@@ -864,12 +864,29 @@ modparam("tm", "cluster_auto_cancel", no)
 	<section id="param_local_request_route" xreflabel="local_request_route">
 		<title><varname>local_request_route</varname> (string)</title>
 		<para>
-		This parameter points to a route, which is executed whenever TM creates
-		a new request (e.g., through the B2B modules or through MI).
+		This parameter points to a route, which is executed whenever TM is
+		about to send out a locally generated request (e.g., through the 
+		B2B modules or through MI).
 		</para>
 		<para>
-		The route is executed with the generated message by TM, incorporating all
-		modifications.
+		The purpose of this route is limited to exposing the content of the 
+		request as SIP message 
+		</para>
+		<para>
+		The route is executed with the generated message by TM, incorporating
+		all modifications.
+		</para>
+		<para>
+		IMPORTANT: this route is executed AFTER the local_route (if defined)
+		and it expose all the changes from that route.
+		</para>
+		<para>
+		IMPORTANT: this route is to be used in a read-only manner, inspection
+		only. Any changes you do here will discarded.
+		</para>
+		<para>
+		IMPORTANT: this route does not offer any message, transactional or
+		dialog context, so do not rely on any variables with scope (like AVPs).
 		</para>
 		<example>
 		<title>Set the <varname>local_request_route</varname> parameter</title>
@@ -879,7 +896,7 @@ modparam("tm", "cluster_auto_cancel", no)
 modparam("tm", "local_request_route", "tm_local_request")
 
 route[tm_local_request] {
-	if (is_method("INVITE") && $rb(application/sdp) && !has_totag()) {
+	if (is_method("INVITE") &amp;&amp; $rb(application/sdp) &amp;&amp; !has_totag()) {
 		$avp(sdp_request) := $rb(application/sdp);
 	}
 }
@@ -891,10 +908,22 @@ route[tm_local_request] {
 	<section id="param_local_reply_route" xreflabel="local_reply_route">
 		<title><varname>local_reply_route</varname> (string)</title>
 		<para>
-		This parameter points to a reply-route, which is executed whenever TM creates
-		a reply (e.g., through the B2B modules or through MI).
+		This parameter points to a route, which is executed whenever TM is
+		about to send out a locally generated reply (e.g., through the 
+		B2B modules or through MI).
 		</para>
-
+		<para>
+		The purpose of this route is limited to exposing the content of the 
+		reply as SIP message 
+		</para>
+		<para>
+		IMPORTANT: this route is to be used in a read-only manner, inspection
+		only. Any changes you do here will discarded.
+		</para>
+		<para>
+		IMPORTANT: this route does not offer any message, transactional or
+		dialog context, so do not rely on any variables with scope (like AVPs).
+		</para>
 		<example>
 		<title>Set the <varname>local_reply_route</varname> parameter</title>
 		<programlisting format="linespecific">
@@ -902,7 +931,7 @@ route[tm_local_request] {
 # Execute the route "tm_local_reply" upon sending a request
 modparam("tm", "local_reply_route", "tm_local_reply")
 
-onreply_route[tm_local_reply] {
+route[tm_local_reply] {
 	if (is_method("BYE")) {
 		$var(rc) = rest_get("http://localhost/qos/delete",
 					$var(recv_body), $var(recv_ct), $var(rcode));

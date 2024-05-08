@@ -30,7 +30,7 @@
 
 extern int restart_fr_on_each_reply;
 extern int onreply_avp_mode;
-extern struct script_route_ref *tm_local_reply;
+extern struct script_route_ref *tm_local_reply_route;
 
 /* reply processing status */
 enum rps {

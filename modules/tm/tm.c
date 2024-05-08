@@ -141,11 +141,11 @@ struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
 int fr_timeout;
 int fr_inv_timeout;
 
-static char* tm_local_reply_route;
-struct script_route_ref *tm_local_reply = NULL;
+static char* tm_local_reply_route_s;
+struct script_route_ref *tm_local_reply_route = NULL;
 
-static char* tm_local_request_route;
-struct script_route_ref *tm_local_request = NULL;
+static char* tm_local_request_route_s;
+struct script_route_ref *tm_local_request_route = NULL;
 
 #define TM_CANCEL_BRANCH_ALL    (1<<0)
 #define TM_CANCEL_BRANCH_OTHERS (1<<1)
@@ -346,10 +346,10 @@ static const param_export_t params[]={
 		&tm_cluster_param.s },
 	{ "cluster_auto_cancel",      INT_PARAM,
 		&tm_repl_auto_cancel },
-	{ "local_reply_route",		  STR_PARAM,
-        &tm_local_reply_route },
+	{ "local_reply_route",        STR_PARAM,
+		&tm_local_reply_route_s },
 	{ "local_request_route",      STR_PARAM,
-        &tm_local_request_route },
+		&tm_local_request_route_s },
 	{0,0,0}
 };
 
@@ -957,27 +957,29 @@ static int mod_init(void)
 		LM_WARN("running without cluster support for transactions!\n");
 	}
 
-	if (tm_local_reply_route)
+	if (tm_local_reply_route_s)
 	{
-		tm_local_reply = ref_script_route_by_name( tm_local_reply_route,
-			sroutes->onreply, ONREPLY_RT_NO, ONREPLY_ROUTE, 0);
-		if (!ref_script_route_is_valid(tm_local_reply))
+		tm_local_reply_route = ref_script_route_by_name(
+			tm_local_reply_route_s,
+			sroutes->onreply, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(tm_local_reply_route))
 		{
-			LM_ERR("route <%s> does not exist\n",tm_local_reply_route);
+			LM_ERR("route <%s> does not exist\n",tm_local_reply_route_s);
 			return -1;
 		}
-	}       
+	}
 
-	if (tm_local_request_route)
+	if (tm_local_request_route_s)
 	{
-		tm_local_request = ref_script_route_by_name( tm_local_request_route,
+		tm_local_request_route = ref_script_route_by_name(
+			tm_local_request_route_s,
 			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
-		if (!ref_script_route_is_valid(tm_local_request))
+		if (!ref_script_route_is_valid(tm_local_request_route))
 		{
-			LM_ERR("route <%s> does not exist\n",tm_local_request_route);
+			LM_ERR("route <%s> does not exist\n",tm_local_request_route_s);
 			return -1;
 		}
-	}   
+	}
 
 	return 0;
 }

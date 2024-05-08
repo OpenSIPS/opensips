@@ -553,15 +553,17 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		request->buffer.len = buf_len;
 	}
 
-	if (ref_script_route_is_valid(tm_local_request)) {
+	if (ref_script_route_is_valid(tm_local_request_route)) {
 		LM_DBG("Found Local-Request Route...\n");
 		memset(&dummy_msg, 0, sizeof(struct sip_msg));
 		dummy_msg.buf = request->buffer.s;
 		dummy_msg.len = request->buffer.len;
 
-		if (parse_msg(request->buffer.s, request->buffer.len, &dummy_msg) == 0) {
-			LM_DBG("Parsed Message, executing Local-Reply Route with Message...\n");
-			run_top_route(sroutes->request[tm_local_request->idx], &dummy_msg);
+		if (parse_msg(request->buffer.s, request->buffer.len, &dummy_msg)==0){
+			LM_DBG("Parsed Message, executing Local-Request Route "
+				"with Message...\n");
+			run_top_route(sroutes->request[tm_local_request_route->idx],
+				&dummy_msg);
 		}
 		free_sip_msg(&dummy_msg);
 	}
