@@ -1492,7 +1492,7 @@ static int mod_preinit(void)
 	};
 	if (!pv_parse_spec(&rtpengine_relay_pvar_str, &media_pvar))
 		return -1;
-	register_rtp_relay(exports.name, &binds, &rtp_relay);
+	register_rtp_relay("rtpengine", &binds, &rtp_relay);
 	return 0;
 }
 
