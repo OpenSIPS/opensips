@@ -247,7 +247,7 @@ static void _pt_raise_event(struct process_group *pg, int p_id, int load,
 		goto error;
 	}
 
-	if (evi_raise_event(EVI_PROC_AUTO_SCALE_ID, list)) {
+	if (evi_dispatch_event(EVI_PROC_AUTO_SCALE_ID, list)) {
 		LM_ERR("unable to send auto scaling event\n");
 	}
 	return;
