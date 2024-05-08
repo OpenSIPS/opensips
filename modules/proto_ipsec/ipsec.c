@@ -768,7 +768,6 @@ int ipsec_ctx_release_unsafe(struct ipsec_ctx *ctx)
 	return free;
 }
 
-
 void ipsec_ctx_release(struct ipsec_ctx *ctx)
 {
 	int free = 0;

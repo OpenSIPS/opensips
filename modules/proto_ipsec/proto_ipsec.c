@@ -35,6 +35,7 @@
 #include "../../net/net_tcp.h"
 #include "../../net/tcp_common.h"
 #include "../../parser/parse_authenticate.h"
+#include "../../parser/parse_fline.h"
 #include "../../data_lump.h"
 #include "../../parser/digest/digest.h"
 #include "../../lib/aka.h"
@@ -60,6 +61,9 @@ static int mod_init(void);
 static void mod_destroy(void);
 static int proto_ipsec_init(struct proto_info *pi);
 static int proto_ipsec_init_listener(struct socket_info *si);
+static int proto_ipsec_send(const struct socket_info* source,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id);
 static int ipsec_pre_script_handler( struct sip_msg *msg, void *param);
 static void ipsec_usrloc_handler(void *binding, ul_cb_type type, ul_cb_extra *_);
 
@@ -218,8 +222,6 @@ static void ipsec_handle_register_req(struct cell* t, int type, struct tmcb_para
 	LM_DBG("saved IPSec context %p in t=%p\n", ctx, t);
 }
 
-
-
 static int mod_init(void)
 {
 	LM_INFO("initializing IPSec protocols\n");
@@ -309,6 +311,7 @@ static int proto_ipsec_add_listeners(void)
 					si->name, si->port);
 			return -1;
 		}
+		udp->socket_info.internal_proto = PROTO_IPSEC;
 		si->proto = PROTO_TCP;
 		si->workers = 0;
 		si->flags |= SI_REUSEPORT;
@@ -318,6 +321,7 @@ static int proto_ipsec_add_listeners(void)
 					si->name, si->port);
 			return -1;
 		}
+		tcp->socket_info.internal_proto = PROTO_IPSEC;
 		pair = pkg_malloc(sizeof *pair);
 		if (!pair) {
 			LM_ERR("could not add new socket info pair!\n");
@@ -341,6 +345,7 @@ static int proto_ipsec_init(struct proto_info *pi)
 
 	pi->tran.init_listener	= proto_ipsec_init_listener;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
+	pi->tran.send			= proto_ipsec_send;
 
 	pi->net.flags			= 0;
 
@@ -367,6 +372,86 @@ static int proto_ipsec_init_listener(struct socket_info *si)
 	si->socket = -1;
 	/* re-initialize as UDP now */
 	return udp_init_listener(si, O_NONBLOCK);
+}
+
+static int proto_ipsec_send(const struct socket_info* source,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id)
+{
+	struct ip_addr ip;
+	unsigned short port;
+	int ret;
+	struct socket_info *ipsec_si;
+	struct ipsec_ctx *ctx = NULL;
+	struct cell *t;
+	struct msg_start fl;
+	union sockaddr_union ue_to;
+
+	sockaddr2ip_addr(&ip, &to->s);
+	port = su_getport(to);
+
+	parse_first_line(buf, len, &fl);
+	if (fl.type == SIP_INVALID) {
+		LM_DBG("invalid SIP message to be sent!\n");
+		return 0;
+	}
+
+	ipsec_si = find_ipsec_socket_info((struct ip_addr *)&source->address, source->port_no, 0, 0);
+	if (!ipsec_si) {
+		LM_BUG("trying to send through IPSec coming from a non-IPSec socket\n");
+		return -1;
+	}
+	/* check to see if we need to change the socket info */
+	if (fl.type == SIP_REQUEST || source->proto == PROTO_UDP) {
+		/* we need to send from the client port */
+		t = tm_ipsec.t_gett();
+		if (t && t != T_UNDEFINED)
+			ctx = IPSEC_CTX_TM_GET(t);
+		if (!ctx)
+			ctx = ipsec_get_ctx_ip_port(&ip, port);
+		if (ctx) {
+			ipsec_si = ctx->client;
+			if (source->proto == PROTO_UDP)
+				source = ((struct socket_info_pair *)ipsec_si->extra_data)->udp;
+			else
+				source = ((struct socket_info_pair *)ipsec_si->extra_data)->tcp;
+			/* destination should be ue's server port */
+			if (ctx->ue.port_s != port) {
+				memcpy(&ue_to, to, sizeof *to);
+				su_setport(&ue_to, ctx->ue.port_s);
+				to = &ue_to;
+			}
+			IPSEC_CTX_UNREF(ctx);
+		} else {
+			LM_WARN("could not find ctx for %s:%hu\n", ip_addr2a(&ip), port);
+		}
+	} else {
+		/* this should be a TCP reply - preserve the socket */
+		LM_DBG("keeping same socket for reply!\n");
+	}
+	LM_DBG("sending SIP %s over %s from %.*s:%hu -> %s:%hu\n",
+			(fl.type == SIP_REQUEST?"request":"reply"), proto2a(source->proto),
+			source->address_str.len, source->address_str.s, source->port_no,
+			ip_addr2a(&ip), port);
+	ret = protos[source->proto].tran.send(source, buf, len, to, id);
+	if (ret >= 0)
+		return ret;
+	/* TODO: handle protocol fallback! - need to update via? */
+	/* grab the new pair */
+	ipsec_si = find_ipsec_socket_info((struct ip_addr *)&source->address, source->port_no, 0, 0);
+	if (!ipsec_si) {
+		LM_BUG("trying to send through IPSec coming from a non-IPSec socket\n");
+		return -1;
+	}
+	if (source->proto == PROTO_UDP)
+		source = ((struct socket_info_pair *)ipsec_si->extra_data)->tcp;
+	else
+		source = ((struct socket_info_pair *)ipsec_si->extra_data)->udp;
+	LM_DBG("fallback SIP %s over %s from %.*s:%hu -> %s:%hu\n",
+			(fl.type == SIP_REQUEST?"request":"reply"), proto2a(source->proto),
+			source->address_str.len, source->address_str.s, source->port_no,
+			ip_addr2a(&ip), port);
+	return protos[source->proto].tran.send(source, buf, len, to, id);
 }
 
 static int ipsec_aka_auth_match_f(const struct authenticate_body *auth,
@@ -529,7 +614,7 @@ static struct socket_info *ipsec_get_socket_info(const struct socket_info *bind_
 {
 	struct socket_info_full *si;
 	struct socket_info_pair *pair;
-	if (!bind_address)
+	if (!bind_address || !(bind_address->flags & SI_INTERNAL))
 		return NULL;
 	for (si = protos[PROTO_IPSEC].listeners; si; si = si->next) {
 		pair = si->socket_info.extra_data;

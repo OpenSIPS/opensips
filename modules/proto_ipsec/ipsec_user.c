@@ -440,3 +440,53 @@ struct ipsec_ctx *ipsec_get_ctx_user(struct ipsec_user *user, struct receive_inf
 	lock_release(&user->lock);
 	return ctx;
 }
+
+struct ipsec_ctx *ipsec_get_ctx_user_port(struct ipsec_user *user, unsigned short port)
+{
+	struct list_head *it;
+	struct ipsec_ctx *ctx = NULL;
+	lock_get(&user->lock);
+	list_for_each(it, &user->sas) {
+		ctx = list_entry(it, struct ipsec_ctx, list);
+		if (ctx->ue.port_s == port || ctx->ue.port_c)
+			break;
+		ctx = NULL;
+	}
+	lock_release(&user->lock);
+	return ctx;
+}
+
+struct ipsec_ctx *ipsec_get_ctx_ip_port(struct ip_addr *ip, unsigned short port)
+{
+	struct ipsec_ctx *ctx = NULL;
+	struct ipsec_map *map;
+	struct ipsec_map_node *node;
+	struct ipsec_user *user;
+	struct ipsec_user_impi *uimpi;
+	struct list_head *it, *uit;
+
+	if (ip->af == AF_INET)
+		map = ipsec_map_ipv4;
+	else
+		map = ipsec_map_ipv6;
+	lock_get(&map->lock);
+	node = ipsec_find_node(ip, 0, map->nodes, map->size);
+	if (node) {
+		list_for_each(it, node->users) {
+			uimpi = list_entry(it, struct ipsec_user_impi, list);
+			list_for_each(uit, &uimpi->users) {
+				user = list_entry(uit, struct ipsec_user, list);
+				ctx = ipsec_get_ctx_user_port(user, port);
+				if (ctx)
+					goto end;
+				ctx = NULL;
+			}
+		}
+	}
+end:
+	if (ctx) {
+		IPSEC_CTX_REF(ctx);
+	}
+	lock_release(&map->lock);
+	return ctx;
+}
