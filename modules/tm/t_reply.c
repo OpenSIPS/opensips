@@ -294,13 +294,16 @@ inline static int update_totag_set(struct cell *t, struct sip_msg *ok)
 
 /*
  * Build and send an ACK to a negative reply
+ * On successful send:
+ *   - return 0
+ *   - populate @ack_buf, for callback purposes, which *must* be SHM freed!
  */
-static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
+static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch, str *ack_buf)
 {
 	str method = str_init(ACK);
 	str to;
-	str ack_buf;
 	struct usr_avp **backup_list;
+	int rc;
 
 	if(parse_headers(rpl,is_local(trans)?HDR_EOH_F:(HDR_TO_F|HDR_FROM_F),0)==-1
 	|| !rpl->to || !rpl->from ) {
@@ -310,10 +313,10 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	to.s=rpl->to->name.s;
 	to.len=rpl->to->len;
 
-	ack_buf.s = is_local(trans)?
-		build_dlg_ack(rpl, trans, branch, &to, (unsigned int*)&ack_buf.len):
-		build_local( trans, branch, &method, NULL, rpl, (unsigned int*)&ack_buf.len );
-	if (ack_buf.s==0) {
+	ack_buf->s = is_local(trans)?
+		build_dlg_ack(rpl, trans, branch, &to, (unsigned int*)&ack_buf->len):
+		build_local( trans, branch, &method, NULL, rpl, (unsigned int*)&ack_buf->len );
+	if (ack_buf->s==0) {
 		LM_ERR("failed to build ACK\n");
 		goto error;
 	}
@@ -323,23 +326,17 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 
 	set_bavp_list(&trans->uac[branch].user_avps);
 	backup_list = set_avp_list( &trans->user_avps );
-	if(SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf.s, ack_buf.len)==0){
-		/* successfully sent out */
-		if ( has_tran_tmcbs( trans, TMCB_MSG_SENT_OUT) ) {
-			set_extra_tmcb_params( &ack_buf, &trans->uac[branch].request.dst);
-			run_trans_callbacks( TMCB_MSG_SENT_OUT,
-				trans, trans->uas.request, 0, 0);
-		}
-	}
+
+	rc = SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf->s, ack_buf->len);
+
 	set_avp_list(backup_list);
 	reset_bavp_list();
 
 	tcp_no_new_conn = 0;
 
-	shm_free(ack_buf.s);
-
-	return 0;
+	return rc;
 error:
+	memset(ack_buf, 0, sizeof *ack_buf);
 	return -1;
 }
 
@@ -1532,7 +1529,8 @@ int reply_received( struct sip_msg  *p_msg )
 	struct cell *t;
 	struct usr_avp **backup_list;
 	unsigned int has_reply_route;
-	int old_route_type;
+	int old_route_type, ack_sent = 0;
+	str ack_buf;
 
 	set_t(T_UNDEFINED);
 
@@ -1581,12 +1579,12 @@ int reply_received( struct sip_msg  *p_msg )
 		reset_timer( &uac->request.fr_timer);
 	}
 
-	/* acknowledge negative INVITE replies (do it before detailed
+	/* acknowledge negative INVITE replies ASAP! (do it before detailed
 	 * on_reply processing, which may take very long, like if it
 	 * is attempted to establish a TCP connection to a fail-over dst */
 	if (is_invite(t) && ((msg_status >= 300) ||
 	(is_local(t) && !no_autoack(t) && msg_status >= 200) )) {
-		if (send_ack(p_msg, t, branch)!=0)
+		if (!(ack_sent = (send_ack(p_msg, t, branch, &ack_buf)>=0)))
 			LM_ERR("failed to send ACK (local=%s)\n", is_local(t)?"yes":"no");
 	}
 
@@ -1599,6 +1597,15 @@ int reply_received( struct sip_msg  *p_msg )
 	if (!is_local(t))
 		run_trans_callbacks( TMCB_RESPONSE_IN, t, t->uas.request, p_msg,
 			p_msg->REPLY_STATUS);
+
+	if (ack_sent) {
+		if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
+			set_extra_tmcb_params( &ack_buf, &t->uac[branch].request.dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT,
+				t, t->uas.request, 0, 0);
+		}
+		shm_free(ack_buf.s);
+	}
 
 	/* processing of on_reply block */
 	has_reply_route = (t->on_reply) || (t->uac[branch].on_reply);
