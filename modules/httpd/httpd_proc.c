@@ -54,6 +54,7 @@
 extern int port;
 extern str ip;
 extern str buffer;
+extern unsigned int hd_conn_timeout_s;
 extern int post_buf_size;
 extern str tls_cert_file;
 extern str tls_key_file;
@@ -452,6 +453,9 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 	 * sockaddr_union contains sockaddr* inside */
 	cl_socket = (union sockaddr_union *)MHD_get_connection_info(connection,
 			MHD_CONNECTION_INFO_CLIENT_ADDRESS)->client_addr;
+
+	if (!MHD_set_connection_option(connection, MHD_CONNECTION_OPTION_TIMEOUT, hd_conn_timeout_s))
+		LM_ERR("failed to set connection timeout\n");
 
 #if ( MHD_VERSION >= 0x000092800 )
 	sv_sockfd = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CONNECTION_FD)->connect_fd;

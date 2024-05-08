@@ -126,6 +126,32 @@ modparam("httpd", "port", 8000)
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_conn_timeout" xreflabel="conn_timeout">
+		<title><varname>conn_timeout</varname>(integer)</title>
+		<para>
+		Auto-close TCP connections which are idle for more than the designated
+		timeout, in seconds.  Set to zero to never close any connections.
+		</para>
+		<para>
+		Note: the connection auto-close routine only seems to be executed
+		in an "on-demand" fashion, during an HTTPD network event (e.g. on a new
+		connection), which although not ideal, it should be good enough in
+		practical terms.
+		</para>
+		<para>
+		<emphasis>The default timeout is 30 seconds.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>conn_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "conn_timeout", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_buf_size" xreflabel="buf_size">
 		<title><varname>buf_size</varname> (integer)</title>
 		<para>
