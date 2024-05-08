@@ -1581,15 +1581,6 @@ int reply_received( struct sip_msg  *p_msg )
 		reset_timer( &uac->request.fr_timer);
 	}
 
-	/* acknowledge negative INVITE replies (do it before detailed
-	 * on_reply processing, which may take very long, like if it
-	 * is attempted to establish a TCP connection to a fail-over dst */
-	if (is_invite(t) && ((msg_status >= 300) ||
-	(is_local(t) && !no_autoack(t) && msg_status >= 200) )) {
-		if (send_ack(p_msg, t, branch)!=0)
-			LM_ERR("failed to send ACK (local=%s)\n", is_local(t)?"yes":"no");
-	}
-
 	_tm_branch_index = branch;
 
 	if (has_tran_tmcbs( t, TMCB_MSG_MATCHED_IN) )
@@ -1599,6 +1590,15 @@ int reply_received( struct sip_msg  *p_msg )
 	if (!is_local(t))
 		run_trans_callbacks( TMCB_RESPONSE_IN, t, t->uas.request, p_msg,
 			p_msg->REPLY_STATUS);
+
+	/* acknowledge negative INVITE replies (do it before detailed
+	 * on_reply processing, which may take very long, like if it
+	 * is attempted to establish a TCP connection to a fail-over dst */
+	if (is_invite(t) && ((msg_status >= 300) ||
+	(is_local(t) && !no_autoack(t) && msg_status >= 200) )) {
+		if (send_ack(p_msg, t, branch)!=0)
+			LM_ERR("failed to send ACK (local=%s)\n", is_local(t)?"yes":"no");
+	}
 
 	/* processing of on_reply block */
 	has_reply_route = (t->on_reply) || (t->uac[branch].on_reply);
