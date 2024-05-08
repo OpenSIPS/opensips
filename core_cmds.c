@@ -129,7 +129,7 @@ static int w_script_trace(struct sip_msg *msg, int *log_level,
 					pv_elem_t *fmt_string, void *info_str);
 static int w_is_myself(struct sip_msg *msg, str *host, int *port);
 static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
-static int w_set_via_handling(struct sip_msg* msg, int* flags);
+static int w_set_via_handling(struct sip_msg* msg, int flags);
 
 #ifndef FUZZ_BUILD
 static
@@ -1487,18 +1487,18 @@ static int fixup_via_hdl(void** param)
 	return fixup_named_flags(param, via_hdl_flag_names, NULL, NULL);
 }
 
-static int w_set_via_handling(struct sip_msg* msg, int* flags)
+static int w_set_via_handling(struct sip_msg* msg, int flags)
 {
-	if (*flags & VIA_HDL_FORCE_RPORT)
+	if (flags & (1<<VIA_HDL_FORCE_RPORT))
 		msg->msg_flags |= FL_FORCE_RPORT;
 
-	if (*flags & VIA_HDL_ADD_LOCAL_RPORT)
+	if (flags & (1<<VIA_HDL_ADD_LOCAL_RPORT))
 		msg->msg_flags|=FL_FORCE_LOCAL_RPORT;
 
-	if (*flags & VIA_HDL_REPLY_TO_VIA)
+	if (flags & (1<<VIA_HDL_REPLY_TO_VIA))
 		msg->msg_flags |= FL_REPLY_TO_VIA;
 
-	if (*flags & VIA_HDL_FORCE_TCP_ALIAS)
+	if (flags & (1<<VIA_HDL_FORCE_TCP_ALIAS))
 		w_force_tcp_alias( msg, 0);
 
 	return 1;
