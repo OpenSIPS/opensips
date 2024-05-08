@@ -1684,6 +1684,37 @@ list_hdr_add_option("Supported", "optionX");
 		</example>
 	</section>
 
+	<section id="sip_to_json" xreflabel="sip_to_json()">
+		<title>
+		<function moreinfo="none">sip_to_json(out_var)</function>
+		</title>
+		<para>
+		Returns a JSON formatted representation of the current SIP message, containing first_line , headers and body json members 
+		Useful in cases when you want to pass a generic SIP message to a SIP agnostic entity, but still want to provide some layer of SIP parsing before sending the full message further.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>out_var (string)</emphasis> - the output JSON formatted SIP message variable
+		</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>sip_to_json</function> usage</title>
+		<programlisting format="linespecific">
+...
+       if (sip_to_json($var(out_sip_json))) {
+           xlog("The JSON format for the current SIP message is $var(out_sip_json) \n");
+       }
+...
+</programlisting>
+		</example>
+	</section>
+
 
 	</section>
 	<section>

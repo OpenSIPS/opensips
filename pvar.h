@@ -136,8 +136,6 @@ enum _pv_type {
 	PVT_JSON,
 	/* registered by xml module */
 	PVT_XML,
-	/* sip 2 json pvar */
-	PVT_SIP2JSON,
 
 	PVT_EXTRA /* keep it last */
 };
