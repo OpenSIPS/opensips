@@ -102,7 +102,7 @@ static inline int msg_send( const struct socket_info* send_sock, int proto,
 	out_buff.len = len;
 	out_buff.s = buf;
 
-	/* determin the send socket */
+	/* determine the send socket */
 	if (send_sock==0)
 		send_sock=get_send_socket(0, to, proto);
 	if (send_sock==0){
@@ -119,6 +119,8 @@ static inline int msg_send( const struct socket_info* send_sock, int proto,
 
 	/* update the length for further processing */
 	len = out_buff.len;
+	if ((send_sock->flags & SI_INTERNAL) && send_sock->internal_proto != PROTO_NONE)
+		proto = send_sock->internal_proto;
 
 	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to,id)<0){
 		get_su_info(to, ip, port);

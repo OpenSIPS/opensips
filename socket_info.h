@@ -63,6 +63,7 @@ struct socket_info {
 	unsigned short workers;
 	struct scaling_profile *s_profile;
 	void *extra_data;
+	enum sip_protos internal_proto;
 
 	/* these are IP-level local/remote ports used during the last write op via
 	 * this sock (or a connection belonging to this sock). These values are 
