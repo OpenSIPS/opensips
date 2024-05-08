@@ -199,6 +199,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (protos[PROTO_HEP_TLS].listeners && load_tls_mgm_api(&tls_mgm_api)!=0) {
+		LM_DBG("failed to find TLS API - is tls_mgm module loaded?\n");
+		return -1;
+	}
+
 	if (payload_compression) {
 		load_compression =
 			(load_compression_f)find_export("load_compression", 0);
@@ -304,10 +309,6 @@ static int proto_hep_init_tcp(struct proto_info* pi)
 
 static int proto_hep_init_tls(struct proto_info* pi)
 {
-	if (load_tls_mgm_api(&tls_mgm_api) != 0) {
-		LM_DBG("failed to find TLS API - is tls_mgm module loaded?\n");
-		return -1;
-	}
 
 	pi->id                  = PROTO_HEP_TLS;
 	pi->name                = "hep_tls";
