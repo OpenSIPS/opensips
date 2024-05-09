@@ -8,7 +8,7 @@ CREATE TABLE dispatcher (
     probe_mode INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     weight CHAR(64) DEFAULT 1 NOT NULL,
     priority INT DEFAULT 0 NOT NULL,
-    attrs CHAR(128) DEFAULT '' NOT NULL,
-    description CHAR(64) DEFAULT '' NOT NULL
+    attrs CHAR(128) DEFAULT NULL,
+    description CHAR(64) DEFAULT NULL
 ) ENGINE=InnoDB;
 
