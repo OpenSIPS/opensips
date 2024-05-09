@@ -160,29 +160,23 @@ struct ipsec_allowed_algo {
 	struct ipsec_allowed_algo *next;
 };
 
-struct ipsec_allowed_algo *ipsec_allowed_algos;
+struct ipsec_allowed_algo *ipsec_global_allowed_algos;
 
-/* Types is 1 for integrity, 2 for encryption, 0 for both */
-int ipsec_add_allowed_algorithms(str *algs)
+struct ipsec_allowed_algo *ipsec_parse_allowed_algorithms(str *algs)
 {
-	int ret = -1;
 	csv_record *csv;
 	str_list *it;
 	char *p;
 	str alg;
-	struct ipsec_allowed_algo *pair;
-	static struct ipsec_allowed_algo *ipsec_allowed_algos_last;
+	struct ipsec_allowed_algo *pair, *ipsec_allowed_algos_last, *ipsec_allowed_algos = NULL;
 	struct ipsec_algorithm_desc *auth, *enc;
 
-	if (!algs || !algs->s)
-		return 0;
-	algs->len = strlen(algs->s);
-	LM_DBG("parse allowed_algorithms: %.*s\n", algs->len, algs->s);
-
+	if (!algs || !algs->len)
+		return NULL;
 	csv = parse_csv_record(algs);
 	if (!csv) {
 		LM_ERR("could not parse algorithms\n");
-		return -1;
+		return NULL;
 	}
 	for (it = csv; it; it = it->next) {
 		trim(&it->s);
@@ -229,7 +223,7 @@ int ipsec_add_allowed_algorithms(str *algs)
 		pair = pkg_malloc(sizeof *pair);
 		if (!pair) {
 			LM_ERR("oom for authentication pair\n");
-			return -1;
+			goto end;
 		}
 		memset(pair, 0, sizeof *pair);
 		pair->auth = auth;
@@ -240,19 +234,27 @@ int ipsec_add_allowed_algorithms(str *algs)
 			ipsec_allowed_algos = pair;
 		ipsec_allowed_algos_last = pair;
 	}
-	ret = 0;
 end:
-	LM_DBG("full list of allowed supported algorithms:\n");
-	for (pair = ipsec_allowed_algos; pair; pair = pair->next) {
-		LM_DBG(" - auth=%s enc=%s\n",
-				(pair->auth->name?pair->auth->name:"ANY"),
-				(pair->enc->name?pair->enc->name:"ANY"));
-	}
 	free_csv_record(csv);
-	return ret;
+	return ipsec_allowed_algos;
 }
 
-sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg)
+int ipsec_add_allowed_algorithms(str *algs)
+{
+	ipsec_global_allowed_algos = ipsec_parse_allowed_algorithms(algs);
+	return (ipsec_global_allowed_algos?0:-1);
+}
+
+void ipsec_free_allowed_algorithms(struct ipsec_allowed_algo *algos)
+{
+	struct ipsec_allowed_algo *next;
+	for (; algos; algos = next) {
+		next = algos ->next;
+		pkg_free(algos);
+	}
+}
+
+sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg, struct ipsec_allowed_algo *algos)
 {
 	struct hdr_field *h;
 	sec_agree_body_t *sa, *sas;
@@ -267,8 +269,10 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg)
 		LM_ERR("cannot parse Security-Client header\n");
 		return NULL;
 	}
+	if (!algos)
+		algos = ipsec_global_allowed_algos;
 	/* TODO: order by priority */
-	if (!ipsec_allowed_algos) {
+	if (!algos) {
 		LM_DBG("no allowed algorithms specified - using the first supported one!\n");
 		/* if we have no prefference, choose the first one supported */
 		for (h = msg->security_client; h; h = h->sibling) {
@@ -316,7 +320,7 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg)
 	} else {
 		/* choose according to our preference */
 		LM_DBG("try to match against allowed supported algorithms:\n");
-		for (algs = ipsec_allowed_algos; algs; algs = algs->next) {
+		for (algs = algos; algs; algs = algs->next) {
 			LM_DBG(" - attempt auth=%s enc=%s\n",
 					(algs->auth->name?algs->auth->name:"ANY"),
 					(algs->enc->name?algs->enc->name:"ANY"));

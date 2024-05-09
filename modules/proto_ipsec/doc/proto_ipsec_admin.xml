@@ -359,7 +359,7 @@ modparam("proto_ipsec", "disable_deprecated_algorithms", yes)
 
 	<section id="func_ipsec_create" xreflabel="ipsec_create()">
 		<title>
-		<function moreinfo="none">ipsec_create([port_server], [port_client])</function>
+		<function moreinfo="none">ipsec_create([port_server], [port_client], [algos])</function>
 		</title>
 		<para>
 			Creates an IPSec SA/tunnel according to the
@@ -376,15 +376,27 @@ modparam("proto_ipsec", "disable_deprecated_algorithms", yes)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 			<listitem>
-				<para><emphasis>port_server (integer)</emphasis> - the server port
-				to be used in the IPSec communication. It should be an existing IPSec
-				port and is advertised in the <emphasis>Security-Server</emphasis> header.
+				<para><emphasis>port_server (integer, optional)</emphasis> - the server
+				port to be used in the IPSec communication. It should be an existing
+				IPSec port and is advertised in the
+				<emphasis>Security-Server</emphasis> header. If missing, the
+				<xref linkend="param_default_client_port"/> is considered.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>port_client (integer)</emphasis> - the client port
-				to be used in the IPSec communication. It should be an existing IPSec
-				port and is advertised in the <emphasis>Security-Server</emphasis> header.
+				<para><emphasis>port_client (integer, optional)</emphasis> - the client
+				port to be used in the IPSec communication. It should be an existing
+				IPSec port and is advertised in the
+				<emphasis>Security-Server</emphasis> header. If missing, the
+				<xref linkend="param_default_server_port"/> is considered.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>algos (string, optional)</emphasis> - a list of
+				algorithms that should be used for creating this security association.
+				It has the same format as <xref linkend="param_allowed_algorithms"/>
+				and overwrites its value when used. If missing, the
+				<xref linkend="param_allowed_algorithms"/> is considered.
 				</para>
 			</listitem>
 		</itemizedlist>

@@ -74,12 +74,17 @@ static int ipsec_aka_auth_match_f(const struct authenticate_body *auth,
 static struct match_auth_hf_desc ipsec_aka_auth_match =
 	MATCH_AUTH_HF(ipsec_aka_auth_match_f, NULL);
 
-static int w_ipsec_create(struct sip_msg *msg, int *port_ps, int *port_pc);
+static int w_ipsec_create(struct sip_msg *msg, int *port_ps, int *port_pc,
+		struct ipsec_allowed_algo *algos);
+static int fixup_ipsec_create_algos(void **param);
+static int fixup_ipsec_create_algos_free(void **param);
 
 static const cmd_export_t cmds[] = {
 	{"ipsec_create", (cmd_function)w_ipsec_create, {
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,
+			fixup_ipsec_create_algos, fixup_ipsec_create_algos_free},
 		{0,0,0}},
 		ONREPLY_ROUTE},
 	{"proto_init", (cmd_function)proto_ipsec_init, {{0,0,0}}, 0},
@@ -626,7 +631,8 @@ static struct socket_info *ipsec_get_socket_info(const struct socket_info *bind_
 
 
 
-static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
+static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc,
+		struct ipsec_allowed_algo *algos)
 {
 	struct cell *t;
 	int port_ps, port_pc;
@@ -755,7 +761,7 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 		goto release_user;
 	}
 
-	sa = ipsec_get_security_client(req);
+	sa = ipsec_get_security_client(req, algos);
 	if (!sa) {
 		LM_ERR("could not find a matching Secrity-Client header\n");
 		ret = -2;
@@ -799,6 +805,18 @@ close:
 release_user:
 	ipsec_release_user(user);
 	return ret;
+}
+
+static int fixup_ipsec_create_algos(void **param)
+{
+	*param = ipsec_parse_allowed_algorithms((str *)*param);
+	return 0;
+}
+
+static int fixup_ipsec_create_algos_free(void **param)
+{
+	ipsec_free_allowed_algorithms(*param);
+	return 0;
 }
 
 str pv_ipsec_ctx_type[] = {

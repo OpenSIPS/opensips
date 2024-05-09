@@ -31,6 +31,7 @@ struct ipsec_algorithm_desc {
 	const char *deprecated;
 	int key_len;
 };
+struct ipsec_allowed_algo;
 
 #define IPSEC_ALGO_KEY_SIZE 128
 /*
@@ -88,7 +89,9 @@ enum ipsec_algo_type {
 
 int ipsec_add_allowed_algorithms(str *algs);
 struct ipsec_algorithm_desc *ipsec_parse_algorithm(str *name, enum ipsec_algo_type type);
-sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg);
+struct ipsec_allowed_algo *ipsec_parse_allowed_algorithms(str *algs);
+sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg, struct ipsec_allowed_algo *algos);
+void ipsec_free_allowed_algorithms(struct ipsec_allowed_algo *algos);
 
 extern int ipsec_disable_deprecated_algorithms;
 
