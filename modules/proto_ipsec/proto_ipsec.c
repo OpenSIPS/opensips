@@ -809,6 +809,8 @@ str pv_ipsec_ctx_type[] = {
 	str_init("spi-s"),   /* 4 */
 	str_init("port-c"),  /* 5 */
 	str_init("port-s"),  /* 6 */
+	str_init("ik"),      /* 7 */
+	str_init("ck"),      /* 8 */
 };
 
 static int pv_parse_ipsec_ctx_flag(str *name)
@@ -903,6 +905,12 @@ static int pv_get_ipsec_ctx(struct sip_msg *msg, pv_param_t *param,
 		break;
 	case 6: /* port-s */
 		res->ri = e->port_s;
+		break;
+	case 7: /* ik */
+		res->rs = ctx->ik;
+		break;
+	case 8: /* ck */
+		res->rs = ctx->ck;
 		break;
 	default:
 		LM_BUG("invalid name %d\n", name);

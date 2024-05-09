@@ -418,6 +418,12 @@ onreply_route[ipsec] {
 			<para>
 				The following fields can be retrieved:
 				<itemizedlist>
+					<listitem><para><emphasis>ik</emphasis> - integrity key
+					being used by the IPSec tunnel.
+					</para></listitem>
+					<listitem><para><emphasis>ck</emphasis> - confidentiality key
+					being used by the IPSec tunnel.
+					</para></listitem>
 					<listitem><para><emphasis>alg</emphasis> - authentication
 					algorithm being used.
 					</para></listitem>
@@ -460,6 +466,12 @@ xlog("Using $ipsec(ip):$ipsec(port-c) and $ipsec(ip):$ipsec(port-s) socket\n");
 			<para>
 				The following fields can be retrieved:
 				<itemizedlist>
+					<listitem><para><emphasis>ik</emphasis> - integrity key
+					being used by the IPSec tunnel.
+					</para></listitem>
+					<listitem><para><emphasis>ck</emphasis> - confidentiality key
+					being used by the IPSec tunnel.
+					</para></listitem>
 					<listitem><para><emphasis>alg</emphasis> - authentication
 					algorithm being used.
 					</para></listitem>
