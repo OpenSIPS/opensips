@@ -2,8 +2,6 @@
 #
 # $NetBSD$
 #
-# $Id$
-#
 
 COMMENT= "OpenSIPS"
 

@@ -1,5 +1,3 @@
-# $Id$
-#
 # mi_fifo module makefile
 #
 # 

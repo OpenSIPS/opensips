@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 # WARNING: do not run this directly, it should be run by the master Makefile
 #
 # Copyright (C) 2006 SOMA Networks, INC.
