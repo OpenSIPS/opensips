@@ -1586,6 +1586,9 @@ fi
 
 
 %changelog
+* Thu May 09 2024 Liviu Chircu <liviu@opensips.org> - 3.6.0-1
+- Specification updated for opensips 3.6
+
 * Thu May 18 2023 Nick Altmann <nick@altmann.pro> - 3.5.0-1
 - Specification updated for opensips 3.5
 

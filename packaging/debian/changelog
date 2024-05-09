@@ -1,3 +1,10 @@
+opensips (3.5.0-beta-1) beta; urgency=low
+
+  * Major Public Release.
+
+ -- Liviu Chircu <liviu@opensips.org>  Thu, 09 May 2024 18:14:29 +0300
+
+
 opensips (3.5.0-dev-1) beta; urgency=low
 
   * Development Build.
