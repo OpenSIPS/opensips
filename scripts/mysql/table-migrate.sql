@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020-2023 OpenSIPS Solutions
+# Copyright (C) 2020-2024 OpenSIPS Solutions
 #
 # This file is part of opensips, a free SIP server.
 #
@@ -17,9 +17,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-DROP PROCEDURE IF EXISTS `OSIPS_TB_COPY_3_3_TO_3_4`;
+DROP PROCEDURE IF EXISTS `OSIPS_TB_COPY_3_4_TO_3_5`;
 DELIMITER $$
-CREATE PROCEDURE `OSIPS_TB_COPY_3_3_TO_3_4`(
+CREATE PROCEDURE `OSIPS_TB_COPY_3_4_TO_3_5`(
 	IN old_db CHAR(64), IN new_db CHAR(64), IN tb_name CHAR(64))
 BEGIN
 SET @c1 = (SELECT EXISTS(
@@ -33,7 +33,7 @@ SET @c2 = (SELECT EXISTS(
        AND table_name = tb_name
 ));
 IF @c1 = 1 AND @c2 = 1 THEN
-	IF tb_name = 'dispatcher' THEN
+	IF tb_name = 'example_exception_dispatcher' THEN
 		SET @Q = CONCAT('INSERT INTO ', new_db, '.', tb_name, '
 			(id, setid, destination, socket, state, probe_mode,
 				weight, priority, attrs, description)
