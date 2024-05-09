@@ -1,0 +1,5896 @@
+=========================== Release 3.5.0-beta ==============================
+
+2024-05-09  Liviu Chircu  <liviu at opensips dot org>
+        * [9c8b8b740] :
+
+        Bump version to 3.5.0-beta
+
+
+2024-05-09  Liviu Chircu  <liviu at opensips dot org>
+        * [816b58e6b] :
+
+        Update MySQL DB migration scripts for "3.4 to 3.5"
+
+
+2024-05-09  Liviu Chircu  <liviu at opensips dot org>
+        * [5f3baea39] :
+
+        Remove references to README-MODULES; Remove svn '$Id$' tags
+
+        Reason: this file was slowly becoming more and more outdated and was
+        ultimately removed in 8292659d5, in favour of the opensips.org listing.
+
+        Fixes #3375
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [3cf643015] :
+
+        proto_ipsec: proper initialize allowed algorithms
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [14466ccdd] :
+
+        proto_ipsec: allow empty allowed_algorithms
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [da8ae0751] :
+
+        proto_ipsec: add allowed_algorithms to ipsec_create()
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [0b135352d] :
+
+        proto_ipsec: add ik and ck to $ipsec pvar
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [64ffb9ad4] :
+
+        proto_ipsec: add documentation
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [c26b314f1] :
+
+        proto_ipsec: handle send command logic
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [1af4a6898] :
+
+        rtpengine: explicit name when registring for rtp_relay
+
+        Otherwise the module might use a different `exports` structure
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [a7f070a9a] :
+
+        core_cmds: fix set_via_handling crash
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [991a41092] :
+
+        socket_info: provide send callback for internal listeners
+
+        When a proto hooks on top of another proto to operate (such as
+        proto_ipsec is using proto_udp and proto_tcp listners), we need a hook
+        before sending a message out.
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [018e9be03] :
+
+        aaa_diameter: unlock cond after signaling
+
+        This avoids a deadlock on the main condition
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [fabd1732b] :
+
+        proto_ipsec: fix allowed_algorithms parsing
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [4ed21bf69] :
+
+        proto_ipsec: provide persistency for SAs
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [7b61d7f08] :
+
+        proto_ipsec: change free spi management
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [fc7626e07] :
+
+        proto_ipsec: store ck and ik in ctx
+
+        This helps us store in the usrloc kv store
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [8c1b5851f] :
+
+        proto_ipsec: granular management of re-registration
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [fc6b10430] :
+
+        ipsec: complete ipsec SA/policy removal
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [2430e1019] :
+
+        ipsec: enhanced REGISTER handling
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [56a5b7c64] :
+
+        auth_aka: refactor hash to reverse impu vs impi
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [2a9192011] :
+
+        ipsec: add proto_ipsec module + proto parsing
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [0be8ad991] :
+
+        socket_info: expose listeners interface
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [1bb45295f] :
+
+        net: add support for internal listeners
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [4e06e87d5] :
+
+        parser/authenticate: extract ik and ck parameters
+
+
+2024-05-09  Razvan Crainea  <razvan at opensips dot org>
+        * [d38333b3d] :
+
+        parser: add parser for Security-{Client,Server,Verify} headers
+
+
+2024-05-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [60f352e05] :
+
+        [PI] remove duplicates for `usr_preferences` table
+
+        The duplicate was a side effect of renaming avpops to sqlops
+
+
+2024-05-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [b99d7c62a] :
+
+        [dbschema] updated according to the latest `dispatcher` format
+
+
+2024-05-08  Liviu Chircu  <liviu at opensips dot org>
+        * [115faea9a] :
+
+        httpd: Add a new 'conn_timeout' (seconds) modparam
+
+
+2024-05-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [afbdbdcf4] :
+
+        [core] fix raising E_CORE_PROC_AUTO_SCALE
+
+        The event is raised by the attendent process, which is not properly init for all event backends.
+        So better dispatch the event to the regular workers to be raised.
+
+
+2024-05-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [9f9e4649b] :
+
+        [sipmsgops] fixed section IDs in docs
+
+
+2024-05-08  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [043b7e095] :
+
+        Merge pull request #3311 from vladpaiu/sip2json
+
+        Add sip2json pvar
+
+2024-05-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [fa93ebbe6] :
+
+        [tm] Changes on the new `local_reply/request_route` mod params
+
+        Improve the names of the variables.
+        Improve docs with more details.
+        Make `local_reply_route` a generic route, not a onreply route (as it taints the concept of onreply routes)
+        Related to #3329
+        Complets 57b122f29e0872b221e40fba6f9e900362f8c2ce
+
+
+2024-05-08  Carsten Bock  <carsten at ng-voice dot com>
+        * [1248f80b9] :
+
+        tm: Add functionality to execute a route, whenever TM creates a request or reply
+
+
+2024-05-08  Liviu Chircu  <liviu at opensips dot org>
+        * [43477da50] :
+
+        tm: Avoid running hop-by-hop ACK callbacks before reply callbacks
+
+        Commit aaa6b6867 mitigated the effects of a poor HEP connection
+        affecting the OpenSIPS's responsiveness by delaying the reply callbacks
+        until after the hop-by-hop ACK is sent out.  However, a side-effect in
+        doing so is that the reply/ACK HEP packets on un-established calls
+        became swapped.  This patch aims to address the issue.
+
+        Related to #3255
+
+
+2024-05-08  vladpaiu  <vladpaiu at opensips dot org>
+        * [15537c25d] :
+
+        Merge branch 'OpenSIPS:master' into sip2json
+
+
+2024-05-08  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [67f890117] :
+
+        Move implementation to sipmsgops
+
+
+2024-05-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [07e4febb3] :
+
+        [proto_hep] avoid hard dependency to `tls_mgm`
+
+        Load the tls_mgm module ONLY if a TLS HEP socket is defined
+
+
+2024-05-07  Liviu Chircu  <liviu at opensips dot org>
+        * [9c27ae414] :
+
+        Revert "Optimize str_strstr()"
+
+        Partial revert of commit 418922f1452b5637efa
+
+        Reason: premature optimization :) new implementation was actually slower
+
+
+2024-05-07  Liviu Chircu  <liviu at opensips dot org>
+        * [486e96118] :
+
+        parser: Reuse add_last() macro when possible
+
+
+2024-05-07  Liviu Chircu  <liviu at opensips dot org>
+        * [418922f14] :
+
+        Optimize str_strstr(); Add some basic tests
+
+
+2024-05-07  Liviu Chircu  <liviu at opensips dot org>
+        * [7a9912602] :
+
+        mid_registrar: Improve robustness vs. bad traffic in mode 2
+
+        In case the main registrar returns extra contacts, make sure to
+        correctly match the mid-registrar's *single* contact within the list,
+        then strip all Contacts from the 200 OK, effectively fixing it.
+
+        Thanks go to Slava Bendersky for reporting and helping troubleshoot.
+
+
+2024-05-07  Liviu Chircu  <liviu at opensips dot org>
+        * [5e7be5626] :
+
+        Merge branch 'pr_ct_refresh_event' of https://github.com/sippy/opensips into sippy-pr_ct_refresh_event
+
+
+2024-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [ca98f5778] :
+
+        [uac_registrant] added new reg_force_register MI command
+
+        to force the (re-)registration of a record (before its normal timeout/retry interval)
+
+
+2024-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [da52437b0] :
+
+        [uac_registrant] add `failure_retry_interval` to docs
+
+        Completes #3270
+        Related to 570c853beb2b8fa24f65cf29d81917833d45acf
+
+
+2024-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [46db9d93a] :
+
+        [uac_registrant] tune the calculation of the timeout in error cases
+
+        Use the "expires" if the "failure_retry_interval" is not set
+        Completes #3270
+        Related to 570c853beb2b8fa24f65cf29d81917833d45acf8
+
+
+2024-05-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [570c853be] :
+
+        Merge pull request #3270 from jes/jes/failure-retry-interval
+
+        uac_registrant: add "failure_retry_interval" modparam
+
+2024-05-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [7ea63f394] :
+
+        Merge pull request #3384 from NormB/NormB-patch-2
+
+        Update notify.c to reduce noisy logs
+
+2024-05-07  Răzvan Crainea  <razvan at opensips dot org>
+        * [34520687b] :
+
+        Merge pull request #3310 from OpenSIPS/prometheus_custom_route
+
+        Add support for publishing custom prometheus data ( not stat driven )
+
+2024-05-05  OpenSIPS  <github at opensips dot org>
+        * [ca319630e] :
+
+        Rebuild documentation
+
+
+2024-05-02  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [cf5048535] :
+
+        Add script route ref support
+
+
+2024-05-02  Norm Brandinger  <n.brandinger at gmail dot com>
+        * [6f6bb1af4] :
+
+        Update notify.c to reduce noisy logs
+
+2024-05-02  Razvan Crainea  <razvan at opensips dot org>
+        * [dd9c5144a] :
+
+        auth_aka: make auth-int defaut qop
+
+
+2024-05-02  Liviu Chircu  <liviu at opensips dot org>
+        * [ea93e4350] :
+
+        freeswitch: Fix off-by-one comparison bug; Add safety checks
+
+        Many thanks to Five9 (https://www.five9.com) for reporting this issue!
+
+
+2024-05-02  Razvan Crainea  <razvan at opensips dot org>
+        * [99ea7e857] :
+
+        tracer: proper detection of dummy messages
+
+        Complete commit 6fcfc70
+
+
+2024-05-02  Razvan Crainea  <razvan at opensips dot org>
+        * [e3eb2e153] :
+
+        parser: log_event_level_filter should be signed int
+
+        This allow setting the filter to more severe levels, i.e. ERROR and
+        upper
+
+
+2024-05-02  Liviu Chircu  <liviu at opensips dot org>
+        * [7e4213298] :
+
+        Exclude "snmpstats" from multi-arch build
+
+        It seems LTO is not possible with clang on the below arch, since
+        LLVMgold.so is not available, yet snmpstat's `net-snmp-config` program
+        includes the -ffat-lto-objects CFLAGS, which activates LTO.
+
+        build_multiarch (clang-arm64-qemu-cross, ubuntu-22.04)
+
+        /usr/bin/ld: /usr/lib/llvm-18/bin/../lib/LLVMgold.so: error loading
+        plugin: /usr/lib/llvm-18/bin/../lib/LLVMgold.so: cannot open shared
+        object file: No such file or directory
+        clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+
+2024-05-01  Liviu Chircu  <liviu at opensips dot org>
+        * [251078369] :
+
+        Fix various ARM32 time_t warnings (Ubuntu 22.04)
+
+
+2024-05-01  Liviu Chircu  <liviu at opensips dot org>
+        * [52f21088b] :
+
+        usrloc: Fix a data packing bug
+
+
+2024-05-01  Liviu Chircu  <liviu at opensips dot org>
+        * [077072d9a] :
+
+        snmpstats: Fix clang warnings on ARM32/QEMU/Ubuntu-22.04
+
+        clang: warning: argument unused during compilation:
+            '-fno-stack-clash-protection' [-Wunused-command-line-argument]
+
+
+2024-05-01  Liviu Chircu  <liviu at opensips dot org>
+        * [4250ccd78] :
+
+        python build: Ensure "setuptools" is available
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [61ba2cc98] :
+
+        b2b_entities: Fix ARM32 time_t warnings (Ubuntu 22.04)
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [1e0ea18a6] :
+
+        github/workflows: Avoid fancy bash syntax
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [a09e75e86] :
+
+        github/workflows: Fix bash multi-line error
+
+
+2024-04-30  Razvan Crainea  <razvan at opensips dot org>
+        * [1ad6753da] :
+
+        github/workflows: continue on error on job
+
+
+2024-04-30  Razvan Crainea  <razvan at opensips dot org>
+        * [567652f39] :
+
+        github/workflows: continue on fail to notify
+
+
+2024-04-30  Razvan Crainea  <razvan at opensips dot org>
+        * [6daabe7d0] :
+
+        github/workflows: aggregate multiarch and unittests
+
+
+2024-04-30  Razvan Crainea  <razvan at opensips dot org>
+        * [39fdc9833] :
+
+        Reapply "github/workflows: don't fail fast - allow other platforms to run"
+
+        This reverts commit ecbb1e2de9f6703e8654228a3ed32fe63b8535e9.
+
+
+2024-04-30  Razvan Crainea  <razvan at opensips dot org>
+        * [d82ab0cd8] :
+
+        github/workflows: aggregate status of matrix jobs
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [3ab5a1cfb] :
+
+        github/workflows: Move auto-detection post apt-update
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [63c9eb230] :
+
+        github/workflows: Auto-detect available libodbc packages
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [41a20d6de] :
+
+        Complete b8fdce475d (ARM32 warnings)
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [761b844e6] :
+
+        github/workflows: Add exception for multi-arch Ubuntu 22.04
+
+
+2024-04-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [9a2fc7ffa] :
+
+        [dialog] relaxed the name of the dialog profiles
+
+        '-' and '_' are allowed (besides alphanum) in dialog profiles
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [ecbb1e2de] :
+
+        Revert "github/workflows: don't fail fast - allow other platforms to run"
+
+        This reverts commit 70b805ed21929cdce904e4b9ebe23d03a21c2bb5.
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [44c995aae] :
+
+        Fix package typo
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [d7fcd9043] :
+
+        Attempt #2 to fix GitHub Workflow
+
+        Previous commit fixed 22.04 but broke 20.04, so this commit should make
+        both work.
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [b8fdce475] :
+
+        Fix a bunch of ARM32 printf() warnings (Ubuntu 22.04)
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [dbf794dcc] :
+
+        Attempt to fix GitHub Workflow
+
+        On newer 22.04 Ubuntu, it seems the ODBC package has been bumped to "2".
+
+        Related commits:
+            - fa652e8
+            - 6bfd7d2
+
+
+2024-04-30  Liviu Chircu  <liviu at opensips dot org>
+        * [b38b06aa7] :
+
+        Fix the E_CORE_SHM_THRESHOLD event
+
+        For some time now, this event has not been functional, due to
+        init_shm_mallocs() being called *before* parsing the opensips.cfg,
+        leading to un-initialized event holders and a quick-exit at runtime,
+        including times when the event actually needs to be raised.
+
+        Credits to Bogdan Iancu for reporting this issue!
+
+
+2024-04-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [2b0c809a8] :
+
+        [sql_cacher] fix README format (on the bigint_to_str param)
+
+
+2024-04-30  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [320ef54c5] :
+
+        Merge pull request #3381 from ovidiusas/master
+
+        sql_cacher: adding support for returning bigint in string format
+
+2024-04-29  Liviu Chircu  <liviu at opensips dot org>
+        * [812a3962a] :
+
+        Merge pull request #3382 from NormB/patch-1
+
+        Correct syntax
+
+2024-04-29  Norm Brandinger  <n.brandinger at gmail dot com>
+        * [163f2fe3e] :
+
+        Correct syntax
+
+2024-04-29  Ovidiu Sas  <osas at voipembedded dot com>
+        * [43673c282] :
+
+        sql_cacher: README: document bigint_to_str module parameter
+
+
+2024-04-29  Ovidiu Sas  <osas at voipembedded dot com>
+        * [b70249a94] :
+
+        sql_cacher: README: remove trailling empty spaces
+
+
+2024-04-29  Ovidiu Sas  <osas at voipembedded dot com>
+        * [15f522938] :
+
+        sql_cacher: new module parameter: bigint_to_str to control bigint output
+         - allow bigint to be returned as string
+
+
+2024-04-29  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [faeb93261] :
+
+        Merge pull request #3376 from ovidiusas/master
+
+        sqlops: adding support for returning bigint in string format
+
+2024-04-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [92b0dcfbd] :
+
+        [pua] properly insert sh_tag into pua table
+
+        Credits go to @NormB
+        Fixes #3377
+
+
+2024-04-29  Ovidiu Sas  <osas at voipembedded dot com>
+        * [304729cfc] :
+
+        sqlops: README: document bigint_to_str module parameter
+
+
+2024-04-29  Ovidiu Sas  <osas at voipembedded dot com>
+        * [8f680ac33] :
+
+        sqlops: new module parameter: bigint_to_str to control bigint output
+         - allow bigint to be returned as string
+
+
+2024-04-29  Ovidiu Sas  <osas at voipembedded dot com>
+        * [43dfdc8f6] :
+
+        core: add bigint2str helper function
+         - convert bigint to string
+
+
+2024-04-28  OpenSIPS  <github at opensips dot org>
+        * [65fdb1af1] :
+
+        Rebuild documentation
+
+
+2024-04-26  Razvan Crainea  <razvan at opensips dot org>
+        * [999b8ac5d] :
+
+        event_route: fix int interpretation in $param
+
+        Treat the integer as signed when building the $param value
+
+        Many thanks to Norm Brandinger (@NormB on GitHub) for reporting it in #3367
+
+
+2024-04-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [6af903981] :
+
+        [presence] fix evaluating shtag when cluster disabled
+
+        Avoid evaluating sharing tags when the clustering support in presence module is disabled.
+        Related to #3359
+
+
+2024-04-26  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [7930e8541] :
+
+        Merge pull request #3371 from ovidiusas/master
+
+        db/schema: fix dbtext dispatcher definition
+
+2024-04-25  Liviu Chircu  <liviu at opensips dot org>
+        * [a86b7e2cd] :
+
+        auth_aaa: Fix bad Digest-Qop AVP name with libfreeDiameter
+
+        RADIUS and Diameter have different names for the QoP AVP, as they use
+        "Digest-Qop" and "Digest-QoP", respectively.  This patch fixes an issue
+        where the libfreeDiameter cannot locate "Digest-Qop" in its dict.
+
+        Credits to Ionuț Boangiu (ITSysCom) for reporting this issue!
+
+
+2024-04-25  Razvan Crainea  <razvan at opensips dot org>
+        * [2a7c0c69a] :
+
+        cfg.y: fix socket specification without port
+
+        Complete b1ae0ec4f55873cd4f05cf0ae65182fced126e47
+        Close #3365
+
+
+2024-04-25  Ovidiu Sas  <osas at voipembedded dot com>
+        * [b8d57e003] :
+
+        db/schema: fix dbtext dispatcher definition
+         - allow null/empty values for priority and description fields
+
+
+2024-04-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [a80ff8665] :
+
+        [presence_callinfo] fix non-optional params for sca_set_xxx_line() funcs
+
+        The line parameter is supposed to be optional
+        Reported by @NormB
+        Closes #3361
+
+
+2024-04-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [b7a804071] :
+
+        [registrar] fix mem bug and mem leak in UA-regexp filter
+
+        The compiled RE (for UA) is to be freed by the fixup-free function and not by the script function.
+        Reported by @feiyingcheung
+        Closes #3356
+
+
+2024-04-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [887f17b6e] :
+
+        [registrar] removed old obsolete fixup function
+
+
+2024-04-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [7fce69b44] :
+
+        [registrar] address issues on #3318 (bflag filtering for remove())
+
+        On top of 43726f8c1a5d70be3346433e95c214e679b4342a
+        * be clear the param holds a single Branch Flag
+        * use fixup to resolve the flag only once (suggested by @liviuchircu)
+
+
+2024-04-25  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [43726f8c1] :
+
+        Merge pull request #3318 from vladpaiu/usrloc_remove_branch_filtering
+
+        Add remove() filtering by bflags
+
+2024-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [6a847364b] :
+
+        [proto_ws] fix mem leak when hdr parsing fails
+
+        Even if the hdr parsing failed (due to a bogus hdr), you still have to free whatever hdrs were already parsed ;)
+        Reported by @11qeq11
+        Closes #3353
+
+
+2024-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [09a7eafd1] :
+
+        [sql_cacher] fix computing the useful value size
+
+        ...as the initial value may be overestimated if DOUBLE's are present
+        Credits for reporting go to @ovidiusas
+
+
+2024-04-23  Razvan Crainea  <razvan at opensips dot org>
+        * [6fcfc7060] :
+
+        tracer: do not trace dummy messages
+
+        If a message is dummy, it should not be traced, as it is never actually
+        sent to any participants.
+        This fixes the errors dumped by the module when trying to trace a dummy
+        (such as a locally generated BYE due to timeout) message that does not
+        have a bind socket, erroneously logging
+        `CRITICAL:tracer:proto2str: unsupported proto 0`
+
+
+2024-04-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [8b96b7032] :
+
+        [presence] fix federation with local HA combination
+
+        Added a sharing tag to control which node (from the HA combination) is active in the federated cluster. See all the details here https://github.com/OpenSIPS/opensips/issues/2960
+        (this is fully backward compatible)
+
+        Closes #2960
+
+
+2024-04-21  OpenSIPS  <github at opensips dot org>
+        * [9de45e002] :
+
+        Rebuild documentation
+
+
+2024-04-19  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [0b9916c1b] :
+
+        Merge pull request #3364 from ovidiusas/master
+
+        tracer: set proper IP instead of FQDN for locally generated requests and outgoing replies
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [6beb906e5] :
+
+        [pua/presence_reginfo] more in doc formating
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [58c88e7cb] :
+
+        [presence_reginfo] fixed docs syntax
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [0b03b771d] :
+
+        [pua_reginfo] Fix docs syntax
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [098835cdc] :
+
+        Added presence_reginfo & pua_reginfo modules to the list
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [7eee4aa1b] :
+
+        pua_reginfo: Avoid clearing LIBS= flags during build
+
+        This breaks CI by clearing "-flto", which leads to unrecognizable ".o"
+        files which the linker assumes to be bytecode (hint, hint: they are not).
+
+        Thanks to Răzvan Crainea for helping troubleshoot this!
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [70b805ed2] :
+
+        github/workflows: don't fail fast - allow other platforms to run
+
+
+2024-04-18  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [0d1a6d08a] :
+
+        Merge pull request #3333 from carstenbock/presence_add_pua_reginfo
+
+        Presence add pua reginfo
+
+2024-04-18  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [8ef1bf449] :
+
+        Merge pull request #3332 from carstenbock/presence_add_reginfo_module
+
+        Presence: add "reginfo" module
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [ecb954378] :
+
+        Merge branch 'carstenbock-presence_add_reginfo'
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [fbf5e0bd6] :
+
+        Fix identation
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [e3b2c34fb] :
+
+        [presence] refine uandd_to_uri() changes
+
+        Be sure we have at least one URI part (domain or user).
+        Make more clear the TEL versus SIP handling
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [5ca41364b] :
+
+        Revert "tm: If "reply_to_via" is set, send reply to IP/Port indicated in "Via""
+
+        This reverts commit 7d9227b732fce6216f0eb7c0a371c4430a259e2b.
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [8df20faf0] :
+
+        Revert "sl: If "reply_to_via" is set, send reply to IP/Port indicated in "Via""
+
+        This reverts commit 68f55e1d3a3084f09f1a8d1ec896ed74a35f8e41.
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [a33b204d8] :
+
+        Revert "[Core] Add core-option "reply_to_via""
+
+        This reverts commit d843fa68a0a0f1aa64b3127c52e6309435dc9aae.
+
+
+2024-04-18  OpenSIPS  <github at opensips dot org>
+        * [6df118b12] :
+
+        Rebuild documentation
+
+
+2024-04-18  Shanee Vanstone  <s.vanstone at resilientplc dot com>
+        * [1e9d124ec] :
+
+        [clusterer] Added enable_rerouting parameter
+
+         When "enable_rerouting" is set to 0, packet will never be rerouted via other nodes.
+         This is useful for situations where network issues are unlikely (LAN) or when only
+         two nodes are present.
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [fa61e9b64] :
+
+        [drouting] fixed weight based selection
+
+        if the last element has weight 1, it will never be selected.
+        This was instroduced with 48c051fc16f4d83bf176d1eefe1df642882b6b88.
+        The fix is to actually follow the initial PR approach, which was correct. My attempt to improve the original PR actually broke stuff there :(
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [ee3af6bcf] :
+
+        cfg: provide support for port range in sockets
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [9c394e56a] :
+
+        event_rabbitmq: add timeout support
+
+        Add RPC timeout support for any command sent to the rabbitmq server
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [73c6e9279] :
+
+        rabbitmq: don't block indefinitely on connect
+
+        ported from fec5b51
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [b530aa607] :
+
+        event_rabbitmq: add timeout support
+
+        Add RPC timeout support for any command sent to the rabbitmq server
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [273e6043f] :
+
+        registrar docs: Clarify that save/lookup flags are CSVs
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [a6c0bf35f] :
+
+        http2d: Skip on Unit Tests build and DEB/RPM builds
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [2cddb6ebd] :
+
+        http2d: Add to "exclude_modules"
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [b9762b918] :
+
+        http2d: Convert fprintf() logs; Measure IPC wait time
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [225fd1d5b] :
+
+        http2d: Convert errx/warnx to LM_ functions
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [1ef17b2c2] :
+
+        http2d: Adjust indentation & coding style
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [22de14d13] :
+
+        http2d: Add documentation, contributors; Adjust modparams
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [b54a6d89d] :
+
+        http2d: Add support for HTTP/2 responses in opensips.cfg
+
+        ... via the new http2_send_response(code, [hdrs], [body]) function.
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [53a126404] :
+
+        http2d: Collect headers & body using cbs; Raise event
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [4e69c8c34] :
+
+        http2d: Initial version
+
+        New "http2d" module, providing an RFC 7540/9113 HTTP/2 server
+        implementation, based on "nghttp2" library (https://nghttp2.org/).
+
+
+2024-04-18  OpenSIPS  <github at opensips dot org>
+        * [dc0d6584d] :
+
+        Rebuild documentation
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [ed18d57e2] :
+
+        stir_shaken: return -2 if ppt Identity header is not found
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [b5968bf83] :
+
+        aaa_diameter: remove log
+
+        Thank you Liviu Chircu for spotting it :)
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [144cabdb3] :
+
+        aka: add contributors file
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [c25ffda74] :
+
+        [stir_shaken] fix using the right Identity hdr...
+
+        Iterate all present Identity hdrs and pick the one with passport type "shaken".
+        This allows the usage of Identity hdrs for both Stir-Shaken and Rich Call Data
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [b0256505a] :
+
+        aka_av_diameter: fix uninitilized variable
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [502d894b8] :
+
+        aka_av_diameter: do not fail for more AVs
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [628c056ee] :
+
+        auth_aka: do not wait for more AVs than needed
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [36157501d] :
+
+        aaa_diameter: Fix locking issues when sending requests
+
+        - avoid READ ops on the @msg pointer, after it's queued for sending
+              (subject to race condition with the Diameter Peer process, which
+                can free the memory before we read it)
+        - lock the "reply_cond" variable *before* queueing the msg for sending
+              (avoids race condition where the reply signal arrives *before*
+                    we even call pthread_cond_timedwait())
+        - rename "req" to "msg", as _dm_send_message() also originates Answers
+        - normalize return code 1 (req sent, ignoring reply) to 0 (success)
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [5ac5e301e] :
+
+        auth_aka: drop unused function
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [f64592ef4] :
+
+        auth_aka: fix uninitilized variable
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [f9d38d1ed] :
+
+        auth_aka: properly manage AV timestamps
+
+        Properly store the timestamps when the AV is created, and also store the
+        value in case the AV is not used and it needs to be reverted.
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [6f4fd4ff2] :
+
+        aka_av_diameter: fix AAA dependency to aaa_diameter
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [cf03b0201] :
+
+        auth_aka: release identity when there are no more AVs
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [1effb0ffb] :
+
+        auth_aka: add authentication vectors expire
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [d2fce6a52] :
+
+        aka_av_diameter: add new module
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [663e5193f] :
+
+        aaa_diameter: add parameter to reply callback
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [079a1dc82] :
+
+        auth_aka: prevent ref leaking during timeout
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [f79497c0e] :
+
+        auth_aka: add support for marking an AV as failure
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [e4b02414d] :
+
+        aaa_diameter: provide internal API for diameter commands
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [c526ee3f9] :
+
+        auth_aka: fix default QOP resolve
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [764b5baa3] :
+
+        auth_aka: provide API for AV management
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [f7fb3c8bc] :
+
+        auth_aka: fix algmask filtering
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [78cbbd2f4] :
+
+        aaa_diameter: properly pass reply return code
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [ac6eed586] :
+
+        aaa_diameter: fix locking on transactions hash
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [290700204] :
+
+        auth_aka: make count per algorithm, rather than for all
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [aaa49accb] :
+
+        auth_aka: add support for timing out async queries
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [d9ef79d53] :
+
+        auth_aka: add new AKA auth module
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [18ca2935a] :
+
+        lib: add pthread cond implementation
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [dcc6bf063] :
+
+        digest_auth: add functions for AKA digest
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [de16dda94] :
+
+        digest_auth: name parameters in headers
+
+        Avoid compiler warnings
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [d5b8122f7] :
+
+        ut: add hex2string decoding
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [cf1753005] :
+
+        csv: add support for printing a csv_record
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [bc6db7a68] :
+
+        str_list: provie support for adding str to list
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [24e26ca39] :
+
+        digest: print algorithm value
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [639a4f18a] :
+
+        digest: add auts parameter parsing
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [46355f367] :
+
+        auth: make qop parameter build available
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [ff74448d5] :
+
+        auth: expose send_resp function in API
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [523568073] :
+
+        auth: allow pre_auth to skip aditional checks
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [4cb787cf0] :
+
+        digest: add AKAv1 and AKAv2 parsers
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [78bdec9eb] :
+
+        auth: make fixup_qop reusable
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [6bf4b7fca] :
+
+        [db] fix wrong size for mangled_from/to_uri columns in dialog table
+
+        They are URIs, so let's use the URI len, not USER len :)
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [6089b74f7] :
+
+        rtp_relay: do not check for pending when late
+
+        Many thanks to Voxtronic for spotting this issue!
+
+
+2024-04-18  OpenSIPS  <github at opensips dot org>
+        * [58759feaf] :
+
+        Rebuild documentation
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [63de77b9b] :
+
+        Fix several mod_destroy() prototypes
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [540944236] :
+
+        Contributors: Provision recent module renames
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [d79c4635c] :
+
+        [sqlops] improve the prepared statements support II
+
+        Use the new DB_CAP_PREPARED_STMT capability to test if the backend support statements and build the query ID only if so.
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [6b2dbbc31] :
+
+        [db] added new DB_CAP_PREPARED_STMT capability
+
+        to identify the db backends able to provide prepared statements.
+        DB_MYSQL is for now the only condidate
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [183b41d90] :
+
+        [sqlops] improve prepare statements support
+
+        Log warning when the buffer for building query ID is not large enaugh; Also point to the modparam to adjust the buffer size
+        For "select", take the "order by" col into consideration too, when building the query ID
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [13cf206bc] :
+
+        [sqlops] migrate name from dbops to sqlops
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [935b70b64] :
+
+        [sqlops] migrate DB stuff from DBops to SQLops
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [6bb1a90f6] :
+
+        [sqlops] renaming from DBops to SQLops
+
+        After all the module does only SQL ops, no noSQL ones
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [a478acdae] :
+
+        [dbops] renamed to sqlops
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [76c3d03e3] :
+
+        [dbops] fixed bogus condition on JSON handling
+
+        Reported by CI
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [b9cc1687e] :
+
+        [dbops] fix +1 overreading during memcmp
+
+        Reported by CI
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [452a33bcf] :
+
+        [dbops] added prepared statements support
+
+        for the newly added db_select|update|insert|replace|delete() functions
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [005985e8c] :
+
+        [dbops] fix bad usage of non-static variable
+
+        Use the cols pointer (which is static) and not the str_cols which are valid only during a mem realloc
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [a5e487b77] :
+
+        [dbops] swap cols and table as args for INSERT and REPLACE..
+
+        ...just to follow order int the SQL syntax :)
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [4bdd0c91b] :
+
+        [dbops] docs update with the latest functions
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [497ad60ff] :
+
+        [dbops] Add SQL structured query functions
+
+        These are functions performing structured (not raw) queries via the internal DB SQL API. They provide full standard INSERT/UPDATE/SELECT/REPLACE/DELETE support.
+
+
+2024-04-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [853906d91] :
+
+        [dbops] remove obsolete flags from docs
+
+
+2024-04-18  OpenSIPS  <github at opensips dot org>
+        * [9e806b091] :
+
+        Rebuild documentation
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [db0e3dcf1] :
+
+        rtpengine: proper count of the exported processes
+
+        This should fix a memory corruption generated by reloading a process
+        that was not initially counted. Moreover, an overflow is no longer
+        possible, as the commit checks on it and triggers a BUG in case it
+        happens
+
+
+2024-04-18  Razvan Crainea  <razvan at opensips dot org>
+        * [52f3cdf37] :
+
+        dialog: call DLGCB_PROCESS_VARS under dlg lock
+
+        Avoid taking the var logs, as this might lead to a deadlock if one of
+        the callbacks are setting the variable.
+
+        Credits go to Norman Brandinger (@NormB on GitHub) for reporting it!
+
+
+2024-04-18  Liviu Chircu  <liviu at opensips dot org>
+        * [99d853b57] :
+
+        rest_client: Fix RHEL 7.9 build regression in commit 7e85fddb6
+
+        RHEL 7.9 is using libcurl 7.29 (from 11 years ago), so the
+        CURLINFO_CONNECT_TIME_T easyinfo option is not available.  So let's use
+        the CURLINFO_CONNECT_TIME info instead, which returns the exact same
+        data (i.e. the `data->progress.t_connect` handle info), but divided as
+        (double)seconds instead of being returned as (long)useconds.
+
+        Credits to Răzvan Crainea for reporting this issue!
+
+
+2024-04-15  Razvan Crainea  <razvan at opensips dot org>
+        * [b7f471f7b] :
+
+        tracer: avoid crash in case bind_address is not present
+
+        Introduced in a13e034
+
+
+2024-04-14  OpenSIPS  <github at opensips dot org>
+        * [38a848a5f] :
+
+        Rebuild documentation
+
+
+2024-04-12  Ovidiu Sas  <osas at voipembedded dot com>
+        * [2f7973a94] :
+
+        tracer: set proper IP instead of FQDN for outgoing replies
+
+
+2024-04-11  Ovidiu Sas  <osas at voipembedded dot com>
+        * [433218a22] :
+
+        tracer: set proper IP instead of FQDN for locally generated requests
+
+
+2024-04-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [744874732] :
+
+        Removed the useless FL_FORCE_ACTIVE msg flag
+
+
+2024-04-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [1ab78f836] :
+
+        [core] adds back the ability to reply to VIA (and not to network src)
+
+        This is a rework of #3327 (credits go to @carstenbock).
+        Even more, we merged:
+        * force_rport()
+        * this new reply_to_via PR
+        * add_local_rport()
+        * force_tcp_alias()
+        as a single VIA related function:
+          set_via_handling("force-rport|add-local-rport|reply-to-via|force-tcp-alias")
+
+        Closes #3327
+
+
+2024-04-11  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [90891064e] :
+
+        Merge pull request #3352 from ovidiusas/master
+
+        db_text: new parameter: buffer_size
+
+2024-04-10  Liviu Chircu  <liviu at opensips dot org>
+        * [0f6b4116b] :
+
+        Merge pull request #3328 from carstenbock/usrloc_kv_store
+
+        Usrloc kv store
+
+
+2024-04-10  Liviu Chircu  <liviu at opensips dot org>
+        * [c84110403] :
+
+        usrloc: Small improvements to (add/del/get)_key()
+
+        * fix list markup in docbook XML files; remove whitespace
+        * add_key(): avoid returning success on OOM
+        * release locks before any logging
+        * normalize coding style with rest of the file
+
+
+2024-04-10  Carsten Bock  <carsten at ng-voice dot com>
+        * [2e485d51b] :
+
+        usrloc: Expose functions to store/retrieve/delete values from the Key/Value-Store
+
+
+2024-04-09  Liviu Chircu  <liviu at opensips dot org>
+        * [1a50d6647] :
+
+        usrloc: Avoid firing DELETE and EXPIRE for same ct
+
+        This patch fixes a usrloc callbacks API issue where both the
+        UL_CONTACT_DELETE and UL_CONTACT_EXPIRE events would often be fired for
+        the same contact, when the "write-back" SQL mode is in use.
+
+        The following modules should notice improved behavior:
+            mid_registrar, pua_bla, pua_usrloc, snmpstats
+
+
+2024-03-31  OpenSIPS  <github at opensips dot org>
+        * [03f3f0c7f] :
+
+        Rebuild documentation
+
+
+2024-03-29  Liviu Chircu  <liviu at opensips dot org>
+        * [7428704fd] :
+
+        Merge pull request #3341 from Ellipsis753/master
+
+        [clusterer] Added enable_rerouting parameter
+
+2024-03-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [cdd84307a] :
+
+        [drouting] fixed weight based selection
+
+        if the last element has weight 1, it will never be selected.
+        This was instroduced with 48c051fc16f4d83bf176d1eefe1df642882b6b88.
+        The fix is to actually follow the initial PR approach, which was correct. My attempt to improve the original PR actually broke stuff there :(
+
+
+2024-03-29  Razvan Crainea  <razvan at opensips dot org>
+        * [b1ae0ec4f] :
+
+        cfg: provide support for port range in sockets
+
+
+2024-03-29  Ovidiu Sas  <osas at voipembedded dot com>
+        * [3d880e0d9] :
+
+        db_text: new parameter: buffer_size
+
+
+2024-03-28  Razvan Crainea  <razvan at opensips dot org>
+        * [4b23a80bd] :
+
+        event_rabbitmq: add timeout support
+
+        Add RPC timeout support for any command sent to the rabbitmq server
+
+
+2024-03-28  Razvan Crainea  <razvan at opensips dot org>
+        * [a889ac915] :
+
+        rabbitmq: don't block indefinitely on connect
+
+        ported from fec5b51
+
+
+2024-03-28  Razvan Crainea  <razvan at opensips dot org>
+        * [16fb12e06] :
+
+        event_rabbitmq: add timeout support
+
+        Add RPC timeout support for any command sent to the rabbitmq server
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [9357cd438] :
+
+        registrar docs: Clarify that save/lookup flags are CSVs
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [37555f8c9] :
+
+        http2d: Skip on Unit Tests build and DEB/RPM builds
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [e939f09b6] :
+
+        http2d: Add to "exclude_modules"
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [72728e9c7] :
+
+        http2d: Convert fprintf() logs; Measure IPC wait time
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [61561c763] :
+
+        http2d: Convert errx/warnx to LM_ functions
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [2e57bb5b9] :
+
+        http2d: Adjust indentation & coding style
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [f2d17683c] :
+
+        http2d: Add documentation, contributors; Adjust modparams
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [accdcc7f3] :
+
+        http2d: Add support for HTTP/2 responses in opensips.cfg
+
+        ... via the new http2_send_response(code, [hdrs], [body]) function.
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [e69f32504] :
+
+        http2d: Collect headers & body using cbs; Raise event
+
+
+2024-03-27  Liviu Chircu  <liviu at opensips dot org>
+        * [c740b1ab2] :
+
+        http2d: Initial version
+
+        New "http2d" module, providing an RFC 7540/9113 HTTP/2 server
+        implementation, based on "nghttp2" library (https://nghttp2.org/).
+
+
+2024-03-24  OpenSIPS  <github at opensips dot org>
+        * [51be49f03] :
+
+        Rebuild documentation
+
+
+2024-03-22  Razvan Crainea  <razvan at opensips dot org>
+        * [7f23d8d98] :
+
+        stir_shaken: return -2 if ppt Identity header is not found
+
+
+2024-03-22  Razvan Crainea  <razvan at opensips dot org>
+        * [760932ecd] :
+
+        aaa_diameter: remove log
+
+        Thank you Liviu Chircu for spotting it :)
+
+
+2024-03-20  Razvan Crainea  <razvan at opensips dot org>
+        * [ad418ff74] :
+
+        aka: add contributors file
+
+
+2024-03-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [7b24df60b] :
+
+        [stir_shaken] fix using the right Identity hdr...
+
+        Iterate all present Identity hdrs and pick the one with passport type "shaken".
+        This allows the usage of Identity hdrs for both Stir-Shaken and Rich Call Data
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [ae77d5274] :
+
+        aka_av_diameter: fix uninitilized variable
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [f494aac3e] :
+
+        aka_av_diameter: do not fail for more AVs
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [9b87a8687] :
+
+        auth_aka: do not wait for more AVs than needed
+
+
+2024-03-19  Liviu Chircu  <liviu at opensips dot org>
+        * [00c4cbeaf] :
+
+        aaa_diameter: Fix locking issues when sending requests
+
+        - avoid READ ops on the @msg pointer, after it's queued for sending
+              (subject to race condition with the Diameter Peer process, which
+                can free the memory before we read it)
+        - lock the "reply_cond" variable *before* queueing the msg for sending
+              (avoids race condition where the reply signal arrives *before*
+                    we even call pthread_cond_timedwait())
+        - rename "req" to "msg", as _dm_send_message() also originates Answers
+        - normalize return code 1 (req sent, ignoring reply) to 0 (success)
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [9a06143c8] :
+
+        auth_aka: drop unused function
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [72a1b2536] :
+
+        auth_aka: fix uninitilized variable
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [794f3c042] :
+
+        auth_aka: properly manage AV timestamps
+
+        Properly store the timestamps when the AV is created, and also store the
+        value in case the AV is not used and it needs to be reverted.
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [8977732d5] :
+
+        aka_av_diameter: fix AAA dependency to aaa_diameter
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [04c685e87] :
+
+        auth_aka: release identity when there are no more AVs
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [a3f4b82dd] :
+
+        auth_aka: add authentication vectors expire
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [306e3bc7a] :
+
+        aka_av_diameter: add new module
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [3b1f6268e] :
+
+        aaa_diameter: add parameter to reply callback
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [ef83f8ce0] :
+
+        auth_aka: prevent ref leaking during timeout
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [623c37184] :
+
+        auth_aka: add support for marking an AV as failure
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [e8b354860] :
+
+        aaa_diameter: provide internal API for diameter commands
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [b97eb0ee9] :
+
+        auth_aka: fix default QOP resolve
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [d5ddb255b] :
+
+        auth_aka: provide API for AV management
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [5f21b6c14] :
+
+        auth_aka: fix algmask filtering
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [f190be114] :
+
+        aaa_diameter: properly pass reply return code
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [052b3a844] :
+
+        aaa_diameter: fix locking on transactions hash
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [cb658ab47] :
+
+        auth_aka: make count per algorithm, rather than for all
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [f3ded66f9] :
+
+        auth_aka: add support for timing out async queries
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [948989571] :
+
+        auth_aka: add new AKA auth module
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [096cea00f] :
+
+        lib: add pthread cond implementation
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [77773e572] :
+
+        digest_auth: add functions for AKA digest
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [ecac8076b] :
+
+        digest_auth: name parameters in headers
+
+        Avoid compiler warnings
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [55a587de2] :
+
+        ut: add hex2string decoding
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [904078b02] :
+
+        csv: add support for printing a csv_record
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [1e94ebfca] :
+
+        str_list: provie support for adding str to list
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [5cfbf1a63] :
+
+        digest: print algorithm value
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [cea69f861] :
+
+        digest: add auts parameter parsing
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [dfb129d7f] :
+
+        auth: make qop parameter build available
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [0625eadfd] :
+
+        auth: expose send_resp function in API
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [c25af6c3b] :
+
+        auth: allow pre_auth to skip aditional checks
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [4786fc342] :
+
+        digest: add AKAv1 and AKAv2 parsers
+
+
+2024-03-19  Razvan Crainea  <razvan at opensips dot org>
+        * [4a6c26c0b] :
+
+        auth: make fixup_qop reusable
+
+
+2024-03-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [18e7d8dbb] :
+
+        [db] fix wrong size for mangled_from/to_uri columns in dialog table
+
+        They are URIs, so let's use the URI len, not USER len :)
+
+
+2024-03-18  Razvan Crainea  <razvan at opensips dot org>
+        * [471dab313] :
+
+        rtp_relay: do not check for pending when late
+
+        Many thanks to Voxtronic for spotting this issue!
+
+
+2024-03-17  OpenSIPS  <github at opensips dot org>
+        * [1dd05c946] :
+
+        Rebuild documentation
+
+
+2024-03-14  Liviu Chircu  <liviu at opensips dot org>
+        * [b067f8cc1] :
+
+        Fix several mod_destroy() prototypes
+
+
+2024-03-14  Shanee Vanstone  <s.vanstone at resilientplc dot com>
+        * [017b57feb] :
+
+        [clusterer] Added enable_rerouting parameter
+
+         When "enable_rerouting" is set to 0, packet will never be rerouted via other nodes.
+         This is useful for situations where network issues are unlikely (LAN) or when only
+         two nodes are present.
+
+
+2024-03-13  Liviu Chircu  <liviu at opensips dot org>
+        * [f277fa881] :
+
+        Contributors: Provision recent module renames
+
+
+2024-03-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [9ec3a02e3] :
+
+        [sqlops] improve the prepared statements support II
+
+        Use the new DB_CAP_PREPARED_STMT capability to test if the backend support statements and build the query ID only if so.
+
+
+2024-03-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [de922d293] :
+
+        [db] added new DB_CAP_PREPARED_STMT capability
+
+        to identify the db backends able to provide prepared statements.
+        DB_MYSQL is for now the only condidate
+
+
+2024-03-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [0793d7187] :
+
+        [sqlops] improve prepare statements support
+
+        Log warning when the buffer for building query ID is not large enaugh; Also point to the modparam to adjust the buffer size
+        For "select", take the "order by" col into consideration too, when building the query ID
+
+
+2024-03-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [71fd974fe] :
+
+        [sqlops] migrate name from dbops to sqlops
+
+
+2024-03-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [5053c580b] :
+
+        [sqlops] migrate DB stuff from DBops to SQLops
+
+
+2024-03-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [5d0141497] :
+
+        [sqlops] renaming from DBops to SQLops
+
+        After all the module does only SQL ops, no noSQL ones
+
+
+2024-03-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [3a7cc6a12] :
+
+        [dbops] renamed to sqlops
+
+
+2024-03-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [d15a7d8a8] :
+
+        [dbops] fixed bogus condition on JSON handling
+
+        Reported by CI
+
+
+2024-03-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [254fa4b96] :
+
+        [dbops] fix +1 overreading during memcmp
+
+        Reported by CI
+
+
+2024-03-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [5efa82fcd] :
+
+        [dbops] added prepared statements support
+
+        for the newly added db_select|update|insert|replace|delete() functions
+
+
+2024-03-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [5b7d83d43] :
+
+        [dbops] fix bad usage of non-static variable
+
+        Use the cols pointer (which is static) and not the str_cols which are valid only during a mem realloc
+
+
+2024-03-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [12b9ba4a8] :
+
+        [dbops] swap cols and table as args for INSERT and REPLACE..
+
+        ...just to follow order int the SQL syntax :)
+
+
+2024-03-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [518c4f94d] :
+
+        [dbops] docs update with the latest functions
+
+
+2024-03-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [80c2ee12d] :
+
+        [dbops] Add SQL structured query functions
+
+        These are functions performing structured (not raw) queries via the internal DB SQL API. They provide full standard INSERT/UPDATE/SELECT/REPLACE/DELETE support.
+
+
+2024-03-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [4befbb436] :
+
+        [dbops] remove obsolete flags from docs
+
+
+2024-03-10  OpenSIPS  <github at opensips dot org>
+        * [64fd8c7e9] :
+
+        Rebuild documentation
+
+
+2024-03-08  Razvan Crainea  <razvan at opensips dot org>
+        * [831cdd5ac] :
+
+        rtpengine: proper count of the exported processes
+
+        This should fix a memory corruption generated by reloading a process
+        that was not initially counted. Moreover, an overflow is no longer
+        possible, as the commit checks on it and triggers a BUG in case it
+        happens
+
+
+2024-03-08  Razvan Crainea  <razvan at opensips dot org>
+        * [75810c554] :
+
+        dialog: call DLGCB_PROCESS_VARS under dlg lock
+
+        Avoid taking the var logs, as this might lead to a deadlock if one of
+        the callbacks are setting the variable.
+
+        Credits go to Norman Brandinger (@NormB on GitHub) for reporting it!
+
+
+2024-03-08  Liviu Chircu  <liviu at opensips dot org>
+        * [975f5d13e] :
+
+        rest_client: Fix RHEL 7.9 build regression in commit 7e85fddb6
+
+        RHEL 7.9 is using libcurl 7.29 (from 11 years ago), so the
+        CURLINFO_CONNECT_TIME_T easyinfo option is not available.  So let's use
+        the CURLINFO_CONNECT_TIME info instead, which returns the exact same
+        data (i.e. the `data->progress.t_connect` handle info), but divided as
+        (double)seconds instead of being returned as (long)useconds.
+
+        Credits to Răzvan Crainea for reporting this issue!
+
+
+2024-03-08  Carsten Bock  <carsten at ng-voice dot com>
+        * [9f0de9efe] :
+
+        pua: Add Events for reginfo
+
+
+2024-03-08  Carsten Bock  <carsten at ng-voice dot com>
+        * [02d01aa2e] :
+
+        pua_reginfo: New module for processing SUBSCRIBE for REG-Info messages, for remotely SUBSCRIBE regarding registration status and for sending PUBLISH upon updates.
+
+
+2024-03-08  Carsten Bock  <carsten at ng-voice dot com>
+        * [d7af8575d] :
+
+        presence_reginfo: Adding module for handling "reg" events with "presence"
+
+
+2024-03-08  Carsten Bock  <carsten at ng-voice dot com>
+        * [bce04b3dc] :
+
+        presence: Ensure, Event-List is initialized
+
+
+2024-03-08  Carsten Bock  <carsten at ng-voice dot com>
+        * [30ce63958] :
+
+        presence: Add support for "tel"-URIs
+
+
+2024-03-08  Carsten Bock  <carsten at ng-voice dot com>
+        * [1fba62cc4] :
+
+        parser: Add support for "reg" event
+
+
+2024-03-08  carstenbock  <carsten at bock dot info>
+        * [0626e2911] :
+
+        Merge branch 'OpenSIPS:master' into master
+
+
+2024-03-08  Răzvan Crainea  <razvan at opensips dot org>
+        * [fcfacae75] :
+
+        Merge pull request #3330 from NormB/master
+
+        Update rtp_relay_ctx.c to avoid segfault
+
+2024-03-07  Norm Brandinger  <n.brandinger at gmail dot com>
+        * [058e9bc5f] :
+
+        Merge pull request #1 from NormB/rtp_relay_ctx
+
+        Update rtp_relay_ctx.c to avoid segfault
+
+2024-03-07  Norm Brandinger  <n.brandinger at gmail dot com>
+        * [3e7113b0b] :
+
+        Update rtp_relay_ctx.c to avoid segfault
+
+        rtp_relay_release_tmp(ctmp, 0) is called before the variable ctmp has been allocated.
+
+2024-03-07  Carsten Bock  <carsten at ng-voice dot com>
+        * [7d9227b73] :
+
+        tm: If "reply_to_via" is set, send reply to IP/Port indicated in "Via"
+
+
+2024-03-07  Carsten Bock  <carsten at ng-voice dot com>
+        * [68f55e1d3] :
+
+        sl: If "reply_to_via" is set, send reply to IP/Port indicated in "Via"
+
+
+2024-03-07  Carsten Bock  <carsten at ng-voice dot com>
+        * [d843fa68a] :
+
+        [Core] Add core-option "reply_to_via"
+
+
+2024-03-03  OpenSIPS  <github at opensips dot org>
+        * [48e0a4cde] :
+
+        Rebuild documentation
+
+
+2024-03-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [d5a7f5d49] :
+
+        [dbops] add db_query_one() function
+
+        that returns only the first row, may store in any kind of variable and set out var to NULL upon DB NULL
+
+
+2024-03-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [257190486] :
+
+        [db] regenerated schema with DBops instead of AVPops
+
+
+2024-02-29  Liviu Chircu  <liviu at opensips dot org>
+        * [3d386f4e2] :
+
+        aaa_diameter docs: Fix missing default 'answer_timeout'
+
+
+2024-02-29  Liviu Chircu  <liviu at opensips dot org>
+        * [a82b8181f] :
+
+        aaa_diameter: Add the possibility to set the 'E' (error) bit on replies
+
+
+2024-02-29  Liviu Chircu  <liviu at opensips dot org>
+        * [37fec531e] :
+
+        aaa_diameter docs: Add a notice regarding E_DM_REQUEST usage
+
+
+2024-02-29  Liviu Chircu  <liviu at opensips dot org>
+        * [dd56be4db] :
+
+        aaa_diameter: Reply to requests when E_DM_REQUEST not used
+
+        At the end of the day, we are a Diameter peer, so we should also reply
+        to requests even if the opensips.cfg script does not require any
+        server-side support (e.g. perhaps it's only pushing Diameter requests).
+
+
+2024-02-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [1083c0efd] :
+
+        [dispatcher] move destination into PROBING if sending the probe failed
+
+        Fixes 3285
+
+
+2024-02-28  Razvan Crainea  <razvan at opensips dot org>
+        * [ff2923cc4] :
+
+        proto_hep: clear context in case of error
+
+        Thanks go to Jonathan Hulme from ConnexCS for reporting and providing
+        valuable troubleshooting information
+
+
+2024-02-28  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [6d6fb2b74] :
+
+        Merge pull request #3309 from bogdan-iancu/master
+
+        [db_postgres] fix the SSL control over the "use_tls" parameter
+
+2024-02-28  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [c87a90351] :
+
+        Merge pull request #3313 from vladpaiu/drouting_data_hashing
+
+        Add generate_data_md5 param
+
+2024-02-28  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [97a1c98ac] :
+
+        Change param name to generate_data_checksum
+
+
+2024-02-27  Liviu Chircu  <liviu at opensips dot org>
+        * [ca0006b10] :
+
+        aaa_diameter: Code + filename improvements; Improve docs
+
+
+2024-02-27  Liviu Chircu  <liviu at opensips dot org>
+        * [b43964f67] :
+
+        aaa_diameter: Add management for "unreplied requests"
+
+        This becomes necessary both when the event_route is not defined, as well
+        as in various error cases, e.g. script writer omits to invoke
+        dm_send_answer() or an internal error occurs before the answer is built.
+
+        Finally, make sure to protect the requests list, since it is actually
+        managed by multiple threads part of the "Diameter peer" OpenSIPS worker:
+
+        * dm_update_unreplied_req() - called by the peer's Server Thread
+            (i.e. "put a freshly received request on hold")
+        * dm_remove_unreplied_req() - called by the peer's Main Thread
+            (i.e. "the script writer just built a new reply, msg can be freed")
+
+
+2024-02-27  Liviu Chircu  <liviu at opensips dot org>
+        * [223a7e32d] :
+
+        aaa_diameter docs: Add new "Client" and "Server" sections
+
+
+2024-02-27  Liviu Chircu  <liviu at opensips dot org>
+        * [4da1a3014] :
+
+        aaa_diameter: Add docs for the new function / event
+
+        Also, rename `dm_send_reply()` to `dm_send_answer()`, to better match
+        the Diameter terminology.
+
+
+2024-02-27  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [b29396566] :
+
+        Merge pull request #3316 from vladpaiu/cachedb_local_bulk_mi_fetch
+
+        Add MI fetching of keys based on glob
+
+2024-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [b65930612] :
+
+        Merge branch 'ovidiusas-master'
+
+
+2024-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [8ed21bf18] :
+
+        [sql_cacher] be more consistent when calculating the size required by DOUBLE
+
+        Keep all the "size" estimation inside get_cdb_val_size()
+
+
+2024-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [063403bdd] :
+
+        [avpops] remove old avpops module
+
+        Replaced by dbops
+
+
+2024-02-27  Liviu Chircu  <liviu at opensips dot org>
+        * [cdcc6ee77] :
+
+        aaa_diameter: Add Diameter server support
+
+        * add the E_DM_REQUEST event, for receiving arbitrary Diameter requests
+        * add the dm_send_reply(<avps-json>) function, in order to reply back
+            to the sender
+
+
+2024-02-27  Liviu Chircu  <liviu at opensips dot org>
+        * [a5515f2a4] :
+
+        aaa_diameter: Fix some AVP typos; Add a few notices
+
+
+2024-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [53983b13b] :
+
+        [dbops] fixed names of script functions
+
+        they were renamed from avp_db_query() to db_query() during module migration from avpops to dbops
+
+
+2024-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [f6400d396] :
+
+        [avpops] remove old avpops module
+
+        Replaced by dbops
+
+
+2024-02-26  Liviu Chircu  <liviu at opensips dot org>
+        * [06ffb7a7e] :
+
+        aaa_diameter: Add Diameter server support
+
+        * add the E_DM_REQUEST event, for receiving arbitrary Diameter requests
+        * add the dm_send_reply(<avps-json>) function, in order to reply back
+            to the sender
+
+
+2024-02-26  Liviu Chircu  <liviu at opensips dot org>
+        * [4da5b7317] :
+
+        aaa_diameter: Fix some AVP typos; Add a few notices
+
+
+2024-02-26  Ovidiu Sas  <osas at voipembedded dot com>
+        * [a3d83c2ca] :
+
+        sql_cacher: handle double as str (just live avp_db_query)
+
+
+2024-02-26  Dudu Ben Moshe  <dudu at voicenter.co dot il>
+        * [0a24c258b] :
+
+        Add remove() filtering by bflags
+
+
+2024-02-26  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [df24836d3] :
+
+        Add MI fetching of keys based on glob
+
+
+2024-02-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [4881b95e5] :
+
+        [dbops] migrate name from avpops to dbops
+
+
+2024-02-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [61dc79eb2] :
+
+        [dbops] migrate name from avpops to dbops
+
+
+2024-02-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [1378ab1c9] :
+
+        [dbops] migrate name from avpops to dbops
+
+
+2024-02-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [1185ccbd4] :
+
+        [dbops] migrate name from avpops to dbops
+
+
+2024-02-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [3e9a52ecd] :
+
+        [avpops] renamed as DBops
+
+        Also rename some params and script functions to align to the purpose of the module
+
+
+2024-02-25  OpenSIPS  <github at opensips dot org>
+        * [861ec3879] :
+
+        Rebuild documentation
+
+
+2024-02-23  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [be64db138] :
+
+        Merge pull request #3306 from jes/getsockopt-warnings
+
+        Getsockopt warnings
+
+2024-02-23  Razvan Crainea  <razvan at opensips dot org>
+        * [4bf32ad2e] :
+
+        dialog: do not try to replicate values if cluster not available
+
+        Many thanks go to Rob Moore from Dubber for reporting this!
+
+
+2024-02-23  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [ee6ff9527] :
+
+        Add generate_data_md5 param
+
+
+2024-02-23  Dudu Ben Moshe  <dudu at voicenter.co dot il>
+        * [7a879ab8a] :
+
+        Add sip2json pvar
+
+
+2024-02-23  Dudu Ben Moshe  <dudu at voicenter.co dot il>
+        * [c85cce33b] :
+
+        Add support for publishing custom prometheus data ( not stat driven )
+
+
+2024-02-22  Razvan Crainea  <razvan at opensips dot org>
+        * [d0f238ca8] :
+
+        msg_translator: avoid mem leak when via params are present
+
+        Many thanks to Nick Altmann for spotting the issue and fixing it!
+
+
+2024-02-22  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [358afd073] :
+
+        Merge pull request #3308 from ovidiusas/master
+
+        core: consistent usage of int2str_buf
+
+2024-02-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [75b6cc542] :
+
+        [db_postgres] fix the SSL control over the "use_tls" parameter
+
+
+2024-02-22  Razvan Crainea  <razvan at opensips dot org>
+        * [4bf072d63] :
+
+        rtpengine: always provide flags for any subcommand
+
+
+2024-02-22  Razvan Crainea  <razvan at opensips dot org>
+        * [364a459f2] :
+
+        rtp_relay: proper cleanup of a copy context
+
+        When a copy context was deleted, a dangling pointer would have remained
+        in the session - this would lead to a crash, since it would access
+        invalid memory.
+
+        Thanks go to Rob Moore from Dubber for reporting this!
+
+
+2024-02-21  Ovidiu Sas  <osas at voipembedded dot com>
+        * [09d2fdc09] :
+
+        core: fix old-style function definition error
+
+
+2024-02-21  Ovidiu Sas  <osas at voipembedded dot com>
+        * [efab99599] :
+
+        core: consistent usage of int2str_buf
+
+
+2024-02-21  James Stanley  <james at incoherency.co dot uk>
+        * [f241f98c1] :
+
+        Warn about getsockopt() errors
+
+
+2024-02-21  Liviu Chircu  <liviu at opensips dot org>
+        * [036d02961] :
+
+        rest_client: Fix ARM32 compiler warning
+
+        Apparently, `curl_off_t` is `long long` there, instead of just `long`.
+
+
+2024-02-21  Liviu Chircu  <liviu at opensips dot org>
+        * [7e85fddb6] :
+
+        rest_client: Improve cURL compatibility when using async()
+
+        This patch aims to fix a regression in 1ecb32491f, breaking the
+        "SUCCESS" async download test case.  Mitigation as follows:
+
+        * improved detection for the "Request Sent" state, before putting the
+            download on async hold.  It seems that whenever both the
+            CURLINFO_CONNECT_TIME_T and CURLINFO_REQUEST_SIZE become available,
+            the file descriptor can be safely polled on, awaiting the reply.
+            Note: there is no official cURL library mechanism to detect this
+            state.
+
+        * make the async() statement timeout accessible to modules.  This fixes
+        a bug where a GET on a dead HTTP server would time out after
+        `curl_timeout` seconds, instead of `async()` seconds (lower).
+
+        Fixes #3286
+
+
+2024-02-21  Razvan Crainea  <razvan at opensips dot org>
+        * [57b28d8f2] :
+
+        dialog: do not replicate value if already received replicated
+
+
+2024-02-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [fd19fbaf3] :
+
+        [avpops] code cleanup after removing old script functions
+
+
+2024-02-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [bcdffb9df] :
+
+        [docs] replace old avp functions in docs
+
+
+2024-02-20  Razvan Crainea  <razvan at opensips dot org>
+        * [cca6f15a2] :
+
+        rtp_relay: handle NULL resetting the rtp_relay_ctx value
+
+        Thanks go to Rob Moore from Dubber for reporting this!
+
+
+2024-02-20  Razvan Crainea  <razvan at opensips dot org>
+        * [8c16de4c8] :
+
+        b2b_entities: handle case where callback is not yet registered
+
+
+2024-02-20  Razvan Crainea  <razvan at opensips dot org>
+        * [1bea6e19e] :
+
+        siprec: handle replication case for late sessions
+
+        When the call is answered by the SRS before the call is actually
+        answered, the dialog callbacks were no loger registered. This commit
+        aims to fix this situation.
+
+        Depends on 0b19546f8ca66c24f9c795b691488ec65896578a
+
+
+2024-02-20  Razvan Crainea  <razvan at opensips dot org>
+        * [107d83790] :
+
+        dialog: replicate dialog values
+
+
+2024-02-20  Razvan Crainea  <razvan at opensips dot org>
+        * [355a126b9] :
+
+        dialog: unify replication return code
+
+
+2024-02-20  Razvan Crainea  <razvan at opensips dot org>
+        * [4161b5232] :
+
+        docs: drop is_avp_set from xml and m4
+
+
+2024-02-18  OpenSIPS  <github at opensips dot org>
+        * [fadcd3803] :
+
+        Rebuild documentation
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [a981f0b3c] :
+
+        fix typos and syntax errors
+
+        Related to c33aea7b5ae291cb83ade9c163d56e027608d0a1
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [83d693785] :
+
+        [avpsops & cfgutils] move avp_suffle to cfgutils as suffle_avps()
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [0972ad7bd] :
+
+        [avpops] removed the old is_avp_set() function
+
+        it can be replaced with NULL testing in script
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [e84eb59ed] :
+
+        [avpops] remove old avp_subst() function
+
+        It can replaced with the more generic {re.subst} transformation
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [04f42d958] :
+
+        [avpops] remove old avp_delete() function
+
+        can be replaced with:
+         $avp(foo) = NULL;    # delete latest avp
+         $avp(foo) := NULL;   # delete all avps
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [ec96a3778] :
+
+        [avpops] removed old avp_op() function
+
+        its functionality may be achieved by scripting
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [c52c9c782] :
+
+        [avpops] removed avp_copy() old function
+
+        its functinality may be achieved by scripting
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [61a5e2bdc] :
+
+        [avpops] remove old avp_check() and avp_pushto() functions
+
+        their functionality can be achieved by simple scripting
+
+
+2024-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [c33aea7b5] :
+
+        [avpops] moved avp_print() in core
+
+
+2024-02-14  Razvan Crainea  <razvan at opensips dot org>
+        * [fa3471e12] :
+
+        siprec: register callbacks even though skip_failover_codes is not used
+
+
+2024-02-13  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [da20b2259] :
+
+        Merge pull request #3262 from jes/jes/topology-hiding-fix
+
+        topology_hiding: fix encoded Contact length calculation
+
+2024-02-12  Liviu Chircu  <liviu at opensips dot org>
+        * [edf21b1b9] :
+
+        Status/Report: Improve function prototype
+
+
+2024-02-12  Liviu Chircu  <liviu at opensips dot org>
+        * [3e7231cff] :
+
+        freeswitch: Several improvements to socket management
+
+        * add exponential backoff behavior when reconnecting to a FreeSWITCH
+           which is down (1/5/10/30/90 second retries, counting x20 each)
+
+        * add monitoring for the ESL command activity of sockets.  Specifically,
+           the module now remembers the last ESL command and will reap sockets
+           which both do not have event subscriptions and have not run an ESL
+           command in the last 86400 seconds.
+
+        * freeswitch_esl() will now return faster in case the connection is
+           down (the lock might still be grabbed by the timer, reconnecting...),
+           thus minimizing the risk of a service outage.
+
+        * improved handling for connect error cases (fd management)
+
+
+2024-02-12  Liviu Chircu  <liviu at opensips dot org>
+        * [01b5fdd55] :
+
+        freeswitch: Add socket flags; Avoid re-learning user/pass for DB sockets
+
+        While re-learning the user/pass for sockets learned through MI makes
+        sense (same host/port), the same is not valid for DB-provisioned
+        sockets.  In that case, just update the table & reload.
+
+
+2024-02-12  Liviu Chircu  <liviu at opensips dot org>
+        * [6e6c60bd6] :
+
+        freeswitch: Avoid failed "unref" operations during mod init
+
+        This fixes a bug where if a FreeSWITCH socket were defined in both
+        modparam and DB, it would get a +2 ref instead of +1, thus after a DB
+        removal + reload operation it would remain in a dangling state.
+
+        Many thanks to Five9 (https://www.five9.com) for reporting this issue!
+
+
+2024-02-12  Razvan Crainea  <razvan at opensips dot org>
+        * [93e90a5ac] :
+
+        dialog: advertise dst_leg in callbacks
+
+        This is particularly useful for in-dialog requests that come before the
+        dialog is established, such as a PRACK - this patch makes sure that the
+        correct leg is chosen by the topology hiding in such situations.
+
+
+2024-02-11  OpenSIPS  <github at opensips dot org>
+        * [439bb9728] :
+
+        Rebuild documentation
+
+
+2024-02-09  Razvan Crainea  <razvan at opensips dot org>
+        * [4efc482fc] :
+
+        rtp_relay: proper cleanup of a copy context
+
+        When a copy context was deleted, a dangling pointer would have remained
+        in the session - this would lead to a crash, since it would access
+        invalid memory.
+
+        Thanks go to Rob Moore from Dubber for reporting this!
+
+
+2024-02-09  Razvan Crainea  <razvan at opensips dot org>
+        * [9600ae72d] :
+
+        rtp_relay: clear established when sess is deleted
+
+        This avoids crashes when ctx->established pointer remains dangling
+
+        Many thanks to Voxtronic for spotting this issue!
+
+
+2024-02-09  Razvan Crainea  <razvan at opensips dot org>
+        * [28ea0565c] :
+
+        siprec: avoid double unref for failed transaction
+
+        Many thanks to Voxtronic for reporting this!
+
+
+2024-02-07  Ovidiu Sas  <osas at voipembedded dot com>
+        * [1a38989d2] :
+
+        mqueue: fix debug level for debug logs
+
+
+2024-02-04  OpenSIPS  <github at opensips dot org>
+        * [5ff1df948] :
+
+        Rebuild documentation
+
+
+2024-02-02  Liviu Chircu  <liviu at opensips dot org>
+        * [dec380907] :
+
+        b2b_logic: Fix a logical bug which could cause crashes
+
+        ... in b2b_init_request().  Completes c84fe372c.
+
+        Neither @e1 or @e2 can be NULL after the "if" guard, otherwise there is
+        a good chance of a crash shortly afterwards.
+
+
+2024-02-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [e5f0b5a2c] :
+
+        [b2b_logic] fix bogus documented prototype for b2b_init_request
+
+
+2024-02-01  Ovidiu Sas  <osas at voipembedded dot com>
+        * [ac5810b87] :
+
+        mqueue: new module
+
+
+2024-01-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [9527f7b07] :
+
+        [launch_darkly] skip it from github CI and deb/rpm builds
+
+
+2024-01-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [55c0b2e7d] :
+
+        Force "os_" prefix for all cJSON functions from OpenSIPS core
+
+        This is needed to avoid any symbol colision with the CJSON public library - this library may end up linked by some OpenSIPS modules (like launch_darkly) and such conflict may raise when using such modules.
+
+
+2024-01-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [5ffd3bb41] :
+
+        Add new launch_darkly module
+
+        This module implements support for the "Launch Darkly" feature management cloud. The module provide the conectivity to the cloud and the ability to query for feature flags.
+
+        The development of this module was sponsored by Five9 https://www.five9.com/
+
+
+2024-01-30  Razvan Crainea  <razvan at opensips dot org>
+        * [b8bbf1440] :
+
+        dialog: get ACK cseq from src leg, rather than dst
+
+
+2024-01-29  Liviu Chircu  <liviu at opensips dot org>
+        * [f8205d1f2] :
+
+        RADIUS/Diameter: Fix AVP type for Sip-From-Tag, Sip-To-Tag
+
+        This patch fixes a copy/paste error in commit a2c6c62ba1.
+
+
+2024-01-29  Razvan Crainea  <razvan at opensips dot org>
+        * [b9ebc83fe] :
+
+        siprec: add from_uri and to_uri settings to $siprec
+
+
+2024-01-28  OpenSIPS  <github at opensips dot org>
+        * [247ae6f63] :
+
+        Rebuild documentation
+
+
+2024-01-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [32539ef8b] :
+
+        [sql_cacher] fix proper update on status/report upon quick exit
+
+        Be sure the SR info is properly updated (on the reload result) even when doing a quick return upon no records loaded
+
+
+2024-01-23  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [3bef4afe6] :
+
+        Merge pull request #3289 from purecloudlabs/hotfix/sql-cacher_load_entire_table_memory_leak
+
+        sql_cacher: fix SQL result leak when insert_in_cachedb fails
+
+2024-01-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [d3cc59ba6] :
+
+        [sql_cacher] promote DBG to ERR to report failures
+
+        Similar to 4ddb507f19bb48654a1dd1f279d4092b301d17f2
+
+
+2024-01-23  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [4ddb507f1] :
+
+        Merge pull request #3288 from purecloudlabs/hotfix/sql_cacher_mi_reload_error_loglevel
+
+        sql_cacher: MI/timer initiated table reload error logged on different log level
+
+2024-01-23  Razvan Crainea  <razvan at opensips dot org>
+        * [8ff603fe1] :
+
+        b2b_logic: provite delay for terminated bridge entity
+
+        When a message is bridged in another call, a flag (`late_bye`) may be
+        used to the `b2b_bridge_request` command to delay the BYE message until
+        the new entity establishes the call.
+
+        Worked sponsored by NG-Voice/Carsten Bock
+
+
+2024-01-23  Bence Szigeti  <bence.szigeti at gohyda dot com>
+        * [d373ab65f] :
+
+        sql_cacher: fix SQL result leak when insert_in_cachedb fails
+
+
+2024-01-23  Razvan Crainea  <razvan at opensips dot org>
+        * [ce9fccc7f] :
+
+        b2b_logic: document adv_contact param for b2b_bridge_request
+
+        Complete 726fca1523
+
+
+2024-01-22  Bence Szigeti  <bence.szigeti at gohyda dot com>
+        * [01442d4c2] :
+
+        sql_cacher: MI/timer initiated table reload error logged on different log level
+
+
+2024-01-21  OpenSIPS  <github at opensips dot org>
+        * [10b639672] :
+
+        Rebuild documentation
+
+
+2024-01-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [012587e22] :
+
+        [presence_dfks] fix XML namespace URL
+
+
+2024-01-17  Liviu Chircu  <liviu at opensips dot org>
+        * [1d6d2e4b5] :
+
+        for-each statement: Fix iteration when <reply> context is used
+
+        Make sure to interpret the variable's context, if any, e.g.:
+
+            for ($var(ct) in $(<reply>ct[*]))
+                xlog("300 Redirect Contact: $var(ct)\n");
+
+
+2024-01-16  Razvan Crainea  <razvan at opensips dot org>
+        * [1339b7acb] :
+
+        rtp_relay: match reply leg by index, if tag not present
+
+
+2024-01-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [1a11c03a3] :
+
+        Fix printing all values of branch(subfield)
+
+        The [*] range was printing all the time the URI subfield of the branches, instead of the requested one.
+
+
+2024-01-15  Razvan Crainea  <razvan at opensips dot org>
+        * [224a3236c] :
+
+        dialog: do not populate dst_leg on unmatched dlg
+
+        Avoid chaning the dst_leg on unmatched dialogs, as this might lead to
+        inconsistent states. A common pattern is to match a dialog in state 5,
+        which would set a dst_leg, but then "invalidate" the dialog due to the
+        bad state - proceeding to a next dialog would not set the dst_leg (as it
+        was set by the previous match), leading to an invalid access in the
+        second dialog.
+
+        Credits go to NFON for reporting and providing valuable troubleshooting
+        information
+
+
+2024-01-14  OpenSIPS  <github at opensips dot org>
+        * [195a186e5] :
+
+        Rebuild documentation
+
+
+2024-01-11  Liviu Chircu  <liviu at opensips dot org>
+        * [337791836] :
+
+        RW locking: Add a pair of re-entrant functions for readers
+
+        In some cases, the same lock_start_read() function could be reached
+        multiple times in a nested fashion, e.g. after running a callback which
+        returns the control flow to the same module through an API call done by
+        the module which installed the callback.
+
+
+2024-01-11  Liviu Chircu  <liviu at opensips dot org>
+        * [fd894705f] :
+
+        tracer: Fix mixing between "src_ip" and "dst_ip"
+
+        Completes a13e03420c
+
+        Credits to James Seer for reporting this issue!
+
+
+2024-01-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [f3657e486] :
+
+        [presence_dfks] updated link to DFKS specs
+
+
+2024-01-09  Liviu Chircu  <liviu at opensips dot org>
+        * [b7c4f2a3b] :
+
+        transformations: Fix edge-cases with {param.value} and {uri.param}
+
+        For inputs containing only the parameter part, these transformations
+        would return a bogus {NULL, 0} value (flagged as PV_VAL_STR), which
+        cannot be used in assignments or conditional checks:
+
+        Credits to Bogdan-Andrei Iancu for finding this issue!
+
+
+2024-01-08  Liviu Chircu  <liviu at opensips dot org>
+        * [0fb0094b2] :
+
+        nathelper: Improve nat_uac_test() docs
+
+        The function involves neither trying nor guessing, it's quite precise.
+
+
+2024-01-07  OpenSIPS  <github at opensips dot org>
+        * [52f2be167] :
+
+        Rebuild documentation
+
+
+2024-01-05  Răzvan Crainea  <razvan at opensips dot org>
+        * [953d138c0] :
+
+        Merge pull request #3277 from smititelu/master
+
+        dialog: add one more param to dlg_send_sequential mi function
+
+2024-01-05  Stefan-Cristian Mititelu  <stefan-cristian.mititelu at 1and1 dot ro>
+        * [48bbd3150] :
+
+        dialog: add one more param to dlg_send_sequential mi function
+
+
+2024-01-04  Liviu Chircu  <liviu at opensips dot org>
+        * [1d712c17c] :
+
+        Merge pull request #3275 from lemenkov/guard_versiontype
+
+        Ensure VERSIONTYPE is always defined
+
+2024-01-04  Razvan Crainea  <razvan at opensips dot org>
+        * [aae8b39b5] :
+
+        rtp_relay: fix broken ref taken with lock
+
+        This caused a deadlock when DLG registers were not able to be setup.
+
+
+2023-12-24  Peter Lemenkov  <lemenkov at gmail dot com>
+        * [22ef73ed1] :
+
+        Ensure VERSIONTYPE is always defined
+
+        Signed-off-by: Peter Lemenkov <lemenkov at gmail dot com>
+
+
+2023-12-24  OpenSIPS  <github at opensips dot org>
+        * [b49ed50a1] :
+
+        Rebuild documentation
+
+
+2023-12-23  James Stanley  <james at incoherency.co dot uk>
+        * [c3b1356a1] :
+
+        uac_registrant: add "failure_retry_interval" modparam
+
+
+2023-12-21  Ovidiu Sas  <osas at voipembedded dot com>
+        * [a796a4962] :
+
+        parser/parse_uri.c: fix compare_uris()
+
+
+2023-12-21  Ovidiu Sas  <osas at voipembedded dot com>
+        * [54b5a353a] :
+
+        uac_registrant: fix uri comparison for bindings
+
+
+2023-12-21  Razvan Crainea  <razvan at opensips dot org>
+        * [353fb73d3] :
+
+        aaa_diameter: add dm_send_request async command
+
+
+2023-12-20  Razvan Crainea  <razvan at opensips dot org>
+        * [3a891b908] :
+
+        cJSON: provide support for adding header to functions
+
+        This avoids conflicts between overlapping libs that use different cJSON
+        implementations.
+
+        Many thanks to He Huang from Five9 for reporting and providing tests
+
+
+2023-12-19  Razvan Crainea  <razvan at opensips dot org>
+        * [f2f68d56e] :
+
+        siprec: add replication over B2B support
+
+        This enables replication of the siprec structures over multiple nodes,
+        allowing them to failover in case the main instance dissapears.
+
+        Many thanks to Voxtronic for sponsoring this work!
+
+
+2023-12-18  Liviu Chircu  <liviu at opensips dot org>
+        * [d836f4a26] :
+
+        aaa_diameter: Fix compile errors w/ gcc 9.x
+
+        * missing function param names
+        * labels may not point to declarations
+
+
+2023-12-18  Liviu Chircu  <liviu at opensips dot org>
+        * [26a9e3a26] :
+
+        freeswitch: Avoid dangling socket structs in reactor
+
+        Should reactor_del_reader() ever fail, retry it using index "-1" in
+        order to guarantee removal of the file descriptor from the EPOLL
+        controller.
+
+        Also fix several occurences of bad 3rd parameter (IO_WATCH_READ instead
+        of IO_FD_CLOSING, which was probably the intended argument).
+
+
+2023-12-18  Liviu Chircu  <liviu at opensips dot org>
+        * [0c9aa6fff] :
+
+        cfgutils: Fix "lock" operations during MI listing
+
+        * fix missing lock check, causing too many unlocks
+        * always lock the shv during MI listing, to avoid reading garbage
+            (e.g. partial data), as a WRITE is taking place in parallel
+
+
+2023-12-17  OpenSIPS  <github at opensips dot org>
+        * [e87b6dbdc] :
+
+        Rebuild documentation
+
+
+2023-12-14  Liviu Chircu  <liviu at opensips dot org>
+        * [1ecb32491] :
+
+        rest_client: Improve previous commit (async timeouts)
+
+        * fix corner-case causing module timeout to be discarded
+        * change logging level on transfer timeout from INFO -> ERR
+
+
+2023-12-13  Razvan Crainea  <razvan at opensips dot org>
+        * [212f1f8c2] :
+
+        aaa_diameter: add support for ip and hex strings
+
+
+2023-12-13  Razvan Crainea  <razvan at opensips dot org>
+        * [a5373b7b2] :
+
+        aaa_diameter/app_opensips: improve ERROR reporting
+
+
+2023-12-12  Liviu Chircu  <liviu at opensips dot org>
+        * [fd5066a04] :
+
+        drouting: Allow rule fallback across multiple prefixless rules ('')
+
+        Mostly affects the "do_routing() + use_next_gw()" scripting logic.
+
+
+2023-12-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [ac364c169] :
+
+        [tm] remove unappropriated RW locks and use standard ones
+
+        In the timer list implementation, all the ops over the list are like writer, so it makes no sense to use the RW locks which overall are a bit slower than the standard simple locks
+
+
+2023-12-12  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [5dfc2768b] :
+
+        Negative return code from dispatcher algo route will cause the entry to be automatically skipped
+
+
+2023-12-11  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [a13e03420] :
+
+        If we are receiving/sending from/to an interface with advertised address, replicate to HEP using the advertised address
+
+
+2023-12-11  Liviu Chircu  <liviu at opensips dot org>
+        * [1ea1852ed] :
+
+        rest_client: Fix handling for async timeouts
+
+        This patch improves all rest_client async operations such that they
+        now correctly time out after the minimum between:
+
+        * the "rest_client.curl_timeout" modparam (seconds)
+        * the async() statement timeout, if any (seconds)
+
+        Credits to Bence Szigeti for helping diagnose and fix the issue
+
+
+2023-12-11  Liviu Chircu  <liviu at opensips dot org>
+        * [03db3688a] :
+
+        async: Add support for module-injected timeouts
+
+        In some cases, the module may have its own timeout for the async
+        operation which it would prefer to force into the reactor wait loop,
+        possibly even have it combined with the async(..., X) statement timeout
+        as well, with the minimum of the two timeouts to win out.
+
+
+2023-12-11  Liviu Chircu  <liviu at opensips dot org>
+        * [42f1eb7ae] :
+
+        acc: Fix possible crash if 'aaa' module not loaded
+
+        If do_accounting("aaa") is used without a backend module loaded,
+        OpenSIPS would actually start, then crash when generating an acc record.
+
+        Credits to Simon Gajski and Bogdan Iancu for reporting and diagnosing
+        the issue here.
+
+
+2023-12-10  OpenSIPS  <github at opensips dot org>
+        * [894d9bb47] :
+
+        Rebuild documentation
+
+
+2023-12-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [13bd2b877] :
+
+        [tm] fix missing Route hdrs in locally generated ACK/CANCEL
+
+        Even if those requests are hop-to-hop (and they do not need Route hdrs), this is valid only for stateful SIP servers. Yes, woow, we need to take care of stateless SIP server :P.
+        As various module may add lumps with Route hdrs, let's mark this, so we will know later if we should re-parse and check for such Route hdrs (in the outbound buffer)
+        Closes #3131
+
+
+2023-12-08  Razvan Crainea  <razvan at opensips dot org>
+        * [58adeca99] :
+
+        blacklists: initialize backlist net structure
+
+        Thanks go to Jonathan Hulme from ConnexCS for spotting it.
+
+
+2023-12-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [2cb54ee86] :
+
+        Merge pull request #3266 from jes/jes/proto_tls-rlen
+
+        proto_tls: report error with correct variable
+
+2023-12-07  Razvan Crainea  <razvan at opensips dot org>
+        * [5d90a34b4] :
+
+        b2b_logic: Fix pkg_str_dup ret code check
+
+        Fix bug while checking the return of pkg_str_dup - due to the bad return
+        check, we were no longer terminating dangling entities with BYE.
+
+        Many thanks to David Escartin from Sonoc for reporting and help in
+        troubleshooting this issue!
+
+
+2023-12-05  James Stanley  <james at incoherency.co dot uk>
+        * [d397608b0] :
+
+        proto_tls: report error with correct variable
+
+        Assigning to `len` at this point has no effect, and comparing with the
+        code not far above, with the same comment, and the code under
+        `con_release` ending with `return rlen;` it is obvious that the
+        intention was to assign to `rlen` instead of `len`.
+
+
+2023-12-05  Razvan Crainea  <razvan at opensips dot org>
+        * [ec6b5c4e0] :
+
+        siprec: handle SRS in-dialog UPDATE and re-INVITEs
+
+
+2023-12-05  Razvan Crainea  <razvan at opensips dot org>
+        * [937e1340c] :
+
+        rtp_relay: fix creating caller's tag in branch route
+
+
+2023-12-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [d3e3ad118] :
+
+        [b2b_logic] fix TO hdr setting in UAC entities
+
+        Keep the original idea (<=3.1) to have TO and RURI set to the same URI. Starting 3.2 this was accidentally changed, TO hdr being preserved from the UAS entity.
+        Fixes #3176
+
+
+2023-12-04  Liviu Chircu  <liviu at opensips dot org>
+        * [f635a63a7] :
+
+        acc: Code improvements
+
+        * make the is_xxx_on() macros more practical, by returning `int` instead
+        of `unsigned long long`, to avoid integer overflows during result check
+
+        * fix strange 1-byte extra offset for the DO_ACC_EVI constant
+
+        * add more unit tests
+
+
+2023-12-04  Liviu Chircu  <liviu at opensips dot org>
+        * [0f0de89f6] :
+
+        acc: Fix drop_accounting() regression (211a63c9b2)
+
+        Commit 211a63c9 changed drop_accounting() from doing too little
+        dropping (the "backend bit" would never get reset) into doing too much
+        dropping (the "backend bit" would always be reset, despite some of the
+        flags still remaining enabled after the drop operation).
+
+        This commit fixes the code and also adds some unit tests for the
+        set/reset bitmask operations, to lock in the correct behavior.
+
+
+2023-12-03  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [04cb08e70] :
+
+        usrloc: simplify processing of the refresh events
+
+        Do not abuse "struct socket_info" just to pass sock_str over.
+        Instead, add str to the refresh event data and pass that alone.
+        Not only it reduces amount of data to pass, but also makes
+        code much easier to read and understand.
+
+
+2023-12-03  OpenSIPS  <github at opensips dot org>
+        * [e4c37c2a9] :
+
+        Rebuild documentation
+
+
+2023-12-02  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [42d83f4bf] :
+
+        core: make str_cpy() work with the str_const as well.
+
+
+2023-12-01  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [bb300aeb9] :
+
+        core: make sockaddr_union* and socket_info* arguments, vars and members const
+
+        Make the said pointers const in most places where appropriate. This basically
+        ensures that code in modules cannot mess with them intentionally or by a
+        mistake.
+
+        It should also have some positive effect on the performance of the code, as
+        with those being const * the optimizer would have more room to speculate
+        about what code might and might not do.
+
+        There might be also some improvement of static analysis front.
+
+        Most of the change is pretty mechanical, the only functional change is
+        the allocation of the socket_info.last_real_port, since those are expected
+        to be updated by the underlying protos/modules. Work around that by
+        making a separate smaller struct last_real_ports and co-allocate it along
+        with the socket_info main backing storage, exposing the non-const pointer
+        to that instead.
+
+        Move the prev / next into the semi-private part of the struct.
+
+        Rework net/api_proto_net.h to not require casting handler functions
+        to a generic type.
+
+        Next step would be make str members of socket_info into str_const.
+
+        Tested with voiptests.
+
+
+2023-12-01  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [5dc91d374] :
+
+        core: make working on the system with just a cc or clang and no gcc
+
+
+2023-12-01  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [a4b1263a9] :
+
+        emergency,presence,siprec: also look for includes and libs in ${LOCALBASE}
+
+
+2023-12-01  James Stanley  <james at incoherency.co dot uk>
+        * [ac1e2f3d8] :
+
+        topology_hiding: fix encoded Contact length calculation
+
+        This leads to segfaults (and probable vulnerabilities) when the allocated buffer
+        is not long enough to contain its contents.
+
+        This bug was introduced in
+        https://github.com/OpenSIPS/opensips/commit/e23be5d19a4865083971d17dc719a4d4d3436a24
+        presumably as a copy-and-paste mistake.
+
+
+2023-12-01  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [034fa7861] :
+
+        cgrates: fix cgr_conn_schedule() -> nop() workaround
+
+
+2023-12-01  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [f66b96596] :
+
+        proto_msrp: include timer.h to get get_ticks() prototype
+
+
+2023-12-01  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [38ec51c7e] :
+
+        core: GC unused function
+
+
+2023-11-29  Razvan Crainea  <razvan at opensips dot org>
+        * [d8323704b] :
+
+        rtpengine: avoid serializing if rtpengine ctx was not created
+
+
+2023-11-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [ae9e51ec1] :
+
+        [tm] fix the visibility of $T_branch_idx in failure route
+
+        The bavp's are already available in failure route and they are using the same internal variable for the branch index. So, to keep consistency, the branch index should be visible also in failure route via $T_branch_idx
+
+
+2023-11-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [43590e93f] :
+
+        [tm] fix setting _tm_branch_index in case of internal timeout
+
+        Be sure the _tm_branch_index variable is properly set for internal timeout and not only for received replies
+
+
+2023-11-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [5bab986c7] :
+
+        [cfg] fix bogus constraint on ':=' operator
+
+        It is actually implemented by BAVP also (not only AVPs), but the script does not allow its usage :(.
+        Removing the check is safe as all the other variables will treat the ':=' as '=' - they do not test the operator during "set", assuming '=' all the time.
+
+
+2023-11-28  Razvan Crainea  <razvan at opensips dot org>
+        * [2b5392d53] :
+
+        rtpproxy: handle timeouts for stats command
+
+        Fixes a crash when OpenSIPS was timing out when fetching statistics
+
+
+2023-11-27  Razvan Crainea  <razvan at opensips dot org>
+        * [51b8a2bc8] :
+
+        cgrates: return 1 while setting a non-object return
+
+        Comply with documentation with functions that always return 1 if success
+
+        Reported by MonkeyTester (@Integration-IT on GitHub) for reporting this.
+        Close #3256
+
+
+2023-11-27  Razvan Crainea  <razvan at opensips dot org>
+        * [6d38787c1] :
+
+        rtpengine: make oom error logs more verbose
+
+
+2023-11-27  Răzvan Crainea  <razvan at opensips dot org>
+        * [aabc81730] :
+
+        Merge pull request #3148 from Sda79/master
+
+        #1923 - New option flag for global advertised address
+
+2023-11-26  Sylvain Daste  <dastesylvain at gmail dot com>
+        * [b579acb08] :
+
+        #1923 - New option flag
+
+
+2023-11-26  OpenSIPS  <github at opensips dot org>
+        * [737aafc28] :
+
+        Rebuild documentation
+
+
+2023-11-22  Răzvan Crainea  <razvan at opensips dot org>
+        * [b26490e91] :
+
+        Merge pull request #3252 from BSVN/Feature/1-siprec-add-xml-custom-extension
+
+        Add xml group and session custom extensions in metadata for siprec module.
+
+2023-11-22  Seyed Mehran Siadati  <siadatism at gmail dot com>
+        * [490575cf3] :
+
+        Add siprec doc.
+
+
+2023-11-21  Razvan Crainea  <razvan at opensips dot org>
+        * [2a70e6116] :
+
+        dispatcher: fix partition parsing ending
+
+
+2023-11-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [492df453d] :
+
+        [tm] fix NULL on out of index for bavp() vars
+
+
+2023-11-20  Răzvan Crainea  <razvan at opensips dot org>
+        * [d2a41690c] :
+
+        Merge pull request #3250 from dunst0/fix/b2b_logic_deadlock
+
+        b2b_logic: fix deadlock on error case
+
+2023-11-20  Razvan Crainea  <razvan at opensips dot org>
+        * [ae098f7d8] :
+
+        b2b_logic: unlink entity in the tuple before destroying
+
+        This prevents a crash generated while trying to iterate through the
+        tuple bridging_entities in the local route - since the entity has been
+        destroyed, but not removed from the tuple, accessing it may cause in
+        invalid memory access and crashes.
+
+        Thanks go to @BTa7BxrHYn on GitHub for reporting it
+        Close #3240
+
+
+2023-11-19  Seyed Mehran Siadati  <siadatism at gmail dot com>
+        * [da4bd48d7] :
+
+        Add xml group and session custom extensions in metadata for siprec module.
+
+
+2023-11-19  OpenSIPS  <github at opensips dot org>
+        * [bf9661108] :
+
+        Rebuild documentation
+
+
+2023-11-17  Rick Barenthin  <rick at ng-voice dot com>
+        * [bed93f801] :
+
+        b2b_logic: fix deadlock on error case
+
+
+2023-11-16  Razvan Crainea  <razvan at opensips dot org>
+        * [e8aaca713] :
+
+        rtpproxy: fix rtpproxy_enable setid docs
+
+
+2023-11-16  Liviu Chircu  <liviu at opensips dot org>
+        * [64b41b5b0] :
+
+        dialog: Fix bad test in prev commit
+
+
+2023-11-15  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [86270b3a3] :
+
+        core: make _pv_export.name str_const
+
+        This ensures that name is truly constant, stored in the
+        read-only data segment.
+
+        Use str_const_init() to initialize it consistently.
+
+
+2023-11-15  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [f89780854] :
+
+        core: reduce code duplication
+
+        Define pv_true and pv_false constants and use them each time we
+        need to return true or false instead of constructing those
+        in-line
+
+
+2023-11-15  James Stanley  <james at incoherency.co dot uk>
+        * [bffcf0035] :
+
+        net_tcp_proc: close a socket received for writing when there is an error
+
+
+2023-11-15  Liviu Chircu  <liviu at opensips dot org>
+        * [8f328428c] :
+
+        usrloc: Clarify docs for MI 'ul_cluster_sync'
+
+
+2023-11-15  Liviu Chircu  <liviu at opensips dot org>
+        * [34dc02bf8] :
+
+        dialog: Mitigate 'dlg_list' PKG fragmentation; Fix dlg_list_ctx memleak
+
+        By using pkg_str_extend() instead of pkg_realloc(), we avoid a constant
+        creation of PKG fragments (the buffer will eventually stop growing),
+        which seems to gradually fragment the private memory pool, as the MI
+        'dlg_list' is continuously polled by various monitoring software.
+
+        As a bonus, this patch also fixes a 'dlg_list_ctx' PKG memory leak
+        introduced in 543a40c8ff and only present on OpenSIPS 3.4+.
+
+        Related to #3235
+
+
+2023-11-15  Liviu Chircu  <liviu at opensips dot org>
+        * [be764a16f] :
+
+        Fix PKG memory leak on {s.eval} corner-case
+
+        Make sure to correctly free the transformation data structures even when
+        parsed by {s.eval} at runtime, as opposed to one-time parsing during
+        startup, which would never highlight the leak:
+
+            $var(proxy) = "$(du{nameaddr.uri}{re.subst,/scscf-int-/scscf-/})";
+            $var(proxy) = $(var(proxy){s.eval});
+
+        Fixes #3233
+
+
+2023-11-13  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [1a3ff9b66] :
+
+        Increase the static buffer size where the dialog info gets printed to
+
+        Since we also have the SDP going there, that can grow pretty large ( in webrtc context )
+
+
+2023-11-13  Răzvan Crainea  <razvan at opensips dot org>
+        * [6ec8840f0] :
+
+        Merge pull request #3243 from purecloudlabs/hotfix/json-array-del-element
+
+        json: fix array element deletion
+
+2023-11-12  OpenSIPS  <github at opensips dot org>
+        * [5cb0df80e] :
+
+        Rebuild documentation
+
+
+2023-11-10  Bence Szigeti  <bence.szigeti at gohyda dot com>
+        * [d53e6f32e] :
+
+        json: fix array element deletion
+
+        OpenSIPS incorrectly calls the JSON-C array element deletion function by passing the size of the array instead of the desired count of elements to delete. When attempting to delete from index `0`, it results in the deletion of all elements, while specifying an index greater than `0` leads to no deletion due to overindexing.
+
+        ### Example 1:
+        ```
+          $json(obj) := "[ 1, 2, 3 ]";
+          $json(obj[0]) = NULL;
+          xlog("$json(obj)\n");
+        ```
+        Result:   `[]`
+        Expected: `[ 2, 3 ]`
+
+        ### Example 2:
+        ```
+          $json(obj) := "[ 1, 2, 3 ]";
+          $json(obj[1]) = NULL;
+          xlog("$json(obj)\n");
+        ```
+        Result:   `[ 1, 2, 3 ]`
+        Expected: `[ 1, 3 ]`
+
+
+2023-11-08  tcresson  <tcresson at keyyo dot com>
+        * [b56acffb4] :
+
+        Adapt the Makefiles that don't use Makefile.openssl
+
+
+2023-11-08  tcresson  <tcresson at keyyo dot com>
+        * [216909f68] :
+
+        Makefile.openssl can now search and link with either only libcrypto or both libcrypto and libssl
+
+
+2023-11-07  Liviu Chircu  <liviu at opensips dot org>
+        * [f0488b5fa] :
+
+        mid_registrar/usrloc: Small doc improvements
+
+        Many thanks to Conrad de Wet and Devang Dhandhalya for the hints!
+
+
+2023-11-05  OpenSIPS  <github at opensips dot org>
+        * [f547a7c07] :
+
+        Rebuild documentation
+
+
+2023-11-02  Liviu Chircu  <liviu at opensips dot org>
+        * [1df9afd38] :
+
+        CacheDB: Allow "@" in URL passwords
+
+
+2023-10-31  Ovidiu Sas  <osas at voipembedded dot com>
+        * [cc0ac0074] :
+
+        core: enhace error log for unexpected replies
+
+
+2023-10-31  Razvan Crainea  <razvan at opensips dot org>
+        * [267b93842] :
+
+        proto_hep: fix type in  hep_async_local_write_timeout param name
+
+
+2023-10-31  Razvan Crainea  <razvan at opensips dot org>
+        * [d6bcd2d49] :
+
+        call_center: fix usage of parameter passed to cc_handle_call
+
+
+2023-10-31  Liviu Chircu  <liviu at opensips dot org>
+        * [82876a790] :
+
+        tls_wolfssl: Fix tarball generation
+
+        Since ".patch" files are explicitly excluded during tarball packing,
+        let's just rename the patch file to ".diff" instead so it gets included,
+        thus allowing the tarball module code to compile once again.
+
+
+2023-10-31  vladpaiu  <vladpaiu at opensips dot org>
+        * [139b158a6] :
+
+        Merge pull request #3237 from OpenSIPS/ws_support_via_headers_in_http
+
+        Support overlapping SIP&HTTP headers in WS HTTP initial requests
+
+2023-10-30  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [e30a35539] :
+
+        Support overlapping SIP&HTTP headers in WS HTTP initial requests
+
+
+2023-10-29  OpenSIPS  <github at opensips dot org>
+        * [c442ae6f5] :
+
+        Rebuild documentation
+
+
+2023-10-25  Razvan Crainea  <razvan at opensips dot org>
+        * [c0f5b1241] :
+
+        call_center: passthrough in-dialog requests, except BYE
+
+
+2023-10-25  Razvan Crainea  <razvan at opensips dot org>
+        * [7c9661cdb] :
+
+        Revert "call_center: passthrough re-INVITEs"
+
+        This reverts commit f971fa17310c654c54305608855cfc28c1477bd0.
+
+
+2023-10-25  Razvan Crainea  <razvan at opensips dot org>
+        * [f971fa173] :
+
+        call_center: passthrough re-INVITEs
+
+
+2023-10-22  OpenSIPS  <github at opensips dot org>
+        * [1de3b680c] :
+
+        Rebuild documentation
+
+
+2023-10-17  Razvan Crainea  <razvan at opensips dot org>
+        * [8a6e78dde] :
+
+        dialog: only publish cseq mappings for INVITEs
+
+
+2023-10-15  OpenSIPS  <github at opensips dot org>
+        * [fd50b7210] :
+
+        Rebuild documentation
+
+
+2023-10-13  Razvan Crainea  <razvan at opensips dot org>
+        * [9bc202432] :
+
+        b2b_entities: reject overlapping BYE when uac is pending
+
+
+2023-10-12  Razvan Crainea  <razvan at opensips dot org>
+        * [5449d944e] :
+
+        prometheus: fix labels documentation
+
+        Many thanks to Norman Brandinger (@NormB on GitHub) for spotting it.
+
+
+2023-10-12  Razvan Crainea  <razvan at opensips dot org>
+        * [761e8800a] :
+
+        b2b_entities: proper handling of overlapping BYE
+
+        Although in normal circumstances we should reply with a 500 reply code,
+        in case a BYE is received, we should process it accordingly, and as soon
+        as the overlapping transaction completes, we should terminate the other
+        leg as well.
+
+        Completes c4032f94f3993d1b62a0483eaae3ac0bd6c7c358
+
+
+2023-10-11  Liviu Chircu  <liviu at opensips dot org>
+        * [b524764ae] :
+
+        fix_nated_sdp(): Fix crash due to mis-managed flags
+
+        Fixes #3226
+
+
+2023-10-11  Liviu Chircu  <liviu at opensips dot org>
+        * [ad8814bb7] :
+
+        str.h: Parenthesize str initialization macros
+
+        This should help avoid compiler warnings similar to:
+
+        error: too many arguments provided to function-like macro invocation
+            ok(str_match(&kvf_values[0], &str_init("X")), "test-fixup-flags-3.1");
+
+
+2023-10-11  Liviu Chircu  <liviu at opensips dot org>
+        * [6eedadb68] :
+
+        fixup_named_flags(): Add a few unit tests
+
+        It's easy to lose track of how this function works, given there are 3
+        different ways of invoking it.  So write a few tests to "lock in" its
+        behavior and also make it available for double-checking on demand.
+
+
+2023-10-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [b3990ad41] :
+
+        [parser] parse_min_expires() returns FALSE if hdr no found
+
+        Alternative to #3165
+
+
+2023-10-11  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [7673c2e26] :
+
+        Merge pull request #3158 from purecloudlabs/hotfix/upstream/proto-hep-tls-connection-reuse
+
+        proto_hep: Fix TLS connection reuse
+
+2023-10-11  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [a1b2c3c1c] :
+
+        Merge pull request #3223 from purecloudlabs/hotfix/wolfssl-client-cert-verify
+
+        `tls_wolfssl`: Fix certificate verification in client mode
+
+2023-10-11  Liviu Chircu  <liviu at opensips dot org>
+        * [8565a7296] :
+
+        Merge pull request #3166 from nphantom/master-fix-cluster-nodes
+
+        cachedb_redis_dbase: Fix the type of port with unsigned short.
+
+2023-10-11  Liviu Chircu  <liviu at opensips dot org>
+        * [3532746c1] :
+
+        cachedb_redis: Fix a bug with parsing custom ports
+
+        This patch fixes an issue where custom Redis ports (i.e. not
+        6379) in simple URLs with just 1 host were always being parsed as 6379.
+        Most likely, the issue dates back to the "circular failover hosts"
+        feature (69179289).
+
+        Many thanks to Artiom Druz (@Shkiperion) for a full report + PR attempt!
+
+        Fixes #3168
+        Closes #3169
+
+
+2023-10-11  Bence Szigeti  <bence.szigeti at gohyda dot com>
+        * [7c1369922] :
+
+        `tls_wolfssl`: Fix certificate verification in client mode
+
+
+2023-10-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [14df28478] :
+
+        [load_balancer & dispatcher] FS stats do not depend on probing
+
+        Enabling the stats collection (via timer) from FS boxes must not be conditioned by the activation of probing - there is not relation / dependency between the two.
+        Closes #3216
+        Reported by @spacetourist
+
+
+2023-10-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [47f56e040] :
+
+        [async] fix async launching without report route
+
+        Handle the case where no report route is provided.
+        Closes #3188
+
+        (cherry picked from commit 26d6d95ffde2bfcdcc67f134c3056dc893c0aad9)
+
+
+2023-10-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [fd0657602] :
+
+        [evi] do not raise event from TCP MAIN
+
+        The TCP MAIN process does not have script capabilities, so we should NOT raise event here (as they may translate into scripting due to the event_route module). So, if we have an event to be raised from TCP MAIN (as E_CORE_TCP_DISCONNECT) we better use the newly added evi_dispatch_event() function which does IPC dispatching (into a different process) and raise for the event.
+        Closes #3212
+
+
+2023-10-08  OpenSIPS  <github at opensips dot org>
+        * [c905e10c4] :
+
+        Rebuild documentation
+
+
+2023-10-06  Razvan Crainea  <razvan at opensips dot org>
+        * [fc144da23] :
+
+        dialog: proper update contact of callee on seq
+
+        fixes bug introduced in a76af3f
+        Close #3218
+
+
+2023-10-06  Razvan Crainea  <razvan at opensips dot org>
+        * [e393d4cd2] :
+
+        tls_wolfssl: amend patch with Fix RNG with writedup
+
+        Amend patch with wolfSSL/wolfssl#6843
+
+
+2023-10-05  Razvan Crainea  <razvan at opensips dot org>
+        * [faafd70f4] :
+
+        rtpengine: allow passing flags for subscribe answer cmds
+
+
+2023-10-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [942509835] :
+
+        Fix persistency of the globally set log_level
+
+        The globally set log_level (via MI cmd) must impact the future forked processes (due to auto scalling).
+        Closes #3146
+
+
+2023-10-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [caa78d967] :
+
+        [b2b_entities] proper handling of B2B requests without active dialogs
+
+        If we have a requests that is 100% looking as a B2B related request, but it's not matching any active/ongoing b2b dialog, better reject with 481 and drop instead of pushing it into the script (where may be proxyed).
+
+        Closes #3205
+
+
+2023-10-04  Razvan Crainea  <razvan at opensips dot org>
+        * [e7f887d35] :
+
+        statistics: do not allow duplicate stats in different groups
+
+        The statistic's name should be unique, whether it is located in a
+        different group or not.
+
+        Completes 4640465, Fixes #3136
+
+
+2023-10-02  Razvan Crainea  <razvan at opensips dot org>
+        * [483ee0be1] :
+
+        drouting: allow usage of goes_to_gw in LOCAL_ROUTE
+
+
+2023-10-01  OpenSIPS  <github at opensips dot org>
+        * [366d6be7a] :
+
+        Rebuild documentation
+
+
+2023-09-27  Liviu Chircu  <liviu at opensips dot org>
+        * [e2977a4f4] :
+
+        stir_shaken VS: Improve several return codes
+
+        * on bad client-side signature length, return
+           "438 Invalid Identity Header (bad signature)"
+           vs. "500 Internal Server Error" (??)
+
+        * on encountering expired certificates advertised by clients, return
+            "438 Invalid Identity Header (cert validity)"
+            vs. "403 Stale Date" (?!)
+
+        * fix abs() related compiler warnings introduced earlier
+
+
+2023-09-27  Liviu Chircu  <liviu at opensips dot org>
+        * [75a168a9f] :
+
+        stir_shaken: Fix detection for invalid "future Date/iat"
+
+        This patch fixes a bug where both the Date hf and the "iat" PASSporT
+        claim could be filled in with a random timestamp value "in the future"
+        and still bypass the OpenSIPS "freshness" integrity checks.
+
+        Issue discovered during OpenSIPIt'03,
+                thanks to Pavel Bussel & Maksym Sobolyev (Sippy Software)
+
+
+2023-09-27  Razvan Crainea  <razvan at opensips dot org>
+        * [464046521] :
+
+        [WIP] statistics: fix crash when creating a series stat
+
+        Under normal circumstances, when a statistic is updated, we first search
+        whether it exists, and if not, we add it to the statistics hash.
+        However, due to the way it is implemented, searching and adding a
+        statistic is not atomic, hence, with high concurrency, when adding a new
+        statistic, we might already find an existing one there. In this case,
+        the code tries to return that statistic in the `pvar` parameter -
+        however, that parameter might be a (r/o) function, hence a crash
+        happens. This commit fixes the crash. Close #3136
+
+        However, it returns 0, as if the statistic was properly added - the
+        problem with this approach is that from the caller's perspective, we do
+        not know whether the statistic was already there or not, to free the
+        existing structure - hence this might result into a leak. We are still
+        working on a solution for this.
+
+
+2023-09-27  Razvan Crainea  <razvan at opensips dot org>
+        * [41aa549a5] :
+
+        main: avoid 'for' loop initial declarations in C98
+
+        This would break rpm build on CentOS 7 due to old compiler/standard
+
+
+2023-09-27  Razvan Crainea  <razvan at opensips dot org>
+        * [1dde47b52] :
+
+        siprec: fix memory leaking while setting the same field of siprec var
+
+        Credits go to Rob Moore, Daniel Bryars and Steven Ayre from Dubber, as
+        well as Liviu Chircu from the OpenSIPS team for working together to spot
+        this leak.
+
+
+2023-09-26  Razvan Crainea  <razvan at opensips dot org>
+        * [75605d539] :
+
+        add move_branch() and swap_branches() core functions
+
+
+2023-09-26  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [d82ddd85d] :
+
+        Merge pull request #3189 from Keyyo-Private/fix_ldap_memleak
+
+        ldap: Fix memory leak
+
+2023-09-26  Razvan Crainea  <razvan at opensips dot org>
+        * [7bafee1f9] :
+
+        dialog: increment last_gen_cseq only if initialized
+
+        Many thanks to Denys Pozniak (@denyspozniak on GitHub) for reporting and
+        providing troubleshooting information.
+
+        Close #3206
+
+
+2023-09-25  Liviu Chircu  <liviu at opensips dot org>
+        * [2e6623573] :
+
+        stir_shaken: Add the `e164_max_length` parameter
+
+        This parameter allows the 15-digit number length restriction of the E.164
+        format to be bypassed.  Especially useful in scenarios where various
+        telephony number prefixes are in use, causing some numbers to exceed
+        the standard maximum length.
+
+        Credits to @Integration-IT for watching over the core issue and helping
+        work towards the current solution!
+
+        Fixes #3202
+        Fixes #3182
+        Fixes #3181
+
+
+2023-09-24  OpenSIPS  <github at opensips dot org>
+        * [e0ef3850e] :
+
+        Rebuild documentation
+
+
+2023-09-21  Razvan Crainea  <razvan at opensips dot org>
+        * [2548f4755] :
+
+        tls_wolfssl: adapt patch with upstream
+
+        Grabbed from wolfSSL/wolfssl/#6785
+        As soon as the patch gets in a released version, we shall bump our
+        version as well.
+
+
+2023-09-21  Razvan Crainea  <razvan at opensips dot org>
+        * [8fccc49c7] :
+
+        digest_auth: fix Makefile flags escaping
+
+
+2023-09-21  Razvan Crainea  <razvan at opensips dot org>
+        * [d1c8a4751] :
+
+        digest_auth: fix # escaping in Makefile
+
+        Fix bogus parsing of makefile; completes d92607f
+
+
+2023-09-21  Razvan Crainea  <razvan at opensips dot org>
+        * [d92607f2d] :
+
+        digest_auth: avoid dash escaping in Makefile
+
+        Replace dash's builin printf with the echo binary impelmentation.
+        Many thanks to Liviu Chircu for brainstorming and testing!
+
+
+2023-09-21  Razvan Crainea  <razvan at opensips dot org>
+        * [3c11d3c0f] :
+
+        digest_auth: restore support openssl for 1.0.2
+
+        This completes commit f566fb which used a new interface of openssl, one
+        that is not available in 1.0.2.
+        Many thanks to Oleksandr Kozmenko (@11qeq11 on GitHub) for reporting it.
+        Close #3183
+
+
+2023-09-21  Razvan Crainea  <razvan at opensips dot org>
+        * [3b4beb2c4] :
+
+        proto_ws: enclose IPv6 Host IPs with square brackets
+
+        Many thanks to @alekseiZh on GitHub for reporting it
+        Close #3198
+
+
+2023-09-18  Razvan Crainea  <razvan at opensips dot org>
+        * [9d61465fe] :
+
+        b2b_entities: fix Notify buffer timeout build
+
+        Complete 312cdd4
+        Related to bug in #3195
+
+
+2023-09-17  OpenSIPS  <github at opensips dot org>
+        * [34c9c3be2] :
+
+        Rebuild documentation
+
+
+2023-09-15  Razvan Crainea  <razvan at opensips dot org>
+        * [66493ce7e] :
+
+        b2b_logic: do not abort bridging if re-INVITE is rejected with 491
+
+        If the SDP negociation gets rejected with 491, we should not abort
+        negociation, since most likely it is an indication that the remote UAS
+        is trying to lock its codecs, hence do the same thing we are trying to
+        do, but in the other direction.
+        If however, the other participant does not send itself a re-INVITE, we
+        arm a timer to re-try the bridging according to the RFC 3261, section
+        14.1:
+           If a UAC receives a 491 response to a re-INVITE, it SHOULD start a
+           timer with a value T chosen as follows:
+
+              1. If the UAC is the owner of the Call-ID of the dialog ID
+                 (meaning it generated the value), T has a randomly chosen value
+                 between 2.1 and 4 seconds in units of 10 ms.
+
+        Fix #3137
+
+
+2023-09-15  Razvan Crainea  <razvan at opensips dot org>
+        * [01a3568ef] :
+
+        b2b_logic: properly initialize socket for topo hiding
+
+        Fix possible crash when no socket is forced in topology hiding scenario
+
+
+2023-09-15  Liviu Chircu  <liviu at opensips dot org>
+        * [e2bfeda4e] :
+
+        dialog: Fix $dlg_val memleak
+
+        Fixed #3135
+
+
+2023-09-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [4244c286e] :
+
+        [b2b_entities/logic] use the newly added pref_socket
+
+        When creating a new B2B client, avoid using the UAS side incoming socket as a forced socket. By doing that we override the proto given by the UAC RURI (and forcing to use the same proto as the UAS side - of course, unless we do not do a force send socket from script to manually indicate a new socket/proto). Shortly, th dynamic selection of the correct UAC socket is broken.
+
+        With this change, we do:
+        * if the UAS/msg side has a forced socket (from script), we will push it as forced socket to the UAC too (as before this change).
+        * if there is no forcing, the current UAS/msg incoming socket is passed as "preferred" socket to the UAC - like use it as time as it fits the RURI proto. This helps in preserving (during the whole b2b logic) the same socket when having multiple sockets serving the same protocol.
+
+        Fixes #3138
+
+
+2023-09-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [2824a3818] :
+
+        [tm] t_uac() gets a preferred socket too
+
+        The function already receives a send_socket (a forced socket) which overrides the protocol given by the destination URI. But are cases were we need a milder approach, like a preffered socket to be used if not conflicting with the protocol given by the RURI.
+        What we have now:
+        * send_socket - it is a forced socket, overrides the proto given by RURI, it will be used for sure
+        * pref_socket - a preferred socket, to be used if no send_socket is given and if there is no conflict with the proto given by RURI (in case of a conflict, the pref_socket is discarded and a new socket is looked up based on the RURI info).
+
+        First part fix for #3138
+
+
+2023-09-14  Razvan Crainea  <razvan at opensips dot org>
+        * [4fe2fb6f5] :
+
+        b2b_entities: prevent hop-by-hop ACK to change the status of dialog
+
+
+2023-09-14  Razvan Crainea  <razvan at opensips dot org>
+        * [1bf83d61b] :
+
+        tm: simplify API interface for t_relay and t_check_trans
+
+
+2023-09-14  tcresson  <tcresson at keyyo dot com>
+        * [4612a7f77] :
+
+        Fix memory leak in LDAP module.
+
+        The subst_expr* that is allocated for the methods ldap_write_result and
+        ldap_result_check is never freed.
+
+        In order to fix it, we declare the fixup_free_substre function that is
+        used in the definition of the "free_fixup" function for the subst_expr
+        parameter of these two functions.
+
+
+2023-09-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [c4032f94f] :
+
+        [b2b_entities] Proper handling of overlaping transactions
+
+        As per RFC3261, Section 14.2 :
+
+           A UAS that receives a second INVITE before it sends the final
+           response to a first INVITE with a lower CSeq sequence number on the
+           same dialog MUST return a 500 (Server Internal Error) response to the
+           second INVITE and MUST include a Retry-After header field with a
+           randomly chosen value of between 0 and 10 seconds.
+
+           A UAS that receives an INVITE on a dialog while an INVITE it had sent
+           on that dialog is in progress MUST return a 491 (Request Pending)
+           response to the received INVITE.
+
+        Changes:
+        * 491 is now generated when receiving a request while already having an outbound one - the old code was generating 491 upon receiving a request while having another INCOMING one :-/
+        * generate the 500 reply when receiving a new request while handing another incoming one.
+
+
+2023-09-12  Razvan Crainea  <razvan at opensips dot org>
+        * [1af376b71] :
+
+        rtp_relay: remove context from the list on repicated deletes
+
+
+2023-09-11  Liviu Chircu  <liviu at opensips dot org>
+        * [1d4d5a6ba] :
+
+        Merge pull request #3171 from Integration-IT/master-1
+
+        STIR SHAKEN Documentation
+
+2023-09-10  OpenSIPS  <github at opensips dot org>
+        * [20e540d00] :
+
+        Rebuild documentation
+
+
+2023-09-08  Razvan Crainea  <razvan at opensips dot org>
+        * [9e8793473] :
+
+        build: add patch as requirement
+
+
+2023-09-08  Razvan Crainea  <razvan at opensips dot org>
+        * [716f1d633] :
+
+        tls_wolfssl: patch wolfssl lib to fix memory leak
+
+        More information about the leak can be found on the wolfssl issue
+        tracker: wolfSSL/wolfssl#6760
+
+
+2023-09-08  Razvan Crainea  <razvan at opensips dot org>
+        * [3e6a0fcb0] :
+
+        tls_wolfssl: refactor makefile to use dependencies
+
+
+2023-09-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [3b04f2185] :
+
+        Revert ERR back to DBG log
+
+        Introduced by mistake via e0fe732e9c9d28c24ed6860fbd3531940978b8f9
+        Reported by Bence Szigeti.
+
+
+2023-09-04  Razvan Crainea  <razvan at opensips dot org>
+        * [d6ef279f6] :
+
+        rtp_relay: fix invalid contexts leaked in list
+
+        When a session would have been established on a provisional reply with
+        body (i.e. 183), the rtp contexts would have been stored in the list.
+        However, if the call would not establish (with a 200 OK), there would be
+        no one removing it from the list, even though the context was released -
+        this resulted in unexpected and almost impossible to track down invalid
+        memory usage.
+        The current patch makes sure that the context is removed from the list
+        if the call does not establish.
+
+        Many thanks to Rob Moore, Daniel Bryars and Steven Ayre from Dubber for
+        pushing an enormous amount of time into troubleshooting and debugging
+        this, as well as to Liviu Chircu for guiding the troubleshooting!
+
+
+2023-09-03  OpenSIPS  <github at opensips dot org>
+        * [af6f1576b] :
+
+        Rebuild documentation
+
+
+2023-08-31  Razvan Crainea  <razvan at opensips dot org>
+        * [d86668889] :
+
+        route: fix previous commit
+
+
+2023-08-31  Razvan Crainea  <razvan at opensips dot org>
+        * [242598f70] :
+
+        route: fix another crash related to f07048c
+
+
+2023-08-31  Razvan Crainea  <razvan at opensips dot org>
+        * [f07048c58] :
+
+        route: do not unref if route not initialized
+
+        Prevents crash when init fails and routes have not yet been initialized
+
+
+2023-08-31  Liviu Chircu  <liviu at opensips dot org>
+        * [9996f9fd1] :
+
+        siprec: Fix invalid READ operation on freed memory
+
+        Also tidy up the cleanup phase
+
+        Thanks to Rob Moore, Daniel Bryars and Steven Ayre from Dubber for
+        reporting it and providing valuable information for troubleshooting!
+
+
+2023-08-29  Razvan Crainea  <razvan at opensips dot org>
+        * [7962c754d] :
+
+        uac: add uac_inc_cseq function
+
+
+2023-08-29  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [ace6d4003] :
+
+        STIR SHAKEN Documentation
+
+        fix "Exported MI Functions" indent
+
+2023-08-28  Razvan Crainea  <razvan at opensips dot org>
+        * [bc239b1f8] :
+
+        dst_blacklists: append _rule check_blacklist func
+
+        This avoids collision with the userblacklist's module check_blacklist
+        function.
+
+        Many thanks to Bence Szigeti from Genesys for reporting it!
+
+
+2023-08-28  Razvan Crainea  <razvan at opensips dot org>
+        * [6678bae93] :
+
+        b2b_sdp_demux: fix client key concurrency case
+
+        Thanks to Suchi Sahoo from Five9 for reporting!
+
+
+2023-08-27  OpenSIPS  <github at opensips dot org>
+        * [020d704e9] :
+
+        Rebuild documentation
+
+
+2023-08-24  Liviu Chircu  <liviu at opensips dot org>
+        * [c42efece9] :
+
+        Merge pull request #3157 from Integration-IT/master-1
+
+        STIR SHAKEN CA/CRL reload - disengagement token
+
+2023-08-24  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [8ad0d8e0d] :
+
+        Update stir_shaken_admin.xml
+
+        dev still under construction and testing for this function, next step is to add control, sanitization and filtering to validate the token.
+
+2023-08-24  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [2f3d51a74] :
+
+        STIR SHAKEN remove token global var
+
+        since token is not used as exported param, no need to keep this glabal var.
+
+2023-08-24  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [57f3f3cde] :
+
+        STIR SHAKEN remove unused exported token param
+
+        token used for w_stir_disengagement function, not used to configure the module.
+
+2023-08-24  zhengsh  <zhengsh at ti-net.com dot cn>
+        * [59b076048] :
+
+        cachedb_redis_dbase: Fix the type of port with unsigned short.
+
+
+2023-08-24  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [c9d2515a4] :
+
+        STIR-SHAKEN Update documentation module
+
+        - add stir_shaken_disengagement exported function.
+        - add mi_stir_shaken_ca_reload exported function.
+        - add mi_stir_shaken_crl_reload exported function.
+
+2023-08-24  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [25d9b2fbe] :
+
+        STIR-SHAKEN Disengagement token feature for FFT/APNF regulation requirement
+
+        - add w_stir_disengagement script function.
+        - add w_stir_disengagement cmd function.
+        - add token exported param.
+        - add add_disengagement_token function to push P-Identity-Bypass header at the end of lump anchor.
+
+        POC feature for request route:
+        ```
+        if ( is_method("INVITE") && !has_totag()) {
+         stir_shaken_disengagement("OSIP99-1234567890ABCDEF");
+         xlog("STIR-SHAKEN: stir_shaken_disengagement retcode: <$rc>\n");
+        }
+        ```
+
+2023-08-24  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [4bb566917] :
+
+        STIR SHAKEN CA/CRL reload
+
+        - add init_cert_ca_reload function (derivative init_cert_validation)
+        - add init_cert_crl_reload function (derivative init_cert_validation)
+        - export stir_shaken_ca_reload to opensips-cli
+        - export stir_shaken_crl_reload to opensips-cli
+
+2023-08-20  OpenSIPS  <github at opensips dot org>
+        * [6ce670dc1] :
+
+        Rebuild documentation
+
+
+2023-08-18  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [b1628508b] :
+
+        Merge pull request #3156 from purecloudlabs/hotfix/sipcapture-relay-over-tls
+
+        sipcapture: Fix HEP relay over TLS
+
+2023-08-18  Bence Szigeti  <bence.szigeti at gohyda dot com>
+        * [42ba430bb] :
+
+        proto_hep: Fix TLS connection reuse
+
+
+2023-08-17  Bence Szigeti  <bence.szigeti at gohyda dot com>
+        * [7c68fff8c] :
+
+        sipcapture: Fix HEP relay over TLS
+
+
+2023-08-17  Razvan Crainea  <razvan at opensips dot org>
+        * [5afeb6ac1] :
+
+        regex: fix previous commit
+
+
+2023-08-17  Răzvan Crainea  <razvan at opensips dot org>
+        * [0e5ad6d39] :
+
+        Merge pull request #3147 from Integration-IT/master
+
+        REGEX add pcres_match and pcres_match_group to opensips-cli
+
+2023-08-17  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [41ebb3ed8] :
+
+        REGEX Update documentation
+
+        - add doc mi_regex_match
+        - add doc mi_regex_match_group
+
+2023-08-17  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [ede29b2b8] :
+
+        Update regex_mod.c
+
+        - add mi_pcres_match_group brief comment.
+        - revert misleading error tabulation.
+
+2023-08-17  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [b5050f1cd] :
+
+        Merge branch 'OpenSIPS:master' into master
+
+
+2023-08-17  Razvan Crainea  <razvan at opensips dot org>
+        * [3aeeee431] :
+
+        rtp_relay: fix missing ref for legs in session
+
+        This missing ref would (almost all the time) lead to possible invalid
+        memory accesses and possilbe double free.
+
+        Thanks to Rob Moore and Steven Ayre from Dubber for reporting it and
+        providing valuable information for troubleshooting
+
+
+2023-08-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [c29007168] :
+
+        Switch default xlog level from ERR to NOTICE
+
+        ERR is too scary for a default value :)
+
+
+2023-08-16  Razvan Crainea  <razvan at opensips dot org>
+        * [45aa9a947] :
+
+        db_sqlite: fix possible crash when the values is relocated
+
+        When the query does not manage to count the rows in a first shot, the
+        values buffer might be reallocated, which can result in a relocation of
+        the buffer - if that's the case, we should repoint all the old values to
+        the new location, otherwise they will point to an invalid value.
+
+        Many thanks to Rob Moore and Steven Ayre from Dubber for reporting and
+        helping us testing and troubleshooting this corner case.
+
+
+2023-08-16  Razvan Crainea  <razvan at opensips dot org>
+        * [8b2ac9279] :
+
+        db_perlvdb: fix valdata inline
+
+        Thanks go to @varghesepaul for reporting it
+        Close #3152
+
+
+2023-08-16  Razvan Crainea  <razvan at opensips dot org>
+        * [90018c21a] :
+
+        rtpproxy/rtpengine: document socket type if protocol is missing
+
+        Close #3154
+
+
+2023-08-13  OpenSIPS  <github at opensips dot org>
+        * [62aeebb9a] :
+
+        Rebuild documentation
+
+
+2023-08-12  MonkeyTester  <57145271+Integration-IT at users.noreply.github dot com>
+        * [e0c957254] :
+
+        Update regex_mod.c
+
+        - mi_pcres_match (exported from pcre_match)
+        - mi_pcres_match_group (exported from pcre_match_group)
+
+2023-08-09  Razvan Crainea  <razvan at opensips dot org>
+        * [9376d60c7] :
+
+        tls_wolfssl: complete 80a96be0 commit
+
+
+2023-08-09  Razvan Crainea  <razvan at opensips dot org>
+        * [243e0e3ab] :
+
+        ipc: initialize job structure before dispatching it
+
+
+2023-08-09  Razvan Crainea  <razvan at opensips dot org>
+        * [bc1a9ceab] :
+
+        prometheus: properly initiate local stats val
+
+
+2023-08-09  Razvan Crainea  <razvan at opensips dot org>
+        * [80a96be06] :
+
+        tls_wolfssl: complete WOLFSSL_DEBUG_MEMORY commit
+
+
+2023-08-08  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+        * [bd7791d5e] :
+
+        Merge pull request #3132 from purecloudlabs/feature/hep-tls-master
+
+        `proto_hep`: Add TLS transport
+
+2023-08-08  Razvan Crainea  <razvan at opensips dot org>
+        * [4cb0d83da] :
+
+        tls_wolfssl: add support for WOLFSSL_DEBUG_MEMORY
+
+
+2023-08-08  Razvan Crainea  <razvan at opensips dot org>
+        * [93e88f28e] :
+
+        dprint: fix compile time printf checking
+
+
+2023-08-07  Razvan Crainea  <razvan at opensips dot org>
+        * [3cdc8f1eb] :
+
+        action/params: do not run route if params were not properly built
+
+        Thanks go to Nick Altmann for reporting it
+        Close #3141
+
+
+2023-08-06  OpenSIPS  <github at opensips dot org>
+        * [53d2730ff] :
+
+        Rebuild documentation
+
+
+2023-08-05  Razvan Crainea  <razvan at opensips dot org>
+        * [11f613622] :
+
+        dialog: fix warning without proper variables provided
+
+
+2023-08-05  Razvan Crainea  <razvan at opensips dot org>
+        * [a76af3f49] :
+
+        dialog: complete cseq maps implementation
+
+        Do not limit the number of maps, update existing in case the same cseq
+        is incremented multiple times (due to authentication), optimize the
+        number of maps and remove them when the transction is deleted.
+
+        Complete and close #1071
+
+
+2023-08-04  Razvan Crainea  <razvan at opensips dot org>
+        * [b417951b6] :
+
+        rtp_relay: suppress warning if session is established
+
+
+2023-08-03  Razvan Crainea  <razvan at opensips dot org>
+        * [b1f3aa5c2] :
+
+        add support for setting mpath multiple times
+
+
+2023-07-31  Razvan Crainea  <razvan at opensips dot org>
+        * [c49ba7007] :
+
+        proto_*: move TCP request in shm, not pkg
+
+        This is because TCP connection might get re-balanced on different nodes
+
+        Thanks go to ConnexCS for reporting this!
+
+
+2023-07-31  Razvan Crainea  <razvan at opensips dot org>
+        * [7c93e59cb] :
+
+        context: return 0 if pushing context fails 1 otherwise
+
+
+2023-07-31  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [6786b8e69] :
+
+        Added str flag to out pvar
+
+        (cherry picked from commit f6377ca7a8246253563b464e5a1dd103bd0e2cd9)
+
+
+2023-07-30  OpenSIPS  <github at opensips dot org>
+        * [88587a496] :
+
+        Rebuild documentation
+
+
+2023-07-27  Razvan Crainea  <razvan at opensips dot org>
+        * [695f66684] :
+
+        dispatcher: provide ping_from and ping_method per partition
+
+
+2023-07-27  Razvan Crainea  <razvan at opensips dot org>
+        * [7e866d5b4] :
+
+        dispatcher: provide persistent_state per partition
+
+
+2023-07-26  Razvan Crainea  <razvan at opensips dot org>
+        * [0a0a0d65a] :
+
+        b2b_entities: make sure we don't "leak" transaction when canceling it
+
+
+2023-07-26  Razvan Crainea  <razvan at opensips dot org>
+        * [5339179b0] :
+
+        tm: add set_t in API
+
+
+2023-07-26  Razvan Crainea  <razvan at opensips dot org>
+        * [7c618fb23] :
+
+        rtp_relay: do not unsubscribe from terminated sessions
+
+
+2023-07-26  Razvan Crainea  <razvan at opensips dot org>
+        * [73351da02] :
+
+        rtpengine: use rtp_relay api only if loaded
+
+        Thanks go to ConnexCS for reporting this
+
+
+2023-07-26  Bence Szigeti  <bence.szigeti at gohyda dot com>
+        * [95ab93fb6] :
+
+        `proto_hep`: Add TLS transport
+
+
+2023-07-25  Razvan Crainea  <razvan at opensips dot org>
+        * [9d77b6def] :
+
+        rtp_relay: mark session as successful if we have callee's SDP
+
+
+2023-07-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [227852ce8] :
+
+        [sipmsgops] added append_body_to_reply() function
+
+        ...to add a body to any reply generated by OpenSIPS for the current reply, disregarding if you are using a stateless, statefull or generic send_reply() wrapper for that.
+
+
+2023-07-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [4de0a549e] :
+
+        [tm] avoid incoming request matching against UAC transactions
+
+        (cherry picked from commit e6c733595eeeaa74fec18a5911fc45592f45e737)
+
+
+2023-07-24  Razvan Crainea  <razvan at opensips dot org>
+        * [2a0990d08] :
+
+        siprec: do not require SDP for a 200 OK
+
+        This should be OK if the SDP was completed on the 183.
+
+
+2023-07-23  OpenSIPS  <github at opensips dot org>
+        * [1d47e7a7b] :
+
+        Rebuild documentation
+
+
+2023-07-19  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [2ff495526] :
+
+        Added async timeout support in db_mysql & integrated that into avpops avp_db_query
+
+
+2023-07-17  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [cfcd9a65e] :
+
+        set async ctx to 0
+
+        prevent crash in timeout_f not being set but reactor still somehow timing out fds
+
+
+2023-07-16  OpenSIPS  <github at opensips dot org>
+        * [d952c6f83] :
+
+        Rebuild documentation
+
+
+2023-07-13  Vlad Patrascu  <vladp at opensips dot org>
+        * [0b2cc8b62] :
+
+        clusterer: fix restoring "cap:" status/report IDs after reload
+
+        Thanks to Suchi Sahoo from Five9 for reporting!
+
+
+2023-07-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [c4407c4d0] :
+
+        [tm] fix accessing free'd reference to script route
+
+        When setting the T->failure reference to NULL, the previously set script reference is automatically free'ed, so be sure you do not use if afterwards.
+        Closes #3115
+        Credits to @Integration-IT for helping with the troubleshooting and testing
+
+        (cherry picked from commit 30f6c2aa070f58897e3f3fb651012189a5adff1e)
+
+
+2023-07-12  Vlad Patrascu  <vladp at opensips dot org>
+        * [b7845d238] :
+
+        b2b_logic: fix deadlocks due to calling API functions from callbacks
+
+        Related to #3117
+
+        (cherry picked from commit 69a573922296f5eff0a2688a409c87c44aa8f06e)
+
+
+2023-07-12  Razvan Crainea  <razvan at opensips dot org>
+        * [58863fc92] :
+
+        rtpengine: search through rtp_relay calldis when terminating
+
+        Reported as part of the #3121 ticket
+
+
+2023-07-12  Razvan Crainea  <razvan at opensips dot org>
+        * [2ff9c5903] :
+
+        rtp_relay: provide more precise dialog matching based on ids
+
+
+2023-07-12  Razvan Crainea  <razvan at opensips dot org>
+        * [8d6cfba71] :
+
+        dialog: indicate if dialog was not found when terminating
+
+
+2023-07-12  Razvan Crainea  <razvan at opensips dot org>
+        * [f73a2b4ab] :
+
+        dialog: provide means to fetch dialog by h_entry and h_id
+
+
+2023-07-11  Vlad Patrascu  <vladp at opensips dot org>
+        * [004f46565] :
+
+        Remove obsolete tests from test/ dir
+
+
+2023-07-11  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [c4c376484] :
+
+        Generate correct OPTIONS pings for NATed devices
+
+
+2023-07-10  Razvan Crainea  <razvan at opensips dot org>
+        * [bfff7dee0] :
+
+        tm: add T_branch_last_reply_code variable
+
+        The variable retrievs the last reply code received for a specific branch
+
+
+2023-07-09  OpenSIPS  <github at opensips dot org>
+        * [1e2e2f257] :
+
+        Rebuild documentation
+
+
+2023-07-06  Razvan Crainea  <razvan at opensips dot org>
+        * [24ec4ebd9] :
+
+        tm: proper cleanup for anycast CANCEL transactions
+
+        Thanks go to Rizwan Syed and Jonathan Hulme from ConnexCS for reporting,
+        providing testing environment and support the troubleshooting and fix!
+
+        Close #3111
+
+
+2023-07-05  Vlad Patrascu  <vladp at opensips dot org>
+        * [a1cd6230f] :
+
+        logging: fix crashes when some main initializations fail
+
+        The shm allocated consumer structures could still be accessed after the
+        shm was destroyed.
+
+
+2023-07-05  Razvan Crainea  <razvan at opensips dot org>
+        * [ae09c986c] :
+
+        rtp_relay: engage indialog callbacks when session is established
+
+        This allows the module to run callbacks on UPDATEs even if the dialog
+        was not estabhished yet
+
+
+2023-07-04  Vlad Patrascu  <vladp at opensips dot org>
+        * [aa8e5ff0a] :
+
+        clusterer: fix deadlock when receiving clusterer_reload via cluster
+
+        Running cluster_send_mi or cluster_broadcast_mi with clusterer_reload
+        as the command to dispatch would cause a deadlock on the receiving nodes.
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [9eb13bf2c] :
+
+        [tracer] properly do per-request traceing in local route
+
+        As in local route we have only outbound (callee) leg, we cannot the typical incoming request tracing here. We need to "fake" it a bit to look as an outbound tracing.
+        Funny enough, this problem poped only when doing per-request/message tracing in local route; otherwise the per-transaction tracing was doing the correct job.
+
+        Credits for reporting go to @ovidiusas
+        Closes #3066
+
+
+2023-07-04  Vlad Patrascu  <vladp at opensips dot org>
+        * [3f602fece] :
+
+        b2b_logic: fix compile error
+
+        (cherry picked from commit 61401ea40f0394cbd589e3c3b301fa00e2aa05f6)
+
+
+2023-07-04  Vlad Patrascu  <vladp at opensips dot org>
+        * [5c51a8ea3] :
+
+        b2b_logic: properly reset the current tuple in all cases
+
+        The global variable used to identify the current tuple in the local_route was
+        not properly reset in all cases (when retrying a birdge action for example).
+        This could lead to a failure to identify the current tuple when acessing
+        the $b2b_logic variables, the b2b logic context etc., even when we're
+        not in the context of a local_route.
+
+        (cherry picked from commit 92772e69f36dcc70b2418374d83bf3274b13f104)
+
+
+2023-07-04  Vlad Patrascu  <vladp at opensips dot org>
+        * [98919c976] :
+
+        b2b_logic: fix some locking issues
+
+        Properly access the b2b logic context of the current tuple under lock.
+        Also, protect the access to the tuple when using the b2bl_get_entity_info()
+        API function.
+
+        Related to #3117
+
+        (cherry picked from commit ebf40c91f9d62f367cddd722f05a1b53b6d30b6a)
+
+
+2023-07-04  Vlad Patrascu  <vladp at opensips dot org>
+        * [848bb1c01] :
+
+        b2b_logic: don't crash when searching inexistent tuple by key
+
+        Searching the current tuple by key for accessing the logic context
+        should not cause a crash. As the hash is not locked or the structure
+        ref counted, there is a distinct possibility that the tuple cannot
+        be found anymore.
+
+        Related to #3117
+
+        (cherry picked from commit d05d408b0bf2346769d580d04b413f7d4a277e13)
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [03788691a] :
+
+        [ratelimit] Fix accuracy on the ratelimit timer
+
+        The computation perform by the ratelimit module is very time sensitive - any deviation of the interval between the runs of the timer handler may lead to false positive detection of CPS thresholds.
+        So, let's move the timer handler from regular timer (1s sensitivity) to utimer (100ms sensitivity) -> 10 times more accurate.
+        Still, the number of triggerings is the same, only the precision is 10 times better.
+        Credits go to @ovidiusas
+        Closes #2797
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [88a0622fd] :
+
+        Fixed CacheDB URL escaping.
+
+        The ability to escape/encode DB URLs using %xy became a must with the auto generated user and passwords in the cloud envs.
+        Cloned from 5b0bc1e
+        Closes #2412
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [4c16207a5] :
+
+        Fix advertising IPv6 IP addresses
+
+        Enclose the IPv6 advertised address when using it as string
+        Fixes #2774
+
+
+2023-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [e455d0094] :
+
+        Small code beautification
+
+        Related to 1d83a0c
+
+
+2023-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [daaef52c1] :
+
+        Merge branch 'warning_delay_timer'
+
+
+2023-07-03  Ovidiu Sas  <osas at voipembedded dot com>
+        * [1d83a0c77] :
+
+        core: fix bogus "delay in execution" warnings
+
+         - time ijiffies are adjusted by the time_keeper process
+         - when the trigger time for a time job is set right
+           before adjusting the ijiffies and the processing
+           of the timer job is done right after the ijiffies
+           adjustment, there's an artificial delay (the ijiffies
+           adjutment) that triggers a bogus "delay in execution"
+           warning
+         - by taking into consideration the ijiffies adjutment
+           we avoid printing the bogus "delay in execution" warning
+        Closes #2812
+
+
+2023-07-03  Vlad Patrascu  <vladp at opensips dot org>
+        * [b0f98ef84] :
+
+        clusterer: fix crash after MI reload
+
+        The crash was caused by accessing a dangling pointer to the capability
+        structure after it was freed.
+
+        Thanks to Suchi Sahoo from Five9 for reporting!
+
+        (cherry picked from commit cb8d63193b84909e1c238418dc3e80825ebb746e)
+
+
+2023-07-02  OpenSIPS  <github at opensips dot org>
+        * [c41da6bc7] :
+
+        Rebuild documentation
+
+
+2023-07-01  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [d2601f358] :
+
+        Properly populate out decoded JWT
+
+        Closes #3098
+
+
+2023-06-30  Razvan Crainea  <razvan at opensips dot org>
+        * [e5185e114] :
+
+        siprec: fix pvar definition
+
+
+2023-06-30  Vlad Patrascu  <vladp at opensips dot org>
+        * [44f4ae6ee] :
+
+        b2b_entities: fix crashes due to races when deleting entity
+
+        An entity might have been deleted and freed while the lock has been released
+        when running the entity storage callbacks.
+
+        Related to #3110
+
+        (cherry picked from commit 22bd8184e6c1cbd52ce3be79fbe0c52306226f37)
+
+
+2023-06-30  Razvan Crainea  <razvan at opensips dot org>
+        * [02869583b] :
+
+        tracer: fix refs for multiple transactions in b2b scenarios
+
+        Many thanks to @vtzan for reporting and intensive testing
+
+
+2023-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [e0fe732e9] :
+
+        Fix resuming partial msg reading on TCP
+
+        When conn rebalancing or parallel processing is enabled for TCP, a read operation may start (partial reading) in one process and be completed in a different one. So the con_req (buffer for partial reading) must be in shm mem and also it must survive a conn release (passing the conn back to MAIN).
+        Many thanks to @liviuchircu for reporting and helping with the troubleshooting
+        This issue was found during the TCP performance tests done for the 3.4 release
+
+
+2023-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [44c25dba4] :
+
+        [uac_registrant] avoid code duplicate
+
+        Use common/shared functions for pushing / poping new processing context
+        A follow up on 3705209d524b7f61b193df8b56310fe9600e14b1
+
+
+2023-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [3705209d5] :
+
+        [b2b_logic] fix crash on tracing expired b2b tuples
+
+        When a tuple expires via timer, be sure to provide a processing context, otherwise the tracer (if enabled) will simply crash.
+        As part of the fix, two new helper functions were added for pushing and poping new processing contexts - these are to be reused by some prev similar fix on uac_registrant.
+        Related to #3110
+        Many thanks to @vtzan for helping with the troubleshooting and testing
+
+        (cherry picked from commit 2a3eb1e2a8e609b6b7b37074c1d1fd4dffc76f5e)
+
+
+2023-06-30  Vlad Paiu  <vladpaiu at opensips dot org>
+        * [ebc3edd78] :
+
+        Added support for rtx RFC 4588 when deleting a codec that has RTX attached to it
+
+
+2023-06-28  Vlad Patrascu  <vladp at opensips dot org>
+        * [bfb048af6] :
+
+        dialog: fix matching dialog by integer dialog value
+
+        This fixes the matching of dialogs when using the get_dialogs_by_val()
+        and get_dialog_info() functions.
+
+        (cherry picked from commit 57c2a8d91b6934a74c088a733753a3968479302d)
+
+
+2023-06-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [397ef8fe1] :
+
+        Fix computing the size to clone for a body part
+
+        Take the optional header len into account also when cloning a body part struct.
+        This particular bug occured when using add_body_part() with extra hdr parameter in conjunction with an async() operation (or failure route)
+        Credits for reporting and helping with repoducing this go to @thuroc
+        Fixes #3067
+
+        (cherry picked from commit a042588e322c5acf997313773cbc5ff6e007c956)
+
+
+2023-06-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [e24668131] :
+
+        [dialog] fix dropping empty string dlg vals
+
+        Upon DB recovery (after an OpenSIPS restart) do not drop emtpy string dlg vals - as we do allow creation of such vals via cfg and api and have them saved to DB, it makes all the sense to also restore them
+        This triggers some startup warnings when using in-dialog re-INVITE probing.
+        Closes #3108
+
+
+2023-06-26  Liviu Chircu  <liviu at opensips dot org>
+        * [ad6aef029] :
+
+        dialog: Change dlg->vals locking to be independent
+
+        By making the dlg->vals locking independent from the dialog hash lock,
+        working with the dialog API will become less prone to AB/BA deadlocks.
+        Sample possible AB/BA deadlock which is now naturally avoided:
+
+          * module "X" timer grabs lock-A, then gets stuck trying to grab
+        	lock-B(dialog bucket) through some innocent .store_dlg_val()
+        	dialog API call
+
+          * dialog DB timer had grabbed lock-B(dialog bucket), and is now stuck
+        	grabbing lock-A while running a DLGCB_DESTROYED callback
+        	installed by module "X"
+
+
+2023-06-25  OpenSIPS  <github at opensips dot org>
+        * [3fb2c356a] :
+
+        Rebuild documentation
+
+
+2023-06-23  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [ccb913f82] :
+
+        Add missing include. Shame on @sobomax for having it broken for
+        so long!
+
+
+2023-06-23  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [0bbc0fd6e] :
+
+        Make sure CC is set.
+
+
+2023-06-23  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [f3e060008] :
+
+        Remove packages that are auto-installed by GitHub and create
+        a version conflict later when we install our version. This is
+        the reason the build were failing in the past few days.
+
+
+2023-06-23  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [f4e90f3d6] :
+
+        Reset sources.lst to default ubuntu's.
+
+
+2023-06-23  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [6bfd7d22f] :
+
+        Move list of required packages into plain text file and GC
+        .travis.yml which "serves no purpose anymore".
+
+
+2023-06-23  Liviu Chircu  <liviu at opensips dot org>
+        * [a2d72ba56] :
+
+        Get rid of outdated sched_yield.h temporary wrapper
+
+        The main utility of "sched_yield.h" was to provide sched_yield() on
+        OS'ed which didn't have it back in 2007, such as OpenBSD and NetBSD.
+
+        Nowadays, the landscape is different, with the issue having been fixed
+        in both above OS'es.  Moreover, by getting rid of the wrapper, we avoid
+        "missing -DHAVE_SCHED_YIELD" problems on architectures such as ARM (see
+        commit f8ad265a70f, where the issue was caused by this wrapper header
+        exclusively).
+
+
+2023-06-22  Vlad Patrascu  <vladp at opensips dot org>
+        * [f69b150c8] :
+
+        Also register a custom event from subscribe_event() fixup
+
+        This will permit raising an event from MI with an event subscribtion
+        done in startup_route without the need to define an event_route for
+        this event or using a raise() in the script.
+
+
+2023-06-22  Vlad Patrascu  <vladp at opensips dot org>
+        * [aa9f3e2bc] :
+
+        lua: fix previous commit
+
+        Remove unused variable
+
+
+2023-06-22  Vlad Patrascu  <vladp at opensips dot org>
+        * [949422a93] :
+
+        lua: fix duplicate logs to syslog
+
+
+2023-06-22  Vlad Patrascu  <vladp at opensips dot org>
+        * [5e4d10cff] :
+
+        lua: don't register functions under a name
+
+        This fixes issues with running the "opensips" table functions on Lua
+        library version 5.1.
+
+        This essentially reverts commit ab964d9.
+
+
+2023-06-21  Vlad Patrascu  <vladp at opensips dot org>
+        * [d950d65a9] :
+
+        lua: fix opensips lua API docs
+
+        (cherry picked from commit a53ba3d0d696ef56684a03b7bbf4a4e8474c3e33)
+
+
+2023-06-20  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [f8ad265a7] :
+
+        Add missing include. Shame on @sobomax for having it broken for
+        so long!
+
+
+2023-06-20  Liviu Chircu  <liviu at opensips dot org>
+        * [47fbe3627] :
+
+        drouting: Fix 'inherit_reload' related errors on MI reloads
+
+        Related to e871882cb6.  Be silent about "MI param not found" errors, in
+        case the function was _meant_ to be called without those parameters.
+
+
+2023-06-20  Vlad Patrascu  <vladp at opensips dot org>
+        * [ce177c133] :
+
+        cachedb_mongodb: fix regression in commit 69ed4f7
+
+        Loading the cachedb_mongodb module alongside the tls_openssl module, but
+        before tls_mgm would cause a crash. This is a result of the OpenSIPS versus
+        mongoc library openssl initialization issues (initially fixed in commit
+        298bf6b). Commit 69ed4f7 split all the openssl related code from the tls_mgm
+        module into a new tls_openssl module but some openssl initialization bypasses
+        from the cachedb_mongodb module were left to depend on loading the tls_mgm
+        module (instead of the new tls_openssl module).
+
+        Fixes #3072
+
+
+2023-06-20  Liviu Chircu  <liviu at opensips dot org>
+        * [e6b4de512] :
+
+        F_MALLOC: Optimize the free() operation
+
+        Commit bdaaf60b2c introduced a side-effect of gradually moving the
+        fragment "action" towards the exponential, non-optimized hash table
+        buckets (i.e. buckets 2049 ... 2100).  Here, the fragments were inserted
+        in a sorted fashion, with the sorted-insert algorithm costing a O(N)
+        iteration on each free operation instead of a simple O(1).
+
+        Consequently, the user experience of this effect is that "dr_reload"
+        operations were stalling for 12 minutes (coming up from 24 seconds!),
+        when working with large rule sets (millions of rules).  Interestingly
+        enough, the stalling was not due to the caching phase -- malloc() --
+        rather due to the cleanup phase, when clearing the old rules -- free()!
+
+        To address this issue:
+
+        * we drop the sorted insertion completely for buckets 2049 ... 2100, and
+            simply do a list prepend operation: O(1), as with the others
+        * we make all allocation requests from these buckets return the next
+           bucket (!!), thus guarantee'ing our requested fragment.  Examples:
+
+              malloc(18K) -> now you always get a 32K+ frag, but instantly!
+              malloc(37K) -> now you always get a 64K+ frag, but instantly!
+        * this does not make F_MALLOC more wasteful, since the extra frag
+          space gets split anyway into a new fragment, with the two eventually
+          coalescing together again thanks to commit bdaaf60b2c
+
+
+2023-06-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [18ccdbe0e] :
+
+        [tracer] fix bogus multiple tracing
+
+        When calling the trace() function multiple times from script (to do tracing via different backends), be sure and install all the tracing callbacks (in TM, dialog) only first time.
+        Reported by @gmaruzz
+        Closes #3082
+
+
+2023-06-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [63fe8ce89] :
+
+        [uac_registrant] fix passing wrong context to authenticated REGISTER
+
+        When sending the authenticating REGISTER, be sure a new context is provided. This will avoid the usage of the context belonging to the first (challenged) REGISTER. This mixup of the context was breaking the tracing of these REGISTER requests via local route.
+
+        (cherry picked from commit c64766a8526c3953bd5adf45030a29a9aacb4550)
+
+
+2023-06-18  OpenSIPS  <github at opensips dot org>
+        * [19ae25f28] :
+
+        Rebuild documentation
+
+
+2023-06-16  Vlad Patrascu  <vladp at opensips dot org>
+        * [8c0a9e0ae] :
+
+        b2b_logic: prevent initializing B2B session on non-INVITEs
+
+        This prevents crashes when the b2b_init_request() function is used on
+        methods other than INVITE or from other routes than request routes where
+        the INVITE SIP message is visible.
+
+        Related to #3102
+
+
+2023-06-16  Vlad Pătrașcu  <vladp at opensips dot org>
+        * [1e8efb7d8] :
+
+        Merge pull request #3103 from Giedriusj1/master
+
+        Improve passthru_prack behaviour so it actually passes through PRACKs
+
+2023-06-15  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [b32313650] :
+
+        Script out running of setup routine in the main process.
+
+
+2023-06-15  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [c67898594] :
+
+        Add handy howmany() macro.
+
+
+2023-06-15  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [af8028bec] :
+
+        Add support for post-fork handlers. This is to perform various
+        cleanups after forking is done (i.e. close unused pipes etc).
+
+
+2023-06-15  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [1839528a7] :
+
+        Fix build on non-linux systems. The HOST_NAME_MAX is not portable,
+        POSIX way to find it out is to use sysconf(_SC_HOST_NAME_MAX),
+        but for now just fix it with ifndef.
+
+
+2023-06-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [a5f85013e] :
+
+        [dialog] fix too strict restrictions for get_profile_size()
+
+        The function does not require any existing dialog context, so it can be used from any route
+
+
+2023-06-11  OpenSIPS  <github at opensips dot org>
+        * [ba9586193] :
+
+        Rebuild documentation
+
+
+2023-06-09  Vlad Patrascu  <vladp at opensips dot org>
+        * [1e5fbeca5] :
+
+        logging: complete fix in commit a4bf044
+
+
+2023-06-09  Vlad Patrascu  <vladp at opensips dot org>
+        * [91c264abd] :
+
+        logging: improve the format of the logging interface's own errors
+
+        Align the format of the error logs from the consumers printing functions
+        with the rest of the plain stderror logs. For the event consumer, the
+        error logs can be sent as normally to the rest of the consumers
+        (stderror and syslog).
+
+
+2023-06-09  Vlad Patrascu  <vladp at opensips dot org>
+        * [c84fe372c] :
+
+        b2b_logic: fix issues when new entities are unused
+
+        New entities created with b2b_server_new() or b2b_client_new() functions would
+        leak if they were not eventually used by a b2b_init_request() call. This would
+        lead to pkg memory leaks and bogus errors from successive calls to
+        b2b_init_request().
+
+        Also, fix an entity memory leak when using the b2b_bridge_retry() function
+        for a tuple that is in a non-initial bridging state (eg. triggered by
+        b2b_bridge_request()).
+
+
+2023-06-09  Răzvan Crainea  <razvan at opensips dot org>
+        * [14e1eab55] :
+
+        Merge pull request #3104 from purecloudlabs/hotfix/sipmsgops-allowed-routes
+
+        sipmsgops: fix allowed routes for exported functions
+
+2023-06-07  Ovidiu Sas  <osas at voipembedded dot com>
+        * [155995b2b] :
+
+        dialog/uac: fix in-dialog authentication
+         - closes #3041
+
+
+2023-06-06  Vlad Patrascu  <vladp at opensips dot org>
+        * [d148232fe] :
+
+        logging: fix print buffers length check for JSON CEE format
+
+
+2023-06-06  Vlad Patrascu  <vladp at opensips dot org>
+        * [e18662aa9] :
+
+        logging: print log level in xlog() messages
+
+
+2023-06-06  Vlad Patrascu  <vladp at opensips dot org>
+        * [a4bf04426] :
+
+        logging: improve E_CORE_LOG suppression mechanism
+
+        Do not stop all logs, to any logging consumer, from being printed when
+        handling the E_CORE_LOG event in the event consumers. Only suppress the
+        triggering of the event itself.
+
+        This also fixes the blocking of OpenSIPS when xlog() is used from the
+        event_route.
+
+
+2023-06-04  OpenSIPS  <github at opensips dot org>
+        * [91e40b58c] :
+
+        Rebuild documentation
+
+
+2023-06-02  Razvan Crainea  <razvan at opensips dot org>
+        * [e767b8712] :
+
+        topology_hiding: properly quote contact hdr params
+
+        Thanks go to @manojmth for reporting this on GitHub
+
+        Close #3090
+
+
+2023-05-31  Vlad Patrascu  <vladp at opensips dot org>
+        * [6bab367f0] :
+
+        Use the fixup_named_flags() function consistently
+
+        Always let the fixup_named_flags() function internally set the values to
+        NULL for unused key-value flags.
+
+
+2023-05-31  Vlad Patrascu  <vladp at opensips dot org>
+        * [a050cc581] :
+
+        Update the -h help message regarding the -E option deprecation
+
+
+2023-05-31  Vlad Patrascu  <vladp at opensips dot org>
+        * [61ecc1047] :
+
+        logging: revise the JSON CEE format
+
+        * Add the "@cee:" prefix only for the syslog consumer.
+        * Add the "hostname" and "pname" CEE mandatory fields.
+        * Use nested objects for the function and PID fields instead of the
+          "proc!id" and "native!function" notation.
+        * Change the PID field to string instead of number data type.
+        * Add the "log_prefix" field.
+
+
+2023-05-31  Vlad Patrascu  <vladp at opensips dot org>
+        * [fb5b35866] :
+
+        b2b_entities: trigger the E_UA_SESSION event for initial INVITEs
+
+        Add ability to trigger the E_UA_SESSION event, with the 'NEW' event
+        type, for initial INVITES handled with the ua_session_server_init().
+        This can also be suppressed with the 'n' flag.
+
+
+2023-05-31  Vlad Patrascu  <vladp at opensips dot org>
+        * [310231822] :
+
+        b2b_entities: rename ua_session_start to ua_session_client_start
+
+        Rename the ua_session_start MI command as originally inteded.
+
+
+2023-05-31  Vlad Patrascu  <vladp at opensips dot org>
+        * [19b6d3e94] :
+
+        b2b_entities: make 'reason' param mandatory for ua_session_reply
+
+        Omiting the 'reason' parameter for the ua_session_reply MI command would
+        cause a crash in the tm module.
+
+
+2023-05-31  Vlad Patrascu  <vladp at opensips dot org>
+        * [28471600b] :
+
+        b2b_logic: remove leftover debugging log
+
+
+2023-05-31  Vlad Patrascu  <vladp at opensips dot org>
+        * [a2f2ec645] :
+
+        msrp_relay: fix check for running the socket_route
+
+
+2023-05-30  Maksym Sobolyev  <sobomax at sippysoft dot com>
+        * [c5d47538a] :
+
+        Restore -E option, which has became core(5) implementation after
+        incomplete removal in b3644964573d7. Instead of dumping core,
+        print error message directing user to the "stderror_enabled=yes"
+        at the script level.
+
+
+2023-05-29  Razvan Crainea  <razvan at opensips dot org>
+        * [e00300c46] :
+
+        rtp_relay: avoid crash when dialog/b2b not loaded
+
+
+2023-05-29  Razvan Crainea  <razvan at opensips dot org>
+        * [96eac0be3] :
+
+        rtpengine: add docs for via-branch-param
+
+
+2023-05-25  Bence Szigeti  <bence.szigeti at gohyda dot com>
+        * [2274f80b8] :
+
+        sipmsgops: fix allowed routes for functions
+
+
+2023-05-25  Giedrius  <giedriusj1 at gmail dot com>
+        * [d6d4c9f86] :
+
+        Improve passthru_prack behaviour so it actually passes through PRACKs
+
+
+2023-05-24  Razvan Crainea  <razvan at opensips dot org>
+        * [dbceae2d2] :
+
+        sdp: fix crash in SDP parsing
+
+        Introduced in commit 7743524
+
+
+2023-05-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [397e1daa1] :
+
+        Improved error logging on parsing KV flags for lookup()
+
+
+2023-05-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [f9cade9d7] :
+
+        Improved error logging on parsing KV flags for save()
+
+
+2023-05-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+        * [1668bc3f0] :
+
+        fix uninitalized returned list of KV flags
+
+        closes #3100
+
+
+2023-05-21  OpenSIPS  <github at opensips dot org>
+        * [8264616e3] :
+
+        Rebuild documentation
+
+
+2023-05-19  Vlad Patrascu  <vladp at opensips dot org>
+        * [89f947b69] :
+
+        [mid_]registrar: fix default flag values for lookup() and save()
+
+        The default values for unset flags were not properly set if any other flags
+        were provided to the save()/lookup() functions.
+
+        Fixes #3097
+
+
+2023-05-19  Vlad Patrascu  <vladp at opensips dot org>
+        * [168808757] :
+
+        b2b_entities: fix incorrect entity key after loading from DB
+
+        Do not generate a new random part for the entity key when loading from
+        DB.
+
+
+2023-05-19  Vlad Patrascu  <vladp at opensips dot org>
+        * [a9401510f] :
+
+        logging: expose missing level filter param for event consumer
+
+
+2023-05-18  Vlad Patrascu  <vladp at opensips dot org>
+        * [94acb11f5] :
+
+        b2b_logic: fix crash if no B2B routes are set
+
+        This fixes a crash when the 'script_req_route'/'script_reply_route'
+        module parameters are not set and b2b_init_request() is called with no
+        route parameters.
+
+
+2023-05-18  Nick Altmann  <nick at altmann dot pro>
+        * [6c0203b7b] :
+
+        Set version number for apt and yum builds
+
+
+2023-05-17  Liviu Chircu  <liviu at opensips dot org>
+        * [42de07939] :
+
+        Bump development version
+
+
