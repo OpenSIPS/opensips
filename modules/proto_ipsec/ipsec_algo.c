@@ -241,6 +241,8 @@ end:
 
 int ipsec_add_allowed_algorithms(str *algs)
 {
+	if (!algs || !algs->len)
+		return 0;
 	ipsec_global_allowed_algos = ipsec_parse_allowed_algorithms(algs);
 	return (ipsec_global_allowed_algos?0:-1);
 }
