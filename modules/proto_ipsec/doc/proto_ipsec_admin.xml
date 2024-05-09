@@ -1,0 +1,497 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+		The <emphasis role='bold'>proto_ipsec</emphasis> module provides
+		IPSec sockets for establishing secure communication channels.
+		It relies on RFC 3329 (Security Mechanism Agreement for the Session
+		Initiation Protocol (SIP)) to establish the IPSec parameters necessary
+		for creating dynamic Security Associations (SAs) for each connection.
+	</para>
+	<para>
+		This module has been developed to fully comply with the VoLTE
+		specification (GSMA PRD IR.92) and implements the extensions defined
+		in TS 33.203 (3G Security: Access Security for IP-based Services).
+	</para>
+	<para>
+		It allows creation of both UDP and TCP secure connections on the same
+		IP:port pair, defined as sockets. Essentially, when defining a socket
+		using the <emphasis>proto_ipsec</emphasis> protocol, two new
+		internal/hidden sockets are created on the specified port.
+		For example, defining the following socket:
+	<para>
+		<programlisting format="linespecific">
+...
+socket=ipsec:127.0.0.1:5100
+...
+</programlisting>
+	</para>
+		Internally, two different sockets are created:
+	<para>
+		<programlisting format="linespecific">
+...
+socket=udp:127.0.0.1:5100
+socket=tcp:127.0.0.1:5100
+...
+</programlisting>
+	</para>
+		Communication through these sockets should be done over IPSec,
+		thus appropriate security associations (SAs) should be made prior
+		to using these listeners, as defined in RFC 3329.
+	</para>
+	<para>
+		<emphasis>NOTE</emphasis> that this means that you can no longer
+		define these sockets in your config, otherwise they will overlap
+		with the internally defined ones.
+	</para>
+	<para>
+		IPSec communication requires each participant to define at least two
+		ports for each connection: one when the entity behaves as a client and
+		another when it behaves as a server. Consequently, it's typically
+		necessary to define at least two IPSec sockets for the module to
+		function correctly.
+	</para>
+	<para>
+		The module implements the entire logic of keeping track of the
+		registration status by hooking into the usrloc module and listening
+		for contact changes updates. It also ensures the persistency of the
+		tunnels by restoring them after a restart.
+	</para>
+	<para>
+		When a request is received over an IPSec tunnel, the module provides
+		two variables, <xref linkend="pv_ipsec"/> and
+		<xref linkend="pv_ipsec_ue"/> to inspect details about it.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tm</emphasis> - used to keep track of IPSec
+				SA context between requests and replies.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>usrloc</emphasis> - used to identify when
+				a successful registration/de-registration happens.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>proto_udp</emphasis> - used for handling
+				IPSec UDP connections operations.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>proto_tcp</emphasis> - used for handling
+				IPSec TCP connections operations.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libmnl</emphasis> - Minimalistic Netlink Library
+				used to create IPSec SA using the XFRM kernel interface.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section id="param_port" xreflabel="port">
+		<title><varname>port</varname> (integer)</title>
+		<para>
+			Default IPSec port used when no prot is being specified in the
+			<emphasis>socket</emphasis> global parameter.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 5062.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>port</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ipsec", "port", 5100)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_min_spi" xreflabel="min_spi">
+		<title><varname>min_spi</varname> (integer)</title>
+		<para>
+			This parameter represents the minimum value for the Security
+			Association's (SA) SPI parameter. In conjunction with the
+			<emphasis>max_spi</emphasis> setting, it defines the SPI
+			range <emphasis>[min_spi, max_spi]</emphasis> that must be
+			unique within the system.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 65536.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>min_spi</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ipsec", "min_spi", 10000)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_max_spi" xreflabel="max_spi">
+		<title><varname>max_spi</varname> (integer)</title>
+		<para>
+			This parameter represents the maximum value for the Security
+			Association's (SA) SPI parameter. In conjunction with the
+			<emphasis>min_spi</emphasis> setting, it defines the SPI
+			range <emphasis>[min_spi, max_spi]</emphasis> that must be
+			unique within the system.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 262144.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_spi</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ipsec", "max_spi", 20000)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_temporary_timeout" xreflabel="temporary_timeout">
+		<title><varname>temporary_timeout</varname> (integer)</title>
+		<para>
+			Sets the timeout (in seconds) a temporary security association
+			can be stored in memory until in is confirmed (or used) by the
+			remote endpoint.
+		</para>
+		<para>
+			The timeout signifies the duration elapsed after sending the
+			Security Association's (SA) parameters in the 401 reply and
+			when the User Equipment (UE) transmits the initial message
+			over the new secure channel.
+		</para>
+		<para><emphasis>
+			Default value is 30.
+		</emphasis></para>
+		<example>
+			<title>Set <varname>temporary_timeout</varname> variable</title>
+			<programlisting format="linespecific">
+
+param("proto_ipsec", "temporary_timeout", 10) # number of seconds
+
+			</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_default_client_port" xreflabel="default_client_port">
+		<title><varname>default_client_port</varname> (integer)</title>
+		<para>
+			Default port value to be used when we act as clients in the
+			IPSec communication.
+		</para>
+		<para>
+		<emphasis>
+			Default value is not defined - a random socket is being used,
+			but needs to be different from the server socket.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>default_client_port</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ipsec", "default_client_port", 5100)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_default_server_port" xreflabel="default_server_port">
+		<title><varname>default_server_port</varname> (integer)</title>
+		<para>
+			Default port value to be used when we act as server in the
+			IPSec communication.
+		</para>
+		<para>
+		<emphasis>
+			Default value is not defined - a random socket is being used,
+			but needs to be different from the client socket.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>default_server_port</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ipsec", "default_server_port", 6100)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_allowed_algorithms" xreflabel="disable_allowed_algorithms">
+		<title><varname>allowed_algorithms</varname> (string)</title>
+		<para>
+			Whitelists the authentication and encryption algorithms
+			that can be used for IPSec.
+		</para>
+		<para>
+			Its format is: <emphasis>alg|ealg|alg=ealg</emphasis>
+		</para>
+		<para>
+			Multiple algorithms pairs can be specified separated by comma.
+		</para>
+		<para>
+			Currently supported algorithms are:
+			<itemizedList>
+			<listitem>
+			<para>
+				Authentication algorithms:
+				<itemizedList>
+					<listitem>hmac-md5-96</listitem> - deprecated by TS 33.203 V13
+					<listitem>hmac-sha-1-96</listitem> - not recomended by TS 33.203 V17
+					<listitem>aes-gmac</listitem>
+					<listitem>null</listitem> - must only be used with aes-gcm encryption
+				</itemizedList>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Encryption algorithms:
+				<itemizedList>
+					<listitem>des-ede3-cbc</listitem> - not recommended
+					<listitem>aes-cbc</listitem> - not recomended by TS 33.203 V17
+					<listitem>aes-gcm</listitem>
+					<listitem>null</listitem> - no encryption
+				</itemizedList>
+			</para>
+			</listitem>
+			</itemizedList>
+		</para>
+		<para>
+		<emphasis>
+			Default value is none - this means that all algorithms can be used.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>allowed_algorithms</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ipsec", "allowed_algorithms", "null")
+modparam("proto_ipsec", "allowed_algorithms", "hmac-sha-1-96=null")
+modparam("proto_ipsec", "allowed_algorithms", "hmac-sha-1-96=null,aes-gmac=aes-gcm")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_disable_deprecated_algorithms" xreflabel="disable_deprecated_algorithms">
+		<title><varname>disable_deprecated_algorithms</varname> (integer)</title>
+		<para>
+			Indicates whether we should ignore deprecated algorithms,
+			as defined in TS 33.203 (3G Security: Access Security for
+			IP-based Services). At the moment, this disables the
+			following algorithms:
+			<itemizedList>
+			<listitem>
+			<para>
+				<emphasis>hmac-md5-96</emphasis> and <emphasis>hmac-sha-1-96</emphasis> authentication algorithms
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>des-ede3-cbc</emphasis> and <emphasis>aes-cbc</emphasis> encryption algorithms
+			</para>
+			</listitem>
+			</itemizedList>
+		</para>
+		<para>
+		<emphasis>
+			Default value is false - all algorihms can be used.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>disable_deprecated_algorithms</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ipsec", "disable_deprecated_algorithms", yes)
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+
+	<section id="func_ipsec_create" xreflabel="ipsec_create()">
+		<title>
+		<function moreinfo="none">ipsec_create([port_server], [port_client])</function>
+		</title>
+		<para>
+			Creates an IPSec SA/tunnel according to the
+			<emphasis>Security-Client</emphasis> header and the AKA information
+			received in the 401 reply.
+		</para>
+		<para>
+			This function should only be called on a 401 reply for a REGISTER message.
+		</para>
+		<para>
+			Upon successful creation of the IPSec tunnel, it builds the
+			<emphasis>Security-Server</emphasis> header and appends it to the reply.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>port_server (integer)</emphasis> - the server port
+				to be used in the IPSec communication. It should be an existing IPSec
+				port and is advertised in the <emphasis>Security-Server</emphasis> header.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>port_client (integer)</emphasis> - the client port
+				to be used in the IPSec communication. It should be an existing IPSec
+				port and is advertised in the <emphasis>Security-Server</emphasis> header.
+				</para>
+			</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can be used from REPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>ipsec_create()</function> usage</title>
+		<programlisting format="linespecific">
+...
+onreply_route[ipsec] {
+	if ($T_reply_code == 401)
+		if (ipsec_create())
+}
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+		<section id="pv_ipsec" xreflabel="$ipsec(field)">
+			<title><varname>$ipsec</varname></title>
+			<para>
+				Populated for a request that is being received over
+				an IPSec tunnel, it contains information about the
+				local IPSec endpoint.
+			</para>
+			<para>
+				The following fields can be retrieved:
+				<itemizedlist>
+					<listitem><para><emphasis>alg</emphasis> - authentication
+					algorithm being used.
+					</para></listitem>
+					<listitem><para><emphasis>ealg</emphasis> - encryption
+					algorithm being used.
+					</para></listitem>
+					<listitem><para><emphasis>ip</emphasis> - local IP bound
+					for this tunnel.
+					</para></listitem>
+					<listitem><para><emphasis>spi-c</emphasis> - local SPI
+					chosen for receiving messages through the client channel.
+					</para></listitem>
+					<listitem><para><emphasis>spi-s</emphasis> - local SPI
+					chosen for receiving messages through the server channel.
+					</para></listitem>
+					<listitem><para><emphasis>port-c</emphasis> - local port
+					chosen for communicating through the client channel.
+					</para></listitem>
+					<listitem><para><emphasis>port-c</emphasis> - local port
+					chosen for communicating through the server channel.
+					</para></listitem>
+				</itemizedlist>
+			</para>
+		<example>
+		<title><function>$ipsec(field)</function> usage</title>
+		<programlisting format="linespecific">
+...
+xlog("Using $ipsec(ip):$ipsec(port-c) and $ipsec(ip):$ipsec(port-s) socket\n");
+...
+</programlisting>
+		</example>
+		</section>
+		<section id="pv_ipsec_ue" xreflabel="$ipsec_ue(field)">
+			<title><varname>$ipsec_ue</varname></title>
+			<para>
+				Populated for a request that is being received over
+				an IPSec tunnel, it contains information about the
+				remote IPSec endpoint.
+			</para>
+			<para>
+				The following fields can be retrieved:
+				<itemizedlist>
+					<listitem><para><emphasis>alg</emphasis> - authentication
+					algorithm being used.
+					</para></listitem>
+					<listitem><para><emphasis>ealg</emphasis> - encryption
+					algorithm being used.
+					</para></listitem>
+					<listitem><para><emphasis>ip</emphasis> - remote IP of
+					the UE that uses this tunnel.
+					</para></listitem>
+					<listitem><para><emphasis>spi-c</emphasis> - remote SPI
+					chosen for sending messages through the client channel.
+					</para></listitem>
+					<listitem><para><emphasis>spi-s</emphasis> - remote SPI
+					chosen for sending messages through the server channel.
+					</para></listitem>
+					<listitem><para><emphasis>port-c</emphasis> - remote port
+					chosen for communicating through the client channel.
+					</para></listitem>
+					<listitem><para><emphasis>port-c</emphasis> - remote port
+					chosen for communicating through the server channel.
+					</para></listitem>
+				</itemizedlist>
+			</para>
+		<example>
+		<title><function>$ipsec_ue(field)</function> usage</title>
+		<programlisting format="linespecific">
+...
+xlog("Using $ipsec_ue(ip):$ipsec_ue(port-c) and $ipsec_ue(ip):$ipsec_ue(port-s) socket\n");
+...
+</programlisting>
+		</example>
+		</section>
+	</section>
+
+</chapter>
