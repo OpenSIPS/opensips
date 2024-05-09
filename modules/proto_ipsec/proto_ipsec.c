@@ -261,10 +261,14 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (ipsec_add_allowed_algorithms(&ipsec_allowed_algorithms) < 0) {
-		LM_ERR("could not parse preferred_algorithms_pairs\n");
-		return -1;
+	if (ipsec_allowed_algorithms.s) {
+		ipsec_allowed_algorithms.len = strlen(ipsec_allowed_algorithms.s);
+		if (ipsec_add_allowed_algorithms(&ipsec_allowed_algorithms) < 0) {
+			LM_ERR("could not parse preferred_algorithms_pairs\n");
+			return -1;
+		}
 	}
+
 	if (ipsec_init() < 0) {
 		LM_ERR("could not initiate IPSec engine\n");
 		return -1;

@@ -168,7 +168,7 @@ struct ipsec_allowed_algo *ipsec_parse_allowed_algorithms(str *algs)
 	str_list *it;
 	char *p;
 	str alg;
-	struct ipsec_allowed_algo *pair, *ipsec_allowed_algos_last, *ipsec_allowed_algos = NULL;
+	struct ipsec_allowed_algo *pair, *ipsec_allowed_algos_last = NULL, *ipsec_allowed_algos = NULL;
 	struct ipsec_algorithm_desc *auth, *enc;
 
 	if (!algs || !algs->len)
