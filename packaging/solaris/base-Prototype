@@ -128,7 +128,6 @@ d none /opt/opensips/man8 0755 root root
 f none /opt/opensips/man8/opensips.8 0644 root root
 f none /opt/opensips/NEWS 0644 root root
 f none /opt/opensips/README 0644 root root
-f none /opt/opensips/README-MODULES 0644 root root
 f none /opt/opensips/README.acc 0644 root root
 f none /opt/opensips/README.alias_db 0644 root root
 f none /opt/opensips/README.auth 0644 root root

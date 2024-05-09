@@ -1,5 +1,3 @@
-# $Id$
-#
 # cfgutils module makefile
 #
 # 

@@ -1,5 +1,3 @@
-# $Id$
-#
 # JWT Authentication
 #
 # 

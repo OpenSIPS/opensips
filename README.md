@@ -27,7 +27,8 @@ file.
 
 For current developers/contributors of this project, see the [CREDITS](CREDITS) and
 [AUTHORS](AUTHORS) file. For complete license information, please see the [COPYING](COPYING) file.
-For a quick overview of OpenSIPS modules, please see the [README-MODULES](README-MODULES) file.
+For an overview of OpenSIPS modules, a [modules listing](https://www.opensips.org/Documentation/Modules)
+is available on the opensips.org website.
 
 
 ## Docs

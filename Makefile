@@ -120,7 +120,7 @@ modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf $(deps_gen)
 
-install_docs := README-MODULES AUTHORS NEWS README
+install_docs := AUTHORS NEWS README
 ifneq ($(skip-install-doc),yes)
 	install_docs += INSTALL
 endif

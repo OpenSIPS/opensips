@@ -1,5 +1,3 @@
-# $Id$
-#
 # Presence_XML 
 # 
 # 

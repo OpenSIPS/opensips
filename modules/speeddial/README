@@ -218,8 +218,6 @@ if($ru=~"sip:[0-9]{2}@.*")
    Example 1.10. OpenSIPS config script - sample speeddial usage
 ...
 #
-# $Id$
-#
 # sample config script to use speeddial module
 #
 
