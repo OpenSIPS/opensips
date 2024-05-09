@@ -21,10 +21,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
 
 ### global OpenSIPS commit stats, self-generated on each "rebuild-proj-stats"
-__PROJ_COMMITS=17783
-__PROJ_LINES_ADD=2184345
-__PROJ_LINES_DEL=1089621
-__LAST_REBUILD_SHA=b6ef99633e17d0fac08b98364389678f8ae3a3d2
+__PROJ_COMMITS=21604
+__PROJ_LINES_ADD=2576926
+__PROJ_LINES_DEL=1328694
+__LAST_REBUILD_SHA=816b58e6b36d873f63b20923fb822593a175b5f2
 
 TMP_FILE=/var/tmp/.opensips-build-contrib.tmp
 
@@ -654,14 +654,17 @@ normalize_arrays() {
   fi
 }
 
+# $1 (optional) - git SHA to be taken as a starting point
 rebuild_proj_commit_stats() {
   __PROJ_COMMITS=0
   __PROJ_LINES_ADD=0
   __PROJ_LINES_DEL=0
 
+  [ -n "$1" ] && commit_range="$1..HEAD"
+
   echo "Summing up all OpenSIPS commits! :-O"
 
-  for sha in $(git log --reverse --format=%H); do
+  for sha in $(git log --reverse --format=%H $commit_range); do
     [ -n "${skip_commits[$sha]}" ] && continue
 
     lines=($(git show $sha --format= --numstat \
@@ -673,6 +676,14 @@ rebuild_proj_commit_stats() {
     __PROJ_LINES_DEL=$(($__PROJ_LINES_DEL + ${lines[1]}))
     echo -en "\rProcessing commit #$__PROJ_COMMITS"
   done
+
+  if [ -n "$1" ]; then
+    echo "Commits: $__PROJ_COMMITS"
+    echo "Lines++: $__PROJ_LINES_ADD"
+    echo "Lines--: $__PROJ_LINES_DEL"
+    echo " ... since: $1"
+    return
+  fi
 
   sed -i "s/^__PROJ_COMMITS.*/__PROJ_COMMITS=$__PROJ_COMMITS/" $0
   sed -i "s/^__PROJ_LINES_ADD=.*/__PROJ_LINES_ADD=$__PROJ_LINES_ADD/" $0
@@ -1003,7 +1014,7 @@ if [[ ! $(git log --reverse --format=%H | head -1) =~ ^f06ade ]]; then
 fi
 
 if [[ "$1" =~ rebuild-proj-stats ]]; then
-  rebuild_proj_commit_stats
+  rebuild_proj_commit_stats "$2"
   exit 0
 fi
 
