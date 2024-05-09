@@ -224,7 +224,6 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/INSTALL
 %doc %{_docdir}/opensips/READE
 %doc %{_docdir}/opensips/NEWS
-%doc %{_docdir}/opensips/README-MODULES
 %doc %{_docdir}/opensips/README.acc
 %doc %{_docdir}/opensips/README.alias_db
 %doc %{_docdir}/opensips/README.auth

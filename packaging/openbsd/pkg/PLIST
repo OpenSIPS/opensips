@@ -60,7 +60,6 @@ lib/opensips/modules/xlog.so
 lib/opensips/modules/xmpp.so
 share/doc/opensips/README
 share/doc/opensips/INSTALL
-share/doc/opensips/README-MODULES
 share/doc/opensips/AUTHORS
 share/doc/opensips/NEWS
 share/doc/opensips/README.acc

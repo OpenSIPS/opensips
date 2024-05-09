@@ -1,5 +1,3 @@
-# $Id$
-#
 # call_control module makefile
 #
 # 

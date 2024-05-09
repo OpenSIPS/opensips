@@ -1,4 +1,3 @@
-# $Id$
 i pkginfo=pkginfo
 d none etc 0755 bin bin
 d none etc/opensips 0755 bin bin
@@ -57,7 +56,6 @@ d none doc 0755 bin bin
 d none doc/opensips 0755 bin bin
 f none doc/opensips/README 0644 bin bin
 f none doc/opensips/INSTALL 0644 bin bin
-f none doc/opensips/README-MODULES 0644 bin bin
 f none doc/opensips/AUTHORS 0644 bin bin
 f none doc/opensips/NEWS    0644 bin bin
 f none doc/opensips/README.acc 0644 bin bin
