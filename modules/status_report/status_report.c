@@ -38,8 +38,8 @@ static int w_add_report(struct sip_msg *msg, void *srg,
 static const cmd_export_t cmds[]={
 	{"sr_set_status", (cmd_function)w_set_status, {
 		{CMD_PARAM_STR, fixup_sr_group, 0},
-		{CMD_PARAM_INT, 0, 0}, {0,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}},
+		{CMD_PARAM_INT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"sr_add_report", (cmd_function)w_add_report, {
 		{CMD_PARAM_STR, fixup_sr_group, 0},
