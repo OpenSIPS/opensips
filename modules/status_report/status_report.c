@@ -125,12 +125,16 @@ static int w_add_report(struct sip_msg *msg, void *srg,
 static int w_set_status(struct sip_msg *msg, void *srg,
 		int *status, str *txt)
 {
+	int rc;
+
 	if (txt)
-		return sr_set_status( srg, CHAR_INT_NULL,
+		rc = sr_set_status( srg, CHAR_INT_NULL,
 			*status, txt->s, txt->len, 1/*public access*/);
 	else
-		return sr_set_status( srg, CHAR_INT_NULL,
+		rc = sr_set_status( srg, CHAR_INT_NULL,
 			*status, CHAR_INT_NULL, 1/*public access*/);
+
+	return !rc ? 1 : rc;
 }
 
 
