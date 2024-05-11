@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">340</entry>
-		<entry align="center">204</entry>
+		<entry align="center">341</entry>
+		<entry align="center">205</entry>
 		<entry align="center">9178</entry>
-		<entry align="center">3719</entry>
+		<entry align="center">3721</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Andrei Pelinescu-Onciul</entry>
-		<entry align="center">17</entry>
-		<entry align="center">13</entry>
-		<entry align="center">151</entry>
-		<entry align="center">91</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">18</entry>
+		<entry align="center">12</entry>
+		<entry align="center">339</entry>
+		<entry align="center">154</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nils Ohlmeier, Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Andrei Dragus, Anca Vamanu, Alessio Garzi (<ulink url="https://github.com/Ozzyboshi">@Ozzyboshi</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Marcus Hunger, Jamey Hicks, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Andreas Granig, Shlomi Gutman, <ulink url="https://github.com/jalung">@jalung</ulink>, Jeffrey Magder, Phil D'Amore, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), David Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon, Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Matthew M. Boedicker, UnixDev, Edson Gellert Schubert, Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Elena-Ramona Modroiu, Stephane Alnet.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nils Ohlmeier, Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Andrei Dragus, Anca Vamanu, Alessio Garzi (<ulink url="https://github.com/Ozzyboshi">@Ozzyboshi</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Marcus Hunger, Jamey Hicks, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Andreas Granig, Shlomi Gutman, <ulink url="https://github.com/jalung">@jalung</ulink>, Jeffrey Magder, Phil D'Amore, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), David Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon, Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Matthew M. Boedicker, UnixDev, Edson Gellert Schubert, Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Elena-Ramona Modroiu, Stephane Alnet.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,22 +129,22 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jan 2013 - Apr 2024</entry>
+		<entry align="center">Jan 2013 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Apr 2003 - Dec 2023</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Jun 2011 - Jul 2023</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">Jul 2016 - Mar 2023</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Apr 2003 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>5. </entry>

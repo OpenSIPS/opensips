@@ -167,8 +167,8 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 58 17 3287 806
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 13 59 81
-   3. Razvan Crainea (@razvancrainea) 13 11 24 33
-   4. Liviu Chircu (@liviuchircu) 12 10 40 61
+   3. Liviu Chircu (@liviuchircu) 14 11 40 63
+   4. Razvan Crainea (@razvancrainea) 13 11 24 33
    5. Daniel-Constantin Mierla (@miconda) 10 8 27 21
    6. Vlad Patrascu (@rvlad-patrascu) 7 4 34 69
    7. Ovidiu Sas (@ovidiusas) 3 1 14 2
@@ -200,9 +200,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
