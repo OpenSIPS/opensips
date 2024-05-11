@@ -180,12 +180,12 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Henning Westerholt (@henningw) 67 29 554 1963
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 60 45 1088 349
-   3. Norman Brandinger (@NormB) 53 4 1449 2247
-   4. Greg Fausak 41 3 4472 2
+   1. Henning Westerholt (@henningw) 66 29 554 1963
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 61 45 1088 349
+   3. Norman Brandinger (@NormB) 54 4 1449 2247
+   4. Greg Fausak 42 3 4472 2
    5. Daniel-Constantin Mierla (@miconda) 27 20 350 203
-   6. Liviu Chircu (@liviuchircu) 17 14 45 85
+   6. Liviu Chircu (@liviuchircu) 18 15 45 87
    7. Razvan Crainea (@razvancrainea) 13 10 208 25
    8. Jan Janak (@janakj) 12 8 300 23
    9. Klaus Darilion 10 6 139 67
@@ -219,13 +219,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Feb 2024
-   2.  Maksym Sobolyev (@sobomax)          Apr 2004 - Feb 2023
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
-   4.  Norman Brandinger (@NormB)          Aug 2006 - Oct 2021
-   5.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
-   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   7.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Feb 2024
+   3.  Maksym Sobolyev (@sobomax)          Apr 2004 - Feb 2023
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
+   5.  Norman Brandinger (@NormB)          Aug 2006 - Oct 2021
+   6.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
+   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
    8.  Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
    9.  Vlad Paiu (@vladpaiu)               Jan 2011 - Feb 2019
    10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018

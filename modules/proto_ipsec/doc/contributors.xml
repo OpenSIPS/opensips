@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">47</entry>
-		<entry align="center">9</entry>
-		<entry align="center">3858</entry>
-		<entry align="center">333</entry>
+		<entry align="center">58</entry>
+		<entry align="center">14</entry>
+		<entry align="center">4482</entry>
+		<entry align="center">369</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -73,7 +73,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
 </section>
 
 </chapter>

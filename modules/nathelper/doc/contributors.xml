@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">154</entry>
+		<entry align="center">155</entry>
 		<entry align="center">122</entry>
 		<entry align="center">2044</entry>
 		<entry align="center">867</entry>
@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">48</entry>
-		<entry align="center">38</entry>
+		<entry align="center">49</entry>
+		<entry align="center">39</entry>
 		<entry align="center">438</entry>
-		<entry align="center">307</entry>
+		<entry align="center">313</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -76,19 +76,19 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Andrei Pelinescu-Onciul</entry>
+		<entry align="center">21</entry>
+		<entry align="center">17</entry>
+		<entry align="center">121</entry>
+		<entry align="center">110</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>)</entry>
 		<entry align="center">21</entry>
 		<entry align="center">11</entry>
 		<entry align="center">780</entry>
 		<entry align="center">129</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>Andrei Pelinescu-Onciul</entry>
-		<entry align="center">20</entry>
-		<entry align="center">17</entry>
-		<entry align="center">121</entry>
-		<entry align="center">110</entry>
 	</row>
 	<row>
 		<entry>10. </entry>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Nov 2003 - Apr 2024</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jan 2013 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jan 2013 - Jan 2024</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Nov 2003 - Apr 2024</entry>
 	</row>
 	<row>
 		<entry>3. </entry>

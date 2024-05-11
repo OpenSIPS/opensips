@@ -15,21 +15,22 @@ UAC Registrant Module
 
               1.3.1. hash_size (integer)
               1.3.2. timer_interval (integer)
-              1.3.3. enable_clustering (integer)
-              1.3.4. db_url (string)
-              1.3.5. table_name (string)
-              1.3.6. registrar_column (string)
-              1.3.7. proxy_column (string)
-              1.3.8. aor_column (string)
-              1.3.9. third_party_registrant_column (string)
-              1.3.10. username_column (string)
-              1.3.11. password_column (string)
-              1.3.12. binding_URI_column (string)
-              1.3.13. binding_params_column (string)
-              1.3.14. expiry_column (string)
-              1.3.15. forced_socket_column (string)
-              1.3.16. cluster_shtag_column (string)
-              1.3.17. state_column (string)
+              1.3.3. failure_retry_interval (integer)
+              1.3.4. enable_clustering (integer)
+              1.3.5. db_url (string)
+              1.3.6. table_name (string)
+              1.3.7. registrar_column (string)
+              1.3.8. proxy_column (string)
+              1.3.9. aor_column (string)
+              1.3.10. third_party_registrant_column (string)
+              1.3.11. username_column (string)
+              1.3.12. password_column (string)
+              1.3.13. binding_URI_column (string)
+              1.3.14. binding_params_column (string)
+              1.3.15. expiry_column (string)
+              1.3.16. forced_socket_column (string)
+              1.3.17. cluster_shtag_column (string)
+              1.3.18. state_column (string)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -38,6 +39,7 @@ UAC Registrant Module
               1.5.2. reg_reload
               1.5.3. reg_enable
               1.5.4. reg_disable
+              1.5.5. reg_force_register
 
    2. Contributors
 
@@ -59,21 +61,22 @@ UAC Registrant Module
 
    1.1. Set hash_size parameter
    1.2. Set timer_interval parameter
-   1.3. Set enable_clustering parameter
-   1.4. Set “db_url” parameter
-   1.5. Set “table_name” parameter
-   1.6. Set “registrar_column” parameter
-   1.7. Set “proxy_column” parameter
-   1.8. Set “aor_column” parameter
-   1.9. Set “third_party_registrant_column” parameter
-   1.10. Set “username_column” parameter
-   1.11. Set “password_column” parameter
-   1.12. Set “binding_URI_column” parameter
-   1.13. Set “binding_params_column” parameter
-   1.14. Set “expiry_column” parameter
-   1.15. Set “forced_socket_column” parameter
-   1.16. Set “cluster_shtag_column” parameter
-   1.17. Set “state_column” parameter
+   1.3. Set failure_retry_interval parameter
+   1.4. Set enable_clustering parameter
+   1.5. Set “db_url” parameter
+   1.6. Set “table_name” parameter
+   1.7. Set “registrar_column” parameter
+   1.8. Set “proxy_column” parameter
+   1.9. Set “aor_column” parameter
+   1.10. Set “third_party_registrant_column” parameter
+   1.11. Set “username_column” parameter
+   1.12. Set “password_column” parameter
+   1.13. Set “binding_URI_column” parameter
+   1.14. Set “binding_params_column” parameter
+   1.15. Set “expiry_column” parameter
+   1.16. Set “forced_socket_column” parameter
+   1.17. Set “cluster_shtag_column” parameter
+   1.18. Set “state_column” parameter
 
 Chapter 1. Admin Guide
 
@@ -166,7 +169,22 @@ modparam("uac_registrant", "hash_size", 2)
 modparam("uac_registrant", "timer_interval", 120)
 ...
 
-1.3.3. enable_clustering (integer)
+1.3.3. failure_retry_interval (integer)
+
+   Defines a custom interval to retry the registration upon
+   error/failure. Normally, after any kind of failure (timeout,
+   credentials, internal error), the registration is re-taken
+   after "expires" seconds. The parameter here, if set, overrides
+   that value.
+
+   Default value is 0 (not set).
+
+   Example 1.3. Set failure_retry_interval parameter
+...
+modparam("uac_registrant", "failure_retry_interval", 3600)
+...
+
+1.3.4. enable_clustering (integer)
 
    This parameter enables the clustering support in the module.
    This is used to share this registration between all the nodes
@@ -178,35 +196,35 @@ modparam("uac_registrant", "timer_interval", 120)
 
    Default value is 0 / off.
 
-   Example 1.3. Set enable_clustering parameter
+   Example 1.4. Set enable_clustering parameter
 ...
 modparam("uac_registrant", "enable_clustering", 1)
 ...
 
-1.3.4. db_url (string)
+1.3.5. db_url (string)
 
    Database where to load the registrants from.
 
    Default value is “NULL” (use default DB URL from core).
 
-   Example 1.4. Set “db_url” parameter
+   Example 1.5. Set “db_url” parameter
 ...
 modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/datab
 ase")
 ...
 
-1.3.5. table_name (string)
+1.3.6. table_name (string)
 
    The database table that holds the registrant records.
 
    Default value is “registrant”.
 
-   Example 1.5. Set “table_name” parameter
+   Example 1.6. Set “table_name” parameter
 ...
 modparam("uac_registrant", "table_name", "my_registrant")
 ...
 
-1.3.6. registrar_column (string)
+1.3.7. registrar_column (string)
 
    The column's name in the database storing the URI pointing to
    the remote registrar (mandatory field). OpenSIPS expects a
@@ -214,12 +232,12 @@ modparam("uac_registrant", "table_name", "my_registrant")
 
    Default value is “registrar”.
 
-   Example 1.6. Set “registrar_column” parameter
+   Example 1.7. Set “registrar_column” parameter
 ...
 modparam("uac_registrant", "registrar_column", "registrant_uri")
 ...
 
-1.3.7. proxy_column (string)
+1.3.8. proxy_column (string)
 
    The column's name in the database storing the URI pointing to
    the outbond proxy (not mandatory field). An empty or NULL value
@@ -228,12 +246,12 @@ modparam("uac_registrant", "registrar_column", "registrant_uri")
 
    Default value is “proxy”.
 
-   Example 1.7. Set “proxy_column” parameter
+   Example 1.8. Set “proxy_column” parameter
 ...
 modparam("uac_registrant", "proxy_column", "proxy_uri")
 ...
 
-1.3.8. aor_column (string)
+1.3.9. aor_column (string)
 
    The column's name in the database storing the URI defining the
    address of record (mandatory field). The URI stored here will
@@ -242,12 +260,12 @@ modparam("uac_registrant", "proxy_column", "proxy_uri")
 
    Default value is “aor”.
 
-   Example 1.8. Set “aor_column” parameter
+   Example 1.9. Set “aor_column” parameter
 ...
 modparam("uac_registrant", "aor_column", "to_uri")
 ...
 
-1.3.9. third_party_registrant_column (string)
+1.3.10. third_party_registrant_column (string)
 
    The column's name in the database storing the URI defining the
    third party registrant (not mandatory field). The URI stored
@@ -258,12 +276,12 @@ modparam("uac_registrant", "aor_column", "to_uri")
 
    Default value is “third_party_registrant”.
 
-   Example 1.9. Set “third_party_registrant_column” parameter
+   Example 1.10. Set “third_party_registrant_column” parameter
 ...
 modparam("uac_registrant", "third_party_registrant_column", "from_uri")
 ...
 
-1.3.10. username_column (string)
+1.3.11. username_column (string)
 
    The column's name in the database storing the username for
    authentication (mandatory if the registrar requires
@@ -271,12 +289,12 @@ modparam("uac_registrant", "third_party_registrant_column", "from_uri")
 
    Default value is “username”.
 
-   Example 1.10. Set “username_column” parameter
+   Example 1.11. Set “username_column” parameter
 ...
 modparam("uac_registrant", "username_column", "auth_username")
 ...
 
-1.3.11. password_column (string)
+1.3.12. password_column (string)
 
    The column's name in the database storing the password for
    authentication (mandatory if the registrar requires
@@ -284,12 +302,12 @@ modparam("uac_registrant", "username_column", "auth_username")
 
    Default value is “password”.
 
-   Example 1.11. Set “password_column” parameter
+   Example 1.12. Set “password_column” parameter
 ...
 modparam("uac_registrant", "password_column", "auth_passowrd")
 ...
 
-1.3.12. binding_URI_column (string)
+1.3.13. binding_URI_column (string)
 
    The column's name in the database storing the binding URI in
    REGISTER (mandatory field). The URI stored here will be used in
@@ -297,12 +315,12 @@ modparam("uac_registrant", "password_column", "auth_passowrd")
 
    Default value is “binding_URI”.
 
-   Example 1.12. Set “binding_URI_column” parameter
+   Example 1.13. Set “binding_URI_column” parameter
 ...
 modparam("uac_registrant", "binding_URI_column", "contact_uri")
 ...
 
-1.3.13. binding_params_column (string)
+1.3.14. binding_params_column (string)
 
    The column's name in the database storing the binding params in
    REGISTER (not mandatory field). If not NULL or not empty, the
@@ -321,24 +339,24 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
 
    Default value is “binding_params”.
 
-   Example 1.13. Set “binding_params_column” parameter
+   Example 1.14. Set “binding_params_column” parameter
 ...
 modparam("uac_registrant", "binding_params_column", "contact_params")
 ...
 
-1.3.14. expiry_column (string)
+1.3.15. expiry_column (string)
 
    The column's name in the database storing the expiration time
    (not mandatory).
 
    Default value is “expiry”.
 
-   Example 1.14. Set “expiry_column” parameter
+   Example 1.15. Set “expiry_column” parameter
 ...
 modparam("uac_registrant", "expiry_column", "registration_timeout")
 ...
 
-1.3.15. forced_socket_column (string)
+1.3.16. forced_socket_column (string)
 
    The column's name in the database storing the socket for
    sending the REGISTER (not mandatory). If a forced socket is
@@ -347,12 +365,12 @@ modparam("uac_registrant", "expiry_column", "registration_timeout")
 
    Default value is “forced_socket”.
 
-   Example 1.15. Set “forced_socket_column” parameter
+   Example 1.16. Set “forced_socket_column” parameter
 ...
 modparam("uac_registrant", "forced_socket_column", "fs")
 ...
 
-1.3.16. cluster_shtag_column (string)
+1.3.17. cluster_shtag_column (string)
 
    The column's name in the database storing the cluster sharing
    tag in [tag_name/cluster_id] format (not mandatory). If a
@@ -361,12 +379,12 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 
    Default value is “cluster_shtag”.
 
-   Example 1.16. Set “cluster_shtag_column” parameter
+   Example 1.17. Set “cluster_shtag_column” parameter
 ...
 modparam("uac_registrant", "cluster_shtag_column", "sh")
 ...
 
-1.3.17. state_column (string)
+1.3.18. state_column (string)
 
    The column's name in the database storing the current state of
    the registrant. When a registrant is disabled, OpenSIPS will no
@@ -375,7 +393,7 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
 
    Default value is “state”.
 
-   Example 1.17. Set “state_column” parameter
+   Example 1.18. Set “state_column” parameter
 ...
 modparam("uac_registrant", "state_column", "status")
 ...
@@ -460,17 +478,40 @@ opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.
    Parameters: none
      * aor - URI defining the address of record. If provided,
        contact and registrar parameters are also required and only
-       a specific record will be reloaded.
+       a specific record will be disabled.
      * contact - Contact URI. If provided, aor and registrar
        parameters are also required and only a specific record
-       will be reloaded.
+       will be disabled.
      * registrar - URI pointing to the remote registrar. If
        provided, aor and contact parameters are also required and
-       only a specific record will be reloaded.
+       only a specific record will be disabled.
 
    MI FIFO Command Format:
 opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0
 .1:5060 sip:opensips.org
+
+1.5.5. reg_force_register
+
+   Forces the re-registration (or registation) of a specific
+   registrant (depending on its state). Note that the registrant
+   must be enabled.
+
+   Name: reg_force_register
+
+   Parameters:
+     * aor - URI defining the address of record. If provided,
+       contact and registrar parameters are also required and only
+       a specific record will be forced to re-register.
+     * contact - Contact URI. If provided, aor and registrar
+       parameters are also required and only a specific record
+       will be forced to re-register.
+     * registrar - URI pointing to the remote registrar. If
+       provided, aor and contact parameters are also required and
+       only a specific record will be forced to re-register.
+
+   MI FIFO Command Format:
+opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@
+127.0.0.1:5060 sip:opensips.org
 
 Chapter 2. Contributors
 
@@ -479,19 +520,19 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ovidiu Sas (@ovidiusas) 142 41 5688 3268
-   2. Liviu Chircu (@liviuchircu) 17 14 57 68
-   3. Vlad Patrascu (@rvlad-patrascu) 15 7 732 118
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 14 10 309 20
+   1. Ovidiu Sas (@ovidiusas) 143 41 5688 3268
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 13 451 49
+   3. Liviu Chircu (@liviuchircu) 17 14 57 68
+   4. Vlad Patrascu (@rvlad-patrascu) 16 7 732 118
    5. Razvan Crainea (@razvancrainea) 11 9 26 36
    6. Maksym Sobolyev (@sobomax) 5 3 20 16
    7. Nick Altmann (@nikbyte) 4 2 35 4
    8. Vlad Paiu (@vladpaiu) 4 2 6 3
-   9. sagarmalam 3 1 15 1
-   10. Walter Doekes (@wdoekes) 3 1 2 2
+   9. James Stanley 3 1 20 13
+   10. sagarmalam 3 1 15 1
 
-   All remaining contributors: James Stanley, Peter Lemenkov
-   (@lemenkov).
+   All remaining contributors: Walter Doekes (@wdoekes), James
+   Stanley, Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -513,19 +554,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
-   2.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Jun 2023
-   4.  James Stanley                       Mar 2023 - Mar 2023
-   5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
-   7.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   8.  sagarmalam                          Jan 2021 - Jan 2021
-   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2020
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - May 2024
+   2.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
+   3.  James Stanley                       Dec 2023 - Dec 2023
+   4.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
+   5.  James Stanley                       Mar 2023 - Mar 2023
+   6.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
+   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
+   8.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   9.  sagarmalam                          Jan 2021 - Jan 2021
+   10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2020
 
-   All remaining contributors: Nick Altmann (@nikbyte), Vlad Paiu
-   (@vladpaiu).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Nick
+   Altmann (@nikbyte), Vlad Paiu (@vladpaiu).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -534,10 +575,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
-   (@ovidiusas), Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
+   Chircu (@liviuchircu).
 
    Documentation Copyrights:
 

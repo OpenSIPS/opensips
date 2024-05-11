@@ -42,6 +42,8 @@ tm Module
               1.3.20. tm_replication_cluster (integer)
               1.3.21. cluster_param (string)
               1.3.22. cluster_auto_cancel (boolean)
+              1.3.23. local_request_route (string)
+              1.3.24. local_reply_route (string)
 
         1.4. Exported Functions
 
@@ -161,29 +163,31 @@ tm Module
    1.20. Set tm_replication_cluster parameter
    1.21. Set the cluster_param parameter
    1.22. Set the cluster_auto_cancel parameter
-   1.23. t_relay usage
-   1.24. t_reply usage
-   1.25. t_reply_with_body usage
-   1.26. t_newtran usage
-   1.27. t_check_trans usage
-   1.28. t_check_status usage
-   1.29. t_local_replied usage
-   1.30. t_was_cancelled usage
-   1.31. t_cancel_branch usage
-   1.32. t_new_request usage
-   1.33. t_on_failure usage
-   1.34. t_on_reply usage
-   1.35. t_on_branch usage
-   1.36. t_inject_branches usage
-   1.37. t_wait_for_new_branches usage
-   1.38. t_wait_no_more_branches usage
-   1.39. t_add_hdrs usage
-   1.40. t_add_cancel_reason usage
-   1.41. t_replicate usage
-   1.42. t_write_req/unix usage
-   1.43. t_flush_flags usage
-   1.44. t_anycast_replicate usage
-   1.45. t_reply_by_callid usage
+   1.23. Set the local_request_route parameter
+   1.24. Set the local_reply_route parameter
+   1.25. t_relay usage
+   1.26. t_reply usage
+   1.27. t_reply_with_body usage
+   1.28. t_newtran usage
+   1.29. t_check_trans usage
+   1.30. t_check_status usage
+   1.31. t_local_replied usage
+   1.32. t_was_cancelled usage
+   1.33. t_cancel_branch usage
+   1.34. t_new_request usage
+   1.35. t_on_failure usage
+   1.36. t_on_reply usage
+   1.37. t_on_branch usage
+   1.38. t_inject_branches usage
+   1.39. t_wait_for_new_branches usage
+   1.40. t_wait_no_more_branches usage
+   1.41. t_add_hdrs usage
+   1.42. t_add_cancel_reason usage
+   1.43. t_replicate usage
+   1.44. t_write_req/unix usage
+   1.45. t_flush_flags usage
+   1.46. t_anycast_replicate usage
+   1.47. t_reply_by_callid usage
 
 Chapter 1. Admin Guide
 
@@ -745,6 +749,72 @@ modparam("tm", "cluster_param", "tid")
 modparam("tm", "cluster_auto_cancel", no)
 ...
 
+1.3.23. local_request_route (string)
+
+   This parameter points to a route, which is executed whenever TM
+   is about to send out a locally generated request (e.g., through
+   the B2B modules or through MI).
+
+   The purpose of this route is limited to exposing the content of
+   the request as SIP message
+
+   The route is executed with the generated message by TM,
+   incorporating all modifications.
+
+   IMPORTANT: this route is executed AFTER the local_route (if
+   defined) and it expose all the changes from that route.
+
+   IMPORTANT: this route is to be used in a read-only manner,
+   inspection only. Any changes you do here will discarded.
+
+   IMPORTANT: this route does not offer any message, transactional
+   or dialog context, so do not rely on any variables with scope
+   (like AVPs).
+
+   Example 1.23. Set the local_request_route parameter
+...
+# Execute the route "local_request_route" upon sending a request
+modparam("tm", "local_request_route", "tm_local_request")
+
+route[tm_local_request] {
+        if (is_method("INVITE") && $rb(application/sdp) && !has_totag())
+ {
+                $avp(sdp_request) := $rb(application/sdp);
+        }
+}
+...
+
+1.3.24. local_reply_route (string)
+
+   This parameter points to a route, which is executed whenever TM
+   is about to send out a locally generated reply (e.g., through
+   the B2B modules or through MI).
+
+   The purpose of this route is limited to exposing the content of
+   the reply as SIP message
+
+   IMPORTANT: this route is to be used in a read-only manner,
+   inspection only. Any changes you do here will discarded.
+
+   IMPORTANT: this route does not offer any message, transactional
+   or dialog context, so do not rely on any variables with scope
+   (like AVPs).
+
+   Example 1.24. Set the local_reply_route parameter
+...
+# Execute the route "tm_local_reply" upon sending a request
+modparam("tm", "local_reply_route", "tm_local_reply")
+
+route[tm_local_reply] {
+        if (is_method("BYE")) {
+                $var(rc) = rest_get("http://localhost/qos/delete",
+                                        $var(recv_body), $var(recv_ct),
+$var(rcode));
+        }
+}
+
+...
+
 1.4. Exported Functions
 
 1.4.1.  t_relay([flags],[outbound_proxy])
@@ -811,7 +881,7 @@ modparam("tm", "cluster_auto_cancel", no)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.23. t_relay usage
+   Example 1.25. t_relay usage
 ...
 if (!t_relay()) {
     sl_reply_error();
@@ -836,7 +906,7 @@ t_relay(0x1, "mydomain.com:5070");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.24. t_reply usage
+   Example 1.26. t_reply usage
 ...
 t_reply(404, "Use $rU not found");
 ...
@@ -855,7 +925,7 @@ t_reply(404, "Use $rU not found");
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.25. t_reply_with_body usage
+   Example 1.27. t_reply_with_body usage
 ...
         if(is_method("INVITE"))
         {
@@ -878,7 +948,7 @@ t_reply(404, "Use $rU not found");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.26. t_newtran usage
+   Example 1.28. t_newtran usage
 ...
 t_newtran();  # 100 Trying is fired here
 xlog("doing my complicated routing logic\n");
@@ -913,7 +983,7 @@ t_relay(); # send the call further
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
 
-   Example 1.27. t_check_trans usage
+   Example 1.29. t_check_trans usage
 ...
 if ( is_method("CANCEL") ) {
         if ( t_check_trans() )
@@ -934,7 +1004,7 @@ if ( is_method("CANCEL") ) {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE .
 
-   Example 1.28. t_check_status usage
+   Example 1.30. t_check_status usage
 ...
 if (t_check_status("(487)|(408)")) {
     log("487 or 408 negative reply\n");
@@ -951,7 +1021,7 @@ if (t_check_status("(487)|(408)")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.29. t_local_replied usage
+   Example 1.31. t_local_replied usage
 ...
 if (t_local_replied("all")) {
         log ("no reply received\n");
@@ -965,7 +1035,7 @@ if (t_local_replied("all")) {
 
    This function can be used from ONREPLY_ROUTE, FAILURE_ROUTE.
 
-   Example 1.30. t_was_cancelled usage
+   Example 1.32. t_was_cancelled usage
 ...
 if (t_was_cancelled()) {
     log("transaction was cancelled by UAC\n");
@@ -987,7 +1057,7 @@ if (t_was_cancelled()) {
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.31. t_cancel_branch usage
+   Example 1.33. t_cancel_branch usage
 onreply_route[3] {
 ...
         if (t_check_status(183)) {
@@ -1017,7 +1087,7 @@ onreply_route[3] {
        added to the new transaction as an AVP with name "uac_ctx"
        (it may be visible in local route)
 
-   Example 1.32. t_new_request usage
+   Example 1.34. t_new_request usage
 ...
         # send a MESSAGE request
         t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@m
@@ -1052,7 +1122,7 @@ ydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!"))
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.33. t_on_failure usage
+   Example 1.35. t_on_failure usage
 ...
 route {
         t_on_failure("1");
@@ -1101,7 +1171,7 @@ failure_route[1] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.34. t_on_reply usage
+   Example 1.36. t_on_reply usage
 ...
 route {
         seturi("sip:bob@opensips.org");  # first branch
@@ -1158,7 +1228,7 @@ onreply_route[global] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.35. t_on_branch usage
+   Example 1.37. t_on_branch usage
 ...
 route {
         t_on_branch("1");
@@ -1214,7 +1284,7 @@ branch_route[1] {
             transaction, do not wait for any other branches to be
             injected.
 
-   Example 1.36. t_inject_branches usage
+   Example 1.38. t_inject_branches usage
 ...
 route[event_notification] {
         t_inject_branches("event");
@@ -1245,7 +1315,7 @@ route[event_notification] {
      * branches (integer, options) - what is the maximum number of
        branches to be waited for.
 
-   Example 1.37. t_wait_for_new_branches usage
+   Example 1.39. t_wait_for_new_branches usage
 ...
 t_newtran();
 t_wait_for_new_branches();
@@ -1267,7 +1337,7 @@ t_relay();
    wait for more branches, depending on the answers you get from
    various devices, fix or mobile).
 
-   Example 1.38. t_wait_no_more_branches usage
+   Example 1.40. t_wait_no_more_branches usage
 ...
 t_wait_no_more_branches();
 ...
@@ -1281,7 +1351,7 @@ t_wait_no_more_branches();
    Parameters:
      * sip_hdrs (string)
 
-   Example 1.39. t_add_hdrs usage
+   Example 1.41. t_add_hdrs usage
 ...
 t_add_hdrs("X-origin: 1.1.1.1\r\n");
 ...
@@ -1299,7 +1369,7 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
    Parameters:
      * reason_hdr (string)
 
-   Example 1.40. t_add_cancel_reason usage
+   Example 1.42. t_add_cancel_reason usage
 ...
 t_add_cancel_reason("Reason: SIP ;cause=200 ;text=\"Call completed elsew
 here\"\r\n");
@@ -1325,7 +1395,7 @@ t_relay();
 
    This functions can be used from REQUEST_ROUTE.
 
-   Example 1.41. t_replicate usage
+   Example 1.43. t_replicate usage
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
@@ -1345,7 +1415,7 @@ t_replicate("sip:1.2.3.4",0x4);
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
 
-   Example 1.42. t_write_req/unix usage
+   Example 1.44. t_write_req/unix usage
 ...
 modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
 modparam("tm","tw_append","append2:body=$rb")
@@ -1364,7 +1434,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
 
-   Example 1.43. t_flush_flags usage
+   Example 1.45. t_flush_flags usage
 ...
 t_flush_flags();
 ...
@@ -1377,7 +1447,7 @@ t_flush_flags();
    the cluster, but only the “owner” of the transaction will be
    able to handle it.
 
-   Example 1.44. t_anycast_replicate usage
+   Example 1.46. t_anycast_replicate usage
 ...
 if (is_method("ACK|CANCEL") && !t_check_trans()) {
         t_anycast_replicate();
@@ -1402,7 +1472,7 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.45. t_reply_by_callid usage
+   Example 1.47. t_reply_by_callid usage
 ...
 route{
         if($rU == "LOCAL_PARK") {
@@ -1696,12 +1766,12 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1088 634 22006 16779
-   2. Jiri Kuthan (@jiriatipteldotorg) 534 198 18723 11167
-   3. Jan Janak (@janakj) 160 76 6462 1840
-   4. Andrei Pelinescu-Onciul 145 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 135 104 2030 851
-   6. Liviu Chircu (@liviuchircu) 111 85 1274 890
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1095 635 22074 16813
+   2. Jiri Kuthan (@jiriatipteldotorg) 537 198 18723 11167
+   3. Jan Janak (@janakj) 161 76 6462 1840
+   4. Andrei Pelinescu-Onciul 146 105 2447 1210
+   5. Razvan Crainea (@razvancrainea) 137 105 2045 851
+   6. Liviu Chircu (@liviuchircu) 113 87 1301 912
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Vlad Patrascu (@rvlad-patrascu) 40 18 916 826
    9. Anca Vamanu 37 19 778 651
@@ -1713,14 +1783,14 @@ Chapter 4. Contributors
    (@ionutrazvanionita), Raphael Coeffic, Nils Ohlmeier, Klaus
    Darilion, Peter Lemenkov (@lemenkov), Andreas Granig, Elias
    Baixas, Marcus Hunger, Christophe Sollet (@csollet), Jeffrey
-   Magder, Ezequiel Lovelle (@lovelle), Saúl Ibarra Corretgé
-   (@saghul), Elena-Ramona Modroiu, John Riordan, Julián Moreno
-   Patiño, Andrei Dragus, Jesus Rodrigues, Konstantin Bokarius,
-   Aron Podrigal (@ar45), Anonymous, Dusan Klinec (@ph4r05), Mark
-   Dalby, Walter Doekes (@wdoekes), Alexey Vasilyev
-   (@vasilevalex), Fabian Gast (@fgast), Nick Altmann (@nikbyte),
-   Zero King (@l2dy), Edson Gellert Schubert, MayamaTakeshi, Ingo
-   Wolfsberger, Daniel Hsueh.
+   Magder, Ezequiel Lovelle (@lovelle), Carsten Bock, Saúl Ibarra
+   Corretgé (@saghul), Elena-Ramona Modroiu, John Riordan, Julián
+   Moreno Patiño, Andrei Dragus, Jesus Rodrigues, Konstantin
+   Bokarius, Aron Podrigal (@ar45), Anonymous, Dusan Klinec
+   (@ph4r05), Mark Dalby, Walter Doekes (@wdoekes), Alexey
+   Vasilyev (@vasilevalex), Fabian Gast (@fgast), Nick Altmann
+   (@nikbyte), Zero King (@l2dy), Edson Gellert Schubert,
+   MayamaTakeshi, Ingo Wolfsberger, Daniel Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1742,29 +1812,30 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Apr 2024
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2024
-   3.  Maksym Sobolyev (@sobomax)          Mar 2004 - Nov 2023
-   4.  Razvan Crainea (@razvancrainea)     Jul 2010 - Sep 2023
-   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
-   7.  MayamaTakeshi                       Oct 2022 - Oct 2022
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
-   9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   10. Dan Pascu (@danpascu)               Feb 2006 - Feb 2020
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - May 2024
+   3.  Razvan Crainea (@razvancrainea)     Jul 2010 - Mar 2024
+   4.  Carsten Bock                        Mar 2024 - Mar 2024
+   5.  Maksym Sobolyev (@sobomax)          Mar 2004 - Nov 2023
+   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   8.  MayamaTakeshi                       Oct 2022 - Oct 2022
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
+   10. Zero King (@l2dy)                   Mar 2020 - Mar 2020
 
-   All remaining contributors: Fabian Gast (@fgast), Aron Podrigal
-   (@ar45), Alexey Vasilyev (@vasilevalex), Ionut Ionita
-   (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
-   (@nikbyte), Ovidiu Sas (@ovidiusas), Dusan Klinec (@ph4r05),
-   Ezequiel Lovelle (@lovelle), Walter Doekes (@wdoekes),
-   Christophe Sollet (@csollet), Saúl Ibarra Corretgé (@saghul),
-   Anonymous, Mark Dalby, Anca Vamanu, Andrei Dragus, John
-   Riordan, Henning Westerholt (@henningw), Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
-   (@juha-h), Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas
-   Granig, Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
+   All remaining contributors: Dan Pascu (@danpascu), Fabian Gast
+   (@fgast), Aron Podrigal (@ar45), Alexey Vasilyev
+   (@vasilevalex), Ionut Ionita (@ionutrazvanionita), Julián
+   Moreno Patiño, Nick Altmann (@nikbyte), Ovidiu Sas
+   (@ovidiusas), Dusan Klinec (@ph4r05), Ezequiel Lovelle
+   (@lovelle), Walter Doekes (@wdoekes), Christophe Sollet
+   (@csollet), Saúl Ibarra Corretgé (@saghul), Anonymous, Mark
+   Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Henning
+   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Jesus Rodrigues, Marcus Hunger, Juha Heinanen (@juha-h),
+   Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas Granig,
+   Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
    Pelinescu-Onciul, Jan Janak (@janakj), Jiri Kuthan
    (@jiriatipteldotorg), Raphael Coeffic, Nils Ohlmeier.
 
@@ -1775,16 +1846,16 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
-   Liviu Chircu (@liviuchircu), Fabian Gast (@fgast), Alexey
-   Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Nick
-   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
-   (@vladpaiu), Anca Vamanu, Henning Westerholt (@henningw), Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Juha
-   Heinanen (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj),
-   Jiri Kuthan (@jiriatipteldotorg).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Carsten
+   Bock, Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Fabian Gast
+   (@fgast), Alexey Vasilyev (@vasilevalex), Peter Lemenkov
+   (@lemenkov), Nick Altmann (@nikbyte), Ovidiu Sas (@ovidiusas),
+   Vlad Paiu (@vladpaiu), Anca Vamanu, Henning Westerholt
+   (@henningw), Klaus Darilion, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Dan
+   Pascu (@danpascu), Juha Heinanen (@juha-h), Elena-Ramona
+   Modroiu, Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 

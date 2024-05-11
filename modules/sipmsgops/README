@@ -56,6 +56,8 @@ sipmsgops Module
               1.3.41. get_glob_headers_values(hdr_name_glob,
                       hdr_names_avp,hdr_vals_avp)
 
+              1.3.42. sip_to_json(out_var)
+
         1.4. Known Limitations
 
    2. Contributors
@@ -119,6 +121,7 @@ sipmsgops Module
    1.41. list_hdr_add_option usage
    1.42. list_hdr_remove_option usage
    1.43. get_glob_headers_values usage
+   1.44. sip_to_json usage
 
 Chapter 1. Admin Guide
 
@@ -1123,6 +1126,29 @@ hdr_names_avp,hdr_vals_avp)
        }
 ...
 
+1.3.42.  sip_to_json(out_var)
+
+   Returns a JSON formatted representation of the current SIP
+   message, containing first_line , headers and body json members
+   Useful in cases when you want to pass a generic SIP message to
+   a SIP agnostic entity, but still want to provide some layer of
+   SIP parsing before sending the full message further.
+
+   Meaning of the parameters is as follows:
+     * out_var (string) - the output JSON formatted SIP message
+       variable
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.44. sip_to_json usage
+...
+       if (sip_to_json($var(out_sip_json))) {
+           xlog("The JSON format for the current SIP message is $var(out
+_sip_json) \n");
+       }
+...
+
 1.4. Known Limitations
 
    Search functions are applied to the current message so
@@ -1138,10 +1164,10 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 69 39 2181 693
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 71 40 2183 695
    2. Liviu Chircu (@liviuchircu) 59 27 809 1510
    3. Razvan Crainea (@razvancrainea) 47 20 2949 87
-   4. Vlad Paiu (@vladpaiu) 15 7 530 123
+   4. Vlad Paiu (@vladpaiu) 16 8 663 123
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
    6. Maksym Sobolyev (@sobomax) 5 3 2 3
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 49 13
@@ -1175,8 +1201,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jul 2023
-   2.  Vlad Paiu (@vladpaiu)               Feb 2012 - Jun 2023
+   1.  Vlad Paiu (@vladpaiu)               Feb 2012 - May 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - May 2024
    3.  Bence Szigeti                       May 2023 - May 2023
    4.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
    5.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
@@ -1199,9 +1225,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Bence
-   Szigeti, Vlad Paiu (@vladpaiu), Liviu Chircu (@liviuchircu),
-   Vlad Patrascu (@rvlad-patrascu), Fabian Gast (@fgast), Peter
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu), Bence Szigeti, Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Fabian Gast (@fgast), Peter
    Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Julián Moreno
    Patiño, Razvan Crainea (@razvancrainea), Mihai Tiganus
    (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte).
