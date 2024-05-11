@@ -104,7 +104,8 @@ void ipsec_dump_users_rec(struct ipsec_map_node *nodes, int size, unsigned char 
 			impi = list_entry(it, struct ipsec_user_impi, list);
 			list_for_each(it2, &impi->users) {
 				user = list_entry(it2, struct ipsec_user, list);
-				LM_DBG("print %hu.%hu.%hu.%hu - %.*s/%.*s\n", buf[0], buf[1], buf[2], buf[3],
+				LM_DBG("print %u.%u.%u.%u - %.*s/%.*s\n",
+					(unsigned)buf[0], (unsigned)buf[1], (unsigned)buf[2], (unsigned)buf[3],
 						user->impi.len, user->impi.s, user->impu.len, user->impu.s);
 			}
 		}

@@ -381,8 +381,8 @@ error:
 }
 
 struct xfrm_algo_osips {
-	struct xfrm_algo algo;
 	char buf[IPSEC_ALGO_MAX_KEY_SIZE];
+	struct xfrm_algo algo;
 };
 
 int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
@@ -837,8 +837,9 @@ void ipsec_ctx_release_tmp_user(struct ipsec_user *user)
 
 void ipsec_ctx_release_user(struct ipsec_ctx *ctx)
 {
-	int release;
+	int release = 0;
 	struct ipsec_user *user = ctx->user;
+
 	lock_get(&user->lock);
 	if (list_is_valid(&ctx->list)) {
 		list_del(&ctx->list);
