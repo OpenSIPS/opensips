@@ -217,7 +217,6 @@ if($ru=~"sip:[0-9]{2}@.*")
 
    Example 1.10. OpenSIPS config script - sample speeddial usage
 ...
-#
 # sample config script to use speeddial module
 #
 
@@ -334,7 +333,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 28 24 91 148
    2. Daniel-Constantin Mierla (@miconda) 21 16 127 137
-   3. Liviu Chircu (@liviuchircu) 12 10 35 53
+   3. Liviu Chircu (@liviuchircu) 13 11 35 58
    4. Elena-Ramona Modroiu 12 2 1063 1
    5. Razvan Crainea (@razvancrainea) 8 6 11 8
    6. Vlad Patrascu (@rvlad-patrascu) 6 4 31 35
@@ -367,7 +366,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2022
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jul 2021
    3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2020
@@ -389,10 +388,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Sergio Gutierrez, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Sergio Gutierrez, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Elena-Ramona Modroiu, Elena-Ramona Modroiu.
 
    Documentation Copyrights:

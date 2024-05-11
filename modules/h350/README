@@ -654,7 +654,7 @@ Chapter 2. Contributors
    1. Christian Schlatter 21 3 1993 1
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 52 50
    3. Daniel-Constantin Mierla (@miconda) 12 9 79 83
-   4. Liviu Chircu (@liviuchircu) 10 8 25 37
+   4. Liviu Chircu (@liviuchircu) 11 9 25 39
    5. Vlad Patrascu (@rvlad-patrascu) 9 3 80 247
    6. Razvan Crainea (@razvancrainea) 8 6 51 59
    7. Konstantin Bokarius 3 1 1 4
@@ -681,11 +681,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2020
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Mar 2020
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1. Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2. Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2020
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Mar 2020
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6. Daniel-Constantin Mierla (@miconda) Sep 2007 - Mar 2008
    7. Konstantin Bokarius                 Mar 2008 - Mar 2008
    8. Edson Gellert Schubert              Feb 2008 - Feb 2008
