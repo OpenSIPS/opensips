@@ -19,6 +19,8 @@
  *
  */
 
+#include <assert.h>
+
 #include "ipsec.h"
 #include "ipsec_user.h"
 #include "ipsec_algo.h"
@@ -380,10 +382,14 @@ error:
 			ip_addr2a(&src->ip), src_port, ip_addr2a(&dst->ip), dst_port, spi);
 }
 
+/* identical to (struct xfrm_algo), except the max key size is known */
 struct xfrm_algo_osips {
-	char buf[IPSEC_ALGO_MAX_KEY_SIZE];
-	struct xfrm_algo algo;
+	char alg_name[64];
+	unsigned int alg_key_len;
+	char alg_key[IPSEC_ALGO_MAX_KEY_SIZE];
 };
+static_assert(sizeof(struct xfrm_algo_osips) == sizeof(struct xfrm_algo)
+		+ IPSEC_ALGO_MAX_KEY_SIZE, "ERROR!  Unexpected 'xfrm_algo' size!");
 
 int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 		enum ipsec_dir dir, int client)
@@ -448,9 +454,9 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 		}
 	}
 
-	strncpy(ia.algo.alg_name, ctx->alg->xfrm_name, sizeof ia.algo.alg_name - 1);
-	ia.algo.alg_key_len = ctx->alg->key_len;
-	if (ctx->alg->key_len != 0 && hex2string(ctx->ik.s, ctx->ik.len, ia.buf) < 0) {
+	strncpy(ia.alg_name, ctx->alg->xfrm_name, sizeof ia.alg_name - 1);
+	ia.alg_key_len = ctx->alg->key_len;
+	if (ctx->alg->key_len != 0 && hex2string(ctx->ik.s, ctx->ik.len, ia.alg_key) < 0) {
 		LM_ERR("could not hexa decode integrity key [%.*s]\n", ctx->ik.len, ctx->ik.s);
 		goto error;
 	}
@@ -461,9 +467,9 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 		LM_WARN("%s\n", ctx->ealg->deprecated);
 		ctx->ealg->deprecated = NULL;
 	}
-	strncpy(ie.algo.alg_name, ctx->ealg->xfrm_name, sizeof ie.algo.alg_name - 1);
-	ie.algo.alg_key_len = ctx->ealg->key_len;
-	if (ctx->ealg->key_len != 0 && hex2string(ctx->ck.s, ctx->ck.len, ie.buf) < 0) {
+	strncpy(ie.alg_name, ctx->ealg->xfrm_name, sizeof ie.alg_name - 1);
+	ie.alg_key_len = ctx->ealg->key_len;
+	if (ctx->ealg->key_len != 0 && hex2string(ctx->ck.s, ctx->ck.len, ie.alg_key) < 0) {
 		LM_ERR("could not hexa decode confidentialitty key [%.*s]\n", ctx->ck.len, ctx->ck.s);
 		goto error;
 	}
@@ -506,9 +512,9 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 	sa_info->mode = XFRM_MODE_TRANSPORT;
 
 	mnl_attr_put(nlh, XFRMA_ALG_AUTH,
-			sizeof(struct xfrm_algo) + ia.algo.alg_key_len, &ia);
+			sizeof(struct xfrm_algo) + ia.alg_key_len, &ia);
 	mnl_attr_put(nlh, XFRMA_ALG_CRYPT,
-			sizeof(struct xfrm_algo) + ie.algo.alg_key_len, &ie);
+			sizeof(struct xfrm_algo) + ie.alg_key_len, &ie);
 
 	if (mnl_socket_sendto(sock, nlh, nlh->nlmsg_len) < 0) {
 		LM_ERR("communicating with kernel for new SA: %s\n", strerror(errno));
