@@ -238,10 +238,10 @@ event_route [E_HTTP2_REQUEST] {
   xlog("content-type: $json(hdrs/content-type)\n");
 
   $var(rpl_headers) = "[
-	{ \"content-type\": "application/json" },
-	{ \"server\": "OpenSIPS 3.5" },
-	{ \"x-current-time\": "1711457142" },
-	{ \"x-call-cost\": "0.355" }
+	{ \"content-type\": \"application/json\" },
+	{ \"server\": \"OpenSIPS 3.5\" },
+	{ \"x-current-time\": \"1711457142\" },
+	{ \"x-call-cost\": \"0.355\" }
   ]";
 
   $var(data) = "{\"status\": \"success\"}";
