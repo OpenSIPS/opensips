@@ -127,7 +127,7 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 
 	ssl_ctx = SSL_CTX_new(TLS_server_method());
 	if (!ssl_ctx) {
-		LM_ERR("Could not create SSL/TLS context: %s",
+		LM_ERR("Could not create SSL/TLS context: %s\n",
 		     ERR_error_string(ERR_get_error(), NULL));
 		return NULL;
 	}
@@ -137,7 +137,7 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 	                      SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 	if (SSL_CTX_set1_curves_list(ssl_ctx, "P-256") != 1) {
-		LM_ERR("SSL_CTX_set1_curves_list failed: %s",
+		LM_ERR("SSL_CTX_set1_curves_list failed: %s\n",
 		      ERR_error_string(ERR_get_error(), NULL));
 		return NULL;
 	}
@@ -146,7 +146,7 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 		EC_KEY *ecdh;
 		ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
 		if (!ecdh) {
-			LM_ERR("EC_KEY_new_by_curv_name failed: %s",
+			LM_ERR("EC_KEY_new_by_curv_name failed: %s\n",
 			     ERR_error_string(ERR_get_error(), NULL));
 			return NULL;
 		}
@@ -156,11 +156,11 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 #endif /* !(OPENSSL_VERSION_NUMBER >= 0x30000000L) */
 
 	if (SSL_CTX_use_PrivateKey_file(ssl_ctx, key_file, SSL_FILETYPE_PEM) != 1) {
-		LM_ERR("Could not read private key file %s", key_file);
+		LM_ERR("Could not read private key file %s\n", key_file);
 		return NULL;
 	}
 	if (SSL_CTX_use_certificate_chain_file(ssl_ctx, cert_file) != 1) {
-		LM_ERR("Could not read certificate file %s", cert_file);
+		LM_ERR("Could not read certificate file %s\n", cert_file);
 		return NULL;
 	}
 
@@ -174,7 +174,7 @@ static SSL *create_ssl(SSL_CTX *ssl_ctx) {
 	SSL *ssl;
 	ssl = SSL_new(ssl_ctx);
 	if (!ssl) {
-		LM_ERR("Could not create SSL/TLS session object: %s",
+		LM_ERR("Could not create SSL/TLS session object: %s\n",
 		     ERR_error_string(ERR_get_error(), NULL));
 		return NULL;
 	}
@@ -944,7 +944,7 @@ static void start_listen(struct event_base *evbase, const char *service,
 
 	rv = getaddrinfo(h2_ip, service, &hints, &res);
 	if (rv != 0) {
-		LM_ERR("Could not resolve server address");
+		LM_ERR("Could not resolve server address\n");
 		return;
 	}
 
@@ -960,7 +960,7 @@ static void start_listen(struct event_base *evbase, const char *service,
 		}
 	}
 
-	LM_ERR("Could not start listener");
+	LM_ERR("Could not start listener\n");
 }
 
 static void initialize_app_context(app_context *app_ctx, SSL_CTX *ssl_ctx,
