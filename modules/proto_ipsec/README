@@ -384,6 +384,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea)    58      14      4482     369
+   2. Liviu Chircu (@liviuchircu)        4        2       23       15
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -405,7 +406,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Apr 2024 - May 2024
+   1. Liviu Chircu (@liviuchircu)     May 2024 - May 2024
+   2. Razvan Crainea (@razvancrainea) Apr 2024 - May 2024
 
    (1) including any documentation-related commits, excluding
    merge commits
