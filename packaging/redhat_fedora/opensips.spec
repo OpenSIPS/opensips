@@ -25,7 +25,7 @@
 %global _without_aaa_radius 1
 %endif
 
-%if 0%{?rhel} > 7
+%if 0%{?rhel} > 7 || 0%{?fedora} > 36
 %global _with_python3 1
 %endif
 
@@ -73,6 +73,7 @@ BuildRequires:  openssl-devel
 BuildRequires:  expat-devel
 BuildRequires:  xmlrpc-c-devel
 BuildRequires:  libconfuse-devel
+BuildRequires:  libmnl-devel
 %if 0%{?rhel} > 0 && 0%{?rhel} < 8
 BuildRequires:  db4-devel
 %else
@@ -87,6 +88,9 @@ BuildRequires:  pcre-devel
 BuildRequires:  python3-devel
 %else
 BuildRequires:  python-devel
+%endif
+%if 0%{?fedora} > 38
+BuildRequires:  python3-setuptools
 %endif
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 BuildRequires:  systemd-units
@@ -1119,6 +1123,7 @@ fi
 %{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/mi_script.so
 %{_libdir}/opensips/modules/mid_registrar.so
+%{_libdir}/opensips/modules/mqueue.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nat_traversal.so
 %{_libdir}/opensips/modules/nathelper.so
@@ -1129,6 +1134,7 @@ fi
 %{_libdir}/opensips/modules/proto_bin.so
 %{_libdir}/opensips/modules/proto_bins.so
 %{_libdir}/opensips/modules/proto_hep.so
+%{_libdir}/opensips/modules/proto_ipsec.so
 %{_libdir}/opensips/modules/proto_smpp.so
 %{_libdir}/opensips/modules/proto_ws.so
 %{_libdir}/opensips/modules/qos.so
@@ -1215,6 +1221,7 @@ fi
 %doc docdir/README.mi_fifo
 %doc docdir/README.mi_script
 %doc docdir/README.mid_registrar
+%doc docdir/README.mqueue
 %doc docdir/README.msilo
 %doc docdir/README.nat_traversal
 %doc docdir/README.nathelper
@@ -1224,6 +1231,7 @@ fi
 %doc docdir/README.pike
 %doc docdir/README.proto_bin
 %doc docdir/README.proto_hep
+%doc docdir/README.proto_ipsec
 %doc docdir/README.proto_smpp
 %doc docdir/README.proto_ws
 %doc docdir/README.qos
@@ -1266,8 +1274,10 @@ fi
 
 %files auth-modules
 %{_libdir}/opensips/modules/auth.so
+%{_libdir}/opensips/modules/auth_aka.so
 %{_libdir}/opensips/modules/uac_auth.so
 %doc docdir/README.auth
+%doc docdir/README.auth_aka
 %doc docdir/README.uac_auth
 
 %files berkeley-bin
@@ -1319,7 +1329,9 @@ fi
 %if 0%{?_with_aaa_diameter:1}
 %files diameter-module
 %{_libdir}/opensips/modules/aaa_diameter.so
+%{_libdir}/opensips/modules/aka_av_diameter.so
 %doc docdir/README.aaa_diameter
+%doc docdir/README.aka_av_diameter
 %endif
 
 %files emergency-module
@@ -1460,6 +1472,8 @@ fi
 %doc docdir/README.presence_dialoginfo
 %{_libdir}/opensips/modules/presence_dfks.so
 %doc docdir/README.presence_dfks
+%{_libdir}/opensips/modules/presence_reginfo.so
+%doc docdir/README.presence_reginfo
 %{_libdir}/opensips/modules/presence_mwi.so
 %doc docdir/README.presence_mwi
 %{_libdir}/opensips/modules/presence_xcapdiff.so
@@ -1474,6 +1488,8 @@ fi
 %doc docdir/README.pua_dialoginfo
 %{_libdir}/opensips/modules/pua_mi.so
 %doc docdir/README.pua_mi
+%{_libdir}/opensips/modules/pua_reginfo.so
+%doc docdir/README.pua_reginfo
 %{_libdir}/opensips/modules/pua_usrloc.so
 %doc docdir/README.pua_usrloc
 %{_libdir}/opensips/modules/pua_xmpp.so
@@ -1607,8 +1623,9 @@ fi
 * Thu May 09 2024 Liviu Chircu <liviu@opensips.org> - 3.6.0-1
 - Specification updated for opensips 3.6
 
-* Thu May 18 2023 Nick Altmann <nick@altmann.pro> - 3.5.0-1
+* Sat May 18 2024 Nick Altmann <nick@altmann.pro> - 3.5.0-1
 - Specification updated for opensips 3.5
+- New modules: aka_av_diameter, auth_aka, mqueue, presence_reginfo, proto_ipsec, pua_reginfo
 
 * Thu May 18 2023 Nick Altmann <nick@altmann.pro> - 3.4.0-1
 - Specification updated for opensips 3.4
