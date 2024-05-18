@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Răzvan Crainea <razvan@opensips.org>
 Build-Depends: bison,
-               debhelper (>= 9),
+               debhelper (>= 10),
                default-libmysqlclient-dev | libmysqlclient-dev,
                debhelper (>= 9.20160709) | dh-systemd (>= 1.5),
                dpkg-dev (>= 1.16.1.1),
