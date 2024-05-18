@@ -36,6 +36,22 @@
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Dudu Ben Moshe</entry>
+		<entry align="center">4</entry>
+		<entry align="center">1</entry>
+		<entry align="center">272</entry>
+		<entry align="center">0</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">6</entry>
+		<entry align="center">6</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -43,7 +59,7 @@
 		<entry align="center">1</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>6. </entry>
 		<entry>OpenSIPS</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -80,21 +96,31 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
+		<entry align="center">May 2024 - May 2024</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Dudu Ben Moshe</entry>
+		<entry align="center">Feb 2024 - Feb 2024</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Feb 2021 - Oct 2023</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>4. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Feb 2023 - Feb 2023</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>5. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Aug 2022 - Aug 2022</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>6. </entry>
 		<entry>OpenSIPS</entry>
 		<entry align="center">Feb 2021 - Feb 2021</entry>
 	</row>
@@ -112,7 +138,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), OpenSIPS.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Dudu Ben Moshe, Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), OpenSIPS.</para>
 </section>
 
 </chapter>

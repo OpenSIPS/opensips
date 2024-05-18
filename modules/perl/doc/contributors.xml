@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bastian Friedrich</entry>
-		<entry align="center">113</entry>
+		<entry align="center">116</entry>
 		<entry align="center">38</entry>
 		<entry align="center">8597</entry>
 		<entry align="center">284</entry>
@@ -45,10 +45,10 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">20</entry>
-		<entry align="center">17</entry>
+		<entry align="center">22</entry>
+		<entry align="center">18</entry>
 		<entry align="center">62</entry>
-		<entry align="center">73</entry>
+		<entry align="center">133</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2014 - May 2024</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Dec 2006 - Mar 2024</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Oct 2022 - Feb 2023</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - Jul 2022</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

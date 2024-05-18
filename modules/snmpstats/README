@@ -693,10 +693,10 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Jeffrey Magder 114 4 13157 64
+   1. Jeffrey Magder 117 4 13157 64
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 50 36 519 526
    3. Razvan Crainea (@razvancrainea) 24 21 94 70
-   4. Liviu Chircu (@liviuchircu) 15 12 45 117
+   4. Liviu Chircu (@liviuchircu) 16 13 45 119
    5. Ovidiu Sas (@ovidiusas) 13 3 6 505
    6. Daniel-Constantin Mierla (@miconda) 12 10 48 41
    7. Anca Vamanu 6 2 161 111

@@ -426,7 +426,7 @@ Warning
    Example 1.15. sql_select usage
 ...
 sql_select('["password","ha1"]', 'subscriber',
-        '[ {"username", "$tu"}, {"domain",{"!=",null}}]', ,
+        '[ {"username": "$tu"}, {"domain": {"!=", null}}]', ,
         '$avp(pass);$avp(hash)');
 ...
 
@@ -453,7 +453,7 @@ sql_select_one([columns],table,[filter],[order],[res_col_vars],
    Example 1.16. sql_select_one usage
 ...
 sql_select_one('["value","type"]', 'usr_preferences',
-        '[ {"username", "$tu"}, {"attribute","cfna"}]', ,
+        '[ {"username": "$tu"}, {"attribute": "cfna"}]', ,
         '$var(cf_uri);$var(type)');
 # the above query will return only one row, even if there are multiple `
 cfna`
@@ -491,7 +491,7 @@ cfna`
    Example 1.17. sql_update usage
 ...
 sql_update( '[{"password":"my_secret"}]', 'subscriber',
-        '[{"username", "$tu"}]');
+        '[{"username": "$tu"}]');
 ...
 
 1.4.6.  sql_insert(table,columns,[db_id])
@@ -548,7 +548,7 @@ ons":2}]' );
 
    Example 1.19. sql_delete usage
 ...
-sql_delete( 'subscriber', '[{"username", "$tu"}]');
+sql_delete( 'subscriber', '[{"username": "$tu"}]');
 ...
 
 1.4.8.  sql_replace(table,columns,[db_id])
@@ -720,11 +720,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 245 73 6018 7507
-   2. Daniel-Constantin Mierla (@miconda) 104 44 2927 2158
-   3. Liviu Chircu (@liviuchircu) 53 27 1112 944
-   4. Elena-Ramona Modroiu 51 11 4040 390
-   5. Razvan Crainea (@razvancrainea) 21 14 149 246
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 247 73 6018 7507
+   2. Daniel-Constantin Mierla (@miconda) 105 44 2927 2158
+   3. Liviu Chircu (@liviuchircu) 54 28 1116 948
+   4. Elena-Ramona Modroiu 52 11 4040 390
+   5. Razvan Crainea (@razvancrainea) 20 14 149 246
    6. Elena-Ramona Modroiu 18 5 1051 192
    7. Henning Westerholt (@henningw) 12 8 112 133
    8. Vlad Paiu (@vladpaiu) 9 7 39 2
@@ -759,14 +759,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Norman Brandinger (@NormB)          Aug 2006 - Apr 2024
-   2.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2024
-   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
-   6.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   7.  John Burke (@john08burke)           Jun 2022 - Jun 2022
-   8.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2024
+   2.  Norman Brandinger (@NormB)          Aug 2006 - Apr 2024
+   3.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2024
+   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
+   7.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   8.  John Burke (@john08burke)           Jun 2022 - Jun 2022
    9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
@@ -786,11 +786,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), John Burke
-   (@john08burke), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
-   (@vladpaiu), Anca Vamanu, Norman Brandinger (@NormB), Kobi
+   Last edited by: Liviu Chircu (@liviuchircu), Ovidiu Sas
+   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), John Burke (@john08burke), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad
+   Paiu (@vladpaiu), Anca Vamanu, Norman Brandinger (@NormB), Kobi
    Eshun (@ekobi), Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Elena-Ramona Modroiu, Klaus Darilion, Andrei

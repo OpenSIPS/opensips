@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>)</entry>
-		<entry align="center">410</entry>
+		<entry align="center">414</entry>
 		<entry align="center">117</entry>
 		<entry align="center">15689</entry>
 		<entry align="center">10095</entry>
@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">342</entry>
-		<entry align="center">205</entry>
+		<entry align="center">345</entry>
+		<entry align="center">206</entry>
 		<entry align="center">9214</entry>
-		<entry align="center">3734</entry>
+		<entry align="center">3736</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -52,6 +52,14 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
+		<entry align="center">41</entry>
+		<entry align="center">24</entry>
+		<entry align="center">1099</entry>
+		<entry align="center">413</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>)</entry>
 		<entry align="center">40</entry>
 		<entry align="center">29</entry>
@@ -59,17 +67,9 @@
 		<entry align="center">308</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
-		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
-		<entry align="center">40</entry>
-		<entry align="center">24</entry>
-		<entry align="center">1099</entry>
-		<entry align="center">413</entry>
-	</row>
-	<row>
 		<entry>7. </entry>
 		<entry>Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>)</entry>
-		<entry align="center">35</entry>
+		<entry align="center">36</entry>
 		<entry align="center">25</entry>
 		<entry align="center">975</entry>
 		<entry align="center">120</entry>
@@ -93,10 +93,10 @@
 	<row>
 		<entry>10. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">18</entry>
-		<entry align="center">12</entry>
-		<entry align="center">313</entry>
-		<entry align="center">138</entry>
+		<entry align="center">19</entry>
+		<entry align="center">13</entry>
+		<entry align="center">347</entry>
+		<entry align="center">162</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jan 2013 - Apr 2024</entry>
+		<entry align="center">Jan 2013 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -139,7 +139,7 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Apr 2003 - Nov 2023</entry>
+		<entry align="center">Apr 2003 - Dec 2023</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

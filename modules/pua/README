@@ -512,14 +512,14 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Anca Vamanu 276 106 11549 4540
+   1. Anca Vamanu 277 106 11549 4540
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 72 53 1114 550
-   3. Liviu Chircu (@liviuchircu) 21 11 256 383
+   3. Liviu Chircu (@liviuchircu) 22 12 256 395
    4. Ovidiu Sas (@ovidiusas) 17 13 230 109
    5. Daniel-Constantin Mierla (@miconda) 12 8 144 97
    6. Razvan Crainea (@razvancrainea) 10 7 76 83
    7. Edson Gellert Schubert 10 1 0 501
-   8. Saúl Ibarra Corretgé (@saghul) 8 5 243 31
+   8. Saúl Ibarra Corretgé (@saghul) 9 5 243 31
    9. Henning Westerholt (@henningw) 7 4 86 76
    10. Vlad Patrascu (@rvlad-patrascu) 6 4 30 20
 
@@ -552,12 +552,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Apr 2024
-   2.  Carsten Bock                        Mar 2024 - Mar 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
-   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2021
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Apr 2024
+   3.  Carsten Bock                        Mar 2024 - Mar 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
+   6.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2021
    7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2016

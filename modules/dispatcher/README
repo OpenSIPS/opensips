@@ -1507,11 +1507,11 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 170 108 3331 2025
-   2. Liviu Chircu (@liviuchircu) 106 68 1664 1429
-   3. Daniel-Constantin Mierla (@miconda) 81 39 3372 844
-   4. Andrei Datcu (@andrei-datcu) 47 15 2153 846
-   5. Razvan Crainea (@razvancrainea) 45 37 602 175
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 169 108 3331 2025
+   2. Liviu Chircu (@liviuchircu) 107 69 1664 1432
+   3. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
+   4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
+   5. Razvan Crainea (@razvancrainea) 46 37 602 175
    6. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
    7. Ovidiu Sas (@ovidiusas) 31 17 705 434
    8. Vlad Patrascu (@rvlad-patrascu) 19 11 378 236
@@ -1549,12 +1549,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Feb 2024
-   2.  Vlad Paiu (@vladpaiu)               Mar 2012 - Dec 2023
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
-   4.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2023
-   5.  wangdd                              Apr 2023 - May 2023
-   6.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Feb 2024
+   3.  Vlad Paiu (@vladpaiu)               Mar 2012 - Dec 2023
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   5.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2023
+   6.  wangdd                              Apr 2023 - May 2023
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
    8.  John Burke (@john08burke)           Feb 2021 - Jan 2022
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
@@ -1579,8 +1579,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Razvan Crainea
-   (@razvancrainea), wangdd, Liviu Chircu (@liviuchircu), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Paiu
+   (@vladpaiu), Razvan Crainea (@razvancrainea), wangdd, Vlad
    Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
    (@bogdan-iancu), John Burke (@john08burke), Roman Sevko, Peter
    Lemenkov (@lemenkov), Nick Altmann (@nikbyte), Ionel Cerghit
