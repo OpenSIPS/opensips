@@ -383,6 +383,20 @@ per second even on low-budget hardware.
 .
 This package provides support for SIP Identity (see RFC 4474).
 
+%package  ipsec-module
+Summary:  IPSec proto module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: libmnl
+BuildRequires:  libmnl-devel
+
+%description  ipsec-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides IMS IPSec connections (see TS 33.203).
+
 %package  jabber-module
 Summary:  Jabber gateway module for OpenSIPS
 Group:    System Environment/Daemons
@@ -1342,6 +1356,10 @@ fi
 %files identity-module
 %{_libdir}/opensips/modules/identity.so
 %doc docdir/README.identity
+
+%files ipsec-module
+%{_libdir}/opensips/modules/proto_ipsec.so
+%doc docdir/README.ipsec
 
 %files jabber-module
 %{_libdir}/opensips/modules/jabber.so
