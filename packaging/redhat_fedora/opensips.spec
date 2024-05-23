@@ -1359,7 +1359,7 @@ fi
 
 %files ipsec-module
 %{_libdir}/opensips/modules/proto_ipsec.so
-%doc docdir/README.ipsec
+%doc docdir/README.proto_ipsec
 
 %files jabber-module
 %{_libdir}/opensips/modules/jabber.so
