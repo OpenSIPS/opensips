@@ -278,7 +278,7 @@ int ops_sql_avp_load (struct sip_msg* msg, struct fis_param *sp,
 			/* check that uri contains user part */
 			if(!uri.user.s|| !uri.user.len)
 			{
-				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				LM_ERR("incomplete uri <%.*s> missing user\n", uuid.len, uuid.s);
 				goto error;
 			}
 			else
@@ -291,7 +291,7 @@ int ops_sql_avp_load (struct sip_msg* msg, struct fis_param *sp,
 			/* check that uri contains host part */
 			if(!uri.host.len|| !uri.host.s)
 			{
-				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				LM_ERR("incomplete uri <%.*s> missing host\n", uuid.len, uuid.s);
 				goto error;
 			}
 			else
