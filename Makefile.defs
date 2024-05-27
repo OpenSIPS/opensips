@@ -1414,7 +1414,7 @@ DEFAULT_YACC=bison
 
 # on solaris add -lxnet (e.g. LIBS= -lxnet)
 _SAVE_LIBS := $(LIBS)
-LIBS+= -ldl -lresolv
+LIBS+= -ldl -lresolv -pthread
 
 #os specific stuff
 ifeq ($(OS), linux)
@@ -1424,9 +1424,6 @@ ifeq ($(OS), linux)
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_POSIX_SEM  # try posix sems
 		found_lock_method=yes
-	endif
-	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
-		LIBS += -pthread
 	endif
 	ifneq (,$(findstring PROFILING, $(DEFS)))
 		LIBS += -lprofiler
@@ -1518,9 +1515,6 @@ ifeq ($(OS), freebsd)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
 	endif
-	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
-		LIBS+=-lpthread
-	endif
 	# check for ver >= 4.1
 	ifeq ($(shell [ $(OSREL_N) -gt 4001 ] && echo has_kqueue), has_kqueue)
 		ifeq ($(NO_KQUEUE),)
@@ -1604,10 +1598,8 @@ ifeq ($(OS), darwin)
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
-		LIBS= -pthread -lresolv  #dlopen is in libc
-	else
-		LIBS= -lresolv  #dlopen is in libc
 	endif
+	LIBS= -lresolv  #dlopen is in libc
 	ifeq ($(NO_KQUEUE),)
 		DEFS+=-DHAVE_KQUEUE
 	endif
