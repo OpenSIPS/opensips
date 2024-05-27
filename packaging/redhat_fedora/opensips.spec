@@ -41,7 +41,7 @@
 %global _with_wolfssl 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} launch_darkly http2d
+%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} http2d
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
@@ -439,6 +439,19 @@ This module is an implementation of an Apache Kafka producer.
 It serves as a transport backend for the Event Interface and
 also provides a stand-alone connector to be used from the
 OpenSIPS script in order to publish messages to Kafka brokers.
+
+%package  launch-darkly-module
+Summary:  Implementation of the Launch Darkly APIs
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: cmake
+
+%description  launch-darkly-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module provides an implementation of the Launch Darkly APIs.
 
 %package  ldap-modules
 Summary:  LDAP modules for OpenSIPS
@@ -1373,6 +1386,10 @@ fi
 %{_libdir}/opensips/modules/event_kafka.so
 %doc docdir/README.event_kafka
 
+%files launch-darkly-module
+%{_libdir}/opensips/modules/launch_darkly.so
+%doc docdir/README.launch_darkly
+
 %files ldap-modules
 %{_libdir}/opensips/modules/h350.so
 %doc docdir/README.h350
@@ -1620,6 +1637,9 @@ fi
 
 
 %changelog
+* Sat May 27 2024 Razvan Crainea <razvan@opensips.org> - 3.5.0-1
+- New modules: launch_darkly
+
 * Sat May 18 2024 Nick Altmann <nick@altmann.pro> - 3.5.0-1
 - Specification updated for opensips 3.5
 - New modules: aka_av_diameter, auth_aka, mqueue, presence_reginfo, proto_ipsec, pua_reginfo
