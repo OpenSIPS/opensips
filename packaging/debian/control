@@ -12,6 +12,7 @@ Build-Depends: bison,
                libconfuse-dev,
                libcurl4-gnutls-dev,
                libdb-dev (>= 4.6.19),
+               libevent-dev,
                libfdcore6 (>= 1.2.1) | base-files,
                libfdproto6 (>= 1.2.1) | base-files,
                libfreediameter-dev (>= 1.2.1) | base-files,
@@ -68,6 +69,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-emergency-module,
           opensips-geoip-module,
           opensips-http-modules,
+          opensips-http2d-module,
           opensips-identity-module,
           opensips-ipsec-module,
           opensips-jabber-module,
@@ -309,7 +311,7 @@ Package: opensips-geoip-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: IP address-to-location looku (MaxMind GeoIP API) for OpenSIPS
+Description: IP address-to-location lookup (MaxMind GeoIP API) for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
@@ -335,6 +337,20 @@ Description: HTTP transport layer and Management Interface for OpenSIPS
  .
  This package provides an HTTP transport layer and Management Interface for
  OpenSIPS.
+
+Package: opensips-http2d-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: HTTP/2 server implementation with "h2" ALPN support
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an RFC 7540/9113 HTTP/2 server implementation with
+ "h2" ALPN support for OpenSIPS.
 
 Package: opensips-identity-module
 Architecture: any

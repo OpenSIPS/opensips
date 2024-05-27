@@ -41,7 +41,7 @@
 %global _with_wolfssl 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} http2d
+%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl}
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
@@ -370,6 +370,20 @@ per second even on low-budget hardware.
 .
 This package provides an HTTP transport layer and Management Interface for
 OpenSIPS.
+
+%package  http2d-module
+Summary:  HTTP/2 server implementation with "h2" ALPN support
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: libevent-devel
+
+%description  http2d-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides an RFC 7540/9113 HTTP/2 server implementation with
+"h2" ALPN support for OpenSIPS.
 
 %package  identity-module
 Summary:  SIP Identity module for OpenSIPS
@@ -1366,6 +1380,10 @@ fi
 %{_datadir}/opensips/pi_http/*
 %doc docdir/README.pi_http
 
+%files http2d-module
+%{_libdir}/opensips/modules/http2d.so
+%doc docdir/README.http2d
+
 %files identity-module
 %{_libdir}/opensips/modules/identity.so
 %doc docdir/README.identity
@@ -1638,7 +1656,7 @@ fi
 
 %changelog
 * Sat May 27 2024 Razvan Crainea <razvan@opensips.org> - 3.5.0-1
-- New modules: launch_darkly
+- New modules: launch_darkly http2d
 
 * Sat May 18 2024 Nick Altmann <nick@altmann.pro> - 3.5.0-1
 - Specification updated for opensips 3.5
