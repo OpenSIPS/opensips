@@ -55,7 +55,7 @@ ALL_MODPKG_LIST := \
 	PRESENCE PROMETHEUS PROTO_TLS PROTO_WSS PYTHON RABBITMQ \
 	REDIS RADIUS REGEX REST_CLIENT SIPREC SNMPSTATS SQLITE STIR_SHAKEN \
 	TLS_MGM TLS_OPENSSL TLS_WOLFSSL UNIXODBC UUID XML XMLRPC XMPP IPSEC \
-	LAUNCH_DARKLY HTTP2D
+	LAUNCH_DARKLY
 
 
 MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)
@@ -274,9 +274,6 @@ IPSEC_MOD_PATH=$(addprefix modules/, $(IPSEC_MODULES))
 LAUNCH_DARKLY_PKGNAME = opensips-launch-darkly-module
 LAUNCH_DARKLY_MODULES = launch_darkly
 LAUNCH_DARKLY_MOD_PATH=$(addprefix modules/, $(LAUNCH_DARKLY_MODULES))
-HTTP2D_PKGNAME = opensips-http2d-module
-HTTP2D_MODULES = http2d
-HTTP2D_MOD_PATH=$(addprefix modules/, $(HTTP2D_MODULES))
 
 
 # Need this per-package variables available in environment so accessible
@@ -288,7 +285,7 @@ BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
 
 ## modules not in the "main" package or unstable modules that we never want to build
 ## Everything we don't specifically exclude here will get built into the primary package
-NONCORE_MODULES = $(ALL_MODULES) osp
+NONCORE_MODULES = $(ALL_MODULES) osp http2d
 
 ifeq (cc, $(CC))
 	CC = gcc
