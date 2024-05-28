@@ -57,7 +57,6 @@ int db_mysql_connect(struct my_con* ptr)
 {
 	str *tls_domain_name;
 
-	my_bool reconnect = 0;
 	/* if connection already in use, close it first*/
 	if (ptr->init)
 		mysql_close(ptr->con);
@@ -95,11 +94,14 @@ int db_mysql_connect(struct my_con* ptr)
 	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT, (void *)&db_mysql_timeout_interval);
 	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT, (void *)&db_mysql_timeout_interval);
 
-	/* force no auto reconnection */
-#if MYSQL_VERSION_ID >= 50013
-	mysql_options(ptr->con, MYSQL_OPT_RECONNECT, &reconnect);
-#else
+	/* explicitly disable auto-reconnect on older libraries (default: 0) */
+#if MYSQL_VERSION_ID < 50013
 	ptr->con->reconnect = 0;
+#elif MYSQL_VERSION_ID < 80034
+	{
+		my_bool reconnect = 0;
+		mysql_options(ptr->con, MYSQL_OPT_RECONNECT, &reconnect);
+	}
 #endif
 
 	if (ptr->id->port) {
