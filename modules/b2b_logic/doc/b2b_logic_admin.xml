@@ -584,7 +584,7 @@ modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2 seconds
 		This function can be used from REQUEST_ROUTE.
 	</para>
 	<note><para>
-		If you have a multi interface setup and want to chance the outbound interface,
+		If you have a multi interface setup and want to change the outbound interface,
 		it is mandatory to use the "force_send_socket()" core function before passing
 		control to b2b function. If you do not do it, the requests may be correctly routed,
 		but the SIP pacakge may be invalid (as Contact, Via, etc).
