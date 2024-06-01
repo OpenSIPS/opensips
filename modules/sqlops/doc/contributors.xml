@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Anca Vamanu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Klaus Darilion, John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Andrey Vorobiev, Olle E. Johansson, Kennard White, Julián Moreno Patiño, Konstantin Bokarius, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Andreas Granig, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergio Gutierrez, Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Andrei Pelinescu-Onciul, Anca Vamanu, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Klaus Darilion, John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Andrey Vorobiev, Olle E. Johansson, Kennard White, Julián Moreno Patiño, Konstantin Bokarius, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Andreas Granig, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergio Gutierrez, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2013 - May 2024</entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">Aug 2006 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
-		<entry align="center">Aug 2006 - Apr 2024</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2013 - May 2024</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
