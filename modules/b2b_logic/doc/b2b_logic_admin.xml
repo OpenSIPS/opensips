@@ -608,7 +608,7 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user()) {
 				advertise in generated messages.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>extra_hdrs (var, optioanl)</emphasis> - AVP variable holding a list
+				<emphasis>extra_hdrs (var, optional)</emphasis> - AVP variable holding a list
 				of extra headers (the header names) to be added for any request sent
 				to this entity.
 			</para></listitem>
