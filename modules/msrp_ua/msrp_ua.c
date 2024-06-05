@@ -1112,7 +1112,7 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 	switch (msg->REQ_METHOD) {
 	case METHOD_INVITE:
 		if (get_body(msg, &body) == 0 && body.len == 0) {
-			/* no SDP -> late negociation */
+			/* no SDP -> late negotiation */
 
 			if (msrpua_update_send_200ok(sess, etype) < 0)
 				LM_ERR("Failed to send 200 OK on reInvite with no SDP\n");
@@ -1171,7 +1171,7 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 			/* ACK for reINVITE */
 
 			if (get_body(msg, &body) == 0 && body.len == 0) {
-				/* no SDP -> no late negociation, just update state */
+				/* no SDP -> no late negotiation, just update state */
 				sess->dlg_state = MSRPUA_DLG_EST;
 			} else {
 				/* ACK with SDP -> update session */
