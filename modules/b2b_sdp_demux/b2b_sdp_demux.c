@@ -1027,7 +1027,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 			/* also notify the upstream */
 			body = b2b_sdp_mux_body(ctx);
 			if (body) {
-				/* we do a busy waiting if there's a different negociation happening */
+				/* we do a busy waiting if there's a different negotiation happening */
 				B2B_SDP_CLIENT_WAIT_FREE(ctx);
 				ctx->pending_no = 1;
 				lock_release(&ctx->lock);
