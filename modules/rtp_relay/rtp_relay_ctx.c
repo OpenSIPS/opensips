@@ -1579,7 +1579,7 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 			if (msg->REQ_METHOD != METHOD_ACK)
 				LM_DBG("method %d without SDP\n", msg->REQ_METHOD);
 			else if (rtp_sess_late(sess))
-				LM_WARN("late negociation without SDP in ACK!\n");
+				LM_WARN("late negotiation without SDP in ACK!\n");
 			ret = 0;
 		} else {
 			rtp_sess_set_late(sess);
