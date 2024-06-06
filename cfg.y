@@ -152,6 +152,7 @@ struct port_range {
 	int max;
 	struct port_range *next;
 } *pr_tmp;
+static struct script_return_param sr_tmp;
 
 static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
@@ -160,6 +161,16 @@ static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
 static struct multi_str *new_string(char *s);
 static struct port_range* mk_port_range(int, int);
 static int parse_ipnet(char *in, int len, struct net **ipnet);
+static struct script_return_param *mk_script_return(enum script_return_type type)
+{
+	struct script_return_param *param = pkg_malloc(sizeof *param);
+	if (!param)
+		return NULL;
+	*param = sr_tmp;
+	param->type = type;
+	param->next = NULL;
+	return param;
+}
 
 extern int line;
 extern int column;
@@ -249,6 +260,7 @@ extern int cfg_parse_only_routes;
 	struct _pv_spec *specval;
 	struct multi_str* multistr;
 	struct port_range* portrange;
+	struct script_return_param* return_params;
 }
 
 /* terminals */
@@ -493,6 +505,7 @@ extern int cfg_parse_only_routes;
 %type <strval> folded_string
 %type <multistr> multi_string
 %type <portrange> portrange
+%type <return_params> return_params return_param
 
 /*
  * known shift/reduce conflicts (the default action, shift, is correct):
@@ -2429,6 +2442,17 @@ async_func: ID LPAREN RPAREN {
 			}
 	;
 
+return_param: script_var { sr_tmp.rspec = $1; $$ = mk_script_return(SCRIPT_ROUTE_RET_VAR);}
+		| snumber { sr_tmp.rint = $1; $$ = mk_script_return(SCRIPT_ROUTE_RET_INT);}
+		| STRING { sr_tmp.rstr.s = $1; sr_tmp.rstr.len = strlen($1);
+					$$ = mk_script_return(SCRIPT_ROUTE_RET_STR);}
+		| NULLV { $$ = mk_script_return(SCRIPT_ROUTE_RET_NULL);}
+		;
+
+return_params: return_param { $$ = $1; }
+		| return_params COMMA return_param { $3->next = $1; $$ = $3; }
+		;
+
 cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5);
 			}
@@ -2437,16 +2461,58 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 		| EXIT				 {mk_action0( $$, EXIT_T); }
 		| EXIT LPAREN RPAREN {mk_action0( $$, EXIT_T); }
 		| RETURN script_var
-							 {mk_action1( $$, RETURN_T, SCRIPTVAR_ST, (void*)$2); }
+							 {mk_action2( $$, RETURN_T,
+								SCRIPTVAR_ST,
+								NULLV_ST,
+								(void*)$2,
+								NULL); }
 		| RETURN LPAREN script_var RPAREN
-							 {mk_action1( $$, RETURN_T, SCRIPTVAR_ST, (void*)$3); }
+							 {mk_action2( $$, RETURN_T,
+								SCRIPTVAR_ST,
+								NULLV_ST,
+								(void*)$3,
+								NULL); }
+		| RETURN LPAREN script_var COMMA return_params RPAREN
+							 {mk_action2( $$, RETURN_T,
+								SCRIPTVAR_ST,
+								EXPR_ST,
+								(void*)$3,
+								$5); }
 		| RETURN snumber
-							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)$2); }
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								NULLV_ST,
+								(void*)$2,
+								NULL); }
 		| RETURN LPAREN snumber	RPAREN
-							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)$3); }
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								NULLV_ST,
+								(void*)$3,
+								NULL); }
+		| RETURN LPAREN snumber COMMA return_params RPAREN
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								EXPR_ST,
+								(void*)$3,
+								$5); }
 		| RETURN LPAREN RPAREN
-							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)1); }
-		| RETURN			 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)1); }
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								NULLV_ST,
+								(void*)1,
+								NULL); }
+		| RETURN LPAREN COMMA return_params RPAREN
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								EXPR_ST,
+								(void*)1,
+								$4); }
+		| RETURN			 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								NULLV_ST,
+								(void*)1,
+								NULL); }
 		| LOG_TOK LPAREN STRING RPAREN	{mk_action2( $$, LOG_T, NUMBER_ST,
 													STRING_ST,(void*)4,$3);
 									}

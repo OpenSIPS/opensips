@@ -2160,3 +2160,117 @@ int is_script_async_func_used(const char *name, int param_no)
 
 	return 0;
 }
+
+static int script_return_level = 0;
+static struct script_return_value **script_return_values = NULL, *script_return_last;
+
+int script_return_push(void)
+{
+	struct script_return_value **tmp;
+	tmp = pkg_realloc(script_return_values, (script_return_level + 1) * sizeof *tmp);
+	if (!tmp) {
+		LM_ERR("could not add another return level (current=%d\n", script_return_level);
+		return -1;
+	}
+	script_return_values = tmp;
+	script_return_values[script_return_level] = NULL;
+	if (script_return_last)
+		script_return_free(&script_return_last);
+	return script_return_level++;
+}
+
+void script_return_pop(int level)
+{
+	/* we leave this here, just to have a way of popping the last level */
+	if (script_return_last)
+		script_return_free(&script_return_last);
+	if (script_return_level < 0)
+		return;
+	if (level != script_return_level - 1) {
+		LM_BUG("cannot return level %d vs %d\n", level, script_return_level);
+		return;
+	}
+	script_return_last = script_return_values[level];
+	script_return_values = pkg_realloc(script_return_values,
+			(--script_return_level) * sizeof *script_return_values);
+}
+
+void script_return_free(struct script_return_value **values)
+{
+	struct script_return_value *v, *n;
+	if (*values == NULL)
+		return;
+	for (v = *values; v; v = n) {
+		n = v->next;
+		pkg_free(v);
+	}
+	*values = NULL;
+}
+
+void script_return_set(struct sip_msg *msg, struct script_return_param *params)
+{
+	pv_value_t val;
+	struct script_return_param *p;
+	struct script_return_value *v, *ret = NULL;
+	if (script_return_level <= 0) {
+		LM_ERR("no return level initialized\n");
+		return;
+	}
+	/* itertate through each parameter to store it's value */
+	for (p = params; p; p = p->next) {
+		memset(&val, 0, sizeof val);
+		switch (p->type) {
+			case SCRIPT_ROUTE_RET_INT:
+				val.ri = p->rint;
+				val.flags = PV_VAL_INT;
+				break;
+			case SCRIPT_ROUTE_RET_STR:
+				val.rs = p->rstr;
+				val.flags = PV_VAL_STR;
+				break;
+			case SCRIPT_ROUTE_RET_VAR:
+				if (pv_get_spec_value(msg, p->rspec, &val) != 0) {
+					LM_ERR("cannot get return value\n");
+					pv_get_null(NULL, NULL, &val);
+				}
+				break;
+			case SCRIPT_ROUTE_RET_NULL:
+				pv_get_null(NULL, NULL, &val);
+				break;
+			default:
+				LM_BUG("unhandled return type %d\n", p->type);
+				script_return_free(&ret);
+				return;
+		}
+		v = pkg_malloc(sizeof(*v) + ((val.flags & PV_VAL_STR)?val.rs.len:0));
+		if (v) {
+			v->val = val;
+			if (val.flags & PV_VAL_STR) {
+				v->val.rs.s = v->buf;
+				memcpy(v->val.rs.s, val.rs.s, val.rs.len);
+			}
+			v->next = ret;
+			ret = v;
+		} else {
+			LM_ERR("could not allocate return value\n");
+			script_return_free(&ret);
+			return;
+		}
+	}
+	if (script_return_values[script_return_level - 1])
+		script_return_free(&script_return_values[script_return_level - 1]);
+	script_return_values[script_return_level - 1] = ret;
+}
+
+int script_return_get(pv_value_t *res, int index)
+{
+	struct script_return_value *v;
+	pv_get_null(NULL, NULL, res);
+	if (index < 0 || !script_return_last)
+		return 0;
+	for (v = script_return_last; v && index > 0; v = v->next, index--);
+	if (!v)
+		return 0;
+	*res = v->val;
+	return 1;
+}

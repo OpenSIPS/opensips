@@ -114,7 +114,7 @@ static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
 /* (0 if drop or break encountered, 1 if not ) */
 static inline int run_actions(struct action* a, struct sip_msg* msg)
 {
-	int ret, _;
+	int ret, _, ret_lvl;
 	str top_route;
 
 	if (route_stack_size > ROUTE_MAX_REC_LEV) {
@@ -133,11 +133,15 @@ static inline int run_actions(struct action* a, struct sip_msg* msg)
 		goto error;
 	}
 
+	ret_lvl=script_return_push();
+
 	ret=run_action_list(a, msg);
 
 	/* if 'return', reset the flag */
 	if(action_flags&ACT_FL_RETURN)
 		action_flags &= ~ACT_FL_RETURN;
+
+	script_return_pop(ret_lvl);
 
 	return ret;
 
@@ -682,6 +686,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 				action_flags |= ACT_FL_EXIT;
 			break;
 		case RETURN_T:
+				if (a->elem[1].type == EXPR_ST)
+					script_return_set(msg, a->elem[1].u.data);
+				else
+					script_return_set(msg, NULL);
 				script_trace("core", "return", msg, a->file, a->line) ;
 				if (a->elem[0].type == SCRIPTVAR_ST)
 				{

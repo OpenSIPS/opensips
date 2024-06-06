@@ -149,6 +149,7 @@ int init_pvar_support(void)
 /* route param variable */
 static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
 static int pv_parse_param_name(pv_spec_p sp, const str *in);
+static int pv_parse_return_value(pv_spec_p sp, const str *in);
 
 /********** helper functions ********/
 /**
@@ -3618,6 +3619,56 @@ static int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t
 	return 0;
 }
 
+static int pv_get_return_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	int index;
+	pv_value_t tv;
+
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if(res == NULL)
+		return -1;
+
+	if (param->pvn.type == PV_NAME_INTSTR) {
+		if (param->pvn.u.isname.type != 0) {
+			LM_ERR("route $return variable accepts only integer indexes\n");
+			return -1;
+		}
+		index = param->pvn.u.isname.name.n;
+	} else {
+		/* pvar -> it might be another $param variable! */
+		if(pv_get_spec_value(msg, (pv_spec_p)(param->pvn.u.dname), &tv)!=0) {
+			LM_ERR("cannot get spec value\n");
+			return -1;
+		}
+
+		if(tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY) {
+			LM_ERR("null or empty name\n");
+			return -1;
+		}
+		if (!(tv.flags&PV_VAL_INT) || str2int(&tv.rs,(unsigned int*)&index) < 0) {
+			LM_ERR("invalid index <%.*s>\n", tv.rs.len, tv.rs.s);
+			return -1;
+		}
+	}
+
+	if (script_return_get(res, index) < 0) {
+		LM_ERR("could not get return %d\n", index);
+		return -1;
+	}
+
+	/* "normalize" integer */
+	if ((res->flags & PV_VAL_INT) && !(res->flags & PV_VAL_STR)) {
+		res->rs.s = int2str(res->ri, &res->rs.len);
+		res->flags |= PV_VAL_STR;
+	}
+
+	return 0;
+}
+
 /************** Boolean consts *****************/
 
 static const pv_value_t pv_true = {
@@ -4201,6 +4252,8 @@ const pv_export_t _pv_names_table[] = {
 	0, 0, 0, 0 },
 	{str_const_init("xlog_level"), PVT_XLOG_LEVEL, pv_get_xlog_level,
 		pv_set_xlog_level, 0, 0, 0, 0 },
+	{str_const_init("return"), PVT_EXTRA, pv_get_return_value, 0,
+		pv_parse_return_value, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -5540,6 +5593,45 @@ static int pv_parse_param_name(pv_spec_p sp, const str *in)
 		/* remember it was a string, so we can retrieve it later */
 		sp->pvp.pvn.u.isname.name.s = *in;
 		sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
+	}
+	return 0;
+
+}
+
+static int pv_parse_return_value(pv_spec_p sp, const str *in)
+{
+	char *p;
+	char *s;
+	pv_spec_p nsp = 0;
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+	p = in->s;
+	if(*p==PV_MARKER)
+	{
+		nsp = (pv_spec_p)pkg_malloc(sizeof(pv_spec_t));
+		if(nsp==NULL)
+		{
+			LM_ERR("no more memory\n");
+			return -1;
+		}
+		s = pv_parse_spec(in, nsp);
+		if(s==NULL)
+		{
+			LM_ERR("invalid name [%.*s]\n", in->len, in->s);
+			pv_spec_free(nsp);
+			return -1;
+		}
+		sp->pvp.pvn.type = PV_NAME_PVAR;
+		sp->pvp.pvn.u.dname = (void*)nsp;
+		return 0;
+	}
+	sp->pvp.pvn.u.isname.type = 0;
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	/* do our best to convert it to an index */
+	if (str2int(in, (unsigned int *)&sp->pvp.pvn.u.isname.name.n) < 0) {
+		LM_ERR("could not convert index to int!\n");
+		return -1;
 	}
 	return 0;
 
