@@ -1019,12 +1019,8 @@ void shm_mem_destroy(void)
 	#endif
 
 	#ifdef STATISTICS
-		if (event_shm_threshold) {
-			if (event_shm_last)
-				shm_free(event_shm_last);
-			if (event_shm_pending)
-				shm_free(event_shm_pending);
-		}
+		if (event_shm_last)
+			shm_free_unsafe(event_shm_last);
 	#endif
 	}
 	shm_relmem(shm_mempool, shm_mem_size);
