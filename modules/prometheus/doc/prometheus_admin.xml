@@ -304,7 +304,7 @@ route[my_custom_prometheus_route] {
 	# the header field to contain the custom prometheus stats header
 	# the values field is an array itself, of name/value objects 
 	# used for individual stats publishing
-	$avp(prometheus_out_json) = "
+	$avp(prometheus_out_json) = '
 [   {
         "header": "# TYPE opensips_cps gauge",
         "values": [
@@ -322,8 +322,8 @@ route[my_custom_prometheus_route] {
                 "value": 0
             }
         ]
-    },
-]";
+    }
+]';
 
 }
 ...
