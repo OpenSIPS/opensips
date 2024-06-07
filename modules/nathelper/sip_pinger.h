@@ -392,8 +392,8 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 		s_len("Via: SIP/2.0/") + st.len + address->len +
 		1 + port->len + strlen(branch) +
 		(path->len ? (s_len(CRLF"Route: ") + path->len) : 0) +
-		s_len(CRLF"From: ") +  sipping_from.len + s_len(";tag=") + 8 +
-		s_len(CRLF"To: ") + curi->len +
+		s_len(CRLF"From: ") + 2 +  sipping_from.len + s_len(";tag=") + 8 +
+		s_len(CRLF"To: ") + 2 + curi->len +
 		s_len(CRLF"Call-ID: ") + sipping_callid.len + 1 + 8 + 1 + 8 + 1 +
 		address->len +
 		s_len(CRLF"CSeq: 1 ") + sipping_method.len +
@@ -419,14 +419,14 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 		append_fix( p, CRLF"Route: ");
 		append_str( p, *path);
 	}
-	append_fix( p, CRLF"From: ");
+	append_fix( p, CRLF"From: <");
 	append_str( p, sipping_from);
-	append_fix( p, ";tag=");
+	append_fix( p, ">;tag=");
 	len = 8;
 	int2reverse_hex( &p, &len, sipping_fromtag++ );
-	append_fix( p, CRLF"To: ");
+	append_fix( p, CRLF"To: <");
 	append_str( p, *curi);
-	append_fix( p, CRLF"Call-ID: ");
+	append_fix( p, ">"CRLF"Call-ID: ");
 	append_str( p, sipping_callid);
 	*(p++) = '-';
 	len = 8;
