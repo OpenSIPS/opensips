@@ -113,8 +113,20 @@ static const mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
+char *rtp_relay_route_offer_name = "rtp_relay_offer";
+char *rtp_relay_route_answer_name = "rtp_relay_answer";
+char *rtp_relay_route_delete_name = "rtp_relay_delete";
+char *rtp_relay_route_copy_offer_name = "rtp_relay_copy_offer";
+char *rtp_relay_route_copy_answer_name = "rtp_relay_copy_answer";
+char *rtp_relay_route_copy_delete_name = "rtp_relay_copy_delete";
 
 static const param_export_t mod_params[] = {
+	{"route_offer",       STR_PARAM, &rtp_relay_route_offer_name},
+	{"route_answer",      STR_PARAM, &rtp_relay_route_answer_name},
+	{"route_delete",      STR_PARAM, &rtp_relay_route_delete_name},
+	{"route_copy_offer",  STR_PARAM, &rtp_relay_route_copy_offer_name},
+	{"route_copy_answer", STR_PARAM, &rtp_relay_route_copy_answer_name},
+	{"route_copy_delete", STR_PARAM, &rtp_relay_route_copy_delete_name},
 	{0, 0, 0}
 };
 
@@ -155,10 +167,20 @@ struct module_exports exports = {
 
 static int mod_preinit(void)
 {
+	static struct rtp_relay_hooks rtp_relay;
 	if (rtp_relay_ctx_preinit() < 0) {
 		LM_ERR("could not pre-initialize rtp_relay ctx\n");
 		return -1;
 	}
+	struct rtp_relay_funcs binds = {
+		.offer = rtp_relay_route_offer,
+		.answer = rtp_relay_route_answer,
+		.delete = rtp_relay_route_delete,
+		.copy_offer = rtp_relay_route_copy_offer,
+		.copy_answer = rtp_relay_route_copy_answer,
+		.copy_delete = rtp_relay_route_copy_delete,
+	};
+	register_rtp_relay("route", &binds, &rtp_relay);
 	return 0;
 }
 

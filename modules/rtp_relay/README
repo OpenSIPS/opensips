@@ -7,26 +7,36 @@ RTP Relay Module
 
         1.1. Overview
         1.2. Multiple Branches
-        1.3. Dependencies
+        1.3. RTP Relay Engines
+        1.4. Dependencies
 
-              1.3.1. OpenSIPS Modules
-              1.3.2. External Libraries or Applications
+              1.4.1. OpenSIPS Modules
+              1.4.2. External Libraries or Applications
 
-        1.4. Exported Functions
+        1.5. Exported Parameters
 
-              1.4.1. rtp_relay_engage(engine, [set])
+              1.5.1. route_offer (string)
+              1.5.2. route_answer (string)
+              1.5.3. route_delete (string)
+              1.5.4. route_copy_offer (string)
+              1.5.5. route_copy_answer (string)
+              1.5.6. route_copy_delete (string)
 
-        1.5. Exported MI Functions
+        1.6. Exported Functions
 
-              1.5.1. rtp_relay_list
-              1.5.2. rtp_relay_update
-              1.5.3. rtp_relay_update_callid
+              1.6.1. rtp_relay_engage(engine, [set])
 
-        1.6. Exported Pseudo-Variables
+        1.7. Exported MI Functions
 
-              1.6.1. $rtp_relay
-              1.6.2. $rtp_relay_peer
-              1.6.3. $rtp_relay_ctx()
+              1.7.1. rtp_relay_list
+              1.7.2. rtp_relay_update
+              1.7.3. rtp_relay_update_callid
+
+        1.8. Exported Pseudo-Variables
+
+              1.8.1. $rtp_relay
+              1.8.2. $rtp_relay_peer
+              1.8.3. $rtp_relay_ctx()
 
    2. Contributors
 
@@ -46,10 +56,22 @@ RTP Relay Module
 
    List of Examples
 
-   1.1. rtp_relay_engage usage
-   1.2. rtp_relay_list usage
-   1.3. rtp_relay_update usage
-   1.4. rtp_relay_update_callid usage
+   1.1. Set route_offer parameter
+   1.2. route_offer route usage
+   1.3. Set route_answer parameter
+   1.4. route_answer route usage
+   1.5. Set route_delete parameter
+   1.6. rtp_relay_delete route usage
+   1.7. Set rtp_relay_copy_offer parameter
+   1.8. Set rtp_relay_copy_offer usage
+   1.9. Set rtp_relay_copy_answer parameter
+   1.10. Set rtp_relay_copy_answer usage
+   1.11. Set rtp_relay_copy_delete parameter
+   1.12. Set rtp_relay_copy_delete usage
+   1.13. rtp_relay_engage usage
+   1.14. rtp_relay_list usage
+   1.15. rtp_relay_update usage
+   1.16. rtp_relay_update_callid usage
 
 Chapter 1. Admin Guide
 
@@ -109,24 +131,320 @@ Chapter 1. Admin Guide
    all the other branches are destroyed and only the established
    branches remain active throughout the call.
 
-1.3. Dependencies
+1.3. RTP Relay Engines
 
-1.3.1. OpenSIPS Modules
+   The module does not perform any SDP mangling itself, it is just
+   an enabler of the different backends supported, such as
+   RTPProxy or RTPEngine. These backends are called RTP Relay
+   angines and they need to be specified when RTP Relay is being
+   engaged.
+
+   Starting with OpenSIPS 3.6, the module has been enhanced with
+   an internal RTP Engine, which can be used to perform
+   manual/custom SDP mangling by running a set of routes when an
+   RTP event (such as offer, answer, delete) happens. This can be
+   enabled by engaging RTP Relay with the route engine. If the
+   defined routes are not being defined, then the SDP does not
+   change. For more information, please check the route_offer,
+   route_answer and route_delete parameters.
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * Dialog module - used to keep track of in-dialog requests.
      * RTP Relay module(s) - such rtpproxy, or rtpengine, or any
        module that implements the rtp_relay interface.
 
-1.3.2. External Libraries or Applications
+1.4.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.4. Exported Functions
+1.5. Exported Parameters
 
-1.4.1.  rtp_relay_engage(engine, [set])
+1.5.1. route_offer (string)
+
+   Route that is being run when an SDP offer happens (i.e. an
+   INVITE with SDP is being processed).
+
+   When the route is executed, the following parameters are being
+   populated:
+     * callid - the callid of the call being processed.
+     * from_tag - the from_tag of the call being processed.
+     * to_tag - the to_tag, if exists, of the call being
+       processed.
+     * branch - the branch that RTP relay is being engaed on - if
+       engaged in the main branch, -1 is used.
+     * body - optional, if an explicit body is being used,
+       otherwise the message's body should be considered.
+     * set - the rtp relay set being used for the call.
+     * node - optional, an node Engine idenfifier - this is a user
+       populated value returned after running a route_offer route
+       (see the return values section below).
+     * ip - optional, the IP being specified in the $rtp_relay
+       variable for the current peer.
+     * type - optional, the RTP type being specified in the
+       $rtp_relay variable for the current peer.
+     * in-iface - optional, the inbound interface that should be
+       used for this peer.
+     * out-iface - optional, the outbound interface that should be
+       used for this peer.
+     * ctx-flags - optional, global flags that are being specified
+       in the $rtp_relay_ctx variable.
+     * flags - optional, flags specified for this peer.
+     * peer - optional, peer flags specified for the corresponding
+       peer;
+
+   When running the route, the following values are expected to be
+   returned:
+     * body - the newly created body to be offered. If not
+       returned, the body is left unchanged.
+     * node - optional, a node to be identified for further
+       routes/commands executed.
+
+   Default value is "rtp_relay_offer".
+
+   Example 1.1. Set route_offer parameter
+...
+modparam("rtp_relay", "route_offer", "custom_rtp_offer")
+...
+
+   Example 1.2. route_offer route usage
+...
+route[rtp_relay_offer] {
+        # manually engaging RTPEngine, get the SDP, and replace it in th
+e message
+        return (1, $var(body));
+}
+...
+
+1.5.2. route_answer (string)
+
+   Route that is being run when an SDP answer happens (i.e. a 183
+   or 200 OK reply with SDP is being processed).
+
+   When the route is executed, the following parameters are being
+   populated:
+     * callid - the callid of the call being processed.
+     * from_tag - the from_tag of the call being processed.
+     * to_tag - the to_tag, if exists, of the call being
+       processed.
+     * branch - the branch that RTP relay is being engaed on - if
+       engaged in the main branch, -1 is used.
+     * body - optional, if an explicit body is being used,
+       otherwise the message's body should be considered.
+     * set - the rtp relay set being used for the call.
+     * node - optional, an node Engine idenfifier - this is a user
+       populated value returned after running a route_offer route.
+     * ip - optional, the IP being specified in the $rtp_relay
+       variable for the current peer.
+     * type - optional, the RTP type being specified in the
+       $rtp_relay variable for the current peer.
+     * in-iface - optional, the inbound interface that should be
+       used for this peer.
+     * out-iface - optional, the outbound interface that should be
+       used for this peer.
+     * ctx->flags - optional, global flags that are being
+       specified in the $rtp_relay_ctx variable.
+     * flags - optional, flags specified for this peer.
+     * peer - optional, peer flags specified for the corresponding
+       peer;
+
+   When running the route, the following values are expected to be
+   returned:
+     * body - the newly created body to be answered. If not
+       returned, the body is left unchanged.
+
+   Default value is "rtp_relay_answer".
+
+   Example 1.3. Set route_answer parameter
+...
+modparam("rtp_relay", "route_answer", "custom_rtp_answer")
+...
+
+   Example 1.4. route_answer route usage
+...
+route[rtp_relay_answer] {
+        # again, manually engaging RTPEngine
+        rtpengine_answer(,, $var(body), $rb);
+        return (1, $var(body));
+}
+...
+
+1.5.3. route_delete (string)
+
+   Route that is being run when media should be disconnected (i.e.
+   a CANCEL or BYE is received).
+
+   When the route is executed, the following parameters are being
+   populated:
+     * callid - the callid of the call being processed.
+     * from_tag - the from_tag of the call being processed.
+     * to_tag - the to_tag, if exists, of the call being
+       processed.
+     * branch - the branch that RTP relay is being engaed on - if
+       engaged in the main branch, -1 is used.
+     * body - optional, if an explicit body is being used,
+       otherwise the message's body should be considered.
+     * set - the rtp relay set being used for the call.
+     * node - optional, an node Engine idenfifier - this is a user
+       populated value returned after running a route_offer route
+       (see the return values section below).
+     * ctx->flags - optional, global flags that are being
+       specified in the $rtp_relay_ctx variable.
+     * delete - optional, delete flags specified in the
+       $rtp_relay_ctx variable.
+
+   Return values are not needed.
+
+   Default value is "rtp_relay_delete".
+
+   Example 1.5. Set route_delete parameter
+...
+modparam("rtp_relay", "route_delete", "custom_rtp_delete")
+...
+
+   Example 1.6. rtp_relay_delete route usage
+...
+route[rtp_relay_delete] {
+        # manually removing RTPEngine session
+        rtpengine_delete();
+}
+...
+
+1.5.4. route_copy_offer (string)
+
+   Route that is being executed when a new call's SDP is being
+   copied.
+
+   When the route is executed, the following parameters are being
+   populated:
+     * callid - the callid of the call being processed.
+     * from_tag - the from_tag of the call being processed.
+     * to_tag - the to_tag, if exists, of the call being
+       processed.
+     * branch - the branch that RTP relay is being engaed on - if
+       engaged in the main branch, -1 is used.
+     * set - the rtp relay set being used for the call.
+     * node - optional, an node Engine idenfifier - this is a user
+       populated value returned after running a route_offer route
+       (see the return values section below).
+     * flags - optional, flags that are being specified by the
+       module which is copying the SDP.
+     * copy-ctx - optional, an copy context identifier - this is a
+       user populated value returned after running a
+       route_copy_offer route (see the return values section
+       below).
+
+   When running the route, the following values are expected to be
+   returned:
+     * copy-ctx - optional, a copy context identifier that can be
+       later used to identify the current copy session.
+
+   Default value is "rtp_relay_copy_offer".
+
+   Example 1.7. Set rtp_relay_copy_offer parameter
+...
+modparam("rtp_relay", "route_copy_offer", "custom_rtp_copy_offer")
+...
+
+   Example 1.8. Set rtp_relay_copy_offer usage
+...
+route[rtp_relay_copy_offer] {
+        # instruct a media engine to fork media and assign an identifier
+        # that shall be stored in the $var(handle) variable
+        return (1, $var(handle));
+}
+...
+
+1.5.5. route_copy_answer (string)
+
+   Route that is being run when an SDP for the copied stream is
+   received. (i.e. a CANCEL or BYE is received).
+
+   When the route is executed, the following parameters are being
+   populated:
+     * callid - the callid of the call being processed.
+     * from_tag - the from_tag of the call being processed.
+     * to_tag - the to_tag, if exists, of the call being
+       processed.
+     * branch - the branch that RTP relay is being engaed on - if
+       engaged in the main branch, -1 is used.
+     * body - optional, if an explicit body is being used,
+       otherwise the message's body should be considered.
+     * set - the rtp relay set being used for the call.
+     * node - optional, an node Engine idenfifier - this is a user
+       populated value returned after running a route_offer route
+       (see the return values section below).
+     * flags - optional, flags that are being specified by the
+       module which is copying the SDP.
+     * copy-ctx - optional, an copy context identifier - this is a
+       user populated value returned at the end of
+       route_copy_offer execution.
+
+   Default value is "rtp_relay_copy_answer".
+
+   Example 1.9. Set rtp_relay_copy_answer parameter
+...
+modparam("rtp_relay", "route_copy_answer", "custom_rtp_copy_answer")
+...
+
+   Example 1.10. Set rtp_relay_copy_answer usage
+...
+route[rtp_relay_copy_answer] {
+        # feed the received $param(body) to the media engine that is for
+king the call
+        # copy instance is identified by the $param(copy-ctx) variable
+}
+...
+
+1.5.6. route_copy_delete (string)
+
+   Route that is being run when media fork should be removed.
+
+   When the route is executed, the following parameters are being
+   populated:
+     * callid - the callid of the call being processed.
+     * from_tag - the from_tag of the call being processed.
+     * to_tag - the to_tag, if exists, of the call being
+       processed.
+     * branch - the branch that RTP relay is being engaed on - if
+       engaged in the main branch, -1 is used.
+     * body - optional, if an explicit body is being used,
+       otherwise the message's body should be considered.
+     * set - the rtp relay set being used for the call.
+     * node - optional, an node Engine idenfifier - this is a user
+       populated value returned after running a route_offer route
+       (see the return values section below).
+     * flags - optional, flags that are being specified by the
+       module which is copying the SDP.
+     * copy-ctx - optional, an copy context identifier - this is a
+       user populated value returned at the end of
+       route_copy_offer execution.
+
+   Return values are not needed.
+
+   Default value is "rtp_relay_copy_delete".
+
+   Example 1.11. Set rtp_relay_copy_delete parameter
+...
+modparam("rtp_relay", "route_copy_delete", "custom_rtp_copy_delete")
+...
+
+   Example 1.12. Set rtp_relay_copy_delete usage
+...
+route[rtp_relay_copy_delete] {
+        # remove the copy instance is identified by the $param(copy-ctx)
+ variable
+}
+...
+
+1.6. Exported Functions
+
+1.6.1.  rtp_relay_engage(engine, [set])
 
    Engages the RTP Relay engine for the current initial INVITE.
    After calling this function, the entire RTP relay communication
@@ -155,7 +473,7 @@ Chapter 1. Admin Guide
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.1. rtp_relay_engage usage
+   Example 1.13. rtp_relay_engage usage
 ...
 if (is_method("INVITE") && !has_totag()) {
         xlog("SCRIPT: engaging RTPProxy relay for all branches\n");
@@ -165,9 +483,9 @@ if (is_method("INVITE") && !has_totag()) {
 }
 ...
 
-1.5. Exported MI Functions
+1.7. Exported MI Functions
 
-1.5.1. rtp_relay_list
+1.7.1. rtp_relay_list
 
    Lists all the RTP Relay sessions engaged.
 
@@ -179,7 +497,7 @@ if (is_method("INVITE") && !has_totag()) {
      * node - (optional) the RTP relay node. When used, the engine
        parameter must also be specified.
 
-   Example 1.2.  rtp_relay_list usage
+   Example 1.14.  rtp_relay_list usage
 ...
 ## list all sessions
 $ opensips-cli -x mi rtp_relay_list
@@ -188,7 +506,7 @@ $ opensips-cli -x mi rtp_relay_list
 $ opensips-cli -x mi rtp_relay_list rtpproxy udp:127.0.0.1:2222
 ...
 
-1.5.2. rtp_relay_update
+1.7.2. rtp_relay_update
 
    Updates/Re-engages the RTP relays in all ongoing RTP relay
    sessions.
@@ -220,13 +538,13 @@ $ opensips-cli -x mi rtp_relay_list rtpproxy udp:127.0.0.1:2222
      * new_node - (optional) a new RTP node to be used for the
        call. If new_set is missing, the same set will be used.
 
-   Example 1.3.  rtp_relay_update usage
+   Example 1.15.  rtp_relay_update usage
 ...
 ## update all sessions that are using rtpproxy
 $ opensips-cli -x mi rtp_relay_update rtpproxy
 ...
 
-1.5.3. rtp_relay_update_callid
+1.7.3. rtp_relay_update_callid
 
    Updates/Re-engages the RTP relays in all ongoing RTP relay
    sessions.
@@ -251,7 +569,7 @@ $ opensips-cli -x mi rtp_relay_update rtpproxy
        for the session. Only explicitely specified flags will be
        overwritten.
 
-   Example 1.4.  rtp_relay_update_callid usage
+   Example 1.16.  rtp_relay_update_callid usage
 ...
 ## update a call with a working RTPproxy node
 $ opensips-cli -x mi rtp_relay_update_callid 1-3758963@127.0.0.1 rtpprox
@@ -264,9 +582,9 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1
                 "callee":{"type":"RTP", "flags"="replace-origin"}}'
 ...
 
-1.6. Exported Pseudo-Variables
+1.8. Exported Pseudo-Variables
 
-1.6.1. $rtp_relay
+1.8.1. $rtp_relay
 
    Is used to provision the RTP back-end flags for the current
    peer - if used in the initial INVITE REQUEST/BRANCH route, it
@@ -298,14 +616,14 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1
      * disabled - provisioned as an integer, it is used to disable
        RTP relay for this UAC.
 
-1.6.2. $rtp_relay_peer
+1.8.2. $rtp_relay_peer
 
    This variable has the same meaning and parameters as the
    $rtp_relay variable, except that it is used to provision the
    other UAC's flags, except the current one. All other fields are
    similar.
 
-1.6.3. $rtp_relay_ctx()
+1.8.3. $rtp_relay_ctx()
 
    This variable can be used to provide information about the RTP
    context, information that is not associated with any of the
@@ -375,4 +693,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2021 OpenSIPS Solutions
+   Copyright © 2021 OpenSIPS Solutions

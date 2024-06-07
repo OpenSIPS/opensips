@@ -29,6 +29,7 @@
 #include "../../data_lump_rpl.h"
 #include "../b2b_logic/b2b_load.h"
 #include "../../parser/parse_to.h"
+#include "../../route.h"
 
 static b2bl_api_t rtp_relay_b2b;
 static struct tm_binds rtp_relay_tmb;
@@ -238,7 +239,7 @@ static void rtp_copy_ctx_free(struct rtp_copy_ctx *copy_ctx)
 {
 	if (!copy_ctx)
 		return;
-	if (copy_ctx->ctx)
+	if (copy_ctx->ctx && copy_ctx->relay->funcs.copy_release)
 		copy_ctx->relay->funcs.copy_release(&copy_ctx->ctx);
 	list_del(&copy_ctx->list);
 	shm_free(copy_ctx);
@@ -1037,8 +1038,30 @@ int rtp_relay_ctx_preinit(void)
 	return 0;
 }
 
+static struct script_route_ref *rtp_relay_route_offer_ref;
+static struct script_route_ref *rtp_relay_route_answer_ref;
+static struct script_route_ref *rtp_relay_route_delete_ref;
+static struct script_route_ref *rtp_relay_route_copy_offer_ref;
+static struct script_route_ref *rtp_relay_route_copy_answer_ref;
+static struct script_route_ref *rtp_relay_route_copy_delete_ref;
+
+#define RTP_RELAY_ROUTE_DEF(_type) \
+	do { \
+		rtp_relay_route_ ##_type ##_ref = \
+			ref_script_route_by_name(rtp_relay_route_ ##_type ##_name, \
+				sroutes->request, RT_NO , REQUEST_ROUTE, 0); \
+		if (!ref_script_route_is_valid(rtp_relay_route_ ##_type ##_ref)) \
+			LM_DBG("route %s not defined\n", rtp_relay_route_ ##_type ##_name); \
+	} while (0)
+
 int rtp_relay_ctx_init(void)
 {
+	RTP_RELAY_ROUTE_DEF(offer);
+	RTP_RELAY_ROUTE_DEF(answer);
+	RTP_RELAY_ROUTE_DEF(delete);
+	RTP_RELAY_ROUTE_DEF(copy_offer);
+	RTP_RELAY_ROUTE_DEF(copy_answer);
+	RTP_RELAY_ROUTE_DEF(copy_delete);
 
 	rtp_relay_contexts_lock = lock_init_rw();
 	if (!rtp_relay_contexts_lock) {
@@ -1080,6 +1103,7 @@ int rtp_relay_ctx_init(void)
 	}
 	return 0;
 }
+#undef RTP_RELAY_ROUTE_DEF
 
 int rtp_relay_ctx_branch(void)
 {
@@ -2876,3 +2900,344 @@ int rtp_relay_get_dlg_ids(str *callid, unsigned int *h_entry, unsigned int *h_id
 	lock_stop_read(rtp_relay_contexts_lock);
 	return found;
 }
+
+struct rtp_relay_route_param {
+	char *name;
+	pv_value_t val;
+};
+
+static int rtp_relay_param_get(struct sip_msg *msg, pv_param_t *ip,
+		pv_value_t *res, void *_params, void *extra)
+{
+	int p;
+	pv_value_t tv;
+	int size = (int)(long)extra;
+	struct rtp_relay_route_param *params = _params;
+	if (size <= 0)
+		return pv_get_null(msg, NULL, res);
+
+	if(ip->pvn.type == PV_NAME_INTSTR) {
+		if (ip->pvn.u.isname.type != 0) {
+			tv.rs =  ip->pvn.u.isname.name.s;
+			tv.flags = PV_VAL_STR;
+		}
+	}
+	else {
+		/* pvar -> it might be another $param variable! */
+		if(pv_get_spec_value(msg, (pv_spec_p)(ip->pvn.u.dname), &tv)!=0) {
+			LM_ERR("cannot get spec value\n");
+			return -1;
+		}
+
+		if(tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY) {
+			LM_ERR("null or empty name\n");
+			return -1;
+		}
+	}
+	if ((tv.flags & PV_VAL_STR) == 0) {
+		LM_ERR("non-string param name\n");
+		return -1;
+	}
+	for (p = 0; p < size; p++) {
+		if (str_strcmp(&tv.rs, _str(params[p].name)))
+			continue;
+		*res = params[p].val;
+		return 0;
+	}
+	/* not found */
+	return pv_get_null(msg, NULL, res);
+}
+
+static int get_to_tag(struct sip_msg* _m, str* _tag)
+{
+
+	if (!_m->to && ((parse_headers(_m, HDR_TO_F, 0) == -1) || (!_m->to))) {
+		LM_ERR("To header field missing\n");
+		return -1;
+	}
+
+	if (get_to(_m)->tag_value.len) {
+		_tag->s = get_to(_m)->tag_value.s;
+		_tag->len = get_to(_m)->tag_value.len;
+	} else {
+		_tag->s = NULL; /* fixes gcc 4.0 warnings */
+		_tag->len = 0;
+	}
+
+	return 0;
+}
+
+static int get_from_tag(struct sip_msg* _m, str* _tag)
+{
+
+	if (parse_from_header(_m)<0) {
+		LM_ERR("failed to parse From header\n");
+		return -1;
+	}
+
+	if (get_from(_m)->tag_value.len) {
+		_tag->s = get_from(_m)->tag_value.s;
+		_tag->len = get_from(_m)->tag_value.len;
+	} else {
+		_tag->s = NULL; /* fixes gcc 4.0 warnings */
+		_tag->len = 0;
+	}
+
+	return 0;
+}
+
+#define RTP_RELAY_SESS_MAX_PARAMS (7 + 25) /* branch, callid, from_tag, to_tag, body, set, node */
+
+#define RTP_RELAY_ADD_PARAM_INT(_val, _params, _no, _name) \
+	do { \
+		if (_no >= RTP_RELAY_SESS_MAX_PARAMS) { \
+			LM_ERR("too many parameters %d\n", _no); \
+			return -1; \
+		} \
+		(_params[_no]).name = _name; \
+		(_params[_no]).val.ri = (_val); \
+		(_params[_no]).val.rs.s = sint2str((_val), &(_params[_no]).val.rs.len); \
+		(_params[_no]).val.flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT; \
+		(_no)++; \
+	} while(0)
+#define RTP_RELAY_ADD_PARAM(_val, _params, _no, _name) \
+	do { \
+		if ((_val)) { \
+			if (_no >= RTP_RELAY_SESS_MAX_PARAMS) { \
+				LM_ERR("too many parameters %d\n", _no); \
+				return -1; \
+			} \
+			(_params[_no]).name = _name; \
+			(_params[_no]).val.rs =  *(_val); \
+			(_params[_no]).val.flags = PV_VAL_STR; \
+			(_no)++; \
+		} \
+	} while(0)
+
+#define RTP_RELAY_ROUTE_REF(_type) rtp_relay_route_ ## _type ##_ref
+#define RTP_RELAY_ROUTE_NAME(_type) rtp_relay_route_ ## _type ##_name
+
+#define RTP_RELAY_CHECK_ROUTE(_type) \
+	if (!ref_script_route_is_valid(rtp_relay_route_ ## _type ##_ref)) \
+		return -1;
+
+int rtp_relay_route_run(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+		struct rtp_relay_route_param *params, int params_no,
+		struct script_route_ref *route_ref, char *route_name)
+{
+	int ret;
+	str tmp, *ptmp;
+	struct sip_msg *msg;
+	if (!sess->msg) {
+		msg = get_dummy_sip_msg();
+		if (!msg)
+			return -1;
+	} else {\
+		msg = sess->msg;
+	}
+	RTP_RELAY_ADD_PARAM_INT(sess->branch, params, params_no, "branch");
+	if (!sess->callid && sess->msg) {
+		if (get_callid(sess->msg, &tmp) == -1 || tmp.len == 0) {
+			LM_ERR("could not get callid\n");
+			return -1;
+		}
+		ptmp = &tmp;
+	} else {
+		ptmp = sess->callid;
+	}
+	RTP_RELAY_ADD_PARAM(ptmp, params, params_no, "callid");
+	if (!sess->from_tag && sess->msg) {
+		if (get_from_tag(sess->msg, &tmp) == -1 || tmp.len == 0) {
+			LM_ERR("could not get from_tag\n");
+			return -1;
+		}
+		ptmp = &tmp;
+	} else {
+		ptmp = sess->from_tag;
+	}
+	RTP_RELAY_ADD_PARAM(ptmp, params, params_no, "from_tag");
+	if (!sess->to_tag && sess->msg) {
+		if (get_to_tag(sess->msg, &tmp) == -1) {
+			LM_ERR("could not get to_tag\n");
+			return -1;
+		}
+		ptmp = &tmp;
+	} else {
+		ptmp = sess->to_tag;
+	}
+	RTP_RELAY_ADD_PARAM(ptmp, params, params_no, "to_tag");
+	RTP_RELAY_ADD_PARAM(sess->body, params, params_no, "body");
+	if (server) {
+		RTP_RELAY_ADD_PARAM_INT(server->set, params, params_no, "set");
+		if (server->node.len)
+			RTP_RELAY_ADD_PARAM(&server->node, params, params_no, "node");
+	}
+	route_params_push_level(route_name,
+			params, (void*)(long)params_no, rtp_relay_param_get);
+	ret = run_top_route(sroutes->request[route_ref->idx], msg);
+	route_params_pop_level();
+	if (!sess->msg) {
+		release_dummy_sip_msg(msg);
+		reset_avps(); /* reset AVPs only if dummy is used */
+	}
+	if (ret < 0 || (ret & ACT_FL_DROP))
+		return -1;
+	return 0;
+}
+
+static inline int rtp_relay_route_fill_body(struct sip_msg *msg, str *body)
+{
+	str tmp;
+	pv_value_t val;
+	if (!msg && !body)
+		return 0;
+	if (script_return_get(&val, 0) > 0) {
+		if (val.flags & PV_VAL_STR) {
+			if (body) {
+				*body = val.rs;
+				LM_DBG("returning body [%.*s]\n", body->len, body->s);
+			}
+			if (msg) {
+				if (pkg_str_dup(&tmp, &val.rs) >= 0) {
+					if (rtp_relay_replace_body(msg, &tmp) < 0)
+						pkg_free(tmp.s);
+				}
+			}
+		} else {
+			LM_ERR("invalid body type returned %X - expected string!\n", val.flags);
+			return -1;
+			}
+	} else {
+		LM_ERR("no body provided!\n");
+		return -1;
+	}
+	return 0;
+}
+
+int rtp_relay_route_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags)
+{
+	pv_value_t val;
+	int no = 0, r;
+	struct rtp_relay_route_param params[RTP_RELAY_SESS_MAX_PARAMS];
+	RTP_RELAY_CHECK_ROUTE(offer);
+	RTP_RELAY_ADD_PARAM(ip, params, no, "ip");
+	RTP_RELAY_ADD_PARAM(type, params, no, "type");
+	RTP_RELAY_ADD_PARAM(in_iface, params, no, "in-iface");
+	RTP_RELAY_ADD_PARAM(out_iface, params, no, "out-iface");
+	RTP_RELAY_ADD_PARAM(global_flags, params, no, "ctx-flags");
+	RTP_RELAY_ADD_PARAM(flags, params, no, "flags");
+	RTP_RELAY_ADD_PARAM(extra_flags, params, no, "peer");
+	r = rtp_relay_route_run(sess, server, params, no,
+			RTP_RELAY_ROUTE_REF(offer), RTP_RELAY_ROUTE_NAME(offer));
+	if (r < 0)
+		return r;
+	if (rtp_relay_route_fill_body(sess->msg, body) < 0)
+		return -1;
+	if (sess->msg && body)
+		rtp_relay_replace_body(sess->msg, body);
+	if (script_return_get(&val, 1) > 0 && val.flags & PV_VAL_STR) {
+		if (server->node.s)
+			shm_free(server->node.s);
+		return shm_nt_str_dup(&server->node, &val.rs);
+	}
+	return 0;
+}
+
+int rtp_relay_route_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags)
+{
+	int no = 0, r;
+	struct rtp_relay_route_param params[RTP_RELAY_SESS_MAX_PARAMS];
+	RTP_RELAY_CHECK_ROUTE(answer);
+	RTP_RELAY_ADD_PARAM(ip, params, no, "ip");
+	RTP_RELAY_ADD_PARAM(type, params, no, "type");
+	RTP_RELAY_ADD_PARAM(in_iface, params, no, "in-iface");
+	RTP_RELAY_ADD_PARAM(out_iface, params, no, "out-iface");
+	RTP_RELAY_ADD_PARAM(global_flags, params, no, "ctx-flags");
+	RTP_RELAY_ADD_PARAM(flags, params, no, "flags");
+	RTP_RELAY_ADD_PARAM(extra_flags, params, no, "peer");
+	r = rtp_relay_route_run(sess, server, params, no,
+			RTP_RELAY_ROUTE_REF(answer), RTP_RELAY_ROUTE_NAME(answer));
+	if (r < 0)
+		return r;
+	if (rtp_relay_route_fill_body(sess->msg, body) < 0)
+		return -1;
+	return 0;
+}
+
+int rtp_relay_route_delete(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *flags, str *extra)
+{
+	int no = 0;
+	struct rtp_relay_route_param params[RTP_RELAY_SESS_MAX_PARAMS];
+	RTP_RELAY_CHECK_ROUTE(delete);
+	RTP_RELAY_ADD_PARAM(flags, params, no, "ctx-flags");
+	RTP_RELAY_ADD_PARAM(extra, params, no, "delete");
+	return rtp_relay_route_run(sess, server, params, no,
+			RTP_RELAY_ROUTE_REF(delete), RTP_RELAY_ROUTE_NAME(delete));
+}
+
+int rtp_relay_route_copy_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void **_ctx, str *flags,
+		unsigned int copy_flags, unsigned int streams, str *body)
+{
+	pv_value_t val;
+	str *ctx;
+	int no = 0;
+	struct rtp_relay_route_param params[RTP_RELAY_SESS_MAX_PARAMS];
+	RTP_RELAY_CHECK_ROUTE(copy_offer);
+	RTP_RELAY_ADD_PARAM((str *)_ctx, params, no, "copy-ctx");
+	RTP_RELAY_ADD_PARAM(flags, params, no, "flags");
+	if (rtp_relay_route_fill_body(sess->msg, body) < 0)
+		return -1;
+	if (script_return_get(&val, 1) > 0 && val.flags & PV_VAL_STR) {
+		ctx = shm_malloc(sizeof *ctx + val.rs.len);
+		if (ctx) {
+			ctx->s = (char *)(ctx + 1);
+			ctx->len = val.rs.len;
+			memcpy(ctx->s, val.rs.s, ctx->len);
+		}
+		*_ctx = ctx;
+	}
+	return rtp_relay_route_run(sess, server, params, no,
+			RTP_RELAY_ROUTE_REF(copy_offer), RTP_RELAY_ROUTE_NAME(copy_offer));
+}
+
+int rtp_relay_route_copy_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *_ctx, str *flags, str *body)
+{
+	int no = 0;
+	struct rtp_relay_route_param params[RTP_RELAY_SESS_MAX_PARAMS];
+	RTP_RELAY_CHECK_ROUTE(copy_answer);
+	sess->body = body;
+	RTP_RELAY_ADD_PARAM((str *)_ctx, params, no, "copy-ctx");
+	RTP_RELAY_ADD_PARAM(flags, params, no, "flags");
+	return rtp_relay_route_run(sess, server, params, no,
+			RTP_RELAY_ROUTE_REF(copy_answer), RTP_RELAY_ROUTE_NAME(copy_answer));
+}
+
+int rtp_relay_route_copy_delete(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *_ctx, str *flags)
+{
+	int no = 0;
+	struct rtp_relay_route_param params[RTP_RELAY_SESS_MAX_PARAMS];
+	RTP_RELAY_CHECK_ROUTE(copy_delete);
+	if (server) {
+		RTP_RELAY_ADD_PARAM_INT(server->set, params, no, "set");
+		if (server->node.len)
+			RTP_RELAY_ADD_PARAM(&server->node, params, no, "node");
+	}
+	RTP_RELAY_ADD_PARAM((str *)_ctx, params, no, "copy-ctx");
+	RTP_RELAY_ADD_PARAM(flags, params, no, "flags");
+	return rtp_relay_route_run(sess, server, params, no,
+			RTP_RELAY_ROUTE_REF(copy_delete), RTP_RELAY_ROUTE_NAME(copy_delete));
+}
+#undef RTP_RELAY_RUN_ROUTE
+#undef RTP_RELAY_CHECK_ROUTE
+#undef RTP_RELAY_SESS_PARAM
+#undef RTP_RELAY_SESS_PARAMS
