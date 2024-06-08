@@ -549,7 +549,7 @@ modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2
 
 Note
 
-   If you have a multi interface setup and want to chance the
+   If you have a multi interface setup and want to change the
    outbound interface, it is mandatory to use the
    "force_send_socket()" core function before passing control to
    b2b function. If you do not do it, the requests may be
@@ -583,7 +583,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
        B2B actions.
      * adv_contact (string, optional) - Contact header to
        advertise in generated messages.
-     * extra_hdrs (var, optioanl) - AVP variable holding a list of
+     * extra_hdrs (var, optional) - AVP variable holding a list of
        extra headers (the header names) to be added for any
        request sent to this entity.
      * extra_hdr_bodies (var, optional) - AVP variable holding a
@@ -1267,8 +1267,8 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 237 57 8167 6793
    2. Razvan Crainea (@razvancrainea) 32 17 1119 294
-   3. Nick Altmann (@nikbyte) 14 10 346 36
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 13 9 145 67
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 11 147 69
+   4. Nick Altmann (@nikbyte) 14 10 346 36
    5. Carsten Bock 12 5 679 23
    6. Maksym Sobolyev (@sobomax) 7 5 31 31
    7. Liviu Chircu (@liviuchircu) 5 3 4 3
@@ -1298,8 +1298,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Feb 2024
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Jun 2024
+   2.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
    3.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jan 2024
    4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    5.  Rick Barenthin                      Nov 2023 - Nov 2023
