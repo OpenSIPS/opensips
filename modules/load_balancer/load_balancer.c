@@ -62,6 +62,8 @@ str lb_probe_from = str_init("sip:prober@localhost");
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
 
+int use_cpu_factor;
+
 int fetch_freeswitch_stats;
 int initial_fs_load = 1000;
 
@@ -173,6 +175,7 @@ static const param_export_t mod_params[]={
 	{ "cluster_id",            INT_PARAM, &lb_cluster_id            },
 	{ "cluster_sharing_tag",   STR_PARAM, &lb_cluster_shtag         },
 	{ "fetch_freeswitch_stats",  INT_PARAM, &fetch_freeswitch_stats },
+	{ "use_cpu_factor",          INT_PARAM, &use_cpu_factor         },
 	{ "initial_freeswitch_load", INT_PARAM, &initial_fs_load        },
 	{ 0,0,0 }
 };
@@ -299,7 +302,7 @@ static void lb_inherit_state(struct lb_data *old_data,struct lb_data *new_data)
 			strncasecmp(new_dst->uri.s, old_dst->uri.s, old_dst->uri.len)==0) {
 				LM_DBG("DST %d/<%.*s> found in old set, copying state\n",
 					new_dst->group, new_dst->uri.len,new_dst->uri.s);
-				/* first reset the existing flags (only the flags related 
+				/* first reset the existing flags (only the flags related
 				 * to state!!!) */
 				new_dst->flags &=
 					~(LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG);
@@ -569,7 +572,7 @@ static int w_lb_start(struct sip_msg *req, int *grp_no,
 						return -5;
 					}
 					flags |= LB_FLAGS_PERCENT_WITH_CPU;
-					LM_DBG("using integrated estimation (percentage of max sessions with CPU factor estimation) \n");
+					LM_DBG("using integrated estimation (percentage of max sessions used, tracing real time allocations) \n");
 					break;
 				case 'n':
 					flags |= LB_FLAGS_NEGATIVE;
@@ -807,6 +810,7 @@ static void lb_update_max_loads(unsigned int ticks, void *param)
 				            dst->rmap[ri].resource->profile, &dst->profile_id);
 				old = dst->rmap[ri].max_load;
 
+				// if ( flags & LB_FLAGS_PERCENT_WITH_CPU ) { todo flags not avavilable here
 				/*
 				 * In LB_FLAGS_PERCENT_WITH_CPU mode we capture the raw values and use these in each LB calculation. This
 				 * means we do not use profile counting in the load calculation. This is suitable for

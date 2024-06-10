@@ -38,6 +38,7 @@
 /* dialog stuff */
 extern struct dlg_binds lb_dlg_binds;
 
+extern int use_cpu_factor;
 extern int fetch_freeswitch_stats;
 extern int initial_fs_load;
 extern struct fs_binds fs_api;
@@ -429,11 +430,17 @@ static int get_dst_load(struct lb_resource **res, unsigned int res_no,
 			if( dst->rmap[l].max_load )
 				av = 100 - (100 * lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id) / dst->rmap[l].max_load);
 		} else if( flags & LB_FLAGS_PERCENT_WITH_CPU ) {
-			/* generate score based on the percentage of channels occupied, reduced by CPU idle factor */
 			if( dst->rmap[l].max_sessions ) {
-				av = ( 100 - ( 100 * ( dst->rmap[l].current_sessions + dst->rmap[l].sessions_since_last_heartbeat ) / dst->rmap[l].max_sessions ) ) * dst->rmap[l].cpu_idle;
-				LM_DBG("destination %d <%.*s> availability score %d (sessions=%d since_last_hb=%d max_sess=%d cpu_idle=%.2f)", dst->id, dst->uri.len, dst->uri.s, av, dst->rmap[l].current_sessions, dst->rmap[l].sessions_since_last_heartbeat, dst->rmap[l].max_sessions, dst->rmap[l].cpu_idle);
-            }
+        if(use_cpu_factor) {
+          /* generate score based on the percentage of channels occupied, reduced by CPU idle factor */
+          av = ( 100 - ( 100 * ( dst->rmap[l].current_sessions + dst->rmap[l].sessions_since_last_heartbeat ) / dst->rmap[l].max_sessions ) ) * dst->rmap[l].cpu_idle;
+          LM_DBG("destination %d <%.*s> availability score %d (sessions=%d since_last_hb=%d max_sess=%d cpu_idle=%.2f)", dst->id, dst->uri.len, dst->uri.s, av, dst->rmap[l].current_sessions, dst->rmap[l].sessions_since_last_heartbeat, dst->rmap[l].max_sessions, dst->rmap[l].cpu_idle);
+        } else {
+          /* generate score based on the percentage of channels occupied */
+          av = 100 - ( 100 * ( dst->rmap[l].current_sessions + dst->rmap[l].sessions_since_last_heartbeat ) / dst->rmap[l].max_sessions );
+          LM_DBG("destination %d <%.*s> availability score %d (sessions=%d since_last_hb=%d max_sess=%d)", dst->id, dst->uri.len, dst->uri.s, av, dst->rmap[l].current_sessions, dst->rmap[l].sessions_since_last_heartbeat, dst->rmap[l].max_sessions);
+        }
+      }
 		} else {
 			av = dst->rmap[l].max_load - lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id);
 		}

@@ -539,6 +539,35 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 		</example>
 	</section>
 
+	<section id="param_use_cpu_factor" xreflabel="use_cpu_factor">
+		<title><varname>use_cpu_factor</varname> (integer)</title>
+		<para>
+		This is only relevant for "integrated estimation" mode.
+		</para>
+		<para>
+		If enabled, the CPU factor collected in the most recent heartbeat
+		will be used to reduce the capacity of each FreeSWITCH instance.
+		</para>
+		<para>
+		When disabled, no CPU factor will be applied in the calculation.
+		</para>
+		<para>
+
+		</para>
+
+		<emphasis>
+			Default value is <quote>empty (disabled)</quote>.
+		</emphasis>
+		<example>
+		<title>Set <varname>use_cpu_factor</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("load_balancer", "use_cpu_factor", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 
@@ -592,8 +621,12 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 					performed using the most recent heartbeat data and a
 					counter of all sessions allocated since the last heartbeat.
 					Profile counting is unused in the calculation. The reported
-					CPU load value is used to reduce session load on systems
+					CPU load value is optionally used to reduce session load on systems
 					with high CPU utilisation. Mutually exclusive with flag "r".
+
+					This is well suited to high performance systems where many calls
+					may arrive within the heartbeat period (which should be set to the
+					minimum value 1s when used with this algorithm).
 				</para>
 			</listitem>
 			<listitem>
