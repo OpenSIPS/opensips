@@ -1,7 +1,6 @@
 #aaa_diameter= Diameter implementation for the core AAA API | freeDiameter (libfdcore + libfdproto) v1.2.1 or higher
 #aaa_radius= Radius implementation for the core AAA API | Radius client development library, typically radiusclient-ng 0.5.0 or higher
 #auth_jwt= JWT auth support | JWT client development library, libjwt-dev
-#b2b_logic_xml= Logic engine of B2BUA, responsible of actually implementing the B2BUA services | xml parsing development library, typically libxml2-dev
 #cachedb_cassandra= Implementation of a cache system designed to work with Cassandra servers | thrift 0.6.1
 #cachedb_couchbase= Implementation of a cache system designed to work with CouchBase servers | libcouchbase >= 2.0
 #cachedb_memcached= Implementation of a cache system designed to work with a memcached server. | Memcached client library, typically libmemcached
