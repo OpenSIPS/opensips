@@ -138,6 +138,7 @@ loadmodule "proto_udp.so"
 
 ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
 ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
+loadmodule "tls_wolfssl.so"
 loadmodule "tls_mgm.so"
 modparam("tls_mgm","server_domain", "default")
 modparam("tls_mgm","match_ip_address", "[default]*")
