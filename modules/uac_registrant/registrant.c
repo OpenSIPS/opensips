@@ -1534,7 +1534,7 @@ static mi_response_t *mi_reg_force_register(const mi_params_t *params,
 
 	lock_get(&reg_htable[hash_code].lock);
 	rc = slinkedl_traverse(reg_htable[hash_code].p_list,
-					&run_mi_reg_disable, &coords, NULL);
+					&run_mi_reg_force_register, &coords, NULL);
 	lock_release(&reg_htable[hash_code].lock);
 
 	if (rc < 0)
