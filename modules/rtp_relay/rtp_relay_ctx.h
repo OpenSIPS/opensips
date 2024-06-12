@@ -201,7 +201,8 @@ int rtp_relay_route_delete(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, str *flags, str *extra);
 int rtp_relay_route_copy_offer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void **_ctx, str *flags,
-		unsigned int copy_flags, unsigned int streams, str *body);
+		unsigned int copy_flags, unsigned int streams, str *body,
+		struct rtp_relay_streams *ret_streams);
 int rtp_relay_route_copy_answer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *_ctx, str *flags, str *body);
 int rtp_relay_route_copy_delete(struct rtp_relay_session *sess,
