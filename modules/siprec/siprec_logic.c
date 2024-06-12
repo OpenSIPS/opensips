@@ -227,6 +227,27 @@ int srec_reply(struct src_sess *ss, int method, int code, str *body)
 	return srec_b2b.send_reply(&reply_data);
 }
 
+static int srec_get_body(struct src_sess *sess, str *body)
+{
+	unsigned int flags = RTP_COPY_MODE_SIPREC|RTP_COPY_LEG_BOTH;
+	struct rtp_relay_streams streams;
+	struct rtp_relay_stream *stream;
+	int s;
+
+	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
+			&sess->media, flags, -1, body, &streams) < 0) {
+		LM_ERR("could not start recording!\n");
+		return -3;
+	}
+	for (s = 0; s < streams.count; s++) {
+		stream = &streams.streams[s];
+		srs_fill_sdp_stream(stream->label, stream->medianum,
+				NULL, sess, &sess->participants[stream->leg]);
+	}
+	return 0;
+}
+
+
 static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 {
 	str body = str_init("");
@@ -243,8 +264,7 @@ static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 			code = 488;
 			goto reply;
 		}
-		if (srec_rtp.copy_offer(ss->rtp, &mod_name, &ss->media,
-				RTP_COPY_MODE_SIPREC|RTP_COPY_LEG_BOTH, -1, &body) < 0) {
+		if (srec_get_body(ss, &body) < 0) {
 			LM_ERR("could not refresh recording!\n");
 			goto reply;
 		}
@@ -494,7 +514,6 @@ static int srs_send_invite(struct src_sess *sess)
 /* starts the recording to the srs */
 static int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 {
-	unsigned int flags = RTP_COPY_MODE_SIPREC|RTP_COPY_LEG_BOTH;
 	union sockaddr_union tmp;
 	int ret;
 	str sdp;
@@ -508,11 +527,11 @@ static int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 		}
 	}
 
-	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
-			&sess->media, flags, -1, &sdp) < 0) {
+	if (srec_get_body(sess, &sdp) < 0) {
 		LM_ERR("could not start recording!\n");
 		return -3;
 	}
+
 	if (shm_str_dup(&sess->initial_sdp, &sdp) < 0) {
 		pkg_free(sdp.s);
 		srec_rtp.copy_delete(sess->rtp, &mod_name, &sess->media);
@@ -586,8 +605,7 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess)
 	if (sess->flags & SIPREC_PAUSED)
 		flags |= RTP_COPY_MODE_DISABLE;
 
-	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
-			&sess->media, flags, -1, &sdp) < 0) {
+	if (srec_get_body(sess, &sdp) < 0) {
 		LM_ERR("could not refresh recording!\n");
 		goto error;
 	}

@@ -235,7 +235,7 @@ int media_fork_offer(struct media_session_leg *msl,
 {
 	if (media_rtp.copy_offer(msl->ms->rtp,
 			&media_exchange_name, NULL, mf->flags,
-			mf->streams, body) < 0) {
+			mf->streams, body, NULL) < 0) {
 		LM_ERR("could not get copy SDP\n");
 		return -1;
 	}
@@ -290,7 +290,7 @@ int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int res
 		flags |= RTP_COPY_MODE_DISABLE;
 
 	if (media_rtp.copy_offer(msl->ms->rtp,
-			&media_exchange_name, NULL, flags, todo, &body) < 0) {
+			&media_exchange_name, NULL, flags, todo, &body, NULL) < 0) {
 		LM_ERR("could not get copy SDP\n");
 		MEDIA_LEG_STATE_SET_UNSAFE(msl, MEDIA_SESSION_STATE_RUNNING);
 		return -1;

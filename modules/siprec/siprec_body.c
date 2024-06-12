@@ -38,10 +38,33 @@ void srs_free_stream(struct srs_sdp_stream *stream)
 	shm_free(stream);
 }
 
-int srs_add_raw_sdp_stream(int label, int medianum, siprec_uuid *uuid,
+int srs_fill_sdp_stream(int label, int medianum, siprec_uuid *uuid,
 		struct src_sess *sess, struct src_part *part)
 {
+	struct list_head *it;
 	struct srs_sdp_stream *stream = NULL;
+
+	/* first, search for a corresponding stream */
+	list_for_each(it, &part->streams) {
+		stream = list_entry(it, struct srs_sdp_stream, list);
+		/* if we have a uuid, it is possible that we've already
+		 * created it */
+		if (uuid) {
+			if (siprec_cmp_uuid(uuid, &stream->uuid) == 0)
+				break;
+		} else if (stream->medianum == medianum) {
+			/* if not, we might have the same medianum, so we need
+			 * to update it */
+			break;
+		}
+		stream = NULL;
+	}
+	if (stream) {
+		if (uuid)
+			memcpy(stream->uuid, uuid, sizeof *uuid);
+		stream->label = label;
+		return 0;
+	}
 
 	stream = shm_malloc(sizeof *stream);
 	if (!stream) {
@@ -52,7 +75,10 @@ int srs_add_raw_sdp_stream(int label, int medianum, siprec_uuid *uuid,
 	stream->label = label;
 	stream->medianum = medianum;
 
-	memcpy(stream->uuid, uuid, sizeof *uuid);
+	if (uuid)
+		memcpy(stream->uuid, uuid, sizeof *uuid);
+	else
+		siprec_build_uuid(stream->uuid);
 	list_add_tail(&stream->list, &part->streams);
 	sess->streams_no++;
 

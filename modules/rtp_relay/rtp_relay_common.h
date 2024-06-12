@@ -32,5 +32,17 @@
 #define RTP_COPY_LEG_CALLEE (1<<3)
 #define RTP_COPY_LEG_BOTH \
 	(RTP_COPY_LEG_CALLER|RTP_COPY_LEG_CALLEE)
+#define RTP_COPY_MAX_STREAMS 32
+
+struct rtp_relay_stream {
+	int leg;
+	int medianum;
+	int label;
+};
+
+struct rtp_relay_streams {
+	int count;
+	struct rtp_relay_stream streams[RTP_COPY_MAX_STREAMS];
+};
 
 #endif /* _RTP_RELAY_COMMON_H_ */
