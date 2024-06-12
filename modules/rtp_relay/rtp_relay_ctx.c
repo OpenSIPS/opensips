@@ -2701,7 +2701,8 @@ int rtp_relay_api_delete(rtp_ctx _ctx, str *id, unsigned int flags)
 }
 
 int rtp_relay_copy_offer(rtp_ctx _ctx, str *id, str *flags,
-		unsigned int copy_flags, unsigned int streams, str *ret_body)
+		unsigned int copy_flags, unsigned int streams, str *ret_body,
+		struct rtp_relay_streams *ret_streams)
 {
 	int release = 0;
 	struct rtp_relay_session info;
@@ -2742,7 +2743,8 @@ int rtp_relay_copy_offer(rtp_ctx _ctx, str *id, str *flags,
 	info.to_tag = &ctx->to_tag;
 	info.branch = sess->index;
 	if (sess->relay->funcs.copy_offer(&info, &sess->server,
-			&rtp_copy->ctx, flags, copy_flags, streams, ret_body) < 0) {
+			&rtp_copy->ctx, flags, copy_flags, streams, ret_body,
+			ret_streams) < 0) {
 		if (release) {
 			list_del(&rtp_copy->list);
 			shm_free(rtp_copy);

@@ -445,7 +445,7 @@ static int srec_pop_sess(struct dlg_cell *dlg, bin_packet_t *packet)
 				goto error;
 			}
 			memcpy(&uuid, tmp.s, tmp.len);
-			if (srs_add_raw_sdp_stream(label, medianum, &uuid, sess,
+			if (srs_fill_sdp_stream(label, medianum, &uuid, sess,
 					&sess->participants[sess->participants_no - 1]) < 0) {
 				LM_ERR("cannot add new media stream!\n");
 				goto error;
