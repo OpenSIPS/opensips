@@ -45,4 +45,37 @@ void test_ut(void)
 	ok(_is_e164(_str("+123456789012345"), 0, 15) == 1, "test-e164-17");
 	ok(_is_e164(_str("+1234567890123456"), 0, 15) == -1, "test-e164-18");
 	ok(_is_e164(_str("123456789x12345"), 0, 15) == -1, "test-e164-19");
+
+	/* str_strcasestr() tests */
+	{
+		struct {
+			str a;
+			str b;
+			int ok_offset;
+		} tests[] = {
+			{str_init(""), str_init(""), -1},
+			{str_init(""), str_init("x"), -1},
+			{str_init("x"), str_init(""), -1},
+			{str_init("x"), str_init("x"), 0},
+			{str_init("xy"), str_init("x"), 0},
+			{str_init("yx"), str_init("x"), 1},
+			{str_init("yxy"), str_init("x"), 1},
+			{str_init("foo"), str_init("bar"), -1},
+			{str_init("foobar"), str_init("BAR"), 3},
+			{str_init("fooBaRx"), str_init("bAr"), 3},
+			{str_init("fbaRx"), str_init("bar"), 1},
+			{str_init("barx"), str_init("Bar"), 0},
+			{str_init("Bar"), str_init("baR"), 0},
+			{str_init("foo"), str_init("foobar"), -1},
+		};
+		int i;
+
+		for (i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+			char *p = str_strcasestr(&tests[i].a, &tests[i].b);
+			if (tests[i].ok_offset < 0)
+				ok(!p, "test-str_strcasestr-%d", i);
+			else
+				ok(p == (tests[i].a.s + tests[i].ok_offset), "test-str_strcasestr-%d", i);
+		}
+	}
 }
