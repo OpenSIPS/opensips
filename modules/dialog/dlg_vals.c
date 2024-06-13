@@ -21,6 +21,7 @@
 
 #include "../../mem/shm_mem.h"
 #include "../../pt.h"
+#include "../../ut.h"
 #include "dlg_vals.h"
 #include "dlg_hash.h"
 #include "dlg_replication.h"
@@ -339,9 +340,33 @@ int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
 
 int pv_parse_name(pv_spec_p sp, const str *in)
 {
+	char *p;
+	char *s;
+	pv_spec_p nsp = 0;
+
 	if(in==NULL || in->s==NULL || sp==NULL)
 		return -1;
 
+	p = in->s;
+	if (*p==PV_MARKER) {
+		/* variable as name -> dynamic name */
+		nsp = (pv_spec_p)pkg_malloc(sizeof(pv_spec_t));
+		if (nsp==NULL) {
+			LM_ERR("no more memory\n");
+			return -1;
+		}
+		s = pv_parse_spec(in, nsp);
+		if (s==NULL) {
+			LM_ERR("invalid name [%.*s]\n", in->len, in->s);
+			pv_spec_free(nsp);
+			return -1;
+		}
+		sp->pvp.pvn.type = PV_NAME_PVAR;
+		sp->pvp.pvn.u.dname = (void*)nsp;
+		return 0;
+	}
+
+	/* static name */
 	sp->pvp.pvn.type = PV_NAME_INTSTR;
 	sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
 	sp->pvp.pvn.u.isname.name.s = *in;
@@ -350,17 +375,50 @@ int pv_parse_name(pv_spec_p sp, const str *in)
 }
 
 
+inline static int get_dlg_val_name(struct sip_msg *msg, pv_name_t *pvn,
+																str *name)
+{
+	pv_value_t tv;
+
+	if (pvn->type==PV_NAME_INTSTR){
+		*name = pvn->u.isname.name.s;
+		return 0;
+	}
+
+	/* pvar */
+	if (pv_get_spec_value(msg, (pv_spec_p)(pvn->u.dname), &tv)!=0) {
+		LM_ERR("cannot evaluate dynamic name via variable\n");
+		return -1;
+	}
+	if (tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY) {
+		LM_ERR("null or empty variable for name\n");
+		return -1;
+	}
+
+	if (!(tv.flags&PV_VAL_STR))
+		name->s = int2str(tv.ri, &name->len);
+	else
+		*name = tv.rs;
+	
+	return 0;
+}
+
 
 int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
 	struct dlg_cell *dlg;
 	int type;
 	int_str isval;
+	str name;
 
-	if (param==NULL || param->pvn.type!=PV_NAME_INTSTR ||
-	param->pvn.u.isname.type!=AVP_NAME_STR ||
-	param->pvn.u.isname.name.s.s==NULL ) {
+	if (res==NULL || param==NULL) {
 		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	/* get the name of the variable */
+	if (get_dlg_val_name( msg, &param->pvn, &name)<0) {
+		LM_ERR("Invalid name\n");
 		return -1;
 	}
 
@@ -368,7 +426,7 @@ int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		return pv_get_null(msg, param, res);
 
 	isval.s = param->pvv;
-	if (fetch_dlg_value(dlg, &param->pvn.u.isname.name.s, &type, &isval, 1)!=0)
+	if (fetch_dlg_value(dlg, &name, &type, &isval, 1)!=0)
 		return pv_get_null(msg, param, res);
 	param->pvv = isval.s;
 
@@ -390,23 +448,27 @@ int pv_set_dlg_val(struct sip_msg* msg, pv_param_t *param, int op,
 	struct dlg_cell *dlg;
 	int_str val;
 	int type;
+	str name;
 
-	if ( (dlg=get_current_dialog())==NULL )
-		return -1;
-
-	if (param==NULL || param->pvn.type!=PV_NAME_INTSTR ||
-	param->pvn.u.isname.type!=AVP_NAME_STR ||
-	param->pvn.u.isname.name.s.s==NULL ) {
+	if (param==NULL) {
 		LM_CRIT("BUG - bad parameters\n");
 		return -1;
 	}
 
+	/* get the name of the variable */
+	if (get_dlg_val_name( msg, &param->pvn, &name)<0) {
+		LM_ERR("Invalid name\n");
+		return -1;
+	}
+
+	if ( (dlg=get_current_dialog())==NULL )
+		return -1;
+
 	if (pval==NULL || pval->flags&(PV_VAL_NONE|PV_VAL_NULL|PV_VAL_EMPTY)) {
 		/* if NULL, remove the value */
-		if (store_dlg_value( dlg, &param->pvn.u.isname.name.s, NULL,
-			DLG_VAL_TYPE_NONE)!=0) {
+		if (store_dlg_value( dlg, &name, NULL, DLG_VAL_TYPE_NONE)!=0) {
 			LM_ERR("failed to delete dialog values <%.*s>\n",
-				param->pvn.u.isname.name.s.len,param->pvn.u.isname.name.s.s);
+				name.len,name.s);
 			return -1;
 		}
 	} else {
@@ -421,9 +483,9 @@ int pv_set_dlg_val(struct sip_msg* msg, pv_param_t *param, int op,
 			return -1;
 		}
 
-		if (store_dlg_value( dlg, &param->pvn.u.isname.name.s, &val, type)!=0) {
+		if (store_dlg_value( dlg, &name, &val, type)!=0) {
 			LM_ERR("failed to store dialog values <%.*s>\n",
-				param->pvn.u.isname.name.s.len,param->pvn.u.isname.name.s.s);
+				name.len, name.s);
 			return -1;
 		}
 	}

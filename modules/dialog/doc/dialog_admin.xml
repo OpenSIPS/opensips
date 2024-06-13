@@ -3390,8 +3390,15 @@ event_route[E_RTPPROXY_DTMF] {
 			<para>
 			This is a read/write variable that allows access to the dialog
 			attribute named <emphasis>name</emphasis>. It can hold a string or
-			integer value. This PV will be available only for sequential requests,
-			after doing loose_route().
+			integer value.
+			</para>
+			<para>
+			Be sure and use this variable only when having a dialog context 
+			(like after create_dialog() or match_dialog() or equivalent).
+			</para>
+			<para>
+			The variable accepts dynamic names, meaning the name may contain
+			other variables.
 			</para>
 			<para>
 			NULL will be returned if there is no dialog for the request.
