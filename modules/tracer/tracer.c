@@ -1037,7 +1037,7 @@ static int mod_init(void)
 	if(load_b2b_logic_api(&b2bl)< 0) {
 		LM_DBG("Failed to load b2b_logic API (module not loaded)\n");
 	} else {
-		b2bl.register_set_tracer_cb( b2b_set_tracer_cb, FL_USE_SIPTRACE);
+		b2bl.register_set_tracer_cb( b2b_set_tracer_cb, FL_USE_SIPTRACE_B2B);
 	}
 
 	if (load_dlg_api(&dlgb) != 0)
@@ -1494,7 +1494,7 @@ static int trace_b2b(struct sip_msg *msg, trace_info_p info)
 	 * B2B logic, via the "creating new session" callback, will 
 	 * install the tracing callback into the B2B logic
 	 */
-	msg->msg_flags |= FL_USE_SIPTRACE;
+	msg->msg_flags |= FL_USE_SIPTRACE_B2B;
 
 	return 0;
 }
