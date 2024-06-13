@@ -234,6 +234,9 @@ static int srec_get_body(struct src_sess *sess, str *body)
 	struct rtp_relay_stream *stream;
 	int s;
 
+	if (sess->flags & SIPREC_PAUSED)
+		flags |= RTP_COPY_MODE_DISABLE;
+
 	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
 			&sess->media, flags, -1, body, &streams) < 0) {
 		LM_ERR("could not start recording!\n");
@@ -597,13 +600,9 @@ static void srs_send_update_invite(struct src_sess *sess, str *body)
 static int src_update_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	str body, sdp;
-	unsigned int flags = RTP_COPY_MODE_SIPREC|RTP_COPY_LEG_BOTH;
 
 	if (msg == FAKED_REPLY)
 		return 0;
-
-	if (sess->flags & SIPREC_PAUSED)
-		flags |= RTP_COPY_MODE_DISABLE;
 
 	if (srec_get_body(sess, &sdp) < 0) {
 		LM_ERR("could not refresh recording!\n");
