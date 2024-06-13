@@ -348,8 +348,10 @@ override_dh_auto_build:
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
 	  modules modules="$(BUILD_MODULE_PATHS)" cfg_prefix=$(INSTALL_PREFIX) \
 	  cfg_target=$(INSTALL_PREFIX)/etc/opensips/
+ifneq ($(filter BERKELEY,$(BUILD_MODPKG_LIST)),)
 	# generate the utils db_berkeley
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) utils include_modules="db_berkeley"
+endif
 
 	touch build-stamp
 
@@ -402,10 +404,12 @@ override_dh_auto_install:
 		;\
 	done
 
-	# move binaries of opensips-berkeley-module to opensips-berkeley-bin
+ifneq ($(filter BERKELEY,$(BUILD_MODPKG_LIST)),)
+	# move binaries of opensips-berkeley-module to opensips-iberkeley-bin
 	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
 	mv $(CURDIR)/debian/opensips-berkeley-module/$(BIN_PREFIX)/sbin \
 		$(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
+endif
 
 override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg
