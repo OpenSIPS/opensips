@@ -1137,6 +1137,48 @@ static inline char* str_strstr(const str *stra, const str *strb)
 }
 
 /*
+ * search @strb in @stra ignoring case of both, return pointer to 1st occurrence
+ */
+static inline char* str_strcasestr(const str *stra, const str *strb)
+{
+	int i;
+	int len;
+
+	if (stra==NULL || strb==NULL || stra->s==NULL || strb->s==NULL
+			|| stra->len<=0 || strb->len<=0) {
+#ifdef EXTRA_DEBUG
+		LM_DBG("bad parameters\n");
+#endif
+		return NULL;
+	}
+
+	if (strb->len > stra->len)
+		return NULL;
+
+	len=0;
+	while (stra->len-len >= strb->len){
+		if (tolower(stra->s[len]) != tolower(strb->s[0])) {
+			len++;
+			continue;
+		}
+
+		for (i=1; i<strb->len; i++)
+			if (tolower(stra->s[len+i])!=tolower(strb->s[i])) {
+				len++;
+				break;
+			}
+
+		if (i != strb->len)
+			continue;
+
+		return stra->s+len;
+	}
+
+
+	return NULL;
+}
+
+/*
  * case-insensitive compare n chars of two str's
  */
 static inline int str_strncasecmp(const str *stra, const str *strb, int n)
