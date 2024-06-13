@@ -128,6 +128,8 @@ enum request_method {
                                       * one, not received */
 #define FL_HAS_ROUTE_LUMP    (1<<22) /* the message had Route headers added
                                       * as lumps */
+#define FL_USE_SIPTRACE_B2B  (1<<23) /* used by tracer to check if the b2b
+                                      * tracing was enabled */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10
