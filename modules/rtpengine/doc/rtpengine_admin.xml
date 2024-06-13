@@ -966,7 +966,7 @@ rtpengine_stop_recording();
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem><para>
-		<emphasis>flags(string)</emphasis> - a list of flags simialar to
+		<emphasis>flags(string)</emphasis> - a list of flags similar to
 			the other functions. One of the <emphasis>file</emphasis>,
 			<emphasis>blob</emphasis> or <emphasis>db-id</emphasis> parameters
 			is mandatory to indicate the content of the media file to be played.
@@ -1025,7 +1025,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
 	<section id="func_rtpengine_stop_media" xreflabel="rtpengine_stop_media()">
 		<title>
-		<function moreinfo="none">rtpengine_stop_media([flags[, sockvar]])</function>
+		<function moreinfo="none">rtpengine_stop_media(flags, [last_frame_pos[, sock_var[, sockvar]]])</function>
 		</title>
 		<para>
 			This function will stop playing a media file previously started
@@ -1035,6 +1035,17 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 			<function>rtpengine_play_media()</function> call, otherwise
 			RTPEngine will not be able to stop media playing.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>flags(string)</emphasis> - a list of flags similar to
+			the other functions.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>last_frame_pos(var, optional)</emphasis> - a pseudo variable that
+			will contain the last frame played of the file.
+		</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from any route.
 		</para>
