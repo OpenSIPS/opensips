@@ -2912,7 +2912,7 @@ static int rtp_relay_param_get(struct sip_msg *msg, pv_param_t *ip,
 		pv_value_t *res, void *_params, void *extra)
 {
 	int p;
-	pv_value_t tv;
+	pv_value_t tv = {0};
 	int size = (int)(long)extra;
 	struct rtp_relay_route_param *params = _params;
 	if (size <= 0)
