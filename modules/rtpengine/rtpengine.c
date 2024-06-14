@@ -277,7 +277,7 @@ static void free_rtpe_nodes(struct rtpe_set *list);
 static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 		pv_spec_t *duration, pv_spec_t *spvar);
 static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags,
-		pv_spec_t *last_frame_pos, pv_spec_t *spvar);
+		pv_spec_t *spvar, pv_spec_t *last_frame_pos);
 static int rtpengine_blockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_unblockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_blockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
@@ -3950,7 +3950,7 @@ static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 }
 
 static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags,
-		pv_spec_t *last_frame_pos, pv_spec_t *spvar)
+		pv_spec_t *spvar, pv_spec_t *last_frame_pos)
 {
 	bencode_buffer_t bencbuf;
 	bencode_item_t *dict;
