@@ -1025,7 +1025,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
 	<section id="func_rtpengine_stop_media" xreflabel="rtpengine_stop_media()">
 		<title>
-		<function moreinfo="none">rtpengine_stop_media(flags, [last_frame_pos[, sock_var[, sockvar]]])</function>
+		<function moreinfo="none">rtpengine_stop_media(flags[, [sock_var[, sockvar]][, last_frame_pos]])</function>
 		</title>
 		<para>
 			This function will stop playing a media file previously started
@@ -1067,7 +1067,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 		$dlg_val(on_hold = "1";
 		rtpengine_play_media("from-tag=$tt start-pos=$avp(last_frame_pos) file=/path/to/moh_file.wav");
 	} else if ($dlg_val(on_hold) == "1") {
-		rtpengine_stop_media("from-tag=$tt", $avp(last_frame_pos));
+		rtpengine_stop_media("from-tag=$tt", , $avp(last_frame_pos));
 		$dlg_val(on_hold = "0");
 	}
 }
