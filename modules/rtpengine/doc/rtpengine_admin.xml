@@ -1062,10 +1062,10 @@ if (is_method("INVITE") &amp;&amp; $rs == 200)
 		<title>Example use of the last-frame-pos parameter <function>rtpengine_stop_media</function></title>
 		<programlisting format="linespecific">
 ...
-if (is_method("INVITE") &amp;&amp; has_totag())
+if (is_method("INVITE") &amp;&amp; has_totag()) {
 	if (is_audio_on_hold()) {
 		$dlg_val(on_hold = "1";
-		rtpengine_play_media("from-tag=$tt start-pos=$avp(last_frame_pos)");
+		rtpengine_play_media("from-tag=$tt start-pos=$avp(last_frame_pos) file=/path/to/moh_file.wav");
 	} else if ($dlg_val(on_hold) == "1") {
 		rtpengine_stop_media("from-tag=$tt", $avp(last_frame_pos));
 		$dlg_val(on_hold = "0");
