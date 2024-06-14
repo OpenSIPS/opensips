@@ -4793,7 +4793,7 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 	else
 		while (media_start <= media_stop) {
 			vrec.vu[9].iov_base = int2str(media_start, (int *)&vrec.vu[9].iov_len);
-			vrec.vu[13] = vrec.vu[9];
+			memcpy(&vrec.vu[13], &vrec.vu[9], sizeof *vrec.vu);
 			send_rtpp_command(node, &vrec, nitems);
 			media_start++;
 		}
@@ -4834,7 +4834,7 @@ static int w_rtpproxy_stop_recording(struct sip_msg *msg, str *callid,
 		STR2IOVEC(*to_tag, vstrec.vu[7]);
 
 	vstrec.vu[5].iov_base = int2str(medianum, (int *)&vstrec.vu[5].iov_len);
-	vstrec.vu[9] = vstrec.vu[5];
+	memcpy(&vstrec.vu[9], &vstrec.vu[5], sizeof *vstrec.vu);
 	send_rtpp_command(node, &vstrec, vstrec.useritems);
 
 	return 1;
