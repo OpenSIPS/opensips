@@ -4418,11 +4418,10 @@ static void rtpengine_copy_streams(bencode_item_t *streams, struct rtp_relay_str
 	for (item = streams->child; item; item = item->sibling) {
 		if (dlg) {
 			tmp.s = bencode_dictionary_get_string(item, "tag", &tmp.len);
-			if (!tmp.s) {
+			if (!tmp.s)
 				LM_WARN("could not retrieve tag - placing to %s\n",
 						(leg == RTP_RELAY_CALLER?"caller":"callee"));
-			}
-			if (!str_match(&tmp, &dlg->legs[DLG_CALLER_LEG].tag))
+			else if (!str_match(&tmp, &dlg->legs[DLG_CALLER_LEG].tag))
 				leg = RTP_RELAY_CALLEE;
 			else
 				leg = RTP_RELAY_CALLER;
