@@ -1025,7 +1025,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
 	<section id="func_rtpengine_stop_media" xreflabel="rtpengine_stop_media()">
 		<title>
-		<function moreinfo="none">rtpengine_stop_media(flags[, [sock_var[, sockvar]][, last_frame_pos]])</function>
+		<function moreinfo="none">rtpengine_stop_media(flags[, [sock_var[, sockvar]], [last_frame_pos]])</function>
 		</title>
 		<para>
 			This function will stop playing a media file previously started
