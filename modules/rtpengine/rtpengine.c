@@ -4405,7 +4405,7 @@ static str *rtpengine_new_subs(str *tag)
 static void rtpengine_copy_streams(bencode_item_t *streams, struct rtp_relay_streams *ret)
 {
 	bencode_item_t *item, *medias;
-	str tmp;
+	str tmp = STR_NULL;
 	struct dlg_cell *dlg;
 	int leg = RTP_RELAY_CALLER, medianum, label, s;
 	if (!ret || !streams)
@@ -4459,7 +4459,7 @@ static int rtpengine_api_copy_offer(struct rtp_relay_session *sess,
 		unsigned int copy_flags, unsigned int streams, str *ret_body,
 		struct rtp_relay_streams *ret_streams)
 {
-	str tmp, *to_tag;
+	str tmp;
 	bencode_item_t *ret;
 	ret = rtpengine_api_copy_op(sess, OP_SUBSCRIBE_REQUEST,
 			server, *_ctx, flags, copy_flags, NULL);
@@ -4467,12 +4467,12 @@ static int rtpengine_api_copy_offer(struct rtp_relay_session *sess,
 		return -1;
 	if (!bencode_dictionary_get_str_dup(ret, "sdp", ret_body))
 		LM_ERR("failed to extract sdp body from proxy reply\n");
-	if (!bencode_dictionary_get_str(ret, "to-tag", &tmp))
-		LM_ERR("failed to extract to-tag from proxy reply\n");
 	if (ret_streams)
 		rtpengine_copy_streams(bencode_dictionary_get(ret, "tag-medias"), ret_streams);
-	to_tag = rtpengine_new_subs(&tmp);
-	*_ctx = to_tag;
+	if (!bencode_dictionary_get_str(ret, "to-tag", &tmp))
+		LM_ERR("failed to extract to-tag from proxy reply\n");
+	else
+		*_ctx = rtpengine_new_subs(&tmp);
 	bencode_buffer_free(bencode_item_buffer(ret));
 	return 0;
 }
