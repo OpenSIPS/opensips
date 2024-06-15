@@ -2415,8 +2415,12 @@ GIwZjAzNGM1ZDY
 
    This is a read/write variable that allows access to the dialog
    attribute named name. It can hold a string or integer value.
-   This PV will be available only for sequential requests, after
-   doing loose_route().
+
+   Be sure and use this variable only when having a dialog context
+   (like after create_dialog() or match_dialog() or equivalent).
+
+   The variable accepts dynamic names, meaning the name may
+   contain other variables.
 
    NULL will be returned if there is no dialog for the request.
 
@@ -2560,7 +2564,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 457 287 13282 3530
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 459 288 13367 3546
    2. Razvan Crainea (@razvancrainea) 285 213 5285 1659
    3. Vlad Paiu (@vladpaiu) 256 145 7206 3027
    4. Vlad Patrascu (@rvlad-patrascu) 199 104 4330 3514
@@ -2605,8 +2609,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2024
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2024
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2024
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2024
    3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2024
    4.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
    5.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023

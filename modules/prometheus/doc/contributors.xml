@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">31</entry>
-		<entry align="center">17</entry>
-		<entry align="center">1283</entry>
-		<entry align="center">153</entry>
+		<entry align="center">34</entry>
+		<entry align="center">19</entry>
+		<entry align="center">1306</entry>
+		<entry align="center">220</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -96,18 +96,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Feb 2021 - Jun 2024</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">May 2024 - May 2024</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Dudu Ben Moshe</entry>
 		<entry align="center">Feb 2024 - Feb 2024</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Feb 2021 - Oct 2023</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -138,7 +138,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Dudu Ben Moshe, Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), OpenSIPS.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Dudu Ben Moshe, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), OpenSIPS.</para>
 </section>
 
 </chapter>

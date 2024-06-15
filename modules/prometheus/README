@@ -22,7 +22,6 @@ Prometheus Module
               1.3.7. statistics(string)
               1.3.8. labels(string)
               1.3.9. script_route(string)
-              1.3.10. script_route_avp_result(string)
 
         1.4. Exported Functions
         1.5. Examples
@@ -54,8 +53,7 @@ Prometheus Module
    1.7. Set statistics parameter
    1.8. Set statistics parameter
    1.9. Set script_route parameter
-   1.10. Set script_route parameter
-   1.11. Prometheus Scrape Config
+   1.10. Prometheus Scrape Config
 
 Chapter 1. Admin Guide
 
@@ -245,32 +243,13 @@ modparam("prometheus", "labels", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/
 ...
 modparam("prometheus", "script_route", "my_custom_prometheus_route")
 ...
-
-1.3.10. script_route_avp_result(string)
-
-   Specifies the AVP spec name to be used to for returning custom
-   prometheus information.
-
-   The AVP is expected to contain a JSON format, containing an
-   array of arrays of custom statistics to export to prometheus.
-   See section for the format itself.
-
-   The default value is "" - no custom route called.
-
-   Example 1.10. Set script_route parameter
-...
-modparam("prometheus", "script_route", "my_custom_prometheus_route")
-modparam("prometheus", "script_route_avp_result", "$avp(prometheus_out_j
-son)")
-...
 route[my_custom_prometheus_route] {
-        # the OUT JSON needs to contain an array of objects containing a
- header and a values field
+        # the returned JSON needs to contain an array of objects contain
+ing a header and a values field
         # the header field to contain the custom prometheus stats header
         # the values field is an array itself, of name/value objects
         # used for individual stats publishing
-        $avp(prometheus_out_json) = "
-[   {
+        return (1, '[{
         "header": "# TYPE opensips_cps gauge",
         "values": [
             {
@@ -278,8 +257,7 @@ route[my_custom_prometheus_route] {
                 "value": 3
             }
         ]
-    },
-    {
+    }, {
         "header": "# TYPE opensips_disabled_rtpengine gauge",
         "values": [
             {
@@ -287,9 +265,7 @@ route[my_custom_prometheus_route] {
                 "value": 0
             }
         ]
-    },
-]";
-
+    }]');
 }
 ...
 
@@ -305,7 +281,7 @@ route[my_custom_prometheus_route] {
    config, indicating the IP and port you've configured the httpd
    module to listen on (default: 0.0.0.0:8888).
 
-   Example 1.11. Prometheus Scrape Config
+   Example 1.10. Prometheus Scrape Config
 
 scrape_configs:
   - job_name: opensips
@@ -321,7 +297,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    31      17      1283     153
+   1. Razvan Crainea (@razvancrainea)    34      19      1306     220
    2. Maksym Sobolyev (@sobomax)         4        2       2        3
    3. Dudu Ben Moshe                     4        1      272       0
    4. Vlad Paiu (@vladpaiu)              3        1       6        6
@@ -348,9 +324,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Vlad Paiu (@vladpaiu)           May 2024 - May 2024
-   2. Dudu Ben Moshe                  Feb 2024 - Feb 2024
-   3. Razvan Crainea (@razvancrainea) Feb 2021 - Oct 2023
+   1. Razvan Crainea (@razvancrainea) Feb 2021 - Jun 2024
+   2. Vlad Paiu (@vladpaiu)           May 2024 - May 2024
+   3. Dudu Ben Moshe                  Feb 2024 - Feb 2024
    4. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
    5. Liviu Chircu (@liviuchircu)     Aug 2022 - Aug 2022
    6. OpenSIPS                        Feb 2021 - Feb 2021
@@ -362,8 +338,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Dudu Ben Moshe, Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), OpenSIPS.
+   Last edited by: Razvan Crainea (@razvancrainea), Dudu Ben
+   Moshe, Liviu Chircu (@liviuchircu), OpenSIPS.
 
    Documentation Copyrights:
 
