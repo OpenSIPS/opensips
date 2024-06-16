@@ -23,21 +23,9 @@
  * \brief Support for transformations
  */
 
+/* make strptime available */
 #define _GNU_SOURCE
-#define _XOPEN_SOURCE 600          /* glibc2 on linux, bsd */
-#define _XOPEN_SOURCE_EXTENDED 1   /* solaris */
-
-/**
- * _XOPEN_SOURCE creates conflict in swab definition in Solaris
- */
-#ifdef __OS_solaris
-	#undef _XOPEN_SOURCE
-#endif
-
 #include <time.h>
-
-#undef _XOPEN_SOURCE
-#undef _XOPEN_SOURCE_EXTENDED
 
 #include <stdio.h>
 #include <string.h>
