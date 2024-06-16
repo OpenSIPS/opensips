@@ -19,9 +19,9 @@ MAKE_CMD="${MAKE_ENV} make"
 
 if [ ! -z "${ONE_MODULE}" ]
 then
-  env CC_EXTRA_OPTS="${CC_EXTRA_OPTS:-"-Werror"}" ${MAKE_CMD} \
+  env CC_EXTRA_OPTS="${CC_EXTRA_OPTS:-"-Werror -Wno-atomic-alignment"}" ${MAKE_CMD} \
    -C "modules/${ONE_MODULE}"
 else
-  env CC_EXTRA_OPTS="${CC_EXTRA_OPTS:-"-Werror"}" ${MAKE_CMD} \
+  env CC_EXTRA_OPTS="${CC_EXTRA_OPTS:-"-Werror -Wno-atomic-alignment"}" ${MAKE_CMD} \
    exclude_modules="${EXCLUDE_MODULES}" "${@}" ${MAKE_TGT:-"all"}
 fi
