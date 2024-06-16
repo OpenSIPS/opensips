@@ -1,0 +1,141 @@
+name: rtp.io
+
+on:
+  workflow_call:
+    inputs:
+      llvm-version:
+        required: true
+        type: string
+      llvm-version-old:
+        required: true
+        type: string
+      ghcr-repo:
+        required: false
+        type: string
+        default: ghcr.io/${{ github.repository_owner }}/opensips
+      rtpp-repo:
+        required: false
+        type: string
+        default: ghcr.io/sippy/rtpproxy:latest
+      rtpp-tag:
+        required: false
+        type: string
+        default: debian_12-slim
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build_rtp_io_dock:
+    name: Build OpenSIPS+rtp.io Container
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      BASE_IMAGE: ${{ inputs.rtpp-repo }}-${{ inputs.rtpp-tag }}
+    outputs:
+      test_matrix: ${{ steps.set-env.outputs.test_matrix }}
+      build_image: ${{ steps.set-env.outputs.build_image }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Checkout VoIPTests repo
+        uses: actions/checkout@v4
+        with:
+          repository: 'sippy/voiptests'
+          path: dist/voiptests
+
+      - name: Checkout RTPProxy repo
+        uses: actions/checkout@v4
+        with:
+          repository: 'sippy/rtpproxy'
+          path: dist/rtpproxy
+
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set dynamic environment
+        id: set-env
+        run: |
+          BUILD_OS="`echo ${{ inputs.rtpp-tag }} | sed 's|-.*|| ; s|_|-|g'`"
+          echo "BUILD_OS=${BUILD_OS}" >> $GITHUB_ENV
+          PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | \
+            jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)\(if .platform.variant != null then "/\(.platform.variant)" else "" end)"' | \
+            sort -u | grep -v unknown | BUILD_OS="${BUILD_OS}" ./scripts/build/get-arch-buildargs.rtp.io fltplatforms | paste -sd ','`"
+          echo "Platforms: ${PLATFORMS}"
+          GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          BUILD_IMAGE="${{ inputs.ghcr-repo }}:rtp.io-${{ inputs.rtpp-tag }}-${GIT_BRANCH}"
+          echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_ENV
+          echo "GIT_BRANCH=${GIT_BRANCH}" >> $GITHUB_ENV
+          echo "BUILD_IMAGE=${BUILD_IMAGE}" >> $GITHUB_ENV
+          for _p in `echo ${PLATFORMS} | tr ',' '\n'`; \
+          do \
+            if TARGETPLATFORM="${_p}" BUILD_OS="${BUILD_OS}" ./scripts/build/get-arch-buildargs.rtp.io isbrokenplatform; \
+            then \
+              TEST_MATRIX="${_p}${TEST_MATRIX:+,}${TEST_MATRIX}"; \
+            fi; \
+          done
+          TEST_MATRIX="`echo ${TEST_MATRIX} | tr ',' '\n'  | jq -R . | jq -s . | tr '\n' ' '`"
+          echo "test_matrix=${TEST_MATRIX}" >> $GITHUB_OUTPUT
+          echo "build_image=${BUILD_IMAGE}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        env:
+          CACHE_SPEC: "type=registry,ref=${{ env.BUILD_IMAGE }}-buildcache"
+        with:
+          context: .
+          file: ./docker/Dockerfile.rtp.io
+          build-args: |
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
+            BUILD_OS=${{ env.BUILD_OS }}
+            LLVM_VER=${{ inputs.llvm-version }}
+            LLVM_VER_OLD=${{ inputs.llvm-version-old }}
+          platforms: ${{ env.PLATFORMS }}
+          cache-from: ${{ env.CACHE_SPEC }}
+          cache-to: ${{ env.CACHE_SPEC }},mode=max
+          tags: ${{ env.BUILD_IMAGE }}
+          push: true
+
+  test_rtp_io_dock:
+    name: Test OpenSIPS+rtp.io
+    needs: build_rtp_io_dock
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test_platform: ${{ fromJSON(needs.build_rtp_io_dock.outputs.test_matrix) }}
+    env:
+      TARGETPLATFORM: ${{ matrix.test_platform }}
+      BUILD_IMAGE: ${{ needs.build_rtp_io_dock.outputs.build_image }}
+
+    steps:
+    - name: Set dynamic environment
+      run: |
+        BUILD_OS="`echo ${{ inputs.rtpp-tag }} | sed 's|-.*|| ; s|_|-|g'`"
+        echo "BUILD_OS=${BUILD_OS}" >> $GITHUB_ENV
+
+    - name: Set up QEMU
+      id: qemu
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: ${{ env.TARGETPLATFORM }}
+
+    - name: Test ${{ env.TARGETPLATFORM }}
+      run: |
+        docker pull ${BUILD_IMAGE}
+        docker run --platform ${TARGETPLATFORM} --name test --cap-add=SYS_PTRACE \
+         --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0 ${BUILD_IMAGE}
+      timeout-minutes: 2
