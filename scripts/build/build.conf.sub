@@ -1,6 +1,6 @@
 enable_ubuntu_toolchain_test() {
-	sudo apt install software-properties-common
-	sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+	${SUDO} env DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common
+	${SUDO} add-apt-repository -y ppa:ubuntu-toolchain-r/test
 }
 
 setup_qemu() {
