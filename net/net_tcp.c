@@ -1197,8 +1197,8 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 				tcpconn->flags|=F_CONN_REMOVED;
 				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
 					"Async connect failed");
-				tcpconn_destroy(tcpconn);
 				sh_log(tcpconn->hist, TCP_UNREF, "tcpconn connect, (%d)", tcpconn->refcnt);
+				tcpconn_destroy(tcpconn);
 				return 0;
 			}
 
