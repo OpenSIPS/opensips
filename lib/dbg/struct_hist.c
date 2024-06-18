@@ -188,6 +188,9 @@ static void sh_free(struct struct_hist *sh)
 
 void sh_unref(struct struct_hist *sh)
 {
+	if (!sh)
+		return;
+
 	gen_lock_t *shl_lock = &sh->shlist->wlock;
 
 	lock_get(shl_lock);
