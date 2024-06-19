@@ -1,3 +1,629 @@
+=========================== Release 3.4.6 ==============================
+
+2024-06-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [31bbb28e2] :
+
+        [event_kafka] remove bogus example in docs
+
+        (cherry picked from commit ccc346b8e3c85fb07de0f05c8cde0123857382f2)
+
+
+2024-06-18  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [2d8ea8ef2] :
+
+        [tcp] check if the history list exists when doing unref
+
+        There are cases where the tcp conn may fail right at the beginning (like a failed connect/accept) and maybe the hist list is not yet attached to the conn.
+
+
+2024-06-17  Razvan Crainea  <razvan@opensips.org>
+        * [ecbaff29c] :
+
+        rtpengine: fix uninitialized tmp warning
+
+        (cherry picked from commit 675db4c00019f7e782afcc4dbdc2c0860a710362)
+
+
+2024-06-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [3bb0d23d9] :
+
+        [net/tcp] log the unref BEFORE destroying the conn
+
+
+2024-06-16  OpenSIPS  <github@opensips.org>
+        * [27cc42dea] :
+
+        Rebuild documentation
+
+
+2024-06-14  Razvan Crainea  <razvan@opensips.org>
+        * [5b4a17035] :
+
+        rtpproxy: fix structure copying
+
+        (cherry picked from commit 80bee9b8c26efd1f3a5cd4b7df4c1a7c27a2dde3)
+
+
+2024-06-14  Razvan Crainea  <razvan@opensips.org>
+        * [3b4f48a0c] :
+
+        rtpengine: fix unitialized warning
+
+        (cherry picked from commit 1c3139ae28ed815749e84c7289c50703d16f9191)
+
+
+2024-06-14  Razvan Crainea  <razvan@opensips.org>
+        * [1b40fea3c] :
+
+        rtp_relay: ignore correct branch index
+
+        Many thanks to Liviu Chircu for spotting the issue
+
+        (cherry picked from commit 90c9b78fb3330231129d49ab32ce4593654e7408)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [231c71bf6] :
+
+        packaging/debian: do not run berkeley stubs if not built
+
+        If the berkeley package is not build, we should not run its stubs, as
+        they result in errors.
+
+        Thanks go to Richard Revels (@rrevels-bw on GitHub) for reporting it.
+        Close #3389
+
+        (cherry picked from commit 2fba04ae731a519b8eb3a033e7a491aa3c7e8f66)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [f36f40b05] :
+
+        tracer: use own flag for B2B tracing
+
+        This fix prevents crashes generated when the B2B module is loaded, but
+        tracing is done at the transaction layer - since the transaction layer
+        was setting the same flag, B2B tracing was also engaged, but without the
+        necessary structures, leading to crashes.
+
+        (cherry picked from commit efc25521b294f61955b8a181234278dc8313ccf4)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [65a5c86a5] :
+
+        siprec: properly handle paused recording
+
+        (cherry picked from commit 0091ab4751164b77a1ea928f04899101ea51c3fe)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [77924d948] :
+
+        siprec: expose streams in xml
+
+        Close #3287 and #3293
+
+        (cherry picked from commit fb4402da3969eea64ecdd79b1233325d45346651)
+
+
+2024-06-13  Liviu Chircu  <liviu@opensips.org>
+        * [54b671f9b] :
+
+        db_sqlite raw queries: Fix unnecessary lowercase restriction
+
+        The code was searching for the " from " string chunk in the query but
+        in a case-sensitive manner (??), causing formatted queries (e.g. " FROM
+        ") to fail.
+
+        Credits to Eric Tamme (@etamme) for spotting and reporting the issue
+
+        Fixes #3409
+
+        (cherry picked from commit 388d4faa99e1d1842d9510947020c3d11157aa2b)
+
+
+2024-06-11  Liviu Chircu  <liviu@opensips.org>
+        * [098168d45] :
+
+        Update opensips.vim syntax file (v3.4)
+
+
+2024-06-11  Liviu Chircu  <liviu@opensips.org>
+        * [9d30b05cd] :
+
+        menuconfig templates: Fix nat_uac_test() flags; Load a TLS module
+
+        (cherry picked from commit 1768d6543ebd927081e27e78035c27472dc045d2)
+
+
+2024-06-11  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [4896e5cc2] :
+
+        Remove b2b_logic_xml from exclude list
+
+        The module does not exist anymore
+
+
+2024-06-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [bcaadf81c] :
+
+        [nathelper] do proper URI enclosing for FROM and TO URIs
+
+        Reported by @InnovateAsterisk
+        Closes #3405
+
+        (cherry picked from commit 9308abc20f177fdd49c1be770dccb100a696e524)
+
+
+2024-06-09  OpenSIPS  <github@opensips.org>
+        * [5a8cca2f1] :
+
+        Rebuild documentation
+
+
+2024-06-06  Liviu Chircu  <liviu@opensips.org>
+        * [d607d10aa] :
+
+        Fix shutdown crash when 'event_shm_threshold' is enabled
+
+        The SHM lock is NULL at that point, so use shm_free_unsafe() instead.
+
+        (cherry picked from commit d076141e4fa3f5c4ef9a67a72e0c0b23dcd37e7c)
+
+
+2024-06-03  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [41475ade0] :
+
+        Merge pull request #3400 from NormB/NormB-patch-4
+
+        Update b2b_logic_admin.xml
+
+        (cherry picked from commit 909ac1b8896b9d7b76b840cf24e3b900a929a504)
+
+
+2024-06-03  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [b353e3e01] :
+
+        Merge pull request #3399 from NormB/NormB-patch-3
+
+        Update b2b_logic_admin.xml
+
+        (cherry picked from commit e22e9c51a0562f453431610fc5c201ff9dbed13e)
+
+
+2024-06-03  Liviu Chircu  <liviu@opensips.org>
+        * [6fe6e96ec] :
+
+        Merge pull request #3403 from p120ph37/3.4
+
+        Fix `perl_exec_simple` memory leak
+
+2024-06-02  OpenSIPS  <github@opensips.org>
+        * [9d0e05a92] :
+
+        Rebuild documentation
+
+
+2024-05-31  Aaron Meriwether  <me@ameriwether.com>
+        * [a861f90a8] :
+
+        Fix `perl_exec_simple` memory leak
+
+
+2024-05-28  Liviu Chircu  <liviu@opensips.org>
+        * [9cfdab532] :
+
+        db_mysql: Drop usage of MYSQL_OPT_RECONNECT in 8.0.35+
+
+        The auto-reconnect feature of libmysqlclient has been deprecated
+        starting with version 8.0.34 and is subject to future removal.
+        Moreover, OpenSIPS was explicitly disabling it anyway on startup, in
+        favour of the "max_db_queries" application-level query retrying loop.
+
+        (cherry picked from commit 39f056b617c2997daa0fc7f49e7570b5ed94ca6f)
+
+
+2024-05-26  OpenSIPS  <github@opensips.org>
+        * [185980664] :
+
+        Rebuild documentation
+
+
+2024-05-23  Razvan Crainea  <razvan@opensips.org>
+        * [577ffe1b2] :
+
+        b2b_entities: logic_key should always be printable
+
+        Many thanks to Voxtronic for spotting this issue!
+
+        (cherry picked from commit f96335091d82a15c0a2d2e70f3a03fd7adfb1868)
+
+
+2024-05-22  Liviu Chircu  <liviu@opensips.org>
+        * [1779c5060] :
+
+        cfg parser: Avoid unnecessary strlen on error case
+
+        When getline() returns -1, the @lineptr argument is never safe to read,
+        nor is this recommended.  So when both rc == -1 and EOF conditions
+        occur, it is safe to assume we read 0 bytes, without doing the strlen().
+
+        Many thanks to Dhiraj Mishra (@RandomDhiraj) for detecting, documenting
+        and reporting the potential risk of a heap buffer overflow here!
+
+        (cherry picked from commit 50b651c230eec5daaf52f8742a9c3dd92123f3d2)
+
+
+2024-05-12  OpenSIPS  <github@opensips.org>
+        * [3eb9916b4] :
+
+        Rebuild documentation
+
+
+2024-05-10  Liviu Chircu  <liviu@opensips.org>
+        * [fdfe37f3b] :
+
+        status_report: Avoid return 0 in sr_set_status()
+
+        (cherry picked from commit 64c0042b4258eeaf1c52d6f37bda5b2d7d7a1ff7)
+
+
+2024-05-10  Liviu Chircu  <liviu@opensips.org>
+        * [9f2d4d53b] :
+
+        status_report: Fix bad 3rd parameter to sr_set_status()
+
+        (cherry picked from commit 7f12c44813f080a3a2177c8d89a5c160b80139c9)
+
+
+2024-05-10  Liviu Chircu  <liviu@opensips.org>
+        * [2939930ca] :
+
+        Remove references to README-MODULES; Remove svn '$Id$' tags
+
+        Reason: this file was slowly becoming more and more outdated and was
+        ultimately removed in 8292659d5, in favour of the opensips.org listing.
+
+        Fixes #3375
+
+        (cherry picked from commit 5f3baea398885b93f25e6652001170a440758954)
+
+
+2024-05-07  Liviu Chircu  <liviu@opensips.org>
+        * [a81afc112] :
+
+        mid_registrar: Improve robustness vs. bad traffic in mode 2
+
+        In case the main registrar returns extra contacts, make sure to
+        correctly match the mid-registrar's *single* contact within the list,
+        then strip all Contacts from the 200 OK, effectively fixing it.
+
+        Thanks go to Slava Bendersky for reporting and helping troubleshoot.
+
+        (cherry picked from commit 7a9912602aa76b2af9dbdf8632cccb8aace7b22a)
+
+
+2024-05-07  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [126712e37] :
+
+        usrloc: simplify processing of the refresh events
+
+        Do not abuse "struct socket_info" just to pass sock_str over.
+        Instead, add str to the refresh event data and pass that alone.
+        Not only it reduces amount of data to pass, but also makes
+        code much easier to read and understand.
+
+        (cherry picked from commit 04cb08e70ef467e5d599289abec485c957587d7c)
+
+
+2024-05-05  OpenSIPS  <github@opensips.org>
+        * [dbe02b7ff] :
+
+        Rebuild documentation
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [deb6b25e2] :
+
+        freeswitch: Fix off-by-one comparison bug; Add safety checks
+
+        Many thanks to Five9 (https://www.five9.com) for reporting this issue!
+
+
+2024-05-02  Razvan Crainea  <razvan@opensips.org>
+        * [ee65c4def] :
+
+        tracer: proper detection of dummy messages
+
+        Complete commit 6fcfc70
+
+        (cherry picked from commit 99ea7e85722becabfc6788b2c089ecadd1115238)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [80178f0c5] :
+
+        Exclude "snmpstats" from multi-arch build
+
+        It seems LTO is not possible with clang on the below arch, since
+        LLVMgold.so is not available, yet snmpstat's `net-snmp-config` program
+        includes the -ffat-lto-objects CFLAGS, which activates LTO.
+
+        build_multiarch (clang-arm64-qemu-cross, ubuntu-22.04)
+
+        /usr/bin/ld: /usr/lib/llvm-18/bin/../lib/LLVMgold.so: error loading
+        plugin: /usr/lib/llvm-18/bin/../lib/LLVMgold.so: cannot open shared
+        object file: No such file or directory
+        clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+        (cherry picked from commit 7e421329810a7d11e5721e934d9e4ab52f3eb80a)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [9590bd7e4] :
+
+        Fix various ARM32 time_t warnings (Ubuntu 22.04)
+
+        (cherry picked from commit 25107836920b2caa0e94d40538691752f3183f57)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [b70c9270a] :
+
+        usrloc: Fix a data packing bug
+
+        (cherry picked from commit 52f21088b78647f4aa94bb66334e9ebeac6558a7)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [8f6a9798f] :
+
+        snmpstats: Fix clang warnings on ARM32/QEMU/Ubuntu-22.04
+
+        clang: warning: argument unused during compilation:
+            '-fno-stack-clash-protection' [-Wunused-command-line-argument]
+        (cherry picked from commit 077072d9a87c974d1a9cce67cbea66344db9e1a8)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [fa4aa2143] :
+
+        python build: Ensure "setuptools" is available
+
+        (cherry picked from commit 4250ccd78f7c900a7eea844e9b41a0f487d08fa9)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [cab8e5191] :
+
+        b2b_entities: Fix ARM32 time_t warnings (Ubuntu 22.04)
+
+        (cherry picked from commit 61ba2cc98cc63acca4774d153d6f66b5282831f0)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [19236750e] :
+
+        github/workflows: Auto-detect available libodbc packages
+
+        (cherry picked from commit 63c9eb2306d7989cd63e53e778317e11c8ed16b5)
+
+        github/workflows: Move auto-detection post apt-update
+
+        (cherry picked from commit 3ab5a1cfb6372a40032989fe5e9e4b36df80aa94)
+
+        github/workflows: Fix bash multi-line error
+
+        (cherry picked from commit a09e75e8610925f4737b57dbcb1a38ef79068a2e)
+
+        github/workflows: Avoid fancy bash syntax
+
+        (cherry picked from commit 1e0ea18a637553a4c4ab51fb95428f05c37ddd62)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [6893324a1] :
+
+        Complete b8fdce475d (ARM32 warnings)
+
+        (cherry picked from commit 41a20d6deca2861e2dce6b06485b3e0347c8fb4c)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [e7c798e2b] :
+
+        github/workflows: Add exception for multi-arch Ubuntu 22.04
+
+        (cherry picked from commit 761b844e6804ccba2aa006a8d2efd873e2d54992)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [5a847bdad] :
+
+        Attempt to fix GitHub Workflow
+
+        On newer 22.04 Ubuntu, it seems the ODBC package has been bumped to "2".
+
+        Related commits:
+            - fa652e8
+            - 6bfd7d2
+
+        (cherry picked from commit dbf794dccad5f2865f955e693c85a65bc5046237)
+
+        Fix a bunch of ARM32 printf() warnings (Ubuntu 22.04)
+
+        (cherry picked from commit b8fdce475d6c8b7a3df3b2ae1b6d7ec64a053d9c)
+
+        Attempt #2 to fix GitHub Workflow
+
+        Previous commit fixed 22.04 but broke 20.04, so this commit should make
+        both work.
+
+        (cherry picked from commit d7fcd90432494b259b608d5397c6dd2bcdaa3f59)
+
+        Fix package typo
+
+        (cherry picked from commit 44c995aae67d24f80161096a529ded398bd69c45)
+
+
+2024-05-02  Razvan Crainea  <razvan@opensips.org>
+        * [6d6a0bec6] :
+
+        parser: log_event_level_filter should be signed int
+
+        This allow setting the filter to more severe levels, i.e. ERROR and
+        upper
+
+
+2024-04-30  Liviu Chircu  <liviu@opensips.org>
+        * [0eafd4f7f] :
+
+        Fix the E_CORE_SHM_THRESHOLD event
+
+        For some time now, this event has not been functional, due to
+        init_shm_mallocs() being called *before* parsing the opensips.cfg,
+        leading to un-initialized event holders and a quick-exit at runtime,
+        including times when the event actually needs to be raised.
+
+        Credits to Bogdan Iancu for reporting this issue!
+
+        (cherry picked from commit b38b06aa763d8c7457d5e87c28b2d5f6676c5798)
+
+
+2024-04-30  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f019ddc15] :
+
+        [pua] properly insert sh_tag into pua table
+
+        Credits go to @NormB
+        Fixes #3377
+
+        (cherry picked from commit 92b0dcfbdf75c456da2a66c607875ab60801df89)
+
+
+2024-04-28  OpenSIPS  <github@opensips.org>
+        * [9a503f35c] :
+
+        Rebuild documentation
+
+
+2024-04-26  Razvan Crainea  <razvan@opensips.org>
+        * [c36068a2b] :
+
+        event_route: fix int interpretation in $param
+
+        Treat the integer as signed when building the $param value
+
+        Many thanks to Norm Brandinger (@NormB on GitHub) for reporting it in #3367
+
+        (cherry picked from commit 999b8ac5d35f1e53af5cf854b3be2ef5936b2cd0)
+
+
+2024-04-26  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [2d82d20ee] :
+
+        [presence] fix evaluating shtag when cluster disabled
+
+        Avoid evaluating sharing tags when the clustering support in presence module is disabled.
+        Related to #3359
+
+        (cherry picked from commit 6af90398171f8f872e68ffe52ee664a285ad6b6c)
+
+
+2024-04-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [adf1f7907] :
+
+        [presence_callinfo] fix non-optional params for sca_set_xxx_line() funcs
+
+        The line parameter is supposed to be optional
+        Reported by @NormB
+        Closes #3361
+
+        (cherry picked from commit a80ff86657dc1bb31abb490f151b74317d99c1bd)
+
+
+2024-04-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f8941cb77] :
+
+        [registrar] fix mem bug and mem leak in UA-regexp filter
+
+        The compiled RE (for UA) is to be freed by the fixup-free function and not by the script function.
+        Reported by @feiyingcheung
+        Closes #3356
+
+        (cherry picked from commit b7a8040711f5d801a361722d5ff5bce236ebdfb0)
+
+
+2024-04-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f3912dc34] :
+
+        [registrar] removed old obsolete fixup function
+
+        (cherry picked from commit 887f17b6e076c89b845c81b6ed0741bd3c5177a7)
+
+
+2024-04-24  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [253ad43d3] :
+
+        [proto_ws] fix mem leak when hdr parsing fails
+
+        Even if the hdr parsing failed (due to a bogus hdr), you still have to free whatever hdrs were already parsed ;)
+        Reported by @11qeq11
+        Closes #3353
+
+        (cherry picked from commit 6a847364b5122d6abc76229c892fb8d48c24fac5)
+
+
+2024-04-23  Razvan Crainea  <razvan@opensips.org>
+        * [79953d755] :
+
+        tracer: do not trace dummy messages
+
+        If a message is dummy, it should not be traced, as it is never actually
+        sent to any participants.
+        This fixes the errors dumped by the module when trying to trace a dummy
+        (such as a locally generated BYE due to timeout) message that does not
+        have a bind socket, erroneously logging
+        `CRITICAL:tracer:proto2str: unsupported proto 0`
+
+        (cherry picked from commit 6fcfc706082c124809ed68186ce6299af884dccd)
+
+
+2024-04-22  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [799da7c2d] :
+
+        [presence] fix federation with local HA combination
+
+        Added a sharing tag to control which node (from the HA combination) is active in the federated cluster. See all the details here https://github.com/OpenSIPS/opensips/issues/2960
+        (this is fully backward compatible)
+
+        Closes #2960
+
+        (cherry picked from commit 8b96b70327ab80e14499edfabd6021d24acbc020)
+
+
+2024-04-21  OpenSIPS  <github@opensips.org>
+        * [b278b74ae] :
+
+        Rebuild documentation
+
+
+2024-04-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [fc3609552] :
+
+        [tracer] adapt the backport
+
+
+2024-04-19  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [5b5ac2768] :
+
+        Merge pull request #3364 from ovidiusas/master
+
+        tracer: set proper IP instead of FQDN for locally generated requests and outgoing replies
+        (cherry picked from commit 0b9916c1bd5bb000cf93e761c79129409ecca615)
+
+
 =========================== Release 3.4.5 ==============================
 
 2024-04-15  Razvan Crainea  <razvan@opensips.org>
