@@ -1,3 +1,326 @@
+=========================== Release 3.2.19 ==============================
+
+2024-06-18  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [5d535f74d] :
+
+        [tcp] check if the history list exists when doing unref
+
+        There are cases where the tcp conn may fail right at the beginning (like a failed connect/accept) and maybe the hist list is not yet attached to the conn.
+
+        (cherry picked from commit 2d8ea8ef28b4efbcde658ece5a65ec4e440e35ba)
+
+
+2024-06-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [87c76187c] :
+
+        [net/tcp] log the unref BEFORE destroying the conn
+
+        (cherry picked from commit 3bb0d23d9aba03e2ea674563c88aa5ba18ca8ae7)
+
+
+2024-06-15  OpenSIPS  <github@opensips.org>
+        * [873c5e272] :
+
+        Rebuild documentation
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [7ef4cbcd4] :
+
+        packaging/debian: do not run berkeley stubs if not built
+
+        If the berkeley package is not build, we should not run its stubs, as
+        they result in errors.
+
+        Thanks go to Richard Revels (@rrevels-bw on GitHub) for reporting it.
+        Close #3389
+
+        (cherry picked from commit 2fba04ae731a519b8eb3a033e7a491aa3c7e8f66)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [5d5e34b37] :
+
+        tracer: use own flag for B2B tracing
+
+        This fix prevents crashes generated when the B2B module is loaded, but
+        tracing is done at the transaction layer - since the transaction layer
+        was setting the same flag, B2B tracing was also engaged, but without the
+        necessary structures, leading to crashes.
+
+        (cherry picked from commit efc25521b294f61955b8a181234278dc8313ccf4)
+
+
+2024-06-13  Liviu Chircu  <liviu@opensips.org>
+        * [6ca961a4d] :
+
+        db_sqlite raw queries: Fix unnecessary lowercase restriction
+
+        The code was searching for the " from " string chunk in the query but
+        in a case-sensitive manner (??), causing formatted queries (e.g. " FROM
+        ") to fail.
+
+        Credits to Eric Tamme (@etamme) for spotting and reporting the issue
+
+        Fixes #3409
+
+        (cherry picked from commit 388d4faa99e1d1842d9510947020c3d11157aa2b)
+        (cherry picked from commit 54b671f9b837bc6031596cf907eaebac40783458)
+
+
+2024-06-11  Liviu Chircu  <liviu@opensips.org>
+        * [a53104bb2] :
+
+        Update opensips.vim syntax file (v3.2)
+
+
+2024-06-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [77c4dd954] :
+
+        [nathelper] do proper URI enclosing for FROM and TO URIs
+
+        Reported by @InnovateAsterisk
+        Closes #3405
+
+        (cherry picked from commit 9308abc20f177fdd49c1be770dccb100a696e524)
+
+
+2024-06-08  OpenSIPS  <github@opensips.org>
+        * [e3f9690a4] :
+
+        Rebuild documentation
+
+
+2024-06-06  Liviu Chircu  <liviu@opensips.org>
+        * [d25d4f9a4] :
+
+        Fix shutdown crash when 'event_shm_threshold' is enabled
+
+        The SHM lock is NULL at that point, so use shm_free_unsafe() instead.
+
+        (cherry picked from commit d076141e4fa3f5c4ef9a67a72e0c0b23dcd37e7c)
+
+
+2024-06-03  Aaron Meriwether  <me@ameriwether.com>
+        * [7c2204a92] :
+
+        Fix `perl_exec_simple` memory leak
+
+        (cherry picked from commit 1c40610737ab3ffe240a1bb5a4fa7405b3a856cc)
+
+
+2024-06-01  OpenSIPS  <github@opensips.org>
+        * [da83b671a] :
+
+        Rebuild documentation
+
+
+2024-05-28  Liviu Chircu  <liviu@opensips.org>
+        * [5ffee6125] :
+
+        db_mysql: Drop usage of MYSQL_OPT_RECONNECT in 8.0.35+
+
+        The auto-reconnect feature of libmysqlclient has been deprecated
+        starting with version 8.0.34 and is subject to future removal.
+        Moreover, OpenSIPS was explicitly disabling it anyway on startup, in
+        favour of the "max_db_queries" application-level query retrying loop.
+
+        (cherry picked from commit 39f056b617c2997daa0fc7f49e7570b5ed94ca6f)
+
+
+2024-05-22  Liviu Chircu  <liviu@opensips.org>
+        * [7d818f8d4] :
+
+        cfg parser: Avoid unnecessary strlen on error case
+
+        When getline() returns -1, the @lineptr argument is never safe to read,
+        nor is this recommended.  So when both rc == -1 and EOF conditions
+        occur, it is safe to assume we read 0 bytes, without doing the strlen().
+
+        Many thanks to Dhiraj Mishra (@RandomDhiraj) for detecting, documenting
+        and reporting the potential risk of a heap buffer overflow here!
+
+        (cherry picked from commit 50b651c230eec5daaf52f8742a9c3dd92123f3d2)
+
+
+2024-05-11  OpenSIPS  <github@opensips.org>
+        * [b8876244f] :
+
+        Rebuild documentation
+
+
+2024-05-10  Liviu Chircu  <liviu@opensips.org>
+        * [53c3496c8] :
+
+        Remove references to README-MODULES; Remove svn '$Id$' tags
+
+        Reason: this file was slowly becoming more and more outdated and was
+        ultimately removed in 8292659d5, in favour of the opensips.org listing.
+
+        Fixes #3375
+
+        (cherry picked from commit 5f3baea398885b93f25e6652001170a440758954)
+
+
+2024-05-07  Liviu Chircu  <liviu@opensips.org>
+        * [ecda948a4] :
+
+        mid_registrar: Improve robustness vs. bad traffic in mode 2
+
+        In case the main registrar returns extra contacts, make sure to
+        correctly match the mid-registrar's *single* contact within the list,
+        then strip all Contacts from the 200 OK, effectively fixing it.
+
+        Thanks go to Slava Bendersky for reporting and helping troubleshoot.
+
+        (cherry picked from commit 7a9912602aa76b2af9dbdf8632cccb8aace7b22a)
+
+
+2024-05-07  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [f24f0fd35] :
+
+        usrloc: simplify processing of the refresh events
+
+        Do not abuse "struct socket_info" just to pass sock_str over.
+        Instead, add str to the refresh event data and pass that alone.
+        Not only it reduces amount of data to pass, but also makes
+        code much easier to read and understand.
+
+        (cherry picked from commit 04cb08e70ef467e5d599289abec485c957587d7c)
+        (cherry picked from commit 126712e37f9c8cf28b0441cd4aab5cd7a571892c)
+
+
+2024-05-04  OpenSIPS  <github@opensips.org>
+        * [81f8bf50b] :
+
+        Rebuild documentation
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [8e774bd38] :
+
+        freeswitch: Fix off-by-one comparison bug; Add safety checks
+
+        Many thanks to Five9 (https://www.five9.com) for reporting this issue!
+
+        (cherry picked from commit deb6b25e2b8db0591f4d16f0ff40f01b0b5f5667)
+
+
+2024-05-02  Liviu Chircu  <liviu@opensips.org>
+        * [ac0ee1b06] :
+
+        usrloc: Fix a data packing bug
+
+        (cherry picked from commit 52f21088b78647f4aa94bb66334e9ebeac6558a7)
+
+
+2024-04-30  Liviu Chircu  <liviu@opensips.org>
+        * [a92e51397] :
+
+        Fix the E_CORE_SHM_THRESHOLD event
+
+        For some time now, this event has not been functional, due to
+        init_shm_mallocs() being called *before* parsing the opensips.cfg,
+        leading to un-initialized event holders and a quick-exit at runtime,
+        including times when the event actually needs to be raised.
+
+        Credits to Bogdan Iancu for reporting this issue!
+
+        (cherry picked from commit b38b06aa763d8c7457d5e87c28b2d5f6676c5798)
+
+
+2024-04-30  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [8630d5458] :
+
+        [pua] properly insert sh_tag into pua table
+
+        Credits go to @NormB
+        Fixes #3377
+
+        (cherry picked from commit 92b0dcfbdf75c456da2a66c607875ab60801df89)
+
+
+2024-04-27  OpenSIPS  <github@opensips.org>
+        * [4413767a4] :
+
+        Rebuild documentation
+
+
+2024-04-26  Razvan Crainea  <razvan@opensips.org>
+        * [a6439cda5] :
+
+        event_route: fix int interpretation in $param
+
+        Treat the integer as signed when building the $param value
+
+        Many thanks to Norm Brandinger (@NormB on GitHub) for reporting it in #3367
+
+        (cherry picked from commit 999b8ac5d35f1e53af5cf854b3be2ef5936b2cd0)
+
+
+2024-04-26  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c30eee9a6] :
+
+        [presence] fix evaluating shtag when cluster disabled
+
+        Avoid evaluating sharing tags when the clustering support in presence module is disabled.
+        Related to #3359
+
+        (cherry picked from commit 6af90398171f8f872e68ffe52ee664a285ad6b6c)
+
+
+2024-04-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [6ccd853b0] :
+
+        [presence_callinfo] fix non-optional params for sca_set_xxx_line() funcs
+
+        The line parameter is supposed to be optional
+        Reported by @NormB
+        Closes #3361
+
+        (cherry picked from commit a80ff86657dc1bb31abb490f151b74317d99c1bd)
+
+
+2024-04-24  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [702812fd5] :
+
+        [proto_ws] fix mem leak when hdr parsing fails
+
+        Even if the hdr parsing failed (due to a bogus hdr), you still have to free whatever hdrs were already parsed ;)
+        Reported by @11qeq11
+        Closes #3353
+
+        (cherry picked from commit 6a847364b5122d6abc76229c892fb8d48c24fac5)
+
+
+2024-04-22  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e65069578] :
+
+        [presence] fix federation with local HA combination
+
+        Added a sharing tag to control which node (from the HA combination) is active in the federated cluster. See all the details here https://github.com/OpenSIPS/opensips/issues/2960
+        (this is fully backward compatible)
+
+        Closes #2960
+
+        (cherry picked from commit 8b96b70327ab80e14499edfabd6021d24acbc020)
+
+
+2024-04-20  OpenSIPS  <github@opensips.org>
+        * [8bad0db15] :
+
+        Rebuild documentation
+
+
+2024-04-19  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [31e1a6a49] :
+
+        Merge pull request #3364 from ovidiusas/master
+
+        tracer: set proper IP instead of FQDN for locally generated requests and outgoing replies
+        (cherry picked from commit 0b9916c1bd5bb000cf93e761c79129409ecca615)
+
+
 =========================== Release 3.2.18 ==============================
 
 2024-04-13  OpenSIPS  <github@opensips.org>
