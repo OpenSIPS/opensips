@@ -1,3 +1,376 @@
+=========================== Release 3.5.0-rc1 ==============================
+
+2024-06-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [fa9bfb7c8b] :
+
+        [event_kafka] remove bogus example in docs
+
+        (cherry picked from commit ccc346b8e3c85fb07de0f05c8cde0123857382f2)
+
+
+2024-06-18  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [9721229535] :
+
+        [tcp] check if the history list exists when doing unref
+
+        There are cases where the tcp conn may fail right at the beginning (like a failed connect/accept) and maybe the hist list is not yet attached to the conn.
+
+        (cherry picked from commit 2d8ea8ef28b4efbcde658ece5a65ec4e440e35ba)
+
+
+2024-06-17  Razvan Crainea  <razvan@opensips.org>
+        * [7a50f884c3] :
+
+        rtpengine: fix uninitialized tmp warning
+
+        (cherry picked from commit 675db4c00019f7e782afcc4dbdc2c0860a710362)
+
+
+2024-06-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [496c6ab0ca] :
+
+        [net/tcp] log the unref BEFORE destroying the conn
+
+        (cherry picked from commit 3bb0d23d9aba03e2ea674563c88aa5ba18ca8ae7)
+
+
+2024-06-16  OpenSIPS  <github@opensips.org>
+        * [1c700613d6] :
+
+        Rebuild documentation
+
+
+2024-06-14  Razvan Crainea  <razvan@opensips.org>
+        * [4fb9a817ec] :
+
+        rtpproxy: fix structure copying
+
+        (cherry picked from commit 80bee9b8c26efd1f3a5cd4b7df4c1a7c27a2dde3)
+
+
+2024-06-14  Razvan Crainea  <razvan@opensips.org>
+        * [02333ad6e2] :
+
+        rtpengine: fix unitialized warning
+
+        (cherry picked from commit 1c3139ae28ed815749e84c7289c50703d16f9191)
+
+
+2024-06-14  Razvan Crainea  <razvan@opensips.org>
+        * [b385ba5ad0] :
+
+        rtp_relay: ignore correct branch index
+
+        Many thanks to Liviu Chircu for spotting the issue
+
+        (cherry picked from commit 90c9b78fb3330231129d49ab32ce4593654e7408)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [3800b74b0c] :
+
+        packaging/debian: do not run berkeley stubs if not built
+
+        If the berkeley package is not build, we should not run its stubs, as
+        they result in errors.
+
+        Thanks go to Richard Revels (@rrevels-bw on GitHub) for reporting it.
+        Close #3389
+
+        (cherry picked from commit 2fba04ae731a519b8eb3a033e7a491aa3c7e8f66)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [93cfbcbe7e] :
+
+        tracer: use own flag for B2B tracing
+
+        This fix prevents crashes generated when the B2B module is loaded, but
+        tracing is done at the transaction layer - since the transaction layer
+        was setting the same flag, B2B tracing was also engaged, but without the
+        necessary structures, leading to crashes.
+
+        (cherry picked from commit efc25521b294f61955b8a181234278dc8313ccf4)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [1bdadb5c23] :
+
+        siprec: properly handle paused recording
+
+        (cherry picked from commit 0091ab4751164b77a1ea928f04899101ea51c3fe)
+
+
+2024-06-13  Razvan Crainea  <razvan@opensips.org>
+        * [ed76583176] :
+
+        siprec: expose streams in xml
+
+        Close #3287 and #3293
+
+        (cherry picked from commit fb4402da3969eea64ecdd79b1233325d45346651)
+
+
+2024-06-13  Liviu Chircu  <liviu@opensips.org>
+        * [b3964047cc] :
+
+        db_sqlite raw queries: Fix unnecessary lowercase restriction
+
+        The code was searching for the " from " string chunk in the query but
+        in a case-sensitive manner (??), causing formatted queries (e.g. " FROM
+        ") to fail.
+
+        Credits to Eric Tamme (@etamme) for spotting and reporting the issue
+
+        Fixes #3409
+
+        (cherry picked from commit 388d4faa99e1d1842d9510947020c3d11157aa2b)
+
+
+2024-06-11  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [5e22a91cbe] :
+
+        Merge pull request #3407 from jes/jes/force-rereg
+
+        uac_registrant: make force_register run force_register instead of disable
+
+        (cherry picked from commit fda7385b454469fc8ebb5caea9aec5b7b537ea50)
+
+
+2024-06-11  Liviu Chircu  <liviu@opensips.org>
+        * [b82b4e12d9] :
+
+        Update opensips.vim syntax file (v3.5)
+
+
+2024-06-11  Liviu Chircu  <liviu@opensips.org>
+        * [6bcc35cc8b] :
+
+        menuconfig templates: Fix nat_uac_test() flags; Load a TLS module
+
+        (cherry picked from commit 1768d6543ebd927081e27e78035c27472dc045d2)
+
+
+2024-06-11  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [ed120f8afd] :
+
+        Remove b2b_logic_xml from exclude list
+
+        The module does not exist anymore
+
+        (cherry picked from commit 4896e5cc25282ba99eca6a10c8304ff63ebb525b)
+
+
+2024-06-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f742a8d97d] :
+
+        [nathelper] do proper URI enclosing for FROM and TO URIs
+
+        Reported by @InnovateAsterisk
+        Closes #3405
+
+        (cherry picked from commit 9308abc20f177fdd49c1be770dccb100a696e524)
+
+
+2024-06-09  OpenSIPS  <github@opensips.org>
+        * [ddcb651930] :
+
+        Rebuild documentation
+
+
+2024-06-06  Liviu Chircu  <liviu@opensips.org>
+        * [9f94984846] :
+
+        Fix shutdown crash when 'event_shm_threshold' is enabled
+
+        The SHM lock is NULL at that point, so use shm_free_unsafe() instead.
+
+        (cherry picked from commit d076141e4fa3f5c4ef9a67a72e0c0b23dcd37e7c)
+
+
+2024-06-03  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [f444eaf974] :
+
+        Merge pull request #3400 from NormB/NormB-patch-4
+
+        Update b2b_logic_admin.xml
+
+        (cherry picked from commit 909ac1b8896b9d7b76b840cf24e3b900a929a504)
+
+
+2024-06-03  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [52a0829f04] :
+
+        Merge pull request #3399 from NormB/NormB-patch-3
+
+        Update b2b_logic_admin.xml
+
+        (cherry picked from commit e22e9c51a0562f453431610fc5c201ff9dbed13e)
+
+
+2024-06-03  Aaron Meriwether  <me@ameriwether.com>
+        * [b2d0d2fefc] :
+
+        Fix `perl_exec_simple` memory leak
+
+        (cherry picked from commit 1c40610737ab3ffe240a1bb5a4fa7405b3a856cc)
+
+
+2024-06-02  OpenSIPS  <github@opensips.org>
+        * [08e3c99953] :
+
+        Rebuild documentation
+
+
+2024-05-28  Liviu Chircu  <liviu@opensips.org>
+        * [8683734a72] :
+
+        db_mysql: Drop usage of MYSQL_OPT_RECONNECT in 8.0.35+
+
+        The auto-reconnect feature of libmysqlclient has been deprecated
+        starting with version 8.0.34 and is subject to future removal.
+        Moreover, OpenSIPS was explicitly disabling it anyway on startup, in
+        favour of the "max_db_queries" application-level query retrying loop.
+
+        (cherry picked from commit 39f056b617c2997daa0fc7f49e7570b5ed94ca6f)
+
+
+2024-05-26  OpenSIPS  <github@opensips.org>
+        * [a6ca42e03f] :
+
+        Rebuild documentation
+
+
+2024-05-23  Razvan Crainea  <razvan@opensips.org>
+        * [20c98c9d1e] :
+
+        b2b_entities: logic_key should always be printable
+
+        Many thanks to Voxtronic for spotting this issue!
+
+        (cherry picked from commit f96335091d82a15c0a2d2e70f3a03fd7adfb1868)
+
+
+2024-05-23  Razvan Crainea  <razvan@opensips.org>
+        * [f13eb815ff] :
+
+        redhat: fix diameter exclude list
+
+        (cherry picked from commit 8878491ad5921c23a62195d6cc5df5df979624f6)
+
+
+2024-05-23  Razvan Crainea  <razvan@opensips.org>
+        * [db73169923] :
+
+        proto_ipsec: fix redhat README
+
+        (cherry picked from commit d9543650d069200dee9a1fb41999fd5ff8ec2229)
+
+
+2024-05-23  Razvan Crainea  <razvan@opensips.org>
+        * [1f0ef9804e] :
+
+        proto_ipsec: add packaging
+
+        (cherry picked from commit adc2612b76f144454e3c10a5908e007779dbc829)
+
+
+2024-05-22  Liviu Chircu  <liviu@opensips.org>
+        * [315b7c3558] :
+
+        cfg parser: Avoid unnecessary strlen on error case
+
+        When getline() returns -1, the @lineptr argument is never safe to read,
+        nor is this recommended.  So when both rc == -1 and EOF conditions
+        occur, it is safe to assume we read 0 bytes, without doing the strlen().
+
+        Many thanks to Dhiraj Mishra (@RandomDhiraj) for detecting, documenting
+        and reporting the potential risk of a heap buffer overflow here!
+
+        (cherry picked from commit 50b651c230eec5daaf52f8742a9c3dd92123f3d2)
+
+
+2024-05-19  OpenSIPS  <github@opensips.org>
+        * [b5bad0f983] :
+
+        Rebuild documentation
+
+
+2024-05-16  Liviu Chircu  <liviu@opensips.org>
+        * [d506b1bae8] :
+
+        http2d: Fix syntax in examples; Improve logs
+
+        (cherry picked from commit 099e771b39712df0a03a632cb12d5ec99ba1a66e)
+
+
+2024-05-12  Liviu Chircu  <liviu@opensips.org>
+        * [65344f8e71] :
+
+        proto_ipsec: Correct fix for struct ordering issue in 45272908
+
+        Original error, on (clang-arm32-qemu-cross, ubuntu-22.04):
+
+        ipsec.c:384:19: error: field 'algo' with variable sized type
+        'struct xfrm_algo' not at the end of a struct or class is a GNU
+        extension [-Werror,-Wgnu-variable-sized-type-not-at-end]
+          384 |         struct xfrm_algo algo;
+              |                          ^
+
+        Credits to Răzvan Crainea for spotting the bug!
+
+        (cherry picked from commit a5890980ebd848eded8df9a3b9fd18d8b938f62e)
+
+
+2024-05-12  Liviu Chircu  <liviu@opensips.org>
+        * [08498b8f2a] :
+
+        proto_ipsec: Fix various compile warnings
+
+        (cherry picked from commit 4527290889db8e79c059a4183e561724ce26283c)
+
+
+2024-05-12  Liviu Chircu  <liviu@opensips.org>
+        * [ee2b7ef81d] :
+
+        Tests build: Add 'libmnl-dev' to DEB list
+
+        (cherry picked from commit a9813063d5d27d15b81247d7ca9643bba4ab3e17)
+
+
+2024-05-10  Liviu Chircu  <liviu@opensips.org>
+        * [0255849652] :
+
+        status_report: Avoid return 0 in sr_set_status()
+
+        (cherry picked from commit 64c0042b4258eeaf1c52d6f37bda5b2d7d7a1ff7)
+
+
+2024-05-10  Liviu Chircu  <liviu@opensips.org>
+        * [2c6b4120b7] :
+
+        status_report: Fix bad 3rd parameter to sr_set_status()
+
+        (cherry picked from commit 7f12c44813f080a3a2177c8d89a5c160b80139c9)
+
+
+2024-05-10  Liviu Chircu  <liviu@opensips.org>
+        * [38795b913b] :
+
+        sqlops docs: Fix JSON syntax in examples
+
+        (cherry picked from commit ca385b4580b319bea42336dcbfea10176aa851ba)
+
+
+2024-05-09  Liviu Chircu  <liviu@opensips.org>
+        * [3061451e48] :
+
+        Contributors: Update project-level stats
+
+        Note: the numbers were last updated on Feb 2020.
+        (cherry picked from commit 8fb00939cf12fbfcf5473ed4df8d718ed5323e4a)
+
+
 =========================== Release 3.5.0-beta ==============================
 
 2024-05-09  Liviu Chircu  <liviu at opensips dot org>
