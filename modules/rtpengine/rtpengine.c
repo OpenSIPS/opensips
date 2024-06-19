@@ -276,7 +276,8 @@ static int rtpengine_delete_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 static void free_rtpe_nodes(struct rtpe_set *list);
 static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 		pv_spec_t *duration, pv_spec_t *spvar);
-static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags,
+		pv_spec_t *spvar, pv_spec_t *last_frame_pos);
 static int rtpengine_blockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_unblockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_blockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
@@ -460,6 +461,7 @@ static const cmd_export_t cmds[] = {
 		ALL_ROUTES},
 	{"rtpengine_stop_media", (cmd_function)rtpengine_stopmedia_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
 		ALL_ROUTES},
@@ -3947,9 +3949,32 @@ static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 	return 1;
 }
 
-static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags,
+		pv_spec_t *spvar, pv_spec_t *last_frame_pos)
 {
-	return rtpe_function_call_simple(msg, OP_STOP_MEDIA, flags, NULL, NULL, spvar);
+	bencode_buffer_t bencbuf;
+	bencode_item_t *dict;
+	pv_value_t val;
+
+	if (set_rtpengine_set_from_avp(msg) == -1)
+		return -1;
+
+	dict = rtpe_function_call_ok(&bencbuf, msg, OP_STOP_MEDIA, flags,
+			NULL, spvar, NULL, NULL, NULL);
+	if (!dict) {
+		LM_ERR("could not start media!\n");
+		return -1;
+	}
+
+	if (last_frame_pos) {
+		memset(&val, 0, sizeof(pv_value_t));
+		val.flags = PV_TYPE_INT|PV_VAL_INT;
+		val.ri = bencode_dictionary_get_integer(dict, "last-frame-pos", -1);
+		if (pv_set_value(msg, last_frame_pos, 0, &val) != 0)
+			LM_ERR("failed to set last-frame-pos after stopping media!\n");
+	}
+	bencode_buffer_free(&bencbuf);
+	return 1;
 }
 
 static int rtpengine_blockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
