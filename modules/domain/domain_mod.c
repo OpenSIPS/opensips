@@ -250,7 +250,7 @@ error:
 static int child_init(int rank)
 {
 	/* Check if database is needed by worker processes only */
-	if ( db_mode==0 && (rank>=1) ) {
+	if (rank >= 1) {
 		if (domain_db_init(&db_url)<0) {
 			LM_ERR("Unable to connect to the database\n");
 			return -1;
