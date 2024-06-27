@@ -141,7 +141,7 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 }
 
 int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
-                 enum sip_protos proto, struct tcp_conn_profile *prof, enum si_flags flags)
+                 enum sip_protos proto, struct tcp_conn_profile *prof, enum si_flags flags, int mark)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -156,6 +156,13 @@ int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
 	if (tcp_init_sock_opt(s, prof, flags)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
+	}
+
+	if (mark > 0) {
+		if (setsockopt(s, SOL_SOCKET, SO_MARK, &mark, sizeof(mark)) < 0) {
+			LM_ERR("SO_MARK setsockopt failed (%d) %s\n", errno, strerror(errno));
+			goto error;
+		}
 	}
 
 	if (src) {
@@ -188,7 +195,7 @@ struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 	struct tcp_connection* con;
 	int s;
 
-	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof, send_sock->flags);
+	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof, send_sock->flags, send_sock->mark);
 	if (s < 0)
 		return NULL;
 
@@ -235,6 +242,13 @@ int tcp_async_connect(struct socket_info* send_sock,
 	if (tcp_init_sock_opt(fd, prof, send_sock->flags)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
+	}
+
+	if (send_sock->mark > 0) {
+		if (setsockopt(fd, SOL_SOCKET, SO_MARK, &send_sock->mark, sizeof(send_sock->mark)) < 0) {
+			LM_ERR("SO_MARK setsockopt failed (%d) %s\n", errno, strerror(errno));
+			goto error;
+		}
 	}
 
 	my_name_len = sockaddru_len(send_sock->su);
