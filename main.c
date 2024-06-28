@@ -225,6 +225,7 @@ static const struct main_script main_script[] = {
 	FN_HNDLR(init_db_support, !=, 0, "SQL database support"),
 	FN_HNDLR(init_cdb_support, !=, 0, "CacheDB support"),
 	FN_HNDLR(init_modules, !=, 0, "modules"),
+	FN_HNDLR(init_auto_scaling, !=, 0, "auto-scaling support"),
 	FN_HNDLR(init_xlog, <, 0, "xlog"),
 	FN_HNDLR(register_route_timers, <, 0, "route_timers"),
 	FN_HNDLR(init_pvar_support, !=, 0, "pseudo-variable support"),
