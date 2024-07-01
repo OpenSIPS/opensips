@@ -476,23 +476,43 @@ void b2b_mark_todel( b2bl_tuple_t* tuple)
 
 int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact)
 {
-	struct sip_uri ct_uri;
+	struct sip_uri ct_uri,server_uri;
 	const struct socket_info *send_sock = msg ?
 		(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
 
 	if (server_address.len) {
 		if (pv_printf_s(msg, server_address_pve, local_contact) != 0) {
 			LM_WARN("Failed to print format string from 'server_address'\n");
-
-			if (msg) {
-				get_local_contact(send_sock, NULL, local_contact);
-			} else {
-				LM_ERR("No current SIP message, "
-					"failed to build Contact from send socket\n");
-				return -1;
+			goto msg_contact;
+		} else {
+			/* validate what we have built */
+			if (parse_uri(local_contact->s, local_contact->len, &server_uri) < 0) {
+				LM_ERR("Not a valid server sip uri [%.*s]\n", local_contact->len, local_contact->s);
+				goto msg_contact;
 			}
+
+			/* we have expanded the server address, need to add username, if needed */
+			if (contact_user) {
+				send_sock = grep_sock_info( &server_uri.host, server_uri.port_no, server_uri.proto);
+				if (send_sock == NULL) {
+					LM_ERR("Failed to find send socket for server address [%.*s]\n", local_contact->len, local_contact->s);
+					goto msg_contact;
+				}
+
+				memset(&ct_uri, 0, sizeof(struct sip_uri));
+				if (parse_uri(from_uri->s, from_uri->len, &ct_uri) < 0) {
+					LM_ERR("Not a valid FROM sip uri [%.*s]\n", from_uri->len, from_uri->s);
+					goto done;
+				}
+
+				get_local_contact(send_sock, &ct_uri.user, local_contact);
+				goto done;
+			} else
+				/* no contact username needed, we have our valid Contact header based on the server_address */
+				goto done;
 		}
 	} else {
+msg_contact:
 		if (msg) {
 			memset(&ct_uri, 0, sizeof(struct sip_uri));
 			if (contact_user && parse_uri(from_uri->s, from_uri->len, &ct_uri) < 0) {
@@ -507,6 +527,7 @@ int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact
 		}
 	}
 
+done:
 	return 0;
 }
 
