@@ -1865,6 +1865,7 @@ int w_t_reply_body(struct sip_msg* msg, unsigned int* code, str *text,
 				LM_BUG("no transaction found in Failure Route\n");
 				return -1;
 			}
+			update_cloned_msg_from_msg( t->uas.request, msg);
 			lock_replies = 0;
 			break;
 		case REQUEST_ROUTE:
