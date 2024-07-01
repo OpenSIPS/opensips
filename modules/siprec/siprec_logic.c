@@ -351,15 +351,9 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 	}
 	ss->flags |= SIPREC_ONGOING;
 
-	if (ss->flags & SIPREC_PAUSED) {
-		ss->flags &= ~SIPREC_PAUSED;
-		//srs_stop_media(ss);
-
-	} else {
-		if (srs_handle_media(msg, ss) < 0) {
-			LM_ERR("cannot handle SRS media!\n");
-			goto no_recording;
-		}
+	if (srs_handle_media(msg, ss) < 0) {
+		LM_ERR("cannot handle SRS media!\n");
+		goto no_recording;
 	}
 
 	if (!(ss->flags & SIPREC_DLG_CBS) && srec_register_callbacks(ss) < 0) {
