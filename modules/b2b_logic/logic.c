@@ -923,7 +923,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			if ((tuple->bridge_flags & B2BL_BR_FLAG_RENEW_SDP) && statuscode == 491) {
 				/* it is very likely that the new entity is trying to send itself a re-INVITE
 				 * to lock down the codecs, therefore we no longer need this step - thus, for now,
-				 * we simply ACK the ongoing bridging entity, and arm a re-negociation attempt
+				 * we simply ACK the ongoing bridging entity, and arm a re-negotiation attempt
 				 */
 				memset(&req_data, 0, sizeof(b2b_req_data_t));
 				req_data.et = tuple->bridge_entities[0]->type;

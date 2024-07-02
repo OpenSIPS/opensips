@@ -2956,7 +2956,7 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 		if (!has_sdp) {
 			if (msg->first_line.type == SIP_REQUEST &&
 					(method_id == METHOD_INVITE ||  method_id == METHOD_UPDATE)) {
-				/* indicate there's an ongoing late negociation happening */
+				/* indicate there's an ongoing late negotiation happening */
 				value.s = late_name;
 				if (dlg_api.store_dlg_value(dlg, &late_name, &value,
 					DLG_VAL_TYPE_NONE) < 0) {

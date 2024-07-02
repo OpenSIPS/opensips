@@ -933,7 +933,7 @@ static int handle_media_indialog_fork(struct sip_msg *msg,
 {
 	MEDIA_LEG_LOCK(msl);
 	if (msl->state != MEDIA_SESSION_STATE_RUNNING) {
-		LM_DBG("this media leg is already involved in a different negociation! "
+		LM_DBG("this media leg is already involved in a different negotiation! "
 				"state=%d\n", msl->state);
 		MEDIA_LEG_UNLOCK(msl);
 		return -2; /* drop this request */

@@ -760,12 +760,12 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 					it to the new entity.
 					</para></listitem>
 					<listitem><para>
-					<emphasis>no-late-sdp</emphasis> - Do not attempt late SDP negociation
+					<emphasis>no-late-sdp</emphasis> - Do not attempt late SDP negotiation
 					with the new entity. Start the bridging by first contacting the new entity
 					using the initial SDP received from the old entity. After the new entity
 					answers, send a reINVITE without body to the old entity. Use the current
 					SDP received in this new answer from the old entity to trigger a
-					renegociation with the new entity.
+					renegotiation with the new entity.
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
