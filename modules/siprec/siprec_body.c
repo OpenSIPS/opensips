@@ -394,7 +394,7 @@ int srs_build_body(struct src_sess *sess, str *sdp, str *body)
 	SIPREC_COPY_STR(sdp_content_type, &buf);
 	SIPREC_COPY(CRLF, &buf);
 
-	if (sdp)
+	if (sdp->s && sdp->len > 0)
 		SIPREC_COPY_STR((*sdp), &buf);
 
 	/* add second bondary */
