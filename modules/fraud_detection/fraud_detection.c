@@ -278,7 +278,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 
 	/* Find a rule */
 
-	unsigned int matched_len;
+	unsigned int matched_len = 0;
 	lock_start_read(frd_data_lock);
 	rt_info_t *rule = drb.match_number(*dr_head, *pid, number, &matched_len);
 
