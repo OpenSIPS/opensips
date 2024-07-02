@@ -812,7 +812,7 @@ route[b2b_logic_request] {
 ...
 route[b2b_logic_reply] {
    ...
-   if ($b2b_logic.entity(id) == "client1" &amp;&amp; $rm == "INVITE" &amp;&amp; $rs >= 300) {
+   if ($(b2b_logic.entity(id)[0]) == "client1" &amp;&amp; $rm == "INVITE" &amp;&amp; $rs >= 300) {
       b2b_client_new("client_retry", "sip:alice@opensips.org");
 
       b2b_bridge_retry("client_retry");
@@ -874,7 +874,7 @@ route[b2b_logic_request] {
 		<programlisting format="linespecific">
 ...
 route[b2b_logic_reply] {
-    xlog("B2B REPLY: [$rs $rm] from entity: $b2b_logic.entity(id)\n");
+    xlog("B2B REPLY: [$rs $rm] from entity: $(b2b_logic.entity(id)[0])\n");
     b2b_handle_reply();
 }
 ...
@@ -1311,7 +1311,7 @@ local_route {
 
 	<section id="b2b_logic.entity" xreflabel="$b2b_logic.entity">
 	<title>
-		<varname>$b2b_logic.entity(field)[idx]</varname>
+		<varname>$(b2b_logic.entity(field)[idx])</varname>
 	</title>
 	<para>
 		This is a read-only variable that returns information about the
