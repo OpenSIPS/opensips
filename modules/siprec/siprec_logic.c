@@ -105,7 +105,6 @@ static int srs_do_failover(struct src_sess *sess)
 		LM_BUG("failover without any destination!\n");
 		return -1;
 	}
-	srec_logic_destroy(sess);
 
 	/* pop the first element */
 	node = list_entry(sess->srs.next, struct srs_node, list);
