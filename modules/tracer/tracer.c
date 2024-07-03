@@ -1794,27 +1794,6 @@ static int fixup_cflags(void **param)
 }
 
 
-int trace_has_totag(struct sip_msg* _m)
-{
-	str tag;
-
-	if (!_m->to && parse_headers(_m, HDR_TO_F,0)==-1) {
-		LM_ERR("To parsing failed\n");
-		return 0;
-	}
-	if (!_m->to) {
-		LM_ERR("no To\n");
-		return 0;
-	}
-	tag=get_to(_m)->tag_value;
-	if (tag.s==0 || tag.len==0) {
-		LM_DBG("no totag\n");
-		return 0;
-	}
-	LM_DBG("totag found\n");
-	return 1;
-}
-
 static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 					int trace_types, int trace_flags, str *trace_attrs,
 					int control_flags, str *corr_id)
@@ -2037,11 +2016,11 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 
 	if (trace_flags == TRACE_B2B && msg->first_line.type == SIP_REQUEST &&
 			b2bl.register_set_tracer_cb != NULL &&
-			msg->REQ_METHOD == METHOD_INVITE && !trace_has_totag(msg)) {
+			msg->REQ_METHOD == METHOD_INVITE && !has_totag(msg)) {
 		LM_DBG("tracing b2b!\n");
 	} else if (trace_flags == TRACE_DIALOG &&
 			dlgb.get_dlg && msg->first_line.type == SIP_REQUEST &&
-			msg->REQ_METHOD == METHOD_INVITE && !trace_has_totag(msg)) {
+			msg->REQ_METHOD == METHOD_INVITE && !has_totag(msg)) {
 		LM_DBG("tracing dialog!\n");
 	} else if (trace_flags == TRACE_DIALOG) {
 		LM_WARN("can't trace dialog! Will try to trace transaction\n");

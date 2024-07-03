@@ -115,6 +115,7 @@ static int fixup_validate_fl(void** param);
 static int list_hdr_has_option(struct sip_msg *msg, void *hdr, str *option);
 static int list_hdr_add_option(struct sip_msg *msg, void *hdr, str *option);
 static int list_hdr_remove_option(struct sip_msg *msg, void *hdr, str *option);
+static int w_has_totag(struct sip_msg *msg);
 
 static int change_reply_status_f(struct sip_msg* msg, int* code, str* reason);
 
@@ -277,7 +278,7 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
-	{"has_totag", (cmd_function)has_totag, {{0, 0, 0}},
+	{"has_totag", (cmd_function)w_has_totag, {{0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"ruri_has_param", (cmd_function)ruri_has_param, {
@@ -2173,4 +2174,9 @@ error:
 		pkg_free(json_ret.s);
 
 	return -1;
+}
+
+static int w_has_totag(struct sip_msg *msg)
+{
+	return (has_totag(msg) ?1:-1);
 }

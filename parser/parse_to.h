@@ -69,4 +69,6 @@ void free_to_params(struct to_body *tb);
 
 char* parse_multi_to(char* buffer, char *end, struct to_body *to_b);
 
+int has_totag(struct sip_msg* _m);
+
 #endif
