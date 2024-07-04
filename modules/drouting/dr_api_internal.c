@@ -77,6 +77,8 @@ rt_info_t* find_rule_by_prefix_unsafe(ptree_t *pt, ptree_node_t *noprefix,
 	rt_info = get_prefix(pt, &prefix, grp_id,matched_len, &rule_idx);
 
 	if (rt_info==NULL) {
+		*matched_len = 0;
+
 		LM_DBG("no matching for prefix \"%.*s\"\n",
 				prefix.len, prefix.s);
 
