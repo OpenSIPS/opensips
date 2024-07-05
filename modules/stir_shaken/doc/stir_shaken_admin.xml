@@ -337,9 +337,6 @@ modparam("stir_shaken", "require_date_hdr", 0)
 		    <para>-1: Internal error</para>
 		</listitem>
 		<listitem>
-		    <para>-2: Identity header already exists</para>
-		</listitem>
-		<listitem>
 		    <para>-3: Failed to derive identity from SIP message because the
 		    URI is not a telephone number</para>
 		</listitem>
