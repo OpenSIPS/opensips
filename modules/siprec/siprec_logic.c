@@ -93,7 +93,7 @@ static int srs_do_failover(struct src_sess *sess)
 		LM_BUG("failover without any destination!\n");
 		return -1;
 	}
-	srec_logic_destroy(sess);
+	srec_logic_destroy(sess, 1);
 
 	/* pop the first element */
 	node = list_entry(sess->srs.next, struct srs_node, list);
@@ -147,7 +147,7 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
-	srec_logic_destroy(ss);
+	srec_logic_destroy(ss, 0);
 }
 
 static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
@@ -376,7 +376,7 @@ no_recording:
 					req.b2b_key->len, req.b2b_key->s);
 	}
 	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
-	srec_logic_destroy(ss);
+	srec_logic_destroy(ss, 0);
 
 	if (!(ss->flags & SIPREC_DLG_CBS)) {
 		/* if the dialog has already been engaged, then we need to keep the
@@ -494,6 +494,8 @@ static int srs_send_invite(struct src_sess *sess)
 		return -1;
 	}
 
+	sess->flags |= SIPREC_STARTED;
+
 	/* store the key in the param */
 	sess->b2b_key.s = shm_malloc(client->len);
 	if (!sess->b2b_key.s) {
@@ -545,8 +547,6 @@ static int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 		srec_rtp.copy_delete(sess->rtp, &mod_name, &sess->media);
 		return ret;
 	}
-
-	sess->flags |= SIPREC_STARTED;
 
 	return 1;
 }
@@ -650,12 +650,12 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 	SIPREC_UNLOCK(ss);
 }
 
-void srec_logic_destroy(struct src_sess *sess)
+void srec_logic_destroy(struct src_sess *sess, int keep_sdp)
 {
 	if (!sess->b2b_key.s)
 		return;
 
-	if (sess->initial_sdp.s) {
+	if (!keep_sdp && sess->initial_sdp.s) {
 		shm_free(sess->initial_sdp.s);
 		sess->initial_sdp.s = NULL;
 	}
