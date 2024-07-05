@@ -1000,11 +1000,6 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 		return -1;
 	}
 
-	if (get_header_by_static_name(msg, "Identity")) {
-		LM_NOTICE("Identity header already exists\n");
-		return -2;
-	}
-
 	if (!orig_tn_p) {
 		if ((rc = get_orig_tn_from_msg(msg, &orig_tn)) < 0) {
 			if (rc == -1)
