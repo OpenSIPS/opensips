@@ -188,12 +188,18 @@ static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 static void dlg_src_unref_session(void *p)
 {
 	struct src_sess *ss = (struct src_sess *)p;
+	/* if the dialog is not in termination state, we should not delete it */
+	if (ss->dlg->state < DLG_STATE_DELETED)
+		return;
 	srec_hlog(ss, SREC_UNREF, "dlg recording unref");
 	SIPREC_UNREF(ss);
 }
 
 int srec_register_callbacks(struct src_sess *sess)
 {
+	if (sess->flags & SIPREC_DLG_CBS)
+		return 0;
+
 	/* also, the b2b ref moves on the dialog */
 	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED|DLGCB_FAILED,
 			srec_dlg_end, sess, dlg_src_unref_session)){
@@ -374,7 +380,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		goto no_recording;
 	}
 
-	if (!(ss->flags & SIPREC_DLG_CBS) && srec_register_callbacks(ss) < 0) {
+	if (srec_register_callbacks(ss) < 0) {
 		LM_ERR("cannot register callback for terminating session\n");
 		goto no_recording;
 	}
@@ -535,7 +541,7 @@ static int srs_send_invite(struct src_sess *sess)
 }
 
 /* starts the recording to the srs */
-static int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
+int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	union sockaddr_union tmp;
 	int ret;
@@ -619,7 +625,7 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	str body, sdp;
 
-	if (msg == FAKED_REPLY)
+	if (msg == FAKED_REPLY || (sess->flags & SIPREC_STARTED) == 0)
 		return 0;
 
 	if (srec_get_body(sess, &sdp) < 0) {
@@ -693,7 +699,7 @@ void srec_logic_destroy(struct src_sess *sess, int keep_sdp)
 	shm_free(sess->b2b_key.s);
 	sess->b2b_key.s = NULL;
 
-	sess->flags &= ~SIPREC_STARTED;
+	sess->flags &= ~(SIPREC_STARTED|SIPREC_ONGOING);
 }
 
 struct src_sess *src_get_session(void)

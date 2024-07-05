@@ -188,5 +188,6 @@ void src_event_trigger(enum b2b_entity_type et, str *key,
 void src_event_received(enum b2b_entity_type et, str *key,
 		str *logic_key, void *param, enum b2b_event_type event_type,
 		bin_packet_t *store, int backend);
+int srs_add_nodes(struct src_sess *sess, str *srs);
 
 #endif /* _SIPREC_SESS_H_ */

@@ -35,6 +35,7 @@ int srec_restore_callback(struct src_sess *sess);
 void srec_logic_destroy(struct src_sess *sess, int keep_sdp);
 int src_pause_recording(void);
 int src_resume_recording(void);
+int src_start_recording(struct sip_msg *msg, struct src_sess *sess);
 
 extern int srec_dlg_idx;
 extern struct b2b_api srec_b2b;

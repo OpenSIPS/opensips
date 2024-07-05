@@ -121,30 +121,12 @@ static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
 	return ss;
 }
 
-struct src_sess *src_new_session(str *srs, rtp_ctx rtp,
-		struct srec_var *var)
+int srs_add_nodes(struct src_sess *sess, str *srs)
 {
-	struct src_sess *sess;
 	struct srs_node *node;
 	char *p, *end;
 	str s;
-
-	siprec_uuid uuid;
-	siprec_build_uuid(uuid);
-
-	sess = src_create_session(rtp,
-			(var && var->media.len)?&var->media:NULL,
-			(var && var->group.len)?&var->group:NULL,
-			(var?var->si:NULL), 0, time(NULL),
-			(var && var->headers.len)?&var->headers:NULL,
-			(var && var->from_uri.len)?&var->from_uri:NULL,
-			(var && var->to_uri.len)?&var->to_uri:NULL,
-			&uuid,
-			(var && var->group_custom_extension.len)?&var->group_custom_extension:NULL,
-			(var && var->session_custom_extension.len)?&var->session_custom_extension:NULL);
-
-	if (!sess)
-		return NULL;
+	int nr = -1;
 
 	/* parse the srs here */
 	end = srs->s + srs->len;
@@ -166,15 +148,45 @@ struct src_sess *src_new_session(str *srs, rtp_ctx rtp,
 
 		if (!node) {
 			LM_ERR("cannot add srs node information!\n");
-			src_free_session(sess);
-			return NULL;
+			return nr;
 		}
 		node->uri.s = (char *)(node + 1);
 		node->uri.len = s.len;
 		memcpy(node->uri.s, s.s, s.len);
 		list_add(&node->list, &sess->srs);
 		LM_DBG("add srs_uri %.*s\n", node->uri.len, node->uri.s);
+		nr++;
 	} while (end > srs->s);
+
+	return nr;
+}
+
+struct src_sess *src_new_session(str *srs, rtp_ctx rtp,
+		struct srec_var *var)
+{
+	struct src_sess *sess;
+
+	siprec_uuid uuid;
+	siprec_build_uuid(uuid);
+
+	sess = src_create_session(rtp,
+			(var && var->media.len)?&var->media:NULL,
+			(var && var->group.len)?&var->group:NULL,
+			(var?var->si:NULL), 0, time(NULL),
+			(var && var->headers.len)?&var->headers:NULL,
+			(var && var->from_uri.len)?&var->from_uri:NULL,
+			(var && var->to_uri.len)?&var->to_uri:NULL,
+			&uuid,
+			(var && var->group_custom_extension.len)?&var->group_custom_extension:NULL,
+			(var && var->session_custom_extension.len)?&var->session_custom_extension:NULL);
+
+	if (!sess)
+		return NULL;
+
+	if (srs && srs_add_nodes(sess, srs) < 0) {
+		src_free_session(sess);
+		return NULL;
+	}
 
 	return sess;
 }
@@ -372,7 +384,7 @@ static int srec_pop_sess(struct dlg_cell *dlg, bin_packet_t *packet)
 		LM_ERR("cannot create a new siprec session!\n");
 		return -1;
 	}
-	sess->flags = flags;
+	sess->flags = (flags & ~SIPREC_DLG_CBS);
 
 	node = shm_malloc(sizeof(*node) + srs_uri.len);
 	if (!node) {
