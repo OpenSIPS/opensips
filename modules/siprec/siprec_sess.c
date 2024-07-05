@@ -214,7 +214,7 @@ void src_free_session(struct src_sess *sess)
 		list_del(&node->list);
 		shm_free(node);
 	}
-	srec_logic_destroy(sess);
+	srec_logic_destroy(sess, 0);
 	if (sess->dlg)
 		srec_dlg.dlg_ctx_put_ptr(sess->dlg, srec_dlg_idx, NULL);
 	lock_destroy(&sess->lock);
