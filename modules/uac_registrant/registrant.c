@@ -35,6 +35,7 @@
 #include "../../parser/parse_authenticate.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_min_expires.h"
+#include "../../parser/parse_expires.h"
 #include "../uac_auth/uac_auth.h"
 #include "../../lib/digest_auth/digest_auth.h"
 #include "reg_records.h"
@@ -354,6 +355,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	str msg_body;
 	int statuscode = 0;
 	unsigned int exp = 0;
+	exp_body_t *header_exp = NULL;
 	unsigned int bindings_counter = 0;
 	reg_record_t *rec = (reg_record_t*)e_data;
 	struct hdr_field *c_ptr, *head_contact;
@@ -509,6 +511,15 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				}
 			} else {
 				contact = contact->next;
+			}
+		}
+		// if there is no expires in contact, try parse expires from header
+		if (exp == 0 && msg->expires) {
+			if (parse_expires(msg->expires) < 0) {
+				LM_ERR("failed to parse Expires header\n");
+			} else {
+				header_exp = (exp_body_t*)msg->expires->parsed;
+				exp = header_exp->val;
 			}
 		}
 
