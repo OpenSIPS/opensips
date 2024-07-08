@@ -1568,7 +1568,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		return 0;
 	}
 
-	if(pto->tag_value.s!= 0 && pto->tag_value.len != 0)
+	if(pto->tag_value.s!=NULL && pto->tag_value.len != 0)
 	{
 		LM_DBG("Not an initial request\n");
 		dlg.tag[CALLEE_LEG] = pto->tag_value;
