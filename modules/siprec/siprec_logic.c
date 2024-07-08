@@ -129,23 +129,15 @@ static void srec_tm_unref(void *p)
 	SIPREC_UNREF(ss);
 }
 
-static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+int srec_stop_recording(struct src_sess *ss)
 {
-	struct src_sess *ss;
 	struct b2b_req_data req;
-
 	str bye = str_init(BYE);
-
-	if (!_params) {
-		LM_ERR("no parameter specified to dlg callback!\n");
-		return;
-	}
-	ss = *_params->param;
 
 	if ((ss->flags & SIPREC_STARTED) == 0) {
 		LM_DBG("sess=%p no longer in progress\n", ss);
 		/* the session was not started, or it had been deleted in the meantime */
-		return;
+		return -1;
 	}
 
 	memset(&req, 0, sizeof(req));
@@ -159,7 +151,20 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
-	srec_logic_destroy(ss, 0);
+	src_clean_session(ss);
+	return 0;
+}
+
+static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+{
+	struct src_sess *ss;
+
+	if (!_params) {
+		LM_ERR("no parameter specified to dlg callback!\n");
+		return;
+	}
+	ss = *_params->param;
+	srec_stop_recording(ss);
 }
 
 static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
@@ -700,6 +705,7 @@ void srec_logic_destroy(struct src_sess *sess, int keep_sdp)
 	sess->b2b_key.s = NULL;
 
 	sess->flags &= ~(SIPREC_STARTED|SIPREC_ONGOING);
+	LM_DBG("stopped recording for %p!\n", sess);
 }
 
 struct src_sess *src_get_session(void)

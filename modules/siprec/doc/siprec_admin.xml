@@ -378,6 +378,29 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	</programlisting>
 			</example>
 		</section>
+		<section id="func_siprec_stop_recording" xreflabel="siprec_stop_recording()">
+			<title>
+			<function moreinfo="none">siprec_stop_recording()</function>
+			</title>
+			<para>
+				Stops the recording for the ongoing call. Should be called for SIPREC
+				sessions that have been previously started.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<example>
+			<title>Use <function>siprec_stop_recording()</function> </title>
+			<programlisting format="linespecific">
+	...
+	if (has_totag() &amp;&amp; is_method("INVITE")) {
+		if (is_audio_on_hold())
+			siprec_stop_recording();
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
 	</section>
 
 	<section id="exported_pseudo_variables">

@@ -123,6 +123,7 @@ struct src_sess {
 
 struct src_sess *src_new_session(str *srs, rtp_ctx rtp, struct srec_var *var);
 void src_free_session(struct src_sess *sess);
+void src_clean_session(struct src_sess *sess);
 int src_add_participant(struct src_sess *sess, str *aor, str *name, str *xml_val,
 		siprec_uuid *uuid, time_t *start);
 

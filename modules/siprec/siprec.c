@@ -42,6 +42,7 @@ static void mod_destroy(void);
 static int siprec_start_rec(struct sip_msg *msg, str *srs);
 static int siprec_pause_rec(struct sip_msg *msg);
 static int siprec_resume_rec(struct sip_msg *msg);
+static int siprec_stop_rec(struct sip_msg *msg);
 
 /* modules dependencies */
 static const dep_export_t deps = {
@@ -66,6 +67,8 @@ static const cmd_export_t cmds[] = {
 	{"siprec_pause_recording",(cmd_function)siprec_pause_rec,
 		{{0,0,0}}, ALL_ROUTES},
 	{"siprec_resume_recording",(cmd_function)siprec_resume_rec,
+		{{0,0,0}}, ALL_ROUTES},
+	{"siprec_stop_recording",(cmd_function)siprec_stop_rec,
 		{{0,0,0}}, ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
@@ -320,4 +323,20 @@ static int siprec_pause_rec(struct sip_msg *msg)
 static int siprec_resume_rec(struct sip_msg *msg)
 {
 	return (src_resume_recording() < 0 ? -1: 1);
+}
+
+static int siprec_stop_rec(struct sip_msg *msg)
+{
+	struct dlg_cell *dlg = srec_dlg.get_dlg();
+	struct src_sess *ss;
+	if (!dlg) {
+		LM_ERR("dialog not found!\n");
+		return -2;
+	}
+	ss = (struct src_sess *)srec_dlg.dlg_ctx_get_ptr(dlg, srec_dlg_idx);
+	if (!ss) {
+		LM_DBG("no recording session started\n");
+		return -1;
+	}
+	return (srec_stop_recording(ss)<0?-1:1);
 }

@@ -38,12 +38,7 @@ static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
 		str *from_uri, str *to_uri, siprec_uuid *uuid,
 		str* group_custom_extension, str* session_custom_extension)
 {
-	char *p;
-	struct src_sess *ss = shm_malloc(sizeof *ss + (m_ip ? m_ip->len : 0) +
-			(grp ? grp->len : 0) + (hdrs ? hdrs->len : 0) +
-			(from_uri ? from_uri->len : 0) + (to_uri ? to_uri->len : 0) +
-			(group_custom_extension ? group_custom_extension->len : 0) +
-			(session_custom_extension ? session_custom_extension->len : 0));
+	struct src_sess *ss = shm_malloc(sizeof *ss);
 	if (!ss) {
 		LM_ERR("not enough memory for creating siprec session!\n");
 		return NULL;
@@ -52,57 +47,40 @@ static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
 	ss->socket = si;
 	ss->rtp = rtp;
 
-	p = (char *)(ss + 1);
-	if (m_ip) {
-		ss->media.s = p;
-		memcpy(ss->media.s, m_ip->s, m_ip->len);
-		ss->media.len = m_ip->len;
-		p += m_ip->len;
-	} else {
-		ss->media.s = NULL;
-		ss->media.len = 0;
+	if (m_ip && shm_str_sync(&ss->media, m_ip) < 0) {
+		LM_ERR("cannot sync media field\n");
+		goto error;
 	}
 
-	if (grp && grp->len) {
-		ss->group.s = p;
-		memcpy(ss->group.s, grp->s, grp->len);
-		ss->group.len = grp->len;
-		p += grp->len;
+	if (grp && grp->len && shm_str_sync(&ss->group, grp) < 0) {
+		LM_ERR("cannot sync group field\n");
+		goto error;
 	}
 
-	if (hdrs && hdrs->len) {
-		ss->headers.s = p;
-		memcpy(ss->headers.s, hdrs->s, hdrs->len);
-		ss->headers.len = hdrs->len;
-		p += hdrs->len;
+	if (hdrs && hdrs->len && shm_str_sync(&ss->headers, hdrs) < 0) {
+		LM_ERR("cannot sync headers field\n");
+		goto error;
 	}
 
-	if (grp && grp->len && group_custom_extension && group_custom_extension->len) {
-		ss->group_custom_extension.s = p;
-		memcpy(ss->group_custom_extension.s, group_custom_extension->s, group_custom_extension->len);
-		ss->group_custom_extension.len = group_custom_extension->len;
-		p += group_custom_extension->len;
+	if (grp && grp->len && group_custom_extension && group_custom_extension->len &&
+		shm_str_sync(&ss->group_custom_extension, group_custom_extension) < 0) {
+		LM_ERR("cannot sync group_custom_extension field\n");
+		goto error;
 	}
 
-	if (session_custom_extension && session_custom_extension->len) {
-		ss->session_custom_extension.s = p;
-		memcpy(ss->session_custom_extension.s, session_custom_extension->s, session_custom_extension->len);
-		ss->session_custom_extension.len = session_custom_extension->len;
-		p += session_custom_extension->len;
+	if (session_custom_extension && session_custom_extension->len&&
+		shm_str_sync(&ss->session_custom_extension, session_custom_extension) < 0) {
+		LM_ERR("cannot sync session_custom_extension field\n");
+		goto error;
 	}
 
-	if (from_uri && from_uri->len) {
-		ss->from_uri.s = p;
-		memcpy(ss->from_uri.s, from_uri->s, from_uri->len);
-		ss->from_uri.len = from_uri->len;
-		p += from_uri->len;
+	if (from_uri && from_uri->len && shm_str_sync(&ss->from_uri, from_uri) < 0) {
+		LM_ERR("cannot sync from_uri field\n");
+		goto error;
 	}
-
-	if (to_uri && to_uri->len) {
-		ss->to_uri.s = p;
-		memcpy(ss->to_uri.s, to_uri->s, to_uri->len);
-		ss->to_uri.len = to_uri->len;
-		p += to_uri->len;
+	if (to_uri && to_uri->len && shm_str_sync(&ss->to_uri, to_uri) < 0) {
+		LM_ERR("cannot sync to_uri field\n");
+		goto error;
 	}
 
 
@@ -119,6 +97,9 @@ static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
 #endif
 
 	return ss;
+error:
+	src_free_session(ss);
+	return NULL;
 }
 
 int srs_add_nodes(struct src_sess *sess, str *srs)
@@ -206,11 +187,57 @@ void src_free_participant(struct src_part *part)
 		shm_free(part->xml_val.s);
 }
 
-void src_free_session(struct src_sess *sess)
+void srec_nodes_destroy(struct src_sess *sess)
+{
+	struct srs_node *node;
+	while (!list_empty(&sess->srs)) {
+		node = list_entry(sess->srs.next, struct srs_node, list);
+		LM_DBG("freeing %.*s\n", node->uri.len, node->uri.s);
+		list_del(&node->list);
+		shm_free(node);
+	}
+}
+
+void src_clean_session(struct src_sess *sess)
 {
 	int p;
-	struct srs_node *node;
+	for (p = 0; p < sess->participants_no; p++)
+		src_free_participant(&sess->participants[p]);
+	srec_nodes_destroy(sess);
+	srec_logic_destroy(sess, 0);
 
+	if (sess->media.s) {
+		shm_free(sess->media.s);
+		memset(&sess->media, 0, sizeof sess->media);
+	}
+	if (sess->group.s) {
+		shm_free(sess->group.s);
+		memset(&sess->group, 0, sizeof sess->group);
+	}
+	if (sess->headers.s) {
+		shm_free(sess->headers.s);
+		memset(&sess->headers, 0, sizeof sess->headers);
+	}
+	if (sess->from_uri.s) {
+		shm_free(sess->from_uri.s);
+		memset(&sess->from_uri, 0, sizeof sess->from_uri);
+	}
+	if (sess->to_uri.s) {
+		shm_free(sess->to_uri.s);
+		memset(&sess->to_uri, 0, sizeof sess->to_uri);
+	}
+	if (sess->group_custom_extension.s) {
+		shm_free(sess->group_custom_extension.s);
+		memset(&sess->group_custom_extension, 0, sizeof sess->group_custom_extension);
+	}
+	if (sess->session_custom_extension.s) {
+		shm_free(sess->session_custom_extension.s);
+		memset(&sess->session_custom_extension, 0, sizeof sess->session_custom_extension);
+	}
+}
+
+void src_free_session(struct src_sess *sess)
+{
 	/* extra check here! */
 	if (sess->ref != 0) {
 		srec_hlog(sess, SREC_DESTROY, "error destroying");
@@ -218,15 +245,7 @@ void src_free_session(struct src_sess *sess)
 		return;
 	}
 
-	for (p = 0; p < sess->participants_no; p++)
-		src_free_participant(&sess->participants[p]);
-	while (!list_empty(&sess->srs)) {
-		node = list_entry(sess->srs.next, struct srs_node, list);
-		LM_DBG("freeing %.*s\n", node->uri.len, node->uri.s);
-		list_del(&node->list);
-		shm_free(node);
-	}
-	srec_logic_destroy(sess, 0);
+	src_clean_session(sess);
 	if (sess->dlg)
 		srec_dlg.dlg_ctx_put_ptr(sess->dlg, srec_dlg_idx, NULL);
 	lock_destroy(&sess->lock);
@@ -274,7 +293,7 @@ int src_add_participant(struct src_sess *sess, str *aor, str *name,
 
 		part->aor.len = aor->len;
 		memcpy(part->aor.s, aor->s, aor->len);
-		if (name) {
+		if (name && name->len) {
 			/* remove the quotes, if provided */
 			if (name->len > 2 && name->s[0] == '"') {
 				name->s++;
@@ -318,14 +337,14 @@ static int srec_pop_sess(struct dlg_cell *dlg, bin_packet_t *packet)
 	int p_type;
 	int flags;
 	str from_tag, to_tag;
-	struct srs_node *node = NULL;
 	struct src_sess *sess = NULL;
+	int update = 0;
 
 	/* first, double check if we've already done this */
 	sess = (struct src_sess *)srec_dlg.dlg_ctx_get_ptr(dlg, srec_dlg_idx);
 	if (sess) {
-		LM_DBG("SIPREC session already popped\n");
-		return 0;
+		LM_DBG("SIPREC session already available\n");
+		update = 1;
 	}
 
 	/* retrieve the RTP information */
@@ -374,27 +393,65 @@ static int srec_pop_sess(struct dlg_cell *dlg, bin_packet_t *packet)
 	}
 	memcpy(&uuid, tmp.s, tmp.len);
 
-	sess = src_create_session(rtp,
-			(media_ip.len ? &media_ip : NULL), (group.len ? &group : NULL),
-			si, version, ts, NULL /* we do not replicate headers */,
-			NULL, NULL /* we already know from and to */, &uuid,
-			(group_custom_extension.len ? &group_custom_extension : NULL),
-			(session_custom_extension.len ? &session_custom_extension : NULL));
 	if (!sess) {
-		LM_ERR("cannot create a new siprec session!\n");
-		return -1;
+		sess = src_create_session(rtp,
+				(media_ip.len ? &media_ip : NULL), (group.len ? &group : NULL),
+				si, version, ts, NULL /* we do not replicate headers */,
+				NULL, NULL /* we already know from and to */, &uuid,
+				(group_custom_extension.len ? &group_custom_extension : NULL),
+				(session_custom_extension.len ? &session_custom_extension : NULL));
+		if (!sess) {
+			LM_ERR("cannot create a new siprec session!\n");
+			return -1;
+		}
+		sess->flags = (flags & ~SIPREC_DLG_CBS);
+	} else {
+		sess->socket = si;
+		sess->version = version;
+		sess->ts = ts;
+		if (media_ip.len) {
+			if (shm_str_sync(&sess->media, &media_ip) < 0) {
+				LM_ERR("cannot sync media field\n");
+				return -1;
+			}
+		} else if (sess->media.s) {
+			shm_free(sess->media.s);
+			memset(&sess->media, 0, sizeof sess->media);
+		}
+		if (group.len) {
+			if (shm_str_sync(&sess->group, &group) < 0) {
+				LM_ERR("cannot sync group field\n");
+				return -1;
+			}
+		} else if (sess->group.s) {
+			shm_free(sess->group.s);
+			memset(&sess->group, 0, sizeof sess->group);
+		}
+		if (group_custom_extension.len) {
+			if (shm_str_sync(&sess->group_custom_extension, &group_custom_extension) < 0) {
+				LM_ERR("cannot sync group_custom_extension field\n");
+				return -1;
+			}
+		} else if (sess->group_custom_extension.s) {
+			shm_free(sess->group_custom_extension.s);
+			memset(&sess->group_custom_extension, 0, sizeof sess->group_custom_extension);
+		}
+		if (session_custom_extension.len) {
+			if (shm_str_sync(&sess->session_custom_extension, &session_custom_extension) < 0) {
+				LM_ERR("cannot sync session_custom_extension field\n");
+				return -1;
+			}
+		} else if (sess->session_custom_extension.s) {
+			shm_free(sess->session_custom_extension.s);
+			memset(&sess->session_custom_extension, 0, sizeof sess->session_custom_extension);
+		}
+		srec_logic_destroy(sess, 0);
+		for (p = 0; p < sess->participants_no; p++)
+			src_free_participant(&sess->participants[p]);
+		sess->participants_no = 0;
+		sess->flags = flags;
 	}
-	sess->flags = (flags & ~SIPREC_DLG_CBS);
-
-	node = shm_malloc(sizeof(*node) + srs_uri.len);
-	if (!node) {
-		LM_ERR("cannot add srs node information!\n");
-		goto error;
-	}
-	node->uri.s = (char *)(node + 1);
-	node->uri.len = srs_uri.len;
-	memcpy(node->uri.s, srs_uri.s, srs_uri.len);
-	list_add(&node->list, &sess->srs);
+	srs_add_nodes(sess, &srs_uri);
 
 	SIPREC_BIN_POP(str, &tmp);
 	sess->b2b_key.s = shm_malloc(tmp.len);
@@ -466,17 +523,18 @@ static int srec_pop_sess(struct dlg_cell *dlg, bin_packet_t *packet)
 	}
 
 	/* all good: continue with dialog support! */
-	SIPREC_REF(sess);
-	srec_hlog(sess, SREC_REF, "registered dlg");
-	sess->dlg = dlg;
+	if (!update) {
+		SIPREC_REF(sess);
+		srec_hlog(sess, SREC_REF, "registered dlg");
+		sess->dlg = dlg;
+		srec_dlg.dlg_ctx_put_ptr(dlg, srec_dlg_idx, sess);
+	}
 
 	/* restore b2b callbacks */
 	if (srec_restore_callback(sess) < 0) {
 		LM_ERR("cannot restore b2b callbacks!\n");
 		goto error_unref;
 	}
-
-	srec_dlg.dlg_ctx_put_ptr(dlg, srec_dlg_idx, sess);
 
 	if (srec_register_callbacks(sess) < 0) {
 		LM_ERR("cannot register callback for terminating session\n");
@@ -485,10 +543,13 @@ static int srec_pop_sess(struct dlg_cell *dlg, bin_packet_t *packet)
 
 	return 0;
 error_unref:
-	srec_hlog(sess, SREC_UNREF, "error registering dlg callbacks");
-	SIPREC_UNREF(sess);
+	if (!update) {
+		srec_hlog(sess, SREC_UNREF, "error registering dlg callbacks");
+		SIPREC_UNREF(sess);
+	}
+	return -1;
 error:
-	if (sess)
+	if (sess && !update)
 		src_free_session(sess);
 	return -1;
 }
