@@ -110,6 +110,8 @@ int tcp_done_reading(struct tcp_connection* con)
 		tcpconn_check_del(con);
 		tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 		if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+		sh_log(con->hist, TCP_SEND2MAIN,
+			"parallel read OK - releasing, ref: %d", con->refcnt);
 		tcpconn_release(con, CONN_RELEASE, 0, 1 /*as TCP proc*/);
 
 		_tcp_done_reading_marker = 1;
@@ -284,6 +286,9 @@ again:
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					goto con_error;
 				}
+
+				sh_log(con->hist, TCP_ADD_READER, "add reader fd %d, ref: %d",
+				       s, con->refcnt);
 
 				/* mark that the connection is currently in our process
 				future writes to this con won't have to acquire FD */
