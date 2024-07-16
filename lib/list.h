@@ -66,10 +66,12 @@ static inline void __list_add(struct list_head *new,
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
+#ifndef _list_h_skip_list_add_ /* conflict with 'mysql/my_list.h' list_add() */
 static inline void list_add(struct list_head *new, struct list_head *head)
 {
 	__list_add(new, head, head->next);
 }
+#endif
 
 /**
  * list_add_tail - add a new entry
