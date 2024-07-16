@@ -31,6 +31,11 @@
 
 #define DB_TLS_DOMAIN_PARAM "tls_domain"
 #define DB_TLS_DOMAIN_PARAM_EQ DB_TLS_DOMAIN_PARAM "="
+#define DB_TLS_DOMAIN_PARAM_EQ_S (sizeof(DB_TLS_DOMAIN_PARAM_EQ) - 1)
+
+#define DB_TLS_OPTS_PARAM "tls_opts"
+#define DB_TLS_OPTS_PARAM_EQ DB_TLS_OPTS_PARAM "="
+#define DB_TLS_OPTS_PARAM_EQ_S (sizeof(DB_TLS_OPTS_PARAM_EQ) - 1)
 
 /** Structure representing a database ID */
 struct db_id {
