@@ -40,7 +40,7 @@ mi_response_t *mi_domain_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	if(db_mode==0)
-		return init_mi_error( 500, MI_SSTR("command not activated"));
+		return init_mi_error( 500, MI_SSTR("DB is disabled (db_mode=0)"));
 
 	if (reload_domain_table () == 1) {
 		return init_mi_result_ok();
@@ -60,7 +60,7 @@ mi_response_t *mi_domain_dump(const mi_params_t *params,
 	mi_item_t *resp_obj, *domains_arr;
 
 	if(db_mode==0)
-		return init_mi_error(500, MI_SSTR("command not activated"));
+		return init_mi_error(500, MI_SSTR("DB is disabled (db_mode=0)"));
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
