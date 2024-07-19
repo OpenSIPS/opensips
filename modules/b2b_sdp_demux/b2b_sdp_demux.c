@@ -1271,6 +1271,7 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 			ret = -2;
 			goto release;
 		}
+		ctx->success_no = 0;
 		/* we've actually completed all the upstream clients
 		 * therefore we need to respond to the server */
 		body = b2b_sdp_mux_body(ctx);
