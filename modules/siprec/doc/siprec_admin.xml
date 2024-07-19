@@ -443,8 +443,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 					<emphasis>media</emphasis> - the IP that
 					RTPProxy will be streaming media from. If absent
 					<emphasis>127.0.0.1</emphasis> will be used.
-					<emphasis>NOTE:</emphasis> deprecated
-					<emphasis>media_ip</emphasis> is an alias for this param.
+					<emphasis>NOTE:</emphasis><emphasis>media_ip</emphasis> has been dropped.
 				</para></listitem>
 				<listitem><para>
 					<emphasis>headers</emphasis> - extra headers
