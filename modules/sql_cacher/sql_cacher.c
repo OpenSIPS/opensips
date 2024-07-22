@@ -820,6 +820,13 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 		new_db_hdls->cdbcon = 0;
 		return NULL;
 	}
+	if (new_db_hdls->cdbf.remove(new_db_hdls->cdbcon, &cdb_test_key) < 0) {
+		LM_ERR("Failed to remove test key from cachedb: %.*s\n",
+			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
+		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
+		new_db_hdls->cdbcon = 0;
+		return NULL;
+	}
 
 	/* SQL DB init and test connection */
 	if (db_bind_mod(&c_entry->db_url, &new_db_hdls->db_funcs) < 0) {
@@ -1498,7 +1505,7 @@ static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_versi
 							str *str_res, int *int_res)
 {
 	int int_val, next_str_off, i, rc;
-	char int_buf[4];
+	char int_buf[calc_max_base64_decode_len(INT_B64_ENC_LEN)];
 	const char zeroes[INT_B64_ENC_LEN] = {0};
 
 	if (pv_name->col_offset == -1) {
