@@ -1763,7 +1763,7 @@ int tcp_init(void)
 		return 0;
 
 #ifdef DBG_TCPCON
-	con_hist = shl_init("TCP con", 10000, 1);
+	con_hist = shl_init("TCP con", 10000, 0);
 	if (!con_hist) {
 		LM_ERR("oom con hist\n");
 		goto error;
