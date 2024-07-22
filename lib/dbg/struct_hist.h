@@ -45,7 +45,7 @@
  *    remain available inside the global history list for a while
  */
 
-#define MAX_SHLOG_SIZE 100 /* longer log lines will get truncated */
+#define MAX_SHLOG_SIZE 80 /* longer log lines will get truncated */
 
 /**
  * To be freely extended by any piece of OpenSIPS code which makes use of
@@ -85,7 +85,7 @@ struct struct_hist_action {
 struct struct_hist;
 struct struct_hist_list;
 
-#define FLUSH_LIMIT 2000
+#define FLUSH_LIMIT 300
 #define flushable(sh) (sh->len == FLUSH_LIMIT)
 
 /**
