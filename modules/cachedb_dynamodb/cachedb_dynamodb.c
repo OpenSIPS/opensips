@@ -22,9 +22,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cachedb_dynamodb_dbase.h"
 #include "../../lib/csv.h"
-#include "dynamodb_lib.h" 
-#include "../../cachedb/cachedb.h"
 
 typedef struct url_lst {
 	str url;
@@ -35,22 +34,92 @@ typedef struct url_lst {
 static int mod_init(void);
 static int child_init(int rank);
 static void destroy(void);
+
+
 str cache_mod_name = str_init("dynamodb");
 struct cachedb_url *dynamo_script_urls = NULL;
-
-
-cachedb_con *dynamodb_init(str *url);
-dynamodb_con *dynamodb_new_connection(struct cachedb_id* id);
-int dynamodb_set(cachedb_con *connection,str *attr,str *val,int expires);
-int dynamodb_get(cachedb_con *connection,str *attr,str *val);
-void dynamodb_destroy(cachedb_con *con);
-char *from_str_to_string(str *str);
-
 
 
 int set_connection(unsigned int type, void *val)
 {
 	return cachedb_store_url(&dynamo_script_urls,(char *)val);
+}
+
+
+dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
+{
+    dynamodb_con *con = NULL;
+
+    LM_DBG("Connecting to DynamoDB with URL: %s\n", id->initial_url);
+
+    con = (dynamodb_con *)pkg_malloc(sizeof(dynamodb_con));
+    if (!con) {
+        LM_ERR("malloc failed\n");
+        return NULL;
+    }
+
+    memset(con, 0, sizeof(dynamodb_con));
+
+    if (id->database) {
+		con->tableName = id->database;
+    } else {
+        LM_ERR("No table\n");
+        pkg_free(con);
+        return NULL;
+    }
+
+
+	csv_record *cols, *col, *kv;
+	str collection_list;
+
+	init_str(&collection_list, id->extra_options);
+
+	cols = __parse_csv_record(&collection_list, 0, ';');
+	if (!cols) {
+        LM_ERR("Parse failed\n");
+		pkg_free(con);
+        return NULL;
+    }
+
+	/* Parse each key-value pair */
+	for (col = cols; col; col = col->next) {
+		kv = __parse_csv_record(&col->s, 0, '=');
+		if (!kv) {
+			LM_ERR("Parse failed\n");
+			pkg_free(con);
+			return NULL;
+		}
+
+		if (strncasecmp(kv->s.s, "region", kv->s.len) == 0) {
+			con->region = from_str_to_string(&(kv->next)->s);
+		} else if (strncasecmp(kv->s.s, "key", kv->s.len) == 0) {
+			con->key = from_str_to_string(&(kv->next)->s);
+		} else if (strncasecmp(kv->s.s, "val", kv->s.len) == 0) {
+			con->value = from_str_to_string(&(kv->next)->s);
+		}
+	}
+
+	con->cache_con.id = id;
+	
+	if(strcmp(id->host, "") != 0) {
+		/* build endpoint */
+
+		char *endpoint = pkg_malloc(MAX_PORT_LEN * sizeof(char) + sizeof(id->host) + 8 + 1 /* \0 */);
+		sprintf(endpoint, "http://%s:%d", id->host, id->port);
+	
+		con->endpoint = endpoint;
+		
+	}
+
+	con->config = init_dynamodb(con);
+	
+	return con;
+}
+
+
+cachedb_con *dynamodb_init(str *url)
+{
+	return cachedb_do_init(url,(void *)dynamodb_new_connection);
 }
 
 
@@ -91,7 +160,6 @@ struct module_exports exports= {
 
 
 
-
 /**
  * init module function
  */
@@ -106,8 +174,17 @@ static int mod_init(void)
 
 	cde.cdb_func.init = dynamodb_init;
 	cde.cdb_func.get = dynamodb_get;
-	cde.cdb_func.destroy = dynamodb_destroy;
+	cde.cdb_func.get_counter = dynamodb_get_counter;
 	cde.cdb_func.set = dynamodb_set;
+	cde.cdb_func.remove = dynamodb_remove;
+	cde.cdb_func.add = dynamodb_add;
+	cde.cdb_func.sub = dynamodb_sub;
+	cde.cdb_func.destroy = dynamodb_destroy;
+	cde.cdb_func.map_get = dynamodb_map_get;
+	cde.cdb_func.map_set = dynamodb_map_set;
+	cde.cdb_func.map_remove = dynamodb_map_remove;
+	cde.cdb_func.destroy = dynamodb_destroy;
+
 	if (register_cachedb(&cde)< 0)
 	{
 		LM_ERR("failed to register to core memory store interface\n");
@@ -146,161 +223,6 @@ static int child_init(int rank)
  */
 static void destroy(void)
 {
+    cachedb_end_connections(&cache_mod_name);
 	LM_DBG("destroying cachedb_dynamodb module ...\n");
-}
-
-cachedb_con *dynamodb_init(str *url)
-{
-	return cachedb_do_init(url,(void *)dynamodb_new_connection);
-}
-
-void dynamodb_destroy(cachedb_con *connection) {
-	dynamodb_con *con = (dynamodb_con *)(connection->data);
-	shutdown_dynamodb(&con->config);
-}
-
-char *from_str_to_string(str *str) {
-	char *string = (char *)pkg_malloc(str->len + 1);
-	strncpy(string, str->s, str->len);
-	string[str->len] = '\0';
-	return string;	
-
-}
-
-dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
-{
-    dynamodb_con *con = NULL;
-
-    LM_DBG("Connecting to DynamoDB with URL: %s\n", id->initial_url);
-
-    con = (dynamodb_con *)pkg_malloc(sizeof(dynamodb_con));
-    if (!con) {
-        LM_ERR("malloc failed\n");
-        return NULL;
-    }
-
-    memset(con, 0, sizeof(dynamodb_con));
-
-    if (id->database) {
-		LM_DBG("TableName: %s\n", id->database);
-		con->tableName = id->database;
-    } else {
-        LM_ERR("No table\n");
-        pkg_free(con);
-        return NULL;
-    }
-
-	if (id->extra_options) {
-		LM_DBG("ExtraOptions: %s\n", id->extra_options);
-    } 
-
-	if (id->flags) {
-		LM_DBG("Flags: %d\n", id->flags);
-    }
-
-	if (id->group_name) {
-		LM_DBG("GroupName: %s\n", id->group_name);
-    }
-
-	if (id->host) {
-		LM_DBG("Host: %s\n", id->host);
-	}
-	
-	if (id->initial_url) {
-		LM_DBG("Initial_url: %s\n", id->initial_url);
-	}
-
-	if (id->port) {
-		LM_DBG("Port: %d\n", id->port);
-	}
-	if (id->scheme) {
-		LM_DBG("Scheme: %s\n", id->scheme);
-	}
-	if (id->username) {
-		LM_DBG("Username: %s\n", id->username);
-	}
-
-
-	csv_record *cols, *col, *kv;
-	str collection_list;
-
-	init_str(&collection_list, id->extra_options);
-
-	cols = __parse_csv_record(&collection_list, 0, ';');
-	if (!cols) {
-        LM_ERR("Parse failed\n");
-		pkg_free(con);
-        return NULL;
-    }
-
-	/* Parse each key-value pair */
-	for (col = cols; col; col = col->next) {
-		kv = __parse_csv_record(&col->s, 0, '=');
-		if (!kv) {
-			LM_ERR("Parse failed\n");
-			pkg_free(con);
-			return NULL;
-		}
-
-		if (strncasecmp(kv->s.s, "region", kv->s.len) == 0) {
-			con->region = strndup(kv->next->s.s, kv->next->s.len);
-		} else if (strncasecmp(kv->s.s, "key", kv->s.len) == 0) {
-			con->key = strndup(kv->next->s.s, kv->next->s.len);
-		} else if (strncasecmp(kv->s.s, "val", kv->s.len) == 0) {
-			con->value = strndup(kv->next->s.s, kv->next->s.len);
-		}
-	}
-
-	con->cache_con.id = id;
-	
-	if(strcmp(id->host, "") != 0) {
-		/* build endpoint */
-		char *port_str = pkg_malloc(MAX_PORT_LEN * sizeof(char));
-		sprintf(port_str, "%d", id->port);
-
-		char *endpoint = pkg_malloc(sizeof(id->host) + sizeof(port_str) + 9); // 9: "http://" + ":", "\0"
-		
-		strcat(endpoint, "http://");
-		strcat(endpoint, id->host);
-		strcat(endpoint, ":");
-		strcat(endpoint, port_str);	
-	
-		con->endpoint = endpoint;
-		
-		pkg_free(port_str);
-	
-	}
-	con->config = init_dynamodb(con);
-	
-	return con;
-}
-
-
-int dynamodb_set(cachedb_con *connection,str *attr,str *val,int expires) {
-	dynamodb_con *con = (dynamodb_con *)(connection->data);
-
-	char *attr_string = from_str_to_string(attr);
-	char *val_string = from_str_to_string(val);
-	
-	insert_item(&con->config, con->tableName, con->key, attr_string, con->value, val_string);
-
-	pkg_free(attr_string);
-	pkg_free(val_string);
-
-	return 1;
-}
-
-int dynamodb_get(cachedb_con *connection,str *attr,str *val) {
-	dynamodb_con *con = (dynamodb_con *)(connection->data);
-
-	char *attr_string = from_str_to_string(attr);
-	char *result1 = query_item(&con->config, con->tableName, con->key, attr_string, con->value);
-
-	char *result2 = pkg_malloc(strlen(result1) * sizeof(char));
-	strcpy(result2, result1);
-	init_str(val, result2);
-
-	free(result1);
-	pkg_free(result2);
-	return 1;
 }
