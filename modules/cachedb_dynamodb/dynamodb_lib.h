@@ -35,71 +35,71 @@
 extern "C" {
 #endif
 
-typedef struct {      
-    void *options;
-    void *clientConfig;   
+typedef struct {
+	void *options;
+	void *clientConfig;
 } dynamodb_config;
 
 
 typedef struct key_set_entry {
-    char *keyset_name;
-    struct list_head keys;
-    struct key_set_entry *next;
+	char *keyset_name;
+	struct list_head keys;
+	struct key_set_entry *next;
 } key_set_entry_t;
 
 typedef struct key_entry {
-    char *key;
-    struct list_head list;
+	char *key;
+	struct list_head list;
 } key_entry_t;
 
 typedef struct dynamodb_con {
-    cachedb_pool_con cache_con;
+	cachedb_pool_con cache_con;
 
-	char *host;            // Note: the .id may contain multi-hosts, so the
-	unsigned short port;   // host/port of this connection are extracted here
-    char *endpoint;
-    char *region;
-    char *key;
-    key_set_entry_t *key_sets; // List to store key sets
-    char *value;
-    char *tableName;
-    dynamodb_config config;
+	char *host;				// Note: the .id may contain multi-hosts, so the
+	unsigned short port;	// host/port of this connection are extracted here
+	char *endpoint;
+	char *region;
+	char *key;
+	key_set_entry_t *key_sets; // List to store key sets
+	char *value;
+	char *tableName;
+	dynamodb_config config;
 } dynamodb_con;
 
 typedef struct {
-    char *key;
-    char *value;
+	char *key;
+	char *value;
 } key_value_pair_t;
 
 typedef struct {
-    int no_attributes;
-    char *key;
-    char *key_value;
-    key_value_pair_t *attributes;
+	int no_attributes;
+	char *key;
+	char *key_value;
+	key_value_pair_t *attributes;
 } rows_t;
 
 typedef struct {
-    int num_rows;
-    rows_t *items;
+	int num_rows;
+	rows_t *items;
 } query_result_t;
 
 
 dynamodb_config init_dynamodb(dynamodb_con *con);
 void shutdown_dynamodb(dynamodb_config *config);
-bool create_table(dynamodb_config *config, const char *tableName, const char *partitionKey);
-bool put_item(dynamodb_config *config, const char *tableName, const char *partitionKey,
-                const char *partitionValue, const char *founder, int employeeCount, int yearFounded,
-                int qualityRanking);
-int insert_item(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue,
-                  const char *attributeName, const char* attributeValue);
-bool delete_item(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue);
-char *query_item(dynamodb_config *config, const char *tableName, const char *partitionKey,
-                 const char *partitionValue, const char *attributeKey);
-void dealloc_query_result(query_result_t *result);
-int update_item_inc(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue);
-query_result_t *query_items(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue);
-int update_item_sub(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue);
-query_result_t *scan_table(dynamodb_config *config, const char *tableName, const char *key);
+bool create_table_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey);
+bool put_item_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey,
+				const char *partitionValue, const char *founder, int employeeCount, int yearFounded,
+				int qualityRanking);
+int insert_item_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue,
+				const char *attributeName, const char* attributeValue);
+bool delete_item_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue);
+char *query_item_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey,
+				const char *partitionValue, const char *attributeKey);
+void dealloc_query_result_dynamodb(query_result_t *result);
+int update_item_inc_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue);
+query_result_t *query_items_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue);
+int update_item_sub_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue);
+query_result_t *scan_table_dynamodb(dynamodb_config *config, const char *tableName, const char *key);
 #ifdef __cplusplus
 }
 #endif
