@@ -1,3 +1,25 @@
+/*
+ * Copyright (C) 2024 OpenSIPS Solutions
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ */
+
+
 #include <aws/core/Aws.h>
 #include <aws/dynamodb/DynamoDBClient.h>
 #include <aws/dynamodb/model/AttributeDefinition.h>
@@ -9,9 +31,14 @@
 #include <aws/dynamodb/model/DeleteItemRequest.h>
 #include <aws/dynamodb/model/QueryRequest.h>
 #include <aws/dynamodb/model/ScanRequest.h>
+#include <aws/dynamodb/model/GetItemRequest.h>
+#include <aws/dynamodb/model/UpdateItemRequest.h>
+#include <aws/dynamodb/model/UpdateItemResult.h>
 #include <iostream>
 #include <sstream>
 #include "dynamodb_lib.h"
+
+
 
 
 extern "C" {
@@ -79,64 +106,42 @@ bool create_table(dynamodb_config *config, const char *tableName, const char *pa
     return outcome.IsSuccess();
 }
 
-bool put_item(dynamodb_config *config, const char *tableName, const char *partitionKey,
-                const char *partitionValue, const char *founder, int employeeCount, int yearFounded,
-                int qualityRanking) {
-    Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
-    Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
-
-    Aws::DynamoDB::Model::PutItemRequest putItemRequest;
-    putItemRequest.SetTableName(tableName);
-    putItemRequest.AddItem(partitionKey, Aws::DynamoDB::Model::AttributeValue().SetS(partitionValue));
-    putItemRequest.AddItem("Founder", Aws::DynamoDB::Model::AttributeValue().SetS(founder));
-    putItemRequest.AddItem("Employee Count", Aws::DynamoDB::Model::AttributeValue().SetN(std::to_string(employeeCount)));
-    putItemRequest.AddItem("Year Founded", Aws::DynamoDB::Model::AttributeValue().SetN(std::to_string(yearFounded)));
-    putItemRequest.AddItem("Quality Ranking", Aws::DynamoDB::Model::AttributeValue().SetN(std::to_string(qualityRanking)));
-
-    const Aws::DynamoDB::Model::PutItemOutcome outcome = dynamoClient.PutItem(putItemRequest);
-    if (outcome.IsSuccess()) {
-        std::cout << "Successfully added Item!" << std::endl;
-        return true;
-    } else {
-        std::cerr << outcome.GetError().GetMessage() << std::endl;
-        return false;
-    }
-}
 
 int insert_item(dynamodb_config *config,
-                    const char *tableName,
-                    const char *partitionKey,
-                    const char *partitionValue,
-                    const char *attributeName,
-                    const char *attributeValue) {
+                const char *tableName,
+                const char *partitionKey,
+                const char *partitionValue,
+                const char *attributeName,
+                const char *attributeValue) {
     Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
     Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
 
-    // Define PutItem request
-    Aws::DynamoDB::Model::PutItemRequest request;
+    Aws::DynamoDB::Model::UpdateItemRequest request;
     request.SetTableName(tableName);
 
-    // Set partition key attribute
     Aws::DynamoDB::Model::AttributeValue partitionKeyValue;
     partitionKeyValue.SetS(partitionValue);
-    request.AddItem(partitionKey, partitionKeyValue);
+    request.AddKey(partitionKey, partitionKeyValue);
 
-    // Set additional attribute
-    Aws::DynamoDB::Model::AttributeValue additionalAttributeValue;
-    additionalAttributeValue.SetS(attributeValue);
-    request.AddItem(attributeName, additionalAttributeValue);
+    Aws::String updateExpression = "SET #attrName = :attrValue";
+    request.SetUpdateExpression(updateExpression);
 
-    // Insert the item
-    const Aws::DynamoDB::Model::PutItemOutcome &outcome = dynamoClient.PutItem(request);
-    if (outcome.IsSuccess()) {
-        std::cout << "Item was inserted successfully" << std::endl;
-        return 0;
-    } else {
-        std::cerr << "Failed to insert item: " << outcome.GetError().GetMessage() << std::endl;
-        return -1;
-    }
+    Aws::Map<Aws::String, Aws::String> expressionAttributeNames;
+    expressionAttributeNames["#attrName"] = attributeName;
+    request.SetExpressionAttributeNames(expressionAttributeNames);
+
+    Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> expressionAttributeValues;
+    Aws::DynamoDB::Model::AttributeValue attributeValueObj;
+    attributeValueObj.SetS(attributeValue);
+    expressionAttributeValues[":attrValue"] = attributeValueObj;
+    request.SetExpressionAttributeValues(expressionAttributeValues);
+
+    const Aws::DynamoDB::Model::UpdateItemOutcome &outcome = dynamoClient.UpdateItem(request);
+    if (outcome.IsSuccess())
+       return 0;
+    
+    return -1;
 }
-
 
 bool delete_item(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue) {
     Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
@@ -195,6 +200,7 @@ char* query_item(dynamodb_config *config, const char *tableName, const char *par
                 }
             } else {
                 result << "No item found in table: " << tableName << std::endl;
+                return NULL;
             }
             exclusiveStartKey = outcome.GetResult().GetLastEvaluatedKey();
         } else {
@@ -209,8 +215,8 @@ char* query_item(dynamodb_config *config, const char *tableName, const char *par
 
     return resultCStr;
 }
-char *query_items(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue) {
 
+query_result_t* query_items(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue) {
     Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
     Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
     Aws::DynamoDB::Model::QueryRequest request;
@@ -226,8 +232,9 @@ char *query_items(dynamodb_config *config, const char *tableName, const char *pa
     attributeValues.emplace(":valueToMatch", partitionValue);
     request.SetExpressionAttributeValues(attributeValues);
 
-
-    std::ostringstream result;
+    query_result_t *queryResult = new query_result_t;
+    queryResult->num_rows = 0;
+    queryResult->items = nullptr;
 
     Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> exclusiveStartKey;
     do {
@@ -238,29 +245,243 @@ char *query_items(dynamodb_config *config, const char *tableName, const char *pa
         const Aws::DynamoDB::Model::QueryOutcome &outcome = dynamoClient.Query(request);
         if (outcome.IsSuccess()) {
             const Aws::Vector<Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue>> &items = outcome.GetResult().GetItems();
-            if (!items.empty()) {
-                result << "Number of items retrieved from Query: " << items.size() << std::endl;
-                for (const auto &item : items) {
-                    result << "******************************************************" << std::endl;
-                    for (const auto &i : item) {
-                        result << i.first << ": " << i.second.GetS() << std::endl;
+            for (const auto &item : items) {
+                rows_t row;
+                row.no_attributes = item.size();
+                row.key = strdup(partitionKey);
+                row.key_value = strdup(partitionValue);
+                row.attributes = new key_value_pair_t[item.size()];
+
+                int attribute_index = 0;
+                for (const auto &i : item) {
+                    row.attributes[attribute_index].key = strdup(i.first.c_str());
+                    if (i.second.GetS() != "") {
+                        row.attributes[attribute_index].value = strdup(i.second.GetS().c_str());
+                    } else if (i.second.GetN() != "") {
+                        row.attributes[attribute_index].value = strdup(i.second.GetN().c_str());
+                    } else {
+                        row.attributes[attribute_index].value = nullptr;
                     }
+                    ++attribute_index;
                 }
-            } else {
-                result << "No item found in table: " << tableName << std::endl;
+
+                rows_t *new_items = new rows_t[queryResult->num_rows + 1];
+                if (queryResult->items != nullptr) {
+                    std::copy(queryResult->items, queryResult->items + queryResult->num_rows, new_items);
+                    delete[] queryResult->items;
+                }
+                queryResult->items = new_items;
+                queryResult->items[queryResult->num_rows] = row;
+                ++queryResult->num_rows;
             }
             exclusiveStartKey = outcome.GetResult().GetLastEvaluatedKey();
         } else {
-            result << "Failed to Query items: " << outcome.GetError().GetMessage() << std::endl;
-            return NULL;
+            std::cerr << "Failed to Query items: " << outcome.GetError().GetMessage() << std::endl;
+            if (queryResult->items != nullptr) {
+                for (int i = 0; i < queryResult->num_rows; ++i) {
+                    delete[] queryResult->items[i].attributes;
+                }
+                delete[] queryResult->items;
+            }
+            delete queryResult;
+            return nullptr;
         }
     } while (!exclusiveStartKey.empty());
 
-    std::string resultStr = result.str();
-    char *result_str = new char[resultStr.length() + 1];
-    std::strcpy(result_str, resultStr.c_str());
-
-    return result_str;
+    return queryResult;
 }
+
+
+query_result_t *scan_table(dynamodb_config *config, const char *tableName, const char *key) {
+   
+    Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
+    Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
+    Aws::DynamoDB::Model::ScanRequest request;
+    request.SetTableName(tableName);
+
+    query_result_t *result = new query_result_t;
+    result->num_rows = 0;
+    result->items = nullptr;
+
+    std::vector<rows_t> rows;
+
+    do {
+        const Aws::DynamoDB::Model::ScanOutcome &outcome = dynamoClient.Scan(request);
+        if (outcome.IsSuccess()) {
+            const Aws::Vector<Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue>>& items = outcome.GetResult().GetItems();
+
+            for (const auto &itemMap : items) {
+                rows_t row;
+                row.no_attributes = itemMap.size() - 1;
+                row.attributes = new key_value_pair_t[row.no_attributes];
+                int attr_index = 0;
+
+                for (const auto &itemEntry : itemMap) {
+                    if (itemEntry.first == key) {
+                        row.key = strdup(itemEntry.first.c_str());
+                        row.key_value = strdup(itemEntry.second.GetS().c_str());
+                    } else {
+                        row.attributes[attr_index].key = strdup(itemEntry.first.c_str());
+                        if (itemEntry.second.GetS() != "") {
+                            
+                            row.attributes[attr_index].value = strdup(itemEntry.second.GetS().c_str());
+                        
+                        } else if (itemEntry.second.GetN() != "") {
+                        
+                            row.attributes[attr_index].value = strdup(itemEntry.second.GetN().c_str());
+                        
+                        } else {
+                        
+                            row.attributes[attr_index].value = nullptr;
+                        
+                        }
+                        attr_index++;
+                    }
+
+                }
+
+                rows.push_back(row);
+            }
+            request.SetExclusiveStartKey(outcome.GetResult().GetLastEvaluatedKey());
+        } else {
+            std::cerr << "Failed to Scan items: " << outcome.GetError().GetMessage() << std::endl;
+            delete result;
+            return nullptr;
+        }
+    } while (!request.GetExclusiveStartKey().empty());
+
+    result->num_rows = rows.size();
+    result->items = new rows_t[result->num_rows];
+    for (int i = 0; i < result->num_rows; ++i) {
+        result->items[i] = rows[i];
+    }
+
+    return result;
+}
+
+int update_item_inc(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue) {
+    Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
+    Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
+
+    Aws::DynamoDB::Model::GetItemRequest getItemRequest;
+    getItemRequest.SetTableName(tableName);
+    getItemRequest.AddKey(partitionKey, Aws::DynamoDB::Model::AttributeValue(partitionValue));
+
+    const Aws::DynamoDB::Model::GetItemOutcome &getItemOutcome = dynamoClient.GetItem(getItemRequest);
+    if (!getItemOutcome.IsSuccess()) {
+        std::cerr << getItemOutcome.GetError().GetMessage() << std::endl;
+        return -1;
+    }
+
+    const Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> &item = getItemOutcome.GetResult().GetItem();
+    if (item.empty()) {
+        std::cerr << "Item not found." << std::endl;
+        return -1;
+    }
+
+    int currentValue = 0;
+    const auto &attributeIter = item.find(valueKey);
+    if (attributeIter != item.end() && attributeIter->second.GetType() == Aws::DynamoDB::Model::ValueType::STRING) {
+        try {
+            currentValue = std::stoi(attributeIter->second.GetS());
+        } catch (const std::exception &e) {
+            std::cerr << "Error converting current value to integer: " << e.what() << std::endl;
+            return -1;
+        }
+    } else {
+        std::cerr << "Attribute not found or not a string." << std::endl;
+        return -1;
+    }
+
+    int newValue = currentValue + incrementValue;
+
+    Aws::DynamoDB::Model::UpdateItemRequest updateRequest;
+    updateRequest.SetTableName(tableName);
+    updateRequest.AddKey(partitionKey, Aws::DynamoDB::Model::AttributeValue(partitionValue));
+
+    Aws::String update_expression = "SET #valKey = :newval";
+    updateRequest.SetUpdateExpression(update_expression);
+
+    Aws::Map<Aws::String, Aws::String> expressionAttributeNames;
+    expressionAttributeNames["#valKey"] = valueKey;
+    updateRequest.SetExpressionAttributeNames(expressionAttributeNames);
+
+    Aws::DynamoDB::Model::AttributeValue newValueAttribute;
+    newValueAttribute.SetN(std::to_string(newValue));
+    Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> expressionAttributeValues;
+    expressionAttributeValues[":newval"] = newValueAttribute;
+    updateRequest.SetExpressionAttributeValues(expressionAttributeValues);
+
+    const Aws::DynamoDB::Model::UpdateItemOutcome &updateOutcome = dynamoClient.UpdateItem(updateRequest);
+    if (!updateOutcome.IsSuccess()) {
+        std::cerr << updateOutcome.GetError().GetMessage() << std::endl;
+        return -1;
+    }
+
+    return newValue;
+}
+
+int update_item_sub(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int decrementValue) {
+    Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
+    Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
+
+    Aws::DynamoDB::Model::GetItemRequest getItemRequest;
+    getItemRequest.SetTableName(tableName);
+    getItemRequest.AddKey(partitionKey, Aws::DynamoDB::Model::AttributeValue(partitionValue));
+
+    const Aws::DynamoDB::Model::GetItemOutcome &getItemOutcome = dynamoClient.GetItem(getItemRequest);
+    if (!getItemOutcome.IsSuccess()) {
+        std::cerr << getItemOutcome.GetError().GetMessage() << std::endl;
+        return -1; 
+    }
+
+    const Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> &item = getItemOutcome.GetResult().GetItem();
+    if (item.empty()) {
+        std::cerr << "Item not found." << std::endl;
+        return -1;
+    }
+
+    int currentValue = 0;
+    const auto &attributeIter = item.find(valueKey);
+    if (attributeIter != item.end() && attributeIter->second.GetType() == Aws::DynamoDB::Model::ValueType::STRING) {
+        try {
+            currentValue = std::stoi(attributeIter->second.GetS());
+        } catch (const std::exception &e) {
+            std::cerr << "Error converting current value to integer: " << e.what() << std::endl;
+            return -1;
+        }
+    } else {
+        std::cerr << "Attribute not found or not a string." << std::endl;
+        return -1;
+    }
+
+    int newValue = currentValue - decrementValue;
+
+    Aws::DynamoDB::Model::UpdateItemRequest updateRequest;
+    updateRequest.SetTableName(tableName);
+    updateRequest.AddKey(partitionKey, Aws::DynamoDB::Model::AttributeValue(partitionValue));
+
+    Aws::String update_expression = "SET #valKey = :newval";
+    updateRequest.SetUpdateExpression(update_expression);
+
+    Aws::Map<Aws::String, Aws::String> expressionAttributeNames;
+    expressionAttributeNames["#valKey"] = valueKey;
+    updateRequest.SetExpressionAttributeNames(expressionAttributeNames);
+
+    Aws::DynamoDB::Model::AttributeValue newValueAttribute;
+    newValueAttribute.SetN(std::to_string(newValue));
+    Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> expressionAttributeValues;
+    expressionAttributeValues[":newval"] = newValueAttribute;
+    updateRequest.SetExpressionAttributeValues(expressionAttributeValues);
+
+    const Aws::DynamoDB::Model::UpdateItemOutcome &updateOutcome = dynamoClient.UpdateItem(updateRequest);
+    if (!updateOutcome.IsSuccess()) {
+        std::cerr << updateOutcome.GetError().GetMessage() << std::endl;
+        return -1; 
+    }
+
+    return newValue;
+}
+
 
 }
