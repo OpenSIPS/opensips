@@ -36,6 +36,25 @@
 typedef int  (*proto_net_dgram_read_f)(const struct socket_info *si, int *len);
 
 typedef int  (*proto_net_stream_write_f)(struct tcp_connection *c, int fd);
+
+/**
+ * Read a complete SIP message from the network, including its body/payload and
+ * also fully process it, through receive_msg() and opensips.cfg routing logic.
+ *
+ * The function must include sufficient parsing logic in order to overcome
+ * the streaming protocol's inherent limitation of not having the data "split"
+ * into individual application-layer messages.  For example, implementors may
+ * want to block-READ until "Content-Length: " to obtain payload size, then
+ * continue READ'ing until EOH, then a final READ for the full body.
+ *
+ * Possible return values:
+ *   -1 :: error during reading, the @c connection is still valid and must be
+ *         released by caller
+ *    0 :: a complete request was read and processed; check @c->state for
+ *         S_CONN_EOF and release @c connection if condition is true
+ *    1 :: a complete request was read and processed; the @c ptr is *invalid*
+ *         as the connection has already been released, to achieve parallelism
+ */
 typedef int  (*proto_net_stream_read_f)(struct tcp_connection *c, int *len);
 typedef int  (*proto_net_stream_conn_init_f)(struct tcp_connection *c);
 typedef void (*proto_net_stream_conn_clean_f)(struct tcp_connection *c);
