@@ -647,7 +647,7 @@ again:
  */
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 {
-	int bytes;
+	int bytes, rc;
 	int total_bytes;
 	struct tcp_req* req;
 
@@ -735,7 +735,7 @@ again:
 	int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
 			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : tcp_max_msg_chunks;
 
-	switch (tcp_handle_req(req,con,max_chunks,parallel_handling)){
+	switch ((rc = tcp_handle_req(req,con,max_chunks,parallel_handling))){
 		case 1:
 			goto again;
 		case -1:
@@ -745,8 +745,9 @@ again:
 	LM_DBG("tcp_read_req end for conn %p, req is %p\n",con,con->con_req);
 done:
 	if (bytes_read) *bytes_read=total_bytes;
-	/* connection will be released */
-	return 0;
+
+	return rc == 2   ?  1  /* connection is already released! */
+	       /* 0,1? */:  0; /* connection will be released */
 error:
 	/* connection will be released as ERROR */
 	return -1;

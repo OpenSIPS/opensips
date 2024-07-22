@@ -628,7 +628,7 @@ con_release:
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 {
-	int ret;
+	int ret, rc = 0;
 	int bytes;
 	int total_bytes;
 	struct tcp_req* req;
@@ -732,7 +732,7 @@ again:
 	int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
 			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : tls_max_msg_chunks;
 
-	switch (tcp_handle_req(req, con, max_chunks, 0) ) {
+	switch ((rc = tcp_handle_req(req, con, max_chunks, 0))) {
 		case 1:
 			goto again;
 		case -1:
@@ -742,8 +742,9 @@ again:
 	LM_DBG("tls_read_req end\n");
 done:
 	if (bytes_read) *bytes_read=total_bytes;
-	/* connection will be released */
-	return 0;
+
+	return rc == 2   ?  1  /* connection is already released! */
+	       /* 0,1? */:  0; /* connection will be released */
 error:
 	/* connection will be released as ERROR */
 	return -1;
