@@ -345,6 +345,9 @@ again:
 						"handle read, err, resp: %d, att: %d",
 						resp, con->msg_attempts);
 					tcpconn_release_error(con, 0, "Read error");
+				} else if (resp == 1) {
+					/* the connection is already released */
+					break;
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_check_del(con);

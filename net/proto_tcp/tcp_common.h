@@ -382,6 +382,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 
 		/* prepare for next request */
 		size=req->pos-req->parsed;
+		con->msg_attempts = 0;
 
 		if (req->state==H_PING_CRLFCRLF) {
 			/* we send the reply */
@@ -413,6 +414,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 					msg_buf_cpy[msg_len] = 0;
 					msg_buf = msg_buf_cpy;
 					tcp_done_reading( con );
+					con = NULL; /* having reached this, we MUST return 2 */
 				}
 
 			} else {
@@ -427,8 +429,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			if (msg_buf_cpy)
 				pkg_free(msg_buf_cpy);
 		}
-
-		con->msg_attempts = 0;
 
 		if (size) {
 			/* restoring the char only makes sense if there is something else to
@@ -450,7 +450,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			/* if we no longer need this tcp_req
 			 * we can free it now */
 			shm_free(req);
-			con->con_req = NULL;
+			if (con)
+				con->con_req = NULL;
 		}
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
@@ -509,8 +510,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		}
 	}
 
-	/* everything ok */
-	return 0;
+	/* everything ok; if connection was returned already, use special rc 2 */
+	return con ? 0 : 2;
 error:
 	/* report error */
 	return -1;
