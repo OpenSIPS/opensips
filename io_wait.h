@@ -181,7 +181,7 @@ typedef struct io_wait_handler io_wait_h;
  */
 #define unhash_fd_map(pfm,c_flags,sock_flags,erase)	\
 	do{ \
-		if ((c_flags & IO_FD_CLOSING) || pfm->flags == sock_flags) { \
+		if ((c_flags & IO_FD_CLOSING) || (pfm->flags&IO_WATCH_PRV_FILTER)==sock_flags) { \
 			(pfm)->type=0 /*F_NONE */; \
 			(pfm)->fd=-1; \
 			(pfm)->flags = 0; \
@@ -260,7 +260,8 @@ again:
 #define IO_WATCH_WRITE           (1<<1)
 #define IO_WATCH_ERROR           (1<<2)
 #define IO_WATCH_TIMEOUT         (1<<3)
-/* reserved, do not attempt to use */
+/* 24 starting are reserved, do not attempt to use */
+#define IO_WATCH_PRV_FILTER      ((1<<24)-1)
 #define IO_WATCH_PRV_CHECKED     (1<<29)
 #define IO_WATCH_PRV_TRIG_READ   (1<<30)
 #define IO_WATCH_PRV_TRIG_WRITE  (1<<31)
