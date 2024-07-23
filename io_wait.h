@@ -94,6 +94,7 @@
 #ifdef __OS_linux
 #include <features.h>     /* for GLIBC version testing */
 #endif
+#include "lib/dbg/backtrace.h"
 
 #ifndef FD_TYPE_DEFINED
 typedef int fd_type;
@@ -684,6 +685,14 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 				" entry %d in the hash(%d, %d, %p) )\n",
 				h->name,fd, e->fd, e->type, e->data);
 		goto error0;
+	}
+
+	if (idx>=0 && h->fd_array[idx].fd!=fd) {
+		LM_CRIT("[%s] FD consistency check failed, idx=%d points to fd=%d,"
+			" but operating on %d\n",h->name, idx, h->fd_array[idx].fd, fd );
+		_log_backtrace(L_CRIT);
+		rla_dump();
+		idx = -1;
 	}
 
 	if ((e->flags & sock_flags) == 0) {
