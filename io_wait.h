@@ -194,6 +194,23 @@ typedef struct io_wait_handler io_wait_h;
 		} \
 	}while(0)
 
+#define unhash_fd_map2(pfm,c_flags,sock_flags,erase)	\
+	do{ \
+		if ((c_flags & IO_FD_CLOSING) || (pfm->flags&IO_WATCH_PRV_FILTER)==sock_flags) { \
+			rla_log("erase case detected with sflags=%x\n",sock_flags); \
+			(pfm)->type=0 /*F_NONE */; \
+			(pfm)->fd=-1; \
+			(pfm)->flags = 0; \
+			(pfm)->data = NULL; \
+			erase = 1; \
+		} else { \
+			rla_log("not erasing flags=%x, flags=%x\n",(pfm)->flags,sock_flags); \
+			(pfm)->flags &= ~sock_flags; \
+			erase = 0; \
+		} \
+	}while(0)
+
+
 /*! \brief add a fd_map structure to the fd hash */
 static inline struct fd_map* hash_fd_map(	io_wait_h* h,
 						int fd,
@@ -436,6 +453,13 @@ inline static int io_watch_add(	io_wait_h* h, // lgtm [cpp/use-of-goto]
 	/*  hash sanity check */
 	e=get_fd_map(h, fd);
 
+	check_io_data();
+	if (check_error) {
+		LM_CRIT("[%s] check failed before fd add "
+			"(fd=%d,type=%d,data=%p,flags=%x) already=%d\n",h->name,
+			fd, type, data, flags, already);
+	}
+
 	if (e->flags & flags){
 		if (e->data != data) {
 			LM_BUG("[%s] BUG trying to overwrite entry %d"
@@ -632,6 +656,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 				for (idx=0; (idx<h->fd_no) && \
 							(h->fd_array[idx].fd!=fd); idx++); \
 			} \
+			rla_log("fixing: final idx=%d out of %d, erase=%d\n",idx,idx<h->fd_no,erase); \
 			if (idx<h->fd_no){ \
 				if (erase) { \
 					memmove(&h->fd_array[idx], &h->fd_array[idx+1], \
@@ -665,11 +690,24 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 	int check_error;
 	int i;
 
+	#define x_RL_NO  10
+	#define x_RL_LEN 200
+	static char rla[x_RL_NO][x_RL_LEN];
+	int rla_idx=0;
+	#define rla_log( _fmt, args...) \
+		snprintf( rla[rla_idx++], x_RL_LEN, _fmt, ## args)
+	#define rla_dump() \
+		for(int w=0;w<rla_idx;w++) \
+			LM_CRIT("[%d]-> [%s]",w,rla[w])
+
 	if ((fd<0) || (fd>=h->max_fd_no)){
 		LM_CRIT("[%s] invalid fd %d, not in [0, %d)\n", h->name, fd, h->fd_no);
 		goto error0;
 	}
 	LM_DBG("[%s] io_watch_del op on index %d %d (%p, %d, %d, 0x%x,0x%x) "
+		"fd_no=%d called\n", h->name,idx,fd, h, fd, idx, flags,
+		sock_flags,h->fd_no);
+	rla_log("[%s] io_watch_del op on index %d %d (%p, %d, %d, 0x%x,0x%x) "
 		"fd_no=%d called\n", h->name,idx,fd, h, fd, idx, flags,
 		sock_flags,h->fd_no);
 	//fd_array_print;
@@ -701,7 +739,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 		goto error0;
 	}
 
-	unhash_fd_map(e,flags,sock_flags,erase);
+	unhash_fd_map2(e,flags,sock_flags,erase);
 
 	switch(h->poll_method){
 		case POLL_POLL:
@@ -807,6 +845,7 @@ again_devpoll:
 				h->name,poll_method_str[h->poll_method], h->poll_method);
 			goto error;
 	}
+	rla_log("fixing fd array, idx=%d\n",idx); \
 
 	fix_fd_array;
 	//fd_array_print;
@@ -819,6 +858,7 @@ again_devpoll:
 			fd, flags, sock_flags,
 			e->fd, e->type, e->data, e->flags,
 			erase);
+		rla_dump();
 	}
 
 	return 0;
@@ -837,6 +877,7 @@ error:
 			fd, flags, sock_flags,
 			e->fd, e->type, e->data, e->flags,
 			erase);
+		rla_dump();
 	}
 error0:
 
