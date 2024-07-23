@@ -725,12 +725,20 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 		goto error0;
 	}
 
-	if (idx>=0 && h->fd_array[idx].fd!=fd) {
-		LM_CRIT("[%s] FD consistency check failed, idx=%d points to fd=%d,"
-			" but operating on %d\n",h->name, idx, h->fd_array[idx].fd, fd );
-		_log_backtrace(L_CRIT);
-		rla_dump();
-		idx = -1;
+	if (idx != -1) {
+		if (!(idx>=0 && idx<h->fd_no)) {
+			LM_CRIT("[%s] FD index check failed, idx=%d, max=%d"
+				" operating on %d\n",h->name, idx, h->fd_no, fd );
+			log_backtrace();
+			rla_dump();
+			idx = -1;
+		} else if (h->fd_array[idx].fd!=fd) {
+			LM_CRIT("[%s] FD consistency check failed, idx=%d points to fd=%d,"
+				" but operating on %d\n",h->name, idx, h->fd_array[idx].fd, fd );
+			log_backtrace();
+			rla_dump();
+			idx = -1;
+		}
 	}
 
 	if ((e->flags & sock_flags) == 0) {
