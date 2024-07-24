@@ -130,6 +130,7 @@ AUTH_PKGNAME = opensips-auth-modules
 AUTH_MODULES = auth auth_aka uac_auth
 AUTH_MOD_PATH=$(addprefix modules/, $(AUTH_MODULES))
 BERKELEY_PKGNAME = opensips-berkeley-module
+BERKELEY_DBSCHEMA_PKGNAME = opensips-berkeley-dbschema
 BERKELEY_MODULES = db_berkeley
 BERKELEY_MOD_PATH=$(addprefix modules/, $(BERKELEY_MODULES))
 CARRIERROUTE_PKGNAME = opensips-carrierroute-module
@@ -190,12 +191,14 @@ MSRP_PKGNAME = opensips-msrp-modules
 MSRP_MODULES = msrp_gateway msrp_relay msrp_ua proto_msrp
 MSRP_MOD_PATH=$(addprefix modules/, $(MSRP_MODULES))
 MYSQL_PKGNAME = opensips-mysql-module
+MYSQL_DBSCHEMA_PKGNAME = opensips-mysql-dbschema
 MYSQL_MODULES = db_mysql
 MYSQL_MOD_PATH=$(addprefix modules/, $(MYSQL_MODULES))
 PERL_PKGNAME = opensips-perl-modules
 PERL_MODULES = perl db_perlvdb
 PERL_MOD_PATH=$(addprefix modules/, $(PERL_MODULES))
 POSTGRES_PKGNAME = opensips-postgres-module
+POSTGRES_DBSCHEMA_PKGNAME = opensips-postgres-dbschema
 POSTGRES_MODULES = db_postgres
 POSTGRES_MOD_PATH=$(addprefix modules/, $(POSTGRES_MODULES))
 PRESENCE_PKGNAME = opensips-presence-modules
@@ -238,6 +241,7 @@ SNMPSTATS_PKGNAME = opensips-snmpstats-module
 SNMPSTATS_MODULES = snmpstats
 SNMPSTATS_MOD_PATH=$(addprefix modules/, $(SNMPSTATS_MODULES))
 SQLITE_PKGNAME = opensips-sqlite-module
+SQLITE_DBSCHEMA_PKGNAME = opensips-sqlite-dbschema
 SQLITE_MODULES = db_sqlite
 SQLITE_MOD_PATH=$(addprefix modules/, $(SQLITE_MODULES))
 STIR_SHAKEN_PKGNAME = opensips-stir-shaken-module
@@ -274,7 +278,7 @@ IPSEC_MOD_PATH=$(addprefix modules/, $(IPSEC_MODULES))
 
 # Need this per-package variables available in environment so accessible
 # to shell. Since have underscore in them, need to explicitly export
-export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH)
+export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH $(pkg)_DBSCHEMA_PKGNAME)
 
 ALL_MODULES = $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_MODULES))
 BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
@@ -393,15 +397,27 @@ override_dh_auto_install:
 	    eval pkg_pkgname=\$$$${pkg}_PKGNAME;\
 	    eval pkg_modules=\$$$${pkg}_MODULES;\
 	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
+	    eval pkg_dbschema_pkgname=\$$$${pkg}_DBSCHEMA_PKGNAME;\
 	    echo "rules: Installing $${pkg} as $${pkg_pkgname} from $${pkg_modules} ...";\
-	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-all \
-		modules="$${pkg_paths}"  \
-		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
-		prefix=$(BIN_PREFIX) \
-		cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname}/$(INSTALL_PREFIX) \
-		cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
-		doc_dir=share/doc/$${pkg_pkgname} \
-		;\
+	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-files \
+	        modules="$${pkg_paths}"  \
+	        basedir=$(CURDIR)/debian/$${pkg_pkgname} \
+	        prefix=$(BIN_PREFIX) \
+	        cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname}/$(INSTALL_PREFIX) \
+	        cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
+	        doc_dir=share/doc/$${pkg_pkgname} \
+	        ;\
+	    if [ -n "$${pkg_dbschema_pkgname}" ]; then \
+	        echo "rules: Installing $${pkg} schema as $${pkg_dbschema_pkgname} from $${pkg_modules} ...";\
+	        CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-dbschema \
+	            modules="$${pkg_paths}"  \
+	            basedir=$(CURDIR)/debian/$${pkg_dbschema_pkgname} \
+	            prefix=$(BIN_PREFIX) \
+	            cfg_prefix=$(CURDIR)/debian/$${pkg_dbschema_pkgname}/$(INSTALL_PREFIX) \
+	            cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
+	            doc_dir=share/doc/$${pkg_dbschema_pkgname} \
+	            ;\
+	    fi \
 	done
 
 ifneq ($(filter BERKELEY,$(BUILD_MODPKG_LIST)),)

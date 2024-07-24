@@ -167,6 +167,7 @@ Multi-Arch: foreign
 Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: opensips-berkeley-module, opensips-berkeley-schema
 Description: Berkeley Database module for OpenSIPS - helper program
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -183,6 +184,7 @@ Depends: db-util (>= 4.6.19),
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: opensips-berkeley-bin, opensips-berkeley-schema
 Description: Berkeley Database module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -191,6 +193,19 @@ Description: Berkeley Database module for OpenSIPS
  This package provides the berkeley database module for OpenSIPS, a
  high-performance embedded DB kernel. All database tables are stored
  in files, no additional server is necessary.
+
+Package: opensips-berkeley-dbschema
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-berkeley-bin, opensips-berkeley-module
+Description: Berkeley database schema for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the Berkeley database schema files for OpenSIPS.
 
 Package: opensips-carrierroute-module
 Architecture: any
@@ -466,12 +481,26 @@ Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: opensips-mysql-dbschema
 Description: MySQL database connectivity module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
  This package provides the MySQL database driver for OpenSIPS.
+
+Package: opensips-mysql-dbschema
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-mysql-module
+Description: MySQL database schema for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the MySQL database schema files for OpenSIPS.
 
 Package: opensips-perl-modules
 Architecture: any
@@ -492,12 +521,26 @@ Depends: opensips (= ${binary:Version}),
          postgresql-client,
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: opensips-postgres-dbschema
 Description: PostgreSQL database connectivity module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
  This package provides the PostgreSQL database driver for OpenSIPS.
+
+Package: opensips-postgres-dbschema
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-postgres-module
+Description: PostgreSQL database schema for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the PostgreSQL database schema files for OpenSIPS.
 
 Package: opensips-presence-modules
 Architecture: any
@@ -644,12 +687,26 @@ Package: opensips-sqlite-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Suggests: opensips-sqlite-dbschema
 Description: SQLite database connectivity module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
  This package provides the SQLite database driver for OpenSIPS.
+
+Package: opensips-sqlite-dbschema
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-sqlite-module
+Description: SQLite database schema for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the SQLite database schema files for OpenSIPS.
 
 Package: opensips-stir-shaken-module
 Architecture: any
