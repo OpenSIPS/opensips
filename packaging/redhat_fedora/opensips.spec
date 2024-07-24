@@ -1105,6 +1105,7 @@ fi
 %{_libdir}/opensips/modules/event_stream.so
 %{_libdir}/opensips/modules/event_virtual.so
 %{_libdir}/opensips/modules/event_xmlrpc.so
+%{_libdir}/opensips/modules/example.so
 %{_libdir}/opensips/modules/exec.so
 %{_libdir}/opensips/modules/fraud_detection.so
 %{_libdir}/opensips/modules/freeswitch.so
@@ -1204,6 +1205,7 @@ fi
 %doc docdir/README.event_stream
 %doc docdir/README.event_virtual
 %doc docdir/README.event_xmlrpc
+%doc docdir/README.example
 %doc docdir/README.exec
 %doc docdir/README.fraud_detection
 %doc docdir/README.freeswitch
