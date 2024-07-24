@@ -91,14 +91,14 @@ bool put_item_dynamodb(dynamodb_config *config, const char *tableName, const cha
 				const char *partitionValue, const char *founder, int employeeCount, int yearFounded,
 				int qualityRanking);
 int insert_item_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue,
-				const char *attributeName, const char* attributeValue);
+				const char *attributeName, const char* attributeValue, int ttl);
 bool delete_item_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue);
 char *query_item_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey,
 				const char *partitionValue, const char *attributeKey);
 void dealloc_query_result_dynamodb(query_result_t *result);
-int update_item_inc_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue);
+int update_item_inc_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue, int ttl);
 query_result_t *query_items_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue);
-int update_item_sub_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue);
+int update_item_sub_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue, int ttl);
 query_result_t *scan_table_dynamodb(dynamodb_config *config, const char *tableName, const char *key);
 #ifdef __cplusplus
 }

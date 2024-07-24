@@ -108,13 +108,13 @@ bool create_table_dynamodb(dynamodb_config *config, const char *tableName, const
 	return outcome.IsSuccess();
 }
 
-
 int insert_item_dynamodb(dynamodb_config *config,
 				const char *tableName,
 				const char *partitionKey,
 				const char *partitionValue,
 				const char *attributeName,
-				const char *attributeValue) {
+				const char *attributeValue,
+				int ttl) {
 	Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
 	Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
 
@@ -126,23 +126,32 @@ int insert_item_dynamodb(dynamodb_config *config,
 	request.AddKey(partitionKey, partitionKeyValue);
 
 	Aws::String updateExpression = "SET #attrName = :attrValue";
-	request.SetUpdateExpression(updateExpression);
-
 	Aws::Map<Aws::String, Aws::String> expressionAttributeNames;
 	expressionAttributeNames["#attrName"] = attributeName;
-	request.SetExpressionAttributeNames(expressionAttributeNames);
 
 	Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> expressionAttributeValues;
 	Aws::DynamoDB::Model::AttributeValue attributeValueObj;
 	attributeValueObj.SetS(attributeValue);
 	expressionAttributeValues[":attrValue"] = attributeValueObj;
+
+	if (ttl > 0) {
+		updateExpression += ", #ttl = :ttlValue";
+		expressionAttributeNames["#ttl"] = "ttl";
+		Aws::DynamoDB::Model::AttributeValue ttlValueObj;
+		ttlValueObj.SetN(std::to_string(time(NULL) + ttl));
+		expressionAttributeValues[":ttlValue"] = ttlValueObj;
+	}
+
+	request.SetUpdateExpression(updateExpression);
+	request.SetExpressionAttributeNames(expressionAttributeNames);
 	request.SetExpressionAttributeValues(expressionAttributeValues);
 
 	const Aws::DynamoDB::Model::UpdateItemOutcome &outcome = dynamoClient.UpdateItem(request);
-	if (outcome.IsSuccess())
-		return 0;
-
-	return -1;
+	if (!outcome.IsSuccess()) {
+		std::cerr << "Failed to update item: " << outcome.GetError().GetMessage() << std::endl;
+		return -1;
+	}
+	return 0;
 }
 
 bool delete_item_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue) {
@@ -408,7 +417,7 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config, const char *tableNa
 	return result;
 }
 
-int update_item_inc_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue) {
+int update_item_inc_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int incrementValue, int ttl) {
 	Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
 	Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
 
@@ -449,16 +458,23 @@ int update_item_inc_dynamodb(dynamodb_config *config, const char *tableName, con
 	updateRequest.AddKey(partitionKey, Aws::DynamoDB::Model::AttributeValue(partitionValue));
 
 	Aws::String update_expression = "SET #valKey = :newval";
-	updateRequest.SetUpdateExpression(update_expression);
-
 	Aws::Map<Aws::String, Aws::String> expressionAttributeNames;
 	expressionAttributeNames["#valKey"] = valueKey;
-	updateRequest.SetExpressionAttributeNames(expressionAttributeNames);
 
 	Aws::DynamoDB::Model::AttributeValue newValueAttribute;
 	newValueAttribute.SetN(std::to_string(newValue));
 	Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> expressionAttributeValues;
 	expressionAttributeValues[":newval"] = newValueAttribute;
+
+	if (ttl > 0) {
+		update_expression += ", #ttl = :ttlValue";
+		expressionAttributeNames["#ttl"] = "ttl";
+		Aws::DynamoDB::Model::AttributeValue ttlValueObj;
+		ttlValueObj.SetN(std::to_string(time(NULL) + ttl));
+		expressionAttributeValues[":ttlValue"] = ttlValueObj;
+	}
+	updateRequest.SetUpdateExpression(update_expression);
+	updateRequest.SetExpressionAttributeNames(expressionAttributeNames);
 	updateRequest.SetExpressionAttributeValues(expressionAttributeValues);
 
 	const Aws::DynamoDB::Model::UpdateItemOutcome &updateOutcome = dynamoClient.UpdateItem(updateRequest);
@@ -470,7 +486,7 @@ int update_item_inc_dynamodb(dynamodb_config *config, const char *tableName, con
 	return newValue;
 }
 
-int update_item_sub_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int decrementValue) {
+int update_item_sub_dynamodb(dynamodb_config *config, const char *tableName, const char *partitionKey, const char *partitionValue, const char *valueKey, int decrementValue, int ttl) {
 	Aws::Client::ClientConfiguration *clientConfig = static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
 	Aws::DynamoDB::DynamoDBClient dynamoClient(*clientConfig);
 
@@ -511,16 +527,24 @@ int update_item_sub_dynamodb(dynamodb_config *config, const char *tableName, con
 	updateRequest.AddKey(partitionKey, Aws::DynamoDB::Model::AttributeValue(partitionValue));
 
 	Aws::String update_expression = "SET #valKey = :newval";
-	updateRequest.SetUpdateExpression(update_expression);
-
 	Aws::Map<Aws::String, Aws::String> expressionAttributeNames;
 	expressionAttributeNames["#valKey"] = valueKey;
-	updateRequest.SetExpressionAttributeNames(expressionAttributeNames);
 
 	Aws::DynamoDB::Model::AttributeValue newValueAttribute;
 	newValueAttribute.SetN(std::to_string(newValue));
 	Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> expressionAttributeValues;
 	expressionAttributeValues[":newval"] = newValueAttribute;
+
+	if (ttl > 0) {
+		update_expression += ", #ttl = :ttlValue";
+		expressionAttributeNames["#ttl"] = "ttl";
+		Aws::DynamoDB::Model::AttributeValue ttlValueObj;
+		ttlValueObj.SetN(std::to_string(time(NULL) + ttl));
+		expressionAttributeValues[":ttlValue"] = ttlValueObj;
+	}
+
+	updateRequest.SetUpdateExpression(update_expression);
+	updateRequest.SetExpressionAttributeNames(expressionAttributeNames);
 	updateRequest.SetExpressionAttributeValues(expressionAttributeValues);
 
 	const Aws::DynamoDB::Model::UpdateItemOutcome &updateOutcome = dynamoClient.UpdateItem(updateRequest);
@@ -531,6 +555,5 @@ int update_item_sub_dynamodb(dynamodb_config *config, const char *tableName, con
 
 	return newValue;
 }
-
 
 }

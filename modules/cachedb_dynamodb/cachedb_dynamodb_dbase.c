@@ -144,7 +144,7 @@ int dynamodb_set(cachedb_con *connection, str *attr, str *val, int expires) {
 	attr_string = from_str_to_string(attr);
 	val_string = from_str_to_string(val);
 
-	insert_item_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val_string);
+	insert_item_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val_string, expires);
 
 	pkg_free(attr_string);
 	pkg_free(val_string);
@@ -175,7 +175,7 @@ int dynamodb_add(cachedb_con *connection, str *attr, int val, int expires, int *
 
 	attr_string = from_str_to_string(attr);
 
-	new_value = update_item_inc_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val);
+	new_value = update_item_inc_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val, expires);
 
 	pkg_free(attr_string);
 
@@ -198,7 +198,7 @@ int dynamodb_sub(cachedb_con *connection, str *attr, int val, int expires, int *
 
 	attr_string = from_str_to_string(attr);
 
-	new_value = update_item_sub_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val);
+	new_value = update_item_sub_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val, expires);
 
 	pkg_free(attr_string);
 
@@ -299,7 +299,7 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 			return -1;
 		}
 		attribute_name = from_str_to_string(&pair->key.name);
-		insert_item_dynamodb(&con->config, con->tableName, con->key, key_string, attribute_name, attribute_value);
+		insert_item_dynamodb(&con->config, con->tableName, con->key, key_string, attribute_name, attribute_value, 0);
 		pkg_free(attribute_name);
 		pkg_free(attribute_value);
 	}
