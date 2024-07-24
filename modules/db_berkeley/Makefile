@@ -39,6 +39,9 @@ $(UTILS_DIR)/db_berkeley/bdb_recover:
 	make -C $(UTILS_DIR)/db_berkeley/
 
 install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_berkeley/bdb_recover
+	$(INSTALL_BIN) $(UTILS_DIR)/db_berkeley/bdb_recover $(bin_prefix)/$(bin_dir) ; \
+
+install_module_schema:
 	mkdir -p $(data_prefix)/$(data_dir)/db_berkeley/opensips ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/db_berkeley/opensips/*) ; do \
 		if [ -f $$FILE ] ; then \
@@ -48,4 +51,3 @@ install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_berkeley/bdb_rec
 			$(data_prefix)/$(data_dir)/db_berkeley/opensips/`basename "$$FILE"` ; \
 		fi ;\
 	done ; \
-	$(INSTALL_BIN) $(UTILS_DIR)/db_berkeley/bdb_recover $(bin_prefix)/$(bin_dir) ; \

@@ -112,6 +112,7 @@ endif
 
 modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_basenames=$(patsubst modules/%, %, $(modules))
+db_modules_basenames=$(filter db_%, $(modules_basenames))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf $(deps_gen)
@@ -477,7 +478,8 @@ install-app: mk-install-dirs install-cfg install-bin \
 	install-app-doc install-man
 
 # Install all module stuff (except modules-docbook?)
-install-modules-all: install-modules install-modules-doc
+install-modules-files: install-modules install-modules-doc
+install-modules-all: install-modules-files install-modules-schema
 
 # Install everything (except modules-docbook?)
 install: install-app install-modules-all
@@ -546,6 +548,15 @@ install-modules: modules $(modules_prefix)/$(modules_dir)
 				$(MAKE) -C `dirname "$$r"` install_module_custom ; \
 			else \
 				echo "ERROR: module $$r not compiled" ; \
+			fi ;\
+		fi ; \
+	done
+
+install-modules-schema: $(modules_prefix)/$(modules_dir)
+	@for r in $(db_modules_basenames) "" ; do \
+		if [ -n "$$r" ]; then \
+			if [ -f modules/"$$r"/Makefile ]; then \
+				$(MAKE) -C modules/"$$r" install_module_schema ; \
 			fi ;\
 		fi ; \
 	done

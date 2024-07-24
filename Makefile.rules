@@ -185,7 +185,7 @@ mantainer-clean:
 	@false
 
 
-.PHONY: install_module_custom
+.PHONY: install_module_custom install_module_schema
 
 
 .PHONY: TAGS

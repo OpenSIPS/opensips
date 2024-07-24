@@ -35,7 +35,7 @@ endif
 
 include ../../Makefile.modules
 
-install_module_custom: 
+install_module_schema:
 	mkdir -p $(data_prefix)/$(data_dir)/postgres ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/postgres/*) ; do \
 		if [ -f $$FILE ] ; then \
