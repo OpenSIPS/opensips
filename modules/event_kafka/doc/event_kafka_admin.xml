@@ -228,6 +228,7 @@ modparam("event_kafka", "broker_id", "[k1]127.0.0.1:9092/topic1?g.linger.ms=100&
 		</section>
 	</section>
 
+	<section>
 	<title>Examples</title>
 		<example>
 		<title>Kafka socket</title>
