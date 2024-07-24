@@ -697,8 +697,11 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 	#define rla_log( _fmt, args...) \
 		snprintf( rla[rla_idx++], x_RL_LEN, _fmt, ## args)
 	#define rla_dump() \
-		for(int w=0;w<rla_idx;w++) \
-			LM_CRIT("[%d]-> [%s]",w,rla[w])
+		do { \
+			int w; \
+			for(w=0;w<rla_idx;w++) \
+				LM_CRIT("[%d]-> [%s]",w,rla[w]); \
+		} while(0)
 
 	if ((fd<0) || (fd>=h->max_fd_no)){
 		LM_CRIT("[%s] invalid fd %d, not in [0, %d)\n", h->name, fd, h->fd_no);
