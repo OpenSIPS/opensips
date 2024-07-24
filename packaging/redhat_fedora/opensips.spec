@@ -200,6 +200,17 @@ This package provides the berkeley database module for OpenSIPS, a
 high-performance embedded DB kernel. All database tables are stored
 in files, no additional server is necessary
 
+%package  berkeley-dbschema
+Summary:  Berkeley database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description  berkeley-dbschema
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the Berkeley database schema files for OpenSIPS.
+
 %package  carrierroute-module
 Summary:  Carrierroute module for OpenSIPS
 Group:    System Environment/Daemons
@@ -530,6 +541,17 @@ per second even on low-budget hardware.
 .
 This package provides the MySQL database driver for OpenSIPS.
 
+%package  mysql-dbschema
+Summary:  MySQL database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description  mysql-dbschema
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the MySQL database schema files for OpenSIPS.
+
 %if 0%{?_with_db_oracle:1}
 %package  oracle-module
 Summary:  Oracle Storage Support for the OpenSIPS
@@ -591,6 +613,17 @@ server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
 This package provides the PostgreSQL database driver for OpenSIPS.
+
+%package  postgres-dbschema
+Summary:  PostgreSQL database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description  postgres-dbschema
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the PostgreSQL database schema files for OpenSIPS.
 
 %package  presence-modules
 Summary:  SIMPLE presence modules for OpenSIPS
@@ -778,6 +811,17 @@ server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
 This package provides the SQLite database driver for OpenSIPS.
+
+%package  sqlite-dbschema
+Summary:  SQLite database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description  sqlite-dbschema
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the SQLite database schema files for OpenSIPS.
 
 %package  stir-shaken-module
 Summary:  STIR/SHAKEN support for OpenSIPS
@@ -1287,10 +1331,12 @@ fi
 
 %files berkeley-module
 %{_libdir}/opensips/modules/db_berkeley.so
+%doc docdir/README.db_berkeley
+
+%files berkeley-dbschema
 %dir %{_datadir}/opensips/db_berkeley
 %dir %{_datadir}/opensips/db_berkeley/opensips
 %{_datadir}/opensips/db_berkeley/opensips/*
-%doc docdir/README.db_berkeley
 
 %files carrierroute-module
 %{_libdir}/opensips/modules/carrierroute.so
@@ -1407,9 +1453,11 @@ fi
 
 %files mysql-module
 %{_libdir}/opensips/modules/db_mysql.so
+%doc docdir/README.db_mysql
+
+%files mysql-dbschema
 %dir %{_datadir}/opensips/mysql
 %{_datadir}/opensips/mysql/*.sql
-%doc docdir/README.db_mysql
 
 %if 0%{?_with_db_oracle:1}
 %files oracle-module
@@ -1461,9 +1509,11 @@ fi
 
 %files postgres-module
 %{_libdir}/opensips/modules/db_postgres.so
+%doc docdir/README.db_postgres
+
+%files postgres-dbschema
 %dir %{_datadir}/opensips/postgres
 %{_datadir}/opensips/postgres/*.sql
-%doc docdir/README.db_postgres
 
 %files presence-modules
 %{_libdir}/opensips/modules/presence.so
@@ -1571,6 +1621,8 @@ fi
 %files sqlite-module
 %{_libdir}/opensips/modules/db_sqlite.so
 %doc docdir/README.db_sqlite
+
+%files sqlite-dbschema
 %dir %{_datadir}/opensips/sqlite
 %{_datadir}/opensips/sqlite/*.sql
 
