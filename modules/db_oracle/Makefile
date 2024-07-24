@@ -84,7 +84,7 @@ $(UTILS_DIR)/db_oracle/opensips_orasel:
 install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_oracle/opensips_orasel
 	$(INSTALL_BIN) $(UTILS_DIR)/db_oracle/opensips_orasel $(bin_prefix)/$(bin_dir) ; \
 
-instsall_module_schema:
+install_module_schema:
 	mkdir -p $(data_prefix)/$(data_dir)/oracle ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/oracle/*) ; do \
 		if [ -f $$FILE ] ; then \
