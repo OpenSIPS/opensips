@@ -41,7 +41,7 @@ $(UTILS_DIR)/db_berkeley/bdb_recover:
 install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_berkeley/bdb_recover
 	$(INSTALL_BIN) $(UTILS_DIR)/db_berkeley/bdb_recover $(bin_prefix)/$(bin_dir) ; \
 
-install_module_schema:
+install_module_dbschema:
 	mkdir -p $(data_prefix)/$(data_dir)/db_berkeley/opensips ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/db_berkeley/opensips/*) ; do \
 		if [ -f $$FILE ] ; then \

@@ -479,7 +479,7 @@ install-app: mk-install-dirs install-cfg install-bin \
 
 # Install all module stuff (except modules-docbook?)
 install-modules-files: install-modules install-modules-doc
-install-modules-all: install-modules-files install-modules-schema
+install-modules-all: install-modules-files install-modules-dbschema
 
 # Install everything (except modules-docbook?)
 install: install-app install-modules-all
@@ -552,11 +552,11 @@ install-modules: modules $(modules_prefix)/$(modules_dir)
 		fi ; \
 	done
 
-install-modules-schema: $(modules_prefix)/$(modules_dir)
+install-modules-dbschema:
 	@for r in $(db_modules_basenames) "" ; do \
 		if [ -n "$$r" ]; then \
 			if [ -f modules/"$$r"/Makefile ]; then \
-				$(MAKE) -C modules/"$$r" install_module_schema ; \
+				$(MAKE) -C modules/"$$r" install_module_dbschema ; \
 			fi ;\
 		fi ; \
 	done

@@ -10,7 +10,7 @@ LIBS+=-lsqlite3
 
 include ../../Makefile.modules
 
-install_module_schema:
+install_module_dbschema:
 	mkdir -p $(data_prefix)/$(data_dir)/sqlite ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/sqlite/*) ; do \
 		if [ -f $$FILE ] ; then \

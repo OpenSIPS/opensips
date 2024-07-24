@@ -41,7 +41,7 @@ endif
 
 include ../../Makefile.modules
 
-install_module_schema:
+install_module_dbschema:
 	mkdir -p $(data_prefix)/$(data_dir)/mysql ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/mysql/*) ; do \
 		if [ -f $$FILE ] ; then \
