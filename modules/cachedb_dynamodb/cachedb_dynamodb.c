@@ -25,6 +25,11 @@
 #include "cachedb_dynamodb_dbase.h"
 #include "../../lib/csv.h"
 
+#define DYNAMODB_KEY_COL_S    "opensipskey"
+#define DYNAMODB_KEY_COL_LEN  11
+#define DYNAMODB_VAL_COL_S    "opensipsval"
+#define DYNAMODB_VAL_COL_LEN  11
+
 typedef struct url_lst {
 	str url;
 	struct url_lst* next;
@@ -100,6 +105,17 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 
 		free_csv_record(kv);
 
+	}
+
+	/* default key & value */
+	if (!con->key) {
+		con->key = pkg_malloc(DYNAMODB_KEY_COL_LEN * sizeof(char));
+		strncpy(con->key, DYNAMODB_KEY_COL_S, DYNAMODB_KEY_COL_LEN);
+	}
+
+	if (!con->value) {
+		con->value = pkg_malloc(DYNAMODB_VAL_COL_LEN * sizeof(char));
+		strncpy(con->value, DYNAMODB_VAL_COL_S, DYNAMODB_VAL_COL_LEN);
 	}
 
 	free_csv_record(cols);
