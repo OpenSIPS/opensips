@@ -29,7 +29,8 @@
 
 #include <string.h>
 
-
+#define DYNAMODB_KEY_COL_S    "opensipskey"
+#define DYNAMODB_VAL_COL_S    "opensipsval"
 
 #ifdef __cplusplus
 extern "C" {

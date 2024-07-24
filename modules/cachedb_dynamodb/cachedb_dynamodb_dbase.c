@@ -32,7 +32,7 @@ void dynamodb_destroy(cachedb_con *connection) {
 		pkg_free(con->host);
 	}
 
-	if(con->key) {
+	if (con->key && con->key != (char *)DYNAMODB_KEY_COL_S) {
 		pkg_free(con->key);
 	}
 
@@ -44,7 +44,7 @@ void dynamodb_destroy(cachedb_con *connection) {
 		pkg_free(con->tableName);
 	}
 
-	if(con->value) {
+	if (con->value && con->value != (char *)DYNAMODB_VAL_COL_S) {
 		pkg_free(con->value);
 	}
 
