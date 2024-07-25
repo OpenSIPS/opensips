@@ -19,6 +19,7 @@
  *
  */
 
+#define _ISOC11_SOURCE /* fix static_assert on older OSes */
 #include <assert.h>
 
 #include "ipsec.h"
