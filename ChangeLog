@@ -1,3 +1,345 @@
+=========================== Release 3.5.0 ==============================
+
+2024-07-25  Razvan Crainea  <razvan@opensips.org>
+        * [f4dc14693a] :
+
+        Makefile: always link against pthread
+
+        (cherry picked from commit 7bb3b8aad7392fd3a757566a42681d72bad517a5)
+
+
+2024-07-25  Razvan Crainea  <razvan@opensips.org>
+        * [488a21a104] :
+
+        redhat: order changelog chronologically
+
+
+2024-07-25  Nick Altmann  <nick@altmann.pro>
+        * [d9ec61e8d4] :
+
+        RPM Packaging: new modules support
+
+        (cherry picked from commit 5d0ae4be4c68e35f4451bec55e72b1b37d81fd07)
+
+
+2024-07-25  Razvan Crainea  <razvan@opensips.org>
+        * [3763aef963] :
+
+        auth_aka: replace C11 timespec_get with clock_gettime
+
+        (cherry picked from commit f16b47814480d5e25e4e8a7dc2c7d7b4478f16ec)
+
+
+2024-07-25  Razvan Crainea  <razvan@opensips.org>
+        * [39ca298f5a] :
+
+        proto_ipsec: fix static_assert on older OSes
+
+        (cherry picked from commit 07896e13f9fde5a0dbaf0c8fd5ec8f45dabde118)
+
+
+2024-07-24  Razvan Crainea  <razvan@opensips.org>
+        * [3b773aee98] :
+
+        io_wait: fix declaration according to c89 standard
+
+        This fixes compile on older compilers i.e. Redhat 7
+
+        (cherry picked from commit 07a0c059bda1465cd6d2834862723765338c1638)
+
+
+2024-07-24  Razvan Crainea  <razvan@opensips.org>
+        * [b1dcbe89c6] :
+
+        event_kafka: fix xml admin doc file
+
+        (cherry picked from commit ea1f23eb3d7e1bf6ce639e2c9d3d112db272a9d1)
+
+
+2024-07-23  Liviu Chircu  <liviu@opensips.org>
+        * [c3c151e8df] :
+
+        [I/O reactor] Small improvements to c15bd04aa4
+
+        * add @idx check against upper bounds of h->fd_array (avoid overflow)
+        * recover @idx even when it's out-of-bounds (e.g. idx == -10)
+        * simplify backtrace call
+
+        (cherry picked from commit 46e2085b60bbd2784511cb31ec6a0a213e8cb081)
+
+
+2024-07-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [4f548390c9] :
+
+        [IO reactor] added an enhanced logging when detecting a reactor data corruption
+
+        Use a basic/simple array to store logs to be eventually dump later if a corruption of the reactor data is detected after an io_wait_del() operation.
+        This is debugging only, with the intention of helping the troubleshooting some ongoing investigations.
+
+        (cherry picked from commit a28e500a0bffa9fcdf1a6223d94bbfe465135228)
+
+
+2024-07-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [6500022ed8] :
+
+        [I/O reactor] do sanity check on the provided fd index
+
+        On del operation, if an index (in the fd_array) is provided, check its consistency, to avoid corrupting the reactor's data.
+        Upon corruption, do a backtrace and force recovery by resetting the index to -1
+
+        IMPORTANT: this is not a fix, but a detection and recovery, hoping to help identifing bad ops over the reactor's fds.
+        (cherry picked from commit c15bd04aa47843147427fd56f427152addda8e93)
+
+
+2024-07-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [324c47d83b] :
+
+        Fixed test over the IO flags when removing a fd from reactor
+
+        ignore the internal flags during the test
+
+        (cherry picked from commit 5e11c80de870f22bca3aae85e88ef8b8b57c0f93)
+
+
+2024-07-22  Liviu Chircu  <liviu@opensips.org>
+        * [91f41107b7] :
+
+        presence: Fix subtle race condition in update_db_subs()
+
+        While walking the list and collecting expired subscriptions, it is
+        incorrect to temporarily release, then re-acquire the lock and still
+        make use of the @s or @prev_s pointers afterwards, as the list may have
+        changed in the meantime!
+
+        The fix is to detach and collect any expired subs, then walk & handle
+        them in a separate iteration.
+
+        (cherry picked from commit b8e0250bc957bb408f23317012716524129f1fa9)
+
+
+2024-07-22  Liviu Chircu  <liviu@opensips.org>
+        * [f5f927bbf5] :
+
+        TCP debugging: Fine-tune TCP conn history settings
+
+        * reduce logline buffer from 100 -> 80
+        * only keep the last 300 events per connection (down from 2000)
+        * avoid auto-logging (flushing) of all TCP conn histories to syslog
+
+        These changes should reduce the default TCP conn debugging footprint
+        from ~2GB to ~0.3GB of shared memory, as well as clean up the logs.
+
+        (cherry picked from commit e496cfc28aa6e88259dd17054912f88859087534)
+
+
+2024-07-22  Liviu Chircu  <liviu@opensips.org>
+        * [8f8dc5da73] :
+
+        TCP: Fix race condition in "proto_tcp.tcp_parallel_handling"
+
+        During F_TCPCONN handling by a TCP worker, the @con pointer must *not*
+        be de-referenced if the READ was successful and connection already
+        returned to TCP Main.  This patch adds a new retcode to the tcp.read API
+        function in order to achieve this.
+
+        Credits to Yury Kirsanov and Bogdan Iancu for helping troubleshoot
+        this issue!
+
+        (cherry picked from commit 6108ee296fe372cb59719acde9499d0cbe8fbdc8)
+
+
+2024-07-22  Razvan Crainea  <razvan@opensips.org>
+        * [b393519196] :
+
+        sql_cacher: remove test key from cache
+
+        Since this key is stored in a non-base64 format, when the hash is being
+        iterated, this value breaks the convesion - and when trying to
+        `base64_decode("cdb_test_val")`, this results in a larger value than the
+        expected integer, resulting in a stack crash.
+
+        Removing the key from the hash fixes this crash, as all keys remain are
+        properly base64 encoded. Moreover, if the key is not properly encoded,
+        we should make sure that its decode does not overwrite the stack frame.
+
+        (cherry picked from commit dc38cf3a19819bc010489e0f88a663a4f35f9aca)
+
+
+2024-07-19  Razvan Crainea  <razvan@opensips.org>
+        * [1169b7700b] :
+
+        b2b_sdp_demux: reset successful legs for in-dialog
+
+        The number of successful legs should be reset after completing the
+        initial setup, so that if sequential legs are being rejected, we should
+        not assume they are successful.
+
+        Many thanks to Eric Tamme (@etamme) for reporting the issue and
+        for providing testing scenarios.
+
+        (cherry picked from commit fd37fa5ea54f67093dd014297ca8451bdeffccf3)
+
+
+2024-07-16  Liviu Chircu  <liviu@opensips.org>
+        * [cb6cc1e478] :
+
+        db_mysql: Add the 'tls_opts=' optional DB URL parameter
+
+        With some DBaaS, the TLS connections only require a CA setting on the
+        client side -- no need to explicitly set the "cert=" or "private_key=",
+        as they might not even be available.
+
+        (cherry picked from commit 616ddd660a3444e937a5080e18432d5a404dc5a3)
+
+
+2024-07-15  Liviu Chircu  <liviu@opensips.org>
+        * [2484af0acd] :
+
+        TCP: Add more connection debug logs from TCP workers
+
+        (cherry picked from commit 4074f8723d938070f720cc16c664e3146c92172a)
+
+
+2024-07-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f2a3af0e57] :
+
+        [tracer] remove useless line, pron to crashes
+
+        Setting the tracing info into the processing context here is useless as none of the following funcions are using /accessing this context.
+        Even more, there are cases (like tracing an UAC b2b transaction triggered by a b2b timeout) where there is not processing context set (so crashing).
+
+        (cherry picked from commit 759d08f9168052005eea88742abcb3577f745247)
+
+
+2024-07-09  Liviu Chircu  <liviu@opensips.org>
+        * [5cd89d1754] :
+
+        TCP Main: Make connection frees easier to troubleshoot
+
+        By rewriting _tcpconn_rm() as a macro, the built-in shared memory
+        debugging support (see `shm_memlog_size` core parameter) will record
+        the TCP connection free() operations more accurately (file/func/line).
+
+        (cherry picked from commit 42ebe1dbc46f7ea850c80b011b00dd76b022a512)
+
+
+2024-07-08  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [3353f3695a] :
+
+        Merge pull request #3429 from okhowang/uac-expires
+
+        uac_registrant: using Expires header if expires is absent in contact
+
+        (cherry picked from commit 3e592b60f4a4883b203fade4f1404c12d4bec2a0)
+
+
+2024-07-08  Liviu Chircu  <liviu@opensips.org>
+        * [2c66190c97] :
+
+        backtrace.h: Make code more usage-friendly
+
+        * avoid having to define -DEXTRA_DEBUG for backtrace logging
+        * now you can define -DDBG_NO_BACKTRACE in order to disable all traces
+        * default logging level changed from DBG to CRIT
+        * fix issue with log level always being INFO; fix bad include
+
+        (cherry picked from commit bbe8f809d119695577792a5438d97d51a4eb420d)
+
+
+2024-07-08  Razvan Crainea  <razvan@opensips.org>
+        * [dad2fb818d] :
+
+        siprec: fix failover crash
+
+        When a failover happens, the initial_sdp is no longer available, hence
+        the module crashes when trying to use it. This fix makes sure that the
+        initial_sdp is not released, so that sequential failover can catch and
+        use them.
+
+        Many thanks to Farzaneh Soltanzadeh (@Fr-Soltanzadeh on GitHub) for
+        reporting it in #3421 and trying to fix it in #3425.
+        Fix #3421
+        Close #3425
+
+        (cherry picked from commit a970903c113b47c152c0077689c70faa2a1816cf)
+
+
+2024-07-05  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [2400d85c26] :
+
+        [stir_shaken] updated docs...
+
+        ...to reflex the fix in a2560af0f7e0180589228267553fbe37d5885140
+
+        (cherry picked from commit 005aa2e5be85920f5cda82e8b0f89760b8d678b8)
+
+
+2024-07-05  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [8428924e57] :
+
+        [stir_shaken] fix agressive test on Identity hdr.
+
+        This will fail in a scenario like: INCITE with Identity received, remove the Identity hdr, call stir_shaken_verify again to add a new Identity hdr.
+
+        (cherry picked from commit a2560af0f7e0180589228267553fbe37d5885140)
+
+
+2024-07-04  Liviu Chircu  <liviu@opensips.org>
+        * [35e65236e8] :
+
+        fraud_detection: Fix possible SHM allocation bug w/ prefixless rules
+
+        During the check_fraud() call, in case dr_binds.match_number() finds a
+        prefixless route, the output @matched_len is un-initialized, potentially
+        leading to a bogus map.get_map() call and arbitrary-sized shm_malloc().
+
+        Many thanks to @okhowang for spotting the bug!
+
+        Closes #3413
+
+        (cherry picked from commit e8344e88fed2ac2ef9f3737e619f38361d949fc3)
+
+
+2024-07-02  Norm Brandinger  <n.brandinger@gmail.com>
+        * [40206eeefa] :
+
+        Update README
+
+        (cherry picked from commit 2f0940a6cec5e2e7378411e5856821478b52561b)
+
+
+2024-07-01  Razvan Crainea  <razvan@opensips.org>
+        * [7aa2617fba] :
+
+        siprec: proper handling recording resuming
+
+        (cherry picked from commit 79fced4aa5f28354f004e1e9ed5cfefd903b56b6)
+
+
+2024-06-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c741ad77a3] :
+
+        [rabbitmq_consumer] fix wrong IPC advertising in rabbitMQ aux process
+
+        (cherry picked from commit 50006eae756edb075ebe15b7582cd0bfdbc57492)
+        (cherry picked from commit 26e9a75d264f15df24de10f8bfb62a5beddbb02a)
+
+
+2024-06-21  Razvan Crainea  <razvan@opensips.org>
+        * [563c58f87b] :
+
+        domain: init db connection in all processes
+
+        If the db_mode says we should cache the dialog table and only reload it
+        in MI proceeses, the module would not initialize the db connection for
+        SIP workers/timers. This would prevent the mi_script from running the
+        mi() commands.
+        This fix initializes the db connection in all proceses, thus enabling
+        the reload behavior from any process.
+
+        (cherry picked from commit e0d0f6b8fbfdabb8c7fd6e0a9307fb8df0caefe5)
+
+
 =========================== Release 3.5.0-rc1 ==============================
 
 2024-06-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
