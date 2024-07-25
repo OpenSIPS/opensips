@@ -77,6 +77,10 @@ int dynamodb_get(cachedb_con *connection,str *attr,str *val) {
 	con = (dynamodb_con *)(connection->data);
 
 	attr_string = from_str_to_string(attr);
+	if (attr_string == NULL) {
+		LM_ERR("Invalid key name\n");
+		return -1;
+	}
 
 	result1 = query_item_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value);
 
@@ -112,6 +116,10 @@ int dynamodb_get_counter(cachedb_con *connection,str *attr, int *val) {
 	con = (dynamodb_con *)(connection->data);
 
 	attr_string = from_str_to_string(attr);
+	if (attr_string == NULL) {
+		LM_ERR("Invalid key name\n");
+		return -1;
+	}
 
 	result1 = query_item_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value);
 	pkg_free(attr_string);
@@ -142,6 +150,11 @@ int dynamodb_set(cachedb_con *connection, str *attr, str *val, int expires) {
 	con = (dynamodb_con *)(connection->data);
 
 	attr_string = from_str_to_string(attr);
+	if (attr_string == NULL) {
+		LM_ERR("Invalid key name\n");
+		return -1;
+	}
+
 	val_string = from_str_to_string(val);
 
 	insert_item_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val_string, expires);
@@ -158,6 +171,10 @@ int dynamodb_remove(cachedb_con *connection,str *attr) {
 	con = (dynamodb_con *)(connection->data);
 
 	attr_string = from_str_to_string(attr);
+	if (attr_string == NULL) {
+		LM_ERR("Invalid key name\n");
+		return -1;
+	}
 
 	delete_item_dynamodb(&con->config, con->tableName, con->key, attr_string);
 
@@ -174,16 +191,14 @@ int dynamodb_add(cachedb_con *connection, str *attr, int val, int expires, int *
 	con = (dynamodb_con *)(connection->data);
 
 	attr_string = from_str_to_string(attr);
+	if (attr_string == NULL) {
+		LM_ERR("Invalid key name\n");
+		return -1;
+	}
 
 	new_value = update_item_inc_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val, expires);
 
 	pkg_free(attr_string);
-
-	new_val = pkg_malloc(sizeof(int));
-	if (!new_val) {
-		LM_ERR("No more pkg mem\n");
-		return -1;
-	}
 
 	*new_val = new_value;
 
@@ -197,16 +212,14 @@ int dynamodb_sub(cachedb_con *connection, str *attr, int val, int expires, int *
 	con = (dynamodb_con *)(connection->data);
 
 	attr_string = from_str_to_string(attr);
+	if (attr_string == NULL) {
+		LM_ERR("Invalid Key name\n");
+		return -1;
+	}
 
 	new_value = update_item_sub_dynamodb(&con->config, con->tableName, con->key, attr_string, con->value, val, expires);
 
 	pkg_free(attr_string);
-
-	new_val = pkg_malloc(sizeof(int));
-	if (!new_val) {
-		LM_ERR("malloc failed\n");
-		return -1;
-	}
 
 	*new_val = new_value;
 
@@ -263,6 +276,11 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 	con = (dynamodb_con *)(connection->data);
 
 	key_string = from_str_to_string(key);
+	if (key_string == NULL) {
+		LM_ERR("Invalid key name\n");
+		return -1;
+	}
+
 	list_for_each (_, pairs) {
 
 		pair = list_entry(_, cdb_pair_t, list);
@@ -292,6 +310,10 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 
 		case CDB_STR:
 			attribute_value = from_str_to_string(&pair->val.val.st);
+			if (attribute_value == NULL && pair->val.val.st.s != NULL) {
+				LM_ERR("Invalid attribute value due to leak of mem\n");
+				return -1;
+			}
 			break;
 
 		default:
@@ -307,10 +329,15 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 	/* Handle key sets */
 	if (keyset != NULL) {
 		keyset_string = from_str_to_string(keyset);
+		if (keyset_string == NULL) {
+			LM_ERR("Invalid keyset name\n");
+			return -1;
+		}
+
 		add_key_to_set(con, keyset_string, key_string);
 		pkg_free(keyset_string);
 	}
-
+	pkg_free(key_string);
 	return 0;
 }
 
@@ -515,6 +542,10 @@ int dynamodb_map_get(cachedb_con *connection, const str *key, cdb_res_t *res) {
 	} else {
 
 		key_string = from_str_to_string(key);
+		if (key_string == NULL) {
+			LM_ERR("Invalid key name\n");
+			return -1;
+		}
 		result = query_items_dynamodb(&con->config, con->tableName, con->key, key_string);
 		pkg_free(key_string);
 
@@ -539,6 +570,10 @@ int remove_key_from_dynamodb(cachedb_con *connection, const str *key) {
 	str *key_attr;
 
 	attr = from_str_to_string(key);
+	if(attr == NULL) {
+		LM_ERR("Invalid key name\n");
+		return -1;
+	}
 
 	key_attr = pkg_malloc(sizeof(str));
 	if (!key_attr) {
@@ -559,7 +594,6 @@ int remove_key_from_dynamodb(cachedb_con *connection, const str *key) {
 
 int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keyset) {
 	dynamodb_con *con;
-	char *keyset_string, *key_string;
 	key_set_entry_t *current_set, *prev_set;
 	struct list_head *pos, *n;
 	key_entry_t *entry;
@@ -575,11 +609,8 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 
 	if (key) {
 
-		keyset_string = from_str_to_string(keyset);
-		key_string = from_str_to_string(key);
-
 		current_set = con->key_sets;
-		while (current_set != NULL && strcmp(current_set->keyset_name, keyset_string) != 0) {
+		while (current_set != NULL && memcmp(current_set->keyset_name, keyset->s, keyset->len) != 0) {
 			current_set = current_set->next;
 		}
 
@@ -587,7 +618,7 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 
 			list_for_each_safe(pos, n, &current_set->keys) {
 				entry = list_entry(pos, key_entry_t, list);
-				if (strcmp(entry->key, key_string) == 0) {
+				if (memcmp(entry->key, key->s, key->len) == 0) {
 					list_del(&entry->list);
 					break;
 				}
@@ -595,24 +626,17 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 
 			int result = remove_key_from_dynamodb(connection, key);
 
-			pkg_free(keyset_string);
-			pkg_free(key_string);
-
 			return result;
 		} else {
-			pkg_free(keyset_string);
-			pkg_free(key_string);
 			LM_ERR("Keyset not found\n");
 			return -1;
 		}
 	} else {
-		keyset_string = from_str_to_string(keyset);
 
 		current_set = con->key_sets;
-		while (current_set != NULL && strcmp(current_set->keyset_name, keyset_string) != 0) {
+		while (current_set != NULL && memcmp(current_set->keyset_name, keyset->s, keyset->len) != 0) {
 			 current_set = current_set->next;
 		}
-		pkg_free(keyset_string);
 
 		if (current_set) {
 

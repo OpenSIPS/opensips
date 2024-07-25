@@ -93,10 +93,23 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 
 		if (strncasecmp(kv->s.s, "region", kv->s.len) == 0) {
 			con->region = from_str_to_string(&(kv->next)->s);
+			if(con->region == NULL) {
+				LM_ERR("No more pkg mem for con->region\n");
+				return NULL;
+			}
+
 		} else if (strncasecmp(kv->s.s, "key", kv->s.len) == 0) {
 			con->key = from_str_to_string(&(kv->next)->s);
+			if(con->key == NULL) {
+				LM_ERR("No more pkg mem for con->key\n");
+				return NULL;
+			}
 		} else if (strncasecmp(kv->s.s, "val", kv->s.len) == 0) {
 			con->value = from_str_to_string(&(kv->next)->s);
+			if(con->value == NULL) {
+				LM_ERR("No more pkg mem for con->value\n");
+				return NULL;
+			}
 		}
 
 		free_csv_record(kv);
