@@ -58,7 +58,7 @@ static void th_down_onreply(struct cell* t, int type,struct tmcb_params *param);
 static void th_up_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params *param);
-static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags);
+static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags,str *routes);
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info);
 static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
 		int init_req, int dir);
@@ -839,10 +839,11 @@ err_free_rport:
 
 #define RECORD_ROUTE "Record-Route: "
 #define RECORD_ROUTE_LEN (sizeof(RECORD_ROUTE)-1)
-static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param,int flags)
+static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param,int flags, int do_rr)
 {
 	struct lump* lmp;
 	str rr_set;
+	str *route_s = (str *)*param->param;
 	struct sip_msg *req = param->req;
 	struct sip_msg *rpl = param->rpl;
 	char *route;
@@ -865,7 +866,7 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 	}
 
 	if ( !(rpl->REPLY_STATUS>=300 && rpl->REPLY_STATUS<400) ) {
-		if (topo_no_dlg_encode_contact(rpl,flags) < 0) {
+		if (topo_no_dlg_encode_contact(rpl,flags,route_s) < 0) {
 			LM_ERR("Failed to encode contact header \n");
 			return;
 		}
@@ -877,7 +878,7 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 	}
 
 	/* pass record route headers */
-	if(req->record_route){
+	if(do_rr && req->record_route){
 		if(print_rr_body(req->record_route, &rr_set, 0, 1, NULL) != 0 ){
 			LM_ERR("failed to print route records \n");
 			return;
@@ -910,14 +911,18 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 
 static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 {
-	_th_no_dlg_onreply(t,type,param,0);
+	_th_no_dlg_onreply(t,type,param,0,1);
 }
 
 static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params *param)
 {
-	_th_no_dlg_onreply(t,type,param,TOPOH_KEEP_USER);
+	_th_no_dlg_onreply(t,type,param,TOPOH_KEEP_USER,1);
 }
 
+static void th_no_dlg_onreply_within(struct cell* t, int type, struct tmcb_params *param)
+{
+	_th_no_dlg_onreply(t,type,param,0,0);
+}
 
 static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags)
 {
@@ -939,7 +944,7 @@ static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags
 		return -1;
 	}
 
-	if (topo_no_dlg_encode_contact(req,extra_flags) < 0) {
+	if (topo_no_dlg_encode_contact(req,extra_flags,NULL) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
@@ -1552,7 +1557,7 @@ error:
 
 /* We encode the RR headers, the actual Contact and the socket str for this leg */
 /* Via headers will be restored using the TM module, no need to save anything for them */
-static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
+static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len)
 {
 	short rr_len,ct_len,addr_len,enc_len;
 	char *suffix_plain,*suffix_enc,*p,*s;
@@ -1574,7 +1579,11 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 		return NULL;
 	}
 
-	if(msg->record_route){
+	if (routes) {
+		rr_set = *routes;
+		rr_len = (short)routes->len;
+		LM_INFO("XXX: adding [%.*s]\n", routes->len, routes->s);
+	} else if(msg->record_route){
 		if(print_rr_body(msg->record_route, &rr_set, !is_req, 0, NULL) != 0){
 			LM_ERR("failed to print route records \n");
 			return NULL;
@@ -1707,7 +1716,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 		}
 	}
 
-	if (rr_set.s)
+	if (rr_set.s && !routes)
 		pkg_free(rr_set.s);
 	pkg_free(suffix_plain);
 	*suffix_len = total_len;
@@ -1718,7 +1727,7 @@ error:
 	return NULL;
 }
 
-static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags) 
+static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes) 
 {
 	struct lump* lump;
 	char *prefix=NULL,*suffix=NULL,*ct_username=NULL;
@@ -1779,7 +1788,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags)
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (!(suffix = build_encoded_contact_suffix(msg,&suffix_len))) {
+	if (!(suffix = build_encoded_contact_suffix(msg,routes,&suffix_len))) {
 		LM_ERR("Failed to build suffix \n");
 		goto error;
 	}
@@ -1808,6 +1817,12 @@ error:
 #define ROUTE_SUFF ">\r\n"
 #define ROUTE_SUFF_LEN (sizeof(ROUTE_SUFF) -1)
 
+static inline void topo_no_dlg_seq_free(void *p)
+{
+	if (p)
+		shm_free(p);
+}
+
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 {
 	int max_size,dec_len,i,size;
@@ -1822,6 +1837,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	str host;
 	int port,proto;
 	struct socket_info *sock;
+	str *route_s = NULL, route_buf = {0, 0};
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(msg, HDR_EOH_F, 0)< 0) {
@@ -1957,6 +1973,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 				goto err_free_route;
 			}
 			msg->msg_flags |= FL_HAS_ROUTE_LUMP;
+			route_buf = rr_buf;
 
 			LM_DBG("Setting route  header to <%s> \n",route);
 			LM_DBG("setting dst_uri to <%.*s> \n",head->nameaddr.uri.len,
@@ -2019,6 +2036,8 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 					goto err_free_route;
 				}
 				msg->msg_flags |= FL_HAS_ROUTE_LUMP;
+				route_buf.s = route;
+				route_buf.len = rr_buf.len - head->len - 1;
 			}
 
 			if (lmp == NULL) {
@@ -2055,10 +2074,18 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 			}
 		}
 	}
+	if (route_buf.s && route_buf.len) {
+		route_s = shm_malloc(sizeof *route_s + route_buf.len);
+		if (route_s) {
+			route_s->s = (char *)(route_s + 1);
+			memcpy(route_s->s, route_buf.s, route_buf.len);
+			route_s->len = route_buf.len;
+		}
+	}
 
 	/* register tm callback for response in  */
 	if (tm_api.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
-	th_no_dlg_onreply,NULL,NULL )<0 ) {
+	th_no_dlg_onreply_within,route_s,topo_no_dlg_seq_free)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 	}
 
@@ -2080,7 +2107,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		free_rr(&head);
 	pkg_free(dec_buf);
 
-	if (topo_no_dlg_encode_contact(msg,0) < 0) {
+	if (topo_no_dlg_encode_contact(msg,0,NULL) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
