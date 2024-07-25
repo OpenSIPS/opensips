@@ -1620,6 +1620,9 @@ fi
 
 
 %changelog
+* Thu Jul 25 2024 Liviu Chircu <liviu@opensips.org> - 3.5.0-1
+- OpenSIPS minor stable release: 3.5.0-1
+
 * Sat May 18 2024 Nick Altmann <nick@altmann.pro> - 3.5.0-1
 - Specification updated for opensips 3.5
 - New modules: aka_av_diameter, auth_aka, mqueue, presence_reginfo, proto_ipsec, pua_reginfo
