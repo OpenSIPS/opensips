@@ -1629,12 +1629,12 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 			hdrs, nohold, ctx, NULL) < 0) {
 		media_dlg.dlg_unref(dlg, 1);
 		if (release)
-			pkg_free(&body.s);
+			pkg_free(pbody->s);
 		return init_mi_error(500, MI_SSTR("Could not start media session"));
 	}
 
 	if (release)
-		pkg_free(&body.s);
+		pkg_free(pbody->s);
 	/* all good now, unref the dialog as it is reffed by the ms */
 	media_dlg.dlg_unref(dlg, 1);
 	return init_mi_result_ok();
