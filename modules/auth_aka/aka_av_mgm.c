@@ -338,7 +338,7 @@ int aka_av_get_new_wait(struct aka_user *user, int algmask,
 				break;
 			default:
 				do {
-					timespec_get(&begin, TIME_UTC);
+					clock_gettime(CLOCK_REALTIME, &begin);
 					spec = begin;
 					spec.tv_sec += milliseconds / 1000;
 					spec.tv_nsec += (milliseconds % 1000) * 1000000;
@@ -353,7 +353,7 @@ int aka_av_get_new_wait(struct aka_user *user, int algmask,
 						break;
 					if (!av) {
 						/* compute the drift/reminder */
-						timespec_get(&end, TIME_UTC);
+						clock_gettime(CLOCK_REALTIME, &end);
 						milliseconds -= (end.tv_sec - begin.tv_sec) * 1000 +
 							(end.tv_nsec - begin.tv_nsec) / 1000000;
 					}
