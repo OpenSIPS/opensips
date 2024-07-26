@@ -31,6 +31,7 @@ struct rtp_relay_binds media_rtp;
 
 static str b2b_media_exchange_cap = str_init("media_exchange");
 
+static int mod_preinit(void);
 static int mod_init(void);
 static int media_fork_to_uri(struct sip_msg *msg, str *uri,
 		int leg, str *headers, int *medianum);
@@ -174,7 +175,7 @@ struct module_exports exports = {
 	0,								/* exported pseudo-variables */
 	0,								/* extra processes */
 	0,								/* extra transformations */
-	0,								/* module pre-initialization function */
+	mod_preinit,							/* module pre-initialization function */
 	mod_init,						/* module initialization function */
 	NULL,							/* response handling function */
 	NULL,							/* destroy function */
@@ -182,13 +183,8 @@ struct module_exports exports = {
 	0								/* reload confirm function */
 };
 
-/**
- * init module function
- */
-static int mod_init(void)
+static int mod_preinit(void)
 {
-	LM_DBG("initializing media_exchange module ...\n");
-
 	if (load_dlg_api(&media_dlg) != 0) {
 		LM_ERR("dialog module not loaded! Cannot use media bridging module\n");
 		return -1;
@@ -205,6 +201,24 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (load_rtp_relay(&media_rtp) != 0)
+		LM_DBG("rtp_relay module not loaded! Cannot use streaming module\n");
+
+	if (init_media_sessions() < 0) {
+		LM_ERR("could not initialize media sessions!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
+ * init module function
+ */
+static int mod_init(void)
+{
+	LM_DBG("initializing media_exchange module ...\n");
+
 	if (media_b2b.register_cb(media_exchange_event_received,
 			B2BCB_RECV_EVENT, &b2b_media_exchange_cap) < 0) {
 		LM_ERR("could not register loaded callback!\n");
@@ -214,15 +228,6 @@ static int mod_init(void)
 	if (media_b2b.register_cb(media_exchange_event_trigger,
 			B2BCB_TRIGGER_EVENT, &b2b_media_exchange_cap) < 0) {
 		LM_ERR("could not register loaded callback!\n");
-		return -1;
-	}
-
-
-	if (load_rtp_relay(&media_rtp) != 0)
-		LM_DBG("rtp_relay module not loaded! Cannot use streaming module\n");
-
-	if (init_media_sessions() < 0) {
-		LM_ERR("could not initialize media sessions!\n");
 		return -1;
 	}
 
