@@ -492,29 +492,44 @@ static int mi_child_init(void)
  */
 static void destroy(void)
 {
+	int do_sync = 0;
+
 	/* we need to sync DB in order to flush the cache */
 	if (have_sql_con() && ul_dbf.init) {
 		ul_dbh = ul_dbf.init(&db_url); /* Get a new database connection */
 		if (!ul_dbh) {
 			LM_ERR("failed to connect to database\n");
-	} else {
-			ul_unlock_locks();
-			if (sync_lock)
-				lock_start_read(sync_lock);
-			if (_synchronize_all_udomains() != 0) {
-				LM_ERR("flushing cache failed\n");
-			}
-			if (sync_lock) {
-				lock_stop_read(sync_lock);
-				lock_destroy_rw(sync_lock);
-				sync_lock = 0;
-			}
-			ul_dbf.close(ul_dbh);
+			do_sync = -10;
+		} else {
+			do_sync++;
 		}
 	}
 
+	if (have_cdb_con()) {
+		if (init_cachedb() < 0)
+			do_sync = -10;
+		else
+			do_sync++;
+	}
+
+	ul_unlock_locks();
+
+	if (sync_lock)
+		lock_start_read(sync_lock);
+	if (do_sync > 0 && _synchronize_all_udomains() != 0)
+		LM_ERR("flushing cache failed\n");
+	if (sync_lock) {
+		lock_stop_read(sync_lock);
+		lock_destroy_rw(sync_lock);
+		sync_lock = NULL;
+	}
+
+	if (ul_dbh)
+		ul_dbf.close(ul_dbh);
 	if (cdbc)
 		cdbf.destroy(cdbc);
+
+	ul_dbh = NULL;
 	cdbc = NULL;
 
 	free_all_udomains();
