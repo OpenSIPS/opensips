@@ -407,26 +407,29 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		}
 	}
 
-	/* restore b2b callbacks */
-	if (srec_restore_callback(sess) < 0) {
-		LM_ERR("cannot restore b2b callbacks!\n");
-		return;
-	}
-
 	/* all good: continue with dialog support! */
 	SIPREC_REF(sess);
 	srec_hlog(sess, SREC_REF, "registered dlg");
 	sess->dlg = dlg;
 	srec_dlg.dlg_ctx_put_ptr(dlg, srec_dlg_idx, sess);
 
+	/* restore b2b callbacks */
+	if (srec_restore_callback(sess) < 0) {
+		LM_ERR("cannot restore b2b callbacks!\n");
+		goto error_unref;
+	}
+
 	if (srec_register_callbacks(sess) < 0) {
 		LM_ERR("cannot register callback for terminating session\n");
-		srec_hlog(sess, SREC_UNREF, "error registering dlg callbacks");
-		SIPREC_UNREF(sess);
-		goto error;
+		goto error_unref;
 	}
 
 	return;
+error_unref:
+	srec_hlog(sess, SREC_UNREF, "error registering callbacks");
+	SIPREC_UNREF(sess);
+	return;
+
 error:
 	if (sess)
 		src_free_session(sess);
