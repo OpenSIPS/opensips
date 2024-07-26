@@ -21,15 +21,8 @@
 
 #include <stdio.h>
 #include <string.h>
-
 #include "cachedb_dynamodb_dbase.h"
 #include "../../lib/csv.h"
-
-
-typedef struct url_lst {
-	str url;
-	struct url_lst* next;
-} url_lst_t;
 
 
 static int mod_init(void);
@@ -49,12 +42,15 @@ int set_connection(unsigned int type, void *val)
 
 dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 {
-	dynamodb_con *con = NULL;
+	dynamodb_con *con;
 	csv_record *cols, *col, *kv;
 	str collection_list;
 	char *endpoint;
-	int endpoint_len;
-
+	int endpoint_len, ret;
+	con = NULL;
+	cols = NULL;
+	kv = NULL;
+	endpoint = NULL;
 	LM_DBG("Connecting to DynamoDB with URL: %s\n", id->initial_url);
 
 	con = (dynamodb_con *)pkg_malloc(sizeof(dynamodb_con));
@@ -69,8 +65,7 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 		con->tableName = id->database;
 	} else {
 		LM_ERR("No table\n");
-		pkg_free(con);
-		return NULL;
+		goto out_err3;
 	}
 
 	init_str(&collection_list, id->extra_options);
@@ -78,8 +73,7 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 	cols = __parse_csv_record(&collection_list, 0, ';');
 	if (!cols) {
 		LM_ERR("Parse failed\n");
-		pkg_free(con);
-		return NULL;
+		goto out_err3;
 	}
 
 	/* Parse each key-value pair */
@@ -87,34 +81,34 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 		kv = __parse_csv_record(&col->s, 0, '=');
 		if (!kv) {
 			LM_ERR("Parse failed\n");
-			pkg_free(con);
-			return NULL;
+			goto out_err2;
 		}
 
 		if (strncasecmp(kv->s.s, "region", kv->s.len) == 0) {
 			con->region = from_str_to_string(&(kv->next)->s);
 			if(con->region == NULL) {
 				LM_ERR("No more pkg mem for con->region\n");
-				return NULL;
+				goto out_err1;
 			}
 
 		} else if (strncasecmp(kv->s.s, "key", kv->s.len) == 0) {
 			con->key = from_str_to_string(&(kv->next)->s);
 			if(con->key == NULL) {
 				LM_ERR("No more pkg mem for con->key\n");
-				return NULL;
+				goto out_err1;
 			}
 		} else if (strncasecmp(kv->s.s, "val", kv->s.len) == 0) {
 			con->value = from_str_to_string(&(kv->next)->s);
 			if(con->value == NULL) {
 				LM_ERR("No more pkg mem for con->value\n");
-				return NULL;
+				goto out_err1;
 			}
 		}
 
 		free_csv_record(kv);
 
 	}
+	free_csv_record(cols);
 
 	/* default key & value */
 	if (!con->key) {
@@ -124,7 +118,6 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 	if (!con->value) {
 		con->value = DYNAMODB_VAL_COL_S;
 	}
-	free_csv_record(cols);
 
 	con->cache_con.id = id;
 
@@ -132,18 +125,36 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 		/* build endpoint */
 		endpoint_len = MAX_PORT_LEN + sizeof(id->host) + 8 + 1 /* \0 */;
 		endpoint = pkg_malloc(endpoint_len * sizeof(char));
+		if (!endpoint) {
+			LM_ERR("No more pkg mem\n");
+			goto out_err3;
+		}
+
 		snprintf(endpoint, endpoint_len, "http://%s:%d", id->host, id->port);
 
 		con->endpoint = endpoint;
 
 	}
 
-	con->config = init_dynamodb(con);
 	if(con->endpoint == NULL && con->region == NULL) {
-		shutdown_dynamodb(&con->config);
+		LM_ERR("Can't init connection\n");
+		goto out_err3;
 	}
 
+	ret = init_dynamodb(con);
+	if (ret == -1) {
+		LM_ERR("Init API failed\n");
+		goto out_err3;
+	}
 	return con;
+
+out_err1:
+	if (kv) free_csv_record(kv);
+out_err2:
+	if (cols) free_csv_record(cols);
+out_err3:
+	pkg_free(con);
+	return NULL;
 }
 
 
