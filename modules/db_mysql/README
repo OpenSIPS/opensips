@@ -154,7 +154,11 @@ modparam("db_mysql", "ps_max_col_size", 4096)
    connections. In order to enable TLS for a specific connection,
    you can use the "tls_domain=dom_name" URL parameter in the
    db_url of the respective OpenSIPS module. This should be placed
-   at the end of the URL after the '?' character.
+   at the end of the URL after the '?' character. Additionally,
+   the query string may include the "tls_opts=
+   PKEY,CERT,CA,CA_DIR,CIPHERS" CSV parameter, in order to
+   control/limit the amount of TLS options passed to the TLS
+   library.
 
    When using this parameter, you must also ensure that tls_mgm is
    loaded and properly configured. Refer to the the module for
@@ -184,6 +188,9 @@ modparam("db_mysql", "use_tls", 1)
 ...
 modparam("usrloc", "db_url", "mysql://root:1234@localhost/opensips?tls_d
 omain=dom1")
+...
+modparam("usrloc", "db_url", "mysql://root:1234@localhost/opensips?tls_d
+omain=dom1&tls_opts=PKEY,CERT,CA,CA_DIR,CIPHERS")
 ...
 
 1.4. Exported Functions
@@ -225,7 +232,7 @@ Chapter 2. Contributors
    1. Jan Janak (@janakj) 150 53 5336 3190
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 99 72 1574 793
    3. Henning Westerholt (@henningw) 57 30 693 1239
-   4. Liviu Chircu (@liviuchircu) 41 33 491 184
+   4. Liviu Chircu (@liviuchircu) 43 34 581 206
    5. Daniel-Constantin Mierla (@miconda) 28 20 571 154
    6. Razvan Crainea (@razvancrainea) 19 16 231 59
    7. Andrei Pelinescu-Onciul 16 14 52 49
@@ -262,7 +269,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2024
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Mar 2024
    3.  Vlad Paiu (@vladpaiu)               Feb 2011 - Jul 2023
    4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
