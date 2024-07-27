@@ -24,6 +24,7 @@ SIPREC Module
               1.8.1. siprec_start_recording(srs)
               1.8.2. siprec_pause_recording()
               1.8.3. siprec_resume_recording()
+              1.8.4. siprec_stop_recording()
 
         1.9. Exported Pseudo-Variables
 
@@ -61,6 +62,7 @@ SIPREC Module
 
    1.7. Use siprec_pause_recording()
    1.8. Use siprec_resume_recording()
+   1.9. Use siprec_stop_recording()
 
 Chapter 1. Admin Guide
 
@@ -303,6 +305,21 @@ fty5</callcenterCode>";
         }
         ...
 
+1.8.4.  siprec_stop_recording()
+
+   Stops the recording for the ongoing call. Should be called for
+   SIPREC sessions that have been previously started.
+
+   This function can be used from any route.
+
+   Example 1.9. Use siprec_stop_recording()
+        ...
+        if (has_totag() && is_method("INVITE")) {
+                if (is_audio_on_hold())
+                        siprec_stop_recording();
+        }
+        ...
+
 1.9. Exported Pseudo-Variables
 
 1.9.1. $siprec
@@ -329,8 +346,8 @@ fty5</callcenterCode>";
        callee. If absent, the To header of the initial dialog is
        used to build the value.
      * media - the IP that RTPProxy will be streaming media from.
-       If absent 127.0.0.1 will be used. NOTE: deprecated media_ip
-       is an alias for this param.
+       If absent 127.0.0.1 will be used. NOTE:media_ip has been
+       dropped.
      * headers - extra headers that are to be added in the initial
        request towards the SRS. NOTE: headers must be separated by
        \r\n and must end with \r\n.
@@ -358,7 +375,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 153 80 5120 1836
+   1. Razvan Crainea (@razvancrainea) 163 85 5401 1965
    2. Vlad Patrascu (@rvlad-patrascu) 16 11 166 149
    3. Liviu Chircu (@liviuchircu) 9 7 35 53
    4. Maksym Sobolyev (@sobomax) 6 4 12 11
@@ -386,7 +403,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jun 2024
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jul 2024
    2. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    3. Seyed Mehran Siadati                Nov 2023 - Nov 2023
    4. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2023

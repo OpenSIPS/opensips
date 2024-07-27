@@ -50,7 +50,9 @@ rtpengine Module
               1.5.8. rtpengine_play_media(flags, [duration_spec[,
                       sock_var[, sockvar]]])
 
-              1.5.9. rtpengine_stop_media([flags[, sockvar]])
+              1.5.9. rtpengine_stop_media(flags[, [sock_var[,
+                      sockvar]], [last_frame_pos]])
+
               1.5.10. rtpengine_block_media([flags[, sockvar]])
               1.5.11. rtpengine_unblock_media([flags[, sockvar]])
               1.5.12. rtpengine_block_dtmf([flags[, sockvar]])
@@ -127,20 +129,23 @@ rtpengine Module
    1.24. Ringback tone using rtpengine_play_media
    1.25. Manage music on hold using rtpengine_play_media
    1.26. Ringback tone stop using rtpengine_stop_media
-   1.27. Example of rtpengine_block_media usage
-   1.28. Example of rtpengine_unblock_media usage
-   1.29. Example of rtpengine_block_dtmf usage
-   1.30. Example of rtpengine_unblock_dtmf usage
-   1.31. Example of rtpengine_start_forwarding usage
-   1.32. Example of rtpengine_stop_forwarding usage
-   1.33. Example of rtpengine_play_dtmf usage
-   1.34. $rtpstat Usage
-   1.35. $rtpstat(STAT)
-   1.36. $rtpquery Usage
-   1.37. rtpengine_enable usage
-   1.38. rtpengine_show usage
-   1.39. rtpengine_reload usage
-   1.40. teardown usage
+   1.27. Example use of the last-frame-pos parameter
+          rtpengine_stop_media
+
+   1.28. Example of rtpengine_block_media usage
+   1.29. Example of rtpengine_unblock_media usage
+   1.30. Example of rtpengine_block_dtmf usage
+   1.31. Example of rtpengine_unblock_dtmf usage
+   1.32. Example of rtpengine_start_forwarding usage
+   1.33. Example of rtpengine_stop_forwarding usage
+   1.34. Example of rtpengine_play_dtmf usage
+   1.35. $rtpstat Usage
+   1.36. $rtpstat(STAT)
+   1.37. $rtpquery Usage
+   1.38. rtpengine_enable usage
+   1.39. rtpengine_show usage
+   1.40. rtpengine_reload usage
+   1.41. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -822,7 +827,7 @@ sockvar]]])
    endpoints.
 
    Meaning of the parameters is as follows:
-     * flags(string) - a list of flags simialar to the other
+     * flags(string) - a list of flags similar to the other
        functions. One of the file, blob or db-id parameters is
        mandatory to indicate the content of the media file to be
        played. file is a common choice for specifying rtpengine to
@@ -863,7 +868,8 @@ e.wav");
 }
 ...
 
-1.5.9.  rtpengine_stop_media([flags[, sockvar]])
+1.5.9.  rtpengine_stop_media(flags[, [sock_var[, sockvar]],
+[last_frame_pos]])
 
    This function will stop playing a media file previously started
    by a rtpengine_play_media() call. The meaning of its parameters
@@ -872,11 +878,34 @@ e.wav");
    rtpengine_play_media() call, otherwise RTPEngine will not be
    able to stop media playing.
 
+   Meaning of the parameters is as follows:
+     * flags(string) - a list of flags similar to the other
+       functions.
+     * last_frame_pos(var, optional) - a pseudo variable that will
+       contain the last frame played of the file.
+
    This function can be used from any route.
 
    Example 1.26. Ringback tone stop using rtpengine_stop_media
 ...
 if (is_method("INVITE") && $rs == 200)
+        rtpengine_stop_media();
+...
+
+   Example 1.27. Example use of the last-frame-pos parameter
+   rtpengine_stop_media
+...
+if (is_method("INVITE") && has_totag()) {
+        if (is_audio_on_hold()) {
+                $dlg_val(on_hold = "1";
+                rtpengine_play_media("from-tag=$tt start-pos=$avp(last_f
+rame_pos) file=/path/to/moh_file.wav");
+        } else if ($dlg_val(on_hold) == "1") {
+                rtpengine_stop_media("from-tag=$tt", , $avp(last_frame_p
+os));
+                $dlg_val(on_hold = "0");
+        }
+}
         rtpengine_stop_media();
 ...
 
@@ -888,7 +917,7 @@ if (is_method("INVITE") && $rs == 200)
 
    This function can be used from any route.
 
-   Example 1.27. Example of rtpengine_block_media usage
+   Example 1.28. Example of rtpengine_block_media usage
 ...
 rtpengine_block_media();
 ...
@@ -901,7 +930,7 @@ rtpengine_block_media();
 
    This function can be used from any route.
 
-   Example 1.28. Example of rtpengine_unblock_media usage
+   Example 1.29. Example of rtpengine_unblock_media usage
 ...
 rtpengine_unblock_media();
 ...
@@ -914,7 +943,7 @@ rtpengine_unblock_media();
 
    This function can be used from any route.
 
-   Example 1.29. Example of rtpengine_block_dtmf usage
+   Example 1.30. Example of rtpengine_block_dtmf usage
 ...
 rtpengine_block_dtmf();
 ...
@@ -927,7 +956,7 @@ rtpengine_block_dtmf();
 
    This function can be used from any route.
 
-   Example 1.30. Example of rtpengine_unblock_dtmf usage
+   Example 1.31. Example of rtpengine_unblock_dtmf usage
 ...
 rtpengine_unblock_dtmf();
 ...
@@ -942,7 +971,7 @@ rtpengine_unblock_dtmf();
 
    This function can be used from any route.
 
-   Example 1.31. Example of rtpengine_start_forwarding usage
+   Example 1.32. Example of rtpengine_start_forwarding usage
 ...
 rtpengine_start_forwarding();
 ...
@@ -954,7 +983,7 @@ rtpengine_start_forwarding();
 
    This function can be used from any route.
 
-   Example 1.32. Example of rtpengine_stop_forwarding usage
+   Example 1.33. Example of rtpengine_stop_forwarding usage
 ...
 rtpengine_stop_forwarding();
 ...
@@ -975,7 +1004,7 @@ rtpengine_stop_forwarding();
 
    This function can be used from any route.
 
-   Example 1.33. Example of rtpengine_play_dtmf usage
+   Example 1.34. Example of rtpengine_play_dtmf usage
 ...
 rtpengine_play_dtmf("0"); # send the 0 code upstream
 ...
@@ -988,7 +1017,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
    statistics from the RTP proxy are provided as a string and it
    does contain several packet counters.
 
-   Example 1.34. $rtpstat Usage
+   Example 1.35. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
@@ -1061,7 +1090,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
    short, or if the phones do not properly report RTP statistics
    over RTCP). In these cases the variable returns the NULL value.
 
-   Example 1.35. $rtpstat(STAT)
+   Example 1.36. $rtpstat(STAT)
 ...
     xlog("Average MOS of the entire call is $rtpstat(MOS-average)\r\n");
     xlog("Average MOS of caller is $(rtpstat(MOS-average)[$ft])\r\n");
@@ -1081,7 +1110,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    any information from the query, such as RTP statistics, or MOS
    values.
 
-   Example 1.36. $rtpquery Usage
+   Example 1.37. $rtpquery Usage
 ...
         $json(reply) := $rtpquery;
         xlog("Total RTP Stats: $json(reply/totals)\n");
@@ -1104,7 +1133,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    different set), all of its instances will be enabled/disabled
    IF no set ID is provided.
 
-   Example 1.37.  rtpengine_enable usage
+   Example 1.38.  rtpengine_enable usage
 ...
 ## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
@@ -1120,7 +1149,7 @@ $ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=
 
    No parameter.
 
-   Example 1.38.  rtpengine_show usage
+   Example 1.39.  rtpengine_show usage
 ...
 $ opensips-cli -x mi rtpengine_show
 ...
@@ -1139,7 +1168,7 @@ $ opensips-cli -x mi rtpengine_show
 
    No parameter.
 
-   Example 1.39.  rtpengine_reload usage
+   Example 1.40.  rtpengine_reload usage
 ...
 $ opensips-cli -x mi rtpengine_reload
 $ opensips-cli -x mi rtpengine_reload type=soft
@@ -1158,7 +1187,7 @@ $ opensips-cli -x mi rtpengine_reload type=soft
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.40.  teardown usage
+   Example 1.41.  teardown usage
 ...
 $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZD
 Q
@@ -1273,13 +1302,14 @@ Chapter 3. Contributors
    5. Richard Fuchs 20 2 640 723
    6. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
    7. Peter Lemenkov (@lemenkov) 10 7 27 62
-   8. Eric Tamme (@etamme) 7 5 42 19
-   9. Nick Altmann (@nikbyte) 6 4 43 2
-   10. Maksym Sobolyev (@sobomax) 6 4 11 12
+   8. Norman Brandinger (@NormB) 9 7 65 12
+   9. Eric Tamme (@etamme) 7 5 42 19
+   10. Nick Altmann (@nikbyte) 6 4 43 2
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Zero King
-   (@l2dy), Rob Gagnon (@rgagnon24), Flavio E. Goncalves, Dan
-   Pascu (@danpascu), Oliver Severin Mulelid-Tynes (@olivermt).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Ovidiu
+   Sas (@ovidiusas), Zero King (@l2dy), Rob Gagnon (@rgagnon24),
+   Flavio E. Goncalves, Dan Pascu (@danpascu), Oliver Severin
+   Mulelid-Tynes (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1302,20 +1332,20 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jun 2024
-   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   3.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   5.  John Burke (@john08burke)           Jun 2019 - Apr 2022
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
-   7.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   8.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
-   9.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
-   10. Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020
+   2.  Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   6.  John Burke (@john08burke)           Jun 2019 - Apr 2022
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
+   8.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   9.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
+   10. Zero King (@l2dy)                   Mar 2020 - Sep 2020
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
-   Dan Pascu (@danpascu), Oliver Severin Mulelid-Tynes
-   (@olivermt), Rob Gagnon (@rgagnon24), Eric Tamme (@etamme),
-   Richard Fuchs.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad
+   Patrascu (@rvlad-patrascu), Dan Pascu (@danpascu), Oliver
+   Severin Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24),
+   Eric Tamme (@etamme), Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1324,11 +1354,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), John Burke (@john08burke), Nick Altmann
-   (@nikbyte), Flavio E. Goncalves, Peter Lemenkov (@lemenkov),
-   Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Richard Fuchs.
+   Last edited by: Norman Brandinger (@NormB), Razvan Crainea
+   (@razvancrainea), Liviu Chircu (@liviuchircu), John Burke
+   (@john08burke), Nick Altmann (@nikbyte), Flavio E. Goncalves,
+   Peter Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Richard Fuchs.
 
    Documentation Copyrights:
 

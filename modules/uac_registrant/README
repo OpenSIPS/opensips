@@ -532,7 +532,7 @@ Chapter 2. Contributors
    10. sagarmalam 3 1 15 1
 
    All remaining contributors: Walter Doekes (@wdoekes), James
-   Stanley, Peter Lemenkov (@lemenkov).
+   Stanley, Peter Lemenkov (@lemenkov), okhowang(王沛文).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -554,19 +554,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  James Stanley                       Dec 2023 - Jun 2024
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - May 2024
-   3.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
-   4.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
-   5.  James Stanley                       Mar 2023 - Mar 2023
-   6.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
-   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
-   8.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   9.  sagarmalam                          Jan 2021 - Jan 2021
-   10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2020
+   1.  okhowang(王沛文)                       Jul 2024 - Jul 2024
+   2.  James Stanley                       Dec 2023 - Jun 2024
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - May 2024
+   4.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
+   5.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
+   6.  James Stanley                       Mar 2023 - Mar 2023
+   7.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
+   8.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
+   9.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   10. sagarmalam                          Jan 2021 - Jan 2021
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Nick
-   Altmann (@nikbyte), Vlad Paiu (@vladpaiu).
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Peter Lemenkov (@lemenkov), Nick Altmann (@nikbyte), Vlad Paiu
+   (@vladpaiu).
 
    (1) including any documentation-related commits, excluding
    merge commits

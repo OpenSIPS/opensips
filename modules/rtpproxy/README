@@ -990,7 +990,7 @@ Chapter 3. Contributors
    (@davesidwell), Ezequiel Lovelle (@lovelle), Christophe Sollet
    (@csollet), Anca Vamanu, Mikko Lehto, Dan Pascu (@danpascu),
    Walter Doekes (@wdoekes), Dusan Klinec (@ph4r05), Julián Moreno
-   Patiño, Zero King (@l2dy).
+   Patiño, Norman Brandinger (@NormB), Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1013,21 +1013,22 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Jun 2024
-   2.  Liviu Chircu (@liviuchircu)         Jul 2012 - May 2023
-   3.  Maksym Sobolyev (@sobomax)          Mar 2011 - Mar 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
-   5.  Peter Lemenkov (@lemenkov)          Dec 2011 - Apr 2022
-   6.  John Burke (@john08burke)           Apr 2021 - Apr 2021
-   7.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
-   9.  robdyck                             Apr 2020 - Apr 2020
-   10. Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   2.  Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
+   3.  Liviu Chircu (@liviuchircu)         Jul 2012 - May 2023
+   4.  Maksym Sobolyev (@sobomax)          Mar 2011 - Mar 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   6.  Peter Lemenkov (@lemenkov)          Dec 2011 - Apr 2022
+   7.  John Burke (@john08burke)           Apr 2021 - Apr 2021
+   8.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
+   10. robdyck                             Apr 2020 - Apr 2020
 
-   All remaining contributors: Dan Pascu (@danpascu), Ryan Bullock
-   (@rrb3942), Julián Moreno Patiño, Vlad Paiu (@vladpaiu), Dusan
-   Klinec (@ph4r05), Dave Sidwell (@davesidwell), Ezequiel Lovelle
-   (@lovelle), Mikko Lehto, Walter Doekes (@wdoekes), Christophe
-   Sollet (@csollet), Anca Vamanu.
+   All remaining contributors: Zero King (@l2dy), Dan Pascu
+   (@danpascu), Ryan Bullock (@rrb3942), Julián Moreno Patiño,
+   Vlad Paiu (@vladpaiu), Dusan Klinec (@ph4r05), Dave Sidwell
+   (@davesidwell), Ezequiel Lovelle (@lovelle), Mikko Lehto,
+   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Anca
+   Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits

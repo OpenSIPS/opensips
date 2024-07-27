@@ -283,7 +283,6 @@ modparam("stir_shaken", "require_date_hdr", 0)
    The function returns the following values:
      * 1: Success
      * -1: Internal error
-     * -2: Identity header already exists
      * -3: Failed to derive identity from SIP message because the
        URI is not a telephone number
      * -4: Date header value is older than local policy for
@@ -494,9 +493,9 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 23 18 252 123
    3. MonkeyTester 12 7 375 8
    4. Maksym Sobolyev (@sobomax) 6 4 22 22
-   5. Razvan Crainea (@razvancrainea) 5 3 21 25
-   6. kworm83 4 2 7 2
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 47 56
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 6 3 47 64
+   6. Razvan Crainea (@razvancrainea) 5 3 21 25
+   7. kworm83 4 2 7 2
    8. tcresson 3 1 4 18
    9. Kevin 3 1 2 2
    10. John Burke (@john08burke) 2 1 4 0
@@ -523,9 +522,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2019 - Apr 2024
-   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Mar 2024
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Jul 2024
+   2.  Liviu Chircu (@liviuchircu)         Nov 2019 - Apr 2024
+   3.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2024
    4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    5.  tcresson                            Oct 2023 - Oct 2023
    6.  MonkeyTester                        Aug 2023 - Aug 2023
@@ -543,8 +542,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), MonkeyTester, Vlad
-   Patrascu (@rvlad-patrascu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), MonkeyTester, Vlad Patrascu
+   (@rvlad-patrascu).
 
    Documentation Copyrights:
 
