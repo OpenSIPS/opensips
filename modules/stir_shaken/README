@@ -276,7 +276,6 @@ modparam("stir_shaken", "require_date_hdr", 0)
    The function returns the following values:
      * 1: Success
      * -1: Internal error
-     * -2: Identity header already exists
      * -3: Failed to derive identity from SIP message because the
        URI is not a telephone number
      * -4: Date header value is older than local policy for
@@ -424,15 +423,16 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                   Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    58      26      3129     324
-   2. Liviu Chircu (@liviuchircu)        24      18      252      123
-   3. Maksym Sobolyev (@sobomax)         5        3       21       21
-   4. Razvan Crainea (@razvancrainea)    4        2       8        9
-   5. kworm83                            4        2       7        2
-   6. Kevin                              3        1       2        2
-   7. John Burke (@john08burke)          2        1       4        0
-   8. Andriy Pylypenko (@bambyster)      2        1       1        0
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu) 58 26 3129 324
+   2. Liviu Chircu (@liviuchircu) 24 18 252 123
+   3. Maksym Sobolyev (@sobomax) 5 3 21 21
+   4. Razvan Crainea (@razvancrainea) 4 2 8 9
+   5. kworm83 4 2 7 2
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 3 2 0 8
+   7. Kevin 3 1 2 2
+   8. John Burke (@john08burke) 2 1 4 0
+   9. Andriy Pylypenko (@bambyster) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -453,15 +453,16 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                   Name                 Commit Activity
-   1. Liviu Chircu (@liviuchircu)     Nov 2019 - Apr 2024
-   2. Maksym Sobolyev (@sobomax)      Jan 2021 - Feb 2023
-   3. Kevin                           Feb 2022 - Feb 2022
-   4. kworm83                         Jan 2022 - Jan 2022
-   5. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Aug 2021
-   6. Razvan Crainea (@razvancrainea) Jan 2021 - Jul 2021
-   7. John Burke (@john08burke)       Apr 2021 - Apr 2021
-   8. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2024 - Jul 2024
+   2. Liviu Chircu (@liviuchircu)         Nov 2019 - Apr 2024
+   3. Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   4. Kevin                               Feb 2022 - Feb 2022
+   5. kworm83                             Jan 2022 - Jan 2022
+   6. Vlad Patrascu (@rvlad-patrascu)     Oct 2019 - Aug 2021
+   7. Razvan Crainea (@razvancrainea)     Jan 2021 - Jul 2021
+   8. John Burke (@john08burke)           Apr 2021 - Apr 2021
+   9. Andriy Pylypenko (@bambyster)       Aug 2020 - Aug 2020
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -470,8 +471,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:
 
