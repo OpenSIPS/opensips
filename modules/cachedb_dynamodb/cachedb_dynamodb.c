@@ -220,7 +220,6 @@ static int mod_init(void)
 	cde.cdb_func.remove = dynamodb_remove;
 	cde.cdb_func.add = dynamodb_add;
 	cde.cdb_func.sub = dynamodb_sub;
-	cde.cdb_func.destroy = dynamodb_destroy;
 	cde.cdb_func.map_get = dynamodb_map_get;
 	cde.cdb_func.map_set = dynamodb_map_set;
 	cde.cdb_func.map_remove = dynamodb_map_remove;

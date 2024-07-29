@@ -31,6 +31,8 @@
 
 #define DYNAMODB_KEY_COL_S    "opensipskey"
 #define DYNAMODB_VAL_COL_S    "opensipsval"
+#define INT64_LEN 20
+#define INT32_LEN 11
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,13 +45,13 @@ typedef struct {
 
 
 typedef struct key_set_entry {
-	char *keyset_name;
+	str *keyset_name;
 	struct list_head keys;
 	struct key_set_entry *next;
 } key_set_entry_t;
 
 typedef struct key_entry {
-	char *key;
+	str *key;
 	struct list_head list;
 } key_entry_t;
 

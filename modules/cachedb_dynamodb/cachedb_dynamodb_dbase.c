@@ -27,32 +27,26 @@ void dynamodb_destroy(cachedb_con *connection) {
 	if (connection)
 		con = (dynamodb_con *)(connection->data);
 
-	if (!con) {
+	if (!con)
 		return;
-	}
-	if (con->endpoint) {
+
+	if (con->endpoint)
 		pkg_free(con->endpoint);
-	}
 
-	if (con->host) {
+	if (con->host)
 		pkg_free(con->host);
-	}
 
-	if (con->key && con->key != (char *)DYNAMODB_KEY_COL_S) {
+	if (con->key && con->key != (char *)DYNAMODB_KEY_COL_S)
 		pkg_free(con->key);
-	}
 
-	if(con->region) {
+	if(con->region)
 		pkg_free(con->region);
-	}
 
-	if(con->tableName) {
+	if(con->tableName)
 		pkg_free(con->tableName);
-	}
 
-	if (con->value && con->value != (char *)DYNAMODB_VAL_COL_S) {
+	if (con->value && con->value != (char *)DYNAMODB_VAL_COL_S)
 		pkg_free(con->value);
-	}
 
 	shutdown_dynamodb(&con->config);
 	pkg_free(con);
@@ -75,10 +69,49 @@ char *from_str_to_string(const str *str) {
 
 }
 
+static int *convert_from_string_to_int(str *str) {
+	char *endptr;
+	errno = 0;
+
+	long val = strtol(str->s, &endptr, 10);
+
+	if (errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) {
+		return NULL;
+	}
+
+	if (errno != 0 && val == 0) {
+		return NULL;
+	}
+
+	if (endptr == str->s) {
+		return NULL;
+	}
+
+	if (*endptr != '\0') {
+		return NULL;
+	}
+
+	if (val < INT_MIN || val > INT_MAX) {
+		return NULL;
+	}
+
+	int *integer = (int *)pkg_malloc(sizeof(int));
+	if (integer == NULL) {
+		LM_ERR("No more pkg mem\n");
+		return NULL;
+	}
+
+	*integer = (int)val;
+
+	return integer;
+}
+
+
 int dynamodb_get(cachedb_con *connection,str *attr, str *val) {
 	dynamodb_con *con;
 	query_item_t *result1;
 	char *result2;
+	str *value;
 
 	con = (dynamodb_con *)(connection->data);
 
@@ -91,25 +124,49 @@ int dynamodb_get(cachedb_con *connection,str *attr, str *val) {
 	if (result1->type == NULL_TYPE) {
 		val->s = NULL;
 		val->len = 0;
-		return -2;
+		goto out_err1;
 	}
 
-	result2 = from_str_to_string(result1->str);
-	if (!result2) {
-		pkg_free(result1->str);
-		pkg_free(result1);
-		return -1;
+	if (result1->type == INT_TYPE) {
+		result2 = (char *)pkg_malloc(INT64_LEN * sizeof(char));
+		if (!result2) {
+			LM_ERR("No more pkg mem\n");
+			goto out_err1;
+		}
+
+		snprintf(result2, INT64_LEN, "%d", result1->number);
+		free(result1);
+
+	} else {
+		result2 = from_str_to_string(result1->str);
+		if (!result2) {
+			goto out_err2;
+		}
+		free(result1->str->s);
+		free(result1->str);
+		free(result1);
 	}
-	init_str(val, result2);
+
+	value = pkg_malloc(sizeof(str));
+	init_str(value, result2);
+	pkg_str_dup(val, value);
 
 	pkg_free(result2);
 
 	return 0;
+
+out_err2:
+	free(result1->str->s);
+	free(result1->str);
+out_err1:
+	free(result1);
+	return -2;
 }
 
 int dynamodb_get_counter(cachedb_con *connection,str *attr, int *val) {
 	dynamodb_con *con;
 	query_item_t *result1;
+	int *value;
 
 	con = (dynamodb_con *)(connection->data);
 	result1 = query_item_dynamodb(&con->config, con->tableName, con->key, attr, con->value);
@@ -120,10 +177,35 @@ int dynamodb_get_counter(cachedb_con *connection,str *attr, int *val) {
 
 	if (result1->type == NULL_TYPE) {
 		val = NULL;
-		return -2;
+		goto out_err1;
 	}
-	*val = result1->number;
-	return 1;
+
+	if (result1->type == INT_TYPE) {
+		*val = result1->number;
+		free(result1);
+		return 0;
+	}
+
+	if(result1->type == STR_TYPE) {
+		value = convert_from_string_to_int(result1->str);
+		if (value == NULL) {
+			goto out_err2;
+		}
+
+		*val = *value;
+		pkg_free(value);
+		free(result1->str->s);
+		free(result1->str);
+		free(result1);
+		return 0;
+	}
+
+out_err2:
+	free(result1->str->s);
+	free(result1->str);
+out_err1:
+	free(result1);
+	return -2;
 }
 
 int dynamodb_set(cachedb_con *connection, str *attr, str *val, int expires) {
@@ -182,13 +264,14 @@ int dynamodb_sub(cachedb_con *connection, str *attr, int val, int expires, int *
 	return 1;
 }
 
-void add_key_to_set(dynamodb_con *con, const char *keyset_name, const char *key) {
+void add_key_to_set(dynamodb_con *con, const str *keyset_name, const str *key) {
 	key_set_entry_t *current_set;
 	key_entry_t *new_key;
 
 	current_set = con->key_sets;
 
-	while (current_set != NULL && strcmp(current_set->keyset_name, keyset_name) != 0) {
+	while (current_set != NULL && (current_set->keyset_name->len != keyset_name->len || 
+			memcmp(current_set->keyset_name->s, keyset_name->s, keyset_name->len) != 0)) {
 		current_set = current_set->next;
 	}
 
@@ -198,12 +281,21 @@ void add_key_to_set(dynamodb_con *con, const char *keyset_name, const char *key)
 			LM_ERR("No more pkg mem\n");
 			return;
 		}
-		current_set->keyset_name = strdup(keyset_name);
-		if(!current_set->keyset_name) {
-			LM_ERR("Strdup failed\n");
+		current_set->keyset_name = (str *)pkg_malloc(sizeof(str));
+		if (!current_set->keyset_name) {
+			LM_ERR("No more pkg mem\n");
 			pkg_free(current_set);
 			return;
 		}
+
+		current_set->keyset_name->s = pkg_strdup(keyset_name->s);
+		if (!current_set->keyset_name->s) {
+			LM_ERR("pkg_strdup failed\n");
+			pkg_free(current_set->keyset_name);
+			pkg_free(current_set);
+			return;
+		}
+		current_set->keyset_name->len = keyset_name->len;
 
 		INIT_LIST_HEAD(&current_set->keys);
 		current_set->next = con->key_sets;
@@ -215,24 +307,34 @@ void add_key_to_set(dynamodb_con *con, const char *keyset_name, const char *key)
 		LM_ERR("No more pkg mem\n");
 		return;
 	}
-	new_key->key = strdup(key);
-	if(!new_key->key) {
-		LM_ERR("Strdup failed\n");
+	new_key->key = (str *)pkg_malloc(sizeof(str));
+	if (!new_key->key) {
+		LM_ERR("No more pkg mem\n");
 		pkg_free(new_key);
 		return;
 	}
+	new_key->key->s = pkg_strdup(key->s);
+	if (!new_key->key->s) {
+		LM_ERR("pkg_strdup failed\n");
+		pkg_free(new_key->key);
+		pkg_free(new_key);
+		return;
+	}
+	new_key->key->len = key->len;
 
 	list_add_tail(&new_key->list, &current_set->keys);
 }
+
 
 int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset, const cdb_dict_t *pairs) {
 	dynamodb_con *con;
 	struct list_head *_;
 	cdb_pair_t *pair;
-	char *key_string, *attribute_value_int, *attribute_name, *keyset_string;
+	char *attribute_value_int, *attribute_name;
 	str *attribute_value;
 	int ret;
 	attribute_value = pkg_malloc(sizeof(str));
+	attribute_value_int = NULL;
 
 	con = (dynamodb_con *)(connection->data);
 
@@ -247,7 +349,7 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 			break;
 
 		case CDB_INT32:
-			attribute_value_int = (char*)pkg_malloc(12 * sizeof(char));
+			attribute_value_int = (char*)pkg_malloc(INT32_LEN * sizeof(char));
 			if (!attribute_value_int) {
 				LM_ERR("No more pkg mem\n");
 				return -1;
@@ -258,7 +360,7 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 			break;
 
 		case CDB_INT64:
-			attribute_value_int = (char*)pkg_malloc(20 * sizeof(char));
+			attribute_value_int = (char*)pkg_malloc(INT64_LEN * sizeof(char));
 			if (!attribute_value_int) {
 				LM_ERR("No more pkg mem\n");
 				return -1;
@@ -281,30 +383,24 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 		if (ret == -1 && pair->val.type != CDB_NULL) {
 			LM_ERR("Failed to insert item\n");
 			pkg_free(attribute_name);
+			if(attribute_value_int != NULL)
+				pkg_free(attribute_value_int);
 			return -1;
 		}
-
+		if (attribute_value_int != NULL) {
+			pkg_free(attribute_value_int);
+			attribute_value_int = NULL;
+		}
 		pkg_free(attribute_name);
+
 	}
+
+	pkg_free(attribute_value);
 
 	/* Handle key sets */
-	if (keyset != NULL) {
-		keyset_string = from_str_to_string(keyset);
-		if (!keyset_string) {
-			LM_ERR("No more pkg mem\n");
-			return -1;
-		}
-		key_string = from_str_to_string(key);
-		if (!key_string) {
-			LM_ERR("No more pkg mem\n");
-			pkg_free(keyset_string);
-			return -1;
-		}
+	if (keyset != NULL)
+		add_key_to_set(con, keyset, key);
 
-		add_key_to_set(con, keyset_string, key_string);
-		pkg_free(keyset_string);
-		pkg_free(key_string);
-	}
 	return 0;
 }
 
@@ -568,7 +664,7 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 	struct list_head *pos, *n;
 	key_entry_t *entry;
 	str *key_to_remove;
-	int ret;
+	int ret = 0;
 
 	con = (dynamodb_con *)(connection->data);
 
@@ -581,7 +677,8 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 	if (key) {
 
 		current_set = con->key_sets;
-		while (current_set != NULL && memcmp(current_set->keyset_name, keyset->s, keyset->len) != 0) {
+		while (current_set != NULL && (current_set->keyset_name->len != keyset->len ||
+				memcmp(current_set->keyset_name->s, keyset->s, keyset->len) != 0)) {
 			current_set = current_set->next;
 		}
 
@@ -589,8 +686,12 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 
 			list_for_each_safe(pos, n, &current_set->keys) {
 				entry = list_entry(pos, key_entry_t, list);
-				if (memcmp(entry->key, key->s, key->len) == 0) {
+				if (entry->key->len == key->len &&
+					memcmp(entry->key->s, key->s, key->len) == 0) {
 					list_del(&entry->list);
+					pkg_free(entry->key->s);
+					pkg_free(entry->key);
+					pkg_free(entry);
 					break;
 				}
 			}
@@ -602,7 +703,8 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 	} else {
 
 		current_set = con->key_sets;
-		while (current_set != NULL && memcmp(current_set->keyset_name, keyset->s, keyset->len) != 0) {
+		while (current_set != NULL && (current_set->keyset_name->len != keyset->len ||
+				memcmp(current_set->keyset_name->s, keyset->s, keyset->len) != 0)) {
 			 current_set = current_set->next;
 		}
 
@@ -610,27 +712,47 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 
 			list_for_each_safe(pos, n, &current_set->keys) {
 				entry = list_entry(pos, key_entry_t, list);
-				key_to_remove = pkg_malloc(sizeof(str));
-				init_str(key_to_remove, entry->key);
+				key_to_remove = (str *)pkg_malloc(sizeof(str));
+				if (!key_to_remove) {
+					LM_ERR("No more pkg mem\n");
+					return -1;
+				}
+
+				key_to_remove->s = pkg_strdup(entry->key->s);
+				if (!key_to_remove->s) {
+					LM_ERR("pkg_strdup failed\n");
+					pkg_free(key_to_remove);
+					return -1;
+				}
+				key_to_remove->len = entry->key->len;
 
 				ret = dynamodb_remove(connection, key_to_remove);
+				pkg_free(key_to_remove->s);
+				pkg_free(key_to_remove);
+
 				if (ret == -1) {
-					pkg_free(key_to_remove);
 					return -1;
 				}
 
 				list_del(&entry->list);
+				pkg_free(entry->key->s);
+				pkg_free(entry->key);
+				pkg_free(entry);
 			}
 
 			prev_set = con->key_sets;
 			if (prev_set == current_set) {
-				 con->key_sets = current_set->next;
+				con->key_sets = current_set->next;
 			} else {
 				while (prev_set->next != current_set) {
 					prev_set = prev_set->next;
 				}
 				prev_set->next = current_set->next;
 			}
+
+			pkg_free(current_set->keyset_name->s);
+			pkg_free(current_set->keyset_name);
+			pkg_free(current_set);
 
 		} else {
 			return -1;
