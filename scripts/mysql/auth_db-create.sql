@@ -4,11 +4,9 @@ CREATE TABLE subscriber (
     username CHAR(64) DEFAULT '' NOT NULL,
     domain CHAR(64) DEFAULT '' NOT NULL,
     password CHAR(25) DEFAULT '' NOT NULL,
-    email_address CHAR(64) DEFAULT '' NOT NULL,
     ha1 CHAR(64) DEFAULT '' NOT NULL,
     ha1_sha256 CHAR(64) DEFAULT '' NOT NULL,
     ha1_sha512t256 CHAR(64) DEFAULT '' NOT NULL,
-    rpid CHAR(64) DEFAULT NULL,
     CONSTRAINT account_idx UNIQUE (username, domain)
 ) ENGINE=InnoDB;
 
