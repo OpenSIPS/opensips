@@ -524,34 +524,41 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 }
 
 str *media_exchange_get_offer_sdp(rtp_ctx ctx, struct dlg_cell *dlg,
-		int mleg, int *release)
+		int leg, int *release)
 {
 	static str sbody;
 
 	*release = 0;
 	if (media_rtp.offer && ctx) {
-		sbody = dlg->legs[DLG_MEDIA_SESSION_LEG(dlg, mleg)].in_sdp;
+		sbody = dlg->legs[leg].in_sdp;
 		if (media_rtp.offer(ctx, &media_exchange_name,
-				(mleg == MEDIA_LEG_CALLER?
+				(leg == DLG_CALLER_LEG?
 				 RTP_RELAY_CALLER:RTP_RELAY_CALLEE),
 				&sbody) >= 0) {
-			*release = 1;
-			return &sbody;
+			/* the body towards the leg has changed, so we should update it */
+			if (shm_str_sync(&dlg->legs[leg].out_sdp, &sbody) < 0) {
+				LM_ERR("could not update dialog's out_sdp\n");
+				*release = 1;
+				return &sbody;
+			}
+			/* otherwise we return what has already been sync'ed */
 		}
 	}
 
-	sbody = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, mleg));
+	sbody = dlg_get_out_sdp(dlg, leg);
 	return &sbody;
 }
 
-str *media_exchange_get_answer_sdp(rtp_ctx ctx, str *body,
-		int mleg, int *release)
+str *media_exchange_get_answer_sdp(rtp_ctx ctx, struct dlg_cell *dlg, str *body,
+		int leg, int *release)
 {
 	*release = 0;
 	if (media_rtp.answer && ctx && media_rtp.answer(ctx, &media_exchange_name,
-			(mleg == MEDIA_LEG_CALLER?
-			 RTP_RELAY_CALLER:RTP_RELAY_CALLEE),
+			(leg == DLG_CALLER_LEG?
+			 RTP_RELAY_CALLEE:RTP_RELAY_CALLER),
 			body) >= 0) {
+		if (dlg)
+			shm_str_sync(&dlg->legs[leg].out_sdp, body);
 		*release = 1;
 		return body;
 	}
