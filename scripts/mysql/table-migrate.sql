@@ -17,9 +17,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-DROP PROCEDURE IF EXISTS `OSIPS_TB_COPY_3_4_TO_3_5`;
+DROP PROCEDURE IF EXISTS `OSIPS_TB_COPY_3_5_TO_3_6`;
 DELIMITER $$
-CREATE PROCEDURE `OSIPS_TB_COPY_3_4_TO_3_5`(
+CREATE PROCEDURE `OSIPS_TB_COPY_3_5_TO_3_6`(
 	IN old_db CHAR(64), IN new_db CHAR(64), IN tb_name CHAR(64))
 BEGIN
 SET @c1 = (SELECT EXISTS(
@@ -33,13 +33,13 @@ SET @c2 = (SELECT EXISTS(
        AND table_name = tb_name
 ));
 IF @c1 = 1 AND @c2 = 1 THEN
-	IF tb_name = 'example_exception_dispatcher' THEN
+	IF tb_name = 'subscriber' THEN
 		SET @Q = CONCAT('INSERT INTO ', new_db, '.', tb_name, '
-			(id, setid, destination, socket, state, probe_mode,
-				weight, priority, attrs, description)
+			(id, username, domain, password,
+				ha1, ha1_sha256, ha1_sha512t256)
 			SELECT
-			id, setid, destination, socket, state, 0,
-				weight, priority, attrs, description
+			id, username, domain, password,
+				ha1, ha1_sha256, ha1_sha512t256
 			FROM ', old_db, '.', tb_name);
 	ELSE
 		SET @Q = CONCAT('INSERT INTO ', new_db, '.', tb_name,
