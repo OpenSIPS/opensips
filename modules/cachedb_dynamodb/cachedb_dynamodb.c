@@ -124,12 +124,12 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 
 	/* default key & value */
 	if (!con->key.s) {
-		con->key.len = DYNAMODB_KEY_COL_LEN;
+		con->key.len = sizeof(DYNAMODB_KEY_COL_S);
 		con->key.s = DYNAMODB_KEY_COL_S;
 	}
 
 	if (!con->value.s) {
-		con->value.len = DYNAMODB_VAL_COL_LEN;
+		con->value.len = sizeof(DYNAMODB_VAL_COL_S);
 		con->value.s = DYNAMODB_VAL_COL_S;
 	}
 

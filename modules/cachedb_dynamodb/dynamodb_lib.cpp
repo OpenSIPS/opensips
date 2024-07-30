@@ -114,7 +114,7 @@ int insert_item_dynamodb(dynamodb_config *config,
 
 	if (ttl > 0) {
 		updateExpression += ", #ttl = :ttlValue";
-		expressionAttributeNames["#ttl"] = "ttl";
+		expressionAttributeNames["#ttl"] = DYNAMODB_TTL_S;
 		Aws::DynamoDB::Model::AttributeValue ttlValueObj;
 		ttlValueObj.SetN(std::to_string(time(NULL) + ttl));
 		expressionAttributeValues[":ttlValue"] = ttlValueObj;
@@ -473,7 +473,7 @@ int *update_item_inc_dynamodb(dynamodb_config *config,
 
 	if (ttl > 0) {
 		update_expression += ", #ttl = :ttlValue";
-		expressionAttributeNames["#ttl"] = "ttl";
+		expressionAttributeNames["#ttl"] = DYNAMODB_TTL_S;
 		Aws::DynamoDB::Model::AttributeValue ttlValueObj;
 		ttlValueObj.SetN(std::to_string(time(NULL) + ttl));
 		expressionAttributeValues[":ttlValue"] = ttlValueObj;
