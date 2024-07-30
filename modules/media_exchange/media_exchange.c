@@ -680,7 +680,7 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 	if (!body) {
 		if (media_rtp.get_ctx_dlg) {
 			ctx = media_rtp.get_ctx_dlg(dlg);
-			body = media_exchange_get_offer_sdp(ctx, dlg, leg, &release);
+			body = media_exchange_get_offer_sdp(ctx, dlg, req_leg, &release);
 		} else {
 			sbody = dlg_get_out_sdp(dlg, req_leg);
 			body = &sbody;
@@ -1261,11 +1261,11 @@ static int handle_media_session_reply_exchange(struct media_session_leg *msl,
 	str sbody;
 	struct dlg_cell *dlg;
 
-	if (msl->ms->rtp)
-		body = media_exchange_get_answer_sdp(msl->ms->rtp, body,
-				msl->leg, &release);
-
 	dlg = msl->ms->dlg;
+	if (msl->ms->rtp)
+		body = media_exchange_get_answer_sdp(msl->ms->rtp, dlg, body,
+				MEDIA_SESSION_DLG_LEG(msl), &release);
+
 	if (!p) {
 		/* here we were triggered outside of a request - simply reinvite the
 		 * other leg with the new body */
@@ -1621,7 +1621,8 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 	if (try_get_mi_string_param(params, "body", &body.s, &body.len) < 0) {
 		if (media_rtp.get_ctx_dlg) {
 			ctx = media_rtp.get_ctx_dlg(dlg);
-			pbody = media_exchange_get_offer_sdp(ctx, dlg, media_leg, &release);
+			pbody = media_exchange_get_offer_sdp(ctx, dlg,
+					DLG_MEDIA_SESSION_LEG(dlg, media_leg), &release);
 		} else {
 			body = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, media_leg));
 			pbody = &body;
