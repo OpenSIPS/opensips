@@ -30,20 +30,20 @@ void dynamodb_destroy(cachedb_con *connection) {
 	if (!con)
 		return;
 
-	if (con->endpoint)
-		pkg_free(con->endpoint);
+	if (con->endpoint.s)
+		pkg_free(con->endpoint.s);
 
-	if (con->key && con->key->s != (char *)DYNAMODB_KEY_COL_S)
-		pkg_free(con->key);
+	if (con->key.s && con->key.s != (char *)DYNAMODB_KEY_COL_S)
+		pkg_free(con->key.s);
 
-	if (con->region)
-		pkg_free(con->region);
+	if (con->region.s)
+		pkg_free(con->region.s);
 
-	if (con->tableName)
-		pkg_free(con->tableName);
+	if (con->tableName.s)
+		pkg_free(con->tableName.s);
 
-	if (con->value && con->value->s != (char *)DYNAMODB_VAL_COL_S)
-		pkg_free(con->value);
+	if (con->value.s && con->value.s != (char *)DYNAMODB_VAL_COL_S)
+		pkg_free(con->value.s);
 
 	shutdown_dynamodb(&con->config);
 	pkg_free(con);
@@ -55,11 +55,11 @@ int dynamodb_get(cachedb_con *connection, str *attr, str *val) {
 	query_item_t *result1;
 	char *result2;
 	str *value;
-	int *len, ret;
+	int ret, len;
 
 	con = (dynamodb_con *)(connection->data);
 
-	result1 = query_item_dynamodb(&con->config, con->tableName, con->key, attr, con->value);
+	result1 = query_item_dynamodb(&con->config, con->tableName, con->key, *attr, con->value);
 	if (result1 == NULL) {
 		LM_ERR("Query failed\n");
 		return -1;
@@ -72,14 +72,10 @@ int dynamodb_get(cachedb_con *connection, str *attr, str *val) {
 	}
 
 	if (result1->type == INT_TYPE) {
-		len = pkg_malloc(sizeof(int));
-		if (!len) {
-			LM_ERR("No more pkg mem\n");
-			goto out_err1;
-		}
-		result2 = sint2str(result1->number, len);
-		result2[*len] = '\0';
-		pkg_free(len);
+
+		result2 = sint2str(result1->number, &len);
+		result2[len] = '\0';
+
 		value = pkg_malloc(sizeof(str));
 		if (!value) {
 			LM_ERR("No more pkg mem\n");
@@ -124,7 +120,7 @@ int dynamodb_get_counter(cachedb_con *connection, str *attr, int *val) {
 	int ret;
 
 	con = (dynamodb_con *)(connection->data);
-	result1 = query_item_dynamodb(&con->config, con->tableName, con->key, attr, con->value);
+	result1 = query_item_dynamodb(&con->config, con->tableName, con->key, *attr, con->value);
 	if (result1 == NULL) {
 		LM_ERR("Query failed\n");
 		return -1;
@@ -168,7 +164,7 @@ int dynamodb_set(cachedb_con *connection, str *attr, str *val, int expires) {
 
 	con = (dynamodb_con *)(connection->data);
 
-	ret = insert_item_dynamodb(&con->config, con->tableName, con->key, attr, con->value, val, expires);
+	ret = insert_item_dynamodb(&con->config, con->tableName, con->key, *attr, con->value, *val, expires);
 	if (ret == -1) {
 		LM_ERR("Failed to insert item");
 		return -1;
@@ -183,7 +179,7 @@ int dynamodb_remove(cachedb_con *connection, str *attr) {
 
 	con = (dynamodb_con *)(connection->data);
 
-	ret = delete_item_dynamodb(&con->config, con->tableName, con->key, attr);
+	ret = delete_item_dynamodb(&con->config, con->tableName, con->key, *attr);
 	if (ret == -1) {
 		LM_ERR("Failed to delete item");
 		return -1;
@@ -196,7 +192,7 @@ int dynamodb_add(cachedb_con *connection, str *attr, int val, int expires, int *
 
 	con = (dynamodb_con *)(connection->data);
 
-	new_val = update_item_inc_dynamodb(&con->config, con->tableName, con->key, attr, con->value, val, expires);
+	new_val = update_item_inc_dynamodb(&con->config, con->tableName, con->key, *attr, con->value, val, expires);
 	if (new_val == NULL) {
 		return -1;
 	}
@@ -209,7 +205,7 @@ int dynamodb_sub(cachedb_con *connection, str *attr, int val, int expires, int *
 
 	con = (dynamodb_con *)(connection->data);
 
-	new_val = update_item_sub_dynamodb(&con->config, con->tableName, con->key, attr, con->value, val, expires);
+	new_val = update_item_sub_dynamodb(&con->config, con->tableName, con->key, *attr, con->value, val, expires);
 	if (new_val == NULL) {
 		return -1;
 	}
@@ -275,9 +271,8 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 	struct list_head *_;
 	cdb_pair_t *pair;
 	char *attribute_value_int;
-	str *attribute_value;
+	str attribute_value;
 	int ret;
-	attribute_value = pkg_malloc(sizeof(str));
 	attribute_value_int = NULL;
 
 	con = (dynamodb_con *)(connection->data);
@@ -288,8 +283,8 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 
 		switch (pair->val.type) {
 		case CDB_NULL:
-			attribute_value->s = NULL;
-			attribute_value->len = 0;
+			attribute_value.s = NULL;
+			attribute_value.len = 0;
 			break;
 
 		case CDB_INT32:
@@ -299,7 +294,7 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 				return -1;
 			}
 			sprintf(attribute_value_int, "%d", pair->val.val.i32);
-			init_str(attribute_value, attribute_value_int);
+			init_str(&attribute_value, attribute_value_int);
 
 			break;
 
@@ -310,11 +305,11 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 				return -1;
 			}
 			sprintf(attribute_value_int, "%ld", pair->val.val.i64);
-			init_str(attribute_value, attribute_value_int);
+			init_str(&attribute_value, attribute_value_int);
 			break;
 
 		case CDB_STR:
-			*attribute_value = pair->val.val.st;
+			attribute_value = pair->val.val.st;
 			break;
 
 		default:
@@ -322,7 +317,7 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 			return -1;
 		}
 
-		ret = insert_item_dynamodb(&con->config, con->tableName, con->key, key, &pair->key.name, attribute_value, 0);
+		ret = insert_item_dynamodb(&con->config, con->tableName, con->key, *key, pair->key.name, attribute_value, 0);
 		if (ret == -1 && pair->val.type != CDB_NULL) {
 			LM_ERR("Failed to insert item\n");
 			if (attribute_value_int != NULL)
@@ -335,8 +330,6 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 		}
 
 	}
-
-	pkg_free(attribute_value);
 
 	/* Handle key sets */
 	if (keyset != NULL)
@@ -548,7 +541,7 @@ int dynamodb_map_get(cachedb_con *connection, const str *key, cdb_res_t *res) {
 
 	} else {
 
-		result = query_items_dynamodb(&con->config, con->tableName, con->key, key);
+		result = query_items_dynamodb(&con->config, con->tableName, con->key, *key);
 		if (result == NULL) {
 			LM_ERR("Failed to get results\n");
 			return -1;
