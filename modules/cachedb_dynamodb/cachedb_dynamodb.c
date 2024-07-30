@@ -45,7 +45,7 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 	dynamodb_con *con;
 	csv_record *cols, *col, *kv;
 	str collection_list;
-	int ret;
+	int ret, len;
 	con = NULL;
 	cols = NULL;
 	kv = NULL;
@@ -61,12 +61,14 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 	memset(con, 0, sizeof(dynamodb_con));
 
 	if (id->database) {
-		con->tableName = pkg_malloc(sizeof(str));
+		con->tableName = pkg_malloc(sizeof(str) + strlen(id->database));
 		if (!con->tableName) {
 			LM_ERR("No more pkg mem\n");
 			goto out_err3;
 		}
-		init_str(con->tableName, id->database);
+		con->tableName->len = strlen(id->database);
+		con->tableName->s = (char *)(con->tableName + 1);
+		memcpy(con->tableName->s, id->database, con->tableName->len);
 	} else {
 		LM_ERR("No table\n");
 		goto out_err3;
@@ -89,45 +91,34 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 		}
 
 		if (strncasecmp(kv->s.s, "region", kv->s.len) == 0) {
-			con->region = pkg_malloc(sizeof(str));
+			con->region = pkg_malloc(sizeof(str) + kv->next->s.len);
 			if(!con->region) {
 				LM_ERR("No more pkg mem for con->region\n");
 				goto out_err1;
 			}
-			ret = pkg_str_dup(con->region, &(kv->next)->s);
-			if (ret == -1) {
-				LM_ERR("Pkg_str_dup failed\n");
-				pkg_free(con->region);
-				goto out_err1;
-
-			}
+			con->region->s = (char *)(con->region + 1);
+			memcpy(con->region->s, kv->next->s.s, kv->next->s.len);
+			con->region->len = kv->next->s.len;
 
 		} else if (strncasecmp(kv->s.s, "key", kv->s.len) == 0) {
-			con->key = pkg_malloc(sizeof(str));
+			con->key = pkg_malloc(sizeof(str) + kv->next->s.len);
 			if(!con->key) {
 				LM_ERR("No more pkg mem for con->key\n");
 				goto out_err1;
 			}
-			ret = pkg_str_dup(con->key, &(kv->next)->s);
-			if (ret == -1) {
-				LM_ERR("Pkg_str_dup failed\n");
-				pkg_free(con->key);
-				goto out_err1;
+			con->key->s = (char *)(con->key + 1);
+			memcpy(con->key->s, kv->next->s.s, kv->next->s.len);
+			con->key->len = kv->next->s.len;
 
-			}
 		} else if (strncasecmp(kv->s.s, "val", kv->s.len) == 0) {
-			con->value = pkg_malloc(sizeof(str));
+			con->value = pkg_malloc(sizeof(str) + kv->next->s.len);
 			if(!con->value) {
-				LM_ERR("No more pkg mem for con->value\n");
+				LM_ERR("No more pkg mem for con->key\n");
 				goto out_err1;
 			}
-			ret = pkg_str_dup(con->value, &(kv->next)->s);
-			if (ret == -1) {
-				LM_ERR("Pkg_str_dup failed\n");
-				pkg_free(con->value);
-				goto out_err1;
-
-			}
+			con->value->s = (char *)(con->value + 1);
+			memcpy(con->value->s, kv->next->s.s, kv->next->s.len);
+			con->value->len = kv->next->s.len;
 		}
 
 		free_csv_record(kv);
@@ -150,19 +141,16 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 
 	if(strcmp(id->host, "") != 0) {
 		/* build endpoint */
-		con->endpoint = pkg_malloc(sizeof(str));
+		len = MAX_PORT_LEN + sizeof(id->host) + 8 + 1 /* \0 */;
+
+		con->endpoint = pkg_malloc(sizeof(str) + len);
 		if (!con->endpoint) {
 			LM_ERR("No more pkg mem\n");
 			goto out_err3;
 		}
-		con->endpoint->len = MAX_PORT_LEN + sizeof(id->host) + 8 + 1 /* \0 */;
-		con->endpoint->s = pkg_malloc(con->endpoint->len * sizeof(char));
-		if (!con->endpoint->s) {
-			LM_ERR("No more pkg mem\n");
-			pkg_free(con->endpoint);
-			goto out_err3;
-		}
-		snprintf(con->endpoint->s, con->endpoint->len, "http://%s:%d", id->host, id->port);
+		con->endpoint->s = (char *)(con->endpoint + 1);
+		snprintf(con->endpoint->s, len, "http://%s:%d", id->host, id->port);
+		con->endpoint->len = len;
 
 	}
 

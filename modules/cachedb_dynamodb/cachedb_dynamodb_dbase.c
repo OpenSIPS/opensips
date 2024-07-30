@@ -79,7 +79,7 @@ int dynamodb_get(cachedb_con *connection, str *attr, str *val) {
 		}
 		result2 = sint2str(result1->number, len);
 		result2[*len] = '\0';
-
+		pkg_free(len);
 		value = pkg_malloc(sizeof(str));
 		if (!value) {
 			LM_ERR("No more pkg mem\n");
@@ -93,7 +93,6 @@ int dynamodb_get(cachedb_con *connection, str *attr, str *val) {
 			pkg_free(value);
 			goto out_err1;
 		}
-
 
 		free(result1);
 
@@ -235,20 +234,15 @@ void add_key_to_set(dynamodb_con *con, const str *keyset_name, const str *key) {
 			LM_ERR("No more pkg mem\n");
 			return;
 		}
-		current_set->keyset_name = (str *)pkg_malloc(sizeof(str));
+		current_set->keyset_name = (str *)pkg_malloc(sizeof(str) + keyset_name->len);
 		if (!current_set->keyset_name) {
 			LM_ERR("No more pkg mem\n");
 			pkg_free(current_set);
 			return;
 		}
 
-		current_set->keyset_name->s = pkg_strdup(keyset_name->s);
-		if (!current_set->keyset_name->s) {
-			LM_ERR("pkg_strdup failed\n");
-			pkg_free(current_set->keyset_name);
-			pkg_free(current_set);
-			return;
-		}
+		current_set->keyset_name->s = (char *)(current_set->keyset_name + 1);
+		memcpy(current_set->keyset_name->s, keyset_name->s, keyset_name->len);
 		current_set->keyset_name->len = keyset_name->len;
 
 		INIT_LIST_HEAD(&current_set->keys);
@@ -261,19 +255,15 @@ void add_key_to_set(dynamodb_con *con, const str *keyset_name, const str *key) {
 		LM_ERR("No more pkg mem\n");
 		return;
 	}
-	new_key->key = (str *)pkg_malloc(sizeof(str));
+	new_key->key = (str *)pkg_malloc(sizeof(str) + key->len);
 	if (!new_key->key) {
 		LM_ERR("No more pkg mem\n");
 		pkg_free(new_key);
 		return;
 	}
-	new_key->key->s = pkg_strdup(key->s);
-	if (!new_key->key->s) {
-		LM_ERR("pkg_strdup failed\n");
-		pkg_free(new_key->key);
-		pkg_free(new_key);
-		return;
-	}
+
+	new_key->key->s = (char *)(new_key->key + 1);
+	memcpy(new_key->key->s, key->s, key->len);
 	new_key->key->len = key->len;
 
 	list_add_tail(&new_key->list, &current_set->keys);
@@ -625,7 +615,6 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 				if (entry->key->len == key->len &&
 					memcmp(entry->key->s, key->s, key->len) == 0) {
 					list_del(&entry->list);
-					pkg_free(entry->key->s);
 					pkg_free(entry->key);
 					pkg_free(entry);
 					break;
@@ -648,22 +637,17 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 
 			list_for_each_safe(pos, n, &current_set->keys) {
 				entry = list_entry(pos, key_entry_t, list);
-				key_to_remove = (str *)pkg_malloc(sizeof(str));
+				key_to_remove = (str *)pkg_malloc(sizeof(str) + entry->key->len);
 				if (!key_to_remove) {
 					LM_ERR("No more pkg mem\n");
 					return -1;
 				}
 
-				key_to_remove->s = pkg_strdup(entry->key->s);
-				if (!key_to_remove->s) {
-					LM_ERR("pkg_strdup failed\n");
-					pkg_free(key_to_remove);
-					return -1;
-				}
+				key_to_remove->s = (char *)(key_to_remove + 1);
+				memcpy(key_to_remove->s, entry->key->s, entry->key->len);
 				key_to_remove->len = entry->key->len;
 
 				ret = dynamodb_remove(connection, key_to_remove);
-				pkg_free(key_to_remove->s);
 				pkg_free(key_to_remove);
 
 				if (ret == -1) {
@@ -671,7 +655,6 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 				}
 
 				list_del(&entry->list);
-				pkg_free(entry->key->s);
 				pkg_free(entry->key);
 				pkg_free(entry);
 			}
@@ -686,7 +669,6 @@ int dynamodb_map_remove(cachedb_con *connection, const str *key, const str *keys
 				prev_set->next = current_set->next;
 			}
 
-			pkg_free(current_set->keyset_name->s);
 			pkg_free(current_set->keyset_name);
 			pkg_free(current_set);
 
