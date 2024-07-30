@@ -61,14 +61,13 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 	memset(con, 0, sizeof(dynamodb_con));
 
 	if (id->database) {
-		con->tableName = pkg_malloc(sizeof(str) + strlen(id->database));
-		if (!con->tableName) {
+		con->tableName.s = pkg_malloc(strlen(id->database) * sizeof(char));
+		if (!con->tableName.s) {
 			LM_ERR("No more pkg mem\n");
 			goto out_err3;
 		}
-		con->tableName->len = strlen(id->database);
-		con->tableName->s = (char *)(con->tableName + 1);
-		memcpy(con->tableName->s, id->database, con->tableName->len);
+		con->tableName.len = strlen(id->database);
+		memcpy(con->tableName.s, id->database, con->tableName.len);
 	} else {
 		LM_ERR("No table\n");
 		goto out_err3;
@@ -91,34 +90,31 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 		}
 
 		if (strncasecmp(kv->s.s, "region", kv->s.len) == 0) {
-			con->region = pkg_malloc(sizeof(str) + kv->next->s.len);
-			if(!con->region) {
+			con->region.s = pkg_malloc(kv->next->s.len * sizeof(char));
+			if(!con->region.s) {
 				LM_ERR("No more pkg mem for con->region\n");
 				goto out_err1;
 			}
-			con->region->s = (char *)(con->region + 1);
-			memcpy(con->region->s, kv->next->s.s, kv->next->s.len);
-			con->region->len = kv->next->s.len;
+			memcpy(con->region.s, kv->next->s.s, kv->next->s.len);
+			con->region.len = kv->next->s.len;
 
 		} else if (strncasecmp(kv->s.s, "key", kv->s.len) == 0) {
-			con->key = pkg_malloc(sizeof(str) + kv->next->s.len);
-			if(!con->key) {
+			con->key.s = pkg_malloc(kv->next->s.len * sizeof(char));
+			if(!con->key.s) {
 				LM_ERR("No more pkg mem for con->key\n");
 				goto out_err1;
 			}
-			con->key->s = (char *)(con->key + 1);
-			memcpy(con->key->s, kv->next->s.s, kv->next->s.len);
-			con->key->len = kv->next->s.len;
+			memcpy(con->key.s, kv->next->s.s, kv->next->s.len);
+			con->key.len = kv->next->s.len;
 
 		} else if (strncasecmp(kv->s.s, "val", kv->s.len) == 0) {
-			con->value = pkg_malloc(sizeof(str) + kv->next->s.len);
-			if(!con->value) {
+			con->value.s = pkg_malloc(kv->next->s.len * sizeof(char));
+			if(!con->value.s) {
 				LM_ERR("No more pkg mem for con->key\n");
 				goto out_err1;
 			}
-			con->value->s = (char *)(con->value + 1);
-			memcpy(con->value->s, kv->next->s.s, kv->next->s.len);
-			con->value->len = kv->next->s.len;
+			memcpy(con->value.s, kv->next->s.s, kv->next->s.len);
+			con->value.len = kv->next->s.len;
 		}
 
 		free_csv_record(kv);
@@ -127,14 +123,14 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 	free_csv_record(cols);
 
 	/* default key & value */
-	if (!con->key) {
-		con->key->len = DYNAMODB_KEY_COL_LEN;
-		con->key->s = DYNAMODB_KEY_COL_S;
+	if (!con->key.s) {
+		con->key.len = DYNAMODB_KEY_COL_LEN;
+		con->key.s = DYNAMODB_KEY_COL_S;
 	}
 
-	if (!con->value) {
-		con->value->len = DYNAMODB_VAL_COL_LEN;
-		con->value->s = DYNAMODB_VAL_COL_S;
+	if (!con->value.s) {
+		con->value.len = DYNAMODB_VAL_COL_LEN;
+		con->value.s = DYNAMODB_VAL_COL_S;
 	}
 
 	con->cache_con.id = id;
@@ -143,18 +139,17 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 		/* build endpoint */
 		len = MAX_PORT_LEN + sizeof(id->host) + 8 + 1 /* \0 */;
 
-		con->endpoint = pkg_malloc(sizeof(str) + len);
-		if (!con->endpoint) {
+		con->endpoint.s = pkg_malloc(len * sizeof(char));
+		if (!con->endpoint.s) {
 			LM_ERR("No more pkg mem\n");
 			goto out_err3;
 		}
-		con->endpoint->s = (char *)(con->endpoint + 1);
-		snprintf(con->endpoint->s, len, "http://%s:%d", id->host, id->port);
-		con->endpoint->len = len;
+		snprintf(con->endpoint.s, len, "http://%s:%d", id->host, id->port);
+		con->endpoint.len = len;
 
 	}
 
-	if(con->endpoint == NULL && con->region == NULL) {
+	if(con->endpoint.s == NULL && con->region.s == NULL) {
 		LM_ERR("Can't init connection\n");
 		goto out_err3;
 	}

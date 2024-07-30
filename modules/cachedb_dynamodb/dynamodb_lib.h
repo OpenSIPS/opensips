@@ -60,12 +60,12 @@ typedef struct dynamodb_con {
 
 	str *host;				// Note: the .id may contain multi-hosts, so the
 	unsigned short port;	// host/port of this connection are extracted here
-	str *endpoint;
-	str *region;
-	str *key;
+	str endpoint;
+	str region;
+	str key;
 	key_set_entry_t *key_sets; // List to store key sets
-	str *value;
-	str *tableName;
+	str value;
+	str tableName;
 	dynamodb_config config;
 } dynamodb_con;
 
@@ -95,42 +95,42 @@ typedef struct {
 int init_dynamodb(dynamodb_con *con);
 void shutdown_dynamodb(dynamodb_config *config);
 int insert_item_dynamodb(dynamodb_config *config,
-						 const str *tableName,
-						 const str *partitionKey,
-						 const str *partitionValue,
-						 const str *attributeName,
-						 const str* attributeValue,
+						 const str tableName,
+						 const str partitionKey,
+						 const str partitionValue,
+						 const str attributeName,
+						 const str attributeValue,
 						 int ttl);
 int delete_item_dynamodb(dynamodb_config *config,
-						 const str *tableName,
-						 const str *partitionKey,
-						 const str *partitionValue);
+						 const str tableName,
+						 const str partitionKey,
+						 const str partitionValue);
 query_item_t *query_item_dynamodb(dynamodb_config *config,
-								  const str *tableName,
-								  const str *partitionKey,
-								  const str *partitionValue,
-								  const str *attributeKey);
+								  const str tableName,
+								  const str partitionKey,
+								  const str partitionValue,
+								  const str attributeKey);
 int *update_item_inc_dynamodb(dynamodb_config *config,
-							  const str *tableName,
-							  const str *partitionKey,
-							  const str *partitionValue,
-							  const str *valueKey,
+							  const str tableName,
+							  const str partitionKey,
+							  const str partitionValue,
+							  const str valueKey,
 							  int incrementValue,
 							  int ttl);
 query_result_t *query_items_dynamodb(dynamodb_config *config,
-									 const str *tableName,
-									 const str *partitionKey,
-									 const str *partitionValue);
+									 const str tableName,
+									 const str partitionKey,
+									 const str partitionValue);
 int *update_item_sub_dynamodb(dynamodb_config *config,
-							  const str *tableName,
-							  const str *partitionKey,
-							  const str *partitionValue,
-							  const str *valueKey,
+							  const str tableName,
+							  const str partitionKey,
+							  const str partitionValue,
+							  const str valueKey,
 							  int incrementValue,
 							  int ttl);
 query_result_t *scan_table_dynamodb(dynamodb_config *config,
-									const str *tableName,
-									const str *key);
+									const str tableName,
+									const str key);
 #ifdef __cplusplus
 }
 #endif
