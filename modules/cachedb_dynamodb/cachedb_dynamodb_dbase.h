@@ -25,16 +25,15 @@
 #include "dynamodb_lib.h"
 #include "../../cachedb/cachedb.h"
 
-int dynamodb_get(cachedb_con *connection,str *attr,str *val);
-int dynamodb_get_counter(cachedb_con *connection,str *attr, int *val);
-int dynamodb_set(cachedb_con *connection,str *attr,str *val,int expires);
-int dynamodb_remove(cachedb_con *connection,str *attr);
+int dynamodb_get(cachedb_con *connection, str *attr, str *val);
+int dynamodb_get_counter(cachedb_con *connection, str *attr, int *val);
+int dynamodb_set(cachedb_con *connection, str *attr, str *val, int expires);
+int dynamodb_remove(cachedb_con *connection, str *attr);
 int dynamodb_add(cachedb_con *connection, str *attr, int val, int expires, int *new_val);
 int dynamodb_sub(cachedb_con *connection, str *attr, int val, int expires, int *new_val);
 int dynamodb_map_set(cachedb_con *con, const str *key, const str *subkey, const cdb_dict_t *pairs);
 int dynamodb_map_get(cachedb_con *con, const str *key, cdb_res_t *res);
 int dynamodb_map_remove(cachedb_con *con, const str *key, const str *subkey);
 void dynamodb_destroy(cachedb_con *con);
-char *from_str_to_string(const str *str);
 
 #endif
