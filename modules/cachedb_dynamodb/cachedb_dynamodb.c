@@ -36,7 +36,7 @@ struct cachedb_url *dynamo_script_urls = NULL;
 
 int set_connection(unsigned int type, void *val)
 {
-	return cachedb_store_url(&dynamo_script_urls,(char *)val);
+	return cachedb_store_url(&dynamo_script_urls, (char *)val);
 }
 
 
@@ -45,12 +45,11 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 	dynamodb_con *con;
 	csv_record *cols, *col, *kv;
 	str collection_list;
-	char *endpoint;
-	int endpoint_len, ret;
+	int ret;
 	con = NULL;
 	cols = NULL;
 	kv = NULL;
-	endpoint = NULL;
+
 	LM_DBG("Connecting to DynamoDB with URL: %s\n", id->initial_url);
 
 	con = (dynamodb_con *)pkg_malloc(sizeof(dynamodb_con));
@@ -62,7 +61,12 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 	memset(con, 0, sizeof(dynamodb_con));
 
 	if (id->database) {
-		con->tableName = id->database;
+		con->tableName = pkg_malloc(sizeof(str));
+		if (!con->tableName) {
+			LM_ERR("No more pkg mem\n");
+			goto out_err3;
+		}
+		init_str(con->tableName, id->database);
 	} else {
 		LM_ERR("No table\n");
 		goto out_err3;
@@ -85,23 +89,44 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 		}
 
 		if (strncasecmp(kv->s.s, "region", kv->s.len) == 0) {
-			con->region = from_str_to_string(&(kv->next)->s);
-			if(con->region == NULL) {
+			con->region = pkg_malloc(sizeof(str));
+			if(!con->region) {
 				LM_ERR("No more pkg mem for con->region\n");
 				goto out_err1;
 			}
+			ret = pkg_str_dup(con->region, &(kv->next)->s);
+			if (ret == -1) {
+				LM_ERR("Pkg_str_dup failed\n");
+				pkg_free(con->region);
+				goto out_err1;
+
+			}
 
 		} else if (strncasecmp(kv->s.s, "key", kv->s.len) == 0) {
-			con->key = from_str_to_string(&(kv->next)->s);
-			if(con->key == NULL) {
+			con->key = pkg_malloc(sizeof(str));
+			if(!con->key) {
 				LM_ERR("No more pkg mem for con->key\n");
 				goto out_err1;
 			}
+			ret = pkg_str_dup(con->key, &(kv->next)->s);
+			if (ret == -1) {
+				LM_ERR("Pkg_str_dup failed\n");
+				pkg_free(con->key);
+				goto out_err1;
+
+			}
 		} else if (strncasecmp(kv->s.s, "val", kv->s.len) == 0) {
-			con->value = from_str_to_string(&(kv->next)->s);
-			if(con->value == NULL) {
+			con->value = pkg_malloc(sizeof(str));
+			if(!con->value) {
 				LM_ERR("No more pkg mem for con->value\n");
 				goto out_err1;
+			}
+			ret = pkg_str_dup(con->value, &(kv->next)->s);
+			if (ret == -1) {
+				LM_ERR("Pkg_str_dup failed\n");
+				pkg_free(con->value);
+				goto out_err1;
+
 			}
 		}
 
@@ -112,27 +137,32 @@ dynamodb_con *dynamodb_new_connection(struct cachedb_id* id)
 
 	/* default key & value */
 	if (!con->key) {
-		con->key = DYNAMODB_KEY_COL_S;
+		con->key->len = DYNAMODB_KEY_COL_LEN;
+		con->key->s = DYNAMODB_KEY_COL_S;
 	}
 
 	if (!con->value) {
-		con->value = DYNAMODB_VAL_COL_S;
+		con->value->len = DYNAMODB_VAL_COL_LEN;
+		con->value->s = DYNAMODB_VAL_COL_S;
 	}
 
 	con->cache_con.id = id;
 
 	if(strcmp(id->host, "") != 0) {
 		/* build endpoint */
-		endpoint_len = MAX_PORT_LEN + sizeof(id->host) + 8 + 1 /* \0 */;
-		endpoint = pkg_malloc(endpoint_len * sizeof(char));
-		if (!endpoint) {
+		con->endpoint = pkg_malloc(sizeof(str));
+		if (!con->endpoint) {
 			LM_ERR("No more pkg mem\n");
 			goto out_err3;
 		}
-
-		snprintf(endpoint, endpoint_len, "http://%s:%d", id->host, id->port);
-
-		con->endpoint = endpoint;
+		con->endpoint->len = MAX_PORT_LEN + sizeof(id->host) + 8 + 1 /* \0 */;
+		con->endpoint->s = pkg_malloc(con->endpoint->len * sizeof(char));
+		if (!con->endpoint->s) {
+			LM_ERR("No more pkg mem\n");
+			pkg_free(con->endpoint);
+			goto out_err3;
+		}
+		snprintf(con->endpoint->s, con->endpoint->len, "http://%s:%d", id->host, id->port);
 
 	}
 
@@ -160,7 +190,7 @@ out_err3:
 
 cachedb_con *dynamodb_init(str *url)
 {
-	return cachedb_do_init(url,(void *)dynamodb_new_connection);
+	return cachedb_do_init(url, (void *)dynamodb_new_connection);
 }
 
 
@@ -247,7 +277,7 @@ static int child_init(int rank)
 			LM_ERR("failed to open connection\n");
 			return -1;
 		}
-		if (cachedb_put_connection(&cache_mod_name,con) < 0) {
+		if (cachedb_put_connection(&cache_mod_name, con) < 0) {
 			LM_ERR("failed to insert connection\n");
 			return -1;
 		}
