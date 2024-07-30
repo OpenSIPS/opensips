@@ -30,9 +30,8 @@
 #include <string.h>
 
 #define DYNAMODB_KEY_COL_S    "opensipskey"
-#define DYNAMODB_KEY_COL_LEN  11
 #define DYNAMODB_VAL_COL_S    "opensipsval"
-#define DYNAMODB_VAL_COL_LEN  11
+#define DYNAMODB_TTL_S		  "ttl"
 
 #ifdef __cplusplus
 extern "C" {
