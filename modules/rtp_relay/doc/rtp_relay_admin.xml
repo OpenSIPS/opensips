@@ -1010,9 +1010,9 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1 \
 			<para>
 				Is used to provision the RTP back-end flags for the
 				current peer - if used in the initial INVITE
-				REQUEST/BRANCH route, it provisions the flags of the
-				caller, whereas if used in the initial INVITE REPLY,
-				it provisions the callee's flags.
+				REQUEST route, it provisions the flags of the
+				caller, whereas if used in the initial INVITE BRANCH/REPLY
+				route, it provisions the callee's flags.
 			</para>
 			<para>
 				For a sequential request, the variable represents the
