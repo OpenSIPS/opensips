@@ -16,6 +16,8 @@ include ../../Makefile.modules
 dynamodb_lib.o: dynamodb_lib.cpp
 	$(Q)g++ -c -fPIC $< -o $@
 
-.PHONY: clean
-clean:
-	-@rm dynamodb_lib.o
+clean: clean-dynamodb
+
+.PHONY: clean-dynamodb
+clean-dynamodb:
+	-@rm -f dynamodb_lib.o
