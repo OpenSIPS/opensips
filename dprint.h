@@ -68,7 +68,7 @@
 #ifdef __SUNPRO_C
 	#define DP_PREFIX
 #else
-	#define DP_PREFIX  "%s [%d] "
+	#define DP_PREFIX  (char *)"%s [%d] "
 #endif
 
 #define DP_ALERT_STR    "ALERT"
@@ -170,7 +170,7 @@ int dp_my_pid(void);
 
 void stderr_dprint_tmp(char *format, ...);
 
-void dprint(int log_level, int facility, char *module, const char *func,
+void dprint(int log_level, int facility, const char *module, const char *func,
 	char *stderr_fmt, char *syslog_fmt, char *format, ...)
 	__attribute__ ((__format__ (__printf__, 5, 8)));
 
@@ -206,9 +206,9 @@ static inline char* dp_time(void)
 	return ctime_buf+4;  /* remove name of day*/
 }
 
-static inline char *dp_log_level_str(int log_level)
+static inline const char *dp_log_level_str(int log_level)
 {
-	char *level_str;
+	const char *level_str;
 
 	switch (log_level) {
 	case L_ALERT:
@@ -454,8 +454,8 @@ static inline char *dp_log_level_str(int log_level)
 				dprint(_log_level, _log_facility, \
 					LOG_PREFIX_UTIL(MOD_NAME), __DP_FUNC, \
 					_stderr_prefix LOG_PREFIX _fmt, \
-					"%s" _syslog_prefix LOG_PREFIX _fmt, \
-					_fmt, \
+					(char *)"%s" _syslog_prefix LOG_PREFIX _fmt, \
+					(char *)_fmt, \
 					dp_time(), dp_my_pid(), log_prefix, __DP_FUNC, ## args) \
 
 		#define LM_GEN(_lev, fmt, args...) \

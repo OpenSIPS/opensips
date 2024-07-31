@@ -40,7 +40,7 @@
 
 /* used internally by the log interface */
 typedef void (*log_print_pre_fmt_f)(log_print_f gen_print_func, int log_level,
-	int facility, char *module, const char *func,
+	int facility, const char *module, const char *func,
 	char *stderr_plain_fmt, char *syslog_plain_fmt, char *format, va_list ap);
 
 struct log_consumer_t {
@@ -72,16 +72,16 @@ int log_msg_buf_size = 4096;
 
 str log_cee_hostname;
 
-static void stderr_dprint(int log_level, int facility, char *module, const char *func,
+static void stderr_dprint(int log_level, int facility, const char *module, const char *func,
 	char *format, va_list ap);
-static void syslog_dprint(int log_level, int facility, char *module, const char *func,
+static void syslog_dprint(int log_level, int facility, const char *module, const char *func,
 	char *format, va_list ap);
 
 static void stderr_pre_fmt_func(log_print_f gen_print_func, int log_level,
-	int facility, char *module, const char *func,
+	int facility, const char *module, const char *func,
 	char *stderr_plain_fmt, char *syslog_plain_fmt, char *format, va_list ap);
 static void syslog_pre_fmt_func(log_print_f gen_print_func, int log_level,
-	int facility, char *module, const char *func,
+	int facility, const char *module, const char *func,
 	char *stderr_plain_fmt, char *syslog_plain_fmt, char *format, va_list ap);
 
 /* static consumer table to be used until a shm one is alloc'ed;
@@ -311,7 +311,7 @@ enum log_json_format {
 };
 
 static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
-	int pid, char *prefix, char *level, char *module, const char *func,
+	int pid, char *prefix, const char *level, const char *module, const char *func,
 	char *format, va_list ap)
 {
 	char *p, *tmp;
@@ -454,7 +454,7 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 	return len;
 }
 
-static void stderr_dprint(int log_level, int facility, char *module, const char *func,
+static void stderr_dprint(int log_level, int facility, const char *module, const char *func,
 	char *format, va_list ap)
 {
 	char *time;
@@ -486,7 +486,7 @@ static void stderr_dprint(int log_level, int facility, char *module, const char 
 	}
 }
 
-static void syslog_dprint(int log_level, int facility, char *module, const char *func,
+static void syslog_dprint(int log_level, int facility, const char *module, const char *func,
 	char *format, va_list ap)
 {
 	int level;
@@ -553,7 +553,7 @@ static str evi_func_str = str_init("function");
 static str evi_prefix_str = str_init("prefix");
 static str evi_msg_str = str_init("message");
 
-static void event_dprint(int level, int facility, char *module, const char *func,
+static void event_dprint(int level, int facility, const char *module, const char *func,
 	char *format, va_list ap)
 {
 	evi_params_p list = NULL;
@@ -652,7 +652,7 @@ end_free:
 
 /* generic consumer that registers to the log interface */
 static void gen_consumer_pre_fmt_func(log_print_f gen_print_func, int log_level,
-	int facility, char *module, const char *func,
+	int facility, const char *module, const char *func,
 	char *stderr_plain_fmt, char *syslog_plain_fmt, char *format, va_list ap)
 {
 	/* skip the time, pid, prefix and function arguments from va_list */
@@ -666,7 +666,7 @@ static void gen_consumer_pre_fmt_func(log_print_f gen_print_func, int log_level,
 }
 
 static void stderr_pre_fmt_func(log_print_f gen_print_func, int log_level,
-	int facility, char *module, const char *func,
+	int facility, const char *module, const char *func,
 	char *stderr_plain_fmt, char *syslog_plain_fmt, char *format, va_list ap)
 {
 	char *fmt = stderr_log_format == LOG_FORMAT_PLAIN ? stderr_plain_fmt : format;
@@ -675,7 +675,7 @@ static void stderr_pre_fmt_func(log_print_f gen_print_func, int log_level,
 }
 
 static void syslog_pre_fmt_func(log_print_f gen_print_func, int log_level,
-	int facility, char *module, const char *func,
+	int facility, const char *module, const char *func,
 	char *stderr_plain_fmt, char *syslog_plain_fmt, char *format, va_list ap)
 {
 	char *fmt = syslog_log_format == LOG_FORMAT_PLAIN ? syslog_plain_fmt : format;
@@ -683,7 +683,7 @@ static void syslog_pre_fmt_func(log_print_f gen_print_func, int log_level,
 	gen_print_func(log_level, facility, module, func, fmt, ap);
 }
 
-void dprint(int log_level, int facility, char *module, const char *func,
+void dprint(int log_level, int facility, const char *module, const char *func,
 	char *stderr_fmt, char *syslog_fmt, char *format, ...)
 {
 	va_list ap, ap_copy;
