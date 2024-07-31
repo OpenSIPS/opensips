@@ -126,7 +126,7 @@ int insert_item_dynamodb(dynamodb_config *config,
 
 	const Aws::DynamoDB::Model::UpdateItemOutcome &outcome = dynamoClient.UpdateItem(request);
 	if (!outcome.IsSuccess()) {
-		std::cerr << "Failed to update item: " << outcome.GetError().GetMessage() << std::endl;
+		LM_ERR("Failed to update item: %s\n", outcome.GetError().GetMessage().c_str());
 		return -1;
 	}
 	return 0;
@@ -145,7 +145,7 @@ int delete_item_dynamodb(dynamodb_config *config,
 
 	const Aws::DynamoDB::Model::DeleteItemOutcome &outcome = dynamoClient.DeleteItem(request);
 	if (!outcome.IsSuccess()) {
-		std::cerr << "Failed to delete item: " << outcome.GetError().GetMessage() << std::endl;
+		LM_ERR("Failed to delete item: %s\n", outcome.GetError().GetMessage().c_str());
 		return -1;
 	}
 	return 0;
@@ -203,15 +203,15 @@ query_item_t* query_item_dynamodb(dynamodb_config *config,
 							result->type = query_item_t::INT_TYPE;
 						}
 					} else {
-						std::cout << "Not found" << std::endl;
+						LM_DBG("Not found.\n");
 					}
 				}
 			} else {
-				std::cerr << "No item found in table: " << std::endl;
+				LM_DBG("No item found in table: %.*s\n", tableName.len, tableName.s);
 			}
 			exclusiveStartKey = outcome.GetResult().GetLastEvaluatedKey();
 		} else {
-			std::cerr << "Failed to Query items: " << outcome.GetError().GetMessage() << std::endl;
+			LM_ERR("Failed to Query items: %s\n", outcome.GetError().GetMessage().c_str());
 			return NULL;
 		}
 	} while (!exclusiveStartKey.empty());
@@ -256,13 +256,13 @@ query_result_t* query_items_dynamodb(dynamodb_config *config,
 				row.no_attributes = item.size();
 				row.key = strdup(std::string(partitionKey.s, partitionKey.len).c_str());
 				if (!row.key) {
-					std::cerr << "Strdup failed\n" << std::endl;
+					LM_ERR("Strdup failed\n");
 					return NULL;
 				}
 
 				row.key_value = strdup(std::string(partitionValue.s, partitionValue.len).c_str());
 				if (!row.key_value) {
-					std::cerr << "Strdup failed\n" << std::endl;
+					LM_ERR("Strdup failed\n");
 					return NULL;
 				}
 
@@ -272,21 +272,21 @@ query_result_t* query_items_dynamodb(dynamodb_config *config,
 				for (const auto &i : item) {
 					row.attributes[attribute_index].key = strdup(i.first.c_str());
 					if (!row.attributes[attribute_index].key) {
-						std::cerr << "Strdup failed\n" << std::endl;
+						LM_ERR("Strdup failed\n");
 						return NULL;
 					}
 
 					if (i.second.GetS() != "") {
 						row.attributes[attribute_index].value = strdup(i.second.GetS().c_str());
 						if (!row.attributes[attribute_index].value) {
-							std::cerr << "Strdup failed\n" << std::endl;
+							LM_ERR("Strdup failed\n");
 							return NULL;
 						}
 
 					} else if (i.second.GetN() != "") {
 						row.attributes[attribute_index].value = strdup(i.second.GetN().c_str());
 						if (!row.attributes[attribute_index].value) {
-							std::cerr << "Strdup failed\n" << std::endl;
+							LM_ERR("Strdup failed\n");
 							return NULL;
 						}
 					} else {
@@ -306,7 +306,7 @@ query_result_t* query_items_dynamodb(dynamodb_config *config,
 			}
 			exclusiveStartKey = outcome.GetResult().GetLastEvaluatedKey();
 		} else {
-			std::cerr << "Failed to Query items: " << outcome.GetError().GetMessage() << std::endl;
+			LM_ERR("Failed to Query items: %s\n", outcome.GetError().GetMessage().c_str());
 			if (queryResult->items != nullptr) {
 				for (int i = 0; i < queryResult->num_rows; ++i) {
 					delete[] queryResult->items[i].attributes;
@@ -352,20 +352,20 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 					if (itemEntry.first == std::string(key.s, key.len)) {
 						row.key = strdup(itemEntry.first.c_str());
 						if (!row.key) {
-							std::cerr << "Strdup failed\n" << std::endl;
+							LM_ERR("Strdup failed\n");
 							return NULL;
 						}
 
 						row.key_value = strdup(itemEntry.second.GetS().c_str());
 						if (!row.key_value) {
-							std::cerr << "Strdup failed\n" << std::endl;
+							LM_ERR("Strdup failed\n");
 							return NULL;
 						}
 
 					} else {
 						row.attributes[attr_index].key = strdup(itemEntry.first.c_str());
 						if (!row.attributes[attr_index].key) {
-							std::cerr << "Strdup failed\n" << std::endl;
+							LM_ERR("Strdup failed\n");
 							return NULL;
 						}
 
@@ -373,7 +373,7 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 
 							row.attributes[attr_index].value = strdup(itemEntry.second.GetS().c_str());
 							if (!row.attributes[attr_index].value) {
-								std::cerr << "Strdup failed\n" << std::endl;
+								LM_ERR("Strdup failed\n");
 								return NULL;
 							}
 
@@ -381,7 +381,7 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 
 							row.attributes[attr_index].value = strdup(itemEntry.second.GetN().c_str());
 							if (!row.attributes[attr_index].value) {
-								std::cerr << "Strdup failed\n" << std::endl;
+								LM_ERR("Strdup failed\n");
 								return NULL;
 							}
 
@@ -399,7 +399,7 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 			}
 			request.SetExclusiveStartKey(outcome.GetResult().GetLastEvaluatedKey());
 		} else {
-			std::cerr << "Failed to Scan items: " << outcome.GetError().GetMessage() << std::endl;
+			LM_ERR("Failed to Scan items: %s\n", outcome.GetError().GetMessage().c_str());
 			delete result;
 			return nullptr;
 		}
@@ -431,13 +431,13 @@ int *update_item_inc_dynamodb(dynamodb_config *config,
 
 	const Aws::DynamoDB::Model::GetItemOutcome &getItemOutcome = dynamoClient.GetItem(getItemRequest);
 	if (!getItemOutcome.IsSuccess()) {
-		std::cerr << getItemOutcome.GetError().GetMessage() << std::endl;
+		LM_ERR("%s\n", getItemOutcome.GetError().GetMessage().c_str());
 		return NULL;
 	}
 
 	const Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> &item = getItemOutcome.GetResult().GetItem();
 	if (item.empty()) {
-		std::cerr << "Item not found." << std::endl;
+		LM_DBG("Item not found.\n");
 		return NULL;
 	}
 
@@ -447,11 +447,11 @@ int *update_item_inc_dynamodb(dynamodb_config *config,
 		try {
 			currentValue = std::stoi(attributeIter->second.GetS());
 		} catch (const std::exception &e) {
-			std::cerr << "Error converting current value to integer: " << e.what() << std::endl;
+			LM_ERR("Error converting current value to integer: %s\n", e.what());
 			return NULL;
 		}
 	} else {
-		std::cerr << "Attribute not found or not a string." << std::endl;
+		LM_DBG("Attribute not found or not a string.\n");
 		return NULL;
 	}
 
@@ -484,7 +484,7 @@ int *update_item_inc_dynamodb(dynamodb_config *config,
 
 	const Aws::DynamoDB::Model::UpdateItemOutcome &updateOutcome = dynamoClient.UpdateItem(updateRequest);
 	if (!updateOutcome.IsSuccess()) {
-		std::cerr << updateOutcome.GetError().GetMessage() << std::endl;
+		LM_ERR("%s\n", updateOutcome.GetError().GetMessage().c_str());
 		return NULL;
 	}
 
@@ -508,13 +508,13 @@ int *update_item_sub_dynamodb(dynamodb_config *config,
 
 	const Aws::DynamoDB::Model::GetItemOutcome &getItemOutcome = dynamoClient.GetItem(getItemRequest);
 	if (!getItemOutcome.IsSuccess()) {
-		std::cerr << getItemOutcome.GetError().GetMessage() << std::endl;
+		LM_ERR("%s\n", getItemOutcome.GetError().GetMessage().c_str());
 		return NULL;
 	}
 
 	const Aws::Map<Aws::String, Aws::DynamoDB::Model::AttributeValue> &item = getItemOutcome.GetResult().GetItem();
 	if (item.empty()) {
-		std::cout << "Item not found." << std::endl;
+		LM_DBG("Item not found.\n");
 		return NULL;
 	}
 
@@ -524,11 +524,11 @@ int *update_item_sub_dynamodb(dynamodb_config *config,
 		try {
 			currentValue = std::stoi(attributeIter->second.GetS());
 		} catch (const std::exception &e) {
-			std::cerr << "Error converting current value to integer: " << e.what() << std::endl;
+			LM_ERR("Error converting current value to integer: %s\n", e.what());
 			return NULL;
 		}
 	} else {
-		std::cerr << "Attribute not found or not a string." << std::endl;
+		LM_DBG("Attribute not found or not a string.\n");
 		return NULL;
 	}
 
@@ -562,7 +562,7 @@ int *update_item_sub_dynamodb(dynamodb_config *config,
 
 	const Aws::DynamoDB::Model::UpdateItemOutcome &updateOutcome = dynamoClient.UpdateItem(updateRequest);
 	if (!updateOutcome.IsSuccess()) {
-		std::cerr << updateOutcome.GetError().GetMessage() << std::endl;
+		LM_ERR("%s\n", updateOutcome.GetError().GetMessage().c_str());
 		return NULL;
 	}
 
