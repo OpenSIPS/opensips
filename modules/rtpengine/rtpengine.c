@@ -2440,7 +2440,8 @@ static struct rtpe_node *get_rtpe_node(str *node, struct rtpe_set *set)
 	for (rnode = set->rn_first; rnode; rnode = rnode->rn_next)
 		if (node->len == rnode->rn_url.len &&
 				!memcmp(node->s, rnode->rn_url.s, node->len)) {
-			return rnode;
+			rnode->rn_disabled = rtpe_test(rnode, rnode->rn_disabled, 0);
+			return (rnode->rn_disabled?NULL:rnode);
 		}
 	return NULL;
 }
