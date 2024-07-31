@@ -25,7 +25,7 @@
 #include <stdarg.h>
 
 /* printing function to be registered by a generic logging consumer */
-typedef void (*log_print_f)(int log_level, int facility, char *module, const char *func,
+typedef void (*log_print_f)(int log_level, int facility, const char *module, const char *func,
 	char *format, va_list ap);
 
 int register_log_consumer(char *name, log_print_f print_func,
