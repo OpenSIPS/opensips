@@ -285,7 +285,7 @@ BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
 
 ## modules not in the "main" package or unstable modules that we never want to build
 ## Everything we don't specifically exclude here will get built into the primary package
-NONCORE_MODULES = $(ALL_MODULES) osp launch_darkly http2d
+NONCORE_MODULES = $(ALL_MODULES) osp launch_darkly http2d cachedb_dynamodb
 
 ifeq (cc, $(CC))
 	CC = gcc
