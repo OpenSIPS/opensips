@@ -37,6 +37,8 @@
 extern "C" {
 #endif
 
+#include "../../dprint.h"
+
 typedef struct {
 	void *options;
 	void *clientConfig;
