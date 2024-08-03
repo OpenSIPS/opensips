@@ -587,9 +587,10 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1
 1.8.1. $rtp_relay
 
    Is used to provision the RTP back-end flags for the current
-   peer - if used in the initial INVITE REQUEST/BRANCH route, it
+   peer - if used in the initial INVITE REQUEST route, it
    provisions the flags of the caller, whereas if used in the
-   initial INVITE REPLY, it provisions the callee's flags.
+   initial INVITE BRANCH/REPLY route, it provisions the callee's
+   flags.
 
    For a sequential request, the variable represents the flags
    used for the UAC that generated the request. When used in a
@@ -650,7 +651,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)   161      84      6873     1144
+   1. Razvan Crainea (@razvancrainea)   163      86      6877     1148
    2. Maksym Sobolyev (@sobomax)         6        4       10       11
    3. Norman Brandinger (@NormB)         4        2       2        2
    4. Vlad Patrascu (@rvlad-patrascu)    3        1       11       7
@@ -677,7 +678,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Apr 2021 - Jun 2024
+   1. Razvan Crainea (@razvancrainea) Apr 2021 - Jul 2024
    2. Liviu Chircu (@liviuchircu)     Jun 2024 - Jun 2024
    3. Norman Brandinger (@NormB)      Mar 2024 - Jun 2024
    4. Maksym Sobolyev (@sobomax)      Feb 2023 - Nov 2023
