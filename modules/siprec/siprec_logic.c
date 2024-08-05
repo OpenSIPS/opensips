@@ -568,6 +568,42 @@ static int srs_send_invite(struct src_sess *sess)
 	return 0;
 }
 
+static void srec_dlg_late(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+{
+	struct src_sess *ss;
+
+	if (!_params) {
+		LM_ERR("no parameter specified to dlg callback!\n");
+		return;
+	}
+	ss = *_params->param;
+	SIPREC_LOCK(ss);
+	if ((ss->flags & SIPREC_LATE) == 0)
+		goto unlock;
+	if (src_start_recording(_params->msg, ss) < 0) {
+		LM_ERR("could not start recording\n");
+		goto unlock;
+	}
+	ss->flags &= ~SIPREC_LATE;
+unlock:
+	SIPREC_UNLOCK(ss);
+}
+
+
+int srec_late_recording(struct src_sess *sess)
+{
+	SIPREC_REF(sess);
+	sess->flags |= SIPREC_LATE;
+	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_REQ_WITHIN,
+			srec_dlg_late, sess, dlg_src_unref_session)){
+		LM_ERR("cannot register callback for late negotiation\n");
+		sess->flags &= ~SIPREC_LATE;
+		SIPREC_UNREF(sess);
+		return -1;
+	}
+	return 0;
+}
+
 /* starts the recording to the srs */
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 {
@@ -575,7 +611,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	int ret;
 	str sdp;
 
-	if (!sess->socket) {
+	if (!sess->socket && msg) {
 		sess->socket = uri2sock(msg, &SIPREC_SRS(sess), &tmp, PROTO_NONE);
 		if (!sess->socket) {
 			LM_ERR("cannot get send socket for uri %.*s\n",

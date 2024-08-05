@@ -204,6 +204,8 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 	struct src_sess *ss;
 	struct dlg_cell *dlg;
 	struct srec_var *var;
+	struct cell *t;
+	str body;
 	rtp_ctx rtp;
 
 	/* create the dialog, if does not exist yet */
@@ -292,6 +294,14 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 
 	if (dlg->state > DLG_STATE_CONFIRMED_NA)
 		goto start_recording;
+
+	/* if we are in the context of a reply, but we're dealing with a late-negotiation
+	 * we need to postpone the 'copy-offer' command until we have both SDPs */
+	t = srec_tm.t_gett();
+	if (t && t != T_UNDEFINED && t->uas.request) {
+		if (get_body(t->uas.request, &body) >= 0 && body.len == 0)
+			return srec_late_recording(ss);
+	}
 
 	SIPREC_REF_UNSAFE(ss);
 	srec_hlog(ss, SREC_REF, "starting recording");

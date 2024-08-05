@@ -36,6 +36,7 @@ void srec_logic_destroy(struct src_sess *sess, int keep_sdp);
 void srec_nodes_destroy(struct src_sess *sess);
 int src_pause_recording(void);
 int src_resume_recording(void);
+int srec_late_recording(struct src_sess *ss);
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess);
 int srec_stop_recording(struct src_sess *ss);
 int src_send_indialog(struct sip_msg *msg, str *hdrs, str *body);
