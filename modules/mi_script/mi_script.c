@@ -638,6 +638,7 @@ static void mi_script_async_start_job(int sender, void *param)
 	struct mi_script_async_job *job = (struct mi_script_async_job *)param;
 	struct mi_handler *hdl = NULL;
 	mi_response_t *resp = NULL;
+	mi_request_t *req;
 
 	if (job->cmd->flags & MI_ASYNC_RPL_FLAG) {
 		hdl = shm_malloc(sizeof *hdl);
@@ -649,13 +650,17 @@ static void mi_script_async_start_job(int sender, void *param)
 		}
 	}
 
-	resp = handle_mi_request(job->req, job->cmd, hdl);
+	/* backup @req now, before exposing @job to other procs */
+	req = job->req;
+	job->req = NULL;
+
+	resp = handle_mi_request(req, job->cmd, hdl);
 	if (resp != MI_ASYNC_RPL) {
 		mi_script_async_job(resp, job);
 		free_mi_response(resp);
 	}
-	mi_script_free_request(job->req, 1);
-	job->req = NULL;
+
+	mi_script_free_request(req, 1);
 }
 
 /* we use this just for notifying that the request is terminated */
