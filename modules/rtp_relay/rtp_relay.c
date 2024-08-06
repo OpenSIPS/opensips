@@ -275,7 +275,7 @@ struct rtp_relay_leg *rtp_relay_get_leg(struct rtp_relay_ctx *ctx,
 				continue;
 			}
 		}
-		if (leg->index != RTP_RELAY_ALL_BRANCHES && leg->index == idx)
+		if (leg->index == idx)
 			return leg;
 	}
 
