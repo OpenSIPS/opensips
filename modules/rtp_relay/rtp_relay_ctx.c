@@ -548,7 +548,8 @@ static inline void rtp_relay_fill_sess_leg(struct rtp_relay_ctx *ctx,
 		struct rtp_relay_sess *sess, int type, str *tag, int index)
 {
 	struct rtp_relay_leg *leg = rtp_relay_get_leg(ctx, tag, index);
-	if (!leg && index != RTP_RELAY_ALL_BRANCHES)
+	if ((leg && index != RTP_RELAY_ALL_BRANCHES && sess->legs[RTP_RELAY_PEER(type)] == leg) ||
+			(!leg && index != RTP_RELAY_ALL_BRANCHES))
 		leg = rtp_relay_get_leg(ctx, tag, RTP_RELAY_ALL_BRANCHES);
 	rtp_relay_push_sess_leg(sess, leg, type);
 }
