@@ -1181,7 +1181,7 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 		else if (ctx->dlg_callid.len)
 			info->callid = &ctx->dlg_callid;
 	}
-	if (leg == RTP_RELAY_CALLER) {
+	if (leg == RTP_RELAY_CALLER || rtp_sess_late(sess)) {
 		if (!info->from_tag && ctx->from_tag.len)
 			info->from_tag = &ctx->from_tag;
 		if (!info->to_tag && ctx->to_tag.len)
