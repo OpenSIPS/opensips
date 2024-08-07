@@ -1489,6 +1489,8 @@ static int rtp_relay_indlg_get_type(struct sip_msg *msg,
 			RTP_RELAY_ALL_BRANCHES);
 	if (!leg)
 		return -1;
+	if (!leg->tag.s)
+		shm_str_sync(&leg->tag, &get_from(msg)->tag_value);
 	for (ltype = RTP_RELAY_CALLER; ltype <= RTP_RELAY_CALLEE; ltype++)
 		if (leg == ctx->established->legs[ltype])
 			return ltype;
