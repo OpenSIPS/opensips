@@ -537,6 +537,8 @@ static inline void rtp_relay_push_sess_leg(struct rtp_relay_sess *sess,
 		return;
 	if (sess->legs[type])
 		rtp_relay_ctx_release_leg(sess->legs[type]);
+	LM_RTP_DBG("pushing sess=%p index=%d type=%d leg=%p(%d/%.*s)\n",
+			sess, sess->index, type, leg, leg->index, leg->tag.len, leg->tag.s);
 	sess->legs[type] = leg;
 	leg->peer = sess->legs[RTP_RELAY_PEER(type)];
 	if (leg->peer)
@@ -1168,9 +1170,10 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 		if (!info->from_tag && ctx->to_tag.len)
 			info->from_tag = &ctx->to_tag;
 	}
-	LM_DBG("callid=[%.*s] ftag=[%.*s] ttag=[%.*s] "
+	LM_DBG("leg=%s callid=[%.*s] ftag=[%.*s] ttag=[%.*s] "
 			"type=[%.*s] in-iface=[%.*s] out-iface=[%.*s] ctx-flags=[%.*s] "
 			"flags=[%.*s] peer-flags=[%.*s]\n",
+			(leg==RTP_RELAY_CALLER?"caller":"callee"),
 			RTP_RELAY_S(info->callid),
 			RTP_RELAY_S(info->from_tag),
 			RTP_RELAY_S(info->to_tag),
@@ -1239,10 +1242,10 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 			body = &ret_body;
 		}
 	}
-
-	LM_DBG("callid=[%.*s] ftag=[%.*s] ttag=[%.*s] "
+	LM_DBG("leg=%s callid=[%.*s] ftag=[%.*s] ttag=[%.*s] "
 			"type=[%.*s] in-iface=[%.*s] out-iface=[%.*s] ctx-flags=[%.*s] "
 			"flags=[%.*s] peer-flags=[%.*s]\n",
+			(leg==RTP_RELAY_CALLER?"caller":"callee"),
 			RTP_RELAY_S(info->callid),
 			RTP_RELAY_S(info->from_tag),
 			RTP_RELAY_S(info->to_tag),
@@ -1730,6 +1733,14 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 		}
 		rtp_relay_ctx_set_established(ctx);
 	}
+	LM_RTP_DBG("success %p(%d) %p(%d/%.*s)/%p(%d/%.*s)\n",
+			ctx->established, ctx->established->index,
+			sess->legs[0], sess->legs[0]?sess->legs[0]->index:-2,
+			sess->legs[0]?sess->legs[0]->tag.len:0,
+			sess->legs[0]?sess->legs[0]->tag.s:"",
+			sess->legs[1], sess->legs[1]?sess->legs[1]->index:-2,
+			sess->legs[1]?sess->legs[1]->tag.len:0,
+			sess->legs[1]?sess->legs[1]->tag.s:"");
 	return 0;
 }
 
