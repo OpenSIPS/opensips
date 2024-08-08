@@ -302,7 +302,7 @@ struct rtp_relay_leg *rtp_relay_new_leg(struct rtp_relay_ctx *ctx,
 	leg->index = idx;
 	leg->ref = 1;
 	list_add(&leg->list, &ctx->legs);
-	LM_RTP_DBG("new leg=%p index=%d tag=[%.*s]\n", leg, idx, tag?tag->len:0, tag.s);
+	LM_RTP_DBG("new leg=%p index=%d tag=[%.*s]\n", leg, idx, tag?tag->len:0, tag->s);
 	return leg;
 }
 
