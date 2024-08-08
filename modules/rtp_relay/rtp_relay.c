@@ -243,20 +243,25 @@ struct rtp_relay_leg *rtp_relay_get_leg(struct rtp_relay_ctx *ctx,
 
 	LM_RTP_DBG("searching for tag [%.*s] idx [%d]\n", tag?tag->len:0, tag?tag->s:"", idx);
 
+	if (tag) {
+		/* search only by tag */
+		list_for_each(it, &ctx->legs) {
+			leg = list_entry(it, struct rtp_relay_leg, list);
+			/* match by tag */
+			if (str_match(tag, &leg->tag))
+				return leg;
+		}
+		if (idx == RTP_RELAY_ALL_BRANCHES)
+			goto not_found;
+	}
+	/* search by index */
 	list_for_each(it, &ctx->legs) {
 		leg = list_entry(it, struct rtp_relay_leg, list);
-		if (tag) {
-			/* match by tag */
-			if (leg->tag.len) {
-				if (str_match(tag, &leg->tag))
-					return leg;
-				continue;
-			}
-		}
 		if (leg->index == idx)
 			return leg;
 	}
 
+not_found:
 	LM_RTP_DBG("no leg for tag [%.*s] idx [%d]\n", tag?tag->len:0, tag?tag->s:"", idx);
 	return NULL;
 }
@@ -275,7 +280,7 @@ struct rtp_relay_leg *rtp_relay_new_leg(struct rtp_relay_ctx *ctx,
 	leg->index = idx;
 	leg->ref = 1;
 	list_add(&leg->list, &ctx->legs);
-	LM_RTP_DBG("new leg=%p index=%d\n", leg, idx);
+	LM_RTP_DBG("new leg=%p index=%d tag=[%.*s]\n", leg, idx, tag?tag->len:0, tag.s);
 	return leg;
 }
 
