@@ -231,6 +231,52 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 		</section>
 	</section>
 
+	<section id="exported_events" xreflabel="Exported Events">
+		<title>Exported Events</title>
+		<section id="event_E_SIPREC_START" xreflabel="E_SIPREC_START">
+			<title>
+				<function moreinfo="none">E_SIPREC_START</function>
+			</title>
+			<para>
+				This event is raised when a SIPREC call is established and a call
+				starts to be recorded.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>dlg_id</emphasis> - dialog id (<quote>did</quote>)
+					of the call being recorded;
+				</para></listitem>
+				<listitem><para>
+					<emphasis>dlg_callid</emphasis> - Call-Id of the call being
+					recorded;
+				</para></listitem>
+				<listitem><para>
+					<emphasis>callid</emphasis> - Call-Id (B2B id) of the
+					SIPREC call;
+				</para></listitem>
+				<listitem><para>
+					<emphasis>session_id</emphasis> - SIPREC UUID of the recording call;
+				</para></listitem>
+				<listitem><para>
+					<emphasis>server</emphasis> - the SIPREC server handing this call;
+				</para></listitem>
+			</itemizedlist>
+		</section>
+
+		<section id="event_E_SIPREC_STOP" xreflabel="E_SIPREC_STOP">
+			<title>
+				<function moreinfo="none">E_SIPREC_STOP</function>
+			</title>
+			<para>
+				This event is raised when a SIPREC call is terminated.
+			</para>
+			<para>This event exposes the same parameters as the
+			<xref linkend="event_E_SIPREC_START"/> event.
+			</para>
+		</section>
+	</section>
+
 	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 		<section id="func_siprec_start_recording" xreflabel="siprec_start_recording()">

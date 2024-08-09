@@ -25,6 +25,7 @@
 
 #include "siprec_logic.h"
 #include "siprec_body.h"
+#include "siprec_events.h"
 #include "../../mod_fix.h"
 #include "../../error.h"
 
@@ -72,6 +73,11 @@ int src_init(void)
 	if (regcomp(&skip_codes_regex, skip_failover_codes.s, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) {
 		LM_ERR("cannot compile skip_failover_codes regex [%.*s]!\n",
 				skip_failover_codes.len, skip_failover_codes.s);
+		return -1;
+	}
+
+	if (src_init_events() < 0) {
+		LM_ERR("could not initialize siprec events\n");
 		return -1;
 	}
 
@@ -151,6 +157,7 @@ int srec_stop_recording(struct src_sess *ss)
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
+	raise_siprec_stop_event(ss);
 	src_clean_session(ss);
 	return 0;
 }
@@ -231,6 +238,7 @@ int srec_register_callbacks(struct src_sess *sess)
 			"Will not be able to handle in-dialog for replicated sessions!\n");
 	LM_DBG("registered dialog callbacks for %p\n", sess);
 	sess->flags |= SIPREC_DLG_CBS;
+	raise_siprec_start_event(sess);
 	return 0;
 }
 
@@ -288,6 +296,8 @@ static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 	if (get_body(msg, &body) != 0 || body.len==0) {
 		if (msg->REQ_METHOD != METHOD_UPDATE)
 			goto reply;
+		if (msg->REQ_METHOD == METHOD_BYE)
+			raise_siprec_stop_event(ss);
 		code = 200;
 	} else {
 		if (srec_rtp.copy_answer(ss->rtp, &mod_name,
