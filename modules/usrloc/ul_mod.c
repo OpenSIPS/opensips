@@ -177,6 +177,9 @@ static char *nat_bflag_str = 0;
  */
 int location_cluster;
 
+int ul_ha_cluster;
+str ul_ha_shtag;
+
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
 
@@ -263,6 +266,8 @@ static const param_export_t params[] = {
 
 	/* data replication through clusterer using TCP binary packets */
 	{ "location_cluster",	INT_PARAM, &location_cluster   },
+	{ "ha_cluster",	        INT_PARAM, &ul_ha_cluster },
+	{ "ha_shtag",	        STR_PARAM, &ul_ha_shtag.s },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops   },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
@@ -729,6 +734,14 @@ int ul_check_config(void)
 			return -1;
 		}
 
+		if (!ul_ha_cluster)
+			LM_ERR("'ha_cluster' is not set! "
+			        "Backup node will also write to CacheDB!\n");
+
+		if (!ul_ha_shtag.s)
+			LM_ERR("'ha_shtag' is not set! "
+			        "Backup node will also write to CacheDB!\n");
+
 		if (!cdb_url.s) {
 			LM_ERR("no cache database URL defined! ('cachedb_url')\n");
 			return -1;
@@ -848,6 +861,8 @@ int ul_init_globals(void)
 	kv_store_col.len = strlen(kv_store_col.s);
 	attr_col.len = strlen(attr_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
+	if (ul_ha_shtag.s)
+		ul_ha_shtag.len = strlen(ul_ha_shtag.s);
 
 	if (ul_hash_size > 16) {
 		LM_WARN("hash too big! max 2 ^ 16\n");

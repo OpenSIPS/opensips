@@ -1178,7 +1178,7 @@ int mem_timer_udomain(udomain_t* _d)
 				if (exists_ulcb_type(UL_AOR_EXPIRE))
 					run_ul_callbacks(UL_AOR_EXPIRE, ptr, NULL);
 
-				if (location_cluster) {
+				if (location_cluster && ul_is_active_node()) {
 					if (cluster_mode == CM_FEDERATION_CACHEDB &&
 					    cdb_update_urecord_metadata(&ptr->aor, 1) != 0)
 						LM_ERR("failed to delete metadata, aor: %.*s\n",

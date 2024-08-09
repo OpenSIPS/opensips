@@ -1188,6 +1188,48 @@ modparam("usrloc", "location_cluster", 1)
 		</example>
 	</section>
 
+	<section id="param_ha_cluster" xreflabel="ha_cluster">
+		<title><varname>ha_cluster</varname> (integer)</title>
+		<para>
+		Only relevant in <emphasis role='bold'>"federation-cachedb"</emphasis>
+		<xref linkend="param_cluster_mode"/>.  Denotes the HA cluster ID to use in
+		order to establish the active node within the HA pair, such that only
+		that node performs WRITE operations to CacheDB.
+		</para>
+		<para>
+		Default value is 0 (disabled).
+		</para>
+		<example>
+		<title>Setting the <varname>ha_cluster</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "ha_cluster", 4)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ha_shtag" xreflabel="ha_shtag">
+		<title><varname>ha_shtag</varname> (string)</title>
+		<para>
+		Only relevant in <emphasis role='bold'>"federation-cachedb"</emphasis>
+		<xref linkend="param_cluster_mode"/>.  Denotes the HA cluster sharing tag to
+		use in order to establish the active node within the HA pair, such that
+		only that node performs WRITE operations to CacheDB.
+		</para>
+		<para>
+		Default value is NULL (disabled).
+		</para>
+		<example>
+		<title>Setting the <varname>ha_shtag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "ha_shtag", "vip2")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_skip_replicated_db_ops" xreflabel="skip_replicated_db_ops">
 		<title><varname>skip_replicated_db_ops</varname> (int)</title>
 		<para>
