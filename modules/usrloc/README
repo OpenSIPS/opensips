@@ -52,15 +52,17 @@ usrloc Module
               1.5.30. matching_mode (integer)
               1.5.31. cseq_delay (integer)
               1.5.32. location_cluster (integer)
-              1.5.33. skip_replicated_db_ops (int)
-              1.5.34. max_contact_delete (int)
-              1.5.35. hash_size (integer)
-              1.5.36. regen_broken_contactid (integer)
-              1.5.37. latency_event_min_us (integer)
-              1.5.38. latency_event_min_us_delta (integer)
-              1.5.39. pinging_mode (string)
-              1.5.40. mi_dump_kv_store (integer)
-              1.5.41. contact_refresh_timer (boolean)
+              1.5.33. ha_cluster (integer)
+              1.5.34. ha_shtag (string)
+              1.5.35. skip_replicated_db_ops (int)
+              1.5.36. max_contact_delete (int)
+              1.5.37. hash_size (integer)
+              1.5.38. regen_broken_contactid (integer)
+              1.5.39. latency_event_min_us (integer)
+              1.5.40. latency_event_min_us_delta (integer)
+              1.5.41. pinging_mode (string)
+              1.5.42. mi_dump_kv_store (integer)
+              1.5.43. contact_refresh_timer (boolean)
 
         1.6. Exported Functions
 
@@ -188,18 +190,20 @@ usrloc Module
    1.30. Set matching_mode parameter
    1.31. Set cseq_delay parameter
    1.32. Setting the location_cluster parameter
-   1.33. Setting the skip_replicated_db_ops parameter
-   1.34. Setting the max_contact_delete parameter
-   1.35. Set hash_size parameter
-   1.36. Set regen_broken_contactid parameter
-   1.37. Set latency_event_min_us parameter
-   1.38. Set latency_event_min_us_delta parameter
-   1.39. Set pinging_mode parameter
-   1.40. Set mi_dump_kv_store parameter
-   1.41. Set contact_refresh_timer parameter
-   1.42. ul_add_key usage
-   1.43. ul_get_key usage
-   1.44. ul_del_key usage
+   1.33. Setting the ha_cluster parameter
+   1.34. Setting the ha_shtag parameter
+   1.35. Setting the skip_replicated_db_ops parameter
+   1.36. Setting the max_contact_delete parameter
+   1.37. Set hash_size parameter
+   1.38. Set regen_broken_contactid parameter
+   1.39. Set latency_event_min_us parameter
+   1.40. Set latency_event_min_us_delta parameter
+   1.41. Set pinging_mode parameter
+   1.42. Set mi_dump_kv_store parameter
+   1.43. Set contact_refresh_timer parameter
+   1.44. ul_add_key usage
+   1.45. ul_get_key usage
+   1.46. ul_del_key usage
 
 Chapter 1. Admin Guide
 
@@ -915,7 +919,35 @@ modparam("usrloc", "cseq_delay", 5)
 modparam("usrloc", "location_cluster", 1)
 ...
 
-1.5.33. skip_replicated_db_ops (int)
+1.5.33. ha_cluster (integer)
+
+   Only relevant in "federation-cachedb" cluster_mode. Denotes the
+   HA cluster ID to use in order to establish the active node
+   within the HA pair, such that only that node performs WRITE
+   operations to CacheDB.
+
+   Default value is 0 (disabled).
+
+   Example 1.33. Setting the ha_cluster parameter
+...
+modparam("usrloc", "ha_cluster", 4)
+...
+
+1.5.34. ha_shtag (string)
+
+   Only relevant in "federation-cachedb" cluster_mode. Denotes the
+   HA cluster sharing tag to use in order to establish the active
+   node within the HA pair, such that only that node performs
+   WRITE operations to CacheDB.
+
+   Default value is NULL (disabled).
+
+   Example 1.34. Setting the ha_shtag parameter
+...
+modparam("usrloc", "ha_shtag", "vip2")
+...
+
+1.5.35. skip_replicated_db_ops (int)
 
    Prevent OpenSIPS from performing any DB-related contact
    operations when events are received over the Binary Interface.
@@ -927,12 +959,12 @@ modparam("usrloc", "location_cluster", 1)
    More details on the user location replication mechanism are
    available in Distributed SIP User Location
 
-   Example 1.33. Setting the skip_replicated_db_ops parameter
+   Example 1.35. Setting the skip_replicated_db_ops parameter
 ...
 modparam("usrloc", "skip_replicated_db_ops", 1)
 ...
 
-1.5.34. max_contact_delete (int)
+1.5.36. max_contact_delete (int)
 
    Relevant only in WRITE_THROUGH or WRITE_BACK schemes. The
    maximum number of contacts to be deleted from the database at
@@ -941,12 +973,12 @@ modparam("usrloc", "skip_replicated_db_ops", 1)
 
    Default value is "10"
 
-   Example 1.34. Setting the max_contact_delete parameter
+   Example 1.36. Setting the max_contact_delete parameter
 ...
 modparam("usrloc", "max_contact_delete", 10)
 ...
 
-1.5.35. hash_size (integer)
+1.5.37. hash_size (integer)
 
    The number of entries of the hash table used by usrloc to store
    the location records is 2^hash_size. For hash_size=4, the
@@ -956,12 +988,12 @@ modparam("usrloc", "max_contact_delete", 10)
 
    Default value is “9”.
 
-   Example 1.35. Set hash_size parameter
+   Example 1.37. Set hash_size parameter
 ...
 modparam("usrloc", "hash_size", 10)
 ...
 
-1.5.36. regen_broken_contactid (integer)
+1.5.38. regen_broken_contactid (integer)
 
    Since version 2.2, contact_id concept was introduced. Since
    this parameter validates a contact each time OpenSIPS is
@@ -973,12 +1005,12 @@ modparam("usrloc", "hash_size", 10)
 
    Default value is “0(not enabled)”
 
-   Example 1.36. Set regen_broken_contactid parameter
+   Example 1.38. Set regen_broken_contactid parameter
 ...
 modparam("usrloc", "regen_broken_contactid", 1)
 ...
 
-1.5.37. latency_event_min_us (integer)
+1.5.39. latency_event_min_us (integer)
 
    Defines a minimal pinging latency threshold, in microseconds,
    past which contact pinging latency update events will get
@@ -990,13 +1022,13 @@ modparam("usrloc", "regen_broken_contactid", 1)
 
    Default value is “0 (no bottom limit set)”.
 
-   Example 1.37. Set latency_event_min_us parameter
+   Example 1.39. Set latency_event_min_us parameter
 ...
 # raise an event for any 425+ ms pinging latency
 modparam("usrloc", "latency_event_min_us", 425000)
 ...
 
-1.5.38. latency_event_min_us_delta (integer)
+1.5.40. latency_event_min_us_delta (integer)
 
    Defines a minimal, absolute pinging latency difference, in
    microseconds, past which contact pinging latency update events
@@ -1009,13 +1041,13 @@ modparam("usrloc", "latency_event_min_us", 425000)
 
    Default value is “0 (no minimal latency delta set)”.
 
-   Example 1.38. Set latency_event_min_us_delta parameter
+   Example 1.40. Set latency_event_min_us_delta parameter
 ...
 # raise an event only if a contact has pinging latency swings of 300+ ms
 modparam("usrloc", "latency_event_min_us_delta", 300000)
 ...
 
-1.5.39. pinging_mode (string)
+1.5.41. pinging_mode (string)
 
    Depending on the cluster_mode, the module can perform contact
    pinging using one of two possible heuristics:
@@ -1048,13 +1080,13 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
    pinging logic. Any unaccepted value, according to the above
    table, set for those modes will be silently discarded.
 
-   Example 1.39. Set pinging_mode parameter
+   Example 1.41. Set pinging_mode parameter
 ...
 # prepare an active/backup "full-sharing" setup, with no front-end
 modparam("usrloc", "pinging_mode", "ownership")
 ...
 
-1.5.40. mi_dump_kv_store (integer)
+1.5.42. mi_dump_kv_store (integer)
 
    Enable in order to include the "KV-Store" field in all usrloc
    MI commands which output AoR or Contact representations. This
@@ -1064,13 +1096,13 @@ modparam("usrloc", "pinging_mode", "ownership")
 
    Default value is “0 (disabled)”.
 
-   Example 1.40. Set mi_dump_kv_store parameter
+   Example 1.42. Set mi_dump_kv_store parameter
 ...
 # include the "KV-Store" key in all usrloc MI output
 modparam("usrloc", "mi_dump_kv_store", 1)
 ...
 
-1.5.41. contact_refresh_timer (boolean)
+1.5.43. contact_refresh_timer (boolean)
 
    Enable a timer which will periodically scan a sorted list of
    contacts and raise the E_UL_CONTACT_REFRESH for any of them
@@ -1080,7 +1112,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
    Default value is “false (disabled)”.
 
-   Example 1.41. Set contact_refresh_timer parameter
+   Example 1.43. Set contact_refresh_timer parameter
 ...
 modparam("usrloc", "contact_refresh_timer", true)
 ...
@@ -1104,7 +1136,7 @@ modparam("usrloc", "contact_refresh_timer", true)
 
    This function can be used in ANY route.
 
-   Example 1.42. ul_add_key usage
+   Example 1.44. ul_add_key usage
 ...
 ul_add_key("location", "$tU@$td", "service_route", "$hdr(Service-Route)"
 );
@@ -1128,7 +1160,7 @@ ul_add_key("location", "$tU@$td", "service_route", "$hdr(Service-Route)"
 
    This function can be used in ANY route.
 
-   Example 1.43. ul_get_key usage
+   Example 1.45. ul_get_key usage
 ...
 if (ul_get_key("location", "$tU@$td", "service_route", "$avp(service_rou
 te)")) {
@@ -1151,7 +1183,7 @@ te)")) {
 
    This function can be used in ANY route.
 
-   Example 1.44. ul_del_key usage
+   Example 1.46. ul_del_key usage
 ...
 ul_del_key("location", "$tU@$td", "service_route");
 ...
@@ -1659,7 +1691,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 414 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 345 206 9214 3736
+   2. Liviu Chircu (@liviuchircu) 346 207 9281 3737
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 245 150 4232 3624
    4. Vlad Patrascu (@rvlad-patrascu) 43 25 794 661
    5. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
@@ -1703,7 +1735,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2024
    2.  Carsten Bock                        Mar 2024 - Mar 2024
    3.  Maksym Sobolyev (@sobomax)          Apr 2003 - Dec 2023
    4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
