@@ -42,6 +42,7 @@ struct rtpe_node {
 	int					rn_disabled;	/* found unaccessible? */
 	unsigned			rn_weight;		/* for load balancing */
 	unsigned int		rn_recheck_ticks;
+	unsigned int		rn_last_ticks;
 	int					rn_flags;
 	struct rtpe_node	*rn_next;
 };

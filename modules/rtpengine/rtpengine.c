@@ -358,6 +358,7 @@ static int rtpengine_stats_used = 0;
 static int rtpengine_disable_tout = 60;
 static int rtpengine_retr = 5;
 static int rtpengine_tout = 1;
+static int rtpengine_ping_enabled = 0;
 static int rtpengine_timer_interval = 5;
 static pid_t mypid;
 static int myrand = 0;
@@ -696,6 +697,7 @@ static const param_export_t params[] = {
 	{"set_column",             STR_PARAM, &db_rtpe_set_col.s         },
 	{"notification_sock",      STR_PARAM|USE_FUNC_PARAM,
 									(void *)rtpengine_set_notify},
+	{"ping_enabled",           INT_PARAM, &rtpengine_ping_enabled    },
 	{0, 0, 0}
 };
 
@@ -1465,7 +1467,9 @@ void rtpengine_timer(unsigned int ticks, void *param)
 					rtpe_list = rtpe_list->rset_next){
 		for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
 						crt_rtpe = crt_rtpe->rn_next){
-      if (crt_rtpe->rn_disabled && crt_rtpe->rn_recheck_ticks <= get_ticks()) {
+      if ((crt_rtpe->rn_disabled && crt_rtpe->rn_recheck_ticks <= get_ticks()) ||
+		  (rtpengine_ping_enabled && !crt_rtpe->rn_disabled &&
+		   crt_rtpe->rn_last_ticks + rtpengine_timer_interval <= get_ticks())) {
 		disabled = crt_rtpe->rn_disabled;
         crt_rtpe->rn_disabled = rtpe_test(crt_rtpe, 0, 1);
 		if (crt_rtpe->rn_disabled != disabled)
@@ -2929,6 +2933,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 			LM_ERR("can't read reply from a RTP proxy\n");
 			goto badproxy;
 		}
+		node->rn_last_ticks = get_ticks();
 	} else {
 		if (rtpe_socks[node->idx] != -1) {
 			fds[0].fd = rtpe_socks[node->idx];
@@ -2977,6 +2982,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 					RTPE_IO_ERROR_CLOSE(rtpe_socks[node->idx]);
 					continue;
 				}
+				node->rn_last_ticks = get_ticks();
 				if (len >= (v[0].iov_len - 1) &&
 				    memcmp(buf, v[0].iov_base, (v[0].iov_len - 1)) == 0) {
 					len -= (v[0].iov_len - 1);

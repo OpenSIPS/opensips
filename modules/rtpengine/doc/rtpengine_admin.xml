@@ -373,6 +373,31 @@ modparam("rtpengine", "set_column", "set_new")
 		</example>
 	</section>
 
+	<section id="param_rtpengine_ping_enabled" xreflabel="ping_enabled">
+		<title><varname>ping_enabled</varname> (integer)</title>
+		<para>
+			This parameter indicates whether probing should be done for
+			enabled nodes as well.
+		</para>
+		<para>
+			If this parameter is set, each enabled node is pinged
+			every <xref linkend="param_rtpengine_timer_interval"/> seconds, unless
+			there was any communication with the node since the previous interval.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ping_enabled</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpengine", "ping_enables", yes)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>
