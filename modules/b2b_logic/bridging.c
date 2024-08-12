@@ -1094,7 +1094,7 @@ int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 
 	if (e) {
 		if (old_entity)
-			LM_ERR("At least one new client entity required for bridging\n");
+			LM_ERR("both entities are already bridged - trying the first one\n");
 		else
 			old_entity = e;
 	} else if (!new_br_ent[1]) {
