@@ -1128,8 +1128,7 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 					the config file).
 				</para></listitem>
 				<listitem><para>
-					<emphasis>enable</emphasis> - 1 - enable, 0 - disable.
-					the config file).
+					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the RTPproxy node, 2 - put the RTPproxy node in probing mode.
 				</para></listitem>
 				<listitem><para>
 					<emphasis>setid</emphasis> (optional) - the rtpproxy set ID (used
