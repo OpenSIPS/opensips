@@ -1200,7 +1200,7 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 	int enable, set;
 	struct rtpe_set * rtpe_list;
 	struct rtpe_node * crt_rtpe;
-	int found;
+	int found, prev_disabled, recheck_ticks;
 
 	found = 0;
 
@@ -1233,10 +1233,22 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 				if(strncmp(crt_rtpe->rn_url.s, rtpe_url.s, rtpe_url.len) == 0){
 					/*set the enabled/disabled status*/
 					found = 1;
-					crt_rtpe->rn_recheck_ticks =
-						enable? MI_MIN_RECHECK_TICKS : MI_MAX_RECHECK_TICKS;
+					prev_disabled = crt_rtpe->rn_disabled;
 					crt_rtpe->rn_disabled = enable?0:1;
-					raise_rtpengine_status_event(crt_rtpe);
+					switch (enable) {
+						case 0: /* disable */
+							recheck_ticks = MI_MAX_RECHECK_TICKS;
+							break;
+						case 2: /* pending */
+							recheck_ticks = get_ticks() + rtpengine_disable_tout;
+							break;
+						default: /* enable */
+							recheck_ticks = MI_MIN_RECHECK_TICKS;
+							break;
+					}
+					crt_rtpe->rn_recheck_ticks = recheck_ticks;
+					if (prev_disabled != crt_rtpe->rn_disabled)
+						raise_rtpengine_status_event(crt_rtpe);
 				}
 			}
 		}

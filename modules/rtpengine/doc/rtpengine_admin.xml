@@ -1456,7 +1456,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 					defined in the config file).
 				</para></listitem>
 				<listitem><para>
-					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the &rtp; proxy.
+					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the &rtp; proxy, 2 - put the &rtp; node in probing mode.
 				</para></listitem>
         <listitem><para>
 					<emphasis>setid</emphasis> (optional) the set ID of the nodes to be updated. If provided, only nodes in the provided set will be updated.
