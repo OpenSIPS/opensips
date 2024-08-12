@@ -65,7 +65,18 @@ struct struct_hist_list *con_hist;
 
 enum tcp_worker_state { STATE_INACTIVE=0, STATE_ACTIVE, STATE_DRAINING};
 
-/* definition of a TCP worker */
+/* definition of a TCP worker - the array of these TCP workers is
+ * mainly intended to be used by the TCP main, to keep track of the
+ * workers, about their load and so. Nevertheless, since the addition
+ * of the process auto-scaling, other processes may need access to this
+ * data, thus it's relocation in SHM (versus initial PKG). For example,
+ * the attendant process is the one forking new TCP workers (scaling up),
+ * so it must be able to set the ENABLE state for the TCP worker (and being
+ * (seen by the TCP main proc). Similar, when a TCP worker shuts down, it has
+ * to mark itself as DISABLED and the TCP main must see that.
+ * Again, 99% this array is intended for TCP Main ops, it is not lock
+ * protected, so be very careful with any ops from other procs.
+ */
 struct tcp_worker {
 	pid_t pid;
 	int unix_sock;		/*!< Main-Worker comm, worker end */
@@ -1785,7 +1796,7 @@ int tcp_init(void)
 		s_profile->max_procs : tcp_workers_no ;
 
 	/* init tcp workers array */
-	tcp_workers = (struct tcp_worker*)pkg_malloc
+	tcp_workers = (struct tcp_worker*)shm_malloc
 		( tcp_workers_max_no*sizeof(struct tcp_worker) );
 	if (tcp_workers==0) {
 		LM_CRIT("could not alloc tcp_workers array in pkg memory\n");
