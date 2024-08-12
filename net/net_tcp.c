@@ -1798,7 +1798,7 @@ int tcp_init(void)
 	tcp_workers = (struct tcp_worker*)shm_malloc
 		( tcp_workers_max_no*sizeof(struct tcp_worker) );
 	if (tcp_workers==0) {
-		LM_CRIT("could not alloc tcp_workers array in pkg memory\n");
+		LM_CRIT("could not alloc tcp_workers array in shm memory\n");
 		goto error;
 	}
 	memset( tcp_workers, 0, tcp_workers_max_no*sizeof(struct tcp_worker));
