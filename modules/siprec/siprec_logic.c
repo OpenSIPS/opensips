@@ -65,6 +65,11 @@ int src_init(void)
 		return -1;
 	}
 
+	if (src_init_events() < 0) {
+		LM_ERR("could not initialize siprec events\n");
+		return -1;
+	}
+
 	skip_failover_codes.len = strlen(skip_failover_codes.s);
 	if (!skip_failover_codes.len)
 		return 0;
@@ -73,11 +78,6 @@ int src_init(void)
 	if (regcomp(&skip_codes_regex, skip_failover_codes.s, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) {
 		LM_ERR("cannot compile skip_failover_codes regex [%.*s]!\n",
 				skip_failover_codes.len, skip_failover_codes.s);
-		return -1;
-	}
-
-	if (src_init_events() < 0) {
-		LM_ERR("could not initialize siprec events\n");
 		return -1;
 	}
 
