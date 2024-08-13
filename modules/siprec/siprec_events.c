@@ -80,6 +80,12 @@ int src_init_events(void)
 				siprec_state_event_dlg_callid_s.s, siprec_event_start_name.s);
 		goto error;
 	}
+	if ((siprec_state_event_session = evi_param_create(siprec_state_event_params,
+				&siprec_state_event_session_s)) == NULL) {
+		LM_ERR("could not create %s param for %s event\n",
+				siprec_state_event_session_s.s, siprec_event_start_name.s);
+		goto error;
+	}
 	if ((siprec_state_event_server = evi_param_create(siprec_state_event_params,
 				&siprec_state_event_server_s)) == NULL) {
 		LM_ERR("could not create %s param for %s event\n",
