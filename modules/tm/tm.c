@@ -338,8 +338,8 @@ static const param_export_t params[]={
 		&tm_cluster_param.s },
 	{ "cluster_auto_cancel",      INT_PARAM,
 		&tm_repl_auto_cancel },
-	{ "bypass_anycast_check",     INT_PARAM,
-        &tm_bypass_anycast_check },
+	{ "bypass_replication_socket_check", INT_PARAM,
+		&tm_bypass_replication_socket_check },
 	{0,0,0}
 };
 

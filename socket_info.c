@@ -276,6 +276,7 @@ struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 					continue;
 				}
 			}
+			if (h_len == 1 && hname[0] == '*') goto found;
 			if ( (h_len==si->name.len) &&
 				(strncasecmp(hname, si->name.s,
 						 si->name.len)==0) /*slower*/)
