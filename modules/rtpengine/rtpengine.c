@@ -1486,7 +1486,7 @@ void rtpengine_timer(unsigned int ticks, void *param)
 		  (rtpengine_ping_enabled && !crt_rtpe->rn_disabled &&
 		   crt_rtpe->rn_last_ticks + rtpengine_timer_interval <= get_ticks())) {
 		disabled = crt_rtpe->rn_disabled;
-        crt_rtpe->rn_disabled = rtpe_test(crt_rtpe, 0, 1);
+        crt_rtpe->rn_disabled = rtpe_test(crt_rtpe, disabled, 1);
 		if (crt_rtpe->rn_disabled != disabled)
 			raise_rtpengine_status_event(crt_rtpe);
 	  }
