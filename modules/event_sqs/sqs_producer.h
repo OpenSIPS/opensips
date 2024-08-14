@@ -20,26 +20,35 @@
  *
  */
 
-#ifndef SQS_LIB
-#define SQS_LIB
+#ifndef _SQS_PROD_H_
+#define _SQS_PROD_H_
+#include <sys/eventfd.h> 
+#include "signal.h"
+#include "sqs_lib.h"
 
+/* transport protocols name */
+#define SQS_NAME	"sqs"
+#define SQS_STR	{ SQS_NAME, sizeof(SQS_NAME) - 1}
+/* module flag */
+#define SQS_FLAG	(int)(1 << 20)
+#define SQS_REACTOR_TIMEOUT 1
+#define QUEUE_EV_MARKER "EeEe"
+#define QUEUE_EV_MARKER_LEN (sizeof(QUEUE_EV_MARKER) - 1)
+#define F_SQS_JOB -3    /* new job from an worker process */
+#define F_SQS_EVENT -4  /* new event in librdkafka main event queue */
 
-#include "../../str.h"
+typedef struct _sqs_queue {
+	str id;
+	str url;
+	sqs_config *config;
+	struct list_head list;
+	struct list_head job_list;
+	int event_fd;
+} sqs_queue_t;
 
-#ifdef __cplusplus
-extern "C" {
+sqs_queue_t *get_script_url(str *id);
+void sqs_process(int rank);
+int sqs_create_pipe(void);
+void sqs_destroy_pipe(void);
+int sqs_init_writer(void);
 #endif
-
-typedef struct {
-	void *options;
-	void *clientConfig;
-} sqs_config;
-
-void init_sqs(sqs_config *config, const char* region, const char* endpoint);
-void shutdown_sqs(sqs_config *config);
-int sqs_send_message(sqs_config *config, str queueUrl, str messageBody);
-
-#ifdef __cplusplus
-}
-#endif
-#endif // SQS_LIB

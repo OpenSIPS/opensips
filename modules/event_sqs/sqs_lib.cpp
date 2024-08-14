@@ -1,3 +1,25 @@
+/*
+ * Copyright (C) 2024 OpenSIPS Solutions
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ *
+ */
+
 #include <aws/core/Aws.h>
 #include <aws/sqs/SQSClient.h>
 #include <aws/sqs/model/CreateQueueRequest.h>
@@ -13,27 +35,53 @@
 extern "C" {
 #include "../../dprint.h"
 
-void init_sqs(sqs_config *config) {
-	config->options = new Aws::SDKOptions();
-	Aws::InitAPI(*reinterpret_cast<Aws::SDKOptions*>(config->options));
-	config->clientConfig = new Aws::Client::ClientConfiguration();
-	reinterpret_cast<Aws::Client::ClientConfiguration*>(config->clientConfig)->region = "u-east-1";
-	reinterpret_cast<Aws::Client::ClientConfiguration*>(config->clientConfig)->endpointOverride = "http://localhost:4566";
-}
+void init_sqs(sqs_config *config, const char* region, const char* endpoint) {
+	Aws::SDKOptions* options = new Aws::SDKOptions();
+	if (options == NULL) {
+		exit(-1);
+	}
+	Aws::InitAPI(*options);
 
+	Aws::Client::ClientConfiguration* clientConfig = new Aws::Client::ClientConfiguration();
+	if (clientConfig == NULL) {
+		Aws::ShutdownAPI(*options);
+		delete(options);
+		exit(-1);
+	}
+
+	clientConfig->region = region ? region : "";
+	clientConfig->endpointOverride = endpoint ? endpoint : "";
+	if(!strcmp(clientConfig->region.c_str(), "") && !strcmp(clientConfig->endpointOverride.c_str(), "")) {
+		Aws::ShutdownAPI(*options);
+		delete(options);
+		exit(-1);
+	}
+
+	config->clientConfig = clientConfig;
+	config->options = options;
+}
 void shutdown_sqs(sqs_config *config) {
-	Aws::ShutdownAPI(*reinterpret_cast<Aws::SDKOptions*>(config->options));
-	delete reinterpret_cast<Aws::SDKOptions*>(config->options);
-	delete reinterpret_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
-}
+	Aws::SDKOptions *options = static_cast<Aws::SDKOptions*>(config->options);
+	Aws::ShutdownAPI(*options);
 
+	delete static_cast<Aws::Client::ClientConfiguration*>(config->clientConfig);
+	delete options;
+}
 
 int sqs_send_message(sqs_config *config, str queueUrl, str messageBody) {
+	LM_NOTICE("sqs_send_message called with:\n");
+	LM_NOTICE("  Queue URL: %.*s\n", queueUrl.len, queueUrl.s);
+	LM_NOTICE("  Message Body: %.*s\n", messageBody.len, messageBody.s);
+
 	Aws::SQS::SQSClient sqsClient(*reinterpret_cast<Aws::Client::ClientConfiguration*>(config->clientConfig));
 
 	Aws::SQS::Model::SendMessageRequest request;
 	request.SetQueueUrl(std::string(queueUrl.s, queueUrl.len));
 	request.SetMessageBody(std::string(messageBody.s, messageBody.len));
+
+	LM_NOTICE("SendMessageRequest constructed with:\n");
+	LM_NOTICE("  Queue URL: %s\n", request.GetQueueUrl().c_str());
+	LM_NOTICE("  Message Body: %s\n", request.GetMessageBody().c_str());
 
 	const Aws::SQS::Model::SendMessageOutcome outcome = sqsClient.SendMessage(request);
 	if (outcome.IsSuccess()) {
