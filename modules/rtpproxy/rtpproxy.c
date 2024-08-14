@@ -2077,8 +2077,9 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 				"%s\n", node->rn_url.s, REQ_CPROTOVER);
 		goto error;
 	}
-	LM_INFO("rtp proxy <%s> found, support for it %senabled\n",
-	    node->rn_url.s, force == 0 ? "re-" : "");
+	if (isdisabled)
+		LM_INFO("rtp proxy <%s> found, support for it %senabled\n",
+				node->rn_url.s, force == 0 ? "re-" : "");
 	/* Check for optional capabilities */
 	if (rtpp_checkcap(node, RTP_CAP(REPACK)) > 0)
 		SET_CAP(node, REPACK);
