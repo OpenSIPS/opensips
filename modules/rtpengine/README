@@ -27,6 +27,7 @@ rtpengine Module
               1.4.11. db_table (string)
               1.4.12. socket_column (string)
               1.4.13. set_column (string)
+              1.4.14. ping_enabled (integer)
 
         1.5. Exported Functions
 
@@ -116,36 +117,37 @@ rtpengine Module
    1.11. Set db_table parameter
    1.12. Set socket_column parameter
    1.13. Set set_column parameter
-   1.14. rtpengine_use_set usage
-   1.15. rtpengine_offer usage
-   1.16. rtpengine_offer usage with body replace
-   1.17. rtpengine_offer usage with call recording
-   1.18. rtpengine_offer usage for transcoding
-   1.19. rtpengine_answer usage
-   1.20. rtpengine_delete usage
-   1.21. rtpengine_manage usage
-   1.22. rtpengine_start_recording usage
-   1.23. rtpengine_stop_recording usage
-   1.24. Ringback tone using rtpengine_play_media
-   1.25. Manage music on hold using rtpengine_play_media
-   1.26. Ringback tone stop using rtpengine_stop_media
-   1.27. Example use of the last-frame-pos parameter
+   1.14. Set ping_enabled parameter
+   1.15. rtpengine_use_set usage
+   1.16. rtpengine_offer usage
+   1.17. rtpengine_offer usage with body replace
+   1.18. rtpengine_offer usage with call recording
+   1.19. rtpengine_offer usage for transcoding
+   1.20. rtpengine_answer usage
+   1.21. rtpengine_delete usage
+   1.22. rtpengine_manage usage
+   1.23. rtpengine_start_recording usage
+   1.24. rtpengine_stop_recording usage
+   1.25. Ringback tone using rtpengine_play_media
+   1.26. Manage music on hold using rtpengine_play_media
+   1.27. Ringback tone stop using rtpengine_stop_media
+   1.28. Example use of the last-frame-pos parameter
           rtpengine_stop_media
 
-   1.28. Example of rtpengine_block_media usage
-   1.29. Example of rtpengine_unblock_media usage
-   1.30. Example of rtpengine_block_dtmf usage
-   1.31. Example of rtpengine_unblock_dtmf usage
-   1.32. Example of rtpengine_start_forwarding usage
-   1.33. Example of rtpengine_stop_forwarding usage
-   1.34. Example of rtpengine_play_dtmf usage
-   1.35. $rtpstat Usage
-   1.36. $rtpstat(STAT)
-   1.37. $rtpquery Usage
-   1.38. rtpengine_enable usage
-   1.39. rtpengine_show usage
-   1.40. rtpengine_reload usage
-   1.41. teardown usage
+   1.29. Example of rtpengine_block_media usage
+   1.30. Example of rtpengine_unblock_media usage
+   1.31. Example of rtpengine_block_dtmf usage
+   1.32. Example of rtpengine_unblock_dtmf usage
+   1.33. Example of rtpengine_start_forwarding usage
+   1.34. Example of rtpengine_stop_forwarding usage
+   1.35. Example of rtpengine_play_dtmf usage
+   1.36. $rtpstat Usage
+   1.37. $rtpstat(STAT)
+   1.38. $rtpquery Usage
+   1.39. rtpengine_enable usage
+   1.40. rtpengine_show usage
+   1.41. rtpengine_reload usage
+   1.42. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -395,6 +397,22 @@ modparam("rtpengine", "socket_column", "sock")
 modparam("rtpengine", "set_column", "set_new")
 ...
 
+1.4.14. ping_enabled (integer)
+
+   This parameter indicates whether probing should be done for
+   enabled nodes as well.
+
+   If this parameter is set, each enabled node is pinged every
+   rtpengine_timer_interval seconds, unless there was any
+   communication with the node since the previous interval.
+
+   Default value is “0” (disabled).
+
+   Example 1.14. Set ping_enabled parameter
+...
+modparam("rtpengine", "ping_enables", yes)
+...
+
 1.5. Exported Functions
 
 1.5.1.  rtpengine_use_set(setid)
@@ -406,7 +424,7 @@ modparam("rtpengine", "set_column", "set_new")
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.14. rtpengine_use_set usage
+   Example 1.15. rtpengine_use_set usage
 ...
 rtpengine_use_set(2);
 rtpengine_offer();
@@ -651,7 +669,7 @@ rtpengine_offer();
 
    This function can be used from ALL_ROUTES.
 
-   Example 1.15. rtpengine_offer usage
+   Example 1.16. rtpengine_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -683,7 +701,7 @@ onreply_route[2]
 ...
 }
 
-   Example 1.16. rtpengine_offer usage with body replace
+   Example 1.17. rtpengine_offer usage with body replace
 ...
 if (rtpengine_offer(, $var(socket), $var(body), $rb)) {
     xlog("Used rtpengine $var(socket)\n");
@@ -694,7 +712,7 @@ if (rtpengine_offer(, $var(socket), $var(body), $rb)) {
 }
 ...
 
-   Example 1.17. rtpengine_offer usage with call recording
+   Example 1.18. rtpengine_offer usage with call recording
 ...
 $var(rtpengine_flags) = $var(rtpengine_flags) + " record-call=yes";
 
@@ -711,7 +729,7 @@ cording_keys){s.encode.hexa});
 rtpengine_offer($var(rtpengine_flags));
 ...
 
-   Example 1.18. rtpengine_offer usage for transcoding
+   Example 1.19. rtpengine_offer usage for transcoding
 ...
 # Goal: make A-side talk PCMA and B-side talk opus
 # * do not present PCMA to B-side: codec-mask-PCMA, but use it on A-side
@@ -733,7 +751,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.19. rtpengine_answer usage
+   Example 1.20. rtpengine_answer usage
 
    See rtpengine_offer() function example above for examples.
 
@@ -747,7 +765,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 
    This function can be used from ALL_ROUTES.
 
-   Example 1.20. rtpengine_delete usage
+   Example 1.21. rtpengine_delete usage
 ...
 rtpengine_delete();
 ...
@@ -775,7 +793,7 @@ rtpengine_delete();
 
    This function can be used from ALL_ROUTES.
 
-   Example 1.21. rtpengine_manage usage
+   Example 1.22. rtpengine_manage usage
 ...
 rtpengine_manage();
 ...
@@ -795,7 +813,7 @@ rtpengine_manage();
 
    This function can be used from any route.
 
-   Example 1.22. rtpengine_start_recording usage
+   Example 1.23. rtpengine_start_recording usage
 ...
 rtpengine_start_recording();
 ...
@@ -815,7 +833,7 @@ rtpengine_start_recording();
 
    This function can be used from any route.
 
-   Example 1.23. rtpengine_stop_recording usage
+   Example 1.24. rtpengine_stop_recording usage
 ...
 rtpengine_stop_recording();
 ...
@@ -848,13 +866,13 @@ sockvar]]])
 
    This function can be used from any route.
 
-   Example 1.24. Ringback tone using rtpengine_play_media
+   Example 1.25. Ringback tone using rtpengine_play_media
 ...
 if (is_method("INVITE") && !has_totag())
         rtpengine_play_media("file=/path/to/ringback_tone_file.wav");
 ...
 
-   Example 1.25. Manage music on hold using rtpengine_play_media
+   Example 1.26. Manage music on hold using rtpengine_play_media
 ...
 if (is_method("INVITE") && has_totag()) {
         if (is_audio_on_hold()) {
@@ -886,13 +904,13 @@ e.wav");
 
    This function can be used from any route.
 
-   Example 1.26. Ringback tone stop using rtpengine_stop_media
+   Example 1.27. Ringback tone stop using rtpengine_stop_media
 ...
 if (is_method("INVITE") && $rs == 200)
         rtpengine_stop_media();
 ...
 
-   Example 1.27. Example use of the last-frame-pos parameter
+   Example 1.28. Example use of the last-frame-pos parameter
    rtpengine_stop_media
 ...
 if (is_method("INVITE") && has_totag()) {
@@ -917,7 +935,7 @@ os));
 
    This function can be used from any route.
 
-   Example 1.28. Example of rtpengine_block_media usage
+   Example 1.29. Example of rtpengine_block_media usage
 ...
 rtpengine_block_media();
 ...
@@ -930,7 +948,7 @@ rtpengine_block_media();
 
    This function can be used from any route.
 
-   Example 1.29. Example of rtpengine_unblock_media usage
+   Example 1.30. Example of rtpengine_unblock_media usage
 ...
 rtpengine_unblock_media();
 ...
@@ -943,7 +961,7 @@ rtpengine_unblock_media();
 
    This function can be used from any route.
 
-   Example 1.30. Example of rtpengine_block_dtmf usage
+   Example 1.31. Example of rtpengine_block_dtmf usage
 ...
 rtpengine_block_dtmf();
 ...
@@ -956,7 +974,7 @@ rtpengine_block_dtmf();
 
    This function can be used from any route.
 
-   Example 1.31. Example of rtpengine_unblock_dtmf usage
+   Example 1.32. Example of rtpengine_unblock_dtmf usage
 ...
 rtpengine_unblock_dtmf();
 ...
@@ -971,7 +989,7 @@ rtpengine_unblock_dtmf();
 
    This function can be used from any route.
 
-   Example 1.32. Example of rtpengine_start_forwarding usage
+   Example 1.33. Example of rtpengine_start_forwarding usage
 ...
 rtpengine_start_forwarding();
 ...
@@ -983,7 +1001,7 @@ rtpengine_start_forwarding();
 
    This function can be used from any route.
 
-   Example 1.33. Example of rtpengine_stop_forwarding usage
+   Example 1.34. Example of rtpengine_stop_forwarding usage
 ...
 rtpengine_stop_forwarding();
 ...
@@ -1004,7 +1022,7 @@ rtpengine_stop_forwarding();
 
    This function can be used from any route.
 
-   Example 1.34. Example of rtpengine_play_dtmf usage
+   Example 1.35. Example of rtpengine_play_dtmf usage
 ...
 rtpengine_play_dtmf("0"); # send the 0 code upstream
 ...
@@ -1017,7 +1035,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
    statistics from the RTP proxy are provided as a string and it
    does contain several packet counters.
 
-   Example 1.35. $rtpstat Usage
+   Example 1.36. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
@@ -1090,7 +1108,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
    short, or if the phones do not properly report RTP statistics
    over RTCP). In these cases the variable returns the NULL value.
 
-   Example 1.36. $rtpstat(STAT)
+   Example 1.37. $rtpstat(STAT)
 ...
     xlog("Average MOS of the entire call is $rtpstat(MOS-average)\r\n");
     xlog("Average MOS of caller is $(rtpstat(MOS-average)[$ft])\r\n");
@@ -1110,7 +1128,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    any information from the query, such as RTP statistics, or MOS
    values.
 
-   Example 1.37. $rtpquery Usage
+   Example 1.38. $rtpquery Usage
 ...
         $json(reply) := $rtpquery;
         xlog("Total RTP Stats: $json(reply/totals)\n");
@@ -1125,7 +1143,8 @@ pstat(MOS-min-at)[$ft])\r\n");
    Parameters:
      * url - the RTP proxy url (exactly as defined in the config
        file).
-     * enable - 1 - enable, 0 - disable the RTP proxy.
+     * enable - 1 - enable, 0 - disable the RTP proxy, 2 - put the
+       RTP node in probing mode.
      * setid (optional) the set ID of the nodes to be updated. If
        provided, only nodes in the provided set will be updated.
 
@@ -1133,7 +1152,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    different set), all of its instances will be enabled/disabled
    IF no set ID is provided.
 
-   Example 1.38.  rtpengine_enable usage
+   Example 1.39.  rtpengine_enable usage
 ...
 ## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
@@ -1149,7 +1168,7 @@ $ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=
 
    No parameter.
 
-   Example 1.39.  rtpengine_show usage
+   Example 1.40.  rtpengine_show usage
 ...
 $ opensips-cli -x mi rtpengine_show
 ...
@@ -1168,7 +1187,7 @@ $ opensips-cli -x mi rtpengine_show
 
    No parameter.
 
-   Example 1.40.  rtpengine_reload usage
+   Example 1.41.  rtpengine_reload usage
 ...
 $ opensips-cli -x mi rtpengine_reload
 $ opensips-cli -x mi rtpengine_reload type=soft
@@ -1187,7 +1206,7 @@ $ opensips-cli -x mi rtpengine_reload type=soft
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.41.  teardown usage
+   Example 1.42.  teardown usage
 ...
 $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZD
 Q
@@ -1295,7 +1314,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 224 122 6035 3089
+   1. Razvan Crainea (@razvancrainea) 230 127 6091 3097
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173
@@ -1331,7 +1350,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jul 2024
+   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Aug 2024
    2.  Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
    3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    4.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
@@ -1354,8 +1373,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Norman Brandinger (@NormB), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), John Burke
+   Last edited by: Razvan Crainea (@razvancrainea), Norman
+   Brandinger (@NormB), Liviu Chircu (@liviuchircu), John Burke
    (@john08burke), Nick Altmann (@nikbyte), Flavio E. Goncalves,
    Peter Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
    Bogdan-Andrei Iancu (@bogdan-iancu), Richard Fuchs.
