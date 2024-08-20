@@ -1999,7 +1999,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if ((rc = get_parsed_identity( msg, &parsed)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
-			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_PARSE_IDENTITY);
 		} else {  /* rc == -4 */
 			LM_INFO("Invalid identity header\n");
 			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
@@ -2028,7 +2028,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 	if ((now = time(0)) == -1) {
 		LM_ERR("Failed to get current time\n");
-		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
+		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_GET_CURRENT_TIME);
 		rc = -1;
 		goto error;
 	}
@@ -2045,7 +2045,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 		if (get_date_ts(date_hf, &date_ts) < 0) {
 			LM_ERR("Failed to get UNIX time from Date header\n");
-			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_GET_TIME_FROM_DATE_HEADER);
 			rc = -1;
 			goto error;
 		}
@@ -2095,7 +2095,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 	if (load_cert(&cert, &certchain, cert_buf) < 0) {
 		LM_ERR("Failed to load certificate\n");
-		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
+		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_LOAD_CERTIFICATE);
 		rc = -1;
 		goto error;
 	}
@@ -2119,7 +2119,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if ((rc = validate_certificate(cert, certchain)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Error validating certificate\n");
-			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_VALIDATE_CERTIFICATE);
 			goto error;
 		} else {  /* rc == -8 */
 			LM_INFO("Invalid certificate\n");
@@ -2135,7 +2135,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) <= 0) {
 		if (rc < 0) {
 			LM_ERR("Error while verifying signature\n");
-			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_VERIFY_SIGNATURE);
 			rc = -1;
 			goto error;
 		} else {
