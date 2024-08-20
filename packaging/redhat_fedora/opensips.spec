@@ -21,7 +21,7 @@
 %global _with_cachedb_mongodb 1
 %endif
 
-%if 0%{?rhel} > 7
+%if 0%{?rhel} > 7 || 0%{?fedora} > 36
 %global _with_python3 1
 %endif
 
@@ -83,6 +83,9 @@ BuildRequires:  pcre-devel
 BuildRequires:  python3-devel
 %else
 BuildRequires:  python-devel
+%endif
+%if 0%{?fedora} > 38
+BuildRequires:  python3-setuptools
 %endif
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 BuildRequires:  systemd-units
@@ -1576,7 +1579,10 @@ fi
 
 
 %changelog
-* Mon Aug 19 2024 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+* Tue Aug 20 2024 Razvan Crainea <razvan@opensips.org> - 3.4.7-1
+- Add python-setuptools dependency
+
+* Mon Aug 19 2024 Razvan Crainea <razvan@opensips.org> - 3.4.7-1
 - Replace deprecated dependency for radius modules
 
 * Wed Jul 24 2024 Liviu Chircu <liviu@opensips.org> - 3.4.7-1
