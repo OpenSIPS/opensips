@@ -242,11 +242,14 @@ char* parse_content_length( char* buffer, char* end, int* length)
 	number = 0;
 	while (p<end && *p>='0' && *p<='9') {
 		number = number*10 + (*p)-'0';
-		if (number<0) {
-			LM_ERR("number overflow at pos %d in len number [%.*s]\n",
+		/* do not actually cause an integer overflow, as it is UB! --liviu */
+		if (number > 214748363) {
+			LM_ERR("integer overflow risk at pos %d in len number [%.*s]\n",
 				(int)(p-buffer),(int)(end-buffer), buffer);
 			return 0;
 		}
+
+		number = number*10 + (*p)-'0';
 		size ++;
 		p++;
 	}
