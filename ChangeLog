@@ -1,3 +1,257 @@
+=========================== Release 3.4.8 ==============================
+
+2024-08-21  Liviu Chircu  <liviu@opensips.org>
+        * [7aeb53cab7] :
+
+        tm docs: Expand $T_fr_inv_timeout section
+
+        (cherry picked from commit b71cf95b3ed0c32d3ddaf33b5d382b298ebf3ac0)
+
+
+2024-08-20  Razvan Crainea  <razvan@opensips.org>
+        * [842a3025dc] :
+
+        packaging: add python3-setuptools dependency on redhat
+
+
+2024-08-20  MonkeyTester  <57145271+Integration-IT@users.noreply.github.com>
+        * [27057b9d04] :
+
+        Update stir_shaken.c - enforce verifier pvar error reason
+
+        - more explicit SET_VERIFY_ERR_VARS.
+        - stir_shaken_verify generic err_reason pvar is now more explicit to easily reflect the real reason.
+
+        - replace verifier generic "Internal Server Error" by dedicated internal error like "Failed to parse headers", "Failed to parse identity header", "Failed to get current time", "Failed to get UNIX time from Date header", "Failed to load certificate", "Error validating certificate", "Error while verifying signature".
+
+        (cherry picked from commit 2f5be1642b6e8ddf0e1f851f6be2777c87a54198)
+
+
+2024-08-20  MonkeyTester  <57145271+Integration-IT@users.noreply.github.com>
+        * [c32d8da568] :
+
+        Update stir_shaken.h
+
+        - define new internal server error scopes.
+
+        (cherry picked from commit 85f9250131bd44b080efbb92a875d84609a36ed7)
+
+
+2024-08-19  Razvan Crainea  <razvan@opensips.org>
+        * [ef0b9a7af8] :
+
+        redhat: replace deprecated radiuslient with radcli
+
+        (cherry picked from commit b36a2479c6433d09e7d560c1e466dc5b87735f4e)
+
+
+2024-08-19  Razvan Crainea  <razvan@opensips.org>
+        * [b8e9e77c9f] :
+
+        b2b_logic: fix error logging when bridging existing entities
+
+        (cherry picked from commit 35d7e1f53d2a3433a71ec154e935fcc5cd9481e0)
+
+
+2024-08-12  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c76a542480] :
+
+        [TCP] fix OOM error logs (pkg versus shm)
+
+        Part of 50650b7ab64b1cc6e81c051d30e55a6d57e2b173
+
+
+2024-08-12  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [50650b7ab6] :
+
+        [TCP] fix pkg versus shm for the TCP workers array
+
+        Due to the process auto-scaling, this array may visible not only to TCP Main, but also to attendet and TCP workers procs. See the comments in the code for more details
+
+
+2024-08-11  OpenSIPS  <github@opensips.org>
+        * [c310812b60] :
+
+        Rebuild documentation
+
+
+2024-08-08  Razvan Crainea  <razvan@opensips.org>
+        * [5b87766f65] :
+
+        rtp_relay: fix debugging in prev commit
+
+
+2024-08-08  Razvan Crainea  <razvan@opensips.org>
+        * [6668c07890] :
+
+        rtp_relay: add enhanced leg debugging
+
+        (cherry picked from commit 28129a177ac1d7c44e498ee21371fc9d04897b64)
+
+
+2024-08-08  Razvan Crainea  <razvan@opensips.org>
+        * [eecb64108a] :
+
+        rtp_relay: try first to match by tag, and only fallback to index
+
+        (cherry picked from commit c689ec3a40938c59e49a51ddd02ae0dbbe08902d)
+
+
+2024-08-07  Razvan Crainea  <razvan@opensips.org>
+        * [43cd7f8f32] :
+
+        rtp_relay: sync leg tag on late
+
+        (cherry picked from commit 2b80f1a04c2e1c75726429e9e6a09011a089efde)
+
+
+2024-08-06  Razvan Crainea  <razvan@opensips.org>
+        * [739c0596d5] :
+
+        rtp_relay: fix leg detection on newer branches
+
+        (cherry picked from commit 33f42743bb4942cab02b448572bc7d14b3fbc123)
+
+
+2024-08-06  Liviu Chircu  <liviu@opensips.org>
+        * [4bc0bee25a] :
+
+        mi_script: Avoid race condition in async(mi())
+
+        Make sure to read & clean @job->req before dispatching @job to a
+        different OpenSIPS worker, which may do a quick free() on it.
+
+        Credits to Suchi Sahoo from Five9 for reporting!
+
+        (cherry picked from commit c7a9f68d12da814e25c4c7b0398aeccf2fdbcb95)
+
+
+2024-08-04  OpenSIPS  <github@opensips.org>
+        * [4ad27782c4] :
+
+        Rebuild documentation
+
+
+2024-08-02  Razvan Crainea  <razvan@opensips.org>
+        * [c104d90114] :
+
+        rtp_relay: do not check for pending when late
+
+        Many thanks to Voxtronic for spotting this issue!
+
+        (cherry picked from commit 471dab3130eea8788cbbf0884c6e5c2af8d61622)
+
+
+2024-08-02  Razvan Crainea  <razvan@opensips.org>
+        * [dafe08381f] :
+
+        topology_hiding: store the appropriate routes in headers for indialog
+
+        Credits go to Bence Szigeti for reporting and troubleshooting!
+
+        (cherry picked from commit 46e3d05de1455eaf1797d313352f2daab7912b9b)
+
+
+2024-08-02  Razvan Crainea  <razvan@opensips.org>
+        * [e5bf3e172f] :
+
+        tm: clean receive_info for replicated packages
+
+        (cherry picked from commit 2cdda849040118e621967dfcfbd6483a99cf44d6)
+
+
+2024-07-31  Razvan Crainea  <razvan@opensips.org>
+        * [888f099aba] :
+
+        rtp_relay: prevent patch on abnormal traffic
+
+        (cherry picked from commit 6edaba2281e16c7fd6fa044c9a28d33067fb3f28)
+
+
+2024-07-31  Razvan Crainea  <razvan@opensips.org>
+        * [6ba0f3019b] :
+
+        rtpengine: respect disable state when choosing a node
+
+        (cherry picked from commit 454b71312040bd3ac893c3d3c2433be11c37d1cc)
+
+
+2024-07-30  Razvan Crainea  <razvan@opensips.org>
+        * [de32161e05] :
+
+        media_exchange: sync SDPs when offering/answering
+
+        (cherry picked from commit a30ded6bee2fa63b764686b88f561c0cb1a910e3)
+
+
+2024-07-30  Razvan Crainea  <razvan@opensips.org>
+        * [6763383e50] :
+
+        rtp_relay: update $rtp_relay doc on branch route
+
+        It provisiones the flags for the callee, rather than caller
+
+        (cherry picked from commit cb9c8c94804cea080ad00f90103f5dc1e32e8e5c)
+
+
+2024-07-28  OpenSIPS  <github@opensips.org>
+        * [c209d635ca] :
+
+        Rebuild documentation
+
+
+2024-07-26  Razvan Crainea  <razvan@opensips.org>
+        * [25647154a5] :
+
+        media_exchange: register index on pre_init
+
+        this avoids overlapping with other modules that register the pointer and
+        start storing in it immedately, without allowing to register other
+        indexes
+
+        (cherry picked from commit 267205d77c06795c40cbf6df8a37ed77b2610069)
+
+
+2024-07-26  Liviu Chircu  <liviu@opensips.org>
+        * [7da509ea36] :
+
+        usrloc federation: Fix shutdown crash edge-case
+
+        This patch fixes a destroy() issue, where _synchronize_all_udomains()
+        needs to sync an AoR (empty, no contacts) to CacheDB, but @cdbc is NULL
+        in "attendant" process, per 7b62f2453b.
+
+
+2024-07-26  Razvan Crainea  <razvan@opensips.org>
+        * [7c8b5b234e] :
+
+        siprec: make sure dialog exists when restoring session
+
+
+2024-07-25  Liviu Chircu  <liviu@opensips.org>
+        * [c0bc614de1] :
+
+        media_exchange: Fix bad free in MI `media_exchange_from_call_to_uri`
+
+        (cherry picked from commit 19add7c5bb71e7fa93ff5c96783cd4349001a66a)
+
+
+2024-07-25  Liviu Chircu  <liviu@opensips.org>
+        * [54bea59763] :
+
+        tm: Avoid running hop-by-hop ACK callbacks before reply callbacks
+
+        Commit aaa6b6867 mitigated the effects of a poor HEP connection
+        affecting the OpenSIPS's responsiveness by delaying the reply callbacks
+        until after the hop-by-hop ACK is sent out.  However, a side-effect in
+        doing so is that the reply/ACK HEP packets on un-established calls
+        became swapped.  This patch aims to address the issue.
+
+        Related to #3255
+
+        (cherry picked from commit 43477da50c67eaa4b7bd206c2d8bcaa09b0b6b25)
+
+
 =========================== Release 3.4.7 ==============================
 
 2024-07-24  Razvan Crainea  <razvan@opensips.org>
