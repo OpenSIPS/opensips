@@ -101,7 +101,6 @@ static void sig_handler(int signo) {
 			}
 
 			shm_free(queue->config);
-			shm_free(queue);
 		}
 		exit(0);
 	default:
@@ -110,40 +109,46 @@ static void sig_handler(int signo) {
 
 }
 
-static int parse_queue_url(str *queue_url, char **region, char **endpoint) {
-	char *url_copy = strndup(queue_url->s, queue_url->len);
+int parse_queue_url(str *queue_url, char **region, char **endpoint) {
+	char *url_copy, *endpoint_start, *endpoint_end, *region_start, *region_end;
+	url_copy = strndup(queue_url->s, queue_url->len);
 	if (!url_copy) {
 		LM_ERR("Strdup failed!\n");
 		return -1;
 	}
 
-	char *endpoint_start = strstr(url_copy, "http");
+	endpoint_start = strstr(url_copy, "http");
 	if (endpoint_start) {
-		char *endpoint_end = strrchr(endpoint_start, '/');
+		endpoint_end = strrchr(endpoint_start, '/');
 		if (endpoint_end) {
 			*endpoint_end = '\0';
 			*endpoint = strdup(endpoint_start);
 		}
 	}
 
-	LM_NOTICE("ENDPOINT: %s\n", *endpoint ? *endpoint : "NULL");
+	LM_DBG("ENDPOINT: %s\n", *endpoint ? *endpoint : "NULL");
 
-	char *region_start = strstr(url_copy, "://sqs.") + strlen("://sqs.");
+	region_start = strstr(url_copy, "://sqs.") + strlen("://sqs.");
 	if (region_start) {
-		char *region_end = strchr(region_start, '.');
+		region_end = strchr(region_start, '.');
 		if (region_end) {
 			*region_end = '\0';
 			*region = strdup(region_start);
 		}
 	}
 
-	LM_NOTICE("REGION: %s\n", *region ? *region : "NULL");
+	LM_DBG("REGION: %s\n", *region ? *region : "NULL");
 
 	free(url_copy);
 	return 0;
 }
 
 void sqs_process(int rank) {
+	int ret;
+	struct list_head *it;
+	sqs_queue_t *queue;
+	char *region, *endpoint;
+
 	suppress_proc_log_event();
 	signal(SIGTERM, sig_handler);
 
@@ -154,22 +159,23 @@ void sqs_process(int rank) {
 		abort();
 	}
 
-	struct list_head *it;
-	sqs_queue_t *queue;
-
 	list_for_each(it, sqs_urls) {
 		queue = list_entry(it, sqs_queue_t, list);
 
-		char *region = NULL;
-		char *endpoint = NULL;
+		region = NULL;
+		endpoint = NULL;
 		if (parse_queue_url(&queue->url, &region, &endpoint) != 0) {
 			LM_ERR("Failed to parse queue URL\n");
 			shm_free(queue->config);
-			shm_free(queue);
 			return;
 		}
 
-		init_sqs(queue->config, region, endpoint);
+		ret = init_sqs(queue->config, region, endpoint);
+		if (ret == -1) {
+			LM_ERR("Cannot init the configuration\n");
+			goto out_err;
+		}
+
 		free(region);
 		free(endpoint);
 

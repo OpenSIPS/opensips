@@ -35,7 +35,7 @@ typedef struct {
 	void *clientConfig;
 } sqs_config;
 
-void init_sqs(sqs_config *config, const char* region, const char* endpoint);
+int init_sqs(sqs_config *config, const char* region, const char* endpoint);
 void shutdown_sqs(sqs_config *config);
 int sqs_send_message(sqs_config *config, str queueUrl, str messageBody);
 

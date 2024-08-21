@@ -35,10 +35,10 @@
 extern "C" {
 #include "../../dprint.h"
 
-void init_sqs(sqs_config *config, const char* region, const char* endpoint) {
+int init_sqs(sqs_config *config, const char* region, const char* endpoint) {
 	Aws::SDKOptions* options = new Aws::SDKOptions();
 	if (options == NULL) {
-		exit(-1);
+		return -1;
 	}
 	Aws::InitAPI(*options);
 
@@ -46,7 +46,7 @@ void init_sqs(sqs_config *config, const char* region, const char* endpoint) {
 	if (clientConfig == NULL) {
 		Aws::ShutdownAPI(*options);
 		delete(options);
-		exit(-1);
+		return -1;
 	}
 
 	clientConfig->region = region ? region : "";
@@ -54,11 +54,13 @@ void init_sqs(sqs_config *config, const char* region, const char* endpoint) {
 	if(!strcmp(clientConfig->region.c_str(), "") && !strcmp(clientConfig->endpointOverride.c_str(), "")) {
 		Aws::ShutdownAPI(*options);
 		delete(options);
-		exit(-1);
+		return -1;
 	}
 
 	config->clientConfig = clientConfig;
 	config->options = options;
+
+	return 0;
 }
 void shutdown_sqs(sqs_config *config) {
 	Aws::SDKOptions *options = static_cast<Aws::SDKOptions*>(config->options);
@@ -69,19 +71,11 @@ void shutdown_sqs(sqs_config *config) {
 }
 
 int sqs_send_message(sqs_config *config, str queueUrl, str messageBody) {
-	LM_NOTICE("sqs_send_message called with:\n");
-	LM_NOTICE("  Queue URL: %.*s\n", queueUrl.len, queueUrl.s);
-	LM_NOTICE("  Message Body: %.*s\n", messageBody.len, messageBody.s);
-
 	Aws::SQS::SQSClient sqsClient(*reinterpret_cast<Aws::Client::ClientConfiguration*>(config->clientConfig));
 
 	Aws::SQS::Model::SendMessageRequest request;
 	request.SetQueueUrl(std::string(queueUrl.s, queueUrl.len));
 	request.SetMessageBody(std::string(messageBody.s, messageBody.len));
-
-	LM_NOTICE("SendMessageRequest constructed with:\n");
-	LM_NOTICE("  Queue URL: %s\n", request.GetQueueUrl().c_str());
-	LM_NOTICE("  Message Body: %s\n", request.GetMessageBody().c_str());
 
 	const Aws::SQS::Model::SendMessageOutcome outcome = sqsClient.SendMessage(request);
 	if (outcome.IsSuccess()) {

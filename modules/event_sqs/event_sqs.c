@@ -38,6 +38,8 @@ static void mod_destroy(void);
 static int sqs_evi_raise(struct sip_msg *msg, str* ev_name,
 	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx);
 static evi_reply_sock *sqs_evi_parse(str socket);
+static int sqs_evi_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
+static void sqs_evi_free(evi_reply_sock *sock);
 static str sqs_evi_print(evi_reply_sock *sock);
 
 static int add_script_url(modparam_t type, void *val);
@@ -96,11 +98,11 @@ struct module_exports exports = {
 /* exported functions for core event interface */
 static const evi_export_t trans_export_sqs = {
 	SQS_STR,					/* transport module name */
-	sqs_evi_raise,
-	sqs_evi_parse,
-	0,
-	0,
-	sqs_evi_print,
+	sqs_evi_raise,				/* raise function */
+	sqs_evi_parse,				/* parse function */
+	sqs_evi_match,				/* sockets match function */
+	sqs_evi_free,				/* free function */
+	sqs_evi_print,				/* print socket */
 	SQS_FLAG
 };
 
@@ -147,9 +149,9 @@ static void mod_destroy(void) {
 
 	list_for_each_safe(it, tmp, sqs_urls) {
 		queue = list_entry(it, sqs_queue_t, list);
-		LM_NOTICE("Queue_url: %.*s\n", queue->url.len, queue->url.s);
 		list_del(&queue->list);
-		//shm_free(queue);
+		shm_free(queue);
+	
 	}
 
 	shm_free(sqs_urls);
@@ -162,14 +164,14 @@ sqs_queue_t *get_script_url(str *id) {
 	struct list_head *it;
 	sqs_queue_t *queue;
 
-	LM_NOTICE("get_script_url called with id: %.*s\n", id->len, id->s);
+	LM_DBG("get_script_url called with id: %.*s\n", id->len, id->s);
 	list_for_each(it, sqs_urls) {
 		queue = list_entry(it, sqs_queue_t, list);
 		if (queue->id.len == id->len && memcmp(queue->id.s, id->s, id->len) == 0) {
 			return queue;
 		}
 	}
-	LM_NOTICE("No url found with id: %.*s\n", id->len, id->s);
+	LM_DBG("No url found with id: %.*s\n", id->len, id->s);
 	return NULL;
 }
 
@@ -260,7 +262,6 @@ static int add_script_url(modparam_t type, void *val) {
 	queue->config = shm_malloc(sizeof(sqs_config));
 	if (!queue->config) {
 		LM_ERR("oom!\n");
-		shm_free(queue);
 		return -1;
 	}
 
@@ -268,8 +269,6 @@ static int add_script_url(modparam_t type, void *val) {
 	INIT_LIST_HEAD(&queue->list);
 
 	list_add(&queue->list, sqs_urls);
-
-	LM_NOTICE("Added SQS url: %.*s\n", queue->url.len, queue->url.s);
 
 	return 0;
 }
@@ -283,7 +282,7 @@ static evi_reply_sock *sqs_evi_parse(str socket)
 		LM_ERR("No socket specified\n");
 		return NULL;
 	}
-
+	
 	queue = shm_malloc(sizeof *queue);
 	if (!queue) {
 		LM_ERR("No more pkg mem\n");
@@ -308,23 +307,82 @@ static evi_reply_sock *sqs_evi_parse(str socket)
 	return sock;
 }
 
+static int sqs_evi_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
+{
+	if (!sock1 || !sock2)
+		return 0;
+
+	if (!(sock1->flags & EVI_PARAMS) || !(sock2->flags & EVI_PARAMS) ||
+		sock1->params != sock2->params)
+		return 0;
+
+	return 1;
+}
+
+static void sqs_evi_free(evi_reply_sock *sock)
+{
+	sqs_queue_t *queue;
+	if (!sock) {
+		return;
+	}
+
+	if (sock->params) {
+		queue = (sqs_queue_t *)sock->params;
+		if (queue->config) {
+			shm_free(queue->config);
+		}
+		shm_free(queue);
+	}
+
+	shm_free(sock);
+}
+
 static str sqs_evi_print(evi_reply_sock *sock)
 {
 	return sock->address;
 }
 
 static int sqs_evi_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx) {
-	str payload;
 	sqs_queue_t *queue = (sqs_queue_t *)sock->params;
+	int ret;
+	str payload, message_body;
+	char *start, *end, *region, *endpoint;
 
-	if (!sock) {
-		LM_ERR("invalid evi socket\n");
+	queue = (sqs_queue_t *)sock->params;
+	queue->url = sock->address;
+
+	if (!queue->config) {
+		region = NULL;
+		endpoint = NULL;
+		if (parse_queue_url(&queue->url, &region, &endpoint) != 0) {
+			LM_ERR("Failed to parse queue URL\n");
+			shm_free(queue->config);
+			return -1;
+		}
+		queue->config = pkg_malloc(sizeof(sqs_config));
+		if (!queue->config) {
+			LM_ERR("No more pkg mem\n");
+			free(region);
+			free(endpoint);
+			return -1;
+		}
+		ret = init_sqs(queue->config, region, endpoint);
+
+		free(region);
+		free(endpoint);
+
+		if (ret == -1) {
+			LM_ERR("Cannot init the configuration\n");
+			return -1;
+		}
+
+	}
+
+	if (!sock || !queue || !queue->config) {
+		LM_ERR("Invalid queue or config in sqs_evi_raise\n");
 		return -1;
 	}
-	if (!queue) {
-		LM_ERR("Invalid\n");
-		return -1;
-	}
+
 	payload.s = evi_build_payload(params, ev_name, 0, NULL, NULL);
 	if (!payload.s) {
 		LM_ERR("Failed to build event payload\n");
@@ -332,20 +390,38 @@ static int sqs_evi_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 	}
 	payload.len = strlen(payload.s);
 
-	if (!sqs_send_message(queue->config, queue->url, payload)) {
+	/* Extract the message body */
+	start = strstr(payload.s, "params");
+	if (!start) {
+		return -1;
+	}
+	start = start + 10; /* "params":["Message"] */
+	end = strstr(start, "\"");
+	if (!end) {
+		return -1;
+	}
+
+	message_body.len = end - start;
+	message_body.s = start;
+
+	if (sqs_send_message(queue->config, queue->url, message_body) != 0) {
 		LM_ERR("Failed to send message to SQS\n");
 		evi_free_payload(payload.s);
 		return -1;
 	}
 
 	evi_free_payload(payload.s);
-
 	return 0;
+
 }
 
+
+
+
 static int fixup_url(void **param) {
-	str *s = (str *)*param;
-	LM_NOTICE("fixup_url called with id: %.*s\n", s->len, s->s);
+	str *s;
+	s = (str *)*param;
+	LM_DBG("fixup_url called with id: %.*s\n", s->len, s->s);
 
 	*param = get_script_url(s);
 	if (*param == NULL) {
@@ -358,31 +434,37 @@ static int fixup_url(void **param) {
 
 
 static int send_message(struct sip_msg *msg, str *queue_id, str *message_body) {
+	sqs_queue_t *queue;
+	size_t msg_len;
+	ssize_t written;
+	char *buffer;
+	int queue_len, body_len;
+
 	LM_INFO("sqs_send_message called with id: %.*s\n", queue_id->len, queue_id->s);
 
-	sqs_queue_t *queue = get_script_url(queue_id);
+	queue = get_script_url(queue_id);
 	if (!queue) {
 		LM_ERR("Unknown broker id: %.*s\n", queue_id->len, queue_id->s);
 		return -1;
 	}
 
-	size_t msg_len = sizeof(int) + sizeof(int) + message_body->len + queue_id->len;
-	char *buffer = (char *)malloc(msg_len);
+	msg_len = sizeof(int) + sizeof(int) + message_body->len + queue_id->len;
+	buffer = (char *)pkg_malloc(msg_len);
 	if (!buffer) {
 		LM_ERR("Failed to allocate memory for pipe message\n");
 		return -1;
 	}
 
-	int queue_len = queue_id->len;
-	int body_len = message_body->len;
+	queue_len = queue_id->len;
+	body_len = message_body->len;
 
 	memcpy(buffer, &queue_len, sizeof(int));
 	memcpy(buffer + sizeof(int), &body_len, sizeof(int));
 	memcpy(buffer + 2 * sizeof(int), queue_id->s, queue_len);
 	memcpy(buffer + 2 * sizeof(int) + queue_len, message_body->s, body_len);
 
-	ssize_t written = write(sqs_pipe[1], buffer, msg_len);
-	free(buffer);
+	written = write(sqs_pipe[1], buffer, msg_len);
+	pkg_free(buffer);
 	if (written != msg_len) {
 		LM_ERR("Failed to notify SQS worker, error: %s\n", strerror(errno));
 		return -1;

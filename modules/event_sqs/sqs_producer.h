@@ -47,6 +47,7 @@ typedef struct _sqs_queue {
 } sqs_queue_t;
 
 sqs_queue_t *get_script_url(str *id);
+int parse_queue_url(str *queue_url, char **region, char **endpoint);
 void sqs_process(int rank);
 int sqs_create_pipe(void);
 void sqs_destroy_pipe(void);
