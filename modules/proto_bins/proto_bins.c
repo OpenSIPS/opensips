@@ -70,6 +70,7 @@ static int bins_handshake_tout = 100;
 static int bins_async_handshake_connect_timeout = 10;
 static str trace_destination_name = {NULL, 0};
 static int trace_is_on_tmp;
+static str bins_tls_client_domain = {NULL, 0};
 
 static struct tcp_req bins_current_req;
 
@@ -114,6 +115,7 @@ static const param_export_t params[] = {
 									&bins_async_handshake_connect_timeout },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
+	{ "bins_tls_client_domain", STR_PARAM, &bins_tls_client_domain          },
 	{0, 0, 0}
 };
 
@@ -213,6 +215,10 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (bins_tls_client_domain.s != NULL) {
+		bins_tls_client_domain.len = strlen(bins_tls_client_domain.s);
+	}
+
 	*trace_is_on = trace_is_on_tmp;
 
 	return 0;
@@ -256,7 +262,11 @@ out:
 			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
 		dom = tls_mgm_api.find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
 	} else {
-		dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+		if (bins_tls_client_domain.len > 0) {
+			dom = tls_mgm_api.find_client_domain_name(&bins_tls_client_domain);
+		} else {
+			dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+		}
 	}
 	if (!dom) {
 		LM_ERR("no TLS %s domain found\n",
