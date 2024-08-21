@@ -2073,7 +2073,8 @@ route{
 			<para>
 			<emphasis>$T_fr_inv_timeout (R/W)</emphasis> - the timeout
 			for the final reply to an INVITE request, after a 1XX reply
-			was received
+			was received.  This variable may also be set in an onreply_route
+			(e.g. on 180 Ringing, after 100 Trying) and still take effect.
 			</para>
 			<para>
 			With each different request received,
