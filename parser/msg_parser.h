@@ -208,6 +208,9 @@ struct sip_uri {
 	str pn_prid_val;
 	str pn_param_val;
 	str pn_purr_val;
+	/* XXX - in the future when adding params as special links
+	 * in the list above, make sure to also update compare_uris() function
+	 * to explicitly compare these here */
 
 	/* unknown params */
 	str u_name[URI_MAX_U_PARAMS]; /* Unknown param names */
