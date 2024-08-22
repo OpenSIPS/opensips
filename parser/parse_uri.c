@@ -1818,6 +1818,11 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 	compare_uri_val(method_val,strncasecmp);
 	compare_uri_val(lr_val,strncasecmp);
 	compare_uri_val(r2_val,strncasecmp);
+	compare_uri_val(gr_val,strncasecmp);
+	compare_uri_val(pn_provider_val,strncasecmp);
+	compare_uri_val(pn_prid_val,strncasecmp);
+	compare_uri_val(pn_param_val,strncasecmp);
+	compare_uri_val(pn_purr_val,strncasecmp);
 
 	if (first.u_params_no == 0 || second.u_params_no == 0)
 		/* one URI doesn't have other params,
