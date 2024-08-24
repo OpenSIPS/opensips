@@ -1542,7 +1542,9 @@ _in(ip):$socket_in(port)\r\n");
 1.5.4. $T_fr_inv_timeout
 
    $T_fr_inv_timeout (R/W) - the timeout for the final reply to an
-   INVITE request, after a 1XX reply was received
+   INVITE request, after a 1XX reply was received. This variable
+   may also be set in an onreply_route (e.g. on 180 Ringing, after
+   100 Trying) and still take effect.
 
    With each different request received, $T_fr_inv_timeout will
    initially be equal to the fr_inv_timeout parameter.
@@ -1770,8 +1772,8 @@ Chapter 4. Contributors
    2. Jiri Kuthan (@jiriatipteldotorg) 537 198 18723 11167
    3. Jan Janak (@janakj) 161 76 6462 1840
    4. Andrei Pelinescu-Onciul 146 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 138 106 2046 851
-   6. Liviu Chircu (@liviuchircu) 113 87 1301 912
+   5. Razvan Crainea (@razvancrainea) 139 107 2056 854
+   6. Liviu Chircu (@liviuchircu) 114 88 1303 913
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Vlad Patrascu (@rvlad-patrascu) 40 18 916 826
    9. Anca Vamanu 37 19 778 651
@@ -1812,8 +1814,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Aug 2024
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2024
+   2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Aug 2024
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - May 2024
    4.  Carsten Bock                        Mar 2024 - Mar 2024
    5.  Maksym Sobolyev (@sobomax)          Mar 2004 - Nov 2023
@@ -1846,9 +1848,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Carsten
-   Bock, Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Fabian Gast
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Carsten Bock, Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Fabian Gast
    (@fgast), Alexey Vasilyev (@vasilevalex), Peter Lemenkov
    (@lemenkov), Nick Altmann (@nikbyte), Ovidiu Sas (@ovidiusas),
    Vlad Paiu (@vladpaiu), Anca Vamanu, Henning Westerholt
