@@ -74,6 +74,31 @@ extern stat_var* bad_msg_hdr;
 /*! \brief SIP message processing which exceeded 'threshold' duration */
 extern stat_var* slow_msgs;
 
+/*! \brief total handled incoming tcp connections */
+extern stat_var* tcp_in_total;
+
+/*! \brief total incoming tcp connections processed successfully */
+extern stat_var* tcp_in_success;
+
+/*! \brief the accept syscall returned error */
+extern stat_var* tcp_in_accept_failed;
+
+/*! \brief the tcp_max_connections exceeded  */
+extern stat_var* tcp_in_max_exceeded;
+
+/*! \brief the tcp_init_sock_opt for new incoming connection failed */
+extern stat_var* tcp_in_init_sock_opt_failed;
+
+/*! \brief the tcpconn_new for incoming connection failed  */
+extern stat_var* tcp_in_conn_new_failed;
+
+/*! \brief the TCP MAIN sent new incoming conn to a worker unsucceessfully */
+extern stat_var* tcp_in_no_workers;
+
+/*! \brief the TCP MAIN sent the socket to a worker and it failed. */
+extern stat_var* tcp_send_fd_failed;
+
+
 #ifdef PKG_MALLOC
 int init_pkg_stats(int no_procs);
 #endif

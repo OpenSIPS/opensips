@@ -79,6 +79,15 @@ const stat_export_t core_stats[] = {
 
 /*************************** NET statistics *********************************/
 
+stat_var* tcp_in_total;
+stat_var* tcp_in_success;
+stat_var* tcp_in_accept_failed;
+stat_var* tcp_in_max_exceeded;
+stat_var* tcp_in_init_sock_opt_failed;
+stat_var* tcp_in_conn_new_failed;
+stat_var* tcp_in_no_workers;
+stat_var* tcp_send_fd_failed;
+
 static unsigned long net_get_wb_udp(unsigned short foo)
 {
 	return get_total_bytes_waiting(PROTO_UDP);
@@ -95,9 +104,17 @@ static unsigned long net_get_wb_tls(unsigned short foo)
 }
 
 const stat_export_t net_stats[] = {
-	{"waiting_udp" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_udp    },
-	{"waiting_tcp" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_tcp    },
-	{"waiting_tls" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_tls    },
+	{"waiting_udp" ,           STAT_IS_FUNC,  (stat_var**)net_get_wb_udp    },
+	{"waiting_tcp" ,           STAT_IS_FUNC,  (stat_var**)net_get_wb_tcp    },
+	{"waiting_tls" ,           STAT_IS_FUNC,  (stat_var**)net_get_wb_tls    },
+	{"tcp_in_total" ,                     0,  &tcp_in_total                 },
+	{"tcp_in_success" ,                   0,  &tcp_in_success               },
+	{"tcp_in_accept_failed",              0,  &tcp_in_accept_failed         },
+	{"tcp_in_max_exceeded",               0,  &tcp_in_max_exceeded          },
+	{"tcp_in_init_sock_opt_failed",       0,  &tcp_in_init_sock_opt_failed  },
+	{"tcp_in_conn_new_failed",            0,  &tcp_in_conn_new_failed       },
+	{"tcp_in_no_workers",                 0,  &tcp_in_no_workers            },
+	{"tcp_send_fd_failed",                0,  &tcp_send_fd_failed           },
 	{0,0,0}
 };
 

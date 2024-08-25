@@ -51,6 +51,7 @@
 #include "../reactor.h"
 #include "../timer.h"
 #include "../ipc.h"
+#include "../core_stats.h"
 
 #include "tcp_passfd.h"
 #include "net_tcp_proc.h"
@@ -311,6 +312,7 @@ static int send2worker(struct tcp_connection* tcpconn,int rw)
 	if (send_fd(tcp_workers[idx].unix_sock, response, sizeof(response),
 			tcpconn->s)<=0){
 		LM_ERR("send_fd failed\n");
+		update_stat(tcp_send_fd_failed, 1);
 		return -1;
 	}
 
@@ -1106,11 +1108,16 @@ static inline int handle_new_connect(struct socket_info* si)
 		if ((errno==EAGAIN)||(errno==EWOULDBLOCK))
 			return 0;
 		LM_ERR("failed to accept connection(%d): %s\n", errno, strerror(errno));
+		update_stat(tcp_in_accept_failed, 1);
 		return -1;
 	}
+
+	update_stat(tcp_in_total, 1);
+
 	if (tcp_connections_no>=tcp_max_connections){
 		LM_ERR("maximum number of connections exceeded: %d/%d\n",
 					tcp_connections_no, tcp_max_connections);
+		update_stat(tcp_in_max_exceeded, 1);
 		close(new_sock);
 		return 1; /* success, because the accept was successful */
 	}
@@ -1119,6 +1126,7 @@ static inline int handle_new_connect(struct socket_info* si)
 	if (tcp_init_sock_opt(new_sock, &prof, si->flags)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		close(new_sock);
+		update_stat(tcp_in_init_sock_opt_failed, 1);
 		return 1; /* success, because the accept was successful */
 	}
 
@@ -1135,6 +1143,7 @@ static inline int handle_new_connect(struct socket_info* si)
 		sh_log(tcpconn->hist, TCP_SEND2CHILD, "accept");
 		if(send2worker(tcpconn,IO_WATCH_READ)<0){
 			LM_ERR("no TCP workers available\n");
+			update_stat(tcp_in_no_workers, 1);
 			id = tcpconn->id;
 			sh_log(tcpconn->hist, TCP_UNREF, "accept, (%d)", tcpconn->refcnt);
 			TCPCONN_LOCK(id);
@@ -1149,8 +1158,10 @@ static inline int handle_new_connect(struct socket_info* si)
 		}
 	}else{ /*tcpconn==0 */
 		LM_ERR("tcpconn_new failed, closing socket\n");
+		update_stat(tcp_in_conn_new_failed, 1);
 		close(new_sock);
 	}
+	update_stat(tcp_in_success, 1);
 	return 1; /* accept() was successful */
 }
 
