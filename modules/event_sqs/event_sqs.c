@@ -45,7 +45,7 @@ static str sqs_evi_print(evi_reply_sock *sock);
 static int add_script_url(modparam_t type, void *val);
 
 static int fixup_url(void **param);
-static int send_message(struct sip_msg *msg, str *queue_id, str *message_body);
+static int sqs_publish_message(struct sip_msg *msg, str *queue_id, str *message_body);
 
 struct list_head *sqs_urls;
 int sqs_pipe[2];
@@ -62,7 +62,7 @@ static const param_export_t mod_params[] = {
 };
 
 static const cmd_export_t cmds[] = {
-	{"sqs_send_message", (cmd_function)send_message, {
+	{"sqs_send_message", (cmd_function)sqs_publish_message, {
 		{CMD_PARAM_STR, fixup_url, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{0, 0, 0}},
@@ -273,8 +273,31 @@ static int add_script_url(modparam_t type, void *val) {
 	return 0;
 }
 
-static evi_reply_sock *sqs_evi_parse(str socket)
-{
+
+static sqs_job_t *sqs_prepare_job(sqs_queue_t *queue, str *message_body, sqs_job_type_t job_type) {
+	sqs_job_t *job;
+	size_t job_size;
+
+	job_size = sizeof(sqs_job_t) + message_body->len;
+
+	job = (sqs_job_t *)shm_malloc(job_size);
+	if (!job) {
+		LM_ERR("Failed to allocate memory for SQS job\n");
+		return NULL;
+	}
+
+	job->type = job_type;
+	job->message_len = message_body->len;
+
+	job->message = (char *)(job + 1);
+	memcpy(job->message, message_body->s, job->message_len);
+
+	job->queue = queue;
+
+	return job;
+}
+
+static evi_reply_sock *sqs_evi_parse(str socket) {
 	evi_reply_sock *sock = NULL;
 	sqs_queue_t *queue = NULL;
 
@@ -282,12 +305,13 @@ static evi_reply_sock *sqs_evi_parse(str socket)
 		LM_ERR("No socket specified\n");
 		return NULL;
 	}
-	
+
 	queue = shm_malloc(sizeof *queue);
 	if (!queue) {
 		LM_ERR("No more pkg mem\n");
 		return NULL;
 	}
+
 	queue->url.s = socket.s;
 	queue->url.len = socket.len;
 
@@ -303,9 +327,9 @@ static evi_reply_sock *sqs_evi_parse(str socket)
 	sock->address.len = queue->url.len;
 	sock->params = queue;
 	sock->flags |= EVI_ADDRESS | EVI_PARAMS | EVI_EXPIRE | EVI_ASYNC_STATUS;
-
 	return sock;
 }
+
 
 static int sqs_evi_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 {
@@ -313,21 +337,36 @@ static int sqs_evi_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 		return 0;
 
 	if (!(sock1->flags & EVI_PARAMS) || !(sock2->flags & EVI_PARAMS) ||
-		sock1->params != sock2->params)
+		memcmp(sock1->params, sock2->params, sizeof(evi_reply_sock)) != 0)
 		return 0;
 
 	return 1;
 }
 
-static void sqs_evi_free(evi_reply_sock *sock)
-{
+static void sqs_evi_free(evi_reply_sock *sock) {
 	sqs_queue_t *queue;
+	sqs_job_t *job;
+	ssize_t written;
+	str message;
+
+	message.len = 0;
+	message.s = NULL;
+
 	if (!sock) {
 		return;
 	}
 
 	if (sock->params) {
 		queue = (sqs_queue_t *)sock->params;
+
+
+		job = sqs_prepare_job(queue, &message, SQS_JOB_SHUTDOWN);
+
+		written = write(sqs_pipe[1], &job, sizeof(sqs_job_t *));
+		if (written != sizeof(sqs_job_t)) {
+			LM_ERR("Failed to send shutdown job to SQS worker\n");
+		}
+
 		if (queue->config) {
 			shm_free(queue->config);
 		}
@@ -337,51 +376,23 @@ static void sqs_evi_free(evi_reply_sock *sock)
 	shm_free(sock);
 }
 
+
+
 static str sqs_evi_print(evi_reply_sock *sock)
 {
 	return sock->address;
 }
 
 static int sqs_evi_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx) {
-	sqs_queue_t *queue = (sqs_queue_t *)sock->params;
-	int ret;
+	sqs_queue_t *queue;
 	str payload, message_body;
-	char *start, *end, *region, *endpoint;
+	char *start, *end;
+	sqs_job_t *job;
+	ssize_t written;
 
 	queue = (sqs_queue_t *)sock->params;
-	queue->url = sock->address;
-
-	if (!queue->config) {
-		region = NULL;
-		endpoint = NULL;
-		if (parse_queue_url(&queue->url, &region, &endpoint) != 0) {
-			LM_ERR("Failed to parse queue URL\n");
-			shm_free(queue->config);
-			return -1;
-		}
-		queue->config = pkg_malloc(sizeof(sqs_config));
-		if (!queue->config) {
-			LM_ERR("No more pkg mem\n");
-			free(region);
-			free(endpoint);
-			return -1;
-		}
-		ret = init_sqs(queue->config, region, endpoint);
-
-		free(region);
-		free(endpoint);
-
-		if (ret == -1) {
-			LM_ERR("Cannot init the configuration\n");
-			return -1;
-		}
-
-	}
-
-	if (!sock || !queue || !queue->config) {
-		LM_ERR("Invalid queue or config in sqs_evi_raise\n");
-		return -1;
-	}
+	queue->url.s = sock->address.s;
+	queue->url.len = sock->address.len;
 
 	payload.s = evi_build_payload(params, ev_name, 0, NULL, NULL);
 	if (!payload.s) {
@@ -393,30 +404,36 @@ static int sqs_evi_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 	/* Extract the message body */
 	start = strstr(payload.s, "params");
 	if (!start) {
+		evi_free_payload(payload.s);
 		return -1;
 	}
 	start = start + 10; /* "params":["Message"] */
 	end = strstr(start, "\"");
 	if (!end) {
+		evi_free_payload(payload.s);
 		return -1;
 	}
 
 	message_body.len = end - start;
 	message_body.s = start;
 
-	if (sqs_send_message(queue->config, queue->url, message_body) != 0) {
-		LM_ERR("Failed to send message to SQS\n");
+	job = sqs_prepare_job(queue, &message_body, SQS_JOB_SEND);
+	if (!job) {
+		evi_free_payload(payload.s);
+		return -1;
+	}
+
+	written = write(sqs_pipe[1], &job, sizeof(sqs_job_t *));
+	if (written == -1) {
+		LM_ERR("Failed to write job to pipe\n");
+		shm_free(job);
 		evi_free_payload(payload.s);
 		return -1;
 	}
 
 	evi_free_payload(payload.s);
 	return 0;
-
 }
-
-
-
 
 static int fixup_url(void **param) {
 	str *s;
@@ -433,12 +450,10 @@ static int fixup_url(void **param) {
 }
 
 
-static int send_message(struct sip_msg *msg, str *queue_id, str *message_body) {
+static int sqs_publish_message(struct sip_msg *msg, str *queue_id, str *message_body) {
 	sqs_queue_t *queue;
-	size_t msg_len;
 	ssize_t written;
-	char *buffer;
-	int queue_len, body_len;
+	sqs_job_t *job;
 
 	LM_INFO("sqs_send_message called with id: %.*s\n", queue_id->len, queue_id->s);
 
@@ -448,28 +463,18 @@ static int send_message(struct sip_msg *msg, str *queue_id, str *message_body) {
 		return -1;
 	}
 
-	msg_len = sizeof(int) + sizeof(int) + message_body->len + queue_id->len;
-	buffer = (char *)pkg_malloc(msg_len);
-	if (!buffer) {
-		LM_ERR("Failed to allocate memory for pipe message\n");
+	job = sqs_prepare_job(queue, message_body, SQS_JOB_SEND);
+	if (!job) {
 		return -1;
 	}
 
-	queue_len = queue_id->len;
-	body_len = message_body->len;
-
-	memcpy(buffer, &queue_len, sizeof(int));
-	memcpy(buffer + sizeof(int), &body_len, sizeof(int));
-	memcpy(buffer + 2 * sizeof(int), queue_id->s, queue_len);
-	memcpy(buffer + 2 * sizeof(int) + queue_len, message_body->s, body_len);
-
-	written = write(sqs_pipe[1], buffer, msg_len);
-	pkg_free(buffer);
-	if (written != msg_len) {
-		LM_ERR("Failed to notify SQS worker, error: %s\n", strerror(errno));
+	written = write(sqs_pipe[1], &job, sizeof(sqs_job_t *));
+	if (written == -1) {
+		LM_ERR("Failed to write job to pipe\n");
 		return -1;
 	}
 
 	return 0;
 }
+
 

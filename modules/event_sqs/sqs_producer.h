@@ -46,6 +46,18 @@ typedef struct _sqs_queue {
 	int event_fd;
 } sqs_queue_t;
 
+typedef enum {
+		SQS_JOB_SEND,		/* Send message */
+		SQS_JOB_SHUTDOWN	/* Shutdown connection */
+} sqs_job_type_t;
+
+typedef struct {
+	sqs_job_type_t type;
+	int message_len;
+	char *message;
+	sqs_queue_t *queue;
+} sqs_job_t;
+
 sqs_queue_t *get_script_url(str *id);
 int parse_queue_url(str *queue_url, char **region, char **endpoint);
 void sqs_process(int rank);
