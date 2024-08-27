@@ -131,7 +131,7 @@ int pn_init(void)
 		       param->s.len, param->s.s);
 
 		/* build the filter templates, values are to be filled in at runtime */
-		filter = shm_malloc(sizeof *filter);
+		filter = pkg_malloc(sizeof *filter);
 		if (!filter) {
 			LM_ERR("oom\n");
 			return -1;
@@ -161,7 +161,7 @@ int pn_init(void)
 			return -1;
 		}
 
-		provider = shm_malloc(sizeof *provider + pnp->s.len + 1 +
+		provider = pkg_malloc(sizeof *provider + pnp->s.len + 1 +
 		                      MAX_FEATURE_CAPS_SIZE);
 		if (!provider) {
 			LM_ERR("oom\n");
