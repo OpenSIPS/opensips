@@ -574,7 +574,7 @@ int tm_anycast_replicate(struct sip_msg *msg)
 		return -1;
 	}
 
-	if (!is_anycast(msg->rcv.bind_address)) {
+	if (!tm_bypass_replication_socket_check && !is_anycast(msg->rcv.bind_address)) {
 		LM_DBG("request not received on an anycast network\n");
 		return -1;
 	}
