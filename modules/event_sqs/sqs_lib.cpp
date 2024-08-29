@@ -79,7 +79,7 @@ int sqs_send_message(sqs_config *config, str queueUrl, str messageBody) {
 
 	const Aws::SQS::Model::SendMessageOutcome outcome = sqsClient.SendMessage(request);
 	if (outcome.IsSuccess()) {
-		LM_NOTICE("Successfully sent message to %.*s\n", queueUrl.len, queueUrl.s);
+		LM_DBG("Successfully sent message to %.*s\n", queueUrl.len, queueUrl.s);
 		return 0;
 	}
 

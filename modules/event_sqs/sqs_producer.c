@@ -128,7 +128,7 @@ int parse_queue_url(str *queue_url, char **region, char **endpoint) {
 		}
 	}
 
-	LM_NOTICE("ENDPOINT: %s\n", *endpoint ? *endpoint : "NULL");
+	LM_DBG("ENDPOINT: %s\n", *endpoint ? *endpoint : "NULL");
 
 	region_start = strstr(url_copy, "://sqs.") + strlen("://sqs.");
 	if (region_start) {
@@ -139,10 +139,58 @@ int parse_queue_url(str *queue_url, char **region, char **endpoint) {
 		}
 	}
 
-	LM_NOTICE("REGION: %s\n", *region ? *region : "NULL");
+	LM_DBG("REGION: %s\n", *region ? *region : "NULL");
 
 	free(url_copy);
 	return 0;
+}
+
+int sqs_init_config(sqs_queue_t *queue) {
+	char *region, *endpoint;
+	region = NULL;
+	endpoint = NULL;
+	if (parse_queue_url(&queue->url, &region, &endpoint) != 0) {
+		LM_ERR("Failed to parse queue URL\n");
+		shm_free(queue->config);
+		shm_free(queue);
+		return -1;
+	}
+
+	if (init_sqs(queue->config, region, endpoint) != 0) {
+		LM_ERR("Failed to initialize SQS configuration\n");
+		free(region);
+		free(endpoint);
+		shm_free(queue->config);
+		shm_free(queue);
+		return -1;
+	}
+
+	free(region);
+	free(endpoint);
+	return 0;
+}
+
+sqs_job_t *sqs_prepare_job(sqs_queue_t *queue, str *message_body, sqs_job_type_t job_type) {
+	sqs_job_t *job;
+	size_t job_size;
+
+	job_size = sizeof(sqs_job_t) + message_body->len;
+
+	job = (sqs_job_t *)shm_malloc(job_size);
+	if (!job) {
+		LM_ERR("Failed to allocate memory for SQS job\n");
+		return NULL;
+	}
+
+	job->type = job_type;
+	job->message_len = message_body->len;
+
+	job->message = (char *)(job + 1);
+	memcpy(job->message, message_body->s, job->message_len);
+
+	job->queue = queue;
+
+	return job;
 }
 
 int sqs_send_job(sqs_job_t *job) {
@@ -154,7 +202,7 @@ int sqs_send_job(sqs_job_t *job) {
 	} while (rc < 0 && (errno == EINTR || retries-- > 0));
 
 	if (rc < 0) {
-		LM_ERR("Failed to write on pipe\n");
+		LM_ERR("Failed to write on pipe %d - %s\n", errno, strerror(errno));
 		shm_free(job);
 		return -1;
 	}
@@ -175,24 +223,29 @@ sqs_job_t *sqs_receive_job(void) {
 	} while (rc < 0 && (errno == EINTR || retries-- > 0));
 
 	if (rc < 0) {
-		LM_ERR("Failed to read from pipe\n");
+		LM_ERR("Failed to read from pipe: %d - %s\n", errno, strerror(errno));
 		return NULL;
 	}
 
 	return recv;
 }
 
+void sqs_destroy_job(sqs_job_t *job) {
+	if (!job)
+		return;
+
+	shm_free(job);
+}
 
 void sqs_process(int rank) {
 	int ret;
 	struct list_head *it;
 	sqs_queue_t *queue;
-	char *region, *endpoint;
 
 	suppress_proc_log_event();
 	signal(SIGTERM, sig_handler);
 
-	LM_NOTICE("Starting SQS worker process...\n");
+	LM_DBG("Starting SQS worker process...\n");
 
 	if (init_worker_reactor("SQS worker", RCT_PRIO_MAX) != 0) {
 		LM_CRIT("Failed to init SQS worker reactor\n");
@@ -202,22 +255,9 @@ void sqs_process(int rank) {
 	list_for_each(it, sqs_urls) {
 		queue = list_entry(it, sqs_queue_t, list);
 
-		region = NULL;
-		endpoint = NULL;
-		if (parse_queue_url(&queue->url, &region, &endpoint) != 0) {
-			LM_ERR("Failed to parse queue URL\n");
-			shm_free(queue->config);
-			return;
-		}
-
-		ret = init_sqs(queue->config, region, endpoint);
-		if (ret == -1) {
-			LM_ERR("Cannot init the configuration\n");
+		ret = sqs_init_config(queue);
+		if (ret == -1)
 			goto out_err;
-		}
-
-		free(region);
-		free(endpoint);
 	}
 
 	if (reactor_add_reader(sqs_pipe[0], F_SQS_JOB, RCT_PRIO_ASYNC, NULL) < 0) {
@@ -236,6 +276,8 @@ out_err:
 static int handle_io(struct fd_map *fm, int idx, int event_type) {
 	sqs_job_t *job;
 	sqs_queue_t *queue;
+	int ret;
+
 	switch (fm->type) {
 	case F_SQS_JOB:
 
@@ -247,42 +289,26 @@ static int handle_io(struct fd_map *fm, int idx, int event_type) {
 
 		queue = job->queue;
 
-		if (!queue->config) {
-			LM_NOTICE("Queue not found. Initializing new queue for URL: %.*s\n", job->queue->url.len, job->queue->url.s);
-
-			queue->url.s = job->queue->url.s;
-			queue->url.len = job->queue->url.len;
-
-			queue->config = shm_malloc(sizeof(sqs_config));
-			if (!queue->config) {
-				LM_ERR("Failed to allocate memory for SQS config\n");
-				shm_free(queue);
-				return -1;
-			}
-
-			char *region = NULL, *endpoint = NULL;
-			if (parse_queue_url(&queue->url, &region, &endpoint) != 0) {
-				LM_ERR("Failed to parse queue URL\n");
-				shm_free(queue->config);
-				shm_free(queue);
-				return -1;
-			}
-
-			if (init_sqs(queue->config, region, endpoint) != 0) {
-				LM_ERR("Failed to initialize SQS configuration\n");
-				free(region);
-				free(endpoint);
-				shm_free(queue->config);
-				shm_free(queue);
-				return -1;
-			}
-
-			free(region);
-			free(endpoint);
-		}
-
 		switch (job->type) {
 			case SQS_JOB_SEND:
+
+				if (!queue->config) {
+					LM_DBG("Queue not found. Initializing new queue for URL: %.*s\n", job->queue->url.len, job->queue->url.s);
+
+					queue->url.s = job->queue->url.s;
+					queue->url.len = job->queue->url.len;
+
+					queue->config = shm_malloc(sizeof(sqs_config));
+					if (!queue->config) {
+						LM_ERR("Failed to allocate memory for SQS config\n");
+						goto out_err;
+					}
+
+					ret = sqs_init_config(queue);
+					if (ret == -1)
+						goto out_err;
+				}
+
 				if (sqs_send_message(queue->config, queue->url, (str) {job->message, job->message_len}) != 0) {
 					LM_ERR("Failed to send message to SQS\n");
 				}
@@ -293,15 +319,15 @@ static int handle_io(struct fd_map *fm, int idx, int event_type) {
 					shutdown_sqs(queue->config);
 					shm_free(queue->config);
 					queue->config = NULL;
-					LM_NOTICE("SQS connection for URL: %.*s shut down\n", queue->url.len, queue->url.s);
+					LM_DBG("SQS connection for URL: %.*s shut down\n", queue->url.len, queue->url.s);
 				} else {
-					LM_NOTICE("SQS connection for URL: %.*s was not active, nothing to shut down\n", queue->url.len, queue->url.s);
+					LM_DBG("SQS connection for URL: %.*s was not active, nothing to shut down\n", queue->url.len, queue->url.s);
 				}
 				break;
 
 			default:
 				LM_ERR("Unknown job type received\n");
-				return -1;
+				goto out_err;
 		}
 		shm_free(job);
 		break;
@@ -312,4 +338,8 @@ static int handle_io(struct fd_map *fm, int idx, int event_type) {
 	}
 
 	return 0;
+
+out_err:
+	sqs_destroy_job(job);
+	return -1;
 }

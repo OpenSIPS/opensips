@@ -107,7 +107,7 @@ static const evi_export_t trans_export_sqs = {
 };
 
 static int mod_init(void) {
-	LM_NOTICE("initializing event_sqs module......\n");
+	LM_DBG("initializing event_sqs module......\n");
 
 	if (register_event_mod(&trans_export_sqs)) {
 		LM_ERR("cannot register transport functions for SQS\n");
@@ -145,7 +145,7 @@ static void mod_destroy(void) {
 	struct list_head *it, *tmp;
 	sqs_queue_t *queue;
 
-	LM_NOTICE("destroy event_sqs module ...\n");
+	LM_DBG("destroy event_sqs module ...\n");
 
 	list_for_each_safe(it, tmp, sqs_urls) {
 		queue = list_entry(it, sqs_queue_t, list);
@@ -271,30 +271,6 @@ static int add_script_url(modparam_t type, void *val) {
 	list_add(&queue->list, sqs_urls);
 
 	return 0;
-}
-
-
-static sqs_job_t *sqs_prepare_job(sqs_queue_t *queue, str *message_body, sqs_job_type_t job_type) {
-	sqs_job_t *job;
-	size_t job_size;
-
-	job_size = sizeof(sqs_job_t) + message_body->len;
-
-	job = (sqs_job_t *)shm_malloc(job_size);
-	if (!job) {
-		LM_ERR("Failed to allocate memory for SQS job\n");
-		return NULL;
-	}
-
-	job->type = job_type;
-	job->message_len = message_body->len;
-
-	job->message = (char *)(job + 1);
-	memcpy(job->message, message_body->s, job->message_len);
-
-	job->queue = queue;
-
-	return job;
 }
 
 static evi_reply_sock *sqs_evi_parse(str socket) {
@@ -450,7 +426,7 @@ static int sqs_publish_message(struct sip_msg *msg, str *queue_id, str *message_
 	sqs_queue_t *queue;
 	sqs_job_t *job;
 
-	LM_INFO("sqs_send_message called with id: %.*s\n", queue_id->len, queue_id->s);
+	LM_DBG("sqs_send_message called with id: %.*s\n", queue_id->len, queue_id->s);
 
 	queue = get_script_url(queue_id);
 	if (!queue) {

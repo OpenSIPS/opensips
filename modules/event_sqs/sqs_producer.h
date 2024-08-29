@@ -64,6 +64,9 @@ void sqs_process(int rank);
 int sqs_create_pipe(void);
 void sqs_destroy_pipe(void);
 int sqs_init_writer(void);
+sqs_job_t *sqs_prepare_job(sqs_queue_t *queue, str *message_body, sqs_job_type_t job_type);
 int sqs_send_job(sqs_job_t *job);
 sqs_job_t *sqs_receive_job(void);
+void sqs_destroy_job(sqs_job_t *job);
+
 #endif
