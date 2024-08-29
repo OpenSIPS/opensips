@@ -31,6 +31,8 @@
 #include "../../str_list.h"
 #include "sqs_producer.h"
 
+#define SQS_SEND_JOB_RETRIES 3
+
 extern struct list_head *sqs_urls;
 
 extern int sqs_pipe[2];  /* used to send jobs to the sqs process */
@@ -143,6 +145,44 @@ int parse_queue_url(str *queue_url, char **region, char **endpoint) {
 	return 0;
 }
 
+int sqs_send_job(sqs_job_t *job) {
+	int rc;
+	int retries = SQS_SEND_JOB_RETRIES;
+
+	do {
+		rc = write(sqs_pipe[1], &job, sizeof(sqs_job_t *));
+	} while (rc < 0 && (errno == EINTR || retries-- > 0));
+
+	if (rc < 0) {
+		LM_ERR("Failed to write on pipe\n");
+		shm_free(job);
+		return -1;
+	}
+
+	return 0;
+}
+
+sqs_job_t *sqs_receive_job(void) {
+	int rc;
+	int retries = SQS_SEND_JOB_RETRIES;
+	sqs_job_t *recv;
+
+	if (sqs_pipe[0] == -1)
+		return NULL;
+
+	do {
+		rc = read(sqs_pipe[0], &recv, sizeof(sqs_job_t *));
+	} while (rc < 0 && (errno == EINTR || retries-- > 0));
+
+	if (rc < 0) {
+		LM_ERR("Failed to read from pipe\n");
+		return NULL;
+	}
+
+	return recv;
+}
+
+
 void sqs_process(int rank) {
 	int ret;
 	struct list_head *it;
@@ -196,74 +236,80 @@ out_err:
 static int handle_io(struct fd_map *fm, int idx, int event_type) {
 	sqs_job_t *job;
 	sqs_queue_t *queue;
-	ssize_t bytes_read;
+	switch (fm->type) {
+	case F_SQS_JOB:
 
-	bytes_read = read(sqs_pipe[0], &job, sizeof(sqs_job_t *));
-	if (bytes_read == -1) {
-		LM_ERR("Failed to read job from pipe\n");
-		return -1;
-	}
+		job = sqs_receive_job();
+		if (!job) {
+			LM_ERR("Cannot receive job\n");
+			return 0;
+		}
 
-	queue = job->queue;
+		queue = job->queue;
 
-	if (!queue->config) {
-		LM_NOTICE("Queue not found. Initializing new queue for URL: %.*s\n", job->queue->url.len, job->queue->url.s);
-
-		queue->url.s = job->queue->url.s;
-		queue->url.len = job->queue->url.len;
-
-		queue->config = shm_malloc(sizeof(sqs_config));
 		if (!queue->config) {
-			LM_ERR("Failed to allocate memory for SQS config\n");
-			shm_free(queue);
-			return -1;
-		}
+			LM_NOTICE("Queue not found. Initializing new queue for URL: %.*s\n", job->queue->url.len, job->queue->url.s);
 
-		char *region = NULL, *endpoint = NULL;
-		if (parse_queue_url(&queue->url, &region, &endpoint) != 0) {
-			LM_ERR("Failed to parse queue URL\n");
-			shm_free(queue->config);
-			shm_free(queue);
-			return -1;
-		}
+			queue->url.s = job->queue->url.s;
+			queue->url.len = job->queue->url.len;
 
-		if (init_sqs(queue->config, region, endpoint) != 0) {
-			LM_ERR("Failed to initialize SQS configuration\n");
+			queue->config = shm_malloc(sizeof(sqs_config));
+			if (!queue->config) {
+				LM_ERR("Failed to allocate memory for SQS config\n");
+				shm_free(queue);
+				return -1;
+			}
+
+			char *region = NULL, *endpoint = NULL;
+			if (parse_queue_url(&queue->url, &region, &endpoint) != 0) {
+				LM_ERR("Failed to parse queue URL\n");
+				shm_free(queue->config);
+				shm_free(queue);
+				return -1;
+			}
+
+			if (init_sqs(queue->config, region, endpoint) != 0) {
+				LM_ERR("Failed to initialize SQS configuration\n");
+				free(region);
+				free(endpoint);
+				shm_free(queue->config);
+				shm_free(queue);
+				return -1;
+			}
+
 			free(region);
 			free(endpoint);
-			shm_free(queue->config);
-			shm_free(queue);
-			return -1;
 		}
 
-		free(region);
-		free(endpoint);
+		switch (job->type) {
+			case SQS_JOB_SEND:
+				if (sqs_send_message(queue->config, queue->url, (str) {job->message, job->message_len}) != 0) {
+					LM_ERR("Failed to send message to SQS\n");
+				}
+				break;
+
+			case SQS_JOB_SHUTDOWN:
+				if (queue->config) {
+					shutdown_sqs(queue->config);
+					shm_free(queue->config);
+					queue->config = NULL;
+					LM_NOTICE("SQS connection for URL: %.*s shut down\n", queue->url.len, queue->url.s);
+				} else {
+					LM_NOTICE("SQS connection for URL: %.*s was not active, nothing to shut down\n", queue->url.len, queue->url.s);
+				}
+				break;
+
+			default:
+				LM_ERR("Unknown job type received\n");
+				return -1;
+		}
+		shm_free(job);
+		break;
+
+	default:
+		LM_CRIT("unknown fd type %d in SQS worker\n", fm->type);
+		return -1;
 	}
-
-	switch (job->type) {
-		case SQS_JOB_SEND:
-			if (sqs_send_message(queue->config, queue->url, (str) {job->message, job->message_len}) != 0) {
-				LM_ERR("Failed to send message to SQS\n");
-			}
-			break;
-
-		case SQS_JOB_SHUTDOWN:
-			if (queue->config) {
-				shutdown_sqs(queue->config);
-				shm_free(queue->config);
-				queue->config = NULL;
-				LM_NOTICE("SQS connection for URL: %.*s shut down\n", queue->url.len, queue->url.s);
-			} else {
-				LM_NOTICE("SQS connection for URL: %.*s was not active, nothing to shut down\n", queue->url.len, queue->url.s);
-			}
-			break;
-
-		default:
-			LM_ERR("Unknown job type received\n");
-			return -1;
-	}
-
-	shm_free(job);
 
 	return 0;
 }

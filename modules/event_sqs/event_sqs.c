@@ -388,7 +388,6 @@ static int sqs_evi_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 	str payload, message_body;
 	char *start, *end;
 	sqs_job_t *job;
-	ssize_t written;
 
 	queue = (sqs_queue_t *)sock->params;
 	queue->url.s = sock->address.s;
@@ -423,10 +422,8 @@ static int sqs_evi_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 		return -1;
 	}
 
-	written = write(sqs_pipe[1], &job, sizeof(sqs_job_t *));
-	if (written == -1) {
-		LM_ERR("Failed to write job to pipe\n");
-		shm_free(job);
+	if (sqs_send_job(job) < 0) {
+		LM_ERR("Cannot send job worker\n");
 		evi_free_payload(payload.s);
 		return -1;
 	}
@@ -449,10 +446,8 @@ static int fixup_url(void **param) {
 	return 0;
 }
 
-
 static int sqs_publish_message(struct sip_msg *msg, str *queue_id, str *message_body) {
 	sqs_queue_t *queue;
-	ssize_t written;
 	sqs_job_t *job;
 
 	LM_INFO("sqs_send_message called with id: %.*s\n", queue_id->len, queue_id->s);
@@ -468,9 +463,8 @@ static int sqs_publish_message(struct sip_msg *msg, str *queue_id, str *message_
 		return -1;
 	}
 
-	written = write(sqs_pipe[1], &job, sizeof(sqs_job_t *));
-	if (written == -1) {
-		LM_ERR("Failed to write job to pipe\n");
+	if (sqs_send_job(job) < 0) {
+		LM_ERR("Cannot send job worker\n");
 		return -1;
 	}
 

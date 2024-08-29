@@ -81,10 +81,10 @@ int sqs_send_message(sqs_config *config, str queueUrl, str messageBody) {
 	if (outcome.IsSuccess()) {
 		LM_NOTICE("Successfully sent message to %.*s\n", queueUrl.len, queueUrl.s);
 		return 0;
-	} else {
-		LM_ERR("Error sending message to %.*s: %s\n", queueUrl.len, queueUrl.s, outcome.GetError().GetMessage().c_str());
-		return -1;
 	}
+
+	LM_ERR("Error sending message to %.*s: %s\n", queueUrl.len, queueUrl.s, outcome.GetError().GetMessage().c_str());
+	return -1;
 }
 
 }
