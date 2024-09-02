@@ -63,6 +63,21 @@
 		If the set was selected using setid_avp, the avp needs to be
 		set only once before rtpengine_offer() or rtpengine_manage() call.
 	</para>
+	<para id="param_failover" xreflabel="Failover">
+		The module is able to failover to a new node within a set, if a chosen
+		one has communication issues. Moreover, it will also failover if the node
+		returns one of the following errors:
+		<itemizedlist>
+			<listitem><para>
+				Parallel session limit reached
+			</para></listitem>
+			<listitem><para>
+				Ran out of ports
+			</para></listitem>
+		</itemizedlist>
+		You can use the <xref linkend="param_extra_failover_error"/> parameter
+		to extend the above list.
+	</para>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
@@ -804,6 +819,36 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
 ...
 </programlisting>
                 </example>
+
+	<section id="param_extra_failover_error" xreflabel="extra_failover_error">
+		<title><varname>extra_failover_error</varname> (string)</title>
+		<para>
+			Contains a (XDB) regular expression that can be
+			used to match an error received from a RTPEngine node. If matched
+			the module tries to use a new node to handle the affected command.
+		</para>
+		<para>
+			This parameter can be used to extend the list
+			(see <xref linkend="para_failover"/> of errors the module
+			implicitely fails over.
+		</para>
+		<para>
+			<emphasis>Note</emphasis> each declaration will define a single
+			expression/matching rule. If you want to define multiple rules, you
+			need to define the parameter multiple times.
+		</para>
+		<para>
+			Default value is empty, no extra errors are being used.
+		</para>
+		<example>
+		<title>Set <varname>extra_failover_error</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("rtpengine", "extra_failover_error", "Parallel session limit reached")
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 		<section id="func_rtpengine_answer" xreflabel="rtpengine_answer()">
