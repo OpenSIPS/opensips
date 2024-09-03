@@ -140,7 +140,6 @@ static inline int fix_fake_req_headers(struct sip_msg *req)
 	struct hdr_field *hdr;
 	struct lump *ld, *la;
 	contact_t *c;
-	int enclosed;
 
 	if (clone_headers(req, req) < 0) {
 		LM_ERR("could not clone headers list!\n");
@@ -169,16 +168,10 @@ static inline int fix_fake_req_headers(struct sip_msg *req)
 							la->type, ld->u.offset, ld->len,
 							(int)(c->uri.s-req->buf), c->uri.len); */
 					if (la->op == LUMP_ADD && la->type == HDR_CONTACT_T &&
-							ld->u.offset == c->uri.s-req->buf) {
-						/* if we don't have the same length as the URI was
-						 * initially pointing (excluding quotes), then this is
-						 * not the actual URI
-						 */
-						enclosed = (la->len > 2 && la->u.value[0] == '<');
-						if (la->len != (c->uri.len + (enclosed?2:0)))
-							continue;
+							ld->u.offset == c->uri.s-req->buf &&
+							ld->len == c->uri.len) {
 						/* if enclosed, skip enclosing */
-						if (enclosed) {
+						if (la->u.value[0] == '<') {
 							c->uri.s = la->u.value + 1;
 							c->uri.len = la->len - 2;
 						} else {
