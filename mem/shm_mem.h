@@ -301,6 +301,7 @@ inline static void shm_threshold_check(void)
 				lock_release(mem_lock); \
 		} while (0)
 	#endif
+	extern unsigned long long *shm_hash_usage;
 #else
 #define shm_lock()    lock_get(mem_lock)
 #define shm_unlock()  lock_release(mem_lock)
@@ -628,8 +629,6 @@ inline static void _shm_free_bulk(void *ptr,
 #define shm_free_bulk_func _shm_free_bulk
 #define shm_free_bulk( _ptr ) _shm_free_bulk( (_ptr), \
 	__FILE__, __FUNCTION__, __LINE__ )
-
-extern unsigned long long *shm_hash_usage;
 
 #else /*DBG_MALLOC*/
 
