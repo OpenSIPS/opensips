@@ -35,7 +35,6 @@ extern str topo_hiding_seed;
 extern str topo_hiding_ct_encode_pw;
 extern str th_contact_encode_param;
 extern int th_ct_enc_scheme;
-extern int th_bypass_self_check;
 
 struct th_ct_params {
 	str param_name;
@@ -144,7 +143,7 @@ int topology_hiding_match(struct sip_msg *msg)
 
 	r_uri = &msg->parsed_uri;
 
-	if ((th_bypass_self_check || check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1) && msg->route == NULL) {
+	if (check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1 && msg->route == NULL) {
 		/* Seems we are in the topo hiding case :
 		 * we are in the R-URI and there are no other route headers */
 		for (i=0;i<r_uri->u_params_no;i++)
