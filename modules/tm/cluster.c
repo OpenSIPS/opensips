@@ -28,7 +28,6 @@
 #include "../../bin_interface.h"
 #include "../../parser/parse_cseq.h"
 
-int tm_bypass_replication_socket_check = 0;
 str tm_cid;
 int tm_repl_cluster = 0;
 int tm_repl_auto_cancel = 1;
@@ -170,6 +169,7 @@ static void receive_tm_repl(bin_packet_t *packet)
 	str tmp;
 	struct receive_info ri;
 
+	memset(&ri, 0, sizeof ri);
 	LM_DBG("received %d packet from %d in cluster %d\n",
 			packet->type, packet->src_id, tm_repl_cluster);
 
@@ -186,24 +186,14 @@ static void receive_tm_repl(bin_packet_t *packet)
 	TM_BIN_POP(str, &tmp, "dst host");
 	TM_BIN_POP(int, &port, "dst port");
 
-	if (tm_bypass_replication_socket_check) {
-		char any_str = '*';
-
-		str any_host;
-		any_host.s = &any_str;
-		any_host.len = 1;
-
-		ri.bind_address = grep_internal_sock_info(&any_host, port, proto);
-	} else {
-		ri.bind_address = grep_internal_sock_info(&tmp, port, proto);
-	}
+	ri.bind_address = grep_internal_sock_info(&tmp, port, proto);
 	if (!ri.bind_address) {
 		LM_WARN("received replicated message for an interface"
 				" we don't know %s:%.*s:%d; discarding...\n",
 				proto2a(proto), tmp.len, tmp.s, port);
 		return;
 	}
-	if (!tm_bypass_replication_socket_check && !(ri.bind_address->flags & SI_IS_ANYCAST)) {
+	if (!(ri.bind_address->flags & SI_IS_ANYCAST)) {
 		LM_WARN("received replicated message for a non-anycast interface"
 				" %s:%.*s:%d\n",
 				proto2a(proto), tmp.len, tmp.s, port);
@@ -503,8 +493,8 @@ int tm_reply_replicate(struct sip_msg *msg)
 	if (!tm_cluster_enabled())
 		return 0;
 
-	/* check if the anycast bypass is active, if not double-check we have received the message on a anycast network*/
-	if (!tm_bypass_replication_socket_check && !is_anycast(msg->rcv.bind_address))
+	/* double-check we have received the message on a anycast network */
+	if (!is_anycast(msg->rcv.bind_address))
 		return 0;
 	cid = tm_get_cid(msg);
 	/* if there was no parameter, or it was, but it was ours, handle it */
@@ -574,7 +564,7 @@ int tm_anycast_replicate(struct sip_msg *msg)
 		return -1;
 	}
 
-	if (!tm_bypass_replication_socket_check && !is_anycast(msg->rcv.bind_address)) {
+	if (!is_anycast(msg->rcv.bind_address)) {
 		LM_DBG("request not received on an anycast network\n");
 		return -1;
 	}
