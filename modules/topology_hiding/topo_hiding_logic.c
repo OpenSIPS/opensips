@@ -421,7 +421,7 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, i
 			goto error;
 		}
 
-		if ((lump = insert_new_lump_after(lump, prefix, ct->len, HDR_CONTACT_T)) == 0) {
+		if ((lump = insert_new_lump_after(lump, prefix, ct->len, 0)) == 0) {
 			LM_ERR("failed inserting '%.*s'\n", ct->len, prefix);
 			goto error;
 		}
@@ -598,19 +598,19 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, i
 		goto error;
 	}
 
-	if ((lump = insert_new_lump_after(lump,prefix,prefix_len,HDR_CONTACT_T)) == 0) {
+	if ((lump = insert_new_lump_after(lump,prefix,prefix_len,0)) == 0) {
 		LM_ERR("failed inserting '<sip:'\n");
 		goto error;
 	}
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if ((lump = insert_subst_lump_after(lump, SUBST_SND_ALL, HDR_CONTACT_T)) == 0) {
+	if ((lump = insert_subst_lump_after(lump, SUBST_SND_ALL, 0)) == 0) {
 		LM_ERR("failed inserting SUBST_SND buf\n");
 		goto error;
 	}
 
-	if ((lump = insert_new_lump_after(lump,suffix,suffix_len,HDR_CONTACT_T)) == 0) {
+	if ((lump = insert_new_lump_after(lump,suffix,suffix_len,0)) == 0) {
 		LM_ERR("failed inserting '<sip:'\n");
 		goto error;
 	}
@@ -1782,7 +1782,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 		prefix[prefix_len-1] = '@';
 	}
 
-	if (!(lump = insert_new_lump_after(lump,prefix,prefix_len,HDR_CONTACT_T))) {
+	if (!(lump = insert_new_lump_after(lump,prefix,prefix_len,0))) {
 		LM_ERR("failed inserting '<sip:'\n");
 		goto error;
 	}
@@ -1794,12 +1794,12 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 		goto error;
 	}
 
-	if (!(lump = insert_subst_lump_after(lump, SUBST_SND_ALL, HDR_CONTACT_T))) {
+	if (!(lump = insert_subst_lump_after(lump, SUBST_SND_ALL, 0))) {
 		LM_ERR("failed inserting SUBST_SND buf\n");
 		goto error;
 	}
 
-	if (!(lump = insert_new_lump_after(lump,suffix,suffix_len,HDR_CONTACT_T))) {
+	if (!(lump = insert_new_lump_after(lump,suffix,suffix_len,0))) {
 		LM_ERR("failed inserting '<sip:'\n");
 		goto error;
 	}
