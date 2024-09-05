@@ -739,8 +739,8 @@ int shtag_activate(str *tag_name, int cluster_id, char *reason, int reason_len)
 				return ret;
 			}
 			ni->node_id = node->node_id;
-			ni->next = tag->active_msgs_sent;
 			lock_switch_write(shtags_lock, lock_old_flag);
+			ni->next = tag->active_msgs_sent;
 			tag->active_msgs_sent = ni;
 			lock_switch_read(shtags_lock, lock_old_flag);
 		}
@@ -816,8 +816,8 @@ void shtag_flush_state(int c_id, int node_id)
 				return;
 			}
 			ni->node_id = node_id;
-			ni->next = tag->active_msgs_sent;
 			lock_switch_write(shtags_lock, lock_old_flag);
+			ni->next = tag->active_msgs_sent;
 			tag->active_msgs_sent = ni;
 			lock_switch_read(shtags_lock, lock_old_flag);
 		}
