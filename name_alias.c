@@ -28,7 +28,6 @@
 #include <string.h>
 #include "name_alias.h"
 
-
 struct host_alias* aliases=0; /* name aliases list */
 
 struct alias_function* alias_fcts = NULL;
@@ -40,7 +39,7 @@ struct alias_function* alias_fcts = NULL;
  * if proto==0, the alias will match all the protocols
  * returns 1 if a new alias was added, 0 if a matching alias was already on
  * the list and  -1 on error */
-int add_alias(char* name, int len, unsigned short port, unsigned short proto)
+int add_alias(char* name, int len, unsigned short port, unsigned short proto, enum si_flags flags)
 {
 	struct host_alias* a;
 
@@ -63,6 +62,7 @@ int add_alias(char* name, int len, unsigned short port, unsigned short proto)
 	a->alias.s[len]=0; /* null terminate for easier printing*/
 	a->port=port;
 	a->proto=proto;
+	a->flags=flags;
 	a->next=aliases;
 	aliases=a;
 	return 1;
