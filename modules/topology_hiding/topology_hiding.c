@@ -41,7 +41,6 @@ str topo_hiding_seed = str_init("OpenSIPS");
 str topo_hiding_ct_encode_pw = str_init("ToPoCtPaSS");
 str th_contact_encode_param = str_init("thinfo");
 str th_contact_encode_scheme = str_init("base64");
-int th_bypass_self_check = 0;
 
 int th_ct_enc_scheme;
 
@@ -71,8 +70,7 @@ static const param_export_t params[] = {
 	{ "th_callid_prefix",            STR_PARAM, &topo_hiding_prefix.s        },
 	{ "th_contact_encode_passwd",    STR_PARAM, &topo_hiding_ct_encode_pw.s  },
 	{ "th_contact_encode_param",     STR_PARAM, &th_contact_encode_param.s   },
-	{ "th_contact_encode_scheme",    STR_PARAM, &th_contact_encode_scheme.s  },
-	{ "th_bypass_self_check",        INT_PARAM, &th_bypass_self_check        },
+	{ "th_contact_encode_scheme",    STR_PARAM, &th_contact_encode_scheme.s   },
 	{0, 0, 0}
 };
 
