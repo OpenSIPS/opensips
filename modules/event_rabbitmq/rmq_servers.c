@@ -25,17 +25,18 @@
 
 #include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
-#include "../../lib/list.h"
 #include "../../mod_fix.h"
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../pt.h"
+#include "../tls_mgm/tls_helper.h"
 
 #include "rmq_servers.h"
+#include "rabbitmq_send.h"
 #include <amqp_framing.h>
 
 #ifdef AMQP_VERSION_v04
-#define rmq_parse amqp_parse_url
+#define rmq_parse_rm amqp_parse_url
 #else
 #include "../../db/db_id.h"
 #warning "You are using an old, unsupported RabbitMQ library version - compile on your own risk!"
@@ -45,7 +46,7 @@
 		(_to) = (_from); \
 		(_from) = NULL; \
 	} while(0)
-static inline int rmq_parse(char *url, rmq_uri *uri)
+static inline int rmq_parse_rm(char *url, rmq_uri *uri)
 {
 	str surl;
 	struct db_id *id;
@@ -96,8 +97,23 @@ struct rmq_func_param {
 	void *value;
 };
 
+
+/* function used to get a rmq_server based on a cid */
+struct rmq_server *rmq_get_server(str *cid)
+{
+	struct list_head *it;
+	struct rmq_server *srv;
+
+	list_for_each(it, &rmq_servers) {
+		srv = container_of(it, struct rmq_server, list);
+		if (srv->cid.len == cid->len && memcmp(srv->cid.s, cid->s, cid->len) == 0)
+			return srv;
+	}
+	return NULL;
+}
+
 /* function that checks for error */
-static int rmq_error(char const *context, amqp_rpc_reply_t x)
+int rmq_error(char const *context, amqp_rpc_reply_t x)
 {
 	amqp_connection_close_t *mconn;
 	amqp_channel_close_t *mchan;
@@ -110,7 +126,7 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 			return 0;
 
 		case AMQP_RESPONSE_NONE:
-			LM_ERR("%s: missing RPC reply type!\n", context);
+			LM_ERR("%s: missing RPC reply type!", context);
 			break;
 
 		case AMQP_RESPONSE_LIBRARY_EXCEPTION:
@@ -127,20 +143,20 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 			switch (x.reply.id) {
 				case AMQP_CONNECTION_CLOSE_METHOD:
 					mconn = (amqp_connection_close_t *)x.reply.decoded;
-					LM_ERR("%s: server connection error %d, message: %.*s\n",
+					LM_ERR("%s: server connection error %d, message: %.*s",
 							context, mconn->reply_code,
 							(int)mconn->reply_text.len,
 							(char *)mconn->reply_text.bytes);
 					break;
 				case AMQP_CHANNEL_CLOSE_METHOD:
 						mchan = (amqp_channel_close_t *)x.reply.decoded;
-					LM_ERR("%s: server channel error %d, message: %.*s\n",
+					LM_ERR("%s: server channel error %d, message: %.*s",
 							context, mchan->reply_code,
 							(int)mchan->reply_text.len,
 							(char *)mchan->reply_text.bytes);
 					break;
 				default:
-					LM_ERR("%s: unknown server error, method id 0x%08X\n",
+					LM_ERR("%s: unknown server error, method id 0x%08X",
 							context, x.reply.id);
 					break;
 			}
@@ -149,105 +165,55 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 	return -1;
 }
 
-/* function used to get a rmq_server based on a cid */
-struct rmq_server *rmq_get_server(str *cid)
-{
-	struct list_head *it;
-	struct rmq_server *srv;
-
-	list_for_each(it, &rmq_servers) {
-		srv = container_of(it, struct rmq_server, list);
-		if (srv->cid.len == cid->len && memcmp(srv->cid.s, cid->s, cid->len) == 0)
-			return srv;
-	}
-	return NULL;
-}
-
-static void rmq_close_server(struct rmq_server *srv)
-{
-	switch (srv->state) {
-	case RMQS_ON:
-	case RMQS_CONN:
-		rmq_error("closing channel",
-				amqp_channel_close(srv->conn, 1, AMQP_REPLY_SUCCESS));
-	case RMQS_INIT:
-		rmq_error("closing connection",
-				amqp_connection_close(srv->conn, AMQP_REPLY_SUCCESS));
-		if (amqp_destroy_connection(srv->conn) < 0)
-			LM_ERR("cannot destroy connection\n");
-	case RMQS_OFF:
-		break;
-	default:
-		LM_WARN("Unknown rmq server state %d\n", srv->state);
-	}
-	srv->state = RMQS_OFF;
-
-	if (srv->tls_dom) {
-		tls_api.release_domain(srv->tls_dom);
-		srv->tls_dom = NULL;
-	}
-}
-
-#if 0
-static void rmq_destroy_server(struct rmq_server *srv)
-{
-	rmq_close_server(srv);
-	if (srv->exchange.bytes)
-		amqp_bytes_free(srv->exchange);
-	pkg_free(srv);
-}
-#endif
-
 /*
  * function used to reconnect a RabbitMQ server
  */
-int rmq_reconnect(struct rmq_server *srv)
+int rmq_reconnect(rmq_connection_t *conn, int max_frames, str cid)
 {
 #if defined AMQP_VERSION_v04
 	amqp_socket_t *amqp_sock;
 #endif
 	int socket;
 
-	switch (srv->state) {
+	switch (conn->state) {
 	case RMQS_OFF:
-		srv->conn = amqp_new_connection();
-		if (!srv->conn) {
+		if (!(conn->conn = amqp_new_connection())) {
 			LM_ERR("cannot create amqp connection!\n");
 			return -1;
 		}
 #if defined AMQP_VERSION_v04
-		if (use_tls && srv->uri.ssl) {
-			if (!srv->tls_dom) {
-				srv->tls_dom = tls_api.find_client_domain_name(&srv->tls_dom_name);
-				if (!srv->tls_dom) {
+		if (use_tls && (conn->uri.ssl || (conn->flags&RMQ_PARAM_TLS))) {
+			if (!conn->tls_dom) {
+				conn->tls_dom = tls_api.find_client_domain_name(&conn->tls_dom_name);
+				if (!conn->tls_dom) {
 					LM_ERR("TLS domain: %.*s not found\n",
-						srv->tls_dom_name.len, srv->tls_dom_name.s);
-					goto clean_rmq_conn;
+						conn->tls_dom_name.len, conn->tls_dom_name.s);
+					return -1;
 				}
 			}
 
-			amqp_sock = amqp_ssl_socket_new(srv->conn);
+			amqp_sock = amqp_ssl_socket_new(conn->conn);
 			if (!amqp_sock) {
 				LM_ERR("cannot create AMQP TLS socket\n");
-				goto clean_rmq_conn;
+				return -1;
 			}
 
 			#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 			/* if amqp_ssl_socket_get_context() is not available, serialize the CA,
 			 * cert and key loading in order to prevent openssl multiprocess issues */
 			lock_get(ssl_lock);
-			if (amqp_ssl_socket_set_cacert(amqp_sock, srv->tls_dom->ca.s) !=
+			if (amqp_ssl_socket_set_cacert(amqp_sock, conn->tls_dom->ca.s) !=
 				AMQP_STATUS_OK) {
 				LM_ERR("Failed to set CA certificate\n");
 				lock_release(ssl_lock);
-				goto clean_rmq_conn;
+				return -1;
 			}
 
-			if (amqp_ssl_socket_set_key(amqp_sock, srv->tls_dom->cert.s,
-				srv->tls_dom->pkey.s) != AMQP_STATUS_OK) {
+			if (amqp_ssl_socket_set_key(amqp_sock, conn->tls_dom->cert.s,
+				conn->tls_dom->pkey.s) != AMQP_STATUS_OK) {
 				LM_ERR("Failed to set certificate and private key\n");
 				lock_release(ssl_lock);
-				goto clean_rmq_conn;
+				return -1;
 			}
 			lock_release(ssl_lock);
 			#else
@@ -259,34 +225,34 @@ int rmq_reconnect(struct rmq_server *srv)
 
 			/* set CA in AMQP's SSL_CTX  */
 			openssl_api.ctx_set_cert_store(ssl_ctx,
-				((void**)srv->tls_dom->ctx)[process_no]);
+				((void**)conn->tls_dom->ctx)[process_no]);
 
 			/* set certificate in AMQP's SSL_CTX */
 			if (openssl_api.ctx_set_cert_chain(ssl_ctx,
-				((void**)srv->tls_dom->ctx)[process_no]) < 0) {
+				((void**)conn->tls_dom->ctx)[process_no]) < 0) {
 				LM_ERR("Failed to set certificate\n");
-				goto clean_rmq_conn;
+				return -1;
 			}
 
 			/* set private key in AMQP's SSL_CTX */
-			if (openssl_api.ctx_set_pkey_file(ssl_ctx, srv->tls_dom->pkey.s) < 0) {
+			if (openssl_api.ctx_set_pkey_file(ssl_ctx, conn->tls_dom->pkey.s) < 0) {
 				LM_ERR("Failed to set private key\n");
-				goto clean_rmq_conn;
+				return -1;
 			}
 			#endif
 
 			#if AMQP_VERSION >= AMQP_VERSION_CODE(0, 8, 0, 0)
-			amqp_ssl_socket_set_verify_peer(amqp_sock, srv->tls_dom->verify_cert);
+			amqp_ssl_socket_set_verify_peer(amqp_sock, conn->tls_dom->verify_cert);
 			amqp_ssl_socket_set_verify_hostname(amqp_sock, 0);
 			#else
-			amqp_ssl_socket_set_verify(amqp_sock, srv->tls_dom->verify_cert);
+			amqp_ssl_socket_set_verify(amqp_sock, conn->tls_dom->verify_cert);
 			#endif
 
 			#if AMQP_VERSION >= AMQP_VERSION_CODE(0, 8, 0, 0)
 			amqp_tls_version_t method_min, method_max;
 
-			if (srv->tls_dom->method != TLS_METHOD_UNSPEC) {
-				switch (srv->tls_dom->method) {
+			if (conn->tls_dom->method != TLS_METHOD_UNSPEC) {
+				switch (conn->tls_dom->method) {
 				case TLS_USE_TLSv1:
 					method_min = AMQP_TLSv1;
 					break;
@@ -302,8 +268,8 @@ int rmq_reconnect(struct rmq_server *srv)
 				method_min = AMQP_TLSv1;
 			}
 
-			if (srv->tls_dom->method_max != TLS_METHOD_UNSPEC) {
-				switch (srv->tls_dom->method_max) {
+			if (conn->tls_dom->method_max != TLS_METHOD_UNSPEC) {
+				switch (conn->tls_dom->method_max) {
 				case TLS_USE_TLSv1:
 					method_max = AMQP_TLSv1;
 					break;
@@ -324,80 +290,72 @@ int rmq_reconnect(struct rmq_server *srv)
 			if (amqp_ssl_socket_set_ssl_versions(amqp_sock, method_min, method_max) !=
 				AMQP_STATUS_OK) {
 				LM_ERR("Failed to set TLS method range\n");
-				goto clean_rmq_conn;
+				return -1;
 			}
 			#endif
 		} else {
-			amqp_sock = amqp_tcp_socket_new(srv->conn);
+			amqp_sock = amqp_tcp_socket_new(conn->conn);
 			if (!amqp_sock) {
 				LM_ERR("cannot create AMQP socket\n");
-				goto clean_rmq_conn;
+				return -1;
 			}
 		}
 
-		socket = amqp_socket_open_noblock(amqp_sock, srv->uri.host,
-			srv->uri.port, &conn_timeout_tv);
+		socket = amqp_socket_open_noblock(amqp_sock, conn->uri.host,
+			conn->uri.port, &conn_timeout_tv);
 		if (socket < 0) {
+			amqp_connection_close(conn->conn, AMQP_REPLY_SUCCESS);
 			LM_ERR("cannot open AMQP socket\n");
-			goto clean_rmq_conn;
+			return -1;
 		}
 #if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
 		if (rpc_timeout_tv.tv_sec > 0 &&
-				amqp_set_rpc_timeout(srv->conn, &rpc_timeout_tv) < 0)
+				amqp_set_rpc_timeout(conn->conn, &rpc_timeout_tv) < 0)
 			LM_ERR("setting RPC timeout - going blocking\n");
 #endif
 
 #else
-		socket = amqp_open_socket_noblock(srv->uri.host, srv->uri.port,
+		socket = amqp_open_socket_noblock(conn->uri.host, conn->uri.port,
 				&conn_timeout_tv);
 		if (socket < 0) {
 			LM_ERR("cannot open AMQP socket\n");
-			goto clean_rmq_conn;
+			return -1;
 		}
 		amqp_set_sockfd(srv->conn, socket);
 #endif
-		srv->state = RMQS_INIT;
+		conn->state = RMQS_INIT;
 		/* fall through */
 	case RMQS_INIT:
 		if (rmq_error("Logging in", amqp_login(
-				srv->conn,
-				(srv->uri.vhost ? srv->uri.vhost: "/"),
+				conn->conn,
+				(conn->uri.vhost ? conn->uri.vhost: RMQ_DEFAULT_VHOST),
 				0,
-				srv->max_frames,
-				srv->heartbeat,
+				max_frames,
+				conn->heartbeat,
 				AMQP_SASL_METHOD_PLAIN,
-				srv->uri.user,
-				srv->uri.password)))
-			goto clean_rmq_server;
+				conn->uri.user ? conn->uri.user : RMQ_DEFAULT_UP,
+				conn->uri.password ? conn->uri.password : RMQ_DEFAULT_UP)))
+			return -2;
 		/* all good - return success */
-		srv->state = RMQS_CONN;
+		conn->state = RMQS_CONN;
 		/* fall through */
 	case RMQS_CONN:
 		/* don't use more than 1 channel */
-		amqp_channel_open(srv->conn, 1);
-		if (rmq_error("Opening channel", amqp_get_rpc_reply(srv->conn)))
-			goto clean_rmq_server;
-		LM_DBG("[%.*s] successfully connected!\n", srv->cid.len, srv->cid.s);
-		srv->state = RMQS_ON;
+		amqp_channel_open(conn->conn, RMQ_DEFAULT_CHANNEL);
+		if (rmq_error("Opening channel", amqp_get_rpc_reply(conn->conn)))
+			return -2;
+		LM_DBG("[%.*s] successfully connected!\n", cid.len, cid.s);
+		conn->state = RMQS_ON;
 		/* fall through */
 	case RMQS_ON:
 		return 0;
 	default:
-		LM_WARN("Unknown rmq server state %d\n", srv->state);
+		LM_WARN("Unknown rmq server state %d\n", conn->state);
 		return -1;
 	}
-clean_rmq_server:
-	rmq_close_server(srv);
-	return -2;
-clean_rmq_conn:
-	if (amqp_destroy_connection(srv->conn) < 0)
-		LM_ERR("cannot destroy connection\n");
-	if (srv->tls_dom) {
-		tls_api.release_domain(srv->tls_dom);
-		srv->tls_dom = NULL;
-	}
-	return -1;
+
 }
+
 
 #define IS_WS(_c) ((_c) == ' ' || (_c) == '\t' || (_c) == '\r' || (_c) == '\n')
 
@@ -609,12 +567,12 @@ no_value:
 	memcpy(uri, suri.s, suri.len);
 	uri[suri.len] = 0;
 
-	if (rmq_parse(uri, &srv->uri) != 0) {
+	if (rmq_parse_rm(uri, &srv->conn.uri) != 0) {
 		LM_ERR("[%.*s] cannot parse rabbitmq uri: %s\n", cid.len, cid.s, uri);
 		goto free;
 	}
 
-	if (srv->uri.ssl) {
+	if (srv->conn.uri.ssl) {
 		if (!use_tls) {
 			LM_WARN("[%.*s] 'use_tls' modparam required for using amqps URIs!\n",
 				cid.len, cid.s);
@@ -627,9 +585,9 @@ no_value:
 			goto free;
 		}
 
-		srv->tls_dom_name.s = ((char *)srv) + sizeof *srv + suri.len + 1;
-		memcpy(srv->tls_dom_name.s, tls_dom.s, tls_dom.len);
-		srv->tls_dom_name.len = tls_dom.len;
+		srv->conn.tls_dom_name.s = ((char *)srv) + sizeof *srv + suri.len + 1;
+		memcpy(srv->conn.tls_dom_name.s, tls_dom.s, tls_dom.len);
+		srv->conn.tls_dom_name.len = tls_dom.len;
 	} else {
 		if(tls_dom.s) {
 			LM_WARN("[%.*s] tls_domain can only be defined for amqps URIs!\n",
@@ -639,26 +597,26 @@ no_value:
 	}
 
 	if (exchange.len) {
-		srv->exchange = amqp_bytes_malloc(exchange.len);
-		if (!srv->exchange.bytes) {
+		srv->conn.exchange = amqp_bytes_malloc(exchange.len);
+		if (!srv->conn.exchange.bytes) {
 			LM_ERR("[%.*s] cannot allocate echange buffer!\n", cid.len, cid.s);
 			goto free;
 		}
-		memcpy(srv->exchange.bytes, exchange.s, exchange.len);
+		memcpy(srv->conn.exchange.bytes, exchange.s, exchange.len);
 	} else
-		srv->exchange = RMQ_EMPTY;
+		srv->conn.exchange = RMQ_EMPTY;
 
-	srv->state = RMQS_OFF;
+	srv->conn.state = RMQS_OFF;
 	srv->cid = cid;
 
-	srv->flags = flags;
+	srv->conn.flags = flags;
 	srv->retries = retries;
 	srv->max_frames = max_frames;
-	srv->heartbeat = heartbeat;
+	srv->conn.heartbeat = heartbeat;
 
 	list_add(&srv->list, &rmq_servers);
 	LM_DBG("[%.*s] new AMQP host=%s:%u\n", srv->cid.len, srv->cid.s,
-			srv->uri.host, srv->uri.port);
+			srv->conn.uri.host, srv->conn.uri.port);
 
 	/* parse the url */
 	return 0;
@@ -693,16 +651,30 @@ void rmq_connect_servers(void)
 {
 	struct list_head *it;
 	struct rmq_server *srv;
+	int ret;
 
 	list_for_each(it, &rmq_servers) {
 		srv = container_of(it, struct rmq_server, list);
-		if (rmq_reconnect(srv) < 0)
+
+		ret = rmq_reconnect(&srv->conn, srv->max_frames, srv->cid); 
+
+		if (ret == -1) {
+			if (amqp_destroy_connection(srv->conn.conn) < 0)
+				LM_ERR("cannot destroy connection\n");
+			if (srv->conn.tls_dom) {
+				tls_api.release_domain(srv->conn.tls_dom);
+				srv->conn.tls_dom = NULL;
+			}
 			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
-					srv->uri.host, srv->uri.port);
+				srv->conn.uri.host, srv->conn.uri.port);
+		}
+		if (ret == -2) {
+			rmq_destroy_connection(&srv->conn);
+		}
 	}
 }
 
-static inline int amqp_check_status(struct rmq_server *srv, int r, int* retry)
+int amqp_check_status(rmq_connection_t *conn, int r, int *retry, str cid)
 {
 #ifndef AMQP_VERSION_v04
 	if (r != 0) {
@@ -719,49 +691,49 @@ static inline int amqp_check_status(struct rmq_server *srv, int r, int* retry)
 			return 0;
 
 		case AMQP_STATUS_TIMER_FAILURE:
-			LM_ERR("[%.*s] timer failure\n", srv->cid.len, srv->cid.s);
+			LM_ERR("[%.*s] timer failure\n", cid.len, cid.s);
 			goto no_close;
 
 		case AMQP_STATUS_NO_MEMORY:
-			LM_ERR("[%.*s] no more memory\n", srv->cid.len, srv->cid.s);
+			LM_ERR("[%.*s] no more memory\n", cid.len, cid.s);
 			goto no_close;
 
 		case AMQP_STATUS_TABLE_TOO_BIG:
 			LM_ERR("[%.*s] a table in the properties was too large to fit in "
-					"a single frame\n", srv->cid.len, srv->cid.s);
+					"a single frame\n", cid.len, cid.s);
 			goto no_close;
 
 		case AMQP_STATUS_HEARTBEAT_TIMEOUT:
-			LM_ERR("[%.*s] heartbeat timeout\n", srv->cid.len, srv->cid.s);
+			LM_ERR("[%.*s] heartbeat timeout\n", cid.len, cid.s);
 			break;
 
 		case AMQP_STATUS_CONNECTION_CLOSED:
-			LM_ERR("[%.*s] connection closed\n", srv->cid.len, srv->cid.s);
+			LM_ERR("[%.*s] connection closed\n", cid.len, cid.s);
 			break;
 
 		/* this should not happened since we do not use ssl */
 		case AMQP_STATUS_SSL_ERROR:
-			LM_ERR("[%.*s] SSL error\n", srv->cid.len, srv->cid.s);
+			LM_ERR("[%.*s] SSL error\n", cid.len, cid.s);
 			break;
 
 		case AMQP_STATUS_TCP_ERROR:
-			LM_ERR("[%.*s] TCP error: %s(%d)\n", srv->cid.len, srv->cid.s,
+			LM_ERR("[%.*s] TCP error: %s(%d)\n", cid.len, cid.s,
 					strerror(errno), errno);
 			break;
 
 		/* This is happening on rabbitmq server restart */
 		case AMQP_STATUS_SOCKET_ERROR:
 			LM_WARN("[%.*s] socket error: %s(%d)\n",
-					srv->cid.len, srv->cid.s, strerror(errno), errno);
+					cid.len, cid.s, strerror(errno), errno);
 			break;
 
 		default:
 			LM_ERR("[%.*s] unknown AMQP error[%d]: %s(%d)\n",
-					srv->cid.len, srv->cid.s, r, strerror(errno), errno);
+					cid.len, cid.s, r, strerror(errno), errno);
 			break;
 	}
 	/* we close the connection here to be able to re-connect later */
-	rmq_close_server(srv);
+	rmq_destroy_connection(conn);
 no_close:
 	if (retry && *retry > 0) {
 		(*retry)--;
@@ -771,9 +743,49 @@ no_close:
 #endif
 }
 
+int rmq_basic_publish(rmq_connection_t *conn, int max_frames,
+							str *cid, amqp_bytes_t akey, amqp_bytes_t abody,
+							amqp_basic_properties_t *props, int retries) {
+	int ret;
+
+	if (conn->flags & RMQF_NOPER) {
+		props->delivery_mode = 2;
+		props->_flags |= AMQP_BASIC_DELIVERY_MODE_FLAG;
+	}
+								
+	do {
+		ret = rmq_reconnect(conn, max_frames, *cid); 
+
+		if (ret == -1) {
+			if (amqp_destroy_connection(conn->conn) < 0)
+				LM_ERR("cannot destroy connection\n");
+			if (conn->tls_dom) {
+				tls_api.release_domain(conn->tls_dom);
+				conn->tls_dom = NULL;
+			}
+			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
+				conn->uri.host, conn->uri.port);
+			return ret;
+		}
+		if (ret == -2) {
+			rmq_destroy_connection(conn);
+			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
+				conn->uri.host, conn->uri.port);
+				return ret;
+		}
+
+		ret = amqp_basic_publish(conn->conn, RMQ_DEFAULT_CHANNEL, conn->exchange, akey, \
+				(conn->flags & RMQF_MAND), (conn->flags & RMQF_IMM),
+				props, abody);
+		ret = amqp_check_status(conn, ret, &retries, *cid);
+	} while (ret > 0);
+
+	return ret;
+}
+
 #define RMQ_ALLOC_STEP 2
 
-int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype,
+int rmq_send_rm(struct rmq_server *srv, str *rkey, str *body, str *ctype,
 		int *names, int *values)
 {
 	int nr;
@@ -847,23 +859,14 @@ int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype,
 		props.content_type.len = ctype->len;
 		props.content_type.bytes = ctype->s;
 	}
-	if (!(srv->flags & RMQF_NOPER)) {
-		props.delivery_mode = 2;
-		props._flags |= AMQP_BASIC_DELIVERY_MODE_FLAG;
-	}
 
-	do {
-		if (rmq_reconnect(srv) < 0) {
-			LM_ERR("[%.*s] cannot send RabbitMQ message\n",
-					srv->cid.len, srv->cid.s);
-			return ret;
-		}
-
-		ret = amqp_basic_publish(srv->conn, 1, srv->exchange, akey, \
-				(srv->flags & RMQF_MAND), (srv->flags & RMQF_IMM),
-				&props, abody);
-		ret = amqp_check_status(srv, ret, &retries);
-	} while (ret > 0);
+	ret = rmq_basic_publish(&srv->conn,
+			srv->max_frames,
+			&srv->cid,
+			akey,
+			abody,
+			&props,
+			retries);
 
 	return ret;
 }

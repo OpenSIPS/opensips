@@ -41,6 +41,7 @@
 #include "../tls_openssl/openssl_api.h"
 #include "../tls_mgm/api.h"
 #include <amqp.h>
+#include "../../lib/list.h"
 
 #if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 #include "../../locking.h"
@@ -79,37 +80,33 @@ enum rmq_server_state { RMQS_OFF, RMQS_INIT, RMQS_CONN, RMQS_ON };
 #define RMQF_MAND	(1<<1) /* message MUST be routed to a queue */
 #define RMQF_NOPER	(1<<2) /* message must not be persistent */
 
-struct rmq_server {
+typedef struct rmq_connection {
 	enum rmq_server_state state;
-	str cid; /* connection id */
-	struct list_head list;
-
 	rmq_uri uri;
 	unsigned flags;
-	int retries;
 	int heartbeat;
-	int max_frames;
 	str tls_dom_name;
 	struct tls_domain *tls_dom;
 	amqp_bytes_t exchange;
 	amqp_connection_state_t conn;
-};
+} rmq_connection_t;
 
+struct rmq_server {
+	str cid; /* connection id */
+	struct list_head list;
+	int max_frames;
+	int retries;
+
+	rmq_connection_t conn;
+};
 int rmq_server_add(modparam_t type, void * val);
-int rmq_reconnect(struct rmq_server *srv);
 int fixup_rmq_server(void **param);
 struct rmq_server *rmq_get_server(str *cid);
 void rmq_connect_servers(void);
 
-int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype,
+int rmq_send_rm(struct rmq_server *srv, str *rkey, str *body, str *ctype,
 		int *names, int *values);
 
-extern int use_tls;
 extern struct openssl_binds openssl_api;
-extern struct tls_mgm_binds tls_api;
-extern struct timeval conn_timeout_tv;
-#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
-extern struct timeval rpc_timeout_tv;
-#endif
 
 #endif /* _RMQ_SERVERS_H_ */
