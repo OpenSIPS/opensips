@@ -170,12 +170,15 @@ sqs_publish_message("q1", $var(msg));
 	</section>
 
 	<section>
+		<title>Examples</title>
+
+		<section>
 		<title>Event-Driven Messaging with <emphasis>Event Interface</emphasis></title>
 
 	<para>
 		OpenSIPS' event interface can be utilized to send messages to SQS by subscribing to an event and raising it when needed.
 	</para>
-	<para> Steps: </para>
+	<para> Steps:
 	<itemizedlist>
 		<listitem><para><emphasis>Event Subscription:</emphasis></para>
 			<para>First, register the event subscription in your OpenSIPS configuration file within the `startup_route`:</para>
@@ -205,6 +208,8 @@ opensips-cli -x mi raise_event MY_EVENT 'OpenSIPS Message'
 
 
 	</itemizedlist>
+</para>
+	</section>
 	</section>
 
 </chapter>
