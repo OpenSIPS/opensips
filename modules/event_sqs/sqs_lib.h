@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Solutions
+ * Copyright (C) 2024 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,38 +18,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
- * history:
- * ---------
- *  2011-05-xx  created (razvancrainea)
  */
 
+#ifndef SQS_LIB
+#define SQS_LIB
 
-#ifndef _RMQ_SEND_H_
-#define _RMQ_SEND_H_
 
-#include "event_rabbitmq.h"
+#include "../../str.h"
 
-#define RMQ_SEND_RETRY 3
-
-typedef struct _rmq_send {
-	evi_reply_sock *sock;
-	evi_async_ctx_t async_ctx;
-	char msg[0];
-} rmq_send_t;
-
-struct rmq_cb_ipc_param {
-	evi_async_ctx_t async_ctx;
-	enum evi_status status;
-};
-
-void rmq_process(int rank);
-int rmq_create_pipe(void);
-void rmq_destroy_pipe(void);
-int rmq_init_writer(void);
-int rmq_send(rmq_send_t * rmqs);
-void rmq_free_param(rmq_params_t *rmqp);
-void rmq_destroy(evi_reply_sock *sock);
-
-extern str rmq_static_holder;
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+typedef struct {
+	void *options;
+	void *clientConfig;
+} sqs_config;
+
+int init_sqs(sqs_config *config, const char* region, const char* endpoint);
+void shutdown_sqs(sqs_config *config);
+int sqs_send_message(sqs_config *config, str queueUrl, str messageBody);
+
+#ifdef __cplusplus
+}
+#endif
+#endif // SQS_LIB

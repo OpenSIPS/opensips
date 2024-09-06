@@ -1,0 +1,211 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		The event_sqs module is an implementation of an Amazon SQS producer.
+		It serves as a transport backend for the Event Interface and also provides a stand-alone
+		connector to be used from the OpenSIPS script in order to publish messages to SQS queues.
+		<para>
+			<ulink url="https://aws.amazon.com/sqs/"></ulink>
+		</para>
+	</para>
+	<para>
+	</para>
+	</section>
+
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		There is no need to load any module before this module.
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>AWS SDK for C++:</emphasis>
+			</para>	
+			<para>By following these steps, you'll have the AWS SDK for C++ installed and 
+				configured on your Linux system, allowing you to integrate with SQS:
+				<ulink url="https://docs.aws.amazon.com/sdk-for-cpp/v1/developer-guide/setup-linux.html">AWS SDK for C++ Installation Guide</ulink>
+			</para>
+			<para>
+				Additional instructions for installation can be found at:
+				<ulink url="https://github.com/aws/aws-sdk-cpp">AWS SDK for C++ GitHub Repository</ulink>
+			</para>
+
+			</listitem>
+			</itemizedlist>
+	</section>
+
+	<section>
+		<title>Deploying Amazon SQS locally on your computer</title>
+		<para>
+		For testing purposes, you can run SQS locally. To achieve this, you start localstack on your computer:
+		<programlisting format="linespecific">
+
+pip install localstack
+localstack start
+		</programlisting>
+		</para>
+		<para>
+		Don't forget to set the necessary environment variables for testing, for example:
+		</para>
+		<programlisting format="linespecific">
+
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
+		</programlisting>
+		<para>
+		Here you can find some cli commands such as create-queue, send/receive-message, etc.:
+		<ulink>https://docs.aws.amazon.com/cli/latest/reference/sqs/</ulink>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+		<section id="param_queue_url" xreflabel="queue_url">
+		<title><varname>queue_url</varname> (string)</title>
+		<para>
+			This parameter specifies the configuration for an SQS queue that can be used
+			to publish messages directly from the script, using the sqs_publish_message() function
+			or to send messages using raise_event function.
+		</para>
+
+		<para>
+		The format of the parameter is: [ID]sqs_url, where ID is an identifier
+		for this SQS queue instance and sqs_url is the full url of the queue.
+		</para>
+		<para>
+		The queue_url contains:
+		<itemizedlist>
+		<listitem><para><emphasis>endpoint</emphasis></para></listitem>
+		<listitem><para><emphasis>region</emphasis></para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		This parameter can be set multiple times.
+		</para>
+
+		<example>
+			<title>Set queue_url parameter </title>
+			<programlisting format="linespecific">
+
+...
+
+modparam("event_sqs", "queue_url",
+	  "[q1]https://sqs.us-west-2.amazonaws.com/123456789012/Queue1")
+
+modparam("event_sqs", "queue_url",
+	  "[q2]http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/Queue2")
+
+...
+		</programlisting>
+		</example>
+
+	</section>
+	</section>
+
+
+
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+		<section>
+
+		<title>sqs_publish_message(queue_id, message)</title>
+		<para> Publishes a message to an SQS queue. As the actual 
+		send operation is done asynchronously, this function does not block and returns 
+		immediately after queuing the message for sending.</para>
+		<para>This function can be used from any route.</para>
+		<para>The function has the following parameters:</para>
+		<itemizedlist>
+			<listitem>
+			<para>
+			<emphasis>queue_id (string)</emphasis> The ID of the SQS queue. Must be one of the IDs defined through the `queue_url` modparam.
+			</para>
+			</listitem>
+		
+			<listitem>
+			<para>
+			<emphasis>message (string)</emphasis> - The payload of the message to publish.
+			</para>
+			</listitem>
+		</itemizedlist>
+
+		</section>
+
+		<section>
+		<example>
+		<title>sqs_publish_message() function usage</title>
+		<programlisting format="linespecific">
+
+...
+
+$var(msg) = "Hello, this is a message to SQS!";
+sqs_publish_message("q1", $var(msg));
+
+...
+		</programlisting>
+		</example>
+		</section>
+
+
+	</section>
+
+	<section>
+		<title>Event-Driven Messaging with <emphasis>`evi_raise`</emphasis></title>
+
+	<para>
+		OpenSIPS' event interface can be utilized to send messages to SQS by subscribing to an event and raising it when needed.
+	</para>
+	<para> Steps: </para>
+	<itemizedlist>
+		<listitem><para><emphasis>Event Subscription:</emphasis></para>
+			<para>First, register the event subscription in your OpenSIPS configuration file within the `startup_route`:</para>
+			<programlisting format="linespecific">
+
+subscribe_event("MY_EVENT",
+	"sqs:http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/Queue2");
+		</programlisting>
+		</listitem>
+
+		<listitem><para><emphasis>Event Subscription via CLI:</emphasis></para>
+			<para>After starting OpenSIPS, you can subscribe to the event from another terminal using the OpenSIPS CLI:</para>
+			<programlisting format="linespecific">
+
+opensips-cli -x mi event_subscribe MY_EVENT \
+	  sqs:http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/Queue2
+		</programlisting>
+		</listitem>
+
+		<listitem><para><emphasis>Raise the Event and Send Message:</emphasis></para>
+			<para>Finally, to send a message, raise the subscribed event with the desired message content:</para>
+			<programlisting format="linespecific">
+
+opensips-cli -x mi raise_event MY_EVENT 'OpenSIPS Message'
+		</programlisting>
+		</listitem>
+
+
+	</itemizedlist>
+	</section>
+
+</chapter>
+
