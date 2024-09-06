@@ -1556,8 +1556,6 @@ fi
 %files rabbitmq-modules
 %{_libdir}/opensips/modules/event_rabbitmq.so
 %doc docdir/README.event_rabbitmq
-%{_libdir}/opensips/modules/rabbitmq.so
-%doc docdir/README.rabbitmq
 %{_libdir}/opensips/modules/rabbitmq_consumer.so
 %doc docdir/README.rabbitmq_consumer
 
