@@ -619,6 +619,7 @@ mod_renames=(
   [b2b_logic_xml]=b2b_logic::1605638778
   [sqlops]=dbops
   [dbops]=avpops
+  [event_rabbitmq]=rabbitmq
 )
 
 mk_git_handle() {
