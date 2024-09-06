@@ -127,8 +127,8 @@ modparam("event_sqs", "queue_url",
 
 	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-		<section>
 
+		<section id="func_sqs_publish_message" xreflabel="sqs_publish_message()">
 		<title>sqs_publish_message(queue_id, message)</title>
 		<para> Publishes a message to an SQS queue. As the actual 
 		send operation is done asynchronously, this function does not block and returns 
@@ -170,7 +170,7 @@ sqs_publish_message("q1", $var(msg));
 	</section>
 
 	<section>
-		<title>Event-Driven Messaging with <emphasis>`evi_raise`</emphasis></title>
+		<title>Event-Driven Messaging with <emphasis>Event Interface</emphasis></title>
 
 	<para>
 		OpenSIPS' event interface can be utilized to send messages to SQS by subscribing to an event and raising it when needed.
