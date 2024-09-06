@@ -60,6 +60,8 @@
 
 #include "test/unit_tests.h"
 
+#include "libgen.h"
+
 struct sr_module* modules=0;
 
 #ifdef STATIC_EXEC
@@ -401,12 +403,47 @@ void add_mpath(const char *new_mpath)
 	nmpath->buf[nmpath->len] = '\0';
 }
 
+static struct {
+ char *module;
+ char *name;
+ unsigned int flags;
+} module_warnings[] = {
+	{ "rabbitmq", "'rabbitmq' module has been dropped - please use 'event_rabbitmq' instead!", MOD_WARN_EXIT }
+};
+
 /* returns 0 on success , <0 on error */
 int load_module(char* name)
 {
 	int i_tmp, len;
 	struct stat statf;
 	struct mpath *mp;
+	int module_warnings_len;
+	char *base_name;
+
+	base_name = basename(name);
+	len = strlen(base_name);
+	if (strstr(base_name, ".so"))
+		len -= 3;
+
+	module_warnings_len = sizeof(module_warnings) / sizeof(module_warnings[0]);
+
+	for (int i = 0; i < module_warnings_len; i++) {
+		if (strncmp(base_name, module_warnings[i].module, len) == 0) {
+			switch (module_warnings[i].flags)
+			{
+				case MOD_WARN_EXIT:
+					LM_ERR("%s\n", module_warnings[i].name);
+					return -1;
+
+				case MOD_WARN_SKIP:
+					LM_WARN("%s\n", module_warnings[i].name);
+					return 0;
+
+				default:
+					break;
+			}
+		}
+	}
 
 	/* if this is a static module, load it directly */
 	if (load_static_module(name) == 0)
