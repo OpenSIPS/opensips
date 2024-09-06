@@ -651,7 +651,7 @@ static int aka_send_resp(struct sip_msg *_msg, str *realm, struct aka_user *user
 {
 	int ret = -1;
 	int nalgs, c;
-	str auth_hfs[LAST_ALG_SPTD - FIRST_ALG_SPTD + 1];
+	str auth_hfs[LAST_ALG_SPTD - FIRST_ALG_SPTD + 1] = {0};
 
 	for (nalgs = 0; nalgs < count; nalgs++) {
 		auth_hfs[nalgs].s = build_aka_auth_hf(avs[nalgs], realm, qop,
