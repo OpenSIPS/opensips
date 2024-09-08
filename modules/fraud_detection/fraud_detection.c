@@ -390,7 +390,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 #define CHECK_AND_RAISE(pname, type) \
 	(thr->pname ## _thr.type && se->stats.pname >= thr->pname ## _thr.type) { \
 		raise_ ## type ## _event(&pname ## _name, &se->stats.pname,\
-				&thr->pname ## _thr.type, user, number, &rule->id);\
+				&thr->pname ## _thr.type, user, number, &rule->id, pid);\
 		rc = rc_ ## type ## _thr;\
 	}
 
@@ -429,6 +429,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 		param->stats = se;        /* safe to ref, only freed @ shutdown */
 		param->user = shm_user;   /* safe to ref, only freed @ shutdown */
 		param->ruleid = rule->id;
+		param->pid = *pid;
 		param->dlg_terminated = 0;
 
 		param->calldur_warn = thr->call_duration_thr.warning;
