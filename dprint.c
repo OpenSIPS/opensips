@@ -427,7 +427,7 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 	l = log_escape_json_buf(log_msg_buf, l, p,
 		buf->len - len - rlen - 1);
 	if (l < 0) {
-		stderr_dprint_tmp_err("failed to escape log message!\n",l);
+		stderr_dprint_tmp_err("failed to escape log message!\n");
 		return -1;
 	}
 
