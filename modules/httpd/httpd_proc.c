@@ -751,6 +751,7 @@ void httpd_proc(int rank)
 
   		cert_pem = load_file(tls_cert_file.s);
 		if (NULL == cert_pem) {
+			free(key_pem);	
 			LM_ERR("unable to load tls certificate\n");
 			return;
 		}
