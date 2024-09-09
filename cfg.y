@@ -644,7 +644,7 @@ portrange: portrange COMMA NUMBER MINUS NUMBER { IFOR();
 			}
 		 | NUMBER MINUS NUMBER { IFOR();
 				if ($1 > $3) {
-					yyerrorf("invalid port range (%d > %d)\n", $1, $3);
+					yyerrorf("invalid port range (%d > %d)\n", (int)$1, (int)$3);
 					YYABORT;
 				}
 				$$=mk_port_range($1, $3);
