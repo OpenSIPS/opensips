@@ -23,161 +23,21 @@
  *  2012-12-xx  created (razvancrainea)
  */
 
-#include "../../sr_module.h"
-#include "../../evi/evi_transport.h"
-#include "../../evi/evi_modules.h"
-#include "../../ut.h"
+#include "evi_modules.h"
+#include "../ut.h"
 #include "event_route.h"
-#include "route_send.h"
 #include <string.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include "../ipc.h"
+
 
 /* default PVAR names */
 
-/**
- * module functions
- */
-static int mod_init(void);
-static int child_init(int rank);
-
-/**
- * exported functions
- */
-static evi_reply_sock* scriptroute_parse(str socket);
-static void scriptroute_free(evi_reply_sock *sock);
-static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
-	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx);
-static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
-static str scriptroute_print(evi_reply_sock *sock);
-
 #define SR_SOCK_ROUTE(_s) ((struct script_route_ref *)(_s->params))
 
-/**
- *  * module process
- *   */
-static const proc_export_t procs[] = {
-	{0,0,0,0,0,0}
-};
-/**
- * module exported functions
- */
-static const cmd_export_t cmds[]={
-	{0,0,{{0,0,0}},0}
-};
-
-/**
- * module exports
- */
-struct module_exports exports= {
-	"event_route",			/* module name */
-	MOD_TYPE_DEFAULT,/* class of this module */
-	MODULE_VERSION,
-	DEFAULT_DLFLAGS,		/* dlopen flags */
-	0,						/* load function */
-	NULL,            /* OpenSIPS module dependencies */
-	cmds,					/* exported functions */
-	0,						/* exported async functions */
-	0,						/* exported parameters */
-	0,						/* exported statistics */
-	0,						/* exported MI functions */
-	0,						/* exported pseudo-variables */
-	0,			 			/* exported transformations */
-	procs,					/* extra processes */
-	0,						/* module pre-initialization function */
-	mod_init,				/* module initialization function */
-	0,						/* response handling function */
-	0,						/* destroy function */
-	child_init,				/* per-child init function */
-	0						/* reload confirm function */
-};
-
-
-/**
- * exported functions for core event interface
- */
-static const evi_export_t trans_export_scriptroute = {
-	SCRIPTROUTE_NAME_STR,	/* transport module name */
-	scriptroute_raise,		/* raise function */
-	scriptroute_parse,		/* parse function */
-	scriptroute_match,		/* sockets match function */
-	scriptroute_free,		/* no free function */
-	scriptroute_print,		/* socket print function */
-	SCRIPTROUTE_FLAG		/* flags */
-};
-
-/**
- * init module function
- */
-static int mod_init(void)
-{
-	LM_NOTICE("initializing module ...\n");
-
-	if (register_event_mod(&trans_export_scriptroute)) {
-		LM_ERR("cannot register transport functions for SCRIPTROUTE\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-
-static int child_init(int rank)
-{
-	char buffer[EV_SCRIPTROUTE_MAX_SOCK];
-	str sock_name;
-	str event_name;
-	int idx;
-
-	/*
-	 * Only the first process registers the subscribers
-	 *
-	 * We do this in child init because here we are sure that all
-	 * the events were subscribed
-	 */
-	if (rank != 1)
-		return 0;
-
-	/* init the socket buffer */
-	sock_name.s = buffer;
-	memcpy(buffer, SCRIPTROUTE_NAME, sizeof(SCRIPTROUTE_NAME) - 1);
-	buffer[sizeof(SCRIPTROUTE_NAME) - 1] = COLON_C;
-
-	/* subscribe the route events - idx starts at 1 */
-	for (idx = 1; sroutes->event[idx].a && sroutes->event[idx].name; idx++) {
-		/* build the socket */
-		event_name.s = sroutes->event[idx].name;
-		event_name.len = strlen(sroutes->event[idx].name);
-
-		/* first check if the event exists */
-		if (evi_get_id(&event_name) == EVI_ERROR) {
-			LM_ERR("Event %s not registered\n", event_name.s);
-			return -1;
-		}
-		LM_DBG("Registering event %s\n", sroutes->event[idx].name);
-
-		if (sizeof(SCRIPTROUTE_NAME)+event_name.len > EV_SCRIPTROUTE_MAX_SOCK) {
-			LM_ERR("socket name too big %d (max: %d)\n",
-				   (int)(sizeof(SCRIPTROUTE_NAME) + event_name.len),
-				   EV_SCRIPTROUTE_MAX_SOCK);
-			return -1;
-		}
-		memcpy(buffer + sizeof(SCRIPTROUTE_NAME), event_name.s, event_name.len);
-		sock_name.len = event_name.len + sizeof(SCRIPTROUTE_NAME);
-
-		/* register the subscriber - does not expire */
-		if (evi_event_subscribe(event_name, sock_name, 0, 0) < 0) {
-			LM_ERR("cannot subscribe to event %s\n", event_name.s);
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-
 /* returns 0 if sockets match */
-static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
+int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 {
 	if (!sock1 || !sock2)
 		return 0;
@@ -188,7 +48,7 @@ static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 }
 
 
-static evi_reply_sock* scriptroute_parse(str socket)
+evi_reply_sock* scriptroute_parse(str socket)
 {
 	evi_reply_sock *sock = NULL;
 	struct script_route_ref *ref;
@@ -231,14 +91,14 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	return sock;
 }
 
-static void scriptroute_free(evi_reply_sock *sock)
+void scriptroute_free(evi_reply_sock *sock)
 {
 	/* free the script route reference */
 	if (sock && sock->params)
 		shm_free(sock->params);
 }
 
-static str scriptroute_print(evi_reply_sock *sock)
+str scriptroute_print(evi_reply_sock *sock)
 {
 	/* return only the route's name */
 	return sock->address;
@@ -348,7 +208,7 @@ void route_run(struct script_route route, struct sip_msg* msg,
 	route_params_pop_level();
 }
 
-static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
+int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx)
 {
 	route_send_t *buf = NULL;
@@ -377,4 +237,136 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 		return -1;
 
 	return 0;
+}
+
+#define IS_ERR(_err) (errno == _err)
+
+int route_build_buffer(str *event_name, evi_reply_sock *sock,
+		evi_params_t *params, route_send_t **msg)
+{
+	struct {
+		route_send_t rt;
+		evi_param_t eps[0];
+	} *buf;
+	evi_param_p param, buf_param;
+	int len, params_len=0;
+	unsigned int param_no = 0;
+	char *s;
+
+	len = sizeof(*buf) + event_name->len;
+	if (params) {
+		for (param = params->first; param; param = param->next) {
+			if (param->flags & EVI_INT_VAL) {
+				param_no++;
+				params_len += param->name.len;
+			} else if (param->flags & EVI_STR_VAL) {
+				param_no++;
+				params_len += param->name.len + param->val.s.len;
+			} else {
+				LM_DBG("FIXME: handle param=[%p] name=[%.*s] flags=%X\n",
+						param, param->name.len, param->name.s, param->flags);
+			}
+		}
+	}
+
+	len += param_no*sizeof(evi_param_t) + params_len;
+	buf = shm_malloc(len);
+	if (!buf) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(buf, 0, len);
+
+	/* Stick the event name at the end */
+	buf->rt.event.s = (char*)(buf) + len - event_name->len;
+	buf->rt.event.len = event_name->len;
+	memcpy(buf->rt.event.s, event_name->s, event_name->len);
+
+	if (params && param_no) {
+		buf_param = &buf->eps[0];
+		buf->rt.params.first = buf_param;
+		s = (char*)(&buf->eps[param_no]);
+		for (param = params->first; param; param = param->next) {
+			if (param->flags & EVI_INT_VAL) {
+				buf_param->flags = EVI_INT_VAL;
+				memcpy(s, param->name.s, param->name.len);
+				buf_param->name.s = s;
+				buf_param->name.len = param->name.len;
+				s += param->name.len;
+				buf_param->val.n = param->val.n;
+				buf_param->next = buf_param + 1;
+				buf_param++;
+			} else if (param->flags & EVI_STR_VAL) {
+				buf_param->flags = EVI_STR_VAL;
+				memcpy(s, param->name.s, param->name.len);
+				buf_param->name.s = s;
+				buf_param->name.len = param->name.len;
+				s += param->name.len;
+				memcpy(s, param->val.s.s, param->val.s.len);
+				buf_param->val.s.s = s;
+				buf_param->val.s.len = param->val.s.len;
+				s += param->val.s.len;
+				buf_param->next = buf_param + 1;
+				buf_param++;
+			} else {
+				LM_DBG("FIXME: handle param=[%p] name=[%.*s] flags=%X\n",
+						param, param->name.len, param->name.s, param->flags);
+			}
+		}
+		buf_param--;
+		buf_param->next = NULL;
+		buf->rt.params.last = buf_param;
+	}
+
+	*msg = &buf->rt;
+	return 0;
+}
+
+#if 0
+void route_params_push_level(void *params, void *extra, param_getf_t getf);
+void route_params_pop_level(void);
+int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
+#endif
+
+static void route_received(int sender, void *param)
+{
+	struct sip_msg* req;
+	route_send_t *route_s = (route_send_t *)param;
+
+	/* suppress the E_CORE_LOG event for new logs while handling
+	 * the event itself */
+	suppress_proc_log_event();
+
+	if (!ref_script_route_check_and_update(route_s->ev_route)){
+		LM_ERR("event route [%.s] no longer available in script\n",
+			route_s->ev_route->name.s);
+		goto cleanup;
+	}
+
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("cannot create new dummy sip request\n");
+		goto cleanup;
+	}
+
+	route_run(sroutes->event[route_s->ev_route->idx], req,
+		&route_s->params, &route_s->event);
+
+	release_dummy_sip_msg(req);
+
+	/* remove all added AVP - here we use all the time the default AVP list */
+	reset_avps( );
+
+cleanup:
+	if (route_s->ev_route)
+		shm_free(route_s->ev_route);
+	shm_free(route_s);
+
+	reset_proc_log_event();
+}
+
+
+int route_send(route_send_t *route_s)
+{
+	return ipc_dispatch_rpc( route_received, (void *)route_s);
 }

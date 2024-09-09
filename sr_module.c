@@ -408,7 +408,8 @@ static struct {
  char *name;
  unsigned int flags;
 } module_warnings[] = {
-	{ "rabbitmq", "'rabbitmq' module has been dropped - please use 'event_rabbitmq' instead!", MOD_WARN_EXIT }
+	{ "rabbitmq", "'rabbitmq' module has been dropped - please use 'event_rabbitmq' instead!", MOD_WARN_EXIT },
+	{ "event_route", "'event_route' module has been integrated in core file. You no longer need to load the module.", MOD_WARN_SKIP }
 };
 
 /* returns 0 on success , <0 on error */

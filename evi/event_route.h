@@ -23,10 +23,10 @@
  *  2012-12-xx  created (razvancrainea)
  */
 
-
 #ifndef _EV_ROUTE_H_
 #define _EV_ROUTE_H_
 
+#define ROUTE_SEND_RETRY 3
 
 /* transport protocol name */
 #define SCRIPTROUTE_NAME		"route"
@@ -40,5 +40,42 @@
 
 /* maximum length of the socket */
 #define EV_SCRIPTROUTE_MAX_SOCK	256
+
+
+#include "../sr_module.h"
+#include "evi_transport.h"
+
+evi_reply_sock* scriptroute_parse(str socket);
+void scriptroute_free(evi_reply_sock *sock);
+int scriptroute_raise(struct sip_msg *msg, str* ev_name,
+	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx);
+int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
+str scriptroute_print(evi_reply_sock *sock);
+
+/**
+ * exported functions for core event interface
+ */
+static const evi_export_t trans_export_scriptroute = {
+	SCRIPTROUTE_NAME_STR,	/* transport module name */
+	scriptroute_raise,		/* raise function */
+	scriptroute_parse,		/* parse function */
+	scriptroute_match,		/* sockets match function */
+	scriptroute_free,		/* no free function */
+	scriptroute_print,		/* socket print function */
+	SCRIPTROUTE_FLAG		/* flags */
+};
+
+typedef struct _route_send {
+	struct script_route_ref *ev_route;
+	str event;
+	evi_params_t params;
+} route_send_t;
+
+int route_build_buffer(str *event_name, evi_reply_sock *sock,
+		evi_params_t *params, route_send_t **msg);
+
+int route_send(route_send_t *route_s);
+void route_run(struct script_route route, struct sip_msg* msg,
+		evi_params_t *params, str *event);
 
 #endif
