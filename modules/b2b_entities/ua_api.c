@@ -171,6 +171,7 @@ int raise_ua_sess_event(str *key, enum b2b_entity_type ent_type,
 	str method;
 	str *reason;
 	int statuscode;
+	str empty = STR_NULL;
 
 	if (evi_param_set_str(evi_key_param, key) < 0) {
 		LM_ERR("cannot set event parameter\n");
@@ -190,7 +191,7 @@ int raise_ua_sess_event(str *key, enum b2b_entity_type ent_type,
 	if (msg->first_line.type == SIP_REQUEST) {
 		method = msg->first_line.u.request.method;
 		statuscode = 0;
-		reason = &STR_NULL;
+		reason = &empty;
 	} else {
 		method = get_cseq(msg)->method;
 		statuscode = msg->first_line.u.reply.statuscode;
