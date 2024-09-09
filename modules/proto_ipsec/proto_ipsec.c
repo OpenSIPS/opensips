@@ -1310,7 +1310,7 @@ static void ipsec_usrloc_restore(ucontact_t *contact)
 		return;
 	}
 
-	ctx = ipsec_ctx_new(&sa, &user->ip, ss, sc, &ck, &ik, spi_ps, spi_pc);
+	ctx = ipsec_ctx_new(&sa, &user->ip, ss, sc, &ck, &ik, spi_pc, spi_ps);
 	if (!ctx) {
 		LM_ERR("could not allocate new IPSec ctx\n");
 		goto release_user;
