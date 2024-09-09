@@ -318,8 +318,6 @@ static int rmq_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
 		return -1;
 	}
 
-	LM_NOTICE("Sent message successfully: %s\n", rmqs->msg);
-
 	return 0;
 }
 
