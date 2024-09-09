@@ -26,6 +26,10 @@ proto_tls module
               1.5.9. trace_filter_route (string)
               1.5.10. tls_handshake_timeout (integer)
               1.5.11. tls_send_timeout (integer)
+              1.5.12. tls_async (integer)
+              1.5.13. tls_async_max_postponed_chunks (integer)
+              1.5.14. tls_async_local_connect_timeout (integer)
+              1.5.15. tls_async_handshake_timeout (integer)
 
         1.6. Exported MI Functions
 
@@ -61,6 +65,10 @@ proto_tls module
    1.9. Set trace_filter_route parameter
    1.10. Set tls_handshake_timeout variable
    1.11. Set tls_send_timeout variable
+   1.12. Set tls_async variable
+   1.13. Set tls_async_max_postponed_chunks parameter
+   1.14. Set tls_async_local_connect_timeout parameter
+   1.15. Set tls_async_handshake_timeout parameter
 
 Chapter 1. Admin Guide
 
@@ -189,17 +197,15 @@ Chapter 1. Admin Guide
 1.4.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
+     * tls_openssl or tls_wolfssl, depending on the desired TLS
+       library
      * tls_mgm.
 
 1.4.2. Dependencies of external libraries
 
-   OpenSIPS TLS v1.0 support requires the following packages:
-     * openssl or libssl >= 0.9.6
-     * openssl-dev or libssl-dev
-
-   OpenSIPS TLS v1.1/1.2 support requires the following packages:
-     * openssl or libssl >= 1.0.1e
-     * openssl-dev or libssl-dev
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
 
 1.5. OpenSIPS Exported parameters
 
@@ -317,8 +323,8 @@ modparam("proto_tls", "cert_check_on_conn_reusage", 1)
 
    Example 1.7. Set trace_destination parameter
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
-=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
+n=3")
 
 modparam("proto_tls", "trace_destination", "hep_dest")
 ...
@@ -396,10 +402,10 @@ route[tls_filter] {
    Default value is 100.
 
    Example 1.10. Set tls_handshake_timeout variable
-
-param("proto_tls", "tls_handshake_timeout", 200) # number of millisecond
-s
-
+...
+modparam("proto_tls", "tls_handshake_timeout", 200) # number of millisec
+onds
+...
 
 1.5.11. tls_send_timeout (integer)
 
@@ -412,9 +418,67 @@ s
    Default value is 100.
 
    Example 1.11. Set tls_send_timeout variable
+...
+modparam("proto_tls", "tls_send_timeout", 200) # number of milliseconds
+...
 
-param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
+1.5.12. tls_async (integer)
 
+   If the TLS connect and write operations should be done in an
+   asynchronous mode (non-blocking connect and write). If
+   disabled, OpenSIPS will block and wait for TLS operations like
+   connect and write.
+
+   Default value is 1 (enabled).
+
+   Example 1.12. Set tls_async variable
+...
+modparam("proto_tls", "tls_async", 1) # enable async TLS
+...
+
+1.5.13. tls_async_max_postponed_chunks (integer)
+
+   If tls_async is enabled, this specifies the maximum number of
+   SIP messages that can be stashed for later/async writing. If
+   the connection pending writes exceed this number, the
+   connection will be marked as broken and dropped.
+
+   Default value is 32.
+
+   Example 1.13. Set tls_async_max_postponed_chunks parameter
+...
+modparam("proto_tls", "tls_async_max_postponed_chunks", 16)
+...
+
+1.5.14. tls_async_local_connect_timeout (integer)
+
+   If tls_async is enabled, this specifies the number of
+   milliseconds that a connect will be tried in blocking mode
+   (optimization). If the connect operation lasts more than this,
+   the connect will go to async mode and will be passed to tls
+   MAIN for polling.
+
+   Default value is 100 ms.
+
+   Example 1.14. Set tls_async_local_connect_timeout parameter
+...
+modparam("proto_tls", "tls_async_local_connect_timeout", 200)
+...
+
+1.5.15. tls_async_handshake_timeout (integer)
+
+   If tls_async is enabled, this specifies the number of
+   milliseconds that a TLS handshake should be tried in blocking
+   mode (optimization). If the handshake operation lasts more than
+   this, the write will go to async mode and will be passed to tls
+   MAIN for polling.
+
+   Default value is 10 ms.
+
+   Example 1.15. Set tls_async_handshake_timeout parameter
+...
+modparam("proto_tls", "tls_async_handshake_timeout", 100)
+...
 
 1.6. Exported MI Functions
 
@@ -517,19 +581,20 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 56 29 1543 809
-   2. Razvan Crainea (@razvancrainea) 44 27 630 641
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 60 32 1553 817
+   2. Razvan Crainea (@razvancrainea) 53 33 920 706
    3. Eseanu Marius Cristian (@eseanucristian) 41 5 55 2133
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
-   5. Liviu Chircu (@liviuchircu) 10 7 30 105
-   6. Vlad Patrascu (@rvlad-patrascu) 9 6 54 64
-   7. Bogdan Chifor 5 2 141 1
-   8. Vlad Paiu (@vladpaiu) 4 2 84 3
-   9. Maksym Sobolyev (@sobomax) 4 2 3 18
+   5. Vlad Patrascu (@rvlad-patrascu) 20 14 186 213
+   6. Liviu Chircu (@liviuchircu) 15 12 49 118
+   7. Maksym Sobolyev (@sobomax) 6 4 20 35
+   8. Bogdan Chifor 5 2 141 1
+   9. Vlad Paiu (@vladpaiu) 4 2 84 3
    10. Dan Pascu (@danpascu) 3 1 2 4
 
-   All remaining contributors: Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov), Zero King (@l2dy).
+   All remaining contributors: Nick Altmann (@nikbyte), James
+   Stanley, Julián Moreno Patiño, Peter Lemenkov (@lemenkov), Zero
+   King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -551,19 +616,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   2.  Maksym Sobolyev (@sobomax)          Jul 2017 - Sep 2020
-   3.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jul 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
-   7.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Apr 2017
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Liviu Chircu (@liviuchircu)         Mar 2015 - Jul 2024
+   2.  James Stanley                       Dec 2023 - Dec 2023
+   3.  Maksym Sobolyev (@sobomax)          Jul 2017 - Nov 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - May 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2023
+   6.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   7.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2021
+   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   9.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Eseanu Marius Cristian
-   (@eseanucristian), Bogdan Chifor, Vlad Paiu (@vladpaiu).
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Eseanu Marius Cristian (@eseanucristian),
+   Bogdan Chifor, Vlad Paiu (@vladpaiu).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -572,11 +638,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Zero King
-   (@l2dy), Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
-   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Eseanu
-   Marius Cristian (@eseanucristian), Vlad Paiu (@vladpaiu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Zero King (@l2dy), Razvan Crainea
+   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Eseanu Marius
+   Cristian (@eseanucristian), Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

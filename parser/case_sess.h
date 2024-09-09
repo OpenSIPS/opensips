@@ -59,6 +59,8 @@
 
 #define sess_CASE    \
 	p += 4;          \
+	if (!HAVE(12))   \
+		goto other;  \
 	val = READ(p);   \
 	ION__CASE;       \
 	goto other;

@@ -72,12 +72,18 @@ enum poll_types io_poll_method=0;
 int debug_mode = 0;
 /* do not become daemon, stay attached to the console */
 int no_daemon_mode = 0;
-/* assertion statements in script. disabled by default */
+/* assertion statements in script. disabled by default, except for DEV build */
+#if defined(CC_O0) || defined(EXTRA_DEBUG)
+int enable_asserts = 1;
+#else
 int enable_asserts = 0;
+#endif
 /* abort process on failed assertion. disabled by default */
 int abort_on_assert = 0;
-/* start by logging to stderr */
-int log_stderr = 1;
+/* start by only logging to stderr */
+int log_stdout = 0;
+int stderr_enabled = 1;
+int syslog_enabled = 0;
 /* log facility (see syslog(3)) */
 int log_facility = LOG_DAEMON;
 /* the id to be printed in syslog */
@@ -88,6 +94,7 @@ int check_via =  0;
 /* debugging level for memory stats */
 int memlog = L_DBG + 11;
 int memdump = L_DBG + 10;
+unsigned int shm_memlog_size = 0;
 /* debugging in case msg processing takes. too long disabled by default */
 int execmsgthreshold = 0;
 /* debugging in case dns takes too long. disabled by default */
@@ -131,7 +138,7 @@ int mcast_ttl = -1; /* if -1, don't touch it, use the default (usually 1) */
 
 int tos = IPTOS_LOWDELAY; // lgtm [cpp/short-global-name]
 
-struct socket_info* bind_address=NULL; /* pointer to the crt. proc.
+const struct socket_info* bind_address=NULL; /* pointer to the crt. proc.
 				       listening address*/
 
 /* if aliases should be automatically discovered and added

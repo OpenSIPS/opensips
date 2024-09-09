@@ -26,18 +26,17 @@ typedef void * db_ps_t;
 /** Is any prepared statement provided for the next query? */
 #define CON_HAS_PS(cn)  ((cn)->curr_ps)
 
-/** Does the connection has attached an uninitialized prepared statemen? */
+/** Does the connection has attached an uninitialized prepared statement? */
 #define CON_HAS_UNINIT_PS(cn)  (*((cn)->curr_ps)==NULL)
 
-
-/** Pointer to the current used prepared statment */
+/** Pointer to the currently used prepared statement */
 #define CON_CURR_PS(cn)      (*(cn)->curr_ps)
 
-/** Pointer to the address of the current used prepared statment */
-#define CON_PS_REFERENCE(cn)      ((cn)->curr_ps)
+/** Wipe the address of the currently used prepared statement */
+#define CON_RESET_CURR_PS(cn)    *((void***)&(cn)->curr_ps)=NULL
 
-#define CON_RESET_CURR_PS(cn)    *((void***)&cn->curr_ps)=NULL
-#define CON_SET_CURR_PS(cn, ptr)    *((void***)&cn->curr_ps)=ptr
+/** Set the address of the currently used prepared statement */
+#define CON_SET_CURR_PS(cn, ptr)    *((void***)&(cn)->curr_ps)=ptr
 
 #endif
 

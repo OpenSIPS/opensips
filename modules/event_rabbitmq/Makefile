@@ -17,8 +17,8 @@ ifneq ($(RABBITMQ_BUILDER),)
 	LIBS += $(shell $(RABBITMQ_BUILDER) --libs)
 endif
 else
-	DEFS+=-I$(LOCALBASE)/include
-	LIBS=-L$(LOCALBASE)/lib -lrabbitmq
+	DEFS += -I$(LOCALBASE)/include
+	LIBS += -L$(LOCALBASE)/lib -lrabbitmq
 endif
 
 include ../../Makefile.modules

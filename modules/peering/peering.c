@@ -50,7 +50,7 @@ int verify_source_service_type = -1;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
     {"verify_destination", (cmd_function)verify_destination, {{0,0,0}},
         REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
     {"verify_source", (cmd_function)verify_source, {{0,0,0}},
@@ -61,7 +61,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
     {"aaa_url", STR_PARAM, &aaa_proto_url},
     {"verify_destination_service_type", INT_PARAM,
      &verify_destination_service_type},
@@ -70,7 +70,7 @@ static param_export_t params[] = {
     {0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_AAA, NULL, DEP_WARN },
 		{ MOD_TYPE_NULL, NULL, 0 },

@@ -41,6 +41,8 @@
 
 #define subj_CASE        \
 		p += 4;          \
+		if (!HAVE(4))    \
+			goto other;  \
 		val = READ(p);   \
 		ect_CASE;        \
 		goto other;

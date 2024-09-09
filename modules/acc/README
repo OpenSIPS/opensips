@@ -54,7 +54,6 @@ Acc Module
               1.6.17. acc_sip_code_column (string)
               1.6.18. acc_sip_reason_column (string)
               1.6.19. acc_time_column (string)
-              1.6.20. acc_created_avp_name (string)
 
         1.7. Exported Pseudo-Variables
 
@@ -118,15 +117,14 @@ Acc Module
    1.17. acc_sip_code_column example
    1.18. acc_sip_reason_column example
    1.19. acc_time_column example
-   1.20. acc_created_avp_name example
-   1.21. do_accounting usage
-   1.22. drop_accounting usage
-   1.23. acc_log_request usage
-   1.24. acc_db_request usage
-   1.25. acc_aaa_request usage
-   1.26. acc_evi_request usage
-   1.27. acc_new_leg usage
-   1.28. acc_load_ctx_from_dlg usage
+   1.20. do_accounting usage
+   1.21. drop_accounting usage
+   1.22. acc_log_request usage
+   1.23. acc_db_request usage
+   1.24. acc_aaa_request usage
+   1.25. acc_evi_request usage
+   1.26. acc_new_leg usage
+   1.27. acc_load_ctx_from_dlg usage
 
 Chapter 1. Admin Guide
 
@@ -204,7 +202,7 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
 
     if (is_method("INVITE") && $au!=$fU) {
         xlog("FROM URI != digest username\n");
-        sl_send_reply("403","Forbidden");
+        sl_send_reply(403,"Forbidden");
     }
 
     do_accounting("log"); /* set for accounting via syslog */
@@ -611,17 +609,6 @@ modparam("acc", "acc_sip_reason_column", "sip_reason")
    Example 1.19. acc_time_column example
 modparam("acc", "acc_time_column", "time")
 
-1.6.20. acc_created_avp_name (string)
-
-   The name of the openSips avp that will be used to hold the time
-   when the call was created. This time will only be logged on
-   missed calls.
-
-   Default value is "accX_created".
-
-   Example 1.20. acc_created_avp_name example
-modparam("acc", "acc_created_avp_name", "call_created_avp")
-
 1.7. Exported Pseudo-Variables
 
 1.7.1. $acc_extra(tag_name)
@@ -668,6 +655,8 @@ $(acc_leg(caller)[-2])
    want the accounting to take place, and the function will do all
    the work for you.
 
+   When called multiple times, the function behaves additively.
+
    Meaning of the parameters is as follows:
      * type (string) - the type of accounting you want to do. All
        types have to be separated by '|'. The following parameters
@@ -700,7 +689,7 @@ $(acc_leg(caller)[-2])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.21. do_accounting usage
+   Example 1.20. do_accounting usage
                 ...
                 if (!has_totag()) {
                         if (is_method("INVITE")) {
@@ -727,6 +716,8 @@ y_acc");
    accounting for that type will be stopped. If called with two
    arguments normal accounting will still be enabled.
 
+   When called multiple times, the function behaves additively.
+
    Meaning of the parameters is as follows:
      * type (string, optional) - the type of accounting you want
        to stop. All the types have to be separated by '|'. The
@@ -745,7 +736,7 @@ y_acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.22. drop_accounting usage
+   Example 1.21. drop_accounting usage
                 ...
                 acc_log_request("403 Destination not allowed");
                 if (!has_totag()) {
@@ -789,7 +780,7 @@ yslog;
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.23. acc_log_request usage
+   Example 1.22. acc_log_request usage
 ...
 acc_log_request("403 Destination not allowed");
 ...
@@ -810,7 +801,7 @@ acc_log_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.24. acc_db_request usage
+   Example 1.23. acc_db_request usage
 ...
 acc_db_request("Some comment", "Some table");
 acc_db_request("$T_reply_code $(<reply>rr)", "acc");
@@ -830,7 +821,7 @@ acc_db_request("$T_reply_code $(<reply>rr)", "acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.25. acc_aaa_request usage
+   Example 1.24. acc_aaa_request usage
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
@@ -851,7 +842,7 @@ acc_aaa_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.26. acc_evi_request usage
+   Example 1.25. acc_evi_request usage
 ...
 acc_evi_request("403 Destination not allowed");
 ...
@@ -865,7 +856,7 @@ acc_evi_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.27. acc_new_leg usage
+   Example 1.26. acc_new_leg usage
 ...
         acc_new_leg();
 ...
@@ -889,7 +880,7 @@ acc_evi_request("403 Destination not allowed");
 
    This function can be used from any type of route.
 
-   Example 1.28. acc_load_ctx_from_dlg usage
+   Example 1.27. acc_load_ctx_from_dlg usage
 ...
 if ( load_dialog_ctx("$var(callid)") ) {
         # we now have the dialog context of the new dialog
@@ -1064,24 +1055,25 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 222 111 4302 4578
-   2. Jan Janak (@janakj) 145 16 5587 5074
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 226 114 4306 4609
+   2. Jan Janak (@janakj) 146 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 139 39 3730 4180
-   4. Razvan Crainea (@razvancrainea) 93 61 2646 566
-   5. Liviu Chircu (@liviuchircu) 60 46 585 545
-   6. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
+   4. Razvan Crainea (@razvancrainea) 100 66 2702 675
+   5. Liviu Chircu (@liviuchircu) 74 55 985 608
+   6. Jiri Kuthan (@jiriatipteldotorg) 57 26 2272 660
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
-   8. Elena-Ramona Modroiu 24 4 2267 5
-   9. Henning Westerholt (@henningw) 20 15 184 131
-   10. Vlad Patrascu (@rvlad-patrascu) 20 10 292 427
+   8. Elena-Ramona Modroiu 25 4 2267 5
+   9. Vlad Patrascu (@rvlad-patrascu) 22 11 353 478
+   10. Henning Westerholt (@henningw) 20 15 184 131
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Irina-Maria
-   Stanescu, Maksym Sobolyev (@sobomax), Karel Kozlik, Andrei
+   All remaining contributors: Vlad Paiu (@vladpaiu), Maksym
+   Sobolyev (@sobomax), Irina-Maria Stanescu, Karel Kozlik, Andrei
    Pelinescu-Onciul, Dan Pascu (@danpascu), Juha Heinanen
    (@juha-h), Elena-Ramona Modroiu, Ryan Bullock (@rrb3942),
-   Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Peter Nixon, Alex
-   Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues,
-   Julien Blache, Julián Moreno Patiño, Peter Lemenkov
+   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Sergio
+   Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier,
+   Konstantin Bokarius, Alexey Vasilyev (@vasilevalex), Jesus
+   Rodrigues, Julien Blache, Julián Moreno Patiño, Peter Lemenkov
    (@lemenkov), Dusan Klinec (@ph4r05), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1104,26 +1096,27 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   5.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2024
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   3.  Maksym Sobolyev (@sobomax)          Dec 2003 - Nov 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   6.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
+   7.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   8.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
 
-   All remaining contributors: Ryan Bullock (@rrb3942),
+   All remaining contributors: Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Vlad Paiu (@vladpaiu), Ryan Bullock (@rrb3942),
    Irina-Maria Stanescu, Alex Massover, Sergio Gutierrez, Ovidiu
    Sas (@ovidiusas), Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Elena-Ramona Modroiu, Jesus Rodrigues, Julien
-   Blache, Peter Nixon, Maksym Sobolyev (@sobomax), Juha Heinanen
-   (@juha-h), Jan Janak (@janakj), Jiri Kuthan
-   (@jiriatipteldotorg), Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu, Nils Ohlmeier, Karel Kozlik.
+   Blache, Peter Nixon, Juha Heinanen (@juha-h), Jan Janak
+   (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Nils Ohlmeier, Karel
+   Kozlik.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1132,14 +1125,15 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Razvan
-   Crainea (@razvancrainea), Ryan Bullock (@rrb3942), Irina-Maria
-   Stanescu, Sergio Gutierrez, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj),
-   Maksym Sobolyev (@sobomax), Elena-Ramona Modroiu.
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
+   Ionita (@ionutrazvanionita), Ryan Bullock (@rrb3942),
+   Irina-Maria Stanescu, Sergio Gutierrez, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jan
+   Janak (@janakj), Maksym Sobolyev (@sobomax), Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

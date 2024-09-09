@@ -25,7 +25,7 @@
 		<column><field>timeout</field><type>DB_INT</type></column>
 		<column><field>vars</field><type>DB_BLOB</type></column>
 		<column><field>profiles</field><type>DB_BLOB</type></column>
-		<column><field>script_flags</field><type>DB_INT</type></column>
+		<column><field>script_flags</field><type>DB_STR</type></column>
 		<column><field>module_flags</field><type>DB_INT</type></column>
 		<column><field>flags</field><type>DB_INT</type></column>
 		<column><field>rt_on_answer</field><type>DB_STR</type></column>

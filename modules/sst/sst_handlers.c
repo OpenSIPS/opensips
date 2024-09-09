@@ -358,8 +358,10 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 	}
 	/* We keep the sst_info in the dialog's vals in case of restarting */
 	/* No const here because of store_dlg_value's definition */
-	str raw_info = {(char*)info, sizeof(sst_info_t)};
-	if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info) != 0) {
+	int_str raw_info;
+	raw_info.s = (str){(char*)info, sizeof(sst_info_t)};
+	if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info,
+		DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("No sst_info can be added to the dialog."
 				"This dialog won't be considered after restart!\n");
 	}
@@ -374,6 +376,8 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 
 void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
 		struct dlg_cb_params *params){
+	int_str raw_info;
+	int val_type;
 
 	/* Check if this is previously marked by sst module */
 	if (!dlg_binds->is_mod_flag_set(did, SST_DIALOG_FLAG))
@@ -389,8 +393,9 @@ void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
 
 	memset(info, 0, sizeof(sst_info_t));
 
-	str raw_info = {(char*)info, sizeof(sst_info_t)};
-	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &raw_info, 1) != 0){
+	raw_info.s = (str){(char*)info, sizeof(sst_info_t)};
+	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &val_type,
+		&raw_info, 1) != 0){
 		LM_ERR ("No sst_info found!\n");
 		return;
 	}
@@ -552,8 +557,10 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 	}
 
 	if (info_dirty){
-		str raw_info = {(char*)info, sizeof(sst_info_t)};
-		if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info) != 0) {
+		int_str raw_info;
+		raw_info.s = (str){(char*)info, sizeof(sst_info_t)};
+		if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info,
+			DLG_VAL_TYPE_STR) != 0) {
 			LM_ERR("sst_info can't be updated\n");
 		}
 	}
@@ -688,8 +695,10 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 
 update_info:
 	if (info_dirty){
-		str raw_info = {(char*)info, sizeof(sst_info_t)};
-		if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info) != 0) {
+		int_str raw_info;
+		raw_info.s = (str){(char*)info, sizeof(sst_info_t)};
+		if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info,
+			DLG_VAL_TYPE_STR) != 0) {
 			LM_ERR("sst_info can't be updated\n");
 		}
 	}

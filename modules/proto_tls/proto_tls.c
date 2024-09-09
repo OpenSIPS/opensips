@@ -34,11 +34,6 @@
  *
  */
 
-#include <openssl/ui.h>
-#include <openssl/ssl.h>
-#include <openssl/opensslv.h>
-#include <openssl/err.h>
-
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -53,6 +48,7 @@
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
+#include "../../net/tcp_common.h"
 #include "../../net/net_tcp_report.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
@@ -64,10 +60,11 @@
 
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../tls_mgm/api.h"
-#include "../tls_mgm/tls_conn_ops.h"
-#include "../tls_mgm/tls_conn_server.h"
+#include "../tls_mgm/tls_trace_common.h"
 
 #include "../../net/trans_trace.h"
+
+#include "../../net/net_tcp_dbg.h"
 
 /*
  * Open questions:
@@ -93,6 +90,21 @@ struct tls_mgm_binds tls_mgm_api;
 
 static int tls_port_no = SIPS_PORT;
 
+/* 1 if tls connect & write should be async */
+static int tls_async = 1;
+
+/* Number of milliseconds that a worker will block waiting for a local
+ * connect - if connect op exceeds this, it will get passed to tls main*/
+static int tls_async_local_connect_timeout = 100;
+
+/* Number of milliseconds that a worker will block waiting for a SSL
+ * connect handshake to complete */
+static int tls_async_handshake_connect_timeout = 10;
+
+/* maximum number of write chunks that will be queued per tls connection -
+  if we exceed this number, we just drop the connection */
+static int tls_async_max_postponed_chunks = 32;
+
 static int tls_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 
 /* 0: send CRLF pong to incoming CRLFCRLF ping */
@@ -108,11 +120,11 @@ static int tls_handshake_tout = 100;
 static int tls_send_tout = 100;
 
 static int  mod_init(void);
-static void mod_destroy(void);
 static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
-static int proto_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id);
+static int proto_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id);
 static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
 static mi_response_t *tls_trace_mi(const mi_params_t *params,
@@ -129,10 +141,45 @@ static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *bu
 	int ret;
 
 	lock_get(&c->write_lock);
-	ret = tls_blocking_write(c, fd, buf, len,
+	ret = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
 			tls_handshake_tout, tls_send_tout, t_dst);
 	lock_release(&c->write_lock);
 	return ret;
+}
+
+static int tls_write_on_socket(struct tcp_connection* c, int fd,
+		char *buf, int len)
+{
+	int n;
+
+	lock_get(&c->write_lock);
+	if (c->async) {
+		/*
+		 * if there is any data pending to write, we have to wait for those chunks
+		 * to be sent, otherwise we will completely break the messages' order
+		 */
+		if (!c->async->pending) {
+			if (tls_mgm_api.tls_update_fd(c, fd) < 0) {
+				n = -1;
+				goto release;
+			}
+
+			n = tls_mgm_api.tls_write(c, fd, buf, len, NULL);
+			if (n >= 0 && len - n) {
+				/* if could not write entire buffer, delay it */
+				n = tcp_async_add_chunk(c, buf + n, len - n, 0);
+			}
+		} else {
+			n = tcp_async_add_chunk(c, buf, len, 0);
+		}
+	} else {
+		n = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
+				tls_handshake_tout, tls_send_tout, t_dst);
+	}
+release:
+	lock_release(&c->write_lock);
+
+	return n;
 }
 
 /* buffer to be used for reading all TCP SIP messages
@@ -154,21 +201,22 @@ trace_proto_t tprot;
 /* module  tracing parameters */
 static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
-static int trace_filter_route_id = -1;
+static struct script_route_ref *trace_filter_route_ref = NULL;
 
 /**/
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read);
+static int tls_async_write(struct tcp_connection* con,int fd);
 static int proto_tls_conn_init(struct tcp_connection* c);
 static void proto_tls_conn_clean(struct tcp_connection* c);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tls_init, {{0, 0, 0}}, 0},
 	{ 0, 0, {{0, 0, 0}}, 0}
 };
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "tls_port",              INT_PARAM,         &tls_port_no               },
 	{ "tls_crlf_pingpong",     INT_PARAM,         &tls_crlf_pingpong         },
 	{ "tls_crlf_drop",         INT_PARAM,         &tls_crlf_drop             },
@@ -176,13 +224,20 @@ static param_export_t params[] = {
 	{ "tls_send_timeout",      INT_PARAM,         &tls_send_tout             },
 	{ "tls_handshake_timeout", INT_PARAM,         &tls_handshake_tout        },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
+	{ "tls_async",                       INT_PARAM, &tls_async               },
+	{ "tls_async_max_postponed_chunks",  INT_PARAM,
+											&tls_async_max_postponed_chunks  },
+	{ "tls_async_local_connect_timeout", INT_PARAM,
+											&tls_async_local_connect_timeout },
+	{ "tls_async_handshake_timeout",	 INT_PARAM,
+											&tls_async_handshake_connect_timeout },
 	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
 	{ "trace_filter_route",			STR_PARAM, &trace_filter_route        },
 	{ "cert_check_on_conn_reusage",	INT_PARAM, &cert_check_on_conn_reusage},
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tls_mgm"  , DEP_ABORT  },
 		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
@@ -193,7 +248,7 @@ static dep_export_t deps = {
 	},
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "tls_trace", 0, 0, 0, {
 		{tls_trace_mi, {0}},
 		{tls_trace_mi_1, {"trace_mode", 0}},
@@ -221,7 +276,7 @@ struct module_exports exports = {
 	0,          /* module pre-initialization function */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
-	mod_destroy,/* destroy function */
+	0,          /* destroy function */
 	0,          /* per-child init function */
 	0           /* reload confirm function */
 };
@@ -264,28 +319,18 @@ static int mod_init(void)
 
 	*trace_is_on = trace_is_on_tmp;
 	if ( trace_filter_route ) {
-		trace_filter_route_id =
-			get_script_route_ID_by_name( trace_filter_route,
-				sroutes->request, RT_NO);
+		trace_filter_route_ref =
+			ref_script_route_by_name( trace_filter_route,
+				sroutes->request, RT_NO, REQUEST_ROUTE, 0);
 	}
 
 	return 0;
 }
 
-
-/*
- * called from main.c when opensips exits (main process)
- */
-static void mod_destroy(void)
+static int tls_conn_extra_match(struct tcp_connection *c, void *id)
 {
-	/* library destroy */
-	ERR_free_strings();
-	/*SSL_free_comp_methods(); - this function is not on std. openssl*/
-	EVP_cleanup();
-	CRYPTO_cleanup_all_ex_data();
-	return;
+	return tls_mgm_api.tls_conn_extra_match(c, id);
 }
-
 
 static int proto_tls_init(struct proto_info *pi)
 {
@@ -298,14 +343,24 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
-	pi->net.read			= (proto_net_read_f)tls_read_req;
-	pi->net.conn_init		= proto_tls_conn_init;
-	pi->net.conn_clean		= proto_tls_conn_clean;
+	pi->net.stream.read		= tls_read_req;
+	pi->net.stream.write		= tls_async_write;
+	pi->net.stream.conn.init	= proto_tls_conn_init;
+	pi->net.stream.conn.clean	= proto_tls_conn_clean;
 	if (cert_check_on_conn_reusage)
-		pi->net.conn_match		= tls_conn_extra_match;
+		pi->net.stream.conn.match	= tls_conn_extra_match;
 	else
-		pi->net.conn_match		= NULL;
+		pi->net.stream.conn.match	= NULL;
 	pi->net.report			= tls_report;
+
+	if (tls_async && !tcp_has_async_write()) {
+		LM_WARN("TCP network layer does not have support for ASYNC write, "
+			"disabling it for TLS\n");
+		tls_async = 0;
+	}
+
+	if (tls_async!=0)
+		pi->net.stream.async_chunks= tls_async_max_postponed_chunks;
 
 	return 0;
 }
@@ -336,6 +391,7 @@ error:
 static int proto_tls_conn_init(struct tcp_connection* c)
 {
 	struct tls_data* data;
+	struct tls_domain *dom;
 
 	if ( t_dst && tprot.create_trace_message ) {
 		/* this message shall be used in first send function */
@@ -351,7 +407,7 @@ static int proto_tls_conn_init(struct tcp_connection* c)
 			data->dest  = t_dst;
 			data->net_trace_proto_id = net_trace_proto_id;
 			data->trace_is_on = trace_is_on;
-			data->trace_route_id = trace_filter_route_id;
+			data->trace_route_ref = trace_filter_route_ref;
 		}
 
 		c->proto_data = data;
@@ -360,18 +416,38 @@ static int proto_tls_conn_init(struct tcp_connection* c)
 	}
 
 out:
-	return tls_conn_init(c, &tls_mgm_api);
+	if ( c->flags&F_CONN_ACCEPTED ) {
+		LM_DBG("looking up TLS server "
+			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
+		dom = tls_mgm_api.find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
+	} else {
+		dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+	}
+	if (!dom) {
+		LM_ERR("no TLS %s domain found\n",
+				(c->flags&F_CONN_ACCEPTED?"server":"client"));
+		return -1;
+	}
+
+	return tls_mgm_api.tls_conn_init(c, dom);
 }
 
 
 static void proto_tls_conn_clean(struct tcp_connection* c)
 {
+	struct tls_domain *dom;
+
 	if (c->proto_data) {
 		shm_free(c->proto_data);
 		c->proto_data = NULL;
 	}
 
-	tls_conn_clean(c, &tls_mgm_api);
+	tls_mgm_api.tls_conn_clean(c, &dom);
+
+	if (!dom)
+		LM_ERR("Failed to retrieve the tls_domain pointer in the SSL struct\n");
+	else
+		tls_mgm_api.release_domain(dom);
 }
 
 
@@ -397,69 +473,27 @@ static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 	return;
 }
 
-static struct tcp_connection* tls_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server, int *fd)
-{
-	int s;
-	union sockaddr_union my_name;
-	socklen_t my_name_len;
-	struct tcp_connection* con;
-
-	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
-	if (s==-1){
-		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
-		goto error;
-	}
-	if (tcp_init_sock_opt(s)<0){
-		LM_ERR("tcp_init_sock_opt failed\n");
-		goto error;
-	}
-	my_name_len = sockaddru_len(send_sock->su);
-	memcpy( &my_name, &send_sock->su, my_name_len);
-	su_setport( &my_name, 0);
-	if (bind(s, &my_name.s, my_name_len )!=0) {
-		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
-		goto error;
-	}
-
-	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
-		LM_ERR("tcp_blocking_connect failed\n");
-		goto error;
-	}
-	con=tcp_conn_create(s, server, send_sock, S_CONN_OK);
-	if (con==NULL){
-		LM_ERR("tcp_conn_create failed, closing the socket\n");
-		goto error;
-	}
-	*fd = s;
-	return con;
-	/*FIXME: set sock idx! */
-error:
-	/* close the opened socket */
-	if (s!=-1) close(s);
-	return 0;
-}
-
-
-static int proto_tls_send(struct socket_info* send_sock,
-				char* buf, unsigned int len, union sockaddr_union* to, int id)
+static int proto_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id)
 {
 	struct tcp_connection *c;
 	struct tls_domain *dom;
 	struct ip_addr ip;
 	int port;
 	int fd, n;
+	int rlen;
 
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
 		dom = (cert_check_on_conn_reusage==0)?
 			NULL : tls_mgm_api.find_client_domain( &ip, port);
-		n = tcp_conn_get(id, &ip, port, PROTO_TLS, dom, &c, &fd);
+		n = tcp_conn_get(id, &ip, port, PROTO_TLS, dom, &c, &fd, send_sock);
 		if (dom)
 			tls_mgm_api.release_domain(dom);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd);
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
 		return -1;
@@ -473,19 +507,78 @@ static int proto_tls_send(struct socket_info* send_sock,
 
 	/* was connection found ?? */
 	if (c==0) {
-		if (tcp_no_new_conn) {
+		struct tcp_conn_profile prof;
+		int matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
+
+		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
 			return -1;
-		}
+
 		if (!to) {
 			LM_ERR("Unknown destination - cannot open new ws connection\n");
 			return -1;
 		}
-		LM_DBG("no open tcp connection found, opening new one\n");
-		/* create tcp connection */
-		if ((c=tls_sync_connect(send_sock, to, &fd))==0) {
-			LM_ERR("connect failed\n");
-			return -1;
+		LM_DBG("no open tcp connection found, opening new one, async = %d\n",
+			tls_async);
+		if (tls_async) {
+			n = tcp_async_connect(send_sock, to, &prof,
+					tls_async_local_connect_timeout, &c, &fd, 1);
+			if (n<0) {
+				LM_ERR("async TCP connect failed\n");
+				return -1;
+			}
+			/* connect succeeded, we have a connection */
+			LM_DBG("Successfully connected from interface %s:%d to %s:%d!\n",
+				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
+				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
+
+			rlen = len;
+			if (n==0) {
+				/* attach the write buffer to it */
+				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+					LM_ERR("Failed to add the initial write chunk\n");
+					rlen = -1; /* report an error - let the caller decide what to do */
+				}
+
+				LM_DBG("Successfully started async connection \n");
+				goto con_release;
+			}
+			LM_DBG("First TCP connect attempt succeeded in less than %dms, "
+				"proceed to TLS connect \n",tls_async_local_connect_timeout);
+			/* succesful TCP conection done - starting async SSL connect */
+			lock_get(&c->write_lock);
+			/* we connect under lock to make sure no one else is reading our
+			 * connect status */
+			tls_mgm_api.tls_update_fd(c, fd);
+			n = tls_mgm_api.tls_async_connect(c, fd,
+				tls_async_handshake_connect_timeout, t_dst);
+			lock_release(&c->write_lock);
+			if (n<0) {
+				LM_ERR("failed async TLS connect\n");
+				rlen = -1;
+				goto con_release;
+			}
+			if (n==0) {
+				/* attach the write buffer to it */
+				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+					LM_ERR("Failed to add the initial write chunk\n");
+					rlen = -1; /* report an error - let the caller decide what to do */
+				}
+
+				LM_DBG("Successfully started async SSL connection \n");
+				goto con_release;
+			}
+
+			LM_DBG("First TLS handshake attempt succeeded in less than %dms, "
+				"proceed to writing \n",tls_async_handshake_connect_timeout);
+		} else {
+			/* it is safe to send the fd to the main, because it doesn't
+			 * matter which process completes the handshake */
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
+				LM_ERR("connect failed\n");
+				return -1;
+			}
 		}
+
 		goto send_it;
 	}
 
@@ -501,15 +594,12 @@ static int proto_tls_send(struct socket_info* send_sock,
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
-	lock_get(&c->write_lock);
-	n = tls_blocking_write(c, fd, buf, len,
-			tls_handshake_tout, tls_send_tout, t_dst);
-	lock_release(&c->write_lock);
-	tcp_conn_set_lifetime( c, tcp_con_lifetime);
+	rlen = tls_write_on_socket(c, fd, buf, len);
+	tcp_conn_reset_lifetime(c);
 
-	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("after write: c=%p n=%d fd=%d\n",c, rlen, fd);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);
-	if (n<0){
+	if (rlen<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
 		if (c->proc_id != process_no)
@@ -525,16 +615,20 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, 0);
-	return n;
+	return rlen;
+con_release:
+	sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);
+	tcp_conn_release(c, (rlen < 0)?0:1);
+	return rlen;
 }
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 {
-	int ret;
+	int ret, rc = 0;
 	int bytes;
 	int total_bytes;
 	struct tcp_req* req;
@@ -554,7 +648,14 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	}
 
 	/* do this trick in order to trace whether if it's an error or not */
-	ret=tls_fix_read_conn(con, t_dst);
+	ret=tls_mgm_api.tls_fix_read_conn(con, con->fd, tls_handshake_tout, t_dst, 1);
+	if (ret < 0) {
+		LM_ERR("failed to do pre-tls handshake!\n");
+		return -1;
+	} else if (ret == 0) {
+		LM_DBG("SSL accept/connect still pending!\n");
+		return 0;
+	}
 
 	/* if there is pending tracing data on an accepted connection, flush it
 	 * As this is a read op, we look only for accepted conns, not to conflict
@@ -574,7 +675,7 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 		con->proto_flags &= ~( F_TLS_TRACE_READY );
 	}
 
-	if ( ret != 0 ) {
+	if ( ret != 1 ) {
 		LM_ERR("failed to do pre-tls reading\n");
 		goto error;
 	}
@@ -589,7 +690,7 @@ again:
 		if (req->parsed<req->pos){
 			bytes=0;
 		}else{
-			bytes=tls_read(con,req);
+			bytes=tls_mgm_api.tls_read(con,req);
 			if (bytes<0) {
 				LM_ERR("failed to read \n");
 				goto error;
@@ -628,7 +729,10 @@ again:
 		goto error;
 	}
 
-	switch (tcp_handle_req(req, con, tls_max_msg_chunks) ) {
+	int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
+			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : tls_max_msg_chunks;
+
+	switch ((rc = tcp_handle_req(req, con, max_chunks, 0))) {
 		case 1:
 			goto again;
 		case -1:
@@ -638,11 +742,48 @@ again:
 	LM_DBG("tls_read_req end\n");
 done:
 	if (bytes_read) *bytes_read=total_bytes;
-	/* connection will be released */
-	return 0;
+
+	return rc == 2   ?  1  /* connection is already released! */
+	       /* 0,1? */:  0; /* connection will be released */
 error:
 	/* connection will be released as ERROR */
 	return -1;
+}
+
+static int tls_async_write(struct tcp_connection* con, int fd)
+{
+	int n;
+	int err;
+	struct tcp_async_chunk *chunk;
+
+	err = tls_mgm_api.tls_fix_read_conn(con, fd, tls_handshake_tout, t_dst, 0);
+	if (err < 0) {
+		LM_ERR("failed to do pre-tls handshake!\n");
+		return -1;
+	} else if (err == 0) {
+		LM_DBG("SSL accept/connect still pending!\n");
+		return 1;
+	}
+	tls_mgm_api.tls_update_fd(con, fd);
+
+	while ((chunk = tcp_async_get_chunk(con)) != NULL) {
+		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
+				chunk->len, chunk, con, chunk->ticks, get_ticks());
+
+		n = tls_mgm_api.tls_write(con, fd, chunk->buf, chunk->len, NULL);
+		if (n == 0) {
+			LM_DBG("Can't finish to write chunk %p on conn %p\n",
+					chunk,con);
+			/* report back we have more writting to be done */
+			return 1;
+		} else if (n < 0) {
+			/* report the conn as broken */
+			return -1;
+		}
+
+		tcp_async_update_write(con, n);
+	}
+	return 0;
 }
 
 static mi_response_t *tls_trace_mi(const mi_params_t *params,

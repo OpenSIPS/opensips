@@ -37,8 +37,9 @@ int geoip2_open_db(void)
 	if ((rc = MMDB_open(MMG_city_db_path.s, MMDB_MODE_MMAP, &mmdb)) != MMDB_SUCCESS) {
 		if (rc == MMDB_IO_ERROR)
 			LM_ERR("IO error: %s\n", strerror(errno));
-		LM_ERR("Unable to open City DB at path '%.*s'\n",
-				(int)strlen(MMG_city_db_path.s),MMG_city_db_path.s);
+		LM_ERR("Unable to open City DB at path '%.*s' (%s)\n",
+				(int)strlen(MMG_city_db_path.s),MMG_city_db_path.s,
+				MMDB_strerror(rc));
 
 		return -1;
 	}
@@ -106,7 +107,7 @@ char *check_short_fields(char *field)
 	return NULL;
 }
 
-int geoip2_get_field(lookup_res_t ip_data, char *field, char *buf)
+int geoip2_get_field(lookup_res_t ip_data, char *field, char buf[256])
 {
 	char *path_arr[MAX_PATH_DEPTH+1];
 	int i = 0;
@@ -178,7 +179,7 @@ int geoip2_get_field(lookup_res_t ip_data, char *field, char *buf)
 		len = sprintf(buf, "%d", entry_data.int32);
 		break;
 	case MMDB_DATA_TYPE_UINT64:
-		len = sprintf(buf, "%lu", entry_data.uint64);
+		len = sprintf(buf, "%llu", (unsigned long long)entry_data.uint64);
 		break;
 	case MMDB_DATA_TYPE_BOOLEAN:
 		if (entry_data.boolean)

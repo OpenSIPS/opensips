@@ -118,12 +118,12 @@ static inline str_list *new_str(char *s, int len, str_list **last, int *total)
 
 
 static inline char *get_hfblock( str *uri, struct hdr_field *hf, int *l,
-											struct socket_info** send_sock)
+											const struct socket_info** send_sock)
 {
 	str_list sl, *last, *new, *i, *foo;
 	int hf_avail, frag_len, total_len;
 	char *begin, *needle, *dst, *ret, *d;
-	str *sock_name, *portname;
+	const str *sock_name, *portname;
 	union sockaddr_union to_su;
 
 	ret=0; /* pessimist: assume failure */
@@ -374,15 +374,13 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	static dlg_t dlg;
 	struct sip_uri pruri;
 	struct sip_uri pnexthop;
-	struct socket_info* sock;
+	const struct socket_info* sock;
 	str method;
 	str ruri;
 	str hdrs;
 	str s;
 	str callid = {0,0};
 	int sip_error;
-	int proto = PROTO_NONE;
-	int port = 0;
 	int cseq = 0;
 	int n;
 	mi_response_t *resp;
@@ -400,11 +398,7 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 		return init_mi_error( 400, MI_SSTR("Invalid next_hop"));
 
 	if (socket && socket->len) {
-		if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
-		&port,&proto)!=0)
-			return init_mi_error( 404, MI_SSTR("Invalid local socket"));
-		set_sip_defaults( port, proto);
-		sock = grep_internal_sock_info( &s, (unsigned short)port, proto);
+		sock = parse_sock_info(socket);
 		if (sock==0)
 			return init_mi_error( 404, MI_SSTR("Local socket not found"));
 	} else {

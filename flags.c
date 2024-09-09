@@ -119,13 +119,15 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask)
 	return ret;
 }
 
-int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
+int flag_list_to_bitmask(const str_const *flags, enum flag_type type, char delim,
+	int init_new_flags)
 {
-	char *p, *lim;
-	char *crt_flag;
-	str name;
+	const char *p, *lim;
+	const char *crt_flag;
+	str_const name;
 	struct flag_entry *e;
 	int ret = 0;
+	int id;
 
 	if (flags->len < 0)
 		return 0;
@@ -148,6 +150,12 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 					ret |= 1 << e->bit;
 					break;
 				}
+			}
+
+			if (init_new_flags && !e) {
+				id = get_flag_id_by_name(type, (char*)name.s, name.len);
+				if (id >= 0)
+					ret |= 1 << id;
 			}
 
 			crt_flag = p + 1;
@@ -217,7 +225,7 @@ int get_flag_id_by_name(int flag_type, char *flag_name, int flag_name_len)
 	return it->bit;
 }
 
-unsigned int fixup_flag(int flag_type, str *flag_name)
+unsigned int fixup_flag(int flag_type, const str *flag_name)
 {
 	int ret;
 

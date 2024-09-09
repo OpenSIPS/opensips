@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('registrant','2');
+INSERT INTO version (table_name, table_version) values ('registrant','3');
 CREATE TABLE registrant (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     registrar CHAR(255) DEFAULT '' NOT NULL,
@@ -12,6 +12,7 @@ CREATE TABLE registrant (
     expiry INTEGER DEFAULT NULL,
     forced_socket CHAR(64) DEFAULT NULL,
     cluster_shtag CHAR(64) DEFAULT NULL,
-    CONSTRAINT registrant_aor_idx  UNIQUE (aor)
+    state INTEGER DEFAULT 0 NOT NULL,
+    CONSTRAINT registrant_registrant_idx  UNIQUE (aor, binding_URI, registrar)
 );
 

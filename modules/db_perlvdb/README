@@ -273,18 +273,18 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 26 19 257 202
-   2. Bastian Friedrich 18 2 1820 18
-   3. Liviu Chircu (@liviuchircu) 13 11 25 55
-   4. Razvan Crainea (@razvancrainea) 10 8 26 13
+   2. Bastian Friedrich 19 2 1820 18
+   3. Liviu Chircu (@liviuchircu) 14 12 25 57
+   4. Razvan Crainea (@razvancrainea) 11 9 27 14
    5. Daniel-Constantin Mierla (@miconda) 9 7 27 25
-   6. Henning Westerholt (@henningw) 4 2 14 13
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 10 10
-   8. Ancuta Onofrei 3 1 13 20
-   9. Konstantin Bokarius 3 1 3 5
-   10. Julián Moreno Patiño 3 1 1 1
+   6. Maksym Sobolyev (@sobomax) 5 3 5 21
+   7. Henning Westerholt (@henningw) 4 2 14 13
+   8. Vlad Patrascu (@rvlad-patrascu) 4 2 10 10
+   9. Ancuta Onofrei 3 1 13 20
+   10. Konstantin Bokarius 3 1 3 5
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert.
+   All remaining contributors: Julián Moreno Patiño, Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -306,18 +306,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
-   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Daniel-Constantin Mierla (@miconda) Oct 2007 - Mar 2008
-   8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   9.  Edson Gellert Schubert              Feb 2008 - Feb 2008
-   10. Henning Westerholt (@henningw)      Jan 2008 - Jan 2008
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2023
+   3.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Daniel-Constantin Mierla (@miconda) Oct 2007 - Mar 2008
+   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
 
-   All remaining contributors: Ancuta Onofrei, Bastian Friedrich.
+   All remaining contributors: Henning Westerholt (@henningw),
+   Ancuta Onofrei, Bastian Friedrich.
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -1,0 +1,21 @@
+<!-- Module FAQ -->
+
+<chapter>
+	<title>&faqguide;</title>
+	<qandaset defaultlabel="number">
+	<qandaentry>
+		<question>
+		<para>My OpenSIPS is occasionally crashing in libhiredis, what to do?</para>
+		</question>
+		<answer>
+		<para>
+		Make sure you've upgraded the Redis "libhiredis" client library to at
+		least version 0.14.1.  There was at least one significant vulnerability
+		reported in library versions prior to that one (<ulink url="https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2020-7105">CVE-2020-7105</ulink>),
+		so upgrading to latest stable may very well fix the crash!
+		</para>
+		</answer>
+	</qandaentry>
+
+	</qandaset>
+</chapter>

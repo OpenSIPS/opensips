@@ -25,6 +25,7 @@
 #include "../../pt.h"
 #include "../../lib/list.h"
 #include "../../mem/mem_funcs.h"
+#include "../../mem/shm_mem.h"
 #include "../../lib/osips_malloc.h"
 
 #include "test_malloc.h"
@@ -41,12 +42,19 @@ static osips_free_t    FREE;
 #define MY_MAX_USED ((long)((double)HPT_SHM / TEST_MALLOC_PROCS * HPT_MAX_PROC_USAGE))
 #define check_limit() (hpt_my_used < MY_MAX_USED)
 
+/* ensure all allocations are aligned to this multiple (match this to ROUNDTO) */
+#define MEM_ALIGN           8UL
+
 #define HPT_MAX_ALLOC_SZ    65536
 #define HPT_FAC             65536
-#define HPT_OPS             4000000
+#define HPT_OPS             100000
+
+static unsigned int pkg_frag_overhead;
+int shm_frag_overhead __attribute__((weak));
 
 static long hpt_my_used = 0;
 static long mallocs, reallocs, frees;
+static long aligned_mallocs, aligned_reallocs;
 static long should_grow = 1;
 
 OSIPS_LIST_HEAD(hpt_frags);
@@ -60,7 +68,7 @@ struct hpt_frag {
 	struct list_head list;
 };
 
-static void _hpt_malloc(void)
+static void _hpt_malloc(unsigned int frag_overhead)
 {
 	struct hpt_frag *ret;
 	ssize_t size;
@@ -80,23 +88,26 @@ static void _hpt_malloc(void)
 	}
 	memset(ret, -1, sizeof *ret + size);
 
+	if ((unsigned long)ret % MEM_ALIGN == 0)
+		aligned_mallocs++;
+
 	ret->chunk = (void *)(ret + 1);
 	ret->size = size;
 
 	list_add(&ret->list, &hpt_frags);
 
-	hpt_my_used += size + sizeof *ret + HP_FRAG_OVERHEAD;
+	hpt_my_used += size + sizeof *ret + frag_overhead;
 	mallocs++;
 	fragments++;
 }
 
-static void _hpt_realloc(void)
+static void _hpt_realloc(unsigned int frag_overhead)
 {
 	struct hpt_frag *f, *ret;
 	ssize_t size;
 
 	if (list_empty(&hpt_frags))
-		return _hpt_malloc();
+		return _hpt_malloc(frag_overhead);
 
 	f = list_entry(hpt_frags.prev, struct hpt_frag, list);
 	list_del(&f->list);
@@ -122,6 +133,9 @@ static void _hpt_realloc(void)
 	}
 	memset(ret, -1, sizeof *ret + size);
 
+	if ((unsigned long)ret % MEM_ALIGN == 0)
+		aligned_reallocs++;
+
 	ret->chunk = (void *)(ret + 1);
 	ret->size = size;
 	hpt_my_used += size;
@@ -137,9 +151,10 @@ out:
 	fragments--;
 }
 
-#define hpt_malloc() (rand() & 1 ? _hpt_malloc() : _hpt_realloc())
+#define hpt_malloc(frag_overhead) (rand() & 1 ? \
+	_hpt_malloc(frag_overhead) : _hpt_realloc(frag_overhead))
 
-static void hpt_free(void)
+static void hpt_free(unsigned int frag_overhead)
 {
 	struct hpt_frag *f;
 
@@ -150,7 +165,7 @@ static void hpt_free(void)
 
 	f = list_entry(hpt_frags.prev, struct hpt_frag, list);
 
-	hpt_my_used -= (f->size + sizeof *f + HP_FRAG_OVERHEAD);
+	hpt_my_used -= (f->size + sizeof *f + frag_overhead);
 
 	list_del(&f->list);
 
@@ -159,16 +174,26 @@ static void hpt_free(void)
 	fragments--;
 }
 
-static void _test_malloc(int procs)
+static void _test_malloc(int procs, unsigned int frag_overhead)
 {
 	int i;
-	int my_pid = 0;
+	int my_pid = 0, child_pid;
 
 	update_stat(workers, +1);
 
 	for (i = 1; i < procs; i++) {
 		update_stat(workers, +1);
-		if (internal_fork("malloc test", OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD, TYPE_NONE) == 0) {
+		const struct internal_fork_params ifp_th = {
+			.proc_desc = "malloc test",
+			.flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
+			.type = TYPE_NONE,
+		};
+
+		child_pid = internal_fork(&ifp_th);
+		if (child_pid < 0)
+			exit(-1);
+
+		if (child_pid == 0) {
 			my_pid = i;
 			printf("forked extra test worker #%d!\n", i);
 			break;
@@ -181,23 +206,23 @@ static void _test_malloc(int procs)
 		if (i % 100000 == 0)
 			LM_INFO("ops left: %d, F: %ld, M: %ld, R: %ld, F: %ld, usage: %ld/%ld, frags: %lu\n",
 			        i, fragments, mallocs, reallocs, frees,
-			        hpt_my_used, MY_MAX_USED, shm_frags ? get_stat_val(shm_frags) : -1);
+			        hpt_my_used, MY_MAX_USED, get_stat_val(get_stat(_str("fragments"))));
 
 		if (should_grow) {
 			if (rand() % 10 >= 1)
-				hpt_malloc();
+				hpt_malloc(frag_overhead);
 			else
-				hpt_free();
+				hpt_free(frag_overhead);
 		} else {
 			if (rand() % 10 < 1)
-				hpt_malloc();
+				hpt_malloc(frag_overhead);
 			else
-				hpt_free();
+				hpt_free(frag_overhead);
 		}
 	}
 
 	for (i = 0; !list_empty(&hpt_frags); i++)
-		hpt_free();
+		hpt_free(frag_overhead);
 
 	LM_INFO("Worker %d ended, freed up remaining %d chunks.\n", my_pid, i);
 	update_stat(workers, -1);
@@ -221,12 +246,26 @@ static inline void test_pkg_malloc(void)
 	LM_INFO("Starting PKG stress test...\n");
 	LM_INFO("================================\n");
 
-	_test_malloc(1);
+	_test_malloc(1, pkg_frag_overhead);
+
+	LM_INFO("PKG test complete.  Final stats:\n");
+	LM_INFO("================================\n");
+
+	LM_INFO("mallocs %ld : %ld aligned-mallocs\n", mallocs, aligned_mallocs);
+	LM_INFO("reallocs %ld : %ld aligned-reallocs\n", reallocs, aligned_reallocs);
+	LM_INFO("frees %ld\n", frees);
+
+	ok(mallocs == aligned_mallocs,   "check pkg_malloc() alignment");
+	ok(reallocs == aligned_reallocs,   "check pkg_realloc() alignment");
+
+	mallocs = aligned_mallocs = 0;
+	reallocs = aligned_reallocs = 0;
+	frees = 0;
 }
 
 static inline void test_shm_malloc(void)
 {
-	unsigned long used, rused, new_used, new_rused;
+	unsigned long used, rused, frags, new_used, new_rused, new_frags;
 
 	MALLOC  = osips_shm_malloc;
 	REALLOC = osips_shm_realloc;
@@ -234,6 +273,7 @@ static inline void test_shm_malloc(void)
 
 	used = get_stat_val(get_stat(_str("used_size")));
 	rused = get_stat_val(get_stat(_str("real_used_size")));
+	frags = get_stat_val(get_stat(_str("fragments")));
 
 	LM_INFO("Starting SHM stress test...\n");
 	LM_INFO("================================\n");
@@ -243,21 +283,29 @@ static inline void test_shm_malloc(void)
 	LM_INFO("fragments: %ld\n", get_stat_val(get_stat(_str("fragments"))));
 	LM_INFO("================================\n");
 
-	_test_malloc(TEST_MALLOC_PROCS);
+	_test_malloc(TEST_MALLOC_PROCS, shm_frag_overhead);
 
 	new_used = get_stat_val(get_stat(_str("used_size")));
 	new_rused = get_stat_val(get_stat(_str("real_used_size")));
+	new_frags = get_stat_val(get_stat(_str("fragments")));
 
 	LM_INFO("SHM test complete.  Final stats:\n");
 	LM_INFO("================================\n");
-	LM_INFO("used: %ld\n", new_used);
-	LM_INFO("real_used: %ld\n", new_rused);
+	LM_INFO("used: %ld -> %ld\n", used, new_used);
+	LM_INFO("real_used: %ld -> %ld\n", rused, new_rused);
 	LM_INFO("max_real_used: %ld\n", get_stat_val(get_stat(_str("max_used_size"))));
-	LM_INFO("fragments: %ld\n", get_stat_val(get_stat(_str("fragments"))));
+	LM_INFO("fragments: %ld -> %ld\n", frags, new_frags);
+	LM_INFO("mallocs %ld : %ld aligned-mallocs\n", mallocs, aligned_mallocs);
+	LM_INFO("reallocs %ld : %ld aligned-reallocs\n", reallocs, aligned_reallocs);
+	LM_INFO("frees %ld\n", frees);
 	LM_INFO("================================\n");
 
 	ok(new_used == used,   "check stats: shm_used");
-	ok(new_rused == rused, "check stats: shm_rused");
+	/* we don't yet have a way of testing the correctness of real_used
+		ok(new_rused == rused, "check stats: shm_rused"); */
+
+	ok(mallocs == aligned_mallocs,   "check shm_malloc() alignment");
+	ok(reallocs == aligned_reallocs,   "check shm_realloc() alignment");
 }
 
 void test_malloc(void)
@@ -275,6 +323,59 @@ void init_malloc_tests(void)
 
 	if (register_stat("test_malloc", "test-workers", &workers, 0) != 0) {
 		LM_ERR("failed to register stat\n");
+		return;
+	}
+
+	switch (mem_allocator_pkg) {
+#ifdef F_MALLOC
+	case MM_F_MALLOC:
+	case MM_F_MALLOC_DBG:
+		pkg_frag_overhead = FM_FRAG_OVERHEAD;
+		break;
+#endif
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
+	case MM_Q_MALLOC_DBG:
+		pkg_frag_overhead = QM_FRAG_OVERHEAD;
+		break;
+#endif
+#ifdef HP_MALLOC
+	case MM_HP_MALLOC:
+	case MM_HP_MALLOC_DBG:
+		pkg_frag_overhead = HP_FRAG_OVERHEAD;
+		break;
+#endif
+	case MM_NONE:
+		LM_ERR("no memory allocator set\n");
+		return;
+	default:
+		LM_ERR("Unknown memory allocator\n");
+		return;
+	}
+	switch (mem_allocator_shm) {
+#ifdef F_MALLOC
+	case MM_F_MALLOC:
+	case MM_F_MALLOC_DBG:
+		shm_frag_overhead = FM_FRAG_OVERHEAD;
+		break;
+#endif
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
+	case MM_Q_MALLOC_DBG:
+		shm_frag_overhead = QM_FRAG_OVERHEAD;
+		break;
+#endif
+#ifdef HP_MALLOC
+	case MM_HP_MALLOC:
+	case MM_HP_MALLOC_DBG:
+		shm_frag_overhead = HP_FRAG_OVERHEAD;
+		break;
+#endif
+	case MM_NONE:
+		LM_ERR("no memory allocator set\n");
+		return;
+	default:
+		LM_ERR("Unknown memory allocator\n");
 		return;
 	}
 }

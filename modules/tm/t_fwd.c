@@ -68,26 +68,32 @@
 #define NO_BODY_CLONE_MARKER ((struct sip_msg_body*)-1)
 
 /* route to execute for the branches */
-static int goto_on_branch;
+static struct script_route_ref *goto_on_branch;
 int _tm_branch_index = 0;
 
-void t_on_branch( unsigned int go_to )
+void t_on_branch( struct script_route_ref *ref )
 {
 	struct cell *t = get_t();
+	struct script_route_ref **holder;
 
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
 	 * in MODE_REQUEST T will be set only if the transaction was already
 	 * created; if not -> use the static variable */
-	if (route_type==BRANCH_ROUTE || !t || t==T_UNDEFINED )
-		goto_on_branch=go_to;
-	else
-		t->on_branch = go_to;
+	holder = (!t || t==T_UNDEFINED ) ? &goto_on_branch : &t->on_branch ;
+
+	/* if something already set, free it first */
+	if (*holder)
+		shm_free( *holder );
+
+	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
 }
 
 
-unsigned int get_on_branch(void)
+struct script_route_ref *get_on_branch(void)
 {
-	return goto_on_branch;
+	struct script_route_ref *ref = goto_on_branch;
+	goto_on_branch = NULL;
+	return ref;
 }
 
 
@@ -154,7 +160,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 
 	/* run branch route, if any; run it before RURI's DNS lookup
 	 * to allow to be changed --bogdan */
-	if (t->on_branch) {
+	if ( ref_script_route_check_and_update(t->on_branch)) {
 		/* need to pkg_malloc the dst_uri */
 		if ( request->dst_uri.s && request->dst_uri.len>0 ) {
 			if ( (p=pkg_malloc(request->dst_uri.len))==0 ) {
@@ -185,7 +191,8 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 		swap_route_type( backup_route_type, BRANCH_ROUTE);
 
 		_tm_branch_index = branch;
-		if(run_top_route(sroutes->branch[t->on_branch],request)&ACT_FL_DROP){
+		if (run_top_route( sroutes->branch[t->on_branch->idx],request)
+		&ACT_FL_DROP) {
 			LM_DBG("dropping branch <%.*s>\n", request->new_uri.len,
 					request->new_uri.s);
 			_tm_branch_index = 0;
@@ -228,7 +235,7 @@ error:
 
 /* be aware and use it *all* the time between pre_* and post_* functions! */
 static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
-		struct socket_info *send_sock, enum sip_protos proto )
+		const struct socket_info *send_sock, enum sip_protos proto )
 {
 	char *buf;
 	str *cid = NULL;
@@ -318,7 +325,7 @@ int add_blind_uac(void)  /*struct cell *t*/
 static inline int update_uac_dst( struct sip_msg *request,
 													struct ua_client *uac )
 {
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 	char *shbuf;
 	unsigned int len;
 
@@ -690,7 +697,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	struct cell *t_invite;
 	int success_branch;
 	str dst_uri;
-	struct socket_info *bk_sock;
+	const struct socket_info *bk_sock;
 	unsigned int br_flags, bk_bflags;
 	int idx;
 	str path;
@@ -831,14 +838,17 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 					LM_DBG("blocked by blacklists\n");
 					ser_error=E_IP_BLOCKED;
 				} else {
+					set_bavp_list(&t->uac[i].user_avps);
 					set_extra_tmcb_params( &t->uac[i].request.buffer,
 							&t->uac[i].request.dst);
 					run_trans_callbacks(TMCB_PRE_SEND_BUFFER, t, p_msg, 0, i);
 
 					if (SEND_BUFFER( &t->uac[i].request)==0) {
+						reset_bavp_list();
 						ser_error = 0;
 						break;
 					}
+					reset_bavp_list();
 
 					LM_ERR("sending request failed\n");
 					ser_error=E_SEND;
@@ -1015,12 +1025,32 @@ static int dst_to_msg(struct sip_msg *s_msg, struct sip_msg *d_msg)
 }
 
 
+int t_wait_no_more_branches( struct cell *t, int extra)
+{
+	int b;
+
+	/* look back (in the set of active branches for a PHONY branch
+	 * that might control the EBR waiting. If found, update it
+	 * (the br_flags field), so that this is the last allowed injected
+	 * branch (the max number of allowed branches is set to the current
+	 * number of branches) */
+	for ( b=t->nr_of_outgoings-1; b>=t->first_branch ; b-- ) {
+		if (t->uac[b].flags & T_UAC_IS_PHONY) {
+			t->uac[b].br_flags=t->nr_of_outgoings+extra;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+
 int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 {
 	static struct sip_msg faked_req;
 	branch_bm_t cancel_bm = 0;
 	str reason = str_init(CANCEL_REASON_200);
-	int b, rc;
+	int rc;
 
 	/* does the transaction state still accept new branches ? */
 	if (t->uas.status >= 200) {
@@ -1068,17 +1098,8 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 		which_cancel( t, &cancel_bm );
 	}
 
-	/* look back (in the set of active branches for a PHONY branch
-	 * that might contoll the EBR waiting. If found, update it
-	 * (the br_flags field), so that this is the lasr allowed injected
-	 * branch (the max number of allowed branches is set to the current
-	 * number of branches) */
-	if (flags&TM_INJECT_FLAG_LAST) {
-		for ( b=t->nr_of_outgoings-1; b>=t->first_branch ; b-- ) {
-			if (t->uac[b].flags & T_UAC_IS_PHONY)
-				t->uac[b].br_flags=t->nr_of_outgoings+1;
-		}
-	}
+	if (flags&TM_INJECT_FLAG_LAST)
+		t_wait_no_more_branches(t, 1/*the branch we will create*/);
 
 	/* generated the new branches, without branch counter reset */
 	rc = t_forward_nonack( t, &faked_req , NULL, 0, 1/*locked*/ );

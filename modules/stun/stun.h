@@ -187,9 +187,34 @@ typedef struct stun_controll{
     struct sockaddr_in*	dst;
     int			sock_outbound;
 
+    struct stun_socket_set *socket_set;
+
     int			upd_tcp_tls;
 }StunCtl;
 
+struct stun_socket {
+    int sockfd;
+    int ip;
+    int port;
+
+    /* no sets containing this socket */
+    int no_sets;
+
+    struct stun_socket *next;
+};
+
+struct stun_socket_set {
+    /* ip1:port1 - sip listener; ip2/port2 - alternate ip/port */
+    struct stun_socket *sock2;  /* ip1 port2 */
+    struct stun_socket *sock3;  /* ip2 port1 */
+
+    const struct socket_info *si;
+
+    int ip1;
+    int port1;
+    int adv_ip1;
+    int adv_port1;
+};
 
 /* init */
 int bind_ip_port(int ip, int port, int* sockfd);

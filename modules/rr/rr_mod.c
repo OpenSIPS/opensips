@@ -93,7 +93,7 @@ static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param,
 /*! \brief
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"loose_route", (cmd_function)loose_route, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"record_route", (cmd_function)w_record_route, {
@@ -119,7 +119,7 @@ static cmd_export_t cmds[] = {
 /*! \brief
  * Exported parameters
  */
-static param_export_t params[] ={
+static const param_export_t params[] ={
 	{"append_fromtag",                 INT_PARAM, &append_fromtag                },
 	{"enable_double_rr",               INT_PARAM, &enable_double_rr              },
 #ifdef ENABLE_USER_CHECK
@@ -134,8 +134,8 @@ static param_export_t params[] ={
 /**
  * pseudo-variables exported by RR module
  */
-static pv_export_t mod_items[] = {
-	{ {"rr_params", sizeof("rr_params")-1}, 900, pv_get_rr_params, 0,
+static const pv_export_t mod_items[] = {
+	{ str_const_init("rr_params"), 900, pv_get_rr_params, 0,
 		0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

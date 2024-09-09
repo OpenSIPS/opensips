@@ -153,10 +153,10 @@ int reload_address_table(struct pm_part_struct *part_struct)
 
 	/* Choose new hash table and free its old contents */
 	if (*part_struct->hash_table == part_struct->hash_table_1) {
-		empty_hash(part_struct->hash_table_2);
+		pm_empty_hash(part_struct->hash_table_2);
 		new_hash_table = part_struct->hash_table_2;
 	} else {
-		empty_hash(part_struct->hash_table_1);
+		pm_empty_hash(part_struct->hash_table_1);
 		new_hash_table = part_struct->hash_table_1;
 	}
 
@@ -297,7 +297,7 @@ int reload_address_table(struct pm_part_struct *part_struct)
 
 		if ( (mask == 32 && ip_addr->af==AF_INET) ||
 		(mask == 128 && ip_addr->af==AF_INET6) ) {
-			if (hash_insert(new_hash_table, ip_addr, group, port, proto,
+			if (pm_hash_insert(new_hash_table, ip_addr, group, port, proto,
 				&str_pattern, &str_info) == -1) {
 					LM_ERR("hash table insert error\n");
 					goto error;
@@ -389,10 +389,10 @@ int init_address_part(struct pm_partition *partition)
 		return -1;
 	}
 
-	part_struct->hash_table_1 = hash_create();
+	part_struct->hash_table_1 = pm_hash_create();
 	if (!part_struct->hash_table_1) return -1;
 
-	part_struct->hash_table_2  = hash_create();
+	part_struct->hash_table_2  = pm_hash_create();
 	if (!part_struct->hash_table_2) goto error;
 
 	part_struct->hash_table = (struct address_list ***)shm_malloc
@@ -426,11 +426,11 @@ int init_address_part(struct pm_partition *partition)
 
 error:
 	if (part_struct->hash_table_1) {
-		hash_destroy(part_struct->hash_table_1);
+		pm_hash_destroy(part_struct->hash_table_1);
 		part_struct->hash_table_1 = 0;
 	}
 	if (part_struct->hash_table_2) {
-		hash_destroy(part_struct->hash_table_2);
+		pm_hash_destroy(part_struct->hash_table_2);
 		part_struct->hash_table_2 = 0;
 	}
 	if (part_struct->hash_table) {
@@ -486,8 +486,8 @@ int mi_init_address(void)
  */
 void clean_address(struct pm_part_struct *part_struct)
 {
-	if (part_struct->hash_table_1) hash_destroy(part_struct->hash_table_1);
-	if (part_struct->hash_table_2) hash_destroy(part_struct->hash_table_2);
+	if (part_struct->hash_table_1) pm_hash_destroy(part_struct->hash_table_1);
+	if (part_struct->hash_table_2) pm_hash_destroy(part_struct->hash_table_2);
 	if (part_struct->hash_table) shm_free(part_struct->hash_table);
 }
 
@@ -511,7 +511,7 @@ int check_addr(struct sip_msg* msg, int* grp, str* s_ip, int *port, long proto,
 		part->name.len, part->name.s, *grp,
 		s_ip->len, s_ip->s, (int)proto, *port, ZSW(pattern) );
 
-	hash_ret = hash_match(msg, *part->hash_table, *grp,
+	hash_ret = pm_hash_match(msg, *part->hash_table, *grp,
 			ip, *port, (int)proto, pattern, info);
 	if (hash_ret < 0) {
 		subnet_ret = match_subnet_table(msg, *part->subnet_table, *grp,
@@ -536,7 +536,7 @@ int check_src_addr(struct sip_msg *msg, int *grp,
 		part->name.len, part->name.s, *grp,
 		ip_addr2a(ip), msg->rcv.proto, msg->rcv.src_port, ZSW(pattern) );
 
-	hash_ret = hash_match(msg, *part->hash_table, *grp, ip,
+	hash_ret = pm_hash_match(msg, *part->hash_table, *grp, ip,
 		msg->rcv.src_port, msg->rcv.proto, pattern, info);
 	if (hash_ret < 0) {
 			subnet_ret = match_subnet_table(msg, *part->subnet_table,

@@ -1,5 +1,3 @@
-# $Id$
-#
 # print example module makefile
 #
 # 
@@ -8,7 +6,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=nathelper.so
-LIBS=
 
 include ../../Makefile.modules
 

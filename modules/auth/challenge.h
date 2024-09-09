@@ -25,23 +25,22 @@
 #define CHALLENGE_H
 
 #include "../../parser/msg_parser.h"
+#include "../../parser/digest/digest_parser.h"
 
-#define QOP_TYPE_AUTH      1
-#define QOP_TYPE_AUTH_INT  2
-#define QOP_TYPE_BOTH      3
-
-int fixup_qop(void** param);
+#include "../../lib/digest_auth/dauth_nonce.h"
 
 /*
  * Challenge a user agent using WWW-Authenticate header field
  */
-int www_challenge(struct sip_msg* _msg, str* _realm, void* _qop);
+int www_challenge(struct sip_msg* _msg, str* _realm, void* _qop,
+    intptr_t alg_flgs);
 
 
 /*
  * Challenge a user agent using Proxy-Authenticate header field
  */
-int proxy_challenge(struct sip_msg* _msg, str* _realm, void* _qop);
+int proxy_challenge(struct sip_msg* _msg, str* _realm, void* _qop,
+    intptr_t alg_flgs);
 
 
 /*
@@ -49,5 +48,11 @@ int proxy_challenge(struct sip_msg* _msg, str* _realm, void* _qop);
  */
 int consume_credentials(struct sip_msg* _m, char* _s1, char* _s2);
 
+/*
+ * Build {WWW,Proxy}-Authenticate header field
+ */
+char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
+	int _stale, const str_const *_realm, int* _len,
+    const str_const *alg_val, const str_const* _hf_name, const str_const *opaque);
 
 #endif /* AUTH_H */

@@ -171,6 +171,7 @@ modparam("b2b_logic", "cleanup_period", 60)
 		from the dialog of one side to the other side. There are a number
 		of headers that are passed by default. They are: 
 		<itemizedlist>
+			<listitem>Max-Forwards (it is decreased by 1)</listitem>
 			<listitem>Content-Type</listitem>
 			<listitem>Supported</listitem>
 			<listitem>Allow</listitem>
@@ -240,32 +241,6 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 	</programlisting>
 		</example>
 	</section>
-
-	<section id="param_use_init_sdp" xreflabel="use_init_sdp">
-		<title><varname>use_init_sdp</varname> (int)</title>
-		<para>
-		This parameter modifies the behaviour of the B2BUA when bridging
-		and a provisional media uri is set. For playing media while the callee
-		answers (that is connecting the caller to a media server), the bridging
-		with the callee must start by sending an Invite to it. The correct way
-		is to send an Invite without a body in this case, but it has been observed
-		that not many gateways support this. So, the solution is to use the sdp
-		received in the first Invite from the caller and put it as the body for this
-		invite. By setting this parameter, this behavior is enabled.
-		You can also set use_init_sdp per session and overwrite this global value.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>0</quote>.</emphasis>
-		</para>
-		<example>
-		<title>Set <varname></varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("b2b_logic", "use_init_sdp", 1)
-...
-	</programlisting>
-		</example>
-	</section>
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (str)</title>
 		<para>
@@ -280,6 +255,40 @@ modparam("b2b_logic", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips"
 	</programlisting>
 		</example>
 	</section>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
+			<title><varname>cachedb_url</varname> (str)</title>
+			<para>
+				URL of a NoSQL database to be used. Only Redis is supported
+				at the moment.
+			</para>
+			<example>
+			<title>Set <varname>cachedb_url</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("b2b_logic", "cachedb_url", "redis://localhost:6379/")
+...
+		</programlisting>
+			</example>
+		</section>
+		<section id="param_cachedb_key_prefix" xreflabel="cachedb_key_prefix">
+			<title><varname>cachedb_key_prefix</varname> (string)</title>
+			<para>
+			Prefix to use for every key set in the NoSQL database.
+			</para>
+			<para>
+			<emphasis>
+				Default value is <quote>b2bl$</quote>.
+			</emphasis>
+			</para>
+			<example>
+			<title>Set <varname>cachedb_key_prefix</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("b2b_logic", "cachedb_key_prefix", "b2b")
+...
+	</programlisting>
+			</example>
+		</section>
 	<section id="param_update_period" xreflabel="update_period">
 		<title><varname>update_period</varname> (int)</title>
 		<para>
@@ -311,6 +320,24 @@ modparam("b2b_logic", "update_period", 60)
 		<programlisting format="linespecific">
 ...
 modparam("b2b_logic", "max_duration", 7200)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_contact_user" xreflabel="contact_user">
+		<title><varname>contact_user</varname> (int)</title>
+		<para>
+			If set to 1, adds user from From: header to generated Contact:
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>contact_user</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "contact_user", 1)
 ...
 	</programlisting>
 		</example>
@@ -354,12 +381,21 @@ route{
 			socket where the initiating request was received.
 			This socket will be used to send all the requests, replies for that
 			session.
+			This parameter support Pseudo-Variables.
 		</para>
 		<example>
 		<title>Set <varname>server_address</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
+...
+	</programlisting>
+		</example>
+		<example>
+		<title>Set <varname>server_address</varname> parameter using Pseudo-Variables</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "server_address", "sip:$socket_in(advertised_ip):$socket_in(advertised_port)")
 ...
 	</programlisting>
 		</example>
@@ -442,6 +478,52 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 		</example>
 	</section>
 
+
+	<section id="param_b2bl_early_update" xreflabel="b2bl_early_update">
+		<title><varname>b2bl_early_update</varname> (int)</title>
+		<para>
+			Allow bridging of calls in early stage by issuing a "UPDATE" request
+		</para>
+		<para>
+		<itemizedlist>
+				<listitem>0 - Do not bridge dialogs in early stage</listitem>
+				<listitem>1 - Try to update an session in early stage by sending an UPDATE</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> Do not bridge dialogs in early stage</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2bl_early_update</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "b2bl_early_update", 1)
+...
+	</programlisting>
+		</example>
+	</section>	
+	<section id="param_old_entity_term_delay" xreflabel="old_entity_term_delay">
+		<title><varname>old_entity_term_delay</varname> (int)</title>
+		<para>
+			When the <emphasis>b2b_bridge_request</emphasis> is being used with the
+			<emphasis>late_bye</emphasis> flag, this parameter can delay the moment
+			when the BYE is being sent to the terminating entity. Thus, instead of
+			terminating it when the new entity is established, the BYE is delayed
+			with the value of this param, expressed in seconds.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> - send BYE on the spot</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>old_entity_term_delay</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2 seconds
+...
+	</programlisting>
+		</example>
+	</section>	
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -449,7 +531,7 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 	<section id="func_b2b_init_request" xreflabel="b2b_init_request()">
 		<title>
 		<function moreinfo="none">b2b_init_request(id, [flags], [req_route],
-			[reply_route], [init_sdp_body], [init_sdp_ctype])</function>
+			[reply_route])</function>
 		</title>
 		<para>
 			This function initializes a new B2B session based on an initial INVITE.
@@ -469,22 +551,19 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 				scripting or dedicated routes are required.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>flags (string, optional)</emphasis> - meanings of the flags is as follows:
+				<emphasis>flags (string, optional)</emphasis> - CSV list of the following flags:
 				<itemizedlist>
 					<listitem><para>
-					<emphasis>t[nn]</emphasis> - Call setup timeout for topology hiding scenario.
-					Example: t300.
+					<emphasis>setup-timeout=[nn]</emphasis> - Call setup timeout. 0 sets
+					timeout to max_duration value. Example: "setup-timeout=300".
 					</para></listitem>
 					<listitem><para>
-					<emphasis>a</emphasis> - Transparent authentication. In this mode b2b passes your 401
-					or 407 authentication request to destination server.
+					<emphasis>transparent-auth</emphasis> - Transparent authentication.
+					In this mode b2b passes your 401 or 407 authentication request to
+					destination server.
 					</para></listitem>
 					<listitem><para>
-					<emphasis>p</emphasis> - Preserve To: header.
-					</para></listitem>
-					<listitem><para>
-					<emphasis>s</emphasis> - Use init SDP (as described in the
-					<xref linkend="param_use_init_sdp"/> modparam) for this session.
+					<emphasis>preserve-to</emphasis> - Preserve To: header.
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
@@ -500,20 +579,12 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 				parameter will override the global <xref linkend="param_script_reply_route"/>
 				modparam for this particular B2B session.
 			</para></listitem>
-			<listitem><para>
-				<emphasis>init_sdp_body (string, optional)</emphasis> - SDP body to use
-				as init SDP (see the <xref linkend="param_use_init_sdp"/> modparam).
-			</para></listitem>
-			<listitem><para>
-				<emphasis>init_sdp_ctype (string, optional)</emphasis> - Content type to use
-				for the init SDP (see the <xref linkend="param_use_init_sdp"/> modparam).
-			</para></listitem>
 		</itemizedlist>
 	<para>
 		This function can be used from REQUEST_ROUTE.
 	</para>
 	<note><para>
-		If you have a multi interface setup and want to chance the outbound interface,
+		If you have a multi interface setup and want to change the outbound interface,
 		it is mandatory to use the "force_send_socket()" core function before passing
 		control to b2b function. If you do not do it, the requests may be correctly routed,
 		but the SIP pacakge may be invalid (as Contact, Via, etc).
@@ -539,7 +610,8 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user()) {
 
 	<section id="func_b2b_server_new" xreflabel="b2b_server_new()">
 		<title>
-		<function moreinfo="none">b2b_server_new(id, [extra_hdrs], [extra_hdr_bodies])</function>
+		<function moreinfo="none">b2b_server_new(id, [adv_contact], [extra_hdrs],
+			[extra_hdr_bodies])</function>
 		</title>
 		<para>
 			This function creates a new server entity (dialog where OpenSIPS acts as a UAS)
@@ -553,7 +625,11 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user()) {
 				in further B2B actions.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>extra_hdrs (var, optioanl)</emphasis> - AVP variable holding a list
+				<emphasis>adv_contact (string, optional)</emphasis> - Contact header to
+				advertise in generated messages.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_hdrs (var, optional)</emphasis> - AVP variable holding a list
 				of extra headers (the header names) to be added for any request sent
 				to this entity.
 			</para></listitem>
@@ -582,7 +658,8 @@ if(is_method("INVITE") &amp;&amp; !has_totag()) {
 
 	<section id="func_b2b_client_new" xreflabel="b2b_client_new()">
 		<title>
-		<function moreinfo="none">b2b_client_new(id, [extra_hdrs], [extra_hdr_bodies])</function>
+		<function moreinfo="none">b2b_client_new(id, dest_uri, [proxy], [from_dname],
+			[adv_contact], [extra_hdrs], [extra_hdr_bodies])</function>
 		</title>
 		<para>
 			This function creates a new client entity (dialog where OpenSIPS acts as a UAC)
@@ -600,8 +677,16 @@ if(is_method("INVITE") &amp;&amp; !has_totag()) {
 				<emphasis>dest_uri (string)</emphasis> - URI of the new destination.
 			</para></listitem>
 			<listitem><para>
+				<emphasis>proxy (string, optional)</emphasis> - URI of the outbound proxy
+				to send the INVITE to.
+			</para></listitem>
+			<listitem><para>
 				<emphasis>from_dname (string, optional)</emphasis> - Display name to
 				use in the From header.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>adv_contact (string, optional)</emphasis> - Contact header to
+				advertise in generated messages.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>extra_hdrs (var, optional)</emphasis> - AVP variable holding a list
@@ -630,13 +715,12 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 
 	<section id="func_b2b_bridge" xreflabel="b2b_bridge()">
 		<title>
-		<function moreinfo="none">b2b_bridge(entity1, entity2, [provmedia_uri], [lifetime])</function>
+		<function moreinfo="none">b2b_bridge(entity1, entity2, [provmedia_uri], [flags])</function>
 		</title>
 		<para>
 			This function bridges two entities, in the context of an existing B2B session
 			(the initial entities are already connected). At least one of the two entities
-			has to be a new client entity. If an existing entity is provided, the first step
-			will be to send it a reINVITE.
+			has to be a new client entity.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -655,9 +739,35 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 				media server to be connected with the caller while the callee answers.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>lifetime (int, optional)</emphasis> - maximum duration of the B2B
-				session. If the lifetime expires, the B2BUA will send BYE messages to both
-				ends and delete the record.
+				<emphasis>flags (string, optional)</emphasis> - CSV list of the following flags:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>max_duration=[nn]</emphasis> - Maximum duration of the B2B
+					session. If the lifetime expires, the B2BUA will send BYE messages to both
+					ends and delete the record. Example: "max_duration=300".
+					</para></listitem>
+					<listitem><para>
+					<emphasis>notify</emphasis> - Enable rfc3515 NOTIFY to inform the agent
+					sending the REFER of the status of the reference.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>rollback-failed</emphasis> - Rollback call to state before
+					bridging in case of transfer failed, don't hangup the call
+					(default behaviour).
+					</para></listitem>
+					<listitem><para>
+					<emphasis>hold</emphasis> - Put the old entity on hold before bridging
+					it to the new entity.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>no-late-sdp</emphasis> - Do not attempt late SDP negotiation
+					with the new entity. Start the bridging by first contacting the new entity
+					using the initial SDP received from the old entity. After the new entity
+					answers, send a reINVITE without body to the old entity. Use the current
+					SDP received in this new answer from the old entity to trigger a
+					renegotiation with the new entity.
+					</para></listitem>
+				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -672,6 +782,44 @@ route[b2b_logic_request] {
    b2b_client_new("client2", $hdr(Refer-To));
 
    b2b_bridge("peer", "client2");
+}
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_b2b_bridge_retry" xreflabel="b2b_bridge_retry()">
+		<title>
+		<function moreinfo="none">b2b_bridge_retry(new_entity)</function>
+		</title>
+		<para>
+			This function can be used to retry a failed bridging action by contacting
+			a new destination. A new client entity must be created before running this
+			function with <xref linkend="func_b2b_client_new"/>.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>entity1 (string)</emphasis> - ID of the new entity to bridge.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from the b2b_logic reply route.
+		</para>
+		<example>
+			<title><function>b2b_bridge</function> usage</title>
+		<programlisting format="linespecific">
+...
+route[b2b_logic_reply] {
+   ...
+   if ($b2b_logic.entity(id) == "client1" &amp;&amp; $rm == "INVITE" &amp;&amp; $rs >= 300) {
+      b2b_client_new("client_retry", "sip:alice@opensips.org");
+
+      b2b_bridge_retry("client_retry");
+   } else {
+      b2b_handle_reply();
+   }
+   ...
 }
 ...
 		</programlisting>
@@ -736,7 +884,7 @@ route[b2b_logic_reply] {
 
 	<section id="func_b2b_send_reply" xreflabel="b2b_send_reply()">
 		<title>
-		<function moreinfo="none">b2b_send_reply(code, reason)</function>
+		<function moreinfo="none">b2b_send_reply(code, reason[, headers[, body]])</function>
 		</title>
 		<para>
 			This function sends a reply to the entity that sent the current
@@ -749,6 +897,12 @@ route[b2b_logic_reply] {
 			</para></listitem>
 			<listitem><para>
 				<emphasis>reason (string)</emphasis> - reply reason string
+			</para></listitem>
+			<listitem><para>
+				<emphasis>headers (string, optional)</emphasis> - additional headers
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body (string, optional)</emphasis> - message body
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -825,7 +979,7 @@ route[b2b_logic_request] {
 
 	<section id="func_b2b_bridge_request" xreflabel="b2b_bridge_request()">
 		<title>
-		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no)</function>
+		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no, [adv_contact], [flags])</function>
 		</title>
 		<para>
 			This function will bridge an initial INVITE with one of the
@@ -842,25 +996,132 @@ route[b2b_logic_request] {
 				<emphasis>entity_no (int)</emphasis> - an integer that
 				holds the entity of the entity/participant to bridge.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>adv_contact (string, optional)</emphasis> - Contact header to
+				advertise in generated messages.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>flags (string, optional)</emphasis> - Flags that can modify the
+				behavior of the function. Available flags are:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>late_bye</emphasis> - instead of terminating the replaced entity
+					on the stop, leave it pending until the new enity fully establishes.
+				</para></listitem>
+				</itemizedlist>
+			</para></listitem>
 		</itemizedlist>
 		<example>
 			<title><function>b2b_bridge_request</function> usage</title>
 		<programlisting format="linespecific">
 ...
-modparam("b2b_entities", "script_req_route", "b2b_request")
+if ($rU == "pickup") {
+    # get the b2b logic key of the parked call for this user
+    cache_fetch("local", "$fU", $var(b2bl_key));
+    cache_remove("local", "$fU");
+
+    if ($var(b2bl_key) != NULL)
+        b2b_bridge_request($var(b2bl_key), 0);
+    else
+        send_reply(481, "Call/Transaction Does Not Exist");
+
+    exit;
+}
 ...
-route[b2b_request]
-{
-   # incoming requests from the B2B entities
-   ...
-   if ($ci~="^B2B") { #keep this aligned with b2b_key_prefix
-      # request coming from the UAC side;
-      # the Call-ID carries the B2B key ID
-      if (is_method("BYE") {
-         $var(entity) = 1;
-         b2b_bridge_request($ci,$var(entity));
-      }
-   }
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_b2b_trigger_scenario" xreflabel="b2b_trigger_scenario()">
+		<title>
+		<function moreinfo="none">b2b_trigger_scenario(scenario, [params], peer1,
+			[extra_headers_peer1], [extra_headers_contents_peer1],
+			peer2
+			[extra_headers_peer2], [extra_headers_contents_peer2])</function>
+		</title>
+		<para>
+			This function triggers a certain scenario from routing script, e.g.
+			out-of-dialog REFERs.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>scenario (string)</emphasis> - Name of the scenario to be triggered.
+			</para></listitem>
+			<listitem>
+				<para>
+					<emphasis>params (string, optional)</emphasis> - Parameters to be used in this scenario (optionally as CSV)
+				</para>
+				<itemizedlist>
+					<listitem><para>
+						<emphasis>n</emphasis> - Enable rfc3515 NOTIFY to inform the agent sending the
+						REFER of the status of the reference.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>session key (string, optional)</emphasis> - Internal session key, if the NOTIFY should be sent
+						in a different session on this B2B-UA (e.g. useful for receiving out-of-dialog REFERs)
+					</para></listitem>
+					<listitem><para>
+						<emphasis>party of remote session (int, optional)</emphasis> - If the NOTIFY should be sent to a different session, which
+						side should receive the NOTIFY of the session (0 = A-Party of the session, 1 = B-Party of the session)
+					</para></listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>peer1 (string)</emphasis> - Parameters to define the A-Party of the triggered scenario
+				</para>
+				<itemizedlist>
+					<listitem><para>
+						<emphasis>entitiy_name (string)</emphasis> - Name of the entity
+					</para></listitem>
+					<listitem><para>
+						<emphasis>RURI (string)</emphasis> - R-URI of the entity to contact
+					</para></listitem>
+					<listitem><para>
+						<emphasis>Proxy (string, optional)</emphasis> - Outbound Proxy to be used for this entity
+					</para></listitem>
+					<listitem><para>
+						<emphasis>Display-Name (string, optional)</emphasis> - Display Name to be used for this entity
+					</para></listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem><para>
+				<emphasis>extra_headers_peer1 (var, optional)</emphasis> - AVP variable holding a list
+				of extra headers (the header names) to be added for any request sent for the first entity.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers_contents_peer1 (var, optional)</emphasis> - AVP variable holding a
+				list of extra header bodies (corresponding to the headers given in the
+				<emphasis>extra_headers_peer1</emphasis> parameter) to be added for any request
+				sent for the first entity.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>peer2 (string)</emphasis> - Parameters to define the B-Party of the
+				triggered scenario. The format is identitical to the definition of <emphasis>peer1</emphasis>.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers_peer2 (var, optional)</emphasis> - AVP variable holding a list
+				of extra headers (the header names) to be added for any request sent for the second entity.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers_contents_peer2 (var, optional)</emphasis> - AVP variable holding a
+				list of extra header bodies (corresponding to the headers given in the
+				<emphasis>extra_headers_peer2</emphasis> parameter) to be added for any request
+				sent for the second entity.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+			<title><function>b2b_trigger_scenario</function> usage</title>
+		<programlisting format="linespecific">
+...
+if(is_method("REFER") &amp;&amp; !has_totag()) {
+   $avp(header) = "Replaces";
+   $avp(header_content) = "call-id=xyz";
+   b2b_trigger_scenario("refer", "n", "conf,sip:conference@10.0.0.1", $avp(header), $avp(header_content), "callee,sip:user@10.0.0.1,sip:10.0.0.1");
    ...
 }
 ...
@@ -988,6 +1249,31 @@ route[b2b_request]
 	</programlisting>
 	</section>
 
+	<section id="mi_b2b_terminate_call" xreflabel="b2b_terminate_call">
+		<title>
+		<function moreinfo="none">b2b_terminate_call</function>
+		</title>
+		<para>
+			Terminates an ongoing B2B session.
+		</para>
+		<para>
+		Name: <emphasis>b2b_terminate_call</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>key</emphasis> : the <emphasis>b2b_logic key</emphasis>
+				or the <emphasis>callid;from-tag;to-tag</emphasis> of
+				one of call legs of the ongoing session.
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+	<programlisting  format="linespecific">
+	opensips-cli -x mi b2b_terminate_call 159.0
+	</programlisting>
+	</section>
+
 </section>
 
 <section id="exported_pseudo_variables">
@@ -1045,6 +1331,14 @@ local_route {
 			<listitem><para>
 				the entity ID, accessible by using the
 				<emphasis>id</emphasis> subname.
+			</para></listitem>
+			<listitem><para>
+				the From-Tag of the dialog, accessible by using the
+				<emphasis>fromtag</emphasis> subname.
+			</para></listitem>
+			<listitem><para>
+				the To-Tag of the dialog, accessible by using the
+				<emphasis>totag</emphasis> subname.
 			</para></listitem>
 		</itemizedlist>
 	</para>

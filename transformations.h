@@ -38,12 +38,14 @@
 
 enum _tr_s_subtype {
 	TR_S_NONE=0, TR_S_LEN, TR_S_INT, TR_S_MD5, TR_S_SUBSTR,
-	TR_S_SELECT, TR_S_ENCODEHEXA, TR_S_DECODEHEXA, TR_S_HEX2DEC, TR_S_DEC2HEX,
+	TR_S_SELECT, TR_S_ENCODEHEXA, TR_S_DECODEHEXA, TR_S_HEX2DEC, TR_S_DEC2HEX, TR_S_DATE2UNIX,
 	TR_S_ESCAPECOMMON, TR_S_UNESCAPECOMMON, TR_S_ESCAPEUSER, TR_S_UNESCAPEUSER,
 	TR_S_ESCAPEPARAM, TR_S_UNESCAPEPARAM, TR_S_TOLOWER, TR_S_TOUPPER, TR_S_CRC32,
 	TR_S_INDEX, TR_S_RINDEX, TR_S_FILL_LEFT, TR_S_FILL_RIGHT, TR_S_WIDTH,
-        TR_S_B64ENCODE, TR_S_B64DECODE, TR_S_XOR, TR_S_TRIM, TR_S_TRIMR, TR_S_TRIML,
-        TR_S_REVERSE, TR_S_EVAL
+	TR_S_B64ENCODE, TR_S_B64DECODE, TR_S_XOR, TR_S_TRIM, TR_S_TRIMR, TR_S_TRIML,
+	TR_S_REVERSE, TR_S_EVAL, TR_S_SHA1, TR_S_SHA1_HMAC, TR_S_SHA224, TR_S_SHA224_HMAC,
+	TR_S_SHA256, TR_S_SHA256_HMAC, TR_S_SHA384, TR_S_SHA384_HMAC, TR_S_SHA512,
+	TR_S_SHA512_HMAC
 };
 enum _tr_uri_subtype {
 	TR_URI_NONE=0, TR_URI_USER, TR_URI_HOST, TR_URI_PASSWD, TR_URI_PORT,
@@ -96,7 +98,7 @@ typedef struct trans_ {
 typedef int (*tr_parse_f)(str *in, trans_t *t);
 
 typedef struct trans_export_ {
-	str name;
+	str_const name;
 	tr_parse_f parse_func;
 	tr_eval_f eval_func;
 } trans_export_t;
@@ -106,7 +108,7 @@ typedef struct trans_extra_ {
 	struct trans_extra_ *next;
 } trans_extra_t;
 
-int register_trans_mod(char *mod_name, trans_export_t *tr_exports);
+int register_trans_mod(const char *mod_name, const trans_export_t *tr_exports);
 void tr_free_extra_list(void);
 
 int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val);

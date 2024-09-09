@@ -24,13 +24,15 @@
  * \brief Generic string handling functions
  */
 
+#include "parser/parse_uri.h"
+
 #include "ut.h"
 #include "strcommon.h"
 
 /*! \brief
  * add backslashes to special characters
  */
-int escape_common(char *dst, char *src, int src_len)
+int escape_common(char *dst, const char *src, int src_len)
 {
 	int i, j;
 
@@ -67,7 +69,7 @@ int escape_common(char *dst, char *src, int src_len)
 /*! \brief
  * remove backslashes to special characters
  */
-int unescape_common(char *dst, char *src, int src_len)
+int unescape_common(char *dst, const char *src, int src_len)
 {
 	int i, j;
 
@@ -111,7 +113,7 @@ int unescape_common(char *dst, char *src, int src_len)
 /*! \brief
  * replace &#xx; with ascii character
  */
-int unescape_xml(char *dst, char *src, int src_len)
+int unescape_xml(char *dst, const char *src, int src_len)
 {
 	int i, j;
 
@@ -133,10 +135,10 @@ int unescape_xml(char *dst, char *src, int src_len)
 }
 
 /*! \brief Compute MD5 checksum */
-void compute_md5(char *dst, char *src, int src_len)
+void compute_md5(char *dst, const char *src, int src_len)
 {
 	MD5_CTX context;
-	unsigned char digest[16];
+	char digest[16];
 	MD5Init (&context);
   	MD5Update (&context, src, src_len);
 	MD5Final (digest, &context);
@@ -144,9 +146,10 @@ void compute_md5(char *dst, char *src, int src_len)
 }
 
 /*! \brief Unscape all printable ASCII characters */
-int unescape_user(str *sin, str *sout)
+int _unescape_user(const str_const *sin, str *sout)
 {
-	char *at, *p, c;
+	char *at, c;
+	const char *p;
 
 	if(sin==NULL || sout==NULL || sout->s==NULL
 			|| sin->len<0 || sout->len < sin->len+1) {
@@ -261,10 +264,11 @@ done:
  * mark = - | _ | . | ! | ~ | * | ' | ( | )
  * user-unreserved = & | = | + | $ | , | ; | ? | /
  */
-int escape_user(str *sin, str *sout)
+int _escape_user(const str_const *sin, str *sout)
 {
 
-	char *at, *p;
+	char *at;
+	const char *p;
 	unsigned char x;
 
 	if(sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL
@@ -280,49 +284,26 @@ int escape_user(str *sin, str *sout)
 			LM_ERR("invalid escaped character <%u>\n", (unsigned int)*p);
 			return -1;
 		}
-		if (isalnum((int)*p))
-		{
+
+		if (is_username_char(*p)) {
 			*at = *p;
 		} else {
-			switch (*p) {
-				/* unreserved chars */
-				case '-':
-				case '_':
-				case '.':
-				case '!':
-				case '~':
-				case '*':
-				case '\'':
-				case '(':
-				case ')':
-				/* user unreserved chars */
-				case '&':
-				case '=':
-				case '+':
-				case '$':
-				case ',':
-				case ';':
-				case '?':
-				case '/':
-					*at = *p;
-					break;
-				default:
-					*at++ = '%';
-					x = (*p) >> 4;
-					if (x < 10)
-					{
-						*at++ = x + '0';
-					} else {
-						*at++ = x - 10 + 'a';
-					}
-					x = (*p) & 0x0f;
-					if (x < 10) {
-						*at = x + '0';
-					} else {
-						*at = x - 10 + 'a';
-					}
+			*at++ = '%';
+			x = (*p) >> 4;
+			if (x < 10)
+			{
+				*at++ = x + '0';
+			} else {
+				*at++ = x - 10 + 'a';
+			}
+			x = (*p) & 0x0f;
+			if (x < 10) {
+				*at = x + '0';
+			} else {
+				*at = x - 10 + 'a';
 			}
 		}
+
 		at++;
 		p++;
 	}
@@ -333,7 +314,7 @@ int escape_user(str *sin, str *sout)
 }
 
 
-int unescape_param(str *sin, str *sout)
+int _unescape_param(const str_const *sin, str *sout)
 {
 	return unescape_user(sin, sout);
 }
@@ -347,9 +328,10 @@ int unescape_param(str *sin, str *sout)
  * mark = - | _ | . | ! | ~ | * | ' | ( | )
  * param-unreserved = [ | ] | / | : | & | + | $
  */
-int escape_param(str *sin, str *sout)
+int _escape_param(const str_const *sin, str *sout)
 {
-	char *at, *p;
+	char *at;
+	const char *p;
 	unsigned char x;
 
 	if (sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL ||

@@ -521,20 +521,20 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 53 31 1175 712
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 58 34 1205 742
    2. Anca Vamanu 26 16 713 231
-   3. Razvan Crainea (@razvancrainea) 12 10 19 18
-   4. Liviu Chircu (@liviuchircu) 12 9 44 76
+   3. Liviu Chircu (@liviuchircu) 13 10 44 78
+   4. Razvan Crainea (@razvancrainea) 12 10 19 18
    5. Klaus Darilion 11 1 1109 0
-   6. Vlad Patrascu (@rvlad-patrascu) 8 5 41 76
+   6. Vlad Patrascu (@rvlad-patrascu) 9 6 117 120
    7. Ovidiu Sas (@ovidiusas) 7 5 104 9
    8. Vallimamod Abdullah 5 2 97 75
    9. Damien Sandras (@dsandras) 4 2 93 1
    10. Vlad Paiu (@vladpaiu) 4 2 29 15
 
    All remaining contributors: Walter Doekes (@wdoekes), Stanislaw
-   Pitucha, Peter Lemenkov (@lemenkov), Zero King (@l2dy), Aron
-   Podrigal (@ar45).
+   Pitucha, Maksym Sobolyev (@sobomax), Peter Lemenkov
+   (@lemenkov), Zero King (@l2dy), Aron Podrigal (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -556,19 +556,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jul 2020
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
-   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019
-   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   8.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Jan 2014
-   9.  Damien Sandras (@dsandras)          Jul 2013 - Aug 2013
-   10. Vlad Paiu (@vladpaiu)               Aug 2011 - Aug 2011
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jun 2021
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   8.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019
+   9.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Jan 2014
+   10. Damien Sandras (@dsandras)          Jul 2013 - Aug 2013
 
-   All remaining contributors: Anca Vamanu, Vallimamod Abdullah,
-   Stanislaw Pitucha, Walter Doekes (@wdoekes), Klaus Darilion.
+   All remaining contributors: Vlad Paiu (@vladpaiu), Anca Vamanu,
+   Vallimamod Abdullah, Stanislaw Pitucha, Walter Doekes
+   (@wdoekes), Klaus Darilion.
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -52,7 +52,10 @@ struct cell;
 #define TMCB_PRE_SEND_BUFFER	(1<<13)
 #define TMCB_MSG_MATCHED_IN     (1<<14)
 #define TMCB_MSG_SENT_OUT       (1<<15)
-#define TMCB_MAX                ((1<<16)-1)
+#define TMCB_LOCAL_TRANS_NEW    (1<<16)
+#define TMCB_LOCAL_REQUEST_OUT  (1<<17)
+#define TMCB_LOCAL_RESPONSE     (1<<18)
+#define TMCB_MAX                ((1<<19)-1)
 
 /*
  *  Caution: most of the callbacks work with shmem-ized messages
@@ -181,6 +184,18 @@ struct cell;
  * 2) the callback's param MUST be in shared memory and will
  *  NOT be freed by TM; you must do it yourself from the
  *  callback function if necessary.
+ *
+ * TMCB_LOCAL_TRANS_NEW -- triggered when a local transacton is
+ *  created there the transaction
+ *
+ * TMCB_LOCAL_REQUEST_OUT -- triggered when a local transaction
+ *  creates a new request and sends it out.
+ *
+ * TMCB_LOCAL_RESPONSE -- triggered when a response is generated
+ *  either from script, or through the API. It is run just before
+ *  the response is actually built, so a reply is not available.
+ *  Receives as parameter the body of the reply.
+ *
 */
 
 
@@ -218,7 +233,7 @@ struct tmcb_head_list {
 };
 
 
-extern struct tmcb_head_list*  req_in_tmcb_hl;
+extern struct tmcb_head_list*  new_tran_tmcb_hl;
 
 extern struct tmcb_head_list tmcb_pending_hl;
 extern unsigned int tmcb_pending_id;
@@ -226,7 +241,9 @@ extern unsigned int tmcb_pending_id;
 #define has_tran_tmcbs(_T_, _types_) \
 	( ((_T_)->tmcb_hl.reg_types)&(_types_) )
 #define has_reqin_tmcbs() \
-	( req_in_tmcb_hl->first!=0 )
+	( new_tran_tmcb_hl->first!=0 && (new_tran_tmcb_hl->reg_types&TMCB_REQUEST_IN))
+#define has_new_local_tmcbs() \
+	( new_tran_tmcb_hl->first!=0 && (new_tran_tmcb_hl->reg_types&TMCB_LOCAL_TRANS_NEW))
 
 
 void empty_tmcb_list(struct tmcb_head_list *head);
@@ -257,6 +274,8 @@ void run_trans_callbacks_locked( int type , struct cell *trans,
 /* run all REQUEST_IN callbacks */
 void run_reqin_callbacks( struct cell *trans, struct sip_msg *req, int code );
 
+/* run all NEW LOCAL callbacks */
+void run_new_local_callbacks(struct cell *trans, struct sip_msg *req, int code);
 
 typedef int (*ctx_load_register_func)(void*);
 

@@ -103,10 +103,10 @@ static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
 		}\
 	}while(0);
 
-#define SET_ROUTE_VALUE(_val, _idx) \
+#define SET_ROUTE_VALUE(_val, _ref) \
 	do {\
-		if (_idx) { \
-			VAL_STRING((_val)) = sroutes->request[_idx].name;\
+		if (_ref) { \
+			VAL_STRING((_val)) = (_ref)->name.s;\
 			VAL_NULL((_val)) = 0;\
 		} else {\
 			VAL_STRING((_val)) = NULL;\
@@ -138,9 +138,9 @@ static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
 			str __s;\
 			__s.s = VAL_STR((_values)+ (_index)).s;\
 			__s.len = strlen(VAL_STR((_values)+ (_index)).s);\
-			(_res) =  get_script_route_ID_by_name_str( &__s, \
-				sroutes->request, RT_NO);\
-			if ((_res)==-1) { \
+			(_res) = ref_script_route_by_name_str( &__s, \
+				sroutes->request, RT_NO, REQUEST_ROUTE, 1);\
+			if (!ref_script_route_is_valid(_res)) { \
 				LM_WARN("loaded <%.*s> route not found " \
 				"in the script\n", __s.len, __s.s); \
 				(_res) = 0; \
@@ -294,11 +294,10 @@ static int select_entire_dialog_table(db_res_t ** res, int *no_rows)
 
 
 
-struct socket_info * create_socket_info(db_val_t * vals, int n){
+const struct socket_info * create_socket_info(db_val_t * vals, int n){
 
-	struct socket_info * sock;
-	str host, p;
-	int port, proto;
+	const struct socket_info * sock;
+	str p;
 
 	/* socket name */
 	p.s  = (VAL_STR(vals+n)).s;
@@ -307,15 +306,10 @@ struct socket_info * create_socket_info(db_val_t * vals, int n){
 	if (VAL_NULL(vals+n) || p.s==0 || p.s[0]==0){
 		sock = 0;
 	} else {
-		if (parse_phostport( p.s, p.len, &host.s, &host.len,
-		&port, &proto)!=0) {
-			LM_ERR("bad socket <%.*s>\n", p.len, p.s);
-			return 0;
-		}
-		sock = grep_sock_info( &host, (unsigned short)port, proto);
+		sock = parse_sock_info(&p);
 		if (sock==0) {
 			LM_WARN("non-local socket <%.*s>...ignoring\n", p.len, p.s);
-			}
+		}
 	}
 
 	return sock;
@@ -338,8 +332,11 @@ static inline void strip_esc(str *s)
 }
 
 
-static inline char* read_pair(char *b, char *end, str *name, str *val)
+static inline char* read_pair(char *b, char *end, str *name, int_str *val,
+	int *type)
 {
+	str vals;
+
 	/* read name */
 	name->s = b;
 	while (b<end) {
@@ -354,13 +351,29 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 	name->len = b - name->s;
 	if (name->len==0) goto skip;
 	strip_esc(name);
-	/*LM_DBG("-----read name <%.*s>(%d)\n",name->len,name->s,name->len);*/
+	LM_DBG("-----read name <%.*s>(%d)\n",name->len,name->s,name->len);
 
 	/* read # */
 	b++;
 
+	if (b>=end) return NULL;
+
+	if ((*b != '0' + DLG_VAL_TYPE_STR) && (*b != '0' + DLG_VAL_TYPE_INT))
+		/* unexpected type char */
+		return NULL;
+	*type = *b - '0';
+
+	/* read type char */
+		b++;
+
+	if (b>=end) return NULL;
+	if (*b!='#') return NULL;
+
+	/* read # */
+		b++;
+
 	/* read value */
-	val->s = b;
+	vals.s = b;
 	while (b<end) {
 		if (*b=='|' || *b=='#')
 			break;
@@ -368,12 +381,22 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 			b++;
 		b++;
 	}
+
+	vals.len = b - vals.s;
+	if (vals.len==0) vals.s = 0;
+
 	if (b>=end) return NULL;
 	if (*b=='#') goto skip;
-	val->len = b - val->s;
-	if (val->len==0) val->s = 0;
-	strip_esc(val);
-	/*LM_DBG("-----read value <%.*s>(%d)\n",val->len,val->s,val->len);*/
+
+	if (*type == DLG_VAL_TYPE_STR) {
+		strip_esc(&vals);
+		val->s = vals;
+		LM_DBG("-----read value <%.*s>(%d)\n",val->s.len,val->s.s,val->s.len);
+	} else {
+		if (str2sint(&vals, &val->n) < 0)
+			return NULL;
+		LM_DBG("-----read value <%d>\n",val->n);
+	}
 
 	/* read | */
 	b++;
@@ -389,26 +412,29 @@ skip:
  * it's either called when dialog is not linked yes, or is under the dialog lock */
 void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 {
-	str name, val;
+	str name;
 	char *end;
 	char *p;
+	int type;
+	int_str isval;
 
 	end = b + l;
 	p = b;
+
+	lock_start_write(dlg->vals_lock);
 	do {
 		/* read a new pair from input string */
-		p = read_pair( p, end, &name, &val);
+		p = read_pair( p, end, &name, &isval, &type);
 		if (p==NULL) break;
 
-		if (val.len==0) continue;
-
-		LM_DBG("new var found  <%.*s>=<%.*s>\n",name.len,name.s,val.len,val.s);
+		LM_DBG("new var found  <%.*s>\n",name.len,name.s);
 
 		/* add the variable */
-		if (store_dlg_value_unsafe( dlg, &name, &val)!=0)
+		if (store_dlg_value_unsafe( dlg, &name, &isval, type)!=0)
 			LM_ERR("failed to add val, skipping...\n");
 	} while(p!=end);
 
+	lock_stop_write(dlg->vals_lock);
 }
 
 
@@ -417,21 +443,28 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 {
 	struct dlg_profile_table *profile;
 	struct dlg_profile_link *it;
-	str name, val,double_check_name;
+	str name, double_check_name;
 	char *end;
 	char *p,*s,*e;
 	char bk;
 	unsigned repl_type;
+	int_str val;
+	int type;
 
 	end = b + l;
 	p = b;
 
 	do {
 		/* read a new pair from input string */
-		p = read_pair( p, end, &name, &val);
+		p = read_pair( p, end, &name, &val, &type);
 		if (p==NULL) break;
 
-		LM_DBG("new profile found  <%.*s>=<%.*s>\n",name.len,name.s,val.len,val.s);
+		if (type==DLG_VAL_TYPE_INT) {
+			LM_ERR("Bad type when reading profile\n");
+			continue;
+		}
+
+		LM_DBG("new profile found  <%.*s>=<%.*s>\n",name.len,name.s,val.s.len,val.s.s);
 
 		if (double_check) {
 			LM_DBG("Double checking profile - if it exists we'll skip it \n");
@@ -480,7 +513,7 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 			/* create a new one */
 			bk = name.s[name.len];
 			name.s[name.len] = 0;
-			if (add_profile_definitions(name.s, (val.len && val.s)?1:0 ) != 0) {
+			if (add_profile_definitions(name.s, (val.s.len && val.s.s)?1:0 ) != 0) {
 				LM_ERR("failed to add dialog profile <%.*s>\n", name.len, name.s);
 				name.s[name.len] = bk;
 				continue;
@@ -493,7 +526,7 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 				continue;
 			}
 		}
-		if (set_dlg_profile( dlg, profile->has_value ? &val : NULL, profile,
+		if (set_dlg_profile( dlg, profile->has_value ? &val.s : NULL, profile,
 		    is_replicated) < 0 )
 			LM_ERR("failed to add to profile, skipping....\n");
 		next:
@@ -518,8 +551,7 @@ int remove_ended_dlgs_from_db(void)
 
 	VAL_INT(values) = DLG_STATE_DELETED ;
 
-	CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
-
+	CON_SET_CURR_PS(dialog_db_handle, &my_ps);
 	if(dialog_dbf.delete(dialog_db_handle, match_keys, 0, values, 1) < 0) {
 		LM_ERR("failed to delete database information\n");
 		return -1;
@@ -539,11 +571,13 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
 	int no_rows = 10;
-	struct socket_info *caller_sock,*callee_sock;
+	const struct socket_info *caller_sock,*callee_sock;
 	int found_ended_dlgs=0;
 	unsigned int hash_entry,hash_id;
-	str tag_name;
+	int_str tag_name;
 	int rc;
+	int dlg_val_type;
+	str_const flag_list;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -628,6 +662,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			}
 
 			if(dlg->h_entry != hash_entry){
+				dlg_unlock(d_table, d_entry);
 				LM_ERR("inconsistent hash data in the dialog database: "
 					"you may have restarted opensips using a different "
 					"hash_size: please erase %.*s database and restart\n"
@@ -635,7 +670,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					dialog_table_name.len, dialog_table_name.s,
 					dlg->h_entry,hash_entry);
 				shm_free(dlg);
-				goto error_unlock;
+				continue;
 			}
 
 			/* link the dialog */
@@ -671,6 +706,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg_unsafe(dlg, 1, d_entry);
+				dlg_unlock(d_table, d_entry);
 				continue;
 			}
 			dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
@@ -687,7 +723,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			/* script flags */
 			if (!VAL_NULL(values+19)) {
-				dlg->user_flags = VAL_INT(values+19);
+				GET_STR_VALUE(flag_list, values, 19, 0, 0);
+				dlg->user_flags = flag_list_to_bitmask(&flag_list,
+					FLAG_TYPE_DIALOG, FLAG_DELIM, 1);
 			}
 
 			/* module flags */
@@ -728,6 +766,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 				/* destroy the dialog */
 				unref_dlg_unsafe(dlg, 1, d_entry);
+				dlg_unlock(d_table, d_entry);
 				continue;
 			}
 
@@ -744,12 +783,22 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			dlg_unlock(d_table, d_entry);
 
+			if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &dlg_val_type,
+				&tag_name, 0)) == 0) {
+				if (dlg_val_type != DLG_VAL_TYPE_STR)
+					LM_ERR("Bad dialog value type\n");
+				else if (shm_str_dup(&dlg->shtag, &tag_name.s) < 0)
+					LM_ERR("No more shm memory\n");
+			} else if (rc == -1)
+				LM_ERR("Failed to get dlg value for sharing tag %.*s\n",
+				       tag_name.s.len, tag_name.s.s);
+
 			/* profiles */
 			if (!VAL_NULL(values+18))
 				read_dialog_profiles( VAL_STR(values+18).s,
 					strlen(VAL_STR(values+18).s), dlg, 0, 0);
 
-			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+			if (dlg_has_options_pinging(dlg)) {
 				if (0 != insert_ping_timer(dlg))
 					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 				else {
@@ -770,12 +819,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					/* reference dialog as kept in reinvite ping timer list */
 					ref_dlg(dlg, 1);
 			}
-
-			if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
-				if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
-					LM_ERR("No more shm memory\n");
-			} else if (rc == -1)
-				LM_ERR("Failed to get dlg value for sharing tag\n");
 
 			if (dlg_db_mode == DB_MODE_DELAYED) {
 				/* to be later removed by timer */
@@ -884,8 +927,8 @@ int dlg_timer_remove_from_db(struct dlg_cell *cell)
 	if (dlg_del_curr_no == dlg_bulk_del_no) {
 		LM_DBG("triggering delete for %d dialogs\n",dlg_del_curr_no);
 
-		CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
 		CON_USE_OR_OP(dialog_db_handle);
+		CON_SET_CURR_PS(dialog_db_handle, &my_ps);
 		if(dialog_dbf.delete(dialog_db_handle, dlg_del_keys,
 					0, dlg_del_values, dlg_bulk_del_no) < 0)
 			LM_ERR("failed to delete bulk database information !!!\n");
@@ -949,8 +992,7 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 
 	VAL_BIGINT(values) = dlg_get_db_id(cell);
 
-	CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
-
+	CON_SET_CURR_PS(dialog_db_handle, &my_ps);
 	if(dialog_dbf.delete(dialog_db_handle, match_keys, 0, values, 1) < 0) {
 		LM_ERR("failed to delete database information\n");
 		return -1;
@@ -959,7 +1001,7 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 	LM_DBG("callid was %.*s\n", cell->callid.len, cell->callid.s );
 
 	/* dialog saved */
-	run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+	run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 
 	return 0;
 }
@@ -991,8 +1033,7 @@ int update_dialog_timeout_info(struct dlg_cell * cell)
 	SET_INT_VALUE(values+1, (unsigned int)( (unsigned int)time(0) +
 			 cell->tl.timeout - get_ticks()) );
 
-	CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
-
+	CON_SET_CURR_PS(dialog_db_handle, &my_ps_update);
 	if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 					(values), (insert_keys+1), (values+1), 1, 1)) !=0){
 		LM_ERR("could not update database timeout info\n");
@@ -1000,7 +1041,7 @@ int update_dialog_timeout_info(struct dlg_cell * cell)
 	}
 
 	/* dialog saved */
-	run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+	run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 
 	cell->flags &= ~(DLG_FLAG_CHANGED);
 
@@ -1046,14 +1087,14 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		VAL_TYPE(values+8) = VAL_TYPE(values+11) = VAL_TYPE(values+12) =
 		VAL_TYPE(values+15) =VAL_TYPE(values+16) = VAL_TYPE(values+17) =
-		VAL_TYPE(values+20) = VAL_TYPE(values+21) = DB_INT;
+		VAL_TYPE(values+21) = DB_INT;
 
 		VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
 		VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
 		VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) =
-		VAL_TYPE(values+22) = VAL_TYPE(values+23) = VAL_TYPE(values+24) =
-		VAL_TYPE(values+25) = DB_STR;
+		VAL_TYPE(values+20) = VAL_TYPE(values+22) = VAL_TYPE(values+23) =
+		VAL_TYPE(values+24) = VAL_TYPE(values+25) = DB_STR;
 		VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
 		DB_STRING;
 		VAL_TYPE(values+18) = DB_BLOB;
@@ -1070,10 +1111,11 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+4, cell->to_uri);
 		SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
 
-		SET_STR_VALUE(values+6, cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+		SET_STR_VALUE(values+6,
+			*get_socket_internal_name(cell->legs[DLG_CALLER_LEG].bind_addr) );
 		if (cell->legs[callee_leg].bind_addr) {
 			SET_STR_VALUE(values+7,
-				cell->legs[callee_leg].bind_addr->sock_str);
+				*get_socket_internal_name(cell->legs[callee_leg].bind_addr) );
 		} else {
 			VAL_NULL(values+7) = 1;
 		}
@@ -1103,8 +1145,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
 		SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
-		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
-
+		CON_SET_CURR_PS(dialog_db_handle, &my_ps_insert);
 		if((dialog_dbf.insert(dialog_db_handle, insert_keys, values,
 								DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 			LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
@@ -1113,7 +1154,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		}
 
 		/* dialog saved */
-		run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+		run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 
 		cell->flags &= ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 
@@ -1121,11 +1162,10 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		/* save only dialog's state and timeout */
 		VAL_TYPE(values) = DB_BIGINT;
 		VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+15) =
-		VAL_TYPE(values+16) = VAL_TYPE(values+17) = VAL_TYPE(values+20) =
-		VAL_TYPE(values+21) = DB_INT;
+		VAL_TYPE(values+16) = VAL_TYPE(values+17) = VAL_TYPE(values+21) = DB_INT;
 
 		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) =
-		VAL_TYPE(values+22) = VAL_TYPE(values+23) = DB_STR;
+		VAL_TYPE(values+22) = VAL_TYPE(values+23) = VAL_TYPE(values+20) = DB_STR;
 		VAL_TYPE(values+18) = DB_BLOB;
 
 		/* lock the entry */
@@ -1147,8 +1187,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+22, cell->legs[DLG_CALLER_LEG].contact);
 		SET_STR_VALUE(values+23, cell->legs[callee_leg].contact);
 
-		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
-
+		CON_SET_CURR_PS(dialog_db_handle, &my_ps_update);
 		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 						(values), (insert_keys+11), (values+11), 1, 13)) !=0){
 			LM_ERR("could not update database info\n");
@@ -1156,14 +1195,14 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		}
 
 		/* dialog saved */
-		run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+		run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 
 		cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 	} else if (cell->flags & DLG_FLAG_VP_CHANGED) {
 		VAL_TYPE(values) = DB_BIGINT;
 		VAL_TYPE(values+18) = DB_BLOB;
 		VAL_TYPE(values+19) = DB_STR;
-		VAL_TYPE(values+20) = DB_INT;
+		VAL_TYPE(values+20) = DB_STR;
 		VAL_TYPE(values+21) = DB_INT;
 
 		/* lock the entry */
@@ -1174,15 +1213,14 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		set_final_update_cols(values+18, cell, 0);
 
-		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
-
+		CON_SET_CURR_PS(dialog_db_handle, &my_ps_update_vp);
 		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 						(values), (insert_keys+18), (values+18), 1, 4)) !=0){
 			LM_ERR("could not update database info\n");
 			goto error;
 		}
 
-		run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+		run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 
 		cell->flags &= ~DLG_FLAG_VP_CHANGED;
 	} else {
@@ -1199,9 +1237,11 @@ error:
 
 
 static inline unsigned int write_pair( char *b, str *name, str *name_suffix,
-				str *val)
+	int_str *val, int type)
 {
 	int i,j;
+	int intlen;
+	char *intbuf;
 
 	for( i=0,j=0 ; i<name->len ; i++) {
 		if (name->s[i]=='|' || name->s[i]=='#' || name->s[i]=='\\')
@@ -1213,32 +1253,62 @@ static inline unsigned int write_pair( char *b, str *name, str *name_suffix,
 		j+=name_suffix->len;
 	}
 	b[j++] = '#';
-	for( i=0 ; val && i<val->len ; i++) {
-		if (val->s[i]=='|' || val->s[i]=='#' || val->s[i]=='\\')
-			b[j++] = '\\';
-		b[j++] = val->s[i];
+
+	if (type == DLG_VAL_TYPE_STR) {
+		b[j++] = DLG_VAL_TYPE_STR + '0';
+
+		b[j++] = '#';
+
+		for( i=0 ; val && i<val->s.len ; i++) {
+			if (val->s.s[i]=='|' || val->s.s[i]=='#' || val->s.s[i]=='\\')
+				b[j++] = '\\';
+			b[j++] = val->s.s[i];
+		}
+	} else {
+		b[j++] = DLG_VAL_TYPE_INT + '0';
+
+		b[j++] = '#';
+
+		intbuf = sint2str(val->n, &intlen);
+		memcpy(b+j,intbuf,intlen);
+		j+=intlen;
 	}
+
 	b[j++] = '|';
 
 	return j;
 }
 
 
-str* write_dialog_vars( struct dlg_val *vars)
+str* write_dialog_vars( struct dlg_cell *dlg)
 {
 	static str o = {NULL,0};
 	static int o_l=0;
 	struct dlg_val *v;
 	unsigned int l,i;
 	char *p;
+	int intlen;
+
+	lock_start_read(dlg->vals_lock);
 
 	/* compute the required len */
-	for ( v=vars,l=0 ; v ; v=v->next) {
-		l += v->name.len + 1 + v->val.len + 1;
+	for ( v=dlg->vals,l=0 ; v ; v=v->next) {
+		l += v->name.len + 1/*'#'*/ + 1/*type char*/ + 1;/*'#'*/
+		if (v->type == DLG_VAL_TYPE_STR) {
+			l += v->val.s.len;
+		} else {
+			p = sint2str(v->val.n, &intlen);
+			l += intlen;
+		}
+
+		l += 1; /*'|'*/
+
 		for( i=0 ; i<v->name.len ; i++ )
 			if (v->name.s[i]=='|' || v->name.s[i]=='#' || v->name.s[i]=='\\') l++;
-		for( i=0 ; i<v->val.len ; i++ )
-			if (v->val.s[i]=='|' || v->val.s[i]=='#' || v->val.s[i]=='\\') l++;
+
+		if (v->type == DLG_VAL_TYPE_STR)
+			for( i=0 ; i<v->val.s.len ; i++ )
+				if (v->val.s.s[i]=='|' || v->val.s.s[i]=='#' || v->val.s.s[i]=='\\') l++;
 	}
 
 	/* allocate the string to be stored */
@@ -1246,17 +1316,20 @@ str* write_dialog_vars( struct dlg_val *vars)
 		if (o.s) pkg_free(o.s);
 		o.s = (char*)pkg_malloc(l);
 		if (o.s==NULL) {
+			lock_stop_read(dlg->vals_lock);
 			LM_ERR("not enough pkg mem (req=%d)\n",l);
 			return NULL;
 		}
 		o_l = l;
 	}
 
+	lock_stop_read(dlg->vals_lock);
+
 	/* write the stuff into it */
 	o.len = l;
 	p = o.s;
-	for ( v=vars ; v ; v=v->next) {
-		p += write_pair( p, &v->name,NULL, &v->val);
+	for ( v=dlg->vals ; v ; v=v->next) {
+		p += write_pair( p, &v->name,NULL, &v->val, v->type);
 	}
 	if (o.len!=p-o.s) {
 		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
@@ -1277,10 +1350,12 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 	struct dlg_profile_link *link;
 	unsigned int l,i;
 	char *p;
+	int_str val;
 
 	/* compute the required len */
 	for ( link=links,l=0 ; link ; link=link->next) {
-		l += link->profile->name.len + 1 + link->value.len + 1;
+		l += link->profile->name.len + 1/*'#'*/ + 1/*type char*/ + 1/*'#'*/ +
+			link->value.len + 1 /*'|'*/;
 		for( i=0 ; i<link->profile->name.len ; i++ )
 			if (link->profile->name.s[i]=='|' || link->profile->name.s[i]=='#'
 					|| link->profile->name.s[i]=='\\') l++;
@@ -1306,14 +1381,16 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 	o.len = l;
 	p = o.s;
 	for ( link=links; link ; link=link->next) {
+		val.s = link->value;
+
 		if (link->profile->repl_type == REPL_CACHEDB)
 			p += write_pair( p, &link->profile->name, &cached_marker,
-							&link->value);
+							&val, DLG_VAL_TYPE_STR);
 		else if (link->profile->repl_type == REPL_PROTOBIN)
 			p += write_pair( p, &link->profile->name, &bin_marker,
-							&link->value);
+							&val, DLG_VAL_TYPE_STR);
 		else
-			p += write_pair( p, &link->profile->name, NULL, &link->value);
+			p += write_pair( p, &link->profile->name, NULL, &val, DLG_VAL_TYPE_STR);
 	}
 	if (o.len!=p-o.s) {
 		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
@@ -1331,53 +1408,67 @@ int persist_reinvite_pinging(struct dlg_cell *dlg)
 	str caller_in_sdp = str_init("uCSDP"), callee_in_sdp = str_init("ucSDP");
 	str caller_out_sdp = str_init("aCSDP"), callee_out_sdp = str_init("acSDP");
 	str caller_adv_ct = str_init("Cct"), callee_adv_ct = str_init("cct");
+	int_str val;
 
 	if (dlg->legs_no[DLG_LEG_200OK] == 0) {
 		LM_DBG("non-confirmed dialogs are not DB persistent!\n");
 		return 0;
 	}
 
+	lock_start_write(dlg->vals_lock);
+
+	val.s = dlg->legs[DLG_CALLER_LEG].in_sdp;
 	if (dlg->legs[DLG_CALLER_LEG].in_sdp.len &&
 			store_dlg_value_unsafe(dlg, &caller_in_sdp,
-				&dlg->legs[DLG_CALLER_LEG].in_sdp) != 0) {
+				&val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist caller UAC SDP\n");
-		return -1;
+		goto error;
 	}
 
+	val.s = dlg->legs[DLG_CALLER_LEG].out_sdp;
 	if (dlg->legs[DLG_CALLER_LEG].out_sdp.len &&
 			store_dlg_value_unsafe(dlg, &caller_out_sdp,
-				&dlg->legs[DLG_CALLER_LEG].out_sdp) != 0) {
+				&val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist caller advertised SDP\n");
-		return -1;
+		goto error;
 	}
 
+	val.s = dlg->legs[DLG_CALLER_LEG].adv_contact;
 	if (store_dlg_value_unsafe(dlg, &caller_adv_ct,
-	                    &dlg->legs[DLG_CALLER_LEG].adv_contact) != 0) {
+	                    &val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist caller advertised Contact\n");
-		return -1;
+		goto error;
 	}
 
+	val.s = dlg->legs[dlg->legs_no[DLG_LEG_200OK]].in_sdp;
 	if (dlg->legs[dlg->legs_no[DLG_LEG_200OK]].in_sdp.len &&
 			store_dlg_value_unsafe(dlg, &callee_in_sdp,
-				&dlg->legs[dlg->legs_no[DLG_LEG_200OK]].in_sdp) != 0) {
+				&val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist callee UAC SDP\n");
-		return -1;
+		goto error;
 	}
 
+	val.s = dlg->legs[dlg->legs_no[DLG_LEG_200OK]].out_sdp;
 	if (dlg->legs[dlg->legs_no[DLG_LEG_200OK]].out_sdp.len &&
 			store_dlg_value_unsafe(dlg, &callee_out_sdp,
-				&dlg->legs[dlg->legs_no[DLG_LEG_200OK]].out_sdp) != 0) {
+				&val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist callee advertised SDP\n");
-		return -1;
+		goto error;
 	}
 
+	val.s = dlg->legs[dlg->legs_no[DLG_LEG_200OK]].adv_contact;
 	if (store_dlg_value_unsafe(dlg, &callee_adv_ct,
-	           &dlg->legs[dlg->legs_no[DLG_LEG_200OK]].adv_contact) != 0) {
+	           &val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist callee advertised Contact\n");
-		return -1;
+		goto error;
 	}
 
+	lock_stop_write(dlg->vals_lock);
 	return 0;
+
+error:
+	lock_stop_write(dlg->vals_lock);
+	return -1;
 }
 
 /* re-populate the SDPs/Contacts of caller/callee(s) from dlg val storage */
@@ -1386,67 +1477,87 @@ int restore_reinvite_pinging(struct dlg_cell *dlg)
 	str caller_in_sdp = str_init("uCSDP"), callee_in_sdp = str_init("ucSDP");
 	str caller_out_sdp = str_init("aCSDP"), callee_out_sdp = str_init("acSDP");
 	str caller_adv_ct = str_init("Cct"), callee_adv_ct = str_init("cct");
-	str out_buf;
+	int_str out_buf;
 	int ret = 0;
+	int dlg_val_type;
 
-	if (fetch_dlg_value(dlg, &caller_in_sdp, &out_buf, 0) != 0) {
+	if (fetch_dlg_value(dlg, &caller_in_sdp, &dlg_val_type, &out_buf, 0) != 0) {
 		dlg->legs[DLG_CALLER_LEG].in_sdp.len = 0;
 		dlg->legs[DLG_CALLER_LEG].in_sdp.s = 0;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].in_sdp, &out_buf) != 0) {
+		if (dlg_val_type != DLG_VAL_TYPE_STR) {
+			LM_ERR("Bad dialog value type\n");
+			ret = -1;
+		} else if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].in_sdp, &out_buf.s) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
 	}
 
-	if (fetch_dlg_value(dlg, &caller_out_sdp, &out_buf, 0) != 0) {
+	if (fetch_dlg_value(dlg, &caller_out_sdp, &dlg_val_type, &out_buf, 0) != 0) {
 		dlg->legs[DLG_CALLER_LEG].out_sdp.len = 0;
 		dlg->legs[DLG_CALLER_LEG].out_sdp.s = 0;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].out_sdp, &out_buf) != 0) {
+		if (dlg_val_type != DLG_VAL_TYPE_STR) {
+			LM_ERR("Bad dialog value type\n");
+			ret = -1;
+		} else if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].out_sdp, &out_buf.s) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
 	}
 
-	if (fetch_dlg_value(dlg, &caller_adv_ct, &out_buf, 0) != 0) {
+	if (fetch_dlg_value(dlg, &caller_adv_ct, &dlg_val_type, &out_buf, 0) != 0) {
 		LM_ERR("failed to fetch caller advertised Contact\n");
 		ret = -1;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].adv_contact,
-		                &out_buf) != 0) {
+		if (dlg_val_type != DLG_VAL_TYPE_STR) {
+			LM_ERR("Bad dialog value type\n");
+			ret = -1;
+		} else if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].adv_contact,
+		                &out_buf.s) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
 	}
 
-	if (fetch_dlg_value(dlg, &callee_in_sdp, &out_buf, 0) != 0) {
+	if (fetch_dlg_value(dlg, &callee_in_sdp, &dlg_val_type, &out_buf, 0) != 0) {
 		dlg->legs[DLG_FIRST_CALLEE_LEG].in_sdp.len = 0;
 		dlg->legs[DLG_FIRST_CALLEE_LEG].in_sdp.s = 0;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].in_sdp, &out_buf) != 0) {
+		if (dlg_val_type != DLG_VAL_TYPE_STR) {
+			LM_ERR("Bad dialog value type\n");
+			ret = -1;
+		} else if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].in_sdp,
+			&out_buf.s) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
 	}
 
 
-	if (fetch_dlg_value(dlg, &callee_out_sdp, &out_buf, 0) != 0) {
+	if (fetch_dlg_value(dlg, &callee_out_sdp, &dlg_val_type, &out_buf, 0) != 0) {
 		dlg->legs[DLG_FIRST_CALLEE_LEG].out_sdp.len = 0;
 		dlg->legs[DLG_FIRST_CALLEE_LEG].out_sdp.s = 0;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].out_sdp, &out_buf) != 0) {
+		if (dlg_val_type != DLG_VAL_TYPE_STR) {
+			LM_ERR("Bad dialog value type\n");
+			ret = -1;
+		} else if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].out_sdp, &out_buf.s) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
 	}
 
-	if (fetch_dlg_value(dlg, &callee_adv_ct, &out_buf, 0) != 0) {
+	if (fetch_dlg_value(dlg, &callee_adv_ct, &dlg_val_type, &out_buf, 0) != 0) {
 		LM_ERR("failed to fetch callee advertised Contact\n");
 		ret = -1;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].adv_contact,
-		                &out_buf) != 0) {
+		if (dlg_val_type != DLG_VAL_TYPE_STR) {
+			LM_ERR("Bad dialog value type\n");
+			ret = -1;
+		} else if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].adv_contact,
+		                &out_buf.s) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
@@ -1459,6 +1570,8 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 		int on_shutdown)
 {
 	str *s;
+	int_str val;
+	str flag_list;
 
 	LM_DBG("DLG vals and profiles should %s[%x:%d]\n",
 			(db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED)) ?
@@ -1468,22 +1581,24 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 		/* it is very likely to flush the vals/profiles to DB, so trigger the
 		 * callback to see if other modules may want to add more vals/profiles
 		 before the actual writting */
-		run_dlg_callbacks(DLGCB_WRITE_VP, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+		run_dlg_callbacks(DLGCB_WRITE_VP, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 	}
 
 	if (persist_reinvite_pinging(cell) != 0)
 		LM_ERR("failed to persist some Re-INVITE pinging info\n");
 
 	/* save sharing tag name as dlg val */
-	if (cell->shtag.s && store_dlg_value_unsafe(cell, &shtag_dlg_val,
-		&cell->shtag) < 0)
-		LM_ERR("Failed to store sharing tag name as dlg val\n");
+	val.s = cell->shtag;
+	if (cell->shtag.s && store_dlg_value(cell, &shtag_dlg_val, &val,
+		DLG_VAL_TYPE_STR) < 0)
+		LM_ERR("Failed to store sharing tag %.*s(%p) as dlg val\n",
+		       cell->shtag.len, cell->shtag.s, cell->shtag.s);
 
 	if (on_shutdown || (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED))) {
 		if (cell->vals==NULL) {
 			VAL_NULL(vals) = 1;
 		} else {
-			s = write_dialog_vars( cell->vals );
+			s = write_dialog_vars( cell );
 			if (s==NULL) {
 				VAL_NULL(vals) = 1;
 			} else {
@@ -1500,12 +1615,13 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 				SET_STR_VALUE(vals+1, *s);
 			}
 		}
-		SET_INT_VALUE(vals+2,  cell->user_flags);
+		flag_list = bitmask_to_flag_list(FLAG_TYPE_DIALOG, cell->user_flags);
+		SET_STR_VALUE(vals+2,  flag_list);
 		SET_INT_VALUE(vals+3,  cell->mod_flags);
 	} else {
 		VAL_NULL(vals) = 1;
 		VAL_NULL(vals+1) = 1;
-		SET_INT_VALUE(vals+2,  0);
+		VAL_NULL(vals+2) = 1;
 		SET_INT_VALUE(vals+3,  0);
 	}
 
@@ -1548,15 +1664,14 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 	VAL_TYPE(values) = DB_BIGINT;
 	VAL_TYPE(values+8) =
 	VAL_TYPE(values+15) = VAL_TYPE(values+16) = VAL_TYPE(values+19) =
-	VAL_TYPE(values+20) = VAL_TYPE(values+23) = VAL_TYPE(values+24)=
-	VAL_TYPE(values+25) = DB_INT;
+	VAL_TYPE(values+20) = VAL_TYPE(values+24)= VAL_TYPE(values+25) = DB_INT;
 
 	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
 	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
 	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
 	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
-	VAL_TYPE(values+22) = DB_STR;
+	VAL_TYPE(values+22) = VAL_TYPE(values+23) = DB_STR;
 
 	VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
 	DB_STRING;
@@ -1603,11 +1718,11 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				SET_STR_VALUE(values+4, cell->to_uri);
 				SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
 
-				SET_STR_VALUE(values+6,
-					cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+				SET_STR_VALUE(values+6, *get_socket_internal_name
+					(cell->legs[DLG_CALLER_LEG].bind_addr) );
 				if (cell->legs[callee_leg].bind_addr) {
-					SET_STR_VALUE(values+7,
-						cell->legs[callee_leg].bind_addr->sock_str);
+					SET_STR_VALUE(values+7, *get_socket_internal_name
+						(cell->legs[callee_leg].bind_addr) );
 				} else {
 					VAL_NULL(values+7) = 1;
 				}
@@ -1643,11 +1758,11 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
 				SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
-				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
-				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
-				&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
+				if (con_set_inslist(&dialog_dbf, dialog_db_handle,
+						&ins_list, insert_keys, DIALOG_TABLE_TOTAL_COL_NO) < 0) {
 					CON_RESET_INSLIST(dialog_db_handle);
-
+				}
+				CON_SET_CURR_PS(dialog_db_handle, &my_ps_insert);
 				if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 				values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 					LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
@@ -1661,7 +1776,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 
 				/* dialog saved */
 				cell->locked_by = process_no;
-				run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+				run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 				cell->locked_by = 0;
 
 				cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
@@ -1693,7 +1808,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				set_final_update_cols(values+21, cell, on_shutdown);
 				SET_INT_VALUE(values+25, cell->flags);
 
-				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
+				CON_SET_CURR_PS(dialog_db_handle, &my_ps_update);
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+13), (values+13), 1, 13)) !=0) {
@@ -1704,7 +1819,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 
 				/* dialog saved */
 				cell->locked_by = process_no;
-				run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+				run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 				cell->locked_by = 0;
 
 				cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
@@ -1714,7 +1829,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 
 				set_final_update_cols(values+21, cell, on_shutdown);
 
-				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
+				CON_SET_CURR_PS(dialog_db_handle, &my_ps_update_vp);
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+21), (values+21), 1, 4)) !=0) {
@@ -1724,7 +1839,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				}
 
 				cell->locked_by = process_no;
-				run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL,1, 1);
+				run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL,1, 1);
 				cell->locked_by = 0;
 
 				cell->flags &= ~DLG_FLAG_VP_CHANGED;
@@ -1759,12 +1874,14 @@ static int sync_dlg_db_mem(void)
 	int no_rows = 10;
 	unsigned int db_caller_cseq = 0, db_callee_cseq = 0;
 	unsigned int dlg_caller_cseq = 0, dlg_callee_cseq = 0;
-	struct socket_info *caller_sock,*callee_sock;
+	const struct socket_info *caller_sock,*callee_sock;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
-	int hash_entry,hash_id;
-	str tag_name;
+	unsigned int hash_entry, hash_id;
+	int_str tag_name;
 	int rc;
+	int dlg_val_type;
+	str_const flag_list;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -1840,7 +1957,7 @@ static int sync_dlg_db_mem(void)
 						"hash_size: please erase %.*s database and restart\n",
 						dialog_table_name.len, dialog_table_name.s);
 					shm_free(dlg);
-					goto error;
+					continue;
 				}
 
 				/*link the dialog*/
@@ -1888,6 +2005,17 @@ static int sync_dlg_db_mem(void)
 					}
 				}
 
+				if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &dlg_val_type,
+					&tag_name, 0)) == 0) {
+					if (dlg_val_type != DLG_VAL_TYPE_STR) {
+						LM_ERR("Bad dialog value type\n");
+					} else if (shm_str_dup(&dlg->shtag, &tag_name.s) < 0) {
+						LM_ERR("No more shm memory\n");
+					}
+				} else if (rc == -1)
+					LM_ERR("Failed to get dlg value for sharing tag %.*s\n",
+					       tag_name.s.len, tag_name.s.s);
+
 				/* profiles */
 				if (!VAL_NULL(values+18))
 					read_dialog_profiles( VAL_STR(values+18).s,
@@ -1896,7 +2024,9 @@ static int sync_dlg_db_mem(void)
 
 				/* script flags */
 				if (!VAL_NULL(values+19)) {
-					dlg->user_flags = VAL_INT(values+19);
+					GET_STR_VALUE(flag_list, values, 19, 0, 0);
+					dlg->user_flags = flag_list_to_bitmask(&flag_list,
+						FLAG_TYPE_DIALOG, FLAG_DELIM, 1);
 				}
 
 				/* module flags */
@@ -1946,7 +2076,7 @@ static int sync_dlg_db_mem(void)
 				dlg->legs[callee_idx(dlg)].last_gen_cseq =
 					(unsigned int)(VAL_INT(values+21));
 
-				if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+				if (dlg_has_options_pinging(dlg)) {
 					if (0 != insert_ping_timer(dlg))
 						LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 					else {
@@ -1967,12 +2097,6 @@ static int sync_dlg_db_mem(void)
 						ref_dlg(dlg,1);
 					}
 				}
-
-				if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
-					if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
-						LM_ERR("No more shm memory\n");
-				} else if (rc == -1)
-					LM_ERR("Failed to get dlg value for sharing tag\n");
 
 				if (dlg_db_mode == DB_MODE_DELAYED) {
 					/* to be later removed by timer */
@@ -2253,15 +2377,14 @@ static int restore_dlg_db(void)
 	VAL_TYPE(values) = DB_BIGINT;
 	VAL_TYPE(values+8) =
 	VAL_TYPE(values+15) = VAL_TYPE(values+16) = VAL_TYPE(values+19) =
-	VAL_TYPE(values+20) = VAL_TYPE(values+23) = VAL_TYPE(values+24)=
-	VAL_TYPE(values+25) = DB_INT;
+	VAL_TYPE(values+20) = VAL_TYPE(values+24) = VAL_TYPE(values+25) = DB_INT;
 
 	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
 	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
 	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
 	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
-	VAL_TYPE(values+22) = DB_STR;
+	VAL_TYPE(values+22) = VAL_TYPE(values+23) = DB_STR;
 
 	VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
 	DB_STRING;
@@ -2294,11 +2417,11 @@ static int restore_dlg_db(void)
 			SET_STR_VALUE(values+4, cell->to_uri);
 			SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
 
-			SET_STR_VALUE(values+6,
-				cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+			SET_STR_VALUE(values+6, *get_socket_internal_name
+				(cell->legs[DLG_CALLER_LEG].bind_addr) );
 			if (cell->legs[callee_leg].bind_addr) {
-				SET_STR_VALUE(values+7,
-					cell->legs[callee_leg].bind_addr->sock_str);
+				SET_STR_VALUE(values+7, *get_socket_internal_name
+					(cell->legs[callee_leg].bind_addr) );
 			} else {
 				VAL_NULL(values+7) = 1;
 			}
@@ -2334,11 +2457,11 @@ static int restore_dlg_db(void)
 			SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
 			SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
-			CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
-			if (con_set_inslist(&dialog_dbf,dialog_db_handle,
-			&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
+			if (con_set_inslist(&dialog_dbf, dialog_db_handle,
+					&ins_list, insert_keys, DIALOG_TABLE_TOTAL_COL_NO) < 0) {
 				CON_RESET_INSLIST(dialog_db_handle);
-
+			}
+			CON_SET_CURR_PS(dialog_db_handle, &my_ps_insert);
 			if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 			values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 				LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
@@ -2350,7 +2473,7 @@ static int restore_dlg_db(void)
 				ins_done = 1;
 
 			/* dialog saved */
-			run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
+			run_dlg_callbacks(DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, -1, NULL, 1, 1);
 
 			cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 		}

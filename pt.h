@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "atomic.h"
 #include "pt_load.h"
 
 #define MAX_PT_DESC	128
@@ -74,6 +75,9 @@ struct process_table {
 	int log_level;
 	/* used when resetting the log level */
 	int default_log_level;
+	/* used for suppressing the E_CORE_LOG event for new logs while handling
+	 * the event itself */
+	int suppress_log_event;
 
 	/* statistics of this process - they do not change during runtime,
 	 * even when the proc is terminated or respawn - we just hide/unhide */
@@ -89,6 +93,9 @@ struct process_table {
 
 	/* the load statistic of this process */
 	struct proc_load_info load;
+
+	/* synchronization during fork */
+	atomic_t startup_result;
 };
 
 
@@ -97,7 +104,7 @@ extern unsigned int counted_max_processes;
 extern int _termination_in_progress;
 
 int   init_multi_proc_support();
-void  set_proc_attrs( char *fmt, ...);
+void  set_proc_attrs(const char *fmt, ...);
 int   count_init_child_processes(void);
 int   count_child_processes(void);
 
@@ -114,8 +121,24 @@ int   count_child_processes(void);
 #define is_process_running(_idx) \
 	( (pt[_idx].flags&OSS_PROC_IS_RUNNING)?1:0 )
 
-pid_t internal_fork(char *proc_desc, unsigned int flags,
-		enum process_type type);
+struct internal_fork_params {
+	const char *proc_desc;
+	unsigned int flags;
+	enum process_type type;
+};
+
+struct internal_fork_handler {
+        const char *desc;
+        struct {
+            int (*in_child)(const struct internal_fork_params *);
+            int (*in_parent)(void);
+        } post_fork;
+        struct internal_fork_handler *_next;
+};
+
+pid_t internal_fork(const struct internal_fork_params *params);
+void register_fork_handler(struct internal_fork_handler *h);
+int run_post_fork_handlers(void);
 
 /* return processes pid */
 inline static int my_pid(void)

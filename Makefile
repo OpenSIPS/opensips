@@ -62,11 +62,7 @@ deps_gen += $(MEM_STATS_HDR)
 auto_gen += mem/mem_stats.c
 endif
 
-ifneq (,$(findstring DBG_STRUCT_HIST,$(DEFS)))
 dbg_objs=lib/dbg/struct_hist.c
-else
-dbg_objs=
-endif
 
 include Makefile.sources
 include Makefile.defs
@@ -116,11 +112,12 @@ endif
 
 modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_basenames=$(patsubst modules/%, %, $(modules))
+db_modules_basenames=$(filter db_%, $(modules_basenames))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf $(deps_gen)
 
-install_docs := README-MODULES AUTHORS NEWS README
+install_docs := AUTHORS NEWS README
 ifneq ($(skip-install-doc),yes)
 	install_docs += INSTALL
 endif
@@ -156,8 +153,13 @@ tar_extra_args+=
 include Makefile.rules
 
 #extra targets
+include Makefile.test
 
+ifdef UNIT_TESTS
+$(NAME): $(extra_objs) gen_misclibs # static_modules
+else
 $(NAME): $(extra_objs) # static_modules
+endif
 
 lex.yy.c: cfg.lex cfg.tab.h $(ALLDEP)
 ifeq (,$(FASTER))
@@ -192,16 +194,10 @@ $(modules):
 		)
 
 .PHONY: modules
-modules: $(deps_gen)
-	@set -e; \
-	for r in $(all_misclibs); do \
-		echo  "" ; \
-		echo  "" ; \
-		$(MAKE) -j -C $$r ; \
-	done
+modules: $(deps_gen) gen_misclibs
 ifeq (,$(FASTER))
 	@set -e; \
-	for r in $(modules) "" ; do \
+	for r in $(modules); do \
 		if [ -n "$$r" ]; then \
 			if [ -d "$$r" ]; then \
 				echo  "" ; \
@@ -221,6 +217,13 @@ else
 	)
 endif
 
+gen_misclibs:
+	@set -e; \
+	for r in $(all_misclibs); do \
+		echo  "" ; \
+		echo  "" ; \
+		$(MAKE) -j -C $$r ; \
+	done
 
 .PHONY: tool-docbook2pdf
 tool-docbook2pdf:
@@ -475,7 +478,8 @@ install-app: mk-install-dirs install-cfg install-bin \
 	install-app-doc install-man
 
 # Install all module stuff (except modules-docbook?)
-install-modules-all: install-modules install-modules-doc
+install-modules-files: install-modules install-modules-doc
+install-modules-all: install-modules-files install-modules-dbschema
 
 # Install everything (except modules-docbook?)
 install: install-app install-modules-all
@@ -544,6 +548,15 @@ install-modules: modules $(modules_prefix)/$(modules_dir)
 				$(MAKE) -C `dirname "$$r"` install_module_custom ; \
 			else \
 				echo "ERROR: module $$r not compiled" ; \
+			fi ;\
+		fi ; \
+	done
+
+install-modules-dbschema:
+	@for r in $(db_modules_basenames) "" ; do \
+		if [ -n "$$r" ]; then \
+			if [ -f modules/"$$r"/Makefile ]; then \
+				$(MAKE) -C modules/"$$r" install_module_dbschema ; \
 			fi ;\
 		fi ; \
 	done
@@ -622,5 +635,3 @@ comp_menuconfig:
 	$(MAKE) -C menuconfig
 menuconfig: comp_menuconfig
 	./menuconfig/configure --local
-
-include Makefile.test

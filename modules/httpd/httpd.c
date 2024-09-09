@@ -51,7 +51,7 @@
 
 /* module functions */
 static int mod_init();
-static int destroy(void);
+static void destroy(void);
 
 static mi_response_t *mi_list_root_path(const mi_params_t *params,
 						struct mi_handler *async_hdl);
@@ -59,6 +59,7 @@ static mi_response_t *mi_list_root_path(const mi_params_t *params,
 int port = 8888;
 str ip = {NULL, 0};
 str buffer = {NULL, 0};
+unsigned int hd_conn_timeout_s = 30;
 str tls_cert_file = {NULL, 0};
 str tls_key_file = {NULL, 0};
 str tls_ciphers = {"SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2", 45};
@@ -66,17 +67,19 @@ int post_buf_size = DEFAULT_POST_BUF_SIZE;
 struct httpd_cb *httpd_cb_list = NULL;
 
 
-static proc_export_t mi_procs[] = {
-	{"HTTPD",  0,  0, httpd_proc, 1, PROC_FLAG_INITCHILD },
+static const proc_export_t mi_procs[] = {
+	{"HTTPD",  0,  0, httpd_proc, 1,
+		PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT },
 	{NULL, 0, 0, NULL, 0, 0}
 };
 
 
 /** Module parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"port",          INT_PARAM, &port},
 	{"ip",            STR_PARAM, &ip.s},
 	{"buf_size",      INT_PARAM, &buffer.len},
+	{"conn_timeout",  INT_PARAM, &hd_conn_timeout_s},
 	{"post_buf_size", INT_PARAM, &post_buf_size},
 	{"tls_cert_file", STR_PARAM, &tls_cert_file.s},
 	{"tls_key_file", STR_PARAM,  &tls_key_file.s},
@@ -85,13 +88,13 @@ static param_export_t params[] = {
 };
 
 /** Exported functions */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"httpd_bind",	(cmd_function)httpd_bind, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
 /** MI commands */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "httpd_list_root_path", 0, 0, 0, {
 		{mi_list_root_path, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -124,14 +127,50 @@ struct module_exports exports = {
 };
 
 
+#if defined MHD_VERSION && MHD_VERSION < 0x00093500
+static long httpd_get_runtime_version(void)
+{
+	char *end;
+	const char *ver = MHD_get_version(), *rend, *vi;
+	unsigned long tmp, version = 0;
+	int i;
+
+	vi = ver;
+	rend = ver + strlen(ver);
+	for (i = 1; i < 4; i++) {
+		tmp = strtoul(vi, &end, 16);
+		if (end == vi || end > rend) {
+			LM_ERR("invalid libmicrohttpd version %s at token %d\n", ver, i);
+			return 0;
+		}
+		vi = end + 1;
+		version += tmp;
+		version <<= 8;
+	}
+
+	return version;
+}
+#endif
+
 static int mod_init(void)
 {
 	struct ip_addr *_ip;
 
-
+#if defined MHD_VERSION && MHD_VERSION >= 0x00093500
+	/* Get whether epoll() is supported. If supported then
+	 * Flags MHD_USE_EPOLL and MHD_USE_EPOLL_INTERNAL_THREAD can be used. */
+	if (MHD_is_feature_supported(MHD_FEATURE_EPOLL)!=MHD_YES) {
+#else
+	if (httpd_get_runtime_version() < 0x00095000) {
+#endif
+		LM_CRIT("the version of libmicrohttpd you have does not support "
+			"EPOLL feature, you need a version newer than 0.9.50, but "
+			"running %s\n",MHD_get_version());
+		return -1;
+	}
 	if (ip.s) {
 		ip.len = strlen(ip.s);
-		if ( (_ip=str2ip(&ip)) == NULL ) {
+		if ( strcmp(ip.s, "*") && !(_ip=str2ip(&ip)) && !(_ip=str2ip6(&ip))) {
 			LM_ERR("invalid IP [%.*s]\n", ip.len, ip.s);
 			return -1;
 		}
@@ -150,7 +189,7 @@ static int mod_init(void)
 }
 
 
-int destroy(void)
+static void destroy(void)
 {
 	struct httpd_cb *cb = httpd_cb_list;
 
@@ -161,7 +200,6 @@ int destroy(void)
 		shm_free(cb);
 		cb = httpd_cb_list;
 	}
-	return 0;
 }
 
 

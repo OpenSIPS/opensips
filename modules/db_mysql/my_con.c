@@ -25,39 +25,90 @@
 #include "dbase.h"
 #include <mysql.h>
 
+#define _list_h_skip_list_add_
+#include "../../lib/csv.h"
 #include "../tls_mgm/api.h"
+#include "../../mod_fix.h"
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../ut.h"
 
-static str *get_mysql_tls_dom(struct db_id* id)
+unsigned int db_mysql_tls_opts;
+
+static str *get_mysql_tls_dom(struct db_id* id, unsigned int *opts)
 {
 	static str dom = {0,0};
+	csv_record *rec;
+	str params;
+	int have_opts = 0;
 
 	if (!id->parameters)
 		return NULL;
 
-	if (strncmp(id->parameters, DB_TLS_DOMAIN_PARAM_EQ,
-			strlen(DB_TLS_DOMAIN_PARAM_EQ))) {
-		LM_ERR("Invalid URL parameter: %s\n", id->parameters);
-		return NULL;
+	init_str(&params, id->parameters);
+	rec = __parse_csv_record(&params, 0, '&');
+	for (; rec; rec = rec->next) {
+		/* tls_domain= */
+		if (rec->s.len >= DB_TLS_DOMAIN_PARAM_EQ_S && !memcmp(
+		        rec->s.s, DB_TLS_DOMAIN_PARAM_EQ, DB_TLS_DOMAIN_PARAM_EQ_S)) {
+			dom.s = rec->s.s + DB_TLS_DOMAIN_PARAM_EQ_S;
+			dom.len = rec->s.len - DB_TLS_DOMAIN_PARAM_EQ_S;
+			if (!dom.len) {
+				LM_ERR("Empty TLS domain name\n");
+				goto error;
+			}
+
+		/* tls_opts= */
+		} else if (rec->s.len >= DB_TLS_OPTS_PARAM_EQ_S && !memcmp(
+		        rec->s.s, DB_TLS_OPTS_PARAM_EQ, DB_TLS_OPTS_PARAM_EQ_S)) {
+			str tokens, f_names[] = {
+			    str_init("PKEY"),
+			    str_init("CERT"),
+			    str_init("CA"),
+			    str_init("CA_DIR"),
+			    str_init("CIPHERS"),
+				{0},
+			    };
+			void *inout = &tokens;
+
+			tokens.s = rec->s.s + DB_TLS_OPTS_PARAM_EQ_S;
+			tokens.len = rec->s.len - DB_TLS_OPTS_PARAM_EQ_S;
+			if (fixup_named_flags(&inout, f_names, NULL, NULL) != 0) {
+				LM_ERR("failed to parse 'tls_opts=' value: '%s'\n", tokens.s);
+				goto error;
+			}
+
+			*opts = (unsigned int)(unsigned long)inout;
+			have_opts = 1;
+
+			LM_INFO("using custom MySQL TLS opts: %s (mask: %u)\n",
+			        tokens.s, *opts);
+		} else {
+			LM_ERR("unknown MySQL URL param: '%.*s'\n", rec->s.len, rec->s.s);
+		}
 	}
 
-	dom.s = id->parameters + strlen(DB_TLS_DOMAIN_PARAM_EQ);
-	dom.len = strlen(dom.s);
 	if (!dom.len) {
-		LM_ERR("Empty TLS domain name\n");
-		return NULL;
+		if (have_opts)
+			LM_ERR("Missing 'tls_domain=' URL parameter\n");
+		goto error;
 	}
 
+	if (!have_opts)
+		*opts = MY_CON_TLS_ALL_OPTS;
+
+	free_csv_record(rec);
 	return &dom;
+error:
+	free_csv_record(rec);
+	return NULL;
 }
 
 int db_mysql_connect(struct my_con* ptr)
 {
 	str *tls_domain_name;
+	unsigned int tls_opts;
 
-	my_bool reconnect = 0;
 	/* if connection already in use, close it first*/
 	if (ptr->init)
 		mysql_close(ptr->con);
@@ -65,7 +116,7 @@ int db_mysql_connect(struct my_con* ptr)
 	mysql_init(ptr->con);
 	ptr->init = 1;
 
-	tls_domain_name = get_mysql_tls_dom(ptr->id);
+	tls_domain_name = get_mysql_tls_dom(ptr->id, &tls_opts);
 	if (use_tls && tls_domain_name) {
 		/* the connection should use TLS */
 		if (!ptr->tls_dom) {
@@ -74,19 +125,24 @@ int db_mysql_connect(struct my_con* ptr)
 				LM_ERR("TLS domain: %.*s not found\n",
 					tls_domain_name->len, tls_domain_name->s);
 				mysql_close(ptr->con);
+				ptr->init = 0;
 				return -1;
 			}
 		}
 
-		LM_DBG("TLS key file: %.*s\n", ptr->tls_dom->pkey.len, ptr->tls_dom->pkey.s);
-		LM_DBG("TLS cert file: %.*s\n", ptr->tls_dom->cert.len, ptr->tls_dom->cert.s);
-		LM_DBG("TLS ca file: %.*s\n", ptr->tls_dom->ca.len, ptr->tls_dom->ca.s);
-		LM_DBG("TLS ca dir: %s\n", ptr->tls_dom->ca_directory);
-		LM_DBG("TLS ciphers: %s\n", ptr->tls_dom->ciphers_list);
+		LM_DBG("TLS key file: %s\n", (tls_opts & MY_CON_TLS_PKEY) ? ptr->tls_dom->pkey.s:NULL);
+		LM_DBG("TLS cert file: %s\n", (tls_opts & MY_CON_TLS_CERT) ? ptr->tls_dom->cert.s:NULL);
+		LM_DBG("TLS ca file: %s\n", (tls_opts & MY_CON_TLS_CA) ? ptr->tls_dom->ca.s:NULL);
+		LM_DBG("TLS ca dir: %s\n", (tls_opts & MY_CON_TLS_CA_DIR) ? ptr->tls_dom->ca_directory:NULL);
+		LM_DBG("TLS ciphers: %s\n", (tls_opts & MY_CON_TLS_CIPHERS) ? ptr->tls_dom->ciphers_list:NULL);
+		LM_DBG("TLS opts: %u\n", tls_opts);
 
-		mysql_ssl_set(ptr->con, ptr->tls_dom->pkey.s, ptr->tls_dom->cert.s,
-		              ptr->tls_dom->ca.s, ptr->tls_dom->ca_directory,
-		              ptr->tls_dom->ciphers_list);
+		mysql_ssl_set(ptr->con,
+			(tls_opts & MY_CON_TLS_PKEY) ? ptr->tls_dom->pkey.s:NULL,
+			(tls_opts & MY_CON_TLS_CERT) ? ptr->tls_dom->cert.s:NULL,
+			(tls_opts & MY_CON_TLS_CA) ? ptr->tls_dom->ca.s:NULL,
+			(tls_opts & MY_CON_TLS_CA_DIR) ? ptr->tls_dom->ca_directory:NULL,
+			(tls_opts & MY_CON_TLS_CIPHERS) ? ptr->tls_dom->ciphers_list:NULL);
 	}
 
 	/* set connect, read and write timeout, the value counts three times */
@@ -94,11 +150,14 @@ int db_mysql_connect(struct my_con* ptr)
 	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT, (void *)&db_mysql_timeout_interval);
 	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT, (void *)&db_mysql_timeout_interval);
 
-	/* force no auto reconnection */
-#if MYSQL_VERSION_ID >= 50013
-	mysql_options(ptr->con, MYSQL_OPT_RECONNECT, &reconnect);
-#else
+	/* explicitly disable auto-reconnect on older libraries (default: 0) */
+#if MYSQL_VERSION_ID < 50013
 	ptr->con->reconnect = 0;
+#elif MYSQL_VERSION_ID < 80034
+	{
+		my_bool reconnect = 0;
+		mysql_options(ptr->con, MYSQL_OPT_RECONNECT, &reconnect);
+	}
 #endif
 
 	if (ptr->id->port) {
@@ -121,6 +180,7 @@ int db_mysql_connect(struct my_con* ptr)
 		LM_ERR("driver error(%d): %s\n",
 			mysql_errno(ptr->con), mysql_error(ptr->con));
 		mysql_close(ptr->con);
+		ptr->init = 0;
 		return -1;
 	}
 
@@ -196,7 +256,8 @@ void db_mysql_free_connection(struct pool_con* con)
 	if (_c->res) mysql_free_result(_c->res);
 	if (_c->id) free_db_id(_c->id);
 	if (_c->con) {
-		mysql_close(_c->con);
+		if (_c->init)
+			mysql_close(_c->con);
 		pkg_free(_c->con);
 	}
 	pkg_free(_c);

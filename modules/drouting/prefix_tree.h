@@ -70,7 +70,7 @@ typedef struct pgw_ {
 	/* type of gateway */
 	int type;
 	str ip_str;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	/* strip / pri and attrs */
 	str pri;
 	int strip;
@@ -129,7 +129,7 @@ typedef struct rt_info_ {
 	/* timerec says when the rule is on */
 	tmrec_expr *time_rec;
 	/* script route to be executed */
-	char* route_idx;
+	struct script_route_ref *route_ref;
 	/* opaque string with rule attributes */
 	str attrs;
 	/* array of pointers into the PSTN gw list */
@@ -203,8 +203,8 @@ get_prefix(
 	ptree_t *ptree,
 	str* prefix,
 	unsigned int rgid,
-	unsigned int *rgidx,
-	unsigned int *matched_len
+	unsigned int *matched_len,
+	int *rgidx
 	);
 
 int
@@ -253,6 +253,13 @@ rt_info_t*
 check_rt(
 	ptree_node_t *ptn,
 	unsigned int rgid
+	);
+
+rt_info_t*
+_check_rt(
+	ptree_node_t *ptn,
+	unsigned int rgid,
+	int *rgidx
 	);
 
 #endif

@@ -33,6 +33,7 @@
 #include "../globals.h"
 #include "../statistics.h"
 #include "../locking.h"
+#include "../mem/shm_mem.h"
 
 #include "hp_malloc.h"
 
@@ -40,11 +41,13 @@
 #include "mem_dbg_hash.h"
 #endif
 
+#include "../lib/dbg/struct_hist.h"
+
 #define MIN_FRAG_SIZE	ROUNDTO
 
 /* only perform a split if the resulting free fragment is at least this size */
-#define MIN_SHM_SPLIT_SIZE	4096
-#define MIN_PKG_SPLIT_SIZE	 256
+#define MIN_SHM_SPLIT_SIZE	 256
+#define MIN_PKG_SPLIT_SIZE	 128
 
 #define FRAG_NEXT(f) ((struct hp_frag *)(void *)((char *)((f) + 1) + (f)->size))
 
@@ -99,8 +102,6 @@ static unsigned int optimized_put_indexes[HP_HASH_SIZE];
 			optimized_put_indexes[___hash]; \
 	}) : \
 	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
-
-extern unsigned long *shm_hash_usage;
 
 /*
  * adaptive image of OpenSIPS's memory usage during runtime
@@ -209,6 +210,14 @@ void hp_stats_set_index(void *ptr, unsigned long idx)
 	HP_FRAG(ptr)->statistic_index = idx;
 }
 #endif
+
+unsigned long hp_get_dbg_pool_size(unsigned int hist_size)
+{
+	return ROUNDUP(sizeof(struct hp_block)) + FRAG_OVERHEAD +
+		FRAG_OVERHEAD + 56 /* sizeof(struct struct_hist_list) */ + 2 * hist_size *
+		(FRAG_OVERHEAD + 88 /* sizeof(struct struct_hist) */ +
+		FRAG_OVERHEAD + sizeof(struct struct_hist_action));
+}
 
 #if 0
 /* walk through all fragments and write them to the log.  Useful for dev */
@@ -526,10 +535,11 @@ static struct hp_block *hp_malloc_init(char *address, unsigned long size,
 
 	/* make address and size multiple of 8*/
 	start = (char *)ROUNDUP((unsigned long) address);
-	LM_DBG("HP_OPTIMIZE=%lu, HP_LINEAR_HASH_SIZE=%lu\n",
-			HP_MALLOC_OPTIMIZE, HP_LINEAR_HASH_SIZE);
-	LM_DBG("HP_HASH_SIZE=%lu, HP_EXTRA_HASH_SIZE=%lu, hp_block size=%zu\n",
-			HP_HASH_SIZE, HP_EXTRA_HASH_SIZE, sizeof(struct hp_block));
+	LM_DBG("HP_OPTIMIZE=%lu, HP_LINEAR_HASH_SIZE=%lu, %lu-bytes aligned\n",
+			HP_MALLOC_OPTIMIZE, HP_LINEAR_HASH_SIZE, (unsigned long)ROUNDTO);
+	LM_DBG("HP_HASH_SIZE=%lu, HP_EXTRA_HASH_SIZE=%lu, hp_block size=%zu, "
+			"frag_size=%zu\n", HP_HASH_SIZE, HP_EXTRA_HASH_SIZE,
+			sizeof(struct hp_block), sizeof(struct hp_frag));
 	LM_DBG("params (%p, %lu), start=%p\n", address, size, start);
 
 	if (size < (unsigned long)(start - address))

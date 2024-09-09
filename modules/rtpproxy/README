@@ -19,15 +19,17 @@ rtpproxy Module
               1.5.2. rtpproxy_disable_tout (integer)
               1.5.3. rtpproxy_timeout (string)
               1.5.4. rtpproxy_autobridge (integer)
-              1.5.5. rtpproxy_tout (integer)
-              1.5.6. rtpproxy_retr (integer)
-              1.5.7. default_set (integer)
-              1.5.8. nortpproxy_str (string)
-              1.5.9. db_url (string)
-              1.5.10. db_table (string)
-              1.5.11. rtpp_socket_col (string)
-              1.5.12. set_id_col (string)
-              1.5.13. rtpp_notify_socket (string)
+              1.5.5. rtpproxy_retr (integer)
+              1.5.6. default_set (integer)
+              1.5.7. nortpproxy_str (string)
+              1.5.8. db_url (string)
+              1.5.9. db_table (string)
+              1.5.10. rtpp_socket_col (string)
+              1.5.11. set_id_col (string)
+              1.5.12. rtpp_notify_socket (string)
+              1.5.13. generated_sdp_port_min (integer)
+              1.5.14. generated_sdp_port_max (integer)
+              1.5.15. generated_sdp_media_ip (string)
 
         1.6. Exported Functions
 
@@ -35,10 +37,12 @@ rtpproxy Module
                       [set_id][, [sock_var][, ret_var]]]]])
 
               1.6.2. rtpproxy_offer([[flags][, [ip_address][,
-                      [set_id][, [sock_var][, ret_var]]]])
+                      [set_id][, [sock_var][, [ret_var][,
+                      [body_var]]]]]])
 
               1.6.3. rtpproxy_answer([[flags][, [ip_address][,
-                      [set_id][, [sock_var][, ret_var]]]]])
+                      [set_id][, [sock_var][, [ret_var][,
+                      [body_var]]]]]]])
 
               1.6.4. rtpproxy_unforce([[set_id][, sock_var]])
               1.6.5. rtpproxy_stream2uac(prompt_name, count[,
@@ -103,17 +107,20 @@ rtpproxy Module
    1.10. Set rtpp_socket_col parameter
    1.11. Set set_id parameter
    1.12. Set rtpp_notify_socket parameter
-   1.13. rtpproxy_engage usage
-   1.14. rtpproxy_offer usage
-   1.15. rtpproxy_answer usage
-   1.16. rtpproxy_unforce usage
-   1.17. rtpproxy_stream2xxx usage
-   1.18. rtpproxy_start_recording usage
-   1.19. rtpproxy_stats usage
-   1.20. rtpproxy_all_stats usage
-   1.21. rtpproxy_enable usage
-   1.22. rtpproxy_show usage
-   1.23. rtpproxy_reload usage
+   1.13. Set generated_sdp_port_min parameter
+   1.14. Set generated_sdp_port_max parameter
+   1.15. Set generated_sdp_media_ip parameter
+   1.16. rtpproxy_engage usage
+   1.17. rtpproxy_offer usage
+   1.18. rtpproxy_answer usage
+   1.19. rtpproxy_unforce usage
+   1.20. rtpproxy_stream2xxx usage
+   1.21. rtpproxy_start_recording usage
+   1.22. rtpproxy_stats usage
+   1.23. rtpproxy_all_stats usage
+   1.24. rtpproxy_enable usage
+   1.25. rtpproxy_show usage
+   1.26. rtpproxy_reload usage
 
 Chapter 1. Admin Guide
 
@@ -240,7 +247,8 @@ Chapter 1. Admin Guide
 
    Definition of socket(s) used to connect to (a set) RTPProxy. It
    may specify a UNIX socket, an IPv4/IPv6 UDP socket or an
-   IPv4/IPv6 TCP socket.
+   IPv4/IPv6 TCP socket. If the protocol part (i.e. “udp:”) is
+   missing, the socket is treated as a UNIX socket.
 
    The definition also supports to specify a different IP that
    will be advertised instead of the one returned by RTPProxy.
@@ -252,19 +260,23 @@ Chapter 1. Admin Guide
 
    Example 1.1. Set rtpproxy_sock parameter
 ...
-# single rtproxy with specific weight
-modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:12221=2")
+# single rtpproxy with specific weight
+modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:22222=2")
+
+# single rtpproxy with advertised address + weight
+modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:22222|8.8.8.8=2")
+
 # multiple rtproxies for LB
 modparam("rtpproxy", "rtpproxy_sock",
-        "udp:localhost:12221 udp:localhost:12222 tcp:remote1:33422 tcp6:
+        "udp:localhost:22222 udp:localhost:22223 tcp:remote1:33422 tcp6:
 remote2:32322")
+
 # multiple sets of multiple rtproxies
-modparam("rtpproxy", "rtpproxy_sock",
-        "1 == udp:localhost:12221 udp:localhost:12222")
-modparam("rtpproxy", "rtpproxy_sock",
-        "2 == udp:localhost:12225")
-modparam("rtpproxy", "rtpproxy_sock",
-        "2 == udp:localhost:12225|8.8.8.8")
+modparam("rtpproxy", "rtpproxy_sock", "1 == udp:localhost:22222 udp:loca
+lhost:22223")
+modparam("rtpproxy", "rtpproxy_sock", "2 == udp:localhost:22223")
+modparam("rtpproxy", "rtpproxy_sock", "2 == udp:localhost:22223|8.8.8.8"
+)
 ...
 
 1.5.2. rtpproxy_disable_tout (integer)
@@ -303,11 +315,7 @@ modparam("rtpproxy", "rtpproxy_timeout", "0.2")
 modparam("rtpproxy", "rtpproxy_autobridge", 1)
 ...
 
-1.5.5. rtpproxy_tout (integer)
-
-   Obsolete. see rtpproxy_timeout.
-
-1.5.6. rtpproxy_retr (integer)
+1.5.5. rtpproxy_retr (integer)
 
    How many times rtpproxy should retry to send and receive after
    timeout was generated.
@@ -319,7 +327,7 @@ modparam("rtpproxy", "rtpproxy_autobridge", 1)
 modparam("rtpproxy", "rtpproxy_retr", 2)
 ...
 
-1.5.7. default_set (integer)
+1.5.6. default_set (integer)
 
    The parameter indicates the default RTPProxy set to be used
    when provisioning an engine in the config file without an
@@ -333,7 +341,7 @@ modparam("rtpproxy", "rtpproxy_retr", 2)
 modparam("rtpproxy", "default_set", 1)
 ...
 
-1.5.8. nortpproxy_str (string)
+1.5.7. nortpproxy_str (string)
 
    The parameter sets the SDP attribute used by rtpproxy to mark
    the packet SDP informations have already been mangled.
@@ -352,7 +360,7 @@ Note
 modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
 
-1.5.9. db_url (string)
+1.5.8. db_url (string)
 
    The database url. This parameter should be set if you want to
    use a database table from where to load or reload definitions
@@ -371,7 +379,7 @@ modparam("rtpproxy", "db_url",
 ...
 
 
-1.5.10. db_table (string)
+1.5.9. db_table (string)
 
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
@@ -384,7 +392,7 @@ modparam("rtpproxy", "db_table", "nh_sockets")
 ...
 
 
-1.5.11. rtpp_socket_col (string)
+1.5.10. rtpp_socket_col (string)
 
    The name rtpp socket column in the database table.
 
@@ -396,7 +404,7 @@ modparam("rtpproxy", "rtpp_socket_col", "rtpp_socket")
 ...
 
 
-1.5.12. set_id_col (string)
+1.5.11. set_id_col (string)
 
    The name set id column in the database table.
 
@@ -408,7 +416,7 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 ...
 
 
-1.5.13. rtpp_notify_socket (string)
+1.5.12. rtpp_notify_socket (string)
 
    The socket OpenSIPS listens for notifications from RTPProxy.
    Currently OpenSIPS can receive RTP timeout and DTMF events.
@@ -425,6 +433,42 @@ modparam("rtpproxy", "rtpp_notify_socket", "unix:/tmp/rtpproxy.unix")
 modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 ...
 
+
+1.5.13. generated_sdp_port_min (integer)
+
+   When RTPProxy module needs to generate an SDP body, use this
+   value as the minimum value of the port.
+
+   Default value is “35000”.
+
+   Example 1.13. Set generated_sdp_port_min parameter
+...
+modparam("rtpproxy", "generated_sdp_port_min", 10000)
+...
+
+1.5.14. generated_sdp_port_max (integer)
+
+   When RTPProxy module needs to generate an SDP body, use this
+   value as the maximum value of the port.
+
+   Default value is “65000”.
+
+   Example 1.14. Set generated_sdp_port_max parameter
+...
+modparam("rtpproxy", "generated_sdp_port_max", 30000)
+...
+
+1.5.15. generated_sdp_media_ip (string)
+
+   When RTPProxy module needs to generate an SDP body, use this
+   value as the media_ip in the c= and the o=.
+
+   Default value is “127.0.0.1”.
+
+   Example 1.15. Set generated_sdp_media_ip parameter
+...
+modparam("rtpproxy", "generated_sdp_media_ip", "10.0.0.1")
+...
 
 1.6. Exported Functions
 
@@ -531,7 +575,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.13. rtpproxy_engage usage
+   Example 1.16. rtpproxy_engage usage
 ...
 if (is_method("INVITE") && has_totag()) {
         if ($var(setid) != 0) {
@@ -545,20 +589,25 @@ if (is_method("INVITE") && has_totag()) {
 ...
 
 1.6.2.  rtpproxy_offer([[flags][, [ip_address][, [set_id][,
-[sock_var][, ret_var]]]])
+[sock_var][, [ret_var][, [body_var]]]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on INVITE for the cases the SDPs are in
    INVITE and 200 OK and on 200 OK when SDPs are in 200 OK and
    ACK.
 
-   See rtpproxy_engage() function description above for the
-   meaning of the parameters.
+   The function receives the same parameters as rtpproxy_engage(),
+   as well as an extra parameter named body_var - this parameter
+   is used as an in-out variable for the body that should be used
+   to challenge RTP proxy server. If the variable is specified, it
+   is the function uses its content as the body to challenge, and
+   returns the resulted body in it. If not used, the message's
+   body is used, and the outgoing body is changed.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.14. rtpproxy_offer usage
+   Example 1.17. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -591,19 +640,19 @@ onreply_route[2]
 }
 
 1.6.3.  rtpproxy_answer([[flags][, [ip_address][, [set_id][,
-[sock_var][, ret_var]]]]])
+[sock_var][, [ret_var][, [body_var]]]]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on 200 OK for the cases the SDPs are in
    INVITE and 200 OK and on ACK when SDPs are in 200 OK and ACK.
 
-   See rtpproxy_engage() function description above for the
-   meaning of the parameters.
+   See rtpproxy_offer() function description above for the meaning
+   of the parameters.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.15. rtpproxy_answer usage
+   Example 1.18. rtpproxy_answer usage
 
    See rtpproxy_offer() function example above for example.
 
@@ -619,7 +668,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.16. rtpproxy_unforce usage
+   Example 1.19. rtpproxy_unforce usage
 ...
 rtpproxy_unforce();
 ...
@@ -663,7 +712,7 @@ sock_var]])
      * sock_var(var, optional) - variable used to store the
        RTPProxy socket chosen for this call.
 
-   Example 1.17. rtpproxy_stream2xxx usage
+   Example 1.20. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -719,7 +768,7 @@ rtpproxy_stop_stream2uas([[set_id][, sock_var]])
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.18. rtpproxy_start_recording usage
+   Example 1.21. rtpproxy_start_recording usage
 ...
 rtpproxy_start_recording();
 
@@ -751,7 +800,7 @@ rtpproxy_start_recording(,,,"udp:127.0.0.1:60000", 1);
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.19. rtpproxy_stats usage
+   Example 1.22. rtpproxy_stats usage
 ...
 rtpproxy_stats($var(up),$var(down),$var(sent),$var(fail));
 xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
@@ -790,7 +839,7 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
      * rtpa_lost - $(avp(ret)[8])
      * rtpa_perrs - $(avp(ret)[9])
 
-   Example 1.20. rtpproxy_all_stats usage
+   Example 1.23. rtpproxy_all_stats usage
 ...
 rtpproxy_all_stats($avp(stats));
 xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
@@ -805,21 +854,22 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
    Parameters:
      * url - the rtp proxy url (exactly as defined in the config
        file).
+     * enable - 1 - enable, 0 - disable the RTPproxy node, 2 - put
+       the RTPproxy node in probing mode.
      * setid (optional) - the rtpproxy set ID (used for better
        indentification of the rtpproxy instance to be enabled, for
        example when a rtpproxy is used in multiple sets).
-     * enable - 1 - enable, 0 - disable. the config file).
 
    NOTE: if a rtpproxy is defined multiple times (in the same or
    different set), all its instances will be enables/disabled IF
    no set ID provided (as second param).
 
-   Example 1.21.  rtpproxy_enable usage
+   Example 1.24.  rtpproxy_enable usage
 ...
 ## disable a RTPProxy by URL only
 $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
-$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0 3
 ...
 
 1.7.2. rtpproxy_show
@@ -829,7 +879,7 @@ $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
 
    No parameter.
 
-   Example 1.22.  rtpproxy_show usage
+   Example 1.25.  rtpproxy_show usage
 ...
 $ opensips-cli -x mi rtpproxy_show
 ...
@@ -843,7 +893,7 @@ $ opensips-cli -x mi rtpproxy_show
 
    No parameter.
 
-   Example 1.23.  rtpproxy_reload usage
+   Example 1.26.  rtpproxy_reload usage
 ...
 $ opensips-cli -x mi rtpproxy_reload
 ...
@@ -926,22 +976,22 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 178 119 3801 1667
-   2. Maksym Sobolyev (@sobomax) 52 6 5006 253
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
-   4. Vlad Patrascu (@rvlad-patrascu) 23 8 362 699
-   5. Liviu Chircu (@liviuchircu) 20 16 91 183
-   6. Ovidiu Sas (@ovidiusas) 7 5 31 22
-   7. Peter Lemenkov (@lemenkov) 6 4 60 11
+   1. Razvan Crainea (@razvancrainea) 265 166 6162 2870
+   2. Maksym Sobolyev (@sobomax) 60 12 5054 280
+   3. Liviu Chircu (@liviuchircu) 28 22 228 243
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
+   5. Vlad Patrascu (@rvlad-patrascu) 25 9 409 725
+   6. Peter Lemenkov (@lemenkov) 7 5 60 59
+   7. Ovidiu Sas (@ovidiusas) 7 5 31 22
    8. Vlad Paiu (@vladpaiu) 6 4 15 9
    9. Ryan Bullock (@rrb3942) 4 2 68 9
-   10. robdyck 4 2 8 4
+   10. John Burke (@john08burke) 4 2 8 6
 
-   All remaining contributors: Dave Sidwell (@davesidwell),
-   Ezequiel Lovelle (@lovelle), Christophe Sollet (@csollet), Anca
-   Vamanu, Mikko Lehto, Dan Pascu (@danpascu), Walter Doekes
-   (@wdoekes), Dusan Klinec (@ph4r05), Julián Moreno Patiño, Zero
-   King (@l2dy).
+   All remaining contributors: robdyck, Dave Sidwell
+   (@davesidwell), Ezequiel Lovelle (@lovelle), Christophe Sollet
+   (@csollet), Anca Vamanu, Mikko Lehto, Dan Pascu (@danpascu),
+   Walter Doekes (@wdoekes), Dusan Klinec (@ph4r05), Julián Moreno
+   Patiño, Norman Brandinger (@NormB), Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -963,22 +1013,23 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Jul 2020
-   2.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jul 2020
-   3.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
-   5.  robdyck                             Apr 2020 - Apr 2020
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   9.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
-   10. Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
+   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Aug 2024
+   2.  Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
+   3.  Liviu Chircu (@liviuchircu)         Jul 2012 - May 2023
+   4.  Maksym Sobolyev (@sobomax)          Mar 2011 - Mar 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   6.  Peter Lemenkov (@lemenkov)          Dec 2011 - Apr 2022
+   7.  John Burke (@john08burke)           Apr 2021 - Apr 2021
+   8.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
+   10. robdyck                             Apr 2020 - Apr 2020
 
-   All remaining contributors: Maksym Sobolyev (@sobomax), Julián
-   Moreno Patiño, Vlad Paiu (@vladpaiu), Dusan Klinec (@ph4r05),
-   Dave Sidwell (@davesidwell), Ezequiel Lovelle (@lovelle), Mikko
-   Lehto, Walter Doekes (@wdoekes), Christophe Sollet (@csollet),
-   Anca Vamanu.
+   All remaining contributors: Zero King (@l2dy), Dan Pascu
+   (@danpascu), Ryan Bullock (@rrb3942), Julián Moreno Patiño,
+   Vlad Paiu (@vladpaiu), Dusan Klinec (@ph4r05), Dave Sidwell
+   (@davesidwell), Ezequiel Lovelle (@lovelle), Mikko Lehto,
+   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Anca
+   Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -987,12 +1038,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Maksym Sobolyev (@sobomax), Razvan Crainea
-   (@razvancrainea), Zero King (@l2dy), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei Iancu
-   (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu
-   Sas (@ovidiusas).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Maksym Sobolyev (@sobomax), Zero King (@l2dy),
+   Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
+   Julián Moreno Patiño, Bogdan-Andrei Iancu (@bogdan-iancu),
+   Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

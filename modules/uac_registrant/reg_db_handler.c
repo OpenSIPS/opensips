@@ -41,12 +41,12 @@ str binding_params_column = str_init(BINDING_PARAMS_COL);
 str expiry_column = str_init(EXPIRY_COL);
 str forced_socket_column = str_init(FORCED_SOCKET_COL);
 str cluster_shtag_column = str_init(CLUSTER_SHTAG_COL);
+str state_column = str_init(STATE_COL);
 
 str reg_table_name = str_init(REG_TABLE_NAME);
 
 static db_con_t *reg_db_handle = NULL;
 static db_func_t reg_dbf;
-
 
 int connect_reg_db(const str *db_url)
 {
@@ -70,8 +70,7 @@ static int use_reg_table(void)
 	return 0;
 }
 
-
-int load_reg_info_from_db(unsigned int plist)
+int load_reg_info_from_db(unsigned int mode, record_coords_t *coords)
 {
 	db_res_t * res = NULL;
 	db_val_t * values;
@@ -89,7 +88,11 @@ int load_reg_info_from_db(unsigned int plist)
 	unsigned int expiry_col;
 	unsigned int forced_socket_col;
 	unsigned int cluster_shtag_col;
+	unsigned int state_col;
 	db_key_t q_cols[REG_TABLE_TOTAL_COL_NO];
+	db_key_t key_cols[REG_KEY_COL_NO] =
+		{&aor_column, &binding_URI_column, &registrar_column};
+	db_val_t key_vals[REG_KEY_COL_NO];
 
 	char *p = NULL;
 	int len = 0;
@@ -101,8 +104,7 @@ int load_reg_info_from_db(unsigned int plist)
 	str _param_str = {NULL, 0};
 	int reg_id_found = 0;
 	int sip_instance_found = 0;
-	str forced_socket, host, s;
-	int port, proto;
+	str forced_socket, s;
 	uac_reg_map_t uac_param;
 
 	p = int2str((unsigned long)(time(0)), &len);
@@ -129,27 +131,60 @@ int load_reg_info_from_db(unsigned int plist)
 	q_cols[expiry_col = n_result_cols++] = &expiry_column;
 	q_cols[forced_socket_col = n_result_cols++] = &forced_socket_column;
 	q_cols[cluster_shtag_col = n_result_cols++] = &cluster_shtag_column;
+	q_cols[state_col = n_result_cols++] = &state_column;
 
-	/* select the whole tabel and all the columns */
-	if (DB_CAPABILITY(reg_dbf, DB_CAP_FETCH)) {
-		if(reg_dbf.query(reg_db_handle, 0, 0, 0, q_cols, 0,
-				REG_TABLE_TOTAL_COL_NO, 0, 0) < 0) {
-			LM_ERR("Error while querying (fetch) database\n");
-			return -1;
-		}
-		if(reg_dbf.fetch_result(reg_db_handle, &res, REG_FETCH_SIZE)<0){
-			LM_ERR("fetching rows failed\n");
+	if (mode == REG_DB_LOAD_RECORD) {
+		key_vals[0].type = DB_STR;
+		key_vals[0].nul = 0;
+		key_vals[1].type = DB_STR;
+		key_vals[1].nul = 0;
+		key_vals[2].type = DB_STR;
+		key_vals[2].nul = 0;
+
+		VAL_STR(&key_vals[0]) = coords->aor;
+		VAL_STR(&key_vals[1]) = coords->contact;
+		VAL_STR(&key_vals[2]) = coords->registrar;
+
+		if(reg_dbf.query(reg_db_handle, key_cols, 0, key_vals, q_cols,
+			REG_KEY_COL_NO, REG_TABLE_TOTAL_COL_NO, 0, &res) < 0) {
+			LM_ERR("Error while querying database\n");
 			return -1;
 		}
 	} else {
-		if(reg_dbf.query(reg_db_handle, 0, 0, 0, q_cols, 0,
-				REG_TABLE_TOTAL_COL_NO, 0, &res) < 0) {
-			LM_ERR("Error while querying database\n");
-			return -1;
+		/* select the whole tabel and all the columns */
+		if (DB_CAPABILITY(reg_dbf, DB_CAP_FETCH)) {
+			if(reg_dbf.query(reg_db_handle, 0, 0, 0, q_cols, 0,
+					REG_TABLE_TOTAL_COL_NO, 0, 0) < 0) {
+				LM_ERR("Error while querying (fetch) database\n");
+				return -1;
+			}
+			if(reg_dbf.fetch_result(reg_db_handle, &res, REG_FETCH_SIZE)<0){
+				LM_ERR("fetching rows failed\n");
+				return -1;
+			}
+		} else {
+			if(reg_dbf.query(reg_db_handle, 0, 0, 0, q_cols, 0,
+					REG_TABLE_TOTAL_COL_NO, 0, &res) < 0) {
+				LM_ERR("Error while querying database\n");
+				return -1;
+			}
 		}
 	}
 
 	nr_rows = RES_ROW_N(res);
+
+	if (mode == REG_DB_LOAD_RECORD) {
+		if (nr_rows == 0) {
+			LM_INFO("Record not found\n");
+			return -2;
+		} else if (nr_rows > 1) {
+			/* just make sure we reload a single registrant even if multiple
+			 * DB records matched */
+			LM_INFO("(aor, binding_URI, registrar) should identify a single record!"
+				" Reloading first match\n");
+			nr_rows = 1;
+		}
+	}
 
 	do {
 		LM_INFO("loading [%i] records from db\n", nr_rows);
@@ -329,20 +364,10 @@ int load_reg_info_from_db(unsigned int plist)
 			}
 
 			/* Get the socket */
-			if (values[forced_socket_col].val.string_val &&
-				(forced_socket.s = (char*)values[forced_socket_col].val.string_val)) {
-				if((forced_socket.len = strlen(forced_socket.s))){
-					if (parse_phostport(forced_socket.s,
-							forced_socket.len,
-							&host.s, &host.len,
-							&port, &proto)<0) {
-						LM_ERR("cannot parse forced socket [%.*s]\n",
-							forced_socket.len, forced_socket.s);
-						continue;
-					}
-					uac_param.send_sock = grep_internal_sock_info(&host,
-								(unsigned short) port,
-								(unsigned short) proto);
+			if (values[forced_socket_col].val.string_val) {
+				init_str(&forced_socket, values[forced_socket_col].val.string_val);
+				if (forced_socket.len) {
+					uac_param.send_sock = parse_sock_info(&forced_socket);
 					if (uac_param.send_sock==NULL) {
 						LM_ERR("invalid forced socket [%.*s]\n",
 							forced_socket.len, forced_socket.s);
@@ -388,10 +413,14 @@ int load_reg_info_from_db(unsigned int plist)
 				}
 			}
 
+			/* Get the initial state (enabled/disabled) */
+			if (values[state_col].val.int_val == REG_DB_STATE_ENABLED)
+				uac_param.flags |= REG_ENABLED;
+
 			LM_DBG("registrar=[%.*s] AOR=[%.*s] auth_user=[%.*s] "
 				"password=[%.*s] expire=[%d] proxy=[%.*s] "
 				"contact=[%.*s] third_party=[%.*s] "
-				"cluster_shtag=[%.*s/%d]\n",
+				"cluster_shtag=[%.*s/%d] state=[%d]\n",
 				uac_param.registrar_uri.len, uac_param.registrar_uri.s,
 				uac_param.to_uri.len, uac_param.to_uri.s,
 				uac_param.auth_user.len, uac_param.auth_user.s,
@@ -401,9 +430,10 @@ int load_reg_info_from_db(unsigned int plist)
 				uac_param.contact_uri.len, uac_param.contact_uri.s,
 				uac_param.from_uri.len, uac_param.from_uri.s,
 				uac_param.cluster_shtag.len, uac_param.cluster_shtag.s,
-				uac_param.cluster_id);
+				uac_param.cluster_id,
+				values[state_col].val.int_val);
 			lock_get(&reg_htable[uac_param.hash_code].lock);
-			ret = add_record(&uac_param, &now, plist);
+			ret = add_record(&uac_param, &now, mode, coords);
 			lock_release(&reg_htable[uac_param.hash_code].lock);
 			if(ret<0) {
 				LM_ERR("can't load registrant\n");
@@ -411,15 +441,19 @@ int load_reg_info_from_db(unsigned int plist)
 			}
 		}
 
-		/* any more data to be fetched ?*/
-		if (DB_CAPABILITY(reg_dbf, DB_CAP_FETCH)) {
-			if (reg_dbf.fetch_result(reg_db_handle, &res, REG_FETCH_SIZE)<0) {
-				LM_ERR("fetching more rows failed\n");
-				goto error;
-			}
-			nr_rows = RES_ROW_N(res);
-		} else {
+		if (mode == REG_DB_LOAD_RECORD) {
 			nr_rows = 0;
+		} else {
+			/* any more data to be fetched ?*/
+			if (DB_CAPABILITY(reg_dbf, DB_CAP_FETCH)) {
+				if (reg_dbf.fetch_result(reg_db_handle, &res, REG_FETCH_SIZE)<0) {
+					LM_ERR("fetching more rows failed\n");
+					goto error;
+				}
+				nr_rows = RES_ROW_N(res);
+			} else {
+				nr_rows = 0;
+			}
 		}
 	}while (nr_rows>0);
 
@@ -432,6 +466,39 @@ error:
 	return -1;
 }
 
+int reg_update_db_state(reg_record_t *rec)
+{
+	db_key_t key_cols[REG_KEY_COL_NO] =
+		{&aor_column, &binding_URI_column, &registrar_column};
+	db_val_t key_vals[REG_KEY_COL_NO];
+	db_key_t update_key = &state_column;
+	db_val_t update_val;
+
+	key_vals[0].type = DB_STR;
+	key_vals[0].nul = 0;
+	key_vals[1].type = DB_STR;
+	key_vals[1].nul = 0;
+	key_vals[2].type = DB_STR;
+	key_vals[2].nul = 0;
+
+	VAL_STR(&key_vals[0]) = rec->td.rem_uri;
+	VAL_STR(&key_vals[1]) = rec->contact_uri;
+	VAL_STR(&key_vals[2]) = rec->td.rem_target;
+
+	VAL_TYPE(&update_val) = DB_INT;
+	VAL_NULL(&update_val) = 0;
+	VAL_INT(&update_val) = rec->flags&REG_ENABLED ? 0 : 1;
+
+	if(use_reg_table()) return -1;
+
+	if (reg_dbf.update(reg_db_handle, key_cols, 0, key_vals, &update_key,
+		&update_val, 1, 1) < 0) {
+		LM_ERR("Failed to update registrant state in database\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 int init_reg_db(const str *db_url)
 {
@@ -450,7 +517,7 @@ int init_reg_db(const str *db_url)
 		return -1;
 	}
 	/* Load registrants into the primary list */
-	if(load_reg_info_from_db(0) !=0){
+	if(load_reg_info_from_db(REG_DB_LOAD, NULL) !=0){
 		LM_ERR("unable to load the registrant data\n");
 		return -1;
 	}

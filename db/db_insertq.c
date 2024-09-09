@@ -23,10 +23,11 @@
  *  2011-06-07  created (vlad)
  */
 
-#include "db_insertq.h"
-#include "db_cap.h"
 #include "../timer.h"
 #include "../pt.h"
+
+#include "db_insertq.h"
+#include "db_cap.h"
 
 int query_buffer_size = 0;
 int query_flush_time = 0;
@@ -130,11 +131,10 @@ void flush_query_list(void)
 			//Reset prepared statement between query lists/connections
 			my_ps = NULL;
 
-			CON_PS_REFERENCE(it->conn[process_no]) = &my_ps;
-
 			/* and let's insert the rows */
 			for (i=0;i<it->no_rows;i++)
 			{
+				CON_SET_CURR_PS(it->conn[process_no], &my_ps);
 				if (it->dbf.insert(it->conn[process_no],it->cols,it->rows[i],
 							it->col_no) < 0)
 					LM_ERR("failed to insert into DB\n");
@@ -642,6 +642,8 @@ void ql_force_process_disconnect(int p_id)
 				it->dbf.close(it->conn[p_id]);
 				it->conn[p_id]=NULL;
 			}
+
+			lock_release(it->lock);
 		}
 	}
 }

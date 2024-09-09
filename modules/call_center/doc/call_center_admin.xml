@@ -18,6 +18,16 @@
 	except the media playback (for the queue). This part must be provided via 
 	a third party media server (FreeSwitch, Asterisk or others).
 	</para>
+	<para>
+	This is actually a Contact Center and it is able to handle both
+	RTP/audio calls and (multiple) MSRP/chat calls, in the same time.
+	</para>
+	<para>
+	The module provides an internal buit-in dispatching logic (for sending the
+	calls/chats to the agents), but also offers the possibility to use an
+	external logic to do the dispatching
+	(see <xref linkend="mi_cc_dispatch_call_to_agent"/> MI command).
+	</para>
 	</section>
 
 	<section>
@@ -31,7 +41,7 @@
 		Each entity has a corresponding table in the database, for 
 		provisioning purposes - the <emphasis>cc_flows</emphasis> and 
 		<emphasis>cc_agents</emphasis> tables, see
-		<ulink url='https://opensips.org/Documentation/Install-DBSchema-1-11#AEN2361'>DB schema</ulink>.
+		<ulink url='https://opensips.org/Documentation/Install-DBSchema--3-3#AEN2656'>DB schema</ulink>.
 		Data is loaded at startup and cached into memory ; runtime reload is 
 		possible via the MI commands (see the <emphasis>cc_reload</emphasis> 
 		command in <xref linkend="exported_mi_functions"/>).
@@ -115,11 +125,23 @@
 		<title>Agents</title>
 		<para>
 		An agent is defined by a unique alphanumerical ID - the main attribute 
-		of an agent is its the set of <emphasis>skills</emphasis> and its SIP
-		<emphasis>location</emphasis>. The set of skills will tell what calls
-		to be received (from which flows, based on the skill matching); the 
-		location is a SIP URI where to call must be sent in order to be 
-		answered by the agent.
+		of an agent is its the set of <emphasis>skills</emphasis>. This set of
+		skills will tell what calls to be received (from which flows, based on
+		the skill matching).
+		</para>
+		<para>
+		The agent may provide support for different optional media types, like
+		RTP/audio or MSRP/chat. Each supported media type comes with the 
+		maximum supported number of sessions. Of course, for audio the `1` 
+		value is hardocded. On the SIP side, each media type comes with a
+		<emphasis>locations</emphasis>. The location is a SIP URI where to 
+		calls must be sent in order to be answered by the agent. At least one 
+		media type should be defined. To specify which media the agent
+		support, just define the corresponding SIP location in his profile.
+		</para>
+		<para>
+		So, at a certain time, an agent may handle either a single call,
+		either several chat sessions.
 		</para>
 		<para>
 		Additionally, the agent has a initial <emphasis>logstate</emphasis> - 
@@ -314,6 +336,78 @@ modparam("call_center", "reject_on_no_agents", 0)
 		</example>
 	</section>
 
+	<section id="param_chat_dispatch_policy" xreflabel="chat_dispatch_policy">
+		<title><varname>chat_dispatch_policy</varname> (int)</title>
+		<para>
+		A parameter to tell what should be the policy on dispatching the
+		chat/MSRP sessions to the agents, considering that an agent may
+		handle multiple such sessions/chats in the same time.
+		</para>
+		<para>
+		Options are:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>balancing </emphasis> - the distribution
+			will try to be even across the agents, but by doing this you may 
+			end up waisting chat sessions on agents and call starvation -
+			agents are partially used by chat sessions, so they cannot take
+			calls (of course, if you have mixed agetns with audio/chat)
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>full-load</emphasis> - the distribution
+			will try to make usage of an agent in the best possible way when
+			comes to chat sessions - once the agent take a chat, all the
+			following chats will be assigned ot him - the idea is to try to 
+			be efficient in using the resource/sessions of an agents, to leave
+			as much room as possible for calls. Of course, this may lead to an
+			un-even loading of chat agents - some will be full, others empty.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>Default value is <quote>balancing</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>chat_dispatch_policy</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "chat_dispatch_policy", "balancing")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_internal_call_dispatching" xreflabel="chat_internal_call_dispatching">
+		<title><varname>internal_call_dispatching</varname> (int)</title>
+		<para>
+		A parameter to tell if the internal/buit-in call dispatching to agent
+		should be used or not. If enabled, the module will automatically
+		dispatch (by itself) the queued/incoming calls to the available agents.
+		If disabled, the module will not do such dispaching by itself and it
+		is expected to use the  <xref linkend="mi_cc_dispatch_call_to_agent"/>
+		MI command to dispatch the queued calls to agents. This allows the
+		implementation of an external, custom dispatching logic. The value of
+		this setting may be changed during runtime via the 
+		<xref linkend="mi_cc_internal_call_dispatching"/> MI command.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>internal_call_dispatching</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "internal_call_dispatching", 0)
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section id="param_cc_agents_table" xreflabel="cc_agents_table">
 		<title><varname>cc_agents_table</varname> (string)</title>
@@ -357,11 +451,11 @@ modparam("call_center", "cca_agentid_column", "cid")
 	<section id="param_cca_location_column" xreflabel="cca_location_column">
 		<title><varname>cca_location_column</varname> (string)</title>
 		<para>
-		Name to be used for the "location" (SIP URI) column in the
-		agents table.
+		Name to be used for the calling/audio "location" (SIP URI) column in 
+		the agents table.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>agentid</quote>.
+		<emphasis>Default value is <quote>location</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -369,6 +463,46 @@ modparam("call_center", "cca_agentid_column", "cid")
 		<programlisting format="linespecific">
 ...
 modparam("call_center", "cca_location_column", "sip_uri")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_msrp_location_column" xreflabel="cca_msrp_location_column">
+		<title><varname>cca_msrp_location_column</varname> (string)</title>
+		<para>
+		Name to be used for the msrp/chat "location" (SIP URI) column in the
+		agents table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>msrp_location</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_msrp_location_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_msrp_location_column", "sip_uri")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_msrp_max_sessions_column" xreflabel="cca_msrp_max_sessions_column">
+		<title><varname>cca_msrp_max_sessions_column</varname> (string)</title>
+		<para>
+		Name to be used for the column (in the agents table) holding the 
+		maximum number of chat sessions that can be handled by the agent.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>msrp_max_sessions</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_msrp_max_sessions_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_msrp_max_sessions_column", "max_chats")
 ...
 </programlisting>
 		</example>
@@ -734,6 +868,44 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 		</example>
 	</section>
 
+	<section id="param_b2b_logic_ctx_param" xreflabel="b2b_logic_ctx_param">
+		<title><varname>b2b_logic_ctx_param</varname> (string)</title>
+		<para>
+		The name of the <emphasis>$b2b_logic.ctx</emphasis> variable that can be
+		used to retrieve the value of the parameter passed to
+		the <xref linkend="func_cc_handle_call"/> function.
+		</para>
+		<para>
+		This parameter will be copied throughout all the B2B scenarios started
+		by the call_center module. NOTE that you can change the value of the current
+		scenario by writing into it, but the change will not be reflected in a
+		different scenario.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>call_center</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2b_logic_ctx_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "b2b_logic_ctx_param", "b2b_callid")
+...
+route[handle_call_center] {
+    ...
+    cc_handle_call("flow", $ci);
+    ...
+}
+...
+route[b2b_handle_request] {
+    ...
+    xlog("Initial Callid is $b2b_logic.ctx(b2b_callid)\n");
+    ...
+}
+</programlisting>
+		</example>
+	</section>
+
 </section>
 
 
@@ -764,6 +936,10 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 				intended for custom integration of the call center module and 
 				it is 100% up to the script writer about the value and purpose
 				of this parameter, OpenSIPS will not touch or interpret it.
+				You can retrieve the value of this parameter using the
+				<emphasis>$b2b_logic.ctx</emphasis> variable with the name
+				defined in the <xref linkend="param_b2b_logic_ctx_param"/>
+				parameter.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -879,7 +1055,14 @@ cc_agent_login("agentX",0);
 		<section id="stat_ccg_answered_incalls" xreflabel="ccg_answered_incalls">
 		<title>ccg_answered_incalls</title>
 			<para>
-			Total number of calls answered by agents. (counter type)
+			Total number of calls (audio/RTP and chat/MSRP) answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section id="stat_ccg_answered_inchats" xreflabel="ccg_answered_inchats">
+		<title>ccg_answered_inchats</title>
+			<para>
+			Total number of chat/MSRP only calls answered by agents. (counter type)
 			</para>
 		</section>
 
@@ -894,7 +1077,14 @@ cc_agent_login("agentX",0);
 		<section id="stat_ccg_onhold_calls" xreflabel="ccg_onhold_calls">
 		<title>ccg_onhold_calls</title>
 			<para>
-			Total number of calls in the queues (onhold). (realtime type)
+			Total number of calls (audio/RTP and chat/MSRP) in the queues (onhold). (realtime type)
+			</para>
+		</section>
+
+		<section id="stat_ccg_onhold_chats" xreflabel="ccg_onhold_chats">
+		<title>ccg_onhold_chats</title>
+			<para>
+			Total number of chat/MSRP only calls in the queues (onhold). (realtime type)
 			</para>
 		</section>
 
@@ -925,7 +1115,14 @@ cc_agent_login("agentX",0);
 		<section id="stat_ccf_answ_incalls_flowID" xreflabel="ccf_answ_incalls_flowID">
 		<title>ccf_answ_incalls_flowID</title>
 			<para>
-			Nnumber of calls from the flow answered by agents. (counter type)
+			Nnumber of calls (audio/RTP and chat/MSRP) from the flow answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section id="stat_ccf_answ_inchats_flowID" xreflabel="ccf_answ_incalls_flowID">
+		<title>ccf_answ_incalls_flowID</title>
+			<para>
+			Nnumber of chat/MSRP only calls from the flow answered by agents. (counter type)
 			</para>
 		</section>
 
@@ -940,8 +1137,16 @@ cc_agent_login("agentX",0);
 		<section id="stat_ccf_onhold_incalls_flowID" xreflabel="ccf_onhold_incalls_flowID">
 		<title>ccf_onhold_incalls_flowID</title>
 			<para>
-			Number of calls (from the flow) which were put onhold.
-			 (counter type)
+			Number of calls (audio/RTP and chat/MSRP) -from the flow- which are onhold.
+			 (realtime type)
+			</para>
+		</section>
+
+		<section id="stat_ccf_onhold_inchats_flowID" xreflabel="ccf_onhold_inchats_flowID">
+		<title>ccf_onhold_inchats_flowID</title>
+			<para>
+			Number of chat/MSRP only calls -from the flow- which are onhold.
+			 (realtime type)
 			</para>
 		</section>
 
@@ -994,7 +1199,14 @@ cc_agent_login("agentX",0);
 		<section id="stat_cca_answ_incalls_agentID" xreflabel="cca_answ_incalls_agentID">
 		<title>cca_answ_incalls_agentID</title>
 			<para>
-			Nnumber of calls answered by the agent. (counter type)
+			Number of calls (audio/RTP and chat/MSRP) answered by the agent. (counter type)
+			</para>
+		</section>
+
+		<section id="stat_cca_answ_inchats_agentID" xreflabel="cca_answ_inchats_agentID">
+		<title>cca_answ_inchats_agentID</title>
+			<para>
+			Number of chat/MSRP only calls answered by the agent. (counter type)
 			</para>
 		</section>
 
@@ -1068,7 +1280,8 @@ opensips-cli -x mi cc_agent_login agentX 0
 		</title>
 		<para>
 		Command to list all the calls in queuing - for each call, the 
-		following attributes will be printed: the flow of the call, for how
+		following attributes will be printed: the call id, the calling
+		user info, the flow of the call, for how
 		long the call is in the queue, the ETW for the call, call priority 
 		and the call skill (inherited from the flow).
 		</para>
@@ -1110,8 +1323,8 @@ opensips-cli -x mi cc_list_flows
 		</title>
 		<para>
 		Command to list all the agents - for each agent, the 
-		following attributes will be printed: agent ID, agent login state and
-		agent state (free, wrapup, incall).
+		following attributes will be printed: agent ID, agent login state,
+		agent state (free, wrapup, incall) and info on ongoing sessions.
 		</para>
 		<para>
 		It takes no parameter.
@@ -1144,6 +1357,80 @@ opensips-cli -x mi cc_list_agents
 opensips-cli -x mi cc_list_agents
 </programlisting>
 	</section>
+
+	<section id="mi_cc_dispatch_call_to_agent" xreflabel="cc_dispatch_call_to_agent">
+		<title>
+		<function moreinfo="none">cc_dispatch_call_to_agent</function>
+		</title>
+		<para>
+		This function sends a given call (from the queue) to a given agent. For
+		the operation to succeed, several conditions must be met:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			the call must be in the queue
+			</para></listitem>
+			<listitem><para>
+			the agent must be logged in
+			</para></listitem>
+			<listitem><para>
+			the agent must support the skill required by the call
+			</para></listitem>
+			<listitem><para>
+			the agent must support the media (RTP/MSRP) requiref by the call
+			</para></listitem>
+			<listitem><para>
+			the agent must have available sessions for the requested media
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		It takes two parameters.
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>call_id</emphasis> - the ID of the call, as provided by
+			the queue listing MI command <xref linkend="mi_cc_list_queue"/>
+			</para></listitem>
+			<listitem><para>
+			<emphasis>agent_id</emphasis> - the ID of the call, as provided by
+			the agents listing MI command <xref linkend="mi_cc_list_agents"/>
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		IMPORTANT: in order to be used, you need to be sure that the internal
+		call dispatching is DISABLED via the
+		<xref linkend="param_internal_call_dispatching"/> module parameter
+		or the <xref linkend="mi_cc_internal_call_dispatching"/> MI command.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
+</programlisting>
+	</section>
+
+	<section id="mi_cc_internal_call_dispatching" xreflabel="cc_internal_call_dispatching">
+		<title>
+		<function moreinfo="none">cc_internal_call_dispatching</function>
+		</title>
+		<para>
+		Command to inspect and/or change the 
+		<xref linkend="param_internal_call_dispatching"/> setting
+		</para>
+		<para>
+		It takes one optional parameter <varname>dispatching</varname> if the
+		value of the setting should be changed. A 0 value means disabling
+		the internal dispatching, a non zero means to enable it.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi cc_internal_call_dispatching 0
+</programlisting>
+	</section>
+
 
 	<section id="mi_cc_reset_stats" xreflabel="cc_reset_stats">
 		<title>
@@ -1205,6 +1492,47 @@ opensips-cli -x mi cc_reset_stats
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
 	<para>
+		<section id="pv_cc_state" xreflabel="$cc_state">
+			<title><function moreinfo="none">$cc_state</function></title>
+			<para>
+			Returns the state of a call.
+			</para>
+			<para>
+				Possible values returned are:
+				<para>
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>welcome</emphasis> - the welcome message is played.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>dissuading1</emphasis> - the first dissuading message is played.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>dissuading2</emphasis> - the second dissuading message is played.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>queue</emphasis> - the call is in queue.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>preagent</emphasis> - the agent is being called.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>toagent</emphasis> - the agent is in call.
+					</para></listitem>
+				</itemizedlist>
+				</para>
+			</para>
+
+		<example>
+		<title>$rtpquery Usage</title>
+		<programlisting format="linespecific">
+...
+	$json(reply) := $rtpquery;
+	xlog("Total RTP Stats: $json(reply/totals)\n");
+...
+		</programlisting>
+		</example>
+		</section>
 	NONE
 	</para>
 	</section>

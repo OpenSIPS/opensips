@@ -750,19 +750,20 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ionut Ionita (@ionutrazvanionita) 201 45 5927 6525
-   2. Liviu Chircu (@liviuchircu) 40 20 464 921
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 22 178 147
-   4. Razvan Crainea (@razvancrainea) 22 20 61 56
+   1. Ionut Ionita (@ionutrazvanionita) 202 45 5927 6525
+   2. Liviu Chircu (@liviuchircu) 44 24 477 933
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 202 180
+   4. Razvan Crainea (@razvancrainea) 24 21 86 64
    5. Alexandr Dubovikov (@adubovikov) 22 2 2360 0
-   6. Vlad Patrascu (@rvlad-patrascu) 8 6 70 52
-   7. Zero King (@l2dy) 4 2 2 3
-   8. Vlad Paiu (@vladpaiu) 3 1 3 3
-   9. Dusan Klinec (@ph4r05) 3 1 1 1
-   10. Ezequiel Lovelle (@lovelle) 3 1 1 1
+   6. Vlad Patrascu (@rvlad-patrascu) 9 7 73 54
+   7. Maksym Sobolyev (@sobomax) 8 6 19 16
+   8. Walter Doekes (@wdoekes) 5 3 7 5
+   9. Bence Szigeti 4 2 10 4
+   10. Zero King (@l2dy) 4 2 2 3
 
-   All remaining contributors: Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov), Walter Doekes (@wdoekes).
+   All remaining contributors: Vlad Paiu (@vladpaiu), Dusan Klinec
+   (@ph4r05), Ezequiel Lovelle (@lovelle), Julián Moreno Patiño,
+   Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -784,19 +785,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Dec 2020
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   10. Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   3.  Bence Szigeti                       Jul 2023 - Aug 2023
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - May 2023
+   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2021
+   7.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
+   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
 
-   All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
-   (@vladpaiu), Alexandr Dubovikov (@adubovikov).
+   All remaining contributors: Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Ezequiel Lovelle (@lovelle), Vlad Paiu (@vladpaiu),
+   Alexandr Dubovikov (@adubovikov).
 
    (1) including any documentation-related commits, excluding
    merge commits

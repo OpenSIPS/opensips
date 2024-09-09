@@ -267,7 +267,7 @@ int xj_wlist_get(xj_wlist jwl, xj_jkey jkey, xj_jkey *p)
 		{
 			if(pos >= 0)
 				lock_set_release(jwl->sems, pos);
-				lock_set_release(jwl->sems, i);
+			lock_set_release(jwl->sems, i);
 #ifdef XJ_EXTRA_DEBUG
 			LM_DBG("entry already exists for <%.*s> in the"
 				" pool of <%d> [%d]\n",jkey->id->len, jkey->id->s,
@@ -470,7 +470,7 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 			strncpy(p0, "sip:", 5);
 			p0 += 4;
 		}
-		strncpy(p0, pa, i);
+		strncpy(p0, pa, i+1);
 #ifdef XJ_EXTRA_DEBUG
 		LM_DBG("outbound proxy=[%.*s]\n",
 			jwl->aliases->proxy->len, jwl->aliases->proxy->s);

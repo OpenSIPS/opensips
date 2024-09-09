@@ -1,8 +1,7 @@
-$Id$
 
 ******************************************************************************
 *                                                                            *
-*                   Welcome to OpenSIPS Project                               *
+*                   Welcome to OpenSIPS Project                              *
 *                                                                            *
 ******************************************************************************
 
@@ -31,7 +30,8 @@ file.
 
 For current developers/contributors of this project, see the CREDITS and
 AUTHORS file. For complete license information, please see the COPYING file.
-For a quick overview of OpenSIPS modules, please see the README-MODULES file.
+For an overview of OpenSIPS modules, see this listing on opensips.org:
+	https://www.opensips.org/Documentation/Modules
 
 
 Docs
@@ -58,12 +58,12 @@ reports, etc - please use the
            devel@lists.opensips.org
 public mailing list.
 
-For questions regarding businesses around OpenSIPS - like products, 
+For questions regarding businesses around OpenSIPS - like products,
 consultancy, trainings, etc - please use the
            business@lists.opensips.org
 public mailing list.
 
-Also there is a generic news mailing list where you can learn about what is 
+Also there is a generic news mailing list where you can learn about what is
 new or important for the OpenSIPS project, about alerts and updates regarding
 relaces and about events around the project.
            news@lists.opensips.org

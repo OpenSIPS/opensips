@@ -29,6 +29,7 @@
 #include "../../forward.h"
 #include "../../ut.h"
 #include "../../lib/url.h"
+#include "../../status_report.h"
 
 #include "fs_api.h"
 #include "fs_ipc.h"
@@ -146,11 +147,14 @@ void evs_free(fs_evs *sock)
 	shm_free(sock->host.s);
 	shm_free(sock->user.s);
 	shm_free(sock->pass.s);
+	pkg_free(sock->handle);
 
 	lock_destroy_rw(sock->stats_lk);
 	lock_destroy_rw(sock->lists_lk);
 
 	memset(sock, 0, sizeof *sock);
+
+	sock->invalid = 1; /* safety check against dangling fds in reactor */
 	shm_free(sock);
 }
 
@@ -300,7 +304,9 @@ static fs_evs* get_evs(const str *host, unsigned short port,
 		list_add(&sock->reconnect_list, fs_sockets_down);
 		lock_stop_write(sockets_down_lock);
 	} else {
-		evs_update(sock, user, pass);
+		/* avoid interfering with the auth of DB-provisioned sockets */
+		if (!(sock->flags & FS_EVS_FL_DB))
+			evs_update(sock, user, pass);
 
 		LM_DBG("found & updated FS sock: host=%s, port=%d, user=%s, pass=%s\n",
 		       sock->host.s, sock->port, sock->user.s, sock->pass.s);
@@ -366,12 +372,8 @@ int dup_common_tag(const str *tag, str *out)
 	memcpy(t->s.s, tag->s, tag->len);
 	t->s.s[t->s.len] = '\0';
 
-	if (!all_tags) {
-		all_tags = t;
-	} else {
-		t->next = all_tags;
-		all_tags = t;
-	}
+	t->next = all_tags;
+	all_tags = t;
 
 	*out = t->s;
 	return 0;
@@ -575,6 +577,20 @@ void evs_unsub(fs_evs *sock, const str *tag, const str_list *name)
 		LM_ERR("oom! some events may have been skipped\n");
 }
 
+void evs_set_flags(fs_evs *sock, unsigned int flags)
+{
+	lock_start_write(sock->stats_lk);
+	sock->flags |= flags;
+	lock_stop_write(sock->stats_lk);
+}
+
+void evs_reset_flags(fs_evs *sock, unsigned int flags)
+{
+	lock_start_write(sock->stats_lk);
+	sock->flags &= ~flags;
+	lock_stop_write(sock->stats_lk);
+}
+
 void put_evs(fs_evs *sock)
 {
 	/* prevents deadlocks on shutdown.
@@ -583,7 +599,7 @@ void put_evs(fs_evs *sock)
 	 * possible, since the main process brutally murders the FS connection
 	 * manager before it gets a chance to gracefully EOF its TCP connections.
 	 */
-	if (is_main)
+	if (sr_get_core_status() == STATE_TERMINATING)
 		return;
 
 	lock_start_write(sockets_lock);
@@ -719,6 +735,8 @@ int fs_bind(struct fs_binds *fapi)
 	fapi->get_evs_by_url        = get_evs_by_url;
 	fapi->evs_sub               = evs_sub;
 	fapi->evs_unsub             = evs_unsub;
+	fapi->evs_set_flags         = evs_set_flags;
+	fapi->evs_reset_flags       = evs_reset_flags;
 	fapi->put_evs               = put_evs;
 	fapi->get_stats_evs         = get_stats_evs;
 	fapi->put_stats_evs         = put_stats_evs;

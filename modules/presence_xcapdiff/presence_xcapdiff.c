@@ -30,11 +30,11 @@ str s_content_type = str_init("application/xcap-diff+xml");
 
 static int mod_init(void);
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
     {0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "presence", DEP_SILENT },
 		{ MOD_TYPE_DEFAULT, "pua",      DEP_SILENT },

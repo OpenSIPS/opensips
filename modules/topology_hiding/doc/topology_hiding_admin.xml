@@ -253,7 +253,19 @@ modparam("topology_hiding", "th_contact_encode_scheme", "base32")
 					<para><emphasis>U</emphasis> - Propagate the Username in the Contact header URI
 					</para>
 				</listitem>
-	<listitem>
+				<listitem>
+					<para><emphasis>D</emphasis> - Dialog ID (DID) is pushed into Contact username, rather than URI param. This option makes sense only when using topology hiding with dialog support.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>a</emphasis> - Preserve the advertised Contact header advertised to the caller throughout the entire dialog.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>A</emphasis> - Preserve the advertised Contact header advertised to the callee throughout the entire dialog.
+					</para>
+				</listitem>
+				<listitem>
 					<para><emphasis>D</emphasis> - Dialog ID (DID) is pushed into Contact username, rather than URI param. This option makes sense only when using topology hiding with dialog support.
 					</para>
 				</listitem>

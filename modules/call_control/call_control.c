@@ -126,7 +126,7 @@ int parse_stop(unsigned int type, void *val);
 
 // Local global variables
 static CallControlSocket callcontrol_socket = {
-    "/var/run/callcontrol/socket", // name
+    "/run/callcontrol/socket", // name
     -1,                            // sock
     500,                           // timeout in 500 milliseconds if there is no answer
     0,                             // time of the last failure
@@ -160,13 +160,13 @@ AVP_List *init_avps = NULL, *start_avps = NULL, *stop_avps = NULL;
 pv_elem_t *model;
 
 
-static cmd_export_t commands[] = {
+static const cmd_export_t commands[] = {
     {"call_control", (cmd_function)CallControl, {{0, 0, 0}}, REQUEST_ROUTE},
     {0, 0, {{0, 0, 0}}, 0}
 };
 
 
-static param_export_t parameters[] = {
+static const param_export_t parameters[] = {
     {"init",                    STR_PARAM|USE_FUNC_PARAM, (void*)parse_init},
     {"start",                   STR_PARAM|USE_FUNC_PARAM, (void*)parse_start},
     {"stop",                    STR_PARAM|USE_FUNC_PARAM, (void*)parse_stop},
@@ -183,7 +183,7 @@ static param_export_t parameters[] = {
 };
 
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
     // OpenSIPS module dependencies
     {
         {MOD_TYPE_DEFAULT, "dialog", DEP_ABORT},

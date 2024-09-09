@@ -41,7 +41,7 @@ int db_unixodbc_bind_api(const str* mod, db_func_t *dbb);
 /*
  * MySQL database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api",    (cmd_function)db_unixodbc_bind_api, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -49,7 +49,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"auto_reconnect",    INT_PARAM, &auto_reconnect},
 	{"use_escape_common", INT_PARAM, &use_escape_common},
 	{0, 0, 0}

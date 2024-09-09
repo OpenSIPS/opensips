@@ -33,15 +33,13 @@
 # define my_bool bool
 #endif
 
-#define PREP_STMT_VAL_LEN	1024
-
 struct bind_icontent {
 	unsigned long len;
 	my_bool null;
 };
 
 struct bind_ocontent {
-	char buf[PREP_STMT_VAL_LEN];
+	char *buf;
 	unsigned long len;
 	my_bool null;
 	my_bool error;
@@ -90,7 +88,14 @@ struct my_con {
 	struct tls_domain *tls_dom;;  /* TLS domain */
 };
 
-
+#define MY_CON_TLS_PKEY     (1<<0)
+#define MY_CON_TLS_CERT     (1<<1)
+#define MY_CON_TLS_CA       (1<<2)
+#define MY_CON_TLS_CA_DIR   (1<<3)
+#define MY_CON_TLS_CIPHERS  (1<<4)
+#define MY_CON_TLS_ALL_OPTS (MY_CON_TLS_PKEY|MY_CON_TLS_CERT|MY_CON_TLS_CA\
+                             |MY_CON_TLS_CA_DIR|MY_CON_TLS_CIPHERS)
+extern unsigned int db_mysql_tls_opts;
 
 /*
  * Some convenience wrappers

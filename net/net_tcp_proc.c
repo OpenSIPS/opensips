@@ -34,15 +34,16 @@
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
 #include "net_tcp_report.h"
-#include "net_tcp_dbg.h"
 #include "trans.h"
-
+#include "net_tcp_dbg.h"
 
 /*!< the FD currently used by the process to communicate with TCP MAIN*/
 static int _my_fd_to_tcp_main = -1;
 
 /*!< list of tcp connections handled by this process */
 static struct tcp_connection* tcp_conn_lst=0;
+
+static int _tcp_done_reading_marker = 0;
 
 static int tcpmain_sock=-1;
 extern int unix_tcp_sock;
@@ -52,27 +53,20 @@ extern struct struct_hist_list *con_hist;
 #define tcpconn_release_error(_conn, _writer, _reason) \
 	do { \
 		tcp_trigger_report( _conn, TCP_REPORT_CLOSE, _reason);\
-		tcpconn_release( _conn, CONN_ERROR, _writer);\
+		tcpconn_release( _conn, CONN_ERROR_TCPW, _writer, 1/*as TCP worker*/);\
 	}while(0)
 
 
 
 
-static void tcpconn_release(struct tcp_connection* c, long state,int writer)
+static void tcpconn_release(struct tcp_connection* c, long state, int writer,
+															int as_tcp_worker)
 {
 	long response[2];
 
 	LM_DBG(" releasing con %p, state %ld, fd=%d, id=%d\n",
 			c, state, c->fd, c->id);
 	LM_DBG(" extra_data %p\n", c->extra_data);
-
-	/* if we are in a writer context, do not touch the buffer contain read packets per connection
-	might be in a completely different process
-	even if in our process we shouldn't touch it, since it might currently be in use, when we've read multiple SIP messages in one try*/
-	if (!writer && c->con_req) {
-		pkg_free(c->con_req);
-		c->con_req = NULL;
-	}
 
 	/* release req & signal the parent */
 	if (!writer)
@@ -82,7 +76,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	response[0]=(long)c;
 	response[1]=state;
 
-	if (send_all((tcpmain_sock==-1)?unix_tcp_sock:tcpmain_sock, response,
+	if (send_all( as_tcp_worker?tcpmain_sock:unix_tcp_sock, response,
 	sizeof(response))<=0)
 		LM_ERR("send_all failed state=%ld con=%p\n", state, c);
 }
@@ -98,14 +92,32 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 	if (c->state==S_CONN_BAD) {
 		c->lifetime=0;
 		/* CONN_ERROR will auto-dec refcnt => we must not call tcpconn_put !!*/
-		tcpconn_release(c, CONN_ERROR2,1);
+		tcpconn_release(c, CONN_ERROR_GENW, 1, 0 /*not TCP, but GEN worker*/);
 		return;
 	}
 	if (pending_data) {
-		tcpconn_release(c, ASYNC_WRITE2,1);
+		tcpconn_release(c, ASYNC_WRITE_GENW, 1, 0 /*not TCP, but GEN worker*/);
 		return;
 	}
 	tcpconn_put(c);
+}
+
+
+int tcp_done_reading(struct tcp_connection* con)
+{
+	if (_tcp_done_reading_marker==0) {
+		reactor_del_all( con->fd, -1, IO_FD_CLOSING );
+		tcpconn_check_del(con);
+		tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+		if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+		sh_log(con->hist, TCP_SEND2MAIN,
+			"parallel read OK - releasing, ref: %d", con->refcnt);
+		tcpconn_release(con, CONN_RELEASE, 0, 1 /*as TCP proc*/);
+
+		_tcp_done_reading_marker = 1;
+	}
+
+	return 0;
 }
 
 
@@ -156,7 +168,7 @@ static void tcp_receive_timeout(void)
 				tcpconn_release_error(con, 0, "Read timeout with"
 					"incomplete SIP message");
 			else
-				tcpconn_release(con, CONN_RELEASE,0);
+				tcpconn_release(con, CONN_RELEASE, 0,  1 /*as TCP proc*/);
 		}
 	}
 }
@@ -231,14 +243,14 @@ again:
 					break;
 			}
 			if (s==-1) {
-				LM_BUG("read_fd:no fd read\n");
+				LM_BUG("read_fd:no fd read for conn %p, rw %d\n", con, rw);
 				/* FIXME? */
 				goto error;
 			}
 
 			if (!(con->flags & F_CONN_INIT)) {
-				if (protos[con->type].net.conn_init &&
-						protos[con->type].net.conn_init(con) < 0) {
+				if (protos[con->type].net.stream.conn.init &&
+						protos[con->type].net.stream.conn.init(con) < 0) {
 					LM_ERR("failed to do proto %d specific init for conn %p\n",
 							con->type, con);
 					goto con_error;
@@ -266,7 +278,7 @@ again:
 				tcpconn_check_add(con);
 				tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
 				/* pending event on a connection -> prevent premature expiry */
-				tcp_conn_set_lifetime(con, tcp_con_lifetime);
+				tcp_conn_reset_lifetime(con);
 				con->timeout = con->lifetime;
 				if (reactor_add_reader( s, F_TCPCONN, RCT_PRIO_NET, con )<0) {
 					LM_CRIT("failed to add new socket to the fd list\n");
@@ -275,31 +287,41 @@ again:
 					goto con_error;
 				}
 
+				sh_log(con->hist, TCP_ADD_READER, "add reader fd %d, ref: %d",
+				       s, con->refcnt);
+
 				/* mark that the connection is currently in our process
 				future writes to this con won't have to acquire FD */
 				con->proc_id = process_no;
 				/* save FD which is valid in context of this TCP worker */
 				con->fd=s;
 			} else if (rw & IO_WATCH_WRITE) {
-				LM_DBG("Received con for async write %p ref = %d\n",con,con->refcnt);
+				LM_DBG("Received con for async write %p ref = %d\n",
+					con, con->refcnt);
 				lock_get(&con->write_lock);
-				resp = protos[con->type].net.write( (void*)con, s );
+				resp = protos[con->type].net.stream.write( con, s );
 				lock_release(&con->write_lock);
 				if (resp<0) {
 					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
-					sh_log(con->hist, TCP_SEND2MAIN, "handle write, err, state: %d, att: %d",
-					       con->state, con->msg_attempts);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle write, err, state: %d, att: %d",
+						con->state, con->msg_attempts);
 					tcpconn_release_error(con, 1,"Write error");
+					close(s); /* we always close the socket received for writing */
 					break;
 				} else if (resp==1) {
-					sh_log(con->hist, TCP_SEND2MAIN, "handle write, async, state: %d, att: %d",
-					       con->state, con->msg_attempts);
-					tcpconn_release(con, ASYNC_WRITE,1);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle write, async, state: %d, att: %d",
+						con->state, con->msg_attempts);
+					tcpconn_release(con, ASYNC_WRITE_TCPW, 1,
+						1 /*as TCP proc*/);
 				} else {
-					sh_log(con->hist, TCP_SEND2MAIN, "handle write, ok, state: %d, att: %d",
-					       con->state, con->msg_attempts);
-					tcpconn_release(con, CONN_RELEASE_WRITE,1);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle write, ok, state: %d, att: %d",
+						con->state, con->msg_attempts);
+					tcpconn_release(con, CONN_RELEASE_WRITE, 1,
+						1/*as TCP proc*/);
 				}
 				ret = 0;
 				/* we always close the socket received for writing */
@@ -309,7 +331,8 @@ again:
 		case F_TCPCONN:
 			if (event_type & IO_WATCH_READ) {
 				con=(struct tcp_connection*)fm->data;
-				resp = protos[con->type].net.read( (void*)con, &ret );
+				_tcp_done_reading_marker = 0;
+				resp = protos[con->type].net.stream.read( con, &ret );
 				if (resp<0) {
 					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
@@ -318,9 +341,13 @@ again:
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-					sh_log(con->hist, TCP_SEND2MAIN, "handle read, err, resp: %d, att: %d",
-					       resp, con->msg_attempts);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle read, err, resp: %d, att: %d",
+						resp, con->msg_attempts);
 					tcpconn_release_error(con, 0, "Read error");
+				} else if (resp == 1) {
+					/* the connection is already released */
+					break;
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_check_del(con);
@@ -329,12 +356,14 @@ again:
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 					tcp_trigger_report( con, TCP_REPORT_CLOSE,
 						"EOF received");
-					sh_log(con->hist, TCP_SEND2MAIN, "handle read, EOF, resp: %d, att: %d",
-					       resp, con->msg_attempts);
-					tcpconn_release(con, CONN_EOF,0);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle read, EOF, resp: %d, att: %d",
+						resp, con->msg_attempts);
+					tcpconn_release(con, CONN_EOF, 0, 1 /*as TCP proc*/);
 				} else {
-					//tcpconn_release(con, CONN_RELEASE);
-					/* keep the connection for now */
+					if (con->profile.parallel_read)
+						/* return the connection if not already */
+						tcp_done_reading( con );
 					break;
 				}
 			}

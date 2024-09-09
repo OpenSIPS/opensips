@@ -104,8 +104,6 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 
 typedef pthread_mutex_t gen_lock_t;
 
-#define lock_destroy(lock) /* do nothing */
-
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
 	pthread_mutexattr_t attr;
@@ -127,7 +125,7 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 	return lock;
 }
 
-
+#define lock_destroy(lock) pthread_mutex_destroy(lock)
 #define lock_get(lock) pthread_mutex_lock(lock)
 #define lock_release(lock) pthread_mutex_unlock(lock)
 

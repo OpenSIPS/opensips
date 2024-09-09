@@ -61,12 +61,15 @@ static int check_service_type = -1;
 
 int use_ruri_flag = -1;
 char *use_ruri_flag_str = 0;
+/* Radius (RFC 5090) uses "Digest-Qop"
+ * Diameter (RFC 4740) uses "Digest-QoP" */
+static char *digest_qop_name = "Digest-QoP";
 
 /*
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"aaa_www_authorize", (cmd_function)aaa_www_authorize, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
@@ -87,11 +90,12 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"aaa_url",            STR_PARAM, &aaa_proto_url       },
 	{"auth_service_type",  INT_PARAM, &auth_service_type   },
 	{"check_service_type", INT_PARAM, &check_service_type  },
 	{"use_ruri_flag",      STR_PARAM, &use_ruri_flag_str   },
+	{"digest_qop_name",    STR_PARAM, &digest_qop_name     },
 	{0, 0, 0}
 };
 
@@ -99,7 +103,7 @@ static param_export_t params[] = {
  * functions are used from the script - we do a small trick here and
  * hook on the 'aaa_url' mandatory  param to run the check, even if the
  * param value is not involved in the test */
-static module_dependency_t *get_deps_aaa_url(param_export_t *param)
+static module_dependency_t *get_deps_aaa_url(const param_export_t *param)
 {
 	if (is_script_func_used("aaa_www_authorize", -1) ||
 	is_script_func_used("aaa_proxy_authorize", -1) )
@@ -108,7 +112,7 @@ static module_dependency_t *get_deps_aaa_url(param_export_t *param)
 	return NULL;
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_AAA,     NULL,   DEP_WARN  },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -154,26 +158,26 @@ static int mod_init(void)
 	bind_auth_t bind_auth;
 	str proto_url;
 
-	aaa_map map;
+	aaa_map vendor;
 
 	LM_INFO("initializing...\n");
 
 	memset(attrs, 0, sizeof(attrs));
 	memset(vals, 0, sizeof(vals));
 	attrs[A_SERVICE_TYPE].name			= "Service-Type";
-	attrs[A_SIP_URI_USER].name			= "Sip-URI-User";
-	attrs[A_SIP_URI_HOST].name			= "SIP-URI-Host";
+	attrs[A_SIP_URI_USER].name			= "Sip-Uri-User";
+	attrs[A_SIP_URI_HOST].name			= "Sip-Uri-Host";
 	attrs[A_DIGEST_RESPONSE].name		= "Digest-Response";
 	attrs[A_DIGEST_ALGORITHM].name		= "Digest-Algorithm";
-	attrs[A_DIGEST_BODY_DIGEST].name	= "Digest-Body-Digest";
+	attrs[A_DIGEST_OPAQUE].name			= "Digest-Opaque";
 	attrs[A_DIGEST_CNONCE].name			= "Digest-CNonce";
 	attrs[A_DIGEST_NONCE_COUNT].name	= "Digest-Nonce-Count";
-	attrs[A_DIGEST_QOP].name			= "Digest-QOP";
+	attrs[A_DIGEST_QOP].name			= digest_qop_name;
 	attrs[A_DIGEST_METHOD].name			= "Digest-Method";
 	attrs[A_DIGEST_URI].name			= "Digest-URI";
 	attrs[A_DIGEST_NONCE].name			= "Digest-Nonce";
 	attrs[A_DIGEST_REALM].name			= "Digest-Realm";
-	attrs[A_DIGEST_USER_NAME].name		= "Digest-User-Name";
+	attrs[A_DIGEST_USER_NAME].name		= "Digest-Username";
 	attrs[A_USER_NAME].name				= "User-Name";
 	attrs[A_CISCO_AVPAIR].name			= "Cisco-AVPair";
 	attrs[A_SIP_AVP].name				= "SIP-AVP";
@@ -201,10 +205,12 @@ static int mod_init(void)
 		return -2;
 	}
 
-	map.name = "Cisco";
-	if (proto.dictionary_find(conn, &map, AAA_DICT_FIND_VEND)) {
+	vendor.name = "Cisco";
+	if (proto.dictionary_find(conn, &vendor, AAA_DICT_FIND_VEND)) {
 		LM_DBG("no `Cisco' vendor in AAA protocol dictionary\n");
 		attrs[A_CISCO_AVPAIR].name = NULL;
+	} else {
+		attrs[A_CISCO_AVPAIR].type = vendor.value;
 	}
 
 	if (is_script_func_used("aaa_www_authorize", -1) ||

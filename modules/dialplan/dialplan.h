@@ -111,8 +111,8 @@ typedef struct dp_param{
 
 int init_data();
 void destroy_data();
-int dp_load_db(dp_connection_list_p dp_table);
-int dp_load_all_db(void);
+int dp_load_db(dp_connection_list_p dp_table, int initial);
+int dp_load_all_db(int initial);
 void dp_disconnect_all_db(void);
 
 dpl_id_p select_dpid(dp_connection_list_p table, int id, int index);

@@ -56,16 +56,20 @@ extern int acc_flags_ctx_idx;
 /*
  * parse $acc_extra variable name
  */
-int pv_parse_acc_extra_name(pv_spec_p sp, str *in)
+int pv_parse_acc_extra_name(pv_spec_p sp, const str *in)
 {
 	int idx;
+	str _in;
 
 	if (sp == NULL || in == NULL || in->s == NULL || in->len == 0) {
 		LM_ERR("bad name!\n");
 		return -1;
 	}
 
-	str_trim_spaces_lr(*in);
+	_in = *in;
+	in = &_in;
+
+	str_trim_spaces_lr(_in);
 
 	for (idx = 0; idx < extra_tgs_len; idx++) {
 		if (!str_strcmp(in, &extra_tags[idx])) {
@@ -300,10 +304,11 @@ int pv_get_acc_current_leg(struct sip_msg *msg, pv_param_t *param,
  * VARIABLE
  * ***********************/
 
-int pv_parse_acc_leg_index(pv_spec_p sp, str* in)
+int pv_parse_acc_leg_index(pv_spec_p sp, const str* in)
 {
 	int idx;
 	pv_spec_p e;
+	str _in;
 
 	if (in == NULL || in->s == NULL || in->len == 0) {
 		LM_ERR("bad index!\n");
@@ -315,7 +320,10 @@ int pv_parse_acc_leg_index(pv_spec_p sp, str* in)
 		return -1;
 	}
 
-	str_trim_spaces_lr(*in);
+	_in = *in;
+	in = &_in;
+
+	str_trim_spaces_lr(_in);
 
 	if (in->s[0] == PV_MARKER) {
 		e=pkg_malloc(sizeof(pv_spec_t));
@@ -349,16 +357,20 @@ int pv_parse_acc_leg_index(pv_spec_p sp, str* in)
 /*
 * parse $acc_leg variable name
 */
-int pv_parse_acc_leg_name(pv_spec_p sp, str *in)
+int pv_parse_acc_leg_name(pv_spec_p sp, const str *in)
 {
    int idx;
+   str _in;
 
    if (sp == NULL || in == NULL || in->s == NULL || in->len == 0) {
 	   LM_ERR("bad name!\n");
 	   return -1;
    }
 
-   str_trim_spaces_lr(*in);
+   _in = *in;
+   in = &_in;
+
+   str_trim_spaces_lr(_in);
 
    for (idx=0; idx<leg_tgs_len; idx++) {
 		if (!str_strcmp(in, &leg_tags[idx])) {

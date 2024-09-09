@@ -67,7 +67,7 @@ int bdb_bind_api(const str* mod, db_func_t *dbb);
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api",    (cmd_function)bdb_bind_api, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -75,7 +75,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"auto_reload",        INT_PARAM, &auto_reload },
 	{"log_enable",         INT_PARAM, &log_enable  },
 	{"journal_roll_interval", INT_PARAM, &journal_roll_interval  },
@@ -85,7 +85,7 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_BDB_RELOAD, 0, 0, 0, {
 		{mi_bdb_reload, {"table_path", 0}},
 		{EMPTY_MI_RECIPE}}

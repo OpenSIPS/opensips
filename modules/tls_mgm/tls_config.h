@@ -45,7 +45,7 @@ extern int      tls_default_method;
 extern int      tls_verify_client_cert;
 extern int      tls_verify_server_cert;
 extern int      tls_require_client_cert;
-extern int	crl_check_all;
+extern int	    crl_check_all;
 extern char    *tls_cert_file;
 extern char    *tls_pkey_file;
 extern char    *tls_ca_file;
@@ -75,5 +75,14 @@ extern str     eccurve_col;
 
 extern int      tls_client_domain_avp;
 extern int      sip_client_domain_avp;
+
+extern str tls_library_param;
+
+extern enum os_tls_library tls_library;
+
+#define TLS_LIB_AUTO_STR "auto"
+#define TLS_LIB_NONE_STR "none"
+#define TLS_LIB_OPENSSL_STR "openssl"
+#define TLS_LIB_WOLFSSL_STR "wolfssl"
 
 #endif

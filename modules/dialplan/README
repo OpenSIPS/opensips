@@ -44,7 +44,11 @@ dialplan Module
               1.8.2. dp_translate
               1.8.3. dp_show_partiton
 
-        1.9. Installation
+        1.9. Exported Status/Report Identifiers
+
+              1.9.1. [partition_name]
+
+        1.10. Installation
 
    2. Developer's Guide
    3. Contributors
@@ -387,7 +391,10 @@ modparam("dialplan", "repl_exp_col", "column_name")
 
    The column name that indicates an additional time recurrence
    check within the rule (column values are RFC 2445-compatible
-   strings)
+   strings). The value format is identical to the input of the
+   check_time_rec() function of the cfgutils module, including the
+   optional use of logical operators linking multiple such strings
+   into a larger expression.
 
    Default value is “timerec”.
 
@@ -432,10 +439,12 @@ modparam("dialplan", "attrs_col", "column_name")
        and for computing the output string.
      * out_var (var, optional) - variable to be populated/written
        with the output string (if provided by the translation
-       rule).
+       rule), on a successful translation.
      * attrs_var (var, optional) - variable to be
-       populated/written with the atribute string, if provided by
-       the translation rule.
+       populated/written with the "attributes" field of the
+       translation rule, on a successful translation. If the field
+       is NULL or empty-string, the variable will be set to
+       empty-string.
      * partition (string, optional) - the name of the partition
        (set of data) to be used for locating the DP ID.
 
@@ -516,7 +525,70 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
    MI DATAGRAM Command Format:
         opensips-cli -x mi dp_translate default
 
-1.9. Installation
+1.9. Exported Status/Report Identifiers
+
+   The module provides the "dialplan" Status/Report group, where
+   each dialplan partition is defined as a separate SR identifier.
+
+1.9.1. [partition_name]
+
+   The status of these identifiers reflects the readiness/status
+   of the cached data (if available or not when being loaded from
+   DB):
+     * -2 - no data at all (initial status)
+     * -1 - no data, initial loading in progress
+     * 1 - data loaded, partition ready
+     * 2 - data available, a reload in progress
+
+   In terms of reports/logs, the following events will be
+   reported:
+     * starting DB data loading
+     * DB data loading failed, discarding
+     * DB data loading successfully completed
+     * N rules loaded (N discarded)
+
+    {
+        "Name": "default",
+        "Reports": [
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "5 rules loaded (0 discarded)"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "5 rules loaded (0 discarded)"
+            }
+        ]
+    }
+
+   For how to access and use the Status/Report information, please
+   see
+   https://www.opensips.org/Documentation/Interface-StatusReport-3
+   -3.
+
+1.10. Installation
 
    The modules requires one table in OpenSIPS database:
    dialplan.The SQL syntax to create them can be found in
@@ -540,21 +612,22 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 66 42 963 935
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 61 41 657 852
+   1. Liviu Chircu (@liviuchircu) 71 46 980 943
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 70 46 910 983
    3. Ionut Ionita (@ionutrazvanionita) 40 20 1149 579
-   4. Anca Vamanu 33 5 3263 19
+   4. Anca Vamanu 34 5 3263 19
    5. Andrei Dragus 24 3 382 1029
    6. Razvan Crainea (@razvancrainea) 21 17 92 132
    7. Ovidiu Sas (@ovidiusas) 16 13 144 37
-   8. Vlad Patrascu (@rvlad-patrascu) 9 5 153 114
-   9. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
-   10. Henning Westerholt (@henningw) 5 3 5 14
+   8. Vlad Patrascu (@rvlad-patrascu) 10 6 157 115
+   9. Maksym Sobolyev (@sobomax) 6 4 10 10
+   10. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
 
-   All remaining contributors: Zero King (@l2dy), Parantido Julius
-   De Rica (@Parantido), Paul Wise, Sergio Gutierrez, Vlad Paiu
-   (@vladpaiu), Rudy Pedraza, Juha Heinanen (@juha-h), Peter
-   Lemenkov (@lemenkov), UnixDev, David Sanders.
+   All remaining contributors: Henning Westerholt (@henningw),
+   Zero King (@l2dy), Parantido Julius De Rica (@Parantido), Paul
+   Wise, Sergio Gutierrez, Vlad Paiu (@vladpaiu), Rudy Pedraza,
+   Juha Heinanen (@juha-h), Peter Lemenkov (@lemenkov), UnixDev,
+   David Sanders.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -575,23 +648,23 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-     Name Commit Activity
-   1. Liviu Chircu (@liviuchircu) Jul 2012 - Nov 2020
-   2. Zero King (@l2dy) Mar 2020 - Mar 2020
-   3. Razvan Crainea (@razvancrainea) Dec 2010 - Sep 2019
-   4. Vlad Patrascu (@rvlad-patrascu) May 2017 - Apr 2019
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2019
-   6. Peter Lemenkov (@lemenkov) Jun 2018 - Jun 2018
-   7. Ovidiu Sas (@ovidiusas) Sep 2008 - Nov 2015
-   8. Ionut Ionita (@ionutrazvanionita) Jul 2014 - Nov 2015
-   9. David Sanders Sep 2015 - Sep 2015
-   10. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul
-   2015
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Jul 2012 - May 2024
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Sep 2022
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   6.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ovidiu Sas (@ovidiusas)             Sep 2008 - Nov 2015
+   9.  Ionut Ionita (@ionutrazvanionita)   Jul 2014 - Nov 2015
+   10. David Sanders                       Sep 2015 - Sep 2015
 
-   All remaining contributors: Parantido Julius De Rica
-   (@Parantido), Vlad Paiu (@vladpaiu), Rudy Pedraza, Sergio
-   Gutierrez, Paul Wise, Anca Vamanu, Andrei Dragus, UnixDev, Juha
-   Heinanen (@juha-h), Henning Westerholt (@henningw).
+   All remaining contributors: Eseanu Marius Cristian
+   (@eseanucristian), Parantido Julius De Rica (@Parantido), Vlad
+   Paiu (@vladpaiu), Rudy Pedraza, Sergio Gutierrez, Paul Wise,
+   Anca Vamanu, Andrei Dragus, UnixDev, Juha Heinanen (@juha-h),
+   Henning Westerholt (@henningw).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -600,10 +673,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Zero King (@l2dy),
-   Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Zero King
+   (@l2dy), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Andrei Dragus, Anca Vamanu.
 
    Documentation Copyrights:

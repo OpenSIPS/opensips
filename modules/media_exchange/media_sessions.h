@@ -33,7 +33,6 @@ enum media_session_state {
 	MEDIA_SESSION_STATE_INIT,
 	MEDIA_SESSION_STATE_RUNNING,
 	MEDIA_SESSION_STATE_PENDING,
-	MEDIA_SESSION_STATE_UPDATING,
 };
 
 struct media_session_leg {
@@ -45,12 +44,14 @@ struct media_session_leg {
 	str b2b_key;
 	int nohold;
 	gen_lock_t lock;
+	b2b_dlginfo_t *dlginfo;
 	enum b2b_entity_type b2b_entity;
 	struct media_session_leg *next;
 	void *params;
 };
 
 struct media_session {
+	rtp_ctx rtp;
 	gen_lock_t lock;
 	struct dlg_cell *dlg;
 

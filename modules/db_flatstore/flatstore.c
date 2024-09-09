@@ -36,6 +36,7 @@
 #include "../../dprint.h"
 #include "flat_pool.h"
 #include "flat_con.h"
+#include "flat_mi.h"
 #include "flatstore_mod.h"
 #include "flatstore.h"
 
@@ -336,19 +337,21 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 	str aux;
 	char * begin = flat_iov_buf.s;
 
-	if (local_timestamp < *flat_rotate) {
+	lock_start_read(rotate_lock);
+
+	if (my_rotate < *flat_rotate) {
 		flat_rotate_logs();
-		local_timestamp = *flat_rotate;
+		my_rotate = *flat_rotate;
 	}
 
 	if ( !h || !CON_TAIL(h) || (f=CON_FILE(h))==NULL ) {
 		LM_ERR("uninitialized connection\n");
-		return -1;
+		goto out_err;
 	}
 
 	if (flat_prepare_iovec(n) < 0) {
 		LM_ERR("cannot insert row\n");
-		return -1;
+		goto out_err;
 	}
 
 	FLAT_LOCK(f);
@@ -393,7 +396,7 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 		case DB_DATETIME:
 			/* guess this is 20 */
 			FLAT_ALLOC(20);
-			FLAT_PRINTF("%lu", VAL_TIME(v+i), i);
+			FLAT_PRINTF("%lld", (long long)VAL_TIME(v+i), i);
 			break;
 
 		case DB_BLOB:
@@ -427,7 +430,7 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 
 	if (auxl < 0) {
 		LM_ERR("unable to write to file: %s - %d\n", strerror(errno), errno);
-		return -1;
+		goto out_err;
 	}
 
 	/* XXX does this make sense any more? */
@@ -436,6 +439,10 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 	}
 	FLAT_UNLOCK(f);
 
-
+	lock_stop_read(rotate_lock);
 	return 0;
+
+out_err:
+	lock_stop_read(rotate_lock);
+	return -1;
 }

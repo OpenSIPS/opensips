@@ -69,7 +69,7 @@ ldap_api_t ldap_api;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"h350_sipuri_lookup", (cmd_function)w_h350_sipuri_lookup, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE},
@@ -90,14 +90,14 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"ldap_session",     STR_PARAM, &h350_ldap_session.s},
 	{"base_dn",          STR_PARAM, &h350_base_dn.s},
 	{"search_scope",     STR_PARAM, &h350_search_scope.s},
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "ldap", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

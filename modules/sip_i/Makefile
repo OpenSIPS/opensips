@@ -3,6 +3,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=sip_i.so
-LIBS=
 
 include ../../Makefile.modules

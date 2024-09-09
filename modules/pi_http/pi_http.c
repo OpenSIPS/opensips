@@ -41,8 +41,8 @@ extern ph_framework_t *ph_framework_data;
 
 /* module functions */
 static int mod_init();
-static int child_init();
-static int destroy(void);
+static int child_init(int);
+static void destroy(void);
 int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
@@ -68,7 +68,7 @@ static const str PI_HTTP_U_METHOD = str_init("<html><body>"
 
 
 /* module parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"pi_http_root",   STR_PARAM, &http_root.s},
 	{"pi_http_method", INT_PARAM, &http_method},
 	{"framework",      STR_PARAM, &filename.s},
@@ -76,7 +76,7 @@ static param_export_t params[] = {
 };
 
 /** MI commands */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "pi_reload_tbls_and_cmds", 0, 0, 0, {
 		{mi_framework_reload, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -84,7 +84,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "httpd", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -225,11 +225,10 @@ static int child_init(int rank)
 }
 
 
-int destroy(void)
+static void destroy(void)
 {
 	destroy_http_db(ph_framework_data);
 	ph_destroy_async_lock();
-	return 0;
 }
 
 

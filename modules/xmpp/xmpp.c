@@ -120,7 +120,7 @@ int* xmpp_pid;
 #define DEFAULT_COMPONENT_PORT 5347
 #define DEFAULT_SERVER_PORT 5269
 
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"XMPP receiver",  0,  0, xmpp_process, 1, 0},
 	{0,0,0,0,0,0}
 };
@@ -129,7 +129,7 @@ static proc_export_t procs[] = {
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"xmpp_send_message", (cmd_function)cmd_send_message, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"bind_xmpp",         (cmd_function)bind_xmpp,
@@ -140,7 +140,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "backend",            STR_PARAM, &backend         },
 	{ "xmpp_domain",        STR_PARAM, &xmpp_domain     },
 	{ "xmpp_host",          STR_PARAM, &xmpp_host       },
@@ -151,7 +151,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

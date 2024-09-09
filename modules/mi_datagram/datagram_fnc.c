@@ -39,9 +39,10 @@
 #include <signal.h>
 
 #include "../../resolve.h"
+#include "../../mi/mi_trace.h"
+#include "../../reactor_proc.h"
 #include "mi_datagram.h"
 #include "datagram_fnc.h"
-#include "../../mi/mi_trace.h"
 
 /* solaris doesn't have SUN_LEN  */
 #ifndef SUN_LEN
@@ -430,7 +431,8 @@ static inline void trace_datagram_reply( struct mi_cmd* f, str* message)
 	mi_trace_reply( sv_socket, &cl_socket, message, t_dst);
 }
 
-void mi_datagram_server(int rx_sock, int tx_sock)
+
+int mi_datagram_callback(int rx_sock, void *_tx_sock, int was_timeout)
 {
 	int ret = 0;
 	const char **parse_end = NULL;
@@ -440,80 +442,62 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 	struct mi_handler *async_hdl;
 	struct mi_cmd *cmd = NULL;
 	str print_buf;
+	int tx_sock = (int)(long)_tx_sock;
 
-	while(1){/*read the datagram*/
-		reply_addr_len = sizeof(reply_addr);
 
-		ret = recvfrom(rx_sock, mi_buf, DATAGRAM_SOCK_BUF_SIZE, 0,
-					(struct sockaddr*)&reply_addr, &reply_addr_len);
+	reply_addr_len = sizeof(reply_addr);
 
-		if (ret < 0) {
-			LM_ERR("recvfrom %d: (%d) %s\n", ret, errno, strerror(errno));
-			if ((errno == EINTR) ||
-				(errno == EAGAIN) ||
-				(errno == EWOULDBLOCK) ||
-				(errno == ECONNREFUSED)) {
-				LM_DBG("got %d (%s), going on\n", errno, strerror(errno));
-				continue;
-			}
-			LM_DBG("error in recvfrom\n");
-			continue;
+	ret = recvfrom(rx_sock, mi_buf, DATAGRAM_SOCK_BUF_SIZE, 0,
+				(struct sockaddr*)&reply_addr, &reply_addr_len);
+
+	if (ret < 0) {
+		LM_ERR("recvfrom %d: (%d) %s\n", ret, errno, strerror(errno));
+		if ((errno == EINTR) ||
+			(errno == EAGAIN) ||
+			(errno == EWOULDBLOCK) ||
+			(errno == ECONNREFUSED)) {
+			LM_DBG("got %d (%s), going on\n", errno, strerror(errno));
+			return 0;
 		}
+		LM_DBG("error in recvfrom\n");
+		return -1;
+	}
 
-		if(ret == 0)
-			continue;
+	if(ret == 0)
+		return 0;
 
-		mi_buf[ret] = '\0';
-		LM_DBG("received %d |%.*s|\n", ret, ret, mi_buf);
+	mi_buf[ret] = '\0';
+	LM_DBG("received %d |%.*s|\n", ret, ret, mi_buf);
 
-		if(ret> DATAGRAM_SOCK_BUF_SIZE){
-				LM_ERR("buffer overflow\n");
-				continue;
-		}
+	if(ret> DATAGRAM_SOCK_BUF_SIZE){
+		LM_ERR("buffer overflow, dropping\n");
+		return -1;
+	}
 
-		memset(&request, 0, sizeof request);
-		if (parse_mi_request(mi_buf, parse_end, &request) < 0) {
-			LM_ERR("cannot parse command: %.*s\n", ret, mi_buf);
+	memset(&request, 0, sizeof request);
+	if (parse_mi_request(mi_buf, parse_end, &request) < 0) {
+		LM_ERR("cannot parse command: %.*s\n", ret, mi_buf);
 
-			if (mi_send_dgram(tx_sock, MI_PARSE_ERROR, MI_PARSE_ERROR_LEN,
-				(struct sockaddr* )&reply_addr, reply_addr_len,
-				mi_socket_timeout) < 0)
-				LM_ERR("failed to send reply: %s | errno=%d\n",
-						MI_PARSE_ERROR, errno);
+		if (mi_send_dgram(tx_sock, MI_PARSE_ERROR, MI_PARSE_ERROR_LEN,
+			(struct sockaddr* )&reply_addr, reply_addr_len,
+			mi_socket_timeout) < 0)
+			LM_ERR("failed to send reply: %s | errno=%d\n",
+					MI_PARSE_ERROR, errno);
 
-			trace_datagram_err(&PARSE_ERR_STR);
-			continue;
-		}
+		trace_datagram_err(&PARSE_ERR_STR);
+		return -1;
+	}
 
-		req_method = mi_get_req_method(&request);
-		if (req_method)
-			cmd = lookup_mi_cmd(req_method, strlen(req_method));
+	req_method = mi_get_req_method(&request);
+	if (req_method)
+		cmd = lookup_mi_cmd(req_method, strlen(req_method));
 
-		/* if asyncron cmd, build the async handler */
-		if (cmd && cmd->flags & MI_ASYNC_RPL_FLAG) {
-			async_hdl = build_async_handler(mi_socket_domain,
-					&reply_addr, reply_addr_len, tx_sock, request.id);
-			if (async_hdl==0) {
-				LM_ERR("failed to build async handler\n");
-				if (mi_send_dgram(tx_sock, MI_INTERNAL_ERROR, MI_INTERNAL_ERROR_LEN,
-					(struct sockaddr* )&reply_addr, reply_addr_len,
-					mi_socket_timeout) < 0)
-					LM_ERR("failed to send reply: %s | errno=%d\n",
-							MI_INTERNAL_ERROR, errno);
-
-				trace_datagram_err(&INTERNAL_ERR_STR);
-
-				goto free_req;
-			}
-		} else{
-			async_hdl = 0;
-		}
-
-		response = handle_mi_request(&request, cmd, async_hdl);
-
-		if (response == NULL) {
-			LM_ERR("failed to build response!\n");
-
+	/* if asyncron cmd, build the async handler */
+	if (cmd && cmd->flags & MI_ASYNC_RPL_FLAG) {
+		async_hdl = build_async_handler(mi_socket_domain,
+				&reply_addr, reply_addr_len, tx_sock, request.id);
+		if (async_hdl==0) {
+			LM_ERR("failed to build async handler\n");
 			if (mi_send_dgram(tx_sock, MI_INTERNAL_ERROR, MI_INTERNAL_ERROR_LEN,
 				(struct sockaddr* )&reply_addr, reply_addr_len,
 				mi_socket_timeout) < 0)
@@ -522,57 +506,97 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 
 			trace_datagram_err(&INTERNAL_ERR_STR);
 
-			if (async_hdl)
-				free_async_handler(async_hdl);
 			goto free_req;
-		} else if (response != MI_ASYNC_RPL) {
-			trace_datagram_request(cmd, req_method, request.params);
+		}
+	} else{
+		async_hdl = 0;
+	}
 
-			print_buf.s = mi_buf;
-			print_buf.len = DATAGRAM_SOCK_BUF_SIZE;
-			ret = print_mi_response(response, request.id,
-					&print_buf, mi_datagram_pp);
+	response = handle_mi_request(&request, cmd, async_hdl);
 
-			if (ret == MI_NO_RPL) {
-				LM_DBG("No reply for jsonrpc notification\n");
-			} else if (ret < 0) {
-				LM_ERR("failed to print json response\n");
+	if (response == NULL) {
+		LM_ERR("failed to build response!\n");
 
-				if (mi_send_dgram(tx_sock, MI_INTERNAL_ERROR, MI_INTERNAL_ERROR_LEN,
-					(struct sockaddr* )&reply_addr, reply_addr_len,
-					mi_socket_timeout) < 0)
-					LM_ERR("failed to send reply: %s | errno=%d\n",
-							MI_INTERNAL_ERROR, errno);
+		if (mi_send_dgram(tx_sock, MI_INTERNAL_ERROR, MI_INTERNAL_ERROR_LEN,
+			(struct sockaddr* )&reply_addr, reply_addr_len,
+			mi_socket_timeout) < 0)
+			LM_ERR("failed to send reply: %s | errno=%d\n",
+					MI_INTERNAL_ERROR, errno);
+
+		trace_datagram_err(&INTERNAL_ERR_STR);
+
+		if (async_hdl)
+			free_async_handler(async_hdl);
+		goto free_req;
+	} else if (response != MI_ASYNC_RPL) {
+		trace_datagram_request(cmd, req_method, request.params);
+
+		print_buf.s = mi_buf;
+		print_buf.len = DATAGRAM_SOCK_BUF_SIZE;
+		ret = print_mi_response(response, request.id,
+				&print_buf, mi_datagram_pp);
+
+		if (ret == MI_NO_RPL) {
+			LM_DBG("No reply for jsonrpc notification\n");
+		} else if (ret < 0) {
+			LM_ERR("failed to print json response\n");
+
+			if (mi_send_dgram(tx_sock, MI_INTERNAL_ERROR, MI_INTERNAL_ERROR_LEN,
+				(struct sockaddr* )&reply_addr, reply_addr_len,
+				mi_socket_timeout) < 0)
+				LM_ERR("failed to send reply: %s | errno=%d\n",
+						MI_INTERNAL_ERROR, errno);
+
+			trace_datagram_reply(cmd, &INTERNAL_ERR_STR);
+
+			goto free_resp;
+		} else {
+			print_buf.len = strlen(print_buf.s);
+			ret = mi_send_dgram(tx_sock, print_buf.s, print_buf.len,
+							(struct sockaddr* )&reply_addr,
+							reply_addr_len, mi_socket_timeout);
+			if (ret>0){
+				LM_DBG("the response: %s has been sent in %i octets\n",
+					print_buf.s, ret);
+
+				trace_datagram_reply(cmd, &print_buf);
+			}else{
+				LM_ERR("failed to send the response: %s (%d)\n",
+					strerror(errno), errno);
 
 				trace_datagram_reply(cmd, &INTERNAL_ERR_STR);
-
-				goto free_resp;
-			} else {
-				print_buf.len = strlen(print_buf.s);
-				ret = mi_send_dgram(tx_sock, print_buf.s, print_buf.len,
-								(struct sockaddr* )&reply_addr,
-								reply_addr_len, mi_socket_timeout);
-				if (ret>0){
-					LM_DBG("the response: %s has been sent in %i octets\n",
-						print_buf.s, ret);
-
-					trace_datagram_reply(cmd, &print_buf);
-				}else{
-					LM_ERR("failed to send the response: %s (%d)\n",
-						strerror(errno), errno);
-
-					trace_datagram_reply(cmd, &INTERNAL_ERR_STR);
-				}
 			}
+		}
 free_resp:
-			if (async_hdl)
-					free_async_handler(async_hdl);
-			if (response)
-				free_mi_response(response);
-		} else
-			continue;
+		if (async_hdl)
+				free_async_handler(async_hdl);
+		if (response)
+			free_mi_response(response);
+	} else
+		return 0;
 free_req:
-		free_mi_request_parsed(&request);
-		continue;
-	}
+	free_mi_request_parsed(&request);
+	return 0;
 }
+
+
+void mi_datagram_server(int rx_sock, int tx_sock)
+{
+	if (reactor_proc_init( "MI Datagram" )<0) {
+		LM_ERR("failed to init the MI Datagram reactor\n");
+		return;
+	}
+
+	if (reactor_proc_add_fd( rx_sock, mi_datagram_callback,
+	(void*)(long)tx_sock)<0) {
+		LM_CRIT("failed to add Datagram listen socket to reactor\n");
+		return;
+	}
+
+	reactor_proc_loop();
+
+	/* we get here only if the "loop"-ing failed to start*/
+
+	return;
+}
+

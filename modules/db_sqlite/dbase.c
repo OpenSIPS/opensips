@@ -55,6 +55,7 @@ static int db_sqlite_store_result(const db_con_t* _h, db_res_t** _r, const db_va
 static int db_sqlite_bind_values(sqlite3_stmt* stmt, const db_val_t* _v, const int _n);
 #endif
 static int db_sqlite_free_result_internal(const db_con_t* _h, db_res_t* _r);
+static void db_sqlite_free_result_rows(db_res_t* _r);
 
 static int db_sqlite_submit_dummy_query(const db_con_t* _h, const str* _s)
 {
@@ -92,7 +93,7 @@ static inline int db_copy_rest_of_count(const str* _qh, str* count_query)
 	const str searched_str = {" from ", sizeof(" from ")-1};
 
 	count_query->len = sizeof(COUNT_QUERY)-1;
-	if ((found=str_strstr(_qh, &searched_str)) != NULL) {
+	if ((found=str_strcasestr(_qh, &searched_str)) != NULL) {
 		const int len=_qh->len-(found-_qh->s);
 		/* check for overflow */
 		if (len > COUNT_BUF_SIZE-(sizeof(COUNT_QUERY)-1)) {
@@ -265,10 +266,7 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 		}
 	} else {
 		/* free old rows */
-		if(RES_ROWS(*_r)!=0)
-			db_free_rows(*_r);
-		RES_ROWS(*_r) = 0;
-		RES_ROW_N(*_r) = 0;
+		db_sqlite_free_result_rows(*_r);
 	}
 
 	/* determine the number of rows remaining to be processed */
@@ -822,6 +820,32 @@ int db_sqlite_free_result(db_con_t* _h, db_res_t* _r)
 	_r = NULL;
 
 	return 0;
+}
+
+/**
+ * Release a result set from memory.
+ * \param _r result set whose rows and values should be freed
+ * \return void
+ */
+static void db_sqlite_free_result_rows(db_res_t* _r)
+{
+	db_val_t* values;
+
+	if (!_r) {
+		LM_DBG("nothing to free!\n");
+		return;
+	}
+
+	if(RES_ROWS(_r)!=0)
+	{
+		values = _r->rows[0].values;
+		/* db_sqlite_allocate_rows allocates memory for rows and values separately.
+		 * Hence freeing rows using generic function and then values separately*/
+		db_free_rows(_r);
+		pkg_free(values);
+	}
+	RES_ROWS(_r) = 0;
+	RES_ROW_N(_r) = 0;
 }
 
 /**

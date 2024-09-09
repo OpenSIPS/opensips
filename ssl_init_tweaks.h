@@ -29,12 +29,12 @@
 int OPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings)
 {
 	int (*real_OPENSSL_init_ssl)(uint64_t, const OPENSSL_INIT_SETTINGS *);
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm) {
+	if (have_openssl) {
 		return 1;
 	} else {
 		real_OPENSSL_init_ssl = dlsym(RTLD_NEXT, "OPENSSL_init_ssl");
@@ -48,12 +48,12 @@ int OPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings)
 int OPENSSL_init_crypto(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings)
 {
 	int (*real_OPENSSL_init_crypto)(uint64_t, const OPENSSL_INIT_SETTINGS *);
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm) {
+	if (have_openssl) {
 		return 1;
 	} else {
 		real_OPENSSL_init_crypto = dlsym(RTLD_NEXT, "OPENSSL_init_crypto");
@@ -67,12 +67,12 @@ int OPENSSL_init_crypto(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings)
 int ERR_load_BIO_strings(void)
 {
 	int (*real_ERR_load_BIO_strings)(void);
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm) {
+	if (have_openssl) {
 		return 1;
 	} else {
 		real_ERR_load_BIO_strings = dlsym(RTLD_NEXT, "ERR_load_BIO_strings");
@@ -88,12 +88,12 @@ int ERR_load_BIO_strings(void)
 int SSL_library_init(void)
 {
 	int (*real_SSL_library_init)(void);
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm) {
+	if (have_openssl) {
 		return 1;
 	} else {
 		real_SSL_library_init = dlsym(RTLD_NEXT, "SSL_library_init");
@@ -107,12 +107,12 @@ int SSL_library_init(void)
 void ERR_load_BIO_strings(void)
 {
 	int (*real_ERR_load_BIO_strings)(void);
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm) {
+	if (have_openssl) {
 		return;
 	} else {
 		real_ERR_load_BIO_strings = dlsym(RTLD_NEXT, "ERR_load_BIO_strings");
@@ -128,12 +128,12 @@ void CRYPTO_set_locking_callback(void (*func)(int mode, int type,
 {
 	int (*real_CRYPTO_set_locking_callback)(void (*)(int, int,
 		const char *, int));
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm) {
+	if (have_openssl) {
 		return;
 	} else {
 		real_CRYPTO_set_locking_callback = dlsym(RTLD_NEXT,
@@ -149,12 +149,12 @@ void CRYPTO_set_locking_callback(void (*func)(int mode, int type,
 void CRYPTO_set_id_callback(unsigned long (*func) (void))
 {
 	int (*real_CRYPTO_set_id_callback)(unsigned long (*)(void));
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm) {
+	if (have_openssl) {
 		return;
 	} else {
 		real_CRYPTO_set_id_callback = dlsym(RTLD_NEXT, "CRYPTO_set_id_callback");
@@ -169,12 +169,12 @@ void CRYPTO_set_id_callback(unsigned long (*func) (void))
 int CRYPTO_THREADID_set_callback(void (*threadid_func) (CRYPTO_THREADID *))
 {
 	int (*real_CRYPTO_THREADID_set_callback)(void (*)(CRYPTO_THREADID *));
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm) {
+	if (have_openssl) {
 		return 0;
 	} else {
 		real_CRYPTO_THREADID_set_callback = dlsym(RTLD_NEXT,

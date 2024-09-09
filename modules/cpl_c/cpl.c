@@ -79,7 +79,7 @@ static char* proxy_route   = NULL;
 struct cpl_enviroment    cpl_env = {
 		0, /* no cpl logging */
 		0, /* recurse proxy level is 0 */
-		0, /* no script route to be run before proxy */
+		NULL, /* no script route to be run before proxy */
 		0, /* user part is not case sensitive */
 		{0,0},   /* no domain prefix to be ignored */
 		{-1,-1}, /* communication pipe to aux_process */
@@ -108,7 +108,7 @@ static void cpl_process(int rank);
 /*
  * Exported processes
  */
-static proc_export_t cpl_procs[] = {
+static const proc_export_t cpl_procs[] = {
 	{"CPL Aux",  0,  0,  cpl_process, 1, 0 },
 	{0,0,0,0,0,0}
 };
@@ -118,7 +118,7 @@ static proc_export_t cpl_procs[] = {
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"cpl_run_script", (cmd_function)cpl_invoke_script, {
 		{CMD_PARAM_STR,fixup_cpl_run_script_1,0},
 		{CMD_PARAM_STR,fixup_cpl_run_script_2,0}, {0,0,0}},
@@ -133,7 +133,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",         STR_PARAM, &db_url.s                          },
 	{"db_table",       STR_PARAM, &db_table.s                        },
 	{"cpl_dtd_file",   STR_PARAM, &dtd_file                          },
@@ -156,7 +156,7 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "LOAD_CPL", 0, 0, 0, {
 		{mi_cpl_load, {"username", "cpl_filename", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -172,7 +172,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static module_dependency_t *get_deps_lookup_domain(param_export_t *param)
+static module_dependency_t *get_deps_lookup_domain(const param_export_t *param)
 {
 	char *domain = *(char **)param->param_pointer;
 	if (!domain || strlen(domain) == 0)
@@ -181,7 +181,7 @@ static module_dependency_t *get_deps_lookup_domain(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",        DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
@@ -281,9 +281,9 @@ static int cpl_init(void)
 	LM_INFO("initializing...\n");
 
 	if (proxy_route && proxy_route[0]) {
-		cpl_env.proxy_route = get_script_route_ID_by_name( proxy_route,
-				sroutes->request, RT_NO);
-		if (cpl_env.proxy_route==-1) {
+		cpl_env.proxy_route = ref_script_route_by_name( proxy_route,
+				sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(cpl_env.proxy_route)) {
 			LM_ERR("route <%s> does not exist\n",proxy_route);
 			return -1;
 		}

@@ -57,19 +57,19 @@ struct address_list {
 /*
  * Create and initialize a hash table
  */
-struct address_list** hash_create(void);
+struct address_list** pm_hash_create(void);
 
 
 /*
  * Destroy a hash table and release memory
  */
-void hash_destroy(struct address_list** table);
+void pm_hash_destroy(struct address_list** table);
 
 
 /*
  * Add <ip, group, port, proto, pattern> into hash table
  */
-int hash_insert(struct address_list** table, struct ip_addr *ip,
+int pm_hash_insert(struct address_list** table, struct ip_addr *ip,
 		unsigned int grp, unsigned int port, int proto,
 		str* pattern, str* info);
 
@@ -78,7 +78,7 @@ int hash_insert(struct address_list** table, struct ip_addr *ip,
  * Check if an entry exists in hash table that has given group, ip,
  * port, protocol value and pattern that matches to From URI.
  */
-int hash_match(struct sip_msg *msg, struct address_list** table,
+int pm_hash_match(struct sip_msg *msg, struct address_list** table,
 		unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
 		char *pattern, pv_spec_t* info);
 
@@ -87,13 +87,13 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
  * Print entries stored in hash table
  */
 //void hash_print(struct address_list** hash_table, FILE* reply_file);
-int hash_mi_print(struct address_list **table, mi_item_t *part_item,
+int pm_hash_mi_print(struct address_list **table, mi_item_t *part_item,
 		struct pm_part_struct *pm);
 
 /*
  * Empty hash table
  */
-void empty_hash(struct address_list** table);
+void pm_empty_hash(struct address_list** table);
 
 
 

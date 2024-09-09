@@ -46,6 +46,7 @@
 static gen_lock_t *extra_lock;
 static struct usr_avp *global_avps = 0;
 static struct usr_avp **crt_avps  = &global_avps;
+static struct usr_avp **crt_bavps;
 
 static map_t avp_map = 0;
 static map_t avp_map_shm = 0;
@@ -186,7 +187,7 @@ struct usr_avp *search_index_avp(unsigned short flags,
 {
 	struct usr_avp *avp = NULL;
 
-	while ( (avp=search_first_avp( flags, name, 0, avp))!=0 ) {
+	while ( (avp=search_first_avp( flags, name, val, avp))!=0 ) {
 		if( index == 0 ){
 			return avp;
 		}
@@ -201,8 +202,14 @@ int replace_avp(unsigned short flags, int name, int_str val, int index)
 	struct usr_avp* avp_new, *avp_del;
 
 	if(index < 0) {
-		LM_ERR("Index with negative value\n");
-		return -1;
+		/* convert negative index to 0+ */
+		int pidx = count_avps(flags, name) + index;
+		if (pidx < 0) {
+			LM_DBG("AVP with the specified index (%d) not found\n", index);
+			return -1;
+		}
+
+		index = pidx;
 	}
 
 	avp_del = search_index_avp(flags, name, 0, index);
@@ -415,6 +422,17 @@ void destroy_index_avp( unsigned short flags, int name, int index)
 {
 	struct usr_avp *avp = NULL;
 
+	if(index < 0) {
+		/* convert negative index to 0+ */
+		int pidx = count_avps(flags, name) + index;
+		if (pidx < 0) {
+			LM_DBG("AVP with the specified index (%d) not found\n", index);
+			return;
+		}
+
+		index = pidx;
+	}
+
 	avp = search_index_avp(flags, name, 0, index);
 	if(avp== NULL) {
 		LM_DBG("AVP with the specified index not found\n");
@@ -422,6 +440,17 @@ void destroy_index_avp( unsigned short flags, int name, int index)
 	}
 
 	destroy_avp( avp );
+}
+
+int count_avps(unsigned short flags, int name)
+{
+	struct usr_avp *avp = NULL;
+	int n = 0;
+
+	while ((avp=search_first_avp(flags, name, 0, avp)))
+		n++;
+
+	return n;
 }
 
 void destroy_avp_list_bulk( struct usr_avp **list )
@@ -489,7 +518,7 @@ struct usr_avp** set_avp_list( struct usr_avp **list )
 	return foo;
 }
 
-static inline int __search_avp_map(str *alias, map_t m)
+static inline int __search_avp_map(const str *alias, map_t m)
 {
 	int **id = (int **)map_find(m, *alias);
 	LM_DBG("looking for [%.*s] avp %s - found %d\n", alias->len, alias->s,
@@ -498,7 +527,7 @@ static inline int __search_avp_map(str *alias, map_t m)
 }
 
 
-static int lookup_avp_alias_str(str *alias, int extra)
+static int lookup_avp_alias_str(const str *alias, int extra)
 {
 	int id;
 	if (!alias || !alias->len || !alias->s)
@@ -514,7 +543,7 @@ static int lookup_avp_alias_str(str *alias, int extra)
 	return id;
 }
 
-static inline int new_avp_alias(str *alias)
+static inline int new_avp_alias(const str *alias)
 {
 	int id = last_avp_index + 1;
 
@@ -531,7 +560,7 @@ static inline int new_avp_alias(str *alias)
 	return id;
 }
 
-static inline int new_avp_extra_alias(str *alias)
+static inline int new_avp_extra_alias(const str *alias)
 {
 	int id;
 
@@ -544,6 +573,7 @@ static inline int new_avp_extra_alias(str *alias)
 	lock_get(extra_lock);
 	id = (*last_avp_index_shm) + 1;
 	if (map_put(avp_map_shm, *alias, int2p(id))) {
+		lock_release(extra_lock);
 		LM_WARN("[BUG] Value should have already be found [%.*s]\n",
 				alias->len, alias->s);
 		return -1;
@@ -556,7 +586,7 @@ static inline int new_avp_extra_alias(str *alias)
 	return id;
 }
 
-int parse_avp_spec( str *name, int *avp_name)
+int parse_avp_spec(const str *name, int *avp_name)
 {
 	int id, extra;
 
@@ -613,3 +643,22 @@ struct usr_avp *clone_avp_list(struct usr_avp *old)
 	return a;
 }
 
+
+struct usr_avp** set_bavp_list(struct usr_avp **list)
+{
+	struct usr_avp **foo;
+
+	foo = crt_bavps;
+	crt_bavps = list;
+	return foo;
+}
+
+struct usr_avp** get_bavp_list(void)
+{
+	return crt_bavps;
+}
+
+struct usr_avp** reset_bavp_list(void)
+{
+	return set_bavp_list(NULL);
+}

@@ -50,8 +50,10 @@
 #include "../../parser/sdp/sdp.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/digest/digest.h"
+#include "../../msg_translator.h"
 #include "../../mod_fix.h"
 #include "../../trim.h"
+#include "../../lib/cJSON.h"
 
 #include "codecs.h"
 #include "list_hdr.h"
@@ -82,9 +84,11 @@
 static int remove_hf(struct sip_msg* msg, int_str_t* hf);
 static int remove_hf_re(struct sip_msg* msg, regex_t* re);
 static int remove_hf_glob(struct sip_msg* msg, str* pattern);
+static int get_glob_headers_values(struct sip_msg* msg, str* pattern,pv_spec_t* names, pv_spec_t *vals);
 static int remove_hf_match_f(struct sip_msg* msg, void* pattern, int is_regex);
 static int is_present_hf(struct sip_msg* msg, void* _match_hf);
 static int append_to_reply_f(struct sip_msg* msg, str* key);
+static int append_body_to_reply_f(struct sip_msg* msg, str* key);
 static int append_hf(struct sip_msg *msg, str *str1, void *str2);
 static int insert_hf(struct sip_msg *msg, str *str1, void *str2);
 static int append_urihf(struct sip_msg *msg, str *str1, str *str2);
@@ -95,8 +99,10 @@ static int is_privacy_f(struct sip_msg *msg, void *privacy);
 static int remove_body_part_f(struct sip_msg *msg, void *type, void *revert);
 static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
                            str *extra_hdrs);
+static int get_updated_body_part_f(struct sip_msg *msg, int *type,pv_spec_t* out);
 static int is_audio_on_hold_f(struct sip_msg *msg);
 static int w_sip_validate(struct sip_msg *msg, void *flags, pv_spec_t* err_txt);
+static int w_sip_to_json(struct sip_msg *msg, pv_spec_t* out_json);
 
 static int fixup_parse_hname(void** param);
 
@@ -109,13 +115,18 @@ static int fixup_validate_fl(void** param);
 static int list_hdr_has_option(struct sip_msg *msg, void *hdr, str *option);
 static int list_hdr_add_option(struct sip_msg *msg, void *hdr, str *option);
 static int list_hdr_remove_option(struct sip_msg *msg, void *hdr, str *option);
+static int w_has_totag(struct sip_msg *msg);
 
 static int change_reply_status_f(struct sip_msg* msg, int* code, str* reason);
 
 static int mod_init(void);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"append_to_reply",  (cmd_function)append_to_reply_f, {
+		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ERROR_ROUTE},
+
+	{"append_body_to_reply",  (cmd_function)append_body_to_reply_f, {
 		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ERROR_ROUTE},
 
@@ -184,6 +195,11 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
+	{"get_updated_body_part",    (cmd_function)get_updated_body_part_f, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, 0},
+		{CMD_PARAM_VAR, 0, 0}, {0, 0, 0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
 	{"codec_exists",	(cmd_function)codec_find, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
@@ -238,11 +254,13 @@ static cmd_export_t cmds[]={
 		ONREPLY_ROUTE },
 
 	{"stream_exists",	(cmd_function)stream_find, {
-		{CMD_PARAM_REGEX, 0, 0}, {0, 0, 0}},
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_REGEX|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"stream_delete",	(cmd_function)stream_delete, {
-		{CMD_PARAM_REGEX, 0, 0}, {0, 0, 0}},
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_REGEX|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"list_hdr_has_option", (cmd_function)list_hdr_has_option, {
@@ -260,7 +278,7 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
-	{"has_totag", (cmd_function)has_totag, {{0, 0, 0}},
+	{"has_totag", (cmd_function)w_has_totag, {{0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"ruri_has_param", (cmd_function)ruri_has_param, {
@@ -274,14 +292,23 @@ static cmd_export_t cmds[]={
 
 	{"ruri_del_param", (cmd_function)ruri_del_param, {
 		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"ruri_tel2sip", (cmd_function)ruri_tel2sip, {{0, 0, 0}},
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"is_uri_user_e164", (cmd_function)is_uri_user_e164, {
 		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"get_glob_headers_values",   (cmd_function)get_glob_headers_values, {
+		{CMD_PARAM_STR, 0, 0},
+	        {CMD_PARAM_VAR, 0, 0},
+	        {CMD_PARAM_VAR, 0, 0},
+		{0, 0, 0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_to_json",     (cmd_function)w_sip_to_json, {
+		{CMD_PARAM_VAR, 0, 0}, {0, 0, 0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{0,0,{{0,0,0}},0}
 };
@@ -520,6 +547,27 @@ static int append_to_reply_f(struct sip_msg* msg, str* key)
 	{
 		LM_ERR("unable to add lump_rl\n");
 		return -1;
+	}
+
+	return 1;
+}
+
+
+static int append_body_to_reply_f(struct sip_msg* msg, str* body)
+{
+	struct lump_rpl *l;
+
+	l = get_lump_rpl( msg, LUMP_RPL_BODY);
+	if (l) {
+		if (replace_lump_rpl(l, body->s, body->len, LUMP_RPL_BODY)!=0) {
+			LM_ERR("unable to replace existing body lump_rl\n");
+			return -1;
+		}
+	} else {
+		if (add_lump_rpl( msg, body->s, body->len, LUMP_RPL_BODY)==NULL) {
+			LM_ERR("unable to create new body lump_rl\n");
+			return -1;
+		}
 	}
 
 	return 1;
@@ -853,14 +901,16 @@ static int has_body_f(struct sip_msg *msg, void *type)
 {
 	struct body_part * p;
 
-	if ( msg->content_length==NULL &&
-	(parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1||msg->content_length==NULL))
-		return -1;
+	if ( msg->content_length==NULL ) {
+		if (parse_headers(msg,HDR_CONTENTLENGTH_F, 0)==-1)
+			return -1;
 
-	if (get_content_length (msg)==0) {
-		LM_DBG("content length is zero\n");
-		/* Nothing to see here, please move on. */
-		return -1;
+		if (msg->rcv.proto!=PROTO_UDP && (
+		(msg->content_length==NULL) || get_content_length (msg)==0 ) ) {
+			LM_DBG("no content length hdr or zero len\n");
+			/* Nothing to see here, please move on. */
+			return -1;
+		}
 	}
 
 	if( ( ((int)(long)type )>>16) == TYPE_MULTIPART )
@@ -952,6 +1002,110 @@ static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
 
 	if (!add_body_part(msg, mime, extra_hdrs, body)) {
 		LM_ERR("failed to add new body part <%.*s>\n", mime->len, mime->s);
+		return -1;
+	}
+
+	return 1;
+}
+
+
+/*
+ *	Function to apply all pending changes over a body part and
+ *	return the result into a variable
+ * */
+static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* res)
+{
+	static str out = {NULL, 0};
+	struct body_part *p, *it;
+	unsigned int out_offs, orig_offs, parts;
+	pv_value_t val;
+
+
+	if (parse_sip_body(msg)<0 || msg->body==NULL) {
+		LM_DBG("no body found\n");
+		return -1;
+	}
+
+
+	if (type) {
+
+		p = &msg->body->first;
+		while (p) {
+			if ( (p->flags&SIP_BODY_PART_FLAG_DELETED) == 0
+			&& p->mime == ((int)(long)type) )
+				break;
+
+			p = p->next;
+		}
+
+		if (p==NULL)
+			return -2;  /* not found */
+
+		/* found */
+
+		/* iterate again and mark all the other as DELETED */
+		for (it = &msg->body->first ; it ; it=it->next)
+			if (it!=p) {
+				if (it->flags&SIP_BODY_PART_FLAG_DELETED)
+					it->flags |= SIP_BODY_PART_FLAG_MARKED;
+				else
+					it->flags |= SIP_BODY_PART_FLAG_DELETED;
+			}
+
+		parts = msg->body->updated_part_count;
+		msg->body->updated_part_count = 1;
+
+		/* now the body is faked as having only one part,
+		 * so the body assembler will generate output only for it */
+	}
+
+
+	/* re-assemble the whole body, with all its existing parts */
+
+	/* calculate the new len */
+	out.len = prep_reassemble_body_parts( msg, msg->rcv.bind_address );
+
+	/* get the new buffer */
+	if (out.s)
+		pkg_free(out.s);
+	out.s = (char*)pkg_malloc(out.len+1);
+	if (out.s==0){
+		LM_ERR("out of pkg mem\n");
+		return -1;
+	}
+
+	/* generate the out buffer */
+	out_offs = 0;
+	orig_offs = msg->body->body.s - msg->buf;
+	reassemble_body_parts( msg, out.s, &out_offs, &orig_offs,
+		msg->rcv.bind_address);
+
+	if (out_offs!=out.len) {
+		LM_BUG("len mismatch : calculated %d, written %d\n", out.len, out_offs);
+		abort();
+	}
+
+
+	if (type) {
+
+		/* restore the correct DELETED flag */
+		for (it = &msg->body->first ; it ; it=it->next)
+			if (it!=p) {
+				if (it->flags&SIP_BODY_PART_FLAG_MARKED)
+					it->flags &= ~SIP_BODY_PART_FLAG_MARKED;
+				else
+					it->flags &= ~SIP_BODY_PART_FLAG_DELETED;
+			}
+
+		msg->body->updated_part_count = parts;
+
+	}
+
+	/* continue setting the output variable with the result */
+	val.rs = out;
+	val.flags = PV_VAL_STR;
+	if (pv_set_value( msg, res, 0, &val)!=0) {
+		LM_ERR("failed to set the result to script var\n");
 		return -1;
 	}
 
@@ -1329,7 +1483,7 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 
 			case HDR_PROXY_AUTHENTICATE_T:
 			case HDR_WWW_AUTHENTICATE_T:
-				CHECK_HDR_FUNC(parse_authenticate_header, hf);
+				CHECK_HDR_FUNC(_parse_authenticate_header, hf);
 				break;
 
 			case HDR_CALLID_T:
@@ -1370,170 +1524,6 @@ failed:
 }
 
 
-static char _is_username_char[128] = {
-	0 /* 0 NUL */,
-	0 /* 1 SOH */,
-	0 /* 2 STX */,
-	0 /* 3 ETX */,
-	0 /* 4 EOT */,
-	0 /* 5 ENQ */,
-	0 /* 6 ACK */,
-	0 /* 7 BEL */,
-	0 /* 8 BS */,
-	0 /* 9 HT */,
-	0 /* 10 LF */,
-	0 /* 11 VT */,
-	0 /* 12 FF */,
-	0 /* 13 CR */,
-	0 /* 14 SO */,
-	0 /* 15 SI */,
-	0 /* 16 DLE */,
-	0 /* 17 DC1 */,
-	0 /* 18 DC2 */,
-	0 /* 19 DC3 */,
-	0 /* 20 DC4 */,
-	0 /* 21 NAK */,
-	0 /* 22 SYN */,
-	0 /* 23 ETB */,
-	0 /* 24 CAN */,
-	0 /* 25 EM */,
-	0 /* 26 SUB */,
-	0 /* 27 ESC */,
-	0 /* 28 FS */,
-	0 /* 29 GS */,
-	0 /* 30 RS */,
-	0 /* 31 US */,
-	0 /* 32   */,
-	1 /* 33 ! */,
-	0 /* 34 " */,
-	0 /* 35 # */,
-	1 /* 36 $ */,
-	0 /* 37 % */,
-	1 /* 38 & */,
-	1 /* 39 ' */,
-	1 /* 40 ( */,
-	1 /* 41 ) */,
-	1 /* 42 * */,
-	1 /* 43 + */,
-	1 /* 44 , */,
-	1 /* 45 - */,
-	1 /* 46 . */,
-	1 /* 47 / */,
-	1 /* 48 0 */,
-	1 /* 49 1 */,
-	1 /* 50 2 */,
-	1 /* 51 3 */,
-	1 /* 52 4 */,
-	1 /* 53 5 */,
-	1 /* 54 6 */,
-	1 /* 55 7 */,
-	1 /* 56 8 */,
-	1 /* 57 9 */,
-	0 /* 58 : */,
-	1 /* 59 ; */,
-	0 /* 60 < */,
-	1 /* 61 = */,
-	0 /* 62 > */,
-	1 /* 63 ? */,
-	0 /* 64 @ */,
-	1 /* 65 A */,
-	1 /* 66 B */,
-	1 /* 67 C */,
-	1 /* 68 D */,
-	1 /* 69 E */,
-	1 /* 70 F */,
-	1 /* 71 G */,
-	1 /* 72 H */,
-	1 /* 73 I */,
-	1 /* 74 J */,
-	1 /* 75 K */,
-	1 /* 76 L */,
-	1 /* 77 M */,
-	1 /* 78 N */,
-	1 /* 79 O */,
-	1 /* 80 P */,
-	1 /* 81 Q */,
-	1 /* 82 R */,
-	1 /* 83 S */,
-	1 /* 84 T */,
-	1 /* 85 U */,
-	1 /* 86 V */,
-	1 /* 87 W */,
-	1 /* 88 X */,
-	1 /* 89 Y */,
-	1 /* 90 Z */,
-	0 /* 91 [ */,
-	0 /* 92 \ */,
-	0 /* 93 ] */,
-	0 /* 94 ^ */,
-	1 /* 95 _ */,
-	0 /* 96 ` */,
-	1 /* 97 a */,
-	1 /* 98 b */,
-	1 /* 99 c */,
-	1 /* 100 d */,
-	1 /* 101 e */,
-	1 /* 102 f */,
-	1 /* 103 g */,
-	1 /* 104 h */,
-	1 /* 105 i */,
-	1 /* 106 j */,
-	1 /* 107 k */,
-	1 /* 108 l */,
-	1 /* 109 m */,
-	1 /* 110 n */,
-	1 /* 111 o */,
-	1 /* 112 p */,
-	1 /* 113 q */,
-	1 /* 114 r */,
-	1 /* 115 s */,
-	1 /* 116 t */,
-	1 /* 117 u */,
-	1 /* 118 v */,
-	1 /* 119 w */,
-	1 /* 120 x */,
-	1 /* 121 y */,
-	1 /* 122 z */,
-	0 /* 123 { */,
-	0 /* 124 | */,
-	0 /* 125 } */,
-	1 /* 126 ~ */,
-	0 /* 127 DEL */
-};
-
-static inline int check_username(const str *username)
-{
-	char *p, *end, c;
-
-	for (p = username->s, end = p + username->len; p < end; p++) {
-		c = *p;
-
-		if (c < 0)
-			goto err;
-
-		if (c == '%') {
-			if ((p + 3) > end || !_isxdigit(*(p + 1)) || !_isxdigit(*(p + 2)))
-				goto err;
-			p += 2;
-		} else if (!_is_username_char[(int)c]) {
-			goto err;
-		}
-	}
-
-	return 0;
-
-err:
-	LM_DBG("invalid character %c[%d] in username <%.*s> on index %ld\n",
-	       c, c, username->len, username->s, p - username->s);
-	return -1;
-}
-
-
-#define IS_ALPHANUM(_c) ( \
-		((_c) >= 'a' && (_c) <= 'z') || \
-		((_c) >= 'A' && (_c) <= 'Z') || \
-		((_c) >= '0' && (_c) <= '9') )
-
 static int check_hostname(str *domain)
 {
 	char *p, *end;
@@ -1544,7 +1534,7 @@ static int check_hostname(str *domain)
 	}
 
 	/* always starts with a ALPHANUM */
-	if (!IS_ALPHANUM(domain->s[0]) && (domain->s[0] != '[')) {
+	if (!_isalnum(domain->s[0]) && (domain->s[0] != '[')) {
 		LM_DBG("invalid starting character in domain: %c[%d]\n",
 			domain->s[0], domain->s[0]);
 		return -1;
@@ -1554,7 +1544,7 @@ static int check_hostname(str *domain)
 	end = domain->s + domain->len - 1;
 
 	for (p = domain->s + 1; p < end; p++) {
-		if (!IS_ALPHANUM(*p) && (*p != '-') && (*p != ':')) {
+		if (!_isalnum(*p) && (*p != '-') && (*p != ':')) {
 			if (*p != '.') {
 				LM_DBG("invalid character in hostname: %c[%d]\n", *p, *p);
 				return -1;
@@ -1566,7 +1556,7 @@ static int check_hostname(str *domain)
 	}
 
 	/* check if the last character is a '-' */
-	if (!IS_ALPHANUM(*end) && (*end != '.') && (*end != ']')) {
+	if (!_isalnum(*end) && (*end != '.') && (*end != ']')) {
 		LM_DBG("invalid character at the end of the domain: %c[%d]\n",
 			*end, *end);
 		return -1;
@@ -1575,7 +1565,6 @@ static int check_hostname(str *domain)
 
 }
 
-#undef IS_ALPHANUM
 
 #define CHECK_HEADER(_m, _h) \
 	do { \
@@ -1739,7 +1728,8 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 			ret = SV_TO_DOMAIN_ERROR;
 			goto failed;
 		}
-		if(check_username(&to->parsed_uri.user) < 0) {
+
+		if(!is_username_str(&to->parsed_uri.user)) {
 			strcpy(reason, "invalid username for 'To' header");
 			ret = SV_TO_USERNAME_ERROR;
 			goto failed;
@@ -1770,7 +1760,8 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 			ret = SV_FROM_DOMAIN_ERROR;
 			goto failed;
 		}
-		if (check_username(&from->parsed_uri.user) < 0) {
+
+		if (!is_username_str(&from->parsed_uri.user)) {
 			strcpy(reason, "invalid username for 'From' header");
 			ret = SV_FROM_USERNAME_ERROR;
 			goto failed;
@@ -1793,7 +1784,8 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 					ret = SV_BAD_HOSTNAME;
 					goto failed;
 				}
-				if (check_username(&msg->parsed_uri.user) < 0) {
+
+				if (!is_username_str(&msg->parsed_uri.user)) {
 					strcpy(reason, "invalid username for R-URI");
 					ret = SV_BAD_USERNAME;
 					goto failed;
@@ -2031,3 +2023,160 @@ static int list_hdr_remove_option(struct sip_msg *msg, void *hdr, str *option)
 	return list_hdr_remove_val(msg, (int_str_t *)hdr, option);
 }
 
+static int get_glob_headers_values(struct sip_msg* msg, str* pattern,pv_spec_t* names, pv_spec_t *vals)
+{
+	struct hdr_field *hf;
+	int cnt=0;
+	char tmp;
+	pv_value_t val;
+
+	if (names->type != PVT_AVP) {
+		LM_ERR("AVP needed for names pvar \n");
+		return -1;
+	}
+
+	if (vals->type != PVT_AVP) {
+		LM_ERR("AVP needed for vals pvar \n");
+		return -1;
+	}
+
+
+	/* we need to be sure we have seen all HFs */
+	if (parse_headers(msg, HDR_EOH_F, 0)!=0) {
+		LM_ERR("failed to parse SIP message\n");
+		return -1;
+	}
+	for (hf=msg->headers; hf; hf=hf->next) {
+		tmp = *(hf->name.s+hf->name.len);
+		*(hf->name.s+hf->name.len) = 0;
+		#ifdef FNM_CASEFOLD
+		if(fnmatch(pattern->s, hf->name.s, FNM_CASEFOLD) !=0 ){
+		#else
+		if(fnmatch(pattern->s, hf->name.s, 0) !=0 ){
+		#endif
+			*(hf->name.s+hf->name.len) = tmp;
+			continue;
+		}
+
+		*(hf->name.s+hf->name.len) = tmp;
+
+		val.rs = hf->name;
+		val.flags = PV_VAL_STR;
+		if (pv_set_value( msg, names, 0, &val)!=0) {
+			LM_ERR("failed to set the result to script var\n");
+			return -1;
+		}
+
+		val.rs = hf->body;
+		val.flags = PV_VAL_STR;
+		if (pv_set_value( msg, vals, 0, &val)!=0) {
+			LM_ERR("failed to set the result to script var\n");
+			return -1;
+		}
+
+		cnt++;
+	}
+	return cnt==0 ? -1 : 1;
+}
+
+static int w_sip_to_json(struct sip_msg *msg, pv_spec_t* out_json)
+{
+	cJSON *ret=NULL, *aux, *aux2, *arr;
+	struct hdr_field* it;
+	char hdr_name_buf[255];
+	str json_ret = {0,0};
+	pv_value_t pv_val;
+
+	if (!msg) {
+		LM_ERR("No SIP msg, can't convert to json\n");
+		return -1;
+	}	
+
+	if(parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("Failed to parse all SIP msg \n");
+		return -1;
+	}
+
+	ret = cJSON_CreateObject();
+
+	/* first line */
+	aux = cJSON_CreateStr(msg->buf,msg->first_line.len); 
+	if (!aux) {
+		LM_ERR("Failed to create 1st line json \n");
+		goto error;
+	}
+
+	cJSON_AddItemToObject(ret,"first_line",aux);
+
+	/* headers */
+	aux = cJSON_CreateObject();
+	if (!aux) {
+		LM_ERR("Failed to create headers json \n");
+		goto error;
+	}
+
+	for (it=msg->headers;it;it=it->next) {
+		memcpy(hdr_name_buf,it->name.s,it->name.len);
+		hdr_name_buf[it->name.len] = 0;
+
+		arr = cJSON_GetObjectItem(aux, hdr_name_buf);
+		if (!arr) {
+			arr = cJSON_CreateArray();
+			cJSON_AddItemToObject(aux,hdr_name_buf,arr);
+		}
+
+		aux2 =  cJSON_CreateStr(it->body.s,it->body.len);
+		if (!aux2) {
+			LM_ERR("Failed to create individual header json\n");
+			goto error;
+		}
+
+		cJSON_AddItemToArray(arr,aux2);
+	}
+	cJSON_AddItemToObject(ret,"headers",aux);
+
+	/* body */
+	if (msg->body) {
+		aux = cJSON_CreateStr(msg->body->body.s,msg->body->body.len); 
+		if (!aux) {
+			LM_ERR("Failed to create body json\n");
+			goto error;
+		}
+		cJSON_AddItemToObject(ret,"body",aux);
+	}
+
+	json_ret.s = cJSON_Print(ret);
+	if (!json_ret.s) {
+		LM_ERR("Failed to print json to string obj\n");
+		goto error;
+	}
+
+	cJSON_Minify(json_ret.s);
+	json_ret.len = strlen(json_ret.s);
+
+	pv_val.flags = PV_VAL_STR;
+	pv_val.rs = json_ret;
+
+	if (pv_set_value(msg,out_json,0,&pv_val) != 0) {
+		LM_ERR("Failed to set out json pvar \n");
+		goto error;
+	} 
+
+	pkg_free(json_ret.s);
+	cJSON_Delete(ret);
+
+	return 1;
+
+error:
+	if (ret)
+		cJSON_Delete(ret);
+	if (json_ret.s)
+		pkg_free(json_ret.s);
+
+	return -1;
+}
+
+static int w_has_totag(struct sip_msg *msg)
+{
+	return (has_totag(msg) ?1:-1);
+}

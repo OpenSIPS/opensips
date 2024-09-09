@@ -60,7 +60,7 @@ static int fix_reset_flags(void **pflags);
 static int fix_contact_count(void** param);
 
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"set_deny_filter",   (cmd_function)w_set_deny,
 		{ {CMD_PARAM_REGEX, NULL, NULL},
 		  {CMD_PARAM_STR, fix_reset_flags, NULL},
@@ -82,14 +82,14 @@ static cmd_export_t cmds[] = {
 	{0, 0, {{0, 0, 0}}, 0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"deny_filter",     STR_PARAM,  &deny_filter_s    },
 	{"accept_filter",   STR_PARAM,  &accept_filter_s  },
 	{"default_filter",  STR_PARAM,  &def_filter_s     },
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",  DEP_ABORT   },
 		{ MOD_TYPE_DEFAULT, "acc", DEP_SILENT  },

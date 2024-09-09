@@ -26,6 +26,7 @@ UAC Module
 
               1.4.2. uac_restore_from() uac_restore_to()
               1.4.3. uac_auth()
+              1.4.4. uac_inc_cseq()
 
    2. Frequently Asked Questions
    3. Contributors
@@ -54,6 +55,7 @@ UAC Module
    1.6. uac_replace_from/uac_replace_to usage
    1.7. uac_restore_from/uac_restore_to usage
    1.8. uac_auth usage
+   1.9. uac_inc_cseq usage
 
 Chapter 1. Admin Guide
 
@@ -65,12 +67,6 @@ Chapter 1. Admin Guide
 
    If the dialog module is loaded and a dialog can be created,
    then the auto mode can be done more efficiently.
-
-   Known limitations in this version:
-     * authentication does not support qop auth-int, just qop
-       auth;
-     * CSeq not increased during authentication - the response may
-       be rejected.
 
 1.2. Dependencies
 
@@ -220,11 +216,60 @@ uac_restore_from();
    credentials provided by the uac_auth module (static or via
    AVPs).
 
+   As optional parameter, the function may receive a list of auth
+   algorithms to be considered / supported during authentication:
+     * MD5, MD5-sess
+     * SHA-256, SHA-256-sess (may be missing, depends on lib
+       support)
+     * SHA-512-256, SHA-512-256-sess (may be missing, depends on
+       lib support)
+
+   Note that the CSeq is automatically increased during
+   authentication.
+
    This function can be used from FAILURE_ROUTE.
+
+   NOTE: when used without dialog support, the uac_auth() function
+   cannot be used for authenticating in-dialog requests, as there
+   is no mechanism to store the CSeq changes that are required for
+   ensuring the correctness of the dialog. The only exception are
+   BYE messages, which are the last messages within a call, hence
+   no further adjustments are needed. The function can still be
+   used for authenticating the initial INVITE though.
 
    Example 1.8. uac_auth usage
 ...
 uac_auth();
+...
+failure_route[check_auth] {
+    ...
+    if ($T_reply_code==407) {
+        if (uac_auth("MD5,MD5-sess")) {
+            # auth is succesful, just relay
+            t_relay();
+            exit;
+        }
+        # auth failed (no credentials maybe)
+        # so continue handling the 407 reply
+    }
+    ...
+}
+...
+
+1.4.4.  uac_inc_cseq()
+
+   This function can be called to increase the CSeq of an ongoing
+   request.
+
+   It receives as the cseq parameter the value that the CSeq
+   should be incremented with.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
+   FAILURE_ROUTE.
+
+   Example 1.9. uac_inc_cseq usage
+...
+uac_inc_cseq(1);
 ...
 
 Chapter 2. Frequently Asked Questions
@@ -279,21 +324,21 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 126 74 4175 1059
-   2. Ovidiu Sas (@ovidiusas) 33 7 371 1346
-   3. Razvan Crainea (@razvancrainea) 29 22 485 148
-   4. Liviu Chircu (@liviuchircu) 22 14 263 290
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 129 75 4208 1076
+   2. Ovidiu Sas (@ovidiusas) 34 8 403 1351
+   3. Razvan Crainea (@razvancrainea) 32 24 560 148
+   4. Liviu Chircu (@liviuchircu) 25 17 299 292
    5. Daniel-Constantin Mierla (@miconda) 15 11 138 88
-   6. Vlad Patrascu (@rvlad-patrascu) 9 4 127 161
-   7. Vlad Paiu (@vladpaiu) 8 5 243 18
-   8. Andreas Heise 7 3 105 129
-   9. Edson Gellert Schubert 5 1 0 201
-   10. Elena-Ramona Modroiu 4 2 95 42
+   6. Vlad Patrascu (@rvlad-patrascu) 10 5 150 175
+   7. Maksym Sobolyev (@sobomax) 10 3 168 294
+   8. Vlad Paiu (@vladpaiu) 9 5 243 18
+   9. Andreas Heise 7 3 105 129
+   10. Edson Gellert Schubert 5 1 0 201
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Konstantin Bokarius, Peter Lemenkov (@lemenkov), Dan Pascu
-   (@danpascu), Dusan Klinec (@ph4r05), Jesus Rodrigues, Sergio
-   Gutierrez.
+   All remaining contributors: Elena-Ramona Modroiu, Henning
+   Westerholt (@henningw), Konstantin Bokarius, Peter Lemenkov
+   (@lemenkov), Dan Pascu (@danpascu), Dusan Klinec (@ph4r05),
+   Jesus Rodrigues, Sergio Gutierrez.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -315,21 +360,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2020
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   7.  Vlad Paiu (@vladpaiu)               Aug 2011 - Sep 2015
-   8.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Oct 2013
-   9.  Sergio Gutierrez                    Nov 2008 - Nov 2008
-   10. Dan Pascu (@danpascu)               Nov 2008 - Nov 2008
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Aug 2023
+   3.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   6.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Sep 2015
+   10. Sergio Gutierrez                    Nov 2008 - Nov 2008
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw), Jesus Rodrigues, Andreas Heise,
-   Elena-Ramona Modroiu.
+   All remaining contributors: Dan Pascu (@danpascu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Jesus
+   Rodrigues, Andreas Heise, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -338,9 +383,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Ovidiu Sas
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu Sas
    (@ovidiusas), Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Elena-Ramona
    Modroiu.

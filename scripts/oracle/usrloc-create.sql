@@ -3,7 +3,7 @@ CREATE TABLE location (
     contact_id BIGINT(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',
     domain VARCHAR2(64) DEFAULT NULL,
-    contact VARCHAR2(255) DEFAULT '',
+    contact CLOB,
     received VARCHAR2(255) DEFAULT NULL,
     path VARCHAR2(255) DEFAULT NULL,
     expires NUMBER(10),

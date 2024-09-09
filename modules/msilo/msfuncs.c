@@ -238,7 +238,8 @@ error:
  *         - body->s MUST be allocated
  * return: 0 OK ; -1 error
  * */
-int m_build_body(str *body, time_t date, str msg, time_t sdate)
+int m_build_body(str *body, time_t date, str msg, time_t sdate,
+															int is_reminder)
 {
 	char *p;
 
@@ -250,7 +251,7 @@ int m_build_body(str *body, time_t date, str msg, time_t sdate)
 
 	if(ms_add_date!=0)
 	{
-		if(sdate!=0)
+		if(is_reminder)
 		{
 			memcpy(p, "[Reminder message - ", 20);
 			p += 20;
@@ -264,7 +265,7 @@ int m_build_body(str *body, time_t date, str msg, time_t sdate)
 			p += 19;
 
 			ctime_r(&sdate, p);
-			p += strlen(p - 1);
+			p += strlen(p) - 1;
 
 			*p++ = ']';
 		}

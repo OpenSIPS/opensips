@@ -19,7 +19,7 @@ NIL|''|''|''|NULL|NULL|2147483648|1.0|'Default-Call-ID'|13|'1900-01-01 00:00:01'
 b2b_entities|
 b2b_entities|2
 b2b_logic|
-b2b_logic|4
+b2b_logic|5
 b2b_sca|
 b2b_sca|1
 cachedb|
@@ -29,11 +29,11 @@ carrierfailureroute|2
 carrierroute|
 carrierroute|3
 cc_agents|
-cc_agents|2
+cc_agents|3
 cc_calls|
-cc_calls|2
+cc_calls|3
 cc_cdrs|
-cc_cdrs|1
+cc_cdrs|2
 cc_flows|
 cc_flows|2
 closeddial|
@@ -45,11 +45,11 @@ cpl|2
 dbaliases|
 dbaliases|2
 dialog|
-dialog|11
+dialog|12
 dialplan|
 dialplan|5
 dispatcher|
-dispatcher|8
+dispatcher|9
 domain|
 domain|3
 domainpolicy|
@@ -97,7 +97,7 @@ missed_calls|5
 presentity|
 presentity|5
 pua|
-pua|8
+pua|9
 qr_profiles|
 qr_profiles|1
 rc_clients|
@@ -111,7 +111,7 @@ rc_vendors|1
 re_grp|
 re_grp|2
 registrant|
-registrant|2
+registrant|3
 rls_presentity|
 rls_presentity|1
 rls_watchers|
@@ -131,7 +131,9 @@ smpp|1
 speed_dial|
 speed_dial|3
 subscriber|
-subscriber|7
+subscriber|8
+tcp_mgm|
+tcp_mgm|1
 tls_mgm|
 tls_mgm|3
 uri|

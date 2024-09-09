@@ -31,21 +31,14 @@
 
 #undef UN_HASH
 
-#ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
  * but long can be 32 bits aligned => malloc should return long long
  * aligned memory */
 	#define QM_ROUNDTO		sizeof(long long)
 #else
-	#define QM_ROUNDTO		sizeof(void*) /* minimum possible QM_ROUNDTO
-										     -> heavy debugging */
-#endif
-#else /* DBG_MALLOC */
-	#define QM_ROUNDTO		16UL /* size we round to, must be = 2^n  and also
-							 sizeof(qm_frag)+sizeof(qm_frag_end)
-							 must be multiple of QM_ROUNDTO!
-						   */
+	/* address alignment, in bytes (2^n) */
+	#define QM_ROUNDTO		sizeof(void *)
 #endif
 
 #define Q_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
@@ -65,6 +58,48 @@
  *                            QM_ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 
+#ifdef DBG_MALLOC
+#ifndef QM_DBG_MALLOC_HIST
+#define QM_DBG_MALLOC_HIST 1
+#endif
+struct qm_frag_dbg {
+       const char* file;
+       const char* func;
+       unsigned long line;
+};
+
+#define qm_dbg_coords(_frag) \
+       (_frag)->dbg[0].file, (_frag)->dbg[0].func, (_frag)->dbg[0].line
+#else
+#define qm_dbg_coords(_frag)
+#endif
+
+#ifdef DBG_MALLOC
+#if QM_DBG_MALLOC_HIST > 1
+#define qm_dbg_move(_frag) \
+       memmove(&(_frag)->dbg[1], &(_frag)->dbg[0], \
+                       (QM_DBG_MALLOC_HIST - 1) * sizeof(struct qm_frag_dbg))
+#define qm_dbg_clear(_frag) \
+       memset(&(_frag)->dbg[1], 0, \
+                       (QM_DBG_MALLOC_HIST - 1) * sizeof(struct qm_frag_dbg))
+#else /* QM_DBG_MALLOC_HIST */
+#define qm_dbg_move(_frag)
+#define qm_dbg_clear(_frag)
+#endif /* QM_DBG_MALLOC_HIST */
+#define qm_dbg_fill(_frag, _file, _func, _line) \
+       do { \
+               qm_dbg_move(_frag); \
+               (_frag)->dbg[0].file = _file; \
+               (_frag)->dbg[0].func = _func; \
+               (_frag)->dbg[0].line = _line; \
+       } while(0)
+
+#else /* DBG_MALLOC */
+#define qm_dbg_fill(_frag, _file, _func, _line)
+#define qm_dbg_clear(_frag)
+#endif /* DBG_MALLOC */
+
+
 struct qm_frag {
 	unsigned long size;
 	union {
@@ -72,15 +107,13 @@ struct qm_frag {
 		long is_free;
 	} u;
 #ifdef DBG_MALLOC
-	const char *file;
-	const char *func;
-	unsigned long line;
+	struct qm_frag_dbg dbg[QM_DBG_MALLOC_HIST];
 	unsigned long check;
 #endif
 #ifdef SHM_EXTRA_STATS
 	unsigned long statistic_index;
 #endif
-};
+} __attribute__ ((aligned (QM_ROUNDTO)));
 
 #define QM_FRAG_OVERHEAD (sizeof(struct qm_frag))
 
@@ -93,7 +126,7 @@ struct qm_frag_end {
 #endif
 	unsigned long size;
 	struct qm_frag *prev_free;
-};
+} __attribute__ ((aligned (QM_ROUNDTO)));
 
 struct qm_frag_lnk {
 	struct qm_frag head;
@@ -114,7 +147,7 @@ struct qm_block {
 	struct qm_frag_end *last_frag_end;
 
 	struct qm_frag_lnk free_hash[QM_HASH_SIZE];
-};
+} __attribute__ ((aligned (QM_ROUNDTO)));
 
 struct qm_block *qm_malloc_init(char *address, unsigned long size, char *name);
 
@@ -151,7 +184,6 @@ void qm_info(struct qm_block*, struct mem_info*);
  */
 int qm_mem_check(struct qm_block *qm);
 
-#ifdef SHM_EXTRA_STATS
 static inline unsigned long qm_frag_size(void *p)
 {
 	if (!p)
@@ -160,14 +192,15 @@ static inline unsigned long qm_frag_size(void *p)
 	return QM_FRAG(p)->size;
 }
 
+#ifdef SHM_EXTRA_STATS
 void qm_stats_core_init(struct qm_block *qm, int core_index);
 unsigned long qm_stats_get_index(void *ptr);
 void qm_stats_set_index(void *ptr, unsigned long idx);
 
 #ifdef DBG_MALLOC
-static inline const char *qm_frag_file(void *p) { return QM_FRAG(p)->file; }
-static inline const char *qm_frag_func(void *p) { return QM_FRAG(p)->func; }
-static inline unsigned long qm_frag_line(void *p) { return QM_FRAG(p)->line; }
+static inline const char *qm_frag_file(void *p) { return QM_FRAG(p)->dbg[0].file; }
+static inline const char *qm_frag_func(void *p) { return QM_FRAG(p)->dbg[0].func; }
+static inline unsigned long qm_frag_line(void *p) { return QM_FRAG(p)->dbg[0].line; }
 #else
 static inline const char *qm_frag_file(void *p) { return NULL; }
 static inline const char *qm_frag_func(void *p) { return NULL; }
@@ -201,5 +234,7 @@ static inline unsigned long qm_get_frags(struct qm_block *qm)
 	return qm->fragments;
 }
 #endif /* STATISTICS */
+
+unsigned long qm_get_dbg_pool_size(unsigned int hist_size);
 
 #endif

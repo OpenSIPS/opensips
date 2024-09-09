@@ -60,6 +60,8 @@
 
 #include "test/unit_tests.h"
 
+#include "libgen.h"
+
 struct sr_module* modules=0;
 
 #ifdef STATIC_EXEC
@@ -90,9 +92,12 @@ struct sr_module* modules=0;
 #endif
 
 #define MPATH_LEN	256
-static const char *mpath;
-static char mpath_buf[MPATH_LEN + 1];
-static int  mpath_len;
+struct mpath {
+	char buf[MPATH_LEN + 1];
+	int len;
+	struct mpath *next;
+};
+static struct mpath *mpaths, *last_mpath;
 
 /* initializes statically built (compiled in) modules*/
 int register_builtin_modules(void)
@@ -140,7 +145,7 @@ int register_builtin_modules(void)
 
 /* registers a module,  register_f= module register  functions
  * returns <0 on error, 0 on success */
-int register_module(struct module_exports* e, char* path, void* handle)
+int register_module(const struct module_exports* e, char* path, void* handle)
 {
 	int ret;
 	struct sr_module* mod;
@@ -197,30 +202,53 @@ error:
 }
 
 
-static inline int version_control(struct module_exports* exp, char *path)
+static inline int version_control(const struct module_exports* exp, char *path)
 {
-	if ( !exp->version ) {
+	const char *hint = "(try `make clean all modules' and reinstall everything)";
+	const char *scm_nm = "version control system";
+	if ( !exp->ver_info.version ) {
 		LM_CRIT("BUG - version not defined in module <%s>\n", path );
 		return 0;
 	}
-	if ( !exp->compile_flags ) {
+	if ( !exp->ver_info.compile_flags ) {
 		LM_CRIT("BUG - compile flags not defined in module <%s>\n", path );
 		return 0;
 	}
-
-	if (strcmp(OPENSIPS_FULL_VERSION, exp->version)==0){
-		if (strcmp(OPENSIPS_COMPILE_FLAGS, exp->compile_flags)==0)
-			return 1;
-		else {
-			LM_ERR("module compile flags mismatch for %s "
-				" \ncore: %s \nmodule: %s\n",
-				exp->name, OPENSIPS_COMPILE_FLAGS, exp->compile_flags);
-			return 0;
-		}
+	if ( !exp->ver_info.scm.type ) {
+		LM_CRIT("BUG - %s type not defined in module <%s> %s\n",
+			scm_nm, path, hint );
+		return 0;
 	}
-	LM_ERR("module version mismatch for %s; core: %s; module: %s\n",
-		exp->name, OPENSIPS_FULL_VERSION, exp->version );
-	return 0;
+	if ( !exp->ver_info.scm.rev ) {
+		LM_CRIT("BUG - %s revision not defined in module <%s> %s\n",
+			scm_nm, path, hint );
+		return 0;
+	}
+
+	if (strcmp(OPENSIPS_FULL_VERSION, exp->ver_info.version)!=0) {
+		LM_CRIT("module version mismatch for %s; core: %s; module: %s\n",
+			exp->name, OPENSIPS_FULL_VERSION, exp->ver_info.version );
+		return 0;
+	}
+	if (strcmp(OPENSIPS_COMPILE_FLAGS, exp->ver_info.compile_flags)!=0) {
+		LM_CRIT("module compile flags mismatch for %s "
+			" \ncore: %s \nmodule: %s\n", exp->name,
+			OPENSIPS_COMPILE_FLAGS, exp->ver_info.compile_flags);
+		return 0;
+	}
+	if (strcmp(core_scm_ver.type, exp->ver_info.scm.type) != 0) {
+		LM_CRIT("module %s type mismatch for %s "
+			" \ncore: %s \nmodule: %s %s\n", scm_nm, exp->name,
+			core_scm_ver.type, exp->ver_info.scm.type, hint);
+		return 0;
+	}
+	if (strcmp(core_scm_ver.rev, exp->ver_info.scm.rev) != 0) {
+		LM_CRIT("module %s revision mismatch for %s "
+			" \ncore: %s \nmodule: %s %s\n", scm_nm, exp->name,
+			core_scm_ver.rev, exp->ver_info.scm.rev, hint);
+		return 0;
+	}
+	return 1;
 }
 
 
@@ -231,7 +259,7 @@ int sr_load_module(char* path)
 	void* handle;
 	unsigned int moddlflags;
 	char* error;
-	struct module_exports* exp;
+	const struct module_exports* exp;
 	struct sr_module* t;
 
 	/* load module */
@@ -250,10 +278,14 @@ int sr_load_module(char* path)
 	}
 
 	/* import module interface */
-	exp = (struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
+	exp = (const struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
 	if ( (error =(char*)dlerror())!=0 ){
 		LM_ERR("load_module: %s\n", error);
 		goto error1;
+	}
+	/* version control */
+	if (!version_control(exp, path)) {
+		exit(1);
 	}
 	if(exp->dlflags!=DEFAULT_DLFLAGS && exp->dlflags!=OPENSIPS_DLFLAGS) {
 		moddlflags = exp->dlflags;
@@ -264,16 +296,11 @@ int sr_load_module(char* path)
 			LM_ERR("could not open module <%s>: %s\n", path, dlerror() );
 			goto error;
 		}
-		exp = (struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
+		exp = (const struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
 		if ( (error =(char*)dlerror())!=0 ){
 			LM_ERR("failed to load module : %s\n", error);
 			goto error1;
 		}
-	}
-
-	/* version control */
-	if (!version_control(exp, path)) {
-		exit(0);
 	}
 
 	if (exp->load_f && exp->load_f() < 0) {
@@ -347,75 +374,130 @@ static int load_static_module(char *path)
 	return -1;
 }
 
-void set_mpath(const char *new_mpath)
+void add_mpath(const char *new_mpath)
 {
+	struct mpath *nmpath;
 	int len = strlen(new_mpath);
 	if (len >= MPATH_LEN) {
 		LM_ERR("mpath %s too long!\n", new_mpath);
 		return;
 	}
-	mpath = new_mpath;
-	strcpy(mpath_buf, new_mpath);
-	mpath_len = len;
-	if (mpath_len == 0 || mpath_buf[mpath_len - 1] != '/') {
-		mpath_buf[mpath_len] = '/';
-		mpath_len++;
-		mpath_buf[mpath_len] = '\0';
+	nmpath = pkg_malloc(sizeof *nmpath);
+	if (!nmpath) {
+		LM_ERR("could not allocate space for %s mpath!\n", new_mpath);
+		return;
 	}
+	memset(nmpath, 0, sizeof *nmpath);
+	/* link it in the list */
+	if (last_mpath)
+		last_mpath->next = nmpath;
+	else
+		mpaths = nmpath;
+	last_mpath = nmpath;
+	memcpy(nmpath->buf, new_mpath, len);
+	nmpath->len = len;
+	if (nmpath->len == 0 || nmpath->buf[nmpath->len - 1] != '/') {
+		nmpath->buf[nmpath->len] = '/';
+		nmpath->len++;
+	}
+	nmpath->buf[nmpath->len] = '\0';
 }
+
+static struct {
+ char *module;
+ char *name;
+ unsigned int flags;
+} module_warnings[] = {
+	{ "rabbitmq", "'rabbitmq' module has been dropped - please use 'event_rabbitmq' instead!", MOD_WARN_EXIT }
+};
 
 /* returns 0 on success , <0 on error */
 int load_module(char* name)
 {
-	int i_tmp;
+	int i_tmp, len;
 	struct stat statf;
+	struct mpath *mp;
+	int module_warnings_len;
+	char *base_name;
+
+	base_name = basename(name);
+	len = strlen(base_name);
+	if (strstr(base_name, ".so"))
+		len -= 3;
+
+	module_warnings_len = sizeof(module_warnings) / sizeof(module_warnings[0]);
+
+	for (i_tmp = 0; i_tmp < module_warnings_len; i_tmp++) {
+		if (strncmp(base_name, module_warnings[i_tmp].module, len) == 0) {
+			switch (module_warnings[i_tmp].flags)
+			{
+				case MOD_WARN_EXIT:
+					LM_ERR("%s\n", module_warnings[i_tmp].name);
+					return -1;
+
+				case MOD_WARN_SKIP:
+					LM_WARN("%s\n", module_warnings[i_tmp].name);
+					return 0;
+
+				default:
+					break;
+			}
+		}
+	}
 
 	/* if this is a static module, load it directly */
 	if (load_static_module(name) == 0)
 		return 0;
 
-	if(*name!='/' && mpath!=NULL
-		&& strlen(name)+mpath_len<MPATH_LEN)
-	{
-		strcpy(mpath_buf+mpath_len, name);
-		if (stat(mpath_buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
-			i_tmp = strlen(mpath_buf);
-			if(strchr(name, '/')==NULL &&
-				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
-			{
-				if(i_tmp+strlen(name)<MPATH_LEN)
-				{
-					strcpy(mpath_buf+i_tmp-3, "/");
-					strcpy(mpath_buf+i_tmp-2, name);
-					if (stat(mpath_buf, &statf) == -1) {
-						mpath_buf[mpath_len]='\0';
-						LM_ERR("module '%s' not found in '%s'\n",
-								name, mpath_buf);
-						return -1;
-					}
-				} else {
-					LM_ERR("failed to load module - path too long\n");
-					return -1;
-				}
-			} else {
-				LM_ERR("failed to load module - not found\n");
-				return -1;
-			}
-		}
-		LM_DBG("loading module %s\n", mpath_buf);
-		if (sr_load_module(mpath_buf)!=0){
-			LM_ERR("failed to load module\n");
-			return -1;
-		}
-		mpath_buf[mpath_len]='\0';
-	} else {
+	if (*name=='/' || mpaths==NULL) {
 		LM_DBG("loading module %s\n", name);
 		if (sr_load_module(name)!=0){
 			LM_ERR("failed to load module\n");
 			return -1;
 		}
+		return 0;
 	}
-	return 0;
+	for (mp = mpaths; mp; mp = mp->next) {
+		len = strlen(name);
+		if (len + mp->len >= MPATH_LEN)
+			continue;
+		memcpy(mp->buf + mp->len, name, len);
+		mp->buf[mp->len + len] = '\0';
+		if (stat(mp->buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
+			i_tmp = strlen(mp->buf);
+			if(strchr(name, '/')==NULL &&
+				strncmp(mp->buf+i_tmp-3, ".so", 3)==0)
+			{
+				if(i_tmp+len<MPATH_LEN)
+				{
+					strcpy(mp->buf+i_tmp-3, "/");
+					strcpy(mp->buf+i_tmp-2, name);
+					if (stat(mp->buf, &statf) == -1) {
+						mp->buf[mp->len]='\0';
+						LM_DBG("module '%s' not found in '%s'\n",
+								name, mp->buf);
+						goto next;
+					}
+				} else {
+					LM_DBG("failed to load module '%s' from '%s' - path too long\n", name, mp->buf);
+					goto next;
+				}
+			} else {
+				goto next;
+			}
+		}
+		LM_DBG("trying module %s\n", mp->buf);
+		if (sr_load_module(mp->buf)!=0) {
+			LM_DBG("failed to load module '%s'\n", mp->buf);
+		} else {
+			mp->buf[mp->len]='\0';
+			return 0;
+		}
+next:
+		mp->buf[mp->len]='\0';
+	}
+	LM_ERR("failed to load module '%s' - not found\n", name);
+	return -1;
 }
 
 
@@ -424,9 +506,9 @@ int load_module(char* name)
  * 0 if not found
  * flags parameter is OR value of all flags that must match
  */
-cmd_function find_export(char* name, int flags)
+cmd_function find_export(const char* name, int flags)
 {
-	cmd_export_t* cmd;
+	const cmd_export_t* cmd;
 
 	cmd = find_mod_cmd_export_t(name, flags);
 	if (cmd==0)
@@ -439,10 +521,10 @@ cmd_function find_export(char* name, int flags)
 
 /* Searches the module list for the "name" cmd_export_t structure.
  */
-cmd_export_t* find_mod_cmd_export_t(char* name, int flags)
+const cmd_export_t* find_mod_cmd_export_t(const char* name, int flags)
 {
 	struct sr_module* t;
-	cmd_export_t* cmd;
+	const cmd_export_t* cmd;
 
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
@@ -462,10 +544,10 @@ cmd_export_t* find_mod_cmd_export_t(char* name, int flags)
 
 /* Searches the module list for the "name" acmd_export_t structure.
  */
-acmd_export_t* find_mod_acmd_export_t(char* name)
+const acmd_export_t* find_mod_acmd_export_t(const char* name)
 {
 	struct sr_module* t;
-	acmd_export_t* cmd;
+	const acmd_export_t* cmd;
 
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->acmds; cmd && cmd->name; cmd++){
@@ -485,10 +567,10 @@ acmd_export_t* find_mod_acmd_export_t(char* name)
  * "mod" or 0 if not found
  * flags parameter is OR value of all flags that must match
  */
-cmd_function find_mod_export(char* mod, char* name, int flags)
+cmd_function find_mod_export(const char* mod, const char* name, int flags)
 {
 	struct sr_module* t;
-	cmd_export_t* cmd;
+	const cmd_export_t* cmd;
 
 	for (t = modules; t; t = t->next) {
 		if (strcmp(t->exports->name, mod) == 0) {
@@ -510,10 +592,10 @@ cmd_function find_mod_export(char* mod, char* name, int flags)
 
 
 
-void* find_param_export(char* mod, char* name, modparam_t type)
+void* find_param_export(const char* mod, const char* name, modparam_t type)
 {
 	struct sr_module* t;
-	param_export_t* param;
+	const param_export_t* param;
 
 	for(t = modules; t; t = t->next) {
 		if (strcmp(mod, t->exports->name) == 0) {
@@ -532,21 +614,45 @@ void* find_param_export(char* mod, char* name, modparam_t type)
 }
 
 
+static void destroy_module(struct sr_module *m, int skip_others)
+{
+	struct sr_module_dep *dep;
+
+	if (!m)
+		return;
+
+	/* destroy the modules in script load order using backwards iteration */
+	if (!skip_others)
+		destroy_module(m->next, 0);
+
+	if (m->destroy_done || !m->exports)
+		return;
+
+	/* make sure certain modules get destroyed before this one */
+	for (dep = m->sr_deps_destroy; dep; dep = dep->next)
+		if (!dep->mod->destroy_done)
+			destroy_module(dep->mod, 1);
+
+	if (m->init_done && m->exports->destroy_f)
+		m->exports->destroy_f();
+
+	m->destroy_done = 1;
+}
+
 
 void destroy_modules(void)
 {
-	struct sr_module* t, *foo;
+	struct sr_module *mod, *aux;
 
-	t = modules;
-	while (t) {
-		foo = t->next;
-		if (t->init_done && t->exports && t->exports->destroy_f)
-			t->exports->destroy_f();
-		pkg_free(t);
-		t = foo;
+	destroy_module(modules, 0);
+	free_module_dependencies(modules);
+
+	mod = modules;
+	while (mod) {
+		aux = mod;
+		mod = mod->next;
+		pkg_free(aux);
 	}
-
-	modules = NULL;
 }
 
 
@@ -555,33 +661,39 @@ void destroy_modules(void)
    which modules are loaded in config file
 */
 
-static int init_mod_child( struct sr_module* m, int rank, char *type )
+static int init_mod_child( struct sr_module* m, int rank, char *type,
+                          int skip_others)
 {
-	if (m) {
-		/* iterate through the list; if error occurs,
-		   propagate it up the stack */
-		if (init_mod_child(m->next, rank, type)!=0)
-			return -1;
+	struct sr_module_dep *dep;
 
-		if (m->exports && m->exports->init_child_f) {
-			LM_DBG("type=%s, rank=%d, module=%s\n",
-					type, rank, m->exports->name);
-			if (m->exports->init_child_f(rank)<0) {
-				LM_ERR("failed to initializing module %s, rank %d\n",
-					m->exports->name,rank);
+	if (!m || m->init_child_done)
+		return 0;
+
+	/* iterate through the list; if error occurs,
+	   propagate it up the stack */
+	if (!skip_others && init_mod_child(m->next, rank, type, 0) != 0)
+		return -1;
+
+	for (dep = m->sr_deps_init; dep; dep = dep->next)
+		if (!dep->mod->init_child_done)
+			if (init_mod_child(dep->mod, rank, type, 1) != 0)
 				return -1;
-			} else {
-				/* module correctly initialized */
-				return 0;
-			}
-		}
 
-		/* no init function -- proceed with success */
+	if (m->init_child_done)
 		return 0;
-	} else {
-		/* end of list */
-		return 0;
+
+	if (m->exports && m->exports->init_child_f) {
+		LM_DBG("type=%s, rank=%d, module=%s\n",
+				type, rank, m->exports->name);
+		if (m->exports->init_child_f(rank)<0) {
+			LM_ERR("failed to initializing module %s, rank %d\n",
+				m->exports->name,rank);
+			return -1;
+		}
 	}
+
+	m->init_child_done = 1;
+	return 0;
 }
 
 
@@ -608,7 +720,7 @@ int init_child(int rank)
 			type = "UNKNOWN";
 	}
 
-	return init_mod_child(modules, rank, type);
+	return init_mod_child(modules, rank, type, 0);
 }
 
 
@@ -637,7 +749,7 @@ static int init_mod( struct sr_module* m, int skip_others)
 			return 0;
 
 		/* make sure certain modules get loaded before this one */
-		for (dep = m->sr_deps; dep; dep = dep->next) {
+		for (dep = m->sr_deps_init; dep; dep = dep->next) {
 			if (!dep->mod->init_done)
 				if (init_mod(dep->mod, 1) != 0)
 					return -1;
@@ -705,11 +817,7 @@ int init_modules(void)
 		}
 	}
 
-	ret = init_mod(modules, 0);
-
-	free_module_dependencies(modules);
-
-	return ret;
+	return init_mod(modules, 0);
 }
 
 
@@ -769,6 +877,7 @@ int start_module_procs(void)
 	struct sr_module *m;
 	unsigned int n;
 	unsigned int l;
+	unsigned int flags;
 	int x;
 
 	for( m=modules ; m ; m=m->next) {
@@ -789,9 +898,21 @@ int start_module_procs(void)
 			for ( l=0; l<m->exports->procs[n].no ; l++) {
 				LM_DBG("forking process \"%s\"/%d for module %s\n",
 					m->exports->procs[n].name, l, m->exports->name);
-				x = internal_fork( m->exports->procs[n].name,
-						((m->exports->procs[n].flags&PROC_FLAG_HAS_IPC) ?
-						0 : OSS_PROC_NO_IPC)|OSS_PROC_IS_EXTRA, TYPE_MODULE );
+				/* conver the module proc flags to internal proc flgas
+				 * NOTE that the PROC_FLAG_NEEDS_SCRIPT automatically
+				 * assumes PROC_FLAG_HAS_IPC - IPC is needed for script
+				 * reload */
+				flags = OSS_PROC_IS_EXTRA;
+				if (m->exports->procs[n].flags&PROC_FLAG_NEEDS_SCRIPT)
+					flags |= OSS_PROC_NEEDS_SCRIPT;
+				if ( (m->exports->procs[n].flags&PROC_FLAG_HAS_IPC)==0)
+					flags |= OSS_PROC_NO_IPC;
+				struct internal_fork_params ifp = {
+					.proc_desc = m->exports->procs[n].name,
+					.flags = flags,
+					.type = TYPE_MODULE,
+				};
+				x = internal_fork(&ifp);
 				if (x<0) {
 					LM_ERR("failed to fork process \"%s\"/%d for module %s\n",
 						m->exports->procs[n].name, l, m->exports->name);

@@ -7,6 +7,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=presence_mwi.so
-LIBS=
 
 include ../../Makefile.modules

@@ -1,5 +1,3 @@
-# $Id$
-#
 # JWT Authentication
 #
 # 
@@ -11,3 +9,4 @@ NAME=auth_jwt.so
 LIBS+=-ljwt
 
 include ../../Makefile.modules
+include ../../Makefile.openssl

@@ -74,7 +74,7 @@
 #define REC_MATCH   0
 #define REC_NOMATCH 1
 
-#define _IS_SET(x) ((x) > 0)
+#define _IS_SET(x) ((x) != TR_NOVAL)
 #define _D(c) ((c) -'0')
 
 #define TR_SEPARATOR '|'
@@ -105,6 +105,11 @@
 		}\
 	} while(0)
 
+#if 0 /* debugging mode */
+#define LM_DEV LM_ERR
+#else
+#define LM_DEV(...)
+#endif
 
 typedef struct _ac_maxval
 {
@@ -181,15 +186,7 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
 
 static inline void ac_tm_fill(ac_tm_p _atp, struct tm* _tm)
 {
-	_atp->t.tm_sec = _tm->tm_sec;       /* seconds */
-	_atp->t.tm_min = _tm->tm_min;       /* minutes */
-	_atp->t.tm_hour = _tm->tm_hour;     /* hours */
-	_atp->t.tm_mday = _tm->tm_mday;     /* day of the month */
-	_atp->t.tm_mon = _tm->tm_mon;       /* month */
-	_atp->t.tm_year = _tm->tm_year;     /* year */
-	_atp->t.tm_wday = _tm->tm_wday;     /* day of the week */
-	_atp->t.tm_yday = _tm->tm_yday;     /* day in the year */
-	_atp->t.tm_isdst = _tm->tm_isdst;   /* daylight saving time */
+	_atp->t = *_tm;
 
 #if 0
 	_atp->mweek = ac_get_mweek(_tm);
@@ -488,18 +485,39 @@ int tr_byxxx_free(tr_byxxx_p _bxp)
 	return 0;
 }
 
+void tmrec_init(tmrec_p t)
+{
+	memset(t, 0, sizeof *t);
+
+	/* these values may be legitimately set to 0 (i.e. UNIX start time) */
+	t->dtstart  = TR_NOVAL;
+	t->dtend    = TR_NOVAL;
+	t->duration = TR_NOVAL;
+
+	t->freq     = TR_NOVAL;
+	t->until    = TR_NOVAL;
+	t->interval = TR_NOVAL;
+}
+
+static inline void tmrec_expr_init(tmrec_expr_t *e)
+{
+	memset(e, 0, sizeof *e);
+	INIT_LIST_HEAD(&e->operands);
+	tmrec_init(&e->tr);
+}
+
 tmrec_p tmrec_new(char alloc)
 {
-	tmrec_p _trp = NULL;
+	tmrec_p _trp;
 	if (alloc & PKG_ALLOC)
 		_trp = (tmrec_p)pkg_malloc(sizeof(tmrec_t));
 	else
 		_trp = (tmrec_p)shm_malloc(sizeof(tmrec_t));
 	if(!_trp)
 		return NULL;
-	memset(_trp, 0, sizeof(tmrec_t));
+
+	tmrec_init(_trp);
 	_trp->flags = alloc;
-/*	localtime_r(&_trp->dtstart,&(_trp->ts)); */
 	return _trp;
 }
 
@@ -551,7 +569,7 @@ int tr_parse_dtstart(tmrec_p _trp, char *_in)
 	if (!_in)
 		return -1;
 	_trp->dtstart = ic_parse_datetime(_in, &(_trp->ts));
-	return (_trp->dtstart==0)?-1:0;
+	return (_trp->dtstart == TR_NOVAL) ? -1 : 0;
 }
 
 int tr_parse_dtend(tmrec_p _trp, char *_in)
@@ -560,7 +578,7 @@ int tr_parse_dtend(tmrec_p _trp, char *_in)
 	if (!_in)
 		return -1;
 	_trp->dtend = ic_parse_datetime(_in,&_tm);
-	return (_trp->dtend==0)?-1:0;
+	return (_trp->dtend == TR_NOVAL) ? -1 : 0;
 }
 
 int tr_parse_duration(tmrec_p _trp, char *_in)
@@ -568,7 +586,7 @@ int tr_parse_duration(tmrec_p _trp, char *_in)
 	if (!_in)
 		return -1;
 	_trp->duration = ic_parse_duration(_in);
-	return 0;
+	return (_trp->duration == TR_NOVAL) ? -1 : 0;
 }
 
 int tr_parse_until(tmrec_p _trp, char *_in)
@@ -577,7 +595,7 @@ int tr_parse_until(tmrec_p _trp, char *_in)
 	if (!_in)
 		return -1;
 	_trp->until = ic_parse_datetime(_in, &_tm);
-	return 0;
+	return (_trp->until == TR_NOVAL) ? -1 : 0;
 }
 
 int tr_parse_freq(tmrec_p _trp, char *_in)
@@ -746,18 +764,32 @@ int tmrec_print(const tmrec *tr)
 
 time_t ic_parse_datetime(char *_in, struct tm *_tm)
 {
-	if (!_in || strlen(_in)!=15)
-		return 0;
+	struct tm t;
 
-	memset(_tm, 0, sizeof(struct tm));
-	_tm->tm_year = _D(_in[0])*1000 + _D(_in[1])*100
-			+ _D(_in[2])*10 + _D(_in[3]) - 1900;
-	_tm->tm_mon = _D(_in[4])*10 + _D(_in[5]) - 1;
-	_tm->tm_mday = _D(_in[6])*10 + _D(_in[7]);
-	_tm->tm_hour = _D(_in[9])*10 + _D(_in[10]);
-	_tm->tm_min = _D(_in[11])*10 + _D(_in[12]);
-	_tm->tm_sec = _D(_in[13])*10 + _D(_in[14]);
-	_tm->tm_isdst = -1 /*daylight*/;
+	if (!_in || strlen(_in)!=15)
+		return TR_NOVAL;
+
+	t.tm_year = _D(_in[0])*1000 + _D(_in[1])*100
+			+ _D(_in[2])*10 + _D(_in[3]);
+	if (t.tm_year < 1970) {
+		LM_ERR("invalid year in Date-Time: '%s'\n", _in);
+		return TR_NOVAL;
+	}
+
+	t.tm_year -= 1900; /* per man ctime(3) */
+	t.tm_mon = _D(_in[4])*10 + _D(_in[5]) - 1;
+	t.tm_mday = _D(_in[6])*10 + _D(_in[7]);
+	if (t.tm_mon == -1 || t.tm_mday == 0) {
+		LM_ERR("month or month day cannot be zero in Date-Time: '%s'\n", _in);
+		return TR_NOVAL;
+	}
+
+	t.tm_hour = _D(_in[9])*10 + _D(_in[10]);
+	t.tm_min = _D(_in[11])*10 + _D(_in[12]);
+	t.tm_sec = _D(_in[13])*10 + _D(_in[14]);
+	t.tm_isdst = -1 /*daylight*/;
+
+	*_tm = t;
 	return mktime(_tm);
 }
 
@@ -768,7 +800,7 @@ time_t ic_parse_duration(char *_in)
 	int _fl;
 
 	if(!_in || strlen(_in)<2)
-		return 0;
+		return TR_NOVAL;
 
 	if(*_in == 'P' || *_in=='p')
 	{
@@ -1147,7 +1179,6 @@ error:
 
 
 /*** local headers ***/
-int get_min_interval(tmrec_p);
 int check_min_unit(tmrec_p _trp, ac_tm_p _atp);
 int check_freq_interval(tmrec_p _trp, ac_tm_p _atp);
 int check_byxxx(tmrec_p, ac_tm_p);
@@ -1160,37 +1191,36 @@ int check_byxxx(tmrec_p, ac_tm_p);
  */
 int check_tmrec(const tmrec_p _trp, ac_tm_p _atp)
 {
-	/* it is before start date */
-	if (_atp->time < _trp->dtstart)
+	/* it is before the start date or outside a non-recurring interval? */
+	if (_atp->time < _trp->dtstart ||
+	        (!_IS_SET(_trp->freq) && _atp->time >= _trp->dtend))
 		return REC_NOMATCH;
 
-	/* compute the duration of the recurrence interval */
-	if (!_IS_SET(_trp->duration)) {
-		/* no duration, end or "byxxx" limitations -> for ever */
-		if (!_IS_SET(_trp->dtend) && !(_trp->flags & TR_BYXXX))
-			return REC_MATCH;
+	LM_DEV("1) %ld + %ld = %ld\n", _trp->dtstart, _trp->duration, _trp->dtend);
 
-		_trp->duration = _trp->dtend - _trp->dtstart;
-	}
-
-	if (_atp->time < _trp->dtstart+_trp->duration)
+	if (!_IS_SET(_trp->freq) && _atp->time < _trp->dtend)
 		return REC_MATCH;
 
-	/* after the bound of recurrence */
-	if (_IS_SET(_trp->until) && _atp->time >= _trp->until + _trp->duration)
-		return REC_NOMATCH;
+	LM_DEV("2) check freq\n");
 
 	/* check if the instance of recurrence matches the 'interval' */
-	if (check_freq_interval(_trp, _atp)!=REC_MATCH)
+	if (check_freq_interval(_trp, _atp) != REC_MATCH)
 		return REC_NOMATCH;
 
-	if (check_min_unit(_trp, _atp)!=REC_MATCH)
+	LM_DEV("3) check min unit\n");
+
+	if (check_min_unit(_trp, _atp) != REC_MATCH)
 		return REC_NOMATCH;
 
-	if (check_byxxx(_trp, _atp)!=REC_MATCH)
+	LM_DEV("4) check byxxx\n");
+
+	if (check_byxxx(_trp, _atp) != REC_MATCH)
 		return REC_NOMATCH;
 
-	return REC_MATCH;
+	LM_DEV("5) check until\n");
+
+	return (!_IS_SET(_trp->until) || _atp->time <= _trp->until) ?
+	            REC_MATCH : REC_NOMATCH;
 }
 
 
@@ -1198,14 +1228,16 @@ int check_freq_interval(tmrec_p _trp, ac_tm_p _atp)
 {
 	int _t0, _t1;
 	struct tm _tm;
-	if(!_trp || !_atp)
-		return REC_ERR;
 
 	if(!_IS_SET(_trp->freq))
 		return REC_NOMATCH;
 
+	LM_DEV("have freq\n");
+
 	if(!_IS_SET(_trp->interval) || _trp->interval==1)
 		return REC_MATCH;
+
+	LM_DEV("have interval (%d)\n", _trp->interval);
 
 	switch(_trp->freq)
 	{
@@ -1245,11 +1277,8 @@ int check_freq_interval(tmrec_p _trp, ac_tm_p _atp)
 	return REC_NOMATCH;
 }
 
-int get_min_interval(tmrec_p _trp)
+static inline int get_min_interval(tmrec_p _trp)
 {
-	if(!_trp)
-		return FREQ_NOFREQ;
-
 	if(_trp->freq == FREQ_DAILY || _trp->byday || _trp->bymday || _trp->byyday)
 		return FREQ_DAILY;
 	if(_trp->freq == FREQ_WEEKLY || _trp->byweekno)
@@ -1271,18 +1300,21 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
 
 	switch (freq) {
 	case FREQ_YEARLY:
+		LM_DEV("YEARLY\n");
 		d1 = bgn->tm_yday;
 		d2 = end->tm_yday;
 		dx = x->tm_yday;
 		break;
 
 	case FREQ_MONTHLY:
+		LM_DEV("MONTHLY\n");
 		d1 = bgn->tm_mday;
 		d2 = end->tm_mday;
 		dx = x->tm_mday;
 		break;
 
 	case FREQ_WEEKLY:
+		LM_DEV("WEEKLY\n");
 		d1 = bgn->tm_wday;
 		d2 = end->tm_wday;
 		dx = x->tm_wday;
@@ -1290,7 +1322,9 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
 
 	case FREQ_DAILY:
 	default:
+		LM_DEV("DAILY\n");
 		if (bgn->tm_mday == end->tm_mday) {
+			LM_DEV("DAILY-1\n");
 			diff = x->tm_hour*3600 + x->tm_min*60 + x->tm_sec -
 					(bgn->tm_hour*3600 + bgn->tm_min*60 + bgn->tm_sec);
 			if (diff < 0)
@@ -1301,8 +1335,11 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
 			if (diff <= 0)
 				return REC_NOMATCH;
 
+			LM_DEV("MATCH\n");
 			return REC_MATCH;
+
 		} else {
+			LM_DEV("DAILY-2\n");
 			diff = bgn->tm_hour*3600 + bgn->tm_min*60 + bgn->tm_sec -
 					(x->tm_hour*3600 + x->tm_min*60 + x->tm_sec);
 			if (diff <= 0)
@@ -1313,12 +1350,16 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
 			if (diff < 0)
 				return REC_MATCH;
 
+			LM_DEV("NOMATCH\n");
 			return REC_NOMATCH;
 		}
 	}
 
+	LM_DEV("check intervals\n");
+
 	/* continuous interval (e.g. "M [ T W T F ] S S") */
 	if (d1 < d2) {
+		LM_DEV("CI-1\n");
 		if (dx < d1 || dx > d2)
 			return REC_NOMATCH;
 
@@ -1327,6 +1368,7 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
 
 	/* overlapping interval (e.g. "1 2 ... 20 ] 21 ... 29 [ 30 31") */
 	} else if (d2 < d1) {
+		LM_DEV("CI-2\n");
 		if (dx > d2 && dx < d1)
 			return REC_NOMATCH;
 
@@ -1334,12 +1376,14 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
 			return REC_MATCH;
 
 	} else if (dx != d1) {
+		LM_DEV("CI-3\n");
 		if (dur <= SEC_DAILY)
 			return REC_NOMATCH;
 		else
 			return REC_MATCH;
 
 	} else {
+		LM_DEV("CI-4\n");
 		diff = x->tm_hour*3600 + x->tm_min*60 + x->tm_sec -
 				(bgn->tm_hour*3600 + bgn->tm_min*60 + bgn->tm_sec);
 		if (diff < 0)
@@ -1368,14 +1412,10 @@ int check_min_unit(tmrec_p _trp, ac_tm_p _atp)
 {
 	int min_itv;
 	struct tm end;
-	time_t t;
-
-	end = _trp->ts;
-	end.tm_sec += _trp->duration;
-	t = mktime(&end);
-	localtime_r(&t, &end);
 
 	min_itv = get_min_interval(_trp);
+	LM_DEV("min_itv: %d\n", min_itv);
+
 	switch (min_itv) {
 	case FREQ_DAILY:
 		if (_trp->duration >= SEC_DAILY)
@@ -1401,6 +1441,9 @@ int check_min_unit(tmrec_p _trp, ac_tm_p _atp)
 		return REC_NOMATCH;
 	}
 
+	LM_DEV("check recur...\n");
+
+	localtime_r(&_trp->dtend, &end);
 	return check_recur_itv(&_atp->t, &_trp->ts, &end, _trp->duration, min_itv);
 }
 
@@ -1543,6 +1586,53 @@ done:
 	if (time_rec->tz)
 		tz_reset();
 
+	if (!_IS_SET(time_rec->dtstart))
+		time_rec->dtstart = 0; /* invalid; auto-fix to 19700101T000000 */
+
+	if (!_IS_SET(time_rec->duration)) {
+		if (!_IS_SET(time_rec->dtend)) {
+			/* invalid; since we don't support mementos, we need a duration */
+			switch (get_min_interval(time_rec)) {
+			case FREQ_DAILY:
+				time_rec->dtend = time_rec->dtstart + SEC_DAILY -
+				    (time_rec->ts.tm_hour * 3600 + time_rec->ts.tm_min * 60
+				     + time_rec->ts.tm_sec); /* until the end of the day */
+				break;
+			case FREQ_WEEKLY:
+				time_rec->dtend = time_rec->dtstart + SEC_WEEKLY -
+				    (time_rec->ts.tm_wday * SEC_DAILY
+				     + time_rec->ts.tm_hour * 3600 + time_rec->ts.tm_min * 60
+				     + time_rec->ts.tm_sec); /* until the end of the week */
+				break;
+			case FREQ_MONTHLY:
+				time_rec->dtend = time_rec->dtstart + SEC_MONTHLY_MAX -
+				    (time_rec->ts.tm_mday * SEC_DAILY
+				     + time_rec->ts.tm_hour * 3600 + time_rec->ts.tm_min * 60
+				     + time_rec->ts.tm_sec); /* until the end of the month */
+				break;
+			case FREQ_YEARLY:
+				time_rec->dtend = time_rec->dtstart + SEC_YEARLY_MAX -
+				    (time_rec->ts.tm_yday * SEC_DAILY
+				     + time_rec->ts.tm_hour * 3600 + time_rec->ts.tm_min * 60
+				     + time_rec->ts.tm_sec); /* until the end of the year */
+				break;
+			default:
+				time_rec->dtend = 4294967295UL; /* auto-fix to +136 years */
+			}
+		}
+
+		time_rec->duration = time_rec->dtend - time_rec->dtstart;
+	} else {
+		time_rec->dtend = time_rec->dtstart + time_rec->duration;
+	}
+
+	if (!_IS_SET(time_rec->freq) &&
+	        (_IS_SET(time_rec->until) || _IS_SET(time_rec->interval)
+	         || time_rec->flags & TR_BYXXX)) {
+		LM_ERR("missing FREQ component in time rec: '%s'\n", tr);
+		return -1;
+	}
+
 	return 0;
 
 parse_error:
@@ -1584,7 +1674,7 @@ int _tmrec_check(const tmrec *_tr, time_t time)
 	int rc;
 
 	/* shortcut: if there is no dstart, timerec is valid */
-	if (tr->dtstart == 0)
+	if (!_IS_SET(tr->dtstart))
 		return 1;
 
 	if (tr->tz)
@@ -1609,7 +1699,7 @@ int _tmrec_check_str(const char *tr, time_t check_time)
 	int rc;
 
 	LM_DBG("checking: '%s'\n", tr);
-	memset(&time_rec, 0, sizeof time_rec);
+	tmrec_init(&time_rec);
 	time_rec.flags = PKG_ALLOC;
 
 	if (_tmrec_parse(tr, &time_rec) < 0) {
@@ -1865,8 +1955,7 @@ tmrec_expr *tmrec_expr_parse(const char *trx, char alloc_type)
 		return NULL;
 	}
 
-	memset(exp, 0, sizeof *exp);
-	INIT_LIST_HEAD(&exp->operands);
+	tmrec_expr_init(exp);
 	exp->flags = alloc_type;
 
 	for (p = (char *)trx; *p != '\0'; p++) {
@@ -1956,8 +2045,7 @@ tmrec_expr *tmrec_expr_parse(const char *trx, char alloc_type)
 					goto parse_err;
 				}
 
-				memset(e, 0, sizeof *e);
-				INIT_LIST_HEAD(&e->operands);
+				tmrec_expr_init(e);
 				e->flags = e->tr.flags = alloc_type;
 				e->is_leaf = 1;
 
@@ -2083,9 +2171,12 @@ int _tmrec_expr_check(const tmrec_expr *_trx, time_t check_time)
 	}
 
 out:
-	if (trx->inverted)
+	if (trx->inverted) {
+		LM_DEV("result: %d\n", (rc + 2) % 4 - 1);
 		return (rc + 2) % 4 - 1;
+	}
 
+	LM_DEV("result: %d\n", rc - 1);
 	return rc - 1;
 }
 

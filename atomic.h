@@ -212,6 +212,13 @@ static __inline__ void atomic_dec(atomic_t *v)
 
 #endif
 
+#if defined(NO_ATOMIC_OPS) && defined(HAVE_STDATOMIC)
+#undef NO_ATOMIC_OPS
+#include <stdatomic.h>
+
+typedef _Atomic(unsigned long) atomic_t;
+#else
+
 /* C11 stdatomics wrappers */
 #define atomic_init(a, v) atomic_set(a, v)
 #define atomic_store(a, v) atomic_set(a, v)
@@ -221,5 +228,6 @@ static __inline__ void atomic_dec(atomic_t *v)
 		atomic_add(v, a);\
 	else \
 		atomic_sub(-(v), a);
+#endif
 
 #endif

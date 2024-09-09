@@ -121,7 +121,7 @@ Chapter 1. Admin Guide
     |            |     |         |
     |            |<----+         |
     |            |(7)setflag     |
-    |            |Dialog flag    |
+    |            |create dialog  |
     |            |Set expire     |
     |            |-----+         |
     |            |     |         |
@@ -268,7 +268,7 @@ route {
    Example 1.7. sstCheckMin usage
 
 ...
-modparam("sst", "sst_flag", 6)
+modparam("sst", "sst_flag", "SST_FLAG")
 modparam("sst", "min_se", 2400) # Must be >= 90
 ...
 
@@ -280,25 +280,11 @@ route {
                 exit;
         }
         # track the session timers via the dialog module
-        setflag(6);
+        setflag(SST_FLAG);
         create_dialog();
   }
 }
 
-... or ...
-
-route {
-  if ($rm=="INVITE") {
-        if (sstCheckMin(0)) {
-                xlog("L_ERR", "Session Timer Too Small, dropping request
-\n");
-                exit;
-        }
-        # track the session timers via the dialog module
-        setflag(5);
-        setflag(6);
-  }
-}
 ...
 
 1.6. Exported Statistics
@@ -315,21 +301,22 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 30 25 125 129
-   2. Ron Winacott 27 5 2083 265
-   3. Liviu Chircu (@liviuchircu) 18 15 54 65
+   2. Ron Winacott 28 5 2083 265
+   3. Liviu Chircu (@liviuchircu) 19 16 54 68
    4. Daniel-Constantin Mierla (@miconda) 15 12 104 104
    5. Razvan Crainea (@razvancrainea) 14 10 106 140
-   6. Andrei Datcu (@andrei-datcu) 8 6 122 28
-   7. Vlad Patrascu (@rvlad-patrascu) 7 5 23 37
-   8. Vlad Paiu (@vladpaiu) 6 4 7 15
-   9. Ovidiu Sas (@ovidiusas) 6 3 171 44
+   6. Andrei Datcu (@andrei-datcu) 9 6 122 28
+   7. Vlad Patrascu (@rvlad-patrascu) 8 6 40 45
+   8. Ovidiu Sas (@ovidiusas) 7 4 174 60
+   9. Vlad Paiu (@vladpaiu) 6 4 7 15
    10. Henning Westerholt (@henningw) 5 3 15 18
 
    All remaining contributors: Anca Vamanu, Christophe Sollet
    (@csollet), Ionut Ionita (@ionutrazvanionita), Damien Sandras
-   (@dsandras), Konstantin Bokarius, Dan Pascu (@danpascu),
-   Ezequiel Lovelle (@lovelle), Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert, Elena-Ramona Modroiu.
+   (@dsandras), Maksym Sobolyev (@sobomax), Konstantin Bokarius,
+   Dan Pascu (@danpascu), Ezequiel Lovelle (@lovelle), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Elena-Ramona
+   Modroiu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -351,22 +338,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2020
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Ionut Ionita (@ionutrazvanionita)   Oct 2016 - Oct 2016
-   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2015
-   8.  Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
-   9.  Andrei Datcu (@andrei-datcu)        Jul 2014 - Jul 2014
-   10. Damien Sandras (@dsandras)          Jul 2013 - Jul 2013
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  Ovidiu Sas (@ovidiusas)             Mar 2008 - Jun 2022
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2020
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Oct 2016 - Oct 2016
+   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2015
+   10. Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
 
-   All remaining contributors: Christophe Sollet (@csollet), Anca
-   Vamanu, Henning Westerholt (@henningw), Ovidiu Sas
-   (@ovidiusas), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu),
-   Elena-Ramona Modroiu, Ron Winacott.
+   All remaining contributors: Andrei Datcu (@andrei-datcu),
+   Damien Sandras (@dsandras), Christophe Sollet (@csollet), Anca
+   Vamanu, Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Dan Pascu (@danpascu), Elena-Ramona Modroiu, Ron Winacott.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -375,13 +362,13 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Paiu (@vladpaiu), Christophe Sollet (@csollet), Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
-   Modroiu, Ron Winacott.
+   Last edited by: Ovidiu Sas (@ovidiusas), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Christophe Sollet
+   (@csollet), Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Ron Winacott.
 
    Documentation Copyrights:
 

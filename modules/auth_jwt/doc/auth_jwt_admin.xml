@@ -1,5 +1,3 @@
-<!-- AUTH_JWT Module User's Guide -->
-
 <chapter>
 
 	<title>&adminguide;</title>
@@ -25,7 +23,7 @@
 			<itemizedlist>
 			<listitem>
 				<para><emphasis>database</emphasis> -- Any database module
-				(currently mysql, postgres, dbtext)
+				(currently mysql, postgres, dbtext) , in case the db_url parameter is set
 				</para>
 			</listitem>
 			</itemizedlist>
@@ -41,6 +39,11 @@
 				<listitem>
 				<para><emphasis>libjwt-dev</emphasis></para>
 				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
+				</listitem>
 			</itemizedlist>
 		</section>
 	</section>
@@ -48,6 +51,23 @@
 
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
+	<section id="param_db_mode" xreflabel="db_mode">
+		<title><varname>db_mode</varname> (int)</title>
+		<para>
+		If set to 0, the module won't connect to the Database for reading the Keys for decoding JWTs - only jwt_script_authorize will be usable from the script.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title><varname>db_mode</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("auth_jwt", "db_mode", 0)
+</programlisting>
+		</example>
+	</section>
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
@@ -284,9 +304,9 @@ modparam("auth_jwt", "load_credentials", "$avp(extra_jwt_info)=my_extra_column")
 
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="func_jwt_authorize" xreflabel="jwt_authorize()">
+	<section id="func_jwt_db_authorize" xreflabel="jwt_db_authorize()">
 		<title>
-			<function moreinfo="none">jwt_authorize(jwt_token,out_decoded_token,out_sip_username)</function>
+			<function moreinfo="none">jwt_db_authorize(jwt_token,out_decoded_token,out_sip_username)</function>
 		</title>
 		<para>
 			The function will read the first param ( jwt_token ), extract the tag claim and then try to authenticate it against the DB secrets for the respective profile tag. In case of success, it populates the out_decoded_token pvar with the decoded JWT ( in plaintext format header_json.payload_json ) and the out_sip_username with the SIP username corresponding to that JWT profile.
@@ -319,18 +339,133 @@ modparam("auth_jwt", "load_credentials", "$avp(extra_jwt_info)=my_extra_column")
 		This function can be used from REQUEST_ROUTE.
 		</para>
 		<example>
-		<title><function moreinfo="none">www_authorize</function> usage</title>
+		<title><function moreinfo="none">jwt_db_authorize</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (!jwt_authorize("$avp(my_jwt_token)", $avp(decoded_token), $avp(sip_username) )) {
-	send_reply("401","Unauthorized");
+if (!jwt_db_authorize("$avp(my_jwt_token)", $avp(decoded_token), $avp(sip_username) )) {
+	send_reply(401,"Unauthorized");
 	exit;
 } else {
 	xlog("Succesful JWT auth - $avp(decoded_token) \n");
 	if ($fU != $avp(sip_username)) {
-		send_reply("403","Forbidden AUTH ID");
+		send_reply(403,"Forbidden AUTH ID");
 		exit;
 	}	
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_jwt_script_authorize" xreflabel="jwt_script_authorize()">
+		<title>
+			<function moreinfo="none">jwt_script_authorize(jwt_token,key, out_decoded_token)</function>
+		</title>
+		<para>
+			The function will read the first param ( jwt_token ), decode it and then try to validate it against the provided key. If the JWT decoding is succesful, the out_decoded_token pvar will be populated.
+			Return codes are : 
+			<itemizedlist>
+				<listitem>
+				<para>
+					-2 : Failure in decoding the JWT ( out_decoded_token will not be populated )
+					
+				</para>
+				</listitem>
+				<listitem>
+				<para>
+					-1 : Failure in validating the JWT ( out_decoded_token will be populated )
+					
+				</para>
+				</listitem>
+				<listitem>
+				<para>
+					1 : JWT succesfully validated with the key ( out_decoded_token will be populated )
+					
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>jwt_token (string)</emphasis> - The JWT token to perform auth on
+			</para>
+			<para>
+			The string may contain pseudo variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>key (string)</emphasis> - The key to be used for validating the JWT.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_decoded_token (pvar)</emphasis> - PVAR used to store the decoded JWT
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">jwt_script_authorize</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (!jwt_script_authorize("$avp(my_jwt_token)",$avp(pub_key), $avp(decoded_token))) {
+	send_reply(401,"Unauthorized");
+	exit;
+} else {
+	xlog("Succesful JWT auth - $avp(decoded_token) \n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_extract_pub_key_from_cert" xreflabel="extract_pub_key_from_cert()">
+		<title>
+			<function moreinfo="none">extract_pub_key_from_cert(certificate,out_public_key)</function>
+		</title>
+		<para>
+			The function will read the first param ( certificate ), decode it and then try to extract the public key with the certificate. If the extraction is succesful, the out_public_key will be populated. Useful to be used in conjuction with the jwt_script_authorize function, since most providers make their certificates public, but the JWTs are signed with the actual public key embeded in the certificate.
+			Return codes are : 
+			<itemizedlist>
+				<listitem>
+				<para>
+					-1 : Failure in extracting the pub key
+					
+				</para>
+				</listitem>
+				<listitem>
+				<para>
+					1 : out_public_key succesfully populated
+					
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>certificate (string)</emphasis> - The certificate to read and from which to extract the public key
+			</para>
+			<para>
+			The string may contain pseudo variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_public_key (pvar)</emphasis> - PVAR used to store the extracted public key
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">extract_pub_key_from_cert</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (extract_pub_key_from_cert("$avp(my_certificate)",$avp(my_pub_key))) {
+    xlog("Succesfully extracted public key - $avp(my_pub_key) \n");
 }
 ...
 </programlisting>

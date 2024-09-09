@@ -55,7 +55,7 @@ extern int min_action_time;
 
 /* the current route call stack, containing route names */
 extern char *route_stack[];
-extern int route_stack_size;
+extern int route_stack_start, route_stack_size;
 
 int do_action(struct action* a, struct sip_msg* msg);
 int run_top_route(struct script_route sr, struct sip_msg* msg);
@@ -72,8 +72,8 @@ void run_error_route(struct sip_msg* msg, int force_reset);
 			__script_trace(class, action, msg, file, line); \
 	} while (0)
 
-void __script_trace(char *class, char *action, struct sip_msg *msg,
-		char *file, int line);
+void __script_trace(const char *class, const char *action, struct sip_msg *msg,
+		const char *file, int line);
 
 typedef int (*param_getf_t)(struct sip_msg*, pv_param_t*, pv_value_t*, void *, void *);
 
@@ -94,5 +94,6 @@ int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
 
 struct sip_msg* get_dummy_sip_msg(void);
 void release_dummy_sip_msg( struct sip_msg* req);
+int is_dummy_sip_msg(struct sip_msg *req);
 
 #endif

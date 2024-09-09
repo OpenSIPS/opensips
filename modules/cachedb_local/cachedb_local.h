@@ -46,15 +46,24 @@ typedef struct {
 	struct lcache_col* col;
 } lcache_con;
 
+typedef struct lcache_rpm_cache {
+	str col_name;
+	lcache_htable_t *col_htable;
+	struct lcache_rpm_cache *next;
+} lcache_rpm_cache_t;
+
 typedef struct lcache_col {
 	str col_name;
 
-	lcache_t* col_htable;
+	lcache_htable_t *col_htable;
 	int size;
 
-	/* we need to know somehow if this collection is used or not;
-	 * if not used we'll need to throw an error */
-	int is_used;
+	int replicated;
+
+	osips_malloc_f malloc;
+	osips_realloc_f realloc;
+	osips_free_f free;
+	lcache_rpm_cache_t *rpm_cache;
 
 	struct lcache_col* next;
 } lcache_col_t;

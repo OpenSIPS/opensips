@@ -117,7 +117,7 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
 
     if (is_method("INVITE") &amp;&amp; $au!=$fU) {
         xlog("FROM URI != digest username\n");
-        sl_send_reply("403","Forbidden");
+        sl_send_reply(403,"Forbidden");
     }
 
     do_accounting("log"); /* set for accounting via syslog */
@@ -740,23 +740,6 @@ modparam("acc", "acc_time_column", "time")
 		</example>
 	</section>
 
-	<section id="param_acc_created_avp_name" xreflabel="acc_created_avp_name">
-		<title><varname>acc_created_avp_name</varname> (string)</title>
-		<para>
-		The name of the openSips avp that will be used to hold the
-		time when the call was created. This time will only be logged on
-		missed calls.
-		</para>
-		<para>
-		Default value is "accX_created".
-		</para>
-		<example>
-		<title>acc_created_avp_name example</title>
-		<programlisting format="linespecific">
-modparam("acc", "acc_created_avp_name", "call_created_avp")
-</programlisting>
-		</example>
-	</section>
 	</section>
 
 	<section id="exported_pseudo_variables" xreflabel="Exported Pseudo-Variables">
@@ -822,7 +805,10 @@ $(acc_leg(caller)[-2])
 		</para>
 
 		<para>
-		Meaning of the parameters is as follows:</para>
+		When called multiple times, the function behaves <emphasis>additively</emphasis>.
+		</para>
+		<para>
+			Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>type (string)</emphasis> - the type of accounting you want to do.
@@ -914,6 +900,9 @@ $(acc_leg(caller)[-2])
 			all accounting for that type will be stopped. If called with two arguments
 			normal accounting will still be enabled.</para>
 
+		<para>
+		When called multiple times, the function behaves <emphasis>additively</emphasis>.
+		</para>
 		<para>
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>

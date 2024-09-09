@@ -1,5 +1,3 @@
-# $Id$
-#
 # Usrloc module Makefile
 #
 # 
@@ -8,6 +6,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=usrloc.so
-LIBS=
 
 include ../../Makefile.modules

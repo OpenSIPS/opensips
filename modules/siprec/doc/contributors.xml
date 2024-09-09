@@ -21,39 +21,63 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">87</entry>
-		<entry align="center">46</entry>
-		<entry align="center">3579</entry>
-		<entry align="center">666</entry>
+		<entry align="center">170</entry>
+		<entry align="center">89</entry>
+		<entry align="center">5653</entry>
+		<entry align="center">1970</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">13</entry>
-		<entry align="center">8</entry>
-		<entry align="center">157</entry>
-		<entry align="center">137</entry>
+		<entry align="center">16</entry>
+		<entry align="center">11</entry>
+		<entry align="center">166</entry>
+		<entry align="center">149</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">8</entry>
-		<entry align="center">6</entry>
-		<entry align="center">27</entry>
-		<entry align="center">50</entry>
+		<entry align="center">9</entry>
+		<entry align="center">7</entry>
+		<entry align="center">35</entry>
+		<entry align="center">53</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">6</entry>
+		<entry align="center">4</entry>
+		<entry align="center">12</entry>
+		<entry align="center">11</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Seyed Mehran Siadati</entry>
+		<entry align="center">5</entry>
+		<entry align="center">2</entry>
+		<entry align="center">124</entry>
+		<entry align="center">15</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">3</entry>
+		<entry align="center">2</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
-		<entry align="center">2</entry>
-		<entry align="center">1</entry>
+		<entry align="center">4</entry>
+		<entry align="center">4</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -81,27 +105,42 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2017 - Jan 2021</entry>
+		<entry align="center">Jun 2017 - Aug 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Feb 2018 - Apr 2020</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Nov 2023</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Apr 2018 - Nov 2019</entry>
+		<entry>Seyed Mehran Siadati</entry>
+		<entry align="center">Nov 2023 - Nov 2023</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Apr 2018 - Aug 2023</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Feb 2018 - Mar 2023</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">Aug 2021 - Aug 2021</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Apr 2019 - Apr 2019</entry>
+		<entry align="center">Apr 2019 - Apr 2021</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
@@ -112,7 +151,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Seyed Mehran Siadati, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>).</para>
 </section>
 
 </chapter>

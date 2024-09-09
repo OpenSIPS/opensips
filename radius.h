@@ -75,7 +75,7 @@ struct val {
 #define	A_DIGEST_URI					18
 #define	A_DIGEST_QOP					19
 #define	A_DIGEST_ALGORITHM				20
-#define	A_DIGEST_BODY_DIGEST			        21
+#define	A_DIGEST_OPAQUE			        21
 #define	A_DIGEST_CNONCE					22
 #define	A_DIGEST_NONCE_COUNT			        23
 #define	A_DIGEST_USER_NAME				24

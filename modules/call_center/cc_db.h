@@ -29,6 +29,8 @@
 extern str cc_agent_table_name;
 extern str cca_agentid_column;
 extern str cca_location_column;
+extern str cca_msrp_location_column;
+extern str cca_msrp_max_sessions_column;
 extern str cca_skills_column;
 extern str cca_logstate_column;
 extern str cca_wrapupend_column;
@@ -62,8 +64,8 @@ void cc_close_rt_db(void);
 
 int cc_load_db_data( struct cc_data *data);
 
-int cc_write_cdr( str *un, str *fid, str *aid, int type,
-		int rt, int wt, int tt , int pt, int rej, int fst, int cid);
+int cc_write_cdr( str *un, str *fid, str *aid, int type, int rt, int wt,
+		int tt , int pt, int rej, int fst, int cid, media_type media);
 
 int prepare_cdr(struct cc_call *call, str *un, str *fid , str *aid);
 

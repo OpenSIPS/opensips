@@ -55,7 +55,7 @@ int set_connection(unsigned int type, void *val)
 	return cachedb_store_url(&cassandra_script_urls,(char *)val);
 }
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"connect_timeout", INT_PARAM, &cassandra_conn_timeout},
 	{"query_timeout", INT_PARAM, &cassandra_query_timeout},
 	{"exec_threshold", INT_PARAM, &cassandra_exec_threshold},

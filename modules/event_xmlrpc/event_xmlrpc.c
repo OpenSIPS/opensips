@@ -35,7 +35,6 @@
 #include <arpa/inet.h>
 
 extern unsigned xmlrpc_struct_on;
-extern unsigned xmlrpc_sync_mode;
 
 /**
  * module functions
@@ -48,8 +47,8 @@ static int child_init(int);
  * exported functions
  */
 static evi_reply_sock* xmlrpc_parse(str socket);
-static int xmlrpc_raise(struct sip_msg *msg, str* ev_name,
-						evi_reply_sock *sock, evi_params_t * params);
+static int xmlrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
+	evi_reply_sock *sock, evi_params_t * params, evi_async_ctx_t *async_ctx);
 static int xmlrpc_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static void xmlrpc_free(evi_reply_sock *sock);
 static str xmlrpc_print(evi_reply_sock *sock);
@@ -57,15 +56,14 @@ static str xmlrpc_print(evi_reply_sock *sock);
 /**
  * module process
  */
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"XML-RPC sender",  0,  0, xmlrpc_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
 /* module parameters */
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"use_struct_param",		INT_PARAM, &xmlrpc_struct_on},
-	{"sync_mode",		INT_PARAM, &xmlrpc_sync_mode},
 	{0,0,0}
 };
 
@@ -98,7 +96,7 @@ struct module_exports exports = {
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_xmlrpc = {
+static const evi_export_t trans_export_xmlrpc = {
 	XMLRPC_STR,					/* transport module name */
 	xmlrpc_raise,				/* raise function */
 	xmlrpc_parse,				/* parse function */
@@ -328,7 +326,7 @@ static evi_reply_sock* xmlrpc_parse(str socket)
 	sock->flags |= EVI_PARAMS;
 
 	/* needs expire */
-	sock->flags |= EVI_EXPIRE|XMLRPC_FLAG;
+	sock->flags |= EVI_EXPIRE|XMLRPC_FLAG|EVI_ASYNC_STATUS;
 
 	sock->params= params;
 
@@ -392,7 +390,7 @@ end:
 
 
 static int xmlrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
-						evi_reply_sock *sock, evi_params_t * params)
+	evi_reply_sock *sock, evi_params_t * params, evi_async_ctx_t *async_ctx)
 {
 	xmlrpc_send_t * msg = NULL;
 
@@ -425,6 +423,8 @@ static int xmlrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
 		LM_ERR("cannot create send buffer\n");
 		return -1;
 	}
+
+	msg->async_ctx = *async_ctx;
 
 	if (xmlrpc_send(msg) < 0) {
 		LM_ERR("cannot send message\n");

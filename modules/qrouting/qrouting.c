@@ -26,6 +26,7 @@
 
 #include "../../sr_module.h"
 #include "../../str.h"
+#include "../../ipc.h"
 #include "../../timer.h"
 #include "../../lib/csv.h"
 
@@ -110,7 +111,7 @@ static int w_qr_enable_dst(struct sip_msg *_,
 
 static int qr_fix_xstat(void **param);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"qr_set_xstat", (cmd_function)w_qr_set_xstat,
 		{ {CMD_PARAM_INT, NULL, NULL},
 		  {CMD_PARAM_STR, NULL, NULL},
@@ -141,7 +142,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",                  STR_PARAM, &db_url.s},
 	{"table_name",              STR_PARAM, &qr_profiles_table.s},
 	{"algorithm",               STR_PARAM, &qr_algorithm_s},
@@ -161,7 +162,7 @@ static param_export_t params[] = {
 #define HLP1 "Params: [partition [, rule_id [, dst_name]]]; List QR statistics"
 #define HLP2 "Params: [partition] rule_id dst_name; Remove a gateway/carrier from routing"
 #define HLP3 "Params: [partition] rule_id dst_name; Re-introduce a gateway/carrier into routing"
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "qr_status", HLP1, 0, NULL, {
 		{mi_qr_status_0, {NULL}},
 		{mi_qr_status_1, {QR_PARAM_PART, NULL}},
@@ -189,11 +190,15 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+
+		/* qrouting must always be first to load its profiles,
+		 * so drouting can look them up during DRCB_RLD_INIT_RULE */
+		{ MOD_TYPE_DEFAULT, "drouting", DEP_SILENT|DEP_REVERSE },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -267,6 +272,12 @@ static int qr_init(void)
 	return 0;
 }
 
+static void rpc_qr_reload(int _, void *__)
+{
+	if (qr_reload(&qr_dbf, qr_db_hdl) < 0)
+		LM_ERR("failed to load data from db\n");
+}
+
 static int qr_child_init(int rank)
 {
 	/* re-connect to the db */
@@ -277,11 +288,15 @@ static int qr_child_init(int rank)
 		return -1;
 	}
 
-	if (!(qr_db_hdl = qr_dbf.init(&db_url)))
+	if (!(qr_db_hdl = qr_dbf.init(&db_url))) {
 		LM_ERR("failed to load db url %.*s\n", db_url.len, db_url.s);
+		return -1;
+	}
 
-	if (rank == 1 && qr_reload(&qr_dbf, qr_db_hdl) < 0)
-		LM_ERR("failed to load data from db\n");
+	if (rank == 1 && ipc_send_rpc(process_no, rpc_qr_reload, NULL) < 0) {
+		LM_CRIT("failed to send RPC for data loading\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -444,7 +459,7 @@ static int qr_parse_extra_stats(void)
 			continue;
 		} else if (stat->s.len > QR_MAX_STAT_NAME_LEN) {
 			LM_ERR("stat name too long (%.*s), use max %lu chars\n",
-			       stat->s.len, stat->s.s, QR_MAX_STAT_NAME_LEN);
+			       stat->s.len, stat->s.s, (unsigned long)QR_MAX_STAT_NAME_LEN);
 			return -1;
 		}
 

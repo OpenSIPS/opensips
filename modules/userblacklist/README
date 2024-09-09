@@ -260,12 +260,12 @@ Chapter 2. Contributors
    5. Henning Westerholt (@henningw) 9 5 204 72
    6. Daniel-Constantin Mierla (@miconda) 8 6 17 12
    7. Vlad Patrascu (@rvlad-patrascu) 8 4 82 151
-   8. Ruslan Bukin 3 1 21 10
-   9. Julián Moreno Patiño 3 1 1 1
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   8. Maksym Sobolyev (@sobomax) 4 2 4 5
+   9. Ruslan Bukin 3 1 21 10
+   10. Julián Moreno Patiño 3 1 1 1
 
-   All remaining contributors: UnixDev, Vlad Paiu (@vladpaiu),
-   Edson Gellert Schubert.
+   All remaining contributors: Peter Lemenkov (@lemenkov),
+   UnixDev, Vlad Paiu (@vladpaiu), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -287,19 +287,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Vlad Paiu (@vladpaiu)               Apr 2011 - Apr 2011
-   8.  Ruslan Bukin                        Oct 2009 - Oct 2009
-   9.  UnixDev                             Feb 2009 - Feb 2009
-   10. Henning Westerholt (@henningw)      Feb 2008 - May 2008
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Mar 2020
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Vlad Paiu (@vladpaiu)               Apr 2011 - Apr 2011
+   9.  Ruslan Bukin                        Oct 2009 - Oct 2009
+   10. UnixDev                             Feb 2009 - Feb 2009
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Edson Gellert Schubert, Hardy Kahl.
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
+   Hardy Kahl.
 
    (1) including any documentation-related commits, excluding
    merge commits

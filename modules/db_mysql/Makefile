@@ -1,5 +1,3 @@
-# $Id$
-#
 # WARNING: do not run this directly, it should be run by the master Makefile
 
 include ../../Makefile.defs
@@ -20,7 +18,7 @@ ifeq ($(HAS_MYSQLCFG),YES)
 
 	# use autodetection
 	DEFS += $(shell mysql_config --include)
-	LIBS = $(shell mysql_config --libs)
+	LIBS += $(shell mysql_config --libs)
 	LIBS += -dl -Bsymbolic
 
 else
@@ -32,7 +30,7 @@ else
 
 	# libmysqlclient locations on RH/Suse, Solaris /OpenBSD, FreeBSD
 	# (Debian does the right thing and puts it in /usr/lib)
-	LIBS=-L$(SYSBASE)/lib/mysql -L$(LOCALBASE)/lib -L$(LOCALBASE)/lib/mysql \
+	LIBS += -L$(SYSBASE)/lib/mysql -L$(LOCALBASE)/lib -L$(LOCALBASE)/lib/mysql \
 		-L$(LOCALBASE)/mysql/lib/mysql/ \
 		-L$(LOCALBASE)/mysql/lib \
 		-L$(SYSBASE)/lib64/mysql \
@@ -43,7 +41,7 @@ endif
 
 include ../../Makefile.modules
 
-install_module_custom: 
+install_module_dbschema:
 	mkdir -p $(data_prefix)/$(data_dir)/mysql ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/mysql/*) ; do \
 		if [ -f $$FILE ] ; then \

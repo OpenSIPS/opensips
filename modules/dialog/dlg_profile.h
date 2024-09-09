@@ -118,6 +118,8 @@ int set_dlg_profile(struct dlg_cell *dlg, str *value,
 int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 		struct dlg_profile_table *profile);
 
+int unset_dlg_profile_all_values(struct dlg_cell *dlg, struct dlg_profile_table *profile);
+
 int is_dlg_in_profile(struct dlg_cell *dlg, struct dlg_profile_table *profile,
 		str *value);
 

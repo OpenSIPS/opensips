@@ -74,8 +74,6 @@ static int aaa_is_user_fixup(void** param);
 static int db_get_gid_fixup(void** param);
 static int check_dburl_fixup(void** param);
 static int check_aaaurl_fixup(void** param);
-static int obsolete_fixup_0(void** param);
-static int obsolete_fixup_1(void** param);
 
 #define TABLE      "grp"
 #define USER_COL   "username"
@@ -117,15 +115,7 @@ aaa_map vals[V_MAX];
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
-	{"is_user_in", (cmd_function)NULL, {
-		{CMD_PARAM_STR,obsolete_fixup_0,0},
-		{CMD_PARAM_STR,obsolete_fixup_0,0}, {0,0,0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"get_user_group", (cmd_function)NULL, {
-		{CMD_PARAM_STR,obsolete_fixup_1,0},
-		{CMD_PARAM_STR,obsolete_fixup_1,0}, {0,0,0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+static const cmd_export_t cmds[] = {
 	{"aaa_is_user_in", (cmd_function)aaa_is_user_in, {
 		{CMD_PARAM_STR, aaa_is_user_fixup, 0},
 		{CMD_PARAM_STR, check_aaaurl_fixup, 0}, {0,0,0}},
@@ -144,7 +134,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"aaa_url", 	  STR_PARAM, &aaa_proto_url.s},
 	{"db_url",        STR_PARAM, &db_url.s       },
 	{"table",         STR_PARAM, &table.s        },
@@ -159,7 +149,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_AAA, NULL, DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -294,23 +284,6 @@ static void destroy(void)
 {
 }
 
-
-static int obsolete_fixup_0(void** param) {
-
-	LM_ERR("You are using is_user_in function that is now obsolete. \
-If you want to use it with DB support, use db_is_user_in. \
-If you want to use it with AAA support, use aaa_is_user_in.\n");
-
-	return E_CFG;
-}
-
-static int obsolete_fixup_1(void** param) {
-
-	LM_ERR("You are get_user_group function that has been renamed\
-into db_get_user_group\n");
-
-	return E_CFG;
-}
 
 static int db_get_gid_fixup(void** param)
 {

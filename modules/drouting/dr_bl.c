@@ -161,7 +161,7 @@ int init_dr_bls(struct head_db * head_db_start)
 
 
 		/* create backlist for it */
-		drbl->bl = create_bl_head( 131313, 0/*flags*/, NULL, NULL, &name);
+		drbl->bl = create_bl_head(_str("drouting"), 0/*flags*/, NULL, NULL, &name);
 		drbl->part = current_partition;
 
 		to_clean = it_blk;

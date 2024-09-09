@@ -1,5 +1,3 @@
-# $Id$
-#
 # Diversion Header Field Support2
 #
 # 
@@ -8,6 +6,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=diversion.so
-LIBS=
 
 include ../../Makefile.modules

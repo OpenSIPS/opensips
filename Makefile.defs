@@ -65,7 +65,7 @@ MAIN_NAME=opensips
 
 #version number
 VERSION_MAJOR = 3
-VERSION_MINOR = 2
+VERSION_MINOR = 6
 VERSION_SUBMINOR = 0
 VERSION_BUILD = dev
 
@@ -147,7 +147,7 @@ YACC := $(shell echo "$${YACC}")
 
 # find compiler name & version
 ifeq ($(CC),)
- 	CC=gcc
+	CC=$(shell for x in cc clang gcc; do which $${x} >/dev/null && break; done; echo $${x})
 endif
 LD= $(CC)
 CC_LONGVER=$(shell if  $(CC) -v 2>/dev/null; then \
@@ -183,7 +183,7 @@ else ifneq (,$(findstring gcc, $(CC_LONGVER)))
 	#XXX: for now treat 4+.x the same as 4.x
 	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
 				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
-				 -e 's/\([4-9]\|10\)\(\.[0-9]\)\?/4.x/')
+				 -e 's/\([4-9]\|[0-9]\{2,\}\)\(\.[0-9]\+\)\?/4.x/')
 endif
 
 ifneq (, $(findstring Sun, $(CC_LONGVER)))
@@ -228,7 +228,7 @@ sparc64_macros= __sparcv9 __sparc_v9__
 
 arm_macros= __arm__ __thumb__
 arm6_macros= __ARM_ARCH_6__
-arm7_macros= __ARM_ARCH_7__
+arm7_macros= __ARM_ARCH_7__ __ARM_ARCH_7A__
 
 arm64_macros= __AARCH64EL__
 
@@ -248,8 +248,11 @@ ifeq ($(CC_NAME:clang=gcc),gcc)
 predef_macros:=$(shell $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
 					$(CFLAGS) /dev/null)
 stdatomics_support:=$(shell printf '\43include <stdatomic.h>' | $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
-					$(CFLAGS) /dev/stdin >/dev/null 2>/dev/null && printf '%sDHAVE_STDATOMIC' '-')
-DEFS+=$(stdatomics_support)
+					$(CFLAGS) - >/dev/null 2>/dev/null && printf '\55DHAVE_STDATOMIC')
+generics_support:=$(shell printf '\43include <unistd.h>\n\43define m(x) _Generic((x),default:sleep)(x)\nint main(void){(int)m(0);}\n' | \
+	$(CC) -dM -c -x c $(CC_EXTRA_OPTS) $(extra_defs) \
+					$(CFLAGS) -o /dev/null - >/dev/null 2>/dev/null && printf '\55DHAVE_GENERICS')
+DEFS+=$(stdatomics_support) $(generics_support)
 
 ifneq ($(strip $(filter $(i386_macros), $(predef_macros))),)
 CC_ARCH=i386
@@ -342,8 +345,8 @@ CROSS_COMPILE ?=
 SYSBASE ?= /usr
 
 # dirs
-cfg_dir = etc/$(MAIN_NAME)/
-bin_dir = sbin/
+cfg_dir ?= etc/$(MAIN_NAME)/
+bin_dir ?= sbin/
 
 ARCH_B = $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
 ifeq ($(OS),freebsd)
@@ -459,17 +462,17 @@ endif
 
 INSTALL_TOUCH = touch          # used to create the file first (good to
                                #  make solaris install work)
-INSTALL_CFG = $(INSTALL) -m 644
-INSTALL_BIN = $(INSTALL) -m 755
-INSTALL_MODULES = $(INSTALL) -m 755
-INSTALL_DOC = $(INSTALL) -m 644
-INSTALL_MAN = $(INSTALL) -m 644
+INSTALL_CFG ?= $(INSTALL) -m 644
+INSTALL_BIN ?= $(INSTALL) -m 755
+INSTALL_MODULES ?= $(INSTALL) -m 755
+INSTALL_DOC ?= $(INSTALL) -m 644
+INSTALL_MAN ?= $(INSTALL) -m 644
 
 
 ifeq ($(VERSIONTYPE),)
-VERSIONTYPE = $(shell if [ -d ".svn" ]; then \
+VERSIONTYPE = $(shell if [ -d "${TOP_SRCDIR}/.svn" ]; then \
 			  		echo "svn"; \
-				elif [ -d ".git" ]; then \
+				elif [ -d "${TOP_SRCDIR}/.git" ]; then \
 					echo "git"; \
 				fi )
 endif
@@ -493,7 +496,7 @@ ifneq ($(VERSIONTYPE),)
   endif
 
   ifeq ($(THISREVISION),)
-  THISREVISION = $(shell if [ -f main.c -a -f Makefile.defs ] ; then \
+  THISREVISION = $(shell if [ -f ${TOP_SRCDIR}/main.c -a -f ${TOP_SRCDIR}/Makefile.defs ] ; then \
 				if [ -x "$(GETVERSION)" ] ; then \
 					$(GETVERSION) $(GETVERSIONOPTS) ;\
 				fi ;\
@@ -501,9 +504,11 @@ ifneq ($(VERSIONTYPE),)
   endif
 else
   # git is the default versioning method
-  VERSIONTYPE = $(shell [ -f ".gitrevision" ] && echo "git")
+  VERSIONTYPE = $(shell [ -f "${TOP_SRCDIR}/.gitrevision" ] && echo "git")
   ifneq ($(VERSIONTYPE),)
-    THISREVISION = $(shell cat .gitrevision)
+    THISREVISION = $(shell cat ${TOP_SRCDIR}/.gitrevision)
+  else
+    VERSIONTYPE = unknown
   endif
   OLDREVISION = "$(THISREVISION)"
 endif
@@ -526,8 +531,8 @@ endif
 
 ifneq (,$(MEM_STATS_HDR))
 EXPECTED_MD5=$(shell [ -f $(MEM_STATS_HDR) ] && tail -n 1 $(MEM_STATS_HDR) | awk '{print $$4}')
-MODULES_MD5=$(shell find $(dir $(MEM_STATS_HDR))/../modules -name "[Mm]akefile" | \
-			awk -F/ '{print $$(NF - 1)}' | sort | $(md5sum_cmd) | awk '{print $$1}')
+MODULES_MD5=$(shell find $(dir $(MEM_STATS_HDR))/../modules -maxdepth 2 -name "[Mm]akefile" | \
+			awk -F/ '{print $$(NF - 1)}' | sort -u | $(md5sum_cmd) | awk '{print $$1}')
 ifneq ($(EXPECTED_MD5),$(MODULES_MD5))
 REGENERATE_MEM_STATS=remove-mem-stats
 endif
@@ -820,13 +825,13 @@ ifeq	($(CC_NAME), clang)
 	CC_OPTIMIZE_FLAG?=-O3
 endif
 
+ifeq ($(mode), release)
 ifeq (,$(CFLAGS))
 
 #common stuff
 CFLAGS+=$(DEBUGSYM)
 
 # setting more CFLAGS
-ifeq ($(mode), release)
 
 #if i386
 ifeq	($(ARCH), i386)
@@ -1337,7 +1342,7 @@ ifeq		($(LDTYPE), solaris)
 else
 		#gcc and maybe others, => gnu ld
 		LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE)
-		MOD_LDFLAGS=-shared $(LDFLAGS)
+		MOD_LDFLAGS=-shared -fPIC -DPIC $(LDFLAGS)
 endif
 endif
 ifeq    ($(CC_NAME), clang)
@@ -1369,7 +1374,7 @@ ifeq		($(LDTYPE), solaris)
 else
 			#gnu or other ld type
 			LDFLAGS+=-Wl,-E $(PROFILE)
-			MOD_LDFLAGS=-shared $(LDFLAGS)
+			MOD_LDFLAGS=-shared -fPIC -DPIC $(LDFLAGS)
 endif
 endif
 ifeq	($(CC_NAME), icc)
@@ -1381,6 +1386,10 @@ ifeq	($(CC_NAME), suncc)
 		CFLAGS+=$(PROFILE)
 		LDFLAGS+=$(PROFILE)
 		MOD_LDFLAGS=-G $(LDFLAGS)
+endif
+ifeq    ($(CC_NAME), clang)
+		LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE)
+		MOD_LDFLAGS=-shared -fPIC -DPIC $(LDFLAGS)
 endif
 
 endif #mode=release
@@ -1404,19 +1413,20 @@ endif
 DEFAULT_YACC=bison
 
 # on solaris add -lxnet (e.g. LIBS= -lxnet)
-LIBS= -ldl -lresolv
+_SAVE_LIBS := $(LIBS)
+LIBS+= -ldl -lresolv -pthread
 
 #os specific stuff
 ifeq ($(OS), linux)
-	DEFS+=-DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_SCHED_YIELD \
+	DEFS+=-DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN \
 			-DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H \
 			-DHAVE_TIMEGM
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_POSIX_SEM  # try posix sems
 		found_lock_method=yes
 	endif
-	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
-		LIBS += -pthread
+	ifneq (,$(findstring PROFILING, $(DEFS)))
+		LIBS += -lprofiler
 	endif
 	# check for >= 2.5.44
 	ifeq ($(shell [ $(OSREL_N) -ge 2005044 ] && echo has_epoll), has_epoll)
@@ -1438,7 +1448,7 @@ ifeq ($(OS), linux)
 endif
 
 ifeq ($(OS), gnu_kfreebsd)
-	DEFS+=-DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_SCHED_YIELD \
+	DEFS+=-DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN \
 			-DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H \
 			-DHAVE_TIMEGM
 	ifneq ($(found_lock_method), yes)
@@ -1457,7 +1467,7 @@ ifeq ($(OS), gnu_kfreebsd)
 endif
 
 ifeq  ($(OS), solaris)
-	DEFS+= -DHAVE_GETIPNODEBYNAME -DHAVE_SYS_SOCKIO_H -DHAVE_SCHED_YIELD \
+	DEFS+= -DHAVE_GETIPNODEBYNAME -DHAVE_SYS_SOCKIO_H \
 			-DHAVE_ALLOCA_H -DUSE_SIGACTION -D_POSIX_PTHREAD_SEMANTICS
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
@@ -1483,7 +1493,7 @@ ifeq  ($(OS), solaris)
 	DEFAULT_YACC=yacc
 
 ifeq ($(CC_NAME), suncc)
-	LIBS= -fast -ldl -lresolv
+	LIBS= $(_SAVE_LIBS) -fast -ldl -lresolv
 endif
 	OLD_SOLARIS= $(shell echo "$(OSREL)" | \
 				sed -e 's/^5\.[0-6][^0-9]*$$/yes/' )
@@ -1498,16 +1508,12 @@ endif
 
 ifeq ($(OS), freebsd)
 	DEFS+=-DHAVE_SOCKADDR_SA_LEN -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN \
-		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL \
-		-DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM \
-		-DHAVE_NETINET_IN_SYSTM
-	LIBS=  #dlopen is in libc
+		-DHAVE_MSGHDR_MSG_CONTROL -DHAVE_CONNECT_ECONNRESET_BUG \
+		-DHAVE_TIMEGM -DHAVE_NETINET_IN_SYSTM
+	LIBS=  $(_SAVE_LIBS) #resolver & dlopen is in libc
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
-	endif
-	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
-		LIBS+=-lpthread
 	endif
 	# check for ver >= 4.1
 	ifeq ($(shell [ $(OSREL_N) -gt 4001 ] && echo has_kqueue), has_kqueue)
@@ -1585,18 +1591,15 @@ endif
 # OS X support, same as freebsd
 ifeq ($(OS), darwin)
 	DEFS+=-DHAVE_SOCKADDR_SA_LEN -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN \
-		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL \
-		-DUSE_ANON_MMAP \
+		-DHAVE_MSGHDR_MSG_CONTROL -DUSE_ANON_MMAP \
 		-DNDEBUG -DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM
 	# -DNDEBUG used to turn off assert (assert wants to call
 	# eprintf which doesn't seem to be defined in any shared lib
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
-		LIBS= -pthread -lresolv  #dlopen is in libc
-	else
-		LIBS= -lresolv  #dlopen is in libc
 	endif
+	LIBS= -lresolv  #dlopen is in libc
 	ifeq ($(NO_KQUEUE),)
 		DEFS+=-DHAVE_KQUEUE
 	endif
@@ -1686,10 +1689,10 @@ endif
 
 
 ## Unit Testing - required extensions
-ifeq (1,$(shell grep -c '^\DEFS+= -DUNIT_TESTS' $(TOP_SRCDIR)/Makefile.conf))
+ifneq (,$(findstring UNIT_TESTS, $(DEFS)))
 DEFS := $(DEFS) -DUNIT_TESTS
 LIBS := $(LIBS) -ltap
-test_src := $(shell find . -wholename "*/test/*\.c" | grep -v "^./modules/")
+test_src := $(shell find . -wholename "*/test/*\.c" | grep -vE "^./(modules|test/fuzz)/")
 test_objs := $(test_src:.c=.o)
 objs := $(objs) $(test_objs)
 endif

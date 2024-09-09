@@ -37,98 +37,78 @@
  *
  */
 
-#include <openssl/ssl.h>
-#include <openssl/x509v3.h>
 #include "../../globals.h"
 #include "../../net/net_tcp.h"
-#include "../../ut.h"
+
+#include "../tls_openssl/openssl_api.h"
+#include "../tls_wolfssl/wolfssl_api.h"
+
 #include "tls_select.h"
+#include "tls_config.h"
+#include "api.h"
 
+extern struct openssl_binds openssl_api;
+extern struct wolfssl_binds wolfssl_api;
 
-struct tcp_connection* get_cur_connection(struct sip_msg* msg)
+static void *get_ssl(struct sip_msg *msg, struct tcp_connection **c)
 {
-	struct tcp_connection* c;
-
 	if (msg->rcv.proto != PROTO_TLS && msg->rcv.proto != PROTO_WSS) {
 		LM_ERR("transport protocol is not TLS (bug in config)\n");
-		return 0;
+		goto err;
 	}
 
 	/* get conn by ID */
 	tcp_conn_get(msg->rcv.proto_reserved1, 0, 0, PROTO_NONE, NULL,
-		&c, NULL/*fd*/);
-	if (c && c->type != PROTO_TLS && c->type != PROTO_WSS) {
+		c, NULL/*fd*/, NULL);
+	if (*c && (*c)->type != PROTO_TLS && (*c)->type != PROTO_WSS) {
 		LM_ERR("connection found but is not TLS (bug in config)\n");
-		tcp_conn_release(c, 0);
-		return 0;
-	}
-	return c;
-}
-
-
-static inline SSL* get_ssl(struct tcp_connection* c)
-{
-	if (!c || !c->extra_data) {
-		LM_ERR("failed to extract SSL data from TLS connection\n");
-		return 0;
-	}
-	return c->extra_data;
-}
-
-
-static inline int get_cert(X509** cert, struct tcp_connection** c,
-												struct sip_msg* msg, int my)
-{
-	SSL* ssl;
-
-	*cert = 0;
-	*c = get_cur_connection(msg);
-	if (!(*c)) {
-		LM_INFO("TLS connection not found\n");
-		return -1;
-	}
-	ssl = get_ssl(*c);
-	if (!ssl) goto err;
-	*cert = my ? SSL_get_certificate(ssl) : SSL_get_peer_certificate(ssl);
-	if (!*cert) {
-		LM_ERR("failed to get certificate from SSL structure\n");
 		goto err;
 	}
 
-	return 0;
+	if (!*c) {
+		LM_INFO("TLS connection not found\n");
+		goto err;
+	}
+
+	if (!(*c)->extra_data) {
+		LM_ERR("failed to extract SSL data from TLS connection\n");
+		goto err;
+	}
+
+	return (*c)->extra_data;
 err:
-	tcp_conn_release(*c,0);
-	return -1;
+	if (*c) {
+		tcp_conn_release(*c, 0);
+		*c = NULL;
+	}
+	return 0;
 }
 
 
 int tlsops_cipher(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	str cipher;
-	static char buf[1024];
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	struct tcp_connection* c;
-	SSL* ssl;
-
-	c = get_cur_connection(msg);
-	if (!c) {
-		LM_INFO("TLS connection not found in select_cipher\n");
-		goto err;
-	}
-	ssl = get_ssl(c);
+	ssl = get_ssl(msg, &c);
 	if (!ssl) goto err;
 
-	cipher.s = (char*)SSL_CIPHER_get_name(SSL_get_current_cipher(ssl));
-	cipher.len = cipher.s ? strlen(cipher.s) : 0;
-	if (cipher.len >= 1024) {
-		LM_ERR("cipher name too long\n");
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_cipher(ssl, &res->rs);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_cipher(ssl, &res->rs);
+	} else {
+		LM_CRIT("No TLS library module loaded\n");
 		goto err;
 	}
-	memcpy(buf, cipher.s, cipher.len);
-	res->rs.s = buf;
-	res->rs.len = cipher.len;
+
+	if (rc < 0)
+		goto err;
+
 	res->flags = PV_VAL_STR;
+
 	tcp_conn_release(c,0);
 
 	return 0;
@@ -141,32 +121,27 @@ err:
 int tlsops_bits(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	str bits;
-	int b;
-	static char buf[1024];
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	struct tcp_connection* c;
-	SSL* ssl;
-
-	c = get_cur_connection(msg);
-	if (!c) {
-		LM_INFO("TLS connection not found in select_bits\n");
-		goto err;
-	}
-	ssl = get_ssl(c);
+	ssl = get_ssl(msg, &c);
 	if (!ssl) goto err;
 
-	b = SSL_CIPHER_get_bits(SSL_get_current_cipher(ssl), 0);
-	bits.s = int2str(b, &bits.len);
-	if (bits.len >= 1024) {
-		LM_ERR("bits string too long\n");
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_bits(ssl, &res->rs, &res->ri);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_bits(ssl, &res->rs, &res->ri);
+	} else {
+		LM_CRIT("No TLS library module loaded\n");
 		goto err;
 	}
-	memcpy(buf, bits.s, bits.len);
-	res->rs.s = buf;
-	res->rs.len = bits.len;
-	res->ri = b;
+
+	if (rc < 0)
+		goto err;
+
 	res->flags = PV_VAL_STR | PV_VAL_INT;
+
 	tcp_conn_release(c,0);
 
 	return 0;
@@ -179,30 +154,25 @@ err:
 int tlsops_version(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	str version;
-	static char buf[1024];
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	struct tcp_connection* c;
-	SSL* ssl;
-
-	c = get_cur_connection(msg);
-	if (!c) {
-		LM_INFO("TLS connection not found in select_version\n");
-		goto err;
-	}
-	ssl = get_ssl(c);
+	ssl = get_ssl(msg, &c);
 	if (!ssl) goto err;
 
-	version.s = (char*)SSL_get_version(ssl);
-	version.len = version.s ? strlen(version.s) : 0;
-	if (version.len >= 1024) {
-		LM_ERR("version string too long\n");
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_version(ssl, &res->rs);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_version(ssl, &res->rs);
+	} else {
+		LM_CRIT("No TLS library module loaded\n");
 		goto err;
 	}
-	memcpy(buf, version.s, version.len);
 
-	res->rs.s = buf;
-	res->rs.len = version.len;
+	if (rc < 0)
+		goto err;
+
 	res->flags = PV_VAL_STR;
 
 	tcp_conn_release(c,0);
@@ -217,23 +187,25 @@ err:
 int tlsops_desc(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	static char buf[128];
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	struct tcp_connection* c;
-	SSL* ssl;
-
-	c = get_cur_connection(msg);
-	if (!c) {
-		LM_INFO("TLS connection not found in select_desc\n");
-		goto err;
-	}
-	ssl = get_ssl(c);
+	ssl = get_ssl(msg, &c);
 	if (!ssl) goto err;
 
-	buf[0] = '\0';
-	SSL_CIPHER_description(SSL_get_current_cipher(ssl), buf, 128);
-	res->rs.s = buf;
-	res->rs.len = strlen(buf);
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_desc(ssl, &res->rs);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_desc(ssl, &res->rs);
+	} else {
+		LM_CRIT("No TLS library module loaded\n");
+		goto err;
+	}
+
+	if (rc < 0)
+		goto err;
+
 	res->flags = PV_VAL_STR;
 
 	tcp_conn_release(c,0);
@@ -248,29 +220,36 @@ err:
 int tlsops_cert_version(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	static char buf[INT2STR_MAX_LEN];
-	X509* cert;
-	struct tcp_connection* c;
-	char* version;
-	int my;
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	if (param->pvn.u.isname.name.n & CERT_PEER) {
-		my = 0;
-	} else if (param->pvn.u.isname.name.n & CERT_LOCAL) {
-		my = 1;
+	ssl = get_ssl(msg, &c);
+	if (!ssl)
+		goto err;
+
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_cert_vers(param->pvn.u.isname.name.n,
+		ssl, &res->rs);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_cert_vers(param->pvn.u.isname.name.n,
+		ssl, &res->rs);
 	} else {
-		LM_CRIT("bug in call to tlsops_cert_version\n");
-		return pv_get_null(msg, param, res);
+		LM_CRIT("No TLS library module loaded\n");
+		goto err;
 	}
 
-	if (get_cert(&cert, &c, msg, my) < 0) return -1;
-	version = int2str(X509_get_version(cert), &res->rs.len);
-	memcpy(buf, version, res->rs.len);
-	res->rs.s = buf;
+	if (rc < 0)
+		goto err;
+
 	res->flags = PV_VAL_STR;
-	if (!my) X509_free(cert);
+
 	tcp_conn_release(c,0);
+
 	return 0;
+err:
+	if (c) tcp_conn_release(c,0);
+	return pv_get_null(msg, param, res);
 }
 
 
@@ -281,48 +260,33 @@ int tlsops_cert_version(struct sip_msg *msg, pv_param_t *param,
 int tlsops_check_cert(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	static str succ = str_init("1");
-	static str fail = str_init("0");
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	int err;
-	struct tcp_connection* c;
-	SSL* ssl;
-	X509* cert = 0;
+	ssl = get_ssl(msg, &c);
+	if (!ssl) goto err;
 
-	switch (param->pvn.u.isname.name.n) {
-	case CERT_VERIFIED:   err = X509_V_OK;                              break;
-	case CERT_REVOKED:    err = X509_V_ERR_CERT_REVOKED;                break;
-	case CERT_EXPIRED:    err = X509_V_ERR_CERT_HAS_EXPIRED;            break;
-	case CERT_SELFSIGNED: err = X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT; break;
-	default:
-		LM_CRIT("unexpected parameter value \"%d\"\n",
-				param->pvn.u.isname.name.n);
-		return pv_get_null(msg, param, res);
-	}
-
-	c = get_cur_connection(msg);
-	if (!c) return -1;
-
-	ssl = get_ssl(c);
-	if (!ssl) goto error;
-
-	if ((cert = SSL_get_peer_certificate(ssl)) && SSL_get_verify_result(ssl) == err) {
-		res->rs.s = succ.s;
-		res->rs.len = succ.len;
-		res->ri   = 1;
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_check_cert(param->pvn.u.isname.name.n,
+		ssl, &res->rs, &res->ri);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_check_cert(param->pvn.u.isname.name.n,
+		ssl, &res->rs, &res->ri);
 	} else {
-		res->rs.s = fail.s;
-		res->rs.len = fail.len;
-		res->ri   = 0;
+		LM_CRIT("No TLS library module loaded\n");
+		goto err;
 	}
+
+	if (rc < 0)
+		goto err;
+
 	res->flags = PV_VAL_STR | PV_VAL_INT;
 
-	if (cert) X509_free(cert);
 	tcp_conn_release(c,0);
 
 	return 0;
-error:
-	/* if (cert) X509_free(cert); */
+err:
 	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
@@ -331,54 +295,35 @@ error:
 int tlsops_validity(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	static char buf[1024];
-	X509* cert;
-	struct tcp_connection* c;
-	BUF_MEM* p;
-	BIO* mem = 0;
-	ASN1_TIME* date;
-	int my = 0;
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	if (get_cert(&cert, &c, msg, my) < 0) return -1;
+	ssl = get_ssl(msg, &c);
+	if (!ssl)
+		goto err;
 
-	switch (param->pvn.u.isname.name.n) {
-	case CERT_NOTBEFORE: date = X509_get_notBefore(cert); break;
-	case CERT_NOTAFTER:  date = X509_get_notAfter(cert);  break;
-	default:
-		LM_CRIT("unexpected parameter value \"%d\"\n", param->pvn.u.isname.name.n);
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_validity(param->pvn.u.isname.name.n,
+		ssl, &res->rs);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_validity(param->pvn.u.isname.name.n,
+		ssl, &res->rs);
+	} else {
+		LM_CRIT("No TLS library module loaded\n");
 		goto err;
 	}
 
-	mem = BIO_new(BIO_s_mem());
-	if (!mem) {
-		LM_ERR("failed to create memory BIO\n");
+	if (rc < 0)
 		goto err;
-	}
 
-	if (!ASN1_TIME_print(mem, date)) {
-		LM_ERR("failed to print certificate date/time\n");
-		goto err;
-	}
+	res->flags = PV_VAL_STR;
 
-	BIO_get_mem_ptr(mem, &p);
-	if (p->length >= 1024) {
-		LM_ERR("Date/time too long\n");
-		goto err;
-	}
-	memcpy(buf, p->data, p->length);
-	res->rs.s = buf;
-	res->rs.len = p->length;
-	res->flags = PV_VAL_STR ;
-
-	BIO_free(mem);
-	if (!my) X509_free(cert);
 	tcp_conn_release(c,0);
 
 	return 0;
 err:
-	if (mem) BIO_free(mem);
-	if (!my) X509_free(cert);
-	tcp_conn_release(c,0);
+	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
@@ -386,285 +331,135 @@ err:
 int tlsops_sn(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	static char buf[INT2STR_MAX_LEN];
-	X509* cert;
-	struct tcp_connection* c;
-	int my, serial;
-	char* sn;
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	if (param->pvn.u.isname.name.n & CERT_PEER) {
-		my = 0;
-	} else if (param->pvn.u.isname.name.n & CERT_LOCAL) {
-		my = 1;
+	ssl = get_ssl(msg, &c);
+	if (!ssl)
+		goto err;
+
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_sn(param->pvn.u.isname.name.n,
+		ssl, &res->rs, &res->ri);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_sn(param->pvn.u.isname.name.n,
+		ssl, &res->rs, &res->ri);
 	} else {
-		LM_CRIT("could not determine certificate\n");
-		return pv_get_null(msg, param, res);
+		LM_CRIT("No TLS library module loaded\n");
+		goto err;
 	}
 
-	if (get_cert(&cert, &c, msg, my) < 0)
-		return pv_get_null(msg, param, res);
+	if (rc < 0)
+		goto err;
 
-	serial = ASN1_INTEGER_get(X509_get_serialNumber(cert));
-	sn = int2str( serial, &res->rs.len);
-	memcpy(buf, sn, res->rs.len);
-	res->rs.s = buf;
-	res->ri = serial;
 	res->flags = PV_VAL_STR | PV_VAL_INT;
 
-	if (!my) X509_free(cert);
 	tcp_conn_release(c,0);
+
 	return 0;
+ err:
+	if (c) tcp_conn_release(c,0);
+	return pv_get_null(msg, param, res);
 }
 
 int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	static char buf[1024];
-	X509* cert;
-	struct tcp_connection* c;
-	X509_NAME* name;
-	X509_NAME_ENTRY* e;
-	ASN1_STRING* asn1;
-	int nid = NID_commonName, index, my = 0, issuer = 0, ind_local;
-	char* elem;
-	str text;
-	UNUSED(elem);
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	text.s = 0;
-	/* copy callback value as we modify it */
-	ind_local = param->pvn.u.isname.name.n;
+	ssl = get_ssl(msg, &c);
+	if (!ssl)
+		goto err;
 
-	LM_DBG("ind_local = %x", ind_local);
-	if (ind_local & CERT_PEER) {
-		my = 0;
-		ind_local = ind_local ^ CERT_PEER;
-	} else if (ind_local & CERT_LOCAL) {
-		my = 1;
-		ind_local = ind_local ^ CERT_LOCAL;
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_comp(param->pvn.u.isname.name.n,
+		ssl, &res->rs);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_comp(param->pvn.u.isname.name.n,
+		ssl, &res->rs);
 	} else {
-		LM_CRIT("could not determine certificate\n");
-		return pv_get_null(msg, param, res);
-	}
-
-	if (ind_local & CERT_SUBJECT) {
-		issuer = 0;
-		ind_local = ind_local ^ CERT_SUBJECT;
-	} else if (ind_local & CERT_ISSUER) {
-		issuer = 1;
-		ind_local = ind_local ^ CERT_ISSUER;
-	} else {
-		LM_CRIT("could not determine subject or issuer\n");
-		return pv_get_null(msg, param, res);
-	}
-
-	switch(ind_local) {
-		case COMP_CN: nid = NID_commonName;             break;
-		case COMP_O:  nid = NID_organizationName;       break;
-		case COMP_OU: nid = NID_organizationalUnitName; break;
-		case COMP_C:  nid = NID_countryName;            break;
-		case COMP_ST: nid = NID_stateOrProvinceName;    break;
-		case COMP_L:  nid = NID_localityName;           break;
-		case COMP_SUBJECT_SERIAL: nid = NID_serialNumber;break;
-		default:      nid = NID_undef;
-	}
-
-	if (get_cert(&cert, &c, msg, my) < 0) return -1;
-
-	name = issuer ? X509_get_issuer_name(cert) : X509_get_subject_name(cert);
-	if (!name) {
-		LM_ERR("cannot extract subject or issuer name from peer"
-				" certificate\n");
+		LM_CRIT("No TLS library module loaded\n");
 		goto err;
 	}
 
-	if (nid == NID_undef) { /* dump the whole cert info into buf */
-		X509_NAME_oneline(name, buf, sizeof(buf));
-		res->rs.s = buf;
-		res->rs.len = strlen(buf);
-		res->flags = PV_VAL_STR;
-	} else {
-		index = X509_NAME_get_index_by_NID(name, nid, -1);
-		if (index == -1) {
-			switch(ind_local) {
-			case COMP_CN: elem = "CommonName";              break;
-			case COMP_O:  elem = "OrganizationName";        break;
-			case COMP_OU: elem = "OrganizationalUnitUname"; break;
-			case COMP_C:  elem = "CountryName";             break;
-			case COMP_ST: elem = "StateOrProvinceName";     break;
-			case COMP_L:  elem = "LocalityName";            break;
-			case COMP_SUBJECT_SERIAL:  elem = "SubjectSerialNumber";break;
-			default:      elem = "Unknown";                 break;
-			}
-			LM_DBG("element %s not found in "
-				"certificate subject/issuer\n", elem);
-			goto err;
-		}
+	if (rc < 0)
+		goto err;
 
-		e = X509_NAME_get_entry(name, index);
-		asn1 = X509_NAME_ENTRY_get_data(e);
-		text.len = ASN1_STRING_to_UTF8((unsigned char**)(void*)&text.s, asn1);
-		if (text.len < 0 || text.len >= 1024) {
-			LM_ERR("failed to convert ASN1 string\n");
-			goto err;
-		}
-		memcpy(buf, text.s, text.len);
-		res->rs.s = buf;
-		res->rs.len = text.len;
-		res->flags = PV_VAL_STR;
+	res->flags = PV_VAL_STR;
 
-		OPENSSL_free(text.s);
-	}
-	if (!my) X509_free(cert);
 	tcp_conn_release(c,0);
+
 	return 0;
-
  err:
-	if (text.s) OPENSSL_free(text.s);
-	if (!my) X509_free(cert);
-	tcp_conn_release(c,0);
+	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
 int tlsops_alt(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	static char buf[1024];
-	int type = GEN_URI, my = 0, n, found = 0, ind_local;
-	STACK_OF(GENERAL_NAME)* names = 0;
-	GENERAL_NAME* nm;
-	X509* cert;
-	struct tcp_connection* c;
-	str text;
-	struct ip_addr ip;
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	ind_local = param->pvn.u.isname.name.n;
-
-	if (ind_local & CERT_PEER) {
-		my = 0;
-		ind_local = ind_local ^ CERT_PEER;
-	} else if (ind_local & CERT_LOCAL) {
-		my = 1;
-		ind_local = ind_local ^ CERT_LOCAL;
-	} else {
-		LM_CRIT("could not determine certificate\n");
-		return pv_get_null(msg, param, res);
-	}
-
-	switch(ind_local) {
-		case COMP_E:    type = GEN_EMAIL; break;
-		case COMP_HOST: type = GEN_DNS;   break;
-		case COMP_URI:  type = GEN_URI;   break;
-		case COMP_IP:   type = GEN_IPADD; break;
-		default:
-			LM_CRIT("ind_local=%d\n", ind_local);
-			return pv_get_null(msg, param, res);
-	}
-
-	if (get_cert(&cert, &c, msg, my) < 0) return -1;
-
-	names = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
-	if (!names) {
-		LM_ERR("cannot get certificate alternative subject\n");
+	ssl = get_ssl(msg, &c);
+	if (!ssl)
 		goto err;
 
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.get_tls_var_alt(param->pvn.u.isname.name.n,
+		ssl, &res->rs);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.get_tls_var_alt(param->pvn.u.isname.name.n,
+		ssl, &res->rs);
+	} else {
+		LM_CRIT("No TLS library module loaded\n");
+		goto err;
 	}
 
-	for (n = 0; n < sk_GENERAL_NAME_num(names); n++) {
-		nm = sk_GENERAL_NAME_value(names, n);
-		if (nm->type != type) continue;
-		switch(type) {
-		case GEN_EMAIL:
-		case GEN_DNS:
-		case GEN_URI:
-			text.s = (char*)nm->d.ia5->data;
-			text.len = nm->d.ia5->length;
-			if (text.len >= 1024) {
-				LM_ERR("alternative subject text too long\n");
-				goto err;
-			}
-			memcpy(buf, text.s, text.len);
-			res->rs.s = buf;
-			res->rs.len = text.len;
-			res->flags = PV_VAL_STR;
-			found = 1;
-			break;
+	if (rc < 0)
+		goto err;
 
-		case GEN_IPADD:
-			ip.len = nm->d.iPAddress->length;
-			ip.af = (ip.len == 16) ? AF_INET6 : AF_INET;
-			memcpy(ip.u.addr, nm->d.iPAddress->data, ip.len);
-			text.s = ip_addr2a(&ip);
-			text.len = strlen(text.s);
-			memcpy(buf, text.s, text.len);
-			res->rs.s = buf;
-			res->rs.len = text.len;
-			res->flags = PV_VAL_STR;
-			found = 1;
-			break;
-		}
-		break;
-	}
-	if (!found) goto err;
+	res->flags = PV_VAL_STR;
 
-	if (names) sk_GENERAL_NAME_pop_free(names, GENERAL_NAME_free);
-	if (!my) X509_free(cert);
 	tcp_conn_release(c,0);
+
 	return 0;
  err:
-	if (names) sk_GENERAL_NAME_pop_free(names, GENERAL_NAME_free);
-	if (!my) X509_free(cert);
-	tcp_conn_release(c,0);
+	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }
 
 int tls_is_peer_verified(struct sip_msg* msg)
 {
-	struct tcp_connection *c;
-	SSL *ssl;
-	long ssl_verify;
-	X509 *x509_cert;
+	struct tcp_connection *c = NULL;
+	void *ssl;
+	int rc;
 
-	c = get_cur_connection(msg);
-	if (c==NULL) {
-		LM_ERR("no corresponding TLS/TCP connection found."
-				" This should not happen... return -1\n");
-		return -1;
-	}
-	LM_DBG("corresponding TLS/TCP connection found. s=%d, fd=%d, id=%d\n",
-			c->s, c->fd, c->id);
+	ssl = get_ssl(msg, &c);
+	if (!ssl)
+		goto err;
 
-	if (!c->extra_data) {
-		LM_ERR("no extra_data specified in TLS/TCP connection found."
-				" This should not happen... return -1\n");
-		goto error;
+	if (tls_library == TLS_LIB_OPENSSL) {
+		rc = openssl_api.is_peer_verified(c->extra_data);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		rc = wolfssl_api.is_peer_verified(c->extra_data);
+	} else {
+		LM_CRIT("No TLS library module loaded\n");
+		goto err;
 	}
 
-	ssl = (SSL *) c->extra_data;
-
-	ssl_verify = SSL_get_verify_result(ssl);
-	if ( ssl_verify != X509_V_OK ) {
-		LM_INFO("verification of presented certificate failed... return -1\n");
-		goto error;
-	}
-
-	/* now, we have only valid peer certificates or peers without certificates.
-	 * Thus we have to check for the existence of a peer certificate
-	 */
-	x509_cert = SSL_get_peer_certificate(ssl);
-	if ( x509_cert == NULL ) {
-		LM_INFO("peer did not presented "
-				"a certificate. Thus it could not be verified... return -1\n");
-		goto error;
-	}
-
-	X509_free(x509_cert);
+	if (rc < 0)
+		goto err;
 
 	tcp_conn_release(c, 0);
 
 	LM_DBG("peer is successfully verified... done\n");
 	return 1;
-error:
-	tcp_conn_release(c, 0);
+err:
+	if (c) tcp_conn_release(c, 0);
 	return -1;
 }
-

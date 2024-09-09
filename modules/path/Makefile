@@ -1,5 +1,3 @@
-# $Id$
-#
 # path module makefile
 #
 # 
@@ -8,6 +6,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=path.so
-LIBS=
 
 include ../../Makefile.modules

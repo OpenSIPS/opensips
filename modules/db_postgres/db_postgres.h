@@ -29,4 +29,8 @@
 #define DEFAULT_PSQL_TIMEOUT 5
 extern int pq_timeout;
 
+extern int use_tls;
+
+extern struct tls_mgm_binds tls_api;
+
 #endif /* DB_POSTGRES_H */

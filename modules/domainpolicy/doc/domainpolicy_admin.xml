@@ -328,11 +328,11 @@ dp_can_connect();
 switch(retcode) {
 	case -2:
 		xlog("L_INFO","Errors during the DP evaluation\n");
-		sl_send_reply("404", "We can't connect you.");
+		sl_send_reply(404, "We can't connect you.");
 		break;
 	case -1:
 		xlog("L_INFO","We can't connect to that domain\n");
-		sl_send_reply("404", "We can't connect you.");
+		sl_send_reply(404, "We can't connect you.");
 		break;
 	case 1:
 		xlog("L_INFO","We found matching policy records\n");

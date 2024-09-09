@@ -34,12 +34,18 @@
 int dr_cluster_id = 0;
 
 str dr_cluster_shtag = {NULL,0};
+char* dr_cluster_prob_mode_s = NULL;
+int dr_cluster_prob_mode = DR_CLUSTER_PROB_MODE_ALL;
 
 static str status_repl_cap = str_init("drouting-status-repl");
 static struct clusterer_binds c_api;
 
 /* implemented in drouting.c */
-void dr_raise_event(struct head_db *p, pgw_t *gw);
+void dr_raise_event(struct head_db *p, pgw_t *gw,
+		char *reason_s, int reason_len);
+void dr_raise_cr_event(struct head_db *p, pcr_t *cr,
+		char *reason_s, int reason_len);
+
 
 extern struct head_db * head_db_start;
 
@@ -52,6 +58,15 @@ int dr_cluster_shtag_is_active(void)
 		return 1;
 
 	return 0;
+}
+
+int dr_cluster_get_my_index(int *size)
+{
+	if (dr_cluster_id>0)
+		return c_api.get_my_index( dr_cluster_id, &status_repl_cap, size);
+	*size = 1;
+	return 0;
+
 }
 
 static void bin_push_gw_status(bin_packet_t *packet, str *part_name,
@@ -160,7 +175,7 @@ static int gw_status_update(bin_packet_t *packet, int raise_event)
 	bin_pop_int(packet, &flags);
 
 	part = get_partition( &part_name );
-	if (part==NULL)
+	if (part==NULL || part->rdata==NULL)
 		return -1;
 
 	lock_start_read(part->ref_lock);
@@ -173,7 +188,7 @@ static int gw_status_update(bin_packet_t *packet, int raise_event)
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
 		if (raise_event)
 			/* raise event for the status change */
-			dr_raise_event(part, gw);
+			dr_raise_event(part, gw, MI_SSTR("replicated info"));
 		lock_stop_read(part->ref_lock);
 		return 0;
 	}
@@ -197,7 +212,7 @@ static int cr_status_update(bin_packet_t *packet)
 	bin_pop_int(packet, &flags);
 
 	part = get_partition( &part_name );
-	if (part==NULL)
+	if (part==NULL || part->rdata==NULL)
 		return -1;
 
 	lock_start_read(part->ref_lock);
@@ -208,6 +223,7 @@ static int cr_status_update(bin_packet_t *packet)
 		cr->flags = ((~DR_CR_FLAG_IS_OFF)&cr->flags)|(DR_CR_FLAG_IS_OFF&flags);
 		/* set the DIRTY flag to force flushing to DB */
 		cr->flags |= DR_CR_FLAG_DIRTY;
+		dr_raise_cr_event( part, cr, MI_SSTR("replicated info"));
 		lock_stop_read(part->ref_lock);
 		return 0;
 	}
@@ -233,39 +249,36 @@ static void dr_recv_sync_packet(bin_packet_t *packet)
 	}
 }
 
-static void receive_dr_binary_packet(bin_packet_t *packet)
+static void receive_dr_binary_packet(bin_packet_t *pkt)
 {
-	bin_packet_t *pkt;
 	int rc = 0;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		LM_DBG("received a binary packet [%d]!\n", packet->type);
+	LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
-		switch (pkt->type) {
-		case REPL_GW_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+	switch (pkt->type) {
+	case REPL_GW_STATUS_UPDATE:
+		ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = gw_status_update(pkt, 1);
-			break;
-		case REPL_CR_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+		rc = gw_status_update(pkt, 1);
+		break;
+	case REPL_CR_STATUS_UPDATE:
+		ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = cr_status_update(pkt);
-			break;
-		case SYNC_PACKET_TYPE:
-			_ensure_bin_version(pkt, BIN_VERSION, "drouting sync packet");
+		rc = cr_status_update(pkt);
+		break;
+	case SYNC_PACKET_TYPE:
+		_ensure_bin_version(pkt, BIN_VERSION, "drouting sync packet");
 
-			dr_recv_sync_packet(pkt);
-			break;
-		default:
-			LM_WARN("Invalid drouting binary packet command: %d "
-				"(from node: %d in cluster: %d)\n",
-				pkt->type, pkt->src_id, dr_cluster_id);
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+		dr_recv_sync_packet(pkt);
+		break;
+	default:
+		LM_WARN("Invalid drouting binary packet command: %d "
+			"(from node: %d in cluster: %d)\n",
+			pkt->type, pkt->src_id, dr_cluster_id);
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int dr_recv_sync_request(int node_id)
@@ -339,12 +352,26 @@ void receive_dr_cluster_event(enum clusterer_event ev, int node_id)
 
 int dr_cluster_sync(void)
 {
-	if (c_api.request_sync(&status_repl_cap, dr_cluster_id) < 0) {
+	if (!dr_cluster_id)
+		return 0;
+
+	if (c_api.request_sync(&status_repl_cap, dr_cluster_id, 0) < 0) {
 		LM_ERR("Sync request failed\n");
 		return -1;
 	}
 
 	return 0;
+}
+
+static int get_cluster_prob_mode(char *mode)
+{
+	if ( strcasecmp( mode, "all")==0 )
+		return DR_CLUSTER_PROB_MODE_ALL;
+	if ( strcasecmp( mode, "by-shtag")==0 )
+		return DR_CLUSTER_PROB_MODE_SHTAG;
+	if ( strcasecmp( mode, "distributed")==0 )
+		return DR_CLUSTER_PROB_MODE_DISTRIBUTED;
+	return -1;
 }
 
 int dr_init_cluster(void)
@@ -377,8 +404,22 @@ int dr_init_cluster(void)
 		dr_cluster_shtag.len = 0;
 	}
 
-	if (dr_cluster_sync() < 0)
+	if (dr_cluster_prob_mode_s) {
+		dr_cluster_prob_mode =
+			get_cluster_prob_mode(dr_cluster_prob_mode_s);
+		if (dr_cluster_prob_mode < 0) {
+			LM_ERR("failed to initialized the cluster prob mode <%s>,"
+				" unknown value\n", dr_cluster_prob_mode_s);
+			return -1;
+		}
+	}
+
+	if ( (dr_cluster_prob_mode == DR_CLUSTER_PROB_MODE_SHTAG)
+	&& (dr_cluster_shtag.len == 0)) {
+		LM_ERR("cluster probing mode 'by-shtag' requires the definition"
+			" of a sharing tag\n");
 		return -1;
+	}
 
 	return 0;
 }

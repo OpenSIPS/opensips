@@ -228,9 +228,70 @@ void set_sdp_payload_fmtp(sdp_payload_attr_t *payload_attr, str *fmtp_string )
 		LM_ERR("Invalid payload location\n");
 		return;
 	}
+
 	payload_attr->fmtp_string.s = fmtp_string->s;
 	payload_attr->fmtp_string.len = fmtp_string->len;
 
+	return;
+}
+
+void try_set_fmtp_payload_link(sdp_stream_cell_t *stream,sdp_payload_attr_t *payload_attr, str *fmtp_string )
+{
+	str link_str=str_init("apt=");
+	char *p_start,*p_end;
+	str ref_payload_s;
+	sdp_payload_attr_t *ref_payload;
+
+	if (payload_attr == NULL) {
+		LM_ERR("Invalid payload location\n");
+		return;
+	}
+
+	/* apt=xxx */
+	if (fmtp_string->len < 4) {
+		LM_DBG("Too small body \n");
+		return;
+	}
+
+	LM_DBG("We need to link [%.*s] to [%.*s]\n",fmtp_string->len,fmtp_string->s,payload_attr->rtp_payload.len,payload_attr->rtp_payload.s);
+
+	if ((p_start = str_strstr(fmtp_string,&link_str)) == NULL) {
+		return;
+	}
+
+	/* skip it */
+	p_start += link_str.len; 
+	ref_payload_s.s = p_start;
+	for (p_end=p_start;p_end<fmtp_string->s+fmtp_string->len;p_end++) {
+		if (*p_end==';')
+			break;
+	}
+
+	ref_payload_s.len = p_end-p_start;
+	trim(&ref_payload_s);
+
+	ref_payload = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &ref_payload_s);
+	if (ref_payload == NULL)
+		return;
+
+	LM_DBG("Found it, %.*s going to %.*s\n",ref_payload_s.len,ref_payload_s.s,ref_payload->rtp_payload.len,ref_payload->rtp_payload.s);
+
+	ref_payload->linked_payload = payload_attr; 
+	return;
+}
+
+void set_sdp_payload_custom_attr(sdp_payload_attr_t *payload_attr, str *attr )
+{
+	if (payload_attr == NULL) {
+		LM_DBG("No payload_attr\n");
+		return;
+	}
+	if (payload_attr->custom_attrs_size == MAX_CUSTOM_ATTRS-1) {
+		LM_DBG("Max custom a= attrs reached \n");
+		return;
+	}
+
+	payload_attr->custom_attrs[payload_attr->custom_attrs_size++] = *attr;
 	return;
 }
 
@@ -372,7 +433,7 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 	int is_rtp;
 	char *bodylimit;
 	char *v1p, *o1p, *m1p, *m2p, *c1p, *c2p, *a1p, *a2p, *b1p;
-	str tmpstr1;
+	str tmpstr1,custom_attr;
 	int stream_num, payloadnum, pf;
 	sdp_session_cell_t *session;
 	sdp_stream_cell_t *stream;
@@ -583,9 +644,12 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 			} else if (extract_rtcp(&tmpstr1, &stream->rtcp_port) == 0) {
 				a1p = stream->rtcp_port.s + stream->rtcp_port.len;
 			} else if (parse_payload_attr && extract_fmtp(&tmpstr1,&rtp_payload,&fmtp_string) == 0){
+				LM_DBG("Found FMTP [%.*s] for payload [%.*s]\n",fmtp_string.len,fmtp_string.s,rtp_payload.len,rtp_payload.s);
 				a1p = fmtp_string.s + fmtp_string.len;
 				payload_attr = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &rtp_payload);
 				set_sdp_payload_fmtp(payload_attr, &fmtp_string);
+
+				try_set_fmtp_payload_link(stream,payload_attr,&fmtp_string);
 			} else if (extract_accept_types(&tmpstr1, &stream->accept_types) == 0) {
 				a1p = stream->accept_types.s + stream->accept_types.len;
 			} else if (extract_accept_wrapped_types(&tmpstr1, &stream->accept_wrapped_types) == 0) {
@@ -594,8 +658,15 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 				a1p = stream->max_size.s + stream->max_size.len;
 			} else if (extract_path(&tmpstr1, &stream->path) == 0) {
 				a1p = stream->path.s + stream->path.len;
-			/*} else { */
-			/*	LM_DBG("else: `%.*s'\n", tmpstr1.len, tmpstr1.s); */
+			} else {
+				if (parse_payload_attr && extract_custom_a_attr(&tmpstr1,&rtp_payload,&custom_attr) == 0) {
+					LM_DBG("extracted attr [%.*s] for payload [%.*s]\n",custom_attr.len,custom_attr.s,rtp_payload.len,rtp_payload.s);
+					a1p = custom_attr.s + custom_attr.len;
+					payload_attr = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &rtp_payload);
+					set_sdp_payload_custom_attr(payload_attr, &custom_attr);
+				} else {
+					LM_DBG("else: parse_payload_attr ? %d `%.*s'\n",parse_payload_attr, tmpstr1.len, tmpstr1.s);
+				}
 			}
 
 			tmpstr1.s = a2p;

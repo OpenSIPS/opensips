@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "cachedb_redis_admin.xml">
+<!ENTITY faq SYSTEM "cachedb_redis_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
@@ -21,6 +22,7 @@
 
 	&admin;
 	&contrib;
+	&faq;
 
 	&docCopyrights;
 	<para>&copyright; 2011 &osipssol;</para>

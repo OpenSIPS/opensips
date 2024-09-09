@@ -156,7 +156,7 @@ static inline int no_contacts(udomain_t* _d, struct save_ctx *_sctx,
 static int set_sock_hdr(struct sip_msg *msg, ucontact_info_t *ci,
                         unsigned int reg_flags)
 {
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	struct hdr_field *hf;
 	str socks;
 	str hosts;
@@ -241,10 +241,12 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 				if (r==NULL || r->contacts==NULL) {
 					LM_CRIT("BUG - overflow detected with r=%p and "
 						"contacts=%p\n",r,r->contacts);
+					rerrno = R_INTERNAL;
 					goto error;
 				}
-				if (ul.delete_ucontact( r, r->contacts, 0)!=0) {
+				if (ul.delete_ucontact( r, r->contacts, &_sctx->cmatch, 0)!=0) {
 					LM_ERR("failed to remove contact\n");
+					rerrno = R_INTERNAL;
 					goto error;
 				}
 			} else {
@@ -277,13 +279,14 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		if ( r->contacts==0 ||
 		ul.get_ucontact(r, &_c->uri, ci->callid, ci->cseq+1, &_sctx->cmatch,
 		&c)!=0 ){
-			if (ul.insert_ucontact( r, &_c->uri, ci, &c, 0) < 0) {
+			if (ul.insert_ucontact( r, &_c->uri, ci, &_sctx->cmatch,
+				    0, &c) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto error;
 			}
 		} else {
-			if (ul.update_ucontact( r, c, ci, 0) < 0) {
+			if (ul.update_ucontact( r, c, ci, &_sctx->cmatch, 0) < 0) {
 				rerrno = R_UL_UPD_C;
 				LM_ERR("failed to update contact\n");
 				goto error;
@@ -427,7 +430,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					}
 					LM_DBG("overflow on inserting new contact -> removing "
 						"<%.*s>\n", c_last->c.len, c_last->c.s);
-					if (ul.delete_ucontact( _r, c_last, 0)!=0) {
+					if (ul.delete_ucontact( _r, c_last, &_sctx->cmatch, 0)!=0) {
 						LM_ERR("failed to remove contact\n");
 						goto error;
 					}
@@ -442,12 +445,13 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 			/* pack the contact_info */
 			if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
-							&_sctx->ownership_tag, NULL))==0 ) {
+							&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
 
-			if (ul.insert_ucontact( _r, &_c->uri, ci, &c, 0) < 0) {
+			if (ul.insert_ucontact( _r, &_c->uri, ci, &_sctx->cmatch,
+				    0, &c) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto error;
@@ -464,7 +468,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					c->flags &= ~FL_MEM;
 				}
 
-				if (ul.delete_ucontact(_r, c, 0) < 0) {
+				if (ul.delete_ucontact(_r, c, &_sctx->cmatch, 0) < 0) {
 					rerrno = R_UL_DEL_C;
 					LM_ERR("failed to delete contact\n");
 					goto error;
@@ -494,7 +498,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 						}
 						LM_DBG("overflow on update -> removing contact "
 							"<%.*s>\n", c_last->c.len, c_last->c.s);
-						if (ul.delete_ucontact( _r, c_last, 0)!=0) {
+						if (ul.delete_ucontact( _r, c_last, &_sctx->cmatch, 0)!=0) {
 							LM_ERR("failed to remove contact\n");
 							goto error;
 						}
@@ -509,12 +513,12 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 				/* pack the contact specific info */
 				if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
-								&_sctx->ownership_tag, NULL))==0 ) {
+								&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}
 
-				if (ul.update_ucontact(_r, c, ci, 0) < 0) {
+				if (ul.update_ucontact(_r, c, ci, &_sctx->cmatch, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
 					goto error;
@@ -609,8 +613,8 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
  * Process REGISTER request and save it's contacts
  */
 #define is_cflag_set(_name) ((sctx.flags)&(_name))
-int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
-				str* uri, str* _owtag)
+int save_aux(struct sip_msg* _m, str* forced_binding, void* _d,
+	struct save_flags *flags, str* uri, str* _owtag)
 {
 	struct save_ctx  sctx;
 	contact_t* c;
@@ -620,10 +624,17 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 	rerrno = R_FINE;
 	memset( &sctx, 0 , sizeof(sctx));
 
+	sctx.cmatch.mode = CT_MATCH_NONE;
 	sctx.min_expires = min_expires;
 	sctx.max_expires = max_expires;
-	if ( flags_s )
-		reg_parse_save_flags( flags_s, &sctx);
+	sctx.max_contacts = max_contacts;
+	if (flags) {
+		sctx.flags = flags->flags;
+		sctx.max_contacts = flags->max_contacts;
+		sctx.min_expires = flags->min_expires;
+		sctx.max_expires = flags->max_expires;
+		sctx.cmatch = flags->cmatch;
+	}
 
 	if (route_type == ONREPLY_ROUTE)
 		sctx.flags |= REG_SAVE_NOREPLY_FLAG;
@@ -635,6 +646,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		if (parse_contacts(forced_binding, &forced_c) < 0) {
 			LM_ERR("Unable to parse forced binding [%.*s]\n",
 				forced_binding->len, forced_binding->s);
+			rerrno = R_INTERNAL;
 			goto error;
 		}
 		/* prevent processing all the headers from the message */
@@ -658,6 +670,12 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 
 	if (extract_aor(uri, &sctx.aor, 0, 0, reg_use_domain) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
+		goto error;
+	}
+
+	if (sctx.aor.len == 0) {
+		LM_ERR("the AoR URI is missing the 'username' part!\n");
+		rerrno = R_AOR_PARSE;
 		goto error;
 	}
 
@@ -704,7 +722,7 @@ return_minus_one:
 }
 
 #define MAX_FORCED_BINDING_LEN 256
-int save(struct sip_msg* _m, void* _d, str* _f, str* _s, str* _owtag)
+int save(struct sip_msg* _m, void* _d, void* _f, str* _s, str* _owtag)
 {
 	struct sip_msg* msg = _m;
 	struct cell* t = NULL;
@@ -893,11 +911,12 @@ done:
  * @contact_gp:      contact URI to be deleted
  * @next_hop_gp:     IP/domain in front of contacts to be deleted
  * @sip_instance_gp: delete contacts with given "+sip_instance"
+ * @bflag:           delete contacts which the specific branch flag mask
  *
  * @return:      1 on success, negative on failure
  */
 int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
-            str *match_next_hop, str *match_sin)
+            str *match_next_hop, str *match_sin, int* bflag)
 {
 	struct hostent delete_nh_he, *he;
 	urecord_t *record;
@@ -921,7 +940,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 	}
 
 	/* without any additional filtering, delete the whole urecord entry */
-	if (!match_ct && !match_next_hop && !match_sin) {
+	if (!match_ct && !match_next_hop && !match_sin && (!bflag ||!*bflag)) {
 		if (ul.delete_urecord((udomain_t *)udomain, &aor_user, record, 0) != 0) {
 			LM_ERR("failed to delete urecord for aor '%.*s'\n",
 			        aor_user.len, aor_user.s);
@@ -948,8 +967,10 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 			goto out_unlock;
 		}
 
+		struct sockaddr_in daddr;
+		memcpy(&daddr.sin_addr, he->h_addr_list[0], sizeof(daddr.sin_addr));
 		LM_DBG("Delete by host: '%s'\n",
-		        inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])));
+		        inet_ntoa(daddr.sin_addr));
 
 		if (hostent_cpy(&delete_nh_he, he) != 0) {
 			LM_ERR("no more pkg mem\n");
@@ -975,9 +996,11 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 			continue;
 		}
 
+		struct sockaddr_in daddr;
+		memcpy(&daddr.sin_addr, he->h_addr_list[0], sizeof(daddr.sin_addr));
 		LM_DBG("next hop is [%.*s] resolving to [%s]\n",
 			contact->next_hop.name.len, contact->next_hop.name.s,
-			inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])));
+			inet_ntoa(daddr.sin_addr));
 
 		if (match_next_hop) {
 			if (memcmp(delete_nh_he.h_addr_list[0],
@@ -996,7 +1019,12 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 				continue;
 		}
 
-		ul.delete_ucontact(record, contact, 0);
+		if (bflag && *bflag) {
+			if ((contact->cflags & *(bflag)) == 0)
+				continue;
+		}
+
+		ul.delete_ucontact(record, contact, NULL, 0);
 	}
 
 	ul.release_urecord(record, 0);
@@ -1006,6 +1034,132 @@ out_unlock:
 	if (match_next_hop)
 		free_hostent(&delete_nh_he);
 
+	return ret;
+}
+
+/* Assumes everything is locked */
+int _remove_ip_port_urecord(urecord_t* record, str *ip, int* port)
+{
+	ucontact_t *contact, *it;
+	struct hostent *he;
+	str contact_ip;
+
+	for (it = record->contacts; it; ) {
+		contact = it;
+		it = it->next;
+
+		he = sip_resolvehost(&contact->next_hop.name,
+		                     &contact->next_hop.port,
+		                     &contact->next_hop.proto, 0, NULL);
+		if (!he) {
+			LM_ERR("failed to resolve next hop %.*s of contact '%.*s'\n",
+				contact->next_hop.name.len, contact->next_hop.name.s,
+				contact->c.len, contact->c.s);
+			continue;
+		}
+
+		contact_ip.s = inet_ntoa(*(struct in_addr *)(he->h_addr_list[0]));
+		contact_ip.len = strlen(contact_ip.s);
+
+		LM_DBG("next hop is [%.*s] resolving to [%s]\n",
+			contact->next_hop.name.len, contact->next_hop.name.s,
+			contact_ip.s);
+
+
+		if (ip->len == contact_ip.len &&
+		memcmp(ip->s,contact_ip.s,ip->len) == 0 &&
+		contact->next_hop.port == *port) {
+			LM_DBG("Removing contact \n");
+			ul.delete_ucontact(record, contact, NULL, 0);
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * _remove - Delete ALL contacts by IP and Port
+ *
+ * @ip:		IP to filter for deletion
+ * @port	Port to filter for deletion
+ * @aor:	Optionally, AOR to filter for deletion
+ *
+ * @return:      1 on success, negative on failure
+ */
+int _remove_ip_port(struct sip_msg *msg, str *ip, int *port, void *udomain, str* aor)
+{
+	urecord_t *record;
+	str aor_user;
+	int ret = 1;
+	int i;
+	map_iterator_t it;
+	void ** dest;
+	udomain_t *dom = (udomain_t *)udomain;
+
+	if (!udomain || !ip || !port) {
+		LM_ERR("Mandatory parameters not provided \n");
+		return -1;
+	}
+
+	if (aor && aor->s ) {
+		LM_DBG("Removing %.*s : %d for AOR %.*s\n",ip->len,ip->s,
+		*port,aor->len,aor->s);
+		/* received AOR indication, we're lucky */
+		if (extract_aor(aor, &aor_user, 0, 0, reg_use_domain) < 0) {
+			LM_ERR("failed to extract Address Of Record\n");
+			return E_BAD_URI;
+		}
+
+
+		ul.lock_udomain(dom, &aor_user);
+
+		if (ul.get_urecord(dom, &aor_user, &record) != 0) {
+			LM_DBG("no record '%.*s' found!\n", aor_user.len, aor_user.s);
+			goto out_unlock;
+		}
+
+		if (_remove_ip_port_urecord(record,ip,port) != 0) {
+			LM_ERR("Failed to remove contacts \n");
+			ret = -1;
+		}
+
+		ul.release_urecord(record, 0);
+		goto out_unlock;
+	}
+
+	LM_DBG("Removing %.*s : %d for ALL AORs\n",ip->len,ip->s,*port);
+	
+	/* no AOR help, go through ALL registered AORs :( */
+	for(i=0; i<dom->size; i++) {
+		ul.lock_ulslot( dom, i);
+
+		map_first(dom->table[i].records, &it);
+		while (iterator_is_valid(&it)) {
+			dest = iterator_val(&it);
+			if (!dest) {
+				LM_ERR("Failed to get urecord\n");
+				goto error_unlock;
+			}
+
+			record = (urecord_t *)*dest;
+			iterator_next(&it);
+
+			if (_remove_ip_port_urecord(record,ip,port) != 0) {
+				LM_ERR("Failed to remove contacts \n");
+				/* continue here, might be more */
+			}
+
+			ul.release_urecord(record, 0);
+		}
+
+error_unlock:
+		ul.unlock_ulslot( dom, i);
+	}
+
+	return 1;
+
+out_unlock:
+	ul.unlock_udomain(dom, &aor_user);
 	return ret;
 }
 

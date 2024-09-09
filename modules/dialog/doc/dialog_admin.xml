@@ -30,11 +30,21 @@
 	the create_dialog() function, with or without parameter.
 	</para>
 	<para>
-	The dialog is automatically destroyed when a <quote>BYE</quote> is
+	The dialog is automatically terminated when a <quote>BYE</quote> is
 	received. In case of no <quote>BYE</quote>, the dialog lifetime is
 	controlled via the default timeout (see <quote>default_timeout</quote>
 	- <xref linkend="param_default_timeout"/>) and custom timeout (see
 	<quote>$DLG_timeout</quote> - <xref linkend="pv_DLG_timeout"/>).
+	</para>
+	<para>
+	Once terminated, the in-memory dialog may be destroyed right away or, 
+	depending on the <quote>delete_delay</quote>
+	- <xref linkend="param_delete_delay"/>) setting, it may be kept for a
+	while in memory, in a read-only state (no action, no changes, nothing).
+	This delaying may be used to help with the routing of late in-dialog
+	request that may be received after the dialog terminted (like late BYE's
+	due retransmissions, cross BYE requests, auth'ed BYE request, slow ACK on
+	re-INVITEs, etc).
 	</para>
 	</section>
 
@@ -137,9 +147,8 @@
 	In the context of dialog replication, using a database as a failsafe for obtaining
 	restart persistency for dialog data is useful in case all nodes in the cluster are down.
 	This approach makes the most sense if a separate, local DB is used for each node in the
-	cluster. In consequence dialogs loaded from the database at startup are dropped and also
-	deleted from the DB once the sync from cluster is complete. This is done for dialogs that
-	are not reconfirmed as being active in the meantime (SIP updates, received in sync data).
+	cluster. Dialogs loaded from the database at startup, which are not reconfirmed through
+	syncing, are dropped and also deleted from the database once the sync from cluster is complete.
 	</para>
 	<para>
 	Also configuring profile replication via the <emphasis>profile_replication_cluster</emphasis>
@@ -388,6 +397,34 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 		<programlisting format="linespecific">
 ...
 modparam("dialog", "dlg_match_mode", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+<section id="param_delete_delay" xreflabel="delete_delay">
+		<title><varname>delete_delay</varname> (integer)</title>
+		<para>
+			The interval (seconds) to delay a dialog deletion / removal from
+			memory AFTER its termination. Once terminated, the dialog will
+			be kept in a read only state (no action, no changes), but it will
+			still be able to match and route late in-dialog requests.
+		</para>
+		<para>
+			This global value may be per-call changed via the DLG_del_delay
+			<quote>$DLG_del_delay</quote> (<xref linkend="pv_DLG_del_delay"/>)
+			script variable.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>delete_delay</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "delete_delay", 10)
 ...
 </programlisting>
 		</example>
@@ -831,7 +868,7 @@ modparam("dialog", "to_sock_column", "to_sock_c_name")
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>hash_id</quote>.
+			Default value is <quote>dlg_id</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -1009,7 +1046,7 @@ modparam("dialog", "flags_column", "flags_c_name")
 	<section id="param_profiles_with_value" xreflabel="profiles_with_value">
 		<title><varname>profiles_with_value</varname> (string)</title>
 		<para>
-			List of names for profiles with values. Flags
+			List of names (alphanumerical/-/_) for profiles with values. Flags
 			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
 			profiles between &osips; instances using the clusterer module or a
 			CacheDB backend, respectively.
@@ -1023,7 +1060,7 @@ modparam("dialog", "flags_column", "flags_c_name")
 		<title>Set <varname>profiles_with_value</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s; repl/b;")
+modparam("dialog", "profiles_with_value", "callerCC; gatewayCC; clientChannels/s; codecUsed/b;")
 ...
 </programlisting>
 		</example>
@@ -1032,7 +1069,7 @@ modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s; repl/b;
 	<section id="param_profiles_no_value" xreflabel="profiles_no_value">
 		<title><varname>profiles_no_value</varname> (string)</title>
 		<para>
-			List of names for profiles without values. Flags
+			List of names (alphanumerical/-/_) for profiles without values. Flags
 			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
 			profiles between &osips; instances using the clusterer module or a
 			CacheDB backend, respectively.
@@ -1323,7 +1360,7 @@ modparam("dialog", "replicate_profiles_check", 100)
 		</para>
 		<para>
 		<emphasis>
-			Default value is 10 ms.
+			Default value is 200 ms.
 		</emphasis>
 		</para>
 		<example>
@@ -1353,6 +1390,26 @@ modparam("dialog", "replicate_profiles_timer", 100)
 		<programlisting format="linespecific">
 ...
 modparam("dialog", "replicate_profiles_expire", 10)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_cluster_auto_sync" xreflabel="cluster_auto_sync">
+		<title><varname>cluster_auto_sync</varname> (string)</title>
+		<para>
+		Specifies whether to automatically issue a sync request (for dialogs
+		marked with a sharing tag in backup state) when a node becomes reachable.
+		A value of <emphasis>1</emphasis> means enabled and <emphasis>0</emphasis>
+		disabled.
+		</para>
+		<para><emphasis>
+			Default value is 1 (enabled).
+		</emphasis></para>
+		<example>
+		<title>Set <varname>cluster_auto_sync</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "cluster_auto_sync", 0)
 ...
 </programlisting>
 		</example>
@@ -1621,7 +1678,7 @@ create_dialog("B");
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>key_val (string)</emphasis> - the value of the dialog
+			<para><emphasis>key_val (var)</emphasis> - the value of the dialog
 			variable that is used as key in searching the target dialog.
 			</para>
 		</listitem>
@@ -1734,7 +1791,7 @@ if ( get_dialog_vals($avp(d_names),$avp(d_vals),$var(callid)) ) {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>value (string)</emphasis> - the value of the above dialog val
+			<para><emphasis>value (var)</emphasis> - the value of the above dialog val
 			</para>
 		</listitem>
 		<listitem>
@@ -1861,7 +1918,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 if (load_dialog_ctx("$var(callid)")) {
 	xlog("The dialog '$var(callid)' already has a duration "
 	     "of $DLG_lifetime seconds\n");
-	if (is_in_profile("inbound_call"))
+	if (is_in_profile("inboundCall"))
 		xlog("this dialog is an inbound call\n");
 	unload_dialog_ctx();
 }
@@ -1894,7 +1951,7 @@ if (load_dialog_ctx("$var(callid)")) {
 
 	<section id="func_set_dlg_profile" xreflabel="set_dlg_profile()">
 		<title>
-		<function moreinfo="none">set_dlg_profile(profile,[value])</function>
+		<function moreinfo="none">set_dlg_profile(profile, [value], [clear_values])</function>
 		</title>
 		<para>
 		Inserts the current dialog into a profile. Note that if the profile does
@@ -1918,6 +1975,12 @@ if (load_dialog_ctx("$var(callid)")) {
 			profile must support values.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>clear_values (boolean, optional)</emphasis> - if set to
+				<emphasis>true</emphasis> (1), all values of the profile will be cleared
+				before setting the given value.  Default: <emphasis>false</emphasis>.
+			</para>
+		</listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1927,8 +1990,13 @@ if (load_dialog_ctx("$var(callid)")) {
 		<title><function>set_dlg_profile</function> usage</title>
 		<programlisting format="linespecific">
 ...
-set_dlg_profile("inbound_call");
-set_dlg_profile("caller",$fu);
+set_dlg_profile("inboundCall");
+
+# Set a new value (all other values are kept intact)
+set_dlg_profile("caller", $fu);
+
+# Set a new value while removing all previous values
+set_dlg_profile("caller", $fu, true);
 ...
 </programlisting>
 		</example>
@@ -1937,7 +2005,7 @@ set_dlg_profile("caller",$fu);
 
 	<section id="func_unset_dlg_profile" xreflabel="unset_dlg_profile()">
 		<title>
-		<function moreinfo="none">unset_dlg_profile(profile,[value])</function>
+		<function moreinfo="none">unset_dlg_profile(profile, [value])</function>
 		</title>
 		<para>
 		Removes the current dialog from a profile.
@@ -1958,6 +2026,9 @@ set_dlg_profile("caller",$fu);
 			define the belonging of the dialog to the profile - note that the
 			profile must support values.
 			</para>
+			<para>NEW in 3.4: for profiles with value, by omitting this parameter
+				you can now clear all values of the given profile.
+			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -1968,8 +2039,11 @@ set_dlg_profile("caller",$fu);
 		<title><function>unset_dlg_profile</function> usage</title>
 		<programlisting format="linespecific">
 ...
-unset_dlg_profile("inbound_call");
-unset_dlg_profile("caller",$fu);
+unset_dlg_profile("inboundCall");
+unset_dlg_profile("caller", $fu);
+...
+# Remove all values in a profile
+unset_dlg_profile("caller");
 ...
 </programlisting>
 		</example>
@@ -2013,7 +2087,7 @@ unset_dlg_profile("caller",$fu);
 		<title><function>is_in_profile</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (is_in_profile("inbound_call")) {
+if (is_in_profile("inboundCall")) {
 	log("this request belongs to a inbound call\n");
 }
 ...
@@ -2077,17 +2151,17 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 
 	<section id="func_set_dlg_flag" xreflabel="set_dlg_flag()">
 		<title>
-		<function moreinfo="none">set_dlg_flag(idx)</function>
+		<function moreinfo="none">set_dlg_flag(flag)</function>
 		</title>
 		<para>
-		Sets the dialog flag index <emphasis>idx</emphasis> to true. The dialog
+		Sets the dialog flag named <emphasis>flag</emphasis> to true. The dialog
 		flags are dialog persistent and they can be accessed (set and test)
 		for all requests belonging to the dialog.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>idx (int)</emphasis> - The flag index can be between 0 and 31.
+				<emphasis>flag (string, static)</emphasis> - The flag name.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2102,7 +2176,7 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 		<title><function>set_dlg_flag</function> usage</title>
 		<programlisting format="linespecific">
 ...
-set_dlg_flag(3);
+set_dlg_flag("MY_DLG_FLAG");
 ...
 </programlisting>
 		</example>
@@ -2110,16 +2184,16 @@ set_dlg_flag(3);
 
 	<section id="func_test_and_set_dlg_flag" xreflabel="test_and_set_dlg_flag()">
 		<title>
-		<function moreinfo="none">test_and_set_dlg_flag(idx, value)</function>
+		<function moreinfo="none">test_and_set_dlg_flag(flag, value)</function>
 		</title>
 		<para>
-		Atomically checks if the dialog flag index <emphasis>idx</emphasis> is
+		Atomically checks if the dialog flag named <emphasis>flag</emphasis> is
 		equal to <emphasis>value</emphasis>. If true, changes the value with the
 		opposite one. This operation is done under the dialog lock.
 		</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>idx (int)</emphasis> - The flag index can be between 0 and 31.
+				<emphasis>flag (string, static)</emphasis> - The flag name.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>value (int)</emphasis> - The value should be 0 (false) or 1 (true).
@@ -2137,7 +2211,7 @@ set_dlg_flag(3);
 		<title><function>test_and_set_dlg_flag</function> usage</title>
 		<programlisting format="linespecific">
 ...
-test_and_set_dlg_flag(3, 0);
+test_and_set_dlg_flag("MY_DLG_FLAG", 0);
 ...
 </programlisting>
 		</example>
@@ -2145,17 +2219,17 @@ test_and_set_dlg_flag(3, 0);
 
 	<section id="func_reset_dlg_flag" xreflabel="reset_dlg_flag()">
 		<title>
-		<function moreinfo="none">reset_dlg_flag(idx)</function>
+		<function moreinfo="none">reset_dlg_flag(flag)</function>
 		</title>
 		<para>
-		Resets the dialog flag index <emphasis>idx</emphasis> to false.
+		Resets the dialog flag named <emphasis>flag</emphasis> to false.
 		The dialog flags are dialog persistent and they can be accessed
 		(set and test) for all requests belonging to the dialog.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>idx (int)</emphasis> - The flag index can be between 0 and 31.
+				<emphasis>flag (string, static)</emphasis> - The flag name.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2170,7 +2244,7 @@ test_and_set_dlg_flag(3, 0);
 		<title><function>reset_dlg_flag</function> usage</title>
 		<programlisting format="linespecific">
 ...
-reset_dlg_flag(16);
+reset_dlg_flag("MY_DLG_FLAG");
 ...
 </programlisting>
 		</example>
@@ -2178,17 +2252,17 @@ reset_dlg_flag(16);
 
 	<section id="func_is_dlg_flag_set" xreflabel="is_dlg_flag_set()">
 		<title>
-		<function moreinfo="none">is_dlg_flag_set(idx)</function>
+		<function moreinfo="none">is_dlg_flag_set(flag)</function>
 		</title>
 		<para>
-		Returns true if the dialog flag index <emphasis>idx</emphasis> is set.
+		Returns true if the dialog flag named <emphasis>flag</emphasis> is set.
 		The dialog flags are dialog persistent and they can be accessed
 		(set and test) for all requests belonging to the dialog.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>idx (int)</emphasis> - The flag index can be between 0 and 31.
+				<emphasis>flag (string, static)</emphasis> - The flag name.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2203,8 +2277,8 @@ reset_dlg_flag(16);
 		<title><function>is_dlg_flag_set</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (is_dlg_flag_set(16)) {
-	xlog("dialog flag 16 is set\n");
+if (is_dlg_flag_set("MY_DLG_FLAG")) {
+	xlog("dialog flag MY_DLG_FLAG is set\n");
 }
 ...
 </programlisting>
@@ -2216,8 +2290,8 @@ if (is_dlg_flag_set(16)) {
 		<function moreinfo="none">store_dlg_value(name,val)</function>
 		</title>
 		<para>
-		Attaches to the dialog the value <emphasis>val</emphasis> under the
-		name <emphasis>name</emphasis>. The values attached to dialogs are
+		Attaches to the dialog the value from the variable <emphasis>val</emphasis>
+		under the name <emphasis>name</emphasis>. The values attached to dialogs are
 		dialog persistent and they can be accessed (read and write) for all
 		requests belonging to the dialog.
 		</para>
@@ -2227,7 +2301,7 @@ if (is_dlg_flag_set(16)) {
 				<emphasis>name (string)</emphasis>
 			</para></listitem>
 			<listitem><para>
-				<emphasis>val (string)</emphasis>
+				<emphasis>val (var)</emphasis>
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2247,7 +2321,7 @@ if (is_dlg_flag_set(16)) {
 		<programlisting format="linespecific">
 ...
 store_dlg_value("inv_src_ip",$si);
-store_dlg_value("account type","prepaid");
+store_dlg_value("account type",$var(account));
 # or
 $dlg_val(account_type) = "prepaid";
 ...
@@ -2770,7 +2844,7 @@ event_route[E_RTPPROXY_DTMF] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_get_size inbound_calls
+		opensips-cli -x mi profile_get_size inboundCalls
 		</programlisting>
 		</section>
 
@@ -2804,7 +2878,7 @@ event_route[E_RTPPROXY_DTMF] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_list_dlgs inbound_calls
+		opensips-cli -x mi profile_list_dlgs inboundCalls
 		</programlisting>
 		</section>
 
@@ -2830,7 +2904,7 @@ event_route[E_RTPPROXY_DTMF] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_get_values inbound_calls
+		opensips-cli -x mi profile_get_values inboundCalls
 		</programlisting>
 		</section>
 		<section id="mi_profile_end_dlgs" xreflabel="profile_end_dlgs">
@@ -2856,7 +2930,7 @@ event_route[E_RTPPROXY_DTMF] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_end_dlgs inbound_calls
+		opensips-cli -x mi profile_end_dlgs inboundCalls
 		</programlisting>
 		</section>
 		<section id="mi_dlg_db_sync" xreflabel="dlg_db_sync">
@@ -2885,22 +2959,27 @@ event_route[E_RTPPROXY_DTMF] {
 		This command will only take effect if dialog replication is enabled.
 		</para>
 		<para>
-		The current node will locate a suitable donor node within the
-		<xref linkend="param_dialog_replication_cluster"/> and issue a sync
-		request to it. The donor node will then push all the dialog information
-		to the current node, via the the binary interface. For dialogs that
-		already exist in memory, the information will be not be treated as an update
-		but discarded instead.
+		Fully synchronize the dialog information in memory from a suitable donor
+		node within the <xref linkend="param_dialog_replication_cluster"/>. Dialogs
+		that already exist in memory which are not reconfirmed through syncing will
+		be discarded. A sharing tag can be specified in order to sync only dialogs
+		marked with that sharing tag.
 		</para>
 		<para>
 		Name: <emphasis>dlg_cluster_sync</emphasis>
 		</para>
-		<para>It takes no parameters</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>sharing_tag</emphasis> - name of the sharing tag that
+				dialogs have to be marked with in order to be synced
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dlg_cluster_sync
+		opensips-cli -x mi dlg_cluster_sync vip1
 		</programlisting>
 		</section>
 
@@ -3053,6 +3132,10 @@ event_route[E_RTPPROXY_DTMF] {
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
+			<listitem><para>
+				<emphasis>headers</emphasis> - (optional) can be used to specify some headers for
+					the initial sequential message.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 			This functions runs asynchronously and returns the status code and reason
@@ -3085,6 +3168,18 @@ event_route[E_RTPPROXY_DTMF] {
 				mode=challenge-callee \
 				body=outbound \
 				method=UPDATE
+		</programlisting>
+
+		<para>
+		MI Command used to send REFER to the callee, and add Refer-To header:
+		</para>
+		<programlisting  format="linespecific">
+			opensips-cli -x mi dlg_send_sequential \
+				callid=usR8FlGOSMfCTAIHebHCOQ.. \
+				method=REFER \
+				body=none \
+				mode=callee \
+				headers='Refer-To: sip:user@domain:50060'
 		</programlisting>
 
 		</section>
@@ -3153,7 +3248,7 @@ event_route[E_RTPPROXY_DTMF] {
 		<section id="pv_DLG_flags" xreflabel="$DLG_flags">
 			<title><varname>$DLG_flags</varname></title>
 			<para>
-			Returns the dialog flags array (as a single integer value)
+			Returns the dialog flags (as a list of flag names separted by space)
 			of the dialog corresponding to the processed sequential request.
 			This PV will be available only for sequential requests,
 			after doing loose_route().
@@ -3253,6 +3348,23 @@ event_route[E_RTPPROXY_DTMF] {
 			</para>
 		</section>
 
+		<section id="pv_DLG_del_delay" xreflabel="$DLG_del_delay">
+			<title><varname>$DLG_del_delay</varname></title>
+			<para>
+				Used to set the dialog deletion delay (in seconds) for the
+				current dialog (in a per-call manner). When read, the variable
+				returns the number of seconds that were set for the call or
+				the default value ( see the
+				<quote>delete_delay</quote> - <xref linkend="param_delete_delay"/>)
+				module param) for the delete delaying.
+			</para>
+			<para>
+				The variable must be used when the context of a dialog is
+				available in script.
+			</para>
+		</section>
+
+
 		<section id="pv_DLG_json" xreflabel="$DLG_json">
 			<title><varname>$DLG_json</varname></title>
 			<para>
@@ -3277,9 +3389,16 @@ event_route[E_RTPPROXY_DTMF] {
 			<title><varname>$dlg_val(name)</varname></title>
 			<para>
 			This is a read/write variable that allows access to the dialog
-			attribute named <emphasis>name</emphasis>.
-			This PV will be available only for sequential requests,
-			after doing loose_route().
+			attribute named <emphasis>name</emphasis>. It can hold a string or
+			integer value.
+			</para>
+			<para>
+			Be sure and use this variable only when having a dialog context 
+			(like after create_dialog() or match_dialog() or equivalent).
+			</para>
+			<para>
+			The variable accepts dynamic names, meaning the name may contain
+			other variables.
 			</para>
 			<para>
 			NULL will be returned if there is no dialog for the request.
@@ -3300,14 +3419,11 @@ event_route[E_RTPPROXY_DTMF] {
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-					<emphasis>hash_entry</emphasis> - the entry in the dialog table.
-					This is used, along with the <emphasis>hash_id</emphasis>,
-					to uniquely identify the dialog.
+					<emphasis>id</emphasis> - the hex representation of the dialog id.
 			</para></listitem>
 			<listitem><para>
-					<emphasis>hash_id</emphasis> - the id in the dialog table.
-					This is used, along with the <emphasis>hash_entry</emphasis>,
-					to uniquely identify the dialog.
+					<emphasis>db_id</emphasis> - the integer representation of the dialog id,
+					as it is stored in the database <emphasis>dlg_id</emphasis> field.
 			</para></listitem>
 			<listitem><para>
 					<emphasis>callid</emphasis> - the callid.

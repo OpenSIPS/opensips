@@ -9,7 +9,7 @@
 	    <para>
 	    The module enables the handling of the "as-feature-event" event package (as
 	    defined by Broadsoft's
-	    <ulink url="http://community.polycom.com/polycom/attachments/polycom/VoIP/2234/1/DeviceFeatureKeySynchronizationFD.pdf">Device Feature Key Synchronization</ulink>
+	    <ulink url="https://h30434.www3.hp.com/psg/attachments/psg/Desk_IP_Conference_Phones/1740/1/DeviceFeatureKeySynchronizationFD.pdf">Device Feature Key Synchronization</ulink>
 	    protocol) by the presence module. This can be used to synchronize the status of
 	    features such as Do Not Disturb and different forwarding types between a SIP
 	    phone and a SIP server.

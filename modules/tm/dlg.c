@@ -138,7 +138,7 @@ int w_calculate_hooks(dlg_t* _d)
 /*
  * Create a new dialog - internal function
  */
-static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _turi, str* _ruri, struct socket_info* sock, dlg_t** _d)
+static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _turi, str* _ruri, const struct socket_info* sock, dlg_t** _d)
 {
 	dlg_t* res;
 
@@ -198,7 +198,7 @@ int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _tur
 /*
  * Create a new dialog (auto mode)
  */
-int new_auto_dlg_uac( str* _luri, str* _turi, str* _ruri, str *callid, struct socket_info* _sock, dlg_t** _d)
+int new_auto_dlg_uac( str* _luri, str* _turi, str* _ruri, str *callid, const struct socket_info* _sock, dlg_t** _d)
 {
 	str fromtag, clid;
 
@@ -689,10 +689,10 @@ void print_dlg(FILE* out, dlg_t* _d)
 			_d->rem_target.len,_d->rem_target.s);
 	fprintf(out, "state         : ");
 	switch(_d->state) {
-	case DLG_NEW:       fprintf(out, "DLG_NEW\n");       break;
-	case DLG_EARLY:     fprintf(out, "DLG_EARLY\n");     break;
-	case DLG_CONFIRMED: fprintf(out, "DLG_CONFIRMED\n"); break;
-	case DLG_DESTROYED: fprintf(out, "DLG_DESTROYED\n"); break;
+	CASE_FPRINTENUM(out, DLG_NEW);
+	CASE_FPRINTENUM(out, DLG_EARLY);
+	CASE_FPRINTENUM(out, DLG_CONFIRMED);
+	CASE_FPRINTENUM(out, DLG_DESTROYED);
 	}
 	print_rr(out, _d->route_set);
 	if (_d->hooks.request_uri)

@@ -68,6 +68,7 @@
 #include "../../dprint.h"
 #include "../../config.h"
 #include "../../parser/parser_f.h"
+#include "../../parser/msg_parser.h"
 #include "../../ut.h"
 #include "../../timer.h"
 #include "../../error.h"
@@ -112,14 +113,14 @@ char *tm_tag_suffix;
 static int picked_branch=-1;
 
 /* where to go if there is no positive reply */
-static int goto_on_negative=0;
+static struct script_route_ref *goto_on_negative = NULL;
 /* where to go on receipt of reply */
-static int goto_on_reply=0;
+static struct script_route_ref *goto_on_reply = NULL;
 
 /* currently processed branch */
 extern int _tm_branch_index;
 
-
+static struct sip_msg dummy_msg;
 
 /* returns the picked branch */
 int t_get_picked_branch(void)
@@ -138,46 +139,56 @@ int t_get_picked_branch(void)
 */
 
 
-void t_on_negative( unsigned int go_to )
+void t_on_negative( struct script_route_ref *ref )
 {
 	struct cell *t = get_t();
+	struct script_route_ref **holder;
 
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
 	 * in MODE_REQUEST T will be set only if the transaction was already
 	 * created; if not -> use the static variable */
-	if (!t || t==T_UNDEFINED )
-		goto_on_negative=go_to;
-	else
-		t->on_negative = go_to;
+	holder = (!t || t==T_UNDEFINED ) ? &goto_on_negative : &t->on_negative ;
+
+	/* if something already set, free it first */
+	if (*holder)
+		shm_free( *holder );
+
+	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
 }
 
 
-void t_on_reply( unsigned int go_to )
+void t_on_reply( struct script_route_ref *ref  )
 {
 	struct cell *t = get_t();
+
+	struct script_route_ref **holder;
 
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
 	 * in MODE_REQUEST T will be set only if the transaction was already
 	 * created; if not -> use the static variable */
-	if (!t || t==T_UNDEFINED ) {
-		goto_on_reply=go_to;
-	} else {
-		if (route_type==BRANCH_ROUTE) {
-			t->uac[_tm_branch_index].on_reply = go_to;
-		} else {
-			t->on_reply = go_to;
-		}
-	}
+	holder = (!t || t==T_UNDEFINED ) ? &goto_on_reply :
+		( route_type==BRANCH_ROUTE ?
+			&t->uac[_tm_branch_index].on_reply : &t->on_reply );
+
+	/* if something already set, free it first */
+	if (*holder)
+		shm_free( *holder );
+
+	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
 }
 
 
-unsigned int get_on_negative(void)
+struct script_route_ref *get_on_negative(void)
 {
-	return goto_on_negative;
+	struct script_route_ref *ref = goto_on_negative;
+	goto_on_negative = NULL;
+	return ref;
 }
-unsigned int get_on_reply(void)
+struct script_route_ref *get_on_reply(void)
 {
-	return goto_on_reply;
+	struct script_route_ref *ref = goto_on_reply;
+	goto_on_reply = NULL;
+	return ref;
 }
 
 void tm_init_tags(void)
@@ -284,12 +295,16 @@ inline static int update_totag_set(struct cell *t, struct sip_msg *ok)
 
 /*
  * Build and send an ACK to a negative reply
+ * On successful send:
+ *   - return 0
+ *   - populate @ack_buf, for callback purposes, which *must* be SHM freed!
  */
-static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
+static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch, str *ack_buf)
 {
 	str method = str_init(ACK);
 	str to;
-	str ack_buf;
+	struct usr_avp **backup_list;
+	int rc;
 
 	if(parse_headers(rpl,is_local(trans)?HDR_EOH_F:(HDR_TO_F|HDR_FROM_F),0)==-1
 	|| !rpl->to || !rpl->from ) {
@@ -299,10 +314,10 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	to.s=rpl->to->name.s;
 	to.len=rpl->to->len;
 
-	ack_buf.s = is_local(trans)?
-		build_dlg_ack(rpl, trans, branch, &to, (unsigned int*)&ack_buf.len):
-		build_local( trans, branch, &method, NULL, rpl, (unsigned int*)&ack_buf.len );
-	if (ack_buf.s==0) {
+	ack_buf->s = is_local(trans)?
+		build_dlg_ack(rpl, trans, branch, &to, (unsigned int*)&ack_buf->len):
+		build_local( trans, branch, &method, NULL, rpl, (unsigned int*)&ack_buf->len );
+	if (ack_buf->s==0) {
 		LM_ERR("failed to build ACK\n");
 		goto error;
 	}
@@ -310,21 +325,19 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	if (trans->uac[branch].br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 
-	if(SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf.s, ack_buf.len)==0){
-		/* successfully sent out */
-		if ( has_tran_tmcbs( trans, TMCB_MSG_SENT_OUT) ) {
-			set_extra_tmcb_params( &ack_buf, &trans->uac[branch].request.dst);
-			run_trans_callbacks( TMCB_MSG_SENT_OUT,
-				trans, trans->uas.request, 0, 0);
-		}
-	}
+	set_bavp_list(&trans->uac[branch].user_avps);
+	backup_list = set_avp_list( &trans->user_avps );
+
+	rc = SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf->s, ack_buf->len);
+
+	set_avp_list(backup_list);
+	reset_bavp_list();
 
 	tcp_no_new_conn = 0;
 
-	shm_free(ack_buf.s);
-
-	return 0;
+	return rc;
 error:
+	memset(ack_buf, 0, sizeof *ack_buf);
 	return -1;
 }
 
@@ -428,6 +441,22 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 	if(trans->uas.request && trans->uas.request->flags&tcp_no_new_conn_rplflag)
 		tcp_no_new_conn = 1;
 
+	if(ref_script_route_is_valid(tm_local_reply_route)) {
+		LM_DBG("Found Local-Reply Route...\n");
+		memset(&dummy_msg, 0, sizeof(struct sip_msg));
+		dummy_msg.buf = buf;
+		dummy_msg.len = len;
+
+		if (parse_msg(buf, len, &dummy_msg) == 0) {
+			LM_DBG("Parsed Message, executing Local-Reply Route "
+				"with Message...\n");
+			run_top_route(sroutes->request[tm_local_reply_route->idx],
+				&dummy_msg);
+		}
+		free_sip_msg(&dummy_msg);
+	}
+
+
 	if ( SEND_PR_BUFFER( rb, buf, len )==0 ) {
 		LM_DBG("reply sent out. buf=%p: %.9s..., "
 			"shmem=%p: %.9s\n", buf, buf, rb->buffer.s, rb->buffer.s );
@@ -498,6 +527,11 @@ static int _reply( struct cell *trans, struct sip_msg* p_msg,
 		}
 	}
 
+	if (has_tran_tmcbs(trans, TMCB_LOCAL_RESPONSE)) {
+		run_trans_callbacks(TMCB_LOCAL_RESPONSE,
+			trans, p_msg, 0, code);
+	}
+
 	/* check if the UAS retranmission port needs to be updated */
 	if ( (p_msg->msg_flags ^ trans->uas.request->msg_flags) & FL_FORCE_RPORT )
 		su_setport( &trans->uas.response.dst.to, p_msg->rcv.src_port );
@@ -524,7 +558,7 @@ static inline void faked_env( struct cell *t,struct sip_msg *msg)
 {
 	static struct cell *backup_t;
 	static struct usr_avp **backup_list;
-	static struct socket_info* backup_si;
+	static const struct socket_info* backup_si;
 	static int backup_route_type;
 
 	if (msg) {
@@ -561,7 +595,7 @@ static inline int run_failure_handlers(struct cell *t)
 	static struct sip_msg faked_req;
 	struct sip_msg *shmem_msg;
 	struct ua_client *uac;
-	int on_failure;
+	int on_failure_idx;
 	int old_route_type;
 
 	shmem_msg = t->uas.request;
@@ -569,14 +603,17 @@ static inline int run_failure_handlers(struct cell *t)
 
 	/* failure_route for a local UAC? */
 	if (!shmem_msg || REQ_LINE(shmem_msg).method_value==METHOD_CANCEL ) {
-		LM_WARN("no UAC or CANCEL support (%d, %d) \n",
-				t->on_negative, t->tmcb_hl.reg_types);
+		LM_WARN("no UAC or CANCEL support (%s, %d) \n",
+				ref_script_route_name(t->on_negative), t->tmcb_hl.reg_types);
 		return 0;
 	}
 
 	/* don't start faking anything if we don't have to */
-	if ( !has_tran_tmcbs( t, TMCB_ON_FAILURE) && !t->on_negative ) {
-		LM_WARN("no negative handler (%d, %d)\n",t->on_negative,
+	if ( !ref_script_route_check_and_update(t->on_negative) &&
+	!has_tran_tmcbs( t, TMCB_ON_FAILURE) ) {
+		LM_WARN("no failure route (%s/%d), callbacks (%d)\n",
+			ref_script_route_name(t->on_negative),
+			ref_script_route_idx(t->on_negative),
 			t->tmcb_hl.reg_types);
 		return 1;
 	}
@@ -593,17 +630,17 @@ static inline int run_failure_handlers(struct cell *t)
 		run_trans_callbacks( TMCB_ON_FAILURE, t, &faked_req,
 				uac->reply, uac->last_received);
 	}
-	if (t->on_negative) {
+	if (ref_script_route_is_valid(t->on_negative)) {
 		/* update flags in transaction if changed by callbacks */
 		shmem_msg->flags = faked_req.flags;
 		/* avoid recursion -- if failure_route forwards, and does not
 		 * set next failure route, failure_route will not be reentered
 		 * on failure */
-		on_failure = t->on_negative;
-		t->on_negative=0;
+		on_failure_idx = t->on_negative->idx;
+		t_on_negative(NULL);
 		/* run a reply_route action if some was marked */
 		swap_route_type(old_route_type, FAILURE_ROUTE);
-		run_top_route(sroutes->failure[on_failure], &faked_req);
+		run_top_route(sroutes->failure[on_failure_idx], &faked_req);
 		set_route_type(old_route_type);
 	}
 
@@ -1509,12 +1546,16 @@ int reply_received( struct sip_msg  *p_msg )
 	struct cell *t;
 	struct usr_avp **backup_list;
 	unsigned int has_reply_route;
-	int old_route_type;
+	int old_route_type, ack_sent = 0;
+	str ack_buf;
 
 	set_t(T_UNDEFINED);
 
 	/* make sure we know the associated transaction ... */
-	if (t_check(p_msg, &branch ) == -1) goto not_found;
+	switch (t_check(p_msg, &branch )) {
+		case -1: goto not_found;
+		case -2: return 0; /* reply forwarded elsewhere */
+	}
 
 	/*... if there is none, tell the core router to fwd statelessly */
 	t = get_t();
@@ -1555,12 +1596,12 @@ int reply_received( struct sip_msg  *p_msg )
 		reset_timer( &uac->request.fr_timer);
 	}
 
-	/* acknowledge negative INVITE replies (do it before detailed
+	/* acknowledge negative INVITE replies ASAP! (do it before detailed
 	 * on_reply processing, which may take very long, like if it
 	 * is attempted to establish a TCP connection to a fail-over dst */
 	if (is_invite(t) && ((msg_status >= 300) ||
 	(is_local(t) && !no_autoack(t) && msg_status >= 200) )) {
-		if (send_ack(p_msg, t, branch)!=0)
+		if (!(ack_sent = (send_ack(p_msg, t, branch, &ack_buf)>=0)))
 			LM_ERR("failed to send ACK (local=%s)\n", is_local(t)?"yes":"no");
 	}
 
@@ -1573,6 +1614,15 @@ int reply_received( struct sip_msg  *p_msg )
 	if (!is_local(t))
 		run_trans_callbacks( TMCB_RESPONSE_IN, t, t->uas.request, p_msg,
 			p_msg->REPLY_STATUS);
+
+	if (ack_sent) {
+		if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
+			set_extra_tmcb_params( &ack_buf, &t->uac[branch].request.dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT,
+				t, t->uas.request, 0, 0);
+		}
+		shm_free(ack_buf.s);
+	}
 
 	/* processing of on_reply block */
 	has_reply_route = (t->on_reply) || (t->uac[branch].on_reply);
@@ -1591,8 +1641,8 @@ int reply_received( struct sip_msg  *p_msg )
 
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* run block - first per branch and then global one */
-		if ( t->uac[branch].on_reply &&
-		(run_top_route(sroutes->onreply[t->uac[branch].on_reply],p_msg)
+		if ( ref_script_route_check_and_update(t->uac[branch].on_reply) &&
+		(run_top_route(sroutes->onreply[t->uac[branch].on_reply->idx],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
@@ -1602,7 +1652,8 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
-		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply],p_msg)
+		if ( ref_script_route_check_and_update(t->on_reply) &&
+		(run_top_route(sroutes->onreply[t->on_reply->idx],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
@@ -1738,6 +1789,11 @@ static int _reply_with_body( struct cell *trans, unsigned int code, str *text,
 		}
 	} else {
 		body_lump = 0;
+	}
+	if (has_tran_tmcbs(trans, TMCB_LOCAL_RESPONSE)) {
+		set_extra_tmcb_params(body, NULL);
+		run_trans_callbacks(TMCB_LOCAL_RESPONSE,
+			trans, p_msg, 0, code);
 	}
 
 	if(to_tag && to_tag->len) {

@@ -1,5 +1,3 @@
-# $Id$
-#
 # xmpp module makefile
 #
 #
@@ -9,14 +7,13 @@ include ../../Makefile.defs
 
 auto_gen=
 NAME=xmpp.so
-LIBS=
 
 ifeq ($(CROSS_COMPILE),)
-LIBS=-lexpat
+LIBS += -lexpat
 else
 # expat.h location
 DEFS+=-I$(LOCALBASE)/include
-LIBS=-L$(LOCALBASE)/lib -lexpat
+LIBS += -L$(LOCALBASE)/lib -lexpat
 endif
 
 include ../../Makefile.modules

@@ -65,18 +65,18 @@ int sca_set_called_line(struct sip_msg *msg, str *line);
 
 
 /* module exported commands */
-static cmd_export_t cmds[] ={
+static const cmd_export_t cmds[] ={
 	{"sca_set_calling_line", (cmd_function)sca_set_calling_line, {
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"sca_set_called_line",  (cmd_function)sca_set_called_line, {
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
 /* module exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"line_hash_size",                  INT_PARAM, &hash_size},
 	{"disable_dialog_support_for_sca",  INT_PARAM, &no_dialog_support},
 	{"call_info_timeout_notification",  INT_PARAM, &call_info_timeout_notification},
@@ -84,7 +84,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static module_dependency_t *get_deps_dialog_support(param_export_t *param)
+static module_dependency_t *get_deps_dialog_support(const param_export_t *param)
 {
 	int no_dialog_support = *(int *)param->param_pointer;
 
@@ -94,7 +94,7 @@ static module_dependency_t *get_deps_dialog_support(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "presence", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

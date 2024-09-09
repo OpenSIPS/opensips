@@ -33,6 +33,7 @@
 #include "../../pt.h"
 #include "../../sr_module.h"
 #include "../../net/net_tcp.h"
+#include "../../net/tcp_common.h"
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../socket_info.h"
@@ -47,8 +48,6 @@
 #include "proto_wss.h"
 #include "../proto_ws/ws_common_defs.h"
 #include "../tls_mgm/api.h"
-#include "../tls_mgm/tls_conn_ops.h"
-#include "../tls_mgm/tls_conn_server.h"
 
 struct tls_mgm_binds tls_mgm_api;
 
@@ -62,6 +61,7 @@ static struct ws_req wss_current_req;
 static int wss_hs_read_tout = 100;
 static int wss_hs_tls_tout = 100;
 static int wss_send_tout = 100;
+static int wss_require_origin = 1;
 
 /* check the SSL certificate when comes to TCP conn reusage */
 static int cert_check_on_conn_reusage = 0;
@@ -76,9 +76,10 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #define _ws_common_tcp_current_req tcp_current_req
 #define _ws_common_current_req wss_current_req
 #define _ws_common_max_msg_chunks wss_max_msg_chunks
-#define _ws_common_read tls_read
+#define _ws_common_read(c, r) tls_mgm_api.tls_read((c), (r))
 #define _ws_common_writev wss_raw_writev
 #define _ws_common_read_tout wss_hs_read_tout
+#define _ws_common_require_origin wss_require_origin
 /*
  * the timeout is only used by the _ws_common_writev function
  * but in our case, the timeout specified in the TLS MGM
@@ -100,19 +101,21 @@ extern int is_tcp_main;
 /* module  tracing parameters */
 static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
-static int trace_filter_route_id = -1;
+static struct script_route_ref *trace_filter_route_ref = NULL;
 /**/
 
 static int mod_init(void);
 static int proto_wss_init(struct proto_info *pi);
 static int proto_wss_init_listener(struct socket_info *si);
-static int proto_wss_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id);
+static int proto_wss_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id);
 static int wss_read_req(struct tcp_connection* con, int* bytes_read);
 static int wss_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
 static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
+static int tls_conn_extra_match(struct tcp_connection *c, void *id);
 
 static mi_response_t *wss_trace_mi(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -122,16 +125,18 @@ static mi_response_t *wss_trace_mi_1(const mi_params_t *params,
 
 static int wss_port = WSS_DEFAULT_PORT;
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_wss_init, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	/* XXX: should we drop the ws prefix? */
 	{ "wss_port",           INT_PARAM, &wss_port           },
 	{ "wss_max_msg_chunks", INT_PARAM, &wss_max_msg_chunks },
 	{ "wss_resource",       STR_PARAM, &wss_resource.s     },
 	{ "wss_send_timeout",   INT_PARAM, &wss_send_tout      },
+	{ "require_origin",     INT_PARAM, &wss_require_origin },
 	{ "wss_handshake_timeout", INT_PARAM, &wss_hs_read_tout},
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "wss_tls_handshake_timeout",  INT_PARAM, &wss_hs_tls_tout           },
@@ -141,7 +146,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -151,7 +156,7 @@ static dep_export_t deps = {
 	},
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "wss_trace", 0, 0, 0, {
 		{wss_trace_mi, {0}},
 		{wss_trace_mi_1, {"trace_mode", 0}},
@@ -197,14 +202,14 @@ static int proto_wss_init(struct proto_info *pi)
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
-	pi->net.read			= (proto_net_read_f)wss_read_req;
+	pi->net.stream.read		= wss_read_req;
 
-	pi->net.conn_init		= wss_conn_init;
-	pi->net.conn_clean		= ws_conn_clean;
+	pi->net.stream.conn.init	= wss_conn_init;
+	pi->net.stream.conn.clean	= ws_conn_clean;
 	if (cert_check_on_conn_reusage)
-		pi->net.conn_match		= tls_conn_extra_match;
+		pi->net.stream.conn.match	= tls_conn_extra_match;
 	else
-		pi->net.conn_match		= NULL;
+		pi->net.stream.conn.match	= NULL;
 	pi->net.report			= wss_report;
 
 	return 0;
@@ -249,20 +254,18 @@ static int mod_init(void)
 
 	*trace_is_on = trace_is_on_tmp;
 	if ( trace_filter_route ) {
-		trace_filter_route_id =
-			get_script_route_ID_by_name( trace_filter_route,
-				sroutes->request, RT_NO);
+		trace_filter_route_ref =
+			ref_script_route_by_name( trace_filter_route,
+				sroutes->request, RT_NO, REQUEST_ROUTE, 0);
 	}
-
-
 
 	return 0;
 }
 
-
 static int wss_conn_init(struct tcp_connection* c)
 {
 	struct ws_data *d;
+	struct tls_domain *dom;
 	int ret;
 
 	/* allocate the tcp_data and the array of chunks as a single mem chunk */
@@ -279,7 +282,7 @@ static int wss_conn_init(struct tcp_connection* c)
 		d->dest = t_dst;
 		d->net_trace_proto_id = net_trace_proto_id;
 		d->trace_is_on = trace_is_on;
-		d->trace_route_id = trace_filter_route_id;
+		d->trace_route_ref = trace_filter_route_ref;
 	}
 
 
@@ -290,7 +293,20 @@ static int wss_conn_init(struct tcp_connection* c)
 
 	c->proto_data = (void*)d;
 
-	ret = tls_conn_init(c, &tls_mgm_api);
+	if ( c->flags&F_CONN_ACCEPTED ) {
+		LM_DBG("looking up TLS server "
+			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
+		dom = tls_mgm_api.find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
+	} else {
+		dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+	}
+	if (!dom) {
+		LM_ERR("no TLS %s domain found\n",
+				(c->flags&F_CONN_ACCEPTED?"server":"client"));
+		return -1;
+	}
+
+	ret = tls_mgm_api.tls_conn_init(c, dom);
 	if (ret < 0) {
 		c->proto_data = NULL;
 		LM_ERR("Cannot initiate the conn\n");
@@ -302,6 +318,8 @@ static int wss_conn_init(struct tcp_connection* c)
 
 static void ws_conn_clean(struct tcp_connection* c)
 {
+	struct tls_domain *dom;
+
 	if (c->proto_data) {
 
 		if (c->state == S_CONN_OK && !is_tcp_main) {
@@ -322,9 +340,19 @@ static void ws_conn_clean(struct tcp_connection* c)
 
 	}
 
-	tls_conn_clean(c, &tls_mgm_api);
+	tls_mgm_api.tls_conn_clean(c, &dom);
+
+	if (!dom)
+		LM_ERR("Failed to retrieve the tls_domain pointer in the SSL struct\n");
+	else
+		tls_mgm_api.release_domain(dom);
 }
 
+
+static int tls_conn_extra_match(struct tcp_connection *c, void *id)
+{
+	return tls_mgm_api.tls_conn_extra_match(c, id);
+}
 
 static int proto_wss_init_listener(struct socket_info *si)
 {
@@ -360,62 +388,64 @@ static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 
 
 /*! \brief Finds a tcpconn & sends on it */
-static int proto_wss_send(struct socket_info* send_sock,
-											char* buf, unsigned int len,
-											union sockaddr_union* to, int id)
+static int proto_wss_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id)
 {
 	struct tcp_connection *c;
+	struct tcp_conn_profile prof;
 	struct tls_domain *dom;
 	struct timeval get;
 	struct ip_addr ip;
-	int port = 0;
-	int fd, n;
+	int port = 0, fd, n, matched;
 	struct ws_data* d;
 
-	reset_tcp_vars(tcpthreshold);
-	start_expire_timer(get,tcpthreshold);
+	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
+
+	reset_tcp_vars(prof.send_threshold);
+	start_expire_timer(get,prof.send_threshold);
 
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
 		dom = (cert_check_on_conn_reusage==0)?
 			NULL : tls_mgm_api.find_client_domain( &ip, port);
-		n = tcp_conn_get(id, &ip, port, PROTO_WSS, dom, &c, &fd);
+		n = tcp_conn_get(id, &ip, port, PROTO_WSS, dom, &c, &fd, send_sock);
 		if (dom)
 			tls_mgm_api.release_domain(dom);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd);
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
-		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+		get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 		return -1;
 	}
 
 	if (n<0) {
 		/* error during conn get, return with error too */
 		LM_ERR("failed to acquire connection\n");
-		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+		get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 		return -1;
 	}
 
 	/* was connection found ?? */
 	if (c==0) {
-		if (tcp_no_new_conn) {
+		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
 			return -1;
-		}
+
 		if (!to) {
 			LM_ERR("Unknown destination - cannot open new tcp connection\n");
 			return -1;
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=ws_connect(send_sock, to, &fd))==0) {
+		if ((c=ws_connect(send_sock, to, &prof, &fd))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
 		goto send_it;
 	}
-	get_time_difference(get, tcpthreshold, tcp_timeout_con_get);
+	get_time_difference(get, prof.send_threshold, tcp_timeout_con_get);
 
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
@@ -430,8 +460,8 @@ send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
 	n = ws_req_write(c, fd, buf, len);
-	stop_expire_timer(get, tcpthreshold, "WSS ops",buf,(int)len,1);
-	tcp_conn_set_lifetime( c, tcp_con_lifetime);
+	stop_expire_timer(get, prof.send_threshold, "WSS ops",buf,(int)len,1);
+	tcp_conn_reset_lifetime(c);
 
 	/* only here we will have all tracing data TLS + WS */
 	d = c->proto_data;
@@ -465,8 +495,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, 0);
 	return n;
@@ -490,7 +520,7 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 	struct ws_data* d;
 
 	/* we need to fix the SSL connection before doing anything */
-	if (tls_fix_read_conn(con, t_dst) < 0) {
+	if (tls_mgm_api.tls_fix_read_conn(con, con->fd, 0, t_dst, 1) < 0) {
 		LM_ERR("cannot fix read connection\n");
 		if ( (d=con->proto_data) && d->dest && d->tprot ) {
 			if ( d->message ) {
@@ -559,7 +589,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #ifndef TLS_DONT_WRITE_FRAGMENTS
 	lock_get(&c->write_lock);
 	for (i = 0; i < iovcnt; i++) {
-		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len,
+		n = tls_mgm_api.tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len,
 				wss_hs_tls_tout, wss_send_tout, t_dst);
 		if (n < 0) {
 			ret = -1;
@@ -582,7 +612,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 		n += iov[i].iov_len;
 	}
 	lock_get(&c->write_lock);
-	n = tls_blocking_write(c, fd, buf, n,
+	n = tls_mgm_api.tls_blocking_write(c, fd, buf, n,
 				wss_hs_tls_tout, wss_send_tout, t_dst);
 #endif /* TLS_DONT_WRITE_FRAGMENTS */
 

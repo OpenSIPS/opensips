@@ -1,7 +1,7 @@
 <!-- SQL Cacher Module User's Guide -->
 
 <chapter>
-    
+
     <title>&adminguide;</title>
 
     <section id="overview" xreflabel="Overview">
@@ -133,7 +133,7 @@
 		<example>
 		<title><varname>cache_table</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "cache_table",
 "id=caching_name
 db_url=mysql://root:opensips@localhost/opensips_2_2
@@ -142,7 +142,7 @@ table=table_name
 key=column_name_0
 columns=column_name_1 column_name_2 column_name_3
 on_demand=0")
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -160,9 +160,9 @@ on_demand=0")
 		<example>
 		<title><varname>spec_delimiter</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "spec_delimiter", "\n")
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -180,9 +180,9 @@ modparam("sql_cacher", "spec_delimiter", "\n")
 		<example>
 		<title><varname>pvar_delimiter</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "pvar_delimiter", " ")
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -200,9 +200,9 @@ modparam("sql_cacher", "pvar_delimiter", " ")
 		<example>
 		<title><varname>columns_delimiter</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "columns_delimiter", ",")
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -212,7 +212,7 @@ modparam("sql_cacher", "columns_delimiter", ",")
 		<para>
 		The number of rows to be fetched into &osips; private memory in one chunk from
 		the SQL database driver. When querying large tables, adjust this parameter
-		accordingly to avoid the filling of &osips; private memory. 
+		accordingly to avoid the filling of &osips; private memory.
 		</para>
 		<para>
 		The default value is <quote>100</quote>.
@@ -220,9 +220,9 @@ modparam("sql_cacher", "columns_delimiter", ",")
 		<example>
 		<title><varname>sql_fetch_nr_rows</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -240,9 +240,9 @@ modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
 		<example>
 		<title><varname>full_caching_expire</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "full_caching_expire", 3600)
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -259,12 +259,35 @@ modparam("sql_cacher", "full_caching_expire", 3600)
 		<example>
 		<title><varname>reload_interval</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "reload_interval", 5)
-   
+
 </programlisting>
 	    </example>
 	</section>
+
+	<section id="param_bigint_to_str" xreflabel="bigint_to_str">
+		<title><varname>bigint_to_str</varname> (integer)</title>
+		<para>
+		Controls bigint conversion.
+		By default bigint values are returned as int.
+		If the value stored in bigint is out of the int range,
+		by enabling bigint to string conversion,
+		the bigint value will be returned as string.
+		</para>
+		<para>
+		The default value is <quote>0</quote> (disabled).
+		</para>
+		<example>
+		<title><varname>bigint_to_str</varname> parameter usage</title>
+		<programlisting format="linespecific">
+
+modparam("sql_cacher", "bigint_to_str", 1)
+
+</programlisting>
+	    </example>
+	</section>
+
 </section>
 
 <section id="exported_functions" xreflabel="exported_functions">
@@ -279,7 +302,8 @@ modparam("sql_cacher", "reload_interval", 5)
 	<section id="mi_sql_cacher_reload" xreflabel="sql_cacher_reload">
 		<title><function moreinfo="none">sql_cacher_reload</function></title>
 		<para>
-			Reloads the entire SQL table in cache in <emphasis>full caching</emphasis> mode.
+			Reloads the entire SQL table in cache or the single key (if key provided) in
+			<emphasis>full caching</emphasis> mode.
 		</para>
 		<para>
 			Reloads the given key or invalidates all the keys in cache in <emphasis>on demand</emphasis> mode.
@@ -290,8 +314,7 @@ modparam("sql_cacher", "reload_interval", 5)
 				<emphasis>id</emphasis> - the caching entry's id
 			</para></listitem>
 			<listitem><para>
-				<emphasis>key</emphasis> (optional) - the specific key to be reloaded, 
-				only makes sense in <emphasis>on demand</emphasis> mode.
+				<emphasis>key</emphasis> (optional) - the specific key to be reloaded.
 			</para></listitem>
 		</itemizedlist>
 		<example>
@@ -348,7 +371,7 @@ $avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
 	This section provides an usage example for the caching of an SQL table.
 	</para>
 	<para>
-	Suppose one in interested in caching the columns: <quote>host_name</quote>, 
+	Suppose one in interested in caching the columns: <quote>host_name</quote>,
 	<quote>reply_code</quote>, <quote>flags</quote> and <quote>next_domain</quote>
 	 from the <quote>carrierfailureroute</quote> table of the &osips; database.
 	</para>
@@ -368,7 +391,7 @@ $avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
 		</programlisting>
 	</example>
 	<para>
-		In the first place, the details of the caching must be provided by setting 
+		In the first place, the details of the caching must be provided by setting
 		the module parameter <quote>cache_table</quote> in the &osips; configuration script.
 	</para>
 	<example>
@@ -402,4 +425,61 @@ xlog("host name is: $sql_cached_value(carrier_fr_caching:host_name:2)");
 	</example>
 </section>
 
+
+	<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Exported Status/Report Identifiers</title>
+
+	<para>
+	The module provides the "sql_cacher" Status/Report group, where each
+	full cache is defined as a separate SR identifier. NOTE that there
+	are no identifiers created for the on-demand caches.
+	</para>
+	<section id="sr_id_cache_entry_id" xreflabel="cache_entry_id">
+	<title><varname>[cache_entry_id]</varname></title>
+	<para>
+	The status of these identifiers reflects the readiness/status of the
+	cached data (if available or not when being loaded from DB):
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		<emphasis>-2</emphasis> - no data at all (initial status)
+		</para></listitem>
+		<listitem><para>
+		<emphasis>-1</emphasis> - no data, initial loading in progress
+		</para></listitem>
+		<listitem><para>
+		<emphasis>1</emphasis> - data loaded, partition ready
+		</para></listitem>
+		<listitem><para>
+		<emphasis>2</emphasis> - data available, a reload in progress
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	In terms of reports/logs, the following events will be reported:
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		starting DB data loading
+		</para></listitem>
+		<listitem><para>
+		DB data loading failed, discarding
+		</para></listitem>
+		<listitem><para>
+		DB data loading successfully completed
+		</para></listitem>
+		<listitem><para>
+		N records loaded)
+		</para></listitem>
+	</itemizedlist>
+	</section>
+
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>https://www.opensips.org/Documentation/Interface-StatusReport-3-3</ulink>.
+	</para>
+	</section>
+
+
 </chapter>
+

@@ -1,0 +1,55 @@
+From 911c4519ef921a3e50e5a46cbe958ced8a528c3e Mon Sep 17 00:00:00 2001
+From: Eric Blankenhorn <eric@wolfssl.com>
+Date: Mon, 18 Sep 2023 16:19:22 -0500
+Subject: [PATCH] Fix writedup rng leak
+
+---
+ src/internal.c | 2 ++
+ src/ssl.c      | 7 +++++++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/src/internal.c b/src/internal.c
+index 930769152..46e26a313 100644
+--- a/src/internal.c
++++ b/src/internal.c
+@@ -7210,6 +7210,8 @@ void SSL_ResourceFree(WOLFSSL* ssl)
+     if (ssl->options.weOwnRng) {
+         wc_FreeRng(ssl->rng);
+         XFREE(ssl->rng, ssl->heap, DYNAMIC_TYPE_RNG);
++        ssl->rng = NULL;
++        ssl->options.weOwnRng = 0;
+     }
+     FreeSuites(ssl);
+     FreeHandshakeHashes(ssl);
+diff --git a/src/ssl.c b/src/ssl.c
+index 8d946f07b..a0f4a5fc5 100644
+--- a/src/ssl.c
++++ b/src/ssl.c
+@@ -731,6 +731,8 @@ void FreeWriteDup(WOLFSSL* ssl)
+ */
+ static int DupSSL(WOLFSSL* dup, WOLFSSL* ssl)
+ {
++    word16 tmp_weOwnRng;
++
+     /* shared dupWrite setup */
+     ssl->dupWrite = (WriteDup*)XMALLOC(sizeof(WriteDup), ssl->heap,
+                                        DYNAMIC_TYPE_WRITEDUP);
+@@ -747,6 +749,8 @@ static int DupSSL(WOLFSSL* dup, WOLFSSL* ssl)
+     ssl->dupWrite->dupCount = 2;    /* both sides have a count to start */
+     dup->dupWrite = ssl->dupWrite; /* each side uses */
+ 
++    tmp_weOwnRng = dup->options.weOwnRng;
++
+     /* copy write parts over to dup writer */
+     XMEMCPY(&dup->specs,   &ssl->specs,   sizeof(CipherSpecs));
+     XMEMCPY(&dup->options, &ssl->options, sizeof(Options));
+@@ -769,6 +773,9 @@ static int DupSSL(WOLFSSL* dup, WOLFSSL* ssl)
+     dup->truncated_hmac = ssl->truncated_hmac;
+ #endif
+ 
++    /* Restore rng option */
++    dup->options.weOwnRng = tmp_weOwnRng;
++
+     /* unique side dup setup */
+     dup->dupSide = WRITE_DUP_SIDE;
+     ssl->dupSide = READ_DUP_SIDE;

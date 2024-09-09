@@ -98,7 +98,7 @@ int init_ipc(void)
 
 int create_ipc_pipes( int proc_no )
 {
-	int i;
+	int optval, i;
 
 	for( i=0 ; i<proc_no ; i++ ) {
 		if (pipe(pt[i].ipc_pipe_holder)<0) {
@@ -107,11 +107,39 @@ int create_ipc_pipes( int proc_no )
 			return -1;
 		}
 
-		if (pipe(pt[i].ipc_sync_pipe_holder)<0) {
-			LM_ERR("failed to create IPC sync pipe for process %d, err %d/%s\n",
-				i, errno, strerror(errno));
+		/* make writing fd non-blocking */
+		optval = fcntl( pt[i].ipc_pipe_holder[1], F_GETFL);
+		if (optval == -1) {
+			LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 			return -1;
 		}
+
+		if (fcntl(pt[i].ipc_pipe_holder[1], F_SETFL, optval|O_NONBLOCK) == -1){
+			LM_ERR("set non-blocking write failed: (%d) %s\n",
+				errno, strerror(errno));
+			return -1;
+		}
+
+
+		if (pipe(pt[i].ipc_sync_pipe_holder)<0) {
+			LM_ERR("failed to create IPC sync pipe for process %d, "
+				"err %d/%s\n", i, errno, strerror(errno));
+			return -1;
+		}
+
+		/* make writing fd non-blocking */
+		optval = fcntl( pt[i].ipc_sync_pipe_holder[1], F_GETFL);
+		if (optval == -1) {
+			LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
+			return -1;
+		}
+
+		if (fcntl(pt[i].ipc_sync_pipe_holder[1], F_SETFL, optval|O_NONBLOCK) == -1){
+			LM_ERR("set non-blocking write failed: (%d) %s\n",
+				errno, strerror(errno));
+			return -1;
+		}
+
 	}
 	return 0;
 }
@@ -152,7 +180,7 @@ ipc_handler_type ipc_register_handler( ipc_handler_f *hdl, char *name)
 }
 
 
-static inline int __ipc_send_job(int fd, ipc_handler_type type,
+static inline int __ipc_send_job(int fd, int dst_proc, ipc_handler_type type,
 												void *payload1, void *payload2)
 {
 	ipc_job job;
@@ -160,6 +188,7 @@ static inline int __ipc_send_job(int fd, ipc_handler_type type,
 
 	// FIXME - we should check if the destination process really listens
 	// for read, otherwise we may end up filling in the pipe and block
+	memset(&job, 0, sizeof job);
 
 	job.snd_proc = (short)process_no;
 	job.handler_type = type;
@@ -167,13 +196,23 @@ static inline int __ipc_send_job(int fd, ipc_handler_type type,
 	job.payload2 = payload2;
 
 again:
-	// TODO - should we do this non blocking and discard if we block ??
+	/* The per-proc IPC write fds are sent to non-blocking (to be sure we
+	 * do not escalate into a global blocking if a single process got stuck.
+	 * In such care the EAGAIN or EWOULDBLOCK will be thrown and we will
+	 * handle as generic error, nothing special to do.
+	 */
 	n = write(fd, &job, sizeof(job) );
 	if (n<0) {
-		if (errno==EINTR)
+		if (errno==EAGAIN || errno==EWOULDBLOCK)
+			LM_CRIT("blocking detected while sending job type %d[%s] on %d "
+				" to proc id %d/%d [%s]\n", type, ipc_handlers[type].name, fd,
+				dst_proc, (dst_proc==-1)?-1:pt[dst_proc].pid ,
+				(dst_proc==-1)?"n/a":pt[dst_proc].desc);
+		else if (errno==EINTR)
 			goto again;
-		LM_ERR("sending job type %d[%s] on %d failed: %s\n",
-			type, ipc_handlers[type].name, fd, strerror(errno));
+		else
+			LM_ERR("sending job type %d[%s] on %d failed: %s\n",
+				type, ipc_handlers[type].name, fd, strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -181,22 +220,24 @@ again:
 
 int ipc_send_job(int dst_proc, ipc_handler_type type, void *payload)
 {
-	return __ipc_send_job(IPC_FD_WRITE(dst_proc), type, payload, NULL);
+	return __ipc_send_job(IPC_FD_WRITE(dst_proc), dst_proc,
+		type, payload, NULL);
 }
 
 int ipc_dispatch_job(ipc_handler_type type, void *payload)
 {
-	return __ipc_send_job(ipc_shared_pipe[1], type, payload, NULL);
+	return __ipc_send_job(ipc_shared_pipe[1], -1, type, payload, NULL);
 }
 
 int ipc_send_rpc(int dst_proc, ipc_rpc_f *rpc, void *param)
 {
-	return __ipc_send_job(IPC_FD_WRITE(dst_proc), ipc_rpc_type, rpc, param);
+	return __ipc_send_job(IPC_FD_WRITE(dst_proc), dst_proc,
+		ipc_rpc_type, rpc, param);
 }
 
 int ipc_dispatch_rpc( ipc_rpc_f *rpc, void *param)
 {
-	return __ipc_send_job(ipc_shared_pipe[1], ipc_rpc_type, rpc, param);
+	return __ipc_send_job(ipc_shared_pipe[1], -1, ipc_rpc_type, rpc, param);
 }
 
 int ipc_send_sync_reply(int dst_proc, void *param)
@@ -249,8 +290,14 @@ void ipc_handle_job(int fd)
 		return;
 	}
 
+	/* suppress the E_CORE_LOG event for the below log while handling
+	 * the event itself */
+	suppress_proc_log_event();
+
 	LM_DBG("received job type %d[%s] from process %d\n",
 		job.handler_type, ipc_handlers[job.handler_type].name, job.snd_proc);
+
+	reset_proc_log_event();
 
 	/* custom handling for RPC type */
 	if (job.handler_type==ipc_rpc_type) {

@@ -58,7 +58,7 @@
 		</listitem>
 		<listitem>
 		<para>
-			<emphasis>Participants Metadata</emphasis> - an XML-formated
+			<emphasis>Participants Metadata</emphasis> - an XML-formatted
 			document that contains information about the participants. The
 			structure of the document is detailed in <ulink
 				url='https://tools.ietf.org/html/rfc7865'>RFC 7865</ulink>.
@@ -84,10 +84,12 @@
 	<para>
 		Since &osips; is a SIP Proxy, it does not have any Media Capabilities
 		by itself. Thus we need to rely on a different Media Server to capture
-		the RTP traffic and fork it to the SRS. This module currently uses the
-		<ulink url='rtpproxy'>RTPProxy module</ulink> in &osips; to instruct
-		the <ulink url='http://www.rtpproxy.org/'>RTPProxy Media
-			Server</ulink> to fork the RTP media to the SRS.
+		the RTP traffic and fork it to the SRS. The current implementation
+		supports both the <ulink url='http://www.rtpproxy.org/'>RTPProxy</ulink>
+		(through the <ulink url='rtpproxy'>RTPProxy module</ulink>) and
+		<ulink url='https://github.com/sipwise/rtpengine'>RTPEngine</ulink>
+		(through the <ulink url='rtpengine'>RTEngine module</ulink>) Media
+		Servers.
 	</para>
 	</section>
 
@@ -96,12 +98,12 @@
 	<para>
 		The <emphasis>siprec</emphasis> module supports failover between
 		multiple SRS servers - when calling the <emphasis><xref
-				linkend="func_siprec_start_recording"/></emphasis> function, one
-		can provision more SRS URIs, separated by comma. In this case, &osips;
+		linkend="func_siprec_start_recording"/></emphasis> function, one
+		can provision multiple SRS URIs, separated by comma. In this case, &osips;
 		will try to use them in the same order specified, one by one, until
 		either one of them responds with a positive reply (200 OK), or the
 		response code is one of the codes matched by the <emphasis><xref
-				linkend="param_skip_failover_codes"/></emphasis> regular expression.
+		linkend="param_skip_failover_codes"/></emphasis> regular expression.
 		In the latter case the call is not recorded at all.
 	</para>
 	</section>
@@ -135,7 +137,7 @@
 		<para>
 			<emphasis>Cannot handle Recording Sessions initiated by
 				SRS</emphasis> - we do not support the scenario when an SRS
-			suddently decides to record a call in the middle of the dialog.
+			suddenly decides to record a call in the middle of the dialog.
 		</para>
 		</listitem>
 		<listitem>
@@ -168,7 +170,8 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>RTPProxy</emphasis> - RTPProxy module used for controlling the media forked.
+				<emphasis>RTP_Relay</emphasis> - RTP Relay module used for controlling the
+				Media Servers that will fork the media.
 			</para>
 			</listitem>
 			<listitem>
@@ -198,47 +201,6 @@
 	
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section id="param_media_port_min" xreflabel="media_port_min">
-		<title><varname>media_port_min</varname> (integer)</title>
-		<para>
-			The minimum value of the port used in the SDP sent to the SRS.
-			This value should correlate to the port-range configured in the
-			RTPProxy Media Server.
-		</para>
-		
-		<para>
-		<emphasis>Default value is <quote>35000</quote>.</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>media_port_min</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siprec", "media_port_min", 10000)
-...
-		</programlisting>
-		</example>
-		</section>
-
-		<section id="param_media_port_max" xreflabel="media_port_max">
-		<title><varname>media_port_max</varname> (integer)</title>
-		<para>
-			The maximum value of the port used in the SDP sent to the SRS.
-			This value should correlate to the port-range configured in the
-			RTPProxy Media Server.
-		</para>
-		
-		<para>
-		<emphasis>Default value is <quote>65000</quote>.</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>media_port_max</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siprec", "media_port_max", 20000)
-...
-		</programlisting>
-		</example>
-		</section>
 
 		<section id="param_skip_failover_codes" xreflabel="skip_failover_codes">
 		<title><varname>skip_failover_codes</varname> (string)</title>
@@ -269,19 +231,64 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 		</section>
 	</section>
 
+	<section id="exported_events" xreflabel="Exported Events">
+		<title>Exported Events</title>
+		<section id="event_E_SIPREC_START" xreflabel="E_SIPREC_START">
+			<title>
+				<function moreinfo="none">E_SIPREC_START</function>
+			</title>
+			<para>
+				This event is raised when a SIPREC call is established and a call
+				starts to be recorded.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>dlg_id</emphasis> - dialog id (<quote>did</quote>)
+					of the call being recorded;
+				</para></listitem>
+				<listitem><para>
+					<emphasis>dlg_callid</emphasis> - Call-Id of the call being
+					recorded;
+				</para></listitem>
+				<listitem><para>
+					<emphasis>callid</emphasis> - Call-Id (B2B id) of the
+					SIPREC call;
+				</para></listitem>
+				<listitem><para>
+					<emphasis>session_id</emphasis> - SIPREC UUID of the recording call;
+				</para></listitem>
+				<listitem><para>
+					<emphasis>server</emphasis> - the SIPREC server handing this call;
+				</para></listitem>
+			</itemizedlist>
+		</section>
+
+		<section id="event_E_SIPREC_STOP" xreflabel="E_SIPREC_STOP">
+			<title>
+				<function moreinfo="none">E_SIPREC_STOP</function>
+			</title>
+			<para>
+				This event is raised when a SIPREC call is terminated.
+			</para>
+			<para>This event exposes the same parameters as the
+			<xref linkend="event_E_SIPREC_START"/> event.
+			</para>
+		</section>
+	</section>
+
 	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 		<section id="func_siprec_start_recording" xreflabel="siprec_start_recording()">
 			<title>
-			<function moreinfo="none">siprec_start_recording(srs, [group], [caller],
-				[callee], [rtpproxy_sock], [media_ip], [headers])</function>
+			<function moreinfo="none">siprec_start_recording(srs)</function>
 			</title>
 			<para>
 				Calling this function on an initial
-				<emphasis>INVITE</emphasis> engages call recording to SRSs for
+				<emphasis>INVITE</emphasis> engages call recording to SRS(s) for
 				that call. Note that it does not necessary mean that the call
 				will be recorded - it just means that &osips; will query
-				instruct the SRS that a new call has sterted, but the SRS
+				instruct the SRS that a new call has started, but the SRS
 				might decide that the recording is disabled for those
 				participants.
 			</para>
@@ -298,39 +305,6 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 					URIs. These URIs are used in the order specified. See
 					<xref linkend="siprec_srs_failover"/> for more
 					information.
-				</para></listitem>
-				<listitem><para>
-					<emphasis>group</emphasis> (string, optional) - an opaque values
-					used by the SIPREC protocol to group calls in certain
-					profiles.
-				</para></listitem>
-				<listitem><para>
-					<emphasis>caller</emphasis> (string, optional) - an XML block
-					containing information about the caller. If absent, the
-					<emphasis>From</emphasis> header is used to build the value from.
-				</para></listitem>
-				<listitem><para>
-					<emphasis>callee</emphasis> (string, optional) - an XML block
-					containing information about the callee. If absent, the
-					<emphasis>To</emphasis> header is used to build the value from.
-				</para></listitem>
-				<listitem><para>
-					<emphasis>rtpproxy_sock</emphasis> (string, optional) - the
-					RTPProxy soscket used for this call. If absent, the rtpproxy
-					module will try to detect the proxy used for the initial call,
-					based on the default set provisioned in the
-					<emphasis>rtpproxy</emphasis> module.
-				</para></listitem>
-				<listitem><para>
-					<emphasis>media_ip</emphasis> (string, optional) - the IP that
-					RTPProxy will be streaming media from. If absent
-					 <emphasis>127.0.0.1</emphasis> will be used.
-				</para></listitem>
-				<listitem><para>
-					<emphasis>headers</emphasis> (string, optional) - extra headers
-					that are to be added in the initial request towards the SRS.
-					<emphasis>NOTE:</emphasis> headers must be separated by
-					<emphasis>\r\n</emphasis> and must end with <emphasis>\r\n</emphasis>.
 				</para></listitem>
 				</itemizedlist>
 			</para>
@@ -375,7 +349,8 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	$xml(caller_xml) = "&lt;nameID&gt;&lt;/nameID&gt;";
 	$xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:5090";
 	$xml(caller_xml/nameID) = "&lt;name&gt;test&lt;/name&gt;";
-	siprec_start_recording($var(srs),,$xml(caller_xml/nameID));
+	$siprec(caller) = $xml(caller_xml/nameID);
+	siprec_start_recording($var(srs));
 	...
 	</programlisting>
 			</example>
@@ -384,12 +359,177 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 			<title>Use <function>siprec_start_recording()</function> function with custom headers</title>
 			<programlisting format="linespecific">
 	...
-	siprec_start_recording($var(srs),,,,,,"X-MY-CUSTOM_HDR: 1\r\n");
+	$siprec(headers) = "X-MY-CUSTOM_HDR: 1\r\n";
+	siprec_start_recording($var(srs));
+	...
+	</programlisting>
+			</example>
+
+			<example>
+			<title>Use <function>siprec_start_recording()</function> function with custom group and session extensions</title>
+			<programlisting format="linespecific">
+	...
+	$var(temp) = "<callcenterID> 17</callcenterID>";
+	$siprec(group_custom_extension) = $var(temp);
+	$siprec(session_custom_extension) = "<callcenterCode>dfgh3q45gsdfty5</callcenterCode>";
+
+	siprec_start_recording($var(srs));
+	...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_siprec_pause_recording" xreflabel="siprec_pause_recording()">
+			<title>
+			<function moreinfo="none">siprec_pause_recording()</function>
+			</title>
+			<para>
+				Pauses the recording for the ongoing call. Should be called after
+				the dialog has matched.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<example>
+			<title>Use <function>siprec_pause_recording()</function> </title>
+			<programlisting format="linespecific">
+	...
+	if (has_totag() &amp;&amp; is_method("INVITE")) {
+		if (is_audio_on_hold())
+			siprec_pause_recording();
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_siprec_resume_recording" xreflabel="siprec_resume_recording()">
+			<title>
+			<function moreinfo="none">siprec_resume_recording()</function>
+			</title>
+			<para>
+				Resumes the recording for the ongoing call. Should be called after
+				the dialog has matched.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<example>
+			<title>Use <function>siprec_resume_recording()</function> </title>
+			<programlisting format="linespecific">
+	...
+	if (has_totag() &amp;&amp; is_method("INVITE")) {
+		if (!is_audio_on_hold())
+			siprec_resume_recording();
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_siprec_stop_recording" xreflabel="siprec_stop_recording()">
+			<title>
+			<function moreinfo="none">siprec_stop_recording()</function>
+			</title>
+			<para>
+				Stops the recording for the ongoing call. Should be called for SIPREC
+				sessions that have been previously started.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<example>
+			<title>Use <function>siprec_stop_recording()</function> </title>
+			<programlisting format="linespecific">
+	...
+	if (has_totag() &amp;&amp; is_method("INVITE")) {
+		if (is_audio_on_hold())
+			siprec_stop_recording();
+	}
 	...
 	</programlisting>
 			</example>
 		</section>
 	</section>
 
-</chapter>
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+		<section id="pv_siprec" xreflabel="$siprec">
+			<title><varname>$siprec</varname></title>
+			<para>
+				Used to modify/describe different siprec sessions
+				parameters that should be taken into account by the
+				<xref linkend="func_siprec_start_recording"/> function.
+			</para>
+			<para>
+				The context of this variable is only limited to the current
+				message processed - it is not available at the transaction
+				or dialog level.
+			</para>
+			<para>
+				Any of this setting is optional.
+			</para>
+			<para>
+			Settings that can be provisioned:
+			</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>group</emphasis> - an opaque value that will be inserted
+					in the SIPREC body and represents the name of the group that can be
+					used to classify calls in certain profiles. If missing, no group is added.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>caller</emphasis> - an XML block containing information
+					about the caller. If absent, the <emphasis>From</emphasis> header
+					of the initial dialog is used to build the value.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>callee</emphasis> - an XML block containing information
+					about the callee. If absent, the <emphasis>To</emphasis> header
+					of the initial dialog is used to build the value.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>media</emphasis> - the IP that
+					RTPProxy will be streaming media from. If absent
+					<emphasis>127.0.0.1</emphasis> will be used.
+					<emphasis>NOTE:</emphasis><emphasis>media_ip</emphasis> has been dropped.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>headers</emphasis> - extra headers
+					that are to be added in the initial request towards the SRS.
+					<emphasis>NOTE:</emphasis> headers must be separated by
+					<emphasis>\r\n</emphasis> and must end with <emphasis>\r\n</emphasis>.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>socket</emphasis> - listening socket that the outgoing
+					request towards SRS should be used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>from_uri</emphasis> - the URI to appear in the
+					<emphasis>From</emphasis> header of the dialog. Default value is the
+					request URI. Note that this does not influence the
+					<emphasis>caller</emphasis> information in the XML block,
+					which is taken from the initial dialog.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>to_uri</emphasis> - the URI to appear in the
+					<emphasis>To</emphasis> header of the dialog. Default value is the
+					request URI. Note that this does not influence the
+					<emphasis>callee</emphasis> information in the XML block,
+					which is taken from the initial dialog.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>group_custom_extension</emphasis> - an optional XML block
+					containing custom information to be added under the
+					<emphasis>group</emphasis> tag.
+					<emphasis>NOTE:</emphasis> if the <emphasis>group</emphasis> is absent this
+					value will be ignored and not used anywhere.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>session_custom_extension</emphasis> - an optional XML block
+					containing custom information to be added under the
+					<emphasis>session</emphasis> tag.
+				</para></listitem>
+			</itemizedlist>
+		</section>
 
+	</section>
+
+</chapter>

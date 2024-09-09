@@ -24,6 +24,7 @@
 #define _DIALOG_DLG_HASH_H_
 
 #include "../../locking.h"
+#include "../../rw_locking.h"
 #include "../../context.h"
 #include "../../mi/mi.h"
 #include "../../lib/dbg/struct_hist.h"
@@ -67,7 +68,11 @@
 #define DLG_FLAG_WAS_CANCELLED			(1<<16)
 #define DLG_FLAG_RACE_CONDITION_OCCURRED	(1<<17)
 #define DLG_FLAG_SELF_EXTENDED_TIMEOUT		(1<<18)
+#define DLG_FLAG_SYNCED                     (1<<19)
 
+#define dlg_has_options_pinging(dlg) \
+	(dlg->flags & DLG_FLAG_PING_CALLER || \
+	 dlg->flags & DLG_FLAG_PING_CALLEE)
 #define dlg_has_reinvite_pinging(dlg) \
 	(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || \
 	 dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE)
@@ -79,6 +84,11 @@
 #define DLG_DIR_DOWNSTREAM     1
 #define DLG_DIR_UPSTREAM       2
 
+struct dlg_leg_cseq_map {
+	struct dlg_cell *dlg;
+	unsigned int msg, gen, leg;
+	struct dlg_leg_cseq_map *next;
+};
 
 struct dlg_leg {
 	int id;
@@ -98,10 +108,10 @@ struct dlg_leg {
 	str route_uris[64];
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
-	unsigned int last_inv_gen_cseq; /* used when translating ACKs */
+	struct dlg_leg_cseq_map *cseq_maps; /* used when translating ACKs */
 	char reply_received;
 	char reinvite_confirmed;
-	struct socket_info *bind_addr;
+	const struct socket_info *bind_addr;
 };
 
 #define leg_is_answered(dlg_leg) ((dlg_leg)->tag.s)
@@ -118,6 +128,8 @@ struct dlg_leg {
 #define TOPOH_KEEP_USER   (1 << 2)
 #define TOPOH_HIDE_CALLID (1 << 3)
 #define TOPOH_DID_IN_USER (1 << 4)
+#define TOPOH_KEEP_ADV_A  (1 << 5)
+#define TOPOH_KEEP_ADV_B  (1 << 6)
 
 struct dlg_cell
 {
@@ -130,9 +142,11 @@ struct dlg_cell
 	unsigned int         lifetime;
 	unsigned short       lifetime_dirty; /* 1 if lifetime timer should
 	                                      * be updated */
-	unsigned short       locked_by;   /* holds the ID of the process locking
-	                                   * the dialog (if the case) while
-	                                   * calling a callback */
+
+	/* holds the ID of the process holding the dialog bucket lock (or 0)
+	 * when either working with .profile_links list or running dlg callbacks */
+	unsigned short       locked_by;
+
 	unsigned int         start_ts;    /* start time  (absolute UNIX ts)*/
 	unsigned int         flags;
 	unsigned int         from_rr_nb;
@@ -141,7 +155,10 @@ struct dlg_cell
 	unsigned int         initial_t_hash_index;
 	unsigned int         initial_t_label;
 	unsigned int         replicated; /* indicates if the dialog is replicated */
+	unsigned int         del_delay; /* if any custom delay should be done
+	                                 * when deleting this dialog */
 	struct dlg_tl        tl;
+	struct dlg_tl        del_tl;
 	struct dlg_ping_list *pl;
 	struct dlg_ping_list *reinvite_pl;
 	str                  terminate_reason;
@@ -153,11 +170,12 @@ struct dlg_cell
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
 	struct dlg_val       *vals;
+	rw_lock_t            *vals_lock;
 	str                  shtag;
 
-	int                  rt_on_answer;
-	int                  rt_on_timeout;
-	int                  rt_on_hangup;
+	struct script_route_ref  *rt_on_answer;
+	struct script_route_ref  *rt_on_timeout;
+	struct script_route_ref  *rt_on_hangup;
 
 #ifdef DBG_DIALOG
 	struct struct_hist   *hist;
@@ -211,7 +229,7 @@ extern int dlg_enable_stats;
 
 struct dlg_cell *get_current_dialog();
 
-#define dlg_hash(_callid) core_hash(_callid, 0, d_table->size)
+#define dlg_hash(_callid) core_hash(_callid, NULL, d_table->size)
 
 #define dlg_lock(_table, _entry) \
 		lock_set_get( (_table)->locks, (_entry)->lock_idx);
@@ -317,8 +335,17 @@ void destroy_dlg(struct dlg_cell *dlg);
 			abort(); \
 		}\
 		if ((_dlg)->ref<=0) { \
-			unlink_unsafe_dlg( _d_entry, _dlg);\
-			destroy_dlg(_dlg);\
+			/* dlg good to be destried, but be sure it went first
+			 * via the delete timer */ \
+			if ((dlg_del_delay==0 && (_dlg)->del_delay==0) ||    \
+			insert_attempt_dlg_del_timer(&_dlg->del_tl,        \
+			(_dlg)->del_delay?(_dlg)->del_delay:dlg_del_delay)==-2) {\
+				/* no delay on del or not in del timer anymore -> destroy */ \
+				LM_DBG("Destroying dialog %p\n",_dlg); \
+				unlink_unsafe_dlg( _d_entry, _dlg);\
+				destroy_dlg(_dlg);\
+			} /* else, either still in timer (-1), either
+			   * inserted now in del timer (0) -> nothing to do*/ \
 		}\
 	}while(0)
 
@@ -382,24 +409,28 @@ struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx);
 
 int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
-		str *contact, str *adv_ct, str *cseq, struct socket_info *sock,
+		str *contact, str *adv_ct, str *cseq, const struct socket_info *sock,
 		str *mangled_from,str *mangled_to,str *in_sdp, str *out_sdp);
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
-						int field_type);
+		int field_type);
 
-int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,str *rr, str *contact);
+int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,str *rr,
+		str *contact);
 
-struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id);
+struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id,
+		int active_only);
 
 struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag,
 		unsigned int *dir, unsigned int *dst_leg);
 
-struct dlg_cell* get_dlg_by_val(str *attr, str *val);
+struct dlg_cell* get_dlg_by_val(struct sip_msg *msg, str *attr, pv_spec_t *val);
 
-struct dlg_cell* get_dlg_by_callid( str *callid, int active_only);
+struct dlg_cell* get_dlg_by_callid(const str *callid, int active_only);
 
 struct dlg_cell* get_dlg_by_did(str *did, int active_only);
+
+struct dlg_cell* get_dlg_by_ids(unsigned int h_entry, unsigned int h_id, int active_only);
 
 struct dlg_cell *get_dlg_by_dialog_id(str *dialog_id);
 
@@ -654,8 +685,8 @@ void state_changed_event_destroy(void);
 
 #define dlg_parse_db_id(_did, _h_entry, _h_id) \
 	do { \
-		(_h_entry) = (unsigned int)((_did) >> 32); \
-		(_h_id) = (unsigned int)((_did) & 0x00000000ffffffff); \
+		(_h_entry) = (unsigned int)((unsigned long long)(_did) >> 32); \
+		(_h_id) = (unsigned int)((unsigned long long)(_did) & 0xFFFFFFFFULL); \
 	} while(0)
 
 #endif

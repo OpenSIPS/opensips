@@ -31,6 +31,7 @@
 #include "../freeswitch/fs_api.h"
 #include "../../db/db.h"
 #include "../../rw_locking.h"
+#include "../../status_report.h"
 
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
@@ -42,9 +43,11 @@
 #define DS_RESET_FAIL_DST	4  /* Reset-Failure-Counter */
 #define DS_STATE_DIRTY_DST	8  /* STATE is dirty */
 
-#define DS_PV_ALGO_MARKER	"%u"	/* Marker to indicate where the URI should
-									   be inserted in the pvar */
-#define DS_PV_ALGO_MARKER_LEN (sizeof(DS_PV_ALGO_MARKER) - 1)
+#define DS_PROBING_PERM_DST 16 /* permanently probing if not inactive */
+
+#define DS_PV_ALGO_ID_MARKER   "%i"  /* Marker to indicate where the Set ID should be inserted in the pvar */
+#define DS_PV_ALGO_URI_MARKER  "%u"  /* Marker to indicate where the URI should be inserted in the pvar */
+#define DS_PV_ALGO_MARKER_LEN  2
 
 #define DS_MAX_IPS  32
 
@@ -56,9 +59,6 @@
 #define DS_DEFAULT_PARTITION_NAME "default"
 
 #define MI_FULL_LISTING (1<<0)
-
-
-extern int ds_persistent_state;
 
 typedef struct _ds_dest
 {
@@ -73,7 +73,7 @@ typedef struct _ds_dest
 	unsigned short running_weight;
 	unsigned short active_running_weight;
 	unsigned short priority;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	struct ip_addr ips[DS_MAX_IPS]; /* IP-Address of the entry */
 	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
 	unsigned short int protos[DS_MAX_IPS]; /* Protocol of the request URI */
@@ -115,11 +115,16 @@ typedef struct _ds_partition
 	str name;              /* Partition name */
 	str table_name;        /* Table name */
 	str db_url;            /* DB url */
+	str ping_from;
+	str ping_method;
+	int persistent_state;
 
 	db_con_t **db_handle;
 	db_func_t dbf;
 	ds_data_t **data;      /* dispatching data holder */
 	rw_lock_t *lock;       /* reader-writers lock for reloading the data */
+
+	str sr_events_ident;   /* SR identifier for enable/disable events */
 
 	int dst_avp_name;
 	unsigned short dst_avp_type;
@@ -158,12 +163,15 @@ typedef struct
 {
 	ds_partition_t *partition;
 	int set_id;
+	int always_probe;
+	str uri; /* Note: the URI string is allocated together with
+	          * this structure, so no need of separate freeing */
 } ds_options_callback_param_t;
 
 typedef struct _ds_selected_dst
 {
 	str uri;
-	struct socket_info *socket;
+	const struct socket_info *socket;
 } ds_selected_dst, *ds_selected_dst_p;
 
 extern str ds_set_id_col;
@@ -175,10 +183,11 @@ extern str ds_dest_weight_col;
 extern str ds_dest_prio_col;
 extern str ds_dest_attrs_col;
 extern str ds_dest_description_col;
+extern str ds_dest_probe_mode_col;
 
 extern pv_elem_t * hash_param_model;
 extern str hash_pvar_param;
-extern str algo_route_param;
+extern struct script_route_ref *algo_route;
 
 extern str ds_setid_pvname;
 extern pv_spec_t ds_setid_pv;
@@ -197,21 +206,22 @@ extern int ds_probing_mode;
 extern int fetch_freeswitch_stats;
 extern int max_freeswitch_weight;
 
+extern void *ds_srg;
+
 int init_ds_db(ds_partition_t *partition);
 int ds_connect_db(ds_partition_t *partition);
 void ds_disconnect_db(ds_partition_t *partition);
-int ds_reload_db(ds_partition_t *partition);
+int ds_reload_db(ds_partition_t *partition, int initial, int is_inherit_state);
 
 int init_ds_data(ds_partition_t *partition);
 void ds_destroy_data(ds_partition_t *partition);
 
-int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int mode);
+int ds_update_dst(struct sip_msg *msg, str *uri, const struct socket_info *sock, int mode);
 int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selected_dst_p selected_dst, int ds_flags);
 int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
-#define ds_set_state(_group, _address, _state, _type, _partition) \
-	ds_set_state_repl(_group, _address, _state, _type, _partition, 1, 0)
-int ds_set_state_repl(int group, str *address, int state, int type,
-		ds_partition_t *partition, int do_repl, int is_sync);
+int ds_set_state(int group, str *address, int state, int type,
+		ds_partition_t *partition, int do_repl, int is_sync,
+		char *status_s, int status_len);
 int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_print_mi_list(mi_item_t *part_item, ds_partition_t *partition, int full);
 int ds_count(struct sip_msg *msg, int set_id, void *_cmp, pv_spec_p ret,

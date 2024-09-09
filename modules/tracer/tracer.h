@@ -42,7 +42,11 @@
 
 enum trace_flags {TRACE_MESSAGE=(1<<0),
 				  TRACE_TRANSACTION=(1<<1),
-				  TRACE_DIALOG=(1<<2) };
+				  TRACE_DIALOG=(1<<2),
+				  TRACE_B2B=(1<<3) };
+
+enum trace_control_flags {TRACE_C_CALLER=(1<<0),
+				  TRACE_C_CALLEE=(1<<1) };
 
 
 typedef struct st_db_struct {
@@ -60,8 +64,17 @@ typedef struct st_hep_struct {
 	hid_list_t* hep_id;
 } st_hep_struct_t;
 
+typedef struct st_file_struct {
+	char *path;
+	int fd;
+} st_file_struct_t;
 
-enum types { TYPE_HEP=0, TYPE_SIP, TYPE_DB, TYPE_END };
+typedef struct st_syslog_struct {
+	int level;
+	int facility;
+} st_syslog_struct_t;
+
+enum types { TYPE_HEP=0, TYPE_SIP, TYPE_DB, TYPE_FILE, TYPE_SYSLOG, TYPE_END };
 typedef struct tlist_elem {
 	str name;          /* name of the partition */
 	enum types type;   /* SIP-DB-HEP */
@@ -74,6 +87,8 @@ typedef struct tlist_elem {
 		st_db_struct_t  *db;
 		st_hep_struct_t hep;
 		struct sip_uri  uri;
+		st_file_struct_t file;
+		st_syslog_struct_t syslog;
 	} el;
 
 
@@ -104,8 +119,11 @@ typedef struct tlist_dyn_elem {
 } tlist_dyn_elem_t, *tlist_dyn_elem_p;
 
 typedef struct trace_instance {
-	str *trace_attrs;
+	str trace_attrs;
+	str forced_correlation_id;
+	int control_flags;
 	int trace_types;
+	int trace_flags;
 	tlist_elem_p trace_list;
 
 	struct trace_instance *next;
@@ -114,6 +132,7 @@ typedef struct trace_instance {
 #define TRACE_INFO_STAT		(1<<0)		/* request already traced */
 #define TRACE_INFO_TRAN		(1<<1)		/* registred tm callbacks */
 #define TRACE_INFO_DIALOG	(1<<2)		/* registred dialog callbacks */
+#define TRACE_INFO_B2B		(1<<3)		/* registred b2b callbacks */
 
 #define TRACE_FLAG_SET(_ti, _f) ((_ti)->flags |= (_f))
 #define TRACE_FLAG_UNSET(_ti, _f) ((_ti)->flags &= ~(_f))
@@ -124,6 +143,12 @@ typedef struct trace_info {
 
 	/* connection id correlationg sip message with transport messages */
 	unsigned long long conn_id;
+
+	/* ref cnt of number of uses */ 
+	unsigned int ref;
+
+	/* lock for ref cnt ops */
+	gen_lock_t* ref_lock;
 
 	trace_instance_p instances;
 } trace_info_t, *trace_info_p;

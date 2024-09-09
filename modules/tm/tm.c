@@ -61,6 +61,7 @@
 #include "../../usr_avp.h"
 #include "../../mem/mem.h"
 #include "../../pvar.h"
+#include "../../mod_fix.h"
 
 #include "sip_msg.h"
 #include "h_table.h"
@@ -87,6 +88,8 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+static int pv_get_tm_branch_reply_code(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
 
 /* fixup functions */
 static int fixup_local_replied(void** param);
@@ -94,6 +97,7 @@ static int fixup_cancel_branch(void** param);
 static int fixup_froute(void** param);
 static int fixup_rroute(void** param);
 static int fixup_broute(void** param);
+static int free_fixup_Xroute(void** param);
 static int fixup_inject_source(void **param);
 static int fixup_inject_flags(void **param);
 static int fixup_reply_code(void **param);
@@ -127,6 +131,8 @@ static int w_t_new_request(struct sip_msg* msg, str *method,
 			str *ruri, str *from, str *to, str *body, str *p_ctx);
 static int t_wait_for_new_branches(struct sip_msg* msg,
 			unsigned int* br_to_wait);
+static int w_t_wait_no_more_branches(struct sip_msg* msg);
+static int t_reply_by_callid(struct sip_msg* msg, unsigned int* code, str* text, str* callid, str* cseq);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -134,6 +140,12 @@ struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
 /* these values are used when the transaction has not been defined yet */
 int fr_timeout;
 int fr_inv_timeout;
+
+static char* tm_local_reply_route_s;
+struct script_route_ref *tm_local_reply_route = NULL;
+
+static char* tm_local_request_route_s;
+struct script_route_ref *tm_local_request_route = NULL;
 
 #define TM_CANCEL_BRANCH_ALL    (1<<0)
 #define TM_CANCEL_BRANCH_OTHERS (1<<1)
@@ -154,7 +166,7 @@ int pv_get_tm_fr_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
 int pv_set_tm_fr_timeout(struct sip_msg*, pv_param_t *, int, pv_value_t*);
 int pv_get_tm_fr_inv_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
 int pv_set_tm_fr_inv_timeout(struct sip_msg*, pv_param_t *, int, pv_value_t*);
-struct usr_avp** get_bavp_list(void);
+static struct usr_avp** pv_get_bavp_list(void);
 
 
 /* module parameteres */
@@ -174,7 +186,22 @@ stat_var *tm_trans_5xx;
 stat_var *tm_trans_6xx;
 stat_var *tm_trans_inuse;
 
-static dep_export_t deps = {
+stat_var *tm_retran_req_T11;
+stat_var *tm_retran_req_T12;
+stat_var *tm_retran_req_T13;
+stat_var *tm_retran_req_T2;
+stat_var *tm_retran_rpl_T2;
+stat_var *tm_timeout_fr;
+stat_var *tm_timeout_fr_inv;
+
+stat_var *tm_cluster_reply_tx;
+stat_var *tm_cluster_request_tx;
+stat_var *tm_cluster_cancel_tx;
+stat_var *tm_cluster_reply_rx;
+stat_var *tm_cluster_request_rx;
+stat_var *tm_cluster_cancel_rx;
+
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
@@ -185,7 +212,7 @@ static dep_export_t deps = {
 };
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"t_newtran", (cmd_function)w_t_newtran, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"t_reply", (cmd_function)w_pv_t_reply, {
@@ -194,21 +221,21 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_replicate", (cmd_function)w_t_replicate, {
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_INT | CMD_PARAM_OPT, flag_fixup, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, flag_fixup, 0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_relay", (cmd_function)w_t_relay, {
-		{CMD_PARAM_INT|CMD_PARAM_OPT, flag_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, flag_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_phostport2proxy,fixup_free_proxy},
 		{0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_on_failure", (cmd_function)w_t_on_negative, {
-		{CMD_PARAM_STR, fixup_froute, 0}, {0,0,0}},
+		{CMD_PARAM_STR, fixup_froute, free_fixup_Xroute}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_on_reply", (cmd_function)w_t_on_reply, {
-		{CMD_PARAM_STR, fixup_rroute, 0}, {0,0,0}},
+		{CMD_PARAM_STR, fixup_rroute, free_fixup_Xroute}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_on_branch", (cmd_function)w_t_on_branch, {
-		{CMD_PARAM_STR, fixup_broute, 0}, {0,0,0}},
+		{CMD_PARAM_STR, fixup_broute, free_fixup_Xroute}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
 	{"t_check_status", (cmd_function)t_check_status, {
 		{CMD_PARAM_REGEX, 0, 0}, {0,0,0}},
@@ -248,7 +275,7 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		ALL_ROUTES},
 	{"t_add_cancel_reason", (cmd_function)t_add_reason, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -259,13 +286,22 @@ static cmd_export_t cmds[]={
 	{"t_wait_for_new_branches", (cmd_function)t_wait_for_new_branches, {
 		{CMD_PARAM_INT | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
+	{"t_wait_no_more_branches", (cmd_function)w_t_wait_no_more_branches,
+		{{0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"t_anycast_replicate", (cmd_function)tm_anycast_replicate, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"t_reply_by_callid", (cmd_function)t_reply_by_callid, {
+		{CMD_PARAM_INT, fixup_reply_code, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"load_tm", (cmd_function)load_tm, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"ruri_matching",             INT_PARAM,
 		&ruri_matching},
 	{"via1_matching",             INT_PARAM,
@@ -310,11 +346,15 @@ static param_export_t params[]={
 		&tm_cluster_param.s },
 	{ "cluster_auto_cancel",      INT_PARAM,
 		&tm_repl_auto_cancel },
+	{ "local_reply_route",        STR_PARAM,
+		&tm_local_reply_route_s },
+	{ "local_request_route",      STR_PARAM,
+		&tm_local_request_route_s },
 	{0,0,0}
 };
 
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"received_replies" ,    0,              &tm_rcv_rpls    },
 	{"relayed_replies" ,     0,              &tm_rld_rpls    },
 	{"local_replies" ,       0,              &tm_loc_rpls    },
@@ -326,6 +366,19 @@ static stat_export_t mod_stats[] = {
 	{"5xx_transactions" ,    0,              &tm_trans_5xx   },
 	{"6xx_transactions" ,    0,              &tm_trans_6xx   },
 	{"inuse_transactions" ,  STAT_NO_RESET,  &tm_trans_inuse },
+	{"cluster_reply_sent" ,  0,              &tm_cluster_reply_tx   },
+	{"cluster_request_sent" ,0,              &tm_cluster_request_tx },
+	{"cluster_cancel_sent" , 0,              &tm_cluster_cancel_tx },
+	{"cluster_reply_recv" ,  0,              &tm_cluster_reply_rx   },
+	{"cluster_request_recv" ,0,              &tm_cluster_request_rx },
+	{"cluster_cancel_recv" , 0,              &tm_cluster_cancel_rx },
+	{"retransmission_req_T1_1"   , 0,        &tm_retran_req_T11 },
+	{"retransmission_req_T1_2"   , 0,        &tm_retran_req_T12 },
+	{"retransmission_req_T1_3"   , 0,        &tm_retran_req_T13 },
+	{"retransmission_req_T2"     , 0,        &tm_retran_req_T2 },
+	{"retransmission_rpl_T2"     , 0,        &tm_retran_rpl_T2 },
+	{"timeout_finalresponse"     , 0,        &tm_timeout_fr },
+	{"timeout_finalresponse_inv" , 0,        &tm_timeout_fr_inv },
 	{0,0,0}
 };
 
@@ -333,29 +386,32 @@ static stat_export_t mod_stats[] = {
 /**
  * pseudo-variables exported by TM module
  */
-static pv_export_t mod_items[] = {
-	{ {"T_branch_idx", sizeof("T_branch_idx")-1}, 900,
+static const pv_export_t mod_items[] = {
+	{ str_const_init("T_branch_idx"), 900,
 		pv_get_tm_branch_idx, NULL, NULL, NULL, NULL, 0 },
-	{ {"T_reply_code", sizeof("T_reply_code")-1}, 901,
+	{ str_const_init("T_reply_code"), 901,
 		pv_get_tm_reply_code, NULL, NULL, NULL, NULL, 0 },
-	{ {"T_ruri",       sizeof("T_ruri")-1},       902,
+	{ str_const_init("T_ruri"),       902,
 		pv_get_tm_ruri,       NULL, NULL, NULL, NULL, 0 },
-	{ {"bavp",         sizeof("bavp")-1},         903,
+	{ str_const_init("bavp"),         903,
 		pv_get_tm_branch_avp, pv_set_tm_branch_avp,
 		pv_parse_avp_name, pv_parse_index, NULL, 0 },
-	{ {"T_fr_timeout", sizeof("T_fr_timeout")-1}, 904,
+	{ str_const_init("T_fr_timeout"), 904,
 		pv_get_tm_fr_timeout, pv_set_tm_fr_timeout,
 		NULL, NULL, NULL, 0 },
-	{ {"T_fr_inv_timeout", sizeof("T_fr_inv_timeout")-1}, 905,
+	{ str_const_init("T_fr_inv_timeout"), 905,
 		pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout,
 		NULL, NULL, NULL, 0 },
-	{ {"T_id",         sizeof("T_id")-1},         906,
+	{ str_const_init("T_id"),         906,
 		pv_get_t_id, NULL, NULL, NULL, NULL, 0 },
+	{ str_const_init("T_branch_last_reply_code"), 907,
+		pv_get_tm_branch_reply_code, NULL,
+		NULL, pv_parse_index, NULL, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 
-static mi_export_t mi_cmds [] = {
+static const mi_export_t mi_cmds [] = {
 	{ MI_TM_UAC, 0, MI_ASYNC_RPL_FLAG|MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_tm_uac_dlg_1, {"method", "ruri", "headers", 0}},
 		{mi_tm_uac_dlg_2, {"method", "ruri", "headers", "next_hop", 0}},
@@ -419,19 +475,27 @@ struct module_exports exports= {
 
 
 /**************************** fixup functions ******************************/
+static int free_fixup_Xroute(void** param)
+{
+	if (*param)
+		unref_script_route( (struct script_route_ref *)*param );
+	return 0;
+}
+
+
 static int fixup_froute(void** param)
 {
-	int rt;
+	struct script_route_ref *rt;
 
-	rt = get_script_route_ID_by_name_str( (str*)*param,
-			sroutes->failure, FAILURE_RT_NO);
-	if (rt==-1) {
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->failure, FAILURE_RT_NO, FAILURE_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
 		LM_ERR("failure route <%.*s> does not exist\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	*param = (void*)(unsigned long int)rt;
+	*param = (void*)rt;
 
 	return 0;
 }
@@ -439,17 +503,17 @@ static int fixup_froute(void** param)
 
 static int fixup_rroute(void** param)
 {
-	int rt;
+	struct script_route_ref *rt;
 
-	rt = get_script_route_ID_by_name_str( (str*)*param,
-		sroutes->onreply, ONREPLY_RT_NO);
-	if (rt==-1) {
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->onreply, ONREPLY_RT_NO, ONREPLY_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
 		LM_ERR("onreply route <%.*s> does not exist\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	*param = (void*)(unsigned long int)rt;
+	*param = (void*)rt;
 
 	return 0;
 }
@@ -457,25 +521,35 @@ static int fixup_rroute(void** param)
 
 static int fixup_broute(void** param)
 {
-	int rt;
+	struct script_route_ref *rt;
 
-	rt = get_script_route_ID_by_name_str( (str*)*param,
-		sroutes->branch, BRANCH_RT_NO);
-	if (rt==-1) {
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->branch, BRANCH_RT_NO, BRANCH_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
 		LM_ERR("branch route <%.*s> does not exist\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	*param = (void*)(unsigned long int)rt;
+	*param = (void*)rt;
 
 	return 0;
 }
 
+static str t_relay_flag_names[] = {
+	str_init("no-auto-477"),     /* TM_T_RELAY_noerr_FLAG */
+	str_init("no-dns-failover"), /* TM_T_RELAY_nodnsfo_FLAG */
+	str_init("pass-reason-hdr"), /* TM_T_RELAY_reason_FLAG */
+	str_init("allow-no-cancel"), /* TM_T_RELAY_do_cancel_dis_FLAG */
+	STR_NULL
+};
 
 static int flag_fixup(void** param)
 {
-	*param = (void*)((unsigned long int)(*(unsigned int*)*param)<<1);
+	if (fixup_named_flags(param, t_relay_flag_names, NULL, NULL) < 0)
+		return -1;
+
+	*param = (void*)((unsigned long)((unsigned int)(unsigned long)*param)<<1);
 	return 0;
 }
 
@@ -624,7 +698,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->register_tmcb = register_tmcb;
 
 	/* relay function */
-	tmb->t_relay = (cmd_function)w_t_relay;
+	tmb->t_relay = w_t_relay;
 
 	/* reply functions */
 	tmb->t_reply = (treply_f)w_t_reply;
@@ -634,15 +708,17 @@ int load_tm( struct tm_binds *tmb)
 	/* transaction location/status functions */
 	tmb->t_newtran = w_t_newtran;
 	tmb->t_is_local = t_is_local;
-	tmb->t_check_trans = (cmd_function)t_check_trans;
+	tmb->t_check_trans = t_check_trans;
 	tmb->t_get_trans_ident = t_get_trans_ident;
 	tmb->t_lookup_ident = t_lookup_ident;
 	tmb->t_gett = get_t;
+	tmb->t_sett = set_t;
 	tmb->t_get_e2eackt = get_e2eack_t;
 	tmb->t_get_picked = t_get_picked_branch;
 	tmb->t_set_remote_t = t_set_remote_t;
 
 	tmb->t_lookup_original_t = t_lookupOriginalT;
+	tmb->t_release_trans = t_release_transaction;
 	tmb->unref_cell = t_unref_cell;
 	tmb->ref_cell = t_ref_cell;
 	tmb->t_setkr = set_kr;
@@ -818,12 +894,12 @@ static int mod_init(void)
 	/* register the timer functions */
 	for ( set=0 ; set<timer_sets ; set++ ) {
 		if (register_timer( "tm-timer", timer_routine,
-		(void*)(long)set, 1, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
+		(void*)(long)set, TM_TIMER_ITV_S, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
 			LM_ERR("failed to register timer for set %d\n",set);
 			return -1;
 		}
 		if (register_utimer( "tm-utimer", utimer_routine,
-		(void*)(long)set, 100*1000, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+		(void*)(long)set, TM_UTIMER_ITV_US, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 			LM_ERR("failed to register utimer for set %d\n",set);
 			return -1;
 		}
@@ -879,6 +955,30 @@ static int mod_init(void)
 	if (tm_init_cluster() < 0) {
 		LM_ERR("cannot initialize cluster support for transactions!\n");
 		LM_WARN("running without cluster support for transactions!\n");
+	}
+
+	if (tm_local_reply_route_s)
+	{
+		tm_local_reply_route = ref_script_route_by_name(
+			tm_local_reply_route_s,
+			sroutes->onreply, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(tm_local_reply_route))
+		{
+			LM_ERR("route <%s> does not exist\n",tm_local_reply_route_s);
+			return -1;
+		}
+	}
+
+	if (tm_local_request_route_s)
+	{
+		tm_local_request_route = ref_script_route_by_name(
+			tm_local_request_route_s,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(tm_local_request_route))
+		{
+			LM_ERR("route <%s> does not exist\n",tm_local_request_route_s);
+			return -1;
+		}
 	}
 
 	return 0;
@@ -1137,21 +1237,21 @@ static int w_t_newtran( struct sip_msg* p_msg)
 
 static int w_t_on_negative( struct sip_msg* msg, void *go_to)
 {
-	t_on_negative( (unsigned int )(long) go_to );
+	t_on_negative( (struct script_route_ref*) go_to );
 	return 1;
 }
 
 
 static int w_t_on_reply( struct sip_msg* msg, void *go_to)
 {
-	t_on_reply( (unsigned int )(long) go_to );
+	t_on_reply( (struct script_route_ref*) go_to );
 	return 1;
 }
 
 
 static int w_t_on_branch( struct sip_msg* msg, void *go_to)
 {
-	t_on_branch( (unsigned int )(long) go_to );
+	t_on_branch( (struct script_route_ref*) go_to );
 	return 1;
 }
 
@@ -1575,6 +1675,50 @@ static int t_wait_for_new_branches(struct sip_msg* msg,
 }
 
 
+static int w_t_wait_no_more_branches(struct sip_msg* msg)
+{
+	struct cell *t;
+
+	t=get_t();
+
+	if (t==NULL || t==T_UNDEFINED) {
+		/* no transaction */
+		return -1;
+	}
+
+	if (t_wait_no_more_branches(t, 0)<0)
+		return -1;
+
+	return 1;
+}
+
+
+static int t_reply_by_callid(struct sip_msg* msg, unsigned int* code, str* text, str* callid, str* cseq_number)
+{
+	struct cell *trans;
+	int n;
+
+	if (!callid && msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0) ==-1) || (msg->callid==NULL)) ) {
+		/* could not get callid */
+		return -2;
+	}
+
+	if (!cseq_number && !msg->cseq && ((parse_headers(msg, HDR_CSEQ_F, 0) == -1) || !msg->cseq)) {
+		/* could not get cseq */
+		return -3;
+	}
+
+	if(t_lookup_callid( &trans, callid ? *callid : msg->callid->body, cseq_number ? *cseq_number : get_cseq(msg)->number) < 0) {
+		/* transaction not found */
+		return -4;
+	}
+
+	n = t_reply_with_body( trans, *code, text, 0, 0, 0);
+
+	return n;
+}
+
+
 /******************** pseudo-variable functions *************************/
 
 static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
@@ -1586,7 +1730,8 @@ static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if (route_type!=BRANCH_ROUTE && route_type!=ONREPLY_ROUTE) {
+	if (route_type!=BRANCH_ROUTE && route_type!=ONREPLY_ROUTE &&
+	route_type!=FAILURE_ROUTE) {
 		res->flags = PV_VAL_NULL;
 		return 0;
 	}
@@ -1643,6 +1788,43 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	LM_DBG("reply code is <%d>\n",code);
+
+	res->rs.s = int2str( code, &res->rs.len);
+
+	res->ri = code;
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	return 0;
+}
+
+static int pv_get_tm_branch_reply_code(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	struct cell *t;
+	int code;
+	int branch;
+	int idxf;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	/* first get the transaction */
+	if (!(t = get_t()) || t == T_UNDEFINED)
+		return pv_get_null(msg, param, res);
+
+	if (param->pvi.type != 0) {
+		if(pv_get_spec_index(msg, param, &branch, &idxf)!=0 ||
+				idxf == PV_IDX_APPEND || idxf == PV_IDX_APPEND) {
+			LM_ERR("invalid index\n");
+			return -1;
+		}
+	} else {
+		branch = _tm_branch_index;
+	}
+
+	/* it is not our job to find a proper branch, if not explicit asked for */
+	code = t->uac[branch].last_received;
+
+	LM_DBG("reply code for branch %d is <%d>\n", branch, code);
 
 	res->rs.s = int2str( code, &res->rs.len);
 
@@ -1736,7 +1918,7 @@ int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
 	if (!msg || !val)
 		goto error;
 
-	avp_list = get_bavp_list();
+	avp_list = pv_get_bavp_list();
 	if (!avp_list) {
 		pv_get_null(msg, param, val);
 		goto success;
@@ -1848,7 +2030,8 @@ int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
 			val->ri = avp_value.n;
 			val->flags |= PV_VAL_INT|PV_TYPE_INT;
 		}
-	}
+	} else
+		pv_get_null(msg, param, val);
 
 	goto success;
 
@@ -1881,7 +2064,7 @@ int pv_set_tm_branch_avp(struct sip_msg *msg, pv_param_t *param, int op,
 		goto error;
 	}
 
-	avp_list = get_bavp_list();
+	avp_list = pv_get_bavp_list();
 	if (!avp_list) {
 		LM_DBG("cannot find the branch avp list!\n");
 		return -2;
@@ -1952,7 +2135,7 @@ success:
 }
 
 
-struct usr_avp** get_bavp_list(void)
+static struct usr_avp** pv_get_bavp_list(void)
 {
 	struct cell* t;
 
@@ -2099,7 +2282,4 @@ static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 	res->rs.len = p-buf;
 
 	return 0;
-
 }
-
-

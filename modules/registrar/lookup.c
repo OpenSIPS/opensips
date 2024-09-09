@@ -47,9 +47,9 @@
 #define GR_A_PART_SIZE	14
 
 
-int reg_lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri)
+int reg_lookup(struct sip_msg* _m, void* _t, void *flags, str* uri)
 {
-	return lookup(_m, _t, flags_s, uri, reg_use_domain, 0);
+	return lookup(_m, _t, flags, uri, reg_use_domain, NULL);
 }
 
 
@@ -293,7 +293,7 @@ out_found_unlock:
  * IPs comes from:
  * - the IPs avp given as a third parameter
  */
-int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec)
+int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *ip_spec,pv_spec_t *port_spec)
 {
 	str aor;
 	str pv_host={NULL, 0};
@@ -304,8 +304,10 @@ int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec)
 	urecord_t* r;
 	ucontact_t *c;
 	struct usr_avp *avp;
+	struct usr_avp *avp_port;
 	pv_value_t val;
 	struct ip_addr *ipp, ip;
+	int pv_port = 0;
 
 	if (msg_aor_parse(_m, _a, &aor)) {
 		LM_ERR("failed to parse!\n");
@@ -314,12 +316,12 @@ int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec)
 
 	CHECK_DOMAIN(ud);
 
-	if (spec == NULL) {
+	if (ip_spec == NULL) {
 		LM_NOTICE("nothing to compare! exiting...\n");
 		return -1;
-	} else if (spec->type != PVT_AVP) {
+	} else if (ip_spec->type != PVT_AVP) {
 		is_avp=0;
-		if (pv_get_spec_value( _m, spec, &val)!=0) {
+		if (pv_get_spec_value( _m, ip_spec, &val)!=0) {
 			LM_ERR("failed to get IP PV value!\n");
 			return -1;
 		}
@@ -329,6 +331,22 @@ int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec)
 			return -1;
 		}
 		pv_host = val.rs;
+	}
+
+	if (port_spec == NULL) {
+		pv_port = 0;
+	} else if (port_spec->type != PVT_AVP) {
+		if (pv_get_spec_value( _m, port_spec, &val)!=0) {
+			LM_ERR("failed to get Port PV value!\n");
+			return -1;
+		}
+
+		if ((val.flags&PV_VAL_INT)==0) {
+			LM_ERR("PORT should be an integer!\n");
+			return -1;
+		}
+
+		pv_port = val.ri;
 	}
 
 	ul.lock_udomain(ud, &aor);
@@ -366,17 +384,27 @@ int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec)
 				continue;
 			}
 
-			if (ip_addr_cmp(&ip, ipp))
-				goto out_unlock_found;
-
+			if (ip_addr_cmp(&ip, ipp)) {
+				if (pv_port != 0) {
+					if (pv_port == tmp_uri.port_no)
+						goto out_unlock_found;
+				} else
+					goto out_unlock_found;
+			}
 		} else {
 
 			avp = NULL;
-			while ((avp=search_first_avp(spec->pvp.pvn.u.isname.type,
-					spec->pvp.pvn.u.isname.name.n, (int_str*)&pv_host,avp))) {
+			avp_port = NULL;
+			while ((avp=search_first_avp(ip_spec->pvp.pvn.u.isname.type,
+			ip_spec->pvp.pvn.u.isname.name.n, (int_str*)&pv_host,avp))) { 
 				if (!(avp->flags&AVP_VAL_STR)) {
-					LM_NOTICE("avp value should be string\n");
+					LM_NOTICE("IP avp value should be string\n");
 					continue;
+				}
+
+				if (port_spec != NULL) {
+					avp_port=search_first_avp(port_spec->pvp.pvn.u.isname.type,
+					port_spec->pvp.pvn.u.isname.name.n, (int_str*)&pv_port,avp_port);
 				}
 
 				/* convert the param IP to ip_addr too*/
@@ -387,8 +415,13 @@ int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec)
 					continue;
 				}
 
-				if (ip_addr_cmp(&ip, ipp))
-					goto out_unlock_found;
+				if (ip_addr_cmp(&ip, ipp)) {
+					if (avp_port != NULL && pv_port != 0) {
+						if (pv_port == tmp_uri.port_no)
+							goto out_unlock_found;
+					} else
+						goto out_unlock_found;
+				}
 			}
 		}
 	}

@@ -27,6 +27,7 @@
 #ifndef _ASYNC_H_
 #define _ASYNC_H_
 
+#include "route.h"
 #include "route_struct.h"
 #include "parser/msg_parser.h"
 
@@ -57,6 +58,12 @@ typedef struct _async_ctx {
 	void *resume_param;
 	/* the function to be called upon a timeout event while waiting to read */
 	void *timeout_f;
+
+	/* Optional time limit (seconds) for the async op to complete:
+	 *  - on input: the core async() timeout or 0, presented to the module
+	 *  - on output: an updated timeout, if any, as processed by the module
+	 *  Default: 0 (no timeout) */
+	unsigned int timeout_s;
 } async_ctx;
 
 
@@ -74,7 +81,8 @@ extern int async_status;
           -1 some error happened and the async call did not happened.
  */
 typedef int (async_script_start_function)
-	(struct sip_msg *msg, struct action* a , int resume_route,
+	(struct sip_msg *msg, struct action* a,
+	struct script_route_ref *resume_route,
 	unsigned int timeout, void **params);
 
 /* Handles periodic progress (data arrival) on behalf of the contained,
@@ -140,7 +148,8 @@ int async_fd_resume(int fd, void *param);
 /******** functions related to async launch *******/
 
 int async_script_launch(struct sip_msg *msg, struct action* a,
-		int report_route, void **params);
+		struct script_route_ref *report_route,
+		str *report_route_param, void **params);
 
 /* @fd is always valid */
 int async_launch_resume(int fd, void *param);

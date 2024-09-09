@@ -61,17 +61,26 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>dialog</emphasis> - only if you want to trace dialogs.
+				<emphasis>b2b_logic</emphasis> - only if you want to trace
+				B2B sessions.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>tm</emphasis> - only if you want to trace dialogs/transactions.
+				<emphasis>dialog</emphasis> - only if you want to trace
+				SIP dialogs (INVITE based).
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>proto_hep</emphasis> - only if you want to replicate messages over hep.
+				<emphasis>tm</emphasis> - only if you want to trace 
+				SIP transactions.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>proto_hep</emphasis> - only if you want to 
+				trace / replicate messages over HEP protocol.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -158,7 +167,8 @@ modparam("tracer", "trace_local_ip", "10.1.1.1")
 		<title><varname>trace_id</varname> (str)</title>
 		<para>
 			Specify a destination for the trace. This can be a hep id defined
-			in proto_hep, sip uri or a database url and a table. All parameters inside
+			in proto_hep, a sip uri, a file, a syslog facility or a database
+			url and a table. All parameters inside
 			<emphasis>trace_id</emphasis> must be separated by
 			<emphasis>;</emphasis>, excepting the last one. The parameters
 			are given in key-value format, the possible keys being
@@ -168,6 +178,21 @@ modparam("tracer", "trace_local_ip", "10.1.1.1")
 			<emphasis>[id_name]key1=value1;key2=value2;</emphasis>. HEP
 			id's <emphasis role="bold">MUST</emphasis> be defined in proto_hep in order
 			to be able to use them here.
+		</para>
+		<para>
+			When the uri is a <emphasis>file</emphasis>, the path to the file has
+			to be specified after the colon. The output is always appended if the file
+			exists, or created if it doesn't, using <xref linkend="param_file_mode"/>
+			permissions.
+		</para>
+		<para>
+			When the uri is <emphasis>syslog</emphasis>, it has to follow the following
+			format: <emphasis>syslog[:FACILITY[:LEVEL]]</emphasis>. The default
+			facility and levels are the ones used by &osips;
+			(<emphasis>syslog_facility</emphasis> and <emphasis>log_level</emphasis>).
+			These can be tuned using
+			<xref linkend="param_syslog_default_facility"/> and
+			<xref linkend="param_syslog_default_level"/> parameters.
 		</para>
 		<para>
 			One can declare multiple types of tracing under the same trace
@@ -204,6 +229,73 @@ modparam("tracer", "trace_id",
 /* notice that they all have the same name
  * meaning that calling trace("tid",...)
  * will do sql, sip and hep tracing */
+/*file trace id*/
+modparam("tracer", "trace_id",
+"[tid]uri=file:/path/to/file")
+/*syslog trace id at error (level -1)*/
+modparam("tracer", "trace_id",
+"[tid]uri=syslog:local0:-1")
+...
+</programlisting>
+		</example>
+	</section>
+		<section id="param_syslog_default_facility" xreflabel="syslog_default_facility">
+		<title><varname>syslog_default_facility</varname> (string)</title>
+		<para>
+			When <emphasis>syslog</emphasis> tracing is used, this parameter specifies
+			the log facility to write traces to.
+		</para>
+		<para>
+		<emphasis>
+			Default value is the value of <emphasis>syslog_facility</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>syslog_default_facility</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tracer", "syslog_default_facility", "LOG_DAEMON")
+...
+</programlisting>
+		</example>
+	</section>
+		<section id="param_syslog_default_level" xreflabel="syslog_default_level">
+		<title><varname>syslog_default_level</varname> (integer)</title>
+		<para>
+			When <emphasis>syslog</emphasis> tracing is used, this parameter specifies
+			the level to write traces to.
+		</para>
+		<para>
+		<emphasis>
+			Default value is the value of <emphasis>log_level</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>syslog_default_level</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tracer", "syslog_default_level", 2) # NOTICE
+...
+</programlisting>
+		</example>
+	</section>
+		<section id="param_file_mode" xreflabel="file_mode">
+		<title><varname>file_mode</varname> (integer)</title>
+		<para>
+			When <emphasis>file</emphasis> tracing is used, this parameter
+			specifies the permissions to be used to create the trace files.
+			It follows the UNIX conventions.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>0600 (rw-------)</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>file_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tracer", "file_mode", 0644)
 ...
 </programlisting>
 		</example>
@@ -215,11 +307,11 @@ modparam("tracer", "trace_id",
 	<title>Exported Functions</title>
 	<section id="func_trace" xreflabel="trace()">
 		<title>
-		<function moreinfo="none">trace(trace_id, [scope], [type], [trace_attrs])</function>
+		<function moreinfo="none">trace(trace_id, [scope], [type], [trace_attrs], [flags], [correlation_id])</function>
 		</title>
 		<para>This function has replaced the <emphasis>sip_trace()</emphasis> in &osips; 3.0.</para>
 		<para>
-			Store or replocate current processed SIP message,transaction or dialogin database.
+			Store or replicate current processed SIP message, transaction / dialog or B2B session.
 			It is stored in the form prior applying chages made to it. The traced_user_avp
 			parameter is now an argument to trace() function. Since version 2.2, this function
 			also catches internally generated replies in stateless mode(sl_send_reply(...)).
@@ -236,11 +328,12 @@ modparam("tracer", "trace_id",
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>scope (string, optional)</emphasis> what do you want to trace:
-		dialog, transaction or only the message. If not specified, will try
-		the topmost trace that can be done: if dialog module loaded will trace
-		dialogs, else if tm module loaded will trace transaction and if none
-		of these loaded will trace messages.</para>
+		<para><emphasis>scope (string, optional)</emphasis> what do you 
+		want to trace: dialog, transaction, B2B session or only the message. 
+		If not specified, will try the topmost trace that can be done: 
+		if dialog module loaded will trace dialogs, else if tm module loaded
+		will trace transaction and if none of these loaded will trace messages.
+		</para>
 			<para>Types can be the following:</para>
 			<itemizedlist>
 			<listitem>
@@ -256,6 +349,10 @@ modparam("tracer", "trace_id",
 			<listitem>
 				<para><emphasis>'d'/'D'</emphasis> trace dialog</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>'b'/'B'</emphasis> trace all the traffic
+				related to the B2B session to be later created</para>
+			</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>
@@ -267,14 +364,17 @@ modparam("tracer", "trace_id",
 			<para>Current possible types to be traced are the following:</para>
 			<itemizedlist>
 				<listitem>
-					<para><emphasis>sip</emphasis> - enable sip messages tracing;</para>
+					<para><emphasis>sip</emphasis> - enable sip messages 
+					tracing;</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>xlog</emphasis> - enable xlog messages tracing in current
-						scope(dialog, transaction or message);</para>
+					<para><emphasis>xlog</emphasis> - enable xlog messages 
+					tracing in current scope(dialog, transaction, B2B session
+					or message);</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>rest</emphasis> - enable rest messages tracing;</para>
+					<para><emphasis>rest</emphasis> - enable rest messages 
+					tracing;</para>
 				</listitem>
 			</itemizedlist>
 		</listitem>
@@ -283,6 +383,28 @@ modparam("tracer", "trace_id",
 			replaces the traced_user_avp from the old version. To avoid duplicating
 			an entry only for this parameter, whatever you put here(string/pvar)
 			shall be stored in the trace_attrs column in the sip_trace table.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>flags (string,pvar)</emphasis> are some control
+			flags over the tracing process (how and what to be traced).
+			</para>
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>C</emphasis> - trace only the SIP caller side;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>c</emphasis> - trace onlt the SIP callee side;</para>
+				</listitem>
+			</itemizedlist>
+			<para>If both <emphasis>C</emphasis> and <emphasis>c</emphasis> flags are missing, tracing of both sides/legs is assumed.</para>
+			<para>NOTE these flags are supported only by transactional and dialog tracing</para>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>correlation_id (string,pvar)</emphasis> a custom
+			SIP correlation ID to be forced (normally the SIP Call-ID is used)
+			to correlate this traffic (transaction, dialog) with other traffic.
 			</para>
 		</listitem>
 
@@ -330,7 +452,7 @@ modparam("tracer", "trace_id",
 		trace($var(trace_id), "t", "xlog|rest", $var(user));
 		if (!www_authorize("", "subscriber")) {
 			/* tracer will also catch the 401 generated by www_challenge() */
-			www_challenge("", 1);
+			www_challenge("", "auth");
 		}
 	}
 </programlisting>

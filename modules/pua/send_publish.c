@@ -45,6 +45,7 @@
 #include "send_publish.h"
 #include "pua_callback.h"
 #include "event_list.h"
+#include "clustering.h"
 
 /**
  * !! IMPORTANT !!
@@ -582,7 +583,9 @@ int send_publish( publ_info_t* publ )
 	pua_event_t* ev= NULL;
 	publ_t **last;
 
-	LM_DBG("pres_uri=%.*s\n", publ->pres_uri->len, publ->pres_uri->s );
+	LM_DBG("pres_uri=%.*s, event=%d, flag=%d, src flags=%d\n",
+		publ->pres_uri->len, publ->pres_uri->s,
+		publ->event, publ->flag, publ->source_flag);
 
 	/* get event from list */
 
@@ -603,12 +606,23 @@ int send_publish( publ_info_t* publ )
 
 	hash_code= core_hash(publ->pres_uri, NULL, HASH_SIZE);
 
-	LM_DBG("Try to get hash lock [%d]\n", hash_code);
 	lock_get(&HashT->p_records[hash_code].lock);
-	LM_DBG("Got hash lock %d\n", hash_code);
 
-	if(publ->flag != INSERT_TYPE)
+	if(publ->flag != INSERT_TYPE) {
 		presentity= search_htable(&pres, hash_code);
+		if (presentity==NULL && is_pua_cluster_enabled()) {
+			lock_release(&HashT->p_records[hash_code].lock);
+			if ( db_restore( &pres ) < 0 ) {
+				lock_get(&HashT->p_records[hash_code].lock);
+				LM_ERR("failed to restore updated record from DB\n");
+			} else {
+				/* search again, hopefully it was loaded from DB */
+				lock_get(&HashT->p_records[hash_code].lock);
+				presentity= search_htable(&pres, hash_code);
+			}
+		}
+	}
+
 	if(publ->etag && presentity== NULL)
 	{
 		LM_DBG("Etag restriction and no record found\n");

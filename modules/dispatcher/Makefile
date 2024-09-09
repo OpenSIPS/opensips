@@ -1,5 +1,3 @@
-# $Id$
-#
 # example module makefile
 #
 # 
@@ -10,6 +8,6 @@ include ../../Makefile.defs
 auto_gen=
 NAME=dispatcher.so
 
-LIBS=-lm
+LIBS += -lm
 
 include ../../Makefile.modules

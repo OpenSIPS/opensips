@@ -45,7 +45,7 @@
 
 static int mi_mod_init(void);
 static void fifo_process(int rank);
-static int mi_destroy(void);
+static void mi_destroy(void);
 
 /* FIFO server vars */
 /* FIFO name */
@@ -66,7 +66,7 @@ int mi_trace_mod_id = -1;
 char* mi_trace_bwlist_s;
 
 
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"fifo_name",             STR_PARAM, &mi_fifo},
 	{"fifo_mode",             INT_PARAM, &mi_fifo_mode},
 	{"fifo_group",            STR_PARAM, &mi_fifo_gid_s},
@@ -81,8 +81,9 @@ static param_export_t mi_params[] = {
 };
 
 
-static proc_export_t mi_procs[] = {
-	{"MI FIFO",  0,  0,  fifo_process,  1 , PROC_FLAG_INITCHILD },
+static const proc_export_t mi_procs[] = {
+	{"MI FIFO",  0,  0,  fifo_process,  1 ,
+		PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT },
 	{0,0,0,0,0,0}
 };
 
@@ -227,7 +228,7 @@ static void fifo_process(int rank)
 }
 
 
-static int mi_destroy(void)
+static void mi_destroy(void)
 {
 	int n;
 	struct stat filestat;
@@ -239,15 +240,11 @@ static int mi_destroy(void)
 		if (unlink(mi_fifo)<0){
 			LM_ERR("cannot delete the fifo (%s): %s\n",
 				mi_fifo, strerror(errno));
-			goto error;
+			return;
 		}
 	} else if (n<0 && errno!=ENOENT) {
 		LM_ERR("FIFO stat failed: %s\n", strerror(errno));
-		goto error;
+		return;
 	}
-
-	return 0;
-error:
-	return -1;
 }
 

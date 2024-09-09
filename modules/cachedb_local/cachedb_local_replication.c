@@ -53,6 +53,12 @@ int cache_replicated_insert(bin_packet_t *packet)
                 return -1;
         }
 
+        if (!col->replicated) {
+                LM_DBG("Collection: %.*s not configured as replicated, "
+                        "ignoring cache entry\n", col_name.len, col_name.s);
+                return 0;
+        }
+
         if ((_lcache_htable_insert(col, &attr, &value, expires, 1)) < 0) {
                 LM_ERR("Can not insert...\n");
                 return -1;
@@ -80,6 +86,12 @@ int cache_replicated_remove(bin_packet_t *packet)
         if (!col) {
                 LM_ERR("Collection: %.*s not found\n", col_name.len, col_name.s);
                 return -1;
+        }
+
+        if (!col->replicated) {
+                LM_DBG("Collection: %.*s not configured as replicated, "
+                        "ignoring cache remove\n", col_name.len, col_name.s);
+                return 0;
         }
 
         if ((_lcache_htable_remove(col, &attr, 1)) < 0) {
@@ -168,29 +180,37 @@ int receive_sync_request(int node_id)
         lcache_col_t *col;
         lcache_entry_t *data;
         bin_packet_t *sync_packet;
+        lcache_t* cache_htable;
 
         for ( col=lcache_collection; col; col=col->next ) {
                 LM_DBG("Found collection %.*s\n", col->col_name.len, col->col_name.s);
 
-                for (i =0; i < col->size; i++) {
-                        lock_get(&col->col_htable[i].lock);
-                        data = col->col_htable[i].entries;
+                if (!col->replicated)
+                        continue;
+
+                cache_htable = col->col_htable->htable;
+
+                for (i =0; i < col->col_htable->size; i++) {
+                        lock_get(&cache_htable[i].lock);
+                        data = cache_htable[i].entries;
                         while(data) {
                                 if (data->expires == 0 || data->expires > get_ticks()) {
                                         sync_packet = clusterer_api.sync_chunk_start(&cache_repl_cap,
                                                                         cluster_id, node_id, BIN_VERSION);
                                         if (!sync_packet) {
                                                 LM_ERR("Can not create sync packet!\n");
+												lock_release(&cache_htable[i].lock);
                                                 return -1;
                                         }
                                         bin_push_str(sync_packet, &col->col_name);
                                         bin_push_str(sync_packet, &data->attr);
                                         bin_push_str(sync_packet, &data->value);
-                                        bin_push_int(sync_packet, data->expires);
+                                        bin_push_int(sync_packet, data->expires ?
+                                                data->expires - get_ticks() : 0);
                                 }
                                 data = data->next;
                         }
-                        lock_release(&col->col_htable[i].lock);
+                        lock_release(&cache_htable[i].lock);
                 }
         }
 
@@ -199,37 +219,74 @@ int receive_sync_request(int node_id)
 
 void receive_cluster_event(enum clusterer_event ev, int node_id)
 {
+        lcache_col_t *col;
+        lcache_t* cache_htable;
+        lcache_entry_t *entry, *prev, *tmp;
+        int i;
+
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to send sync data to node: %d\n", node_id);
+        else if (ev == SYNC_DONE) {
+                for (col = lcache_collection; col; col = col->next) {
+                        if (!col->replicated || !col->rpm_cache)
+                                continue;
+
+                        cache_htable = col->col_htable->htable;
+
+                        for (i = 0; i < col->col_htable->size; i++) {
+                                lock_get(&cache_htable[i].lock);
+
+                                prev = NULL;
+                                entry = cache_htable[i].entries;
+
+                                while (entry) {
+                                        if (!entry->synced) {
+                                                if (prev)
+                                                        prev->next = entry->next;
+                                                else
+                                                        cache_htable[i].entries = entry->next;
+
+                                                tmp = entry;
+                                                entry = entry->next;
+
+                                                func_free(col->free, tmp);
+                                        } else {
+                                                prev = entry;
+                                                entry = entry->next;
+                                        }
+                                }
+
+                                lock_release(&cache_htable[i].lock);
+                        }
+                }
+        }
 }
 
-void receive_binary_packet(bin_packet_t *packet)
+void receive_binary_packet(bin_packet_t *pkt)
 {
         int rc = 0;
-        bin_packet_t * pkt;
-        for (pkt = packet; pkt; pkt = pkt->next) {
-                LM_DBG("Got cache replication packet %d\n", pkt->type);
-                switch(pkt->type) {
-                        case REPL_CACHE_INSERT:
-                        rc = cache_replicated_insert(pkt);
-                        break;
-                        case REPL_CACHE_REMOVE:
-                        rc = cache_replicated_remove(pkt);
-                        break;
-                        case SYNC_PACKET_TYPE:
-        			while (clusterer_api.sync_chunk_iter(pkt))
-        				if (cache_replicated_insert(pkt) < 0) {
-        					LM_ERR("Failed to process sync packet\n");
-        					return;
-        				}
-        			break;
-                default:
-                        rc = -1;
-                        LM_WARN("Invalid cache binary packet command: %d "
-                                "(from node: %d in cluster: %d)\n", pkt->type, pkt->src_id,
-                                cluster_id);
-                }
-                if (rc != 0)
-			LM_ERR("Failed to process a binary packet!\n");
+
+        LM_DBG("Got cache replication packet %d\n", pkt->type);
+        switch(pkt->type) {
+                case REPL_CACHE_INSERT:
+                rc = cache_replicated_insert(pkt);
+                break;
+                case REPL_CACHE_REMOVE:
+                rc = cache_replicated_remove(pkt);
+                break;
+                case SYNC_PACKET_TYPE:
+			while (clusterer_api.sync_chunk_iter(pkt))
+				if (cache_replicated_insert(pkt) < 0) {
+					LM_ERR("Failed to process sync packet\n");
+					return;
+				}
+			break;
+        default:
+                rc = -1;
+                LM_WARN("Invalid cache binary packet command: %d "
+                        "(from node: %d in cluster: %d)\n", pkt->type, pkt->src_id,
+                        cluster_id);
         }
+        if (rc != 0)
+		LM_ERR("Failed to process a binary packet!\n");
 }

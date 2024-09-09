@@ -29,6 +29,7 @@
 #include "../../locking.h"
 #include "../../flags.h"
 #include "../../parser/parse_from.h"
+#include "../../parser/sdp/sdp.h"
 #include "../b2b_logic/b2b_load.h"
 #include "cc_data.h"
 #include "cc_queue.h"
@@ -45,9 +46,12 @@ static str rt_db_url = {NULL, 0};;
 static struct cc_data *data=NULL;
 static str b2b_scenario = str_init("call center");
 static str b2b_scenario_agent = str_init("call center agent");
+static str b2b_logic_ctx_param = str_init("call_center");
 
 /* b2b logic API */
 b2bl_api_t b2b_api;
+
+static call_state cc_call_state = CC_CALL_NONE;
 
 
 static int mod_init(void);
@@ -69,9 +73,17 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_dispatch_call_to_agent(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_internal_call_dispatching(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param);
+static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
+		str *media_s);
 static int w_agent_login(struct sip_msg *req, str *agent_s, int *state);
+
+static int pv_get_cc_state( struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
 
 static void cc_timer_agents(unsigned int ticks, void* param);
 static void cc_timer_calls(unsigned int ticks, void* param);
@@ -84,8 +96,10 @@ unsigned long stg_free_agents(unsigned short foo);
 stat_var *stg_incalls = 0;
 stat_var *stg_dist_incalls = 0;
 stat_var *stg_answ_incalls = 0;
+stat_var *stg_answ_inchats = 0;
 stat_var *stg_aban_incalls = 0;
 stat_var *stg_onhold_calls = 0;
+stat_var *stg_onhold_chats = 0;
 
 /* a default of 30 secs wrapup time for agents */
 unsigned int wrapup_time = 30;
@@ -94,10 +108,18 @@ unsigned int wrapup_time = 30;
 str queue_pos_param = {NULL,0};
 /* by default reject new calls if there are no agents logged */
 static int reject_on_no_agents = 1;
+/* default policy for distributing the MSRP/CHAT sessions to agents */
+int msrp_dispatch_policy = CC_MSRP_POLICY_LB;
+static char *msrp_dispatch_policy_str = NULL;
+/* if calls should be dispatched by internals of the module */
+static int internal_call_dispatching_param = 1;
+int *internal_call_dispatching = NULL;
 
-static cmd_export_t cmds[]={
+
+static const cmd_export_t cmds[]={
 	{"cc_handle_call", (cmd_function)w_handle_call,
 		{{CMD_PARAM_STR, 0,0},
+		 {CMD_PARAM_STR|CMD_PARAM_OPT, 0,0},
 		 {CMD_PARAM_STR|CMD_PARAM_OPT, 0,0},
 		 {0,0,0}},
 		REQUEST_ROUTE},
@@ -109,20 +131,25 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "db_url",               STR_PARAM, &db_url.s             },
 	{ "acc_db_url",           STR_PARAM, &acc_db_url.s         },
 	{ "rt_db_url",            STR_PARAM, &rt_db_url.s          },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
 	{ "reject_on_no_agents",  INT_PARAM, &reject_on_no_agents  },
+	{ "chat_dispatch_policy", STR_PARAM, &msrp_dispatch_policy_str },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
+	{ "internal_call_dispatching",INT_PARAM, &internal_call_dispatching_param},
 	{ "cc_agents_table",      STR_PARAM, &cc_agent_table_name.s  },
 	{ "cca_agentid_column",   STR_PARAM, &cca_agentid_column.s   },
 	{ "cca_location_column",  STR_PARAM, &cca_location_column.s  },
+	{ "cca_msrp_location_column",    STR_PARAM, &cca_msrp_location_column.s  },
+	{ "cca_msrp_max_sessions_column",STR_PARAM, &cca_msrp_max_sessions_column.s  },
 	{ "cca_skills_column",    STR_PARAM, &cca_skills_column.s    },
 	{ "cca_logstate_column",  STR_PARAM, &cca_logstate_column.s  },
 	{ "cca_wrapupend_column", STR_PARAM, &cca_wrapupend_column.s },
 	{ "cca_wrapuptime_column",STR_PARAM, &cca_wrapuptime_column.s},
+
 	{ "cc_flows_table",       STR_PARAM, &cc_flow_table_name.s             },
 	{ "ccf_flowid_column",    STR_PARAM, &ccf_flowid_column.s              },
 	{ "ccf_priority_column",  STR_PARAM, &ccf_priority_column.s            },
@@ -142,10 +169,11 @@ static param_export_t mod_params[]={
 	{ "ccf_m_dissuading_column",
 							  STR_PARAM, &ccf_m_dissuading_column.s        },
 	{ "ccf_m_flow_id_column", STR_PARAM, &ccf_m_flow_id_column.s           },
+	{ "b2b_logic_ctx_param",  STR_PARAM, &b2b_logic_ctx_param.s            },
 	{ 0,0,0 }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{"cc_reload", 0, 0, mi_child_init, {
 		{mi_cc_reload, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -174,22 +202,33 @@ static mi_export_t mi_cmds[] = {
 		{mi_reset_stats, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
+	{"cc_dispatch_call_to_agent", 0, 0, 0, {
+		{mi_dispatch_call_to_agent, {"call_id", "agent_id", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"cc_internal_call_dispatching", 0, 0, 0, {
+		{mi_internal_call_dispatching, {0}},
+		{mi_internal_call_dispatching, {"dispatching", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"ccg_incalls",             0,             &stg_incalls                  },
 	{"ccg_awt",                 STAT_IS_FUNC,  (stat_var**)stg_awt           },
 	{"ccg_load",                STAT_IS_FUNC,  (stat_var**)stg_load          },
 	{"ccg_distributed_incalls", 0,             &stg_dist_incalls             },
 	{"ccg_answered_incalls" ,   0,             &stg_answ_incalls             },
+	{"ccg_answered_inchats" ,   0,             &stg_answ_inchats             },
 	{"ccg_abandonned_incalls" , 0,             &stg_aban_incalls             },
 	{"ccg_onhold_calls",        STAT_NO_RESET, &stg_onhold_calls             },
+	{"ccg_onhold_chats",        STAT_NO_RESET, &stg_onhold_chats             },
 	{"ccg_free_agents",         STAT_IS_FUNC,  (stat_var**)stg_free_agents   },
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "b2b_logic", DEP_ABORT },
 		{ MOD_TYPE_SQLDB,   NULL,        DEP_ABORT },
@@ -198,6 +237,12 @@ static dep_export_t deps = {
 	{ /* modparam dependencies */
 		{ NULL, NULL },
 	},
+};
+
+static const pv_export_t mod_pvars[] = {
+	{ str_const_init("cc_state"),     1000, pv_get_cc_state,
+		0,                 0, 0, 0, 0 },
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 struct module_exports exports= {
@@ -212,7 +257,7 @@ struct module_exports exports= {
 	mod_params,      /* param exports */
 	mod_stats,       /* exported statistics */
 	mi_cmds,         /* exported MI functions */
-	0,               /* exported pseudo-variables */
+	mod_pvars,       /* exported pseudo-variables */
 	0,				 /* exported transformations */
 	0,               /* extra processes */
 	0,               /* module pre-initialization function */
@@ -239,7 +284,7 @@ unsigned long stg_load(unsigned short foo)
 
 	lock_get( data->lock );
 
-	if (data->logedin_agents==0) {
+	if (data->loggedin_agents==0) {
 		lock_release( data->lock );
 		return 0;
 	}
@@ -249,7 +294,7 @@ unsigned long stg_load(unsigned short foo)
 		if (agent->state==CC_AGENT_FREE) free_ag++;
 	}
 
-	load = 100*( get_stat_val(stg_onhold_calls) + data->logedin_agents - free_ag ) / data->logedin_agents;
+	load = 100*( get_stat_val(stg_onhold_calls) + data->loggedin_agents - free_ag ) / data->loggedin_agents;
 
 	lock_release( data->lock );
 
@@ -331,9 +376,25 @@ static int mod_init(void)
 	ccf_m_queue_column.len = strlen(ccf_m_queue_column.s);
 	ccf_m_dissuading_column.len = strlen(ccf_m_dissuading_column.s);
 	ccf_m_flow_id_column.len = strlen(ccf_m_flow_id_column.s);
+	b2b_logic_ctx_param.len = strlen(b2b_logic_ctx_param.s);
 
 	if (queue_pos_param.s)
 		queue_pos_param.len = strlen(queue_pos_param.s);
+
+	if (msrp_dispatch_policy_str) {
+		if (!strcasecmp(msrp_dispatch_policy_str, "balancing")) {
+			msrp_dispatch_policy = CC_MSRP_POLICY_LB;
+		} else if (!strcasecmp(msrp_dispatch_policy_str, "full-load")) {
+			msrp_dispatch_policy = CC_MSRP_POLICY_FULL_AGENT;
+		}
+	}
+
+	internal_call_dispatching = (int*)shm_malloc(sizeof(int));
+	if (internal_call_dispatching==NULL) {
+		LM_ERR("Can't allocate shm holder for internal_call_dispatching\n");
+		return -1;
+	}
+	*internal_call_dispatching =  (internal_call_dispatching_param==0) ? 0 : 1;
 
 	/* Load B2BUA API */
 	if (load_b2b_logic_api( &b2b_api) != 0) {
@@ -490,9 +551,17 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 	if (prev_state==CC_CALL_TOAGENT || prev_state==CC_CALL_PRE_TOAGENT) {
 		/* free the agent */
 		if (stat && stat->call_time && prev_state==CC_CALL_TOAGENT) {
-			call->agent->state = CC_AGENT_WRAPUP;
-			call->agent->wrapup_end_time = get_ticks()
-				+ get_wrapup_time(call->agent, call->flow);
+			if (call->media==CC_MEDIA_RTP) {
+				call->agent->state = CC_AGENT_WRAPUP;
+				call->agent->wrapup_end_time = get_ticks()
+					+ get_wrapup_time(call->agent, call->flow);
+			} else /*MSRP*/ {
+				call->agent->state = CC_AGENT_INCHAT ;
+				call->agent->wrapup_end_time =
+					( (call->agent->wrapup_end_time<get_ticks()) ?
+						get_ticks():call->agent->wrapup_end_time )
+					+ get_wrapup_time(call->agent, call->flow);
+			}
 			call->flow->processed_calls ++;
 			call->flow->avg_call_duration =
 				( ((float)stat->call_time + 
@@ -504,7 +573,10 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 			update_cc_flow_awt(call->flow, stat->start_time - call->recv_time);
 			update_cc_agent_att(call->agent, stat->call_time);
 		} else {
-			call->agent->state = CC_AGENT_FREE;
+			call->agent->state = (call->media==CC_MEDIA_RTP) ?
+				CC_AGENT_FREE :
+				( (call->agent->ongoing_sessions[CC_MEDIA_MSRP]==1) ?
+					CC_AGENT_FREE : CC_AGENT_INCHAT) ;
 			/* update awt for failed calls */
 			update_awt( get_ticks() - call->recv_time );
 			update_cc_flow_awt( call->flow, get_ticks() - call->recv_time );
@@ -512,6 +584,7 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 		/* update end time for agent's wrapup */
 		cc_db_update_agent_wrapup_end(call->agent);
 		agent_raise_event( call->agent, NULL);
+		call->agent->ongoing_sessions[call->media]--;
 		call->agent->ref_cnt--;
 		call->agent = NULL;
 	} else {
@@ -530,15 +603,15 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 
 	lock_release( data->lock );
 
-	if (call->setup_time==-1 && stat)
-		call->setup_time = stat->setup_time;
+	if (call->setup_time==-1)
+		call->setup_time = stat ? stat->setup_time : 0;
 
 	/* generate CDR */
 	type = (stat==NULL) ? -1 : ((prev_state==CC_CALL_TOAGENT && stat->call_time)? 0 : 1);
 	cc_write_cdr( &un, &fid, &aid, type, call->recv_time,
 		((type==0)? stat->start_time : get_ticks()) - call->recv_time ,
-		(type==0)?stat->call_time:0 , call->setup_time, call->no_rejections, call->fst_flags,
-		call->id);
+		(type==0)?stat->call_time:0 , call->setup_time, call->no_rejections,
+		call->fst_flags, call->id, call->media);
 
 	cc_db_delete_call(call);
 }
@@ -568,12 +641,22 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 	/* prepare CDR */
 	prepare_cdr( call, &un, &fid , &aid);
 
-	call->agent->state = CC_AGENT_WRAPUP;
-	call->agent->wrapup_end_time = get_ticks() +
-				+ get_wrapup_time(call->agent, call->flow);
+	if (call->media==CC_MEDIA_RTP) {
+		call->agent->state = CC_AGENT_WRAPUP;
+		call->agent->wrapup_end_time = get_ticks()
+			+ get_wrapup_time(call->agent, call->flow);
+	} else /*MSRP*/ {
+		call->agent->state = CC_AGENT_INCHAT ;
+		call->agent->wrapup_end_time =
+			( (call->agent->wrapup_end_time<get_ticks()) ?
+				get_ticks():call->agent->wrapup_end_time )
+			+ get_wrapup_time(call->agent, call->flow);
+	}
+
 	/* update end time for agent's wrapup */
 	cc_db_update_agent_wrapup_end(call->agent);
 	agent_raise_event( call->agent, NULL);
+	call->agent->ongoing_sessions[call->media]--;
 	call->agent->ref_cnt--;
 	call->agent = NULL;
 
@@ -587,6 +670,7 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 
 	lock_release( data->lock );
 
+	cc_call_state = call->state;
 	if(from_customer || call->prev_state != CC_CALL_QUEUED) {
 		/* send call to queue */
 		if (set_call_leg( NULL, call, &out)< 0 ) {
@@ -597,12 +681,17 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 		{
 			update_stat( stg_onhold_calls, 1);
 			update_stat( call->flow->st_onhold_calls, 1);
+			if (call->media==CC_MEDIA_MSRP) {
+				update_stat( stg_onhold_chats, 1);
+				update_stat( call->flow->st_onhold_chats, 1);
+			}
 		}
 	}
+	cc_call_state = CC_CALL_NONE;
 	/* write CDR */
 	cc_write_cdr( &un, &fid, &aid, -2, call->recv_time,
 		get_ticks() - call->recv_time, 0 , pickup_time, call->no_rejections-1,
-		call->fst_flags, call->id);
+		call->fst_flags, call->id, call->media);
 	cc_db_update_call(call);
 }
 
@@ -665,16 +754,23 @@ int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
 	LM_DBG("** onhold-- Bridging [%p]\n", call);
 	update_stat( stg_onhold_calls, -1);
 	update_stat( call->flow->st_onhold_calls, -1);
+	if (call->media==CC_MEDIA_MSRP) {
+		update_stat( stg_onhold_chats, -1);
+		update_stat( call->flow->st_onhold_chats, -1);
+	}
 
 	LM_DBG("Bridge two calls [%p] - [%p]\n", call, call->agent);
+	cc_call_state = call->state;
 	cnt = --call->ref_cnt;
 	if(b2b_api.bridge_2calls(&call->b2bua_id, &call->b2bua_agent_id) < 0)
 	{
 		LM_ERR("Failed to bridge the agent with the customer\n");
 		lock_set_release( data->call_locks, call->lock_idx );
 		b2b_api.terminate_call(&call->b2bua_id);
+		cc_call_state = CC_CALL_NONE;
 		return -1;
 	}
+	cc_call_state = CC_CALL_NONE;
 	/* if the agent was connected to the costumer */	
 	lock_set_release( data->call_locks, call->lock_idx );
 	
@@ -693,6 +789,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 
 	lock_set_get( data->call_locks, call->lock_idx );
 	cs = call->state;
+	cc_call_state = call->state;
 
 	if (event==B2B_DESTROY_CB) {
 		LM_DBG("A delete in b2blogic, call->state=%d, %p\n", call->state, call);
@@ -705,6 +802,10 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 				LM_DBG("** onhold-- Destroy [%p]\n", call);
 				update_stat( stg_onhold_calls, -1);
 				update_stat( call->flow->st_onhold_calls, -1);
+				if (call->media==CC_MEDIA_MSRP) {
+					update_stat( stg_onhold_chats, -1);
+					update_stat( call->flow->st_onhold_chats, -1);
+				}
 			}
 			if (cs == CC_CALL_TOAGENT) {
 				/* call no longer on wait */
@@ -719,11 +820,13 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 			free_cc_call( data, call);
 		else
 			LM_DBG("!!! Call ref not 0 - do not delete %p\n", call);
+		cc_call_state = CC_CALL_NONE;
 		return 0;
 	}
 
 	if(call->ign_cback) {
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 2;
 	}
 
@@ -734,6 +837,11 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 			update_stat( call->flow->st_answ_incalls, 1);
 			call->fst_flags |= FSTAT_ANSW;
 			update_stat( call->agent->st_answ_incalls, 1);
+			if (call->media==CC_MEDIA_MSRP) {
+				update_stat( stg_answ_inchats, 1);
+				update_stat( call->flow->st_answ_inchats, 1);
+				update_stat( call->agent->st_answ_inchats, 1);
+			}
 		}
 	}
 	
@@ -745,12 +853,17 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		}
 		/* external caller terminated the call */
 		call->state = CC_CALL_ENDED;
+		cc_call_state = CC_CALL_ENDED;
 		lock_set_release( data->call_locks, call->lock_idx );
 		if (cs<CC_CALL_TOAGENT) {
 			/* call terminated while onwait */
 			LM_DBG("** onhold-- BYE from customer [%p]\n", call);
 			update_stat( stg_onhold_calls, -1);
 			update_stat( call->flow->st_onhold_calls, -1);
+			if (call->media==CC_MEDIA_MSRP) {
+				update_stat( stg_onhold_chats, -1);
+				update_stat( call->flow->st_onhold_chats, -1);
+			}
 		}
 		/* Abandon: client was not sent to agent yet, or call still ringing
 		 * on agent side
@@ -764,11 +877,13 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		terminate_call(call, stat, cs);
 
 		/* route the BYE according to scenario */
+		cc_call_state = CC_CALL_NONE;
 		return 2;
 	}
 	/* if reInvite to the customer failed - end the call */
 	if(event == B2B_REJECT_CB && params->entity==0) {
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 1;
 	}
 
@@ -776,9 +891,11 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		if(call->state == CC_CALL_TOAGENT) {
 			handle_agent_reject(call, 1, stat->setup_time);
 			lock_set_release( data->call_locks, call->lock_idx );
+			cc_call_state = CC_CALL_NONE;
 			return 0;
 		}
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 1;
 	}
 
@@ -786,21 +903,25 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	 * events, just in the BYEs from media/agent side */
 	if (event!=B2B_BYE_CB) {
 		lock_set_release( data->call_locks, call->lock_idx );
-		return 0;
+		cc_call_state = CC_CALL_NONE;
+		return 1;
 	}
 
 	/* right-side leg of call sent BYE */
 	if (stat->call_time==0 && call->state == CC_CALL_TOAGENT) {
 		LM_INFO("*** AGENT answered and closed immediately %.*s\n",
-			call->agent->location.len, call->agent->location.s);
+			call->agent->media[call->media].location.len,
+			call->agent->media[call->media].location.s);
 		handle_agent_reject(call, 1, stat->setup_time);
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 0;
 	}
 
 	/* get next state */
 	lock_get( data->lock );
 
+	cc_call_state = CC_CALL_NONE;
 	if (cc_call_state_machine( data, call, &leg )!=0) {
 		LM_ERR("failed to get next call destination \n");
 		lock_release( data->lock );
@@ -808,6 +929,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		/* force BYE to be sent in both parts */
 		return -1;
 	}
+	cc_call_state = call->state;
 
 	lock_release( data->lock );
 
@@ -817,12 +939,17 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	if (call->state == CC_CALL_ENDED) {
 		lock_set_release( data->call_locks, call->lock_idx );
 		terminate_call( call, stat, cs);
+		cc_call_state = CC_CALL_NONE;
 		return 2;
 	} else if (call->state == CC_CALL_TOAGENT) {
 		/* call no longer on wait */
 		LM_DBG("** onhold-- Direct to agent [%p]\n", call);
 		update_stat( stg_onhold_calls, -1);
 		update_stat( call->flow->st_onhold_calls, -1);
+		if (call->media==CC_MEDIA_MSRP) {
+			update_stat( stg_onhold_chats, -1);
+			update_stat( call->flow->st_onhold_chats, -1);
+		}
 	}
 
 	/* send call to selected destination */
@@ -830,8 +957,10 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		LM_ERR("failed to set new destination for call\n");
 		lock_set_release( data->call_locks, call->lock_idx );
 		pkg_free(leg.s);
+		cc_call_state = CC_CALL_NONE;
 		return -1;
 	}
+	cc_call_state = CC_CALL_NONE;
 	lock_set_release( data->call_locks, call->lock_idx );
 
 	if(cc_db_update_call(call) < 0)
@@ -848,6 +977,7 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 {
 	str* id;
 	b2bl_init_params_t b2b_params;
+	str proxy = {0,0};
 
 	LM_DBG("call %p moving to %.*s , state %d\n", call,
 		new_leg->len, new_leg->s, call->state);
@@ -857,10 +987,14 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 
 		memset(&b2b_params, 0, sizeof b2b_params);
 		b2b_params.e1_type = B2B_CLIENT;
-		b2b_params.e1_to = call->agent->location;
+		b2b_params.e1_to = call->agent->media[call->media].location;
 		b2b_params.e1_from_dname = call->caller_dn;
 		b2b_params.e2_type = B2B_CLIENT;
 		b2b_params.e2_to = *new_leg;
+		if (call->script_param.len) {
+			b2b_params.ctx_key = b2b_logic_ctx_param;
+			b2b_params.ctx_val = call->script_param;
+		}
 
 		id = b2b_api.init(NULL, &b2b_scenario_agent, &b2b_params, b2bl_callback_agent,
 				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL);
@@ -887,6 +1021,10 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		b2b_params.e1_type = B2B_SERVER;
 		b2b_params.e2_type = B2B_CLIENT;
 		b2b_params.e2_to = *new_leg;
+		if (call->script_param.len) {
+			b2b_params.ctx_key = b2b_logic_ctx_param;
+			b2b_params.ctx_val = call->script_param;
+		}
 
 		id = b2b_api.init(msg, &b2b_scenario, &b2b_params, b2bl_callback_customer,
 				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL /* custom_hdrs */ );
@@ -906,7 +1044,8 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		call->b2bua_id.len = id->len;
 	} else {
 		/* call already ongoing */
-		if(b2b_api.bridge( &call->b2bua_id, new_leg, &call->caller_dn, 0) < 0) {
+		if(b2b_api.bridge( &call->b2bua_id, new_leg, &proxy,
+			&call->caller_dn, 0) < 0) {
 			LM_ERR("bridging failed\n");
 			b2b_api.terminate_call(&call->b2bua_id);
 			return -1;
@@ -972,13 +1111,15 @@ done:
 }
 
 
-static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
+static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
+		str *media_s)
 {
 	struct cc_flow *flow;
 	struct cc_call *call;
 	str leg = {NULL,0};
 	str *dn;
 	int dec;
+	unsigned int media;
 	int ret = -1;
 
 	call = NULL;
@@ -1020,6 +1161,36 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 	}
 	LM_DBG("cid=<%.*s>\n",dn->len,dn->s);
 
+	/* detect the media type */
+	if (media_s==NULL || media_s->s==NULL || media_s->len==0) {
+		struct sdp_info *sdp;
+		if ( (sdp=parse_sdp(msg))==NULL ) {
+			LM_ERR("failed to parse the SDP body\n");
+			ret = -6;
+			goto error;
+		}
+		/* TODO - right now we look only at the first session / stream */
+		if (sdp->sessions==NULL || sdp->sessions->streams==NULL) {
+			LM_ERR("no session/stream in the SDP\n");
+			ret = -6;
+			goto error;
+		}
+		media_s = &sdp->sessions->streams->transport;
+	}
+	str _rtp = str_init("RTP");
+	str _msrp = str_init("MSRP");
+	if (str_strstr( media_s, &_rtp))
+		media = CC_MEDIA_RTP;
+	else
+	if (str_strstr( media_s, &_msrp))
+		media = CC_MEDIA_MSRP;
+	else {
+		LM_ERR("media [%.*s] is neither RTP, nor MSRP\n",
+			media_s->len, media_s->s);
+		ret = -7;
+		goto error;
+	}
+
 	call = new_cc_call(data, flow, dn, &get_from(msg)->parsed_uri.user, param);
 	if (call==NULL) {
 		LM_ERR("failed to create new call\n");
@@ -1027,6 +1198,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 		goto error;
 	}
 	call->fst_flags |= FSTAT_INCALL;
+	call->media = media;
 
 	/* get estimated wait time */
 	if (flow->logged_agents)
@@ -1036,7 +1208,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 	else
 		call->eta = INT_MAX;
 
-	LM_DBG("avg_call_duration=%.2f queued_calls=%lu logedin_agents=%u\n",
+	LM_DBG("avg_call_duration=%.2f queued_calls=%lu loggedin_agents=%u\n",
 		flow->avg_call_duration, get_stat_val(flow->st_queued_calls),
 		flow->logged_agents);
 
@@ -1054,6 +1226,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 		ret = -5;
 		goto error;
 	}
+	cc_call_state = call->state;
 
 	lock_release( data->lock );
 	LM_DBG("new destination for call(%p) is %.*s (state=%d)\n",
@@ -1064,6 +1237,10 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 		LM_DBG("** onhold++ Not to agent [%p]\n", call);
 		update_stat( stg_onhold_calls, +1);
 		update_stat( flow->st_onhold_calls, +1);
+		if (call->media==CC_MEDIA_MSRP) {
+			update_stat( stg_onhold_chats, +1);
+			update_stat( flow->st_onhold_chats, +1);
+		}
 		dec = 1;
 	}
 
@@ -1074,6 +1251,10 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 			LM_DBG("** onhold-- Error [%p]\n", call);
 			update_stat( stg_onhold_calls, -1);
 			update_stat( flow->st_onhold_calls, -1);
+			if (call->media==CC_MEDIA_MSRP) {
+				update_stat( stg_onhold_chats, -1);
+				update_stat( call->flow->st_onhold_chats, -1);
+			}
 		}
 		pkg_free(leg.s);
 		goto error1;
@@ -1085,6 +1266,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 		LM_ERR("Failed to insert call record in db\n");
 	}
 
+	cc_call_state = CC_CALL_NONE;
 	return 1;
 error:
 	lock_release( data->lock );
@@ -1095,6 +1277,7 @@ error1:
 		free_cc_call( data, call);
 		flow->ongoing_calls--;
 	}
+	cc_call_state = CC_CALL_NONE;
 	return ret;
 }
 
@@ -1114,23 +1297,30 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 		return -3;
 	}
 
-	if (agent->loged_in != *state) {
+	if (agent->logged_in != *state) {
 
-		if(*state && (agent->state==CC_AGENT_WRAPUP) &&
-			(get_ticks() > agent->wrapup_end_time))
-			agent->state = CC_AGENT_FREE;
+		if(*state) {
+			if ( agent->state==CC_AGENT_WRAPUP &&
+			get_ticks() > agent->wrapup_end_time )
+				agent->state = CC_AGENT_FREE;
 
-		if(*state && data->agents[CC_AG_ONLINE] == NULL)
-			data->last_online_agent = agent;
+			if ( agent->state==CC_AGENT_INCHAT &&
+			get_ticks() > agent->wrapup_end_time &&
+			agent->ongoing_sessions[CC_MEDIA_MSRP]==0 )
+				agent->state = CC_AGENT_FREE;
+
+			if(data->agents[CC_AG_ONLINE] == NULL)
+				data->last_online_agent = agent;
+		}
 
 		/* agent event is triggered here */
 		agent_switch_login(data, agent, prev_agent);
 
 		if(*state) {
-			data->logedin_agents++;
+			data->loggedin_agents++;
 			log_agent_to_flows( data, agent, 1);
 		} else {
-			data->logedin_agents--;
+			data->loggedin_agents--;
 			log_agent_to_flows(data, agent, 0);
 		}
 	}
@@ -1144,7 +1334,7 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 
 static void cc_timer_agents(unsigned int ticks, void* param)
 {
-	struct cc_agent *agent, *prev_agent, *tmp_ag;
+	struct cc_agent *agent, *prev_agent;
 	struct cc_call  *call;
 	str out;
 	str dest;
@@ -1152,60 +1342,80 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 	if (data==NULL || data->agents[CC_AG_ONLINE]==NULL)
 		return;
 
+
+	lock_get( data->lock );
+
+	/* iterate all agents to get update state and evaluate their
+	 * availability */
+	agent = data->agents[CC_AG_ONLINE];
+	prev_agent = data->agents[CC_AG_ONLINE];
+
 	do {
 
-		lock_get( data->lock );
+		//LM_DBG("%.*s , state=%d, wrapup_end_time=%u, ticks=%u, "
+		//		"wrapup=%u\n", agent->id.len, agent->id.s, agent->state,
+		//		agent->wrapup_end_time, ticks, wrapup_time);
+		/* for agents in WRAPUP time, check if expired */
+		if (
+		(agent->state==CC_AGENT_WRAPUP && ticks>agent->wrapup_end_time)
+		  ||
+		(agent->state==CC_AGENT_INCHAT && ticks>agent->wrapup_end_time
+			&& agent->ongoing_sessions[CC_MEDIA_MSRP]==0)
+		) {
+			agent->state = CC_AGENT_FREE;
+			agent_raise_event( agent, NULL);
+			/* move it to the end of the list*/
+			move_cc_agent_to_end( data, agent, prev_agent);
+			/* re-iterate */
+			agent = prev_agent;
+		}
 
-		prev_agent = data->agents[CC_AG_ONLINE];
+		/* next agent */
+		prev_agent = agent;
+		agent = agent->next;
+	}while(agent);
+
+
+	if (*internal_call_dispatching==0) {
+		lock_release( data->lock );
+		return;
+	}
+
+
+	/* assign calls/chats to the agents */
+	do {
+
+		/* iterate and find one call/chat for each agent */
 		agent = data->agents[CC_AG_ONLINE];
+		prev_agent =  data->agents[CC_AG_ONLINE];
 		call = NULL;
 
-		/* iterate all agents*/
 		do {
 
-			//LM_DBG("%.*s , state=%d, wrapup_end_time=%u, ticks=%u, "
-			//		"wrapup=%u\n", agent->id.len, agent->id.s, agent->state,
-			//		agent->wrapup_end_time, ticks, wrapup_time);
-			/* for agents in WRAPUP time, check if expired */
-			if ( (agent->state==CC_AGENT_WRAPUP) &&
-					(ticks > agent->wrapup_end_time )) {
-				agent->state = CC_AGENT_FREE;
-				agent_raise_event( agent, NULL);
-				/* move it to the end of the list*/
-				if(data->last_online_agent != agent) {
-					remove_cc_agent(data, agent, prev_agent);
-					if(!data->last_online_agent) {
-						LM_CRIT("last_online_agent NULL\n");
-						if(data->agents[CC_AG_ONLINE] == NULL)
-							data->agents[CC_AG_ONLINE] = agent;
-						else {
-							for (tmp_ag = data->agents[CC_AG_ONLINE]; tmp_ag; tmp_ag= tmp_ag->next)
-							{
-								prev_agent = tmp_ag;
-							}
-							prev_agent->next = agent;
-							agent->next = NULL;
-							data->last_online_agent = agent;
-						}
-					}
-					else {
-							data->last_online_agent->next = agent;
-							agent->next = NULL;
-							data->last_online_agent = agent;
-					}
-					goto next_ag;
-				}
-			}
+			if (data->queue.calls_no==0)
+				break;
 
 			/* for free agents -> check for calls */
-			if ( (data->queue.calls_no!=0) && (agent->state==CC_AGENT_FREE) ) {
-				call = cc_queue_pop_call_for_agent( data, agent);
+			if (agent->state==CC_AGENT_FREE &&
+			agent->media[CC_MEDIA_RTP].sessions/*0 or 1 here*/) {
+				call = cc_queue_pop_call_for_agent( data, agent, CC_MEDIA_RTP);
 				if (call) {
 					/* found a call for the agent */
 					break;
 				}
 			}
-next_ag:
+
+			/* can the agent take chats? */
+			if ( can_agent_take_chats(agent) ){
+				call = cc_queue_pop_call_for_agent( data, agent,CC_MEDIA_MSRP);
+				if (call) {
+					if (msrp_dispatch_policy == CC_MSRP_POLICY_LB)
+						move_cc_agent_to_end( data, agent, prev_agent);
+					/* found a chat for the agent */
+					break;
+				}
+			}
+
 			/* next agent */
 			prev_agent = agent;
 			agent = agent->next;
@@ -1237,7 +1447,7 @@ next_ag:
 			lock_get( data->lock );
 
 			if(!call->flow->recordings[AUDIO_FLOW_ID].len)
-				dest = agent->location;
+				dest = agent->media[call->media].location;
 			else
 				dest = call->flow->recordings[AUDIO_FLOW_ID];
 
@@ -1253,14 +1463,20 @@ next_ag:
 				LM_DBG("** onhold-- Took out of the queue [%p]\n", call);
 				update_stat( stg_onhold_calls, -1);
 				update_stat( call->flow->st_onhold_calls, -1);
+				if (call->media==CC_MEDIA_MSRP) {
+					update_stat( stg_onhold_chats, -1);
+					update_stat( call->flow->st_onhold_chats, -1);
+				}
 			}else{
 				call->state = CC_CALL_PRE_TOAGENT;
 			}
 
 			/* mark agent as used */
-			agent->state = CC_AGENT_INCALL;
+			agent->state = (call->media==CC_MEDIA_RTP) ?
+				CC_AGENT_INCALL : CC_AGENT_INCHAT;
 			call->agent = agent;
 			call->agent->ref_cnt++;
+			agent->ongoing_sessions[call->media]++;
 			agent_raise_event( agent, call);
 			update_stat( stg_dist_incalls, 1);
 			update_stat( call->flow->st_dist_incalls, 1);
@@ -1271,9 +1487,11 @@ next_ag:
 			lock_release( data->lock );
 
 			/* send call to selected agent */
+			cc_call_state = call->state;
 			if (set_call_leg( NULL, call, &out)< 0 ) {
 				LM_ERR("failed to set new destination for call\n");
 			}
+			cc_call_state = CC_CALL_NONE;
 			lock_set_release( data->call_locks, call->lock_idx );
 
 			if(cc_db_update_call(call) < 0)
@@ -1353,10 +1571,12 @@ static void cc_timer_calls(unsigned int ticks, void* param)
 				/* unlock data */
 				lock_release( data->lock );
 
+				cc_call_state = call->state;
 				/* send call to selected destination */
 				if (set_call_leg( NULL, call, &out)<-0 ) {
 					LM_ERR("failed to set new destination for call\n");
 				}
+				cc_call_state = CC_CALL_NONE;
 			}
 			lock_set_release( data->call_locks, call->lock_idx );
 		}
@@ -1479,10 +1699,6 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 	mi_item_t *resp_obj;
 	mi_item_t *agents_arr, *agent_item;
 	struct cc_agent *agent;
-	str state;
-	static str s_free={"free", 4};
-	static str s_wrapup={"wrapup", 6};
-	static str s_incall={"incall", 6};
 	int i;
 
 	resp = init_mi_result_object(&resp_obj);
@@ -1512,7 +1728,7 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 				agent->ref_cnt) < 0)
 				goto error;
 
-			if(!agent->loged_in) {
+			if(!agent->logged_in) {
 				if (add_mi_string(agent_item, MI_SSTR("Loged in"),
 					MI_SSTR("NO")) < 0)
 					goto error;
@@ -1522,14 +1738,45 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 					goto error;
 
 				switch ( agent->state ) {
-					case CC_AGENT_FREE:   state = s_free;   break;
-					case CC_AGENT_WRAPUP: state = s_wrapup; break;
-					case CC_AGENT_INCALL: state = s_incall; break;
-					default: state.s =0;  state.len = 0;
+				case CC_AGENT_FREE:
+					if (add_mi_string(agent_item, MI_SSTR("State"),
+					MI_SSTR("free")) < 0)
+						goto error;
+					break;
+				case CC_AGENT_WRAPUP:
+					if (add_mi_string(agent_item, MI_SSTR("State"),
+					MI_SSTR("wrapup")) < 0)
+						goto error;
+					if (add_mi_number(agent_item, MI_SSTR("Wrapup-ends"),
+					agent->wrapup_end_time-get_ticks() ) < 0)
+						goto error;
+					break;
+				case CC_AGENT_INCALL:
+					if (add_mi_string(agent_item, MI_SSTR("State"),
+					MI_SSTR("incall")) < 0)
+						goto error;
+					break;
+				case CC_AGENT_INCHAT:
+					if (add_mi_string(agent_item, MI_SSTR("State"),
+					MI_SSTR("inchat")) < 0)
+						goto error;
+					if (add_mi_number(agent_item, MI_SSTR("Ongoing chats"),
+					agent->ongoing_sessions[CC_MEDIA_MSRP]) < 0)
+						goto error;
+					if (add_mi_number(agent_item, MI_SSTR("Free chats"),
+					agent->media[CC_MEDIA_MSRP].sessions -
+					agent->ongoing_sessions[CC_MEDIA_MSRP]) < 0)
+						goto error;
+					if (agent->wrapup_end_time>get_ticks())
+						if (add_mi_number(agent_item, MI_SSTR("Wrapup-ends"),
+						agent->wrapup_end_time-get_ticks() ) < 0)
+							goto error;
+					break;
+				default:
+					if (add_mi_number(agent_item, MI_SSTR("State"),
+					agent->state) < 0)
+						goto error;
 				}
-				if (add_mi_string(agent_item, MI_SSTR("State"),
-					state.s, state.len) < 0)
-					goto error;
 			}
 		}
 
@@ -1551,11 +1798,7 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
 	mi_item_t *calls_arr, *call_item;
-	static str call_state[12]= {{"none", 4},
-			{"welcome", 7},
-			{"queued", 6},
-			{"toagent", 7},
-			{"ended", 5}};
+	str *state;
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
@@ -1587,10 +1830,12 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 			if (add_mi_string(call_item, MI_SSTR("State"),
 				MI_SSTR("ignored")) < 0)
 				goto error;
-		} else
+		} else {
+			state = call_state_str(call->state);
 			if (add_mi_string(call_item, MI_SSTR("State"),
-				call_state[call->state].s, call_state[call->state].len) < 0)
+				state->s, state->len) < 0)
 				goto error;
+		}
 
 		LM_DBG("call->recv_time= %d, ticks= %d\n", call->recv_time, get_ticks());
 		if(call->state != CC_CALL_ENDED)
@@ -1630,15 +1875,16 @@ static mi_response_t *mi_agent_login(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	struct cc_agent *agent;
-	int loged_in;
+	int logged_in;
 	struct cc_agent* prev_agent= 0;
 	str agent_id;
 
 	if (get_mi_string_param(params, "agent_id", &agent_id.s, &agent_id.len) < 0)
 		return init_mi_param_error();
 
-	if (get_mi_int_param(params, "state", &loged_in) < 0)
+	if (get_mi_int_param(params, "state", &logged_in) < 0)
 		return init_mi_param_error();
+	logged_in = logged_in ? 1 : 0;
 
 	/* block access to data */
 	lock_get( data->lock );
@@ -1650,23 +1896,23 @@ static mi_response_t *mi_agent_login(const mi_params_t *params,
 		return init_mi_error( 404, MI_SSTR("Agent not found"));
 	}
 
-	if (agent->loged_in != loged_in) {
+	if (agent->logged_in != logged_in) {
 
-		if(loged_in && (agent->state==CC_AGENT_WRAPUP) &&
+		if(logged_in && (agent->state==CC_AGENT_WRAPUP) &&
 			(get_ticks() > agent->wrapup_end_time))
 			agent->state = CC_AGENT_FREE;
 
-		if(loged_in && data->agents[CC_AG_ONLINE] == NULL)
+		if(logged_in && data->agents[CC_AG_ONLINE] == NULL)
 			data->last_online_agent = agent;
 
 		/* agent event is triggered here */
 		agent_switch_login(data, agent, prev_agent);
 
-		if(loged_in) {
-			data->logedin_agents++;
+		if(logged_in) {
+			data->loggedin_agents++;
 			log_agent_to_flows( data, agent, 1);
 		} else {
-			data->logedin_agents--;
+			data->loggedin_agents--;
 			log_agent_to_flows(data, agent, 0);
 		}
 	}
@@ -1691,6 +1937,7 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 	data->avt_waittime = 0;
 	reset_stat( stg_dist_incalls );
 	reset_stat( stg_answ_incalls );
+	reset_stat( stg_answ_inchats );
 	reset_stat( stg_aban_incalls );
 
 	/* block access to data */
@@ -1701,8 +1948,8 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 		reset_stat( flow->st_incalls );
 		reset_stat( flow->st_dist_incalls );
 		reset_stat( flow->st_answ_incalls );
+		reset_stat( flow->st_answ_inchats );
 		reset_stat( flow->st_aban_incalls );
-		reset_stat( flow->st_onhold_calls );
 		flow->avg_call_duration = 0;
 		flow->processed_calls = 0;
 		flow->avg_waittime = 0;
@@ -1714,6 +1961,7 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 		for ( agent = data->agents[i] ; agent ; agent = agent->next ) {
 			reset_stat( agent->st_dist_incalls );
 			reset_stat( agent->st_answ_incalls );
+			reset_stat( agent->st_answ_inchats );
 			reset_stat( agent->st_aban_incalls );
 			agent->avg_talktime = 0;
 			agent->avg_talktime_no = 0;
@@ -1761,6 +2009,30 @@ static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
 		if (add_mi_number(call_item, MI_SSTR("index"), n) < 0)
 			goto error;
 
+		if (add_mi_string(call_item, MI_SSTR("id"),
+			call->b2bua_id.s, call->b2bua_id.len) < 0)
+			goto error;
+
+		if (call->media==CC_MEDIA_RTP) {
+			if (add_mi_string(call_item, MI_SSTR("Media"), MI_SSTR("RTP"))<0)
+				goto error;
+		} else
+		if (call->media==CC_MEDIA_MSRP) {
+			if (add_mi_string(call_item, MI_SSTR("Media"), MI_SSTR("MSRP"))<0)
+				goto error;
+		} else {
+			if (add_mi_string(call_item, MI_SSTR("Media"), MI_SSTR("--"))<0)
+				goto error;
+		}
+
+		if (add_mi_string(call_item, MI_SSTR("Caller username"),
+			call->caller_un.s, call->caller_un.len) < 0)
+			goto error;
+
+		if (add_mi_string(call_item, MI_SSTR("Caller display name"),
+			call->caller_dn.s, call->caller_dn.len) < 0)
+			goto error;
+
 		if (add_mi_number(call_item, MI_SSTR("Waiting for"),
 			now-call->last_start) < 0)
 			goto error;
@@ -1792,4 +2064,213 @@ error:
 	return NULL;
 }
 
+
+static int pv_get_cc_state( struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	if (cc_call_state == CC_CALL_NONE)
+		return pv_get_null( msg, param, res);
+
+	res->rs = *call_state_str(cc_call_state);
+	res->flags = PV_VAL_STR;
+	return 0;
+}
+
+
+static mi_response_t *mi_internal_call_dispatching(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	int dispatch_val;
+	int ret;
+
+	ret = try_get_mi_int_param(params, "dispatching", &dispatch_val);
+	if (ret<0 && ret!=-1/*MI_PARAM_ERR_MISSING*/)
+		return init_mi_param_error();
+
+	if (ret==0) {
+		/* set the value */
+		*internal_call_dispatching = (dispatch_val==0)? 0 : 1;
+	}
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_number(resp_obj, MI_SSTR("dispatching"),
+	*internal_call_dispatching ) < 0)
+		return 0;
+
+	return resp;
+}
+
+
+static mi_response_t *mi_dispatch_call_to_agent(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	struct cc_agent *agent, *prev_agent;
+	struct cc_call *call;
+	str agent_id, call_id;
+	str dest, out;
+	int i;
+
+	if (*internal_call_dispatching!=0)
+		return init_mi_error( 403, MI_SSTR("Internal dispatching is enabled"));
+
+	if (get_mi_string_param(params, "call_id", &call_id.s, &call_id.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "agent_id", &agent_id.s, &agent_id.len)<0)
+		return init_mi_param_error();
+
+	/* block access to data */
+	lock_get( data->lock );
+
+	/* get the agent */
+	agent = get_agent_by_name( data, &agent_id, &prev_agent);
+	if (agent==NULL) {
+		lock_release( data->lock );
+		return init_mi_error( 404, MI_SSTR("Agent not found"));
+	}
+
+	if (!agent->logged_in) {
+		lock_release( data->lock );
+		return init_mi_error( 404, MI_SSTR("Agent not logged in"));
+	}
+	LM_DBG("found logged-in agent %p(%.*s) in state %d\n",
+		agent, agent->id.len, agent->id.s, agent->state);
+
+	/* search for the call in the queue */
+	for (call=data->queue.first ; call ; call=call->lower_in_queue) {
+		/* match the call id */
+		if ( call->b2bua_id.len && call->b2bua_id.len==call_id.len &&
+		strncmp(call->b2bua_id.s, call_id.s, call_id.len)==0 )
+			break;
+	}
+	if (call==NULL) {
+		lock_release( data->lock );
+		return init_mi_error( 404, MI_SSTR("Call not found"));
+	}
+	LM_DBG("found call %p(%.*s), media %d in state %d \n",
+		call, call->b2bua_id.len, call->b2bua_id.s,
+		call->media, call->state);
+
+	/* check the compatibility of the call and agent */
+	for(i=0 ; i<agent->no_skills ; i++) {
+		if (call->flow->skill==agent->skills[i]) {
+			LM_DBG("found matching skill %d\n",
+				call->flow->skill);
+			break;
+		}
+	}
+	if(i==agent->no_skills) {
+		lock_release( data->lock );
+		return init_mi_error( 488, MI_SSTR("Agent has no skill for the call"));
+	}
+	/* check media and agent state */
+	if (call->media==CC_MEDIA_RTP) {
+		/* we need a FREE agent with calling */
+		if (agent->state!=CC_AGENT_FREE ||
+		agent->media[CC_MEDIA_RTP].sessions==0) {
+			lock_release( data->lock );
+			return init_mi_error( 488,
+				MI_SSTR("Agent is not free/audio enabled"));
+		}
+	} else
+	if (call->media==CC_MEDIA_MSRP) {
+		/* we need an agent with available chatting */
+		if ( !can_agent_take_chats(agent) ) {
+			lock_release( data->lock );
+			return init_mi_error( 488,
+				MI_SSTR("Agent is not free/chat enabled"));
+		}
+	} else {
+		lock_release( data->lock );
+		return init_mi_error( 488,
+			MI_SSTR("Unsupported media in call"));
+	}
+
+	/* we have the call and agent, fully compatible
+	 * and with available sessions => marry them :) */
+
+	/* remove the call from queue */
+	cc_queue_rmv_call( data, call);
+	lock_release( data->lock );
+
+
+	/* no locking here */
+
+	lock_set_get( data->call_locks, call->lock_idx );
+	call->ref_cnt--;
+
+	/* is the call state still valid? (as queued) */
+	if(call->state != CC_CALL_QUEUED) {
+		if (call->state==CC_CALL_ENDED && call->ref_cnt==0) {
+			lock_set_release( data->call_locks, call->lock_idx );
+			free_cc_call( data, call);
+		} else {
+			lock_set_release( data->call_locks, call->lock_idx );
+		}
+		return init_mi_error( 404, MI_SSTR("Call not in queue any more"));
+	}
+	LM_DBG("Call %p ref= %d, state= %d\n", call,
+		call->ref_cnt, call->state);
+
+	lock_get( data->lock );
+
+	if(!call->flow->recordings[AUDIO_FLOW_ID].len)
+		dest = agent->media[call->media].location;
+	else
+		dest = call->flow->recordings[AUDIO_FLOW_ID];
+
+	/* make a copy for destination to agent */
+	out.len = OUT_BUF_LEN(dest.len);
+	out.s = out_buf;
+	memcpy( out.s, dest.s, out.len);
+
+	call->prev_state = call->state;
+	if(!call->flow->recordings[AUDIO_FLOW_ID].len) {
+		call->state = CC_CALL_TOAGENT;
+		/* call no longer on wait */
+		LM_DBG("** onhold-- Took out of the queue [%p]\n", call);
+		update_stat( stg_onhold_calls, -1);
+		update_stat( call->flow->st_onhold_calls, -1);
+		if (call->media==CC_MEDIA_MSRP) {
+			update_stat( stg_onhold_chats, -1);
+			update_stat( call->flow->st_onhold_chats, -1);
+		}
+	}else{
+		call->state = CC_CALL_PRE_TOAGENT;
+	}
+
+	/* mark agent as used */
+	agent->state = call->media==CC_MEDIA_RTP ?
+		CC_AGENT_INCALL : CC_AGENT_INCHAT;
+	call->agent = agent;
+	call->agent->ref_cnt++;
+	agent->ongoing_sessions[call->media]++;
+	agent_raise_event( agent, call);
+	update_stat( stg_dist_incalls, 1);
+	update_stat( call->flow->st_dist_incalls, 1);
+	call->fst_flags |= FSTAT_DIST;
+	update_stat( call->agent->st_dist_incalls, +1);
+
+	/* unlock data */
+	lock_release( data->lock );
+
+	/* send call to selected agent */
+	cc_call_state = call->state;
+	if (set_call_leg( NULL, call, &out)< 0 ) {
+		LM_ERR("failed to set new destination for call\n");
+	}
+	cc_call_state = CC_CALL_NONE;
+	lock_set_release( data->call_locks, call->lock_idx );
+
+	if(cc_db_update_call(call) < 0) {
+		LM_ERR("Failed to update call in database\n");
+	}
+
+	return init_mi_result_ok();
+}
 

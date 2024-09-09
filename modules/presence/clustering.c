@@ -32,6 +32,8 @@ int cluster_federation = 0;
 
 str clustering_events = {NULL,0};
 
+int *cluster_active = NULL;
+
 static unsigned char clustered_events[EVENT_LINE_SEIZE];
 
 struct clusterer_binds c_api;
@@ -49,10 +51,36 @@ static void bin_packet_handler(bin_packet_t *packet);
 static void cluster_event_handler(enum clusterer_event ev, int node_id);
 
 
-int init_pres_clustering(void)
+void cluster_active_shtag_cb(str *tag, int state, int c_id, void *param)
+{
+	if (cluster_active) {
+		*cluster_active = (state==SHTAG_STATE_ACTIVE)? 1 : 0;
+		if (cluster_federation == FEDERATION_FULL_SHARING && *cluster_active &&
+		c_api.request_sync(&presence_capability, pres_cluster_id, 0) < 0)
+			LM_ERR("Sync request failed\n");
+	}
+}
+
+int init_pres_clustering(char *federation_mode_str,
+												char *cluster_active_shtag_str)
 {
 	csv_record *list, *it;
 	event_t e;
+	str sh_tag;
+	int shtag_state;
+
+	if (!federation_mode_str || !strcasecmp(federation_mode_str, "disabled")) {
+		cluster_federation = FEDERATION_DISABLED;
+		pres_cluster_id = 0;
+		return 0;
+	} else if (!strcasecmp(federation_mode_str, "on-demand-sharing")) {
+		cluster_federation = FEDERATION_ON_DEMAND;
+	} else if (!strcasecmp(federation_mode_str, "full-sharing")) {
+		cluster_federation = FEDERATION_FULL_SHARING;
+	} else {
+		LM_ERR("invalid cluster_federation_mode: '%s'\n", federation_mode_str);
+		return -1;
+	}
 
 	/* is clustering needed ? */
 	if (!is_presence_cluster_enabled())
@@ -64,6 +92,13 @@ int init_pres_clustering(void)
 		return -1;
 	}
 
+	cluster_active = (int*)shm_malloc( sizeof(int) );
+	if (cluster_active==NULL) {
+		LM_ERR("not enough shm mem for cluster_active variable\n");
+		return -1;
+	}
+	*cluster_active = 1; /* default is active */
+
 	/* register handler for receiving packets from the clusterer module */
 	if (c_api.register_capability( &presence_capability,
 		bin_packet_handler, cluster_event_handler, pres_cluster_id,
@@ -71,6 +106,25 @@ int init_pres_clustering(void)
 		NODE_CMP_ANY) < 0) {
 		LM_ERR("cannot register callbacks to clusterer module!\n");
 		return -1;
+	}
+
+	if (cluster_active_shtag_str) {
+		sh_tag.s = cluster_active_shtag_str;
+		sh_tag.len = strlen(cluster_active_shtag_str);
+		if ((shtag_state=c_api.shtag_get( &sh_tag, pres_cluster_id))<0) {
+			LM_ERR("failed to lookup the <%.*s> active sharing tag\n",
+				sh_tag.len, sh_tag.s);
+			return -1;
+		}
+		/* inherite the active status*/
+		*cluster_active = (shtag_state==SHTAG_STATE_ACTIVE)? 1 : 0;
+
+		if (c_api.shtag_register_callback( &sh_tag, pres_cluster_id,
+		NULL, cluster_active_shtag_cb) < 0) {
+			LM_ERR("failed to register callbacks for <%.*s> sharing tag\n",
+				sh_tag.len, sh_tag.s);
+			return -1;
+		}
 	}
 
 	if (clustering_events.s) {
@@ -96,8 +150,8 @@ int init_pres_clustering(void)
 		memset( clustered_events, 1, sizeof(clustered_events) );
 	}
 
-	if (cluster_federation == FEDERATION_FULL_SHARING &&
-		c_api.request_sync(&presence_capability, pres_cluster_id) < 0)
+	if (cluster_federation == FEDERATION_FULL_SHARING && *cluster_active &&
+		c_api.request_sync(&presence_capability, pres_cluster_id, 0) < 0)
 		LM_ERR("Sync request failed\n");
 
 	return 0;
@@ -234,6 +288,12 @@ void replicate_publish_on_cluster(presentity_t *pres)
 {
 	bin_packet_t packet;
 
+	/* am I active from clustering perspective? */
+	if (*cluster_active==0) {
+		LM_ERR("trying to do query cluster, but in inactive mode (according to sharing tag) :-/\n");
+		return;
+	}
+
 	memset( &packet, 0, sizeof(bin_packet_t) );
 	if (bin_init(&packet, &presence_capability,
 		CL_PRESENCE_PUBLISH, BIN_VERSION, 0) < 0)
@@ -257,6 +317,12 @@ void query_cluster_for_presentity(str *pres_uri, event_t *evp)
 	unsigned int hash_code;
 	cluster_query_entry_t* p;
 	int step=0;
+
+	/* am I active from clustering perspective? */
+	if (*cluster_active==0) {
+		LM_ERR("trying to do query cluster, but in inactive mode (according to sharing tag) :-/\n");
+		return;
+	}
 
 	/* check if the presentity is not in the pending list */
 	hash_code= core_hash( pres_uri, NULL, phtable_size);
@@ -393,8 +459,10 @@ static int handle_replicated_publish(bin_packet_t *packet)
 	} else if (presentity_has_subscribers(&s, pres.event) == 0) {
 		LM_DBG("Presentity has NO local subscribers\n");
 		/* no subscribers for this presentity, discard the publish */
-		if (p==NULL)
+		if (p==NULL) {
+			pkg_free(s.s); // allocated by uandd_to_uri()
 			return 0;
+		}
 
 		LM_DBG("Forcing expires 0\n");
 		/* force an expire of the presentity */
@@ -601,40 +669,41 @@ error:
 }
 
 
-static void bin_packet_handler(bin_packet_t *packet)
+static void bin_packet_handler(bin_packet_t *pkt)
 {
 	int rc;
-	bin_packet_t *pkt;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		switch (pkt->type) {
-			case CL_PRESENCE_PUBLISH:
-				ensure_bin_version(pkt, BIN_VERSION);
-				rc = handle_replicated_publish(pkt);
-				break;
-			case CL_PRESENCE_PRES_QUERY:
-				ensure_bin_version(pkt, BIN_VERSION);
-				rc = handle_presentity_query(pkt);
-				break;
-			case SYNC_PACKET_TYPE:
-				_ensure_bin_version(pkt, BIN_VERSION, "presence sync packet");
-				rc = 0;
-				while (c_api.sync_chunk_iter(pkt))
-					if (handle_replicated_publish(pkt) < 0) {
-						LM_WARN("failed to process sync chunk!\n");
-						rc = -1;
-					}
-				break;
-			default:
-				LM_ERR("Unknown binary packet %d received from node %d in "
-					"presence cluster %d)\n", pkt->type,
-					pkt->src_id, pres_cluster_id);
-				rc = -1;
-		}
+	/* am I active from clustering perspective? */
+	if (*cluster_active==0)
+		return;
 
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+	switch (pkt->type) {
+		case CL_PRESENCE_PUBLISH:
+			ensure_bin_version(pkt, BIN_VERSION);
+			rc = handle_replicated_publish(pkt);
+			break;
+		case CL_PRESENCE_PRES_QUERY:
+			ensure_bin_version(pkt, BIN_VERSION);
+			rc = handle_presentity_query(pkt);
+			break;
+		case SYNC_PACKET_TYPE:
+			_ensure_bin_version(pkt, BIN_VERSION, "presence sync packet");
+			rc = 0;
+			while (c_api.sync_chunk_iter(pkt))
+				if (handle_replicated_publish(pkt) < 0) {
+					LM_WARN("failed to process sync chunk!\n");
+					rc = -1;
+				}
+			break;
+		default:
+			LM_ERR("Unknown binary packet %d received from node %d in "
+				"presence cluster %d)\n", pkt->type,
+				pkt->src_id, pres_cluster_id);
+			rc = -1;
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int receive_sync_request(int node_id)
@@ -687,6 +756,10 @@ error:
 
 static void cluster_event_handler(enum clusterer_event ev, int node_id)
 {
+	/* am I active from clustering perspective? */
+	if (*cluster_active==0)
+		return;
+
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to send sync data to node: %d\n", node_id);
 }

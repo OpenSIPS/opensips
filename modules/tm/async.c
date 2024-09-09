@@ -35,8 +35,9 @@
 typedef struct _async_tm_ctx {
 	/* generic async context - MUST BE FIRST */
 	async_ctx  async;
-	/* the script route to be used to continue after the resume function */
-	int resume_route;
+	/* the script route to be used to continue after the resume function;
+	 * this is a reference in shm mem, that needs separated free */
+	struct script_route_ref *resume_route;
 	/* the type of the route where the suspend was done */
 	int route_type;
 	/* the processing context for the handled message */
@@ -57,12 +58,12 @@ extern int return_code; /* from action.c, return code */
 
 
 
-static inline void run_resume_route( int resume_route, struct sip_msg *msg,
-															int run_post_cb)
+static inline void run_resume_route( struct script_route_ref * resume_route,
+							struct sip_msg *msg, int run_post_cb)
 {
 	/* run the resume route and if it ends the msg handling (no other aysnc
 	 * started), run the post script callbacks. */
-	if ( (run_top_route(sroutes->request[resume_route], msg) & ACT_FL_TBCONT) == 0 )
+	if ( (run_top_route(sroutes->request[resume_route->idx], msg) & ACT_FL_TBCONT) == 0 )
 		if (run_post_cb)
 			exec_post_req_cb(msg);
 }
@@ -79,7 +80,7 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	struct cell *backup_cancelled_t;
 	struct cell *backup_e2eack_t;
 	struct usr_avp **backup_list;
-	struct socket_info* backup_si;
+	const struct socket_info* backup_si;
 	struct cell *t= ctx->t;
 	int route;
 
@@ -89,8 +90,9 @@ int t_resume_async(int fd, void *param, int was_timeout)
 		LM_DBG("resuming without a fd, transaction %p \n", t);
 
 	if (current_processing_ctx) {
-		LM_CRIT("BUG - a context already set!\n");
-		abort();
+		LM_CRIT("BUG - a context is already set (%p), overwriting it...\n",
+		        current_processing_ctx);
+		set_global_context(NULL);
 	}
 
 	/* prepare for resume route, by filling in a phony UAC structure to
@@ -111,7 +113,7 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	}
 
 	/* enviroment setting */
-	current_processing_ctx = ctx->msg_ctx;
+	set_global_context(ctx->msg_ctx);
 	backup_t = get_t();
 	backup_e2eack_t = get_e2eack_t();
 	backup_cancelled_t = get_cancelled_t();
@@ -181,11 +183,18 @@ route:
 		close(fd);
 
 	/* run the resume_route (some type as the original one) */
-	swap_route_type(route, ctx->route_type);
-	run_resume_route( ctx->resume_route, &faked_req, 1);
-	set_route_type(route);
+	if (!ref_script_route_check_and_update(ctx->resume_route)) {
+		LM_ERR("resume route [%s] not present in cfg anymore\n",
+			ctx->resume_route->name.s);
+	} else {
+		swap_route_type(route, ctx->route_type);
+		run_resume_route( ctx->resume_route, &faked_req, 1);
+		set_route_type(route);
+	}
 
 	/* no need for the context anymore */
+	if (ctx->resume_route)
+		shm_free(ctx->resume_route);
 	shm_free(ctx);
 
 	/* free also the processing ctx if still set
@@ -207,13 +216,14 @@ restore:
 	bind_address = backup_si;
 
 	free_faked_req( &faked_req, t);
-	current_processing_ctx = NULL;
+	set_global_context(NULL);
 
 	return 0;
 }
 
 
-int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
+int t_handle_async(struct sip_msg *msg, struct action* a,
+										struct script_route_ref *resume_route,
 										unsigned int timeout, void **params)
 {
 	async_tm_ctx *ctx = NULL;
@@ -257,8 +267,11 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 		goto failure;
 	}
 
+	memset(ctx,0,sizeof(async_tm_ctx));
+	ctx->async.timeout_s = timeout;
+
 	async_status = ASYNC_NO_IO; /*assume default status "no IO done" */
-	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
+	return_code = ((const acmd_export_t*)(a->elem[0].u.data_const))->function(msg,
 			(async_ctx*)ctx,
 			params[0], params[1], params[2],
 			params[3], params[4], params[5],
@@ -306,11 +319,15 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 	}
 
 	if (route_type!=REQUEST_ROUTE) {
-		LM_DBG("async detected in non-request route, switching to sync\n");
+		LM_WARN("async detected in non-request route, switching to sync\n");
 		goto sync;
 	}
 
-	ctx->resume_route = resume_route;
+	ctx->resume_route = dup_ref_script_route_in_shm(resume_route, 0);
+	if (!ref_script_route_is_valid(ctx->resume_route)) {
+		LM_ERR("failed dup resume route -> act in sync mode\n");
+		goto sync;
+	}
 	ctx->route_type = route_type;
 	ctx->msg_ctx = current_processing_ctx;
 	ctx->t = t;
@@ -319,12 +336,15 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 	ctx->cancelled_t = get_cancelled_t();
 	ctx->e2eack_t = get_e2eack_t();
 
-	current_processing_ctx = NULL;
+	set_global_context(NULL);
 	set_t(T_UNDEFINED);
 	reset_cancelled_t();
 	reset_e2eack_t();
 
 	if (async_status!=ASYNC_NO_FD) {
+		LM_DBG("placing async job into reactor with timeouts %d/%d\n",
+		        timeout, ctx->async.timeout_s);
+
 		/* check if timeout should be used */
 		if (timeout && ctx->async.timeout_f==NULL) {
 			timeout = 0;
@@ -332,14 +352,17 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 			       "still using an infinite timeout!\n");
 		}
 
-		LM_DBG("placing async job into reactor with timeout %d\n", timeout);
+		if (ctx->async.timeout_f && ctx->async.timeout_s
+		        && (!timeout || ctx->async.timeout_s < timeout))
+			timeout = ctx->async.timeout_s;
+
 		/* place the FD + resume function (as param) into reactor */
 		if (reactor_add_reader_with_timeout( fd, F_SCRIPT_ASYNC,
 		RCT_PRIO_ASYNC, timeout, (void*)ctx)<0) {
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 		 	/* as attaching to reactor failed, we have to run in sync mode,
 			 * so we have to restore the environment -- razvanc */
-			current_processing_ctx = ctx->msg_ctx;
+			set_global_context(ctx->msg_ctx);
 			set_t(t);
 			set_cancelled_t(ctx->cancelled_t);
 			set_e2eack_t(ctx->e2eack_t);
@@ -362,6 +385,8 @@ sync:
 			close(fd);
 	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 	/* get rid of the context, useless at this point further */
+	if (ctx->resume_route)
+		shm_free(ctx->resume_route);
 	shm_free(ctx);
 	/* run the resume route in sync mode */
 	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
@@ -374,7 +399,11 @@ failure:
 	return_code = -1;
 resume:
 	/* get rid of the context, useless at this point further */
-	if (ctx) shm_free(ctx);
+	if (ctx) {
+		if (ctx->resume_route)
+			shm_free(ctx->resume_route);
+		shm_free(ctx);
+	}
 	/* run the resume route */
 	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
 	/* the triggering route is terminated and whole script ended */

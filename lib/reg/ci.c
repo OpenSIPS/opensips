@@ -132,8 +132,8 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 			goto error;
 		}
 
-		/* set expire time */
-		ci.expires = _e;
+		/* set expire time, with an optional random deviation */
+		ci.expires = randomize_expires(_e);
 
 		if (pn_enable && _reg_flags & REG_SAVE__PN_ON_FLAG) {
 			ci.flags |= FL_PN_ON;
@@ -214,8 +214,8 @@ void print_ci(ucontact_info_t *ci)
 	LM_DBG(" ----- UCI DUMP (%p) ------\n", ci);
 	LM_DBG("received: %.*s, path: %.*s\n", ci->received.len, ci->received.s,
 	       ci->path ? ci->path->len : 0, ci->path ? ci->path->s : NULL);
-	LM_DBG("expires: %ld, expires_in: %ld, expires_out: %ld\n", ci->expires,
-	       ci->expires_in, ci->expires_out);
+	LM_DBG("expires: %lld, expires_in: %lld, expires_out: %lld\n", (long long)ci->expires,
+	       (long long)ci->expires_in, (long long)ci->expires_out);
 	LM_DBG("q: %d, instance: %.*s, callid: %.*s\n", ci->q, ci->instance.len,
 	       ci->instance.s, ci->callid ? ci->callid->len : 0,
 	       ci->callid ? ci->callid->s : NULL);
@@ -224,6 +224,6 @@ void print_ci(ucontact_info_t *ci)
 	LM_DBG("user_agent: %.*s, sock: %p, methods: %d\n",
 	       ci->user_agent ? ci->user_agent->len : 0,
 	       ci->user_agent ? ci->user_agent->s : NULL, ci->sock, ci->methods);
-	LM_DBG("last_modified: %ld, attr: %.*s\n", ci->last_modified,
+	LM_DBG("last_modified: %lld, attr: %.*s\n", (long long)ci->last_modified,
 	       ci->attr ? ci->attr->len : 0, ci->attr ? ci->attr->s : NULL);
 }

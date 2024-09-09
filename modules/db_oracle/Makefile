@@ -1,5 +1,3 @@
-# $Id$
-#
 # WARNING: do not run this directly, it should be run by the master Makefile
 
 include ../../Makefile.defs
@@ -11,7 +9,6 @@ UTILS_DIR?=../../utils/
 
 # can be defined for non standard placement of oracle so's
 ORAPATH=
-LIBS=
 
 # use for multiple client sdk version install
 ifneq ($(ORAVERSION),)
@@ -85,6 +82,9 @@ $(UTILS_DIR)/db_oracle/opensips_orasel:
 	make -C $(UTILS_DIR)/db_oracle
 
 install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_oracle/opensips_orasel
+	$(INSTALL_BIN) $(UTILS_DIR)/db_oracle/opensips_orasel $(bin_prefix)/$(bin_dir) ; \
+
+install_module_schema:
 	mkdir -p $(data_prefix)/$(data_dir)/oracle ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/oracle/*) ; do \
 		if [ -f $$FILE ] ; then \
@@ -112,4 +112,3 @@ install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_oracle/opensips_
 			$(data_prefix)/$(data_dir)/oracle/admin/`basename "$$FILE"` ; \
 		fi ;\
 	done ; \
-	$(INSTALL_BIN) $(UTILS_DIR)/db_oracle/opensips_orasel $(bin_prefix)/$(bin_dir) ; \

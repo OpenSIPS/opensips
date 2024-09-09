@@ -32,8 +32,8 @@
 #include "keys.h"
 #include "../ut.h"  /* q_memchr */
 
-#define LOWER_BYTE(b) ((b) | 0x20)
-#define LOWER_DWORD(d) ((d) | 0x20202020)
+#define LOWER_BYTE(b) ((b) | 0x20U)
+#define LOWER_DWORD(d) ((d) | 0x20202020U)
 
 /*
  * Skip all white-chars and return position of the first
@@ -86,11 +86,38 @@ static inline char* skip_ws(char* p, char *end)
 #include "case_www.h"      /* WWW-Authenticate */
 #include "case_feat.h"     /* Feature-Caps */
 #include "case_repl.h"     /* Replaces */
+#include "case_to_p.h"     /* To-Path */
+#include "case_mess.h"     /* Message-ID */
+#include "case_byte.h"     /* Byte-Range */
+#include "case_fail.h"     /* Failure-Report */
+#include "case_succ.h"     /* Success-Report */
+#include "case_stat.h"     /* Status */
+#include "case_use_.h"     /* Use-Path */
+#include "case_secu.h"     /* Security-Client, Security-Server,
+                              Security-Verify */
 
 
-#define READ(val) \
-(*(val + 0) + (*(val + 1) << 8) + (*(val + 2) << 16) + (*(val + 3) << 24))
+/*
+ * Read 4-bytes from memory, as an unsigned integer
+ * Reading byte by byte ensures that the code works also on HW which
+ * does not allow reading 4-bytes at once from unaligned memory position
+ * (Sparc for example)
+ */
+#define READ(addr) \
+	((unsigned)*((unsigned char *)addr + 0) + \
+	 ((unsigned)*((unsigned char *)addr + 1) << 8) + \
+	 ((unsigned)*((unsigned char *)addr + 2) << 16) + \
+	 ((unsigned)*((unsigned char *)addr + 3) << 24))
 
+#ifdef FUZZ_BUILD
+/* fuzzers are sensible to heap read overflows, so enable all "HAVE" checks */
+#define HAVE(bytes) (end - p >= (long)(bytes))
+#else
+/* with PKG memory, parser read overflows of a few bytes are harmless, since
+ * the memory is pre-allocated and the read cannot SIGSEGV, making the parser
+ * a lot more performant in production */
+#define HAVE(bytes) 1
+#endif
 
 #define FIRST_QUATERNIONS       \
 	case _via1_: via1_CASE; \
@@ -128,6 +155,14 @@ static inline char* skip_ws(char* p, char *end)
 	case _www__: www_CASE;  \
 	case _feat_: feat_CASE; \
 	case _repl_: repl_CASE; \
+	case _to_p_: to_p_CASE; \
+	case _mess_: mess_CASE; \
+	case _byte_: byte_CASE; \
+	case _fail_: fail_CASE; \
+	case _succ_: succ_CASE; \
+	case _stat_: stat_CASE; \
+	case _use__: use__CASE; \
+	case _secu_: secu_CASE; \
 
 
 #define PARSE_COMPACT(id)      \
@@ -207,7 +242,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 	if (p>=end)
 		goto error;
 	p = skip_ws(p, end);
-	if (*p != ':')
+	if (p >= end || *p != ':')
 		goto error;
 	/* hdr type, name should be already set at this point */
 	return (p+1);
@@ -227,7 +262,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 		case '\t':
 			/* consume spaces to the end of name */
 			p = skip_ws( p+1, end);
-			if (*p != ':')
+			if (p >= end || *p != ':')
 				goto error;
 			return (p+1);
 		/* default: it seems the hdr name continues, fall to "other" */
@@ -248,7 +283,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 			case '\t':
 				hdr->name.len = p - hdr->name.s;
 				p = skip_ws(p+1, end);
-				if (*p != ':')
+				if (p >= end || *p != ':')
 					goto error;
 				return (p+1);
 		}
@@ -256,7 +291,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 	}
 
  error:
-	/* No double colon found, error.. */
+	/* No colon found, error.. */
 	hdr->type = HDR_ERROR_T;
 	hdr->name.s = 0;
 	hdr->name.len = 0;

@@ -550,7 +550,7 @@ output file pointers.
 
 	/* iniparser.c.c following */
 #define ASCIILINESZ         1024
-#define LONGKEYBUFF         2*ASCIILINESZ+1
+#define LONGKEYBUFF         (2*ASCIILINESZ +1/*:*/ +1/*'\0'*/)
 #define INI_INVALID_KEY     ((char*)-1)
 
 	/* Private: add an entry to the dictionary */
@@ -569,7 +569,8 @@ output file pointers.
 			size_t len = strlen(sec);
 			if (len > LONGKEYBUFF - 1)
 				len = LONGKEYBUFF - 1;
-			strncpy(longkey, sec, len + 1);
+			memcpy(longkey, sec, len);
+			longkey[len] = 0;
 		}
 
 		/* Add (key,val) to dictionary */
@@ -963,7 +964,6 @@ The returned dictionary must be freed using iniparser_free().
 		char        val[ASCIILINESZ+1];
 		char    *   where ;
 		FILE    *   ini ;
-		int         lineno ;
 
 		if ((ini=fopen(ininame, "r"))==NULL) {
 			return NULL ;
@@ -975,9 +975,7 @@ The returned dictionary must be freed using iniparser_free().
 	* Initialize a new dictionary entry
 	*/
 		d = dictionary_new(0);
-		lineno = 0 ;
 		while (fgets(lin, ASCIILINESZ, ini)!=NULL) {
-			lineno++ ;
 			where = strskp(lin); /* Skip leading spaces */
 			if (*where==';' || *where=='#' || *where==0)
 			continue ; /* Comment lines */

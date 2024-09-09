@@ -27,11 +27,11 @@
 #ifndef _B2B_COMMON_H_
 #define _B2B_COMMON_H_
 
-#define B2BL_MAX_KEY_LEN	21
-
 struct b2b_context {
 	str b2bl_key;
-	void *data;
+	unsigned int hash_index;
+	unsigned int local_index;
+	int init;
 };
 
 #endif

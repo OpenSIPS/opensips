@@ -112,14 +112,14 @@ static int pv_get_json_ext(struct sip_msg*,  pv_param_t*, pv_value_t* , int flag
 static int json_bind(struct sip_msg* , pv_spec_t* , pv_spec_t* );
 static void print_tag_list( json_tag *, json_tag *, int);
 static json_t *get_object(pv_json_t *, pv_param_t *, json_tag **, int, int);
-static int pv_parse_json_name (pv_spec_p , str *);
-static int pv_parse_json_index(pv_spec_p sp, str *in);
+static int pv_parse_json_name (pv_spec_p, const str *);
+static int pv_parse_json_index(pv_spec_p sp, const str *in);
 static pv_json_t * get_pv_json (pv_param_t* );
 static int pv_add_json ( pv_param_t* , json_t * );
 static int expand_tag_list( struct sip_msg*, json_tag *);
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"json_link",    (cmd_function)json_bind, {
 		{CMD_PARAM_VAR, fixup_json_bind, 0},
 		{CMD_PARAM_VAR, fixup_json_bind, 0}, {0,0,0}},
@@ -128,12 +128,12 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static pv_export_t mod_items[] = {
-	{ {"json",  sizeof("json")-1},    PVT_JSON, pv_get_json,
+static const pv_export_t mod_items[] = {
+	{ str_const_init("json"),    PVT_JSON, pv_get_json,
 		pv_set_json, pv_parse_json_name, pv_parse_json_index, 0, 0},
-	{ {"json_compact",  sizeof("json_compact")-1}, PVT_JSON, pv_get_json_compact,
+	{ str_const_init("json_compact"), PVT_JSON, pv_get_json_compact,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
-	{ {"json_pretty",  sizeof("json_pretty")-1}, PVT_JSON, pv_get_json_pretty,
+	{ str_const_init("json_pretty"), PVT_JSON, pv_get_json_pretty,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -653,7 +653,7 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 	}
 	else
 	{
-		if( val->flags & PV_VAL_INT )
+		if( pvv_is_int(val))
 		{
 			obj = json_object_new_int(val->ri);
 		}
@@ -956,7 +956,7 @@ void init_matrix(void)
 
 
 
-int pv_parse_json_name (pv_spec_p sp, str *in)
+int pv_parse_json_name (pv_spec_p sp, const str *in)
 {
 	json_name * id;
 	char * cur,* start;
@@ -1025,7 +1025,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 	return 0;
 }
 
-static int pv_parse_json_index(pv_spec_p sp, str *in)
+static int pv_parse_json_index(pv_spec_p sp, const str *in)
 {
 	if (in == NULL || in->s == NULL || sp == NULL)
 		return -1;

@@ -334,6 +334,18 @@ int init_shm_mallocs(void)
 	return 0;
 }
 
+int init_dbg_shm_mallocs(void)
+{
+	#ifdef DBG_MALLOC
+	if (shm_dbg_mem_init() < 0) {
+		LM_CRIT("could not initialize debug shared memory pool, exiting...\n");
+		return -1;
+	}
+	#endif
+
+	return 0;
+}
+
 #ifdef SYSTEM_MALLOC
 void *
 sys_malloc(unsigned long s, const char *file, const char *function, unsigned int line)

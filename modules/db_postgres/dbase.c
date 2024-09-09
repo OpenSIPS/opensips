@@ -473,7 +473,7 @@ int db_postgres_free_result(db_con_t* _con, db_res_t* _r)
  * _op: operators
  * _v: values of the keys that must match
  * _c: column names to return
- * _n: nmber of key=values pairs to compare
+ * _n: number of key=values pairs to compare
  * _nc: number of columns to return
  * _o: order by the specified column
  */
@@ -503,7 +503,7 @@ int db_postgres_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
  *
  * Input:
  *   db_con_t*  _con Structure representing the database connection
- *   db_res_t** _r pointer to a structure represending the result set
+ *   db_res_t** _r pointer to a structure representing the result set
  *
  * Output:
  *   return 0: If the status of the last command produced a result set and,
@@ -516,7 +516,7 @@ int db_postgres_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
  * Notes:
  *   A new result structure is allocated on every call to this routine.
  *
- *   If this routine returns 0, it is the callers responsbility to free the
+ *   If this routine returns 0, it is the callers' responsibility to free the
  *   result structure. If this routine returns < 0, then the result structure
  *   is freed before returning to the caller.
  *

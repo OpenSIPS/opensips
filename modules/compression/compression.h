@@ -62,5 +62,10 @@ struct mc_comp_args {
 	int algo;
 };
 
+struct mc_compact_args {
+	mc_whitelist_p wh_list;
+	unsigned int flags;
+};
+
 #endif
 

@@ -136,8 +136,8 @@ int sd_lookup(struct sip_msg* _msg, str* table_s, str* uri_s)
 	}
 
 	db_funcs.use_table(db_handle, table_s);
-	CON_PS_REFERENCE(db_handle) = &my_ps;
 
+	CON_SET_CURR_PS(db_handle, &my_ps);
 	if(db_funcs.query(db_handle, db_keys, NULL, db_vals, db_cols,
 		nr_keys /*no keys*/, 1 /*no cols*/, NULL, &db_res)!=0)
 	{

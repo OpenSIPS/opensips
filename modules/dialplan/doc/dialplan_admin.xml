@@ -551,7 +551,12 @@ modparam("dialplan", "repl_exp_col", "column_name")
 		<title><varname>timerec_col</varname> (integer)</title>
 		<para>
 		The column name that indicates an additional time recurrence check 
-		within the rule (column values are RFC 2445-compatible strings)
+		within the rule (column values are RFC 2445-compatible strings).  The
+		value format is identical to the input of the
+		<ulink url='cfgutils#func_check_time_rec'>check_time_rec()</ulink>
+		function of the <emphasis>cfgutils</emphasis> module, including the
+		optional use of logical operators linking multiple such strings into a
+		larger expression.
 		</para>
 		<para>
 		<emphasis>
@@ -639,14 +644,15 @@ modparam("dialplan", "attrs_col", "column_name")
 	<listitem>
 		<para>
 		<emphasis>out_var</emphasis> (var, optional) - variable to be populated/written with 
-		the output string (if provided by the translation rule).
+		the output string (if provided by the translation rule), on a successful translation.
 		</para>
 	</listitem>
 
 	<listitem>
 		<para>
 		<emphasis>attrs_var</emphasis> (var, optional) - variable to be populated/written 
-		with the atribute string, if provided by the translation rule.
+		with the "attributes" field of the translation rule, on a successful translation.
+		If the field is NULL or empty-string, the variable will be set to empty-string.
 	</para>
 	</listitem>
 
@@ -787,6 +793,99 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
 		</programlisting>
 		</section>
 	</section>
+
+
+	<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Exported Status/Report Identifiers</title>
+
+	<para>
+	The module provides the "dialplan" Status/Report group, where each
+	dialplan partition is defined as a separate SR identifier.
+	</para>
+	<section id="sr_id_partition_name" xreflabel="partition_name">
+	<title><varname>[partition_name]</varname></title>
+	<para>
+	The status of these identifiers reflects the readiness/status of the 
+	cached data (if available or not when being loaded from DB):
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		<emphasis>-2</emphasis> - no data at all (initial status)
+		</para></listitem>
+		<listitem><para>
+		<emphasis>-1</emphasis> - no data, initial loading in progress
+		</para></listitem>
+		<listitem><para>
+		<emphasis>1</emphasis> - data loaded, partition ready
+		</para></listitem>
+		<listitem><para>
+		<emphasis>2</emphasis> - data available, a reload in progress
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	In terms of reports/logs, the following events will be reported:
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		starting DB data loading
+		</para></listitem>
+		<listitem><para>
+		DB data loading failed, discarding
+		</para></listitem>
+		<listitem><para>
+		DB data loading successfully completed
+		</para></listitem>
+		<listitem><para>
+		N rules loaded (N discarded)
+		</para></listitem>
+	</itemizedlist>
+	<programlisting  format="linespecific">
+    {
+        "Name": "default",
+        "Reports": [
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "5 rules loaded (0 discarded)"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "5 rules loaded (0 discarded)"
+            }
+        ]
+    }
+	</programlisting>
+	</section>
+
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>https://www.opensips.org/Documentation/Interface-StatusReport-3-3</ulink>.
+	</para>
+
+</section>
+
 
 	<section>
 		<title>Installation</title>

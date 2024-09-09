@@ -41,6 +41,10 @@ enum32 T_opensips
   cluster_sync_data    22
   cluster_sync_end     23
   cluster_shtag_on     24
+
+  tm_reply             25
+  tm_request           26
+  tm_cancel            27
 }
 
 ###############################################################################
@@ -52,6 +56,7 @@ const string konst::repl_rl       = "ratelimit-pipe-repl";
 const string konst::repl_ul       = "usrloc-contact-repl";
 const string konst::cl_internal   = "clusterer-internal";
 const string konst::cl_extra      = "clusterer-extra";
+const string konst::repl_tm       = "tm-repl";
 
 const uint32 konst::opensips_bin_marker      = 1262695504; # P4CK
 const uint32 konst::sync_chunk_start_marker  = 10101010;
@@ -98,6 +103,15 @@ switch_expr T_type_cl_extra_switch
   default : print ("default case");
 }
 
+switch_expr T_type_tm_switch
+{
+  case (packet_type == 1) : var T_opensips Type = T_opensips::tm_reply;
+  case (packet_type == 2) : var T_opensips Type = T_opensips::tm_request;
+  case (packet_type == 3) : var T_opensips Type = T_opensips::tm_cancel;
+  default : print ("default case");
+}
+
+
 switch_expr T_switch_opensips
 {
   case (capability == konst::repl_dlg)      : T_type_dlg_switch "";
@@ -106,6 +120,7 @@ switch_expr T_switch_opensips
   case (capability == konst::repl_ul)       : T_type_ul_switch "";
   case (capability == konst::cl_internal)   : T_type_cl_internal_switch "";
   case (capability == konst::cl_extra)      : T_type_cl_extra_switch "";
+  case (capability == konst::repl_tm)       : T_type_tm_switch "";
   default : print ("default case");
 }
 
@@ -714,6 +729,60 @@ struct T_bin_cl_shtag_active
   T_msg_header_type   header;
 }
 
+struct T_bin_str
+{
+  uint16              len;
+  if (len > 0) {
+    string(len)       s;
+  }
+}
+
+struct T_bin_tm_msg
+{
+  T_msg_header_type   header;
+  uint32              proto;
+  T_bin_str           dst_host;
+  uint32              dst_port;
+  T_bin_str           src_host;
+  uint32              src_port;
+  T_bin_str           body;
+}
+
+struct T_bin_tm_reply
+{
+  T_bin_tm_msg          reply;
+}
+
+struct T_bin_tm_request
+{
+  T_bin_tm_msg          request;
+}
+
+struct T_bin_tm_via_parse
+{
+  uint32                branch_offset;
+  if (branch_offset > 0) {
+    uint32              branch_length;
+  }
+  uint32                host_offset;
+  if (host_offset > 0) {
+    uint32              host_length;
+  }
+  uint32                transport_offset;
+  if (transport_offset > 0) {
+    uint32              transport_length;
+  }
+  uint32                port;
+}
+
+struct T_bin_tm_cancel
+{
+  T_bin_tm_msg          cancel;
+  T_bin_tm_via_parse    via;
+  T_bin_str             cancel_reason;
+  uint32                msg_hash;
+}
+
 struct T_msg_unknow
 {
   raw(*)   end_of_msg;
@@ -754,6 +823,11 @@ switch T_msg_switch # T_opensips
   case T_opensips::cluster_sync_data    : T_bin_cl_sync "";
   case T_opensips::cluster_sync_end     : T_bin_cl_sync_end "";
   case T_opensips::cluster_shtag_on     : T_bin_cl_shtag_active "";
+
+  case T_opensips::tm_reply             : T_bin_tm_msg "";
+  case T_opensips::tm_request           : T_bin_tm_msg "";
+  case T_opensips::tm_cancel            : T_bin_tm_cancel "";
+
   default  :
     T_msg_unknow "";
 }

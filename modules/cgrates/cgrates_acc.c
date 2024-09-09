@@ -30,8 +30,8 @@
 struct dlg_binds cgr_dlgb;
 struct tm_binds cgr_tmb;
 
-gen_lock_t *cgrates_contexts_lock;
-struct list_head *cgrates_contexts;
+static gen_lock_t *cgrates_contexts_lock;
+static struct list_head *cgrates_contexts;
 
 static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx);
 static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps);
@@ -45,7 +45,7 @@ static str cgr_serial_str = str_init("cgrX_serial");
 int cgr_acc_init(void)
 {
 	cgrates_contexts_lock = lock_alloc();
-	if (!cgrates_contexts_lock) {
+	if (!cgrates_contexts_lock || !lock_init(cgrates_contexts_lock)) {
 		LM_ERR("cannot create lock for cgrates lists\n");
 		return -1;
 	}
@@ -62,7 +62,7 @@ int cgr_acc_init(void)
 
 static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
 {
-	str ctxstr;
+	int_str ctxstr;
 	struct cgr_acc_ctx *ctx = shm_malloc(sizeof(*ctx));
 	if (!ctx) {
 		LM_ERR("cannot create acc context\n");
@@ -70,8 +70,8 @@ static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
 	}
 	memset(ctx, 0, sizeof(*ctx));
 	LM_DBG("new acc ctx=%p\n", ctx);
-	ctxstr.len = sizeof(ctx);
-	ctxstr.s = (char *)&ctx;
+	ctxstr.s.len = sizeof(ctx);
+	ctxstr.s.s = (char *)&ctx;
 
 	lock_get(cgrates_contexts_lock);
 	list_add(&ctx->link, cgrates_contexts);
@@ -80,7 +80,7 @@ static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
 	ctx->ref_no = 1;
 	CGR_REF_DBG(ctx, "init");
 	lock_init(&ctx->ref_lock);
-	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
+	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr, DLG_VAL_TYPE_STR))
 		LM_ERR("cannot store context in dialog!\n");
 	return ctx;
 }
@@ -114,7 +114,8 @@ static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
 struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 {
 	struct cgr_acc_ctx *acc_ctx;
-	str ctxstr;
+	int_str ctxstr;
+	int val_type;
 	struct cgr_kv *kv;
 	struct list_head *l, *sl;
 	struct list_head *t, *st;
@@ -132,13 +133,13 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 	if (!dlg) /* dialog not found yet, moving later */
 		return NULL;
 	/* search for the accounting ctx */
-	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &ctxstr, 0) < 0)
+	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &val_type, &ctxstr, 0) < 0)
 		return NULL;
-	if (ctxstr.len != sizeof(struct cgr_acc_ctx *)) {
-		LM_BUG("Invalid ctx pointer size %d\n", ctxstr.len);
+	if (ctxstr.s.len != sizeof(struct cgr_acc_ctx *)) {
+		LM_BUG("Invalid ctx pointer size %d\n", ctxstr.s.len);
 		return NULL;
 	}
-	acc_ctx = *(struct cgr_acc_ctx **)ctxstr.s;
+	acc_ctx = *(struct cgr_acc_ctx **)ctxstr.s.s;
 	if (!acc_ctx) /* nothing to do now */
 		return NULL;
 
@@ -185,7 +186,7 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 	struct list_head *l;
 	struct list_head *t;
 	struct dlg_cell *dlg;
-	str ctxstr;
+	int_str ctxstr;
 
 	LM_DBG("release acc ctx=%p\n", ctx);
 	/* remove all elements */
@@ -201,10 +202,11 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 
 	shm_free(ctx);
 	ctx = 0;
-	ctxstr.len = sizeof(ctx);
-	ctxstr.s = (char *)&ctx;
+	ctxstr.s.len = sizeof(ctx);
+	ctxstr.s.s = (char *)&ctx;
 	dlg = cgr_dlgb.get_dlg();
-	if (dlg && cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr) < 0)
+	if (dlg && cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr,
+		DLG_VAL_TYPE_STR) < 0)
 		LM_ERR("cannot reset context in dialog %p!\n", dlg);
 }
 
@@ -227,6 +229,7 @@ void cgr_ref_acc_ctx(struct cgr_acc_ctx *ctx, int how, const char *who)
 static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
 		void *p, char *error)
 {
+	unsigned long long timeout;
 	int_str val;
 	struct dlg_cell *dlg = (struct dlg_cell *)p;
 
@@ -243,18 +246,25 @@ static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
 		}
 		/* we are only interested in the MaxUsage token */
 		if (!json_object_object_get_ex(jorig, "MaxUsage", &jobj)) {
-			LM_ERR("CGRateS did not return an MaxUsage in InitiateSession reply: %d %s\n",
-					json_object_get_type(jorig), json_object_to_json_string(jorig));
-			return -4;
+			LM_DBG("CGRateS did not return an MaxUsage in InitiateSession reply: %d %s"
+					"- allow unlimited!\n", json_object_get_type(jorig),
+					json_object_to_json_string(jorig));
+			return 1;
 		}
 		if (json_object_get_type(jobj) != json_type_int) {
 			LM_ERR("CGRateS returned a non-int type for MaxUsage InitiateSession reply: %d %s\n",
 					json_object_get_type(jobj), json_object_to_json_string(jobj));
 			return -4;
 		}
-		val.n = json_object_get_int64(jobj);
-		if (val.n != 0 && val.n != -1)
-			val.n /= 1000000000;
+		timeout = json_object_get_int64(jobj);
+		if (timeout != 0 && timeout != -1)
+			val.n = timeout / 1000000000;
+		else
+			val.n = timeout;
+	} else if (!jobj) {
+		LM_DBG("CGRateS did not return an MaxUsage in InitiateSession reply "
+				"- allow unlimited!\n");
+		return 1;
 	} else {
 		if (json_object_get_type(jobj) != json_type_int) {
 			LM_ERR("CGRateS returned a non-int type for InitiateSession reply: %d %s\n",
@@ -317,19 +327,6 @@ static int cgr_proc_cdr_acc_reply(struct cgr_conn *c, json_object *jobj,
 	LM_DBG("got reply from cgrates: %s\n", json_object_to_json_string(jobj));
 	return 1;
 }
-
-static inline int has_totag(struct sip_msg *msg)
-{
-	/* check if it has to tag */
-	if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
-		LM_ERR("bad request or missing TO hdr :-/\n");
-		return 0;
-	}
-	if (get_to(msg)->tag_value.s != 0 && get_to(msg)->tag_value.len != 0)
-		return 1;
-	return 0;
-}
-
 
 static inline str *cgr_get_sess_callid(struct sip_msg *msg,
 		struct cgr_session *s, str *msg_cid)
@@ -659,6 +656,7 @@ static void cgr_dlg_onwrite(struct dlg_cell *dlg, int type,
 	int sessions_no = 0, i;
 	str buf;
 	char *p;
+	int_str isval;
 
 	/* no need to dump variables for deleted, since these have already been processed */
 	if (dlg->state == DLG_STATE_DELETED)
@@ -849,7 +847,8 @@ static void cgr_dlg_onwrite(struct dlg_cell *dlg, int type,
 		LM_BUG("length mismatch between computed and result: %d != %d\n",
 				buf.len, (int)(p - buf.s));
 
-	if (cgr_dlgb.store_dlg_value(dlg, &cgr_serial_str, &buf) < 0)
+	isval.s = buf;
+	if (cgr_dlgb.store_dlg_value(dlg, &cgr_serial_str, &isval, DLG_VAL_TYPE_STR) < 0)
 		LM_ERR("cannot store the serialized context value!\n");
 
 	pkg_free(buf.s);
@@ -1106,14 +1105,15 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 	char *p, *end;
 	int sessions_no, kvs_no;
 	time_t start_time;
-	str buf;
+	int_str buf;
+	int val_type;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch message flags\n");
 		return;
 	}
 
-	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_serial_str, &buf, 0) < 0) {
+	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_serial_str, &val_type, &buf, 0) < 0) {
 		LM_DBG("ctx was not saved in dialog\n");
 		return;
 	}
@@ -1129,8 +1129,8 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 	INIT_LIST_HEAD(ctx->sessions);
 	LM_DBG("loading from dialog acc ctx=%p\n", ctx);
 
-	p = buf.s;
-	end = buf.s + buf.len;
+	p = buf.s.s;
+	end = buf.s.s + buf.s.len;
 	CGR_CTX_COPY(&ctx->start_time, sizeof(ctx->start_time), "start_time");
 	CGR_CTX_COPY(&ctx->answer_time, sizeof(ctx->answer_time), "answer_time");
 	CGR_CTX_COPY(&sessions_no, sizeof(sessions_no), "sessions_no");
@@ -1186,7 +1186,9 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 		s->acc_info->acc.s = (char *)s->acc_info + sizeof(struct cgr_acc_sess);
 		s->acc_info->dst.s = s->acc_info->acc.s + tmp1.len;
 		memcpy(s->acc_info->acc.s, tmp1.s, tmp1.len);
+		s->acc_info->acc.len = tmp1.len;
 		memcpy(s->acc_info->dst.s, tmp2.s, tmp2.len);
+		s->acc_info->dst.len = tmp2.len;
 		pkg_free(tmp1.s);
 		pkg_free(tmp2.s);
 		s->acc_info->start_time = start_time;

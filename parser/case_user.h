@@ -39,6 +39,8 @@
 
 #define user_CASE              \
 	p += 4;                    \
+	if (!HAVE(6))              \
+		goto other;            \
 	val = READ(p);             \
 	switch(LOWER_DWORD(val)) { \
 		case __age_:           \

@@ -712,9 +712,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	int len, didsomething;
 	char *at; /* pointer to current location inside duri */
 
-	str host;
-	int port, proto;
-	struct socket_info* si;
+	const struct socket_info* si;
 
 	if (route_type != REQUEST_ROUTE) {
 		LM_ERR("unsupported route type\n");
@@ -734,13 +732,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 			return -1;
 		}
 		LM_DBG("send_socket_avp found = '%.*s'\n", val.s.len, ZSW(val.s.s));
-		/* parse phostport */
-		if (parse_phostport(val.s.s, val.s.len, &(host.s), &(host.len), &port, &proto)) {
-			LM_ERR("could not parse send_socket, return with error ...\n");
-			return -1;
-		}
-		si = grep_internal_sock_info( &host, (unsigned short) port,
-			(unsigned short) proto);
+		si = parse_sock_info(&val.s);
 		if (si) {
 			_msg->force_send_socket = si;
 		} else {

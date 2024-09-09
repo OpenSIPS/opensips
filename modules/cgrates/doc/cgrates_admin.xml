@@ -89,7 +89,7 @@
 		<programlisting format="linespecific">
 		...
 		if (!cgrates_auth("$fU", "$rU")) {
-			sl_send_reply("403", "Forbidden");
+			sl_send_reply(403, "Forbidden");
 			exit;
 		}
 		xlog("Call is allowed to run $cgr_ret seconds\n");
@@ -645,6 +645,13 @@ modparam("cgrates", "compat_mode", 1)
 				<emphasis>session tag</emphasis> does not exist, the default
 				(no name) one is used.
 			</para>
+			<para>
+				When assigned with the <emphasis>:=</emphasis> operator,
+				the value is treated as a JSON, rather than a string/integer.
+				However, the evaluation of the JSON is late, therefore when
+				the CGRateS request is built, if the module is unable to parse
+				the JSON, the value is sent as a string.
+			</para>
 		<example>
 				<title>$cgr(name) simple usage</title>
 				<programlisting format="linespecific">
@@ -653,8 +660,9 @@ modparam("cgrates", "compat_mode", 1)
 			...
 			$cgr_opt(Tenant) = $fd; # set the From domain as a tenant
 			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
+			$cgr(AttributeIDs) := '["+5551234"]'; # treat as array
 			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
+				sl_send_reply(403, "Forbidden");
 				exit;
 			}
 		}
@@ -671,7 +679,7 @@ modparam("cgrates", "compat_mode", 1)
 			$cgr_opt(Tenant) = $fd; # set the From domain as a tenant
 			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
 			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
+				sl_send_reply(403, "Forbidden");
 				exit;
 			}
 
@@ -840,7 +848,7 @@ route [auth_reply]
 {
 	if ($rc &lt; 0) {
 		xlog("Call not authorized: code=$cgr_ret!\n");
-		send_reply("403", "Forbidden");
+		send_reply(403, "Forbidden");
 		exit;
 	}
 	...
@@ -915,7 +923,7 @@ route [auth_reply]
 {
 	if ($rc &lt; 0) {
 		xlog("Call not authorized: code=$cgr_ret!\n");
-		send_reply("403", "Forbidden");
+		send_reply(403, "Forbidden");
 		exit;
 	}
 	...
@@ -940,7 +948,7 @@ route [auth_reply]
 {
 	if ($rc &lt; 0) {
 		xlog("Call not authorized: MaxUsage=$cgr_ret(MaxUsage)!\n");
-		send_reply("403", "Forbidden");
+		send_reply(403, "Forbidden");
 		exit;
 	}
 	...

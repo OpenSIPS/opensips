@@ -29,6 +29,7 @@
 #define __MID_REG_SAVE_
 
 #include "../../parser/msg_parser.h"
+#include "../../lib/reg/save_flags.h"
 
 #define MAX_CONTACT_BUFFER 1024
 
@@ -53,7 +54,7 @@
 #define CONTACT_SEP ", "
 #define CONTACT_SEP_LEN (sizeof(CONTACT_SEP) - 1)
 
-int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
+int mid_reg_save(struct sip_msg *msg, udomain_t *ud, struct save_flags *flags,
                           str *to_uri, int *expires, str *owtag);
 
 #endif /* __MID_REG_SAVE_ */

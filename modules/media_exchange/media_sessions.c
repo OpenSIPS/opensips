@@ -73,13 +73,16 @@ void media_session_leg_free(struct media_session_leg *msl)
 				msl, msl->ms);
 	}
 	if (msl->b2b_key.s) {
-		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, NULL, 1, 1);
+		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, msl->dlginfo, 1, 1);
 		shm_free(msl->b2b_key.s);
 		msl->b2b_key.s = NULL;
 	}
 	LM_DBG("releasing media_session_leg=%p\n", msl);
 	if (msl->params && msl->type == MEDIA_SESSION_TYPE_FORK)
-		media_forks_free(msl->params);
+		shm_free(msl->params);
+		//media_forks_free(msl->params);
+	if (msl->dlginfo)
+		shm_free(msl->dlginfo);
 	shm_free(msl);
 }
 
@@ -226,17 +229,64 @@ int media_session_resume_dlg(struct media_session_leg *msl)
 	return 0;
 }
 
-int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody)
+struct media_session_reinvite_p {
+	struct media_session_leg *msl;
+	int leg;
+};
+
+static int media_session_reinvite_reply(struct sip_msg *msg, int statuscode, void *param)
+{
+	struct media_session_reinvite_p *p = param;
+	str body, *pbody;
+	int release;
+
+	if (statuscode < 200)
+		return 0;
+	if (statuscode < 300) {
+		/* successfully completed the transaction */
+		if (get_body(msg, &body) >= 0 && body.len > 0) {
+			pbody = media_exchange_get_answer_sdp(p->msl->ms->rtp, p->msl->ms->dlg,
+					&body, p->leg, &release);
+			if (pbody && release)
+				pkg_free(pbody->s);
+		}
+	}
+	MSL_UNREF(p->msl);
+	shm_free(p);
+	return 0;
+}
+
+int media_session_reinvite(struct media_session_leg *msl, int leg, str *body)
 {
 	static str inv = str_init("INVITE");
+	int ret, release = 0;
+	struct media_session_reinvite_p *p = NULL;
 
-	str body;
-	if (pbody)
-		body = *pbody;
-	else
-		body = dlg_get_out_sdp(msl->ms->dlg, leg);
-	return media_dlg.send_indialog_request(msl->ms->dlg,
-			&inv, leg, &body, &content_type_sdp, NULL, NULL, NULL);
+	if (!body) {
+		body = media_exchange_get_offer_sdp(msl->ms->rtp, msl->ms->dlg,
+				other_leg(msl->ms->dlg, leg), &release);
+		if (release) {
+			/* here we've got a body that has been offered by the media-server
+			 * we need to answer it on its way back */
+			p = shm_malloc(sizeof *p);
+			if (p) {
+				MSL_REF(msl);
+				p->msl = msl;
+				p->leg = leg;
+			} else {
+				LM_ERR("could not allocate reinvite parameter!\n");
+			}
+		}
+	}
+	ret = media_dlg.send_indialog_request(msl->ms->dlg, &inv, leg, body, &content_type_sdp, NULL,
+			(p?media_session_reinvite_reply:NULL),p);
+	if (p && ret < 0) {
+		MSL_UNREF(msl);
+		shm_free(p);
+	}
+	if (release)
+		pkg_free(body->s);
+	return ret;
 }
 
 int media_session_req(struct media_session_leg *msl, const char *method, str *body)
@@ -248,6 +298,7 @@ int media_session_req(struct media_session_leg *msl, const char *method, str *bo
 	memset(&req, 0, sizeof(req));
 	req.et = msl->b2b_entity;
 	req.b2b_key = &msl->b2b_key;
+	req.dlginfo = msl->dlginfo;
 	req.method = &m;
 	req.body = body;
 	if (body)
@@ -275,6 +326,7 @@ int media_session_rpl(struct media_session_leg *msl,
 	reply_data.code = code;
 	reply_data.text = reason;
 	reply_data.body = body;
+	reply_data.dlginfo = msl->dlginfo;
 	if (body)
 		reply_data.extra_headers = &content_type_sdp_hdr;
 

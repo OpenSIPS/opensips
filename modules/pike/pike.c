@@ -45,6 +45,7 @@
 #include "../../evi/evi_modules.h"
 #include "../../timer.h"
 #include "../../locking.h"
+#include "../../status_report.h"
 #include "ip_tree.h"
 #include "timer.h"
 #include "pike_mi.h"
@@ -74,13 +75,16 @@ struct list_link*       timer = 0;
 static str pike_block_event = str_init("E_PIKE_BLOCKED");
 event_id_t pike_event_id = EVI_ERROR;
 
-static cmd_export_t cmds[]={
+/* status/repport group */
+void *pike_srg;
+
+static const cmd_export_t cmds[]={
 	{"pike_check_req", (cmd_function)pike_check_req, {{0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"sampling_time_unit",    INT_PARAM,  &time_unit},
 	{"reqs_density_per_unit", INT_PARAM,  &max_reqs},
 	{"remove_latency",        INT_PARAM,  &timeout},
@@ -89,7 +93,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds [] = {
+static const mi_export_t mi_cmds [] = {
 	{MI_PIKE_LIST, "lists the nodes in the pike tree", 0, 0, {
 		{mi_pike_list, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -129,7 +133,7 @@ struct module_exports exports= {
 
 static int pike_init(void)
 {
-	int rt;
+	struct script_route_ref *rt;
 
 	LM_INFO("initializing...\n");
 
@@ -174,21 +178,33 @@ static int pike_init(void)
 		TIMER_FLAG_DELAY_ON_DELAY );
 
 	if (pike_route_s && *pike_route_s) {
-		rt = get_script_route_ID_by_name(pike_route_s,sroutes->request,RT_NO);
-		if (rt<1) {
+		rt = ref_script_route_by_name( pike_route_s, sroutes->request,
+			RT_NO, REQUEST_ROUTE, 0);
+		if ( !ref_script_route_is_valid(rt) ) {
 			LM_ERR("route <%s> does not exist\n",pike_route_s);
 			return -1;
 		}
 
 		/* register the script callback to get all requests and replies */
 		if (register_script_cb( run_pike_route ,
-		PARSE_ERR_CB|REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, (void*)(long)rt )!=0 ) {
+		PARSE_ERR_CB|REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, (void*)rt )!=0 ) {
 			LM_ERR("failed to register script callbacks\n");
 			goto error3;
 		}
 	}
+
 	if((pike_event_id = evi_publish_event(pike_block_event)) == EVI_ERROR)
 		LM_ERR("cannot register pike flood start event\n");
+
+	pike_srg = sr_register_group_with_identifier( CHAR_INT("pike"),
+		0 /*is_public*/, CHAR_INT_NULL /*identifier*/,
+		1, CHAR_INT_NULL /*status_txt*/,
+		100 /*max_reports*/);
+	if (pike_srg==NULL) {
+		LM_ERR("failed to register SR identifier for reporting\n");
+		goto error3;
+	}
+
 
 	return 0;
 error3:

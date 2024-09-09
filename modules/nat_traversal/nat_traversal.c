@@ -113,7 +113,7 @@ typedef struct SIP_Dialog {
 
 typedef struct NAT_Contact {
     char *uri;
-    struct socket_info *socket;
+    const struct socket_info *socket;
 
     time_t registration_expire;
     time_t subscription_expire;
@@ -185,7 +185,7 @@ static void mod_destroy(void);
 static int  preprocess_request(struct sip_msg *msg, void *param);
 static int  reply_filter(struct sip_msg *reply);
 
-static int pv_parse_nat_contact_name(pv_spec_p sp, str *in);
+static int pv_parse_nat_contact_name(pv_spec_p sp, const str *in);
 static int pv_get_keepalive_socket(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 static int pv_get_source_uri(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 static int pv_get_track_dialog(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
@@ -223,14 +223,14 @@ static NatTest NAT_Tests[] = {
     {NTNone,           NULL}
 };
 
-static cmd_export_t commands[] = {
+static const cmd_export_t commands[] = {
     {"nat_keepalive",   (cmd_function)NAT_Keepalive, {{0, 0, 0}}, REQUEST_ROUTE},
     {"fix_contact",     (cmd_function)FixContact,    {{0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
     {"client_nat_test", (cmd_function)ClientNatTest, {{CMD_PARAM_INT, 0, 0}, {0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
     {0, 0, {{0, 0, 0}}, 0}
 };
 
-static param_export_t parameters[] = {
+static const param_export_t parameters[] = {
     {"keepalive_interval",       INT_PARAM, &keepalive_interval},
     {"keepalive_method",         STR_PARAM, &keepalive_params.method},
     {"keepalive_from",           STR_PARAM, &keepalive_params.from},
@@ -241,15 +241,15 @@ static param_export_t parameters[] = {
     {0, 0, 0}
 };
 
-static pv_export_t pvars[] = {
-    {str_init("keepalive.socket"), 1000, pv_get_keepalive_socket, NULL, pv_parse_nat_contact_name, NULL, NULL, 0},
-    {str_init("source_uri"), 1000, pv_get_source_uri, NULL, NULL, NULL, NULL, 0},
-    {str_init("nat_traversal.track_dialog"), 1000, pv_get_track_dialog, pv_set_track_dialog, NULL, NULL, NULL, 0},
+static const pv_export_t pvars[] = {
+    {str_const_init("keepalive.socket"), 1000, pv_get_keepalive_socket, NULL, pv_parse_nat_contact_name, NULL, NULL, 0},
+    {str_const_init("source_uri"), 1000, pv_get_source_uri, NULL, NULL, NULL, NULL, 0},
+    {str_const_init("nat_traversal.track_dialog"), 1000, pv_get_track_dialog, pv_set_track_dialog, NULL, NULL, NULL, 0},
     {{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
 #ifdef STATISTICS
-static stat_export_t statistics[] = {
+static const stat_export_t statistics[] = {
     {"keepalive_endpoints",  STAT_NO_RESET, &keepalive_endpoints},
     {"registered_endpoints", STAT_NO_RESET, &registered_endpoints},
     {"subscribed_endpoints", STAT_NO_RESET, &subscribed_endpoints},
@@ -258,7 +258,7 @@ static stat_export_t statistics[] = {
 };
 #endif
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
     // OpenSIPS module dependencies
     {
         {MOD_TYPE_DEFAULT, "sl",     DEP_ABORT},
@@ -410,7 +410,7 @@ SIP_Subscription_expire(NAT_Contact *contact, time_t now)
 //
 
 static NAT_Contact*
-NAT_Contact_new(char *uri, struct socket_info *socket)
+NAT_Contact_new(char *uri, const struct socket_info *socket)
 {
     NAT_Contact *contact;
 
@@ -747,9 +747,6 @@ get_contact_uri(struct sip_msg* msg, struct sip_uri *uri, contact_t **_c)
     return True;
 }
 
-
-#define is_private_address(x) (ip_addr_is_1918(x)==1 ? 1 : 0)
-
 // Test if address of signaling is different from address in 1st Via field
 static Bool
 test_source_address(struct sip_msg *msg)
@@ -775,7 +772,7 @@ test_private_contact(struct sip_msg *msg)
     if (!get_contact_uri(msg, &uri, &contact))
         return False;
 
-    return is_private_address(&(uri.host));
+    return ip_addr_is_1918(&(uri.host), 0);
 }
 
 
@@ -783,7 +780,7 @@ test_private_contact(struct sip_msg *msg)
 static Bool
 test_private_via(struct sip_msg *msg)
 {
-    return is_private_address(&(msg->via1->host));
+    return ip_addr_is_1918(&(msg->via1->host), 0);
 }
 
 
@@ -1192,7 +1189,7 @@ __dialog_destroy(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 //
 static void
 __sl_reply_out(struct sip_msg* request, str *buffer, int rpl_code,
-                union sockaddr_union *dst, struct socket_info *sock, int proto)
+                const union sockaddr_union *dst, const struct socket_info *sock, int proto)
 {
     struct sip_msg reply;
     time_t expire;
@@ -1548,7 +1545,7 @@ send_keepalive(NAT_Contact *contact)
     char buffer[8192], *from_uri, *ptr;
     static char from[64] = FROM_PREFIX;
     static char *from_ip = from + sizeof(FROM_PREFIX) - 1;
-    static struct socket_info *last_socket = NULL;
+    static const struct socket_info *last_socket = NULL;
     struct hostent* hostent;
     union sockaddr_union to;
     int nat_port, len, tolen;
@@ -1701,7 +1698,7 @@ restore_keepalive_state(void)
     char uri[64], socket[64];
     time_t rtime, stime, now;
     NAT_Contact *contact;
-    struct socket_info *sock;
+    const struct socket_info *sock;
     int port, proto, res;
     unsigned h;
     str host;
@@ -1722,7 +1719,8 @@ restore_keepalive_state(void)
     res = fscanf(f, STATE_FILE_HEADER); // skip header
 
     while (True) {
-        res = fscanf(f, "%63s %63s %ld %ld", uri, socket, &rtime, &stime);
+        res = fscanf(f, "%63s %63s %lld %lld", uri, socket,
+				(long long *)&rtime, (long long *)&stime);
         if (res == EOF) {
             if (ferror(f))
                 LM_ERR("error while reading keepalive state file: %s\n", strerror(errno));
@@ -1766,6 +1764,7 @@ restore_keepalive_state(void)
 static int
 mod_init(void)
 {
+#define MIN_KEEPALIVE_INTERVAL 2
     int *param;
 
     if (keepalive_interval <= 0) {
@@ -1839,10 +1838,10 @@ mod_init(void)
     restore_keepalive_state();
 
     // check keepalive interval and add keepalive timer process
-    if (keepalive_interval < 10) {
-        LM_WARN("keepalive_interval should be at least 10 seconds\n");
-        LM_NOTICE("using 10 seconds for keepalive_interval\n");
-        keepalive_interval = 10;
+    if (keepalive_interval < MIN_KEEPALIVE_INTERVAL) {
+        LM_WARN("keepalive_interval should be at least %d seconds\n", MIN_KEEPALIVE_INTERVAL);
+        LM_NOTICE("using %d seconds for keepalive_interval\n", MIN_KEEPALIVE_INTERVAL);
+        keepalive_interval = MIN_KEEPALIVE_INTERVAL;
     }
 
     // allocate a shm variable to keep the counter used by the keepalive
@@ -1974,7 +1973,7 @@ reply_filter(struct sip_msg *reply)
 //
 
 static int
-pv_parse_nat_contact_name(pv_spec_p sp, str *in)
+pv_parse_nat_contact_name(pv_spec_p sp, const str *in)
 {
     char *p;
     char *s;

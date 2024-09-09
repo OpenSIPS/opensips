@@ -87,11 +87,11 @@ mi_response_t *perl_mi_reload(const mi_params_t *params,
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"perl_exec_simple", (cmd_function)perl_exec_simple, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+		ALL_ROUTES},
 	{"perl_exec", (cmd_function)perl_exec, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
@@ -102,7 +102,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"filename", STR_PARAM, &filename},
 	{"modpath", STR_PARAM, &modpath},
 	{ 0, 0, 0 }
@@ -112,7 +112,7 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	/* FIXME This does not yet work...
 	{ "perl_reload", 0,0,0, {
 		{perl_mi_reload, {0}},
@@ -122,7 +122,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

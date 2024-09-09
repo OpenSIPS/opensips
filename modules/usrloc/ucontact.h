@@ -122,7 +122,7 @@ typedef struct ucontact {
 	ucontact_flags_t flags; /*!< Usrloc-specific internal contact flags */
 	unsigned int cflags;    /*!< Custom branch flags (NAT, RTO, etc.) */
 	str user_agent;         /*!< User-Agent header field */
-	struct socket_info *sock; /*!< received socket */
+	const struct socket_info *sock; /*!< received socket */
 	time_t last_modified;   /*!< When the record was last modified */
 	unsigned int methods;   /*!< Supported methods */
 	str attr;               /*!< Additional registration info  */
@@ -162,7 +162,7 @@ typedef struct ucontact_info {
 	ucontact_flags_t flags;
 	unsigned int cflags;
 	str *user_agent;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	unsigned int methods;
 	time_t last_modified;
 	str *packed_kv_storage;
@@ -173,6 +173,11 @@ typedef struct ucontact_info {
 
 	/* contact matching algorithm - no need to free anything */
 	struct ct_match *cmatch;
+
+	/* optional callback to be invoked before a freshly created contact
+	 * is replicated (useful to attach additional data, then replicate!) */
+	int (*pre_replicate_cb)(ucontact_t *c, void *info);
+	void *pre_replicate_info;
 } ucontact_info_t;
 
 /*! \brief
@@ -194,16 +199,18 @@ typedef struct {
 
 int ucontact_coords_cmp(ucontact_coords a, ucontact_coords b);
 void free_ucontact_coords(ucontact_coords coords);
+int is_my_ucontact(ucontact_t *c);
 
 /*! \brief
- * ancient time used for marking the contacts forced to expired
+ * Non-zero but still ancient time which forces a contact to expire
  */
 #define UL_EXPIRED_TIME 10
+#define FORCE_EXPIRED_CONTACT(c)  ((c)->expires == UL_EXPIRED_TIME)
 
 /*
- * Valid contact is a contact that either didn't expire yet or is permanent
+ * A contact is valid when it is neither expired nor permanent
  */
-#define VALID_CONTACT(c, t)   ((c->expires>t) || (c->expires==0))
+#define VALID_CONTACT(c, t)   ((c)->expires>(t) || (c)->expires==0)
 
 
 /*! \brief
@@ -300,7 +307,7 @@ struct urecord;
  * Update ucontact with new values
  */
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
-                    char skip_replication);
+                    const struct ct_match *match, char skip_replication);
 
 /*! \brief
  * Fetch a key from the contact-level storage

@@ -21,9 +21,9 @@
 
 #include "cmds.h"
 
-cmd_export_t* find_cmd_export_t(char* name, int flags)
+const cmd_export_t* find_cmd_export_t(const char* name, int flags)
 {
-	cmd_export_t* cmd;
+	const cmd_export_t* cmd;
 
 	cmd = find_core_cmd_export_t(name, flags);
 	if (!cmd)
@@ -40,9 +40,9 @@ cmd_export_t* find_cmd_export_t(char* name, int flags)
  * -2 - too many parameters
  * -3 - mandatory parameter omitted
  */
-int check_cmd_call_params(cmd_export_t *cmd, action_elem_t *elems, int no_params)
+int check_cmd_call_params(const cmd_export_t *cmd, action_elem_t *elems, int no_params)
 {
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	int n=0, m=0, i;
 
 	for (param=cmd->params; param->flags; param++, n++)
@@ -63,9 +63,9 @@ int check_cmd_call_params(cmd_export_t *cmd, action_elem_t *elems, int no_params
 }
 
 /* simillar function to check_cmd_call_params but for async cmds */
-int check_acmd_call_params(acmd_export_t *acmd, action_elem_t *elems, int no_params)
+int check_acmd_call_params(const acmd_export_t *acmd, action_elem_t *elems, int no_params)
 {
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	int n=0, m=0, i;
 
 	for (param=acmd->params; param->flags; param++, n++)

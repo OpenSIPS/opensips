@@ -49,137 +49,164 @@ endif
 # List of all debian module packages we will build
 # Used to index the make variable below, which has details about each package
 ALL_MODPKG_LIST := \
-	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
-	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
-	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
-	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
-	PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
-	SQLITE CGRATES XML SIPREC PYTHON UUID STIR_SHAKEN
-# add SCTP only on linux systems
-ifeq ($(DEB_HOST_ARCH_OS),linux)
-	ALL_MODPKG_LIST += PROTO_SCTP
-endif
+	AUTH BERKELEY CARRIERROUTE CGRATES COMPRESSION CPL \
+	DBHTTP DIALPLAN EMERGENCY GEOIP HTTP IDENTITY JABBER \
+	JSON KAFKA LDAP LUA MEMCACHED MSRP MYSQL PERL POSTGRES \
+	PRESENCE PROMETHEUS PROTO_TLS PROTO_WSS PYTHON RABBITMQ \
+	REDIS RADIUS REGEX REST_CLIENT SIPREC SNMPSTATS SQLITE STIR_SHAKEN \
+	TLS_MGM TLS_OPENSSL TLS_WOLFSSL UNIXODBC UUID XML XMLRPC XMPP IPSEC
+
 
 MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)
-
 # debian unstable (sid) doesn't output a version number, so emulate one
 ifeq ($(MAJOR_RELEASE), unstable)
 	MAJOR_RELEASE=1000
 endif
 
-# use a dummy architecture for the packages we do not want to build
 ifeq ($(shell dpkg-vendor --derives-from Debian && echo yes),yes)
-	LIBMONGOC_MAJOR_RELEASE=9
+	REL_STRETCH_OR_XENIAL=9
 endif
 ifeq ($(shell dpkg-vendor --derives-from Ubuntu && echo yes),yes)
-	LIBMONGOC_MAJOR_RELEASE=16
+	REL_STRETCH_OR_XENIAL=16
 endif
-ifeq ($(shell test $(MAJOR_RELEASE) -ge $(LIBMONGOC_MAJOR_RELEASE); echo $$?),0)
+
+ifeq ($(shell dpkg-vendor --derives-from Debian && echo yes),yes)
+	REL_BUSTER_OR_FOCAL=10
+endif
+ifeq ($(shell dpkg-vendor --derives-from Ubuntu && echo yes),yes)
+	REL_BUSTER_OR_FOCAL=20
+endif
+
+
+#
+# AUTH_JWT package
+#
+ifeq ($(shell test $(MAJOR_RELEASE) -ge $(REL_BUSTER_OR_FOCAL); echo $$?),0)
+	ALL_MODPKG_LIST += AUTH_JWT
+endif
+
+
+#
+# DIAMETER package
+#
+ifeq ($(shell test $(MAJOR_RELEASE) -ge $(REL_BUSTER_OR_FOCAL); echo $$?),0)
+	ALL_MODPKG_LIST += DIAMETER
+endif
+
+
+#
+# MONGODB package
+#
+ifeq ($(shell test $(MAJOR_RELEASE) -ge $(REL_STRETCH_OR_XENIAL); echo $$?),0)
 	ALL_MODPKG_LIST += MONGODB
 endif
-RADCLI_MAJOR_RELEASE=$(LIBMONGOC_MAJOR_RELEASE)
+
+
+#
+# PROTO_SCTP package
+#
+# add SCTP only on linux systems
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+	ALL_MODPKG_LIST += PROTO_SCTP
+endif
+
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
-override BUILD_MODPKG_LIST :=
+	override BUILD_MODPKG_LIST :=
 else
-ifeq ($(BUILD_MODPKG_LIST),)
-override BUILD_MODPKG_LIST := $(ALL_MODPKG_LIST)
+	ifeq ($(BUILD_MODPKG_LIST),)
+		override BUILD_MODPKG_LIST := $(ALL_MODPKG_LIST)
+	endif
 endif
-endif
+
 
 # FOO_MODULES is the directory name within modules/ that belongs to the package
 # FOO_MOD_PATH is same as FOO_MODULES, but with 'modules/' prepended
 
-MYSQL_PKGNAME = opensips-mysql-module
-MYSQL_MODULES = db_mysql
-MYSQL_MOD_PATH=$(addprefix modules/, $(MYSQL_MODULES))
-POSTGRES_PKGNAME = opensips-postgres-module
-POSTGRES_MODULES = db_postgres
-POSTGRES_MOD_PATH=$(addprefix modules/, $(POSTGRES_MODULES))
-UNIXODBC_PKGNAME = opensips-unixodbc-module
-UNIXODBC_MODULES=db_unixodbc
-UNIXODBC_MOD_PATH=$(addprefix modules/, $(UNIXODBC_MODULES))
-SQLITE_PKGNAME = opensips-sqlite-module
-SQLITE_MODULES = db_sqlite
-SQLITE_MOD_PATH=$(addprefix modules/, $(SQLITE_MODULES))
-JABBER_PKGNAME = opensips-jabber-module
-JABBER_MODULES = jabber
-JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
+AUTH_JWT_PKGNAME = opensips-auth-jwt-module
+AUTH_JWT_MODULES = auth_jwt
+AUTH_JWT_MOD_PATH=$(addprefix modules/, $(AUTH_JWT_MODULES))
+AUTH_PKGNAME = opensips-auth-modules
+AUTH_MODULES = auth auth_aka uac_auth
+AUTH_MOD_PATH=$(addprefix modules/, $(AUTH_MODULES))
+BERKELEY_PKGNAME = opensips-berkeley-module
+BERKELEY_DBSCHEMA_PKGNAME = opensips-berkeley-dbschema
+BERKELEY_MODULES = db_berkeley
+BERKELEY_MOD_PATH=$(addprefix modules/, $(BERKELEY_MODULES))
+CARRIERROUTE_PKGNAME = opensips-carrierroute-module
+CARRIERROUTE_MODULES = carrierroute
+CARRIERROUTE_MOD_PATH=$(addprefix modules/, $(CARRIERROUTE_MODULES))
+CGRATES_PKGNAME = opensips-cgrates-module
+CGRATES_MODULES = cgrates
+CGRATES_MOD_PATH=$(addprefix modules/, $(CGRATES_MODULES))
+COMPRESSION_PKGNAME = opensips-compression-module
+COMPRESSION_MODULES = compression
+COMPRESSION_MOD_PATH=$(addprefix modules/, $(COMPRESSION_MODULES))
 CPL_PKGNAME = opensips-cpl-module
 CPL_MODULES = cpl_c
 CPL_MOD_PATH=$(addprefix modules/, $(CPL_MODULES))
-RADIUS_PKGNAME = opensips-radius-modules
-RADIUS_MODULES = aaa_radius peering
-RADIUS_MOD_PATH=$(addprefix modules/, $(RADIUS_MODULES))
-PRESENCE_PKGNAME = opensips-presence-modules
-PRESENCE_MODULES = presence presence_callinfo presence_dialoginfo presence_xml presence_mwi presence_xcapdiff presence_dfks pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap xcap_client
-PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
-XMLRPC_PKGNAME = opensips-xmlrpc-module
-XMLRPC_MODULES = mi_xmlrpc_ng
-XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
-PERL_PKGNAME = opensips-perl-modules
-PERL_MODULES = perl db_perlvdb
-PERL_MOD_PATH=$(addprefix modules/, $(PERL_MODULES))
-SNMPSTATS_PKGNAME = opensips-snmpstats-module
-SNMPSTATS_MODULES = snmpstats
-SNMPSTATS_MOD_PATH=$(addprefix modules/, $(SNMPSTATS_MODULES))
-XMPP_PKGNAME = opensips-xmpp-module
-XMPP_MODULES = xmpp
-XMPP_MOD_PATH=$(addprefix modules/, $(XMPP_MODULES))
-CROUTE_PKGNAME = opensips-carrierroute-module
-CROUTE_MODULES = carrierroute
-CROUTE_MOD_PATH=$(addprefix modules/, $(CROUTE_MODULES))
-BERKELEY_PKGNAME = opensips-berkeley-module
-BERKELEY_MODULES = db_berkeley
-BERKELEY_MOD_PATH=$(addprefix modules/, $(BERKELEY_MODULES))
-LDAP_PKGNAME = opensips-ldap-modules
-LDAP_MODULES = ldap h350
-LDAP_MOD_PATH=$(addprefix modules/, $(LDAP_MODULES))
-GEOIP_PKGNAME = opensips-geoip-module
-GEOIP_MODULES = mmgeoip
-GEOIP_MOD_PATH=$(addprefix modules/, $(GEOIP_MODULES))
-REGEX_PKGNAME = opensips-regex-module
-REGEX_MODULES = regex
-REGEX_MOD_PATH=$(addprefix modules/, $(REGEX_MODULES))
-IDENTITY_PKGNAME = opensips-identity-module
-IDENTITY_MODULES = identity
-IDENTITY_MOD_PATH=$(addprefix modules/, $(IDENTITY_MODULES))
-B2BUA_PKGNAME = opensips-b2bua-module
-B2BUA_MODULES = b2b_entities b2b_logic b2b_logic_xml
-B2BUA_MOD_PATH=$(addprefix modules/, $(B2BUA_MODULES))
 DBHTTP_PKGNAME = opensips-dbhttp-module
 DBHTTP_MODULES = db_http
 DBHTTP_MOD_PATH=$(addprefix modules/, $(DBHTTP_MODULES))
 DIALPLAN_PKGNAME = opensips-dialplan-module
 DIALPLAN_MODULES = dialplan
 DIALPLAN_MOD_PATH=$(addprefix modules/, $(DIALPLAN_MODULES))
-MEMCACHED_PKGNAME = opensips-memcached-module
-MEMCACHED_MODULES = cachedb_memcached
-MEMCACHED_MOD_PATH=$(addprefix modules/, $(MEMCACHED_MODULES))
-REDIS_PKGNAME = opensips-redis-module
-REDIS_MODULES = cachedb_redis
-REDIS_MOD_PATH=$(addprefix modules/, $(REDIS_MODULES))
-CASSANDRA_PKGNAME = opensips-cassandra-module
-CASSANDRA_MODULES = cachedb_cassandra
-CASSANDRA_MOD_PATH=$(addprefix modules/, $(CASSANDRA_MODULES))
-RABBITMQ_PKGNAME = opensips-rabbitmq-modules
-RABBITMQ_MODULES = event_rabbitmq rabbitmq rabbitmq_consumer
-RABBITMQ_MOD_PATH=$(addprefix modules/, $(RABBITMQ_MODULES))
-LUA_PKGNAME = opensips-lua-module
-LUA_MODULES = lua
-LUA_MOD_PATH=$(addprefix modules/, $(LUA_MODULES))
-HTTP_PKGNAME = opensips-http-modules
-HTTP_MODULES = httpd mi_html mi_http pi_http
-HTTP_MOD_PATH=$(addprefix modules/, $(HTTP_MODULES))
-JSON_PKGNAME = opensips-json-module
-JSON_MODULES = json
-JSON_MOD_PATH=$(addprefix modules/, $(JSON_MODULES))
-COMPRESSION_PKGNAME = opensips-compression-module
-COMPRESSION_MODULES = compression
-COMPRESSION_MOD_PATH=$(addprefix modules/, $(COMPRESSION_MODULES))
+DIAMETER_PKGNAME = opensips-diameter-module
+DIAMETER_MODULES = aaa_diameter aka_av_diameter
+DIAMETER_MOD_PATH=$(addprefix modules/, $(DIAMETER_MODULES))
 EMERGENCY_PKGNAME = opensips-emergency-module
 EMERGENCY_MODULES = emergency
 EMERGENCY_MOD_PATH=$(addprefix modules/, $(EMERGENCY_MODULES))
+GEOIP_PKGNAME = opensips-geoip-module
+GEOIP_MODULES = mmgeoip
+GEOIP_MOD_PATH=$(addprefix modules/, $(GEOIP_MODULES))
+HTTP_PKGNAME = opensips-http-modules
+HTTP_MODULES = httpd mi_html mi_http pi_http
+HTTP_MOD_PATH=$(addprefix modules/, $(HTTP_MODULES))
+IDENTITY_PKGNAME = opensips-identity-module
+IDENTITY_MODULES = identity
+IDENTITY_MOD_PATH=$(addprefix modules/, $(IDENTITY_MODULES))
+JABBER_PKGNAME = opensips-jabber-module
+JABBER_MODULES = jabber
+JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
+JSON_PKGNAME = opensips-json-module
+JSON_MODULES = json
+JSON_MOD_PATH=$(addprefix modules/, $(JSON_MODULES))
+KAFKA_PKGNAME = opensips-kafka-module
+KAFKA_MODULES = event_kafka
+KAFKA_MOD_PATH=$(addprefix modules/, $(KAFKA_MODULES))
+LDAP_PKGNAME = opensips-ldap-modules
+LDAP_MODULES = ldap h350
+LDAP_MOD_PATH=$(addprefix modules/, $(LDAP_MODULES))
+LUA_PKGNAME = opensips-lua-module
+LUA_MODULES = lua
+LUA_MOD_PATH=$(addprefix modules/, $(LUA_MODULES))
+MEMCACHED_PKGNAME = opensips-memcached-module
+MEMCACHED_MODULES = cachedb_memcached
+MEMCACHED_MOD_PATH=$(addprefix modules/, $(MEMCACHED_MODULES))
+MONGODB_PKGNAME = opensips-mongodb-module
+MONGODB_MODULES = cachedb_mongodb
+MONGODB_MOD_PATH=$(addprefix modules/, $(MONGODB_MODULES))
+MSRP_PKGNAME = opensips-msrp-modules
+MSRP_MODULES = msrp_gateway msrp_relay msrp_ua proto_msrp
+MSRP_MOD_PATH=$(addprefix modules/, $(MSRP_MODULES))
+MYSQL_PKGNAME = opensips-mysql-module
+MYSQL_DBSCHEMA_PKGNAME = opensips-mysql-dbschema
+MYSQL_MODULES = db_mysql
+MYSQL_MOD_PATH=$(addprefix modules/, $(MYSQL_MODULES))
+PERL_PKGNAME = opensips-perl-modules
+PERL_MODULES = perl db_perlvdb
+PERL_MOD_PATH=$(addprefix modules/, $(PERL_MODULES))
+POSTGRES_PKGNAME = opensips-postgres-module
+POSTGRES_DBSCHEMA_PKGNAME = opensips-postgres-dbschema
+POSTGRES_MODULES = db_postgres
+POSTGRES_MOD_PATH=$(addprefix modules/, $(POSTGRES_MODULES))
+PRESENCE_PKGNAME = opensips-presence-modules
+PRESENCE_MODULES = presence presence_callinfo presence_dialoginfo presence_reginfo presence_xml presence_mwi presence_xcapdiff presence_dfks pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp rls xcap xcap_client
+PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
+PROMETHEUS_PKGNAME = opensips-prometheus-module
+PROMETHEUS_MODULES = prometheus
+PROMETHEUS_MOD_PATH=$(addprefix modules/, $(PROMETHEUS_MODULES))
 PROTO_SCTP_PKGNAME = opensips-sctp-module
 PROTO_SCTP_MODULES = proto_sctp
 PROTO_SCTP_MOD_PATH=$(addprefix modules/, $(PROTO_SCTP_MODULES))
@@ -189,47 +216,76 @@ PROTO_TLS_MOD_PATH=$(addprefix modules/, $(PROTO_TLS_MODULES))
 PROTO_WSS_PKGNAME = opensips-wss-module
 PROTO_WSS_MODULES = proto_wss
 PROTO_WSS_MOD_PATH=$(addprefix modules/, $(PROTO_WSS_MODULES))
-TLS_MGM_PKGNAME = opensips-tlsmgm-module
-TLS_MGM_MODULES = tls_mgm
-TLS_MGM_MOD_PATH=$(addprefix modules/, $(TLS_MGM_MODULES))
-REST_CLIENT_PKGNAME = opensips-restclient-module
-REST_CLIENT_MODULES = rest_client
-REST_CLIENT_MOD_PATH=$(addprefix modules/, $(REST_CLIENT_MODULES))
-CGRATES_PKGNAME = opensips-cgrates-module
-CGRATES_MODULES = cgrates
-CGRATES_MOD_PATH=$(addprefix modules/, $(CGRATES_MODULES))
-XML_PKGNAME = opensips-xml-module
-XML_MODULES = xml
-XML_MOD_PATH=$(addprefix modules/, $(XML_MODULES))
-MONGODB_PKGNAME = opensips-mongodb-module
-MONGODB_MODULES = cachedb_mongodb
-MONGODB_MOD_PATH=$(addprefix modules/, $(MONGODB_MODULES))
-SIPREC_PKGNAME = opensips-siprec-module
-SIPREC_MODULES = siprec
-SIPREC_MOD_PATH=$(addprefix modules/, $(SIPREC_MODULES))
 PYTHON_PKGNAME = opensips-python-module
 PYTHON_MODULES = python
 PYTHON_MOD_PATH=$(addprefix modules/, $(PYTHON_MODULES))
+RABBITMQ_PKGNAME = opensips-rabbitmq-modules
+RABBITMQ_MODULES = event_rabbitmq rabbitmq_consumer
+RABBITMQ_MOD_PATH=$(addprefix modules/, $(RABBITMQ_MODULES))
+REDIS_PKGNAME = opensips-redis-module
+REDIS_MODULES = cachedb_redis
+REDIS_MOD_PATH=$(addprefix modules/, $(REDIS_MODULES))
+RADIUS_PKGNAME = opensips-radius-modules
+RADIUS_MODULES = aaa_radius peering
+RADIUS_MOD_PATH=$(addprefix modules/, $(RADIUS_MODULES))
+REGEX_PKGNAME = opensips-regex-module
+REGEX_MODULES = regex
+REGEX_MOD_PATH=$(addprefix modules/, $(REGEX_MODULES))
+REST_CLIENT_PKGNAME = opensips-restclient-module
+REST_CLIENT_MODULES = rest_client
+REST_CLIENT_MOD_PATH=$(addprefix modules/, $(REST_CLIENT_MODULES))
+SIPREC_PKGNAME = opensips-siprec-module
+SIPREC_MODULES = siprec
+SIPREC_MOD_PATH=$(addprefix modules/, $(SIPREC_MODULES))
+SNMPSTATS_PKGNAME = opensips-snmpstats-module
+SNMPSTATS_MODULES = snmpstats
+SNMPSTATS_MOD_PATH=$(addprefix modules/, $(SNMPSTATS_MODULES))
+SQLITE_PKGNAME = opensips-sqlite-module
+SQLITE_DBSCHEMA_PKGNAME = opensips-sqlite-dbschema
+SQLITE_MODULES = db_sqlite
+SQLITE_MOD_PATH=$(addprefix modules/, $(SQLITE_MODULES))
 STIR_SHAKEN_PKGNAME = opensips-stir-shaken-module
 STIR_SHAKEN_MODULES = stir_shaken
 STIR_SHAKEN_MOD_PATH=$(addprefix modules/, $(STIR_SHAKEN_MODULES))
+TLS_MGM_PKGNAME = opensips-tlsmgm-module
+TLS_MGM_MODULES = tls_mgm
+TLS_MGM_MOD_PATH=$(addprefix modules/, $(TLS_MGM_MODULES))
+TLS_OPENSSL_PKGNAME = opensips-tls-openssl-module
+TLS_OPENSSL_MODULES = tls_openssl
+TLS_OPENSSL_MOD_PATH=$(addprefix modules/, $(TLS_OPENSSL_MODULES))
+TLS_WOLFSSL_PKGNAME = opensips-tls-wolfssl-module
+TLS_WOLFSSL_MODULES = tls_wolfssl
+TLS_WOLFSSL_MOD_PATH=$(addprefix modules/, $(TLS_WOLFSSL_MODULES))
+UNIXODBC_PKGNAME = opensips-unixodbc-module
+UNIXODBC_MODULES=db_unixodbc
+UNIXODBC_MOD_PATH=$(addprefix modules/, $(UNIXODBC_MODULES))
 UUID_PKGNAME = opensips-uuid-module
 UUID_MODULES = uuid
 UUID_MOD_PATH=$(addprefix modules/, $(UUID_MODULES))
+XML_PKGNAME = opensips-xml-module
+XML_MODULES = xml
+XML_MOD_PATH=$(addprefix modules/, $(XML_MODULES))
+XMLRPC_PKGNAME = opensips-xmlrpc-module
+XMLRPC_MODULES = mi_xmlrpc_ng
+XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
+XMPP_PKGNAME = opensips-xmpp-module
+XMPP_MODULES = xmpp
+XMPP_MOD_PATH=$(addprefix modules/, $(IPSEC_MODULES))
+IPSEC_PKGNAME = opensips-ipsec-module
+IPSEC_MODULES = proto_ipsec
+IPSEC_MOD_PATH=$(addprefix modules/, $(IPSEC_MODULES))
 
 
 # Need this per-package variables available in environment so accessible
 # to shell. Since have underscore in them, need to explicitly export
-export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH)
+export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH $(pkg)_DBSCHEMA_PKGNAME)
 
-# not needed anymore
-#ALL_PACKAGES = opensips $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_PKGNAME))
 ALL_MODULES = $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_MODULES))
 BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
 
 ## modules not in the "main" package or unstable modules that we never want to build
 ## Everything we don't specifically exclude here will get built into the primary package
-NONCORE_MODULES = $(ALL_MODULES) osp
+NONCORE_MODULES = $(ALL_MODULES) osp launch_darkly http2d cachedb_dynamodb event_sqs
 
 ifeq (cc, $(CC))
 	CC = gcc
@@ -267,7 +323,7 @@ LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 # force multiarch lib path and SMP support all the time
 VARS = LIBDIR=lib/$(DEB_HOST_MULTIARCH) ISSMP=yes
 
-ifeq ($(shell test $(MAJOR_RELEASE) -ge $(RADCLI_MAJOR_RELEASE); echo $$?),0)
+ifeq ($(shell test $(MAJOR_RELEASE) -ge $(REL_STRETCH_OR_XENIAL); echo $$?),0)
 	VARS += RADIUSCLIENT=RADCLI
 else
 	VARS += RADIUSCLIENT=FREERADIUS
@@ -296,8 +352,10 @@ override_dh_auto_build:
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
 	  modules modules="$(BUILD_MODULE_PATHS)" cfg_prefix=$(INSTALL_PREFIX) \
 	  cfg_target=$(INSTALL_PREFIX)/etc/opensips/
+ifneq ($(filter BERKELEY,$(BUILD_MODPKG_LIST)),)
 	# generate the utils db_berkeley
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) utils include_modules="db_berkeley"
+endif
 
 	touch build-stamp
 
@@ -339,21 +397,35 @@ override_dh_auto_install:
 	    eval pkg_pkgname=\$$$${pkg}_PKGNAME;\
 	    eval pkg_modules=\$$$${pkg}_MODULES;\
 	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
+	    eval pkg_dbschema_pkgname=\$$$${pkg}_DBSCHEMA_PKGNAME;\
 	    echo "rules: Installing $${pkg} as $${pkg_pkgname} from $${pkg_modules} ...";\
-	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-all \
-		modules="$${pkg_paths}"  \
-		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
-		prefix=$(BIN_PREFIX) \
-		cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname}/$(INSTALL_PREFIX) \
-		cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
-		doc_dir=share/doc/$${pkg_pkgname} \
-		;\
+	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-files \
+	        modules="$${pkg_paths}"  \
+	        basedir=$(CURDIR)/debian/$${pkg_pkgname} \
+	        prefix=$(BIN_PREFIX) \
+	        cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname}/$(INSTALL_PREFIX) \
+	        cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
+	        doc_dir=share/doc/$${pkg_pkgname} \
+	        ;\
+	    if [ -n "$${pkg_dbschema_pkgname}" ]; then \
+	        echo "rules: Installing $${pkg} schema as $${pkg_dbschema_pkgname} from $${pkg_modules} ...";\
+	        CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-dbschema \
+	            modules="$${pkg_paths}"  \
+	            basedir=$(CURDIR)/debian/$${pkg_dbschema_pkgname} \
+	            prefix=$(BIN_PREFIX) \
+	            cfg_prefix=$(CURDIR)/debian/$${pkg_dbschema_pkgname}/$(INSTALL_PREFIX) \
+	            cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
+	            doc_dir=share/doc/$${pkg_dbschema_pkgname} \
+	            ;\
+	    fi \
 	done
 
-	# move binaries of opensips-berkeley-module to opensips-berkeley-bin
+ifneq ($(filter BERKELEY,$(BUILD_MODPKG_LIST)),)
+	# move binaries of opensips-berkeley-module to opensips-iberkeley-bin
 	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
 	mv $(CURDIR)/debian/opensips-berkeley-module/$(BIN_PREFIX)/sbin \
 		$(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
+endif
 
 override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('registrant','2');
+INSERT INTO version (table_name, table_version) values ('registrant','3');
 CREATE TABLE registrant (
     id NUMBER(10) PRIMARY KEY,
     registrar VARCHAR2(255) DEFAULT '',
@@ -12,7 +12,8 @@ CREATE TABLE registrant (
     expiry NUMBER(10) DEFAULT NULL,
     forced_socket VARCHAR2(64) DEFAULT NULL,
     cluster_shtag VARCHAR2(64) DEFAULT NULL,
-    CONSTRAINT registrant_aor_idx  UNIQUE (aor)
+    state NUMBER(10) DEFAULT 0 NOT NULL,
+    CONSTRAINT registrant_registrant_idx  UNIQUE (aor, binding_URI, registrar)
 );
 
 CREATE OR REPLACE TRIGGER registrant_tr

@@ -27,6 +27,8 @@ struct cgr_engine {
 	/* engine params */
 	short port;
 	str host;
+
+	int is_fqdn;
 	union sockaddr_union su;
 	time_t disable_time;
 
@@ -54,7 +56,7 @@ extern struct list_head cgrates_engines;
 extern int cgre_retry_tout;
 extern int cgrc_max_conns;
 extern str cgre_bind_ip;
-int cgrc_conn(struct cgr_conn *c);
+void cgrc_conn_rpc(int sender, void *p);
 int cgrc_send(struct cgr_conn *c, str *buf);
 int cgrc_start_listen(struct cgr_conn *c);
 void cgrc_close(struct cgr_conn *c, int remove);

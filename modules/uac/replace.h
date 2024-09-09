@@ -36,6 +36,10 @@
 #define UAC_AUTO_RESTORE    (1)
 #define UAC_MANUAL_RESTORE  (2)
 
+#define UAC_INUSE_REPLACE_FROM (1U<<0)
+#define UAC_INUSE_REPLACE_TO   (1U<<1)
+extern int uac_replace_flags;
+
 void init_from_replacer();
 
 int replace_uri( struct sip_msg *msg, str *display, str *uri,

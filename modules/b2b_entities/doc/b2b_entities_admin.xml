@@ -169,6 +169,42 @@ modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensi
 		</example>
 	</section>
 
+	<section id="param_cachedb_url" xreflabel="cachedb_url">
+		<title><varname>cachedb_url</varname> (str)</title>
+		<para>
+			URL of a NoSQL database to be used. Only Redis is supported
+			at the moment.
+		</para>
+		<example>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "cachedb_url", "redis://localhost:6379/")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cachedb_key_prefix" xreflabel="cachedb_key_prefix">
+		<title><varname>cachedb_key_prefix</varname> (string)</title>
+		<para>
+		Prefix to use for every key set in the NoSQL database.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>b2be$</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cachedb_key_prefix</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "cachedb_key_prefix", "b2b")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_update_period" xreflabel="update_period">
 		<title><varname>update_period</varname> (int)</title>
 		<para>
@@ -274,13 +310,269 @@ modparam("b2b_entities", "cluster_id", 10)
 		</example>
 	</section>
 
-</section>
+	<section id="passthru_prack_id" xreflabel="passthru_prack">
+		<title><varname>passthru_prack</varname> (int)</title>
+		<para>
+		This parameter allows to control, whether a PRACK should be generated locally (=0)
+		or if we request it to be end-to-end (=1).
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> (generate PRACK locally)</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>passthru_prack</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "passthru_prack", 1)
+...
+	</programlisting>
+		</example>
+	</section>
 
+	<section id="param_advertised_contact" xreflabel="advertised_contact">
+		<title><varname>advertised_contact</varname> (str)</title>
+		<para>
+		Contact to use in generated messages for UA session started with the
+		<xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<example>
+		<title>Set <varname>advertised_contact</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "advertised_contact", "opensips@10.10.10.10:5060")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ua_default_timeout" xreflabel="ua_default_timeout">
+		<title><varname>ua_default_timeout</varname> (str)</title>
+		<para>
+		Default timeout, in seconds, for UA session started with the
+		<xref linkend="func_ua_session_server_init"/> function or the
+		<xref linkend="mi_ua_session_client_start"/> MI function. After this
+		interval a BYE will be sent and the session will be deleted.
+		</para>
+		<para>
+		If not set the default is 43200 (12 hours).
+		</para>
+		<example>
+		<title>Set <varname>ua_default_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "ua_default_timeout", 7200)
+...
+	</programlisting>
+		</example>
+	</section>
+
+</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-		<para>The module does not export functions to be used
-		in configuration script.</para>
+	<section id="func_ua_session_server_init" xreflabel="ua_session_server_init()">
+		<title>
+		<function moreinfo="none">ua_session_server_init([key], [flags])</function>
+		</title>
+		<para>
+		This function initializes a new UA session by processing an initial INVITE.
+		Further requests/replies received belonging to this session will only
+		be handled via the <xref linkend="event_E_UA_SESSION"/> event.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key (var, optional)</emphasis> - Variable to return the
+				b2b entity key of the new UA session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>flags (string, optional)</emphasis> - configures options
+				for this UA session via the following flags:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>t[nn]</emphasis> - maximum duration of
+					this session in seconds. After this timeout a BYE
+					will be sent and the session will be deleted. If this
+					is not set, the default timeout, configured with
+					<xref linkend="param_ua_default_timeout"/> will be used.
+					Example: <emphasis>t3600</emphasis>
+					</para></listitem>
+					<listitem><para>
+					<emphasis>a</emphasis> - report the receving of ACK requests
+					via the <xref linkend="event_E_UA_SESSION"/> event. 
+					</para></listitem>
+					<listitem><para>
+					<emphasis>r</emphasis> - report the receving of replies via
+					the <xref linkend="event_E_UA_SESSION"/> event.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>d</emphasis> - disable the automatic sending of ACK
+					upon receving a 200 OK reply for INVITE (in case of UAC session)
+					or re-INVITE.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>h</emphasis> - provide the headers of the SIP request/reply
+					in the <xref linkend="event_E_UA_SESSION"/> event.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>b</emphasis> - provide the body of the SIP request/reply
+					in the <xref linkend="event_E_UA_SESSION"/> event.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>n</emphasis> - do not trigger the
+					<xref linkend="event_E_UA_SESSION"/> event (with event_type
+					<emphasis>NEW</emphasis>)  for initial INVITES
+					handled with this function.
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+			<title><function>ua_session_server_init</function> usage</title>
+		<programlisting format="linespecific">
+...
+if(is_method("INVITE") &amp;&amp; !has_totag()) {
+   ua_session_server_init($var(b2b_key), "arhb");
+
+   ua_session_reply($var(b2b_key), "INVITE", 200, "OK", $var(my_sdp));
+   
+   exit;
+}
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_ua_session_update" xreflabel="ua_session_update()">
+		<title>
+		<function moreinfo="none">ua_session_update(key, method, [body], [extra_headers], [content_type])</function>
+		</title>
+		<para>
+		Sends a sequential request for a UA session started with the 
+		<xref linkend="func_ua_session_server_init"/> function or
+		the <xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key (string)</emphasis> - b2b entity key of the UA session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>method (string)</emphasis> - name of the SIP method for this
+				request.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body (string, optional)</emphasis> - body to include in the
+				SIP message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers (string, optional)</emphasis> - extra headers
+				to include in the SIP message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_type (string, optional)</emphasis> - Content-Type
+				header. If the parameter is missing and a body is provided,
+				"Content-Type: application/sdp" will be used.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, EVENT_ROUTE.
+		</para>
+		<example>
+			<title><function>ua_session_update</function> usage</title>
+		<programlisting format="linespecific">
+...
+ua_session_update($var(b2b_key), "OPTIONS");
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_ua_session_reply" xreflabel="ua_session_reply()">
+		<title>
+		<function moreinfo="none">ua_session_reply(key, method, code, [reason], [body], [extra_headers], [content_type])</function>
+		</title>
+		<para>
+		Sends a reply for a UA session started with the 
+		<xref linkend="func_ua_session_server_init"/> function or
+		the <xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key (string)</emphasis> - b2b entity key of the UA session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>method (string)</emphasis> - name of the SIP method that is
+				replied to.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>code (int)</emphasis> - reply code.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>reason (string, optional)</emphasis> - reply reason string.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body (string, optional)</emphasis> - body to include in the
+				SIP message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers (string, optional)</emphasis> - extra headers
+				to include in the SIP message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_type (string, optional)</emphasis> - Content-Type header.
+				If the parameter is missing and a body is provided,
+				"Content-Type: application/sdp" will be used.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, EVENT_ROUTE.
+		</para>
+		<example>
+			<title><function>ua_session_reply</function> usage</title>
+		<programlisting format="linespecific">
+...
+ua_session_reply($var(b2b_key), "INVITE", 180, "Ringing");
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_ua_session_terminate" xreflabel="ua_session_terminate()">
+		<title>
+		<function moreinfo="none">ua_session_terminate(key, [extra_headers])</function>
+		</title>
+		<para>
+		Terminate a UA session started with the
+		<xref linkend="func_ua_session_server_init"/> function or
+		the <xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key (string)</emphasis> - b2b entity key of the UA session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers (string, optional)</emphasis> - extra headers
+				to include in the SIP message
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, EVENT_ROUTE.
+		</para>
+		<example>
+			<title><function>ua_session_terminate</function> usage</title>
+		<programlisting format="linespecific">
+...
+ua_session_terminate($var(b2b_key));
+...
+		</programlisting>
+		</example>
+	</section>
 	</section>
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
@@ -302,6 +594,285 @@ modparam("b2b_entities", "cluster_id", 10)
 	<programlisting  format="linespecific">
 	opensips-cli -x mi b2be_list
 	</programlisting>
+	</section>
+
+	<section id="mi_ua_session_client_start" xreflabel="ua_session_client_start">
+		<title>
+		<function moreinfo="none">ua_session_client_start</function>
+		</title>
+		<para>
+		This command starts a new UAC session by sending an initial INVITE.
+		Further requests/replies received belonging to this session will only
+		be handled via the <xref linkend="event_E_UA_SESSION"/> event.
+		</para>
+		<para>
+		Name: <emphasis>ua_session_client_start</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>ruri</emphasis> - Request URI</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>to</emphasis> - To URI; can also be specified as:
+				<emphasis>display_name,uri</emphasis> in order to set a Display Name,
+				eg. <emphasis>Alice,sip:alice@opensips.org</emphasis>.</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>from</emphasis> - From URI; can also be specified as:
+				<emphasis>display_name,uri</emphasis> in order to set a Display Name,
+				eg. <emphasis>Alice,sip:alice@opensips.org</emphasis></para>
+			</listitem>
+			<listitem>
+				<para><emphasis>proxy (optional)</emphasis> - URI of the
+				outbound proxy to send the INVITE to</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>body (optional)</emphasis> - message body</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>content_type (optional)</emphasis> - Content Type
+				header to use. If missing and a body is provided,
+				"Content-Type: application/sdp" will be used.</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>extra_headers (optional)</emphasis> - extra headers</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>flags (optional)</emphasis> - flags with the same meaning
+				as for the <emphasis>flags</emphasis> paramater of
+				<xref linkend="func_ua_session_server_init"/>.</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>socket (optional)</emphasis> - OpenSIPS sending socket</para>
+			</listitem>
+		</itemizedlist>
+		<para>opensips-cli Command Format:</para>
+<programlisting  format="linespecific">
+opensips-cli -x mi ua_session_client_start ruri=sip:bob@opensips.org \
+to=sip:bob@opensips.org from=sip:alice@opensips.org flags=arhb
+</programlisting>
+	</section>
+
+	<section id="mi_ua_session_update" xreflabel="ua_session_update">
+		<title>
+		<function moreinfo="none">ua_session_update</function>
+		</title>
+		<para>
+		Sends a sequential request for a UA session started with the
+		<xref linkend="func_ua_session_server_init"/> function or
+		the <xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<para>
+		Name: <emphasis>ua_session_update</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> - b2b entity key of the UA session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>method</emphasis> - name of the SIP method for this
+				request.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body (optional)</emphasis> - body to include in the
+				SIP message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers (optional)</emphasis> - extra headers
+				to include in the SIP message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_type (string)</emphasis> - Content-Type header.
+				If the parameter is missing and a body is provided,
+				"Content-Type: application/sdp" will be used.
+			</para></listitem>
+		</itemizedlist>
+		<para>opensips-cli Command Format:</para>
+<programlisting  format="linespecific">
+opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 method=OPTIONS
+</programlisting>
+	</section>
+
+	<section id="mi_ua_session_reply" xreflabel="ua_session_reply">
+		<title>
+		<function moreinfo="none">ua_session_reply</function>
+		</title>
+		<para>
+		Sends a reply for a UA session started with the
+		<xref linkend="func_ua_session_server_init"/> function or
+		the <xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<para>
+		Name: <emphasis>ua_session_reply</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key </emphasis> - b2b entity key of the UA session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>method </emphasis> - name of the SIP method that is
+				replied to.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>code </emphasis> - reply code
+			</para></listitem>
+			<listitem><para>
+				<emphasis>reason</emphasis> - reply reason string
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body (optional)</emphasis> - body to include in the
+				SIP message
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers (optional)</emphasis> - extra headers
+				to include in the SIP message
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_type (optional)</emphasis> - Content-Type header.
+				If the parameter is missing and a body is provided,
+				"Content-Type: application/sdp" will be used.
+			</para></listitem>
+		</itemizedlist>
+		<para>opensips-cli Command Format:</para>
+<programlisting  format="linespecific">
+opensips-cli -x mi ua_session_reply key=B2B.436.1925389.1649338095 method=OPTIONS code=200 reason=OK
+</programlisting>
+	</section>
+
+	<section id="mi_ua_session_terminate" xreflabel="ua_session_terminate">
+		<title>
+		<function moreinfo="none">ua_session_terminate</function>
+		</title>
+		<para>
+		Terminate a UA session started with the
+		<xref linkend="func_ua_session_server_init"/> function or
+		the <xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<para>
+		Name: <emphasis>ua_session_terminate</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key </emphasis> - b2b entity key of the UA session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers (optional)</emphasis> - extra headers
+				to include in the SIP message
+			</para></listitem>
+		</itemizedlist>
+		<para>opensips-cli Command Format:</para>
+<programlisting  format="linespecific">
+opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
+</programlisting>
+	</section>
+
+	<section id="mi_ua_session_list" xreflabel="ua_session_list">
+		<title>
+		<function moreinfo="none">ua_session_list</function>
+		</title>
+		<para>
+		List information about UA sessions started with
+		<xref linkend="func_ua_session_server_init"/> function or
+		the <xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<para>
+		Name: <emphasis>ua_session_list</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key (optional)</emphasis> - b2b entity key of the UA session
+				to list. If missing, all sessions will be listed.
+			</para></listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+	<programlisting  format="linespecific">
+	opensips-cli -x mi ua_session_list
+	</programlisting>
+	</section>
+
+</section>
+
+<section id="exported_events" xreflabel="Exported Events">
+<title>Exported Events</title>
+
+	<section id="event_E_UA_SESSION" xreflabel="E_UA_SESSION">
+		<title>
+		<function moreinfo="none">E_UA_SESSION</function>
+		</title>
+		<para>
+			This event is triggered for requests/replies belonging to an ongoing UA
+			session started with the
+			<xref linkend="func_ua_session_server_init"/> function or
+		the <xref linkend="mi_ua_session_client_start"/> MI function.
+		</para>
+		<para>
+			Note that replies will not be reported at all unless the
+			<emphasis>r</emphasis> flag was set when initiating the UA session. Also
+			ACK requests are only reported if the <emphasis>a</emphasis> flag was set.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> - b2b entity key of the UA session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>entity_type</emphasis> - indicates whether this is a
+				<emphasis>UAS</emphasis> or <emphasis>UAc</emphasis> entity.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>event_type</emphasis> - the type of event:
+				<itemizedlist>
+					<listitem><para>
+						<emphasis>NEW</emphasis> - for initial INVITE requests,
+						handled with the <xref linkend="func_ua_session_server_init"/>
+						function.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>EARLY</emphasis> - for 1xx provisional
+						responses
+					</para></listitem>
+					<listitem><para>
+						<emphasis>ANSWERED</emphasis> - for 2xx successful
+						responses
+					</para></listitem>
+					<listitem><para>
+						<emphasis>REJECTED</emphasis> - for 3xx-6xx failure
+						responses
+					</para></listitem>
+					<listitem><para>
+						<emphasis>UPDATED</emphasis> - for any sequential requests,
+						including ACK but excluding BYE/CANCEL
+					</para></listitem>
+					<listitem><para>
+						<emphasis>TERMINATED</emphasis> - for BYE or CANCEL
+						requests
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - the reply status code if the message is
+				a SIP reply
+			</para></listitem>
+			<listitem><para>
+				<emphasis>reason</emphasis> - the reply reason if the message is
+				a SIP reply
+			</para></listitem>
+			<listitem><para>
+				<emphasis>method</emphasis> - the SIP method name
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body</emphasis> - SIP message body
+			</para></listitem>
+			<listitem><para>
+				<emphasis>headers</emphasis> - full list of all SIP headers in the
+				message.
+			</para></listitem>
+		</itemizedlist>
 	</section>
 
 </section>

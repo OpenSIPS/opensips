@@ -55,7 +55,7 @@ int bla_set_flag(struct sip_msg* , char*, char*);
 str server_address= {0, 0};
 str presence_server= {0, 0};
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"bla_set_flag", (cmd_function)bla_set_flag, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"bla_handle_notify", (cmd_function)bla_handle_notify, {{0,0,0}},
@@ -63,7 +63,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]=
+static const param_export_t params[]=
 {
 	{"server_address",	 STR_PARAM, &server_address.s    },
 	{"default_domain",	 STR_PARAM, &default_domain.s    },
@@ -73,7 +73,7 @@ static param_export_t params[]=
 	{0,                  0,                 0            }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "pua",    DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT },

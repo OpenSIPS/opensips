@@ -150,7 +150,7 @@ get_static_urecord(const udomain_t* _d, const str* _aor, struct urecord** _r)
 
 	r.aor = *_aor;
 	r.domain = _d->name;
-	r.aorhash = core_hash(_aor, 0, DB_AOR_HASH_MASK);
+	r.aorhash = core_hash(_aor, NULL, DB_AOR_HASH_MASK);
 	r.is_static = 1;
 
 	*_r = &r;
@@ -190,8 +190,8 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 				ci.callid = &callid;
 				break;
 			case 'f':
-				ci.cflags = flag_list_to_bitmask(&pair->val.val.st,
-				                                 FLAG_TYPE_BRANCH, FLAG_DELIM);
+				ci.cflags = flag_list_to_bitmask(str2const(&pair->val.val.st),
+				                                 FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
 				break;
 			case 'o':
 				*contact = pair->val.val.st;
@@ -271,7 +271,7 @@ static inline ucontact_info_t* dbrow2info(db_val_t *vals, str *contact)
 {
 	static ucontact_info_t ci;
 	static str callid, ua, received, host, path, instance;
-	static str attr, packed_kv, flags;
+	static str attr, packed_kv;
 	int port, proto;
 	char *p;
 
@@ -323,11 +323,12 @@ static inline ucontact_info_t* dbrow2info(db_val_t *vals, str *contact)
 	ci.flags  = VAL_BITMAP(vals+6);
 
 	if (!VAL_NULL(vals+7)) {
-		flags.s   = (char *)VAL_STRING(vals+7);
+		str_const flags;
+		flags.s   = VAL_STRING(vals+7);
 		flags.len = strlen(flags.s);
 		LM_DBG("flag str: '%.*s'\n", flags.len, flags.s);
 
-		ci.cflags = flag_list_to_bitmask(&flags, FLAG_TYPE_BRANCH, FLAG_DELIM);
+		ci.cflags = flag_list_to_bitmask(&flags, FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
 
 		LM_DBG("set flags: %d\n", ci.cflags);
 	}
@@ -439,7 +440,6 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	unsigned int   rlabel;
 	UNUSED(n);
 
-	time_t old_expires=0;
 	char suggest_regen=0;
 
 	urecord_t* r;
@@ -507,6 +507,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	do {
 		LM_DBG("loading records - cycle [%d]\n", ++n);
 		for(i = 0; i < RES_ROW_N(res); i++) {
+			time_t old_expires = 0;
 			row = RES_ROWS(res) + i;
 
 			user.s = (char*)VAL_STRING(ROW_VALUES(row));
@@ -792,8 +793,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 		return 0;
 	}
 
-	/* CON_PS_REFERENCE(_c) = &my_ps; - this is still dangerous with STMT */
-
+	/* CON_SET_CURR_PS(_c, &my_ps); - this is still dangerous with STMT */
 	if (ul_dbf.query(_c, keys, 0, vals, columns, use_domain ? 2:1, UL_COLS - 2,
 	                 order, &res) < 0) {
 		LM_ERR("db_query failed\n");
@@ -1039,24 +1039,24 @@ int db_timer_udomain(udomain_t* _d)
 	db_op_t  ops[2];
 	db_val_t vals[2];
 
-	if (my_ps==NULL) {
-		keys[0] = &expires_col;
-		ops[0] = "<";
-		keys[1] = &expires_col;
-		ops[1] = "!=";
+	if (ul_dbf.use_table(ul_dbh, _d->name) < 0) {
+		LM_ERR("failed to change table\n");
+		return -1;
 	}
 
 	memset(vals, 0, sizeof vals);
 
+	keys[0] = &expires_col;
+	ops[0] = "<";
 	vals[0].type = DB_INT;
 	vals[0].val.int_val = act_time + 1;
 
+	keys[1] = &expires_col;
+	ops[1] = "!=";
 	vals[1].type = DB_INT;
 	vals[1].val.int_val = 0;
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
-	ul_dbf.use_table(ul_dbh, _d->name);
-
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 	if (ul_dbf.delete(ul_dbh, keys, ops, vals, 2) < 0) {
 		LM_ERR("failed to delete from table %s\n",_d->name->s);
 		return -1;
@@ -1176,9 +1176,9 @@ int mem_timer_udomain(udomain_t* _d)
 			if (ptr->no_clear_ref <= 0 && ptr->contacts == NULL)
 			{
 				if (exists_ulcb_type(UL_AOR_EXPIRE))
-					run_ul_callbacks(UL_AOR_EXPIRE, ptr);
+					run_ul_callbacks(UL_AOR_EXPIRE, ptr, NULL);
 
-				if (location_cluster) {
+				if (location_cluster && ul_is_active_node()) {
 					if (cluster_mode == CM_FEDERATION_CACHEDB &&
 					    cdb_update_urecord_metadata(&ptr->aor, 1) != 0)
 						LM_ERR("failed to delete metadata, aor: %.*s\n",
@@ -1221,7 +1221,7 @@ void lock_udomain(udomain_t* _d, str* _aor)
 	unsigned int sl;
 	if (have_mem_storage())
 	{
-		sl = core_hash(_aor, 0, _d->size);
+		sl = core_hash(_aor, NULL, _d->size);
 
 #ifdef GEN_LOCK_T_PREFERED
 		lock_get(_d->table[sl].lock);
@@ -1240,7 +1240,7 @@ void unlock_udomain(udomain_t* _d, str* _aor)
 	unsigned int sl;
 	if (have_mem_storage())
 	{
-		sl = core_hash(_aor, 0, _d->size);
+		sl = core_hash(_aor, NULL, _d->size);
 #ifdef GEN_LOCK_T_PREFERED
 		lock_release(_d->table[sl].lock);
 #else
@@ -1379,7 +1379,7 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 	}
 
 	if (exists_ulcb_type(UL_AOR_INSERT))
-		run_ul_callbacks(UL_AOR_INSERT, *_r);
+		run_ul_callbacks(UL_AOR_INSERT, *_r, NULL);
 
 	return 0;
 }
@@ -1389,7 +1389,7 @@ static inline urecord_t *find_mem_urecord(udomain_t *_d, const str *_aor)
 	unsigned int sl, aorhash;
 	urecord_t **r;
 
-	aorhash = core_hash(_aor, 0, 0);
+	aorhash = core_hash(_aor, NULL, 0);
 	sl = aorhash & (_d->size - 1);
 
 	r = (urecord_t **)map_find(_d->table[sl].records, *_aor);
@@ -1524,7 +1524,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 	while(c) {
 		t = c;
 		c = c->next;
-		if (delete_ucontact(_r, t, skip_replication) < 0) {
+		if (delete_ucontact(_r, t, NULL, skip_replication) < 0) {
 			LM_ERR("deleting contact failed\n");
 			return -1;
 		}

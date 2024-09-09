@@ -103,9 +103,9 @@ static int alias_db_query(struct sip_msg* _msg, str* table_s,
 	}
 
 	adbf.use_table(db_handle, table_s);
-	if (!ald_append_branches)
-		CON_PS_REFERENCE(db_handle) = my_ps[ps_idx];
 
+	if (!ald_append_branches)
+		CON_SET_CURR_PS(db_handle, my_ps[ps_idx]);
 	if(adbf.query( db_handle, db_keys, NULL, db_vals, db_cols,
 		(flags&ALIAS_NO_DOMAIN_FLAG)?1:2 /*no keys*/, 2 /*no cols*/,
 		NULL, &db_res)!=0)

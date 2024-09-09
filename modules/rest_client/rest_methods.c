@@ -30,8 +30,10 @@
 #include "../../mem/shm_mem.h"
 #include "../../async.h"
 #include "../../lib/list.h"
+#include "../../lib/hash.h"
 #include "../../trace_api.h"
 #include "../../resolve.h"
+#include "../../timer.h"
 
 #include "../tls_mgm/api.h"
 
@@ -66,8 +68,31 @@ extern int _async_resume_retr_itv;
 /* trace parameters for this module */
 #define MAX_HOST_LENGTH 128
 
+#define REST_TRACE_API_MODULE "proto_hep"
 extern int rest_proto_id;
 extern trace_proto_t tprot;
+extern char *rest_id_s;
+
+/**
+ * We cannot use the "parallel transfers" feature of libcurl's multi interface
+ * because that would consume read events from some of its file descriptors that
+ * we also manually add to the OpenSIPS reactor. This may lead to dangling
+ * descriptors in the reactor, as well as some OpenSIPS async routes which
+ * are not triggered.
+ *
+ * To work around this, we can still achieve the desired effect with a pool of
+ * multi handles each doing a single transfer, rather than using 1 multi handle
+ * doing multiple transfers.
+ *
+ * The maximum size of the multi pool is limited to "max_async_transfers"
+ */
+static struct list_head multi_pool;
+static int multi_pool_sz;
+
+static map_t rcl_connections;
+static gen_hash_t *rcl_parallel_connects;
+int no_concurrent_connects;
+int curl_conn_lifetime;
 
 static inline int rest_trace_enabled(void);
 static int trace_rest_message( rest_trace_param_t* tparam );
@@ -78,6 +103,40 @@ int init_sync_handle(void)
 	if (!sync_handle) {
 		LM_ERR("init curl handle failed!\n");
 		return -1;
+	}
+
+	return 0;
+}
+
+
+int rcl_init_internals(void)
+{
+	INIT_LIST_HEAD(&multi_pool);
+
+	/* try loading the trace api */
+	if (register_trace_type) {
+		rest_proto_id = register_trace_type(rest_id_s);
+		if ( global_trace_api ) {
+			memcpy(&tprot, global_trace_api, sizeof tprot);
+		} else {
+			memset(&tprot, 0, sizeof tprot);
+			if (trace_prot_bind( REST_TRACE_API_MODULE, &tprot))
+				LM_DBG("Can't bind <%s>!\n", REST_TRACE_API_MODULE);
+		}
+	} else {
+		memset(&tprot, 0, sizeof tprot);
+	}
+
+	if (no_concurrent_connects) {
+		if (!(rcl_parallel_connects = hash_init(16))) {
+			LM_ERR("oom 2\n");
+			return -1;
+		}
+
+		if (curl_conn_lifetime && !(rcl_connections = map_create(0))) {
+			LM_ERR("oom 1\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -286,22 +345,6 @@ static inline char del_transfer(int fd)
 	return -1;
 }
 
-/**
- * We cannot use the "parallel transfers" feature of libcurl's multi interface
- * because that would consume read events from some of its file descriptors that
- * we also manually add to the OpenSIPS reactor. This may lead to dangling
- * descriptors in the reactor, as well as some OpenSIPS async routes which
- * are not triggered.
- *
- * To work around this, we can still achieve the desired effect with a pool of
- * multi handles each doing a single transfer, rather than using 1 multi handle
- * doing multiple transfers.
- *
- * The maximum size of the multi pool is limited to "max_async_transfers"
- */
-struct list_head multi_pool;
-static int multi_pool_sz;
-
 static OSS_CURLM *get_multi(void)
 {
 	OSS_CURLM *multi_list;
@@ -356,7 +399,7 @@ static inline int get_easy_status(CURL *handle, CURLM *multi, CURLcode *code)
 	return -1;
 }
 
-static int init_transfer(CURL *handle, char *url)
+static int init_transfer(CURL *handle, char *url, unsigned long timeout_s)
 {
 	CURLcode rc;
 
@@ -371,8 +414,10 @@ static int init_transfer(CURL *handle, char *url)
 		tls_dom = NULL;
 	}
 
-	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
-	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT,
+			timeout_s && timeout_s < connection_timeout ? timeout_s : connection_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT,
+			timeout_s && timeout_s < curl_timeout ? timeout_s : curl_timeout);
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
@@ -461,6 +506,139 @@ cleanup:
 		} \
 	} while (0)
 
+
+static inline int rcl_get_url_host(const char *url, char **out_host)
+{
+	const char *p = url, *end = p + strlen(p);
+	char *ch, *host;
+
+	while (p < end && isspace(*p))
+		p++;
+	if (p == end)
+		goto bad_url;
+
+	ch = q_memchr((char *)p, '/', end - p);
+	if (!ch || ch + 2 >= end || *(ch + 1) != '/')
+		goto bad_url;
+
+	host = ch + 2;
+
+	ch = q_memchr(host, '@', end - host);
+	if (ch) {
+		if (ch + 1 >= end)
+			goto bad_url;
+		host = ch + 1;
+	}
+
+	/* do we have a ":port" part, so we end the "host" part? */
+	ch = q_memchr(host, ':', end - host);
+
+	if (!ch)
+		ch = q_memchr(host, '?', end - host);
+
+	if (!ch)
+		ch = (char *)end;
+
+	str host_str = {host, ch - host}, host_dup;
+
+	if (pkg_nt_str_dup(&host_dup, &host_str) != 0) {
+		LM_ERR("oom\n");
+		goto bad_url;
+	}
+
+	*out_host = host_dup.s;
+	return 0;
+
+bad_url:
+	LM_ERR("failed to parse URL: '%s'\n", url);
+	return -1;
+}
+
+
+int rcl_acquire_url(const char *url, char **url_host)
+{
+	char *host;
+	str host_str;
+	int rc, new_connection;
+
+	rc = rcl_get_url_host(url, &host);
+	if (rc != 0) {
+		LM_ERR("failed to parse URL: '%s'\n", url);
+		return RCL_INTERNAL_ERR;
+	}
+	LM_DBG("returned URL host is: '%s'\n", host);
+
+	init_str(&host_str, host);
+
+	if (curl_conn_lifetime) {
+		void **connected_ts;
+
+		connected_ts = map_get(rcl_connections, host_str);
+		if (!connected_ts) {
+			LM_ERR("oom\n");
+			pkg_free(host);
+			return RCL_INTERNAL_ERR;
+		}
+
+		if (*connected_ts != 0 && (get_ticks() -
+		        (unsigned int)*(unsigned long *)(*connected_ts) < curl_conn_lifetime)) {
+			new_connection = 0;
+		} else {
+			new_connection = 1;
+		}
+	} else {
+		new_connection = 1;
+	}
+
+	if (new_connection) {
+		unsigned int he = hash_entry(rcl_parallel_connects, host_str);
+
+		hash_lock(rcl_parallel_connects, he);
+		if (hash_find(rcl_parallel_connects, he, host_str)) {
+			// already grabbed
+			hash_unlock(rcl_parallel_connects, he);
+			LM_DBG("a cURL parallel transfer is already taking place for "
+			       "hostname '%s', aborting query\n", host);
+			return RCL_ALREADY_CONNECTING;
+		}
+
+		LM_DBG("acquired parallel transfer lock on hostname '%s'\n", host);
+
+		hash_insert(rcl_parallel_connects, he, host_str, (void *)1);
+		hash_unlock(rcl_parallel_connects, he);
+
+		*url_host = host;
+		return RCL_OK_LOCKED;
+	}
+
+	pkg_free(host);
+	return RCL_OK;
+}
+
+
+void rcl_release_url(char *url_host, int update_conn_ts)
+{
+	str host_str = {url_host, strlen(url_host)};
+	unsigned int he = hash_entry(rcl_parallel_connects, host_str);
+
+	hash_lock(rcl_parallel_connects, he);
+	hash_remove(rcl_parallel_connects, he, host_str);
+	hash_unlock(rcl_parallel_connects, he);
+
+	LM_DBG("released parallel transfer lock on hostname '%s'\n", url_host);
+
+	if (curl_conn_lifetime && update_conn_ts) {
+		void **connected_ts;
+
+		connected_ts = map_get(rcl_connections, host_str);
+		if (connected_ts)
+			*connected_ts = (void *)(unsigned long)get_ticks();
+	}
+
+	pkg_free(url_host);
+}
+
+
 static inline char rest_easy_perform(
 			CURL *handle, const char *url, long *out_http_rc)
 {
@@ -526,7 +704,7 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 	str st = STR_NULL, res_body = STR_NULL, tbody, ttype;
 
 	curl_easy_reset(sync_handle);
-	if (init_transfer(sync_handle, url) != 0) {
+	if (init_transfer(sync_handle, url, 0) != 0) {
 		LM_ERR("failed to init transfer to %s\n", url);
 		goto cleanup;
 	}
@@ -626,7 +804,7 @@ cleanup:
  * @url:		HTTP URL to be queried
  * @req_body:	Body of the request (NULL if not needed)
  * @req_ctype:	Value for the "Content-Type: " header of the request (same as ^)
- * @async_parm: output param, will contain async handles
+ * @async_parm: in/out param, will contain async handles
  * @body:	    reply body; gradually reallocated as data arrives
  * @ctype:	    will eventually hold the last "Content-Type" header of the reply
  * @out_fd:     the fd to poll on, or a negative error code
@@ -643,7 +821,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	CURLMcode mrc;
 	fd_set rset, wset, eset;
 	int max_fd, fd, http_rc, ret = RCL_INTERNAL_ERR;
-	long busy_wait, timeout;
+	long busy_wait, timeout, connect_timeout;
 	long retry_time;
 	OSS_CURLM *multi_list;
 	CURLM *multi_handle;
@@ -659,7 +837,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		goto cleanup;
 	}
 
-	if (init_transfer(handle, url) != 0) {
+	if (init_transfer(handle, url, async_parm->timeout_s) != 0) {
 		LM_ERR("failed to init transfer to %s\n", url);
 		goto cleanup;
 	}
@@ -713,34 +891,27 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	multi_handle = multi_list->multi_handle;
 	curl_multi_add_handle(multi_handle, handle);
 
-	timeout = connection_timeout_ms;
+	connect_timeout = (async_parm->timeout_s*1000) < connection_timeout_ms ?
+			(async_parm->timeout_s*1000) : connection_timeout_ms;
+	timeout = connect_timeout;
 	busy_wait = connect_poll_interval;
 
 	/* obtain a read fd in "connection_timeout" seconds at worst */
-	for (timeout = connection_timeout_ms; timeout > 0; timeout -= busy_wait) {
+	for (timeout = connect_timeout; timeout > 0; timeout -= busy_wait) {
+		double connect = -1;
+		long req_sz = -1;
+
 		mrc = curl_multi_perform(multi_handle, &running_handles);
 		if (mrc != CURLM_OK && mrc != CURLM_CALL_MULTI_PERFORM) {
 			LM_ERR("curl_multi_perform: %s\n", curl_multi_strerror(mrc));
 			goto error;
 		}
 
-		LM_DBG("perform code: %d, handles: %d\n", mrc, running_handles);
+		curl_easy_getinfo(handle, CURLINFO_CONNECT_TIME, &connect);
+		curl_easy_getinfo(handle, CURLINFO_REQUEST_SIZE, &req_sz);
 
-		mrc = curl_multi_timeout(multi_handle, &retry_time);
-		if (mrc != CURLM_OK) {
-			LM_ERR("curl_multi_timeout: %s\n", curl_multi_strerror(mrc));
-			goto error;
-		}
-
-		LM_DBG("libcurl TCP connect: we should wait up to %ldms "
-		       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
-		       connection_timeout_ms, connect_poll_interval);
-
-		if (retry_time == -1) {
-			LM_DBG("curl_multi_timeout() returned -1, pausing %ldms...\n",
-			        busy_wait);
-			goto busy_wait;
-		}
+		LM_DBG("perform code: %d, handles: %d, connect: %.3lfs, reqsz: %ldB\n",
+		        mrc, running_handles, connect, req_sz);
 
 		/* transfer completed!  But how well? */
 		if (running_handles == 0) {
@@ -763,8 +934,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 			case CURLE_OPERATION_TIMEDOUT:
 				if (http_rc == 0) {
-					LM_ERR("connect timeout on %s (%lds)\n", url,
-							connection_timeout);
+					LM_ERR("connect timeout on %s (%ldms)\n", url,
+							connect_timeout);
 					ret = RCL_CONNECT_TIMEOUT;
 					goto error;
 				}
@@ -802,9 +973,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		if (max_fd != -1) {
 			for (fd = 0; fd <= max_fd; fd++) {
 				if (FD_ISSET(fd, &rset)) {
-
 					LM_DBG("ongoing transfer on fd %d\n", fd);
-					if (is_new_transfer(fd)) {
+					if (connect > 0 && req_sz > 0 && is_new_transfer(fd)) {
 						LM_DBG(">>> add fd %d to ongoing transfers\n", fd);
 						add_transfer(fd);
 						goto success;
@@ -813,17 +983,33 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			}
 		}
 
-		/*
-		 * from curl_multi_timeout() docs: "retry_time" milliseconds "at most!"
-		 *         -> we'll wait only 1/10 of this time before retrying
-		 */
-		busy_wait = connect_poll_interval < timeout ?
-		            connect_poll_interval : timeout;
+		mrc = curl_multi_timeout(multi_handle, &retry_time);
+		if (mrc != CURLM_OK) {
+			LM_ERR("curl_multi_timeout: %s\n", curl_multi_strerror(mrc));
+			goto error;
+		}
 
-busy_wait:
-		/* libcurl seems to be stuck in internal operations (TCP connect?) */
-		LM_DBG("busy waiting %ldms ...\n", busy_wait);
-		usleep(1000UL * busy_wait);
+		LM_DBG("libcurl TCP connect: we should wait up to %ldms "
+		       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
+		       connect_timeout, connect_poll_interval);
+
+		/*
+			from curl_multi_timeout() docs:
+				retry_time = -1, no timeout set
+				retry_time =  0, proceed immediately
+				retry_time >  0, wait at most retry_time
+		*/
+		if (retry_time != -1 && retry_time < connect_poll_interval) {
+			busy_wait = retry_time < timeout ? retry_time : timeout;
+		} else {
+			busy_wait = connect_poll_interval < timeout ? connect_poll_interval : timeout;
+		}
+
+		if (busy_wait > 0) {
+			/* libcurl seems to be stuck in internal operations (TCP connect?) */
+			LM_DBG("busy waiting %ldms ...\n", busy_wait);
+			usleep(1000UL * busy_wait);
+		}
 	}
 
 	LM_ERR("connect timeout on %s (%lds)\n", url, connection_timeout);
@@ -876,16 +1062,34 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 
 	multi_handle = param->multi_list->multi_handle;
 
+	if (timed_out) {
+		char *url = NULL;
+		curl_easy_getinfo(param->handle, CURLINFO_EFFECTIVE_URL, &url);
+		LM_ERR("async %s timed out, URL: %s (timeout: %lds)\n",
+		        rest_client_method_str(param->method), url, param->timeout_s);
+		goto cleanup;
+	}
+
 	retr = 0;
 	do {
-		mrc = curl_multi_perform(multi_handle, &running);
-		LM_DBG("perform result: %d, running: %d\n", mrc, running);
-
 		/* When @enable_expect_100 is on, both the client body upload and the
 		 * server body download will be performed within this loop, blocking */
-		if (mrc != CURLM_CALL_MULTI_PERFORM &&
-		     (mrc != CURLM_OK || !enable_expect_100 || !running))
+
+		mrc = curl_multi_perform(multi_handle, &running);
+		LM_DBG("perform result: %d, running: %d (break: %d)\n", mrc, running,
+			mrc != CURLM_CALL_MULTI_PERFORM && (mrc != CURLM_OK || !running));
+
+		if (mrc == CURLM_OK) {
+			if (!running)
+				break;
+
+			async_status = ASYNC_CONTINUE;
+			return 1;
+		/* this rc has been removed since cURL 7.20.0 (Feb 2010), but it's not
+		 * yet marked as deprecated, so let's keep the do/while loop */
+		} else if (mrc != CURLM_CALL_MULTI_PERFORM) {
 			break;
+		}
 
 		usleep(_async_resume_retr_itv);
 		retr += _async_resume_retr_itv;
@@ -928,6 +1132,7 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 		return 1;
 	}
 
+cleanup:
 	curl_slist_free_all(param->header_list);
 
 	if (del_transfer(fd) != 0) {
@@ -1025,7 +1230,6 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 
 enum async_ret_code time_out_async_http_req(int fd, struct sip_msg *msg, void *_param)
 {
-	LM_INFO("transfer timed out (async statement timeout)\n");
 	return _resume_async_http_req(fd, msg, (rest_async_param *)_param, 1);
 }
 
@@ -1112,9 +1316,9 @@ static int trace_rest_message( rest_trace_param_t* tparam )
 
 
 	/* resolve ip addresses */
-	if ( !inet_pton( AF_INET, tparam->local_ip, &addr) ) {
+	if ( inet_pton( AF_INET, tparam->local_ip, &addr) <= 0 ) {
 		/* check IPV6 */
-		if ( !inet_pton( AF_INET6, tparam->local_ip, &addr6) ){
+		if ( inet_pton( AF_INET6, tparam->local_ip, &addr6) <= 0 ){
 			LM_ERR("Invalid local ip from curl <%s>\n", tparam->local_ip);
 			return -1;
 		} else {
@@ -1128,9 +1332,9 @@ static int trace_rest_message( rest_trace_param_t* tparam )
 		local_su.sin.sin_addr = addr;
 	}
 
-	if ( !inet_pton( AF_INET, tparam->remote_ip, &addr) ) {
+	if ( inet_pton( AF_INET, tparam->remote_ip, &addr) <= 0) {
 		/* check IPV6 */
-		if ( !inet_pton( AF_INET6, tparam->remote_ip, &addr6) ){
+		if ( inet_pton( AF_INET6, tparam->remote_ip, &addr6) <= 0 ){
 			LM_ERR("Invalid remote ip from curl <%s>\n", tparam->remote_ip);
 			return -1;
 		} else {

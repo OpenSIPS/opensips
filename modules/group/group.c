@@ -146,8 +146,8 @@ int db_is_user_in(struct sip_msg* _msg, str* hf_s, str* grp_s)
 	VAL_STR(vals + 1) = *grp_s;
 
 	group_dbf.use_table(group_dbh, &table);
-	CON_PS_REFERENCE(group_dbh) = &my_ps;
 
+	CON_SET_CURR_PS(group_dbh, &my_ps);
 	if (group_dbf.query(group_dbh, keys, 0, vals, col, (use_domain) ? (3): (2),
 				1, 0, &res) < 0) {
 		LM_ERR("failed to query database\n");

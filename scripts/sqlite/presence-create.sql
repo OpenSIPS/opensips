@@ -69,7 +69,7 @@ CREATE TABLE xcap (
 
 CREATE INDEX xcap_source_idx  ON xcap (source);
 
-INSERT INTO version (table_name, table_version) values ('pua','8');
+INSERT INTO version (table_name, table_version) values ('pua','9');
 CREATE TABLE pua (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     pres_uri CHAR(255) NOT NULL,
@@ -90,7 +90,8 @@ CREATE TABLE pua (
     contact CHAR(255),
     remote_contact CHAR(255),
     version INTEGER,
-    extra_headers TEXT
+    extra_headers TEXT,
+    sharing_tag CHAR(32) DEFAULT NULL
 );
 
 CREATE INDEX pua_del1_idx  ON pua (pres_uri, event);

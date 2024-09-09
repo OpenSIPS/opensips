@@ -109,6 +109,34 @@ void free_lump_rpl(struct lump_rpl* lump)
 }
 
 
+struct lump_rpl* get_lump_rpl(struct sip_msg *msg, int flags)
+{
+	struct lump_rpl *lump;
+
+	for (lump = msg->reply_lump; lump; lump = lump->next) {
+		if (lump->flags & flags)
+			return lump;
+	}
+	return NULL;
+}
+
+
+int replace_lump_rpl(struct lump_rpl *lump, char *s, int len, int flags)
+{
+	if ((flags & LUMP_RPL_NODUP) == 0) {
+		LM_ERR("replacing lump should have its own buffer\n");
+		return -1;
+	}
+	if (!((lump->flags)&LUMP_RPL_NOFREE) && ((lump->flags)&LUMP_RPL_NODUP)
+		&& lump->text.s)
+			pkg_free(lump->text.s);
+	lump->flags |= flags;
+	lump->text.s = s;
+	lump->text.len = len;
+	return 0;
+}
+
+
 void unlink_lump_rpl(struct sip_msg * msg, struct lump_rpl* lump)
 {
 	struct lump_rpl *foo,*prev;

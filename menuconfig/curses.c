@@ -89,7 +89,7 @@ again:
 
 	/* print title in colour */
 	attron(COLOR_PAIR(1));
-	mvprintw(HIGH_NOTICE_Y,max_x/2-20,menu->parent?menu->parent->name:"OpenSIPS Main Configuration Menu");
+	mvprintw(HIGH_NOTICE_Y,max_x/2-20,"%s",menu->parent?menu->parent->name:"OpenSIPS Main Configuration Menu");
 	/* print footer */
 	print_notice(NOTICE_Y,NOTICE_X,0,"Press h for navigation help.");
 	attroff(COLOR_PAIR(1));
@@ -205,7 +205,7 @@ again:
 
 	/* print title in colour */
 	attron(COLOR_PAIR(1));
-	mvprintw(HIGH_NOTICE_Y,max_x/2-20,menu->name);
+	mvprintw(HIGH_NOTICE_Y,max_x/2-20,"%s",menu->name);
 	attroff(COLOR_PAIR(1));
 
 	if (should_scroll) {
@@ -248,7 +248,7 @@ again:
 	/* print current item description */
 	if (current->description) {
 		attron(COLOR_PAIR(1));
-		print_notice(NOTICE_Y,NOTICE_X,0,current->description);
+		print_notice(NOTICE_Y,NOTICE_X,0,"%s",current->description);
 		attroff(COLOR_PAIR(1));
 	}
 

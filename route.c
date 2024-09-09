@@ -77,6 +77,8 @@ struct os_script_routes *sroutes = NULL;
 
 int route_type = REQUEST_ROUTE;
 
+static struct script_route_ref *sroute_refs = NULL;
+
 
 static int fix_actions(struct action* a); /*fwd declaration*/
 
@@ -97,8 +99,9 @@ str str_event_route   = str_init("event_route");
 /*!
  * \brief Allocates and initializes a new routing list holder
  */
-struct os_script_routes* new_sroutes_holder(void)
+struct os_script_routes* new_sroutes_holder( int inc_ver )
 {
+	static unsigned int sr_version = 1;
 	struct os_script_routes *sr;
 
 	sr = (struct os_script_routes *) pkg_malloc
@@ -111,6 +114,8 @@ struct os_script_routes* new_sroutes_holder(void)
 
 	sr->request[DEFAULT_RT].name = "0";
 	sr->onreply[DEFAULT_RT].name = "0";
+
+	sr->version = inc_ver ? ++sr_version : sr_version ;
 
 	return sr;
 }
@@ -186,6 +191,197 @@ int get_script_route_ID_by_name_str(str *name, struct script_route *sr, int size
 			return i;
 	}
 	return -1;
+}
+
+
+static struct script_route_ref * __ref_script_route_by_name(char *name, int l,
+					struct script_route *sr, int size, int type, int in_shm)
+{
+	struct script_route_ref *ref;
+	unsigned int i;
+
+	/* first check if a reference to the route already exists */
+	for( ref=sroute_refs ; ref ; ref=ref->next ) {
+		if (ref->type==type && ref->name.len==l
+		&& strncmp(ref->name.s,name,l)==0) {
+			/* we found an already exists reference */
+			ref->u.refcnt++;
+			LM_DBG("returning existing %p [%.*s] with idx %d, "
+				"ver/cnt %d\n", ref,
+				ref->name.len, ref->name.s, ref->idx, ref->u.refcnt);
+			/* note that the returned reference may point to
+			 * no route, there is no guarantee to be a working one */
+			return ref;
+		}
+	}
+
+	/* no reference found, create a new one */
+	ref = in_shm
+		? shm_malloc( sizeof(struct script_route_ref) + l + 1 )
+		: pkg_malloc( sizeof(struct script_route_ref) + l + 1 );
+	if (ref==NULL) {
+		LM_ERR("failed to pkg allocate new sroute reference\n");
+		return NULL;
+	}
+	ref->name.s = (char*)(ref+1);
+	ref->name.len = l;
+	memcpy( ref->name.s, name, l);
+	ref->name.s[l] = 0; // make it NULL terminated also
+	ref->type = type;
+	ref->idx = -1;
+
+	/* see if we find its idx */
+	for( i=1 ; i<size && sr[i].name ; i++ ) {
+		if (strcmp(sr[i].name,ref->name.s)==0 )
+			ref->idx = i;
+	}
+
+	if (in_shm) {
+		ref->u.version = sroutes->version;
+		ref->next = NULL;
+	} else {
+		ref->u.refcnt = 1;
+		/* link it */
+		ref->next = sroute_refs;
+		sroute_refs = ref;
+	}
+
+	LM_DBG("returning new %p [%.*s] with idx %d, ver/xnt %d\n", ref,
+		ref->name.len, ref->name.s, ref->idx, ref->u.version);
+	return ref;
+}
+
+
+struct script_route_ref * ref_script_route_by_name(char *name,
+					struct script_route *sr, int size, int type, int in_shm)
+{
+	return __ref_script_route_by_name( name, strlen(name),
+		sr, size, type, in_shm);
+}
+
+
+struct script_route_ref * ref_script_route_by_name_str(str *name,
+					struct script_route *sr, int size, int type, int in_shm)
+{
+	return __ref_script_route_by_name( name->s, name->len,
+		sr, size, type, in_shm);
+}
+
+
+void unref_script_route(struct script_route_ref *ref)
+{
+	struct script_route_ref *it;
+
+	if (!ref)
+		return;
+
+	//LM_DBG("xXx--- unrefing %p [%.*s] with idx %d, ver/cnt\n", ref,
+	//	ref->name.len, ref->name.s, ref->idx, ref->u.version);
+
+	if (--ref->u.refcnt==0) {
+		/* not used by anyone else, destroy it */
+		LM_DBG("freeing %p [%.*s] with idx %d\n", ref,
+			ref->name.len, ref->name.s, ref->idx);
+		if (ref==sroute_refs) {
+			sroute_refs = ref->next;
+		} else {
+			for( it=sroute_refs ; it && it->next!=ref ; it=it->next );
+			if (it==NULL) {
+				LM_BUG("removing sroute reference <%.*s> from empty "
+					"list :(\n",ref->name.len, ref->name.s);
+			} else {
+				it->next = ref->next;
+			}
+			pkg_free(ref);
+		}
+	}
+}
+
+
+int update_script_route_ref(struct script_route_ref *ref)
+{
+	LM_DBG("updating %p [%.*s], idx=%d, ver/cnt %d\n",
+		ref, ref->name.len, ref->name.s, ref->idx, ref->u.version);
+
+	switch (ref->type) {
+		case REQUEST_ROUTE:
+			ref->idx = get_script_route_ID_by_name_str( &ref->name,
+				sroutes->request, RT_NO);
+			LM_DBG("---------found idx=%d\n", ref->idx);
+			return 0;
+		case ONREPLY_ROUTE:
+			ref->idx = get_script_route_ID_by_name_str( &ref->name,
+				sroutes->onreply, ONREPLY_RT_NO);
+			LM_DBG("---------found idx=%d\n", ref->idx);
+			return 0;
+		case FAILURE_ROUTE:
+			ref->idx = get_script_route_ID_by_name_str( &ref->name,
+				sroutes->failure, FAILURE_RT_NO);
+			return 0;
+			LM_DBG("---------found idx=%d\n", ref->idx);
+		case BRANCH_ROUTE:
+			ref->idx = get_script_route_ID_by_name_str( &ref->name,
+				sroutes->branch, BRANCH_RT_NO);
+			LM_DBG("---------found idx=%d\n", ref->idx);
+			return 0;
+		case EVENT_ROUTE:
+			ref->idx = get_script_route_ID_by_name_str( &ref->name,
+				sroutes->event, EVENT_RT_NO);
+			LM_DBG("---------found idx=%d\n", ref->idx);
+			return 0;
+		default:
+			LM_BUG("unsupported route type %d [%s]\n",
+				ref->type, ref->name.s);
+			ref->idx = -1;
+	}
+	return -1;
+}
+
+
+void update_all_script_route_refs(void)
+{
+	struct script_route_ref *it;
+
+	for( it=sroute_refs ; it ; it=it->next ) {
+		update_script_route_ref( it );
+		if (it->idx==-1)
+			LM_WARN("route [%s] not found when updating refs\n",it->name.s);
+	}
+}
+
+
+struct script_route_ref *dup_ref_script_route_in_shm(
+								struct script_route_ref *ref, int from_shm)
+{
+	struct script_route_ref *s_ref;
+
+	s_ref = (struct script_route_ref *) shm_malloc(
+		sizeof(struct script_route_ref) + ref->name.len + 1);
+	if (s_ref==NULL) {
+		LM_ERR("failed to dup script route in shm\n");
+	} else {
+		memcpy( s_ref, ref,
+			sizeof(struct script_route_ref) + ref->name.len + 1 );
+		s_ref->name.s = (char*)(s_ref+1);
+		s_ref->u.version = from_shm ? ref->u.version : sroutes->version;
+		s_ref->next = NULL;
+	}
+
+	LM_DBG("dupping %p [%.*s], idx %d, ver/cnt %d, to "
+		"new %p [%.*s], idx %d, ver/cnt %d\n",
+		ref, ref->name.len, ref->name.s, ref->idx, ref->u.version,
+		s_ref, s_ref->name.len, s_ref->name.s, s_ref->idx, s_ref->u.version);
+	return s_ref;
+}
+
+
+void print_script_route_refs(void)
+{
+	struct script_route_ref *it;
+
+	for( it=sroute_refs ; it ; it=it->next )
+		LM_DBG(" rt_ref - [%s] idx %d, ver/cnt %d\n", it->name.s,
+			it->idx, it->u.refcnt);
 }
 
 
@@ -514,14 +710,14 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 				return comp_s2s(NOTMATCHD_OP, &lstr, &rvalue.rs);
 		}
 
-		if((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)) {
-			/* comparing string */
-			rstr = rvalue.rs;
-			type = 1;
-		} else if((rvalue.flags&PV_VAL_INT) && (lvalue.flags&PV_VAL_INT)) {
+		if((rvalue.flags&PV_VAL_INT) && (lvalue.flags&PV_VAL_INT)) {
 			/* comparing int */
 			rn = rvalue.ri;
 			type = 2;
+		} else if((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)) {
+			/* comparing string */
+			rstr = rvalue.rs;
+			type = 1;
 		} else
 			goto error_op;
 	} else {
@@ -974,24 +1170,22 @@ skip:
 
 int run_startup_route(void)
 {
-	struct sip_msg req;
+	struct sip_msg *req;
 	int ret, old_route_type;
 
-	memset(&req, 0, sizeof(struct sip_msg));
-	req.first_line.type = SIP_REQUEST;
-
-	req.first_line.u.request.method.s= "DUMMY";
-	req.first_line.u.request.method.len= 5;
-	req.first_line.u.request.uri.s= "sip:user@domain.com";
-	req.first_line.u.request.uri.len= 19;
-	req.rcv.src_ip.af = AF_INET;
-	req.rcv.dst_ip.af = AF_INET;
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("No more memory\n");
+		return -1;
+	}
 
 	swap_route_type(old_route_type, STARTUP_ROUTE);
 	/* run the route */
-	ret = run_top_route( sroutes->startup, &req);
-	free_sip_msg( &req );
+	ret = run_top_route( sroutes->startup, req);
 	set_route_type(old_route_type);
+
+	/* clean whatever extra structures were added by script functions */
+	release_dummy_sip_msg(req);
 
 	return ret;
 }
@@ -1109,11 +1303,12 @@ static int fix_actions(struct action* a)
 {
 	struct action *t;
 	int ret;
-	cmd_export_t* cmd;
-	acmd_export_t* acmd;
+	const cmd_export_t* cmd;
+	const acmd_export_t* acmd;
 	str s;
 	pv_elem_t *model=NULL;
 	xl_level_p xlp;
+	struct script_route_ref *rt_ref;
 
 	if (a==0){
 		LM_CRIT("null pointer\n");
@@ -1264,7 +1459,7 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case CMD_T:
-				cmd = (cmd_export_t*)t->elem[0].u.data;
+				cmd = (const cmd_export_t*)t->elem[0].u.data_const;
 				LM_DBG("fixing %s, %s:%d\n", cmd->name, t->file, t->line);
 
 				if ((ret = fix_cmd(cmd->params, t->elem)) < 0) {
@@ -1278,9 +1473,33 @@ static int fix_actions(struct action* a)
 					if ((ret=fix_actions((struct action*)t->elem[0].u.data))<0)
 						return ret;
 				}
+				rt_ref = (struct script_route_ref*)(t->elem[1].u.data);
+				if (rt_ref && update_script_route_ref( rt_ref ) !=0 ) {
+					LM_ERR("async/launch resume route [%s] is not defined\n",
+						rt_ref->name.s);
+					ret = E_CFG;
+					goto error;
+				}
+				/* LAUNCH may have a third param, a FMT'ed string */
+				if ( (t->elem[2].type==STRING_ST) &&
+				(s.s=(char*)t->elem[2].u.data)!=NULL) {
+					if ( (s.len=strlen(s.s))==0 ) {
+						t->elem[2].type = NOSUBTYPE;
+					} else {
+						if(pv_parse_format(&s ,&model) || model==NULL) {
+							LM_ERR("wrong format [%s] for value param!\n",s.s);
+							ret=E_BUG;
+							goto error;
+						}
+						t->elem[2].u.data = (void*)model;
+						t->elem[2].type = SCRIPTVAR_ELEM_ST;
+					}
+				} else {
+					t->elem[2].type = NOSUBTYPE;
+				}
 				break;
 			case AMODULE_T:
-				acmd = (acmd_export_t*)t->elem[0].u.data;
+				acmd = (const acmd_export_t*)t->elem[0].u.data_const;
 				LM_DBG("fixing async %s, %s:%d\n", acmd->name, t->file, t->line);
 
 				if ((ret = fix_cmd(acmd->params, t->elem)) < 0) {
@@ -1414,7 +1633,8 @@ void push(struct action* a, struct action** head)
  */
 int fix_rls(void)
 {
-	int i,ret;
+	int i, ret, check_evr = 1;
+
 	for(i=0;i<RT_NO;i++){
 		if(sroutes->request[i].a){
 			if ((ret=fix_actions(sroutes->request[i].a))!=0){
@@ -1469,16 +1689,31 @@ int fix_rls(void)
 	}
 
 	for(i = 1; i< EVENT_RT_NO; i++) {
+		str st;
+
 		if(sroutes->event[i].a == NULL)
 			break;
+
+		if (check_evr && !module_loaded("event_route")) {
+			LM_ERR("event_route used but 'event_route' module not loaded!\n");
+			return E_CFG;
+		}
+		check_evr = 0;
+
+		/* if neither mod_init() nor function fixups have registered
+		 * this event name yet, do it on the spot! */
+		init_str(&st, sroutes->event[i].name);
+		if (evi_get_id(&st)<=EVI_ERROR && evi_publish_event(st)<=EVI_ERROR) {
+			LM_ERR("failed to publish event %s\n", sroutes->event[i].name);
+			return E_UNSPEC;
+		}
 
 		if ((ret=fix_actions(sroutes->event[i].a))!=0){
 			return ret;
 		}
 	}
 
-
-return 0;
+	return 0;
 }
 
 
@@ -1491,7 +1726,7 @@ static int check_expr(struct expr* exp, int r_type);
 static int check_actions(struct action *a, int r_type)
 {
 	struct action *aitem;
-	cmd_export_t  *fct;
+	const cmd_export_t  *fct;
 	int n;
 
 	for( ; a ; a=a->next ) {
@@ -1540,7 +1775,7 @@ static int check_actions(struct action *a, int r_type)
 				break;
 			case CMD_T:
 				/* do check :D */
-				fct = (cmd_export_t*)(a->elem[0].u.data);
+				fct = (const cmd_export_t*)(a->elem[0].u.data_const);
 				if ( (fct->flags&r_type)!=r_type ) {
 					rcheck_status = -1;
 					LM_ERR("script function "
@@ -1738,13 +1973,13 @@ void get_top_route_type(str *type, int *has_name)
 	switch (route_type) {
 	case REQUEST_ROUTE:
 		*type = str_route;
-		if (!route_stack[0])
+		if (!route_stack[route_stack_start])
 			goto out_noname;
 		break;
 
 	case ONREPLY_ROUTE:
 		*type = str_onreply_route;
-		if (!route_stack[0])
+		if (!route_stack[route_stack_start])
 			goto out_noname;
 		break;
 
@@ -1792,7 +2027,43 @@ out_noname:
 }
 
 
-int is_script_func_used( char *name, int param_no)
+void get_route_type(int idx, str *type)
+{
+	int _;
+
+	if (idx == 0)
+		return get_top_route_type(type, &_);
+	else
+		init_str(type, "route");
+}
+
+
+void get_route_name(int idx, str *name)
+{
+	switch (route_type) {
+	case REQUEST_ROUTE:
+	case ONREPLY_ROUTE:
+	case FAILURE_ROUTE:
+	case BRANCH_ROUTE:
+	case ERROR_ROUTE:
+	case LOCAL_ROUTE:
+	case STARTUP_ROUTE:
+	case TIMER_ROUTE:
+	case EVENT_ROUTE:
+		if (!route_stack[idx] || route_stack[idx][0] == '!')
+			init_str(name, "");
+		else
+			init_str(name, route_stack[idx]);
+		break;
+
+	default:
+		LM_ERR("bad route type: %d\n", route_type);
+		init_str(name, "");
+	}
+}
+
+
+int is_script_func_used(const char *name, int param_no)
 {
 	unsigned int i;
 
@@ -1841,7 +2112,7 @@ int is_script_func_used( char *name, int param_no)
 	return 0;
 }
 
-int is_script_async_func_used( char *name, int param_no)
+int is_script_async_func_used(const char *name, int param_no)
 {
 	unsigned int i;
 
@@ -1888,4 +2159,118 @@ int is_script_async_func_used( char *name, int param_no)
 		return 1;
 
 	return 0;
+}
+
+static int script_return_level = 0;
+static struct script_return_value **script_return_values = NULL, *script_return_last;
+
+int script_return_push(void)
+{
+	struct script_return_value **tmp;
+	tmp = pkg_realloc(script_return_values, (script_return_level + 1) * sizeof *tmp);
+	if (!tmp) {
+		LM_ERR("could not add another return level (current=%d\n", script_return_level);
+		return -1;
+	}
+	script_return_values = tmp;
+	script_return_values[script_return_level] = NULL;
+	if (script_return_last)
+		script_return_free(&script_return_last);
+	return script_return_level++;
+}
+
+void script_return_pop(int level)
+{
+	/* we leave this here, just to have a way of popping the last level */
+	if (script_return_last)
+		script_return_free(&script_return_last);
+	if (script_return_level < 0)
+		return;
+	if (level != script_return_level - 1) {
+		LM_BUG("cannot return level %d vs %d\n", level, script_return_level);
+		return;
+	}
+	script_return_last = script_return_values[level];
+	script_return_values = pkg_realloc(script_return_values,
+			(--script_return_level) * sizeof *script_return_values);
+}
+
+void script_return_free(struct script_return_value **values)
+{
+	struct script_return_value *v, *n;
+	if (*values == NULL)
+		return;
+	for (v = *values; v; v = n) {
+		n = v->next;
+		pkg_free(v);
+	}
+	*values = NULL;
+}
+
+void script_return_set(struct sip_msg *msg, struct script_return_param *params)
+{
+	pv_value_t val;
+	struct script_return_param *p;
+	struct script_return_value *v, *ret = NULL;
+	if (script_return_level <= 0) {
+		LM_ERR("no return level initialized\n");
+		return;
+	}
+	/* itertate through each parameter to store it's value */
+	for (p = params; p; p = p->next) {
+		memset(&val, 0, sizeof val);
+		switch (p->type) {
+			case SCRIPT_ROUTE_RET_INT:
+				val.ri = p->rint;
+				val.flags = PV_VAL_INT;
+				break;
+			case SCRIPT_ROUTE_RET_STR:
+				val.rs = p->rstr;
+				val.flags = PV_VAL_STR;
+				break;
+			case SCRIPT_ROUTE_RET_VAR:
+				if (pv_get_spec_value(msg, p->rspec, &val) != 0) {
+					LM_ERR("cannot get return value\n");
+					pv_get_null(NULL, NULL, &val);
+				}
+				break;
+			case SCRIPT_ROUTE_RET_NULL:
+				pv_get_null(NULL, NULL, &val);
+				break;
+			default:
+				LM_BUG("unhandled return type %d\n", p->type);
+				script_return_free(&ret);
+				return;
+		}
+		v = pkg_malloc(sizeof(*v) + ((val.flags & PV_VAL_STR)?val.rs.len:0));
+		if (v) {
+			v->val = val;
+			if (val.flags & PV_VAL_STR) {
+				v->val.rs.s = v->buf;
+				memcpy(v->val.rs.s, val.rs.s, val.rs.len);
+			}
+			v->next = ret;
+			ret = v;
+		} else {
+			LM_ERR("could not allocate return value\n");
+			script_return_free(&ret);
+			return;
+		}
+	}
+	if (script_return_values[script_return_level - 1])
+		script_return_free(&script_return_values[script_return_level - 1]);
+	script_return_values[script_return_level - 1] = ret;
+}
+
+int script_return_get(pv_value_t *res, int index)
+{
+	struct script_return_value *v;
+	pv_get_null(NULL, NULL, res);
+	if (index < 0 || !script_return_last)
+		return 0;
+	for (v = script_return_last; v && index > 0; v = v->next, index--);
+	if (!v)
+		return 0;
+	*res = v->val;
+	return 1;
 }

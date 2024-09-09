@@ -95,7 +95,7 @@ db_func_t pxml_dbf;
 
 xcapGetNewDoc_t xcap_GetNewDoc;
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "force_active",           INT_PARAM,                     &force_active },
 	{ "pidf_manipulation",      INT_PARAM,                 &pidf_manipulation},
 	{ "xcap_server",     STR_PARAM|USE_FUNC_PARAM,(void*)pxml_add_xcap_server},
@@ -105,7 +105,7 @@ static param_export_t params[]={
 	{  0,                       0,                                          0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "xcap",      DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },

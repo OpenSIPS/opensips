@@ -35,39 +35,13 @@
 #include "uri.h"
 
 /*
- * Checks if From includes a To-tag -- good to identify
- * if a request creates a new dialog
- */
-int has_totag(struct sip_msg* _m, char* _foo, char* _bar)
-{
-	str tag;
-
-	if (!_m->to && parse_headers(_m, HDR_TO_F,0)==-1) {
-		LM_ERR("To parsing failed\n");
-		return -1;
-	}
-	if (!_m->to) {
-		LM_ERR("no To\n");
-		return -1;
-	}
-	tag=get_to(_m)->tag_value;
-	if (tag.s==0 || tag.len==0) {
-		LM_DBG("no totag\n");
-		return -1;
-	}
-	LM_DBG("totag found\n");
-	return 1;
-}
-
-
-/*
  * Find if Request URI has a given parameter with matching value
  */
 int ruri_has_param(struct sip_msg* _msg, str* param, str* value)
 {
 	str t;
 	param_hooks_t hooks;
-	param_t* params;
+	param_t *params, *p;
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 	        LM_ERR("ruri parsing failed\n");
@@ -81,25 +55,26 @@ int ruri_has_param(struct sip_msg* _msg, str* param, str* value)
 	        return -1;
 	}
 
-	while (params) {
-		if ((params->name.len == param->len) &&
-		    (strncmp(params->name.s, param->s, param->len) == 0)) {
+	p = params;
+	while (p) {
+		if ((p->name.len == param->len) &&
+		    (strncmp(p->name.s, param->s, param->len) == 0)) {
 			if (value) {
-				if ((value->len == params->body.len) &&
-				    strncmp(value->s, params->body.s, value->len) == 0) {
+				if ((value->len == p->body.len) &&
+				    strncmp(value->s, p->body.s, value->len) == 0) {
 					goto ok;
 				} else {
 					goto nok;
 				}
 			} else {
-				if (params->body.len > 0) {
+				if (p->body.len > 0) {
 					goto nok;
 				} else {
 					goto ok;
 				}
 			}
 		} else {
-			params = params->next;
+			p = p->next;
 		}
 	}
 
@@ -187,13 +162,14 @@ int ruri_del_param(struct sip_msg* _msg, str* _param)
 			if (end_len)
 				memcpy(new_uri.s + begin_len, param_tok.s + param_tok.len, end_len);
 
-			if (set_ruri(_msg, &new_uri) == 1) {
+			if (set_ruri(_msg, &new_uri) < 0) {
 				pkg_free(new_uri.s);
-				return  1;
-			} else {
-				pkg_free(new_uri.s);
+				LM_ERR("failed to set new R-URI\n");
 				return -1;
 			}
+
+			pkg_free(new_uri.s);
+			return 1;
 		}
 	}
 

@@ -66,11 +66,16 @@ modparam("stir_shaken", "auth_date_freshness", 300)
 	<section id="param_verify_date_freshness" xreflabel="verify_date_freshness">
 	    <title><varname>verify_date_freshness</varname> (integer)</title>
 	    <para>
-		The maximum number of seconds that the value in the Date header field
-		can be older than the current time. Also, if the <emphasis>iat</emphasis>
-		value in the PASSporT is different than the  Date value, but remains within
-		this interval, it will be used in the verification process (for the
+		The maximum number of seconds that the value in the Date header field can be
+		older than the current time. Also, if the <emphasis>iat</emphasis> value in
+		the PASSporT is different than the Date value, but remains within the
+		permitted interval, it will be used in the verification process (for the
 		reconstructed PASSporT) instead of the Date value.
+		</para>
+		<para>
+		If the <xref linkend="param_require_date_hdr"/> parameter is set to not
+		required and the Date header is missing, the <emphasis>iat</emphasis> value
+		will be used for this check instead.
 		</para>
 		<para>
 		This parameter is only relevant for the
@@ -131,7 +136,7 @@ modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
 		<title>Set <varname>crl_list</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
+modparam("stir_shaken", "crl_list", "/stir_certs/crl_list.pem")
 ...
 </programlisting>
 	    </example>
@@ -156,13 +161,81 @@ modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 	    </example>
 	</section>
 
+	<section id="param_e164_strict_mode" xreflabel="e164_strict_mode">
+	    <title><varname>e164_strict_mode</varname> (integer)</title>
+	    <para>
+		Require a leading <emphasis>"+"</emphasis> to be present in
+		the originating/destination SHAKEN identity, on top of mandating an E.164
+		telephone number by default.  Additionally, require the URI to be either
+		a <emphasis>tel</emphasis> URI or a <emphasis>sip</emphasis> /
+		<emphasis>sips</emphasis> URI with the <emphasis>user=phone</emphasis>
+		parameter.
+	    </para>
+	    <para>The default value is <emphasis>0</emphasis> (disabled).</para>
+	    <example>
+		<title>Set <varname>e164_strict_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir_shaken", "e164_strict_mode", 1)
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_e164_max_length" xreflabel="e164_max_length">
+	    <title><varname>e164_max_length</varname> (integer)</title>
+	    <para>
+		This parameter allows the 15-digit number length restriction of the E.164
+		format to be bypassed.  Especially useful in scenarios where various
+		telephony number prefixes are in use, causing some numbers to exceed
+		the standard maximum length.
+	    </para>
+	    <para>The default value is <emphasis>15</emphasis>.</para>
+	    <example>
+		<title>Set <varname>e164_max_length</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir_shaken", "e164_max_length", 16)
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_require_date_hdr" xreflabel="require_date_hdr">
+	    <title><varname>require_date_hdr</varname> (integer)</title>
+	    <para>
+	    Specifies whether the Date header is mandatory when doing verification
+	    with the <xref linkend="func_stir_shaken_verify"/> function.
+	    </para>
+	    <para>
+	    A value of <emphasis>1</emphasis> means required and <emphasis>0</emphasis>
+	    not required.
+	    </para>
+	    <para>
+	    If the parameter is set to "not required" but the Date header is present in the
+	    message, the header value will be used as normally to check the freshness (as
+	    configured in the <xref linkend="param_verify_date_freshness"/>
+	    parameter). If the Date header is indeed missing, the value of the
+	    <emphasis>iat</emphasis> claim in the PASSporT will be used instead.
+		</para>
+	    <para>The default value is <emphasis>1</emphasis> (required).</para>
+	    <example>
+		<title>Set <varname>require_date_hdr</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir_shaken", "require_date_hdr", 0)
+...
+</programlisting>
+	    </example>
+	</section>
+
     </section>
     <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
 	<section id="func_stir_shaken_auth" xreflabel="stir_shaken_auth()">
 	    <title>
-		<function moreinfo="none">stir_shaken_auth(attest, origid, cert, pkey, x5u, [orig], [dest])</function>
+		<function moreinfo="none">stir_shaken_auth(attest, origid, cert, pkey, x5u, [orig], [dest], [out])</function>
 	    </title>
 		<para>
 		This function performs the steps of an authentication service. Before
@@ -227,6 +300,32 @@ modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 			will be derived from the SIP message.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>out (string, no expand, optional)</emphasis> - name of an
+			output variable to store the Identity header or the following flags:
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>req</emphasis> - the Identity header will be appended
+				to the current request message;
+				</para>
+			</listitem>
+			<listitem>
+				<para><para><emphasis>rpl</emphasis> - the Identity header will be appended
+				to all replies that will be generated by OpenSIPS for this request.
+				</para>
+				</para>
+			</listitem>
+			</itemizedlist>
+			</para>
+			<para>
+			If this parameter is missing, the Identity header will be appended
+			to the current request message.
+			</para>
+			<para>
+			If an output variable is provided, it should be given as a quoted string,
+			eg. <emphasis>"$var(identity_hdr)"</emphasis>.
+			</para>
+		</listitem>
 		</itemizedlist>
 
 	    <para>The function returns the following values:</para>
@@ -236,9 +335,6 @@ modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 		</listitem>
 		<listitem>
 		    <para>-1: Internal error</para>
-		</listitem>
-		<listitem>
-		    <para>-2: Identity header already exists</para>
 		</listitem>
 		<listitem>
 		    <para>-3: Failed to derive identity from SIP message because the
@@ -429,6 +525,43 @@ if (!stir_shaken_check_cert($var(cert))) {
 	    </example>
 	</section>
 
+	<section id="stir_shaken_disengagement" xreflabel="stir_shaken_disengagement()">
+	    <title>
+		<function moreinfo="none">stir_shaken_disengagement(token)</function>
+	    </title>
+	    <para>
+		This function add P-Identity-Bypass header with token value at the end of SIP headers.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+	    <itemizedlist>
+	    <listitem>
+			<para><emphasis>token (string)</emphasis> - The token provided by the authority during outage.
+			</para>
+		</listitem>
+	    </itemizedlist>
+		<para>The function returns the following values:</para>
+		<itemizedlist>
+		<listitem>
+		    <para>1: Success</para>
+		</listitem>
+		<listitem>
+		    <para>0: Failed to add P-Identity-Bypass header</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>This function can be used from REQUEST_ROUTE.</para>
+	    <example>
+		<title><function>stir_shaken_disengagement()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( is_method("INVITE") &amp;&amp; !has_totag()) {
+	# equivalent to sipmsgops module: append_hf("P-Identity-Bypass: OSIP99-1234567890ABCDEF\r\n");
+	stir_shaken_disengagement("OSIP99-1234567890ABCDEF");
+}
+...
+</programlisting>
+	    </example>
+	</section>
+
     </section>
 
     <section id="exported_pseudo_variables">
@@ -492,8 +625,69 @@ if (!stir_shaken_check_cert($var(cert))) {
 	</programlisting>
 	</example>
 	</section>
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+		<title>Exported MI Functions</title>
+
+		<section id="mi_stir_shaken_ca_reload" xreflabel="stir_shaken_ca_reload">
+			<title>
+				<function moreinfo="none">stir_shaken_ca_reload</function>
+			</title>
+
+			<para>
+				Reload the file containing trusted CA certificates for the verifier
+				and the directory containing trusted CA certificates for the verifier.
+			</para>
+
+			<para>
+				Name: <emphasis>stir_shaken_ca_reload</emphasis>
+			</para>
+
+			<para>Parameters: <emphasis>none</emphasis></para>
+
+			<para>
+				MI FIFO Command Format:
+			</para>
+
+<programlisting  format="linespecific">
+...
+opensips-cli -x mi stir_shaken_ca_reload
+"OK"
+...
+</programlisting>
+
+		</section>
+
+		<section id="mi_stir_shaken_crl_reload" xreflabel="stir_shaken_crl_reload">
+			<title>
+				<function moreinfo="none">stir_shaken_crl_reload</function>
+			</title>
+
+			<para>
+				Reload the file containing certificate revocation lists (CRLs) for the verifier
+				and the directory containing certificate revocation lists for the verifier.
+			</para>
+
+			<para>
+				Name: <emphasis>stir_shaken_crl_reload</emphasis>
+			</para>
+
+			<para>Parameters: <emphasis>none</emphasis></para>
+
+			<para>
+				MI FIFO Command Format:
+			</para>
+
+<programlisting  format="linespecific">
+...
+opensips-cli -x mi stir_shaken_crl_reload
+"OK"
+...
+</programlisting>
+
+	</section>
 
 	</section>
 
 </chapter>
-

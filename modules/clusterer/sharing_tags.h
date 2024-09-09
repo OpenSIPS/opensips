@@ -31,9 +31,12 @@ int shtag_modparam_func(modparam_t type, void *val);
 
 int shtag_init_list(void);
 
+int shtag_init_reporting(void);
+
 void shtag_validate_list(void);
 
-int handle_shtag_active(bin_packet_t *packet, int cluster_id);
+int handle_shtag_active(bin_packet_t *packet, int cluster_id,
+		int source_id);
 
 int send_shtag_active_info(int c_id, str *tag_name, int node_id);
 
@@ -50,12 +53,24 @@ mi_response_t *shtag_mi_set_active(const mi_params_t *params,
 /* API functions */
 int shtag_get(str *tag_name, int cluster_id);
 
-int shtag_activate(str *tag_name, int cluster_id);
+int shtag_activate_api(str *tag_name, int cluster_id);
+
+int shtag_activate(str *tag_name, int cluster_id,
+		char *reason_s, int reason_len);
 
 str** shtag_get_all_active(int c_id);
 
 int shtag_register_callback(str *tag_name, int c_id, void *param,
 		shtag_cb_f func);
+
+int shtag_get_sync_status(str *tag_name, int cluster_id, str *capability);
+
+int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
+	int new_status);
+
+int shtag_sync_all_backup(int cluster_id, str *capability);
+
+void update_shtags_sync_status_cap(int cluster_id, struct local_cap *new_caps);
 
 /* script vars related functions */
 int var_get_sh_tag(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
@@ -63,7 +78,7 @@ int var_get_sh_tag(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
 		pv_value_t *val);
 
-int var_parse_sh_tag_name(pv_spec_p sp, str *in);
+int var_parse_sh_tag_name(pv_spec_p sp, const str *in);
 
 
 #endif

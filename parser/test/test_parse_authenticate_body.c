@@ -41,14 +41,18 @@ static const struct tts {
 } tset[] = {
 	{
 	/* Case #1 */
-		.ts = str_init("Digest realm=\"[::1]\",nonce=\"ak/bKmGcoPPWdj0AUWv/ldViLInmkiJ2Kct5p/LapNo\","
+		.ts = str_init("Digest realm=\"VoIPTests.Net\",nonce=\"ak/bKmGcoPPWdj0AUWv/ldViLInmkiJ2Kct5p/LapNo\","
                                "qop=auth,algorithm=SHA-512-256"),
-		.tres = -1
+		.tres = 0,
+		.aflags = QOP_AUTH, .aalg = ALG_SHA512_256, .anonce = "ak/bKmGcoPPWdj0AUWv/ldViLInmkiJ2Kct5p/LapNo",
+		.arealm = "VoIPTests.Net"
 	}, {
 	/* Case #2 */
 		.ts = str_init("Digest realm=\"[::1]\",nonce=\"kp5XbciCMxVbeZm2d58YZCfaAjW/2T7XtuYwIeZoz1o\","
                                "qop=auth,algorithm=SHA-256"),
-		.tres = -1
+		.tres = 0,
+		.aflags = QOP_AUTH, .aalg = ALG_SHA256, .anonce = "kp5XbciCMxVbeZm2d58YZCfaAjW/2T7XtuYwIeZoz1o",
+		.arealm = "[::1]"
 	}, {
 	/* Case #3 */
 		.ts = str_init("Digest stale=false,realm=\"[::1]\",nonce=\"esWk1wFa4bUBKzkmfKId++Y83eWzD9edBCGTwLV4Juk\","
@@ -71,6 +75,16 @@ static const struct tts {
 		.tres = 0,
 		.aflags = QOP_AUTH | QOP_AUTH_INT, .aalg = ALG_MD5,
 		.anonce = "n", .aopaque = "0", .arealm = "a"
+	} , {
+	/* Case #6 */
+		.ts = str_init("Digest realm=\"VoIPTests.NET\", nonce=\"gyGiv8LUr3U5ZQaRyzGsfcfGbLCraorDgEvUzk1WlSUA\","
+			       " qop=\"auth,auth-int\", algorithm=SHA-256\nsess"),
+		.tres = -1,
+	} , {
+	/* Case #7 */
+		.ts = str_init("Digest realm=\"whocares?\", nonce=\"NonSense\","
+			       " qop=\"auth,auth-int\", algorithm=CHACHA123"),
+		.tres = -1,
 	}, {}
 };
 
@@ -78,14 +92,14 @@ static const struct tts {
 void test_parse_authenticate_body(void)
 {
 	struct authenticate_body auth;
-	int i;
+	int i, rval;
 
 	for (i = 0; tset[i].ts.s != NULL; i++) {
 		memset(&auth, 0, sizeof(struct authenticate_body));
-		ok(parse_authenticate_body(tset[i].ts, &auth) == tset[i].tres,
-		    "parse_authenticate_body(\"%s\") == %d", tset[i].ts.s, tset[i].tres);
-		if (tset[i].tres == 0) {
-			printf("auth.flags = %d\n", auth.flags);
+		rval = parse_authenticate_body(tset[i].ts, &auth);
+		ok(rval == tset[i].tres, "parse_authenticate_body(\"%s\") == %d, actual %d",
+		    tset[i].ts.s, tset[i].tres, rval);
+		if (tset[i].tres == 0 && rval == 0) {
 			ok(auth.flags == tset[i].aflags, "auth.flags == %d", tset[i].aflags);
 			ok(auth.algorithm == tset[i].aalg, "auth.algorithm == %d", tset[i].aalg);
 			ok(auth.nonce.len == strlen(tset[i].anonce) &&

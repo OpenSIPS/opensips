@@ -90,7 +90,8 @@ nathelper Module
    1.21. fix_nated_sdp usage
    1.22. add_rcv_paramer usage
    1.23. fix_nated_register usage
-   1.24. nh_enable_ping usage
+   1.24. nat_uac_test usage
+   1.25. nh_enable_ping usage
 
 Chapter 1. Admin Guide
 
@@ -192,7 +193,7 @@ modparam("nathelper", "ping_nated_only", 1)
    One partition means sending all pingings together. Two
    partitions means to send half pings and second half at a time.
 
-   Default value is 1.
+   Default value is 1. Maximum allowed value is 8.
 
    Example 1.3. Set natping_partitions parameter
 ...
@@ -479,21 +480,23 @@ if (search("User-Agent: Cisco ATA.*") {
    "a=oldoip" for old origin ip and "a=oldcip" for old meda ip.
 
    Meaning of the parameters is as follows:
-     * flags (int) - the value may be a bitwise OR of the
-       following flags:
-          + 0x01 - adds “a=direction:active” SDP line;
-          + 0x02 - rewrite media IP address (c=) with source
-            address of the message or the provided IP address (the
-            provided IP address takes precedence over the source
-            address).
-          + 0x04 - adds “a=nortpproxy:yes” SDP line;
-          + 0x08 - rewrite IP from origin description (o=) with
-            source address of the message or the provided IP
-            address (the provided IP address takes precedence over
-            the source address).
-          + 0x10 - force rewrite of null media IP and/or origin IP
-            address. Without this flag, null IPs are left
-            untouched.
+     * flags (string) - the value may be a CSV of the following
+       flags:
+          + add-dir-active - (old 0x01 flag) adds
+            “a=direction:active” SDP line;
+          + rewrite-media-ip - (old 0x02 flag) rewrite media IP
+            address (c=) with source address of the message or the
+            provided IP address (the provided IP address takes
+            precedence over the source address).
+          + add-no-rtpproxy - (old 0x04 flag) adds
+            “a=nortpproxy:yes” SDP line;
+          + rewrite-origin-ip - (old 0x08 flag) rewrite IP from
+            origin description (o=) with source address of the
+            message or the provided IP address (the provided IP
+            address takes precedence over the source address).
+          + rewrite-null-ips - (old 0x10 flag) force rewrite of
+            null media IP and/or origin IP address. Without this
+            flag, null IPs are left untouched.
      * ip_address (string, optional) - IP to be used for rewriting
        SDP. If not specified, the received signalling IP will be
        used. NOTE: For the IP to be used, you need to use 0x02 or
@@ -555,30 +558,40 @@ fix_nated_register();
 
 1.5.5.  nat_uac_test(flags)
 
-   Tries to guess if client's request originated behind a nat. The
-   parameter determines what heuristics is used.
+   Determines whether the received SIP message originated behind a
+   NAT, using one or more pre-defined checks.
 
-   Meaning of the flags (int) parameter is as follows:
-     * 1 - Contact header field is searched for occurrence of
-       RFC1918 / RFC6598 addresses.
-     * 2 - the "received" test is used: address in Via is compared
-       against source IP address of signaling
-     * 4 - Top Most VIA is searched for occurrence of RFC1918 /
-       RFC6598 addresses
-     * 8 - SDP is searched for occurrence of RFC1918 / RFC6598
-       addresses
-     * 16 - test if the source port is different from the port in
-       Via
-     * 32 - address in Contact is compared against source IP
-       address of signaling
-     * 64 - Port in Contact is compared against source port of
+   The flags (string) parameter denotes a comma-separated list of
+   checks to be performed, as follows:
+     * private-contact - (old 1 flag) Contact header field is
+       searched for occurrence of RFC1918 / RFC6598 addresses
+     * diff-ip-src-via - (old 2 flag) the "received" test is used:
+       address in Via is compared against source IP address of
        signaling
+     * private-via - (old 4 flag) Top Most VIA is searched for
+       occurrence of RFC1918 / RFC6598 addresses
+     * private-sdp - (old 8 flag) SDP is searched for occurrence
+       of RFC1918 / RFC6598 addresses
+     * diff-port-src-via - (old 16 flag) test if the source port
+       is different from the port in Via
+     * diff-ip-src-contact - (old 32 flag) address in Contact is
+       compared against source IP address of signaling
+     * diff-port-src-contact - (old 64 flag) Port in Contact is
+       compared against source port of signaling
+     * carrier-grade-nat - (old 128 flag) also include RFC 6333
+       addresses in the checks for Contact, Via and SDP
 
-   All flags can be bitwise combined, the test returns true if any
-   of the tests identified a NAT.
+   Returns true if any of the tests passed.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
+
+   Example 1.24. nat_uac_test usage
+...
+# check for private Contact or SDP media IP addresses
+if (nat_uac_test("private-contact,private-sdp"))
+        xlog("SIP message is NAT'ed (Call-ID: $ci)\n");
+...
 
 1.6. Exported MI Functions
 
@@ -592,7 +605,7 @@ fix_nated_register();
        parameter value greater than 0 or disables natping if
        parameter value is 0.
 
-   Example 1.24. nh_enable_ping usage
+   Example 1.25. nh_enable_ping usage
 ...
 $ opensips-cli -x mi nh_enable_ping
 Status:: 1
@@ -644,27 +657,27 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 121 2044 866
-   2. Maksym Sobolyev (@sobomax) 147 40 3546 4779
-   3. Liviu Chircu (@liviuchircu) 43 34 399 275
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 156 123 2050 873
+   2. Maksym Sobolyev (@sobomax) 153 45 3556 4790
+   3. Liviu Chircu (@liviuchircu) 49 39 438 313
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
-   5. Razvan Crainea (@razvancrainea) 32 26 149 240
+   5. Razvan Crainea (@razvancrainea) 33 27 158 240
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
    7. Anca Vamanu 22 4 1602 185
-   8. Jan Janak (@janakj) 21 11 780 129
-   9. Andrei Pelinescu-Onciul 20 17 121 110
-   10. Jiri Kuthan (@jiriatipteldotorg) 18 10 764 47
+   8. Andrei Pelinescu-Onciul 21 17 121 110
+   9. Jan Janak (@janakj) 21 11 780 129
+   10. Vlad Patrascu (@rvlad-patrascu) 19 11 261 268
 
-   All remaining contributors: Ancuta Onofrei, Ovidiu Sas
-   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Andrei Dragus,
-   Vlad Paiu (@vladpaiu), Henning Westerholt (@henningw), Dan
-   Pascu (@danpascu), Christophe Sollet (@csollet), Marcus Hunger,
-   Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu,
-   Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq,
-   Laurent Schweizer, Jasper Hafkenscheid (@hafkensite),
-   Konstantin Bokarius, John Riordan, Peter Lemenkov (@lemenkov),
-   Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Edson Gellert
-   Schubert.
+   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
+   Ancuta Onofrei, Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
+   Andrei Dragus, Henning Westerholt (@henningw), Dan Pascu
+   (@danpascu), Christophe Sollet (@csollet), Marcus Hunger, Klaus
+   Darilion, Sergio Gutierrez, Peter Lemenkov (@lemenkov), Nils
+   Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman, Jeremie Le
+   Hen, Bayan Towfiq, Laurent Schweizer, Jasper Hafkenscheid
+   (@hafkensite), Konstantin Bokarius, John Riordan, Walter Doekes
+   (@wdoekes), Elena-Ramona Modroiu, Nick Altmann (@nikbyte),
+   Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -686,27 +699,27 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2020
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
-   4.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
-   5.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
-   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Shlomi Gutman                       Mar 2018 - Mar 2018
-   10. Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2024
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   3.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2023
+   4.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   6.  Nick Altmann (@nikbyte)             May 2022 - May 2022
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   8.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
+   9.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
+   10. Dan Pascu (@danpascu)               May 2019 - May 2019
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Vlad
-   Paiu (@vladpaiu), Anca Vamanu, John Riordan, Emmanuel Buu,
-   Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Ancuta
-   Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent
-   Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu, Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj),
-   Nils Ohlmeier.
+   All remaining contributors: Shlomi Gutman, Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
+   (@wdoekes), Christophe Sollet (@csollet), Anca Vamanu, John
+   Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
+   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
+   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -715,17 +728,18 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Jasper Hafkenscheid (@hafkensite), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
-   (@ionutrazvanionita), Walter Doekes (@wdoekes), Christophe
-   Sollet (@csollet), Vlad Paiu (@vladpaiu), Maksym Sobolyev
-   (@sobomax), Anca Vamanu, Andrei Dragus, Sergio Gutierrez, Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Carsten Bock, Ancuta Onofrei,
-   Marcus Hunger, Jeremie Le Hen, Bayan Towfiq, Elena-Ramona
-   Modroiu, Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Nick Altmann (@nikbyte), Jasper Hafkenscheid
+   (@hafkensite), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
+   (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu
+   (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu, Andrei
+   Dragus, Sergio Gutierrez, Klaus Darilion, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Carsten Bock, Ancuta Onofrei, Marcus Hunger, Jeremie Le Hen,
+   Bayan Towfiq, Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
+   Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 

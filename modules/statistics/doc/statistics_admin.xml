@@ -41,6 +41,45 @@
 	</para>
 	</section>
 
+	<section id="section_stat_series">
+	<title>Statistic Series</title>
+	<para>
+		Statistic series provide the ability to accumulate statistical data
+		over a pre-defined time window. Data is stored in a circular buffer, pushing
+		new data on top, and removing stale values (values outside the timeframe) from
+		the bottom. These statistics can be used to provide per-time stats, such as
+		ACD, ASR, AST, etc, that can be read using the classic statistics interface,
+		through the <emphasis>$stat()</emphasis> variable.
+	</para>
+	<para>
+		Statistic series profile describe the timeframe used to store the data, as
+		well as how the data is be accumulated and interpreted. There are several
+		types a statistic series can be used, depending on the provisioned algorithm:
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>accumulate</emphasis> - accumulates the specified values in a
+			counter; works similar to clasical statistics, except that they reset
+			after the specified timeframe
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>average</emphasis> - returns an average of all the data fed
+			within the timeframe; can be useful when computing PDD, AST, ACD stats.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>percentage</emphasis> - indicates the percentage of a set of
+			values out of the total amount of values fed; can be useful when computing
+			ASR, NER, CCR stats.
+		</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
@@ -106,6 +145,85 @@ modparam("statistics", "variable", "active_calls/no_reset")
 		<title>setting the stat_groups parameter</title>
 		<programlisting format="linespecific">
 modparam("statistics", "stat_groups", "method, packet, response")
+</programlisting>
+		</example>
+	</section>
+	<section id="param_stat_series_profile" xreflabel="stat_series_profile">
+		<title><varname>stat_series_profile</varname> (string)</title>
+		<para>
+		Used to define a statistic series profile. Has the following format:
+		<emphasis>name: [attr=value]*</emphasis>, where <emphasis>name</emphasis>
+		represents the name of the profile, and <emphasis>attr=value</emphasis>
+		contains multiple settings of the defined profile. Possible attributes
+		and their values are:
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>algorithm</emphasis> - indicates the way data should be
+			stored and accumulated over the specified timeframe. Possible values are:
+			<emphasis>accumulate</emphasis>, <emphasis>average</emphasis> and
+			<emphasis>percentage</emphasis>, as described in the
+			<emphasis role='bold'><xref linkend="section_stat_series"/></emphasis>
+			paragraph (default is <emphasis>accumulate</emphasis>)
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>hash_size</emphasis> - each statistic defined/used is stored in
+			a hash map attached to the profile; this setting tunes the size of the hash
+			(default is: 8)
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>group</emphasis> - indicates the group where the statistics
+			beloging to this profile are grouped (as described in
+			<emphasis role='bold'><xref linkend="param_stat_groups"/></emphasis>
+			(default is to use the same group as the profile)
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>window</emphasis> - the number of seconds a timeframe has;
+			all older values (out of the specified window) are discarded
+			(default is <emphasis>60</emphasis> seconds)
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>slots</emphasis> - the number of slots per window; used to tune
+			the granularity of the circular buffer; the higher the number of slots is,
+			the more accurate the resulted statistic;
+			(default is the same value of the <emphasis>window</emphasis> parameter)
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>percentage_factor</emphasis> - used for
+			<emphasis>percentage</emphasis> algorithm profiles to specify the
+			percentage factor to be used (defaults to <emphasis>100</emphasis>)
+		</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+			This parameter can be set multiple times, for each profile needed.
+		</para>
+		<example>
+		<title>setting the stat_series_profile parameter</title>
+		<programlisting format="linespecific">
+...
+# define a statistic that accumulates average values in the last minute
+modparam("statistics", "stat_series_profile", "avg: algorithm=average")
+...
+# define a statistic that accumulates average values in the 10 minutes
+# with 1 minute granularity (10 slots out of the 600s window)
+modparam("statistics", "stat_series_profile", "avg_10m: algorithm=average window=600 slots=10")
+...
+# define a statistic that computes the percentage of values in the last hour
+# with 10 minutes granularity (6 slots out of the 3600s window)
+modparam("statistics", "stat_series_profile", "perc_1h: algorithm=percentage window=3600 slots=6")
+...
 </programlisting>
 		</example>
 	</section>
@@ -252,6 +370,51 @@ timer_route [clear_packet_stats, 7200] {
 	while (stat_iter_next($var(stat), $var(val), "iter"))
 		reset_stat("packet:$var(stat)");
 }
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="func_update_stat_series" xreflabel="update_stat_series()">
+		<title>
+		<function moreinfo="none">update_stat_series(profile, variable, value)</function>
+		</title>
+		<para>
+		Updates the value of a series statistic.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>profile</emphasis> (string) - the profile as defined in
+			<emphasis role='bold'><xref linkend="param_stat_series_profile"/></emphasis>
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>variable</emphasis> (string) - variable to be updated;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>value</emphasis> (int) - value to update with; it may be
+			also negative; when using <emphasis>percentage</emphasis> algorithm, the
+			resulted value represents the percentage of positive values out of the
+			total number of values (positive + negative)
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>update_stat_series</function> usage</title>
+		<programlisting format="linespecific">
+...
+# account failed calls
+update_stat_series("perc_1h", "ASR_1h", -1);
+
+# account successful calls
+update_stat_series("perc_1h", "ASR_1h", 1);
+
+# compute average PDD
+update_stat_series("avg", "PDD", $var(pdd_ms));
 ...
 </programlisting>
 		</example>

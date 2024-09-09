@@ -125,7 +125,7 @@ static X509_STORE * store = NULL;
 /* needed for certificate verification */
 static X509_STORE_CTX * verify_ctx = NULL;
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"authservice",(cmd_function)authservice_, {{0,0,0}},
 		REQUEST_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
 	{"verifier",(cmd_function)verifier_, {{0,0,0}},
@@ -133,7 +133,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"authCert", STR_PARAM, &authCert},
 	{"privKey", STR_PARAM, &privKey},
 	{"certUri", STR_PARAM, &certUri},

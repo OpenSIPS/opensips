@@ -59,7 +59,6 @@ extern struct tm_binds ebr_tmb;
 static ebr_event *ebr_events = NULL;
 
 
-
 ebr_event* search_ebr_event( const str *name )
 {
 	ebr_event *ev;
@@ -144,7 +143,7 @@ int init_ebr_event( ebr_event *ev )
 	if (evi_event_subscribe( ev->event_name, sock, 0, 0) < 0) {
 		LM_ERR("cannot subscribe to event %.*s\n",
 			ev->event_name.len, ev->event_name.s);
-		return -1;
+		goto error;
 	}
 
 	lock_release( &(ev->lock) );
@@ -281,6 +280,12 @@ oom:
 void free_ebr_subscription( ebr_subscription *sub)
 {
 	ebr_filter *h, *n;
+
+	/* if a notification triggering a script route,
+	 * free the script route ref too */
+	if ( (sub->flags & (EBR_SUBS_TYPE_NOTY|EBR_DATA_TYPE_ROUT))
+	== (EBR_SUBS_TYPE_NOTY|EBR_DATA_TYPE_ROUT) && sub->data)
+		shm_free(sub->data);
 
 	h = sub->filters;
 	while(h) {
@@ -466,8 +471,11 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 
 	lock_get( &(ev->lock) );
 
+	ev->last_timeout_check = my_time;
+
 	/* check the EBR subscription on this event and apply the filters */
 	sub_prev = NULL;
+	sub_next = NULL;
 	for ( sub=ev->subs ; sub ; sub_prev=sub,
 								sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
 
@@ -479,6 +487,26 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				sub->proc_no, pt[sub->proc_no].pid,
 				sub->event->event_name.len, sub->event->event_name.s,
 				sub->expire );
+			/* fire the job, if we deal with an WAIT */
+			if (sub->flags&EBR_SUBS_TYPE_WAIT) {
+				job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
+				if (job==NULL) {
+					LM_ERR("failed to allocated new IPC job, skipping..\n");
+					continue; /* with the next subscription */
+				}
+				job->ev = ev;
+				job->data = sub->data;
+				job->flags = sub->flags;
+				job->tm = sub->tm;
+				job->avps = NULL;
+				/* sent the event notification via IPC to resume on the
+				 * subscribing process */
+				if (ipc_send_job( sub->proc_no, ebr_ipc_type , (void*)job)<0) {
+					LM_ERR("failed to send job via IPC, skipping...\n");
+					shm_free(job);
+					continue; /* keep it and try next time */
+				}
+			}
 			/* remove the subscription */
 			sub_next = sub->next;
 			/* unlink it */
@@ -542,6 +570,11 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 			job->tm = sub->tm;
 
 			if (sub->flags&EBR_SUBS_TYPE_NOTY) {
+				/* if notification with script route, duplicate
+				 * the script reference for this noitifcation */
+				if (sub->flags&EBR_DATA_TYPE_ROUT)
+					job->data = dup_ref_script_route_in_shm
+						((struct script_route_ref *)job->data, 1);
 				/* dispatch the event notification via IPC to the right 
 				 * process. Key question - which one is the "right" process ?
 				 *   - the current processs
@@ -549,6 +582,7 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				 * Let's give it to ourselves for the moment */
 				if (ipc_send_job( process_no, ebr_ipc_type , (void*)job)<0) {
 					LM_ERR("failed to send job via IPC, skipping...\n");
+					if (job->data) shm_free(job->data);
 					shm_free(job);
 				}
 			} else {
@@ -579,7 +613,89 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 	if (avps!=(void*)-1)
 		destroy_avp_list( &avps );
 
-	return 0;
+	return 0;				/* sent the event notification via IPC to resume on the
+				 * subscribing process */
+				if (ipc_send_job( sub->proc_no, ebr_ipc_type , (void*)job)<0) {
+					LM_ERR("failed to send job via IPC, skipping...\n");
+					shm_free(job);
+				}
+
+}
+
+
+void ebr_timeout(unsigned int ticks, void* param)
+{
+	ebr_event *ev;
+	ebr_subscription *sub, *sub_next, *sub_prev;
+	ebr_ipc_job *job;
+	unsigned int my_time;
+
+	/* iterate all events */
+	for( ev=ebr_events ; ev ; ev=ev->next) {
+
+		/* see if the expire check was done within this second */
+		if ( ev->last_timeout_check >= get_ticks() )
+			continue;
+
+		//LM_DBG("expiring for event %.*s\n",
+		//	ev->event_name.len, ev->event_name.s);
+
+		my_time = get_ticks();
+
+		lock_get( &(ev->lock) );
+
+		ev->last_timeout_check = my_time;
+
+		/* check the EBR subscriptions on this event */
+		sub_prev = NULL;
+		sub_next = NULL;
+		for ( sub=ev->subs ; sub ; sub_prev=sub,
+								sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
+
+			/* skip valid and non WAIT subscriptions */
+			if ( (sub->flags&EBR_SUBS_TYPE_WAIT)==0 || sub->expire>my_time )
+				continue;
+
+			LM_DBG("subscription type [%s] from process %d(pid %d) on "
+				"event <%.*s> expired at %d, now %d\n",
+				(sub->flags&EBR_SUBS_TYPE_WAIT)?"WAIT":"NOTIFY",
+				sub->proc_no, pt[sub->proc_no].pid,
+				sub->event->event_name.len, sub->event->event_name.s,
+				sub->expire, my_time );
+
+			/* fire the job */
+			job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
+			if (job==NULL) {
+				LM_ERR("failed to allocated new IPC job, skipping..\n");
+				continue; /* with the next subscription */
+			}
+			job->ev = ev;
+			job->data = sub->data;
+			job->flags = sub->flags;
+			job->tm = sub->tm;
+			job->avps = NULL;
+			/* sent the event notification via IPC to resume on the
+			 * subscribing process */
+			if (ipc_send_job( sub->proc_no, ebr_ipc_type , (void*)job)<0) {
+				LM_ERR("failed to send job via IPC, skipping...\n");
+				shm_free(job);
+				continue; /* with the next subscription */
+			}
+
+			/* remove the subscription */
+			sub_next = sub->next;
+			/* unlink it */
+			if (sub_prev) sub_prev->next = sub_next;
+			else ev->subs = sub_next;
+			/* free it */
+			free_ebr_subscription(sub);
+			/* do not count us as prev, as we are removed */
+			sub = sub_prev;
+		}
+
+		lock_release( &(ev->lock) );
+
+	}
 }
 
 
@@ -596,6 +712,12 @@ void handle_ebr_ipc(int sender, void *payload)
 
 		/* this is a job for notifiying on an event */
 
+		if (job->flags & EBR_DATA_TYPE_ROUT &&
+		!ref_script_route_check_and_update( (struct script_route_ref *)job->data )) {
+			LM_ERR("notify route [%s] does not exist anymore\n",
+				((struct script_route_ref *)job->data)->name.s);
+			goto cleanup;
+		}
 		/* prepare a fake/dummy request */
 		req = get_dummy_sip_msg();
 		if(req == NULL) {
@@ -616,7 +738,7 @@ void handle_ebr_ipc(int sender, void *payload)
 		} else {
 			/* run the notification route */
 			set_route_type( REQUEST_ROUTE );
-			run_top_route( sroutes->request[(int)(long)job->data], req);
+			run_top_route( sroutes->request[((struct script_route_ref *)job->data)->idx], req);
 		}
 
 		if (ebr_tmb.t_set_remote_t)
@@ -628,6 +750,8 @@ void handle_ebr_ipc(int sender, void *payload)
 
 		cleanup:
 		/* destroy everything */
+		if (job->flags & EBR_DATA_TYPE_ROUT)
+			shm_free(job->data);
 		destroy_avp_list( &job->avps );
 		shm_free(job);
 

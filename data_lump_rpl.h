@@ -54,6 +54,10 @@ struct lump_rpl* add_lump_rpl(struct sip_msg *, char *, int , int );
 
 void free_lump_rpl(struct lump_rpl* );
 
+struct lump_rpl* get_lump_rpl(struct sip_msg *, int);
+
+int replace_lump_rpl(struct lump_rpl *, char *, int , int);
+
 void unlink_lump_rpl(struct sip_msg *, struct lump_rpl* );
 
 void del_nonshm_lump_rpl(  struct lump_rpl ** );

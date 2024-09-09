@@ -57,7 +57,7 @@ static int child_init(int);
 static evi_reply_sock* datagram_parse_udp(str socket);
 static evi_reply_sock* datagram_parse_unix(str socket);
 static int datagram_raise(struct sip_msg *msg, str* ev_name,
-						  evi_reply_sock *sock, evi_params_t * params);
+	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx);
 static int datagram_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static str datagram_print(evi_reply_sock *sock);
 
@@ -91,7 +91,7 @@ struct module_exports exports= {
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_udp = {
+static const evi_export_t trans_export_udp = {
 	UDP_STR,					/* transport module name */
 	datagram_raise,				/* raise function */
 	datagram_parse_udp,			/* parse function */
@@ -101,7 +101,7 @@ static evi_export_t trans_export_udp = {
 	DGRAM_UDP_FLAG				/* flags */
 };
 
-static evi_export_t trans_export_unix = {
+static const evi_export_t trans_export_unix = {
 	UNIX_STR,					/* transport module name */
 	datagram_raise,				/* raise function */
 	datagram_parse_unix,		/* parse function */
@@ -295,8 +295,8 @@ end:
 }
 #undef DO_PRINT
 
-static int datagram_raise(struct sip_msg *msg, str* ev_name,
-						  evi_reply_sock *sock, evi_params_t *params)
+static int datagram_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx)
 {
 	int ret;
 	str buf;

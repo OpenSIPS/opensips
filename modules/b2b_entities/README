@@ -18,16 +18,40 @@ B2B_ENTITIES
               1.3.3. script_req_route (str)
               1.3.4. script_reply_route (str)
               1.3.5. db_url (str)
-              1.3.6. update_period (int)
-              1.3.7. b2b_key_prefix (string)
-              1.3.8. db_mode (int)
-              1.3.9. db_table (str)
-              1.3.10. cluster_id (int)
+              1.3.6. cachedb_url (str)
+              1.3.7. cachedb_key_prefix (string)
+              1.3.8. update_period (int)
+              1.3.9. b2b_key_prefix (string)
+              1.3.10. db_mode (int)
+              1.3.11. db_table (str)
+              1.3.12. cluster_id (int)
+              1.3.13. passthru_prack (int)
+              1.3.14. advertised_contact (str)
+              1.3.15. ua_default_timeout (str)
 
         1.4. Exported Functions
+
+              1.4.1. ua_session_server_init([key], [flags])
+              1.4.2. ua_session_update(key, method, [body],
+                      [extra_headers], [content_type])
+
+              1.4.3. ua_session_reply(key, method, code, [reason],
+                      [body], [extra_headers], [content_type])
+
+              1.4.4. ua_session_terminate(key, [extra_headers])
+
         1.5. Exported MI Functions
 
               1.5.1. b2be_list
+              1.5.2. ua_session_client_start
+              1.5.3. ua_session_update
+              1.5.4. ua_session_reply
+              1.5.5. ua_session_terminate
+              1.5.6. ua_session_list
+
+        1.6. Exported Events
+
+              1.6.1. E_UA_SESSION
 
    2. Developer Guide
 
@@ -63,11 +87,20 @@ B2B_ENTITIES
    1.3. Set script_req_route parameter
    1.4. Set script_repl_route parameter
    1.5. Set db_url parameter
-   1.6. Set update_period parameter
-   1.7. Set b2b_key_prefix parameter
-   1.8. Set db_mode parameter
-   1.9. Set db_table parameter
-   1.10. Set cluster_id parameter
+   1.6. Set cachedb_url parameter
+   1.7. Set cachedb_key_prefix parameter
+   1.8. Set update_period parameter
+   1.9. Set b2b_key_prefix parameter
+   1.10. Set db_mode parameter
+   1.11. Set db_table parameter
+   1.12. Set cluster_id parameter
+   1.13. Set passthru_prack parameter
+   1.14. Set advertised_contact parameter
+   1.15. Set ua_default_timeout parameter
+   1.16. ua_session_server_init usage
+   1.17. ua_session_update usage
+   1.18. ua_session_reply usage
+   1.19. ua_session_terminate usage
    2.1. b2b_api_t structure
 
 Chapter 1. Admin Guide
@@ -172,18 +205,39 @@ modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.
 1/opensips")
 ...
 
-1.3.6. update_period (int)
+1.3.6. cachedb_url (str)
+
+   URL of a NoSQL database to be used. Only Redis is supported at
+   the moment.
+
+   Example 1.6. Set cachedb_url parameter
+...
+modparam("b2b_entities", "cachedb_url", "redis://localhost:6379/")
+...
+
+1.3.7. cachedb_key_prefix (string)
+
+   Prefix to use for every key set in the NoSQL database.
+
+   Default value is “b2be$”.
+
+   Example 1.7. Set cachedb_key_prefix parameter
+...
+modparam("b2b_entities", "cachedb_key_prefix", "b2b")
+...
+
+1.3.8. update_period (int)
 
    The time interval at which to update the info in database.
 
    Default value is “100”.
 
-   Example 1.6. Set update_period parameter
+   Example 1.8. Set update_period parameter
 ...
 modparam("b2b_entities", "update_period", 60)
 ...
 
-1.3.7. b2b_key_prefix (string)
+1.3.9. b2b_key_prefix (string)
 
    The string to use when generating the key ( it is inserted in
    the SIP messages as callid or to tag. It is useful to set this
@@ -194,12 +248,12 @@ modparam("b2b_entities", "update_period", 60)
 
    Default value is “B2B”.
 
-   Example 1.7. Set b2b_key_prefix parameter
+   Example 1.9. Set b2b_key_prefix parameter
 ...
 modparam("b2b_entities", "b2b_key_prefix", "B2B1")
 ...
 
-1.3.8. db_mode (int)
+1.3.10. db_mode (int)
 
    The B2B modules have support for the 3 type of database storage
 
@@ -211,24 +265,24 @@ modparam("b2b_entities", "b2b_key_prefix", "B2B1")
 
    Default value is “2” (WRITE BACK).
 
-   Example 1.8. Set db_mode parameter
+   Example 1.10. Set db_mode parameter
 ...
 modparam("b2b_entities", "db_mode", 1)
 ...
 
-1.3.9. db_table (str)
+1.3.11. db_table (str)
 
    The name of the table that will be used for storing B2B
    entities
 
    Default value is “b2b_entities”
 
-   Example 1.9. Set db_table parameter
+   Example 1.11. Set db_table parameter
 ...
 modparam("b2b_entities", "db_table", "some table name")
 ...
 
-1.3.10. cluster_id (int)
+1.3.12. cluster_id (int)
 
    The ID of the cluster this instance belongs to. Setting this
    parameter enables clustering support for the OpenSIPS B2BUA by
@@ -238,15 +292,165 @@ modparam("b2b_entities", "db_table", "some table name")
 
    Default value is “0” (clustering disabled)
 
-   Example 1.10. Set cluster_id parameter
+   Example 1.12. Set cluster_id parameter
 ...
 modparam("b2b_entities", "cluster_id", 10)
 ...
 
+1.3.13. passthru_prack (int)
+
+   This parameter allows to control, whether a PRACK should be
+   generated locally (=0) or if we request it to be end-to-end
+   (=1).
+
+   Default value is “0” (generate PRACK locally)
+
+   Example 1.13. Set passthru_prack parameter
+...
+modparam("b2b_entities", "passthru_prack", 1)
+...
+
+1.3.14. advertised_contact (str)
+
+   Contact to use in generated messages for UA session started
+   with the ua_session_client_start MI function.
+
+   Example 1.14. Set advertised_contact parameter
+...
+modparam("b2b_entities", "advertised_contact", "opensips@10.10.10.10:506
+0")
+...
+
+1.3.15. ua_default_timeout (str)
+
+   Default timeout, in seconds, for UA session started with the
+   ua_session_server_init() function or the
+   ua_session_client_start MI function. After this interval a BYE
+   will be sent and the session will be deleted.
+
+   If not set the default is 43200 (12 hours).
+
+   Example 1.15. Set ua_default_timeout parameter
+...
+modparam("b2b_entities", "ua_default_timeout", 7200)
+...
+
 1.4. Exported Functions
 
-   The module does not export functions to be used in
-   configuration script.
+1.4.1.  ua_session_server_init([key], [flags])
+
+   This function initializes a new UA session by processing an
+   initial INVITE. Further requests/replies received belonging to
+   this session will only be handled via the E_UA_SESSION event.
+
+   Parameters:
+     * key (var, optional) - Variable to return the b2b entity key
+       of the new UA session.
+     * flags (string, optional) - configures options for this UA
+       session via the following flags:
+          + t[nn] - maximum duration of this session in seconds.
+            After this timeout a BYE will be sent and the session
+            will be deleted. If this is not set, the default
+            timeout, configured with ua_default_timeout will be
+            used. Example: t3600
+          + a - report the receving of ACK requests via the
+            E_UA_SESSION event.
+          + r - report the receving of replies via the
+            E_UA_SESSION event.
+          + d - disable the automatic sending of ACK upon receving
+            a 200 OK reply for INVITE (in case of UAC session) or
+            re-INVITE.
+          + h - provide the headers of the SIP request/reply in
+            the E_UA_SESSION event.
+          + b - provide the body of the SIP request/reply in the
+            E_UA_SESSION event.
+          + n - do not trigger the E_UA_SESSION event (with
+            event_type NEW) for initial INVITES handled with this
+            function.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.16. ua_session_server_init usage
+...
+if(is_method("INVITE") && !has_totag()) {
+   ua_session_server_init($var(b2b_key), "arhb");
+
+   ua_session_reply($var(b2b_key), "INVITE", 200, "OK", $var(my_sdp));
+
+   exit;
+}
+...
+
+1.4.2.  ua_session_update(key, method, [body], [extra_headers],
+[content_type])
+
+   Sends a sequential request for a UA session started with the
+   ua_session_server_init() function or the
+   ua_session_client_start MI function.
+
+   Parameters:
+     * key (string) - b2b entity key of the UA session.
+     * method (string) - name of the SIP method for this request.
+     * body (string, optional) - body to include in the SIP
+       message.
+     * extra_headers (string, optional) - extra headers to include
+       in the SIP message.
+     * content_type (string, optional) - Content-Type header. If
+       the parameter is missing and a body is provided,
+       "Content-Type: application/sdp" will be used.
+
+   This function can be used from REQUEST_ROUTE, EVENT_ROUTE.
+
+   Example 1.17. ua_session_update usage
+...
+ua_session_update($var(b2b_key), "OPTIONS");
+...
+
+1.4.3.  ua_session_reply(key, method, code, [reason], [body],
+[extra_headers], [content_type])
+
+   Sends a reply for a UA session started with the
+   ua_session_server_init() function or the
+   ua_session_client_start MI function.
+
+   Parameters:
+     * key (string) - b2b entity key of the UA session.
+     * method (string) - name of the SIP method that is replied
+       to.
+     * code (int) - reply code.
+     * reason (string, optional) - reply reason string.
+     * body (string, optional) - body to include in the SIP
+       message.
+     * extra_headers (string, optional) - extra headers to include
+       in the SIP message.
+     * content_type (string, optional) - Content-Type header. If
+       the parameter is missing and a body is provided,
+       "Content-Type: application/sdp" will be used.
+
+   This function can be used from REQUEST_ROUTE, EVENT_ROUTE.
+
+   Example 1.18. ua_session_reply usage
+...
+ua_session_reply($var(b2b_key), "INVITE", 180, "Ringing");
+...
+
+1.4.4.  ua_session_terminate(key, [extra_headers])
+
+   Terminate a UA session started with the
+   ua_session_server_init() function or the
+   ua_session_client_start MI function.
+
+   Parameters:
+     * key (string) - b2b entity key of the UA session.
+     * extra_headers (string, optional) - extra headers to include
+       in the SIP message
+
+   This function can be used from REQUEST_ROUTE, EVENT_ROUTE.
+
+   Example 1.19. ua_session_terminate usage
+...
+ua_session_terminate($var(b2b_key));
+...
 
 1.5. Exported MI Functions
 
@@ -261,6 +465,146 @@ modparam("b2b_entities", "cluster_id", 10)
 
    MI FIFO Command Format:
         opensips-cli -x mi b2be_list
+
+1.5.2.  ua_session_client_start
+
+   This command starts a new UAC session by sending an initial
+   INVITE. Further requests/replies received belonging to this
+   session will only be handled via the E_UA_SESSION event.
+
+   Name: ua_session_client_start
+
+   Parameters:
+     * ruri - Request URI
+     * to - To URI; can also be specified as: display_name,uri in
+       order to set a Display Name, eg.
+       Alice,sip:alice@opensips.org.
+     * from - From URI; can also be specified as: display_name,uri
+       in order to set a Display Name, eg.
+       Alice,sip:alice@opensips.org
+     * proxy (optional) - URI of the outbound proxy to send the
+       INVITE to
+     * body (optional) - message body
+     * content_type (optional) - Content Type header to use. If
+       missing and a body is provided, "Content-Type:
+       application/sdp" will be used.
+     * extra_headers (optional) - extra headers
+     * flags (optional) - flags with the same meaning as for the
+       flags paramater of ua_session_server_init().
+     * socket (optional) - OpenSIPS sending socket
+
+   opensips-cli Command Format:
+opensips-cli -x mi ua_session_client_start ruri=sip:bob@opensips.org \
+to=sip:bob@opensips.org from=sip:alice@opensips.org flags=arhb
+
+1.5.3.  ua_session_update
+
+   Sends a sequential request for a UA session started with the
+   ua_session_server_init() function or the
+   ua_session_client_start MI function.
+
+   Name: ua_session_update
+
+   Parameters:
+     * key - b2b entity key of the UA session.
+     * method - name of the SIP method for this request.
+     * body (optional) - body to include in the SIP message.
+     * extra_headers (optional) - extra headers to include in the
+       SIP message.
+     * content_type (string) - Content-Type header. If the
+       parameter is missing and a body is provided, "Content-Type:
+       application/sdp" will be used.
+
+   opensips-cli Command Format:
+opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 meth
+od=OPTIONS
+
+1.5.4.  ua_session_reply
+
+   Sends a reply for a UA session started with the
+   ua_session_server_init() function or the
+   ua_session_client_start MI function.
+
+   Name: ua_session_reply
+
+   Parameters:
+     * key - b2b entity key of the UA session.
+     * method - name of the SIP method that is replied to.
+     * code - reply code
+     * reason - reply reason string
+     * body (optional) - body to include in the SIP message
+     * extra_headers (optional) - extra headers to include in the
+       SIP message
+     * content_type (optional) - Content-Type header. If the
+       parameter is missing and a body is provided, "Content-Type:
+       application/sdp" will be used.
+
+   opensips-cli Command Format:
+opensips-cli -x mi ua_session_reply key=B2B.436.1925389.1649338095 metho
+d=OPTIONS code=200 reason=OK
+
+1.5.5.  ua_session_terminate
+
+   Terminate a UA session started with the
+   ua_session_server_init() function or the
+   ua_session_client_start MI function.
+
+   Name: ua_session_terminate
+
+   Parameters:
+     * key - b2b entity key of the UA session.
+     * extra_headers (optional) - extra headers to include in the
+       SIP message
+
+   opensips-cli Command Format:
+opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
+
+1.5.6.  ua_session_list
+
+   List information about UA sessions started with
+   ua_session_server_init() function or the
+   ua_session_client_start MI function.
+
+   Name: ua_session_list
+
+   Parameters:
+     * key (optional) - b2b entity key of the UA session to list.
+       If missing, all sessions will be listed.
+
+   MI FIFO Command Format:
+        opensips-cli -x mi ua_session_list
+
+1.6. Exported Events
+
+1.6.1.  E_UA_SESSION
+
+   This event is triggered for requests/replies belonging to an
+   ongoing UA session started with the ua_session_server_init()
+   function or the ua_session_client_start MI function.
+
+   Note that replies will not be reported at all unless the r flag
+   was set when initiating the UA session. Also ACK requests are
+   only reported if the a flag was set.
+
+   Parameters:
+     * key - b2b entity key of the UA session.
+     * entity_type - indicates whether this is a UAS or UAc
+       entity.
+     * event_type - the type of event:
+          + NEW - for initial INVITE requests, handled with the
+            ua_session_server_init() function.
+          + EARLY - for 1xx provisional responses
+          + ANSWERED - for 2xx successful responses
+          + REJECTED - for 3xx-6xx failure responses
+          + UPDATED - for any sequential requests, including ACK
+            but excluding BYE/CANCEL
+          + TERMINATED - for BYE or CANCEL requests
+     * status - the reply status code if the message is a SIP
+       reply
+     * reason - the reply reason if the message is a SIP reply
+     * method - the SIP method name
+     * body - SIP message body
+     * headers - full list of all SIP headers in the message.
 
 Chapter 2. Developer Guide
 
@@ -297,8 +641,10 @@ typedef struct b2b_api {
 
    Field type:
 ...
-typedef str* (*b2b_server_new_t) (struct sip_msg* ,b2b_notify_t , void*
-param);
+typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
+                b2b_notify_t , str *mod_name, str* logic_key, struct b2b
+_tracer *tracer,
+                void *param, b2b_param_free_cb free_param);
 ...
 
    This function asks the b2b_entities modules to create a new
@@ -335,7 +681,10 @@ typedef int (*b2b_notify_t)(struct sip_msg* msg, str* id, int type, void
 ...
 typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cbac
 k,
-                b2b_add_dlginfo_t add_dlginfo_f, str* param);
+                                b2b_add_dlginfo_t add_dlginfo_f, str *mo
+d_name, str *logic_key,
+                                struct b2b_tracer *tracer, void *param,
+b2b_param_free_cb free_param);
 ...
 
    This function asks the b2b_entities modules to create a new
@@ -419,7 +768,8 @@ y,
    Field type:
 ...
 typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
-                b2b_notify_t cback);
+                b2b_notify_t cback, void *param, b2b_param_free_cb free_
+param);
 ...
 
    This function is used at startup when loading the data from the
@@ -445,18 +795,19 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Anca Vamanu 181 94 6839 1860
-   2. Vlad Patrascu (@rvlad-patrascu) 61 31 2145 686
-   3. Ovidiu Sas (@ovidiusas) 51 39 853 291
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 45 39 313 123
-   5. Razvan Crainea (@razvancrainea) 34 30 157 81
-   6. Liviu Chircu (@liviuchircu) 17 13 87 126
+   1. Anca Vamanu 183 94 6839 1860
+   2. Vlad Patrascu (@rvlad-patrascu) 127 62 5443 1147
+   3. Razvan Crainea (@razvancrainea) 81 65 783 514
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 57 48 499 190
+   5. Ovidiu Sas (@ovidiusas) 54 41 855 293
+   6. Liviu Chircu (@liviuchircu) 20 16 92 128
    7. Vlad Paiu (@vladpaiu) 6 4 74 47
-   8. Stanislaw Pitucha 4 2 6 6
-   9. Peter Lemenkov (@lemenkov) 4 2 5 3
-   10. Nick Altmann (@nikbyte) 4 1 157 26
+   8. Carsten Bock 6 4 66 40
+   9. Maksym Sobolyev (@sobomax) 6 4 29 22
+   10. Nick Altmann (@nikbyte) 6 3 166 29
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   All remaining contributors: Giedrius, Stanislaw Pitucha, Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita),
    @DMOsipov, Stéphane Alnet (@shimaore), Henk Hesselink, Ryan
    Bullock (@rrb3942), Walter Doekes (@wdoekes).
 
@@ -480,20 +831,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Mar 2020
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   6.  @DMOsipov                           Mar 2016 - Mar 2016
-   7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
-   8.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2015
-   9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   10. Vlad Paiu (@vladpaiu)               Aug 2011 - Apr 2014
+   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - May 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2024
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Oct 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
+   6.  Giedrius                            Apr 2023 - May 2023
+   7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2023
+   8.  Carsten Bock                        Mar 2022 - Apr 2022
+   9.  Nick Altmann (@nikbyte)             Jan 2013 - Feb 2022
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
 
-   All remaining contributors: Ryan Bullock (@rrb3942), Nick
-   Altmann (@nikbyte), Stéphane Alnet (@shimaore), Anca Vamanu,
-   Henk Hesselink, Stanislaw Pitucha.
+   All remaining contributors: @DMOsipov, Ionut Ionita
+   (@ionutrazvanionita), Walter Doekes (@wdoekes), Vlad Paiu
+   (@vladpaiu), Ryan Bullock (@rrb3942), Stéphane Alnet
+   (@shimaore), Anca Vamanu, Henk Hesselink, Stanislaw Pitucha.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -502,11 +854,14 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
-   (@vladpaiu), Ovidiu Sas (@ovidiusas), Anca Vamanu.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Carsten Bock,
+   Razvan Crainea (@razvancrainea), Peter Lemenkov (@lemenkov),
+   Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Vlad Paiu (@vladpaiu), Ovidiu Sas
+   (@ovidiusas), Anca Vamanu.
 
    Documentation Copyrights:
 
    Copyright © 2009 Anca-Maria Vamanu
+
+   Copyright © 2022 ng-voice GmbH

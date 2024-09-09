@@ -52,7 +52,7 @@ int set_connection(unsigned int type, void *val)
 	return cachedb_store_url(&redis_script_urls,(char *)val);
 }
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "connect_timeout",             INT_PARAM,                &redis_connnection_tout},
 	{ "query_timeout",               INT_PARAM,                &redis_query_tout      },
 	{ "shutdown_on_error",           INT_PARAM,                &shutdown_on_error     },
@@ -61,7 +61,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static module_dependency_t *get_deps_use_tls(param_export_t *param)
+static module_dependency_t *get_deps_use_tls(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer == 0)
 		return NULL;
@@ -69,12 +69,21 @@ static module_dependency_t *get_deps_use_tls(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static module_dependency_t *get_deps_use_tls_openssl(const param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_openssl", DEP_ABORT);
+}
+
+static const dep_export_t deps = {
 	{
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{
 		{ "use_tls", get_deps_use_tls },
+		{ "use_tls", get_deps_use_tls_openssl },
 		{ NULL, NULL },
 	},
 };
@@ -125,6 +134,9 @@ static int mod_init(void)
 	cde.cdb_func.add = redis_add;
 	cde.cdb_func.sub = redis_sub;
 	cde.cdb_func.raw_query = redis_raw_query;
+	cde.cdb_func.map_get = redis_map_get;
+	cde.cdb_func.map_set = redis_map_set;
+	cde.cdb_func.map_remove = redis_map_remove;
 
 	cde.cdb_func.capability = 0;
 
@@ -146,6 +158,13 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* check if openssl is the configured library in order to have properly
+	 * initialised SSL_CTXes */
+	if (use_tls && tls_api.get_tls_library_used() != TLS_LIB_OPENSSL) {
+		LM_ERR("tls_mgm has to use the openssl library\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -155,7 +174,7 @@ static int child_init(int rank)
 	cachedb_con *con;
 
 	for (it = redis_script_urls;it;it=it->next) {
-		LM_DBG("iterating through conns - [%.*s]\n",it->url.len,it->url.s);
+		LM_DBG("iterating through conns - [%s]\n", db_url_escape(&it->url));
 		con = redis_init(&it->url);
 		if (con == NULL) {
 			LM_ERR("failed to open connection\n");

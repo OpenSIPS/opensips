@@ -31,49 +31,36 @@
 #include "../../parser/parse_authenticate.h"
 #include "../../parser/msg_parser.h"
 
-#define WWW_AUTH_CODE       401
-#define WWW_AUTH_HDR        "WWW-Authenticate"
-#define WWW_AUTH_HDR_LEN    (sizeof(WWW_AUTH_HDR)-1)
-#define PROXY_AUTH_CODE     407
-#define PROXY_AUTH_HDR      "Proxy-Authenticate"
-#define PROXY_AUTH_HDR_LEN  (sizeof(PROXY_AUTH_HDR)-1)
-
-
-#define HASHLEN 16
-typedef char HASH[HASHLEN];
-
-#define HASHHEXLEN 32
-typedef char HASHHEX[HASHHEXLEN+1];
+#include "../../lib/digest_auth/digest_auth.h"
 
 struct uac_credential {
-	str realm;
-	str user;
-	str passwd;
+	struct digest_auth_credential auth_data;
 	struct uac_credential *next;
 };
 
 struct authenticate_nc_cnonce {
-	str *nc;
-	str *cnonce;
+	str_const nc;
+	str_const cnonce;
 };
 
 
-int uac_auth( struct sip_msg *msg);
-void do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd,
+int uac_auth( struct sip_msg *msg, int algmask);
+int do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd,
 		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
-		HASHHEX response);
+		struct digest_auth_response *response) __attribute__ ((warn_unused_result));;
 str* build_authorization_hdr(int code, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
-		struct authenticate_nc_cnonce *auth_nc_cnonce, char *response);
+		struct authenticate_nc_cnonce *auth_nc_cnonce,
+		const struct digest_auth_response *response);
 struct uac_credential* lookup_realm(str *realm);
 
 
-typedef void (*do_uac_auth_t)(str *msg_body, str *method, str *uri, struct uac_credential *crd,
+typedef int (*do_uac_auth_t)(str *msg_body, str *method, str *uri, struct uac_credential *crd,
 	struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
-	HASHHEX response);
+	struct digest_auth_response *response) __attribute__ ((warn_unused_result));;
 typedef str* (*build_authorization_hdr_t)(int code, str *uri,
 	struct uac_credential *crd, struct authenticate_body *auth,
-	struct authenticate_nc_cnonce *auth_nc_cnonce, char *response);
+	struct authenticate_nc_cnonce *auth_nc_cnonce, const struct digest_auth_response *response);
 typedef struct uac_credential* (*lookup_realm_t)(str *realm);
 
 typedef struct uac_auth_api

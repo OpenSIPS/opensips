@@ -59,6 +59,7 @@ static int child_init(int rank);
 */
 static int fixup_result_avp_type(void **param);
 static int fixup_substre(void** param);
+static int fixup_free_substre(void** param);
 
 /*
 * exported functions
@@ -87,13 +88,13 @@ static int w_ldap_result_check(struct sip_msg* msg, str* attr_name,
 str ldap_config = str_init(DEF_LDAP_CONFIG);
 static dictionary* config_vals = NULL;
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	{"ldap_search", (acmd_function)w_ldap_search_async, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}}},
 	{0,0,{{0,0,0}}}
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"ldap_search", (cmd_function)w_ldap_search, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
@@ -102,7 +103,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_result_avp_type, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"ldap_result_next", (cmd_function)w_ldap_result_next, {{0,0,0}},
@@ -111,7 +112,7 @@ static cmd_export_t cmds[] = {
 	{"ldap_result_check", (cmd_function)w_ldap_result_check, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|
 		BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"ldap_filter_url_encode", (cmd_function)w_ldap_filter_url_encode, {
@@ -127,7 +128,7 @@ static cmd_export_t cmds[] = {
 /*
 * Exported parameters
 */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 
 	{"config_file",                    STR_PARAM, &ldap_config.s},
 	{"max_async_connections",          INT_PARAM, &max_async_connections},
@@ -186,7 +187,7 @@ static int child_init(int rank)
 		}
 
 		/* won't check for null in get_ld_session since it's barely been initialized */
-		if (ldap_connect(ld_name, &get_ld_session(ld_name)->conn_s) != 0)
+		if (opensips_ldap_connect(ld_name, &get_ld_session(ld_name)->conn_s) != 0)
 		{
 			LM_ERR("[%s]: failed to connect to LDAP host(s)\n", ld_name);
 			ldap_disconnect(ld_name, NULL);
@@ -342,5 +343,11 @@ static int fixup_substre(void** param)
 	}
 
 	*param=se;
+	return 0;
+}
+
+static int fixup_free_substre(void** param)
+{
+	subst_expr_free(*param);
 	return 0;
 }

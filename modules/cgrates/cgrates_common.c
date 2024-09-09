@@ -211,8 +211,8 @@ int cgrates_set_reply_with_values(json_object *jobj)
 	}
 
 	if (json_object_get_type(jobj) != json_type_object) {
-		LM_ERR("reply is not an object - return will not be set!\n");
-		return -1;
+		LM_DBG("reply is not an object - return will not be set!\n");
+		return 1;
 	}
 
 	json_object_object_foreach(jobj, k, v) {
@@ -292,6 +292,7 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	static struct cgr_msg cmsg;
 	struct cgr_kv *kv;
 	struct list_head *l;
+	struct json_tokener* tok;
 
 	json_object *jtmp = NULL;
 	json_object *jarr = NULL;
@@ -314,15 +315,26 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 		if (s) {
 			list_for_each(l, &s->req_kvs) {
 				kv = list_entry(l, struct cgr_kv, list);
-				if (kv->flags & CGR_KVF_TYPE_NULL) {
-					jtmp = NULL;
-				} else if (kv->flags & CGR_KVF_TYPE_INT) {
-					/* XXX: we treat here int values as booleans */
-					jtmp = json_object_new_boolean(kv->value.n);
-					JSON_CHECK(jtmp, kv->key.s);
-				} else {
-					jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
-					JSON_CHECK(jtmp, kv->key.s);
+				jtmp = NULL;
+				if (kv->flags & CGR_KVF_TYPE_JSON) {
+					tok = json_tokener_new();
+					jtmp = json_tokener_parse_ex(tok, kv->value.s.s,
+							kv->value.s.len);
+					if(tok->err != json_tokener_success)
+						jtmp = NULL;
+					json_tokener_free(tok);
+				}
+				if (!jtmp) {
+					if (kv->flags & CGR_KVF_TYPE_NULL) {
+						jtmp = NULL;
+					} else if (kv->flags & CGR_KVF_TYPE_INT) {
+						/* XXX: we treat here int values as booleans */
+						jtmp = json_object_new_boolean(kv->value.n);
+						JSON_CHECK(jtmp, kv->key.s);
+					} else {
+						jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
+						JSON_CHECK(jtmp, kv->key.s);
+					}
 				}
 				json_object_object_add(cmsg.params, kv->key.s, jtmp);
 			}
@@ -340,14 +352,25 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	if (s) {
 		list_for_each(l, &s->event_kvs) {
 			kv = list_entry(l, struct cgr_kv, list);
-			if (kv->flags & CGR_KVF_TYPE_NULL) {
-				jtmp = NULL;
-			} else if (kv->flags & CGR_KVF_TYPE_INT) {
-				jtmp = json_object_new_int(kv->value.n);
-				JSON_CHECK(jtmp, kv->key.s);
-			} else {
-				jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
-				JSON_CHECK(jtmp, kv->key.s);
+			jtmp = NULL;
+			if (kv->flags & CGR_KVF_TYPE_JSON) {
+				tok = json_tokener_new();
+				jtmp = json_tokener_parse_ex(tok, kv->value.s.s,
+						kv->value.s.len);
+				if(tok->err != json_tokener_success)
+					jtmp = NULL; /* fallback as int/string */
+				json_tokener_free(tok);
+			}
+			if (!jtmp) {
+				if (kv->flags & CGR_KVF_TYPE_NULL) {
+					jtmp = NULL;
+				} else if (kv->flags & CGR_KVF_TYPE_INT) {
+					jtmp = json_object_new_int(kv->value.n);
+					JSON_CHECK(jtmp, kv->key.s);
+				} else {
+					jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
+					JSON_CHECK(jtmp, kv->key.s);
+				}
 			}
 			json_object_object_add(cmsg.params, kv->key.s, jtmp);
 		}
@@ -647,10 +670,8 @@ int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
 		if (!(c = cgr_get_free_conn(e)))
 			continue;
 		/* found a free connection - build the buffer */
-		if (cgrc_send(c, &smsg) < 0) {
-			cgrc_close(c, CGRC_IS_LISTEN(c));
+		if (cgrc_send(c, &smsg) < 0)
 			continue;
-		}
 		cp->c = c;
 		/* message successfully sent - now fetch the reply */
 		if (CGRC_IS_DEFAULT(c)) {
@@ -883,6 +904,10 @@ int cgrates_process(json_object *jobj,
 	}
 
 	if (is_reply) {
+		if (!proc_reply) {
+			LM_ERR("no handler for reply %s\n", rpc);
+			return -2;
+		}
 		LM_DBG("treating JSON-RPC as a reply\n");
 		if (jerror) {
 			type = json_object_get_type(jerror);

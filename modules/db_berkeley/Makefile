@@ -1,5 +1,3 @@
-# $Id$
-#
 # example module makefile
 #
 # 
@@ -29,10 +27,10 @@ ifeq ($(IS_BSD), yes)
 else
 	DB_LIB=ldb
 endif
-LIBS=-L$(LOCALBASE)/lib -L$(SYSBASE)/lib -L$(LOCALBASE)/BerkeleyDB.4.6/lib
+LIBS += -L$(LOCALBASE)/lib -L$(SYSBASE)/lib -L$(LOCALBASE)/BerkeleyDB.4.6/lib
 endif
 
-LIBS+=-$(DB_LIB)
+LIBS += -$(DB_LIB)
 
 include ../../Makefile.modules
 
@@ -41,6 +39,9 @@ $(UTILS_DIR)/db_berkeley/bdb_recover:
 	make -C $(UTILS_DIR)/db_berkeley/
 
 install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_berkeley/bdb_recover
+	$(INSTALL_BIN) $(UTILS_DIR)/db_berkeley/bdb_recover $(bin_prefix)/$(bin_dir) ; \
+
+install_module_dbschema:
 	mkdir -p $(data_prefix)/$(data_dir)/db_berkeley/opensips ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/db_berkeley/opensips/*) ; do \
 		if [ -f $$FILE ] ; then \
@@ -50,4 +51,3 @@ install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_berkeley/bdb_rec
 			$(data_prefix)/$(data_dir)/db_berkeley/opensips/`basename "$$FILE"` ; \
 		fi ;\
 	done ; \
-	$(INSTALL_BIN) $(UTILS_DIR)/db_berkeley/bdb_recover $(bin_prefix)/$(bin_dir) ; \

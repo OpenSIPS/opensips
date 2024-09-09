@@ -45,8 +45,9 @@ async_script_resume_function *async_script_resume_f = NULL;
 typedef struct _async_launch_ctx {
 	/* generic async context - MUST BE FIRST */
 	async_ctx  async;
-	/* the ID of the report script route (-1 if none) */
-	int report_route;
+	/* ref to the report script route (NULL if none) */
+	struct script_route_ref *report_route;
+	str report_route_param;
 } async_launch_ctx;
 
 
@@ -78,6 +79,8 @@ int register_async_fd(int fd, async_resume_fd *f, void *resume_param)
 		LM_ERR("failed to allocate new async_ctx\n");
 		return -1;
 	}
+
+	memset(ctx,0,sizeof(async_ctx));
 
 	ctx->resume_f = f;
 	ctx->resume_param = resume_param;
@@ -151,31 +154,43 @@ done:
 
 /************* Functions related to ASYNC Launch support ***************/
 
-#define init_dummy_request( _req ) \
-	do { \
-		memset( &(_req), 0, sizeof(struct sip_msg));\
-		(_req).first_line.type = SIP_REQUEST;\
-		(_req).first_line.u.request.method.s= "DUMMY";\
-		(_req).first_line.u.request.method.len= 5;\
-		(_req).first_line.u.request.uri.s= "sip:user@domain.com";\
-		(_req).first_line.u.request.uri.len= 19;\
-		(_req).rcv.src_ip.af = AF_INET;\
-		(_req).rcv.dst_ip.af = AF_INET;\
-	} while(0)
+int launch_route_param_get(struct sip_msg *msg, pv_param_t *ip,
+		pv_value_t *res, void *params, void *extra)
+{
+	str *val = (str*)params;
+
+	/* we do accept here only one param with index */
+	if (ip->pvn.type!=PV_NAME_INTSTR || ip->pvn.u.isname.type!=0
+	|| ip->pvn.u.isname.name.n!=1)
+		return pv_get_null(msg, ip, res);
+
+	res->flags = PV_VAL_STR;
+	res->rs.s =val->s;
+	res->rs.len = val->len;
+
+	return 0;
+}
+
 
 int async_launch_resume(int fd, void *param)
 {
-	struct sip_msg req;
+	struct sip_msg *req;
 	async_launch_ctx *ctx = (async_launch_ctx *)param;
+	int bk_rt;
 
 	LM_DBG("resume for a launch job\n");
-	init_dummy_request( req );
+
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("No more memory\n");
+		return -1;
+	}
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 
 	/* call the resume function in order to read and handle data */
 	return_code = ((async_resume_module*)(ctx->async.resume_f))
-		( fd, &req, ctx->async.resume_param );
+		( fd, req, ctx->async.resume_param );
 
 	if (async_status==ASYNC_CONTINUE) {
 		/* do not run the report route, leave the fd into the reactor*/
@@ -208,7 +223,7 @@ int async_launch_resume(int fd, void *param)
 			do {
 				async_status = ASYNC_DONE;
 				return_code = ((async_resume_module*)(ctx->async.resume_f))
-					(fd, &req, ctx->async.resume_param );
+					(fd, req, ctx->async.resume_param );
 				if (async_status == ASYNC_CHANGE_FD)
 					fd=return_code;
 			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
@@ -227,34 +242,49 @@ run_route:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
 		close(fd);
 
-	if (ctx->report_route!=-1) {
-		LM_DBG("runinng report route for a launch job\n");
-		set_route_type( REQUEST_ROUTE );
-		run_top_route( sroutes->request[ctx->report_route], &req);
+	if (ref_script_route_check_and_update(ctx->report_route)) {
+		LM_DBG("runinng report route for a launch job,"
+			" route <%s>, param [%.*s]\n",
+			ctx->report_route->name.s,
+			ctx->report_route_param.len, ctx->report_route_param.s);
+		if (ctx->report_route_param.s)
+			route_params_push_level(
+				sroutes->request[ctx->report_route->idx].name, 
+				&ctx->report_route_param, NULL,
+				launch_route_param_get);
+		swap_route_type( bk_rt, REQUEST_ROUTE);
+		run_top_route( sroutes->request[ctx->report_route->idx], req);
+		set_route_type( bk_rt );
+		if (ctx->report_route_param.s)
+			route_params_pop_level();
 
 		/* remove all added AVP */
 		reset_avps( );
 	}
 
 	/* no need for the context anymore */
+	if (ctx->report_route)
+		shm_free(ctx->report_route);
 	shm_free(ctx);
 	LM_DBG("done with a launch job\n");
 
 restore:
 	/* clean whatever extra structures were added by script functions */
-	free_sip_msg(&req);
+	release_dummy_sip_msg(req);
 
 	return 0;
 }
 
 
 int async_script_launch(struct sip_msg *msg, struct action* a,
-					int report_route, void **params)
+								struct script_route_ref *report_route,
+								str *report_route_param, void **params)
 {
-	struct sip_msg req;
+	struct sip_msg *req;
 	struct usr_avp *report_avps = NULL, **bak_avps = NULL;
 	async_launch_ctx *ctx;
-	int fd;
+	int fd = -1;
+	int bk_rt;
 
 	/* run the function (the action) and get back from it the FD,
 	 * resume function and param */
@@ -265,14 +295,16 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 		return -1;
 	}
 
-	if ( (ctx=shm_malloc(sizeof(async_launch_ctx)))==NULL) {
+	if ( (ctx=shm_malloc(sizeof(async_launch_ctx) + ( (report_route&&report_route_param)?report_route_param->len:0)))==NULL) {
 		LM_ERR("failed to allocate new ctx, forcing sync mode\n");
 		return -1;
 	}
 
+	memset(ctx,0,sizeof(async_launch_ctx));
+
 	async_status = ASYNC_NO_IO; /*assume defauly status "no IO done" */
 
-	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
+	return_code = ((const acmd_export_t*)(a->elem[0].u.data_const))->function(msg,
 			(async_ctx*)ctx,
 			params[0], params[1], params[2],
 			params[3], params[4], params[5],
@@ -306,7 +338,24 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 	}
 
 	/* ctx is to be used from this point further */
-	ctx->report_route = report_route;
+
+	if (report_route) {
+		ctx->report_route = dup_ref_script_route_in_shm( report_route, 0);
+		if (!ref_script_route_is_valid(ctx->report_route)) {
+			LM_ERR("failed dup resume route -> act in sync mode\n");
+			goto sync;
+		}
+
+		if (report_route_param) {
+			ctx->report_route_param.s = (char *)(ctx+1);
+			ctx->report_route_param.len = report_route_param->len;
+			memcpy(ctx->report_route_param.s, report_route_param->s,
+				report_route_param->len);
+		} else {
+			ctx->report_route_param.s = NULL;
+			ctx->report_route_param.len = 0;
+		}
+	}
 
 	if (async_status!=ASYNC_NO_FD) {
 		LM_DBG("placing launch job into reactor\n");
@@ -331,19 +380,30 @@ sync:
 	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 	/* the IO completed, so report now */
 report:
+	if (ctx->report_route)
+		shm_free(ctx->report_route);
 	shm_free(ctx);
-	if (report_route==-1)
+	if (report_route==NULL)
 		return 1;
 
 	/* run the report route inline */
-	init_dummy_request( req );
-	set_route_type( REQUEST_ROUTE );
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("No more memory\n");
+		return -1;
+	}
+
 	bak_avps = set_avp_list(&report_avps);
+	swap_route_type( bk_rt, REQUEST_ROUTE);
 
-	run_top_route( sroutes->request[report_route], &req);
+	run_top_route( sroutes->request[report_route->idx], req);
 
+	set_route_type( bk_rt );
 	destroy_avp_list(&report_avps);
 	set_avp_list(bak_avps);
+
+	release_dummy_sip_msg(req);
+
 	return 1;
 }
 

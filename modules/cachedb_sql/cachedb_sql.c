@@ -81,7 +81,7 @@ int set_connection(unsigned int type, void *val)
 	return cachedb_store_url(&sql_script_urls,(char *)val);
 }
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"cachedb_url",         STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection },
 	{"db_table",            STR_PARAM, &db_table.s         },
 	{"key_column",          STR_PARAM, &key_column.s       },
@@ -461,7 +461,7 @@ static int dbcache_fetch_counter(cachedb_con *con,str *attr,int *ret_val)
 			LM_ERR("unknown type of DB user column\n");
 			if (db_res != NULL && CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
 				LM_ERR("failed to freeing result of query\n");
-				return -1;
+			return -1;
 	}
 
 	return 1;

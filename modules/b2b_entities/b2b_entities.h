@@ -37,6 +37,7 @@
 #include "client.h"
 #include "server.h"
 #include "../../db/db.h"
+#include "../../cachedb/cachedb.h"
 
 /* modes to write in db */
 #define NO_DB         0
@@ -45,21 +46,49 @@
 
 extern int uac_auth_loaded;
 extern str b2b_key_prefix;
-#define B2B_MAX_PREFIX_LEN    5
 
 extern unsigned int server_hsize;
 extern unsigned int client_hsize;
 extern struct tm_binds tmb;
 extern uac_auth_api_t uac_auth_api;
-extern int req_routeid;
-extern int reply_routeid;
+extern struct script_route_ref *req_route_ref;
+extern struct script_route_ref *reply_route_ref;
+extern str db_url;
+extern str b2be_cdb_url;
 extern db_con_t *b2be_db;
 extern db_func_t b2be_dbf;
+extern cachedb_funcs b2be_cdbf;
+extern cachedb_con *b2be_cdb;
 extern str b2be_dbtable;
 extern int b2be_db_mode;
 extern int serialize_backend;
 extern int b2b_ctx_idx;
+extern str cdb_key_prefix;
+extern int passthru_prack;
 
 void *b2b_get_context(void);
+
+int mi_print_b2be_all_dlgs(mi_item_t *resp_arr, b2b_table htable,
+	unsigned int hsize, int ua_sessions);
+int mi_print_b2be_dlg(b2b_dlg_t* dlg, mi_item_t *to);
+
+#ifdef B2B_ENTITIES_LOCK_DBG
+#define B2BE_LOCK_DBG(op, table, index) \
+	LM_INFO("B2B_LOCK %s %s[%d] +%d\n", op, (table==server_htable)?"server":"client", index, __LINE__);
+#else
+#define B2BE_LOCK_DBG(op, table, index)
+#endif
+
+#define B2BE_LOCK_GET(table, hash_index) \
+	do { \
+		B2BE_LOCK_DBG("lock", table, hash_index); \
+		lock_get(&table[hash_index].lock); \
+	} while (0)
+
+#define B2BE_LOCK_RELEASE(table, hash_index) \
+	do { \
+		B2BE_LOCK_DBG("unlock", table, hash_index); \
+		lock_release(&table[hash_index].lock); \
+	} while (0)
 
 #endif

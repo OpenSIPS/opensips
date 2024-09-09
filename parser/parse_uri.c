@@ -357,7 +357,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	str* param_val; /* current param val */
 	str user;
 	str password;
-	int port_no;
+	unsigned int port_no;
 	register char* p;
 	char* end;
 	char* pass;
@@ -369,10 +369,13 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	int i;
 #endif
 
-#define case_port( ch, var) \
+#define case_port( ch, var, ovf_check1, ovf_check2) \
 	case ch: \
-			 (var)=(var)*10+ch-'0'; \
-			 break
+			if (ovf_check1) \
+				(var)=(var)*10+(ch-'0'); \
+			if (ovf_check2 && (var) > USHRT_MAX) \
+				goto error_bad_port; \
+			break
 
 #define still_at_user  \
 						if (found_user==0){ \
@@ -656,7 +659,10 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	memset(uri, 0, sizeof(struct sip_uri)); /* zero it all, just to be sure*/
 	/*look for sip:, sips: or tel:*/
 	if (len<5) goto error_too_short;
-	scheme=buf[0]+(buf[1]<<8)+(buf[2]<<16)+(buf[3]<<24);
+	scheme=(unsigned)(unsigned char)buf[0]
+			+ (((unsigned)(unsigned char)buf[1])<<8)
+			+ (((unsigned)(unsigned char)buf[2])<<16)
+			+ (((unsigned)(unsigned char)buf[3])<<24);
 	scheme|=0x20202020;
 	if (scheme==SIP_SCH){
 		uri->type=SIP_URI_T;
@@ -666,11 +672,13 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	}else if (scheme==TEL_SCH){
 		uri->type=TEL_URI_T;
 	}else if (scheme==URN_SERVICE_SCH){
-		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
+		if ((end-(buf+3)) >= URN_SERVICE_STR_LEN
+		        && memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
 			p+= URN_SERVICE_STR_LEN-1;
 			uri->type=URN_SERVICE_URI_T;
 		}
-		else if (memcmp(buf+3,URN_NENA_SERVICE_STR,URN_NENA_SERVICE_STR_LEN) == 0) {
+		else if ((end-(buf+3)) >= URN_NENA_SERVICE_STR_LEN
+		        && memcmp(buf+3,URN_NENA_SERVICE_STR,URN_NENA_SERVICE_STR_LEN) == 0) {
 			p+= URN_NENA_SERVICE_STR_LEN-1;
 			uri->type=URN_NENA_SERVICE_URI_T;
 		}else goto error_bad_uri;
@@ -773,16 +781,16 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						found_user=1; /*  there is no user part */
 						s=p+1;
 						break;
-					case_port('0', port_no);
-					case_port('1', port_no);
-					case_port('2', port_no);
-					case_port('3', port_no);
-					case_port('4', port_no);
-					case_port('5', port_no);
-					case_port('6', port_no);
-					case_port('7', port_no);
-					case_port('8', port_no);
-					case_port('9', port_no);
+					case_port('0', port_no, port_no < INT_MAX / 10, 0);
+					case_port('1', port_no, port_no < INT_MAX / 10, 0);
+					case_port('2', port_no, port_no < INT_MAX / 10, 0);
+					case_port('3', port_no, port_no < INT_MAX / 10, 0);
+					case_port('4', port_no, port_no < INT_MAX / 10, 0);
+					case_port('5', port_no, port_no < INT_MAX / 10, 0);
+					case_port('6', port_no, port_no < INT_MAX / 10, 0);
+					case_port('7', port_no, port_no < INT_MAX / 10, 0);
+					case_port('8', port_no, port_no < INT_MAX / 10, 0);
+					case_port('9', port_no, port_no < INT_MAX / 10, 0);
 					case '[':
 					case ']':
 					case ':':
@@ -868,16 +876,16 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_HEADERS;
 						s=p+1;
 						break;
-					case_port('0', port_no);
-					case_port('1', port_no);
-					case_port('2', port_no);
-					case_port('3', port_no);
-					case_port('4', port_no);
-					case_port('5', port_no);
-					case_port('6', port_no);
-					case_port('7', port_no);
-					case_port('8', port_no);
-					case_port('9', port_no);
+					case_port('0', port_no, 1, 1);
+					case_port('1', port_no, 1, 1);
+					case_port('2', port_no, 1, 1);
+					case_port('3', port_no, 1, 1);
+					case_port('4', port_no, 1, 1);
+					case_port('5', port_no, 1, 1);
+					case_port('6', port_no, 1, 1);
+					case_port('7', port_no, 1, 1);
+					case_port('8', port_no, 1, 1);
+					case_port('9', port_no, 1, 1);
 					case '&':
 					case '@':
 					case ':':
@@ -1348,6 +1356,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case URI_PASSWORD:
 			/* this is the port, it can't be the passwd */
 			if (found_user) goto error_bad_port;
+			if (port_no > USHRT_MAX) goto error_bad_port;
 			uri->port.s=s;
 			uri->port.len=p-s;
 			uri->port_no=port_no;
@@ -1530,7 +1539,8 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case TELS_URI_T:
 			/* fix tel uris, move the number in uri and empty the host */
 			uri->user=uri->host;
-			uri->host.s="";
+			/* TEL does not have a host part, still most of the code expects
+			 * one, so lets keep the pointer, but set a 0 length */
 			uri->host.len=0;
 			break;
 		case SIP_URI_T:
@@ -1541,8 +1551,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case URN_NENA_SERVICE_URI_T:
 			uri->user.s=0;
 			uri->user.len=0;
-			uri->host.s="";
-			uri->host.len=0;
+			/* keep the service name as host part */
 			break;
 		case ERROR_URI_T:
 			LM_ERR("unexpected error (BUG?)\n");
@@ -1597,20 +1606,20 @@ error_too_short:
 error_bad_char:
 	LM_ERR("bad char '%c' in state %d"
 			" parsed: <%.*s> (%d) / <%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
-			len, ZSW(buf), len);
+			p < end ? *p : *(buf+len-1), state, (int)(p-buf), ZSW(buf),
+			(int)(p-buf), len, ZSW(buf), len);
 	goto error_exit;
 error_bad_host:
 	LM_ERR("bad host in uri (error at char %c in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
-			len, ZSW(buf), len);
+			p < end ? *p : *(buf+len-1), state, (int)(p-buf), ZSW(buf),
+			(int)(p-buf), len, ZSW(buf), len);
 	goto error_exit;
 error_bad_port:
-	LM_ERR("bad port in uri (error at char %c in"
+	LM_ERR("bad port in uri (error at char '%c' in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
-			len, ZSW(buf), len);
+			p < end ? *p : *(buf+len-1), state, (int)(p-buf), ZSW(buf),
+			(int)(p-buf), len, ZSW(buf), len);
 	goto error_exit;
 error_bad_uri:
 	LM_ERR("bad uri, state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
@@ -1623,7 +1632,7 @@ error_headers:
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bug:
-	LM_CRIT("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
+	LM_ERR("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
 error_exit:
 	ser_error=E_BAD_URI;
@@ -1732,6 +1741,25 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 			if (strncasecmp(raw_uri_a->s,raw_uri_b->s,raw_uri_a->len) == 0)
 			{
 				LM_DBG("straight-forward URI match\n");
+				if (parse_uri(raw_uri_a->s,raw_uri_a->len,&first) < 0)
+				{
+					LM_ERR("Failed to parse first URI\n");
+					return -1;
+				}
+				if (parse_uri(raw_uri_b->s,raw_uri_b->len,&second) < 0)
+				{
+					LM_ERR("Failed to parse second URI\n");
+					return -1;
+				}
+				if (unescape_user(&first.user, &unescaped_userA) < 0 ||
+						unescape_user(&second.user, &unescaped_userB) < 0) {
+					LM_ERR("Failed to unescape user!\n");
+					return -1;
+				}
+				first.user = unescaped_userA;
+				second.user = unescaped_userB;
+				compare_uri_val(user,strncmp);
+				compare_uri_val(passwd,strncmp);
 				return 0;
 			}
 	}
@@ -1790,6 +1818,11 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 	compare_uri_val(method_val,strncasecmp);
 	compare_uri_val(lr_val,strncasecmp);
 	compare_uri_val(r2_val,strncasecmp);
+	compare_uri_val(gr_val,strncasecmp);
+	compare_uri_val(pn_provider_val,strncasecmp);
+	compare_uri_val(pn_prid_val,strncasecmp);
+	compare_uri_val(pn_param_val,strncasecmp);
+	compare_uri_val(pn_purr_val,strncasecmp);
 
 	if (first.u_params_no == 0 || second.u_params_no == 0)
 		/* one URI doesn't have other params,

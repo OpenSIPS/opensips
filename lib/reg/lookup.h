@@ -28,12 +28,12 @@
 
 #define REG_LOOKUP_METHODFILTER_FLAG   (1 << 0)
 #define REG_LOOKUP_NOBRANCH_FLAG       (1 << 1)
-#define REG_LOOKUP_UAFILTER_FLAG       (1 << 2)
-#define REG_LOOKUP_GLOBAL_FLAG         (1 << 3)
-#define REG_LOOKUP_MAX_LATENCY_FLAG    (1 << 4)
-#define REG_LOOKUP_LATENCY_SORT_FLAG   (1 << 5)
-#define REG_BRANCH_AOR_LOOKUP_FLAG     (1 << 6)
-#define REG_LOOKUP_NO_RURI_FLAG        (1 << 7)
+#define REG_LOOKUP_GLOBAL_FLAG         (1 << 2)
+#define REG_LOOKUP_LATENCY_SORT_FLAG   (1 << 3)
+#define REG_BRANCH_AOR_LOOKUP_FLAG     (1 << 4)
+#define REG_LOOKUP_NO_RURI_FLAG        (1 << 5)
+#define REG_LOOKUP_UAFILTER_FLAG       (1 << 6)
+#define REG_LOOKUP_MAX_LATENCY_FLAG    (1 << 7)
 
 typedef enum _lookup_rc {
 	LOOKUP_ERROR = -3,        /* internal error (oom, bug, etc.) */
@@ -45,6 +45,14 @@ typedef enum _lookup_rc {
 	LOOKUP_PN_SENT = 2,       /* no branch pushed, but 1+ PN was sent */
 } lookup_rc;
 
+struct lookup_flags {
+	unsigned int flags;
+	regex_t ua_re;
+	int max_latency;
+};
+
+int reg_fixup_free_lookup_flags(void** param);
+int reg_fixup_lookup_flags(void** param);
 
 /**
  * Initialize the lookup support
@@ -57,10 +65,13 @@ int reg_init_lookup(void);
  * and fill in the R-URI, along with other branches, in preparation to route to
  * the found contacts.
  * @use_domain: how to extract the AoR from the R-URI (include '@host' part)
- * @unescape_aor: after extracting the AoR, do 1 round of unescape_param()
+ * @aor_update: optional callback, invoked right after the AoR is extracted
+ *              and un-escaped, where you may perform a quick edit on it.
+ *      @aor: input/output parameter.  Nothing is freed, use a static buffer!
+ *      Return: 0 (success), negative otherwise
  */
-lookup_rc lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *aor_uri,
-                 int use_domain, int unescape_aor);
+lookup_rc lookup(struct sip_msg *req, udomain_t *d, struct lookup_flags *flags,
+	str *aor_uri, int use_domain, int (*aor_update) (str *aor));
 
 
 /**
@@ -75,16 +86,5 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *aor_uri,
  *    -2 - failure to push to new branch
  */
 int push_branch(struct sip_msg *msg, ucontact_t *ct, int *ruri_is_pushed);
-
-
-/**
- * Parse the @input lookup flags string into a bitmask of @flags and any other
- * string or integer components.
- *
- * Return: 0 on success, -1 otherwise (internal error)
- */
-int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
-                       int *regexp_flags, int *max_latency);
-
 
 #endif /* __LIB_REG_LOOKUP_H__ */

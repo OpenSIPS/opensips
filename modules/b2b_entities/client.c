@@ -49,8 +49,20 @@ static char from_tag[FROM_TAG_LEN + 1];
 static void generate_tag(str* tag, str* src, str* callid)
 {
 	int len;
+	str srcs[4];
+	struct timeval tv;
 
-	MD5StringArray(from_tag, src, 1);
+	gettimeofday(&tv, NULL);
+
+	srcs[0] = *src;
+	srcs[1].s = (char *)&tv.tv_sec;
+	srcs[1].len = sizeof(tv.tv_sec);
+	srcs[2].s = (char *)&tv.tv_usec;
+	srcs[2].len = sizeof(tv.tv_usec);
+	srcs[3].s = (char *)&process_no;
+	srcs[3].len = sizeof(process_no);
+
+	MD5StringArray(from_tag, srcs, 4);
 	len = MD5_LEN;
 
 	/* calculate from tag from callid */
@@ -65,20 +77,11 @@ static void generate_tag(str* tag, str* src, str* callid)
 	LM_DBG("from_tag = %.*s\n", tag->len, tag->s);
 }
 
-/**
- * Function to create a new client entity a send send an initial message
- *	method  : the method of the message
- *	to_uri  : the destination URI
- *	from_uri: the source URI
- *	extra_headers: the extra headers to be added in the request
- *	b2b_cback : callback function to notify the logic about a change in dialog
- *	param     : the parameter that will be used when calling b2b_cback function
- *
- *	Return value: dialog key allocated in private memory
- *	*/
 #define HASH_SIZE 1<<23
-str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param)
+str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* logic_key,
+		struct ua_sess_init_params *init_params, struct b2b_tracer *tracer,
+		void *param, b2b_param_free_cb free_param)
 {
 	int result;
 	b2b_dlg_t* dlg;
@@ -91,16 +94,10 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	str from_tag;
 	str random_info = {0, 0};
 
-	if(ci == NULL || b2b_cback == NULL || param== NULL)
+	if(ci == NULL || (!init_params && (b2b_cback == NULL || logic_key == NULL)))
 	{
 		LM_ERR("Wrong parameters.\n");
 		return NULL;
-	}
-	if(param && param->len > B2BL_MAX_KEY_LEN)
-	{
-		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
-				param->len, B2BL_MAX_KEY_LEN);
-		return 0;
 	}
 
 	hash_index = core_hash(&ci->from_uri, &ci->to_uri, client_hsize);
@@ -112,9 +109,9 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
 	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
-		+ ci->from_dname.len + ci->to_dname.len +
+		+ ci->from_dname.len + ci->to_dname.len + ci->dst_uri.len +
 		from_tag.len + ci->local_contact.len + B2B_MAX_KEY_SIZE +
-		B2BL_MAX_KEY_LEN + mod_name->len;
+		mod_name->len;
 
 	/* create record in hash table */
 	dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -132,44 +129,43 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		CONT_COPY(dlg, dlg->to_dname, ci->to_dname);
 	if(ci->from_dname.s)
 		CONT_COPY(dlg, dlg->from_dname, ci->from_dname);
+	if(ci->dst_uri.s)
+		CONT_COPY(dlg, dlg->proxy, ci->dst_uri);
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
 	CONT_COPY(dlg, dlg->contact[CALLER_LEG], ci->local_contact);
 
-	if(param && param->s)
-	{
-		dlg->param.s = (char*)dlg + size;
-		memcpy(dlg->param.s, param->s, param->len);
-		dlg->param.len = param->len;
-		size+= B2BL_MAX_KEY_LEN;
+	if(logic_key && logic_key->s && shm_str_dup(&dlg->logic_key, logic_key) < 0) {
+		LM_ERR("not enough shm memory\n");
+		goto error;
 	}
 	dlg->b2b_cback = b2b_cback;
+	dlg->param = param;
+	dlg->free_param = free_param;
 	dlg->add_dlginfo = add_dlginfo;
+	dlg->tracer = tracer;
+	dlg->ua_flags = init_params?init_params->flags:0;
 
 	CONT_COPY(dlg, dlg->mod_name, (*mod_name));
 
 	if(parse_method(ci->method.s, ci->method.s+ci->method.len, &dlg->last_method) == 0)
 	{
 		LM_ERR("wrong method %.*s\n", ci->method.len, ci->method.s);
-		shm_free(dlg);
 		goto error;
 	}
 	dlg->state = B2B_NEW;
 	dlg->cseq[CALLER_LEG] =(ci->cseq?ci->cseq:1);
-	dlg->send_sock = ci->send_sock;
 
-	srand(get_uticks());
 	random_info.s = int2str(rand(), &random_info.len);
 
-	dlg->send_sock = ci->send_sock;
-	dlg->id = core_hash(&from_tag, random_info.s?&random_info:0, HASH_SIZE);
+	dlg->id = core_hash(&from_tag, random_info.s?&random_info:NULL, HASH_SIZE);
 
 	/* callid must have the special format */
 	dlg->db_flag = NO_UPDATEDB_FLAG;
-	callid = b2b_htable_insert(client_htable, dlg, hash_index, 0, B2B_CLIENT, 0, 0);
+	callid = b2b_htable_insert(client_htable, dlg, hash_index, NULL, B2B_CLIENT, 0, 0,
+		init_params?init_params->timeout:0);
 	if(callid == NULL)
 	{
 		LM_ERR("Inserting new record in hash table failed\n");
-		shm_free(dlg);
 		goto error;
 	}
 
@@ -200,6 +196,11 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.id.rem_tag.s = 0;
 	td.id.rem_tag.len = 0;
 
+	if (ci->maxfwd > 0) {
+		td.mf_enforced = 1;
+		td.mf_value = ci->maxfwd - 1;
+	}
+
 	td.rem_uri = ci->to_uri;
 	if(ci->req_uri.s)
 		td.rem_target    = ci->req_uri;
@@ -220,6 +221,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
 	td.send_sock = ci->send_sock;
+	td.pref_sock = ci->pref_sock;
 
 	if(ci->dst_uri.len)
 		td.obp = ci->dst_uri;
@@ -227,6 +229,9 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.avps = ci->avps;
 
 	tmb.setlocalTholder(&dlg->uac_tran);
+
+	if (dlg->tracer)
+		b2b_arm_uac_tracing( &td, dlg->tracer);
 
 	/* send request */
 	result= tmb.t_request_within
@@ -247,23 +252,50 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		shm_free(b2b_key_shm);
 		return NULL;
 	}
+	/* update the dialog sock with actual socket used when sending the req */
+	dlg->send_sock = td.send_sock;
 	tmb.setlocalTholder(NULL);
 
 	LM_DBG("new client entity [%p] callid=[%.*s] tag=[%.*s] param=[%.*s]"
 			" last method=[%d] dlg->uac_tran=[%p]\n",
 			dlg, callid->len, callid->s,
 			dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
-			dlg->param.len, dlg->param.s, dlg->last_method, dlg->uac_tran);
+			dlg->logic_key.len, dlg->logic_key.s, dlg->last_method, dlg->uac_tran);
 
 	return callid;
 
 error:
+	if (dlg->logic_key.s)
+		shm_free(dlg->logic_key.s);
+	shm_free(dlg);
 	if(callid)
 		pkg_free(callid);
 	return NULL;
 }
 
-dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
+/**
+ * Function to create a new client entity a send send an initial message
+ *	method  : the method of the message
+ *	to_uri  : the destination URI
+ *	from_uri: the source URI
+ *	extra_headers: the extra headers to be added in the request
+ *	b2b_cback : callback function to notify the logic about a change in dialog
+ *	logic_key : the logic identifier
+ *	tracer    : structure used to instruct how the client should be traced
+ *	param     : optional, the parameter that will be used when calling b2b_cback function
+ *	free_param: an optional function to free the parameter
+ *
+ *	Return value: dialog key allocated in private memory
+ *	*/
+str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* logic_key,
+		struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
+{
+	return _client_new(ci, b2b_cback, add_dlginfo, mod_name, logic_key, 0,
+		tracer, param, free_param);
+}
+
+dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg, unsigned int maxfwd)
 {
 	dlg_t* td =NULL;
 
@@ -285,6 +317,14 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 	td->rem_uri = dlg->to_uri;
 	td->loc_dname = dlg->from_dname;
 	td->rem_dname = dlg->to_dname;
+
+	if (maxfwd > 0) {
+		td->mf_enforced = 1;
+		td->mf_value = maxfwd - 1;
+	}
+
+	if(dlg->proxy.len)
+		td->obp = dlg->proxy;
 
 	if(leg)
 	{
@@ -308,6 +348,7 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 	if(dlg->send_sock)
 		LM_DBG("send sock= %.*s\n", dlg->send_sock->address_str.len,
 			dlg->send_sock->address_str.s);
+	td->pref_sock = NULL; /* in-dialog req, use only the forced socket */
 
 	return td;
 error:

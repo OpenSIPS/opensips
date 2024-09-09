@@ -130,7 +130,7 @@ char* generate_correlation_id(int* len)
 }
 
 
-int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
+int trace_mi_message(const union sockaddr_union* src, const union sockaddr_union* dst,
 		struct mi_trace_param* pld_param, str* correlation_val, trace_dest trace_dst)
 {
 	/* FIXME is this the case for all mi impelementations?? */
@@ -364,7 +364,7 @@ int parse_mi_cmd_bwlist(int id, char* bw_string, int len)
 		return -1;
 	}
 
-	if ( (tok_end - bw_string) >= len || tok_end + 1 == 0) {
+	if ( (tok_end - bw_string) >= len || tok_end[1] == '\0') {
 		LM_ERR("no command in list!\n");
 		return -1;
 	}

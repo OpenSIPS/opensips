@@ -30,7 +30,7 @@ cfgutils Module
               1.4.10. set_count(var_to_count, ret_var)
               1.4.11. set_select_weight(int_list_var)
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
-                      t2_usec, delta)
+                      t2_usec, [delta_str], [delta_int])
 
               1.4.13. check_time_rec(time_string, [timestamp])
               1.4.14. get_static_lock(key)
@@ -39,6 +39,8 @@ cfgutils Module
               1.4.17. release_dynamic_lock(key)
               1.4.18. strings_share_lock(key1, key2)
               1.4.19. get_accurate_time(sec, usec, [str_sec_usec])
+
+              1.4.20. shuffle_avps(name)
 
         1.5. Exported Asyncronous Functions
 
@@ -105,19 +107,20 @@ cfgutils Module
    1.23. release_dynamic_lock usage
    1.24. strings_share_lock usage
    1.25. get_accurate_time usage
-   1.26. async sleep usage
-   1.27. async usleep usage
-   1.28. rand_set_prob usage
-   1.29. rand_reset_prob usage
-   1.30. rand_get_prob usage
-   1.31. check_config_hash usage
-   1.32. get_config_hash usage
-   1.33. shv_set usage
-   1.34. shv_get usage
-   1.35. env(name) pseudo-variable usage
-   1.36. RANDOM pseudo-variable usage
-   1.37. ctime(name) pseudo-variable usage
-   1.38. shv(name) pseudo-variable usage
+   1.26. shuffle_avps usage
+   1.27. async sleep usage
+   1.28. async usleep usage
+   1.29. rand_set_prob usage
+   1.30. rand_reset_prob usage
+   1.31. rand_get_prob usage
+   1.32. check_config_hash usage
+   1.33. get_config_hash usage
+   1.34. shv_set usage
+   1.35. shv_get usage
+   1.36. env(name) pseudo-variable usage
+   1.37. RANDOM pseudo-variable usage
+   1.38. ctime(name) pseudo-variable usage
+   1.39. shv(name) pseudo-variable usage
 
 Chapter 1. Admin Guide
 
@@ -424,18 +427,23 @@ set_count($avp(dids), $var(num_dids));
 $var(next_gw_idx) = set_select_weight($avp(gw_success_rates));
 ...
 
-1.4.12.  ts_usec_delta(t1_sec, t1_usec, t2_sec, t2_usec, delta)
+1.4.12.  ts_usec_delta(t1_sec, t1_usec, t2_sec, t2_usec, [delta_str],
+[delta_int])
 
-   This function returns the difference between two timestamps,
-   specified in seconds and microseconds. The result is returned
-   in the last parameter, expressed in microseconds.
+   This function returns the absolute difference between the two
+   given timestamps. The result is expressed as microseconds and
+   can be returned as either string or integer.
+
+   WARNING: when using delta_int, the function will return error
+   code -1 in case the difference overflows the signed integer
+   holder! (i.e. a diff of ~35 minutes or more)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.18. ts_usec_delta usage
 ...
-ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
+ts_usec_delta($var(t1s), 300, 10, $var(t2us), $var(diff_str));
 ...
 
 1.4.13.  check_time_rec(time_string, [timestamp])
@@ -444,8 +452,9 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
    recurrence string matches the current time, or a negative value
    otherwise.
 
-   For checking something else than the current time, the third
-   parameter will contain the UNIX timestamp of the time to check.
+   For checking some other Unix timestamp than the current one,
+   the second parameter will contain the intended timestamp to
+   check.
 
    The syntax of each field is identical to the corresponding
    field from RFC 2445.
@@ -467,8 +476,8 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
        timezone in which to interpret the time recurrence elements
        (e.g. dtstart, dtend, until). By default, the system time
        zone is used.
-     * timestamp (string, optional) - A specific UNIX time to
-       check. The function simply expects the actual UNIX time
+     * timestamp (string, optional) - A specific Unix time to
+       check. The function simply expects the actual Unix time
        here, there is no need to perform any timezone adjustments.
 
    Additionally, more complex time recurrence strings may be built
@@ -672,14 +681,14 @@ if (!release_dynamic_lock($avp(foo)) {
 
 1.4.19.  get_accurate_time(sec, usec, [str_sec_usec])
 
-   Fetch the current UNIX time epoch with microsecond precision.
+   Fetch the current Unix time epoch with microsecond precision.
    Optionally, print this value as a floating point number (3rd
    parameter).
 
    Meaning of the parameters is as follows:
-     * sec (int) - the current UNIX timestamp (integer part)
-     * usec (int) - the current UNIX timestamp (decimal part)
-     * str_sec_usec (string, optional) - the current UNIX
+     * sec (int) - the current Unix timestamp (integer part)
+     * usec (int) - the current Unix timestamp (decimal part)
+     * str_sec_usec (string, optional) - the current Unix
        timestamp as a floating point number (6-digit precision)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -689,7 +698,28 @@ if (!release_dynamic_lock($avp(foo)) {
    Example 1.25. get_accurate_time usage
 ...
 get_accurate_time($var(sec), $var(usec));
-xlog("Current UNIX timestamp: $var(sec) s, $var(usec) us\n");
+xlog("Current Unix timestamp: $var(sec) s, $var(usec) us\n");
+...
+
+1.4.20.  shuffle_avps(name)
+
+   Randomly shuffles AVPs with name.
+
+   Meaning of the parameters is as follows:
+     * name (variable) - name of AVP to shuffle.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+
+   Example 1.26. shuffle_avps usage
+...
+$avp(foo) := "str1";
+$avp(foo)  = "str2";
+$avp(foo)  = "str3";
+xlog("Initial AVP list is: $(avp(foo)[*])\n");       # str3 str2 str1
+if(shuffle_avps( $avp(foo) ))
+    xlog("Shuffled AVP list is: $(avp(foo)[*])\n");  # str1, str3, str2
+(for example)
 ...
 
 1.5. Exported Asyncronous Functions
@@ -705,7 +735,7 @@ xlog("Current UNIX timestamp: $var(sec) s, $var(usec) us\n");
    to use them and what are their advantages, please refer to the
    OpenSIPS online Manual.
 
-   Example 1.26. async sleep usage
+   Example 1.27. async sleep usage
 {
 ...
 async( sleep("5"), after_sleep );
@@ -726,7 +756,7 @@ route[after_sleep] {
    to use them and what are their advantages, please refer to the
    OpenSIPS online Manual.
 
-   Example 1.27. async usleep usage
+   Example 1.28. async usleep usage
 {
 ...
 async( usleep("1000"), after_usleep );
@@ -746,7 +776,7 @@ route[after_usleep] {
      * prob_proc - the parameter should be a percent value (number
        from 0 to 99).
 
-   Example 1.28. rand_set_prob usage
+   Example 1.29. rand_set_prob usage
 ...
 $ opensips-cli -x mi rand_set_prob 10
 ...
@@ -757,7 +787,7 @@ $ opensips-cli -x mi rand_set_prob 10
 
    This command don't need a parameter.
 
-   Example 1.29.  rand_reset_prob usage
+   Example 1.30.  rand_reset_prob usage
 ...
 $ opensips-cli -x mi rand_reset_prob
 ...
@@ -768,7 +798,7 @@ $ opensips-cli -x mi rand_reset_prob
 
    The function return the actual probability value.
 
-   Example 1.30. rand_get_prob usage
+   Example 1.31. rand_get_prob usage
 ...
 $ opensips-cli -x mi get_prob
 The actual probability is 50 percent.
@@ -784,7 +814,7 @@ The actual probability is 50 percent.
    been configured and 500 on errors. Additional a short text
    message is printed.
 
-   Example 1.31. check_config_hash usage
+   Example 1.32. check_config_hash usage
 ...
 $ opensips-cli -x mi check_config_hash
 The actual config file hash is identical to the stored one.
@@ -797,7 +827,7 @@ The actual config file hash is identical to the stored one.
    The function returns 200 OK and the hash value on success or
    404 if no file for hashing has been configured.
 
-   Example 1.32. get_config_hash usage
+   Example 1.33. get_config_hash usage
 ...
 $ opensips-cli -x mi get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
@@ -814,7 +844,7 @@ $ opensips-cli -x mi get_config_hash
           + “str”: string value
      * value : value to be set
 
-   Example 1.33. shv_set usage
+   Example 1.34. shv_set usage
 ...
 $ opensips-cli -x mi shv_set debug int 0
 ...
@@ -827,7 +857,7 @@ $ opensips-cli -x mi shv_set debug int 0
      * name : shared variable name. If this parameter is missing,
        all shared variables are returned.
 
-   Example 1.34. shv_get usage
+   Example 1.35. shv_get usage
 ...
 $ opensips-cli -x mi shv_get debug
 $ opensips-cli -x mi shv_get
@@ -839,7 +869,7 @@ $ opensips-cli -x mi shv_get
 
    This PV provides access to the environment variable 'name'.
 
-   Example 1.35. env(name) pseudo-variable usage
+   Example 1.36. env(name) pseudo-variable usage
 ...
 xlog("PATH environment variable is $env(PATH)\n");
 ...
@@ -848,7 +878,7 @@ xlog("PATH environment variable is $env(PATH)\n");
 
    Returns a random value from the [0 - 2^31) range.
 
-   Example 1.36. RANDOM pseudo-variable usage
+   Example 1.37. RANDOM pseudo-variable usage
 ...
 $avp(10) = ($RANDOM / 16777216); # 2^24
 if ($avp(10) < 10) {
@@ -876,7 +906,7 @@ exit;
      * isdst - return daylight saving time status (int, 0 - DST
        off, >0 DST on)
 
-   Example 1.37. ctime(name) pseudo-variable usage
+   Example 1.38. ctime(name) pseudo-variable usage
 ...
 if ($ctime(year) == 2008) {
         xlog("request: $rm from $fu to $ru in year 2008\n");
@@ -892,7 +922,7 @@ if ($ctime(year) == 2008) {
    variable. The module exports a set of MI functions to get/set
    the value of shared variables.
 
-   Example 1.38. shv(name) pseudo-variable usage
+   Example 1.39. shv(name) pseudo-variable usage
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 ...
@@ -908,20 +938,20 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 82 37 2745 1343
-   2. Henning Westerholt (@henningw) 29 18 1088 86
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 22 367 109
+   1. Liviu Chircu (@liviuchircu) 94 44 2966 1512
+   2. Henning Westerholt (@henningw) 30 18 1088 86
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 29 23 462 109
    4. Razvan Crainea (@razvancrainea) 20 15 289 79
-   5. Vlad Patrascu (@rvlad-patrascu) 18 6 355 547
+   5. Vlad Patrascu (@rvlad-patrascu) 19 7 357 548
    6. Elena-Ramona Modroiu 14 3 1183 7
    7. Daniel-Constantin Mierla (@miconda) 12 10 84 32
-   8. Anca Vamanu 6 3 220 14
-   9. Ionel Cerghit (@ionel-cerghit) 5 1 18 161
-   10. Vlad Paiu (@vladpaiu) 3 2 3 0
+   8. Maksym Sobolyev (@sobomax) 7 5 24 18
+   9. Anca Vamanu 6 3 220 14
+   10. Ionel Cerghit (@ionel-cerghit) 5 1 18 161
 
-   All remaining contributors: Sergio Gutierrez, Konstantin
-   Bokarius, Walter Doekes (@wdoekes), Peter Lemenkov (@lemenkov),
-   Edson Gellert Schubert, Maksym Sobolyev (@sobomax).
+   All remaining contributors: Vlad Paiu (@vladpaiu), Sergio
+   Gutierrez, Konstantin Bokarius, Walter Doekes (@wdoekes), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -943,13 +973,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jan 2021
-   2.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jan 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
-   7.  Maksym Sobolyev (@sobomax)          Dec 2015 - Dec 2015
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Feb 2024
+   3.  Maksym Sobolyev (@sobomax)          Dec 2015 - Nov 2023
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   5.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jan 2020
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
    8.  Walter Doekes (@wdoekes)            Jan 2015 - Jan 2015
    9.  Vlad Paiu (@vladpaiu)               Jan 2013 - Jul 2014
    10. Anca Vamanu                         Aug 2009 - Sep 2009
@@ -966,8 +996,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Peter
    Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Anca
    Vamanu, Sergio Gutierrez, Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Elena-Ramona Modroiu,

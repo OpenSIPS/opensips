@@ -359,10 +359,10 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Juha Heinanen (@juha-h) 35 14 1681 396
+   1. Juha Heinanen (@juha-h) 36 14 1681 396
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 23 302 96
-   3. Jan Janak (@janakj) 19 14 345 75
-   4. Liviu Chircu (@liviuchircu) 19 10 240 375
+   3. Liviu Chircu (@liviuchircu) 20 10 240 375
+   4. Jan Janak (@janakj) 19 14 345 75
    5. Daniel-Constantin Mierla (@miconda) 14 12 46 55
    6. Vlad Patrascu (@rvlad-patrascu) 9 3 47 251
    7. Razvan Crainea (@razvancrainea) 8 6 19 17
@@ -371,9 +371,10 @@ Chapter 2. Contributors
    10. Andrei Pelinescu-Onciul 5 3 11 7
 
    All remaining contributors: Dan Pascu (@danpascu), Jiri Kuthan
-   (@jiriatipteldotorg), Klaus Darilion, Konstantin Bokarius,
-   Klaus Darilion, Andreas Granig, Peter Lemenkov (@lemenkov),
-   Edson Gellert Schubert, Dusan Klinec (@ph4r05).
+   (@jiriatipteldotorg), Maksym Sobolyev (@sobomax), Klaus
+   Darilion, Konstantin Bokarius, Klaus Darilion, Andreas Granig,
+   Peter Lemenkov (@lemenkov), Edson Gellert Schubert, Dusan
+   Klinec (@ph4r05).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -395,21 +396,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
-   4.  Dan Pascu (@danpascu)               Apr 2019 - Apr 2019
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   8.  Juha Heinanen (@juha-h)             Jan 2003 - Apr 2008
-   9.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
-   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2019
+   4.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
+   5.  Dan Pascu (@danpascu)               Apr 2019 - Apr 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9.  Juha Heinanen (@juha-h)             Jan 2003 - Apr 2008
+   10. Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
 
-   All remaining contributors: Edson Gellert Schubert, Henning
-   Westerholt (@henningw), Klaus Darilion, Greg Fausak, Andreas
-   Granig, Klaus Darilion, Andrei Pelinescu-Onciul, Jiri Kuthan
-   (@jiriatipteldotorg), Jan Janak (@janakj).
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Henning Westerholt (@henningw), Klaus Darilion, Greg
+   Fausak, Andreas Granig, Klaus Darilion, Andrei
+   Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg), Jan Janak
+   (@janakj).
 
    (1) including any documentation-related commits, excluding
    merge commits

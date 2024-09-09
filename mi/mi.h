@@ -28,7 +28,7 @@
 #include "item.h"
 
 #define MAX_MI_PARAMS  10
-#define MAX_MI_RECIPES 10
+#define MAX_MI_RECIPES 48
 
 /* async MI command */
 #define MI_ASYNC_RPL_FLAG    (1<<0)
@@ -55,8 +55,11 @@
 #define JSONRPC_SERVER_ERR_MSG     "Server error"
 
 #define ERR_DET_POS_PARAMS_S "Command only supports named parameters"
-#define ERR_DET_AMBIG_CALL_S "Ambiguous call"
-
+#define ERR_DET_AMBIG_CALL_S "Ambiguous call, use named parameters instead"
+#define ERR_DET_NO_PARAMS_S  "Too few or too many parameters"
+#define ERR_DET_MATCH_PARAMS_S "Named parameters do not match"
+#define ERR_DET_CMD_NULL_S "Command handler returned null"
+#define ERR_DET_PARAM_HANDLE_S "Failed to handle parameter"
 
 struct mi_handler;
 
@@ -81,12 +84,12 @@ typedef struct mi_recipe_ {
 
 struct mi_cmd {
 	int id;
-	str module;
+	str_const module;
 	str name;
 	str help;
 	mi_child_init_f *init_f;
 	unsigned int flags;
-	mi_recipe_t *recipes;
+	const mi_recipe_t *recipes;
 
 	volatile unsigned char* trace_mask;
 };
@@ -112,9 +115,9 @@ typedef struct mi_request_ {
 
 
 int register_mi_cmd(char *name, char *help, unsigned int flags,
-		mi_child_init_f in, mi_recipe_t *recipes, char* mod_name);
+		mi_child_init_f in, const mi_recipe_t *recipes, const char* mod_name);
 
-int register_mi_mod(char *mod_name, mi_export_t *mis);
+int register_mi_mod(const char *mod_name, const mi_export_t *mis);
 
 int init_mi_child();
 

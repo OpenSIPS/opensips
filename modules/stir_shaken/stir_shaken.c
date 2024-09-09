@@ -70,6 +70,9 @@
 #include "../../data_lump.h"
 #include "../../lib/cJSON.h"
 #include "../../context.h"
+#include "../../mod_fix.h"
+#include "../../data_lump_rpl.h"
+#include "../../mi/mi.h"
 
 #include "stir_shaken.h"
 
@@ -81,11 +84,26 @@
 #define parsed_ctx_set(_ptr) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, parsed_ctx_idx, _ptr)
 
+/*
+ * Module core functions
+ */
 static int mod_init(void);
 static void mod_destroy(void);
 
+
+/*
+ * Module internal functions
+ */
+static int fixup_auth_out(void** param);
+
+
+/*
+ * Script functions
+ */
 static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
-	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p);
+	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p,
+	struct auth_out_param *out);
+static int w_stir_disengagement(struct sip_msg *msg, str *token);
 static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pv_spec_t *err_code, pv_spec_t *err_reason, str *orig_tn_p, str *dest_tn_p);
 static int w_stir_check(struct sip_msg *msg);
@@ -93,9 +111,23 @@ static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf);
 static int fixup_attest(void **param);
 static int fixup_check_wrvar(void **param);
 
+/*
+ * Exported Pseudo-Variables
+ */
 int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-int pv_parse_identity_name(pv_spec_p sp, str *in);
+int pv_parse_identity_name(pv_spec_p sp, const str *in);
 
+
+/*
+ * MI functions
+ */
+mi_response_t *mi_stir_shaken_ca_reload(const mi_params_t *params, struct mi_handler *async_hdl);
+mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_handler *async_hdl);
+
+
+/*
+ * Module internal parameter variables
+ */
 static int auth_date_freshness = DEFAULT_AUTH_FRESHNESS;
 static int verify_date_freshness = DEFAULT_VERIFY_FRESHNESS;
 static char *ca_list;
@@ -103,30 +135,38 @@ static char *ca_dir;
 static char *crl_list;
 static char *crl_dir;
 
+static int e164_strict_mode;
+static int e164_max_length = 15;
+
+static int require_date_hdr = 1;
+
 static int tn_authlist_nid;
 
 static int parsed_ctx_idx =-1;
 
 static X509_STORE *store;
-static X509_STORE_CTX *verify_ctx;
 
-static param_export_t params[] = {
+
+static const param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
 	{"verify_date_freshness", INT_PARAM, &verify_date_freshness},
 	{"ca_list", STR_PARAM, &ca_list},
 	{"ca_dir", STR_PARAM, &ca_dir},
 	{"crl_list", STR_PARAM, &crl_list},
 	{"crl_dir", STR_PARAM, &crl_dir},
+	{"e164_strict_mode", INT_PARAM, &e164_strict_mode},
+	{"e164_max_length", INT_PARAM, &e164_max_length},
+	{"require_date_hdr", INT_PARAM, &require_date_hdr},
 	{0, 0, 0}
 };
 
-static pv_export_t mod_items[] = {
-	{{"identity", sizeof("identity") - 1}, 1000, pv_get_identity,
+static const pv_export_t mod_items[] = {
+	{str_const_init("identity"), 1000, pv_get_identity,
 		0, pv_parse_identity_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"stir_shaken_auth", (cmd_function)w_stir_auth, {
 		{CMD_PARAM_STR, fixup_attest, 0},
 		{CMD_PARAM_STR, 0, 0},
@@ -134,8 +174,13 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
+			fixup_auth_out, fixup_free_pkg}, {0,0,0}},
 		REQUEST_ROUTE},
+	{"stir_shaken_disengagement", (cmd_function)w_stir_disengagement, {
+		{CMD_PARAM_STR, 0, 0},
+		{0,0,0}}, REQUEST_ROUTE},
 	{"stir_shaken_verify", (cmd_function)w_stir_verify, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_wrvar, 0},
@@ -151,6 +196,25 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
+/*
+ * Exported MI functions
+ */
+static const mi_export_t mi_cmds[] = {
+	{ "stir_shaken_ca_reload", "Stir shaken ca reloader", 0, 0, {
+		{mi_stir_shaken_ca_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "stir_shaken_crl_reload", "Stir shaken crl reloader", 0, 0, {
+		{mi_stir_shaken_crl_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
+
+/*
+ * Module interface
+ */
 struct module_exports exports = {
 	"stir_shaken",    /* module name*/
 	MOD_TYPE_DEFAULT, /* class of this module */
@@ -162,7 +226,7 @@ struct module_exports exports = {
 	0,          /* exported async functions */
 	params,     /* module parameters */
 	0,          /* exported statistics */
-	0,          /* exported MI functions */
+	mi_cmds,	/* exported MI functions */
 	mod_items,  /* exported pseudo-variables */
 	0,			/* exported transformations */
 	0,          /* extra processes */
@@ -188,6 +252,7 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
 	return ok;
 }
 
+// called during mod_init
 static int init_cert_validation(void)
 {
 	store = X509_STORE_new();
@@ -199,11 +264,11 @@ static int init_cert_validation(void)
 
 	if (ca_list || ca_dir) {
 		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
-			LM_ERR("Failed to load trustefd CAs\n");
+			LM_ERR("Failed to load trusted CAs\n");
 			return -1;
 		}
 		if (X509_STORE_set_default_paths(store) != 1) {
-			LM_ERR("Failed to loade the system-wide CA certificates\n");
+			LM_ERR("Failed to load the system-wide CA certificates\n");
 			return -1;
 		}
 	}
@@ -217,9 +282,75 @@ static int init_cert_validation(void)
 			X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
 	}
 
-	if (!(verify_ctx = X509_STORE_CTX_new())) {
+	return 0;
+}
+
+// store check then reload ca_list and ca_dir
+static int init_cert_ca_reload(void)
+{
+	store = X509_STORE_new();
+	if (!store) {
 		LM_ERR("Failed to create X509_STORE_CTX object\n");
 		return -1;
+	}
+	X509_STORE_set_verify_cb_func(store, verify_callback);
+
+	/* check if ca_list param is set */
+	if (!ca_list) {
+		LM_ERR("Failed, path to a file containing trusted CA certificates for the verifier is not set or the certificates must be in PEM format, one after another.\n");
+		return -2;
+	}
+
+	/* check if ca_dir param is set */
+	if (!ca_dir) {
+		LM_ERR("Failed, path to a directory containing trusted CA certificates for the verifier is not set or the certificates in the directory must be in hashed form, as described in the openssl documentation for the Hashed Directory Method.\n");
+		return -3;
+	}
+
+	/* params are set, do reload */
+	if (ca_list || ca_dir) {
+		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
+			LM_ERR("Failed to load trusted CAs\n");
+			return -4;
+		}
+		if (X509_STORE_set_default_paths(store) != 1) {
+			LM_ERR("Failed to load the system-wide CA certificates\n");
+			return -5;
+		}
+	}
+
+	return 0;
+}
+
+// store check then reload crl_list and crl_dir
+static int init_cert_crl_reload(void)
+{
+	store = X509_STORE_new();
+	if (!store) {
+		LM_ERR("Failed to create X509_STORE_CTX object\n");
+		return -1;
+	}
+	X509_STORE_set_verify_cb_func(store, verify_callback);
+
+	/* check if crl_list param is set */
+	if (!crl_list) {
+		LM_ERR("Failed, path to a file containing certificate revocation lists (CRLs) for the verifier is not set.\n");
+		return -2;
+	}
+
+	/* check if crl_dir param is set */
+	if (!crl_dir) {
+		LM_ERR("Failed, path to a directory containing certificate revocation lists (CRLs) for the verifier is not set or the CRLs in the directory must be in hashed form, as described in the openssl documentation for the Hashed Directory Method.\n");
+		return -3;
+	}
+
+	/* params are set, do reload */
+	if (crl_list || crl_dir) {
+		if (X509_STORE_load_locations(store, crl_list, crl_dir) != 1) {
+			LM_ERR("Failed to load CRLs\n");
+			return -4;
+		}
+		X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
 	}
 
 	return 0;
@@ -369,6 +500,62 @@ static int add_date_hf(struct sip_msg *msg, time_t *date_ts)
 
 	if (!insert_new_lump_before(anchor, buf, DATE_HDR_L+len+CRLF_LEN, 0)) {
 		LM_ERR("Failed to insert lump\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/* Add P-Identity-Bypass for Incident Management Response */
+static int add_disengagement_token(struct sip_msg *msg, str *token)
+{
+
+	#define DISENGAGEMENT_HDR_S		"P-Identity-Bypass: "
+	#define DISENGAGEMENT_HDR_L		sizeof(DISENGAGEMENT_HDR_S)
+	
+	char *buf;
+	unsigned int len;
+	struct lump* anchor;
+
+	/* make sure we detect all headers */
+	if (parse_headers(msg, HDR_EOH_F, 0) == -1) {
+		LM_ERR("error while parsing message\n");
+		return -1;
+	}
+
+	/* check if token is available */
+	if (!token){
+		LM_ERR("Failed to identify disengagement token\n");
+		return -1;
+	}
+
+	/* add the anchor at the very end of the SIP headers */
+	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
+	if (anchor == NULL) {
+		LM_ERR("Failed to create lump anchor\n");
+		return -1;
+	}
+
+	/* calculate len (header + token + crlf) */
+	len = strlen(DISENGAGEMENT_HDR_S) + strlen(token->s) + strlen(CRLF);
+	/* alloc pkg memory */
+	buf= pkg_malloc(len);
+	if (!buf) {
+		LM_ERR("No more pkg mem\n");
+		return -1;
+	}
+
+	// push header in the buffer
+	strcpy(buf, DISENGAGEMENT_HDR_S);
+	// push token after the header
+	strcat(buf, token->s);
+	// push "\r\n" after the token
+	strcat(buf, CRLF);
+
+	/* insert buf at the end of previous headers */
+	if (insert_new_lump_after(anchor, buf, len, 0) == 0) {
+		LM_ERR("can't insert lump\n");
+		pkg_free(buf);
 		return -1;
 	}
 
@@ -595,6 +782,7 @@ error:
 static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 {
 	struct to_body *body;
+	struct sip_uri parsed_uri;
 
 	if (parse_headers(msg, HDR_PAI_F | HDR_FROM_F, 0) < 0) {
 		LM_ERR("Failed to parse headers\n");
@@ -615,27 +803,23 @@ static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 		body = get_from(msg);
 	}
 
-	if (parse_uri(body->uri.s, body->uri.len, &body->parsed_uri) < 0) {
-		LM_ERR("Failed to parse URI\n");
+	if (parse_uri(body->uri.s, body->uri.len, &parsed_uri) < 0) {
+		LM_ERR("Failed to parse %s URI: %.*s\n", msg->pai ? "PAI" : "From",
+		       body->uri.len, body->uri.s);
 		return -1;
 	}
 
-	if ((body->parsed_uri.type != SIP_URI_T && body->parsed_uri.type != TEL_URI_T &&
-		body->parsed_uri.type != SIPS_URI_T && body->parsed_uri.type != TELS_URI_T) ||
-		((body->parsed_uri.type == SIP_URI_T || body->parsed_uri.type == SIPS_URI_T) &&
-		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
-		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter required\n");
+	if ((parsed_uri.type != SIP_URI_T && parsed_uri.type != TEL_URI_T &&
+	    parsed_uri.type != SIPS_URI_T && parsed_uri.type != TELS_URI_T) ||
+	    (e164_strict_mode &&
+	      (parsed_uri.type == SIP_URI_T || parsed_uri.type == SIPS_URI_T) &&
+	      str_strcmp(&parsed_uri.user_param, _str("user=phone")))) {
+		LM_ERR("'tel:' URI or 'sip:' URI %srequired\n",
+		        e164_strict_mode ? "with ';user=phone' parameter " : "");
 		return -3;
 	}
 
-	if (is_e164(&body->parsed_uri.user) == -1) {
-		LM_INFO("E.164 number required\n");
-		return -3;
-	}
-
-	/* get rid of the '+' sign as it should not appear in the passport claim */
-	orig_tn->s = body->parsed_uri.user.s + 1;
-	orig_tn->len = body->parsed_uri.user.len - 1;
+	*orig_tn = parsed_uri.user;
 
 	return 0;
 }
@@ -643,32 +827,30 @@ static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 {
 	struct to_body *body;
+	struct sip_uri parsed_uri;
 
 	if (parse_to_header(msg) < 0) {
-		LM_ERR("Unable to parse From header\n");
+		LM_ERR("Unable to parse To header\n");
 		return -1;
 	}
 	body = get_to(msg);
 
-	if (parse_uri(body->uri.s, body->uri.len, &body->parsed_uri) < 0) {
-		LM_ERR("Failed to parse URI\n");
+	if (parse_uri(body->uri.s, body->uri.len, &parsed_uri) < 0) {
+		LM_ERR("Failed to parse To URI: %.*s\n", body->uri.len, body->uri.s);
 		return -1;
 	}
-	if ((body->parsed_uri.type != SIP_URI_T && body->parsed_uri.type != TEL_URI_T) ||
-		(body->parsed_uri.type == SIP_URI_T &&
-		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
-		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter required\n");
+
+	if ((parsed_uri.type != SIP_URI_T && parsed_uri.type != TEL_URI_T &&
+	    parsed_uri.type != SIPS_URI_T && parsed_uri.type != TELS_URI_T) ||
+	    (e164_strict_mode &&
+	      (parsed_uri.type == SIP_URI_T || parsed_uri.type == SIPS_URI_T) &&
+	      str_strcmp(&parsed_uri.user_param, _str("user=phone")))) {
+		LM_ERR("'tel:' URI or 'sip:' URI %srequired\n",
+		        e164_strict_mode ? "with ';user=phone' parameter " : "");
 		return -3;
 	}
 
-	if (is_e164(&body->parsed_uri.user) == -1) {
-		LM_ERR("E.164 number required\n");
-		return -3;
-	}
-
-	/* get rid of the '+' sign as it should not appear in the passport claim */
-	dest_tn->s = body->parsed_uri.user.s + 1;
-	dest_tn->len = body->parsed_uri.user.len - 1;
+	*dest_tn = parsed_uri.user;
 
 	return 0;
 }
@@ -700,16 +882,15 @@ void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps)
 }
 #endif
 
-static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
+static str *build_identity_hf(EVP_PKEY *pkey,
 	time_t date_ts, str *attest, str *cr_url, str *orig_tn,
 	str *dest_tn, str *origid)
 {
-	str hdr_buf = {0,0};
+	static str hdr_buf = {0,0};
 	str unsigned_buf;
 	str der_sig_buf = {0,0};
 	unsigned char *der_sig_p;
 	unsigned char raw_sig_buf[RAW_SIG_LEN];
-	struct lump* anchor;
 	EVP_MD_CTX *mdctx = NULL;
 	ECDSA_SIG *sig = NULL;
 	const BIGNUM *r, *s;
@@ -718,7 +899,7 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	if (build_unsigned_pport(&unsigned_buf, date_ts, attest, cr_url,
 		orig_tn, dest_tn, origid) < 0) {
 		LM_ERR("Failed to build PASSporT\n");
-		return -1;
+		return NULL;
 	}
 
 	mdctx = EVP_MD_CTX_create();
@@ -784,7 +965,7 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 
 	hdr_buf.len = IDENTITY_HDR_LEN + unsigned_buf.len + 1/*'.'*/ +
 		calc_base64_encode_len(RAW_SIG_LEN) + 1/*';'*/ + HDR_INFO_PARAM_LEN +
-		2/*'<','>'*/ + cr_url->len + 1/*';'*/ + HDR_PPT_PARAM_LEN + CRLF_LEN;
+		2/*'<','>'*/ + cr_url->len + 1/*';'*/ + HDR_ALG_PARAM_LEN + 1/*';'*/ + HDR_PPT_PARAM_LEN + CRLF_LEN;
 	hdr_buf.s = pkg_malloc(hdr_buf.len);
 	if (!hdr_buf.s) {
 		LM_ERR("oom!\n");
@@ -814,22 +995,15 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	hdr_buf.len += cr_url->len;
 	hdr_buf.s[hdr_buf.len++] = '>';
 	hdr_buf.s[hdr_buf.len++] = ';';
+	memcpy(hdr_buf.s + hdr_buf.len, HDR_ALG_PARAM_S, HDR_ALG_PARAM_LEN);
+        hdr_buf.len += HDR_ALG_PARAM_LEN;
+        hdr_buf.s[hdr_buf.len++] = ';';
 	memcpy(hdr_buf.s + hdr_buf.len, HDR_PPT_PARAM_S, HDR_PPT_PARAM_LEN);
 	hdr_buf.len += HDR_PPT_PARAM_LEN;
 	memcpy(hdr_buf.s + hdr_buf.len, CRLF, CRLF_LEN);
 	hdr_buf.len += CRLF_LEN;
 
-	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
-	if (!anchor) {
-		LM_ERR("Failed to get anchor lump\n");
-		goto error;
-	}
-	if (!insert_new_lump_before(anchor, hdr_buf.s, hdr_buf.len, 0)) {
-		LM_ERR("Failed to insert lump\n");
-		goto error;
-	}
-
-	return 0;
+	return &hdr_buf;
 
 error:
 	pkg_free(unsigned_buf.s);
@@ -841,7 +1015,8 @@ error:
 		pkg_free(der_sig_buf.s);
 	if (sig)
 		ECDSA_SIG_free(sig);
-	return -1;
+
+	return NULL;
 }
 
 static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
@@ -871,15 +1046,19 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 		if (!stack) {
 			LM_ERR("Failed to allocate cert stack\n");
 			X509_free(*cert);
+			*cert = NULL;
 			BIO_free(cbio);
+			return -1;
 		}
 
 		sk = PEM_X509_INFO_read_bio(cbio, NULL, NULL, NULL);
 		if (!sk) {
 			LM_ERR("error reading certificate stack\n");
 			X509_free(*cert);
+			*cert = NULL;
 			BIO_free(cbio);
 			sk_X509_free(stack);
+			return -1;
 		}
 
 		while (sk_X509_INFO_num(sk)) {
@@ -898,6 +1077,8 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 
 		BIO_free(cbio);
 		sk_X509_INFO_free(sk);
+	} else {
+		BIO_free(cbio);
 	}
 
 	return 0;
@@ -920,18 +1101,76 @@ static int load_pkey(EVP_PKEY **pkey, str *pkey_buf)
 		return -1;
 	}
 
+	BIO_free(kbio);
+
+	return 0;
+}
+
+/* Note: MAY modify @num */
+static int check_passport_phonenum(str *num, int log_lev)
+{
+	if (!num->s || num->len == 0) {
+		LM_GEN(log_lev, "number cannot be NULL or empty\n");
+		return -1;
+	}
+
+	/* get rid of the '+' sign as it should not appear in the passport claim */
+	if (num->s[0] == '+') {
+		num->s++;
+		num->len--;
+	}
+
+	if (_is_e164(num, e164_strict_mode, e164_max_length) == -1) {
+		LM_GEN(log_lev, "number is not in E.164 format: %.*s\n", num->len, num->s);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int fixup_auth_out(void** param)
+{
+	struct auth_out_param *out_p;
+	str *s = (str*)*param;
+
+	out_p = pkg_malloc(sizeof *out_p);
+	memset(out_p, 0, sizeof *out_p);
+
+	if (!str_strcmp(_str(AUTH_OUT_REQ_STR), s)) {
+		out_p->type = AUTH_APPEND_TO_REQ;
+	} else if (!str_strcmp(_str(AUTH_OUT_RPL_STR), s)) {
+		out_p->type = AUTH_APPEND_TO_RPL;
+	} else if (*s->s == PV_MARKER) {
+		out_p->type = AUTH_OUT_VAR;
+
+		if (pv_parse_spec(s, &out_p->var) == NULL) {
+			pkg_free(out_p);
+			LM_ERR("Failed to parse output variable spec\n");
+			return -1;
+		}
+	} else {
+		LM_ERR("Expected variable or the 'req'/'rpl' flags\n");
+		return -1;
+	}
+
+	*param = out_p;
+
 	return 0;
 }
 
 static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
-	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p)
+	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p,
+	struct auth_out_param *out_p)
 {
 	time_t now, date_ts;
 	struct hdr_field *date_hf = NULL;
 	X509 *cert;
 	EVP_PKEY *pkey = NULL;
 	str orig_tn, dest_tn;
-	int rc;
+	int rc, orig_log_lev = L_ERR, dest_log_lev = L_ERR;
+	str *hdr_buf = NULL;
+	struct lump* anchor;
+	pv_value_t out_val;
 
 	/* looking for 'Identity' and 'Date' */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
@@ -939,30 +1178,40 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 		return -1;
 	}
 
-	if (get_header_by_static_name(msg, "Identity")) {
-		LM_INFO("Identity header already exists\n");
-		return -2;
-	}
-
 	if (!orig_tn_p) {
 		if ((rc = get_orig_tn_from_msg(msg, &orig_tn)) < 0) {
 			if (rc == -1)
-				LM_ERR("Error determining Originator's identity\n");
+				LM_ERR("Error determining Originator number\n");
 			else
-				LM_INFO("Originator's URI is not a telephone number\n");
+				LM_NOTICE("Originator URI is not a telephone number\n");
 			return rc;
 		}
 		orig_tn_p = &orig_tn;
+		orig_log_lev = L_NOTICE;
 	}
+
+	if (check_passport_phonenum(orig_tn_p, orig_log_lev) != 0) {
+		LM_GEN(orig_log_lev, "failed to validate Originator number (%.*s)\n",
+		        orig_tn_p->len, orig_tn_p->s);
+		return -3;
+	}
+
 	if (!dest_tn_p) {
 		if ((rc = get_dest_tn_from_msg(msg, &dest_tn)) < 0) {
 			if (rc == -1)
-				LM_ERR("Error determining Destinations's identity\n");
+				LM_ERR("Error determining Destination number\n");
 			else
-				LM_INFO("Destinations's URI is not a telephone number\n");
+				LM_NOTICE("Destination URI is not a telephone number\n");
 			return rc;
 		}
 		dest_tn_p = &dest_tn;
+		dest_log_lev = L_NOTICE;
+	}
+
+	if (check_passport_phonenum(dest_tn_p, dest_log_lev) != 0) {
+		LM_GEN(dest_log_lev, "failed to validate Destination number (%.*s)\n",
+		        dest_tn_p->len, dest_tn_p->s);
+		return -3;
 	}
 
 	if ((now = time(0)) == -1) {
@@ -985,8 +1234,10 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 			return -1;
 		}
 
-		if (now - date_ts > auth_date_freshness) {
-			LM_INFO("Date header value is older than local policy\n");
+		if (labs(now - date_ts) > auth_date_freshness) {
+			LM_NOTICE("Date header timestamp diff exceeds local policy "
+			    "(diff: %llds, auth-freshness: %ds)\n",
+			    (long long)(now - date_ts), auth_date_freshness);
 			return -4;
 		}
 	}
@@ -1002,21 +1253,50 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	}
 
 	if (!check_cert_validity(&now, cert)) {
-		LM_INFO("The current time does not fall within the certificate validity\n");
+		LM_NOTICE("The current time does not fall within the certificate validity\n");
 		rc = -5;
 		goto error;
 	}
 	if (date_ts != now && !check_cert_validity(&date_ts, cert)) {
-		LM_INFO("The Date header does not fall within the certificate validity\n");
+		LM_NOTICE("The Date header does not fall within the certificate validity\n");
 		rc = -5;
 		goto error;
 	}
 
-	if (add_identity_hf(msg, pkey, date_ts, attest, cr_url,
-		orig_tn_p, dest_tn_p, origid) < 0) {
+	if ((hdr_buf = build_identity_hf(pkey, date_ts, attest, cr_url,
+		orig_tn_p, dest_tn_p, origid)) ==  NULL) {
 		LM_ERR("Failed to add Identity header\n");
 		rc = -1;
 		goto error;
+	}
+
+	if (!out_p || out_p->type == AUTH_APPEND_TO_REQ) {
+		anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
+		if (!anchor) {
+			LM_ERR("Failed to get anchor lump\n");
+			rc = -1;
+			goto error;
+		}
+		if (!insert_new_lump_before(anchor, hdr_buf->s, hdr_buf->len, 0)) {
+			LM_ERR("Failed to insert lump\n");
+			rc = -1;
+			goto error;
+		}
+	} else if (out_p->type == AUTH_APPEND_TO_RPL) {
+		if (!add_lump_rpl(msg, hdr_buf->s, hdr_buf->len, LUMP_RPL_HDR)) {
+			LM_ERR("unable to add reply lump\n");
+			rc = -1;
+			goto error;
+		}
+	} else {
+		out_val.flags = PV_VAL_STR;
+		out_val.rs = *hdr_buf;
+		if (pv_set_value(msg, &out_p->var, 0, &out_val) != 0) {
+			rc = -1;
+			goto error;
+		}
+
+		pkg_free(hdr_buf->s);
 	}
 
 	X509_free(cert);
@@ -1024,10 +1304,22 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 
 	return 1;
 error:
+	if (hdr_buf)
+		pkg_free(hdr_buf->s);
 	X509_free(cert);
 	if (pkey)
 		EVP_PKEY_free(pkey);
 	return rc;
+}
+
+/* stir shaken disengagement token function */
+static int w_stir_disengagement(struct sip_msg *msg, str *token)
+{
+	if (add_disengagement_token(msg, token) < 0) {
+		LM_ERR("Failed to add P-Identity-Bypass header\n");
+		return 0;
+	}
+	return 1;
 }
 
 /* decode base64url without padding
@@ -1123,7 +1415,7 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 	str header_str, payload_str, sig_str, params_str;
 	char *p;
 	param_hooks_t _;
-	param_t* params = NULL;
+	param_t* params = NULL, *it;
 	int rc = -1;
 
 	payload_str.s = q_memchr(hdr_buf->s, PPORT_SEPARATOR, hdr_buf->len);
@@ -1175,13 +1467,11 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 		LM_INFO("Header parameters missing\n");
 		goto invalid_hdr;
 	}
-	while (params) {
-		if (!str_strcmp(_str("alg"), &params->name))
-			parsed->alg_hdr_param = params->body;
-		if (!str_strcmp(_str("ppt"), &params->name))
-			parsed->ppt_hdr_param = params->body;
-
-		params = params->next;
+	for (it = params; it; it = it->next) {
+		if (!str_strcmp(const_str("alg"), &it->name))
+			parsed->alg_hdr_param = it->body;
+		if (!str_strcmp(const_str("ppt"), &it->name))
+			parsed->ppt_hdr_param = it->body;
 	}
 
 	parsed->dec_header.len = calc_max_base64_decode_len(header_str.len);
@@ -1383,6 +1673,7 @@ static int check_passport_claims(struct parsed_identity *parsed)
 
 static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 {
+	X509_STORE_CTX *verify_ctx;
 	int rc;
 
 	/* check the TN Authorization list extension */
@@ -1391,15 +1682,22 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 		return -8;
 	}
 
-	if (X509_STORE_CTX_init(verify_ctx, store,
-		cert, certchain) != 1) {
+	if (!(verify_ctx = X509_STORE_CTX_new())) {
+		LM_ERR("Failed to create X509_STORE_CTX object\n");
+		return -1;
+	}
+
+	if (X509_STORE_CTX_init(verify_ctx, store, cert, certchain) != 1) {
 		X509_STORE_CTX_cleanup(verify_ctx);
+		X509_STORE_CTX_free(verify_ctx);
 		LM_ERR("Error initializing verification context\n");
 		return -1;
 	}
 
 	rc = X509_verify_cert(verify_ctx);
+
 	X509_STORE_CTX_cleanup(verify_ctx);
+	X509_STORE_CTX_free(verify_ctx);
 
 	if (rc != 1)
 		return rc == 0 ? -8 : -1;
@@ -1424,6 +1722,7 @@ static int verify_signature(X509 *cert,
 	if (parsed->dec_signature.len != RAW_SIG_LEN) {
 		LM_ERR("Bad raw signature length [%d], should be [%d]\n",
 			parsed->dec_signature.len, RAW_SIG_LEN);
+		rc = 0;
 		goto error;
 	}
 
@@ -1539,17 +1838,36 @@ error:
 	return rc;
 }
 
-static int get_parsed_identity(struct hdr_field *identity_hdr,
+static int get_parsed_identity(struct sip_msg *msg,
 	struct parsed_identity **parsed)
 {
-	int rc = 0;
+	struct hdr_field *identity_hdr;
+	int rc;
 
 	*parsed = parsed_ctx_get();
-	if (*parsed == NULL) {
-		if (!current_processing_ctx) {
-			LM_ERR("no processing ctx found!\n");
-			return -1;
-		}
+	if (*parsed)
+		/* we are lucky, the parsing was already done */
+		return 0;
+
+	if (!current_processing_ctx) {
+		LM_ERR("no processing ctx found!\n");
+		return -1;
+	}
+
+	/* look for the Identity hdr */
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("Failed to parse headers\n");
+		return -1;
+	}
+
+	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
+		LM_INFO("No Identity header found\n");
+		return -2;
+	}
+
+	rc = -2;
+
+	do {
 
 		*parsed = pkg_malloc(sizeof **parsed);
 		if (*parsed == NULL) {
@@ -1559,11 +1877,27 @@ static int get_parsed_identity(struct hdr_field *identity_hdr,
 		memset(*parsed, 0, sizeof **parsed);
 
 		rc = parse_identity_hf(&identity_hdr->body, *parsed);
-		if (rc == 0)
-			parsed_ctx_set(*parsed);
-		else
-			pkg_free(*parsed);
-	}
+		if (rc >= 0) {
+			if (str_strcmp(&(*parsed)->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL)) == 0)
+				break;
+			LM_INFO("Unsupported '%.*s' extension\n",
+				(*parsed)->ppt_hdr_param.len, (*parsed)->ppt_hdr_param.s);
+			rc = -2; /* consider we did not find a proper Identity header */
+		}
+		pkg_free(*parsed);
+		*parsed = NULL;
+		/* let's check other Identity hdr, if present */
+		identity_hdr = get_next_header_by_static_name ( identity_hdr,
+			"Identity");
+		if (identity_hdr==NULL) {
+			LM_INFO("No valid Identity header found\n");
+			return rc;
+		}
+
+	}while(rc < 0);
+
+	if (rc >= 0)
+		parsed_ctx_set(*parsed);
 
 	return rc;
 }
@@ -1573,7 +1907,7 @@ static int set_err_resp_vars(struct sip_msg *msg, pv_spec_t *err_code_var,
 {
 	pv_value_t err_code_val, err_reason_val;
 
-	err_code_val.flags = PV_TYPE_INT;
+	err_code_val.flags = PV_VAL_INT|PV_TYPE_INT;
 	err_code_val.ri = code;
 	if (pv_set_value(msg, err_code_var, 0, &err_code_val) != 0)
 		return -1;
@@ -1600,51 +1934,72 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pv_spec_t *err_code_var, pv_spec_t *err_reason_var,
 	str *orig_tn_p, str *dest_tn_p)
 {
-	struct hdr_field *identity_hdr;
 	str orig_tn, dest_tn, pport_orig_tn, pport_dest_tn;
 	time_t now, date_ts, iat_ts;
 	struct hdr_field *date_hf = NULL;
 	X509 *cert = NULL;
 	STACK_OF(X509) *certchain = NULL;
 	struct parsed_identity *parsed;
-	int rc;
-
-	/* looking for 'Identity' and 'Date' */
-	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_ERR("Failed to parse headers\n");
-		return -1;
-	}
-
-	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
-		LM_INFO("No Identity header found\n");
-		SET_VERIFY_ERR_VARS(USE_IDENTITY_CODE, USE_IDENTITY_REASON);
-		return -2;
-	}
+	int rc, err_code, orig_log_lev = L_ERR, dest_log_lev = L_ERR;
+	char *err_reason;
 
 	if (!orig_tn_p) {
+		err_code = BADREQ_CODE;
+		err_reason = BADREQ_ORIG_REASON;
+
 		if ((rc = get_orig_tn_from_msg(msg, &orig_tn)) < 0) {
 			if (rc == -1)
 				LM_ERR("Failed to get Originator identity\n");
-			else  /* rc == -3 */
-				LM_INFO("Improper URI for Originator identity\n");
+			else
+				LM_NOTICE("Originator URI is not a telephone number\n");
+
+			SET_VERIFY_ERR_VARS(err_code, err_reason);
 			return rc;
 		}
 		orig_tn_p = &orig_tn;
+		orig_log_lev = L_NOTICE;
+	} else {
+		err_code = IERROR_CODE;
+		err_reason = IERROR_REASON;
 	}
+
+	if (check_passport_phonenum(orig_tn_p, orig_log_lev) != 0) {
+		LM_GEN(orig_log_lev, "failed to validate Originator number (%.*s)\n",
+		       orig_tn_p->len, orig_tn_p->s);
+		SET_VERIFY_ERR_VARS(err_code, err_reason);
+		return -3;
+	}
+
 	if (!dest_tn_p) {
+		err_code = BADREQ_CODE;
+		err_reason = BADREQ_DEST_REASON;
 		if ((rc = get_dest_tn_from_msg(msg, &dest_tn)) < 0) {
 			if (rc == -1)
 				LM_ERR("Failed to get Destination identity\n");
-			else  /* rc == -3 */
-				LM_INFO("Improper URI for Destination identity\n");
+			else
+				LM_NOTICE("Destination URI is not a telephone number\n");
+
+			SET_VERIFY_ERR_VARS(err_code, err_reason);
 			return rc;
 		}
 		dest_tn_p = &dest_tn;
+		dest_log_lev = L_NOTICE;
+	} else {
+		err_code = IERROR_CODE;
+		err_reason = IERROR_REASON;
 	}
 
-	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
+	if (check_passport_phonenum(dest_tn_p, dest_log_lev) != 0) {
+		LM_GEN(dest_log_lev, "failed to validate Destination number (%.*s)\n",
+		       dest_tn_p->len, dest_tn_p->s);
+		SET_VERIFY_ERR_VARS(err_code, err_reason);
+		return -3;
+	}
+
+	if ((rc = get_parsed_identity( msg, &parsed)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_PARSE_IDENTITY);
 		} else {  /* rc == -4 */
 			LM_INFO("Invalid identity header\n");
 			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
@@ -1653,49 +2008,65 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		return rc;
 	}
 
-	if (str_strcmp(&parsed->ppt_hdr_param, _str(PPORT_HDR_PPT_VAL))) {
-		LM_INFO("Unsupported 'ppt' extension\n");
-		rc = -5;
-		goto error;
-	}
 	if (parsed->alg_hdr_param.s &&
-		str_strcmp(&parsed->alg_hdr_param, _str(PPORT_HDR_ALG_VAL))) {
-		LM_INFO("Unsupported 'alg'\n");
+		str_strcmp(&parsed->alg_hdr_param, const_str(PPORT_HDR_ALG_VAL))) {
+		LM_NOTICE("Unsupported 'alg': %.*s\n",
+		          parsed->alg_hdr_param.len, parsed->alg_hdr_param.s);
+		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -5;
 		goto error;
 	}
 
 	if (check_passport_claims(parsed) < 0) {
-		LM_INFO("Required PASSporT claims are missing or have bad datatypes\n");
+		LM_NOTICE("Required PASSporT claims are missing or have bad datatypes\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -4;
 		goto error;
 	}
 
 	date_hf = get_header_by_static_name(msg, "Date");
-	if (!date_hf) {
-		LM_INFO("No Date header found\n");
-		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
-		rc = -2;
-		goto error;
-	}
-
-	if (get_date_ts(date_hf, &date_ts) < 0) {
-		LM_ERR("Failed to get UNIX time from Date header\n");
-		rc = -1;
-		goto error;
-	}
 
 	if ((now = time(0)) == -1) {
 		LM_ERR("Failed to get current time\n");
+		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_GET_CURRENT_TIME);
 		rc = -1;
 		goto error;
 	}
-	if (now - date_ts > verify_date_freshness) {
-		LM_INFO("Date header value is older than local policy\n");
-		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
-		rc = -6;
-		goto error;
+
+	iat_ts = (time_t)parsed->iat->valuedouble;
+
+	if (require_date_hdr || date_hf) {
+		if (!date_hf) {
+			LM_NOTICE("No Date header found\n");
+			SET_VERIFY_ERR_VARS(BADREQ_CODE, BADREQ_NODATE_REASON);
+			rc = -2;
+			goto error;
+		}
+
+		if (get_date_ts(date_hf, &date_ts) < 0) {
+			LM_ERR("Failed to get UNIX time from Date header\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_GET_TIME_FROM_DATE_HEADER);
+			rc = -1;
+			goto error;
+		}
+
+		if (labs(now - date_ts) > verify_date_freshness) {
+			LM_NOTICE("Date header timestamp diff exceeds local policy "
+			    "(diff: %llds, verify-freshness: %ds)\n",
+			    (long long)(now - date_ts), verify_date_freshness);
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -6;
+			goto error;
+		}
+	} else {
+		if (labs(now - iat_ts) > verify_date_freshness) {
+			LM_NOTICE("'iat' timestamp diff exceeds local policy "
+			    "(diff: %llds, verify-freshness: %ds)\n",
+			    (long long)(now - iat_ts), verify_date_freshness);
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -6;
+			goto error;
+		}
 	}
 
 	/* if the identities in the PASSporT and SIP message are different
@@ -1703,9 +2074,9 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pport_orig_tn.s = parsed->orig_tn->valuestring;
 	pport_orig_tn.len = strlen(pport_orig_tn.s);
 	if (str_strcmp(&pport_orig_tn, orig_tn_p)) {
-		LM_INFO("Differing identities in orig claim [%.*s] and PAI/From hdr [%.*s]\n",
+		LM_NOTICE("Differing identities in orig claim [%.*s] and PAI/From hdr [%.*s]\n",
 			pport_orig_tn.len, pport_orig_tn.s, orig_tn_p->len, orig_tn_p->s);
-		LM_INFO("Signature would not verify successfully\n");
+		LM_NOTICE("Signature would not verify successfully\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -9;
 		goto error;
@@ -1714,9 +2085,9 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pport_dest_tn.s = parsed->dest_tn->valuestring;
 	pport_dest_tn.len = strlen(pport_dest_tn.s);
 	if (str_strcmp(&pport_dest_tn, dest_tn_p)) {
-		LM_INFO("Differing identities in dest claim [%.*s] and To hdr [%.*s]\n",
+		LM_NOTICE("Differing identities in dest claim [%.*s] and To hdr [%.*s]\n",
 			pport_dest_tn.len, pport_dest_tn.s, dest_tn_p->len, dest_tn_p->s);
-		LM_INFO("Signature would not verify successfully\n");
+		LM_NOTICE("Signature would not verify successfully\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -9;
 		goto error;
@@ -1724,20 +2095,31 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 	if (load_cert(&cert, &certchain, cert_buf) < 0) {
 		LM_ERR("Failed to load certificate\n");
+		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_LOAD_CERTIFICATE);
 		rc = -1;
 		goto error;
 	}
 
-	if (!check_cert_validity(&date_ts, cert)) {
-		LM_INFO("The Date header does not fall within the certificate validity\n");
-		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
-		rc = -7;
-		goto error;
+	if (require_date_hdr || date_hf) {
+		if (!check_cert_validity(&date_ts, cert)) {
+			LM_INFO("The Date header does not fall within the certificate validity\n");
+			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON " (cert validity)");
+			rc = -7;
+			goto error;
+		}
+	} else {
+		if (!check_cert_validity(&iat_ts, cert)) {
+			LM_INFO("The 'iat' value does not fall within the certificate validity\n");
+			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON " (cert validity)");
+			rc = -7;
+			goto error;
+		}
 	}
 
 	if ((rc = validate_certificate(cert, certchain)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Error validating certificate\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_VALIDATE_CERTIFICATE);
 			goto error;
 		} else {  /* rc == -8 */
 			LM_INFO("Invalid certificate\n");
@@ -1746,18 +2128,19 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		}
 	}
 
-	iat_ts = (time_t)parsed->iat->valuedouble;
-	if (iat_ts != date_ts && (now - iat_ts > verify_date_freshness))
+	if (date_hf && iat_ts != date_ts &&
+		(labs(now - iat_ts) > verify_date_freshness))
 		iat_ts = date_ts;
 
 	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) <= 0) {
 		if (rc < 0) {
 			LM_ERR("Error while verifying signature\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_VERIFY_SIGNATURE);
 			rc = -1;
 			goto error;
 		} else {
 			LM_INFO("Signature did not verify successfully\n");
-			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
+			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON " (bad signature)");
 			rc = -9;
 			goto error;
 		}
@@ -1778,21 +2161,10 @@ error:
 
 static int w_stir_check(struct sip_msg *msg)
 {
-	struct hdr_field *identity_hdr;
 	struct parsed_identity *parsed;
 	int rc;
 
-	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_ERR("Failed to parse headers\n");
-		return -1;
-	}
-
-	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
-		LM_INFO("No Identity header found\n");
-		return -2;
-	}
-
-	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
+	if ((rc = get_parsed_identity( msg, &parsed)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
 			return -1;
@@ -1802,12 +2174,8 @@ static int w_stir_check(struct sip_msg *msg)
 		}
 	}
 
-	if (str_strcmp(&parsed->ppt_hdr_param, _str(PPORT_HDR_PPT_VAL))) {
-		LM_INFO("Unsupported 'ppt' extension\n");
-		return -4;
-	}
 	if (parsed->alg_hdr_param.s &&
-		str_strcmp(&parsed->alg_hdr_param, _str(PPORT_HDR_ALG_VAL))) {
+		str_strcmp(&parsed->alg_hdr_param, const_str(PPORT_HDR_ALG_VAL))) {
 		LM_INFO("Unsupported 'alg'\n");
 		return -4;
 	}
@@ -1847,28 +2215,28 @@ static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf)
 	return 1;
 }
 
-int pv_parse_identity_name(pv_spec_p sp, str *in)
+int pv_parse_identity_name(pv_spec_p sp, const str *in)
 {
 	if (!in || !in->s || !in->len) {
 		LM_ERR("Bad subname for $identity\n");
 		return -1;
 	}
 
-	if (!str_strcmp(in, _str("header")))
+	if (!str_strcmp(in, const_str("header")))
 		sp->pvp.pvn.u.isname.name.n = PV_HEADER;
-	else if (!str_strcmp(in, _str(PPORT_HDR_X5U)))
+	else if (!str_strcmp(in, const_str(PPORT_HDR_X5U)))
 		sp->pvp.pvn.u.isname.name.n = PV_HEADER_X5U;
-	else if (!str_strcmp(in, _str("payload")))
+	else if (!str_strcmp(in, const_str("payload")))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ATTEST)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ATTEST)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ATTEST;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_DEST)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_DEST)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_DEST;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_IAT)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_IAT)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_IAT;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ORIG)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ORIG)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ORIG;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ORIGID)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ORIGID)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ORIGID;
 	else {
 		LM_ERR("Bad subname for $identity\n");
@@ -1880,21 +2248,10 @@ int pv_parse_identity_name(pv_spec_p sp, str *in)
 
 int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
-	struct hdr_field *identity_hdr;
 	struct parsed_identity *parsed;
 	int rc;
 
-	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_ERR("Failed to parse headers\n");
-		return pv_get_null(msg, param, res);
-	}
-
-	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
-		LM_INFO("No Identity header found\n");
-		return pv_get_null(msg, param, res);
-	}
-
-	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
+	if ((rc = get_parsed_identity( msg, &parsed)) < 0) {
 		if (rc == -1)
 			LM_ERR("Failed to parse identity header\n");
 		else
@@ -1910,6 +2267,9 @@ int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			res->rs = parsed->dec_header;
 			break;
 		case PV_HEADER_X5U:
+			if (!parsed->x5u || !parsed->x5u->valuestring)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->x5u->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
@@ -1917,23 +2277,38 @@ int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			res->rs = parsed->dec_payload;
 			break;
 		case PV_PAYLOAD_ATTEST:
+			if (!parsed->attest || !parsed->attest->valuestring)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->attest->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
 		case PV_PAYLOAD_DEST:
+			if (!parsed->dest_tn || !parsed->dest_tn->valuestring)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->dest_tn->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
 		case PV_PAYLOAD_IAT:
+			if (!parsed->iat)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = int2str((uint64_t)parsed->iat->valuedouble, &res->rs.len);
 			res->ri = (int)parsed->iat->valuedouble;
 			res->flags |= PV_VAL_INT|PV_TYPE_INT;
 			break;
 		case PV_PAYLOAD_ORIG:
+			if (!parsed->orig_tn || !parsed->orig_tn->valuestring)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->orig_tn->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
 		case PV_PAYLOAD_ORIGID:
+			if (!parsed->origid || !parsed->origid->valuestring)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->origid->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
@@ -1943,4 +2318,85 @@ int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	}
 
 	return 0;
+}
+
+
+/*
+ * MI functions
+ */
+
+/*! \brief Reload stir ca_list and ca_dir shaken */
+mi_response_t *mi_stir_shaken_ca_reload(const mi_params_t *params, struct mi_handler *async_hdl)
+{
+	int rc;
+
+	rc = init_cert_ca_reload();
+	LM_ERR("Engage stir shaken ca reload, result <%i>\n", rc);
+
+	switch(rc) {
+		case 0:
+			/* Reload OK */
+			return init_mi_result_ok();
+			break;
+		case -1:
+			/* X509 Store Error */
+			return init_mi_error(500, MI_SSTR("Error X509 store object."));
+			break;
+		case -2:
+			/* ca_list param */
+			return init_mi_error(500, MI_SSTR("Error ca_list param."));
+			break;
+		case -3:
+			/* ca_dir param */
+			return init_mi_error(500, MI_SSTR("Error ca_dir param."));
+			break;
+		case -4:
+			/* Cert Error */
+			return init_mi_error(500, MI_SSTR("Error failed to load trusted CAs."));
+			break;
+		case -5:
+			/* Path Error */
+			return init_mi_error(500, MI_SSTR("Error failed to load the system-wide CA certificates."));
+			break;
+		default:
+			/* Any other case */
+			return init_mi_error(500, MI_SSTR("Error"));
+	}
+
+}
+
+/*! \brief Reload stir crl_list and crl_dir shaken */
+mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_handler *async_hdl)
+{
+	int rc;
+
+	rc = init_cert_crl_reload();
+	LM_ERR("Engage stir shaken crl reload, result <%i>\n", rc);
+
+	switch(rc) {
+		case 0:
+			/* Reload OK */
+			return init_mi_result_ok();
+			break;
+		case -1:
+			/* X509 Store Error */
+			return init_mi_error(500, MI_SSTR("Error X509 store object."));
+			break;
+		case -2:
+			/* crl_list param */
+			return init_mi_error(500, MI_SSTR("Error crl_list param."));
+			break;
+		case -3:
+			/* crl_dir param */
+			return init_mi_error(500, MI_SSTR("Error crl_dir param."));
+			break;
+		case -4:
+			/* Cert Error */
+			return init_mi_error(500, MI_SSTR("Error failed to load trusted CRL."));
+			break;
+		default:
+			/* Any other case */
+			return init_mi_error(500, MI_SSTR("Error"));
+	}
+
 }

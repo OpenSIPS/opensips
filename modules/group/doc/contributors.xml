@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">45</entry>
+		<entry align="center">46</entry>
 		<entry align="center">31</entry>
 		<entry align="center">848</entry>
 		<entry align="center">397</entry>
@@ -45,26 +45,26 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">15</entry>
-		<entry align="center">11</entry>
+		<entry align="center">16</entry>
+		<entry align="center">12</entry>
 		<entry align="center">87</entry>
-		<entry align="center">152</entry>
+		<entry align="center">154</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">9</entry>
+		<entry align="center">7</entry>
+		<entry align="center">16</entry>
+		<entry align="center">39</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Irina-Maria Stanescu</entry>
 		<entry align="center">9</entry>
 		<entry align="center">4</entry>
 		<entry align="center">466</entry>
 		<entry align="center">59</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">8</entry>
-		<entry align="center">6</entry>
-		<entry align="center">16</entry>
-		<entry align="center">12</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Edson Gellert Schubert</entry>
+		<entry>Sergio Gutierrez</entry>
 		<entry align="center">5</entry>
 		<entry align="center">1</entry>
-		<entry align="center">0</entry>
-		<entry align="center">206</entry>
+		<entry align="center">122</entry>
+		<entry align="center">72</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Sergio Gutierrez, Konstantin Bokarius, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), UnixDev, Anca Vamanu.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Edson Gellert Schubert, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Konstantin Bokarius, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), UnixDev, Anca Vamanu.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,57 +129,57 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - May 2020</entry>
+		<entry align="center">Mar 2014 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Feb 2023</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jun 2011 - Jun 2021</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
+		<entry align="center">Apr 2021 - Apr 2021</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - May 2020</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Jul 2005 - Mar 2020</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2011 - Sep 2019</entry>
-	</row>
-	<row>
-		<entry>5. </entry>
+		<entry>7. </entry>
 		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">Oct 2007 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>8. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>9. </entry>
 		<entry>Irina-Maria Stanescu</entry>
 		<entry align="center">Aug 2009 - Dec 2009</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>10. </entry>
 		<entry>Anca Vamanu</entry>
 		<entry align="center">Sep 2009 - Sep 2009</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>UnixDev</entry>
-		<entry align="center">Feb 2009 - Feb 2009</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Sergio Gutierrez</entry>
-		<entry align="center">Dec 2008 - Dec 2008</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: UnixDev, Sergio Gutierrez, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

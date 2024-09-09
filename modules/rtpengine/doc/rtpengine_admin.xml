@@ -63,6 +63,21 @@
 		If the set was selected using setid_avp, the avp needs to be
 		set only once before rtpengine_offer() or rtpengine_manage() call.
 	</para>
+	<para id="param_failover" xreflabel="Failover">
+		The module is able to failover to a new node within a set, if a chosen
+		one has communication issues. Moreover, it will also failover if the node
+		returns one of the following errors:
+		<itemizedlist>
+			<listitem><para>
+				Parallel session limit reached
+			</para></listitem>
+			<listitem><para>
+				Ran out of ports
+			</para></listitem>
+		</itemizedlist>
+		You can use the <xref linkend="param_extra_failover_error"/> parameter
+		to extend the above list.
+	</para>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
@@ -103,7 +118,9 @@
 		<title><varname>rtpengine_sock</varname> (string)</title>
 		<para>
 		Definition of socket(s) used to connect to (a set) &rtp; proxy. It may
-		specify a UNIX socket or an IPv4/IPv6 UDP socket.
+		specify a UNIX socket or an IPv4/IPv6 UDP socket. If the protocol part
+		(i.e. <quote>udp:</quote>) is missing, the socket is treated as a
+		UNIX socket.
 		</para>
 		<para>
 		<emphasis>
@@ -188,6 +205,26 @@ modparam("rtpengine", "rtpengine_retr", 2)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_rtpengine_timer_interval" xreflabel="rtpengine_timer_interval">
+		<title><varname>rtpengine_timer_interval</varname> (integer)</title>
+		<para>
+    Frequency to scan rtpengine sets for disabled node probing. Probing is done
+    outside the SIP processing context and in a separate timer routine. Disabled nodes
+    are probed for re-enablement after rtpengine_disable_tout seconds. Setting this value
+    too high can lead to unexpectedly large disabled interval as the max interval
+    before probing is (rtpengine_timer_interval + rtpengine_disable_tout) seconds.
+		</para><para>
+			Default value is <quote>5</quote>.
+		</para>
+		<example>
+		<title>Set <varname>rtpengine_timer_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpengine", "rtpengine_timer_interval", 1)
+...
+</programlisting>
+		</example>
+	</section>
 	<section id="param_notification_sock" xreflabel="notification_sock">
 		<title><varname>notification_sock</varname> (string)</title>
 		<para>
@@ -254,6 +291,25 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 		</example>
 	</section>
 
+	<section id="param_error_pv" xreflabel="error_pv">
+		<title><varname>error_pv</varname> (string)</title>
+		<para>
+			The parameter defines a variable that shall be populated
+			by &rtp; when one of the rtpengine_* functions fail.
+		</para>
+		<para>
+			There is no default value.
+		</para>
+		<example>
+		<title>Set <varname>error_pv</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("rtpengine", "error_pv", "$var(rtpengine_error)")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
@@ -284,7 +340,7 @@ modparam("rtpengine", "db_url",
 			Used when Database URL is provisioned.
 		</para>
 		<para>
-			Default value is <quote>rtpengines</quote>.
+			Default value is <quote>rtpengine</quote>.
 		</para>
 		<example>
 		<title>Set <varname>db_table</varname> parameter</title>
@@ -332,6 +388,31 @@ modparam("rtpengine", "set_column", "set_new")
 		</example>
 	</section>
 
+	<section id="param_rtpengine_ping_enabled" xreflabel="ping_enabled">
+		<title><varname>ping_enabled</varname> (integer)</title>
+		<para>
+			This parameter indicates whether probing should be done for
+			enabled nodes as well.
+		</para>
+		<para>
+			If this parameter is set, each enabled node is pinged
+			every <xref linkend="param_rtpengine_timer_interval"/> seconds, unless
+			there was any communication with the node since the previous interval.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ping_enabled</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpengine", "ping_enables", yes)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>
@@ -404,6 +485,10 @@ rtpengine_offer();
 				&rtp; proxy at the moment!</emphasis>
 				</para></listitem>
 				<listitem><para>
+				<emphasis>via-branch-param=...</emphasis> - provide a custom value for the
+				<emphasis>via-branch</emphasis> param.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>call-id</emphasis> - provide a custom Call-ID for the session. If
 				missing, the Call-Id of the request/reply is used.
 				</para></listitem>
@@ -469,6 +554,10 @@ rtpengine_offer();
 				having different m-lines with different IP-protocols grouped together.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>received-from=...</emphasis> - sets the address from which SIP packet with &sdp; received.
+				This flag always set automatically, don't use it until you have a reason for that.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>force</emphasis> - instructs the &rtp; proxy to ignore marks
 				inserted by another &rtp; proxy in transit to indicate that the
 				session is already goes through another proxy. Allows creating
@@ -492,6 +581,12 @@ rtpengine_offer();
 				<emphasis>replace-session-connection</emphasis> - flags to change the session-level
 				SDP connection (c=) IP if media description also includes
 				connection information.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>replace-zero-address</emphasis> - flags to replace zero address with real address.
+				Using a zero endpoint address is an obsolete way to signal a muted or sendonly stream.
+				Streams with zero addresses are normally flagged as sendonly and the zero address in the SDP
+				is passed through.
 				</para></listitem>
 				<listitem><para>
 				<emphasis>symmetric</emphasis> - flags that for the UA from which
@@ -725,6 +820,36 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
 </programlisting>
                 </example>
 
+	<section id="param_extra_failover_error" xreflabel="extra_failover_error">
+		<title><varname>extra_failover_error</varname> (string)</title>
+		<para>
+			Contains a (XDB) regular expression that can be
+			used to match an error received from a RTPEngine node. If matched
+			the module tries to use a new node to handle the affected command.
+		</para>
+		<para>
+			This parameter can be used to extend the list
+			(see <xref linkend="para_failover"/> of errors the module
+			implicitely fails over.
+		</para>
+		<para>
+			<emphasis>Note</emphasis> each declaration will define a single
+			expression/matching rule. If you want to define multiple rules, you
+			need to define the parameter multiple times.
+		</para>
+		<para>
+			Default value is empty, no extra errors are being used.
+		</para>
+		<example>
+		<title>Set <varname>extra_failover_error</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("rtpengine", "extra_failover_error", "Parallel session limit reached")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 		<section id="func_rtpengine_answer" xreflabel="rtpengine_answer()">
                 <title>
@@ -911,7 +1036,7 @@ rtpengine_stop_recording();
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem><para>
-		<emphasis>flags(string)</emphasis> - a list of flags simialar to
+		<emphasis>flags(string)</emphasis> - a list of flags similar to
 			the other functions. One of the <emphasis>file</emphasis>,
 			<emphasis>blob</emphasis> or <emphasis>db-id</emphasis> parameters
 			is mandatory to indicate the content of the media file to be played.
@@ -970,7 +1095,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
 	<section id="func_rtpengine_stop_media" xreflabel="rtpengine_stop_media()">
 		<title>
-		<function moreinfo="none">rtpengine_stop_media([flags[, sockvar]])</function>
+		<function moreinfo="none">rtpengine_stop_media(flags[, [sock_var[, sockvar]], [last_frame_pos]])</function>
 		</title>
 		<para>
 			This function will stop playing a media file previously started
@@ -980,6 +1105,17 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 			<function>rtpengine_play_media()</function> call, otherwise
 			RTPEngine will not be able to stop media playing.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>flags(string)</emphasis> - a list of flags similar to
+			the other functions.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>last_frame_pos(var, optional)</emphasis> - a pseudo variable that
+			will contain the last frame played of the file.
+		</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from any route.
 		</para>
@@ -988,6 +1124,23 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 		<programlisting format="linespecific">
 ...
 if (is_method("INVITE") &amp;&amp; $rs == 200)
+	rtpengine_stop_media();
+...
+		</programlisting>
+		</example>
+		<example>
+		<title>Example use of the last-frame-pos parameter <function>rtpengine_stop_media</function></title>
+		<programlisting format="linespecific">
+...
+if (is_method("INVITE") &amp;&amp; has_totag()) {
+	if (is_audio_on_hold()) {
+		$dlg_val(on_hold = "1";
+		rtpengine_play_media("from-tag=$tt start-pos=$avp(last_frame_pos) file=/path/to/moh_file.wav");
+	} else if ($dlg_val(on_hold) == "1") {
+		rtpengine_stop_media("from-tag=$tt", , $avp(last_frame_pos));
+		$dlg_val(on_hold = "0");
+	}
+}
 	rtpengine_stop_media();
 ...
 		</programlisting>
@@ -1348,19 +1501,25 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 					defined in the config file).
 				</para></listitem>
 				<listitem><para>
-					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the &rtp; proxy.
+					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the &rtp; proxy, 2 - put the &rtp; node in probing mode.
+				</para></listitem>
+        <listitem><para>
+					<emphasis>setid</emphasis> (optional) the set ID of the nodes to be updated. If provided, only nodes in the provided set will be updated.
 				</para></listitem>
 			</itemizedlist>
 			<para>
 			NOTE: if a &rtp; proxy is defined multiple times (in the same or
-			different set), all of its instances will be enables/disabled.
+			different set), all of its instances will be enabled/disabled IF no set ID is provided.
 			</para>
 			<example>
 			<title>
 			<function moreinfo="none">rtpengine_enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
+## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
+## enable rtpengine by URL and set ID (3)
+$ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=1 setid=3
 ...
 			</programlisting>
 			</example>
@@ -1392,6 +1551,15 @@ $ opensips-cli -x mi rtpengine_show
 			Reloads all rtpengine sets from the database. Used only when the
 			<quote><xref linkend="param_db_url"/></quote> parameter is set.
 			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>type</emphasis> (optional) soft - when reloading nodes
+					from the database, reuse any existing sockets and keep existing
+					node disabled state. If not provided, then all nodes and sockets
+					will first be torndown and then nodes will be loaded from the database.
+				</para></listitem>
+			</itemizedlist>
 			<para>
 			No parameter.
 			</para>
@@ -1401,6 +1569,7 @@ $ opensips-cli -x mi rtpengine_show
 			<programlisting format="linespecific">
 ...
 $ opensips-cli -x mi rtpengine_reload
+$ opensips-cli -x mi rtpengine_reload type=soft
 ...
 			</programlisting>
 			</example>
@@ -1481,6 +1650,28 @@ $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 			</para></listitem>
 			<listitem><para>
 				<emphasis>volume</emphasis> - volume of the tone
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_RTPENGINE_STATUS" xreflabel="E_RTPENGINE_STATUS">
+		<title>
+		<function moreinfo="none">E_RTPENGINE_STATUS</function>
+		</title>
+		<para>
+			This event is raised when a RTPEngine server changes it's status to
+			active/inactive.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>socket</emphasis> - the socket that identifies the
+				RTPEngine instance.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>active</emphasis> if
+				the RTPEngine instance responds to probing or
+				<emphasis>inactive</emphasis> if the instance was deactivated.
 			</para></listitem>
 		</itemizedlist>
 	</section>

@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">53</entry>
-		<entry align="center">31</entry>
-		<entry align="center">1175</entry>
-		<entry align="center">712</entry>
+		<entry align="center">58</entry>
+		<entry align="center">34</entry>
+		<entry align="center">1205</entry>
+		<entry align="center">742</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -36,19 +36,19 @@
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">13</entry>
+		<entry align="center">10</entry>
+		<entry align="center">44</entry>
+		<entry align="center">78</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">12</entry>
 		<entry align="center">10</entry>
 		<entry align="center">19</entry>
 		<entry align="center">18</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">12</entry>
-		<entry align="center">9</entry>
-		<entry align="center">44</entry>
-		<entry align="center">76</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -61,10 +61,10 @@
 	<row>
 		<entry>6. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">8</entry>
-		<entry align="center">5</entry>
-		<entry align="center">41</entry>
-		<entry align="center">76</entry>
+		<entry align="center">9</entry>
+		<entry align="center">6</entry>
+		<entry align="center">117</entry>
+		<entry align="center">120</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Stanislaw Pitucha, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Stanislaw Pitucha, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Jan 2009 - Jul 2020</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2014 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Mar 2023</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Feb 2023</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Jan 2009 - Jun 2021</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Feb 2012 - Jul 2020</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>6. </entry>
 		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Feb 2020</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Apr 2019</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
+		<entry>8. </entry>
 		<entry>Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>)</entry>
 		<entry align="center">Jan 2019 - Jan 2019</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - Nov 2018</entry>
-	</row>
-	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
 		<entry align="center">Sep 2010 - Jan 2014</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>)</entry>
 		<entry align="center">Jul 2013 - Aug 2013</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
-		<entry align="center">Aug 2011 - Aug 2011</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Vallimamod Abdullah, Stanislaw Pitucha, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Klaus Darilion.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Anca Vamanu, Vallimamod Abdullah, Stanislaw Pitucha, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Klaus Darilion.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

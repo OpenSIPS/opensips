@@ -3,6 +3,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=sql_cacher.so
-LIBS=
 
 include ../../Makefile.modules

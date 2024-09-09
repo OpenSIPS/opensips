@@ -32,6 +32,10 @@
 #include "../../rw_locking.h"
 #include "lock.h"
 
+#define TM_TIMER_ITV_S   1U
+#define TM_UTIMER_ITV_US (100U*1000U)
+#define TM_TIMER_LOAD_WARN .75
+
 #define MIN_TIMER_VALUE  2
 
 /* identifiers of timer lists;*/
@@ -79,7 +83,7 @@ typedef struct  timer
 /* transaction table */
 struct timer_table
 {
-	rw_lock_t      *ex_lock;
+	gen_lock_t      *ex_lock;
 	/* table of timer lists */
 	struct timer   timers[ NR_OF_TIMER_LISTS ];
 };

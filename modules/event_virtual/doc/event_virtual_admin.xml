@@ -18,12 +18,7 @@
 				notify the subscribers, in the order in which they are given,
 				until the first successful notification. A failed subscriber is
 				skipped for further notifications until the
-				<xref linkend="param_failover_timeout"/> passes. For some transport modules
-				(<emphasis>event_stream</emphasis>, <emphasis>event_xmlrpc</emphasis>,
-				<emphasis>event_rabbitmq</emphasis>), in order to properly
-				detect a failure when raising an event, you have to configure
-				synchronous operation through the <emphasis>sync_mode</emphasis>
-				module parameter of the respective module.
+				<xref linkend="param_failover_timeout"/> passes.
 			</para>	</listitem>
 			<listitem><para>
 				<emphasis>ROUND-ROBIN</emphasis> - for every event raised, notify the subscribers alternatively, in the order in which they are given (for each raised event notify a different subscriber)

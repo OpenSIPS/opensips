@@ -106,9 +106,13 @@ Chapter 1. Admin Guide
        available only for requests
      * set_dst_uri() - sets the destination URI of the message;
        available only for requests
-     * getHeader() - returns the header of a message the
-       destination address (OpenSIPS address) of the message
-     * call_function() - calls a function from the script
+     * getHeader() - returns the header of a message
+     * call_function() - calls built-in script function or
+       function exported by other module
+     * get_pseudoVar(name) - returns the value of the the
+       pseudo-variable specified by the name as Unicode string.
+     * set_pseudoVar(name, value) - sets pseudo-variable using
+       Unicode string value.
 
 1.2. Dependencies
 
@@ -163,7 +167,7 @@ modparam("python", "child_init_method", "child_initializer")
 
 1.4.1.  python_exec(method_name [, extra_args])
 
-   Thhis function is used to execute a method from the Python
+   This function is used to execute a method from the Python
    module loaded.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -181,12 +185,13 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 19 12 498 99
-   2. Maksym Sobolyev (@sobomax) 18 6 1304 10
+   1. Maksym Sobolyev (@sobomax) 23 10 1319 23
+   2. Razvan Crainea (@razvancrainea) 20 13 500 99
    3. Vlad Patrascu (@rvlad-patrascu) 13 9 204 113
    4. Liviu Chircu (@liviuchircu) 8 6 30 61
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 36 48
    6. Peter Lemenkov (@lemenkov) 4 2 2 2
+   7. importos 3 1 104 4
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -208,12 +213,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Jul 2014 - Jan 2020
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2019
-   4. Razvan Crainea (@razvancrainea)     Mar 2015 - Oct 2019
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   6. Maksym Sobolyev (@sobomax)          Dec 2009 - Feb 2017
+   1. Maksym Sobolyev (@sobomax)          Dec 2009 - Feb 2023
+   2. Razvan Crainea (@razvancrainea)     Mar 2015 - Jan 2021
+   3. importos                            Nov 2020 - Nov 2020
+   4. Liviu Chircu (@liviuchircu)         Jul 2014 - Jan 2020
+   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2019
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -222,9 +228,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea).
+   Last edited by: importos, Vlad Patrascu (@rvlad-patrascu),
+   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
+   Crainea (@razvancrainea).
 
    Documentation Copyrights:
 

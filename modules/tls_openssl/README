@@ -1,0 +1,104 @@
+tls_openssl Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module implements TLS operations using the openSSL
+   libarary. It provides the primitives required by the tls_mgm
+   module in order to expose a higher-level API used by TLS-based
+   protocol modules like proto_tls or proto_wss etc.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * None.
+
+1.2.2. External Libraries or Applications
+
+   OpenSIPS TLS v1.0 support requires the following packages:
+     * openssl or libssl >= 0.9.6
+     * openssl-dev or libssl-dev
+
+   OpenSIPS TLS v1.1/1.2 support requires the following packages:
+     * openssl or libssl >= 1.0.1e
+     * openssl-dev or libssl-dev
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu) 25 5 2195 39
+   2. James Stanley 4 2 13 8
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 3 3
+   4. Maksym Sobolyev (@sobomax) 3 1 1 1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. James Stanley                       Apr 2023 - Feb 2024
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) May 2023 - May 2023
+   3. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2021 - Oct 2021
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+
+   Documentation Copyrights:
+
+   Copyright © 2021 www.opensips-solutions.com

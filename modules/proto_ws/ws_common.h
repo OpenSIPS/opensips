@@ -329,7 +329,8 @@ static enum ws_close_code inline ws_parse(struct ws_req *req)
 			/* extended case */
 			if (req->tcp.pos - req->tcp.buf < WS_MIN_HDR_LEN + WS_ELENC_SIZE +
 					WS_IF_MASK_SIZE(req))
-				return 0;
+				/* wait for more data to come */
+				goto update_parsed;
 
 			clen = WS_ELENC(req);
 			if ((clen+WS_MIN_HDR_LEN+WS_ELENC_SIZE+WS_IF_MASK_SIZE(req))>
@@ -345,7 +346,8 @@ static enum ws_close_code inline ws_parse(struct ws_req *req)
 			/* extended case */
 			if (req->tcp.pos - req->tcp.buf < WS_MIN_HDR_LEN + WS_ELEN_SIZE +
 					WS_IF_MASK_SIZE(req))
-				return 0;
+				/* wait for more data to come */
+				goto update_parsed;
 
 			req->tcp.content_len = WS_ELEN(req);
 			if ((req->tcp.content_len+WS_MIN_HDR_LEN+WS_ELEN_SIZE+WS_IF_MASK_SIZE(req))>
@@ -554,7 +556,7 @@ again:
 		if (req != &_ws_common_current_req) {
 			/* make sure we cleanup the request in the connection */
 			con->con_req = NULL;
-			pkg_free(req);
+			shm_free(req);
 		}
 
 	} else {
@@ -571,7 +573,7 @@ again:
 			/* let's duplicate this - most likely another conn will come in */
 
 			LM_DBG("We didn't manage to read a full request\n");
-			newreq = pkg_malloc(sizeof(struct ws_req));
+			newreq = shm_malloc(sizeof(struct ws_req));
 			if (newreq == NULL) {
 				LM_ERR("No more mem for dynamic con request buffer\n");
 				goto error;
@@ -633,8 +635,8 @@ static void ws_close(struct tcp_connection *c)
 	ws_send_close(c);
 }
 
-static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server)
+static struct tcp_connection* ws_sync_connect(const struct socket_info* send_sock,
+		const union sockaddr_union* server, struct tcp_conn_profile *prof)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -646,10 +648,12 @@ static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
 		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
 		goto error;
 	}
-	if (tcp_init_sock_opt(s)<0){
+
+	if (tcp_init_sock_opt(s, prof, send_sock->flags)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
+
 	my_name_len = sockaddru_len(send_sock->su);
 	memcpy( &my_name, &send_sock->su, my_name_len);
 	su_setport( &my_name, 0);
@@ -658,11 +662,12 @@ static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
 		goto error;
 	}
 
-	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
+	if (tcp_connect_blocking_timeout(s, &server->s, sockaddru_len(*server),
+	                      prof->connect_timeout)<0){
 		LM_ERR("tcp_blocking_connect failed\n");
 		goto error;
 	}
-	con=tcp_conn_new(s, server, send_sock, S_CONN_OK);
+	con=tcp_conn_create(s, server, send_sock, prof, S_CONN_OK, 0);
 	if (con==NULL){
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
@@ -678,12 +683,12 @@ error:
 }
 
 
-static struct tcp_connection* ws_connect(struct socket_info* send_sock,
-		union sockaddr_union* to, int *fd)
+static struct tcp_connection* ws_connect(const struct socket_info* send_sock,
+		const union sockaddr_union* to, struct tcp_conn_profile *prof, int *fd)
 {
 	struct tcp_connection *c;
 
-	if ((c=ws_sync_connect(send_sock, to))==0) {
+	if ((c=ws_sync_connect(send_sock, to, prof))==0) {
 		LM_ERR("connect failed\n");
 		return NULL;
 	}

@@ -36,71 +36,73 @@
 #include "cachedb_local_replication.h"
 #include "hash.h"
 
-void lcache_htable_remove_safe(str attr, lcache_entry_t** it);
+void lcache_htable_remove_safe(osips_free_f free_f, str attr, lcache_entry_t** it);
 
-int lcache_htable_init(lcache_t** cache_htable_p, int size)
+int lcache_htable_init(struct lcache_col *col)
 {
 	int i = 0, j;
-	lcache_t* cache_htable;
 
-	if (cache_htable_p == NULL) {
-		LM_ERR("<null> htable pointer!\n");
+	col->col_htable = func_malloc(col->malloc, sizeof *col->col_htable);
+	if (!col->col_htable) {
+		LM_ERR("no more shm memory\n");
 		return -1;
 	}
+	memset(col->col_htable, 0, sizeof *col->col_htable);
 
-	cache_htable = (lcache_t*)shm_malloc(size * sizeof(lcache_t));
-	if(cache_htable == NULL)
+	col->col_htable->size = col->size;
+
+	col->col_htable->htable = func_malloc(col->malloc, col->col_htable->size *
+		sizeof(lcache_t));
+	if(col->col_htable->htable == NULL)
 	{
 		LM_ERR("no more shared memory\n");
+		func_free(col->free, col->col_htable);
 		return -1;
 	}
-	memset(cache_htable, 0, size * sizeof(lcache_t));
+	memset(col->col_htable->htable, 0, col->col_htable->size * sizeof(lcache_t));
 
-	for(i= 0; i< size; i++)
+	for(i= 0; i< col->col_htable->size; i++)
 	{
-		if(lock_init(&cache_htable[i].lock)== 0)
+		if(lock_init(&col->col_htable->htable[i].lock)== 0)
 		{
 			LM_ERR("failed to initialize lock [%d]\n", i);
 			goto error;
 		}
 	}
 
-	*cache_htable_p = cache_htable;
-
 	return 0;
 
 error:
 	for(j = 0; j< i; j++)
 	{
-		lock_destroy(&cache_htable[j].lock);
+		lock_destroy(&col->col_htable->htable[j].lock);
 	}
-	shm_free(cache_htable);
-	cache_htable = NULL;
+	func_free(col->free, col->col_htable->htable);
+	func_free(col->free, col->col_htable);
 	return -1;
 }
 
-void lcache_htable_destroy(lcache_t** cache_htable_p, int size)
+void lcache_htable_destroy(lcache_htable_t *htable, osips_free_f free_f)
 {
 	int i;
 	lcache_entry_t* me1, *me2;
-	lcache_t* cache_htable = *cache_htable_p;
 
-	if(cache_htable == NULL)
+	if(!htable || !htable->htable)
 		return;
 
-	for(i = 0; i< size; i++)
+	for(i = 0; i< htable->size; i++)
 	{
-		lock_destroy(&cache_htable[i].lock);
-		me1 = cache_htable[i].entries;
+		lock_destroy(&htable->htable[i].lock);
+		me1 = htable->htable[i].entries;
 		while(me1)
 		{
 			me2 = me1->next;
-			shm_free(me1);
+			func_free(free_f, me1);
 			me1 = me2;
 		}
 	}
-	shm_free(cache_htable);
-	*cache_htable_p = NULL;
+	func_free(free_f, htable->htable);
+	func_free(free_f, htable);
 }
 
 int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires)
@@ -126,11 +128,11 @@ int _lcache_htable_insert(lcache_col_t *cache_col, str* attr, str* value,
 	struct timeval start;
 	lcache_t* cache_htable;
 
-	cache_htable = cache_col->col_htable;
+	cache_htable = cache_col->col_htable->htable;
 
 	size= sizeof(lcache_entry_t) + attr->len + value->len;
 
-	me = (lcache_entry_t*)shm_malloc(size);
+	me = (lcache_entry_t*)func_malloc(cache_col->malloc, size);
 	if(me == NULL)
 	{
 		LM_ERR("no more shared memory\n");
@@ -147,16 +149,21 @@ int _lcache_htable_insert(lcache_col_t *cache_col, str* attr, str* value,
 	me->value.s = (char*)me + (sizeof(lcache_entry_t)) + attr->len;
 	memcpy(me->value.s, value->s, value->len);
 	me->value.len = value->len;
-	if( expires != 0)
+	if( expires != 0) {
 		me->expires = get_ticks() + expires;
+		me->ttl = expires;
+	}
 
-	hash_code= core_hash( attr, 0, cache_col->size);
+	if (isrepl)
+		me->synced = 1;
+
+	hash_code= core_hash( attr, NULL, cache_col->col_htable->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
 
 	/* if a previous record for the same attr delete it */
-	lcache_htable_remove_safe( *attr, &it);
+	lcache_htable_remove_safe(cache_col->free, *attr, &it);
 
 	me->next = it;
 	cache_htable[hash_code].entries = me;
@@ -168,13 +175,13 @@ int _lcache_htable_insert(lcache_col_t *cache_col, str* attr, str* value,
 		cdb_slow_queries, cdb_total_queries);
 
 	/* replicate */
-	if (cluster_id && isrepl != 1)
+	if (cluster_id && isrepl != 1 && cache_col->replicated)
 		replicate_cache_insert(&cache_col->col_name, attr, value, expires);
 
 	return 1;
 }
 
-void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
+void lcache_htable_remove_safe(osips_free_f free_f, str attr, lcache_entry_t** it_p)
 {
 	lcache_entry_t* me = NULL, *it= *it_p;
 
@@ -189,7 +196,7 @@ void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
 			else
 				*it_p = it->next;
 
-			shm_free(it);
+			func_free(free_f, it);
 
 			return;
 		}
@@ -219,15 +226,15 @@ int _lcache_htable_remove(lcache_col_t *cache_col, str* attr, int isrepl)
 	struct timeval start;
 	lcache_t* cache_htable;
 
-	cache_htable = cache_col->col_htable;
+	cache_htable = cache_col->col_htable->htable;
 
 
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_col->size);
+	hash_code= core_hash( attr, NULL, cache_col->col_htable->size);
 	lock_get(&cache_htable[hash_code].lock);
 
-	lcache_htable_remove_safe( *attr, &cache_htable[hash_code].entries);
+	lcache_htable_remove_safe(cache_col->free, *attr, &cache_htable[hash_code].entries);
 
 	lock_release(&cache_htable[hash_code].lock);
 
@@ -235,7 +242,7 @@ int _lcache_htable_remove(lcache_col_t *cache_col, str* attr, int isrepl)
 		"cachedb_local remove",attr->s,attr->len,0,
 		cdb_slow_queries, cdb_total_queries);
 
-	if (cluster_id && isrepl != 1)
+	if (cluster_id && isrepl != 1 && cache_col->replicated)
 		replicate_cache_remove(&cache_col->col_name, attr);
 
 	return 0;
@@ -250,6 +257,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 	int new_len;
 	str ins_val;
 	struct timeval start;
+	int ttl;
 
 	lcache_t* cache_htable;
 	lcache_col_t* cache_col;
@@ -261,11 +269,11 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 		return -1;
 	}
 
-	cache_htable = cache_col->col_htable;
+	cache_htable = cache_col->col_htable->htable;
 
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code = core_hash(attr,0,cache_col->size);
+	hash_code = core_hash(attr, NULL,cache_col->col_htable->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -279,7 +287,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 				else
 					cache_htable[hash_code].entries = it->next;
 
-				shm_free(it);
+				func_free(cache_col->free, it);
 				lock_release(&cache_htable[hash_code].lock);
 
 				ins_val.s = sint2str(val,&ins_val.len);
@@ -312,8 +320,10 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 
 			old_value+=val;
 			expires = it->expires;
+			ttl = it->ttl;
 			new_value = sint2str(old_value,&new_len);
-			it = shm_realloc(it,sizeof(lcache_entry_t) + attr->len +new_len);
+			it = func_realloc(cache_col->realloc,
+				it, sizeof(lcache_entry_t) + attr->len +new_len);
 			if (it == NULL) {
 				LM_ERR("failed to realloc struct\n");
 				lock_release(&cache_htable[hash_code].lock);
@@ -331,6 +341,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 			it->attr.s = (char*)(it + 1);
 			it->value.s =(char *)(it + 1) + attr->len;
 			it->expires = expires;
+			it->ttl = ttl;
 
 			memcpy(it->value.s,new_value,new_len);
 			it->value.len = new_len;
@@ -396,11 +407,11 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* res)
 		return -1;
 	}
 
-	cache_htable = cache_col->col_htable;
+	cache_htable = cache_col->col_htable->htable;
 
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_col->size);
+	hash_code= core_hash( attr, NULL, cache_col->col_htable->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -418,7 +429,7 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* res)
 				else
 					cache_htable[hash_code].entries = it->next;
 
-				shm_free(it);
+				func_free(cache_col->free, it);
 
 				lock_release(&cache_htable[hash_code].lock);
 				_stop_expire_timer(start,local_exec_threshold,
@@ -474,11 +485,11 @@ int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
 		return -1;
 	}
 
-	cache_htable = cache_col->col_htable;
+	cache_htable = cache_col->col_htable->htable;
 
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_col->size);
+	hash_code= core_hash( attr, NULL, cache_col->col_htable->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -496,7 +507,7 @@ int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
 				else
 					cache_htable[hash_code].entries = it->next;
 
-				shm_free(it);
+				func_free(cache_col->free, it);
 
 				lock_release(&cache_htable[hash_code].lock);
 				_stop_expire_timer(start,local_exec_threshold,

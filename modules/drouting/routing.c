@@ -40,10 +40,11 @@
 
 
 #define is_valid_gw_char(_c) \
-	(isalpha(_c) || isdigit(_c) || (_c)=='_' || (_c)=='-' || (_c)=='.')
+	(_isalnum(_c) || q_memchr(extra_id_chars.s, _c, extra_id_chars.len))
 
 
 extern int dr_force_dns;
+extern str extra_id_chars;
 
 rt_data_t*
 build_rt_data(struct head_db *part)
@@ -229,10 +230,46 @@ error:
 	return -1;
 }
 
+void hash_dst(pgw_t *pgw,MD5_CTX *hash_ctx) 
+{
+	if (hash_ctx == NULL)
+		return;
+
+	MD5Update(hash_ctx, pgw->id.s, pgw->id.len);
+	MD5Update(hash_ctx, (char *)&pgw->type, sizeof(pgw->type));
+	MD5Update(hash_ctx, pgw->ip_str.s, pgw->ip_str.len);
+	if (pgw->pri.s && pgw->pri.len)
+		MD5Update(hash_ctx, pgw->pri.s, pgw->pri.len);
+	MD5Update(hash_ctx, (char *)&pgw->strip, sizeof(pgw->strip));
+	if (pgw->attrs.s && pgw->attrs.len)
+		MD5Update(hash_ctx, pgw->attrs.s, pgw->attrs.len);
+}
+
+void hash_carrier(pcr_t *pcr,MD5_CTX *hash_ctx) 
+{
+	int i;
+
+	if (hash_ctx == NULL)
+		return;
+
+	MD5Update(hash_ctx, pcr->id.s, pcr->id.len);
+	MD5Update(hash_ctx, (char *)pcr->sort_alg, sizeof(pcr->sort_alg));
+	for (i=0;i<pcr->pgwa_len;i++) {
+		if (pcr->pgwl[i].is_carrier == 1)
+			hash_carrier(pcr->pgwl[i].dst.carrier,hash_ctx);
+		else
+			hash_dst(pcr->pgwl[i].dst.gw,hash_ctx);
+
+		MD5Update(hash_ctx, (char *)&pcr->pgwl[i].weight, sizeof(pcr->pgwl[i].weight));
+	}
+
+	if (pcr->attrs.s && pcr->attrs.len)
+		MD5Update(hash_ctx, pcr->attrs.s, pcr->attrs.len);
+}
 
 int add_carrier(char *id, int flags, char *sort_alg, char *gwlist, char *attrs,
 										int state, rt_data_t *rd,
-										osips_malloc_f mf, osips_free_f ff)
+										osips_malloc_f mf, osips_free_f ff, MD5_CTX *hash_ctx)
 {
 	pcr_t *cr;
 	unsigned int i;
@@ -292,6 +329,7 @@ int add_carrier(char *id, int flags, char *sort_alg, char *gwlist, char *attrs,
 	key.len = strlen(id);
 	map_put(rd->carriers_tree, key, cr);
 
+	hash_carrier(cr,hash_ctx);
 
 	return 0;
 error:
@@ -310,7 +348,7 @@ build_rt_info(
 	int priority,
 	tmrec_expr *trec,
 	/* script routing table index */
-	char *route_idx,
+	char *route_name,
 	/* list of destinations indexes */
 	char* dstlst,
 	char* sort_alg,
@@ -331,7 +369,7 @@ build_rt_info(
 	sort_cb_type alg;
 
 	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t) +
-		(attrs?strlen(attrs):0) + (route_idx?strlen(route_idx)+1:0) );
+		(attrs?strlen(attrs):0) );
 	if (rt==NULL) {
 		LM_ERR("no more mem(1)\n");
 		goto err_exit;
@@ -342,7 +380,6 @@ build_rt_info(
 	rt->priority = priority;
 	rt->time_rec = trec;
 
-	rt->route_idx = route_idx;
 	alg = dr_get_sort_alg(sort_alg[0]);
 	rt->sort_alg = alg;
 
@@ -351,9 +388,16 @@ build_rt_info(
 		rt->attrs.len = strlen(attrs);
 		memcpy(rt->attrs.s,attrs,rt->attrs.len);
 	}
-	if (route_idx && strlen(route_idx)) {
-		rt->route_idx = ((char*)(rt+1)) + rt->attrs.len;
-		strcpy(rt->route_idx, route_idx);
+	if (route_name && strlen(route_name)) {
+		rt->route_ref = ref_script_route_by_name( route_name, sroutes->request,
+			RT_NO, REQUEST_ROUTE, 1/*in_shm*/);
+		if (rt->route_ref==NULL)
+			LM_ERR("failed to get ref to route <%s>, ignoring it\n",
+				route_name);
+		else if (rt->route_ref->idx==-1) {
+			LM_WARN("route <%s> not found for now, not running it\n",
+				route_name);
+		}
 	}
 
 	if ( dstlst && dstlst[0]!=0 ) {
@@ -405,6 +449,8 @@ err_exit:
 		if (NULL!=rt->pgwl)
 			func_free(ff, rt->pgwl);
 		func_free(ff, rt);
+		if (rt->route_ref)
+			shm_free( rt->route_ref );
 	}
 	return NULL;
 }
@@ -513,11 +559,12 @@ add_dst(
 	/* probe_mode */
 	int probing,
 	/* socket */
-	struct socket_info *sock,
+	const struct socket_info *sock,
 	/* state */
 	int state,
 	osips_malloc_f mf,
-	osips_free_f ff
+	osips_free_f ff,
+	MD5_CTX* hash_ctx
 	)
 {
 	static unsigned id_counter = 0;
@@ -689,6 +736,8 @@ done:
 		LM_ERR("Duplicate gateway!\n");
 		return -1;
 	}
+
+	hash_dst(pgw,hash_ctx);
 
 	return 0;
 

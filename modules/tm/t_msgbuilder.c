@@ -180,9 +180,9 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	*len+=from.len+Trans->callid.len+to.len+cseq_n.len+1+method->len+CRLF_LEN;
 
 	/* copy'n'paste Route headers that were sent out */
-	if (!is_local(Trans) &&
-	( (req && req->route) || /* at least one route was received*/
-	(Trans->uac[branch].path_vec.len!=0)) ) /* path was forced */
+	if (is_local(Trans) || (!is_local(Trans) &&
+	/* if there was a ROUTE received or added */
+	( req && (req->route || req->msg_flags&FL_HAS_ROUTE_LUMP))) )
 	{
 		buf_hdrs = extract_parsed_hdrs(Trans->uac[branch].request.buffer.s,
 			Trans->uac[branch].request.buffer.len );
@@ -454,7 +454,7 @@ char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
 	struct hostport hp;
 	struct rte* list;
 	str contact, ruri, *cont;
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 	str next_hop;
 
 
@@ -608,7 +608,7 @@ static inline int print_cseq_num(str* _s, dlg_t* _d)
 /*
  * Create Via header
  */
-static inline int assemble_via(str* dest, struct cell* t, struct socket_info* sock, int branch, str *extra)
+static inline int assemble_via(str* dest, struct cell* t, const struct socket_info* sock, int branch, str *extra)
 {
 	static char branch_buf[MAX_BRANCH_PARAM_LEN];
 	char* via;
@@ -666,7 +666,7 @@ static inline char* print_request_uri(char* w, str* method, dlg_t* dialog, struc
 static inline char* print_to(char* w, dlg_t* dialog, struct cell* t)
 {
 	t->to.s = w;
-	t->to.len = TO_LEN + dialog->rem_uri.len + CRLF_LEN;
+	t->to.len = TO_LEN + dialog->rem_uri.len + 2 + CRLF_LEN;
 
 	append_string(w, TO, TO_LEN);
 
@@ -676,18 +676,9 @@ static inline char* print_to(char* w, dlg_t* dialog, struct cell* t)
 		*(w++) = ' ';
 	}
 
-	if(dialog->rem_dname.len || dialog->id.rem_tag.len) {
-		t->to.len +=1;
-		*(w++) = '<';
-	}
-
+	*(w++) = '<';
 	append_string(w, dialog->rem_uri.s, dialog->rem_uri.len);
-
-	if(dialog->rem_dname.len || dialog->id.rem_tag.len) {
-		t->to.len +=1;
-		*(w++) = '>';
-	}
-
+	*(w++) = '>';
 
 	if (dialog->id.rem_tag.len) {
 		t->to.len += TOTAG_LEN + dialog->id.rem_tag.len ;
@@ -706,7 +697,7 @@ static inline char* print_to(char* w, dlg_t* dialog, struct cell* t)
 static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 {
 	t->from.s = w;
-	t->from.len = FROM_LEN + dialog->loc_uri.len + CRLF_LEN;
+	t->from.len = FROM_LEN + dialog->loc_uri.len + 2 + CRLF_LEN;
 
 	append_string(w, FROM, FROM_LEN);
 
@@ -716,17 +707,9 @@ static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 		*(w++) = ' ';
 	}
 
-	if(dialog->loc_dname.len || dialog->id.loc_tag.len) {
-		t->from.len +=1;
-		*(w++) = '<';
-	}
-
+	*(w++) = '<';
 	append_string(w, dialog->loc_uri.s, dialog->loc_uri.len);
-
-	if(dialog->loc_dname.len || dialog->id.loc_tag.len) {
-		t->from.len += 1;
-		*(w++) = '>';
-	}
+	*(w++) = '>';
 
 	if (dialog->id.loc_tag.len) {
 		t->from.len += FROMTAG_LEN + dialog->id.loc_tag.len;
@@ -819,15 +802,13 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 		+ (dialog->rem_dname.len ? dialog->rem_dname.len+1 : 0)
 		+ dialog->rem_uri.len
 		+ (dialog->id.rem_tag.len ? TOTAG_LEN + dialog->id.rem_tag.len : 0)
-		+ (dialog->rem_dname.len || dialog->id.rem_tag.len ? 2 : 0)
-		+ CRLF_LEN;
+		+ 2 /* <> for URI */ + CRLF_LEN;
 	/* From */
 	*len += FROM_LEN
 		+ (dialog->loc_dname.len ? dialog->loc_dname.len+1 : 0)
 		+ dialog->loc_uri.len
 		+ (dialog->id.loc_tag.len ? FROMTAG_LEN + dialog->id.loc_tag.len : 0)
-		+ (dialog->loc_dname.len || dialog->id.loc_tag.len ? 2 : 0)
-		+ CRLF_LEN;
+		+ 2 /* <> for URI */ + CRLF_LEN;
 	/* Call-ID */
 	*len += CALLID_LEN + dialog->id.call_id.len + CRLF_LEN;
 	/* CSeq */

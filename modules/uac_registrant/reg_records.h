@@ -50,6 +50,11 @@
 #define AUTHENTICATING_UNREGISTER_STATE	9
 
 #define FORCE_SINGLE_REGISTRATION 0x1
+#define REG_ENABLED 0x2
+
+#define REG_DB_LOAD        0
+#define REG_DB_RELOAD      1
+#define REG_DB_LOAD_RECORD 2
 
 typedef struct uac_reg_map {
 	unsigned int hash_code;
@@ -62,7 +67,7 @@ typedef struct uac_reg_map {
 	str auth_user;			/* authentication user */
 	str auth_password;		/* authentication password */
 	unsigned int expires;		/* expiration interval */
-	struct socket_info *send_sock;	/* socket */
+	const struct socket_info *send_sock;	/* socket */
 	str cluster_shtag;	/* clustering sharing tag */
 	int cluster_id;
 	unsigned int flags;	/* record flags */
@@ -97,6 +102,13 @@ typedef struct reg_entry {
 
 typedef reg_entry_t *reg_table_t;
 
+typedef struct record_coords {
+	str aor;
+	str contact;
+	str registrar;
+	void *extra;
+} record_coords_t;
+
 extern reg_table_t reg_htable;
 extern unsigned int reg_hsize;
 
@@ -106,7 +118,8 @@ int init_reg_htable(void);
 void destroy_reg_htable(void);
 
 void new_call_id_ftag_4_record(reg_record_t *rec, str *now);
-int add_record(uac_reg_map_t *uac, str *now, unsigned int plist);
+int add_record(uac_reg_map_t *uac, str *now, unsigned int mode,
+	record_coords_t *coords);
 void reg_print_record(reg_record_t *rec);
 
 #endif

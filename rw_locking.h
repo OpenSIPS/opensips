@@ -114,6 +114,10 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 		lock_release((_lock)->lock); \
 	} while (0)
 
+/* processes using the "switchable R/W" macros will run serially with each
+ * other, however they will still run in parallel with processes using the
+ * lock_start_read() macro above!
+ */
 #define lock_start_sw_read(_lock) \
 	do { \
 		__label__ again; \
@@ -127,6 +131,34 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 			(_lock)->r_count++; \
 			(_lock)->sw_flag = 1; \
 			lock_release((_lock)->lock); \
+	} while (0)
+
+/* to be defined in each function making use of re-entrance */
+#define DEFS_RW_LOCKING_R \
+int __r_read_changed = 0;
+
+/**
+ * Re-entrant versions of the reader start/stop functions.
+ * @_r_read_acq: a process-local global variable to test the re-entrance
+ * Note: these functions *cannot* be called in a nested fashion
+ * within the same function!
+ */
+#define lock_start_read_r(_lock, _r_read_acq) \
+	do { \
+		if (!(_r_read_acq)) { \
+			(_r_read_acq) = 1; \
+			__r_read_changed = 1; \
+			lock_start_read(_lock); \
+		} \
+	} while (0)
+
+#define lock_stop_read_r(_lock, _r_read_acq) \
+	do { \
+		if (__r_read_changed) { \
+			lock_stop_read(_lock); \
+			__r_read_changed = 0; \
+			(_r_read_acq) = 0; \
+		} \
 	} while (0)
 
 #define lock_stop_sw_read(_lock) \

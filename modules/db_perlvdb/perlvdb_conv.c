@@ -57,11 +57,10 @@ AV *conds2perlarray(db_key_t* keys, db_op_t* ops, db_val_t* vals, int n) {
 	array = newAV();
 	for (i = 0; i < n; i++) {
 		if (ops) {
-			if (ops + i)
-				if (*(ops + i)){
-					element = cond2perlcond(*(keys + i),
-							*(ops + i), vals + i);
-				}
+			if (ops[i]) {
+				element = cond2perlcond(*(keys + i),
+				    *(ops + i), vals + i);
+			}
 		} else {
 /* OP_EQ is defined in OpenSIPS _and_ perl. Includes collide :( */
 #ifdef OP_EQ
@@ -92,7 +91,7 @@ AV *keys2perlarray(db_key_t* keys, int n) {
 	return array;
 }
 
-inline SV *valdata(db_val_t* val) {
+static inline SV *valdata(db_val_t* val) {
 	SV *data = &PL_sv_undef;
 	const char* stringval;
 

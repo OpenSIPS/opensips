@@ -42,9 +42,7 @@
 /**
  * Postgres default timeout
  */
-#define DEFAULT_POSTGRES_TIMEOUT 5
 extern int pg_timeout;
-
 
 /**
  * Initialize database connection
@@ -60,7 +58,6 @@ void db_postgres_close(db_con_t* _h);
  * Return result of previous query
  */
 int db_postgres_store_result(const db_con_t* _h, db_res_t** _r);
-
 
 /**
  * Free all memory allocated by get_result

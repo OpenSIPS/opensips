@@ -77,11 +77,11 @@ static void mod_destroy(void);
 /* PV functions */
 static int pv_set_xml(struct sip_msg*,  pv_param_t*, int, pv_value_t*);
 static int pv_get_xml(struct sip_msg*,  pv_param_t*, pv_value_t*);
-static int pv_parse_xml_name(pv_spec_p , str *);
+static int pv_parse_xml_name(pv_spec_p , const str *);
 
 
-static pv_export_t mod_items[] = {
-	{ {"xml", sizeof("xml")-1}, PVT_XML, pv_get_xml, pv_set_xml,
+static const pv_export_t mod_items[] = {
+	{ str_const_init("xml"), PVT_XML, pv_get_xml, pv_set_xml,
 		pv_parse_xml_name, 0, 0, 0},
 	  { {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -173,7 +173,7 @@ enum {
 	ST_ACCESS = 3,
 };
 
-int pv_parse_xml_name(pv_spec_p sp, str *in)
+int pv_parse_xml_name(pv_spec_p sp, const str *in)
 {
 	xml_path_t *path = NULL;
 	char *cur, *start;
@@ -258,23 +258,42 @@ int pv_parse_xml_name(pv_spec_p sp, str *in)
 			prev_state = ST_END_IDX;
 			break;
 		case '.':
-			if (prev_state != ST_START_NAME && prev_state != ST_END_IDX) {
-				LM_ERR("<.attr> or <.val> must follow a complete path\n");
-				return -1;
-			}
-
-			if (prev_state == ST_START_NAME) {
-				tag_str.len = cur - start;
-				if (tag_str.len == 0) {
-					LM_ERR("No element name\n");
+			if (!memcmp(cur+1, "val", 3)) {
+				if (prev_state != ST_START_NAME && prev_state != ST_END_IDX) {
+					LM_ERR("<.attr> or <.val> must follow a complete path\n");
 					return -1;
 				}
-				tag_str.s = start;
-			}
 
-			if (!memcmp(cur+1, "val", 3)) {
+				if (prev_state == ST_START_NAME) {
+					tag_str.len = cur - start;
+					if (tag_str.len == 0) {
+						LM_ERR("No element name\n");
+						return -1;
+					}
+					tag_str.s = start;
+				}
+
 				path->access_mode = ACCESS_EL_VAL;
+
+				/* it was the final element in the path */
+				cur = in->s + in->len;
+				prev_state = ST_ACCESS;
+				break;
 			} else if (!memcmp(cur+1, "attr", 4)) {
+				if (prev_state != ST_START_NAME && prev_state != ST_END_IDX) {
+					LM_ERR("<.attr> or <.val> must follow a complete path\n");
+					return -1;
+				}
+
+				if (prev_state == ST_START_NAME) {
+					tag_str.len = cur - start;
+					if (tag_str.len == 0) {
+						LM_ERR("No element name\n");
+						return -1;
+					}
+					tag_str.s = start;
+				}
+
 				path->access_mode = ACCESS_EL_ATTR;
 
 				attr_str.len = in->len - (cur - in->s + 6); /* 6 = len(".attr/") */
@@ -291,14 +310,12 @@ int pv_parse_xml_name(pv_spec_p sp, str *in)
 					path->attr_is_var = 1;
 				} else
 					path->attr = attr_str;
-			} else {
-				LM_ERR("Invalid access type, must be: <.attr> or <.val>\n");
-				return -1;
-			}
 
-			/* it was the final element in the path */
-			cur = in->s + in->len;
-			prev_state = ST_ACCESS;
+				/* it was the final element in the path */
+				cur = in->s + in->len;
+				prev_state = ST_ACCESS;
+				break;
+			}
 			break;
 		}
 	}
@@ -445,7 +462,9 @@ static int get_node_content(xmlNode *node, xmlBufferPtr xml_buf)
 	xmlNode *n_it;
 
 	for (n_it = node->children; n_it; n_it = n_it->next)
-		if (n_it->type == XML_TEXT_NODE && xmlBufferCat(xml_buf, n_it->content) < 0) {
+		if ((n_it->type == XML_TEXT_NODE ||
+			n_it->type == XML_CDATA_SECTION_NODE) &&
+			xmlBufferCat(xml_buf, n_it->content) < 0) {
 			LM_ERR("Unable to append string to xml buffer\n");
 			return -1;
 		}
@@ -669,25 +688,111 @@ static int insert_new_node(xmlDoc *doc, xmlNode *parent, xmlDoc *new_doc, xml_pa
 	return 0;
 }
 
-static int set_node_content(xmlNode *node, str new_content)
+#define TMP_TAG_S "<x>"
+#define TMP_TAG_END_S "</x>"
+#define TMP_TAG_LEN (sizeof(TMP_TAG_S) - 1)
+#define TMP_TAG_END_LEN (sizeof(TMP_TAG_END_S) - 1)
+
+static int set_node_content_w_cdata(xmlNode *node, str new_content,
+	xmlDoc *xml_doc)
+{
+	xmlNode *n, *tmp = NULL, *tmp_root;
+	xmlDoc *tmp_doc = NULL;
+	str tmp_doc_str = STR_NULL;
+
+	/* remove all existing CDATA and text nodes */
+	for (n = node->children; n; n = tmp) {
+		tmp = n->next;
+
+		if (n->type == XML_TEXT_NODE || n->type == XML_CDATA_SECTION_NODE) {
+			xmlUnlinkNode(n);
+			xmlFreeNode(n);
+		}
+	}
+
+	/* build a temporary XML doc just to help us parse the cdata sections and
+	 * potentially extra text; then copy the corresponding nodes to the
+	 * original tree */
+	tmp_doc_str.len = new_content.len + TMP_TAG_LEN + TMP_TAG_END_LEN;
+	tmp_doc_str.s = pkg_malloc(tmp_doc_str.len);
+	if (!tmp_doc_str.s) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+
+	memcpy(tmp_doc_str.s, TMP_TAG_S, TMP_TAG_LEN);
+	memcpy(tmp_doc_str.s+TMP_TAG_LEN, new_content.s, new_content.len);
+	memcpy(tmp_doc_str.s+TMP_TAG_LEN+new_content.len,
+		TMP_TAG_END_S, TMP_TAG_END_LEN);
+
+	tmp_doc = xmlParseMemory(tmp_doc_str.s, tmp_doc_str.len);
+	if (!tmp_doc) {
+		LM_ERR("Failed to parse xml block\n");
+		goto error;
+	}
+
+	tmp_root = xmlDocGetRootElement(tmp_doc);
+	for (n = tmp_root->children; n; n = n->next) {
+		if (n->type == XML_TEXT_NODE || n->type == XML_CDATA_SECTION_NODE) {
+			tmp = xmlDocCopyNode(n, xml_doc, 0);
+			if (!tmp) {
+				LM_ERR("Failed to copy node\n");
+				goto error;
+			}
+
+			if (!xmlAddChild(node, tmp)) {
+				LM_ERR("Unable to link copied node\n");
+				goto error;
+			}
+		}
+	}
+
+	xmlFreeDoc(tmp_doc);
+	pkg_free(tmp_doc_str.s);
+
+	return 0;
+error:
+	if (tmp_doc_str.s)
+		pkg_free(tmp_doc_str.s);
+	if (tmp_doc)
+		xmlFreeDoc(tmp_doc);
+	return -1;
+}
+
+#define CDATA_PREFIX_S "<![CDATA["
+#define CDATA_SUFFIX_S "]]>"
+#define CDATA_PREFIX_LEN (sizeof(CDATA_PREFIX_S) - 1)
+#define CDATA_SUFFIX_LEN (sizeof(CDATA_SUFFIX_S) - 1)
+
+static int set_node_content(xmlNode *node, str new_content, xmlDoc *xml_doc)
 {
 	xmlNode *n_it, *tmp = NULL, *new_txt;
 	int set = 0;
 
-	/* remove all text nodes */
+	if ((new_content.len > CDATA_PREFIX_LEN + CDATA_SUFFIX_LEN) &&
+		str_strstr(&new_content, &str_init(CDATA_PREFIX_S)))
+		return set_node_content_w_cdata(node, new_content, xml_doc);
+
+	/* remove all text and CDATA nodes */
 	if (!new_content.s)
 		set = 1;
 
 	for (n_it = node->children; n_it; n_it = tmp) {
 		tmp = n_it->next;
 
-		if (n_it->type == XML_TEXT_NODE && !xmlIsBlankNode(n_it)) {
+		if (n_it->type == XML_TEXT_NODE || n_it->type == XML_CDATA_SECTION_NODE) {
 			if (!set) {
-				/* replace existing text node content with given string */
-				xmlNodeSetContentLen(n_it, BAD_CAST new_content.s, new_content.len);
-				set = 1;
+				if (n_it->type == XML_CDATA_SECTION_NODE) {
+					xmlUnlinkNode(n_it);
+					xmlFreeNode(n_it);
+				} else {
+					/* replace existing node content with given string */
+					xmlNodeSetContentLen(n_it,
+						BAD_CAST new_content.s, new_content.len);
+					set = 1;
+				}
 			} else {
-				/* remove any other text node */
+				/* remove any other text or CDATA node */
 				xmlUnlinkNode(n_it);
 				xmlFreeNode(n_it);
 			}
@@ -776,7 +881,7 @@ int pv_set_xml(struct sip_msg* msg,  pv_param_t* pvp, int flag, pv_value_t* val)
 				return -1;
 			}
 
-			if (set_node_content(node, empty_str) < 0) {
+			if (set_node_content(node, empty_str, obj->xml_doc) < 0) {
 				LM_ERR("Unable to clear text content for element <%s>\n", node->name);
 				return -1;
 			}
@@ -878,7 +983,7 @@ int pv_set_xml(struct sip_msg* msg,  pv_param_t* pvp, int flag, pv_value_t* val)
 				return -1;
 			}
 
-			if (set_node_content(node, val->rs) < 0) {
+			if (set_node_content(node, val->rs, obj->xml_doc) < 0) {
 				LM_ERR("Unable to set content for element <%s>\n", node->name);
 				return -1;
 			}

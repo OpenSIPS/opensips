@@ -115,6 +115,8 @@ csv_record *__parse_csv_record(const str *_in, enum csv_flags parse_flags,
 	return record;
 
 rfc_4180_parsing:
+	parse_flags |= CSV_DUP_FIELDS;
+
 	if (in.len >= 2 && in.s[in.len - 2] == '\r' && in.s[in.len - 1] == '\n')
 		in.len -= 2;
 
@@ -179,9 +181,12 @@ matched_quote:
 			*c = '\0';
 			field.len = c - field.s;
 
-			if (!push_csv_field(&field, last, parse_flags & (~CSV_DUP_FIELDS)))
+			if (!push_csv_field(&field, last, parse_flags)) {
+				free_f(field.s);
 				goto oom;
+			}
 
+			free_f(field.s);
 			last = &(*last)->next;
 
 			if (ch == lim - 1)
@@ -237,4 +242,79 @@ void free_csv_record(csv_record *record)
 
 		free_f(prev);
 	}
+}
+
+static int check_quote_csv_record(str *val, int *escape)
+{
+	char *p;
+	int quote = 0;
+	*escape = 0;
+
+	for (p = val->s; p < val->s + val->len; p++) {
+		switch (*p) {
+			case '"':
+				(*escape)++;
+				/* fallthrough */
+			case ',':
+			case '\n':
+				quote = 1;
+				break;
+		}
+	}
+	return quote;
+}
+
+str *__print_csv_record(csv_record *record, enum csv_flags print_flags,
+						unsigned char sep)
+{
+	static str ret;
+	str_list *it;
+	int len = -1, esc;
+	char *p, *c;
+
+	if (print_flags & CSV_SHM)
+		malloc_f = osips_shm_malloc;
+	else
+		malloc_f = osips_pkg_malloc;
+
+	for (it = record; it; it = it->next) {
+		len += 1 /* sep */ + it->s.len;
+		/* check to see if ne need to encode */
+		if (check_quote_csv_record(&it->s, &esc))
+			len += 2 + esc;
+	}
+
+	ret.s = malloc_f(len);
+	if (!ret.s)
+		return NULL;
+	p = ret.s;
+	for (it = record; it; it = it->next) {
+		if (it != record)
+			*p++ = sep;
+
+		if (check_quote_csv_record(&it->s, &esc)) {
+			if (!esc) {
+				/* simply add the quotes */
+				*p++ = '"';
+				memcpy(p, it->s.s, it->s.len);
+				p+= it->s.len;
+				*p++ = '"';
+			} else {
+				for (c = it->s.s; c < it->s.s + it->s.len; c++) {
+					switch (*c) {
+						case '"':
+							*p++ = '"';
+							break;
+					}
+					*p++ = *c;
+				}
+			}
+		} else {
+			/* simply copy the content */
+			memcpy(p, it->s.s, it->s.len);
+			p += it->s.len;
+		}
+	}
+	ret.len = len;
+	return &ret;
 }

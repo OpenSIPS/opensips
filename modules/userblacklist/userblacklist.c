@@ -78,7 +78,7 @@ mi_response_t *mi_reload_blacklist(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"check_user_blacklist", (cmd_function)check_user_blacklist, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -91,7 +91,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "db_url",          STR_PARAM, &db_url.s },
 	{ "db_table",        STR_PARAM, &db_table.s },
 	{ "use_domain",      INT_PARAM, &use_domain },
@@ -100,7 +100,7 @@ static param_export_t params[] = {
 
 
 /* Exported MI functions */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "reload_blacklist", 0, 0, 0, {
 		{mi_reload_blacklist, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -108,7 +108,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

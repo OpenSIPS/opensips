@@ -41,12 +41,6 @@ int create_status_pipe(void);
 int wait_for_one_child(void);
 int wait_for_all_children(void);
 
-enum opensips_states {STATE_NONE, STATE_STARTING,
-	STATE_RUNNING, STATE_TERMINATING};
-
-void set_osips_state(enum opensips_states);
-enum opensips_states get_osips_state(void);
-
 #define report_failure_status() \
 	do { \
 		if (send_status_code(-1) < 0) \

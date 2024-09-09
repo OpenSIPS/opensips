@@ -43,4 +43,7 @@ extern int default_expires;
 extern db_con_t *pua_db;
 extern db_func_t pua_dbf;
 extern str db_table;
+
+int db_restore(ua_pres_t *pres);
+
 #endif /* PUA_PUBLISH_H */

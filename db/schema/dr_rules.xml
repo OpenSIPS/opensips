@@ -78,8 +78,9 @@
 		<name>gwlist</name>
 		<type>string</type>
 		<size>255</size>
-		<description>Reference to the GWs/destinations to be used when
-		rule matches.</description>
+		<null/>
+		<description>A comma-separated list of GW unique IDs (e.g. GW-5)
+			and/or hash-prefixed ("#") Carrier unique IDs (e.g. #CR-2).</description>
 	</column>
 
 	<column id="sorting_alg">

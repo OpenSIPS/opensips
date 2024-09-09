@@ -46,6 +46,7 @@ enum osips_context {
 	CONTEXT_GLOBAL,
 	CONTEXT_TRAN,
 	CONTEXT_DIALOG,
+	CONTEXT_B2B_LOGIC,
 
 	CONTEXT_COUNT,
 };
@@ -62,6 +63,8 @@ enum osips_context_val {
 #define context_size(enum_ctx) (context_sizes[enum_ctx])
 
 extern context_p current_processing_ctx;
+#define set_global_context(__ctx) current_processing_ctx = __ctx
+
 extern unsigned int context_sizes[];
 extern unsigned int type_sizes[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
 extern unsigned int type_offsets[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
@@ -83,12 +86,19 @@ context_p context_alloc(enum osips_context type);
 int ensure_global_context(void);
 
 
+/* pushes or pops a context level from internal stack
+ */
+int push_new_global_context(void);
+int pop_pushed_global_context(void);
+
+
 /* free and reset the global context */
 void clear_global_context(void);
 
 
 /*
  * destroys a context by calling each callback registered
+ * Note: @ctx will *not* be freed!
  */
 void context_destroy(enum osips_context type, context_p ctx);
 

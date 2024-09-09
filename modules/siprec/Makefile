@@ -7,6 +7,7 @@ include ../../Makefile.defs
 auto_gen=
 NAME=siprec.so
 
-LIBS+=-luuid
+DEFS += -I${LOCALBASE}/include
+LIBS += -L${LOCALBASE}/lib -luuid
 
 include ../../Makefile.modules

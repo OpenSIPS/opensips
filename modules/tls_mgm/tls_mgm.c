@@ -34,16 +34,6 @@
  *
  */
 
-#ifdef __OS_linux
-#define _GNU_SOURCE /* we need this for gettid() */
-#endif
-
-#include <openssl/ui.h>
-#include <openssl/ssl.h>
-#include <openssl/opensslv.h>
-#include <openssl/err.h>
-#include <openssl/rand.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -51,7 +41,6 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <unistd.h>
-#include <dirent.h>
 
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
@@ -69,23 +58,15 @@
 #include "../../db/db.h"
 #include "../../str_list.h"
 
+#include "../tls_openssl/openssl_api.h"
+#include "../tls_wolfssl/wolfssl_api.h"
+
 #include "../../net/proto_tcp/tcp_common_defs.h"
-#include "tls_conn_server.h"
 #include "tls_config.h"
 #include "tls_domain.h"
 #include "tls_params.h"
 #include "tls_select.h"
-#include "tls.h"
 #include "api.h"
-
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L && defined __OS_linux)
-#include <features.h>
-#if defined(__GLIBC_PREREQ)
-#if __GLIBC_PREREQ(2, 2)
-#define __OPENSSL_ON_EXIT
-#endif
-#endif
-#endif
 
 #define DB_CAP DB_CAP_QUERY | DB_CAP_UPDATE
 #define len(s)	s == NULL?0:strlen(s)
@@ -109,12 +90,16 @@
 		} \
 	}while(0)
 
+struct openssl_binds openssl_api;
+struct wolfssl_binds wolfssl_api;
+
+enum os_tls_library tls_library;
+
 static char *tls_domain_avp = NULL;
 static char *sip_domain_avp = NULL;
 
 static int  mod_init(void);
 static int  child_init(int rank);
-static int  mod_load(void);
 static void mod_destroy(void);
 static int load_tls_mgm(struct tls_mgm_binds *binds);
 static mi_response_t *tls_reload(const mi_params_t *params,
@@ -123,16 +108,13 @@ static mi_response_t *tls_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d);
 
-void tls_ctx_set_cert_store(void *ctx, void *src_ctx);
-int tls_ctx_set_cert_chain(void *ctx, void *src_ctx);
-int tls_ctx_set_pkey_file(void *ctx, char *pkey_file);
-
 /* DB handler */
 static db_con_t *db_hdl = 0;
 /* DB functions */
 static db_func_t dr_dbf;
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
+	{ "tls_library",	STR_PARAM,  &tls_library_param.s },
 	{ "client_tls_domain_avp",     STR_PARAM,         &tls_domain_avp        },
 	{ "client_sip_domain_avp",     STR_PARAM,         &sip_domain_avp        },
 	{ "server_domain", STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_add_srv_domain },
@@ -171,7 +153,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"is_peer_verified", (cmd_function)tls_is_peer_verified, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"load_tls_mgm", (cmd_function)load_tls_mgm,
@@ -182,7 +164,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported MI functions
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "tls_reload", "reloads stored data from the database", 0, 0, {
 		{tls_reload, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -197,171 +179,182 @@ static mi_export_t mi_cmds[] = {
 /*
  *  pseudo variables
  */
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	/* TLS session parameters */
-	{{"tls_version", sizeof("tls_version")-1},
+	{str_const_init("tls_version"),
 		850, tlsops_version, 0,
 		0, 0, 0, 0 },
-	{{"tls_description", sizeof("tls_description")-1},
+	{str_const_init("tls_description"),
 		850, tlsops_desc, 0,
 		0, 0, 0, 0 },
-	{{"tls_cipher_info", sizeof("tls_cipher_info")-1},
+	{str_const_init("tls_cipher_info"),
 		850, tlsops_cipher, 0,
 		0, 0, 0, 0 },
-	{{"tls_cipher_bits", sizeof("tls_cipher_bits")-1},
+	{str_const_init("tls_cipher_bits"),
 		850,  tlsops_bits, 0,
 		0, 0, 0, 0 },
 	/* general certificate parameters for peer and local */
-	{{"tls_peer_version", sizeof("tls_peer_version")-1},
+	{str_const_init("tls_peer_version"),
 		850, tlsops_cert_version, 0,
-		0, 0, pv_init_iname, CERT_PEER  },
-	{{"tls_my_version", sizeof("tls_my_version")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  },
+	{str_const_init("tls_my_version"),
 		850, tlsops_cert_version, 0,
-		0, 0, pv_init_iname, CERT_LOCAL },
-	{{"tls_peer_serial", sizeof("tls_peer_serial")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL },
+	{str_const_init("tls_peer_serial"),
 		850, tlsops_sn, 0,
-		0, 0, pv_init_iname, CERT_PEER  },
-	{{"tls_my_serial", sizeof("tls_my_serial")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  },
+	{str_const_init("tls_my_serial"),
 		850, tlsops_sn,0,
-		0, 0, pv_init_iname, CERT_LOCAL },
+		0, 0, pv_init_iname, VAR_CERT_LOCAL },
 	/* certificate parameters for peer and local, for subject and issuer*/
-	{{"tls_peer_subject", sizeof("tls_peer_subject")-1},
+	{str_const_init("tls_peer_subject"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT },
-	{{"tls_peer_issuer", sizeof("tls_peer_issuer")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_SUBJECT },
+	{str_const_init("tls_peer_issuer"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_ISSUER  },
-	{{"tls_my_subject", sizeof("tls_my_subject")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_ISSUER  },
+	{str_const_init("tls_my_subject"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT },
-	{{"tls_my_issuer", sizeof("tls_my_issuer")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_SUBJECT },
+	{str_const_init("tls_my_issuer"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  },
-	{{"tls_peer_subject_cn", sizeof("tls_peer_subject_cn")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_ISSUER  },
+	{str_const_init("tls_peer_subject_cn"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT | COMP_CN },
-	{{"tls_peer_issuer_cn", sizeof("tls_peer_issuer_cn")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_SUBJECT | VAR_COMP_CN },
+	{str_const_init("tls_peer_issuer_cn"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_ISSUER  | COMP_CN },
-	{{"tls_my_subject_cn", sizeof("tls_my_subject_cn")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_ISSUER  | VAR_COMP_CN },
+	{str_const_init("tls_my_subject_cn"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_CN },
-	{{"tls_my_issuer_cn", sizeof("tls_my_issuer_cn")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_SUBJECT | VAR_COMP_CN },
+	{str_const_init("tls_my_issuer_cn"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  | COMP_CN },
-	{{"tls_peer_subject_locality", sizeof("tls_peer_subject_locality")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_ISSUER  | VAR_COMP_CN },
+	{str_const_init("tls_peer_subject_locality"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT | COMP_L },
-	{{"tls_peer_issuer_locality", sizeof("tls_peer_issuer_locality")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_SUBJECT | VAR_COMP_L },
+	{str_const_init("tls_peer_issuer_locality"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_ISSUER  | COMP_L },
-	{{"tls_my_subject_locality", sizeof("tls_my_subject_locality")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_ISSUER  | VAR_COMP_L },
+	{str_const_init("tls_my_subject_locality"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_L },
-	{{"tls_my_issuer_locality", sizeof("tls_my_issuer_locality")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_SUBJECT | VAR_COMP_L },
+	{str_const_init("tls_my_issuer_locality"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  | COMP_L },
-	{{"tls_peer_subject_country", sizeof("tls_peer_subject_country")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_ISSUER  | VAR_COMP_L },
+	{str_const_init("tls_peer_subject_country"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT | COMP_C },
-	{{"tls_peer_issuer_country", sizeof("tls_peer_issuer_country")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_SUBJECT | VAR_COMP_C },
+	{str_const_init("tls_peer_issuer_country"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_ISSUER  | COMP_C },
-	{{"tls_my_subject_country", sizeof("tls_my_subject_country")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_ISSUER  | VAR_COMP_C },
+	{str_const_init("tls_my_subject_country"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_C },
-	{{"tls_my_issuer_country", sizeof("tls_my_issuer_country")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_SUBJECT | VAR_COMP_C },
+	{str_const_init("tls_my_issuer_country"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  | COMP_C },
-	{{"tls_peer_subject_state", sizeof("tls_peer_subject_state")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_ISSUER  | VAR_COMP_C },
+	{str_const_init("tls_peer_subject_state"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT | COMP_ST },
-	{{"tls_peer_issuer_state", sizeof("tls_peer_issuer_state")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_SUBJECT | VAR_COMP_ST },
+	{str_const_init("tls_peer_issuer_state"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_ISSUER  | COMP_ST },
-	{{"tls_my_subject_state", sizeof("tls_my_subject_state")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_ISSUER  | VAR_COMP_ST },
+	{str_const_init("tls_my_subject_state"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_ST },
-	{{"tls_my_issuer_state", sizeof("tls_my_issuer_state")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_SUBJECT | VAR_COMP_ST },
+	{str_const_init("tls_my_issuer_state"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  | COMP_ST },
-	{{"tls_peer_subject_organization", sizeof("tls_peer_subject_organization")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_ISSUER  | VAR_COMP_ST },
+	{str_const_init("tls_peer_subject_organization"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT | COMP_O },
-	{{"tls_peer_issuer_organization", sizeof("tls_peer_issuer_organization")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_SUBJECT | VAR_COMP_O },
+	{str_const_init("tls_peer_issuer_organization"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_ISSUER  | COMP_O },
-	{{"tls_my_subject_organization", sizeof("tls_my_subject_organization")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_ISSUER  | VAR_COMP_O },
+	{str_const_init("tls_my_subject_organization"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_O },
-	{{"tls_my_issuer_organization", sizeof("tls_my_issuer_organization")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_SUBJECT | VAR_COMP_O },
+	{str_const_init("tls_my_issuer_organization"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  | COMP_O },
-	{{"tls_peer_subject_unit", sizeof("tls_peer_subject_unit")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_ISSUER  | VAR_COMP_O },
+	{str_const_init("tls_peer_subject_unit"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT | COMP_OU },
-	{{"tls_peer_issuer_unit", sizeof("tls_peer_issuer_unit")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_SUBJECT | VAR_COMP_OU },
+	{str_const_init("tls_peer_issuer_unit"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER  | CERT_ISSUER  | COMP_OU },
-	{{"tls_my_subject_unit", sizeof("tls_my_subject_unit")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_CERT_ISSUER  | VAR_COMP_OU },
+	{str_const_init("tls_my_subject_unit"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_OU },
-	{{"tls_my_subject_serial", sizeof("tls_my_subject_serial")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_SUBJECT | VAR_COMP_OU },
+	{str_const_init("tls_my_subject_serial"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_SUBJECT_SERIAL },
-	{{"tls_peer_subject_serial", sizeof("tls_peer_subject_serial")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_SUBJECT | VAR_COMP_SUBJECT_SERIAL },
+	{str_const_init("tls_peer_subject_serial"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_PEER | CERT_SUBJECT | COMP_SUBJECT_SERIAL },
-	{{"tls_my_issuer_unit", sizeof("tls_my_issuer_unit")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER | VAR_CERT_SUBJECT | VAR_COMP_SUBJECT_SERIAL },
+	{str_const_init("tls_my_issuer_unit"),
 		850, tlsops_comp, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  | COMP_OU },
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_CERT_ISSUER  | VAR_COMP_OU },
 	/* subject alternative name parameters for peer and local */
-	{{"tls_peer_san_email", sizeof("tls_peer_san_email")-1},
+	{str_const_init("tls_peer_san_email"),
 		850, tlsops_alt, 0,
-		0, 0, pv_init_iname, CERT_PEER  | COMP_E },
-	{{"tls_my_san_email", sizeof("tls_my_san_email")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_COMP_E },
+	{str_const_init("tls_my_san_email"),
 		850, tlsops_alt, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | COMP_E },
-	{{"tls_peer_san_hostname", sizeof("tls_peer_san_hostname")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_COMP_E },
+	{str_const_init("tls_peer_san_hostname"),
 		850, tlsops_alt, 0,
-		0, 0, pv_init_iname, CERT_PEER  | COMP_HOST },
-	{{"tls_my_san_hostname", sizeof("tls_my_san_hostname")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_COMP_HOST },
+	{str_const_init("tls_my_san_hostname"),
 		850, tlsops_alt, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | COMP_HOST },
-	{{"tls_peer_san_uri", sizeof("tls_peer_san_uri")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_COMP_HOST },
+	{str_const_init("tls_peer_san_uri"),
 		850, tlsops_alt, 0,
-		0, 0, pv_init_iname, CERT_PEER  | COMP_URI },
-	{{"tls_my_san_uri", sizeof("tls_my_san_uri")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_COMP_URI },
+	{str_const_init("tls_my_san_uri"),
 		850, tlsops_alt, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | COMP_URI },
-	{{"tls_peer_san_ip", sizeof("tls_peer_san_ip")-1},
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_COMP_URI },
+	{str_const_init("tls_peer_san_ip"),
 		850, tlsops_alt, 0,
-		0, 0, pv_init_iname, CERT_PEER  | COMP_IP },
-	{{"tls_my_san_ip", sizeof("tls_my_san_ip")-1},
+		0, 0, pv_init_iname, VAR_CERT_PEER  | VAR_COMP_IP },
+	{str_const_init("tls_my_san_ip"),
 		850, tlsops_alt, 0,
-		0, 0, pv_init_iname, CERT_LOCAL | COMP_IP },
+		0, 0, pv_init_iname, VAR_CERT_LOCAL | VAR_COMP_IP },
 	/* peer certificate validation parameters */
-	{{"tls_peer_verified", sizeof("tls_peer_verified")-1},
+	{str_const_init("tls_peer_verified"),
 		850, tlsops_check_cert, 0,
-		0, 0, pv_init_iname, CERT_VERIFIED },
-	{{"tls_peer_revoked", sizeof("tls_peer_revoked")-1},
+		0, 0, pv_init_iname, VAR_CERT_VERIFIED },
+	{str_const_init("tls_peer_revoked"),
 		850, tlsops_check_cert, 0,
-		0, 0, pv_init_iname, CERT_REVOKED },
-	{{"tls_peer_expired", sizeof("tls_peer_expired")-1},
+		0, 0, pv_init_iname, VAR_CERT_REVOKED },
+	{str_const_init("tls_peer_expired"),
 		850, tlsops_check_cert, 0,
-		0, 0, pv_init_iname, CERT_EXPIRED },
-	{{"tls_peer_selfsigned", sizeof("tls_peer_selfsigned")-1},
+		0, 0, pv_init_iname, VAR_CERT_EXPIRED },
+	{str_const_init("tls_peer_selfsigned"),
 		850, tlsops_check_cert, 0,
-		0, 0, pv_init_iname, CERT_SELFSIGNED },
-	{{"tls_peer_notBefore", sizeof("tls_peer_notBefore")-1},
+		0, 0, pv_init_iname, VAR_CERT_SELFSIGNED },
+	{str_const_init("tls_peer_notBefore"),
 		850, tlsops_validity, 0,
-		0, 0, pv_init_iname, CERT_NOTBEFORE },
-	{{"tls_peer_notAfter", sizeof("tls_peer_notAfter")-1},
+		0, 0, pv_init_iname, VAR_CERT_NOTBEFORE },
+	{str_const_init("tls_peer_notAfter"),
 		850, tlsops_validity, 0,
-		0, 0, pv_init_iname, CERT_NOTAFTER },
+		0, 0, pv_init_iname, VAR_CERT_NOTAFTER },
 
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 
+};
+
+static const dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tls_openssl", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "tls_wolfssl", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
 };
 
 struct module_exports exports = {
@@ -369,8 +362,8 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,    /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	mod_load,   /* load function */
-	NULL,            /* OpenSIPS module dependencies */
+	0,          /* load function */
+	&deps,       /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
 	params,     /* module parameters */
@@ -386,94 +379,6 @@ struct module_exports exports = {
 	child_init, /* per-child init function */
 	0           /* reload confirm function */
 };
-
-
-#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
-/*
- * Load and set DH params to be used in ephemeral key exchange from a file.
- */
-static int
-set_dh_params(SSL_CTX * ctx, char *filename)
-{
-	BIO *bio = BIO_new_file(filename, "r");
-	if (!bio) {
-		LM_ERR("unable to open dh params file '%s'\n", filename);
-		return -1;
-	}
-
-	DH *dh = PEM_read_bio_DHparams(bio, 0, 0, 0);
-	BIO_free(bio);
-	if (!dh) {
-		LM_ERR("unable to read dh params from '%s'\n", filename);
-		return -1;
-	}
-
-	if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
-		LM_ERR("unable to set dh params\n");
-		return -1;
-	}
-
-	DH_free(dh);
-	LM_DBG("DH params from '%s' successfully set\n", filename);
-	return 0;
-}
-
-static int set_dh_params_db(SSL_CTX * ctx, str *blob)
-{
-	BIO *bio;
-	DH *dh;
-
-	bio = BIO_new_mem_buf((void*)blob->s,blob->len);
-	if (!bio) {
-		LM_ERR("unable to create bio \n");
-		return -1;
-	}
-
-	dh = PEM_read_bio_DHparams(bio, 0, 0, 0);
-	BIO_free(bio);
-	if (!dh) {
-		LM_ERR("unable to read dh params from bio\n");
-		return -1;
-	}
-
-	if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
-		LM_ERR("unable to set dh params\n");
-		return -1;
-	}
-
-	DH_free(dh);
-	LM_DBG("DH params from successfully set\n");
-	return 0;
-}
-
-/*
- * Set elliptic curve.
- */
-static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
-{
-	int curve = 0;
-	if (curve_name) {
-		curve = OBJ_txt2nid(curve_name);
-	}
-	if (curve > 0) {
-		EC_KEY *ecdh = EC_KEY_new_by_curve_name (curve);
-		if (! ecdh) {
-			LM_ERR("unable to create EC curve\n");
-			return -1;
-		}
-		if (1 != SSL_CTX_set_tmp_ecdh (ctx, ecdh)) {
-			LM_ERR("unable to set tmp_ecdh\n");
-			return -1;
-		}
-		EC_KEY_free (ecdh);
-	}
-	else {
-		LM_ERR("unable to find the EC curve\n");
-		return -1;
-	}
-	return 0;
-}
-#endif
 
 /* loads data from the db */
 int load_info(struct tls_domain **serv_dom, struct tls_domain **cli_dom,
@@ -646,573 +551,90 @@ error:
 	return -1;
 }
 
-
-/* This callback is called during each verification process,
-   at each step during the chain of certificates (this function
-   is not the certificate_verification one!). */
-int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
-	char buf[256];
-	X509 *cert;
-	int depth, err;
-
-	depth = X509_STORE_CTX_get_error_depth(ctx);
-
-	if (pre_verify_ok) {
-		LM_NOTICE("depth = %d, verify success\n", depth);
-	} else {
-		LM_NOTICE("depth = %d, verify failure\n", depth);
-
-		cert = X509_STORE_CTX_get_current_cert(ctx);
-		err = X509_STORE_CTX_get_error(ctx);
-
-		X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof buf);
-		LM_NOTICE("subject = %s\n", buf);
-
-		X509_NAME_oneline(X509_get_issuer_name(cert), buf, sizeof buf);
-		LM_NOTICE("issuer  = %s\n", buf);
-
-		LM_NOTICE("verify error: %s [error=%d]\n", X509_verify_cert_error_string(err), err);
-	}
-
-	return pre_verify_ok;
-}
-
-/* This callback is called during Client Hello processing in order to
- * inspect if a servername extension is present. If the client
- * indicated which hostname is attempting to connect to, we should present
- * the appropriate certificate for that domain.
- */
-int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
+int tls_sni_cb(struct tls_domain *dom, struct tcp_connection *c,
+	void *ssl_ctx, char *servername)
 {
 	str srvname = {NULL, 0};
-	struct tls_domain *dom, *new_dom;
-	struct tcp_connection *c;
+	struct tls_domain *new_dom;
 	str match_no_sni = str_init(MATCH_NO_SNI_VAL);
 	str *match_val;
+	int rc;
 
-	if (!ssl || !arg) {
-		LM_ERR("Bad parameters in servername callback\n");
-		return SSL_TLSEXT_ERR_NOACK;
-	}
-
-	dom = (struct tls_domain *)arg;
-
-	srvname.s = (char *)SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+	srvname.s = servername;
 	if (!srvname.s)
 		match_val = &match_no_sni;
 	else {
-		srvname.len = strlen(srvname.s);
-		if (!srvname.len) {
-			LM_ERR("Empty Servername extension in Client Hello\n");
-			return SSL_TLSEXT_ERR_NOACK;
-		}
+		srvname.len = strlen(servername);
 		match_val = &srvname;
 	}
 
-	c = (struct tcp_connection *)SSL_get_ex_data(ssl, SSL_EX_CONN_IDX);
-	if (!c) {
-		LM_ERR("Failed to get tcp_connection pointer from SSL struct\n");
-		return SSL_TLSEXT_ERR_NOACK;
-	}
 	new_dom = tls_find_domain_by_filters(&c->rcv.dst_ip, c->rcv.dst_port,
 										match_val, DOM_FLAG_SRV);
 	if (!new_dom) {
 		LM_INFO("No domain found matching host: %.*s in servername extension\n",
 			srvname.len, srvname.s);
-		return SSL_TLSEXT_ERR_ALERT_FATAL;
+		return -2;
 	} else if (new_dom && new_dom != dom) {
 		/* switch SSL context to the one with the proper certificate
 		 * for the indicated hostname */
-		SSL_set_SSL_CTX(ssl, new_dom->ctx[process_no]);
-
-		if (!SSL_set_ex_data(ssl, SSL_EX_DOM_IDX, new_dom)) {
-			LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
+		if (tls_library == TLS_LIB_OPENSSL) {
+			rc = openssl_api.switch_ssl_ctx(new_dom, ssl_ctx);
+		} else if (tls_library == TLS_LIB_WOLFSSL) {
+			rc = wolfssl_api.switch_ssl_ctx(new_dom, ssl_ctx);
+		} else {
+			LM_CRIT("No TLS library module loaded\n");
 			tls_release_domain(dom);
-			return SSL_TLSEXT_ERR_NOACK;
+			return -1;
 		}
+		if (rc < 0) {
+			tls_release_domain(dom);
+			return -1;
+		}
+
 		tls_release_domain(dom);
 
 		LM_DBG("Switched to TLS server domain: %.*s due to SNI\n",
 			new_dom->name.len, new_dom->name.s);
-		return SSL_TLSEXT_ERR_OK;
+		return 0;
 	} else {
 		/* the originally matched domain is the correct one */
 		tls_release_domain(new_dom);
-		return SSL_TLSEXT_ERR_OK;
-	}
-}
-
-
-static void get_ssl_ctx_verify_mode(struct tls_domain *d, int *verify_mode)
-{
-	/* Set verification procedure
-	 * The verification can be made null with SSL_VERIFY_NONE, or
-	 * at least easier with SSL_VERIFY_CLIENT_ONCE instead of
-	 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT.
-	 * For extra control, instead of 0, we can specify a callback function:
-	 *           int (*verify_callback)(int, X509_STORE_CTX *)
-	 * Also, depth 2 may be not enough in some scenarios ... though no need
-	 * to increase it much further */
-
-	if (d->flags & DOM_FLAG_SRV) {
-		/* Server mode:
-		 * SSL_VERIFY_NONE
-		 *   the server will not send a client certificate request to the
-		 *   client, so the client  will not send a certificate.
-		 * SSL_VERIFY_PEER
-		 *   the server sends a client certificate request to the client.
-		 *   The certificate returned (if any) is checked. If the verification
-		 *   process fails, the TLS/SSL handshake is immediately terminated
-		 *   with an alert message containing the reason for the verification
-		 *   failure. The behaviour can be controlled by the additional
-		 *   SSL_VERIFY_FAIL_IF_NO_PEER_CERT and SSL_VERIFY_CLIENT_ONCE flags.
-		 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
-		 *   if the client did not return a certificate, the TLS/SSL handshake
-		 *   is immediately terminated with a ``handshake failure'' alert.
-		 *   This flag must be used together with SSL_VERIFY_PEER.
-		 * SSL_VERIFY_CLIENT_ONCE
-		 *   only request a client certificate on the initial TLS/SSL
-		 *   handshake. Do not ask for a client certificate again in case of
-		 *   a renegotiation. This flag must be used together with
-		 *   SSL_VERIFY_PEER.
-		 */
-
-		if( d->verify_cert ) {
-			*verify_mode = SSL_VERIFY_PEER;
-			if( d->require_client_cert ) {
-				LM_INFO("client verification activated. Client "
-						"certificates are mandatory.\n");
-				*verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-			} else
-				LM_INFO("client verification activated. Client "
-						"certificates are NOT mandatory.\n");
-		} else {
-			*verify_mode = SSL_VERIFY_NONE;
-			LM_INFO("client verification NOT activated. Weaker security.\n");
-		}
-	} else {
-		/* Client mode:
-		 * SSL_VERIFY_NONE
-		 *   if not using an anonymous cipher (by default disabled), the
-		 *   server will send a certificate which will be checked. The result
-		 *   of the certificate verification process can be checked after the
-		 *   TLS/SSL handshake using the SSL_get_verify_result(3) function.
-		 *   The handshake will be continued regardless of the verification
-		 *   result.
-		 * SSL_VERIFY_PEER
-		 *   the server certificate is verified. If the verification process
-		 *   fails, the TLS/SSL handshake is immediately terminated with an
-		 *   alert message containing the reason for the verification failure.
-		 *   If no server certificate is sent, because an anonymous cipher is
-		 *   used, SSL_VERIFY_PEER is ignored.
-		 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
-		 *   ignored
-		 * SSL_VERIFY_CLIENT_ONCE
-		 *   ignored
-		 */
-
-		if( d->verify_cert ) {
-			*verify_mode = SSL_VERIFY_PEER;
-			LM_INFO("server verification activated.\n");
-		} else {
-			*verify_mode = SSL_VERIFY_NONE;
-			LM_INFO("server verification NOT activated. Weaker security.\n");
-		}
-	}
-}
-
-/*
- * load a certificate from a file
- * (certificate file can be a chain, starting by the user cert,
- * and ending in the root CA; if not all needed certs are in this
- * file, they are looked up in the caFile or caPATH (see verify
- * function).
- */
-static int load_certificate(SSL_CTX * ctx, char *filename)
-{
-	if (!SSL_CTX_use_certificate_chain_file(ctx, filename)) {
-		tls_print_errstack();
-		LM_ERR("unable to load certificate file '%s'\n",
-				filename);
-		return -1;
-	}
-
-	LM_DBG("'%s' successfully loaded\n", filename);
-	return 0;
-}
-
-static int load_certificate_db(SSL_CTX * ctx, str *blob)
-{
-	X509 *cert = NULL;
-	BIO *cbio;
-
-	cbio = BIO_new_mem_buf((void*)blob->s,blob->len);
-	if (!cbio) {
-		LM_ERR("Unable to create BIO buf\n");
-		return -1;
-	}
-
-	cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
-	if (!cert) {
-		LM_ERR("Unable to load certificate from buffer\n");
-		BIO_free(cbio);
-		return -1;
-	}
-
-	if (! SSL_CTX_use_certificate(ctx, cert)) {
-		tls_print_errstack();
-		LM_ERR("Unable to use certificate\n");
-		X509_free(cert);
-		BIO_free(cbio);
-		return -1;
-	}
-	tls_dump_cert_info("Certificate loaded: ", cert);
-	X509_free(cert);
-
-	while ((cert = PEM_read_bio_X509(cbio, NULL, 0, NULL)) != NULL) {
-		if (!SSL_CTX_add_extra_chain_cert(ctx, cert)){
-			tls_print_errstack();
-			tls_dump_cert_info("Unable to add chain cert: ", cert);
-			X509_free(cert);
-			BIO_free(cbio);
-			return -1;
-		}
-		/* The x509 certificate provided to SSL_CTX_add_extra_chain_cert()
-		*	will be freed by the library when the SSL_CTX is destroyed.
-		*	An application should not free the x509 object.a*/
-		tls_dump_cert_info("Chain certificate loaded: ", cert);
-	}
-
-	BIO_free(cbio);
-	LM_DBG("Successfully loaded\n");
-	return 0;
-}
-
-static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
-{
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
-	DIR *d;
-	struct dirent *dir;
-	int crl_added = 0;
-	LM_DBG("Loading CRL from directory\n");
-
-	/*Get X509 store from SSL context*/
-	X509_STORE *store = SSL_CTX_get_cert_store(ctx);
-	if(!store) {
-		LM_ERR("Unable to get X509 store from ssl context\n");
-		return -1;
-	}
-
-	/*Parse directory*/
-	d = opendir(crl_directory);
-	if(!d) {
-		LM_ERR("Unable to open crl directory '%s'\n", crl_directory);
-		return -1;
-	}
-
-	while ((dir = readdir(d)) != NULL) {
-		/*Skip if not regular file*/
-		if (dir->d_type != DT_REG)
-			continue;
-
-		/*Create filename*/
-		char* filename = (char*) pkg_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
-		if (!filename) {
-			LM_ERR("Unable to allocate crl filename\n");
-			closedir(d);
-			return -1;
-		}
-		strcpy(filename,crl_directory);
-		if(filename[strlen(filename)-1] != '/')
-			strcat(filename,"/");
-		strcat(filename,dir->d_name);
-
-		/*Get CRL content*/
-		FILE *fp = fopen(filename,"r");
-		pkg_free(filename);
-		if(!fp)
-			continue;
-
-		X509_CRL *crl = PEM_read_X509_CRL(fp, NULL, NULL, NULL);
-		fclose(fp);
-		if(!crl)
-			continue;
-
-		/*Add CRL to X509 store*/
-		if (X509_STORE_add_crl(store, crl) == 1)
-			crl_added++;
-		else
-			LM_ERR("Unable to add crl to ssl context\n");
-
-		X509_CRL_free(crl);
-	}
-	closedir(d);
-
-	if (!crl_added) {
-		LM_ERR("No suitable CRL files found in directory %s\n", crl_directory);
 		return 0;
 	}
-
-	/*Enable CRL checking*/
-	X509_VERIFY_PARAM *param;
-	param = X509_VERIFY_PARAM_new();
-
-	int flags =  X509_V_FLAG_CRL_CHECK;
-	if(crl_check_all)
-		flags |= X509_V_FLAG_CRL_CHECK_ALL;
-
-	X509_VERIFY_PARAM_set_flags(param, flags);
-
-	SSL_CTX_set1_param(ctx, param);
-	X509_VERIFY_PARAM_free(param);
-
-	return 0;
-#else
-	static int already_warned = 0;
-	if (!already_warned) {
-		LM_WARN("CRL not supported in %s\n", OPENSSL_VERSION_TEXT);
-		already_warned = 1;
-	}
-	return 0;
-#endif
 }
 
-/*
- * Load a caList, to be used to verify the client's certificate.
- * The list is to be stored in a single file, containing all
- * the acceptable root certificates.
- */
-static int load_ca(SSL_CTX * ctx, char *filename)
+void destroy_tls_dom(struct tls_domain *d)
 {
-	if (!SSL_CTX_load_verify_locations(ctx, filename, 0)) {
-		tls_print_errstack();
-		LM_ERR("unable to load ca '%s'\n", filename);
-		return -1;
-	}
-
-	LM_DBG("CA '%s' successfully loaded\n", filename);
-	return 0;
-}
-
-static int load_ca_db(SSL_CTX * ctx, str *blob)
-{
-	X509_STORE *store;
-	X509 *cert = NULL;
-	BIO *cbio;
-
-	cbio = BIO_new_mem_buf((void*)blob->s,blob->len);
-
-	if (!cbio) {
-		LM_ERR("Unable to create BIO buf\n");
-		return -1;
-	}
-
-	store =  SSL_CTX_get_cert_store(ctx);
-	if(!store) {
-		BIO_free(cbio);
-		LM_ERR("Unable to get X509 store from ssl context\n");
-		return -1;
-	}
-
-	while ((cert = PEM_read_bio_X509_AUX(cbio, NULL, 0, NULL)) != NULL) {
-		tls_dump_cert_info("CA loaded: ", cert);
-		if (!X509_STORE_add_cert(store, cert)){
-			tls_dump_cert_info("Unable to add ca: ", cert);
-			X509_free(cert);
-			BIO_free(cbio);
-			return -1;
-		}
-		X509_free(cert);
-	}
-
-	BIO_free(cbio);
-	LM_DBG("CA successfully loaded\n");
-	return 0;
-}
-
-/*
- * Load a caList from a directory instead of a single file.
- */
-static int load_ca_dir(SSL_CTX * ctx, char *directory)
-{
-	if (!SSL_CTX_load_verify_locations(ctx, 0 , directory)) {
-		LM_ERR("unable to load ca directory '%s'\n", directory);
-		return -1;
-	}
-
-	LM_DBG("CA '%s' successfully loaded from directory\n", directory);
-	return 0;
-}
-
-static int passwd_cb(char *buf, int size, int rwflag, void *filename)
-{
-	UI             *ui;
-	const char     *prompt;
-
-	ui = UI_new();
-	if (ui == NULL)
-		goto err;
-
-	prompt = UI_construct_prompt(ui, "passphrase", filename);
-	UI_add_input_string(ui, prompt, 0, buf, 0, size - 1);
-	UI_process(ui);
-	UI_free(ui);
-	return strlen(buf);
-
-err:
-	LM_ERR("passwd_cb failed\n");
-	if (ui)
-		UI_free(ui);
-	return 0;
-}
-
-
-/*
- * load a private key from a file
- */
-static int load_private_key(SSL_CTX * ctx, char *filename)
-{
-#define NUM_RETRIES 3
-	int idx, ret_pwd;
-
-	SSL_CTX_set_default_passwd_cb(ctx, passwd_cb);
-	SSL_CTX_set_default_passwd_cb_userdata(ctx, filename);
-
-	for(idx = 0, ret_pwd = 0; idx < NUM_RETRIES; idx++ ) {
-		ret_pwd = SSL_CTX_use_PrivateKey_file(ctx, filename, SSL_FILETYPE_PEM);
-		if ( ret_pwd ) {
-			break;
-		} else {
-			LM_ERR("unable to load private key file '%s'. \n"
-					"Retry (%d left) (check password case)\n",
-					filename, (NUM_RETRIES - idx -1) );
-			continue;
-		}
-	}
-
-	if( ! ret_pwd ) {
-		tls_print_errstack();
-		LM_ERR("unable to load private key file '%s'\n",
-				filename);
-		return -1;
-	}
-
-	if (!SSL_CTX_check_private_key(ctx)) {
-		LM_ERR("key '%s' does not match the public key of the certificate\n",
-				filename);
-		return -1;
-	}
-
-	LM_DBG("key '%s' successfully loaded\n", filename);
-	return 0;
-}
-
-static int load_private_key_db(SSL_CTX * ctx, str *blob)
-{
-#define NUM_RETRIES 3
-	int idx;
-	BIO *kbio;
-	EVP_PKEY *key;
-
-	kbio = BIO_new_mem_buf((void*)blob->s, blob->len);
-
-	if (!kbio) {
-		LM_ERR("Unable to create BIO buf\n");
-		return -1;
-	}
-
-	for(idx = 0; idx < NUM_RETRIES; idx++ ) {
-		key = PEM_read_bio_PrivateKey(kbio,NULL, passwd_cb, "database");
-		if ( key ) {
-			break;
-		} else {
-			LM_ERR("unable to load private key. \n"
-				   "Retry (%d left) (check password case)\n",  (NUM_RETRIES - idx -1) );
-			continue;
-		}
-	}
-
-	BIO_free(kbio);
-	if(!key) {
-		tls_print_errstack();
-		LM_ERR("unable to load private key from buffer\n");
-		return -1;
-	}
-
-	if (!SSL_CTX_use_PrivateKey(ctx, key)) {
-		EVP_PKEY_free(key);
-		LM_ERR("key does not match the public key of the certificate\n");
-		return -1;
-	}
-
-	EVP_PKEY_free(key);
-	LM_DBG("key successfully loaded\n");
-	return 0;
-}
-
-static void destroy_tls_dom(struct tls_domain *d)
-{
-	int i;
-	if (d->ctx) {
-		for (i = 0; i < d->ctx_no; i++)
-			if (d->ctx[i])
-				SSL_CTX_free(d->ctx[i]);
-		shm_free(d->ctx);
-	}
-	lock_destroy(d->lock);
-	lock_dealloc(d->lock);
-	shm_free(d);
+	if (tls_library == TLS_LIB_OPENSSL)
+		openssl_api.destroy_tls_dom(d);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		wolfssl_api.destroy_tls_dom(d);
 }
 
 static int init_tls_dom(struct tls_domain *d)
 {
-	int cert_from_file = 0;
-	int ca_from_file = 0;
-	int verify_mode = 0;
-	unsigned i, tcp_procs;
-	char *ciphers_list = NULL;
-#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
-	int dh_from_file = 0;
-#endif
+	int init_flags = 0;
 
 	LM_INFO("Processing TLS domain '%.*s'\n",
 			d->name.len, ZSW(d->name.s));
 
-#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
-	/*
-	 * set dh params
-	 */
 	if (!d->dh_param.s) {
-		dh_from_file = 1;
+		init_flags |= TLS_DOM_DH_FILE_FL;
 		LM_DBG("no DH params file for tls domain '%.*s' defined, using default '%s'\n",
 				d->name.len, ZSW(d->name.s), tls_tmp_dh_file);
 		d->dh_param.s = tls_tmp_dh_file;
 		d->dh_param.len = len(tls_tmp_dh_file);
 	}
-	if (!d->tls_ec_curve)
-		LM_NOTICE("No EC curve defined\n");
-#else
-	if (d->tmp_dh_file  || tls_tmp_dh_file)
-		LM_INFO("DH params file discarded as not supported by your "
-			"openSSL version\n");
-	if (d->tls_ec_curve)
-		LM_INFO("EC params file discarded as not supported by your "
-			"openSSL version\n");
-#endif
 
-	if( d->ciphers_list != 0 ) {
-		ciphers_list = d->ciphers_list;
-		LM_NOTICE("setting cipher list to %s\n", ciphers_list);
-	} else {
+	if( d->ciphers_list != 0 )
+		LM_NOTICE("setting cipher list to %s\n", d->ciphers_list);
+	else
 		LM_DBG( "cipher list null ... setting default\n");
-	}
-
-	get_ssl_ctx_verify_mode(d, &verify_mode);
 
 	/*
 	 * set method
 	 */
-	if (d->method == TLS_METHOD_UNSPEC) {
+	if (!d->method_str.s) {
 		LM_DBG("no method for tls domain '%.*s', using default\n",
 				d->name.len, ZSW(d->name.s));
 		d->method = tls_default_method;
@@ -1220,7 +642,7 @@ static int init_tls_dom(struct tls_domain *d)
 	}
 
 	if (!d->cert.s) {
-		cert_from_file = 1;
+		init_flags |= TLS_DOM_CERT_FILE_FL;
 		LM_NOTICE("no certificate for tls domain '%.*s' defined, using default '%s'\n",
 				d->name.len, ZSW(d->name.s), tls_cert_file);
 		d->cert.s = tls_cert_file;
@@ -1228,7 +650,7 @@ static int init_tls_dom(struct tls_domain *d)
 	}
 
 	if (!d->ca.s) {
-		ca_from_file = 1;
+		init_flags |= TLS_DOM_CA_FILE_FL;
 		LM_NOTICE("no CA list for tls domain '%.*s' defined, using default '%s'\n",
 				d->name.len, ZSW(d->name.s), tls_ca_file);
 		d->ca.s = tls_ca_file;
@@ -1247,119 +669,12 @@ static int init_tls_dom(struct tls_domain *d)
 	if (!d->crl_directory)
 		LM_NOTICE("no crl for tls, using none\n");
 
-	tcp_procs = count_child_processes();
-
-	d->ctx = shm_malloc(tcp_procs * sizeof(SSL_CTX *));
-	if (!d->ctx) {
-		LM_ERR("cannot allocate ssl ctx per process!\n");
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.init_tls_dom(d, init_flags);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.init_tls_dom(d, init_flags);
+	else
 		return 0;
-	}
-	memset(d->ctx, 0, tcp_procs * sizeof(SSL_CTX *));
-
-	d->ctx_no = tcp_procs;
-
-	for (i = 0; i < tcp_procs; i++) {
-		/*
-		 * create context
-		 */
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-		d->ctx[i] = SSL_CTX_new(TLS_method());
-#else
-		d->ctx[i] = SSL_CTX_new(ssl_methods[d->method - 1]);
-#endif
-		if (d->ctx[i] == NULL) {
-			LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
-				d->name.len, ZSW(d->name.s));
-			return -1;
-		}
-
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-		if (d->method != TLS_USE_SSLv23) {
-			if (!SSL_CTX_set_min_proto_version(d->ctx[i],
-					ssl_versions[d->method - 1]) ||
-				!SSL_CTX_set_max_proto_version(d->ctx[i],
-					ssl_versions[d->method_max - 1])) {
-				LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
-						d->name.len, ZSW(d->name.s));
-				return -1;
-			}
-		}
-#endif
-
-#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
-		if (!(d->flags & DOM_FLAG_DB) || dh_from_file) {
-			if (d->dh_param.s && set_dh_params(d->ctx[i], d->dh_param.s) < 0)
-				return -1;
-		} else {
-			set_dh_params_db(d->ctx[i], &d->dh_param);
-		}
-		if (d->tls_ec_curve && set_ec_params(d->ctx[i], d->tls_ec_curve) < 0)
-			return -1;
-#endif
-
-		if (ciphers_list != 0 && SSL_CTX_set_cipher_list(d->ctx[i], d->ciphers_list) == 0 ) {
-			LM_ERR("failure to set SSL context "
-					"cipher list '%s'\n", d->ciphers_list);
-			return -1;
-		}
-
-		/* Set a bunch of options:
-		 *     do not accept SSLv2 / SSLv3
-		 *     no session resumption
-		 *     choose cipher according to server's preference's*/
-
-		SSL_CTX_set_options(d->ctx[i],
-				SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
-				SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
-				SSL_OP_CIPHER_SERVER_PREFERENCE);
-
-
-		SSL_CTX_set_verify(d->ctx[i], verify_mode, verify_callback);
-		SSL_CTX_set_verify_depth(d->ctx[i], VERIFY_DEPTH_S);
-
-		//SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_SERVER );
-		SSL_CTX_set_session_cache_mode(d->ctx[i], SSL_SESS_CACHE_OFF );
-		SSL_CTX_set_session_id_context(d->ctx[i], (unsigned char*)OS_SSL_SESS_ID,
-				OS_SSL_SESS_ID_LEN );
-
-		/* install callback for SNI */
-		if (d->flags & DOM_FLAG_SRV) {
-			SSL_CTX_set_tlsext_servername_callback(d->ctx[i], ssl_servername_cb);
-			SSL_CTX_set_tlsext_servername_arg(d->ctx[i], d);
-		}
-
-		/*
-		 * load certificate
-		 */
-		if (!(d->flags & DOM_FLAG_DB) || cert_from_file) {
-			if (load_certificate(d->ctx[i], d->cert.s) < 0)
-				return -1;
-		} else
-			if (load_certificate_db(d->ctx[i], &d->cert) < 0)
-				return -1;
-
-		/**
-		 * load crl from directory
-		 */
-		if (d->crl_directory && load_crl(d->ctx[i], d->crl_directory, d->crl_check_all) < 0)
-			return -1;
-
-		/*
-		 * load ca
-		 */
-		if (!(d->flags & DOM_FLAG_DB) || ca_from_file) {
-			if (d->ca.s && load_ca(d->ctx[i], d->ca.s) < 0)
-				return -1;
-		} else {
-			if (load_ca_db(d->ctx[i], &d->ca) < 0)
-				return -1;
-		}
-
-		if (d->ca_directory && load_ca_dir(d->ctx[i], d->ca_directory) < 0)
-			return -1;
-	}
-
-	return 0;
 }
 
 /*
@@ -1369,9 +684,8 @@ static int init_tls_domains(struct tls_domain **dom)
 {
 	struct tls_domain *d, *tmp, *prev = NULL;
 	int from_file = 0;
-	int rc;
-	int i;
 	int db = 0;
+	int rc;
 
 	d = *dom;
 	while (d) {
@@ -1391,7 +705,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			destroy_tls_dom(tmp);
+			tls_free_domain(tmp);
 
 			if (!db)
 				return -1;
@@ -1415,14 +729,14 @@ static int init_tls_domains(struct tls_domain **dom)
 			from_file = 1;
 		}
 
-		rc = 0;
-		for (i = 0; i < d->ctx_no; i++) {
-			if (!(d->flags & DOM_FLAG_DB) || from_file)
-				rc = load_private_key(d->ctx[i], d->pkey.s);
-			else
-				rc = load_private_key_db(d->ctx[i], &d->pkey);
-			if (rc < 0)
-				break;
+		if (tls_library == TLS_LIB_OPENSSL)
+			rc = openssl_api.load_priv_key(d, from_file);
+		else if (tls_library == TLS_LIB_WOLFSSL)
+			rc = wolfssl_api.load_priv_key(d, from_file);
+		else {
+			prev = d;
+			d = d->next;
+			continue;
 		}
 
 		if (rc < 0) {
@@ -1441,7 +755,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			destroy_tls_dom(tmp);
+			tls_free_domain(tmp);
 
 			if (!db)
 				return -1;
@@ -1454,206 +768,23 @@ static int init_tls_domains(struct tls_domain **dom)
 	return 0;
 }
 
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-static int check_for_krb(void)
-{
-	SSL_CTX *xx;
-
-	int j;
-
-	xx = SSL_CTX_new(ssl_methods[tls_default_method - 1]);
-	if (xx==NULL)
-		return -1;
-
-	for( j=0 ; j<sk_SSL_CIPHER_num(xx->cipher_list) ; j++) {
-		SSL_CIPHER *yy = sk_SSL_CIPHER_value(xx->cipher_list,j);
-		if ( yy->id>=SSL3_CK_KRB5_DES_64_CBC_SHA &&
-			yy->id<=SSL3_CK_KRB5_RC4_40_MD5 ) {
-			LM_INFO("KRB5 cipher %s found\n", yy->name);
-			SSL_CTX_free(xx);
-			return 1;
-		}
-	}
-
-	SSL_CTX_free(xx);
-	return 0;
-}
-#endif
-
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-static int tls_static_locks_no=0;
-static gen_lock_set_t* tls_static_locks=NULL;
-
-static void tls_static_locks_ops(int mode, int n, const char* file, int line)
-{
-	if (n<0 || n>tls_static_locks_no) {
-		LM_ERR("BUG - SSL Lib attempting to acquire bogus lock\n");
-		abort();
-	}
-
-	if (mode & CRYPTO_LOCK) {
-		lock_set_get(tls_static_locks,n);
-	} else {
-		lock_set_release(tls_static_locks,n);
-	}
-}
-
-
-
-static int tls_init_multithread(void)
-{
-	/* init static locks support */
-	tls_static_locks_no = CRYPTO_num_locks();
-
-	if (tls_static_locks_no>0) {
-		/* init a lock set & pass locking function to SSL */
-		tls_static_locks = lock_set_alloc(tls_static_locks_no);
-		if (tls_static_locks == NULL) {
-			LM_ERR("Failed to alloc static locks\n");
-			return -1;
-		}
-		if (lock_set_init(tls_static_locks)==0) {
-				LM_ERR("Failed to init static locks\n");
-				lock_set_dealloc(tls_static_locks);
-				return -1;
-		}
-		CRYPTO_set_locking_callback(tls_static_locks_ops);
-	}
-
-#if OPENSSL_VERSION_NUMBER < 0x10000000L
-	CRYPTO_set_id_callback(tls_get_id);
-#else /* between 1.0.0 and 1.1.0 */
-	CRYPTO_THREADID_set_callback(tls_get_thread_id);
-#endif /* OPENSSL_VERSION_NUMBER */
-
-	/* dynamic locks support*/
-	CRYPTO_set_dynlock_create_callback(tls_dyn_lock_create);
-	CRYPTO_set_dynlock_lock_callback(tls_dyn_lock_ops);
-	CRYPTO_set_dynlock_destroy_callback(tls_dyn_lock_destroy);
-
-	return 0;
-}
-#endif
-
-/*
- * initialize ssl methods
- */
-static void
-init_ssl_methods(void)
-{
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	ssl_methods[TLS_USE_TLSv1-1] = (SSL_METHOD*)TLSv1_method();
-	ssl_methods[TLS_USE_SSLv23-1] = (SSL_METHOD*)SSLv23_method();
-
-#if OPENSSL_VERSION_NUMBER >= 0x10001000L
-	ssl_methods[TLS_USE_TLSv1_2-1] = (SSL_METHOD*)TLSv1_2_method();
-#endif
-#else
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
-	ssl_versions[TLS_USE_TLSv1_3-1] = TLS1_3_VERSION;
-#endif
-	ssl_versions[TLS_USE_TLSv1_2-1] = TLS1_2_VERSION;
-	ssl_versions[TLS_USE_TLSv1-1] = TLS1_VERSION;
-#endif
-}
-
 static struct {
 	char *name;
-	char *alias;
 	enum tls_method method;
 } ssl_versions_struct[] = {
-	{ "SSLv23",  "TLSany", TLS_USE_SSLv23  },
-	{ "TLSv1",   NULL,     TLS_USE_TLSv1   },
-	{ "TLSv1_2", NULL,     TLS_USE_TLSv1_2 },
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
-	{ "TLSv1_3", NULL,     TLS_USE_TLSv1_3 },
-#endif
+	{ "SSLv23",  TLS_USE_SSLv23  },
+	{ "TLSv1",   TLS_USE_TLSv1   },
+	{ "TLSv1_2", TLS_USE_TLSv1_2 },
+	{ "TLSv1_3", TLS_USE_TLSv1_3 },
 };
 
 #define SSL_VERSIONS_SIZE (sizeof(ssl_versions_struct)/sizeof(ssl_versions_struct[0]))
-
-#define MATCH(name, field) ((field) && strncasecmp(field, (name)->s, (name)->len) == 0)
-
 
 static inline char *get_ssl_method_name(enum tls_method method)
 {
 	if (method < 1 || method > SSL_VERSIONS_SIZE)
 		return "UNKNOWN";
 	return ssl_versions_struct[method-1].name;
-}
-
-enum tls_method get_ssl_min_method(void)
-{
-	return ssl_versions_struct[1].method;  // skip SSLv23/TLSany
-}
-
-enum tls_method get_ssl_max_method(void)
-{
-	return ssl_versions_struct[SSL_VERSIONS_SIZE-1].method;
-}
-
-int parse_ssl_method(str *name)
-{
-	int index;
-	for (index = 0; index < SSL_VERSIONS_SIZE; index++)
-		if (MATCH(name, ssl_versions_struct[index].name) || MATCH(name, ssl_versions_struct[index].alias))
-			return ssl_versions_struct[index].method;
-	return -1;
-}
-
-int tls_get_method(str *method_str,
-	enum tls_method *method, enum tls_method *method_max)
-{
-	str val = *method_str;
-	str val_max;
-	int m;
-	char *s;
-
-	/* search for a '-' to denote an interval */
-	s = q_memchr(val.s, '-', val.len);
-	if (s) {
-		val_max.s = s + 1;
-		val_max.len = val.len - (s - val.s) - 1;
-		val.len = s - val.s;
-		trim(&val_max);
-	}
-	trim(&val);
-	if (val.len == 0)
-		m = get_ssl_min_method();
-	else
-		m = parse_ssl_method(&val);
-	if (m < 0) {
-		LM_ERR("unsupported method [%s]\n",val.s);
-		return -1;
-	}
-
-	*method = m;
-
-	if (s) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-		if (m == TLS_USE_SSLv23)
-			LM_WARN("Using SSLv23/TLSany as the lower value for the method range makes no sense\n");
-
-		if (val_max.len == 0)
-			m = get_ssl_max_method();
-		else
-			m = parse_ssl_method(&val_max);
-		if (m < 0) {
-			LM_ERR("unsupported method [%s]\n",val_max.s);
-			return -1;
-		}
-
-		if (m == TLS_USE_SSLv23)
-			LM_WARN("Using SSLv23/TLSany as the higher value for the method range makes no sense\n");
-#else
-		LM_WARN("TLS method range not supported for versions lower than 1.1.0\n");
-#endif
-	}
-
-	*method_max = m;
-
-	return 0;
 }
 
 /* reloads data from the db */
@@ -1750,138 +881,87 @@ static mi_response_t *tls_reload(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
-#ifdef __OPENSSL_ON_EXIT
-/* This is used to exit _without_ running the remaining onexit callbacks,
- * we do this because openssl 1.1.x does not properly support multi-process
- * applications, and it tries to release an existing connection from each
- * process, resulting in multiple frees of the same chunk.
- *
- * We are sure that this callback is called _before_ the openssl onexit()
- * because glibc guarantees that the callbacks are called in the reversed
- * order they are armed, and since we are only registering this function in
- * the child init code, we are the last ones that register it.
- */
-static void openssl_on_exit(int status, void *param)
+static int load_tls_library(void)
 {
-	_exit(status);
-}
-#endif
+	int wolfssl_loaded, openssl_loaded;
 
+	tls_library = TLS_LIB_NONE;
 
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-#define SSL_LOCK_REENTRANT(_cmd) \
-	do { \
-		int __ssl_lock_unlock; \
-		if (ssl_lock_pid != process_no) { \
-			lock_get(ssl_lock); \
-			ssl_lock_pid = process_no; \
-			__ssl_lock_unlock = 1; \
-		} else { \
-			__ssl_lock_unlock = 0; \
-		} \
-		_cmd; \
-		if (__ssl_lock_unlock) { \
-			ssl_lock_pid = -1; \
-			lock_release(ssl_lock); \
-		} \
-	} while (0)
+	openssl_loaded = module_loaded("tls_openssl");
+	wolfssl_loaded = module_loaded("tls_wolfssl");
 
-static gen_lock_t *ssl_lock;
-static int ssl_lock_pid = -1;
-static const RAND_METHOD *os_ssl_method;
+	tls_library_param.len = strlen(tls_library_param.s);
 
-static int os_ssl_seed(const void *buf, int num)
-{
-	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->seed)
-		return 0;
-	SSL_LOCK_REENTRANT(ret = os_ssl_method->seed(buf, num));
-	return ret;
-}
+	if (!str_strcmp(&tls_library_param, _str(TLS_LIB_AUTO_STR))) {
+		if (openssl_loaded)
+			tls_library = TLS_LIB_OPENSSL;
 
-static int os_ssl_bytes(unsigned char *buf, int num)
-{
-	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->bytes)
-		return 0;
-	SSL_LOCK_REENTRANT(ret = os_ssl_method->bytes(buf, num));
-	return ret;
-}
+		if (wolfssl_loaded) {
+			if (openssl_loaded) {
+				LM_ERR("Multiple TLS library modules loaded\n");
+				return -1;
+			}
 
-static void os_ssl_cleanup(void)
-{
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->cleanup)
-		return;
-	SSL_LOCK_REENTRANT(os_ssl_method->cleanup());
-}
+			tls_library = TLS_LIB_WOLFSSL;	
+		}
 
-static int os_ssl_add(const void *buf, int num, double entropy)
-{
-	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->add)
-		return 0;
-	SSL_LOCK_REENTRANT(ret = os_ssl_method->add(buf, num, entropy));
-	return ret;
-}
+		if (tls_library == TLS_LIB_NONE) {
+			LM_ERR("No TLS library module loaded\n");
+			return -1;
+		}
+	} else if (!str_strcmp(&tls_library_param, _str(TLS_LIB_NONE_STR))) {
+		LM_INFO("No TLS library configured\n");
+	} else if (!str_strcmp(&tls_library_param, _str(TLS_LIB_OPENSSL_STR))) {
+		if (!openssl_loaded) {
+			LM_ERR("Configured to use openssl library but 'tls_openssl' "
+				"module not loaded!\n");
+			return -1;
+		}
 
-static int os_ssl_pseudorand(unsigned char *buf, int num)
-{
-	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->pseudorand)
-		return 0;
-	SSL_LOCK_REENTRANT(ret = os_ssl_method->pseudorand(buf, num));
-	return ret;
-}
+		tls_library = TLS_LIB_OPENSSL;
+	} else if (!str_strcmp(&tls_library_param, _str(TLS_LIB_WOLFSSL_STR))) {
+		if (!wolfssl_loaded) {
+			LM_ERR("Configured to use wolfSSL library but 'tls_wolfssl' "
+				"module not loaded!\n");
+			return -1;
+		}
 
-static int os_ssl_status(void)
-{
-	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->status)
-		return 0;
-	SSL_LOCK_REENTRANT(ret = os_ssl_method->status());
-	return ret;
-}
-
-static RAND_METHOD opensips_ssl_method = {
-	os_ssl_seed,
-	os_ssl_bytes,
-	os_ssl_cleanup,
-	os_ssl_add,
-	os_ssl_pseudorand,
-	os_ssl_status
-};
-#endif
-
-static int mod_load(void)
-{
-	/*
-	 * this has to be called before any function calling CRYPTO_malloc,
-	 * CRYPTO_malloc will set allow_customize in openssl to 0
-	 */
-
-	LM_INFO("openssl version: %s\n", SSLeay_version(SSLEAY_VERSION));
-	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
-		LM_ERR("unable to set the memory allocation functions\n");
-		LM_ERR("NOTE: please make sure you are loading tls_mgm module at the"
-			"very beginning of your script, before any other module!\n");
+		tls_library = TLS_LIB_WOLFSSL;
+	} else {
+		LM_ERR("Bad value for tls_library module parameter\n");
 		return -1;
+	}
+
+	if (tls_library == TLS_LIB_OPENSSL) {
+		if (load_tls_openssl_api(&openssl_api)) {
+			LM_DBG("Failed to load openssl API\n");
+			return -1;
+		}
+
+		openssl_api.reg_tls_sni_cb(tls_sni_cb);
+	} else if (tls_library == TLS_LIB_WOLFSSL) {
+		if (load_tls_wolfssl_api(&wolfssl_api)) {
+			LM_DBG("Failed to load wolfSSL API\n");
+			return -1;
+		}
+
+		wolfssl_api.reg_tls_sni_cb(tls_sni_cb);
 	}
 
 	return 0;
 }
 
-
 static int mod_init(void) {
 	str s;
 	str tls_db_param = str_init(DB_TLS_DOMAIN_PARAM_EQ);
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-	int n;
-#endif
 	struct tls_domain *tls_client_domains_tmp = NULL;
 	struct tls_domain *tls_server_domains_tmp = NULL;
 	struct tls_domain *dom;
 
 	LM_INFO("initializing TLS management\n");
+
+	if (load_tls_library() < 0)
+		return -1;
 
 	if (tls_db_url.s) {
 
@@ -1988,72 +1068,6 @@ static int mod_init(void) {
 		}
 	}
 
-#if !defined(OPENSSL_NO_COMP)
-	STACK_OF(SSL_COMP)* comp_methods;
-	/* disabling compression */
-	LM_INFO("disabling compression due ZLIB problems\n");
-	comp_methods = SSL_COMP_get_compression_methods();
-	if (comp_methods==0) {
-		LM_INFO("openssl compression already disabled\n");
-	} else {
-		sk_SSL_COMP_zero(comp_methods);
-	}
-#endif
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-	if (tls_init_multithread() < 0) {
-		LM_ERR("failed to init multi-threading support\n");
-		return -1;
-	}
-#endif
-
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-	SSL_library_init();
-	SSL_load_error_strings();
-#else
-	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT
-#if (OPENSSL_VERSION_NUMBER >= 0x1010102fL)
-			|OPENSSL_INIT_NO_ATEXIT
-#endif
-			, NULL);
-#endif
-
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-	ssl_lock = lock_alloc();
-	if (!ssl_lock || !lock_init(ssl_lock)) {
-		LM_ERR("could not initialize ssl lock!\n");
-		return -1;
-	}
-	os_ssl_method = RAND_get_rand_method();
-	if (!os_ssl_method) {
-		LM_ERR("could not get the default ssl rand method!\n");
-		return -1;
-	}
-	RAND_set_rand_method(&opensips_ssl_method);
-#endif
-
-	init_ssl_methods();
-
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-	n = check_for_krb();
-	if (n==-1) {
-		LM_ERR("kerberos check failed\n");
-		return -1;
-	}
-
-	if ( ( n ^
-#ifndef OPENSSL_NO_KRB5
-			1
-#else
-			0
-#endif
-		 )!=0 ) {
-		LM_ERR("compiled agaist an openssl with %s"
-				"kerberos, but run with one with %skerberos\n",
-				(n!=1)?"":"no ",(n!=1)?"no ":"");
-		return -1;
-	}
-#endif
-
 	if (tls_db_url.s) {
 		if (load_info(&tls_server_domains_tmp, &tls_client_domains_tmp,
 						*tls_server_domains, *tls_client_domains))
@@ -2138,10 +1152,6 @@ static int mod_init(void) {
 	if (init_tls_domains(tls_client_domains) < 0)
 		return -1;
 
-#ifdef __OPENSSL_ON_EXIT
-	on_exit(openssl_on_exit, NULL);
-#endif
-
 	return 0;
 }
 
@@ -2184,15 +1194,6 @@ static void mod_destroy(void)
 
 	map_destroy(server_dom_matching, map_free_node);
 	map_destroy(client_dom_matching, map_free_node);
-
-	/* TODO - destroy static locks */
-
-	/* library destroy */
-	ERR_free_strings();
-	/*SSL_free_comp_methods(); - this function is not on std. openssl*/
-	EVP_cleanup();
-	CRYPTO_cleanup_all_ex_data();
-	return;
 }
 
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
@@ -2337,14 +1338,142 @@ error:
 	return NULL;
 }
 
+int tls_conn_init(struct tcp_connection *c, struct tls_domain *tls_dom)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_conn_init(c, tls_dom);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_conn_init(c, tls_dom);
+	else {
+		LM_CRIT("No TLS library module loaded\n");
+		return -1;
+	}
+}
+
+void tls_conn_clean(struct tcp_connection* c, struct tls_domain **tls_dom)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_conn_clean(c, tls_dom);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_conn_clean(c, tls_dom);
+	else
+		LM_CRIT("No TLS library module loaded\n");
+}
+
+int tls_update_fd(struct tcp_connection* c, int fd)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_update_fd(c, fd);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_update_fd(c, fd);
+	else {
+		LM_CRIT("No TLS library module loaded\n");
+		return -1;
+	}
+}
+
+int tls_async_connect(struct tcp_connection *con, int fd,
+    int timeout, trace_dest t_dst)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_async_connect(con, fd, timeout, t_dst);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_async_connect(con, fd, timeout, t_dst);
+	else {
+		LM_CRIT("No TLS library module loaded\n");
+		return -1;
+	}
+}
+
+int tls_write(struct tcp_connection *c, int fd, const void *buf,
+    size_t len, short *poll_events)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_write(c, fd, buf, len, poll_events);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_write(c, fd, buf, len, poll_events);
+	else {
+		LM_CRIT("No TLS library module loaded\n");
+		return -1;
+	}
+}
+
+int tls_blocking_write(struct tcp_connection *c, int fd,
+    const char *buf, size_t len, int handshake_timeout, int send_timeout,
+    trace_dest t_dst)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_blocking_write(c, fd, buf, len,
+			handshake_timeout, send_timeout, t_dst);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_blocking_write(c, fd, buf, len,
+			handshake_timeout, send_timeout, t_dst);
+	else {
+		LM_CRIT("No TLS library module loaded\n");
+		return -1;
+	}
+}
+
+int tls_fix_read_conn(struct tcp_connection *c, int fd,
+    int async_timeout, trace_dest t_dst, int lock)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_fix_read_conn(c, fd, async_timeout, t_dst, lock);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_fix_read_conn(c, fd, async_timeout, t_dst, lock);
+	else {
+		LM_CRIT("No TLS library module loaded\n");
+		return -1;
+	}
+}
+
+int tls_read(struct tcp_connection * c,struct tcp_req *r)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_read(c, r);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_read(c, r);
+	else {
+		LM_CRIT("No TLS library module loaded\n");
+		return -1;
+	}
+}
+
+int tls_conn_extra_match(struct tcp_connection *c, void *id)
+{
+	if (tls_library == TLS_LIB_OPENSSL)
+		return openssl_api.tls_conn_extra_match(c, id);
+	else if (tls_library == TLS_LIB_WOLFSSL)
+		return wolfssl_api.tls_conn_extra_match(c, id);
+	else {
+		LM_CRIT("No TLS library module loaded\n");
+		return -1;
+	}
+}
+
+int get_tls_library_used(void)
+{
+	return tls_library;
+}
+
 static int load_tls_mgm(struct tls_mgm_binds *binds)
 {
 	binds->find_server_domain = tls_find_server_domain;
 	binds->find_client_domain = tls_find_client_domain;
 	binds->find_client_domain_name = tls_find_client_domain_name;
 	binds->release_domain = tls_release_domain;
-	binds->ctx_set_cert_store = tls_ctx_set_cert_store;
-	binds->ctx_set_cert_chain = tls_ctx_set_cert_chain;
-	binds->ctx_set_pkey_file = tls_ctx_set_pkey_file;
+
+	binds->tls_conn_init = tls_conn_init;
+	binds->tls_conn_clean = tls_conn_clean;
+	binds->tls_update_fd = tls_update_fd;
+	binds->tls_async_connect = tls_async_connect;
+	binds->tls_write = tls_write;
+	binds->tls_blocking_write = tls_blocking_write;
+	binds->tls_fix_read_conn = tls_fix_read_conn;
+	binds->tls_read = tls_read;
+	binds->tls_conn_extra_match = tls_conn_extra_match;
+
+	binds->get_tls_library_used = get_tls_library_used;
+
 	return 1;
 }

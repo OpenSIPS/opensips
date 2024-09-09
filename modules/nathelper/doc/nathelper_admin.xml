@@ -180,6 +180,9 @@ modparam("nathelper", "ping_nated_only", 1)
 		<emphasis>
 			Default value is 1.
 		</emphasis>
+		<emphasis>
+			Maximum allowed value is 8.
+		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>natping_partitions</varname> parameter</title>
@@ -637,33 +640,38 @@ if (search("User-Agent: Cisco ATA.*") {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>flags (int)</emphasis> - the value may be a bitwise OR of
+			<emphasis>flags (string)</emphasis> - the value may be a CSV of
 			the following flags:
 			</para>
 			<itemizedlist>
 				<listitem>
-					<para><emphasis>0x01</emphasis> - adds
+					<para><emphasis>add-dir-active</emphasis> - (old
+					<emphasis>0x01</emphasis> flag) adds
 					<quote>a=direction:active</quote> SDP line;
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x02</emphasis> - rewrite media
+					<para><emphasis>rewrite-media-ip</emphasis> - (old
+					<emphasis>0x02</emphasis> flag) rewrite media
 					&ip; address (c=) with source address of the message
 					or the provided IP address (the provided IP address takes
 					precedence over the source address).</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x04</emphasis> - adds
+					<para><emphasis>add-no-rtpproxy</emphasis> - (old
+					<emphasis>0x04</emphasis> flag) adds
 						<quote>a=nortpproxy:yes</quote> SDP line;</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x08</emphasis> - rewrite IP from
+					<para><emphasis>rewrite-origin-ip</emphasis> - (old
+					<emphasis>0x08</emphasis> flag) rewrite IP from
 					origin description (o=) with source address of the message
 					or the provided IP address (the provided IP address takes
 					precedence over the source address).</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x10</emphasis> - force rewrite of
+					<para><emphasis>rewrite-null-ips</emphasis> - (old
+					<emphasis>0x10</emphasis> flag) force rewrite of
 					null media IP and/or origin IP address.
 					Without this flag, null IPs are left untouched.</para>
 				</listitem>
@@ -764,48 +772,66 @@ fix_nated_register();
 			<function>nat_uac_test(flags)</function>
 		</title>
 		<para>
-			Tries to guess if client's request originated behind a nat.
-			The parameter determines what heuristics is used.
+			Determines whether the received SIP message originated behind a NAT,
+			using one or more pre-defined checks.
 		</para>
-		<para>Meaning of the <emphasis>flags (int)</emphasis> parameter
-		is as follows:</para>
+		<para>The <emphasis>flags</emphasis> (string) parameter denotes a
+			comma-separated list of checks to be performed, as follows:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>1</emphasis> -  Contact header field is searched
-			for occurrence of RFC1918 / RFC6598 addresses.
+			<emphasis>private-contact</emphasis> - (old <emphasis>1</emphasis> flag)
+			Contact header field is searched for occurrence of RFC1918 / RFC6598
+			addresses
 			</para></listitem>
 			<listitem><para>
-			<emphasis>2</emphasis> -  the "received" test is used: address
-			in Via is compared against source IP address of signaling
+			<emphasis>diff-ip-src-via</emphasis> - (old <emphasis>2</emphasis> flag)
+			the "received" test is used: address in Via is compared against source
+			IP address of signaling
 			</para></listitem>
 			<listitem><para>
-			<emphasis>4</emphasis> -  Top Most VIA is searched
-			for occurrence of RFC1918 / RFC6598 addresses
+			<emphasis>private-via</emphasis> - (old <emphasis>4</emphasis> flag)
+			Top Most VIA is searched for occurrence of RFC1918 / RFC6598 addresses
 			</para></listitem>
 			<listitem><para>
-			<emphasis>8</emphasis> -  SDP is searched for occurrence of
-			RFC1918 / RFC6598 addresses
+			<emphasis>private-sdp</emphasis> - (old <emphasis>8</emphasis> flag)
+			SDP is searched for occurrence of RFC1918 / RFC6598 addresses
 			</para></listitem>
 			<listitem><para>
-			<emphasis>16</emphasis> -  test if the source port is different
-			from the port in Via
+			<emphasis>diff-port-src-via</emphasis> - (old <emphasis>16</emphasis>
+			flag) test if the source port is different from the port in Via
 			</para></listitem>
 			<listitem><para>
-			<emphasis>32</emphasis> -  address in Contact is compared against
-			source IP address of signaling
+			<emphasis>diff-ip-src-contact</emphasis> - (old <emphasis>32</emphasis>
+			flag) address in Contact is compared against source IP address of
+			signaling
 			</para></listitem>
 			<listitem><para>
-			<emphasis>64</emphasis> -  Port in Contact is compared against
-			source port of signaling
+			<emphasis>diff-port-src-contact</emphasis> - (old <emphasis>64</emphasis>
+			flag) Port in Contact is compared against source port of signaling
+			</para></listitem>
+			<listitem><para>
+			<emphasis>carrier-grade-nat</emphasis> - (old <emphasis>128</emphasis>
+			flag) also include RFC 6333 addresses in the checks for
+			<emphasis>Contact</emphasis>, <emphasis>Via</emphasis> and
+			<emphasis>SDP</emphasis>
 			</para></listitem>
 		</itemizedlist>
 		<para>
-		All flags can be bitwise combined, the test returns true if any of
-		the tests identified a NAT.
+			<emphasis role='bold'>Returns true if any of the tests passed</emphasis>.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
+		<example>
+		<title><function>nat_uac_test</function> usage</title>
+		<programlisting format="linespecific">
+...
+# check for private Contact or SDP media IP addresses
+if (nat_uac_test("private-contact,private-sdp"))
+	xlog("SIP message is NAT'ed (Call-ID: $ci)\n");
+...
+</programlisting>
+		</example>
 	</section>
 	</section>
 

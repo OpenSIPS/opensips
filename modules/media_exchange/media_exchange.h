@@ -34,8 +34,8 @@ extern struct tm_binds media_tm;
 extern struct dlg_binds media_dlg;
 #include "../b2b_entities/b2be_load.h"
 extern struct b2b_api media_b2b;
-#include "../rtpproxy/rtpproxy_load.h"
-extern struct rtpproxy_binds media_rtp;
+#include "../rtp_relay/rtp_relay_load.h"
+extern struct rtp_relay_binds media_rtp;
 
 int b2b_media_restore_callbacks(struct media_session_leg *msl);
 

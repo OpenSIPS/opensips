@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Christian Schlatter</entry>
-		<entry align="center">57</entry>
+		<entry align="center">59</entry>
 		<entry align="center">6</entry>
 		<entry align="center">5764</entry>
 		<entry align="center">237</entry>
@@ -45,13 +45,21 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">16</entry>
-		<entry align="center">13</entry>
-		<entry align="center">60</entry>
-		<entry align="center">75</entry>
+		<entry align="center">17</entry>
+		<entry align="center">14</entry>
+		<entry align="center">62</entry>
+		<entry align="center">76</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">13</entry>
+		<entry align="center">10</entry>
+		<entry align="center">19</entry>
+		<entry align="center">62</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>)</entry>
 		<entry align="center">12</entry>
 		<entry align="center">9</entry>
@@ -59,7 +67,7 @@
 		<entry align="center">83</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">12</entry>
 		<entry align="center">3</entry>
@@ -67,15 +75,15 @@
 		<entry align="center">420</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">10</entry>
+		<entry>8. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">3</entry>
+		<entry align="center">5</entry>
 		<entry align="center">8</entry>
-		<entry align="center">18</entry>
-		<entry align="center">59</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Razvan Pistolea</entry>
 		<entry align="center">4</entry>
 		<entry align="center">1</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">66</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Anca Vamanu</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">14</entry>
 		<entry align="center">14</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">6</entry>
-		<entry align="center">3</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Konstantin Bokarius, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: tcresson, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Petr Písař, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Konstantin Bokarius, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2011 - Jul 2020</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2014 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>tcresson</entry>
+		<entry align="center">Sep 2023 - Sep 2023</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Feb 2023</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Petr Písař</entry>
+		<entry align="center">Mar 2022 - Mar 2022</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jun 2011 - Jan 2021</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Jul 2007 - Mar 2020</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>7. </entry>
 		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - Nov 2019</entry>
-	</row>
-	<row>
-		<entry>5. </entry>
+		<entry>8. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>9. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>10. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">Oct 2014 - Jan 2017</entry>
-	</row>
-	<row>
-		<entry>8. </entry>
-		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
-		<entry align="center">Dec 2015 - Dec 2015</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>Anca Vamanu</entry>
-		<entry align="center">Sep 2009 - Sep 2009</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Razvan Pistolea</entry>
-		<entry align="center">Sep 2009 - Sep 2009</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Christian Schlatter.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Anca Vamanu, Razvan Pistolea, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Christian Schlatter.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

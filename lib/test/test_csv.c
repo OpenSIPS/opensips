@@ -30,43 +30,43 @@ void test_csv_simple(void)
 	csv_record *ret;
 
 	ret = parse_csv_record(_str(""));
-	ok(str_match(&ret->s, _str("")));
+	ok(str_match(&ret->s, const_str("")));
 	ok(!ret->next);
 	free_csv_record(ret);
 
 	ret = parse_csv_record(_str("\t\r\n "));
-	ok(str_match(&ret->s, _str("")));
+	ok(str_match(&ret->s, const_str("")));
 	ok(!ret->next);
 	free_csv_record(ret);
 
 	ret = parse_csv_record(_str(" a b "));
-	ok(str_match(&ret->s, _str("a b")));
+	ok(str_match(&ret->s, const_str("a b")));
 	ok(!ret->next);
 	free_csv_record(ret);
 
 	ret = parse_csv_record(_str(" a , "));
-	ok(str_match(&ret->s, _str("a")));
-	ok(str_match(&ret->next->s, _str("")));
+	ok(str_match(&ret->s, const_str("a")));
+	ok(str_match(&ret->next->s, const_str("")));
 	ok(!ret->next->next);
 	free_csv_record(ret);
 
 	ret = parse_csv_record(_str(" , a "));
-	ok(str_match(&ret->s, _str("")));
-	ok(str_match(&ret->next->s, _str("a")));
+	ok(str_match(&ret->s, const_str("")));
+	ok(str_match(&ret->next->s, const_str("a")));
 	ok(!ret->next->next);
 	free_csv_record(ret);
 
 	ret = parse_csv_record(_str("a,b,c"));
-	ok(str_match(&ret->s, _str("a")));
-	ok(str_match(&ret->next->s, _str("b")));
-	ok(str_match(&ret->next->next->s, _str("c")));
+	ok(str_match(&ret->s, const_str("a")));
+	ok(str_match(&ret->next->s, const_str("b")));
+	ok(str_match(&ret->next->next->s, const_str("c")));
 	ok(!ret->next->next->next);
 	free_csv_record(ret);
 
 	ret = parse_csv_record(_str(" a, \"b\" , \" c "));
-	ok(str_match(&ret->s, _str("a")));
-	ok(str_match(&ret->next->s, _str("\"b\"")));
-	ok(str_match(&ret->next->next->s, _str("\" c")));
+	ok(str_match(&ret->s, const_str("a")));
+	ok(str_match(&ret->next->s, const_str("\"b\"")));
+	ok(str_match(&ret->next->next->s, const_str("\" c")));
 	ok(!ret->next->next->next);
 	free_csv_record(ret);
 }
@@ -84,50 +84,50 @@ void test_csv_rfc_4180(void)
 	ok(!_parse_csv_record(_str("a,b,c\t"), CSV_RFC_4180));
 
 	ret = _parse_csv_record(_str(""), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("")));
+	ok(str_match(&ret->s, const_str("")));
 	ok(!ret->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str(" a "), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str(" a ")));
+	ok(str_match(&ret->s, const_str(" a ")));
 	ok(!ret->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str(" \r\n"), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str(" ")));
+	ok(str_match(&ret->s, const_str(" ")));
 	ok(!ret->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str(","), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("")));
-	ok(str_match(&ret->next->s, _str("")));
+	ok(str_match(&ret->s, const_str("")));
+	ok(str_match(&ret->next->s, const_str("")));
 	ok(!ret->next->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str("a,,,"), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("a")));
-	ok(str_match(&ret->next->s, _str("")));
-	ok(str_match(&ret->next->next->s, _str("")));
-	ok(str_match(&ret->next->next->next->s, _str("")));
+	ok(str_match(&ret->s, const_str("a")));
+	ok(str_match(&ret->next->s, const_str("")));
+	ok(str_match(&ret->next->next->s, const_str("")));
+	ok(str_match(&ret->next->next->next->s, const_str("")));
 	ok(!ret->next->next->next->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str(" , a "), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str(" ")));
-	ok(str_match(&ret->next->s, _str(" a ")));
+	ok(str_match(&ret->s, const_str(" ")));
+	ok(str_match(&ret->next->s, const_str(" a ")));
 	ok(!ret->next->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str(" a , \r\n"), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str(" a ")));
-	ok(str_match(&ret->next->s, _str(" ")));
+	ok(str_match(&ret->s, const_str(" a ")));
+	ok(str_match(&ret->next->s, const_str(" ")));
 	ok(!ret->next->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str("a,b,c"), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("a")));
-	ok(str_match(&ret->next->s, _str("b")));
-	ok(str_match(&ret->next->next->s, _str("c")));
+	ok(str_match(&ret->s, const_str("a")));
+	ok(str_match(&ret->next->s, const_str("b")));
+	ok(str_match(&ret->next->next->s, const_str("c")));
 	ok(!ret->next->next->next);
 	free_csv_record(ret);
 
@@ -137,30 +137,30 @@ void test_csv_rfc_4180(void)
 	ok(!_parse_csv_record(_str("\"a\"a,b"), CSV_RFC_4180));
 
 	ret = _parse_csv_record(_str("\"a\""), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("a")));
+	ok(str_match(&ret->s, const_str("a")));
 	ok(!ret->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str("realm=\"etc.example.com\","
 				"nonce=\"B5CFDSFDGD14992F\",opaque=\"opaq\","
 				"qop=\"auth\",algorithm=MD5"), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("realm=\"etc.example.com\"")));
-	ok(str_match(&ret->next->s, _str("nonce=\"B5CFDSFDGD14992F\"")));
-	ok(str_match(&ret->next->next->s, _str("opaque=\"opaq\"")));
-	ok(str_match(&ret->next->next->next->s, _str("qop=\"auth\"")));
-	ok(str_match(&ret->next->next->next->next->s, _str("algorithm=MD5")));
+	ok(str_match(&ret->s, const_str("realm=\"etc.example.com\"")));
+	ok(str_match(&ret->next->s, const_str("nonce=\"B5CFDSFDGD14992F\"")));
+	ok(str_match(&ret->next->next->s, const_str("opaque=\"opaq\"")));
+	ok(str_match(&ret->next->next->next->s, const_str("qop=\"auth\"")));
+	ok(str_match(&ret->next->next->next->next->s, const_str("algorithm=MD5")));
 	ok(!ret->next->next->next->next->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str("a,\"\tb\""), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("a")));
-	ok(str_match(&ret->next->s, _str("\tb")));
+	ok(str_match(&ret->s, const_str("a")));
+	ok(str_match(&ret->next->s, const_str("\tb")));
 	ok(!ret->next->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str("\"a\", bc "), CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("a")));
-	ok(str_match(&ret->next->s, _str(" bc ")));
+	ok(str_match(&ret->s, const_str("a")));
+	ok(str_match(&ret->next->s, const_str(" bc ")));
 	ok(!ret->next->next);
 	free_csv_record(ret);
 
@@ -171,8 +171,8 @@ void test_csv_rfc_4180(void)
 
 	ret = _parse_csv_record(_str("\"\"\"a\"\" \r\"\"\t\nb\"\" \",\"c\"\r\n"),
 							CSV_RFC_4180);
-	ok(str_match(&ret->s, _str("\"a\" \r\"\t\nb\" ")));
-	ok(str_match(&ret->next->s, _str("c")));
+	ok(str_match(&ret->s, const_str("\"a\" \r\"\t\nb\" ")));
+	ok(str_match(&ret->next->s, const_str("c")));
 	ok(!ret->next->next);
 	free_csv_record(ret);
 }

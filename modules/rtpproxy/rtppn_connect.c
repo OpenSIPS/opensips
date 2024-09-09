@@ -59,38 +59,56 @@ out:
 	return cres;
 }
 
-int connect_rtpp_node(const struct rtpp_node *pnode)
+int connect_rtpp_node(struct rtpp_node *pnode)
 {
 	int n, s;
-	char *cp, *hostname;
+	char *cp, *hostname = NULL;
 	struct addrinfo hints, *res;
+	struct sockaddr_un sau;
 
 	/*
 	 * This is UDP, TCP, UDP6 or TCP6. Detect host and port; lookup host;
 	 * do connect() in order to specify peer address
 	 */
-	hostname = (char*)pkg_malloc(sizeof(char) * (strlen(pnode->rn_address) + 1));
-	if (hostname == NULL) {
-		LM_ERR("no more pkg memory\n");
-		goto e0;
-	}
-	strcpy(hostname, pnode->rn_address);
+	if (pnode->rn_umode != CM_CUNIX) {
+		hostname = (char*)pkg_malloc(sizeof(char) * (strlen(pnode->rn_address) + 1));
+		if (hostname == NULL) {
+			LM_ERR("no more pkg memory\n");
+			goto e0;
+		}
+		strcpy(hostname, pnode->rn_address);
 
-	cp = strrchr(hostname, ':');
-	if (cp != NULL) {
-		*cp = '\0';
-		cp++;
-	}
-	if (cp == NULL || *cp == '\0')
-		cp = DEFAULT_CPORT;
+		cp = strrchr(hostname, ':');
+		if (cp != NULL) {
+			*cp = '\0';
+			cp++;
+		}
+		if (cp == NULL || *cp == '\0')
+			cp = DEFAULT_CPORT;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_flags = 0;
-	hints.ai_family = (pnode->rn_umode == CM_UDP6 || pnode->rn_umode == CM_TCP6) ? AF_INET6 : AF_INET;
-	hints.ai_socktype = CM_STREAM(pnode) ? SOCK_STREAM : SOCK_DGRAM;
-	if ((n = getaddrinfo(hostname, cp, &hints, &res)) != 0) {
-		LM_ERR("%s\n", gai_strerror(n));
-		goto e1;
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_flags = 0;
+		hints.ai_family = (pnode->rn_umode == CM_UDP6 || pnode->rn_umode == CM_TCP6) ? AF_INET6 : AF_INET;
+		hints.ai_socktype = CM_STREAM(pnode) ? SOCK_STREAM : SOCK_DGRAM;
+		if ((n = getaddrinfo(hostname, cp, &hints, &res)) != 0) {
+			LM_ERR("%s\n", gai_strerror(n));
+			goto e1;
+		}
+	} else {
+		memset(&sau, 0, sizeof(sau));
+		hints = (struct addrinfo) {
+		    .ai_family = AF_LOCAL,
+		    .ai_socktype = SOCK_STREAM,
+		    .ai_protocol = 0,
+		    .ai_addr = (struct sockaddr *)&sau,
+		    .ai_addrlen = sizeof(sau),
+		};
+		res = &hints;
+		sau.sun_family = AF_LOCAL;
+		strncpy(sau.sun_path, pnode->rn_address, sizeof(sau.sun_path) - 1);
+#ifdef HAVE_SOCKADDR_SA_LEN
+		sau.sun_len = strlen(sau.sun_path);
+#endif
 	}
 
 	s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -107,16 +125,21 @@ int connect_rtpp_node(const struct rtpp_node *pnode)
 		LM_ERR("can't connect to a RTP proxy\n");
 		goto e3;
 	}
-	pkg_free(hostname);
-	freeaddrinfo(res);
+	if (pnode->rn_umode != CM_CUNIX) {
+		memcpy(&pnode->addr.s, res->ai_addr, res->ai_addrlen);
+		pkg_free(hostname);
+		freeaddrinfo(res);
+	}
 	LM_DBG("connected %s\n", pnode->rn_address);
 	return s;
 e3:
 	close(s);
 e2:
-	freeaddrinfo(res);
+	if (pnode->rn_umode != CM_CUNIX)
+		freeaddrinfo(res);
 e1:
-	pkg_free(hostname);
+	if (pnode->rn_umode != CM_CUNIX)
+		pkg_free(hostname);
 e0:
 	return -1;
 }

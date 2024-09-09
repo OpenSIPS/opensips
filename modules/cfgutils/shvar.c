@@ -53,7 +53,7 @@ static inline void unlock_shvar(sh_var_t *shv)
 }
 
 
-sh_var_t* add_shvar(str *name)
+sh_var_t* add_shvar(const str *name)
 {
 	sh_var_t **shv_holder, *shv;
 	unsigned int e;
@@ -208,14 +208,17 @@ void destroy_shvars(void)
 
 
 /********* PV functions *********/
-int pv_parse_shvar_name(pv_spec_p sp, str *in)
+int pv_parse_shvar_name(pv_spec_p sp, const str *in)
 {
 	pv_spec_p pv_inner;
+	str _in;
 
 	if(in==NULL || in->s==NULL || in->len==0 || sp==NULL)
 		return -1;
 
-	trim(in);
+	_in = *in;
+	trim(&_in);
+	in = &_in;
 
 	if (in->s[0] == PV_MARKER) {
 		/* variable as name -> dynamic name */
@@ -444,7 +447,8 @@ int mi_print_var(sh_var_t *shv, mi_item_t *var_item, int do_locking)
 			return -1;
 		}
 
-		unlock_shvar(shv);
+		if (do_locking)
+			unlock_shvar(shv);
 	} else {
 		ival = shv->v.value.n;
 		if (do_locking)
@@ -544,7 +548,7 @@ mi_response_t *mi_shvar_get_1(const mi_params_t *params, struct mi_handler *_)
 	if (!var_obj)
 		goto error;
 
-	if (mi_print_var(shv, var_obj, 0) < 0)
+	if (mi_print_var(shv, var_obj, 1) < 0)
 		goto error;
 
 	return resp;
@@ -630,7 +634,7 @@ int param_set_shvar( modparam_t type, void* val)
 
 /*** $time(name) PV class */
 
-int pv_parse_time_name(pv_spec_p sp, str *in)
+int pv_parse_time_name(pv_spec_p sp, const str *in)
 {
 	if(sp==NULL || in==NULL || in->len<=0)
 		return -1;

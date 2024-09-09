@@ -36,6 +36,7 @@
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp_report.h"
+#include "../../net/tcp_common.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../receive.h"
@@ -51,6 +52,8 @@ int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 static struct tcp_req tcp_current_req;
 
 static struct ws_req ws_current_req;
+
+static int ws_require_origin = 1;
 
 /* in milliseconds */
 int ws_send_timeout = 100;
@@ -70,6 +73,7 @@ static str ws_resource = str_init("/");
 #define _ws_common_read_tout ws_hs_read_tout
 #define _ws_common_write_tout ws_send_timeout
 #define _ws_common_resource ws_resource
+#define _ws_common_require_origin ws_require_origin
 #include "ws_handshake_common.h"
 #include "ws_common.h"
 
@@ -84,14 +88,15 @@ extern int is_tcp_main;
 /* module  tracing parameters */
 static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
-static int trace_filter_route_id = -1;
+static struct script_route_ref *trace_filter_route_ref = NULL;
 /**/
 
 static int mod_init(void);
 static int proto_ws_init(struct proto_info *pi);
 static int proto_ws_init_listener(struct socket_info *si);
-static int proto_ws_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id);
+static int proto_ws_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id);
 static int ws_read_req(struct tcp_connection* con, int* bytes_read);
 static int ws_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
@@ -106,16 +111,18 @@ static mi_response_t *ws_trace_mi_1(const mi_params_t *params,
 static int ws_port = WS_DEFAULT_PORT;
 
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_ws_init, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	/* XXX: should we drop the ws prefix? */
 	{ "ws_port",           INT_PARAM, &ws_port           },
 	{ "ws_max_msg_chunks", INT_PARAM, &ws_max_msg_chunks },
 	{ "ws_send_timeout",   INT_PARAM, &ws_send_timeout   },
 	{ "ws_resource",       STR_PARAM, &ws_resource.s     },
+	{ "require_origin",    INT_PARAM, &ws_require_origin },
 	{ "ws_handshake_timeout", INT_PARAM, &ws_hs_read_tout },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "trace_on",						 INT_PARAM, &trace_is_on_tmp        },
@@ -123,7 +130,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -133,7 +140,7 @@ static dep_export_t deps = {
 	},
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "ws_trace", 0, 0, 0, {
 		{ws_trace_mi, {0}},
 		{ws_trace_mi_1, {"trace_mode", 0}},
@@ -179,10 +186,10 @@ static int proto_ws_init(struct proto_info *pi)
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
-	pi->net.read			= (proto_net_read_f)ws_read_req;
+	pi->net.stream.read		= ws_read_req;
 
-	pi->net.conn_init		= ws_conn_init;
-	pi->net.conn_clean		= ws_conn_clean;
+	pi->net.stream.conn.init	= ws_conn_init;
+	pi->net.stream.conn.clean	= ws_conn_clean;
 	pi->net.report			= ws_report;
 
 	return 0;
@@ -223,9 +230,9 @@ static int mod_init(void)
 
 	*trace_is_on = trace_is_on_tmp;
 	if ( trace_filter_route ) {
-		trace_filter_route_id =
-			get_script_route_ID_by_name( trace_filter_route, 
-				sroutes->request, RT_NO);
+		trace_filter_route_ref =
+			ref_script_route_by_name( trace_filter_route, 
+				sroutes->request, RT_NO, REQUEST_ROUTE, 0);
 	}
 
 	return 0;
@@ -249,7 +256,7 @@ static int ws_conn_init(struct tcp_connection* c)
 		d->dest = t_dst;
 		d->net_trace_proto_id = net_trace_proto_id;
 		d->trace_is_on = trace_is_on;
-		d->trace_route_id = trace_filter_route_id;
+		d->trace_route_ref = trace_filter_route_ref;
 	}
 
 	d->state = WS_CON_INIT;
@@ -320,52 +327,53 @@ static void ws_report(int type, unsigned long long conn_id, int conn_flags,
 
 
 /*! \brief Finds a tcpconn & sends on it */
-static int proto_ws_send(struct socket_info* send_sock,
-											char* buf, unsigned int len,
-											union sockaddr_union* to, int id)
+static int proto_ws_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id)
 {
 	struct tcp_connection *c;
+	struct tcp_conn_profile prof;
 	struct timeval get;
 	struct ip_addr ip;
-	int port = 0;
-	int fd, n;
-
 	struct ws_data* d;
+	int port = 0, fd, n, matched;
 
-	reset_tcp_vars(tcpthreshold);
-	start_expire_timer(get,tcpthreshold);
+	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
+
+	reset_tcp_vars(prof.send_threshold);
+	start_expire_timer(get,prof.send_threshold);
 
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		n = tcp_conn_get(id, &ip, port, PROTO_WS, NULL, &c, &fd);
+		n = tcp_conn_get(id, &ip, port, PROTO_WS, NULL, &c, &fd, send_sock);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd);
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
-		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+		get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 		return -1;
 	}
 
 	if (n<0) {
 		/* error during conn get, return with error too */
 		LM_ERR("failed to acquire connection\n");
-		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+		get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 		return -1;
 	}
 
 	/* was connection found ?? */
 	if (c==0) {
-		if (tcp_no_new_conn) {
+		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
 			return -1;
-		}
+
 		if (!to) {
 			LM_ERR("Unknown destination - cannot open new ws connection\n");
 			return -1;
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=ws_connect(send_sock, to, &fd))==0) {
+		if ((c=ws_connect(send_sock, to, &prof, &fd))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
@@ -385,7 +393,7 @@ static int proto_ws_send(struct socket_info* send_sock,
 
 		goto send_it;
 	}
-	get_time_difference(get, tcpthreshold, tcp_timeout_con_get);
+	get_time_difference(get, prof.send_threshold, tcp_timeout_con_get);
 
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
@@ -400,8 +408,8 @@ send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
 	n = ws_req_write(c, fd, buf, len);
-	stop_expire_timer(get, tcpthreshold, "WS ops",buf,(int)len,1);
-	tcp_conn_set_lifetime( c, tcp_con_lifetime);
+	stop_expire_timer(get, prof.send_threshold, "WS ops",buf,(int)len,1);
+	tcp_conn_reset_lifetime(c);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
 	if (n<0){
@@ -420,8 +428,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, 0);
 	return n;

@@ -96,7 +96,7 @@ static int fixup_wpvar(void **param);
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"is_from_local", (cmd_function)is_from_local, {
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_wpvar, 0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
@@ -115,7 +115,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",         STR_PARAM, &db_url.s      },
 	{"db_mode",        INT_PARAM, &db_mode       },
 	{"domain_table",   STR_PARAM, &domain_table.s},
@@ -128,7 +128,7 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_DOMAIN_RELOAD, 0, 0, mi_child_init, {
 		{mi_domain_reload, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -250,7 +250,7 @@ error:
 static int child_init(int rank)
 {
 	/* Check if database is needed by worker processes only */
-	if ( db_mode==0 && (rank>=1) ) {
+	if (rank >= 1) {
 		if (domain_db_init(&db_url)<0) {
 			LM_ERR("Unable to connect to the database\n");
 			return -1;

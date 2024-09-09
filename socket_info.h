@@ -37,6 +37,11 @@
 #include "net/trans.h"
 #include "ut.h"
 
+struct last_real_ports {
+	unsigned short local;
+	unsigned short remote;
+};
+
 struct socket_info {
 	int socket;
 	str name; /*!< name - eg.: foo.bar or 10.0.0.1 */
@@ -57,6 +62,8 @@ struct socket_info {
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	unsigned short workers;
 	struct scaling_profile *s_profile;
+	void *extra_data;
+	enum sip_protos internal_proto;
 
 	/* these are IP-level local/remote ports used during the last write op via
 	 * this sock (or a connection belonging to this sock). These values are 
@@ -65,13 +72,15 @@ struct socket_info {
 	 * they are simply overwritten by the next write op on this socket/conn.
 	 * IMPORTANT: when reading them, be sure you are just after a write ops,
 	 * otherwise you may read old data here */
-	unsigned short last_local_real_port;
-	unsigned short last_remote_real_port;
-
-	struct socket_info* next;
-	struct socket_info* prev;
+	struct last_real_ports *last_real_ports;
 };
 
+struct socket_info_full {
+	struct socket_info socket_info;
+	struct last_real_ports last_real_ports;
+	struct socket_info_full* next;
+	struct socket_info_full* prev;
+};
 
 #define get_socket_real_name(_s) \
 	(&(_s)->sock_str)
@@ -86,9 +95,9 @@ struct socket_info {
 #define PROTO_NAME_MAX_SIZE  8 /* CHANGEME if you define a bigger protocol name
 						   * currently hep_tcp - biggest proto */
 
-int new_sock2list(struct socket_id *sid, struct socket_info** list);
+int new_sock2list(struct socket_id *sid, struct socket_info_full** list);
 
-int fix_socket_list(struct socket_info **);
+int fix_socket_list(struct socket_info_full **);
 
 /*
  * This function will retrieve a list of all ip addresses and ports that
@@ -142,18 +151,20 @@ void print_aliases();
 #define grep_internal_sock_info(_host, _port, _proto) \
 	grep_sock_info_ext(_host, _port, _proto, 1)
 
-struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
+const struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 										unsigned short proto, int check_tag);
 
-struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
+const struct socket_info* parse_sock_info(str *spec);
+
+const struct socket_info* find_si(const struct ip_addr* ip, unsigned short port,
 												unsigned short proto);
 
 #define set_sip_defaults( _port, _proto) \
 	do { \
-		if (_proto==PROTO_NONE) _proto = PROTO_UDP; \
-		if (_port==0) { \
-			if (_proto==PROTO_TLS) _port = SIPS_PORT; else\
-			_port = SIP_PORT; \
+		if ((_proto)==PROTO_NONE) (_proto) = PROTO_UDP; \
+		if ((_port)==0) { \
+			if ((_proto)==PROTO_TLS) (_port) = SIPS_PORT; else\
+			(_port) = SIP_PORT; \
 		} \
 	} while(0)
 
@@ -175,13 +186,13 @@ static inline int next_proto(unsigned short proto)
 /*! \brief gets first non-null socket_info structure
  * (useful if for. e.g we are not listening on any udp sockets )
  */
-inline static struct socket_info* get_first_socket(void)
+inline static const struct socket_info* get_first_socket(void)
 {
 	int p;
 
 	for( p=0 ; p<PROTO_LAST ; p++ )
 		if (protos[p].listeners)
-			return protos[p].listeners;
+			return &protos[p].listeners->socket_info;
 
 	return NULL;
 }
@@ -201,9 +212,10 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 	/* must support 2-char arrays for ws
 	 * must support 3-char arrays for udp, tcp, tls, wss
 	 * must support 4-char arrays for sctp
+	 * must support 5-char arrays for ipsec
 	 * must support 7-char arrays for hep_tcp and hep_udp */
 	*proto=PROTO_NONE;
-	if ((len < 2 || len > 4) && len != 7) return -1;
+	if ((len < 2 || len > 5) && len != 7) return -1;
 
 	i=PROTO2UINT(s[0], s[1], s[2]);
 	switch(i){
@@ -226,7 +238,15 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 			break;
 		case PROTO2UINT('b', 'i', 'n'):
 			if(len==3) { *proto=PROTO_BIN; return 0; }
+			else if(len==4 && (s[3]=='s' || s[3]=='S')) {
+				*proto=PROTO_BINS; return 0;
+			}
 			break;
+		case PROTO2UINT('i', 'p', 's'):
+			if(len==5 && (s[3]|0x20)=='e' && (s[4]|0x20)=='c') {
+				*proto=PROTO_IPSEC; return 0;
+			}
+			return -1;
 
 		case PROTO2UINT('h', 'e', 'p'):
 			if (len != 7 || s[3] != '_') return -1;
@@ -239,6 +259,9 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				case PROTO2UINT('t','c', 'p'):
 					*proto=PROTO_HEP_TCP;
 					return 0;
+				case PROTO2UINT('t','l', 's'):
+					*proto=PROTO_HEP_TLS;
+					return 0;
 				default:
 					return -1;
 			}
@@ -246,6 +269,18 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 		case PROTO2UINT('s', 'm', 'p'):
 			if(len==4 && (s[3]=='p' || s[3]=='P')) {
 				*proto=PROTO_SMPP; return 0;
+			}
+			break;
+		case PROTO2UINT('m', 's', 'r'):
+			if(len==4) {
+				if (s[3]=='p' || s[3]=='P') {
+					*proto=PROTO_MSRP; return 0;
+				}
+			} else
+			if(len==5) {
+				if ((s[3]=='p' || s[3]=='P') && (s[4]=='s' || s[4]=='S')) {
+					*proto=PROTO_MSRPS; return 0;
+				}
 			}
 			break;
 		default:
@@ -385,10 +420,23 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 's';
 			*(p++) = 's';
 			break;
+		case PROTO_IPSEC:
+			*(p++) = 'i';
+			*(p++) = 'p';
+			*(p++) = 's';
+			*(p++) = 'e';
+			*(p++) = 'c';
+			break;
 		case PROTO_BIN:
 			*(p++) = 'b';
 			*(p++) = 'i';
 			*(p++) = 'n';
+			break;
+		case PROTO_BINS:
+			*(p++) = 'b';
+			*(p++) = 'i';
+			*(p++) = 'n';
+			*(p++) = 's';
 			break;
 		case PROTO_HEP_UDP:
 			*(p++) = 'h';
@@ -408,12 +456,35 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'c';
 			*(p++) = 'p';
 			break;
+		case PROTO_HEP_TLS:
+			*(p++) = 'h';
+			*(p++) = 'e';
+			*(p++) = 'p';
+			*(p++) = '_';
+			*(p++) = 't';
+			*(p++) = 'l';
+			*(p++) = 's';
+			break;
 		case PROTO_SMPP:
 			*(p++) = 's';
 			*(p++) = 'm';
 			*(p++) = 'p';
 			*(p++) = 'p';
 			break;
+		case PROTO_MSRP:
+			*(p++) = 'm';
+			*(p++) = 's';
+			*(p++) = 'r';
+			*(p++) = 'p';
+			break;
+		case PROTO_MSRPS:
+			*(p++) = 'm';
+			*(p++) = 's';
+			*(p++) = 'r';
+			*(p++) = 'p';
+			*(p++) = 's';
+			break;
+
 		default:
 			LM_CRIT("unsupported proto %d\n", proto);
 	}
@@ -421,11 +492,60 @@ static inline char* proto2str(int proto, char *p)
 	return p;
 }
 
+/* Similar to proto2str(), but proto is written in uppercase. The
+   new resulting pointer will be returned (where writing ended) */
+static inline char* proto2upper(int proto, char *p)
+{
+	switch (proto) {
+	case PROTO_UDP:
+		p = memcpy(p, STR_L("UDP")) + sizeof("UDP")-1;
+		break;
+	case PROTO_TCP:
+		p = memcpy(p, STR_L("TCP")) + sizeof("TCP")-1;
+		break;
+	case PROTO_TLS:
+		p = memcpy(p, STR_L("TLS")) + sizeof("TLS")-1;
+		break;
+	case PROTO_SCTP:
+		p = memcpy(p, STR_L("SCTP")) + sizeof("SCTP")-1;
+		break;
+	case PROTO_WS:
+		p = memcpy(p, STR_L("WS")) + sizeof("WS")-1;
+		break;
+	case PROTO_WSS:
+		p = memcpy(p, STR_L("WSS")) + sizeof("WSS")-1;
+		break;
+	case PROTO_BIN:
+		p = memcpy(p, STR_L("BIN")) + sizeof("BIN")-1;
+		break;
+	case PROTO_BINS:
+		p = memcpy(p, STR_L("BINS")) + sizeof("BINS")-1;
+		break;
+	case PROTO_HEP_UDP:
+		p = memcpy(p, STR_L("HEP_UDP")) + sizeof("HEP_UDP")-1;
+		break;
+	case PROTO_HEP_TCP:
+		p = memcpy(p, STR_L("HEP_TCP")) + sizeof("HEP_TCP")-1;
+		break;
+	case PROTO_SMPP:
+		p = memcpy(p, STR_L("SMPP")) + sizeof("SMPP")-1;
+		break;
+	case PROTO_MSRP:
+		p = memcpy(p, STR_L("MSRP")) + sizeof("MSRP")-1;
+		break;
+	case PROTO_MSRPS:
+		p = memcpy(p, STR_L("MSRPS")) + sizeof("MSRPS")-1;
+		break;
+	default:
+		LM_CRIT("unsupported proto %d\n", proto);
+	}
+
+	return p;
+}
 
 static inline char *proto2a(int proto)
 {
-	static char b[8]; /* IMPORTANT - keep this max aligned with the proto2str
-	                   * with an extra +1 for NULL terminator */
+	static char b[PROTO_NAME_MAX_SIZE+1];
 	char *p;
 
 	/* print the proto name */
@@ -450,7 +570,7 @@ static inline char *proto2a(int proto)
       1 - advertised name
       2 - tagged name
 */
-static inline char* socket2str(struct socket_info *sock, char *s, int *len, int type)
+static inline char* socket2str(const struct socket_info *sock, char *s, int *len, int type)
 {
 	static char buf[MAX_SOCKET_STR];
 	char *p,*p1;
@@ -500,10 +620,14 @@ static inline char* socket2str(struct socket_info *sock, char *s, int *len, int 
 
 
 #define get_sock_info_list(_proto) \
-	((_proto>=PROTO_FIRST && _proto<PROTO_LAST)?(&protos[_proto].listeners):0)
+	(((_proto)>=PROTO_FIRST && (_proto)<PROTO_LAST)?(&protos[_proto].listeners):0)
 
 
 int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
 		int buff_increment);
+
+struct socket_id *socket_info2id(struct socket_info *si);
+struct socket_info_full* new_sock_info( struct socket_id *sid);
+void push_sock2list(struct socket_info_full *si);
 
 #endif

@@ -241,6 +241,13 @@ modparam("topology_hiding", "th_contact_encode_scheme", "base32")
      * D - Dialog ID (DID) is pushed into Contact username, rather
        than URI param. This option makes sense only when using
        topology hiding with dialog support.
+     * a - Preserve the advertised Contact header advertised to
+       the caller throughout the entire dialog.
+     * A - Preserve the advertised Contact header advertised to
+       the callee throughout the entire dialog.
+     * D - Dialog ID (DID) is pushed into Contact username, rather
+       than URI param. This option makes sense only when using
+       topology hiding with dialog support.
      * C - Encode the callid header
        There are many cases where propagating the callid towards
        the callee side is not a good idea, since sometimes the
@@ -328,13 +335,15 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Paiu (@vladpaiu) 31 8 2700 25
-   2. Razvan Crainea (@razvancrainea) 23 19 132 62
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 20 16 132 77
-   4. Liviu Chircu (@liviuchircu) 15 13 80 53
+   1. Vlad Paiu (@vladpaiu) 32 8 2700 25
+   2. Razvan Crainea (@razvancrainea) 31 24 336 205
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 21 146 88
+   4. Liviu Chircu (@liviuchircu) 16 14 80 55
    5. Vlad Patrascu (@rvlad-patrascu) 9 6 82 72
-   6. Alexey Vasilyev (@vasilevalex) 4 2 3 15
-   7. Peter Lemenkov (@lemenkov) 4 2 2 2
+   6. Maksym Sobolyev (@sobomax) 8 6 9 10
+   7. Alexey Vasilyev (@vasilevalex) 4 2 3 15
+   8. Peter Lemenkov (@lemenkov) 4 2 2 2
+   9. James Stanley 3 1 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -356,13 +365,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Jan 2021
-   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2020
-   3. Liviu Chircu (@liviuchircu)         Mar 2015 - May 2020
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2020
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jan 2020
-   6. Alexey Vasilyev (@vasilevalex)      Sep 2019 - Sep 2019
-   7. Vlad Paiu (@vladpaiu)               Feb 2015 - Mar 2016
+   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2024
+   2. Liviu Chircu (@liviuchircu)         Mar 2015 - May 2024
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Dec 2023
+   4. James Stanley                       Dec 2023 - Dec 2023
+   5. Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2020
+   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Jan 2020
+   8. Alexey Vasilyev (@vasilevalex)      Sep 2019 - Sep 2019
+   9. Vlad Paiu (@vladpaiu)               Feb 2015 - Mar 2016
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -371,10 +382,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Paiu (@vladpaiu).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu).
 
    Documentation Copyrights:
 

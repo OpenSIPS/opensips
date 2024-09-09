@@ -1,5 +1,3 @@
-# $Id$
-#
 # WARNING: do not run this directly, it should be run by the master Makefile
 
 include ../../Makefile.defs
@@ -12,7 +10,7 @@ LIBS+=-lsqlite3
 
 include ../../Makefile.modules
 
-install_module_custom: 
+install_module_dbschema:
 	mkdir -p $(data_prefix)/$(data_dir)/sqlite ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/sqlite/*) ; do \
 		if [ -f $$FILE ] ; then \

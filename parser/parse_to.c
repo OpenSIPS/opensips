@@ -232,6 +232,8 @@ static inline char* parse_to_param(char *buffer, char *end,
 				switch (status)
 				{
 					case PARA_VALUE_QUOTED:
+						if (tmp+1==end)
+							goto parse_error;
 						switch (*(tmp+1))
 						{
 							case '\r':
@@ -453,8 +455,13 @@ static inline char* parse_to_param(char *buffer, char *end,
 		}/*switch*/
 	}/*for*/
 
+	if (status==PARA_VALUE_QUOTED) {
+			LM_ERR("unexpected end of header in state %d\n", status);
+			goto parse_error;
+	}
 
 endofheader:
+	LM_DBG("end of header reached, state=%d\n", status);
 	if (param) {
 		if (saved_status==S_EQUAL||saved_status==S_PARA_VALUE) {
 			saved_status = E_PARA_VALUE;
@@ -472,7 +479,7 @@ endofheader:
 
 parse_error:
 	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
-		*tmp,status, (int)(tmp-buffer), ZSW(buffer));
+	    tmp < end? *tmp : *(end-1),status, (int)(tmp-buffer), ZSW(buffer));
 error:
 	if (param) pkg_free(param);
 	free_to_params(to_b);
@@ -809,7 +816,7 @@ endofheader:
 
 parse_error:
 	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
-		*tmp,status, (int)(tmp-buffer), buffer);
+	    tmp < end? *tmp : *(end-1), status, (int)(tmp-buffer), buffer);
 error:
 	first_b->error=PARSE_ERROR;
 	free_to_params(first_b);
@@ -895,4 +902,29 @@ int parse_to_header( struct sip_msg *msg)
 	return 0;
 error:
 	return -1;
+}
+
+/*
+ * Checks if From includes a To-tag -- good to identify
+ * if a request creates a new dialog
+ */
+int has_totag(struct sip_msg* _m)
+{
+	str tag;
+
+	if (!_m->to && parse_headers(_m, HDR_TO_F,0)==-1) {
+		LM_ERR("To parsing failed\n");
+		return 0;
+	}
+	if (!_m->to) {
+		LM_ERR("no To\n");
+		return 0;
+	}
+	tag=get_to(_m)->tag_value;
+	if (tag.s==0 || tag.len==0) {
+		LM_DBG("no totag\n");
+		return 0;
+	}
+	LM_DBG("totag found\n");
+	return 1;
 }

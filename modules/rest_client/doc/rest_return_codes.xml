@@ -25,6 +25,12 @@
 	</para>
 </listitem>
 <listitem>
+	<para><emphasis role='bold'>-4</emphasis> - Already Connecting
+	(another OpenSIPS worker is already connecting to this URL hostname.
+	Consult <xref linkend="param_no_concurrent_connects"/> for more info).
+	</para>
+</listitem>
+<listitem>
 	<para><emphasis role='bold'>-10</emphasis> - Internal Error (out of
 		memory, unexpected libcurl error, etc.)
 	</para>

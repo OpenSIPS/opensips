@@ -15,15 +15,28 @@
 	</para>
 
 	<para>
-		This module provides the implementation of a RabbitMQ client for the
-		Event Interface. It is used to send AMQP messages to a RabbitMQ server
+		This module provides the implementation of a RabbitMQ client 
+		that supports two primary functionalities:
+		
+		<itemizedlist>
+
+		<listitem><para>
+		<emphasis>Event-Driven Messaging:</emphasis>
+		It is used to send AMQP messages to a RabbitMQ server
 		each time the Event Interface triggers an event subscribed for.
+		</para></listitem>
+
+		<listitem><para>
+		<emphasis>General Message Publishing:</emphasis>
+		This module also enables sending AMQP messages directly to a RabbitMQ
+		server. Messages can be easily customized according to the AMQP specifications,
+		as well the RabbitMQ extensions.
+		</para></listitem>
+
+		</itemizedlist>
+
 	</para>
 
-	<para>
-		The AMQP protocol is only used as the transport layer for notifications.
-		The content of a message is presented in the next section.
-	</para>
 	</section>
 
 	<section>
@@ -65,7 +78,7 @@
 			</para>	</listitem>
 			<listitem><para>
 					<emphasis>params</emphasis> - extra parameters specified as
-					<emphasis>key</emphasis>=<emphasis>value</emphasis>, separated by ';':
+					<emphasis>key[=value]</emphasis>, separated by ';':
 					<itemizedlist>
 						<listitem><para>
 						<emphasis>exchange</emphasis> - exchange of the RabbitMQ server.
@@ -76,6 +89,11 @@
 						defined using the <emphasis>tls_mgm</emphasis> module) to use for
 						this connection. The <xref linkend="param_use_tls"/> module parameter
 						must be enabled.
+						</para></listitem>
+						<listitem><para>
+						<emphasis>persistent</emphasis> - indicates that the message should be
+						published as persistent <emphasis>delivery_mode=2</emphasis>. This
+						parameter does not have a value.
 						</para></listitem>
 					</itemizedlist>
 			</para></listitem>
@@ -147,25 +165,6 @@ modparam("event_rabbitmq", "heartbeat", 3)
 </programlisting>
 		</example>
 	</section>
-	<section id="param_sync_mode" xreflabel="sync_mode">
-		<title><varname>sync_mode</varname> (integer)</title>
-		<para>
-			Specifies whether an event raise operates synchronous or asynchronous relative to the process where the raise is triggered.In synchronous mode the process waits for the status of the raise from the actual worker process.In asynchronous mode the process continues its operation without receiving any confirmation.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0 (asynchronous)</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>sync_mode</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("event_rabbitmq", "sync_mode", 1)
-...
-</programlisting>
-		</example>
-	</section>
 		<section id="param_connect_timeout" xreflabel="connect_timeout">
 			<title><varname>connect_timeout</varname> (integer)</title>
 			<para>
@@ -220,13 +219,223 @@ modparam("event_rabbitmq", "use_tls", 1)
 		</example>
 	</section>
 
+	<section id="param_timeout" xreflabel="timeout">
+		<title><varname>timeout</varname> (integer)</title>
+		<para>
+		Indicates the timeout (in milliseconds) of any command (i.e. publish)
+		sent to the RabbitMQ server.
+		</para>
+		<para>
+		<emphasis>NOTE</emphasis> that this parameter is available only starting with
+		RabbitMQ library version <emphasis>0.9.0</emphasis>; setting it when using an
+		earlier version will have no effect, and the publish command will run in
+		blocking mode.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>0</emphasis> (no timeout - blocking mode)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_rabbitmq", "timeout", 1000) # timeout after 1s
+...
+</programlisting>
+		</example>
+	</section>
+
+			<section id="param_server_id" xreflabel="server_id">
+		<title><varname>server_id</varname> (string)</title>
+		<para>
+			Specify configuration for a RabbitMQ server. It contains a set
+			of parameters used to customize the connection to the server,
+			as well as to the messages sent. The format of the parameter is
+			<emphasis>[id_name] param1=value1; param2=value2;</emphasis>.
+			The <emphasis>uri</emphasis> parameter is mandatory.
+		</para>
+		<para>
+			This parameter can be set multiple times, for each RabbitMQ
+			server.
+		</para>
+		<para>
+			The following parameters can be used:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>uri</emphasis> - Mandatory parameter - a full
+				<emphasis>amqp</emphasis> URI as described
+				<ulink url='https://www.rabbitmq.com/uri-spec.html'>here</ulink>.
+				Missing fields in the URI will receive default values,
+				such as: <emphasis>user: guest</emphasis>,
+				<emphasis>password: guest</emphasis>,
+				<emphasis>host: localhost</emphasis>,
+				<emphasis>vhost: /</emphasis>,
+				<emphasis>port: 5672</emphasis>. TLS connections are specified
+				using an <emphasis>amqps</emphasis> URI.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>frames</emphasis> - the maximum size of an AMQP
+				frame. Optional parameter, default size is 131072.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>retries</emphasis> - the number of retries in case
+				a connection is down. Optional parameter, default is disabled
+				(do not retry).
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>exchange</emphasis> - exchange used to send AMQP
+				messages to. Optional parameter, default is <emphasis>""</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>heartbeat</emphasis> - interval in seconds used
+				to send heartbeat messages. Optional parameter, default is
+				disabled.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>immediate</emphasis> - indicate to the broker that
+				the message MUST be delivered to a consumer immediately.
+				Optional parameter, default is not immediate.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>mandatory</emphasis> - indicate to the broker that
+				the message MUST be routed to a queue. Optional parameter,
+				default is not mandatory.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>non-persistent</emphasis> - indicates that the
+				message should not be persistent in case the RabbitMQ
+				server restarts. Optional parameter, default is persistent.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tls_domain</emphasis> - indicates which TLS domain (as
+				defined using the <emphasis>tls_mgm</emphasis> module) to use for
+				this connection. This must be an <emphasis>amqps</emphasis> URI and the
+				<xref linkend="param_use_tls"/> module parameter must be enabled.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<example>
+		<title>Set <varname>server_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# connection to a RabbitMQ server on localhost, default port
+modparam("event_rabbitmq", "server_id","[ID1] uri = amqp://127.0.0.1")
+...
+# connection with a 5 seconds interval for heartbeat messages
+modparam("event_rabbitmq", "server_id","[ID2] uri = amqp://127.0.0.1;
+heartbeat = 5")
+...
+# TLS connection
+modparam("event_rabbitmq", "server_id","[ID3] uri = amqps://127.0.0.1; tls_domain=rmq")
+...
+		</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
-	<title>Exported Functions</title>
-		<para>
-		No function exported to be used from configuration file.
-		</para>
+		<title>Exported Functions</title>
+		<section id="func_rabbitmq_publish" xreflabel="rabbitmq_publish()">
+			<title>
+				<function moreinfo="none">rabbitmq_publish(server_id, routing_key, message 
+					[, [content_type [, headers, headers_vals]]])</function>
+			</title>
+			<para>
+				Sends a publish message to a RabbitMQ server.
+			</para>
+			<para>
+				This function also allows you to attach AMQP headers and values
+				in the AMQP message. This is done by specifying a set of headers
+				names (in the <emphasis>headers</emphasis> parameter) and the
+				corresponding values (in the <emphasis>headers_vals</emphasis>
+				parameter). The number of AVP values in the
+				<emphasis>headers</emphasis> must be the same as the one in the
+				<emphasis>headers_vals</emphasis>.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<para>
+			The function has the following parameters:
+			</para>
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis>server_id</emphasis> (string) - the id of the RabbitMQ server.
+						Must be one of the parameters defined in the
+						<emphasis>server_id</emphasis> modparam.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>routing_key</emphasis> (string) - routing key used to
+						deliver the AMQP message.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>message</emphasis> (string) - the body of the message.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>content_type</emphasis> (string, optional) - content type
+						of the message sent. By default it is <emphasis>none</emphasis>.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>headers</emphasis> (string, optional) - an AVP containing
+						the names of the headers within the AMQP message. If set,
+						<emphasis>headers_vals</emphasis> parameter must also be specified.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>headers_vals</emphasis> (string, optional) - an AVP containing
+						the corresponding values of the AMQP headers. If set,
+						<emphasis>headers</emphasis> parameter must also be specified.
+					</para>
+				</listitem>
+			</itemizedlist>
+			<example>
+			<title><function>rabbitmq_publish()</function> function usage</title>
+			<programlisting format="linespecific">
+	...
+	rabbitmq_publish("ID1", "call", "$fU called $rU");
+	...
+	rabbitmq_publish("ID1", "call", "{ \'caller\': \'$fU\',
+					\'callee\; \'$rU\'", "application/json");
+	...
+	$avp(hdr_name) = "caller";
+	$avp(hdr_value) = $fU;
+	$avp(hdr_name) = "callee";
+	$avp(hdr_value) = $rU;
+	rabbitmq_publish("ID2", "call", $rb, , $avp(hdr_name), $avp(hdr_value));
+	...
+	</programlisting>
+			</example>
+		</section>
 	</section>
 
 	<section>

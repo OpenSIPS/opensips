@@ -7,5 +7,4 @@ NAME=proto_tls.so
 
 ETC_DIR?=../../etc/
 
-include ../../Makefile.openssl
 include ../../Makefile.modules

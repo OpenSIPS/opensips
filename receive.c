@@ -99,7 +99,17 @@ unsigned int get_next_msg_no(void)
 int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		context_p existing_context, unsigned int msg_flags)
 {
+	#define reset_global_context() \
+		do {\
+			if (!current_processing_ctx) { \
+				ctx = NULL; \
+			} else { \
+				context_destroy(CONTEXT_GLOBAL, ctx); \
+				set_global_context(NULL); \
+			} \
+		} while (0)
 	static context_p ctx = NULL;
+
 	struct sip_msg* msg;
 	struct timeval start;
 	int rc, old_route_type;
@@ -151,14 +161,17 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		if ( msg->first_line.type==SIP_REQUEST && sroutes->error.a!=NULL ) {
 			if (existing_context == NULL)
 				prepare_context( ctx, parse_error );
-			current_processing_ctx = ctx;
+			set_global_context(ctx);
 			run_error_route(msg, 1);
+			reset_global_context();
 		}
 		goto parse_error;
 	}
 	LM_DBG("After parse_msg...\n");
 
 	start_expire_timer(start,execmsgthreshold);
+	/* jumpt to parse_error_reset (not to parse_error) while
+	 * start_expire_timer() is still on */
 
 	/* ... clear branches from previous message */
 	clear_branches();
@@ -170,17 +183,16 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			/* no via, send back error ? */
 			LM_ERR("no via found in request\n");
 			update_stat( err_reqs, 1);
-			goto parse_error;
+			goto parse_error_reset;
 		}
 		/* check if necessary to add receive?->moved to forward_req */
-		/* check for the alias stuff */
-		if (msg->via1->alias && tcp_accept_aliases &&
-		is_tcp_based_proto(rcv_info->proto) ) {
-			if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
-									rcv_info->proto)!=0){
-				LM_WARN("tcp alias failed\n");
-				/* continue */
-			}
+
+		/* should we reuse this connection for the opposite direction? */
+		if (is_tcp_based_proto(rcv_info->proto)
+		    && tcpconn_add_alias(msg, rcv_info->proto_reserved1,
+			                     msg->via1->port, rcv_info->proto) != 0) {
+			LM_WARN("tcp alias failed\n");
+			/* continue */
 		}
 
 		LM_DBG("preparing to run routing scripts...\n");
@@ -190,8 +202,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		/* prepare and set a new processing context for this request only if
 		 * no context was set from the upper layers */
 		if (existing_context == NULL)
-			prepare_context( ctx, parse_error );
-		current_processing_ctx = ctx;
+			prepare_context( ctx, parse_error_reset );
+		set_global_context(ctx);
 
 		/* execute pre-script callbacks, if any;
 		 * if some of the callbacks said not to continue with
@@ -225,7 +237,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			/* no via, send back error ? */
 			LM_ERR("no via found in reply\n");
 			update_stat( err_rpls, 1);
-			goto parse_error;
+			goto parse_error_reset;
 		}
 
 		/* set reply route type --bogdan*/
@@ -234,8 +246,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		/* prepare and set a new processing context for this reply only if
 		 * no context was set from the upper layers */
 		if (existing_context == NULL)
-			prepare_context( ctx, parse_error );
-		current_processing_ctx = ctx;
+			prepare_context( ctx, parse_error_reset );
+		set_global_context(ctx);
 
 		/* execute pre-script callbacks, if any ;
 		 * if some of the callbacks said not to continue with
@@ -273,15 +285,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 	}
 
 end:
+	reset_global_context();
 
-	/* if someone else set the context, then we should also "release" the
-	 * static ctx. */
-	if (current_processing_ctx == NULL)
-		ctx = NULL;
-	else
-		context_destroy(CONTEXT_GLOBAL, ctx);
-
-	current_processing_ctx = NULL;
 	__stop_expire_timer( start, execmsgthreshold, "msg processing",
 		msg->buf, msg->len, 0, slow_msgs);
 	reset_longest_action_list(execmsgthreshold);
@@ -294,6 +299,8 @@ end:
 	if (in_buff.s != buf)
 		pkg_free(in_buff.s);
 	return 0;
+parse_error_reset:
+	reset_longest_action_list(execmsgthreshold);
 parse_error:
 	exec_parse_err_cb(msg);
 	free_sip_msg(msg);

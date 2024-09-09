@@ -34,13 +34,9 @@
  * \brief Statistics support
  */
 
-#ifdef HAVE_STDATOMIC
-#include <stdatomic.h>
-#else
-#include "atomic.h"
-#endif
 #include <string.h>
 
+#include "atomic.h"
 #include "mem/shm_mem.h"
 #include "mem/rpm_mem.h"
 #include "mi/mi.h"
@@ -66,8 +62,10 @@ static mi_response_t *w_mi_list_stats_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_reset_all_stats(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-static mi_export_t mi_stat_cmds[] = {
+static const mi_export_t mi_stat_cmds[] = {
 	{ "get_statistics",
 		"prints the statistics (all, group or one) realtime values.", 0, 0, {
 		{mi_get_stats, {"statistics", 0}},
@@ -86,6 +84,11 @@ static mi_export_t mi_stat_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
+	{ "reset_all_statistics", "resets the value of all resetable variables", 0, 0, {
+		{mi_reset_all_stats, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
@@ -96,7 +99,7 @@ static mi_export_t mi_stat_cmds[] = {
 gen_lock_t *stat_lock = 0;
 #endif
 
-#define stat_hash(_s) core_hash( _s, 0, STATS_HASH_SIZE)
+#define stat_hash(_s) core_hash( _s, NULL, STATS_HASH_SIZE)
 
 #define stat_is_hidden(_s)  ((_s)->flags&STAT_HIDDEN)
 
@@ -172,6 +175,20 @@ module_stats* get_stat_module( str *module)
 	return 0;
 }
 
+module_stats *module_stats_iterate(module_stats *mod)
+{
+	int m;
+	if (!mod) {
+		/* first iteration - return head */
+		return ((collector->mod_no > 0)?
+				&collector->amodules[0]:NULL);
+	}
+	for (m = 0; m < collector->mod_no - 1; m++)
+		if (&collector->amodules[m] == mod)
+			return &collector->amodules[m + 1];
+	return NULL;
+}
+
 static inline module_stats* __add_stat_module(str *module, int unsafe)
 {
 	module_stats *amods;
@@ -222,7 +239,7 @@ module_stats *add_stat_module(char *module)
 /***************** Init / Destroy STATS support functions *******************/
 
 
-int clone_pv_stat_name(str *name, str *clone)
+int clone_pv_stat_name(const str *name, str *clone)
 {
 	clone->s = (char*)shm_malloc(name->len);
 	if (clone->s==NULL) {
@@ -319,6 +336,7 @@ void destroy_stats_collector(void)
 {
 	stat_var *stat;
 	stat_var *tmp_stat;
+	group_stats *grp, *grp_next;
 	int i, idx;
 
 #ifdef NO_ATOMIC_OPS
@@ -361,6 +379,13 @@ void destroy_stats_collector(void)
 		/* destroy sts_module array */
 		if (collector->amodules)
 			shm_free(collector->amodules);
+
+		/* destroy the stat's groups */
+		for (grp = collector->groups; grp; grp = grp_next) {
+			grp_next = grp->next;
+			shm_free(grp->vars);
+			shm_free(grp);
+		}
 
 		/* destroy the RW lock */
 		if (collector->rwl)
@@ -496,7 +521,8 @@ do_register:
 					shm_free(stat);
 				}
 
-				*pvar = it;
+				if ((flags&STAT_IS_FUNC)==0)
+					*pvar = it;
 				return 0;
 			}
 		}
@@ -549,7 +575,7 @@ error:
 	return -1;
 }
 
-int register_stat2( char *module, char *name, stat_var **pvar,
+int register_stat2(const char *module, char *name, stat_var **pvar,
 					unsigned short flags, void *ctx, int unsafe)
 {
 	str smodule, sname;
@@ -573,7 +599,7 @@ int register_dynamic_stat( str *name, stat_var **pvar)
 	return __register_dynamic_stat (NULL, name, pvar);
 }
 
-int __register_module_stats(char *module, stat_export_t *stats, int unsafe)
+int __register_module_stats(const char *module, const stat_export_t *stats, int unsafe)
 {
 	int ret;
 
@@ -593,7 +619,7 @@ int __register_module_stats(char *module, stat_export_t *stats, int unsafe)
 }
 
 
-stat_var* __get_stat( str *name, int mod_idx )
+stat_var* __get_stat( const str *name, int mod_idx )
 {
 	stat_var *stat;
 	int hash;
@@ -626,7 +652,7 @@ stat_var* __get_stat( str *name, int mod_idx )
 	return 0;
 }
 
-stat_var* get_stat( str *name )
+stat_var* get_stat( const str *name )
 {
 	return __get_stat(name, -1);
 }
@@ -676,6 +702,11 @@ int mi_print_stat(mi_item_t *resp_obj, str *mod, str *stat, unsigned long val)
 	return 0;
 }
 
+
+str *get_stat_module_name(stat_var *stat)
+{
+	return &collector->amodules[stat->mod_idx].name;
+}
 
 
 /***************************** MI STUFF ********************************/
@@ -935,6 +966,108 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
+static mi_response_t *mi_reset_all_stats(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int i;
+	stat_var *stat;
+
+	if (collector==NULL)
+		return 0;
+
+	/* static stats */
+	for (i=0;i<STATS_HASH_SIZE;i++) {
+		for( stat=collector->hstats[i] ; stat ; stat=stat->hnext ) {
+			if ( !stat_is_hidden(stat)) {
+				reset_stat( stat );
+			}
+		}
+	}
+
+	/* dynamic stats */
+	lock_start_read((rw_lock_t *)collector->rwl);
+	for (i=0;i<STATS_HASH_SIZE;i++) {
+		for( stat=collector->dy_hstats[i] ; stat ; stat=stat->hnext ) {
+			if ( !stat_is_hidden(stat)) {
+				reset_stat( stat );
+			}
+		}
+	}
+	lock_stop_read((rw_lock_t *)collector->rwl);
+
+	/* module stats */
+	for( i=0 ; i<collector->mod_no ; i++ ) {
+		for( stat=collector->amodules[i].head ; stat ; stat=stat->hnext ) {
+			if ( !stat_is_hidden(stat)) {
+				reset_stat( stat );
+			}
+		}
+	}
+
+	return init_mi_result_ok();
+}
+
+void stats_mod_lock(module_stats *mod)
+{
+	if (mod->is_dyn)
+		lock_start_read((rw_lock_t *)collector->rwl);
+}
+
+void stats_mod_unlock(module_stats *mod)
+{
+	if (mod->is_dyn)
+		lock_stop_read((rw_lock_t *)collector->rwl);
+}
+
+group_stats *register_stats_group(const char *name)
+{
+	group_stats *grp = shm_malloc(sizeof *grp);
+	if (!grp)
+		return NULL;
+	memset(grp, 0, sizeof *grp);
+	init_str(&grp->name, name);
+	grp->vars = shm_malloc(sizeof(stat_var *));
+	if (!grp->vars) {
+		shm_free(grp);
+		return NULL;
+	}
+
+	grp->next = collector->groups;
+	collector->groups = grp;
+
+	return grp;
+}
+
+int add_stats_group(group_stats *grp, stat_var *stat)
+{
+	stat_var **stats = shm_realloc(grp->vars, sizeof(stat_var) * grp->no + 1);
+	if (!stats)
+		return -1;
+	grp->vars = stats;
+	grp->vars[grp->no++] = stat;
+	stat->flags |= STAT_HAS_GROUP;
+	return 0;
+}
+
+group_stats *get_stat_group(stat_var *stat)
+{
+	int s;
+	group_stats *grp;
+	for (grp = collector->groups; grp; grp = grp->next)
+		for (s = 0; s < grp->no; s++)
+			if (grp->vars[s] == stat)
+				return grp;
+	return NULL;
+}
+
+group_stats *find_stat_group(str *name)
+{
+	group_stats *grp;
+	for (grp = collector->groups; grp; grp = grp->next)
+		if (str_strcmp(name, &grp->name) == 0)
+			return grp;
+	return NULL;
+}
 
 #endif /*STATISTICS*/
 

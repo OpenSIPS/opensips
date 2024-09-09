@@ -38,8 +38,8 @@ int codec_delete_except_re(struct sip_msg* msg, regex_t* re);
 int codec_move_up_re(struct sip_msg* msg, regex_t* re);
 int codec_move_down_re(struct sip_msg* msg, regex_t* re);
 
-int stream_find(struct sip_msg* msg, regex_t* re);
-int stream_delete(struct sip_msg* msg, regex_t* re);
+int stream_find(struct sip_msg* msg, regex_t* re, regex_t* re2);
+int stream_delete(struct sip_msg* msg, regex_t* re, regex_t* re2);
 
 
 

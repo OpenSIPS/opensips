@@ -77,7 +77,7 @@ str isnsuffix;
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"enum_query", (cmd_function)enum_query, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
 			fixup_enum_suffix, 0},
@@ -109,7 +109,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"domain_suffix", STR_PARAM, &domain_suffix},
 	{"tel_uri_params", STR_PARAM, &tel_uri_params},
 	{"branchlabel", STR_PARAM, &branchlabel},

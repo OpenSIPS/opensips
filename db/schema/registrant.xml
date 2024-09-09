@@ -9,7 +9,7 @@
 
 <table id="registrant" xmlns:db="http://docbook.org/ns/docbook">
 	<name>registrant</name>
-	<version>2</version>
+	<version>3</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>Registrant information for the uac_registrant module. More 
@@ -27,7 +27,7 @@
 		<description>unique ID</description>
 	</column>
 
-	<column>
+	<column id="registrar">
 		<name>registrar</name>
 		<type>string</type>
 		<size>&uri_len;</size>
@@ -82,7 +82,7 @@
 		Otherwise, it is considered to be plain text.</description>
 	</column>
 
-	<column>
+	<column id="binding_URI">
 		<name>binding_URI</name>
 		<type>string</type>
 		<size>&uri_len;</size>
@@ -126,9 +126,19 @@
 		<description>A cluster sharing tag (as [tag_name/custer_id]) used to control this registration in clustering scenarios</description>
 	</column>
 
+	<column>
+        <name>state</name>
+        <type>int</type>
+        <description>The state of the registrant (0 enabled, 1 disabled)</description>
+        <default>0</default>
+        <natural/>
+    </column>
+
 	<index>
-		<name>aor_idx</name>
+		<name>registrant_idx</name>
 		<colref linkend="aor"/>
+		<colref linkend="binding_URI"/>
+		<colref linkend="registrar"/>
 		<unique/>
 	</index>
 </table>

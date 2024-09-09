@@ -56,36 +56,39 @@ cachedb_funcs cdbf;
 /* Actual connection to the Cache/DB back-end */
 cachedb_con *con;
 
-static cmd_export_t cmds[]=
+static const cmd_export_t cmds[]=
 {
-	{"process_msg",  (cmd_function)process_msg,  0, 0, 0, REQUEST_ROUTE},
-	{0,0,0,0,0,0}
+	{"process_msg",  (cmd_function)process_msg,  {{0, 0, 0}}, REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "cachedb_url",                 STR_PARAM, &cachedb_url.s},
 	{0,0,0}
 };
 
 
-/** module exports */
 struct module_exports exports= {
-	"example_cachedb",			/* module name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+	"example_cachedb",					/* module name */
+	MOD_TYPE_DEFAULT,			/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	0,							/* load function */
+	0,							/* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
+	0,							/* exported asynchronous functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
-	0,						/* exported MI functions */
+	0,							/* exported MI functions */
 	0,							/* exported pseudo-variables */
 	0,							/* exported transformations */
 	0,							/* extra processes */
+	0,							/* module pre-initialization function */
 	mod_init,					/* module initialization function */
 	(response_function) 0,      /* response handling function */
 	(destroy_function)destroy,	/* destroy function */
-	child_init                  /* per-child init function */
+	child_init,					/* per-child init function */
+	0							/* reload-ack function */
 };
 
 

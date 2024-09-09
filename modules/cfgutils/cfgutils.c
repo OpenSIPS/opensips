@@ -76,6 +76,7 @@
 static int fixup_check_pv_setf(void **param);
 static int fixup_time_rec(void **param);
 static int fixup_free_time_rec(void **param);
+static int fixup_spec_as_avp(void **param);
 
 static int set_prob(struct sip_msg *bar, int *percent_par);
 static int reset_prob(struct sip_msg*);
@@ -91,6 +92,7 @@ static int get_accurate_time(struct sip_msg* msg,
 static int pv_set_count(struct sip_msg* msg,
 					pv_spec_t *pv_name, pv_spec_t *pv_result);
 static int pv_sel_weight(struct sip_msg* msg, pv_spec_t *pv_name);
+static int w_shuffle_avps(struct sip_msg* msg, pv_spec_t *pv_name);
 
 mi_response_t *mi_set_prob(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -106,8 +108,8 @@ mi_response_t *mi_check_hash(const mi_params_t *params,
 static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
-static int ts_usec_delta(struct sip_msg *msg, int *t1s,
-		int *t1u, int *t2s, int *t2u, pv_spec_t *_res);
+static int ts_usec_delta(struct sip_msg *msg, int *t1s, int *t1u,
+		int *t2s, int *t2u, pv_spec_t *pv_delta_str, pv_spec_t *pv_delta_int);
 int check_time_rec(struct sip_msg *_, char *time_rec, unsigned int *ptime);
 
 #ifdef HAVE_TIMER_FD
@@ -130,7 +132,7 @@ static char* hash_file = NULL;
 int lock_pool_size = 32;
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"rand_set_prob", (cmd_function)set_prob, {
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
@@ -182,7 +184,8 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
-		{CMD_PARAM_VAR, fixup_check_pv_setf, 0}, {0,0,0}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_pv_setf, 0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_pv_setf, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"get_static_lock",(cmd_function)get_static_lock, {
@@ -209,10 +212,14 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"shuffle_avps",   (cmd_function)w_shuffle_avps,  {
+		{CMD_PARAM_VAR, fixup_spec_as_avp, NULL}, {0, 0, 0}},
+		ALL_ROUTES},
+
 	{0,0,{{0,0,0}},0}
 };
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 #ifdef HAVE_TIMER_FD
 	{"sleep", (acmd_function)async_sleep, {
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}}},
@@ -223,7 +230,7 @@ static acmd_export_t acmds[] = {
 };
 
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"initial_probability", INT_PARAM, &initial},
 	{"hash_file",           STR_PARAM, &hash_file},
 	{"shv_hash_size",       INT_PARAM, &shv_hash_size},
@@ -233,7 +240,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ FIFO_SET_PROB, 0, 0, 0, {
 		{mi_set_prob, {"prob_proc", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -266,14 +273,14 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static pv_export_t mod_items[] = {
-	{ {"RANDOM", sizeof("RANDOM")-1}, 1000, pv_get_random_val, 0,
+static const pv_export_t mod_items[] = {
+	{ str_const_init("RANDOM"), 1000, pv_get_random_val, 0,
 		0, 0, 0, 0 },
-	{ {"shv", (sizeof("shv")-1)}, 1001, pv_get_shvar,
+	{ str_const_init("shv"), 1001, pv_get_shvar,
 		pv_set_shvar, pv_parse_shvar_name, 0, 0, 0},
-	{ {"ctime", (sizeof("ctime")-1)}, 1002, pv_get_time,
+	{ str_const_init("ctime"), 1002, pv_get_time,
 		0, pv_parse_time_name, 0, 0, 0},
-	{ {"env", (sizeof("env")-1)}, 1002, pv_get_env,
+	{ str_const_init("env"), 1002, pv_get_env,
 		0, pv_parse_env_name, 0, 0, 0},
 
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
@@ -307,8 +314,8 @@ struct module_exports exports = {
 
 static int fixup_check_pv_setf(void **param)
 {
-	if (((pv_spec_t*)*param)->setf == 0) {
-		LM_ERR("invalid pvar\n");
+	if (!pv_is_w(((pv_spec_t*)*param))) {
+		LM_ERR("invalid pvar: must be writable\n");
 		return E_SCRIPT;
 	}
 
@@ -334,6 +341,17 @@ static int fixup_time_rec(void **param)
 static int fixup_free_time_rec(void **param)
 {
 	pkg_free(*param);
+	return 0;
+}
+
+static int fixup_spec_as_avp(void **param)
+{
+	pv_spec_t *sp = (pv_spec_t*)(*param);
+	if (sp->type != PVT_AVP) {
+		LM_ERR("param spec must be an AVP\n");
+		return E_SCRIPT;
+	}
+
 	return 0;
 }
 
@@ -698,7 +716,8 @@ static int get_accurate_time(struct sip_msg* msg,
 
 		val.flags = PV_VAL_STR;
 		val.rs.s = sec_usec_buf;
-		val.rs.len = sprintf(sec_usec_buf, "%ld.%06ld", tv.tv_sec, tv.tv_usec);
+		val.rs.len = sprintf(sec_usec_buf, "%lld.%06lld",
+						(long long)tv.tv_sec, (long long)tv.tv_usec);
 		if (pv_set_value(msg, pv_sec_usec, 0, &val) != 0) {
 			LM_ERR("failed to set 'pv_sec_usec'\n");
 			return -1;
@@ -824,18 +843,44 @@ error:
 	return -1;
 }
 
-static int ts_usec_delta(struct sip_msg *msg, int *t1s,
-		int *t1u, int *t2s, int *t2u, pv_spec_t *_res)
+static int ts_usec_delta(struct sip_msg *msg, int *t1s, int *t1u,
+		int *t2s, int *t2u, pv_spec_t *pv_delta_str, pv_spec_t *pv_delta_int)
 {
-	pv_value_t res;
+	pv_value_t val;
+	long long diff;
 
-	res.ri = abs(1000000 * (*t1s - *t2s) + *t1u - *t2u);
-	res.flags = PV_TYPE_INT;
+	diff = llabs(1000000LL * (*t1s - *t2s) + *t1u - *t2u);
 
-	if (pv_set_value(msg, _res, 0, &res)) {
-		LM_ERR("cannot store result value\n");
-		return -1;
+	if (pv_delta_str) {
+		char diff_buf[20 + 1];
+
+		val.rs.s = diff_buf;
+		val.rs.len = sprintf(diff_buf, "%lld", diff);
+		val.flags = PV_VAL_STR;
+
+		if (pv_set_value(msg, pv_delta_str, 0, &val) != 0) {
+			LM_ERR("failed to set the 'delta_str' output variable\n");
+			return -1;
+		}
 	}
+
+	if (pv_delta_int) {
+		if (diff > INT_MAX) {
+			LM_ERR("diff is too large to store in 'delta_int' (%lld us), "
+			       "use the 'delta_str' output variable instead!\n", diff);
+			return -1;
+		}
+
+		val.rs = STR_NULL;
+		val.ri = (int)diff;
+		val.flags = PV_VAL_INT|PV_TYPE_INT;
+
+		if (pv_set_value(msg, pv_delta_int, 0, &val)) {
+			LM_ERR("failed to set the 'delta_int' output variable\n");
+			return -1;
+		}
+	}
+
 	return 1;
 }
 
@@ -844,3 +889,48 @@ int check_time_rec(struct sip_msg *_, char *time_rec, unsigned int *ptime)
 {
 	return _tmrec_expr_check_str(time_rec, ptime ? *ptime : time(NULL));
 }
+
+static int w_shuffle_avps(struct sip_msg* msg, pv_spec_t *pv_name)
+{
+	struct usr_avp *src_avp, *rnd_avp;
+	struct usr_avp *temp_avp = NULL;
+	int_str src_val, rnd_val;
+	unsigned short avp_type;
+	int avp_name;
+	int n, rnd_idx;
+
+	/* get the name */
+	if(pv_get_avp_name(msg, &pv_name->pvp, &avp_name, &avp_type)!=0)
+	{
+		LM_ERR("invalid name\n");
+		return -1;
+	}
+
+	/* count AVPs */
+	n = 0;
+	while ((temp_avp=search_first_avp(avp_type, avp_name, NULL, temp_avp)) != 0)
+		n++;
+
+	/* randomize AVPs */
+	for ( ; n>1; n-- ) {
+		rnd_idx = random() % n;
+		if (rnd_idx == (n-1))
+			continue;
+
+		LM_DBG("swapping [%d] <--> [%d]\n", (n-1), rnd_idx);
+
+		src_avp = search_index_avp(avp_type, avp_name, &src_val, (n-1));
+		rnd_avp = search_index_avp(avp_type, avp_name, &rnd_val, rnd_idx);
+
+		if ( replace_avp(avp_type|(rnd_avp->flags&AVP_VAL_STR), avp_name, rnd_val, (n-1))==-1 ||
+					replace_avp(avp_type|(src_avp->flags&AVP_VAL_STR), avp_name, src_val, rnd_idx)==-1 ) {
+			LM_ERR("failed to swap avp\n");
+			goto error;
+		}
+	}
+
+	return 1;
+error:
+	return -1;
+}
+

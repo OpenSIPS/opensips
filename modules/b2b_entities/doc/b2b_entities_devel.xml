@@ -48,7 +48,9 @@ typedef struct b2b_api {
 		</para>
 			<programlisting format="linespecific">
 ...
-typedef str* (*b2b_server_new_t) (struct sip_msg* ,b2b_notify_t , void* param);
+typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
+		b2b_notify_t , str *mod_name, str* logic_key, struct b2b_tracer *tracer,
+		void *param, b2b_param_free_cb free_param);
 ...
 </programlisting>
 		<para>
@@ -92,7 +94,8 @@ typedef int (*b2b_notify_t)(struct sip_msg* msg, str* id, int type, void* param)
 			<programlisting format="linespecific">
 ...
 typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo_f, str* param);
+				b2b_add_dlginfo_t add_dlginfo_f, str *mod_name, str *logic_key,
+				struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param);
 ...
 </programlisting>
 		<para>
@@ -199,7 +202,7 @@ typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_key,
 			<programlisting format="linespecific">
 ...
 typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
-		b2b_notify_t cback);
+		b2b_notify_t cback, void *param, b2b_param_free_cb free_param);
 ...
 </programlisting>
 		<para>

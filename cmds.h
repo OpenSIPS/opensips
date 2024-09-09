@@ -56,7 +56,7 @@ struct cmd_param {
 };
 
 struct cmd_export_ {
-	char* name;                 /* null terminated command name */
+	const char* name;           /* null terminated command name */
 	cmd_function function;      /* pointer to the corresponding function */
 	struct cmd_param
 		params[MAX_CMD_PARAMS+1]; /* array of parameters */
@@ -65,7 +65,7 @@ struct cmd_export_ {
 
 
 struct acmd_export_ {
-	char* name;                 /* null terminated command name */
+	const char* name;           /* null terminated command name */
 	acmd_function function;     /* pointer to the corresponding function */
 	struct cmd_param
 		params[MAX_CMD_PARAMS+1]; /* array of parameters */
@@ -74,12 +74,16 @@ struct acmd_export_ {
 typedef struct cmd_export_  cmd_export_t;
 typedef struct acmd_export_ acmd_export_t;
 
-cmd_export_t* find_cmd_export_t(char* name, int flags);
-int check_cmd_call_params(cmd_export_t *cmd, action_elem_t *elems, int no_params);
-int check_acmd_call_params(acmd_export_t *acmd, action_elem_t *elems, int no_params);
+#ifdef FUZZ_BUILD
+extern const cmd_export_t core_cmds[];
+#endif
 
-cmd_export_t* find_core_cmd_export_t(char* name, int flags);
-cmd_export_t* find_mod_cmd_export_t(char* name, int flags);
-acmd_export_t* find_mod_acmd_export_t(char* name);
+const cmd_export_t* find_cmd_export_t(const char* name, int flags);
+int check_cmd_call_params(const cmd_export_t *cmd, action_elem_t *elems, int no_params);
+int check_acmd_call_params(const acmd_export_t *acmd, action_elem_t *elems, int no_params);
+
+const cmd_export_t* find_core_cmd_export_t(const char* name, int flags);
+const cmd_export_t* find_mod_cmd_export_t(const char* name, int flags);
+const acmd_export_t* find_mod_acmd_export_t(const char* name);
 
 #endif /* _CORE_CMDS_H_ */

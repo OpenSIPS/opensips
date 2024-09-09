@@ -173,13 +173,13 @@ int report(struct emergency_report *report, str db_url, str table_report) {
 
 	LM_DBG("storing info...\n");
 
-	if (con_set_inslist(&db_funcs, db_con, &ins_list, db_keys, NR_KEYS) < 0)
+	if (con_set_inslist(&db_funcs, db_con, &ins_list, db_keys, NR_KEYS) < 0) {
 		CON_RESET_INSLIST(db_con);
-	CON_PS_REFERENCE(db_con) = &emergency_ps;
-
+	}
+	CON_SET_CURR_PS(db_con, &emergency_ps);
 	if (db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0) {
 		LM_ERR("failed to insert into database\n");
-		return -1;;
+		return -1;
 	}
 
 	return 1;

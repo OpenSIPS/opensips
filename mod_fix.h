@@ -45,11 +45,26 @@ typedef struct _gparam
 
 struct cmd_param;
 
-int check_cmd(struct cmd_param *params, action_elem_t *elems);
-int fix_cmd(struct cmd_param *params, action_elem_t *elems);
-int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
+int check_cmd(const struct cmd_param *params, action_elem_t *elems);
+int fix_cmd(const struct cmd_param *params, action_elem_t *elems);
+int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 				action_elem_t *elems, void **cmdp, pv_value_t *tmp_val);
-int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp);
+int free_cmd_fixups(const struct cmd_param *params, action_elem_t *elems, void **cmdp);
+
+/**
+ * Parses CSV named flags and sets the bitmasks / returns
+ * the string values for key-value type of flags ("flag_name=flag_value").
+ * @param: function parameter as received by the fixup function; *param will
+ *  be set with the OR'ed bitmasks.
+ * @flag_names: array of flag names which will be translated to bitmasks
+ *  according to the indexes of the flag names in the array, i.e. (1<<array_idx).
+ * @kv_flag_names: array of key-value flag names.
+ * @kv_flag_vals: array of flag values to be returned. Each str the in the
+ *  array will be set with the flag value if the corresponding flag from
+ *  @kv_flag_names is present, otherwise it will be set to {NULL, 0}
+ */
+int fixup_named_flags(void** param, str *flag_names, str *kv_flag_names,
+	str *kv_flag_vals);
 
 static inline int fixup_free_pkg(void **param)
 {

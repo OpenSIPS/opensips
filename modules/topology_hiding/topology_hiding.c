@@ -51,7 +51,7 @@ int w_topology_hiding(struct sip_msg *req, str *flags_s);
 int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val);
 static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"topology_hiding",(cmd_function)w_topology_hiding, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -62,7 +62,7 @@ static cmd_export_t cmds[]={
 };
 
 /* Exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "force_dialog",                INT_PARAM, &force_dialog                },
 	{ "th_passed_contact_uri_params",STR_PARAM, &topo_hiding_ct_params.s     },
 	{ "th_passed_contact_params",    STR_PARAM, &topo_hiding_ct_hdr_params.s },
@@ -74,13 +74,13 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static pv_export_t pvars[] = {
-	{ {"TH_callee_callid",  sizeof("TH_callee_callid")-1}, 1000,
+static const pv_export_t pvars[] = {
+	{ str_const_init("TH_callee_callid"), 1000,
 		pv_topo_callee_callid,0,0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static module_dependency_t *get_deps_dialog(param_export_t *param)
+static module_dependency_t *get_deps_dialog(const param_export_t *param)
 {
 	int force = *(int *)param->param_pointer;
 
@@ -90,7 +90,7 @@ static module_dependency_t *get_deps_dialog(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
@@ -143,9 +143,9 @@ static int mod_init(void)
 		topo_parse_passed_hdr_ct_params(&topo_hiding_ct_hdr_params);
 	}
 	th_contact_encode_scheme.len = strlen(th_contact_encode_scheme.s);
-	if (!str_strcmp(&th_contact_encode_scheme, _str("base64")))
+	if (!str_strcmp(&th_contact_encode_scheme, const_str("base64")))
 		th_ct_enc_scheme = ENC_BASE64;
-	else if (!str_strcmp(&th_contact_encode_scheme, _str("base32")))
+	else if (!str_strcmp(&th_contact_encode_scheme, const_str("base32")))
 		th_ct_enc_scheme = ENC_BASE32;
 	else {
 		LM_ERR("Unsupported value for 'th_contact_encode_scheme' modparam!"
@@ -225,6 +225,14 @@ int w_topology_hiding(struct sip_msg *req, str *flags_s)
 				case 'D':
 					flags |= TOPOH_DID_IN_USER;
 					LM_DBG("Will push DID into contact username\n");
+					break;
+				case 'a':
+					flags |= TOPOH_KEEP_ADV_A;
+					LM_DBG("Will store advertised contact for calller\n");
+					break;
+				case 'A':
+					flags |= TOPOH_KEEP_ADV_B;
+					LM_DBG("Will store advertised contact for calllee\n");
 					break;
 				default:
 					LM_DBG("unknown topology_hiding flag : [%c] . Skipping\n",*p);

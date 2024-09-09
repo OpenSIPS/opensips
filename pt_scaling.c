@@ -27,6 +27,7 @@
 #include "pt.h"
 #include "ipc.h"
 #include "daemonize.h"
+#include "status_report.h"
 
 struct process_group {
 	enum process_type type;
@@ -38,6 +39,7 @@ struct process_group {
 	unsigned char *history_map;
 	unsigned char history_idx;
 	unsigned short no_downscale_cycles;
+	str sr_identifier_name;
 	struct process_group *next;
 };
 
@@ -45,6 +47,23 @@ static struct process_group *pg_head = NULL;
 
 static struct scaling_profile *profiles_head = NULL;
 
+static void *pts_sr_group = NULL;
+
+
+int init_auto_scaling(void)
+{
+	if (!auto_scaling_enabled)
+		return 0;
+
+	pts_sr_group = sr_register_group(CHAR_INT("auto-scaling"), 0/*is_public*/);
+	if (pts_sr_group==NULL) {
+		LM_ERR("Failed to register 'status_report' group for "
+			"'auto-scaling' support\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 
 int create_auto_scaling_profile( char *name,
@@ -133,28 +152,45 @@ struct scaling_profile *get_scaling_profile(char *name)
 }
 
 
+#define get_sr_type_name(_type, _s) \
+	do { \
+		if (_type==TYPE_UDP) {              \
+			(_s).s = "UDP"; (_s).len = 3;   \
+		} else if (_type==TYPE_TCP) {       \
+			(_s).s = "TCP"; (_s).len = 3;   \
+		} else if (_type==TYPE_TIMER) {     \
+			(_s).s = "TIMER"; (_s).len = 5; \
+		} else {                            \
+			LM_BUG("unsupported auto-scaling group %d\n", _type); \
+			(_s).s = "??"; (_s).len = 2;    \
+		}                                   \
+	}while(0)
+
+
 int create_process_group(enum process_type type,
 		struct socket_info *si_filter, struct scaling_profile *prof,
 		fork_new_process_f *f1, terminate_process_f *f2)
 {
 	struct process_group *pg, *it;
 	int h_size;
+	str type_s;
 
 	/* how much of a history do we need in order to cover both up and down
 	 * tranzitions ? */
 	h_size = (prof->up_cycles_tocheck > prof->down_cycles_tocheck) ?
 		prof->up_cycles_tocheck : prof->down_cycles_tocheck;
 
+	get_sr_type_name( type, type_s);
+
 	pg = (struct process_group*)shm_malloc( sizeof(struct process_group) +
-		sizeof(char)*h_size );
+		sizeof(char)*h_size +
+		type_s.len+(si_filter?1+(si_filter->sock_str.len):0)
+		);
 	if (pg==NULL) {
 		LM_ERR("failed to allocate memory for a new process group\n");
 		return -1;
 	}
 	memset( pg, 0, sizeof(struct process_group) + sizeof(char)*h_size );
-
-	LM_DBG("registering group of processes type %d, socket filter %p, "
-		"scaling profile <%s>\n", type, si_filter, prof->name );
 
 	pg->type = type;
 	pg->si_filter = si_filter;
@@ -167,6 +203,31 @@ int create_process_group(enum process_type type,
 	pg->history_map = (unsigned char*)(pg+1);
 	pg->history_idx = 0;
 	pg->no_downscale_cycles = pg->prof->down_cycles_delay;
+
+	pg->sr_identifier_name.s = (char*)(pg->history_map + h_size);
+	memcpy( pg->sr_identifier_name.s, type_s.s, type_s.len);
+	pg->sr_identifier_name.len = type_s.len;
+	if (si_filter) {
+		pg->sr_identifier_name.s[pg->sr_identifier_name.len++] = '/';
+		memcpy( pg->sr_identifier_name.s + pg->sr_identifier_name.len,
+			si_filter->sock_str.s, si_filter->sock_str.len);
+		pg->sr_identifier_name.len += si_filter->sock_str.len;
+	}
+
+	LM_DBG("registering group of processes type %d, socket filter %p, "
+		"name <%.*s> scaling profile <%s>\n", type, si_filter,
+		pg->sr_identifier_name.len, pg->sr_identifier_name.s, prof->name);
+
+	if (sr_register_identifier( pts_sr_group,
+		pg->sr_identifier_name.s, pg->sr_identifier_name.len,
+		SR_STATUS_READY, CHAR_INT("active"), 100)<0
+	) {
+		LM_ERR("failed to register auto-scaling identifier for group"
+			"name <%.*s>, disabling\n",
+		pg->sr_identifier_name.len, pg->sr_identifier_name.s);
+		pg->sr_identifier_name.s = NULL;
+		pg->sr_identifier_name.len = 0;
+	}
 
 	/* add at the end of list, to avoid changing the head of the list due
 	 * forking */
@@ -201,16 +262,8 @@ static void _pt_raise_event(struct process_group *pg, int p_id, int load,
 		return;
 	}
 
-	if (pg->type==TYPE_UDP) {
-		s.s = "UDP"; s.len = 3;
-	} else if (pg->type==TYPE_TCP) {
-		s.s = "TCP"; s.len = 3;
-	} else if (pg->type==TYPE_TIMER) {
-		s.s = "TIMER"; s.len = 5;
-	} else {
-		LM_BUG("trying to raise event for unsupported group %d\n",pg->type);
-		return;
-	}
+	get_sr_type_name( pg->type, s);
+
 	if (evi_param_add_str(list, &pt_ev_type, &s) < 0) {
 		LM_ERR("cannot add group type\n");
 		goto error;
@@ -247,7 +300,7 @@ static void _pt_raise_event(struct process_group *pg, int p_id, int load,
 		goto error;
 	}
 
-	if (evi_raise_event(EVI_PROC_AUTO_SCALE_ID, list)) {
+	if (evi_dispatch_event(EVI_PROC_AUTO_SCALE_ID, list)) {
 		LM_ERR("unable to send auto scaling event\n");
 	}
 	return;
@@ -318,8 +371,8 @@ void do_workers_auto_scaling(void)
 		idx = (pg->history_idx+1)%pg->history_size;
 		pg->history_map[idx] = (unsigned char) ( load / procs_no );
 
-		LM_DBG("group %d (with %d procs) has average load of %d\n",
-			pg->type, procs_no, pg->history_map[idx]);
+		//LM_DBG("group %d (with %d procs) has average load of %d\n",
+		//	pg->type, procs_no, pg->history_map[idx]);
 
 		/* do the check over the history */
 		cnt_over = 0;
@@ -350,6 +403,11 @@ void do_workers_auto_scaling(void)
 					LM_ERR("failed to fork new process for group %d "
 						"(current %d procs)\n",pg->type,procs_no);
 				} else {
+					sr_add_report_fmt( pts_sr_group,
+						pg->sr_identifier_name.s, pg->sr_identifier_name.len,
+						0, "Forking new process id %d at load %d "
+						"in group with %d processes",
+						p_id, pg->history_map[idx], procs_no);
 					_pt_raise_event( pg, p_id, pg->history_map[idx] ,"up");
 					rescale_group_history( pg, idx, procs_no, +1);
 					pg->no_downscale_cycles = pg->prof->down_cycles_delay;
@@ -378,6 +436,11 @@ void do_workers_auto_scaling(void)
 						pg->type, procs_no, load );
 					pt[last_idx_in_pg].flags |= OSS_PROC_TO_TERMINATE;
 					ipc_send_rpc( last_idx_in_pg, pg->term_func, NULL);
+					sr_add_report_fmt( pts_sr_group,
+						pg->sr_identifier_name.s, pg->sr_identifier_name.len,
+						0, "Ripping process id %d at load %d "
+						"in group with %d processes",
+						last_idx_in_pg, pg->history_map[idx], procs_no);
 					_pt_raise_event( pg, last_idx_in_pg,
 						pg->history_map[idx], "down");
 				}

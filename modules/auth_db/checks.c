@@ -117,8 +117,8 @@ static inline int check_username(struct sip_msg* _m, str* _table,
 	VAL_STR(vals + 2) = _uri->user;
 
 	auth_dbf.use_table(auth_db_handle, _table);
-	CON_PS_REFERENCE(auth_db_handle) = &my_ps;
 
+	CON_SET_CURR_PS(auth_db_handle, &my_ps);
 	if (auth_dbf.query(auth_db_handle, keys, 0, vals, cols, 3, 1, 0, &res) < 0)
 	{
 		LM_ERR("Error while querying database\n");
@@ -212,8 +212,7 @@ int does_uri_exist(struct sip_msg* _msg, str* uri, str* _table)
 	VAL_STR(vals) = p_uri.user;
 	VAL_STR(vals + 1) = p_uri.host;
 
-	CON_PS_REFERENCE(auth_db_handle) = &my_ps;
-
+	CON_SET_CURR_PS(auth_db_handle, &my_ps);
 	if (auth_dbf.query(auth_db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
 				1, 0, &res) < 0) {
 		LM_ERR("Error while querying database\n");
@@ -315,10 +314,9 @@ int get_auth_id(struct sip_msg* _msg, str *_table, str* uri,
 	VAL_NULL(vals + 1) = 0;
 	VAL_STR(vals + 1) = sip_uri.host;
 
-	CON_PS_REFERENCE(auth_db_handle) = &my_ps;
-
 	/* if use_domain is set also the domain column of the database table will
 	   be honoured in the following query (see sixth parameter) */
+	CON_SET_CURR_PS(auth_db_handle, &my_ps);
 	if (auth_dbf.query(auth_db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
 	2, 0, &dbres) < 0) {
 		LM_ERR("Error while querying database\n");

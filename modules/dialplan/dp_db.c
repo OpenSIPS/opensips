@@ -28,6 +28,7 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../time_rec.h"
+#include "../../status_report.h"
 
 #include "dp_db.h"
 
@@ -48,6 +49,7 @@ str disabled_column      =   str_init(DISABLED_COL);
 str attrs_column         =   str_init(ATTRS_COL);
 str timerec_column       =   str_init(TIMEREC_COL);
 
+extern void *dp_srg;
 
 #define GET_STR_VALUE(_res, _values, _index, _null)\
 	do{\
@@ -109,38 +111,6 @@ error:
 }
 
 
-int init_db_data(dp_connection_list_p dp_connection)
-{
-	if (dp_connection->partition.s == 0) {
-		LM_ERR("invalid partition name\n");
-		return -1;
-	}
-
-	if (dp_connect_db(dp_connection) !=0)
-		return -1;
-
-
-	if (db_check_table_version(&dp_connection->dp_dbf,
-		*dp_connection->dp_db_handle, &dp_connection->table_name,
-			DP_TABLE_VERSION) < 0) {
-		LM_ERR("error during table version check.\n");
-		goto error;
-	}
-
-
-	if(dp_load_db(dp_connection) != 0){
-		LM_ERR("failed to load database data\n");
-		goto error;
-	}
-
-	return 0;
-error:
-
-	dp_disconnect_db(dp_connection);
-	return -1;
-}
-
-
 int dp_connect_db(dp_connection_list_p conn)
 {
 	if (*conn->dp_db_handle) {
@@ -176,7 +146,7 @@ int init_data(void)
 	}
 
 	/* was the default partition re-pointed? */
-	if (!str_match(&dp_df_part, _str(DEFAULT_PARTITION))) {
+	if (!str_match(&dp_df_part, const_str(DEFAULT_PARTITION))) {
 		int found = 0;
 
 		for (start = dp_hlist; start; start = start->next) {
@@ -214,6 +184,14 @@ int init_data(void)
 			return -1;
 		}
 
+		if (sr_register_identifier( dp_srg, STR2CI(start->partition),
+				SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
+			LM_ERR("failed to create status report identifier for "
+				" partition \'%.*s\')\n",
+				start->partition.len, start->partition.s);
+			return -1;
+		}
+
 		tmp   = start;
 		start = start->next;
 		pkg_free(tmp);
@@ -242,12 +220,12 @@ void destroy_data(void)
 	}
 }
 
-int dp_load_all_db(void)
+int dp_load_all_db(int initial)
 {
 	dp_connection_list_t *el;
 
 	for (el = dp_conns; el; el = el->next) {
-			if (dp_load_db(el) < 0) {
+			if (dp_load_db(el, initial) < 0) {
 					LM_ERR("unable to load %.*s table\n",
 							el->table_name.len, el->table_name.s);
 					return -1;
@@ -265,7 +243,7 @@ void dp_disconnect_all_db(void)
 }
 
 /*load rules from DB*/
-int dp_load_db(dp_connection_list_p dp_conn)
+int dp_load_db(dp_connection_list_p dp_conn, int initial)
 {
 	int i, nr_rows;
 	db_res_t * res = 0;
@@ -282,12 +260,14 @@ int dp_load_db(dp_connection_list_p dp_conn)
 
 	dpl_node_t *rule;
 	int no_rows = 10;
+	int loaded_rl=0, discarded_rl=0;
 
 
 	lock_start_write( dp_conn->ref_lock );
 
 	if( dp_conn->crt_index != dp_conn->next_index){
-		LM_WARN("a load command already generated, aborting reload...\n");
+		LM_WARN("a load command already in-progress for partition <%.*s>, "
+			"aborting reload...\n", dp_conn->partition.len, dp_conn->partition.s);
 		lock_stop_write( dp_conn->ref_lock );
 		return 0;
 	}
@@ -295,6 +275,15 @@ int dp_load_db(dp_connection_list_p dp_conn)
 	dp_conn->next_index = dp_conn->crt_index == 0 ? 1 : 0;
 
 	lock_stop_write( dp_conn->ref_lock );
+
+	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
+		CHAR_INT("starting DB data loading"), 0);
+	if (initial)
+		sr_set_status( dp_srg,  STR2CI(dp_conn->partition),
+			SR_STATUS_LOADING_DATA, CHAR_INT("startup data loading"), 0);
+	else 
+		sr_set_status( dp_srg,  STR2CI(dp_conn->partition),
+			SR_STATUS_RELOADING_DATA, CHAR_INT("data re-loading"), 0);
 
 	if (dp_conn->dp_dbf.use_table(*dp_conn->dp_db_handle, &dp_conn->table_name) < 0){
 		LM_ERR("error in use_table\n");
@@ -340,7 +329,8 @@ int dp_load_db(dp_connection_list_p dp_conn)
 
 
 	if(nr_rows == 0){
-		LM_WARN("no data in the db\n");
+		LM_DBG("no data in the db for partition <%.*s>\n",
+			dp_conn->partition.len, dp_conn->partition.s);
 		goto end;
 	}
 
@@ -350,7 +340,10 @@ int dp_load_db(dp_connection_list_p dp_conn)
 			values = ROW_VALUES(rows+i);
 
 			if ((rule = build_rule(values)) == NULL) {
-				LM_WARN(" failed to build rule -> skipping\n");
+				LM_WARN(" failed to build rule |%s| in partition <%.*s>"
+					" -> skipping\n", VAL_STRING(values+3),
+					dp_conn->partition.len, dp_conn->partition.s);
+				discarded_rl++;
 				continue;
 			}
 
@@ -360,6 +353,7 @@ int dp_load_db(dp_connection_list_p dp_conn)
 				LM_ERR("add_rule2hash failed\n");
 				goto err2;
 			}
+			loaded_rl++;
 		}
 
 
@@ -392,9 +386,19 @@ end:
 	list_hash(dp_conn->hash[dp_conn->crt_index], dp_conn->ref_lock);
 
 	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
+
+	/* do the reporting */
+	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
+		CHAR_INT("DB data loading successfully completed"), 0);
+	sr_add_report_fmt( dp_srg, STR2CI(dp_conn->partition), 0,
+		"%d rules loaded (%d discarded)", loaded_rl, discarded_rl);
+	sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_READY,
+		CHAR_INT("data available"), 0);
+
 	return 0;
 
 err1:
+	LM_ERR("DB reload failed on partition <%.*s>\n",dp_conn->partition.len, dp_conn->partition.s);
 
 	lock_start_write( dp_conn->ref_lock );
 
@@ -402,9 +406,20 @@ err1:
 
 	lock_stop_write( dp_conn->ref_lock );
 
+	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
+		CHAR_INT("DB data loading failed, discarding"), 0);
+	if (initial)
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_NO_DATA,
+			CHAR_INT("no data loaded"), 0);
+	else
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
+
 	return -1;
 
 err2:
+	LM_ERR("DB reload failed on partition <%.*s>\n",dp_conn->partition.len, dp_conn->partition.s);
+
 	if(rule)	destroy_rule(rule);
 	destroy_hash(&dp_conn->hash[dp_conn->next_index]);
 	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
@@ -415,6 +430,16 @@ err2:
 	/* if lock defined - release the exclusive writing access */
 
 	lock_stop_write( dp_conn->ref_lock );
+
+	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
+		CHAR_INT("DB data loading failed, discarding"), 0);
+	if (initial)
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
+	else
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_NO_DATA,
+			CHAR_INT("no data loaded"), 0);
+
 	return -1;
 }
 

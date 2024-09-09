@@ -81,7 +81,7 @@ mi_response_t *mi_show_stats(const mi_params_t *params,
 mi_response_t *mi_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"check_fraud", (cmd_function)check_fraud, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -90,7 +90,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"db_url",                      STR_PARAM, &db_url.s},
 	{"use_utc_time",                INT_PARAM, &mp_use_utc_time},
 	{"table_name",                  STR_PARAM, &table_name.s},
@@ -113,7 +113,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "show_fraud_stats", "print current stats for a particular user", 0, 0, {
 		{mi_show_stats, {"user", "prefix", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -125,7 +125,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{
 		{MOD_TYPE_SQLDB, NULL, DEP_ABORT},
 		{MOD_TYPE_DEFAULT, "drouting", DEP_ABORT},
@@ -335,6 +335,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 	} else {
 		if (shm_str_sync(&se->stats.last_dial, number) != 0) {
 			lock_release(frd_seq_calls_lock);
+			lock_release(&se->lock);
 			LM_ERR("oom\n");
 			rc = rc_error;
 			goto out;
@@ -428,12 +429,13 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 		param->stats = se;        /* safe to ref, only freed @ shutdown */
 		param->user = shm_user;   /* safe to ref, only freed @ shutdown */
 		param->ruleid = rule->id;
+		param->dlg_terminated = 0;
 
 		param->calldur_warn = thr->call_duration_thr.warning;
 		param->calldur_crit = thr->call_duration_thr.critical;
 		param->interval_id = se->interval_id;
 
-		if (dlgb.register_dlgcb(dlgc, DLGCB_DESTROY,
+		if (dlgb.register_dlgcb(dlgc, DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_EXPIRED,
 					dialog_terminate_CB, param, free_dialog_CB_param) != 0) {
 			LM_ERR("failed to register dialog terminated callback\n");
 			shm_free(param->number.s);

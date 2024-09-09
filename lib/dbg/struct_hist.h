@@ -22,6 +22,7 @@
 #define __STRUCT_HIST_H__
 
 #include "../../timer.h"
+#include "../../mem/mem_funcs.h"
 
 /**
  * Generic struct debugging support.  Some major use cases:
@@ -44,7 +45,7 @@
  *    remain available inside the global history list for a while
  */
 
-#define MAX_SHLOG_SIZE 100 /* longer log lines will get truncated */
+#define MAX_SHLOG_SIZE 80 /* longer log lines will get truncated */
 
 /**
  * To be freely extended by any piece of OpenSIPS code which makes use of
@@ -53,12 +54,19 @@
 #define SH_ALL_VERBS(VERB_FUN) \
 	VERB_FUN(TCP_SEND2CHILD) \
 	VERB_FUN(TCP_SEND2MAIN) \
+	VERB_FUN(TCP_ADD_READER) \
 	VERB_FUN(TCP_REF) \
 	VERB_FUN(TCP_UNREF) \
 	VERB_FUN(TCP_DESTROY) \
 	VERB_FUN(DLG_REF) \
 	VERB_FUN(DLG_UNREF) \
 	VERB_FUN(DLG_DESTROY) \
+	VERB_FUN(SREC_REF) \
+	VERB_FUN(SREC_UNREF) \
+	VERB_FUN(SREC_DESTROY) \
+	VERB_FUN(SH_SHM_MALLOC) \
+	VERB_FUN(SH_SHM_REALLOC) \
+	VERB_FUN(SH_SHM_FREE) \
 
 #define __SH_VERB_TO_ENUM(ENUM) ENUM,
 enum struct_hist_verb {
@@ -77,18 +85,8 @@ struct struct_hist_action {
 struct struct_hist;
 struct struct_hist_list;
 
-#define FLUSH_LIMIT 2000
+#define FLUSH_LIMIT 300
 #define flushable(sh) (sh->len == FLUSH_LIMIT)
-
-#ifndef DBG_STRUCT_HIST
-#define shl_init(...) NULL
-#define shl_destroy(...)
-#define sh_push(...) NULL
-#define sh_unref(...)
-#define _sh_log(...) ({0;})
-#define sh_log _sh_log
-#define sh_flush(...)
-#else
 
 /**
  * Initializes a global holder for the histories of all logically linked
@@ -103,8 +101,8 @@ struct struct_hist_list;
  * use with caution!
  */
 struct struct_hist_list *_shl_init(char *obj_name, int window_size,
-			int auto_logging, int init_actions_sz);
-#define shl_init(nm, wsz, autolog) _shl_init(nm, wsz, autolog, 5)
+			int auto_logging, int init_actions_sz, osips_malloc_f malloc_f);
+#define shl_init(nm, wsz, autolog) _shl_init(nm, wsz, autolog, 5, shm_malloc_func)
 
 /**
  * Flush all contents of a struct hist list to the log.  Useful when collecting
@@ -118,7 +116,8 @@ void sh_list_flush(struct struct_hist_list *shl);
 /**
  * Frees up the global history holder, along with all of its content
  */
-void shl_destroy(struct struct_hist_list *shl);
+void _shl_destroy(struct struct_hist_list *shl, osips_free_f free_f);
+#define shl_destroy(shl) _shl_destroy(shl, shm_free_func)
 
 /**
  * Create a new history tracker, usually for each newly allocated struct.
@@ -128,8 +127,9 @@ void shl_destroy(struct struct_hist_list *shl);
  * @list: global holder where this history will be pushed
  * @refs: the amount of references to the new object kept by the calling code
  */
-struct struct_hist *_sh_push(void *obj, struct struct_hist_list *list, int refs);
-#define sh_push(obj, list) _sh_push(obj, list, 1)
+struct struct_hist *_sh_push(void *obj, struct struct_hist_list *list, int refs,
+	osips_malloc_f malloc_f, osips_free_f free_f);
+#define sh_push(obj, list) _sh_push(obj, list, 1, shm_malloc_func, shm_free_func)
 
 /**
  * Unreference a history struct. Depending on whether it is still in the
@@ -137,7 +137,8 @@ struct struct_hist *_sh_push(void *obj, struct struct_hist_list *list, int refs)
  *
  * @sh: a struct history tracker
  */
-void sh_unref(struct struct_hist *sh);
+void _sh_unref(struct struct_hist *sh, osips_free_f free_f);
+#define sh_unref(sh) _sh_unref(sh, shm_free_func)
 
 /**
  * Record a log line to the history of a struct. The max length of a line is
@@ -147,10 +148,11 @@ void sh_unref(struct struct_hist *sh);
  * @verb: the type of the log line recorded (taken from SH_ALL_VERBS)
  * @fmt: C format string
  */
-int _sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...);
+int _sh_log(osips_realloc_f realloc_f, struct struct_hist *sh,
+	enum struct_hist_verb verb, char *fmt, ...);
 #define sh_log(sh, verb, fmt, args...) \
 	do { \
-		_sh_log(sh, verb, "%s:%s:%d: "fmt, \
+		_sh_log(shm_realloc_func, sh, verb, "%s:%s:%d: "fmt, \
 		        __FILE__, __FUNCTION__, __LINE__, ##args); \
 	} while (0)
 
@@ -162,7 +164,5 @@ int _sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...);
  * @sh: a struct history tracker
  */
 void sh_flush(struct struct_hist *sh);
-
-#endif
 
 #endif /* __STRUCT_HIST_H__ */

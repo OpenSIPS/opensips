@@ -25,6 +25,8 @@
 #ifndef _REST_CB_H_
 #define _REST_CB_H_
 
+#include "rest_client.h"
+
 #include "../../str.h"
 #include "../../mem/mem.h"
 #include "../../error.h"

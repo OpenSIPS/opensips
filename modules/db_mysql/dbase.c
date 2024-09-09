@@ -127,6 +127,11 @@ static inline int wrapper_single_mysql_stmt_prepare(const db_con_t *conn,
 		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 		case CR_COMMANDS_OUT_OF_SYNC:
+		/* UGLY magic number here - unfortunately MySQL & MariaDB
+		 * are diverging. MySQL has this as ER_CLIENT_INTERACTION_TIMEOUT
+		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
+		 */
+		case 4031:
 			return -1; /* reconnection error -> <0 */
 		default:
 			LM_CRIT("driver error (%i): %s\n",
@@ -154,6 +159,11 @@ static inline int wrapper_single_mysql_stmt_execute(const db_con_t *conn,
 		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 		case CR_COMMANDS_OUT_OF_SYNC:
+		/* UGLY magic number here - unfortunately MySQL & MariaDB
+		 * are diverging. MySQL has this as ER_CLIENT_INTERACTION_TIMEOUT
+		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
+		 */
+		case 4031:
 			return -1; /* reconnection error -> <0 */
 		default:
 			LM_CRIT("driver error (%i): %s\n", error, mysql_stmt_error(stmt));
@@ -180,6 +190,11 @@ static inline int wrapper_single_mysql_real_query(const db_con_t *conn,
 		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 		case CR_COMMANDS_OUT_OF_SYNC:
+		/* UGLY magic number here - unfortunately MySQL & MariaDB
+		 * are diverging. MySQL has this as ER_CLIENT_INTERACTION_TIMEOUT
+		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
+		 */
+		case 4031:
 			return -1; /* reconnection error -> <0 */
 		case ER_LOCK_DEADLOCK:
 			LM_WARN("server error (%i): %s\n", error,
@@ -210,6 +225,11 @@ static inline int wrapper_single_mysql_send_query(const db_con_t *conn,
 		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 		case CR_COMMANDS_OUT_OF_SYNC:
+		/* UGLY magic number here - unfortunately MySQL & MariaDB
+		 * are diverging. MySQL has this as ER_CLIENT_INTERACTION_TIMEOUT
+		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
+		 */
+		case 4031:
 			return -1; /* reconnection error -> <0 */
 		default:
 			LM_CRIT("driver error (%i): %s\n", error,
@@ -603,7 +623,8 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		/* get a new context */
 		ctx = get_new_stmt_ctx(conn, query);
 		if (ctx==NULL) {
-			LM_ERR("failed to create new context\n");
+			LM_ERR("failed to create new context for query=|%.*s|\n",
+					query->len, query->s);
 			pkg_free(pq_ptr);
 			return -1;
 		}
@@ -628,7 +649,8 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			/* get a new context */
 			ctx = get_new_stmt_ctx(conn, query);
 			if (ctx==NULL) {
-				LM_ERR("failed to create new context\n");
+				LM_ERR("failed to create new context for query=|%.*s|\n",
+						query->len, query->s);
 				return -1;
 			}
 			/* link it */
@@ -758,9 +780,12 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		LM_DBG("prepared statement has %d columns in result\n",cols);
 		/* set the out bind array ? */
 		if (pq_ptr->cols_out==-1) {
+			char *col_bufs;
+
 			pq_ptr->cols_out = cols;
 			pq_ptr->bind_out = (MYSQL_BIND*)pkg_malloc
-				( cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)) );
+				( cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)
+			            + ps_max_col_size) );
 			if (pq_ptr->bind_out==NULL) {
 				db_mysql_free_pq(pq_ptr);
 				CON_CURR_PS(conn) = NULL;
@@ -768,15 +793,19 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				return -1;
 			}
 			memset(pq_ptr->bind_out, 0 ,
-				cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)));
+				cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)
+			          + ps_max_col_size));
 
 			pq_ptr->out_bufs = (struct bind_ocontent*)(pq_ptr->bind_out+cols);
+			col_bufs = (char*)(pq_ptr->out_bufs+cols);
+
 			mysql_bind = pq_ptr->bind_out;
 			/* prepare the pointers */
-			for( i=0 ; i<pq_ptr->cols_out ; i++ ) {
-				mysql_bind[i].buffer =  pq_ptr->out_bufs[i].buf;
+			for( i=0 ; i<cols ; i++ ) {
+				mysql_bind[i].buffer = pq_ptr->out_bufs[i].buf
+				                     = col_bufs + i*ps_max_col_size;
 				mysql_bind[i].buffer_type = MYSQL_TYPE_STRING;
-				mysql_bind[i].buffer_length = PREP_STMT_VAL_LEN;
+				mysql_bind[i].buffer_length = ps_max_col_size;
 				mysql_bind[i].length = &pq_ptr->out_bufs[i].len;
 				mysql_bind[i].is_null = &pq_ptr->out_bufs[i].null;
 #if (MYSQL_VERSION_ID >= 50030)
@@ -1211,6 +1240,28 @@ out:
 	return -2;
 }
 
+void db_mysql_async_timeout(db_con_t *_h, int fd, void *_priv)
+{
+	struct pool_con *con = (struct pool_con *)_priv;
+
+#ifdef EXTRA_DEBUG
+	if (!db_match_async_con(fd, _h)) {
+		LM_BUG("no conn match for fd %d", fd);
+		abort();
+	}
+#endif
+
+	db_switch_to_async(_h, con);
+	mysql_free_result(CON_RESULT(_h));
+	CON_RESULT(_h) = NULL;
+
+	/* we timed out, might as well disconnect */
+	switch_state_to_disconnected(_h);
+
+	db_switch_to_sync(_h);
+	db_store_async_con(_h, con);
+}
+
 int db_mysql_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
 {
 	struct pool_con *con = (struct pool_con *)_priv;
@@ -1324,7 +1375,10 @@ int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_delete(_h, _k, _o, _v, _n, db_mysql_val2str,
 				db_mysql_submit_dummy_query);
-			if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
+			if (ret != 0) {
+				CON_RESET_CURR_PS(_h);
+				return ret;
+			}
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
 		CON_RESET_CURR_PS(_h);
@@ -1357,7 +1411,10 @@ int db_mysql_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_update(_h, _k, _o, _v, _uk, _uv, _n, _un,
 				db_mysql_val2str, db_mysql_submit_dummy_query);
-			if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
+			if (ret != 0) {
+				CON_RESET_CURR_PS(_h);
+				return ret;
+			}
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _uv, _un, _v, _n);
 		CON_RESET_CURR_PS(_h);
@@ -1384,7 +1441,10 @@ int db_mysql_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 		if (CON_HAS_UNINIT_PS(_h)||!has_stmt_ctx(_h,&(CON_MYSQL_PS(_h)->ctx))){
 			ret = db_do_replace(_h, _k, _v, _n, db_mysql_val2str,
 				db_mysql_submit_dummy_query);
-			if (ret!=0) {CON_RESET_CURR_PS(_h);return ret;}
+			if (ret != 0) {
+				CON_RESET_CURR_PS(_h);
+				return ret;
+			}
 		}
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
 		CON_RESET_CURR_PS(_h);

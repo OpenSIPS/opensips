@@ -58,6 +58,9 @@ struct usrloc_api ul;
 struct tm_binds tmb;
 struct sig_binds sig_api;
 
+/* the list of domains (tables) used at opensips.cfg level by mid-registrar */
+static str_list *mid_reg_domains;
+
 /* specifically used to mutually exclude concurrent calls of the
  * TMCB_RESPONSE_IN callback, upon SIP 200 OK retransmissions */
 rw_lock_t *tm_retrans_lk;
@@ -104,6 +107,11 @@ static int mod_init(void);
 static int cfg_validate(void);
 
 static int domain_fixup(void** param);
+static int fix_out_expires(void **out_exp);
+static int save_flags_fixup(void** param);
+static int save_flags_fixup_free(void** param);
+static int lookup_flags_fixup(void** param);
+static int lookup_flags_fixup_free(void** param);
 
 int solve_avp_defs(void);
 
@@ -121,29 +129,30 @@ enum mid_reg_insertion_mode   ctid_insertion  = MR_REPLACE_USER;
 char *mp_ctid_insertion = "ct-param";
 
 str ctid_param = str_init("ctid");
+str at_escape_str = str_init("%40");
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"mid_registrar_save", (cmd_function)mid_reg_save, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, save_flags_fixup, save_flags_fixup_free},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fix_out_expires, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"mid_registrar_lookup", (cmd_function)mid_reg_lookup, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, lookup_flags_fixup, lookup_flags_fixup_free},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	pn_async_cmds,
 	{0,0,{{0,0,0}}}
 };
 
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{ "mode",                 INT_PARAM, &reg_mode },
 	{ "default_expires",      INT_PARAM, &default_expires },
 	{ "min_expires",          INT_PARAM, &min_expires },
@@ -160,6 +169,7 @@ static param_export_t mod_params[] = {
 	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
 	{ "contact_id_insertion", STR_PARAM, &mp_ctid_insertion },
 	{ "contact_id_param",     STR_PARAM, &ctid_param.s },
+	{ "at_escape_str",        STR_PARAM, &at_escape_str.s },
 	{ "extra_contact_params_avp", STR_PARAM, &extra_ct_params_str.s },
 	{ "attr_avp",             STR_PARAM, &attr_avp_param },
 
@@ -172,7 +182,7 @@ static param_export_t mod_params[] = {
 	{ 0,0,0 }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "usrloc",    DEP_ABORT  },
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT  },
@@ -208,27 +218,87 @@ struct module_exports exports= {
 	cfg_validate /* reload confirm function */
 };
 
+int is_mid_reg_domain(const str *dom)
+{
+	str_list *it;
+
+	for (it = mid_reg_domains; it; it = it->next)
+		if (str_match(&it->s, dom))
+			return 1;
+
+	return 0;
+}
+
 /*! \brief
  * Convert char* parameter to udomain_t* pointer
  */
 static int domain_fixup(void** param)
 {
 	udomain_t* d;
-	str dom_s;
+	str *dom_s = (str *)*param; /* CMD_PARAM_STATIC is always NT */
+	str_list *dom;
 
-	if (pkg_nt_str_dup(&dom_s, (str*)*param) < 0)
-		return E_OUT_OF_MEM;
+	if (!is_mid_reg_domain(dom_s)) {
+		dom = pkg_malloc(sizeof *dom);
+		if (!dom) {
+			LM_ERR("oom\n");
+			return E_OUT_OF_MEM;
+		}
+		memset(dom, 0, sizeof *dom);
 
-	if (ul.register_udomain(dom_s.s, &d) < 0) {
+		if (pkg_nt_str_dup(&dom->s, dom_s) < 0) {
+			pkg_free(dom);
+			return E_OUT_OF_MEM;
+		}
+
+		add_last(dom, mid_reg_domains);
+	}
+
+	if (ul.register_udomain(dom_s->s, &d) < 0) {
 		LM_ERR("failed to register domain\n");
-		pkg_free(dom_s.s);
 		return E_UNSPEC;
 	}
 
-	pkg_free(dom_s.s);
-
 	*param = (void*)d;
 	return 0;
+}
+
+
+static int fix_out_expires(void **out_exp)
+{
+	if (*(int *)*out_exp <= 0) {
+		LM_ERR("bad 'outgoing_expires' value: %d, falling back to default\n",
+		       *(int *)*out_exp);
+		*(int *)*out_exp = outgoing_expires;
+	}
+
+	return 0;
+}
+
+static int save_flags_fixup(void **param)
+{
+	struct save_flags default_flags;
+
+	memset(&default_flags, 0, sizeof default_flags);
+	default_flags.cmatch.mode = CT_MATCH_NONE;
+	default_flags.max_contacts = max_contacts;
+
+	return reg_fixup_save_flags(param, &default_flags);
+}
+
+static int save_flags_fixup_free(void **param)
+{
+	return reg_fixup_free_save_flags(param);
+}
+
+static int lookup_flags_fixup(void **param)
+{
+	return reg_fixup_lookup_flags(param);
+}
+
+static int lookup_flags_fixup_free(void **param)
+{
+	return reg_fixup_free_lookup_flags(param);
 }
 
 static int mid_reg_pre_script(struct sip_msg *foo, void *bar)
@@ -245,25 +315,19 @@ static int mid_reg_post_script(struct sip_msg *foo, void *bar)
 }
 
 
-static int mod_init(void)
+static int mid_reg_init_globals(void)
 {
-	if (load_ul_api(&ul) < 0) {
-		LM_ERR("failed to load user location API\n");
+	ctid_param.len = strlen(ctid_param.s);
+	if (ctid_param.len == 0 || !is_uri_parameter_str(&ctid_param)) {
+		LM_ERR("empty 'contact_id_param' or it contains bad chars: '%.*s'\n",
+		       ctid_param.len, ctid_param.s);
 		return -1;
 	}
 
-	if (!ul.have_mem_storage()) {
-		LM_ERR("no support for external-storage usrloc!\n");
-		return -1;
-	}
-
-	if (load_tm_api(&tmb) < 0) {
-		LM_ERR("failed to load user location API\n");
-		return -1;
-	}
-
-	if(load_sig_api(&sig_api)< 0) {
-		LM_ERR("can't load signaling functions\n");
+	at_escape_str.len = strlen(at_escape_str.s);
+	if (at_escape_str.len == 0 || !is_username_str(&at_escape_str)) {
+		LM_ERR("empty 'at_escape_str' or it contains bad chars: '%.*s'\n",
+		       at_escape_str.len, at_escape_str.s);
 		return -1;
 	}
 
@@ -285,8 +349,50 @@ static int mod_init(void)
 		ctid_insertion = MR_APPEND_PARAM;
 	}
 
+	if (outgoing_expires <= 0) {
+		LM_ERR("bad 'outgoing_expires' value: %d\n", outgoing_expires);
+		return -1;
+	}
+
+	tm_retrans_lk = lock_init_rw();
+	if (!tm_retrans_lk) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static int mod_init(void)
+{
+	if (load_ul_api(&ul) < 0) {
+		LM_ERR("failed to load user location API\n");
+		return -1;
+	}
+
+	if (!ul.have_mem_storage()) {
+		LM_ERR("cannot work with a non-caching usrloc!\n");
+		return -1;
+	}
+
+	if (load_tm_api(&tmb) < 0) {
+		LM_ERR("failed to load user location API\n");
+		return -1;
+	}
+
+	if (load_sig_api(&sig_api) < 0) {
+		LM_ERR("can't load signaling functions\n");
+		return -1;
+	}
+
 	if (reg_init_globals() != 0) {
-		LM_ERR("failed to init globals\n");
+		LM_ERR("failed to initialize reg globals\n");
+		return -1;
+	}
+
+	if (mid_reg_init_globals() != 0) {
+		LM_ERR("failed to initialize mid-reg configuration\n");
 		return -1;
 	}
 
@@ -299,8 +405,6 @@ static int mod_init(void)
 		LM_ERR("failed to parse one or more module AVPs\n");
 		return -1;
 	}
-
-	ctid_param.len = strlen(ctid_param.s);
 
 	if (reg_mode != MID_REG_MIRROR) {
 		if (ul.register_ulcb(
@@ -328,12 +432,6 @@ static int mod_init(void)
 	if (register_script_cb(mid_reg_post_script,
 	                       POST_SCRIPT_CB|REQ_TYPE_CB, NULL) < 0) {
 		LM_ERR("failed to register post script cb\n");
-		return -1;
-	}
-
-	tm_retrans_lk = lock_init_rw();
-	if (!tm_retrans_lk) {
-		LM_ERR("oom\n");
 		return -1;
 	}
 
@@ -485,11 +583,10 @@ int get_expires_hf(struct sip_msg* _m)
 
 	if (_m->expires) {
 		p = (exp_body_t*)_m->expires->parsed;
-		if (p != NULL && p->valid) {
-			if (p->val != 0) {
-				return p->val;
-			} else return 0;
-		} else return default_expires;
+		if (p && p->valid)
+			return p->val;
+		else
+			return default_expires;
 	} else {
 		return default_expires;
 	}

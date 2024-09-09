@@ -36,7 +36,7 @@
 #include "t_lookup.h"
 #include "t_funcs.h"
 
-struct tmcb_head_list* req_in_tmcb_hl = 0;
+struct tmcb_head_list* new_tran_tmcb_hl = 0;
 
 struct tmcb_head_list tmcb_pending_hl = {0,0};
 unsigned int tmcb_pending_id = (unsigned int)-1;
@@ -57,29 +57,35 @@ void empty_tmcb_list(struct tmcb_head_list *head)
 	head->reg_types = 0;
 }
 
+static struct tmcb_head_list *new_tmcb_list(void)
+{
+	struct tmcb_head_list *list = (struct tmcb_head_list*)shm_malloc
+		(sizeof(struct tmcb_head_list));
+	if (list==0) {
+		LM_CRIT("no more shared memory\n");
+		return NULL;
+	}
+	list->first = 0;
+	list->reg_types = 0;
+	return list;
+}
 
 int init_tmcb_lists(void)
 {
-	req_in_tmcb_hl = (struct tmcb_head_list*)shm_malloc
-		( sizeof(struct tmcb_head_list) );
-	if (req_in_tmcb_hl==0) {
-		LM_CRIT("no more shared memory\n");
+
+	new_tran_tmcb_hl = new_tmcb_list();
+	if (!new_tran_tmcb_hl)
 		return -1;
-	}
-	req_in_tmcb_hl->first = 0;
-	req_in_tmcb_hl->reg_types = 0;
 	return 1;
 }
 
 
 void destroy_tmcb_lists(void)
 {
-	if (!req_in_tmcb_hl)
-		return;
-
-	empty_tmcb_list(req_in_tmcb_hl);
-
-	shm_free(req_in_tmcb_hl);
+	if (!new_tran_tmcb_hl) {
+		empty_tmcb_list(new_tran_tmcb_hl);
+		shm_free(new_tran_tmcb_hl);
+	}
 }
 
 
@@ -134,18 +140,18 @@ int register_tmcb( struct sip_msg* p_msg, struct cell *t, int types,
 		return E_BUG;
 	}
 
-	if (types&TMCB_REQUEST_IN) {
-		if (types!=TMCB_REQUEST_IN) {
-			LM_CRIT("callback type TMCB_REQUEST_IN "
-				"can't be register along with types\n");
+	if (types&(TMCB_REQUEST_IN|TMCB_LOCAL_TRANS_NEW)) {
+		if (types&(~(TMCB_REQUEST_IN|TMCB_LOCAL_TRANS_NEW))) {
+			LM_CRIT("callback type TMCB_REQUEST_IN and/or TMCB_LOCAL_TRANS_NEW "
+				"can't be register along with other types\n");
 			return E_BUG;
 		}
-		if (req_in_tmcb_hl==0) {
-			LM_ERR("callback type TMCB_REQUEST_IN "
+		if (new_tran_tmcb_hl==0) {
+			LM_ERR("callback type TMCB_REQUEST_IN and/or TMCB_LOCAL_TRANS_NEW "
 				"registration attempt before TM module initialization\n");
 			return E_CFG;
 		}
-		cb_list = req_in_tmcb_hl;
+		cb_list = new_tran_tmcb_hl;
 	} else {
 		if (!t) {
 			if (!p_msg) {
@@ -182,9 +188,8 @@ void set_extra_tmcb_params(void *extra1, void *extra2)
 	tmcb_extra2 = extra2;
 }
 
-
-void run_trans_callbacks( int type , struct cell *trans,
-						struct sip_msg *req, struct sip_msg *rpl, int code )
+static void run_any_trans_callbacks(struct tmcb_head_list *list, unsigned int type,
+		struct cell *trans, struct sip_msg *req, struct sip_msg *rpl, int code)
 {
 	struct tmcb_params params;
 	struct tm_callback    *cbp;
@@ -197,16 +202,23 @@ void run_trans_callbacks( int type , struct cell *trans,
 	params.extra1 = tmcb_extra1;
 	params.extra2 = tmcb_extra2;
 
-	if (trans->tmcb_hl.first==0 || ((trans->tmcb_hl.reg_types)&type)==0 )
+	if (list->first==0 || ((list->reg_types)&type)==0)
 		return;
 
 	backup = set_avp_list( &trans->user_avps );
-	for (cbp=trans->tmcb_hl.first; cbp; cbp=cbp->next)  {
-		if ( (cbp->types)&type ) {
+	for (cbp=list->first; cbp; cbp=cbp->next)  {
+		if ((cbp->types)&type) {
 			LM_DBG("trans=%p, callback type %d, id %d entered\n",
 				trans, type, cbp->id );
 			params.param = &(cbp->param);
 			cbp->callback( trans, type, &params );
+			if ((cbp->types)&(TMCB_REQUEST_IN|TMCB_LOCAL_TRANS_NEW)) {
+				if (req && req->dst_uri.len==-1) {
+					LM_CRIT("callback %s id %d entered\n",
+							(type&TMCB_REQUEST_IN?"REQIN":"LOCAL_NEW"),cbp->id );
+					req->dst_uri.len = 0;
+				}
+			}
 		}
 	}
 	/* env cleanup */
@@ -215,40 +227,21 @@ void run_trans_callbacks( int type , struct cell *trans,
 	set_t(trans_backup);
 }
 
-
-
-void run_reqin_callbacks( struct cell *trans, struct sip_msg *req, int code )
+void run_trans_callbacks( int type , struct cell *trans,
+						struct sip_msg *req, struct sip_msg *rpl, int code )
 {
-	struct tmcb_params params;
-	struct tm_callback    *cbp;
-	struct usr_avp **backup;
-	struct cell *trans_backup = get_t();
-
-	params.req = req;
-	params.rpl = 0;
-	params.code = code;
-	params.extra1 = tmcb_extra1;
-	params.extra2 = tmcb_extra2;
-
-	if (req_in_tmcb_hl->first==0)
-		return;
-
-	backup = set_avp_list( &trans->user_avps );
-	for (cbp=req_in_tmcb_hl->first; cbp; cbp=cbp->next)  {
-		LM_DBG("trans=%p, callback type %d, id %d entered\n",
-			trans, cbp->types, cbp->id );
-		params.param = &(cbp->param);
-		cbp->callback( trans, cbp->types, &params );
-		if (req && req->dst_uri.len==-1) {
-			LM_CRIT("callback REQIN id %d entered\n", cbp->id );
-			req->dst_uri.len = 0;
-		}
-	}
-	set_avp_list( backup );
-	tmcb_extra1 = tmcb_extra2 = 0;
-	set_t(trans_backup);
+	run_any_trans_callbacks(&trans->tmcb_hl, type, trans, req, rpl, code);
 }
 
+void run_new_local_callbacks(struct cell *trans, struct sip_msg *req, int code)
+{
+	run_any_trans_callbacks(new_tran_tmcb_hl, TMCB_LOCAL_TRANS_NEW, trans, req, NULL, code);
+}
+
+void run_reqin_callbacks(struct cell *trans, struct sip_msg *req, int code)
+{
+	run_any_trans_callbacks(new_tran_tmcb_hl, TMCB_REQUEST_IN, trans, req, NULL, code);
+}
 
 void run_trans_callbacks_locked( int type , struct cell *trans,
 						struct sip_msg *req, struct sip_msg *rpl, int code )

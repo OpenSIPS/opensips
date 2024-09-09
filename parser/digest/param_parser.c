@@ -65,13 +65,14 @@
 
 /*
  * Read 4-bytes from memory and store them in an integer variable
- * Reading byte by byte ensures, that the code works also on HW which
+ * Reading byte by byte ensures that the code works also on HW which
  * does not allow reading 4-bytes at once from unaligned memory position
  * (Sparc for example)
  */
 #define READ(val) \
 (*(val + 0) + (*(val + 1) << 8) + (*(val + 2) << 16) + (*(val + 3) << 24))
 
+#define NEED(bytes) do { if (end - p < (bytes)) goto other; } while (0)
 
 #define name_CASE                      \
         switch(LOWER_DWORD(val)) {     \
@@ -83,28 +84,30 @@
 
 
 #define user_CASE         \
-        p += 4;           \
+        p += 4; NEED(4);  \
         val = READ(p);    \
         name_CASE;        \
         goto other;
 
 
 #define real_CASE                         \
-        p += 4;                           \
+        p += 4; NEED(1);                  \
         if (LOWER_BYTE(*p) == 'm') {      \
 		*_type = PAR_REALM;       \
                 p++;                      \
 		goto end;                 \
-	}
+	}                                 \
+        goto other;
 
 
 #define nonc_CASE                         \
-        p += 4;                           \
+        p += 4; NEED(1);                  \
         if (LOWER_BYTE(*p) == 'e') {      \
 	        *_type = PAR_NONCE;       \
                 p++;                      \
 		goto end;                 \
-	}
+	}                                 \
+        goto other;
 
 
 #define onse_CASE                      \
@@ -117,14 +120,14 @@
 
 
 #define resp_CASE         \
-        p += 4;           \
+        p += 4; NEED(4);  \
         val = READ(p);    \
         onse_CASE;        \
         goto other;
 
 
 #define cnon_CASE                                 \
-        p += 4;                                   \
+        p += 4; NEED(2);                          \
         if (LOWER_BYTE(*p) == 'c') {              \
 		p++;                              \
 		if (LOWER_BYTE(*p) == 'e') {      \
@@ -137,7 +140,7 @@
 
 
 #define opaq_CASE                                 \
-        p += 4;                                   \
+        p += 4; NEED(2);                          \
         if (LOWER_BYTE(*p) == 'u') {              \
 		p++;                              \
 		if (LOWER_BYTE(*p) == 'e') {      \
@@ -163,10 +166,16 @@
 
 
 #define algo_CASE         \
-        p += 4;           \
+        p += 4; NEED(5);  \
         val = READ(p);    \
         rith_CASE;        \
         goto other
+
+
+#define auts_CASE         \
+		*_type = PAR_AUTS;\
+        p += 4;           \
+		goto end;         \
 
 
 #define FIRST_QUATERNIONS       \
@@ -176,7 +185,8 @@
         case _resp_: resp_CASE; \
         case _cnon_: cnon_CASE; \
         case _opaq_: opaq_CASE; \
-        case _algo_: algo_CASE;
+        case _algo_: algo_CASE; \
+        case _auts_: auts_CASE;
 
 
 

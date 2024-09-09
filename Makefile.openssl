@@ -1,11 +1,26 @@
 #
 # WARNING: do not run this directly, it should be included by other Makefiles
 
+# Needed to build with openssl 3.x
+DEFS += -Wno-deprecated-declarations
+
+# normalize USE_ONLY_CRYPTO value
+ifeq ($(USE_ONLY_CRYPTO),)
+USE_ONLY_CRYPTO=false
+endif
+
 ifeq ($(CROSS_COMPILE),)
+ifeq ($(USE_ONLY_CRYPTO),false)
 SSL_BUILDER=$(shell \
-	if pkg-config --exists libssl; then \
-		echo 'pkg-config libssl'; \
+	if pkg-config --exists libssl libcrypto; then \
+		echo 'pkg-config libssl libcrypto'; \
 	fi)
+else
+SSL_BUILDER=$(shell \
+	if pkg-config --exists libcrypto; then \
+		echo 'pkg-config libcrypto'; \
+	fi)
+endif
 endif
 
 ifneq ($(SSL_BUILDER),)
@@ -16,5 +31,13 @@ else
 			-I$(LOCALBASE)/include
 	LIBS += -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib \
 			-L$(LOCALBASE)/lib64 -L$(LOCALBASE)/ssl/lib64 \
-			-lssl -lcrypto
+			-lcrypto
+ifeq ($(USE_ONLY_CRYPTO),false)
+	LIBS += -lssl
 endif
+endif
+
+
+# enable this flag to increase performance by not serializing openssl
+# connect/accept/read/write operations, at the cost of possible crashes
+#DEFS+= -DNO_SSL_GLOBAL_LOCK

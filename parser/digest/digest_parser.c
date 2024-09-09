@@ -27,8 +27,9 @@
 
 
 #include "digest_parser.h"
+#include "../../lib/dassert.h"
 #include "../../trim.h"    /* trim_leading */
-#include <string.h>        /* strncasecmp */
+#include "../../lib/turbocompare.h" /* turbo_casematch */
 #include "param_parser.h"  /* Digest parameter name parser */
 #include "../../ut.h"      /* q_memchr */
 
@@ -36,18 +37,27 @@
 #define DIGEST_SCHEME "digest"
 #define DIG_LEN 6
 
-#define QOP_AUTH_STR "auth"
-#define QOP_AUTH_STR_LEN 4
+#define QOP_AUTH_STR_LEN (sizeof(QOP_AUTH_STR) - 1)
+#define QOP_AUTHINT_STR_LEN (sizeof(QOP_AUTHINT_STR) - 1)
 
-#define QOP_AUTHINT_STR "auth-int"
-#define QOP_AUTHINT_STR_LEN 8
-
-#define ALG_MD5_STR "MD5"
-#define ALG_MD5_STR_LEN 3
-
-#define ALG_MD5SESS_STR "MD5-sess"
-#define ALG_MD5SESS_STR_LEN 8
-
+#define ALG_MD5_STR_LEN (sizeof(ALG_MD5_STR) - 1)
+#define ALG_MD5SESS_STR_LEN (sizeof(ALG_MD5SESS_STR) - 1)
+#define ALG_SHA256_STR_LEN (sizeof(ALG_SHA256_STR) - 1)
+#define ALG_SHA256SESS_STR_LEN (sizeof(ALG_SHA256SESS_STR) - 1)
+#define ALG_SHA512_256_STR_LEN (sizeof(ALG_SHA512_256_STR) - 1)
+#define ALG_SHA512_256SESS_STR_LEN (sizeof(ALG_SHA512_256SESS_STR) - 1)
+#define ALG_AKAv1_MD5_STR_LEN (sizeof(ALG_AKAv1_MD5_STR) - 1)
+#define ALG_AKAv1_MD5SESS_STR_LEN (sizeof(ALG_AKAv1_MD5SESS_STR) - 1)
+#define ALG_AKAv1_SHA256_STR_LEN (sizeof(ALG_AKAv1_SHA256_STR) - 1)
+#define ALG_AKAv1_SHA256SESS_STR_LEN (sizeof(ALG_AKAv1_SHA256SESS_STR) - 1)
+#define ALG_AKAv1_SHA512_256_STR_LEN (sizeof(ALG_AKAv1_SHA512_256_STR) - 1)
+#define ALG_AKAv1_SHA512_256SESS_STR_LEN (sizeof(ALG_AKAv1_SHA512_256SESS_STR) - 1)
+#define ALG_AKAv2_MD5_STR_LEN (sizeof(ALG_AKAv2_MD5_STR) - 1)
+#define ALG_AKAv2_MD5SESS_STR_LEN (sizeof(ALG_AKAv2_MD5SESS_STR) - 1)
+#define ALG_AKAv2_SHA256_STR_LEN (sizeof(ALG_AKAv2_SHA256_STR) - 1)
+#define ALG_AKAv2_SHA256SESS_STR_LEN (sizeof(ALG_AKAv2_SHA256SESS_STR) - 1)
+#define ALG_AKAv2_SHA512_256_STR_LEN (sizeof(ALG_AKAv2_SHA512_256_STR) - 1)
+#define ALG_AKAv2_SHA512_256SESS_STR_LEN (sizeof(ALG_AKAv2_SHA512_256SESS_STR) - 1)
 
 /*
  * Parse quoted string in a parameter body
@@ -184,6 +194,7 @@ static inline int parse_digest_param(str* _s, dig_cred_t* _c)
 	case PAR_QOP:       ptr = &_c->qop.qop_str;     break;
 	case PAR_NC:        ptr = &_c->nc;              break;
 	case PAR_ALGORITHM: ptr = &_c->alg.alg_str;     break;
+	case PAR_AUTS:      ptr = &_c->auts;            break;
 	case PAR_OTHER:     ptr = &dummy;               break;
 	default:            ptr = &dummy;               break;
 	}
@@ -217,41 +228,99 @@ static inline void parse_qop(struct qp* _q)
 
 	trim(&s);
 
-	if ((s.len == QOP_AUTH_STR_LEN) &&
-	    !strncasecmp(s.s, QOP_AUTH_STR, QOP_AUTH_STR_LEN)) {
+	if (turbo_strcasematch(&s, QOP_AUTH_STR, QOP_AUTH_STR_LEN)) {
 		_q->qop_parsed = QOP_AUTH_D;
-	} else if ((s.len == QOP_AUTHINT_STR_LEN) &&
-		   !strncasecmp(s.s, QOP_AUTHINT_STR, QOP_AUTHINT_STR_LEN)) {
+	} else if (turbo_strcasematch(&s, QOP_AUTHINT_STR, QOP_AUTHINT_STR_LEN)) {
 		_q->qop_parsed = QOP_AUTHINT_D;
 	} else {
 		_q->qop_parsed = QOP_OTHER_D;
 	}
 }
 
+#define CASE_ALG(alg, sptr) \
+	case ALG_##alg##_STR_LEN: \
+		if (turbo_casematch((sptr)->s, ALG_##alg##_STR, (sptr)->len)) \
+			return ALG_##alg; \
+		break;
+
+#define CASE_ALG2(alg1, alg2, sptr) \
+	case ALG_##alg1##_STR_LEN: \
+		if (turbo_casematch((sptr)->s, ALG_##alg1##_STR, (sptr)->len)) \
+			return ALG_##alg1; \
+		if (turbo_casematch((sptr)->s, ALG_##alg2##_STR, (sptr)->len)) \
+			return ALG_##alg2; \
+		break;
 
 /*
  * Parse algorithm parameter body
  */
-static inline void parse_algorithm(struct algorithm* _a)
+alg_t parse_digest_algorithm(const str *sp)
 {
-	str s;
 
-	s.s = _a->alg_str.s;
-	s.len = _a->alg_str.len;
-
-	trim(&s);
-
-	if ((s.len == ALG_MD5_STR_LEN) &&
-	    !strncasecmp(s.s, ALG_MD5_STR, ALG_MD5_STR_LEN)) {
-		_a->alg_parsed = ALG_MD5;
-	} else if ((s.len == ALG_MD5SESS_STR_LEN) &&
-		   !strncasecmp(s.s, ALG_MD5SESS_STR, ALG_MD5SESS_STR_LEN)) {
-		_a->alg_parsed = ALG_MD5SESS;
-	} else {
-		_a->alg_parsed = ALG_OTHER;
+	switch (sp->len) {
+	CASE_ALG(MD5, sp);
+	CASE_ALG(MD5SESS, sp);
+	CASE_ALG(SHA256, sp);
+	CASE_ALG(SHA256SESS, sp);
+	CASE_ALG(SHA512_256, sp);
+	CASE_ALG(SHA512_256SESS, sp);
+	CASE_ALG2(AKAv1_MD5, AKAv2_MD5, sp);
+	CASE_ALG2(AKAv1_MD5SESS, AKAv2_MD5SESS, sp);
+	CASE_ALG2(AKAv1_SHA256, AKAv2_SHA256, sp);
+	CASE_ALG2(AKAv1_SHA256SESS, AKAv2_SHA256SESS, sp);
+	CASE_ALG2(AKAv1_SHA512_256, AKAv2_SHA512_256, sp);
+	CASE_ALG2(AKAv1_SHA512_256SESS, AKAv2_SHA512_256SESS, sp);
+	default:
+		break;
 	}
+	return ALG_OTHER;
 }
 
+const str *print_digest_algorithm(alg_t alg)
+{
+	switch (alg) {
+	case ALG_MD5:
+		return _str(ALG_MD5_STR);
+	case ALG_MD5SESS:
+		return _str(ALG_MD5SESS_STR);
+	case ALG_SHA256:
+		return _str(ALG_SHA256_STR);
+	case ALG_SHA256SESS:
+		return _str(ALG_SHA256SESS_STR);
+	case ALG_SHA512_256:
+		return _str(ALG_SHA512_256_STR);
+	case ALG_SHA512_256SESS:
+		return _str(ALG_SHA512_256SESS_STR);
+	case ALG_AKAv1_MD5:
+		return _str(ALG_AKAv1_MD5_STR);
+	case ALG_AKAv1_MD5SESS:
+		return _str(ALG_AKAv1_MD5SESS_STR);
+	case ALG_AKAv1_SHA256:
+		return _str(ALG_AKAv1_SHA256_STR);
+	case ALG_AKAv1_SHA256SESS:
+		return _str(ALG_AKAv1_SHA256SESS_STR);
+	case ALG_AKAv1_SHA512_256:
+		return _str(ALG_AKAv1_SHA512_256_STR);
+	case ALG_AKAv1_SHA512_256SESS:
+		return _str(ALG_AKAv1_SHA512_256SESS_STR);
+	case ALG_AKAv2_MD5:
+		return _str(ALG_AKAv2_MD5_STR);
+	case ALG_AKAv2_MD5SESS:
+		return _str(ALG_AKAv2_MD5SESS_STR);
+	case ALG_AKAv2_SHA256:
+		return _str(ALG_AKAv2_SHA256_STR);
+	case ALG_AKAv2_SHA256SESS:
+		return _str(ALG_AKAv2_SHA256SESS_STR);
+	case ALG_AKAv2_SHA512_256:
+		return _str(ALG_AKAv2_SHA512_256_STR);
+	case ALG_AKAv2_SHA512_256SESS:
+		return _str(ALG_AKAv2_SHA512_256SESS_STR);
+	default:
+	case ALG_OTHER:
+	case ALG_UNSPEC:
+		return _str("Unknown");
+	}
+}
 
 /*
  * Parse username for user and domain parts
@@ -307,7 +376,11 @@ static inline int parse_digest_params(str* _s, dig_cred_t* _c)
 
 	     /* Parse algorithm body if the parameter was present */
 	if (_c->alg.alg_str.len > 0) {
-		parse_algorithm(&_c->alg);
+		trim(&(_c->alg.alg_str));
+		_c->alg.alg_parsed = parse_digest_algorithm(&(_c->alg.alg_str));
+	} else {
+		/* No algorithm specified */
+		DASSERT(_c->alg.alg_parsed == ALG_UNSPEC);
 	}
 
 	if (_c->username.whole.len > 0) {
@@ -345,7 +418,7 @@ int parse_digest_cred(str* _s, dig_cred_t* _c)
 	     /* Now test, if it is digest scheme, since it is the only
 	      * scheme we are able to parse here
 	      */
-	if (!strncasecmp(tmp.s, DIGEST_SCHEME, DIG_LEN) &&
+	if (turbo_casematch(tmp.s, DIGEST_SCHEME, DIG_LEN) &&
 	    /* Test for one of LWS chars + ',' */
 	    (is_ws(tmp.s[DIG_LEN]) || (tmp.s[DIG_LEN] == ','))) {
 		     /* Scheme is Digest */
@@ -374,4 +447,3 @@ void init_dig_cred(dig_cred_t* _c)
 {
 	memset(_c, 0, sizeof(dig_cred_t));
 }
-

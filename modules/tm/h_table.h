@@ -165,7 +165,7 @@ typedef struct ua_client
 	/* script flags, specific to this branch */
 	int              br_flags;
 	/* the onreply_route to be processed only for this branch */
-	unsigned int     on_reply;
+	struct script_route_ref *on_reply;
 	/* head list for avps */
 	struct usr_avp *user_avps;
 }ua_client_type;
@@ -275,11 +275,11 @@ typedef struct cell
 	ser_lock_t   reply_mutex;
 
 	/* the route to take if no final positive reply arrived */
-	unsigned int on_negative;
+	struct script_route_ref *on_negative;
 	/* the onreply_route to be processed if registered to do so */
-	unsigned int on_reply;
+	struct script_route_ref *on_reply;
 	/* the branch_route to be processed separately for each branch */
-	unsigned int on_branch;
+	struct script_route_ref *on_branch;
 
 	int fr_timeout;     /* final reply timeout (sec) */
 	int fr_inv_timeout; /* final reply timeout for an INVITE, after 1XX (sec) */

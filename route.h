@@ -70,7 +70,55 @@ struct os_script_routes {
 	struct script_timer_route timer[TIMER_RT_NO];
 	/* event route */
 	struct script_route event[EVENT_RT_NO];
+	/* script version (due to reload) */
+	unsigned int version;
 };
+
+
+struct script_route_ref {
+	/* the name of the route, kept both with len and null terminated */
+	/* the actual string is allocated together with this map structure */
+	str name;
+	/* the index of the route in the script_route array
+	 * it is set to -1 if the route does not exist anymore */
+	int idx;
+	/* type of route */
+	int type;
+	union {
+		/* how many times this script route was referentiated
+		 * by opensips code (by looking the name) */
+		unsigned int refcnt;
+		/* script version */
+		unsigned int version;
+	} u;
+	/* linking into per-process list of ref's. this is not used
+	 * if the ref resides in SHM */
+	struct script_route_ref *next;
+};
+
+enum script_return_type {
+	SCRIPT_ROUTE_RET_NULL,
+	SCRIPT_ROUTE_RET_INT,
+	SCRIPT_ROUTE_RET_STR,
+	SCRIPT_ROUTE_RET_VAR,
+};
+
+struct script_return_param {
+	union {
+		int rint;
+		struct _pv_spec *rspec;
+		str rstr;
+	};
+	unsigned int type;
+	struct script_return_param *next;
+};
+
+struct script_return_value {
+	pv_value_t val;
+	struct script_return_value *next;
+	char buf[0];
+};
+
 
 extern struct os_script_routes *sroutes;
 
@@ -101,12 +149,15 @@ extern str str_event_route;
 extern int route_type;
 
 /**
- * Extract information about the top-level @route_type
+ * Extract the type of the top-level @route_type
  *
  * @type: string representation of the route's type
  * @has_name: whether the top route has a name or not
  */
 void get_top_route_type(str *type, int *has_name);
+
+void get_route_type(int idx, str *type);
+void get_route_name(int idx, str *name);
 
 #define set_route_type(_new_type) \
 	do{\
@@ -121,7 +172,24 @@ void get_top_route_type(str *type, int *has_name);
 
 #define is_route_type(_type) (route_type==_type)
 
-struct os_script_routes* new_sroutes_holder(void);
+#define ref_script_route_is_valid(_ref) \
+	((_ref)!=NULL && (_ref)->idx!=-1)
+
+#define ref_script_route_check_and_update(_ref) \
+	((_ref)!=NULL && (\
+		((_ref)->u.version==sroutes->version)\
+		||\
+		(update_script_route_ref(_ref)==0 && ((_ref)->u.version=sroutes->version))\
+	) && (_ref)->idx!=-1)
+
+#define ref_script_route_name(_ref) \
+	((_ref)?(_ref)->name.s:"n/a")
+
+#define ref_script_route_idx(_ref) \
+	((_ref)?(_ref)->idx:-1)
+
+
+struct os_script_routes* new_sroutes_holder( int inc_ver );
 
 void free_route_lists(struct os_script_routes *sr);
 
@@ -137,10 +205,34 @@ int get_script_route_ID_by_name(char *name,
 int get_script_route_ID_by_name_str(str *name,
 		struct script_route *sr, int size);
 
-int is_script_func_used( char *name, int param_no);
+struct script_route_ref * ref_script_route_by_name(char *name,
+		struct script_route *sr, int size,
+		int type, int in_shm);
 
-int is_script_async_func_used( char *name, int param_no);
+struct script_route_ref * ref_script_route_by_name_str(str *name,
+		struct script_route *sr, int size,
+		int type, int in_shm);
 
+void unref_script_route(struct script_route_ref *ref);
+
+int update_script_route_ref(struct script_route_ref *ref);
+
+void update_all_script_route_refs(void);
+
+struct script_route_ref *dup_ref_script_route_in_shm(
+		struct script_route_ref *ref, int from_shm);
+
+void print_script_route_refs(void);
+
+int is_script_func_used(const char *name, int param_no);
+
+int is_script_async_func_used(const char *name, int param_no);
+
+void script_return_set(struct sip_msg *msg, struct script_return_param *params);
+int script_return_get(pv_value_t *res, int index);
+void script_return_free(struct script_return_value **values);
+int script_return_push(void);
+void script_return_pop(int level);
 
 void push(struct action* a, struct action** head);
 

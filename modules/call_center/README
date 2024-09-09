@@ -25,27 +25,32 @@ Call-Center Module
               1.4.4. wrapup_time (integer)
               1.4.5. queue_pos_param (string)
               1.4.6. reject_on_no_agents (int)
-              1.4.7. cc_agents_table (string)
-              1.4.8. cca_agentid_column (string)
-              1.4.9. cca_location_column (string)
-              1.4.10. cca_skills_column (string)
-              1.4.11. cca_logstate_column (string)
-              1.4.12. cca_wrapuptime_column (string)
-              1.4.13. cca_wrapupend_column (string)
-              1.4.14. cc_flows_table (string)
-              1.4.15. ccf_flowid_column (string)
-              1.4.16. ccf_priority_column (string)
-              1.4.17. ccf_skill_column (string)
-              1.4.18. ccf_cid_column (string)
-              1.4.19. ccf_max_wrapup_column (string)
-              1.4.20. ccf_dissuading_hangup_column (string)
-              1.4.21. ccf_dissuading_onhold_th_column (string)
-              1.4.22. ccf_dissuading_ewt_th_column (string)
-              1.4.23. ccf_dissuading_qsize_th_column (string)
-              1.4.24. ccf_m_welcome_column (string)
-              1.4.25. ccf_m_queue_column (string)
-              1.4.26. ccf_m_dissuading_column (string)
-              1.4.27. ccf_m_flow_id_column (string)
+              1.4.7. chat_dispatch_policy (int)
+              1.4.8. internal_call_dispatching (int)
+              1.4.9. cc_agents_table (string)
+              1.4.10. cca_agentid_column (string)
+              1.4.11. cca_location_column (string)
+              1.4.12. cca_msrp_location_column (string)
+              1.4.13. cca_msrp_max_sessions_column (string)
+              1.4.14. cca_skills_column (string)
+              1.4.15. cca_logstate_column (string)
+              1.4.16. cca_wrapuptime_column (string)
+              1.4.17. cca_wrapupend_column (string)
+              1.4.18. cc_flows_table (string)
+              1.4.19. ccf_flowid_column (string)
+              1.4.20. ccf_priority_column (string)
+              1.4.21. ccf_skill_column (string)
+              1.4.22. ccf_cid_column (string)
+              1.4.23. ccf_max_wrapup_column (string)
+              1.4.24. ccf_dissuading_hangup_column (string)
+              1.4.25. ccf_dissuading_onhold_th_column (string)
+              1.4.26. ccf_dissuading_ewt_th_column (string)
+              1.4.27. ccf_dissuading_qsize_th_column (string)
+              1.4.28. ccf_m_welcome_column (string)
+              1.4.29. ccf_m_queue_column (string)
+              1.4.30. ccf_m_dissuading_column (string)
+              1.4.31. ccf_m_flow_id_column (string)
+              1.4.32. b2b_logic_ctx_param (string)
 
         1.5. Exported Functions
 
@@ -66,7 +71,9 @@ Call-Center Module
               1.7.4. cc_list_flows
               1.7.5. cc_list_agents
               1.7.6. cc_list_calls
-              1.7.7. cc_reset_stats
+              1.7.7. cc_dispatch_call_to_agent
+              1.7.8. cc_internal_call_dispatching
+              1.7.9. cc_reset_stats
 
         1.8. Exported Events
 
@@ -103,29 +110,35 @@ Call-Center Module
    1.4. Set wrapup_time parameter
    1.5. Set queue_pos_param parameter
    1.6. Set reject_on_no_agents parameter
-   1.7. Set cc_agents_table parameter
-   1.8. Set cca_agentid_column parameter
-   1.9. Set cca_location_column parameter
-   1.10. Set cca_skills_column parameter
-   1.11. Set cca_logstate_column parameter
-   1.12. Set cca_wrapuptime_column parameter
-   1.13. Set cca_wrapupend_column parameter
-   1.14. Set cc_flows_table parameter
-   1.15. Set ccf_flowid_column parameter
-   1.16. Set ccf_priority_column parameter
-   1.17. Set ccf_skill_column parameter
-   1.18. Set ccf_cid_column parameter
-   1.19. Set ccf_max_wrapup_column parameter
-   1.20. Set ccf_dissuading_hangup_column parameter
-   1.21. Set ccf_dissuading_onhold_th_column parameter
-   1.22. Set ccf_dissuading_ewt_th_column parameter
-   1.23. Set ccf_dissuading_qsize_th_column parameter
-   1.24. Set ccf_m_welcome_column parameter
-   1.25. Set ccf_m_queue_column parameter
-   1.26. Set ccf_m_dissuading_column parameter
-   1.27. Set ccf_m_flow_id_column parameter
-   1.28. cc_handle_call usage
-   1.29. cc_agent_login usage
+   1.7. Set chat_dispatch_policy parameter
+   1.8. Set internal_call_dispatching parameter
+   1.9. Set cc_agents_table parameter
+   1.10. Set cca_agentid_column parameter
+   1.11. Set cca_location_column parameter
+   1.12. Set cca_msrp_location_column parameter
+   1.13. Set cca_msrp_max_sessions_column parameter
+   1.14. Set cca_skills_column parameter
+   1.15. Set cca_logstate_column parameter
+   1.16. Set cca_wrapuptime_column parameter
+   1.17. Set cca_wrapupend_column parameter
+   1.18. Set cc_flows_table parameter
+   1.19. Set ccf_flowid_column parameter
+   1.20. Set ccf_priority_column parameter
+   1.21. Set ccf_skill_column parameter
+   1.22. Set ccf_cid_column parameter
+   1.23. Set ccf_max_wrapup_column parameter
+   1.24. Set ccf_dissuading_hangup_column parameter
+   1.25. Set ccf_dissuading_onhold_th_column parameter
+   1.26. Set ccf_dissuading_ewt_th_column parameter
+   1.27. Set ccf_dissuading_qsize_th_column parameter
+   1.28. Set ccf_m_welcome_column parameter
+   1.29. Set ccf_m_queue_column parameter
+   1.30. Set ccf_m_dissuading_column parameter
+   1.31. Set ccf_m_flow_id_column parameter
+   1.32. Set b2b_logic_ctx_param parameter
+   1.33. cc_handle_call usage
+   1.34. cc_agent_login usage
+   1.35. $rtpquery Usage
 
 Chapter 1. Admin Guide
 
@@ -141,6 +154,15 @@ Chapter 1. Admin Guide
    everything except the media playback (for the queue). This part
    must be provided via a third party media server (FreeSwitch,
    Asterisk or others).
+
+   This is actually a Contact Center and it is able to handle both
+   RTP/audio calls and (multiple) MSRP/chat calls, in the same
+   time.
+
+   The module provides an internal buit-in dispatching logic (for
+   sending the calls/chats to the agents), but also offers the
+   possibility to use an external logic to do the dispatching (see
+   cc_dispatch_call_to_agent MI command).
 
 1.2. How it works
 
@@ -217,11 +239,22 @@ Chapter 1. Admin Guide
 1.2.3. Agents
 
    An agent is defined by a unique alphanumerical ID - the main
-   attribute of an agent is its the set of skills and its SIP
-   location. The set of skills will tell what calls to be received
-   (from which flows, based on the skill matching); the location
-   is a SIP URI where to call must be sent in order to be answered
-   by the agent.
+   attribute of an agent is its the set of skills. This set of
+   skills will tell what calls to be received (from which flows,
+   based on the skill matching).
+
+   The agent may provide support for different optional media
+   types, like RTP/audio or MSRP/chat. Each supported media type
+   comes with the maximum supported number of sessions. Of course,
+   for audio the `1` value is hardocded. On the SIP side, each
+   media type comes with a locations. The location is a SIP URI
+   where to calls must be sent in order to be answered by the
+   agent. At least one media type should be defined. To specify
+   which media the agent support, just define the corresponding
+   SIP location in his profile.
+
+   So, at a certain time, an agent may handle either a single
+   call, either several chat sessions.
 
    Additionally, the agent has a initial logstate - if he is
    logged in or not (being logged in is a must in order to receive
@@ -335,257 +368,359 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 modparam("call_center", "reject_on_no_agents", 0)
 ...
 
-1.4.7. cc_agents_table (string)
+1.4.7. chat_dispatch_policy (int)
+
+   A parameter to tell what should be the policy on dispatching
+   the chat/MSRP sessions to the agents, considering that an agent
+   may handle multiple such sessions/chats in the same time.
+
+   Options are:
+     * balancing - the distribution will try to be even across the
+       agents, but by doing this you may end up waisting chat
+       sessions on agents and call starvation - agents are
+       partially used by chat sessions, so they cannot take calls
+       (of course, if you have mixed agetns with audio/chat)
+     * full-load - the distribution will try to make usage of an
+       agent in the best possible way when comes to chat sessions
+       - once the agent take a chat, all the following chats will
+       be assigned ot him - the idea is to try to be efficient in
+       using the resource/sessions of an agents, to leave as much
+       room as possible for calls. Of course, this may lead to an
+       un-even loading of chat agents - some will be full, others
+       empty.
+
+   Default value is “balancing”.
+
+   Example 1.7. Set chat_dispatch_policy parameter
+...
+modparam("call_center", "chat_dispatch_policy", "balancing")
+...
+
+1.4.8. internal_call_dispatching (int)
+
+   A parameter to tell if the internal/buit-in call dispatching to
+   agent should be used or not. If enabled, the module will
+   automatically dispatch (by itself) the queued/incoming calls to
+   the available agents. If disabled, the module will not do such
+   dispaching by itself and it is expected to use the
+   cc_dispatch_call_to_agent MI command to dispatch the queued
+   calls to agents. This allows the implementation of an external,
+   custom dispatching logic. The value of this setting may be
+   changed during runtime via the cc_internal_call_dispatching MI
+   command.
+
+   Default value is “1” (enabled).
+
+   Example 1.8. Set internal_call_dispatching parameter
+...
+modparam("call_center", "internal_call_dispatching", 0)
+...
+
+1.4.9. cc_agents_table (string)
 
    Name to be used for the table holding the agents.
 
    Default value is “cc_agents”.
 
-   Example 1.7. Set cc_agents_table parameter
+   Example 1.9. Set cc_agents_table parameter
 ...
 modparam("call_center", "cc_agents_table", "my_agents")
 ...
 
-1.4.8. cca_agentid_column (string)
+1.4.10. cca_agentid_column (string)
 
    Name to be used for the "agent id" (unique DB id) column in the
    agents table.
 
    Default value is “agentid”.
 
-   Example 1.8. Set cca_agentid_column parameter
+   Example 1.10. Set cca_agentid_column parameter
 ...
 modparam("call_center", "cca_agentid_column", "cid")
 ...
 
-1.4.9. cca_location_column (string)
+1.4.11. cca_location_column (string)
 
-   Name to be used for the "location" (SIP URI) column in the
-   agents table.
+   Name to be used for the calling/audio "location" (SIP URI)
+   column in the agents table.
 
-   Default value is “agentid”.
+   Default value is “location”.
 
-   Example 1.9. Set cca_location_column parameter
+   Example 1.11. Set cca_location_column parameter
 ...
 modparam("call_center", "cca_location_column", "sip_uri")
 ...
 
-1.4.10. cca_skills_column (string)
+1.4.12. cca_msrp_location_column (string)
+
+   Name to be used for the msrp/chat "location" (SIP URI) column
+   in the agents table.
+
+   Default value is “msrp_location”.
+
+   Example 1.12. Set cca_msrp_location_column parameter
+...
+modparam("call_center", "cca_msrp_location_column", "sip_uri")
+...
+
+1.4.13. cca_msrp_max_sessions_column (string)
+
+   Name to be used for the column (in the agents table) holding
+   the maximum number of chat sessions that can be handled by the
+   agent.
+
+   Default value is “msrp_max_sessions”.
+
+   Example 1.13. Set cca_msrp_max_sessions_column parameter
+...
+modparam("call_center", "cca_msrp_max_sessions_column", "max_chats")
+...
+
+1.4.14. cca_skills_column (string)
 
    Name to be used for the "skills" (list of skills) column in the
    agents table.
 
    Default value is “skills”.
 
-   Example 1.10. Set cca_skills_column parameter
+   Example 1.14. Set cca_skills_column parameter
 ...
 modparam("call_center", "cca_skills_column", "skills")
 ...
 
-1.4.11. cca_logstate_column (string)
+1.4.15. cca_logstate_column (string)
 
    Name to be used for the "logstate" (original login state)
    column in the agents table.
 
    Default value is “logstate”.
 
-   Example 1.11. Set cca_logstate_column parameter
+   Example 1.15. Set cca_logstate_column parameter
 ...
 modparam("call_center", "cca_logstate_column", "log_state")
 ...
 
-1.4.12. cca_wrapuptime_column (string)
+1.4.16. cca_wrapuptime_column (string)
 
    Name to be used for the "wrapuptime" (per-agent wrapup time)
    column in the agents table.
 
    Default value is “wrapup_time”.
 
-   Example 1.12. Set cca_wrapuptime_column parameter
+   Example 1.16. Set cca_wrapuptime_column parameter
 ...
 modparam("call_center", "cca_wrapuptime_column", "wtime")
 ...
 
-1.4.13. cca_wrapupend_column (string)
+1.4.17. cca_wrapupend_column (string)
 
    Name to be used for the "wrapupend" (timestamp when the wrapup
    ends) column in the agents table.
 
    Default value is “wrapup_end_time”.
 
-   Example 1.13. Set cca_wrapupend_column parameter
+   Example 1.17. Set cca_wrapupend_column parameter
 ...
 modparam("call_center", "cca_wrapupend_column", "wrapup_ends")
 ...
 
-1.4.14. cc_flows_table (string)
+1.4.18. cc_flows_table (string)
 
    Name to be used for the table holding the definition of the
    flows/queues.
 
    Default value is “cc_flows”.
 
-   Example 1.14. Set cc_flows_table parameter
+   Example 1.18. Set cc_flows_table parameter
 ...
 modparam("call_center", "cc_flows_table", "queues")
 ...
 
-1.4.15. ccf_flowid_column (string)
+1.4.19. ccf_flowid_column (string)
 
    Name to be used for the "flow id" (unique DB id) column in the
    flows table.
 
    Default value is “flowid”.
 
-   Example 1.15. Set ccf_flowid_column parameter
+   Example 1.19. Set ccf_flowid_column parameter
 ...
 modparam("call_center", "ccf_flowid_column", "queue_id")
 ...
 
-1.4.16. ccf_priority_column (string)
+1.4.20. ccf_priority_column (string)
 
    Name to be used for the "priority" column in the flows table.
 
    Default value is “priority”.
 
-   Example 1.16. Set ccf_priority_column parameter
+   Example 1.20. Set ccf_priority_column parameter
 ...
 modparam("call_center", "ccf_priority_column", "queue_prio")
 ...
 
-1.4.17. ccf_skill_column (string)
+1.4.21. ccf_skill_column (string)
 
    Name to be used for the "skill" column in the flows table.
 
    Default value is “skill”.
 
-   Example 1.17. Set ccf_skill_column parameter
+   Example 1.21. Set ccf_skill_column parameter
 ...
 modparam("call_center", "ccf_skill_column", "queue_skill")
 ...
 
-1.4.18. ccf_cid_column (string)
+1.4.22. ccf_cid_column (string)
 
    Name to be used for the "caller ID prefix" column in the flows
    table.
 
    Default value is “prependcid”.
 
-   Example 1.18. Set ccf_cid_column parameter
+   Example 1.22. Set ccf_cid_column parameter
 ...
 modparam("call_center", "ccf_cid_column", "queue_cli_prefix")
 ...
 
-1.4.19. ccf_max_wrapup_column (string)
+1.4.23. ccf_max_wrapup_column (string)
 
    Name to be used for the "max limit for wrapup time" column in
    the flows table.
 
    Default value is “max_wrapup_time”.
 
-   Example 1.19. Set ccf_max_wrapup_column parameter
+   Example 1.23. Set ccf_max_wrapup_column parameter
 ...
 modparam("call_center", "ccf_max_wrapup_column", "queue_wrapup")
 ...
 
-1.4.20. ccf_dissuading_hangup_column (string)
+1.4.24. ccf_dissuading_hangup_column (string)
 
    Name to be used for the "hangup after dissuading" column in the
    flows table.
 
    Default value is “dissuading_hangup”.
 
-   Example 1.20. Set ccf_dissuading_hangup_column parameter
+   Example 1.24. Set ccf_dissuading_hangup_column parameter
 ...
 modparam("call_center", "ccf_dissuading_hangup_column", "hangup_on_dissu
 ading")
 ...
 
-1.4.21. ccf_dissuading_onhold_th_column (string)
+1.4.25. ccf_dissuading_onhold_th_column (string)
 
    Name to be used for the "on-hold dissuading threshold" column
    in the flows table.
 
    Default value is “dissuading_onhold_th”.
 
-   Example 1.21. Set ccf_dissuading_onhold_th_column parameter
+   Example 1.25. Set ccf_dissuading_onhold_th_column parameter
 ...
 modparam("call_center", "ccf_dissuading_onhold_th_column", "th_diss_onho
 ld")
 ...
 
-1.4.22. ccf_dissuading_ewt_th_column (string)
+1.4.26. ccf_dissuading_ewt_th_column (string)
 
    Name to be used for the "EWT dissuading threshold" column in
    the flows table.
 
    Default value is “dissuading_ewt_th”.
 
-   Example 1.22. Set ccf_dissuading_ewt_th_column parameter
+   Example 1.26. Set ccf_dissuading_ewt_th_column parameter
 ...
 modparam("call_center", "ccf_dissuading_ewt_th_column", "th_diss_ewt")
 ...
 
-1.4.23. ccf_dissuading_qsize_th_column (string)
+1.4.27. ccf_dissuading_qsize_th_column (string)
 
    Name to be used for the "queue size dissuading threshold"
    column in the flows table.
 
    Default value is “dissuading_qsize_th”.
 
-   Example 1.23. Set ccf_dissuading_qsize_th_column parameter
+   Example 1.27. Set ccf_dissuading_qsize_th_column parameter
 ...
 modparam("call_center", "ccf_dissuading_qsize_th_column", "th_diss_qsize
 ")
 ...
 
-1.4.24. ccf_m_welcome_column (string)
+1.4.28. ccf_m_welcome_column (string)
 
    Name to be used for the "audio message on welcome" column in
    the flows table.
 
    Default value is “message_welcome”.
 
-   Example 1.24. Set ccf_m_welcome_column parameter
+   Example 1.28. Set ccf_m_welcome_column parameter
 ...
 modparam("call_center", "ccf_m_welcome_column", "audio_welcome")
 ...
 
-1.4.25. ccf_m_queue_column (string)
+1.4.29. ccf_m_queue_column (string)
 
    Name to be used for the "audio message on queueing" column in
    the flows table.
 
    Default value is “message_queue”.
 
-   Example 1.25. Set ccf_m_queue_column parameter
+   Example 1.29. Set ccf_m_queue_column parameter
 ...
 modparam("call_center", "ccf_m_queue_column", "audio_queue")
 ...
 
-1.4.26. ccf_m_dissuading_column (string)
+1.4.30. ccf_m_dissuading_column (string)
 
    Name to be used for the "audio message on dissuading" column in
    the flows table.
 
    Default value is “message_dissuading”.
 
-   Example 1.26. Set ccf_m_dissuading_column parameter
+   Example 1.30. Set ccf_m_dissuading_column parameter
 ...
 modparam("call_center", "ccf_m_dissuading_column", "audio_dissuading")
 ...
 
-1.4.27. ccf_m_flow_id_column (string)
+1.4.31. ccf_m_flow_id_column (string)
 
    Name to be used for the "audio message on identifying the flow"
    column in the flows table.
 
    Default value is “message_flow_id”.
 
-   Example 1.27. Set ccf_m_flow_id_column parameter
+   Example 1.31. Set ccf_m_flow_id_column parameter
 ...
 modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 ...
+
+1.4.32. b2b_logic_ctx_param (string)
+
+   The name of the $b2b_logic.ctx variable that can be used to
+   retrieve the value of the parameter passed to the
+   cc_handle_call function.
+
+   This parameter will be copied throughout all the B2B scenarios
+   started by the call_center module. NOTE that you can change the
+   value of the current scenario by writing into it, but the
+   change will not be reflected in a different scenario.
+
+   Default value is “call_center”.
+
+   Example 1.32. Set b2b_logic_ctx_param parameter
+...
+modparam("call_center", "b2b_logic_ctx_param", "b2b_callid")
+...
+route[handle_call_center] {
+    ...
+    cc_handle_call("flow", $ci);
+    ...
+}
+...
+route[b2b_handle_request] {
+    ...
+    xlog("Initial Callid is $b2b_logic.ctx(b2b_callid)\n");
+    ...
+}
 
 1.5. Exported Functions
 
@@ -605,7 +740,9 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
        is intended for custom integration of the call center
        module and it is 100% up to the script writer about the
        value and purpose of this parameter, OpenSIPS will not
-       touch or interpret it.
+       touch or interpret it. You can retrieve the value of this
+       parameter using the $b2b_logic.ctx variable with the name
+       defined in the b2b_logic_ctx_param parameter.
 
    The function returns TRUE back to the script if the call was
    successfully pushed and handled by the Call Center engine.
@@ -620,7 +757,7 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
      * -4 - no agents logged in the flow;
      * -5 - internal error;
 
-   Example 1.28. cc_handle_call usage
+   Example 1.33. cc_handle_call usage
 ...
 if (is_method("INVITE") and !has_totag()) {
         if (!cc_handle_call("tech_support")) {
@@ -641,7 +778,7 @@ if (is_method("INVITE") and !has_totag()) {
      * state (int) - an integer value giving the new state - 0
        means logged off, anything else means logged in.
 
-   Example 1.29. cc_agent_login usage
+   Example 1.34. cc_agent_login usage
 ...
 # log off the 'agentX' agent
 cc_agent_login("agentX",0);
@@ -669,18 +806,30 @@ cc_agent_login("agentX",0);
 
 1.6.1.5. ccg_answered_incalls
 
-   Total number of calls answered by agents. (counter type)
+   Total number of calls (audio/RTP and chat/MSRP) answered by
+   agents. (counter type)
 
-1.6.1.6. ccg_abandonned_incalls
+1.6.1.6. ccg_answered_inchats
+
+   Total number of chat/MSRP only calls answered by agents.
+   (counter type)
+
+1.6.1.7. ccg_abandonned_incalls
 
    Total number of calls terminated by caller before being
    answered by agents. (counter type)
 
-1.6.1.7. ccg_onhold_calls
+1.6.1.8. ccg_onhold_calls
 
-   Total number of calls in the queues (onhold). (realtime type)
+   Total number of calls (audio/RTP and chat/MSRP) in the queues
+   (onhold). (realtime type)
 
-1.6.1.8. ccg_free_agents
+1.6.1.9. ccg_onhold_chats
+
+   Total number of chat/MSRP only calls in the queues (onhold).
+   (realtime type)
+
+1.6.1.10. ccg_free_agents
 
    Total number of free agents (across all flows). (realtime type)
 
@@ -696,36 +845,46 @@ cc_agent_login("agentX",0);
 
 1.6.2.3. ccf_answ_incalls_flowID
 
-   Nnumber of calls from the flow answered by agents. (counter
-   type)
+   Nnumber of calls (audio/RTP and chat/MSRP) from the flow
+   answered by agents. (counter type)
 
-1.6.2.4. ccf_aban_incalls_flowID
+1.6.2.4. ccf_answ_incalls_flowID
+
+   Nnumber of chat/MSRP only calls from the flow answered by
+   agents. (counter type)
+
+1.6.2.5. ccf_aban_incalls_flowID
 
    Number of calls (from the flow) terminated by caller before
    being answered by agents. (counter type)
 
-1.6.2.5. ccf_onhold_incalls_flowID
+1.6.2.6. ccf_onhold_incalls_flowID
 
-   Number of calls (from the flow) which were put onhold. (counter
-   type)
+   Number of calls (audio/RTP and chat/MSRP) -from the flow- which
+   are onhold. (realtime type)
 
-1.6.2.6. ccf_queued_calls_flowID
+1.6.2.7. ccf_onhold_inchats_flowID
+
+   Number of chat/MSRP only calls -from the flow- which are
+   onhold. (realtime type)
+
+1.6.2.8. ccf_queued_calls_flowID
 
    Number of calls which are queued for this flow. (realtime type)
 
-1.6.2.7. ccf_free_agents_flowID
+1.6.2.9. ccf_free_agents_flowID
 
    Number of free agents serving this flow. (realtime type)
 
-1.6.2.8. ccf_etw_flowID
+1.6.2.10. ccf_etw_flowID
 
    Estimated Time to Wait for this flow. (realtime type)
 
-1.6.2.9. ccf_awt_flowID
+1.6.2.11. ccf_awt_flowID
 
    Avg. Wating Time for this flow. (realtime type)
 
-1.6.2.10. ccg_load_flowID
+1.6.2.12. ccg_load_flowID
 
    The load on the flow (number of queued calls versus number of
    logged agents). (realtime type)
@@ -738,14 +897,20 @@ cc_agent_login("agentX",0);
 
 1.6.3.2. cca_answ_incalls_agentID
 
-   Nnumber of calls answered by the agent. (counter type)
+   Number of calls (audio/RTP and chat/MSRP) answered by the
+   agent. (counter type)
 
-1.6.3.3. cca_aban_incalls_agentID
+1.6.3.3. cca_answ_inchats_agentID
+
+   Number of chat/MSRP only calls answered by the agent. (counter
+   type)
+
+1.6.3.4. cca_aban_incalls_agentID
 
    Number of calls (sent to this agent) terminated by caller
    before being answered by agents. (counter type)
 
-1.6.3.4. cca_att_agentID
+1.6.3.5. cca_att_agentID
 
    Avg. Talk Time for this agent (realtime type)
 
@@ -774,9 +939,10 @@ opensips-cli -x mi cc_agent_login agentX 0
 1.7.3.  cc_list_queue
 
    Command to list all the calls in queuing - for each call, the
-   following attributes will be printed: the flow of the call, for
-   how long the call is in the queue, the ETW for the call, call
-   priority and the call skill (inherited from the flow).
+   following attributes will be printed: the call id, the calling
+   user info, the flow of the call, for how long the call is in
+   the queue, the ETW for the call, call priority and the call
+   skill (inherited from the flow).
 
    It takes no parameter.
 
@@ -798,8 +964,8 @@ opensips-cli -x mi cc_list_flows
 1.7.5.  cc_list_agents
 
    Command to list all the agents - for each agent, the following
-   attributes will be printed: agent ID, agent login state and
-   agent state (free, wrapup, incall).
+   attributes will be printed: agent ID, agent login state, agent
+   state (free, wrapup, incall) and info on ongoing sessions.
 
    It takes no parameter.
 
@@ -818,7 +984,46 @@ opensips-cli -x mi cc_list_agents
    MI FIFO Command usage:
 opensips-cli -x mi cc_list_agents
 
-1.7.7.  cc_reset_stats
+1.7.7.  cc_dispatch_call_to_agent
+
+   This function sends a given call (from the queue) to a given
+   agent. For the operation to succeed, several conditions must be
+   met:
+     * the call must be in the queue
+     * the agent must be logged in
+     * the agent must support the skill required by the call
+     * the agent must support the media (RTP/MSRP) requiref by the
+       call
+     * the agent must have available sessions for the requested
+       media
+
+   It takes two parameters.
+     * call_id - the ID of the call, as provided by the queue
+       listing MI command cc_list_queue
+     * agent_id - the ID of the call, as provided by the agents
+       listing MI command cc_list_agents
+
+   IMPORTANT: in order to be used, you need to be sure that the
+   internal call dispatching is DISABLED via the
+   chat_internal_call_dispatching module parameter or the
+   cc_internal_call_dispatching MI command.
+
+   MI FIFO Command usage:
+opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
+
+1.7.8.  cc_internal_call_dispatching
+
+   Command to inspect and/or change the
+   chat_internal_call_dispatching setting
+
+   It takes one optional parameter dispatching if the value of the
+   setting should be changed. A 0 value means disabling the
+   internal dispatching, a non zero means to enable it.
+
+   MI FIFO Command usage:
+opensips-cli -x mi cc_internal_call_dispatching 0
+
+1.7.9.  cc_reset_stats
 
    Command to reset all counter-like statistics.
 
@@ -846,6 +1051,25 @@ opensips-cli -x mi cc_reset_stats
        agent; published only if the state is "incall"
 
 1.9. Exported Pseudo-Variables
+
+1. $cc_state
+
+   Returns the state of a call.
+
+   Possible values returned are:
+
+     * welcome - the welcome message is played.
+     * dissuading1 - the first dissuading message is played.
+     * dissuading2 - the second dissuading message is played.
+     * queue - the call is in queue.
+     * preagent - the agent is being called.
+     * toagent - the agent is in call.
+
+   Example 1.35. $rtpquery Usage
+...
+        $json(reply) := $rtpquery;
+        xlog("Total RTP Stats: $json(reply/totals)\n");
+...
 
    NONE
 
@@ -895,14 +1119,16 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 79 29 5561 198
-   2. Razvan Crainea (@razvancrainea) 36 27 672 146
-   3. Vlad Patrascu (@rvlad-patrascu) 17 8 284 313
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 110 44 6780 511
+   2. Razvan Crainea (@razvancrainea) 45 34 849 159
+   3. Vlad Patrascu (@rvlad-patrascu) 18 9 287 314
    4. Liviu Chircu (@liviuchircu) 14 11 72 89
-   5. Peter Lemenkov (@lemenkov) 4 2 1 1
-   6. Vlad Paiu (@vladpaiu) 3 1 13 4
-   7. Dusan Klinec (@ph4r05) 3 1 1 1
-   8. Zero King (@l2dy) 3 1 1 1
+   5. Maksym Sobolyev (@sobomax) 6 4 8 13
+   6. Walter Doekes (@wdoekes) 4 2 1 2
+   7. Peter Lemenkov (@lemenkov) 4 2 1 1
+   8. Vlad Paiu (@vladpaiu) 3 1 13 4
+   9. Dusan Klinec (@ph4r05) 3 1 1 1
+   10. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -923,15 +1149,17 @@ Chapter 4. Contributors
 4.2. By Commit Activity
 
    Table 4.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - Jul 2020
-   3. Liviu Chircu (@liviuchircu)         Jun 2014 - May 2020
-   4. Razvan Crainea (@razvancrainea)     Mar 2014 - Apr 2020
-   5. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
-   7. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   8. Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
+                      Name                   Commit Activity
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   2.  Razvan Crainea (@razvancrainea)     Mar 2014 - Oct 2023
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - May 2023
+   4.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021
+   6.  Liviu Chircu (@liviuchircu)         Jun 2014 - May 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
+   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   10. Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -940,8 +1168,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Zero
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Zero
    King (@l2dy), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu).
 

@@ -28,14 +28,29 @@
 
 #define RL_DEFAULT_EXPIRE	3600
 #define RL_HASHSIZE			1024
-#define RL_TIMER_INTERVAL	10
+#define RL_TIMER_INTERVAL	10   /* s */
+#define RL_TIMER_BCAST		200  /* ms */
 #define RL_PIPE_PENDING		(1<<0)
 #define BIN_VERSION         1
+
+#ifndef RL_DEBUG_PIPES
+# define RL_DBG(...)
+#else
+# define RL_DBG(pipe, format, args...) do { \
+	struct timeval __tv; \
+	gettimeofday(&__tv, NULL); \
+	LM_INFO("%.*s@%lu: " format "\n", (pipe)->name.len, (pipe)->name.s, \
+			(__tv.tv_sec * 1000 + __tv.tv_usec / 1000), ##args); \
+} while(0)
+#endif
 
 
 #include "../../map.h"
 #include "../clusterer/api.h"
 #include "../../forward.h"
+
+#define RL_PIPE_REPLICATE_BIN	(1<<0) /* replicate the pipe over bin */
+#define RL_PIPE_REPLICATE_CACHE	(1<<1) /* replicate the pipe over cache */
 
 /* copied from old ratelimit module */
 typedef enum {
@@ -66,6 +81,10 @@ typedef struct rl_window {
 } rl_window_t;
 
 typedef struct rl_pipe {
+#ifdef RL_DEBUG_PIPES
+	str name;
+#endif
+	unsigned int flags;			/* pipe's flags */
 	int limit;					/* limit used by algorithm */
 	int counter;				/* countes the accesses */
 	int my_counter;				/* countes the accesses of this instance */
@@ -73,7 +92,8 @@ typedef struct rl_pipe {
 	int last_counter;			/* last counter */
 	int load;					/* countes the accesses */
 	rl_algo_t algo;				/* the algorithm used */
-	unsigned long last_used;	/* timestamp when the pipe was last accessed */
+	time_t last_used;			/* timestamp when the pipe was last accessed */
+	time_t last_local_used;		/* timestamp when the pipe was last locally accessed */
 	rl_repl_counter_t *dsts;	/* counters per destination */
 	rl_window_t rwin;			/* window of requests */
 } rl_pipe_t;
@@ -119,7 +139,7 @@ int w_rl_check(struct sip_msg*, str *, int *, str *);
 int w_rl_dec(struct sip_msg*, str *);
 int w_rl_reset(struct sip_msg*, str *);
 int w_rl_set_count(str, int);
-int rl_stats(mi_item_t *, str *);
+int rl_stats(mi_item_t *, str *, str *, int);
 int rl_pipe_check(rl_pipe_t *);
 int rl_get_counter_value(str *);
 /* update load */
@@ -128,7 +148,7 @@ void do_update_load(void);
 void pid_setpoint_limit(int);
 
 /* timer */
-void rl_timer(unsigned int, void *);
+void rl_timer(utime_t, void *);
 void rl_timer_repl(utime_t, void *);
 
 /* cachedb functions */
@@ -147,6 +167,6 @@ int hist_get_count(rl_pipe_t *pipe);
 
 #define RL_PIPE_COUNTER		0
 #define RL_EXPIRE_TIMER		10
-#define RL_BUF_THRESHOLD	1400
+#define RL_BUF_THRESHOLD	32767
 
 #endif /* _RATELIMIT_H_ */

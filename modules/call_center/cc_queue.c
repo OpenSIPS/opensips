@@ -26,7 +26,7 @@
 extern stat_var *stg_terminated_calls;
 extern stat_var *stg_dist_incalls;
 extern str queue_pos_param;
-
+extern int *internal_call_dispatching;
 
 /* this function must be call under
  *    1) general data lock as it accesses diverent data to calculate the next state
@@ -78,9 +78,13 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 		case CC_CALL_QUEUED:
 			/* search for an available agent */
 			/* if we have a flow_id recording, we push the call in the queue */
-			if (!call->flow->recordings[AUDIO_FLOW_ID].len)
-				agent = get_free_agent_by_skill( data, call->flow->skill);
-			else
+			if (*internal_call_dispatching==0) {
+				agent = NULL;
+			} else
+			if (!call->flow->recordings[AUDIO_FLOW_ID].len) {
+				agent = get_free_agent_by_skill( data, call->media,
+					call->flow->skill);
+			} else
 				agent = NULL;
 			if (agent) {
 				/* send it to agent */
@@ -93,13 +97,16 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 				}
 				else {
 					state = CC_CALL_TOAGENT;
-					out = &agent->location;
-					LM_DBG("moved to TOAGENT from %d, out=%p\n", call->state, out);
+					out = &agent->media[call->media].location;
+					LM_DBG("moved to TOAGENT from %d, out=%p\n",
+						call->state, out);
 				}
 				/* mark agent as used */
-				agent->state = CC_AGENT_INCALL;
+				agent->state = (call->media==CC_MEDIA_RTP) ?
+					CC_AGENT_INCALL : CC_AGENT_INCHAT;
 				call->agent = agent;
 				call->agent->ref_cnt++;
+				agent->ongoing_sessions[call->media]++;
 				update_stat( stg_dist_incalls, 1);
 				update_stat( call->flow->st_dist_incalls, 1);
 				call->fst_flags |= FSTAT_DIST;

@@ -1340,6 +1340,5 @@ int db_insert_update(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
  */
 int db_http_use_table(db_con_t* _h, const str* _t)
 {
-	_h->table = _t;
-	return 0;
+	return db_use_table(_h, _t);
 }

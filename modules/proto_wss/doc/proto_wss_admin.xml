@@ -50,45 +50,32 @@ modparam("tls_mgm", "require_cert", "1")
 		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
-                    <itemizedlist>
+         <itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>,
+				depending on the desired TLS library
+			</para>
+			</listitem>
 			<listitem>
 			<para>
 				<emphasis>tls_mgm</emphasis>.
 			</para>
 			</listitem>
-                    </itemizedlist>
+        </itemizedlist>
 		</para>
 	</section>
 	<section>
 		<title>Dependencies of external libraries</title>
 		<para>
-			&osips; TLS v1.0 support requires the following packages:
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
 			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 0.9.6
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
-			</itemizedlist>
-		</para>
-		<para>
-			&osips; TLS v1.1/1.2 support requires the following packages:
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 1.0.1e
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
 	</section>
@@ -264,7 +251,7 @@ modparam("proto_wss", "cert_check_on_conn_reusage", 1)
 		<title>Set <varname>trace_destination</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
 modparam("proto_wss", "trace_destination", "hep_dest")
 ...
@@ -389,13 +376,30 @@ param("proto_wss", "wss_tls_handshake_timeout", 200) # number of milliseconds
 			<title>Set <varname>wss_send_timeout</varname> variable</title>
 			<programlisting format="linespecific">
 
-aram("proto_wss", "wss_send_timeout", 200) # number of milliseconds
+modparam("proto_wss", "wss_send_timeout", 200) # number of milliseconds
 
 			</programlisting>
 		</example>
 	</section>
 
+	<section id="param_require_origin" xreflabel="require_origin">
+		<title><varname>require_origin</varname> (int)</title>
+		<para>
+			Controls whether the module should require the Origin header or not.
+		</para>
+		<emphasis>
+			Default value is 1(require Origin header).
+		</emphasis>
+		<example>
+		<title>Set <varname>require_origin</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("proto_wss", "require_origin", no)
+
+		</programlisting>
+		</example>
 	</section>
+</section>
 
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">

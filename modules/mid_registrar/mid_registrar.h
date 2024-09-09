@@ -115,6 +115,9 @@ struct mid_reg_info {
 	rw_lock_t *tm_lock;
 };
 
+/* check if a given domain belongs to mid-registrar or not */
+int is_mid_reg_domain(const str *dom);
+
 extern rw_lock_t *tm_retrans_lk;
 
 extern int case_sensitive;
@@ -127,6 +130,7 @@ extern unsigned int outgoing_expires;
 extern enum mid_reg_mode reg_mode;
 extern enum mid_reg_insertion_mode ctid_insertion;
 extern str ctid_param;
+extern str at_escape_str;
 
 extern str register_method;
 extern str contact_hdr;

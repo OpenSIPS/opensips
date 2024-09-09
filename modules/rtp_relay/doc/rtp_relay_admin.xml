@@ -1,0 +1,1103 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		The purpose of this module is to simplify the usage of different
+		RTP Relays Servers (such as RTPProxy, RTPEngine, Media Proxy)
+		in &osips; scripting, as well as to provide various complex
+		features that rely on the usage of RTP relays (such as media re-anchoring).
+	</para>
+	<para>
+		The module provides the logic to engage a specific RTP relay in
+		a call during initial INVITE, and then it will handle the entire
+		communication with the RTP relay, until the call terminates.
+	</para>
+	<para>
+		Moreover, one can specify various flags that modify the way RTP
+		engines use each user agent's SDP - these flags are persistent
+		throughout the entire RTP session, and are being used for further
+		in-dialog requests. These flags can be specified through the 
+		<xref linkend="pv_rtp_relay"/> and/or
+		<xref linkend="pv_rtp_relay_peer"/> variables at initial INVITE,
+		and are then passed along with the RTP relay context until
+		the end of the call. They can also be modified during sequential
+		in-dialog requests.
+	</para>
+	<para>
+		This is not a stand-alone module that communicates directly with RTP relays,
+		but rather a generic interface that is able to interact with the
+		modules that interact with each specific RTP Relay
+		(such as <emphasis>rtpproxy</emphasis> or <emphasis>rtpengine</emphasis>)
+		and implement their specific communication protocol.
+	</para>
+	</section>
+
+	<section id="branches" xreflabel="MultipleBranches">
+	<title>Multiple Branches</title>
+	<para>
+		The module is able to handle RTP relay for multiple branches, with
+		different flags flavors. Each branch can have its flags tuned through
+		the <xref linkend="pv_rtp_relay"/> variable - if the variable
+		is provisioned in the main route, then the flags are inherited
+		by all further branches, unless specifically modified per branch.
+		To modify a specific branch, one needs to specify the desired
+		branch index as variable index
+		(i.e. <emphasis>$(rtp_relay[1]) = "cor"</emphasis>).
+		When provisioned in a branch route, the flags are only changed
+		for that specific branch.
+	</para>
+	<para>
+		Starting with &osips; 3.3, branches can be identified based
+		on their participant's to_tag. This features becomes handy when
+		using <emphasis>rtp_relay</emphasis> in B2B mode, where peers
+		can no longer be identified simply by an index. However, this
+		feature works in dialog secenatios as well.
+	</para>
+	<para>
+		The multiple branches behavior is handled differently by the
+		back-end engine, depending on its capabilities. For example,
+		<emphasis>rtpengine</emphasis> is able to natively support calls
+		with multiple branches, whereas for <emphasis>rtpproxy</emphasis>,
+		each branch is emulated in a different session with a different
+		call-id.
+	</para>
+	<para>
+		When the call gets answered and a single branch remains active,
+		all the other branches are destroyed and only the established
+		branches remain active throughout the call.
+	</para>
+	</section>
+
+	<section id="engines" xreflabel="RTP Relay Engines">
+	<title>RTP Relay Engines</title>
+	<para>
+		The module does not perform any SDP mangling itself, it is just an
+		enabler of the different backends supported, such as RTPProxy
+		or RTPEngine. These backends are called RTP Relay angines and they
+		need to be specified when RTP Relay is being engaged.
+	</para>
+	<para>
+		Starting with &osips; 3.6, the module has been enhanced with an
+		internal RTP Engine, which can be used to perform
+		<emphasis>manual/custom</emphasis> SDP mangling by running a set of
+		routes when an RTP event (such as offer, answer, delete) happens.
+		This can be enabled by engaging RTP Relay with the <emphasis>route</emphasis>
+		engine. If the defined routes are not being defined, then the SDP does not
+		change. For more information, please check the
+		<xref linkend="param_route_offer"/>,
+		<xref linkend="param_route_answer"/> and
+		<xref linkend="param_route_delete"/> parameters.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>Dialog</emphasis> module - used to keep track of in-dialog requests.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>RTP Relay</emphasis> module(s) - such <emphasis>rtpproxy</emphasis>, or
+				<emphasis>rtpengine</emphasis>, or any module that implements the
+				<emphasis>rtp_relay</emphasis> interface.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_route_offer" xreflabel="route_offer">
+		<title><varname>route_offer</varname> (string)</title>
+		<para>
+			Route that is being run when an SDP offer happens (i.e.
+			an INVITE with SDP is being processed).
+		</para>
+		<para>
+			When the route is executed, the following parameters are
+			being populated:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>callid</emphasis> - the callid of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>from_tag</emphasis> - the from_tag of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>to_tag</emphasis> - the to_tag, if exists, of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>branch</emphasis> - the branch that RTP relay is being engaed
+				on - if engaged in the main branch, <emphasis>-1</emphasis> is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>body</emphasis> - optional, if an explicit body is being used,
+				otherwise the message's body should be considered.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>set</emphasis> - the rtp relay set being used for the call.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>node</emphasis> - optional, an node Engine idenfifier - this
+				is a user populated value returned after running a
+				<emphasis>route_offer</emphasis> route (see the return values section
+				below).
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>ip</emphasis> - optional, the IP being specified in the
+				<xref linkend="pv_rtp_relay"/> variable for the current peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>type</emphasis> - optional, the RTP type being specified in the
+				<xref linkend="pv_rtp_relay"/> variable for the current peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>in-iface</emphasis> - optional, the inbound interface
+				that should be used for this peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>out-iface</emphasis> - optional, the outbound interface
+				that should be used for this peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>ctx-flags</emphasis> - optional, global flags that are
+				being specified in the <xref linkend="pv_rtp_relay_ctx"/> variable.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>flags</emphasis> - optional, flags specified for this peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>peer</emphasis> - optional, peer flags specified for
+				the corresponding peer;
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+		<para>
+			When running the route, the following values are expected to be returned:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>body</emphasis> - the newly created body to be offered. If
+				not returned, the body is left unchanged.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>node</emphasis> - optional, a node to be identified for further
+				routes/commands executed.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<emphasis>
+			Default value is <quote>rtp_relay_offer</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>route_offer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtp_relay", "route_offer", "custom_rtp_offer")
+...
+</programlisting>
+		</example>
+		<example>
+		<title><varname>route_offer</varname> route usage</title>
+		<programlisting format="linespecific">
+...
+route[rtp_relay_offer] {
+	# manually engaging RTPEngine, get the SDP, and replace it in the message
+	return (1, $var(body));
+}
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_route_answer" xreflabel="route_answer">
+		<title><varname>route_answer</varname> (string)</title>
+		<para>
+			Route that is being run when an SDP answer happens (i.e.
+			a 183 or 200 OK reply with SDP is being processed).
+		</para>
+		<para>
+			When the route is executed, the following parameters are
+			being populated:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>callid</emphasis> - the callid of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>from_tag</emphasis> - the from_tag of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>to_tag</emphasis> - the to_tag, if exists, of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>branch</emphasis> - the branch that RTP relay is being engaed
+				on - if engaged in the main branch, <emphasis>-1</emphasis> is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>body</emphasis> - optional, if an explicit body is being used,
+				otherwise the message's body should be considered.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>set</emphasis> - the rtp relay set being used for the call.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>node</emphasis> - optional, an node Engine idenfifier - this
+				is a user populated value returned after running a
+				<emphasis>route_offer</emphasis> route.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>ip</emphasis> - optional, the IP being specified in the
+				<xref linkend="pv_rtp_relay"/> variable for the current peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>type</emphasis> - optional, the RTP type being specified in the
+				<xref linkend="pv_rtp_relay"/> variable for the current peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>in-iface</emphasis> - optional, the inbound interface
+				that should be used for this peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>out-iface</emphasis> - optional, the outbound interface
+				that should be used for this peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>ctx->flags</emphasis> - optional, global flags that are
+				being specified in the <xref linkend="pv_rtp_relay_ctx"/> variable.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>flags</emphasis> - optional, flags specified for this peer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>peer</emphasis> - optional, peer flags specified for
+				the corresponding peer;
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+		<para>
+			When running the route, the following values are expected to be returned:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>body</emphasis> - the newly created body to be answered. If
+				not returned, the body is left unchanged.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<emphasis>
+			Default value is <quote>rtp_relay_answer</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>route_answer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtp_relay", "route_answer", "custom_rtp_answer")
+...
+</programlisting>
+		</example>
+		<example>
+		<title><varname>route_answer</varname> route usage</title>
+		<programlisting format="linespecific">
+...
+route[rtp_relay_answer] {
+	# again, manually engaging RTPEngine
+	rtpengine_answer(,, $var(body), $rb);
+	return (1, $var(body));
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_route_delete" xreflabel="route_delete">
+		<title><varname>route_delete</varname> (string)</title>
+		<para>
+			Route that is being run when media should be disconnected
+			(i.e. a CANCEL or BYE is received).
+		</para>
+		<para>
+			When the route is executed, the following parameters are
+			being populated:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>callid</emphasis> - the callid of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>from_tag</emphasis> - the from_tag of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>to_tag</emphasis> - the to_tag, if exists, of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>branch</emphasis> - the branch that RTP relay is being engaed
+				on - if engaged in the main branch, <emphasis>-1</emphasis> is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>body</emphasis> - optional, if an explicit body is being used,
+				otherwise the message's body should be considered.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>set</emphasis> - the rtp relay set being used for the call.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>node</emphasis> - optional, an node Engine idenfifier - this
+				is a user populated value returned after running a
+				<emphasis>route_offer</emphasis> route (see the return values section
+				below).
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>ctx->flags</emphasis> - optional, global flags that are
+				being specified in the <xref linkend="pv_rtp_relay_ctx"/> variable.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>delete</emphasis> - optional, delete flags specified in the
+				<xref linkend="pv_rtp_relay_ctx"/> variable.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+		<para>
+			Return values are not needed.
+		</para>
+		<emphasis>
+			Default value is <quote>rtp_relay_delete</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>route_delete</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtp_relay", "route_delete", "custom_rtp_delete")
+...
+</programlisting>
+		</example>
+		<example>
+		<title><varname>rtp_relay_delete</varname> route usage</title>
+		<programlisting format="linespecific">
+...
+route[rtp_relay_delete] {
+	# manually removing RTPEngine session
+	rtpengine_delete();
+}
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_route_copy_offer" xreflabel="route_copy_offer">
+		<title><varname>route_copy_offer</varname> (string)</title>
+		<para>
+			Route that is being executed when a new call's SDP is being copied.
+		</para>
+		<para>
+			When the route is executed, the following parameters are
+			being populated:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>callid</emphasis> - the callid of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>from_tag</emphasis> - the from_tag of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>to_tag</emphasis> - the to_tag, if exists, of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>branch</emphasis> - the branch that RTP relay is being engaed
+				on - if engaged in the main branch, <emphasis>-1</emphasis> is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>set</emphasis> - the rtp relay set being used for the call.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>node</emphasis> - optional, an node Engine idenfifier - this
+				is a user populated value returned after running a
+				<emphasis>route_offer</emphasis> route (see the return values section
+				below).
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>flags</emphasis> - optional, flags that are being specified
+				by the module which is copying the SDP.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>copy-ctx</emphasis> - optional, an copy context identifier -
+				this is a user populated value returned after running a
+				<emphasis>route_copy_offer</emphasis> route (see the return values
+				section below).
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+		<para>
+			When running the route, the following values are expected to be returned:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>copy-ctx</emphasis> - optional, a copy context identifier
+				that can be later used to identify the current copy session.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<emphasis>
+			Default value is <quote>rtp_relay_copy_offer</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtp_relay_copy_offer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtp_relay", "route_copy_offer", "custom_rtp_copy_offer")
+...
+</programlisting>
+		</example>
+		<example>
+		<title>Set <varname>rtp_relay_copy_offer</varname> usage</title>
+		<programlisting format="linespecific">
+...
+route[rtp_relay_copy_offer] {
+	# instruct a media engine to fork media and assign an identifier
+	# that shall be stored in the $var(handle) variable
+	return (1, $var(handle));
+}
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_route_copy_answer" xreflabel="route_copy_answer">
+		<title><varname>route_copy_answer</varname> (string)</title>
+		<para>
+			Route that is being run when an SDP for the copied stream is received.
+			(i.e. a CANCEL or BYE is received).
+		</para>
+		<para>
+			When the route is executed, the following parameters are
+			being populated:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>callid</emphasis> - the callid of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>from_tag</emphasis> - the from_tag of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>to_tag</emphasis> - the to_tag, if exists, of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>branch</emphasis> - the branch that RTP relay is being engaed
+				on - if engaged in the main branch, <emphasis>-1</emphasis> is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>body</emphasis> - optional, if an explicit body is being used,
+				otherwise the message's body should be considered.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>set</emphasis> - the rtp relay set being used for the call.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>node</emphasis> - optional, an node Engine idenfifier - this
+				is a user populated value returned after running a
+				<emphasis>route_offer</emphasis> route (see the return values section
+				below).
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>flags</emphasis> - optional, flags that are being specified
+				by the module which is copying the SDP.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>copy-ctx</emphasis> - optional, an copy context identifier -
+				this is a user populated value returned at the end of
+				<emphasis>route_copy_offer</emphasis> execution.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>rtp_relay_copy_answer</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtp_relay_copy_answer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtp_relay", "route_copy_answer", "custom_rtp_copy_answer")
+...
+</programlisting>
+		</example>
+		<example>
+		<title>Set <varname>rtp_relay_copy_answer</varname> usage</title>
+		<programlisting format="linespecific">
+...
+route[rtp_relay_copy_answer] {
+	# feed the received $param(body) to the media engine that is forking the call
+	# copy instance is identified by the $param(copy-ctx) variable
+}
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_route_copy_delete" xreflabel="route_copy_delete">
+		<title><varname>route_copy_delete</varname> (string)</title>
+		<para>
+			Route that is being run when media fork should be removed.
+		</para>
+		<para>
+			When the route is executed, the following parameters are
+			being populated:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>callid</emphasis> - the callid of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>from_tag</emphasis> - the from_tag of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>to_tag</emphasis> - the to_tag, if exists, of the call being processed.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>branch</emphasis> - the branch that RTP relay is being engaed
+				on - if engaged in the main branch, <emphasis>-1</emphasis> is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>body</emphasis> - optional, if an explicit body is being used,
+				otherwise the message's body should be considered.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>set</emphasis> - the rtp relay set being used for the call.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>node</emphasis> - optional, an node Engine idenfifier - this
+				is a user populated value returned after running a
+				<emphasis>route_offer</emphasis> route (see the return values section
+				below).
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>flags</emphasis> - optional, flags that are being specified
+				by the module which is copying the SDP.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>copy-ctx</emphasis> - optional, an copy context identifier -
+				this is a user populated value returned at the end of
+				<emphasis>route_copy_offer</emphasis> execution.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			Return values are not needed.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>rtp_relay_copy_delete</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtp_relay_copy_delete</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtp_relay", "route_copy_delete", "custom_rtp_copy_delete")
+...
+</programlisting>
+		</example>
+		<example>
+		<title>Set <varname>rtp_relay_copy_delete</varname> usage</title>
+		<programlisting format="linespecific">
+...
+route[rtp_relay_copy_delete] {
+	# remove the copy instance is identified by the $param(copy-ctx) variable
+}
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_rtp_relay_engage" xreflabel="rtp_relay_engage()">
+		<title>
+			<function moreinfo="none">rtp_relay_engage(engine, [set])</function>
+		</title>
+
+		<para>
+		Engages the RTP Relay <emphasis>engine</emphasis> for the current initial
+		INVITE. After calling this function, the entire RTP relay communication
+		will be handled by the module itself, without having to intervene for any
+		further in-dialog requests/replies (unless you specifically want to).
+		</para>
+		<para>
+		The function is not performing the media requests on the spot,
+		but rather registers the hooks to automatically handle any
+		further media requests.
+		</para>
+		<para>
+		The RTP session modifiers used are the ones provisioned through the
+		<xref linkend="pv_rtp_relay"/> and/or
+		<xref linkend="pv_rtp_relay_peer"/> variables.
+		</para>
+		<para>
+		The function can be called from the main request route - in this case
+		the RTP relay will be engaged for any further branches created, or from
+		the branch route - in this case the RTP relay will only be engaged for
+		the branch where it was called, or that has an associated
+		<emphasis>rtp_relay</emphasis> provisioned.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>engine(string)</emphasis> - the RTP relay engine
+				to be used for the call (i.e. <emphasis>rtpproxy</emphasis>.
+			</para>
+		</listitem>
+		<listitem><para>
+		<emphasis>set(int, optional)</emphasis> - the set used for this call.
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>rtp_relay_engage</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("INVITE") &amp;&amp; !has_totag()) {
+	xlog("SCRIPT: engaging RTPProxy relay for all branches\n");
+	$rtp_relay = "co";
+	$rtp_relay_peer = "co";
+	rtp_relay_engage("rtpproxy");
+}
+...
+		</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+		<section id="mi_rtp_relay_list" xreflabel="rtp_relay_list">
+			<title><function moreinfo="none">rtp_relay_list</function></title>
+			<para>
+			Lists all the RTP Relay sessions engaged.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>engine</emphasis> - (optional) the RTP
+					relay engine (i.e. <emphasis>rtpproxy</emphasis>
+					or <emphasis>rtpengine</emphasis>).
+				</para></listitem>
+				<listitem><para>
+					<emphasis>set</emphasis> - (optional) the RTP
+					relay set. When used, the <emphasis>engine</emphasis>
+					parameter must also be specified.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>node</emphasis> - (optional) the RTP
+					relay node. When used, the <emphasis>engine</emphasis>
+					parameter must also be specified.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">rtp_relay_list</function> usage</title>
+			<programlisting format="linespecific">
+...
+## list all sessions
+$ opensips-cli -x mi rtp_relay_list
+
+## list all sessions going through a specific RTP node
+$ opensips-cli -x mi rtp_relay_list rtpproxy udp:127.0.0.1:2222
+...
+			</programlisting>
+			</example>
+		</section>
+		<section id="mi_rtp_relay_update" xreflabel="rtp_relay_update">
+			<title><function moreinfo="none">rtp_relay_update</function></title>
+			<para>
+			Updates/Re-engages the RTP relays in all ongoing RTP relay sessions.
+			</para>
+			<para>
+				This function can be used to trigger dialog in-dialog
+				updates for certain ongoing RTP sessions. For all matched
+				sessions, it re-engages an RTP Relay offer/answer session,
+				then sends re-INVITEs to call's participants to with
+				the updated SDP.
+			</para>
+			<para>
+				<emphasis>Note:</emphasis>Running the command without a filter
+				(such as <emphasis>engine</emphasis> or <emphasis>set</emphasis>)
+				will cause all RTP relay sessions to be
+				re-engaged.
+			</para>
+			<para>
+				<emphasis>Note:</emphasis>When enforcing a new node,
+				it is not guaranteed to be used - if the node is not
+				avaialble, but a different one is, the active one will
+				be chosen.
+			</para>
+			<para>
+				<emphasis>Note:</emphasis>If the node is being changed,
+				the module tries to unforce the previous RTP relay
+				session, even though it might not work.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>engine</emphasis> - (optional) the RTP
+					relay engine (i.e. <emphasis>rtpproxy</emphasis>
+					or <emphasis>rtpengine</emphasis>) to be used
+					as filter.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>set</emphasis> - (optional) the RTP
+					relay set to be used as filter. If missing, the
+					same set will be used as it was initially engaged
+					for.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>node</emphasis> - (optional) the RTP
+					relay node to be used as filter.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>new_set</emphasis> - (optional) a new RTP
+					Relay set to be used for the call.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>new_node</emphasis> - (optional) a new RTP
+					node to be used for the call. If
+					<emphasis>new_set</emphasis> is missing, the
+					same set will be used.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">rtp_relay_update</function> usage</title>
+			<programlisting format="linespecific">
+...
+## update all sessions that are using rtpproxy
+$ opensips-cli -x mi rtp_relay_update rtpproxy
+...
+			</programlisting>
+			</example>
+		</section>
+		<section id="mi_rtp_relay_update_callid" xreflabel="rtp_relay_update_callid">
+			<title><function moreinfo="none">rtp_relay_update_callid</function></title>
+			<para>
+			Updates/Re-engages the RTP relays in all ongoing RTP relay sessions.
+			</para>
+			<para>
+				The function basically works in the same manner as
+				<xref linkend="mi_rtp_relay_update"/>, but is to be
+				used to update a specific callid. In addition, one can
+				also update the <emphasis>engine</emphasis> and
+				<emphasis>flags</emphasis> used for the particular
+				session.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>callid</emphasis> - the callid used to
+					match the dialog to be updated.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>engine</emphasis> - (optional) the new RTP
+					relay engine (i.e. <emphasis>rtpproxy</emphasis>
+					or <emphasis>rtpengine</emphasis>) to be used. If
+					missing, the same initial engine is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>set</emphasis> - (optional) the new RTP
+					relay set to be used. If missing, the default
+					same set will be used as it was initially engaged
+					for.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>node</emphasis> - (optional) the RTP
+					relay node to be used. If not specified, the first
+					available node is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>flags</emphasis> - (optional) a JSON
+					contining the <emphasis>caller</emphasis> and/or
+					<emphasis>callee</emphasis> nodes, which contain
+					new flags that should be used for the session. Only
+					explicitely specified flags will be overwritten.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">rtp_relay_update_callid</function> usage</title>
+			<programlisting format="linespecific">
+...
+## update a call with a working RTPproxy node
+$ opensips-cli -x mi rtp_relay_update_callid 1-3758963@127.0.0.1 rtpproxy
+
+## update a call to use RTPEngine with a SRTP SDP for caller
+$ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1 \
+	flags='{ "caller":{"type":"SRTP", "flags":"replace-origin"},
+		"callee":{"type":"RTP", "flags"="replace-origin"}}'
+...
+			</programlisting>
+			</example>
+		</section>
+	</section>
+
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+		<section id="pv_rtp_relay" xreflabel="$rtp_relay">
+			<title><varname>$rtp_relay</varname></title>
+			<para>
+				Is used to provision the RTP back-end flags for the
+				current peer - if used in the initial INVITE
+				REQUEST route, it provisions the flags of the
+				caller, whereas if used in the initial INVITE BRANCH/REPLY
+				route, it provisions the callee's flags.
+			</para>
+			<para>
+				For a sequential request, the variable represents the
+				flags used for the UAC that generated the request. When
+				used in a reply, the other UAC's flags are provisioned.
+			</para>
+			<para>
+				In an initial INVITE scope, the variable can be
+				provisioned per branch, by using the variable's index.
+			</para>
+			<para>
+				For each UAC/peer, there are several flags that can be
+				configured:
+				<itemizedlist>
+					<listitem><para><emphasis>flags</emphasis> (default, when
+					variable is used without a name) - are the flags associated
+					with the current UAC - they are passed along with the offer
+					command
+					</para></listitem>
+					<listitem><para><emphasis>peer</emphasis> - these flags are
+					passed along in the offer command, but they are flags associated
+					with the other UAC/peer
+					</para></listitem>
+					<listitem><para><emphasis>ip</emphasis> - the IP that should be
+					advertised in the resulted SDP.
+					</para></listitem>
+					<listitem><para><emphasis>type</emphasis> - the RTP type used
+					by the current UAC (currently only used by <emphasis>
+					rtpengine</emphasis>)
+					</para></listitem>
+					<listitem><para><emphasis>iface</emphasis> - the interface
+					used for the traffic coming from this UAC.
+					</para></listitem>
+					<listitem><para><emphasis>body</emphasis> - the body to be used
+					for the UAC.
+					</para></listitem>
+					<listitem><para><emphasis>delete</emphasis> - flags to be used
+					when the media session is terminated/deleted.
+					</para></listitem>
+					<listitem><para><emphasis>disabled</emphasis> - provisioned
+					as an integer, it is used to disable RTP relay for this UAC.
+					</para></listitem>
+				</itemizedlist>
+			</para>
+		</section>
+		<section id="pv_rtp_relay_peer" xreflabel="$rtp_relay_peer">
+			<title><varname>$rtp_relay_peer</varname></title>
+			<para>
+				This variable has the same meaning and parameters as the
+				<xref linkend="pv_rtp_relay"/> variable, except that it
+				is used to provision the other UAC's flags, except the
+				current one. All other fields are similar.
+			</para>
+		</section>
+		<section id="pv_rtp_relay_ctx" xreflabel="$rtp_relay_ctx">
+			<title><varname>$rtp_relay_ctx()</varname></title>
+			<para>
+				This variable can be used to provide information about the
+				RTP context, information that is not associated with any of
+				the involved peers.
+			</para>
+			<para>
+				The following settings can be used:
+				<itemizedlist>
+					<listitem><para><emphasis>callid</emphasis> - The callid
+					to be used for all communication with the rtp server.
+					If not specified, it is taken from the message/dialog.
+					</para></listitem>
+					<listitem><para><emphasis>from_tag</emphasis> - The from-tag
+					to be used for all communication with the rtp server.
+					If not specified, it is taken from the message/dialog.
+					</para></listitem>
+					<listitem><para><emphasis>to_tag</emphasis> - The to-tag
+					to be used for all communication with the rtp server.
+					If not specified, it is taken from the message/dialog.
+					</para></listitem>
+					<listitem><para><emphasis>flags</emphasis> - Generic flags
+					to be sent to all offer/answer requests.
+					</para></listitem>
+					<listitem><para><emphasis>delete</emphasis> - flags sent
+					when the relay session is terminated.
+					</para></listitem>
+				</itemizedlist>
+			</para>
+		</section>
+	</section>
+</chapter>
+

@@ -320,7 +320,7 @@ mi_response_t *mi_usrloc_rm_contact(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Contact not found"));
 	}
 
-	if (delete_ucontact(rec, con, 0) < 0) {
+	if (delete_ucontact(rec, con, NULL, 0) < 0) {
 		unlock_udomain( dom, &aor);
 		return 0;
 	}
@@ -468,6 +468,7 @@ mi_response_t *mi_usrloc_flush(const mi_params_t *params,
 mi_response_t *mi_usrloc_add(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
+	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
 	ucontact_info_t ci;
 	urecord_t* r;
 	ucontact_t* c;
@@ -539,13 +540,13 @@ mi_response_t *mi_usrloc_add(const mi_params_t *params,
 		/* update contact record */
 		ci.callid = &mi_ul_cid;
 		ci.cseq = c->cseq;
-		if (update_ucontact( r, c, &ci, 0) < 0)
+		if (update_ucontact( r, c, &ci, &cmatch, 0) < 0)
 			goto release_error;
 	} else {
 		/* new contact record */
 		ci.callid = &mi_ul_cid;
 		ci.cseq = MI_UL_CSEQ;
-		if ( insert_ucontact( r, &contact, &ci, &c, 0) < 0 )
+		if ( insert_ucontact( r, &contact, &ci, &cmatch, 0, &c) < 0 )
 			goto release_error;
 	}
 
@@ -649,8 +650,7 @@ static mi_response_t *mi_sync_domain(udomain_t *dom)
 		return 0;
 	}
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
-
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 	if (ul_dbf.delete(ul_dbh, 0, 0, 0, 0) < 0) {
 		LM_ERR("failed to delete from database\n");
 		return 0;
@@ -751,7 +751,7 @@ mi_response_t *mi_usrloc_cl_sync(const mi_params_t *params,
 	if (!location_cluster)
 		return init_mi_error(400, MI_SSTR("Clustering not enabled"));
 
-	if (clusterer_api.request_sync(&contact_repl_cap, location_cluster) < 0)
+	if (clusterer_api.request_sync(&contact_repl_cap, location_cluster, 0) < 0)
 		return init_mi_error(400, MI_SSTR("Failed to send sync request"));
 	else
 		return init_mi_result_ok();

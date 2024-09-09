@@ -37,6 +37,8 @@ typedef struct lcache_entry
 	str attr;
 	str value;
 	unsigned int expires;
+	unsigned int ttl;
+	int synced;
 	struct lcache_entry* next;
 }lcache_entry_t;
 
@@ -47,9 +49,15 @@ typedef struct lcache
 	gen_lock_t lock;
 }lcache_t;
 
+typedef struct lcache_htable {
+	lcache_t *htable;
+	int size;
+} lcache_htable_t;
 
-int lcache_htable_init(lcache_t** cache_htable_p, int size);
-void lcache_htable_destroy();
+struct lcache_col;
+
+int lcache_htable_init(struct lcache_col *col);
+void lcache_htable_destroy(lcache_htable_t *htable, osips_free_f free_f);
 int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires);
 int lcache_htable_remove(cachedb_con *con,str* attr);
 int lcache_htable_fetch(cachedb_con *con,str* attr, str* val);

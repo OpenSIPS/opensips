@@ -191,7 +191,7 @@ modparam("proto_ws", "ws_max_msg_chunks", 8)
 		<title>Set <varname>trace_destination</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
 modparam("proto_ws", "trace_destination", "hep_dest")
 ...
@@ -272,6 +272,23 @@ route[ws_filter] {
 	else
 		drop;
 }
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_require_origin" xreflabel="require_origin">
+		<title><varname>require_origin</varname> (int)</title>
+		<para>
+			Controls whether the module should require the Origin header or not.
+		</para>
+		<emphasis>
+			Default value is 1(require Origin header).
+		</emphasis>
+		<example>
+		<title>Set <varname>require_origin</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ws", "require_origin", no)
 ...
 </programlisting>
 		</example>

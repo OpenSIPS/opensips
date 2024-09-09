@@ -154,117 +154,6 @@ static inline void reset_script_reload_ctx(void)
 }
 
 
-static int reindex_new_sroutes(struct script_route *new_sr,
-						struct script_route *old_sr, int size, int has_zero)
-{
-	static char *deleted_route_name = "_X_deleted_Y_";
-	struct script_route *my_sr;
-	int i, n, adding_idx;
-
-	/* devel only
-	for(i=0+(has_zero?0:1) ; i<size && old_sr[i].name ; i++)
-		LM_DBG("OLD [%d] is [%s]\n",i,old_sr[i].name);
-	for(i=0+(has_zero?0:1) ; i<size && new_sr[i].name ; i++)
-		LM_DBG("NEW [%d] is [%s]\n",i,new_sr[i].name);*/
-
-	my_sr = (struct script_route*)pkg_malloc(size*sizeof(struct script_route));
-	if (my_sr==NULL) {
-		LM_ERR("failed to allocate pkg mem (needing %zu)\n",
-			size*sizeof(struct script_route));
-		return -1;
-	}
-	memset( my_sr, 0, size*sizeof(struct script_route));
-	/* iterate the old set of route and try to correlate the entries with the
-	 * new set of routes - the idea is to try to preserv the indexes */
-	if (has_zero) {
-		my_sr[0] = new_sr[0];
-		new_sr[0].name = NULL;
-		new_sr[0].a = NULL;
-	}
-	for ( i=1 ; i<size && old_sr[i].name ; i++) {
-		if (old_sr[i].name == deleted_route_name) {
-			/* simply preserve the index of old deleted routes */
-			my_sr[i] = old_sr[i];
-		} else {
-			n = get_script_route_ID_by_name( old_sr[i].name, new_sr, size);
-			if (n==-1) {
-				/* route was removed in the new set , set the dummy one here */
-				my_sr[i].name = deleted_route_name;
-				my_sr[i].a = pkg_malloc( sizeof(struct action) );
-				if (my_sr[i].a==NULL) {
-					LM_ERR("failed to allocate dummy EXIT action\n");
-					pkg_free(my_sr);
-					return -1;
-				}
-				my_sr[i].a->type = EXIT_T;
-			} else {
-				/* copy new route definition over the original index*/
-				my_sr[i] = new_sr[n];
-				new_sr[n].name = deleted_route_name;
-				new_sr[n].a = NULL;
-			}
-		}
-	}
-	adding_idx = i;
-
-	/* now see what is left in new set and not re-mapped to the old set 
-	 * (basically the newly defined routes */
-	for ( i=1 ; i<size ; i++) {
-		if (new_sr[i].name==deleted_route_name || new_sr[i].name==NULL)
-			continue;
-		if (adding_idx==size) {
-			LM_ERR("too many routes, cannot re-index newly defined routes "
-				"after reload\n");
-			pkg_free(my_sr);
-			return -1;
-		}
-		my_sr[adding_idx++] = new_sr[i];
-	}
-
-	/* copy the re-indexed set of routes as the new set of routes */
-	memcpy( new_sr, my_sr, size*sizeof(struct script_route));
-	pkg_free(my_sr);
-	/* devel only
-	for(i=0+(has_zero?0:1) ; i<size && new_sr[i].name ; i++)
-		LM_DBG("END NEW [%d] is [%s]\n",i,new_sr[i].name);
-	*/
-	return 0;
-}
-
-
-static int reindex_all_new_sroutes(struct os_script_routes *new_srs,
-											struct os_script_routes *old_srs)
-{
-	if (reindex_new_sroutes( new_srs->request, old_srs->request,
-	RT_NO, 1)<0) {
-		LM_ERR("failed to re-index the request routes\n");
-		return -1;
-	}
-	if (reindex_new_sroutes( new_srs->onreply, old_srs->onreply,
-	ONREPLY_RT_NO, 1)<0) {
-		LM_ERR("failed to re-index the on_reply routes\n");
-		return -1;
-	}
-	if (reindex_new_sroutes( new_srs->failure, old_srs->failure,
-	FAILURE_RT_NO, 0)<0) {
-		LM_ERR("failed to re-index the on_failure routes\n");
-		return -1;
-	}
-	if (reindex_new_sroutes( new_srs->branch, old_srs->branch,
-	BRANCH_RT_NO, 0)<0) {
-		LM_ERR("failed to re-index the branch routes\n");
-		return -1;
-	}
-	if (reindex_new_sroutes( new_srs->event, old_srs->event,
-	EVENT_RT_NO, 0)<0) {
-		LM_ERR("failed to re-index the branch routes\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-
 static inline void send_cmd_to_all_procs(ipc_rpc_f *rpc)
 {
 	int i;
@@ -274,10 +163,16 @@ static inline void send_cmd_to_all_procs(ipc_rpc_f *rpc)
 	for( i=1 ; i<counted_max_processes ; i++) {
 		if ( (pt[i].flags&(OSS_PROC_NO_IPC|OSS_PROC_NEEDS_SCRIPT))==
 		OSS_PROC_NEEDS_SCRIPT ) {
-			if (ipc_send_rpc( i, rpc, (void*)(long)srr_ctx->seq_no)<0)
-				srr_ctx->proc_status[i] = RELOAD_FAILED;
-			else
-				srr_ctx->proc_status[i] = RELOAD_SENT;
+			/* set the status before sending, to avoid any race condition
+			 * with running the callback function */
+			srr_ctx->proc_status[i] = RELOAD_SENT;
+			if (i==process_no) {
+				/* run line the cmd for the proc itself */
+				rpc( process_no, (void*)(long)srr_ctx->seq_no);
+			} else {
+				if (ipc_send_rpc( i, rpc, (void*)(long)srr_ctx->seq_no)<0)
+					srr_ctx->proc_status[i] = RELOAD_FAILED;
+			}
 		}
 	}
 }
@@ -294,6 +189,26 @@ static inline int check_status_of_all_procs(enum proc_reload_status min_status,
 				if (srr_ctx->proc_status[i]<min_status ||
 				srr_ctx->proc_status[i]>max_status)
 					return -1;
+		}
+	}
+
+	return 1;
+}
+
+
+/* this is used only for debugging purposes */
+static inline int list_status_of_all_procs(void)
+{
+	int i;
+
+	for( i=1 ; i<counted_max_processes ; i++) {
+		if ( (pt[i].flags&(OSS_PROC_NO_IPC|OSS_PROC_NEEDS_SCRIPT))==
+		OSS_PROC_NEEDS_SCRIPT ) {
+			LM_INFO("process %d [%d] reported status %d\n",
+				i, pt[i].pid, srr_ctx->proc_status[i]);
+		} else {
+			LM_INFO("process %d [%d] not needing script \n", 
+				i, pt[i].pid);
 		}
 	}
 
@@ -346,7 +261,7 @@ static void routes_reload_per_proc(int sender, void *param)
 		free_route_lists(parsed_sr);
 		pkg_free(parsed_sr);
 	}
-	parsed_sr = new_sroutes_holder();
+	parsed_sr = new_sroutes_holder( 1 );
 	if (parsed_sr==NULL) {
 		LM_ERR("failed to allocate a new script routes holder\n");
 		fclose(cfg);
@@ -365,11 +280,6 @@ static void routes_reload_per_proc(int sender, void *param)
 	}
 	fclose(cfg);
 	cfg_parse_only_routes = 0;
-
-	if (reindex_all_new_sroutes( sroutes, sr_bk)<0) {
-		LM_ERR("re-indexing routes failed, abording\n");
-		goto error;
-	}
 
 	if (fix_rls()<0) {
 		LM_ERR("fixing routes failed, abording\n");
@@ -436,6 +346,10 @@ static void routes_switch_per_proc(int sender, void *param)
 	/* swap the old route set with the new parsed set */
 	sroutes = parsed_sr;
 	parsed_sr = NULL;
+
+	/* update all the ref to script routes */
+	update_all_script_route_refs();
+	print_script_route_refs();
 }
 
 
@@ -458,7 +372,7 @@ int reload_routing_script(void)
 	srr_ctx->seq_no = srr_ctx->next_seq_no++;
 	lock_release( &srr_ctx->lock );
 
-	sr = new_sroutes_holder();
+	sr = new_sroutes_holder( 0 );
 	if (sr==NULL) {
 		LM_ERR("failed to allocate a new script routes holder\n");
 		goto error;
@@ -560,6 +474,7 @@ int reload_routing_script(void)
 	if (check_status_of_all_procs( RELOAD_SUCCESS, RELOAD_SUCCESS)!=1) {
 		LM_INFO("not all processes managed to load the new script, "
 			"aborting the reload\n");
+		list_status_of_all_procs( );
 		/* some processes failed with the reload - setting an out-of-order
 		 * sequence number will prevent any potential process waiting to 
 		 * start the reload to actually do it */
@@ -573,6 +488,8 @@ int reload_routing_script(void)
 	LM_DBG("all procs successfully reloaded, send the switch cmd\n");
 
 	send_cmd_to_all_procs( routes_switch_per_proc );
+
+	register_route_timers();
 
 	/* ready for a new reload :) */
 	reset_script_reload_ctx();

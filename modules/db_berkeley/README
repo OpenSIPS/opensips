@@ -452,20 +452,21 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. William Quan 40 1 4682 0
-   2. Razvan Crainea (@razvancrainea) 28 23 153 154
+   1. William Quan 41 1 4682 0
+   2. Razvan Crainea (@razvancrainea) 30 25 157 156
    3. Henning Westerholt (@henningw) 26 10 381 688
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 24 19 149 170
    5. Anonymous 16 4 681 341
-   6. Liviu Chircu (@liviuchircu) 12 9 19 77
+   6. Liviu Chircu (@liviuchircu) 13 10 19 79
    7. Daniel-Constantin Mierla (@miconda) 10 8 47 30
    8. Vlad Patrascu (@rvlad-patrascu) 6 4 34 28
    9. Andrei Dragus 5 1 135 103
-   10. Jan Janak (@janakj) 3 1 4 2
+   10. Maksym Sobolyev (@sobomax) 4 2 5 5
 
-   All remaining contributors: Konstantin Bokarius, Razvan
-   Pistolea, Walter Doekes (@wdoekes), Peter Lemenkov (@lemenkov),
-   Edson Gellert Schubert, Ovidiu Sas (@ovidiusas).
+   All remaining contributors: Jan Janak (@janakj), Konstantin
+   Bokarius, Razvan Pistolea, Walter Doekes (@wdoekes), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Ovidiu Sas
+   (@ovidiusas).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -487,20 +488,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jul 2020
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   7.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Oct 2010
-   8.  Andrei Dragus                       Oct 2009 - Oct 2009
-   9.  Razvan Pistolea                     Jul 2009 - Jul 2009
-   10. Jan Janak (@janakj)                 Feb 2009 - Feb 2009
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jul 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   8.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Oct 2010
+   9.  Andrei Dragus                       Oct 2009 - Oct 2009
+   10. Razvan Pistolea                     Jul 2009 - Jul 2009
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Henning Westerholt (@henningw), Konstantin
-   Bokarius, Edson Gellert Schubert, Anonymous, William Quan.
+   All remaining contributors: Jan Janak (@janakj),
+   Daniel-Constantin Mierla (@miconda), Henning Westerholt
+   (@henningw), Konstantin Bokarius, Edson Gellert Schubert,
+   Anonymous, William Quan.
 
    (1) including any documentation-related commits, excluding
    merge commits

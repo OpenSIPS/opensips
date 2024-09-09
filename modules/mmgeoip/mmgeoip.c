@@ -159,13 +159,13 @@ static int mmg_lookup_cmd(struct sip_msg *msg, str *_fields, str *ipaddr_str,
 /*
  * wire module pieces together.
  */
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{"mmgeoip_city_db_path",   STR_PARAM, &MMG_city_db_path.s},
 	{"cache_type", STR_PARAM|USE_FUNC_PARAM, parse_mem_option},
 	{ 0,0,0 }
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"mmg_lookup",  (cmd_function)mmg_lookup_cmd, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR,0,0},

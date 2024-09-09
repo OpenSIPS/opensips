@@ -227,46 +227,49 @@ char str_contenttype[50];
 char* parse_content_length( char* buffer, char* end, int* length)
 {
 	int number;
-	char *p;
-	int  size;
+	char *p, *numstart;
 
 	p = buffer;
 	/* search the beginning of the number */
-	while ( p<end && (*p==' ' || *p=='\t' || (*p=='\r' && *(p+1)=='\n') ||
-	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
+	while ( p<end && (*p==' ' || *p=='\t'
+	              || (*p=='\r' && p+1<end && *(p+1)=='\n')
+	              || (*p=='\n' && p+1<end && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
 	if (p==end)
 		goto error;
 	/* parse the number */
-	size = 0;
+	numstart = p;
 	number = 0;
 	while (p<end && *p>='0' && *p<='9') {
-		number = number*10 + (*p)-'0';
-		if (number<0) {
-			LM_ERR("number overflow at pos %d in len number [%.*s]\n",
+		/* do not actually cause an integer overflow, as it is UB! --liviu */
+		if (number >= INT_MAX/10) {
+			LM_ERR("integer overflow risk at pos %d in length value [%.*s]\n",
 				(int)(p-buffer),(int)(end-buffer), buffer);
-			return 0;
+			return NULL;
 		}
-		size ++;
+
+		number = number*10 + ((*p)-'0');
 		p++;
 	}
-	if (p==end || size==0)
+	if (p==end || p==numstart)
 		goto error;
+
 	/* now we should have only spaces at the end */
-	while ( p<end && (*p==' ' || *p=='\t' ||
-	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
+	while ( p<end && (*p==' ' || *p=='\t'
+	              || (*p=='\n' && p+1<end && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
 	if (p==end)
 		goto error;
 	/* the header ends proper? */
-	if ( (*(p++)!='\n') && (*(p-1)!='\r' || *(p++)!='\n' ) )
+	if ( (*(p++)!='\n') && (*(p-1)!='\r' || p==end || *(p++)!='\n' ) )
 		goto error;
 
 	*length = number;
 	return p;
 error:
-	LM_ERR("parse error near char [%d][%c]\n",*p,*p);
-	return 0;
+	LM_ERR("parse error at pos %ld, dec-char: %d, start/p/end: %p/%p/%p\n",
+	       (long)(p - buffer), p < end && (end-buffer) ? *p:-1, buffer, p, end);
+	return NULL;
 }
 
 

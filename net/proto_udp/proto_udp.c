@@ -43,23 +43,24 @@
 static int mod_init(void);
 static int proto_udp_init(struct proto_info *pi);
 static int proto_udp_init_listener(struct socket_info *si);
-static int proto_udp_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id);
+static int proto_udp_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id);
 
-static int udp_read_req(struct socket_info *src, int* bytes_read);
+static int udp_read_req(const struct socket_info *src, int* bytes_read);
 
 static callback_list* cb_list = NULL;
 
 static int udp_port = SIP_PORT;
 
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_udp_init, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "udp_port",    INT_PARAM,   &udp_port   },
 	{0, 0, 0}
 };
@@ -106,7 +107,7 @@ static int proto_udp_init(struct proto_info *pi)
 	pi->tran.send			= proto_udp_send;
 
 	pi->net.flags			= PROTO_NET_USE_UDP;
-	pi->net.read			= (proto_net_read_f)udp_read_req;
+	pi->net.dgram.read		= udp_read_req;
 
 	return 0;
 }
@@ -120,7 +121,7 @@ static int proto_udp_init_listener(struct socket_info *si)
 }
 
 
-static int udp_read_req(struct socket_info *si, int* bytes_read)
+static int udp_read_req(const struct socket_info *si, int* bytes_read)
 {
 	struct receive_info ri;
 	int len;
@@ -197,8 +198,9 @@ static int udp_read_req(struct socket_info *si, int* bytes_read)
  * \param to destination address
  * \return -1 on error, the return value from sento on success
  */
-static int proto_udp_send(struct socket_info* source,
-		char* buf, unsigned int len, union sockaddr_union* to, int id)
+static int proto_udp_send(const struct socket_info* source,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id)
 {
 	int n, tolen;
 

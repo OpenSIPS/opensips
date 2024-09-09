@@ -60,7 +60,7 @@
 
 static int mi_mod_init(void);
 static int mi_child_init(int rank);
-static int mi_destroy(void);
+static void mi_destroy(void);
 static int pre_datagram_process(void);
 static int post_datagram_process(void);
 static void datagram_process(int rank);
@@ -93,12 +93,13 @@ int mi_datagram_pp;
 
 static proc_export_t mi_procs[] = {
 	{"MI Datagram",  pre_datagram_process,  post_datagram_process,
-			datagram_process, MI_CHILD_NO, PROC_FLAG_INITCHILD },
+			datagram_process, MI_CHILD_NO,
+			PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT },
 	{0,0,0,0,0,0}
 };
 
 
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"children_count",      INT_PARAM,    &mi_procs[0].no           },
 	{"socket_name",         STR_PARAM,    &mi_socket                },
 	{"socket_timeout",      INT_PARAM,    &mi_socket_timeout        },
@@ -344,7 +345,7 @@ static int post_datagram_process(void)
 }
 
 
-static int mi_destroy(void)
+static void mi_destroy(void)
 {
 	int n;
 	struct stat filestat;
@@ -356,16 +357,11 @@ static int mi_destroy(void)
 			if (unlink(mi_socket)<0){
 				LM_ERR("cannot delete the socket (%s): %s\n",
 						mi_socket, strerror(errno));
-				goto error;
+				return;
 			}
 		} else if (n<0 && errno!=ENOENT) {
 			LM_ERR("socket stat failed: %s\n",	strerror(errno));
-			goto error;
+			return;
 		}
 	}
-
-	return 0;
-error:
-	return -1;
-
 }

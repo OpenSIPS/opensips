@@ -50,6 +50,11 @@ map_t client_dom_matching;
 
 rw_lock_t *dom_lock;
 
+extern struct openssl_binds openssl_api;
+extern struct wolfssl_binds wolfssl_api;
+
+void destroy_tls_dom(struct tls_domain *d);
+
 struct tls_domain *tls_find_domain_by_name(str *name, struct tls_domain **dom_list)
 {
 	struct tls_domain *d;
@@ -108,15 +113,14 @@ void map_remove_tls_dom(struct tls_domain *dom)
 void tls_free_domain(struct tls_domain *dom)
 {
 	str_list *m_it, *m_tmp;
-	int i;
 
 	dom->refs--;
 	if (dom->refs == 0) {
-		if (dom->ctx) {
-			for (i = 0; i < dom->ctx_no; i++)
-				SSL_CTX_free(dom->ctx[i]);
-			shm_free(dom->ctx);
-		}
+		LM_DBG("Freeing domain: %.*s\n",
+			dom->name.len, dom->name.s);
+
+		destroy_tls_dom(dom);
+
 		lock_destroy(dom->lock);
 		lock_dealloc(dom->lock);
 
@@ -147,6 +151,7 @@ void tls_free_db_domains(struct tls_domain *dom)
 	while (dom && dom->flags & DOM_FLAG_DB) {
 		tmp = dom;
 		dom = dom->next;
+		map_remove_tls_dom(tmp);
 		tls_free_domain(tmp);
 	}
 }
@@ -171,6 +176,8 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	size_t len;
 	char *p;
 	struct tls_domain *d = *dom;
+	size_t method_len = str_vals[STR_VALS_METHOD_COL] ?
+		strlen(str_vals[STR_VALS_METHOD_COL]) : 0;
 	size_t cadir_len = str_vals[STR_VALS_CADIR_COL] ?
 		strlen(str_vals[STR_VALS_CADIR_COL]) : 0;
 	size_t cplist_len = str_vals[STR_VALS_CPLIST_COL] ?
@@ -181,9 +188,10 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 		strlen(str_vals[STR_VALS_ECCURVE_COL]) : 0;
 	char name_buf[255];
 	int name_len;
-	str method_str;
 
 	len = sizeof(struct tls_domain) + d->name.len;
+
+	len += method_len;
 
 	if (cadir_len)
 		len += cadir_len + 1;
@@ -223,14 +231,6 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 
 	*dom = d;
 
-	method_str.s = str_vals[STR_VALS_METHOD_COL];
-	method_str.len = method_str.s ? strlen(method_str.s) : 0;
-
-	if (tls_get_method(&method_str, &d->method, &d->method_max) < 0) {
-		shm_free(d);
-		return -1;
-	}
-
 	if (int_vals[INT_VALS_VERIFY_CERT_COL] != -1) {
 		d->verify_cert = int_vals[INT_VALS_VERIFY_CERT_COL];
 	}
@@ -252,6 +252,13 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	p = p + d->name.len;
 
 	memset(p, 0, len - (sizeof(struct tls_domain) + d->name.len));
+
+	if (method_len) {
+		d->method_str.s = p;
+		d->method_str.len = method_len;
+		memcpy(p, str_vals[STR_VALS_METHOD_COL], method_len);
+		p = p + d->method_str.len;
+	}
 
 	if (cadir_len) {
 		d->ca_directory = p;
@@ -426,50 +433,65 @@ struct tls_domain *tls_find_client_domain_name(str *name)
 	return d;
 }
 
+static str *tls_find_domain_avp(int domain_avp)
+{
+	struct usr_avp **backup_list, **bavp_list;
+	struct usr_avp *avp = NULL;
+	int_str val;
+	static str ret;
+
+	/* we first check if there is an existing bavp */
+	bavp_list = get_bavp_list();
+	if (bavp_list) {
+		backup_list = set_avp_list(bavp_list);
+		avp = search_first_avp(0, domain_avp, &val, 0);
+		set_avp_list(backup_list);
+	}
+	if (!avp)
+		avp = search_first_avp(0, domain_avp, &val, 0);
+	if (avp) {
+		ret = val.s;
+		return &ret;
+	}
+	return NULL;
+}
+
 /*
  * find TLS client domain
  * return NULL if virtual domain not found
  */
 struct tls_domain *tls_find_client_domain(struct ip_addr *ip, unsigned short port)
 {
+	str *domain = NULL;
 	struct tls_domain *dom = NULL;
-	struct usr_avp *tls_dom_avp = NULL, *sip_dom_avp = NULL;
-	int_str val;
 	str match_any_dom = str_init("*");
 	str *sip_domain = &match_any_dom;
 
-	if (tls_client_domain_avp > 0) {
-		tls_dom_avp = search_first_avp(0, tls_client_domain_avp, &val, 0);
-		if (!tls_dom_avp) {
-			if (sip_client_domain_avp > 0) {
-				sip_dom_avp = search_first_avp(0, sip_client_domain_avp, &val, 0);
-				if (sip_dom_avp) {
-					sip_domain = &val.s;
-					LM_DBG("Match TLS domain by sip domain AVP: '%.*s'\n",
-						val.s.len, ZSW(val.s.s));
-				}
-			}
-		} else
-			sip_domain = NULL;  /* search by tls domain name */
-	} else {
+	if (tls_client_domain_avp > 0)
+		domain = tls_find_domain_avp(tls_client_domain_avp);
+	if (!domain) {
 		if (sip_client_domain_avp > 0) {
-			sip_dom_avp = search_first_avp(0, sip_client_domain_avp, &val, 0);
-			if (sip_dom_avp) {
-				sip_domain = &val.s;
+			sip_domain = tls_find_domain_avp(sip_client_domain_avp);
+			if (sip_domain) {
 				LM_DBG("Match TLS domain by sip domain AVP: '%.*s'\n",
-					val.s.len, ZSW(val.s.s));
+					sip_domain->len, ZSW(sip_domain->s));
+			} else {
+				sip_domain = &match_any_dom;
 			}
 		}
+	} else {
+		LM_DBG("Match TLS domain by tls domain AVP: '%.*s'\n",
+				domain->len, domain->s);
 	}
 
-	if (!sip_domain)
-		dom = tls_find_client_domain_name(&val.s);
+	if (domain)
+		dom = tls_find_client_domain_name(domain);
 	else
 		dom = tls_find_domain_by_filters(ip, port, sip_domain, DOM_FLAG_CLI);
 
 	if (dom)
-			LM_DBG("found TLS client domain: %.*s\n",
-				dom->name.len, dom->name.s);
+		LM_DBG("found TLS client domain: %.*s\n",
+			dom->name.len, dom->name.s);
 
 	return dom;
 }
@@ -616,6 +638,8 @@ int parse_match_addresses(struct tls_domain *tls_dom, str *addresses_s)
 	csv_record *list, *it;
 	str match_any_s = str_init("*");
 	struct ip_addr *addr;
+	char addr_buf[64];
+	str addr_s;
 	unsigned int port;
 
 	if (addresses_s->s) {
@@ -639,7 +663,10 @@ int parse_match_addresses(struct tls_domain *tls_dom, str *addresses_s)
 				return -1;
 			}
 
-			if (add_match_filt_to_dom(&it->s, &tls_dom->match_addresses) < 0) {
+			sprintf(addr_buf, "%s:%d", ip_addr2a(addr), port);
+			addr_s.s = addr_buf;
+			addr_s.len = strlen(addr_buf);
+			if (add_match_filt_to_dom(&addr_s, &tls_dom->match_addresses) < 0) {
 				free_csv_record(list);
 				return -1;
 			}
@@ -766,9 +793,19 @@ int update_matching_map(struct tls_domain *tls_dom)
 
 		/* map this address to each domain filter of this tls domain */
 		for (domf_s = tls_dom->match_domains; domf_s; domf_s = domf_s->next) {
-			pos = (doms_array->size)++;
-			doms_array->arr[pos].hostname = domf_s;
-			doms_array->arr[pos].dom_link = tls_dom;
+			for (pos = 0; pos < doms_array->size &&
+				str_strcmp(&domf_s->s, &doms_array->arr[pos].hostname->s); pos++) ;
+
+			if (pos == doms_array->size) {
+				if (doms_array->size == DOM_FILT_ARR_MAX) {
+					LM_ERR("Too many domain filters per address\n");
+					return -1;
+				}
+
+				doms_array->size++;
+				doms_array->arr[pos].hostname = domf_s;
+				doms_array->arr[pos].dom_link = tls_dom;
+			}
 		}
 	}
 

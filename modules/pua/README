@@ -6,25 +6,28 @@ Presence User Agent Module
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. PUA clustering
+        1.3. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
 
-        1.3. Exported Parameters
+        1.4. Exported Parameters
 
-              1.3.1. hash_size (int)
-              1.3.2. db_url (str)
-              1.3.3. db_table (str)
-              1.3.4. min_expires (int)
-              1.3.5. default_expires (int)
-              1.3.6. update_period (int)
+              1.4.1. hash_size (int)
+              1.4.2. db_url (str)
+              1.4.3. db_table (str)
+              1.4.4. min_expires (int)
+              1.4.5. default_expires (int)
+              1.4.6. update_period (int)
+              1.4.7. cluster_id (int)
+              1.4.8. cluster_sharing_tag (int)
 
-        1.4. Exported Functions
+        1.5. Exported Functions
 
-              1.4.1. pua_update_contact()
+              1.5.1. pua_update_contact()
 
-        1.5. Installation
+        1.6. Installation
 
    2. Developer Guide
 
@@ -59,7 +62,9 @@ Presence User Agent Module
    1.4. Set min_expires parameter
    1.5. Set default_expires parameter
    1.6. Set update_period parameter
-   1.7. pua_update_contact usage
+   1.7. Set cluster_id parameter
+   1.8. Set cluster_sharing_tag parameter
+   1.9. pua_update_contact usage
    2.1. pua_api structure
    2.2. pua_is_dialog usage example
    2.3. register_puacb usage example
@@ -69,20 +74,28 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This module offer the functionality of a presence user agent
-   client, sending Subscribe and Publish messages.
+   This module offer the internal support for OpenSIPS to act as a
+   Presence User Agent client, by sending Subscribe and Publish
+   messages.
 
-   Now it can be used with the following modules: pua_mi and
-   pua_usrloc, pua_bla and pua_xmpp. The pua_mi offer the
-   possibility to publish any kind of information or subscribing
-   to a resource through fifo. The pua_usrloc module calls a
-   function exported by pua modules to publish elementary presence
-   information, such as basic status "open" or "closed", for
-   clients that do not implement client-to-server presence.
-   Through pua_bla , BRIDGED LINE APPEARANCE features are added to
-   OpenSIPs. The pua_xmpp module represents a gateway between SIP
-   and XMPP, so that jabber and SIP clients can exchange presence
-   information.
+   Note that the module does NOT provide any functionality to be
+   used directly from the script, but it is providing this PUA
+   client support (via an internal API) for other event-specific
+   modules to do PUA client operations.
+
+   Some of modules build on top of the PUA module are pua_mi,
+   pua_usrloc, pua_dialoginfo, pua_bla and pua_xmpp. The pua_mi
+   offer the possibility to publish any kind of information or
+   subscribing to a resource through fifo. The pua_usrloc module
+   calls a function exported by pua modules to publish elementary
+   presence information, such as basic status "open" or "closed",
+   for clients that do not implement client-to-server presence.
+   The pua_dialoginfo provideds BLF support, by publishing the
+   status of the participants into a call (like ringing,
+   established, terminated). Through pua_bla , BRIDGED LINE
+   APPEARANCE features are added to OpenSIPs. The pua_xmpp module
+   represents a gateway between SIP and XMPP, so that jabber and
+   SIP clients can exchange presence information.
 
    The module use cache to store presentity list and writes to
    database on timer to be able to recover upon restart.
@@ -90,23 +103,60 @@ Chapter 1. Admin Guide
    Notice: This module must not be used in no fork mode (the
    locking mechanism used may cause deadlock in no fork mode).
 
-1.2. Dependencies
+1.2. PUA clustering
 
-1.2.1. OpenSIPS Modules
+   Starting 3.2, the module was extended with clustering support
+   also. This means multiple OpenSIPS instance, configured with
+   PUA module, may work together. For example, the publishing for
+   a certain presentity may be done via different node (PUA
+   OpenSIPS instance) in the cluster.
+
+   The clustering support is a mixture of DB sharing and OpenSIPS
+   clustering. The OpenSIPS clustering layer is used for
+   broadcasting notifications with the cluster when a presentity
+   is modified by one of the nodes (so that, the other nodes in
+   cluster may refresh the presentity via DB.
+
+   The shared DB is used by sharing between the nodes the actual
+   presentity data. A node caches into memory only the
+   presentities created by the node or the presentitites the node
+   worked with. A presentity record may be loaded into memory
+   (from DB) if the node needs to perform an operation with that
+   presentity.
+
+   IMPORTANT: because the actual presentity data is shared between
+   the nodes via DB (the clustering layer is used for
+   notifications only), it is important to set a very low update
+   interval for the DB (for data being flushed from memoryc cache
+   into DB), to get the DB content updated as realtime as
+   possible. See the the update_period, module parameter, with
+   recomanded values like 2-5 seconds.
+
+   On the OpenSIPS clustering layer, the PUA module use the
+   sharing-tags mechanism in order to control (between all the
+   nodes in the cluster) which node is responsible for performing
+   the expiring operation on the presentity (like sending the
+   PUBLISH with expires 0).
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * a database modules.
      * tm.
+     * clusterer, if the cluster_id module parameter is set and
+       clustering support activated.
 
-1.2.2. External Libraries or Applications
+1.3.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libxml.
 
-1.3. Exported Parameters
+1.4. Exported Parameters
 
-1.3.1. hash_size (int)
+1.4.1. hash_size (int)
 
    The size of the hash table used for storing Subscribe and
    Publish information. This parameter will be used as the power
@@ -119,7 +169,7 @@ Chapter 1. Admin Guide
 modparam("pua", "hash_size", 11)
 ...
 
-1.3.2. db_url (str)
+1.4.2. db_url (str)
 
    Database url.
 
@@ -131,7 +181,7 @@ modparam("pua", "hash_size", 11)
 modparam("pua", "db_url" "dbdriver://username:password@dbhost/dbname")
 ...
 
-1.3.3. db_table (str)
+1.4.3. db_table (str)
 
    The name of the database table.
 
@@ -142,7 +192,7 @@ modparam("pua", "db_url" "dbdriver://username:password@dbhost/dbname")
 modparam("pua", "db_table", "pua")
 ...
 
-1.3.4. min_expires (int)
+1.4.4. min_expires (int)
 
    The inferior expires limit for both Publish and Subscribe.
 
@@ -153,7 +203,7 @@ modparam("pua", "db_table", "pua")
 modparam("pua", "min_expires", 0)
 ...
 
-1.3.5. default_expires (int)
+1.4.5. default_expires (int)
 
    The default expires value used in case this information is not
    provisioned.
@@ -165,7 +215,7 @@ modparam("pua", "min_expires", 0)
 modparam("pua", "default_expires", 3600)
 ...
 
-1.3.6. update_period (int)
+1.4.6. update_period (int)
 
    The interval at which the information in database and hash
    table should be updated. In the case of the hash table updating
@@ -173,14 +223,54 @@ modparam("pua", "default_expires", 3600)
 
    Default value is “30”.
 
+   IMPORTANT - if you use clustering support for this module, set
+   a low value here, like 2-5, see the clustering chapter above.
+
    Example 1.6. Set update_period parameter
 ...
 modparam("pua", "update_period", 100)
 ...
 
-1.4. Exported Functions
+1.4.7. cluster_id (int)
 
-1.4.1.  pua_update_contact()
+   The cluster ID where the PUA data should be replicated/shared.
+   This parameter is to be used only if clustering mode is needed.
+   In order to understand the concept of a cluster ID, please see
+   the clusterer module.
+
+   For more on PUA clustering see the Section 1.2, “PUA
+   clustering” chapter.
+
+   Default value is “None”.
+
+   Example 1.7. Set cluster_id parameter
+...
+modparam("pua", "cluster_id", 10)
+...
+
+1.4.8. cluster_sharing_tag (int)
+
+   The clustering share-tag to be used by the PUA module when
+   creating any new presentity record. The tag will by used to
+   decide which OpenSIPS instance (owning the tag as active) will
+   be responsible for expiring this presentity. This parameter is
+   to be used only if clustering mode is needed. In order to
+   understand the concept of sharing TAG, please see the clusterer
+   module.
+
+   For more on PUA clustering see the Section 1.2, “PUA
+   clustering” chapter.
+
+   Default value is “NULL”.
+
+   Example 1.8. Set cluster_sharing_tag parameter
+...
+modparam("pua", "cluster_sharing_tag", "vip")
+...
+
+1.5. Exported Functions
+
+1.5.1.  pua_update_contact()
 
    The remote target can be updated by the Contact of a subsequent
    in dialog request. In the PUA watcher case (sending a SUBSCRIBE
@@ -196,13 +286,13 @@ modparam("pua", "update_period", 100)
      * 1 - if success.
      * -1 - if error.
 
-   Example 1.7. pua_update_contact usage
+   Example 1.9. pua_update_contact usage
 ...
 if($rm=="NOTIFY")
     pua_update_contact();
 ...
 
-1.5. Installation
+1.6. Installation
 
    The module requires 1 table in OpenSIPS database: pua. The SQL
    syntax to create it can be found in presence_xml-create.sql
@@ -422,24 +512,25 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Anca Vamanu 276 106 11549 4540
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 57 45 439 474
-   3. Liviu Chircu (@liviuchircu) 21 11 256 383
+   1. Anca Vamanu 277 106 11549 4540
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 72 53 1114 550
+   3. Liviu Chircu (@liviuchircu) 22 12 256 395
    4. Ovidiu Sas (@ovidiusas) 17 13 230 109
    5. Daniel-Constantin Mierla (@miconda) 12 8 144 97
    6. Razvan Crainea (@razvancrainea) 10 7 76 83
    7. Edson Gellert Schubert 10 1 0 501
-   8. Saúl Ibarra Corretgé (@saghul) 8 5 243 31
+   8. Saúl Ibarra Corretgé (@saghul) 9 5 243 31
    9. Henning Westerholt (@henningw) 7 4 86 76
-   10. Vlad Patrascu (@rvlad-patrascu) 5 3 29 15
+   10. Vlad Patrascu (@rvlad-patrascu) 6 4 30 20
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Juha
    Heinanen (@juha-h), Walter Doekes (@wdoekes), Denis Bilenko,
-   Vallimamod Abdullah, Alex Hermann, Damien Sandras (@dsandras),
-   Sergio Gutierrez, Konstantin Bokarius, Elena-Ramona Modroiu,
-   John Riordan, Peter Lemenkov (@lemenkov), Dusan Klinec
-   (@ph4r05), UnixDev, Zero King (@l2dy), Stanislaw Pitucha, Dan
-   Pascu (@danpascu), Julien Blache.
+   Vallimamod Abdullah, Alex Hermann, Maksym Sobolyev (@sobomax),
+   Damien Sandras (@dsandras), Sergio Gutierrez, Konstantin
+   Bokarius, Elena-Ramona Modroiu, John Riordan, Peter Lemenkov
+   (@lemenkov), Dusan Klinec (@ph4r05), UnixDev, Zero King
+   (@l2dy), Carsten Bock, Stanislaw Pitucha, Dan Pascu
+   (@danpascu), Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -461,18 +552,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2021
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Mar 2020
-   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2016
-   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   9.  Damien Sandras (@dsandras)          Sep 2013 - Sep 2013
-   10. Saúl Ibarra Corretgé (@saghul)      Oct 2012 - Aug 2013
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Apr 2024
+   3.  Carsten Bock                        Mar 2024 - Mar 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
+   6.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2021
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2016
+   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Anca Vamanu,
+   All remaining contributors: Damien Sandras (@dsandras), Saúl
+   Ibarra Corretgé (@saghul), Vlad Paiu (@vladpaiu), Anca Vamanu,
    Vallimamod Abdullah, Alex Hermann, Stanislaw Pitucha, Walter
    Doekes (@wdoekes), John Riordan, UnixDev, Sergio Gutierrez,
    Denis Bilenko, Henning Westerholt (@henningw), Dan Pascu
@@ -487,13 +579,13 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan
-   Crainea (@razvancrainea), Anca Vamanu, Henning Westerholt
-   (@henningw), Daniel-Constantin Mierla (@miconda), Juha Heinanen
-   (@juha-h), Konstantin Bokarius, Edson Gellert Schubert,
-   Elena-Ramona Modroiu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Saúl Ibarra Corretgé (@saghul),
+   Razvan Crainea (@razvancrainea), Anca Vamanu, Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Juha Heinanen (@juha-h), Konstantin Bokarius, Edson Gellert
+   Schubert, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

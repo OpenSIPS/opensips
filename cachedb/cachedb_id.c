@@ -40,15 +40,22 @@
  */
 static int dupl_string(char** dst, const char* begin, const char* end)
 {
+	str old, new;
+
 	if (*dst) pkg_free(*dst);
 
 	*dst = pkg_malloc(end - begin + 1);
 	if ((*dst) == NULL) {
+		LM_ERR("pkg malloc failed on %p/%p\n", begin, end);
 		return -1;
 	}
 
-	memcpy(*dst, begin, end - begin);
-	(*dst)[end - begin] = '\0';
+	old.s = (char*)begin;
+	old.len = end - begin;
+	new.s = *dst;
+	un_escape(&old, &new );
+
+	new.s[new.len] = '\0';
 	return 0;
 }
 
@@ -81,8 +88,8 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	};
 
 	enum state st;
-	unsigned int len, i, ipv6_flag=0;
-	char* begin;
+	unsigned int len, i, ipv6_flag=0, multi_hosts=0;
+	char* begin, *last_at;
 	char* prev_token,*start_host=NULL,*start_prev=NULL,*ptr;
 
 	prev_token = 0;
@@ -104,6 +111,8 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 
 	if (dupl_string(&id->initial_url,url->s,url->s+url->len) < 0)
 		goto err;
+
+	last_at = q_memrchr(url->s, '@', url->len);
 
 	for(i = 0; i < len; i++) {
 		switch(st) {
@@ -158,12 +167,19 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 		case ST_USER_HOST:
 			switch(url->s[i]) {
 			case '@':
+				if (&url->s[i] < last_at)
+					break;
+
 				st = ST_HOST;
+				multi_hosts = 0;
 				if (dupl_string(&id->username, begin, url->s + i) < 0) goto err;
 				begin = url->s + i + 1;
 				break;
 
 			case ':':
+				if (multi_hosts)
+					continue;
+
 				st = ST_PASS_PORT;
 				if (dupl_string(&prev_token, begin, url->s + i) < 0) goto err;
 				start_prev = begin;
@@ -180,16 +196,24 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				begin = url->s + i + 1;
 				st = ST_DB;
 				break;
+
+			case ',':
+				multi_hosts = 1;
+				break;
 			}
 			break;
 
 		case ST_PASS_PORT:
 			switch(url->s[i]) {
 			case '@':
+				if (&url->s[i] < last_at)
+					break;
+
 				st = ST_HOST;
 				id->username = prev_token;
 				if (dupl_string(&id->password, begin, url->s + i) < 0) goto err;
 				begin = url->s + i + 1;
+				start_host = begin;
 				break;
 
 			case '/':
@@ -200,6 +224,10 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				break;
 
 			case ',':
+				/* password could have a "," -> do a look-ahead to confirm */
+				if (q_memchr(url->s + i, '@', len - i))
+					continue;
+
 				st=ST_HOST;
 				start_host=start_prev;
 				id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
@@ -236,6 +264,10 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				if (dupl_string(&id->host, ptr, url->s + i - ipv6_flag) < 0) goto err;
 				begin = url->s + i + 1;
 				st = ST_DB;
+				break;
+
+			case ',':
+				id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
 				break;
 			}
 			break;
@@ -286,17 +318,50 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 		}
 	}
 
+	LM_DBG("final st: %d, begin: %s, start_host: %s\n", st, begin, start_host);
+
+	if (multi_hosts)
+		id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
+
+	if (st == ST_PORT || st == ST_PASS_PORT) {
+		int rc;
+		if (url->s + i - begin == 0)
+			goto err;
+
+		id->port = str2s(begin, url->s + i - begin, &rc);
+		if (rc != 0)
+			goto err;
+
+		if (prev_token && !id->host)
+			id->host = prev_token;
+
+		return 0;
+	}
+
 	if (st == ST_DB) {
 		if (begin < url->s + len &&
 				dupl_string(&id->database, begin, url->s + len) < 0) goto err;
 		return 0;
 	}
 
-	if (st == ST_USER_HOST && begin == url->s+url->len) {
-		/* Not considered an error - to cope with modules that
-		 * offer cacheDB functionality backed up by OpenSIPS mem */
-		id->flags |= CACHEDB_ID_NO_URL;
-		LM_DBG("Just scheme, no actual url\n");
+	if (st == ST_HOST || st == ST_USER_HOST) {
+		if (begin == url->s+url->len) {
+			if (st == ST_USER_HOST) {
+				/* Not considered an error - to cope with modules that
+				 * offer cacheDB functionality backed up by OpenSIPS mem */
+				id->flags |= CACHEDB_ID_NO_URL;
+				LM_DBG("Just scheme, no actual url\n");
+				return 0;
+			} else {
+				goto err;
+			}
+		}
+
+		if (start_host)
+			begin = start_host;
+
+		if (begin < url->s + len &&
+				dupl_string(&id->host, begin, url->s + len) < 0) goto err;
 		return 0;
 	}
 
@@ -311,7 +376,9 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	if (id && id->host) pkg_free(id->host);
 	if (id && id->database) pkg_free(id->database);
 	if (id && id->extra_options) pkg_free(id->extra_options);
-	if (prev_token) pkg_free(prev_token);
+	if (prev_token && prev_token != id->host && prev_token != id->username)
+		pkg_free(prev_token);
+
 	return -1;
 }
 
@@ -338,7 +405,8 @@ struct cachedb_id* new_cachedb_id(const str* url)
 	memset(ptr, 0, sizeof(struct cachedb_id));
 
 	if (parse_cachedb_url(ptr, url) < 0) {
-		LM_ERR("error while parsing database URL: '%.*s' \n", url->len, url->s);
+		LM_ERR("error while parsing database URL: '%s'\n",
+				db_url_escape(url));
 		goto err;
 	}
 

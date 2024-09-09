@@ -34,12 +34,12 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *method)
 {
 	SSL_CTX* (*real_SSL_CTX_new)(const SSL_METHOD *);
 	static int mongoc_init = 0;
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm && !mongoc_init) {
+	if (have_openssl && !mongoc_init) {
 		mongoc_init = 1;
 		/* return a dummy pointer the first time SSL_CTX_new is called
 		 * when mongoc tries to init openssl */
@@ -58,12 +58,12 @@ void SSL_CTX_free(SSL_CTX *ctx)
 {
 	SSL_CTX* (*real_SSL_CTX_free)(SSL_CTX *);
 	static int mongoc_init = 0;
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm && !mongoc_init) {
+	if (have_openssl && !mongoc_init) {
 		mongoc_init = 1;
 		/* do nothing the first time SSL_CTX_free is called when mongoc
 		 * tries to init openssl */

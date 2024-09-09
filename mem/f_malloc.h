@@ -31,18 +31,13 @@
 #undef ROUNDTO
 #undef UN_HASH
 
-#ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
  * but long can be 32 bits aligned => malloc should return long long
  * aligned memory */
 	#define ROUNDTO		sizeof(long long)
 #else
-	#define ROUNDTO		sizeof(void*) /* size we round to, must be = 2^n, and
-                      sizeof(fm_frag) must be multiple of ROUNDTO !*/
-#endif
-#else /* DBG_MALLOC */
-	#define ROUNDTO 8UL
+	#define ROUNDTO		sizeof(void *) /* address alignment, in bytes (2^n) */
 #endif
 
 #define F_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
@@ -69,6 +64,9 @@ struct fm_frag {
 		long reserved;
 	} u;
 	struct fm_frag **prev;
+
+	struct fm_frag *pf; /* previous "physical" frag */
+
 #ifdef DBG_MALLOC
 	const char *file;
 	const char *func;
@@ -78,7 +76,7 @@ struct fm_frag {
 #ifdef SHM_EXTRA_STATS
 	unsigned long statistic_index;
 #endif
-};
+} __attribute__ ((aligned (ROUNDTO)));
 
 #define FM_FRAG_OVERHEAD (sizeof(struct fm_frag))
 
@@ -91,8 +89,6 @@ struct fm_block {
 	char *name; /* purpose of this memory block */
 
 	unsigned long size; /* total size */
-	unsigned long large_space;
-	unsigned long large_limit;
 	unsigned long fragments; /* number of fragments in use */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	unsigned long used; /* alloc'ed size */
@@ -104,7 +100,7 @@ struct fm_block {
 	struct fm_frag *last_frag;
 
 	struct fm_frag_lnk free_hash[F_HASH_SIZE];
-};
+} __attribute__ ((aligned (ROUNDTO)));
 
 struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name);
 
@@ -135,7 +131,6 @@ void fm_status_dbg(struct fm_block *);
 #endif
 void fm_info(struct fm_block *, struct mem_info *);
 
-#ifdef SHM_EXTRA_STATS
 static inline unsigned long fm_frag_size(void *p)
 {
 	if (!p)
@@ -144,6 +139,7 @@ static inline unsigned long fm_frag_size(void *p)
 	return FM_FRAG(p)->size;
 }
 
+#ifdef SHM_EXTRA_STATS
 void fm_stats_core_init(struct fm_block *fm, int core_index);
 unsigned long fm_stats_get_index(void *ptr);
 void fm_stats_set_index(void *ptr, unsigned long idx);
@@ -185,5 +181,7 @@ static inline unsigned long fm_get_frags(struct fm_block *fm)
 	return fm->fragments;
 }
 #endif /*STATISTICS*/
+
+unsigned long fm_get_dbg_pool_size(unsigned int hist_size);
 
 #endif

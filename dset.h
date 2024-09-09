@@ -43,7 +43,7 @@ int init_dset(void);
  * Add a new branch to current transaction
  */
 int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
-		qvalue_t q, unsigned int flags, struct socket_info* force_socket);
+		qvalue_t q, unsigned int flags, const struct socket_info* force_socket);
 
 
 
@@ -51,14 +51,14 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
  * Updates an already created branches
  */
 int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
-		qvalue_t* q, unsigned int* flags, struct socket_info** force_socket);
+		qvalue_t* q, unsigned int* flags, const struct socket_info** force_socket);
 
 
 /*! \brief
  * Get the next branch in the current transaction
  */
 char* get_branch( unsigned int idx, int* len, qvalue_t* q, str* dst_uri,
-		str* path, unsigned int *flags, struct socket_info** force_socket);
+		str* path, unsigned int *flags, const struct socket_info** force_socket);
 
 
 /*! \brief
@@ -111,5 +111,17 @@ int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
  * Moves the branch index idx into the SIP request msg.
  */
 int move_branch_to_ruri(int idx, struct sip_msg *msg);
+
+/*! \brief
+ * Swaps two branches between. Index -1 means MSG branch
+ */
+int swap_branches(struct sip_msg *msg, int src_idx, int dst_idx);
+
+
+/*! \brief
+ * Move a branch over another existing one. Index -1 means MSG branch
+ * If "keep_src", the source branch will not be deleted -> copy
+ */
+int move_branch(struct sip_msg *msg, int src_idx, int dst_idx, int keep_src);
 
 #endif /* _DSET_H */

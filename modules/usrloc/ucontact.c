@@ -677,20 +677,20 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 
 	if ( !update ) {
 		/* do simple insert */
-		CON_PS_REFERENCE(ul_dbh) = &myI_ps;
 		if (ins_list) {
 			if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,keys + start,
 						nr_vals) < 0 )
 				CON_RESET_INSLIST(ul_dbh);
 		}
 
+		CON_SET_CURR_PS(ul_dbh, &myI_ps);
 		if (ul_dbf.insert(ul_dbh, keys + start, vals + start, nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			goto out_err;
 		}
 	} else {
 		/* do insert-update / replace */
-		CON_PS_REFERENCE(ul_dbh) = &myR_ps;
+		CON_SET_CURR_PS(ul_dbh, &myR_ps);
 		if (ul_dbf.insert_update(ul_dbh, keys + start, vals + start, nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			goto out_err;
@@ -823,8 +823,7 @@ int db_update_ucontact(ucontact_t* _c)
 		goto out_err;
 	}
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
-
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 1, 15)<0) {
 		LM_ERR("updating database failed\n");
 		goto out_err;
@@ -863,8 +862,7 @@ int db_delete_ucontact(ucontact_t* _c)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
-
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 	if (ul_dbf.delete(ul_dbh, keys, 0, vals, 1) < 0) {
 		LM_ERR("deleting from database failed\n");
 		return -1;
@@ -966,14 +964,25 @@ static inline void update_contact_pos(struct urecord* _r, ucontact_t* _c)
  * Update ucontact with new values
  */
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
-															char skip_replication)
+                    const struct ct_match *match, char skip_replication)
 {
 	int ret, persist_kv_store = 1;
+	ul_cb_extra extra;
+
+	memset(&extra, 0, sizeof extra);
+
+	if (exists_ulcb_type(UL_CONTACT_UPDATE)) {
+		extra.contact_update.prev_proto = _c->next_hop.proto;
+		extra.contact_update.prev_port = _c->next_hop.port;
+		pkg_str_dup(&extra.contact_update.prev_name, &_c->next_hop.name);
+	}
 
 	/* we have to update memory in any case, but database directly
 	 * only in sql_wmode SQL_WRITE_THROUGH */
 	if (mem_update_ucontact(_c, _ci) < 0) {
 		LM_ERR("failed to update memory\n");
+		if (extra.contact_update.prev_name.s)
+			pkg_free(extra.contact_update.prev_name.s);
 		return -1;
 	}
 
@@ -986,14 +995,16 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		else
 			persist_kv_store = 0;
 
-		replicate_ucontact_update(_r, _c);
+		replicate_ucontact_update(_r, _c, match);
 	}
 
 	/* run callbacks for UPDATE event */
 	if (exists_ulcb_type(UL_CONTACT_UPDATE))
 	{
 		LM_DBG("exists callback for type= UL_CONTACT_UPDATE\n");
-		run_ul_callbacks( UL_CONTACT_UPDATE, _c);
+		run_ul_callbacks( UL_CONTACT_UPDATE, _c, &extra);
+		if (extra.contact_update.prev_name.s)
+			pkg_free(extra.contact_update.prev_name.s);
 	}
 
 	if (have_mem_storage())
@@ -1046,4 +1057,9 @@ int_str_t *put_ucontact_key(ucontact_t* _ct, const str* _key,
                             const int_str_t* _val)
 {
 	return kv_put(_ct->kv_storage, _key, _val);
+}
+
+int is_my_ucontact(ucontact_t *c)
+{
+	return _is_my_ucontact(c);
 }

@@ -498,9 +498,12 @@ void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c)
 }
 
 
-static inline void _ul_raise_ct_refresh_event(
-                const ucontact_t *_c, const str *reason, const str *req_callid)
+static inline void _ul_raise_ct_refresh_event(const struct ct_refresh_event_data *ev)
 {
+	const ucontact_t *_c = ev->ct;
+	const str *reason = &ev->reason;
+	const str *req_callid = &ev->req_callid;
+
 	if (ei_c_refresh_id == EVI_ERROR) {
 		LM_ERR("event not yet registered ("UL_EV_CT_REFRESH")\n");
 		return;
@@ -537,8 +540,7 @@ static inline void _ul_raise_ct_refresh_event(
 	}
 
 	/* the socket */
-	if (evi_param_set_str(ul_ct_pn_event.socket,
-			(_c->sock ? &_c->sock->sock_str : _str(""))) < 0) {
+	if (evi_param_set_str(ul_ct_pn_event.socket, &ev->sock_str) < 0) {
 		LM_ERR("cannot set socket parameter\n");
 		return;
 	}
@@ -593,119 +595,127 @@ static inline void _ul_raise_ct_refresh_event(
 }
 
 
+#if UL_ASYNC_CT_REFRESH
+struct refresh_event_rpc_data {
+	struct ct_refresh_event_data ev;
+	ucontact_t ct;
+	str domain;
+	str aor;
+	char _stor[0];
+};
+
 static void ul_rpc_raise_ct_refresh(int _, void *_ev)
 {
-	struct ct_refresh_event_data *ev = (struct ct_refresh_event_data *)_ev;
+	struct refresh_event_rpc_data *rev = (struct refresh_event_rpc_data*)_ev;
 
-	_ul_raise_ct_refresh_event(ev->ct, &ev->reason, &ev->req_callid);
-	shm_free(ev);
+	_ul_raise_ct_refresh_event(&rev->ev);
+	shm_free(rev);
 }
+#endif
 
 
 void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
                                const str *req_callid)
 {
 #if !UL_ASYNC_CT_REFRESH
-	_ul_raise_ct_refresh_event(c, reason, req_callid);
+	const struct ct_refresh_event_data ev = {
+		.ct = c,
+		.reason = *reason,
+		.req_callid = *req_callid,
+		.sock_str = (c->sock != NULL) ? c->sock->sock_str : (str){0},
+	};
+	_ul_raise_ct_refresh_event(&ev);
 #else
-	struct ct_refresh_event_data *ev;
-	ucontact_t *ct;
+	struct refresh_event_rpc_data *buf;
 	char *p;
 
 	/* since we cannot send a (ucontact_t *), we must dup the data */
-	ev = shm_malloc(sizeof *ev + sizeof *ct + sizeof *c->domain +
-	            c->domain->len + sizeof *c->aor + c->aor->len + c->c.len +
+	buf = shm_malloc(sizeof(*buf) + c->domain->len + c->aor->len + c->c.len +
 	            c->received.len + c->path.len + c->user_agent.len +
-	            (c->sock ? (sizeof *c->sock + c->sock->sock_str.len) : 0) +
+	            (c->sock ? c->sock->sock_str.len : 0) +
 	            c->callid.len + c->attr.len + c->shtag.len + reason->len +
 	            (req_callid ? req_callid->len : 0));
-	if (!ev) {
+	if (buf == NULL) {
 		LM_ERR("oom\n");
 		return;
 	}
 
-	p = (char *)(ev + 1);
+	p = buf->_stor;
 
-	ev->reason.s = p;
-	ev->reason.len = reason->len;
+	buf->ev.reason.s = p;
+	buf->ev.reason.len = reason->len;
 	memcpy(p, reason->s, reason->len);
 	p += reason->len;
 
 	if (!req_callid) {
-		memset(&ev->req_callid, 0, sizeof ev->req_callid);
+		memset(&buf->ev.req_callid, 0, sizeof buf->ev.req_callid);
 	} else {
-		ev->req_callid.s = p;
-		ev->req_callid.len = req_callid->len;
+		buf->ev.req_callid.s = p;
+		buf->ev.req_callid.len = req_callid->len;
 		memcpy(p, req_callid->s, req_callid->len);
 		p += req_callid->len;
 	}
 
-	ct = ev->ct = (ucontact_t *)p;
-	p = (char *)(ct + 1);
+	buf->ev.ct = &buf->ct;
 
-	ct->domain = (str *)p;
-	p += sizeof *ct->domain;
+	buf->ct.domain = &buf->domain;
 
-	ct->domain->s = p;
-	str_cpy(ct->domain, c->domain);
-	p += ct->domain->len;
+	buf->domain.s = p;
+	str_cpy(&buf->domain, c->domain);
+	p += c->domain->len;
 
-	ct->aor = (str *)p;
-	p += sizeof *ct->aor;
+	buf->ct.aor = &buf->aor;
 
-	ct->aor->s = p;
-	str_cpy(ct->aor, c->aor);
-	p += ct->aor->len;
+	buf->aor.s = p;
+	str_cpy(&buf->aor, c->aor);
+	p += c->aor->len;
 
-	ct->c.s = p;
-	str_cpy(&ct->c, &c->c);
-	p += ct->c.len;
+	buf->ct.c.s = p;
+	str_cpy(&buf->ct.c, &c->c);
+	p += c->c.len;
 
-	ct->received.s = p;
-	str_cpy(&ct->received, &c->received);
-	p += ct->received.len;
+	buf->ct.received.s = p;
+	str_cpy(&buf->ct.received, &c->received);
+	p += c->received.len;
 
-	ct->path.s = p;
-	str_cpy(&ct->path, &c->path);
-	p += ct->path.len;
+	buf->ct.path.s = p;
+	str_cpy(&buf->ct.path, &c->path);
+	p += c->path.len;
 
-	ct->user_agent.s = p;
-	str_cpy(&ct->user_agent, &c->user_agent);
-	p += ct->user_agent.len;
+	buf->ct.user_agent.s = p;
+	str_cpy(&buf->ct.user_agent, &c->user_agent);
+	p += c->user_agent.len;
 
 	if (!c->sock) {
-		ct->sock = NULL;
+		buf->ev.sock_str = (str){0};
 	} else {
-		ct->sock = (struct socket_info *)p;
-		p += sizeof *ct->sock;
-
-		ct->sock->sock_str.s = p;
-		str_cpy(&ct->sock->sock_str, &c->sock->sock_str);
-		p += ct->sock->sock_str.len;
+		buf->ev.sock_str.s = p;
+		str_cpy(&buf->ev.sock_str, &c->sock->sock_str);
+		p += c->sock->sock_str.len;
 	}
 
-	ct->callid.s = p;
-	str_cpy(&ct->callid, &c->callid);
-	p += ct->callid.len;
+	buf->ct.callid.s = p;
+	str_cpy(&buf->ct.callid, &c->callid);
+	p += c->callid.len;
 
-	ct->attr.s = p;
-	str_cpy(&ct->attr, &c->attr);
-	p += ct->attr.len;
+	buf->ct.attr.s = p;
+	str_cpy(&buf->ct.attr, &c->attr);
+	p += c->attr.len;
 
 	if (!c->shtag.s) {
-		memset(&ct->shtag, 0, sizeof ct->shtag);
+		memset(&buf->ct.shtag, 0, sizeof buf->ct.shtag);
 	} else {
-		ct->shtag.s = p;
-		str_cpy(&ct->shtag, &c->shtag);
+		buf->ct.shtag.s = p;
+		str_cpy(&buf->ct.shtag, &c->shtag);
 	}
 
-	ct->q = c->q;
-	ct->cflags = c->cflags;
-	ct->expires = c->expires;
-	ct->cseq = c->cseq;
-	ct->sipping_latency = c->sipping_latency;
+	buf->ct.q = c->q;
+	buf->ct.cflags = c->cflags;
+	buf->ct.expires = c->expires;
+	buf->ct.cseq = c->cseq;
+	buf->ct.sipping_latency = c->sipping_latency;
 
-	if (ipc_dispatch_rpc(ul_rpc_raise_ct_refresh, (void *)ev) != 0) {
+	if (ipc_dispatch_rpc(ul_rpc_raise_ct_refresh, (void *)&buf->ev) != 0) {
 		LM_ERR("failed to send RPC for "UL_EV_CT_REFRESH"\n");
 		return;
 	}

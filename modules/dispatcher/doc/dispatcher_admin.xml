@@ -25,8 +25,9 @@
 		Starting with version 2.1, the dispatcher module keeps its destination sets 
 		into different partitions. Each partition is described by its own
 		"db_url", "table_name", "dst_avp", "grp_avp", "cnt_avp", "sock_avp",
-		"attr_avp" and "blacklists" set of attributes.  Setting any of these
-		module parameters will only alter the "default" partition's properties.
+                "attr_avp", "blacklists", "ping_from", "ping_method" and
+                "persistent_state" set of attributes. Setting any of these
+                module parameters will only alter the "default" partition's properties.
 	</para>
 	<para>
 		In order to create a new partition, the <xref linkend="param_partition"/>
@@ -183,6 +184,8 @@ modparam("dispatcher", "attrs_avp", "$avp(script_attrs)")
 		The return value of the route is considered by the dispatcher module to
 		be the current weight of the dispatcher entry, and when using the 10
 		algo, the dispatcher entries are sorted in ascending weight order.
+
+		If the returned value from the algo route is negative, the current dispatcher entry will be automatically skipped from usage
 		</para>
 		<para>
 		<emphasis>
@@ -274,6 +277,10 @@ modparam("dispatcher", "setid_pvar", "$var(setid)")
 		the probing of failed gateways enabled.
 		</para>
 		<para>
+		Use the 'partition' parameter if you want to define the ping method
+		other partitions.
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>OPTIONS</quote>.
 		</emphasis>
@@ -294,6 +301,10 @@ modparam("dispatcher", "ds_ping_method", "INFO")
 		With this Method you can define the "From:"-Line for the request,
 		sent to the failed gateways. This method is only available, if
 		compiled with the probing of failed gateways enabled.
+		</para>
+		<para>
+		Use the 'partition' parameter if you want to define the "From:"
+		ping header of other partitions.
 		</para>
 		<para>
 		<emphasis>
@@ -617,7 +628,9 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
 		pseudovariable pattern used to detect the load of each destination. The
 		name of the pseudovariable should contain the string <quote>%u</quote>,
 		which will be internally replaced by the module with the uri of the
-		destination.
+		destination. The string <quote>%i</quote> can also be used and will be
+		replaced with the set ID of the destination (useful in cases where same
+		uri exists in multiple sets).
 		</para>
 		<para>
 		</para>
@@ -640,7 +653,12 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 		<title><varname>persistent_state</varname> (int)</title>
 		<para>
 		Specifies whether the <emphasis>state</emphasis> column
-		should be loaded at startup and flushed during runtime or not.
+		should be loaded at startup and flushed during runtime or not
+		for the "default" partition.
+		</para>
+		<para>
+		Use the 'partition' parameter if you want to define the persistent
+		state of other partitions.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>1</quote> (enabled).
@@ -703,8 +721,9 @@ modparam("dispatcher", "cluster_id", 9)
 		<para>
 		The name of the sharing tag (as defined per clusterer modules) to 
 		control which node is responsible for perform the self-triggered
-		actions in the module. Such actions may be the destination probing or 
-		sharing the changes in the destination status.
+		actions in the module. Such actions may be the destination probing
+		(see also the <xref linkend="param_cluster_probing_mode"/> parameter)
+		or sharing the changes in the destination status.
 		If defined, only the node with active status of this tag will 
 		perform the actions (pinging and sharing status).
 		</para>
@@ -714,7 +733,7 @@ modparam("dispatcher", "cluster_id", 9)
 		</para>
 		<para>
 		This is an optional parameter. If not set, all the nodes in the cluster
-		will individually do the probing and share the status changes.
+		will share the status changes.
 		</para>
 		<para>
 		<emphasis>
@@ -729,6 +748,73 @@ modparam("dispatcher", "cluster_id", 9)
 # and broadcast the status changes
 modparam("dispatcher", "cluster_id", 9)
 modparam("dispatcher", "cluster_sharing_tag", "vip")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cluster_probing_mode" xreflabel="cluster_probing_mode">
+		<title><varname>cluster_probing_mode</varname> (string)</title>
+		<para>
+		This paramter controls how the probing/pinging should be done when
+		using the clustering support. It is about which node in the cluster
+		pings which gateway/destination.
+		</para>
+		<para>
+		The <xref linkend="param_cluster_id"/> must be defined for this option
+		to work.
+		</para>
+		<para>
+		The supported probing modes are:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"all"</emphasis> - all the nodes in the
+			cluster will independetly ping all the defined destinations,
+			an "all" pings "all" mode.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"by-shtag"</emphasis> - all the destinations
+			are pinged by only one node in the cluster, the node having the
+			<xref linkend="param_cluster_sharing_tag"/> active. By 
+			activating the sharing tag on a different node, the pinging
+			duty will be transfered to another node in the cluster.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"distributed"</emphasis> - the pinging
+			effort is distributed across all the nodes in the cluster, so each
+			node will ping a sub-set of the overall set of destinations. Still
+			all the destinations will get pinged (and only once per pinging 
+			cycle).
+			The re-partitioning of the pinging effort over the available nodes
+			in the cluster is automatically done when new nodes are joining or
+			nodes are dropping out. Still there is no guaratee on which node
+			will be responsible for pinging which destination.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is <quote>"all"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_probing_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# only the node with the active "vip" sharing tag will perform pinging
+modparam("dispatcher", "cluster_id", 9)
+modparam("dispatcher", "cluster_sharing_tag", "vip")
+modparam("dispatcher", "cluster_probing_mode", "by-shtag")
+...
+# the pinging effort is distributed across all the nodes
+modparam("dispatcher", "cluster_id", 9)
+modparam("dispatcher", "cluster_probing_mode", "distributed")
 ...
 </programlisting>
 		</example>
@@ -947,6 +1033,27 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 <programlisting format="linespecific">
 ...
 modparam("dispatcher", "socket_col", "my_sock")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_probe_mode_col" xreflabel="probe_mode_col">
+		<title><varname>probe_mode_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the probe_mode (as
+			string) for destination.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>probe_mode</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>probe_mode_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "probe_mode_col", "probing")
 ...
 </programlisting>
 		</example>
@@ -1178,8 +1285,8 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
 		<listitem>
 			<para>
 			<emphasis>max_res (int, optional)</emphasis> - signifies that only a maximum
-			number of destinations shall be included in the specified failover
-			AVP for failover.  This allows having multiple destinations while
+			number of destinations shall be included in the specified failover AVP. 
+			This allows having multiple destinations while
 			also preventing excessive failover attempts in case a number is
 			bound to fail globally.
 			</para>
@@ -1582,6 +1689,10 @@ opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
 				<emphasis>full</emphasis> (optional) - adds the weight,
 				priority and description fields to the listing
 			</para></listitem>
+			<listitem><para>
+				<emphasis>partition</emphasis> (optional) - return only
+				destinations and sets in the provided partition.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
@@ -1605,14 +1716,23 @@ opensips-cli -x mi ds_list
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>partition</emphasis> (optional) - name of
-				the partition to be reloaded.
+				the partition to be reloaded. default partition is "default".
 			</para></listitem>
+
+			<listitem><para><emphasis>inherit_state</emphasis> (optional) : whether inherit old state of the destination , default is y. </para>
+				<itemizedlist>
+					<listitem><para> <quote>n</quote>: no inherit state </para></listitem>
+					<listitem><para> <quote>y</quote>: inherit state </para></listitem>
+				</itemizedlist>
+			</listitem>
+			
 		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
 opensips-cli -x mi ds_reload
+opensips-cli -x mi ds_reload inherit_state=n
 </programlisting>
 	</section>
 
@@ -1679,6 +1799,127 @@ opensips-cli -x mi ds_reload
 	</section>
 
 
+<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Exported Status/Report Identifiers</title>
+
+	<para>
+	The module provides the "dispatcher" Status/Report group, where each
+	partition is defined as a separate SR identifier.
+	</para>
+	<section id="sr_id_partition_name" xreflabel="partition_name">
+	<title><varname>[partition_name]</varname></title>
+	<para>
+	The status of these identifiers reflects the readiness/status of the 
+	cached data (if available or not when being loaded from DB):
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		<emphasis>-2</emphasis> - no data at all (initial status)
+		</para></listitem>
+		<listitem><para>
+		<emphasis>-1</emphasis> - no data, initial loading in progress
+		</para></listitem>
+		<listitem><para>
+		<emphasis>1</emphasis> - data loaded, partition ready
+		</para></listitem>
+		<listitem><para>
+		<emphasis>2</emphasis> - data available, a reload in progress
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	Reload reporting:
+	</para>
+	<para>
+	In terms of date reloading, the following events will be reported:
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		starting DB data loading
+		</para></listitem>
+		<listitem><para>
+		DB data loading failed, discarding
+		</para></listitem>
+		<listitem><para>
+		DB data loading successfully completed
+		</para></listitem>
+		<listitem><para>
+		N destination loaded (N discarded)
+		</para></listitem>
+	</itemizedlist>
+	<programlisting  format="linespecific">
+        {
+            "Name": "default",
+            "Reports": [
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "starting DB data loading"
+                },
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "DB data loading successfully completed"
+                },
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "2 destinations loaded (0 discarded)"
+                }
+            ]
+        }
+
+	</programlisting>
+	</section>
+
+	<section id="sr_id_events" xreflabel="events">
+	<title><varname>[partition_name];events</varname></title>
+	<para>
+	Destination switching reporting:
+	</para>
+
+	<para>
+	For reporting events related to the state changes of the
+	destinations, the module provides separate identifiers (still
+	one per partition).
+	Why separate ones? The reports on state changing may be verbose and there
+	is the risk of loose/discard important reports on reloads due to the high
+	number of logs on state changes;
+	</para>
+	<para>
+	So, each partition will provide the identified "partition_name;events" for
+	reporting state changes of destinations, along with the reason
+	of the change. This identifiers have a 200 records history before 
+	discarding the old ones.
+	</para>
+	<programlisting  format="linespecific">
+        {
+            "Name": "default;events",
+            "Reports": [
+                {
+                    "Timestamp": 1652373308,
+                    "Date": "Thu May 12 19:35:08 2022",
+                    "Log": "DESTINATION &lt;sip:127.0.1.1&gt;, set 1 switched to [inactive] due to negative probing reply\n"
+                },
+                {
+                    "Timestamp": 1652373308,
+                    "Date": "Thu May 12 19:35:08 2022",
+                    "Log": "DESTINATION &lt;sip:127.0.1.2&gt;, set 1 switched to [inactive] due to negative probing reply\n"
+                }
+            ]
+        },
+
+	</programlisting>
+	</section>
+
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>https://www.opensips.org/Documentation/Interface-StatusReport-3-3</ulink>.
+	</para>
+
+</section>
+
+
 	<section>
 	<title>Installation and Running</title>
 		<section>
@@ -1697,4 +1938,3 @@ opensips-cli -x mi ds_reload
 	</section>
 	</section>
 </chapter>
-

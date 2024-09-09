@@ -47,9 +47,7 @@
 
     <column id="contact">
         <name>contact</name>
-        <type>string</type>
-        <size>&hf_len;</size>
-        <default/>
+        <type>text</type>
         <description>Contact header field value provides a URI whoses meaning depends on the type of request or response it is in.</description>
     </column>
 

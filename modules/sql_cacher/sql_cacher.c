@@ -33,13 +33,14 @@
 #include "../../rw_locking.h"
 #include "../../timer.h"
 #include "../../ipc.h"
+#include "../../status_report.h"
 #include "sql_cacher.h"
 
 static int mod_init(void);
 static void destroy(void);
 static int child_init(int rank);
 
-int pv_parse_name(pv_spec_p sp, str *in);
+int pv_parse_name(pv_spec_p sp, const str *in);
 int pv_init_param(pv_spec_p sp, int param);
 int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 static int parse_cache_entry(unsigned int type, void *val);
@@ -56,6 +57,7 @@ static str columns_delimiter = str_init(DEFAULT_COLUMNS_DELIM);
 static int fetch_nr_rows = DEFAULT_FETCH_NR_ROWS;
 static int full_caching_expire = DEFAULT_FULL_CACHING_EXPIRE;
 static int reload_interval = DEFAULT_RELOAD_INTERVAL;
+static int sql_cacher_bigint2str = DEFAULT_BIGINT2STR;
 
 static cache_entry_t **entry_list;
 static struct queried_key **queries_in_progress;
@@ -65,8 +67,10 @@ static db_handlers_t *db_hdls_list;
 
 gen_lock_t *queries_lock;
 
+void *sql_srg = NULL;
+
 /* module parameters */
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"spec_delimiter", STR_PARAM, &spec_delimiter.s},
 	{"pvar_delimiter", STR_PARAM, &pvar_delimiter.s},
 	{"columns_delimiter", STR_PARAM, &columns_delimiter.s},
@@ -74,16 +78,17 @@ static param_export_t mod_params[] = {
 	{"full_caching_expire", INT_PARAM, &full_caching_expire},
 	{"reload_interval", INT_PARAM, &reload_interval},
 	{"cache_table", STR_PARAM|USE_FUNC_PARAM, (void *)&parse_cache_entry},
+	{"bigint_to_str", INT_PARAM, &sql_cacher_bigint2str},
 	{0,0,0}
 };
 
-static pv_export_t mod_items[] = {
-	{{"sql_cached_value", sizeof("sql_cached_value") - 1}, 1000,
+static const pv_export_t mod_items[] = {
+	{str_const_init("sql_cached_value"), 1000,
 		pv_get_sql_cached_value, 0, pv_parse_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "sql_cacher_reload", "reload the SQL database into the cache", 0, 0, {
 		{mi_reload_1, {"id", 0}},
 		{mi_reload_2, {"id", "key", 0}},
@@ -92,7 +97,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_CACHEDB, NULL, DEP_ABORT },
@@ -425,7 +430,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 						EXPIRE_STR_LEN, EXPIRE_STR, str_val.len, str_val.s);
 				goto parse_err;
 			}
-		} else {
+		} else if (parse_str.len - (p1 - parse_str.s) > 0) {
 			LM_ERR("unknown parameter: %.*s\n",
 				(int)(parse_str.len - (p1 - parse_str.s)), p1);
 			goto parse_err;
@@ -476,20 +481,72 @@ static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_col
 		val_type = VAL_TYPE(values + i);
 		switch (val_type) {
 			case DB_INT:
-			case DB_BIGINT:
-			case DB_DOUBLE:
 				c_entry->nr_ints++;
 				c_entry->column_types &= ~(1LL << i);
+				break;
+			case DB_BIGINT:
+				if (sql_cacher_bigint2str) {
+					c_entry->nr_strs++;
+					c_entry->column_types |= (1LL << i);
+				} else {
+					c_entry->nr_ints++;
+					c_entry->column_types &= ~(1LL << i);
+				}
 				break;
 			case DB_STRING:
 			case DB_STR:
 			case DB_BLOB:
+			case DB_DOUBLE:
 				c_entry->nr_strs++;
 				c_entry->column_types |= (1LL << i);
 				break;
 			default:
 				LM_ERR("Unsupported type: %d for column: %.*s\n", val_type,
 					c_entry->columns[i]->len, c_entry->columns[i]->s);
+				return -1;
+		}
+	}
+
+	return 0;
+}
+
+/* get the column types from the sql query result */
+static int build_column_types(cache_entry_t *c_entry, db_key_t *names, db_type_t *types,
+		int nr_columns)
+{
+	unsigned int i;
+	db_type_t val_type;
+
+	c_entry->nr_ints = 0;
+	c_entry->nr_strs = 0;
+	c_entry->column_types = 0;
+
+	for (i = 0; i < nr_columns; i++) {
+		val_type = types[i];
+		switch (val_type) {
+			case DB_INT:
+				c_entry->nr_ints++;
+				c_entry->column_types &= ~(1LL << i);
+				break;
+			case DB_BIGINT:
+				if (sql_cacher_bigint2str) {
+					c_entry->nr_strs++;
+					c_entry->column_types |= (1LL << i);
+				} else {
+					c_entry->nr_ints++;
+					c_entry->column_types &= ~(1LL << i);
+				}
+				break;
+			case DB_STRING:
+			case DB_STR:
+			case DB_BLOB:
+			case DB_DOUBLE:
+				c_entry->nr_strs++;
+				c_entry->column_types |= (1LL << i);
+				break;
+			default:
+				LM_ERR("Unsupported type: %d for column: %.*s\n", val_type,
+					names[i]->len, names[i]->s);
 				return -1;
 		}
 	}
@@ -518,6 +575,16 @@ static unsigned int get_cdb_val_size(cache_entry_t *c_entry, db_val_t *values, i
 			case DB_BLOB:
 				len += VAL_BLOB(values + i).len;
 				break;
+			case DB_DOUBLE:
+				len += DOUBLE2STR_MAX_LEN;
+				break;
+			case DB_BIGINT:
+				if (sql_cacher_bigint2str) {
+					len += BIGINT2STR_MAX_LEN;
+					break;
+				} else {
+					continue;
+				}
 			default: continue;
 		}
 	}
@@ -563,11 +630,12 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 				int_val = VAL_INT(values + i);
 				break;
 			case DB_BIGINT:
-				int_val = (int)VAL_BIGINT(values + i);
-				break;
-			case DB_DOUBLE:
-				int_val = (int)VAL_DOUBLE(values + i);
-				break;
+				if (!sql_cacher_bigint2str) {
+					int_val = (int)VAL_BIGINT(values + i);
+					break;
+				} else {
+					continue;
+				}
 			default: continue;
 		}
 		if (VAL_NULL(values + i))
@@ -598,6 +666,16 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			case DB_BLOB:
 				str_val = VAL_BLOB(values + i);
 				break;
+			case DB_DOUBLE:
+				str_val.s = double2str(VAL_DOUBLE(values + i), &str_val.len);
+				break;
+			case DB_BIGINT:
+				if (sql_cacher_bigint2str) {
+					str_val.s = bigint2str(VAL_BIGINT(values + i), &str_val.len);
+					break;
+				} else {
+					continue;
+				}
 			default: continue;
 		}
 		if (VAL_NULL(values + i))
@@ -614,6 +692,9 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		memcpy(cdb_val.s + strs_offset, str_val.s, str_val.len);
 		strs_offset += str_val.len;
 	}
+	/* adjust the useful size to how much was actually written;
+	 * The initial value could be over-estimated by get_cdb_val_size() */
+	cdb_val.len = strs_offset;
 
 	/* make sure the key is string */
 	val_type = VAL_TYPE(key);
@@ -707,6 +788,13 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		return NULL;
 	}
+
+	if (new_db_hdls->cdbf.is_replicated &&
+		new_db_hdls->cdbf.is_replicated(new_db_hdls->cdbcon)) {
+		LM_ERR("Cannot use an OpenSIPS replicated cacheDB\n");
+		return NULL;
+	}
+
 	/* setting and getting a test key in cachedb */
 	if (new_db_hdls->cdbf.set(new_db_hdls->cdbcon, &cdb_test_key, &cdb_test_val,
 		0) < 0) {
@@ -727,6 +815,13 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 	pkg_free(cachedb_res.s);
 	if (rc != 0) {
 		LM_ERR("Inconsistent test key for cachedb: %.*s\n",
+			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
+		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
+		new_db_hdls->cdbcon = 0;
+		return NULL;
+	}
+	if (new_db_hdls->cdbf.remove(new_db_hdls->cdbcon, &cdb_test_key) < 0) {
+		LM_ERR("Failed to remove test key from cachedb: %.*s\n",
 			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
 		new_db_hdls->cdbcon = 0;
@@ -786,6 +881,16 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 		}
 	}
 
+	if (c_entry->on_demand && build_column_types(c_entry, sql_res->col.names,
+				sql_res->col.types, sql_res->col.n) < 0) {
+		LM_ERR("Failure to build column types: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
+		new_db_hdls->db_funcs.free_result(new_db_hdls->db_con, sql_res);
+		new_db_hdls->db_funcs.close(new_db_hdls->db_con);
+		new_db_hdls->db_con = 0;
+		return NULL;
+	}
+
 	new_db_hdls->db_funcs.free_result(new_db_hdls->db_con, sql_res);
 	return new_db_hdls;
 }
@@ -804,7 +909,7 @@ static int inc_cache_rld_vers(db_handlers_t *db_hdls, int *rld_vers)
 	memcpy(rld_vers_key.s + db_hdls->c_entry->id.len, "_sql_cacher_reload_vers", 23);
 
 	if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, rld_vers) < 0) {
-		LM_DBG("Failed to increment reload version integer from cachedb\n");
+		LM_ERR("Failed to increment reload version integer from cachedb\n");
 		pkg_free(rld_vers_key.s);
 		return -1;
 	}
@@ -823,11 +928,21 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	db_val_t *values;
 	int i;
 	int reload_vers = 0;
+	int loaded_rec = 0;
+
+	sr_add_report( sql_srg, STR2CI(c_entry->id),
+		CHAR_INT("starting DB data loading"), 0);
+	if (inc_rld_vers==0)
+		sr_set_status( sql_srg,  STR2CI(c_entry->id),
+			SR_STATUS_LOADING_DATA, CHAR_INT("startup data loading"), 0);
+	else 
+		sr_set_status( sql_srg,  STR2CI(c_entry->id),
+			SR_STATUS_RELOADING_DATA, CHAR_INT("data re-loading"), 0);
 
 	query_cols = pkg_malloc((c_entry->nr_columns + 1) * sizeof(db_key_t));
 	if (!query_cols) {
 		LM_ERR("No more pkg memory\n");
-		return -1;
+		goto error_end;
 	}
 	query_cols[0] = &(c_entry->key);
 	for (i=0; i < c_entry->nr_columns; i++)
@@ -839,7 +954,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		db_hdls->db_funcs.close(db_hdls->db_con);
 		db_hdls->db_con = 0;
 		pkg_free(query_cols);
-		return -1;
+		goto error_end;
 	}
 	if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
 		if (db_hdls->db_funcs.query(db_hdls->db_con, NULL, 0, NULL,
@@ -876,11 +991,8 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	}
 
 	/* anything loaded ? if not, we can do a quick exit here */
-	if (RES_ROW_N(sql_res) == 0) {
-		lock_stop_write(db_hdls->c_entry->ref_lock);
-		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
-		return 0;
-	}
+	if (RES_ROW_N(sql_res) == 0)
+		goto done;
 
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
@@ -894,12 +1006,14 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		for (i=0; i < RES_ROW_N(sql_res); i++) {
 			row = RES_ROWS(sql_res) + i;
 			values = ROW_VALUES(row);
-			if (!VAL_NULL(values))
+			if (!VAL_NULL(values)) {
 				if (insert_in_cachedb(c_entry, db_hdls, values ,values + 1,
 					reload_vers, ROW_N(row) - 1) < 0) {
 					lock_stop_write(db_hdls->c_entry->ref_lock);
-					return -1;
+					goto error;
 				}
+				loaded_rec++;
+			}
 		}
 
 		if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
@@ -914,14 +1028,34 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		}
 	} while (RES_ROW_N(sql_res) > 0);
 
+done:
 	lock_stop_write(db_hdls->c_entry->ref_lock);
 
 	db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
+
+	/* do the reporting */
+	sr_add_report( sql_srg, STR2CI(c_entry->id),
+		CHAR_INT("DB data loading successfully completed"), 0);
+	sr_add_report_fmt( sql_srg, STR2CI(c_entry->id), 0,
+		"%d records loaded", loaded_rec);
+	sr_set_status( sql_srg, STR2CI(c_entry->id), SR_STATUS_READY,
+		CHAR_INT("data available"), 0);
+
 	return 0;
 
 error:
 	if (sql_res)
 		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
+error_end:
+	sr_add_report( sql_srg, STR2CI(c_entry->id),
+		CHAR_INT("DB data loading failed, discarding"), 0);
+	if (inc_rld_vers==0)
+		sr_set_status( sql_srg, STR2CI(c_entry->id), SR_STATUS_NO_DATA,
+			CHAR_INT("no data loaded"), 0);
+	else
+		sr_set_status( sql_srg, STR2CI(c_entry->id), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
+
 	return -1;
 }
 
@@ -965,7 +1099,7 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 		goto out_error;
 	}
 
-	CON_PS_REFERENCE(db_hdls->db_con) = &db_hdls->query_ps;
+	CON_SET_CURR_PS(db_hdls->db_con, &db_hdls->query_ps);
 	if (db_hdls->db_funcs.query(db_hdls->db_con,
 		&key_col, 0, &key_val, c_entry->columns, 1,
 		c_entry->nr_columns, 0, sql_res) != 0) {
@@ -1057,7 +1191,7 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 	db_handlers_t *db_hdls;
 	db_val_t *values;
 	db_res_t *sql_res = NULL;
-	struct queried_key *it;
+	struct queried_key *it = NULL;
 	str entry_id, src_key;
 	int rld_vers, rc;
 
@@ -1072,34 +1206,42 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 		return init_mi_error(500, MI_SSTR("ERROR Cache entry not found"));
 	}
 
-	if (db_hdls->c_entry->on_demand) {
+	if (db_hdls->c_entry->on_demand || key) {
 		if (key) {
-			src_key.len = db_hdls->c_entry->id.len + key->len;
-			src_key.s = pkg_malloc(src_key.len);
-			if (!src_key.s) {
-				LM_ERR("No more pkg memory\n");
-				return NULL;
-			}
-			memcpy(src_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
-			memcpy(src_key.s + db_hdls->c_entry->id.len, key->s, key->len);
+			if (db_hdls->c_entry->on_demand) {
+				src_key.len = db_hdls->c_entry->id.len + key->len;
+				src_key.s = pkg_malloc(src_key.len);
+				if (!src_key.s) {
+					LM_ERR("No more pkg memory\n");
+					return NULL;
+				}
+				memcpy(src_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
+				memcpy(src_key.s + db_hdls->c_entry->id.len, key->s, key->len);
 
-			lock_get(queries_lock);
+				lock_get(queries_lock);
 
-			for (it = *queries_in_progress; it; it = it->next)
-				if (!str_strcmp(&it->key, &src_key))
-					break;
-			pkg_free(src_key.s);
-			if (it) {	/* key is in list */
-				lock_release(queries_lock);
-				lock_get(it->wait_sql_query);
+				for (it = *queries_in_progress; it; it = it->next)
+					if (!str_strcmp(&it->key, &src_key))
+						break;
+				pkg_free(src_key.s);
+				if (it) {	/* key is in list */
+					lock_release(queries_lock);
+					lock_get(it->wait_sql_query);
+				}
+			} else {
+				lock_start_write(db_hdls->c_entry->ref_lock);
 			}
 
 			if ((rld_vers = get_rld_vers_from_cache(db_hdls->c_entry, db_hdls)) < 0) {
 				LM_ERR("Unable to fetch reload version counter\n");
-				if (it)
-					lock_release(it->wait_sql_query);
-				else
-					lock_release(queries_lock);
+				if (db_hdls->c_entry->on_demand) {
+					if (it)
+						lock_release(it->wait_sql_query);
+					else
+						lock_release(queries_lock);
+				} else {
+					lock_stop_write(db_hdls->c_entry->ref_lock);
+				}
 
 				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
 													" database\n"));
@@ -1109,10 +1251,14 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 			if (rc == 0)
 				db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
 
-			if (it)
-				lock_release(it->wait_sql_query);
-			else
-				lock_release(queries_lock);
+			if (db_hdls->c_entry->on_demand) {
+				if (it)
+					lock_release(it->wait_sql_query);
+				else
+					lock_release(queries_lock);
+			} else {
+				lock_stop_write(db_hdls->c_entry->ref_lock);
+			}
 
 			if (rc == -1)
 				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
@@ -1127,7 +1273,8 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 		}
 	} else {
 		if (load_entire_table(db_hdls->c_entry, db_hdls, 1) < 0) {
-			LM_DBG("Failed to reload table\n");
+			LM_ERR("Failed to reload table %.*s\n", db_hdls->c_entry->table.len,
+				db_hdls->c_entry->table.s);
 			return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database"));
 		}
 	}
@@ -1243,6 +1390,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	sql_srg = sr_register_group( CHAR_INT("sql_cacher"), 0 /*not public*/);
+	if (sql_srg==NULL) {
+		LM_ERR("failed to create sql_cacher group for 'status-report'");
+		return -1;
+	}
+
 	c_entry = *entry_list;
 	while (c_entry) {
 		if ((db_hdls = db_init_test_conn(c_entry)) == NULL) {
@@ -1257,6 +1410,13 @@ static int mod_init(void)
 			if (!c_entry->ref_lock) {
 				LM_ERR("Failed to init readers-writers lock\n");
 				continue;
+			}
+			if (sr_register_identifier( sql_srg, STR2CI(c_entry->id),
+				SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
+				LM_ERR("failed to create status report identifier for "
+					" cache \'%.*s\')\n",
+					c_entry->id.len, c_entry->id.s);
+				return -1;
 			}
 		}
 
@@ -1345,7 +1505,7 @@ static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_versi
 							str *str_res, int *int_res)
 {
 	int int_val, next_str_off, i, rc;
-	char int_buf[4];
+	char int_buf[calc_max_base64_decode_len(INT_B64_ENC_LEN)];
 	const char zeroes[INT_B64_ENC_LEN] = {0};
 
 	if (pv_name->col_offset == -1) {
@@ -1638,10 +1798,24 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *str_res, int *int_res,
 			*int_res = VAL_INT(values + pv_name->col_nr);
 			break;
 		case DB_BIGINT:
-			*int_res = (int)VAL_BIGINT(values + pv_name->col_nr);
+			if (sql_cacher_bigint2str) {
+				st.s = bigint2str(VAL_BIGINT(values + pv_name->col_nr), &st.len);
+				if (pkg_str_dup(str_res, &st) != 0) {
+					LM_ERR("oom\n");
+					rc = -1;
+					goto out_free_res;
+				}
+			} else {
+				*int_res = (int)VAL_BIGINT(values + pv_name->col_nr);
+			}
 			break;
 		case DB_DOUBLE:
-			*int_res = (int)VAL_DOUBLE(values + pv_name->col_nr);
+			st.s = double2str(VAL_DOUBLE(values + pv_name->col_nr), &st.len);
+			if (pkg_str_dup(str_res, &st) != 0) {
+				LM_ERR("oom\n");
+				rc = -1;
+				goto out_free_res;
+			}
 			break;
 		default:
 			LM_ERR("Unsupported type for SQL column\n");
@@ -1701,7 +1875,7 @@ static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s)
 	return 0;
 }
 
-int pv_parse_name(pv_spec_p sp, str *in)
+int pv_parse_name(pv_spec_p sp, const str *in)
 {
 	pv_elem_t *model = NULL, *it;
 	pv_name_fix_t *pv_name;
@@ -1807,7 +1981,8 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			return pv_get_null(msg, param, res);
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
-				LM_ERR("Cache fetch result should not be empty\n");
+				LM_DBG("key: %.*s not found in SQL db\n",
+						pv_name->key.len, pv_name->key.s);
 				lock_stop_read(pv_name->c_entry->ref_lock);
 				pkg_free(cdb_res.s);
 				return pv_get_null(msg, param, res);

@@ -47,14 +47,40 @@
 #include "tls_config_helper.h"
 #include "../../locking.h"
 
+enum {
+	VAR_CERT_LOCAL      = 1<<0,   /* Select local certificate */
+	VAR_CERT_PEER       = 1<<1,   /* Select peer certificate */
+	VAR_CERT_SUBJECT    = 1<<2,   /* Select subject part of certificate */
+	VAR_CERT_ISSUER     = 1<<3,   /* Select issuer part of certificate */
+
+	VAR_CERT_VERIFIED   = 1<<4,   /* Test for verified certificate */
+	VAR_CERT_REVOKED    = 1<<5,   /* Test for revoked certificate */
+	VAR_CERT_EXPIRED    = 1<<6,   /* Expiration certificate test */
+	VAR_CERT_SELFSIGNED = 1<<7,   /* self-signed certificate test */
+	VAR_CERT_NOTBEFORE  = 1<<8,   /* Select validity end from certificate */
+	VAR_CERT_NOTAFTER   = 1<<9,   /* Select validity start from certificate */
+
+	VAR_COMP_CN = 1<<10,          /* Common name */
+	VAR_COMP_O  = 1<<11,          /* Organization name */
+	VAR_COMP_OU = 1<<12,          /* Organization unit */
+	VAR_COMP_C  = 1<<13,          /* Country name */
+	VAR_COMP_ST = 1<<14,          /* State */
+	VAR_COMP_L  = 1<<15,          /* Locality/town */
+
+	VAR_COMP_HOST = 1<<16,        /* hostname from subject/alternative */
+	VAR_COMP_URI  = 1<<17,        /* URI from subject/alternative */
+	VAR_COMP_E    = 1<<18,        /* Email address */
+	VAR_COMP_IP   = 1<<19,        /* IP from subject/alternative */
+	VAR_COMP_SUBJECT_SERIAL = 1<<20    /*Serial name from Subject*/
+};
+
 struct tls_domain {
 	str name;
 	int flags;
 	struct _str_list *match_domains;
 	struct _str_list *match_addresses;
-	int ssl_ex_index;
-	void **ctx;  /* libssl's SSL_CTX  */
-	int ctx_no;  /* number of allocated SSL_CTXes */
+	void *ctx;  /* openssl's SSL_CTX or wolfSSL's WOLFSSL_CTX */
+	int ctx_no;  /* number of allocated contexts */
 	int verify_cert;
 	int require_client_cert;
 	int crl_check_all;
@@ -68,6 +94,7 @@ struct tls_domain {
 	char *ciphers_list;
 	int refs;
 	gen_lock_t *lock;
+	str method_str;
 	enum tls_method method;
 	enum tls_method method_max;
 	struct tls_domain *next;

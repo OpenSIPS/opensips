@@ -50,7 +50,7 @@ struct proto_info {
 	struct api_proto_net net;
 
 	/* listeners on this proto */
-	struct socket_info *listeners;
+	struct socket_info_full *listeners;
 
 	/* default sending interfaces */
 	struct socket_info *sendipv4;

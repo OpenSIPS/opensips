@@ -1,5 +1,3 @@
-# $Id$
-#
 # auth example module makefile
 #
 # 
@@ -8,6 +6,7 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=auth.so
-LIBS=
+misclibs=../../lib/digest_auth/libdigest_auth.a
 
+include ../../Makefile.openssl
 include ../../Makefile.modules

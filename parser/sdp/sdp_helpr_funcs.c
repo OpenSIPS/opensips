@@ -57,6 +57,11 @@ int extract_rtpmap(str *body,
 	char *cp, *cp1;
 	int len;
 
+	/* a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>] */
+	/* 1       9            10              12           14 */
+	if (body->len < 14)
+		return -1;
+
 	if (strncasecmp(body->s, "a=rtpmap:", 9) !=0) {
 		/*LM_DBG("We are not pointing to an a=rtpmap: attribute =>`%.*s'\n", body->len, body->s); */
 		return -1;
@@ -90,7 +95,8 @@ int extract_rtpmap(str *body,
 	cp1 = (char*)l_memmem(cp, "/", len, 1);
 	len -= cp1 - cp;
 	if (cp1==NULL || len <= 1 || cp == cp1) {
-		LM_ERR("invalid encoding in `a=rtpmap'\n");
+		LM_ERR("invalid encoding in `a=rtpmap' [%.*s]\n",
+			rtpmap_payload->len,rtpmap_payload->s);
 		return -1;
 	}
 	rtpmap_encoding->len = cp1 - cp;
@@ -110,7 +116,8 @@ int extract_rtpmap(str *body,
 		rtpmap_clockrate->len = cp1-cp;
 		len -= cp1 - cp;
 		if (len <= 1) {
-			LM_ERR("invalid encoding in `a=rtpmap:'\n");
+			LM_ERR("invalid encoding in `a=rtpmap' [%.*s]\n",
+				rtpmap_payload->len,rtpmap_payload->s);
 			return -1;
 		}
 		rtpmap_parmas->s = cp1 + 1;
@@ -119,10 +126,80 @@ int extract_rtpmap(str *body,
 	return 0;
 }
 
+int extract_custom_a_attr(str *body, str *payload, str *value)
+{
+	char *cp, *p;
+	int len,i;
+
+	/* a=<format> <format specific parameters> */
+	/* 10 for good luck ? */
+	if (body->len < 10) {
+		LM_DBG("Too small body \n");
+		return -1;
+	}
+
+	if (body->s[0] != 'a' && body->s[1] != '=') {
+		LM_DBG("We are not pointing to an a= attribute =>`%.*s'\n", body->len, body->s);
+		return -1;
+	}
+
+	i=0;
+	p=body->s;
+	while (i<body->len) {
+		if (*p == ':')
+			break;
+		p++;
+		i++;
+	}
+
+	if (i==body->len) {
+		/* no payload found */
+		LM_DBG("no payload ID\n");
+		return -1;
+	}
+
+	/* payload ID starts after : */
+	payload->s = p+1;
+	payload->len = eat_line(payload->s, body->s + body->len -
+		payload->s) - payload->s;
+	trim_len(payload->len, payload->s, *payload);
+	len = payload->len;
+
+	/* */
+	cp = eat_token_end(payload->s, payload->s + payload->len);
+	payload->len = cp - payload->s;
+	if (payload->len <= 0 || cp == payload->s) {
+		LM_ERR("no encoding \n");
+		return -1;
+	}
+
+	len -= payload->len;
+	value->s = cp;
+	cp = eat_space_end(value->s, value->s + len);
+	len -= cp - value->s;
+	if (len <= 0 || cp == value->s) {
+		LM_DBG("no value in a= line \n");
+		return -1;
+	}
+
+	value->s = cp;
+
+	value->len = eat_line(value->s, body->s + body->len -
+		value->s) - value->s;
+	trim_len(value->len, value->s, *value);
+
+	return 0;
+}
+
 int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string )
 {
 	char *cp, *cp1;
 	int len;
+
+	/* a=fmtp:<format> <format specific parameters> */
+	/* 1     7       8                           10 */
+	if (body->len < 10)
+		return -1;
 
 	if (strncasecmp(body->s, "a=fmtp:", 7) !=0) {
 		/*LM_DBG("We are not pointing to an a=fmtp: attribute =>`%.*s'\n", body->len, body->s); */
@@ -166,7 +243,9 @@ int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string )
  * field must has format "a=attrname:" */
 int extract_field(str *body, str *value, str field)
 {
-	if (strncmp(body->s, field.s, field.len < body->len ? field.len : body->len) !=0) {
+	if (body->len < field.len)
+		return -1;
+	if (memcmp(body->s, field.s, field.len) !=0) {
 		/*LM_DBG("We are not pointing to an %.* attribute =>`%.*s'\n", field.len, field.s, body->len, body->s); */
 		return -1;
 	}
@@ -219,6 +298,9 @@ int extract_rtcp(str *body, str *rtcp)
 int extract_sendrecv_mode(str *body, str *sendrecv_mode, int *is_on_hold)
 {
 	char *cp1;
+
+	if (body->len < 10)
+		return -1;
 
 	cp1 = body->s;
 	if ( !( (strncasecmp(cp1, "a=sendrecv", 10) == 0) ||

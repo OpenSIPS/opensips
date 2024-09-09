@@ -29,7 +29,6 @@
 #include "sipstate.h"
 
 char *luafilename = "";
-int lua_user_debug = 1;
 char *lua_allocator = "opensips";
 int lua_auto_reload = 0;
 
@@ -42,7 +41,7 @@ struct sl_binds slb;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
   {"lua_exec", (cmd_function)siplua_exec, {
     {CMD_PARAM_STR,0,0},
     {CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
@@ -55,15 +54,14 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
   { "luafilename", STR_PARAM, &luafilename},
-  { "lua_user_debug", INT_PARAM, &lua_user_debug},
   { "lua_allocator", STR_PARAM, &lua_allocator},
   { "lua_auto_reload", INT_PARAM, &lua_auto_reload},
   { 0, 0, 0 }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
   { "watch", 0,0,0, {
     {siplua_mi_watch, {0}},
     {siplua_mi_watch_2, {"action", "extension", 0}},

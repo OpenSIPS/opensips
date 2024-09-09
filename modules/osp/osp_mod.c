@@ -148,7 +148,7 @@ static int ospVerifyParameters(void);
 static void ospDumpParameters(void);
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
     {"checkospheader",(cmd_function)ospCheckHeader, {{0,0,0}},
         REQUEST_ROUTE},
     {"validateospheader",(cmd_function)ospValidateHeader, {{0,0,0}},
@@ -178,7 +178,7 @@ static cmd_export_t cmds[]={
     {0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
     { "enable_crypto_hardware_support",   INT_PARAM, &_osp_crypto_hw },
     { "validate_callid",                  INT_PARAM, &_osp_validate_callid },
     { "ssl_lifetime",                     INT_PARAM, &_osp_ssl_lifetime },
@@ -259,7 +259,7 @@ static param_export_t params[]={
     { 0,0,0 }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
     { /* OpenSIPS module dependencies */
         { MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
         { MOD_TYPE_DEFAULT, "rr",   DEP_ABORT },

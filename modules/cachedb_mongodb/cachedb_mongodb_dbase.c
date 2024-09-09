@@ -126,12 +126,12 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 
 	snprintf(osips_appname, MONGOC_HANDSHAKE_APPNAME_MAX, "opensips-%d", my_pid());
 
-	LM_DBG("MongoDB conn for [%s]: %s:%s %s:%s |%s|:%u\n", osips_appname,
-	       id->scheme, id->group_name, id->username, id->password, id->host, id->port);
+	LM_DBG("MongoDB conn for [%s]: %s:%s://%s:xxxxxx@%s:%u\n", osips_appname,
+	       id->scheme, id->group_name, id->username, id->host, id->port);
 
 	conn_str = build_mongodb_connect_string(id);
 
-	LM_DBG("cstr: %s\n", conn_str);
+	LM_DBG("cstr: %s\n", _db_url_escape(conn_str));
 
 	con = pkg_malloc(sizeof *con);
 	if (!con) {
@@ -144,7 +144,7 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 
 	con->client = mongoc_client_new(conn_str);
 	if (!con->client) {
-		LM_ERR("failed to connect to Mongo (%s)\n", conn_str);
+		LM_ERR("failed to connect to Mongo (%s)\n", _db_url_escape(conn_str));
 		return NULL;
 	}
 
@@ -182,6 +182,9 @@ cachedb_con *mongo_con_init(str *url)
 void mongo_free_connection(cachedb_pool_con *con)
 {
 	mongo_con *mcon = (mongo_con *)con;
+	
+	if (!mcon)
+		return;
 
 	mongoc_collection_destroy(mcon->collection);
 	mongoc_database_destroy(mcon->database);
@@ -207,6 +210,9 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	unsigned long ival;
 	char *p;
 	int ret = 0;
+
+	if (!con)
+		return -1;
 
 	LM_DBG("find %.*s in %s\n", attr->len, attr->s,
 	       MONGO_NAMESPACE(con));
@@ -295,6 +301,9 @@ int mongo_con_set(cachedb_con *con, str *attr, str *val, int expires)
 	struct timeval start;
 	int ret = 0;
 
+	if (!con)
+		return -1;
+
 	query = bson_new();
 	bson_append_utf8(query, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
@@ -329,6 +338,9 @@ int mongo_con_remove(cachedb_con *con, str *attr)
 	struct timeval start;
 	int ret = 0;
 
+	if (!con)
+		return -1;
+
 	doc = bson_new();
 	bson_append_utf8(doc, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
@@ -361,19 +373,21 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 	mongoc_collection_t *col = NULL;
 	bson_iter_t iter;
 	bson_t _query, *query = NULL, *opts = NULL, proj;
-	mongoc_cursor_t *cursor;
+	mongoc_cursor_t *cursor = NULL;
 	struct timeval start;
 	const bson_value_t *v;
 	const bson_t *doc;
 	int i, len, csz = 0, ret = -1;
 	const char *p;
 
+	if (!con)
+		return -1;
+
 	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
 		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
 		return -1;
 	}
 
-	*reply = NULL;
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   bson_iter_utf8(ns, NULL));
 
@@ -412,6 +426,10 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 		fields = &proj;
 #endif
 	}
+
+	if (!reply)
+		goto ok_skip_result;
+	*reply = NULL;
 
 #if MONGOC_CHECK_VERSION(1, 5, 0)
 	start_expire_timer(start, mongo_exec_threshold);
@@ -474,6 +492,8 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 	}
 
 	*reply_no = csz;
+
+ok_skip_result:
 	if (opts)
 		bson_destroy(opts);
 	if (query != &_query)
@@ -513,6 +533,9 @@ int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	struct timeval start;
 	const bson_value_t *v;
 	int ret, count = 0;
+
+	if (!con)
+		return -1;
 
 	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
 		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
@@ -619,6 +642,9 @@ int mongo_raw_insert(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	const bson_value_t *v;
 	int ret, count = 0;
 
+	if (!con)
+		return -1;
+
 	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
 		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
 		return -1;
@@ -702,6 +728,9 @@ int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	struct timeval start;
 	const bson_value_t *v;
 	int ret, count = 0;
+
+	if (!con)
+		return -1;
 
 	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
 		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
@@ -794,14 +823,16 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 {
 	static str raw_query_buf;
 
-	struct json_object *obj = NULL;
-	bson_t doc, rpl;
+	bson_t doc = BSON_INITIALIZER, rpl = BSON_INITIALIZER;
 	bson_iter_t iter;
 	bson_error_t error;
 	struct timeval start;
 	int ret = 0;
 	const char *p;
 	int csz = 0, i, len;
+
+	if (!con)
+		return -1;
 
 	LM_DBG("Get operation on namespace %s\n", MONGO_NAMESPACE(con));
 	start_expire_timer(start,mongo_exec_threshold);
@@ -818,7 +849,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	if (ret < 0) {
 		LM_ERR("Failed to convert [%.*s] to BSON\n", qstr->len, qstr->s);
 		ret = -1;
-		goto out;
+		goto out_err;
 	}
 
 	/* treat "find" differently on pre-3.2 MongoDB servers */
@@ -853,11 +884,14 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	_stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw query",
 	            qstr->s, qstr->len, 0, cdb_slow_queries, cdb_total_queries);
 
+	if (!reply)
+		goto ok_skip_result;
+
 	/* start with a single returned document */
 	*reply = pkg_malloc(1 * sizeof **reply);
 	if (!*reply) {
 		LM_ERR("no more PKG mem\n");
-		return -1;
+		goto out_err;
 	}
 
 	/* expected_kv_no is always 1 for MongoDB */
@@ -865,7 +899,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	if (!**reply) {
 		LM_ERR("No more pkg mem\n");
 		pkg_free(*reply);
-		return -1;
+		goto out_err;
 	}
 
 	if (!bson_iter_init(&iter, &rpl)) {
@@ -875,6 +909,8 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	}
 
 	do {
+		struct json_object *obj;
+
 		if (csz > 0) {
 			*reply = pkg_realloc(*reply, (csz + 1) * sizeof **reply);
 			if (!*reply) {
@@ -896,6 +932,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		p = json_object_to_json_string(obj);
 		if (!p) {
 			LM_ERR("failed to translate json to string\n");
+			json_object_put(obj);
 			ret = -1;
 			goto out_err;
 		}
@@ -906,6 +943,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		(*reply)[csz][0].val.s.s = pkg_malloc(len);
 		if (!(*reply)[csz][0].val.s.s ) {
 			LM_ERR("No more pkg \n");
+			json_object_put(obj);
 			ret = -1;
 			goto out_err;
 		}
@@ -919,24 +957,19 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		csz++;
 	} while (bson_iter_next(&iter));
 
+	*reply_no = csz;
+
+ok_skip_result:
 	bson_destroy(&doc);
 	bson_destroy(&rpl);
 
-out:
-	*reply_no = csz;
-	if (csz == 0)
-		return -2;
-
-	return 1;
+	return csz == 0 ? -2 : 1;
 
 out_err:
 	bson_destroy(&doc);
 	bson_destroy(&rpl);
 
-	if (obj)
-		json_object_put(obj);
-
-	if (*reply) {
+	if (reply && *reply) {
 		for (i = 0; i < csz; i++) {
 			pkg_free((*reply)[i][0].val.s.s);
 			pkg_free((*reply)[i]);
@@ -944,6 +977,7 @@ out_err:
 
 		pkg_free(*reply);
 		*reply = NULL;
+		*reply_no = 0;
 	}
 
 	return ret;
@@ -958,6 +992,9 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 	bson_iter_t sub_iter;
 	struct timeval start;
 	int ret = 0;
+
+	if (!con)
+		return -1;
 
 	cmd = bson_new();
 	bson_append_utf8(cmd, "findAndModify", 13,
@@ -1024,6 +1061,9 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 	bson_iter_t iter;
 	struct timeval start;
 	int ret = -2;
+
+	if (!con)
+		return -1;
 
 	query = bson_new();
 #if MONGOC_CHECK_VERSION(1, 5, 0)
@@ -1209,6 +1249,9 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	mongoc_collection_t *col = NULL;
 	char *strf, *stro;
 	str st;
+
+	if (!con)
+		return -1;
 
 	*_r = NULL;
 
@@ -1509,6 +1552,9 @@ int mongo_db_insert_trans(cachedb_con *con, const str *table,
 	mongoc_collection_t *col = NULL;
 	struct timeval start;
 
+	if (!con)
+		return -1;
+
 	doc = bson_new();
 	if (kvo_to_bson(_k, _v, NULL, _n, doc) != 0) {
 		LM_ERR("failed to build bson\n");
@@ -1557,6 +1603,9 @@ int mongo_db_delete_trans(cachedb_con *con, const str *table,
 	bson_error_t error;
 	mongoc_collection_t *col = NULL;
 	struct timeval start;
+
+	if (!con)
+		return -1;
 
 	doc = bson_new();
 	if (kvo_to_bson(_k, _v, _o, _n, doc) != 0) {
@@ -1607,6 +1656,9 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
 	bson_error_t error;
 	mongoc_collection_t *col = NULL;
 	struct timeval start;
+
+	if (!con)
+		return -1;
 
 	query = bson_new();
 	if (kvo_to_bson(_k, _v, _o, _n, query) != 0) {
@@ -1670,10 +1722,13 @@ int mongo_truncate(cachedb_con *con)
 	struct timeval start;
 	int ret = 0;
 
+	if (!con)
+		return -1;
+
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_remove(MONGO_COLLECTION(con),
 	                         MONGOC_REMOVE_NONE, &empty_doc, NULL, &error)) {
-		LM_ERR("failed to truncate con %.*s!\n", con->url.len, con->url.s);
+		LM_ERR("failed to truncate collection '%s'!\n", MONGO_COL_STR(con));
 		ret = -1;
 	}
 	_stop_expire_timer(start, mongo_exec_threshold, "MongoDB truncate",
@@ -1887,6 +1942,9 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 	const bson_t *doc;
 	struct timeval start;
 
+	if (!con)
+		return -1;
+
 	LM_DBG("find all in %s\n", MONGO_NAMESPACE(con));
 
 	cdb_res_init(res);
@@ -2066,6 +2124,9 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	char has_set = 0, has_unset = 0;
 	cdb_pair_t *pair;
 	str key;
+
+	if (!con)
+		return -1;
 
 	if (mongo_cdb_filter_to_bson(row_filter, &filter) != 0) {
 		LM_ERR("failed to build bson filter\n");

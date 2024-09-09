@@ -45,8 +45,8 @@ static void mod_destroy(void);
 /* $isup_msg_type */
 int pv_get_isup_msg_type(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 /* $isup_param */
-int pv_parse_isup_param_name(pv_spec_p sp, str *in);
-int pv_parse_isup_param_index(pv_spec_p sp, str* in);
+int pv_parse_isup_param_name(pv_spec_p sp, const str *in);
+int pv_parse_isup_param_index(pv_spec_p sp, const str *in);
 int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_isup_param_str(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val);
@@ -59,22 +59,22 @@ int tr_isup_parse(str* in, trans_t *t);
 int tr_isup_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val);
 
-static trans_export_t trans[] = {
-	{str_init("isup"), tr_isup_parse, tr_isup_eval},
+static const trans_export_t trans[] = {
+	{str_const_init("isup"), tr_isup_parse, tr_isup_eval},
 	{{0,0},0,0}
 };
 
-static pv_export_t mod_items[] = {
-	{{"isup_msg_type", sizeof("isup_msg_type") - 1}, 1000, pv_get_isup_msg_type,
+static const pv_export_t mod_items[] = {
+	{str_const_init("isup_msg_type"), 1000, pv_get_isup_msg_type,
 		0, 0, 0, 0, 0},
-	{{"isup_param", sizeof("isup_param") - 1}, 1000, pv_get_isup_param,
+	{str_const_init("isup_param"), 1000, pv_get_isup_param,
 		pv_set_isup_param, pv_parse_isup_param_name, pv_parse_isup_param_index, 0, 0},
-	{{"isup_param_str", sizeof("isup_param_str") - 1}, 1000, pv_get_isup_param_str,
+	{str_const_init("isup_param_str"), 1000, pv_get_isup_param_str,
 		0, pv_parse_isup_param_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"add_isup_part", (cmd_function)add_isup_part_cmd, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
@@ -87,7 +87,7 @@ static str isup_mime = str_init(ISUP_MIME_S);
 static str country_code = str_init(DEFAULT_COUNTRY_CODE);
 static str default_part_headers = str_init(DEFAULT_PART_HEADERS);
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"param_subfield_separator", STR_PARAM, &param_subf_sep.s},
 	{"isup_mime_str", STR_PARAM, &isup_mime.s},
 	{"country_code", STR_PARAM, &country_code.s},
@@ -165,7 +165,7 @@ static inline int get_msg_idx_by_type(int msg_type)
 	return -1;
 }
 
-int pv_parse_isup_param_name(pv_spec_p sp, str *in)
+int pv_parse_isup_param_name(pv_spec_p sp, const str *in)
 {
 	str param_s = {0, 0}, subfield_s = {0, 0};
 	int i, j;
@@ -256,7 +256,7 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 	return 0;
 }
 
-int pv_parse_isup_param_index(pv_spec_p sp, str* in)
+int pv_parse_isup_param_index(pv_spec_p sp, const str* in)
 {
 	int idx;
 
@@ -759,7 +759,7 @@ int get_param_pval(int isup_params_idx, int subfield_idx, int byte_idx,
 		} else {	/* else print param as hex representation */
 			pv_tr_res_buf[0] = '0';
 			pv_tr_res_buf[1] = 'x';
-			string2hex(p->val, p->len, pv_tr_res_buf + 2);
+			string2hex((const char *)p->val, p->len, pv_tr_res_buf + 2);
 			res->flags = PV_VAL_STR;
 			res->rs.len = 2 * p->len + 2;
 			res->rs.s = pv_tr_res_buf;
@@ -856,7 +856,7 @@ int get_param_pval_str(int isup_params_idx, int subfield_idx,
 	/* no aliases, print whole param as hex */
 	pv_tr_res_buf[0] = '0';
 	pv_tr_res_buf[1] = 'x';
-	string2hex(p->val, p->len, pv_tr_res_buf + 2);
+	string2hex((const char *)p->val, p->len, pv_tr_res_buf + 2);
 	res->flags = PV_VAL_STR;
 	res->rs.len = 2 * p->len + 2;
 	res->rs.s = pv_tr_res_buf;

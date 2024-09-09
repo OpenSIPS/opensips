@@ -27,10 +27,13 @@
 #define EVI_CORE_H
 
 /* events id declared - these must be always incremented by one */
-#define EVI_THRESHOLD_ID		0
-#define EVI_SHM_THRESHOLD_ID	1
-#define EVI_PKG_THRESHOLD_ID	2
-#define EVI_PROC_AUTO_SCALE_ID	3
+/* FIXME - first EVI is E_CORE_SR_STATUS_CHANGED, done outside of EVI core here, 
+ * which is why we start indexing at 1 */ 
+#define EVI_THRESHOLD_ID	1
+#define EVI_SHM_THRESHOLD_ID	2
+#define EVI_PKG_THRESHOLD_ID	3
+#define EVI_PROC_AUTO_SCALE_ID	4
+#define EVI_TCP_DISCONNECT	5
 
 
 #define EVI_CORE_PREFIX		"E_CORE_"

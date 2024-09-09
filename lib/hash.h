@@ -63,18 +63,18 @@ void hash_destroy(gen_hash_t *hash, hash_destroy_func destroy);
 #define hash_get(_h, _e, _k) \
 	map_get((_h)->entries[(_e)], _k)
 
-/* same as above, but compute entry fron key */
+/* same as above, but compute entry from key */
 #define hash_get_key(_h, _k) \
 	hash_get(_h, hash_entry(_h, _k), _k)
 
 /* inserts a value in the hash
  * - if a different value exists, it is returned to be removed/freed */
-#define hash_insert(_h, _e, _k) \
-	map_insert((_h)->entries[(_e)], _k)
+#define hash_insert(_h, _e, _k, _v) \
+	map_put((_h)->entries[(_e)], _k, _v)
 
-/* same as above, but compute entry fron key */
-#define hash_insert_key(_h, _k) \
-	hash_insert(_h, hash_entry(_h, _k), _k)
+/* same as above, but compute entry from key */
+#define hash_insert_key(_h, _k, _v) \
+	hash_insert(_h, hash_entry(_h, _k), _k, _v)
 
 /* removes a value from the hash
  * - the existing value is returned, so it can be released */

@@ -30,6 +30,11 @@
 
 #include "../../parser/msg_parser.h"
 
+int mid_reg_escape_aor(const str *aor, str *out);
+int mid_reg_unescape_aor(const str *aor, str *out);
+
+int mid_reg_update_aor(str *aor);
+
 int decrypt_str(str *in, str *out);
 int encrypt_str(str *in, str *out);
 

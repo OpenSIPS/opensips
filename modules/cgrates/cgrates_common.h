@@ -38,6 +38,7 @@ extern struct tm_binds cgr_tmb;
 #define CGR_KVF_TYPE_INT	0x1
 #define CGR_KVF_TYPE_STR	0x2
 #define CGR_KVF_TYPE_NULL	0x4
+#define CGR_KVF_TYPE_JSON	0x8
 
 
 struct cgr_kv {
@@ -82,6 +83,7 @@ enum cgrc_state {
 
 struct cgr_conn {
 	int fd;
+	int connect_timeout;
 	char flags;
 	enum cgrc_state state;
 	time_t disable_time;

@@ -26,15 +26,20 @@
 #include "../../pvar.h"
 #include "dlg_hash.h"
 
+#define DLG_VAL_TYPE_NONE 0
+#define DLG_VAL_TYPE_STR  1
+#define DLG_VAL_TYPE_INT  2
+
 struct dlg_val {
 	unsigned int id;
 	str name;
-	str val;
+	int type;
+	int_str val;
 	struct dlg_val *next;
 };
 
 
-int pv_parse_name(pv_spec_p sp, str *in);
+int pv_parse_name(pv_spec_p sp, const str *in);
 
 int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param,
 		pv_value_t *res);
@@ -44,19 +49,21 @@ int pv_set_dlg_val(struct sip_msg* msg, pv_param_t *param,
 
 
 typedef int (*store_dlg_value_f)(struct dlg_cell *dlg,
-		str *name, str *val);
+		str *name, int_str *val, int type);
 
-typedef int (*fetch_dlg_value_f)(struct dlg_cell *dlg,
-		const str *name, str *out_val, int val_has_buf);
+typedef int (*fetch_dlg_value_f)(struct dlg_cell *dlg, const str *name,
+	int *type, int_str *out_val, int val_has_buf);
 
 
-int store_dlg_value(struct dlg_cell *dlg, str *name, str *val);
-int store_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val);
+int store_dlg_value(struct dlg_cell *dlg, str *name, int_str *val, int type);
+int store_dlg_value_unsafe(struct dlg_cell *dlg, str *name, int_str *val, int type);
 
 int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
-                    str *out_val, int val_has_buf);
+	int *type, int_str *out_val, int val_has_buf);
+int fetch_dlg_value_unsafe(struct dlg_cell *dlg, const str *name,
+	int *type, int_str *out_val, int val_has_buf);
 
-int check_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val);
-
+int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
+	pv_spec_t *val, int lock_vals);
 
 #endif

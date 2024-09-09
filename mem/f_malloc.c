@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "f_malloc.h"
 #include "../dprint.h"
@@ -36,10 +37,13 @@
 #include "mem_dbg_hash.h"
 #endif
 
+#include "../lib/dbg/struct_hist.h"
+
 #define MIN_FRAG_SIZE	ROUNDTO
 #define FRAG_OVERHEAD	(sizeof(struct fm_frag))
 #define frag_is_free(_f) ((_f)->prev)
 
+#define FRAG_PREV(f) ((f)->pf)
 #define FRAG_NEXT(f) \
 	((struct fm_frag *)(void *)((char *)(f) + sizeof(struct fm_frag) + (f)->size))
 
@@ -50,11 +54,27 @@
 #define ROUNDUP(s)		(((s)+(ROUNDTO-1))&ROUNDTO_MASK)
 #define ROUNDDOWN(s)	((s)&ROUNDTO_MASK)
 
-/* finds the hash value for s, s=ROUNDTO multiple*/
-#define GET_HASH(s)   ( ((unsigned long)(s)<=F_MALLOC_OPTIMIZE)?\
+/**
+ * The @inc is tied to the exponential, non-optimized buckets
+ * (e.g. indexes 2049 ... 2100 with FACTOR = 14UL), where it allows us to fully
+ * drop the slow fragment sorted insertion algorithm for *huge* speed gains, by
+ * always returning anywhere up to 4x (previously 2x) required frag size than
+ * requested...
+ *    For example:
+ *      - malloc(18K) -> now you always get a frag of 32K+ size, but instantly!
+ *      - malloc(37K) -> now you always get a frag of 64K+ size, but instantly!
+ *
+ * Finally, the extra fragment size is *not* wasted, thanks to splitting!
+ *
+ * A possible disadvantage of this approach is that it will make allocating
+ * more than 50% of the remaining free memory pool in a single allocation even
+ * harder than before (borderline impossible now)...
+ */
+#define _GET_HASH(s, inc) ( ((unsigned long)(s)<=F_MALLOC_OPTIMIZE)?\
 							(unsigned long)(s)/ROUNDTO: \
 							F_MALLOC_OPTIMIZE/ROUNDTO+big_hash_idx((s))- \
-								F_MALLOC_OPTIMIZE_FACTOR+1 )
+								F_MALLOC_OPTIMIZE_FACTOR + 1 + (inc))
+#define GET_HASH(s) _GET_HASH(s, 0)
 
 #define UN_HASH(h)	( ((unsigned long)(h)<=(F_MALLOC_OPTIMIZE/ROUNDTO))?\
 						(unsigned long)(h)*ROUNDTO: \
@@ -62,15 +82,8 @@
 							F_MALLOC_OPTIMIZE_FACTOR-1)\
 					)
 
-#define F_MALLOC_LARGE_LIMIT    F_MALLOC_OPTIMIZE
-#define F_MALLOC_DEFRAG_LIMIT (F_MALLOC_LARGE_LIMIT * 5)
-#define F_MALLOC_DEFRAG_PERCENT 5
-
 static inline void free_minus(struct fm_block *fm, unsigned long size)
 {
-
-	if( size > F_MALLOC_LARGE_LIMIT )
-		fm->large_space -= size;
 
 	#if defined(DBG_MALLOC) || defined(STATISTICS)
 	fm->real_used+=size;
@@ -81,9 +94,6 @@ static inline void free_minus(struct fm_block *fm, unsigned long size)
 
 static inline void free_plus(struct fm_block *fm, unsigned long size)
 {
-
-	if( size > F_MALLOC_LARGE_LIMIT )
-		fm->large_space += size;
 
 	#if defined(DBG_MALLOC) || defined(STATISTICS)
 	fm->real_used-=size;
@@ -124,6 +134,14 @@ void fm_stats_set_index(void *ptr, unsigned long idx)
 }
 #endif
 
+unsigned long fm_get_dbg_pool_size(unsigned int hist_size)
+{
+	return ROUNDUP(sizeof(struct fm_block)) + FRAG_OVERHEAD +
+		FRAG_OVERHEAD + 56 /* sizeof(struct struct_hist_list) */ + 2 * hist_size *
+		(FRAG_OVERHEAD + 88 /* sizeof(struct struct_hist) */ +
+		FRAG_OVERHEAD + sizeof(struct struct_hist_action));
+}
+
 static inline void fm_insert_free(struct fm_block *fm, struct fm_frag *frag)
 {
 	struct fm_frag **f;
@@ -131,13 +149,6 @@ static inline void fm_insert_free(struct fm_block *fm, struct fm_frag *frag)
 
 	hash=GET_HASH(frag->size);
 	f=&(fm->free_hash[hash].first);
-	if (frag->size > F_MALLOC_OPTIMIZE){ /* because of '<=' in GET_HASH,
-											(different from 0.8.1[24] on
-											 purpose --andrei ) */
-		for(; *f; f=&((*f)->u.nxt_free)){
-			if (frag->size <= (*f)->size) break;
-		}
-	}
 
 	/*insert it here*/
 	frag->prev = f;
@@ -188,10 +199,11 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 
 	/* make address and size multiple of 8*/
 	start=(char*)ROUNDUP((unsigned long) address);
-	LM_DBG("F_OPTIMIZE=%lu, /ROUNDTO=%lu\n",
-			F_MALLOC_OPTIMIZE, F_MALLOC_OPTIMIZE/ROUNDTO);
-	LM_DBG("F_HASH_SIZE=%lu, fm_block size=%lu\n",
-			F_HASH_SIZE, (long)sizeof(struct fm_block));
+	LM_DBG("F_OPTIMIZE=%lu, /ROUNDTO=%lu, %lu-bytes aligned\n",
+			F_MALLOC_OPTIMIZE, F_MALLOC_OPTIMIZE/ROUNDTO,
+			(unsigned long)ROUNDTO);
+	LM_DBG("F_HASH_SIZE=%lu, fm_block size=%zu, frag_size=%zu\n",
+			F_HASH_SIZE, sizeof(struct fm_block), sizeof(struct fm_frag));
 	LM_DBG("params (%p, %lu), start=%p\n", address, size, start);
 
 	if (size<(unsigned long)(start-address)) return 0;
@@ -225,20 +237,17 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 	/* init initial fragment*/
 	fm->first_frag->size=size-init_overhead;
 	fm->last_frag->size=0;
+	fm->last_frag->pf=fm->first_frag;
 
 	fm->last_frag->prev=NULL;
 	fm->first_frag->prev=NULL;
 
+	assert(((char *)fm->first_frag + sizeof *fm->first_frag + fm->first_frag->size)
+				== (char *)fm->last_frag);
+
 	/* link initial fragment into the free list*/
 
-	fm->large_space = 0;
-	fm->large_limit = fm->size / 100 * F_MALLOC_DEFRAG_PERCENT;
-
-	if( fm->large_limit < F_MALLOC_DEFRAG_LIMIT )
-		fm->large_limit = F_MALLOC_DEFRAG_LIMIT;
-
 	fm_insert_free(fm, fm->first_frag);
-
 
 	return fm;
 }

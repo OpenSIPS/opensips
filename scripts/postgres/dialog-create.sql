@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialog','11');
+INSERT INTO version (table_name, table_version) values ('dialog','12');
 CREATE TABLE dialog (
     dlg_id BIGINT PRIMARY KEY NOT NULL,
     callid VARCHAR(255) NOT NULL,
@@ -6,8 +6,8 @@ CREATE TABLE dialog (
     from_tag VARCHAR(64) NOT NULL,
     to_uri VARCHAR(255) NOT NULL,
     to_tag VARCHAR(64) NOT NULL,
-    mangled_from_uri VARCHAR(64) DEFAULT NULL,
-    mangled_to_uri VARCHAR(64) DEFAULT NULL,
+    mangled_from_uri VARCHAR(255) DEFAULT NULL,
+    mangled_to_uri VARCHAR(255) DEFAULT NULL,
     caller_cseq VARCHAR(11) NOT NULL,
     callee_cseq VARCHAR(11) NOT NULL,
     caller_ping_cseq INTEGER NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE dialog (
     timeout INTEGER NOT NULL,
     vars BYTEA DEFAULT NULL,
     profiles TEXT DEFAULT NULL,
-    script_flags INTEGER DEFAULT 0 NOT NULL,
+    script_flags VARCHAR(255) DEFAULT NULL,
     module_flags INTEGER DEFAULT 0 NOT NULL,
     flags INTEGER DEFAULT 0 NOT NULL,
     rt_on_answer VARCHAR(64) DEFAULT NULL,

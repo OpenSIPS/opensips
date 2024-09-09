@@ -6,6 +6,10 @@ Auth Module
    1. Admin Guide
 
         1.1. Overview
+
+              1.1.1. RFC 8760 Support (Strenghtened
+                      Authentication)
+
         1.2. Nonce Security
         1.3. Dependencies
 
@@ -27,8 +31,8 @@ Auth Module
 
         1.5. Exported Functions
 
-              1.5.1. www_challenge(realm[, qop])
-              1.5.2. proxy_challenge(realm[, qop])
+              1.5.1. www_challenge(realm[, qop[, algorithms]])
+              1.5.2. proxy_challenge(realm[, qop[, algorithms]])
               1.5.3. consume_credentials()
               1.5.4. is_rpid_user_e164()
               1.5.5. append_rpid_hf()
@@ -82,6 +86,13 @@ Chapter 1. Admin Guide
    authentication taking username and password from
    pseudo-variables.
 
+1.1.1. RFC 8760 Support (Strenghtened Authentication)
+
+   Starting with OpenSIPS 3.2, the auth, auth_db and uac_auth
+   modules include support for two new digest authentication
+   algorithms ("SHA-256" and "SHA-512-256"), according to the RFC
+   8760 specs.
+
 1.2. Nonce Security
 
    The authentication mechanism offers protection against sniffing
@@ -126,7 +137,8 @@ Chapter 1. Admin Guide
 
 1.4.1. secret (string)
 
-   Secret phrase used to calculate the nonce value.
+   Secret phrase used to calculate the nonce value. Must be
+   exactly 32-character long.
 
    The default is to use a random value generated from the random
    source in the core.
@@ -261,15 +273,16 @@ modparam("auth", "disable_nonce_check", 1)
 
 1.5. Exported Functions
 
-1.5.1.  www_challenge(realm[, qop])
+1.5.1.  www_challenge(realm[, qop[, algorithms]])
 
-   The function challenges a user agent. It will generate a
-   WWW-Authorize header field containing a digest challenge, it
-   will put the header field into a response generated from the
-   request the server is processing and will send the reply. Upon
-   reception of such a reply the user agent should compute
-   credentials and retry the request. For more information
-   regarding digest authentication see RFC2617.
+   The function challenges a user agent. It will generate one or
+   more WWW-Authorize header fields containing a digest
+   challenges, it will put the header field(s) into a response
+   generated from the request the server is processing and will
+   send the reply. Upon reception of such a reply the user agent
+   should compute credentials and retry the request. For more
+   information regarding digest authentication see RFC2617,
+   RFC3261 and RFC8760.
 
    Meaning of the parameters is as follows:
      * realm (string) - Realm is an opaque string that the user
@@ -294,17 +307,32 @@ modparam("auth", "disable_nonce_check", 1)
        therefore could not be checked. Actually there is no
        information kept by the module during the challenge and
        response requests.
+     * algorithms (string, optional) - Value of this parameter is
+       a comma-separated list of digest algorithms to be offered
+       for the UAC to use for authentication. Possible values are:
+          + “MD5”
+          + “MD5-sess”
+          + “SHA-256”
+          + “SHA-256-sess”
+          + “SHA-512-256”
+          + “SHA-512-256-sess”
+       When the value is empty or not set, the only offered digest
+       algorithm is MD5, to provide compatibility with pre-RFC8760
+       UAC implementations.
+       Values can be listed in any order. The actual order of
+       individual challenges in SIP response is defined by the
+       RFC8760: from stronger algorithm to a weaker one.
 
    This function can be used from REQUEST_ROUTE.
 
    Example 1.11. www_challenge usage
 ...
 if (!www_authorize("siphub.net", "subscriber")) {
-        www_challenge("siphub.net", "auth,auth-int");
-};
+        www_challenge("siphub.net", "auth,auth-int", "MD5,SHA-512-256");
+}
 ...
 
-1.5.2.  proxy_challenge(realm[, qop])
+1.5.2.  proxy_challenge(realm[, qop[, algorithms]])
 
    The function challenges a user agent. It will generate a
    Proxy-Authorize header field containing a digest challenge, it
@@ -312,37 +340,25 @@ if (!www_authorize("siphub.net", "subscriber")) {
    request the server is processing and will send the reply. Upon
    reception of such a reply the user agent should compute
    credentials and retry the request. For more information
-   regarding digest authentication see RFC2617.
+   regarding digest authentication see RFC2617, RFC3261 and
+   RFC8760.
 
-   Meaning of the parameters is as follows:
-     * realm (string) - Realm is an opaque string that the user
-       agent should present to the user so it can decide what
-       username and password to use. Usually this is domain of the
-       host the server is running on.
-       If an empty string “” is used then the server will generate
-       it from the request. “From” header field domain will be
-       used as realm.
-     * qop (string, optional) - Value of this parameter can be
-       either “auth”, “auth-int” or both (separated by ,). When
-       this parameter is set the server will put a qop parameter
-       in the challenge. It is recommended to use the qop
-       parameter, however there are still some user agents that
-       cannot handle qop properly so we made this optional. On the
-       other hand there are still some user agents that cannot
-       handle request without a qop parameter too.
-       Enabling this parameter don't improve the security at the
-       moment, because the sequence number is not stored and
-       therefore could not be checked. Actually there is no
-       information kept by the module during the challenge and
-       response requests.
+   See the paragraph on www_challenge() parameters meaning for the
+   description of the parameters.
 
    This function can be used from REQUEST_ROUTE.
 
    Example 1.12. proxy_challenge usage
 ...
-if (!proxy_authorize("", "subscriber)) {
-        proxy_challenge("", "auth");  # Realm will be autogenerated
-};
+$var(secure_algorithms) = "sha-256,sha-512-256";
+...
+if (!proxy_authorize("", "subscriber")) {
+...
+        proxy_challenge("", "auth", $var(secure_algorithms));  # Realm w
+ill be autogenerated
+                                                               # MD5 won
+'t be allowed
+}
 ...
 
 1.5.3.  consume_credentials()
@@ -359,9 +375,9 @@ if (!proxy_authorize("", "subscriber)) {
 
    Example 1.13. consume_credentials example
 ...
-if (www_authorize("", "subscriber)) {
+if (www_authorize("", "subscriber")) {
     consume_credentials();
-};
+}
 ...
 
 1.5.4.  is_rpid_user_e164()
@@ -379,7 +395,7 @@ if (www_authorize("", "subscriber)) {
 ...
 if (is_rpid_user_e164()) {
     # do something here
-};
+}
 ...
 
 1.5.5.  append_rpid_hf()
@@ -462,7 +478,7 @@ $var(username)="abc";
 $var(password)="xyz";
 if (!pv_www_authorize("opensips.org")) {
         www_challenge("opensips.org", "auth");
-};
+}
 ...
 
 1.5.8.  pv_proxy_authorize(realm)
@@ -493,7 +509,7 @@ $var(username)="abc";
 $var(password)="xyz";
 if (!pv_proxy_authorize("")) {
         proxy_challenge("", "auth");  # Realm will be autogenerated
-};
+}
 ...
 
 Chapter 2. Contributors
@@ -503,19 +519,19 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Jan Janak (@janakj) 269 107 7717 6060
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 48 32 693 604
+   1. Jan Janak (@janakj) 271 107 7717 6060
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 50 34 704 615
    3. Daniel-Constantin Mierla (@miconda) 39 21 1136 476
-   4. Jiri Kuthan (@jiriatipteldotorg) 26 19 660 51
-   5. Liviu Chircu (@liviuchircu) 21 14 137 255
-   6. Vlad Patrascu (@rvlad-patrascu) 13 7 193 210
-   7. Razvan Crainea (@razvancrainea) 12 9 87 102
-   8. Anca Vamanu 12 5 497 77
-   9. Henning Westerholt (@henningw) 11 8 107 100
-   10. Edson Gellert Schubert 8 1 0 412
+   4. Maksym Sobolyev (@sobomax) 33 13 587 862
+   5. Liviu Chircu (@liviuchircu) 28 21 206 292
+   6. Jiri Kuthan (@jiriatipteldotorg) 26 19 660 51
+   7. Razvan Crainea (@razvancrainea) 18 13 212 169
+   8. Vlad Patrascu (@rvlad-patrascu) 18 10 420 236
+   9. Anca Vamanu 12 5 497 77
+   10. Henning Westerholt (@henningw) 11 8 107 100
 
-   All remaining contributors: Andrei Pelinescu-Onciul, Maksym
-   Sobolyev (@sobomax), Juha Heinanen (@juha-h), Dan Pascu
+   All remaining contributors: Edson Gellert Schubert, Andrei
+   Pelinescu-Onciul, Juha Heinanen (@juha-h), Dan Pascu
    (@danpascu), Zero King (@l2dy), Sergio Gutierrez, Anatoly
    Pidruchny, Konstantin Bokarius, Vlad Paiu (@vladpaiu), Peter
    Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Nils Ohlmeier,
@@ -541,12 +557,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2021
-   2.  Maksym Sobolyev (@sobomax)          Jan 2005 - Oct 2020
-   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Apr 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2024
+   3.  Maksym Sobolyev (@sobomax)          Jan 2005 - Mar 2023
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2022
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Jan 2021
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    9.  Walter Doekes (@wdoekes)            Feb 2014 - Feb 2014
@@ -566,8 +582,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Maksym Sobolyev
-   (@sobomax), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   Last edited by: Maksym Sobolyev (@sobomax), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
    (@lemenkov), Razvan Crainea (@razvancrainea), Bogdan-Andrei
    Iancu (@bogdan-iancu), Sergio Gutierrez, Dan Pascu (@danpascu),
    Anca Vamanu, Daniel-Constantin Mierla (@miconda), Konstantin

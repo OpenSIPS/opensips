@@ -137,6 +137,8 @@ WHILE			"while"
 FOR             "for"
 IN              "in"
 XDBG			"xdbg"
+READONLY		"read-only"|"readonly"
+EXPIRE			"expire"
 PV_PRINT_BUF_SIZE	"pv_print_buf_size"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
@@ -205,9 +207,23 @@ OPEN_FD_LIMIT		"open_files_limit"
 ENABLE_ASSERTS	enable_asserts
 ABORT_ON_ASSERT	abort_on_assert
 LOGLEVEL	log_level
+LOGPREFIX	log_prefix
+LOGSTDOUT	log_stdout
 LOGSTDERROR	log_stderror
+STDERROR_ENABLED	stderror_enabled
+SYSLOG_ENABLED	    syslog_enabled
+LOG_EVENT_ENABLED	log_event_enabled
+STDERROR_LEVEL_FILTER	stderror_level_filter
+SYSLOG_LEVEL_FILTER	    syslog_level_filter
+LOG_EVENT_LEVEL_FILTER	log_event_level_filter
+STDERROR_FORMAT stderror_log_format
+SYSLOG_FORMAT   syslog_log_format
+LOG_JSON_BUF_SIZE	"log_json_buf_size"
+LOG_MSG_BUF_SIZE    "log_msg_buf_size"
 LOGFACILITY	log_facility
+SYSLOG_FACILITY	syslog_facility
 LOGNAME		log_name
+SYSLOG_NAME	syslog_name
 LISTEN		listen
 SOCKET		socket
 MEMGROUP	mem-group
@@ -233,6 +249,7 @@ RPM_MEM_FILE "restart_persistency_cache_file"
 RPM_MEM_SIZE "restart_persistency_size"
 MEMLOG		"memlog"|"mem_log"
 MEMDUMP		"memdump"|"mem_dump"
+SHM_MEMLOG_SIZE			"shm_memlog_size"
 EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
 EXECDNSTHRESHOLD		"execdnsthreshold"|"exec_dns_threshold"
 TCPTHRESHOLD			"tcpthreshold"|"tcp_threshold"
@@ -250,7 +267,6 @@ TCP_WORKERS		"tcp_workers"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
-TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
 TCP_SOCKET_BACKLOG   "tcp_socket_backlog"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
@@ -260,6 +276,7 @@ TCP_KEEPCOUNT           "tcp_keepcount"
 TCP_KEEPIDLE            "tcp_keepidle"
 TCP_KEEPINTERVAL        "tcp_keepinterval"
 TCP_MAX_MSG_TIME		"tcp_max_msg_time"
+TCP_PARALLEL_READ_ON_WORKERS "tcp_parallel_read_on_workers"
 ADVERTISED_ADDRESS	"advertised_address"
 ADVERTISED_PORT		"advertised_port"
 MCAST_LOOPBACK		"mcast_loopback"
@@ -323,7 +340,9 @@ DOT			\.
 CR			\n
 
 ANY		"any"
-ANYCAST "anycast"
+ANYCAST	("anycast"|"ANYCAST")
+FRAG	("frag"|"FRAG")
+REUSE_PORT	("reuse_port"|"REUSE_PORT")
 
 
 COM_LINE	#
@@ -369,6 +388,8 @@ SPACE		[ ]
 <INITIAL>{WHILE}	{ count(); yylval.strval=yytext; return WHILE; }
 <INITIAL>{FOR}		{ count(); yylval.strval=yytext; return FOR; }
 <INITIAL>{IN}		{ count(); yylval.strval=yytext; return IN; }
+<INITIAL>{READONLY}	{ count(); yylval.strval=yytext; return READONLY; }
+<INITIAL>{EXPIRE}	{ count(); yylval.strval=yytext; return EXPIRE; }
 
 <INITIAL>{PPTOK_LINE}  { count(); BEGIN(PPTOK_LINE); }
 <INITIAL>{PPTOK_FILEBEG}  { count(); BEGIN(PPTOK_FILEBEG); }
@@ -407,9 +428,25 @@ SPACE		[ ]
 <INITIAL>{ENABLE_ASSERTS}	{ count(); yylval.strval=yytext; return ENABLE_ASSERTS; }
 <INITIAL>{ABORT_ON_ASSERT}	{ count(); yylval.strval=yytext; return ABORT_ON_ASSERT; }
 <INITIAL>{LOGLEVEL} { count(); yylval.strval=yytext; return LOGLEVEL; }
-<INITIAL>{LOGSTDERROR}	{ yylval.strval=yytext; return LOGSTDERROR; }
+<INITIAL>{LOGPREFIX} { count(); yylval.strval=yytext; return LOGPREFIX; }
+<INITIAL>{LOGSTDOUT}	{ yylval.strval=yytext; return LOGSTDOUT; }
+<INITIAL>{LOGSTDERROR} { yylval.strval=yytext; return LOGSTDERROR; }
+<INITIAL>{STDERROR_ENABLED}	{ yylval.strval=yytext; return STDERROR_ENABLED; }
+<INITIAL>{SYSLOG_ENABLED}	{ yylval.strval=yytext; return SYSLOG_ENABLED; }
+<INITIAL>{LOG_EVENT_ENABLED}	{ yylval.strval=yytext; return LOG_EVENT_ENABLED; }
+<INITIAL>{STDERROR_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return STDERROR_LEVEL_FILTER; }
+<INITIAL>{SYSLOG_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return SYSLOG_LEVEL_FILTER; }
+<INITIAL>{LOG_EVENT_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return LOG_EVENT_LEVEL_FILTER; }
+<INITIAL>{STDERROR_FORMAT} { count(); yylval.strval=yytext; return STDERROR_FORMAT; }
+<INITIAL>{SYSLOG_FORMAT} { count(); yylval.strval=yytext; return SYSLOG_FORMAT; }
+<INITIAL>{LOG_JSON_BUF_SIZE}	{	count(); yylval.strval=yytext;
+									return LOG_JSON_BUF_SIZE; }
+<INITIAL>{LOG_MSG_BUF_SIZE}    {	count(); yylval.strval=yytext;
+									return LOG_MSG_BUF_SIZE; }
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
+<INITIAL>{SYSLOG_FACILITY}	{ yylval.strval=yytext; return SYSLOG_FACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
+<INITIAL>{SYSLOG_NAME}	{ yylval.strval=yytext; return SYSLOG_NAME; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
 <INITIAL>{SOCKET}	{ count(); yylval.strval=yytext; return SOCKET; }
 <INITIAL>{MEMGROUP}	{ count(); yylval.strval=yytext; return MEMGROUP; }
@@ -443,6 +480,7 @@ SPACE		[ ]
 <INITIAL>{RPM_MEM_SIZE}	{ count(); yylval.strval=yytext; return RPM_MEM_SIZE; }
 <INITIAL>{MEMLOG}	{ count(); yylval.strval=yytext; return MEMLOG; }
 <INITIAL>{MEMDUMP}	{ count(); yylval.strval=yytext; return MEMDUMP; }
+<INITIAL>{SHM_MEMLOG_SIZE}	{ count(); yylval.strval=yytext; return SHM_MEMLOG_SIZE; }
 <INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }
 <INITIAL>{EXECDNSTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECDNSTHRESHOLD; }
 <INITIAL>{TCPTHRESHOLD}	{ count(); yylval.strval=yytext; return TCPTHRESHOLD; }
@@ -461,8 +499,6 @@ SPACE		[ ]
 									return TCP_CONNECT_TIMEOUT; }
 <INITIAL>{TCP_CON_LIFETIME}		{ count(); yylval.strval=yytext;
 									return TCP_CON_LIFETIME; }
-<INITIAL>{TCP_LISTEN_BACKLOG}   { count(); yylval.strval=yytext;
-									return TCP_LISTEN_BACKLOG; }
 <INITIAL>{TCP_SOCKET_BACKLOG}   { count(); yylval.strval=yytext;
 									return TCP_SOCKET_BACKLOG; }
 <INITIAL>{POLL_METHOD}			{ count(); yylval.strval=yytext;
@@ -474,6 +510,7 @@ SPACE		[ ]
 <INITIAL>{TCP_KEEPIDLE}        { count(); yylval.strval=yytext; return TCP_KEEPIDLE; }
 <INITIAL>{TCP_KEEPINTERVAL}    { count(); yylval.strval=yytext; return TCP_KEEPINTERVAL; }
 <INITIAL>{TCP_MAX_MSG_TIME}    { count(); yylval.strval=yytext; return TCP_MAX_MSG_TIME; }
+<INITIAL>{TCP_PARALLEL_READ_ON_WORKERS}  { count(); yylval.strval=yytext; return TCP_PARALLEL_READ_ON_WORKERS; }
 <INITIAL>{SERVER_SIGNATURE}	{ count(); yylval.strval=yytext; return SERVER_SIGNATURE; }
 <INITIAL>{SERVER_HEADER}	{ count(); yylval.strval=yytext; return SERVER_HEADER; }
 <INITIAL>{USER_AGENT_HEADER}	{ count(); yylval.strval=yytext; return USER_AGENT_HEADER; }
@@ -578,6 +615,8 @@ SPACE		[ ]
 <INITIAL>{CR}		{ count();/* return CR;*/ }
 <INITIAL>{ANY}		{ count(); return ANY; }
 <INITIAL>{ANYCAST}	{ count(); return ANYCAST; }
+<INITIAL>{REUSE_PORT}	{ count(); return REUSE_PORT; }
+<INITIAL>{FRAG}		{ count(); return FRAG; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
 <INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }
 <INITIAL>{SCALE_DOWN_TO}	{ count(); return SCALE_DOWN_TO; }

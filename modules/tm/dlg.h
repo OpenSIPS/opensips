@@ -32,6 +32,7 @@
 #include "../../str.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/msg_parser.h"
+#include "h_table.h"
 
 
 /*
@@ -82,6 +83,10 @@ typedef struct dlg_hooks {
 } dlg_hooks_t;
 
 
+/* callback prototype for UAC transaction */
+typedef void (t_uac_cb) (struct cell* t, void *param);
+
+
 /*
  * Structure representing dialog state
  */
@@ -103,11 +108,14 @@ typedef struct dlg {
 				 * can be reused when building a message (to
 				 * prevent repeated analyzing of the dialog data
 				 */
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;  /* forced sock, overrides dst proto */
+	const struct socket_info* pref_sock;  /* preffered sock, if no proto conflict */
 	unsigned short mf_enforced; /* if Max-Forward is to be enforced */
 	unsigned short mf_value;    /* the Mx-Forward values, if enforced */
 	void *dialog_ctx;       /* backpointer to dialog ctx */
 	struct usr_avp *avps;
+	t_uac_cb *t_created_cb;
+	void *t_created_cb_param;
 } dlg_t;
 
 
@@ -120,8 +128,8 @@ typedef int (*new_dlg_uac_f)(str* _cid, str* _ltag, unsigned int _lseq, str* _lu
 /*
  * Create a auto new dialog (callid, from tag and CSEQ are auto generated)
  */
-int new_auto_dlg_uac( str* _luri, str* _turi, str* _ruri, str* callid, struct socket_info* sock, dlg_t** _d);
-typedef int (*new_auto_dlg_uac_f)(str* _luri, str* _turi, str* _ruri, str* callid, struct socket_info *sock, dlg_t** _d);
+int new_auto_dlg_uac( str* _luri, str* _turi, str* _ruri, str* callid, const struct socket_info* sock, dlg_t** _d);
+typedef int (*new_auto_dlg_uac_f)(str* _luri, str* _turi, str* _ruri, str* callid, const struct socket_info *sock, dlg_t** _d);
 
 /*
  * Function which adds Display Names to an existing dialog

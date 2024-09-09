@@ -131,6 +131,7 @@
 #include "ut.h"
 #include "serialize.h"
 #include "statistics.h"
+#include "status_report.h"
 #include "core_stats.h"
 #include "pvar.h"
 #include "signals.h"
@@ -146,8 +147,11 @@
 #include "net/trans.h"
 
 #include "test/unit_tests.h"
+#include "lib/dbg/profiling.h"
 
 #include "ssl_tweaks.h"
+
+#include "main_script.h"
 
 /* global vars */
 
@@ -170,6 +174,11 @@ static char* flags=OPENSIPS_COMPILE_FLAGS;
 static int user_id = 0;
 static int group_id = 0;
 
+const struct scm_version core_scm_ver = {
+	.type = VERSIONTYPE,
+	.rev = THISREVISION
+};
+
 /**
  * Print compile-time constants
  */
@@ -183,11 +192,53 @@ static void print_ct_constants(void)
 		MAX_RECV_BUFFER_SIZE, MAX_LISTEN, MAX_URI_SIZE,
 		BUF_SIZE );
 	printf("poll method support: %s.\n", poll_support);
-#ifdef VERSIONTYPE
-	printf("%s revision: %s\n", VERSIONTYPE, THISREVISION);
-#endif
+	printf("%s revision: %s\n", core_scm_ver.type, core_scm_ver.rev);
 }
 
+static int
+init_suid(void)
+{
+	/* all processes should have access to all the sockets (for sending)
+	 * so we open all first*/
+	return do_suid(user_id, group_id);
+}
+
+static int
+init_shm_mem_dbg(void)
+{
+	if (shm_memlog_size)
+		shm_mem_enable_dbg();
+	return 0;
+}
+
+static const struct main_script main_script[] = {
+	FN_HNDLR(init_reactor_size, <, 0, "internal reactor"),
+	FN_HNDLR(init_timer, <, 0, "timer"),
+	FN_HNDLR(init_shm_mem_dbg, <, 0, "shm_mem_enable_dbg"),
+	FN_HNDLR(init_ipc, <, 0, "IPC support"),
+	FN_HNDLR(init_serialization, !=, 0, "serialization"),
+	FN_HNDLR(init_mi_core, <, 0, "MI core"),
+	FN_HNDLR(evi_register_core, !=, 0, "register core events"),
+	FN_HNDLR(init_black_lists, !=, 0, "black list engine"),
+	FN_HNDLR(resolv_blacklist_init, !=, 0, "resolver's blacklist"),
+	FN_HNDLR(init_dset, !=, 0, "SIP forking logic"),
+	FN_HNDLR(init_db_support, !=, 0, "SQL database support"),
+	FN_HNDLR(init_cdb_support, !=, 0, "CacheDB support"),
+	FN_HNDLR(init_modules, !=, 0, "modules"),
+	FN_HNDLR(init_auto_scaling, !=, 0, "auto-scaling support"),
+	FN_HNDLR(init_xlog, <, 0, "xlog"),
+	FN_HNDLR(register_route_timers, <, 0, "route_timers"),
+	FN_HNDLR(init_pvar_support, !=, 0, "pseudo-variable support"),
+	FN_HNDLR(init_multi_proc_support, !=, 0, "multi processes support"),
+	FN_HNDLR(init_extra_avps, !=, 0, "avps"),
+	FN_HNDLR(fix_rls, !=, 0, "routing lists"),
+	FN_HNDLR(init_log_level, !=, 0, "logging levels"),
+	FN_HNDLR(init_log_event_cons, <, 0, "log event consumer"),
+	FN_HNDLR(trans_init_all_listeners, <, 0, "all SIP listeners"),
+	FN_HNDLR(init_script_reload, <, 0, "cfg reload ctx"),
+	FN_HNDLR(init_suid, ==, -1, "do_suid"),
+	FN_HNDLR(run_post_fork_handlers, <, 0, "post-fork handlers"),
+};
 
 /**
  * Main loop, forks the children, bind to addresses,
@@ -200,8 +251,14 @@ static int main_loop(void)
 	int* startup_done = NULL;
 	utime_t last_check = 0;
 	int rc;
+	static struct internal_fork_handler profiling_handler = {
+		.desc = "_ProfilerStart_child()",
+		.post_fork.in_child = _ProfilerStart_child,
+		.post_fork.in_parent = _ProfilerStart_parent,
+	};
 
 	chd_rank=0;
+	register_fork_handler(&profiling_handler);
 
 	if (start_module_procs()!=0) {
 		LM_ERR("failed to fork module processes\n");
@@ -256,12 +313,13 @@ static int main_loop(void)
 		shm_free(startup_done);
 	}
 
-	set_osips_state( STATE_RUNNING );
+	sr_set_core_status( STATE_RUNNING, MI_SSTR("running"));
+	sr_add_core_report( MI_SSTR("initialization completed, ready now") );
 
 	/* main process left */
 	is_main=1;
 	set_proc_attrs("attendant");
-	pt[process_no].flags |= OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD;
+	pt[process_no].flags |= OSS_PROC_IS_RUNNING|OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD;
 
 	if (testing_framework) {
 		if (init_child(1) < 0) {
@@ -287,6 +345,11 @@ static int main_loop(void)
 		 * processes, so we will need to pass write-end to the new children;
 		 * of course, we will need the read-end, here in the main proc */
 		last_check = get_uticks();
+	}
+
+	if (set_log_event_cons_cfg_state() < 0) {
+		LM_ERR("Failed to set the config state for event consumer\n");
+		goto error;
 	}
 
 	for(;;){
@@ -325,9 +388,7 @@ error:
  */
 int main(int argc, char** argv)
 {
-	/* configure by default logging to syslog */
-	int cfg_log_stderr = 1;
-	int c,r;
+	int c, n;
 	char *tmp;
 	int tmp_len;
 	int port;
@@ -337,6 +398,7 @@ int main(int argc, char** argv)
 	int ret;
 	unsigned int seed;
 	int rfd;
+	int procs_no;
 
 	/*init*/
 	ret=-1;
@@ -345,7 +407,7 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
+	options="A:f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
 #ifdef UNIT_TESTS
 	"T:"
 #endif
@@ -358,15 +420,17 @@ int main(int argc, char** argv)
 					if (tmp &&(*tmp)){
 						LM_ERR("bad pkgmem size number: -m %s\n", optarg);
 						goto error00;
-					};
-
+					}
 					break;
 			case 'm':
 					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
 					if (tmp &&(*tmp)){
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error00;
-					};
+					}
+					break;
+			case 'd':
+					*log_level = debug_mode ? L_DBG : (*log_level)+1;
 					break;
 			case 'u':
 					user=optarg;
@@ -423,7 +487,7 @@ int main(int argc, char** argv)
 	if (init_pkg_mallocs()==-1)
 		goto error00;
 
-	if ( (sroutes=new_sroutes_holder())==NULL )
+	if ( (sroutes=new_sroutes_holder(0))==NULL )
 		goto error00;
 
 	/* we want to be sure that from now on, all the floating numbers are 
@@ -445,10 +509,10 @@ int main(int argc, char** argv)
 					if (config_check==3)
 						break;
 					config_check |= 1;
-					cfg_log_stderr=1; /* force stderr logging */
 					break;
 			case 'm':
 			case 'M':
+			case 'd':
 			case 'a':
 			case 'k':
 			case 's':
@@ -491,9 +555,6 @@ int main(int argc, char** argv)
 			case 'R':
 					received_dns|=DO_REV_DNS;
 				    break;
-			case 'd':
-					*log_level = debug_mode ? L_DBG : (*log_level)+1;
-					break;
 			case 'D':
 					debug_mode=1;
 					*log_level = L_DBG;
@@ -502,8 +563,9 @@ int main(int argc, char** argv)
 					no_daemon_mode=1;
 					break;
 			case 'E':
-					cfg_log_stderr=1;
-					break;
+					LM_ERR("-E option deprecated since 3.4, set \"stderror_enabled=yes\" "
+					    "at the script level instead\n");
+					goto error00;
 			case 'N':
 					tcp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
@@ -557,6 +619,10 @@ int main(int argc, char** argv)
 					if (add_arg_var(optarg) < 0)
 						LM_ERR("cannot add option %s\n", optarg);
 					break;
+			case 'A':
+					default_global_address->s = optarg;
+					default_global_address->len = strlen(optarg);
+					break;
 #ifdef UNIT_TESTS
 			case 'T':
 					LM_INFO("running in testing framework mode, for '%s'\n", optarg);
@@ -582,8 +648,6 @@ int main(int argc, char** argv)
 					abort();
 		}
 	}
-
-	log_stderr = cfg_log_stderr;
 
 	/* seed the prng, try to use /dev/urandom if possible */
 	/* no debugging information is logged, because the standard
@@ -632,7 +696,13 @@ try_again:
 		goto error;
 	}
 
-	set_osips_state( STATE_STARTING );
+	if (init_status_report() < 0) {
+		LM_ERR("failed to initialize status-report support\n");
+		goto error;
+	}
+
+	sr_set_core_status( STATE_INITIALIZING, MI_SSTR("initializing"));
+	sr_add_core_report( MI_SSTR("initializing") );
 
 	if ((!testing_framework || strcmp(testing_module, "core"))
 	        && parse_opensips_cfg(cfg_file, preproc, NULL) < 0) {
@@ -640,8 +710,19 @@ try_again:
 		goto error00;
 	}
 
+	if (shm_memlog_size && init_dbg_shm_mallocs()==-1)
+		goto error;
+
 	/* shm statistics, module stat groups, memory warming */
-	init_shm_post_yyparse();
+	if (init_shm_post_yyparse() != 0) {
+		LM_ERR("failed to init SHM memory\n");
+		return ret;
+	}
+
+	if (init_log_cons_shm_table() < 0) {
+		LM_ERR("Failed to initialize shm log consumers table\n");
+		goto error;
+	}
 
 	if (config_check>1 && check_rls()!=0) {
 		LM_ERR("bad function call in config file\n");
@@ -725,9 +806,15 @@ try_again:
 			LM_NOTICE("disabling daemon mode (found enabled)\n");
 			no_daemon_mode = 1;
 		}
-		if (log_stderr==0) {
+		if (stderr_enabled==0) {
 			LM_NOTICE("enabling logging to standard error (found disabled)\n");
-			log_stderr = 1;
+			stderr_enabled = 1;
+			set_log_consumer_mute_state(&str_init(STDERR_CONSUMER_NAME), 0);
+		}
+		if (syslog_enabled) {
+			LM_NOTICE("disabling logging to syslog (found enabled)\n");
+			syslog_enabled = 0;
+			set_log_consumer_mute_state(&str_init(SYSLOG_CONSUMER_NAME), 1);
 		}
 		if (*log_level < L_DBG && (!testing_framework ||
 		                           !strcmp(testing_module, "core"))) {
@@ -747,10 +834,11 @@ try_again:
 			}
 		}
 		if (tcp_count_processes(NULL)!=0) {
-			if (tcp_workers_no!=2) {
-				LM_NOTICE("setting TCP children to 2 (found %d)\n",
-					tcp_workers_no);
-				tcp_workers_no = 2;
+			procs_no = (tcp_workers_max_no>=2) ? 2 : tcp_workers_max_no;
+			if (tcp_workers_no != procs_no) {
+				LM_NOTICE("setting TCP children to %d (found %d)\n",
+					procs_no, tcp_workers_no);
+				tcp_workers_no = procs_no;
 			}
 		}
 
@@ -779,137 +867,23 @@ try_again:
 	LM_NOTICE("version: %s\n", version);
 
 	/* print some data about the configuration */
-	LM_INFO("using %ld Mb of shared memory\n", shm_mem_size/1024/1024);
+	LM_NOTICE("using %ld MB of shared memory, allocator: %s\n",
+	          shm_mem_size/1024/1024, mm_str(mem_allocator_shm));
 #if defined(PKG_MALLOC)
-	LM_INFO("using %ld Mb of private process memory\n", pkg_mem_size/1024/1024);
+	LM_NOTICE("using %ld MB of private process memory, allocator: %s\n",
+	          pkg_mem_size/1024/1024, mm_str(mem_allocator_pkg));
 #else
-	LM_INFO("using system memory for private process memory\n");
+	LM_NOTICE("using system memory for private process memory\n");
 #endif
 
-	/* init async reactor */
-	if (init_reactor_size()<0) {
-		LM_CRIT("failed to init internal reactor, exiting...\n");
-		goto error;
+	for (n = 0; n < howmany(main_script, main_script[0]); n++) {
+		int result = main_script[n].hndlr();
+		pred_cmp_f pred_cmp = cmps_ops[main_script[n].pval];
+		if (pred_cmp(result, main_script[n].pred)) {
+			LM_ERR("failed to initialize %s!\n", main_script[n].desc);
+			goto error;
+		}
 	}
-
-	/* init timer */
-	if (init_timer()<0){
-		LM_CRIT("could not initialize timer, exiting...\n");
-		goto error;
-	}
-
-	/* init IPC */
-	if (init_ipc()<0){
-		LM_CRIT("could not initialize IPC support, exiting...\n");
-		goto error;
-	}
-
-	/* init serial forking engine */
-	if (init_serialization()!=0) {
-		LM_ERR("failed to initialize serialization\n");
-		goto error;
-	}
-	/* Init MI */
-	if (init_mi_core()<0) {
-		LM_ERR("failed to initialize MI core\n");
-		goto error;
-	}
-
-	/* Register core events */
-	if (evi_register_core() != 0) {
-		LM_ERR("failed register core events\n");
-		goto error;
-	}
-
-	/* init black list engine */
-	if (init_black_lists()!=0) {
-		LM_CRIT("failed to init blacklists\n");
-		goto error;
-	}
-	/* init resolver's blacklist */
-	if (resolv_blacklist_init()!=0) {
-		LM_CRIT("failed to create DNS blacklist\n");
-		goto error;
-	}
-
-	if (init_dset() != 0) {
-		LM_ERR("failed to initialize SIP forking logic!\n");
-		goto error;
-	}
-
-	/* init SQL DB support */
-	if (init_db_support() != 0) {
-		LM_ERR("failed to initialize SQL database support\n");
-		goto error;
-	}
-
-	/* init CacheDB support */
-	if (init_cdb_support() != 0) {
-		LM_ERR("failed to initialize CacheDB support\n");
-		goto error;
-	}
-
-	/* init modules */
-	if (init_modules() != 0) {
-		LM_ERR("error while initializing modules\n");
-		goto error;
-	}
-
-	/* init xlog */
-	if (init_xlog() < 0) {
-		LM_ERR("error while initializing xlog!\n");
-		goto error;
-	}
-
-	/* register route timers */
-	if(register_route_timers() < 0) {
-		LM_ERR("Failed to register timer\n");
-		goto error;
-	}
-
-	/* init pseudo-variable support */
-	if (init_pvar_support() != 0) {
-		LM_ERR("failed to init pvar support\n");
-		goto error;
-	}
-
-	/* init multi processes support */
-	if (init_multi_proc_support()!=0) {
-		LM_ERR("failed to init multi-proc support\n");
-		goto error;
-	}
-
-	/* init avps */
-	if (init_extra_avps() != 0) {
-		LM_ERR("error while initializing avps\n");
-		goto error;
-	}
-
-	/* fix routing lists */
-	if ( (r=fix_rls())!=0){
-		LM_ERR("failed to fix configuration with err code %d\n", r);
-		goto error;
-	}
-
-	if (init_log_level() != 0) {
-		LM_ERR("failed to init logging levels\n");
-		goto error;
-	}
-
-	if (trans_init_all_listeners()<0) {
-		LM_ERR("failed to init all SIP listeners, aborting\n");
-		goto error;
-	}
-
-	if (init_script_reload()<0) {
-		LM_ERR("failed to init cfg reload ctx, aborting\n");
-		goto error;
-	}
-
-	/* all processes should have access to all the sockets (for sending)
-	 * so we open all first*/
-	if (do_suid(user_id, group_id)==-1)
-		goto error;
 
 	ret = main_loop();
 
@@ -920,5 +894,6 @@ error:
 	cleanup(0);
 error00:
 	LM_NOTICE("Exiting....\n");
+	_ProfilerStop();
 	return ret;
 }

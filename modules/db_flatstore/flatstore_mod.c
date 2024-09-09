@@ -73,17 +73,15 @@ str flat_prefix_s = {0,0};
 pv_elem_t *flat_prefix = NULL;
 
 /*
- * Timestamp of the last log rotation request from
- * the FIFO interface
+ * Counter for the last log rotation request from the MI interface
  */
-time_t* flat_rotate;
-
-time_t local_timestamp;
+unsigned long long *flat_rotate;
+unsigned long long my_rotate;
 
 /*
  * Flatstore database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api",    (cmd_function)db_flat_bind_api, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -91,7 +89,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"flush", INT_PARAM, &flat_flush},
 	{"delimiter", STR_PARAM, &flat_delimiter},
 	{"suffix", STR_PARAM, &flat_suffix_s.s},
@@ -102,7 +100,7 @@ static param_export_t params[] = {
 
 
 #define MI_FLAT_HELP "Params: none ; Rotates the logging file."
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_FLAT_ROTATE, MI_FLAT_HELP, 0, 0, {
 		{mi_flat_rotate_cmd, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -141,14 +139,17 @@ static int mod_init(void)
 		return -1;
 	}
 
-	flat_rotate = (time_t*)shm_malloc(sizeof(time_t));
+	flat_rotate = shm_malloc(sizeof *flat_rotate);
 	if (!flat_rotate) {
 		LM_ERR("no shared memory left\n");
 		return -1;
 	}
+	*flat_rotate = 0;
 
-	*flat_rotate = time(0);
-	local_timestamp = *flat_rotate;
+	if (!(rotate_lock = lock_init_rw())) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 
 	/* parse prefix and suffix */
 	if (flat_suffix_s.s && (flat_suffix_s.len=strlen(flat_suffix_s.s))!=0) {
@@ -171,7 +172,7 @@ static int mod_init(void)
 
 static void mod_destroy(void)
 {
-	if (flat_rotate) shm_free(flat_rotate);
+	shm_free(flat_rotate);
 }
 
 

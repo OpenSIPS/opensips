@@ -34,7 +34,7 @@
 
 /* Pass provisional replies to fifo applications */
 extern int pass_provisional_replies;
-
+extern struct script_route_ref *tm_local_request_route;
 
 /*
  * Function prototypes

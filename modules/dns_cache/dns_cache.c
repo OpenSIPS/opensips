@@ -54,13 +54,13 @@ static cachedb_con *cdbc = 0;
 static int blacklist_timeout=3600; /* seconds */
 static str cachedb_url = {0,0};
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "cachedb_url",                 STR_PARAM, &cachedb_url.s},
 	{ "blacklist_timeout",           INT_PARAM, &blacklist_timeout},
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_CACHEDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

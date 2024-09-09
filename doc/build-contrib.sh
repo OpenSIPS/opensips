@@ -21,10 +21,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
 
 ### global OpenSIPS commit stats, self-generated on each "rebuild-proj-stats"
-__PROJ_COMMITS=17783
-__PROJ_LINES_ADD=2184345
-__PROJ_LINES_DEL=1089621
-__LAST_REBUILD_SHA=b6ef99633e17d0fac08b98364389678f8ae3a3d2
+__PROJ_COMMITS=21604
+__PROJ_LINES_ADD=2576926
+__PROJ_LINES_DEL=1328694
+__LAST_REBUILD_SHA=816b58e6b36d873f63b20923fb822593a175b5f2
 
 TMP_FILE=/var/tmp/.opensips-build-contrib.tmp
 
@@ -152,6 +152,7 @@ github_handles=(
   ["Jasper Hafkenscheid <hafkensite@users.noreply.github.com>"]="hafkensite"
   ["Jeremy Martinez <jmarti70@harris.com>"]="JeremyMartinez51"
   ["Jiri Kuthan <jiri@iptel.org>"]="jiriatipteldotorg"
+  ["John Burke <john@voxtelesys.net>"]="john08burke"
   ["John Kiniston <johnk@simplybits.com>"]="SB-JohnK"
   ["Juha Heinanen"]="juha-h"
   ["Kobi Eshun <kobi@sightspeed.com>"]="ekobi"
@@ -241,7 +242,7 @@ fix_authors=(
   ["13e9a5cbe14050e622a3ef65cd34b72260a74f01"]="Kennard White"
   ["26599d25cbc140373a5c24759dce688235e57589"]="Anatoly Pidruchny"
 
-  # avpops
+  # sqlops
   ["37eba4b6d38f379a227040397c569f0d0fe99c9c"]="Kennard White"
   ["d129377f64f13e85ea0baf6d215092b4b4776f6e"]="Norman Brandinger"
   ["b9247c08af07662c6e712179dc57bcc5f16794aa"]="Kobi Eshun"
@@ -530,6 +531,9 @@ fix_authors=(
   ["1f14961143343b80e682f8436b353921b7309fb1"]="Christophe Sollet"
   ["034e61d1fed5c2e7ef3917f7e827a562486a0bf7"]="Ron Winacott <ronw@somanetworks.com>"
 
+  # stir_shaken
+  ["129834d125e3179ae60e56e4fc485b1ad74f9cc7"]="John Burke <john@voxtelesys.net>"
+
   # textops
   ["ad7f17082aef12211d85d2f1ec0694c4ff21bbef"]="Christophe Sollet"
   ["ca2a72ee03ce7886a3e47af78da72a8967100db5"]="Hugues Mitonneau"
@@ -611,6 +615,11 @@ mod_renames=(
   [mi_http]=mi_json:1540473075:  # old_module:new_module_since:old_module_until
   [mi_html]=mi_http::1540473075
   [event_stream]=event_jsonrpc
+  [b2b_logic]=b2b_logic:1605638778
+  [b2b_logic_xml]=b2b_logic::1605638778
+  [sqlops]=dbops
+  [dbops]=avpops
+  [event_rabbitmq]=rabbitmq
 )
 
 mk_git_handle() {
@@ -646,14 +655,17 @@ normalize_arrays() {
   fi
 }
 
+# $1 (optional) - git SHA to be taken as a starting point
 rebuild_proj_commit_stats() {
   __PROJ_COMMITS=0
   __PROJ_LINES_ADD=0
   __PROJ_LINES_DEL=0
 
+  [ -n "$1" ] && commit_range="$1..HEAD"
+
   echo "Summing up all OpenSIPS commits! :-O"
 
-  for sha in $(git log --reverse --format=%H); do
+  for sha in $(git log --reverse --format=%H $commit_range); do
     [ -n "${skip_commits[$sha]}" ] && continue
 
     lines=($(git show $sha --format= --numstat \
@@ -665,6 +677,14 @@ rebuild_proj_commit_stats() {
     __PROJ_LINES_DEL=$(($__PROJ_LINES_DEL + ${lines[1]}))
     echo -en "\rProcessing commit #$__PROJ_COMMITS"
   done
+
+  if [ -n "$1" ]; then
+    echo "Commits: $__PROJ_COMMITS"
+    echo "Lines++: $__PROJ_LINES_ADD"
+    echo "Lines--: $__PROJ_LINES_DEL"
+    echo " ... since: $1"
+    return
+  fi
 
   sed -i "s/^__PROJ_COMMITS.*/__PROJ_COMMITS=$__PROJ_COMMITS/" $0
   sed -i "s/^__PROJ_LINES_ADD=.*/__PROJ_LINES_ADD=$__PROJ_LINES_ADD/" $0
@@ -711,8 +731,10 @@ _count_module_changes() {
     local old_mod="${arr[0]}"; local since="${arr[1]}"; local until="${arr[2]}"
     unset IFS
 
-    # this trick helps deal with the mi_html->mi_http, mi_http->mi_json rename
-    [ -z "$3" -o -z "$since" ] && \
+    # deal with renames, e.g.:
+    #   * mi_html->mi_http, mi_http->mi_json
+    #   * b2b_logic->b2b_logic_xml, NEW_MOD->b2b_logic
+    [[ $1 != $old_mod ]] && [ -z "$3" -o -z "$since" ] && \
         _count_module_changes "$old_mod" "$2" "recurse" "$until"
   fi
 
@@ -837,7 +859,7 @@ cat <<EOF >>modules/$1/doc/contributors.xml
 	</tbody>
 	</tgroup>
 	</table>
-	$side_authors_para
+$side_authors_para
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -905,7 +927,7 @@ cat <<EOF >>modules/$1/doc/contributors.xml
 	</tbody>
 	</tgroup>
 	</table>
-	$side_authors_para
+$side_authors_para
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
@@ -993,7 +1015,7 @@ if [[ ! $(git log --reverse --format=%H | head -1) =~ ^f06ade ]]; then
 fi
 
 if [[ "$1" =~ rebuild-proj-stats ]]; then
-  rebuild_proj_commit_stats
+  rebuild_proj_commit_stats "$2"
   exit 0
 fi
 

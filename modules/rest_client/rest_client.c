@@ -51,13 +51,14 @@ long connection_timeout_ms;
 int max_async_transfers = 100;
 long curl_timeout = 20;
 char *ssl_capath;
+unsigned int max_transfer_size = 10240; /* KB (10MB) */
 
 /*
  * curl_multi_perform() may indicate a "try again" response even
  * when resuming transfers with pending data
  */
-int _async_resume_retr_timeout = 500000; /* us */
-int _async_resume_retr_itv = 100; /* us */
+int _async_resume_retr_timeout; /* us; equal to @curl_timeout */
+int _async_resume_retr_itv = 500; /* us */
 
 /* libcurl enables these by default */
 int ssl_verifypeer = 1;
@@ -71,10 +72,9 @@ int enable_expect_100;
 struct tls_mgm_binds tls_api;
 
 /* trace parameters for this module */
-#define REST_TRACE_API_MODULE "proto_hep"
 int rest_proto_id;
 trace_proto_t tprot;
-static char* rest_id_s = "rest";
+char* rest_id_s = "rest";
 
 /*
  * Module initialization and cleanup
@@ -108,7 +108,7 @@ static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom);
 int validate_curl_http_version(const int *http_version);
 
 /* module dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tracer", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 }
@@ -118,7 +118,7 @@ static dep_export_t deps = {
 	}
 };
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	{"rest_get",(acmd_function)w_async_rest_get, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_VAR,0,0},
@@ -145,7 +145,7 @@ static acmd_export_t acmds[] = {
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"rest_get",(cmd_function)w_rest_get, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_VAR,0,0},
@@ -184,24 +184,27 @@ int tr_rest_parse(str* in, trans_t *t);
 int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val);
 
-static trans_export_t trans[] = {
-	{str_init("rest"), tr_rest_parse, tr_rest_eval},
+static const trans_export_t trans[] = {
+	{str_const_init("rest"), tr_rest_parse, tr_rest_eval},
 	{{0,0},0,0}
 };
 
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "connection_timeout",	INT_PARAM, &connection_timeout	},
 	{ "connect_poll_interval", INT_PARAM, &connect_poll_interval },
 	{ "max_async_transfers", INT_PARAM, &max_async_transfers },
+	{ "max_transfer_size",	INT_PARAM, &max_transfer_size	},
 	{ "curl_timeout",		INT_PARAM, &curl_timeout		},
 	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
 	{ "ssl_verifyhost",		INT_PARAM, &ssl_verifyhost		},
 	{ "curl_http_version",	INT_PARAM, &curl_http_version	},
 	{ "enable_expect_100",	INT_PARAM, &enable_expect_100	},
+	{ "no_concurrent_connects",	INT_PARAM, &no_concurrent_connects	},
+	{ "curl_conn_lifetime",	INT_PARAM, &curl_conn_lifetime	},
 	{ 0, 0, 0 }
 };
 
@@ -237,6 +240,7 @@ static int mod_init(void)
 	LM_DBG("Initializing...\n");
 
 	connection_timeout_ms = connection_timeout * 1000L;
+	_async_resume_retr_timeout = curl_timeout * 1000000U;
 
 	if (connect_poll_interval < 0) {
 		LM_ERR("Bad connect_poll_interval (%ldms), setting to 20ms\n",
@@ -250,22 +254,10 @@ static int mod_init(void)
 		connection_timeout = curl_timeout;
 	}
 
-	INIT_LIST_HEAD(&multi_pool);
-
-	/* try loading the trace api */
-	if (register_trace_type) {
-		rest_proto_id = register_trace_type(rest_id_s);
-		if ( global_trace_api ) {
-			memcpy(&tprot, global_trace_api, sizeof tprot);
-		} else {
-			memset(&tprot, 0, sizeof tprot);
-			if (trace_prot_bind( REST_TRACE_API_MODULE, &tprot))
-				LM_DBG("Can't bind <%s>!\n", REST_TRACE_API_MODULE);
-		}
-	} else {
-		memset(&tprot, 0, sizeof tprot);
+	if (rcl_init_internals() != 0) {
+		LM_ERR("failed to init internal structures\n");
+		return -1;
 	}
-
 	if (is_script_func_used("rest_init_client_tls", -1)) {
 		if (load_tls_mgm_api(&tls_api) != 0) {
 			LM_ERR("failed to load the tls_mgm API! "
@@ -524,15 +516,22 @@ static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
                       pv_spec_t *ctype_pv, pv_spec_t *code_pv)
 {
 	str url_nt;
-	int rc;
+	int lrc = RCL_OK, rc;
+	char *host;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
 		return RCL_INTERNAL_ERR;
 	}
 
+	if (no_concurrent_connects && (lrc=rcl_acquire_url(url_nt.s, &host)) < RCL_OK)
+		return lrc;
+
 	rc = rest_sync_transfer(REST_CLIENT_GET, msg, url_nt.s, NULL, NULL,
 	                          body_pv, ctype_pv, code_pv);
+
+	if (lrc == RCL_OK_LOCKED)
+		rcl_release_url(host, rc == RCL_OK);
 
 	pkg_free(url_nt.s);
 	return rc;
@@ -543,18 +542,25 @@ static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
-	int rc;
+	int lrc = RCL_OK, rc;
+	char *host;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
 		return RCL_INTERNAL_ERR;
 	}
 
+	if (no_concurrent_connects && (lrc=rcl_acquire_url(url_nt.s, &host)) < RCL_OK)
+		return lrc;
+
 	if (_ctype)
 		ctype = *_ctype;
 
 	rc = rest_sync_transfer(REST_CLIENT_POST, msg, url_nt.s, body, &ctype,
 	                          body_pv, ctype_pv, code_pv);
+
+	if (lrc == RCL_OK_LOCKED)
+		rcl_release_url(host, rc == RCL_OK);
 
 	pkg_free(url_nt.s);
 	return rc;
@@ -565,18 +571,25 @@ static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
-	int rc;
+	int lrc = RCL_OK, rc;
+	char *host;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
 		return RCL_INTERNAL_ERR;
 	}
 
+	if (no_concurrent_connects && (lrc=rcl_acquire_url(url_nt.s, &host)) < RCL_OK)
+		return lrc;
+
 	if (_ctype)
 		ctype = *_ctype;
 
 	rc = rest_sync_transfer(REST_CLIENT_PUT, msg, url_nt.s, body, &ctype,
 	                          body_pv, ctype_pv, code_pv);
+
+	if (lrc == RCL_OK_LOCKED)
+		rcl_release_url(host, rc == RCL_OK);
 
 	pkg_free(url_nt.s);
 	return rc;
@@ -589,7 +602,8 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	rest_async_param *param;
 	pv_value_t val;
 	long http_rc;
-	int read_fd, rc;
+	char *host;
+	int read_fd, rc, lrc = RCL_OK;
 
 	param = pkg_malloc(sizeof *param);
 	if (!param) {
@@ -597,6 +611,12 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		return RCL_INTERNAL_ERR;
 	}
 	memset(param, '\0', sizeof *param);
+
+	if (no_concurrent_connects && (lrc=rcl_acquire_url(url, &host)) < RCL_OK)
+		return lrc;
+
+	param->timeout_s = (ctx->timeout_s && ctx->timeout_s < curl_timeout) ?
+			ctx->timeout_s : curl_timeout;
 
 	rc = start_async_http_req(msg, method, url, body, ctype,
 			param, &param->body, ctype_pv ? &param->ctype : NULL, &read_fd);
@@ -655,8 +675,14 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		return rc;
 	}
 
+	/* the TCP connection is established, async started with success */
+
+	if (lrc == RCL_OK_LOCKED)
+		rcl_release_url(host, rc == RCL_OK);
+
 	ctx->resume_f = resume_async_http_req;
 	ctx->timeout_f = time_out_async_http_req;
+	ctx->timeout_s = param->timeout_s;
 
 	param->method = method;
 	param->body_pv = (pv_spec_p)body_pv;
@@ -664,7 +690,6 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	param->code_pv = (pv_spec_p)code_pv;
 	ctx->resume_param = param;
 
-	/* async started with success */
 	async_status = read_fd;
 	return 1;
 }

@@ -93,6 +93,7 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 #define	NAT_UAC_TEST_RPORT	0x10
 #define	NAT_UAC_TEST_C_RCVD	0x20
 #define	NAT_UAC_TEST_C_RPORT	0x40
+#define	NAT_UAC_TEST_RFC_6333	0x80
 
 #define MI_SET_NATPING_STATE		"nh_enable_ping"
 #define MI_DEFAULT_NATPING_STATE	1
@@ -110,9 +111,12 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 #define STORE_BRANCH_CTID \
 	(sipping_flag && (rm_on_to_flag || sipping_latency_flag))
 
-static int nat_uac_test_f(struct sip_msg* msg, int *tests);
+static int fixup_flags_uac_test(void** param);
+static int fixup_flags_sdp(void** param);
+
+static int nat_uac_test_f(struct sip_msg* msg, void *tests);
 static int fix_nated_contact_f(struct sip_msg* msg, str *params);
-static int fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip,
+static int fix_nated_sdp_f(struct sip_msg* msg, void *flags, str *ip,
 						str *new_sdp_lines);
 static int fix_nated_register_f(struct sip_msg *, char *, char *);
 static int add_rcv_param_f(struct sip_msg* msg, int *flag);
@@ -134,7 +138,7 @@ usrloc_api_t ul;
 static int cblen = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
 static int natping_interval = 0;
-struct socket_info* force_socket = 0;
+const struct socket_info* force_socket = 0;
 
 /* */
 int ping_checker_interval = 1;
@@ -216,17 +220,17 @@ int skip_oldip=0;
 /*0-> disabled, 1 ->enabled*/
 unsigned int *natping_state=0;
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f, {
-		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,fixup_flags_sdp,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"nat_uac_test",       (cmd_function)nat_uac_test_f, {
-		{CMD_PARAM_INT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,fixup_flags_uac_test,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"fix_nated_register", (cmd_function)fix_nated_register_f,
 		{{0,0,0}}, REQUEST_ROUTE},
@@ -236,7 +240,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"natping_interval",		 INT_PARAM, &natping_interval      },
 	{"ping_nated_only",          INT_PARAM, &ping_nated_only       },
 	{"nortpproxy_str",           STR_PARAM, &nortpproxy_str.s      },
@@ -260,7 +264,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{MI_SET_NATPING_STATE, 0, 0, 0, {
 		{mi_enable_natping, {0}},
 		{mi_enable_natping_1, {"status", 0}},
@@ -269,7 +273,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static module_dependency_t *get_deps_natping_interval(param_export_t *param)
+static module_dependency_t *get_deps_natping_interval(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= 0)
 		return NULL;
@@ -277,7 +281,7 @@ static module_dependency_t *get_deps_natping_interval(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
@@ -744,14 +748,14 @@ fix_nated_contact_f(struct sip_msg* msg, str *params)
  * test for occurrence of RFC1918 / RFC6598 IP address in Contact HF
  */
 static int
-contact_1918(struct sip_msg* msg)
+contact_1918(struct sip_msg* msg, int check_rfc_6333)
 {
 	struct sip_uri uri;
 	struct hdr_field *hdr;
 	contact_t* c;
 
 	for( hdr=NULL,c=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; )
-		if ( ip_addr_is_1918(&(uri.host)) == 1) return 1;
+		if ( ip_addr_is_1918(&(uri.host), check_rfc_6333) == 1) return 1;
 
 	return 0;
 }
@@ -760,7 +764,7 @@ contact_1918(struct sip_msg* msg)
  * test for occurrence of RFC1918 / RFC6598 IP address in SDP
  */
 static int
-sdp_1918(struct sip_msg* msg)
+sdp_1918(struct sip_msg* msg, int check_rfc_6333)
 {
 	str body, ip;
 	int pf;
@@ -794,7 +798,7 @@ sdp_1918(struct sip_msg* msg)
 		if (pf != AF_INET || isnulladdr(&ip, pf))
 			return 0;
 
-		ret |= (ip_addr_is_1918(&ip) == 1) ? 1 : 0;
+		ret |= ip_addr_is_1918(&ip, check_rfc_6333);
 	}
 
 	return ret;
@@ -804,10 +808,10 @@ sdp_1918(struct sip_msg* msg)
  * test for occurrence of RFC1918 / RFC6598 IP address in top Via
  */
 static int
-via_1918(struct sip_msg* msg)
+via_1918(struct sip_msg* msg, int check_rfc_6333)
 {
 
-	return (ip_addr_is_1918(&(msg->via1->host)) == 1) ? 1 : 0;
+	return ip_addr_is_1918(&(msg->via1->host), check_rfc_6333);
 }
 
 /*
@@ -848,16 +852,37 @@ contact_rport(struct sip_msg* msg)
 
 }
 
+static str nat_uac_test_flag_names[] =
+{
+	str_init("private-contact"),       /* NAT_UAC_TEST_C_1918 */
+	str_init("diff-ip-src-via"),       /* NAT_UAC_TEST_V_RCVD */
+	str_init("private-via"),           /* NAT_UAC_TEST_V_1918 */
+	str_init("private-sdp"),           /* NAT_UAC_TEST_S_1918 */
+	str_init("diff-port-src-via"),     /* NAT_UAC_TEST_RPORT */
+	str_init("diff-ip-src-contact"),   /* NAT_UAC_TEST_C_RCVD */
+	str_init("diff-port-src-contact"), /* NAT_UAC_TEST_C_RPORT */
+	str_init("carrier-grade-nat"),     /* NAT_UAC_TEST_RFC_6333 */
+	STR_NULL
+};
 
-
+static int fixup_flags_uac_test(void** param)
+{
+	return fixup_named_flags(param, nat_uac_test_flag_names, NULL, NULL);
+}
 
 static int
-nat_uac_test_f(struct sip_msg* msg, int *tests)
+nat_uac_test_f(struct sip_msg* msg, void *flags)
 {
+	unsigned int tests = (unsigned int)(unsigned long)flags;
+	int check_rfc_6333 = 0;
+
+	if (tests & NAT_UAC_TEST_RFC_6333)
+		check_rfc_6333 = 1;
+
 	/* return true if any of the NAT-UAC tests holds */
 
 	/* test if the source port is different from the port in Via */
-	if ((*tests & NAT_UAC_TEST_RPORT) &&
+	if ((tests & NAT_UAC_TEST_RPORT) &&
 		 (msg->rcv.src_port!=(msg->via1->port?msg->via1->port:SIP_PORT)) ){
 		return 1;
 	}
@@ -865,35 +890,35 @@ nat_uac_test_f(struct sip_msg* msg, int *tests)
 	 * test if source address of signaling is different from
 	 * address advertised in Via
 	 */
-	if ((*tests & NAT_UAC_TEST_V_RCVD) && received_test(msg))
+	if ((tests & NAT_UAC_TEST_V_RCVD) && received_test(msg))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses in Contact
 	 * header field
 	 */
-	if ((*tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg)>0))
+	if ((tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg, check_rfc_6333)>0))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses in SDP body
 	 */
-	if ((*tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg))
+	if ((tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg, check_rfc_6333))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses top Via
 	 */
-	if ((*tests & NAT_UAC_TEST_V_1918) && via_1918(msg))
+	if ((tests & NAT_UAC_TEST_V_1918) && via_1918(msg, check_rfc_6333))
 		return 1;
 	/*
 	 * test if source address of signaling is different from
 	 * address advertised in Contact
 	 */
-	if ((*tests & NAT_UAC_TEST_C_RCVD) && contact_rcv(msg))
+	if ((tests & NAT_UAC_TEST_C_RCVD) && contact_rcv(msg))
 		return 1;
 	/*
 	 * test if source port of signaling is different from
 	 * port advertised in Contact
 	 */
-	if ((*tests & NAT_UAC_TEST_C_RPORT) && contact_rport(msg))
+	if ((tests & NAT_UAC_TEST_C_RPORT) && contact_rport(msg))
 		return 1;
 
 	/* no test succeeded */
@@ -1101,12 +1126,27 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip, int forc
 	return 0;
 }
 
+static str fix_nated_sdp_flag_names[] =
+{
+	str_init("add-dir-active"),    /* ADD_ADIRECTION */
+	str_init("rewrite-media-ip"),  /* FIX_MEDIP */
+	str_init("add-no-rtpproxy"),   /* ADD_ANORTPPROXY */
+	str_init("rewrite-origin-ip"), /* FIX_ORGIP */
+	str_init("rewrite-null-ips"),  /* FORCE_NULL_ADDR */
+	STR_NULL
+};
+
+static int fixup_flags_sdp(void** param)
+{
+	return fixup_named_flags(param, fix_nated_sdp_flag_names, NULL, NULL);
+}
 
 static int
-fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
+fix_nated_sdp_f(struct sip_msg* msg, void *_flags, str *ip, str *new_sdp_lines)
 {
 	str body;
 	int forcenulladdr = 0;
+	unsigned int flags = (unsigned int)(unsigned long)_flags;
 	char *buf;
 	struct lump* anchor;
 	struct body_part * p;
@@ -1129,14 +1169,13 @@ fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
 							 || body.len == 0)
 			continue;
 
-		if (*level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
-			msg->msg_flags |= FL_FORCE_ACTIVE;
+		if (flags & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
 			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0);
 			if (anchor == NULL) {
 				LM_ERR("anchor_lump failed\n");
 				return -1;
 			}
-			if (*level & ADD_ADIRECTION) {
+			if (flags & ADD_ADIRECTION) {
 				buf = pkg_malloc((ADIRECTION_LEN + CRLF_LEN) * sizeof(char));
 				if (buf == NULL) {
 					LM_ERR("out of pkg memory\n");
@@ -1150,7 +1189,7 @@ fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
 					return -1;
 				}
 			}
-			if ((*level & ADD_ANORTPPROXY) && nortpproxy_str.len) {
+			if ((flags & ADD_ANORTPPROXY) && nortpproxy_str.len) {
 				buf = pkg_malloc((nortpproxy_str.len + CRLF_LEN) * sizeof(char));
 				if (buf == NULL) {
 					LM_ERR("out of pkg memory\n");
@@ -1179,14 +1218,14 @@ fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
 			}
 		}
 
-		if (*level & FORCE_NULL_ADDR) { forcenulladdr = 1; }
+		if (flags & FORCE_NULL_ADDR) { forcenulladdr = 1; }
 
-		if (*level & FIX_ORGIP) {
+		if (flags & FIX_ORGIP) {
 			/* Iterate all o= and replace ips in them. */
 			if (replace_sdp_ip(msg, &body, "o=", ip?ip:0, forcenulladdr)==-1)
 				return -1;
 		}
-		if (*level & FIX_MEDIP) {
+		if (flags & FIX_MEDIP) {
 			/* Iterate all c= and replace ips in them. */
 			if (replace_sdp_ip(msg, &body, "c=", ip?ip:0, forcenulladdr)==-1)
 				return -1;
@@ -1268,9 +1307,10 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	str c;
 	str opt;
 	str path;
+	str received;
 	union sockaddr_union to;
 	struct hostent *he;
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 	unsigned int flags;
 	struct proxy_l next_hop;
 	ucontact_coords ct_coords = 0;
@@ -1330,9 +1370,15 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 			c.s = (char*)cp + sizeof(c.len);
 			cp = (char*)cp + sizeof(c.len) + c.len;
+
+			memcpy(&received.len, cp, sizeof(received.len));
+			received.s = received.len ? ((char*)cp + sizeof(received.len)) : NULL;
+			cp = (char*)cp + sizeof(received.len) + received.len;
+
 			memcpy(&path.len, cp, sizeof(path.len));
 			path.s = path.len ? ((char*)cp + sizeof(path.len)) : NULL;
 			cp = (char*)cp + sizeof(path.len) + path.len;
+
 			memcpy(&send_sock, cp, sizeof(send_sock));
 			cp = (char*)cp + sizeof(send_sock);
 			memcpy(&flags, cp, sizeof(flags));

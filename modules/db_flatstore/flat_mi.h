@@ -24,8 +24,11 @@
 #define _FLATSTORE_MI_H_
 
 #include "../../mi/mi.h"
+#include "../../rw_locking.h"
 
 #define MI_FLAT_ROTATE "flat_rotate"
+
+extern rw_lock_t *rotate_lock;
 
 mi_response_t *mi_flat_rotate_cmd(const mi_params_t *params,
 								struct mi_handler *async_hdl);

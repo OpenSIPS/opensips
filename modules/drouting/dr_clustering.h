@@ -28,11 +28,21 @@
 
 extern int dr_cluster_id;
 extern str dr_cluster_shtag;
+extern char* dr_cluster_prob_mode_s;
+extern int dr_cluster_prob_mode;
+
+#define DR_CLUSTER_PROB_MODE_ALL          0
+#define DR_CLUSTER_PROB_MODE_SHTAG        1
+#define DR_CLUSTER_PROB_MODE_DISTRIBUTED  2
 
 int dr_init_cluster(void);
 
 /* checks if the sharing tag is on active */
 int dr_cluster_shtag_is_active(void);
+
+/* returns the size of the cluster (as active nodes) and
+ * the index of the current node */
+int dr_cluster_get_my_index(int *size);
 
 /* replicate the GW status via BIN */
 void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw);

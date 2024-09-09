@@ -198,6 +198,8 @@
 		<para>
 		Definition of socket(s) used to connect to (a set) RTPProxy. It may 
 		specify a UNIX socket, an IPv4/IPv6 UDP socket or an IPv4/IPv6 TCP socket.
+		If the protocol part (i.e. <quote>udp:</quote>) is missing, the socket is
+		treated as a UNIX socket.
 		</para>
 		<para>
 			The definition also supports to specify a different IP that will
@@ -215,18 +217,20 @@
 		<title>Set <varname>rtpproxy_sock</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# single rtproxy with specific weight
-modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:12221=2")
+# single rtpproxy with specific weight
+modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:22222=2")
+
+# single rtpproxy with advertised address + weight
+modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:22222|8.8.8.8=2")
+
 # multiple rtproxies for LB
 modparam("rtpproxy", "rtpproxy_sock",
-	"udp:localhost:12221 udp:localhost:12222 tcp:remote1:33422 tcp6:remote2:32322")
+	"udp:localhost:22222 udp:localhost:22223 tcp:remote1:33422 tcp6:remote2:32322")
+
 # multiple sets of multiple rtproxies
-modparam("rtpproxy", "rtpproxy_sock",
-	"1 == udp:localhost:12221 udp:localhost:12222")
-modparam("rtpproxy", "rtpproxy_sock",
-	"2 == udp:localhost:12225")
-modparam("rtpproxy", "rtpproxy_sock",
-	"2 == udp:localhost:12225|8.8.8.8")
+modparam("rtpproxy", "rtpproxy_sock", "1 == udp:localhost:22222 udp:localhost:22223")
+modparam("rtpproxy", "rtpproxy_sock", "2 == udp:localhost:22223")
+modparam("rtpproxy", "rtpproxy_sock", "2 == udp:localhost:22223|8.8.8.8")
 ...
 </programlisting>
 		</example>
@@ -289,12 +293,6 @@ modparam("rtpproxy", "rtpproxy_autobridge", 1)
 ...
 </programlisting>
 		</example>
-	</section>
-	<section id="param_rtpproxy_tout" xreflabel="rtpproxy_tout">
-		<title><varname>rtpproxy_tout</varname> (integer)</title>
-		<para>
-		Obsolete. see rtpproxy_timeout.
-		</para>
 	</section>
 	<section id="param_rtpproxy_retr" xreflabel="rtpproxy_retr">
 		<title><varname>rtpproxy_retr</varname> (integer)</title>
@@ -490,6 +488,70 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 		</example>
 	</section>
 
+	<section id="param_generated_sdp_port_min"
+			xreflabel="generated_sdp_port_min">
+		<title><varname>generated_sdp_port_min</varname> (integer)</title>
+		<para>
+			When RTPProxy module needs to generate an SDP body,
+			use this value as the minimum value of the port.
+		</para>
+
+		<para>
+		<emphasis>Default value is <quote>35000</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>generated_sdp_port_min</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "generated_sdp_port_min", 10000)
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="param_generated_sdp_port_max"
+			xreflabel="generated_sdp_port_max">
+		<title><varname>generated_sdp_port_max</varname> (integer)</title>
+		<para>
+			When RTPProxy module needs to generate an SDP body,
+			use this value as the maximum value of the port.
+		</para>
+
+		<para>
+		<emphasis>Default value is <quote>65000</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>generated_sdp_port_max</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "generated_sdp_port_max", 30000)
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="param_generated_sdp_media_ip"
+			xreflabel="generated_sdp_media_ip">
+		<title><varname>generated_sdp_media_ip</varname> (string)</title>
+		<para>
+			When RTPProxy module needs to generate an SDP body,
+			use this value as the media_ip in the <emphasis>c=</emphasis>
+			and the <emphasis>o=</emphasis>.
+		</para>
+
+		<para>
+		<emphasis>Default value is <quote>127.0.0.1</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>generated_sdp_media_ip</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "generated_sdp_media_ip", "10.0.0.1")
+...
+		</programlisting>
+		</example>
+	</section>
+
 </section>
 
 
@@ -660,19 +722,25 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
         <section id="func_rtpproxy_offer" xreflabel="rtpproxy_offer()">
                 <title>
-                <function moreinfo="none">rtpproxy_offer([[flags][, [ip_address][, [set_id][, [sock_var][, ret_var]]]])</function>
+                <function moreinfo="none">rtpproxy_offer([[flags][, [ip_address][, [set_id][, [sock_var][, [ret_var][, [body_var]]]]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
                 an &rtp; proxy. To be invoked
 		on INVITE for the cases the SDPs are in INVITE and 200 OK and on 200 OK
 		when SDPs are in 200 OK and ACK.
-                </para>
-                <para>
-		See rtpproxy_engage() function description above for the meaning of the
-		parameters.
-		</para>
-		<para>
+			</para>
+				<para>
+					The function receives the same parameters as
+					<function>rtpproxy_engage()</function>, as well as an extra
+					parameter named <emphasis>body_var</emphasis> - this parameter
+					is used as an in-out variable for the body that should be used
+					to challenge &rtp; proxy server. If the variable is specified,
+					it is the function uses its content as the body to challenge,
+					and returns the resulted body in it. If not used, the message's
+					body is used, and the outgoing body is changed.
+				</para>
+			<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
                 </para>
@@ -714,7 +782,7 @@ onreply_route[2]
 	</section>
         <section id="func_rtpproxy_answer" xreflabel="rtpproxy_answer()">
                 <title>
-                <function moreinfo="none">rtpproxy_answer([[flags][, [ip_address][, [set_id][, [sock_var][, ret_var]]]]])</function>
+                <function moreinfo="none">rtpproxy_answer([[flags][, [ip_address][, [set_id][, [sock_var][, [ret_var][, [body_var]]]]]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
@@ -723,8 +791,8 @@ onreply_route[2]
 		when SDPs are in 200 OK and ACK.
 		</para>
 		<para>
-		See rtpproxy_engage() function description above for the meaning of the
-		parameters.
+			See <function>rtpproxy_offer()</function> function description
+			above for the meaning of the parameters.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1060,13 +1128,12 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 					the config file).
 				</para></listitem>
 				<listitem><para>
+					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the RTPproxy node, 2 - put the RTPproxy node in probing mode.
+				</para></listitem>
+				<listitem><para>
 					<emphasis>setid</emphasis> (optional) - the rtpproxy set ID (used
 					for better indentification of the rtpproxy instance to be enabled,
 					for example when a rtpproxy is used in multiple sets).
-				</para></listitem>
-				<listitem><para>
-					<emphasis>enable</emphasis> - 1 - enable, 0 - disable.
-					the config file).
 				</para></listitem>
 			</itemizedlist>
 			<para>
@@ -1082,7 +1149,7 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 ## disable a RTPProxy by URL only
 $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
-$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0 3
 ...
 			</programlisting>
 			</example>

@@ -621,9 +621,9 @@ modparam("tm", "wt_timer", 10 )
 
 
 route{
-    if ( !mf_process_maxfwd_header("10") )
+    if ( !mf_process_maxfwd_header(10) )
     {
-        sl_send_reply("483","To Many Hops");
+        sl_send_reply(483, "Too Many Hops");
         exit;
     };
 
@@ -658,7 +658,7 @@ route{
             # we do not care about anything else but MESSAGEs
             if (!$rm=="MESSAGE")
             {
-                if (!t_reply("404", "Not found"))
+                if (!t_reply(404, "Not found"))
                 {
                     sl_reply_error();
                 };
@@ -669,13 +669,13 @@ route{
             if (m_store("$ru"))
             {
                 log("MSILO: offline message stored\n");
-                if (!t_reply("202", "Accepted"))
+                if (!t_reply(202, "Accepted"))
                 {
                     sl_reply_error();
                 };
             }else{
                 log("MSILO: offline message NOT stored\n");
-                if (!t_reply("503", "Service Unavailable"))
+                if (!t_reply(503, "Service Unavailable"))
                 {
                     sl_reply_error();
                 };
@@ -705,10 +705,10 @@ failure_route[1] {
     if (m_store("$ou"))
     {
         log("MSILO: offline message stored\n");
-        t_reply("202", "Accepted");
+        t_reply(202, "Accepted");
     }else{
         log("MSILO: offline message NOT stored\n");
-        t_reply("503", "Service Unavailable");
+        t_reply(503, "Service Unavailable");
     };
 }
 
@@ -724,21 +724,22 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 124 66 4163 1410
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 43 36 181 271
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 45 38 191 277
    3. Andrei Pelinescu-Onciul 18 10 115 382
-   4. Jan Janak (@janakj) 16 11 126 168
-   5. Liviu Chircu (@liviuchircu) 15 12 66 80
+   4. Liviu Chircu (@liviuchircu) 17 14 73 89
+   5. Jan Janak (@janakj) 16 11 126 168
    6. Razvan Crainea (@razvancrainea) 12 10 33 28
    7. Jiri Kuthan (@jiriatipteldotorg) 9 6 180 33
    8. Henning Westerholt (@henningw) 9 6 114 110
-   9. Vlad Patrascu (@rvlad-patrascu) 9 5 69 123
+   9. Vlad Patrascu (@rvlad-patrascu) 8 5 69 123
    10. Vlad Paiu (@vladpaiu) 7 4 90 80
 
    All remaining contributors: Juha Heinanen (@juha-h), Andrea
-   Giordana, Ancuta Onofrei, Elena-Ramona Modroiu, Aron Rosenberg,
-   John Riordan, Konstantin Bokarius, Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov), Sergio Gutierrez, UnixDev, Zero King
-   (@l2dy), Edson Gellert Schubert, Stanislaw Pitucha.
+   Giordana, Ancuta Onofrei, Elena-Ramona Modroiu, Maksym Sobolyev
+   (@sobomax), Aron Rosenberg, John Riordan, Konstantin Bokarius,
+   Ovidiu Sas (@ovidiusas), Julián Moreno Patiño, Peter Lemenkov
+   (@lemenkov), Sergio Gutierrez, UnixDev, Zero King (@l2dy),
+   Edson Gellert Schubert, Stanislaw Pitucha.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -760,23 +761,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2002 - Apr 2020
-   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2015
-   9.  Stanislaw Pitucha                   Jul 2010 - Jul 2010
-   10. John Riordan                        May 2009 - May 2009
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Ovidiu Sas (@ovidiusas)             Apr 2022 - Apr 2022
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2002 - Oct 2021
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2015
 
-   All remaining contributors: UnixDev, Sergio Gutierrez, Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei,
-   Aron Rosenberg, Elena-Ramona Modroiu, Juha Heinanen (@juha-h),
-   Andrea Giordana, Andrei Pelinescu-Onciul, Jan Janak (@janakj),
-   Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Stanislaw Pitucha, John Riordan,
+   UnixDev, Sergio Gutierrez, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Ancuta Onofrei, Aron Rosenberg, Elena-Ramona
+   Modroiu, Juha Heinanen (@juha-h), Andrea Giordana, Andrei
+   Pelinescu-Onciul, Jan Janak (@janakj), Jiri Kuthan
+   (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -785,9 +787,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Vlad Paiu (@vladpaiu), Razvan Crainea
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Vlad Paiu (@vladpaiu), Razvan Crainea
    (@razvancrainea), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
    Modroiu, Juha Heinanen (@juha-h), Andrea Giordana, Jan Janak

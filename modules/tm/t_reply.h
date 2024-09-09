@@ -30,6 +30,7 @@
 
 extern int restart_fr_on_each_reply;
 extern int onreply_avp_mode;
+extern struct script_route_ref *tm_local_reply_route;
 
 /* reply processing status */
 enum rps {
@@ -69,6 +70,8 @@ typedef int (*treply_f)(struct sip_msg * , unsigned int , const str * );
 typedef int (*treply_wb_f)( struct cell* trans, unsigned int code, str *text,
 	str *body, str *new_header, str *to_tag);
 typedef int (*tgen_totag_f)(struct sip_msg * , str * );
+typedef int (*tcheck_trans_f)(struct sip_msg *);
+typedef int (*trelay_f)(struct sip_msg  *p_msg , void *flags, struct proxy_l *proxy);
 
 #define LOCK_REPLIES(_t) lock(&(_t)->reply_mutex )
 #define UNLOCK_REPLIES(_t) unlock(&(_t)->reply_mutex )
@@ -133,10 +136,10 @@ int t_get_picked_branch();
 /* set which 'reply' structure to take if only negative
    replies arrive
 */
-void t_on_negative( unsigned int go_to );
-unsigned int get_on_negative();
-void t_on_reply( unsigned int go_to );
-unsigned int get_on_reply();
+void t_on_negative( struct script_route_ref *ref );
+struct script_route_ref *get_on_negative();
+void t_on_reply( struct script_route_ref *ref );
+struct script_route_ref *get_on_reply();
 
 /* Retransmits the last sent inbound reply.
  * Returns  -1 - error

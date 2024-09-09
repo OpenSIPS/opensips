@@ -26,7 +26,7 @@
         <para><emphasis>auth</emphasis> -- Authentication Framework module</para>
       </listitem>
       <listitem>
-        <para><emphasis>avpops</emphasis> -- AVP operation module</para>
+        <para><emphasis>sqlops</emphasis> -- SQL operation module</para>
       </listitem>
       <listitem>
         <para><emphasis>maxfwd</emphasis> -- Max-Forward processor module</para>

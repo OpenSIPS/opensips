@@ -1,7 +1,4 @@
 /*
-
-$Id$
-
 MD5C.C - RSA Data Security, Inc., MD5 message-digest algorithm
 
 Copyright (C) 1991-2, RSA Data Security, Inc. Created 1991. All
@@ -60,13 +57,11 @@ documentation and/or software.
 #define S43 15
 #define S44 21
 
-static void MD5Transform PROTO_LIST ((UINT4 [4], unsigned char [64]));
-static void Encode PROTO_LIST
-  ((unsigned char *, UINT4 *, unsigned int));
-static void Decode PROTO_LIST
-  ((UINT4 *, unsigned char *, unsigned int));
-static void MD5_memcpy PROTO_LIST ((POINTER, POINTER, unsigned int));
-static void MD5_memset PROTO_LIST ((POINTER, int, unsigned int));
+static void MD5Transform(UINT4 [4], const unsigned char [64]);
+static void Encode(unsigned char *, UINT4 *, unsigned int);
+static void Decode(UINT4 *, const unsigned char *, unsigned int);
+static void MD5_memcpy(POINTER, POINTER, unsigned int);
+static void MD5_memset(POINTER, int, unsigned int);
 
 static unsigned char PADDING[64] = {
   0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -130,7 +125,7 @@ void MD5Init (MD5_CTX *context)
    unsigned char *input - input block
    unsigned int inputLen - length of input block
  */
-void MD5Update (MD5_CTX *context, unsigned char *input, unsigned int inputLen)
+void MD5Update (MD5_CTX *context, const char *input, unsigned int inputLen)
 {
   unsigned int i, index, partLen;
 
@@ -154,7 +149,7 @@ void MD5Update (MD5_CTX *context, unsigned char *input, unsigned int inputLen)
  MD5Transform (context->state, context->buffer);
 
  for (i = partLen; i + 63 < inputLen; i += 64)
-   MD5Transform (context->state, &input[i]);
+   MD5Transform (context->state, (const unsigned char *)(&input[i]));
 
  index = 0;
   }
@@ -172,7 +167,7 @@ void MD5Update (MD5_CTX *context, unsigned char *input, unsigned int inputLen)
   unsigned char digest[16] - message digest
   MD5_CTX *context - context
  */
-void MD5Final (unsigned char digest[16], MD5_CTX *context)
+void MD5Final (char digest[16], MD5_CTX *context)
 {
   unsigned char bits[8];
   unsigned int index, padLen;
@@ -184,13 +179,13 @@ void MD5Final (unsigned char digest[16], MD5_CTX *context)
 */
   index = (unsigned int)((context->count[0] >> 3) & 0x3f);
   padLen = (index < 56) ? (56 - index) : (120 - index);
-  MD5Update (context, PADDING, padLen);
+  MD5Update (context, (const char *)PADDING, padLen);
 
   /* Append length (before padding) */
-  MD5Update (context, bits, 8);
+  MD5Update (context, (const char *)bits, 8);
 
   /* Store state in digest */
-  Encode (digest, context->state, 16);
+  Encode ((unsigned char *)digest, context->state, 16);
 
   /* Zeroize sensitive information.
 */
@@ -199,7 +194,7 @@ void MD5Final (unsigned char digest[16], MD5_CTX *context)
 
 /* MD5 basic transformation. Transforms state based on block.
  */
-static void MD5Transform (UINT4 state[4], unsigned char block[64])
+static void MD5Transform (UINT4 state[4], const unsigned char block[64])
 {
   UINT4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
 
@@ -305,7 +300,7 @@ static void Encode (unsigned char *output, UINT4 *input, unsigned int len)
 /* Decodes input (unsigned char) into output (UINT4). Assumes len is
   a multiple of 4.
  */
-static void Decode (UINT4 *output, unsigned char *input, unsigned int len)
+static void Decode (UINT4 *output, const unsigned char *input, unsigned int len)
 {
   unsigned int i, j;
 

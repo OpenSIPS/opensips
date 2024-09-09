@@ -493,14 +493,6 @@ static int load_sca_info_from_db(void)
 				b2bl_key.s = (char*)values[app_b2bl_key_col[j]].val.string_val;
 				if (b2bl_key.s) {
 					b2bl_key.len = strlen(b2bl_key.s);
-					if (b2bl_key.len > B2BL_MAX_KEY_LEN) {
-						LM_ERR("buffer overflow on b2bl_key [%.*s]"
-							" for shared_line [%.*s][%d]\n",
-							b2bl_key.len, b2bl_key.s,
-							shared_line.len, shared_line.s,
-							appearance_index);
-						goto cont;
-					}
 					LM_DBG("b2bl_key=[%.*s]\n", b2bl_key.len, b2bl_key.s);
 				} else {
 					LM_ERR("Missing b2bl_key for shared_line [%.*s][1]\n",
@@ -518,6 +510,8 @@ static int load_sca_info_from_db(void)
 				if (0!=b2b_sca_update_call_record_key(call, &b2bl_key)) {
 					LM_ERR("Unable to update b2bl_key [%.*s]\n",
 						b2bl_key.len, b2bl_key.s);
+					if (call->b2bl_key.s)
+						shm_free(call->b2bl_key.s);
 					shm_free(call);
 					call = NULL;
 					record->call[appearance_index-1] = NULL;
@@ -534,6 +528,8 @@ static int load_sca_info_from_db(void)
 				if(b2bl_api.register_cb(&b2bl_key, &sca_logic_notify, cb_params,
 					B2B_RE_INVITE_CB|B2B_CONFIRMED_CB|B2B_DESTROY_CB) != 0){
 					LM_ERR("Unable register b2b cb\n");
+					if (call->b2bl_key.s)
+						shm_free(call->b2bl_key.s);
 					shm_free(call);
 					call = NULL;
 					record->call[appearance_index-1] = NULL;

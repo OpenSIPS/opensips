@@ -38,6 +38,7 @@
 #include "../../lib/csv.h"
 #include "../../mod_fix.h"
 #include "../../ipc.h"
+#include "../../status_report.h"
 #include "dialplan.h"
 #include "dp_db.h"
 
@@ -84,8 +85,10 @@ str dp_df_part = str_init(DEFAULT_PARTITION);
 dp_param_p default_par2 = NULL;
 static str database_url = {NULL, 0};
 
+void *dp_srg = NULL;
 
-static param_export_t mod_params[]={
+
+static const param_export_t mod_params[]={
 	{ "partition",		STR_PARAM|USE_FUNC_PARAM,
 				(void*)dp_set_partition},
 	{ "db_url",		STR_PARAM,	&default_dp_db_url.s},
@@ -103,7 +106,7 @@ static param_export_t mod_params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "dp_reload", 0, 0, mi_child_init, {
 		{mi_reload_rules, {0}},
 		{mi_reload_rules_1, {"partition", 0}},
@@ -122,7 +125,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"dp_translate", (cmd_function)dp_translate_f,
 		{ {CMD_PARAM_INT, NULL, NULL},
 		  {CMD_PARAM_STR, NULL, NULL},
@@ -137,7 +140,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_WARN },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -172,7 +175,7 @@ struct module_exports exports= {
 
 
 /*Inserts table_name/db url into the list of heads*/
-static int dp_head_insert(int dp_insert_type, str *content,
+static int dp_head_insert(int dp_insert_type, const str *content,
 				 str *partition)
 {
 #define h_insert(type, url_str, table_str, ins_str )    \
@@ -266,10 +269,10 @@ static int dp_create_head(const str *in)
 			return 0;
 		}
 
-		if (str_match(&params->s, _str(PARAM_URL))) {
+		if (str_match(&params->s, const_str(PARAM_URL))) {
 			have_db_url = 1;
 			dp_head_insert(DP_TYPE_URL, &params->next->s, &partition);
-		} else if (str_match(&params->s, _str(PARAM_TABLE))) {
+		} else if (str_match(&params->s, const_str(PARAM_TABLE))) {
 			have_db_table = 1;
 			dp_head_insert(DP_TYPE_TABLE, &params->next->s, &partition);
 		} else if (!ZSTR(params->s)) {
@@ -359,7 +362,7 @@ static int mod_init(void)
 	timerec_column.len      = strlen(timerec_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
-	if (!dp_df_head && str_match(&dp_df_part, _str(DEFAULT_PARTITION)) &&
+	if (!dp_df_head && str_match(&dp_df_part, const_str(DEFAULT_PARTITION)) &&
 	        default_dp_db_url.s) {
 		dp_head_insert(DP_TYPE_URL, &default_dp_db_url, &dp_df_part);
 		dp_head_insert(DP_TYPE_TABLE, &default_dp_table, &dp_df_part);
@@ -384,6 +387,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	dp_srg = sr_register_group( CHAR_INT("dialplan"), 0 /*not public*/);
+	if (dp_srg==NULL) {
+		LM_ERR("failed to create dialplan group for 'status-report'");
+		return -1;
+	}
+
 	dp_print_list();
 	if(init_data() != 0) {
 		LM_ERR("could not initialize data\n");
@@ -399,7 +408,7 @@ static int mod_init(void)
  * when done */
 static void dp_rpc_data_load(int sender_id, void *unused)
 {
-	if(dp_load_all_db() != 0){
+	if(dp_load_all_db(1) != 0){
 		LM_ERR("failed to reload database\n");
 		return;
 	}
@@ -562,10 +571,15 @@ static int dp_translate_f(struct sip_msg *msg, int* dpid, str *in_str,
 	/* we are done reading -> unref the data */
 	lock_stop_read( part->ref_lock );
 
-	if (attr_var && attrs.s && attrs.len) {
+	if (attr_var) {
 		verify_par_type(*attr_var);
+
 		pval.flags = PV_VAL_STR;
-		pval.rs = attrs;
+
+		if (ZSTR(attrs))
+			pval.rs = str_init("");
+		else
+			pval.rs = attrs;
 
 		if (pv_set_value(msg, attr_var, 0, &pval) != 0) {
 			LM_ERR("failed to set value '%.*s' for the attr pvar!\n",
@@ -738,7 +752,7 @@ error:
 static mi_response_t *mi_reload_rules(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	if(dp_load_all_db() != 0){
+	if(dp_load_all_db(0) != 0){
 			LM_ERR("failed to reload database\n");
 			return 0;
 	}
@@ -760,7 +774,7 @@ static mi_response_t *mi_reload_rules_1(const mi_params_t *params,
 			return init_mi_error( 400, MI_SSTR("Partition not found"));
 	/* Reload rules from specified  partition */
 	LM_DBG("Reloading rules from partition %.*s\n", table.len, table.s);
-	if(dp_load_db(el) != 0){
+	if(dp_load_db(el,0) != 0){
 			LM_ERR("failed to reload database data\n");
 			return 0;
 	}

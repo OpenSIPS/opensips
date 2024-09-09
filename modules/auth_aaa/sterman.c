@@ -62,7 +62,7 @@ static int add_cisco_vsa(aaa_message** send, struct sip_msg* msg)
 	memcpy(callid.s + 8, msg->callid->body.s, msg->callid->body.len);
 
 	if (proto.avp_add(conn, *send, &attrs[A_CISCO_AVPAIR], callid.s,
-			callid.len, attrs[A_CISCO_AVPAIR].value)) {
+			callid.len, attrs[A_CISCO_AVPAIR].type)) {
 
 		LM_ERR("unable to add Cisco-AVPair attribute\n");
 		pkg_free(callid.s);
@@ -171,7 +171,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 	 */
 	if (_cred->qop.qop_parsed == QOP_AUTH_D) {
 		if (proto.avp_add(conn, send, &attrs[A_DIGEST_QOP], "auth", 4, 0)) {
-			LM_ERR("unable to add Digest-QOP attribute\n");
+			LM_ERR("unable to add Digest-Qop attribute\n");
 			goto err;
 		}
 		if (proto.avp_add(conn, send, &attrs[A_DIGEST_NONCE_COUNT],
@@ -187,7 +187,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 	} else if (_cred->qop.qop_parsed == QOP_AUTHINT_D) {
 		if (proto.avp_add(conn, send, &attrs[A_DIGEST_QOP],
 				"auth-int", 8, 0)) {
-			LM_ERR("unable to add Digest-QOP attribute\n");
+			LM_ERR("unable to add Digest-Qop attribute\n");
 			goto err;
 		}
 		if (proto.avp_add(conn, send, &attrs[A_DIGEST_NONCE_COUNT],
@@ -200,9 +200,9 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 			LM_ERR("unable to add Digest-CNonce attribute\n");
 			goto err;
 		}
-		if (proto.avp_add(conn, send, &attrs[A_DIGEST_BODY_DIGEST],
+		if (proto.avp_add(conn, send, &attrs[A_DIGEST_OPAQUE],
 				_cred->opaque.s, _cred->opaque.len, 0)) {
-			LM_ERR("unable to add Digest-Body-Digest attribute\n");
+			LM_ERR("unable to add Digest-Opaque attribute\n");
 			goto err;
 		}
 	} else  {
@@ -260,7 +260,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 			goto err;
 		}*/
 #endif
-		LM_ERR("authorization failed\n");
+		LM_DBG("authorization failed\n");
 	}
 
 err:

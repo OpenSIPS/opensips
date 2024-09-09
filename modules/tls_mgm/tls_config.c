@@ -82,3 +82,5 @@ str    dhparams_col = str_init("dh_params");
 str    eccurve_col = str_init("ec_curve");
 str    tls_db_table = str_init("tls_mgm");
 str    tls_db_url = {NULL, 0};
+
+str tls_library_param  = str_init(TLS_LIB_AUTO_STR);

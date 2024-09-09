@@ -52,23 +52,27 @@ int init_dialog_support(void)
 static void sca_dialog_callback(struct dlg_cell *dlg, int type,
 												struct dlg_cb_params *_params)
 {
-	str calling_line = {NULL,0};
-	str called_line = {NULL,0};
+	int_str calling_line;
+	int_str called_line;
 	struct sca_line *line=NULL;
 	int idx;
 	int state;
+	int val_type;
+
+	calling_line.s = STR_NULL;
+	called_line.s = STR_NULL;
 
 	/* search the lines */
-	if ( dlgf.fetch_dlg_value(dlg, &calling_line_Dvar, &calling_line, 1)==0 ||
-	calling_line.s!=NULL) {
-		LM_DBG("calling line <%.*s> found \n",calling_line.len,calling_line.s);
+	if ( dlgf.fetch_dlg_value(dlg, &calling_line_Dvar, &val_type,
+		&calling_line, 1)==0 || calling_line.s.s!=NULL) {
+		LM_DBG("calling line <%.*s> found \n",calling_line.s.len,calling_line.s.s);
 		/* search without auto create */
-		line = get_sca_line( &calling_line, 0);
-	} else if ( dlgf.fetch_dlg_value(dlg, &called_line_Dvar, &called_line, 1)==0 ||
-	called_line.s!=NULL) {
-		LM_DBG("called line <%.*s> found \n",called_line.len,called_line.s);
+		line = get_sca_line( &calling_line.s, 0);
+	} else if ( dlgf.fetch_dlg_value(dlg, &called_line_Dvar, &val_type,
+		&called_line, 1)==0 || called_line.s.s!=NULL) {
+		LM_DBG("called line <%.*s> found \n",called_line.s.len,called_line.s.s);
 		/* search without auto create */
-		line = get_sca_line( &called_line, 0);
+		line = get_sca_line( &called_line.s, 0);
 	}
 
 	if (line==NULL) {
@@ -87,7 +91,7 @@ static void sca_dialog_callback(struct dlg_cell *dlg, int type,
 			state = SCA_STATE_IDLE;
 			break;
 		case DLGCB_EARLY:
-			state = calling_line.len?SCA_STATE_PROGRESSING:SCA_STATE_ALERTING;
+			state = calling_line.s.len?SCA_STATE_PROGRESSING:SCA_STATE_ALERTING;
 			break;
 		case DLGCB_CONFIRMED:
 			state = SCA_STATE_ACTIVE;
@@ -113,6 +117,7 @@ int sca_set_line(struct sip_msg *msg, str *line_s, int calling)
 	struct dlg_cell *dlg;
 	unsigned int idx;
 	struct sca_line *line;
+	int_str isval;
 
 	/* extract the index from the call-info line */
 	if ( parse_call_info_header( msg )!=0 ) {
@@ -159,12 +164,16 @@ int sca_set_line(struct sip_msg *msg, str *line_s, int calling)
 
 	/* store the line variable into dialog */
 	if (calling) {
-		if(dlgf.store_dlg_value(dlg, &calling_line_Dvar, line_s)< 0) {
+		isval.s = *line_s;
+		if(dlgf.store_dlg_value(dlg, &calling_line_Dvar, &isval,
+			DLG_VAL_TYPE_STR)< 0) {
 			LM_ERR("Failed to store calling line\n");
 			goto error;
 		}
 	} else {
-		if(dlgf.store_dlg_value(dlg, &called_line_Dvar, line_s)< 0) {
+		isval.s = *line_s;
+		if(dlgf.store_dlg_value(dlg, &called_line_Dvar, &isval,
+			DLG_VAL_TYPE_STR)< 0) {
 			LM_ERR("Failed to store called line\n");
 			goto error;
 		}

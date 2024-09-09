@@ -47,7 +47,7 @@ int set_connection(unsigned int type, void *val)
 /*
  * Virtual database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api", (cmd_function)db_cachedb_bind_api, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -55,12 +55,12 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"cachedb_url",     STR_PARAM|USE_FUNC_PARAM,(void*)&set_connection},
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_CACHEDB, NULL, DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },

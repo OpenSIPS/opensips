@@ -26,6 +26,7 @@
 
 /* stress-test the PKG and/or SHM allocator implementations */
 void init_malloc_tests(void);
+
 void test_malloc(void);
 
 #endif /* __TEST_MALLOC_H__ */

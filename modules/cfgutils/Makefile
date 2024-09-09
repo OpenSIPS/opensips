@@ -1,5 +1,3 @@
-# $Id$
-#
 # cfgutils module makefile
 #
 # 
@@ -8,7 +6,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=cfgutils.so
-LIBS=
 
 include ../../Makefile.modules
 

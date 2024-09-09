@@ -1,5 +1,3 @@
-# $Id$
-#
 # nat_traversal module makefile
 #
 # 
@@ -8,7 +6,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=nat_traversal.so
-LIBS=
 
 include ../../Makefile.modules
 

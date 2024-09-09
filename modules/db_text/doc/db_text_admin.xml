@@ -230,9 +230,6 @@ suser:supasswd:xxx:alpha.org:xxx
 	</section>
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-		<para>
-			<emphasis>None</emphasis>.
-		</para>
 		<section id="param_db_mode" xreflabel="db_mode">
 			<title><varname>db_mode</varname> (integer)</title>
 		<para>
@@ -251,6 +248,25 @@ suser:supasswd:xxx:alpha.org:xxx
 		<programlisting format="linespecific">
 ...
 modparam("db_text", "db_mode", 1)
+...
+</programlisting>
+		</example>
+		</section>
+		<section id="param_buffer_size" xreflabel="buffer_size">
+			<title><varname>buffer_size</varname> (integer)</title>
+		<para>
+		Size of the buffer used to read the text file.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>4096</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>buffer_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_text", "buffer_size", 8192)
 ...
 </programlisting>
 		</example>

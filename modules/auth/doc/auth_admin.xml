@@ -11,6 +11,19 @@
 		other authentication related modules. Also, it can perform 
 		authentication taking username and password from pseudo-variables.
     </para>
+
+	<section id="rfc-8760-support" xreflabel="RFC 8760 Support">
+	        <title>RFC 8760 Support (Strenghtened Authentication)</title>
+	        <para>
+			Starting with OpenSIPS 3.2, the <ulink url='auth'>auth</ulink>,
+			<ulink url='auth_db'>auth_db</ulink> and
+			<ulink url='uac_auth'>uac_auth</ulink>
+			modules include support for two new digest authentication algorithms
+			("SHA-256" and "SHA-512-256"), according to the
+	        <ulink url="https://datatracker.ietf.org/doc/html/rfc8760">RFC 8760</ulink>
+	        specs.
+	        </para>
+	</section>
 	</section>
     
     <section>
@@ -76,6 +89,7 @@
 		<title><varname>secret</varname> (string)</title>
 		<para>
 		Secret phrase used to calculate the nonce value.
+		Must be exactly 32-character long.
 		</para>
 		<para>
 		The default is to use a random value generated from the random source in the core.
@@ -95,7 +109,8 @@ modparam("auth", "secret", "johndoessecretphrase")
 </programlisting>
 		</example>
 	</section>
-	<section>
+
+	<section id="param_nonce_expire" xreflabel="nonce_expire">
 		<title><varname>nonce_expire</varname> (integer)</title>
 		<para>
 		Nonces have limited lifetime. After a given period of time nonces 
@@ -117,7 +132,8 @@ modparam("auth", "nonce_expire", 15)   # Set nonce_expire to 15s
 </programlisting>
 		</example>
 	</section>
-	<section>
+
+	<section id="param_rpid_prefix" xreflabel="rpid_prefix">
 		<title><varname>rpid_prefix</varname> (string)</title>
 		<para>
 		Prefix to be added to Remote-Party-ID header field just before 
@@ -133,7 +149,8 @@ modparam("auth", "rpid_prefix", "Whatever &lt;")
 </programlisting>
 		</example>
 	</section>
-	<section>
+
+	<section id="param_rpid_suffix" xreflabel="rpid_suffix">
 		<title><varname>rpid_suffix</varname> (string)</title>
 		<para>
 		Suffix to be added to Remote-Party-ID header field after the URI 
@@ -150,7 +167,8 @@ modparam("auth", "rpid_suffix", "@1.2.3.4>")
 </programlisting>
 		</example>
 	</section>
-	<section>
+
+	<section id="param_realm_prefix" xreflabel="realm_prefix">
 		<title><varname>realm_prefix</varname> (string)</title>
 		<para>
 			Prefix to be automatically strip from realm. As an alternative to
@@ -171,7 +189,8 @@ modparam("auth", "realm_prefix", "sip.")
 </programlisting>
 		</example>
 	</section>
-	<section>
+
+	<section id="param_rpid_avp" xreflabel="rpid_avp">
 		<title><varname>rpid_avp</varname> (string)</title>
 		<para>
 			Full AVP specification for the AVP which 
@@ -193,8 +212,8 @@ modparam("auth", "rpid_avp", "$avp(caller_rpid)")
 		</programlisting>
 		</example>
 	</section>
-	
-	<section>
+
+	<section id="param_username_spec" xreflabel="username_spec">
 		<title><varname>username_spec</varname> (string)</title>
 		<para>
 		This name of the pseudo-variable that will hold the username.
@@ -210,7 +229,7 @@ modparam("auth", "username_spec", "$var(username)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_password_spec" xreflabel="password_spec">
 		<title><varname>password_spec</varname> (string)</title>
 		<para>
 		This name of the pseudo-variable that will hold the password.
@@ -226,7 +245,7 @@ modparam("auth", "password_spec", "$var(password)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_calculate_ha1" xreflabel="calculate_ha1">
 		<title><varname>calculate_ha1</varname> (integer)</title>
 		<para>
 		This parameter tells the server whether it should expect plaintext
@@ -250,7 +269,7 @@ modparam("auth", "calculate_ha1", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_disable_nonce_check" xreflabel="disable_nonce_check">
 		<title><varname>disable_nonce_check</varname> (int)</title>
 		<para>
 		By setting this parameter you disable the security mechanism 
@@ -276,18 +295,19 @@ modparam("auth", "disable_nonce_check", 1)
 	<title>Exported Functions</title>
 	<section id="func_www_challenge" xreflabel="www_challenge()">
 		<title>
-			<function moreinfo="none">www_challenge(realm[, qop])</function>
+			<function moreinfo="none">www_challenge(realm[, qop[, algorithms]])</function>
 		</title>
 		<para>
-		The function challenges a user agent. It will generate a 
-		WWW-Authorize header field containing a digest challenge, it will 
-		put the header field into a response generated from the request the 
-		server is processing and will send the reply. Upon reception of such a 
+		The function challenges a user agent. It will generate one or
+		more WWW-Authorize header fields containing a digest challenges, it will
+		put the header field(s) into a response generated from the request the
+		server is processing and will send the reply. Upon reception of such a
 		reply the user agent should compute credentials and retry the
 		request. For more information regarding digest authentication 
-		see RFC2617.
+		see RFC2617, RFC3261 and RFC8760.
 		</para>
-		<para>Meaning of the parameters is as follows:</para>
+		<para id="www_challenge_params" xreflabel="www_challenge() parameters meaning">
+                    Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>realm</emphasis> (string) - Realm is an opaque string that 
@@ -319,6 +339,25 @@ modparam("auth", "disable_nonce_check", 1)
 			the challenge and response requests.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>algorithms</emphasis> (string, optional) - Value of this
+			parameter is a comma-separated list of digest algorithms to be offered for
+			the UAC to use for authentication. Possible values are:</para>
+			<itemizedlist>
+				<listitem><quote>MD5</quote></listitem>
+				<listitem><quote>MD5-sess</quote></listitem>
+				<listitem><quote>SHA-256</quote></listitem>
+				<listitem><quote>SHA-256-sess</quote></listitem>
+				<listitem><quote>SHA-512-256</quote></listitem>
+				<listitem><quote>SHA-512-256-sess</quote></listitem>
+			</itemizedlist>
+			<para>When the value is empty or not set, the only offered digest
+			algorithm is <emphasis>MD5</emphasis>, to provide compatibility
+			with pre-RFC8760 UAC implementations.</para>
+			<para>Values can be listed in any order. The actual order of individual
+			challenges in SIP response is defined by the RFC8760: from stronger
+			algorithm to a weaker one.</para>
+                </listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE.
@@ -329,8 +368,8 @@ modparam("auth", "disable_nonce_check", 1)
 		<programlisting format="linespecific">
 ...
 if (!www_authorize("siphub.net", "subscriber")) {
-	www_challenge("siphub.net", "auth,auth-int");
-};
+	www_challenge("siphub.net", "auth,auth-int", "MD5,SHA-512-256");
+}
 ...
 </programlisting>
 		</example>
@@ -338,7 +377,7 @@ if (!www_authorize("siphub.net", "subscriber")) {
 
 	<section id="func_proxy_challenge" xreflabel="proxy_challenge()">
 		<title>
-			<function moreinfo="none">proxy_challenge(realm[, qop])</function>
+			<function moreinfo="none">proxy_challenge(realm[, qop[, algorithms]])</function>
 		</title>
 		<para>
 		The function challenges a user agent. It will generate a 
@@ -346,39 +385,11 @@ if (!www_authorize("siphub.net", "subscriber")) {
 		put the header field into a response generated from the request the 
 		server is processing and will send the reply. Upon reception of such a 
 		reply the user agent should compute credentials and retry the request.
-		For more information regarding digest authentication see RFC2617.
+		For more information regarding digest authentication see RFC2617,
+		RFC3261 and RFC8760.
 		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>realm</emphasis> (string) - Realm is an opaque string that 
-			the user agent should present to the user so it can decide what 
-			username and password to use. Usually this is domain of the host 
-			the server is running on.
-			</para>
-			<para>
-			If an empty string <quote></quote> is used then the server will 
-			generate it from the request. <quote>From</quote> header field domain will be 
-			used as realm.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>qop</emphasis> (string, optional) - Value of this
-			parameter can be either <quote>auth</quote>, <quote>auth-int</quote>
-			or both (separated by <emphasis>,</emphasis>). When this parameter is
-			set the server will put a qop parameter in the challenge. It
-			is recommended to use the qop parameter, however there are still some
-			user agents that cannot handle qop properly so we made this optional.
-			On the other hand there are still some user agents that cannot handle
-			request without a qop parameter too.
-			</para>
-			<para>Enabling this parameter don't improve the security at the moment,
-			because the sequence number is not stored and therefore could not be
-			checked. Actually there is no information kept by the module during
-			the challenge and response requests.
-			</para>
-		</listitem>
-		</itemizedlist>
+		<para>See the paragraph on <xref linkend="www_challenge_params"/> for
+		    the description of the parameters.</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
 		</para>
@@ -386,9 +397,13 @@ if (!www_authorize("siphub.net", "subscriber")) {
 		<title>proxy_challenge usage</title>
 		<programlisting format="linespecific">
 ...
-if (!proxy_authorize("", "subscriber)) {
-	proxy_challenge("", "auth");  # Realm will be autogenerated
-};
+$var(secure_algorithms) = "sha-256,sha-512-256";
+...
+if (!proxy_authorize("", "subscriber")) {
+...
+	proxy_challenge("", "auth", $var(secure_algorithms));  # Realm will be autogenerated
+							       # MD5 won't be allowed
+}
 ...
 </programlisting>
 		</example>
@@ -414,9 +429,9 @@ if (!proxy_authorize("", "subscriber)) {
 		<title>consume_credentials example</title>
 		<programlisting format="linespecific">
 ...
-if (www_authorize("", "subscriber)) {
+if (www_authorize("", "subscriber")) {
     consume_credentials();
-};
+}
 ...
 </programlisting>
 		</example>
@@ -441,7 +456,7 @@ if (www_authorize("", "subscriber)) {
 ...
 if (is_rpid_user_e164()) {
     # do something here
-};
+}
 ...
 </programlisting>
 		</example>
@@ -576,7 +591,7 @@ $var(username)="abc";
 $var(password)="xyz";
 if (!pv_www_authorize("opensips.org")) {
 	www_challenge("opensips.org", "auth");
-};
+}
 ...
 </programlisting>
 		</example>
@@ -624,7 +639,7 @@ $var(username)="abc";
 $var(password)="xyz";
 if (!pv_proxy_authorize("")) {
 	proxy_challenge("", "auth");  # Realm will be autogenerated
-};
+}
 ...
 </programlisting>
 		</example>

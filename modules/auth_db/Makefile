@@ -1,5 +1,3 @@
-# $Id$
-#
 # Digest Authentication - Database support
 #
 # 
@@ -8,6 +6,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=auth_db.so
-LIBS=
 
 include ../../Makefile.modules

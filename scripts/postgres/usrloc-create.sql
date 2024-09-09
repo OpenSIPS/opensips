@@ -3,7 +3,7 @@ CREATE TABLE location (
     contact_id BIGSERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
     domain VARCHAR(64) DEFAULT NULL,
-    contact VARCHAR(255) DEFAULT '' NOT NULL,
+    contact TEXT NOT NULL,
     received VARCHAR(255) DEFAULT NULL,
     path VARCHAR(255) DEFAULT NULL,
     expires INTEGER NOT NULL,

@@ -1,0 +1,9 @@
+[submodule "modules/wolfssl/lib/wolfssl"]
+	path = modules/tls_wolfssl/lib/wolfssl
+	url = https://github.com/wolfSSL/wolfssl.git
+[submodule "modules/launch_darkly/lib/c-server-sdk"]
+	path = modules/launch_darkly/lib/c-server-sdk
+	url = https://github.com/launchdarkly/c-server-sdk.git
+[submodule "modules/http2d/lib/nghttp2"]
+	path = modules/http2d/lib/nghttp2
+	url = https://github.com/nghttp2/nghttp2

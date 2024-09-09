@@ -93,7 +93,7 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 	memcpy((*_r)->aor.s, _aor->s, _aor->len);
 	(*_r)->aor.len = _aor->len;
 	(*_r)->domain = _dom;
-	(*_r)->aorhash = core_hash(_aor, 0, 0);
+	(*_r)->aorhash = core_hash(_aor, NULL, 0);
 
 	return 0;
 }
@@ -248,9 +248,9 @@ static inline int nodb_timer(urecord_t* _r)
 
 	while(ptr) {
 		if (!VALID_CONTACT(ptr, act_time)) {
-			/* run callbacks for EXPIRE event */
-			if (exists_ulcb_type(UL_CONTACT_EXPIRE))
-				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr);
+			/* for forcibly expired contacts, DELETE event is already run */
+			if (!FORCE_EXPIRED_CONTACT(ptr) && exists_ulcb_type(UL_CONTACT_EXPIRE))
+				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
 				ptr->aor->len, ZSW(ptr->aor->s),
@@ -282,10 +282,9 @@ static inline int ALLOW_UNUSED wt_timer(urecord_t* _r)
 
 	while(ptr) {
 		if (!VALID_CONTACT(ptr, act_time)) {
-			/* run callbacks for EXPIRE event */
-			if (exists_ulcb_type(UL_CONTACT_EXPIRE)) {
-				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr);
-			}
+			/* for forcibly expired contacts, DELETE event is already run */
+			if (!FORCE_EXPIRED_CONTACT(ptr) && exists_ulcb_type(UL_CONTACT_EXPIRE))
+				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
 				ptr->aor->len, ZSW(ptr->aor->s),
@@ -325,10 +324,9 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 
 	while(ptr) {
 		if (!VALID_CONTACT(ptr, act_time)) {
-			/* run callbacks for EXPIRE event */
-			if (exists_ulcb_type(UL_CONTACT_EXPIRE)) {
-				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr);
-			}
+			/* for forcibly expired contacts, DELETE event is already run */
+			if (!FORCE_EXPIRED_CONTACT(ptr) && exists_ulcb_type(UL_CONTACT_EXPIRE))
+				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
 				ptr->aor->len, ZSW(ptr->aor->s),
@@ -484,8 +482,7 @@ int db_delete_urecord(urecord_t* _r)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
-
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 	if (ul_dbf.delete(ul_dbh, keys, 0, vals, (use_domain) ? (2) : (1)) < 0) {
 		LM_ERR("failed to delete from database\n");
 		return -1;
@@ -620,7 +617,7 @@ int cdb_flush_urecord(urecord_t *_r)
 		if (!VALID_CONTACT(ct, act_time)) {
 			/* run callbacks for DELETE event */
 			if (exists_ulcb_type(UL_CONTACT_DELETE))
-				run_ul_callbacks(UL_CONTACT_DELETE, ct);
+				run_ul_callbacks(UL_CONTACT_DELETE, ct, NULL);
 
 			LM_DBG("deleting AoR: %.*s, Contact: %.*s.\n",
 				ct->aor->len, ZSW(ct->aor->s),
@@ -828,7 +825,7 @@ void release_urecord(urecord_t* _r, char skip_replication)
 			return;
 
 		if (exists_ulcb_type(UL_AOR_DELETE))
-			run_ul_callbacks(UL_AOR_DELETE, _r);
+			run_ul_callbacks(UL_AOR_DELETE, _r, NULL);
 
 		if (!skip_replication && location_cluster) {
 			if (cluster_mode == CM_FEDERATION_CACHEDB &&
@@ -849,12 +846,12 @@ void release_urecord(urecord_t* _r, char skip_replication)
  * into urecord
  */
 int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
-										ucontact_t** _c, char skip_replication)
+        const struct ct_match *match, char skip_replication, ucontact_t** _c)
 {
 	int first_contact = !_r->contacts;
 
-	/* not used in db only mode */
 	if (_ci->contact_id == 0) {
+		/* in CM_SQL_ONLY, this contact_id will be fully ignored */
 		_ci->contact_id =
 		        pack_indexes((unsigned short)_r->aorhash,
 		                                     _r->label,
@@ -874,14 +871,18 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		return -1;
 	}
 
+	if (_ci->pre_replicate_cb
+	        && _ci->pre_replicate_cb(*_c, _ci->pre_replicate_info) != 0)
+		LM_ERR("pre-replication callback returned non-zero\n");
+
 	if (!skip_replication && have_data_replication())
-		replicate_ucontact_insert(_r, _contact, *_c);
+		replicate_ucontact_insert(_r, _contact, *_c, match);
 
 	if (exists_ulcb_type(UL_CONTACT_INSERT))
-		run_ul_callbacks(UL_CONTACT_INSERT, *_c);
+		run_ul_callbacks(UL_CONTACT_INSERT, *_c, NULL);
 
 	if (!first_contact && exists_ulcb_type(UL_AOR_UPDATE))
-		run_ul_callbacks(UL_AOR_UPDATE, _r);
+		run_ul_callbacks(UL_AOR_UPDATE, _r, NULL);
 
 	if (sql_wmode == SQL_WRITE_THROUGH) {
 		if (persist_urecord_kv_store(_r) != 0)
@@ -901,16 +902,17 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 /*! \brief
  * Delete ucontact from urecord
  */
-int delete_ucontact(urecord_t* _r, struct ucontact* _c, char skip_replication)
+int delete_ucontact(urecord_t* _r, struct ucontact* _c,
+        const struct ct_match *match, char skip_replication)
 {
 	if (!skip_replication && have_data_replication())
-		replicate_ucontact_delete(_r, _c);
+		replicate_ucontact_delete(_r, _c, match);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE))
-		run_ul_callbacks(UL_CONTACT_DELETE, _c);
+		run_ul_callbacks(UL_CONTACT_DELETE, _c, NULL);
 
 	if (exists_ulcb_type(UL_AOR_UPDATE))
-		run_ul_callbacks(UL_AOR_UPDATE, _r);
+		run_ul_callbacks(UL_AOR_UPDATE, _r, NULL);
 
 	LM_DBG("deleting contact '%.*s'\n", _c->c.len, _c->c.s);
 
@@ -936,34 +938,48 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char skip_replication)
 
 static inline struct ucontact* contact_match( ucontact_t* ptr, str* _c)
 {
+	struct sip_uri _c_uri;
+
+	if (parse_uri( _c->s, _c->len, &_c_uri) < 0) {
+		LM_ERR("Failed to parse searched URI\n");
+		return NULL;
+	}
+
 	while(ptr) {
-		if ( ptr->expires != UL_EXPIRED_TIME
-		&& (_c->len == ptr->c.len) && !memcmp(_c->s, ptr->c.s, _c->len)
-		) {
+		if ( compare_uris( &ptr->c, NULL, _c, &_c_uri)==0
+		&& ptr->expires != UL_EXPIRED_TIME ) {
 			return ptr;
 		}
 
 		ptr = ptr->next;
 	}
-	return 0;
+	return NULL;
 }
 
 
 static inline struct ucontact* contact_callid_match( ucontact_t* ptr,
 														str* _c, str *_callid)
 {
+	struct sip_uri _c_uri;
+
+	if (parse_uri( _c->s, _c->len, &_c_uri) < 0) {
+		LM_ERR("Failed to parse searched URI\n");
+		return NULL;
+	}
+
 	while(ptr) {
-		if ( ptr->expires != UL_EXPIRED_TIME
-		&& (_c->len==ptr->c.len) && (_callid->len==ptr->callid.len)
-		&& !memcmp(_c->s, ptr->c.s, _c->len)
+
+		if ( (_callid->len==ptr->callid.len)
+		&& compare_uris( &ptr->c, NULL, _c, &_c_uri)==0
 		&& !memcmp(_callid->s, ptr->callid.s, _callid->len)
+		&& ptr->expires != UL_EXPIRED_TIME
 		) {
 			return ptr;
 		}
 
 		ptr = ptr->next;
 	}
-	return 0;
+	return NULL;
 }
 
 
@@ -990,6 +1006,9 @@ static inline struct ucontact* contact_params_match(ucontact_t* contacts,
 		}
 
 		for (param = _params; param; param = param->next) {
+			/* a bit counter-intuitive, but, according to RFC 3261 § 19.1.4, if
+			 * an unknown URI parameter is missing from either URI,
+			 * the matching of that parameter is successful! */
 			if (get_uri_param_val(&ct, &param->s, &v1) != 0 ||
 			        get_uri_param_val(&cti, &param->s, &v2) != 0)
 				continue;
@@ -1016,8 +1035,9 @@ next_contact:;
  *     -2 - found, but to be skipped (same cseq)
  */
 int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
-								struct ct_match *match, struct ucontact** _co)
+                     const struct ct_match *_match, struct ucontact** _co)
 {
+	struct ct_match match = *_match;
 	ucontact_t* ptr;
 	int no_callid;
 
@@ -1025,11 +1045,11 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 	no_callid = 0;
 	*_co = 0;
 
-	if (match->mode == CT_MATCH_NONE)
-		match->mode = matching_mode;
+	if (match.mode == CT_MATCH_NONE)
+		match.mode = matching_mode;
 
-	LM_DBG("using ct matching mode %d\n", match->mode);
-	switch (match->mode) {
+	LM_DBG("using ct matching mode %d\n", match.mode);
+	switch (match.mode) {
 	case CT_MATCH_CONTACT_ONLY:
 		ptr = contact_match(_r->contacts, _c);
 		break;
@@ -1038,10 +1058,10 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 		no_callid = 1;
 		break;
 	case CT_MATCH_PARAMS:
-		ptr = contact_params_match(_r->contacts, _c, match->match_params);
+		ptr = contact_params_match(_r->contacts, _c, match.match_params);
 		break;
 	default:
-		LM_CRIT("unknown contact matching mode %d\n", match->mode);
+		LM_CRIT("unknown contact matching mode %d\n", match.mode);
 		return -1;
 	}
 

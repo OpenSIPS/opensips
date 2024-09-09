@@ -209,6 +209,7 @@ int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id,
 	_a->s = aor_buf;
 	_a->len = puri.user.len;
 
+	/* per RFC 3261 § 10.3.5 (conversion to canonical form) */
 	if (un_escape(&puri.user, _a) < 0) {
 		rerrno = R_UNESCAPE;
 		LM_ERR("failed to unescape username\n");
@@ -357,6 +358,25 @@ static void __reset_first_contact(struct hdr_field **act_contact)
 contact_t* get_first_contact(struct sip_msg* _m)
 {
 	return __get_first_contact(_m, &act_contact_1);
+}
+
+contact_t* get_first_contact_matching(struct sip_msg* _m, const str *uri_chunk)
+{
+	contact_t *ct;
+
+	ct = __get_first_contact(_m, &act_contact_1);
+	if (!ct)
+		return NULL;
+	if (ZSTRP(uri_chunk))
+		return ct;
+
+	while (!str_strstr(&ct->uri, uri_chunk)) {
+		ct = __get_next_contact(ct, &act_contact_1);
+		if (!ct)
+			return NULL;
+	}
+
+	return ct;
 }
 
 contact_t* get_next_contact(contact_t* _c)

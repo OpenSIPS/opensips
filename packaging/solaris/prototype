@@ -1,4 +1,3 @@
-# $Id$
 i pkginfo=pkginfo
 d none etc 0755 bin bin
 d none etc/opensips 0755 bin bin
@@ -14,7 +13,7 @@ f none lib/opensips/modules/alias_db.so 0755 bin bin
 f none lib/opensips/modules/auth.so 0755 bin bin
 f none lib/opensips/modules/auth_db.so 0755 bin bin
 f none lib/opensips/modules/auth_diameter.so 0755 bin bin
-f none lib/opensips/modules/avpops.so 0755 bin bin
+f none lib/opensips/modules/sqlops.so 0755 bin bin
 f none lib/opensips/modules/dbtext.so 0755 bin bin
 f none lib/opensips/modules/dialog.so 0755 bin bin
 f none lib/opensips/modules/dispatcher.so 0755 bin bin
@@ -57,7 +56,6 @@ d none doc 0755 bin bin
 d none doc/opensips 0755 bin bin
 f none doc/opensips/README 0644 bin bin
 f none doc/opensips/INSTALL 0644 bin bin
-f none doc/opensips/README-MODULES 0644 bin bin
 f none doc/opensips/AUTHORS 0644 bin bin
 f none doc/opensips/NEWS    0644 bin bin
 f none doc/opensips/README.acc 0644 bin bin
@@ -65,7 +63,7 @@ f none doc/opensips/README.alias_db 0644 bin bin
 f none doc/opensips/README.auth 0644 bin bin
 f none doc/opensips/README.auth_db 0644 bin bin
 f none doc/opensips/README.auth_diameter 0644 bin bin
-f none doc/opensips/README.avpops 0644 bin bin
+f none doc/opensips/README.sqlops 0644 bin bin
 f none doc/opensips/README.dbtext  0644 bin bin
 f none doc/opensips/README.dialog  0644 bin bin
 f none doc/opensips/README.dispatcher  0644 bin bin

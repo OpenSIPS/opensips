@@ -53,7 +53,7 @@ void print_publ(publ_info_t* p)
 	LM_DBG("expires= %d\n", p->expires);
 }
 
-static str* build_dialoginfo(str *callid, int branch, char *state,
+static str* build_dialoginfo(str *callid, char *d_id, char *state,
 		struct dlginfo_part *entity, struct dlginfo_part *peer,
 		unsigned int initiator, str *localtag, str *remotetag)
 {
@@ -66,9 +66,7 @@ static str* build_dialoginfo(str *callid, int branch, char *state,
 	xmlNodePtr tag_node = NULL;
 	xmlNodePtr id_node = NULL;
 	str *body= NULL;
-	char buf[MAX_URI_SIZE+1+2+1];
-	char *p;
-	int l;
+	char buf[MAX_URI_SIZE+1];
 
 	if (entity->uri.len > MAX_URI_SIZE) {
 		LM_ERR("entity URI '%.*s' too long, maximum=%d\n",entity->uri.len,
@@ -95,15 +93,6 @@ static str* build_dialoginfo(str *callid, int branch, char *state,
 
     /* version is set by dialoginfo_process_body() */
 
-	/* RFC 3245 differs between id and call-id. For example if a call
-	   is forked and 2 early dialogs are established, we should send 2
-	    PUBLISH requests, both have the same call-id but different id.
-	    Thus, id could be for example derived from the totag.
-
-	    Currently the dialog module does not support multiple dialogs.
-	    Thus, it does no make sense to differ here between multiple dialog.
-	    Thus, id and call-id will be populated identically */
-
 	/* dialog tag */
 	dialog_node =xmlNewChild(root_node, NULL, BAD_CAST "dialog", NULL) ;
 	if( dialog_node ==NULL)
@@ -111,24 +100,15 @@ static str* build_dialoginfo(str *callid, int branch, char *state,
 		LM_ERR("while adding child\n");
 		goto error;
 	}
-
-	/* compute the dialog id as "callid.branch" format */
-	if (callid->len > MAX_URI_SIZE) {
-		LM_ERR("call-id '%.*s' too long, maximum=%d\n",
-			callid->len, callid->s, MAX_URI_SIZE);
-		return NULL;
-	}
-	p = buf;
-	memcpy(p, callid->s, callid->len);
-	p += callid->len;
-	*(p++) = '.';
-	l = 2; /* 2 hexa digits -> 256 branches */
-	int2reverse_hex( &p, &l, branch );
-	*(p++) = '\0';
-
-	xmlNewProp(dialog_node, BAD_CAST "id", BAD_CAST buf);
+	xmlNewProp(dialog_node, BAD_CAST "id", BAD_CAST d_id);
 
 	if (include_callid) {
+		if (callid->len > MAX_URI_SIZE) {
+			LM_ERR("call-id '%.*s' too long, maximum=%d\n",
+				callid->len, callid->s, MAX_URI_SIZE);
+			return NULL;
+		}
+		memcpy(buf, callid->s, callid->len);
 		buf[callid->len] =  '\0';
 		xmlNewProp(dialog_node, BAD_CAST "call-id", BAD_CAST buf);
 	}
@@ -302,8 +282,27 @@ void dialog_publish(char *state,
 	str* body= NULL;
 	publ_info_t publ;
 	int ret_code;
+	int l;
+	char *p;
 
-	body= build_dialoginfo(callid, branch, state, entity, peer, initiator,
+	memset(&publ, 0, sizeof(publ_info_t));
+
+	/* compute the dialog id as "callid.branch" format */
+	publ.id.s = pkg_malloc( callid->len + 1 + 2 + 1);
+	if (publ.id.s==NULL) {
+		LM_ERR("failed to allocated pkg mem\n");
+		goto error;
+	}
+	p = publ.id.s;
+	memcpy( p, callid->s, callid->len);
+	p += callid->len;
+	*(p++) = '.';
+	l = 2; /* 2 hexa digits -> 256 branches */
+	int2reverse_hex( &p, &l, branch );
+	publ.id.len = p - publ.id.s;
+	*(p++) = '\0';
+
+	body= build_dialoginfo(callid, publ.id.s, state, entity, peer, initiator,
 		localtag, remotetag);
 	if(body == NULL || body->s == NULL)
 	{
@@ -311,12 +310,8 @@ void dialog_publish(char *state,
 		goto error;
 	}
 
-	memset(&publ, 0, sizeof(publ_info_t));
-
 	publ.pres_uri= &entity->uri;
 	publ.body = body;
-
-	publ.id = *callid;
 
 	publ.content_type.s= "application/dialog-info+xml";
 	publ.content_type.len= 27;
@@ -352,6 +347,8 @@ error:
 			xmlFree(body->s);
 		pkg_free(body);
 	}
+	if (publ.id.s)
+		pkg_free(publ.id.s);
 
 	return;
 }

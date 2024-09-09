@@ -80,16 +80,9 @@ modparam("db_sqlite", "alloc_limit", 25)
 	<section id="param_load_extension" xreflabel="load_extension">
 		<title><varname>load_extension</varname> (string)</title>
 		<para>
-		Since the library does not support a function to return the number of rows
-		in a query, this number is obtained using "count(*)" query. If we use multiple
-		processes there is the risk ,since "count(*)" query and the actual "select"
-		query, the number of rows in the result query to have changed, so realloc
-		will be needed if the number is bigger. Using <emphasis>alloc_limit</emphasis>
-		parameter you can specify the number with which the number of allocated rows in the
-		result is raised.
 		This parameter enables extension loading, similiar to ".load" functionality in sqlite3,
 		extenions like sqlite3-pcre which enables REGEX function. In order to use this functionality
-		you must specify the library path(.so file) and the entry point which represents the function
+		you must specify the library path (.so file) and the entry point which represents the function
 		to be called by the sqlite library (read more at sqlite
 		<ulink url="https://www.sqlite.org/capi3ref.html#sqlite3_load_extension">load_extension</ulink>
 		official documentation), separated by   ";"   delimiter. The entry point paramter
@@ -97,7 +90,7 @@ modparam("db_sqlite", "alloc_limit", 25)
 		</para>
 		<para>
 		<emphasis>
-			Default no extenion is loaded.
+			By default, no extension is loaded.
 		</emphasis>
 		</para>
 		<example>

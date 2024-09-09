@@ -60,8 +60,9 @@ int replicate_profiles_count(prof_rcv_count_t *rp);
 void receive_prof_repl(bin_packet_t *packet);
 
 #define REPLICATION_DLG_PROFILE		4
-#define DLG_REPL_PROF_TIMER			10
-#define DLG_REPL_PROF_EXPIRE_TIMER	10
+#define DLG_REPL_PROF_TIMER_BCAST	200  /* ms */
+#define DLG_REPL_PROF_TIMER_CLEAN	10   /* s */
+#define DLG_REPL_PROF_EXPIRE_SEC	10   /* s */
 #define DLG_REPL_PROF_BUF_THRESHOLD	1400
 
 static void free_profile_val_t (prof_value_info_t *val){
@@ -120,6 +121,7 @@ static inline struct prof_local_count *get_local_counter(
 		memset(cnt, 0, sizeof *cnt);
 
 		if (shtag->len && shm_str_dup(&cnt->shtag, shtag) < 0) {
+			shm_free(cnt);
 			LM_ERR("oom\n");
 			return NULL;
 		}
@@ -140,7 +142,8 @@ static inline void remove_local_counter(struct prof_local_count **list,
 		(shtag->len != cnt->shtag.len || memcmp(shtag->s, cnt->shtag.s, shtag->len));
 		cnt_prev = cnt, cnt = cnt->next) ;
 	if (!cnt) {
-		LM_ERR("Failed to decrement profile counter, shtag not found\n");
+		LM_ERR("Failed to decrement profile counter, shtag %.*s(%p) not found\n",
+		       shtag->len, shtag->s, shtag->s);
 		return;
 	}
 

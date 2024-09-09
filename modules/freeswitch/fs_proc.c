@@ -54,24 +54,64 @@ extern void fs_api_set_proc_no(void);
 extern void evs_free(fs_evs *sock);
 extern struct fs_event *get_event(fs_evs *sock, const str *name);
 
-static int destroy_fs_evs(fs_evs *sock, int idx)
+static int fs_reconnect_backoff_v[] = {1, 5, 10, 30, 90}; /* sec */
+static int fs_reconnect_backoff_n = 20; /* bump the backoff every N failures */
+#define fs_reconnect_backoff_v_sz \
+	(sizeof fs_reconnect_backoff_v/sizeof fs_reconnect_backoff_v[0])
+
+/* sockets with no event subscriptions and no ESL commands ran for N seconds */
+int fs_no_esl_timeout = 86400; /* sec */
+
+#define SHOULD_KEEP_EVS(sock) ((sock)->ref > 0 || \
+		/* has the script writer run at least 1 FS ESL command over it? */ \
+		((sock)->esl_reply_id > 1 && \
+			/* if yes, give it a reasonable # of reconnect attempts... */ \
+			((!(sock)->handle->connected && (sock)->conn_attempts < \
+				(fs_reconnect_backoff_n * fs_reconnect_backoff_v_sz)) \
+			/* ... and also a reasonable time with no ESL commands at all */ \
+			|| ((sock)->handle->connected && \
+				(get_ticks() - (sock)->last_esl_jiffy) < fs_no_esl_timeout)) \
+		 ))
+
+static inline int fs_reactor_del_reader(int fd, int idx)
+{
+	int rc;
+
+	if (idx >= 0 && (rc = reactor_del_reader(fd, idx, IO_FD_CLOSING)) != 0) {
+		LM_ERR("failed to delete sock %d, idx %d\n", fd, idx);
+		idx = -1;
+	}
+
+	if (idx < 0 && (rc = reactor_del_reader(fd, -1, IO_FD_CLOSING)) != 0)
+		LM_DBG("failed to delete sock %d, idx -1\n", fd);
+
+	return rc;
+}
+
+static void destroy_fs_evs(fs_evs *sock, int idx, int reactor_fd)
 {
 	esl_status_t rc;
-	int ret = 0;
+	int fd;
 
-	LM_DBG("destroying sock %s:%d\n", sock->host.s, sock->port);
-
-	if (reactor_del_reader(sock->handle->sock, idx, IO_WATCH_READ) != 0) {
-		LM_ERR("del failed for sock %d\n", sock->handle->sock);
-		ret = 1;
+	if (sock->invalid) {
+		LM_BUG("attempting to destroy dangling socket (fd: %d, idx: %d)\n",
+		       reactor_fd, idx);
+		return;
 	}
+
+	if (reactor_fd >= 0 && reactor_fd != sock->handle->sock)
+		LM_BUG("different reactor/esl-handle fds: %d/%d\n",
+		       reactor_fd, sock->handle->sock);
+
+	fd = (reactor_fd >= 0 ? reactor_fd : sock->handle->sock);
+	LM_DBG("destroying sock %s:%d (fd: %d)\n", sock->host.s, sock->port, fd);
+
+	fs_reactor_del_reader(fd, idx);
 
 	rc = esl_disconnect(sock->handle);
-	if (rc != ESL_SUCCESS) {
+	if (rc != ESL_SUCCESS)
 		LM_ERR("disconnect error %d on FS sock %.*s:%d\n",
 		       rc, sock->host.len, sock->host.s, sock->port);
-		ret = 1;
-	}
 
 	list_del(&sock->list);
 
@@ -86,8 +126,6 @@ static int destroy_fs_evs(fs_evs *sock, int idx)
 	}
 
 	evs_free(sock);
-
-	return ret;
 }
 
 int fs_renew_stats(fs_evs *sock, const cJSON *ev)
@@ -180,13 +218,16 @@ void prepare_reconnect(fs_evs *sock)
 		ev->action = FS_EVENT_SUB;
 	}
 
+	evs_reset_flags(sock, FS_EVS_FL_CONNECTED);
+
 	lock_start_write(sockets_esl_lock);
 	if (list_empty(&sock->esl_cmd_list))
 		list_add_tail(&sock->esl_cmd_list, fs_sockets_esl);
 	lock_stop_write(sockets_esl_lock);
 
 	lock_start_write(sockets_down_lock);
-	list_add_tail(&sock->reconnect_list, fs_sockets_down);
+	if (list_empty(&sock->reconnect_list))
+		list_add_tail(&sock->reconnect_list, fs_sockets_down);
 	lock_stop_write(sockets_down_lock);
 }
 
@@ -203,38 +244,33 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 	char *s;
 
 	switch (fm->type) {
-		case F_FS_CONN:
+		case F_GEN_PROC:
 			LM_DBG("FS data available on sock %s:%d, ref: %d\n",
 			       sock->host.s, sock->port, sock->ref);
 
-			/* ignore the event: nobody's using this socket anymore, close it */
 			lock_start_write(sockets_lock);
 			if (sock->ref == 0) {
-				if (destroy_fs_evs(sock, idx) != 0)
-					LM_ERR("failed to destroy FS evs!\n");
-
+				/* ignore the event, the socket is unused */
+				destroy_fs_evs(sock, idx, fm->fd);
 				lock_stop_write(sockets_lock);
 				return 0;
 			}
 			lock_stop_write(sockets_lock);
+
+			esl_event_safe_destroy(&sock->handle->last_sr_event);
 
 			rc = esl_recv_event(sock->handle, 0, &sock->handle->last_sr_event);
 			if (rc != ESL_SUCCESS) {
 				LM_ERR("read error %d on FS sock %.*s:%d. Reconnecting...\n",
 				       rc, sock->host.len, sock->host.s, sock->port);
 
-				if (reactor_del_reader(sock->handle->sock, idx,
-				                       IO_WATCH_READ) != 0) {
-					LM_ERR("del failed for sock %d\n", sock->handle->sock);
-					return 0;
-				}
+				fs_reactor_del_reader(fm->fd, idx);
 
 				rc = esl_disconnect(sock->handle);
 				if (rc != ESL_SUCCESS) {
 					LM_ERR("disconnect error %d on FS sock %.*s:%d\n",
 					       rc, sock->host.len, sock->host.s, sock->port);
 					sock->handle->connected = 0;
-					return 0;
 				}
 
 				prepare_reconnect(sock);
@@ -406,6 +442,9 @@ int update_event_subscriptions(fs_evs *sock)
 	/* handle any pending event actions */
 	list_for_each_safe(_, __, &sock->events) {
 		event = list_entry(_, struct fs_event, list);
+		LM_DBG("process event %s, refsum: %d, action: %d\n", event->name.s,
+		       event->refsum, event->action);
+
 		if (event->refsum > 0 && event->action == FS_EVENT_SUB) {
 			LM_DBG("subscribing to %s events on %s:%d\n",
 			       event->name.s, sock->host.s, sock->port);
@@ -460,37 +499,47 @@ int update_event_subscriptions(fs_evs *sock)
 	return ret;
 }
 
-/* referenced by 1+ modules or has performed at least one ESL command */
-#define SHOULD_KEEP_EVS(sock) ((sock)->ref > 0 || (sock)->esl_reply_id > 1)
-
 void handle_reconnects(void)
 {
 	struct list_head *_, *__;
 	fs_evs *sock;
+	int first = 0, backoff = 1, i = -1;
+	unsigned int now;
 
 	list_for_each_safe(_, __, fs_sockets_down) {
 		sock = list_entry(_, fs_evs, reconnect_list);
 
-		LM_DBG("reconnecting sock %s:%d\n", sock->host.s, sock->port);
+		i = sock->conn_attempts / fs_reconnect_backoff_n;
+		if (i >= fs_reconnect_backoff_v_sz)
+			i = fs_reconnect_backoff_v_sz - 1;
+		backoff =  fs_reconnect_backoff_v[i];
+
+		now = get_ticks();
+		LM_DBG("reconnect check for sock %s:%d, backoff: %d/%d, attempts: %u, "
+				"last-attempt-ticks: %u/%u\n", sock->host.s, sock->port,
+		        backoff, i, sock->conn_attempts, sock->last_conn_jiffy, now);
+
+		if (sock->last_conn_jiffy && (now - sock->last_conn_jiffy < backoff)) {
+			LM_DBG("  (delaying reconnect due to backoff)\n");
+			continue;
+		}
 
 		if (sock->handle) {
-			if (sock->handle->connected && sock->handle->sock != ESL_SOCK_INVALID) {
+			if (fs_evs_connected(sock)) {
 				if (!SHOULD_KEEP_EVS(sock)) {
-					/*
-					 * TODO: implement clean up for unused ESL connections here.
-					 *       Currently not immediately possible because:
-					 *	- reactor_del_reader() can only be called under handle_io()
-					 *	- esl_disconnect() closes the fd, so handle_io() is skipped
-					 */
+					destroy_fs_evs(sock, -1, -1);
 					continue;
 				}
 
-				LM_DBG("fake disconnect on %s:%d\n", sock->host.s, sock->port);
+				LM_DBG("outdated reconnect on %s:%d, skipping\n", sock->host.s, sock->port);
+				sock->conn_attempts = 0;
+				evs_set_flags(sock, FS_EVS_FL_CONNECTED);
 				list_del(&sock->reconnect_list);
 				INIT_LIST_HEAD(&sock->reconnect_list);
 				continue;
 			}
 		} else {
+			first = 1;
 			sock->handle = pkg_malloc(sizeof *sock->handle);
 			if (!sock->handle) {
 				LM_ERR("failed to create FS handle!\n");
@@ -499,7 +548,11 @@ void handle_reconnects(void)
 			memset(sock->handle, 0, sizeof *sock->handle);
 		}
 
-		LM_DBG("reconnecting to FS sock '%s:%d'\n", sock->host.s, sock->port);
+		sock->conn_attempts++;
+		sock->last_conn_jiffy = now;
+		evs_reset_flags(sock, FS_EVS_FL_CONNECTED);
+		LM_DBG("%sconnecting to FS sock '%s:%d'\n", first ? "":"re-",
+		        sock->host.s, sock->port);
 
 		if (esl_connect_timeout(sock->handle, sock->host.s, sock->port,
 		      sock->user.s, sock->pass.s, fs_connect_timeout) != ESL_SUCCESS) {
@@ -516,7 +569,7 @@ void handle_reconnects(void)
 			continue;
 		}
 
-		if (reactor_add_reader(sock->handle->sock, F_FS_CONN,
+		if (reactor_add_reader(sock->handle->sock, F_GEN_PROC,
 		                       RCT_PRIO_TIMER, sock) < 0) {
 			LM_ERR("failed to add FS socket %s:%d to reactor\n",
 			       sock->host.s, sock->port);
@@ -524,6 +577,8 @@ void handle_reconnects(void)
 			continue;
 		}
 
+		sock->conn_attempts = 0;
+		evs_set_flags(sock, FS_EVS_FL_CONNECTED);
 		list_del(&sock->reconnect_list);
 		INIT_LIST_HEAD(&sock->reconnect_list);
 	}
@@ -539,14 +594,16 @@ static void apply_socket_commands(void)
 	fs_evs *sock;
 	int rc;
 
+#ifdef EXTRA_DEBUG
 	LM_DBG("applying FS socket commands\n");
+#endif
 
 	lock_start_write(sockets_esl_lock);
 	list_for_each_safe(_, __, fs_sockets_esl) {
 		sock = list_entry(_, fs_evs, esl_cmd_list);
 
 		/* above connect may have failed for this socket; skip it for now */
-		if (SHOULD_KEEP_EVS(sock) && !list_empty(&sock->reconnect_list))
+		if (!SHOULD_KEEP_EVS(sock) || !list_empty(&sock->reconnect_list))
 			continue;
 
 		rc = update_event_subscriptions(sock);
@@ -567,14 +624,15 @@ static void apply_socket_commands(void)
 	handle_reconnects();
 	lock_stop_write(sockets_down_lock);
 	lock_stop_write(sockets_lock);
-
 }
 
 void fs_conn_mgr_loop(int proc_no)
 {
 	fs_api_set_proc_no();
 
+#ifdef EXTRA_DEBUG
 	LM_DBG("size: %d, method: %d\n", reactor_size, io_poll_method);
+#endif
 
 	if (init_worker_reactor("FS Manager", RCT_PRIO_MAX) != 0) {
 		LM_BUG("failed to init FS reactor");

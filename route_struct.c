@@ -200,9 +200,15 @@ void free_action_list( struct action *a)
 	if (a==NULL)
 		return;
 
-	for( i=0 ; i<MAX_ACTION_ELEMS ; i++)
+	if (a->type==ASYNC_T || a->type==LAUNCH_T)
+		/* unref the resume route */
+		unref_script_route
+			( (struct script_route_ref*)(a->elem[1].u.data) );
+
+	for( i=0 ; i<MAX_ACTION_ELEMS ; i++) {
 		if (a->elem[i].type)
 			free_action_elem( &a->elem[i] );
+	}
 
 	if (a->next)
 		free_action_list(a->next);
@@ -524,7 +530,7 @@ void print_action(struct action* t)
 				print_actions((struct action*)t->elem[0].u.data);
 				break;
 		case CMD_ST:
-				LM_GEN1(L_DBG, "f<%s>",((cmd_export_t*)t->elem[0].u.data)->name);
+				LM_GEN1(L_DBG, "f<%s>",((const cmd_export_t*)t->elem[0].u.data_const)->name);
 				break;
 		case SOCKID_ST:
 				LM_GEN1(L_DBG, "%d:%s:%d",
@@ -602,7 +608,7 @@ void print_actions(struct action* a)
 }
 
 
-static int is_mod_func_in_expr(struct expr *e, char *name, int param_no)
+static int is_mod_func_in_expr(struct expr *e, const char *name, int param_no)
 {
 	if (e->type==ELEM_T) {
 		if (e->left.type==ACTION_O)
@@ -618,13 +624,13 @@ static int is_mod_func_in_expr(struct expr *e, char *name, int param_no)
 }
 
 
-int is_mod_func_used(struct action *a, char *name, int param_no)
+int is_mod_func_used(struct action *a, const char *name, int param_no)
 {
-	cmd_export_t *cmd;
+	const cmd_export_t *cmd;
 	while(a) {
 		if (a->type==CMD_T) {
 			/* first param is the name of the function */
-			cmd = (cmd_export_t*)a->elem[0].u.data;
+			cmd = (const cmd_export_t*)a->elem[0].u.data_const;
 			if (strcasecmp(cmd->name, name)==0) {
 				if (param_no==-1 ||
 					(a->elem[param_no].type != NOSUBTYPE &&
@@ -671,13 +677,13 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 	return 0;
 }
 
-int is_mod_async_func_used(struct action *a, char *name, int param_no)
+int is_mod_async_func_used(struct action *a, const char *name, int param_no)
 {
-	acmd_export_t *acmd;
+	const acmd_export_t *acmd;
 
 	for (; a; a=a->next) {
 		if (a->type==ASYNC_T || a->type==LAUNCH_T) {
-			acmd = ((struct action *)(a->elem[0].u.data))->elem[0].u.data;
+			acmd = ((struct action *)(a->elem[0].u.data))->elem[0].u.data_const;
 
 			if (strcasecmp(acmd->name, name)==0) {
 				if (param_no==-1 ||

@@ -67,8 +67,6 @@ char *startup_wdir = NULL;
 
 static int status_pipe[2];
 
-static enum opensips_states *osips_state = NULL;
-
 /* creates the status pipe which will be used for
  * proper status code returning
  *
@@ -351,14 +349,8 @@ int daemonize(char* name, int * own_pgid)
 			strerror(errno));
 		/* continue, leave it open */
 	};
-	if (freopen("/dev/null", "w", stdout)==0){
+	if (!log_stdout && freopen("/dev/null", "w", stdout)==0){
 		LM_WARN("unable to replace stdout with /dev/null: %s\n",
-			strerror(errno));
-		/* continue, leave it open */
-	};
-	/* close stderr only if not to be used */
-	if ( (!log_stderr) && (freopen("/dev/null", "w", stderr)==0)){
-		LM_WARN("unable to replace stderr with /dev/null: %s\n",
 			strerror(errno));
 		/* continue, leave it open */
 	};
@@ -374,7 +366,7 @@ int daemonize(char* name, int * own_pgid)
 			close(r);
 	}
 
-	if (!log_stderr)
+	if (syslog_enabled)
 		openlog(name, LOG_PID|LOG_CONS, log_facility);
 		/* LOG_CONS, LOG_PERRROR ? */
 
@@ -566,27 +558,4 @@ done:
 error:
 	return -1;
 }
-
-
-/* first setting must be done before any forking, so all processes will
- * inherite the same pointer to the global state variable */
-void set_osips_state(enum opensips_states state)
-{
-	if (osips_state==NULL) {
-		osips_state = shm_malloc( sizeof(enum opensips_states) );
-		if (osips_state==NULL) {
-			LM_ERR("failed to allocate opensips state variable in shm\n");
-			return;
-		}
-	}
-
-	*osips_state = state;
-}
-
-
-enum opensips_states get_osips_state(void)
-{
-	return osips_state ? *osips_state : STATE_NONE;
-}
-
 

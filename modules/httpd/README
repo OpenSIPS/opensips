@@ -16,11 +16,12 @@ httpd Module
 
               1.4.1. ip(string)
               1.4.2. port(integer)
-              1.4.3. buf_size (integer)
-              1.4.4. post_buf_size (integer)
-              1.4.5. tls_cert_file (string)
-              1.4.6. tls_key_file (string)
-              1.4.7. tls_ciphers (string)
+              1.4.3. conn_timeout(integer)
+              1.4.4. buf_size (integer)
+              1.4.5. post_buf_size (integer)
+              1.4.6. tls_cert_file (string)
+              1.4.7. tls_key_file (string)
+              1.4.8. tls_ciphers (string)
 
         1.5. Exported MI Functions
 
@@ -57,11 +58,12 @@ httpd Module
 
    1.1. Set ip parameter
    1.2. Set port parameter
-   1.3. Set buf_size parameter
-   1.4. Set post_buf_size parameter
-   1.5. Set tls_cert_file parameter
-   1.6. Set tls_key_file parameter
+   1.3. Set conn_timeout parameter
+   1.4. Set buf_size parameter
+   1.5. Set post_buf_size parameter
+   1.6. Set tls_cert_file parameter
    1.7. Set tls_key_file parameter
+   1.8. Set tls_key_file parameter
 
 Chapter 1. Admin Guide
 
@@ -89,7 +91,20 @@ Chapter 1. Admin Guide
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
-     * libmicrohttpd.
+     * libmicrohttpd, with EPOLL support. This typically means a
+       version newer than 0.9.50.
+
+   WARNING! Please be aware about an EPOLL support regression in
+   the libmicrohttpd library and packaging which affects the
+   OpenSIPS httpd module, which was fixed according to the below
+   timeline. The effect of the regression is that the HTTP reply
+   body is sometimes never written by the library, causing the
+   client (e.g. opensips-cli) to hang indefinitely waiting for it:
+     * versions 0.9.51 - 0.9.52 have been tested and work
+       correctly
+     * regression introduced in 0.9.53 (Apr 2017), lasting until
+       0.9.71 (May 2020)
+     * regression is fixed since 0.9.72 (Dec 2020)
 
 1.4. Exported Parameters
 
@@ -98,8 +113,8 @@ Chapter 1. Admin Guide
    The IP address used by the HTTP server to listen for incoming
    requests.
 
-   The default value is an empty string. If no IP address is set,
-   then the http server will bind to all available IPs.
+   The default value is "*" (bind to all IPv6 and IPv4
+   interfaces).
 
    Example 1.1. Set ip parameter
 ...
@@ -119,7 +134,25 @@ modparam("httpd", "ip", "127.0.0.1")
 modparam("httpd", "port", 8000)
 ...
 
-1.4.3. buf_size (integer)
+1.4.3. conn_timeout(integer)
+
+   Auto-close TCP connections which are idle for more than the
+   designated timeout, in seconds. Set to zero to never close any
+   connections.
+
+   Note: the connection auto-close routine only seems to be
+   executed in an "on-demand" fashion, during an HTTPD network
+   event (e.g. on a new connection), which although not ideal, it
+   should be good enough in practical terms.
+
+   The default timeout is 30 seconds.
+
+   Example 1.3. Set conn_timeout parameter
+...
+modparam("httpd", "conn_timeout", 10)
+...
+
+1.4.4. buf_size (integer)
 
    It specifies the maximum length (in bytes) of the buffer used
    to write in the html response.
@@ -129,12 +162,12 @@ modparam("httpd", "port", 8000)
 
    The default value is 0.
 
-   Example 1.3. Set buf_size parameter
+   Example 1.4. Set buf_size parameter
 ...
 modparam("httpd", "buf_size", 524288)
 ...
 
-1.4.4. post_buf_size (integer)
+1.4.5. post_buf_size (integer)
 
    It specifies the length (in bytes) of the POST HTTP requests
    processing buffer. For large POST request, the default value
@@ -142,36 +175,36 @@ modparam("httpd", "buf_size", 524288)
 
    The default value is 1024. The minumal value is 256.
 
-   Example 1.4. Set post_buf_size parameter
+   Example 1.5. Set post_buf_size parameter
 ...
 modparam("httpd", "post_buf_size", 4096)
 ...
 
-1.4.5. tls_cert_file (string)
+1.4.6. tls_cert_file (string)
 
    Public certificate file for httpd. It will be used as
    server-side certificate for incoming TLS connections.
 
    The default value is ""
 
-   Example 1.5. Set tls_cert_file parameter
+   Example 1.6. Set tls_cert_file parameter
 ...
 modparam("httpd", "tls_cert_file", "/etc/opensips/tls/server.pem")
 ...
 
-1.4.6. tls_key_file (string)
+1.4.7. tls_key_file (string)
 
    Private key of the above certificate. I must be kept in a safe
    place with tight permissions!
 
    The default value is ""
 
-   Example 1.6. Set tls_key_file parameter
+   Example 1.7. Set tls_key_file parameter
 ...
 modparam("httpd", "tls_key_file", "/etc/opensips/tls/server.key")
 ...
 
-1.4.7. tls_ciphers (string)
+1.4.8. tls_ciphers (string)
 
    You can specify the list of algorithms for authentication and
    encryption that you allow. To obtain a list of ciphers and then
@@ -185,7 +218,7 @@ Warning
    The default value is
    "SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2"
 
-   Example 1.7. Set tls_key_file parameter
+   Example 1.8. Set tls_key_file parameter
 ...
 modparam("httpd", "tls_ciphers", "SECURE256:+SECURE192:-VERS-ALL:+VERS-T
 LS1.2")
@@ -257,17 +290,18 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 47 30 1667 147
-   2. Razvan Crainea (@razvancrainea) 18 16 47 50
-   3. Liviu Chircu (@liviuchircu) 11 9 26 49
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 37 19
+   2. Razvan Crainea (@razvancrainea) 24 21 118 68
+   3. Liviu Chircu (@liviuchircu) 23 19 172 82
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 103 54
    5. Vlad Patrascu (@rvlad-patrascu) 10 7 52 89
    6. Ionut Ionita (@ionutrazvanionita) 8 6 65 21
-   7. Fabian Gast (@fgast) 4 1 150 3
-   8. Stephane Alnet 3 1 39 3
-   9. Stas Kobzar 3 1 2 2
-   10. Dusan Klinec (@ph4r05) 3 1 1 1
+   7. Maksym Sobolyev (@sobomax) 4 2 5 5
+   8. Fabian Gast (@fgast) 4 1 150 3
+   9. Stephane Alnet 3 1 39 3
+   10. Stas Kobzar 3 1 2 2
 
-   All remaining contributors: Peter Lemenkov (@lemenkov).
+   All remaining contributors: Dusan Klinec (@ph4r05), Peter
+   Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -289,18 +323,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
-   2.  Razvan Crainea (@razvancrainea)     Mar 2015 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   10. Stas Kobzar                         Feb 2015 - Feb 2015
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Razvan Crainea (@razvancrainea)     Mar 2015 - Oct 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Aug 2021
+   5.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
+   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
 
-   All remaining contributors: Stephane Alnet.
+   All remaining contributors: Stas Kobzar, Stephane Alnet.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -309,10 +343,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Fabian Gast (@fgast), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
-   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Fabian Gast (@fgast), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

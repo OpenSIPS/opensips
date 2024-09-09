@@ -115,6 +115,86 @@ modparam("db_postgres", "timeout", 2)
 </programlisting>
 		</example>
 	</section>
+
+        <section id="param_use_tls" xreflabel="use_tls">
+		<title><varname>use_tls</varname> (integer)</title>
+		<para>
+		Parameter to control the way the SSL support is used when connecting
+		to the Postgres server, as follows:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>use_tls=0</emphasis> (default) - the SSL support
+				is disabled and there is no attempt to use it;
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>use_tls=1</emphasis> with "tls_domain" present
+				in the DB URL - the SSL support is enabled, either 
+				"require", either "verify-ca", depending on the certificate
+				settings;
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>use_tls=1</emphasis> with no "tls_domain" present
+				in the DB URL - the SSL support is enabled in best effort mode
+				(or "prefer"); if supported by the server, it will be used,
+				otherwise it will fall back to non-SSL.
+			</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		Warning: the <emphasis>tls_openssl</emphasis> module cannot be used
+		when setting this parameter. Use the <emphasis>tls_wolfssl</emphasis>
+		module instead if a TLS/SSL Library is required.
+		</para>
+		<para>
+		Setting this parameter will allow you to use TLS for PostgreSQL connections.
+		In order to enable TLS for a specific connection, you can use the
+		"tls_domain=<emphasis>dom_name</emphasis>" URL parameter in the db_url of
+		the respective OpenSIPS module. This should be placed at the end of the
+		URL after the '?' character.
+		</para>
+		<para>
+		When using this parameter, you must also ensure that
+		<emphasis>tls_mgm</emphasis> is loaded and properly configured. Refer to
+		the the module for additional info regarding TLS client domains.
+		</para>
+		<para>
+		Note that if you want to use this feature, the TLS domain must be
+		provisioned in the configuration file, <emphasis>NOT</emphasis> in
+		the database. In case you are loading TLS certificates from the
+		database, you must at least define one domain in the
+		configuration script, to use for the initial connection to the DB.
+		</para>
+		<para>
+		Also, you can <emphasis>NOT</emphasis> enable TLS for the connection
+		to the database of the <emphasis>tls_mgm</emphasis> module itself.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>0</emphasis> (not enabled)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>use_tls</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tls_mgm", "client_domain", "dom1")
+modparam("tls_mgm", "certificate", "[dom1]/etc/pki/tls/certs/opensips.pem")
+modparam("tls_mgm", "private_key", "[dom1]/etc/pki/tls/private/opensips.key")
+modparam("tls_mgm", "ca_list",     "[dom1]/etc/pki/tls/certs/ca.pem")
+...
+modparam("db_postgres", "use_tls", 1)
+...
+modparam("usrloc", "db_url", "postgres://root:1234@localhost/opensips?tls_domain=dom1")
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>

@@ -124,6 +124,8 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 	req->rcv.src_port = req->rcv.dst_port = dialog->send_sock->port_no;
 	req->rcv.bind_address = dialog->send_sock;
 
+	req->flags |= FL_IS_LOCAL;
+
 	return req;
 
 error1:
@@ -158,7 +160,7 @@ static inline int fix_fake_req_headers(struct sip_msg *req)
 		for (c = ((contact_body_t *)hdr->parsed)->contacts; c; c = c->next) {
 			/* search for the lump */
 			for (ld = req->add_rm; ld; ld = ld->next) {
-				if (ld->op != LUMP_DEL)
+				if (ld->op != LUMP_DEL && ld->op != LUMP_NOP)
 					continue;
 				for (la = ld->after; la; la = la->after) {
 					/* LM_DBG("matching contact lump op=%d type=%d offset=%d"

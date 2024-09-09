@@ -69,7 +69,8 @@ static int l_sipmemcache_server_add(lua_State *L)
   struct sipmemcache *o;
   const char *host;
   const char *port;
-  in_port_t iport;
+  in_port_t iport = 0;
+  unsigned int _port = 0;
   str s;
 
   o = luaL_checkudata(L, 1, "siplua.memcache");
@@ -83,10 +84,12 @@ static int l_sipmemcache_server_add(lua_State *L)
     {
 		s.len = strlen(port);
 		s.s = (char *)port;
-		if (str2int(&s, (unsigned int *)&iport) < 0)
+		if (str2int(&s, (unsigned int *)&_port) < 0 || _port > USHRT_MAX) {
 			lua_pushboolean(L, 0);
-		else
+		} else {
 			lua_pushboolean(L, 1);
+			iport = _port;
+		}
 		servers = memcached_server_list_append(servers, host, iport, &rc);
 		if (rc != MEMCACHED_SUCCESS) {
 			LM_ERR("cannot add server: %s\n", memcached_strerror(&o->memc, rc));

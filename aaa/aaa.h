@@ -47,12 +47,28 @@
 #define AAA_DICT_FIND_VAL 1
 #define AAA_DICT_FIND_ATTR 2
 #define AAA_DICT_FIND_VEND 3
+
+/* message types */
 #define AAA_AUTH 4
 #define AAA_ACCT 5
 #define AAA_RECV 6
-#define AAA_GET_FROM_START 7
-#define AAA_GET_FROM_CURRENT 8
+#define AAA_CUSTOM_REQ 7
+#define AAA_CUSTOM_RPL 8
 
+#define AAA_GET_FROM_START 8
+#define AAA_GET_FROM_CURRENT 9
+
+#define AAA_APP_ACCOUNTING 3
+#define AAA_APP_SIP        6
+
+#define AAA_TYPE_INT32       -1
+#define AAA_TYPE_INT64       -2
+#define AAA_TYPE_UINT32      -3
+#define AAA_TYPE_UINT64      -4
+#define AAA_TYPE_FLOAT32     -5
+#define AAA_TYPE_FLOAT64     -6
+#define AAA_TYPE_GROUPED     -7
+#define AAA_TYPE_OCTETSTRING -8
 
 /* Generic structure for an AVP */
 typedef struct _aaa_map {
@@ -261,19 +277,23 @@ int aaa_parse_url(str*, aaa_prot_config*);
 		if (at[i].name == NULL)		\
 			continue;				\
 		if (ap.dictionary_find(rh, &at[i], AAA_DICT_FIND_ATTR) < 0) {	\
-			LM_ERR("%s: can't get code for the "					\
-				   "%s attribute\n", fn, at[i].name);					\
+			LM_ERR("%s: can't get code for the %s attribute (type %d)\n", \
+					fn, at[i].name, at[i].type); \
 			return e1;					\
 		}								\
+		LM_DBG("found AVP '%s' = %d (type %d)\n", at[i].name, at[i].value, \
+				at[i].type); \
 	}									\
 	for (i = 0; i < nr_vl; i++) {		\
 		if (vl[i].name == NULL)			\
 			continue;					\
 		if (ap.dictionary_find(rh, &vl[i], AAA_DICT_FIND_VAL) < 0) {	\
-			LM_ERR("%s: can't get code for the "	\
-				   "%s attribute value\n", fn, vl[i].name);\
+			LM_ERR("%s: can't get code for the %s attribute value\n", \
+					fn, vl[i].name);\
 			return e2;					\
 		}							\
+		LM_DBG("found Enum '%s' = %d (type %d)\n", vl[i].name, vl[i].value, \
+				at[i].type); \
 	}								\
 }
 

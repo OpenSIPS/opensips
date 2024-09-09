@@ -214,16 +214,11 @@ int tlsp_set_method(modparam_t type, void *in)
 {
 	str name;
 	str val;
-	enum tls_method method, method_max;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (tls_get_method(&val, &method, &method_max) < 0)
-		return -1;
-
-	set_domain_attr(name, method, method);
-	set_domain_attr(name, method_max, method_max);
+	set_domain_attr(name, method_str, val);
 
 	return 1;
 }

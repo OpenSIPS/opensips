@@ -42,6 +42,7 @@
 #define XCAPDIFF_EVENT      1<<5
 #define DIALOG_EVENT        1<<6
 #define CALLINFO_EVENT      1<<7
+#define REGINFO_EVENT       1<<8
 
 #define UL_PUBLISH          1<<0
 #define BLA_PUBLISH         1<<1
@@ -55,6 +56,8 @@
 #define RLS_SUBSCRIBE       1<<9
 #define DIALOG_PUBLISH      1<<10
 #define CALLINFO_PUBLISH    1<<11
+#define REGINFO_SUBSCRIBE   1<<12
+#define REGINFO_PUBLISH     1<<13
 
 #define NO_UPDATEDB_FLAG    0
 #define UPDATEDB_FLAG       1
@@ -62,7 +65,8 @@
 
 #define MAX_FORWARD  70
 
-#define PRES_HASH_ID(presentity)(HASH_SIZE*presentity->local_index + presentity->hash_index)
+#define PRES_HASH_ID(presentity) \
+	(unsigned long)(HASH_SIZE*(unsigned long)presentity->local_index + presentity->hash_index)
 
 typedef struct publ
 {
@@ -108,6 +112,7 @@ typedef struct ua_pres{
 	str record_route;
 	str remote_contact;
 	str contact;
+	str sh_tag;
 	void* cb_param;
 }ua_pres_t;
 
@@ -127,7 +132,7 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code);
 
 struct publ_info;
 
-unsigned long insert_htable(ua_pres_t* presentity);
+unsigned long insert_htable(ua_pres_t* presentity, int mem_only);
 unsigned long new_publ_record(struct publ_info* publ, pua_event_t* ev, str* tuple);
 
 int update_htable(unsigned int hash_index, unsigned int local_index,
@@ -135,6 +140,12 @@ int update_htable(unsigned int hash_index, unsigned int local_index,
 int find_htable(unsigned int hash_index, unsigned int local_index);
 void delete_htable(unsigned int hash_index, unsigned int local_index);
 ua_pres_t* get_htable_safe(unsigned int hash_index, unsigned int local_index);
+
+int get_record_coordinates(ua_pres_t* pres, unsigned int *hash_code,
+		unsigned int *label_index);
+
+int replace_in_htable(unsigned int hash_index, unsigned int local_index,
+		ua_pres_t *pres);
 
 void destroy_htable(void);
 int is_dialog(ua_pres_t* dialog);

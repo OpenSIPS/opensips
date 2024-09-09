@@ -1,0 +1,27 @@
+name: Mark stale issues and pull requests
+
+on:
+  schedule:
+  - cron: '27 6 * * *'
+
+jobs:
+  stale:
+
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+    - uses: actions/stale@v4
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        stale-issue-message: 'Any updates here? No progress has been made in the last 15 days, marking as stale. Will close this issue if no further updates are made in the next 30 days.'
+        close-issue-message: 'Marking as closed due to lack of progress for more than 30 days. If this issue is still relevant, please re-open it with additional details.'
+        exempt-issue-labels: 'fixed,improvement,low-priority,high-priority,feature request'
+        stale-issue-label: 'stale'
+        days-before-issue-stale: 15
+        days-before-issue-close: 30
+        stale-pr-message: 'Any updates here? No progress has been made in the last 30 days, marking as stale.'
+        days-before-pr-stale: 30
+        exempt-all-pr-assignees: true

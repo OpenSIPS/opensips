@@ -20,8 +20,12 @@
  */
 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
+#include <sched.h>
 #include <stdio.h>
+
+#include "lib/dbg/profiling.h"
 #include "mem/shm_mem.h"
 #include "net/net_tcp.h"
 #include "net/net_udp.h"
@@ -45,6 +49,37 @@ unsigned int counted_max_processes = 0;
 /* flag per process to control the termination stages */
 int _termination_in_progress = 0;
 
+static int internal_fork_child_setup(const struct internal_fork_params *);
+
+static struct internal_fork_handler default_fh = {
+	.desc = "internal_fork_child_setup()",
+	.post_fork.in_child = internal_fork_child_setup,
+};
+
+static struct internal_fork_handler *_fork_handlers = &default_fh;
+
+/* Register handlers to be invoked after internal_fork()
+ * to do various per-subsystem setup / cleanup tasks.
+ * Takes a reference to a "stable" structure (i.e. static or
+ * malloc'ed) which has to be alive until the last internal_fork()
+ * is called. */
+void register_fork_handler(struct internal_fork_handler *h)
+{
+	struct internal_fork_handler *hp;
+
+	if (is_main == 0) {
+		LM_BUG("buggy call from non-main process!!!\n");
+		abort();
+	}
+	if (h->_next != NULL) {
+		LM_BUG("buggy call h->_next != NULL!!!\n");
+		abort();
+	}
+
+	for (hp = _fork_handlers; hp->_next != NULL; hp = hp->_next)
+		continue;
+	hp->_next = h;
+};
 
 static unsigned long count_running_processes(void *x)
 {
@@ -168,7 +203,7 @@ int init_multi_proc_support(void)
 }
 
 
-void set_proc_attrs( char *fmt, ...)
+void set_proc_attrs(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -179,9 +214,6 @@ void set_proc_attrs( char *fmt, ...)
 
 	/* pid */
 	pt[process_no].pid=getpid();
-
-	/* for sure the process is running */
-	pt[process_no].flags |= OSS_PROC_IS_RUNNING;
 }
 
 
@@ -227,12 +259,33 @@ void reset_process_slot( int p_id )
 }
 
 
+enum {CHLD_STARTING, CHLD_OK, CHLD_FAILED};
+
+static __attribute__((__noreturn__)) void child_startup_failed(void)
+{
+	atomic_store(&pt[process_no].startup_result, CHLD_FAILED);
+	exit(1);
+}
+
+static int internal_fork_child_setup(const struct internal_fork_params *ifpp)
+{
+	init_log_level();
+
+	tcp_connect_proc_to_tcp_main(process_no, 1);
+
+	/* free the script if not needed */
+	if (!(ifpp->flags & OSS_PROC_NEEDS_SCRIPT) && sroutes) {
+		free_route_lists(sroutes);
+		sroutes = NULL;
+	}
+	return 0;
+}
+
 /* This function is to be called only by the main process!
  * Returns, on success, the ID (non zero) in the process table of the
  * newly forked procees.
  * */
-int internal_fork(char *proc_desc, unsigned int flags,
-												enum process_type type)
+int internal_fork(const struct internal_fork_params *ifpp)
 {
 	int new_idx;
 	pid_t pid;
@@ -253,7 +306,7 @@ int internal_fork(char *proc_desc, unsigned int flags,
 
 	seed = rand();
 
-	LM_DBG("forking new process \"%s\" on slot %d\n", proc_desc, new_idx);
+	LM_DBG("forking new process \"%s\" on slot %d\n", ifpp->proc_desc, new_idx);
 
 	/* set TCP communication */
 	if (tcp_activate_comm_proc_socks(new_idx)<0){
@@ -263,7 +316,7 @@ int internal_fork(char *proc_desc, unsigned int flags,
 	}
 
 	/* set the IPC pipes */
-	if ( (flags & OSS_PROC_NO_IPC) ) {
+	if ( (ifpp->flags & OSS_PROC_NO_IPC) ) {
 		/* advertise no IPC to the rest of the procs */
 		pt[new_idx].ipc_pipe[0] = -1;
 		pt[new_idx].ipc_pipe[1] = -1;
@@ -280,56 +333,85 @@ int internal_fork(char *proc_desc, unsigned int flags,
 	}
 
 	pt[new_idx].pid = 0;
-	pt[new_idx].flags = OSS_PROC_IS_RUNNING;
+
+	atomic_init(&pt[new_idx].startup_result, CHLD_STARTING);
 
 	if ( (pid=fork())<0 ){
-		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
+		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",ifpp->proc_desc,
 				errno, strerror(errno));
 		reset_process_slot( new_idx );
 		return -1;
 	}
 
 	if (pid==0){
+		const struct internal_fork_handler *cfhp;
 		/* child process */
 		is_main = 0; /* a child is not main process */
-		/* set uid and pid */
+		/* set uid */
 		process_no = new_idx;
-		pt[process_no].pid = getpid();
-		pt[process_no].flags |= flags;
-		pt[process_no].type = type;
-		/* activate its load & pkg statistics */
-		pt[process_no].load_rt->flags &= (~STAT_HIDDEN);
-		pt[process_no].load_1m->flags &= (~STAT_HIDDEN);
-		pt[process_no].load_10m->flags &= (~STAT_HIDDEN);
-		#ifdef PKG_MALLOC
-		pt[process_no].pkg_used->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_rused->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_mused->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_free->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_frags->flags &= (~STAT_HIDDEN);
-		#endif
+		/* set attributes, pid etc */
+		set_proc_attrs(ifpp->proc_desc);
+
+		pt[process_no].flags |= ifpp->flags;
+		pt[process_no].type = ifpp->type;
+		/* activate its load & pkg statistics, but only if IPC present */
+		if ( (ifpp->flags & OSS_PROC_NO_IPC)==0 ) {
+			pt[process_no].load_rt->flags &= (~STAT_HIDDEN);
+			pt[process_no].load_1m->flags &= (~STAT_HIDDEN);
+			pt[process_no].load_10m->flags &= (~STAT_HIDDEN);
+			#ifdef PKG_MALLOC
+			pt[process_no].pkg_total->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_used->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_rused->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_mused->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_free->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_frags->flags &= (~STAT_HIDDEN);
+			#endif
+		}
 		/* each children need a unique seed */
 		seed_child(seed);
-		init_log_level();
 
-		/* set attributes */
-		set_proc_attrs(proc_desc);
-		tcp_connect_proc_to_tcp_main( process_no, 1);
-
-		/* free the script if not needed */
-		if (!(flags&OSS_PROC_NEEDS_SCRIPT) && sroutes) {
-			free_route_lists(sroutes);
-			sroutes = NULL;
+		for (cfhp = _fork_handlers; cfhp != NULL; cfhp = cfhp->_next) {
+			if (cfhp->post_fork.in_child == NULL)
+				continue;
+			if (cfhp->post_fork.in_child(ifpp) != 0) {
+				LM_CRIT("failed to run %s for process %d\n", cfhp->desc,
+				    process_no);
+				child_startup_failed();
+			}
 		}
+		atomic_store(&pt[process_no].startup_result, CHLD_OK);
 		return 0;
 	}else{
 		/* parent process */
-		/* Do not set PID for child in the main process. Let the child do
-		 * that as this will act as a marker to tell us that the init 
-		 * sequance of the child proc was completed.
-		 * pt[new_idx].pid = pid; */
+		/* wait for the child to complete the critical sectoin of the
+		 * start-up */
+		while (atomic_load(&pt[new_idx].startup_result) == CHLD_STARTING) {
+			int status;
+			sched_yield();
+			pid_t result = waitpid(pid, &status, WNOHANG);
+			if (result < 0) {
+				if (errno == EINTR)
+					continue;
+				goto child_is_down;
+			}
+			if (result == 0) {
+				// Child has not exited yet
+				continue;
+			}
+			// Child has exited, oops
+			goto child_is_down;
+		}
+		if (atomic_load(&pt[new_idx].startup_result) != CHLD_OK) {
+			goto child_is_down;
+		}
+		pt[new_idx].flags |= OSS_PROC_IS_RUNNING;
 		tcp_connect_proc_to_tcp_main( new_idx, 0);
 		return new_idx;
+child_is_down:
+		LM_CRIT("failed to initialize child process %d\n", new_idx);
+		reset_process_slot( new_idx );
+		return -1;
 	}
 }
 
@@ -408,10 +490,26 @@ void dynamic_process_final_exit(void)
 	/* if a TCP proc by chance, reset the tcp-related data */
 	tcp_reset_worker_slot();
 
-	/* mark myself as DYNAMIC (just in case) to have an err-less terminatio */
+	/* mark myself as DYNAMIC (just in case) to have an err-less termination */
 	pt[process_no].flags |= OSS_PROC_SELFEXIT;
 	LM_INFO("doing self termination\n");
 
-	/* the process slot in the proc table will be purge on SIGCHLG by main */
+	/* the process slot in the proc table will be purge on SIGCHLD by main */
 	exit(0);
+}
+
+int run_post_fork_handlers(void)
+{
+	const struct internal_fork_handler *cfhp;
+
+	for (cfhp = _fork_handlers; cfhp != NULL; cfhp = cfhp->_next) {
+		if (cfhp->post_fork.in_parent == NULL)
+			continue;
+		if (cfhp->post_fork.in_parent() != 0) {
+			LM_CRIT("failed to run %s for process %d\n", cfhp->desc,
+			    process_no);
+			return (-1);
+		}
+	}
+	return (0);
 }

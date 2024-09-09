@@ -1,0 +1,144 @@
+tls_wolfssl Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. Compilation
+              1.2.2. OpenSIPS Modules
+              1.2.3. External Libraries or Applications
+
+   2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module implements TLS operations using the wolfSSL
+   libarary. It provides the primitives required by the tls_mgm
+   module in order to expose a higher-level API used by TLS-based
+   protocol modules like proto_tls or proto_wss.
+
+   The wolfSSL library is statically-linked and bundled with this
+   module so no installation or external dependency is required.
+
+1.2. Dependencies
+
+1.2.1. Compilation
+
+   The following packages must be installed before compiling this
+   module:
+     * autoconf.
+     * automake.
+     * libtool.
+
+1.2.2. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * None.
+
+1.2.3. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+Chapter 2. Frequently Asked Questions
+
+   2.1.
+
+   Why do I get the following error when compiling the module?
+    make[1]: Entering directory '/usr/local/src/opensips/modules/tls_wol
+fssl'
+    /bin/sh: 3: ./autogen.sh: not found
+    env: './configure': No such file or directory
+    make[1]: *** [Makefile:15: lib/lib/libwolfssl.a] Error 127
+    make[1]: Leaving directory '/usr/local/src/opensips/modules/tls_wolf
+ssl'
+    make: *** [Makefile:197: modules] Error 2
+
+   If you obtained the OpenSIPS sources by cloning the repository
+   from Github, without using the --recursive option for the git
+   clone command, you did not properly fetch the wolfSSL library
+   code, which is included as a git submodule pointing to the
+   official wolfSSL repository.
+
+   In order to fetch the wolfSSL library code you can run:
+                git submodule update --init
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu) 29 22 553 114
+   2. Razvan Crainea (@razvancrainea) 11 7 206 65
+   3. Maksym Sobolyev (@sobomax) 4 2 2 2
+   4. James Stanley 3 1 6 1
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 3 3
+   6. Liviu Chircu (@liviuchircu) 3 1 2 2
+   7. Bence Szigeti 3 1 1 1
+   8. Alexey Vasilyev (@vasilevalex) 2 1 11 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. James Stanley                       Feb 2024 - Feb 2024
+   2. Liviu Chircu (@liviuchircu)         Oct 2023 - Oct 2023
+   3. Bence Szigeti                       Oct 2023 - Oct 2023
+   4. Razvan Crainea (@razvancrainea)     Aug 2023 - Oct 2023
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) May 2023 - May 2023
+   6. Vlad Patrascu (@rvlad-patrascu)     May 2021 - Mar 2023
+   7. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   8. Alexey Vasilyev (@vasilevalex)      Jan 2022 - Jan 2022
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+
+   Documentation Copyrights:
+
+   Copyright © 2021 www.opensips-solutions.com

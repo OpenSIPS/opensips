@@ -30,53 +30,70 @@
 #include "event_rabbitmq.h"
 #include "rabbitmq_send.h"
 #include <string.h>
-
-
+#include "../../mem/shm_mem.h"
+#include "rmq_servers.h"
+#include "../../db/db_id.h"
+#include "../../mod_fix.h"
+#include "../../dprint.h"
 
 /**
  * module functions
  */
 static int mod_init(void);
 static int child_init(int);
-static void destroy(void);
+static void mod_destroy(void);
 
 /**
  * module parameters
  */
 static unsigned int heartbeat = 0;
-extern unsigned rmq_sync_mode;
 static int rmq_connect_timeout = RMQ_DEFAULT_CONNECT_TIMEOUT;
+static int rmq_timeout = 0;
 struct timeval conn_timeout_tv;
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
+struct timeval rpc_timeout_tv;
+#endif
 int use_tls;
-
 struct tls_mgm_binds tls_api;
+struct openssl_binds openssl_api;
+
+#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
+gen_lock_t *ssl_lock;
+#endif
 
 /**
  * exported functions
  */
 static evi_reply_sock* rmq_parse(str socket);
-static int rmq_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t * params);
+static int rmq_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx);
 static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static void rmq_free(evi_reply_sock *sock);
 static str rmq_print(evi_reply_sock *sock);
 
+static int fixup_check_avp(void** param);
+static int rmq_publish(struct sip_msg *msg, struct rmq_server *srv, str *srkey,
+			str *sbody, str *sctype, pv_spec_t *hnames, pv_spec_t *hvals);
+
+
 /* sending process */
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"RabbitMQ sender",  0,  0, rmq_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
 /* module parameters */
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"heartbeat",					INT_PARAM, &heartbeat},
-	{"sync_mode",		INT_PARAM, &rmq_sync_mode},
 	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
+	{"timeout", INT_PARAM, &rmq_timeout},
 	{"use_tls", INT_PARAM, &use_tls},
+	{ "server_id",			STR_PARAM|USE_FUNC_PARAM,
+		(void *)rmq_server_add},
 	{0,0,0}
 };
 
-static module_dependency_t *get_deps_use_tls(param_export_t *param)
+static module_dependency_t *get_deps_use_tls_mgm(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer == 0)
 		return NULL;
@@ -84,48 +101,70 @@ static module_dependency_t *get_deps_use_tls(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_use_tls_openssl(const param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_openssl", DEP_ABORT);
+}
+
 /* modules dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "use_tls", get_deps_use_tls },
+		{ "use_tls", get_deps_use_tls_mgm },
+		{ "use_tls", get_deps_use_tls_openssl },
 		{ NULL, NULL },
 	},
+};
+
+/* exported commands */
+static const cmd_export_t cmds[] = {
+	{"rabbitmq_publish",(cmd_function)rmq_publish, {
+		{CMD_PARAM_STR, fixup_rmq_server, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, fixup_check_avp, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, fixup_check_avp, 0}, {0,0,0}},
+		ALL_ROUTES},
+	{0,0,{{0,0,0}},0}
 };
 
 /**
  * module exports
  */
 struct module_exports exports= {
-	"event_rabbitmq",			/* module name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+	"event_rabbitmq",				/* module name */
+	MOD_TYPE_DEFAULT,				/* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,			/* dlopen flags */
-	0,							/* load function */
-	&deps,            /* OpenSIPS module dependencies */
-	0,							/* exported functions */
-	0,							/* exported async functions */
-	mod_params,							/* exported parameters */
-	0,							/* exported statistics */
-	0,							/* exported MI functions */
-	0,							/* exported pseudo-variables */
-	0,			 				/* exported transformations */
-	procs,						/* extra processes */
-	0,							/* module pre-initialization function */
-	mod_init,					/* module initialization function */
-	0,							/* response handling function */
-	destroy,					/* destroy function */
-	child_init,					/* per-child init function */
-	0							/* reload confirm function */
+	DEFAULT_DLFLAGS,				/* dlopen flags */
+	0,								/* load function */
+	&deps,							/* OpenSIPS module dependencies */
+	cmds,							/* exported functions */
+	0,								/* exported async functions */
+	mod_params,						/* exported parameters */
+	0,								/* exported statistics */
+	0,								/* exported MI functions */
+	0,								/* exported pseudo-variables */
+	0,								/* exported transformations */
+	procs,							/* extra processes */
+	0,								/* module pre-initialization function */
+	mod_init,						/* module initialization function */
+	0,								/* response handling function */
+	mod_destroy,					/* destroy function */
+	child_init,						/* per-child init function */
+	0								/* reload confirm function */
 };
 
 
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_rmq = {
+static const evi_export_t trans_export_rmq = {
 	RMQ_STR,					/* transport module name */
 	rmq_raise,					/* raise function */
 	rmq_parse,					/* parse function */
@@ -162,16 +201,45 @@ static int mod_init(void)
 	conn_timeout_tv.tv_sec = rmq_connect_timeout/1000;
 	conn_timeout_tv.tv_usec = (rmq_connect_timeout%1000)*1000;
 
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
+	if (rmq_timeout < 0) {
+		LM_WARN("invalid value for 'timeout' %d; fallback to blocking mode\n", rmq_timeout);
+		rmq_timeout = 0;
+	}
+	rpc_timeout_tv.tv_sec = rmq_timeout/1000;
+	rpc_timeout_tv.tv_usec = (rmq_timeout%1000)*1000;
+#else
+	if (rmq_timeout != 0)
+		LM_WARN("setting the timeout without support for it; fallback to blocking mode\n");
+#endif
+
 	if (use_tls) {
 		#ifndef AMQP_VERSION_v04
 		LM_ERR("TLS not supported for librabbitmq version lower than 0.4.0\n");
 		return -1;
 		#endif
 
+		if (load_tls_openssl_api(&openssl_api)) {
+			LM_DBG("Failed to load openssl API\n");
+			return -1;
+		}
+
 		if (load_tls_mgm_api(&tls_api) != 0) {
 			LM_ERR("failed to load tls_mgm API!\n");
 			return -1;
 		}
+
+		#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
+		ssl_lock = lock_alloc();
+		if (!ssl_lock) {
+			LM_ERR("No more shm memory\n");
+			return -1;
+		}
+		if (!lock_init(ssl_lock)) {
+			LM_ERR("Failed to init lock\n");
+			return -1;
+		}
+		#endif
 
 		amqp_set_initialize_ssl_library(0);
 	}
@@ -185,41 +253,71 @@ static int child_init(int rank)
 		LM_ERR("cannot init writing pipe\n");
 		return -1;
 	}
+
+	rmq_connect_servers();
+
 	return 0;
 }
 
-
-/* returns 0 if sockets don't match */
-static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
+/*
+ * destroy function
+ */
+static void mod_destroy(void)
 {
-	rmq_params_t *p1, *p2;
-	/* sock flags */
-	if (!sock1 || !sock2 ||
-			!(sock1->flags & RMQ_FLAG) || !(sock2->flags & RMQ_FLAG) ||
-			!(sock1->flags & EVI_PARAMS) || !(sock2->flags & EVI_PARAMS) ||
-			!(sock1->flags & EVI_PORT) || !(sock2->flags & EVI_PORT) ||
-			!(sock1->flags & EVI_ADDRESS) || !(sock2->flags & EVI_ADDRESS))
-		return 0;
+	LM_NOTICE("destroy module ...\n");
+	/* closing sockets */
+	rmq_destroy_pipe();
 
-	p1 = (rmq_params_t *)sock1->params;
-	p2 = (rmq_params_t *)sock2->params;
-	if (!p1 || !p2 ||
-			!(p1->flags & RMQ_PARAM_RKEY) || !(p2->flags & RMQ_PARAM_RKEY))
-		return 0;
+	#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
+	lock_destroy(ssl_lock);
+	lock_dealloc(ssl_lock);
+	#endif
+}
 
-	if (sock1->port == sock2->port &&
-			sock1->address.len == sock2->address.len &&
-			p1->routing_key.len == p2->routing_key.len &&
-			p1->user.len == p2->user.len && p1->exchange.len == p2->exchange.len &&
-			(p1->user.s == p2->user.s || /* trying the static values */
-			!memcmp(p1->user.s, p2->user.s, p1->user.len)) &&
-			!memcmp(sock1->address.s, sock2->address.s, sock1->address.len) &&
-			!memcmp(p1->routing_key.s, p2->routing_key.s, p1->routing_key.len) && 
-			!memcmp(p1->exchange.s, p2->exchange.s, p1->exchange.len)) {
-		LM_DBG("socket matched: %s@%s:%hu/%s\n",
-				p1->user.s, sock1->address.s, sock2->port, p1->routing_key.s);
-		return 1;
+
+static int rmq_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx)
+{
+	rmq_send_t *rmqs;
+	str buf;
+
+	if (!sock || !(sock->flags & RMQ_FLAG)) {
+		LM_ERR("invalid socket type\n");
+		return -1;
 	}
+	/* sanity checks */
+	if ((sock->flags & (EVI_ADDRESS|EVI_PORT|EVI_PARAMS)) !=
+			(EVI_ADDRESS|EVI_PORT|EVI_PARAMS) ||
+			!sock->port || !sock->address.len || !sock->address.s) {
+		LM_ERR("socket doesn't have enough details\n");
+		return -1;
+	}
+
+	buf.s = evi_build_payload(params, ev_name, 0, NULL, NULL);
+	if (!buf.s) {
+		LM_ERR("Failed to build event payload %.*s\n", ev_name->len, ev_name->s);
+		return -1;
+	}
+	buf.len = strlen(buf.s);
+
+
+	rmqs = shm_malloc(sizeof(rmq_send_t) + buf.len + 1);
+	if (!rmqs) {
+		LM_ERR("no more shm memory\n");
+		evi_free_payload(buf.s);
+		return -1;
+	}
+	memcpy(rmqs->msg, buf.s, buf.len + 1);
+	evi_free_payload(buf.s);
+
+	rmqs->sock = sock;
+	rmqs->async_ctx = *async_ctx;
+
+	if (rmq_send(rmqs) < 0) {
+		LM_ERR("cannot send message\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -259,7 +357,7 @@ static evi_reply_sock* rmq_parse(str socket)
 	rmq_params_t *param;
 	unsigned int len, i;
 	const char* begin;
-	str s;
+	str s, tmp;
 	csv_record *p_list = NULL, *it;
 	str prev_token;
 
@@ -298,9 +396,11 @@ static evi_reply_sock* rmq_parse(str socket)
 			switch(socket.s[i]) {
 			case '@':
 				st = ST_HOST;
-				if (dupl_string(&param->user, begin, socket.s + i)) goto err;
+				if (dupl_string(&tmp, begin, socket.s + i)) goto err;
+				memcpy(param->conn.uri.user, tmp.s, tmp.len);
+				param->conn.uri.user[tmp.len] = '\0';
 				begin = socket.s + i + 1;
-				param->flags |= RMQ_PARAM_USER;
+				param->conn.flags |= RMQ_PARAM_USER;
 				break;
 
 			case ':':
@@ -322,13 +422,13 @@ static evi_reply_sock* rmq_parse(str socket)
 			switch(socket.s[i]) {
 			case '@':
 				st = ST_HOST;
-				param->user.len = prev_token.len;
-				param->user.s = prev_token.s;
-				param->flags |= RMQ_PARAM_USER;
+				memcpy(param->conn.uri.user, prev_token.s, prev_token.len);
+				param->conn.flags |= RMQ_PARAM_USER;
 				prev_token.s = 0;
-				if (dupl_string(&param->pass, begin, socket.s + i) < 0)
+				if (dupl_string(&tmp, begin, socket.s + i) < 0)
 					goto err;
-				param->flags |= RMQ_PARAM_PASS;
+				memcpy(param->conn.uri.password, tmp.s, tmp.len);
+				param->conn.flags |= RMQ_PARAM_PASS;
 				begin = socket.s + i + 1;
 				break;
 
@@ -400,17 +500,22 @@ static evi_reply_sock* rmq_parse(str socket)
 				for (it = p_list; it; it = it->next)
 					if (it->s.len > RMQ_EXCHANGE_LEN &&
 						!memcmp(it->s.s, RMQ_EXCHANGE_S, RMQ_EXCHANGE_LEN)) {
-						if (dupl_string(&param->exchange, it->s.s+RMQ_EXCHANGE_LEN,
+						if (dupl_string(&tmp, it->s.s+RMQ_EXCHANGE_LEN,
 							it->s.s + it->s.len) < 0)
 							goto err;
-						param->flags |= RMQ_PARAM_EKEY;
+						memcpy((char *)param->conn.exchange.bytes, tmp.s, tmp.len);
+						param->conn.exchange.len = tmp.len;
+						param->conn.flags |= RMQ_PARAM_EKEY;
 					} else if (it->s.len > RMQ_TLS_DOM_LEN &&
 						!memcmp(it->s.s, RMQ_TLS_DOM_S, RMQ_TLS_DOM_LEN)) {
-						if (dupl_string(&param->tls_dom_name,
+						if (dupl_string(&param->conn.tls_dom_name,
 							it->s.s+RMQ_TLS_DOM_LEN, it->s.s + it->s.len) < 0)
 							goto err;
-						param->tls_dom_name.len--;
-						param->flags |= RMQ_PARAM_TLS;
+						param->conn.tls_dom_name.len--;
+						param->conn.flags |= RMQ_PARAM_TLS;
+					} else if (it->s.len == RMQ_PERSISTENT_LEN &&
+						!memcmp(it->s.s, RMQ_PERSISTENT_S, RMQ_PERSISTENT_LEN)) {
+						param->conn.flags |= RMQF_NOPER;
 					} else {
 						LM_WARN("unknown extra parameter: '%.*s'\n", it->s.len, it->s.s);
 						goto err;
@@ -420,7 +525,8 @@ static evi_reply_sock* rmq_parse(str socket)
 
 				if (dupl_string(&param->routing_key, socket.s + i + 1, socket.s + len) < 0)
 					goto err;
-				param->flags |= RMQ_PARAM_RKEY;
+				param->conn.flags |= RMQF_MAND;
+
 
 				goto success;
 			}
@@ -428,7 +534,7 @@ static evi_reply_sock* rmq_parse(str socket)
 				if (dupl_string(&param->routing_key, begin, socket.s + len) < 0)
 					goto err;
 
-				param->flags |= RMQ_PARAM_RKEY;
+				param->conn.flags |= RMQF_MAND;
 				goto success;
 			}
 			break;
@@ -440,26 +546,30 @@ static evi_reply_sock* rmq_parse(str socket)
 
 success:
 	if (!(sock->flags & EVI_PORT) || !sock->port) {
-		if (param->flags & RMQ_PARAM_TLS)
+		if (param->conn.flags & RMQ_PARAM_TLS)
 			sock->port = RMQ_DEFAULT_TLS_PORT;
 		else
 			sock->port = RMQ_DEFAULT_PORT;
 		sock->flags |= EVI_PORT;
 	}
-	if (!(param->flags & RMQ_PARAM_USER) || !param->user.s) {
-		param->user.s = param->pass.s = RMQ_DEFAULT_UP;
-		param->user.len = param->pass.len = RMQ_DEFAULT_UP_LEN;
-		param->flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
+	if (!(param->conn.flags & RMQ_PARAM_USER) || !param->conn.uri.user) {
+		param->conn.uri.user = shm_malloc(rmq_static_holder.len);
+		if (!param->conn.uri.user) {
+			goto err;
+		}
+		memcpy(param->conn.uri.user, rmq_static_holder.s, rmq_static_holder.len);
+		param->conn.uri.password = param->conn.uri.user;
+		param->conn.flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
 	}
 
-	if ((param->flags & RMQ_PARAM_TLS) && !use_tls) {
+	if ((param->conn.flags & RMQ_PARAM_TLS) && !use_tls) {
 		LM_ERR("'use_tls' module parameter required for TLS support\n");
 		goto err;
 	}
 
-	param->heartbeat = heartbeat;
+	param->conn.heartbeat = heartbeat;
 	sock->params = param;
-	sock->flags |= EVI_PARAMS | RMQ_FLAG;
+	sock->flags |= EVI_PARAMS | RMQ_FLAG | EVI_ASYNC_STATUS;
 
 	return sock;
 err:
@@ -472,6 +582,42 @@ err:
 		shm_free(sock->address.s);
 	shm_free(sock);
 	return NULL;
+}
+
+
+/* returns 0 if sockets don't match */
+static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
+{
+	rmq_params_t *p1, *p2;
+	/* sock flags */
+	if (!sock1 || !sock2 ||
+			!(sock1->flags & RMQ_FLAG) || !(sock2->flags & RMQ_FLAG) ||
+			!(sock1->flags & EVI_PARAMS) || !(sock2->flags & EVI_PARAMS) ||
+			!(sock1->flags & EVI_PORT) || !(sock2->flags & EVI_PORT) ||
+			!(sock1->flags & EVI_ADDRESS) || !(sock2->flags & EVI_ADDRESS))
+		return 0;
+
+	p1 = (rmq_params_t *)sock1->params;
+	p2 = (rmq_params_t *)sock2->params;
+	if (!p1 || !p2 ||
+		!(p1->conn.flags & RMQF_MAND) || !(p2->conn.flags & RMQF_MAND))
+
+		return 0;
+
+	if (sock1->port == sock2->port &&
+			sock1->address.len == sock2->address.len &&
+			p1->routing_key.len == p2->routing_key.len &&
+			strlen(p1->conn.uri.user) == strlen(p2->conn.uri.user) && p1->conn.exchange.len == p2->conn.exchange.len &&
+			(p1->conn.uri.user == p2->conn.uri.user || /* trying the static values */
+			!memcmp(p1->conn.uri.user, p2->conn.uri.user, strlen(p1->conn.uri.user))) &&
+			!memcmp(sock1->address.s, sock2->address.s, sock1->address.len) &&
+			!memcmp(p1->routing_key.s, p2->routing_key.s, p1->routing_key.len) &&
+			!memcmp(p1->conn.exchange.bytes, p2->conn.exchange.bytes, p1->conn.exchange.len)) {
+		LM_DBG("socket matched: %s@%s:%hu/%s\n",
+				p1->conn.uri.user, sock1->address.s, sock2->port, p1->routing_key.s);
+		return 1;
+	}
+	return 0;
 }
 
 #define DO_PRINT(_s, _l) \
@@ -507,8 +653,8 @@ static str rmq_print(evi_reply_sock *sock)
 		goto end;
 
 	param = sock->params;
-	if (param->flags & RMQ_PARAM_USER) {
-		DO_PRINT(param->user.s, param->user.len - 1 /* skip 0 */);
+	if (param->conn.flags & RMQ_PARAM_USER) {
+		DO_PRINT(param->conn.uri.user, strlen(param->conn.uri.user) - 1 /* skip 0 */);
 		DO_PRINT("@", 1);
 	}
 	if (sock->flags & EVI_ADDRESS)
@@ -516,72 +662,18 @@ static str rmq_print(evi_reply_sock *sock)
 
 	DO_PRINT("/", 1); /* needs to be changed if it can print a key without RMQ_PARAM_RKEY */
 	
-	if (param->flags & RMQ_PARAM_EKEY) {
-		DO_PRINT(param->exchange.s, param->exchange.len - 1);
+	if (param->conn.flags & RMQ_PARAM_EKEY) {
+		DO_PRINT(param->conn.exchange.bytes, param->conn.exchange.len - 1);
 		DO_PRINT("?", 1);
 	}
 
-	if (param->flags & RMQ_PARAM_RKEY) {
+	if (param->conn.flags & RMQF_MAND) {
 		DO_PRINT(param->routing_key.s, param->routing_key.len - 1);
 	}
 end:
 	return rmq_print_s;
 }
 #undef DO_PRINT
-
-static int rmq_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t * params)
-{
-	rmq_send_t *rmqs;
-	str buf;
-
-	if (!sock || !(sock->flags & RMQ_FLAG)) {
-		LM_ERR("invalid socket type\n");
-		return -1;
-	}
-	/* sanity checks */
-	if ((sock->flags & (EVI_ADDRESS|EVI_PORT|EVI_PARAMS)) !=
-			(EVI_ADDRESS|EVI_PORT|EVI_PARAMS) ||
-			!sock->port || !sock->address.len || !sock->address.s) {
-		LM_ERR("socket doesn't have enough details\n");
-		return -1;
-	}
-
-	buf.s = evi_build_payload(params, ev_name, 0, NULL, NULL);
-	if (!buf.s) {
-		LM_ERR("Failed to build event payload %.*s\n", ev_name->len, ev_name->s);
-		return -1;
-	}
-	buf.len = strlen(buf.s);
-
-	rmqs = shm_malloc(sizeof(rmq_send_t) + buf.len + 1);
-	if (!rmqs) {
-		LM_ERR("no more shm memory\n");
-		evi_free_payload(buf.s);
-		return -1;
-	}
-	memcpy(rmqs->msg, buf.s, buf.len + 1);
-	evi_free_payload(buf.s);
-
-	rmqs->sock = sock;
-
-	if (rmq_send(rmqs) < 0) {
-		LM_ERR("cannot send message\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
- * destroy function
- */
-static void destroy(void)
-{
-	LM_NOTICE("destroy module ...\n");
-	/* closing sockets */
-	rmq_destroy_pipe();
-}
 
 static void rmq_free(evi_reply_sock *sock)
 {
@@ -604,4 +696,48 @@ destroy:
 	rmq_destroy(sock);
 }
 
+static int fixup_check_avp(void** param)
+{
+	if (((pv_spec_t *)*param)->type!=PVT_AVP) {
+		LM_ERR("return parameter must be an AVP\n");
+		return E_SCRIPT;
+	}
 
+	return 0;
+}
+
+/*
+ * function that simply prints the parameters passed
+ */
+static int rmq_publish(struct sip_msg *msg, struct rmq_server *srv, str *srkey,
+			str *sbody, str *sctype, pv_spec_t *hnames, pv_spec_t *hvals)
+{
+	int aname, avals;
+	unsigned short type;
+
+	if (hnames && !hvals) {
+		LM_ERR("header names without values!\n");
+		return -1;
+	}
+	if (!hnames && hvals) {
+		LM_ERR("header values without names!\n");
+		return -1;
+	}
+
+	if (hnames &&
+			pv_get_avp_name(msg, &hnames->pvp, &aname, &type) < 0) {
+		LM_ERR("cannot resolve names AVP\n");
+		return -1;
+	}
+
+	if (hvals &&
+			pv_get_avp_name(msg, &hvals->pvp, &avals, &type) < 0) {
+		LM_ERR("cannot resolve values AVP\n");
+		return -1;
+	}
+
+	/* resolve the AVP */
+	return rmq_send_rm(srv, srkey, sbody, sctype,
+			(hnames ? &aname : NULL),
+			(hvals ? &avals : NULL)) == 0 ? 1: -1;
+}

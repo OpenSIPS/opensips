@@ -1,5 +1,3 @@
-# $Id$
-#
 # WARNING: do not run this directly, it should be run by the master Makefile
 
 include ../../Makefile.defs
@@ -21,7 +19,7 @@ ifeq ($(HAS_PGCFG),YES)
 
 	# use autodetection
 	DEFS += -I$(shell pg_config --includedir)
-	LIBS = -L$(shell pg_config --libdir) -lpq
+	LIBS += -L$(shell pg_config --libdir) -lpq
 
 else
 
@@ -30,14 +28,14 @@ else
 	DEFS +=-I$(LOCALBASE)/include -I$(LOCALBASE)/pgsql/include \
 		 -I$(SYSBASE)/include/pgsql -I$(SYSBASE)/include/postgresql \
 		 -I$(SYSBASE)/include/postgresql/8.0 -I$(SYSBASE)/postgres/8.4/include
-	LIBS=-L$(LOCALBASE)/lib -L$(LOCALBASE)/pgsql/lib -L$(LOCALBASE)/lib/pgsql \
+	LIBS += -L$(LOCALBASE)/lib -L$(LOCALBASE)/pgsql/lib -L$(LOCALBASE)/lib/pgsql \
 		 -lpq
 
 endif
 
 include ../../Makefile.modules
 
-install_module_custom: 
+install_module_dbschema:
 	mkdir -p $(data_prefix)/$(data_dir)/postgres ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/postgres/*) ; do \
 		if [ -f $$FILE ] ; then \

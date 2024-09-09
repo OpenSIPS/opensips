@@ -32,6 +32,8 @@
 int ds_cluster_id = 0;
 
 str ds_cluster_shtag = {NULL,0};
+char* ds_cluster_prob_mode_s = NULL;
+int ds_cluster_prob_mode = DS_CLUSTER_PROB_MODE_ALL;
 
 static str status_repl_cap = str_init("dispatcher-status-repl");
 static struct clusterer_binds c_api;
@@ -45,6 +47,14 @@ int ds_cluster_shtag_is_active(void)
 		/* no clustering support or sharing tag found active */
 		return 1;
 
+	return 0;
+}
+
+int ds_cluster_get_my_index(int *size)
+{
+	if (ds_cluster_id>0)
+		return c_api.get_my_index( ds_cluster_id, &status_repl_cap, size);
+	*size = 1;
 	return 0;
 }
 
@@ -123,8 +133,8 @@ static int ds_status_update(bin_packet_t *packet, int is_sync)
 	if (partition == NULL)
 		return -1;
 
-	if (ds_set_state_repl( group, &address, state, type, partition,
-		0 /*no repl*/, is_sync) < 0)
+	if (ds_set_state( group, &address, state, type, partition,
+		0 /*no repl*/, is_sync, MI_SSTR("replicated info")) < 0)
 		return -1;
 
 	return 0;
@@ -132,34 +142,31 @@ static int ds_status_update(bin_packet_t *packet, int is_sync)
 
 static void receive_ds_binary_packet(bin_packet_t *packet)
 {
-	bin_packet_t *pkt;
 	int rc = 0;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		LM_DBG("received a binary packet [%d]!\n", packet->type);
+	LM_DBG("received a binary packet [%d]!\n", packet->type);
 
-		switch (packet->type) {
-		case REPL_DS_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+	switch (packet->type) {
+	case REPL_DS_STATUS_UPDATE:
+		ensure_bin_version(packet, BIN_VERSION);
 
-			rc = ds_status_update(packet, 0);
-			break;
-		case SYNC_PACKET_TYPE:
-			_ensure_bin_version(pkt, BIN_VERSION, "dispatcher sync packet");
+		rc = ds_status_update(packet, 0);
+		break;
+	case SYNC_PACKET_TYPE:
+		_ensure_bin_version(packet, BIN_VERSION, "dispatcher sync packet");
 
-			while (c_api.sync_chunk_iter(pkt))
-				if (ds_status_update(pkt, 1) < 0)
-					LM_WARN("failed to process sync chunk!\n");
-			break;
-		default:
-			LM_WARN("Invalid dispatcher binary packet command: %d "
-				"(from node: %d in cluster: %d)\n",
-				packet->type, packet->src_id, ds_cluster_id);
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+		while (c_api.sync_chunk_iter(packet))
+			if (ds_status_update(packet, 1) < 0)
+				LM_WARN("failed to process sync chunk!\n");
+		break;
+	default:
+		LM_WARN("Invalid dispatcher binary packet command: %d "
+			"(from node: %d in cluster: %d)\n",
+			packet->type, packet->src_id, ds_cluster_id);
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int ds_recv_sync_request(int node_id)
@@ -205,12 +212,23 @@ void receive_ds_cluster_event(enum clusterer_event ev, int node_id)
 }
 
 int ds_cluster_sync(void) {
-	if (c_api.request_sync(&status_repl_cap, ds_cluster_id) < 0) {
+	if (c_api.request_sync(&status_repl_cap, ds_cluster_id, 0) < 0) {
 		LM_ERR("Sync request failed\n");
 		return -1;
 	}
 
 	return 0;
+}
+
+static int get_cluster_prob_mode(char *mode)
+{
+	if ( strcasecmp( mode, "all")==0 )
+		return DS_CLUSTER_PROB_MODE_ALL;
+	if ( strcasecmp( mode, "by-shtag")==0 )
+		return DS_CLUSTER_PROB_MODE_SHTAG;
+	if ( strcasecmp( mode, "distributed")==0 )
+		return DS_CLUSTER_PROB_MODE_DISTRIBUTED;
+	return -1;
 }
 
 int ds_init_cluster(void)
@@ -241,6 +259,23 @@ int ds_init_cluster(void)
 		}
 	} else {
 		ds_cluster_shtag.len = 0;
+	}
+
+	if (ds_cluster_prob_mode_s) {
+		ds_cluster_prob_mode =
+			get_cluster_prob_mode(ds_cluster_prob_mode_s);
+		if (ds_cluster_prob_mode < 0) {
+			LM_ERR("failed to initialized the cluster prob mode <%s>,"
+				" unknown value\n", ds_cluster_prob_mode_s);
+			return -1;
+		}
+	}
+
+	if ( (ds_cluster_prob_mode == DS_CLUSTER_PROB_MODE_SHTAG)
+	&& (ds_cluster_shtag.len == 0)) {
+		LM_ERR("cluster probing mode 'by-shtag' requires the definition"
+			" of a sharing tag\n");
+		return -1;
 	}
 
 	if (ds_cluster_sync() < 0)

@@ -280,7 +280,7 @@ int get_wi_subs_db(subs_t* subs, watcher_t* watchers)
 		goto error;
 	}
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_SET_CURR_PS(pa_db, &my_ps);
 	if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0,  &result) < 0)
 	{
@@ -418,6 +418,7 @@ str* get_wi_notify_body(subs_t* subs, subs_t* watcher_subs)
 				subs->event->wipeer->name)< 0 )
 	{
 		LM_ERR("failed to add waiting watchers\n");
+		lock_release(&subs_htable[hash_code].lock);
 		goto error;
 	}
 
@@ -563,8 +564,7 @@ int add_waiting_watchers(watcher_t* watchers, str pres_uri, str event)
 		return -1;
 	}
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps;
-
+//	CON_SET_CURR_PS(pa_db, &my_ps);
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0, &result) < 0)
 	{
@@ -795,7 +795,7 @@ db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* body_col,
 				query_vals[i].val.str_val.s);
 	}
 
-/*	CON_PS_REFERENCE(pa_db) = &my_ps; */
+/*	CON_SET_CURR_PS(pa_db, &my_ps); */
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, &query_str, &result) < 0)
 	{
@@ -1505,7 +1505,7 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		if (sh_tags)
 			query_vals[n_query_cols-1].val.str_val = *sh_tags[tag_no];
 
-		//CON_PS_REFERENCE(pa_db) = &my_ps;
+		//CON_SET_CURR_PS(pa_db, &my_ps);
 		if (pa_dbf.query(pa_db, query_cols, query_ops, query_vals,result_cols,
 				n_query_cols, n_result_cols, 0, &result) < 0)
 		{
@@ -1731,9 +1731,9 @@ int presentity_has_subscribers(str* pres_uri, pres_ev_t* event)
 		LM_ERR("in use_table\n");
 		goto error;
 	}
-	CON_PS_REFERENCE(pa_db) = ps;
 
-	if ( pa_dbf.query(pa_db, keys, 0, vals, cols, 3, 1, 0, &res) < 0) {
+	CON_SET_CURR_PS(pa_db, ps);
+	if (pa_dbf.query(pa_db, keys, 0, vals, cols, 3, 1, 0, &res) < 0) {
 		LM_ERR("DB query failed\n");
 		goto error;
 	}
@@ -1877,7 +1877,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	while(s)
 	{
 		s->auth_rules_doc= rules_doc;
-		LM_INFO("notify\n");
+		LM_DBG("notify\n");
 		if(notify(s, NULL, notify_body?notify_body:body,
 			0, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, from_publish)< 0 )
 		{
@@ -1951,7 +1951,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 
 	while(s)
 	{
-		LM_INFO("notify\n");
+		LM_DBG("notify\n");
 		if(notify(s, watcher_subs, notify_body, 0, NULL, 0)< 0 )
 		{
 			LM_ERR("Could not send notify for [event]=%.*s\n",
@@ -2158,7 +2158,7 @@ jump_over_body:
 		goto error;
 	}
 
-	LM_INFO("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
+	LM_DBG("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
 		td->rem_uri.len, td->rem_uri.s, td->hooks.next_hop->len, td->hooks.next_hop->s,
 		td->loc_uri.len, td->loc_uri.s, subs->event->name.len, subs->event->name.s,
 		td->id.loc_tag.len, td->id.loc_tag.s, td->loc_seq.value);

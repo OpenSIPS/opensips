@@ -21,23 +21,47 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">6</entry>
-		<entry align="center">2</entry>
-		<entry align="center">342</entry>
-		<entry align="center">1</entry>
+		<entry align="center">9</entry>
+		<entry align="center">4</entry>
+		<entry align="center">368</entry>
+		<entry align="center">4</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">3</entry>
+		<entry align="center">63</entry>
+		<entry align="center">15</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">3</entry>
+		<entry align="center">5</entry>
+		<entry align="center">5</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">2</entry>
 		<entry align="center">1</entry>
 	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -64,18 +88,33 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Aug 2019 - Sep 2019</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Nov 2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">Aug 2021 - Aug 2021</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Jun 2019 - Jun 2019</entry>
+		<entry align="center">Jun 2019 - Feb 2021</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
+		<entry align="center">Feb 2021 - Feb 2021</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Aug 2019 - Sep 2019</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
@@ -86,7 +125,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
 </section>
 
 </chapter>

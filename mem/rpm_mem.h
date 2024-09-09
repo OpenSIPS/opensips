@@ -209,7 +209,7 @@ inline static void* _rpm_malloc(unsigned long size,
 }
 
 
-inline static void* _rpm_realloc(void *ptr, unsigned int size,
+inline static void* _rpm_realloc(void *ptr, unsigned long size,
 		const char* file, const char* function, unsigned int line )
 {
 	void *p;
@@ -276,7 +276,7 @@ inline static void* rpm_malloc(unsigned long size)
 }
 
 #define rpm_realloc_func		rpm_realloc
-inline static void* rpm_realloc(void *ptr, unsigned int size)
+inline static void* rpm_realloc(void *ptr, unsigned long size)
 {
 	void *p;
 

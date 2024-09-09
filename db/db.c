@@ -291,7 +291,7 @@ error:
  * Initialize database module
  * No function should be called before this
  */
-db_con_t* db_do_init(const str* url, void* (*new_connection)())
+db_con_t* db_do_init(const str* url, void* (*new_connection)(const struct db_id *))
 {
 	struct db_id *id = NULL;
 	struct pool_con *con = NULL;
@@ -370,7 +370,7 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
  * Shut down database module
  * No function should be called after this
  */
-void db_do_close(db_con_t* _h, void (*free_connection)())
+void db_do_close(db_con_t* _h, void (*free_connection)(struct pool_con*))
 {
 	struct pool_con* con;
 

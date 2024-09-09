@@ -25,12 +25,13 @@
 
 
 #include "../../parser/digest/digest.h"
+#include "../../parser/digest/digest_parser.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/hf.h"
 #include "../../str.h"
 #include "../../usr_avp.h"
-#include "rfc2617.h"
-
+#include "../../lib/digest_auth/digest_auth.h"
+#include "../../lib/digest_auth/dauth_nonce.h"
 
 typedef enum auth_result {
 	AUTH_ERROR = -5,    /* Error occurred, a reply has not been sent out */
@@ -46,6 +47,9 @@ typedef enum auth_result {
 	                    /* Means to continue doing authorization */
 } auth_result_t;
 
+#define AUTH_SKIP_CRED_CHECK	(1<<0)
+#define AUTH_SKIP_NONCE_CHECK	(1<<1)
+
 
 /*
  * Purpose of this function is to find credentials with given realm,
@@ -54,9 +58,9 @@ typedef enum auth_result {
  * ACK and CANCEL
  */
 typedef auth_result_t (*pre_auth_t)(struct sip_msg* _m, str* _realm,
-		hdr_types_t _hftype, struct hdr_field** _h);
+		hdr_types_t _hftype, struct hdr_field** _h, unsigned skip_flags);
 auth_result_t pre_auth(struct sip_msg* _m, str* _realm,
-		hdr_types_t _hftype, struct hdr_field** _h);
+		hdr_types_t _hftype, struct hdr_field** _h, unsigned skip_flags);
 
 
 /*
@@ -70,13 +74,43 @@ auth_result_t post_auth(struct sip_msg* _m, struct hdr_field* _h);
  * Calculate the response and compare with the given response string
  * Authorization is successful if this two strings are same
  */
-typedef int (*check_response_t)(dig_cred_t* _cred, str* _method,
-							str* _msg_body, char* _ha1);
-int check_response(dig_cred_t* _cred, str* _method,
-				str* _msg_body, char* _ha1);
+typedef int (*check_response_t)(const dig_cred_t* _cred, const str* _method,
+    const str* _msg_body, const HASHHEX* _ha1);
+int check_response(const dig_cred_t* _cred, const str* _method,
+    const str* _msg_body, const HASHHEX* _ha1);
 
-typedef void (*calc_HA1_t)(ha_alg_t _alg, str* _username, str* _realm,
-		str* _password, str* _nonce, str* _cnonce, HASHHEX _sess_key);
+struct calc_HA1_arg {
+	int use_hashed;
+	alg_t alg;
+	union {
+		const struct digest_auth_credential *open;
+		const str *ha1;
+	} creds;
+	const str* nonce;
+	const str* cnonce;
+};
+
+typedef int (*calc_HA1_t)(const struct calc_HA1_arg *params, HASHHEX *_sess_key)
+    __attribute__ ((warn_unused_result));
+
+/*
+ * Build {WWW,Proxy}-Authenticate header field
+ */
+typedef char *(*build_auth_hf_t)(struct nonce_context *ncp, struct nonce_params *calc_np,
+	int _stale, const str_const *_realm, int* _len,
+    const str_const *alg_val, const str_const* _hf_name,  const str_const *opaque);
+
+/*
+ * Build Authentication-Info header field
+ */
+typedef str *(*build_auth_info_hf_t)(str *msg_body, str *method, dig_cred_t *cred,
+	struct digest_auth_credential *auth_data);
+
+/*
+ * Helper function to send a reply
+ */
+typedef int (*send_resp_t)(struct sip_msg* _m, int _code,
+		const str* _reason, const str hdrs[], int nhdrs);
 
 /*
  * Strip the beginning of realm
@@ -94,6 +128,9 @@ typedef struct auth_api {
 	post_auth_t post_auth; /* The function to be called after auth */
 	calc_HA1_t  calc_HA1;  /* calculate H(A1) as per spec */
 	check_response_t check_response; /* check auth response */
+	build_auth_hf_t build_auth_hf;   /* build {WWW,Proxy}-Authenticate header field */
+	build_auth_info_hf_t build_auth_info_hf; /* build Authentication-Info header */
+	send_resp_t  send_resp;/* Helper function to send a response */
 } auth_api_t;
 
 

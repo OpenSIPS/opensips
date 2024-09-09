@@ -40,7 +40,7 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="dependencies_libs" xreflabel="Library Dependencies">
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before 
@@ -48,10 +48,41 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>libmicrohttpd</emphasis>.
+				<emphasis>libmicrohttpd</emphasis>, with EPOLL support. This
+					typically means a version newer than <emphasis role='bold'>0.9.50</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
+		</para>
+		<para>
+			<emphasis role='bold'>WARNING!</emphasis>  Please be aware about an
+			EPOLL support regression in the <emphasis>libmicrohttpd</emphasis>
+			library and packaging which affects the OpenSIPS httpd module, which
+			was fixed according to the below timeline.  The effect of the
+			regression is that the HTTP reply body is <emphasis>sometimes</emphasis>
+			never written by the library, causing the client (e.g. opensips-cli)
+			to hang indefinitely waiting for it:
+		<itemizedlist>
+		<listitem>
+			<para>
+			versions <emphasis role='bold'>0.9.51</emphasis> - <emphasis role='bold'>0.9.52</emphasis>
+				have been tested and work correctly
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				regression introduced in <emphasis role='bold'>0.9.53</emphasis> (Apr 2017),
+				lasting until <emphasis role='bold'>0.9.71</emphasis> (May 2020)
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				regression is fixed since <emphasis role='bold'>0.9.72</emphasis> (Dec 2020)
+			</para>
+		</listitem>
+		</itemizedlist>
+
+
 		</para>
 	</section>
 	</section>
@@ -65,9 +96,7 @@
 		requests.
 		</para>
 		<para>
-		<emphasis>The default value is an empty string.</emphasis>
-		If no IP address is set, then the http server
-		will bind to all available IPs.
+		<emphasis>The default value is "*" </emphasis> (bind to all IPv6 and IPv4 interfaces).
 		</para>
 		<example>
 		<title>Set <varname>ip</varname> parameter</title>
@@ -97,6 +126,32 @@ modparam("httpd", "port", 8000)
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_conn_timeout" xreflabel="conn_timeout">
+		<title><varname>conn_timeout</varname>(integer)</title>
+		<para>
+		Auto-close TCP connections which are idle for more than the designated
+		timeout, in seconds.  Set to zero to never close any connections.
+		</para>
+		<para>
+		Note: the connection auto-close routine only seems to be executed
+		in an "on-demand" fashion, during an HTTPD network event (e.g. on a new
+		connection), which although not ideal, it should be good enough in
+		practical terms.
+		</para>
+		<para>
+		<emphasis>The default timeout is 30 seconds.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>conn_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "conn_timeout", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_buf_size" xreflabel="buf_size">
 		<title><varname>buf_size</varname> (integer)</title>
 		<para>

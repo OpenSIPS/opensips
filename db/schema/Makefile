@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 
 # OpenSIPS database descriptions for modules
 TABLES := $(patsubst opensips-%.xml,%,$(wildcard opensips-*.xml))

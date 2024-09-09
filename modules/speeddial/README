@@ -217,9 +217,6 @@ if($ru=~"sip:[0-9]{2}@.*")
 
    Example 1.10. OpenSIPS config script - sample speeddial usage
 ...
-#
-# $Id$
-#
 # sample config script to use speeddial module
 #
 
@@ -261,12 +258,12 @@ route{
         # initial sanity checks
         if (!mf_process_maxfwd_header("10"))
         {
-                sl_send_reply("483","Too Many Hops");
+                sl_send_reply(483,"Too Many Hops");
                 exit;
         };
         if ($ml >=  65535 )
         {
-                sl_send_reply("513", "Message too big");
+                sl_send_reply(513, "Message too big");
                 exit;
         };
 
@@ -313,7 +310,7 @@ route{
 
                 if (!lookup("location"))
                 {
-                        sl_send_reply("404", "Not Found");
+                        sl_send_reply(404, "Not Found");
                         exit;
                 };
         };
@@ -336,18 +333,19 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 90 147
    2. Daniel-Constantin Mierla (@miconda) 21 16 127 137
-   3. Elena-Ramona Modroiu 12 2 1063 1
-   4. Liviu Chircu (@liviuchircu) 11 9 34 53
+   3. Liviu Chircu (@liviuchircu) 14 12 38 61
+   4. Elena-Ramona Modroiu 12 2 1063 1
    5. Razvan Crainea (@razvancrainea) 8 6 11 8
    6. Vlad Patrascu (@rvlad-patrascu) 6 4 31 35
    7. Henning Westerholt (@henningw) 4 2 50 41
-   8. Elena-Ramona Modroiu 4 2 4 1
-   9. Sergio Gutierrez 4 2 2 2
-   10. Anca Vamanu 3 1 20 22
+   8. Maksym Sobolyev (@sobomax) 4 2 4 5
+   9. Elena-Ramona Modroiu 4 2 4 1
+   10. Sergio Gutierrez 4 2 2 2
 
-   All remaining contributors: Andrei Pelinescu-Onciul, Konstantin
-   Bokarius, Julián Moreno Patiño, Peter Lemenkov (@lemenkov),
-   Edson Gellert Schubert.
+   All remaining contributors: Walter Doekes (@wdoekes), Anca
+   Vamanu, Andrei Pelinescu-Onciul, Konstantin Bokarius, Julián
+   Moreno Patiño, Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -369,20 +367,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Sergio Gutierrez                    Nov 2008 - Dec 2008
-   8.  Daniel-Constantin Mierla (@miconda) May 2006 - Mar 2008
-   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2020
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9.  Sergio Gutierrez                    Nov 2008 - Dec 2008
+   10. Daniel-Constantin Mierla (@miconda) May 2006 - Mar 2008
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Anca Vamanu, Elena-Ramona Modroiu, Andrei Pelinescu-Onciul,
-   Elena-Ramona Modroiu.
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Henning Westerholt (@henningw), Anca Vamanu,
+   Elena-Ramona Modroiu, Andrei Pelinescu-Onciul, Elena-Ramona
+   Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -391,10 +390,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Sergio Gutierrez, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Sergio Gutierrez, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Elena-Ramona Modroiu, Elena-Ramona Modroiu.
 
    Documentation Copyrights:

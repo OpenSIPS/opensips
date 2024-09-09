@@ -1,0 +1,37 @@
+<!-- Module FAQ -->
+
+<chapter>
+
+    <title>&faqguide;</title>
+    <qandaset defaultlabel="number">
+	<qandaentry>
+	    <question>
+		<para>Why do I get the following error when compiling the module?</para>
+		<programlisting format="linespecific">
+    make[1]: Entering directory '/usr/local/src/opensips/modules/tls_wolfssl'
+    /bin/sh: 3: ./autogen.sh: not found
+    env: './configure': No such file or directory
+    make[1]: *** [Makefile:15: lib/lib/libwolfssl.a] Error 127
+    make[1]: Leaving directory '/usr/local/src/opensips/modules/tls_wolfssl'
+    make: *** [Makefile:197: modules] Error 2
+		</programlisting>
+	    </question>
+	    <answer>
+		<para>
+		If you obtained the OpenSIPS sources by cloning the repository from Github,
+		without using the <emphasis>--recursive</emphasis> option for the
+		<emphasis>git clone</emphasis> command, you did not properly fetch the
+		<emphasis>wolfSSL</emphasis> library code, which is included as a git submodule
+		pointing to the official <emphasis>wolfSSL</emphasis> repository.
+		</para>
+		<para>
+		In order to fetch the <emphasis>wolfSSL</emphasis> library code you can run:
+		<programlisting format="linespecific">
+		git submodule update --init
+		</programlisting>
+		</para>
+	    </answer>
+	</qandaentry>
+	</qandaset>
+
+</chapter>

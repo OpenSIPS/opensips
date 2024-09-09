@@ -27,6 +27,7 @@
 #include "ut.h"
 #include "error.h"
 #include "mod_fix.h"
+#include "lib/csv.h"
 
 static char *re_buff=NULL;
 static int re_buff_len = 0;
@@ -79,10 +80,10 @@ static inline gparam_p alloc_gp(void)
 	return gp;
 }
 
-int check_cmd(struct cmd_param *params, action_elem_t *elems)
+int check_cmd(const struct cmd_param *params, action_elem_t *elems)
 {
 	int i;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	pv_elem_t *pve;
 
 	for (param=params, i=1; param->flags; param++, i++) {
@@ -145,10 +146,10 @@ int check_cmd(struct cmd_param *params, action_elem_t *elems)
 	return 0;
 }
 
-int fix_cmd(struct cmd_param *params, action_elem_t *elems)
+int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 {
 	int i;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	gparam_p gp = NULL;
 	int ret;
 	pv_elem_t *pve;
@@ -330,11 +331,11 @@ error:
 	return ret;
 }
 
-int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
+int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 				action_elem_t *elems, void **cmdp, pv_value_t *tmp_vals)
 {
 	int i;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	gparam_p gp;
 	regex_t *re = NULL;
 	int ret;
@@ -487,10 +488,10 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 	return 0;
 }
 
-int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp)
+int free_cmd_fixups(const struct cmd_param *params, action_elem_t *elems, void **cmdp)
 {
 	int i;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	gparam_p gp;
 
 	for (param=params, i=1; param->flags; param++, i++) {
@@ -532,4 +533,78 @@ int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp)
 	}
 
 	return 0;
+}
+
+int fixup_named_flags(void** param, str *flag_names, str *kv_flag_names,
+	str *kv_flag_vals)
+{
+	str *s = (str*)*param;
+	csv_record *list, *rec;
+	int i;
+	unsigned int flags = 0;
+	char *p;
+	str name;
+
+	list = parse_csv_record(s);
+	if (!list) {
+		LM_ERR("Failed to parse list of flags\n");
+		return -1;
+	}
+
+	if (kv_flag_names)
+		for (i = 0; kv_flag_names[i].s ; i++) {
+			kv_flag_vals[i].s = NULL;
+			kv_flag_vals[i].len = 0;
+		}
+
+	for (rec = list; rec; rec = rec->next) {
+		if (flag_names) {
+			for (i = 0; flag_names[i].s && !str_match(&rec->s, &flag_names[i]);
+				i++) ;
+
+			if (!flag_names[i].s) {
+				if (!kv_flag_names) {
+					LM_ERR("Unknown flag: %.*s\n", rec->s.len, rec->s.s);
+					goto error;
+				}
+			} else {
+				flags |= (1<<i);
+				continue;
+			}
+		}
+
+		/* the current flag must be a key-value flag at this point */
+		if (kv_flag_names) {
+			p = q_memchr(rec->s.s, '=', rec->s.len);
+
+			name.s = rec->s.s;
+			name.len = p ? (p - rec->s.s) : rec->s.len;
+
+			for (i = 0; kv_flag_names[i].s &&
+				!str_match(&name, &kv_flag_names[i]); i++) ;
+
+			if (!kv_flag_names[i].s) {
+				LM_ERR("Unknown flag: %.*s\n", name.len, name.s);
+				goto error;
+			}
+
+			if (!p || (rec->s.len - (p - rec->s.s) - 1) == 0) {
+				LM_ERR("Bad format for key-value flag: %.*s\n",
+					rec->s.len, rec->s.s);
+				goto error;
+			}
+
+			kv_flag_vals[i].s = p+1;
+			kv_flag_vals[i].len = rec->s.len - name.len - 1;
+		}
+	}
+
+	if (flag_names)
+		*param = (void*)(unsigned long)flags;
+
+	free_csv_record(list);
+	return 0;
+error:
+	free_csv_record(list);
+	return -1;
 }

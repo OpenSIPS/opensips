@@ -22,6 +22,7 @@
 #define str_h
 
 #include <string.h>
+#include "lib/str2const.h"
 
 /**
  * \file
@@ -56,11 +57,25 @@ struct __str {
 	int len; /**< string length, not including null-termination */
 };
 
+/* Immutable version of the struct __str */
+struct __str_const {
+	const char* s; /**< string as char array */
+	int len; /**< string length, not including null-termination */
+};
+
 typedef struct __str str;
+typedef struct __str_const str_const;
 
 /* str initialization */
-#define STR_NULL (str){NULL, 0}
-#define str_init(_string)  (str){_string, sizeof(_string) - 1}
+#define STR_NULL ((str){NULL, 0})
+#define STR_NULL_const ((str_const){NULL, 0})
+#define STR_EMPTY ((str){"", 0})
+#define STR_EMPTY_const ((str_const){"", 0})
+#define str_init(_string)  ((str){_string, sizeof(_string) - 1})
+#define str_const_init(_string)  ((str_const){_string, sizeof(_string) - 1})
+
+static inline const str_const *_cs2cc(const str *_sp) {return (const str_const *)(const void *)(_sp);}
+static inline str_const *_s2c(str *_sp) {return (str_const *)(void *)(_sp);}
 
 static inline void init_str(str *dest, const char *src)
 {
@@ -72,27 +87,42 @@ static inline void init_str(str *dest, const char *src)
 #define ZSTR(_s)    (!(_s).s || (_s).len == 0)
 #define ZSTRP(_sp)  (!(_sp) || ZSTR(*(_sp)))
 
-static inline str *str_cpy(str *dest, const str *src)
+static inline str *_str_cpy(str *dest, const str_const *src)
 {
 	memcpy(dest->s, src->s, src->len);
 	dest->len = src->len;
 	return dest;
 }
 
+#define str_cpy(dest, src) _str_cpy(dest, str2const(src))
+
 #define STR_L(s) s, strlen(s)
 
 /**
  * Handy function for writing unit tests which compare str's
  *
- * WARNING: _only_ use when passing (str *) to _basic_ functions,
- *          since it is not re-entrant and may cause ugly bugs!
+ * WARNING: _only_ use when passing (const str *) to _basic_
+ *          functions, since while poiter is stable for the
+ *          lifetime of the application its value is mutable
+ *          and bad code messing it around may cause ugly bugs!
  */
-static inline str *_str(const char *s)
-{
-	static str st;
+#define _str(s) ( \
+{ \
+	static str _st; \
+	init_str(&_st, s); \
+	/* return */ (const str *)&_st; \
+})
 
-	init_str(&st, s);
-	return &st;
-}
+/**
+ * Initialize private static str_const given the static buffer
+ * and return const pointer to it.
+ */
+#define const_str(sbuf) ({static const str_const _stc = str_const_init(sbuf); &_stc;})
+
+/**
+ * Initialize private static str given the static buffer
+ * and return const pointer to it.
+ */
+#define str_static(sbuf) ({static const str _stc = str_init(sbuf); &_stc;})
 
 #endif

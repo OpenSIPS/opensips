@@ -29,31 +29,31 @@ void test_parse_fcaps(void)
 {
 	struct hdr_field hf;
 	fcaps_body_t *fcaps;
-	str *hdr;
+	const str *hdr;
 
 	hdr = _str("Feature-Caps: +sip.pns=\"apns\"\r\n");
 	memset(&hf, 0, sizeof hf);
 	get_hdr_field(hdr->s, hdr->s + hdr->len, &hf);
 	ok(hf.type == HDR_FEATURE_CAPS_T, "fcaps-1");
-	ok(str_match(&hf.body, _str("+sip.pns=\"apns\"")), "fcaps-2");
+	ok(str_match(&hf.body, const_str("+sip.pns=\"apns\"")), "fcaps-2");
 
 	hdr = _str("fEATURE-cAPS:+sip.pns=\"apns\"\r\n");
 	memset(&hf, 0, sizeof hf);
 	get_hdr_field(hdr->s, hdr->s + hdr->len, &hf);
 	ok(hf.type == HDR_FEATURE_CAPS_T, "fcaps-3");
-	ok(str_match(&hf.body, _str("+sip.pns=\"apns\"")), "fcaps-4");
+	ok(str_match(&hf.body, const_str("+sip.pns=\"apns\"")), "fcaps-4");
 
 	hdr = _str("feature-caps:      +sip.pns=\"apns\";+sip.pnsreg=\"130\"\r\n");
 	memset(&hf, 0, sizeof hf);
 	get_hdr_field(hdr->s, hdr->s + hdr->len, &hf);
 	ok(hf.type == HDR_FEATURE_CAPS_T, "fcaps-5");
-	ok(str_match(&hf.body, _str("+sip.pns=\"apns\";+sip.pnsreg=\"130\"")), "fcaps-6");
+	ok(str_match(&hf.body, const_str("+sip.pns=\"apns\";+sip.pnsreg=\"130\"")), "fcaps-6");
 	free_fcaps((fcaps_body_t**)&hf.parsed);
 	ok(!hf.parsed, "fcaps-7");
 
 	ok(parse_fcaps(&hf) == 0, "fcaps-8");
 	fcaps = (fcaps_body_t *)hf.parsed;
-	ok(str_match(&fcaps->pns, _str("apns")), "fcaps-9");
+	ok(str_match(&fcaps->pns, const_str("apns")), "fcaps-9");
 	free_fcaps((fcaps_body_t**)&hf.parsed);
 
 	hf.body = *_str("");
@@ -80,30 +80,30 @@ void test_parse_fcaps(void)
 	hf.body = *_str("+sip.pns=\"x\"");
 	ok(parse_fcaps(&hf) == 0, "fcaps-17");
 	fcaps = (fcaps_body_t *)hf.parsed;
-	ok(str_match(&fcaps->pns, _str("x")), "fcaps-18");
+	ok(str_match(&fcaps->pns, const_str("x")), "fcaps-18");
 	free_fcaps((fcaps_body_t**)&hf.parsed);
 
 	hf.body = *_str("+sip.pns=\"apns\";+sip.pns=130\";+sip.pns=\"fcm\"+sip.pns+sip.pns=\"x");
 	ok(parse_fcaps(&hf) == 0, "fcaps-19");
 	fcaps = (fcaps_body_t *)hf.parsed;
-	ok(str_match(&fcaps->pns, _str("fcm")), "fcaps-20");
+	ok(str_match(&fcaps->pns, const_str("fcm")), "fcaps-20");
 	free_fcaps((fcaps_body_t**)&hf.parsed);
 
 	hf.body = *_str("+sip.pns=\"apns\";+sip.pns=130\";+sip.pns=\"fcm\"+sip.pns+sip.pns=\"x");
 	ok(parse_fcaps(&hf) == 0, "fcaps-21");
 	fcaps = (fcaps_body_t *)hf.parsed;
-	ok(str_match(&fcaps->pns, _str("fcm")), "fcaps-22");
+	ok(str_match(&fcaps->pns, const_str("fcm")), "fcaps-22");
 	free_fcaps((fcaps_body_t**)&hf.parsed);
 
 	hf.body = *_str("+sip.pns=\"apns\";+sip.pns=130\";+sip.pns=\"fcm\"+sip.pns+sip.pns=\"3");
 	ok(parse_fcaps(&hf) == 0, "fcaps-23");
 	fcaps = (fcaps_body_t *)hf.parsed;
-	ok(str_match(&fcaps->pns, _str("fcm")), "fcaps-24");
+	ok(str_match(&fcaps->pns, const_str("fcm")), "fcaps-24");
 	free_fcaps((fcaps_body_t**)&hf.parsed);
 
 	hf.body = *_str("+sip.pns=\"apns\";+sip.pns=130\";+sip.pns=\"fcm\"+sip.pns+sip.pns=3;+sip.pns=\"webpush\"");
 	ok(parse_fcaps(&hf) == 0, "fcaps-25");
 	fcaps = (fcaps_body_t *)hf.parsed;
-	ok(str_match(&fcaps->pns, _str("webpush")), "fcaps-26");
+	ok(str_match(&fcaps->pns, const_str("webpush")), "fcaps-26");
 	free_fcaps((fcaps_body_t**)&hf.parsed);
 }

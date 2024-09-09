@@ -95,6 +95,21 @@
 		reading external commands.
 		</para>
 		<para>
+			<emphasis>NOTE:</emphasis>Starting with Linux kernel 4.19,
+			processes can no longer read from FIFO files that are saved
+			in directories with sticky bits (such as <emphasis>/tmp</emphasis>)
+			and are not owned by the same user the process runs with. This
+			prevents external tools (such as <emphasis>opensips-cli</emphasis>)
+			from running MI commands using a different user (a
+			<emphasis>Permissions denied</emphasis> error is triggered). If
+			you are getting this error while trying to use
+			<emphasis>opensips-cli</emphasis>, you can fix it by either store
+			the fifo file in a non-sticky bit directory (such as
+			<emphasis>/run/opensips</emphasis>), or disable the fifo
+			protection using <emphasis>sysctl fs.protected_fifos = 0</emphasis>
+			(NOT RECOMMENDED).
+		</para>
+		<para>
 		<emphasis>
 			Default value is "/tmp/opensips_fifo".
 		</emphasis>

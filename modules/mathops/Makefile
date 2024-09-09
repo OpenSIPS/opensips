@@ -8,6 +8,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=mathops.so
-LIBS=-lm
+LIBS += -lm
 
 include ../../Makefile.modules

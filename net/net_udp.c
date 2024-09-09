@@ -65,7 +65,7 @@ void udp_destroy(void)
 /* tells how many processes the UDP layer will create */
 int udp_count_processes(unsigned int *extra)
 {
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	unsigned int n, e, i;
 
 	if (udp_disabled) {
@@ -75,7 +75,8 @@ int udp_count_processes(unsigned int *extra)
 
 	for( i=0,n=0,e=0 ; i<PROTO_LAST ; i++)
 		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
-			for( si=protos[i].listeners ; si; si=si->next) {
+			for( sif=protos[i].listeners ; sif; sif=sif->next) {
+				const struct socket_info *si = &sif->socket_info;
 				n+=si->workers;
 				if (si->s_profile)
 					if (si->s_profile->max_procs > si->workers)
@@ -179,12 +180,35 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 		LM_ERR("setsockopt: %s\n", strerror(errno));
 		goto error;
 	}
+
+	if (si->flags & SI_FRAG) {
+		/* no DF */
+#if defined(IP_MTU_DISCOVER)
+		optval = IP_PMTUDISC_DONT;
+		setsockopt(si->socket, IPPROTO_IP, IP_MTU_DISCOVER, (void*)&optval, sizeof(optval));
+#else
+#if defined(IP_DONTFRAG)
+		optval = 1;
+		setsockopt(si->socket, IPPROTO_IP, IP_DONTFRAG, (void*)&optval, sizeof(optval));
+#else
+		LM_ERR("DF flag is not supported by your system\n");
+		goto error;
+#endif
+#endif
+	}
+
 	/* tos */
 	optval=tos;
-	if (setsockopt(si->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
-			sizeof(optval)) ==-1){
-		LM_WARN("setsockopt tos: %s\n", strerror(errno));
-		/* continue since this is not critical */
+	if (addr->s.sa_family==AF_INET6){
+		if (setsockopt(si->socket,  IPPROTO_IPV6, IPV6_TCLASS, (void*)&optval, sizeof(optval)) ==-1){
+			LM_WARN("setsockopt tos for IPV6: %s\n", strerror(errno));
+			/* continue since this is not critical */
+		}
+	} else {
+		if (setsockopt(si->socket, IPPROTO_IP, IP_TOS, (void*)&optval, sizeof(optval)) ==-1){
+			LM_WARN("setsockopt tos: %s\n", strerror(errno));
+			/* continue since this is not critical */
+		}
 	}
 #if defined (__linux__) && defined(UDP_ERRORS)
 	optval=1;
@@ -270,7 +294,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	switch(fm->type){
 		case F_UDP_READ:
 			n = protos[((struct socket_info*)fm->data)->proto].net.
-				read( fm->data /*si*/, &read);
+				dgram.read( fm->data /*si*/, &read);
 			break;
 		case F_TIMER_JOB:
 			handle_timer_job();
@@ -352,9 +376,13 @@ static int fork_dynamic_udp_process(void *si_filter)
 {
 	struct socket_info *si = (struct socket_info*)si_filter;
 	int p_id;
+	const struct internal_fork_params ifp_udp_rcv = {
+		.proc_desc = "UDP receiver",
+		.flags = OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT,
+		.type = TYPE_UDP,
+	};
 
-	if ((p_id=internal_fork( "UDP receiver",
-	OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT, TYPE_UDP))<0) {
+	if ((p_id=internal_fork(&ifp_udp_rcv))<0) {
 		LM_CRIT("cannot fork UDP process\n");
 		return(-1);
 	} else if (p_id==0) {
@@ -428,9 +456,14 @@ static void udp_process_graceful_terminate(int sender, void *param)
 /* starts all UDP related processes */
 int udp_start_processes(int *chd_rank, int *startup_done)
 {
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	int p_id;
 	int i,p;
+	const struct internal_fork_params ifp_udp_rcv = {
+		.proc_desc = "UDP receiver",
+		.flags = OSS_PROC_NEEDS_SCRIPT,
+		.type = TYPE_UDP,
+	};
 
 	if (udp_disabled)
 		return 0;
@@ -439,7 +472,8 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 		if ( !is_udp_based_proto(p) )
 			continue;
 
-		for(si=protos[p].listeners; si ; si=si->next ) {
+		for( sif=protos[p].listeners; sif ; sif=sif->next ) {
+			struct socket_info* si = &sif->socket_info;
 
 			if ( auto_scaling_enabled && si->s_profile &&
 			create_process_group( TYPE_UDP, si, si->s_profile,
@@ -450,8 +484,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 			for (i=0;i<si->workers;i++) {
 				(*chd_rank)++;
-				if ( (p_id=internal_fork( "UDP receiver",
-				OSS_PROC_NEEDS_SCRIPT, TYPE_UDP))<0 ) {
+				if ( (p_id=internal_fork(&ifp_udp_rcv))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
 				} else if (p_id==0) {

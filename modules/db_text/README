@@ -19,6 +19,7 @@ db_text Module
         1.3. Exported Parameters
 
               1.3.1. db_mode (integer)
+              1.3.2. buffer_size (integer)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -54,11 +55,12 @@ db_text Module
    1.2. Minimal OpenSIPS location db_text table definition
    1.3. Minimal OpenSIPS subscriber db_text table example
    1.4. Set db_mode parameter
-   1.5. Load the db_text module
-   1.6. Definition of 'subscriber' table (one line)
-   1.7. Definition of 'location' and 'aliases' tables (one line)
-   1.8. Definition of 'version' table and sample records
-   1.9. Configuration file
+   1.5. Set buffer_size parameter
+   1.6. Load the db_text module
+   1.7. Definition of 'subscriber' table (one line)
+   1.8. Definition of 'location' and 'aliases' tables (one line)
+   1.9. Definition of 'version' table and sample records
+   1.10. Configuration file
 
 Chapter 1. Admin Guide
 
@@ -170,8 +172,6 @@ suser:supasswd:xxx:alpha.org:xxx
 
 1.3. Exported Parameters
 
-   None.
-
 1.3.1. db_mode (integer)
 
    Set caching mode (0) or non-caching mode (1). In caching mode,
@@ -185,6 +185,17 @@ suser:supasswd:xxx:alpha.org:xxx
    Example 1.4. Set db_mode parameter
 ...
 modparam("db_text", "db_mode", 1)
+...
+
+1.3.2. buffer_size (integer)
+
+   Size of the buffer used to read the text file.
+
+   Default value is “4096”.
+
+   Example 1.5. Set buffer_size parameter
+...
+modparam("db_text", "buffer_size", 8192)
 ...
 
 1.4. Exported Functions
@@ -239,7 +250,7 @@ opensips-cli -x mi dbt_reload /path/to/dbtext/database table_name
    database path. So, either you provide an absolute path to
    database directory or a relative one to “CFG_DIR” directory.
 
-   Example 1.5. Load the db_text module
+   Example 1.6. Load the db_text module
 ...
 loadmodule "/path/to/opensips/modules/db_text.so"
 ...
@@ -259,7 +270,7 @@ modparam("module_name", "database_URL", "text:///path/to/dbtext/database
    configuration file, the table files must be placed in the
    '/tmp/opensipsdb' directory.
 
-   Example 1.6. Definition of 'subscriber' table (one line)
+   Example 1.7. Definition of 'subscriber' table (one line)
 ...
 username(str) domain(str) password(str) first_name(str) last_name(str) p
 hone(str) email_address(str) datetime_created(int) datetime_modified(int
@@ -268,7 +279,7 @@ r) ha1b(str) perms(str) allow_find(str) timezone(str,null) rpid(str,null
 )
 ...
 
-   Example 1.7. Definition of 'location' and 'aliases' tables (one
+   Example 1.8. Definition of 'location' and 'aliases' tables (one
    line)
 ...
 username(str) domain(str,null) contact(str,null) received(str) expires(i
@@ -276,7 +287,7 @@ nt,null) q(double,null) callid(str,null) cseq(int,null) last_modified(st
 r) flags(int) user_agent(str) socket(str)
 ...
 
-   Example 1.8. Definition of 'version' table and sample records
+   Example 1.9. Definition of 'version' table and sample records
 ...
 table_name(str) table_version(int)
 subscriber:3
@@ -284,7 +295,7 @@ location:6
 aliases:6
 ...
 
-   Example 1.9. Configuration file
+   Example 1.10. Configuration file
 ...
 #
 # simple quick-start config script with dbtext
@@ -346,11 +357,11 @@ route{
     # initial sanity checks -- messages with
     # max_forwards==0, or excessively long requests
     if (!mf_process_maxfwd_header("10")) {
-        sl_send_reply("483","Too Many Hops");
+        sl_send_reply(483,"Too Many Hops");
         exit;
     };
     if ($ml >=  65535 ) {
-        sl_send_reply("513", "Message too big");
+        sl_send_reply(513, "Message too big");
         exit;
     };
 
@@ -400,7 +411,7 @@ route{
 
         # native SIP destinations are handled using our USRLOC DB
         if (!lookup("location")) {
-            sl_send_reply("404", "Not Found");
+            sl_send_reply(404, "Not Found");
             exit;
         };
     };
@@ -432,21 +443,22 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Daniel-Constantin Mierla (@miconda) 133 59 6126 1441
+   1. Daniel-Constantin Mierla (@miconda) 135 59 6126 1441
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 41 32 310 309
    3. Henning Westerholt (@henningw) 25 15 252 410
-   4. Razvan Crainea (@razvancrainea) 19 16 120 95
-   5. Liviu Chircu (@liviuchircu) 18 15 68 104
+   4. Razvan Crainea (@razvancrainea) 23 19 123 97
+   5. Liviu Chircu (@liviuchircu) 21 18 71 110
    6. Jan Janak (@janakj) 11 7 124 106
-   7. Vlad Patrascu (@rvlad-patrascu) 7 5 76 49
-   8. Ovidiu Sas (@ovidiusas) 7 5 61 8
+   7. Ovidiu Sas (@ovidiusas) 8 6 105 20
+   8. Vlad Patrascu (@rvlad-patrascu) 8 6 94 49
    9. Sergey Khripchenko (@shripchenko) 5 2 185 2
    10. Jiri Kuthan (@jiriatipteldotorg) 4 2 8 6
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman
-   Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Dusan Klinec (@ph4r05), Andrei Pelinescu-Onciul.
+   Maksym Sobolyev (@sobomax), Konstantin Bokarius, Razvan
+   Pistolea, Chris Heiser, Norman Brandinger (@NormB), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Dusan Klinec
+   (@ph4r05), Andrei Pelinescu-Onciul.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -468,22 +480,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
-   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
-   4.  Ovidiu Sas (@ovidiusas)             Dec 2012 - May 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   8.  Sergey Khripchenko (@shripchenko)   Aug 2015 - Aug 2015
-   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
-   10. Razvan Pistolea                     Jul 2009 - Jul 2009
+   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Mar 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2021
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9.  Sergey Khripchenko (@shripchenko)   Aug 2015 - Aug 2015
+   10. Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Chris
-   Heiser, Edson Gellert Schubert, Norman Brandinger (@NormB), Jan
-   Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
-   Pelinescu-Onciul.
+   All remaining contributors: Razvan Pistolea, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Chris Heiser, Edson Gellert Schubert, Norman
+   Brandinger (@NormB), Jan Janak (@janakj), Jiri Kuthan
+   (@jiriatipteldotorg), Andrei Pelinescu-Onciul.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -492,10 +504,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sergey
-   Khripchenko (@shripchenko), Ovidiu Sas (@ovidiusas),
+   Last edited by: Ovidiu Sas (@ovidiusas), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad
+   Patrascu (@rvlad-patrascu), Sergey Khripchenko (@shripchenko),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw).
 

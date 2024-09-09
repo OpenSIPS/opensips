@@ -38,6 +38,7 @@
 
 #include "../locking.h"
 #include "../ip_addr.h"
+#include "tcp_conn_profile.h"
 
 /* keepalive */
 #ifndef NO_TCP_KEEPALIVE
@@ -98,6 +99,51 @@ struct tcp_conn_alias{
 	unsigned short hash;			/*!< hash index in the address hash */
 };
 
+enum tcp_conn_alias_mode {
+	TCP_ALIAS_NEVER,
+	TCP_ALIAS_RFC_5923, /*!< only alias a connection if Via ";alias" exists */
+	TCP_ALIAS_ALWAYS,
+};
+
+
+struct tcp_async_chunk {
+	char *buf; /* buffer that needs to be sent out */
+	int len;   /* length of the buffer */
+	int ticks; /* time at which this chunk was initially
+				  attempted to be written */
+};
+
+struct tcp_async_data {
+	/* the number of chunks pending to be written */
+	int pending;
+	/* the number of chunks allocated */
+	int allocated;
+	/* the oldest chunk in our write list */
+	int oldest;
+	/* the chunks that need to be written on this
+	 * connection when it will become writable */
+	struct tcp_async_chunk *chunks[0];
+};
+
+struct tcp_conn_profile {
+	unsigned int connect_timeout;
+	unsigned int con_lifetime;
+
+	unsigned int msg_read_timeout;
+	unsigned int send_threshold;
+	unsigned char no_new_conn:1;
+	unsigned char parallel_read:2;
+
+	enum tcp_conn_alias_mode alias_mode;
+
+	unsigned char keepalive:1;
+	unsigned int keepcount;
+	unsigned int keepidle;
+	unsigned int keepinterval;
+
+	int attrs[TCP_ATTR_COUNT]; /* use (enum tcp_conn_attr) as index */
+	unsigned int id; /* unique profile identifier (default profile ID is 0) */
+};
 
 /*! \brief TCP connection structure */
 struct tcp_connection{
@@ -105,7 +151,7 @@ struct tcp_connection{
 	int fd;					/*!< used only by "children", don't modify it! private data! */
 	int proc_id;				/*!< used only by "children", contains the pt table ID of the TCP worker currently holding the connection, or -1 if in TCP main */
 	gen_lock_t write_lock;
-	int id;					/*!< id (unique!) used to retrieve a specific connection when reply-ing*/
+	unsigned int id;				/*!< id (unique!) used to retrieve a specific connection when reply-ing*/
 	unsigned long long cid;					/*!< connection id (unique!) used to uniquely identify connections across space and time */
 	struct receive_info rcv;		/*!< src & dst ip, ports, proto a.s.o*/
 	volatile int refcnt;
@@ -129,17 +175,22 @@ struct tcp_connection{
 	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
 	/*!< connection related flags */
 	unsigned short flags;
+	struct tcp_conn_profile profile;
 	/*!< protocol related & reserved flags */
 	unsigned short proto_flags;
 	struct struct_hist *hist;
+	struct tcp_async_data *async;
 	/* protocol specific data attached to this connection */
 	void *proto_data;
 };
 
 
-/*! \brief add port as an alias for the "id" connection
+/*! \brief add port as an alias for the "id" connection, as long as the conn
+ * profile allows aliasing and, optionally, the Via header includes ";alias".
+ * Note: pass a NULL @msg in order to unconditionally add the alias
+ *
  * \return 0 on success,-1 on failure */
-int tcpconn_add_alias(int id, int port, int proto);
+int tcpconn_add_alias(struct sip_msg *msg, unsigned int id, int port, int proto);
 
 
 #define tcp_conn_set_lifetime( _c, _lt) \
@@ -149,6 +200,8 @@ int tcpconn_add_alias(int id, int port, int proto);
 			(_c)->lifetime = _timeout;\
 	}while(0)
 
+#define tcp_conn_reset_lifetime(_c) \
+	tcp_conn_set_lifetime(_c, (_c)->profile.con_lifetime)
 
 #endif
 

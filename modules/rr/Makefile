@@ -1,5 +1,3 @@
-# $Id$
-#
 # rr module makefile
 #
 # 
@@ -8,7 +6,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=rr.so
-LIBS=
 
 #DEFS+=-DENABLE_USER_CHECK
 

@@ -1,0 +1,342 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module implements a Gateway for translating between Page Mode
+		(SIP MESSAGE method) and Session Mode (MSRP) Instant Messaging.
+    </para>
+    <para>
+    	The module makes use of the <emphasis>msrp_ua</emphasis> module's API for
+    	the MSRP UAC/UAS functionalities.
+    </para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>tm</emphasis></para>
+			</listitem>
+			<listitem>
+				<para><emphasis>msrp_ua</emphasis></para>
+			</listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+			The following libraries or applications must be installed 
+			before running &osips; with this module loaded:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>None</emphasis>.
+				</para>
+				</listitem>
+			</itemizedlist>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+		<section id="param_hash_size" xreflabel="hash_size">
+			<title><varname>hash_size</varname> (int)</title>
+			<para>
+				The size of the hash table that stores the gateway session
+				information. It is the 2 logarithmic value of the real size.
+			</para>
+			<para>
+			<emphasis>Default value is <quote>10</quote>
+			</emphasis>
+			 (1024 records).
+			</para>
+			<example>
+			<title>Set <varname>hash_size</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("msrp_gateway", "hash_size", 16)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_cleanup_interval" xreflabel="cleanup_interval">
+		<title><varname>cleanup_interval</varname> (int)</title>
+		<para>
+			The interval between full iterations of the sessions table
+			in order to clean up lingering sessions.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>60</quote>. (seconds)</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cleanup_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_gateway", "cleanup_interval", 60)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_session_timeout" xreflabel="session_timeout">
+		<title><varname>session_timeout</varname> (int)</title>
+		<para>
+			Amount of time (in seconds) since last message has been received
+			from either side, after which a session should be terminated.
+		</para>
+		<para>
+		<emphasis>The default value is 12 * 3600 seconds (12 hours).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>session_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_gateway", "session_timeout", 7200)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_message_timeout" xreflabel="message_timeout">
+		<title><varname>message_timeout</varname> (int)</title>
+		<para>
+			Amount of time (in seconds) since last MESSAGE has been received
+			after which a session should be terminated.
+		</para>
+		<para>
+		<emphasis>The default value is 2 * 3600 seconds (2 hours).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>message_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_gateway", "message_timeout", 3600)
+...
+		</programlisting>
+			</example>
+		</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_msrp_gw_answer" xreflabel="msrp_gw_answer()">
+		<title>
+		<function moreinfo="none">msrp_gw_answer(key, content_types, from, to, ruri)</function>
+		</title>
+		<para>
+			This functions initializes a new gateway session by answering an initial
+			INVITE from the MSRP side SIP session. After running this function the
+			call will be completely handled by the MSRP UA engine and MSRP SEND
+			requests will be automatically translated to SIP MESSAGE requests.
+		</para>
+		<para>
+			The SIP From, To, and RURI coordinates for building MESSAGE requests
+			are passed as parameters to the function.
+		</para>
+		<para>
+			Parameters:
+			<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> (string) - gateway session key to be used
+				to correlate the MESSAGE requests with the MSRP side SIP session.
+				A simple example would be to build this key based on the From and To
+				URIs from both sides(from the initial MSRP leg INVITE and SIP MESSAGE
+				requests respectively).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_types</emphasis> (string) - content types
+				adevertised in the SDP offer on the MSRP side SIP session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>from</emphasis> (string) - From URI to be used for building
+				SIP MESSAGE requests.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to</emphasis> (string) - To URI to be used for building
+				SIP MESSAGE requests.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ruri</emphasis> (string) - Request-URI to be used for building
+				SIP MESSAGE requests.
+			</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			This function can be used only from a request route.
+		</para>
+		<example>
+			<title><function>msrp_gw_answer()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (!has_totag() &amp;&amp; is_method("INVITE")) {
+	msrp_gw_answer($var(corr_key), "text/plain", $fu, $tu, $ru);
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="func_msg_to_msrp" xreflabel="msg_to_msrp()">
+		<title>
+		<function moreinfo="none">msg_to_msrp(key, content_types)</function>
+		</title>
+		<para>
+			This functions translates a SIP MESSAGE request into a MSRP SEND request.
+			The function will initialize a new gateway session and establish the MSRP
+			side SIP session if it is not done so already by a previous call.
+		</para>
+		<para>
+			The SIP From, To, and RURI coordinates for the new MSRP side session are
+			taken from the MESSAGE request and mirrored back when translating a MSRP
+			SEND to SIP MESSAGE with <emphasis>msrp_gw_answer</emphasis>.
+		</para>
+		<para>
+			Parameters:
+			<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> (string) - gateway session key to be used
+				to correlate the MESSAGE requests with the MSRP side SIP session.
+				A simple example would be to build this key based on the From and To
+				URIs from both sides(from the initial MSRP leg INVITE and SIP MESSAGE
+				requests respectively).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_types</emphasis> (string) - content types
+				adevertised in the SDP offer on the MSRP side SIP session.
+			</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			This function can be used only from a request route.
+		</para>
+		<example>
+			<title><function>msg_to_msrp()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("MESSAGE")) {
+	msg_to_msrp($var(corr_key), "text/plain");
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+	<section id="mi_msrp_gw_list_sessions"
+			xreflabel="msrp_gw_list_sessions">
+		<title>
+		<function moreinfo="none">msrp_gw_list_sessions</function>
+		</title>
+		<para>
+		Lists information about ongoing sessions.
+		</para>
+		<para>
+		Name: <emphasis>msrp_gw_list_sessions</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>None</emphasis>.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi msrp_gw_list_sessions
+		</programlisting>
+		</section>
+
+	<section id="mi_msrp_gw_end_session"
+			xreflabel="msrp_gw_end_session">
+		<title>
+		<function moreinfo="none">msrp_gw_end_session</function>
+		</title>
+		<para>
+		Terminate an ongoing session.
+		</para>
+		<para>
+		Name: <emphasis>msrp_gw_end_session</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> (string) - session key
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi msrp_gw_end_session alice@opensips.org-bob@opensips.org
+		</programlisting>
+		</section>
+
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+
+	<section id="event_E_MSRP_GW_SETUP_FAILED" xreflabel="E_MSRP_GW_SETUP_FAILED">
+		<title>
+		<function moreinfo="none">E_MSRP_GW_SETUP_FAILED</function>
+		</title>
+		<para>
+			This event is triggered when the MSRP side SIP session fails to set up,
+			when using the <emphasis>msg_to_msrp()</emphasis> function.
+		</para>
+		<para>
+			The event can be used to generate a message with the failure description,
+			back on the MESSAGE side.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> - The session key.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>from_uri</emphasis> - The URI in the SIP From header
+				to use on the MESSAGE side.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to_uri</emphasis> - The URI in the SIP To header
+				to use on the MESSAGE side.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ruri</emphasis> - The SIP Request URI to use on the
+				MESSAGE side.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>code</emphasis> - The SIP error code in the negative reply
+				received on the MSRP side. Might be NULL if the MSRP UA session expired
+				before receiving a negative reply.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>reason</emphasis> - The SIP reason string in the negative reply
+				received on the MSRP side. Might be NULL if the MSRP UA session expired
+				before receiving a negative reply.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	</section>
+
+</chapter>
+

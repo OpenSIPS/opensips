@@ -4,7 +4,7 @@ CREATE TABLE cc_flows (
     flowid VARCHAR2(64),
     priority NUMBER(10) DEFAULT 256 NOT NULL,
     skill VARCHAR2(64),
-    prependcid VARCHAR2(32),
+    prependcid VARCHAR2(32) DEFAULT NULL,
     max_wrapup_time NUMBER(10) DEFAULT 0 NOT NULL,
     dissuading_hangup NUMBER(10) DEFAULT 0 NOT NULL,
     dissuading_onhold_th NUMBER(10) DEFAULT 0 NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE cc_flows (
     dissuading_qsize_th NUMBER(10) DEFAULT 0 NOT NULL,
     message_welcome VARCHAR2(128) DEFAULT NULL,
     message_queue VARCHAR2(128),
-    message_dissuading VARCHAR2(128),
-    message_flow_id VARCHAR2(128),
+    message_dissuading VARCHAR2(128) DEFAULT NULL,
+    message_flow_id VARCHAR2(128) DEFAULT NULL,
     CONSTRAINT cc_flows_unique_flowid  UNIQUE (flowid)
 );
 
@@ -25,12 +25,14 @@ END cc_flows_tr;
 /
 BEGIN map2users('cc_flows'); END;
 /
-INSERT INTO version (table_name, table_version) values ('cc_agents','2');
+INSERT INTO version (table_name, table_version) values ('cc_agents','3');
 CREATE TABLE cc_agents (
     id NUMBER(10) PRIMARY KEY,
     agentid VARCHAR2(128),
     location VARCHAR2(128),
     logstate NUMBER(10) DEFAULT 0 NOT NULL,
+    msrp_location VARCHAR2(128),
+    msrp_max_sessions NUMBER(10) DEFAULT 4 NOT NULL,
     skills VARCHAR2(255),
     wrapup_end_time NUMBER(10) DEFAULT 0 NOT NULL,
     wrapup_time NUMBER(10) DEFAULT 0 NOT NULL,
@@ -45,7 +47,7 @@ END cc_agents_tr;
 /
 BEGIN map2users('cc_agents'); END;
 /
-INSERT INTO version (table_name, table_version) values ('cc_cdrs','1');
+INSERT INTO version (table_name, table_version) values ('cc_cdrs','2');
 CREATE TABLE cc_cdrs (
     id NUMBER(10) PRIMARY KEY,
     caller VARCHAR2(64),
@@ -58,7 +60,8 @@ CREATE TABLE cc_cdrs (
     call_type NUMBER(10) DEFAULT -1 NOT NULL,
     rejected NUMBER(10) DEFAULT 0 NOT NULL,
     fstats NUMBER(10) DEFAULT 0 NOT NULL,
-    cid NUMBER(10) DEFAULT 0
+    cid NUMBER(10) DEFAULT 0,
+    media NUMBER(10) DEFAULT 0 NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER cc_cdrs_tr
@@ -69,10 +72,11 @@ END cc_cdrs_tr;
 /
 BEGIN map2users('cc_cdrs'); END;
 /
-INSERT INTO version (table_name, table_version) values ('cc_calls','2');
+INSERT INTO version (table_name, table_version) values ('cc_calls','3');
 CREATE TABLE cc_calls (
     id NUMBER(10) PRIMARY KEY,
     state NUMBER(10),
+    media NUMBER(10),
     ig_cback NUMBER(10),
     no_rej NUMBER(10),
     setup_time NUMBER(10),

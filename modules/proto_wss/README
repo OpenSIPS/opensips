@@ -24,6 +24,7 @@ proto_wss Module
               1.3.9. trace_filter_route (string)
               1.3.10. wss_tls_handshake_timeout (integer)
               1.3.11. wss_send_timeout (integer)
+              1.3.12. require_origin (int)
 
         1.4. Exported MI Functions
 
@@ -59,6 +60,7 @@ proto_wss Module
    1.9. Set trace_filter_route parameter
    1.10. Set wss_tls_handshake_timeout variable
    1.11. Set wss_send_timeout variable
+   1.12. Set require_origin parameter
 
 Chapter 1. Admin Guide
 
@@ -100,17 +102,15 @@ modparam("tls_mgm", "require_cert", "1")
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
+     * tls_openssl or tls_wolfssl, depending on the desired TLS
+       library
      * tls_mgm.
 
 1.2.2. Dependencies of external libraries
 
-   OpenSIPS TLS v1.0 support requires the following packages:
-     * openssl or libssl >= 0.9.6
-     * openssl-dev or libssl-dev
-
-   OpenSIPS TLS v1.1/1.2 support requires the following packages:
-     * openssl or libssl >= 1.0.1e
-     * openssl-dev or libssl-dev
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
 
 1.3. Exported Parameters
 
@@ -226,8 +226,8 @@ modparam("proto_wss", "cert_check_on_conn_reusage", 1)
 
    Example 1.7. Set trace_destination parameter
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
-=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
+n=3")
 
 modparam("proto_wss", "trace_destination", "hep_dest")
 ...
@@ -323,7 +323,18 @@ conds
 
    Example 1.11. Set wss_send_timeout variable
 
-aram("proto_wss", "wss_send_timeout", 200) # number of milliseconds
+modparam("proto_wss", "wss_send_timeout", 200) # number of milliseconds
+
+
+1.3.12. require_origin (int)
+
+   Controls whether the module should require the Origin header or
+   not.
+   Default value is 1(require Origin header).
+
+   Example 1.12. Set require_origin parameter
+
+modparam("proto_wss", "require_origin", no)
 
 
 1.4. Exported MI Functions
@@ -358,14 +369,15 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 26 17 758 121
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 13 234 19
-   3. Ionut Ionita (@ionutrazvanionita) 14 10 362 19
-   4. Vlad Patrascu (@rvlad-patrascu) 9 7 52 42
-   5. Liviu Chircu (@liviuchircu) 8 6 33 46
-   6. Maksym Sobolyev (@sobomax) 4 2 2 18
+   1. Razvan Crainea (@razvancrainea) 33 23 785 126
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 19 15 243 27
+   3. Vlad Patrascu (@rvlad-patrascu) 17 13 131 113
+   4. Ionut Ionita (@ionutrazvanionita) 15 10 362 19
+   5. Liviu Chircu (@liviuchircu) 10 8 48 59
+   6. Maksym Sobolyev (@sobomax) 6 4 17 33
    7. Dan Pascu (@danpascu) 3 1 3 5
-   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   8. Nick Altmann (@nikbyte) 3 1 2 2
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -387,14 +399,15 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   2. Maksym Sobolyev (@sobomax)          Feb 2017 - Sep 2020
-   3. Razvan Crainea (@razvancrainea)     Jan 2016 - Jul 2020
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Apr 2020
-   5. Liviu Chircu (@liviuchircu)         Mar 2016 - Jan 2020
-   6. Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
-   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8. Ionut Ionita (@ionutrazvanionita)   Mar 2017 - Apr 2017
+   1. Maksym Sobolyev (@sobomax)          Feb 2017 - Nov 2023
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - May 2023
+   3. Liviu Chircu (@liviuchircu)         Mar 2016 - Apr 2022
+   4. Razvan Crainea (@razvancrainea)     Jan 2016 - Jan 2022
+   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
+   6. Nick Altmann (@nikbyte)             May 2021 - May 2021
+   7. Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
+   8. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9. Ionut Ionita (@ionutrazvanionita)   Mar 2017 - Apr 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -403,10 +416,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut
-   Ionita (@ionutrazvanionita).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   (@ionutrazvanionita).
 
    Documentation Copyrights:
 

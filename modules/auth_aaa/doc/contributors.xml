@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>)</entry>
-		<entry align="center">87</entry>
+		<entry align="center">88</entry>
 		<entry align="center">24</entry>
 		<entry align="center">3294</entry>
 		<entry align="center">2182</entry>
@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">17</entry>
-		<entry align="center">14</entry>
-		<entry align="center">73</entry>
-		<entry align="center">119</entry>
+		<entry align="center">25</entry>
+		<entry align="center">21</entry>
+		<entry align="center">101</entry>
+		<entry align="center">145</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -61,18 +61,18 @@
 	<row>
 		<entry>6. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">11</entry>
-		<entry align="center">6</entry>
-		<entry align="center">167</entry>
+		<entry align="center">13</entry>
+		<entry align="center">8</entry>
 		<entry align="center">171</entry>
+		<entry align="center">175</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">9</entry>
-		<entry align="center">7</entry>
-		<entry align="center">12</entry>
-		<entry align="center">14</entry>
+		<entry align="center">10</entry>
+		<entry align="center">8</entry>
+		<entry align="center">13</entry>
+		<entry align="center">15</entry>
 	</row>
 	<row>
 		<entry>8. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ancuta Onofrei, Anatoly Pidruchny, Peter Nixon, Konstantin Bokarius, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ancuta Onofrei, Anatoly Pidruchny, Peter Nixon, Konstantin Bokarius, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jan 2013 - May 2024</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Feb 2012 - Jan 2024</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Dec 2003 - Feb 2023</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Jun 2005 - May 2020</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jan 2013 - Jan 2020</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Feb 2012 - Sep 2019</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Irina-Maria Stanescu</entry>
 		<entry align="center">Aug 2009 - Apr 2010</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>)</entry>
 		<entry align="center">Oct 2005 - Mar 2008</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Konstantin Bokarius</entry>
 		<entry align="center">Mar 2008 - Mar 2008</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Edson Gellert Schubert</entry>
 		<entry align="center">Feb 2008 - Feb 2008</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Dec 2003 - Feb 2008</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ancuta Onofrei, Anatoly Pidruchny, Peter Nixon, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ancuta Onofrei, Anatoly Pidruchny, Peter Nixon, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

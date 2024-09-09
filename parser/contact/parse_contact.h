@@ -66,4 +66,9 @@ void log_contact(contact_body_t* _c);
 int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev);
 
 
+/*
+ * Indicates whether the param's value should be quoted
+ */
+int should_quote_contact_param_value(str *val);
+
 #endif /* PARSE_CONTACT_H */

@@ -56,7 +56,7 @@ static int pv_get_local_totag(struct sip_msg *msg, pv_param_t *param,
 
 
 /** exported commands */
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"send_reply",(cmd_function)sig_send_reply, {	
 		{CMD_PARAM_INT,fixup_sig_send_reply,0},
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -66,13 +66,13 @@ static cmd_export_t cmds[]={
 };
 
 /** pseudo-variables exported by the module */
-static pv_export_t mod_pvars[] = {
-	{ {"sig_local_totag", sizeof("sig_local_totag") - 1}, 5003,
+static const pv_export_t mod_pvars[] = {
+	{ str_const_init("sig_local_totag"), 5003,
 		pv_get_local_totag, 0, 0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_SILENT },
 		{ MOD_TYPE_DEFAULT, "sl", DEP_SILENT },

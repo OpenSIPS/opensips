@@ -55,7 +55,7 @@ static int mod_init(void);
 static int pv_set_dfks(struct sip_msg *msg, pv_param_t *param, int op,
 	pv_value_t *val);
 static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-static int pv_parse_dfks_name(pv_spec_p sp, str *in);
+static int pv_parse_dfks_name(pv_spec_p sp, const str *in);
 
 static str *dfks_handle_subscribe(str *pres_uri, str *subs_body,
 	str *ct_type, int *suppress_notify);
@@ -69,8 +69,8 @@ pres_ev_t *dfks_event;
 
 static char *dfks_get_route = DEFAULT_GET_ROUTE_NAME;
 static char *dfks_set_route = DEFAULT_SET_ROUTE_NAME;
-static int dfks_get_route_idx;
-static int dfks_set_route_idx;
+static struct script_route_ref *dfks_get_route_ref;
+static struct script_route_ref *dfks_set_route_ref;
 
 static struct dfks_ctx feature_ctx;
 
@@ -108,19 +108,19 @@ static char *type_nodes[MAX_FEATURES_NO] = {NULL,
 static char *type_values[MAX_FEATURES_NO] = {NULL,
 	TYPE_VAL_FWD_CFA, TYPE_VAL_FWD_CFB, TYPE_VAL_FWD_CFNA};
 
-static pv_export_t mod_items[] = {
-	{ {"dfks", sizeof("dfks")-1}, 1000, pv_get_dfks, pv_set_dfks,
+static const pv_export_t mod_items[] = {
+	{ str_const_init("dfks"), 1000, pv_get_dfks, pv_set_dfks,
 		pv_parse_dfks_name, 0, 0, 0},
 	  { {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"get_route", STR_PARAM, &dfks_get_route},
 	{"set_route", STR_PARAM, &dfks_set_route},
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "dfks_set_feature", 0, 0, 0, {
 		{mi_dfks_set, {"presentity", "feature", "status", 0}},
 		{mi_dfks_set, {"presentity", "feature", "status", "values", 0}},
@@ -131,7 +131,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "presence", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -200,15 +200,15 @@ static int mod_init(void)
 {
 	bind_presence_t bind_presence;
 
-	dfks_get_route_idx = get_script_route_ID_by_name(dfks_get_route,
-		sroutes->request, RT_NO);
-	if (dfks_get_route_idx == -1) {
+	dfks_get_route_ref = ref_script_route_by_name(dfks_get_route,
+		sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+	if (!ref_script_route_is_valid(dfks_get_route_ref)) {
 		LM_ERR("GET route <%s> not defined in the script\n", dfks_get_route);
 		return -1;
 	}
-	dfks_set_route_idx = get_script_route_ID_by_name(dfks_set_route,
-		sroutes->request, RT_NO);
-	if (dfks_set_route_idx == -1) {
+	dfks_set_route_ref = ref_script_route_by_name(dfks_set_route,
+		sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+	if (!ref_script_route_is_valid(dfks_set_route_ref)) {
 		LM_ERR("SET route <%s> not defined in the script\n", dfks_set_route);
 		return -1;
 	}
@@ -231,7 +231,7 @@ static int mod_init(void)
 	return 0;
 }
 
-static int pv_parse_dfks_name(pv_spec_p sp, str *in)
+static int pv_parse_dfks_name(pv_spec_p sp, const str *in)
 {
 	struct dfks_pv_name *name;
 	str val_node;
@@ -252,17 +252,17 @@ static int pv_parse_dfks_name(pv_spec_p sp, str *in)
 			return -1;
 		}
 		name->type = PV_TYPE_VALUE;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_ASSIGN))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_ASSIGN))) {
 		name->type = PV_TYPE_ASSIGN;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_STATUS))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_STATUS))) {
 		name->type = PV_TYPE_STATUS;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_FEATURE))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_FEATURE))) {
 		name->type = PV_TYPE_FEATURE;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_PRESENTITY))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_PRESENTITY))) {
 		name->type = PV_TYPE_PRESENTITY;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_NOTIFY))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_NOTIFY))) {
 		name->type = PV_TYPE_NOTIFY;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_PARAM))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_PARAM))) {
 		name->type = PV_TYPE_PARAM;
 	} else {
 		LM_ERR("Bad subname for $dfks\n");
@@ -419,9 +419,14 @@ static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
-static int run_dfks_route(int route_idx)
+static int run_dfks_route(struct script_route_ref * route_ref)
 {
 	struct sip_msg *req;
+
+	if (!ref_script_route_is_valid(route_ref)){
+		LM_ERR("Route [%s] does not exist in script\n", route_ref->name.s);
+		return -1;
+	}
 
 	/* prepare a fake/dummy request */
 	req = get_dummy_sip_msg();
@@ -433,10 +438,10 @@ static int run_dfks_route(int route_idx)
 	set_route_type(REQUEST_ROUTE);
 
 	LM_DBG("Running DFKS %s route for feature <%.*s> presentity <%.*s>\n",
-		route_idx == dfks_get_route_idx ? "GET" : "SET",
+		route_ref == dfks_get_route_ref ? "GET" : "SET",
 		feature_names[feature_ctx.idx].len, feature_names[feature_ctx.idx].s,
 		feature_ctx.pres_uri.len, feature_ctx.pres_uri.s);
-	run_top_route(sroutes->request[route_idx], req);
+	run_top_route(sroutes->request[route_ref->idx], req);
 
 	release_dummy_sip_msg(req);
 
@@ -553,7 +558,7 @@ static str *build_full_notify(str *pres_uri, str *content_type)
 		memset(feature_ctx.values, 0, MAX_VALUES_NO * sizeof(str));
 		feature_ctx.idx = i;
 		feature_ctx.pres_uri = *pres_uri;
-		run_dfks_route(dfks_get_route_idx);
+		run_dfks_route(dfks_get_route_ref);
 
 		if (feature_ctx.assigned && feature_ctx.notify) {
 			doc = build_feature_doc(i);
@@ -757,9 +762,9 @@ static int parse_subscribe_xml(str *subs_body, int *feature_idx)
 		rc = -1;
 		goto end;
 	}
-	if (!str_strcmp(&ct, _str(STATUS_VAL_TRUE)))
+	if (!str_strcmp(&ct, const_str(STATUS_VAL_TRUE)))
 		feature_ctx.status = 1;
-	else if (!str_strcmp(&ct, _str(STATUS_VAL_FALSE)))
+	else if (!str_strcmp(&ct, const_str(STATUS_VAL_FALSE)))
 		feature_ctx.status = 0;
 	else {
 		LM_ERR("Bad value for '%s' node\n", req_status_nodes[*feature_idx]);
@@ -817,7 +822,7 @@ static str *build_feature_notify(str *pres_uri, int feature_idx, int from_subs,
 		feature_ctx.param = *param;
 	}
 
-	run_dfks_route(dfks_set_route_idx);
+	run_dfks_route(dfks_set_route_ref);
 
 	if (!feature_ctx.notify)
 		goto end;

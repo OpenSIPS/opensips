@@ -40,7 +40,7 @@ typedef struct sh_var {
 int init_shvars(void);
 void destroy_shvars();
 
-int pv_parse_shvar_name(pv_spec_p sp, str *in);
+int pv_parse_shvar_name(pv_spec_p sp, const str *in);
 int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 int pv_set_shvar(struct sip_msg* msg, pv_param_t *param, int op,
 		pv_value_t *val);
@@ -53,7 +53,7 @@ int param_set_var( modparam_t type, void* val);
 int param_set_shvar( modparam_t type, void* val);
 
 /*** $time(name) PV class */
-int pv_parse_time_name(pv_spec_p sp, str *in);
+int pv_parse_time_name(pv_spec_p sp, const str *in);
 int pv_get_time(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 

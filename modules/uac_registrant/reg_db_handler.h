@@ -44,14 +44,19 @@
 #define EXPIRY_COL			"expiry"
 #define FORCED_SOCKET_COL		"forced_socket"
 #define CLUSTER_SHTAG_COL		"cluster_shtag"
+#define STATE_COL				"state"
 
 #define REG_TABLE_NAME			"registrant"
 
-#define REG_TABLE_VERSION		2
+#define REG_TABLE_VERSION		3
 
-#define REG_TABLE_TOTAL_COL_NO		11
+#define REG_TABLE_TOTAL_COL_NO		12
 
 #define REG_FETCH_SIZE			128
+
+#define REG_KEY_COL_NO 3
+
+#define REG_DB_STATE_ENABLED  0
 
 extern str registrar_column;
 extern str proxy_column;
@@ -64,6 +69,7 @@ extern str binding_params_column;
 extern str expiry_column;
 extern str forced_socket_column;
 extern str cluster_shtag_column;
+extern str state_column;
 
 extern str reg_table_name;
 
@@ -71,7 +77,8 @@ extern unsigned int timer_interval;
 
 int init_reg_db(const str *db_url);
 int connect_reg_db(const str *db_url);
-int load_reg_info_from_db(unsigned int plist);
+int load_reg_info_from_db(unsigned int mode, record_coords_t *coords);
+int reg_update_db_state(reg_record_t *rec);
 void destroy_reg_db(void);
 
 #endif

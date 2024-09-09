@@ -29,6 +29,12 @@
 #ifdef LIBMICROHTTPD
 #include <microhttpd.h>
 extern struct MHD_Daemon *dmn;
+
+#if (MHD_VERSION >= 0x00097002)
+#define MHD_RET enum MHD_Result
+#else
+#define MHD_RET int
+#endif
 #endif
 
 void httpd_proc(int rank);

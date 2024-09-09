@@ -19,21 +19,30 @@ STIR/SHAKEN Module
               1.3.4. ca_dir (string)
               1.3.5. crl_list (string)
               1.3.6. crl_dir (string)
+              1.3.7. e164_strict_mode (integer)
+              1.3.8. e164_max_length (integer)
+              1.3.9. require_date_hdr (integer)
 
         1.4. Exported Functions
 
               1.4.1. stir_shaken_auth(attest, origid, cert, pkey,
-                      x5u, [orig], [dest])
+                      x5u, [orig], [dest], [out])
 
               1.4.2. stir_shaken_verify(cert, err_code,
                       err_reason, [orig], [dest])
 
               1.4.3. stir_shaken_check()
               1.4.4. stir_shaken_check_cert()
+              1.4.5. stir_shaken_disengagement(token)
 
         1.5. Exported Pseudo-Variables
 
               1.5.1. $identity(field)
+
+        1.6. Exported MI Functions
+
+              1.6.1. stir_shaken_ca_reload
+              1.6.2. stir_shaken_crl_reload
 
    2. Contributors
 
@@ -59,11 +68,15 @@ STIR/SHAKEN Module
    1.4. Set ca_dir parameter
    1.5. Set crl_list parameter
    1.6. Set crl_dir parameter
-   1.7. stir_shaken_auth() usage
-   1.8. stir_shaken_verify() usage
-   1.9. stir_shaken_check() usage
-   1.10. stir_shaken_check_cert() usage
-   1.11. identity usage
+   1.7. Set e164_strict_mode parameter
+   1.8. Set e164_max_length parameter
+   1.9. Set require_date_hdr parameter
+   1.10. stir_shaken_auth() usage
+   1.11. stir_shaken_verify() usage
+   1.12. stir_shaken_check() usage
+   1.13. stir_shaken_check_cert() usage
+   1.14. stir_shaken_disengagement() usage
+   1.15. identity usage
 
 Chapter 1. Admin Guide
 
@@ -108,9 +121,13 @@ modparam("stir_shaken", "auth_date_freshness", 300)
    The maximum number of seconds that the value in the Date header
    field can be older than the current time. Also, if the iat
    value in the PASSporT is different than the Date value, but
-   remains within this interval, it will be used in the
+   remains within the permitted interval, it will be used in the
    verification process (for the reconstructed PASSporT) instead
    of the Date value.
+
+   If the require_date_hdr parameter is set to not required and
+   the Date header is missing, the iat value will be used for this
+   check instead.
 
    This parameter is only relevant for the stir_shaken_verify()
    function.
@@ -152,7 +169,7 @@ modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
 
    Example 1.5. Set crl_list parameter
 ...
-modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
+modparam("stir_shaken", "crl_list", "/stir_certs/crl_list.pem")
 ...
 
 1.3.6. crl_dir (string)
@@ -167,10 +184,60 @@ modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
 modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 ...
 
+1.3.7. e164_strict_mode (integer)
+
+   Require a leading "+" to be present in the
+   originating/destination SHAKEN identity, on top of mandating an
+   E.164 telephone number by default. Additionally, require the
+   URI to be either a tel URI or a sip / sips URI with the
+   user=phone parameter.
+
+   The default value is 0 (disabled).
+
+   Example 1.7. Set e164_strict_mode parameter
+...
+modparam("stir_shaken", "e164_strict_mode", 1)
+...
+
+1.3.8. e164_max_length (integer)
+
+   This parameter allows the 15-digit number length restriction of
+   the E.164 format to be bypassed. Especially useful in scenarios
+   where various telephony number prefixes are in use, causing
+   some numbers to exceed the standard maximum length.
+
+   The default value is 15.
+
+   Example 1.8. Set e164_max_length parameter
+...
+modparam("stir_shaken", "e164_max_length", 16)
+...
+
+1.3.9. require_date_hdr (integer)
+
+   Specifies whether the Date header is mandatory when doing
+   verification with the stir_shaken_verify() function.
+
+   A value of 1 means required and 0 not required.
+
+   If the parameter is set to "not required" but the Date header
+   is present in the message, the header value will be used as
+   normally to check the freshness (as configured in the
+   verify_date_freshness parameter). If the Date header is indeed
+   missing, the value of the iat claim in the PASSporT will be
+   used instead.
+
+   The default value is 1 (required).
+
+   Example 1.9. Set require_date_hdr parameter
+...
+modparam("stir_shaken", "require_date_hdr", 0)
+...
+
 1.4. Exported Functions
 
 1.4.1.  stir_shaken_auth(attest, origid, cert, pkey, x5u, [orig],
-[dest])
+[dest], [out])
 
    This function performs the steps of an authentication service.
    Before calling this function though, you must ensure:
@@ -200,11 +267,22 @@ modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
      * dest (string, optional) - telephone number to be used as
        the destination identity in the PASSporT. If missing, this
        value will be derived from the SIP message.
+     * out (string, no expand, optional) - name of an output
+       variable to store the Identity header or the following
+       flags:
+          + req - the Identity header will be appended to the
+            current request message;
+          + rpl - the Identity header will be appended to all
+            replies that will be generated by OpenSIPS for this
+            request.
+       If this parameter is missing, the Identity header will be
+       appended to the current request message.
+       If an output variable is provided, it should be given as a
+       quoted string, eg. "$var(identity_hdr)".
 
    The function returns the following values:
      * 1: Success
      * -1: Internal error
-     * -2: Identity header already exists
      * -3: Failed to derive identity from SIP message because the
        URI is not a telephone number
      * -4: Date header value is older than local policy for
@@ -214,7 +292,7 @@ modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.7. stir_shaken_auth() usage
+   Example 1.10. stir_shaken_auth() usage
 ...
 stir_shaken_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
         $var(cert), $var(privKey), "https://certs.example.org/cert.pem")
@@ -259,7 +337,7 @@ stir_shaken_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.8. stir_shaken_verify() usage
+   Example 1.11. stir_shaken_verify() usage
 ...
 $var(rc) = stir_shaken_verify($var(cert), $var(err_code), $var(err_reaso
 n));
@@ -285,7 +363,7 @@ if ($var(rc) < -1) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.9. stir_shaken_check() usage
+   Example 1.12. stir_shaken_check() usage
 ...
 if (stir_shaken_check()) {
         xlog("forwarding call to stir/shaken verification service\n");
@@ -305,13 +383,37 @@ if (stir_shaken_check()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.10. stir_shaken_check_cert() usage
+   Example 1.13. stir_shaken_check_cert() usage
 ...
 # update expired cached certificates
 cache_fetch("local", $identity(x5u), $var(cert));
 if (!stir_shaken_check_cert($var(cert))) {
         rest_get($identity(x5u), $var(cert));
         cache_store("local", $identity(x5u), $var(cert));
+}
+...
+
+1.4.5.  stir_shaken_disengagement(token)
+
+   This function add P-Identity-Bypass header with token value at
+   the end of SIP headers.
+
+   Meaning of the parameters is as follows:
+     * token (string) - The token provided by the authority during
+       outage.
+
+   The function returns the following values:
+     * 1: Success
+     * 0: Failed to add P-Identity-Bypass header
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.14. stir_shaken_disengagement() usage
+...
+if ( is_method("INVITE") && !has_totag()) {
+        # equivalent to sipmsgops module: append_hf("P-Identity-Bypass:
+OSIP99-1234567890ABCDEF\r\n");
+        stir_shaken_disengagement("OSIP99-1234567890ABCDEF");
 }
 ...
 
@@ -333,7 +435,7 @@ if (!stir_shaken_check_cert($var(cert))) {
        claim;
      * origid - the value of the 'origid' PASSporT claim;
 
-   Example 1.11. identity usage
+   Example 1.15. identity usage
 ...
         # acquire the certificate to use for the verification process
         $var(rc) = rest_get($identity(x5u), $var(cert));
@@ -346,17 +448,59 @@ if (!stir_shaken_check_cert($var(cert))) {
 ity(attest)\n");
 ...
 
+1.6. Exported MI Functions
+
+1.6.1.  stir_shaken_ca_reload
+
+   Reload the file containing trusted CA certificates for the
+   verifier and the directory containing trusted CA certificates
+   for the verifier.
+
+   Name: stir_shaken_ca_reload
+
+   Parameters: none
+
+   MI FIFO Command Format:
+...
+opensips-cli -x mi stir_shaken_ca_reload
+"OK"
+...
+
+1.6.2.  stir_shaken_crl_reload
+
+   Reload the file containing certificate revocation lists (CRLs)
+   for the verifier and the directory containing certificate
+   revocation lists for the verifier.
+
+   Name: stir_shaken_crl_reload
+
+   Parameters: none
+
+   MI FIFO Command Format:
+...
+opensips-cli -x mi stir_shaken_crl_reload
+"OK"
+...
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                   Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    52      23      2883     270
-   2. Liviu Chircu (@liviuchircu)        5        3       4        1
-   3. Razvan Crainea (@razvancrainea)    3        1       2        1
-   4. Andriy Pylypenko (@bambyster)      2        1       1        0
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu) 59 26 3129 324
+   2. Liviu Chircu (@liviuchircu) 23 18 252 123
+   3. MonkeyTester 14 9 388 14
+   4. Maksym Sobolyev (@sobomax) 6 4 22 22
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 6 3 47 64
+   6. Razvan Crainea (@razvancrainea) 5 3 21 25
+   7. kworm83 4 2 7 2
+   8. tcresson 3 1 4 18
+   9. Kevin 3 1 2 2
+   10. John Burke (@john08burke) 2 1 4 0
+
+   All remaining contributors: Andriy Pylypenko (@bambyster).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -377,11 +521,19 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                   Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Jan 2021 - Jan 2021
-   2. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Sep 2020
-   3. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
-   4. Liviu Chircu (@liviuchircu)     Nov 2019 - May 2020
+                      Name                   Commit Activity
+   1.  MonkeyTester                        Aug 2023 - Aug 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Jul 2024
+   3.  Liviu Chircu (@liviuchircu)         Nov 2019 - Apr 2024
+   4.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2024
+   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   6.  tcresson                            Oct 2023 - Oct 2023
+   7.  Kevin                               Feb 2022 - Feb 2022
+   8.  kworm83                             Jan 2022 - Jan 2022
+   9.  Vlad Patrascu (@rvlad-patrascu)     Oct 2019 - Aug 2021
+   10. John Burke (@john08burke)           Apr 2021 - Apr 2021
+
+   All remaining contributors: Andriy Pylypenko (@bambyster).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -390,7 +542,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), MonkeyTester, Vlad Patrascu
    (@rvlad-patrascu).
 
    Documentation Copyrights:

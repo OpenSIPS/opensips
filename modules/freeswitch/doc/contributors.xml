@@ -21,18 +21,18 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">105</entry>
-		<entry align="center">46</entry>
-		<entry align="center">4092</entry>
-		<entry align="center">1498</entry>
+		<entry align="center">115</entry>
+		<entry align="center">53</entry>
+		<entry align="center">4261</entry>
+		<entry align="center">1560</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">11</entry>
-		<entry align="center">9</entry>
-		<entry align="center">29</entry>
-		<entry align="center">20</entry>
+		<entry align="center">12</entry>
+		<entry align="center">10</entry>
+		<entry align="center">30</entry>
+		<entry align="center">21</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -45,31 +45,39 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">6</entry>
+		<entry align="center">5</entry>
 		<entry align="center">3</entry>
+		<entry align="center">8</entry>
+		<entry align="center">5</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>rance</entry>
+		<entry align="center">3</entry>
+		<entry align="center">2</entry>
+		<entry align="center">3</entry>
+		<entry align="center">0</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">8</entry>
+		<entry align="center">8</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">2</entry>
 		<entry align="center">2</entry>
 	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>rance</entry>
-		<entry align="center">2</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-		<entry align="center">0</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -96,38 +104,43 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Feb 2017 - Jan 2021</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jan 2017 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>rance</entry>
-		<entry align="center">Oct 2020 - Oct 2020</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jan 2017 - Jul 2020</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Feb 2017 - Jul 2021</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Jan 2018 - Apr 2019</entry>
+		<entry align="center">Jan 2018 - Apr 2021</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>rance</entry>
+		<entry align="center">Oct 2020 - Mar 2021</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

@@ -44,7 +44,7 @@ extern char *stat_file;
 extern char* pid_file;
 extern char* pgid_file;
 
-extern struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
+extern const struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
 
 extern int auto_aliases;
 
@@ -73,6 +73,8 @@ extern int tcp_max_msg_time;
 extern int tcp_no_new_conn;
 extern int tcp_no_new_conn_bflag;
 extern int tcp_no_new_conn_rplflag;
+extern int tcp_parallel_read_on_workers;
+extern struct tcp_conn_profile tcp_con_df_profile;
 
 extern int no_daemon_mode;
 extern int debug_mode;
@@ -117,6 +119,7 @@ extern int is_pre_daemon;
 
 extern int memlog;  /*!< debugging level for printing memory debugs */
 extern int memdump; /*!< debugging level for dumping memory status */
+extern unsigned int shm_memlog_size;
 extern int execmsgthreshold;  /*!< Maximum number of microseconds a SIP msg processing can last
 						before triggering Warning log */
 extern int execdnsthreshold;

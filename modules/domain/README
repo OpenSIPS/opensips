@@ -289,19 +289,20 @@ Chapter 3. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 55 41 425 559
    2. Jan Janak (@janakj) 32 21 999 113
    3. Juha Heinanen (@juha-h) 30 20 700 233
-   4. Razvan Crainea (@razvancrainea) 20 13 287 221
+   4. Razvan Crainea (@razvancrainea) 21 14 288 222
    5. Daniel-Constantin Mierla (@miconda) 19 16 92 79
    6. Liviu Chircu (@liviuchircu) 11 8 45 109
-   7. Vlad Patrascu (@rvlad-patrascu) 9 5 96 123
+   7. Vlad Patrascu (@rvlad-patrascu) 8 5 96 123
    8. Dan Pascu (@danpascu) 8 4 232 101
    9. Andrei Pelinescu-Onciul 8 4 186 121
    10. Henning Westerholt (@henningw) 7 5 44 48
 
    All remaining contributors: Edson Gellert Schubert,
-   Elena-Ramona Modroiu, Jiri Kuthan (@jiriatipteldotorg), @coxx,
-   Konstantin Bokarius, Klaus Darilion, Anca Vamanu, Norman
-   Brandinger (@NormB), Peter Lemenkov (@lemenkov), UnixDev,
-   Andreas Granig.
+   Elena-Ramona Modroiu, Maksym Sobolyev (@sobomax), Jiri Kuthan
+   (@jiriatipteldotorg), @coxx, Konstantin Bokarius, Klaus
+   Darilion, Anca Vamanu, Norman Brandinger (@NormB), Peter
+   Lemenkov (@lemenkov), Stefan Darius, UnixDev, Andreas Granig,
+   John Burke (@john08burke).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -323,18 +324,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  @coxx                               Mar 2010 - Mar 2010
-   7.  Anca Vamanu                         Sep 2009 - Sep 2009
-   8.  UnixDev                             Feb 2009 - Feb 2009
-   9.  Juha Heinanen (@juha-h)             Jan 2003 - May 2008
-   10. Henning Westerholt (@henningw)      May 2007 - May 2008
+   1.  Stefan Darius                       Jul 2024 - Jul 2024
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2024
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  John Burke (@john08burke)           Jan 2022 - Jan 2022
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  @coxx                               Mar 2010 - Mar 2010
+   10. Anca Vamanu                         Sep 2009 - Sep 2009
 
-   All remaining contributors: Daniel-Constantin Mierla
+   All remaining contributors: UnixDev, Juha Heinanen (@juha-h),
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Elena-Ramona Modroiu, Dan Pascu (@danpascu), Norman Brandinger
    (@NormB), Andreas Granig, Klaus Darilion, Jan Janak (@janakj),

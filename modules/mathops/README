@@ -24,6 +24,7 @@ mathops Module
               1.4.5. math_ceil(number, result_var)
               1.4.6. math_round(number, result_var[, decimals])
               1.4.7. math_round_sf(number, result_var, figures)
+              1.4.8. math_compare(exp1, exp2, result_var)
 
    2. Contributors
 
@@ -51,6 +52,7 @@ mathops Module
    1.6. math_ceil usage
    1.7. math_round usage
    1.8. math_round_sf usage
+   1.9. math_compare usage
 
 Chapter 1. Admin Guide
 
@@ -330,6 +332,37 @@ if (math_round_sf($avp(1), $avp(result), 4)) {
 
 ...
 
+1.4.8.  math_compare(exp1, exp2, result_var)
+
+   Compare exp1 with exp2 and returns the comparison result in the
+   result_var. Standard comparison return codes used : If exp1 >
+   exp2, result_var = 1. Else if exp2 > exp1, result_var = -1,
+   else (in case they are equal), 0 is populated in the result_var
+
+   Meaning of the parameters is as follows:
+     * exp1 (string) - First expression to be evaluated and used
+       for comparison.
+     * exp2 (string) - Second expression to be evaluated and used
+       for comparison.
+     * result_var (var) - variable which will hold the result of
+       the comparison.
+
+   This function can be used from any route.
+
+   Example 1.9. math_compare usage
+...
+# Rounding PI
+
+$var(exp1) = "1 + 8";
+$var(exp2) = "7/2";
+
+if (math_compare($var(exp1), $var(exp2), $var(result))) {
+
+        # $var(result) will be 1, since 9 > 3.5
+}
+
+...
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -342,9 +375,11 @@ Chapter 2. Contributors
    3. Vlad Patrascu (@rvlad-patrascu) 9 3 96 302
    4. Ryan Bullock (@rrb3942) 9 1 552 160
    5. Stephane Alnet 6 2 327 36
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
-   7. Julián Moreno Patiño 3 1 3 3
-   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   6. Maksym Sobolyev (@sobomax) 5 3 3 3
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
+   8. Julián Moreno Patiño 3 1 3 3
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   10. Vlad Paiu (@vladpaiu) 2 1 88 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -365,15 +400,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2019
-   2. Liviu Chircu (@liviuchircu)         Feb 2013 - Jun 2019
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6. Ryan Bullock (@rrb3942)             Feb 2016 - Feb 2016
-   7. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8. Stephane Alnet                      Nov 2013 - Nov 2013
+                      Name                   Commit Activity
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   2.  Vlad Paiu (@vladpaiu)               Jan 2022 - Jan 2022
+   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2019
+   4.  Liviu Chircu (@liviuchircu)         Feb 2013 - Jun 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ryan Bullock (@rrb3942)             Feb 2016 - Feb 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Stephane Alnet                      Nov 2013 - Nov 2013
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -382,9 +419,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Ryan Bullock
-   (@rrb3942), Julián Moreno Patiño, Stephane Alnet.
+   Last edited by: Vlad Paiu (@vladpaiu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ryan Bullock (@rrb3942), Julián Moreno Patiño,
+   Stephane Alnet.
 
    Documentation Copyrights:
 

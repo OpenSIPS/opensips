@@ -111,25 +111,6 @@ modparam("event_xmlrpc", "use_struct_param", 1)
 </programlisting>
 		</example>
 	</section>
-	<section id="param_sync_mode" xreflabel="sync_mode">
-		<title><varname>sync_mode</varname> (integer)</title>
-		<para>
-			Specifies whether an event raise operates synchronous or asynchronous relative to the process where the raise is triggered.In synchronous mode the process waits for the status of the raise from the actual worker process.In asynchronous mode the process continues its operation without receiving any confirmation.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0 (asynchronous)</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>sync_mode</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("event_xmlrpc", "sync_mode", 1)
-...
-</programlisting>
-		</example>
-	</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">

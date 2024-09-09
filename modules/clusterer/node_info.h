@@ -70,6 +70,7 @@ struct node_info {
 	str description;
 	str url;
 	union sockaddr_union addr;
+	enum sip_protos proto;
 	str sip_addr;
 	int priority;                   /* priority to be chosen as next hop for same length paths */
 	int no_ping_retries;            /* maximum number of ping retries */
@@ -91,8 +92,10 @@ struct node_info {
 	struct neighbour *neighbour_list;   /* list of directly reachable neighbours */
 	int ls_seq_no;                      /* sequence number of the last link state update */
 	int top_seq_no;                     /* sequence number of the last topology update message */
+	int cap_seq_no;
 	int ls_timestamp;
 	int top_timestamp;
+	int cap_timestamp;
 	struct node_info *next_hop;         /* next hop from the shortest path */
 	struct remote_cap *capabilities;	/* known capabilities of this node */
 	int flags;
@@ -107,7 +110,7 @@ struct cluster_info {
 	int no_nodes;                   /* number of nodes in the cluster */
 	struct node_info *node_list;
 	struct node_info *current_node; /* current node's info in this cluster */
-	struct socket_info *send_sock;
+	const struct socket_info *send_sock;
 
 	gen_lock_t *lock;
 
@@ -125,7 +128,7 @@ extern int db_mode;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
-int update_db_state(int state);
+int update_db_state(int cluster_id, int node_id, int state);
 int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 
@@ -166,6 +169,18 @@ static inline node_info_t *get_node_by_id(cluster_info_t *cluster, int node_id)
 			return node;
 
 	return NULL;
+}
+
+static inline int validate_update(int seq_no, int msg_seq_no, int timestamp,
+									int msg_timestamp, int val_type, int node_id)
+{
+	if (msg_seq_no == 0) {
+		if (seq_no == 0 && msg_timestamp <= timestamp)
+			return -1;
+	} else if (msg_seq_no <= seq_no)
+		return -1;
+
+	return 0;
 }
 
 #endif /* CL_NODE_INFO_H */

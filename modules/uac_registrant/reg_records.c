@@ -34,19 +34,22 @@ extern const str uac_reg_state[];
 
 static char call_id_ftag_buf[MD5_LEN];
 
+int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
+	unsigned int all_contacts);
 
 void reg_print_record(reg_record_t *rec) {
 	LM_DBG("checking uac=[%p] state=[%d][%.*s] expires=[%d]"
 			" last_register_sent=[%d] registration_timeout=[%d]"
 			" auth_user[%p][%d]->[%.*s] auth_password=[%p][%d]->[%.*s]"
-			" sock=[%p] clustering=[%.*s/%d]\n",
+			" sock=[%p] clustering=[%.*s/%d] enabled=[%s]\n",
 		rec, rec->state,
 		uac_reg_state[rec->state].len, uac_reg_state[rec->state].s, rec->expires,
 		(unsigned int)rec->last_register_sent, (unsigned int)rec->registration_timeout,
 		rec->auth_user.s, rec->auth_user.len, rec->auth_user.len, rec->auth_user.s,
 		rec->auth_password.s, rec->auth_password.len,
 		rec->auth_password.len, rec->auth_password.s, rec->td.send_sock,
-		rec->cluster_shtag.len, rec->cluster_shtag.s, rec->cluster_id);
+		rec->cluster_shtag.len, rec->cluster_shtag.s, rec->cluster_id,
+		rec->flags&REG_ENABLED ? "yes" : "no");
 	LM_DBG("    RURI=[%p][%d]->[%.*s]\n", rec->td.rem_target.s, rec->td.rem_target.len,
 			rec->td.rem_target.len, rec->td.rem_target.s);
 	LM_DBG("      To=[%p][%d]->[%.*s]\n", rec->td.rem_uri.s, rec->td.rem_uri.len,
@@ -75,19 +78,32 @@ void reg_print_record(reg_record_t *rec) {
 static void gen_call_id_ftag(str *aor, str *now, str *call_id_ftag)
 {
 	int i = 0;
-	str src[2];
+	str src[3];
+	int n;
+        int l = 0;
+        char *ch;
+	str random_string;
+
+       
+        n = rand();
+	ch = int2str(n , &l);
+
 
 	call_id_ftag->len = MD5_LEN;
 	call_id_ftag->s = call_id_ftag_buf;
+	random_string.len = l;
+	random_string.s= ch;
 
 	src[i++] = *aor;
+	src[i++]= random_string;
 	if(now->s && now->len)
 		src[i++] = *now;
+	
+	
 
 	MD5StringArray(call_id_ftag->s, src, i);
 	return;
 }
-
 
 void new_call_id_ftag_4_record(reg_record_t *rec, str *now)
 {
@@ -105,8 +121,39 @@ void new_call_id_ftag_4_record(reg_record_t *rec, str *now)
 	return;
 }
 
+int match_reload_record(void *e_data, void *data, void *n_data)
+{
+	reg_record_t *rec = (reg_record_t*)e_data;
+	reg_record_t *new_rec = (reg_record_t*)n_data;
+	record_coords_t *coords = (record_coords_t *)data;
 
-int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
+	if (!str_strcmp(&coords->contact, &rec->contact_uri) &&
+		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
+		if (!(new_rec->flags&REG_ENABLED) && rec->flags&REG_ENABLED &&
+			rec->state == REGISTERED_STATE) {
+			if(send_unregister((unsigned long)coords->extra, rec, NULL, 0)==1)
+				rec->state = UNREGISTERING_STATE;
+			else
+				rec->state = INTERNAL_ERROR_STATE;
+		} else if (new_rec->flags&REG_ENABLED && rec->flags&REG_ENABLED &&
+				rec->state == REGISTERED_STATE) {
+			memcpy(new_rec->td.id.call_id.s, rec->td.id.call_id.s,
+			    new_rec->td.id.call_id.len);
+			memcpy(new_rec->td.id.loc_tag.s, rec->td.id.loc_tag.s,
+			    new_rec->td.id.loc_tag.len);
+			new_rec->td.loc_seq.value = rec->td.loc_seq.value;
+			new_rec->last_register_sent = rec->last_register_sent;
+			new_rec->registration_timeout = rec->registration_timeout;
+			new_rec->state = rec->state;
+		}
+
+		return 1;
+	} else
+		return 0;  /* continue search */
+}
+
+int add_record(uac_reg_map_t *uac, str *now, unsigned int mode,
+	record_coords_t *coords)
 {
 	reg_record_t *record;
 	unsigned int size;
@@ -114,6 +161,7 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
 	str call_id_ftag;
 	char *p;
 	slinkedl_list_t *list;
+	slinkedl_element_t *new_elem = NULL;
 
 	/* Reserve space for record */
 	size = sizeof(reg_record_t) + MD5_LEN +
@@ -122,14 +170,23 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
 		uac->contact_uri.len + uac->contact_params.len + uac->proxy_uri.len +
 		uac->cluster_shtag.len;
 
-	if(plist==0) list = reg_htable[uac->hash_code].p_list;
-	else list = reg_htable[uac->hash_code].s_list;
+	if (mode == REG_DB_LOAD_RECORD) {
+		new_elem = slinkedl_new_element(&reg_alloc, size, (void**)&record);
+		if (!new_elem) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+	} else {
+		if(mode==REG_DB_LOAD) list = reg_htable[uac->hash_code].p_list;
+		else list = reg_htable[uac->hash_code].s_list;
 
-	record = (reg_record_t*)slinkedl_append(list, size);
-	if(!record) {
-		LM_ERR("oom\n");
-		return -1;
+		record = (reg_record_t*)slinkedl_append(list, size);
+		if(!record) {
+			LM_ERR("oom\n");
+			return -1;
+		}
 	}
+
 	memset(record, 0, size);
 
 	record->expires = uac->expires;
@@ -239,6 +296,14 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
 
 	/* Setting the flags */
 	record->flags = uac->flags;
+
+	if (mode == REG_DB_LOAD_RECORD) {
+		coords->extra = (void*)(unsigned long)uac->hash_code;
+		if (slinkedl_replace(reg_htable[uac->hash_code].p_list,
+			match_reload_record, coords, new_elem) == 0)
+			/* this is a new record altogether */
+			slinkedl_append_element(reg_htable[uac->hash_code].p_list, new_elem);
+	}
 
 	reg_print_record(record);
 

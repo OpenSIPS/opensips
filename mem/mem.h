@@ -145,7 +145,7 @@ inline static void *pkg_malloc_func(unsigned long size,
 	return PKG_MALLOC_(mem_block, size, file, function, line);
 }
 
-inline static void* pkg_realloc_func(void *ptr, unsigned int size,
+inline static void* pkg_realloc_func(void *ptr, unsigned long size,
 		const char* file, const char* function, unsigned int line)
 {
 	return PKG_REALLOC(mem_block, ptr, size, file, function, line);
@@ -166,7 +166,7 @@ inline static void *pkg_malloc_func(unsigned long size)
 	return PKG_MALLOC_(mem_block, size);
 }
 
-inline static void* pkg_realloc_func(void *ptr, unsigned int size)
+inline static void* pkg_realloc_func(void *ptr, unsigned long size)
 {
 	return PKG_REALLOC(mem_block, ptr, size);
 }
@@ -185,7 +185,9 @@ void *sys_malloc(unsigned long, const char *, const char *, unsigned int);
 void *sys_realloc(void *, unsigned long, const char *, const char *, unsigned int);
 void sys_free(void *, const char *, const char *, unsigned int);
 
+#ifndef SYSTEM_MALLOC
 #define SYSTEM_MALLOC
+#endif
 #define pkg_malloc_func sys_malloc
 #define pkg_malloc(s) sys_malloc((s), __FILE__, __FUNCTION__, __LINE__)
 #define func_pkg_relloc sys_realloc
@@ -203,5 +205,6 @@ void sys_free(void *, const char *, const char *, unsigned int);
 
 int init_pkg_mallocs();
 int init_shm_mallocs();
+int init_dbg_shm_mallocs();
 
 #endif

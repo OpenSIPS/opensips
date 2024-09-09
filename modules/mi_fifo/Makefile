@@ -1,5 +1,3 @@
-# $Id$
-#
 # mi_fifo module makefile
 #
 # 
@@ -8,6 +6,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=mi_fifo.so
-LIBS=
 
 include ../../Makefile.modules

@@ -481,37 +481,22 @@ modparam("registrar", "disable_gruu", 0)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags (string, optional)</emphasis> - string of
-			the following flags:
+			<emphasis>flags (string, optional)</emphasis> - string composed of
+				one or more of the following flags, comma-separated:
 			</para>
 			<itemizedlist>
+				&save_common_flags;
 				<listitem>
-					<para><emphasis>'m' (Memory only)</emphasis> - save the
-					contacts only in memory cache without no DB operation;
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'r' (no Reply)</emphasis> - do not
-					generate a SIP reply to the current REGISTER request.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'s' (Socket header)</emphasis> -  look
-					into REGISTER request for a header which contains a socket
+					<para><emphasis>'socket-header'</emphasis> - (old
+					<emphasis>s</emphasis> flag) look into REGISTER request
+					for a header which contains a socket
 					description (proto:IP:port). This socket info will be
 					stored by register instead of the received socket info.
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'cnn' (max Contacts)</emphasis> -  this
-					flag can be used to limit the number of contacts for this
-					AOR (Address of Record) in the user location database.
-					Value 0 disables the check. This parameter overrides the
-					global "max_contacts" module parameter.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'e(int)' (minimum expires)</emphasis> -  this
+					<para><emphasis>'min-expires=[int]'</emphasis> - (old
+					<emphasis>e</emphasis> flag) this
 					flag can be used to set minimum register expiration time.
 					Values lower than this minimum will be automatically set
 					to the minimum. Value 0 disables the checking.
@@ -520,87 +505,13 @@ modparam("registrar", "disable_gruu", 0)
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'E(int)' (maximum expires)</emphasis> -  this
+					<para><emphasis>'max-expires=[int]'</emphasis> - (old
+					<emphasis>E</emphasis> flag) this
 					flag can be used to set maximum register expiration time.
 					Values higher than this maximum will be automatically set
 					to the maximum. Value 0 disables the checking.
 					This parameter overrides the global
 					<xref linkend="param_max_expires"/> module parameter.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'f' (force registration)</emphasis> - this
-					flag can be used to force the registration of NEW contacts
-					even if the maximum number of contacts is reached. In such
-					a case, older contacts will be removed to make space to the
-					new ones, without exceeding the maximum allowed number.
-					This flag makes sense only if "cxx" is used.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'o' (Only request contacts)</emphasis> -
-					Only include the REGISTER request's Contacts in the 200 OK
-					reply, in case the registration is successful.  While this
-					is against RFC 3261, it may be useful in certain scenarios.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'Mxx' (contact Matching mode)</emphasis> -
-					How the matching should be performed between the uploaded
-					contacts (by the currently handled REGISTER) and the
-					already know contacts (in memory or DB). This options will
-					be used only for the current operation and can be:
-					<itemizedlist>
-					<listitem>
-						<para><emphasis>'M0'</emphasis> - contact URI matching
-						only</para>
-					</listitem>
-					<listitem>
-						<para><emphasis>'M1'</emphasis> - contact URI and
-						SIP Call-ID matching</para>
-					</listitem>
-					<listitem>
-						<para><emphasis>'M&lt;param_name&gt;'</emphasis> - only
-						the value of the given URI param will be used for
-						matching (for example M&lt;rinstance&gt;)</para>
-					</listitem>
-					</itemizedlist>
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
-					The Path header is saved into usrloc, but is never
-					included in the reply.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'p1' (Path support - lazy mode)</emphasis>
-					The Path header is saved into usrloc, but is only included
-					in the reply if path support is indicated in the
-					registration request by the <quote>path</quote> option
-					of the <quote>Supported</quote> header.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'p2' (Path support - strict mode)</emphasis>
-					The path header is only saved into usrloc, if path support
-					is indicated in the registration request by the
-					<quote>path</quote> option of the <quote>Supported</quote>
-					header. If no path support is indicated, the request is
-					rejected with <quote>420 - Bad Extension</quote> and the
-					header <quote>Unsupported: path</quote> is included in
-					the reply along with the received <quote>Path</quote>
-					header. This mode is the one recommended by RFC-3327.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'v' (path receiVed)</emphasis> if set,
-					the <quote>received</quote> parameter of the first Path
-					URI of a registration is set as received-uri and the NAT
-					branch flag is set for this contact. This is useful if
-					the registrar is placed behind a SIP loadbalancer, which
-					passes the nat'ed UAC address as <quote>received</quote>
-					parameter in it's Path uri.
 					</para>
 				</listitem>
 			</itemizedlist>
@@ -642,13 +553,13 @@ save("location");
 ...
 # save into 'location', do not update DB, max 5 contacts per AOR,
 # use default AOR (TO URI)
-save("location","mc5");
+save("location","memory-only, max-contacts=5");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
 save("location","",$fu);
 ...
 # save into 'location', no DB update, force registration, take AOR from AVP
-save("location","mr", $avp(aor));
+save("location","memory-only, no-reply", $avp(aor));
 ...
 # save into 'location', mark the contacts with the "vip" ownership tag and
 # replicate these contacts to the backup node, which does not currently own "vip"
@@ -660,7 +571,7 @@ save("location", , , "vip");
 
 	<section id="func_remove" xreflabel="remove()">
 		<title>
-		<function moreinfo="none">remove(domain, AOR[, [contact][, [next_hop][, [sip_instance]]]])</function>
+		<function moreinfo="none">remove(domain, AOR[, [contact][, [next_hop][, [sip_instance], [bflag]]]])</function>
 		</title>
 		<para>
 		Explicitly remove contacts behind a given address-of-record.
@@ -698,6 +609,12 @@ save("location", , , "vip");
 			<para>
 				<emphasis>sip_instance (string, optional)</emphasis> - a
 				"+sip.instance" value to be used for filtering purposes.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>blfag (string, optional)</emphasis> - a
+				Branch Flag to be used for filtering purposes.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -755,6 +672,55 @@ remove("location", "sip:bob@atlanta.com", , , "&lt;urn:uuid:e5e68d40-f08a-4600-b
 		</example>
 	</section>
 
+	<section id="func_remove_ip_port" xreflabel="remove_ip_port()">
+		<title>
+		<function moreinfo="none">remove_ip_port(IP,Port, domain, [AOR])</function>
+		</title>
+		<para>
+		Remove all contacts behind a specific IP and Port, optionally filtering by AOR.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>IP (string)</emphasis> - IP of the Contact to be removed
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>Port (integer)</emphasis> - Port of the Contact to be removed
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>domain (static string</emphasis> - Logical domain within the registrar.
+			If a database is used, then this must be name of the table which
+			stores the contacts.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR (string, optional)</emphasis> - address-of-record to be searched (SIP URI)
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from ALL ROUTES.
+		</para>
+		<example>
+		<title><function>remove_ip_port</function> usage</title>
+		<programlisting format="linespecific">
+...
+# remove all contacts behind 8.8.8.8 port 43213
+remove_ip_port("8.8.8.8",43213,"location");
+...
+# remove only bob's contacts behind the 8.8.8.8:43213 host
+remove_ip_port("8.8.8.8",43213,"location","sip:bob@atlanta.com");
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="func_lookup" xreflabel="lookup()">
 		<title>
 		<function moreinfo="none">lookup(domain [, flags [, aor]])</function>
@@ -802,15 +768,15 @@ remove("location", "sip:bob@atlanta.com", , , "&lt;urn:uuid:e5e68d40-f08a-4600-b
 ...
 lookup("location");  # simple lookup
    #or
-lookup("location","m"); # lookup with method filtering
+lookup("location", "method-filtering"); # lookup with method filtering
    #or
-lookup("location","r"); #lookup with aor branch search;
-						#all contacts except the first one shall be put
-						#in the branches
+lookup("location", "branch"); # lookup with aor branch search;
+						# all contacts except the first one shall be put
+						# in the branches
    #or
-lookup("location","u/phone/i"); # lookup with user-agent filtering
+lookup("location", "ua-filtering=/phone/i"); # lookup with user-agent filtering
    #or
-lookup("location","",$var(aor)); # simple lookup with AOR from var
+lookup("location", "", $var(aor)); # simple lookup with AOR from var
 switch ($retcode) {
     case -1:
     case -3:
@@ -948,12 +914,13 @@ if(is_method("INVITE")) {
 
 	<section id="func_is_ip_registered" xreflabel="is_ip_registered()">
 		<title>
-		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar)</function>
+		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar,[PORTvar])</function>
 		</title>
 		<para>
 			The function returns true if there is at least one contact that has
-			been registered from the IP in the IPvar variable. The IP is matched
-			against the received host, if it exists, or the contact host otherwise.
+			been registered from the IP in the IPvar variable ( and from the optional
+			PORTvar variable ). 
+			The IP is matched against the received host, if it exists, or the contact host otherwise.
 			This function does not modify the message being process. This function
 		replaces the old "is_other_contact" function.
 		</para>
@@ -978,6 +945,14 @@ if(is_method("INVITE")) {
 				the contact host or the received host (see above). If the
 				<emphasis>IPvar</emphasis> is an AVP containing multiple values/IPs,
 				then all the values are checked.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>PORTvar (var, optional)</emphasis> - the variable containing the port to be
+			       	matched against the contact host or the received host (see above). If the
+				<emphasis>IPvar</emphasis> is an AVP containing multiple values/IPs, then the PORTvar
+				is expected to contain the same number of entries, and all the values are checked.
 			</para>
 		</listitem>
 

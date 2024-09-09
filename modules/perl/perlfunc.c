@@ -66,22 +66,26 @@ int perl_exec_simple(struct sip_msg* _msg, str *_fnc_s, str *_param_s)
 			return -1;
 		}
 		memcpy(args[0], _param_s->s, _param_s->len);
-		args[0][_param_s->len] = 0;
+		args[0][_param_s->len] = '\0';
 	} else
 		flags |= G_NOARGS;
 
-	fnc = pkg_malloc(_fnc_s->len);
+	fnc = pkg_malloc(_fnc_s->len+1);
 	if (!fnc) {
 		LM_ERR("No more pkg mem!\n");
 		return -1;
 	}
 	memcpy(fnc, _fnc_s->s, _fnc_s->len);
-	fnc[_fnc_s->len] = 0;
+	fnc[_fnc_s->len] = '\0';
 
 	if (perl_checkfnc(fnc)) {
 		LM_DBG("running perl function \"%s\"\n", fnc);
 
+		ENTER;
+		SAVETMPS;
 		call_argv(fnc, flags, args);
+		FREETMPS;
+		LEAVE;
 		ret = 1;
 	} else {
 		LM_ERR("unknown function '%s' called.\n", fnc);
@@ -106,13 +110,13 @@ int perl_exec(struct sip_msg* _msg, str* _fnc_s, str* mystr)
 	str pfnc, pparam;
 	char *fnc;
 
-	fnc = pkg_malloc(_fnc_s->len);
+	fnc = pkg_malloc(_fnc_s->len + 1);
 	if (!fnc) {
 		LM_ERR("No more pkg mem!\n");
 		return -1;
 	}
 	memcpy(fnc, _fnc_s->s, _fnc_s->len);
-	fnc[_fnc_s->len] = 0;
+	fnc[_fnc_s->len] = '\0';
 
 	dSP;
 
@@ -173,6 +177,8 @@ int perl_exec(struct sip_msg* _msg, str* _fnc_s, str* mystr)
 	PUTBACK;
 	FREETMPS;			/* free that return value        */
 	LEAVE;				/* ...and the XPUSHed "mortal" args.*/
+
+	pkg_free(fnc);
 	return retval;
 
 error:

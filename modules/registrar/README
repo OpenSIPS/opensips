@@ -27,40 +27,44 @@ registrar Module
               1.3.7. case_sensitive (integer)
               1.3.8. received_avp (str)
               1.3.9. received_param (string)
-              1.3.10. max_contacts (integer)
-              1.3.11. max_username_len (integer)
-              1.3.12. max_domain_len (integer)
-              1.3.13. max_aor_len (integer)
-              1.3.14. max_contact_len (integer)
-              1.3.15. retry_after (integer)
-              1.3.16. sock_hdr_name (string)
-              1.3.17. mcontact_avp (string)
-              1.3.18. attr_avp (string)
-              1.3.19. gruu_secret (string)
-              1.3.20. disable_gruu (int)
-              1.3.21. pn_enable (boolean)
-              1.3.22. pn_providers (string)
-              1.3.23. pn_ct_match_params (string)
-              1.3.24. pn_pnsreg_interval (integer)
-              1.3.25. pn_trigger_interval (integer)
-              1.3.26. pn_skip_pn_interval (integer)
-              1.3.27. pn_refresh_timeout (integer)
-              1.3.28. pn_enable_purr (boolean)
+              1.3.10. expires_max_deviation (integer)
+              1.3.11. max_contacts (integer)
+              1.3.12. max_username_len (integer)
+              1.3.13. max_domain_len (integer)
+              1.3.14. max_aor_len (integer)
+              1.3.15. max_contact_len (integer)
+              1.3.16. retry_after (integer)
+              1.3.17. sock_hdr_name (string)
+              1.3.18. mcontact_avp (string)
+              1.3.19. attr_avp (string)
+              1.3.20. gruu_secret (string)
+              1.3.21. disable_gruu (int)
+              1.3.22. pn_enable (boolean)
+              1.3.23. pn_providers (string)
+              1.3.24. pn_ct_match_params (string)
+              1.3.25. pn_pnsreg_interval (integer)
+              1.3.26. pn_trigger_interval (integer)
+              1.3.27. pn_skip_pn_interval (integer)
+              1.3.28. pn_refresh_timeout (integer)
+              1.3.29. pn_enable_purr (boolean)
 
         1.4. Exported Functions
 
               1.4.1. save(domain[, flags[, aor[, ownership_tag]]])
 
               1.4.2. remove(domain, AOR[, [contact][, [next_hop][,
-                      [sip_instance]]]])
+                      [sip_instance], [bflag]]]])
 
-              1.4.3. lookup(domain [, flags [, aor]])
-              1.4.4. is_registered(domain ,[AOR])
-              1.4.5. is_contact_registered(domain
+              1.4.3. remove_ip_port(IP,Port, domain, [AOR])
+              1.4.4. lookup(domain [, flags [, aor]])
+              1.4.5. is_registered(domain ,[AOR])
+              1.4.6. is_contact_registered(domain
                       ,[AOR],[contact],[callid])
 
-              1.4.6. is_ip_registered(domain ,[AOR],IPvar)
-              1.4.7. add_sock_hdr(hdr_name)
+              1.4.7. is_ip_registered(domain
+                      ,[AOR],IPvar,[PORTvar])
+
+              1.4.8. add_sock_hdr(hdr_name)
 
         1.5. Exported Asynchronous Functions
 
@@ -102,33 +106,35 @@ registrar Module
    1.7. Set case_sensitive parameter
    1.8. Set received_avp parameter
    1.9. Set received_param parameter
-   1.10. Set max_contacts parameter
-   1.11. Setting the max_username_len module parameter
-   1.12. Setting the max_domain_len module parameter
-   1.13. Setting the max_aor_len module parameter
-   1.14. Setting the max_contact_len module parameter
-   1.15. Set retry_after parameter
-   1.16. Set sock_hdr_namer parameter
-   1.17. Set mcontact_avp parameter
-   1.18. Set attr_avp parameter
-   1.19. Set gruu_secret parameter
+   1.10. Setting the expires_max_deviation parameter
+   1.11. Set max_contacts parameter
+   1.12. Setting the max_username_len module parameter
+   1.13. Setting the max_domain_len module parameter
+   1.14. Setting the max_aor_len module parameter
+   1.15. Setting the max_contact_len module parameter
+   1.16. Set retry_after parameter
+   1.17. Set sock_hdr_namer parameter
+   1.18. Set mcontact_avp parameter
+   1.19. Set attr_avp parameter
    1.20. Set gruu_secret parameter
-   1.21. Setting the pn_enable parameter
-   1.22. Setting the pn_providers parameter
-   1.23. Setting the pn_ct_match_params parameter
-   1.24. Setting the pn_pnsreg_interval parameter
-   1.25. Setting the pn_trigger_interval parameter
-   1.26. Setting the pn_skip_pn_interval parameter
-   1.27. Setting the pn_refresh_timeout parameter
-   1.28. Setting the pn_enable_purr parameter
-   1.29. save usage
-   1.30. remove usage
-   1.31. lookup usage
-   1.32. is_registered usage
-   1.33. is_contact_registered usage
-   1.34. is_ip_registered usage
-   1.35. add_sock_hdr usage
-   1.36. async pn_process_purr() usage
+   1.21. Set gruu_secret parameter
+   1.22. Setting the pn_enable parameter
+   1.23. Setting the pn_providers parameter
+   1.24. Setting the pn_ct_match_params parameter
+   1.25. Setting the pn_pnsreg_interval parameter
+   1.26. Setting the pn_trigger_interval parameter
+   1.27. Setting the pn_skip_pn_interval parameter
+   1.28. Setting the pn_refresh_timeout parameter
+   1.29. Setting the pn_enable_purr parameter
+   1.30. save usage
+   1.31. remove usage
+   1.32. remove_ip_port usage
+   1.33. lookup usage
+   1.34. is_registered usage
+   1.35. is_contact_registered usage
+   1.36. is_ip_registered usage
+   1.37. add_sock_hdr usage
+   1.38. async pn_process_purr() usage
 
 Chapter 1. Admin Guide
 
@@ -402,7 +408,31 @@ modparam("registrar", "received_avp", "$avp(rcv)")
 modparam("registrar", "received_param", "rcv")
 ...
 
-1.3.10. max_contacts (integer)
+1.3.10. expires_max_deviation (integer)
+
+   Set this parameter in order to add a random +/- deviation up to
+   and including the given value to the expiration interval of a
+   newly registered contact. For example, if this parameter is set
+   to 100 and a phone registers for 1800 sec, the final expiry
+   will be a random number in the [1700, 1900] interval.
+
+   By randomizing the registration lifetimes of the contacts, the
+   server is better equipped to deal with a post-restart
+   registration storm, when all TCP connections are lost and a
+   significant portion of UAs will re-register at the same time.
+   Thanks to the contact lifetime randomization, the registration
+   storm will only happen once rather than, e.g., every 1800
+   seconds following the restart.
+
+   Default value is 0 (no deviation).
+
+   Example 1.10. Setting the expires_max_deviation parameter
+...
+# add a random +/- 0-100 seconds to each registration lifetime
+modparam("registrar", "expires_max_deviation", 100)
+...
+
+1.3.11. max_contacts (integer)
 
    The parameter can be used to limit the number of contacts per
    AOR (Address of Record) in the user location database. Value 0
@@ -415,51 +445,51 @@ modparam("registrar", "received_param", "rcv")
 
    Default value is 0.
 
-   Example 1.10. Set max_contacts parameter
+   Example 1.11. Set max_contacts parameter
 ...
 # Allow no more than 10 contacts per AOR
 modparam("registrar", "max_contacts", 10)
 ...
 
-1.3.11. max_username_len (integer)
+1.3.12. max_username_len (integer)
 
    The maximum length of the "username" part of an
    Address-of-Record SIP URI.
 
    Default value is 64.
 
-   Example 1.11. Setting the max_username_len module parameter
+   Example 1.12. Setting the max_username_len module parameter
 modparam("registrar", "max_username_len", 128)
 
-1.3.12. max_domain_len (integer)
+1.3.13. max_domain_len (integer)
 
    The maximum length of the "domain" part of an Address-of-Record
    SIP URI.
 
    Default value is 64.
 
-   Example 1.12. Setting the max_domain_len module parameter
+   Example 1.13. Setting the max_domain_len module parameter
 modparam("registrar", "max_domain_len", 128)
 
-1.3.13. max_aor_len (integer)
+1.3.14. max_aor_len (integer)
 
    The maximum length of an Address-of-Record SIP URI.
 
    Default value is 256.
 
-   Example 1.13. Setting the max_aor_len module parameter
+   Example 1.14. Setting the max_aor_len module parameter
 modparam("registrar", "max_aor_len", 512)
 
-1.3.14. max_contact_len (integer)
+1.3.15. max_contact_len (integer)
 
    The maximum length of a Contact header field SIP URI.
 
    Default value is 255.
 
-   Example 1.14. Setting the max_contact_len module parameter
+   Example 1.15. Setting the max_contact_len module parameter
 modparam("registrar", "max_contact_len", 512)
 
-1.3.15. retry_after (integer)
+1.3.16. retry_after (integer)
 
    The registrar can generate 5xx reply to REGISTER in various
    situations. It can, for example, happen when the max_contacts
@@ -474,12 +504,12 @@ modparam("registrar", "max_contact_len", 512)
 
    Default value is 0 (disabled).
 
-   Example 1.15. Set retry_after parameter
+   Example 1.16. Set retry_after parameter
 ...
 modparam("registrar", "retry_after", 30)
 ...
 
-1.3.16. sock_hdr_name (string)
+1.3.17. sock_hdr_name (string)
 
    Header which contains a socket description (proto:IP:port) to
    override the received socket info. The header will be search
@@ -490,12 +520,12 @@ modparam("registrar", "retry_after", 30)
 
    Default value is NULL.
 
-   Example 1.16. Set sock_hdr_namer parameter
+   Example 1.17. Set sock_hdr_namer parameter
 ...
 modparam("registrar", "sock_hdr_name", "Sock-Info")
 ...
 
-1.3.17. mcontact_avp (string)
+1.3.18. mcontact_avp (string)
 
    AVP to store the modified binding/contact that is set during
    cached registrations scenario (when REGISTER is forwarded to
@@ -508,7 +538,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 
    Default value is NULL.
 
-   Example 1.17. Set mcontact_avp parameter
+   Example 1.18. Set mcontact_avp parameter
 ...
 modparam("registrar", "mcontact_avp", "$avp(orig_ct)")
 ...
@@ -529,7 +559,7 @@ onreply_route[do_save] {
 }
 ...
 
-1.3.18. attr_avp (string)
+1.3.19. attr_avp (string)
 
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
@@ -544,7 +574,7 @@ onreply_route[do_save] {
 
    Default value is NULL.
 
-   Example 1.18. Set attr_avp parameter
+   Example 1.19. Set attr_avp parameter
 # reading attributes from the attr_pvar when doing parallel forking
 ...
 modparam("registrar", "attr_avp", "$avp(attr)")
@@ -565,30 +595,30 @@ _idx])\n");
 }
 
 
-1.3.19. gruu_secret (string)
+1.3.20. gruu_secret (string)
 
    The string that will be used in XORing when generating
    temporary GRUUs.
 
    If not set, 'OpenSIPS' is the default secret.
 
-   Example 1.19. Set gruu_secret parameter
+   Example 1.20. Set gruu_secret parameter
 ...
 modparam("registrar", "gruu_secret", "top_secret")
 ...
 
-1.3.20. disable_gruu (int)
+1.3.21. disable_gruu (int)
 
    Globally disable GRUU handling
 
    Default value is 1 ( GRUU will not be handled ).
 
-   Example 1.20. Set gruu_secret parameter
+   Example 1.21. Set gruu_secret parameter
 ...
 modparam("registrar", "disable_gruu", 0)
 ...
 
-1.3.21. pn_enable (boolean)
+1.3.22. pn_enable (boolean)
 
    Enable SIP Push Notification support (RFC 8599). If enabled,
    Contact header field URIs which include all pn_ct_match_params
@@ -598,12 +628,12 @@ modparam("registrar", "disable_gruu", 0)
 
    Default value is false.
 
-   Example 1.21. Setting the pn_enable parameter
+   Example 1.22. Setting the pn_enable parameter
 ...
 modparam("registrar", "pn_enable", true)
 ...
 
-1.3.22. pn_providers (string)
+1.3.23. pn_providers (string)
 
    A list of supported Push Notification providers. While only
    three possible values are defined by RFC 8599 ("apns", "fcm"
@@ -611,12 +641,12 @@ modparam("registrar", "pn_enable", true)
 
    Default value is NULL (not set).
 
-   Example 1.22. Setting the pn_providers parameter
+   Example 1.23. Setting the pn_providers parameter
 ...
 modparam("registrar", "pn_providers", "apns, fcm, webpush")
 ...
 
-1.3.23. pn_ct_match_params (string)
+1.3.24. pn_ct_match_params (string)
 
    The minimally required list of RFC 8599 parameters (custom ones
    are accepted as well) which must be present in a Contact URI
@@ -638,12 +668,12 @@ modparam("registrar", "pn_providers", "apns, fcm, webpush")
 
    Default value is "pn-provider, pn-prid, pn-param".
 
-   Example 1.23. Setting the pn_ct_match_params parameter
+   Example 1.24. Setting the pn_ct_match_params parameter
 ...
 modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 ...
 
-1.3.24. pn_pnsreg_interval (integer)
+1.3.25. pn_pnsreg_interval (integer)
 
    For devices capable of waking up and refreshing their binding
    on their own (signified by the ";+sip.pnsreg" Contact header
@@ -653,12 +683,12 @@ modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 
    Default value is 130 (seconds before expiry).
 
-   Example 1.24. Setting the pn_pnsreg_interval parameter
+   Example 1.25. Setting the pn_pnsreg_interval parameter
 ...
 modparam("registrar", "pn_pnsreg_interval", 140)
 ...
 
-1.3.25. pn_trigger_interval (integer)
+1.3.26. pn_trigger_interval (integer)
 
    If a binding refresh REGISTER request from a given SIP endpoint
    does not arrive within at least pn_trigger_interval seconds
@@ -674,12 +704,12 @@ modparam("registrar", "pn_pnsreg_interval", 140)
 
    Default value is 120 (seconds before expiry).
 
-   Example 1.25. Setting the pn_trigger_interval parameter
+   Example 1.26. Setting the pn_trigger_interval parameter
 ...
 modparam("registrar", "pn_trigger_interval", 130)
 ...
 
-1.3.26. pn_skip_pn_interval (integer)
+1.3.27. pn_skip_pn_interval (integer)
 
    Following a successful (re)registration of a contact, this
    setting denotes a time interval, in seconds, during which the
@@ -689,12 +719,12 @@ modparam("registrar", "pn_trigger_interval", 130)
    Default value is 0 seconds (always generate Push
    Notifications).
 
-   Example 1.26. Setting the pn_skip_pn_interval parameter
+   Example 1.27. Setting the pn_skip_pn_interval parameter
 ...
 modparam("registrar", "pn_skip_pn_interval", 10)
 ...
 
-1.3.27. pn_refresh_timeout (integer)
+1.3.28. pn_refresh_timeout (integer)
 
    This timeout starts counting following a lookup() or a
    pn_process_purr() which triggers a Push Notification. The value
@@ -715,12 +745,12 @@ modparam("registrar", "pn_skip_pn_interval", 10)
 
    Default value is 6 seconds.
 
-   Example 1.27. Setting the pn_refresh_timeout parameter
+   Example 1.28. Setting the pn_refresh_timeout parameter
 ...
 modparam("registrar", "pn_refresh_timeout", 10)
 ...
 
-1.3.28. pn_enable_purr (boolean)
+1.3.29. pn_enable_purr (boolean)
 
    Enable the SIP Push Notification mechanism for long-lived
    dialogs. If enabled, the registrar will include a
@@ -741,7 +771,7 @@ modparam("registrar", "pn_refresh_timeout", 10)
 
    Default value is false.
 
-   Example 1.28. Setting the pn_enable_purr parameter
+   Example 1.29. Setting the pn_enable_purr parameter
 ...
 modparam("registrar", "pn_enable_purr", true)
 ...
@@ -761,72 +791,80 @@ modparam("registrar", "pn_enable_purr", true)
      * domain (static string) - Logical domain within registrar.
        If database is used then this must be name of the table
        which stores the contacts.
-     * flags (string, optional) - string of the following flags:
-          + 'm' (Memory only) - save the contacts only in memory
-            cache without no DB operation;
-          + 'r' (no Reply) - do not generate a SIP reply to the
-            current REGISTER request.
-          + 's' (Socket header) - look into REGISTER request for a
-            header which contains a socket description
-            (proto:IP:port). This socket info will be stored by
-            register instead of the received socket info.
-          + 'cnn' (max Contacts) - this flag can be used to limit
-            the number of contacts for this AOR (Address of
-            Record) in the user location database. Value 0
-            disables the check. This parameter overrides the
-            global "max_contacts" module parameter.
-          + 'e(int)' (minimum expires) - this flag can be used to
-            set minimum register expiration time. Values lower
-            than this minimum will be automatically set to the
-            minimum. Value 0 disables the checking. This parameter
-            overrides the global min_expires module parameter.
-          + 'E(int)' (maximum expires) - this flag can be used to
-            set maximum register expiration time. Values higher
-            than this maximum will be automatically set to the
-            maximum. Value 0 disables the checking. This parameter
-            overrides the global max_expires module parameter.
-          + 'f' (force registration) - this flag can be used to
-            force the registration of NEW contacts even if the
-            maximum number of contacts is reached. In such a case,
-            older contacts will be removed to make space to the
-            new ones, without exceeding the maximum allowed
-            number. This flag makes sense only if "cxx" is used.
-          + 'o' (Only request contacts) - Only include the
-            REGISTER request's Contacts in the 200 OK reply, in
-            case the registration is successful. While this is
-            against RFC 3261, it may be useful in certain
-            scenarios.
-          + 'Mxx' (contact Matching mode) - How the matching
+     * flags (string, optional) - string composed of one or more
+       of the following flags, comma-separated:
+          + 'memory-only' - (old m flag) save the contacts only in
+            memory cache without no DB operation;
+          + 'no-reply' - (old r flag) do not generate a SIP reply
+            to the current REGISTER request.
+          + 'max-contacts=[int]' - (old c flag) this flag can be
+            used to limit the number of contacts for this AOR
+            (Address of Record) in the user location database.
+            Value 0 disables the check. This parameter overrides
+            the global "max_contacts" module parameter.
+          + 'force-registration' - (old f flag) this flag can be
+            used to force the registration of NEW contacts even if
+            the maximum number of contacts is reached. In such a
+            case, older contacts will be removed to make space to
+            the new ones, without exceeding the maximum allowed
+            number. This flag makes sense only if "max-contacts"
+            is used.
+          + 'matching-mode=[val]' - (old M flag) How the matching
             should be performed between the uploaded contacts (by
             the currently handled REGISTER) and the already know
             contacts (in memory or DB). This options will be used
             only for the current operation and can be:
-               o 'M0' - contact URI matching only
-               o 'M1' - contact URI and SIP Call-ID matching
-               o 'M<param_name>' - only the value of the given URI
+               o '0' - contact URI matching only
+               o '1' - contact URI and SIP Call-ID matching
+               o '<param_name>' - only the value of the given URI
                  param will be used for matching (for example
-                 M<rinstance>)
-          + 'p0' (Path support - 'off' mode) The Path header is
-            saved into usrloc, but is never included in the reply.
-          + 'p1' (Path support - lazy mode) The Path header is
-            saved into usrloc, but is only included in the reply
-            if path support is indicated in the registration
-            request by the “path” option of the “Supported”
-            header.
-          + 'p2' (Path support - strict mode) The path header is
-            only saved into usrloc, if path support is indicated
-            in the registration request by the “path” option of
-            the “Supported” header. If no path support is
-            indicated, the request is rejected with “420 - Bad
-            Extension” and the header “Unsupported: path” is
-            included in the reply along with the received “Path”
-            header. This mode is the one recommended by RFC-3327.
-          + 'v' (path receiVed) if set, the “received” parameter
-            of the first Path URI of a registration is set as
-            received-uri and the NAT branch flag is set for this
-            contact. This is useful if the registrar is placed
-            behind a SIP loadbalancer, which passes the nat'ed UAC
-            address as “received” parameter in it's Path uri.
+                 <rinstance>)
+          + 'path-off' - (old p0 flag) (Path support - 'off' mode)
+            - The Path header is saved into usrloc, but is never
+            included in the reply.
+          + 'path-lazy' - (old p1 flag) (Path support - lazy mode)
+            The Path header is saved into usrloc, but is only
+            included in the reply if path support is indicated in
+            the registration request by the “path” option of the
+            “Supported” header.
+          + 'path-strict' - (old p2 flag) (Path support - strict
+            mode) - The path header is only saved into usrloc, if
+            path support is indicated in the registration request
+            by the “path” option of the “Supported” header. If no
+            path support is indicated, the request is rejected
+            with “420 - Bad Extension” and the header
+            “Unsupported: path” is included in the reply along
+            with the received “Path” header. This mode is the one
+            recommended by RFC-3327.
+          + 'path-received' - (old v flag) if set, the “received”
+            parameter of the first Path URI of a registration is
+            set as received-uri and the NAT branch flag is set for
+            this contact. This is useful if the registrar is
+            placed behind a SIP loadbalancer, which passes the
+            nat'ed UAC address as “received” parameter in it's
+            Path uri.
+          + 'only-request-contacts' - (old o flag) Only include
+            the REGISTER request's Contacts in the 200 OK reply,
+            in case the registration is successful. While this is
+            against RFC 3261, it may be useful in certain
+            scenarios.
+          + 'socket-header' - (old s flag) look into REGISTER
+            request for a header which contains a socket
+            description (proto:IP:port). This socket info will be
+            stored by register instead of the received socket
+            info.
+          + 'min-expires=[int]' - (old e flag) this flag can be
+            used to set minimum register expiration time. Values
+            lower than this minimum will be automatically set to
+            the minimum. Value 0 disables the checking. This
+            parameter overrides the global min_expires module
+            parameter.
+          + 'max-expires=[int]' - (old E flag) this flag can be
+            used to set maximum register expiration time. Values
+            higher than this maximum will be automatically set to
+            the maximum. Value 0 disables the checking. This
+            parameter overrides the global max_expires module
+            parameter.
        This parameter is a string composed of a set of flags.
      * aor (string, optional) - a custom AOR; if missing, the AOR
        will be taken from the default place - the TO header URI.
@@ -846,21 +884,21 @@ modparam("registrar", "pn_enable_purr", true)
    If you plan to use the “save()” function in reply route, please
    refer to mcontact_avp module parameter.
 
-   Example 1.29. save usage
+   Example 1.30. save usage
 ...
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
 ...
 # save into 'location', do not update DB, max 5 contacts per AOR,
 # use default AOR (TO URI)
-save("location","mc5");
+save("location","memory-only, max-contacts=5");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
 save("location","",$fu);
 ...
 # save into 'location', no DB update, force registration, take AOR from
 AVP
-save("location","mr", $avp(aor));
+save("location","memory-only, no-reply", $avp(aor));
 ...
 # save into 'location', mark the contacts with the "vip" ownership tag a
 nd
@@ -869,8 +907,8 @@ own "vip"
 save("location", , , "vip");
 ...
 
-1.4.2.  remove(domain, AOR[, [contact][, [next_hop][,
-[sip_instance]]]])
+1.4.2.  remove(domain, AOR[, [contact][, [next_hop][, [sip_instance],
+[bflag]]]])
 
    Explicitly remove contacts behind a given address-of-record.
 
@@ -888,6 +926,8 @@ save("location", , , "vip");
        Hostnames are resolved before matching.
      * sip_instance (string, optional) - a "+sip.instance" value
        to be used for filtering purposes.
+     * blfag (string, optional) - a Branch Flag to be used for
+       filtering purposes.
 
    IMPORTANT: the IP address of each contact (for matching
    purposes) is computed as follows:
@@ -903,7 +943,7 @@ save("location", , , "vip");
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.30. remove usage
+   Example 1.31. remove usage
 ...
 # remove all contacts belonging to the "bob" AOR
 remove("location", "sip:bob@atlanta.com");
@@ -926,7 +966,32 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
 remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
 600-b82e-ff4d5d8c1a8f>")
 
-1.4.3.  lookup(domain [, flags [, aor]])
+1.4.3.  remove_ip_port(IP,Port, domain, [AOR])
+
+   Remove all contacts behind a specific IP and Port, optionally
+   filtering by AOR.
+
+   Meaning of the parameters is as follows:
+     * IP (string) - IP of the Contact to be removed
+     * Port (integer) - Port of the Contact to be removed
+     * domain (static string - Logical domain within the
+       registrar. If a database is used, then this must be name of
+       the table which stores the contacts.
+     * AOR (string, optional) - address-of-record to be searched
+       (SIP URI)
+
+   This function can be used from ALL ROUTES.
+
+   Example 1.32. remove_ip_port usage
+...
+# remove all contacts behind 8.8.8.8 port 43213
+remove_ip_port("8.8.8.8",43213,"location");
+...
+# remove only bob's contacts behind the 8.8.8.8:43213 host
+remove_ip_port("8.8.8.8",43213,"location","sip:bob@atlanta.com");
+...
+
+1.4.4.  lookup(domain [, flags [, aor]])
 
    The functions extracts username from Request-URI and tries to
    find all contacts for the username in usrloc. If there are no
@@ -942,9 +1007,10 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
    Meaning of the parameters is as follows:
      * domain (static string) - Name of table that should be used
        for the lookup.
-     * flags (string, optional)
-          + 'b' (no Branches) - this flag controls how the
-            lookup() function processes multiple contacts. If
+     * flags (string, optional) - string composed of one or more
+       of the following flags, comma-separated:
+          + 'no-branches' - (old b flag) this flag controls how
+            the lookup() function processes multiple contacts. If
             there are multiple contacts for the given username in
             usrloc and this flag is not set, Request-URI will be
             overwritten with the highest-q rated contact and the
@@ -952,13 +1018,13 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
             later used by tm for forking. If the flag is set, only
             Request-URI will be overwritten with the highest-q
             rated contact and the rest will be left unprocessed.
-          + 'B' (to Branches only) - this flags forces all found
-            contacts to be uploaded only as branches (in the
-            destination set) and not at all in the R-URI of the
-            current message. Using this option allows the lookup()
-            function to also be used in the context of a SIP
-            reply.
-          + 'r' (bRanch lookup) - this flag enables searching
+          + 'to-branches-only' - (old B flag) this flags forces
+            all found contacts to be uploaded only as branches (in
+            the destination set) and not at all in the R-URI of
+            the current message. Using this option allows the
+            lookup() function to also be used in the context of a
+            SIP reply.
+          + 'branch' - (old r flag) this flag enables searching
             through existing branches for aor's and expanding them
             to contacts. For example, you have got AOR A in your
             ruri but you also want to forward your calls to AOR B.
@@ -967,31 +1033,33 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
             expand AOR B to contacts, which will be put back into
             the branches. The AOR's that were in branches before
             the function call shall be removed.
-            WARNING: if you want this flag activated, the 'b' (no
-            Branches) flag must not be set, because by setting
+            WARNING: if you want this flag activated, the
+            'no-branches' flag must not be set, because by setting
             that flag you won't allow lookup() to write in a
             branch.
-          + 'm' (Method filtering) - setting this flag will enable
-            contact filtering based on the supported methods
-            listed in the "Allow" header field during
+          + 'method-filtering' - (old m flag) setting this flag
+            will enable contact filtering based on the supported
+            methods listed in the "Allow" header field during
             registration. Contacts which did not present an
             "Allow" header field during registration are assumed
             to support all standard SIP methods.
-          + 'u' (User-Agent filtering) - this flag enables regexp
-            filtering by user-agent. It's useful with enabled
-            append_branches parameter. Regexp must follow the 'u'
-            flag and must use format like 'u/regexp/'.
-          + 'i' (Case insensitive search) - this flag enables case
-            insensitive filtering for the 'u' flag.
-          + 'e' (Use extended regexp) - this flag enables using of
-            extended regexp format for the 'u' flag.
-          + 'g' (Global lookup) - this flag is only relevant with
-            federated user location clustering. If set, the
-            lookup() function will not only perform the classic
-            in-memory "search-AoR-and-push-branches" operation,
-            but will also perform a metadata lookup and append an
-            additional branch for each returned result. The
-            "in-memory branches" correspond to local contacts
+          + 'ua-filtering=[val]' (old u flag) (User-Agent
+            filtering) - this flag enables regexp filtering by
+            user-agent. It's useful with enabled append_branches
+            parameter. The value must use the format '/regexp/'.
+          + 'case-insensitive' (old i flag) - this flag enables
+            case insensitive filtering for the 'ua-filtering'
+            flag.
+          + 'extended-regexp' - (old e flag) this flag enables
+            using of extended regexp format for the 'ua-filtering'
+            flag.
+          + 'global' (old g flag) (Global lookup) - this flag is
+            only relevant with federated user location clustering.
+            If set, the lookup() function will not only perform
+            the classic in-memory "search-AoR-and-push-branches"
+            operation, but will also perform a metadata lookup and
+            append an additional branch for each returned result.
+            The "in-memory branches" correspond to local contacts
             (current location), while the "metadata branches"
             correspond to contacts available on one or more of the
             remaining locations of the platform.
@@ -1003,14 +1071,15 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
             information:
                o the AoR (e.g. "vladimir@federation-cluster")
                o the home IP (e.g. "10.0.0.223")
-          + 'yXXXXX' (Max pinging latency) - maximally accepted
-            contact pinging latency (microseconds). Contacts of an
-            AoR with a higher latency will be discarded during
-            lookup().
-          + 'Y' (Sort by pinging latency) - contacts will be
+          + 'max-ping-latency=[int]' - (old y flag) maximally
+            accepted contact pinging latency (microseconds).
+            Contacts of an AoR with a higher latency will be
+            discarded during lookup().
+          + 'sort-by-latency' - (old Y flag) contacts will be
             picked in ascending order of their last successful
             pinging latency (fastest ping -> slowest ping). This
-            flag may work together with the "y" flag.
+            flag may work together with the "max-ping-latency"
+            flag.
      * AOR (string, optional) - AOR to lookup for; if missing, the
        RURI is used as AOR;
 
@@ -1029,20 +1098,21 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.31. lookup usage
+   Example 1.33. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
-lookup("location","m"); # lookup with method filtering
+lookup("location", "method-filtering"); # lookup with method filtering
    #or
-lookup("location","r"); #lookup with aor branch search;
-                                                #all contacts except the
- first one shall be put
-                                                #in the branches
+lookup("location", "branch"); # lookup with aor branch search;
+                                                # all contacts except th
+e first one shall be put
+                                                # in the branches
    #or
-lookup("location","u/phone/i"); # lookup with user-agent filtering
+lookup("location", "ua-filtering=/phone/i"); # lookup with user-agent fi
+ltering
    #or
-lookup("location","",$var(aor)); # simple lookup with AOR from var
+lookup("location", "", $var(aor)); # simple lookup with AOR from var
 switch ($retcode) {
     case -1:
     case -3:
@@ -1054,7 +1124,7 @@ switch ($retcode) {
 };
 ...
 
-1.4.4.  is_registered(domain ,[AOR])
+1.4.5.  is_registered(domain ,[AOR])
 
    The function returns true if an AOR is registered, false
    otherwise. The function does not modify the message being
@@ -1073,7 +1143,7 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.32. is_registered usage
+   Example 1.34. is_registered usage
 ...
 /**/
 if (is_method("REGISTER")) {
@@ -1089,7 +1159,7 @@ if (is_registered("location",$fu)) {
 }
 ...
 
-1.4.5.  is_contact_registered(domain ,[AOR],[contact],[callid])
+1.4.6.  is_contact_registered(domain ,[AOR],[contact],[callid])
 
    The function returns true if a contact and/or a callid from a
    certain AOR is registered, false otherwise. The function does
@@ -1114,7 +1184,7 @@ if (is_registered("location",$fu)) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.33. is_contact_registered usage
+   Example 1.35. is_contact_registered usage
 ...
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
@@ -1131,14 +1201,14 @@ if(is_method("INVITE")) {
 }
 ...
 
-1.4.6.  is_ip_registered(domain ,[AOR],IPvar)
+1.4.7.  is_ip_registered(domain ,[AOR],IPvar,[PORTvar])
 
    The function returns true if there is at least one contact that
-   has been registered from the IP in the IPvar variable. The IP
-   is matched against the received host, if it exists, or the
-   contact host otherwise. This function does not modify the
-   message being process. This function replaces the old
-   "is_other_contact" function.
+   has been registered from the IP in the IPvar variable ( and
+   from the optional PORTvar variable ). The IP is matched against
+   the received host, if it exists, or the contact host otherwise.
+   This function does not modify the message being process. This
+   function replaces the old "is_other_contact" function.
 
    Meaning of the parameters is as follows:
      * domain (static string) - Name of table that should be used
@@ -1150,11 +1220,16 @@ if(is_method("INVITE")) {
        against the contact host or the received host (see above).
        If the IPvar is an AVP containing multiple values/IPs, then
        all the values are checked.
+     * PORTvar (var, optional) - the variable containing the port
+       to be matched against the contact host or the received host
+       (see above). If the IPvar is an AVP containing multiple
+       values/IPs, then the PORTvar is expected to contain the
+       same number of entries, and all the values are checked.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.34. is_ip_registered usage
+   Example 1.36. is_ip_registered usage
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
@@ -1165,7 +1240,7 @@ if (is_method("REGISTER")) {
 };
 ...
 
-1.4.7.  add_sock_hdr(hdr_name)
+1.4.8.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    “hdr_name” which contains the description of the received
@@ -1178,7 +1253,7 @@ if (is_method("REGISTER")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.35. add_sock_hdr usage
+   Example 1.37. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
@@ -1211,7 +1286,7 @@ add_sock_hdr("Sock-Info");
        foreign PURR or offline contact)
      * -1 - Internal Error
 
-   Example 1.36. async pn_process_purr() usage
+   Example 1.38. async pn_process_purr() usage
 route {
         ...
         if (has_totag()) {
@@ -1376,28 +1451,28 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 182 110 2781 2990
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 167 113 2382 2031
-   3. Jan Janak (@janakj) 120 73 3465 1102
+   1. Liviu Chircu (@liviuchircu) 194 120 2851 3019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 170 115 2410 2047
+   3. Jan Janak (@janakj) 121 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
-   5. Razvan Crainea (@razvancrainea) 19 14 265 73
-   6. Vlad Paiu (@vladpaiu) 16 10 489 81
-   7. Ionut Ionita (@ionutrazvanionita) 16 4 763 248
-   8. Jiri Kuthan (@jiriatipteldotorg) 15 9 538 45
-   9. Andreas Granig 13 7 527 36
-   10. Vlad Patrascu (@rvlad-patrascu) 13 4 163 373
+   5. Vlad Paiu (@vladpaiu) 21 12 729 96
+   6. Vlad Patrascu (@rvlad-patrascu) 21 9 243 497
+   7. Razvan Crainea (@razvancrainea) 20 15 267 75
+   8. Ionut Ionita (@ionutrazvanionita) 16 4 763 248
+   9. Jiri Kuthan (@jiriatipteldotorg) 15 9 538 45
+   10. Andreas Granig 13 7 527 36
 
    All remaining contributors: Henning Westerholt (@henningw),
-   Andrei Pelinescu-Onciul, Ovidiu Sas (@ovidiusas), Juha Heinanen
-   (@juha-h), Maksym Sobolyev (@sobomax), Nick Altmann (@nikbyte),
+   Maksym Sobolyev (@sobomax), Andrei Pelinescu-Onciul, Ovidiu Sas
+   (@ovidiusas), Juha Heinanen (@juha-h), Nick Altmann (@nikbyte),
    Ancuta Onofrei, Elena-Ramona Modroiu, Peter Lemenkov
    (@lemenkov), Dan Pascu (@danpascu), Sergio Gutierrez, Carsten
-   Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus Hunger,
-   Julián Moreno Patiño, Phil D'Amore, Klaus Darilion, Irina-Maria
-   Stanescu, Dmitry Semyonov, Konstantin Bokarius, Jesus
-   Rodrigues, Dusan Klinec (@ph4r05), Ruslan Bukin, Saúl Ibarra
-   Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
-   Schubert.
+   Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Dudu Ben Moshe,
+   Marcus Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus
+   Darilion, Irina-Maria Stanescu, Dmitry Semyonov, Konstantin
+   Bokarius, Jesus Rodrigues, Dusan Klinec (@ph4r05), Ruslan
+   Bukin, Saúl Ibarra Corretgé (@saghul), @jalung, Tolga Tarhan,
+   Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1419,28 +1494,28 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2021
-   2.  Maksym Sobolyev (@sobomax)          Jul 2004 - Oct 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jul 2020
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   5.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  @jalung                             Aug 2017 - Aug 2017
-   8.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
-   9.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Apr 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2024
+   3.  Dudu Ben Moshe                      Feb 2024 - Feb 2024
+   4.  Maksym Sobolyev (@sobomax)          Jul 2004 - Nov 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   6.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2023
+   7.  Vlad Paiu (@vladpaiu)               Sep 2011 - Nov 2022
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   9.  @jalung                             Aug 2017 - Aug 2017
+   10. Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
 
-   All remaining contributors: Dusan Klinec (@ph4r05), Nick
-   Altmann (@nikbyte), Vlad Paiu (@vladpaiu), Tolga Tarhan, Saúl
-   Ibarra Corretgé (@saghul), Ruslan Bukin, Irina-Maria Stanescu,
-   Kobi Eshun (@ekobi), Phil D'Amore, Sergio Gutierrez, Klaus
-   Darilion, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jesus Rodrigues, Dan Pascu (@danpascu), Ancuta Onofrei, Marcus
-   Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Jeffrey
-   Magder, Carsten Bock, Andreas Granig, Dmitry Semyonov, Jan
-   Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
-   (@jiriatipteldotorg).
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Dusan Klinec (@ph4r05), Nick Altmann
+   (@nikbyte), Tolga Tarhan, Saúl Ibarra Corretgé (@saghul),
+   Ruslan Bukin, Irina-Maria Stanescu, Kobi Eshun (@ekobi), Phil
+   D'Amore, Sergio Gutierrez, Klaus Darilion, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Dan Pascu
+   (@danpascu), Ancuta Onofrei, Marcus Hunger, Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Jeffrey Magder, Carsten Bock,
+   Andreas Granig, Dmitry Semyonov, Jan Janak (@janakj), Andrei
+   Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1449,16 +1524,17 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Ionut
-   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
-   (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),
-   Irina-Maria Stanescu, Kobi Eshun (@ekobi), Sergio Gutierrez,
-   Klaus Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Marcus
-   Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Carsten
-   Bock, Andreas Granig, Jan Janak (@janakj).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Dudu Ben Moshe, Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
+   (@nikbyte), Ovidiu Sas (@ovidiusas), Irina-Maria Stanescu, Kobi
+   Eshun (@ekobi), Sergio Gutierrez, Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Carsten Bock, Andreas Granig,
+   Jan Janak (@janakj).
 
    Documentation Copyrights:
 

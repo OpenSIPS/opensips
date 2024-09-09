@@ -35,6 +35,8 @@
 
 #define refe_CASE     \
 	p += 4;           \
+	if (!HAVE(4))     \
+		goto other;   \
 	val = READ(p);    \
 	r_to_CASE;        \
 	goto other;

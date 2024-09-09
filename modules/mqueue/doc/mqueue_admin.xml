@@ -1,0 +1,338 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		The mqueue module offers a generic message queue system in shared
+		memory for inter-process communication using the config file.
+		One example of usage is to send time consuming operations to one or
+		several timer processes that consumes items in the queue, without
+		affecting SIP message handling in the socket-listening process.
+	</para>
+	<para>
+		There can be many defined queues. Access to queued values is done via
+		pseudo variables.
+	</para>
+	</section>
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para><emphasis>None</emphasis>.</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para><emphasis>None</emphasis>.</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (str)</title>
+		<para>
+		The <acronym>URL</acronym> to connect to database for loading values
+		in mqueue table at start up and/or saving values at shutdown.
+		</para>
+		<para>
+		<emphasis>Default value is NULL (do not connect).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mqueue", "db_url", "&defaultdb;")
+
+# Example of table in sqlite,
+# you have the set the fields to support the length according
+# to the data that will be present in the mqueue
+CREATE TABLE mqueue_name (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+key character varying(64) DEFAULT "" NOT NULL,
+val character varying(4096) DEFAULT "" NOT NULL
+);
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_mqueue" xreflabel="mqueue">
+		<title><varname>mqueue</varname> (string)</title>
+		<para>Definition of a memory queue</para>
+		<para>
+		<emphasis>
+			Default value is <quote>none</quote>.
+		</emphasis>
+		</para>
+		<para>
+		Value must be a list of parameters: attr=value;...
+		<itemizedlist>
+		<listitem>
+			<para>Mandatory attributes:</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>name</emphasis>: name of the queue.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Optional attributes:</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>size</emphasis>: size of the queue.
+				Specifies the maximum number of items in queue.
+				If exceeded the oldest one is removed.
+				If not set the queue will be limitless.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>dbmode</emphasis>: If set to 1, the content of the
+				queue is written to database table when the SIP server is
+				stopped (i.e., ensure persistency over restarts).
+				If set to 2, it is written at shutdown but not read at startup.
+				If set to 3, it is read at sartup but not written at shutdown.
+				Default value is 0 (no db table interaction).
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>addmode</emphasis>: how to add new (key,value) pairs.
+					<itemizedlist>
+					<listitem>
+						<para>
+						<emphasis>0</emphasis>:
+						Will push all new (key,value) pairs at the end of
+						the queue. (default)
+						</para>
+					</listitem>
+					<listitem>
+						<para>
+						<emphasis>1</emphasis>:
+						Will keep oldest (key,value) pair in the queue,
+						based on the key.
+						</para>
+					</listitem>
+					<listitem>
+						<para>
+						<emphasis>2</emphasis>:
+						Will keep newest (key,value) pair in the queue,
+						based on the key.
+						</para>
+					</listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		The parameter can be set many times, each holding the
+		definition of one queue.
+		</para>
+		<example>
+		<title>Set <varname>mqueue</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mqueue", "mqueue", "name=myq;size=20;")
+modparam("mqueue", "mqueue", "name=myq;size=10000;addmode=2")
+modparam("mqueue", "mqueue", "name=qaz")
+modparam("mqueue", "mqueue", "name=qaz;addmode=1")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+ 	<section id="func_mq_add" xreflabel="mq_add">
+		<title>
+		<function moreinfo="none">mq_add(queue, key, value)</function>
+		</title>
+		<para>
+		Add a new item (key, value) in the queue. If max size of queue is
+		exceeded, the oldest one is removed.
+		</para>
+		<example>
+		<title><function>mq_add</function> usage</title>
+		<programlisting format="linespecific">
+...
+mq_add("myq", "$rU", "call from $fU");
+...
+</programlisting>
+		</example>
+	</section>
+
+ 	<section id="func_mq_fetch" xreflabel="mq_fetch">
+		<title>
+		<function moreinfo="none">mq_fetch(queue)</function>
+		</title>
+		<para>
+		Take oldest item from queue and fill $mqk(queue) and
+		$mqv(queue) pseudo variables.
+		</para>
+		<para>
+		Return: true on success (1); false on failure (-1) or
+		no item fetched (-2).
+		</para>
+		<example>
+		<title><function>mq_fetch</function> usage</title>
+		<programlisting format="linespecific">
+...
+while(mq_fetch("myq"))
+{
+	xlog("$mqk(myq) - $mqv(myq)\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+ 	<section id="func_mq_pv_free" xreflabel="mq_pv_free">
+		<title>
+		<function moreinfo="none">mq_pv_free(queue)</function>
+		</title>
+		<para>
+		Free the item fetched in pseudo-variables. It is optional,
+		a new fetch frees the previous values.
+		</para>
+		<example>
+		<title><function>mq_pv_free</function> usage</title>
+		<programlisting format="linespecific">
+...
+mq_pv_free("myq");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_mq_size" xreflabel="mq_size">
+		<title>
+		<function moreinfo="none">mq_size(queue)</function>
+		</title>
+		<para>
+		Returns the current number of elements in the mqueue.
+		</para>
+		<para>
+		If the mqueue is empty, the function returns -1. If the
+		mqueue is not found, the function returns -2.
+		</para>
+		<example>
+		<title><function>mq_size</function> usage</title>
+		<programlisting format="linespecific">
+...
+$var(q_size) = mq_size("queue");
+xlog("L_INFO", "Size of queue is: $var(q_size)\n");
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+	<section id="mi_mq_get_size" xreflabel="mq_get_size">
+		<title>mq_get_size</title>
+		<para>Get the size of a memory queue.</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<emphasis>name</emphasis> - the name of memory queue
+			</listitem>
+		</itemizedlist>
+		<example>
+		<title><function>mq_get_size</function> usage</title>
+		<programlisting format="linespecific">
+...
+opensips-cli -x mq_get_size xyz
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="mi_mq_fetch" xreflabel="mq_fetch">
+		<title>mq_fetch</title>
+		<para>Fetch a key-value pair from a memory queue.</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<emphasis>name</emphasis> - the name of memory queue
+			</listitem>
+		</itemizedlist>
+		<example>
+		<title><function>mq_fetch</function> usage</title>
+		<programlisting format="linespecific">
+...
+opensips-cli -x mq_fetch xyz
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="mi_mq_get_sizes" xreflabel="mq_get_sizes">
+		<title>mq_get_sizes</title>
+		<para>Get the size for all memory queues.</para>
+		<para>Parameters: none</para>
+		<example>
+		<title><function>mq_get_sizes</function> usage</title>
+		<programlisting format="linespecific">
+...
+opensips-cli -x mq_get_sizes
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+		<section id="pv_mqk" xreflabel="$mqk">
+			<title><varname>$mqk(mqueue)</varname></title>
+			<para>
+			The variable is read-only and returns the most recent item key
+			fetched from the specified mqueue.
+			</para>
+		</section>
+		<section id="pv_mqv" xreflabel="$mqv">
+			<title><varname>$mqv(mqueue)</varname></title>
+			<para>
+			The variable is read-only and returns the most recent item value
+			fetched from the specified mqueue.
+			</para>
+		</section>
+		<section id="pv_mq_size" xreflabel="$mq_size">
+			<title><varname>$mq_size(mqueue)</varname></title>
+			<para>
+			The variable is read-only and returns the size of the specified
+			mqueue.
+			</para>
+		</section>
+	</section>
+
+</chapter>

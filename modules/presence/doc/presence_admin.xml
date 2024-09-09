@@ -264,6 +264,44 @@ modparam("presence", "cluster_pres_events" ,"presence, dialog;sla, message-summa
 		</example>
 	</section>
 
+	<section id="param_cluster_be_active_shtag" xreflabel="cluster_be_active_shtag">
+		<title><varname>cluster_be_active_shtag</varname> (str)</title>
+		<para>
+		The name of a cluster sharing tag to be used to indicate when this
+		node (as part of the cluster) should be active or not. If the sharing
+		tag is off (or as backup), the node will become inactive from 
+		clustering perspective, meaning not sending and not accepting any
+		presence related cluster traffic.
+		</para>
+		<para>
+		This ability of a node to become inactive may be used when creating a
+		federated cluster where 2 nodes are acting as a local active-backup 
+		setup (for local High Availability purposes).
+		</para>
+		<para>
+		This parameter has meaning only in clustering mode. If not defined, the
+		node will be active all the time.
+		</para>
+		<para>
+		For more on presence clustering see the 
+		<xref linkend="presence_clustering"/> chapter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>empty</quote> (not tag define).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_be_active_shtag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "cluster_be_active_shtag" ,"local_ha")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 	<section id="param_expires_offset" xreflabel="expires_offset">
 		<title><varname>expires_offset</varname> (int)</title>
 		<para>
@@ -989,6 +1027,9 @@ opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
 			</para></listitem>
 			<listitem><para>
 				<emphasis>etag</emphasis> - the entity tag
+			</para></listitem>
+			<listitem><para>
+				<emphasis>old_etag</emphasis> - the entity tag to be refreshed
 			</para></listitem>
 			<listitem><para>
 				<emphasis>body</emphasis> - the body of the

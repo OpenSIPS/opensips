@@ -1,5 +1,7 @@
-[![Build Status@GitHub](https://github.com/OpenSIPS/opensips/workflows/Main%20CI/badge.svg?branch=master)](https://github.com/OpenSIPS/opensips/actions?query=branch%3Amaster++)
-[![Build Status@TravisCI](https://travis-ci.com/OpenSIPS/opensips.svg?branch=master)](https://travis-ci.org/OpenSIPS/opensips)
+[![Build Status](https://github.com/OpenSIPS/opensips/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/OpenSIPS/opensips/actions/workflows/main.yml?query=branch%3Amaster++)
+[![Unit Tests](https://github.com/OpenSIPS/opensips/actions/workflows/unittests.yml/badge.svg?branch=master)](https://github.com/OpenSIPS/opensips/actions/workflows/unittests.yml?query=branch%3Amaster++)
+[![OSS-Fuzz](https://github.com/OpenSIPS/opensips/actions/workflows/cifuzz.yml/badge.svg?branch=master)](https://github.com/OpenSIPS/opensips/actions/workflows/cifuzz.yml?query=branch%3Amaster++)
+[![Cross Platform Builds](https://github.com/OpenSIPS/opensips/actions/workflows/multiarch.yml/badge.svg?branch=master)](https://github.com/OpenSIPS/opensips/actions/workflows/multiarch.yml?query=branch%3Amaster++)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/7580/badge.svg)](https://scan.coverity.com/projects/opensips-opensips)
 [![Code Quality: Cpp](https://img.shields.io/lgtm/grade/cpp/g/OpenSIPS/opensips.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/OpenSIPS/opensips/context:cpp)
 [![Total Alerts](https://img.shields.io/lgtm/alerts/g/OpenSIPS/opensips.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/OpenSIPS/opensips/alerts)
@@ -27,7 +29,8 @@ file.
 
 For current developers/contributors of this project, see the [CREDITS](CREDITS) and
 [AUTHORS](AUTHORS) file. For complete license information, please see the [COPYING](COPYING) file.
-For a quick overview of OpenSIPS modules, please see the [README-MODULES](README-MODULES) file.
+For an overview of OpenSIPS modules, a [modules listing](https://www.opensips.org/Documentation/Modules)
+is available on the opensips.org website.
 
 
 ## Docs

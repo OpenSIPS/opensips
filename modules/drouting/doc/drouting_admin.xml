@@ -196,10 +196,13 @@
 	<listitem><para>list of gateways with/without weights (string)
 	(Ex:<quote>gw1=10,gw4=10</quote> or <quote>gw1,gw2</quote>
 	</para></listitem>
-	<listitem><para>flags : 0x1 - use weight for sorting the list and
-	not definition order; 0x2 - use only the first gateway from the carrier
-	(depending on the sorting); 0x4 - disable the usage of this
+	<listitem><para>flags : 0x1 - use only the first gateway from the carrier
+	(depending on the sorting); 0x2 - disable the usage of this
 	carrier</para></listitem>
+	<listitem><para>sort algorithm : how the list of the gateways should be
+	sorted before being used, NULL - use the DB given order, W - do weight
+	based re-ordering, Q - do quality based sorting (requires the qrouting 
+	module)</para></listitem>
 	<listitem><para>attributes (not used by DR engine, but only pushed
 	to script level when routing to this carrier)</para></listitem>
 	</itemizedlist>
@@ -259,15 +262,18 @@
 	<listitem><para>
 	A date-time expression that defines the time recurrence to be matched for
 	current rule. Time recurrences are based closely on the recurring time
-	intervals from the Internet Calendaring and Scheduling
-	Core Object Specification (calendar COS), RFC 2445. The set of attributes
-	used in routing rule specification is a subset of time recurrence attributes.
+	intervals from the Internet Calendaring and Scheduling Core Object
+	Specification (calendar COS), RFC 2445. The set of attributes used in
+	a routing rule specification is a subset of time recurrence attributes.
 	</para></listitem>
 	<listitem><para>
-	The value stored in database has the format of:
+	The value stored in database has the basic format of:
 	<![CDATA[
-	<dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
+	<timezone>|<dtstart>|<dtend>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
 	]]>
+	, identical to the input of the <ulink url='cfgutils#func_check_time_rec'>check_time_rec()</ulink>
+	function of the <emphasis>cfgutils</emphasis> module, including the optional
+	use of logical operators linking multiple such strings into a larger expression.
 	</para></listitem>
 	<listitem><para>
 	When an attribute is not specified, the corresponding place must be left
@@ -690,29 +696,6 @@ modparam("drouting", "gw_sock_avp", '$avp(77)')
 		</example>
 	</section>
 
-			<section id="param_rule_attrs_avp" xreflabel="rule_attrs_avp">
-		<title><varname>rule_attrs_avp</varname> (str)</title>
-		<para>
-		The name of the avp for storing rule attrs in case they are requested at least
-		once in the script.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>$avp(___dr_ru_att__)</quote> if <varname>use_partitions</varname> parameter is 0
-		or <quote>$avp(___dr_ru_att__partition_name)</quote> where partition_name is the name of the partition
-		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>rule_attrs_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "rule_attrs_avp", '$avp(dr_rule_attr)')
-modparam("drouting", "rule_attrs_avp", '$avp(11)')
-...
-	</programlisting>
-		</example>
-	</section>
-
 	<section id="param_define_blacklist" xreflabel="define_blacklist">
 		<title><varname>define_blacklist</varname> (str)</title>
 		<para>
@@ -948,6 +931,65 @@ modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 		</example>
 	</section>
 
+	<section id="param_gw_socket_filter_mode" xreflabel="gw_socket_filter_mode">
+		<title><varname>gw_socket_filter_mode</varname> (string)</title>
+		<para>
+		This parameter controls the gateway filtering during DB loading, or which
+		gateways are loaded or not into memory depending on the configured
+		socket they have.
+		</para>
+		<para>
+		The supported filtering modes are:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"all"</emphasis> - all the gateways
+			defined in DB are loaded into memory, disregarding what socket
+			value they have. NOTE: for the gw sockets not matching any OpenSIPS
+			listeners/sockets, the GW will be loaded with NULL/no socket.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"ignore"</emphasis> - all the gateways
+			defined in DB are loaded into memory, but ignoring the socket
+			value they have (the socket will be set to NULL/NONE with no 
+			attempt to check it against the OpenSIPS listeners/sockets).
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"matched-only"</emphasis> - in this mode
+			the module will load from DB only the gateways that have a
+			configured a socket matching any of the  the OpenSIPS
+			listeners/sockets. If the gateways socket does not match, it will
+			be discards, not loaded into memory at all.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is <quote>"all"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gw_socket_filter_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# multiple OpenSIPS instances sharing a DR setting, so each should
+# load only the GWs they have sockets for.
+modparam("drouting", "gw_socket_filter_mode", "matched-only")
+...
+# an OpenSIPs instance not doing routing, but needing to be
+# aware of all the gws, so load them all ignoring the sockets
+modparam("drouting", "gw_socket_filter_mode", "ignore")
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section id="param_cluster_id" xreflabel="cluster_id">
 		<title><varname>cluster_id</varname> (integer)</title>
 		<para>
@@ -994,7 +1036,8 @@ modparam("drouting", "cluster_id", 9)
 		<para>
 		The name of the sharing tag (as defined per clusterer modules) to 
 		control which node is responsible for perform the self-triggered
-		actions in the module. Such actions may be the gateway probing or 
+		actions in the module. Such actions may be the gateway probing (see
+		also the <xref linkend="param_cluster_probing_mode"/> parameter)  or
 		sharing the gateway/carrier status changes.
 		If defined, only the node with active status of this tag will 
 		perform the actions (pinging and sharing status).
@@ -1005,7 +1048,7 @@ modparam("drouting", "cluster_id", 9)
 		</para>
 		<para>
 		This is an optional parameter. If not set, all the nodes in the cluster
-		will individually do the probing and share the status changes.
+		will share the status changes.
 		</para>
 		<para>
 		<emphasis>
@@ -1020,6 +1063,72 @@ modparam("drouting", "cluster_id", 9)
 # and broadcast the status changes
 modparam("drouting", "cluster_id", 9)
 modparam("drouting", "cluster_sharing_tag", "vip")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cluster_probing_mode" xreflabel="cluster_probing_mode">
+		<title><varname>cluster_probing_mode</varname> (string)</title>
+		<para>
+		This paramter controls how the probing/pinging should be done when
+		using the clustering support. It is about which node in the cluster
+		pings which gateway/destination.
+		</para>
+		<para>
+		The <xref linkend="param_cluster_id"/> must be defined for this option
+		to work.
+		</para>
+		<para>
+		The supported probing modes are:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"all"</emphasis> - all the nodes in the
+			cluster will independetly ping all the defined gateways,
+			an "all" pings "all" mode.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"by-shtag"</emphasis> - all the gateways
+			are pinged by only one node in the cluster, the node having the
+			<xref linkend="param_cluster_sharing_tag"/> active. By 
+			activating the sharing tag on a different node, the pinging
+			duty will be transfered to another node in the cluster.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"distributed"</emphasis> - the pinging
+			effort is distributed across all the nodes in the cluster, so each
+			node will ping a sub-set of the overall set of gateway. Still all
+			the gateways will get pinged (and only once per pinging cycle).
+			The re-partitioning of the pinging effort over the available nodes
+			in the cluster is automatically done when new nodes are joining or
+			nodes are dropping out. Still there is no guaratee on which node
+			will be responsible for pinging which gateway.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is <quote>"all"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_probing_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# only the node with the active "vip" sharing tag will perform pinging
+modparam("drouting", "cluster_id", 9)
+modparam("drouting", "cluster_sharing_tag", "vip")
+modparam("drouting", "cluster_probing_mode", "by-shtag")
+...
+# the pinging effort is distributed across all the nodes
+modparam("drouting", "cluster_id", 9)
+modparam("drouting", "cluster_probing_mode", "distributed")
 ...
 </programlisting>
 		</example>
@@ -1128,7 +1237,7 @@ modparam("drouting", "use_partitions", 1)
 	</section>
 
 <section id="param_db_partitions_url" xreflabel="db_partitions_url">
-		<title><varname>db_partitions_url</varname> (int)</title>
+		<title><varname>db_partitions_url</varname> (str)</title>
 		<para>
 		The url to the database containing partition-specific
 		information. (partition-specific information includes
@@ -1153,7 +1262,7 @@ modparam("drouting", "db_partitions_url", "mysql://user:password@localhost/opens
 	</section>
 
 	<section id="param_db_partitions_table" xreflabel="db_partitions_table">
-		<title><varname>db_partitions_table</varname> (int)</title>
+		<title><varname>db_partitions_table</varname> (str)</title>
 		<para>
 		The name of the table containing partition definitions. To be
 		used with <varname>use_partitions</varname> and <varname>db_partitions_url</varname>.
@@ -1198,7 +1307,7 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 	</section>
 
 	<section id="param_enable_restart_persistency" xreflabel="enable_restart_persistency">
-		<title><varname>enable_restart_persistency</varname> (pvar)</title>
+		<title><varname>enable_restart_persistency</varname> (int)</title>
 		<para>
 			Parameter set to enable restart persistency for the Dynamic Routing module.
 			When this parameter is set, the drouting module no longer loads the data
@@ -1227,7 +1336,7 @@ modparam("drouting", "enable_restart_persistency", yes)
 	</section>
 
 	<section id="param_extra_prefix_chars" xreflabel="extra_prefix_chars">
-		<title><varname>extra_prefix_chars</varname> (srt)</title>
+		<title><varname>extra_prefix_chars</varname> (str)</title>
 		<para>
 			List of ASCII (0-127) characters to be additionally accepted in
 			the prefixes. By default only '0' - '9' chars (digits) are
@@ -1247,7 +1356,76 @@ modparam("drouting", "extra_prefix_chars", "#-%")
 		</example>
 	</section>
 
+	<section id="param_extra_id_chars" xreflabel="extra_id_chars">
+		<title><varname>extra_id_chars</varname> (str)</title>
+		<para>
+			A set of extra characters to be allowed in both Gateway and Carrier
+			unique string identifiers, on top of alphanumeric characters.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>_-.</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>extra_id_chars</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "extra_id_chars", ":_-.")
+...
+</programlisting>
+		</example>
+	</section>
 
+	<section id="param_rule_tables_query" xreflabel="rule_tables_query">
+		<title><varname>rule_tables_query</varname> (str)</title>
+		<para>
+			This parameter offers a dynamic, SQL-based way of building a set of
+			<emphasis>dr_rules</emphasis>-compatible table names, to be
+			each loaded and then merged into a single "dr_rules" table,
+			for any given partition.
+		</para>
+		<para>
+			The syntax of the parameter is:
+			"<emphasis role='bold'>token</emphasis> : <emphasis role='bold'>query</emphasis>",
+			where <emphasis role='bold'>token</emphasis> is a special name
+			given to a "dr_rules" table, so OpenSIPS can match it against
+			the custom queries defined using this parameter.
+		</para>
+		<para>
+			This parameter may be set multiple times (each definition creates
+			a new mapping).
+		</para>
+		<example>
+		<title>Set the <varname>rule_tables_query</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# first, set the "dr_rules" table name to the name of your query
+modparam("drouting", "drr_table", "MY_RULES_QUERY")
+
+# next, instruct drouting to load both 'dr_rules_a' and 'dr_rules_b',
+# then merge all of their rules
+modparam("drouting", "rule_tables_query", "
+	MY_RULES_QUERY:
+		SELECT 'dr_rules_a' UNION SELECT 'dr_rules_b'")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_generate_data_checksum" xreflabel="generate_data_checksum">
+		<title><varname>generate_data_checksum</varname> (int)</title>
+		<para>
+			If enabled, it will generate a checksum ( MD5 ) for drouting loaded data, attach that to the reload_status MI command output and to the reload generated status reports
+		</para>
+		<example>
+		<title>Set the <varname>generate_data_checksum</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "generate_data_checksum", 1)
+...
+		</programlisting>
+		</example>
+	</section>
 
 </section>
 
@@ -1262,8 +1440,7 @@ modparam("drouting", "extra_prefix_chars", "#-%")
 		rules in the database table and the configured parameters.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+		This function can be used from all routes.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> to 1 the 
@@ -1311,20 +1488,6 @@ modparam("drouting", "extra_prefix_chars", "#-%")
 				<emphasis role='bold'>C</emphasis> - Only check if the dialed
 				number matches any routing rule, without loading / applying any
 				routing info (no GW is set, the RURI is not altered)
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-				<emphasis role='bold'>W (deprecated)</emphasis> - Instead of using the
-				destination (from the rule definition) in the given order,
-				sort them based on their weight.
-				</para>
-				<para>
-					<emphasis>This flag is deprecated in 3.1+.  The new
-						approach is to set a <emphasis role='bold'>"W"</emphasis>
-						value as the "sort_alg" column of the dr_rules or dr_carriers
-						tables.  See the <ulink url='https://www.opensips.org/Documentation/Install-DBSchema-3-2'>Dynamic Routing DB schema</ulink>
-						for more details.</emphasis>
 				</para>
 			</listitem>
 			</itemizedlist>
@@ -1414,8 +1577,7 @@ do_routing(2, "F", , , $var(gw_attributes));
 		policy).
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+		This function can be used from all routes.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 
@@ -1491,15 +1653,14 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
 
 	<section id="func_route_to_gw" xreflabel="route_to_gw()">
 		<title>
-		<function moreinfo="none">route_to_gw(gw_id, [gw_attrs_var], [partition])</function>
+		<function moreinfo="none">route_to_gw(gw_id, [gw_attrs_var], [carrier_attrs_var], [partition])</function>
 		</title>
 		<para>
 		Function to trigger the direct routing to a given gateway (or list of
 		gateways). Attributes and per-gw processing will be available.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+		This function can be used from all routes.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 
@@ -1519,6 +1680,14 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
 					<emphasis role='bold'>gw_attrs_pvar</emphasis>  (var, optional)
 					- an output writable variable which will be populated
 					with the attributes of the currently matched gateway.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (var, 
+					optional) - an output writable variable which will be 
+					populated with the attributes of this carrier. NOTE: the
+					first carrier pointing to the GW(s) will be considered!
 					</para>
 				</listitem>
 				<listitem>
@@ -1551,13 +1720,13 @@ if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs)) ) {
 }
 ...
 # use_partitions is enabled
-if ( route_to_gw("gw_europe", , "my_partition") ) {
+if ( route_to_gw("gw_europe", , , "my_partition") ) {
 	t_relay();
 	exit;
 }
 ...
 # use_partitions is enabled
-if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), "my_partition") ) {
+if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), , "my_partition") ) {
 	xlog("Relaying to first gateway from our list - $var(gw_attrs)\n");
 	t_relay();
 	exit;
@@ -1663,7 +1832,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 
 	<section id="func_goes_to_gw" xreflabel="goes_to_gw()">
 		<title>
-		<function moreinfo="none">goes_to_gw( [type], [flags], [gw_attrs_pvar], [partition])</function>
+		<function moreinfo="none">goes_to_gw( [type], [flags], [gw_attrs_pvar], [carrier_attrs_pvar], [partition])</function>
 		</title>
 		<para>
 		Function returns true if the destination of the current request
@@ -1675,7 +1844,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+		BRANCH_ROUTE, ONREPLY_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 
@@ -1690,7 +1859,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 				<para>
 				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
+				parameter or specifying the special value <emphasis>-1</emphasis>, matching will 
 				be done against all types. 
 				</para>
 			</listitem>
@@ -1742,6 +1911,13 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 			</listitem>
 			<listitem>
 				<para>
+				<emphasis role='bold'>carrier_attrs_pvar</emphasis> (var, optional) - an 
+				output writable variable which will be populated with
+				the attributes of the matched carrier.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
 				<emphasis role='bold'>partition</emphasis> (string, optional) - 
 				the name of the DR partition to be used. This parameter is
 				to be defined ONLY if the "use_partition" module parameter
@@ -1761,7 +1937,7 @@ if (goes_to_gw( 1, , $var(gw_attrs))) {
 }
 ...
 # use_partitions is enabledt
-if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
+if (goes_to_gw(1, , $var(gw_attrs), , "my_partition")) {
 	sl_send_reply(403,"Forbidden");
 	exit;
 }
@@ -1772,7 +1948,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 
 	<section id="func_is_from_gw" xreflabel="is_from_gw()">
 		<title>
-		<function moreinfo="none">is_from_gw([type], [flag], [gw_attrs_pvar], [partition])</function>
+		<function moreinfo="none">is_from_gw([type], [flags], [gw_attrs_pvar], [carrier_attrs_pvar],  [partition])</function>
 		</title>
 		<para>
 		The function checks if the sender of the message (source IP + source
@@ -1798,7 +1974,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 				<para>
 				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
+				parameter or specifying the special value <emphasis>-1</emphasis>, matching will 
 				be done against all types. 
 				</para>
 			</listitem>
@@ -1831,13 +2007,18 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 						<para>
 						<emphasis role='bold'>'n'</emphasis> (Ignore port) -
 						ignores port number during matching
-							</para>
-						</listitem>
-						<listitem>
-						<para>
-						<emphasis role='bold'>'c'</emphasis> (Carrier ID) - 
-						return the carrier id into carrier_id_avp AVP
 						</para>
+					</listitem>
+					<listitem>
+						<para>
+						<emphasis role='bold'>'r'</emphasis> (Check protocol) - check protocol
+						</para>
+					</listitem>
+					<listitem>
+					<para>
+					<emphasis role='bold'>'c'</emphasis> (Carrier ID) - 
+					return the carrier id into carrier_id_avp AVP
+					</para>
 					</listitem>
 				</itemizedlist>
 			</listitem>
@@ -1846,6 +2027,13 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 				<emphasis role='bold'>gw_attrs_pvar</emphasis> (var, optional) - an 
 				output writable variable which will be populated with
 				the attributes of the matched gateway.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>carrier_attrs_pvar</emphasis> (var, optional) - an 
+				output writable variable which will be populated with
+				the attributes of the matched carrier.
 				</para>
 			</listitem>
 			<listitem>
@@ -1863,14 +2051,14 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 		<programlisting format="linespecific">
 # use_partitions is not set
 # match the source IP (only) against all gateways
-if (is_from_gw(3, "n")) {
+if (is_from_gw(-1, "n")) {
 	...
 }
 
 # use_partitions is enabled
-# match the source IP and port against all gws from "outbound" partition and
-# return its carrier
-if (is_from_gw(3, "c", , "outbound")) {
+# match the source IP and port against all gateways from the "outbound"
+# partition and return the matched gateway's carrier
+if (is_from_gw(, "c", , , "outbound")) {
 	...
 }
 </programlisting>
@@ -1879,7 +2067,7 @@ if (is_from_gw(3, "c", , "outbound")) {
 
 	<section id="func_dr_is_gw" xreflabel="dr_is_gw()">
 		<title>
-		<function moreinfo="none">dr_is_gw( sip_uri, [type], [flag], [gw_attrs_pvar], [partition])</function>
+		<function moreinfo="none">dr_is_gw( sip_uri, [type], [flags], [gw_attrs_pvar], [carrier_attrs_pvar], [partition])</function>
 		</title>
 		<para>
 		The function checks if the SIP URI hostname part stored inside the
@@ -1889,8 +2077,7 @@ if (is_from_gw(3, "c", , "outbound")) {
 		This function does not change anything in the message.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+		This function can be used from all routes.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 
@@ -1912,7 +2099,7 @@ if (is_from_gw(3, "c", , "outbound")) {
 				<para>
 				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
+				parameter or specifying the special value <emphasis>-1</emphasis>, matching will 
 				be done against all types. 
 				</para>
 			</listitem>
@@ -1964,6 +2151,13 @@ if (is_from_gw(3, "c", , "outbound")) {
 			</listitem>
 			<listitem>
 				<para>
+				<emphasis role='bold'>carrier_attrs_pvar</emphasis> (var, optional) - an 
+				output writable variable which will be populated with
+				the attributes of the matched carrier.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
 				<emphasis role='bold'>partition</emphasis> (string, optional) - 
 				the name of the DR partition to be used. This parameter is
 				to be defined ONLY if the "use_partition" module parameter
@@ -1983,7 +2177,7 @@ if (dr_is_gw( $var(uac), , "n")) {
 
 # match the SIP URI host within $var(uac) against
 # all gws in "outbound" partition
-if (dr_is_gw( $avp(uac), , "n", , "partition")) {
+if (dr_is_gw( $avp(uac), , "n", , , "partition")) {
 	...
 }
 </programlisting>
@@ -2045,7 +2239,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 	<section id="func_dr_match" xreflabel="dr_match()">
 		<title>
-		<function moreinfo="none">dr_match([groupID], [flags], number, [rule_attrs_pvar], [partition])</function>
+		<function moreinfo="none">dr_match(groupID, [flags], number, [rule_attrs_pvar], [partition])</function>
 		</title>
 		<para>
 		The function tries to match/check the given number against the
@@ -2085,6 +2279,11 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 				</para>
 			</listitem>
 			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>number</emphasis> (string) - the number to check
+			</para>
 		</listitem>
 		<listitem>
 			<para>
@@ -2134,6 +2333,17 @@ if ( dr_match( 1, , $var(did) ) )
 			<listitem>
 				<para>
 					if <varname>use_partition</varname> is set to 0 - all routing rules will be reloaded.
+
+					<itemizedlist>
+						<listitem><para>
+							<emphasis>inherit_state</emphasis> (optional) : whether inherit old state of the gateway , default is y.
+							<itemizedlist>
+								<listitem><para> <quote>n</quote>: no inherit state </para></listitem>
+								<listitem><para> <quote>y</quote>: inherit state </para></listitem>
+							</itemizedlist>
+						</para></listitem>
+					</itemizedlist>
+					
 				</para>
 			</listitem>
 			<listitem>
@@ -2145,6 +2355,15 @@ if ( dr_match( 1, , $var(did) ) )
 							all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
 						</para></listitem>
 					</itemizedlist>
+
+					<listitem><para>
+							<emphasis>inherit_state</emphasis> (optional) : whether inherit old state of the gateway , default is y.
+							<itemizedlist>
+								<listitem><para> <quote>n</quote>: no inherit state </para></listitem>
+								<listitem><para> <quote>y</quote>: inherit state </para></listitem>
+							</itemizedlist>
+					</para></listitem>
+
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -2444,6 +2663,126 @@ Status:: 0
 </section>
 
 
+<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Exported Status/Report Identifiers</title>
+
+	<para>
+	The module provides the "drouting" Status/Report group, where each
+	routing partition is defined as a separate SR identifier.
+	</para>
+	<section id="sr_id_partition_name" xreflabel="partition_name">
+	<title><varname>[partition_name]</varname></title>
+	<para>
+	The status of these identifiers reflects the readiness/status of the 
+	cached data (if available or not when being loaded from DB):
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		<emphasis>-2</emphasis> - no data at all (initial status)
+		</para></listitem>
+		<listitem><para>
+		<emphasis>-1</emphasis> - no data, initial loading in progress
+		</para></listitem>
+		<listitem><para>
+		<emphasis>1</emphasis> - data loaded, partition ready
+		</para></listitem>
+		<listitem><para>
+		<emphasis>2</emphasis> - data available, a reload in progress
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	Reload reporting:
+	</para>
+	<para>
+	In terms of data reloading, the following logs will be reported:
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		starting DB data loading
+		</para></listitem>
+		<listitem><para>
+		DB data loading failed, discarding
+		</para></listitem>
+		<listitem><para>
+		DB data loading successfully completed
+		</para></listitem>
+		<listitem><para>
+		N gateways loaded (N discarded), N carriers loaded (N discarded), N rules loaded (N discarded)
+		</para></listitem>
+	</itemizedlist>
+	<programlisting  format="linespecific">
+    {
+        "Name": "Default",
+        "Reports": [
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "2 gateways loaded (0 discarded), 2 carriers loaded (0 discarded), 1 rules loaded (0 discarded)"
+            }
+        ]
+    }
+	</programlisting>
+	</section>
+
+	<section id="sr_id_events" xreflabel="events">
+	<title><varname>[partition_name];events</varname></title>
+	<para>
+	GW/Carrier switching reporting:
+	</para>
+	<para>
+	For reporting events related to the state changes of the
+	gateways and carriers, the module provides separate identifiers (still
+	one per partition).
+	Why separate ones? The reports on state changing may be verbose and there
+	is the risk of loose/discard important reports on reloads due to the high
+	number of logs on state changes;
+	</para>
+	<para>
+	So, each partition will provide the identified "partition_name;events" for
+	reporting state changes of gateways and carriers, along with the reason
+	of the change. This identifiers have a 200 records history before 
+	discarding the old ones.
+	</para>
+	<programlisting>
+    {
+        "Name": "Default;events",
+        "Reports": [
+            {
+                "Timestamp": 1652353976,
+                "Date": "Thu May 12 14:12:56 2022",
+                "Log": "GW &lt;gw1_1&gt;/127.0.1.1 switched to [inactive] due probing reply\n"
+            },
+            {
+                "Timestamp": 1652353976,
+                "Date": "Thu May 12 14:12:56 2022",
+                "Log": "GW &lt;gw2_1&gt;/127.0.1.2 switched to [inactive] due probing reply\n"
+            }
+        ]
+    }
+	</programlisting>
+	</section>
+
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>https://www.opensips.org/Documentation/Interface-StatusReport-3-3</ulink>.
+	</para>
+
+</section>
+
+
+
+
 <section>
 	<title>Installation</title>
 	<para>
@@ -2456,4 +2795,3 @@ Status:: 0
 </section>
 
 </chapter>
-

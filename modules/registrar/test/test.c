@@ -21,6 +21,7 @@
 #include <tap.h>
 
 #include "../../../dprint.h"
+#include "../../../dset.h"
 #include "../../../test/ut.h"
 #include "../../../parser/parse_methods.h"
 #include "../../../parser/msg_parser.h"
@@ -66,50 +67,84 @@ static void test_lookup(void)
 			         "mAq9Px0UY8YjVmo2LnmCocmFRBU0gPMV2ebheGGWCc");
 	str ct2 = str_init("sip:desk@127.0.0.2");
 	struct sip_msg msg;
+	struct lookup_flags flags;
+
+	memset(&flags, 0, sizeof flags);
 
 	ok(ul.register_udomain("location", &d) == 0, "get 'location' udomain");
 
 	mk_sip_req("INVITE", "sip:alice@localhost", &msg);
-	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_NO_RESULTS, "lookup-1");
+	ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_NO_RESULTS, "lookup-1");
 
 	ul.lock_udomain(d, &aor);
 	ok(ul.insert_urecord(d, &aor, &r, 0) == 0, "create AoR");
 
 	fill_ucontact_info(&ci);
 	ci.methods = METHOD_UNDEF;
-	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert Contact");
+	ok(ul.insert_ucontact(r, &ct2, &ci, NULL, 1, &c) == 0, "insert Contact");
 	ul.unlock_udomain(d, &aor);
 
-	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_OK, "lookup-2");
+	ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_OK, "lookup-2");
 
 	set_ruri(&msg, &aor_ruri);
-	ok(reg_lookup(&msg, d, _str("m"), NULL) == LOOKUP_METHOD_UNSUP, "lookup-3");
+	flags.flags = REG_LOOKUP_METHODFILTER_FLAG;
+	ok(reg_lookup(&msg, d, &flags, NULL) == LOOKUP_METHOD_UNSUP,
+		"lookup-3");
 
 	c->methods = ALL_METHODS;
 
 	set_ruri(&msg, &aor_ruri);
-	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_OK, "lookup-4");
+	ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_OK, "lookup-4");
 
 	set_ruri(&msg, &aor_ruri);
-	ok(reg_lookup(&msg, d, _str("m"), NULL) == LOOKUP_OK, "lookup-5");
+	ok(reg_lookup(&msg, d, &flags, NULL) == LOOKUP_OK,
+		"lookup-5");
 
-	ok(ul.delete_ucontact(r, c, 0) == 0, "delete ucontact");
+	ok(ul.delete_ucontact(r, c, NULL, 0) == 0, "delete ucontact");
 
 	fill_ucontact_info(&ci);
 	ci.flags |= FL_PN_ON; /* this is needed until we rewrite to call save() */
-	ok(ul.insert_ucontact(r, &ct1, &ci, &c, 0) == 0, "insert ct1 (PN)");
+	ok(ul.insert_ucontact(r, &ct1, &ci, NULL, 1, &c) == 0, "insert ct1 (PN)");
 
 	set_ruri(&msg, &aor_ruri);
-	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_PN_SENT, "lookup-6");
+	ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_PN_SENT, "lookup-6");
 
 	fill_ucontact_info(&ci);
-	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert ct2 (normal)");
+	ok(ul.insert_ucontact(r, &ct2, &ci, NULL, 1, &c) == 0, "insert ct2 (normal)");
 
 	set_ruri(&msg, &aor_ruri);
-	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_OK, "lookup-7");
+	ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_OK, "lookup-7");
 
 	/* the PN contact should just trigger a PN without becoming a branch */
 	ok(str_match(&msg.new_uri, &ct2), "lookup-7: R-URI is ct2");
+
+	/* test the "r" flag (branch lookup) */
+	{
+		str aor2 = str_init("bob"), aor3 = str_init("carol");
+
+		ul.lock_udomain(d, &aor2);
+		ok(ul.insert_urecord(d, &aor2, &r, 0) == 0, "create AoR 2");
+		ul.unlock_udomain(d, &aor2);
+
+		ul.lock_udomain(d, &aor3);
+		ok(ul.insert_urecord(d, &aor3, &r, 0) == 0, "create AoR 3");
+		fill_ucontact_info(&ci);
+		ci.methods = METHOD_UNDEF;
+		ok(ul.insert_ucontact(r, &ct2, &ci, NULL, 1, &c) == 0, "insert Contact for AoR 3");
+		ul.unlock_udomain(d, &aor3);
+
+		/* ensure the AoR expansion process doesn't stop on a non-existing AoR */
+		str ruri1 = str_init("sip:FOOBAR@foobar.com");
+		ok(append_branch(NULL, &ruri1, NULL, NULL, 1, 0, NULL) == 1, "append AoR-2");
+
+		str ruri2 = str_init("sip:carol@foobar.com");
+		ok(append_branch(NULL, &ruri2, NULL, NULL, 1, 0, NULL) == 1, "append AoR-3");
+
+		set_ruri(&msg, &aor_ruri);
+		flags.flags = REG_BRANCH_AOR_LOOKUP_FLAG;
+		ok(reg_lookup(&msg, d, &flags, NULL) == LOOKUP_OK, "lookup-8");
+		ok(get_nr_branches() == 1, "get-nr-branches");
+	}
 }
 
 

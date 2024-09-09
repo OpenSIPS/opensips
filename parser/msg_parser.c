@@ -44,6 +44,7 @@
 #include "../ut.h"
 #include "../error.h"
 #include "../dprint.h"
+#include "../data_lump.h"
 #include "../data_lump_rpl.h"
 #include "../mem/mem.h"
 #include "../error.h"
@@ -68,7 +69,7 @@ int via_cnt;
 
 /* returns pointer to next header line, and fill hdr_f ;
  * if at end of header returns pointer to the last crlf  (always buf)*/
-char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
+char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well_known_parse)
 {
 
 	char* tmp;
@@ -107,88 +108,172 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			/* keep number of vias parsed -- we want to report it in
 			   replies for diagnostic purposes */
 			via_cnt++;
-			vb=pkg_malloc(sizeof(struct via_body));
-			if (vb==0){
-				LM_ERR("out of pkg memory\n");
-				goto error;
+			if (sip_well_known_parse) {
+				vb=pkg_malloc(sizeof(struct via_body));
+				if (vb==0){
+					LM_ERR("out of pkg memory\n");
+					goto error;
+				}
+				memset(vb,0,sizeof(struct via_body));
+				hdr->body.s=tmp;
+				tmp=parse_via(tmp, end, vb);
+				if (vb->error==PARSE_ERROR){
+					LM_ERR("bad via\n");
+					free_via_list(vb);
+					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing Via");
+					set_err_reply(400, "bad Via header");
+					goto error;
+				}
+				hdr->parsed=vb;
+				vb->hdr.s=hdr->name.s;
+				vb->hdr.len=hdr->name.len;
+				hdr->body.len=tmp-hdr->body.s;
+			} else {
+				/* just skip over it */
+				hdr->body.s=tmp;
+				/* find end of header */
+				/* find lf */
+				do{
+					match=q_memchr(tmp, '\n', end-tmp);
+					if (match){
+						match++;
+					}else {
+						LM_ERR("bad body for <%.*s>(%d)\n",
+							 hdr->name.len, hdr->name.s, hdr->type);
+						tmp=end;
+						goto error_bad_hdr;
+					}
+					tmp=match;
+				}while( match<end &&( (*match==' ')||(*match=='\t') ) );
+				tmp=match;
+				hdr->body.len=match-hdr->body.s;
 			}
-			memset(vb,0,sizeof(struct via_body));
-			hdr->body.s=tmp;
-			tmp=parse_via(tmp, end, vb);
-			if (vb->error==PARSE_ERROR){
-				LM_ERR("bad via\n");
-				free_via_list(vb);
-				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-					"error parsing Via");
-				set_err_reply(400, "bad Via header");
-				goto error;
-			}
-			hdr->parsed=vb;
-			vb->hdr.s=hdr->name.s;
-			vb->hdr.len=hdr->name.len;
-			hdr->body.len=tmp-hdr->body.s;
 			break;
 		case HDR_CSEQ_T:
-			cseq_b=pkg_malloc(sizeof(struct cseq_body));
-			if (cseq_b==0){
-				LM_ERR("out of pkg memory\n");
-				goto error;
+			if (sip_well_known_parse) {
+				cseq_b=pkg_malloc(sizeof(struct cseq_body));
+				if (cseq_b==0){
+					LM_ERR("out of pkg memory\n");
+					goto error;
+				}
+				memset(cseq_b, 0, sizeof(struct cseq_body));
+				hdr->body.s=tmp;
+				tmp=parse_cseq(tmp, end, cseq_b);
+				if (cseq_b->error==PARSE_ERROR){
+					LM_ERR("bad cseq\n");
+					pkg_free(cseq_b);
+					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing CSeq`");
+					set_err_reply(400, "bad CSeq header");
+					goto error;
+				}
+				hdr->parsed=cseq_b;
+				hdr->body.len=tmp-hdr->body.s;
+				LM_DBG("cseq <%.*s>: <%.*s> <%.*s>\n",
+						hdr->name.len, ZSW(hdr->name.s),
+						cseq_b->number.len, ZSW(cseq_b->number.s),
+						cseq_b->method.len, cseq_b->method.s);
+			} else {
+				/* just skip over it */
+				hdr->body.s=tmp;
+				/* find end of header */
+				/* find lf */
+				do{
+					match=q_memchr(tmp, '\n', end-tmp);
+					if (match){
+						match++;
+					}else {
+						LM_ERR("bad body for <%.*s>(%d)\n",
+							 hdr->name.len, hdr->name.s, hdr->type);
+						tmp=end;
+						goto error_bad_hdr;
+					}
+					tmp=match;
+				}while( match<end &&( (*match==' ')||(*match=='\t') ) );
+				tmp=match;
+				hdr->body.len=match-hdr->body.s;
 			}
-			memset(cseq_b, 0, sizeof(struct cseq_body));
-			hdr->body.s=tmp;
-			tmp=parse_cseq(tmp, end, cseq_b);
-			if (cseq_b->error==PARSE_ERROR){
-				LM_ERR("bad cseq\n");
-				pkg_free(cseq_b);
-				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-					"error parsing CSeq`");
-				set_err_reply(400, "bad CSeq header");
-				goto error;
-			}
-			hdr->parsed=cseq_b;
-			hdr->body.len=tmp-hdr->body.s;
-			LM_DBG("cseq <%.*s>: <%.*s> <%.*s>\n",
-					hdr->name.len, ZSW(hdr->name.s),
-					cseq_b->number.len, ZSW(cseq_b->number.s),
-					cseq_b->method.len, cseq_b->method.s);
 			break;
 		case HDR_TO_T:
-			to_b=pkg_malloc(sizeof(struct to_body));
-			if (to_b==0){
-				LM_ERR("out of pkg memory\n");
-				goto error;
+			if (sip_well_known_parse) {
+				to_b=pkg_malloc(sizeof(struct to_body));
+				if (to_b==0){
+					LM_ERR("out of pkg memory\n");
+					goto error;
+				}
+				memset(to_b, 0, sizeof(struct to_body));
+				hdr->body.s=tmp;
+				tmp=parse_to(tmp, end,to_b);
+				if (to_b->error==PARSE_ERROR){
+					LM_ERR("bad to header\n");
+					pkg_free(to_b);
+					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing To header");
+					set_err_reply(400, "bad header");
+					goto error;
+				}
+				hdr->parsed=to_b;
+				hdr->body.len=tmp-hdr->body.s;
+				LM_DBG("<%.*s> [%d]; uri=[%.*s] \n",
+					hdr->name.len, ZSW(hdr->name.s),
+					hdr->body.len, to_b->uri.len,ZSW(to_b->uri.s));
+				LM_DBG("to body [%.*s]\n",to_b->body.len, ZSW(to_b->body.s));
+			} else {
+				/* just skip over it */
+				hdr->body.s=tmp;
+				/* find end of header */
+				/* find lf */
+				do{
+					match=q_memchr(tmp, '\n', end-tmp);
+					if (match){
+						match++;
+					}else {
+						LM_ERR("bad body for <%.*s>(%d)\n",
+							 hdr->name.len, hdr->name.s, hdr->type);
+						tmp=end;
+						goto error_bad_hdr;
+					}
+					tmp=match;
+				}while( match<end &&( (*match==' ')||(*match=='\t') ) );
+				tmp=match;
+				hdr->body.len=match-hdr->body.s;
 			}
-			memset(to_b, 0, sizeof(struct to_body));
-			hdr->body.s=tmp;
-			tmp=parse_to(tmp, end,to_b);
-			if (to_b->error==PARSE_ERROR){
-				LM_ERR("bad to header\n");
-				pkg_free(to_b);
-				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-					"error parsing To header");
-				set_err_reply(400, "bad header");
-				goto error;
-			}
-			hdr->parsed=to_b;
-			hdr->body.len=tmp-hdr->body.s;
-			LM_DBG("<%.*s> [%d]; uri=[%.*s] \n",
-				hdr->name.len, ZSW(hdr->name.s),
-				hdr->body.len, to_b->uri.len,ZSW(to_b->uri.s));
-			LM_DBG("to body [%.*s]\n",to_b->body.len, ZSW(to_b->body.s));
 			break;
 		case HDR_CONTENTLENGTH_T:
-			hdr->body.s=tmp;
-			tmp=parse_content_length(tmp,end, &integer);
-			if (tmp==0){
-				LM_ERR("bad content_length header\n");
-				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-					"error parsing Content-Length");
-				set_err_reply(400, "bad Content-Length header");
-				goto error;
+			if (sip_well_known_parse) {
+				hdr->body.s=tmp;
+				tmp=parse_content_length(tmp,end, &integer);
+				if (tmp==0){
+					LM_ERR("bad content_length header\n");
+					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+						"error parsing Content-Length");
+					set_err_reply(400, "bad Content-Length header");
+					goto error;
+				}
+				hdr->parsed=(void*)(long)integer;
+				hdr->body.len=tmp-hdr->body.s;
+				LM_DBG("content_length=%d\n", (int)(long)hdr->parsed);
+			} else {
+				/* just skip over it */
+				hdr->body.s=tmp;
+				/* find end of header */
+				/* find lf */
+				do{
+					match=q_memchr(tmp, '\n', end-tmp);
+					if (match){
+						match++;
+					}else {
+						LM_ERR("bad body for <%.*s>(%d)\n",
+							 hdr->name.len, hdr->name.s, hdr->type);
+						tmp=end;
+						goto error_bad_hdr;
+					}
+					tmp=match;
+				}while( match<end &&( (*match==' ')||(*match=='\t') ) );
+				tmp=match;
+				hdr->body.len=match-hdr->body.s;
 			}
-			hdr->parsed=(void*)(long)integer;
-			hdr->body.len=tmp-hdr->body.s;
-			LM_DBG("content_length=%d\n", (int)(long)hdr->parsed);
 			break;
 		case HDR_SUPPORTED_T:
 		case HDR_CONTENTTYPE_T:
@@ -229,6 +314,17 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 		case HDR_PROXY_AUTHENTICATE_T:
 		case HDR_FEATURE_CAPS_T:
 		case HDR_REPLACES_T:
+		case HDR_TO_PATH_T:
+		case HDR_FROM_PATH_T:
+		case HDR_MESSAGE_ID_T:
+		case HDR_BYTE_RANGE_T:
+		case HDR_FAILURE_REPORT_T:
+		case HDR_SUCCESS_REPORT_T:
+		case HDR_STATUS_T:
+		case HDR_USE_PATH_T:
+		case HDR_SECURITY_CLIENT_T:
+		case HDR_SECURITY_SERVER_T:
+		case HDR_SECURITY_VERIFY_T:
 		case HDR_OTHER_T:
 			/* just skip over it */
 			hdr->body.s=tmp;
@@ -239,7 +335,8 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 				if (match){
 					match++;
 				}else {
-					LM_ERR("bad body for <%s>(%d)\n", hdr->name.s, hdr->type);
+					LM_ERR("bad body for <%.*s>(%d)\n",
+					         hdr->name.len, hdr->name.s, hdr->type);
 					tmp=end;
 					goto error_bad_hdr;
 				}
@@ -269,8 +366,6 @@ error:
 	return tmp;
 }
 
-
-
 /* parse the headers and adds them to msg->headers and msg->to, from etc.
  * It stops when all the headers requested in flags were parsed, on error
  * (bad header) or end of headers */
@@ -283,23 +378,15 @@ error:
    give you the first occurrence of a header you are interested in,
    look at check_transaction_quadruple
 */
-int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
+int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_well_known_parse)
 {
 	struct hdr_field *hf;
-	struct hdr_field *itr;
 	char* tmp;
 	char* rest;
 	char* end;
 	hdr_flags_t orig_flag;
 
-#define link_sibling_hdr(_hook, _hdr) \
-	do{ \
-		if (msg->_hook==0) msg->_hook=_hdr;\
-			else {\
-				for(itr=msg->_hook;itr->sibling;itr=itr->sibling);\
-				itr->sibling = _hdr;\
-			}\
-	}while(0)
+#define link_sibling_hdr(_hook, _hdr) _add_last(_hdr, msg->_hook, sibling)
 
 	end=msg->buf+msg->len;
 	tmp=msg->unparsed;
@@ -320,7 +407,7 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 		}
 		memset(hf,0, sizeof(struct hdr_field));
 		hf->type=HDR_ERROR_T;
-		rest=get_hdr_field(tmp, msg->buf+msg->len, hf);
+		rest=get_hdr_field_aux(tmp, msg->buf+msg->len, hf,sip_well_known_parse);
 		switch (hf->type){
 			case HDR_ERROR_T:
 				LM_INFO("bad header field\n");
@@ -331,6 +418,14 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				pkg_free(hf);
 				goto skip;
 			case HDR_OTHER_T: /*do nothing*/
+			case HDR_TO_PATH_T:
+			case HDR_FROM_PATH_T:
+			case HDR_MESSAGE_ID_T:
+			case HDR_BYTE_RANGE_T:
+			case HDR_FAILURE_REPORT_T:
+			case HDR_SUCCESS_REPORT_T:
+			case HDR_STATUS_T:
+			case HDR_USE_PATH_T:
 				break;
 			case HDR_CALLID_T:
 				if (msg->callid==0) msg->callid=hf;
@@ -494,19 +589,21 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				link_sibling_hdr(h_via1,hf);
 				msg->parsed_flag|=HDR_VIA_F;
 				LM_DBG("via found, flags=%llx\n", (unsigned long long)flags);
-				if (msg->via1==0) {
-					LM_DBG("this is the first via\n");
-					msg->h_via1=hf;
-					msg->via1=hf->parsed;
-					if (msg->via1->next){
-						msg->via2=msg->via1->next;
+				if (sip_well_known_parse) {
+					if (msg->via1==0) {
+						LM_DBG("this is the first via\n");
+						msg->h_via1=hf;
+						msg->via1=hf->parsed;
+						if (msg->via1->next){
+							msg->via2=msg->via1->next;
+							msg->parsed_flag|=HDR_VIA2_F;
+						}
+					}else if (msg->via2==0){
+						msg->h_via2=hf;
+						msg->via2=hf->parsed;
 						msg->parsed_flag|=HDR_VIA2_F;
+						LM_DBG("parse_headers: this is the second via\n");
 					}
-				}else if (msg->via2==0){
-					msg->h_via2=hf;
-					msg->via2=hf->parsed;
-					msg->parsed_flag|=HDR_VIA2_F;
-					LM_DBG("parse_headers: this is the second via\n");
 				}
 				break;
 			case HDR_FEATURE_CAPS_T:
@@ -516,6 +613,18 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 			case HDR_REPLACES_T:
 				link_sibling_hdr(replaces, hf);
 				msg->parsed_flag |= HDR_REPLACES_F;
+				break;
+			case HDR_SECURITY_CLIENT_T:
+				link_sibling_hdr(security_client, hf);
+				msg->parsed_flag |= HDR_SECURITY_CLIENT_F;
+				break;
+			case HDR_SECURITY_SERVER_T:
+				link_sibling_hdr(security_server, hf);
+				msg->parsed_flag |= HDR_SECURITY_SERVER_F;
+				break;
+			case HDR_SECURITY_VERIFY_T:
+				link_sibling_hdr(security_verify, hf);
+				msg->parsed_flag |= HDR_SECURITY_VERIFY_F;
 				break;
 			default:
 				LM_CRIT("unknown header type %d\n",	hf->type);
@@ -555,15 +664,10 @@ int clone_headers(struct sip_msg *from_msg, struct sip_msg *to_msg)
 	int hdrs_no, i;
 	struct hdr_field *hdrs;
 	struct hdr_field *hdr;
-	struct hdr_field *itr;
 
 #define link_sibling_hdr_case(_hook, _hdr_type) \
 	case _hdr_type: \
-		if (to_msg->_hook==0) to_msg->_hook=&hdrs[i];\
-		else {\
-			for(itr=to_msg->_hook;itr->sibling;itr=itr->sibling);\
-			itr->sibling = &hdrs[i];\
-		}\
+		_add_last(&hdrs[i], to_msg->_hook, sibling);\
 		break
 #define link_hdr_case(_hook, _hdr_type) \
 	case _hdr_type: \
@@ -674,6 +778,19 @@ int clone_headers(struct sip_msg *from_msg, struct sip_msg *to_msg)
 			link_sibling_hdr_case(pai, HDR_PAI_T);
 			link_sibling_hdr_case(h_via1, HDR_VIA_T);
 
+			/* not used in sip_msg */
+			case HDR_TO_PATH_T:
+			case HDR_FROM_PATH_T:
+			case HDR_MESSAGE_ID_T:
+			case HDR_BYTE_RANGE_T:
+			case HDR_FAILURE_REPORT_T:
+			case HDR_SUCCESS_REPORT_T:
+			case HDR_STATUS_T:
+			case HDR_USE_PATH_T:
+			case HDR_SECURITY_CLIENT_T:
+			case HDR_SECURITY_SERVER_T:
+			case HDR_SECURITY_VERIFY_T:
+
 			case HDR_OTHER_T:
 			case HDR_ERROR_T:
 				break;
@@ -701,8 +818,8 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	hdr_flags_t flags;
 
 	/* eat crlf from the beginning */
-	for (tmp=buf; (*tmp=='\n' || *tmp=='\r')&&
-			(unsigned int)(tmp-buf) < len ; tmp++);
+	for (tmp=buf; (unsigned int)(tmp-buf) < len
+	        && (*tmp=='\n' || *tmp=='\r'); tmp++);
 	offset=tmp-buf;
 	fl=&(msg->first_line);
 	rest=parse_first_line(tmp, len-offset, fl);
@@ -1397,3 +1514,15 @@ done:
 }
 
 
+int delete_headers(struct sip_msg *msg, struct hdr_field *hdr)
+{
+	for (; hdr; hdr = hdr->sibling) {
+		if (!del_lump(msg, hdr->name.s - msg->buf, hdr->len, hdr->type)) {
+			LM_ERR("failed to delete contact '%.*s'\n", hdr->name.len,
+			       hdr->name.s);
+			return -1;
+		}
+	}
+
+	return 0;
+}

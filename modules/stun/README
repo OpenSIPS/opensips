@@ -22,6 +22,7 @@ Stun Module
               1.3.2. primary_port (str)
               1.3.3. alternate_ip (str)
               1.3.4. alternate_port (str)
+              1.3.5. use_listeners_as_primary (int)
 
    2. Contributors
 
@@ -45,6 +46,7 @@ Stun Module
    1.2. Set primary_port parameter
    1.3. Set alternate_ip parameter
    1.4. Set alternate_port parameter
+   1.5. Set use_listeners_as_primary parameter
 
 Chapter 1. Admin Guide
 
@@ -67,9 +69,18 @@ Chapter 1. Admin Guide
      * socket3 = ip2 : port1
      * socket4 = ip2 : port2
 
+   where ip1 / port1 represent an UDP SIP listener and ip2 / port2
+   are configured via the alternate_ip and alternate_port
+   parameters.
+
    The sockets come from existing SIP sockets or are created.
 
    Socket1 must allways be a SIP UDP listener from OpenSIPS.
+
+   If use_listeners_as_primary is enabled the STUN server will
+   actually use multiple sets of sockets obtained from the IP/port
+   combinations described above, each set corresponding to a SIP
+   UDP listener from OpenSIPS.
 
    The server will create a separate process. This process will
    listen for data on created sockets. The server will register a
@@ -118,7 +129,8 @@ Chapter 1. Admin Guide
 1.3.1.  primary_ip (str)
 
    The IP of an interface which is configured as an UDP SIP
-   listener in OpenSIPS. This is a mandatory parameter.
+   listener in OpenSIPS. This is a mandatory parameter, unless
+   use_listeners_as_primary is enabled.
 
    Syntax: "ip [/ advertised_ip]
 
@@ -158,6 +170,14 @@ modparam("stun", "primary_port", "5060 / 5062")
    Another IP from another interface. This is a mandatory
    parameter.
 
+   If use_listeners_as_primary is enabled, the alternate IP must
+   be either:
+     * an IP from an existing UDP SIP listener configured in
+       OpenSIPS, but one that is different from all the other UPD
+       listeners;
+     * an IP that is different from the UDP SIP listeners
+       configured in OpenSIPS.
+
    Syntax: "ip [/ advertised_ip]
 
    By default, the alternate_ip and the advertised alternate_ip
@@ -177,6 +197,14 @@ modparam("stun", "alternate_ip", "192.168.0.100 / 64.78.46.50")
    The port used by the STUN server for the second interface. The
    default value is 3478 (default STUN port).
 
+   If use_listeners_as_primary is enabled, the alternate port must
+   be either:
+     * a port from an existing UDP SIP listener configured in
+       OpenSIPS, but one that is different from all the other UPD
+       listeners;
+     * a port that is different from the UDP SIP listeners
+       configured in OpenSIPS.
+
    Syntax: "port [/ advertised_port]
 
    By default, the alternate_port and the advertised
@@ -191,6 +219,21 @@ modparam("stun","alternate_port","3479")
 modparam("stun", "alternate_port", "5060 / 5062")
 ...
 
+1.3.5.  use_listeners_as_primary (int)
+
+   Setting this parameter to 1 will allow all configured UDP SIP
+   listeners to be automatically used as "primary" STUN sockets.
+
+   The primary_ip and primary_port parameters will be ignored when
+   this behavior is enabled.
+
+   The default value is 0 (disabled).
+
+   Example 1.5. Set use_listeners_as_primary parameter
+...
+modparam("stun","use_listeners_as_primary",1)
+...
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -199,12 +242,14 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Pistolea 20 3 1891 19
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 13 137 128
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 19 14 194 179
    3. Liviu Chircu (@liviuchircu) 17 12 259 117
    4. Razvan Crainea (@razvancrainea) 14 12 27 20
    5. Vlad Paiu (@vladpaiu) 7 5 25 4
-   6. Peter Lemenkov (@lemenkov) 3 1 1 1
-   7. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   6. Bernard 7 1 391 75
+   7. Maksym Sobolyev (@sobomax) 5 3 13 13
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -226,13 +271,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
-   2. Vlad Paiu (@vladpaiu)               Sep 2011 - Aug 2019
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2009 - Apr 2019
-   4. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   7. Razvan Pistolea                     Sep 2009 - Sep 2009
+   1. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2009 - May 2023
+   3. Bernard                             Oct 2021 - Oct 2021
+   4. Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
+   5. Vlad Paiu (@vladpaiu)               Sep 2011 - Aug 2019
+   6. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   9. Razvan Pistolea                     Sep 2009 - Sep 2009
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -241,9 +288,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Pistolea.
+   Last edited by: Bernard, Peter Lemenkov (@lemenkov), Liviu
+   Chircu (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Razvan Pistolea.
 
    Documentation Copyrights:
 

@@ -25,17 +25,21 @@ CLUSTERER Module
               1.4.9. ping_timeout
               1.4.10. node_timeout
               1.4.11. seed_fallback_interval
-              1.4.12. sync_packet_max_size
-              1.4.13. id_col
-              1.4.14. cluster_id_col
-              1.4.15. node_id_col
-              1.4.16. url_col
-              1.4.17. state_col
-              1.4.18. no_ping_retries_col
-              1.4.19. priority_col
-              1.4.20. sip_addr_col
-              1.4.21. flags_col
-              1.4.22. description_col
+              1.4.12. sync_timeout
+              1.4.13. sync_packet_size
+              1.4.14. dispatch_jobs
+              1.4.15. id_col
+              1.4.16. cluster_id_col
+              1.4.17. node_id_col
+              1.4.18. url_col
+              1.4.19. state_col
+              1.4.20. no_ping_retries_col
+              1.4.21. priority_col
+              1.4.22. sip_addr_col
+              1.4.23. flags_col
+              1.4.24. description_col
+              1.4.25. enable_stats (integer)
+              1.4.26. enable_rerouting (integer)
 
         1.5. Exported Functions
 
@@ -55,11 +59,13 @@ CLUSTERER Module
               1.6.2. clusterer_list
               1.6.3. clusterer_list_topology
               1.6.4. clusterer_set_status
-              1.6.5. cluster_send_mi
-              1.6.6. cluster_broadcast_mi
-              1.6.7. clusterer_list_cap
-              1.6.8. clusterer_shtag_set_active
-              1.6.9. clusterer_list_shtags
+              1.6.5. clusterer_remove_node
+              1.6.6. cluster_send_mi
+              1.6.7. cluster_broadcast_mi
+              1.6.8. clusterer_list_cap
+              1.6.9. clusterer_set_cap_status
+              1.6.10. clusterer_shtag_set_active
+              1.6.11. clusterer_list_shtags
 
         1.7. Exported Script Variables
 
@@ -70,8 +76,20 @@ CLUSTERER Module
               1.8.1. E_CLUSTERER_REQ_RECEIVED
               1.8.2. E_CLUSTERER_RPL_RECEIVED
               1.8.3. E_CLUSTERER_NODE_STATE_CHANGED
+              1.8.4. E_CLUSTERER_SHARING_TAG_CHANGED
 
-        1.9. Usage Example
+        1.9. Exported Status/Report Identifiers
+
+              1.9.1. sharing_tags
+              1.9.2. node_states
+              1.9.3. cap:[capability_name]
+
+        1.10. Usage Example
+        1.11. Exported Statistics
+
+              1.11.1. clusterer_nodes
+              1.11.2. clusterer_nodes_up
+              1.11.3. clusterer_nodes_down
 
    2. Developer Guide
 
@@ -118,27 +136,31 @@ CLUSTERER Module
    1.9. Set ping_timeout parameter
    1.10. Set node_timeout parameter
    1.11. Set seed_fallback_interval parameter
-   1.12. Set sync_packet_max_size parameter
-   1.13. Set id_col parameter
-   1.14. Set cluster_id_col parameter
-   1.15. Set node_id_col parameter
-   1.16. Set url_col parameter
-   1.17. Set state_col parameter
-   1.18. Set no_ping_retries_col parameter
-   1.19. Set priority_col parameter
-   1.20. Set sip_addr_col parameter
-   1.21. Set flags_col parameter
-   1.22. Set description_col parameter
-   1.23. cluster_send_req() usage
-   1.24. cluster_send_rpl() usage
-   1.25. cluster_broadcast_req() usage
-   1.26. cluster_check_addr() usage
-   1.27. clusterer_list usage
-   1.28. clusterer_list_topology usage
-   1.29. clusterer_list_cap usage
-   1.30. Example database content - clusterer table
-   1.31. Node A configuration
-   1.32. Node B configuration
+   1.12. Set sync_timeout parameter
+   1.13. Set sync_packet_size parameter
+   1.14. Set dispatch_jobs parameter
+   1.15. Set id_col parameter
+   1.16. Set cluster_id_col parameter
+   1.17. Set node_id_col parameter
+   1.18. Set url_col parameter
+   1.19. Set state_col parameter
+   1.20. Set no_ping_retries_col parameter
+   1.21. Set priority_col parameter
+   1.22. Set sip_addr_col parameter
+   1.23. Set flags_col parameter
+   1.24. Set description_col parameter
+   1.25. Set enable_stats parameter
+   1.26. Set enable_rerouting parameter
+   1.27. cluster_send_req() usage
+   1.28. cluster_send_rpl() usage
+   1.29. cluster_broadcast_req() usage
+   1.30. cluster_check_addr() usage
+   1.31. clusterer_list usage
+   1.32. clusterer_list_topology usage
+   1.33. clusterer_list_cap usage
+   1.34. Example database content - clusterer table
+   1.35. Node A configuration
+   1.36. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -179,10 +201,9 @@ Chapter 1. Admin Guide
    referenced in each cluster.
 
    An OpenSIPS instance can dynamically learn all the nodes in the
-   cluster that are not provisioned in the database. For instances
-   that do not load any node info from the DB, it is enough to
-   define at least one neigbour in the script in order to discover
-   all the cluster components.
+   cluster if database provisioning is not desired. It is enough
+   to define at least one neigbour in the script in order to
+   discover all the cluster components.
 
 1.2. Capabilities layer
 
@@ -250,6 +271,9 @@ modparam("clusterer", "my_node_id", 1)
    used and the cluster topology in terms of node information will
    be discovered dynamically at runtime.
 
+   If DB mode is enabled, only the nodes defined in the database
+   will be accepted by this instance.
+
    Default value is “1”
 
    Example 1.2. Set db_mode parameter
@@ -287,7 +311,7 @@ modparam("clusterer", "db_table", "clusterer")
    state) by any module build on top of clusterer engine, like
    dialog or presence.
 
-   Note that ohter tags may be dynamically learned during runtime
+   Note that other tags may be dynamically learned during runtime
    via clustering communication with other nodes.
 
    The format for this value is “tag_name / cluster_id =
@@ -401,7 +425,20 @@ modparam("clusterer", "node_timeout", 10)
 modparam("clusterer", "seed_fallback_interval", 10)
 ...
 
-1.4.12. sync_packet_max_size
+1.4.12. sync_timeout
+
+   The inteval, in seconds, since the last sync data packet
+   received after which to consider the sync process as failed and
+   revert the node to the not synced state.
+
+   Default value is “15”.
+
+   Example 1.12. Set sync_timeout parameter
+...
+modparam("clusterer", "sync_timeout", 5)
+...
+
+1.4.13. sync_packet_size
 
    The maximum size of the BIN packets sent while doing data
    synchronization. This is only a suggested value as the actual
@@ -409,70 +446,90 @@ modparam("clusterer", "seed_fallback_interval", 10)
 
    Default value is “65535”.
 
-   Example 1.12. Set sync_packet_max_size parameter
+   Example 1.13. Set sync_packet_size parameter
 ...
-modparam("clusterer", "sync_packet_max_size", 32765)
+modparam("clusterer", "sync_packet_size", 32765)
 ...
 
-1.4.13. id_col
+1.4.14. dispatch_jobs
+
+   Enables the dispatching of jobs(processing replicated data
+   packets) from the receiving TCP worker process to free opensips
+   workers (including UDP, timer processes etc.).
+
+   This generally improves the performance of handling replication
+   packets in high traffic scenarios and should not be disabled.
+
+   Nevertheless there are cases where the "thundering herd"
+   problem occurs which causes abnormaly high CPU loads. Disabling
+   this dispatching mechanism solves such issues.
+
+   Default value is “1” (enabled).
+
+   Example 1.14. Set dispatch_jobs parameter
+...
+modparam("clusterer", "dispatch_jobs", 0)
+...
+
+1.4.15. id_col
 
    The name of the column storing an id for the table rows.
 
    Default value is “id”.
 
-   Example 1.13. Set id_col parameter
+   Example 1.15. Set id_col parameter
 ...
 modparam("clusterer", "id_col", "id")
 ...
 
-1.4.14. cluster_id_col
+1.4.16. cluster_id_col
 
    The name of the column to store the id of a cluster.
 
    Default value is “cluster_id”.
 
-   Example 1.14. Set cluster_id_col parameter
+   Example 1.16. Set cluster_id_col parameter
 ...
 modparam("clusterer", "cluster_id_col", "cluster_id")
 ...
 
-1.4.15. node_id_col
+1.4.17. node_id_col
 
    The name of the column to store the id of an instance. The
    values must be greater than 0.
 
    Default value is “node_id”.
 
-   Example 1.15. Set node_id_col parameter
+   Example 1.17. Set node_id_col parameter
 ...
 modparam("clusterer", "node_id_col", "node_id")
 ...
 
-1.4.16. url_col
+1.4.18. url_col
 
    The name of the column containing the instance url. The values
    must be greater than 0.
 
    Default value is “url”.
 
-   Example 1.16. Set url_col parameter
+   Example 1.18. Set url_col parameter
 ...
 modparam("clusterer", "url_col", "url")
 ...
 
-1.4.17. state_col
+1.4.19. state_col
 
    The name of the column storing the state of the
    node(enabled/disabled).
 
    Default value is “state”.
 
-   Example 1.17. Set state_col parameter
+   Example 1.19. Set state_col parameter
 ...
 modparam("clusterer", "state_col", "state")
 ...
 
-1.4.18. no_ping_retries_col
+1.4.20. no_ping_retries_col
 
    The name of the column containing the maximum number of ping
    retries before the link with the neighbour node is considered
@@ -480,12 +537,12 @@ modparam("clusterer", "state_col", "state")
 
    Default value is “no_ping_retries”.
 
-   Example 1.18. Set no_ping_retries_col parameter
+   Example 1.20. Set no_ping_retries_col parameter
 ...
 modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
 ...
 
-1.4.19. priority_col
+1.4.21. priority_col
 
    The name of the column storing the node priority to be chosen
    as next hop in case of same length(number of hops) paths when
@@ -493,42 +550,70 @@ modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
 
    Default value is “priority”.
 
-   Example 1.19. Set priority_col parameter
+   Example 1.21. Set priority_col parameter
 ...
 modparam("clusterer", "priority_col", "priority")
 ...
 
-1.4.20. sip_addr_col
+1.4.22. sip_addr_col
 
    The name of the column containing a SIP address for the node.
 
    Default value is “sip_addr”.
 
-   Example 1.20. Set sip_addr_col parameter
+   Example 1.22. Set sip_addr_col parameter
 ...
 modparam("clusterer", "sip_addr_col", "sip_addr")
 ...
 
-1.4.21. flags_col
+1.4.23. flags_col
 
    The name of the column containing the node flags.
 
    Default value is “flags”.
 
-   Example 1.21. Set flags_col parameter
+   Example 1.23. Set flags_col parameter
 ...
 modparam("clusterer", "flags_col", "flags")
 ...
 
-1.4.22. description_col
+1.4.24. description_col
 
    The name of the column containing a node description.
 
    Default value is “description”.
 
-   Example 1.22. Set description_col parameter
+   Example 1.24. Set description_col parameter
 ...
 modparam("clusterer", "description_col", "description")
+...
+
+1.4.25. enable_stats (integer)
+
+   If the statistics support should be enabled or not. Via
+   statistic variables, the module provide information about the
+   cluster nodes. Set it to zero to disable or to non-zero to
+   enable it.
+
+   Default value is “1 (enabled)”.
+
+   Example 1.25. Set enable_stats parameter
+...
+modparam("clusterer", "enable_stats", 0)
+...
+
+1.4.26. enable_rerouting (integer)
+
+   If packets should be rerouted via another node if a direct
+   route to destination is unavailible. Disabling may improve
+   stability in two-node topologies. Set it to zero to disable or
+   to non-zero to enable it.
+
+   Default value is “1 (enabled)”.
+
+   Example 1.26. Set enable_rerouting parameter
+...
+modparam("clusterer", "enable_rerouting", 0)
 ...
 
 1.5. Exported Functions
@@ -563,7 +648,7 @@ modparam("clusterer", "description_col", "description")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.23. cluster_send_req() usage
+   Example 1.27. cluster_send_req() usage
 ...
 # send a request
 cluster_send_req(1, 1, "Check USER: $fU", $var(req_tag));
@@ -607,7 +692,7 @@ route[rpl_resume] {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.24. cluster_send_rpl() usage
+   Example 1.28. cluster_send_rpl() usage
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
   cluster_send_rpl($param(cluster_id), $param(src_id), $var(my_reply), $
@@ -635,7 +720,7 @@ param(tag));
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.25. cluster_broadcast_req() usage
+   Example 1.29. cluster_broadcast_req() usage
 ...
 cluster_broadcast_req($var(cl_id), $var(share_data));
 ...
@@ -651,15 +736,13 @@ cluster_broadcast_req($var(cl_id), $var(share_data));
      * addr_type (string, optional) - select the address of the
        node that the comparison is made against, with the possible
        values of:
-          + bin - node's BIN interface listener;
-          + sip - node's DB provisioned SIP address.
-       The default behaviour is to compare against the SIP
-       address.
+          + "sip" (default) - a node's DB provisioned SIP address
+          + "bin" - a node's BIN interface listener
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.26. cluster_check_addr() usage
+   Example 1.30. cluster_check_addr() usage
 ...
 if (cluster_check_addr(1, $si)) {
         ...
@@ -690,7 +773,7 @@ if (cluster_check_addr(1, $si)) {
 
    Parameters:none
 
-   Example 1.27. clusterer_list usage
+   Example 1.31. clusterer_list usage
 $ opensips-cli -x mi clusterer_list
 {
     "Clusters": [
@@ -724,7 +807,7 @@ $ opensips-cli -x mi clusterer_list
 
    Parameters:none
 
-   Example 1.28. clusterer_list_topology usage
+   Example 1.32. clusterer_list_topology usage
 $ opensips-cli -x mi clusterer_list_topology
 {
     "Clusters": [
@@ -750,22 +833,51 @@ $ opensips-cli -x mi clusterer_list_topology
 
 1.6.4.  clusterer_set_status
 
-   Sets the status(Enabled/Disabled) of the local node in a
-   specified cluster. A disabled node does not send any messages
-   and ignores received ones thus appearing as a failed node in
-   the topology.
+   Sets the status(Enabled/Disabled) of a node. If the local
+   instance is disabled, the node will not send any messages and
+   ignore received ones thus appearing as a failed node in the
+   topology (from the other node's perspective). If a different
+   node is disabled, the specified node will simply be ignored by
+   the local instance in terms of sending/receiving any messages,
+   as if no longer part of the topology.
 
    Name: clusterer_set_status
 
    Parameters:
      * cluster_id - indicates the id of the cluster.
+     * node_id (optional) - indicates the id of the node to be
+       disabled. If missing, the local instance will be disalbed.
      * status - indicates the new status(0 - Disabled, 1 -
        Enabled).
 
    MI FIFO Command Format:
+                #disable the local instance
                 opensips-cli -x mi clusterer_set_status 1 0
+                #disable node ID 3
+                opensips-cli -x mi clusterer_set_status 1 3 0
 
-1.6.5.  cluster_send_mi
+1.6.5.  clusterer_remove_node
+
+   Removes a node from the cluster's topology. It is enough to run
+   the function on a single node in order to remove the target
+   node from all the other nodes in the cluster. If the node to be
+   removed is running when triggering this function, it will be
+   automatically disabled (equivalent to running
+   clusterer_set_status on that specific node).
+
+   This function can only be used when db_mode is set to 0
+   (disabled).
+
+   Name: clusterer_remove_node
+
+   Parameters:
+     * cluster_id - cluster ID
+     * node_id - ID of the node to be removed.
+
+   MI FIFO Command Format:
+                opensips-cli -x mi clusterer_remove_node 1 3
+
+1.6.6.  cluster_send_mi
 
    Dispatches a given MI command to be run on a specific node in
    the cluster.
@@ -785,7 +897,7 @@ $ opensips-cli -x mi clusterer_list_topology
    MI FIFO Command Format:
 opensips-cli -x mi cluster_send_mi 1 3 lb_reload
 
-1.6.6.  cluster_broadcast_mi
+1.6.7.  cluster_broadcast_mi
 
    Dispatches a given MI command to be run on all the nodes in a
    cluster. The command is also executed locally.
@@ -804,7 +916,7 @@ opensips-cli -x mi cluster_send_mi 1 3 lb_reload
    MI FIFO Command Format:
 opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 
-1.6.7.  clusterer_list_cap
+1.6.8.  clusterer_list_cap
 
    Lists the registered capabilities and their states.
 
@@ -812,7 +924,7 @@ opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 
    Parameters:none
 
-   Example 1.29. clusterer_list_cap usage
+   Example 1.33. clusterer_list_cap usage
 $ opensips-cli -x mi clusterer_list_cap
 {
     "Clusters": [
@@ -821,18 +933,46 @@ $ opensips-cli -x mi clusterer_list_cap
             "Capabilities": [
                 {
                     "name": "dialog-dlg-repl",
-                    "state": "Ok"
+                    "state": "Ok",
+                    "enabled": "yes"
                 },
                 {
                     "name": "dialog-prof-repl",
-                    "state": "Ok"
+                    "state": "Ok",
+                    "enabled": "yes"
                 }
             ]
         }
     ]
 }
 
-1.6.8. clusterer_shtag_set_active
+1.6.9.  clusterer_set_cap_status
+
+   Sets the status(Enabled/Disabled) of a capability. If a
+   capability is disabled, the node will not send any
+   replication/sync messages belonging to that capability.
+   Likewise, received messages will be dropped. Also, the
+   cabability will transition to a "not synced" state and the node
+   will no longer be able to be a donor for syncing.
+
+   Name: clusterer_set_cap_status
+
+   Parameters:
+     * cluster_id - the id of the cluster
+     * capability - name of the capability, as listed by
+       clusterer_list_cap
+     * status - indicates the new status(0 - Disabled, 1 -
+       Enabled).
+
+   MI FIFO Command Format:
+                #disable dialog replication in cluster 1
+                opensips-cli -x mi clusterer_set_cap_status 1 dialog-dlg
+-repl 0
+                #enable dialog profile replication in cluster 2
+                opensips-cli -x mi clusterer_set_cap_status 2 dialog-pro
+f-repl 1
+
+1.6.10. clusterer_shtag_set_active
 
    Set the given sharing tag to the active state. The information
    about this change is also broadcasted in the cluster in order
@@ -847,7 +987,7 @@ $ opensips-cli -x mi clusterer_list_cap
    MI FIFO Command Format:
                 opensips-cli -x mi clusterer_shtag_set_active vip1/3
 
-1.6.9. clusterer_list_shtags
+1.6.11. clusterer_list_shtags
 
    Lists all known sharing tags and their states.
 
@@ -924,7 +1064,121 @@ $ opensips-cli -x mi clusterer_list_cap
      * new_state - The new state of the node, with the possible
        values: 0 - down, 1 - up.
 
-1.9. Usage Example
+1.8.4.  E_CLUSTERER_SHARING_TAG_CHANGED
+
+   This event is raised when the state of a sharing tag changes.
+
+   Parameters:
+     * name - The name of the sharing tag.
+     * cluster_id - The cluster ID.
+     * node_id - The ID of the node.
+     * state - The new state of the sharing tag, the possible
+       values: "active" or "backup".
+     * reason - short text describing what triggered the change of
+       the state, like a another node stepping as active, an MI
+       command or script variable.
+
+1.9. Exported Status/Report Identifiers
+
+   The module provides the clusterer Status/Report group.
+
+1.9.1. sharing_tags
+
+   The sharing_tags identifier is provided for reporting state
+   changes of the sharing_tags (between active and backup), along
+   with the reason of the change. This identifier has a 200
+   records history before discarding the old ones.
+{
+    "Name": "sharing_tags",
+    "Reports": [
+        {
+            "Timestamp": 1652367224,
+            "Date": "Thu May 12 17:53:44 2022",
+            "Log": "TAG <HA>, cluster 1, became backup due to cluster br
+oadcast from 2"
+        },
+        {
+            "Timestamp": 1652367326,
+            "Date": "Thu May 12 17:55:26 2022",
+            "Log": "TAG <HA>, cluster 1, became active due to MI command
+"
+        }
+    ]
+}
+
+
+1.9.2. node_states
+
+   The node_states identifier is used for reporting node state
+   changes (in terms of availability). This identifier has a 200
+   records history before discarding the old ones.
+{
+    "Name": "node_states",
+    "Reports": [
+        {
+            "Timestamp": 1656489246,
+            "Date": "Wed Jun 29 10:54:06 2022",
+            "Log": "Node [2], cluster [1] is UP"
+        },
+        {
+            "Timestamp": 1656489261,
+            "Date": "Wed Jun 29 10:54:21 2022",
+            "Log": "Node [2], cluster [1] is DOWN"
+        }
+    ]
+}
+
+
+1.9.3. cap:[capability_name]
+
+   Each capability registered to the clusterer module has a
+   corresponding identifier, named cap:[capability_name], used for
+   providing the status of the data syncing for that capability.
+   This status reflects the progress of the syncing process and
+   can have the following values:
+     * -3 - not synced
+     * -2 - sync pending (waiting for either a suitable donor node
+       or actual sync data)
+     * -1 - sync in progress
+     * 1 - synced (either sync has completed or the capability
+       does not require data syncing at all)
+
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Readiness": true,
+    "Status": 1,
+    "Details": "synced"
+},
+
+   The capability identifiers also provide reports regarding the
+   main stages of the sync process. These identifiers have a 200
+   records history before discarding the old ones.
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Reports": [
+        {
+            "Timestamp": 1656966903,
+            "Date": "Mon Jul  4 23:35:03 2022",
+            "Log": "Sync requested"
+        },
+        {
+            "Timestamp": 1656966904,
+            "Date": "Mon Jul  4 23:35:04 2022",
+            "Log": "Sync started from node [1]"
+        },
+        {
+            "Timestamp": 1656966906,
+            "Date": "Mon Jul  4 23:35:06 2022",
+            "Log": "Sync completed, received [10000] chunks"
+        }
+    ]
+},
+
+
+   For how to access and use the Status/Report information, please
+   see Status/Report Interface documentation.
+
+1.10. Usage Example
 
    This section provides an usage example for replicating
    ratelimit pipes between two OpenSIPS instances. It uses the
@@ -940,7 +1194,7 @@ $ opensips-cli -x mi clusterer_list_cap
 
    We insert in the the clusterer table the following:
 
-   Example 1.30. Example database content - clusterer table
+   Example 1.34. Example database content - clusterer table
 +----+------------+---------+----------------------+-------+------------
 -----+----------+----------+-------+-------------+
 | id | cluster_id | node_id | url                  | state | no_ping_ret
@@ -983,7 +1237,7 @@ ries | priority | sip_addr | flags | description |
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.31. Node A configuration
+   Example 1.35. Node A configuration
 ...
 socket= bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -999,7 +1253,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.32. Node B configuration
+   Example 1.36. Node B configuration
 ...
 socket= bin:192.168.0.6:5566 # bin listener for Node B
 
@@ -1017,6 +1271,20 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
    Starting the two OpenSIPS instances with the above
    configurations provides your platform the ability to used
    shared ratelimit pipes in a very efficient and scalable way.
+
+1.11. Exported Statistics
+
+1.11.1.  clusterer_nodes
+
+   Returns the total number of cluster nodes.
+
+1.11.2.  clusterer_nodes_up
+
+   Returns the total number of cluster nodes in the UP state.
+
+1.11.3.  clusterer_nodes_down
+
+   Returns the total number of cluster nodes not in the UP state.
 
 Chapter 2. Developer Guide
 
@@ -1180,15 +1448,19 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 260 92 10026 5239
-   2. Liviu Chircu (@liviuchircu) 50 36 625 440
-   3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
-   4. Razvan Crainea (@razvancrainea) 23 17 319 143
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 23 11 1118 110
+   1. Vlad Patrascu (@rvlad-patrascu) 364 135 13387 7101
+   2. Liviu Chircu (@liviuchircu) 57 43 653 454
+   3. Eseanu Marius Cristian (@eseanucristian) 46 10 3142 534
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 30 15 1332 124
+   5. Razvan Crainea (@razvancrainea) 26 20 326 147
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
-   7. Fabian Gast (@fgast) 4 2 3 3
-   8. Gohar Ahmed (@goharahmed) 3 1 6 5
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. Maksym Sobolyev (@sobomax) 8 6 12 13
+   8. Jasper Hafkenscheid 4 2 107 2
+   9. Fabian Gast (@fgast) 4 2 3 3
+   10. Gohar Ahmed (@goharahmed) 3 1 6 5
+
+   All remaining contributors: kworm83, Peter Lemenkov
+   (@lemenkov), Shanee Vanstone.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1209,16 +1481,21 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                        Name                     Commit Activity
-   1. Fabian Gast (@fgast)                     Nov 2018 - Jul 2020
-   2. Liviu Chircu (@liviuchircu)              Mar 2016 - Jul 2020
-   3. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2020
-   4. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Sep 2019
-   5. Razvan Crainea (@razvancrainea)          Nov 2015 - Sep 2019
-   6. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
-   7. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   8. Ionel Cerghit (@ionel-cerghit)           Dec 2016 - Dec 2016
-   9. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Sep 2015
+                      Name                   Commit Activity
+   1.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
+   2.  Shanee Vanstone                     Mar 2024 - Mar 2024
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Apr 2023
+   6.  Liviu Chircu (@liviuchircu)         Mar 2016 - Oct 2022
+   7.  Jasper Hafkenscheid                 May 2022 - Jul 2022
+   8.  kworm83                             Feb 2021 - Feb 2021
+   9.  Fabian Gast (@fgast)                Nov 2018 - Jul 2020
+   10. Gohar Ahmed (@goharahmed)           Mar 2019 - Mar 2019
+
+   All remaining contributors: Peter Lemenkov (@lemenkov), Ionel
+   Cerghit (@ionel-cerghit), Eseanu Marius Cristian
+   (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1227,10 +1504,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Fabian Gast (@fgast), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
+   Last edited by: Shanee Vanstone, Bogdan-Andrei Iancu
+   (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Jasper
+   Hafkenscheid, Liviu Chircu (@liviuchircu), Fabian Gast
+   (@fgast), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:
 

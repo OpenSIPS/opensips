@@ -184,7 +184,7 @@ modparam("clusterer", "db_table", "clusterer")
 			clusterer engine, like dialog or presence.
 			</para>
 			<para>
-			Note that ohter tags may be dynamically learned during runtime via 
+			Note that other tags may be dynamically learned during runtime via 
 			clustering communication with other nodes.
 			</para>
 			<para>
@@ -349,8 +349,30 @@ modparam("clusterer", "seed_fallback_interval", 10)
 		</example>
         </section>
 
-        <section id="param_sync_packet_max_size" xreflabel="sync_packet_max_size">
-            <title><varname>sync_packet_max_size</varname></title>
+        <section id="param_sync_timeout" xreflabel="sync_timeout">
+            <title><varname>sync_timeout</varname></title>
+            <para>
+                The inteval, in seconds, since the last sync data packet received
+                after which to consider the sync process as failed and revert the
+                node to the not synced state.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>15</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>sync_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "sync_timeout", 5)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_sync_packet_size" xreflabel="sync_packet_size">
+            <title><varname>sync_packet_size</varname></title>
             <para>
                 The maximum size of the BIN packets sent while doing data synchronization. This is only a suggested value as the actual size of the packets may be slightly larger.
             </para>
@@ -360,10 +382,41 @@ modparam("clusterer", "seed_fallback_interval", 10)
 		</emphasis>
             </para>
             <example>
-		<title>Set <varname>sync_packet_max_size</varname> parameter</title>
+		<title>Set <varname>sync_packet_size</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "sync_packet_max_size", 32765)
+modparam("clusterer", "sync_packet_size", 32765)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_dispatch_jobs" xreflabel="dispatch_jobs">
+            <title><varname>dispatch_jobs</varname></title>
+            <para>
+            Enables the dispatching of jobs(processing replicated data packets)
+            from the receiving TCP worker process to free opensips workers
+            (including UDP, timer processes etc.).
+            </para>
+            <para>
+            This generally improves the performance of handling replication packets
+            in high traffic scenarios and should not be disabled.
+            </para>
+            <para>
+            Nevertheless there are cases where the "thundering herd" problem occurs
+            which causes abnormaly high CPU loads. Disabling this dispatching
+            mechanism solves such issues.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>1</quote> (enabled).
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>dispatch_jobs</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "dispatch_jobs", 0)
 ...
 		</programlisting>
 		</example>
@@ -569,6 +622,51 @@ modparam("clusterer", "description_col", "description")
 		</example>
         </section>
 
+		<section id="param_enable_stats" xreflabel="enable_stats">
+			<title><varname>enable_stats</varname> (integer)</title>
+			<para>
+				If the statistics support should be enabled or not. Via statistic
+				variables, the module provide information about the cluster nodes.
+				Set it to zero to disable or to non-zero to enable it.
+			</para>
+			<para>
+				<emphasis>
+					Default value is <quote>1 (enabled)</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>enable_stats</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("clusterer", "enable_stats", 0)
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_enable_rerouting" xreflabel="enable_rerouting">
+			<title><varname>enable_rerouting</varname> (integer)</title>
+			<para>
+				If packets should be rerouted via another node if a direct route
+				to destination is unavailible. Disabling may improve stability in
+				two-node topologies.
+				Set it to zero to disable or to non-zero to enable it.
+			</para>
+			<para>
+				<emphasis>
+					Default value is <quote>1 (enabled)</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>enable_rerouting</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("clusterer", "enable_rerouting", 0)
+...
+				</programlisting>
+			</example>
+		</section>
+
         </section>
 
         <section id="exported_functions" xreflabel="exported_functions">
@@ -754,13 +852,12 @@ cluster_broadcast_req($var(cl_id), $var(share_data));
 						is made against, with the possible values of:
 						<itemizedlist>
 							<listitem>
-								<para><emphasis>bin</emphasis> - node's BIN interface listener;</para>
+								<para><emphasis>"sip"</emphasis> (default) - a node's DB provisioned SIP address</para>
 							</listitem>
 							<listitem>
-								<para><emphasis>sip</emphasis> - node's DB provisioned SIP address.</para>
+								<para><emphasis>"bin"</emphasis> - a node's BIN interface listener</para>
 							</listitem>
 						</itemizedlist>
-						<para>The default behaviour is to compare against the SIP address.</para>
 					</para></listitem>
 				</itemizedlist>
 				<para>
@@ -884,8 +981,8 @@ $ opensips-cli -x mi clusterer_list_topology
 		<function moreinfo="none">clusterer_set_status</function>
 		</title>
 		<para>
-                Sets the status(Enabled/Disabled) of the local node in a specified cluster. A disabled node does not send any messages and ignores received ones thus appearing as a failed node in the topology.
-                </para>
+            Sets the status(Enabled/Disabled) of a node. If the local instance is disabled, the node will not send any messages and ignore received ones thus appearing as a failed node in the topology (from the other node's perspective). If a different node is disabled, the specified node will simply be ignored by the local instance in terms of sending/receiving any messages, as if no longer part of the topology.
+        </para>
 		<para>
 		Name: <emphasis>clusterer_set_status</emphasis>
 		</para>
@@ -893,6 +990,10 @@ $ opensips-cli -x mi clusterer_list_topology
 		<itemizedlist>
 			<listitem><para>
 			<emphasis>cluster_id</emphasis> - indicates the id of the cluster.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>node_id</emphasis> (optional) - indicates the id of the node to be disabled.
+			If missing, the local instance will be disalbed.
 			</para></listitem>
             <listitem><para>
 			<emphasis>status</emphasis> - indicates the new status(0 - Disabled, 1 - Enabled).
@@ -902,7 +1003,10 @@ $ opensips-cli -x mi clusterer_list_topology
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
+		#disable the local instance
 		opensips-cli -x mi clusterer_set_status 1 0
+		#disable node ID 3
+		opensips-cli -x mi clusterer_set_status 1 3 0
 		</programlisting>
 	</section>
 
@@ -1036,11 +1140,13 @@ $ opensips-cli -x mi clusterer_list_cap
             "Capabilities": [
                 {
                     "name": "dialog-dlg-repl",
-                    "state": "Ok"
+                    "state": "Ok",
+                    "enabled": "yes"
                 },
                 {
                     "name": "dialog-prof-repl",
-                    "state": "Ok"
+                    "state": "Ok",
+                    "enabled": "yes"
                 }
             ]
         }
@@ -1049,6 +1155,40 @@ $ opensips-cli -x mi clusterer_list_cap
 </programlisting>
 		</example>
 		</section>
+
+		<section id="mi_clusterer_set_cap_status" xreflabel="clusterer_set_cap_status">
+		<title>
+		<function moreinfo="none">clusterer_set_cap_status</function>
+		</title>
+		<para>
+            Sets the status(Enabled/Disabled) of a capability. If a capability is disabled, the node will not send any replication/sync messages belonging to that capability. Likewise, received messages will be dropped. Also, the cabability will transition to a "not synced" state and the node will no longer be able to be a donor for syncing.
+        </para>
+		<para>
+		Name: <emphasis>clusterer_set_cap_status</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>cluster_id</emphasis> - the id of the cluster
+			</para></listitem>
+			<listitem><para>
+			<emphasis>capability</emphasis> - name of the capability, as listed by
+			<xref linkend="mi_clusterer_list_cap"/>
+			</para></listitem>
+            <listitem><para>
+			<emphasis>status</emphasis> - indicates the new status(0 - Disabled, 1 - Enabled).
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		#disable dialog replication in cluster 1
+		opensips-cli -x mi clusterer_set_cap_status 1 dialog-dlg-repl 0
+		#enable dialog profile replication in cluster 2
+		opensips-cli -x mi clusterer_set_cap_status 2 dialog-prof-repl 1
+		</programlisting>
+	</section>
 
 		<section id='mi_clusterer_shtag_set_active' xreflabel="clusterer_shtag_set_active">
 		<title><function moreinfo="none">clusterer_shtag_set_active</function></title>
@@ -1208,7 +1348,166 @@ $ opensips-cli -x mi clusterer_list_cap
 			</para></listitem>
 		</itemizedlist>
 	</section>
+
+	<section id="event_E_CLUSTERER_SHARING_TAG_CHANGED" xreflabel="E_CLUSTERER_SHARING_TAG_CHANGED">
+		<title>
+		<function moreinfo="none">E_CLUSTERER_SHARING_TAG_CHANGED</function>
+		</title>
+		<para>
+			This event is raised when the state of a sharing tag changes.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>name</emphasis> - The name of the sharing tag.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>cluster_id</emphasis> - The cluster ID.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>node_id</emphasis> - The ID of the node.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>state</emphasis> - The new state of the sharing tag,
+				the possible values: "active" or "backup".
+			</para></listitem>
+			<listitem><para>
+				<emphasis>reason</emphasis> - short text describing what
+				triggered the change of the state, like a another node
+				stepping as active, an MI command or script variable.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
 </section>
+
+<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Exported Status/Report Identifiers</title>
+
+	<para>
+	The module provides the <emphasis>clusterer</emphasis> Status/Report group.
+	</para>
+	<section id="sr_id_sharing_tags" xreflabel="sharing_tags">
+	<title><varname>sharing_tags</varname></title>
+	<para>
+	The <emphasis>sharing_tags</emphasis> identifier is provided for reporting state
+	changes of the sharing_tags (between active and backup), along with the reason of
+	the change. This identifier has a 200 records history before discarding the old ones.
+	</para>
+	<programlisting  format="linespecific">
+{
+    "Name": "sharing_tags",
+    "Reports": [
+        {
+            "Timestamp": 1652367224,
+            "Date": "Thu May 12 17:53:44 2022",
+            "Log": "TAG &lt;HA&gt;, cluster 1, became backup due to cluster broadcast from 2"
+        },
+        {
+            "Timestamp": 1652367326,
+            "Date": "Thu May 12 17:55:26 2022",
+            "Log": "TAG &lt;HA&gt;, cluster 1, became active due to MI command"
+        }
+    ]
+}
+
+	</programlisting>
+	</section>
+	<section id="sr_node_states" xreflabel="node_states">
+	<title><varname>node_states</varname></title>
+	<para>
+	The <emphasis>node_states</emphasis> identifier is used for reporting node state
+	changes (in terms of availability). This identifier has a 200 records history
+	before discarding the old ones.
+	</para>
+	<programlisting  format="linespecific">
+{
+    "Name": "node_states",
+    "Reports": [
+        {
+            "Timestamp": 1656489246,
+            "Date": "Wed Jun 29 10:54:06 2022",
+            "Log": "Node [2], cluster [1] is UP"
+        },
+        {
+            "Timestamp": 1656489261,
+            "Date": "Wed Jun 29 10:54:21 2022",
+            "Log": "Node [2], cluster [1] is DOWN"
+        }
+    ]
+}
+
+	</programlisting>
+	</section>
+	<section id="sr_id_cap" xreflabel="cap">
+	<title><varname>cap:[capability_name]</varname></title>
+	<para>
+	Each capability registered to the clusterer module has a corresponding
+	identifier, named <emphasis>cap:[capability_name]</emphasis>, used for
+	providing the status of the data syncing for that capability. This status
+	reflects the progress of the syncing process and can have the following values:
+	<itemizedlist>
+		<listitem><para>
+			<emphasis>-3</emphasis> - not synced
+		</para></listitem>
+		<listitem><para>
+			<emphasis>-2</emphasis> - sync pending (waiting for either a suitable
+			donor node or actual sync data)
+		</para></listitem>
+		<listitem><para>
+			<emphasis>-1</emphasis> - sync in progress
+		</para></listitem>
+		<listitem><para>
+			<emphasis>1</emphasis> - synced (either sync has completed or the
+			capability does not require data syncing at all)
+		</para></listitem>
+	</itemizedlist>
+	</para>
+	<programlisting  format="linespecific">
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Readiness": true,
+    "Status": 1,
+    "Details": "synced"
+},
+	</programlisting>
+	<para>
+	The capability identifiers also provide reports regarding the main stages of
+	the sync process. These identifiers have a 200 records history before discarding
+	the old ones.
+	</para>
+	<programlisting  format="linespecific">
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Reports": [
+        {
+            "Timestamp": 1656966903,
+            "Date": "Mon Jul  4 23:35:03 2022",
+            "Log": "Sync requested"
+        },
+        {
+            "Timestamp": 1656966904,
+            "Date": "Mon Jul  4 23:35:04 2022",
+            "Log": "Sync started from node [1]"
+        },
+        {
+            "Timestamp": 1656966906,
+            "Date": "Mon Jul  4 23:35:06 2022",
+            "Log": "Sync completed, received [10000] chunks"
+        }
+    ]
+},
+
+	</programlisting>
+	</section>
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='https://www.opensips.org/Documentation/Interface-StatusReport-3-4'>Status/Report Interface documentation</ulink>.
+	</para>
+
+</section>
+
+
 
 <section>
 	<title>Usage Example</title>
@@ -1342,5 +1641,33 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 	your platform the ability to used shared ratelimit pipes in a very
 	efficient and scalable way.
 </para>
+
+<section id="exported_statistics">
+	<title>Exported Statistics</title>
+	<section id="stat_clusterer_nodes" xreflabel="clusterer_nodes">
+		<title>
+			<varname>clusterer_nodes</varname>
+		</title>
+		<para>
+			Returns the total number of cluster nodes.
+		</para>
+	</section>
+	<section id="stat_clusterer_nodes_up" xreflabel="clusterer_nodes_up">
+		<title>
+			<varname>clusterer_nodes_up</varname>
+		</title>
+		<para>
+			Returns the total number of cluster nodes in the UP state.
+		</para>
+	</section>
+	<section id="stat_clusterer_nodes_down" xreflabel="clusterer_nodes_down">
+		<title>
+			<varname>clusterer_nodes_down</varname>
+		</title>
+		<para>
+			Returns the total number of cluster nodes not in the UP state.
+		</para>
+	</section>
+</section>
 
 </chapter>

@@ -49,6 +49,7 @@
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
 #include "../../ipc.h"
+#include "../../pvar.h"
 
 #include "ul_mod.h"
 #include "dlist.h"           /* register_udomain */
@@ -61,6 +62,7 @@
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
+#include "kv_store.h"
 
 #define CONTACTID_COL  "contact_id"
 #define USER_COL       "username"
@@ -90,6 +92,9 @@ int ul_init_globals(void);
 int ul_check_config(void);
 int ul_check_db(void);
 int ul_deprec_shp(modparam_t _, void *modparam);
+
+/*! \brief Fixup functions */
+static int domain_fixup(void** param);
 
 //static int add_replication_dest(modparam_t type, void *val);
 
@@ -172,6 +177,9 @@ static char *nat_bflag_str = 0;
  */
 int location_cluster;
 
+int ul_ha_cluster;
+str ul_ha_shtag;
+
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
 
@@ -185,15 +193,35 @@ int latency_event_min_us;
 /*! \brief
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"ul_bind_usrloc", (cmd_function)bind_usrloc, {{0,0,0}},0},
+        {"ul_add_key", (cmd_function)w_add_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
+        {"ul_get_key", (cmd_function)w_get_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_VAR, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
+       {"ul_del_key", (cmd_function)w_delete_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
 /*! \brief
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"contact_id_column",   STR_PARAM,&contactid_col.s   },
 	{"user_column",        STR_PARAM, &user_col.s        },
 	{"domain_column",      STR_PARAM, &domain_col.s      },
@@ -238,6 +266,8 @@ static param_export_t params[] = {
 
 	/* data replication through clusterer using TCP binary packets */
 	{ "location_cluster",	INT_PARAM, &location_cluster   },
+	{ "ha_cluster",	        INT_PARAM, &ul_ha_cluster },
+	{ "ha_shtag",	        STR_PARAM, &ul_ha_shtag.s },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops   },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
@@ -246,12 +276,12 @@ static param_export_t params[] = {
 };
 
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"registered_users" ,  STAT_IS_FUNC, (stat_var**)get_number_of_users  },
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_USRLOC_RM, 0, 0, mi_child_init, {
 		{mi_usrloc_rm_aor, {"table_name", "aor", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -271,7 +301,7 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ MI_USRLOC_ADD, 0, 0, mi_child_init, {
 		{mi_usrloc_add, {"table_name", "aor", "contact", "expires", "q",
-						 "unsused", "flags", "cflags", "methods", 0}},
+						 "flags", "cflags", "methods", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ MI_USRLOC_SHOW_CONTACT, 0, 0, mi_child_init, {
@@ -290,7 +320,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static module_dependency_t *get_deps_db_mode(param_export_t *param)
+static module_dependency_t *get_deps_db_mode(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= NO_DB)
 		return NULL;
@@ -298,7 +328,7 @@ static module_dependency_t *get_deps_db_mode(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
 }
 
-static module_dependency_t *get_deps_wmode_preset(param_export_t *param)
+static module_dependency_t *get_deps_wmode_preset(const param_export_t *param)
 {
 	char *haystack = *(char **)param->param_pointer;
 
@@ -311,7 +341,7 @@ static module_dependency_t *get_deps_wmode_preset(param_export_t *param)
 	return NULL;
 }
 
-static module_dependency_t *get_deps_rr_persist(param_export_t *param)
+static module_dependency_t *get_deps_rr_persist(const param_export_t *param)
 {
 	if (!strcasecmp(*(char **)param->param_pointer, "load-from-sql"))
 		return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
@@ -319,7 +349,7 @@ static module_dependency_t *get_deps_rr_persist(param_export_t *param)
 	return NULL;
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
@@ -404,7 +434,7 @@ static int mod_init(void)
 }
 
 
-static void ul_rpc_data_load(int sender_id, void *unsused)
+static void ul_rpc_data_load(int sender_id, void *_)
 {
 	dlist_t* ptr;
 
@@ -704,6 +734,14 @@ int ul_check_config(void)
 			return -1;
 		}
 
+		if (!ul_ha_cluster)
+			LM_ERR("'ha_cluster' is not set! "
+			        "Backup node will also write to CacheDB!\n");
+
+		if (!ul_ha_shtag.s)
+			LM_ERR("'ha_shtag' is not set! "
+			        "Backup node will also write to CacheDB!\n");
+
 		if (!cdb_url.s) {
 			LM_ERR("no cache database URL defined! ('cachedb_url')\n");
 			return -1;
@@ -823,6 +861,8 @@ int ul_init_globals(void)
 	kv_store_col.len = strlen(kv_store_col.s);
 	attr_col.len = strlen(attr_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
+	if (ul_ha_shtag.s)
+		ul_ha_shtag.len = strlen(ul_ha_shtag.s);
 
 	if (ul_hash_size > 16) {
 		LM_WARN("hash too big! max 2 ^ 16\n");
@@ -908,7 +948,7 @@ int ul_check_db(void)
 			return -1;
 		}
 
-		if (rr_persist == RRP_LOAD_FROM_SQL) {
+		if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
 			if (!(sync_lock = lock_init_rw())) {
 				LM_ERR("cannot init rw lock\n");
 				return -1;
@@ -922,7 +962,7 @@ int ul_check_db(void)
 				return -1;
 			}
 
-			cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
+			cid_vals = (db_val_t *)(void *)(cid_keys + max_contact_delete);
 			for (i = 0; i < max_contact_delete; i++) {
 				VAL_TYPE(cid_vals + i) = DB_BIGINT;
 				VAL_NULL(cid_vals + i) = 0;
@@ -932,4 +972,26 @@ int ul_check_db(void)
 	}
 
 	return 0;
+}
+
+/*! \brief
+ * Convert char* parameter to udomain_t* pointer
+ */
+static int domain_fixup(void** param)
+{
+        udomain_t* d;
+        str d_nt;
+
+        if (pkg_nt_str_dup(&d_nt, (str*)*param) < 0)
+                return E_OUT_OF_MEM;
+
+        if (register_udomain(d_nt.s, &d) < 0) {
+                LM_ERR("failed to register domain\n");
+                return E_UNSPEC;
+        }
+
+        pkg_free(d_nt.s);
+
+        *param = (void*)d;
+        return 0;
 }

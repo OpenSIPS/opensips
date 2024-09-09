@@ -156,7 +156,7 @@ Chapter 1. Admin Guide
    Usage example:
                 ...
                 if (!cgrates_auth("$fU", "$rU")) {
-                        sl_send_reply("403", "Forbidden");
+                        sl_send_reply(403, "Forbidden");
                         exit;
                 }
                 xlog("Call is allowed to run $cgr_ret seconds\n");
@@ -494,6 +494,12 @@ select,$var(idx),,}{s.select,1,:});
    another. if the session tag does not exist, the default (no
    name) one is used.
 
+   When assigned with the := operator, the value is treated as a
+   JSON, rather than a string/integer. However, the evaluation of
+   the JSON is late, therefore when the CGRateS request is built,
+   if the module is unable to parse the JSON, the value is sent as
+   a string.
+
    Example 1.10. $cgr(name) simple usage
                 ...
                 if (!has_totag()) {
@@ -502,8 +508,10 @@ select,$var(idx),,}{s.select,1,:});
  a tenant
                         $cgr(RequestType) = "*prepaid"; # do prepaid acc
 ounting
+                        $cgr(AttributeIDs) := '["+5551234"]'; # treat as
+ array
                         if (!cgrates_auth("$fU", "$rU")) {
-                                sl_send_reply("403", "Forbidden");
+                                sl_send_reply(403, "Forbidden");
                                 exit;
                         }
                 }
@@ -519,7 +527,7 @@ ounting
                         $cgr(RequestType) = "*prepaid"; # do prepaid acc
 ounting
                         if (!cgrates_auth("$fU", "$rU")) {
-                                sl_send_reply("403", "Forbidden");
+                                sl_send_reply(403, "Forbidden");
                                 exit;
                         }
 
@@ -624,7 +632,7 @@ route [auth_reply]
 {
         if ($rc < 0) {
                 xlog("Call not authorized: code=$cgr_ret!\n");
-                send_reply("403", "Forbidden");
+                send_reply(403, "Forbidden");
                 exit;
         }
         ...
@@ -669,7 +677,7 @@ route [auth_reply]
 {
         if ($rc < 0) {
                 xlog("Call not authorized: code=$cgr_ret!\n");
-                send_reply("403", "Forbidden");
+                send_reply(403, "Forbidden");
                 exit;
         }
         ...
@@ -693,7 +701,7 @@ route [auth_reply]
         if ($rc < 0) {
                 xlog("Call not authorized: MaxUsage=$cgr_ret(MaxUsage)!\
 n");
-                send_reply("403", "Forbidden");
+                send_reply(403, "Forbidden");
                 exit;
         }
         ...
@@ -706,14 +714,15 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 167 79 7052 1787
-   2. Vlad Patrascu (@rvlad-patrascu) 13 9 115 172
-   3. Liviu Chircu (@liviuchircu) 9 7 32 48
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 20 21
-   5. wuhanck 3 1 3 3
-   6. Maksym Sobolyev (@sobomax) 3 1 1 1
-   7. Bradley Jokinen 2 1 6 0
-   8. Razvan 2 1 4 0
+   1. Razvan Crainea (@razvancrainea) 190 98 7241 1867
+   2. Vlad Patrascu (@rvlad-patrascu) 16 10 138 190
+   3. Liviu Chircu (@liviuchircu) 14 11 56 65
+   4. Maksym Sobolyev (@sobomax) 7 5 18 18
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 20 21
+   6. wuhanck 3 1 3 3
+   7. James Stanley 3 1 1 1
+   8. Bradley Jokinen 2 1 6 0
+   9. Razvan 2 1 4 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -735,14 +744,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Dec 2016 - Jul 2020
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Mar 2020
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   4. Liviu Chircu (@liviuchircu)         Nov 2017 - Nov 2019
-   5. Razvan                              Dec 2018 - Dec 2018
-   6. wuhanck                             Apr 2018 - Apr 2018
-   7. Maksym Sobolyev (@sobomax)          Jul 2017 - Jul 2017
-   8. Bradley Jokinen                     Jul 2017 - Jul 2017
+   1. Razvan Crainea (@razvancrainea)     Dec 2016 - Jul 2024
+   2. Liviu Chircu (@liviuchircu)         Nov 2017 - Apr 2024
+   3. Maksym Sobolyev (@sobomax)          Jul 2017 - Nov 2023
+   4. James Stanley                       Mar 2023 - Mar 2023
+   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Mar 2020
+   7. Razvan                              Dec 2018 - Dec 2018
+   8. wuhanck                             Apr 2018 - Apr 2018
+   9. Bradley Jokinen                     Jul 2017 - Jul 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -751,8 +761,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea).
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:
 

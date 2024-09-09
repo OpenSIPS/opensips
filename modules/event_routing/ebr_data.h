@@ -65,6 +65,7 @@ typedef struct _ebr_event {
 	str event_name;
 	int event_id;
 	gen_lock_t lock;
+	unsigned int last_timeout_check;
 	ebr_subscription *subs;
 	struct _ebr_event *next;
 } ebr_event;
@@ -88,6 +89,8 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params);
 void handle_ebr_ipc(int sender, void *payload);
 
 int ebr_resume_from_wait(int *fd, struct sip_msg *msg, void *param);
+
+void ebr_timeout(unsigned int ticks, void* param);
 
 #endif
 

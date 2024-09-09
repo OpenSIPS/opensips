@@ -25,11 +25,24 @@
 #define CASE_FROM_H
 
 
-#define from_CASE             \
-        hdr->type = HDR_FROM_T; \
-        hdr->name.len = 4;    \
-        p += 4;               \
-        goto dc_cont
-
+#define from_CASE                                              \
+	p += 4;                                                    \
+	if (HAVE(1) && *p == '-') {                                \
+		if (!HAVE(5))                                          \
+			goto other;                                        \
+		val = LOWER_DWORD(READ(p));                            \
+		if (val == __pat_ && LOWER_BYTE(*(p+4)) == 'h') {      \
+			hdr->type = HDR_FROM_PATH_T;                       \
+			hdr->name.len = 9;                                 \
+			p += 5;                                            \
+			goto dc_cont;                                      \
+		} else {                                               \
+			goto other;                                        \
+		}                                                      \
+	} else {                                                   \
+		hdr->type = HDR_FROM_T;                                \
+		hdr->name.len = 4;                                     \
+		goto dc_cont;                                          \
+	}
 
 #endif /* CASE_FROM_H */

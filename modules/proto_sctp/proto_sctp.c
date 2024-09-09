@@ -35,13 +35,13 @@ static int sctp_port = SIP_PORT;
 
 static int proto_sctp_init(struct proto_info *pi);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_sctp_init, {{0, 0, 0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "sctp_port",    INT_PARAM,    &sctp_port },
 	{0, 0, 0}
 };
@@ -81,7 +81,7 @@ static int proto_sctp_init(struct proto_info *pi)
 	pi->tran.send			= proto_sctp_send;
 
 	pi->net.flags			= PROTO_NET_USE_UDP;
-	pi->net.read			= (proto_net_read_f)proto_sctp_read;
+	pi->net.dgram.read		= proto_sctp_read;
 
 	return 0;
 }

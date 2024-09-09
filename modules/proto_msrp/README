@@ -1,0 +1,310 @@
+proto_msrp Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. send_timeout (integer)
+              1.3.2. max_msg_chunks (integer)
+              1.3.3. tls_handshake_timeout (integer)
+              1.3.4. cert_check_on_conn_reusage (integer)
+              1.3.5. trace_destination (string)
+              1.3.6. trace_on (int)
+              1.3.7. trace_filter_route (string)
+
+        1.4. Exported MI Functions
+
+              1.4.1. msrp_trace
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set send_timeout parameter
+   1.2. Set max_msg_chunks parameter
+   1.3. Set tls_handshake_timeout variable
+   1.4. Set cert_check_on_conn_reusage parameter
+   1.5. Set trace_destination parameter
+   1.6. Set trace_on parameter
+   1.7. Set trace_filter_route parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The proto_msrp module provides the MSRP protocol stack, meaning
+   the network read/wite (plain and TLS), message parsing and
+   assembling, transactional layer and the basic signalling
+   operations.
+
+   Once loaded, you will be able to define MSRP listeners in your
+   script, by adding its IP, and optionally the listening port, in
+   your configuration file, similar to this example:
+
+...
+socket=msrp:127.0.0.1:65432
+socket=msrps:127.0.0.1:65431
+...
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * tls_mgm - you need to load this module if using MSRPS
+       (secure) sockets. Via this module you will manage the SSL
+       certificates
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. send_timeout (integer)
+
+   Time in milliseconds after a MSRP connection will be closed if
+   it is not available for blocking writing in this interval (and
+   OpenSIPS wants to send something on it).
+
+   Default value is 100 ms.
+
+   Example 1.1. Set send_timeout parameter
+...
+modparam("proto_msrp", "send_timeout", 200)
+...
+
+1.3.2. max_msg_chunks (integer)
+
+   The maximum number of chunks that a SIP message is expected to
+   arrive via MSRP. If a packet is received more fragmented than
+   this, the connection is dropped (either the connection is very
+   overloaded and this leads to high fragmentation - or we are the
+   victim of an ongoing attack where the attacker is sending the
+   traffic very fragmented in order to decrease our performance).
+
+   Default value is 4.
+
+   Example 1.2. Set max_msg_chunks parameter
+...
+modparam("proto_msrp", "max_msg_chunks", 8)
+...
+
+1.3.3. tls_handshake_timeout (integer)
+
+   Sets the timeout (in milliseconds) for the SSL handshake
+   sequence to complete. It may be necessary to increase this
+   value when using a CPU intensive cipher for the connection to
+   allow time for keys to be generated and processed.
+
+   The timeout is invoked during acceptance of a new connection
+   (inbound) and during the wait period when a new session is
+   being initiated (outbound).
+
+   Default value is 100.
+
+   Example 1.3. Set tls_handshake_timeout variable
+
+param("proto_msrp", "tls_handshake_timeout", 200) # number of millisecon
+ds
+
+
+1.3.4. cert_check_on_conn_reusage (integer)
+
+   This parameter turns on or off the extra checking/matching of
+   the TLS domain (SSL certificate) when comes to reusing an
+   existing TLS connection. Without this extra check, only IP and
+   port of the connections will be check (in order to re-use an
+   existing connection). With this extra check, the connection to
+   be reused must have the same SSL certificate as the one set for
+   the current signaling operation.
+
+   This checking is done only when comes to send SIP traffic via
+   TLS and it is applied only against connections that were
+   created / initiated by OpenSIPS (as TLS client). Any accepte
+   connection (as TLS server) will automatically match (the extra
+   test will be skipped).
+
+   Default value is 0 (disabled).
+
+   Example 1.4. Set cert_check_on_conn_reusage parameter
+...
+modparam("proto_msrp", "cert_check_on_conn_reusage", 1)
+...
+
+1.3.5. trace_destination (string)
+
+   Trace destination as defined in the tracing module. Currently
+   the only tracing module is proto_hep. Network events such as
+   connect, accept and connection closed events shall be traced
+   along with errors that could appear in the process.
+
+   WARNING: A tracing module must be loaded in order for this
+   parameter to work. (for example proto_hep).
+
+   Default value is none(not defined).
+
+   Example 1.5. Set trace_destination parameter
+...
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
+n=3")
+
+modparam("proto_msrp", "trace_destination", "hep_dest")
+...
+
+1.3.6. trace_on (int)
+
+   This controls whether tracing for MSRP is on or not. You still
+   need to define Section 1.3.5, “trace_destination (string)”in
+   order to work, but this value will be controlled using MI
+   function Section 1.4.1, “ msrp_trace ”.
+   Default value is 0(tracing inactive).
+
+   Example 1.6. Set trace_on parameter
+...
+modparam("proto_msrp", "trace_on", 1)
+...
+
+1.3.7. trace_filter_route (string)
+
+   Define the name of a route in which you can filter which
+   connections will be trace and which connections won't be. In
+   this route you will have information regarding source and
+   destination ips and ports for the current connection. To
+   disable tracing for a specific connection the last call in this
+   route must be drop, any other exit mode resulting in tracing
+   the current connection ( of course you still have to define a
+   Section 1.3.5, “trace_destination (string)” and trace must be
+   on at the time this connection is opened.
+
+   IMPORTANT Filtering on ip addresses and ports can be made using
+   $si and $sp for matching either the entity that is connecting
+   to OpenSIPS or the entity to which OpenSIPS is connecting. The
+   name might be misleading ( $si meaning the source ip if you
+   read the docs) but in reality it is simply the socket other
+   than the OpenSIPS socket. In order to match OpenSIPS interface
+   (either the one that accepted the connection or the one that
+   initiated a connection) $socket_in(ip) (ip) and
+   $socket_in(port) (port) can be used.
+
+   WARNING: IF Section 1.3.6, “trace_on (int)” is set to 0 or
+   tracing is deactived via the mi command Section 1.4.1, “
+   msrp_trace ” this route won't be called.
+   Default value is none(no route is set).
+
+   Example 1.7. Set trace_filter_route parameter
+...
+modparam("proto_msrp", "trace_filter_route", "msrp_filter")
+...
+/* all MSRP connections will go through this route if tracing is activat
+ed
+ * and a trace destination is defined */
+route[msrp_filter] {
+        ...
+        /* all connections opened from/by ip 1.1.1.1:8000 will be traced
+           on interface 1.1.1.10:5060(opensips listener)
+           all the other connections won't be */
+         if ( $si == "1.1.1.1" && $sp == 8000 &&
+                $socket_in(ip) == "1.1.1.10"  && $socket_in(port) == 506
+0)
+                exit;
+        else
+                drop;
+}
+...
+
+1.4. Exported MI Functions
+
+1.4.1.  msrp_trace
+
+   Name: msrp_trace
+
+   Parameters:
+     * trace_mode(optional): set MSRP tracing on and off. This
+       parameter can be missing and the command will show the
+       current tracing status for this module( on or off );
+       Possible values:
+          + on
+          + off
+
+   MI FIFO Command Format:
+                        :msrp_trace:_reply_fifo_file_
+                        trace_mode
+                        _empty_line_
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 67 17 4831 525
+   2. Vlad Patrascu (@rvlad-patrascu) 32 22 422 348
+   3. Maksym Sobolyev (@sobomax) 6 4 30 28
+   4. Liviu Chircu (@liviuchircu) 6 4 23 21
+   5. Razvan Crainea (@razvancrainea) 4 2 3 3
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   2. Razvan Crainea (@razvancrainea)     Sep 2022 - Jul 2023
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2022 - May 2023
+   4. Vlad Patrascu (@rvlad-patrascu)     Mar 2022 - Jul 2022
+   5. Liviu Chircu (@liviuchircu)         Apr 2022 - Jul 2022
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu).
+
+   Documentation Copyrights:
+
+   Copyright © 2022 www.opensips-solutions.com

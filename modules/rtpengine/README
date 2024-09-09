@@ -18,13 +18,16 @@ rtpengine Module
               1.4.2. rtpengine_disable_tout (integer)
               1.4.3. rtpengine_tout (integer)
               1.4.4. rtpengine_retr (integer)
-              1.4.5. notification_sock (string)
-              1.4.6. extra_id_pv (string)
-              1.4.7. setid_avp (string)
-              1.4.8. db_url (string)
-              1.4.9. db_table (string)
-              1.4.10. socket_column (string)
-              1.4.11. set_column (string)
+              1.4.5. rtpengine_timer_interval (integer)
+              1.4.6. notification_sock (string)
+              1.4.7. extra_id_pv (string)
+              1.4.8. setid_avp (string)
+              1.4.9. error_pv (string)
+              1.4.10. db_url (string)
+              1.4.11. db_table (string)
+              1.4.12. socket_column (string)
+              1.4.13. set_column (string)
+              1.4.14. ping_enabled (integer)
 
         1.5. Exported Functions
 
@@ -48,7 +51,9 @@ rtpengine Module
               1.5.8. rtpengine_play_media(flags, [duration_spec[,
                       sock_var[, sockvar]]])
 
-              1.5.9. rtpengine_stop_media([flags[, sockvar]])
+              1.5.9. rtpengine_stop_media(flags[, [sock_var[,
+                      sockvar]], [last_frame_pos]])
+
               1.5.10. rtpengine_block_media([flags[, sockvar]])
               1.5.11. rtpengine_unblock_media([flags[, sockvar]])
               1.5.12. rtpengine_block_dtmf([flags[, sockvar]])
@@ -78,6 +83,7 @@ rtpengine Module
         1.8. Exported Events
 
               1.8.1. E_RTPENGINE_NOTIFICATION
+              1.8.2. E_RTPENGINE_STATUS
 
    2. Frequently Asked Questions
    3. Contributors
@@ -102,40 +108,47 @@ rtpengine Module
    1.2. Set rtpengine_disable_tout parameter
    1.3. Set rtpengine_tout parameter
    1.4. Set rtpengine_retr parameter
-   1.5. Set notification_sock parameter
-   1.6. Set extra_id_pv parameter
-   1.7. Set setid_avp parameter
-   1.8. Set db_url parameter
-   1.9. Set db_table parameter
-   1.10. Set socket_column parameter
-   1.11. Set set_column parameter
-   1.12. rtpengine_use_set usage
-   1.13. rtpengine_offer usage
-   1.14. rtpengine_offer usage with body replace
-   1.15. rtpengine_offer usage with call recording
-   1.16. rtpengine_offer usage for transcoding
-   1.17. rtpengine_answer usage
-   1.18. rtpengine_delete usage
-   1.19. rtpengine_manage usage
-   1.20. rtpengine_start_recording usage
-   1.21. rtpengine_stop_recording usage
-   1.22. Ringback tone using rtpengine_play_media
-   1.23. Manage music on hold using rtpengine_play_media
-   1.24. Ringback tone stop using rtpengine_stop_media
-   1.25. Example of rtpengine_block_media usage
-   1.26. Example of rtpengine_unblock_media usage
-   1.27. Example of rtpengine_block_dtmf usage
-   1.28. Example of rtpengine_unblock_dtmf usage
-   1.29. Example of rtpengine_start_forwarding usage
-   1.30. Example of rtpengine_stop_forwarding usage
-   1.31. Example of rtpengine_play_dtmf usage
-   1.32. $rtpstat Usage
-   1.33. $rtpstat(STAT)
-   1.34. $rtpquery Usage
-   1.35. rtpengine_enable usage
-   1.36. rtpengine_show usage
-   1.37. rtpengine_reload usage
-   1.38. teardown usage
+   1.5. Set rtpengine_timer_interval parameter
+   1.6. Set notification_sock parameter
+   1.7. Set extra_id_pv parameter
+   1.8. Set setid_avp parameter
+   1.9. Set error_pv parameter
+   1.10. Set db_url parameter
+   1.11. Set db_table parameter
+   1.12. Set socket_column parameter
+   1.13. Set set_column parameter
+   1.14. Set ping_enabled parameter
+   1.15. rtpengine_use_set usage
+   1.16. rtpengine_offer usage
+   1.17. rtpengine_offer usage with body replace
+   1.18. rtpengine_offer usage with call recording
+   1.19. rtpengine_offer usage for transcoding
+   1.20. Set extra_failover_error parameter
+   1.21. rtpengine_answer usage
+   1.22. rtpengine_delete usage
+   1.23. rtpengine_manage usage
+   1.24. rtpengine_start_recording usage
+   1.25. rtpengine_stop_recording usage
+   1.26. Ringback tone using rtpengine_play_media
+   1.27. Manage music on hold using rtpengine_play_media
+   1.28. Ringback tone stop using rtpengine_stop_media
+   1.29. Example use of the last-frame-pos parameter
+          rtpengine_stop_media
+
+   1.30. Example of rtpengine_block_media usage
+   1.31. Example of rtpengine_unblock_media usage
+   1.32. Example of rtpengine_block_dtmf usage
+   1.33. Example of rtpengine_unblock_dtmf usage
+   1.34. Example of rtpengine_start_forwarding usage
+   1.35. Example of rtpengine_stop_forwarding usage
+   1.36. Example of rtpengine_play_dtmf usage
+   1.37. $rtpstat Usage
+   1.38. $rtpstat(STAT)
+   1.39. $rtpquery Usage
+   1.40. rtpengine_enable usage
+   1.41. rtpengine_show usage
+   1.42. rtpengine_reload usage
+   1.43. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -188,6 +201,15 @@ Chapter 1. Admin Guide
    the avp needs to be set only once before rtpengine_offer() or
    rtpengine_manage() call.
 
+   The module is able to failover to a new node within a set, if a
+   chosen one has communication issues. Moreover, it will also
+   failover if the node returns one of the following errors:
+     * Parallel session limit reached
+     * Ran out of ports
+
+   You can use the extra_failover_error parameter to extend the
+   above list.
+
 1.3. Dependencies
 
 1.3.1. OpenSIPS Modules
@@ -207,7 +229,9 @@ Chapter 1. Admin Guide
 1.4.1. rtpengine_sock (string)
 
    Definition of socket(s) used to connect to (a set) RTP proxy.
-   It may specify a UNIX socket or an IPv4/IPv6 UDP socket.
+   It may specify a UNIX socket or an IPv4/IPv6 UDP socket. If the
+   protocol part (i.e. “udp:”) is missing, the socket is treated
+   as a UNIX socket.
 
    Default value is “NONE” (disabled).
 
@@ -262,7 +286,24 @@ modparam("rtpengine", "rtpengine_tout", 2)
 modparam("rtpengine", "rtpengine_retr", 2)
 ...
 
-1.4.5. notification_sock (string)
+1.4.5. rtpengine_timer_interval (integer)
+
+   Frequency to scan rtpengine sets for disabled node probing.
+   Probing is done outside the SIP processing context and in a
+   separate timer routine. Disabled nodes are probed for
+   re-enablement after rtpengine_disable_tout seconds. Setting
+   this value too high can lead to unexpectedly large disabled
+   interval as the max interval before probing is
+   (rtpengine_timer_interval + rtpengine_disable_tout) seconds.
+
+   Default value is “5”.
+
+   Example 1.5. Set rtpengine_timer_interval parameter
+...
+modparam("rtpengine", "rtpengine_timer_interval", 1)
+...
+
+1.4.6. notification_sock (string)
 
    An UDP socket formatted as IP:port that indicates the listening
    IP and port OpenSIPS will bind for to receive notifications
@@ -273,12 +314,12 @@ modparam("rtpengine", "rtpengine_retr", 2)
 
    Default value is “none” - notifications are ignored.
 
-   Example 1.5. Set notification_sock parameter
+   Example 1.6. Set notification_sock parameter
 ...
 modparam("rtpengine", "notification_sock", "127.0.0.1:9999")
 ...
 
-1.4.6. extra_id_pv (string)
+1.4.7. extra_id_pv (string)
 
    The parameter sets the PV definition to use when the
    “via-branch=extra” option is used on the rtpengine_delete(),
@@ -288,12 +329,12 @@ modparam("rtpengine", "notification_sock", "127.0.0.1:9999")
    Default is empty, the “via-branch=extra” option may not be used
    then.
 
-   Example 1.6. Set extra_id_pv parameter
+   Example 1.7. Set extra_id_pv parameter
 ...
 modparam("rtpengine", "extra_id_pv", "$avp(extra_id)")
 ...
 
-1.4.7. setid_avp (string)
+1.4.8. setid_avp (string)
 
    The parameter defines an AVP that, if set, determines which RTP
    proxy set rtpengine_offer(), rtpengine_answer(),
@@ -301,12 +342,24 @@ modparam("rtpengine", "extra_id_pv", "$avp(extra_id)")
 
    There is no default value.
 
-   Example 1.7. Set setid_avp parameter
+   Example 1.8. Set setid_avp parameter
 ...
 modparam("rtpengine", "setid_avp", "$avp(setid)")
 ...
 
-1.4.8. db_url (string)
+1.4.9. error_pv (string)
+
+   The parameter defines a variable that shall be populated by RTP
+   when one of the rtpengine_* functions fail.
+
+   There is no default value.
+
+   Example 1.9. Set error_pv parameter
+...
+modparam("rtpengine", "error_pv", "$var(rtpengine_error)")
+...
+
+1.4.10. db_url (string)
 
    Database URL, used to load RTPEngines sockets from db, instead
    of specifying them in the script (rtpengine_sock module
@@ -314,44 +367,60 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 
    Default value is “NULL”, no database is used.
 
-   Example 1.8. Set db_url parameter
+   Example 1.10. Set db_url parameter
 ...
 modparam("rtpengine", "db_url",
                 "mysql://opensips:opensipsrw@localhost/opensips")
 ...
 
-1.4.9. db_table (string)
+1.4.11. db_table (string)
 
    The table where the RTPEngines sockets are stored. Used when
    Database URL is provisioned.
 
-   Default value is “rtpengines”.
+   Default value is “rtpengine”.
 
-   Example 1.9. Set db_table parameter
+   Example 1.11. Set db_table parameter
 ...
 modparam("rtpengine", "db_table", "rtpengine_new")
 ...
 
-1.4.10. socket_column (string)
+1.4.12. socket_column (string)
 
    The name of the rtpengine socket column in the database table.
 
    Default value is “socket”.
 
-   Example 1.10. Set socket_column parameter
+   Example 1.12. Set socket_column parameter
 ...
 modparam("rtpengine", "socket_column", "sock")
 ...
 
-1.4.11. set_column (string)
+1.4.13. set_column (string)
 
    The name of the rtpengine set column in the database table.
 
    Default value is “set_id”.
 
-   Example 1.11. Set set_column parameter
+   Example 1.13. Set set_column parameter
 ...
 modparam("rtpengine", "set_column", "set_new")
+...
+
+1.4.14. ping_enabled (integer)
+
+   This parameter indicates whether probing should be done for
+   enabled nodes as well.
+
+   If this parameter is set, each enabled node is pinged every
+   rtpengine_timer_interval seconds, unless there was any
+   communication with the node since the previous interval.
+
+   Default value is “0” (disabled).
+
+   Example 1.14. Set ping_enabled parameter
+...
+modparam("rtpengine", "ping_enables", yes)
 ...
 
 1.5. Exported Functions
@@ -365,7 +434,7 @@ modparam("rtpengine", "set_column", "set_new")
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.12. rtpengine_use_set usage
+   Example 1.15. rtpengine_use_set usage
 ...
 rtpengine_use_set(2);
 rtpengine_offer();
@@ -408,6 +477,8 @@ rtpengine_offer();
             the full call, breaking the subsequent “answer” for
             the new branch. This flag is only supported by the
             Sipwise rtpengine RTP proxy at the moment!
+          + via-branch-param=... - provide a custom value for the
+            via-branch param.
           + call-id - provide a custom Call-ID for the session. If
             missing, the Call-Id of the request/reply is used.
           + from-tag - provide a custom from-tag for the session.
@@ -464,6 +535,10 @@ rtpengine_offer();
             work properly with RFC4091 (ANAT) compatible clients,
             which suggests having different m-lines with different
             IP-protocols grouped together.
+          + received-from=... - sets the address from which SIP
+            packet with SDP received. This flag always set
+            automatically, don't use it until you have a reason
+            for that.
           + force - instructs the RTP proxy to ignore marks
             inserted by another RTP proxy in transit to indicate
             that the session is already goes through another
@@ -483,6 +558,12 @@ rtpengine_offer();
           + replace-session-connection - flags to change the
             session-level SDP connection (c=) IP if media
             description also includes connection information.
+          + replace-zero-address - flags to replace zero address
+            with real address. Using a zero endpoint address is an
+            obsolete way to signal a muted or sendonly stream.
+            Streams with zero addresses are normally flagged as
+            sendonly and the zero address in the SDP is passed
+            through.
           + symmetric - flags that for the UA from which message
             is received, support symmetric RTP must be forced. You
             do not need to explicitly specify this value, as it is
@@ -598,7 +679,7 @@ rtpengine_offer();
 
    This function can be used from ALL_ROUTES.
 
-   Example 1.13. rtpengine_offer usage
+   Example 1.16. rtpengine_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -630,7 +711,7 @@ onreply_route[2]
 ...
 }
 
-   Example 1.14. rtpengine_offer usage with body replace
+   Example 1.17. rtpengine_offer usage with body replace
 ...
 if (rtpengine_offer(, $var(socket), $var(body), $rb)) {
     xlog("Used rtpengine $var(socket)\n");
@@ -641,7 +722,7 @@ if (rtpengine_offer(, $var(socket), $var(body), $rb)) {
 }
 ...
 
-   Example 1.15. rtpengine_offer usage with call recording
+   Example 1.18. rtpengine_offer usage with call recording
 ...
 $var(rtpengine_flags) = $var(rtpengine_flags) + " record-call=yes";
 
@@ -658,7 +739,7 @@ cording_keys){s.encode.hexa});
 rtpengine_offer($var(rtpengine_flags));
 ...
 
-   Example 1.16. rtpengine_offer usage for transcoding
+   Example 1.19. rtpengine_offer usage for transcoding
 ...
 # Goal: make A-side talk PCMA and B-side talk opus
 # * do not present PCMA to B-side: codec-mask-PCMA, but use it on A-side
@@ -666,6 +747,27 @@ rtpengine_offer($var(rtpengine_flags));
 # * offer opus to B-side: transcode-opus
 rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 ");
+...
+
+1.5.2.1. extra_failover_error (string)
+
+   Contains a (XDB) regular expression that can be used to match
+   an error received from a RTPEngine node. If matched the module
+   tries to use a new node to handle the affected command.
+
+   This parameter can be used to extend the list (see ??? of
+   errors the module implicitely fails over.
+
+   Note each declaration will define a single expression/matching
+   rule. If you want to define multiple rules, you need to define
+   the parameter multiple times.
+
+   Default value is empty, no extra errors are being used.
+
+   Example 1.20. Set extra_failover_error parameter
+...
+modparam("rtpengine", "extra_failover_error", "Parallel session limit re
+ached")
 ...
 
 1.5.3.  rtpengine_answer([flags[, sock_pvar[, sdp_pvar[, body]]]])
@@ -680,7 +782,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.17. rtpengine_answer usage
+   Example 1.21. rtpengine_answer usage
 
    See rtpengine_offer() function example above for examples.
 
@@ -694,7 +796,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 
    This function can be used from ALL_ROUTES.
 
-   Example 1.18. rtpengine_delete usage
+   Example 1.22. rtpengine_delete usage
 ...
 rtpengine_delete();
 ...
@@ -722,7 +824,7 @@ rtpengine_delete();
 
    This function can be used from ALL_ROUTES.
 
-   Example 1.19. rtpengine_manage usage
+   Example 1.23. rtpengine_manage usage
 ...
 rtpengine_manage();
 ...
@@ -742,7 +844,7 @@ rtpengine_manage();
 
    This function can be used from any route.
 
-   Example 1.20. rtpengine_start_recording usage
+   Example 1.24. rtpengine_start_recording usage
 ...
 rtpengine_start_recording();
 ...
@@ -762,7 +864,7 @@ rtpengine_start_recording();
 
    This function can be used from any route.
 
-   Example 1.21. rtpengine_stop_recording usage
+   Example 1.25. rtpengine_stop_recording usage
 ...
 rtpengine_stop_recording();
 ...
@@ -774,7 +876,7 @@ sockvar]]])
    endpoints.
 
    Meaning of the parameters is as follows:
-     * flags(string) - a list of flags simialar to the other
+     * flags(string) - a list of flags similar to the other
        functions. One of the file, blob or db-id parameters is
        mandatory to indicate the content of the media file to be
        played. file is a common choice for specifying rtpengine to
@@ -795,13 +897,13 @@ sockvar]]])
 
    This function can be used from any route.
 
-   Example 1.22. Ringback tone using rtpengine_play_media
+   Example 1.26. Ringback tone using rtpengine_play_media
 ...
 if (is_method("INVITE") && !has_totag())
         rtpengine_play_media("file=/path/to/ringback_tone_file.wav");
 ...
 
-   Example 1.23. Manage music on hold using rtpengine_play_media
+   Example 1.27. Manage music on hold using rtpengine_play_media
 ...
 if (is_method("INVITE") && has_totag()) {
         if (is_audio_on_hold()) {
@@ -815,7 +917,8 @@ e.wav");
 }
 ...
 
-1.5.9.  rtpengine_stop_media([flags[, sockvar]])
+1.5.9.  rtpengine_stop_media(flags[, [sock_var[, sockvar]],
+[last_frame_pos]])
 
    This function will stop playing a media file previously started
    by a rtpengine_play_media() call. The meaning of its parameters
@@ -824,11 +927,34 @@ e.wav");
    rtpengine_play_media() call, otherwise RTPEngine will not be
    able to stop media playing.
 
+   Meaning of the parameters is as follows:
+     * flags(string) - a list of flags similar to the other
+       functions.
+     * last_frame_pos(var, optional) - a pseudo variable that will
+       contain the last frame played of the file.
+
    This function can be used from any route.
 
-   Example 1.24. Ringback tone stop using rtpengine_stop_media
+   Example 1.28. Ringback tone stop using rtpengine_stop_media
 ...
 if (is_method("INVITE") && $rs == 200)
+        rtpengine_stop_media();
+...
+
+   Example 1.29. Example use of the last-frame-pos parameter
+   rtpengine_stop_media
+...
+if (is_method("INVITE") && has_totag()) {
+        if (is_audio_on_hold()) {
+                $dlg_val(on_hold = "1";
+                rtpengine_play_media("from-tag=$tt start-pos=$avp(last_f
+rame_pos) file=/path/to/moh_file.wav");
+        } else if ($dlg_val(on_hold) == "1") {
+                rtpengine_stop_media("from-tag=$tt", , $avp(last_frame_p
+os));
+                $dlg_val(on_hold = "0");
+        }
+}
         rtpengine_stop_media();
 ...
 
@@ -840,7 +966,7 @@ if (is_method("INVITE") && $rs == 200)
 
    This function can be used from any route.
 
-   Example 1.25. Example of rtpengine_block_media usage
+   Example 1.30. Example of rtpengine_block_media usage
 ...
 rtpengine_block_media();
 ...
@@ -853,7 +979,7 @@ rtpengine_block_media();
 
    This function can be used from any route.
 
-   Example 1.26. Example of rtpengine_unblock_media usage
+   Example 1.31. Example of rtpengine_unblock_media usage
 ...
 rtpengine_unblock_media();
 ...
@@ -866,7 +992,7 @@ rtpengine_unblock_media();
 
    This function can be used from any route.
 
-   Example 1.27. Example of rtpengine_block_dtmf usage
+   Example 1.32. Example of rtpengine_block_dtmf usage
 ...
 rtpengine_block_dtmf();
 ...
@@ -879,7 +1005,7 @@ rtpengine_block_dtmf();
 
    This function can be used from any route.
 
-   Example 1.28. Example of rtpengine_unblock_dtmf usage
+   Example 1.33. Example of rtpengine_unblock_dtmf usage
 ...
 rtpengine_unblock_dtmf();
 ...
@@ -894,7 +1020,7 @@ rtpengine_unblock_dtmf();
 
    This function can be used from any route.
 
-   Example 1.29. Example of rtpengine_start_forwarding usage
+   Example 1.34. Example of rtpengine_start_forwarding usage
 ...
 rtpengine_start_forwarding();
 ...
@@ -906,7 +1032,7 @@ rtpengine_start_forwarding();
 
    This function can be used from any route.
 
-   Example 1.30. Example of rtpengine_stop_forwarding usage
+   Example 1.35. Example of rtpengine_stop_forwarding usage
 ...
 rtpengine_stop_forwarding();
 ...
@@ -927,7 +1053,7 @@ rtpengine_stop_forwarding();
 
    This function can be used from any route.
 
-   Example 1.31. Example of rtpengine_play_dtmf usage
+   Example 1.36. Example of rtpengine_play_dtmf usage
 ...
 rtpengine_play_dtmf("0"); # send the 0 code upstream
 ...
@@ -940,7 +1066,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
    statistics from the RTP proxy are provided as a string and it
    does contain several packet counters.
 
-   Example 1.32. $rtpstat Usage
+   Example 1.37. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
@@ -1013,7 +1139,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
    short, or if the phones do not properly report RTP statistics
    over RTCP). In these cases the variable returns the NULL value.
 
-   Example 1.33. $rtpstat(STAT)
+   Example 1.38. $rtpstat(STAT)
 ...
     xlog("Average MOS of the entire call is $rtpstat(MOS-average)\r\n");
     xlog("Average MOS of caller is $(rtpstat(MOS-average)[$ft])\r\n");
@@ -1033,7 +1159,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    any information from the query, such as RTP statistics, or MOS
    values.
 
-   Example 1.34. $rtpquery Usage
+   Example 1.39. $rtpquery Usage
 ...
         $json(reply) := $rtpquery;
         xlog("Total RTP Stats: $json(reply/totals)\n");
@@ -1048,14 +1174,22 @@ pstat(MOS-min-at)[$ft])\r\n");
    Parameters:
      * url - the RTP proxy url (exactly as defined in the config
        file).
-     * enable - 1 - enable, 0 - disable the RTP proxy.
+     * enable - 1 - enable, 0 - disable the RTP proxy, 2 - put the
+       RTP node in probing mode.
+     * setid (optional) the set ID of the nodes to be updated. If
+       provided, only nodes in the provided set will be updated.
 
    NOTE: if a RTP proxy is defined multiple times (in the same or
-   different set), all of its instances will be enables/disabled.
+   different set), all of its instances will be enabled/disabled
+   IF no set ID is provided.
 
-   Example 1.35.  rtpengine_enable usage
+   Example 1.40.  rtpengine_enable usage
 ...
+## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
+## enable rtpengine by URL and set ID (3)
+$ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=
+1 setid=3
 ...
 
 1.7.2. rtpengine_show
@@ -1065,7 +1199,7 @@ $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.36.  rtpengine_show usage
+   Example 1.41.  rtpengine_show usage
 ...
 $ opensips-cli -x mi rtpengine_show
 ...
@@ -1075,11 +1209,19 @@ $ opensips-cli -x mi rtpengine_show
    Reloads all rtpengine sets from the database. Used only when
    the “db_url” parameter is set.
 
+   Parameters:
+     * type (optional) soft - when reloading nodes from the
+       database, reuse any existing sockets and keep existing node
+       disabled state. If not provided, then all nodes and sockets
+       will first be torndown and then nodes will be loaded from
+       the database.
+
    No parameter.
 
-   Example 1.37.  rtpengine_reload usage
+   Example 1.42.  rtpengine_reload usage
 ...
 $ opensips-cli -x mi rtpengine_reload
+$ opensips-cli -x mi rtpengine_reload type=soft
 ...
 
 1.7.4. teardown
@@ -1095,7 +1237,7 @@ $ opensips-cli -x mi rtpengine_reload
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.38.  teardown usage
+   Example 1.43.  teardown usage
 ...
 $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZD
 Q
@@ -1122,6 +1264,16 @@ Q
      * event - the event/digit pressed
      * duration - how long the digit was pressed
      * volume - volume of the tone
+
+1.8.2.  E_RTPENGINE_STATUS
+
+   This event is raised when a RTPEngine server changes it's
+   status to active/inactive.
+
+   Parameters:
+     * socket - the socket that identifies the RTPEngine instance.
+     * status - active if the RTPEngine instance responds to
+       probing or inactive if the instance was deactivated.
 
 Chapter 2. Frequently Asked Questions
 
@@ -1193,20 +1345,21 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 154 69 4952 2684
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 16 422 594
-   3. Richard Fuchs 20 2 640 723
-   4. Liviu Chircu (@liviuchircu) 16 12 70 135
-   5. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
-   6. Peter Lemenkov (@lemenkov) 8 6 27 34
-   7. Eric Tamme (@etamme) 7 5 42 19
-   8. Ovidiu Sas (@ovidiusas) 5 3 37 7
-   9. Zero King (@l2dy) 4 2 5 4
-   10. John Burke 4 1 172 31
+   1. Razvan Crainea (@razvancrainea) 235 129 6345 3150
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
+   3. John Burke (@john08burke) 25 17 647 102
+   4. Liviu Chircu (@liviuchircu) 20 16 91 173
+   5. Richard Fuchs 20 2 640 723
+   6. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
+   7. Peter Lemenkov (@lemenkov) 10 7 27 62
+   8. Norman Brandinger (@NormB) 9 7 65 12
+   9. Eric Tamme (@etamme) 7 5 42 19
+   10. Nick Altmann (@nikbyte) 6 4 43 2
 
-   All remaining contributors: Rob Gagnon (@rgagnon24), Flavio E.
-   Goncalves, Dan Pascu (@danpascu), Oliver Severin Mulelid-Tynes
-   (@olivermt).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Ovidiu
+   Sas (@ovidiusas), Zero King (@l2dy), Rob Gagnon (@rgagnon24),
+   Flavio E. Goncalves, Dan Pascu (@danpascu), Oliver Severin
+   Mulelid-Tynes (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1228,20 +1381,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Dec 2020
-   2.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
-   3.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
-   4.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2020
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2020
-   6.  Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - May 2020
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   9.  John Burke                          Jun 2019 - Jun 2019
-   10. Dan Pascu (@danpascu)               Mar 2018 - Mar 2018
+   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Sep 2024
+   2.  Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   6.  John Burke (@john08burke)           Jun 2019 - Apr 2022
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
+   8.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   9.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
+   10. Zero King (@l2dy)                   Mar 2020 - Sep 2020
 
-   All remaining contributors: Oliver Severin Mulelid-Tynes
-   (@olivermt), Rob Gagnon (@rgagnon24), Eric Tamme (@etamme),
-   Richard Fuchs.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad
+   Patrascu (@rvlad-patrascu), Dan Pascu (@danpascu), Oliver
+   Severin Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24),
+   Eric Tamme (@etamme), Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1250,10 +1404,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Flavio E. Goncalves, Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Richard Fuchs.
+   Last edited by: Razvan Crainea (@razvancrainea), Norman
+   Brandinger (@NormB), Liviu Chircu (@liviuchircu), John Burke
+   (@john08burke), Nick Altmann (@nikbyte), Flavio E. Goncalves,
+   Peter Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Richard Fuchs.
 
    Documentation Copyrights:
 

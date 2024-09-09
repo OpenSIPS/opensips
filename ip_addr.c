@@ -33,13 +33,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "ut.h"
 #include "ip_addr.h"
 #include "dprint.h"
 #include "mem/mem.h"
 
-char _ip_addr_A_buff[IP_ADDR_MAX_STR_SIZE];
+char _ip_addr_A_buffs[IP_ADDR2STR_BUF_NO][IP_ADDR_MAX_STR_SIZE];
 
-struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask)
+struct net* mk_net(const struct ip_addr* ip, struct ip_addr* mask)
 {
 	struct net* n;
 	int warning;
@@ -77,7 +78,7 @@ error:
 
 
 
-struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen)
+struct net* mk_net_bitlen(const struct ip_addr* ip, unsigned int bitlen)
 {
 	struct ip_addr mask;
 	unsigned int r;
@@ -99,7 +100,7 @@ error:
 
 
 
-void print_ip(char* p, struct ip_addr* ip, char *s)
+void print_ip(char* p, const struct ip_addr* ip, char *s)
 {
 	switch(ip->af){
 		case AF_INET:
@@ -168,7 +169,7 @@ void print_net(struct net* net)
 }
 
 
-int ip_addr_is_1918(str *s_ip)
+int ip_addr_is_1918(str *s_ip, int check_rfc_6333)
 {
 	static struct {
 		uint32_t netaddr;
@@ -178,15 +179,20 @@ int ip_addr_is_1918(str *s_ip)
 		{ 0xac100000, 0xffffffffu << 20},  /* "172.16.0.0"  RFC 1918 */
 		{ 0xc0a80000, 0xffffffffu << 16},  /* "192.168.0.0" RFC 1918 */
 		{ 0x64400000, 0xffffffffu << 22},  /* "100.64.0.0"  RFC 6598 */
+		{ 0x7f000000, 0xffffffffu << 24},  /* "127.0.0.0"   RFC 1122 */
+		{ 0xc0000000, 0xffffffffu << 3},   /* "192.0.0.0"   RFC 6333 */
 		{ 0, 0}
 	};
 	struct ip_addr *ip;
 	uint32_t netaddr;
 	int i;
 
+	if (!check_rfc_6333)
+		nets_1918[5].netaddr = 0;
+
 	/* is it an IPv4 address? */
 	if ( (ip=str2ip(s_ip))==NULL )
-		return -1;
+		return 0;
 
 	netaddr = ntohl(ip->u.addr32[0]);
 
@@ -195,7 +201,7 @@ int ip_addr_is_1918(str *s_ip)
 			return 1;
 	}
 
-	return -1;
+	return 0;
 }
 
 
@@ -217,6 +223,62 @@ int is_mcast(struct ip_addr* ip)
 		LM_ERR("unsupported protocol family\n");
 		return -1;
 	}
+}
+
+int mk_net_cidr(const str *cidr, struct net *out_net)
+{
+	str ip_str, px_str;
+	unsigned int prefix_len = UINT_MAX;
+	struct ip_addr *ip;
+	struct net *tmp_cidr;
+	char *c;
+
+	ip_str.s = cidr->s;
+
+	c = q_memchr(ip_str.s, '/', cidr->len);
+	if (c) {
+		ip_str.len = c - ip_str.s;
+		px_str.s = c + 1;
+		px_str.len = cidr->len - ip_str.len - 1;
+
+		if (px_str.len > 0 && str2int(&px_str, &prefix_len) != 0) {
+			LM_ERR("bad characters in network prefix length (CIDR: %.*s)\n",
+			        cidr->len, cidr->s);
+			goto error;
+		}
+	} else {
+		ip_str.len = cidr->len;
+	}
+
+	if (!(ip=str2ip(&ip_str)) && !(ip=str2ip6(&ip_str))) {
+		LM_ERR("invalid IP address <%.*s>\n", ip_str.len, ip_str.s);
+		goto error;
+	}
+
+	if (prefix_len == UINT_MAX)
+		prefix_len = (ip->af == AF_INET ? 32 : 128);
+
+	/* now that we know the AF family, we can validate the prefix len */
+	if ((ip->af==AF_INET && prefix_len>32) ||
+	        (ip->af==AF_INET6 && prefix_len>128)) {
+		LM_ERR("network prefix length %d too large for AF %d (ip: %.*s)\n",
+		        prefix_len, ip->af, ip_str.len, ip_str.s);
+		goto error;
+	}
+
+	tmp_cidr = mk_net_bitlen(ip, prefix_len);
+	if (!tmp_cidr) {
+		LM_ERR("oom\n");
+		goto error;
+	}
+
+	*out_net = *tmp_cidr;
+	pkg_free(tmp_cidr);
+	return 0;
+
+error:
+	memset(out_net, 0, sizeof *out_net);
+	return -1;
 }
 
 #endif /* USE_MCAST */

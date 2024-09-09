@@ -320,7 +320,8 @@ static int matching_3261( struct sip_msg *p_msg, struct cell **trans,
 		p_cell; p_cell = p_cell->next_cell )
 	{
 		t_msg=p_cell->uas.request;
-		if (!t_msg) continue;  /* don't try matching UAC transactions */
+		/* don't try matching UAC transactions */
+		if (is_local(p_cell) || !t_msg) continue;
 		if (skip_method & t_msg->REQ_METHOD) continue;
 
 		/* here we do an exercise which will be removed from future code
@@ -577,6 +578,9 @@ struct cell* t_lookupOriginalT(  struct sip_msg* p_msg )
 		return cancelled_T;
 
 	/* start searching in the table */
+	if (!p_msg->hash_index)
+		p_msg->hash_index = tm_hash( p_msg->callid->body,
+			get_cseq(p_msg)->number);
 	hash_index = p_msg->hash_index;
 	LM_DBG("searching on hash entry %d\n",hash_index );
 
@@ -859,9 +863,9 @@ nomatch2:
 
 /* Determine current transaction
  *
- *                   Found      Not Found     Error (e.g. parsing)
- *  Return Value     1          0             -1
- *  T                ptr        0             T_UNDEFINED
+ *                   Found      Not Found     Error (e.g. parsing)     Not Here (e.g. anycast)
+ *  Return Value     1          0             -1                       -2
+ *  T                ptr        0             T_UNDEFINED              T_UNDEFINED
  */
 int t_check( struct sip_msg* p_msg , int *param_branch )
 {
@@ -912,7 +916,7 @@ int t_check( struct sip_msg* p_msg , int *param_branch )
 				t_reply_matching(p_msg ,
 						param_branch!=0?param_branch:&local_branch);
 			else
-				T = NULL; /* reply replicated
+				return -2; /* reply replicated
 					should have never got here */
 
 		}
@@ -938,8 +942,18 @@ int init_rb( struct retr_buf *rb, struct sip_msg *msg)
 {
 	int proto;
 
-	update_sock_struct_from_ip( &rb->dst.to, msg );
 	proto=msg->rcv.proto;
+
+	if (msg->msg_flags&FL_REPLY_TO_VIA) {
+		if (update_sock_struct_from_via( &(rb->dst.to), msg, msg->via1 )==-1) {
+			LM_ERR("cannot lookup reply dst: %.*s\n",
+					msg->via1->host.len, msg->via1->host.s );
+			ser_error=E_BAD_VIA;
+			return 0;
+		}
+	} else {
+		update_sock_struct_from_ip( &rb->dst.to, msg );
+	}
 	rb->dst.proto=proto;
 	rb->dst.proto_reserved1=msg->rcv.proto_reserved1;
 	/* use for sending replies the incoming interface of the request -bogdan */
@@ -1124,9 +1138,9 @@ int t_newtran( struct sip_msg* p_msg, int full_uas )
 
 	if (auto_100trying && p_msg->REQ_METHOD==METHOD_INVITE) {
 		ctx_backup = current_processing_ctx;
-		current_processing_ctx = NULL;
+		set_global_context(NULL);
 		t_reply( T, p_msg , 100 , &relay_reason_100);
-		current_processing_ctx = ctx_backup;
+		set_global_context(ctx_backup);
 	}
 
 	return 1;

@@ -1,8 +1,9 @@
-#aaa_radius= Radius implementation for the AAA API from the core | Radius client development library, typically radiusclient-ng 0.5.0 or higher
+#aaa_diameter= Diameter implementation for the core AAA API | freeDiameter (libfdcore + libfdproto) v1.2.1 or higher
+#aaa_radius= Radius implementation for the core AAA API | Radius client development library, typically radiusclient-ng 0.5.0 or higher
 #auth_jwt= JWT auth support | JWT client development library, libjwt-dev
-#b2b_logic= Logic engine of B2BUA, responsible of actually implementing the B2BUA services | xml parsing development library, typically libxml2-dev
 #cachedb_cassandra= Implementation of a cache system designed to work with Cassandra servers | thrift 0.6.1
 #cachedb_couchbase= Implementation of a cache system designed to work with CouchBase servers | libcouchbase >= 2.0
+#cachedb_dynamodb= Implementation of a cache system designed to work with Dynamodb servers | libaws-cpp-sdk-core and libaws-cpp-sdk-dynamodb
 #cachedb_memcached= Implementation of a cache system designed to work with a memcached server. | Memcached client library, typically libmemcached
 #cachedb_mongodb= Implementation of a cache system designed to work with a MongoDB server. | libjson and the mongo-c-driver
 #cachedb_redis= Implementation of a cache system designed to work with Redis servers | Redis client library, hiredis
@@ -21,33 +22,38 @@
 #dialplan= Implements generic string translations based on matching and replacement rules | PCRE development library, typically libpcre-dev
 #emergency= Provides emergency call treatment for OpenSIPS | CURL dev library - typically libcurl4-openssl-dev
 #event_rabbitmq= Provides the implementation of a RabbitMQ client for the Event Interface | RabbitMQ development library, librabbitmq-dev
+#event_kafka= Provides the implementation of an Apache Kafka producer for the Event Interface | Kafka development library, librdkafka-dev
 #h350= Enables access to SIP account data stored in an LDAP [RFC4510] directory containing H.350 commObjects | OpenLDAP library & development files, typically libldap and libldap-dev
 #regex= Offers matching operations against regular expressions using the powerful PCRE library. | Development library for PCRE, typically libpcre-dev
 #identity= Adds support for SIP Identity (see RFC 4474). | SSL library, typically libssl
 #jabber= Integrates XODE XML parser for parsing Jabber messages | Expat library.
 #json= Introduces a new type of variable that provides both serialization and de-serialization from JSON format. | JSON library, libjson
+#launch_darkly= Implements an interface to the Launch Darkly feature management cloud | Launch Darkly C++ server-side SDK (libldserverapi)
 #ldap= Implements an LDAP search interface for OpenSIPS | OpenLDAP library & development files, typically libldap and libldap-dev
 #lua= Easily implement your own OpenSIPS extensions in Lua | liblua5.1-0-dev, libmemcache-dev and libmysqlclient-dev
 #httpd= Provides an HTTP transport layer implementation for OpenSIPS. | libmicrohttpd
+#http2d= Provides HTTP/2 server-side support, using nghttp2 | nghttp2 library (libnghttp2), libevent, libssl and libevent-openssl
 #mi_xmlrpc_ng= New version of the xmlrpc server that handles xmlrpc requests and generates xmlrpc responses. | parsing/building XML library, typically libxml
 #mmgeoip= Lightweight wrapper for the MaxMind GeoIP API | libGeoIP
 #osp= Enables OpenSIPS to support secure, multi-lateral peering using the OSP standard | OSP development kit, typically osptoolkit
 #perl= Easily implement your own OpenSIPS extensions in Perl | Perl library development files, typically libperl-dev
 #pi_http= Provides a simple web database provisioning interface | XML parsing & building library, typically libxml-dev
-#rabbitmq= Provides functions to publish messages to a RabbitMQ server | RabbitMQ development library, librabbitmq-dev
 #rabbitmq_consumer= Receive AMQP messages which will be delivered by triggering events | RabbitMQ development library, librabbitmq-dev
+#proto_ipsec= Provides support for IPSec sockets in OpenSIPS | Library used for Netlink communication with kernel, libmnl-dev
 #proto_sctp= Provides support for SCTP listeners in OpenSIPS | SCTP development library, typically libsctp-dev
 #proto_tls= Provides support for TLS listeners in OpenSIPS | SSL development library, typically libssl-dev
 #proto_wss= Provides support for Secure WebSocket listeners in OpenSIPS | SSL development library, typically libssl-dev
 #presence= Handles PUBLISH and SUBSCRIBE messages and generates NOTIFY messages in a general, event independent way | XML parsing & Building library, typically libxml-dev
 #presence_dialoginfo= Enables the handling of "Event: dialog" (as defined in RFC 4235) |  XML parsing & building library, typically libxml-dev
 #presence_mwi= Does specific handling for notify-subscribe message-summary (message waiting indication) events as specified in RFC 3842 | XML parsing & building library, typically libxml-dev
+#presence_reginfo= Presence handler for "reg"-events according to RFC 3680 | XML parsing & building library,typically libxml-dev
 #presence_xml= Does specific handling for notify-subscribe events using xml bodies. | XML parsing & building library, typically libxml-dev
 #presence_dfks = Does specific handling for DFKS (as-feature-event) events. | XML parsing & building library, typically libxml-dev
 #pua= Offers the functionality of a presence user agent client, sending Subscribe and Publish messages. | XML parsing & building library, typically libxml-dev
 #pua_bla= Enables Bridged Line Appearances support according | XML parsing & building library, typically libxml-dev
 #pua_dialoginfo= Retrieves dialog state information from the dialog module and PUBLISHes the dialog-information using the pua module. | XML parsing & building library,typically libxml-dev
 #pua_mi= Offers the possibility to publish presence information and subscribe to presence information via MI transports. | XML parsing & building library,typically libxml-dev
+#pua_reginfo= Publisher for "reg"-events according to RFC 3680 | XML parsing & building library,typically libxml-dev
 #pua_usrloc= Connector between usrloc and pua modules. | XML parsing & building library,typically libxml-dev
 #pua_xmpp= Gateway for presence between SIP and XMPP. | XML parsing & building library,typically libxml-dev
 #python= Easily implement your own OpenSIPS extensions in Python | Shared Python runtime library, libpython
@@ -56,14 +62,16 @@
 #sngtc= Voice Transcoding using the D-series Sangoma transcoding cards | libsngtc_node
 #siprec= SIP Call Recording to an external/passive recorder | uuid-dev
 #snmpstats= Provides an SNMP management interface to OpenSIPS | NetSNMP v5.3
-#tls_mgm= Provides a TLS interface to manage certificates for OpenSIPS | SSL development library, typically libssl-dev
+#tls_openssl= Implements TLS operations using the OpenSSL libarary | SSL development library, typically libssl-dev
+#tls_mgm= Provides a TLS interface to manage certificates for OpenSIPS |
+#tls_wolfssl= Implements TLS operations using the wolfSSL libarary |
 #xcap= XCAP utility functions for OpenSIPS. | libxml-dev
 #xcap_client= XCAP client for OpenSIPS.It fetches XCAP elements, either documents or part of them, by sending HTTP GET requests | libxml-dev and libcurl-dev
 #xml= Introduces a new type of variable that provides both serialization and de-serialization from XML format. | XML library, libxml2-dev
 #xmpp= Gateway between OpenSIPS and a jabber server. It enables the exchange of IMs between SIP clients and XMPP(jabber) clients. | parsing/building XML files, typically libexpat1-devel
 #uuid= UUID generator | uuid-dev
 
-exclude_modules?= db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb auth_jwt
+exclude_modules?= db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb auth_jwt cachedb_dynamodb event_sqs launch_darkly
 
 include_modules?=
 
@@ -78,6 +86,7 @@ DEFS+= -DF_MALLOC #Fast memory allocator with minimal runtime overhead
 DEFS+= -DQ_MALLOC #Quality assurance memory allocator with runtime safety checks
 DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 DEFS+= -DDBG_MALLOC #Include additional, debug-enabled allocator flavors
+#DEFS+= -DQM_DBG_MALLOC_HIST=3 #Size of debug history for Q_MALLOC (default is 1)
 #DEFS+= -DNO_DEBUG #Compile out all debug messages
 #DEFS+= -DNO_LOG #Compile out all logging
 #DEFS_GROUP_START
@@ -90,7 +99,6 @@ DEFS+= -DDBG_MALLOC #Include additional, debug-enabled allocator flavors
 #DEFS+= -DUSE_FUTEX #Use linux futexes with fast architecture specific locking
 #DEFS+= -DBUSY_WAIT #Use busy waiting on the lock
 #DEFS+= -DDBG_LOCK #Attach debug info to all lock structures
-#DEFS+= -DDBG_STRUCT_HIST #Include support for struct history logging
 #DEFS+= -DDBG_TCPCON #Attach struct history info to all TCP connections
 #DEFS+= -DNOSMP #Do not use SMP compliant locking. Faster but won't work on SMP machines
 #DEFS+= -DEXTRA_DEBUG #Compile in some extra debugging code
@@ -98,5 +106,7 @@ DEFS+= -DCC_O0 #Zero compiler optimizations (FAST compile, SLOW code. For devs)
 #DEFS+= -DORACLE_USRLOC #Use Oracle compatible queries for USRLOC
 #DEFS+= -DSHM_EXTRA_STATS #Provide tools to get extra statistics for the shared memory used
 #DEFS+= -DUNIT_TESTS #Include unit testing code into opensips and modules
+#DEFS+= -DFUZZ_BUILD #Add extra runtime checks to prevent false-positive crashes
+#DEFS+= -DPROFILING #Periodically sample each process' call stack, for profiling purposes
 
 PREFIX ?= /usr/local/

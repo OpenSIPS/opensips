@@ -40,13 +40,22 @@
 #include "../../parser/parse_uri.h"
 #include "../../mi/mi.h"
 #include "../tm/tm_load.h"
+#include "../../md5global.h"
+#include "../../md5.h"
 
 extern int use_partitions;
 extern rw_lock_t *reload_lock;
 
+#define HASHLEN 16
+typedef char HASH[HASHLEN];
+
+#define HASHHEXLEN 32
+typedef char HASHHEX[HASHHEXLEN+1];
+
 struct head_db {
 	str db_url;
 	str partition;
+	str sr_events_ident;  /* SR identifier for enable/disable events */
 	db_func_t db_funcs;
 	db_con_t **db_con;
 	str drd_table; /* drd_table name extracted from database */
@@ -73,6 +82,7 @@ struct head_db {
 	int carrier_attrs_avp;
 	int restart_persistent;
 	rt_data_t *rdata;
+	HASHHEX md5;
 	rw_lock_t *ref_lock;
 	int ongoing_reload;
 	struct head_db *next;

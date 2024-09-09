@@ -20,8 +20,9 @@
 
 log_level=3
 xlog_level=3
-log_stderror=no
-log_facility=LOG_LOCAL0
+stderror_enabled=no
+syslog_enabled=yes
+syslog_facility=LOG_LOCAL0
 
 udp_workers=4
 
@@ -81,8 +82,8 @@ modparam("mi_fifo", "fifo_mode", 0666)
 #### MYSQL module
 loadmodule "db_mysql.so"
 
-#### AVPOPS module
-loadmodule "avpops.so"
+#### SQLOPS module
+loadmodule "sqlops.so"
 
 ####  DYNAMIC ROUTING module
 loadmodule "drouting.so"
@@ -133,6 +134,7 @@ loadmodule "proto_udp.so"
 
 ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
 ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
+loadmodule "tls_wolfssl.so"
 loadmodule "tls_mgm.so"
 modparam("tls_mgm","server_domain", "default")
 modparam("tls_mgm","match_ip_address", "[default]*")
@@ -250,7 +252,7 @@ route{
 	}
 
 	ifelse(DO_CALL_LIMITATION,`yes',`
-	if (is_avp_set("$avp(trunk_attrs)") && $avp(trunk_attrs)=~"^[0-9]+$") {
+	if ($avp(trunk_attrs) != NULL && $avp(trunk_attrs)=~"^[0-9]+$") {
 		get_profile_size("trunkCalls","$si",$var(size));
 		if ( $(var(size){s.int}) >= $(avp(trunk_attrs){s.int}) ) {
 			send_reply(486,"Busy Here");

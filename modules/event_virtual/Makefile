@@ -3,6 +3,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=event_virtual.so
-LIBS=
 
 include ../../Makefile.modules

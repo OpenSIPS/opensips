@@ -10,7 +10,7 @@
 		This module provides a TCP transport layer implementation for the Event
 		Interface. The module can either send a JSON-RPC notification or a
 		standard request and wait for the response (when used in
-		<emphasis>sync_mode</emphasis>).
+		<emphasis>reliable_mode</emphasis>).
 	</para>
 
 	<para>
@@ -68,7 +68,7 @@
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>id</emphasis> - uniquly generated if
-				<emphasis>sync_mode</emphasis> is used, otherwise (for
+				<emphasis>reliable_mode</emphasis> is used, otherwise (for
 				notifications) <emphasis>null</emphasis>.
 			</para></listitem>
 			<listitem><para>
@@ -119,13 +119,13 @@
 
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section id="param_sync_mode" xreflabel="sync_mode">
-		<title><varname>sync_mode</varname> (integer)</title>
+	<section id="param_reliable_mode" xreflabel="reliable_mode">
+		<title><varname>reliable_mode</varname> (integer)</title>
 		<para>
 			This parameter controls the way the
 			<emphasis>event_stream</emphasis> module communicates
 			with the JSON-RPC server. If enabled, (set to
-			<emphasis>yes</emphasis>), each event is translated to
+			<emphasis>1</emphasis>), each event is translated to
 			a JSON-RPC request. If disabled, each event will be sent
 			as a JSON-RPC notification - there will be no reply
 			expected by our client.
@@ -133,11 +133,11 @@
 		<para>
 			Note that if you need a reliable communication with
 			the JSON-RPC server, where each event sent needs to be
-			confirmed, you must set this parameter to
-			<emphasis>1/yes</emphasis>. Also, if you are using this
+			confirmed (by a JSON-RPC response), you must set this parameter
+			to <emphasis>1/yes</emphasis>. If you are using this
 			module in a failover setup (using the
-			<emphasis>event_virtual</emphasis> module), you should
-			also set this parameter to <emphasis>1/yes</emphasis>.
+			<emphasis>event_virtual</emphasis> module), it is recommended
+			to set this parameter to <emphasis>1/yes</emphasis>.
 		</para>
 		<para>
 		<emphasis>
@@ -145,10 +145,10 @@
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>sync_mode</varname> parameter</title>
+		<title>Set <varname>reliable_mode</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("event_stream", "sync_mode", yes)
+modparam("event_stream", "reliable_mode", yes)
 ...
 </programlisting>
 		</example>
@@ -158,9 +158,9 @@ modparam("event_stream", "sync_mode", yes)
 		<para>
 			Specified the amount of milliseconds the module
 			waits for a command to complete. In
-			<emphasis>sync_mode</emphasis>, it specifies the time
+			<emphasis>reliable_mode</emphasis>, it specifies the time
 			module waits the request to be sent and a reply received.
-			In non-<emphasis>sync_mode</emphasis>, it represents
+			In non-<emphasis>reliable_mode</emphasis>, it represents
 			only the time opensips takes to send the JSON-RPC
 			notification.
 		</para>
@@ -237,7 +237,7 @@ modparam("event_stream", "event_param", "opensips_event")
 	<title>JSON-RPC notification</title>
 		<para>
 			This is an example of an event raised when
-			<emphasis>sync_mode</emphasis> is disabled
+			<emphasis>reliable_mode</emphasis> is disabled
 			by the pike module when it decides an ip should be blocked:
 		</para>
 		<example>
@@ -260,11 +260,11 @@ modparam("event_stream", "event_param", "opensips_event")
 	<title>JSON-RPC Request</title>
 		<para>
 			This is an example of an event raised in
-			<emphasis>sync_mode</emphasis> by the pike module
+			<emphasis>reliable_mode</emphasis> by the pike module
 			when it decides an ip should be blocked:
 		</para>
 		<example>
-		<title>E_PIKE_BLOCKED JSON-RPC request (sync_mode)</title>
+		<title>E_PIKE_BLOCKED JSON-RPC request (reliable_mode)</title>
 		<programlisting format="linespecific">
 <![CDATA[
 # request

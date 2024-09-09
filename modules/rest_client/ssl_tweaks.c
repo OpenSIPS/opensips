@@ -32,12 +32,12 @@
 void BN_clear_free(BIGNUM *a)
 {
 	void (*real_BN_clear_free)(BIGNUM *a);
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm && !no_daemon_mode && is_pre_daemon) {
+	if (have_openssl && !no_daemon_mode && is_pre_daemon) {
 		return;
 	} else {
 		real_BN_clear_free = dlsym(RTLD_NEXT, "BN_clear_free");

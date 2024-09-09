@@ -9,7 +9,7 @@
 
 <table id="dialog" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dialog</name>
-	<version>11</version>
+	<version>12</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>Persistent dialog information for the dialog module. More
@@ -69,7 +69,7 @@
 	<column>
 		<name>mangled_from_uri</name>
 		<type>string</type>
-		<size>&user_len;</size>
+		<size>&uri_len;</size>
 		<default><null/></default>
 		<null/>
 		<description>The mangled from URI, in case uac_replace_from
@@ -79,7 +79,7 @@
 	<column>
 		<name>mangled_to_uri</name>
 		<type>string</type>
-		<size>&user_len;</size>
+		<size>&uri_len;</size>
 		<default><null/></default>
 		<null/>
 		<description>The mangled to URI, in case uac_replace_to
@@ -204,9 +204,10 @@
 
 	<column>
 		<name>script_flags</name>
-		<type>unsigned int</type>
-		<size>10</size>
-		<default>0</default>
+		<type>string</type>
+        <size>255</size>
+		<null/>
+        <default><null/></default>
 		<description>Script flags for the dialog.</description>
 	</column>
 

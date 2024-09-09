@@ -85,7 +85,7 @@ struct dlg_binds *dlg_binds = &dialog_st;
 /*
  * Script commands we export.
  */
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"sstCheckMin", (cmd_function)sst_check_min, {
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | ONREPLY_ROUTE},
@@ -95,7 +95,7 @@ static cmd_export_t cmds[]={
 /*
  * Script parameters
  */
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "enable_stats", INT_PARAM, &sst_enable_stats			},
 	{ "min_se", INT_PARAM, &sst_minSE						},
 	{ "reject_to_small",		INT_PARAM, &sst_reject 		},
@@ -107,12 +107,12 @@ static param_export_t mod_params[]={
 /*
  * Export the statistics we have
  */
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"expired_sst", 0,  &expired_sst},
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog",    DEP_ABORT },

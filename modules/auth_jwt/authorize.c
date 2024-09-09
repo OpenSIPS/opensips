@@ -23,6 +23,7 @@
  */
 
 #include <string.h>
+#include <time.h>
 #include "../../ut.h"
 #include "../../str.h"
 #include "../../db/db.h"
@@ -52,7 +53,7 @@
 		}						\
 	} while(0)						\
 
-int jwt_authorize(struct sip_msg* _msg, str* jwt_token, 
+int jwt_db_authorize(struct sip_msg* _msg, str* jwt_token, 
 		pv_spec_t* decoded_jwt, pv_spec_t* auth_user)
 {
 	char raw_query_s[RAW_QUERY_BUF_LEN], *p;
@@ -66,6 +67,12 @@ int jwt_authorize(struct sip_msg* _msg, str* jwt_token,
 	db_row_t *row;
 	pv_value_t pv_val;
 	int_str ivalue;
+	time_t unix_ts;
+
+	if (jwt_db_mode == 0) {
+		LM_ERR("No DB support - needed for this function \n");
+		return -1;
+	}
 
 	jwt_token_buf = pkg_malloc(jwt_token->len + 1);
 	if (!jwt_token_buf) {
@@ -106,16 +113,17 @@ int jwt_authorize(struct sip_msg* _msg, str* jwt_token,
 		DEC_AND_CHECK_LEN(len,n);
 		p+=n;
 	}
-	
-	n = snprintf(p,len," from %.*s a inner join %.*s b on a.%.*s = b.%.*s  where a.%.*s=\"%.*s\" and UNIX_TIMESTAMP() >= b.%.*s and UNIX_TIMESTAMP() < b.%.*s",
+
+	time( &unix_ts);
+	n = snprintf(p,len," from %.*s a inner join %.*s b on a.%.*s = b.%.*s  where a.%.*s='%.*s' and %ld >= b.%.*s and %ld < b.%.*s",
 	profiles_table.len,profiles_table.s,
-	secrets_table.len,secrets_table.s,	
+	secrets_table.len,secrets_table.s,
 	tag_column.len,tag_column.s,
 	secret_tag_column.len,secret_tag_column.s,
 	tag_column.len,tag_column.s,
 	tag.len,tag.s,
-	start_ts_column.len,start_ts_column.s,
-	end_ts_column.len,end_ts_column.s);
+	unix_ts, start_ts_column.len,start_ts_column.s,
+	unix_ts, end_ts_column.len,end_ts_column.s);
 
 	DEC_AND_CHECK_LEN(len,n);
 	p+=n;
@@ -238,4 +246,67 @@ err_out:
 	if (jwt_dec)
 		jwt_free(jwt_dec);
 	return -1;
+}
+
+int jwt_script_authorize(struct sip_msg* _msg, str* jwt_token, str* key, 
+		pv_spec_t* decoded_jwt)
+{
+	char *jwt_token_buf = NULL;
+	jwt_t *jwt = NULL,*jwt_dec=NULL;
+	pv_value_t pv_val;
+	int ret_code=-2;
+
+	jwt_token_buf = pkg_malloc(jwt_token->len + 1);
+	if (!jwt_token_buf) {
+		LM_ERR("No more pkg mem \n");
+		goto err_out;
+	}
+	memcpy(jwt_token_buf,jwt_token->s,jwt_token->len);
+	jwt_token_buf[jwt_token->len] = 0;
+
+	if (jwt_decode(&jwt, jwt_token_buf, NULL,0) != 0 || jwt == NULL) {
+		LM_ERR("Failed to decode jwt \n");
+		goto err_out;
+	}
+
+	/* decoded the JWT - we can push to out */
+	pv_val.flags = PV_VAL_STR;
+	pv_val.rs.s =  jwt_dump_str(jwt,0);
+	pv_val.rs.len = strlen(pv_val.rs.s);
+	if (pv_set_value(_msg,decoded_jwt,0,&pv_val) != 0) {
+		LM_ERR("Failed to set decoded JWT pvar \n");
+		goto err_out;
+	} 
+
+	/* bump up err code */
+	ret_code = -1;
+
+	if (key->len == 0 || key->s == NULL) {
+		/* no key, jwt decode only */
+		goto err_out;
+	}
+
+	if (jwt_decode(&jwt_dec, jwt_token_buf, (const unsigned char *)key->s,key->len) != 0 || 
+	jwt_dec == NULL) {
+		LM_DBG("Failed to decode jwt with script key \n");
+		goto err_out;
+	}
+	
+	if (jwt_token_buf)
+		pkg_free(jwt_token_buf);
+	if (jwt)
+		jwt_free(jwt);
+	if (jwt_dec)
+		jwt_free(jwt_dec);
+
+	return 1;
+
+err_out:
+	if (jwt_token_buf)
+		pkg_free(jwt_token_buf);
+	if (jwt)
+		jwt_free(jwt);
+	if (jwt_dec)
+		jwt_free(jwt_dec);
+	return ret_code;
 }

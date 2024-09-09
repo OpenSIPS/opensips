@@ -20,7 +20,7 @@ compression Module
         1.7. Exported Functions
 
               1.7.1. mc_compress([algo], flags, [whitelist])
-              1.7.2. mc_compact([whitelist])
+              1.7.2. mc_compact([whitelist], flags)
               1.7.3. mc_decompress()
 
         1.8. Compression performance test for sip messages
@@ -187,17 +187,18 @@ mc_compres($avp(algo), $var(flags), $var(list);
 xlog("compression registered\n");
 ...
 
-1.7.2.  mc_compact([whitelist])
+1.7.2.  mc_compact([whitelist], flags)
 
    This function will realise four different things: headers which
    are not mandatory and are not in the whitelist will be removed,
    headers of same type will be merged together, separated by ',',
    header names which have a short form will be reduced to that
-   short form and SDP rtpmap attribute headers which contain a
-   value lower than 96 will be removed, because they are not
-   mandatory. Lumps are not affected by this function, because it
-   is applied after all messages changes are processed. done. The
-   mc_compact supported short forms are:
+   short form (unless the n flag has been set) and SDP rtpmap
+   attribute headers which contain a value lower than 96 will be
+   removed, because they are not mandatory. Lumps are not affected
+   by this function, because it is applied after all messages
+   changes are processed. done. The mc_compact supported short
+   forms are:
      * “c” - Content-Type (RFC 3261)
      * “f” - From (RFC 3261)
      * “i” - Call-ID (RFC 3261)
@@ -213,6 +214,9 @@ xlog("compression registered\n");
      * whitelist (string, optional) - Whitelist of headers not to
        be removed, except from the mandatory ones. The whitelist
        header names must pe separated by '|'.
+     * flags (string) - Controls the behavior of the function.
+       Possible flags are:
+          + “n” - Do not use short form of headers.
 
    This function can be used from REQUEST_ROUTE, LOCAL_ROUTE,
    FAILURE_ROUTE.
@@ -284,15 +288,19 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ionut Ionita (@ionutrazvanionita) 49 12 3976 192
+   1. Ionut Ionita (@ionutrazvanionita) 50 12 3976 192
    2. Razvan Crainea (@razvancrainea) 32 20 283 518
-   3. Liviu Chircu (@liviuchircu) 6 4 15 31
+   3. Liviu Chircu (@liviuchircu) 9 7 31 46
    4. Vlad Patrascu (@rvlad-patrascu) 6 4 8 11
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
-   6. Julián Moreno Patiño 3 1 2 2
-   7. Peter Lemenkov (@lemenkov) 3 1 1 1
-   8. Ryan Bullock (@rrb3942) 2 1 1 0
-   9. Zero King (@l2dy) 2 1 0 5
+   5. Aron Podrigal (@ar45) 6 3 126 43
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 4 2
+   7. Maksym Sobolyev (@sobomax) 4 2 3 3
+   8. Ryan Bullock 3 1 4 4
+   9. Julián Moreno Patiño 3 1 2 2
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+
+   All remaining contributors: Ryan Bullock (@rrb3942), Zero King
+   (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -313,16 +321,20 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Dec 2014 - Jul 2020
-   2. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   3. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2019
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Apr 2019
-   6. Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
-   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
-   9. Julián Moreno Patiño                Feb 2016 - Feb 2016
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Apr 2018 - May 2024
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Ryan Bullock                        Jan 2023 - Jan 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Apr 2022
+   5.  Aron Podrigal (@ar45)               Nov 2021 - Apr 2022
+   6.  Razvan Crainea (@razvancrainea)     Dec 2014 - Jul 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -331,7 +343,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Aron
+   Podrigal (@ar45), Liviu Chircu (@liviuchircu), Vlad Patrascu
    (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
    Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita).
 

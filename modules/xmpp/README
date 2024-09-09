@@ -260,7 +260,8 @@ xmpp_send_message();
 # ----------- global configuration parameters ------------------------
 
 log_level=3        # debug level (cmd line: -dddddddddd)
-log_stderror=no    # (cmd line: -E)
+stderror_enabled=no
+syslog_enabled=yes
 
 /* Uncomment these line to enter debugging mode */
 #debug_mode=yes
@@ -308,7 +309,7 @@ route{
         # initial sanity checks -- messages with
         # max_forwards==0, or excessively long requests
         if (!mf_process_maxfwd_header("10")) {
-                sl_send_reply("483","Too Many Hops");
+                sl_send_reply(483,"Too Many Hops");
                 exit;
         };
 
@@ -320,15 +321,15 @@ route{
         if (is_method("MESSAGE")) {
                 log("*** xmpp-handled MESSAGE message.\n");
                 if (xmpp_send_message()) {
-                        t_reply("200", "Accepted");
+                        t_reply(200, "Accepted");
                 } else {
-                        t_reply("404", "Not found");
+                        t_reply(404, "Not found");
                 }
                 return;
         }
 
         log("*** xmpp: unhandled message type\n");
-        t_reply("503", "Service unavailable");
+        t_reply(503, "Service unavailable");
         return;
 }
 
@@ -342,20 +343,20 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Daniel-Constantin Mierla (@miconda) 67 16 5988 76
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 23 120 245
+   1. Daniel-Constantin Mierla (@miconda) 69 16 5988 76
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 29 23 120 245
    3. Anca Vamanu 20 9 438 398
-   4. Liviu Chircu (@liviuchircu) 12 9 52 92
+   4. Liviu Chircu (@liviuchircu) 14 11 56 98
    5. Razvan Crainea (@razvancrainea) 9 7 31 23
-   6. Henning Westerholt (@henningw) 5 3 13 13
-   7. Vlad Patrascu (@rvlad-patrascu) 5 3 7 4
-   8. Sergio Gutierrez 3 1 5 5
-   9. Vlad Paiu (@vladpaiu) 3 1 3 2
-   10. Konstantin Bokarius 3 1 2 5
+   6. Vlad Patrascu (@rvlad-patrascu) 6 4 9 5
+   7. Henning Westerholt (@henningw) 5 3 13 13
+   8. Maksym Sobolyev (@sobomax) 4 2 6 7
+   9. Sergio Gutierrez 3 1 5 5
+   10. Vlad Paiu (@vladpaiu) 3 1 3 2
 
-   All remaining contributors: John Riordan, Juha Heinanen
-   (@juha-h), Peter Lemenkov (@lemenkov), Zero King (@l2dy), Edson
-   Gellert Schubert.
+   All remaining contributors: Konstantin Bokarius, John Riordan,
+   Juha Heinanen (@juha-h), Peter Lemenkov (@lemenkov), Zero King
+   (@l2dy), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -377,20 +378,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2020
-   2.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   7.  Vlad Paiu (@vladpaiu)               Feb 2012 - Feb 2012
-   8.  Anca Vamanu                         Oct 2007 - Sep 2010
-   9.  John Riordan                        May 2009 - May 2009
-   10. Sergio Gutierrez                    Nov 2008 - Nov 2008
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2020
+   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Vlad Paiu (@vladpaiu)               Feb 2012 - Feb 2012
+   9.  Anca Vamanu                         Oct 2007 - Sep 2010
+   10. John Riordan                        May 2009 - May 2009
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Juha Heinanen (@juha-h).
+   All remaining contributors: Sergio Gutierrez, Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Juha Heinanen
+   (@juha-h).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -399,11 +401,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Anca Vamanu,
-   Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Juha
-   Heinanen (@juha-h).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Anca Vamanu, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Juha Heinanen (@juha-h).
 
    Documentation Copyrights:
 

@@ -5,6 +5,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=b2b_sca.so
-LIBS= 
 
 include ../../Makefile.modules

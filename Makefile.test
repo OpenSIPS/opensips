@@ -6,11 +6,21 @@ endif
 
 .PHONY: test unit_tests system_tests
 
+ifneq (,$(findstring UNIT_TESTS,$(DEFS)))
+include Makefile.openssl
+misclibs=lib/digest_auth/libdigest_auth.a
+UNIT_TESTS=1
+endif
+
 ensure_test_defs:
+ifndef UNIT_TESTS
 	@! grep -q '^DEFS+= -DUNIT_TESTS' Makefile.conf && \
 		echo '\nDEFS+= -DUNIT_TESTS' >> Makefile.conf && \
 		echo "-DUNIT_TESTS was not enabled in Makefile.conf," \
 			"run 'make test' again." && exit 1 || true
+else
+	@true
+endif
 
 unit_tests: ensure_test_defs $(NAME)
 	-@echo "          =============   Start Unit Tests   ============="

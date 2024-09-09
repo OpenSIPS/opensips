@@ -75,7 +75,7 @@ int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
 	callid.s = callidHeader,
 		callid.len = strlen(callidHeader);
 
-	hash_code= core_hash(&callid, 0, emet_size);
+	hash_code= core_hash(&callid, NULL, emet_size);
 	LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 	info_call= search_ehtable(call_htable, callidHeader, ftag, hash_code, 1);

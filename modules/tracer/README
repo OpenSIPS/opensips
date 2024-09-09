@@ -16,11 +16,14 @@ Tracer Module
               1.3.1. trace_on (integer)
               1.3.2. trace_local_ip (str)
               1.3.3. trace_id (str)
+              1.3.4. syslog_default_facility (string)
+              1.3.5. syslog_default_level (integer)
+              1.3.6. file_mode (integer)
 
         1.4. Exported Functions
 
               1.4.1. trace(trace_id, [scope], [type],
-                      [trace_attrs])
+                      [trace_attrs], [flags], [correlation_id])
 
         1.5. Exported MI Functions
 
@@ -52,7 +55,10 @@ Tracer Module
    1.1. Set trace_on parameter
    1.2. Set trace_local_ip parameter
    1.3. Set trace_id parameter
-   1.4. trace() usage
+   1.4. Set syslog_default_facility parameter
+   1.5. Set syslog_default_level parameter
+   1.6. Set file_mode parameter
+   1.7. trace() usage
 
 Chapter 1. Admin Guide
 
@@ -96,10 +102,12 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * database module - mysql, postrgress, dbtext, unixodbc...
        only if you are using a database type trace id
-     * dialog - only if you want to trace dialogs.
-     * tm - only if you want to trace dialogs/transactions.
-     * proto_hep - only if you want to replicate messages over
-       hep.
+     * b2b_logic - only if you want to trace B2B sessions.
+     * dialog - only if you want to trace SIP dialogs (INVITE
+       based).
+     * tm - only if you want to trace SIP transactions.
+     * proto_hep - only if you want to trace / replicate messages
+       over HEP protocol.
 
 1.2.2. External Libraries or Applications
 
@@ -155,13 +163,24 @@ modparam("tracer", "trace_local_ip", "10.1.1.1")
 1.3.3. trace_id (str)
 
    Specify a destination for the trace. This can be a hep id
-   defined in proto_hep, sip uri or a database url and a table.
-   All parameters inside trace_id must be separated by ;,
-   excepting the last one. The parameters are given in key-value
-   format, the possible keys being uri for HEP and SIP IDs and uri
-   and table for databases. The format is
+   defined in proto_hep, a sip uri, a file, a syslog facility or a
+   database url and a table. All parameters inside trace_id must
+   be separated by ;, excepting the last one. The parameters are
+   given in key-value format, the possible keys being uri for HEP
+   and SIP IDs and uri and table for databases. The format is
    [id_name]key1=value1;key2=value2;. HEP id's MUST be defined in
    proto_hep in order to be able to use them here.
+
+   When the uri is a file, the path to the file has to be
+   specified after the colon. The output is always appended if the
+   file exists, or created if it doesn't, using file_mode
+   permissions.
+
+   When the uri is syslog, it has to follow the following format:
+   syslog[:FACILITY[:LEVEL]]. The default facility and levels are
+   the ones used by OpenSIPS (syslog_facility and log_level).
+   These can be tuned using syslog_default_facility and
+   syslog_default_level parameters.
 
    One can declare multiple types of tracing under the same trace
    id, being identified by their name. So if you define two
@@ -192,16 +211,60 @@ modparam("tracer", "trace_id",
 /* notice that they all have the same name
  * meaning that calling trace("tid",...)
  * will do sql, sip and hep tracing */
+/*file trace id*/
+modparam("tracer", "trace_id",
+"[tid]uri=file:/path/to/file")
+/*syslog trace id at error (level -1)*/
+modparam("tracer", "trace_id",
+"[tid]uri=syslog:local0:-1")
+...
+
+1.3.4. syslog_default_facility (string)
+
+   When syslog tracing is used, this parameter specifies the log
+   facility to write traces to.
+
+   Default value is the value of syslog_facility.
+
+   Example 1.4. Set syslog_default_facility parameter
+...
+modparam("tracer", "syslog_default_facility", "LOG_DAEMON")
+...
+
+1.3.5. syslog_default_level (integer)
+
+   When syslog tracing is used, this parameter specifies the level
+   to write traces to.
+
+   Default value is the value of log_level.
+
+   Example 1.5. Set syslog_default_level parameter
+...
+modparam("tracer", "syslog_default_level", 2) # NOTICE
+...
+
+1.3.6. file_mode (integer)
+
+   When file tracing is used, this parameter specifies the
+   permissions to be used to create the trace files. It follows
+   the UNIX conventions.
+
+   Default value is 0600 (rw-------).
+
+   Example 1.6. Set file_mode parameter
+...
+modparam("tracer", "file_mode", 0644)
 ...
 
 1.4. Exported Functions
 
-1.4.1.  trace(trace_id, [scope], [type], [trace_attrs])
+1.4.1.  trace(trace_id, [scope], [type], [trace_attrs], [flags],
+[correlation_id])
 
    This function has replaced the sip_trace() in OpenSIPS 3.0.
 
-   Store or replocate current processed SIP message,transaction or
-   dialogin database. It is stored in the form prior applying
+   Store or replicate current processed SIP message, transaction /
+   dialog or B2B session. It is stored in the form prior applying
    chages made to it. The traced_user_avp parameter is now an
    argument to trace() function. Since version 2.2, this function
    also catches internally generated replies in stateless
@@ -214,11 +277,11 @@ modparam("tracer", "trace_id",
      * trace_id (string) the name of the trace_id specifying where
        to do the tracing.
      * scope (string, optional) what do you want to trace: dialog,
-       transaction or only the message. If not specified, will try
-       the topmost trace that can be done: if dialog module loaded
-       will trace dialogs, else if tm module loaded will trace
-       transaction and if none of these loaded will trace
-       messages.
+       transaction, B2B session or only the message. If not
+       specified, will try the topmost trace that can be done: if
+       dialog module loaded will trace dialogs, else if tm module
+       loaded will trace transaction and if none of these loaded
+       will trace messages.
        Types can be the following:
           + 'm'/'M' trace messages. Is the only one you should use
             in stateless mode.
@@ -227,6 +290,8 @@ modparam("tracer", "trace_id",
             that will catch selected requests both in and out and
             internally generated replies.
           + 'd'/'D' trace dialog
+          + 'b'/'B' trace all the traffic related to the B2B
+            session to be later created
      * type (string, optional) list of types of messages to be
        traced by this function; if not set only sip messages shall
        be traced; if the parameter is set, but sip is not
@@ -235,15 +300,26 @@ modparam("tracer", "trace_id",
        Current possible types to be traced are the following:
           + sip - enable sip messages tracing;
           + xlog - enable xlog messages tracing in current
-            scope(dialog, transaction or message);
+            scope(dialog, transaction, B2B session or message);
           + rest - enable rest messages tracing;
      * trace_attrs (string, optional) this parameter replaces the
        traced_user_avp from the old version. To avoid duplicating
        an entry only for this parameter, whatever you put
        here(string/pvar) shall be stored in the trace_attrs column
        in the sip_trace table.
+     * flags (string,pvar) are some control flags over the tracing
+       process (how and what to be traced).
+          + C - trace only the SIP caller side;
+          + c - trace onlt the SIP callee side;
+       If both C and c flags are missing, tracing of both
+       sides/legs is assumed.
+       NOTE these flags are supported only by transactional and
+       dialog tracing
+     * correlation_id (string,pvar) a custom SIP correlation ID to
+       be forced (normally the SIP Call-ID is used) to correlate
+       this traffic (transaction, dialog) with other traffic.
 
-   Example 1.4. trace() usage
+   Example 1.7. trace() usage
 ...
 /* see declaration of tid in trace_id section */
         $var(trace_id) = "tid";
@@ -290,7 +366,7 @@ r));
                 if (!www_authorize("", "subscriber")) {
                         /* tracer will also catch the 401 generated by w
 ww_challenge() */
-                        www_challenge("", 1);
+                        www_challenge("", "auth");
                 }
         }
 
@@ -420,22 +496,24 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ionut Ionita (@ionutrazvanionita) 105 52 2676 1887
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 97 76 893 751
-   3. Razvan Crainea (@razvancrainea) 56 38 1253 375
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 115 88 1319 876
+   2. Ionut Ionita (@ionutrazvanionita) 106 52 2676 1887
+   3. Razvan Crainea (@razvancrainea) 76 54 1665 453
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
-   5. Liviu Chircu (@liviuchircu) 23 20 84 75
-   6. Vlad Paiu (@vladpaiu) 20 8 335 528
-   7. Vlad Patrascu (@rvlad-patrascu) 16 7 284 333
+   5. Liviu Chircu (@liviuchircu) 26 23 87 80
+   6. Vlad Paiu (@vladpaiu) 24 10 402 568
+   7. Vlad Patrascu (@rvlad-patrascu) 17 8 286 335
    8. Henning Westerholt (@henningw) 11 6 146 155
    9. Andrei Datcu (@andrei-datcu) 11 5 284 135
    10. Alexandr Dubovikov (@adubovikov) 7 1 500 4
 
-   All remaining contributors: Dan Pascu (@danpascu), Dusan Klinec
-   (@ph4r05), Zero King (@l2dy), Andreas Heise, Sergio Gutierrez,
-   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Konstantin
-   Bokarius, Iouri Kharon, Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (@etamme).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Dan
+   Pascu (@danpascu), Ovidiu Sas (@ovidiusas), Walter Doekes
+   (@wdoekes), Peter Lemenkov (@lemenkov), Dusan Klinec (@ph4r05),
+   Zero King (@l2dy), Andreas Heise, Nick Altmann (@nikbyte),
+   Sergio Gutierrez, okhowang, Konstantin Bokarius, Iouri Kharon,
+   Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme
+   (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -457,20 +535,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2020
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jul 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jun 2020
-   4.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jul 2024
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2024
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   4.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Apr 2024
+   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - Dec 2023
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   8.  okhowang                            Mar 2023 - Mar 2023
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
+   10. Nick Altmann (@nikbyte)             Feb 2022 - Feb 2022
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Dusan Klinec (@ph4r05), Andrei Datcu (@andrei-datcu), Vlad Paiu
-   (@vladpaiu), Alexandr Dubovikov (@adubovikov), Sergio
+   All remaining contributors: Walter Doekes (@wdoekes), Zero King
+   (@l2dy), Dan Pascu (@danpascu), Eric Tamme (@etamme), Ionut
+   Ionita (@ionutrazvanionita), Dusan Klinec (@ph4r05), Andrei
+   Datcu (@andrei-datcu), Alexandr Dubovikov (@adubovikov), Sergio
    Gutierrez, Daniel-Constantin Mierla (@miconda), Iouri Kharon,
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Andreas Heise, Elena-Ramona Modroiu.
@@ -482,13 +561,13 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Ionut Ionita
-   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Alexandr Dubovikov
-   (@adubovikov), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Nick Altmann (@nikbyte), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Alexandr
+   Dubovikov (@adubovikov), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Elena-Ramona Modroiu.
 
    Documentation Copyrights:

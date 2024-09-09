@@ -71,12 +71,14 @@ static inline void * get_qr_rule_handle(rt_info_t *rule) {
 rt_info_t* find_rule_by_prefix_unsafe(ptree_t *pt, ptree_node_t *noprefix,
 		str prefix, unsigned int grp_id, unsigned int *matched_len)
 {
-	unsigned int rule_idx = 0;
+	int rule_idx = 0;
 	rt_info_t *rt_info;
 
 	rt_info = get_prefix(pt, &prefix, grp_id,matched_len, &rule_idx);
 
 	if (rt_info==NULL) {
+		*matched_len = 0;
+
 		LM_DBG("no matching for prefix \"%.*s\"\n",
 				prefix.len, prefix.s);
 

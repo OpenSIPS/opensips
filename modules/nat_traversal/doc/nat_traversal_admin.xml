@@ -487,7 +487,7 @@ modparam("nat_traversal", "keepalive_extra_headers", "User-Agent: OpenSIPS\r\nX-
       <title>Setting the <varname>keepalive_state_file</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/keepalive_state")
+modparam("nat_traversal", "keepalive_state_file", "/run/opensips/keepalive_state")
 ...
         </programlisting>
       </example>

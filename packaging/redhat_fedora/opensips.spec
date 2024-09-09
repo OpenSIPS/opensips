@@ -21,19 +21,27 @@
 %global _with_cachedb_mongodb 1
 %endif
 
-%if 0%{?rhel} > 7 || 0%{?fedora} > 23
-%global _without_aaa_radius 1
-%endif
-
-%if 0%{?rhel} > 7
+%if 0%{?rhel} > 7 || 0%{?fedora} > 36
 %global _with_python3 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
+%if 0%{?fedora} > 32
+%global _with_aaa_diameter 1
+%endif
+
+%if 0%{?fedora} > 32
+%global _without_snmpstats 1
+%endif
+
+%if 0%{?rhel} > 7 || 0%{?fedora} > 30
+%global _with_wolfssl 1
+%endif
+
+%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_dynamodb:cachedb_dynamodb} %{!?_with_event_sqs:event_sqs} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} launch_darkly http2d
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.1.0
+Version:  3.6.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -48,14 +56,20 @@ BuildRequires:  subversion
 BuildRequires:  which
 BuildRequires:  mysql-devel
 BuildRequires:  postgresql-devel
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  libtool
+BuildRequires:  make
+BuildRequires:  docbook-xsl
+BuildRequires:  gcc
 
 Requires: m4
-BuildRequires:  net-snmp-devel
 BuildRequires:  unixODBC-devel
 BuildRequires:  openssl-devel
 BuildRequires:  expat-devel
 BuildRequires:  xmlrpc-c-devel
 BuildRequires:  libconfuse-devel
+BuildRequires:  libmnl-devel
 %if 0%{?rhel} > 0 && 0%{?rhel} < 8
 BuildRequires:  db4-devel
 %else
@@ -70,6 +84,9 @@ BuildRequires:  pcre-devel
 BuildRequires:  python3-devel
 %else
 BuildRequires:  python-devel
+%endif
+%if 0%{?fedora} > 38
+BuildRequires:  python3-setuptools
 %endif
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 BuildRequires:  systemd-units
@@ -136,18 +153,20 @@ and two timestamps describing a validation interval. Multiple
 JWT secrets can point to the same JWT profile.
 %endif
 
-%package  b2bua-module
-Summary:  B2B User Agent modules for OpenSIPS
+%package  auth-modules
+Summary:  Authentication interfaces for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  b2bua-module
+%description  auth-modules
 OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
-This package provides modules for B2BUA support in OpenSIPS. Both the
-implementation and control (XML based scenario description) are included.
+This package provides the modules that are being used to provide
+SIP authentication in OpenSIPS. It consists of both the
+authentication interface (the auth module), as well as the UAC
+authentication module (uac_auth).
 
 %package  berkeley-bin
 Summary:  Berkeley Database module for OpenSIPS - helper program
@@ -176,6 +195,17 @@ per second even on low-budget hardware.
 This package provides the berkeley database module for OpenSIPS, a
 high-performance embedded DB kernel. All database tables are stored
 in files, no additional server is necessary
+
+%package  berkeley-dbschema
+Summary:  Berkeley database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description  berkeley-dbschema
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the Berkeley database schema files for OpenSIPS.
 
 %package  carrierroute-module
 Summary:  Carrierroute module for OpenSIPS
@@ -288,6 +318,21 @@ This package provides dialplan module that implements generic string
 translations based on matching and replacement rules. It can be used to
 manipulate R-URI or a PV and to translated to a new format/value.
 
+%if 0%{?_with_aaa_diameter:1}
+%package  diameter-module
+Summary:  Diameter module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: freeDiameter-devel >= 1.4.0
+
+%description  diameter-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides a DIAMETER driver for the AAA API from OpenSIPS.
+%endif
+
 %package  emergency-module
 Summary:  Emergency call module for OpenSIPS
 Group:    System Environment/Daemons
@@ -345,6 +390,20 @@ per second even on low-budget hardware.
 .
 This package provides support for SIP Identity (see RFC 4474).
 
+%package  ipsec-module
+Summary:  IPSec proto module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: libmnl
+BuildRequires:  libmnl-devel
+
+%description  ipsec-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides IMS IPSec connections (see TS 33.203).
+
 %package  jabber-module
 Summary:  Jabber gateway module for OpenSIPS
 Group:    System Environment/Daemons
@@ -371,6 +430,22 @@ This package introduces a new type of variable that provides both
 serialization and de-serialization from JSON format. The script variable
 provides ways to access (from script) objects and arrays to add,replace or
 delete values from the script.
+
+%package  kafka-module
+Summary:  Implementation of an Apache Kafka producer
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: librdkafka-devel
+
+%description  kafka-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module is an implementation of an Apache Kafka producer.
+It serves as a transport backend for the Event Interface and
+also provides a stand-alone connector to be used from the
+OpenSIPS script in order to publish messages to Kafka brokers.
 
 %package  ldap-modules
 Summary:  LDAP modules for OpenSIPS
@@ -437,6 +512,18 @@ This module is an implementation of a cache system designed to work with
 MongoDB servers.
 %endif
 
+%package  msrp-modules
+Summary:  Implementation of the MSRP protocol
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  msrp-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the MSRP protocol support for OpenSIPS.
+
 %package  mysql-module
 Summary:  MySQL database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
@@ -449,6 +536,17 @@ server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
 This package provides the MySQL database driver for OpenSIPS.
+
+%package  mysql-dbschema
+Summary:  MySQL database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description  mysql-dbschema
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the MySQL database schema files for OpenSIPS.
 
 %if 0%{?_with_db_oracle:1}
 %package  oracle-module
@@ -512,6 +610,17 @@ per second even on low-budget hardware.
 .
 This package provides the PostgreSQL database driver for OpenSIPS.
 
+%package  postgres-dbschema
+Summary:  PostgreSQL database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description  postgres-dbschema
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the PostgreSQL database schema files for OpenSIPS.
+
 %package  presence-modules
 Summary:  SIMPLE presence modules for OpenSIPS
 Group:    System Environment/Daemons
@@ -525,6 +634,20 @@ per second even on low-budget hardware.
 This package provides several OpenSIPS modules for implementing presence
 server and presence user agent for RICH presence, registrar-based presence,
 external triggered presence and XCAP support.
+
+%package  prometheus-module
+Summary:  Prometheus Monitoring support for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-http-modules
+
+%description  prometheus-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module provides support in OpenSIPS for the Prometheus
+(https://prometheus.io/) monitoring tool.
 
 %package  python-module
 Summary:  Python scripting support
@@ -558,9 +681,7 @@ module to publish RabbitMQ messages to a RabbitMQ server.
 Summary:  Radius modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-%if 0%{!?_without_aaa_radius:1}
-BuildRequires:  radiusclient-ng-devel
-%endif
+BuildRequires:  radcli-devel
 
 %description  radius-modules
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -661,7 +782,7 @@ Summary:  SNMP AgentX subagent module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
-BuildRequires:  lm_sensors-devel
+BuildRequires: net-snmp-devel
 
 %description  snmpstats-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -685,6 +806,17 @@ per second even on low-budget hardware.
 .
 This package provides the SQLite database driver for OpenSIPS.
 
+%package  sqlite-dbschema
+Summary:  SQLite database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description  sqlite-dbschema
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the SQLite database schema files for OpenSIPS.
+
 %package  stir-shaken-module
 Summary:  STIR/SHAKEN support for OpenSIPS
 Group:    System Environment/Daemons
@@ -700,13 +832,44 @@ per second even on low-budget hardware.
 This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
 Authentication and Verification services in OpenSIPS.
 
-%package  tls-module
+%package  tls-openssl-module
 Summary:  TLS transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-tlsmgm-module
 Requires: openssl
 BuildRequires: openssl-devel
+
+%description  tls-openssl-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the OpenSSL implementation for TLS in OpenSIPS.
+
+%if 0%{?_with_wolfssl:1}
+%package  tls-wolfssl-module
+Summary:  TLS transport module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-tlsmgm-module
+
+%description  tls-wolfssl-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the wolfSSL implementation for TLS in OpenSIPS.
+%endif
+
+%package  tls-module
+Summary:  TLS transport module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-tlsmgm-module
+%if 0%{?rhel} > 7 || 0%{?fedora} > 23
+Requires: (%{name}-tls-openssl-module or %{name}-tls-wolfssl-module)
+%endif
 
 %description  tls-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -810,14 +973,13 @@ This package provides the SIP to XMPP IM translator module for OpenSIPS.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all modules-readme %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
 
 %install
-rm -rf $RPM_BUILD_ROOT
 %{__make} install TLS=1 LIBDIR=%{_lib} \
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
@@ -829,45 +991,34 @@ rm -rf $RPM_BUILD_ROOT
 
 # clean some things
 %if 0%{?el5}
-rm -rf $RPM_BUILD_ROOT/%{_libdir}/opensips/perl/OpenSIPS/VDB*
+rm -rf %{buildroot}/%{_libdir}/opensips/perl/OpenSIPS/VDB*
 %endif
-mkdir -p $RPM_BUILD_ROOT/%{perl_vendorlib}
-if [ -d "$RPM_BUILD_ROOT/%{_prefix}/perl" ]; then
+mkdir -p %{buildroot}/%{perl_vendorlib}
+if [ -d "%{buildroot}/%{_prefix}/perl" ]; then
   # for fedora>=11
-  mv $RPM_BUILD_ROOT/%{_prefix}/perl/* \
-    $RPM_BUILD_ROOT/%{perl_vendorlib}/
+  mv %{buildroot}/%{_prefix}/perl/* \
+    %{buildroot}/%{perl_vendorlib}/
 else
   # for fedora<=10
-  mv $RPM_BUILD_ROOT/%{_libdir}/opensips/perl/* \
-    $RPM_BUILD_ROOT/%{perl_vendorlib}/
+  mv %{buildroot}/%{_libdir}/opensips/perl/* \
+    %{buildroot}/%{perl_vendorlib}/
 fi
-mv $RPM_BUILD_ROOT/%{_sysconfdir}/opensips/tls/README \
-  $RPM_BUILD_ROOT/%{_docdir}/opensips/README.tls
-rm -f $RPM_BUILD_ROOT%{_docdir}/opensips/INSTALL
-mv $RPM_BUILD_ROOT/%{_docdir}/opensips docdir
-
-# recode documentation
-for i in docdir/*; do
-  mv -f $i $i.old
-  iconv -f iso8859-1 -t UTF-8 $i.old > $i
-  rm -f $i.old
-done
+mv %{buildroot}/%{_sysconfdir}/opensips/tls/README \
+  %{buildroot}/%{_docdir}/opensips/README.tls
+rm -f %{buildroot}%{_docdir}/opensips/INSTALL
+mv %{buildroot}/%{_docdir}/opensips docdir
 
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # install systemd files
-install -D -m 0644 -p packaging/redhat_fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
-install -D -m 0644 -p packaging/redhat_fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
-mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
+install -D -m 0644 -p packaging/redhat_fedora/%{name}.service %{buildroot}%{_unitdir}/%{name}.service
+install -D -m 0644 -p packaging/redhat_fedora/%{name}.tmpfiles.conf %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
+mkdir -p %{buildroot}%{_localstatedir}/run/%{name}
 %else
-install -p -D -m 755 packaging/redhat_fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
+install -p -D -m 755 packaging/redhat_fedora/opensips.init %{buildroot}%{_initrddir}/opensips
 %endif
 
 #install sysconfig file
-install -D -p -m 644 packaging/redhat_fedora/%{name}.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
-
-%clean
-rm -rf $RPM_BUILD_ROOT
-
+install -D -p -m 644 packaging/redhat_fedora/%{name}.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 
 %pre
 getent group %{name} >/dev/null || groupadd -r %{name}
@@ -920,11 +1071,10 @@ fi
 %attr(755,root,root) %{_initrddir}/opensips
 %endif
 
-%if 0%{!?_without_aaa_radius:1}
 %config(noreplace) %{_sysconfdir}/opensips/dictionary.opensips
-%endif
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
+%attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/scenario_callcenter.xml
 # these files are just an examples so no need to restrict access to them
 %config(noreplace) %{_sysconfdir}/opensips/tls/ca.conf
 %config(noreplace) %{_sysconfdir}/opensips/tls/request.conf
@@ -953,18 +1103,21 @@ fi
 %doc docdir/AUTHORS
 %doc docdir/NEWS
 %doc docdir/README
-%doc docdir/README-MODULES
 %doc COPYING
 
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
-%{_libdir}/opensips/modules/auth.so
 %{_libdir}/opensips/modules/auth_aaa.so
 %{_libdir}/opensips/modules/auth_db.so
-%{_libdir}/opensips/modules/avpops.so
+%{_libdir}/opensips/modules/sqlops.so
+%{_libdir}/opensips/modules/b2b_entities.so
+%{_libdir}/opensips/modules/b2b_logic.so
+%{_libdir}/opensips/modules/b2b_sca.so
+%{_libdir}/opensips/modules/b2b_sdp_demux.so
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/cachedb_local.so
 %{_libdir}/opensips/modules/cachedb_sql.so
+%{_libdir}/opensips/modules/call_center.so
 %{_libdir}/opensips/modules/call_control.so
 %{_libdir}/opensips/modules/callops.so
 %{_libdir}/opensips/modules/cfgutils.so
@@ -988,6 +1141,7 @@ fi
 %{_libdir}/opensips/modules/event_stream.so
 %{_libdir}/opensips/modules/event_virtual.so
 %{_libdir}/opensips/modules/event_xmlrpc.so
+%{_libdir}/opensips/modules/example.so
 %{_libdir}/opensips/modules/exec.so
 %{_libdir}/opensips/modules/fraud_detection.so
 %{_libdir}/opensips/modules/freeswitch.so
@@ -1004,7 +1158,9 @@ fi
 %{_libdir}/opensips/modules/mediaproxy.so
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_fifo.so
+%{_libdir}/opensips/modules/mi_script.so
 %{_libdir}/opensips/modules/mid_registrar.so
+%{_libdir}/opensips/modules/mqueue.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nat_traversal.so
 %{_libdir}/opensips/modules/nathelper.so
@@ -1013,7 +1169,9 @@ fi
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
 %{_libdir}/opensips/modules/proto_bin.so
+%{_libdir}/opensips/modules/proto_bins.so
 %{_libdir}/opensips/modules/proto_hep.so
+%{_libdir}/opensips/modules/proto_ipsec.so
 %{_libdir}/opensips/modules/proto_smpp.so
 %{_libdir}/opensips/modules/proto_ws.so
 %{_libdir}/opensips/modules/qos.so
@@ -1022,6 +1180,7 @@ fi
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
+%{_libdir}/opensips/modules/rtp_relay.so
 %{_libdir}/opensips/modules/rtpengine.so
 %{_libdir}/opensips/modules/rtpproxy.so
 %{_libdir}/opensips/modules/script_helper.so
@@ -1029,6 +1188,7 @@ fi
 %{_libdir}/opensips/modules/sip_i.so
 %{_libdir}/opensips/modules/sipcapture.so
 %{_libdir}/opensips/modules/sipmsgops.so
+%{_libdir}/opensips/modules/status_report.so
 %{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so
 %{_libdir}/opensips/modules/speeddial.so
@@ -1036,11 +1196,11 @@ fi
 %{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
 %{_libdir}/opensips/modules/stun.so
+%{_libdir}/opensips/modules/tcp_mgm.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/topology_hiding.so
 %{_libdir}/opensips/modules/uac.so
-%{_libdir}/opensips/modules/uac_auth.so
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uac_registrant.so
 %{_libdir}/opensips/modules/userblacklist.so
@@ -1048,13 +1208,17 @@ fi
 
 %doc docdir/README.acc
 %doc docdir/README.alias_db
-%doc docdir/README.auth
 %doc docdir/README.auth_aaa
 %doc docdir/README.auth_db
-%doc docdir/README.avpops
+%doc docdir/README.sqlops
+%doc docdir/README.b2b_entities
+%doc docdir/README.b2b_logic
+%doc docdir/README.b2b_sca
+%doc docdir/README.b2b_sdp_demux
 %doc docdir/README.benchmark
 %doc docdir/README.cachedb_local
 %doc docdir/README.cachedb_sql
+%doc docdir/README.call_center
 %doc docdir/README.call_control
 %doc docdir/README.callops
 %doc docdir/README.cfgutils
@@ -1077,6 +1241,7 @@ fi
 %doc docdir/README.event_stream
 %doc docdir/README.event_virtual
 %doc docdir/README.event_xmlrpc
+%doc docdir/README.example
 %doc docdir/README.exec
 %doc docdir/README.fraud_detection
 %doc docdir/README.freeswitch
@@ -1092,7 +1257,9 @@ fi
 %doc docdir/README.mediaproxy
 %doc docdir/README.mi_datagram
 %doc docdir/README.mi_fifo
+%doc docdir/README.mi_script
 %doc docdir/README.mid_registrar
+%doc docdir/README.mqueue
 %doc docdir/README.msilo
 %doc docdir/README.nat_traversal
 %doc docdir/README.nathelper
@@ -1102,6 +1269,7 @@ fi
 %doc docdir/README.pike
 %doc docdir/README.proto_bin
 %doc docdir/README.proto_hep
+%doc docdir/README.proto_ipsec
 %doc docdir/README.proto_smpp
 %doc docdir/README.proto_ws
 %doc docdir/README.qos
@@ -1110,12 +1278,14 @@ fi
 %doc docdir/README.ratelimit
 %doc docdir/README.registrar
 %doc docdir/README.rr
+%doc docdir/README.rtp_relay
 %doc docdir/README.rtpengine
 %doc docdir/README.rtpproxy
 %doc docdir/README.signaling
 %doc docdir/README.sip_i
 %doc docdir/README.sipcapture
 %doc docdir/README.sipmsgops
+%doc docdir/README.status_report
 %doc docdir/README.tracer
 %doc docdir/README.sl
 %doc docdir/README.speeddial
@@ -1123,12 +1293,12 @@ fi
 %doc docdir/README.sst
 %doc docdir/README.statistics
 %doc docdir/README.stun
+%doc docdir/README.tcp_mgm
 %doc docdir/README.textops
 %doc docdir/README.tls
 %doc docdir/README.tm
 %doc docdir/README.topology_hiding
 %doc docdir/README.uac
-%doc docdir/README.uac_auth
 %doc docdir/README.uac_redirect
 %doc docdir/README.uac_registrant
 %doc docdir/README.userblacklist
@@ -1140,28 +1310,25 @@ fi
 %doc docdir/README.auth_jwt
 %endif
 
-%files b2bua-module
-%{_libdir}/opensips/modules/b2b_entities.so
-%{_libdir}/opensips/modules/b2b_logic.so
-%{_libdir}/opensips/modules/b2b_logic_xml.so
-%{_libdir}/opensips/modules/b2b_sca.so
-%{_libdir}/opensips/modules/call_center.so
-%attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/scenario_callcenter.xml
-%doc docdir/README.b2b_entities
-%doc docdir/README.b2b_logic
-%doc docdir/README.b2b_logic_xml
-%doc docdir/README.b2b_sca
-%doc docdir/README.call_center
+%files auth-modules
+%{_libdir}/opensips/modules/auth.so
+%{_libdir}/opensips/modules/auth_aka.so
+%{_libdir}/opensips/modules/uac_auth.so
+%doc docdir/README.auth
+%doc docdir/README.auth_aka
+%doc docdir/README.uac_auth
 
 %files berkeley-bin
 %{_sbindir}/bdb_recover
 
 %files berkeley-module
 %{_libdir}/opensips/modules/db_berkeley.so
+%doc docdir/README.db_berkeley
+
+%files berkeley-dbschema
 %dir %{_datadir}/opensips/db_berkeley
 %dir %{_datadir}/opensips/db_berkeley/opensips
 %{_datadir}/opensips/db_berkeley/opensips/*
-%doc docdir/README.db_berkeley
 
 %files carrierroute-module
 %{_libdir}/opensips/modules/carrierroute.so
@@ -1199,6 +1366,14 @@ fi
 %{_libdir}/opensips/modules/dialplan.so
 %doc docdir/README.dialplan
 
+%if 0%{?_with_aaa_diameter:1}
+%files diameter-module
+%{_libdir}/opensips/modules/aaa_diameter.so
+%{_libdir}/opensips/modules/aka_av_diameter.so
+%doc docdir/README.aaa_diameter
+%doc docdir/README.aka_av_diameter
+%endif
+
 %files emergency-module
 %{_libdir}/opensips/modules/emergency.so
 %doc docdir/README.emergency
@@ -1222,6 +1397,10 @@ fi
 %{_libdir}/opensips/modules/identity.so
 %doc docdir/README.identity
 
+%files ipsec-module
+%{_libdir}/opensips/modules/proto_ipsec.so
+%doc docdir/README.proto_ipsec
+
 %files jabber-module
 %{_libdir}/opensips/modules/jabber.so
 %doc docdir/README.jabber
@@ -1229,6 +1408,10 @@ fi
 %files json-module
 %{_libdir}/opensips/modules/json.so
 %doc docdir/README.json
+
+%files kafka-module
+%{_libdir}/opensips/modules/event_kafka.so
+%doc docdir/README.event_kafka
 
 %files ldap-modules
 %{_libdir}/opensips/modules/h350.so
@@ -1250,11 +1433,23 @@ fi
 %doc docdir/README.cachedb_mongodb
 %endif
 
+%files msrp-modules
+%{_libdir}/opensips/modules/msrp_gateway.so
+%{_libdir}/opensips/modules/msrp_relay.so
+%{_libdir}/opensips/modules/msrp_ua.so
+%{_libdir}/opensips/modules/proto_msrp.so
+%doc docdir/README.msrp_gateway
+%doc docdir/README.msrp_relay
+%doc docdir/README.msrp_ua
+%doc docdir/README.proto_msrp
+
 %files mysql-module
 %{_libdir}/opensips/modules/db_mysql.so
+%doc docdir/README.db_mysql
+
+%files mysql-dbschema
 %dir %{_datadir}/opensips/mysql
 %{_datadir}/opensips/mysql/*.sql
-%doc docdir/README.db_mysql
 
 %if 0%{?_with_db_oracle:1}
 %files oracle-module
@@ -1306,9 +1501,11 @@ fi
 
 %files postgres-module
 %{_libdir}/opensips/modules/db_postgres.so
+%doc docdir/README.db_postgres
+
+%files postgres-dbschema
 %dir %{_datadir}/opensips/postgres
 %{_datadir}/opensips/postgres/*.sql
-%doc docdir/README.db_postgres
 
 %files presence-modules
 %{_libdir}/opensips/modules/presence.so
@@ -1319,6 +1516,8 @@ fi
 %doc docdir/README.presence_dialoginfo
 %{_libdir}/opensips/modules/presence_dfks.so
 %doc docdir/README.presence_dfks
+%{_libdir}/opensips/modules/presence_reginfo.so
+%doc docdir/README.presence_reginfo
 %{_libdir}/opensips/modules/presence_mwi.so
 %doc docdir/README.presence_mwi
 %{_libdir}/opensips/modules/presence_xcapdiff.so
@@ -1333,6 +1532,8 @@ fi
 %doc docdir/README.pua_dialoginfo
 %{_libdir}/opensips/modules/pua_mi.so
 %doc docdir/README.pua_mi
+%{_libdir}/opensips/modules/pua_reginfo.so
+%doc docdir/README.pua_reginfo
 %{_libdir}/opensips/modules/pua_usrloc.so
 %doc docdir/README.pua_usrloc
 %{_libdir}/opensips/modules/pua_xmpp.so
@@ -1344,24 +1545,25 @@ fi
 %{_libdir}/opensips/modules/xcap_client.so
 %doc docdir/README.xcap_client
 
+%files prometheus-module
+%{_libdir}/opensips/modules/prometheus.so
+%doc docdir/README.prometheus
+
 %files python-module
 %{_libdir}/opensips/modules/python.so
+%doc docdir/README.python
 
 %files rabbitmq-modules
 %{_libdir}/opensips/modules/event_rabbitmq.so
 %doc docdir/README.event_rabbitmq
-%{_libdir}/opensips/modules/rabbitmq.so
-%doc docdir/README.rabbitmq
 %{_libdir}/opensips/modules/rabbitmq_consumer.so
 %doc docdir/README.rabbitmq_consumer
 
 %files radius-modules
 %{_libdir}/opensips/modules/peering.so
 %doc docdir/README.peering
-%if 0%{!?_without_aaa_radius:1}
 %{_libdir}/opensips/modules/aaa_radius.so
 %doc docdir/README.aaa_radius
-%endif
 
 %if 0%{?_with_cachedb_redis:1}
 %files redis-module
@@ -1407,12 +1609,24 @@ fi
 %files sqlite-module
 %{_libdir}/opensips/modules/db_sqlite.so
 %doc docdir/README.db_sqlite
+
+%files sqlite-dbschema
 %dir %{_datadir}/opensips/sqlite
 %{_datadir}/opensips/sqlite/*.sql
 
 %files stir-shaken-module
 %{_libdir}/opensips/modules/stir_shaken.so
 %doc docdir/README.stir_shaken
+
+%files  tls-openssl-module
+%{_libdir}/opensips/modules/tls_openssl.so
+%doc docdir/README.tls_openssl
+
+%if 0%{?_with_wolfssl:1}
+%files  tls-wolfssl-module
+%{_libdir}/opensips/modules/tls_wolfssl.so
+%doc docdir/README.tls_wolfssl
+%endif
 
 %files tls-module
 %{_libdir}/opensips/modules/proto_tls.so
@@ -1448,6 +1662,32 @@ fi
 
 
 %changelog
+* Mon Aug 19 2024 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+- Replace deprecated dependency for radius modules
+
+* Sat May 18 2024 Nick Altmann <nick@altmann.pro> - 3.5.0-1
+- Specification updated for opensips 3.5
+- New modules: aka_av_diameter, auth_aka, mqueue, presence_reginfo, proto_ipsec, pua_reginfo
+
+* Thu May 18 2023 Nick Altmann <nick@altmann.pro> - 3.4.0-1
+- Specification updated for opensips 3.4
+
+* Wed May 18 2022 Nick Altmann <nick@altmann.pro> - 3.3.0-1
+- Specification updated for opensips 3.3
+- New modules: b2b_sdp_demux, msrp_gateway, msrp_relay, msrp_ua, proto_msrp, status_report, tcp_mgm
+- New packages: msrp-modules
+- Removed modules: b2b_logic_xml
+- Removed packages: b2bua-module
+
+* Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
+- Specification updated for opensips 3.2
+- New modules: aaa_diameter, b2b_logic, event_kafka, prometeus, rtp_relay, tls_openssl, tls_wolfssl
+- New packages: aaa-diameter-module, kafka-module, prometeus-module, tls-openssl-module, tls-wolfssl-module
+- Obsoleted modules: b2b_logic_xml
+
+* Fri Feb 26 2021 Razvan Crainea <razvan@opensips.org> - 3.2.0-1
+- New modules: prometheus
+
 * Tue Feb 11 2020 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
 - Specification updated for opensips 3.1
 - New modules: b2b_logic_xml, callops, media_exchange, presence_dfks,

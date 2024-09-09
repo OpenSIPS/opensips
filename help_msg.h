@@ -81,7 +81,8 @@ Options:\n\
     -d           Debugging mode (multiple -d increase the level)\n\
     -D           Run in debug mode\n\
     -F           Daemon mode, but leave main process foreground\n\
-    -E           Log to stderr\n\
+    -E           Option deprecated since version 3.4, set the \n\
+                 \"stderror_enabled=yes\" configuration parameter instead\n\
     -N processes Number of TCP worker processes (default: equal to `-n`)\n\
     -W method    poll method\n\
     -V           Version number\n\
@@ -107,7 +108,8 @@ Options:\n\
                   shall receive input via stdin and it must output the\n\
                   result to stdout\n\
     -P file      Create a pid file\n\
-    -G file      Create a pgid file\n"
+    -G file      Create a pgid file\n\
+    -A address   Set the globally advertised addres\n"
 #ifdef UNIT_TESTS
 "    -T           Fork, run unit tests and exit.\n"
 #endif

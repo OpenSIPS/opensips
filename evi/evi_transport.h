@@ -41,6 +41,7 @@
 #define		EVI_PARAMS		(1 << 4)
 #define		EVI_EXPIRE		(1 << 8) // indicates that the socket may expire
 #define		EVI_PENDING		(1 << 9) // indicates that the socket is in use
+#define		EVI_ASYNC_STATUS	(1<<10)
 
 /* sockets */
 typedef union {
@@ -59,9 +60,21 @@ typedef struct ev_reply_sock_ {
 	void *params;
 } evi_reply_sock;
 
+enum evi_status {
+	EVI_STATUS_FAIL = -1,
+	EVI_STATUS_SUCCESS
+};
+
+typedef void (*evi_status_cb)(void *param, enum evi_status status);
+
+typedef struct evi_async_ctx {
+	evi_status_cb status_cb;
+	void *cb_param;
+} evi_async_ctx_t;
+
 /* event raise function */
-typedef int (raise_f)(struct sip_msg *msg, str *ev_name,
-					  evi_reply_sock *sock, evi_params_t * params);
+typedef int (raise_f)(struct sip_msg *msg, str *ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx);
 /* socket parse function */
 typedef evi_reply_sock* (parse_f)(str);
 /* tries to match two sockets */
@@ -84,7 +97,7 @@ typedef struct evi_export_ {
 
 /* transport list */
 typedef struct evi_trans_ {
-	evi_export_t *module;
+	const evi_export_t *module;
 	struct evi_trans_ *next;
 } evi_trans_t;
 
@@ -97,7 +110,7 @@ typedef struct evi_trans_ {
  * Returns:
  *  - 0 if successful or negative on error
  */
-int register_event_mod(evi_export_t *ev);
+int register_event_mod(const evi_export_t *ev);
 
 /*
  * Used to build the payload of an event

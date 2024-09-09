@@ -123,7 +123,8 @@ static inline void init_urecord_labels(urecord_t *r, udomain_t *d)
 static inline uint64_t
 pack_indexes(unsigned short aorhash, unsigned int rlabel, unsigned short clabel)
 {
-	return clabel + ((uint64_t)rlabel << 14) + ((uint64_t)aorhash << 46);
+	return (clabel & CLABEL_MASK) +
+		((uint64_t)rlabel << 14) + ((uint64_t)aorhash << 46);
 }
 
 

@@ -76,15 +76,15 @@ static inline const char *verb2str(enum struct_hist_verb verb)
 	return sh_verb_strs[verb];
 }
 
-static void sh_unref_unsafe(struct struct_hist *sh);
-static void sh_free(struct struct_hist *sh);
+static void sh_unref_unsafe(struct struct_hist *sh, osips_free_f free_f);
+static void sh_free(struct struct_hist *sh, osips_free_f free_f);
 
 struct struct_hist_list *_shl_init(char *obj_name, int window_size,
-			int auto_logging, int init_actions_sz)
+			int auto_logging, int init_actions_sz, osips_malloc_f malloc_f)
 {
 	struct struct_hist_list *shl;
 
-	shl = shm_malloc(sizeof *shl);
+	shl = func_malloc(malloc_f, sizeof *shl);
 	if (!shl) {
 		LM_ERR("oom\n");
 		return NULL;
@@ -113,7 +113,7 @@ void sh_list_flush(struct struct_hist_list *shl)
 	lock_release(&shl->wlock);
 }
 
-void shl_destroy(struct struct_hist_list *shl)
+void _shl_destroy(struct struct_hist_list *shl, osips_free_f free_f)
 {
 	struct list_head *el, *next;
 	struct struct_hist *sh;
@@ -123,30 +123,31 @@ void shl_destroy(struct struct_hist_list *shl)
 
 	list_for_each_safe (el, next, &shl->objects) {
 		sh = list_entry(el, struct struct_hist, list);
-		sh_free(sh);
+		sh_free(sh, free_f);
 	}
 
-	shm_free(shl);
+	func_free(free_f, shl);
 }
 
-struct struct_hist *_sh_push(void *obj, struct struct_hist_list *list, int refs)
+struct struct_hist *_sh_push(void *obj, struct struct_hist_list *list, int refs,
+	osips_malloc_f malloc_f, osips_free_f free_f)
 {
 	struct struct_hist *sh, *last;
 
-	if (!obj || !list)
+	if (!list)
 		return NULL;
 
-	sh = shm_malloc(sizeof *sh);
+	sh = func_malloc(malloc_f, sizeof *sh);
 	if (!sh) {
 		LM_ERR("oom\n");
 		return NULL;
 	}
 	/* CAREFUL: sh is not memset, for speed reasons! */
 
-	sh->actions = shm_malloc(list->init_actions_sz * sizeof *sh->actions);
+	sh->actions = func_malloc(malloc_f, list->init_actions_sz * sizeof *sh->actions);
 	if (!sh->actions) {
 		LM_ERR("oom2\n");
-		shm_free(sh);
+		func_free(free_f, sh);
 		return NULL;
 	}
 	/* CAREFUL: sh->actions is not memset, for speed reasons! */
@@ -173,25 +174,28 @@ struct struct_hist *_sh_push(void *obj, struct struct_hist_list *list, int refs)
 		list_del(&last->list);
 		INIT_LIST_HEAD(&last->list);
 		list->len--;
-		sh_unref_unsafe(last);
+		sh_unref_unsafe(last, free_f);
 	}
 	lock_release(&list->wlock);
 
 	return sh;
 }
 
-static void sh_free(struct struct_hist *sh)
+static void sh_free(struct struct_hist *sh, osips_free_f free_f)
 {
-	shm_free(sh->actions);
-	shm_free(sh);
+	func_free(free_f, sh->actions);
+	func_free(free_f, sh);
 }
 
-void sh_unref(struct struct_hist *sh)
+void _sh_unref(struct struct_hist *sh, osips_free_f free_f)
 {
+	if (!sh)
+		return;
+
 	gen_lock_t *shl_lock = &sh->shlist->wlock;
 
 	lock_get(shl_lock);
-	sh_unref_unsafe(sh);
+	sh_unref_unsafe(sh, free_f);
 	lock_release(shl_lock);
 }
 
@@ -223,7 +227,7 @@ void sh_flush(struct struct_hist *sh)
 	lock_release(&sh->wlock);
 }
 
-static void sh_unref_unsafe(struct struct_hist *sh)
+static void sh_unref_unsafe(struct struct_hist *sh, osips_free_f free_f)
 {
 	sh->ref--;
 	if (sh->ref != 0)
@@ -242,10 +246,11 @@ static void sh_unref_unsafe(struct struct_hist *sh)
 	if (!list_empty(&sh->list))
 		list_del(&sh->list);
 
-	sh_free(sh);
+	sh_free(sh, free_f);
 }
 
-int _sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
+int _sh_log(osips_realloc_f realloc_f, struct struct_hist *sh,
+	enum struct_hist_verb verb, char *fmt, ...)
 {
 	va_list ap;
 	int n;
@@ -265,7 +270,7 @@ int _sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 
 		_sh_flush(sh, sh->auto_logging);
 	} else if (sh->len == sh->max_len) {
-		new = shm_realloc(sh->actions, sh->max_len * 2 * sizeof *sh->actions);
+		new = func_realloc(realloc_f, sh->actions, sh->max_len * 2 * sizeof *sh->actions);
 		if (!new) {
 			lock_release(&sh->wlock);
 			LM_ERR("oom\n");

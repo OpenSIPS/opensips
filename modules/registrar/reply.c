@@ -116,7 +116,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 {
 	unsigned int len;
 	int qlen;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	len = 0;
 	while(c) {
@@ -223,7 +223,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 	char *p, *cp, *tmpgr;
 	int fl, len,grlen;
 	int build_gruu = 0;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	if (!disable_gruu && _m->supported && parse_supported(_m) == 0 &&
 		(get_supported(_m) & F_SUPPORTED_GRUU))

@@ -35,6 +35,24 @@
 	</section>
 
 	<section>
+		<title>TLS libraries</title>
+		<para>
+			Besides TLS certificates and parameters, this module also acts as
+			an inteface between the actual TLS implemenation (provided by
+			<emphasis>openSSL</emphasis> or <emphasis>wolfSSL</emphasis> libraries)
+			and transport protocol modules like <emphasis>proto_tls</emphasis> or
+			<emphasis>proto_wss</emphasis>. The <emphasis>tls_mgm</emphasis> module
+			transparently exposes the TLS operations implemented by
+			<emphasis>tls_openssl</emphasis> and <emphasis>tls_wolfssl</emphasis> modules
+			to the higher-level OpenSIPS transport modules.
+		</para>
+		<para>
+			The TLS library selection ca be configured through the
+			<xref linkend="param_tls_library"/> module parameter.
+		</para>
+	</section>
+
+	<section>
 		<title>TLS domains</title>
 		<para>
 		The wording 'TLS domain' means that this TLS connection will have different
@@ -103,37 +121,35 @@
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+         <itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>,
+				unless <xref linkend="param_tls_library"/> is set to 'none'.
+			</para>
+			</listitem>
+        </itemizedlist>
+		</para>
+	</section>
+	<section>
 		<title>Dependencies of external libraries</title>
 		<para>
-			&osips; TLS v1.0 support requires the following packages:
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
 			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 0.9.6
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
-		<para>
-			&osips; TLS v1.1/1.2 support requires the following packages:
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 1.0.1e
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
-			</itemizedlist>
-		</para>
+	</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -206,6 +222,52 @@ if (is_peer_verified()) {
 				<programlisting format="linespecific">
 ...
 socket= tls:1.2.3.4:5061
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_tls_library" xreflabel="tls_library">
+			<title><varname>tls_library</varname> (string)</title>
+			<para>
+				Selects which TLS library to use. Possible values are:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>auto</emphasis> - auto-detect which TLS library
+				module (<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>)
+				was loaded. OpenSIPS will not start if no module, or both modules are
+				found.
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>none</emphasis> - do not use any TLS library; this
+				is useful when the <emphasis>tls_mgm</emphasis> module is required only
+				for the management of TLS certificates and parameters by modules like
+				<emphasis>db_mysql</emphasis>, <emphasis>rabbitmq</emphasis> etc. (
+				and not for TLS operations by transport modules like
+				<emphasis>proto_tls</emphasis> etc.)
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl</emphasis> - use the <emphasis>openSSL</emphasis>
+				library through the <emphasis>tls_openssl</emphasis> module.
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>wolfssl</emphasis> - use the <emphasis>wolfSSL</emphasis>
+				library through the <emphasis>tls_wolfssl</emphasis> module.
+				</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+				Default value is <emphasis>auto</emphasis>.
+			</para>
+			<example>
+				<title>Set <varname>tls_library</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "tls_library", "none")
 ...
 				</programlisting>
 			</example>
@@ -540,6 +602,12 @@ modparam("tls_mgm", "require_cert", "[dom]0")
 			Note: If there is already an existing TLS connection to the remote target,
 			it will be reused and setting this AVP has no effect.
 			</para>
+			<para>
+			Note: You can force a particular domain to be used just for a particular
+			branch by setting the <emphasis>$bavp</emphasis> variable with the same
+			name. When both <emphasis>$bavp</emphasis> and <emphasis>$avp</emphasis>
+			variables are set, the first one takes precedence.
+			</para>
 			<para><emphasis>
 				No default value.
 			</emphasis></para>
@@ -562,6 +630,12 @@ modparam("tls_mgm", "client_tls_domain_avp", "tls_match_dom")
 			<para>
 			Note: If there is already an existing TLS connection to the remote target,
 			it will be reused and setting this AVP has no effect.
+			</para>
+			<para>
+			Note: You can force a particular SIP domain to be used just for a particular
+			branch by setting the <emphasis>$bavp</emphasis> variable with the same
+			name. When both <emphasis>$bavp</emphasis> and <emphasis>$avp</emphasis>
+			variables are set, the first one takes precedence.
 			</para>
 			<para>
 			For the AVP usage example, refer to  <xref linkend="domains-param"/>.
@@ -1276,7 +1350,8 @@ route{
 		<programlisting format="linespecific">
   # ----------- global configuration parameters ------------------------
   log_level=3
-  log_stderror=no
+  stderror_enabled=no
+  syslog_enabled=yes
 
   check_via=no
   dns=no
@@ -1336,7 +1411,7 @@ route{
 
   # initial sanity checks
   if (!mf_process_maxfwd_header("10")) {
-      send_reply("483","Too Many Hops");
+      send_reply(483,"Too Many Hops");
       exit;
   };
 
@@ -1352,13 +1427,13 @@ route{
           };
           if ($au!=$fU) {
               xlog("FROM hdr Cheating attempt in INVITE\n");
-              send_reply("403",
+              send_reply(403,
                   "That is ugly -- use From=id next time (OB)");
               exit;
           };
       }; # non-REGISTER from other domain
   } else if ( is_method("INVITE") &amp;&amp; !is_myself("$rd") ) {
-      send_reply("403", "No relaying");
+      send_reply(403, "No relaying");
       exit;
   };
 
@@ -1410,7 +1485,7 @@ route{
       };
       if ($au!=$tU) {
           xlog("TO hdr Cheating attempt\n");
-          send_reply("403", "That is ugly -- use To=id in REGISTERs");
+          send_reply(403, "That is ugly -- use To=id in REGISTERs");
           exit;
       };
       # it is an authenticated request, update Contact database now
@@ -1423,7 +1498,7 @@ route{
   # native SIP destinations are handled using USRLOC DB
   if (!lookup("location")) {
       # handle user which was not found
-      send_reply("404", "Not Found");
+      send_reply(404, "Not Found");
       exit;
   };
 

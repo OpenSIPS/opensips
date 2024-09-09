@@ -1,0 +1,79 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module implements TLS operations using the
+		<ulink url="https://www.wolfssl.com/">
+		<citetitle>wolfSSL</citetitle></ulink> libarary. It provides the primitives
+		required by the <emphasis>tls_mgm</emphasis> module in order to expose a
+		higher-level API used by TLS-based protocol modules like
+		<emphasis>proto_tls</emphasis> or <emphasis>proto_wss</emphasis>.
+	</para>
+	<para>
+		The <emphasis>wolfSSL</emphasis> library is statically-linked and bundled
+		with this module so no installation or external dependency is required.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>Compilation</title>
+		<para>
+		The following packages must be installed before compiling this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>autoconf</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>automake</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>libtool</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+</chapter>

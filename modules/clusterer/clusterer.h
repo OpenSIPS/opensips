@@ -32,12 +32,13 @@
 #include "api.h"
 
 #define BIN_VERSION 1
-#define BIN_SYNC_VERSION 2
+#define BIN_SYNC_VERSION 3
 #define DEFAULT_PING_INTERVAL 4
 #define DEFAULT_NODE_TIMEOUT 60
 #define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */
 #define DEFAULT_SEED_FB_INTERVAL 5
-#define SEED_FB_CHECK_INTERVAL 500 /* ms */
+#define DEFAULT_SYNC_TIMEOUT 15
+#define SYNC_CHECK_INTERVAL 500 /* ms */
 #define UPDATE_MAX_PATH_LEN 25
 #define SMALL_MSG 300
 
@@ -55,7 +56,14 @@
 /* capability flags */
 #define CAP_STATE_OK		(1<<0)
 #define CAP_SYNC_PENDING	(1<<1)
-#define CAP_PKT_BUFFERING	(1<<2)
+#define CAP_SYNC_IN_PROGRESS	(1<<2)
+#define CAP_STATE_ENABLED	(1<<3)
+
+#define CAP_DISABLED 0
+#define CAP_ENABLED  1
+
+#define CAP_SR_ID_PREFIX "cap:"
+#define CAP_SR_ID_PREFIX_LEN (sizeof(CAP_SR_ID_PREFIX) - 1)
 
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
@@ -79,8 +87,20 @@ typedef enum {
 	LS_TEMP
 } clusterer_link_state;
 
+enum cap_sr_status {
+	CAP_SR_NOT_SYNCED       = -3,
+	CAP_SR_SYNC_PENDING     = -2,
+	CAP_SR_SYNCING          = -1,
+	CAP_SR_RESERVED	        =  0,
+	CAP_SR_SYNCED           =  1,
+};
+
+#define CAP_SR_STATUS_STR(_cap_sr_status) \
+	cap_sr_details_str[(_cap_sr_status)-CAP_SR_NOT_SYNCED]
+
 struct capability_reg {
 	str name;
+	str sr_id;
 	enum cl_node_match_op sync_cond;
 	cl_packet_cb_f packet_cb;
 	cl_event_cb_f event_cb;
@@ -96,8 +116,10 @@ struct local_cap {
 	struct capability_reg reg;
 	struct buf_bin_pkt *pkt_q_front;
 	struct buf_bin_pkt *pkt_q_back;
-	struct buf_bin_pkt *pkt_q_cutpos;
 	struct timeval sync_req_time;
+	int last_sync_pkt;
+	int sync_total_chunks_cnt;
+	int sync_cur_chunks_cnt;
 	unsigned int flags;
 	struct local_cap *next;
 };
@@ -110,6 +132,7 @@ struct remote_cap {
 
 struct packet_rpc_params {
 	struct capability_reg *cap;
+	int cluster_id;
 	int pkt_src_id;
 	int pkt_type;
 	str pkt_buf;
@@ -139,8 +162,13 @@ extern enum sip_protos clusterer_proto;
 
 extern str cl_internal_cap;
 extern str cl_extra_cap;
+extern void *cl_srg;
+extern str node_st_sr_ident;
+extern str cap_sr_details_str[];
 
-void seed_fb_check_timer(utime_t ticks, void *param);
+extern int dispatch_jobs;
+
+void sync_check_timer(utime_t ticks, void *param);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att);
@@ -149,7 +177,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 
 int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id);
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
-												int cluster_id, int dst_id);
+	int cluster_id, int dst_id, int check_cap, int locked);
 int send_single_cap_update(struct cluster_info *cluster, struct local_cap *cap,
 							int cap_state);
 int send_cap_update(struct node_info *dest_node, int require_reply);
@@ -158,6 +186,8 @@ void do_actions_node_ev(struct cluster_info *clusters, int *select_cluster,
 
 void remove_node(struct cluster_info *cl, struct node_info *node);
 
+unsigned long clusterer_get_num_nodes(int state);
+
 enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);
 enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag);
@@ -165,7 +195,7 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 									mi_item_t *cmd_params_arr, int no_params);
 enum clusterer_send_ret bcast_remove_node(int cluster_id, int target_node);
 
-int cl_set_state(int cluster_id, enum cl_node_state state);
+int cl_set_state(int cluster_id, int node_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, str *ip_str,
 							enum node_addr_type check_type);
 enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
@@ -179,8 +209,12 @@ struct local_cap *dup_caps(struct local_cap *caps);
 
 int preserve_reg_caps(struct cluster_info *new_info);
 
+int mi_cap_set_state(int cluster_id, str *capability, int status);
+int get_capability_status(struct cluster_info *cluster, str *capability);
+
 int run_rcv_mi_cmd(str *cmd_name, str *cmd_params_arr, int no_params);
 
-int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap);
+int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap,
+	int cluster_id);
 
 #endif  /* CLUSTERER_H */

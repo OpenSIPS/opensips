@@ -14,4 +14,5 @@
 		<column><field>expiry</field><type>DB_INT</type></column>
 		<column><field>forced_socket</field><type>DB_STR</type></column>
 		<column><field>cluster_shtag</field><type>DB_STR</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
 	</db_table>

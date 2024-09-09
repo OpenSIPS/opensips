@@ -125,7 +125,7 @@ dig_err_t check_dig_cred(dig_cred_t* _c)
 	     /* If QOP parameter is present, some additional
 	      * requirements must be met
 	      */
-	if ((_c->qop.qop_parsed == QOP_AUTH_D) || (_c->qop.qop_parsed == QOP_AUTHINT_D)) {
+	if (_c->qop.qop_parsed != QOP_UNSPEC_D) {
 		     /* CNONCE must be specified */
 		if (_c->cnonce.s == 0) res |= E_DIG_CNONCE;
 		     /* and also nonce count must be specified */
@@ -156,10 +156,26 @@ void print_cred(dig_cred_t* _c)
 		printf("\\--parsed = ");
 
 		switch(_c->alg.alg_parsed) {
-		case ALG_UNSPEC:  printf("ALG_UNSPEC\n");  break;
-		case ALG_MD5:     printf("ALG_MD5\n");     break;
-		case ALG_MD5SESS: printf("ALG_MD5SESS\n"); break;
-		case ALG_OTHER:   printf("ALG_OTHER\n");   break;
+		CASE_PRINTENUM(ALG_UNSPEC);
+		CASE_PRINTENUM(ALG_MD5);
+		CASE_PRINTENUM(ALG_MD5SESS);
+		CASE_PRINTENUM(ALG_SHA256);
+		CASE_PRINTENUM(ALG_SHA256SESS);
+		CASE_PRINTENUM(ALG_SHA512_256);
+		CASE_PRINTENUM(ALG_SHA512_256SESS);
+		CASE_PRINTENUM(ALG_AKAv1_MD5);
+		CASE_PRINTENUM(ALG_AKAv1_MD5SESS);
+		CASE_PRINTENUM(ALG_AKAv1_SHA256);
+		CASE_PRINTENUM(ALG_AKAv1_SHA256SESS);
+		CASE_PRINTENUM(ALG_AKAv1_SHA512_256);
+		CASE_PRINTENUM(ALG_AKAv1_SHA512_256SESS);
+		CASE_PRINTENUM(ALG_AKAv2_MD5);
+		CASE_PRINTENUM(ALG_AKAv2_MD5SESS);
+		CASE_PRINTENUM(ALG_AKAv2_SHA256);
+		CASE_PRINTENUM(ALG_AKAv2_SHA256SESS);
+		CASE_PRINTENUM(ALG_AKAv2_SHA512_256);
+		CASE_PRINTENUM(ALG_AKAv2_SHA512_256SESS);
+		CASE_PRINTENUM(ALG_OTHER);
 		}
 
 		printf("Cnonce    = \'%.*s\'\n", _c->cnonce.len, _c->cnonce.s);
@@ -168,10 +184,12 @@ void print_cred(dig_cred_t* _c)
 		printf("\\--parsed = ");
 
 		switch(_c->qop.qop_parsed) {
-		case QOP_UNSPEC_D:  printf("QOP_UNSPEC_D\n");  break;
-		case QOP_AUTH_D:    printf("QOP_AUTH_D\n");    break;
-		case QOP_AUTHINT_D: printf("QOP_AUTHINT_D\n"); break;
-		case QOP_OTHER_D:   printf("QOP_OTHER_D\n");   break;
+		CASE_PRINTENUM(QOP_UNSPEC_D);
+		CASE_PRINTENUM(QOP_AUTH_D);
+		CASE_PRINTENUM(QOP_AUTHINT_D);
+		CASE_PRINTENUM(QOP_AUTHINT_AUTH_D);
+		CASE_PRINTENUM(QOP_AUTH_AUTHINT_D);
+		CASE_PRINTENUM(QOP_OTHER_D);
 		}
 		printf("NC        = \'%.*s\'\n", _c->nc.len, _c->nc.s);
 	}

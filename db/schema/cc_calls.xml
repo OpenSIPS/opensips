@@ -9,11 +9,12 @@
 
 <table id="cc_calls" xmlns:db="http://docbook.org/ns/docbook">
 	<name>cc_calls</name>
-	<version>2</version>
+	<version>3</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
-		<db:para>This table is used by the Call Center module to store ongoing calls for restart persitancy.
-			It consists only of runtime data and should not be manually provisioned.
+		<db:para>This table is used by the Call Center module to store ongoing 
+		calls for restart persitancy. It consists only of runtime data and 
+		should not be manually provisioned.
 		More information can be found at: &OPENSIPS_MOD_DOC;call_center.html.
 		</db:para>
 	</description>
@@ -34,6 +35,15 @@
 		<type>int</type>
 		<size>11</size>
 		<description>The state of the call.
+		</description>
+	</column>
+
+	<column id="media">
+		<name>media</name>
+		<type>int</type>
+		<size>11</size>
+		<description>Indicates the media type of the call,
+		(0) RTP/audio or (1) MSRP/chat.
 		</description>
 	</column>
 

@@ -71,13 +71,14 @@ static int w_round_dp_op(struct sip_msg *msg, str *exp, pv_spec_t *result,
                          int *digits);
 static int w_round_sf_op(struct sip_msg *msg, str *exp, pv_spec_t *result,
                          int *digits);
+static int w_compare_exp(struct sip_msg *msg, str *exp1, str *exp2, pv_spec_t *result);
 
 
 /**
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"math_eval", (cmd_function)w_evaluate_exp, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_VAR,0,0}, {0,0,0}},
@@ -108,13 +109,18 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
+	{"math_compare", (cmd_function)w_compare_exp, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR,0,0}, {0,0,0}},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
 /**
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"decimal_digits", INT_PARAM, &decimal_digits},
 	{0, 0, 0}
 };
@@ -219,3 +225,39 @@ static int w_round_sf_op(struct sip_msg *msg, str *exp, pv_spec_t *result,
 	return round_sf_op(msg, exp, result, *digits);
 }
 
+static int w_compare_exp(struct sip_msg *msg, str *e1, str *e2, pv_spec_t *result)
+{
+	int error;
+	double r1,r2;
+	pv_value_t pv_val;
+
+	trim(e1);
+	trim(e2);
+
+	r1 = te_interp(e1->s, &error);
+	if (isnan(r1)) {
+		LM_ERR("Failed to run math expression: <%.*s>\n", e1->len, e1->s);
+		return -1;
+	}
+
+	r2 = te_interp(e2->s, &error);
+	if (isnan(r2)) {
+		LM_ERR("Failed to run math expression: <%.*s>\n", e2->len, e2->s);
+		return -1;
+	}
+
+	pv_val.flags = PV_VAL_INT | PV_TYPE_INT;
+	if (r1 > r2 )
+		pv_val.ri = 1;
+	else if (r1 < r2)
+		pv_val.ri = -1;
+	else
+		pv_val.ri = 0;
+
+	if (pv_set_value(msg, result, 0, &pv_val) != 0) {
+		LM_ERR("SET output value failed.\n");
+		return -1;
+	}
+
+	return 1;
+}

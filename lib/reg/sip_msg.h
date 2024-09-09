@@ -80,6 +80,7 @@ int calc_contact_q(param_t* _q, qvalue_t* _r);
  * Return: NULL on star, missing or unparsed Contact header, otherwise the ptr
  */
 contact_t* get_first_contact(struct sip_msg* _m);
+contact_t* get_first_contact_matching(struct sip_msg* _m, const str *uri_chunk);
 contact_t* get_next_contact(contact_t* _c);
 void reset_first_contact(void);
 

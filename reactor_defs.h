@@ -65,8 +65,8 @@ enum fd_types { F_NONE=0,
 		F_TCPMAIN, F_TCPCONN,
 		/* fd types for TCP management process (TCP main process) */
 		F_TCP_LISTENER, F_TCP_TCPWORKER, F_TCP_WORKER,
-		/* fd type specific to FreeSWITCH ESL traffic (FS worker process) */
-		F_FS_CONN,
+		/* generic fd type specific to the custome processes (like MI) */
+		F_GEN_PROC,
 		};
 
 extern io_wait_h _worker_io;
@@ -103,6 +103,9 @@ int init_reactor_size(void);
 
 #define reactor_is_empty() \
 	(_worker_io.fd_no==0)
+
+#define reactor_name() \
+	(_worker_io.name)
 
 #define reactor_set_app_flag( _type, _app_flag) \
 	io_set_app_flag( &_worker_io , _type, _app_flag)

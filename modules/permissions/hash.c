@@ -36,9 +36,9 @@
 #include <fnmatch.h>
 //#include <regex.h>
 
-#define perm_hash(_s)  core_hash( &(_s), 0, PERM_HASH_SIZE)
+#define perm_hash(_s)  core_hash( &(_s), NULL, PERM_HASH_SIZE)
 
-struct address_list** hash_create(void) {
+struct address_list** pm_hash_create(void) {
 	struct address_list** ptr;
 
 	/* Initializing hash tables and hash table variable */
@@ -54,16 +54,16 @@ struct address_list** hash_create(void) {
 }
 
 
-void hash_destroy(struct address_list** table) {
+void pm_hash_destroy(struct address_list** table) {
 	if (!table) {
 		LM_ERR("trying to destroy an empty hash table\n");
 		return;
 	}
-	empty_hash(table);
+	pm_empty_hash(table);
 	shm_free(table);
 }
 
-int hash_insert(struct address_list** table, struct ip_addr *ip,
+int pm_hash_insert(struct address_list** table, struct ip_addr *ip,
 		  unsigned int grp, unsigned int port, int proto, str* pattern,
 		  str* info) {
 
@@ -132,7 +132,7 @@ int hash_insert(struct address_list** table, struct ip_addr *ip,
 }
 
 
-int hash_match(struct sip_msg *msg, struct address_list** table,
+int pm_hash_match(struct sip_msg *msg, struct address_list** table,
 		unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
 		char *pattern, pv_spec_t *info) {
 
@@ -243,7 +243,7 @@ int find_group_in_hash_table(struct address_list** table,
 
 
 
-int hash_mi_print(struct address_list **table, mi_item_t *part_item,
+int pm_hash_mi_print(struct address_list **table, mi_item_t *part_item,
 		struct pm_part_struct *pm)
 {
 	int i, len;
@@ -305,7 +305,7 @@ int hash_mi_print(struct address_list **table, mi_item_t *part_item,
 	return 0;
 }
 
-void empty_hash(struct address_list** table) {
+void pm_empty_hash(struct address_list** table) {
 	int i;
 
 	struct address_list *node = NULL, *next = NULL;

@@ -133,19 +133,23 @@
 		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
-			The urls of the server groups that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
-			It can be set more than one time.
-			The prefix part of the URL will be the identifier that will be used
-			from the script.
+			The URLs of the server groups that OpenSIPS will connect to in order
+			to use, from script, the cache_store(), cache_fetch(), etc. operations.
+			It may be set more than once.  The prefix part of the URL will be
+			the identifier that will be used from the script.
 		</para>
 
 		<example>
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_redis", "cachedb_url","redis:group1://localhost:6379/")
-modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:8888/")
+# single-instance URLs (Redis Server or Redis Cluster)
+modparam("cachedb_redis", "cachedb_url", "redis:group1://localhost:6379/")
+modparam("cachedb_redis", "cachedb_url", "redis:cluster1://random_url:8888/")
+
+# multi-instance URL (will perform circular <emphasis role='bold'>failover</emphasis> on each query)
+modparam("cachedb_redis", "cachedb_url",
+	"redis:ha://localhost,host_a:6380,host_b:6381,host_c/")
 ...
 		</programlisting>
 			</example>
@@ -154,9 +158,9 @@ modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:8888/")
 			<title>Use Redis servers </title>
 			<programlisting format="linespecific">
 ...
-cache_store("redis:group1","key","$ru value");
-cache_fetch("redis:cluster1","key",$avp(10));
-cache_remove("redis:cluster1","key");
+cache_store("redis:group1", "key", "$ru value");
+cache_fetch("redis:cluster1", "key", $avp(10));
+cache_remove("redis:cluster1", "key");
 ...
 		</programlisting>
 			</example>

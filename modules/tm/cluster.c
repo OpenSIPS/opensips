@@ -21,6 +21,7 @@
 #include "cluster.h"
 #include "t_lookup.h"
 #include "t_fwd.h"
+#include "t_stats.h"
 #include "../../ut.h"
 #include "../../receive.h"
 #include "../../socket_info.h"
@@ -168,6 +169,7 @@ static void receive_tm_repl(bin_packet_t *packet)
 	str tmp;
 	struct receive_info ri;
 
+	memset(&ri, 0, sizeof ri);
 	LM_DBG("received %d packet from %d in cluster %d\n",
 			packet->type, packet->src_id, tm_repl_cluster);
 
@@ -206,14 +208,25 @@ static void receive_tm_repl(bin_packet_t *packet)
 	memcpy((char *)&ri.src_ip, tmp.s, tmp.len);
 	TM_BIN_POP(int, &ri.src_port, "src port");
 	TM_BIN_POP(str, &tmp, "message");
+	/* we need to substract the '\0' termination from message len */
+	tmp.len--;
 
 	/* only auto-CANCEL is treated differently */
-	if (packet->type == TM_CLUSTER_AUTO_CANCEL) {
+	switch (packet->type) {
+	case TM_CLUSTER_AUTO_CANCEL:
+		if_update_stat(tm_enable_stats, tm_cluster_cancel_rx , 1);
 		if (tm_repl_auto_cancel) {
 			tm_repl_cancel(packet, &tmp, &ri);
 			return;
 		}
 		LM_WARN("auto-CANCEL handling is disabled, but got one auto-CANCEL here!\n");
+		break;
+	case TM_CLUSTER_REQUEST:
+		if_update_stat(tm_enable_stats, tm_cluster_request_rx , 1);
+		break;
+	case TM_CLUSTER_REPLY:
+		if_update_stat(tm_enable_stats, tm_cluster_reply_rx , 1);
+		break;
 	}
 	receive_msg(tmp.s, tmp.len, &ri, NULL, FL_TM_REPLICATED);
 }
@@ -312,7 +325,7 @@ static bin_packet_t *tm_replicate_packet(struct sip_msg *msg, int type)
 	TM_BIN_PUSH(str, &tmp, "src host");
 	TM_BIN_PUSH(int, msg->rcv.src_port, "src port");
 	tmp.s = msg->buf;
-	tmp.len = msg->len + 1; /* XXX: add null terminator */
+	tmp.len = msg->len + 1; /* XXX: add '\0' terminator - receive_msg expects it */
 	TM_BIN_PUSH(str, &tmp, "message");
 
 	return &packet;
@@ -370,6 +383,9 @@ static void *tm_replicate_cancel(struct sip_msg *msg)
 		LM_ERR("Error sending message to cluster: %d\n",
 				tm_repl_cluster);
 		break;
+	case CLUSTERER_SEND_SUCCESS:
+		if_update_stat(tm_enable_stats, tm_cluster_cancel_tx , 1);
+		break;
 	}
 	bin_free_packet(&packet);
 	return NULL; /* dummy return to comply with TM_BIN_PUSH() */
@@ -398,6 +414,9 @@ static void tm_replicate_reply(struct sip_msg *msg, int cid)
 	case CLUSTERER_SEND_ERR:
 		LM_ERR("Error sending message to %d in cluster: %d\n", cid,
 				tm_repl_cluster);
+		break;
+	case CLUSTERER_SEND_SUCCESS:
+		if_update_stat(tm_enable_stats, tm_cluster_reply_tx , 1);
 		break;
 	}
 	bin_free_packet(packet);
@@ -428,6 +447,9 @@ static int tm_replicate_broadcast(struct sip_msg *msg)
 	case CLUSTERER_SEND_ERR:
 		LM_ERR("Error sending message to cluster: %d\n",
 				tm_repl_cluster);
+		break;
+	case CLUSTERER_SEND_SUCCESS:
+		if_update_stat(tm_enable_stats, tm_cluster_request_tx , 1);
 		break;
 	}
 	bin_free_packet(packet);
@@ -487,7 +509,7 @@ int tm_reply_replicate(struct sip_msg *msg)
 	return 1;
 }
 
-static int tm_existing_trans(struct sip_msg *msg)
+static int tm_existing_ack_trans(struct sip_msg *msg)
 {
 	struct cell *t = get_t();
 	if (t == T_UNDEFINED) {
@@ -503,6 +525,28 @@ static int tm_existing_trans(struct sip_msg *msg)
 	}
 	return 0;
 }
+
+static int tm_existing_invite_trans(struct sip_msg *msg)
+{
+	struct cell *t = get_cancelled_t();
+	if (t == T_UNDEFINED) {
+		/* parse needed hdrs*/
+		if (check_transaction_quadruple(msg)==0) {
+			LM_ERR("too few headers\n");
+			return 0; /*drop request!*/
+		}
+		if (!msg->hash_index)
+			msg->hash_index = tm_hash(msg->callid->body,get_cseq(msg)->number);
+		/* performe lookup */
+		t = t_lookupOriginalT(msg);
+	}
+	if (t) {
+		LM_DBG("transaction already present here, no need to replicate\n");
+		return 1;
+	}
+	return 0;
+}
+
 
 /**
  * Replicates a message within a cluster
@@ -529,7 +573,9 @@ int tm_anycast_replicate(struct sip_msg *msg)
 		LM_DBG("message already replicated, shouldn't have got here\n");
 		return -2;
 	}
-	if (tm_existing_trans(msg))
+	if (msg->REQ_METHOD == METHOD_CANCEL && tm_existing_invite_trans(msg))
+		return -1;
+	if (msg->REQ_METHOD == METHOD_ACK && tm_existing_ack_trans(msg))
 		return -1;
 
 	/* we are currently doing auto-CANCEL only for 3261 transactions */
@@ -547,15 +593,21 @@ int tm_anycast_replicate(struct sip_msg *msg)
  */
 int tm_anycast_cancel(struct sip_msg *msg)
 {
+	struct cell *t;
 	if (!tm_repl_auto_cancel || !tm_repl_cluster)
 		return -1;
 
-	if (!tm_existing_trans(msg))
+	if (!tm_existing_invite_trans(msg))
 		return tm_replicate_cancel(msg)? 0: -2;
-	else if (t_relay_to(msg, NULL, 0) < 0) {
+	t = get_cancelled_t();
+	if (t!=NULL && t!=T_UNDEFINED)
+		t_unref_cell(t);
+
+	if (t_relay_to(msg, NULL, 0) < 0) {
 		LM_ERR("cannot handle auto-CANCEL here - send to script!\n");
 		return -1;
 	}
+	t_unref(msg);
 
 	return 0;
 }

@@ -66,7 +66,7 @@ db_con_t* db_handle=0;   /* Database connection handle */
 
 
 /* Exported functions */
-// static cmd_export_t cmds[] = {
+// static const cmd_export_t cmds[] = {
 // 	{"sd_lookup", (cmd_function)sd_lookup, 1, fixup_spve_null, 0,
 // 		REQUEST_ROUTE},
 // 	{"sd_lookup", (cmd_function)sd_lookup, 2, fixup_spve_spve, 0,
@@ -74,15 +74,16 @@ db_con_t* db_handle=0;   /* Database connection handle */
 // 	{0, 0, 0, 0, 0, 0}
 // };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"sd_lookup", (cmd_function)sd_lookup, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 /* Exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",           STR_PARAM, &db_url.s             },
 	{"user_column",      STR_PARAM, &user_column.s        },
 	{"domain_column",    STR_PARAM, &domain_column.s      },
@@ -94,7 +95,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

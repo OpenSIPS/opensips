@@ -110,6 +110,11 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		*cl_list = cluster;
 	}
 
+	if (get_node_by_id(cluster, int_vals[INT_VALS_NODE_ID_COL])) {
+		LM_DBG("Node [%d] already exists\n", int_vals[INT_VALS_NODE_ID_COL]);
+		return 0;
+	}
+
 	*new_info = shm_malloc(sizeof **new_info);
 	if (!*new_info) {
 		LM_ERR("no more shm memory\n");
@@ -188,12 +193,16 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	st.len = hlen;
 
 	if (proto == PROTO_NONE)
-		proto = clusterer_proto;
-	if (proto != clusterer_proto) {
-		LM_ERR("Clusterer currently supports only BIN protocol, but node: %d "
-			"has proto=%d\n", int_vals[INT_VALS_NODE_ID_COL], proto);
+		proto = PROTO_BIN;
+	else if (proto != PROTO_BIN && proto != PROTO_BINS) {
+		LM_ERR("Clusterer currently supports only BIN/BINS protocols, but node: "
+			"%d has proto=%d\n", int_vals[INT_VALS_NODE_ID_COL], proto);
 		return 1;
 	}
+	LM_DBG("adding node: %.*s:%d (df: %d)\n", hlen, host, port,
+	       protos[PROTO_BIN].default_port);
+
+	(*new_info)->proto = proto;
 
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
 		he = sip_resolvehost(&st, (unsigned short *) &port,
@@ -204,6 +213,10 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		}
 
 		hostent2su(&((*new_info)->addr), he, 0, port);
+
+		struct ip_addr ip;
+		su2ip_addr(&ip, &(*new_info)->addr);
+		LM_DBG("resolved node: %s:%d\n", ip_addr2a(&ip), port);
 
 		t.tv_sec = 0;
 		t.tv_usec = 0;
@@ -225,8 +238,10 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 
 	(*new_info)->ls_seq_no = -1;
 	(*new_info)->top_seq_no = -1;
+	(*new_info)->cap_seq_no = -1;
 	(*new_info)->ls_timestamp = 0;
 	(*new_info)->top_timestamp = 0;
+	(*new_info)->cap_timestamp = 0;
 
 	(*new_info)->sp_info = shm_malloc(sizeof(struct node_search_info));
 	if (!(*new_info)->sp_info) {
@@ -477,10 +492,14 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 		/* add info to backing list */
 		if ((rc = add_node_info(&_, cl_list, int_vals, str_vals)) != 0) {
 			LM_ERR("Unable to add node info to backing list\n");
-			if (rc < 0)
+			if (rc < 0) {
 				return -1;
-			else
+			} else if (int_vals[INT_VALS_NODE_ID_COL] == current_id) {
+				LM_ERR("Invalid info for local node\n");
+				return -1;
+			} else {
 				return 2;
+			}
 		}
 	}
 
@@ -621,16 +640,13 @@ int provision_current(modparam_t type, void *val)
 	return 0;
 }
 
-int update_db_state(int state) {
-	db_key_t node_id_key = &id_col;
+int update_db_state(int cluster_id, int node_id, int state) {
+	db_key_t node_id_key = &node_id_col;
 	db_val_t node_id_val;
+	db_key_t cl_node_id_keys[2] = {&node_id_col, &cluster_id_col};
+	db_val_t cl_node_id_vals[2];
 	db_key_t update_key;
 	db_val_t update_val;
-
-	VAL_TYPE(&node_id_val) = DB_INT;
-	VAL_NULL(&node_id_val) = 0;
-	VAL_INT(&node_id_val) = current_id;
-	update_key = &state_col;
 
 	CON_OR_RESET(db_hdl);
 	if (dr_dbf.use_table(db_hdl, &db_table) < 0) {
@@ -638,13 +654,31 @@ int update_db_state(int state) {
 		return -1;
 	}
 
+	update_key = &state_col;
 	VAL_TYPE(&update_val) = DB_INT;
 	VAL_NULL(&update_val) = 0;
 	VAL_INT(&update_val) = state;
 
-	if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, &update_key,
-		&update_val, 1, 1) < 0)
-		return -1;
+	if (node_id == current_id) {
+		VAL_TYPE(&node_id_val) = DB_INT;
+		VAL_NULL(&node_id_val) = 0;
+		VAL_INT(&node_id_val) = current_id;
+
+		if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, &update_key,
+			&update_val, 1, 1) < 0)
+			return -1;
+	} else {
+		VAL_TYPE(&cl_node_id_vals[0]) = DB_INT;
+		VAL_NULL(&cl_node_id_vals[0]) = 0;
+		VAL_INT(&cl_node_id_vals[0]) = node_id;
+		VAL_TYPE(&cl_node_id_vals[1]) = DB_INT;
+		VAL_NULL(&cl_node_id_vals[1]) = 0;
+		VAL_INT(&cl_node_id_vals[1]) = cluster_id;
+
+		if (dr_dbf.update(db_hdl, cl_node_id_keys, 0, cl_node_id_vals, &update_key,
+			&update_val, 2, 1) < 0)
+			return -1;
+	}
 
 	return 0;
 }
@@ -842,24 +876,25 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_DBG("Cluster id: %d not found!\n", cluster_id);
-		return NULL;
+		goto error;
 	}
 	dest_node = get_node_by_id(cluster, node_id);
 	if (!dest_node) {
 		LM_DBG("Node id: %d no found!\n", node_id);
-		return NULL;
+		goto error;
 	}
 
 	if (get_next_hop(dest_node) == 0) {
 		LM_DBG("No other path to node: %d\n", node_id);
-		return NULL;
+		goto error;
 	}
 
 	lock_get(dest_node->lock);
 
 	if (add_clusterer_node(&ret, dest_node->next_hop) < 0) {
+		lock_release(dest_node->lock);
 		LM_ERR("Failed to allocate next hop\n");
-		return NULL;
+		goto error;
 	}
 
 	lock_release(dest_node->lock);
@@ -867,6 +902,9 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	lock_stop_read(cl_list_lock);
 
 	return ret;
+error:
+	lock_stop_read(cl_list_lock);
+	return NULL;
 }
 
 void api_free_next_hop(clusterer_node_t *next_hop)

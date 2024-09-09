@@ -43,7 +43,7 @@ ifeq ($(CROSS_COMPILE),)
 	fi)
 else
 	DEFS+=-I$(LOCALBASE)/include
-	LIBS=-L$(LOCALBASE)/lib $(RADIUS_LIB)
+	LIBS+=-L$(LOCALBASE)/lib $(RADIUS_LIB)
 endif
 
 ifneq ($(BUILDER),)

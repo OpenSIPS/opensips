@@ -17,7 +17,8 @@ mysql Module
               1.3.2. timeout_interval (integer)
               1.3.3. max_db_queries (integer)
               1.3.4. max_db_retries (integer)
-              1.3.5. use_tls (integer)
+              1.3.5. ps_max_col_size (integer)
+              1.3.6. use_tls (integer)
 
         1.4. Exported Functions
         1.5. Installation
@@ -47,7 +48,8 @@ mysql Module
    1.2. Set timeout_interval parameter
    1.3. Set max_db_queries parameter
    1.4. Set max_db_retries parameter
-   1.5. Set the use_tls parameter
+   1.5. Set ps_max_col_size parameter
+   1.6. Set the use_tls parameter
 
 Chapter 1. Admin Guide
 
@@ -129,13 +131,34 @@ modparam("db_mysql", "max_db_queries", 2)
 modparam("db_mysql", "max_db_retries", 2)
 ...
 
-1.3.5. use_tls (integer)
+1.3.5. ps_max_col_size (integer)
+
+   The maximum size of a column's data, when fetched using
+   prepared statements. Particularly relevant for variable-length
+   data, such as CHAR, BLOB, etc.
+
+   NOTE: Should a column's data exceed this limit, the value will
+   be silently truncated to fit the buffer, without reporting any
+   errors!
+
+   Default value is 1024 (bytes).
+
+   Example 1.5. Set ps_max_col_size parameter
+...
+modparam("db_mysql", "ps_max_col_size", 4096)
+...
+
+1.3.6. use_tls (integer)
 
    Setting this parameter will allow you to use TLS for MySQL
    connections. In order to enable TLS for a specific connection,
    you can use the "tls_domain=dom_name" URL parameter in the
    db_url of the respective OpenSIPS module. This should be placed
-   at the end of the URL after the '?' character.
+   at the end of the URL after the '?' character. Additionally,
+   the query string may include the "tls_opts=
+   PKEY,CERT,CA,CA_DIR,CIPHERS" CSV parameter, in order to
+   control/limit the amount of TLS options passed to the TLS
+   library.
 
    When using this parameter, you must also ensure that tls_mgm is
    loaded and properly configured. Refer to the the module for
@@ -152,7 +175,7 @@ modparam("db_mysql", "max_db_retries", 2)
 
    Default value is 0 (not enabled)
 
-   Example 1.5. Set the use_tls parameter
+   Example 1.6. Set the use_tls parameter
 ...
 modparam("tls_mgm", "client_domain", "dom1")
 modparam("tls_mgm", "certificate", "[dom1]/etc/pki/tls/certs/opensips.pe
@@ -165,6 +188,9 @@ modparam("db_mysql", "use_tls", 1)
 ...
 modparam("usrloc", "db_url", "mysql://root:1234@localhost/opensips?tls_d
 omain=dom1")
+...
+modparam("usrloc", "db_url", "mysql://root:1234@localhost/opensips?tls_d
+omain=dom1&tls_opts=PKEY,CERT,CA,CA_DIR,CIPHERS")
 ...
 
 1.4. Exported Functions
@@ -204,19 +230,20 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 150 53 5336 3190
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 97 71 1573 792
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 99 72 1574 793
    3. Henning Westerholt (@henningw) 57 30 693 1239
-   4. Liviu Chircu (@liviuchircu) 33 26 412 156
+   4. Liviu Chircu (@liviuchircu) 43 34 581 206
    5. Daniel-Constantin Mierla (@miconda) 28 20 571 154
-   6. Razvan Crainea (@razvancrainea) 19 16 231 59
+   6. Razvan Crainea (@razvancrainea) 21 18 233 61
    7. Andrei Pelinescu-Onciul 16 14 52 49
-   8. Vlad Paiu (@vladpaiu) 13 10 139 25
-   9. Vlad Patrascu (@rvlad-patrascu) 11 7 175 74
+   8. Vlad Paiu (@vladpaiu) 15 12 185 25
+   9. Vlad Patrascu (@rvlad-patrascu) 12 8 179 78
    10. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
 
-   All remaining contributors: Nils Ohlmeier, Norman Brandinger
-   (@NormB), Peter Lemenkov (@lemenkov), Eseanu Marius Cristian
-   (@eseanucristian), Dan Pascu (@danpascu), Ionut Ionita
+   All remaining contributors: Nils Ohlmeier, Maksym Sobolyev
+   (@sobomax), Norman Brandinger (@NormB), Peter Lemenkov
+   (@lemenkov), Eseanu Marius Cristian (@eseanucristian), Dan
+   Pascu (@danpascu), Walter Doekes (@wdoekes), Ionut Ionita
    (@ionutrazvanionita), Ovidiu Sas (@ovidiusas), Konstantin
    Bokarius, Andreas Heise, Razvan Pistolea, Saúl Ibarra Corretgé
    (@saghul), Sergio Gutierrez, Edson Gellert Schubert, Augusto
@@ -241,23 +268,23 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-     Name Commit Activity
-   1. Razvan Crainea (@razvancrainea) Oct 2011 - Jan 2021
-   2. Vlad Patrascu (@rvlad-patrascu) Apr 2017 - Nov 2020
-   3. Liviu Chircu (@liviuchircu) Mar 2014 - Mar 2020
-   4. Vlad Paiu (@vladpaiu) Feb 2011 - Dec 2019
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019
-   6. Peter Lemenkov (@lemenkov) Nov 2017 - Jun 2018
-   7. Augusto Caringi Jul 2017 - Jul 2017
-   8. Ovidiu Sas (@ovidiusas) Mar 2017 - Mar 2017
-   9. Ionut Ionita (@ionutrazvanionita) Feb 2016 - Feb 2016
-   10. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul
-   2015
+                      Name                   Commit Activity
+   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2024
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Mar 2024
+   4.  Vlad Paiu (@vladpaiu)               Feb 2011 - Jul 2023
+   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2021
+   7.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   8.  Peter Lemenkov (@lemenkov)          Nov 2017 - Jun 2018
+   9.  Augusto Caringi                     Jul 2017 - Jul 2017
+   10. Ovidiu Sas (@ovidiusas)             Mar 2017 - Mar 2017
 
-   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
-   Razvan Pistolea, Norman Brandinger (@NormB), Sergio Gutierrez,
-   Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Eseanu Marius Cristian (@eseanucristian), Saúl Ibarra Corretgé
+   (@saghul), Razvan Pistolea, Norman Brandinger (@NormB), Sergio
+   Gutierrez, Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Andreas Heise, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
    Dan Pascu (@danpascu), Jiri Kuthan (@jiriatipteldotorg), Nils
    Ohlmeier.
@@ -269,9 +296,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
    Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Jan Janak

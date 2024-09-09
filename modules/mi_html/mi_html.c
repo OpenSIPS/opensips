@@ -34,7 +34,7 @@
 
 /* module functions */
 static int mod_init();
-static int destroy(void);
+static void destroy(void);
 int mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
@@ -70,7 +70,7 @@ static str MI_HTTP_U_METHOD_REASON = str_init("500 Unexpected method! Only GET i
 
 
 /* module parameters */
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"root",   STR_PARAM, &http_root.s},
 	{"http_method", INT_PARAM, &http_method},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
@@ -78,7 +78,7 @@ static param_export_t mi_params[] = {
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "httpd", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -177,10 +177,9 @@ static int mod_init(void)
 }
 
 
-int destroy(void)
+static void destroy(void)
 {
 	mi_http_destroy_async_lock();
-	return 0;
 }
 
 

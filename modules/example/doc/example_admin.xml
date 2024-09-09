@@ -1,0 +1,170 @@
+<!-- Example Module's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module serves as an example of how to write a module in OpenSIPS.
+		Its primary goal is to simplify the development of new modules for
+		newcomers, providing a clear and accessible starting point.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following  modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_default_str" xreflabel="default_str">
+		<title><varname>default_str</varname> (string)</title>
+		<para>
+			The default parameter used when the <xref linkend="func_example_str"/>
+			function is called without any parameter.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote></quote> (empty sring).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>default_str</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("example", "default_str", "TEST")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_default_int" xreflabel="default_int">
+		<title><varname>default_int</varname> (integer)</title>
+		<para>
+			The default parameter used when the <xref linkend="func_example_int"/>
+			function is called without any parameter.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>default_int</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("example", "default_int", -1)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_example" xreflabel="example()">
+		<title>
+		<function moreinfo="none">example()</function>
+		</title>
+		<para>
+			Function that simply prints a message to log, saying that it has been called.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">example</function> usage</title>
+		<programlisting format="linespecific">
+...
+example();
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="func_example_str" xreflabel="example_str()">
+		<title>
+		<function moreinfo="none">example_str([string])</function>
+		</title>
+		<para>
+			Function that simply prints a message to log, saying that it has been called.
+			If a parameter is passed, it is printed in the log, otherwise the value of
+			<xref linkend="param_default_str"/> parameter is used.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>string (string, optional)</emphasis> - parameter to be logged
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">example_str()</function> usage</title>
+		<programlisting format="linespecific">
+...
+example_str("test");
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="func_example_int" xreflabel="example_int()">
+		<title>
+		<function moreinfo="none">example_int([int])</function>
+		</title>
+		<para>
+			Function that simply prints a message to log, saying that it has been called.
+			If a parameter is passed, it is printed in the log, otherwise the value of
+			<xref linkend="param_default_int"/> parameter is used.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>int (integer, optional)</emphasis> - parameter to be logged
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">example_int()</function> usage</title>
+		<programlisting format="linespecific">
+...
+example_int(10);
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+</chapter>

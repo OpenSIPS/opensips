@@ -201,7 +201,7 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 	if(heph->hp_v == 2) {
 		offset+=sizeof(struct hep_timehdr);
 		heptime_tmp = (struct hep_timehdr*) hep_payload;
-
+		hep_payload += sizeof(struct hep_timehdr);
 
 		heptime.tv_sec = heptime_tmp->tv_sec;
 		heptime.tv_usec = heptime_tmp->tv_usec;
@@ -647,14 +647,14 @@ static hid_list_p get_hep_id_by_name(str* name, int lock, int ref)
 			lock_release(hid_dyn_lock);
 	}
 
-	LM_INFO("hep id <%.*s> not found!\n", name->len, name->s);
+	LM_DBG("hep id <%.*s> not found\n", name->len, name->s);
 	return NULL;
 }
 
 
 /*
  * New hep uri. Hep uri format
- * ip[:proto]; version=<1/2/3>; transport=<tcp/udp>;"
+ * ip[:proto]; version=<1/2/3>; transport=<tcp/udp/tls>;"
  * ';' can miss; version and transport are interchangeable;
  *
  */
@@ -667,6 +667,10 @@ hid_list_p new_hep_id(str *name, str *uri_s)
 	#define IS_TCP(__url__) ((__url__.len == 3/*O_o*/ \
 				&& (__url__.s[0]|0x20) == 't' && (__url__.s[1]|0x20) == 'c' \
 					&& (__url__.s[2]|0x20) == 'p'))
+
+	#define IS_TLS(__url__) ((__url__.len == 3/*O_o*/ \
+				&& (__url__.s[0]|0x20) == 't' && (__url__.s[1]|0x20) == 'l' \
+					&& (__url__.s[2]|0x20) == 's'))
 
 	hid_list_p el;
 	unsigned int port;
@@ -720,6 +724,8 @@ hid_list_p new_hep_id(str *name, str *uri_s)
 			trans = PROTO_HEP_UDP;
 		} else if (IS_TCP(transport)) {
 			trans = PROTO_HEP_TCP;
+		} else if (IS_TLS(transport)) {
+			trans = PROTO_HEP_TLS;
 		} else {
 			LM_ERR("Bad transport <%.*s>!\n", transport.len, transport.s);
 			return NULL;
@@ -729,7 +735,12 @@ hid_list_p new_hep_id(str *name, str *uri_s)
 	}
 
 	if (trans == PROTO_HEP_TCP && ver < 3) {
-		LM_WARN("TCP not available for HEP version < 3! Falling back to udp!\n");
+		LM_WARN("TCP not available for HEP version < 3! Falling back to UDP!\n");
+		trans = PROTO_HEP_UDP;
+	}
+
+	if (trans == PROTO_HEP_TLS && ver < 3) {
+		LM_WARN("TLS not available for HEP version < 3! Falling back to UDP!\n");
 		trans = PROTO_HEP_UDP;
 	}
 
@@ -763,18 +774,19 @@ hid_list_p new_hep_id(str *name, str *uri_s)
 	LM_DBG("Parsed hep id {%.*s} with ip {%.*s} port {%d}"
 			" transport {%s} hep version {%d}!\n",
 			el->name.len, el->name.s, el->ip.len, el->ip.s,
-			el->port_no, el->transport == PROTO_HEP_TCP ? "tcp" : "udp",
+			el->port_no, el->transport == PROTO_HEP_TCP ? "tcp" : (el->transport == PROTO_HEP_TLS ? "tls" : "udp"),
 			el->version);
 
 	return el;
 
+#undef IS_TLS
 #undef IS_TCP
 #undef IS_UDP
 }
 
 /*
  * parse hep id. Hep id format
- * [<name>]ip[:proto]; version=<1/2/3>; transport=<tcp/udp>;"
+ * [<name>]ip[:proto]; version=<1/2/3>; transport=<tcp/udp/tls>;"
  * ';' can miss; version and transport are interchangeable;
  *
  */
@@ -854,7 +866,7 @@ int parse_hep_id(unsigned int type, void *val)
 /**
  *
  */
-static trace_message create_hep12_message(union sockaddr_union* from_su, union sockaddr_union* to_su,
+static trace_message create_hep12_message(const union sockaddr_union* from_su, const union sockaddr_union* to_su,
 		int net_proto, str* payload, int version)
 {
 	unsigned int totlen=0;
@@ -937,7 +949,7 @@ static trace_message create_hep12_message(union sockaddr_union* from_su, union s
 }
 
 
-static trace_message create_hep3_message(union sockaddr_union* from_su, union sockaddr_union* to_su,
+static trace_message create_hep3_message(const union sockaddr_union* from_su, const union sockaddr_union* to_su,
 		int net_proto, str* payload, int proto)
 {
 	int rc;
@@ -1245,14 +1257,15 @@ static inline void JSON_free(void* root)
 
 static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 {
-	#define UPDATE_CHECK_REMAINING(__rem, __len, __curr) \
+	#define HEP3_BUF_APPEND(_dst, _src, _sz) \
 		do { \
-			if (__rem < __curr) { \
+			if (rem < (_sz)) { \
 				LM_BUG("bad packet length inside hep structure!\n"); \
-				return NULL; \
+				goto out_err; \
 			} \
-			__rem -= __curr; \
-			__len += __curr; \
+			memcpy((_dst), (_src), (_sz)); \
+			rem -= (_sz); \
+			(*len) += (_sz); \
 		} while (0);
 
 
@@ -1353,20 +1366,17 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		return NULL;
 	}
 
-	memcpy(buf, &hep_msg->u.hepv3.hg, sizeof(hep_generic_t));
-	UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_generic_t));
+	HEP3_BUF_APPEND(buf, &hep_msg->u.hepv3.hg, sizeof(hep_generic_t));
 
 	if (hep_msg->u.hepv3.hg.ip_family.data == AF_INET) {
-		memcpy(buf+*len, &hep_msg->u.hepv3.addr.ip4_addr, sizeof(struct ip4_addr));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(struct ip4_addr));
+		HEP3_BUF_APPEND(buf+*len, &hep_msg->u.hepv3.addr.ip4_addr, sizeof(struct ip4_addr));
 	}
 	/* IPv6 */
 	else if(hep_msg->u.hepv3.hg.ip_family.data == AF_INET6) {
-		memcpy(buf+*len, &hep_msg->u.hepv3.addr.ip6_addr, sizeof(struct ip6_addr));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(struct ip6_addr));
+		HEP3_BUF_APPEND(buf+*len, &hep_msg->u.hepv3.addr.ip6_addr, sizeof(struct ip6_addr));
 	} else {
 		LM_ERR("unknown IP family\n");
-		return NULL;
+		goto out_err;
 	}
 
 	if ( hep_msg->u.hepv3.payload_chunk.data
@@ -1377,23 +1387,18 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		hep_msg->u.hepv3.payload_chunk.chunk.length =
 					htons(hep_msg->u.hepv3.payload_chunk.chunk.length);
 
-		memcpy(buf+*len, &hep_msg->u.hepv3.payload_chunk, sizeof(hep_chunk_t));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
-
-		memcpy(buf+*len, hep_msg->u.hepv3.payload_chunk.data, pld_len);
-		UPDATE_CHECK_REMAINING(rem, *len, pld_len);
+		HEP3_BUF_APPEND(buf+*len, &hep_msg->u.hepv3.payload_chunk, sizeof(hep_chunk_t));
+		HEP3_BUF_APPEND(buf+*len, hep_msg->u.hepv3.payload_chunk.data, pld_len);
 	}
 
 	/* copy the correlation if exists */
 	if ( hep_msg->correlation ) {
 		/* if on it will be with the rest of the chunks */
 		if ( !homer5_on ) {
-			memcpy( buf + *len, &correlation.chunk, sizeof(hep_chunk_t));
-			UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
+			HEP3_BUF_APPEND( buf + *len, &correlation.chunk, sizeof(hep_chunk_t));
 
 			/* can't get the correlation length from header since it's in htons form */
-			memcpy(buf + *len, correlation.data, corr_len);
-			UPDATE_CHECK_REMAINING(rem, *len, corr_len);
+			HEP3_BUF_APPEND(buf + *len, correlation.data, corr_len);
 
 			/* just dumped the string - no need to keep it further on */
 			cJSON_PurgeString((char *)correlation.data);
@@ -1407,22 +1412,21 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		it->chunk.length = htons(it->chunk.length);
 		it->chunk.type_id = htons(it->chunk.type_id);
 
-		memcpy(buf+*len, &it->chunk, sizeof(hep_chunk_t));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
-
-		memcpy(buf+*len, it->data, hdr_len - sizeof(hep_chunk_t));
-		UPDATE_CHECK_REMAINING(rem, *len, hdr_len - sizeof(hep_chunk_t));
+		HEP3_BUF_APPEND(buf+*len, &it->chunk, sizeof(hep_chunk_t));
+		HEP3_BUF_APPEND(buf+*len, it->data, hdr_len - sizeof(hep_chunk_t));
 	}
 
 	if (rem) {
 		LM_ERR("%d bytes not copied!\n", rem);
-		return NULL;
+		goto out_err;
 	}
-
 
 	return buf;
 
-#undef UPDATE_CHECK_REMAINING
+out_err:
+	pkg_free(buf);
+	return NULL;
+#undef HEP3_BUF_APPEND
 }
 
 /*
@@ -1437,7 +1441,7 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 /*
  * create message function
  * */
-trace_message create_hep_message(union sockaddr_union* from_su, union sockaddr_union* to_su,
+trace_message create_hep_message(const union sockaddr_union* from_su, const union sockaddr_union* to_su,
 		int net_proto, str* payload, int pld_proto, trace_dest dest)
 {
 	hid_list_p hep_dest = (hid_list_p) dest;
@@ -1674,7 +1678,7 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 }
 
 
-int send_hep_message(trace_message message, trace_dest dest, struct socket_info* send_sock)
+int send_hep_message(trace_message message, trace_dest dest, const struct socket_info* send_sock)
 {
 	int len, ret=-1;
 	char* buf=0;

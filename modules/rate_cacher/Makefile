@@ -7,6 +7,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=rate_cacher.so
-LIBS= 
 
 include ../../Makefile.modules

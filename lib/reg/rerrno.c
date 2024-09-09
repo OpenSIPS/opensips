@@ -30,6 +30,7 @@ rerr_t rerrno;
 str error_info[] = {
 	str_init(EI_R_FINE),
 	str_init(EI_R_INTERNAL),
+	str_init(EI_R_NOT_IMPL),
 	str_init(EI_R_UL_DEL_R),
 	str_init(EI_R_UL_GET_R),
 	str_init(EI_R_UL_NEW_R),
@@ -65,6 +66,7 @@ str error_info[] = {
 int rerr_codes[] = {
 	200, /* R_FINE */
 	500, /* R_INTERNAL */
+	501, /* R_NOT_IMPL */
 	500, /* R_UL_DEL_R */
 	500, /* R_UL_GET */
 	500, /* R_UL_NEW_R */

@@ -165,45 +165,32 @@
 		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
-                    <itemizedlist>
+        <itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>,
+				depending on the desired TLS library
+			</para>
+			</listitem>
 			<listitem>
 			<para>
 				<emphasis>tls_mgm</emphasis>.
 			</para>
 			</listitem>
-                    </itemizedlist>
+        </itemizedlist>
 		</para>
 	</section>
 	<section>
 		<title>Dependencies of external libraries</title>
 		<para>
-			&osips; TLS v1.0 support requires the following packages:
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
 			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 0.9.6
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
-			</itemizedlist>
-		</para>
-		<para>
-			&osips; TLS v1.1/1.2 support requires the following packages:
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 1.0.1e
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
 	</section>
@@ -382,7 +369,7 @@ modparam("proto_tls", "cert_check_on_conn_reusage", 1)
 		<title>Set <varname>trace_destination</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
 modparam("proto_tls", "trace_destination", "hep_dest")
 ...
@@ -484,10 +471,10 @@ route[tls_filter] {
 		<example>
 			<title>Set <varname>tls_handshake_timeout</varname> variable</title>
 			<programlisting format="linespecific">
-
-param("proto_tls", "tls_handshake_timeout", 200) # number of milliseconds
-
-			</programlisting>
+...
+modparam("proto_tls", "tls_handshake_timeout", 200) # number of milliseconds
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -506,12 +493,103 @@ param("proto_tls", "tls_handshake_timeout", 200) # number of milliseconds
 		<example>
 			<title>Set <varname>tls_send_timeout</varname> variable</title>
 			<programlisting format="linespecific">
-
-param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
-
-			</programlisting>
+...
+modparam("proto_tls", "tls_send_timeout", 200) # number of milliseconds
+...
+</programlisting>
 		</example>
 	</section>
+
+	<section id="param_tls_async" xreflabel="tls_async">
+		<title><varname>tls_async</varname> (integer)</title>
+		<para>
+			If the TLS connect and write operations should be done in an
+			asynchronous mode (non-blocking connect and
+			write). If disabled, OpenSIPS will block and wait for TLS
+			operations like connect and write.
+		</para>
+		<para><emphasis>
+			Default value is 1 (enabled).
+		</emphasis></para>
+		<example>
+			<title>Set <varname>tls_async</varname> variable</title>
+			<programlisting format="linespecific">
+...
+modparam("proto_tls", "tls_async", 1) # enable async TLS
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>tls_async_max_postponed_chunks</varname> (integer)</title>
+		<para>
+			If <emphasis>tls_async</emphasis> is enabled, this specifies the
+			maximum number of SIP messages that can be stashed for later/async
+			writing. If the connection pending writes exceed this number, the
+			connection will be marked as broken and dropped.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 32.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>tls_async_max_postponed_chunks</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_tls", "tls_async_max_postponed_chunks", 16)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>tls_async_local_connect_timeout</varname> (integer)</title>
+		<para>
+			If <emphasis>tls_async</emphasis> is enabled, this specifies the
+			number of milliseconds that a connect will be tried in blocking
+			mode (optimization). If the connect operation lasts more than
+			this, the connect will go to async mode and will be passed to tls
+			MAIN for polling.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 100 ms.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>tls_async_local_connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_tls", "tls_async_local_connect_timeout", 200)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>tls_async_handshake_timeout</varname> (integer)</title>
+		<para>
+			If <emphasis>tls_async</emphasis> is enabled, this specifies the
+			number of milliseconds that a TLS handshake should be tried in blocking
+			mode (optimization). If the handshake operation lasts more than this,
+			the write will go to async mode and will be passed to tls MAIN for
+			polling.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 10 ms.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>tls_async_handshake_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_tls", "tls_async_handshake_timeout", 100)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 

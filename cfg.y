@@ -132,7 +132,6 @@ static void yyerror(char* s);
 static void yyerrorf(char* fmt, ...);
 static char* tmp;
 static int i_tmp, rc;
-static void* cmd_tmp;
 static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
 static str s_tmp;
@@ -142,16 +141,36 @@ static pv_spec_t *spec;
 static pv_elem_t *elem;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
+static struct script_route_ref *rt_ref = NULL;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 static action_elem_t route_elems[MAX_ACTION_ELEMS];
 action_elem_t *a_tmp;
 
+struct port_range {
+	int min;
+	int max;
+	struct port_range *next;
+} *pr_tmp;
+static struct script_return_param sr_tmp;
+
 static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
+static struct socket_id* mk_listen_id_range(char*, enum sip_protos, struct port_range *);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
 static struct multi_str *new_string(char *s);
+static struct port_range* mk_port_range(int, int);
 static int parse_ipnet(char *in, int len, struct net **ipnet);
+static struct script_return_param *mk_script_return(enum script_return_type type)
+{
+	struct script_return_param *param = pkg_malloc(sizeof *param);
+	if (!param)
+		return NULL;
+	*param = sr_tmp;
+	param->type = type;
+	param->next = NULL;
+	return param;
+}
 
 extern int line;
 extern int column;
@@ -179,7 +198,7 @@ struct multi_str{
 	char *s;
 	struct multi_str* next;
 };
-#else 
+#else
 static struct multi_str *tmp_mod;
 #endif
 
@@ -240,6 +259,8 @@ extern int cfg_parse_only_routes;
 	struct listen_param* listen_param;
 	struct _pv_spec *specval;
 	struct multi_str* multistr;
+	struct port_range* portrange;
+	struct script_return_param* return_params;
 }
 
 /* terminals */
@@ -270,6 +291,8 @@ extern int cfg_parse_only_routes;
 %token WHILE
 %token FOR
 %token IN
+%token READONLY
+%token EXPIRE
 %token NULLV
 %token XDBG
 %token XLOG
@@ -284,9 +307,23 @@ extern int cfg_parse_only_routes;
 %token ENABLE_ASSERTS
 %token ABORT_ON_ASSERT
 %token LOGLEVEL
+%token LOGPREFIX
+%token LOGSTDOUT
 %token LOGSTDERROR
+%token STDERROR_ENABLED
+%token SYSLOG_ENABLED
+%token LOG_EVENT_ENABLED
+%token STDERROR_LEVEL_FILTER
+%token SYSLOG_LEVEL_FILTER
+%token LOG_EVENT_LEVEL_FILTER
+%token STDERROR_FORMAT
+%token SYSLOG_FORMAT
+%token LOG_JSON_BUF_SIZE
+%token LOG_MSG_BUF_SIZE
 %token LOGFACILITY
+%token SYSLOG_FACILITY
 %token LOGNAME
+%token SYSLOG_NAME
 %token AVP_ALIASES
 %token LISTEN
 %token SOCKET
@@ -314,6 +351,7 @@ extern int cfg_parse_only_routes;
 %token RPM_MEM_SIZE
 %token MEMLOG
 %token MEMDUMP
+%token SHM_MEMLOG_SIZE
 %token EXECMSGTHRESHOLD
 %token EXECDNSTHRESHOLD
 %token TCPTHRESHOLD
@@ -337,7 +375,6 @@ extern int cfg_parse_only_routes;
 %token TCP_WORKERS
 %token TCP_CONNECT_TIMEOUT
 %token TCP_CON_LIFETIME
-%token TCP_LISTEN_BACKLOG
 %token TCP_SOCKET_BACKLOG
 %token TCP_MAX_CONNECTIONS
 %token TCP_NO_NEW_CONN_BFLAG
@@ -347,6 +384,7 @@ extern int cfg_parse_only_routes;
 %token TCP_KEEPIDLE
 %token TCP_KEEPINTERVAL
 %token TCP_MAX_MSG_TIME
+%token TCP_PARALLEL_READ_ON_WORKERS
 %token ADVERTISED_ADDRESS
 %token ADVERTISED_PORT
 %token DISABLE_CORE
@@ -428,6 +466,8 @@ extern int cfg_parse_only_routes;
 %token COLON
 %token ANY
 %token ANYCAST
+%token FRAG
+%token REUSE_PORT
 %token SCRIPTVARERR
 %token SCALE_UP_TO
 %token SCALE_DOWN_TO
@@ -452,7 +492,7 @@ extern int cfg_parse_only_routes;
 %type <sockid> id_lst
 %type <sockid> alias_def
 %type <sockid> listen_id_def
-%type <sockid> phostport panyhostport
+%type <sockid> phostport phostportrange
 %type <intval> proto port any_proto
 %type <strval> host_sep
 %type <intval> equalop compop matchop strop intop
@@ -461,8 +501,11 @@ extern int cfg_parse_only_routes;
 %type <strval> route_name
 %type <intval> route_name_var
 %type <intval> route_param
+%type <intval> blst_flag blst_flags
 %type <strval> folded_string
 %type <multistr> multi_string
+%type <portrange> portrange
+%type <return_params> return_params return_param
 
 /*
  * known shift/reduce conflicts (the default action, shift, is correct):
@@ -577,6 +620,37 @@ port:	  NUMBER	{ $$=$1; }
 		| ANY		{ $$=0; }
 ;
 
+portrange: portrange COMMA NUMBER MINUS NUMBER { IFOR();
+				if ($3 > $5) {
+					yyerrorf("invalid port range (%d > %d)\n", $3, $5);
+					YYABORT;
+				}
+				pr_tmp = mk_port_range($3, $5);
+				if (!pr_tmp) {
+					yyerror("cannot allocate new portrange\n");
+					YYABORT;
+				}
+				pr_tmp->next = $1;
+				$$ = pr_tmp;
+			}
+		 | portrange COMMA NUMBER { IFOR();
+				pr_tmp = mk_port_range($3, $3);
+				if (!pr_tmp) {
+					yyerror("cannot allocate new portrange\n");
+					YYABORT;
+				}
+				pr_tmp->next = $1;
+				$$ = pr_tmp;
+			}
+		 | NUMBER MINUS NUMBER { IFOR();
+				if ($1 > $3) {
+					yyerrorf("invalid port range (%d > %d)\n", $1, $3);
+					YYABORT;
+				}
+				$$=mk_port_range($1, $3);
+			}
+		 | NUMBER { IFOR(); $$=mk_port_range($1, $1); }
+;
 snumber:	NUMBER	{ $$=$1; }
 		| PLUS NUMBER	{ $$=$2; }
 		| MINUS NUMBER	{ $$=-$2; }
@@ -598,10 +672,26 @@ phostport: proto COLON listen_id	{ IFOR();
 			}
 			;
 
-panyhostport: proto COLON MULT				{ IFOR();
+		 ;
+
+phostportrange: proto COLON MULT				{ IFOR();
 				$$=mk_listen_id(0, $1, 0); }
-			| proto COLON MULT COLON port	{ IFOR();
-				$$=mk_listen_id(0, $1, $5); }
+			| proto COLON listen_id	{ IFOR();
+				$$=mk_listen_id_range($3, $1, 0); }
+			| proto COLON MULT COLON portrange	{ IFOR();
+				$$=mk_listen_id_range(0, $1, $5); }
+			| proto COLON listen_id COLON portrange	{ IFOR();
+				$$=mk_listen_id_range($3, $1, $5); }
+			| proto COLON MULT COLON error	{ IFOR();
+				$$=0;
+				yyerror("invalid port range");
+				YYABORT;
+			}
+			| proto COLON listen_id COLON error	{ IFOR();
+				$$=0;
+				yyerror("invalid port range");
+				YYABORT;
+			}
 			;
 
 alias_def:	listen_id						{ IFOR();
@@ -623,8 +713,8 @@ id_lst:		alias_def		{ IFOR();  $$=$1 ; }
 
 listen_id_def:	listen_id					{ IFOR();
 					$$=mk_listen_id($1, PROTO_NONE, 0); }
-			 |	listen_id COLON port		{ IFOR();
-			 		$$=mk_listen_id($1, PROTO_NONE, $3); }
+			 |	listen_id COLON portrange	{ IFOR();
+					$$=mk_listen_id_range($1, PROTO_NONE, $3); }
 			 |	listen_id COLON error {
 					$$=0;
 					yyerror(" port number expected");
@@ -633,6 +723,12 @@ listen_id_def:	listen_id					{ IFOR();
 
 socket_def_param: ANYCAST { IFOR();
 					p_tmp.flags |= SI_IS_ANYCAST;
+					}
+				| FRAG { IFOR();
+					p_tmp.flags |= SI_FRAG;
+					}
+				| REUSE_PORT { IFOR();
+					p_tmp.flags |= SI_REUSEPORT;
 					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;
@@ -652,14 +748,8 @@ socket_def_params:	socket_def_param
 				 |	socket_def_param socket_def_params
 				 ;
 
-socket_def:	panyhostport			{ $$=$1; }
-			| phostport				{ $$=$1; }
-			| panyhostport { IFOR();
-					memset(&p_tmp, 0, sizeof(p_tmp));
-				} socket_def_params	{ IFOR();
-					$$=$1; fill_socket_id(&p_tmp, $$);
-				}
-			| phostport { IFOR();
+socket_def:	phostportrange	{ $$=$1; }
+			| phostportrange { IFOR();
 					memset(&p_tmp, 0, sizeof(p_tmp));
 				} socket_def_params	{ IFOR();
 					$$=$1; fill_socket_id(&p_tmp, $$);
@@ -673,7 +763,7 @@ multi_string: 	STRING {  IFOR(); $$=new_string($1); }
 		| STRING multi_string { IFOR(); $$=new_string($1); $$->next=$2; }
 		;
 
-blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
+blst_elem: LPAREN any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				IFOR(pkg_free($4));
 				s_tmp.s=$8;
 				s_tmp.len=strlen($8);
@@ -681,7 +771,7 @@ blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 					yyerror("failed to add backlist element\n");YYABORT;
 				}
 			}
-		| NOT  LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
+		| NOT LPAREN any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				IFOR(pkg_free($5));
 				s_tmp.s=$9;
 				s_tmp.len=strlen($9);
@@ -690,6 +780,85 @@ blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 					yyerror("failed to add backlist element\n");YYABORT;
 				}
 			}
+		| LPAREN any_proto COMMA ipnet COMMA port RPAREN {
+				IFOR(pkg_free($4));
+				if (add_rule_to_list(&bl_head,&bl_tail,$4,NULL,$6,$2,0)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| NOT LPAREN any_proto COMMA ipnet COMMA port RPAREN {
+				IFOR(pkg_free($5));
+				if (add_rule_to_list(&bl_head,&bl_tail,$5,NULL,
+				$7,$3,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| LPAREN any_proto COMMA ipnet RPAREN {
+				IFOR(pkg_free($4));
+				if (add_rule_to_list(&bl_head,&bl_tail,$4,NULL,0,$2,0)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| NOT LPAREN any_proto COMMA ipnet RPAREN {
+				IFOR(pkg_free($5));
+				if (add_rule_to_list(&bl_head,&bl_tail,$5,NULL,
+				0,$3,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| LPAREN ipnet COMMA port RPAREN {
+				IFOR(pkg_free($2));
+				if (add_rule_to_list(&bl_head,&bl_tail,$2,NULL,$4,PROTO_NONE,0)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| NOT LPAREN ipnet COMMA port RPAREN {
+				IFOR(pkg_free($3));
+				if (add_rule_to_list(&bl_head,&bl_tail,$3,NULL,
+				$5,PROTO_NONE,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| LPAREN ipnet RPAREN {
+				IFOR(pkg_free($2));
+				if (add_rule_to_list(&bl_head,&bl_tail,$2,NULL,0,PROTO_NONE,0)) {
+					yyerror("failed to add backlist element\n"); YYABORT;
+				}
+			}
+		| NOT LPAREN ipnet RPAREN {
+				IFOR(pkg_free($3));
+				if (add_rule_to_list(&bl_head,&bl_tail,$3,NULL,
+				0,PROTO_NONE,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| ipnet {
+				IFOR(pkg_free($1));
+				if (add_rule_to_list(&bl_head,&bl_tail,$1,NULL,0,PROTO_NONE,0)) {
+					yyerror("failed to add backlist element\n"); YYABORT;
+				}
+			}
+		| NOT ipnet {
+				IFOR(pkg_free($2));
+				if (add_rule_to_list(&bl_head,&bl_tail,$2,NULL,
+				0,PROTO_NONE,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		;
+
+blst_def: COLON LBRACE blst_elem_list RBRACE
+		| COLON LBRACE RBRACE
+		|
+		;
+
+blst_flag: READONLY { $$ = BL_READONLY_LIST; }
+		 | EXPIRE { $$ = BL_DO_EXPIRE; }
+		 | DEFAULT { $$ = BL_BY_DEFAULT; }
+		 ;
+
+blst_flags: blst_flags COMMA blst_flag { $$ = $1 | $3; }
+		| blst_flag {}
 		;
 
 blst_elem_list: blst_elem_list COMMA blst_elem {}
@@ -732,30 +901,206 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			/* in debug mode, force logging to DEBUG level*/
 			*log_level = debug_mode?L_DBG:$3;
 			}
+		| LOGPREFIX EQUAL STRING { IFOR();
+			if (*$3) {
+				int len = strlen($3);
+				char *buf = pkg_malloc(len + 2);
+				if (!buf)
+					yyerror("oom");
+				sprintf(buf, "%s:", $3);
+				log_prefix = buf;
+			} else {
+				log_prefix = $3;
+			}
+			}
+		| LOGPREFIX EQUAL error  { yyerror("string value expected"); }
 		| ENABLE_ASSERTS EQUAL NUMBER  { IFOR(); enable_asserts=$3; }
 		| ENABLE_ASSERTS EQUAL error  { yyerror("boolean value expected"); }
 		| ABORT_ON_ASSERT EQUAL NUMBER  { IFOR(); abort_on_assert=$3; }
 		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
 		| DEBUG_MODE EQUAL NUMBER  { IFOR();
 			debug_mode=$3;
-			if (debug_mode) { *log_level = L_DBG;log_stderr=1;}
+			if (debug_mode) {
+				*log_level = L_DBG;
+				stderr_enabled=1;
+				syslog_enabled=0;
+
+				s_tmp.s=STDERR_CONSUMER_NAME;
+				s_tmp.len=strlen(STDERR_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, 0);
+				s_tmp.s=SYSLOG_CONSUMER_NAME;
+				s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, 1);
+			}
 			}
 		| DEBUG_MODE EQUAL error
 			{ yyerror("boolean value expected for debug_mode"); }
-		| LOGSTDERROR EQUAL NUMBER 
-			/* in config-check or debug mode we force logging 
-			 * to standard error */
-			{ IFOR(); if (!config_check && !debug_mode) log_stderr=$3; }
+		| LOGSTDOUT EQUAL NUMBER
+			/* may be useful when integrating 3rd party libraries */
+			{ IFOR(); log_stdout=$3; }
+		| LOGSTDOUT EQUAL error { yyerror("boolean value expected"); }
+		| LOGSTDERROR EQUAL NUMBER {
+			IFOR();
+			warn("'log_stderror' is deprecated, use 'stderror_enabled' and/or"
+				"'syslog_enabled' instead");
+			if (!config_check && !debug_mode) {
+				if ($3) {
+					stderr_enabled=1;
+					syslog_enabled=0;
+				} else {
+					stderr_enabled=0;
+					syslog_enabled=1;
+				}
+
+				s_tmp.s=STDERR_CONSUMER_NAME;
+				s_tmp.len=strlen(STDERR_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, !$3);
+				s_tmp.s=SYSLOG_CONSUMER_NAME;
+				s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, $3);
+			}
+			}
 		| LOGSTDERROR EQUAL error { yyerror("boolean value expected"); }
+		| STDERROR_ENABLED EQUAL NUMBER {
+			/* in config-check or debug mode we force logging
+			 * to standard error */
+			IFOR();
+			if (!config_check && !debug_mode) {
+				stderr_enabled=$3;
+				s_tmp.s=STDERR_CONSUMER_NAME;
+				s_tmp.len=strlen(STDERR_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, !$3);
+			}
+			}
+		| STDERROR_ENABLED EQUAL error { yyerror("boolean value expected"); }
+		| SYSLOG_ENABLED EQUAL NUMBER {
+			IFOR();
+			/* in config-check or debug mode we force logging
+			 * to standard error */
+			if (!config_check && !debug_mode) {
+				syslog_enabled=$3;
+				s_tmp.s=SYSLOG_CONSUMER_NAME;
+				s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, !$3);
+			}
+			}
+		| SYSLOG_ENABLED EQUAL error { yyerror("boolean value expected"); }
+		| LOG_EVENT_ENABLED EQUAL NUMBER {
+			IFOR();
+			if ($3) {
+				if (init_log_msg_buf(0) < 0) {
+					yyerror("failed to allocate msg log buffer");
+					YYABORT;
+				}
+			}
+			log_event_enabled=$3; }
+		| LOG_EVENT_ENABLED EQUAL error { yyerror("boolean value expected"); }
+		| STDERROR_LEVEL_FILTER EQUAL snumber {
+			IFOR();
+			s_tmp.s=STDERR_CONSUMER_NAME;
+			s_tmp.len=strlen(STDERR_CONSUMER_NAME);
+			set_log_consumer_level_filter(&s_tmp, $3);
+			}
+		| STDERROR_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
+		| SYSLOG_LEVEL_FILTER EQUAL snumber {
+			IFOR();
+			s_tmp.s=SYSLOG_CONSUMER_NAME;
+			s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
+			set_log_consumer_level_filter(&s_tmp, $3);
+			}
+		| SYSLOG_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
+		| LOG_EVENT_LEVEL_FILTER EQUAL snumber { IFOR();
+							log_event_level_filter = $3; }
+		| LOG_EVENT_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
+		| STDERROR_FORMAT EQUAL STRING { IFOR();
+			s_tmp.s = $3;
+			s_tmp.len = strlen($3);
+			if ((i_tmp = parse_log_format(&s_tmp)) < 0) {
+				yyerror("unknown log format");
+			} else {
+				if (i_tmp != LOG_FORMAT_PLAIN) {
+					if (init_log_json_buf(0) < 0) {
+						yyerror("failed to allocate json log buffer");
+						YYABORT;
+					}
+					if (init_log_msg_buf(0) < 0) {
+						yyerror("failed to allocate msg log buffer");
+						YYABORT;
+					}
+
+					if (i_tmp == LOG_FORMAT_JSON_CEE && init_log_cee_hostname() < 0) {
+						yyerror("failed to allocate hostname buffer");
+						YYABORT;
+					}
+				}
+
+				stderr_log_format = i_tmp;
+			}
+			}
+		| SYSLOG_FORMAT EQUAL STRING { IFOR();
+			s_tmp.s = $3;
+			s_tmp.len = strlen($3);
+			if ((i_tmp = parse_log_format(&s_tmp)) < 0) {
+				yyerror("unknown log format");
+			} else {
+				if (i_tmp != LOG_FORMAT_PLAIN) {
+					if (init_log_json_buf(0) < 0) {
+						yyerror("failed to allocate json log buffer");
+						YYABORT;
+					}
+					if (init_log_msg_buf(0) < 0) {
+						yyerror("failed to allocate msg log buffer");
+						YYABORT;
+					}
+
+					if (i_tmp == LOG_FORMAT_JSON_CEE && init_log_cee_hostname() < 0) {
+						yyerror("failed to allocate hostname buffer");
+						YYABORT;
+					}
+				}
+
+				syslog_log_format = i_tmp;
+			}
+			}
+		| LOG_JSON_BUF_SIZE EQUAL NUMBER {
+			IFOR();
+			log_json_buf_size = $3;
+			if (init_log_json_buf(1) < 0) {
+				yyerror("failed to realloc json log buffer");
+				YYABORT;
+			}
+			}
+		| LOG_JSON_BUF_SIZE EQUAL error { yyerror("number expected"); }
+		| LOG_MSG_BUF_SIZE EQUAL NUMBER {
+			IFOR();
+			log_msg_buf_size = $3;
+			if (init_log_msg_buf(1) < 0) {
+				yyerror("failed to realloc msg log buffer");
+				YYABORT;
+			}
+			}
+		| LOG_MSG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| LOGFACILITY EQUAL ID { IFOR();
+			warn("'log_facility' is deprecated, use 'syslog_facility' instead");
 			if ( (i_tmp=str2facility($3))==-1)
 				yyerror("bad facility (see syslog(3) man page)");
 			if (!config_check)
 				log_facility=i_tmp;
 			}
 		| LOGFACILITY EQUAL error { yyerror("ID expected"); }
-		| LOGNAME EQUAL STRING { IFOR(); log_name=$3; }
+		| SYSLOG_FACILITY EQUAL ID { IFOR();
+			if ( (i_tmp=str2facility($3))==-1)
+				yyerror("bad facility (see syslog(3) man page)");
+			if (!config_check)
+				log_facility=i_tmp;
+			}
+		| SYSLOG_FACILITY EQUAL error { yyerror("ID expected"); }
+		| LOGNAME EQUAL STRING { IFOR();
+			warn("'log_name' is deprecated, use 'syslog_name' instead");
+			log_name=$3; }
 		| LOGNAME EQUAL error { yyerror("string value expected"); }
+		| SYSLOG_NAME EQUAL STRING { IFOR(); log_name=$3; }
+		| SYSLOG_NAME EQUAL error { yyerror("string value expected"); }
 		| DNS EQUAL NUMBER   { IFOR(); received_dns|= ($3)?DO_DNS:0; }
 		| DNS EQUAL error { yyerror("boolean value expected"); }
 		| REV_DNS EQUAL NUMBER { IFOR(); received_dns|= ($3)?DO_REV_DNS:0; }
@@ -881,6 +1226,8 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| RPM_MEM_SIZE EQUAL error { yyerror("int value expected"); }
 		| MEMLOG EQUAL snumber { IFOR(); memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
+		| SHM_MEMLOG_SIZE EQUAL snumber { IFOR(); shm_memlog_size=$3;}
+		| SHM_MEMLOG_SIZE EQUAL error { yyerror("int value expected"); }
 		| MEMDUMP EQUAL snumber { IFOR(); memdump=$3; }
 		| MEMDUMP EQUAL error { yyerror("int value expected"); }
 		| EXECMSGTHRESHOLD EQUAL NUMBER {  IFOR();execmsgthreshold=$3; }
@@ -951,6 +1298,8 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 									}
 		| POLL_METHOD EQUAL error { yyerror("poll method name expected"); }
 		| TCP_ACCEPT_ALIASES EQUAL NUMBER { IFOR();
+				if ($3 < TCP_ALIAS_NEVER || $3 > TCP_ALIAS_ALWAYS)
+					yyerror("invalid 'tcp_accept_aliases' value");
 				tcp_accept_aliases=$3;
 		}
 		| TCP_ACCEPT_ALIASES EQUAL error { yyerror("boolean value expected"); }
@@ -963,6 +1312,8 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		}
 		| TCP_WORKERS EQUAL error { yyerror("number expected"); }
 		| TCP_CONNECT_TIMEOUT EQUAL NUMBER { IFOR();
+				if ($3 <= 0)
+					yyerror("invalid 'tcp_connect_timeout' (value too low!)");
 				tcp_connect_timeout=$3;
 		}
 		| TCP_CONNECT_TIMEOUT EQUAL error { yyerror("number expected"); }
@@ -970,11 +1321,6 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 				tcp_con_lifetime=$3;
 		}
 		| TCP_CON_LIFETIME EQUAL error { yyerror("number expected"); }
-		| TCP_LISTEN_BACKLOG EQUAL NUMBER { IFOR();
-				warn("tcp_listen_backlog is deprecated, use tcp_socket_backlog");
-				tcp_socket_backlog=$3;
-		}
-		| TCP_LISTEN_BACKLOG EQUAL error { yyerror("number expected"); }
 		| TCP_SOCKET_BACKLOG EQUAL NUMBER { IFOR();
 				tcp_socket_backlog=$3;
 		}
@@ -1001,13 +1347,19 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| TCP_NO_NEW_CONN_RPLFLAG EQUAL error { yyerror("number value expected"); }
 
 		| TCP_KEEPALIVE EQUAL NUMBER { IFOR();
-				tcp_keepalive=$3;
+				tcp_keepalive=!!$3;
 		}
 		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
 		| TCP_MAX_MSG_TIME EQUAL NUMBER { IFOR();
 				tcp_max_msg_time=$3;
 		}
 		| TCP_MAX_MSG_TIME EQUAL error { yyerror("boolean value expected"); }
+		| TCP_PARALLEL_READ_ON_WORKERS EQUAL NUMBER { IFOR();
+				tcp_parallel_read_on_workers=!!$3;
+		}
+		| TCP_PARALLEL_READ_ON_WORKERS EQUAL error {
+			yyerror("boolean value expected");
+		}
 		| TCP_KEEPCOUNT EQUAL NUMBER 		{ IFOR();
 			#ifndef HAVE_TCP_KEEPCNT
 				warn("cannot be enabled TCP_KEEPCOUNT (no OS support)");
@@ -1056,14 +1408,16 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
 		| XLOG_PRINT_LEVEL EQUAL error { yyerror("number expected"); }
-		| XLOG_LEVEL EQUAL NUMBER { IFOR();
+		| XLOG_LEVEL EQUAL snumber { IFOR();
 							*xlog_level = $3; }
 		| XLOG_LEVEL EQUAL error { yyerror("number expected"); }
 		| SOCKET EQUAL socket_def { IFOR();
-							if (add_listening_socket($3)!=0){
-								LM_CRIT("cfg. parser: failed"
-										" to add listening socket\n");
-								break;
+							for (lst_tmp = $3; lst_tmp; lst_tmp = lst_tmp->next) {
+								if (add_listening_socket(lst_tmp)!=0){
+									LM_CRIT("cfg. parser: failed"
+											" to add listening socket\n");
+									break;
+								}
 							}
 						}
 		| SOCKET EQUAL  error { yyerror("ip address or hostname "
@@ -1071,10 +1425,12 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 						" config keywords)"); }
 		| LISTEN EQUAL socket_def { IFOR();
 							warn("'listen' is deprecated, use 'socket' instead");
-							if (add_listening_socket($3)!=0){
-								LM_CRIT("cfg. parser: failed"
-										" to add listen address\n");
-								break;
+							for (lst_tmp = $3; lst_tmp; lst_tmp = lst_tmp->next) {
+								if (add_listening_socket(lst_tmp)!=0){
+									LM_CRIT("cfg. parser: failed"
+											" to add listen address\n");
+									break;
+								}
 							}
 						}
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
@@ -1117,7 +1473,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 								}
 							}
 
-							mem_free_idx++;	
+							mem_free_idx++;
 
 							if(alloc_group_stat()){
 								YYABORT;
@@ -1217,7 +1573,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		 }
 		| TOS EQUAL error { yyerror("number expected"); }
 		| MPATH EQUAL STRING {IFOR();
-				set_mpath($3); }
+				add_mpath($3); }
 		| MPATH EQUAL error  { yyerror("string value expected"); }
 		| DISABLE_DNS_FAILOVER EQUAL NUMBER { IFOR();
 										disable_dns_failover=$3;
@@ -1227,10 +1583,20 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 										disable_dns_blacklist=$3;
 									}
 		| DISABLE_DNS_BLACKLIST error { yyerror("boolean value expected"); }
-		| DST_BLACKLIST EQUAL ID COLON LBRACE blst_elem_list RBRACE { IFOR();
+		| DST_BLACKLIST EQUAL ID SLASH blst_flags blst_def { IFOR();
 				s_tmp.s = $3;
 				s_tmp.len = strlen($3);
-				if (create_bl_head( BL_CORE_ID, BL_READONLY_LIST,
+				if (create_bl_head(_str("script"), $5,
+				    bl_head, bl_tail, &s_tmp)==0) {
+					yyerror("failed to create blacklist\n");
+					YYABORT;
+				}
+				bl_head = bl_tail = NULL;
+				}
+		| DST_BLACKLIST EQUAL ID blst_def { IFOR();
+				s_tmp.s = $3;
+				s_tmp.len = strlen($3);
+				if (create_bl_head(_str("script"), BL_READONLY_LIST,
 				    bl_head, bl_tail, &s_tmp)==0) {
 					yyerror("failed to create blacklist\n");
 					YYABORT;
@@ -1273,6 +1639,12 @@ module_stm:	LOADMODULE STRING	{ IFOR();
 		}
 		| LOADMODULE error	{ yyerror("string expected");  }
 		| MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN { IFOR();
+				if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
+					yyerrorf("Parameter <%s> not found in module <%s> - "
+						"can't set", $5, $3);
+				}
+			}
+		| MODPARAM LPAREN STRING COMMA STRING COMMA folded_string RPAREN { IFOR();
 				if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
 					yyerrorf("Parameter <%s> not found in module <%s> - "
 						"can't set", $5, $3);
@@ -1507,7 +1879,7 @@ startup_route_stm:  ROUTE_STARTUP LBRACE actions RBRACE {
 
 timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actions RBRACE {
 						i_tmp = 0;
-						while(sroutes->timer[i_tmp].a!=0 && i_tmp<TIMER_RT_NO){
+						while(i_tmp<TIMER_RT_NO && sroutes->timer[i_tmp].a!=0){
 							i_tmp++;
 						}
 						if(i_tmp == TIMER_RT_NO) {
@@ -1527,7 +1899,7 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 						if (i_tmp==-1) YYABORT;
 						push($6, &sroutes->event[i_tmp].a);
 					}
-		| ROUTE_EVENT error { yyerror("invalid timer_route statement"); }
+		| ROUTE_EVENT error { yyerror("invalid event_route statement"); }
 	;
 
 
@@ -1693,13 +2065,6 @@ assign_cmd: script_var assignop assignexp {
 	|  script_var COLONEQ NULLV {
 			if(!pv_is_w($1))
 				yyerror("invalid left operand in assignment");
-			/* not all can get NULL with := */
-			switch($1->type) {
-				case PVT_AVP:
-				break;
-				default:
-					yyerror("invalid left operand in NULL assignment");
-			}
 			if($1->trans!=0)
 				yyerror("transformations not accepted in left side "
 					"of assignment");
@@ -2019,31 +2384,31 @@ route_param: STRING {
 	;
 
 async_func: ID LPAREN RPAREN {
-				cmd_tmp=(void*)find_mod_acmd_export_t($1);
-				if (cmd_tmp==0){
+				const acmd_export_t* acmd_tmp=find_mod_acmd_export_t($1);
+				if (acmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
 						"missing loadmodule?", $1);
 					$$=0;
 				}else{
-					if (check_acmd_call_params(cmd_tmp,elems,0)<0) {
+					if (check_acmd_call_params(acmd_tmp,elems,0)<0) {
 						yyerrorf("too few parameters "
 							"for command <%s>\n", $1);
 						$$=0;
 					} else {
 						elems[0].type = ACMD_ST;
-						elems[0].u.data = cmd_tmp;
+						elems[0].u.data_const = acmd_tmp;
 						mk_action_($$, AMODULE_T, 1, elems);
 					}
 				}
 			}
 			| ID LPAREN func_param RPAREN {
-				cmd_tmp=(void*)find_mod_acmd_export_t($1);
-				if (cmd_tmp==0){
+				const acmd_export_t* acmd_tmp=find_mod_acmd_export_t($1);
+				if (acmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
 						"missing loadmodule?", $1);
 					$$=0;
 				}else{
-					rc = check_acmd_call_params(cmd_tmp,elems,$3);
+					rc = check_acmd_call_params(acmd_tmp,elems,$3);
 					switch (rc) {
 					case -1:
 						yyerrorf("too few parameters "
@@ -2062,7 +2427,7 @@ async_func: ID LPAREN RPAREN {
 						break;
 					default:
 						elems[0].type = ACMD_ST;
-						elems[0].u.data = cmd_tmp;
+						elems[0].u.data_const = acmd_tmp;
 						mk_action_($$, AMODULE_T, $3+1, elems);
 					}
 				}
@@ -2077,6 +2442,17 @@ async_func: ID LPAREN RPAREN {
 			}
 	;
 
+return_param: script_var { sr_tmp.rspec = $1; $$ = mk_script_return(SCRIPT_ROUTE_RET_VAR);}
+		| snumber { sr_tmp.rint = $1; $$ = mk_script_return(SCRIPT_ROUTE_RET_INT);}
+		| STRING { sr_tmp.rstr.s = $1; sr_tmp.rstr.len = strlen($1);
+					$$ = mk_script_return(SCRIPT_ROUTE_RET_STR);}
+		| NULLV { $$ = mk_script_return(SCRIPT_ROUTE_RET_NULL);}
+		;
+
+return_params: return_param { $$ = $1; }
+		| return_params COMMA return_param { $3->next = $1; $$ = $3; }
+		;
+
 cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5);
 			}
@@ -2085,16 +2461,58 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 		| EXIT				 {mk_action0( $$, EXIT_T); }
 		| EXIT LPAREN RPAREN {mk_action0( $$, EXIT_T); }
 		| RETURN script_var
-							 {mk_action1( $$, RETURN_T, SCRIPTVAR_ST, (void*)$2); }
+							 {mk_action2( $$, RETURN_T,
+								SCRIPTVAR_ST,
+								NULLV_ST,
+								(void*)$2,
+								NULL); }
 		| RETURN LPAREN script_var RPAREN
-							 {mk_action1( $$, RETURN_T, SCRIPTVAR_ST, (void*)$3); }
+							 {mk_action2( $$, RETURN_T,
+								SCRIPTVAR_ST,
+								NULLV_ST,
+								(void*)$3,
+								NULL); }
+		| RETURN LPAREN script_var COMMA return_params RPAREN
+							 {mk_action2( $$, RETURN_T,
+								SCRIPTVAR_ST,
+								EXPR_ST,
+								(void*)$3,
+								$5); }
 		| RETURN snumber
-							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)$2); }
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								NULLV_ST,
+								(void*)$2,
+								NULL); }
 		| RETURN LPAREN snumber	RPAREN
-							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)$3); }
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								NULLV_ST,
+								(void*)$3,
+								NULL); }
+		| RETURN LPAREN snumber COMMA return_params RPAREN
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								EXPR_ST,
+								(void*)$3,
+								$5); }
 		| RETURN LPAREN RPAREN
-							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)1); }
-		| RETURN			 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)1); }
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								NULLV_ST,
+								(void*)1,
+								NULL); }
+		| RETURN LPAREN COMMA return_params RPAREN
+							 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								EXPR_ST,
+								(void*)1,
+								$4); }
+		| RETURN			 {mk_action2( $$, RETURN_T,
+								NUMBER_ST,
+								NULLV_ST,
+								(void*)1,
+								NULL); }
 		| LOG_TOK LPAREN STRING RPAREN	{mk_action2( $$, LOG_T, NUMBER_ST,
 													STRING_ST,(void*)4,$3);
 									}
@@ -2143,7 +2561,7 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
 						"argument"); }
 		| ID LPAREN RPAREN	{
-								cmd_tmp=(void*)find_cmd_export_t($1, rt);
+								const cmd_export_t* cmd_tmp=find_cmd_export_t($1, rt);
 								if (cmd_tmp==0){
 									if (find_cmd_export_t($1, 0)) {
 										yyerrorf("Command <%s> cannot be "
@@ -2160,13 +2578,13 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 										$$=0;
 									} else {
 										elems[0].type = CMD_ST;
-										elems[0].u.data = cmd_tmp;
+										elems[0].u.data_const = cmd_tmp;
 										mk_action_($$, CMD_T, 1, elems);
 									}
 								}
 							}
 		| ID LPAREN func_param RPAREN	{
-								cmd_tmp=(void*)find_cmd_export_t($1, rt);
+								const cmd_export_t* cmd_tmp=find_cmd_export_t($1, rt);
 								if (cmd_tmp==0){
 									if (find_cmd_export_t($1, 0)) {
 										yyerrorf("Command <%s> cannot be "
@@ -2196,7 +2614,7 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 										break;
 									default:
 										elems[0].type = CMD_ST;
-										elems[0].u.data = cmd_tmp;
+										elems[0].u.data_const = cmd_tmp;
 										mk_action_($$, CMD_T, $3+1, elems);
 									}
 								}
@@ -2219,26 +2637,36 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 		| XLOG LPAREN STRING COMMA folded_string RPAREN {
 				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
 		| ASYNC_TOKEN LPAREN async_func COMMA route_name RPAREN {
-				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
-				if (i_tmp==-1) yyerror("too many script routes");
-				mk_action2($$, ASYNC_T, ACTIONS_ST, NUMBER_ST,
-						$3, (void*)(long)i_tmp);
+				rt_ref = ref_script_route_by_name( $5, sroutes->request,
+					RT_NO, REQUEST_ROUTE, 0);
+				if (rt_ref==NULL) yyerror("fail to create route reference");
+				mk_action2($$, ASYNC_T, ACTIONS_ST, ROUTE_REF_ST,
+						$3, (void*)rt_ref);
 				}
 		| ASYNC_TOKEN LPAREN async_func COMMA route_name COMMA NUMBER RPAREN {
-				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
-				if (i_tmp==-1) yyerror("too many script routes");
-				mk_action3($$, ASYNC_T, ACTIONS_ST, NUMBER_ST, NUMBER_ST,
-						$3, (void*)(long)i_tmp, (void*)(long)$7);
+				rt_ref = ref_script_route_by_name( $5, sroutes->request,
+					RT_NO, REQUEST_ROUTE, 0);
+				if (rt_ref==NULL) yyerror("fail to create route reference");
+				mk_action3($$, ASYNC_T, ACTIONS_ST, ROUTE_REF_ST, NUMBER_ST,
+						$3, (void*)rt_ref, (void*)(long)$7);
+				}
+		| LAUNCH_TOKEN LPAREN async_func COMMA route_name COMMA STRING RPAREN {
+				rt_ref = ref_script_route_by_name( $5, sroutes->request,
+					RT_NO, REQUEST_ROUTE, 0);
+				if (rt_ref==NULL) yyerror("fail to create route reference");
+				mk_action3($$, LAUNCH_T, ACTIONS_ST, ROUTE_REF_ST, STRING_ST,
+						$3, (void*)rt_ref, $7);
 				}
 		| LAUNCH_TOKEN LPAREN async_func COMMA route_name RPAREN {
-				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
-				if (i_tmp==-1) yyerror("too many script routes");
-				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
-						$3, (void*)(long)i_tmp);
+				rt_ref = ref_script_route_by_name( $5, sroutes->request,
+					RT_NO, REQUEST_ROUTE, 0);
+				if (rt_ref==NULL) yyerror("fail to create route reference");
+				mk_action2($$, LAUNCH_T, ACTIONS_ST, ROUTE_REF_ST,
+						$3, (void*)rt_ref);
 				}
 		| LAUNCH_TOKEN LPAREN async_func RPAREN {
-				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
-						$3, (void*)(long)-1);
+				mk_action2($$, LAUNCH_T, ACTIONS_ST, ROUTE_REF_ST,
+						$3, (void*)NULL);
 				}
 	;
 
@@ -2256,7 +2684,7 @@ static void yyerror(char* s)
 	cfg_dump_backtrace();
 	LM_CRIT("parse error in %s:%d:%d-%d: %s\n",
 			get_cfg_file_name, line, startcolumn, column, s);
-	cfg_dump_context(get_cfg_file_name, line, startcolumn, column);
+	_cfg_dump_context(get_cfg_file_name, line, startcolumn, column, 1);
 	cfg_errors++;
 }
 
@@ -2292,14 +2720,55 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 	return l;
 }
 
+static struct socket_id* mk_listen_id_range(char* host, enum sip_protos proto, struct port_range *pr)
+{
+	int port;
+	struct socket_id *sid, *first_sid = NULL;
+	if (!pr)
+		return mk_listen_id(host, proto, 0);
+	while (pr) {
+		for (port = pr->max; port >= pr->min; port--) {
+			sid = mk_listen_id(host, proto, port);
+			if (!sid)
+				return first_sid;
+			sid->next = first_sid;
+			first_sid = sid;
+		}
+		pr = pr->next;
+	}
+	return first_sid;
+}
+
 static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 {
-	s->flags |= param->flags;
-	s->workers = param->workers;
-	s->auto_scaling_profile = param->auto_scaling_profile;
-	if (param->socket)
-		set_listen_id_adv(s, param->socket->name, param->socket->port);
-	s->tag = param->tag;
+	int warn;
+	struct socket_id *socket;
+	while (s) {
+		s->flags |= param->flags;
+		s->workers = param->workers;
+		s->auto_scaling_profile = param->auto_scaling_profile;
+		s->tag = param->tag;
+		if (param->socket) {
+			socket = param->socket;
+			param->socket = param->socket->next;
+			set_listen_id_adv(s, socket->name, socket->port);
+			pkg_free(socket);
+		} else if (!warn) {
+			LM_WARN("inconsistent port range with advertised ports - skipping advertised\n");
+			warn = 1;
+		}
+		s = s->next;
+	}
+	/* free remaining sockets, if any */
+	while (param->socket) {
+		if (!warn) {
+			LM_WARN("inconsistent port range with advertised ports - too many adverised\n");
+			warn = 1;
+		}
+		socket = param->socket->next;
+		param->socket = param->socket->next;
+		pkg_free(socket);
+	}
 }
 
 static struct multi_str *new_string(char *s)
@@ -2312,6 +2781,20 @@ static struct multi_str *new_string(char *s)
 		ms->next = NULL;
 	}
 	return ms;
+}
+
+static struct port_range* mk_port_range(int min, int max)
+{
+	struct port_range *pr = pkg_malloc(sizeof *pr);
+	if (pr) {
+		memset(pr, 0, sizeof *pr);
+		pr->min = min;
+		pr->max = max;
+		pr->next = NULL;
+	} else {
+		LM_CRIT("cfg. parser: out of memory.\n");
+	}
+	return pr;
 }
 
 static struct socket_id* set_listen_id_adv(struct socket_id* sock,

@@ -109,14 +109,14 @@ Chapter 1. Admin Guide
        be put on hold, but this behavior can be tuned when the new
        leg is originated.
      * Fork Media - the new B2B call, either originated or
-       terminated, will just have a copy of the RTP forked by
-       RTPProxy. In this mode, the proxied call should have had
-       RTPProxy already engaged in the media path before the
-       forked call starts. One can fork only one media leg, or
-       both legs. NOTE: RTPProxy currently does not support
-       stopping media streaming, therefore if the streaming call
-       terminates, RTPProxy will continue streaming, even if there
-       is no one listening on the other end.
+       terminated, will just have a copy of the RTP forked by the
+       media proxy engine. In this mode, the proxied call should
+       have had the RTP relay engaged path before the forked call
+       starts. One can fork only one media leg, or both legs.
+       NOTE: RTPProxy currently does not support stopping media
+       streaming, therefore if the streaming call terminates,
+       RTPProxy will continue streaming, even if there is no one
+       listening on the other end.
 
    This module can provide different functionalities and can be
    used in various use cases, such as:
@@ -136,8 +136,8 @@ Chapter 1. Admin Guide
      * TM - Transaction module.
      * Dialog - Dialog module for keeping track of the proxied
        calls.
-     * RTPProxy - optional, the RTPProxy module is only used when
-       running in media forking mode.
+     * RTP Relay - optional, when the initial call either uses RTP
+       Relay, or when using the media forking mode.
      * B2B_ENTITIES - Back-2-Back module used form manipulating
        calls with the Media Server.
 
@@ -501,10 +501,14 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                   Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)   114      48      5609     1182
-   2. Vlad Patrascu (@rvlad-patrascu)    5        3       15       9
-   3. Zero King (@l2dy)                  3        1       1        1
+     Name DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea) 157 64 6155 2472
+   2. Vlad Patrascu (@rvlad-patrascu) 6 4 19 11
+   3. Maksym Sobolyev (@sobomax) 4 2 12 12
+   4. Liviu Chircu (@liviuchircu) 4 2 6 3
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 4 4
+   6. Norman Brandinger (@NormB) 3 1 1 1
+   7. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -525,10 +529,14 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                   Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Feb 2020 - Jul 2020
-   2. Vlad Patrascu (@rvlad-patrascu) Mar 2020 - Apr 2020
-   3. Zero King (@l2dy)               Mar 2020 - Mar 2020
+                     Name                   Commit Activity
+   1. Razvan Crainea (@razvancrainea)     Feb 2020 - Jul 2024
+   2. Liviu Chircu (@liviuchircu)         Jul 2022 - Jul 2024
+   3. Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
+   4. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   5. Vlad Patrascu (@rvlad-patrascu)     Mar 2020 - Jul 2021
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2021
+   7. Zero King (@l2dy)                   Mar 2020 - Mar 2020
 
    (1) including any documentation-related commits, excluding
    merge commits

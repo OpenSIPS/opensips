@@ -79,10 +79,9 @@
 		<column><field>username</field><type>DB_STR</type></column>
 		<column><field>domain</field><type>DB_STR</type></column>
 		<column><field>password</field><type>DB_STR</type></column>
-		<column><field>email_address</field><type>DB_STR</type></column>
 		<column><field>ha1</field><type>DB_STR</type></column>
-		<column><field>ha1b</field><type>DB_STR</type></column>
-		<column><field>rpid</field><type>DB_STR</type></column>
+		<column><field>ha1_sha256</field><type>DB_STR</type></column>
+		<column><field>ha1_sha512t256</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of uri table-->
 	<db_table id="uri">
@@ -111,19 +110,6 @@
 		<column><field>secret</field><type>DB_BLOB</type></column>
 		<column><field>start_ts</field><type>DB_INT</type></column>
 		<column><field>end_ts</field><type>DB_INT</type></column>
-	</db_table>
-	<!-- Declaration of usr_preferences table-->
-	<db_table id="usr_preferences">
-		<table_name>usr_preferences</table_name>
-		<db_url_id>mysql</db_url_id>
-		<column><field>id</field><type>DB_INT</type></column>
-		<column><field>uuid</field><type>DB_STR</type></column>
-		<column><field>username</field><type>DB_STR</type></column>
-		<column><field>domain</field><type>DB_STR</type></column>
-		<column><field>attribute</field><type>DB_STR</type></column>
-		<column><field>type</field><type>DB_INT</type></column>
-		<column><field>value</field><type>DB_STR</type></column>
-		<column><field>last_modified</field><type>DB_DATETIME</type></column>
 	</db_table>
 	<!-- Declaration of b2b_entities table-->
 	<db_table id="b2b_entities">
@@ -167,18 +153,19 @@
 		<column><field>si_key</field><type>DB_STR</type></column>
 		<column><field>scenario</field><type>DB_STR</type></column>
 		<column><field>sstate</field><type>DB_INT</type></column>
-		<column><field>sdp</field><type>DB_BLOB</type></column>
 		<column><field>lifetime</field><type>DB_INT</type></column>
 		<column><field>e1_type</field><type>DB_INT</type></column>
 		<column><field>e1_sid</field><type>DB_STR</type></column>
 		<column><field>e1_from</field><type>DB_STR</type></column>
 		<column><field>e1_to</field><type>DB_STR</type></column>
 		<column><field>e1_key</field><type>DB_STR</type></column>
+		<column><field>e1_sdp</field><type>DB_BLOB</type></column>
 		<column><field>e2_type</field><type>DB_INT</type></column>
 		<column><field>e2_sid</field><type>DB_STR</type></column>
 		<column><field>e2_from</field><type>DB_STR</type></column>
 		<column><field>e2_to</field><type>DB_STR</type></column>
 		<column><field>e2_key</field><type>DB_STR</type></column>
+		<column><field>e2_sdp</field><type>DB_BLOB</type></column>
 		<column><field>e3_type</field><type>DB_INT</type></column>
 		<column><field>e3_sid</field><type>DB_STR</type></column>
 		<column><field>e3_from</field><type>DB_STR</type></column>
@@ -280,6 +267,8 @@
 		<column><field>agentid</field><type>DB_STR</type></column>
 		<column><field>location</field><type>DB_STR</type></column>
 		<column><field>logstate</field><type>DB_INT</type></column>
+		<column><field>msrp_location</field><type>DB_STR</type></column>
+		<column><field>msrp_max_sessions</field><type>DB_INT</type></column>
 		<column><field>skills</field><type>DB_STR</type></column>
 		<column><field>wrapup_end_time</field><type>DB_INT</type></column>
 		<column><field>wrapup_time</field><type>DB_INT</type></column>
@@ -300,6 +289,7 @@
 		<column><field>rejected</field><type>DB_INT</type></column>
 		<column><field>fstats</field><type>DB_INT</type></column>
 		<column><field>cid</field><type>DB_INT</type></column>
+		<column><field>media</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of cc_calls table-->
 	<db_table id="cc_calls">
@@ -307,6 +297,7 @@
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>state</field><type>DB_INT</type></column>
+		<column><field>media</field><type>DB_INT</type></column>
 		<column><field>ig_cback</field><type>DB_INT</type></column>
 		<column><field>no_rej</field><type>DB_INT</type></column>
 		<column><field>setup_time</field><type>DB_INT</type></column>
@@ -423,7 +414,7 @@
 		<column><field>timeout</field><type>DB_INT</type></column>
 		<column><field>vars</field><type>DB_BLOB</type></column>
 		<column><field>profiles</field><type>DB_BLOB</type></column>
-		<column><field>script_flags</field><type>DB_INT</type></column>
+		<column><field>script_flags</field><type>DB_STR</type></column>
 		<column><field>module_flags</field><type>DB_INT</type></column>
 		<column><field>flags</field><type>DB_INT</type></column>
 		<column><field>rt_on_answer</field><type>DB_STR</type></column>
@@ -455,6 +446,7 @@
 		<column><field>destination</field><type>DB_STR</type></column>
 		<column><field>socket</field><type>DB_STR</type></column>
 		<column><field>state</field><type>DB_INT</type></column>
+		<column><field>probe_mode</field><type>DB_INT</type></column>
 		<column><field>weight</field><type>DB_STR</type></column>
 		<column><field>priority</field><type>DB_INT</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
@@ -796,6 +788,7 @@
 		<column><field>remote_contact</field><type>DB_STR</type></column>
 		<column><field>version</field><type>DB_INT</type></column>
 		<column><field>extra_headers</field><type>DB_BLOB</type></column>
+		<column><field>sharing_tag</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of qr_profiles table-->
 	<db_table id="qr_profiles">
@@ -876,6 +869,7 @@
 		<column><field>expiry</field><type>DB_INT</type></column>
 		<column><field>forced_socket</field><type>DB_STR</type></column>
 		<column><field>cluster_shtag</field><type>DB_STR</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of rls_presentity table-->
 	<db_table id="rls_presentity">
@@ -964,12 +958,49 @@
 		<column><field>lname</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of usr_preferences table-->
+	<db_table id="usr_preferences">
+		<table_name>usr_preferences</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>uuid</field><type>DB_STR</type></column>
+		<column><field>username</field><type>DB_STR</type></column>
+		<column><field>domain</field><type>DB_STR</type></column>
+		<column><field>attribute</field><type>DB_STR</type></column>
+		<column><field>type</field><type>DB_INT</type></column>
+		<column><field>value</field><type>DB_STR</type></column>
+		<column><field>last_modified</field><type>DB_DATETIME</type></column>
+	</db_table>
 	<!-- Declaration of version table-->
 	<db_table id="version">
 		<table_name>version</table_name>
 		<db_url_id>mysql</db_url_id>
 		<column><field>table_name</field><type>DB_STR</type></column>
 		<column><field>table_version</field><type>DB_INT</type></column>
+	</db_table>
+	<!-- Declaration of tcp_mgm table-->
+	<db_table id="tcp_mgm">
+		<table_name>tcp_mgm</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>proto</field><type>DB_STR</type></column>
+		<column><field>remote_addr</field><type>DB_STR</type></column>
+		<column><field>remote_port</field><type>DB_INT</type></column>
+		<column><field>local_addr</field><type>DB_STR</type></column>
+		<column><field>local_port</field><type>DB_INT</type></column>
+		<column><field>priority</field><type>DB_INT</type></column>
+		<column><field>attrs</field><type>DB_STR</type></column>
+		<column><field>connect_timeout</field><type>DB_INT</type></column>
+		<column><field>con_lifetime</field><type>DB_INT</type></column>
+		<column><field>msg_read_timeout</field><type>DB_INT</type></column>
+		<column><field>send_threshold</field><type>DB_INT</type></column>
+		<column><field>no_new_conn</field><type>DB_INT</type></column>
+		<column><field>alias_mode</field><type>DB_INT</type></column>
+		<column><field>parallel_read</field><type>DB_INT</type></column>
+		<column><field>keepalive</field><type>DB_INT</type></column>
+		<column><field>keepcount</field><type>DB_INT</type></column>
+		<column><field>keepidle</field><type>DB_INT</type></column>
+		<column><field>keepinterval</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of tls_mgm table-->
 	<db_table id="tls_mgm">
@@ -1039,7 +1070,7 @@
 		<column><field>contact_id</field><type>DB_BIGINT</type></column>
 		<column><field>username</field><type>DB_STR</type></column>
 		<column><field>domain</field><type>DB_STR</type></column>
-		<column><field>contact</field><type>DB_STR</type></column>
+		<column><field>contact</field><type>DB_BLOB</type></column>
 		<column><field>received</field><type>DB_STR</type></column>
 		<column><field>path</field><type>DB_STR</type></column>
 		<column><field>expires</field><type>DB_INT</type></column>
@@ -1274,10 +1305,9 @@
 				<col><field>username</field></col>
 				<col><field>domain</field></col>
 				<col><field>password</field></col>
-				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
-				<col><field>ha1b</field></col>
-				<col><field>rpid</field></col>
+				<col><field>ha1_sha256</field></col>
+				<col><field>ha1_sha512t256</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -1287,10 +1317,9 @@
 				<col><field>username</field></col>
 				<col><field>domain</field></col>
 				<col><field>password</field></col>
-				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
-				<col><field>ha1b</field></col>
-				<col><field>rpid</field></col>
+				<col><field>ha1_sha256</field></col>
+				<col><field>ha1_sha512t256</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -1303,10 +1332,9 @@
 				<col><field>username</field></col>
 				<col><field>domain</field></col>
 				<col><field>password</field></col>
-				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
-				<col><field>ha1b</field></col>
-				<col><field>rpid</field></col>
+				<col><field>ha1_sha256</field></col>
+				<col><field>ha1_sha512t256</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -1443,59 +1471,6 @@
 			</clause_cols>
 		</cmd>
 	</mod>
-	<!-- usr_preferences provisionning -->
-	<mod><mod_name>usr_preferences</mod_name>
-		<cmd><cmd_name>show</cmd_name>
-			<db_table_id>usr_preferences</db_table_id>
-			<cmd_type>DB_QUERY</cmd_type>
-			<query_cols>
-				<col><field>id</field><link_cmd>update</link_cmd></col>
-				<col><field>uuid</field></col>
-				<col><field>username</field></col>
-				<col><field>domain</field></col>
-				<col><field>attribute</field></col>
-				<col><field>type</field></col>
-				<col><field>value</field></col>
-				<col><field>last_modified</field></col>
-			</query_cols>
-		</cmd>
-		<cmd><cmd_name>add</cmd_name>
-			<db_table_id>usr_preferences</db_table_id>
-			<cmd_type>DB_INSERT</cmd_type>
-			<query_cols>
-				<col><field>uuid</field></col>
-				<col><field>username</field></col>
-				<col><field>domain</field></col>
-				<col><field>attribute</field></col>
-				<col><field>type</field></col>
-				<col><field>value</field></col>
-				<col><field>last_modified</field></col>
-			</query_cols>
-		</cmd>
-		<cmd><cmd_name>update</cmd_name>
-			<db_table_id>usr_preferences</db_table_id>
-			<cmd_type>DB_UPDATE</cmd_type>
-			<clause_cols>
-				<col><field>id</field><operator>=</operator></col>
-			</clause_cols>
-			<query_cols>
-				<col><field>uuid</field></col>
-				<col><field>username</field></col>
-				<col><field>domain</field></col>
-				<col><field>attribute</field></col>
-				<col><field>type</field></col>
-				<col><field>value</field></col>
-				<col><field>last_modified</field></col>
-			</query_cols>
-		</cmd>
-		<cmd><cmd_name>delete</cmd_name>
-			<db_table_id>usr_preferences</db_table_id>
-			<cmd_type>DB_DELETE</cmd_type>
-			<clause_cols>
-				<col><field>id</field><operator>=</operator></col>
-			</clause_cols>
-		</cmd>
-	</mod>
 	<!-- b2b_entities provisionning -->
 	<mod><mod_name>b2b_entities</mod_name>
 		<cmd><cmd_name>show</cmd_name>
@@ -1622,18 +1597,19 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>
 				<col><field>e1_sid</field></col>
 				<col><field>e1_from</field></col>
 				<col><field>e1_to</field></col>
 				<col><field>e1_key</field></col>
+				<col><field>e1_sdp</field></col>
 				<col><field>e2_type</field></col>
 				<col><field>e2_sid</field></col>
 				<col><field>e2_from</field></col>
 				<col><field>e2_to</field></col>
 				<col><field>e2_key</field></col>
+				<col><field>e2_sdp</field></col>
 				<col><field>e3_type</field></col>
 				<col><field>e3_sid</field></col>
 				<col><field>e3_from</field></col>
@@ -1648,18 +1624,19 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>
 				<col><field>e1_sid</field></col>
 				<col><field>e1_from</field></col>
 				<col><field>e1_to</field></col>
 				<col><field>e1_key</field></col>
+				<col><field>e1_sdp</field></col>
 				<col><field>e2_type</field></col>
 				<col><field>e2_sid</field></col>
 				<col><field>e2_from</field></col>
 				<col><field>e2_to</field></col>
 				<col><field>e2_key</field></col>
+				<col><field>e2_sdp</field></col>
 				<col><field>e3_type</field></col>
 				<col><field>e3_sid</field></col>
 				<col><field>e3_from</field></col>
@@ -1677,18 +1654,19 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>
 				<col><field>e1_sid</field></col>
 				<col><field>e1_from</field></col>
 				<col><field>e1_to</field></col>
 				<col><field>e1_key</field></col>
+				<col><field>e1_sdp</field></col>
 				<col><field>e2_type</field></col>
 				<col><field>e2_sid</field></col>
 				<col><field>e2_from</field></col>
 				<col><field>e2_to</field></col>
 				<col><field>e2_key</field></col>
+				<col><field>e2_sdp</field></col>
 				<col><field>e3_type</field></col>
 				<col><field>e3_sid</field></col>
 				<col><field>e3_from</field></col>
@@ -1899,7 +1877,7 @@
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
-				<col><field>keyname</field><link_cmd>update</link_cmd></col>
+				<col><field>keyname</field></col>
 				<col><field>value</field></col>
 				<col><field>counter</field></col>
 				<col><field>expires</field></col>
@@ -1920,9 +1898,9 @@
 			<cmd_type>DB_UPDATE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>
-				<col><field>keyname</field><operator>=</operator></col>
 			</clause_cols>
 			<query_cols>
+				<col><field>keyname</field></col>
 				<col><field>value</field></col>
 				<col><field>counter</field></col>
 				<col><field>expires</field></col>
@@ -1933,7 +1911,6 @@
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>
-				<col><field>keyname</field><operator>=</operator></col>
 			</clause_cols>
 		</cmd>
 	</mod>
@@ -2018,6 +1995,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -2030,6 +2009,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -2045,6 +2026,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -2076,6 +2059,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -2093,6 +2077,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -2113,6 +2098,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -2131,6 +2117,7 @@
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>
@@ -2150,6 +2137,7 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>
@@ -2172,6 +2160,7 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>
@@ -2696,6 +2685,7 @@
 				<col><field>destination</field></col>
 				<col><field>socket</field></col>
 				<col><field>state</field></col>
+				<col><field>probe_mode</field></col>
 				<col><field>weight</field></col>
 				<col><field>priority</field></col>
 				<col><field>attrs</field></col>
@@ -2710,6 +2700,7 @@
 				<col><field>destination</field></col>
 				<col><field>socket</field></col>
 				<col><field>state</field></col>
+				<col><field>probe_mode</field></col>
 				<col><field>weight</field></col>
 				<col><field>priority</field></col>
 				<col><field>attrs</field></col>
@@ -2727,6 +2718,7 @@
 				<col><field>destination</field></col>
 				<col><field>socket</field></col>
 				<col><field>state</field></col>
+				<col><field>probe_mode</field></col>
 				<col><field>weight</field></col>
 				<col><field>priority</field></col>
 				<col><field>attrs</field></col>
@@ -4025,6 +4017,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -4050,6 +4043,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -4078,6 +4072,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -4365,6 +4360,7 @@
 				<col><field>expiry</field></col>
 				<col><field>forced_socket</field></col>
 				<col><field>cluster_shtag</field></col>
+				<col><field>state</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -4382,6 +4378,7 @@
 				<col><field>expiry</field></col>
 				<col><field>forced_socket</field></col>
 				<col><field>cluster_shtag</field></col>
+				<col><field>state</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -4402,6 +4399,7 @@
 				<col><field>expiry</field></col>
 				<col><field>forced_socket</field></col>
 				<col><field>cluster_shtag</field></col>
+				<col><field>state</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -4757,6 +4755,59 @@
 			</clause_cols>
 		</cmd>
 	</mod>
+	<!-- usr_preferences provisionning -->
+	<mod><mod_name>usr_preferences</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>usr_preferences</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>uuid</field></col>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>attribute</field></col>
+				<col><field>type</field></col>
+				<col><field>value</field></col>
+				<col><field>last_modified</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>usr_preferences</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>uuid</field></col>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>attribute</field></col>
+				<col><field>type</field></col>
+				<col><field>value</field></col>
+				<col><field>last_modified</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>usr_preferences</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>uuid</field></col>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>attribute</field></col>
+				<col><field>type</field></col>
+				<col><field>value</field></col>
+				<col><field>last_modified</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>usr_preferences</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
 	<!-- version provisionning -->
 	<mod><mod_name>version</mod_name>
 		<cmd><cmd_name>show</cmd_name>
@@ -4774,6 +4825,92 @@
 				<col><field>table_name</field></col>
 				<col><field>table_version</field></col>
 			</query_cols>
+		</cmd>
+	</mod>
+	<!-- tcp_mgm provisionning -->
+	<mod><mod_name>tcp_mgm</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>tcp_mgm</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>proto</field></col>
+				<col><field>remote_addr</field></col>
+				<col><field>remote_port</field></col>
+				<col><field>local_addr</field></col>
+				<col><field>local_port</field></col>
+				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
+				<col><field>connect_timeout</field></col>
+				<col><field>con_lifetime</field></col>
+				<col><field>msg_read_timeout</field></col>
+				<col><field>send_threshold</field></col>
+				<col><field>no_new_conn</field></col>
+				<col><field>alias_mode</field></col>
+				<col><field>parallel_read</field></col>
+				<col><field>keepalive</field></col>
+				<col><field>keepcount</field></col>
+				<col><field>keepidle</field></col>
+				<col><field>keepinterval</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>tcp_mgm</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>proto</field></col>
+				<col><field>remote_addr</field></col>
+				<col><field>remote_port</field></col>
+				<col><field>local_addr</field></col>
+				<col><field>local_port</field></col>
+				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
+				<col><field>connect_timeout</field></col>
+				<col><field>con_lifetime</field></col>
+				<col><field>msg_read_timeout</field></col>
+				<col><field>send_threshold</field></col>
+				<col><field>no_new_conn</field></col>
+				<col><field>alias_mode</field></col>
+				<col><field>parallel_read</field></col>
+				<col><field>keepalive</field></col>
+				<col><field>keepcount</field></col>
+				<col><field>keepidle</field></col>
+				<col><field>keepinterval</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>tcp_mgm</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>proto</field></col>
+				<col><field>remote_addr</field></col>
+				<col><field>remote_port</field></col>
+				<col><field>local_addr</field></col>
+				<col><field>local_port</field></col>
+				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
+				<col><field>connect_timeout</field></col>
+				<col><field>con_lifetime</field></col>
+				<col><field>msg_read_timeout</field></col>
+				<col><field>send_threshold</field></col>
+				<col><field>no_new_conn</field></col>
+				<col><field>alias_mode</field></col>
+				<col><field>parallel_read</field></col>
+				<col><field>keepalive</field></col>
+				<col><field>keepcount</field></col>
+				<col><field>keepidle</field></col>
+				<col><field>keepinterval</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>tcp_mgm</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
 		</cmd>
 	</mod>
 	<!-- tls_mgm provisionning -->

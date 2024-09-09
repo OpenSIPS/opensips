@@ -165,6 +165,9 @@ void free_cell( struct cell* dead_cell )
 
 		_clean_branch(dead_cell->uac[i],
 					shm_free_bulk, destroy_avp_list_bulk);
+
+		if (dead_cell->uac[i].on_reply)
+			shm_free_bulk(dead_cell->uac[i].on_reply);
 	}
 
 	/* collected to tags */
@@ -183,6 +186,14 @@ void free_cell( struct cell* dead_cell )
 	/* extra hdrs */
 	if ( dead_cell->extra_hdrs.s )
 		shm_free_bulk( dead_cell->extra_hdrs.s );
+
+	/* script route references */
+	if (dead_cell->on_negative)
+		shm_free_bulk(dead_cell->on_negative);
+	if (dead_cell->on_reply)
+		shm_free_bulk(dead_cell->on_reply);
+	if (dead_cell->on_branch)
+		shm_free_bulk(dead_cell->on_branch);
 
 	/* the cell's body */
 	shm_free_bulk( dead_cell );

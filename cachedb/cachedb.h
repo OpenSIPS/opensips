@@ -144,6 +144,21 @@ typedef struct cachedb_funcs_t {
 	               const cdb_dict_t *pairs);
 	/* TODO: can we also implement these ^ with Redis, or can we adapt them? */
 
+	/*
+	 * Endpoints specific for "map" operations (Redis)
+	 * Support for these endpoints can be verified via CACHEDB_CAP_MAP
+	 */
+
+	int (*map_get) (cachedb_con *con, const str *key, cdb_res_t *res);
+	int (*map_set) (cachedb_con *con, const str *key, const str *subkey,
+		const cdb_dict_t *pairs);
+	int (*map_remove) (cachedb_con *con, const str *key, const str *subkey);
+
+	/* Checks if the database is replicated (in an OpenSIPS cluster).
+	 * Currently only makes sense for cachedb_local
+	 */
+	int (*is_replicated) (cachedb_con *con);
+
 	int capability;
 } cachedb_funcs;
 

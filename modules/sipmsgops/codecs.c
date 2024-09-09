@@ -96,11 +96,18 @@ static int create_codec_lumps(struct sip_msg * msg)
 		struct sdp_stream_cell * cur_cell = cur_session->streams;
 		struct lump* l;
 		str text;
+		str payloads;
 
 		while(cur_cell)
 		{
-			l = del_lump(msg, cur_cell->payloads.s - msg->buf,
-					cur_cell->payloads.len,0);
+			payloads = cur_cell->payloads;
+			/* include the previous whitespaces */
+			while (payloads.s > cur_cell->body.s && *(payloads.s-1) == ' ') {
+				payloads.s--;
+				payloads.len++;
+			}
+
+			l = del_lump(msg, payloads.s - msg->buf, payloads.len, 0);
 
 			lumps[count] = l;
 
@@ -119,8 +126,8 @@ static int create_codec_lumps(struct sip_msg * msg)
 				return -1;
 			}
 
-			text.len = cur_cell->payloads.len;
-			text.s = (char*)pkg_malloc(cur_cell->payloads.len);
+			text.len = payloads.len;
+			text.s = (char*)pkg_malloc(payloads.len);
 
 			if( text.s == NULL )
 			{
@@ -128,7 +135,7 @@ static int create_codec_lumps(struct sip_msg * msg)
 				return -1;
 			}
 
-			memcpy(text.s,cur_cell->payloads.s,cur_cell->payloads.len);
+			memcpy(text.s,payloads.s,payloads.len);
 
 			tmp = insert_new_lump_after( tmp, text.s, text.len, 0);
 			if(tmp == NULL)
@@ -272,14 +279,18 @@ static struct lump * get_associated_lump(struct sip_msg * msg,
 								  struct sdp_stream_cell * cell)
 {
 	struct lump *lmp;
-	int i;
+	char *payload;
+	int i, have,want;
 
 	LM_DBG("Have %d lumps\n",lumps_len);
 
 	for( i =0 ; i< lumps_len; i++)
 	{
-		int have = lumps[i]->u.offset;
-		int want = cell->payloads.s - msg->buf;
+		have = lumps[i]->u.offset;
+		payload = cell->payloads.s;
+		while (payload > cell->body.s && *(payload - 1) == ' ')
+			payload--;
+		want = payload - msg->buf;
 
 		LM_DBG("have lump at %d want at %d\n", have, want );
 		if( have == want ) {
@@ -336,7 +347,10 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 }
 
 
-int delete_sdp_line( struct sip_msg * msg, char * s)
+/* deletes a SDP line (from a stream) by giving a pointer within the line.
+ * The stream is used to safeguard the identification of the line boundries.
+ */
+int delete_sdp_line( struct sip_msg * msg, char * s, struct sdp_stream_cell *stream)
 {
 	char * start,*end;
 
@@ -346,13 +360,14 @@ int delete_sdp_line( struct sip_msg * msg, char * s)
 	start = s;
 	end  = s;
 
-	while(*start != '\n')
+	while(*start != '\n' && start > stream->body.s)
 		start--;
 	start++;
 
-	while(*end != '\n')
+	while(*end != '\n' && end < (stream->body.s+stream->body.len) )
 		end++;
-	end++;
+	if ( *end == '\n')
+		end++;
 
 	/* delete the entry */
 	if( del_lump(msg, start - msg->buf, end - start,0) == NULL )
@@ -371,38 +386,38 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 {
 	static sdp_payload_attr_t static_payloads[] = {
 	/* as per http://www.iana.org/assignments/rtp-parameters/rtp-parameters.xml */
-	{ NULL,0,{ "0",1},{"PCMU",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 0 - PCMU/8000  */
-	{ NULL,0,{ "3",1},{ "GSM",3},{ "8000",4},{NULL,0},{NULL,0} },   /* 3 -  GSM/8000  */
-	{ NULL,0,{ "4",1},{"G723",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 4 - G723/8000  */
-	{ NULL,0,{ "5",1},{"DVI4",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 5 - DVI4/8000  */
-	{ NULL,0,{ "6",1},{"DVI4",4},{"16000",5},{NULL,0},{NULL,0} },   /* 6 - DVI4/16000 */
-	{ NULL,0,{ "7",1},{ "LPC",3},{ "8000",4},{NULL,0},{NULL,0} },   /* 7 -  LPC/8000  */
-	{ NULL,0,{ "8",1},{"PCMA",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 8 - PCMA/8000  */
-	{ NULL,0,{ "9",1},{"G722",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 9 - G722/8000  */
-	{ NULL,0,{"10",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0} },   /*10 -  L16/44100 */
-	{ NULL,0,{"11",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0} },   /*11 -  L16/44100 */
-	{ NULL,0,{"12",2},{"QCELP",5},{"8000",4},{NULL,0},{NULL,0} },   /*12 -QCELP/8000  */
-	{ NULL,0,{"13",2},{  "CN",2},{ "8000",4},{NULL,0},{NULL,0} },   /*13 -   CN/8000  */
-	{ NULL,0,{"14",2},{ "MPA",3},{"90000",5},{NULL,0},{NULL,0} },   /*14 -  MPA/90000 */
-	{ NULL,0,{"15",2},{"G728",4},{ "8000",4},{NULL,0},{NULL,0} },   /*15 - G728/8000  */
-	{ NULL,0,{"16",2},{"DVI4",4},{"11025",5},{NULL,0},{NULL,0} },   /*16 - DVI4/11025 */
-	{ NULL,0,{"17",2},{"DVI4",4},{"22050",5},{NULL,0},{NULL,0} },   /*17 - DVI4/22050 */
-	{ NULL,0,{"18",2},{"G729",4},{ "8000",4},{NULL,0},{NULL,0} },   /*18 - G729/8000  */
-	{ NULL,0,{"25",2},{"CelB",4},{ "8000",4},{NULL,0},{NULL,0} },   /*25 - CelB/8000  */
-	{ NULL,0,{"26",2},{"JPEG",4},{"90000",5},{NULL,0},{NULL,0} },   /*26 - JPEG/90000 */
-	{ NULL,0,{"28",2},{  "nv",2},{"90000",5},{NULL,0},{NULL,0} },   /*28 -   nv/90000 */
-	{ NULL,0,{"31",2},{"H261",4},{"90000",5},{NULL,0},{NULL,0} },   /*31 - H261/90000 */
-	{ NULL,0,{"32",2},{ "MPV",3},{"90000",5},{NULL,0},{NULL,0} },   /*32 -  MPV/90000 */
-	{ NULL,0,{"33",2},{"MP2T",4},{"90000",5},{NULL,0},{NULL,0} },   /*33 - MP2T/90000 */
-	{ NULL,0,{"34",2},{"H263",4},{"90000",5},{NULL,0},{NULL,0} },   /*34 - H263/90000 */
-	{ NULL,0,{"t38",3},{"t38",3},{     "",0},{NULL,0},{NULL,0} },   /*T38- fax        */
-	{ NULL,0,{NULL,0},{  NULL,0},{   NULL,0},{NULL,0},{NULL,0} }
+	{ NULL,0,{ "0",1},{"PCMU",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 0 - PCMU/8000  */
+	{ NULL,0,{ "3",1},{ "GSM",3},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 3 -  GSM/8000  */
+	{ NULL,0,{ "4",1},{"G723",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 4 - G723/8000  */
+	{ NULL,0,{ "5",1},{"DVI4",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 5 - DVI4/8000  */
+	{ NULL,0,{ "6",1},{"DVI4",4},{"16000",5},{NULL,0},{NULL,0},{},0, NULL },   /* 6 - DVI4/16000 */
+	{ NULL,0,{ "7",1},{ "LPC",3},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 7 -  LPC/8000  */
+	{ NULL,0,{ "8",1},{"PCMA",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 8 - PCMA/8000  */
+	{ NULL,0,{ "9",1},{"G722",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 9 - G722/8000  */
+	{ NULL,0,{"10",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0},{},0, NULL },   /*10 -  L16/44100 */
+	{ NULL,0,{"11",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0},{},0, NULL },   /*11 -  L16/44100 */
+	{ NULL,0,{"12",2},{"QCELP",5},{"8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*12 -QCELP/8000  */
+	{ NULL,0,{"13",2},{  "CN",2},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*13 -   CN/8000  */
+	{ NULL,0,{"14",2},{ "MPA",3},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*14 -  MPA/90000 */
+	{ NULL,0,{"15",2},{"G728",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*15 - G728/8000  */
+	{ NULL,0,{"16",2},{"DVI4",4},{"11025",5},{NULL,0},{NULL,0},{},0, NULL },   /*16 - DVI4/11025 */
+	{ NULL,0,{"17",2},{"DVI4",4},{"22050",5},{NULL,0},{NULL,0},{},0, NULL },   /*17 - DVI4/22050 */
+	{ NULL,0,{"18",2},{"G729",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*18 - G729/8000  */
+	{ NULL,0,{"25",2},{"CelB",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*25 - CelB/8000  */
+	{ NULL,0,{"26",2},{"JPEG",4},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*26 - JPEG/90000 */
+	{ NULL,0,{"28",2},{  "nv",2},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*28 -   nv/90000 */
+	{ NULL,0,{"31",2},{"H261",4},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*31 - H261/90000 */
+	{ NULL,0,{"32",2},{ "MPV",3},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*32 -  MPV/90000 */
+	{ NULL,0,{"33",2},{"MP2T",4},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*33 - MP2T/90000 */
+	{ NULL,0,{"34",2},{"H263",4},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*34 - H263/90000 */
+	{ NULL,0,{"t38",3},{"t38",3},{     "",0},{NULL,0},{NULL,0},{},0, NULL },   /*T38- fax        */
+	{ NULL,0,{NULL,0},{  NULL,0},{   NULL,0},{NULL,0},{NULL,0},{},0, NULL }
 	};
 	sdp_payload_attr_t *payload;
 	char *cur, *tmp, *buff, temp;
 	struct lump * lmp;
-	str found;
-	int ret, i, depl, single, match, buff_len, is_static;
+	str found,linked_found;
+	int ret, i,match, linked_match, buff_len, is_static;
 	regmatch_t pmatch;
 
 
@@ -518,34 +533,73 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 				if( op == DELETE && !is_static )
 				{
 					/* find the full 'a=...' entry */
-
-					if( delete_sdp_line( msg, payload->rtp_enc.s) < 0 )
+					if( delete_sdp_line( msg, payload->rtp_enc.s, cell) < 0 )
 					{
 						LM_ERR("Unable to add delete lump for a=\n");
 						ret = -1;
 						goto end;
 					}
 
-					if( delete_sdp_line( msg, payload->fmtp_string.s) < 0 )
+					if( delete_sdp_line( msg, payload->fmtp_string.s, cell) < 0 )
 					{
 						LM_ERR("Unable to add delete lump for a=\n");
 						ret = -1;
 						goto end;
+					}
+
+					for (i=0;i<payload->custom_attrs_size;i++) {
+						LM_DBG("also deleting attribute [%.*s] belonging to codec to be deleted\n",payload->custom_attrs[i].len,payload->custom_attrs[i].s);
+						if( delete_sdp_line( msg, payload->custom_attrs[i].s, cell) < 0 )
+						{
+							LM_ERR("Unable to add delete lump for a=\n");
+							ret = -1;
+							goto end;
+						}
+					}
+
+					if (payload->linked_payload != NULL) {
+						LM_DBG("%.*s is linked with %.*s\n",payload->rtp_payload.len,payload->rtp_payload.s,
+						payload->linked_payload->rtp_payload.len,payload->linked_payload->rtp_payload.s);
+
+						/* find the full 'a=...' entry */
+						if( delete_sdp_line( msg, payload->linked_payload->rtp_enc.s, cell) < 0 )
+						{
+							LM_ERR("Unable to add delete lump for a=\n");
+							ret = -1;
+							goto end;
+						}
+
+						if( delete_sdp_line( msg, payload->linked_payload->fmtp_string.s, cell) < 0 )
+						{
+							LM_ERR("Unable to add delete lump for a=\n");
+							ret = -1;
+							goto end;
+						}
+
+						for (i=0;i<payload->linked_payload->custom_attrs_size;i++) {
+							LM_DBG("also deleting attribute [%.*s] belonging to codec to be deleted\n",
+							payload->linked_payload->custom_attrs[i].len,payload->linked_payload->custom_attrs[i].s);
+							if( delete_sdp_line( msg, payload->linked_payload->custom_attrs[i].s, cell) < 0 )
+							{
+								LM_ERR("Unable to add delete lump for a=\n");
+								ret = -1;
+								goto end;
+							}
+						}
 					}
 				}
 
 				{
-					/* take the following whitespaces as well */
-					while( cur < lmp->u.value + lmp->len &&  *cur == ' '  )
-					{
-						cur++;
+					/* take the previous whitespaces as well */
+					while (found.s > lmp->u.value && *(found.s - 1) == ' ') {
+						found.s--;
 						found.len++;
 					}
 
 					/* when trimming the very last payload, avoid trailing ws */
 					if (cur == lmp->u.value + lmp->len) {
 						tmp = found.s;
-						while (*(--tmp) == ' ') {
+						while (tmp>lmp->u.value && *(--tmp) == ' ') {
 							found.s--;
 							found.len++;
 						}
@@ -557,16 +611,64 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 
 					//cur -= found.len;
 					lmp->len -= found.len;
+
+					if (op == DELETE && payload->linked_payload != NULL) {
+						linked_match = 0;
+						cur = lmp->u.value;
+						while( !linked_match && cur < lmp->u.value + lmp->len)
+						{
+							/* find the end of the number */
+							linked_found.s = cur;
+
+							while(  cur < lmp->u.value + lmp->len &&  *cur != ' ' )
+								cur++;
+
+							linked_found.len = cur - linked_found.s;
+
+							/* does it matches payload number */
+							if ( linked_found.len == payload->linked_payload->rtp_payload.len &&
+							strncmp( linked_found.s,payload->linked_payload->rtp_payload.s,linked_found.len) == 0) {
+								linked_match = 1;
+							} else {
+								/* continue on searching => skip spaces
+								   if there still are any */
+								while( cur < lmp->u.value + lmp->len && * cur == ' '  )
+									cur++;
+							}
+						}
+
+						if (linked_match) {
+							/* take the previous whitespaces as well */
+							while (linked_found.s > lmp->u.value && *(linked_found.s - 1) == ' ') {
+								linked_found.s--;
+								linked_found.len++;
+							}
+
+							/* when trimming the very last payload, avoid trailing ws */
+							if (cur == lmp->u.value + lmp->len) {
+								tmp = linked_found.s;
+								while (tmp>lmp->u.value && *(--tmp) == ' ') {
+									linked_found.s--;
+									linked_found.len++;
+								}
+							}
+
+							/* delete the string and update iterators */
+							for(tmp=linked_found.s ; tmp< lmp->u.value + lmp->len ; tmp++ )
+								*tmp  = *(tmp+linked_found.len);
+
+							//cur -= found.len;
+							lmp->len -= linked_found.len;
+						}
+					}	
+					
 				}
 
 				/* add the deleted number into a buffer to be addded later */
 				if( op == ADD_TO_FRONT  || op == ADD_TO_BACK)
 				{
-					if( buff_len > 0)
-					{
-						memcpy(&buff[buff_len]," ",1);
-						buff_len++;
-					}
+					memcpy(&buff[buff_len]," ",1);
+					buff_len++;
 
 					memcpy(&buff[buff_len],payload->rtp_payload.s,
 						payload->rtp_payload.len);
@@ -597,16 +699,7 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 
 	if( op == ADD_TO_FRONT && buff_len >0 )
 	{
-		depl = buff_len;
-		single = 1;
-
-		if( lmp->len > 0)
-		{
-			depl++;
-			single = 0;
-		}
-
-		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+depl);
+		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+buff_len);
 		if(!lmp->u.value) {
 			LM_ERR("No more pkg memory\n");
 			ret = -1;
@@ -614,40 +707,48 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 		}
 
 		for( i = lmp->len -1 ; i>=0;i--)
-			lmp->u.value[i+depl] = lmp->u.value[i];
+			lmp->u.value[i+buff_len] = lmp->u.value[i];
 
 		memcpy(lmp->u.value,buff,buff_len);
 
-		if(!single)
-			lmp->u.value[buff_len] = ' ';
-
-		lmp->len += depl;
+		lmp->len += buff_len;
 
 	}
 
 	if( op == ADD_TO_BACK && buff_len >0 )
 	{
 
-		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+buff_len+1);
+		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+buff_len);
 		if(!lmp->u.value) {
 			LM_ERR("No more pkg memory\n");
 			ret = -1;
 			goto end;
 		}
 
-
-		if( lmp->len > 0)
-		{
-
-			memcpy(&lmp->u.value[lmp->len]," ",1);
-			lmp->len++;
-		}
-
-
 		memcpy(&lmp->u.value[lmp->len],buff,buff_len);
 
 		lmp->len += buff_len;
 
+	}
+
+	/* if we ended up with a 0-length lump, then it means that all payloads
+	 * have been deleted, therefore we need to disable the media stream */
+	if (lmp->len == 0) {
+		/* replace the media port with 0 - we also replace the spaces before
+		 * and after the port, to make sure we have a larger buffer */
+		lmp = del_lump(msg, cell->port.s - msg->buf - 1, cell->port.len + 2, 0);
+		if (!lmp) {
+			LM_ERR("could not add lump to disable stream!\n");
+			goto end;
+		}
+		tmp = pkg_malloc(3);
+		if (!tmp) {
+			LM_ERR("oom for port 0\n");
+			goto end;
+		}
+		memcpy(tmp, " 0 ", 3);
+		if (!insert_new_lump_after(lmp, tmp, 3, 0))
+			LM_ERR("could not insert lump to disable stream!\n");
 	}
 
 end:
@@ -728,7 +829,8 @@ int codec_move_down(struct sip_msg* msg, str* codec, str* clock)
 }
 
 
-static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
+static int handle_streams(struct sip_msg* msg, regex_t* re, regex_t* re2,
+																	int delete)
 {
 	struct sdp_session_cell *session;
 	struct sdp_stream_cell *stream;
@@ -761,6 +863,13 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 			stream->media.s[stream->media.len] = 0;
 			match = regexec( re, stream->media.s, 1, &pmatch, 0) == 0;
 			stream->media.s[stream->media.len] = temp;
+			/* optionally check the transport in stream also */
+			if (match && re2) {
+				temp = stream->transport.s[stream->transport.len];
+				stream->transport.s[stream->transport.len] = 0;
+				match = regexec( re2, stream->transport.s, 1, &pmatch, 0) == 0;
+				stream->transport.s[stream->transport.len] = temp;
+			}
 			if (match) break;
 		}
 	}
@@ -768,7 +877,9 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 	if (!match)
 		return -1;
 
-	LM_DBG(" found stream [%.*s]\n",stream->media.len,stream->media.s);
+	LM_DBG(" found stream media [%.*s], transport [%.*s]\n",
+		stream->media.len,stream->media.s,
+		stream->transport.len,stream->transport.s);
 
 	/* stream found */
 	if (!delete)
@@ -825,15 +936,15 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 }
 
 
-int stream_find(struct sip_msg* msg, regex_t* re)
+int stream_find(struct sip_msg* msg, regex_t* re, regex_t* re2)
 {
-	return handle_streams(msg, re, 0);
+	return handle_streams(msg, re, re2, 0);
 }
 
 
-int stream_delete(struct sip_msg* msg, regex_t* re)
+int stream_delete(struct sip_msg* msg, regex_t* re, regex_t* re2)
 {
-	return handle_streams(msg, re, 1);
+	return handle_streams(msg, re, re2, 1);
 }
 
 

@@ -43,7 +43,7 @@
 /* forward declaration for this structure */
 struct ld_conn;
 
-extern int ldap_connect(char* _ld_name, struct ld_conn* conn);
+extern int opensips_ldap_connect(char* _ld_name, struct ld_conn* conn);
 extern int ldap_disconnect(char* _ld_name, struct ld_conn* conn);
 extern int ldap_reconnect(char* _ld_name, struct ld_conn* conn);
 extern int ldap_get_vendor_version(char** _version);

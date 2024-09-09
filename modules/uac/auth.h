@@ -30,5 +30,6 @@
 #include "../rr/api.h"
 
 void rr_uac_auth_checker(struct sip_msg *msg, str *r_param, void *cb_param);
+int uac_inc_cseq(struct sip_msg *msg, int val);
 
 #endif

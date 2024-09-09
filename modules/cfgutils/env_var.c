@@ -7,7 +7,7 @@
 
 static env_var_t *env_vars = 0;
 
-int pv_parse_env_name(pv_spec_p sp, str *in)
+int pv_parse_env_name(pv_spec_p sp, const str *in)
 {
 	env_var_p it;
 

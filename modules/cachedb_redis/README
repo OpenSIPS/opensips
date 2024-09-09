@@ -33,6 +33,8 @@ cachedb_redis Module
 
         3.1. Contributors
 
+   4. Frequently Asked Questions
+
    List of Tables
 
    2.1. Top contributors by DevScore^(1), authored commits^(2) and
@@ -104,25 +106,30 @@ Chapter 1. Admin Guide
 
 1.5.1. cachedb_url (string)
 
-   The urls of the server groups that OpenSIPS will connect to in
-   order to use the from script cache_store,cache_fetch, etc
-   operations. It can be set more than one time. The prefix part
+   The URLs of the server groups that OpenSIPS will connect to in
+   order to use, from script, the cache_store(), cache_fetch(),
+   etc. operations. It may be set more than once. The prefix part
    of the URL will be the identifier that will be used from the
    script.
 
    Example 1.1. Set cachedb_url parameter
 ...
-modparam("cachedb_redis", "cachedb_url","redis:group1://localhost:6379/"
-)
-modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:888
-8/")
+# single-instance URLs (Redis Server or Redis Cluster)
+modparam("cachedb_redis", "cachedb_url", "redis:group1://localhost:6379/
+")
+modparam("cachedb_redis", "cachedb_url", "redis:cluster1://random_url:88
+88/")
+
+# multi-instance URL (will perform circular failover on each query)
+modparam("cachedb_redis", "cachedb_url",
+        "redis:ha://localhost,host_a:6380,host_b:6381,host_c/")
 ...
 
    Example 1.2. Use Redis servers
 ...
-cache_store("redis:group1","key","$ru value");
-cache_fetch("redis:cluster1","key",$avp(10));
-cache_remove("redis:cluster1","key");
+cache_store("redis:group1", "key", "$ru value");
+cache_fetch("redis:cluster1", "key", $avp(10));
+cache_remove("redis:cluster1", "key");
 ...
 
 1.5.2. connect_timeout (integer)
@@ -251,18 +258,19 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 30 17 1428 43
-   2. Razvan Crainea (@razvancrainea) 16 13 130 35
-   3. Liviu Chircu (@liviuchircu) 12 10 106 55
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 7 5
-   5. Vlad Patrascu (@rvlad-patrascu) 5 2 210 14
-   6. jalung 4 1 144 61
-   7. Dan Pascu (@danpascu) 3 1 15 15
-   8. Ezequiel Lovelle 3 1 11 4
-   9. Julián Moreno Patiño 3 1 1 1
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   2. Liviu Chircu (@liviuchircu) 29 19 558 277
+   3. Razvan Crainea (@razvancrainea) 16 13 130 35
+   4. Vlad Patrascu (@rvlad-patrascu) 12 6 595 38
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 7 5
+   6. Maksym Sobolyev (@sobomax) 6 4 7 7
+   7. jalung 4 1 144 61
+   8. Dan Pascu (@danpascu) 3 1 15 15
+   9. Ezequiel Lovelle 3 1 11 4
+   10. John Burke (@john08burke) 3 1 6 1
 
-   All remaining contributors: Jarrod Baumann (@jarrodb), Kristian
-   Høgh.
+   All remaining contributors: tcresson, Julián Moreno Patiño,
+   Peter Lemenkov (@lemenkov), zhengsh, Jarrod Baumann (@jarrodb),
+   Kristian Høgh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -284,19 +292,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Kristian Høgh                       Apr 2016 - Apr 2016
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Jarrod Baumann (@jarrodb)           May 2015 - May 2015
-   10. jalung                              Jun 2014 - Jun 2014
+   1.  tcresson                            Oct 2023 - Oct 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Oct 2023
+   3.  zhengsh                             Aug 2023 - Aug 2023
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  John Burke (@john08burke)           Apr 2022 - Apr 2022
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2022
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
+   8.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   9.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Ezequiel
-   Lovelle.
+   All remaining contributors: Kristian Høgh, Julián Moreno
+   Patiño, Jarrod Baumann (@jarrodb), jalung, Vlad Paiu
+   (@vladpaiu), Ezequiel Lovelle.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -305,9 +314,21 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Julián Moreno Patiño,
-   Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián Moreno
+   Patiño, Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu).
+
+Chapter 4. Frequently Asked Questions
+
+   4.1.
+
+   My OpenSIPS is occasionally crashing in libhiredis, what to do?
+
+   Make sure you've upgraded the Redis "libhiredis" client library
+   to at least version 0.14.1. There was at least one significant
+   vulnerability reported in library versions prior to that one
+   (CVE-2020-7105), so upgrading to latest stable may very well
+   fix the crash!
 
    Documentation Copyrights:
 

@@ -44,6 +44,8 @@
 #include "cachedb_local_replication.h"
 #include "hash.h"
 
+#include "../../mem/rpm_mem.h"
+
 #include <fnmatch.h>
 
 
@@ -63,26 +65,37 @@ int cluster_id = 0;
 enum cachedb_rr_persist rr_persist = RRP_SYNC_FROM_CLUSTER;
 char *cluster_persist;
 
+/* restart persistency with rpm */
+int lcache_rpm_enable = 0;
+lcache_rpm_cache_t *lcache_rpm_cache;
+
 static int remove_chunk_f(struct sip_msg* msg, str* collection, str* glob);
 mi_response_t *mi_cache_remove_chunk_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_cache_remove_chunk_2(const mi_params_t *params,
+
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_cache_fetch_chunk_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_cache_fetch_chunk_2(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 void localcache_clean(unsigned int ticks,void *param);
 static int parse_collections(unsigned int type, void *val);
 static int store_urls(unsigned int type, void *val);
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "cache_clean_period", INT_PARAM, &cache_clean_period },
 	{ "exec_threshold",     INT_PARAM, &local_exec_threshold },
 	{ "cache_collections",  STR_PARAM|USE_FUNC_PARAM, (void *)parse_collections },
 	{ "cachedb_url",        STR_PARAM|USE_FUNC_PARAM, (void *)store_urls },
 	{ "cluster_id",INT_PARAM, &cluster_id },
 	{ "cluster_persistency",STR_PARAM, &cluster_persist },
+	{ "enable_restart_persistency",INT_PARAM, &lcache_rpm_enable },
 	{0,0,0}
 };
 
-static cmd_export_t cmds[]= {
+static const cmd_export_t cmds[]= {
 	{"cache_remove_chunk",        (cmd_function)remove_chunk_f, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -90,16 +103,21 @@ static cmd_export_t cmds[]= {
 	{0,0,{{0,0,0}},0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "cache_remove_chunk", 0, 0, 0, {
 		{mi_cache_remove_chunk_1, {"glob", 0}},
 		{mi_cache_remove_chunk_2, {"glob", "collection", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
+	{ "cache_fetch_chunk", 0, 0, 0, {
+		{mi_cache_fetch_chunk_1, {"glob", 0}},
+		{mi_cache_fetch_chunk_2, {"glob", "collection", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0},
 	},
@@ -163,7 +181,7 @@ static int remove_chunk_f(struct sip_msg* msg, str* col_s, str* pat)
 		}
 	}
 
-	cache_htable = col->col_htable;
+	cache_htable = col->col_htable->htable;
 
 	if (pat->len+1 > pat_buff_size) {
 		pat_buff = pkg_realloc(pat_buff,pat->len+1);
@@ -182,7 +200,7 @@ static int remove_chunk_f(struct sip_msg* msg, str* col_s, str* pat)
 	LM_DBG("trying to remove chunk with pattern [%s]\n",pat_buff);
 	start_expire_timer(start,local_exec_threshold);
 
-	for(i = 0; i< col->size; i++) {
+	for(i = 0; i< col->col_htable->size; i++) {
 		lock_get(&cache_htable[i].lock);
 		me1 = cache_htable[i].entries;
 		me2 = NULL;
@@ -212,11 +230,11 @@ static int remove_chunk_f(struct sip_msg* msg, str* col_s, str* pat)
 
 				if(me2) {
 					me2->next = me1->next;
-					shm_free(me1);
+					func_free(col->free, me1);
 					me1 = me2->next;
 				} else{
 					cache_htable[i].entries = me1->next;
-					shm_free(me1);
+					func_free(col->free, me1);
 					me1 = cache_htable[i].entries;
 				}
 			} else {
@@ -263,6 +281,137 @@ mi_response_t *mi_cache_remove_chunk_2(const mi_params_t *params,
 	return mi_cache_remove_chunk(params, &col);
 }
 
+mi_response_t *mi_cache_fetch_chunk(const mi_params_t *params, str *collection)
+{
+	str glob;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *keys_arr, *key_obj;
+	lcache_col_t* col;
+	lcache_t* cache_htable;
+	lcache_entry_t* me1;
+	struct timeval start;
+	int i;
+
+	if (get_mi_string_param(params, "glob", &glob.s, &glob.len) < 0)
+		return init_mi_param_error();
+
+	if ( !collection ) {
+		/* use default collection; default collection is always first in list */
+		col = lcache_collection;
+	} else {
+		for ( col=lcache_collection; col; col=col->next ) {
+			if ( !str_strcmp( &col->col_name, collection) )
+				break;
+		}
+
+		if ( !col ) {
+			LM_ERR("collection <%.*s> not defined!\n", collection->len, collection->s);
+			return init_mi_param_error();
+		}
+	}
+
+	cache_htable = col->col_htable->htable;
+
+	if (glob.len+1 > pat_buff_size) {
+		pat_buff = pkg_realloc(pat_buff,glob.len+1);
+		if (pat_buff == NULL) {
+			LM_ERR("No more pkg mem\n");
+			pat_buff_size = 0;
+			return init_mi_error( 400, MI_SSTR("Internal Error"));
+		}
+
+		pat_buff_size = glob.len +1;
+	}
+
+	memcpy(pat_buff,glob.s,glob.len);
+	pat_buff[glob.len] = 0;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (resp==NULL) {
+		LM_ERR("Failed to init reply object \n");
+		return init_mi_error( 400, MI_SSTR("Internal Error"));
+	}
+
+	if((keys_arr = add_mi_array(resp_obj, MI_SSTR("keys"))) < 0) {
+		LM_ERR("Failed to init client rates reply object \n");
+		return init_mi_error( 400, MI_SSTR("Internal Error"));
+	}
+
+	LM_DBG("trying to fetch entire chunk with pattern [%s]\n",pat_buff);
+	start_expire_timer(start,local_exec_threshold);
+
+	for(i = 0; i< col->size; i++) {
+		lock_get(&cache_htable[i].lock);
+		me1 = cache_htable[i].entries;
+
+		while(me1) {
+			if (me1->attr.len + 1 > key_buff_size) {
+				key_buff = pkg_realloc(key_buff,me1->attr.len+1);
+				if (key_buff == NULL) {
+					LM_ERR("No more pkg mem\n");
+					key_buff_size = 0;
+					goto err_release;
+				}
+				key_buff_size = me1->attr.len + 1;
+			}
+
+			memcpy(key_buff,me1->attr.s,me1->attr.len);
+			key_buff[me1->attr.len] = 0;
+
+			if(fnmatch(pat_buff,key_buff,0) == 0) {
+				LM_DBG("[%.*s] matches glob [%.*s] - returning %d\n",
+						me1->attr.len, me1->attr.s,pat_buff_size,pat_buff,i);
+				if ((key_obj = add_mi_object(keys_arr, MI_SSTR("key"))) < 0) {
+					LM_ERR("Failed to add object \n");
+					goto err_release;
+				}
+				if (add_mi_string(key_obj,MI_SSTR("name"),me1->attr.s,me1->attr.len) < 0) {
+					LM_ERR("Failed to add key name \n");
+					goto err_release;
+				}
+				if (add_mi_string(key_obj,MI_SSTR("value"),me1->value.s,me1->value.len) < 0) {
+					LM_ERR("Failed to add key value \n");
+					goto err_release;
+				}
+			}
+
+			me1 = me1->next;
+		}
+
+		lock_release(&cache_htable[i].lock);
+	}
+
+	_stop_expire_timer(start,local_exec_threshold,
+		"cachedb_local fetch_chunk",glob.s,glob.len,0,
+		cdb_slow_queries, cdb_total_queries);
+
+
+	return resp;
+err_release:
+	lock_release(&cache_htable[i].lock);
+	_stop_expire_timer(start,local_exec_threshold,
+		"cachedb_local fetch_chunk",glob.s,glob.len,0,
+		cdb_slow_queries, cdb_total_queries);
+	return init_mi_error( 400, MI_SSTR("Internal Error"));
+}
+
+mi_response_t *mi_cache_fetch_chunk_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_cache_fetch_chunk(params, NULL);
+}
+
+mi_response_t *mi_cache_fetch_chunk_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str col;
+
+	if (get_mi_string_param(params, "collection", &col.s, &col.len) < 0)
+		return init_mi_param_error();
+
+	return mi_cache_fetch_chunk(params, &col);
+}
+
 lcache_con* lcache_new_connection(struct cachedb_id* id)
 {
 	lcache_con *con;
@@ -301,7 +450,6 @@ lcache_con* lcache_new_connection(struct cachedb_id* id)
 	}
 
 	con->col = it;
-	it->is_used = 1;
 
 	return con;
 }
@@ -321,6 +469,94 @@ void lcache_destroy(cachedb_con *con)
 	cachedb_do_close(con,lcache_free_connection);
 }
 
+int lcache_is_replicated (cachedb_con *con)
+{
+	return ((lcache_con*)con->data)->col->replicated;
+}
+
+lcache_rpm_cache_t *get_rpm_cache(str *col_name)
+{
+	lcache_rpm_cache_t *cache;
+
+	for (cache = lcache_rpm_cache; cache; cache = cache->next)
+		if (cache->col_name.len == col_name->len &&
+				memcmp(cache->col_name.s, col_name->s, col_name->len) == 0)
+			return cache;
+	return NULL;
+}
+
+lcache_rpm_cache_t *add_head_rpm_cache(str *col_name)
+{
+	lcache_rpm_cache_t *c = rpm_malloc(sizeof(*c) + col_name->len);
+	if (!c) {
+		LM_ERR("cannot allocate persistent mem for cache head!\n");
+		return NULL;
+	}
+	c->col_name.s = (char *)(c + 1);
+	c->col_name.len = col_name->len;
+	memcpy(c->col_name.s, col_name->s, col_name->len);
+	c->col_htable = NULL;
+	c->next = lcache_rpm_cache;
+	lcache_rpm_cache = c;
+	rpm_key_set("cachedb_local", lcache_rpm_cache);
+
+	return c;
+}
+
+void fix_rpm_cache_entries(lcache_htable_t *col_htable)
+{
+	lcache_entry_t *me;
+	int i;
+
+	for(i = 0; i < col_htable->size; i++) {
+		me = col_htable->htable[i].entries;
+		while (me) {
+			if (me->expires > 0)
+				me->expires = get_ticks() + me->ttl;
+
+			me->synced = 0;
+
+			me = me->next;
+		}
+	}
+}
+
+void clean_rpm_cache_old(void)
+{
+	lcache_col_t *it = NULL;
+	lcache_rpm_cache_t *c, *prev_c = NULL, *free_c;
+
+	if (!lcache_rpm_cache)
+		return;
+
+	/* cleanup old collections */
+	c = lcache_rpm_cache;
+	while (c) {
+		for (it=lcache_collection; it; it=it->next) {
+			if (c->col_name.len == it->col_name.len &&
+				memcmp(c->col_name.s, it->col_name.s,
+						it->col_name.len) == 0)
+				break;
+		}
+		if (it != NULL) {
+			prev_c = c;
+			c = c->next;
+			continue;
+		}
+		LM_NOTICE("<%.*s> collection no longer used - cleaning old data!\n",
+			c->col_name.len, c->col_name.s);
+
+		if (!prev_c) {
+			lcache_rpm_cache = c->next;
+			rpm_key_set("cachedb_local", lcache_rpm_cache);
+		} else {
+			prev_c->next = c->next;
+		}
+		free_c = c;
+		c = c->next;
+		lcache_htable_destroy(free_c->col_htable, rpm_free_func);
+	}
+}
 
 /**
  * init module function
@@ -335,6 +571,8 @@ static int mod_init(void)
 	url_lst_t *it=url_list, *foo=NULL;
 	lcache_col_t *default_col, *col_it;
 
+	lcache_rpm_cache_t *rpm_cache;
+
 	memset(&cde, 0, sizeof cde);
 
 	/* register the cache system */
@@ -348,6 +586,7 @@ static int mod_init(void)
 	cde.cdb_func.remove = lcache_htable_remove;
 	cde.cdb_func.add = lcache_htable_add;
 	cde.cdb_func.sub = lcache_htable_sub;
+	cde.cdb_func.is_replicated = lcache_is_replicated;
 
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
 
@@ -361,6 +600,19 @@ static int mod_init(void)
 	{
 		LM_ERR("failed to register to core memory store interface\n");
 		return -1;
+	}
+
+	if (lcache_rpm_enable) {
+		if (rpm_init_mem() < 0) {
+			LM_ERR("could not initilize restart persistent memory!\n");
+			return -1;
+		}
+		lcache_rpm_cache = (lcache_rpm_cache_t *)rpm_key_get("cachedb_local");
+		if (!lcache_rpm_cache)
+			LM_INFO("starting cachedb_local with empty rpm cache\n");
+
+		LM_INFO("using %ld MB of restart-persistent memory, allocator: %s\n",
+		          rpm_mem_size/1024/1024, mm_str(mem_allocator_rpm));
 	}
 
 	for ( col_it=lcache_collection; col_it; col_it=col_it->next ) {
@@ -377,19 +629,11 @@ static int mod_init(void)
 			LM_ERR("no more shared memory!\n");
 			return -1;
 		}
+		memset(default_col, 0, sizeof(lcache_col_t));
 
 		default_col->col_name.s = DEFAULT_COLLECTION_NAME;
 		default_col->col_name.len = sizeof(DEFAULT_COLLECTION_NAME) - 1;
 		default_col->size = (1 << HASH_SIZE_DEFAULT);
-		if (lcache_htable_init(&default_col->col_htable, default_col->size) < 0) {
-			LM_ERR("failed to initialize for <%s> collection!\n",
-						DEFAULT_COLLECTION_NAME);
-			return -1;
-		}
-
-		/* the default collection is special; it's always there, it doesn't have
-		 * to be used in order to keep backwards compatibility */
-		default_col->is_used = 1;
 
 		/* link the default collection */
 		default_col->next = lcache_collection;
@@ -428,11 +672,73 @@ static int mod_init(void)
 		}
 	}
 
-	/* check to see if we've got unused collections */
+	clean_rpm_cache_old();
+
 	for ( col_it=lcache_collection; col_it; col_it=col_it->next ) {
-		if ( !col_it->is_used ) {
-			LM_WARN("collection <%.*s> is not assigned to any url!\n",
+		if (!cluster_id && col_it->replicated) {
+			LM_WARN("collection <%.*s> is replicated but no "
+				"'cluster_id' defined!\n",
 					col_it->col_name.len, col_it->col_name.s);
+		}
+
+		if (lcache_rpm_enable) {
+			rpm_cache = get_rpm_cache(&col_it->col_name);
+			if (!rpm_cache)
+				rpm_cache = add_head_rpm_cache(&col_it->col_name);
+			if (!rpm_cache) {
+				LM_ERR("could not create rpm cache head!\n");
+				continue;
+			} else {
+				col_it->malloc = rpm_malloc_func;
+				col_it->realloc = rpm_realloc_func;
+				col_it->free = rpm_free_func;
+				col_it->rpm_cache = rpm_cache;
+			}
+
+			if (rpm_cache->col_htable) {
+				LM_INFO("starting cachedb_local with cache data %p->%p!\n",
+					rpm_cache, rpm_cache->col_htable);
+
+				col_it->col_htable = rpm_cache->col_htable;
+
+				if (rpm_cache->col_htable->size != col_it->size) {
+					LM_WARN("Defined size [%d] for collection <%.*s> is different "
+						"than the old rpm cached size - cleaning old data\n",
+						col_it->size, col_it->col_name.len, col_it->col_name.s);
+
+					lcache_htable_destroy(col_it->col_htable, col_it->free);
+
+					if (lcache_htable_init(col_it) < 0) {
+						LM_ERR("failed to initialize htable for collection <%.*s>!\n",
+							col_it->col_name.len, col_it->col_name.s);
+						return -1;
+					}
+
+					rpm_cache->col_htable = col_it->col_htable;
+
+					continue;
+				}
+
+				fix_rpm_cache_entries(col_it->col_htable);
+			} else {
+				if (lcache_htable_init(col_it) < 0) {
+					LM_ERR("failed to initialize htable for collection <%.*s>!\n",
+						col_it->col_name.len, col_it->col_name.s);
+					return -1;
+				}
+
+				rpm_cache->col_htable = col_it->col_htable;
+			}
+		} else {
+			col_it->malloc = shm_malloc_func;
+			col_it->realloc = shm_realloc_func;
+			col_it->free = shm_free_func;
+
+			if (lcache_htable_init(col_it) < 0) {
+				LM_ERR("failed to initialize htable for collection <%.*s>!\n",
+					col_it->col_name.len, col_it->col_name.s);
+				return -1;
+			}
 		}
 	}
 
@@ -466,7 +772,7 @@ static int mod_init(void)
 		}
 
 		if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
-		    clusterer_api.request_sync(&cache_repl_cap, cluster_id) < 0)
+		    clusterer_api.request_sync(&cache_repl_cap, cluster_id, 0) < 0)
 			LM_ERR("cachedb sync request failed\n");
 
 	}
@@ -488,9 +794,23 @@ static int child_init(int rank)
 static void destroy(void)
 {
 	lcache_col_t* it;
+	lcache_entry_t *me;
+	int i;
 
 	for ( it=lcache_collection; it; it=it->next) {
-		lcache_htable_destroy(&it->col_htable, it->size);
+		if (!it->rpm_cache) {
+			lcache_htable_destroy(it->col_htable, it->free);
+		} else {
+			for(i = 0; i< it->col_htable->size; i++) {
+				me = it->col_htable->htable[i].entries;
+				while (me) {
+					if (me->expires > 0)
+						me->ttl = me->expires - get_ticks();
+
+					me = me->next;
+				}
+			}
+		}
 	}
 }
 
@@ -503,9 +823,9 @@ void localcache_clean(unsigned int ticks,void *param)
 
 	for ( it=lcache_collection; it; it=it->next ) {
 		LM_DBG("start\n");
-		cache_htable = it->col_htable;
+		cache_htable = it->col_htable->htable;
 
-		for(i = 0; i< it->size; i++)
+		for(i = 0; i< it->col_htable->size; i++)
 		{
 			lock_get(&cache_htable[i].lock);
 			me1 = cache_htable[i].entries;
@@ -521,18 +841,21 @@ void localcache_clean(unsigned int ticks,void *param)
 					if(me2)
 					{
 						me2->next = me1->next;
-						shm_free(me1);
+						func_free(it->free, me1);
 						me1 = me2->next;
 					}
 					else
 					{
 						cache_htable[i].entries = me1->next;
-						shm_free(me1);
+						func_free(it->free, me1);
 						me1 = cache_htable[i].entries;
 					}
 				}
 				else
 				{
+					if (me1->expires > 0 && it->rpm_cache)
+						me1->ttl = me1->expires - get_ticks();
+
 					me2 = me1;
 					me1 = me1->next;
 				}
@@ -549,6 +872,7 @@ static int parse_collections(unsigned int type, void* val)
 	str collection_list, coll;
 	lcache_col_t *new_col, *it;
 	csv_record *cols, *col, *kv;
+	int replicated;
 
 	if (!val) {
 		LM_ERR("null collection list!\n");
@@ -580,6 +904,13 @@ static int parse_collections(unsigned int type, void* val)
 			continue;
 		}
 
+		if (coll.s[coll.len-2] == '/' && coll.s[coll.len-1] == 'r') {
+			coll.len -= 2;
+			replicated = 1;
+		} else {
+			replicated = 0;
+		}
+
 		LM_DBG("creating collection '%.*s' with hash_size %d\n",
 		       coll.len, coll.s, coll_size);
 
@@ -606,11 +937,8 @@ static int parse_collections(unsigned int type, void* val)
 		}
 
 		new_col->size = (1 << coll_size);
-		if (lcache_htable_init(&new_col->col_htable, new_col->size) < 0) {
-			LM_ERR("failed to initialize htable for collection <%.*s>!\n",
-					coll.len, coll.s);
-			return -1;
-		}
+
+		new_col->replicated = replicated;
 
 		add_last(new_col, lcache_collection);
 		free_csv_record(kv);

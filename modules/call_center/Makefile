@@ -4,7 +4,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=call_center.so
-LIBS= 
 
 include ../../Makefile.modules
 

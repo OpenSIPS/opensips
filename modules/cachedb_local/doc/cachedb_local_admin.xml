@@ -46,6 +46,10 @@
 			module for details on how to do this and why is it needed.
 		</para>
 		<para>
+			<emphasis>Note:</emphasis> You have to explicitly specify which collections
+			you want to replicate when you set <xref linkend="param_cache_collections"/>.
+		</para>
+		<para>
 			<emphasis role='bold'>Limitations:</emphasis> The clustering operations are not atomic
 			and constistency over the cluster nodes is not guaranteed.
 		</para>
@@ -91,8 +95,11 @@
 		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
-			URL parameter used to define cachedb_local collections. One collection
-		can belong to multiple URLs, but one URL can have only one collection.
+		URLs of local cache groups to be used used for the script and MI cacheDB
+		operations. The parameter can be set multiple times.
+		</para>
+		<para>
+		One collection can belong to multiple URLs, but one URL can have only one collection.
 		Redefining an URL with the same schema and group name will result in overwriting
 		that URL. Each collection used in URL definition must be defined using
 		<emphasis>cachedb_collection</emphasis> parameter. The collection shall be defined
@@ -131,16 +138,18 @@ cache_store("local:group2", ...)
 		<section id="param_cache_collections" xreflabel="cache_collections">
 		<title><varname>cache_collections</varname> (string)</title>
 		<para>
-			Using this parameter collections(hash tables) and their sizes can be defined. Each
+			Using this parameter, collections(hash tables) and their sizes can be defined. Each
 			collection definition must be separated one from another using ';'. Default size
 			for a hash is 512. The size must be separated from the name of the collection using
-			'='. Every collection that is defined in this parameter <emphasis>SHOULD</emphasis> be
-			used in at least one URL, else you'll receive a WARNING.
+			'='.
 		</para>
 		<para>
-			<emphasis><quote>If no collection is defined, the collection with name "default" will be
-				created.</quote>.
-		</emphasis>
+			If clustering is enabled you have to specify which collections you want to replicate
+			with the <emphasis>/r</emphasis> suffix to the collection name.
+		</para>
+		<para>
+			The <emphasis>"default"</emphasis> collection always gets created, even when
+				not included in this list of collections.
 		</para>
 		<example>
 		<title>Set <varname>cache_collections</varname> parameter</title>
@@ -149,7 +158,9 @@ cache_store("local:group2", ...)
 ## creating collection1 with default size (512) and collection2 with custom size
 ## 2^5 (32); we also changed the size of the default collection, which would have been
 ## created anyway from 2^9 - 512 (default value) to 2^4 - 16
-modparam("cachedb_local", "cache_collections", "collection1; collection2 = 5; default = 4")
+## also, collection1 and collection2 will be replicated in the cluster, while the
+## default collection will be local to this node
+modparam("cachedb_local", "cache_collections", "collection1/r; collection2/r = 5; default = 4")
 ...
 	</programlisting>
 		</example>
@@ -233,6 +244,33 @@ modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
 		</programlisting>
 		</example>
 	</section>
+	<section id="param_enable_restart_persistency" xreflabel="enable_restart_persistency">
+		<title><varname>enable_restart_persistency</varname> (int)</title>
+		<para>
+			Enable restart persistency using the persistent memory mechanism. Data is
+			stored in a cache file that is mapped against OpenSIPS memory.
+		</para>
+		<para>
+			Note that you have to keep the same collection definitions from a previous
+			run in order to use the cached data for the respective collections.
+		</para>
+		<para>
+			If cluster persistency is enabled as well, keys loaded from the persistent
+			cache will be discarded if they are not received in the cluster sync data.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>enable_restart_persistency</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_local", "enable_restart_persistency", yes)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -299,6 +337,44 @@ modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
 		</para>
 		<programlisting  format="linespecific">
 opensips-cli -x mi cache_remove_chunk "keyprefix*" collection
+		</programlisting>
+		</section>
+
+		<section id="mi_cache_fetch_chunk" xreflabel="cache_fetch_chunk">
+		<title>
+			<function moreinfo="none">cache_fetch_chunk</function>
+		</title>
+		<para>
+		Fetches all local cache entries that match the provided glob param.
+		</para>
+
+		<para>Parameters :</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>glob</emphasis> - keys that match glob will be returned
+			</para></listitem>
+			<listitem><para>
+				<emphasis>collection(optional)</emphasis> - collection from which the keys shall
+					be retrieved; if no collection set, the default collection will be used;
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi cache_fetch_chunk "keyprefix*" collection
+{
+    "keys": [
+        {
+            "name": "keyprefix_1",
+            "value": "key 1 data here"
+        },
+        {
+            "name": "keyprefix_2",
+            "value": "key 2 data here"
+        }
+    ]
+}
 		</programlisting>
 		</section>
 	</section>

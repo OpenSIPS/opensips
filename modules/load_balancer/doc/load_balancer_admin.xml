@@ -19,7 +19,7 @@
 	</para>
 	<para>
 	Also the module has the capability to do failover (to try a new destination
-	if the selected one done not responde), to keep state of the destinations 
+	if the selected one does not respond), to keep state of the destinations 
 	(to remember the failed destination and avoid using them agai) and to 
 	check the health of the destination (by doing probing of the destination 
 	and auto re-enabling).

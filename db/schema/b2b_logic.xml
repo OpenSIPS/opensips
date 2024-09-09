@@ -9,7 +9,7 @@
 
 <table id="b2b_logic" xmlns:db="http://docbook.org/ns/docbook">
     <name>b2b_logic</name>
-    <version>4</version>
+    <version>5</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>Table for the b2b_logic module. More information can be found at: &OPENSIPS_MOD_DOC;b2b_logic.html
@@ -48,14 +48,6 @@
         <type>int</type>
         <size>2</size>
         <description>Scenario State</description>
-    </column>
-
-    <column>
-        <name>sdp</name>
-        <type>text</type>
-        <size>&user_len;</size>
-        <null/>
-        <description>Scenario id</description>
     </column>
 
     <column>
@@ -104,6 +96,13 @@
     </column>
 
     <column>
+        <name>e1_sdp</name>
+        <type>text</type>
+        <null/>
+        <description>E1 SDP</description>
+    </column>
+
+    <column>
         <name>e2_type</name>
         <type>int</type>
         <size>2</size>
@@ -137,6 +136,13 @@
         <type>string</type>
         <size>&user_len;</size>
         <description>E2 Key</description>
+    </column>
+
+    <column>
+        <name>e2_sdp</name>
+        <type>text</type>
+        <null/>
+        <description>E2 SDP</description>
     </column>
 
    <column>

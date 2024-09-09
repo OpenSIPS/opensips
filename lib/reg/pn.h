@@ -98,7 +98,7 @@ extern char *_pn_providers;
 
 
 /* module dependencies */
-struct module_dependency *pn_get_deps(param_export_t *param);
+struct module_dependency *pn_get_deps(const param_export_t *param);
 
 #define pn_modparam_deps \
 	{"pn_enable", pn_get_deps}

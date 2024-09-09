@@ -21,6 +21,7 @@
 #ifndef _NET_trans_trace_h
 #define _NET_trans_trace_h
 #include "../ut.h"
+#include "../route.h"
 #include "tcp_conn_defs.h"
 
 typedef enum _trans_trace_status { TRANS_TRACE_SUCCESS=0, TRANS_TRACE_FAILURE }
@@ -46,8 +47,9 @@ int trace_message_atonce( int proto, unsigned long long id, union sockaddr_union
 	trans_trace_event event, trans_trace_status status, str* data,
 	void* destination);
 int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
-		union sockaddr_union* dst_su);
-int check_trace_route( int route_id, struct tcp_connection* conn);
+	union sockaddr_union* dst_su);
+int check_trace_route(  struct script_route_ref* rt_ref,
+	struct tcp_connection* conn);
 
 
 /* forward declaration */

@@ -34,6 +34,7 @@
 #include "../../mem/rpm_mem.h"
 #include "../../time_rec.h"
 #include "../../socket_info.h"
+#include "../../status_report.h"
 
 #include "dr_load.h"
 #include "routing.h"
@@ -42,9 +43,20 @@
 #include "dr_db_def.h"
 
 
+extern void *dr_srg;
+
+enum dr_gw_socket_filter_mode {
+	DR_GW_SOCK_FILTER_MODE_NONE=0,
+	DR_GW_SOCK_FILTER_MODE_IGNORE,
+	DR_GW_SOCK_FILTER_MODE_MATCH
+};
+
+enum dr_gw_socket_filter_mode gw_sock_filter = DR_GW_SOCK_FILTER_MODE_NONE;
+
+
 #define check_val2( _col, _val, _type1, _type2, _not_null, _is_empty_str) \
 	do{\
-		if ((_val)->type!=_type1 && (_val)->type!=_type2) { \
+		if ((_val)->type!=(_type1) && (_val)->type!=(_type2)) { \
 			LM_ERR("column %.*s has a bad type [%d], accepting only [%d,%d]\n",\
 				_col.len, _col.s, (_val)->type, _type1, _type2); \
 			goto error;\
@@ -61,7 +73,7 @@
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
 	do{\
-		if ((_val)->type!=_type) { \
+		if ((_val)->type!=(_type)) { \
 			LM_ERR("column %.*s has a bad type [%d], accepting only [%d]\n",\
 				_col.len, _col.s, (_val)->type, _type); \
 			goto error;\
@@ -77,8 +89,49 @@
 	}while(0)
 
 
+int dr_set_gw_sock_filter_mode(char *mode)
+{
+	if ( strcasecmp( mode, "none")==0 ) {
+		gw_sock_filter = DR_GW_SOCK_FILTER_MODE_NONE;
+		return 0;
+	}
+	if ( strcasecmp( mode, "ignore")==0 ) {
+		gw_sock_filter = DR_GW_SOCK_FILTER_MODE_IGNORE;
+		return 0;
+	}
+	if ( strcasecmp( mode, "matched-only")==0 ) {
+		gw_sock_filter = DR_GW_SOCK_FILTER_MODE_MATCH;
+		return 0;
+	}
+	return -1;
+}
+
+void hash_rule(char* grplst, str* prefix, rt_info_t* rule, MD5_CTX* hash_ctx)
+{
+	int i;
+
+	if (hash_ctx == NULL)
+		return;
+
+	MD5Update(hash_ctx, grplst, strlen(grplst));
+	if (prefix->s && prefix->len)
+		MD5Update(hash_ctx, prefix->s, prefix->len);
+
+	MD5Update(hash_ctx, (char *)&rule->priority, sizeof(rule->priority));
+	if (rule->attrs.s && rule->attrs.len)
+		MD5Update(hash_ctx, rule->attrs.s, rule->attrs.len);
+	MD5Update(hash_ctx, (char *)rule->sort_alg, sizeof(rule->sort_alg));
+
+	for (i=0;i<rule->pgwa_len;i++) {
+		if (rule->pgwl[i].is_carrier == 1)
+			hash_carrier(rule->pgwl[i].dst.carrier,hash_ctx);
+		else
+			hash_dst(rule->pgwl[i].dst.gw,hash_ctx);
+	}
+}
+
 static int add_rule(rt_data_t *rdata, char *grplst, str *prefix,
-		rt_info_t *rule, osips_malloc_f malloc_f, osips_free_f free_f)
+		rt_info_t *rule, osips_malloc_f malloc_f, osips_free_f free_f,MD5_CTX* hash_ctx)
 {
 	long int t;
 	char *tmp;
@@ -135,13 +188,15 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix,
 		goto error;
 	}
 
+	hash_rule(grplst,prefix,rule,hash_ctx);
+
 	return 0;
 error:
 	return -1;
 }
 
 static struct head_cache_socket *get_cache_sock_info(struct head_cache *cache,
-		struct socket_info *old_sock)
+		const struct socket_info *old_sock)
 {
 	struct head_cache_socket *hsock;
 	for (hsock = cache->sockets; hsock; hsock = hsock->next)
@@ -151,7 +206,7 @@ static struct head_cache_socket *get_cache_sock_info(struct head_cache *cache,
 }
 
 
-static int add_cache_sock_info(struct head_cache *cache, struct socket_info *sock,
+static int add_cache_sock_info(struct head_cache *cache, const struct socket_info *sock,
 		str *host, int port, int proto)
 {
 	struct head_cache_socket *hsock;
@@ -251,27 +306,30 @@ void dr_update_head_cache(struct head_db *head)
  * loads all partitions
  */
 
-rt_data_t* dr_load_routing_info(struct head_db *current_partition,
-                                int persistent_state)
+extern struct custom_rule_table *custom_rule_tables;
+
+rt_data_t* dr_load_routing_info(struct head_db *part,
+                  int persistent_state, str *rules_tables, int rules_tables_no,MD5_CTX* hash_ctx)
 {
 	int    int_vals[5];
 	char * str_vals[7];
 	str tmp;
-	db_func_t *dr_dbf = &current_partition->db_funcs;
-	db_con_t* db_hdl = *current_partition->db_con;
-	str *drd_table = &current_partition->drd_table;
-	str *drc_table = &current_partition->drc_table;
-	str *drr_table = &current_partition->drr_table;
+	db_func_t *dr_dbf = &part->db_funcs;
+	db_con_t* db_hdl = *part->db_con;
+	str *drd_table = &part->drd_table;
+	str *drc_table = &part->drc_table;
 	db_key_t columns[10];
 	db_res_t* res;
 	db_row_t* row;
 	rt_info_t *ri;
 	rt_data_t *rdata;
 	tmrec_expr *time_rec;
-	int i,n;
+	int i, j, n;
+	int loaded_gw = 0, loaded_cr = 0, loaded_rl = 0;
+	int discarded_gw = 0, discarded_cr = 0, discarded_rl = 0;
 	int no_rows = 10;
 	int db_cols;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	str s_sock, host;
 	int proto, port;
 	char id_buf[INT2STR_MAX_LEN];
@@ -280,8 +338,11 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 	ri = 0;
 	rdata = 0;
 
+	sr_add_report( dr_srg, STR2CI(part->partition),
+		CHAR_INT("starting DB data loading"), 0 /*is_public*/);
+
 	/* init new data structure */
-	if ( (rdata=build_rt_data(current_partition))==0 ) {
+	if ( (rdata=build_rt_data(part))==0 ) {
 		LM_ERR("failed to build rdata\n");
 		goto error;
 	}
@@ -329,7 +390,6 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 	LM_DBG("%d records found in %.*s\n",
 			RES_ROW_N(res), drd_table->len,drd_table->s);
 
-	n = 0;
 	do {
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
@@ -369,7 +429,8 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 			int_vals[INT_VALS_PROBE_DRD_COL] = VAL_INT(ROW_VALUES(row)+7);
 			/* SOCKET column */
 			check_val( sock_drd_col, ROW_VALUES(row)+8, DB_STRING, 0, 0);
-			if ( !VAL_NULL(ROW_VALUES(row)+8) &&
+			if ( gw_sock_filter!=DR_GW_SOCK_FILTER_MODE_IGNORE &&
+					!VAL_NULL(ROW_VALUES(row)+8) &&
 					(s_sock.s=(char*)VAL_STRING(ROW_VALUES(row)+8))[0]!=0 ) {
 				s_sock.len = strlen(s_sock.s);
 				if (parse_phostport( s_sock.s, s_sock.len, &host.s, &host.len,
@@ -382,14 +443,16 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 				} else {
 					sock = grep_internal_sock_info( &host, port, proto);
 					if (sock == NULL) {
+						if (gw_sock_filter==DR_GW_SOCK_FILTER_MODE_MATCH)
+							continue;
 						LM_ERR("GW <%s>(%s): socket <%.*s> is not local to "
 								"OpenSIPS (we must listen on it) -> ignoring socket\n",
 								str_vals[STR_VALS_GWID_DRD_COL],
 								str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
-					} else if (current_partition->cache) {
+					} else if (part->cache) {
 						/* if we have cache, we need to cache the socket
 						 * information */
-						add_cache_sock_info(current_partition->cache,
+						add_cache_sock_info(part->cache,
 								sock, &host, port, proto);
 					}
 				}
@@ -415,18 +478,20 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 						int_vals[INT_VALS_PROBE_DRD_COL],
 						sock,
 						int_vals[INT_VALS_STATE_DRD_COL],
-						current_partition->malloc,
-						current_partition->free )<0 ) {
+						part->malloc,
+						part->free,
+				   		hash_ctx )<0 ) {
 				LM_ERR("failed to add destination <%s>(%s) -> skipping\n",
 						str_vals[STR_VALS_GWID_DRD_COL],
 						str_vals[STR_VALS_ID_DRD_COL]);
+				discarded_gw++;
 				continue;
 			}
-			n++;
+			loaded_gw++;
 		}
 		if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
 			if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
-				LM_ERR( "fetching rows (1)\n");
+				LM_ERR("fetching rows\n");
 				goto error;
 			}
 		} else {
@@ -465,7 +530,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 		no_rows = estimate_available_rows( 4+4+32+64+64+1, db_cols);
 		if (no_rows==0) no_rows = 10;
 		if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
-			LM_ERR("Error fetching rows\n");
+			LM_ERR("Error fetching rows (1)\n");
 			goto error;
 		}
 	} else {
@@ -513,10 +578,12 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 							ROW_VALUES(row)+3);
 				}
 				/* GWLIST column */
-				check_val( gwlist_drc_col, ROW_VALUES(row)+4, DB_STRING, 1, 1);
+				check_val( gwlist_drc_col, ROW_VALUES(row)+4,
+					ROW_VALUES(row)[4].type == DB_BLOB ? DB_BLOB : DB_STRING, 1, 1);
 				str_vals[STR_VALS_GWLIST_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
 				/* ATTRS column */
-				check_val( attrs_drc_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
+				check_val( attrs_drc_col, ROW_VALUES(row)+5,
+					ROW_VALUES(row)[5].type == DB_BLOB ? DB_BLOB : DB_STRING, 0, 0);
 				str_vals[STR_VALS_ATTRS_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+5);
 				/* STATE column */
 				if (persistent_state) {
@@ -534,16 +601,19 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 							str_vals[STR_VALS_GWLIST_DRC_COL],
 							str_vals[STR_VALS_ATTRS_DRC_COL],
 							int_vals[INT_VALS_STATE_DRC_COL], rdata,
-							current_partition->malloc,
-							current_partition->free) != 0 ) {
+							part->malloc,
+							part->free,
+							hash_ctx) != 0 ) {
 					LM_ERR("failed to add carrier db_id <%s> -> skipping\n",
 							str_vals[STR_VALS_ID_DRC_COL]);
+					discarded_cr++;
 					continue;
 				}
+				loaded_cr++;
 			}
 			if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
 				if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
-					LM_ERR( "fetching rows (1)\n");
+					LM_ERR("fetching rows (1)\n");
 					goto error;
 				}
 			} else {
@@ -554,167 +624,202 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 	dr_dbf->free_result(db_hdl, res);
 	res = 0;
 
-
-	/* read the routing rules */
-	if (dr_dbf->use_table( db_hdl, drr_table) < 0) {
-		LM_ERR("cannot select table \"%.*s\"\n", drr_table->len, drr_table->s);
-		goto error;
-	}
-
-	columns[0] = &rule_id_drr_col;
-	columns[1] = &group_drr_col;
-	columns[2] = &prefix_drr_col;
-	columns[3] = &time_drr_col;
-	columns[4] = &priority_drr_col;
-	columns[5] = &routeid_drr_col;
-	columns[6] = &dstlist_drr_col;
-	columns[7] = &sort_alg_drr_col;
-	columns[8] = &sort_profile_drr_col;
-	columns[9] = &attrs_drr_col;
-
-	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 10, 0, 0) < 0) {
-			LM_ERR("DB query failed\n");
+	for (j = 0; j < rules_tables_no; j++) {
+		/* read the routing rules */
+		if (dr_dbf->use_table(db_hdl, rules_tables + j) < 0) {
+			LM_ERR("cannot select table \"%.*s\"\n",
+			       rules_tables[j].len, rules_tables[j].s);
 			goto error;
 		}
-		no_rows = estimate_available_rows( 4+32+32+128+32+64+128+4+1, 10/*cols*/);
-		if (no_rows==0) no_rows = 10;
-		if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
-			LM_ERR("Error fetching rows\n");
-			goto error;
-		}
-	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 10, 0, &res) < 0) {
-			LM_ERR("DB query failed\n");
-			goto error;
-		}
-	}
 
-	if (RES_ROW_N(res) == 0) {
-		LM_WARN("table \"%.*s\" is empty\n", drr_table->len, drr_table->s);
-	}
+		columns[0] = &rule_id_drr_col;
+		columns[1] = &group_drr_col;
+		columns[2] = &prefix_drr_col;
+		columns[3] = &time_drr_col;
+		columns[4] = &priority_drr_col;
+		columns[5] = &routeid_drr_col;
+		columns[6] = &dstlist_drr_col;
+		columns[7] = &sort_alg_drr_col;
+		columns[8] = &sort_profile_drr_col;
+		columns[9] = &attrs_drr_col;
 
-	LM_DBG("initial %d records found in %.*s\n", RES_ROW_N(res),
-			drr_table->len, drr_table->s);
-
-	n = 0;
-	do {
-		for(i=0; i < RES_ROW_N(res); i++) {
-			row = RES_ROWS(res) + i;
-			/* RULE_ID column */
-			check_val( rule_id_drr_col, ROW_VALUES(row), DB_INT, 1, 0);
-			int_vals[INT_VALS_RULE_ID_DRR_COL] = VAL_INT (ROW_VALUES(row));
-			/* GROUP column */
-			check_val( group_drr_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
-			str_vals[STR_VALS_GROUP_DRR_COL] =
-				(char*)VAL_STRING(ROW_VALUES(row)+1);
-			/* PREFIX column - it may be null or empty */
-			check_val( prefix_drr_col, ROW_VALUES(row)+2, DB_STRING, 0, 0);
-			if ((ROW_VALUES(row)+2)->nul || VAL_STRING(ROW_VALUES(row)+2)==0){
-				tmp.s = NULL;
-				tmp.len = 0;
-			} else {
-				str_vals[STR_VALS_PREFIX_DRR_COL] =
-					(char*)VAL_STRING(ROW_VALUES(row)+2);
-				tmp.s = str_vals[STR_VALS_PREFIX_DRR_COL];
-				tmp.len = strlen(str_vals[STR_VALS_PREFIX_DRR_COL]);
-			}
-			/* TIME column */
-			check_val( time_drr_col, ROW_VALUES(row)+3, DB_STRING, 0, 0);
-			/* PRIORITY column */
-			check_val2( priority_drr_col, ROW_VALUES(row)+4, DB_INT, DB_BIGINT, 1, 0);
-			int_vals[INT_VALS_PRIORITY_DRR_COL] = VAL_INT(ROW_VALUES(row)+4);
-			/* ROUTE_ID column */
-			check_val( routeid_drr_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
-			/* DSTLIST column */
-			check_val( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, 1, 1);
-			str_vals[STR_VALS_DSTLIST_DRR_COL] =
-				(char*)VAL_STRING(ROW_VALUES(row)+6);
-			/* SORT_ALG column */
-			if( VAL_TYPE(ROW_VALUES(row)+7) == DB_INT ) {
-				check_val(sort_alg_drr_col, ROW_VALUES(row)+7, DB_INT, 1, 0);
-				str_vals[STR_VALS_SORT_ALG_DRR_COL] = int2bstr((unsigned long)
-						VAL_INT(ROW_VALUES(row)+7), id_buf, &int_vals[0]);
-			} else {
-				check_val(sort_alg_drr_col, ROW_VALUES(row)+7, DB_STRING, 1, 0);
-				str_vals[STR_VALS_SORT_ALG_DRR_COL] = (char*)VAL_STRING(
-						ROW_VALUES(row)+7);
-			}
-			/* SORT_PROFILE column */
-			check_val(sort_profile_drr_col, ROW_VALUES(row)+8, DB_INT, 0, 0);
-			int_vals[INT_VALS_QR_PROFILE_DRR_COL] = VAL_INT(ROW_VALUES(row)+8);
-			/* ATTRS column */
-			check_val( attrs_drr_col, ROW_VALUES(row)+9, DB_STRING, 0, 0);
-			str_vals[STR_VALS_ATTRS_DRR_COL] =
-				(char*)VAL_STRING(ROW_VALUES(row)+9);
-			/* parse the time definition */
-			if ( VAL_NULL(ROW_VALUES(row)+3) ||
-			((str_vals[STR_VALS_TIME_DRR_COL]=
-				(char*)VAL_STRING(ROW_VALUES(row)+3))==NULL ) ||
-			*(str_vals[STR_VALS_TIME_DRR_COL]) == 0)
-				time_rec = NULL;
-			else if ((time_rec = tmrec_expr_parse(
-			              str_vals[STR_VALS_TIME_DRR_COL], SHM_ALLOC))==0) {
-				LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
-					str_vals[STR_VALS_TIME_DRR_COL],
-					int_vals[INT_VALS_RULE_ID_DRR_COL]);
-				continue;
-			}
-			/* set the script route ID */
-			if ( VAL_NULL(ROW_VALUES(row)+5) ||
-			((str_vals[STR_VALS_ROUTEID_DRR_COL]=
-				(char*)VAL_STRING(ROW_VALUES(row)+5))==NULL ) ||
-			str_vals[STR_VALS_ROUTEID_DRR_COL][0]==0 ) {
-				str_vals[STR_VALS_ROUTEID_DRR_COL] = NULL;
-			}
-			/* build the routing rule */
-			if ((ri = build_rt_info( int_vals[INT_VALS_RULE_ID_DRR_COL],
-							int_vals[INT_VALS_PRIORITY_DRR_COL], time_rec,
-							str_vals[STR_VALS_ROUTEID_DRR_COL],
-							str_vals[STR_VALS_DSTLIST_DRR_COL],
-							str_vals[STR_VALS_SORT_ALG_DRR_COL],
-							int_vals[INT_VALS_QR_PROFILE_DRR_COL],
-							str_vals[STR_VALS_ATTRS_DRR_COL], rdata,
-							current_partition->malloc,
-							current_partition->free))== 0 ) {
-				LM_ERR("failed to add routing info for rule id %d -> "
-						"skipping\n", int_vals[INT_VALS_RULE_ID_DRR_COL]);
-				tmrec_expr_free( time_rec );
-				continue;
-			}
-			/* add the rule */
-			if (add_rule(rdata, str_vals[STR_VALS_GROUP_DRR_COL], &tmp, ri,
-					current_partition->malloc, current_partition->free)!=0) {
-				LM_ERR("failed to add rule id %d -> skipping\n",
-						int_vals[INT_VALS_RULE_ID_DRR_COL]);
-				free_rt_info(ri, current_partition->free);
-				continue;
-			}
-			n++;
-		}
 		if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-			if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
-				LM_ERR( "fetching rows (1)\n");
+			if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 10, 0, 0) < 0) {
+				LM_ERR("DB query failed\n");
 				goto error;
 			}
-			LM_DBG("additional %d records found in %.*s\n", RES_ROW_N(res),
-					drr_table->len, drr_table->s);
+			no_rows = estimate_available_rows( 4+32+32+128+32+64+128+4+1, 10/*cols*/);
+			if (no_rows==0) no_rows = 10;
+			if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
+				LM_ERR("Error fetching rows (2)\n");
+				goto error;
+			}
 		} else {
-			break;
+			if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 10, 0, &res) < 0) {
+				LM_ERR("DB query failed\n");
+				goto error;
+			}
 		}
-	} while(RES_ROW_N(res)>0);
 
-	dr_dbf->free_result(db_hdl, res);
-	res = 0;
+		LM_DBG("initial %d records found in %.*s\n", RES_ROW_N(res),
+		       rules_tables[j].len, rules_tables[j].s);
 
-	LM_DBG("%d total records loaded from table %.*s\n", n,
-			drr_table->len, drr_table->s);
+		n = 0;
+		do {
+			for(i=0; i < RES_ROW_N(res); i++) {
+				row = RES_ROWS(res) + i;
+				/* RULE_ID column */
+				check_val( rule_id_drr_col, ROW_VALUES(row), DB_INT, 1, 0);
+				int_vals[INT_VALS_RULE_ID_DRR_COL] = VAL_INT (ROW_VALUES(row));
+				/* GROUP column */
+				check_val( group_drr_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
+				str_vals[STR_VALS_GROUP_DRR_COL] =
+					(char*)VAL_STRING(ROW_VALUES(row)+1);
+				/* PREFIX column - it may be null or empty */
+				check_val( prefix_drr_col, ROW_VALUES(row)+2, DB_STRING, 0, 0);
+				if ((ROW_VALUES(row)+2)->nul || VAL_STRING(ROW_VALUES(row)+2)==0){
+					tmp.s = NULL;
+					tmp.len = 0;
+				} else {
+					str_vals[STR_VALS_PREFIX_DRR_COL] =
+						(char*)VAL_STRING(ROW_VALUES(row)+2);
+					tmp.s = str_vals[STR_VALS_PREFIX_DRR_COL];
+					tmp.len = strlen(str_vals[STR_VALS_PREFIX_DRR_COL]);
+				}
+				/* TIME column */
+				check_val( time_drr_col, ROW_VALUES(row)+3,
+					ROW_VALUES(row)[3].type == DB_BLOB ? DB_BLOB : DB_STRING, 0, 0);
+				/* PRIORITY column */
+				check_val2( priority_drr_col, ROW_VALUES(row)+4, DB_INT, DB_BIGINT, 1, 0);
+				int_vals[INT_VALS_PRIORITY_DRR_COL] = VAL_INT(ROW_VALUES(row)+4);
+				/* ROUTE_ID column */
+				check_val( routeid_drr_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
+				/* DSTLIST column */
+				check_val2( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, DB_BLOB, 0, 1);
+				str_vals[STR_VALS_DSTLIST_DRR_COL] = ROW_VALUES(row)[6].type == DB_STRING ?
+					(char*)VAL_STRING(ROW_VALUES(row)+6) : VAL_BLOB(ROW_VALUES(row)+6).s;
+				/* SORT_ALG column */
+				if( VAL_TYPE(ROW_VALUES(row)+7) == DB_INT ) {
+					check_val(sort_alg_drr_col, ROW_VALUES(row)+7, DB_INT, 1, 0);
+					str_vals[STR_VALS_SORT_ALG_DRR_COL] = int2bstr((unsigned long)
+							VAL_INT(ROW_VALUES(row)+7), id_buf, &int_vals[0]);
+				} else {
+					check_val(sort_alg_drr_col, ROW_VALUES(row)+7, DB_STRING, 1, 0);
+					str_vals[STR_VALS_SORT_ALG_DRR_COL] = (char*)VAL_STRING(
+							ROW_VALUES(row)+7);
+				}
+				/* SORT_PROFILE column */
+				check_val2(sort_profile_drr_col, ROW_VALUES(row)+8, DB_INT, DB_BIGINT, 0, 0);
+				int_vals[INT_VALS_QR_PROFILE_DRR_COL] = VAL_INT(ROW_VALUES(row)+8);
+				/* ATTRS column */
+				check_val2( attrs_drr_col, ROW_VALUES(row)+9, DB_STRING, DB_BLOB, 0, 0);
+				str_vals[STR_VALS_ATTRS_DRR_COL] = ROW_VALUES(row)[9].type == DB_STRING ?
+					(char*)VAL_STRING(ROW_VALUES(row)+9) : VAL_BLOB(ROW_VALUES(row)+9).s;
+				/* parse the time definition */
+				if ( VAL_NULL(ROW_VALUES(row)+3) ||
+				((str_vals[STR_VALS_TIME_DRR_COL]=
+					(char*)VAL_STRING(ROW_VALUES(row)+3))==NULL ) ||
+				*(str_vals[STR_VALS_TIME_DRR_COL]) == 0)
+					time_rec = NULL;
+				else if ((time_rec = tmrec_expr_parse(
+				              str_vals[STR_VALS_TIME_DRR_COL], SHM_ALLOC))==0) {
+					LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
+						str_vals[STR_VALS_TIME_DRR_COL],
+						int_vals[INT_VALS_RULE_ID_DRR_COL]);
+					continue;
+				}
+				/* set the script route name */
+				if ( VAL_NULL(ROW_VALUES(row)+5) ||
+				((str_vals[STR_VALS_ROUTEID_DRR_COL]=
+					(char*)VAL_STRING(ROW_VALUES(row)+5))==NULL ) ||
+				str_vals[STR_VALS_ROUTEID_DRR_COL][0]==0 ) {
+					str_vals[STR_VALS_ROUTEID_DRR_COL] = NULL;
+				}
+				/* build the routing rule */
+				if ((ri = build_rt_info( int_vals[INT_VALS_RULE_ID_DRR_COL],
+								int_vals[INT_VALS_PRIORITY_DRR_COL], time_rec,
+								str_vals[STR_VALS_ROUTEID_DRR_COL],
+								str_vals[STR_VALS_DSTLIST_DRR_COL],
+								str_vals[STR_VALS_SORT_ALG_DRR_COL],
+								int_vals[INT_VALS_QR_PROFILE_DRR_COL],
+								str_vals[STR_VALS_ATTRS_DRR_COL], rdata,
+								part->malloc,
+								part->free))== 0 ) {
+					LM_ERR("failed to add routing info for rule id %d -> "
+							"skipping\n", int_vals[INT_VALS_RULE_ID_DRR_COL]);
+					tmrec_expr_free( time_rec );
+					continue;
+				}
+				/* add the rule */
+				if (add_rule(rdata, str_vals[STR_VALS_GROUP_DRR_COL], &tmp, ri,
+						part->malloc, part->free,hash_ctx)!=0) {
+					LM_ERR("failed to add rule id %d -> skipping\n",
+							int_vals[INT_VALS_RULE_ID_DRR_COL]);
+					free_rt_info(ri, part->free);
+					discarded_rl++;
+					continue;
+				}
+				n++;
+			}
+
+			if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
+				if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
+					LM_ERR("fetching rows (2)\n");
+					goto error;
+				}
+				LM_DBG("additional %d records found in %.*s\n", RES_ROW_N(res),
+				       rules_tables[j].len, rules_tables[j].s);
+			} else {
+				break;
+			}
+		} while(RES_ROW_N(res)>0);
+
+		dr_dbf->free_result(db_hdl, res);
+		res = NULL;
+
+		if (custom_rule_tables)
+			LM_NOTICE("loaded %d rules from table '%.*s'\n", n,
+			          rules_tables[j].len, rules_tables[j].s);
+		loaded_rl += n;
+	}
+
+	LM_INFO("loaded %d (discarded %d) gateways in partition '%.*s'\n",
+		loaded_gw, discarded_gw,
+		part->partition.len, part->partition.s);
+
+	LM_INFO("loaded %d (discarded %d) carriers in partition '%.*s'\n",
+		loaded_cr, discarded_cr,
+		part->partition.len, part->partition.s);
+
+	if (custom_rule_tables)
+		LM_INFO("loaded %d (discarded %d) rules from %d table%s in "
+			"partition '%.*s'\n", loaded_rl, discarded_rl, rules_tables_no,
+			rules_tables_no != 1 ? "s":"",
+			part->partition.len, part->partition.s);
+	else
+		LM_NOTICE("loaded %d (discarded %d) rules in partition '%.*s'\n",
+			loaded_rl, discarded_rl,
+			 part->partition.len, part->partition.s);
+
+	/* do the reporting */
+	sr_add_report( dr_srg, STR2CI(part->partition),
+		CHAR_INT("DB data loading successfully completed"), 0 /*is_public*/);
+	sr_add_report_fmt( dr_srg, STR2CI(part->partition), 0 /*is_public*/,
+			"%d gateways loaded (%d discarded), "
+			"%d carriers loaded (%d discarded), "
+			"%d rules loaded (%d discarded)",
+		loaded_gw, discarded_gw,
+		loaded_cr, discarded_cr,
+		loaded_rl, discarded_rl);
+
 	return rdata;
 error:
+	sr_add_report( dr_srg, STR2CI(part->partition),
+		CHAR_INT("DB data loading failed, discarding"), 0 /*is_public*/);
 	if (res)
 		dr_dbf->free_result(db_hdl, res);
 	if (rdata)
-		free_rt_data(rdata, current_partition->free);
+		free_rt_data(rdata, part->free);
 	rdata = NULL;
 	return 0;
 }

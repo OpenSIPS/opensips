@@ -48,6 +48,7 @@ typedef unsigned int flag_t;
 enum flag_type {
 	FLAG_TYPE_MSG=0,
 	FLAG_TYPE_BRANCH,
+	FLAG_TYPE_DIALOG,
 	FLAG_LIST_COUNT,
 };
 
@@ -77,12 +78,13 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask);
 /**
  * parses a list of named flags and returns the corresponding bitmask
  *
- * Note: flags which are not used at script level and are not instantiated with
- * get_flag_id_by_name will be ignored
+ * Note: if @init_new_flags is 0, flags which are not used at script level and
+ * are not instantiated beforehand with get_flag_id_by_name will be ignored.
  */
-int flag_list_to_bitmask(str *flags, enum flag_type type, char delim);
+int flag_list_to_bitmask(const str_const *flags, enum flag_type type, char delim,
+	int init_new_flags);
 
-unsigned int fixup_flag(int flag_type, str *flag_name);
+unsigned int fixup_flag(int flag_type, const str *flag_name);
 int get_flag_id_by_name(int flag_type, char *flag_name, int flag_name_len);
 
 #endif

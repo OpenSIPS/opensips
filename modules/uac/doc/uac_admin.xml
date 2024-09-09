@@ -16,22 +16,6 @@
 		If the dialog module is loaded and a dialog can be created, 
 		then the auto mode can be done more efficiently.
 		</para>
-		<para>
-		Known limitations in this version:
-		</para>
-		<itemizedlist>
-			<listitem>
-			<para>
-				authentication does not support qop auth-int, just qop auth;
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-				CSeq not increased during authentication - the response 
-				may be rejected.
-			</para>
-			</listitem>
-		</itemizedlist>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
@@ -290,7 +274,7 @@ uac_restore_from();
 			</example>
 		</section>
 
-		<section id="func_uac_auth" xreflabel="uac_auth()">
+		<section id="func_uac_auth" xreflabel="uac_auth([algs])">
 			<title>
 				<function moreinfo="none">uac_auth()</function>
 			</title>
@@ -303,13 +287,78 @@ uac_restore_from();
 			or via AVPs).
 			</para>
 			<para>
+			As optional parameter, the function may receive a list of auth
+			algorithms to be considered / supported during authentication:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>MD5, MD5-sess</para>
+			</listitem>
+			<listitem>
+				<para>SHA-256, SHA-256-sess (may be missing, depends on lib support)</para>
+			</listitem>
+			<listitem>
+				<para>SHA-512-256, SHA-512-256-sess (may be missing, depends on lib support)</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			Note that the CSeq is automatically increased during authentication.
+			</para>
+			<para>
 			This function can be used from FAILURE_ROUTE.
+			</para>
+			<para>
+				<emphasis>NOTE: </emphasis> when used without dialog support, the
+				<emphasis>uac_auth()</emphasis> function cannot be used for authenticating
+				in-dialog requests, as there is no mechanism to store the CSeq changes that
+				are required for ensuring the correctness of the dialog. The only exception are
+				<emphasis>BYE</emphasis> messages, which are the last messages within a call,
+				hence no further adjustments are needed. The function can still be used for
+				authenticating the initial INVITE though.
 			</para>
 			<example>
 				<title><function>uac_auth</function> usage</title>
 				<programlisting format="linespecific">
 ...
 uac_auth();
+...
+failure_route[check_auth] {
+    ...
+    if ($T_reply_code==407) {
+        if (uac_auth("MD5,MD5-sess")) {
+            # auth is succesful, just relay
+            t_relay();
+            exit;
+        }
+        # auth failed (no credentials maybe)
+        # so continue handling the 407 reply
+    }
+    ...
+}
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="func_uac_inc_cseq" xreflabel="uac_inc_cseq(cseq)">
+			<title>
+				<function moreinfo="none">uac_inc_cseq()</function>
+			</title>
+			<para>
+			This function can be called to increase the CSeq of an ongoing request.
+			</para>
+			<para>
+			It receives as the <emphasis>cseq</emphasis> parameter the value that
+			the CSeq should be incremented with.
+			</para>
+			<para>
+			This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and  FAILURE_ROUTE.
+			</para>
+			<example>
+				<title><function>uac_inc_cseq</function> usage</title>
+				<programlisting format="linespecific">
+...
+uac_inc_cseq(1);
 ...
 				</programlisting>
 			</example>

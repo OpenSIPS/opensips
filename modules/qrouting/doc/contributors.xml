@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">141</entry>
-		<entry align="center">57</entry>
-		<entry align="center">4775</entry>
-		<entry align="center">2714</entry>
+		<entry align="center">150</entry>
+		<entry align="center">64</entry>
+		<entry align="center">4815</entry>
+		<entry align="center">2743</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
+		<entry align="center">6</entry>
+		<entry align="center">4</entry>
+		<entry align="center">6</entry>
+		<entry align="center">7</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -69,7 +69,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -97,12 +97,12 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jan 2020 - Jan 2021</entry>
+		<entry align="center">Jan 2020 - May 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Oct 2020 - Oct 2020</entry>
+		<entry align="center">Oct 2020 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -127,7 +127,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

@@ -317,7 +317,9 @@ inline static void tcp_parse_headers(struct tcp_req *r,
 
 			default:
 				LM_CRIT("unexpected state %d\n", r->state);
+#ifdef USE_ABORT
 				abort();
+#endif
 		}
 	}
 	if (r->state == H_SKIP_EMPTY_CRLF_FOUND && _crlf_drop) {
@@ -333,13 +335,14 @@ skip:
 
 
 static inline int tcp_handle_req(struct tcp_req *req,
-							struct tcp_connection *con, int _max_msg_chunks)
+		struct tcp_connection *con, int _max_msg_chunks,
+		int _parallel_handling)
 {
 	struct receive_info local_rcv;
 	char *msg_buf;
 	int msg_len;
 	long size;
-	char c;
+	char c, *msg_buf_cpy = NULL;
 
 	if (req->complete){
 #ifdef EXTRA_DEBUG
@@ -360,7 +363,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		}
 
 		/* update the timeout - we successfully read the request */
-		tcp_conn_set_lifetime( con, tcp_con_lifetime);
+		tcp_conn_reset_lifetime(con);
 		con->timeout=con->lifetime;
 
 		/* if we are here everything is nice and ok*/
@@ -379,6 +382,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 
 		/* prepare for next request */
 		size=req->pos-req->parsed;
+		con->msg_attempts = 0;
 
 		if (req->state==H_PING_CRLFCRLF) {
 			/* we send the reply */
@@ -400,9 +404,19 @@ static inline int tcp_handle_req(struct tcp_req *req,
 					 *	detach it , release the conn and free it afterwards */
 					con->con_req = NULL;
 				}
-				/* TODO - we could indicate to the TCP net layer to release
-				 * the connection -> other worker may read the next available
-				 * message on the pipe */
+
+				/* If parallel handling, make a copy (null terminted) of the
+				 * current reading buffer (so we can continue its handling)
+				 * and release the TCP conn on READ */
+				if ( (_parallel_handling!=0) &&
+				(msg_buf_cpy=(char*)pkg_malloc( msg_len+1 )) !=NULL ) {
+					memcpy( msg_buf_cpy, msg_buf, msg_len);
+					msg_buf_cpy[msg_len] = 0;
+					msg_buf = msg_buf_cpy;
+					tcp_done_reading( con );
+					con = NULL; /* having reached this, we MUST return 2 */
+				}
+
 			} else {
 				LM_DBG("We still have things on the pipe - "
 					"keeping connection \n");
@@ -411,9 +425,10 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			if (receive_msg(msg_buf, msg_len,
 				&local_rcv, NULL, 0) <0)
 					LM_ERR("receive_msg failed \n");
-		}
 
-		con->msg_attempts = 0;
+			if (msg_buf_cpy)
+				pkg_free(msg_buf_cpy);
+		}
 
 		if (size) {
 			/* restoring the char only makes sense if there is something else to
@@ -434,15 +449,16 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		if (req != &_tcp_common_current_req) {
 			/* if we no longer need this tcp_req
 			 * we can free it now */
-			pkg_free(req);
-			con->con_req = NULL;
+			shm_free(req);
+			if (con)
+				con->con_req = NULL;
 		}
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
 		if (con->msg_attempts==0)
 			/* if first iteration, set a short timeout for reading
 			 * a whole SIP message */
-			con->timeout = get_ticks() + tcp_max_msg_time;
+			con->timeout = get_ticks() + con->profile.msg_read_timeout;
 
 		con->msg_attempts ++;
 		if (con->msg_attempts == _max_msg_chunks) {
@@ -454,8 +470,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		if (req == &_tcp_common_current_req) {
 			/* let's duplicate this - most likely another conn will come in */
 
-			LM_DBG("We didn't manage to read a full request\n");
-			con->con_req = pkg_malloc(sizeof(struct tcp_req));
+			LM_DBG("We didn't manage to read a full request on con %p\n",con);
+			con->con_req = shm_malloc(sizeof(struct tcp_req));
 			if (con->con_req == NULL) {
 				LM_ERR("No more mem for dynamic con request buffer\n");
 				goto error;
@@ -494,8 +510,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		}
 	}
 
-	/* everything ok */
-	return 0;
+	/* everything ok; if connection was returned already, use special rc 2 */
+	return con ? 0 : 2;
 error:
 	/* report error */
 	return -1;

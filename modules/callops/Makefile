@@ -6,6 +6,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=callops.so
-LIBS=
 
 include ../../Makefile.modules

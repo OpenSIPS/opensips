@@ -1,5 +1,3 @@
-# $Id$
-#
 # User aliases
 #
 # 
@@ -9,7 +7,6 @@ include ../../Makefile.defs
 
 auto_gen=
 NAME=benchmark.so
-LIBS=
 DEFS+=
 
 # nanosec precision - requires realtime library

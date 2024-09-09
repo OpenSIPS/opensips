@@ -29,7 +29,7 @@
 
 #include "ip_addr.h"
 #include "str.h"
-#include "locking.h"
+#include "rw_locking.h"
 
 #define BL_READONLY_LIST      (1<<0)
 #define BL_DO_EXPIRE          (1<<1)
@@ -49,11 +49,9 @@ struct bl_rule{
 
 struct bl_head{
 	str name;
-	int owner; 	/*!< the id of the module that owns the set of rules */
+	str owner; 	/*!< identifier of the module that owns the set of rules */
 	int flags;
-	gen_lock_t *lock;
-	int count_write;
-	int count_read;
+	rw_lock_t *lock;
 	/* ... more fields, maybe ... */
 	struct bl_rule *first;
 	struct bl_rule *last;
@@ -67,8 +65,8 @@ int init_black_lists();
 void destroy_black_lists();
 
 
-struct bl_head *create_bl_head(int owner, int flags, struct bl_rule *head,
-			struct bl_rule *tail, str *name);
+struct bl_head *create_bl_head(const str *owner, int flags,
+		struct bl_rule *head, struct bl_rule *tail, str *name);
 
 int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 			struct net *ip_net, str *body, unsigned short port,
@@ -100,6 +98,25 @@ static inline int check_blacklists( unsigned short proto,
 	port = su_getport(to);
 	return check_against_blacklist(&ip, &body, port, proto);
 }
+
+
+struct bl_net_flags {
+	struct net ipnet;
+	unsigned int flags;
+};
+
+int fixup_blacklist_proto(void** param);
+int fixup_blacklist_net(void** param);
+int fixup_blacklist_net_free(void** param);
+
+int w_check_blacklist(struct sip_msg *msg, struct bl_head *head,
+		struct ip_addr *ip, int *port, unsigned short _proto, str *_pattern);
+int w_add_blacklist_rule(struct sip_msg *msg, struct bl_head *head,
+		struct bl_net_flags *_nf, int *_port, unsigned short _proto,
+		str *_pattern, int *_exp);
+int w_del_blacklist_rule(struct sip_msg *msg, struct bl_head *head,
+		struct bl_net_flags *_nf, int *_port, unsigned short _proto,
+		str *_pattern);
 
 #endif /* _BLACKLST_H */
 

@@ -44,6 +44,7 @@ extern str start_ts_column;
 extern str end_ts_column;
 extern str jwt_tag_claim;
 
+extern int jwt_db_mode;
 extern db_con_t* auth_db_handle; /* database connection handle */
 extern db_func_t auth_dbf;
 

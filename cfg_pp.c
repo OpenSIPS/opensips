@@ -40,6 +40,7 @@ extern int column;
 
 extern FILE *yyin;
 extern int yyparse();
+extern int yyrestart(FILE*);
 #ifdef DEBUG_PARSER
 extern int yydebug;
 #endif
@@ -56,6 +57,7 @@ static int exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline,
                              str *out);
 
 static struct cfg_context *cfg_context_new_file(const char *path);
+static void cfg_context_reset_all(void);
 static void cfg_context_append_line(struct cfg_context *con,
                                     char *line, int len);
 
@@ -80,6 +82,8 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 			return -1;
 		}
 	}
+
+	cfg_context_reset_all();
 
 	if (flatten_opensips_cfg(cfg_stream,
 				cfg_stream == stdin ? "stdin" : cfg_file, &cfg_buf) < 0) {
@@ -116,6 +120,7 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
 	yyin = cfg_stream;
+	yyrestart(yyin);
 	cfg_errors = 0;
 	if (yyparse() != 0 || cfg_errors) {
 		LM_ERR("bad config file (%d errors)\n", cfg_errors);
@@ -163,6 +168,11 @@ int mk_included_file_path(char *line, int line_len, const char *current_dir,
 	struct stat _;
 	char *p = NULL, enclose = 0;
 	int len1, len2, fplen;
+
+	while (line_len > 0 && is_ws(*line)) {
+		line_len--;
+		line++;
+	}
 
 	if (line_len > include_v1.len &&
 	        !memcmp(line, include_v1.s, include_v1.len)) {
@@ -245,6 +255,21 @@ static struct cfg_context {
 	int bufsz;
 	struct cfg_context *next;
 } *__ccon;
+
+static void cfg_context_reset_all(void)
+{
+	struct cfg_context *pos = NULL, *it = __ccon;
+
+	while ( it && (it != __ccon || !pos) ) {
+		pos = it;
+		it = it->next;
+		free((char*)pos->path);
+		free((char*)pos->dirname);
+		free(pos->lines);
+		free(pos);
+	};
+	__ccon = NULL;
+}
 
 static struct cfg_context *cfg_context_new_file(const char *path)
 {
@@ -343,7 +368,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 				goto out_err;
 			}
 
-			line_len = strlen(line);
+			line_len = 0;
 			break;
 
 		} else if (line_len == 0) {
@@ -516,18 +541,22 @@ int cfg_pop(void)
 	return 0;
 }
 
-void cfg_dump_context(const char *file, int line, int colstart, int colend)
+void _cfg_dump_context(const char *file, int line, int colstart, int colend,
+                       int run_once)
 {
 	static int called_before;
 	struct cfg_context *con;
 	int i, iter = 1, len;
 	char *p, *end, *wsbuf, *wb, *hiline;
 
+	if (!file)
+		return;
+
 	for (con = __ccon; con; con = con->next)
 		if (!strcmp(con->path, file))
 			break;
 
-	if (!con || !con->lines[0] || called_before)
+	if (!con || !con->lines[0] || (run_once && called_before))
 		return;
 
 	called_before = 1;

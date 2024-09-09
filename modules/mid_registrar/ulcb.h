@@ -28,7 +28,7 @@
 #ifndef __MID_REG_ULCB_
 #define __MID_REG_ULCB_
 
-void mid_reg_ct_event(void *binding, ul_cb_type type);
-void mid_reg_aor_event(void *binding, ul_cb_type type);
+void mid_reg_ct_event(void *binding, ul_cb_type type, ul_cb_extra *_);
+void mid_reg_aor_event(void *binding, ul_cb_type type, ul_cb_extra *_);
 
 #endif /* __MID_REG_ULCB_ */

@@ -116,7 +116,7 @@ static void lb_prob_handler(unsigned int ticks, void* param);
 
 static void lb_update_max_loads(unsigned int ticks, void *param);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"lb_start", (cmd_function)w_lb_start, {
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR, fixup_resources, fixup_free_resources},
@@ -161,7 +161,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "db_url",                STR_PARAM, &db_url.s                 },
 	{ "db_table",              STR_PARAM, &table_name               },
 	{ "probing_interval",      INT_PARAM, &lb_prob_interval         },
@@ -178,7 +178,7 @@ static param_export_t mod_params[]={
 };
 
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "lb_reload", 0, 0, mi_child_init, {
 		{mi_lb_reload, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -199,7 +199,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static module_dependency_t *get_deps_probing_interval(param_export_t *param)
+static module_dependency_t *get_deps_probing_interval(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= 0)
 		return NULL;
@@ -207,7 +207,7 @@ static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
 }
 
-static module_dependency_t *get_deps_fetch_fs_load(param_export_t *param)
+static module_dependency_t *get_deps_fetch_fs_load(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= 0)
 		return NULL;
@@ -215,7 +215,7 @@ static module_dependency_t *get_deps_fetch_fs_load(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "freeswitch", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
 		{ MOD_TYPE_SQLDB,   NULL,     DEP_ABORT },
@@ -422,14 +422,6 @@ static int mod_init(void)
 			return -1;
 		}
 
-		/* Register the max load recalculation timer */
-		if (fetch_freeswitch_stats &&
-		    register_timer("lb-update-max-load", lb_update_max_loads, NULL,
-		           fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
-			LM_ERR("failed to register timer for max load recalc!\n");
-			return -1;
-		}
-
 		if (lb_probe_replies.s) {
 			lb_probe_replies.len = strlen(lb_probe_replies.s);
 			if(parse_reply_codes( &lb_probe_replies, &probing_reply_codes,
@@ -439,6 +431,14 @@ static int mod_init(void)
 				return -1;
 			}
 		}
+	}
+
+	/* Register the max load recalculation timer */
+	if (fetch_freeswitch_stats &&
+	    register_timer("lb-update-max-load", lb_update_max_loads, NULL,
+	           fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+		LM_ERR("failed to register timer for max load recalc!\n");
+		return -1;
 	}
 
 	/* parse avps */
@@ -771,13 +771,10 @@ void set_dst_state_from_rplcode( int id, int code)
 
 static void lb_prob_handler(unsigned int ticks, void* param)
 {
-	lock_start_read( ref_lock );
-
 	/* do probing */
 	lb_do_probing(*curr_data);
-
-	lock_stop_read( ref_lock );
 }
+
 
 static void lb_update_max_loads(unsigned int ticks, void *param)
 {

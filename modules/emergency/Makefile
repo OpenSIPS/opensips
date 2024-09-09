@@ -4,6 +4,7 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=emergency.so
-LIBS+=-lcurl
+LIBS += -L${LOCALBASE}/lib -lcurl
+DEFS += -I${LOCALBASE}/include
 
 include ../../Makefile.modules

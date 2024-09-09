@@ -38,7 +38,7 @@
  * protocols, because we never know what kind of traffic we receive and have
  * to print its name
  */
-struct proto_info protos[PROTO_LAST - PROTO_NONE] = {
+struct proto_info protos[PROTO_LAST - PROTO_NONE + 1] = {
 	{ .name = NULL,  .default_rfc_port = 0 }, /* PROTO_NONE */
 
 	{ .name = "udp",  .default_rfc_port = 5060 }, /* PROTO_UDP */
@@ -47,6 +47,10 @@ struct proto_info protos[PROTO_LAST - PROTO_NONE] = {
 	{ .name = "sctp", .default_rfc_port = 5060 }, /* PROTO_SCTP */
 	{ .name = "ws",   .default_rfc_port = 80 },   /* PROTO_WS */
 	{ .name = "wss",  .default_rfc_port = 443 },  /* PROTO_WSS */
+	{ .name = "ipsec",.default_rfc_port = 5062 }, /* PROTO_IPSEC */
+
+	{ .name = "bin",  .default_port = 5555 },     /* PROTO_BIN */
+	{ .name = "bins", .default_port = 5556 },     /* PROTO_BINS */
 	/* populate here for other protos - not necessary right now */
 };
 
@@ -58,7 +62,7 @@ int trans_load(void)
 {
 	int id;
 	struct sr_module *mod;
-	cmd_export_t *cmd;
+	const cmd_export_t *cmd;
 	int found_all = 0;
 	int found_proto;
 	api_proto_init abind;
@@ -226,12 +230,13 @@ error:
 
 int trans_init_all_listeners(void)
 {
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	int i;
 
 	for (i = PROTO_FIRST; i < PROTO_LAST; i++)
 		if (protos[i].id != PROTO_NONE)
-			for( si=protos[i].listeners ; si ; si=si->next ) {
+			for( sif=protos[i].listeners ; sif ; sif=sif->next ) {
+				struct socket_info *si = &sif->socket_info;
 				if (protos[i].tran.init_listener(si)<0) {
 					LM_ERR("failed to init listener [%.*s], proto %s\n",
 						si->name.len, si->name.s,
@@ -252,7 +257,7 @@ int trans_init_all_listeners(void)
 
 void print_all_socket_lists(void)
 {
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	int i;
 
 
@@ -260,10 +265,15 @@ void print_all_socket_lists(void)
 		if (protos[i].id == PROTO_NONE)
 			continue;
 
-		for (si = protos[i].listeners; si; si = si->next)
-			printf("             %s: %s [%s]:%s%s%s\n", protos[i].name,
+		for ( sif = protos[i].listeners; sif; sif = sif->next ) {
+			const struct socket_info *si = &sif->socket_info;
+			if (si->flags & SI_INTERNAL)
+				continue;
+			printf("             %s: %s [%s]:%s%s%s%s\n", protos[i].name,
 					si->name.s, si->address_str.s, si->port_no_str.s,
 					si->flags & SI_IS_MCAST ? " mcast" : "",
+					si->flags & SI_FRAG ? " allow_fragments" : "",
 					is_anycast(si)? " anycast" : "");
+		}
 	}
 }

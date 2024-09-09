@@ -100,7 +100,7 @@ struct rad_ctx {
 };
 #endif
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 #ifdef RADIUS_ASYNC_SUPPORT
 	{"radius_send_auth", (acmd_function) send_auth_func_async, {
 		{CMD_PARAM_STR, radius_hdl_fixup, 0},
@@ -111,7 +111,7 @@ static acmd_export_t acmds[] = {
 	{0,0,{{0,0,0}}}
 };
 
-static cmd_export_t cmds[]= {
+static const cmd_export_t cmds[]= {
 	{"aaa_bind_api", (cmd_function) aaa_radius_bind_api, {{0, 0, 0}}, 0},
 	{"radius_send_auth", (cmd_function) send_auth_func, {
 		{CMD_PARAM_STR, radius_hdl_fixup, 0},
@@ -126,7 +126,7 @@ static cmd_export_t cmds[]= {
 };
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"sets",             STR_PARAM|USE_FUNC_PARAM, parse_sets_func},
 	{"radius_config",    STR_PARAM,                &config_file},
 	{"syslog_name",      STR_PARAM,                &syslog_name},

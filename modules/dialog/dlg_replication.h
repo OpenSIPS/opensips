@@ -32,8 +32,12 @@
 #define REPLICATION_DLG_UPDATED		2
 #define REPLICATION_DLG_DELETED		3
 #define REPLICATION_DLG_CSEQ		4
+#define REPLICATION_DLG_VALUE		5
 
-#define BIN_VERSION 2
+#define DLG_BIN_V3      3
+#define DLG_BIN_V4      4
+
+#define BIN_VERSION DLG_BIN_V4
 
 extern int dialog_repl_cluster;
 extern int profile_repl_cluster;
@@ -45,13 +49,18 @@ extern struct clusterer_binds clusterer_api;
 
 extern str shtag_dlg_val;
 
+extern int cluster_auto_sync;
+
+int dlg_init_clustering(void);
+
 void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);
 void replicate_dialog_deleted(struct dlg_cell *dlg);
 void replicate_dialog_cseq_updated(struct dlg_cell *dlg, int leg);
+void replicate_dialog_value(struct dlg_cell *dlg, str *name, int_str *val, int type);
 
-int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag,
-							str *ttag, int safe);
+int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
+	str *ftag, str *ttag, unsigned int hid, int safe, int from_sync);
 int dlg_replicated_update(bin_packet_t *packet);
 int dlg_replicated_delete(bin_packet_t *packet);
 

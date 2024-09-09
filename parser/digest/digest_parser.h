@@ -34,20 +34,94 @@
 
 /* Type of algorithm used */
 typedef enum alg {
-	ALG_UNSPEC = 0,   /* Algorithm parameter not specified */
-	ALG_MD5 = 1,      /* MD5 - default value*/
-	ALG_MD5SESS = 2,  /* MD5-Session */
-	ALG_OTHER = 4     /* Unknown */
+	ALG_UNSPEC = 0,         /* Algorithm parameter not specified: defaults to MD5 */
+	ALG_MD5 = 1,            /* MD5 */
+	ALG_MD5SESS = 2,        /* MD5-Session */
+	ALG_SHA256 = 3,         /* SHA-256 */
+	ALG_SHA256SESS = 4,     /* SHA-256-Session */
+	ALG_SHA512_256 = 5,     /* SHA-512/256 */
+	ALG_SHA512_256SESS = 6, /* SHA-512/256-Session */
+	ALG_AKAv1_FIRST = 7,       /* First AKAv1 algorithm */
+	ALG_AKAv1_MD5 = 7,         /* AKAv1-MD5 */
+	ALG_AKAv1_MD5SESS = 8,     /* AKAv1-MD5-Session */
+	ALG_AKAv1_SHA256 = 9,      /* AKAv1-SHA-256 */
+	ALG_AKAv1_SHA256SESS = 10, /* AKAv1-SHA-256-Session */
+	ALG_AKAv1_SHA512_256 = 11, /* AKAv1-SHA-512/256 */
+	ALG_AKAv1_SHA512_256SESS = 12, /* AKAv1-SHA-512/256-Session */
+	ALG_AKAv1_LAST = 12,       /* Last AKAv1 algorithm */
+	ALG_AKAv2_FIRST = 13,       /* First AKAv2 algorithm */
+	ALG_AKAv2_MD5 = 13,        /* AKAv2-MD5 */
+	ALG_AKAv2_MD5SESS = 14,    /* AKAv2-MD5-Session */
+	ALG_AKAv2_SHA256 = 15,     /* AKAv2-SHA-256 */
+	ALG_AKAv2_SHA256SESS = 16,/* AKAv2-SHA-256-Session */
+	ALG_AKAv2_SHA512_256 = 17,/* AKAv2-SHA-512/256 */
+	ALG_AKAv2_SHA512_256SESS = 18, /* AKAv2-SHA-512/256-Session */
+	ALG_AKAv2_LAST = 18,       /* Last AKAv2 algorithm */
+	ALG_OTHER = 19            /* Unknown */
 } alg_t;
 
+#define ALG2ALGFLG(_alg)      (1 << (_alg))
+
+/* Flags to enable/disable set of algorithms */
+#define ALGFLG_UNSPEC         ALG2ALGFLG(ALG_UNSPEC)
+#define ALGFLG_MD5            ALG2ALGFLG(ALG_MD5)
+#define ALGFLG_MD5SESS        ALG2ALGFLG(ALG_MD5SESS)
+#define ALGFLG_SHA256         ALG2ALGFLG(ALG_SHA256)
+#define ALGFLG_SHA256SESS     ALG2ALGFLG(ALG_SHA256SESS)
+#define ALGFLG_SHA512_256     ALG2ALGFLG(ALG_SHA512_256)
+#define ALGFLG_SHA512_256SESS ALG2ALGFLG(ALG_SHA512_256SESS)
+#define ALGFLG_AKAv1_MD5            ALG2ALGFLG(ALG_AKAv1_MD5)
+#define ALGFLG_AKAv1_MD5SESS        ALG2ALGFLG(ALG_AKAv1_MD5SESS)
+#define ALGFLG_AKAv1_SHA256         ALG2ALGFLG(ALG_AKAv1_SHA256)
+#define ALGFLG_AKAv1_SHA256SESS     ALG2ALGFLG(ALG_AKAv1_SHA256SESS)
+#define ALGFLG_AKAv1_SHA512_256     ALG2ALGFLG(ALG_AKAv1_SHA512_256)
+#define ALGFLG_AKAv1_SHA512_256SESS ALG2ALGFLG(ALG_AKAv1_SHA512_256SESS)
+#define ALGFLG_AKAv2_MD5            ALG2ALGFLG(ALG_AKAv2_MD5)
+#define ALGFLG_AKAv2_MD5SESS        ALG2ALGFLG(ALG_AKAv2_MD5SESS)
+#define ALGFLG_AKAv2_SHA256         ALG2ALGFLG(ALG_AKAv2_SHA256)
+#define ALGFLG_AKAv2_SHA256SESS     ALG2ALGFLG(ALG_AKAv2_SHA256SESS)
+#define ALGFLG_AKAv2_SHA512_256     ALG2ALGFLG(ALG_AKAv2_SHA512_256)
+#define ALGFLG_AKAv2_SHA512_256SESS ALG2ALGFLG(ALG_AKAv2_SHA512_256SESS)
+
+/* Canonical algorithm names */
+#define ALG_SESS_SFX           "-sess"
+#define ALG_MD5_STR            "MD5"
+#define ALG_MD5SESS_STR        ALG_MD5_STR ALG_SESS_SFX
+#define ALG_SHA256_STR         "SHA-256"
+#define ALG_SHA256SESS_STR     ALG_SHA256_STR ALG_SESS_SFX
+#define ALG_SHA512_256_STR     "SHA-512-256"
+#define ALG_SHA512_256SESS_STR ALG_SHA512_256_STR ALG_SESS_SFX
+#define ALG_AKAv1_PRX            "AKAv1-"
+#define ALG_AKAv1_MD5_STR        ALG_AKAv1_PRX ALG_MD5_STR
+#define ALG_AKAv1_MD5SESS_STR    ALG_AKAv1_PRX ALG_MD5SESS_STR
+#define ALG_AKAv1_SHA256_STR     ALG_AKAv1_PRX ALG_SHA256_STR
+#define ALG_AKAv1_SHA256SESS_STR ALG_AKAv1_PRX ALG_SHA256SESS_STR
+#define ALG_AKAv1_SHA512_256_STR ALG_AKAv1_PRX ALG_SHA512_256_STR
+#define ALG_AKAv1_SHA512_256SESS_STR ALG_AKAv1_PRX ALG_SHA512_256SESS_STR
+#define ALG_AKAv2_PRX            "AKAv2-"
+#define ALG_AKAv2_MD5_STR        ALG_AKAv2_PRX ALG_MD5_STR
+#define ALG_AKAv2_MD5SESS_STR    ALG_AKAv2_PRX ALG_MD5SESS_STR
+#define ALG_AKAv2_SHA256_STR     ALG_AKAv2_PRX ALG_SHA256_STR
+#define ALG_AKAv2_SHA256SESS_STR ALG_AKAv2_PRX ALG_SHA256SESS_STR
+#define ALG_AKAv2_SHA512_256_STR ALG_AKAv2_PRX ALG_SHA512_256_STR
+#define ALG_AKAv2_SHA512_256SESS_STR ALG_AKAv2_PRX ALG_SHA512_256SESS_STR
+
+#define ALG_IS_AKAv1(alg) (alg >= ALG_AKAv1_FIRST && alg <= ALG_AKAv1_LAST)
+#define ALG_IS_AKAv2(alg) (alg >= ALG_AKAv2_FIRST && alg <= ALG_AKAv2_LAST)
 
 /* Quality Of Protection used */
 typedef enum qop_type {
 	QOP_UNSPEC_D = 0,   /* QOP parameter not present in response */
 	QOP_AUTH_D = 1,     /* Authentication only */
 	QOP_AUTHINT_D = 2,  /* Authentication with integrity checks */
-	QOP_OTHER_D = 4     /* Unknown */
+	QOP_AUTHINT_AUTH_D = 3,  /* Authentication with integrity checks+Authentication only */
+	QOP_AUTH_AUTHINT_D = 4,  /* Authentication only+Authentication with integrity checks */
+	QOP_OTHER_D = 5     /* Unknown */
 } qop_type_t;
+
+/* Canonical QOP names */
+#define QOP_AUTH_STR "auth"
+#define QOP_AUTHINT_STR "auth-int"
 
 
 /* Algorithm structure */
@@ -86,6 +160,7 @@ typedef struct dig_cred {
 	str opaque;                 /* Opaque data string */
 	struct qp qop;              /* Quality Of Protection */
 	str nc;                     /* Nonce count parameter */
+	str auts;                   /* Auts parameter */
 } dig_cred_t;
 
 
@@ -118,6 +193,7 @@ void init_dig_cred(dig_cred_t* _c);
  *  1 - Unknown scheme
  */
 int parse_digest_cred(str* _s, dig_cred_t* _c);
-
+alg_t parse_digest_algorithm(const str *);
+const str *print_digest_algorithm(alg_t alg);
 
 #endif /* DIGEST_PARSER_H */

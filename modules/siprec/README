@@ -17,15 +17,23 @@ SIPREC Module
 
         1.7. Exported Parameters
 
-              1.7.1. media_port_min (integer)
-              1.7.2. media_port_max (integer)
-              1.7.3. skip_failover_codes (string)
+              1.7.1. skip_failover_codes (string)
 
-        1.8. Exported Functions
+        1.8. Exported Events
 
-              1.8.1. siprec_start_recording(srs, [group],
-                      [caller], [callee], [rtpproxy_sock],
-                      [media_ip], [headers])
+              1.8.1. E_SIPREC_START
+              1.8.2. E_SIPREC_STOP
+
+        1.9. Exported Functions
+
+              1.9.1. siprec_start_recording(srs)
+              1.9.2. siprec_pause_recording()
+              1.9.3. siprec_resume_recording()
+              1.9.4. siprec_stop_recording()
+
+        1.10. Exported Pseudo-Variables
+
+              1.10.1. $siprec
 
    2. Contributors
 
@@ -45,17 +53,21 @@ SIPREC Module
 
    List of Examples
 
-   1.1. Set media_port_min parameter
-   1.2. Set media_port_max parameter
-   1.3. Set skip_failover_codes parameter
-   1.4. Use siprec_start_recording() function with a single SRS
-   1.5. Use siprec_start_recording() function with multiple SRS
+   1.1. Set skip_failover_codes parameter
+   1.2. Use siprec_start_recording() function with a single SRS
+   1.3. Use siprec_start_recording() function with multiple SRS
           servers
 
-   1.6. Use siprec_start_recording() function with custom XML
+   1.4. Use siprec_start_recording() function with custom XML
           values for participants
 
-   1.7. Use siprec_start_recording() function with custom headers
+   1.5. Use siprec_start_recording() function with custom headers
+   1.6. Use siprec_start_recording() function with custom group
+          and session extensions
+
+   1.7. Use siprec_pause_recording()
+   1.8. Use siprec_resume_recording()
+   1.9. Use siprec_stop_recording()
 
 Chapter 1. Admin Guide
 
@@ -97,7 +109,7 @@ Chapter 1. Admin Guide
    to the SRS contains a multi-part body consisting of two parts:
      * Recording SDP - the SDP of the Media Server that will fork
        the RTP to the recorder.
-     * Participants Metadata - an XML-formated document that
+     * Participants Metadata - an XML-formatted document that
        contains information about the participants. The structure
        of the document is detailed in RFC 7865.
 
@@ -115,16 +127,16 @@ Chapter 1. Admin Guide
    Since OpenSIPS is a SIP Proxy, it does not have any Media
    Capabilities by itself. Thus we need to rely on a different
    Media Server to capture the RTP traffic and fork it to the SRS.
-   This module currently uses the RTPProxy module in OpenSIPS to
-   instruct the RTPProxy Media Server to fork the RTP media to the
-   SRS.
+   The current implementation supports both the RTPProxy (through
+   the RTPProxy module) and RTPEngine (through the RTEngine
+   module) Media Servers.
 
 1.4. SRS Failover
 
    The siprec module supports failover between multiple SRS
    servers - when calling the siprec_start_recording() function,
-   one can provision more SRS URIs, separated by comma. In this
-   case, OpenSIPS will try to use them in the same order
+   one can provision multiple SRS URIs, separated by comma. In
+   this case, OpenSIPS will try to use them in the same order
    specified, one by one, until either one of them responds with a
    positive reply (200 OK), or the response code is one of the
    codes matched by the skip_failover_codes regular expression. In
@@ -146,7 +158,7 @@ Chapter 1. Admin Guide
        for us to postpone the media between the caller and callee
        to play a Recording Indicator message.
      * Cannot handle Recording Sessions initiated by SRS - we do
-       not support the scenario when an SRS suddently decides to
+       not support the scenario when an SRS suddenly decides to
        record a call in the middle of the dialog.
      * OpenSIPS cannot be “queried” for ongoing recording sessions
        - this is scheduled to be implemented in further releases.
@@ -158,8 +170,8 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * TM - Transaction module.
      * Dialog - Dialog module for keeping track of the call.
-     * RTPProxy - RTPProxy module used for controlling the media
-       forked.
+     * RTP_Relay - RTP Relay module used for controlling the Media
+       Servers that will fork the media.
      * B2B_ENTITIES - Back-2-Back module used for communicating
        with the SRS.
 
@@ -171,40 +183,14 @@ Chapter 1. Admin Guide
 
 1.7. Exported Parameters
 
-1.7.1. media_port_min (integer)
-
-   The minimum value of the port used in the SDP sent to the SRS.
-   This value should correlate to the port-range configured in the
-   RTPProxy Media Server.
-
-   Default value is “35000”.
-
-   Example 1.1. Set media_port_min parameter
-...
-modparam("siprec", "media_port_min", 10000)
-...
-
-1.7.2. media_port_max (integer)
-
-   The maximum value of the port used in the SDP sent to the SRS.
-   This value should correlate to the port-range configured in the
-   RTPProxy Media Server.
-
-   Default value is “65000”.
-
-   Example 1.2. Set media_port_max parameter
-...
-modparam("siprec", "media_port_max", 20000)
-...
-
-1.7.3. skip_failover_codes (string)
+1.7.1. skip_failover_codes (string)
 
    A regular expression used to specify the codes that should
    prevent the module from failing over to a new SRS server.
 
    By default any negative reply generates a failover.
 
-   Example 1.3. Set skip_failover_codes parameter
+   Example 1.1. Set skip_failover_codes parameter
 ...
 # do not failover on 408 reply codes
 modparam("siprec", "skip_failover_codes", "408")
@@ -216,16 +202,36 @@ modparam("siprec", "skip_failover_codes", "408|487")
 modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 ...
 
-1.8. Exported Functions
+1.8. Exported Events
 
-1.8.1.  siprec_start_recording(srs, [group], [caller], [callee],
-[rtpproxy_sock], [media_ip], [headers])
+1.8.1.  E_SIPREC_START
+
+   This event is raised when a SIPREC call is established and a
+   call starts to be recorded.
+
+   Parameters:
+     * dlg_id - dialog id (“did”) of the call being recorded;
+     * dlg_callid - Call-Id of the call being recorded;
+     * callid - Call-Id (B2B id) of the SIPREC call;
+     * session_id - SIPREC UUID of the recording call;
+     * server - the SIPREC server handing this call;
+
+1.8.2.  E_SIPREC_STOP
+
+   This event is raised when a SIPREC call is terminated.
+
+   This event exposes the same parameters as the E_SIPREC_START
+   event.
+
+1.9. Exported Functions
+
+1.9.1.  siprec_start_recording(srs)
 
    Calling this function on an initial INVITE engages call
-   recording to SRSs for that call. Note that it does not
+   recording to SRS(s) for that call. Note that it does not
    necessary mean that the call will be recorded - it just means
    that OpenSIPS will query instruct the SRS that a new call has
-   sterted, but the SRS might decide that the recording is
+   started, but the SRS might decide that the recording is
    disabled for those participants.
 
    Note that the call recording is not started right away, but
@@ -236,23 +242,6 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
      * srs (string) - a comma-separated list of SRS URIs. These
        URIs are used in the order specified. See
        siprec_srs_failover for more information.
-     * group (string, optional) - an opaque values used by the
-       SIPREC protocol to group calls in certain profiles.
-     * caller (string, optional) - an XML block containing
-       information about the caller. If absent, the From header is
-       used to build the value from.
-     * callee (string, optional) - an XML block containing
-       information about the callee. If absent, the To header is
-       used to build the value from.
-     * rtpproxy_sock (string, optional) - the RTPProxy soscket
-       used for this call. If absent, the rtpproxy module will try
-       to detect the proxy used for the initial call, based on the
-       default set provisioned in the rtpproxy module.
-     * media_ip (string, optional) - the IP that RTPProxy will be
-       streaming media from. If absent 127.0.0.1 will be used.
-     * headers (string, optional) - extra headers that are to be
-       added in the initial request towards the SRS. NOTE: headers
-       must be separated by \r\n and must end with \r\n.
 
    The function returns false when an internal error is triggered
    and the call recording setup fails. Otherwise, if all the
@@ -260,7 +249,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.4. Use siprec_start_recording() function with a
+   Example 1.2. Use siprec_start_recording() function with a
    single SRS
         ...
         if (!has_totag() && is_method("INVITE")) {
@@ -271,7 +260,7 @@ n");
         }
         ...
 
-   Example 1.5. Use siprec_start_recording() function with
+   Example 1.3. Use siprec_start_recording() function with
    multiple SRS servers
         ...
         if (!has_totag() && is_method("INVITE")) {
@@ -283,21 +272,127 @@ for $ci in inbound group\n");
         }
         ...
 
-   Example 1.6. Use siprec_start_recording() function with custom
+   Example 1.4. Use siprec_start_recording() function with custom
    XML values for participants
         ...
         $xml(caller_xml) = "<nameID></nameID>";
         $xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:509
 0";
         $xml(caller_xml/nameID) = "<name>test</name>";
-        siprec_start_recording($var(srs),,$xml(caller_xml/nameID));
+        $siprec(caller) = $xml(caller_xml/nameID);
+        siprec_start_recording($var(srs));
         ...
 
-   Example 1.7. Use siprec_start_recording() function with custom
+   Example 1.5. Use siprec_start_recording() function with custom
    headers
         ...
-        siprec_start_recording($var(srs),,,,,,"X-MY-CUSTOM_HDR: 1\r\n");
+        $siprec(headers) = "X-MY-CUSTOM_HDR: 1\r\n";
+        siprec_start_recording($var(srs));
         ...
+
+   Example 1.6. Use siprec_start_recording() function with custom
+   group and session extensions
+        ...
+        $var(temp) = "<callcenterID> 17</callcenterID>";
+        $siprec(group_custom_extension) = $var(temp);
+        $siprec(session_custom_extension) = "<callcenterCode>dfgh3q45gsd
+fty5</callcenterCode>";
+
+        siprec_start_recording($var(srs));
+        ...
+
+1.9.2.  siprec_pause_recording()
+
+   Pauses the recording for the ongoing call. Should be called
+   after the dialog has matched.
+
+   This function can be used from any route.
+
+   Example 1.7. Use siprec_pause_recording()
+        ...
+        if (has_totag() && is_method("INVITE")) {
+                if (is_audio_on_hold())
+                        siprec_pause_recording();
+        }
+        ...
+
+1.9.3.  siprec_resume_recording()
+
+   Resumes the recording for the ongoing call. Should be called
+   after the dialog has matched.
+
+   This function can be used from any route.
+
+   Example 1.8. Use siprec_resume_recording()
+        ...
+        if (has_totag() && is_method("INVITE")) {
+                if (!is_audio_on_hold())
+                        siprec_resume_recording();
+        }
+        ...
+
+1.9.4.  siprec_stop_recording()
+
+   Stops the recording for the ongoing call. Should be called for
+   SIPREC sessions that have been previously started.
+
+   This function can be used from any route.
+
+   Example 1.9. Use siprec_stop_recording()
+        ...
+        if (has_totag() && is_method("INVITE")) {
+                if (is_audio_on_hold())
+                        siprec_stop_recording();
+        }
+        ...
+
+1.10. Exported Pseudo-Variables
+
+1.10.1. $siprec
+
+   Used to modify/describe different siprec sessions parameters
+   that should be taken into account by the
+   siprec_start_recording() function.
+
+   The context of this variable is only limited to the current
+   message processed - it is not available at the transaction or
+   dialog level.
+
+   Any of this setting is optional.
+
+   Settings that can be provisioned:
+     * group - an opaque value that will be inserted in the SIPREC
+       body and represents the name of the group that can be used
+       to classify calls in certain profiles. If missing, no group
+       is added.
+     * caller - an XML block containing information about the
+       caller. If absent, the From header of the initial dialog is
+       used to build the value.
+     * callee - an XML block containing information about the
+       callee. If absent, the To header of the initial dialog is
+       used to build the value.
+     * media - the IP that RTPProxy will be streaming media from.
+       If absent 127.0.0.1 will be used. NOTE:media_ip has been
+       dropped.
+     * headers - extra headers that are to be added in the initial
+       request towards the SRS. NOTE: headers must be separated by
+       \r\n and must end with \r\n.
+     * socket - listening socket that the outgoing request towards
+       SRS should be used.
+     * from_uri - the URI to appear in the From header of the
+       dialog. Default value is the request URI. Note that this
+       does not influence the caller information in the XML block,
+       which is taken from the initial dialog.
+     * to_uri - the URI to appear in the To header of the dialog.
+       Default value is the request URI. Note that this does not
+       influence the callee information in the XML block, which is
+       taken from the initial dialog.
+     * group_custom_extension - an optional XML block containing
+       custom information to be added under the group tag. NOTE:
+       if the group is absent this value will be ignored and not
+       used anywhere.
+     * session_custom_extension - an optional XML block containing
+       custom information to be added under the session tag.
 
 Chapter 2. Contributors
 
@@ -306,10 +401,13 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 87 46 3579 666
-   2. Vlad Patrascu (@rvlad-patrascu) 13 8 157 137
-   3. Liviu Chircu (@liviuchircu) 8 6 27 50
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
+   1. Razvan Crainea (@razvancrainea) 170 89 5653 1970
+   2. Vlad Patrascu (@rvlad-patrascu) 16 11 166 149
+   3. Liviu Chircu (@liviuchircu) 9 7 35 53
+   4. Maksym Sobolyev (@sobomax) 6 4 12 11
+   5. Seyed Mehran Siadati 5 2 124 15
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 2
+   7. Norman Brandinger (@NormB) 3 1 4 4
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -331,10 +429,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jan 2021
-   2. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Apr 2020
-   3. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2019
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Aug 2024
+   2. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   3. Seyed Mehran Siadati                Nov 2023 - Nov 2023
+   4. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2023
+   5. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Mar 2023
+   6. Norman Brandinger (@NormB)          Aug 2021 - Aug 2021
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -343,7 +444,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   Last edited by: Razvan Crainea (@razvancrainea), Seyed Mehran
+   Siadati, Norman Brandinger (@NormB), Vlad Patrascu
    (@rvlad-patrascu), Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:

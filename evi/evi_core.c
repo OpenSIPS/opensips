@@ -30,11 +30,14 @@
 /* static events exported by the core */
 static str evi_core_table[] = {
 	CORE_EVENT_STR(THRESHOLD),
+	/* FIXME - if no statistics, the EVI ids will not be working anymore,
+	 * since we don't save the actual ID registered in EVI */
 #ifdef STATISTICS
 	CORE_EVENT_STR(SHM_THRESHOLD),
 #endif
 	CORE_EVENT_STR(PKG_THRESHOLD),
 	CORE_EVENT_STR(PROC_AUTO_SCALE),
+	CORE_EVENT_STR(TCP_DISCONNECT),
 };
 
 int evi_register_core(void)

@@ -41,7 +41,7 @@
 		<name>gwlist</name>
 		<type>string</type>
 		<size>255</size>
-		<description>Reference to the GWs/destinations from the list.
+		<description>A comma-separated list of GW unique IDs (e.g. GW-5).
 		</description>
 	</column>
 
@@ -61,7 +61,7 @@
 		<type>string</type>
 		<default>N</default>
 		<size>1</size>
-		<description>The sorting algorithm to be employed for the carriers's
+		<description>The sorting algorithm to be employed for the carrier's
 			destinations when do_routing() is called.  Possible values:
 			'N' (default; no sorting, preserve given order),
 			'W' (weight based sorting),

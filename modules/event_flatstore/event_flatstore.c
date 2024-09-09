@@ -49,8 +49,8 @@ static int flat_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static evi_reply_sock* flat_parse(str socket);
 mi_response_t *mi_rotate(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-static int flat_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t * params);
+static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx);
 
 static int *opened_fds;
 static int *rotate_version;
@@ -71,7 +71,7 @@ static int suppress_event_name = 0;
 static str file_permissions;
 static mode_t file_permissions_oct;
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "evi_flat_rotate", "rotates the files the module dumps events into", 0,0,{
 		{mi_rotate, {"path_to_file", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -79,7 +79,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"max_open_sockets",INT_PARAM, &initial_capacity},
 	{"delimiter",STR_PARAM, &delimiter.s},
 	{"file_permissions", STR_PARAM, &file_permissions.s},
@@ -110,7 +110,7 @@ struct module_exports exports= {
 	0							/* reload confirm function */
 };
 
-static evi_export_t trans_export_flat = {
+static const evi_export_t trans_export_flat = {
 	FLAT_STR,					/* transport module name */
 	flat_raise,					/* raise function */
 	flat_parse,					/* parse function */
@@ -543,8 +543,8 @@ static void rotating(struct flat_file *file){
 		lock_release(global_lock);
 }
 
-static int flat_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t *params) {
+static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx) {
 
 	int idx = 0, offset_buff = 0, len, required_length = 0, nwritten;
 	evi_param_p param;
@@ -687,6 +687,7 @@ static void flat_free(evi_reply_sock *sock) {
 	if (!del_it) {
 		new_del = shm_malloc(sizeof *new_del);
 		if (!new_del) {
+			lock_release(global_lock);
 			LM_ERR("oom!\n");
 			return;
 		}

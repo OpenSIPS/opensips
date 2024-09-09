@@ -509,7 +509,7 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 			extra_len = 0;
 		} else {
 			extra_len = (p->flags&SIP_BODY_PART_FLAG_NEW) ?
-				p->mime_s.len+p->body.len : 0 ;
+				p->mime_s.len+p->body.len+p->headers.len : 0 ;
 			if((np->next=func_malloc(my_malloc, sizeof(struct body_part)+extra_len))==NULL){
 				LM_ERR("failed to allocate new body_part clone (shared=%d)\n",
 					shared);
@@ -585,4 +585,30 @@ int should_update_sip_body(struct sip_msg *msg)
 	}
 	/* no changes on the body - should not be updated */
 	return 0;
+}
+
+str *get_body_part(struct sip_msg *msg, unsigned int type, unsigned int subtype)
+{
+	struct body_part *p;
+
+	if (parse_sip_body(msg)<0 || msg->body==NULL) {
+		LM_DBG("cannot parse body\n");
+		return NULL;
+	}
+	if (type == 0 && subtype == 0)
+		return &msg->body->first.body; /* not interested in a particular type */
+
+	for (p = &msg->body->first; p; p = p->next) {
+		if (is_body_part_received(p) &&
+				(p->mime & (type << 16) &&
+				(subtype == 0 || p->mime == (type << 16) + subtype)))
+			return &p->body;
+	}
+
+	return NULL;
+}
+
+int has_body_part(struct sip_msg *msg, unsigned int type, unsigned int subtype)
+{
+	return (get_body_part(msg, type, subtype) == NULL?0:1);
 }

@@ -287,6 +287,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -312,6 +313,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -340,6 +342,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

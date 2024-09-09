@@ -33,21 +33,53 @@
 #define PROTO_NET_USE_UDP	(1<<1) /* set by proto's that are based on UDP */
 
 
-typedef int (*proto_net_write_f)(void *src, int fd);
-typedef int (*proto_net_read_f)(void *src, int *len);
-typedef int (*proto_net_conn_init_f)(struct tcp_connection *c);
-typedef void (*proto_net_conn_clean_f)(struct tcp_connection *c);
-typedef int (*proto_net_extra_match_f)(struct tcp_connection *c, void *id);
+typedef int  (*proto_net_dgram_read_f)(const struct socket_info *si, int *len);
+
+typedef int  (*proto_net_stream_write_f)(struct tcp_connection *c, int fd);
+
+/**
+ * Read a complete SIP message from the network, including its body/payload and
+ * also fully process it, through receive_msg() and opensips.cfg routing logic.
+ *
+ * The function must include sufficient parsing logic in order to overcome
+ * the streaming protocol's inherent limitation of not having the data "split"
+ * into individual application-layer messages.  For example, implementors may
+ * want to block-READ until "Content-Length: " to obtain payload size, then
+ * continue READ'ing until EOH, then a final READ for the full body.
+ *
+ * Possible return values:
+ *   -1 :: error during reading, the @c connection is still valid and must be
+ *         released by caller
+ *    0 :: a complete request was read and processed; check @c->state for
+ *         S_CONN_EOF and release @c connection if condition is true
+ *    1 :: a complete request was read and processed; the @c ptr is *invalid*
+ *         as the connection has already been released, to achieve parallelism
+ */
+typedef int  (*proto_net_stream_read_f)(struct tcp_connection *c, int *len);
+typedef int  (*proto_net_stream_conn_init_f)(struct tcp_connection *c);
+typedef void (*proto_net_stream_conn_clean_f)(struct tcp_connection *c);
+typedef int  (*proto_net_stream_extra_match_f)(struct tcp_connection *c, void *id);
+
 typedef void (*proto_net_report_f)( int type, unsigned long long conn_id,
 		int conn_flags, void *extra);
 
 struct api_proto_net {
 	int						flags;
-	proto_net_write_f		write;
-	proto_net_read_f		read;
-	proto_net_conn_init_f	conn_init;
-	proto_net_conn_clean_f	conn_clean;
-	proto_net_extra_match_f	conn_match;
+	union {
+		struct {
+			proto_net_dgram_read_f		read;
+		} dgram;
+		struct {
+			unsigned			async_chunks;
+			proto_net_stream_read_f		read;
+			proto_net_stream_write_f	write;
+			struct {
+				proto_net_stream_conn_init_f   init;
+				proto_net_stream_conn_clean_f  clean;
+				proto_net_stream_extra_match_f match;
+			} conn;
+		} stream;
+	};
 	proto_net_report_f		report;
 };
 

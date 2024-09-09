@@ -69,17 +69,32 @@
 #define IDENTITY_HDR_LEN (sizeof(IDENTITY_HDR_S)-1)
 #define HDR_INFO_PARAM_S "info="
 #define HDR_INFO_PARAM_LEN (sizeof(HDR_INFO_PARAM_S)-1)
-#define HDR_PPT_PARAM_S "ppt=\"shaken\""
+#define HDR_ALG_PARAM_S "alg=ES256"
+#define HDR_ALG_PARAM_LEN (sizeof(HDR_ALG_PARAM_S)-1)
+#define HDR_PPT_PARAM_S "ppt=shaken"
 #define HDR_PPT_PARAM_LEN (sizeof(HDR_PPT_PARAM_S)-1)
 
-#define USE_IDENTITY_CODE 428
-#define USE_IDENTITY_REASON "Use Identity Header"
+#define BADREQ_CODE 400
+#define BADREQ_ORIG_REASON "Bad Request (PAI/From Number)"
+#define BADREQ_DEST_REASON "Bad Request (To Number)"
+#define BADREQ_NODATE_REASON "Bad Request (Missing Date)"
 #define STALE_DATE_CODE 403
 #define STALE_DATE_REASON "Stale Date"
-#define INVALID_IDENTITY_CODE 438
-#define INVALID_IDENTITY_REASON "Invalid Identity Header"
+#define USE_IDENTITY_CODE 428
+#define USE_IDENTITY_REASON "Use Identity Header"
 #define UNSUPPORTED_CRED_CODE 437
 #define UNSUPPORTED_CRED_REASON "Unsupported Credential"
+#define INVALID_IDENTITY_CODE 438
+#define INVALID_IDENTITY_REASON "Invalid Identity Header"
+#define IERROR_CODE 500
+#define IERROR_REASON "Internal Server Error"
+#define IERROR_REASON_PARSE_HEADERS "Failed to parse headers"
+#define IERROR_REASON_PARSE_IDENTITY "Failed to parse identity header"
+#define IERROR_REASON_GET_CURRENT_TIME "Failed to get current time"
+#define IERROR_REASON_GET_TIME_FROM_DATE_HEADER "Failed to get UNIX time from Date header"
+#define IERROR_REASON_LOAD_CERTIFICATE "Failed to load certificate"
+#define IERROR_REASON_VALIDATE_CERTIFICATE "Error validating certificate"
+#define IERROR_REASON_VERIFY_SIGNATURE "Error while verifying signature"
 
 #define TN_AUTH_LIST_OID "1.3.6.1.5.5.7.1.26"
 #define TN_AUTH_LIST_LN "TNAuthorizationList"
@@ -87,6 +102,9 @@
 
 #define R_S_INT_LEN 32
 #define RAW_SIG_LEN 64
+
+#define AUTH_OUT_REQ_STR "req"
+#define AUTH_OUT_RPL_STR "rpl"
 
 struct parsed_identity {
 	cJSON *header;
@@ -116,4 +134,15 @@ enum pv_identity_field {
 	PV_PAYLOAD_IAT,
 	PV_PAYLOAD_ORIG,
 	PV_PAYLOAD_ORIGID
+};
+
+enum auth_out_type {
+	AUTH_APPEND_TO_REQ,
+	AUTH_APPEND_TO_RPL,
+	AUTH_OUT_VAR
+};
+
+struct auth_out_param {
+	enum auth_out_type type;
+	pv_spec_t var;
 };

@@ -1,13 +1,12 @@
-INSERT INTO version (table_name, table_version) values ('subscriber','7');
+INSERT INTO version (table_name, table_version) values ('subscriber','8');
 CREATE TABLE subscriber (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',
     domain VARCHAR2(64) DEFAULT '',
     password VARCHAR2(25) DEFAULT '',
-    email_address VARCHAR2(64) DEFAULT '',
     ha1 VARCHAR2(64) DEFAULT '',
-    ha1b VARCHAR2(64) DEFAULT '',
-    rpid VARCHAR2(64) DEFAULT NULL,
+    ha1_sha256 VARCHAR2(64) DEFAULT '',
+    ha1_sha512t256 VARCHAR2(64) DEFAULT '',
     CONSTRAINT subscriber_account_idx  UNIQUE (username, domain)
 );
 

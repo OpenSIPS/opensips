@@ -163,12 +163,12 @@ modparam("mediaproxy", "disable", 1)
    It is the path to the filesystem socket where the mediaproxy
    dispatcher listens for commands from the module.
 
-   Default value is “/var/run/mediaproxy/dispatcher.sock”.
+   Default value is “/run/mediaproxy/dispatcher.sock”.
 
    Example 1.2. Setting the mediaproxy_socket parameter
 ...
-modparam("mediaproxy", "mediaproxy_socket", "/var/run/mediaproxy/dispatc
-her.sock")
+modparam("mediaproxy", "mediaproxy_socket", "/run/mediaproxy/dispatcher.
+sock")
 ...
 
 1.5.3. mediaproxy_timeout (int)
@@ -352,10 +352,10 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Dan Pascu (@danpascu) 130 55 4241 2404
+   1. Dan Pascu (@danpascu) 131 55 4241 2404
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 31 688 88
    3. Saúl Ibarra Corretgé (@saghul) 21 14 504 71
-   4. Liviu Chircu (@liviuchircu) 13 11 41 47
+   4. Liviu Chircu (@liviuchircu) 14 12 41 49
    5. Daniel-Constantin Mierla (@miconda) 13 11 37 33
    6. Razvan Crainea (@razvancrainea) 9 7 22 41
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 8 4
@@ -363,8 +363,9 @@ Chapter 2. Contributors
    9. Henning Westerholt (@henningw) 4 2 6 31
    10. Andrei Pelinescu-Onciul 4 2 4 4
 
-   All remaining contributors: Eric Tamme (@etamme), Marcus
-   Hunger, Sergio Gutierrez, Jan Janak (@janakj), Konstantin
+   All remaining contributors: Maksym Sobolyev (@sobomax), Eric
+   Tamme (@etamme), Marcus Hunger, Sergio Gutierrez, Alexey
+   Vasilyev (@vasilevalex), Jan Janak (@janakj), Konstantin
    Bokarius, Julián Moreno Patiño, Klaus Darilion, Peter Lemenkov
    (@lemenkov), Edson Gellert Schubert, Adrian Georgescu,
    Elena-Ramona Modroiu, Sergio Gutierrez.
@@ -389,18 +390,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   2.  Dan Pascu (@danpascu)               Mar 2004 - Aug 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Eric Tamme (@etamme)                Jul 2014 - Jul 2014
-   9.  Saúl Ibarra Corretgé (@saghul)      Mar 2010 - Dec 2013
-   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   5.  Dan Pascu (@danpascu)               Mar 2004 - Aug 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Eric Tamme (@etamme)                Jul 2014 - Jul 2014
 
-   All remaining contributors: Sergio Gutierrez, Sergio Gutierrez,
+   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
+   Vlad Paiu (@vladpaiu), Sergio Gutierrez, Sergio Gutierrez,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Marcus
    Hunger, Klaus Darilion, Elena-Ramona Modroiu, Andrei
@@ -413,12 +415,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Dan Pascu
-   (@danpascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Saúl Ibarra
-   Corretgé (@saghul), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
-   Modroiu.
+   Last edited by: Alexey Vasilyev (@vasilevalex), Liviu Chircu
+   (@liviuchircu), Dan Pascu (@danpascu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Saúl Ibarra Corretgé (@saghul),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

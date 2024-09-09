@@ -125,21 +125,22 @@ void release_urecord(urecord_t* _r, char skip_replication);
 /*
  * Insert new contact
  */
-int insert_ucontact(urecord_t* _r, str* _contact,
-		ucontact_info_t* _ci, ucontact_t** _c, char skip_replication);
+int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
+        const struct ct_match *match, char skip_replication, ucontact_t** _c);
 
 
 /*
  * Delete ucontact from urecord
  */
-int delete_ucontact(urecord_t* _r, struct ucontact* _c, char skip_replication);
+int delete_ucontact(urecord_t* _r, struct ucontact* _c,
+        const struct ct_match *match, char skip_replication);
 
 
 /*
  * Get pointer to ucontact with given contact
  */
 int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
-		struct ct_match *match, struct ucontact** _co);
+        const struct ct_match *match, struct ucontact** _co);
 int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co);
 
 

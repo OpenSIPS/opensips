@@ -55,8 +55,8 @@
 #include "../../route.h"
 #include "../../action.h"
 #include "../../dset.h"
-#include "../../ipc.h"
 #include "../../data_lump.h"
+#include "../../parser/parse_methods.h"
 
 #include "ut.h"
 #include "h_table.h"
@@ -76,19 +76,7 @@ int pass_provisional_replies = 0;
 
 /* T holder for the last local transaction */
 struct cell** last_localT;
-
-/* used for passing multiple params across an RPC for running local route */
-struct t_uac_rpc_param {
-	struct cell *new_cell;
-	char *buf;
-	int buf_len;
-	str next_hop;
-	/* this is a mini dlg-struct, carrying only send_sock and next_hop
-	 * as this is what the local route needs */
-	dlg_t dlg;
-};
-
-
+static struct sip_msg dummy_msg;
 
 /*
  * Initialize UAC
@@ -96,7 +84,7 @@ struct t_uac_rpc_param {
 int uac_init(void)
 {
 	str src[3];
-	struct socket_info *si;
+	const struct socket_info *si;
 
 	if (RAND_MAX < TM_TABLE_ENTRIES) {
 		LM_WARN("uac does not spread across the whole hash table\n");
@@ -175,21 +163,28 @@ static inline unsigned int dlg2hash( dlg_t* dlg )
 
 
 static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
-																dlg_t *dialog)
+				dlg_t *dialog, struct sip_msg **ret_req, char **ret_req_buf)
 {
-	struct sip_msg *req;
+	struct sip_msg *req = NULL;
 	struct cell *backup_cell;
 	int backup_route_type;
 	struct retr_buf *request;
 	struct proxy_l *new_proxy = NULL;
 	union sockaddr_union new_to_su;
-	struct socket_info *new_send_sock;
+	const struct socket_info *new_send_sock;
 	unsigned short dst_changed;
-	char *buf1;
+	char *buf1=NULL, *sipmsg_buf;
 	int buf_len1, sip_msg_len;
 	str h_to, h_from, h_cseq, h_callid;
 
+	/* do not build buffer if callbacks are not needed and
+	 * there are no local routes */
+	if (!has_tran_tmcbs(new_cell, TMCB_LOCAL_REQUEST_OUT) &&
+			!sroutes->local.a)
+		return 0;
+
 	LM_DBG("building sip_msg from buffer\n");
+	sipmsg_buf = *buf; /* remember the buffer used to get the sip_msg */
 	req = buf_to_sip_msg( *buf, *buf_len, dialog);
 	if (req==NULL) {
 		LM_ERR("failed to build sip_msg from buffer\n");
@@ -204,7 +199,12 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 
 	/* run the route */
 	swap_route_type( backup_route_type, LOCAL_ROUTE);
-	run_top_route( sroutes->local, req);
+	if (sroutes && sroutes->local.a)
+		run_top_route( sroutes->local, req);
+	if (has_tran_tmcbs(new_cell, TMCB_LOCAL_REQUEST_OUT) ) {
+		run_trans_callbacks(TMCB_LOCAL_REQUEST_OUT, new_cell,
+			req, 0, 0);
+	}
 	set_route_type( backup_route_type );
 
 	/* transfer current message context back to t */
@@ -219,7 +219,8 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 	if (req->new_uri.s || req->force_send_socket!=dialog->send_sock ||
 	req->dst_uri.len != dialog->hooks.next_hop->len ||
 	memcmp(req->dst_uri.s,dialog->hooks.next_hop->s,req->dst_uri.len) ||
-	(dst_changed=0)!=0 || req->add_rm || should_update_sip_body(req)) {
+	(dst_changed=0)!=0 || req->add_rm || should_update_sip_body(req)
+	|| req->msg_flags&FL_FORCE_LOCAL_RPORT) {
 
 		/* stuff changed in the request, we may need to rebuild, so let's
 		 * evaluate the changes first, mainly if the destination changed */
@@ -230,7 +231,7 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 			/* calculate the socket corresponding to next hop */
 			new_proxy = uri2proxy(
 				req->dst_uri.s ? &(req->dst_uri) : &req->new_uri,
-				PROTO_NONE );
+				req->force_send_socket?req->force_send_socket->proto:PROTO_NONE);
 			if (new_proxy==0)
 				goto skip_update;
 			/* use the first address */
@@ -238,18 +239,31 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 				&new_proxy->host, new_proxy->addr_idx,
 				new_proxy->port ? new_proxy->port:SIP_PORT);
 			/* get the send socket */
-			new_send_sock = get_send_socket( req, &new_to_su,
-				new_proxy->proto);
-			if (new_send_sock==NULL) {
-				free_proxy( new_proxy );
-				pkg_free( new_proxy );
-				LM_ERR("no socket found for the new destination\n");
-					goto skip_update;
+			if (req->force_send_socket) {
+				new_send_sock = req->force_send_socket;
+			} else if (dialog->pref_sock &&
+			dialog->pref_sock->proto==new_proxy->proto) {
+				new_send_sock = dialog->pref_sock;
+			} else {
+				new_send_sock = get_send_socket( req, &new_to_su,
+					new_proxy->proto);
+				if (new_send_sock==NULL) {
+					free_proxy( new_proxy );
+					pkg_free( new_proxy );
+					LM_ERR("no socket found for the new destination\n");
+						goto skip_update;
+				}
 			}
 		}
 
-		/* if interface change, we need to re-build the via */
-		if (new_send_sock && new_send_sock != dialog->send_sock) {
+		/* if interface change or new VIA related flags were added,
+		 * we need to re-build the via */
+		if ( (new_send_sock && new_send_sock != dialog->send_sock)
+		|| (req->msg_flags&FL_FORCE_LOCAL_RPORT &&
+		/* coding hack to get the new_send_sock set if FL_FORCE_LOCAL_RPORT
+		 * was set (note that new_send_sock gets set only if destination was
+		 * changed, which is not the case here) */
+		(new_send_sock=dialog->send_sock)!=NULL) ) {
 
 			LM_DBG("Interface change in local route -> "
 				"rebuilding via\n");
@@ -334,7 +348,13 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 			}
 		}
 
-		shm_free(*buf);
+		/* the `buf` buffer is the same as `sipmsg_buf`, so we
+		 * do not loose the original msg buffer; later, if we 
+		 * see a non zero `buf1` (as a marker that we visited this
+		 * part of the code), we know that we have to release the
+		 * `sipmsg_buf` also; if we did not visit this part of the
+		 * code, the `buf` == `sipmsg_buf` and  `buf1` is NULL, so
+		 * nothing to free later */
 		*buf = buf1;
 		*buf_len = buf_len1;
 		/* use new buffer */
@@ -367,112 +387,20 @@ skip_update:
 		free_proxy( new_proxy );
 		pkg_free( new_proxy );
 	}
-	free_sip_msg(req);
-	pkg_free(req);
 
-	return 0;
-}
-
-
-static void rpc_run_local_route(int sender, void *v_param)
-{
-	struct t_uac_rpc_param *param=(struct t_uac_rpc_param *)v_param;
-	struct cell *new_cell = param->new_cell;
-	struct usr_avp **backup;
-	int ret;
-
-	if (sroutes->local.a==NULL) {
-
-		/* nothing to run here */
-		ret = -2;
-
+	if (ret_req) {
+		*ret_req = req;
+		/* if the buffer was rebuilt, return also the original buffer */
+		*ret_req_buf = buf1 ? sipmsg_buf : NULL;
 	} else {
-
-		/* run the local route */
-
-		/* set transaction AVP list */
-		backup = set_avp_list( &new_cell->user_avps);
-
-		ret = run_local_route( new_cell, &param->buf, &param->buf_len,
-			&param->dlg);
-
-		set_avp_list( backup );
-
-	}
-
-	/* setting the len of the resulting buffer is the marker for the calling
-	 * process that we are done
-	 * IMPORTANT: this MUST be the last thing to do here */
-	if (ret==0) {
-		/* success */
-		new_cell->uac[0].request.buffer.s = param->buf;
-		new_cell->uac[0].request.buffer.len = param->buf_len;
-	} else {
-		new_cell->uac[0].request.buffer.s = NULL;
-		new_cell->uac[0].request.buffer.len = -1;
-	}
-
-	/* cleanup */
-	if (param->dlg.hooks.next_hop)
-		shm_free(param->dlg.hooks.next_hop->s);
-	shm_free(param);
-}
-
-
-static inline int rpc_trigger_local_route(struct cell *new_cell,
-											char *buf, int len, dlg_t* dialog)
-{
-	struct t_uac_rpc_param *rpc_p = NULL;
-
-	rpc_p=(struct t_uac_rpc_param*)shm_malloc(sizeof(struct t_uac_rpc_param));
-	if (rpc_p==NULL) {
-		LM_ERR("failed to allocate RPC param in shm, not running local"
-			" route :(\n");
-		return -1;
-	}
-	memset( rpc_p, 0, sizeof(struct t_uac_rpc_param));
-
-	rpc_p->new_cell = new_cell;
-	rpc_p->buf = buf;
-	rpc_p->buf_len = len;
-	rpc_p->dlg.send_sock = dialog->send_sock;
-	if (dialog->hooks.next_hop) {
-		rpc_p->dlg.hooks.next_hop = &rpc_p->next_hop;
-		if (shm_str_dup( &rpc_p->next_hop, dialog->hooks.next_hop)<0) {
-			LM_ERR("failed to duplicate next_hop in shm, not running local"
-				" route :(\n");
-			goto error;
-		}
-	}
-
-	new_cell->uac[0].request.buffer.len=0;
-
-	if ( ipc_dispatch_rpc( rpc_run_local_route, (void*)rpc_p) < 0 ) {
-		LM_ERR("failed to dispatch RPC job, not running local"
-			" route :(\n");
-		shm_free(rpc_p->dlg.hooks.next_hop->s);
-		goto error;
-	}
-
-	/* wait for the job to be executed - doing a busy-waiting is a bit of
-	 * an ugly hack, but harmless - we do block module procs, not workers;
-	 * also this is a temporary solution until next releases, where 
-	 * the module procs will also have reactors ;) */
-	while (new_cell->uac[0].request.buffer.len==0)
-		usleep(10);
-
-	/* if success, the len and buf are valid and transaction updated. */
-	/* if error, the len is -1, buf NULL and the transaction not updated.
-	 *    -> the upper function will set the original buffer */
-	if (new_cell->uac[0].request.buffer.len==-1) {
-		new_cell->uac[0].request.buffer.len = 0;
-		new_cell->uac[0].request.buffer.s = NULL;
+		free_sip_msg(req);
+		pkg_free(req);
+		/* if the buffer was rebuilt, free the original one */
+		if (buf1)
+			shm_free(sipmsg_buf);
 	}
 
 	return 0;
-error:
-	shm_free(rpc_p);
-	return -1;
 }
 
 
@@ -485,12 +413,15 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	union sockaddr_union to_su;
 	struct cell *new_cell;
 	struct retr_buf *request;
+	struct sip_msg *req = NULL;
+	char *buf_req = NULL;
 	struct usr_avp **backup;
 	char *buf;
 	int buf_len;
 	int ret, flags;
-	unsigned int hi;
+	unsigned int hi, method_id;
 	struct proxy_l *proxy;
+	struct tm_callback *it;
 
 	ret=-1;
 
@@ -506,7 +437,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	LM_DBG("next_hop=<%.*s>\n",dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 
-	/* calculate the socket corresponding to next hop */
+	/* calculate the socket corresponding to next hop ; here we take
+	 * into consideration the protocol forced by the "send_sock" */
 	proxy = uri2proxy( dialog->hooks.next_hop,
 		dialog->send_sock ? dialog->send_sock->proto : PROTO_NONE );
 	if (proxy==0)  {
@@ -525,12 +457,18 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			dialog->send_sock = NULL;
 	}
 	if (dialog->send_sock==NULL) {
-		/* get the send socket */
-		dialog->send_sock = get_send_socket( NULL/*msg*/, &to_su, proxy->proto);
-		if (!dialog->send_sock) {
-			LM_ERR("no corresponding socket for af %d\n", to_su.s.sa_family);
-			ser_error = E_NO_SOCKET;
-			goto error3;
+		if (dialog->pref_sock && proxy->proto == dialog->pref_sock->proto) {
+			dialog->send_sock = dialog->pref_sock;
+		} else {
+			/* get the send socket */
+			dialog->send_sock = get_send_socket(NULL/*msg*/, &to_su,
+				proxy->proto);
+			if (!dialog->send_sock) {
+				LM_ERR("no corresponding socket for af %d\n",
+					to_su.s.sa_family);
+				ser_error = E_NO_SOCKET;
+				goto error3;
+			}
 		}
 	}
 	LM_DBG("sending socket is %.*s \n",
@@ -548,6 +486,11 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	 * we might need it later for accessing dialog specific info */
 	if (dialog->dialog_ctx)
 		new_cell->dialog_ctx = dialog->dialog_ctx;
+	if (has_new_local_tmcbs()) {
+		if (parse_method(method->s, method->s + method->len, &method_id) == NULL)
+			method_id = METHOD_UNDEF;
+		run_new_local_callbacks(new_cell, NULL, method_id);
+	}
 
 	/* pass the transaction flags from dialog to transaction */
 	new_cell->flags |= dialog->T_flags;
@@ -588,6 +531,10 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	/* set transaction AVP list */
 	backup = set_avp_list( &new_cell->user_avps );
 
+	/* run the "transaction created" callback if set */
+	if (dialog->t_created_cb)
+		dialog->t_created_cb( new_cell, dialog->t_created_cb_param);
+
 	/* ***** Create the message buffer ***** */
 	buf = build_uac_req(method, headers, body, dialog, 0, new_cell, &buf_len);
 	if (!buf) {
@@ -596,18 +543,29 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		goto error1;
 	}
 
-	/* run the local route, inline or remote, depending on the process
-	 * we are running in */
-	if (sroutes==NULL) {
-		/* do IPC to run the local route */
-		rpc_trigger_local_route( new_cell, buf, buf_len, dialog);
-	} else if (sroutes->local.a) {
-		run_local_route( new_cell, &buf, &buf_len, dialog);
-	}
+	/* run the local route */
+	if (sroutes==NULL)
+		LM_BUG("running local route/t_uac, but no routes in the process\n");
+	run_local_route( new_cell, &buf, &buf_len, dialog, &req, &buf_req);
 
 	if (request->buffer.s==NULL) {
 		request->buffer.s = buf;
 		request->buffer.len = buf_len;
+	}
+
+	if (ref_script_route_is_valid(tm_local_request_route)) {
+		LM_DBG("Found Local-Request Route...\n");
+		memset(&dummy_msg, 0, sizeof(struct sip_msg));
+		dummy_msg.buf = request->buffer.s;
+		dummy_msg.len = request->buffer.len;
+
+		if (parse_msg(request->buffer.s, request->buffer.len, &dummy_msg)==0){
+			LM_DBG("Parsed Message, executing Local-Request Route "
+				"with Message...\n");
+			run_top_route(sroutes->request[tm_local_request_route->idx],
+				&dummy_msg);
+		}
+		free_sip_msg(&dummy_msg);
 	}
 
 	/* for DNS based failover, copy the DNS proxy into transaction
@@ -634,11 +592,13 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	if (new_cell->uac[0].br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 
+	set_bavp_list(&new_cell->uac[0].user_avps);
 	if (SEND_BUFFER(request) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n",
 			dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 	}
+	reset_bavp_list();
 
 	tcp_no_new_conn = 0;
 
@@ -646,6 +606,23 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		t_release_transaction(new_cell);
 	} else {
 		start_retr(request);
+	}
+
+	/* successfully sent out */
+
+	if ( req ) {
+		/* run callbacks 
+		 * NOTE: this callback will be executed ONLY if the local route
+		 * was executed (so we have the msg) */
+		if ( has_tran_tmcbs( new_cell, TMCB_MSG_SENT_OUT) ) {
+			set_extra_tmcb_params( &request->buffer,
+				&request->dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT, new_cell,
+				req, 0, 0);
+		}
+		free_sip_msg(req);
+		pkg_free(req);
+		if (buf_req) shm_free(buf_req);
 	}
 
 	set_avp_list( backup );
@@ -659,6 +636,15 @@ error1:
 	remove_from_hash_table_unsafe(new_cell);
 	UNLOCK_HASH(hi);
 error2:
+	/* if we set a callback, prevent any eventual release function to run
+	 * and let the upper layer to take care of distoying the callback params
+	 * or any resources it passed here. */
+	if (cb && release_func)
+		for(it=new_cell->tmcb_hl.first ; it ; it=it->next)
+			if (it->callback==cb) {
+				it->release=NULL;
+				break;
+			}
 	free_cell(new_cell);
 error3:
 	free_proxy( proxy );

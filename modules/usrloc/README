@@ -52,17 +52,28 @@ usrloc Module
               1.5.30. matching_mode (integer)
               1.5.31. cseq_delay (integer)
               1.5.32. location_cluster (integer)
-              1.5.33. skip_replicated_db_ops (int)
-              1.5.34. max_contact_delete (int)
-              1.5.35. hash_size (integer)
-              1.5.36. regen_broken_contactid (integer)
-              1.5.37. latency_event_min_us (integer)
-              1.5.38. latency_event_min_us_delta (integer)
-              1.5.39. pinging_mode (string)
-              1.5.40. mi_dump_kv_store (integer)
-              1.5.41. contact_refresh_timer (boolean)
+              1.5.33. ha_cluster (integer)
+              1.5.34. ha_shtag (string)
+              1.5.35. skip_replicated_db_ops (int)
+              1.5.36. max_contact_delete (int)
+              1.5.37. hash_size (integer)
+              1.5.38. regen_broken_contactid (integer)
+              1.5.39. latency_event_min_us (integer)
+              1.5.40. latency_event_min_us_delta (integer)
+              1.5.41. pinging_mode (string)
+              1.5.42. mi_dump_kv_store (integer)
+              1.5.43. contact_refresh_timer (boolean)
 
         1.6. Exported Functions
+
+              1.6.1. ul_add_key(domain, aor, key_name,
+                      [key_value])
+
+              1.6.2. ul_get_key(domain, aor, key_name,
+                      destination)
+
+              1.6.3. ul_del_key(domain, aor, key_name)
+
         1.7. Exported MI Functions
 
               1.7.1. ul_rm
@@ -179,15 +190,20 @@ usrloc Module
    1.30. Set matching_mode parameter
    1.31. Set cseq_delay parameter
    1.32. Setting the location_cluster parameter
-   1.33. Setting the skip_replicated_db_ops parameter
-   1.34. Setting the max_contact_delete parameter
-   1.35. Set hash_size parameter
-   1.36. Set regen_broken_contactid parameter
-   1.37. Set latency_event_min_us parameter
-   1.38. Set latency_event_min_us_delta parameter
-   1.39. Set pinging_mode parameter
-   1.40. Set mi_dump_kv_store parameter
-   1.41. Set contact_refresh_timer parameter
+   1.33. Setting the ha_cluster parameter
+   1.34. Setting the ha_shtag parameter
+   1.35. Setting the skip_replicated_db_ops parameter
+   1.36. Setting the max_contact_delete parameter
+   1.37. Set hash_size parameter
+   1.38. Set regen_broken_contactid parameter
+   1.39. Set latency_event_min_us parameter
+   1.40. Set latency_event_min_us_delta parameter
+   1.41. Set pinging_mode parameter
+   1.42. Set mi_dump_kv_store parameter
+   1.43. Set contact_refresh_timer parameter
+   1.44. ul_add_key usage
+   1.45. ul_get_key usage
+   1.46. ul_del_key usage
 
 Chapter 1. Admin Guide
 
@@ -903,7 +919,35 @@ modparam("usrloc", "cseq_delay", 5)
 modparam("usrloc", "location_cluster", 1)
 ...
 
-1.5.33. skip_replicated_db_ops (int)
+1.5.33. ha_cluster (integer)
+
+   Only relevant in "federation-cachedb" cluster_mode. Denotes the
+   HA cluster ID to use in order to establish the active node
+   within the HA pair, such that only that node performs WRITE
+   operations to CacheDB.
+
+   Default value is 0 (disabled).
+
+   Example 1.33. Setting the ha_cluster parameter
+...
+modparam("usrloc", "ha_cluster", 4)
+...
+
+1.5.34. ha_shtag (string)
+
+   Only relevant in "federation-cachedb" cluster_mode. Denotes the
+   HA cluster sharing tag to use in order to establish the active
+   node within the HA pair, such that only that node performs
+   WRITE operations to CacheDB.
+
+   Default value is NULL (disabled).
+
+   Example 1.34. Setting the ha_shtag parameter
+...
+modparam("usrloc", "ha_shtag", "vip2")
+...
+
+1.5.35. skip_replicated_db_ops (int)
 
    Prevent OpenSIPS from performing any DB-related contact
    operations when events are received over the Binary Interface.
@@ -915,12 +959,12 @@ modparam("usrloc", "location_cluster", 1)
    More details on the user location replication mechanism are
    available in Distributed SIP User Location
 
-   Example 1.33. Setting the skip_replicated_db_ops parameter
+   Example 1.35. Setting the skip_replicated_db_ops parameter
 ...
 modparam("usrloc", "skip_replicated_db_ops", 1)
 ...
 
-1.5.34. max_contact_delete (int)
+1.5.36. max_contact_delete (int)
 
    Relevant only in WRITE_THROUGH or WRITE_BACK schemes. The
    maximum number of contacts to be deleted from the database at
@@ -929,12 +973,12 @@ modparam("usrloc", "skip_replicated_db_ops", 1)
 
    Default value is "10"
 
-   Example 1.34. Setting the max_contact_delete parameter
+   Example 1.36. Setting the max_contact_delete parameter
 ...
 modparam("usrloc", "max_contact_delete", 10)
 ...
 
-1.5.35. hash_size (integer)
+1.5.37. hash_size (integer)
 
    The number of entries of the hash table used by usrloc to store
    the location records is 2^hash_size. For hash_size=4, the
@@ -944,12 +988,12 @@ modparam("usrloc", "max_contact_delete", 10)
 
    Default value is “9”.
 
-   Example 1.35. Set hash_size parameter
+   Example 1.37. Set hash_size parameter
 ...
 modparam("usrloc", "hash_size", 10)
 ...
 
-1.5.36. regen_broken_contactid (integer)
+1.5.38. regen_broken_contactid (integer)
 
    Since version 2.2, contact_id concept was introduced. Since
    this parameter validates a contact each time OpenSIPS is
@@ -961,12 +1005,12 @@ modparam("usrloc", "hash_size", 10)
 
    Default value is “0(not enabled)”
 
-   Example 1.36. Set regen_broken_contactid parameter
+   Example 1.38. Set regen_broken_contactid parameter
 ...
 modparam("usrloc", "regen_broken_contactid", 1)
 ...
 
-1.5.37. latency_event_min_us (integer)
+1.5.39. latency_event_min_us (integer)
 
    Defines a minimal pinging latency threshold, in microseconds,
    past which contact pinging latency update events will get
@@ -978,13 +1022,13 @@ modparam("usrloc", "regen_broken_contactid", 1)
 
    Default value is “0 (no bottom limit set)”.
 
-   Example 1.37. Set latency_event_min_us parameter
+   Example 1.39. Set latency_event_min_us parameter
 ...
 # raise an event for any 425+ ms pinging latency
 modparam("usrloc", "latency_event_min_us", 425000)
 ...
 
-1.5.38. latency_event_min_us_delta (integer)
+1.5.40. latency_event_min_us_delta (integer)
 
    Defines a minimal, absolute pinging latency difference, in
    microseconds, past which contact pinging latency update events
@@ -997,23 +1041,23 @@ modparam("usrloc", "latency_event_min_us", 425000)
 
    Default value is “0 (no minimal latency delta set)”.
 
-   Example 1.38. Set latency_event_min_us_delta parameter
+   Example 1.40. Set latency_event_min_us_delta parameter
 ...
 # raise an event only if a contact has pinging latency swings of 300+ ms
 modparam("usrloc", "latency_event_min_us_delta", 300000)
 ...
 
-1.5.39. pinging_mode (string)
+1.5.41. pinging_mode (string)
 
    Depending on the cluster_mode, the module can perform contact
-   pinging using one of at most two possible heuristics:
+   pinging using one of two possible heuristics:
      * "ownership" - this instance will only attempt to ping a
        contact if it decides it is the logical owner of the
        contact. If a shared tag is attached to a contact, a node
        will keep sending pings to that contact as long as it owns
        the respective tag. If no shared tag has been specified for
        a given contact, the default is to assume permanent
-       ownership of the contact and always ping it.
+       ownership of the contact and ping it upon request.
      * "cooperation" - the assumption behind this pinging
        heuristic is that all user location cluster nodes are
        symmetrical (possibly front-ended by a SIP traffic
@@ -1036,13 +1080,13 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
    pinging logic. Any unaccepted value, according to the above
    table, set for those modes will be silently discarded.
 
-   Example 1.39. Set pinging_mode parameter
+   Example 1.41. Set pinging_mode parameter
 ...
 # prepare an active/backup "full-sharing" setup, with no front-end
 modparam("usrloc", "pinging_mode", "ownership")
 ...
 
-1.5.40. mi_dump_kv_store (integer)
+1.5.42. mi_dump_kv_store (integer)
 
    Enable in order to include the "KV-Store" field in all usrloc
    MI commands which output AoR or Contact representations. This
@@ -1052,13 +1096,13 @@ modparam("usrloc", "pinging_mode", "ownership")
 
    Default value is “0 (disabled)”.
 
-   Example 1.40. Set mi_dump_kv_store parameter
+   Example 1.42. Set mi_dump_kv_store parameter
 ...
 # include the "KV-Store" key in all usrloc MI output
 modparam("usrloc", "mi_dump_kv_store", 1)
 ...
 
-1.5.41. contact_refresh_timer (boolean)
+1.5.43. contact_refresh_timer (boolean)
 
    Enable a timer which will periodically scan a sorted list of
    contacts and raise the E_UL_CONTACT_REFRESH for any of them
@@ -1068,14 +1112,81 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
    Default value is “false (disabled)”.
 
-   Example 1.41. Set contact_refresh_timer parameter
+   Example 1.43. Set contact_refresh_timer parameter
 ...
 modparam("usrloc", "contact_refresh_timer", true)
 ...
 
 1.6. Exported Functions
 
-   There are no exported functions that could be used in scripts.
+1.6.1.  ul_add_key(domain, aor, key_name, [key_value])
+
+   Append a Key/Value to the Key-Value-Store of a Usrloc-Record.
+
+   Returns false, if no record is found is usrloc.
+
+   Meaning of the parameters is as follows:
+     * domain (string) - Domain of the AOR, e.g. "location"
+     * aor (string) - Address-of-Record, save the key for a
+       specific (registered) user.
+     * key (string) - The name of the key to be stored.
+     * value (string, optional) - The value to be stored. Not
+       providing the value or by providing an empty value, will
+       delete the entry.
+
+   This function can be used in ANY route.
+
+   Example 1.44. ul_add_key usage
+...
+ul_add_key("location", "$tU@$td", "service_route", "$hdr(Service-Route)"
+);
+...
+
+1.6.2.  ul_get_key(domain, aor, key_name, destination)
+
+   Retrieve a Key/Value from the Key-Value-Store of a
+   Usrloc-Record.
+
+   Returns false, if no record is found is usrloc or no according
+   key is found.
+
+   Meaning of the parameters is as follows:
+     * domain (string) - Domain of the AOR, e.g. "location"
+     * aor (string) - Address-of-Record, save the key for a
+       specific (registered) user.
+     * key (string) - The name of the key to be retrieved.
+     * destination (variable) - A variable, where to store the
+       retrieved key.
+
+   This function can be used in ANY route.
+
+   Example 1.45. ul_get_key usage
+...
+if (ul_get_key("location", "$tU@$td", "service_route", "$avp(service_rou
+te)")) {
+        append_to_reply("Service-Route: $avp(service_route)\r\n");
+}
+...
+
+1.6.3.  ul_del_key(domain, aor, key_name)
+
+   Deletes a Key/Value from the Key-Value-Store of a
+   Usrloc-Record.
+
+   Returns false, if no record is found is usrloc.
+
+   Meaning of the parameters is as follows:
+     * domain (string) - Domain of the AOR, e.g. "location"
+     * aor (string) - Address-of-Record, save the key for a
+       specific (registered) user.
+     * key (string) - The name of the key to be deleted.
+
+   This function can be used in ANY route.
+
+   Example 1.46. ul_del_key usage
+...
+ul_del_key("location", "$tU@$td", "service_route");
+...
 
 1.7. Exported MI Functions
 
@@ -1120,17 +1231,19 @@ modparam("usrloc", "contact_refresh_timer", true)
    Adds a new contact for an user AOR.
 
    Parameters:
-     * table name - table where the contact will be added (Ex:
-       location).
-     * aor - user AOR in username[@domain] format (domain must be
-       supplied only if use_domain option is on).
-     * contact - contact string to be added
-     * expires - expires value of the contact
-     * q - Q value of the contact
-     * unused - unused attribute (kept for backword compatibility)
-     * flags - internal USRLOC flags of the contact
-     * cflags - per branch flags of the contact
-     * methods - mask with supported requests of the contact
+     * table name (string) - table where the contact will be added
+       (Ex: "location").
+     * aor (string) - user AOR in username[@domain] format (domain
+       must be supplied only if use_domain option is on).
+     * contact (string) - Contact URI to be added
+     * expires (int) - expires value of the contact
+     * q (string) - Q value of the contact
+     * flags (int) - internal USRLOC flags of the contact
+     * cflags (int) - per branch flags of the contact
+     * methods (int) - bitmask with supported requests of the
+       contact. To whitelist all SIP methods, simply use the value
+       32767. For a breakdown of each method's value, see the
+       "request_method" internal enum.
 
 1.7.6.  ul_show_contact
 
@@ -1158,7 +1271,8 @@ modparam("usrloc", "contact_refresh_timer", true)
 
 1.7.8.  ul_cluster_sync
 
-   This command will only take effect if the module is running
+   This command will only take effect if the target OpenSIPS
+   instance is paired with a hot backup instance, while running
    under a cluster-enabled working_mode_preset.
 
    The current node will locate a healthy donor node within the
@@ -1250,8 +1364,8 @@ modparam("usrloc", "contact_refresh_timer", true)
        string is options, if missing in the contact, the event
        will push the empty string for this event field.
      * latency - The latency of the last successful ping for this
-       contact. Until the first ping reply for a given contact
-       arrives, its pinging latency will be 0.
+       contact, in microseconds. Until the first ping reply for a
+       given contact arrives, its pinging latency will be 0.
      * shtag - The shared tag of the contact, which helps
        determine if the current node owns the contact (e.g.
        possibly using the $cluster.sh_tag pseudo-variable in order
@@ -1576,24 +1690,24 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 311 185 8470 3451
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 242 148 4208 3614
-   4. Daniel-Constantin Mierla (@miconda) 40 29 544 308
-   5. Ionut Ionita (@ionutrazvanionita) 40 24 1099 413
-   6. Vlad Patrascu (@rvlad-patrascu) 40 22 787 651
-   7. Jiri Kuthan (@jiriatipteldotorg) 35 25 975 120
-   8. Razvan Crainea (@razvancrainea) 28 22 380 121
+   1. Jan Janak (@janakj) 414 117 15689 10095
+   2. Liviu Chircu (@liviuchircu) 346 207 9281 3737
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 245 150 4232 3624
+   4. Vlad Patrascu (@rvlad-patrascu) 43 25 794 661
+   5. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
+   6. Daniel-Constantin Mierla (@miconda) 40 29 544 308
+   7. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
+   8. Razvan Crainea (@razvancrainea) 31 24 427 159
    9. Henning Westerholt (@henningw) 21 11 462 356
-   10. Andrei Pelinescu-Onciul 17 13 151 91
+   10. Maksym Sobolyev (@sobomax) 19 13 347 162
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Nils
-   Ohlmeier, Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
-   (@ovidiusas), Maksym Sobolyev (@sobomax), Ionel Cerghit
-   (@ionel-cerghit), Andrei Dragus, Walter Doekes (@wdoekes), Anca
-   Vamanu, Alessio Garzi (@Ozzyboshi), Zero King (@l2dy), Dusan
-   Klinec (@ph4r05), Andrei Datcu (@andrei-datcu), Juha Heinanen
-   (@juha-h), Marcus Hunger, Jamey Hicks, Peter Lemenkov
+   All remaining contributors: Andrei Pelinescu-Onciul, Vlad Paiu
+   (@vladpaiu), Walter Doekes (@wdoekes), Nils Ohlmeier, Eseanu
+   Marius Cristian (@eseanucristian), Ovidiu Sas (@ovidiusas),
+   Ionel Cerghit (@ionel-cerghit), Andrei Dragus, Anca Vamanu,
+   Alessio Garzi (@Ozzyboshi), Zero King (@l2dy), Dusan Klinec
+   (@ph4r05), Andrei Datcu (@andrei-datcu), Carsten Bock, Juha
+   Heinanen (@juha-h), Marcus Hunger, Jamey Hicks, Peter Lemenkov
    (@lemenkov), Andreas Granig, Shlomi Gutman, @jalung, Jeffrey
    Magder, Phil D'Amore, Norman Brandinger (@NormB), David
    Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon,
@@ -1621,19 +1735,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2021
-   2.  Walter Doekes (@wdoekes)            Apr 2019 - Sep 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - May 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   7.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
-   8.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
-   9.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
-   10. Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2024
+   2.  Carsten Bock                        Mar 2024 - Mar 2024
+   3.  Maksym Sobolyev (@sobomax)          Apr 2003 - Dec 2023
+   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
+   6.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jan 2023
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Feb 2022
+   8.  Walter Doekes (@wdoekes)            Apr 2019 - May 2021
+   9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
 
-   All remaining contributors: Dan Pascu (@danpascu), Shlomi
-   Gutman, @jalung, Vlad Paiu (@vladpaiu), Ionut Ionita
+   All remaining contributors: Alexey Vasilyev (@vasilevalex),
+   Aron Podrigal (@ar45), Alessio Garzi (@Ozzyboshi), Dan Pascu
+   (@danpascu), Shlomi Gutman, @jalung, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Ovidiu
    Sas (@ovidiusas), Dusan Klinec (@ph4r05), Eseanu Marius
    Cristian (@eseanucristian), David Sanders, Andrei Datcu
@@ -1644,8 +1759,7 @@ Chapter 3. Contributors
    Marcus Hunger, Elena-Ramona Modroiu, Jeffrey Magder, Norman
    Brandinger (@NormB), Andreas Granig, Juha Heinanen (@juha-h),
    Klaus Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
-   Jiri Kuthan (@jiriatipteldotorg), Maksym Sobolyev (@sobomax),
-   Jamey Hicks, Nils Ohlmeier.
+   Jiri Kuthan (@jiriatipteldotorg), Jamey Hicks, Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1654,8 +1768,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Zero King (@l2dy),
-   Alexey Vasilyev (@vasilevalex), Vlad Patrascu
+   Last edited by: Liviu Chircu (@liviuchircu), Carsten Bock, Zero
+   King (@l2dy), Alexey Vasilyev (@vasilevalex), Vlad Patrascu
    (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
    Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
    Ionita (@ionutrazvanionita), Eseanu Marius Cristian

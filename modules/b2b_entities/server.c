@@ -38,31 +38,16 @@
 #include "dlg.h"
 #include "b2b_entities.h"
 
-/**
- * Function to create a new server entity
- *	msg: SIP message
- *	b2b_cback: callback function to notify the logic about a change in dialog
- *	param: the parameter that will be used when calling b2b_cback function
- *
- *	Return value: the dialog key allocated in private memory
- *	*/
-
-str* server_new(struct sip_msg* msg, str* local_contact,
-		b2b_notify_t b2b_cback, str *mod_name, str* param)
+str* _server_new(struct sip_msg* msg, str* local_contact, b2b_notify_t b2b_cback,
+	str *mod_name, str* logic_key, struct ua_sess_init_params *ua_init_params,
+	struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
 	int ret;
 
-	if(param && param->len > B2BL_MAX_KEY_LEN)
-	{
-		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
-				param->len, B2BL_MAX_KEY_LEN);
-		return NULL;
-	}
-
 	/* create new entry in hash table */
-	dlg = b2b_new_dlg(msg, local_contact, 0, param, mod_name);
+	dlg = b2b_new_dlg(msg, local_contact, 0, logic_key, mod_name);
 	if( dlg == NULL )
 	{
 		LM_ERR("failed to create new dialog structure entry\n");
@@ -74,6 +59,10 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 
 	dlg->state = B2B_NEW;
 	dlg->b2b_cback = b2b_cback;
+	dlg->param = param;
+	dlg->free_param = free_param;
+	dlg->tracer = tracer;
+	dlg->ua_flags = ua_init_params?ua_init_params->flags:0;
 
 	/* get the pointer to the tm transaction to store it the tuple record */
 	dlg->uas_tran = tmb.t_gett();
@@ -92,25 +81,47 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 		}
 		dlg->uas_tran = tmb.t_gett();
 	}
+
+	/* start tracing for this transaction */
+	b2b_run_tracer( dlg, msg, dlg->uas_tran);
+
 	tmb.ref_cell(dlg->uas_tran);
 	tmb.t_setkr(REQ_FWDED);
 
 	LM_DBG("new server entity[%p]: callid=[%.*s] tag=[%.*s] param=[%.*s] dlg->uas_tran=[%p]\n",
 		dlg, dlg->callid.len, dlg->callid.s,
 		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
-		dlg->param.len, dlg->param.s, dlg->uas_tran);
+		dlg->logic_key.len, dlg->logic_key.s, dlg->uas_tran);
 
 	/* add the record in hash table */
 	dlg->db_flag = INSERTDB_FLAG;
-	return b2b_htable_insert(server_htable, dlg, hash_index, 0, B2B_SERVER, 0, 1);
+	return b2b_htable_insert(server_htable, dlg, hash_index, NULL, B2B_SERVER, 0, 1,
+		ua_init_params?ua_init_params->timeout:0);
 error:
 	if(dlg)
 		shm_free(dlg);
 	return NULL;
 }
 
+/**
+ * Function to create a new server entity
+ *	msg: SIP message
+ *	b2b_cback: callback function to notify the logic about a change in dialog
+ *	param: the parameter that will be used when calling b2b_cback function
+ *
+ *	Return value: the dialog key allocated in private memory
+ *	*/
 
-dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg)
+str* server_new(struct sip_msg* msg, str* local_contact,
+		b2b_notify_t b2b_cback, str *mod_name, str* logic_key,
+		struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
+{
+	return _server_new(msg, local_contact, b2b_cback, mod_name, logic_key, NULL,
+		tracer, param, free_param);
+}
+
+
+dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg, unsigned int maxfwd)
 {
 	dlg_t* td =NULL;
 
@@ -135,6 +146,11 @@ dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg)
 	td->rem_uri = dlg->from_uri;
 	td->loc_dname = dlg->to_dname;
 	td->rem_dname = dlg->from_dname;
+
+	if (maxfwd > 0) {
+		td->mf_enforced = 1;
+		td->mf_value = maxfwd - 1;
+	}
 
 	if(dlg->route_set[CALLER_LEG].s && dlg->route_set[CALLER_LEG].len)
 	{
