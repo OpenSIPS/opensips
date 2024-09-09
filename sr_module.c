@@ -427,16 +427,16 @@ int load_module(char* name)
 
 	module_warnings_len = sizeof(module_warnings) / sizeof(module_warnings[0]);
 
-	for (int i = 0; i < module_warnings_len; i++) {
-		if (strncmp(base_name, module_warnings[i].module, len) == 0) {
-			switch (module_warnings[i].flags)
+	for (i_tmp = 0; i_tmp < module_warnings_len; i_tmp++) {
+		if (strncmp(base_name, module_warnings[i_tmp].module, len) == 0) {
+			switch (module_warnings[i_tmp].flags)
 			{
 				case MOD_WARN_EXIT:
-					LM_ERR("%s\n", module_warnings[i].name);
+					LM_ERR("%s\n", module_warnings[i_tmp].name);
 					return -1;
 
 				case MOD_WARN_SKIP:
-					LM_WARN("%s\n", module_warnings[i].name);
+					LM_WARN("%s\n", module_warnings[i_tmp].name);
 					return 0;
 
 				default:
