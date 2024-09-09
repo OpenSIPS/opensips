@@ -1576,7 +1576,6 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	if (routes) {
 		rr_set = *routes;
 		rr_len = (short)routes->len;
-		LM_INFO("XXX: adding [%.*s]\n", routes->len, routes->s);
 	} else if(msg->record_route){
 		if(print_rr_body(msg->record_route, &rr_set, !is_req, 0, NULL) != 0){
 			LM_ERR("failed to print route records \n");
