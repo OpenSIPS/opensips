@@ -73,7 +73,7 @@ export AWS_DEFAULT_REGION=us-east-1
 		</programlisting>
 		<para>
 		Here you can find some cli commands such as create-queue, send/receive-message, etc.:
-		<ulink>https://docs.aws.amazon.com/cli/latest/reference/sqs/</ulink>
+		<ulink url="https://docs.aws.amazon.com/cli/latest/reference/sqs/"></ulink>
 		</para>
 	</section>
 	</section>
