@@ -1633,7 +1633,7 @@ void push(struct action* a, struct action** head)
  */
 int fix_rls(void)
 {
-	int i, ret, check_evr = 1;
+	int i, ret;
 
 	for(i=0;i<RT_NO;i++){
 		if(sroutes->request[i].a){
@@ -1693,20 +1693,6 @@ int fix_rls(void)
 
 		if(sroutes->event[i].a == NULL)
 			break;
-
-		if (check_evr && !module_loaded("event_route")) {
-			LM_ERR("event_route used but 'event_route' module not loaded!\n");
-			return E_CFG;
-		}
-		check_evr = 0;
-
-		/* if neither mod_init() nor function fixups have registered
-		 * this event name yet, do it on the spot! */
-		init_str(&st, sroutes->event[i].name);
-		if (evi_get_id(&st)<=EVI_ERROR && evi_publish_event(st)<=EVI_ERROR) {
-			LM_ERR("failed to publish event %s\n", sroutes->event[i].name);
-			return E_UNSPEC;
-		}
 
 		if ((ret=fix_actions(sroutes->event[i].a))!=0){
 			return ret;
