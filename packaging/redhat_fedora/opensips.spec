@@ -1136,7 +1136,6 @@ fi
 %{_libdir}/opensips/modules/enum.so
 %{_libdir}/opensips/modules/event_datagram.so
 %{_libdir}/opensips/modules/event_flatstore.so
-%{_libdir}/opensips/modules/event_route.so
 %{_libdir}/opensips/modules/event_routing.so
 %{_libdir}/opensips/modules/event_stream.so
 %{_libdir}/opensips/modules/event_virtual.so
@@ -1236,7 +1235,6 @@ fi
 %doc docdir/README.enum
 %doc docdir/README.event_datagram
 %doc docdir/README.event_flatstore
-%doc docdir/README.event_route
 %doc docdir/README.event_routing
 %doc docdir/README.event_stream
 %doc docdir/README.event_virtual
