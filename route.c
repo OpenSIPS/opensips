@@ -1689,8 +1689,6 @@ int fix_rls(void)
 	}
 
 	for(i = 1; i< EVENT_RT_NO; i++) {
-		str st;
-
 		if(sroutes->event[i].a == NULL)
 			break;
 
