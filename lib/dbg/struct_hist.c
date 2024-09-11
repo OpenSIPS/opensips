@@ -274,6 +274,7 @@ int _sh_log(osips_realloc_f realloc_f, struct struct_hist *sh,
 		if (!new) {
 			lock_release(&sh->wlock);
 			LM_ERR("oom\n");
+			va_end(ap);
 			return -1;
 		}
 		/* CAREFUL: newly added actions are not memset, for speed reasons! */

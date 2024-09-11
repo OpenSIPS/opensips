@@ -622,7 +622,7 @@ port:	  NUMBER	{ $$=$1; }
 
 portrange: portrange COMMA NUMBER MINUS NUMBER { IFOR();
 				if ($3 > $5) {
-					yyerrorf("invalid port range (%d > %d)\n", $3, $5);
+					yyerrorf("invalid port range (%d > %d)\n", (int)$3, (int)$5);
 					YYABORT;
 				}
 				pr_tmp = mk_port_range($3, $5);
@@ -644,7 +644,7 @@ portrange: portrange COMMA NUMBER MINUS NUMBER { IFOR();
 			}
 		 | NUMBER MINUS NUMBER { IFOR();
 				if ($1 > $3) {
-					yyerrorf("invalid port range (%d > %d)\n", $1, $3);
+					yyerrorf("invalid port range (%d > %d)\n", (int)$1, (int)$3);
 					YYABORT;
 				}
 				$$=mk_port_range($1, $3);

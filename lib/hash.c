@@ -28,7 +28,7 @@ gen_hash_t *hash_init(unsigned int size)
 	gen_lock_set_t *locks = NULL;
 
 	/* initialized the hash table */
-	for (n=0 ; n<(8*sizeof(n)) ; n++) {
+	for (n=0 ; n<(8*sizeof(n) - 1) ; n++) {
 		if (size==(1<<n))
 			break;
 		if (size<(1<<n)) {
