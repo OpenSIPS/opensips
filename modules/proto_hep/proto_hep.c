@@ -28,8 +28,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <netinet/tcp.h>
-#include <fcntl.h>
 
+#include <fcntl.h>
 #include "../../timer.h"
 #include "../../sr_module.h"
 #include "../../net/api_proto.h"
@@ -43,10 +43,13 @@
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../../pt.h"
 #include "../../ut.h"
+#include "../../reactor_proc.h"
 #include "../compression/compression_api.h"
 #include "../tls_mgm/api.h"
 #include "hep.h"
 #include "hep_cb.h"
+#include "signal.h"
+
 
 static int mod_init(void);
 static void destroy(void);
@@ -66,6 +69,9 @@ static int hep_udp_send(const struct socket_info* send_sock,
 static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id, unsigned int is_tls);
+static int hep_tcp_or_tls_send_single(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id, unsigned int is_tls);
 static int hep_tcp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
@@ -77,6 +83,9 @@ void free_hep_context(void* ptr);
 static int proto_hep_tls_conn_init(struct tcp_connection* c);
 static void proto_hep_tls_conn_clean(struct tcp_connection* c);
 static int hep_tls_write_on_socket(struct tcp_connection* c, int fd, char* buf, int len);
+void hep_process(int rank);
+static int use_single_process();
+
 
 static int hep_port = HEP_PORT;
 static int hep_async = 1;
@@ -95,6 +104,8 @@ int payload_compression = 0;
 int homer5_on = 1;
 str homer5_delim = {":", 0};
 
+int *hep_process_no;
+
 compression_api_t compression_api;
 load_compression_f load_compression;
 
@@ -106,6 +117,20 @@ static int hep_current_proto;
 union sockaddr_union local_su;
 
 struct tls_mgm_binds tls_mgm_api;
+
+typedef struct hep_job {
+	struct socket_info* send_sock;
+	char *buf;
+	unsigned int len;
+	union sockaddr_union to;
+	unsigned int id;
+	unsigned int is_tls;
+} hep_job_t;
+
+static const proc_export_t procs[] = {
+	{"HEP worker",  0,  0, hep_process, 1, PROC_FLAG_HAS_IPC},
+	{0,0,0,0,0,0}
+};
 
 static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_hep_init_udp, {{0,0,0}}, 0},
@@ -137,6 +162,8 @@ static const param_export_t params[] = {
 	{ "hep_id",                          STR_PARAM|USE_FUNC_PARAM, parse_hep_id     },
 	{ "homer5_on",                       INT_PARAM, &homer5_on                      },
 	{ "homer5_delim",                    STR_PARAM, &homer5_delim.s                 },
+	{ "use_single_process",				 INT_PARAM|USE_FUNC_PARAM,
+													(void *)use_single_process		},
 	{0, 0, 0}
 };
 
@@ -198,11 +225,17 @@ static int mod_init(void)
 		LM_ERR("could not initialize HEP id list!\n");
 		return -1;
 	}
-
 	if (protos[PROTO_HEP_TLS].listeners && load_tls_mgm_api(&tls_mgm_api)!=0) {
 		LM_DBG("failed to find TLS API - is tls_mgm module loaded?\n");
 		return -1;
 	}
+	hep_process_no = (int*)shm_malloc(sizeof(int));
+	if (!hep_process_no) {
+		LM_ERR("Failed to allocate shared memory for current_process_no\n");
+		return -1;
+	}
+
+	*hep_process_no = process_no;
 
 	if (payload_compression) {
 		load_compression =
@@ -233,6 +266,34 @@ static void destroy(void)
 	free_hep_cbs();
 	destroy_hep_id();
 }
+
+static int use_single_process(modparam_t type, void * val)
+{
+	int p;
+
+	p = (int)(unsigned long)val;
+
+	if(p == 0) {
+		return 0;
+	}
+	exports.procs = procs;
+	return 0;
+}
+
+void hep_process(int rank) {
+
+	*hep_process_no = process_no;
+	suppress_proc_log_event();
+
+	LM_DBG("Starting HEP worker process...\n");
+	if (reactor_proc_init("HEP worker") != 0) {
+		LM_CRIT("Failed to init HEP worker reactor\n");
+		abort();
+	}
+
+	reactor_proc_loop();
+}
+
 
 void free_hep_context(void *ptr)
 {
@@ -367,18 +428,252 @@ again:
 	return n;
 }
 
+
+static hep_job_t *create_hep_job(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id, unsigned int is_tls) {
+	hep_job_t *new_job;
+	new_job = (hep_job_t*)shm_malloc(sizeof(hep_job_t) + len);
+	if (!new_job) {
+		LM_ERR("failed to allocate memory for hep job\n");
+		return NULL;
+	}
+	
+	memset(new_job, 0, sizeof(*new_job));
+
+	new_job->buf = (char *)(new_job + 1);
+
+	memcpy(new_job->buf, buf, len);
+
+	new_job->send_sock = (struct socket_info*)send_sock;
+	new_job->len = len;
+	if (to) {
+		memcpy(&new_job->to, to, sizeof(union sockaddr_union));
+	}
+	new_job->id = id;
+	new_job->is_tls = is_tls;
+
+	return new_job;
+}
+
+static void rpc_hep_tcp_or_tls_send(int sender, void* data) {
+	hep_job_t* job = (hep_job_t*)data;
+	LM_DBG("Handling job\n");
+	hep_tcp_or_tls_send_single(job->send_sock, job->buf, job->len, &job->to, job->id, job->is_tls);
+
+	shm_free(job);
+}
+
+
+static int hep_tcp_or_tls_send_unify(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id, unsigned int is_tls) {
+
+	hep_job_t *new_job;
+	if (*hep_process_no != process_no) {
+		LM_DBG("Sending to hep process: %d\n", *hep_process_no);
+		new_job = create_hep_job(send_sock, buf, len, to, id, is_tls);
+		if (new_job && ipc_send_rpc(*hep_process_no, rpc_hep_tcp_or_tls_send, new_job) == 0)
+			return len;
+
+	}
+
+	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, is_tls);
+}
+
 static int hep_tcp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
-	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 0);
+	return hep_tcp_or_tls_send_unify(send_sock, buf, len, to, id, 0);
 }
 
 static int hep_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
-	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 1);
+	return hep_tcp_or_tls_send_unify(send_sock, buf, len, to, id, 1);
+}
+
+static int hep_tcp_or_tls_send_single(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
+		unsigned int id, unsigned int is_tls)
+{
+	struct tcp_connection* c;
+	int port = 0;
+	struct ip_addr ip;
+	int fd, n;
+
+	if (to) {
+		su2ip_addr(&ip, to);
+		port=su_getport(to);
+		n = tcp_conn_get(id, &ip, port, is_tls ? PROTO_HEP_TLS : PROTO_HEP_TCP, NULL, &c, &fd, send_sock);
+	} else if (id) {
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
+	} else {
+		LM_CRIT("tcp_send called with null id & to\n");
+		return -1;
+	}
+
+	if (n < 0) {
+		/* error during conn get, return with error too */
+		LM_ERR("failed to acquire connection\n");
+		return -1;
+	}
+
+	/* was connection found ?? */
+	if (c == 0) {
+		struct tcp_conn_profile prof;
+		int matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
+
+		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
+			return -1;
+
+		if (!to) {
+			LM_ERR("Unknown destination - cannot open new tcp connection\n");
+			return -1;
+		}
+		LM_DBG("no open tcp connection found, opening new one, async = %d\n", hep_async);
+		/* create tcp connection */
+		if (hep_async) {
+			n = tcp_async_connect(send_sock, to, &prof,
+					hep_async_local_connect_timeout, &c, &fd, 1);
+			if (n < 0) {
+				LM_ERR("async TCP connect failed\n");
+				return -1;
+			}
+			/* connect succeeded, we have a connection */
+			if (n == 0) {
+				/* attach the write buffer to it */
+				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+					LM_ERR("Failed to add the initial write chunk\n");
+					len = -1; /* report an error - let the caller decide what to do */
+				}
+
+				/* mark the ID of the used connection (tracing purposes) */
+				last_outgoing_tcp_id = c->id;
+				send_sock->last_real_ports->local = c->rcv.dst_port;
+				send_sock->last_real_ports->remote = c->rcv.src_port;
+				/* connect is still in progress, break the sending
+				 * flow now (the actual write will be done when
+				 * connect will be completed */
+				LM_DBG("Successfully started async connection \n");
+				tcp_conn_release(c, 0);
+				return len;
+			}
+			if (is_tls) {
+				LM_DBG("first TCP connect attempt succeeded in less than %dms, "
+					"proceed to TLS connect \n", hep_async_local_connect_timeout);
+				/* succesful TCP conection done - starting async SSL connect */
+
+				lock_get(&c->write_lock);
+				/* we connect under lock to make sure no one else is reading our
+				 * connect status */
+				tls_mgm_api.tls_update_fd(c, fd);
+				n = tls_mgm_api.tls_async_connect(c, fd,
+					hep_tls_async_handshake_connect_timeout, NULL);
+				lock_release(&c->write_lock);
+				if (n < 0) {
+					LM_ERR("failed async TLS connect\n");
+					tcp_conn_release(c, 0);
+					return -1;
+				}
+				if (n == 0) {
+					/* attach the write buffer to it */
+					if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+						LM_ERR("failed to add the initial write chunk\n");
+						tcp_conn_release(c, 0);
+						return -1;
+					}
+
+					LM_DBG("successfully started async TLS connection\n");
+					tcp_conn_release(c, 1);
+					return len;
+				}
+
+				LM_DBG("first TLS handshake attempt succeeded in less than %dms, "
+					"proceed to writing \n", hep_tls_async_handshake_connect_timeout);
+			}
+		} else if ((c = tcp_sync_connect(send_sock, to, &prof, &fd, 1)) == 0) {
+			LM_ERR("connect failed\n");
+			return -1;
+		}
+		goto send_it;
+	}
+
+	/* now we have a connection, let's see what we can do with it */
+	/* BE CAREFUL now as we need to release the conn before exiting !!! */
+	if (fd == -1) {
+		/* connection is not writable because of its state - can we append
+		 * data to it for later writting (async writting)? */
+		if (c->state == S_CONN_CONNECTING) {
+			/* the connection is currently in the process of getting
+			 * connected - let's append our send chunk as well - just in
+			 * case we ever manage to get through */
+			LM_DBG("We have acquired a TCP connection which is still "
+				"pending to connect - delaying write \n");
+			n = tcp_async_add_chunk(c,buf,len,1);
+			if (n < 0) {
+				LM_ERR("Failed to add another write chunk to %p\n",c);
+				/* we failed due to internal errors - put the
+				 * connection back */
+				tcp_conn_release(c, 0);
+				return -1;
+			}
+
+			/* mark the ID of the used connection (tracing purposes) */
+			last_outgoing_tcp_id = c->id;
+			send_sock->last_real_ports->local = c->rcv.dst_port;
+			send_sock->last_real_ports->remote = c->rcv.src_port;
+
+			/* we successfully added our write chunk - success */
+			tcp_conn_release(c, 0);
+			return len;
+		} else {
+			/* return error, nothing to do about it */
+			tcp_conn_release(c, 0);
+			return -1;
+		}
+	}
+
+send_it:
+	LM_DBG("sending via fd %d...\n",fd);
+
+	if (is_tls) {
+		n = hep_tls_write_on_socket(c, fd, buf, len);
+	} else {
+		n = tcp_write_on_socket(c, fd, buf, len,
+			hep_send_timeout, hep_async_local_write_timeout);
+	}
+
+	tcp_conn_reset_lifetime(c);
+
+	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n", c, n, len, fd);
+	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
+	if (n < 0){
+		LM_ERR("failed to send\n");
+		c->state = S_CONN_BAD;
+		if (c->proc_id != process_no) {
+			close(fd);
+		}
+		tcp_conn_release(c, 0);
+		return -1;
+	}
+	/* mark the ID of the used connection (tracing purposes) */
+	last_outgoing_tcp_id = c->id;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
+
+	/* only close the FD if not already in the context of our process
+	either we just connected, or main sent us the FD */
+	if (c->proc_id != process_no) {
+		close(fd);
+	}
+
+
+	tcp_conn_release(c, (n < len) ? 1 : 0 /*pending data in async mode?*/);
+
+	return n;
 }
 
 static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
@@ -545,6 +840,10 @@ send_it:
 		tcp_conn_release(c, 0);
 		return -1;
 	}
+	/* mark the ID of the used connection (tracing purposes) */
+	last_outgoing_tcp_id = c->id;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	/* only close the FD if not already in the context of our process
 	either we just connected, or main sent us the FD */
@@ -552,10 +851,6 @@ send_it:
 		close(fd);
 	}
 
-	/* mark the ID of the used connection (tracing purposes) */
-	last_outgoing_tcp_id = c->id;
-	send_sock->last_real_ports->local = c->rcv.dst_port;
-	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, (n < len) ? 1 : 0 /*pending data in async mode?*/);
 
