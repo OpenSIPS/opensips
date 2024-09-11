@@ -97,7 +97,7 @@ static int redis_init_ssl(char *url_extra_opts, redisContext *ctx,
 	SSL *ssl;
 	struct tls_domain *d;
 
-	if (tls_dom == NULL) {
+	if (tls_dom == NULL || *tls_dom == NULL) {
 		if (strncmp(url_extra_opts, CACHEDB_TLS_DOM_PARAM,
 				CACHEDB_TLS_DOM_PARAM_LEN)) {
 			LM_ERR("Invalid Redis URL parameter: %s\n", url_extra_opts);
@@ -258,6 +258,8 @@ int redis_connect(redis_con *con)
 				freeReplyObject(rpl);
 			goto error;
 		}
+
+		memset(con->nodes,0,sizeof(cluster_node) + len + 1);
 		con->nodes->ip = (char *)(con->nodes + 1);
 
 		strcpy(con->nodes->ip,con->host);
