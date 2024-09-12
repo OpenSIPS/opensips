@@ -30,6 +30,7 @@
 #include <netinet/tcp.h>
 
 #include <fcntl.h>
+#include <time.h>
 #include "../../timer.h"
 #include "../../sr_module.h"
 #include "../../net/api_proto.h"
@@ -49,6 +50,9 @@
 #include "hep.h"
 #include "hep_cb.h"
 #include "signal.h"
+#include "../../lib/list.h"
+#include "../../mem/shm_mem.h"
+#include "../../locking.h"
 
 
 static int mod_init(void);
@@ -105,6 +109,9 @@ int homer5_on = 1;
 str homer5_delim = {":", 0};
 
 int *hep_process_no;
+struct list_head *hep_job_list;
+gen_lock_t *job_list_lock;
+int *job_count;
 
 compression_api_t compression_api;
 load_compression_f load_compression;
@@ -125,6 +132,8 @@ typedef struct hep_job {
 	union sockaddr_union to;
 	unsigned int id;
 	unsigned int is_tls;
+	time_t timestamp;
+	struct list_head list;
 } hep_job_t;
 
 static const proc_export_t procs[] = {
@@ -229,6 +238,7 @@ static int mod_init(void)
 		LM_DBG("failed to find TLS API - is tls_mgm module loaded?\n");
 		return -1;
 	}
+
 	hep_process_no = (int*)shm_malloc(sizeof(int));
 	if (!hep_process_no) {
 		LM_ERR("Failed to allocate shared memory for current_process_no\n");
@@ -236,6 +246,31 @@ static int mod_init(void)
 	}
 
 	*hep_process_no = process_no;
+	hep_job_list = (struct list_head *)shm_malloc(sizeof(struct list_head));
+	if (!hep_job_list) {
+		LM_ERR("Failed to allocate shared memory for hep_job_list\n");
+		return -1;
+	}
+	INIT_LIST_HEAD(hep_job_list);
+
+	job_list_lock = lock_alloc();
+	if (job_list_lock == NULL) {
+		LM_CRIT("ERROR\n");
+		return -1;
+	}
+
+	if (lock_init(job_list_lock) < 0) {
+		LM_CRIT("ERROR\n");
+		lock_dealloc(job_list_lock);
+		return -1;
+	}
+
+	job_count = (int *)shm_malloc(sizeof(int));
+	if (!job_count) {
+		LM_ERR("Failed to allocate shared memory for job_count\n");
+		return -1;
+	}
+	*job_count = 0;
 
 	if (payload_compression) {
 		load_compression =
@@ -452,23 +487,70 @@ static hep_job_t *create_hep_job(const struct socket_info* send_sock,
 	}
 	new_job->id = id;
 	new_job->is_tls = is_tls;
+	new_job->timestamp = time(NULL);
 
 	return new_job;
 }
 
+static void remove_job_from_list(hep_job_t *job) {
+
+	lock_get(job_list_lock);
+
+	list_del(&job->list);
+
+	(*job_count)--;
+	lock_release(job_list_lock);
+
+	shm_free(job);
+}
+
+static void remove_expired_jobs(void) {
+	time_t current_time = time(NULL);
+	struct list_head *pos;
+	hep_job_t *job;
+
+	lock_get(job_list_lock);
+
+	list_for_each(pos, hep_job_list) {
+		job = list_entry(pos, hep_job_t, list);
+		if (difftime(current_time, job->timestamp) > MAX_KEEP_JOB_TIME) {
+			LM_INFO("Removing expired job with id: %u\n", job->id);
+			remove_job_from_list(job);
+		}
+	}
+	lock_release(job_list_lock);
+}
+
+static void add_job_to_list(hep_job_t *job) {
+
+	remove_expired_jobs();
+
+	if (*job_count >= MAX_NUMBER_OF_JOBS) {
+		LM_ERR("Cannot add job, maximum number of jobs reached\n");
+		return;
+	}
+
+	lock_get(job_list_lock);
+
+	list_add_tail(&job->list, hep_job_list);
+
+	lock_release(job_list_lock);
+
+}
+
+
 static void rpc_hep_tcp_or_tls_send(int sender, void* data) {
 	hep_job_t* job = (hep_job_t*)data;
 	LM_DBG("Handling job\n");
-	hep_tcp_or_tls_send_single(job->send_sock, job->buf, job->len, &job->to, job->id, job->is_tls);
+	if (hep_tcp_or_tls_send_single(job->send_sock, job->buf, job->len, &job->to, job->id, job->is_tls) < 0)
+		add_job_to_list(job);
 
-	shm_free(job);
 }
 
 
 static int hep_tcp_or_tls_send_unify(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id, unsigned int is_tls) {
-
 	hep_job_t *new_job;
 	if (*hep_process_no != process_no) {
 		LM_DBG("Sending to hep process: %d\n", *hep_process_no);
@@ -477,6 +559,7 @@ static int hep_tcp_or_tls_send_unify(const struct socket_info* send_sock,
 			return len;
 
 	}
+	add_job_to_list(new_job);
 
 	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, is_tls);
 }
