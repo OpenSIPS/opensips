@@ -47,7 +47,7 @@ extern int ssl_verifyhost;
 
 extern int curl_http_version;
 extern int no_concurrent_connects;
-extern int curl_conn_lifetime;
+extern unsigned int curl_conn_lifetime;
 
 /* handle for use with synchronous reqs */
 extern CURL *sync_handle;
