@@ -92,7 +92,7 @@ static int multi_pool_sz;
 static map_t rcl_connections;
 static gen_hash_t *rcl_parallel_connects;
 int no_concurrent_connects;
-int curl_conn_lifetime;
+unsigned int curl_conn_lifetime;
 
 static inline int rest_trace_enabled(void);
 static int trace_rest_message( rest_trace_param_t* tparam );
@@ -581,7 +581,7 @@ int rcl_acquire_url(const char *url, char **url_host)
 		}
 
 		if (*connected_ts != 0 && (get_ticks() -
-		        (unsigned int)*(unsigned long *)(*connected_ts) < curl_conn_lifetime)) {
+		        (unsigned int)*(unsigned long *)connected_ts < curl_conn_lifetime)) {
 			new_connection = 0;
 		} else {
 			new_connection = 1;
@@ -631,8 +631,8 @@ void rcl_release_url(char *url_host, int update_conn_ts)
 		void **connected_ts;
 
 		connected_ts = map_get(rcl_connections, host_str);
-		if (connected_ts && *connected_ts)
-			*(unsigned long *)(*connected_ts) = (unsigned long)get_ticks();
+		if (connected_ts)
+			*connected_ts = (void *)(unsigned long)get_ticks();
 	}
 
 	pkg_free(url_host);
