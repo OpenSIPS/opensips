@@ -110,8 +110,8 @@ str homer5_delim = {":", 0};
 
 int *hep_process_no;
 struct list_head *hep_job_list;
-gen_lock_t *job_list_lock;
-int *job_count;
+gen_lock_t *hep_job_list_lock;
+int *hep_job_count;
 
 compression_api_t compression_api;
 load_compression_f load_compression;
@@ -253,24 +253,24 @@ static int mod_init(void)
 	}
 	INIT_LIST_HEAD(hep_job_list);
 
-	job_list_lock = lock_alloc();
-	if (job_list_lock == NULL) {
+	hep_job_list_lock = lock_alloc();
+	if (hep_job_list_lock == NULL) {
 		LM_CRIT("ERROR\n");
 		return -1;
 	}
 
-	if (lock_init(job_list_lock) < 0) {
+	if (lock_init(hep_job_list_lock) < 0) {
 		LM_CRIT("ERROR\n");
-		lock_dealloc(job_list_lock);
+		lock_dealloc(hep_job_list_lock);
 		return -1;
 	}
 
-	job_count = (int *)shm_malloc(sizeof(int));
-	if (!job_count) {
+	hep_job_count = (int *)shm_malloc(sizeof(int));
+	if (!hep_job_count) {
 		LM_ERR("Failed to allocate shared memory for job_count\n");
 		return -1;
 	}
-	*job_count = 0;
+	*hep_job_count = 0;
 
 	if (payload_compression) {
 		load_compression =
@@ -494,12 +494,12 @@ static hep_job_t *create_hep_job(const struct socket_info* send_sock,
 
 static void remove_job_from_list(hep_job_t *job) {
 
-	lock_get(job_list_lock);
+	lock_get(hep_job_list_lock);
 
 	list_del(&job->list);
 
-	(*job_count)--;
-	lock_release(job_list_lock);
+	(*hep_job_count)--;
+	lock_release(hep_job_list_lock);
 
 	shm_free(job);
 }
@@ -509,59 +509,93 @@ static void remove_expired_jobs(void) {
 	struct list_head *pos;
 	hep_job_t *job;
 
-	lock_get(job_list_lock);
+	lock_get(hep_job_list_lock);
 
 	list_for_each(pos, hep_job_list) {
 		job = list_entry(pos, hep_job_t, list);
 		if (difftime(current_time, job->timestamp) > MAX_KEEP_JOB_TIME) {
 			LM_INFO("Removing expired job with id: %u\n", job->id);
 			remove_job_from_list(job);
+			break;
 		}
 	}
-	lock_release(job_list_lock);
+	lock_release(hep_job_list_lock);
 }
 
 static void add_job_to_list(hep_job_t *job) {
 
 	remove_expired_jobs();
 
-	if (*job_count >= MAX_NUMBER_OF_JOBS) {
-		LM_ERR("Cannot add job, maximum number of jobs reached\n");
-		return;
-	}
+	lock_get(hep_job_list_lock);
 
-	lock_get(job_list_lock);
+	if (*hep_job_count >= MAX_NUMBER_OF_JOBS) {
+		LM_WARN("Maximum number of jobs reached, removing oldest job\n");
+		if (!list_empty(hep_job_list)) {
+			hep_job_t *first_job = list_entry(hep_job_list->next, hep_job_t, list);
+			list_del(&first_job->list);
+			(*hep_job_count)--;
+			shm_free(first_job);
+		}
+	}
 
 	list_add_tail(&job->list, hep_job_list);
 
-	lock_release(job_list_lock);
+	lock_release(hep_job_list_lock);
 
 }
-
-
+static void try_to_send_all(void);
 static void rpc_hep_tcp_or_tls_send(int sender, void* data) {
 	hep_job_t* job = (hep_job_t*)data;
 	LM_DBG("Handling job\n");
+	try_to_send_all();
 	if (hep_tcp_or_tls_send_single(job->send_sock, job->buf, job->len, &job->to, job->id, job->is_tls) < 0)
 		add_job_to_list(job);
 
 }
 
+static void try_to_send_all(void) {
+    struct list_head *pos, *tmp;
+    hep_job_t *job;
+    int ret;
+
+    lock_get(hep_job_list_lock);
+
+    list_for_each_safe(pos, tmp, hep_job_list) {
+        job = list_entry(pos, hep_job_t, list);
+		lock_release(hep_job_list_lock);
+        ret = hep_tcp_or_tls_send(job->send_sock, job->buf, job->len, &job->to, job->id, job->is_tls);
+        if (ret >= 0) {
+			lock_get(hep_job_list_lock);
+            list_del(&job->list);
+            (*hep_job_count)--;
+            shm_free(job);
+        } else {
+            LM_WARN("Failed to send job with id: %u, keeping in list\n", job->id);
+        }
+    }
+
+    lock_release(hep_job_list_lock);
+
+}
 
 static int hep_tcp_or_tls_send_unify(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id, unsigned int is_tls) {
 	hep_job_t *new_job;
+	int ret;
 	if (*hep_process_no != process_no) {
 		LM_DBG("Sending to hep process: %d\n", *hep_process_no);
 		new_job = create_hep_job(send_sock, buf, len, to, id, is_tls);
 		if (new_job && ipc_send_rpc(*hep_process_no, rpc_hep_tcp_or_tls_send, new_job) == 0)
 			return len;
-
 	}
-	add_job_to_list(new_job);
 
-	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, is_tls);
+	ret = hep_tcp_or_tls_send(send_sock, buf, len, to, id, is_tls);
+	if (ret == -1) {
+		add_job_to_list(new_job);
+	}
+
+	return ret;
 }
 
 static int hep_tcp_send(const struct socket_info* send_sock,
