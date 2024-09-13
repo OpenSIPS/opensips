@@ -420,10 +420,6 @@ static int child_init(int rank)
 {
 	dp_connection_list_p el;
 
-	/* only process with rank 1 loads data */
-	if (rank != 1)
-		return 0;
-
 	/* Connect to DBs.... */
 	for(el = dp_conns; el; el = el->next){
 		if (dp_connect_db(el) != 0) {
@@ -432,6 +428,10 @@ static int child_init(int rank)
 			return -1;
 		}
 	}
+
+	/* only process with rank 1 loads data */
+	if (rank != 1)
+		return 0;
 
 	/* ...and fire the RPC to perform the data load in the
 	 * same process, but after child_init is done */
