@@ -23,7 +23,7 @@
 
 
 void dynamodb_destroy(cachedb_con *connection) {
-	dynamodb_con *con;
+	dynamodb_con *con = NULL;
 	if (connection)
 		con = (dynamodb_con *)(connection->data);
 
@@ -392,7 +392,7 @@ static int is_valid_int64(const char *str, int64_t *value) {
 		return 0;
 	}
 
-	if (val < INT64_MIN || val > INT64_MAX) {
+	if (val > INT64_MAX) {
 		return 0;
 	}
 
