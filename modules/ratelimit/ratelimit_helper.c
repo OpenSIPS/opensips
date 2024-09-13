@@ -486,6 +486,7 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 		}
 	} else {
 		pipe->counter++;
+		pipe->repl_zero_cnt = 3;
 	}
 
 	ret = rl_pipe_check(pipe);
@@ -1057,11 +1058,12 @@ void rl_timer_repl(utime_t ticks, void *param)
 				LM_ERR("[BUG] bogus map[%d] state\n", i);
 				goto next_pipe;
 			}
-			if (!RL_USE_BIN(pipe))
-			        goto next_pipe;
-
-			/* do not replicate if about to expire */
-			if (pipe->last_local_used + rl_expire_time < now)
+			/* ignore cachedb replicated stuff */
+			if (!RL_USE_BIN(pipe)
+			        /* ... or pipes with value: 0 after 'cnt' broadcasts */
+			        || (pipe->counter == 0 && pipe->repl_zero_cnt-- <= 0)
+			        /* ... and do not replicate if about to expire */
+			        || pipe->last_local_used + rl_expire_time < now)
 				goto next_pipe;
 
 			key = iterator_key(&it);
