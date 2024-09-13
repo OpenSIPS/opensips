@@ -330,6 +330,75 @@ modparam("proto_hep", "hep_async_local_write_timeout", 100)
 		</example>
 	</section>
 
+
+	<section id="param_use_single_process" xreflabel="use_single_process">
+		<title><varname>use_single_process</varname> (integer)</title>
+		<para>
+		The <emphasis>use_single_process</emphasis> parameter controls whether the HEP message processing is
+		handled by the SIP worker that is processing the message or by a dedicated HEP worker process.
+		When this parameter is set to <emphasis>1</emphasis>, the HEP worker process is created to handle all HEP message
+		transmissions. This allows OpenSIPS to offload HEP transmissions to a separate process, freeing up the SIP workers.
+		</para>
+		<para>
+		In this case, the HEP worker process will queue the unsent HEP messages and attempt to send them periodically.
+		If the messages cannot be sent, they are retained in a job list that can be configured through the 
+		<emphasis>max_number_of_jobs</emphasis> and <emphasis>max_keep_time_job</emphasis> parameters.
+		</para>
+		<example>
+		<title>Set <varname>use_single_process</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "use_single_process", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_max_number_of_jobs" xreflabel="max_number_of_jobs">
+	<title><varname>max_number_of_jobs</varname> (integer)</title>
+	<para>
+		The <emphasis>max_number_of_jobs</emphasis> parameter defines the maximum number of HEP message jobs that can be stored in
+		the job list. When the number of jobs in the list exceeds this value, the oldest job is removed to make space for the
+		new incoming job.
+	</para>
+	<para>
+		The default value for this parameter is <emphasis>1000000</emphasis>, but it can be adjusted based on system resources
+		and user preferences.
+	</para>
+	<example>
+		<title>Set <varname>max_number_of_jobs</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "max_number_of_jobs", 2000000)
+...
+</programlisting>
+	</example>
+</section>
+
+
+
+	<section id="param_max_keep_job_time" xreflabel="max_keep_job_time">
+	<title><varname>max_keep_job_time</varname> (integer)</title>
+	<para>
+		The <emphasis>max_keep_job_time</emphasis> parameter defines the maximum time (in seconds) that a job can remain in the
+		job list before it is automatically removed.
+	</para>
+	<para>
+		The default value for this parameter is <emphasis>1800</emphasis> seconds.
+	</para>
+	<example>
+		<title>Set <varname>max_keep_job_time</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "max_keep_job_time", 100)
+...
+</programlisting>
+	</example>
+</section>
+
+
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
