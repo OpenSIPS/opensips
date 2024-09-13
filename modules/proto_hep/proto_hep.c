@@ -100,6 +100,8 @@ static int hep_async_local_connect_timeout = 100;
 static int hep_async_local_write_timeout = 10;
 static int hep_tls_handshake_timeout = 100;
 static int hep_tls_async_handshake_connect_timeout = 10;
+static int max_number_of_jobs = MAX_NUMBER_OF_JOBS;
+static int max_keep_job_time = MAX_KEEP_JOB_TIME;
 
 int hep_ctx_idx = 0;
 int hep_capture_id = 1;
@@ -173,6 +175,9 @@ static const param_export_t params[] = {
 	{ "homer5_delim",                    STR_PARAM, &homer5_delim.s                 },
 	{ "use_single_process",				 INT_PARAM|USE_FUNC_PARAM,
 													(void *)use_single_process		},
+	{ "max_number_of_jobs",				 INT_PARAM, &max_number_of_jobs				},
+	{ "max_keep_job_time",				 INT_PARAM, &max_keep_job_time				},
+
 	{0, 0, 0}
 };
 
@@ -513,7 +518,7 @@ static void remove_expired_jobs(void) {
 
 	list_for_each(pos, hep_job_list) {
 		job = list_entry(pos, hep_job_t, list);
-		if (difftime(current_time, job->timestamp) > MAX_KEEP_JOB_TIME) {
+		if (difftime(current_time, job->timestamp) > max_keep_job_time) {
 			LM_INFO("Removing expired job with id: %u\n", job->id);
 			remove_job_from_list(job);
 			break;
@@ -528,7 +533,7 @@ static void add_job_to_list(hep_job_t *job) {
 
 	lock_get(hep_job_list_lock);
 
-	if (*hep_job_count >= MAX_NUMBER_OF_JOBS) {
+	if (*hep_job_count >= max_number_of_jobs) {
 		LM_WARN("Maximum number of jobs reached, removing oldest job\n");
 		if (!list_empty(hep_job_list)) {
 			hep_job_t *first_job = list_entry(hep_job_list->next, hep_job_t, list);
