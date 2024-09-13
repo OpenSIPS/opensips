@@ -49,8 +49,9 @@ static str ei_thr_name = str_init("threshold");
 static str ei_user_name = str_init("user");
 static str ei_number_name = str_init("called_number");
 static str ei_ruleid_name = str_init("rule_id");
+static str ei_pid_name = str_init("profile_id");
 
-static evi_param_p param_p, val_p, thr_p, user_p, number_p, ruleid_p;
+static evi_param_p param_p, val_p, thr_p, user_p, number_p, ruleid_p, pid_p;
 
 
 /*
@@ -87,6 +88,7 @@ int frd_event_init(void)
 	CREATE_PARAM(user);
 	CREATE_PARAM(number);
 	CREATE_PARAM(ruleid);
+	CREATE_PARAM(pid);
 #undef CREATE_PARAM
 
 	return 0;
@@ -106,7 +108,7 @@ void frd_event_destroy(void)
 */
 static void raise_event(event_id_t e,
 		str *param, unsigned int *val, unsigned int *thr, str *user,
-		str *number, unsigned int *ruleid)
+		str *number, unsigned int *ruleid, int *pid)
 {
 #define SET_PARAM(pname, ptype) \
 	if (evi_param_set_ ##ptype (pname ## _p, pname) < 0) { \
@@ -120,6 +122,7 @@ static void raise_event(event_id_t e,
 	SET_PARAM(user, str);
 	SET_PARAM(number, str);
 	SET_PARAM(ruleid, int);
+	SET_PARAM(pid, int);
 #undef SET_PARAM
 
 	if (evi_raise_event(e, event_params) < 0)
@@ -127,15 +130,15 @@ static void raise_event(event_id_t e,
 }
 
 void raise_warning_event(str *param, unsigned int *val, unsigned int *thr,
-		str *user, str *number, unsigned int *ruleid)
+		str *user, str *number, unsigned int *ruleid, int *pid)
 {
-	raise_event(ei_warn_id, param, val, thr, user, number, ruleid);
+	raise_event(ei_warn_id, param, val, thr, user, number, ruleid, pid);
 }
 
 void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
-		str *user, str *number, unsigned int *ruleid)
+		str *user, str *number, unsigned int *ruleid, int *pid)
 {
-	raise_event(ei_crit_id, param, val, thr, user, number, ruleid);
+	raise_event(ei_crit_id, param, val, thr, user, number, ruleid, pid);
 }
 
 
@@ -163,13 +166,13 @@ void dialog_terminate_CB(struct dlg_cell *dlg, int type,
 	        && duration >= frdparam->calldur_crit)
 		raise_critical_event(&call_dur_name, &duration,
 				&frdparam->calldur_crit,
-				&frdparam->user, &frdparam->number, &frdparam->ruleid);
+				&frdparam->user, &frdparam->number, &frdparam->ruleid, &frdparam->pid);
 
 	else if (!(type & DLGCB_FAILED) && frdparam->calldur_warn
 	            && duration >= frdparam->calldur_warn)
 		raise_warning_event(&call_dur_name, &duration,
 				&frdparam->calldur_warn,
-				&frdparam->user, &frdparam->number, &frdparam->ruleid);
+				&frdparam->user, &frdparam->number, &frdparam->ruleid, &frdparam->pid);
 
 	lock_get(&frdparam->stats->lock);
 	if (!frdparam->dlg_terminated

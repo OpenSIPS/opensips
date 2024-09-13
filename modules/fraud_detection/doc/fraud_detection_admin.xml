@@ -682,6 +682,9 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 					<emphasis>rule_id</emphasis> - the id of the fraud rule that matched
 					when the call was initiated
 			</para></listitem>
+			<listitem><para>
+					<emphasis>profile_id</emphasis> - the profile id used
+			</para></listitem>
 		</itemizedlist>
 	</section>
 	<section id="event_E_FRD_CRITICAL" xreflabel="E_FRD_CRITICAL">
@@ -711,6 +714,9 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 			<listitem><para>
 					<emphasis>rule_id</emphasis> - the id of the fraud rule that matched
 					when the call was initiated
+			</para></listitem>
+						<listitem><para>
+					<emphasis>profile_id</emphasis> - the profile id used
 			</para></listitem>
 		</itemizedlist>
 	</section>
