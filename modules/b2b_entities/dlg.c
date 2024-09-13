@@ -885,13 +885,14 @@ search_dialog:
 		*/
 		dlg = b2bl_search_iteratively(&callid, &from_tag, T_invite,
 			hash_index);
-		tmb.unref_cell( T_invite );
 		if(dlg == NULL)
 		{
 			B2BE_LOCK_RELEASE(server_htable, hash_index);
 			LM_DBG("No dialog found for cancel\n");
 			return SCB_RUN_ALL;
 		}
+		tmb.unref_cell( T_invite );
+		reset_cancelled_t();
 
 		ctx = b2b_get_context();
 		if (!ctx) {
