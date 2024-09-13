@@ -892,7 +892,6 @@ search_dialog:
 			return SCB_RUN_ALL;
 		}
 		tmb.unref_cell( T_invite );
-		reset_cancelled_t();
 
 		ctx = b2b_get_context();
 		if (!ctx) {
