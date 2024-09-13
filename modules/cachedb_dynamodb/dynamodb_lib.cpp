@@ -212,6 +212,11 @@ query_item_t* query_item_dynamodb(dynamodb_config *config,
 			exclusiveStartKey = outcome.GetResult().GetLastEvaluatedKey();
 		} else {
 			LM_ERR("Failed to Query items: %s\n", outcome.GetError().GetMessage().c_str());
+			if (result->str) {
+				delete[] result->str->s;
+				delete result->str;
+			}
+			delete result;
 			return NULL;
 		}
 	} while (!exclusiveStartKey.empty());
@@ -257,13 +262,13 @@ query_result_t* query_items_dynamodb(dynamodb_config *config,
 				row.key = strdup(std::string(partitionKey.s, partitionKey.len).c_str());
 				if (!row.key) {
 					LM_ERR("Strdup failed\n");
-					return NULL;
+					goto out_err;
 				}
 
 				row.key_value = strdup(std::string(partitionValue.s, partitionValue.len).c_str());
 				if (!row.key_value) {
 					LM_ERR("Strdup failed\n");
-					return NULL;
+					goto out_err;
 				}
 
 				row.attributes = new key_value_pair_t[item.size()];
@@ -273,21 +278,20 @@ query_result_t* query_items_dynamodb(dynamodb_config *config,
 					row.attributes[attribute_index].key = strdup(i.first.c_str());
 					if (!row.attributes[attribute_index].key) {
 						LM_ERR("Strdup failed\n");
-						return NULL;
+						goto out_err;
 					}
 
 					if (i.second.GetS() != "") {
 						row.attributes[attribute_index].value = strdup(i.second.GetS().c_str());
 						if (!row.attributes[attribute_index].value) {
 							LM_ERR("Strdup failed\n");
-							return NULL;
+							goto out_err;
 						}
-
 					} else if (i.second.GetN() != "") {
 						row.attributes[attribute_index].value = strdup(i.second.GetN().c_str());
 						if (!row.attributes[attribute_index].value) {
 							LM_ERR("Strdup failed\n");
-							return NULL;
+							goto out_err;
 						}
 					} else {
 					row.attributes[attribute_index].value = nullptr;
@@ -307,18 +311,27 @@ query_result_t* query_items_dynamodb(dynamodb_config *config,
 			exclusiveStartKey = outcome.GetResult().GetLastEvaluatedKey();
 		} else {
 			LM_ERR("Failed to Query items: %s\n", outcome.GetError().GetMessage().c_str());
-			if (queryResult->items != nullptr) {
-				for (int i = 0; i < queryResult->num_rows; ++i) {
-					delete[] queryResult->items[i].attributes;
-				}
-				delete[] queryResult->items;
-			}
-			delete queryResult;
-			return nullptr;
+			goto out_err;
 		}
 	} while (!exclusiveStartKey.empty());
 
 	return queryResult;
+
+out_err:
+	if (queryResult) {
+		for (int i = 0; i < queryResult->num_rows; ++i) {
+			if (queryResult->items[i].key) free(queryResult->items[i].key);
+			if (queryResult->items[i].key_value) free(queryResult->items[i].key_value);
+			for (int j = 0; j < queryResult->items[i].no_attributes; ++j) {
+				if (queryResult->items[i].attributes[j].key) free(queryResult->items[i].attributes[j].key);
+				if (queryResult->items[i].attributes[j].value) free(queryResult->items[i].attributes[j].value);
+			}
+			delete[] queryResult->items[i].attributes;
+		}
+		delete[] queryResult->items;
+		delete queryResult;
+	}
+	return nullptr;
 }
 
 
@@ -353,20 +366,20 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 						row.key = strdup(itemEntry.first.c_str());
 						if (!row.key) {
 							LM_ERR("Strdup failed\n");
-							return NULL;
+							goto out_err;
 						}
 
 						row.key_value = strdup(itemEntry.second.GetS().c_str());
 						if (!row.key_value) {
 							LM_ERR("Strdup failed\n");
-							return NULL;
+							goto out_err;
 						}
 
 					} else {
 						row.attributes[attr_index].key = strdup(itemEntry.first.c_str());
 						if (!row.attributes[attr_index].key) {
 							LM_ERR("Strdup failed\n");
-							return NULL;
+							goto out_err;
 						}
 
 						if (itemEntry.second.GetS() != "") {
@@ -374,7 +387,7 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 							row.attributes[attr_index].value = strdup(itemEntry.second.GetS().c_str());
 							if (!row.attributes[attr_index].value) {
 								LM_ERR("Strdup failed\n");
-								return NULL;
+								goto out_err;
 							}
 
 						} else if (itemEntry.second.GetN() != "") {
@@ -382,7 +395,7 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 							row.attributes[attr_index].value = strdup(itemEntry.second.GetN().c_str());
 							if (!row.attributes[attr_index].value) {
 								LM_ERR("Strdup failed\n");
-								return NULL;
+								goto out_err;
 							}
 
 						} else {
@@ -400,8 +413,7 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 			request.SetExclusiveStartKey(outcome.GetResult().GetLastEvaluatedKey());
 		} else {
 			LM_ERR("Failed to Scan items: %s\n", outcome.GetError().GetMessage().c_str());
-			delete result;
-			return nullptr;
+			goto out_err;
 		}
 	} while (!request.GetExclusiveStartKey().empty());
 
@@ -412,6 +424,18 @@ query_result_t *scan_table_dynamodb(dynamodb_config *config,
 	}
 
 	return result;
+out_err:
+	for (auto &row : rows) {
+		if (row.key) free(row.key);
+		if (row.key_value) free(row.key_value);
+		for (int i = 0; i < row.no_attributes; i++) {
+			if (row.attributes[i].key) free(row.attributes[i].key);
+			if (row.attributes[i].value) free(row.attributes[i].value);
+		}
+		delete[] row.attributes;
+	}
+	delete result;
+	return NULL;
 }
 
 int *update_item_inc_dynamodb(dynamodb_config *config,
@@ -485,6 +509,7 @@ int *update_item_inc_dynamodb(dynamodb_config *config,
 	const Aws::DynamoDB::Model::UpdateItemOutcome &updateOutcome = dynamoClient.UpdateItem(updateRequest);
 	if (!updateOutcome.IsSuccess()) {
 		LM_ERR("%s\n", updateOutcome.GetError().GetMessage().c_str());
+		delete newValue;
 		return NULL;
 	}
 
@@ -563,6 +588,7 @@ int *update_item_sub_dynamodb(dynamodb_config *config,
 	const Aws::DynamoDB::Model::UpdateItemOutcome &updateOutcome = dynamoClient.UpdateItem(updateRequest);
 	if (!updateOutcome.IsSuccess()) {
 		LM_ERR("%s\n", updateOutcome.GetError().GetMessage().c_str());
+		delete newValue;
 		return NULL;
 	}
 
