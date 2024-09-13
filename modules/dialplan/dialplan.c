@@ -56,7 +56,6 @@
 
 static int mod_init(void);
 static int child_init(int rank);
-static int mi_child_init(void);
 static void mod_destroy();
 
 static mi_response_t *mi_reload_rules(const mi_params_t *params,
@@ -107,7 +106,7 @@ static const param_export_t mod_params[]={
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "dp_reload", 0, 0, mi_child_init, {
+	{ "dp_reload", 0, 0, NULL, {
 		{mi_reload_rules, {0}},
 		{mi_reload_rules_1, {"partition", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -117,7 +116,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_translate3, {"dpid", "input", "partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dp_show_partition", 0, 0, mi_child_init, {
+	{ "dp_show_partition", 0, 0, NULL, {
 		{mi_show_partition, {0}},
 		{mi_show_partition_1, {"partition", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -442,29 +441,6 @@ static int child_init(int rank)
 
 	return 0;
 }
-
-
-static int mi_child_init(void)
-{
-	static int mi_child_initialized = 0;
-	dp_connection_list_p el;
-
-	if (mi_child_initialized)
-		return 0;
-
-	/* Connect to DB s */
-	for(el = dp_conns; el; el = el->next){
-		if (dp_connect_db(el) != 0) {
-			/* all el shall be freed in mod destroy */
-			LM_ERR("Unable to init/connect db connection\n");
-			return -1;
-		}
-	}
-
-	mi_child_initialized = 1;
-	return 0;
-}
-
 
 
 static void mod_destroy(void)
