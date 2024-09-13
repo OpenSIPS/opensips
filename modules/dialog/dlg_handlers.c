@@ -2333,16 +2333,18 @@ after_unlock5:
 				LM_DBG("dlg_leg_get_cseq(dlg, [%d], req)\n", src_leg);
 				update_val = dlg_leg_get_cseq(dlg, src_leg, req);
 				if (update_val == 0) {
-					LM_DBG("dlg->legs[%d].last_gen_cseq=[%d]\n",
-						dst_leg, dlg->legs[dst_leg].last_gen_cseq);
-					update_val = dlg->legs[dst_leg].last_gen_cseq;
+					if (dlg->legs[dst_leg].last_gen_cseq) {
+						LM_DBG("dlg->legs[%d].last_gen_cseq=[%d]\n",
+							dst_leg, dlg->legs[dst_leg].last_gen_cseq);
+						update_val = dlg->legs[dst_leg].last_gen_cseq;
+					}
 				}
 				else {
 					LM_DBG("update_val=[%d]\n", update_val);
 				}
 				dlg_unlock( d_table, d_entry );
 
-				if (update_msg_cseq(req,0,update_val) != 0) {
+				if (update_val && update_msg_cseq(req,0,update_val) != 0) {
 					LM_ERR("failed to update ACK msg cseq\n");
 				}
 			} else
