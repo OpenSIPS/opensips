@@ -404,7 +404,7 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 {
 	int ret = 1, should_update = 0;
 	unsigned int hash_idx;
-	rl_pipe_t **pipe;
+	rl_pipe_t **ppipe, *pipe;
 	str pipe_name;
 	unsigned flags;
 
@@ -443,56 +443,55 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 	RL_GET_LOCK(hash_idx);
 
 	/* try to get the value */
-	pipe = RL_GET_PIPE(hash_idx, pipe_name);
-	if (!pipe) {
+	ppipe = RL_GET_PIPE(hash_idx, pipe_name);
+	if (!ppipe) {
 		LM_ERR("cannot get the index\n");
 		goto release;
 	}
 
-	if (!*pipe) {
+	if (!(pipe = *ppipe)) {
 		/* allocate new pipe */
-		if (!(*pipe = rl_create_pipe(*limit, algo, &pipe_name, flags)))
+		if (!(pipe = *ppipe = rl_create_pipe(*limit, algo, &pipe_name, flags)))
 			goto release;
 
 		LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
-				pipe_name.len, pipe_name.s, *pipe);
-		if ((*pipe)->algo == PIPE_ALGO_NETWORK)
+				pipe_name.len, pipe_name.s, pipe);
+		if (pipe->algo == PIPE_ALGO_NETWORK)
 			should_update = 1;
 	} else {
 		LM_DBG("Pipe %.*s found: %p - last used %lld\n",
-			pipe_name.len, pipe_name.s, *pipe, (long long)(*pipe)->last_used);
-		if (algo != PIPE_ALGO_NOP && (*pipe)->algo != algo) {
+			pipe_name.len, pipe_name.s, pipe, (long long)pipe->last_used);
+		if (algo != PIPE_ALGO_NOP && pipe->algo != algo) {
 			LM_WARN("algorithm %d different from the initial one %d for pipe "
-				"%.*s\n", algo, (*pipe)->algo, pipe_name.len, pipe_name.s);
+				"%.*s\n", algo, pipe->algo, pipe_name.len, pipe_name.s);
 		}
 		/* update the limit */
-		(*pipe)->limit = *limit;
-		if ((*pipe)->flags != flags) {
+		pipe->limit = *limit;
+		if (pipe->flags != flags) {
 			LM_DBG("updating %.*s pipe flags from %x to %x\n",
-					pipe_name.len, pipe_name.s, (*pipe)->flags,
-					((*pipe)->flags | flags));
-			(*pipe)->flags |= flags; /* also update the flags */
+					pipe_name.len, pipe_name.s, pipe->flags,
+					(pipe->flags | flags));
+			pipe->flags |= flags; /* also update the flags */
 		}
 	}
 
-	/* set the last used time */
-	(*pipe)->last_used = time(0);
-	/* set the last 'local' used time: */
-	(*pipe)->last_local_used = time(0);
-	if (RL_USE_CDB(*pipe)) {
+	/* set the "last used" and "last local used" timestamps */
+	pipe->last_used = pipe->last_local_used = time(0);
+
+	if (RL_USE_CDB(pipe)) {
 		/* release the counter for a while */
-		if (rl_change_counter(&pipe_name, *pipe, 1) < 0) {
+		if (rl_change_counter(&pipe_name, pipe, 1) < 0) {
 			LM_ERR("cannot increase counter\n");
 			goto release;
 		}
 	} else {
-		(*pipe)->counter++;
+		pipe->counter++;
 	}
 
-	ret = rl_pipe_check(*pipe);
+	ret = rl_pipe_check(pipe);
 	LM_DBG("Pipe %.*s counter:%d load:%d limit:%d should %sbe blocked (%p)\n",
-		pipe_name.len, pipe_name.s, (*pipe)->counter, (*pipe)->load,
-		(*pipe)->limit, ret == 1 ? "NOT " : "", *pipe);
+		pipe_name.len, pipe_name.s, pipe->counter, pipe->load,
+		pipe->limit, ret == 1 ? "NOT " : "", pipe);
 
 
 release:
@@ -511,7 +510,7 @@ void rl_timer(utime_t uticks, void *param)
 {
 	unsigned int i = 0;
 	map_iterator_t it, del;
-	rl_pipe_t **pipe;
+	rl_pipe_t **ppipe, *pipe;
 	str *key;
 	void *value;
 	unsigned long now = time(0);
@@ -542,8 +541,8 @@ void rl_timer(utime_t uticks, void *param)
 			goto next_map;
 		}
 		for (; iterator_is_valid(&it);) {
-			pipe = (rl_pipe_t **) iterator_val(&it);
-			if (!pipe || !*pipe) {
+			ppipe = (rl_pipe_t **) iterator_val(&it);
+			if (!ppipe || !(pipe = *ppipe)) {
 				LM_ERR("[BUG] bogus map[%d] state\n", i);
 				goto next_pipe;
 			}
@@ -553,17 +552,17 @@ void rl_timer(utime_t uticks, void *param)
 				goto next_pipe;
 			}
 			/* check to see if it is expired */
-			if (((*pipe)->last_local_used + rl_expire_time < now) &&
+			if ((pipe->last_local_used + rl_expire_time < now) &&
 				/* We shall wait a while until we make sure all destinations
 				 * have sent us replicated packets - after that, we can delete
 				 * the pipe; the condition is always true if pipe is not
 				 * replicated */
-				((*pipe)->last_used + (RL_USE_BIN(*pipe)?rl_repl_timer_expire:0) < now)) {
+				(pipe->last_used + (RL_USE_BIN(pipe)?rl_repl_timer_expire:0) < now)) {
 				/* this pipe is engaged in a transaction */
 				del = it;
 				if (iterator_next(&it) < 0)
 					LM_DBG("cannot find next iterator\n");
-				if ((*pipe)->algo == PIPE_ALGO_NETWORK) {
+				if (pipe->algo == PIPE_ALGO_NETWORK) {
 					lock_get(rl_lock);
 					(*rl_network_count)--;
 					lock_release(rl_lock);
@@ -577,36 +576,36 @@ void rl_timer(utime_t uticks, void *param)
 				continue;
 			} else {
 				/* leave the lock if a cachedb query should be done*/
-				if (RL_USE_CDB(*pipe)) {
-					if (rl_get_counter(key, *pipe) < 0) {
+				if (RL_USE_CDB(pipe)) {
+					if (rl_get_counter(key, pipe) < 0) {
 						LM_ERR("cannot get pipe counter\n");
 						goto next_pipe;
 					}
 				}
-				switch ((*pipe)->algo) {
+				switch (pipe->algo) {
 				case PIPE_ALGO_NETWORK:
 					/* handle network algo */
-					(*pipe)->load =
-						(*rl_network_load > (*pipe)->limit) ? -1 : 1;
+					pipe->load =
+						(*rl_network_load > pipe->limit) ? -1 : 1;
 					break;
 
 				case PIPE_ALGO_RED:
-					if ((*pipe)->limit && rl_timer_interval)
-						(*pipe)->load = (*pipe)->counter /
-						((*pipe)->limit *
+					if (pipe->limit && rl_timer_interval)
+						pipe->load = pipe->counter /
+						(pipe->limit *
 							(rl_limit_per_interval ? 1 : rl_timer_interval));
 					break;
 				default:
 					break;
 				}
-				(*pipe)->my_last_counter = (*pipe)->counter;
-				(*pipe)->last_counter = rl_get_all_counters(*pipe);
-				if (RL_USE_CDB(*pipe)) {
-					if (rl_change_counter(key, *pipe, 0) < 0) {
+				pipe->my_last_counter = pipe->counter;
+				pipe->last_counter = rl_get_all_counters(pipe);
+				if (RL_USE_CDB(pipe)) {
+					if (rl_change_counter(key, pipe, 0) < 0) {
 						LM_ERR("cannot reset counter\n");
 					}
 				} else {
-					(*pipe)->counter = 0;
+					pipe->counter = 0;
 				}
 			}
 next_pipe:
@@ -1032,7 +1031,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 {
 	unsigned int i = 0;
 	map_iterator_t it;
-	rl_pipe_t **pipe;
+	rl_pipe_t **ppipe, *pipe;
 	str *key;
 	int nr = 0;
 	int ret = 0;
@@ -1053,17 +1052,16 @@ void rl_timer_repl(utime_t ticks, void *param)
 			goto next_map;
 		}
 		for (; iterator_is_valid(&it);) {
-			pipe = (rl_pipe_t **) iterator_val(&it);
-			if (!pipe || !*pipe) {
+			ppipe = (rl_pipe_t **) iterator_val(&it);
+			if (!ppipe || !(pipe = *ppipe)) {
 				LM_ERR("[BUG] bogus map[%d] state\n", i);
 				goto next_pipe;
 			}
-			/* ignore cachedb replicated stuff */
-			if (!RL_USE_BIN(*pipe))
-				goto next_pipe;
+			if (!RL_USE_BIN(pipe))
+			        goto next_pipe;
 
 			/* do not replicate if about to expire */
-			if ((*pipe)->last_local_used + rl_expire_time < now)
+			if (pipe->last_local_used + rl_expire_time < now)
 				goto next_pipe;
 
 			key = iterator_key(&it);
@@ -1075,24 +1073,24 @@ void rl_timer_repl(utime_t ticks, void *param)
 			if (bin_push_str(&packet, key) < 0)
 				goto error;
 
-			if (bin_push_int(&packet, (*pipe)->flags) < 0)
+			if (bin_push_int(&packet, pipe->flags) < 0)
 				goto error;
 
-			if (bin_push_int(&packet, (*pipe)->algo) < 0)
+			if (bin_push_int(&packet, pipe->algo) < 0)
 				goto error;
 
-			if (bin_push_int(&packet, (*pipe)->limit) < 0)
+			if (bin_push_int(&packet, pipe->limit) < 0)
 				goto error;
 
 			/*
 			 * for the SBT algorithm it is safe to replicate the current
 			 * counter, since it is always updating according to the window
 			 */
-			RL_DBG(*pipe, "replicate=%d", ((*pipe)->algo == PIPE_ALGO_HISTORY ?
-						 (*pipe)->counter : (*pipe)->my_last_counter));
+			RL_DBG(p, "replicate=%d", (pipe->algo == PIPE_ALGO_HISTORY ?
+						 pipe->counter : pipe->my_last_counter));
 			if ((ret = bin_push_int(&packet,
-						((*pipe)->algo == PIPE_ALGO_HISTORY ?
-						 (*pipe)->counter : (*pipe)->my_last_counter))) < 0)
+						(pipe->algo == PIPE_ALGO_HISTORY ?
+						 pipe->counter : pipe->my_last_counter))) < 0)
 				goto error;
 			nr++;
 
@@ -1127,10 +1125,9 @@ int rl_get_all_counters(rl_pipe_t *pipe)
 {
 	unsigned counter = 0;
 	time_t now = time(0);
-	rl_repl_counter_t *nodes = pipe->dsts;
 	rl_repl_counter_t *d;
 
-	for (d = nodes; d; d = d->next) {
+	for (d = pipe->dsts; d; d = d->next) {
 		/* if the replication expired, reset its counter */
 		if ((d->update + rl_repl_timer_expire) < now)
 			d->counter = 0;
