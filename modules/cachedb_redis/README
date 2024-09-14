@@ -257,7 +257,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Paiu (@vladpaiu) 30 17 1428 43
+   1. Vlad Paiu (@vladpaiu) 31 18 1431 44
    2. Liviu Chircu (@liviuchircu) 29 19 558 277
    3. Razvan Crainea (@razvancrainea) 16 13 130 35
    4. Vlad Patrascu (@rvlad-patrascu) 12 6 595 38
@@ -292,20 +292,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Oct 2023
-   2.  zhengsh                             Aug 2023 - Aug 2023
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  John Burke (@john08burke)           Apr 2022 - Apr 2022
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2022
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
-   7.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Kristian Høgh                       Apr 2016 - Apr 2016
+   1.  Vlad Paiu (@vladpaiu)               Oct 2011 - Sep 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Oct 2023
+   3.  zhengsh                             Aug 2023 - Aug 2023
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  John Burke (@john08burke)           Apr 2022 - Apr 2022
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2022
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
+   8.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   9.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Julián Moreno Patiño, Jarrod
-   Baumann (@jarrodb), jalung, Vlad Paiu (@vladpaiu), Ezequiel
-   Lovelle.
+   All remaining contributors: Kristian Høgh, Julián Moreno
+   Patiño, Jarrod Baumann (@jarrodb), jalung, Ezequiel Lovelle.
 
    (1) including any documentation-related commits, excluding
    merge commits
