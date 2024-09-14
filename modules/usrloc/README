@@ -1711,9 +1711,9 @@ Chapter 3. Contributors
    (@lemenkov), Andreas Granig, Shlomi Gutman, @jalung, Jeffrey
    Magder, Phil D'Amore, Norman Brandinger (@NormB), David
    Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon,
-   Aron Podrigal (@ar45), Dan Pascu (@danpascu), Matthew M.
-   Boedicker, UnixDev, Edson Gellert Schubert, Alexey Vasilyev
-   (@vasilevalex), Elena-Ramona Modroiu, Stephane Alnet.
+   Aron Podrigal (@ar45), Alexandra Titoc, Dan Pascu (@danpascu),
+   Matthew M. Boedicker, UnixDev, Edson Gellert Schubert, Alexey
+   Vasilyev (@vasilevalex), Elena-Ramona Modroiu, Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1735,31 +1735,32 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2024
-   2.  Carsten Bock                        Mar 2024 - Mar 2024
-   3.  Maksym Sobolyev (@sobomax)          Apr 2003 - Dec 2023
-   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
-   6.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jan 2023
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Feb 2022
-   8.  Walter Doekes (@wdoekes)            Apr 2019 - May 2021
-   9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2024
+   3.  Carsten Bock                        Mar 2024 - Mar 2024
+   4.  Maksym Sobolyev (@sobomax)          Apr 2003 - Dec 2023
+   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
+   7.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jan 2023
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Feb 2022
+   9.  Walter Doekes (@wdoekes)            Apr 2019 - May 2021
+   10. Zero King (@l2dy)                   Mar 2020 - Mar 2020
 
-   All remaining contributors: Alexey Vasilyev (@vasilevalex),
-   Aron Podrigal (@ar45), Alessio Garzi (@Ozzyboshi), Dan Pascu
-   (@danpascu), Shlomi Gutman, @jalung, Ionut Ionita
-   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Ovidiu
-   Sas (@ovidiusas), Dusan Klinec (@ph4r05), Eseanu Marius
-   Cristian (@eseanucristian), David Sanders, Andrei Datcu
-   (@andrei-datcu), Stephane Alnet, Andrei Dragus, Phil D'Amore,
-   UnixDev, Daniel-Constantin Mierla (@miconda), Henning
-   Westerholt (@henningw), Iouri Kharon, Konstantin Bokarius,
-   Edson Gellert Schubert, Anca Vamanu, Matthew M. Boedicker,
-   Marcus Hunger, Elena-Ramona Modroiu, Jeffrey Magder, Norman
-   Brandinger (@NormB), Andreas Granig, Juha Heinanen (@juha-h),
-   Klaus Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
-   Jiri Kuthan (@jiriatipteldotorg), Jamey Hicks, Nils Ohlmeier.
+   All remaining contributors: Peter Lemenkov (@lemenkov), Alexey
+   Vasilyev (@vasilevalex), Aron Podrigal (@ar45), Alessio Garzi
+   (@Ozzyboshi), Dan Pascu (@danpascu), Shlomi Gutman, @jalung,
+   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   (@ionel-cerghit), Ovidiu Sas (@ovidiusas), Dusan Klinec
+   (@ph4r05), Eseanu Marius Cristian (@eseanucristian), David
+   Sanders, Andrei Datcu (@andrei-datcu), Stephane Alnet, Andrei
+   Dragus, Phil D'Amore, UnixDev, Daniel-Constantin Mierla
+   (@miconda), Henning Westerholt (@henningw), Iouri Kharon,
+   Konstantin Bokarius, Edson Gellert Schubert, Anca Vamanu,
+   Matthew M. Boedicker, Marcus Hunger, Elena-Ramona Modroiu,
+   Jeffrey Magder, Norman Brandinger (@NormB), Andreas Granig,
+   Juha Heinanen (@juha-h), Klaus Darilion, Jan Janak (@janakj),
+   Andrei Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg),
+   Jamey Hicks, Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits

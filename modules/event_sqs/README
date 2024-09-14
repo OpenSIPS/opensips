@@ -188,7 +188,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Alexandra Titoc                    27       7      1629     366
-   2. Razvan Crainea (@razvancrainea)    4        2       8        3
+   2. Razvan Crainea (@razvancrainea)    5        3       9        4
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
