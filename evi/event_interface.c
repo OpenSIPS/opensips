@@ -163,6 +163,7 @@ void evi_remove_expired_subs(event_id_t id) {
 			}
 			continue;
 		}
+		prev = subs;
 		subs = subs->next;
 	}
 	lock_release(events[id].lock);
