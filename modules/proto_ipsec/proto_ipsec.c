@@ -245,10 +245,6 @@ static int mod_init(void)
 	}
 
 	ipsec_ctx_tm_idx = tm_ipsec.t_ctx_register_ptr((context_destroy_f)ipsec_ctx_release);
-	if (!ipsec_ctx_tm_idx) {
-		LM_ERR("could not get transaction index!\n");
-		return -1;
-	}
 
 	if (load_ul_api(&ul_ipsec) != 0) {
 		LM_ERR("can't load usrloc API\n");
