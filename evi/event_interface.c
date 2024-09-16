@@ -769,6 +769,9 @@ mi_response_t *w_mi_subscribers_list_1(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Event not published"));
 	/* get the event id & before printing the subs list check for any expired subscribers and remove them*/
 	evid = evi_get_id(&event_s);
+	if (evid == -1)
+        return init_mi_error(404, MI_SSTR("Can't get the id"));
+
 	evi_remove_expired_subs(evid);
 
 	return mi_subscribers_list(event, NULL);
@@ -790,6 +793,9 @@ mi_response_t *w_mi_subscribers_list_2(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Event not published"));
 	/* get the event id & before printing the subs list check for any expired subscribers and remove them*/
 	evid = evi_get_id(&event_s);
+	if (evid == -1)
+		return init_mi_error(404, MI_SSTR("Can't get the id"));
+
 	evi_remove_expired_subs(evid);
 
 	if (get_mi_string_param(params, "socket", &subs_s.s, &subs_s.len) < 0)
