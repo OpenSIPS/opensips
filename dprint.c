@@ -181,6 +181,7 @@ int init_log_cee_hostname(void)
 		init_str(&cname, info->ai_canonname);
 		if (pkg_str_dup(&log_cee_hostname, &cname) < 0) {
 			LM_ERR("no more pkg memory\n");
+			freeaddrinfo(info);
 			return -1;
 		}
 	}
