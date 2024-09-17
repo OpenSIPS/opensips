@@ -637,7 +637,6 @@ int parse_attr_def(char *line, FILE *fp)
 			goto error;
 
 		len -= newp - p;
-		p = newp;
 	}
 
 	if (avp_type != AVP_TYPE_GROUPED)
