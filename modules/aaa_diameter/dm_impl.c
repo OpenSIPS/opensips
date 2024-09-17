@@ -2273,7 +2273,7 @@ int dm_enc_add(int vendor, int code, enum dict_avp_enc_type enc)
 	} else {
 		/* resize the avps */
 		a = realloc(v->avps, (v->avps_no + 1) * sizeof *a);
-		if (!v) {
+		if (!a) {
 			LM_ERR("oom for reallocating avps encoding\n");
 			return -1;
 		}
