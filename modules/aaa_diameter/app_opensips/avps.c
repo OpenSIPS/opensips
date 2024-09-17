@@ -581,6 +581,10 @@ int parse_attr_def(char *line, FILE *fp)
 		goto error;
 
 	nt_name = malloc(name_len + 1);
+	if (!nt_name) {
+		LOG_ERROR("Malloc failed\n");
+		return -1;
+	}
 	memcpy(nt_name, name, name_len);
 	nt_name[name_len] = '\0';
 
@@ -658,11 +662,13 @@ int parse_attr_def(char *line, FILE *fp)
 
 		if (avp_count >= 128) {
 			LOG_ERROR("max AVP count exceeded (128)\n");
+			free(nt_name);
 			return -1;
 		}
 
 		if (parse_avp_def(avps, &avp_count, p, len) != 0) {
 			LOG_ERROR("failed to parse Grouped sub-AVP line: '%s'\n", line);
+			free(nt_name);
 			return -1;
 		}
 	}
@@ -673,6 +679,7 @@ create_avp:;
 	if (enc_type != AVP_ENC_TYPE_NONE &&
 			dm_enc_add((vendor_id != -1?vendor_id:0), avp_code, enc_type) != 0) {
 		LOG_ERROR("failed to add encoding type\n");
+		free(nt_name);
 		return -1;
 	}
 
@@ -722,6 +729,7 @@ create_avp:;
 	return 0;
 error:
 	LOG_ERROR("failed to parse line: %s\n", line);
+	free(nt_name);
 	return -1;
 }
 
