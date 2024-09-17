@@ -67,7 +67,10 @@ uint32_t rc_get_ipaddr (char *host)
 	struct in_addr** addr_list;
 
 	he=resolvehost(host, 0/*do test if is ip*/);
-
+	if (!he) {
+		LM_ERR("Can't resolve host: %s\n", host);
+		return 0;
+	}
 	/* FIXME the function is not for IPV6 */
 	addr_list = (struct in_addr **)he->h_addr_list;
 	if (addr_list[0])
