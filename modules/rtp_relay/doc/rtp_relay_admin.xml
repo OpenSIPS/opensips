@@ -806,7 +806,8 @@ route[rtp_relay_copy_delete] {
 		<listitem>
 			<para>
 				<emphasis>engine(string)</emphasis> - the RTP relay engine
-				to be used for the call (i.e. <emphasis>rtpproxy</emphasis>.
+				to be used for the call (i.e. <emphasis>rtpproxy</emphasis>,
+				<emphasis>rtpengine</emphasis> or <emphasis>route</emphasis>)
 			</para>
 		</listitem>
 		<listitem><para>
