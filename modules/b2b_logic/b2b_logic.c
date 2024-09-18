@@ -2168,11 +2168,8 @@ static str *b2bl_get_key(void)
 	int locked = 0;
 	b2bl_tuple_t *tuple = get_ctx_tuple(&locked);
 
-	if (!tuple) {
-		if (locked)
-			B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
+	if (!tuple)
 		return NULL;
-	}
 
 	ret.s = buf;
 	ret.len = 0;
