@@ -322,7 +322,7 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 
 	if (ctx) {
 		/* get created value from context */
-		_created = (unsigned int)ctx->created;
+		_created = (unsigned int)(unsigned long)ctx->created;
 		_setup_time = time(NULL) - _created;
 	}
 
@@ -862,7 +862,7 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 	}
 
 	if (ctx) {
-		_created = (unsigned int)ctx->created;
+		_created = (unsigned int)(unsigned long)ctx->created;
 		_setup_time = time(NULL) - _created;
 	}
 
@@ -1012,7 +1012,7 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	ADD_AAA_AVPAIR( offset + nr_leg_vals + 2, &av_type, -1);
 
 	/* Sip-Call-Created (229) */
-	av_type = (uint32_t)ctx->created;
+	av_type = (uint32_t)(unsigned long)ctx->created;
 	ADD_AAA_AVPAIR( offset + nr_leg_vals + 3, &av_type, -1);
 
 	/* Sip-Call-MSDuration (230) */
@@ -1234,7 +1234,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int missed_flag)
 		return 1;
 
 	if (ctx) {
-		_created = (unsigned int)ctx->created;
+		_created = (unsigned int)(unsigned long)ctx->created;
 		_setup_time = time(NULL) - _created;
 	}
 
