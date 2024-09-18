@@ -237,7 +237,7 @@ void b2b_logic_dump(int no_lock)
 			}
 
 			qvals[2].val.int_val  = tuple->state;
-			qvals[3].val.int_val = tuple->lifetime - get_ticks() + (int)time(NULL);
+			qvals[3].val.int_val = tuple->lifetime - get_ticks() + (int)(unsigned long)time(NULL);
 			qvals[4].val.int_val = tuple->bridge_entities[0]->type;
 			qvals[5].val.str_val = tuple->bridge_entities[0]->scenario_id;
 			qvals[6].val.str_val = tuple->bridge_entities[0]->to_uri;
@@ -493,7 +493,7 @@ static int load_tuple(int_str_t *vals)
 	memset(bridge_entities, 0, 3*sizeof(b2bl_entity_id_t));
 
 	tuple.state = vals[2].i;
-	_time = (int)time(NULL);
+	_time = (int)(unsigned long)time(NULL);
 	if (vals[3].i <= _time)
 		tuple.lifetime = 1;
 	else
@@ -790,7 +790,7 @@ void b2bl_db_insert(b2bl_tuple_t* tuple)
 	}
 
 	qvals[2].val.int_val = tuple->state;
-	qvals[3].val.int_val= tuple->lifetime - get_ticks() + (int)time(NULL);
+	qvals[3].val.int_val= tuple->lifetime - get_ticks() + (int)(unsigned long)time(NULL);
 	ci = 4;
 
 	for(i = 0; i< 3; i++)
@@ -862,7 +862,7 @@ void b2bl_db_update(b2bl_tuple_t* tuple)
 	qvals[0].val.str_val = *tuple->key;
 
 	qvals[3].val.int_val  = tuple->state;
-	qvals[4].val.int_val = tuple->lifetime -get_ticks() + (int)time(NULL);
+	qvals[4].val.int_val = tuple->lifetime -get_ticks() + (int)(unsigned long)time(NULL);
 	ci = 4;
 
 	for(i = 0; i< 3; i++)
