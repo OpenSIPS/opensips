@@ -3046,6 +3046,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	}
 	else
 	{
+		/* coverity[var_deref_model] */
 		dlg = b2b_search_htable_dlg(htable, hash_index, local_index,
 			&from_tag, (method_id==METHOD_CANCEL)?NULL:&to_tag, &callid);
 	}
@@ -3100,6 +3101,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			"transaction [%p]\n", dlg, dlg->uac_tran, t);
 		if(dlg_based_search)
 			/* coverity[swapped_arguments] */
+			/* coverity[var_deref_model] */
 			dlg = b2b_search_htable_next_dlg( previous_dlg, htable, hash_index,
 				local_index, &from_tag, &to_tag, &callid);
 		else
