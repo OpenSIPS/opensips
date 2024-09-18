@@ -497,7 +497,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			} else if (int_vals[INT_VALS_NODE_ID_COL] == current_id) {
 				LM_ERR("Invalid info for local node\n");
 				return -1;
-			} else if (int_vals[INT_VALS_NODE_ID_COL] == current_id && rc == 1) {
+			} else if (int_vals[INT_VALS_NODE_ID_COL] != current_id && rc == 1) {
 				LM_ERR("Invalid info for remote node, this will segfault! [%d] current_id=%d\n",
 				int_vals[INT_VALS_NODE_ID_COL], rc);
 				return -1;
