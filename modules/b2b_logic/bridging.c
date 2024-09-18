@@ -204,15 +204,17 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		goto error;
 	}
 
-	if (old_entity->peer->peer == old_entity)
-		old_entity->peer->peer = NULL;
-	else
-	{
-		LM_ERR("Unexpected chain: old_entity=[%p] and old_entity->peer->peer=[%p]\n",
-			old_entity, old_entity->peer->peer);
-		goto error;
+	if (old_entity->peer) {
+		if (old_entity->peer->peer == old_entity)
+			old_entity->peer->peer = NULL;
+		else
+		{
+			LM_ERR("Unexpected chain: old_entity=[%p] and old_entity->peer->peer=[%p]\n",
+				old_entity, old_entity->peer->peer);
+			goto error;
+		}
+		old_entity->peer = NULL;
 	}
-	old_entity->peer = NULL;
 
 	tuple->bridge_entities[0]= bridging_entity;
 
