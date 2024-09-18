@@ -175,6 +175,7 @@ void cdb_add_n_pairs(cdb_dict_t *pairs, int idx_start, int idx_end)
 		if (qvals[i].nul || (qvals[i].type == DB_STR && !qvals[i].val.str_val.s))
 			cdb_dict_add_null(pairs, qcols[i]->s, qcols[i]->len);
 		else if (qvals[i].type == DB_STR)
+			/* coverity[check_result] - false positive */
 			cdb_dict_add_str(pairs, qcols[i]->s, qcols[i]->len,
 				&qvals[i].val.str_val);
 		else if (qvals[i].type == DB_INT)
