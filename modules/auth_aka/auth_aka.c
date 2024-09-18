@@ -737,7 +737,7 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 
 	realm = (_realm?*_realm:str_init(""));
 	if (count > 1) {
-		avs = pkg_malloc(count * sizeof *av);
+		avs = pkg_malloc(count * sizeof(struct aka_av *));
 		if (!avs) {
 			LM_ERR("could not allocate %d AVs\n", count);
 			return -1;
