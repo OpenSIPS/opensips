@@ -396,7 +396,9 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 	}
 
 	memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
-	PREP_RPL_DATA(entity);
+	if (entity) {
+		PREP_RPL_DATA(entity);
+	}
 	rpl_data.method =METHOD_BYE;
 	rpl_data.code =200;
 	rpl_data.text =&ok;
