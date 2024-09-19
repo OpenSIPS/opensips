@@ -2168,6 +2168,8 @@ static int w_stir_check(struct sip_msg *msg)
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
 			return -1;
+		} else if (rc == -2) {
+			return -2;
 		} else {
 			LM_INFO("Invalid identity header\n");
 			return -3;
