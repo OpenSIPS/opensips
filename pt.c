@@ -490,6 +490,8 @@ void dynamic_process_final_exit(void)
 	/* if a TCP proc by chance, reset the tcp-related data */
 	tcp_reset_worker_slot();
 
+	pt_become_idle();
+
 	/* mark myself as DYNAMIC (just in case) to have an err-less termination */
 	pt[process_no].flags |= OSS_PROC_SELFEXIT;
 	LM_INFO("doing self termination\n");
