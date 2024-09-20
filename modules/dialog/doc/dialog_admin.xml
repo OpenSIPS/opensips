@@ -2605,6 +2605,45 @@ event_route[E_RTPPROXY_DTMF] {
 </programlisting>
 		</example>
 	</section>
+	<section id="func_dlg_inc_cseq" xreflabel="dlg_inc_cseq()">
+		<title>
+			<function moreinfo="none">dlg_inc_cseq([tag, ][inc])</function>
+		</title>
+		<para>Increments the dialog's generated CSeq associated to the leg
+		identified by the dialog's tag.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para><emphasis>tag (string, optional)</emphasis> -
+			the tag to increment the CSeq value for. If missing, the
+			message's <emphasis>To</emphasis> tag is used to identify
+			the leg to increment the CSeq for.
+			</para></listitem>
+			<listitem><para><emphasis>inc (integer, optional)</emphasis> - the
+			value used to increment/decrement (if negative) the CSeq of
+			the identified leg. If not used, the value is incremented with
+			<emphasis>1</emphasis>.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE routes.
+		</para>
+		<example>
+		<title><function>dlg_inc_cseq</function> usage</title>
+		<programlisting format="linespecific">
+...
+route {
+	...
+	if (has_totag()) {
+		if (loose_route())
+			dlg_inc_cseq(); # increment upstream CSeq after each in-dialog request
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 

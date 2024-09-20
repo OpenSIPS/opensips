@@ -159,6 +159,7 @@ static int dlg_on_answer(struct sip_msg* msg, void *route_id);
 static int dlg_on_hangup(struct sip_msg* msg, void *route_id);
 static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 		str *body, str *ct, str *headers);
+static int dlg_inc_cseq(struct sip_msg *msg, str *tag, int *_count);
 
 
 /* item/pseudo-variables functions */
@@ -282,6 +283,10 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
+	{"dlg_inc_cseq", (cmd_function)dlg_inc_cseq, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"load_dlg", (cmd_function)load_dlg, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
@@ -2565,4 +2570,56 @@ static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 	return send_indialog_request(dlg, method, (leg == DLG_CALLER_LEG?leg:callee_idx(dlg)),
 			body, ct, headers, NULL, NULL) == 0?1:-1;
 
+}
+
+static int dlg_inc_cseq(struct sip_msg *msg, str *tag, int *_count)
+{
+	struct dlg_cell *dlg;
+	int count = (_count?*_count:1);
+	int leg, ret = -1;
+	str cseq;
+	unsigned int loc_seq;
+
+	if ( (dlg=get_current_dialog())==NULL ) {
+		LM_DBG("no current dialog found\n");
+		return -2;
+	}
+
+	if (!tag) {
+		if ((!msg->to && parse_headers(msg, HDR_TO_F, 0) < 0) || !msg->to) {
+			LM_ERR("inexisting or invalid to header!\n");
+			return -1;
+		}
+		tag = &get_to(msg)->tag_value;
+	}
+	dlg_lock_dlg(dlg);
+	for (leg = DLG_FIRST_CALLEE_LEG ; leg < dlg->legs_no[DLG_LEGS_USED]; leg++) {
+		if (str_match(tag, &dlg->legs[leg].tag))
+			break;
+	}
+	if (leg == dlg->legs_no[DLG_LEGS_USED]) {
+		LM_ERR("leg with tag <%.*s> not found\n", tag->len, tag->s);
+		goto end;
+	}
+	if (dlg->legs[leg].last_gen_cseq == 0) {
+		/*local sequence number*/
+		cseq = dlg->legs[leg].r_cseq;
+		if (!cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
+			LM_ERR("invalid cseq\n");
+			goto end;
+		}
+
+		dlg->legs[leg].last_gen_cseq = loc_seq + count;
+	} else {
+		dlg->legs[leg].last_gen_cseq += count;
+		loc_seq = -1;
+	}
+	LM_DBG("increasing leg=%d cseq=%u count=%d gen=%d\n",
+		leg, loc_seq, count, dlg->legs[leg].last_gen_cseq);
+	ret = 1;
+
+	dlg->flags |= DLG_FLAG_CSEQ_ENFORCE;
+end:
+	dlg_unlock_dlg(dlg);
+	return ret;
 }
