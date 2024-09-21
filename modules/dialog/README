@@ -108,6 +108,8 @@ dialog Module
               1.7.25. dlg_send_sequential(method, leg, [, body] [,
                       content-type] [, headers])
 
+              1.7.26. dlg_inc_cseq([tag, ][inc])
+
         1.8. Exported Statistics
 
               1.8.1. active_dialogs
@@ -260,6 +262,7 @@ dialog Module
    1.75. dlg_on_timeout usage
    1.76. dlg_on_hangup usage
    1.77. dlg_send_sequential usage to convert DTMF codes
+   1.78. dlg_inc_cseq usage
 
 Chapter 1. Admin Guide
 
@@ -1915,6 +1918,35 @@ event_route[E_RTPPROXY_DTMF] {
 }
 ...
 
+1.7.26.  dlg_inc_cseq([tag, ][inc])
+
+   Increments the dialog's generated CSeq associated to the leg
+   identified by the dialog's tag.
+
+   Parameters:
+     * tag (string, optional) - the tag to increment the CSeq
+       value for. If missing, the message's To tag is used to
+       identify the leg to increment the CSeq for.
+     * inc (integer, optional) - the value used to
+       increment/decrement (if negative) the CSeq of the
+       identified leg. If not used, the value is incremented with
+       1.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE routes.
+
+   Example 1.78. dlg_inc_cseq usage
+...
+route {
+        ...
+        if (has_totag()) {
+                if (loose_route())
+                        dlg_inc_cseq(); # increment upstream CSeq after
+each in-dialog request
+        }
+}
+...
+
 1.8. Exported Statistics
 
 1.8.1. active_dialogs
@@ -2565,7 +2597,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 459 288 13367 3546
-   2. Razvan Crainea (@razvancrainea) 286 214 5288 1660
+   2. Razvan Crainea (@razvancrainea) 288 215 5384 1660
    3. Vlad Paiu (@vladpaiu) 256 145 7206 3027
    4. Vlad Patrascu (@rvlad-patrascu) 199 104 4330 3514
    5. Liviu Chircu (@liviuchircu) 180 130 3118 1369
@@ -2642,12 +2674,12 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu),
-   Stefan-Cristian Mititelu, Liviu Chircu (@liviuchircu), Ryan
-   Bullock, Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Vlad Paiu (@vladpaiu), Zero King (@l2dy), Dan
-   Pascu (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno
-   Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Stefan-Cristian Mititelu, Liviu Chircu
+   (@liviuchircu), Ryan Bullock, Vlad Patrascu (@rvlad-patrascu),
+   Vlad Paiu (@vladpaiu), Zero King (@l2dy), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno Patiño,
+   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
    Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
    Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
