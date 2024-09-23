@@ -3432,7 +3432,7 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 	s = list2->next->next ? &list2->next->next->s : NULL;
 	if (s && s->s && s->len) {
 		e2_proxy = s;
-		s = list2->next->next->next ? &list1->next->next->next->s : NULL;
+		s = list2->next->next->next ? &list2->next->next->next->s : NULL;
 		if (s && s->s && s->len) {
 			e2_dname = s;
 		}
