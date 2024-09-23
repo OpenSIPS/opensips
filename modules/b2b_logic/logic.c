@@ -1439,7 +1439,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			cur_route_ctx.extra_headers->len?cur_route_ctx.extra_headers:NULL;
 		req_data.body =cur_route_ctx.body->len?cur_route_ctx.body:NULL;
 		/* Decrement Max-Forwards value */
-		if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+		if ((maxfwd = b2b_msg_get_maxfwd(msg)) > (int)0)
 			req_data.maxfwd = maxfwd;
 		if(b2b_api.send_request(&req_data) < 0)
 		{
