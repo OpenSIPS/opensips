@@ -232,7 +232,7 @@ static int dbcache_set(cachedb_con *con, str* attr, str* value, int expires)
 	vals[2].type = DB_INT;
 	vals[2].nul = 0;
 	if (expires > 0)
-		vals[2].val.int_val = (int)time(NULL) + expires;
+		vals[2].val.int_val = (int)(unsigned long)time(NULL) + expires;
 	else
 		vals[2].val.int_val = 0;
 
@@ -363,7 +363,7 @@ static int dbcache_add(cachedb_con *con, str *attr, int val, int expires, int *n
 	db_res_t* res = NULL;
 
 	if (expires > 0)
-		expires += (int)time(NULL);
+		expires += (int)(unsigned int)time(NULL);
 	else
 		expires = 0;
 
@@ -489,7 +489,7 @@ static void dbcache_clean(unsigned int ticks, void* param)
 
 	vals[1].type = DB_INT;
 	vals[1].nul = 0;
-	vals[1].val.int_val = (int)time(NULL);
+	vals[1].val.int_val = (int)(unsigned long)time(NULL);
 
 	lst = filter_pool_by_scheme(&cache_mod_name,&size);
 	for (i=0;i<size;i++) {
