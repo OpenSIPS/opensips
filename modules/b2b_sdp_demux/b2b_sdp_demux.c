@@ -723,7 +723,8 @@ static int b2b_sdp_streams_from_avps(struct b2b_sdp_ctx *ctx,
 				tmp.len = p - tmp.s;
 				if (tmp.len == 0)
 					break;
-				str2int(&tmp, &itmp);
+				if (str2int(&tmp, &itmp) < 0)
+					return -1;
 				val.s.len -= (p - val.s.s);
 				val.s.s = p;
 
