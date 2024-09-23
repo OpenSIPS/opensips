@@ -404,7 +404,7 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 
 	entity->type = type;
 
-	if(type == B2B_SERVER && msg)
+	if(type == B2B_SERVER && msg && entity_id)
 	{
 		if( msg_add_dlginfo(entity, msg, entity_id)< 0 )
 		{
