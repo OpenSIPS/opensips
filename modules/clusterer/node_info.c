@@ -395,6 +395,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 
 	if (RES_ROW_N(res) == 0) {
 		LM_WARN("Current node does not belong to any cluster\n");
+		dr_dbf->free_result(db_hdl, res);
 		return 1;
 	}
 
@@ -493,12 +494,17 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 		if ((rc = add_node_info(&_, cl_list, int_vals, str_vals)) != 0) {
 			LM_ERR("Unable to add node info to backing list\n");
 			if (rc < 0) {
-				return -1;
+				/* serious error happened, better give up */
+				goto error;
 			} else if (int_vals[INT_VALS_NODE_ID_COL] == current_id) {
 				LM_ERR("Invalid info for local node\n");
-				return -1;
+				/* the node info is bogus, but cannot be skipped
+				 * as it is the current node) */
+				goto error;
 			} else {
-				return 2;
+				/* the node info is bogus, just skip it
+				 * (it's not current node) */
+				continue;
 			}
 		}
 	}
