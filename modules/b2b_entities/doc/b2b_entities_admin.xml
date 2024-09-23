@@ -297,6 +297,9 @@ modparam("b2b_entities", "db_table", "some table name")
 		persistency through the <emphasis>clusterer</emphasis> module's
 		data "sync" mechanism.
 		</para>
+
+			&clusterer_sync_cap_para;
+
 		<para>
 		<emphasis>Default value is <quote>0</quote> (clustering disabled)</emphasis>
 		</para>

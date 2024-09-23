@@ -1270,6 +1270,9 @@ modparam("dialog", "profile_timeout", "43200")
 			and receiving all the dialog-related events (creation, update and
 			deletion) in the cluster.
 		</para>
+
+			&clusterer_sync_cap_para;
+
 		<para>
 		<emphasis>
 			Default value is <quote>0</quote> (no replication).
