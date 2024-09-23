@@ -1433,7 +1433,7 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						VAL_TYPE(cur_val) = DB_DATETIME;
 						VAL_TIME(cur_val) = bson_iter_date_time(&iter)/(int64_t)1000;
 						LM_DBG("Found time [%.*s]=[%d]\n",
-						       _c[c]->len, _c[c]->s, (int)VAL_TIME(cur_val));
+						       _c[c]->len, _c[c]->s, (int)(unsigned long)VAL_TIME(cur_val));
 						break;
 					case BSON_TYPE_OID:
 						bson_oid_to_string(bson_iter_oid(&iter), hex_oid);
