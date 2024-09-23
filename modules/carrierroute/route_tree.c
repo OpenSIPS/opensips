@@ -421,6 +421,7 @@ static void destroy_route_tree_item(struct route_tree_item *route_tree_item) {
 
 	if (!route_tree_item) {
 		LM_ERR("NULL pointer in parameter\n");
+		return;
 	}
 
 	for (i = 0; i < 10; ++i) {
@@ -450,6 +451,7 @@ static void destroy_failure_route_tree_item(struct failure_route_tree_item *rout
 
 	if (!route_tree_item) {
 		LM_ERR("NULL pointer in parameter\n");
+		return;
 	}
 
 	for (i = 0; i < 10; ++i) {
