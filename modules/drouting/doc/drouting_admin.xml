@@ -1011,9 +1011,12 @@ modparam("drouting", "gw_socket_filter_mode", "ignore")
 		gateways. See the
 		<xref linkend="param_cluster_sharing_tag"/> option.
 		</para>
+
+			&clusterer_sync_cap_para;
+
 		<para>
 		For more info on how to define and populate a cluster (with OpenSIPS 
-		nodes) see the "clusterer" module.
+		nodes) see the <ulink url='clusterer'>clusterer</ulink> module.
 		</para>
 		<para>
 		<emphasis>
