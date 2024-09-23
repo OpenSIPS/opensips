@@ -163,6 +163,9 @@ modparam("presence", "fallback2db", 1)
 		understand th concept of a cluster ID, please see the 
 		<emphasis>clusterer</emphasis> module.
 		</para>
+
+			&clusterer_sync_cap_para;
+
 		<para>
 		For more on presence clustering see the 
 		<xref linkend="presence_clustering"/> chapter.

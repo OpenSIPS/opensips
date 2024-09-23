@@ -1171,6 +1171,9 @@ modparam("usrloc", "cseq_delay", 5)
         (<emphasis>addresses-of-record</emphasis>, <emphasis>contacts</emphasis>),
 		organized into specific events (inserts, deletes or updates).
 		</para>
+
+			&clusterer_sync_cap_para;
+
 		<para>
 		Default value is 0 (replication disabled).
 		</para>
