@@ -388,7 +388,10 @@ static int mod_init(void) {
  * fixes the module functions' parameter if it is a carrier.
  */
 static int carrier_fixup(void ** param) {
-	if ((*param = (void *)(unsigned long)find_tree((str*)*param)) < 0) {
+	int ret;
+	ret = find_tree((str *)*param);
+	*param = (void *)(unsigned long)ret;
+	if (ret < 0) {
 		LM_ERR("could not find carrier tree '%.*s'\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
@@ -404,7 +407,10 @@ static int carrier_fixup(void ** param) {
  * fixes the module functions' parameter if it is a domain.
  */
 static int domain_fixup(void ** param) {
-	if ((*param = (void*)(unsigned long)add_domain((str*)*param)) < 0) {
+	int ret;
+	ret = add_domain((str *)*param);
+	*param = (void *)(unsigned long)ret;
+	if (ret < 0) {
 		LM_ERR("could not add domain\n");
 		return -1;
 	}
