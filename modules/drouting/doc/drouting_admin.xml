@@ -2359,13 +2359,15 @@ if ( dr_match( 1, , $var(did) ) )
 						</para></listitem>
 					</itemizedlist>
 
-					<listitem><para>
+					<itemizedlist>
+						<listitem><para>
 							<emphasis>inherit_state</emphasis> (optional) : whether inherit old state of the gateway , default is y.
 							<itemizedlist>
 								<listitem><para> <quote>n</quote>: no inherit state </para></listitem>
 								<listitem><para> <quote>y</quote>: inherit state </para></listitem>
 							</itemizedlist>
-					</para></listitem>
+						</para></listitem>
+					</itemizedlist>
 
 				</para>
 			</listitem>
