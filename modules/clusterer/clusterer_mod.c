@@ -467,7 +467,7 @@ static int mod_init(void)
 			LM_ERR("cannot initialize database connection\n");
 			goto error;
 		}
-		if (load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) < 0) {
+		if (load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) != 0) {
 			LM_ERR("Failed to load info from DB\n");
 			goto error;
 		}
