@@ -988,7 +988,7 @@ void cc_db_update_agent_wrapup_end(struct cc_agent* agent)
 	vals[1].nul = 0;
 	vals[1].type = DB_INT;
 	/* translate from internal time to timestamp */
-	vals[1].val.int_val = (int)time(NULL)-get_ticks()+agent->wrapup_end_time;
+	vals[1].val.int_val = (int)(unsigned long)time(NULL)-get_ticks()+agent->wrapup_end_time;
 
 	cc_dbf.use_table( cc_db_handle, &cc_agent_table_name);
 
