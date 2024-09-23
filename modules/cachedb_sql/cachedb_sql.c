@@ -493,6 +493,7 @@ static void dbcache_clean(unsigned int ticks, void* param)
 
 	lst = filter_pool_by_scheme(&cache_mod_name,&size);
 	for (i=0;i<size;i++) {
+		/* coverity[dereference] - size is 0 if lst is NULL, so no dereference */
 		c = (cachedbsql_con*)(lst[i]);	
 			
 		if (c->cdb_dbf.use_table(c->cdb_db_handle, &db_table) < 0) {
