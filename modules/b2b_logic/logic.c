@@ -3299,7 +3299,7 @@ static struct b2bl_new_entity *tmp_client_new(struct sip_msg *msg, str *id,
 	}
 
 	if (proxy) {
-		entity->proxy.s = (char *)(entity + 1) + id->len + dest_uri->len;
+		entity->proxy.s = (char *)(entity + 1) + id->len + (dest_uri ? dest_uri->len : 0);
 		entity->proxy.len = proxy->len;
 		memcpy(entity->proxy.s, proxy->s, proxy->len);
 
@@ -3317,7 +3317,7 @@ static struct b2bl_new_entity *tmp_client_new(struct sip_msg *msg, str *id,
 	}
 
 	if (from_dname) {
-		entity->from_dname.s = (char *)(entity + 1) + id->len + dest_uri->len +
+		entity->from_dname.s = (char *)(entity + 1) + id->len + (dest_uri ? dest_uri->len : 0) +
 			proxy->len;
 		entity->from_dname.len = from_dname->len;
 		memcpy(entity->from_dname.s, from_dname->s, from_dname->len);
