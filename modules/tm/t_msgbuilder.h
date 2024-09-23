@@ -268,11 +268,23 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			faked_req->set_global_address.s = NULL;
 			faked_req->set_global_address.len = 0;
 		}
+		if (uac->adv_address_via.s) {
+			faked_req->set_global_address_via.s = pkg_malloc(uac->adv_address_via.len);
+			if (!faked_req->set_global_address_via.s) {
+				LM_ERR("out of pkg mem\n");
+				goto out4;
+			}
+			memcpy(faked_req->set_global_address_via.s,
+				uac->adv_address_via.s, uac->adv_address_via.len);
+		} else {
+			faked_req->set_global_address_via.s = NULL;
+			faked_req->set_global_address_via.len = 0;
+		}
 		if (uac->adv_port.s) {
 			faked_req->set_global_port.s=pkg_malloc(uac->adv_port.len);
 			if (!faked_req->set_global_port.s) {
 				LM_ERR("out of pkg mem\n");
-				goto out4;
+				goto out5;
 			}
 			memcpy(faked_req->set_global_port.s,
 				uac->adv_port.s, uac->adv_port.len);
@@ -311,12 +323,23 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 				shm_msg->set_global_address.s,
 				shm_msg->set_global_address.len);
 		}
+		if (shm_msg->set_global_address_via.s) {
+			faked_req->set_global_address_via.s = pkg_malloc
+				(shm_msg->set_global_address_via.len);
+			if (!faked_req->set_global_address_via.s) {
+				LM_ERR("out of pkg mem\n");
+				goto out4;
+			}
+			memcpy(faked_req->set_global_address_via.s,
+				shm_msg->set_global_address_via.s,
+				shm_msg->set_global_address_via.len);
+		}
 		if (shm_msg->set_global_port.s) {
 			faked_req->set_global_port.s=pkg_malloc
 				(shm_msg->set_global_port.len);
 			if (!faked_req->set_global_port.s) {
 				LM_ERR("out of pkg mem\n");
-				goto out4;
+				goto out5;
 			}
 			memcpy(faked_req->set_global_port.s, shm_msg->set_global_port.s,
 				shm_msg->set_global_port.len);
@@ -326,12 +349,12 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 
 	if (fix_fake_req_headers(faked_req) < 0) {
 		LM_ERR("could not fix request headers!\n");
-		goto out5;
+		goto out6;
 	}
 
 	if (clone_sip_msg_body( shm_msg, faked_req, &faked_req->body, 0)!=0) {
 		LM_ERR("out of pkg mem - cannot clone body\n");
-		goto out6;
+		goto out7;
 	}
 
 	/* set as flags the global flags */
@@ -339,12 +362,15 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 
 	return 1;
 
-out6:
+out7:
 	if (faked_req->headers)
 		pkg_free(faked_req->headers);
-out5:
+out6:
 	if (faked_req->set_global_port.s)
 		pkg_free(faked_req->set_global_port.s);
+out5:
+	if (faked_req->set_global_address_via.s)
+		pkg_free(faked_req->set_global_address_via.s);
 out4:
 	if (faked_req->set_global_address.s)
 		pkg_free(faked_req->set_global_address.s);
@@ -379,6 +405,10 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 	if (faked_req->set_global_address.s) {
 		pkg_free(faked_req->set_global_address.s);
 		faked_req->set_global_address.s = NULL;
+	}
+	if (faked_req->set_global_address_via.s) {
+		pkg_free(faked_req->set_global_address_via.s);
+		faked_req->set_global_address_via.s = NULL;
 	}
 	if (faked_req->set_global_port.s) {
 		pkg_free(faked_req->set_global_port.s);
