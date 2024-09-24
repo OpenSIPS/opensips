@@ -124,8 +124,10 @@ int gzip_uncompress(unsigned char* in, unsigned long ilen, str* out, unsigned lo
 
 	/* Gzip holds the length of the original message
 		in the last 4 bytes */
-	*olen = (in[ilen-1] << 24) + (in[ilen-2] << 16) +
-				(in[ilen-3] << 8) + in[ilen-4];
+	*olen =	((unsigned long)in[ilen-1] << 24) +
+			((unsigned long)in[ilen-2] << 16) +
+			((unsigned long)in[ilen-3] << 8) +
+			(unsigned long)in[ilen-4];
 	neededSize = *olen+1; /*'\0'*/
 
 	zlibStream.zalloc = Z_NULL;
