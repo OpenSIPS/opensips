@@ -123,14 +123,19 @@ int raise_node_state_ev(enum clusterer_event ev, int cluster_id, int node_id)
 {
 	int new_state = ev == CLUSTER_NODE_DOWN ? 0 : 1;
 
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (evi_param_set_int(ei_clusterid_p, &cluster_id) < 0) {
 		LM_ERR("cannot set cluster_id event parameter\n");
 		return -1;
 	}
+
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (evi_param_set_int(ei_nodeid_p, &node_id) < 0) {
 		LM_ERR("cannot set node_id event parameter\n");
 		return -1;
 	}
+
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (evi_param_set_int(ei_newstate_p, &new_state) < 0) {
 		LM_ERR("cannot set new_state event parameter\n");
 		return -1;
@@ -147,10 +152,13 @@ int raise_node_state_ev(enum clusterer_event ev, int cluster_id, int node_id)
 int raise_gen_msg_ev(int cluster_id, int source_id,
 	int req_like, str *rcv_msg, str *rcv_tag)
 {
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (evi_param_set_int(ei_clid_p, &cluster_id) < 0) {
 		LM_ERR("cannot set cluster id event parameter\n");
 		return -1;
 	}
+
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (evi_param_set_int(ei_srcid_p, &source_id) < 0) {
 		LM_ERR("cannot set source id event parameter\n");
 		return -1;
