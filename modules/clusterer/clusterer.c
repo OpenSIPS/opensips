@@ -1437,7 +1437,7 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 	int no_dests = 0, i;
 	int timestamp;
 
-	timestamp = time(NULL);
+	timestamp = (int)(unsigned long)time(NULL);
 
 	lock_get(cluster->current_node->lock);
 
@@ -1504,7 +1504,7 @@ int send_cap_update(node_info_t *dest_node, int require_reply)
 	node_info_t *node;
 	int timestamp;
 
-	timestamp = time(NULL);
+	timestamp = (int)(unsigned long)time(NULL);
 
 	if (dest_node->cluster->capabilities)
 		nr_nodes++;
