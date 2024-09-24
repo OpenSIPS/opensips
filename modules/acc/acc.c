@@ -1255,12 +1255,14 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int missed_flag)
 
 	for (extra=evi_leg_tags, nr_leg_vals=0; extra; extra=extra->next, nr_leg_vals++);
 
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (missed_flag && evi_param_set_int(acc_env.ev_params[m+nr_leg_vals],
 		&_setup_time) < 0) {
 		LM_ERR("cannot set setuptime parameter\n");
 		goto end;
 	}
 
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (missed_flag && evi_param_set_int(acc_env.ev_params[m+nr_leg_vals+1],
 		&_created) < 0) {
 		LM_ERR("cannot set created parameter\n");
@@ -1369,20 +1371,26 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 
 	ms_duration = TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
 	duration = ceil((double)ms_duration/1000);
+
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+1], &duration) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;
 	}
 
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+2], &ms_duration) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;
 	}
 	setup_duration = start_time.tv_sec - ctx->created;
+
+	/* coverity[overrun-buffer-val: FALSE] */
 	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+3], &setup_duration) < 0) {
 		LM_ERR("cannot set setuptime parameter\n");
 		goto end;
 	}
+
 	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+4], &ctx->created) < 0) {
 		LM_ERR("cannot set created parameter\n");
 		goto end;
