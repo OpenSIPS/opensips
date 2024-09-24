@@ -1811,7 +1811,7 @@ static int mc_decompress(struct sip_msg* msg)
 
 	b64_required=0;
 	if (hdr_vec[2]) {
-		parse_algo_hdr(hdr_vec[3], &algo, &b64_required);
+		parse_algo_hdr(hdr_vec[2], &hdrs_algo, &b64_required);
 	}
 
 	if (b64_required > 0 &&  hdr_vec[1]) {
