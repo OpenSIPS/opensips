@@ -1012,7 +1012,8 @@ again:
 memerr:
 	LM_ERR("No more pkg mem\n");
 free_mem:
-	free_hdr_mask(hdr_mask);
+	if (hdr_mask != NULL)
+		free_hdr_mask(hdr_mask);
 	return -1;
 }
 
@@ -1733,7 +1734,7 @@ static int mc_decompress(struct sip_msg* msg)
 	/*If compressed with this module there are great chances that Content-Encoding is last*/
 	hdr_vec[3] = msg->last_header;
 
-	if (!is_content_encoding(hdr_vec[3])) {
+	if (hdr_vec[3] && !is_content_encoding(hdr_vec[3])) {
 		hdr_vec[3] = NULL;
 		for (hf = msg->headers; hf; hf = hf->next) {
 			if (is_content_encoding(hf)) {

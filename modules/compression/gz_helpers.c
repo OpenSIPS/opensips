@@ -79,7 +79,7 @@ int gzip_compress(unsigned char* in, unsigned long ilen, str* out, unsigned long
 	if (!out->s) {
 		out->s = pkg_malloc(neededSize);
 		out->len = neededSize;
-		if (!out)
+		if (!out->s)
 			goto memerr;
 	} else if (ilen > out->len) {
 		out->s = pkg_realloc(out->s, neededSize);
