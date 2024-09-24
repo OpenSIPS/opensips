@@ -679,6 +679,15 @@ error_before:
 
 }
 
+#define w_curl_easy_setopt(h, opt, value) \
+    do { \
+        rc = curl_easy_setopt(h, opt, value); \
+        if (rc != CURLE_OK) { \
+            LM_ERR("curl_easy_setopt(%d): (%s)\n", opt, curl_easy_strerror(rc)); \
+            goto error; \
+        } \
+    } while (0)
+
 int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 	     const db_val_t* v, const int n, const db_key_t* c, const int nc,
 	     const db_key_t* uk, const db_val_t* uv, const int nu,
@@ -804,22 +813,22 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 
 	LM_DBG("Sent:%s \n",q.s);
 
-	curl_easy_setopt(conn->handle, CURLOPT_HTTPGET, 1);
-	curl_easy_setopt(conn->handle, CURLOPT_URL, q.s);
+	w_curl_easy_setopt(conn->handle, CURLOPT_HTTPGET, 1);
+	w_curl_easy_setopt(conn->handle, CURLOPT_URL, q.s);
 
 
-	curl_easy_setopt(conn->handle, CURLOPT_WRITEFUNCTION, receive);
-	curl_easy_setopt(conn->handle, CURLOPT_WRITEDATA, &buff);
+	w_curl_easy_setopt(conn->handle, CURLOPT_WRITEFUNCTION, receive);
+	w_curl_easy_setopt(conn->handle, CURLOPT_WRITEDATA, &buff);
 
 	if( db_op != HTTPDB_QUERY && db_op != HTTPDB_CUSTOM)
 	{
 		LM_DBG("Posted:%s \n",&q.s[middle_poz]);
-		curl_easy_setopt(conn->handle, CURLOPT_POSTFIELDS, &q.s[middle_poz]);
+		w_curl_easy_setopt(conn->handle, CURLOPT_POSTFIELDS, &q.s[middle_poz]);
 
 	}
 
 
-	curl_easy_setopt(conn->handle, CURLOPT_FAILONERROR,1);
+	w_curl_easy_setopt(conn->handle, CURLOPT_FAILONERROR,1);
 	ret = curl_easy_perform(conn->handle);
 
 
@@ -977,8 +986,6 @@ str url_encode(str s)
 	return rez;
 }
 
-
-
 db_con_t* db_http_init(const str* url)
 {
 
@@ -1051,19 +1058,19 @@ db_con_t* db_http_init(const str* url)
 	//Disable Expect: 100-continue behavior
 	if (disable_expect) {
 		curl->headers = curl_slist_append(curl->headers, "Expect:");
-		curl_easy_setopt(curl->handle,CURLOPT_HTTPHEADER,curl->headers);
+		w_curl_easy_setopt(curl->handle,CURLOPT_HTTPHEADER,curl->headers);
 	}
 
-	curl_easy_setopt(curl->handle,CURLOPT_SSL_VERIFYPEER,0);
-	curl_easy_setopt(curl->handle,CURLOPT_SSL_VERIFYHOST,0);
+	w_curl_easy_setopt(curl->handle,CURLOPT_SSL_VERIFYPEER,0);
+	w_curl_easy_setopt(curl->handle,CURLOPT_SSL_VERIFYHOST,0);
 
-	curl_easy_setopt(curl->handle,CURLOPT_USERPWD,user_pass);
-	curl_easy_setopt(curl->handle,CURLOPT_HTTPAUTH,CURLAUTH_ANY);
+	w_curl_easy_setopt(curl->handle,CURLOPT_USERPWD,user_pass);
+	w_curl_easy_setopt(curl->handle,CURLOPT_HTTPAUTH,CURLAUTH_ANY);
 
-	curl_easy_setopt(curl->handle,CURLOPT_ERRORBUFFER,error_buffer);
+	w_curl_easy_setopt(curl->handle,CURLOPT_ERRORBUFFER,error_buffer);
 #if LIBCURL_VERSION_NUM >= 0x071002
 	LM_DBG("timeout set to %d", db_http_timeout);
-	curl_easy_setopt(curl->handle,CURLOPT_TIMEOUT_MS,db_http_timeout);
+	w_curl_easy_setopt(curl->handle,CURLOPT_TIMEOUT_MS,db_http_timeout);
 #endif
 
 	ret = snprintf(path, DB_HTTP_BUFF_SIZE, "http");
