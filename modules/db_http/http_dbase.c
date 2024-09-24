@@ -1128,7 +1128,7 @@ db_con_t* db_http_init(const str* url)
 		next_state[OUT][i] = OUT;
 
 	for( i=0 ; i< 256;i++)
-		next_state[ESC][i] = OUT;
+		next_state[ESC][i] = ESC;
 
 	next_state[ OUT ][ (int)quote_delim ] = IN;
 	next_state[ IN ][  (int)quote_delim ] = ESC;
