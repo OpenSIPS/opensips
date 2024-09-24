@@ -204,7 +204,7 @@ again:
 		 * because later won't have the query string */
 		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
 	}
-	if( ret < 0 ){
+	if( ret < 0 && _r ){
 		db_sqlite_free_result_internal(_h,*_r);
 	}
 
@@ -399,7 +399,7 @@ again:
 		 * because later won't have the query string */
 		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
 	}
-	if( ret < 0 ){
+	if( ret < 0 && _r ){
 		db_sqlite_free_result_internal(_h,*_r);
 	}
 
