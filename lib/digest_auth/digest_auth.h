@@ -72,7 +72,7 @@ struct digest_auth_credential {
 };
 
 struct dauth_algorithm_match {
-	int algmask;
+	unsigned algmask;
 };
 
 #define DAUTH_ALGMATCH_ALL      (const struct dauth_algorithm_match){.algmask = ~0}

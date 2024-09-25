@@ -252,7 +252,7 @@ static int uac_auth_dlg_leg(struct dlg_cell *dlg, str *tag)
 		return callee_idx(dlg);
 }
 
-int uac_auth( struct sip_msg *msg, int algmask)
+int uac_auth( struct sip_msg *msg, unsigned algmask)
 {
 	struct authenticate_body *auth = NULL;
 	str msg_body;
