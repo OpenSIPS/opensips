@@ -69,7 +69,7 @@ int dbt_check_mtime(const str *tbn, const str *dbn, time_t *mt)
 	}
 	if(stat(path, &s) == 0)
 	{
-		if((int)s.st_mtime > (int)*mt)
+		if((int)s.st_mtime > (int)(unsigned long)*mt)
 		{
 			ret = 1;
 			*mt = s.st_mtime;
