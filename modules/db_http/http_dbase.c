@@ -694,7 +694,7 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 	     const db_key_t o, const str* custom, db_res_t** r,   int db_op )
 
 {
-
+	CURLcode rc;
 
 	LM_DBG("Called with db_op=%d\n",db_op);
 
@@ -988,6 +988,7 @@ str url_encode(str s)
 
 db_con_t* db_http_init(const str* url)
 {
+	CURLcode rc;
 
 #define DB_HTTP_BUFF_SIZE 1024
 	char* path;
