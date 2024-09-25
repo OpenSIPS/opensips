@@ -1930,7 +1930,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		flag_list.len, flag_list.s,
 		dlg->callid.len,dlg->callid.s,
 		dlg->start_ts,
-		dlg->tl.timeout?((unsigned int)time(0) + dlg->tl.timeout - get_ticks()):0,
+		dlg->tl.timeout?((unsigned int)(unsigned long)time(0) + dlg->tl.timeout - get_ticks()):0,
 		dlg->from_uri.len,dlg->from_uri.s,
 		dlg->to_uri.len,dlg->to_uri.s);
 

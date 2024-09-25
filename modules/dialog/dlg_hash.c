@@ -1397,7 +1397,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 				goto error;
 	}
 
-	_ts = (time_t)(dlg->tl.timeout?((unsigned int)time(0) +
+	_ts = (time_t)(dlg->tl.timeout?((unsigned int)(unsigned long)time(0) +
                 dlg->tl.timeout - get_ticks()):0);
 	if (add_mi_number(dialog_obj, MI_SSTR("timeout"), _ts) < 0)
 		goto error;

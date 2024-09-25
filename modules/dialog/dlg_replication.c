@@ -322,10 +322,10 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	DLG_BIN_POP_ROUTE( packet, dlg, on_timeout, pre_linking_error);
 	DLG_BIN_POP_ROUTE( packet, dlg, on_hangup, pre_linking_error);
 
-	if (dlg->tl.timeout <= (unsigned int) time(0))
+	if (dlg->tl.timeout <= (unsigned int)(unsigned long) time(0))
 		dlg->tl.timeout = 0;
 	else
-		dlg->tl.timeout -= (unsigned int) time(0);
+		dlg->tl.timeout -= (unsigned int)(unsigned long) time(0);
 
 	/* restore the timer values */
 	if (insert_dlg_timer(&dlg->tl, (int) dlg->tl.timeout) != 0) {
@@ -862,7 +862,7 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_int(packet, dlg->mod_flags);
 	bin_push_int(packet, dlg->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|
 		DLG_FLAG_VP_CHANGED|DLG_FLAG_FROM_DB|DLG_FLAG_SYNCED));
-	bin_push_int(packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
+	bin_push_int(packet, (unsigned int)(unsigned long)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(packet, dlg->legs[callee_leg].last_gen_cseq);
 
