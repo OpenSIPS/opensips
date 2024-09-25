@@ -1217,6 +1217,11 @@ int send_request_vpc(struct sip_msg *msg) {
 		if(locationHeader && strlen(locationHeader)>1){
 			int size_lie =  strlen(pidf_body) + strlen(locationHeader) + 2;
 			lie = pkg_malloc(sizeof (char)* size_lie);
+			if (!lie) {
+				pkg_free(callidHeader);
+				pkg_free(from_tag);
+				goto error;
+			}
 			memset(lie, 0, size_lie);
 			sprintf(lie, "%s %s", locationHeader, pidf_body);
 			pkg_free(pidf_body);
