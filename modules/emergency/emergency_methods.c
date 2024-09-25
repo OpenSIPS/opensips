@@ -1536,6 +1536,12 @@ int routing_by_ert( struct sip_msg *msg, ESCT *call_cell, int failure) {
 			call_cell->esgwri = esgwri_db;
 
 			char *r = strstr(call_cell->esgwri, "@");
+			if (!r) {
+				LM_ERR("String '@' not found\n");
+				shm_free(call_cell->esqwri);
+				return -1;
+			}
+
 			r++;
 			int tam_esgw = call_cell->esgwri + strlen(call_cell->esgwri) - r;
 

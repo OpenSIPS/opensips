@@ -890,6 +890,11 @@ int find_body_pidf(struct sip_msg *msg, char** pidf_body) {
 		memcmp(mbody_part->mime_s.s, MIME_PIDF, mbody_part->mime_s.len)==0 ) {
 			body_start = strstr(mbody_part->body.s, PRESENCE_START);
 			body_end = strstr(mbody_part->body.s, PRESENCE_END);
+			if (!body_start || !body_end) {
+				LM_ERR("Cannot create body\n");
+				return -1;
+			}
+
 			size_body = body_end - body_start + 11;
 			body_aux = pkg_malloc(size_body);
 			if (body_aux == NULL) {
