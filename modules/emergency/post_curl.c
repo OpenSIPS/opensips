@@ -72,10 +72,19 @@ size_t write_data(char *ptr, size_t size, size_t nmemb, void *stream) {
 	return size * nmemb;
 }
 
+#define w_curl_easy_setopt(h, opt, value) \
+    do { \
+        rc = curl_easy_setopt(h, opt, value); \
+        if (rc != CURLE_OK) { \
+            LM_ERR("curl_easy_setopt(%d): (%s)\n", opt, curl_easy_strerror(rc)); \
+            goto error; \
+        } \
+    } while (0)
+
 /* simple FTTP POST using curl lib */
 int post(char*  url, char* xml, char** response){
 	CURL *curl;
-	CURLcode res;
+	CURLcode resi, rc;
 	LM_DBG("INIT CURL\n");
 	curl = curl_easy_init();
 	struct url_data data;
@@ -90,10 +99,10 @@ int post(char*  url, char* xml, char** response){
 	LM_DBG("CURL PASSOU MALLOC\n");
 
 	if(curl) {
-		curl_easy_setopt(curl, CURLOPT_URL, url);
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, xml);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
+		w_curl_easy_setopt(curl, CURLOPT_URL, url);
+		w_curl_easy_setopt(curl, CURLOPT_POSTFIELDS, xml);
+		w_curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		w_curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
 		long http_code = 0;
 		res = curl_easy_perform(curl);
 		int resp = -1;
