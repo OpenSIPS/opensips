@@ -103,8 +103,8 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
 	vsp_addr_len = strlen(vsp_addr);
 
 	time(&rawtime);
-	time_now = (int)rawtime;
-	LM_DBG("TIME : %d \n", (int)rawtime );
+	time_now = (int)(unsigned long)rawtime;
+	LM_DBG("TIME : %d \n", (int)(unsigned long)rawtime );
 
 	/* build subscriber cell */
 	size_subs_cell = sizeof (struct sm_subscriber) + (2 * sizeof(struct dialog_id))
@@ -883,7 +883,7 @@ int treat_notify(struct sip_msg *msg) {
 	LM_DBG("SUBS_EXPIRES: %s\n ", subs_expires);
 
 	time(&rawtime);
-	time_now = (int)rawtime;
+	time_now = (int)(unsigned long)rawtime;
 
 	/* analise state value*/
 	if (strcmp(subs_state, "active") == 0){

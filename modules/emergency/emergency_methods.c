@@ -530,8 +530,8 @@ static void free_subs(void) {
 	int i;
 
 	time(&rawtime);
-	time_C = (int)rawtime;
-	LM_DBG("TIME : %d \n", (int)rawtime );
+	time_C = (int)(unsigned long)rawtime;
+	LM_DBG("TIME : %d \n", (int)(unsigned long)rawtime );
 
 	for(i= 0; i< subst_size; i++){
 
@@ -1742,7 +1742,7 @@ int bye(struct sip_msg *msg, int dir) {
 
 	time(&rawtime);
 	localtime_r(&rawtime, &timeinfo);
-	time_now = (int)rawtime;
+	time_now = (int)(unsigned long)rawtime;
 
 	if (proxy_role == 2) {
 		// Call Server scenario II
