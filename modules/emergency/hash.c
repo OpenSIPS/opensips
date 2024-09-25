@@ -42,6 +42,7 @@ emetable_t new_ehtable(int hash_size){
 	if(htable== NULL)
 	{
 		LM_ERR("--------------------------------------------------no more shm memory\n");
+		goto error;
 	}
 	memset(htable, 0, hash_size* sizeof(call_table_t));
 
@@ -85,6 +86,7 @@ sbtable_t new_shtable(int hash_size){
 	if(htable== NULL)
 	{
 		LM_ERR("--------------------------------------------------no more shm memory\n");
+		goto error;
 	}
 	memset(htable, 0, hash_size* sizeof(subs_table_t));
 
