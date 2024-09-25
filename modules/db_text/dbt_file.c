@@ -112,6 +112,8 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 			strncpy(path, dbn->s, dbn->len);
 			path[dbn->len] = '/';
 			strncpy(path+dbn->len+1, tbn->s, tbn->len);
+
+			/* coverity[overrun-local: FALSE] */
 			path[dbn->len+tbn->len+1] = 0;
 		}
 	}
@@ -565,6 +567,8 @@ int dbt_print_table(dbt_table_p _dtp, str *_dbn)
 		strncpy(path, _dbn->s, _dbn->len);
 		path[_dbn->len] = '/';
 		strncpy(path+_dbn->len+1, _dtp->name.s, _dtp->name.len);
+
+		/* coverity[overrun-local: FALSE] */
 		path[_dbn->len+_dtp->name.len+1] = 0;
 		fout = fopen(path, "wt");
 		if(!fout)
