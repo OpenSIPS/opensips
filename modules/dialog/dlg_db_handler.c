@@ -2253,7 +2253,7 @@ static int sync_dlg_db_mem(void)
 
 					if (!VAL_NULL(values+10)) {
 						cseq2.s = VAL_STR(values+10).s;
-						cseq2.len = strlen(cseq1.s);
+						cseq2.len = strlen(cseq2.s);
 						callee_leg_idx = callee_idx(known_dlg);
 
 						if (known_dlg->legs[callee_leg_idx].r_cseq.len < cseq2.len) {
