@@ -327,7 +327,6 @@ int db_sqlite_realloc_rows(db_res_t* res, const unsigned int rows)
 	/* if the values was relocated, we need to re-point all values to the new block,
 	 * otherwise only fix the new ones */
 	start = (res_rows[0].values == prev_values?RES_ROW_N(res):0);
-	start = RES_ROW_N(res);
 
 	for( i=start ; i<rows ; i++ ) {
 		/* the values of the row i */
