@@ -1529,6 +1529,8 @@ void receive_prof_repl(bin_packet_t *packet)
 						goto release;
 				} else {
 					dst = map_get(profile->entries[i], value);
+					if (!dst)
+						goto release;
 				}
 				if (!*dst) {
 					rp = shm_malloc(sizeof(prof_value_info_t));
