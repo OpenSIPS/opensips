@@ -470,7 +470,6 @@ int reindex_dests( ds_data_t *d_data)
 	for( sp=d_data->sets ; sp!= NULL ; sp=sp->next )
 	{
 		if (sp->nr == 0) {
-			dp0 = NULL;
 			continue;
 		}
 
@@ -1110,7 +1109,8 @@ static ds_data_t* ds_load_data(ds_partition_t *partition)
 			get_str_from_dbval("WEIGHT", values+3,
 			                   0/*not_null*/, 0/*not_empty*/, weight_st, error2);
 			if (!is_fs_url(&weight_st)) {
-				str2int(&weight_st, (unsigned int *)&weight);
+				if (str2int(&weight_st, (unsigned int *)&weight) < 0)
+					goto error;
 				memset(&weight_st, 0, sizeof weight_st);
 			}
 		}
