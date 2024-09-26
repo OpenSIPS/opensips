@@ -215,11 +215,13 @@ int add_from_db(void)
 		LM_ERR("failed to querry table\n");
 		return -1;
 	}
-	if(r_res && r_res->n<=0)
+	if(!r_res)
 	{
 		LM_INFO("the query returned no result\n");
-		imc_dbf.free_result(imc_db, r_res);
-		r_res = NULL;
+		if (r_res->n <= 0) {
+			imc_dbf.free_result(imc_db, r_res);
+			r_res = NULL;
+		}
 		return 0;
 	}
 
