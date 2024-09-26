@@ -1412,6 +1412,8 @@ static time_t parseX509Date(ASN1_STRING * dateString)
 	unsigned char * tmp = NULL;
 	struct tm tmDate;
 
+	tmDate.tm_isdst = 0;
+
 	if(!dateString)
 	{
 		LM_ERR("dateString not set\n");
