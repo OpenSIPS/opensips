@@ -971,7 +971,11 @@ static int w_force_tcp_alias(struct sip_msg *msg, int *port)
 
 static int w_set_adv_address(struct sip_msg *msg, str *adv_addr, str *adv_addr_via)
 {
-	LM_DBG("setting adv address = [%.*s]; via adv address = [%.*s]\n", adv_addr->len, adv_addr->s, adv_addr_via->len, adv_addr_via->s);
+	if (adv_addr_via) {
+		LM_DBG("setting adv address = [%.*s]; via adv address = [%.*s]\n", adv_addr->len, adv_addr->s, adv_addr_via->len, adv_addr_via->s);
+	} else {
+		LM_DBG("setting adv address = [%.*s]\n", adv_addr->len, adv_addr->s);
+	}
 
 	/* duplicate the advertised address into private memory */
 	if (adv_addr->len > msg->set_global_address.len) {
@@ -985,7 +989,7 @@ static int w_set_adv_address(struct sip_msg *msg, str *adv_addr, str *adv_addr_v
 	memcpy(msg->set_global_address.s, adv_addr->s, adv_addr->len);
 	msg->set_global_address.len = adv_addr->len;
 
-	if (adv_addr_via->len > 0) {
+	if (adv_addr_via && adv_addr_via->len > 0) {
 		msg->set_global_address_via.s = pkg_realloc(msg->set_global_address_via.s, adv_addr_via->len);
 		if (!msg->set_global_address_via.s) {
 			LM_ERR("out of pkg mem\n");
@@ -994,6 +998,9 @@ static int w_set_adv_address(struct sip_msg *msg, str *adv_addr, str *adv_addr_v
 
 		memcpy(msg->set_global_address_via.s, adv_addr_via->s, adv_addr_via->len);
 		msg->set_global_address_via.len = adv_addr_via->len;
+	} else {
+		msg->set_global_address_via.s = NULL;
+		msg->set_global_address_via.len = 0;
 	}
 
 	return 1;
