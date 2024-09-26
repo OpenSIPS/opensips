@@ -622,6 +622,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	if (push_new_processing_context( dlg, &old_ctx, &new_ctx, NULL)!=0)
 		return -1;
 
+	ctx_lastdstleg_set(dst_leg);
+
 	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
 	result = d_tmb.t_request_within
