@@ -316,6 +316,9 @@ dictionary, give size=0.
 		if (size<DICTMINSZ) size=DICTMINSZ ;
 
 		d = (dictionary *)calloc(1, sizeof(dictionary));
+		if (!d)
+			return NULL;
+
 		d->size = size ;
 		d->val  = (char **)calloc(size, sizeof(char*));
 		d->key  = (char **)calloc(size, sizeof(char*));
