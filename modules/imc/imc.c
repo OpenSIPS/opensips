@@ -262,7 +262,7 @@ int add_from_db(void)
 			goto error;
 		}
 
-		if(m_res && m_res->n <=0)
+		if(!m_res || m_res->n <=0)
 		{
 			LM_INFO("the query returned no result\n");
 			er_ret = 0;
