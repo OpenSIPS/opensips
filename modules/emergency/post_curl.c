@@ -84,7 +84,7 @@ size_t write_data(char *ptr, size_t size, size_t nmemb, void *stream) {
 /* simple FTTP POST using curl lib */
 int post(char*  url, char* xml, char** response){
 	CURL *curl;
-	CURLcode resi, rc;
+	CURLcode res, rc;
 	LM_DBG("INIT CURL\n");
 	curl = curl_easy_init();
 	struct url_data data;
@@ -130,6 +130,7 @@ int post(char*  url, char* xml, char** response){
 		return resp;
 	}
 
+error:
 	free(data.data);
 	return  -1;
 }
