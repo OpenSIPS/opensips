@@ -413,7 +413,7 @@ int xj_worker_process(xj_wlist jwl, char* jaddress, int jport, char* priority,
 		LM_DBG("%d: new connection for <%s>.\n", _xj_pid, buff);
 #endif
 		if(dbf->query(db_con, keys, 0, vals, col, 2, 2, NULL, &res) != 0 ||
-			RES_ROW_N(res) <= 0)
+			(res && RES_ROW_N(res) <= 0))
 		{
 #ifdef XJ_EXTRA_DEBUG
 			LM_DBG("%d: no database result when looking"
