@@ -361,7 +361,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 		/* more than t0 + WINDOW_SIZE but less than 2 * WINDOW_SIZE
 		 * we can consider calls from t0 + (now - WINDOW_SIZE)
 		 * all cals from t0 to t0 + (now - WINDOW_SIZE) shall be invalidated */
-		unsigned int old_matched_time = se->stats.last_matched_time;
+		unsigned int old_matched_time = (unsigned int)(unsigned long)se->stats.last_matched_time;
 
 		se->stats.last_matched_time = nowt - FRD_SECS_PER_WINDOW + 1;
 
@@ -394,13 +394,21 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 		rc = rc_ ## type ## _thr;\
 	}
 
+	/* coverity[overrun-buffer-val: FALSE] */
 	if CHECK_AND_RAISE(cpm, critical)
+	/* coverity[overrun-buffer-val: FALSE] */
 	else if CHECK_AND_RAISE(total_calls, critical)
+	/* coverity[overrun-buffer-val: FALSE] */
 	else if CHECK_AND_RAISE(concurrent_calls, critical)
+	/* coverity[overrun-buffer-val: FALSE] */
 	else if CHECK_AND_RAISE(seq_calls, critical)
+	/* coverity[overrun-buffer-val: FALSE] */
 	else if CHECK_AND_RAISE(cpm, warning)
+	/* coverity[overrun-buffer-val: FALSE] */
 	else if CHECK_AND_RAISE(total_calls, warning)
+	/* coverity[overrun-buffer-val: FALSE] */
 	else if CHECK_AND_RAISE(concurrent_calls, warning)
+	/* coverity[overrun-buffer-val: FALSE] */
 	else if CHECK_AND_RAISE(seq_calls, warning);
 
 #undef CHECK_AND_RAISE
