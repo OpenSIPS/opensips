@@ -551,7 +551,8 @@ end:
 	if (r) {
 		init_str(&val.rs, err);
 		val.flags = PV_VAL_STR;
-		pv_set_value(msg, r, 0, &val);
+		if (pv_set_value(msg, r, 0, &val) < 0)
+			ret = -3;
 	}
 ret:
 	if (req)
@@ -762,7 +763,8 @@ error:
 	if (r) {
 		init_str(&val.rs, err);
 		val.flags = PV_VAL_STR;
-		pv_set_value(msg, r, 0, &val);
+		if (pv_set_value(msg, r, 0, &val) < 0)
+			return -3;
 	}
 	mi_script_free_request(req, 1);
 	return -2;
