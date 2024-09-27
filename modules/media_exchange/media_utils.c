@@ -423,7 +423,7 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 {
 	struct media_session_leg *msl = NULL;
 	unsigned int flags, streams, paused;
-	struct media_fork_info *mf;
+	struct media_fork_info *mf = NULL;
 	struct media_session *ms;
 
 	if (dlg) {
