@@ -819,8 +819,16 @@ modparam("drouting", "gw_socket_filter_mode", "ignore")
    which node in the cluster will perform the pinging/probing to
    gateways. See the cluster_sharing_tag option.
 
+   This OpenSIPS cluster exposes the "drouting-status-repl"
+   capability in order to mark nodes as eligible for becoming data
+   donors during an arbitrary sync request. Consequently, the
+   cluster must have at least one node marked with the "seed"
+   value as the clusterer.flags column/property in order to be
+   fully functional. Consult the clusterer - Capabilities chapter
+   for more details.
+
    For more info on how to define and populate a cluster (with
-   OpenSIPS nodes) see the "clusterer" module.
+   OpenSIPS nodes) see the clusterer module.
 
    Default value is “0 (none)”.
 
@@ -1895,7 +1903,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 412 201 13804 5822
-   2. Liviu Chircu (@liviuchircu) 159 94 2505 2610
+   2. Liviu Chircu (@liviuchircu) 160 95 2511 2611
    3. Razvan Crainea (@razvancrainea) 100 53 1171 2226
    4. Mihai Tiganus (@tallicamike) 72 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 42 20 1100 735
@@ -1933,7 +1941,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jul 2024
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Sep 2024
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Mar 2024
    3.  Vlad Paiu (@vladpaiu)               Aug 2011 - Feb 2024
    4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
@@ -1960,8 +1968,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Razvan Crainea
-   (@razvancrainea), wangdd, Liviu Chircu (@liviuchircu), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Paiu
+   (@vladpaiu), Razvan Crainea (@razvancrainea), wangdd, Vlad
    Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
    (@bogdan-iancu), Nick Altmann (@nikbyte), Alexey Vasilyev
    (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut Ionita

@@ -905,6 +905,14 @@ modparam("usrloc", "cseq_delay", 5)
    (addresses-of-record, contacts), organized into specific events
    (inserts, deletes or updates).
 
+   This OpenSIPS cluster exposes the "usrloc-contact-repl"
+   capability in order to mark nodes as eligible for becoming data
+   donors during an arbitrary sync request. Consequently, the
+   cluster must have at least one node marked with the "seed"
+   value as the clusterer.flags column/property in order to be
+   fully functional. Consult the clusterer - Capabilities chapter
+   for more details.
+
    Default value is 0 (replication disabled).
 
    More details on the user location distribution mechanisms are
@@ -1659,7 +1667,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 414 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 345 206 9214 3736
+   2. Liviu Chircu (@liviuchircu) 346 207 9219 3736
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 245 150 4232 3624
    4. Vlad Patrascu (@rvlad-patrascu) 43 25 794 661
    5. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
@@ -1703,7 +1711,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2024
    2.  Carsten Bock                        Mar 2024 - Mar 2024
    3.  Maksym Sobolyev (@sobomax)          Apr 2003 - Dec 2023
    4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
