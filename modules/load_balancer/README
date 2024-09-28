@@ -361,6 +361,14 @@ modparam("load_balancer", "initial_freeswitch_load", 200)
    which node in the cluster will perform the pinging/probing to
    destinations. See the cluster_sharing_tag option.
 
+   This OpenSIPS cluster exposes the "load_balancer-status-repl"
+   capability in order to mark nodes as eligible for becoming data
+   donors during an arbitrary sync request. Consequently, the
+   cluster must have at least one node marked with the "seed"
+   value as the clusterer.flags column/property in order to be
+   fully functional. Consult the clusterer - Capabilities chapter
+   for more details.
+
    For more info on how to define and populate a cluster (with
    OpenSIPS nodes) see the "clusterer" module.
 
@@ -768,7 +776,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 123 74 4331 755
-   2. Liviu Chircu (@liviuchircu) 42 33 683 172
+   2. Liviu Chircu (@liviuchircu) 43 34 688 172
    3. Vlad Patrascu (@rvlad-patrascu) 38 19 623 766
    4. Sergey Khripchenko (@shripchenko) 28 10 1058 516
    5. Razvan Crainea (@razvancrainea) 26 20 261 143
@@ -802,7 +810,7 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Sep 2024
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Oct 2023
    3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Razvan Crainea (@razvancrainea)     Oct 2010 - Oct 2022
@@ -824,8 +832,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: agree, Zero King (@l2dy), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Razvan Crainea
+   Last edited by: Liviu Chircu (@liviuchircu), agree, Zero King
+   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
    (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
    Lemenkov (@lemenkov), Sergey Khripchenko (@shripchenko),
    Ezequiel Lovelle (@lovelle), Walter Doekes (@wdoekes), Vlad

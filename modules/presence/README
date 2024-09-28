@@ -226,6 +226,14 @@ modparam("presence", "fallback2db", 1)
    order to understand th concept of a cluster ID, please see the
    clusterer module.
 
+   This OpenSIPS cluster exposes the "presence" capability in
+   order to mark nodes as eligible for becoming data donors during
+   an arbitrary sync request. Consequently, the cluster must have
+   at least one node marked with the "seed" value as the
+   clusterer.flags column/property in order to be fully
+   functional. Consult the clusterer - Capabilities chapter for
+   more details.
+
    For more on presence clustering see the Section 1.2, “Presence
    clustering” chapter.
 
@@ -1064,7 +1072,7 @@ Chapter 3. Contributors
    1. Anca Vamanu 651 247 24146 12623
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 150 93 3219 1832
    3. Razvan Crainea (@razvancrainea) 35 28 423 163
-   4. Liviu Chircu (@liviuchircu) 33 23 280 396
+   4. Liviu Chircu (@liviuchircu) 34 24 285 396
    5. Vlad Patrascu (@rvlad-patrascu) 33 19 631 481
    6. Ovidiu Sas (@ovidiusas) 29 20 618 170
    7. Daniel-Constantin Mierla (@miconda) 24 19 174 165
@@ -1102,7 +1110,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2024
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2024
    3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
@@ -1130,10 +1138,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Jasper
-   Hafkenscheid, Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu), Walter Doekes (@wdoekes), Dan Pascu
-   (@danpascu), Liviu Chircu (@liviuchircu), Razvan Crainea
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Jasper Hafkenscheid, Ovidiu Sas
+   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Walter Doekes
+   (@wdoekes), Dan Pascu (@danpascu), Razvan Crainea
    (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl Ibarra
    Corretgé (@saghul), Anca Vamanu, Kennard White, Angel Marin,
    Kobi Eshun (@ekobi), Klaus Darilion, Henning Westerholt

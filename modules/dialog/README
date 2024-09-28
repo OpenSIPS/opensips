@@ -1046,6 +1046,14 @@ modparam("dialog", "profile_timeout", "43200")
    dialog-related events (creation, update and deletion) in the
    cluster.
 
+   This OpenSIPS cluster exposes the "dialog-dlg-repl" capability
+   in order to mark nodes as eligible for becoming data donors
+   during an arbitrary sync request. Consequently, the cluster
+   must have at least one node marked with the "seed" value as the
+   clusterer.flags column/property in order to be fully
+   functional. Consult the clusterer - Capabilities chapter for
+   more details.
+
    Default value is “0” (no replication).
 
    Example 1.47. Set dialog_replication_cluster parameter
@@ -2549,9 +2557,9 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 453 286 13279 3527
    2. Razvan Crainea (@razvancrainea) 278 209 5135 1595
-   3. Vlad Paiu (@vladpaiu) 254 145 7206 3027
+   3. Vlad Paiu (@vladpaiu) 255 146 7208 3027
    4. Vlad Patrascu (@rvlad-patrascu) 198 104 4330 3514
-   5. Liviu Chircu (@liviuchircu) 176 129 2949 1293
+   5. Liviu Chircu (@liviuchircu) 177 130 2954 1293
    6. Ovidiu Sas (@ovidiusas) 34 26 601 161
    7. Dan Pascu (@danpascu) 30 25 233 179
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
@@ -2592,10 +2600,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2024
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2023
-   4.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2023
+   1.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2024
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Sep 2024
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2024
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2023
    5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
    6.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
    7.  Ryan Bullock                        May 2023 - May 2023
