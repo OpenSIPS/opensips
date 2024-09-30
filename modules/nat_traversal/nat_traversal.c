@@ -895,7 +895,7 @@ get_register_expire(struct sip_msg *request, struct sip_msg *reply)
         }
     }
 
-    LM_DBG("maximum expire for all contacts: %u\n", (unsigned)expire);
+    LM_DBG("maximum expire for all contacts: %u\n", (unsigned)(unsigned long)expire);
 
     return (expire ? expire + now : 0);
 }
