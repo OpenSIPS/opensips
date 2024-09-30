@@ -409,7 +409,7 @@ int ms_extract_time(str *time_str, int *time_val)
 				return -1;
 		}
 	}
-	*time_val = (int)mktime(&stm);
+	*time_val = (int)(unsigned long)mktime(&stm);
 
 	return 0;
 }

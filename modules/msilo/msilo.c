@@ -634,7 +634,7 @@ static int m_store(struct sip_msg* msg, str* owner)
 	}
 
 	/* current time */
-	val = (int)time(NULL);
+	val = (int)(unsigned long)time(NULL);
 
 	/* add expiration time */
 	db_keys[nr_keys] = &sc_exp_time;
@@ -1049,7 +1049,7 @@ void m_clean_silo(unsigned int ticks, void *param)
 		db_keys[0] = &sc_exp_time;
 		db_vals[0].type = DB_INT;
 		db_vals[0].nul = 0;
-		db_vals[0].val.int_val = (int)time(NULL);
+		db_vals[0].val.int_val = (int)(unsigned long)time(NULL);
 		if (msilo_dbf.delete(db_con, db_keys, db_ops, db_vals, 1) < 0)
 			LM_DBG("ERROR cleaning expired messages\n");
 	}
@@ -1148,7 +1148,7 @@ void m_send_ontimer(unsigned int ticks, void *param)
 	db_vals[1].type = DB_INT;
 	db_vals[1].nul = 0;
 	ttime = time(NULL);
-	db_vals[1].val.int_val = (int)ttime;
+	db_vals[1].val.int_val = (int)(unsigned long)ttime;
 
 	if (msilo_dbf.use_table(db_con, &ms_db_table) < 0)
 	{
