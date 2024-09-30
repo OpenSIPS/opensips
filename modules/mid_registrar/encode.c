@@ -62,7 +62,7 @@ int mid_reg_escape_aor(const str *aor, str *out)
 		} else {
 			*w++ = '%';
 			*w++ = fourbits2char[c >> 4];
-			*w++ = fourbits2char[c & 0xFF];
+			*w++ = fourbits2char[c & 0x0F]; // ensure to use only the 4 least significant bits
 		}
 	}
 
