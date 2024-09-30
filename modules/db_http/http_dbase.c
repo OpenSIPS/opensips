@@ -1136,6 +1136,7 @@ db_con_t* db_http_init(const str* url)
 		next_state[OUT][i] = OUT;
 
 	for( i=0 ; i< 256;i++)
+		/* coverity[copy_paste_error: FALSE] - it should be OUT */
 		next_state[ESC][i] = OUT;
 
 	next_state[ OUT ][ (int)quote_delim ] = IN;
