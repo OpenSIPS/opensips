@@ -357,7 +357,7 @@ static evi_reply_sock* rmq_parse(str socket)
 	rmq_params_t *param;
 	unsigned int len, i;
 	const char* begin;
-	str s, tmp;
+	str s, tmp = {NULL, 0};
 	csv_record *p_list = NULL, *it;
 	str prev_token;
 

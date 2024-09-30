@@ -164,12 +164,16 @@ void dialog_terminate_CB(struct dlg_cell *dlg, int type,
 	/* avoid generating alerts on CANCEL/487 calls, but decrement the CC */
 	if (!(type & DLGCB_FAILED) && frdparam->calldur_crit
 	        && duration >= frdparam->calldur_crit)
+
+		/* coverity[overrun-buffer-val: FALSE] */
 		raise_critical_event(&call_dur_name, &duration,
 				&frdparam->calldur_crit,
 				&frdparam->user, &frdparam->number, &frdparam->ruleid, &frdparam->pid);
 
 	else if (!(type & DLGCB_FAILED) && frdparam->calldur_warn
 	            && duration >= frdparam->calldur_warn)
+
+		/* coverity[overrun-buffer-val: FALSE] */
 		raise_warning_event(&call_dur_name, &duration,
 				&frdparam->calldur_warn,
 				&frdparam->user, &frdparam->number, &frdparam->ruleid, &frdparam->pid);

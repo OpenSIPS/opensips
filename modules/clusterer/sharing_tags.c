@@ -716,6 +716,10 @@ int shtag_activate(str *tag_name, int cluster_id, char *reason, int reason_len)
 	}
 
 	/* inform the other nodes that we are active now */
+
+	if (!tag)
+		goto stop;
+
 	for (node = cl->node_list; node; node = node->next) {
 		if (tag->send_active_msg)
 			for (ni = tag->active_msgs_sent;
@@ -746,6 +750,7 @@ int shtag_activate(str *tag_name, int cluster_id, char *reason, int reason_len)
 		}
 	}
 
+stop:
 	lock_stop_sw_read(shtags_lock);
 
 	/* do we have a transition from BACKUP to ACTIVE? */

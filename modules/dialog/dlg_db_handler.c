@@ -752,7 +752,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			if (dlg->tl.timeout<=(unsigned int)time(0))
 				dlg->tl.timeout = 0;
 			else
-				dlg->tl.timeout -= (unsigned int)time(0);
+				dlg->tl.timeout -= (unsigned int)(unsigned long)time(0);
 
 			/* restore the timer values */
 			if (0 != insert_dlg_timer( &(dlg->tl), (int)dlg->tl.timeout )) {
@@ -1030,7 +1030,7 @@ int update_dialog_timeout_info(struct dlg_cell * cell)
 	dlg_lock( d_table, &entry);
 
 	SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
-	SET_INT_VALUE(values+1, (unsigned int)( (unsigned int)time(0) +
+	SET_INT_VALUE(values+1, (unsigned int)( (unsigned int)(unsigned long)time(0) +
 			 cell->tl.timeout - get_ticks()) );
 
 	CON_SET_CURR_PS(dialog_db_handle, &my_ps_update);
@@ -1126,7 +1126,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+10,cell->legs[callee_leg].to_uri);
 
 		SET_INT_VALUE(values+11, cell->state);
-		SET_INT_VALUE(values+12, (unsigned int)( (unsigned int)time(0) +
+		SET_INT_VALUE(values+12, (unsigned int)( (unsigned int)(unsigned long)time(0) +
 			 cell->tl.timeout - get_ticks()) );
 
 		SET_STR_VALUE(values+13, cell->legs[DLG_CALLER_LEG].r_cseq);
@@ -1174,7 +1174,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 		SET_INT_VALUE(values+11, cell->state);
-		SET_INT_VALUE(values+12, (unsigned int)( (unsigned int)time(0) +
+		SET_INT_VALUE(values+12, (unsigned int)( (unsigned int)(unsigned long)time(0) +
 				 cell->tl.timeout - get_ticks()) );
 
 		SET_STR_VALUE(values+13, cell->legs[DLG_CALLER_LEG].r_cseq);
@@ -1741,7 +1741,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 					cell->legs[callee_leg].contact);
 
 				SET_INT_VALUE(values+15, cell->state);
-				SET_INT_VALUE(values+16, (unsigned int)((unsigned int)time(0)
+				SET_INT_VALUE(values+16, (unsigned int)((unsigned int)(unsigned long)time(0)
 					+ cell->tl.timeout - get_ticks()) );
 
 				SET_STR_VALUE(values+17, cell->legs[DLG_CALLER_LEG].r_cseq);
@@ -1798,7 +1798,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				SET_STR_VALUE(values+14,
 					cell->legs[callee_leg].contact);
 				SET_INT_VALUE(values+15, cell->state);
-				SET_INT_VALUE(values+16, (unsigned int)((unsigned int)time(0)
+				SET_INT_VALUE(values+16, (unsigned int)((unsigned int)(unsigned long)time(0)
 					 + cell->tl.timeout - get_ticks()) );
 				SET_STR_VALUE(values+17, cell->legs[DLG_CALLER_LEG].r_cseq);
 				SET_STR_VALUE(values+18, cell->legs[callee_leg].r_cseq);
@@ -2045,10 +2045,10 @@ static int sync_dlg_db_mem(void)
 
 				/* calculate timeout */
 				dlg->tl.timeout = (unsigned int)(VAL_INT(values+8));
-				if (dlg->tl.timeout<=(unsigned int)time(0))
+				if (dlg->tl.timeout<=(unsigned int)(unsigned long)time(0))
 					dlg->tl.timeout = 0;
 				else
-					dlg->tl.timeout -= (unsigned int)time(0);
+					dlg->tl.timeout -= (unsigned int)(unsigned long)time(0);
 
 				/* restore the timer values */
 				if (0 != insert_dlg_timer( &(dlg->tl), (int)dlg->tl.timeout )) {
@@ -2129,10 +2129,10 @@ static int sync_dlg_db_mem(void)
 
 					/* play nice and store longest timeout, although not always correct*/
 					db_timeout = (unsigned int)(VAL_INT(values+8));
-					if (db_timeout<=(unsigned int)time(0))
+					if (db_timeout<=(unsigned int)(unsigned long)time(0))
 						db_timeout = 0;
 					else
-						db_timeout -= (unsigned int)time(0);
+						db_timeout -= (unsigned int)(unsigned long)time(0);
 					db_timeout += get_ticks();
 
 					if (known_dlg->tl.timeout < db_timeout)
@@ -2242,10 +2242,10 @@ static int sync_dlg_db_mem(void)
 
 					/* update timeout */
 					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+8));
-					if (known_dlg->tl.timeout<=(unsigned int)time(0))
+					if (known_dlg->tl.timeout<=(unsigned int)(unsigned long)time(0))
 						known_dlg->tl.timeout = 0;
 					else
-						known_dlg->tl.timeout -= (unsigned int)time(0);
+						known_dlg->tl.timeout -= (unsigned int)(unsigned long)time(0);
 					known_dlg->tl.timeout += get_ticks();
 
 					/* update cseqs */
@@ -2268,7 +2268,7 @@ static int sync_dlg_db_mem(void)
 
 					if (!VAL_NULL(values+10)) {
 						cseq2.s = VAL_STR(values+10).s;
-						cseq2.len = strlen(cseq1.s);
+						cseq2.len = strlen(cseq2.s);
 						callee_leg_idx = callee_idx(known_dlg);
 
 						if (known_dlg->legs[callee_leg_idx].r_cseq.len < cseq2.len) {
@@ -2440,7 +2440,7 @@ static int restore_dlg_db(void)
 			SET_STR_VALUE(values+14,cell->legs[callee_leg].to_uri);
 
 			SET_INT_VALUE(values+15, cell->state);
-			SET_INT_VALUE(values+16, (unsigned int)((unsigned int)time(0)
+			SET_INT_VALUE(values+16, (unsigned int)((unsigned int)(unsigned long)time(0)
 				+ cell->tl.timeout - get_ticks()) );
 
 			SET_STR_VALUE(values+17, cell->legs[DLG_CALLER_LEG].r_cseq);

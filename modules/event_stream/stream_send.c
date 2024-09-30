@@ -547,7 +547,7 @@ static void handle_reply_jsonrpc(struct stream_con *con)
 		buf.len -= bytes_read;
 		buf.s += bytes_read;
 
-		if (buf.len) {
+		if (buf.len > 0) {
 			/* XXX: this was not tested! */
 			/* still have stuff to parse - move it in the connection */
 			if (con->pending_buffer.s) {

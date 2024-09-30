@@ -84,9 +84,9 @@ static inline time_t randomize_expires(unsigned int expires_ts)
 		expires_dur = max_expires;
 
 	ret = expires_dur + get_act_time();
-	LM_DBG("randomized expiry ts from %u to %lld (adj: %d/%d, "
+	LM_DBG("randomized expiry ts from %u to %lld (adj: %d/%lld, "
 	       "max_deviation: %d)\n", expires_ts, (long long)ret, expires_adj,
-	       (int)ret - (int)expires_ts, expires_max_deviation);
+	       (long long)ret - (long long)expires_ts, expires_max_deviation);
 
 	return ret;
 }

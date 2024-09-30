@@ -78,7 +78,11 @@ int json_to_bson_append_element(bson_t *doc, const char *k, struct json_object *
 	bson_t child;
 
 	if (!v) {
-		bson_append_null(doc, k, -1);
+		if (!bson_append_null(doc, key, -1)) {
+			LM_ERR("failed to append NULL doc\n");
+			return -1;
+		}
+
 		return 0;
 	}
 

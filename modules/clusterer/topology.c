@@ -537,7 +537,7 @@ static int send_full_top_update(node_info_t *dest_node, int nr_nodes, int *node_
 	int timestamp;
 	int i;
 
-	timestamp = time(NULL);
+	timestamp = (int)(unsigned long)time(NULL);
 
 	lock_get(dest_node->cluster->current_node->lock);
 
@@ -630,7 +630,7 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 	bin_packet_t packet;
 	int timestamp;
 
-	timestamp = time(NULL);
+	timestamp = (int)(unsigned long)time(NULL);
 
 	lock_get(node->cluster->current_node->lock);
 

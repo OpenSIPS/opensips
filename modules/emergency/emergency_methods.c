@@ -530,8 +530,8 @@ static void free_subs(void) {
 	int i;
 
 	time(&rawtime);
-	time_C = (int)rawtime;
-	LM_DBG("TIME : %d \n", (int)rawtime );
+	time_C = (int)(unsigned long)rawtime;
+	LM_DBG("TIME : %d \n", (int)(unsigned long)rawtime );
 
 	for(i= 0; i< subst_size; i++){
 
@@ -1217,6 +1217,11 @@ int send_request_vpc(struct sip_msg *msg) {
 		if(locationHeader && strlen(locationHeader)>1){
 			int size_lie =  strlen(pidf_body) + strlen(locationHeader) + 2;
 			lie = pkg_malloc(sizeof (char)* size_lie);
+			if (!lie) {
+				pkg_free(callidHeader);
+				pkg_free(from_tag);
+				goto error;
+			}
 			memset(lie, 0, size_lie);
 			sprintf(lie, "%s %s", locationHeader, pidf_body);
 			pkg_free(pidf_body);
@@ -1531,6 +1536,11 @@ int routing_by_ert( struct sip_msg *msg, ESCT *call_cell, int failure) {
 			call_cell->esgwri = esgwri_db;
 
 			char *r = strstr(call_cell->esgwri, "@");
+			if (!r) {
+				LM_ERR("String '@' not found\n");
+				return -1;
+			}
+
 			r++;
 			int tam_esgw = call_cell->esgwri + strlen(call_cell->esgwri) - r;
 
@@ -1737,7 +1747,7 @@ int bye(struct sip_msg *msg, int dir) {
 
 	time(&rawtime);
 	localtime_r(&rawtime, &timeinfo);
-	time_now = (int)rawtime;
+	time_now = (int)(unsigned long)rawtime;
 
 	if (proxy_role == 2) {
 		// Call Server scenario II

@@ -723,7 +723,8 @@ static int b2b_sdp_streams_from_avps(struct b2b_sdp_ctx *ctx,
 				tmp.len = p - tmp.s;
 				if (tmp.len == 0)
 					break;
-				str2int(&tmp, &itmp);
+				if (str2int(&tmp, &itmp) < 0)
+					return -1;
 				val.s.len -= (p - val.s.s);
 				val.s.s = p;
 
@@ -1876,7 +1877,7 @@ static void b2b_sdp_server_event_trigger_create(struct b2b_sdp_ctx *ctx, bin_pac
 
 	bin_push_str(store, &ctx->callid);
 	bin_push_int(store, ctx->clients_no);
-	bin_push_int(store, ctx->sess_id);
+	bin_push_int(store, (int)(unsigned long)ctx->sess_id);
 	bin_push_str(store, &ctx->sess_ip);
 
 	list_for_each(c, &ctx->clients) {

@@ -1728,7 +1728,7 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	b2bl_entity_id_t *curr_entities[MAX_BRIDGE_ENT];
 	b2bl_entity_id_t dummy_entity;
 	b2b_dlginfo_t dummy_dlginfo;
-	str callid;
+	str callid = {NULL, 0};
 	int i;
 	int locked = 0;
 
@@ -2168,11 +2168,8 @@ static str *b2bl_get_key(void)
 	int locked = 0;
 	b2bl_tuple_t *tuple = get_ctx_tuple(&locked);
 
-	if (!tuple) {
-		if (locked)
-			B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
+	if (!tuple)
 		return NULL;
-	}
 
 	ret.s = buf;
 	ret.len = 0;

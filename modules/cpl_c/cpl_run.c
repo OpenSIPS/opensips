@@ -128,7 +128,7 @@ struct cpl_interpreter* new_cpl_interpreter( struct sip_msg *msg, str *script)
 	/* init the interpreter*/
 	intr->script.s = script->s;
 	intr->script.len = script->len;
-	intr->recv_time = time(0);
+	intr->recv_time = (unsigned int)(unsigned long)time(0);
 	intr->ip = script->s;
 	intr->msg = msg;
 

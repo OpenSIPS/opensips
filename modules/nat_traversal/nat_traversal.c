@@ -895,7 +895,7 @@ get_register_expire(struct sip_msg *request, struct sip_msg *reply)
         }
     }
 
-    LM_DBG("maximum expire for all contacts: %u\n", (unsigned)expire);
+    LM_DBG("maximum expire for all contacts: %u\n", (unsigned)(unsigned long)expire);
 
     return (expire ? expire + now : 0);
 }
@@ -1931,7 +1931,11 @@ reply_filter(struct sip_msg *reply)
     static str prefix = {NULL, 0};
     str call_id;
 
-    parse_headers(reply, HDR_VIA2_F, 0);
+    if (parse_headers(reply, HDR_VIA2_F, 0) < 0) {
+        LM_ERR("failed to parse message\n");
+        return -1;
+    }
+
     if (reply->via2)
         return 1;
 

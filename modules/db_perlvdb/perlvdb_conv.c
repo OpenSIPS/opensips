@@ -121,7 +121,7 @@ static inline SV *valdata(db_val_t* val) {
 			break;
 
 		case DB_DATETIME:
-			data = newSViv((unsigned int)VAL_TIME(val));
+			data = newSViv((unsigned int)(unsigned long)VAL_TIME(val));
 			break;
 
 		case DB_BLOB:

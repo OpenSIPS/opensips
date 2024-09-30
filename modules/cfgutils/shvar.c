@@ -70,6 +70,12 @@ sh_var_t* add_shvar(const str *name)
 	hash_lock(sh_vars, e);
 
 	shv_holder = (sh_var_t **)hash_get(sh_vars, e, *name);
+	if (!shv_holder) {
+		LM_ERR("oom\n");
+		hash_unlock(sh_vars, e);
+		return NULL;
+	}
+
 	if (*shv_holder) {
 		hash_unlock(sh_vars, e);
 		return *shv_holder;

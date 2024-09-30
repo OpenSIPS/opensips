@@ -633,7 +633,7 @@ int add_cc_agent( struct cc_data *data, str *id, struct media_info *media,
 			goto error;
 		}
 #endif
-		if (wrapup_end_time && (wrapup_end_time > (int)time(NULL))) {
+		if (wrapup_end_time && (wrapup_end_time > (int)(unsigned long)time(NULL))) {
 			agent->state = CC_AGENT_WRAPUP;
 			agent->wrapup_end_time = wrapup_end_time - startup_time;
 		}
@@ -1218,7 +1218,7 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 	}
 
 	if (agent->state==CC_AGENT_WRAPUP) {
-		ts = (int)time(NULL)+agent->wrapup_end_time-get_ticks();
+		ts = (int)(unsigned long)time(NULL)+agent->wrapup_end_time-get_ticks();
 		if (evi_param_add_int(list, &wrapup_ends_str, &ts) < 0) {
 			LM_ERR("cannot add wrapup time\n");
 			goto error;
@@ -1240,7 +1240,7 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 			goto error;
 		}
 		if ( agent->wrapup_end_time>get_ticks() ) {
-			ts = (int)time(NULL)+agent->wrapup_end_time-get_ticks();
+			ts = (int)(unsigned long)time(NULL)+agent->wrapup_end_time-get_ticks();
 			if (evi_param_add_int(list, &wrapup_ends_str, &ts) < 0) {
 				LM_ERR("cannot add wrapup time\n");
 				goto error;

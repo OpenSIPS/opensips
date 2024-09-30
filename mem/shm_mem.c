@@ -766,6 +766,7 @@ int shm_dbg_mem_init(void)
 	default:
 		LM_ERR("current build does not include support for "
 		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
+		close(fd_dbg);
 		return -1;
 	}
 	#endif

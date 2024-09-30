@@ -736,7 +736,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 
 		/* set start time */
-		dlg->start_ts = (unsigned int)(time(0));
+		dlg->start_ts = (unsigned int)(unsigned long)(time(0));
 
 		if (0 != insert_dlg_timer( &dlg->tl, dlg->lifetime )) {
 			LM_CRIT("Unable to insert dlg %p [%u:%u] on event %d [%d->%d] "

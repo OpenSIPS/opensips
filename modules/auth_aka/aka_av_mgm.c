@@ -351,7 +351,7 @@ int aka_av_get_new_wait(struct aka_user *user, int algmask,
 					*av = aka_av_get_state(user, algmask, AKA_AV_NEW); /* one last time */
 					if (cond_has_timedout(&user->cond))
 						break;
-					if (!av) {
+					if (*av == NULL) {
 						/* compute the drift/reminder */
 						clock_gettime(CLOCK_REALTIME, &end);
 						milliseconds -= (end.tv_sec - begin.tv_sec) * 1000 +

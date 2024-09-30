@@ -217,12 +217,12 @@ static inline b2b_dlginfo_t *b2b_new_dlginfo(str *callid, str *fromtag, str *tot
 	dlg->callid.s = (char *)(dlg + 1);
 	dlg->callid.len = callid->len;
 	memcpy(dlg->callid.s, callid->s, callid->len);
-	if (totag->s) {
+	if (totag && totag->s) {
 		dlg->totag.len = totag->len;
 		dlg->totag.s = dlg->callid.s + dlg->callid.len;
 		memcpy(dlg->totag.s, totag->s, totag->len);
 	}
-	if (fromtag->s) {
+	if (fromtag && fromtag->s) {
 		dlg->fromtag.len = fromtag->len;
 		dlg->fromtag.s = dlg->callid.s + dlg->callid.len + dlg->totag.len;
 		memcpy(dlg->fromtag.s, fromtag->s, fromtag->len);

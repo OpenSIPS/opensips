@@ -698,13 +698,19 @@ static str
 get_sdp_line_separator(str *sdp)
 {
     char *ptr, *end_ptr, *sdp_end;
-    str separator;
+    str separator = { NULL, 0 };
 
     sdp_end = sdp->s + sdp->len;
 
-    ptr = find_line_starting_with(sdp, "v=", False);
-    end_ptr = findendline(ptr, sdp_end-ptr);
-    separator.s = ptr = end_ptr;
+	ptr = find_line_starting_with(sdp, "v=", False);
+	if (!ptr)
+		return separator;
+
+	end_ptr = findendline(ptr, sdp_end-ptr);
+	if (!end_ptr)
+		return separator;
+
+	separator.s = ptr = end_ptr;
     while ((*ptr=='\n' || *ptr=='\r') && ptr<sdp_end)
         ptr++;
     separator.len = ptr - separator.s;

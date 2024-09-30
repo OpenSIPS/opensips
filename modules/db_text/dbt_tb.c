@@ -173,7 +173,7 @@ dbt_table_p dbt_table_new(const str *_tbname, const str *_dbname, const char *pa
 	dtp->dbname.s[_dbname->len] = '\0';
 	dtp->dbname.len = _dbname->len;
 
-	dtp->mark = (int)time(NULL);
+	dtp->mark = (int)(unsigned long)time(NULL);
 	dtp->flag = DBT_TBFL_ZERO;
 	dtp->auto_col = -1;
 	if(stat(path, &s) == 0)
@@ -331,7 +331,7 @@ int dbt_row_set_val(dbt_row_p _drp, dbt_val_p _vp, int _t, int _idx)
 
 			case DB_DATETIME:
 				_drp->fields[_idx].type = _t;
-				_drp->fields[_idx].val.int_val = (int)_vp->val.time_val;
+				_drp->fields[_idx].val.int_val = (int)(unsigned long)_vp->val.time_val;
 			break;
 
 			case DB_BITMAP:
@@ -425,7 +425,7 @@ int dbt_row_update_val(dbt_row_p _drp, dbt_val_p _vp, int _t, int _idx)
 
 			case DB_DATETIME:
 				_drp->fields[_idx].type = _t;
-				_drp->fields[_idx].val.int_val = (int)_vp->val.time_val;
+				_drp->fields[_idx].val.int_val = (int)(unsigned long)_vp->val.time_val;
 			break;
 
 			case DB_BITMAP:
@@ -497,7 +497,7 @@ int dbt_table_update_flags(dbt_table_p _dtp, int _f, int _o, int _m)
 			_dtp->flag &= ~_f;
 
 	if(_m)
-		_dtp->mark = (int)time(NULL);
+		_dtp->mark = (int)(unsigned long)time(NULL);
 
 	return 0;
 }

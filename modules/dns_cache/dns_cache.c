@@ -203,13 +203,15 @@ static char* serialize_he_rdata(struct hostent *he,int *buf_len,int do_encoding)
 	memcpy(p,&he->h_addrtype,sizeof(int));
 	p+=sizeof(int);
 
-	/* copy h_name len */
-	len=strlen(he->h_name)+1;
-	memcpy(p,&len,sizeof(int));
-	p+=sizeof(int);
-	/* copy h_name */
-	memcpy(p,he->h_name,len);
-	p+=len;
+	if (he->h_name) {
+		/* copy h_name len */
+		len=strlen(he->h_name)+1;
+		memcpy(p,&len,sizeof(int));
+		p+=sizeof(int);
+		/* copy h_name */
+		memcpy(p,he->h_name,len);
+		p+=len;
+	}
 
 	/* copy number of aliases */
 	memcpy(p,&alias_no,sizeof(int));

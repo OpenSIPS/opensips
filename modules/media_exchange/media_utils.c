@@ -397,12 +397,13 @@ static void media_exchange_event_received_create(struct dlg_cell *dlg,
 	} else {
 		msl = NULL;
 	}
-	if (type == MEDIA_SESSION_TYPE_FORK)
-		msl->params = mf;
 
 	/* if we do not have a dialog, the drain is completed */
 	if (!msl)
 		return;
+
+	if (type == MEDIA_SESSION_TYPE_FORK)
+		msl->params = mf;
 
 	if (shm_str_dup(&msl->b2b_key, key) < 0) {
 		LM_ERR("could not duplicate b2b key!\n");
@@ -422,7 +423,7 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 {
 	struct media_session_leg *msl = NULL;
 	unsigned int flags, streams, paused;
-	struct media_fork_info *mf;
+	struct media_fork_info *mf = NULL;
 	struct media_session *ms;
 
 	if (dlg) {
@@ -438,8 +439,9 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 
 	if (msl && msl->type != MEDIA_SESSION_TYPE_FORK)
 		return;
+	if (msl)
+		mf = msl->params;
 
-	mf = msl->params;
 	bin_pop_int(store, &flags);
 	bin_pop_int(store, &streams);
 	bin_pop_int(store, &paused);

@@ -851,7 +851,8 @@ inline static void shm_force_unlock(void)
 			for (i = 0; i < HP_HASH_SIZE; i++)
 				lock_release(&mem_locks[i]);
 		} else {
-			shm_unlock();
+			if (mem_lock)
+				shm_unlock();
 		}
 #elif defined HP_MALLOC
 		int i;

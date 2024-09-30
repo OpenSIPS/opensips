@@ -620,6 +620,7 @@ static mi_response_t *clusterer_set_status(const mi_params_t *params,
 	switch (try_get_mi_int_param(params, "node_id", &node_id)) {
 		case -1:
 			node_id = current_id;
+			/* fallback */
 		case 0:
 			if (node_id < 1)
 				return init_mi_error(400, MI_SSTR("Bad value for 'node_id'"));

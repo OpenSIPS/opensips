@@ -918,6 +918,11 @@ static int parse_ip_net(char *in, int len, struct net *ipnet)
 	}
 
 	ip_tmp = (af == AF_INET) ? str2ip(&ip_s) : str2ip6(&ip_s);
+	if (!ip_tmp) {
+		LM_ERR("Invalid IP address\n");
+		return -1;
+	}
+
 	/* save the IP */
 	ip = *ip_tmp;
 

@@ -925,7 +925,7 @@ static char * load_file(char * filename)
 	fseek(f, 0, SEEK_END);
 	long fsize = ftell(f);
 
-	if(fsize == 0) {
+	if(fsize <= 0) {
 		fclose(f);
 		return NULL;
 	}

@@ -256,34 +256,38 @@ int mq_param(modparam_t type, void *val)
 			qname = pit->body;
 		} else if(pit->name.len == 4
 				  && strncasecmp(pit->name.s, "size", 4) == 0) {
-			str2sint(&pit->body, &msize);
+			if (str2sint(&pit->body, &msize) < 0)
+				goto out_error;
 		} else if(pit->name.len == 6
 				  && strncasecmp(pit->name.s, "dbmode", 6) == 0) {
-			str2sint(&pit->body, &dbmode);
+			if (str2sint(&pit->body, &dbmode) < 0)
+				goto out_error;
 		} else if(pit->name.len == 7
 				  && strncasecmp(pit->name.s, "addmode", 7) == 0) {
-			str2sint(&pit->body, &addmode);
+			if (str2sint(&pit->body, &addmode) < 0)
+				goto out_error;
 		} else {
 			LM_ERR("unknown param: %.*s\n", pit->name.len, pit->name.s);
-			free_params(params_list);
-			return -1;
+			goto out_error;
 		}
 	}
 	if(qname.len <= 0) {
 		LM_ERR("mqueue name not defined: %.*s\n", mqs.len, mqs.s);
-		free_params(params_list);
-		return -1;
+		goto out_error;
 	}
 	if(mq_head_add(&qname, msize, addmode) < 0) {
 		LM_ERR("cannot add mqueue: %.*s\n", mqs.len, mqs.s);
-		free_params(params_list);
-		return -1;
+		goto out_error;
 	}
 	LM_INFO("mqueue param: [%.*s|%d|%d|%d]\n", qname.len, qname.s, dbmode,
 			addmode, msize);
 	mq_set_dbmode(&qname, dbmode);
 	free_params(params_list);
 	return 0;
+
+out_error:
+	free_params(params_list);
+	return -1;
 }
 
 static int bind_mq(mq_api_t *api)

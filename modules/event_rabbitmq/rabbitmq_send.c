@@ -200,13 +200,14 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 	int re_publish = 0;
 	amqp_basic_properties_t props;
 
-	if (rmqp->conn.state == RMQS_OFF)
-		return 0;
-
 	if (!rmqp || !(rmqp->conn.flags & RMQF_MAND)) {
 		LM_ERR("not enough socket info\n");
 		return -1;;
 	}
+
+	if (rmqp->conn.state == RMQS_OFF)
+		return 0;
+
 	rmqp->conn.uri.host = rmqs->sock->address.s;
 
 	rmqp->conn.uri.port = rmqs->sock->port;

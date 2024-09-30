@@ -421,7 +421,10 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 		v = bson_iter_value(&iter);
 		bson_init_static(&proj, v->value.v_doc.data, v->value.v_doc.data_len);
 #if MONGOC_CHECK_VERSION(1, 5, 0)
-		bson_append_document(opts, "projection", 10, &proj);
+		if (!bson_append_document(opts, "projection", 10, &proj)) {
+			LM_ERR("failed to append doc\n");
+			goto out_err;
+		}
 #else
 		fields = &proj;
 #endif
@@ -1430,7 +1433,7 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						VAL_TYPE(cur_val) = DB_DATETIME;
 						VAL_TIME(cur_val) = bson_iter_date_time(&iter)/(int64_t)1000;
 						LM_DBG("Found time [%.*s]=[%d]\n",
-						       _c[c]->len, _c[c]->s, (int)VAL_TIME(cur_val));
+						       _c[c]->len, _c[c]->s, (int)(unsigned long)VAL_TIME(cur_val));
 						break;
 					case BSON_TYPE_OID:
 						bson_oid_to_string(bson_iter_oid(&iter), hex_oid);

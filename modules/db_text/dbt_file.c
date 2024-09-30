@@ -69,7 +69,7 @@ int dbt_check_mtime(const str *tbn, const str *dbn, time_t *mt)
 	}
 	if(stat(path, &s) == 0)
 	{
-		if((int)s.st_mtime > (int)*mt)
+		if((int)s.st_mtime > (int)(unsigned long)*mt)
 		{
 			ret = 1;
 			*mt = s.st_mtime;
@@ -112,6 +112,8 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 			strncpy(path, dbn->s, dbn->len);
 			path[dbn->len] = '/';
 			strncpy(path+dbn->len+1, tbn->s, tbn->len);
+
+			/* coverity[overrun-local: FALSE] */
 			path[dbn->len+tbn->len+1] = 0;
 		}
 	}
@@ -131,6 +133,9 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 		LM_ERR("error allocating read buffer, %i\n", buffer_size);
 		goto done;
 	}
+
+	if(!dbn->s)
+		goto done;
 
 	dtp = dbt_table_new(tbn, dbn, path);
 	if(!dtp)
@@ -562,6 +567,8 @@ int dbt_print_table(dbt_table_p _dtp, str *_dbn)
 		strncpy(path, _dbn->s, _dbn->len);
 		path[_dbn->len] = '/';
 		strncpy(path+_dbn->len+1, _dtp->name.s, _dtp->name.len);
+
+		/* coverity[overrun-local: FALSE] */
 		path[_dbn->len+_dtp->name.len+1] = 0;
 		fout = fopen(path, "wt");
 		if(!fout)

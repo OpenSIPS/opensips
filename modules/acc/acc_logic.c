@@ -457,6 +457,7 @@ static inline void acc_onreply_in(struct cell *t, struct sip_msg *req,
 				|| (is_invite(t)
 					&& code >= 300
 					&& is_mc_acc_on(ctx->flags)))) {
+		/* coverity[check_return: FALSE] */
 		parse_headers(reply, HDR_TO_F, 0 );
 	}
 }

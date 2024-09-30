@@ -423,7 +423,7 @@ static int mod_init(void)
 		LM_ERR("no more shm memory\n");
 		return -1;
 	}
-	*next_sdp_id = time(NULL);
+	*next_sdp_id = (int)(unsigned long)time(NULL);
 
 	if (msrpua_evi_init() < 0) {
 		LM_ERR("Failed to init events\n");

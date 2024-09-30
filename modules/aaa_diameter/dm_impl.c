@@ -2253,7 +2253,8 @@ int dm_enc_add(int vendor, int code, enum dict_avp_enc_type enc)
 			for (i = 0; i < dict_avp_enc_vendors_no; i++)
 				if (v[i].vendor > vendor)
 					break;
-			memmove(&v[i+1], &v[i], (dict_avp_enc_vendors_no - i) * sizeof *v);
+			if (i < dict_avp_enc_vendors_no)
+				memmove(&v[i+1], &v[i], (dict_avp_enc_vendors_no - i) * sizeof *v);
 			v = v + i;
 			dict_avp_enc_vendors_no++;
 			v->vendor = vendor;
@@ -2272,7 +2273,7 @@ int dm_enc_add(int vendor, int code, enum dict_avp_enc_type enc)
 	} else {
 		/* resize the avps */
 		a = realloc(v->avps, (v->avps_no + 1) * sizeof *a);
-		if (!v) {
+		if (!a) {
 			LM_ERR("oom for reallocating avps encoding\n");
 			return -1;
 		}
@@ -2280,7 +2281,8 @@ int dm_enc_add(int vendor, int code, enum dict_avp_enc_type enc)
 		for (i = 0; i < v->avps_no; i++)
 			if (a[i].code > code)
 				break;
-		memmove(&a[i+1], &a[i], (v->avps_no - i) * sizeof *a);
+		if (i < v->avps_no)
+			memmove(&a[i+1], &a[i], (v->avps_no - i) * sizeof *a);
 		a = a + i;
 		v->avps_no++;
 	}

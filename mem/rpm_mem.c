@@ -423,7 +423,9 @@ int load_rpm_file(void)
 	bytes_needed = sizeof(tmp);
 	do {
 		ret = read(fd, ((char *)&tmp) + bytes_read, bytes_needed);
-		if (ret < 0 && errno != EINTR) {
+		if (ret < 0) {
+			if (errno == EINTR)
+				continue;
 			LM_ERR("could not read from restart persistency file: %s (%d: %s)\n",
 					rpm_mem_file, errno, strerror(errno));
 			close(fd);

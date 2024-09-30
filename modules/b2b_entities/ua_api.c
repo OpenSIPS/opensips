@@ -319,8 +319,10 @@ struct ua_sess_t_list *insert_ua_sess_tl(str *b2b_key, unsigned int timeout)
 				tl->next = tmp;
 				ua_dlg_timer->first = tl;
 			} else {
-				tmp->prev->next = tl;
-				tl->prev = tmp->prev;
+				if (tmp->prev) {
+					tmp->prev->next = tl;
+					tl->prev = tmp->prev;
+				}
 				tl->next = tmp;
 				tmp->prev = tl;
 			}
