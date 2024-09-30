@@ -272,7 +272,7 @@ build_branch(char *branch, int *size,
 		old_state = p_cell->state;
 		p_cell->state = PING_CELL_STATE_PINGING;
 		p_cell->ct_flags = ct_flags;
-		p_cell->timestamp = timestamp;
+		p_cell->timestamp = (unsigned int)(unsigned long)timestamp;
 		p_cell->last_send_time = timeval_st;
 
 		/* we get the label that assures us that the via is unique */

@@ -110,7 +110,7 @@ struct ping_cell *build_p_cell(int hash_id, udomain_t* d,
 	memset(cell, 0, sizeof(struct ping_cell));
 
 	cell->hash_id   = hash_id;
-	cell->timestamp = now;
+	cell->timestamp = (unsigned int)(unsigned long)now;
 	cell->d         = d;
 	cell->ct_coords = ct_coords;
 
