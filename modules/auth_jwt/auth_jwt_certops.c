@@ -45,9 +45,9 @@ int extract_pub_key_from_cert(struct sip_msg* _msg, str* cert,
 	/* TODO - if x5c just add beggining & end */
 
 	if (cert == NULL) {
-        LM_ERR("Failed to parse certificate\n");
-        goto err_free;
-    }
+		LM_ERR("Failed to parse certificate\n");
+		return -1;
+	}
 
 	bio = BIO_new_mem_buf((void*)cert->s,cert->len);
 	if (!bio) {

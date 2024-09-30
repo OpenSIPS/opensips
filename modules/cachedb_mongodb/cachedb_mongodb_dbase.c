@@ -423,7 +423,7 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 #if MONGOC_CHECK_VERSION(1, 5, 0)
 		if (!bson_append_document(opts, "projection", 10, &proj)) {
 			LM_ERR("failed to append doc\n");
-			return -1;
+			goto out_err;
 		}
 #else
 		fields = &proj;

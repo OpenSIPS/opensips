@@ -1932,9 +1932,9 @@ reply_filter(struct sip_msg *reply)
     str call_id;
 
     if (parse_headers(reply, HDR_VIA2_F, 0) < 0) {
-		LM_ERR("failed to parse message\n");
-		return -1;
-	}
+        LM_ERR("failed to parse message\n");
+        return -1;
+    }
 
     if (reply->via2)
         return 1;

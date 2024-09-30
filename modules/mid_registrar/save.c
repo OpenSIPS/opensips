@@ -2535,14 +2535,8 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, struct save_flags *flags,
 	struct hdr_field *path;
 	int rc = -1, st, unlock_udomain = 0;
 
-	memset(&sctx, 0, sizeof sctx);
-	if (msg->REQ_METHOD != METHOD_REGISTER) {
-		LM_ERR("rejecting non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
-		rerrno = R_NOT_IMPL;
-		goto out_error;
-	}
-
 	rerrno = R_FINE;
+	memset(&sctx, 0, sizeof sctx);
 	sctx.cmatch.mode = CT_MATCH_NONE;
 	sctx.max_contacts = max_contacts;
 
@@ -2554,6 +2548,12 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, struct save_flags *flags,
 		sctx.min_expires = flags->min_expires;
 		sctx.max_expires = flags->max_expires;
 		sctx.cmatch = flags->cmatch;
+	}
+
+	if (msg->REQ_METHOD != METHOD_REGISTER) {
+		LM_ERR("rejecting non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
+		rerrno = R_NOT_IMPL;
+		goto out_error;
 	}
 
 	if (parse_reg_headers(msg) != 0) {
