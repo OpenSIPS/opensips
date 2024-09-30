@@ -359,9 +359,6 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 		}
 	}
 
-	if(result)
-		pa_dbf.free_result(pa_db, result);
-
 	/* now remove the expired records from DB ; just to be sure
 	 * that the presentity was handled (as expired) on all presence 
 	 * servers (if DB is shared), remove from only presentities older
