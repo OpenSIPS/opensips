@@ -218,10 +218,11 @@ int add_from_db(void)
 	if(!r_res)
 	{
 		LM_INFO("the query returned no result\n");
-		if (r_res->n <= 0) {
-			imc_dbf.free_result(imc_db, r_res);
-			r_res = NULL;
-		}
+		return 0;
+	} else if (r_res->n <= 0) {
+		LM_INFO("there are no rooms\n");
+		imc_dbf.free_result(imc_db, r_res);
+		r_res = NULL;
 		return 0;
 	}
 
