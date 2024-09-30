@@ -544,7 +544,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
 
     for(i = 0; i < n; i++)
     {
-        if(body_array[i] == NULL )
+        if(!body_array || !body_array[i])
             continue;
 
         xml_array[j] = NULL;
