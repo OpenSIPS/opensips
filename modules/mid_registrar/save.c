@@ -1391,7 +1391,7 @@ update_usrloc:
 				ci->pre_replicate_cb = mid_reg_store_ct_data;
 				ct_data = (struct mr_ct_data){
 						mri, &_c->uri, ctmap->expires, e_out,
-						get_act_time(), ci->cseq
+						(int)(unsigned long)get_act_time(), ci->cseq
 					};
 				ci->pre_replicate_info = &ct_data;
 			}
@@ -1446,7 +1446,7 @@ update_usrloc:
 
 			if (reg_mode == MID_REG_THROTTLE_CT &&
 				store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
-				                    get_act_time(), ci->cseq) != 0) {
+				                    (int)(unsigned long)get_act_time(), ci->cseq) != 0) {
 				LM_ERR("failed to update ucontact data - oom?\n");
 				goto error;
 			}
@@ -1580,7 +1580,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 
 	/* replicated AoRs will have an empty k/v store */
 	if (!ul.get_urecord_key(r, &ul_key_callid) && _c) {
-		if (store_urecord_data(r, mri, &_c->uri, e_out, get_act_time(),
+		if (store_urecord_data(r, mri, &_c->uri, e_out, (int)(unsigned long)get_act_time(),
 		                       cseq) != 0) {
 			LM_ERR("failed to attach urecord data - oom?\n");
 			goto out_err;

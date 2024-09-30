@@ -147,7 +147,7 @@ int update_urecord_data(urecord_t *r, int no_rpl_contacts, const str *callid,
 		if (!ul.put_urecord_key(r, &ul_key_skip_dereg, &value))
 			return -1;
 	} else {
-		last_reg_ts = get_act_time();
+		last_reg_ts = (unsigned int)(unsigned long)get_act_time();
 	}
 
 	value.i = last_reg_ts;
@@ -233,7 +233,7 @@ int update_ucontact_data(ucontact_t *c, int expires, int expires_out,
 	if (!ul.put_ucontact_key(c, &ul_key_last_cseq, &value))
 		return -1;
 
-	value.i = get_act_time();
+	value.i = (int)(unsigned long)get_act_time();
 	if (!ul.put_ucontact_key(c, &ul_key_last_reg_ts, &value))
 		return -1;
 
