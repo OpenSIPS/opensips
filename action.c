@@ -1374,8 +1374,8 @@ void release_dummy_sip_msg( struct sip_msg* req)
 		req->msg_cb = NULL;
 		req->new_uri.s = req->dst_uri.s = req->path_vec.s = NULL;
 		req->new_uri.len = req->dst_uri.len = req->path_vec.len = 0;
-		req->set_global_address.s = req->set_global_port.s = NULL;
-		req->set_global_address.len = req->set_global_port.len = 0;
+		req->set_global_address.s = req->set_global_address_via.s = req->set_global_port.s = NULL;
+		req->set_global_address.len = req->set_global_address_via.len = req->set_global_port.len = 0;
 		req->add_rm = req->body_lumps = NULL;
 		req->reply_lump = NULL;
 		req->ruri_q = Q_UNSPECIFIED;

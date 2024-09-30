@@ -164,6 +164,8 @@ static inline void force_retr(struct retr_buf *rb)
 			free_f((br).path_vec.s); \
 		if ((br).adv_address.s) \
 			free_f((br).adv_address.s); \
+		if ((br).adv_address_via.s) \
+			free_f((br).adv_address_via.s); \
 		if ((br).adv_port.s) \
 			free_f((br).adv_port.s); \
 		if ((br).duri.s) \

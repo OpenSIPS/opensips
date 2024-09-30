@@ -855,6 +855,8 @@ void free_sip_msg(struct sip_msg* msg)
 		pkg_free(msg->new_uri.s);
 	if (msg->set_global_address.s)
 		pkg_free(msg->set_global_address.s);
+	if (msg->set_global_address_via.s)
+		pkg_free(msg->set_global_address_via.s);
 	if (msg->set_global_port.s)
 		pkg_free(msg->set_global_port.s);
 	if (msg->dst_uri.s)

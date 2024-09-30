@@ -37,6 +37,8 @@
 				shm_free_bulk((_msg)->path_vec.s);\
 			if ((_msg)->set_global_address.s) \
 				shm_free_bulk((_msg)->set_global_address.s);\
+			if ((_msg)->set_global_address_via.s) \
+				shm_free_bulk((_msg)->set_global_address_via.s);\
 			if ((_msg)->set_global_port.s) \
 				shm_free_bulk((_msg)->set_global_port.s);\
 			if ((_msg)->add_rm) \
@@ -68,6 +70,8 @@
 				shm_free((_msg)->path_vec.s);\
 			if ((_msg)->set_global_address.s) \
 				shm_free((_msg)->set_global_address.s);\
+			if ((_msg)->set_global_address_via.s) \
+				shm_free((_msg)->set_global_address_via.s);\
 			if ((_msg)->set_global_port.s) \
 				shm_free((_msg)->set_global_port.s);\
 			if ((_msg)->add_rm) \

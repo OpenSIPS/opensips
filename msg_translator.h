@@ -73,7 +73,9 @@ struct hostport {
 		if (!(msg)) \
 			(hp)->host = NULL; \
 		else { \
-			if (((struct sip_msg *)(msg))->set_global_address.s) \
+			if (((struct sip_msg *)(msg))->set_global_address_via.s) \
+				(hp)->host = &(((struct sip_msg *)(msg))->set_global_address_via); \
+			else if (((struct sip_msg *)(msg))->set_global_address.s) \
 				(hp)->host = &(((struct sip_msg *)(msg))->set_global_address); \
 			else \
 				(hp)->host = default_global_address; \
