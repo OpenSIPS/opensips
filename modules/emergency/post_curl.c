@@ -73,18 +73,18 @@ size_t write_data(char *ptr, size_t size, size_t nmemb, void *stream) {
 }
 
 #define w_curl_easy_setopt(h, opt, value) \
-    do { \
-        rc = curl_easy_setopt(h, opt, value); \
-        if (rc != CURLE_OK) { \
-            LM_ERR("curl_easy_setopt(%d): (%s)\n", opt, curl_easy_strerror(rc)); \
-            goto error; \
-        } \
-    } while (0)
+	do { \
+		CURLcode rc = curl_easy_setopt(h, opt, value); \
+		if (rc != CURLE_OK) { \
+			LM_ERR("curl_easy_setopt(%d): (%s)\n", opt, curl_easy_strerror(rc)); \
+			goto error; \
+		} \
+	} while (0)
 
 /* simple FTTP POST using curl lib */
 int post(char*  url, char* xml, char** response){
 	CURL *curl;
-	CURLcode res, rc;
+	CURLcode res;
 	LM_DBG("INIT CURL\n");
 	curl = curl_easy_init();
 	struct url_data data;

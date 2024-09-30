@@ -680,13 +680,13 @@ error_before:
 }
 
 #define w_curl_easy_setopt(h, opt, value) \
-    do { \
-        rc = curl_easy_setopt(h, opt, value); \
-        if (rc != CURLE_OK) { \
-            LM_ERR("curl_easy_setopt(%d): (%s)\n", opt, curl_easy_strerror(rc)); \
-            goto error; \
-        } \
-    } while (0)
+	do { \
+		CURLcode rc = curl_easy_setopt(h, opt, value); \
+		if (rc != CURLE_OK) { \
+			LM_ERR("curl_easy_setopt(%d): (%s)\n", opt, curl_easy_strerror(rc)); \
+			goto error; \
+		} \
+	} while (0)
 
 int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 	     const db_val_t* v, const int n, const db_key_t* c, const int nc,
@@ -694,8 +694,6 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 	     const db_key_t o, const str* custom, db_res_t** r,   int db_op )
 
 {
-	CURLcode rc;
-
 	LM_DBG("Called with db_op=%d\n",db_op);
 
 	static var_str q = {0,0,0};
@@ -988,8 +986,6 @@ str url_encode(str s)
 
 db_con_t* db_http_init(const str* url)
 {
-	CURLcode rc;
-
 #define DB_HTTP_BUFF_SIZE 1024
 	char* path;
 	char user_pass[DB_HTTP_BUFF_SIZE];
