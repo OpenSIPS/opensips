@@ -215,7 +215,7 @@ int do_callinfo_publish(struct sca_line *sca)
 			presentity.old_etag   = etag;
 		presentity.event  = callinfo_event;
 		presentity.expires = callinfo_event->default_expires;
-		presentity.received_time= (int)time(NULL);
+		presentity.received_time=time(NULL);
 		presentity.extra_hdrs = &ci_hdr;
 		presentity.etag_new = new_etag;
 		if ( pres.update_presentity( &presentity )<0 )
