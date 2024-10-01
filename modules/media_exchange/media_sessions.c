@@ -23,14 +23,29 @@
 
 static int media_session_dlg_idx;
 
-void media_session_unref(void *param)
+#define MEDIA_SESSION_DETACHED(ms) (ms->dlg == NULL)
+#define MEDIA_SESSION_HAS_LEGS(ms) (ms->legs != NULL)
+
+static void media_session_detach(struct media_session *ms)
+{
+	if (MEDIA_SESSION_DETACHED(ms))
+		return;
+	media_dlg.dlg_ctx_put_ptr(ms->dlg, media_session_dlg_idx, NULL);
+	media_dlg.dlg_unref(ms->dlg, 1);
+	ms->dlg = NULL;
+}
+
+static void media_session_unref(void *param)
 {
 	struct media_session *ms = (struct media_session *)param;
 	MEDIA_SESSION_LOCK(ms);
-	if (ms->legs)
+	media_session_detach(ms);
+	if (MEDIA_SESSION_HAS_LEGS(ms)) {
 		LM_WARN("media session %p still in use %p!\n", ms, ms->legs);
-	else
+		MEDIA_SESSION_UNLOCK(ms);
+	} else {
 		media_session_release(ms, 1);
+	}
 }
 
 int init_media_sessions(void)
@@ -88,7 +103,7 @@ void media_session_leg_free(struct media_session_leg *msl)
 
 void media_session_release(struct media_session *ms, int unlock)
 {
-	int existing_legs = (ms->legs != NULL);
+	int existing_legs = MEDIA_SESSION_HAS_LEGS(ms);
 
 	if (unlock)
 		MEDIA_SESSION_UNLOCK(ms);
@@ -96,16 +111,13 @@ void media_session_release(struct media_session *ms, int unlock)
 		LM_DBG("media session %p has onhoing legs!\n", ms);
 		return;
 	}
-	media_session_free(ms);
+	/* release only if detached from the dialog */
+	if (MEDIA_SESSION_DETACHED(ms))
+		media_session_free(ms);
 }
 
 void media_session_free(struct media_session *ms)
 {
-
-	if (ms->dlg) {
-		media_dlg.dlg_ctx_put_ptr(ms->dlg, media_session_dlg_idx, NULL);
-		media_dlg.dlg_unref(ms->dlg, 1);
-	}
 	lock_destroy(&ms->lock);
 	LM_DBG("releasing media_session=%p\n", ms);
 	shm_free(ms);
@@ -126,6 +138,7 @@ static void media_session_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_
 		return;
 
 	media_session_end(ms, MEDIA_LEG_BOTH, 0, 0);
+	media_session_unref(ms);
 }
 
 struct media_session *media_session_create(struct dlg_cell *dlg)
@@ -149,6 +162,7 @@ struct media_session *media_session_create(struct dlg_cell *dlg)
 		/* we are not storing media session in the dialog, as it might
 		 * dissapear along the way, if the playback ends */
 		LM_ERR("could not register media_session_termination!\n");
+		media_session_detach(ms);
 		media_session_free(ms);
 		return NULL;
 	}
@@ -381,6 +395,8 @@ int media_session_end(struct media_session *ms, int leg, int nohold, int proxied
 
 	MEDIA_SESSION_LOCK(ms);
 	if (leg == MEDIA_LEG_BOTH) {
+		if (!ms->legs)
+			goto release;
 		msl = ms->legs;
 		nmsl = msl->next;
 		if (nmsl) {
