@@ -32,18 +32,18 @@ lib/wolfssl/Makefile: lib/wolfssl/configure
 		--prefix=$(MOD_DIR)/lib \
 		--exec-prefix=$(MOD_DIR)/lib \
 		C_EXTRA_FLAGS="-fPIC" \
-		CFLAGS="-DWOLFSSL_STATIC_RSA $(WOLFSSL_EXTRA_CFLAGS)"
+		CFLAGS="-DWOLFSSL_STATIC_RSA -DOPENSSL_EXTRA $(WOLFSSL_EXTRA_CFLAGS)"
 
-PATCHED_FILES = lib/wolfssl/src/internal.c lib/wolfssl/src/ssl.c
+PATCHED_FILES = #lib/wolfssl/src/internal.c lib/wolfssl/src/ssl.c
 
 lib/lib/libwolfssl.a: lib/wolfssl/Makefile $(PATCHED_FILES)
 	$(Q)$(MAKE) -C ./lib/wolfssl install
 
-lib/wolfssl/src/internal.c: lib/patches/wolfssl-internal-memleak-fix.patched
-
-lib/patches/wolfssl-internal-memleak-fix.patched: lib/patches/wolfssl-internal-memleak-fix.diff
-	 $(Q)patch -sNR -p1 -d lib/wolfssl --dry-run < $< || patch -N -p1 -d lib/wolfssl  < $< && cp $< $@
-
+#lib/wolfssl/src/internal.c: lib/patches/wolfssl-internal-memleak-fix.patched
+#
+#lib/patches/wolfssl-internal-memleak-fix.patched: lib/patches/wolfssl-internal-memleak-fix.diff
+#	 $(Q)patch -sNR -p1 -d lib/wolfssl --dry-run < $< || patch -N -p1 -d lib/wolfssl  < $< && cp $< $@
+#
 clean:	clean-wolfssl-lib
 
 .PHONY: clean-wolfssl-lib
@@ -51,7 +51,8 @@ clean-wolfssl-lib:
 	-@if [ -f ./lib/wolfssl/Makefile ]; then \
 		$(MAKE) -C ./lib/wolfssl clean; \
 	fi;
-	-@patch -stNR -p1 -d lib/wolfssl < lib/patches/wolfssl-internal-memleak-fix.diff
+#	-@patch -stNR -p1 -d lib/wolfssl < lib/patches/wolfssl-internal-memleak-fix.diff
 	-@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share \
 	./lib/wolfssl/Makefile ./lib/wolfssl/configure \
-	lib/patches/wolfssl-internal-memleak-fix.patched
+
+#	lib/patches/wolfssl-internal-memleak-fix.patched
