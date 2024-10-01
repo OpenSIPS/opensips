@@ -70,7 +70,7 @@ int generate_ETag(int publ_count, str* etag)
 	memset(etag_buf, 0, ETAG_LEN);
 
 	etag->len = sprintf (etag_buf, "%c.%d.%d.%d.%d",
-			prefix, (int)startup_time, pid, counter, publ_count);
+			prefix, (int)(unsigned long)startup_time, pid, counter, publ_count);
 	if( etag->len <0 )
 	{
 		LM_ERR("unsuccessful sprintf\n");
@@ -457,7 +457,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 
 	if(presentity->etag_new)
 	{
-		if (msg && publ_send200ok(msg, presentity->expires,
+		if (msg && publ_send200ok(msg, (int)(unsigned long)presentity->expires,
 		presentity->new_etag)<0)
 		{
 			LM_ERR("sending 200OK\n");
@@ -487,7 +487,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 		query_vals[n_query_cols].type = DB_INT;
 		query_vals[n_query_cols].nul = 0;
 		query_vals[n_query_cols].val.int_val = presentity->expires+
-				(int)time(NULL);
+				(int)(unsigned long)time(NULL);
 		n_query_cols++;
 
 		query_cols[n_query_cols] = &str_sender_col;
@@ -514,7 +514,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 		query_cols[n_query_cols] = &str_received_time_col;
 		query_vals[n_query_cols].type = DB_INT;
 		query_vals[n_query_cols].nul = 0;
-		query_vals[n_query_cols].val.int_val = presentity->received_time;
+		query_vals[n_query_cols].val.int_val = (int)(unsigned long)presentity->received_time;
 		n_query_cols++;
 
 		if(extra_hdrs)
@@ -622,7 +622,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 			p = NULL;
 
 			lock_release(&pres_htable[hash_code].lock);
-			if(msg && publ_send200ok(msg, presentity->expires,
+			if(msg && publ_send200ok(msg, (int)(unsigned long)presentity->expires,
 			presentity->old_etag)<0)
 			{
 				LM_ERR("sending 200OK reply\n");
@@ -712,13 +712,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 		update_vals[n_update_cols].type = DB_INT;
 		update_vals[n_update_cols].nul = 0;
 		update_vals[n_update_cols].val.int_val= presentity->expires +
-			(int)time(NULL);
+			(int)(unsigned long)time(NULL);
 		n_update_cols++;
 
 		update_keys[n_update_cols] = &str_received_time_col;
 		update_vals[n_update_cols].type = DB_INT;
 		update_vals[n_update_cols].nul = 0;
-		update_vals[n_update_cols].val.int_val= presentity->received_time;
+		update_vals[n_update_cols].val.int_val= (int)(unsigned long)presentity->received_time;
 		n_update_cols++;
 
 		update_keys[n_update_cols] = &str_sender_col;
@@ -796,7 +796,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 		}
 
 		/* send 200OK */
-		if (msg && publ_send200ok(msg, presentity->expires,
+		if (msg && publ_send200ok(msg, (int)(unsigned long)presentity->expires,
 		presentity->new_etag)<0 )
 		{
 			LM_ERR("sending 200OK reply\n");
@@ -990,7 +990,7 @@ int pres_htable_restore(void)
 				continue;
 			}
 
-			if(row_vals[expires_col].val.int_val< (int)time(NULL))
+			if(row_vals[expires_col].val.int_val< (int)(unsigned long)time(NULL))
 				continue;
 
 			sphere= NULL;
@@ -1088,7 +1088,7 @@ int pres_expose_evi(pres_ev_t *ev, str *filter)
 	query_ops[nr_vals] = OP_GT;
 	query_vals[nr_vals].nul = 0;
 	query_vals[nr_vals].type = DB_INT;
-	query_vals[nr_vals].val.int_val = (int)time(NULL);
+	query_vals[nr_vals].val.int_val = (int)(unsigned long)time(NULL);
 	nr_vals++;
 	query_cols[nr_vals] = &str_event_col;
 	query_ops[nr_vals] = OP_EQ;
@@ -1159,7 +1159,7 @@ int pres_expose_evi(pres_ev_t *ev, str *filter)
 			}
 
 			/* not sure if this is needed */
-			if(row_vals[expires_col].val.int_val< (int)time(NULL))
+			if(row_vals[expires_col].val.int_val< (int)(unsigned long)time(NULL))
 				continue;
 
 			memset(&presentity, 0, sizeof(presentity_t));

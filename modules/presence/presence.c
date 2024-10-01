@@ -1477,7 +1477,7 @@ static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs
                 lock_release(&subs_htable[hash_code].lock);
                 return -1;
 			}
-			cs->expires-= (int)time(NULL);
+			cs->expires-= (unsigned int)(unsigned long)time(NULL);
 			cs->next= (*subs_array);
 			(*subs_array)= cs;
 			if(subs->status== TERMINATED_STATUS)

@@ -236,11 +236,11 @@ static int bin_push_presentity(bin_packet_t *packet, presentity_t *pres)
 		goto error;
 	step++;
 
-	if (bin_push_int(packet, pres->expires) < 0)
+	if (bin_push_int(packet, (int)(unsigned long)pres->expires) < 0)
 		goto error;
 	step++;
 
-	if (bin_push_int(packet, pres->received_time) < 0)
+	if (bin_push_int(packet, (int)(unsigned long)pres->received_time) < 0)
 		goto error;
 	step++;
 
@@ -578,8 +578,8 @@ int pack_repl_presentity(bin_packet_t *packet, str *pres_uri, pres_ev_t *ev)
 	pres.new_etag.s = (char*)VAL_STRING(ROW_VALUES(RES_ROWS(res))+etag_col);
 	pres.new_etag.len = strlen(pres.new_etag.s);
 	pres.expires = VAL_INT(ROW_VALUES(RES_ROWS(res))+expires_col) -
-		(int)time(NULL);
-	pres.received_time = (int)time(NULL);
+		(int)(unsigned long)time(NULL);
+	pres.received_time = (int)(unsigned long)time(NULL);
 	if (!VAL_NULL(ROW_VALUES(RES_ROWS(res))+extra_hdrs_col)) {
 		s.s = (char*)VAL_STRING(ROW_VALUES(RES_ROWS(res))+extra_hdrs_col);
 		s.len = strlen(s.s);

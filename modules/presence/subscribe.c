@@ -233,7 +233,7 @@ int update_subs_db(subs_t* subs, int type)
 		update_keys[n_update_cols] = &str_expires_col;
 		update_vals[n_update_cols].type = DB_INT;
 		update_vals[n_update_cols].nul = 0;
-		update_vals[n_update_cols].val.int_val = subs->expires + (int)time(NULL);
+		update_vals[n_update_cols].val.int_val = subs->expires + (int)(unsigned long)time(NULL);
 		n_update_cols++;
 
 		update_keys[n_update_cols] = &str_remote_cseq_col;
@@ -488,7 +488,7 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 	db_ops[0] = OP_LT;
 	db_vals[0].type = DB_INT;
 	db_vals[0].nul = 0;
-	db_vals[0].val.int_val = (int)time(NULL)- waiting_subs_time;
+	db_vals[0].val.int_val = (int)(unsigned long)time(NULL)- waiting_subs_time;
 
 	db_keys[1] = &str_status_col;
 	db_ops [1] = OP_EQ;
@@ -1543,7 +1543,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 
 			/* collect and later delete (from memory) expired subscriptions,
 			 * disregarding any clustering policy */
-			if(s->expires < (int)time(NULL))
+			if(s->expires < (unsigned int)(unsigned long)time(NULL))
 			{
 				LM_DBG("Found expired record\n");
 				del_s= s;
@@ -1676,7 +1676,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	update_cols[0]= &str_expires_col;
 	update_vals[0].type = DB_INT;
 	update_vals[0].nul = 0;
-	update_vals[0].val.int_val = (int)time(NULL);
+	update_vals[0].val.int_val = (int)(unsigned long)time(NULL);
 	update_ops[0] = OP_LT;
 
 	if (dbf->use_table(db, &active_watchers_table) < 0) {
@@ -1805,7 +1805,7 @@ int insert_subs_db(subs_t* s)
 	query_cols[n_query_cols] =&str_expires_col;
 	query_vals[n_query_cols].type = DB_INT;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.int_val = s->expires + (int)time(NULL);
+	query_vals[n_query_cols].val.int_val = s->expires + (int)(unsigned long)time(NULL);
 	n_query_cols++;
 
 	query_cols[n_query_cols] =&str_status_col;
@@ -1982,7 +1982,7 @@ int restore_db_subs(void)
 
 			expires= row_vals[expires_col].val.int_val;
 
-			if(expires< (int)time(NULL))
+			if(expires< (unsigned int)(unsigned long)time(NULL))
 				continue;
 
 			s.pres_uri.s= (char*)row_vals[pres_uri_col].val.string_val;
@@ -2058,7 +2058,7 @@ int restore_db_subs(void)
 			s.local_cseq= row_vals[local_cseq_col].val.int_val;
 			s.version= row_vals[version_col].val.int_val;
 
-			s.expires= expires- (int)time(NULL);
+			s.expires= expires- (unsigned int)(unsigned long)time(NULL);
 			s.status = row_vals[status_col].val.int_val;
 
 			if(!event->req_auth)
@@ -2352,7 +2352,7 @@ int insert_db_subs_auth(subs_t* subs)
 	db_keys[n_query_cols] = &str_inserted_time_col;
 	db_vals[n_query_cols].type = DB_INT;
 	db_vals[n_query_cols].nul = 0;
-	db_vals[n_query_cols].val.int_val= (int)time(NULL);
+	db_vals[n_query_cols].val.int_val= (int)(unsigned long)time(NULL);
 	n_query_cols++;
 
 	db_keys[n_query_cols] =&str_reason_col;
