@@ -25,11 +25,7 @@
 #ifdef SHM_EXTRA_STATS
 
 #include <dlfcn.h>
-#ifdef HAVE_STDATOMIC
-#include <stdatomic.h>
-#else
 #include "../atomic.h"
-#endif
 #include <string.h>
 
 #include "module_info.h"
