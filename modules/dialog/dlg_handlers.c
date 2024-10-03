@@ -76,7 +76,7 @@ static void dlg_update_req_info(str *buffer, struct dlg_cell *dlg, int leg,
 
 
 static void dlg_update_ack_sdp(struct sip_msg* req, str *buffer, int rpl_code,
-				const union sockaddr_union *to, const struct socket_info *sock, int proto)
+				union sockaddr_union *to, struct socket_info *sock, int proto)
 {
 	struct dlg_cell *dlg;
 
