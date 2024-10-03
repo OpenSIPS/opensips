@@ -307,7 +307,7 @@ int uac_auth( struct sip_msg *msg, unsigned algmask)
 	}
 
 	if (auth == NULL) {
-		LM_ERR("Unable to extract authentication info\n");
+		LM_ERR("Unable to extract a compatible authentication challenge\n");
 		goto error;
 	}
 
