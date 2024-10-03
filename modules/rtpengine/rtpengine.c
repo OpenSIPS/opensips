@@ -4544,7 +4544,7 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		str *flags, unsigned int copy_flags, str *body)
 {
 	static bencode_buffer_t bencbuf;
-	bencode_item_t *dict, *list;
+	bencode_item_t *dict, *list = NULL;
 	bencode_item_t *ret;
 	struct sip_msg *msg;
 	struct rtpe_set* rset;
@@ -4575,7 +4575,6 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		bencode_dictionary_add_str(dict, "to-tag", copy_ctx);
 	if (copy_flags & RTP_COPY_MODE_SIPREC) {
 		list = bencode_list(&bencbuf);
-		bencode_dictionary_add(dict, "flags", list);
 		bencode_list_add_string(list, "all");
 		bencode_list_add_string(list, "siprec");
 	} else if ((copy_flags & RTP_COPY_LEG_BOTH) == RTP_COPY_LEG_BOTH) {
@@ -4586,6 +4585,13 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 	} else if (sess->to_tag) {
 		bencode_dictionary_add_str(dict, "from-tag", sess->to_tag);
 	}
+	if (copy_flags & RTP_COPY_MODE_DISABLE) {
+		if (!list)
+			list = bencode_list(&bencbuf);
+		bencode_list_add_string(list, "inactive");
+	}
+	if (list)
+		bencode_dictionary_add(dict, "flags", list);
 	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
 	ret = rtpe_function_call_ok(&bencbuf, msg, op, flags, body,
 			NULL, rset, &server->node, dict);
