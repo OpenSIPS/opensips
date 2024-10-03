@@ -37,6 +37,7 @@
 #include "../../parser/parse_refer_to.h"
 #include "../../parser/parse_replaces.h"
 #include "../../parser/parse_uri.h"
+#include "../../parser/contact/parse_contact.h"
 #include "../../strcommon.h"
 #include "../../ut.h"
 #include "../../pt.h"
@@ -797,6 +798,7 @@ do{								\
 	rpl_data.b2b_key =&peer->key;				\
 	rpl_data.method =method_value;				\
 	rpl_data.code =statuscode;				\
+	rpl_data.contact =ct;				\
 	rpl_data.text =&msg->first_line.u.reply.reason;		\
 	rpl_data.body = cur_route_ctx.body->s?cur_route_ctx.body:NULL;	\
 	rpl_data.extra_headers =	\
@@ -832,8 +834,26 @@ static int ack_and_term_entity(b2bl_tuple_t *tuple, b2bl_entity_id_t *entity,
 	return 0;
 }
 
+static inline str *get_contact_uri(struct sip_msg* _m)
+{
+	contact_t* c;
+
+	if (!_m->contact)
+		return NULL;
+
+	if (parse_contact(_m->contact) < 0)
+		return NULL;
+
+	c = ((contact_body_t*)_m->contact->parsed)->contacts;
+
+	if (!c)
+		return NULL;
+
+	return &c->uri;
+}
+
 int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
-	b2bl_entity_id_t *entity, b2bl_entity_id_t **entity_head)
+	b2bl_entity_id_t *entity, b2bl_entity_id_t **entity_head, unsigned int flags)
 {
 	str method;
 	b2bl_entity_id_t *peer, *e, *ent;
@@ -848,6 +868,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	b2b_dlginfo_t dlginfo;
 	int do_unlock = 0;
 	static str method_ack = {ACK, ACK_LEN};
+	str *ct = NULL;
 
 	if (!tuple) {
 		B2BL_LOCK_GET(cur_route_ctx.hash_index);
@@ -885,8 +906,10 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		LM_ERR("Failed to parse method\n");
 		goto error;
 	}
-
 	statuscode = msg->first_line.u.reply.statuscode;
+
+	if (flags & B2BL_RPL_FLAG_PASS_CONTACT && statuscode >= 300 && statuscode < 400)
+		ct = get_contact_uri(msg);
 
 	peer = entity->peer;
 
@@ -1312,7 +1335,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 
 	if (!ref_script_route_check_and_update(tuple->reply_route)
 	|| tuple->scenario_id == B2B_TOP_HIDING_ID_PTR) {
-		if (_b2b_handle_reply(msg, tuple, entity, entity_head) < 0)
+		if (_b2b_handle_reply(msg, tuple, entity, entity_head, 0) < 0)
 			goto error;
 	} else {
 		cur_route_ctx.entity_type = src;
@@ -1888,7 +1911,7 @@ error:
 	return -1;
 }
 
-int b2b_handle_reply(struct sip_msg *msg)
+int b2b_handle_reply(struct sip_msg *msg, unsigned int flags)
 {
 	if (!(cur_route_ctx.flags & B2BL_RT_RPL_CTX)) {
 		LM_ERR("The 'b2b_handle_reply' function can only be used from the "
@@ -1896,7 +1919,7 @@ int b2b_handle_reply(struct sip_msg *msg)
 		return -1;
 	}
 
-	return _b2b_handle_reply(msg, NULL, NULL, NULL) ? -1 : 1;
+	return _b2b_handle_reply(msg, NULL, NULL, NULL, flags) ? -1 : 1;
 }
 
 int b2b_pass_request(struct sip_msg *msg)

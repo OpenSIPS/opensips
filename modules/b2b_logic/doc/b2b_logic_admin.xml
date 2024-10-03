@@ -857,7 +857,7 @@ route[b2b_logic_request] {
 
 	<section id="func_b2b_handle_reply" xreflabel="b2b_handle_reply()">
 		<title>
-		<function moreinfo="none">b2b_handle_reply()</function>
+		<function moreinfo="none">b2b_handle_reply([flags])</function>
 		</title>
 		<para>
 			This function processes the received reply by taking the appropriate actions
@@ -869,6 +869,21 @@ route[b2b_logic_request] {
 		<para>
 		This function can be used from the b2b_logic reply routes.
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>flags (string, optional)</emphasis> - a list of comma
+				separated flags that changes the behavior of the reply processing.
+				Supported values are:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>pass-3xx-contact</emphasis> - When a redirect reply
+					(3xx) message is received, pass the contact to the other peer
+					just as it is, without modifying it.
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+		</itemizedlist>
 		<example>
 			<title><function>b2b_handle_reply</function> usage</title>
 		<programlisting format="linespecific">

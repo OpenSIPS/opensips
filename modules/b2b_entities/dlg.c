@@ -1775,7 +1775,9 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		return 0;
 	}
 */
-	if(et == B2B_CLIENT)
+	if (rpl_data->contact)
+		local_contact = *rpl_data->contact;
+	else if(et == B2B_CLIENT)
 		local_contact = dlg->contact[CALLER_LEG];
 	else
 		local_contact = dlg->contact[CALLEE_LEG];
