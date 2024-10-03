@@ -34,6 +34,7 @@
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_hname2.h"
 #include "../../parser/parser_f.h"
+#include "../../msg_callbacks.h"
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
 #include "dlg_hash.h"
@@ -70,11 +71,34 @@ static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int leg, int tmp);
 
 static inline void dlg_merge_tmp_sdp(struct dlg_cell *dlg, unsigned int leg);
+static void dlg_update_req_info(str *buffer, struct dlg_cell *dlg, int leg,
+		struct sip_msg *req, struct cell *t);
+
+
+static void dlg_update_ack_sdp(struct sip_msg* req, str *buffer, int rpl_code,
+				const union sockaddr_union *to, const struct socket_info *sock, int proto)
+{
+	struct dlg_cell *dlg;
+
+	dlg = get_current_dialog();
+	if (!dlg) {
+		LM_BUG("dialog dissapeared while trying to update ACK SDP\n");
+		return;
+	}
+	dlg_update_req_info(buffer, dlg, other_leg(dlg, ctx_lastdstleg_get()) , NULL, NULL);
+}
 
 
 void init_dlg_handlers(int default_timeout_p)
 {
 	default_timeout = default_timeout_p;
+
+	/* statelessly forwarded ACK requests with SDP */
+	if (register_slcb(SLCB_REQUEST_OUT, FL_ACK_WITH_BODY,
+			dlg_update_ack_sdp) != 0) {
+		LM_ERR("can't register callback for statelessly "
+			"forwarded ACK requests with body\n");
+	}
 }
 
 
@@ -926,13 +950,34 @@ end:
 	dlg_unlock_dlg(dlg);
 }
 
+static void dlg_update_req_info(str *buffer, struct dlg_cell *dlg, int leg,
+		struct sip_msg *req, struct cell *t)
+{
+	struct sip_msg msg;
+
+	memset(&msg, 0, sizeof(struct sip_msg));
+	msg.buf = buffer->s;
+	msg.len = buffer->len;
+
+	if (parse_msg(buffer->s, buffer->len, &msg) != 0)
+		return;
+
+	if (req && req->REQ_METHOD != METHOD_ACK)
+		dlg_update_contact(dlg, req, leg);
+	if (t && is_invite(t))
+		dlg_leg_push_cseq_map(dlg, t, DLG_CALLER_LEG, &msg);
+	dlg_update_out_sdp(dlg, leg, other_leg(dlg, leg), &msg,
+			msg.REQ_METHOD != METHOD_ACK);
+	free_sip_msg(&msg);
+}
+
+
 static void dlg_update_callee_sdp(struct cell* t, int type,
 		struct tmcb_params *ps)
 {
-	struct sip_msg *rpl,*msg;
+	struct sip_msg *rpl;
 	int statuscode;
 	struct dlg_cell *dlg;
-	str buffer;
 
 	if(ps == NULL || ps->rpl == NULL) {
 			LM_ERR("Wrong tmcb params\n");
@@ -956,39 +1001,16 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 	if (statuscode == 200) {
 		dlg_merge_tmp_sdp(dlg, DLG_CALLER_LEG);
 		dlg_update_sdp(dlg, rpl, callee_idx(dlg), 0);
-
-		buffer.s = ((str*)ps->extra1)->s;
-		buffer.len = ((str*)ps->extra1)->len;
-
-		msg=pkg_malloc(sizeof(struct sip_msg));
-		if (msg==0) {
-			LM_ERR("no pkg mem left for sip_msg\n");
-			return;
-		}
-
-		memset(msg,0, sizeof(struct sip_msg));
-		msg->buf=buffer.s;
-	        msg->len=buffer.len;
-
-		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
-			pkg_free(msg);
-			return;
-		}
-
-		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 0);
-
-		free_sip_msg(msg);
-		pkg_free(msg);
+		dlg_update_req_info((str *)ps->extra1, dlg, callee_idx(dlg), NULL, NULL);
 	}
 }
 
 static void dlg_update_caller_sdp(struct cell* t, int type,
 		struct tmcb_params *ps)
 {
-	struct sip_msg *rpl,*msg;
+	struct sip_msg *rpl;
 	int statuscode;
 	struct dlg_cell *dlg;
-	str buffer;
 
 	if(ps == NULL || ps->rpl == NULL) {
 			LM_ERR("Wrong tmcb params\n");
@@ -1013,29 +1035,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 	if (statuscode == 200) {
 		dlg_merge_tmp_sdp(dlg, callee_idx(dlg));
 		dlg_update_sdp(dlg, rpl, DLG_CALLER_LEG, 0);
-
-		buffer.s = ((str*)ps->extra1)->s;
-		buffer.len = ((str*)ps->extra1)->len;
-
-		msg=pkg_malloc(sizeof(struct sip_msg));
-		if (msg==0) {
-			LM_ERR("no pkg mem left for sip_msg\n");
-			return;
-		}
-
-		memset(msg,0, sizeof(struct sip_msg));
-		msg->buf=buffer.s;
-	        msg->len=buffer.len;
-
-		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
-			pkg_free(msg);
-			return;
-		}
-
-		dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg, 0);
-
-		free_sip_msg(msg);
-		pkg_free(msg);
+		dlg_update_req_info((str *)ps->extra1, dlg, DLG_CALLER_LEG, NULL, NULL);
 	}
 }
 
@@ -1326,71 +1326,16 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 
 static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 {
-	struct sip_msg *msg;
-	struct dlg_cell *dlg;
-	str buffer;
+	struct dlg_cell *dlg = (struct dlg_cell *)(*ps->param);
 
-	buffer.s = ((str*)ps->extra1)->s;
-	buffer.len = ((str*)ps->extra1)->len;
-
-	dlg = (struct dlg_cell *)(*ps->param);
-
-	msg=pkg_malloc(sizeof(struct sip_msg));
-        if (msg==0) {
-                LM_ERR("no pkg mem left for sip_msg\n");
-                return;
-        }
-
-	memset(msg,0, sizeof(struct sip_msg));
-	msg->buf=buffer.s;
-	msg->len=buffer.len;
-
-        if (parse_msg(buffer.s,buffer.len, msg)!=0) {
-		pkg_free(msg);
-		return;
-	}
-
-	/* we use the initial request, which already has the contact parsed/fixed */
-	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
-	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg, 1);
-	if (is_invite(t))
-		dlg_leg_push_cseq_map(dlg, t, DLG_CALLER_LEG, msg);
-	free_sip_msg(msg);
-	pkg_free(msg);
+	dlg_update_req_info((str *)ps->extra1, dlg, DLG_CALLER_LEG, ps->req, t);
 }
 
 static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 {
-	struct sip_msg *msg;
-	struct dlg_cell *dlg;
-	str buffer;
+	struct dlg_cell *dlg = (struct dlg_cell *)(*ps->param);
 
-	buffer.s = ((str*)ps->extra1)->s;
-	buffer.len = ((str*)ps->extra1)->len;
-
-	dlg = (struct dlg_cell *)(*ps->param);
-
-	msg=pkg_malloc(sizeof(struct sip_msg));
-        if (msg==0) {
-                LM_ERR("no pkg mem left for sip_msg\n");
-                return;
-        }
-
-	memset(msg,0, sizeof(struct sip_msg));
-	msg->buf=buffer.s;
-	msg->len=buffer.len;
-
-        if (parse_msg(buffer.s,buffer.len, msg)!=0) {
-		pkg_free(msg);
-		return;
-	}
-
-	dlg_update_contact(dlg, ps->req, callee_idx(dlg));
-	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 1);
-	if (is_invite(t))
-		dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
-	free_sip_msg(msg);
-	pkg_free(msg);
+	dlg_update_req_info((str *)ps->extra1, dlg, callee_idx(dlg), ps->req, t);
 }
 
 
@@ -1810,11 +1755,12 @@ static inline void update_sequential_sdp(struct dlg_cell *dlg, struct sip_msg *r
 {
 	int ret;
 
-	if (req->REQ_METHOD != METHOD_INVITE && req->REQ_METHOD != METHOD_UPDATE)
+	if ((req->REQ_METHOD & (METHOD_INVITE|METHOD_UPDATE|METHOD_ACK)) == 0)
 		return;
 
 	dlg_lock_dlg(dlg);
-	ret = dlg_update_sdp(dlg, req, leg, 1);
+	/* on ACK we have a final SDP, thus we need to store it permanently */
+	ret = dlg_update_sdp(dlg, req, leg, (req->REQ_METHOD != METHOD_ACK));
 	dlg_unlock_dlg(dlg);
 
 	/* if anything has changed in the meantime, also update replicate */
@@ -2349,6 +2295,11 @@ after_unlock5:
 				}
 			} else
 				dlg_unlock( d_table, d_entry );
+
+			/* if we have an SDP, it might be changed on the outgoing message,
+			 * thus we need to save it's outgoing SDP */
+			if (get_body(req, &val) == 0 && val.len != 0)
+				req->msg_flags |= FL_ACK_WITH_BODY;
 		}
 
 		if ( event!=DLG_EVENT_REQACK) {

@@ -130,6 +130,7 @@ enum request_method {
                                       * as lumps */
 #define FL_USE_SIPTRACE_B2B  (1<<23) /* used by tracer to check if the b2b
                                       * tracing was enabled */
+#define FL_ACK_WITH_BODY     (1<<24) /* ACK message has SDP body */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10
