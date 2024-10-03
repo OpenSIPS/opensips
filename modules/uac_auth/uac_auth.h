@@ -44,7 +44,7 @@ struct authenticate_nc_cnonce {
 };
 
 
-int uac_auth( struct sip_msg *msg, int algmask);
+int uac_auth( struct sip_msg *msg, unsigned algmask);
 int do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd,
 		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
 		struct digest_auth_response *response) __attribute__ ((warn_unused_result));;
