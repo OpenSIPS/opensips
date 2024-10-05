@@ -53,10 +53,10 @@
 	<row>
 		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">26</entry>
-		<entry align="center">20</entry>
-		<entry align="center">326</entry>
-		<entry align="center">147</entry>
+		<entry align="center">27</entry>
+		<entry align="center">21</entry>
+		<entry align="center">327</entry>
+		<entry align="center">148</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -76,6 +76,14 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">6</entry>
+		<entry align="center">4</entry>
+		<entry align="center">18</entry>
+		<entry align="center">4</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Jasper Hafkenscheid</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">2</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">3</entry>
 		<entry align="center">3</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Gohar Ahmed (<ulink url="https://github.com/goharahmed">@goharahmed</ulink>)</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">6</entry>
-		<entry align="center">5</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: kworm83, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Shanee Vanstone.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Gohar Ahmed (<ulink url="https://github.com/goharahmed">@goharahmed</ulink>), kworm83, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Shanee Vanstone.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2016 - Sep 2024</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Apr 2016 - Sep 2024</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Nov 2015 - Sep 2024</entry>
 	</row>
 	<row>
+		<entry>2. </entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">Sep 2024 - Sep 2024</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2016 - Sep 2024</entry>
+	</row>
+	<row>
 		<entry>4. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Apr 2016 - Sep 2024</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Shanee Vanstone</entry>
 		<entry align="center">Mar 2024 - Mar 2024</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jan 2021 - Nov 2023</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">Jul 2016 - Jul 2023</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Jasper Hafkenscheid</entry>
 		<entry align="center">May 2022 - Jul 2022</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>kworm83</entry>
 		<entry align="center">Feb 2021 - Feb 2021</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>)</entry>
 		<entry align="center">Nov 2018 - Jul 2020</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Gohar Ahmed (<ulink url="https://github.com/goharahmed">@goharahmed</ulink>)</entry>
-		<entry align="center">Mar 2019 - Mar 2019</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Gohar Ahmed (<ulink url="https://github.com/goharahmed">@goharahmed</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

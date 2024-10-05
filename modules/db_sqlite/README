@@ -135,17 +135,18 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ionut Ionita (@ionutrazvanionita) 81 28 3744 1276
-   2. Razvan Crainea (@razvancrainea) 16 14 98 35
+   2. Razvan Crainea (@razvancrainea) 17 15 107 42
    3. Liviu Chircu (@liviuchircu) 12 10 32 60
    4. Jarrod Baumann (@jarrodb) 5 3 7 4
    5. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
-   6. Aron Podrigal (@ar45) 3 1 10 1
-   7. Daniel Fussia 3 1 4 22
-   8. Maksym Sobolyev (@sobomax) 3 1 2 2
-   9. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
-   10. Eric Green 3 1 1 10
+   6. Alexandra Titoc 4 2 2 3
+   7. Aron Podrigal (@ar45) 3 1 10 1
+   8. Daniel Fussia 3 1 4 22
+   9. Maksym Sobolyev (@sobomax) 3 1 2 2
+   10. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
 
-   All remaining contributors: Peter Lemenkov (@lemenkov).
+   All remaining contributors: Eric Green, Peter Lemenkov
+   (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -167,18 +168,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         May 2016 - Sep 2024
-   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Eric Green                          Aug 2020 - Aug 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Ionut Ionita (@ionutrazvanionita)   Apr 2015 - Feb 2017
-   9.  Daniel Fussia                       Jun 2016 - Jun 2016
-   10. Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2024
+   2.  Liviu Chircu (@liviuchircu)         May 2016 - Sep 2024
+   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Eric Green                          Aug 2020 - Aug 2020
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Ionut Ionita (@ionutrazvanionita)   Apr 2015 - Feb 2017
+   10. Daniel Fussia                       Jun 2016 - Jun 2016
 
-   All remaining contributors: Aron Podrigal (@ar45).
+   All remaining contributors: Jarrod Baumann (@jarrodb), Aron
+   Podrigal (@ar45).
 
    (1) including any documentation-related commits, excluding
    merge commits

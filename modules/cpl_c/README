@@ -507,12 +507,12 @@ Chapter 2. Contributors
    9. Jiri Kuthan (@jiriatipteldotorg) 7 2 372 25
    10. Maksym Sobolyev (@sobomax) 6 4 8 10
 
-   All remaining contributors: Elena-Ramona Modroiu, Eric Tamme
-   (@etamme), Dan Pascu (@danpascu), Nick Altmann (@nikbyte),
-   Ovidiu Sas (@ovidiusas), Konstantin Bokarius, Jesus Rodrigues,
-   Norman Brandinger (@NormB), Andreas Granig, Ionel Cerghit
-   (@ionel-cerghit), Julián Moreno Patiño, Peter Lemenkov
-   (@lemenkov), UnixDev, Edson Gellert Schubert.
+   All remaining contributors: Elena-Ramona Modroiu, Alexandra
+   Titoc, Eric Tamme (@etamme), Dan Pascu (@danpascu), Nick
+   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Konstantin
+   Bokarius, Jesus Rodrigues, Norman Brandinger (@NormB), Andreas
+   Granig, Ionel Cerghit (@ionel-cerghit), Julián Moreno Patiño,
+   Peter Lemenkov (@lemenkov), UnixDev, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -534,23 +534,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - May 2023
-   4.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
-   10. Ionel Cerghit (@ionel-cerghit)      Oct 2015 - Oct 2015
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - May 2023
+   5.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), UnixDev,
-   Dan Pascu (@danpascu), Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Jesus Rodrigues, Elena-Ramona Modroiu, Norman
-   Brandinger (@NormB), Andreas Granig, Andrei Pelinescu-Onciul,
-   Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
+   Ovidiu Sas (@ovidiusas), UnixDev, Dan Pascu (@danpascu),
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jesus
+   Rodrigues, Elena-Ramona Modroiu, Norman Brandinger (@NormB),
+   Andreas Granig, Andrei Pelinescu-Onciul, Jan Janak (@janakj),
+   Jiri Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits

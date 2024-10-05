@@ -296,12 +296,12 @@ Chapter 3. Contributors
    5. Vlad Patrascu (@rvlad-patrascu) 10 7 52 89
    6. Ionut Ionita (@ionutrazvanionita) 8 6 65 21
    7. Maksym Sobolyev (@sobomax) 4 2 5 5
-   8. Fabian Gast (@fgast) 4 1 150 3
-   9. Stephane Alnet 3 1 39 3
-   10. Stas Kobzar 3 1 2 2
+   8. Alexandra Titoc 4 2 2 1
+   9. Fabian Gast (@fgast) 4 1 150 3
+   10. Stephane Alnet 3 1 39 3
 
-   All remaining contributors: Dusan Klinec (@ph4r05), Peter
-   Lemenkov (@lemenkov), Alexandra Titoc.
+   All remaining contributors: Stas Kobzar, Dusan Klinec
+   (@ph4r05), Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

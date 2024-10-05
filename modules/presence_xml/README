@@ -208,8 +208,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Kennard White, Vlad Paiu
    (@vladpaiu), Walter Doekes (@wdoekes), Konstantin Bokarius,
-   Peter Lemenkov (@lemenkov), UnixDev, Zero King (@l2dy), Edson
-   Gellert Schubert, Denis Bilenko, Vlad Patrascu
+   Alexandra Titoc, Peter Lemenkov (@lemenkov), UnixDev, Zero King
+   (@l2dy), Edson Gellert Schubert, Denis Bilenko, Vlad Patrascu
    (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -232,22 +232,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Dan Pascu (@danpascu)               Oct 2007 - Nov 2018
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   9.  Saúl Ibarra Corretgé (@saghul)      May 2012 - Mar 2013
-   10. Anca Vamanu                         Apr 2007 - Jun 2012
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Dan Pascu (@danpascu)               Oct 2007 - Nov 2018
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   10. Saúl Ibarra Corretgé (@saghul)      May 2012 - Mar 2013
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Ovidiu Sas
-   (@ovidiusas), Kennard White, Walter Doekes (@wdoekes), UnixDev,
-   Denis Bilenko, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert.
+   All remaining contributors: Anca Vamanu, Vlad Paiu (@vladpaiu),
+   Ovidiu Sas (@ovidiusas), Kennard White, Walter Doekes
+   (@wdoekes), UnixDev, Denis Bilenko, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert.
 
    (1) including any documentation-related commits, excluding
    merge commits

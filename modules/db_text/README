@@ -451,14 +451,14 @@ Chapter 3. Contributors
    6. Jan Janak (@janakj) 11 7 124 106
    7. Ovidiu Sas (@ovidiusas) 8 6 105 20
    8. Vlad Patrascu (@rvlad-patrascu) 8 6 94 49
-   9. Sergey Khripchenko (@shripchenko) 5 2 185 2
-   10. Jiri Kuthan (@jiriatipteldotorg) 4 2 8 6
+   9. Alexandra Titoc 5 3 13 6
+   10. Sergey Khripchenko (@shripchenko) 5 2 185 2
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Maksym Sobolyev (@sobomax), Konstantin Bokarius, Razvan
-   Pistolea, Chris Heiser, Norman Brandinger (@NormB), Peter
-   Lemenkov (@lemenkov), Edson Gellert Schubert, Dusan Klinec
-   (@ph4r05), Andrei Pelinescu-Onciul.
+   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
+   Ionut Ionita (@ionutrazvanionita), Maksym Sobolyev (@sobomax),
+   Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman
+   Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert, Dusan Klinec (@ph4r05), Andrei Pelinescu-Onciul.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -480,22 +480,23 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2024
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Mar 2024
-   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2021
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   9.  Sergey Khripchenko (@shripchenko)   Aug 2015 - Aug 2015
-   10. Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Mar 2024
+   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2021
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   10. Sergey Khripchenko (@shripchenko)   Aug 2015 - Aug 2015
 
-   All remaining contributors: Razvan Pistolea, Henning Westerholt
-   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Chris Heiser, Edson Gellert Schubert, Norman
-   Brandinger (@NormB), Jan Janak (@janakj), Jiri Kuthan
-   (@jiriatipteldotorg), Andrei Pelinescu-Onciul.
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Razvan Pistolea, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Chris
+   Heiser, Edson Gellert Schubert, Norman Brandinger (@NormB), Jan
+   Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   Pelinescu-Onciul.
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -1452,15 +1452,15 @@ Chapter 3. Contributors
    2. Liviu Chircu (@liviuchircu) 58 44 662 454
    3. Eseanu Marius Cristian (@eseanucristian) 46 10 3142 534
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 31 16 1342 128
-   5. Razvan Crainea (@razvancrainea) 26 20 326 147
+   5. Razvan Crainea (@razvancrainea) 27 21 327 148
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Maksym Sobolyev (@sobomax) 8 6 12 13
-   8. Jasper Hafkenscheid 4 2 107 2
-   9. Fabian Gast (@fgast) 4 2 3 3
-   10. Gohar Ahmed (@goharahmed) 3 1 6 5
+   8. Alexandra Titoc 6 4 18 4
+   9. Jasper Hafkenscheid 4 2 107 2
+   10. Fabian Gast (@fgast) 4 2 3 3
 
-   All remaining contributors: kworm83, Peter Lemenkov
-   (@lemenkov), Shanee Vanstone.
+   All remaining contributors: Gohar Ahmed (@goharahmed), kworm83,
+   Peter Lemenkov (@lemenkov), Shanee Vanstone.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1482,20 +1482,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2024
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
-   3.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
-   4.  Shanee Vanstone                     Mar 2024 - Mar 2024
-   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
-   7.  Jasper Hafkenscheid                 May 2022 - Jul 2022
-   8.  kworm83                             Feb 2021 - Feb 2021
-   9.  Fabian Gast (@fgast)                Nov 2018 - Jul 2020
-   10. Gohar Ahmed (@goharahmed)           Mar 2019 - Mar 2019
+   1.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2024
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
+   5.  Shanee Vanstone                     Mar 2024 - Mar 2024
+   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
+   8.  Jasper Hafkenscheid                 May 2022 - Jul 2022
+   9.  kworm83                             Feb 2021 - Feb 2021
+   10. Fabian Gast (@fgast)                Nov 2018 - Jul 2020
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Ionel
-   Cerghit (@ionel-cerghit), Eseanu Marius Cristian
-   (@eseanucristian).
+   All remaining contributors: Gohar Ahmed (@goharahmed), Peter
+   Lemenkov (@lemenkov), Ionel Cerghit (@ionel-cerghit), Eseanu
+   Marius Cristian (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits

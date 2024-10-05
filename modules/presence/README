@@ -1082,14 +1082,14 @@ Chapter 3. Contributors
 
    All remaining contributors: Saúl Ibarra Corretgé (@saghul),
    Maksym Sobolyev (@sobomax), Vlad Paiu (@vladpaiu), Juha
-   Heinanen (@juha-h), Edson Gellert Schubert, Stanislaw Pitucha,
-   Damien Sandras (@dsandras), Kobi Eshun (@ekobi), Carsten Bock,
-   Dusan Klinec (@ph4r05), Angel Marin, Klaus Darilion, Carlos
-   Oliva, Sergio Gutierrez, Kennard White, Elena-Ramona Modroiu,
-   Jasper Hafkenscheid, Vasil Kolev, Benny Prijono, James
-   Criscuolo, Peter Lemenkov (@lemenkov), Vallimamod Abdullah,
-   UnixDev, Norman Brandinger (@NormB), Denis Bilenko, Julián
-   Moreno Patiño, John Riordan, Julien Blache.
+   Heinanen (@juha-h), Edson Gellert Schubert, Alexandra Titoc,
+   Stanislaw Pitucha, Damien Sandras (@dsandras), Kobi Eshun
+   (@ekobi), Carsten Bock, Dusan Klinec (@ph4r05), Angel Marin,
+   Klaus Darilion, Carlos Oliva, Sergio Gutierrez, Kennard White,
+   Elena-Ramona Modroiu, Jasper Hafkenscheid, Vasil Kolev, Benny
+   Prijono, James Criscuolo, Peter Lemenkov (@lemenkov),
+   Vallimamod Abdullah, UnixDev, Norman Brandinger (@NormB), Denis
+   Bilenko, Julián Moreno Patiño, John Riordan, Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1111,27 +1111,28 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
-   2.  Norman Brandinger (@NormB)          May 2024 - May 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2024
-   4.  Carsten Bock                        Mar 2024 - Mar 2024
-   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   7.  Jasper Hafkenscheid                 Jul 2022 - Jul 2022
-   8.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
-   9.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   10. Ovidiu Sas (@ovidiusas)             Sep 2010 - Sep 2020
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
+   3.  Norman Brandinger (@NormB)          May 2024 - May 2024
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2024
+   5.  Carsten Bock                        Mar 2024 - Mar 2024
+   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   8.  Jasper Hafkenscheid                 Jul 2022 - Jul 2022
+   9.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
+   10. Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
 
-   All remaining contributors: Dan Pascu (@danpascu), Peter
-   Lemenkov (@lemenkov), James Criscuolo, Julián Moreno Patiño,
-   Dusan Klinec (@ph4r05), Carlos Oliva, Damien Sandras
-   (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra Corretgé
-   (@saghul), Anca Vamanu, Vallimamod Abdullah, Kennard White,
-   Stanislaw Pitucha, Angel Marin, John Riordan, Vasil Kolev,
-   UnixDev, Sergio Gutierrez, Kobi Eshun (@ekobi), Klaus Darilion,
-   Denis Bilenko, Henning Westerholt (@henningw), Juha Heinanen
-   (@juha-h), Daniel-Constantin Mierla (@miconda), Edson Gellert
-   Schubert, Julien Blache, Benny Prijono, Elena-Ramona Modroiu.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), James Criscuolo,
+   Julián Moreno Patiño, Dusan Klinec (@ph4r05), Carlos Oliva,
+   Damien Sandras (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra
+   Corretgé (@saghul), Anca Vamanu, Vallimamod Abdullah, Kennard
+   White, Stanislaw Pitucha, Angel Marin, John Riordan, Vasil
+   Kolev, UnixDev, Sergio Gutierrez, Kobi Eshun (@ekobi), Klaus
+   Darilion, Denis Bilenko, Henning Westerholt (@henningw), Juha
+   Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda), Edson
+   Gellert Schubert, Julien Blache, Benny Prijono, Elena-Ramona
+   Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

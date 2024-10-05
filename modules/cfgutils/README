@@ -951,7 +951,7 @@ Chapter 2. Contributors
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Sergio
    Gutierrez, Konstantin Bokarius, Walter Doekes (@wdoekes), Peter
-   Lemenkov (@lemenkov), Edson Gellert Schubert.
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Alexandra Titoc.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -973,21 +973,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2024
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Feb 2024
-   3.  Maksym Sobolyev (@sobomax)          Dec 2015 - Nov 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
-   5.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jan 2020
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
-   8.  Walter Doekes (@wdoekes)            Jan 2015 - Jan 2015
-   9.  Vlad Paiu (@vladpaiu)               Jan 2013 - Jul 2014
-   10. Anca Vamanu                         Aug 2009 - Sep 2009
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2024
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Feb 2024
+   4.  Maksym Sobolyev (@sobomax)          Dec 2015 - Nov 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   6.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jan 2020
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
+   9.  Walter Doekes (@wdoekes)            Jan 2015 - Jan 2015
+   10. Vlad Paiu (@vladpaiu)               Jan 2013 - Jul 2014
 
-   All remaining contributors: Sergio Gutierrez, Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Elena-Ramona Modroiu, Konstantin Bokarius, Edson Gellert
-   Schubert.
+   All remaining contributors: Anca Vamanu, Sergio Gutierrez,
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Elena-Ramona Modroiu, Konstantin Bokarius, Edson
+   Gellert Schubert.
 
    (1) including any documentation-related commits, excluding
    merge commits

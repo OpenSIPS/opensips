@@ -247,7 +247,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Alexandra Titoc                    65      15      3526     1171
+   1. Alexandra Titoc                    67      17      3573     1192
    2. Razvan Crainea (@razvancrainea)    6        2       0       213
 
    (1) DevScore = author_commits + author_lines_added /
@@ -270,8 +270,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Aug 2024 - Aug 2024
-   2. Alexandra Titoc                 Jul 2024 - Jul 2024
+   1. Alexandra Titoc                 Jul 2024 - Sep 2024
+   2. Razvan Crainea (@razvancrainea) Aug 2024 - Aug 2024
 
    (1) including any documentation-related commits, excluding
    merge commits

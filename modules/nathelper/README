@@ -675,9 +675,9 @@ Chapter 3. Contributors
    Darilion, Sergio Gutierrez, Peter Lemenkov (@lemenkov), Nils
    Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman, Jeremie Le
    Hen, Bayan Towfiq, Laurent Schweizer, Jasper Hafkenscheid
-   (@hafkensite), Konstantin Bokarius, John Riordan, Walter Doekes
-   (@wdoekes), Elena-Ramona Modroiu, Nick Altmann (@nikbyte),
-   Edson Gellert Schubert.
+   (@hafkensite), Konstantin Bokarius, Alexandra Titoc, John
+   Riordan, Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Nick
+   Altmann (@nikbyte), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -699,27 +699,28 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2024
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2023
-   4.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
-   6.  Nick Altmann (@nikbyte)             May 2022 - May 2022
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   8.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
-   9.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
-   10. Dan Pascu (@danpascu)               May 2019 - May 2019
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2024
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2023
+   5.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   7.  Nick Altmann (@nikbyte)             May 2022 - May 2022
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   9.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
+   10. Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
 
-   All remaining contributors: Shlomi Gutman, Ovidiu Sas
-   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
-   (@wdoekes), Christophe Sollet (@csollet), Anca Vamanu, John
-   Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
-   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
-   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
-   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
+   All remaining contributors: Dan Pascu (@danpascu), Shlomi
+   Gutman, Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Walter Doekes (@wdoekes), Christophe
+   Sollet (@csollet), Anca Vamanu, John Riordan, Emmanuel Buu,
+   Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Ancuta
+   Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent
+   Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona
+   Modroiu, Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj),
+   Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits

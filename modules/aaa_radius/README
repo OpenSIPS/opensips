@@ -405,8 +405,9 @@ Chapter 3. Contributors
    10. Matt Lehner 3 1 32 3
 
    All remaining contributors: Авдиенко Михаил, Alex Massover,
-   Julián Moreno Patiño, Peter Lemenkov (@lemenkov), Walter Doekes
-   (@wdoekes), Zero King (@l2dy), Dan Pascu (@danpascu).
+   Alexandra Titoc, Julián Moreno Patiño, Peter Lemenkov
+   (@lemenkov), Walter Doekes (@wdoekes), Zero King (@l2dy), Dan
+   Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -428,20 +429,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2019
-   4.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
-   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Apr 2017
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2019
+   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
+   8.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Apr 2017
 
-   All remaining contributors: Walter Doekes (@wdoekes), Boris
-   Ratner, Matt Lehner, Irina-Maria Stanescu, Авдиенко Михаил,
-   Alex Massover, Anca Vamanu.
+   All remaining contributors: Julián Moreno Patiño, Walter Doekes
+   (@wdoekes), Boris Ratner, Matt Lehner, Irina-Maria Stanescu,
+   Авдиенко Михаил, Alex Massover, Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits

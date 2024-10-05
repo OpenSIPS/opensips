@@ -266,6 +266,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                Name           DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas)    19       2      1843      34
+   2. Alexandra Titoc            3        1       13       9
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -287,7 +288,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                Name             Commit Activity
-   1. Ovidiu Sas (@ovidiusas) Feb 2024 - Feb 2024
+   1. Alexandra Titoc         Sep 2024 - Sep 2024
+   2. Ovidiu Sas (@ovidiusas) Feb 2024 - Feb 2024
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -76,6 +76,14 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">1</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">3</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Stephane Alnet</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">39</entry>
 		<entry align="center">3</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Stas Kobzar</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Alexandra Titoc.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Stas Kobzar, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>

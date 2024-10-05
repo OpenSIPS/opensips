@@ -369,17 +369,17 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Evandro Villaron (@evillaron) 150 9 10947 3011
    2. Robison Tesini (@rtesini) 62 1 3116 2038
-   3. Razvan Crainea (@razvancrainea) 25 16 329 336
+   3. Razvan Crainea (@razvancrainea) 26 17 331 338
    4. Liviu Chircu (@liviuchircu) 19 13 134 188
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 11 9 52 52
-   6. Maksym Sobolyev (@sobomax) 6 4 18 17
-   7. Peter Lemenkov (@lemenkov) 5 3 38 17
-   8. Walter Doekes (@wdoekes) 4 2 4 4
-   9. Zero King (@l2dy) 4 2 2 1
-   10. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
+   6. Alexandra Titoc 10 8 62 19
+   7. Maksym Sobolyev (@sobomax) 6 4 18 17
+   8. Peter Lemenkov (@lemenkov) 5 3 38 17
+   9. Walter Doekes (@wdoekes) 4 2 4 4
+   10. Zero King (@l2dy) 4 2 2 1
 
-   All remaining contributors: Julián Moreno Patiño, Vlad Patrascu
-   (@rvlad-patrascu).
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -401,19 +401,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   2.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2023
-   3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   4.  Zero King (@l2dy)                   Mar 2020 - Aug 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Mar 2020
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   7.  Razvan Crainea (@razvancrainea)     Jul 2015 - Sep 2019
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Evandro Villaron (@evillaron)       Feb 2015 - Sep 2015
+   1.  Razvan Crainea (@razvancrainea)     Jul 2015 - Sep 2024
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2023
+   5.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   6.  Zero King (@l2dy)                   Mar 2020 - Aug 2020
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Mar 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Robison Tesini (@rtesini).
+   All remaining contributors: Evandro Villaron (@evillaron),
+   Ionut Ionita (@ionutrazvanionita), Robison Tesini (@rtesini).
 
    (1) including any documentation-related commits, excluding
    merge commits
