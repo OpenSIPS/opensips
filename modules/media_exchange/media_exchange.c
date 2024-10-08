@@ -1439,6 +1439,11 @@ static int b2b_media_notify(struct sip_msg *msg, str *key, int type,
 				MEDIA_LEG_LOCK(msl);
 				initial_state = msl->state;
 				MEDIA_LEG_UNLOCK(msl);
+				if (msg == FAKED_REPLY) {
+					LM_ERR("could not stream media due to timeout (callid=%.*s)\n",
+							msl->ms->dlg->callid.len, msl->ms->dlg->callid.s);
+					goto terminate;
+				}
 				if (msg->REPLY_STATUS >= 300) {
 					LM_ERR("could not stream media due to negative reply %d (callid=%.*s)\n",
 							msg->REPLY_STATUS, msl->ms->dlg->callid.len, msl->ms->dlg->callid.s);
