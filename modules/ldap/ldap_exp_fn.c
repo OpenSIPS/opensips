@@ -159,7 +159,8 @@ int ldap_search_impl_async(
 	return 1;
 
 error:
-	release_ldap_connection(conn);
+	if (conn)
+		release_ldap_connection(conn);
 	return rc;
 }
 
