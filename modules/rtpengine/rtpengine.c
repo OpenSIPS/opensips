@@ -3343,7 +3343,7 @@ rtpengine_manage(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 		return rtpengine_delete(msg, flags, NULL, NULL, spvar);
 
 	if (body)
-		nosdp = body->len != 0;
+		nosdp = body->len == 0;
 	else if(has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP))
 		nosdp = 0;
 	else
