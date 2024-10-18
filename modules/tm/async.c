@@ -249,7 +249,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 	} else {
 		/* update the cloned UAS (from transaction)
 		 * with data from current msg */
-		if (t->uas.request)
+		if ((t->uas.request) && (route_type==REQUEST_ROUTE) && ((msg->msg_flags & FL_TM_FAKE_REQ) == 0))
 			update_cloned_msg_from_msg( t->uas.request, msg);
 	}
 
