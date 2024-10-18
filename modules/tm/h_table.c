@@ -120,6 +120,10 @@ void free_cell( struct cell* dead_cell )
 	struct sip_msg *rpl;
 	struct totag_elem *tt, *foo;
 	struct proxy_l *p;
+	struct cell *backup_t;
+
+	backup_t = get_t();
+	set_t(dead_cell);
 
 	if ( has_tran_tmcbs( dead_cell, TMCB_TRANS_DELETED) )
 		run_trans_callbacks( TMCB_TRANS_DELETED, dead_cell, 0, 0, 0);
@@ -127,6 +131,8 @@ void free_cell( struct cell* dead_cell )
 	empty_tmcb_list(&dead_cell->tmcb_hl);
 
 	context_destroy(CONTEXT_TRAN, context_of(dead_cell));
+
+	set_t(backup_t);
 
 	release_cell_lock( dead_cell );
 
