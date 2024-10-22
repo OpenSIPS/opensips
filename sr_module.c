@@ -643,6 +643,7 @@ static int init_mod_child( struct sr_module* m, int rank, char *type,
 int init_child(int rank)
 {
 	char* type;
+	int rc;
 
 	type = 0;
 
@@ -660,7 +661,11 @@ int init_child(int rank)
 			type = "UNKNOWN";
 	}
 
-	return init_mod_child(modules, rank, type, 0);
+	rc = init_mod_child(modules, rank, type, 0);
+	ready_time = time(NULL);
+	ready_delay = ready_time - startup_time;
+
+	return rc;
 }
 
 

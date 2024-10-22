@@ -144,7 +144,7 @@ extern int max_while_loops;
 
 extern int sl_fwd_disabled;
 
-extern time_t startup_time;
+extern time_t startup_time, ready_time, ready_delay;
 
 extern char *db_version_table;
 extern char *db_default_url;

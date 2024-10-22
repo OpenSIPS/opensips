@@ -73,6 +73,12 @@ void sync_check_timer(utime_t ticks, void *param)
 	struct local_cap *cap;
 	struct timeval now;
 
+	if (sr_get_core_status() != STATE_RUNNING) {
+		LM_DBG("opensips is not operational (state: %d), nothing "
+		        "to check for now\n", sr_get_core_status());
+		return;
+	}
+
 	gettimeofday(&now, NULL);
 
 	lock_start_read(cl_list_lock);
@@ -93,10 +99,11 @@ void sync_check_timer(utime_t ticks, void *param)
 					if ((cap->flags & CAP_SYNC_PENDING) &&
 						(cl->current_node->flags & NODE_IS_SEED) &&
 						(TIME_DIFF(cap->sync_req_time, now) >=
-						seed_fb_interval*1000000)) {
+							((cap->flags&CAP_SYNC_STARTUP ? ready_delay:0)
+								+ seed_fb_interval) * 1000000)) {
 
 						cap->flags |= CAP_STATE_OK;
-						cap->flags &= ~CAP_SYNC_PENDING;
+						cap->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 						sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCED,
 							STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
 						sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
@@ -866,7 +873,7 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 											node_id);
 						if (rc == CLUSTERER_SEND_SUCCESS) {
 							lock_get(source->cluster->lock);
-							lcap->flags &= ~CAP_SYNC_PENDING;
+							lcap->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 							lock_release(source->cluster->lock);
 						} else if (rc == CLUSTERER_SEND_ERR)
 							LM_ERR("Failed to send sync request to node: %d\n",
@@ -1640,7 +1647,7 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 				/* check pending sync replies */
 				for (n_cap = node->capabilities; n_cap; n_cap = n_cap->next) {
 					if (n_cap->flags & CAP_SYNC_PENDING) {
-						n_cap->flags &= ~CAP_SYNC_PENDING;
+						n_cap->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 						lock_release(node->lock);
 						/* reply now that the node is up */
 						if (ipc_dispatch_sync_reply(cl, node->node_id,
@@ -1693,7 +1700,7 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					 * a module tries to sync on node UP event */
 					if (rst_sync_pending) {
 						lock_get(cl->lock);
-						cap_it->flags &= ~CAP_SYNC_PENDING;
+						cap_it->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 						lock_release(cl->lock);
 					}
 				}
