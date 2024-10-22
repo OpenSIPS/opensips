@@ -59,11 +59,16 @@
 	} while (0)
 #define ensure_bin_version(pkt, needed) _ensure_bin_version(pkt, needed, "")
 
+typedef unsigned bin_packet_flags_t;
+#define BINFL_SYSMEM (1U<<0)
+
 typedef struct bin_packet {
 	str buffer;
 	char *front_pointer;
+	struct bin_packet *next;
 	int size;
 	int type;
+	bin_packet_flags_t flags;
 	/* not populated by bin_interface */
 	int src_id;
 } bin_packet_t;
@@ -123,8 +128,10 @@ int bin_register_cb(str *cap, void (*cb)(bin_packet_t *, int,
  *
  * @return: 0 on success
  */
-int bin_init(bin_packet_t *packet, str *capability, int packet_type, short version,
-				int length);
+int _bin_init(bin_packet_t *packet, str *capability, int packet_type, short version,
+				int length, int use_sysmalloc);
+#define bin_init(_pk, _cap, _pt, _ver, _len) \
+	_bin_init(_pk, _cap, _pt, _ver, _len, 0)
 
 /**
  * function called to build a binary packet with a known buffer
