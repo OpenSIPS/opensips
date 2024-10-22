@@ -30,9 +30,11 @@
 int sync_packet_size = DEFAULT_SYNC_PACKET_SIZE;
 int _sync_from_id = 0;
 
-static bin_packet_t *sync_packet_snd;
+static bin_packet_t *sync_packet_last;
 static int sync_prev_buf_len;
 static int *sync_last_chunk_sz;
+static bin_packet_t *sync_packets;
+static unsigned sync_packets_cnt;
 
 int send_sync_req(str *capability, int cluster_id, int source_id)
 {
@@ -204,8 +206,8 @@ bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
 	int aloc_new_pkt = 0;
 	bin_packet_t *new_packet = NULL;
 
-	if (sync_packet_snd) {
-		bin_get_buffer(sync_packet_snd, &bin_buffer);
+	if (sync_packet_last) {
+		bin_get_buffer(sync_packet_last, &bin_buffer);
 		prev_chunk_size = bin_buffer.len - sync_prev_buf_len;
 		/* assume this chunk will have aprox the same size as the previous one
 		 * and check if there is enough space in the packet */
@@ -215,62 +217,59 @@ bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
 		aloc_new_pkt = 1;
 
 	if (aloc_new_pkt) {  /* next chunk will be in a new packet */
-		if (sync_packet_snd) {
+		if (sync_packet_last) {
 			*sync_last_chunk_sz = prev_chunk_size;
 
-			/* send and free the previous packet */
-			msg_add_trailer(sync_packet_snd, cluster_id, dst_id);
-
-			if (clusterer_send_msg(sync_packet_snd, cluster_id, dst_id, 0,
-				1 /* we should be in a SYNC_REQ_RCV callback here so
-				   * already locked*/) < 0)
-				LM_ERR("Failed to send sync packet\n");
-
-			bin_free_packet(sync_packet_snd);
-			pkg_free(sync_packet_snd);
-			sync_packet_snd = NULL;
+			/* properly end the previous packet (to be sent later) */
+			msg_add_trailer(sync_packet_last, cluster_id, dst_id);
 			sync_last_chunk_sz = NULL;
 		}
 
-		new_packet = pkg_malloc(sizeof *new_packet);
+		new_packet = malloc(sizeof *new_packet);
 		if (!new_packet) {
 			LM_ERR("No more pkg memory\n");
 			return NULL;
 		}
+		new_packet->next = NULL;
 
-		if (bin_init(new_packet,&cl_extra_cap,CLUSTERER_SYNC,BIN_SYNC_VERSION,0)<0) {
+		if (_bin_init(new_packet,&cl_extra_cap,CLUSTERER_SYNC,BIN_SYNC_VERSION,0,1)<0) {
 			LM_ERR("Failed to init bin packet\n");
-			pkg_free(new_packet);
+			free(new_packet);
 			return NULL;
 		}
 
 		bin_push_str(new_packet, capability);
 		bin_push_int(new_packet, data_version);
-		sync_packet_snd = new_packet;
+		if (sync_packet_last)
+			sync_packet_last->next = new_packet;
+		else
+			sync_packets = new_packet;
+		sync_packet_last = new_packet;
+		sync_packets_cnt++;
 	}
 
 	if (sync_last_chunk_sz)
 		*sync_last_chunk_sz = prev_chunk_size;
 
 	/* reserve and remember a holder for the upcoming data chunk size */
-	bin_get_buffer(sync_packet_snd, &bin_buffer);
-	bin_push_int(sync_packet_snd, 0);
+	bin_get_buffer(sync_packet_last, &bin_buffer);
+	bin_push_int(sync_packet_last, 0);
 	sync_last_chunk_sz = (int *)(bin_buffer.s + bin_buffer.len);
 
-	bin_push_int(sync_packet_snd, SYNC_CHUNK_START_MARKER);
+	bin_push_int(sync_packet_last, SYNC_CHUNK_START_MARKER);
 
-	bin_get_buffer(sync_packet_snd, &bin_buffer);
+	bin_get_buffer(sync_packet_last, &bin_buffer);
 	sync_prev_buf_len = bin_buffer.len;
 
 	no_sync_chunks_sent++;
 
-	return sync_packet_snd;
+	return sync_packet_last;
 }
 
 int no_sync_chunks_iter;
 
-/* this mechanism allows modules to ignore all or part of a sync chunk
- * without disrupting the sequencing / consuming of the remaining data */
+/* this mechanism allows modules to ignore all or part of a sync chunk on the
+ * receiver node, without affecting their consuming of remaining sync chunks */
 char *next_data_chunk;
 
 int cl_sync_chunk_iter(bin_packet_t *packet)
@@ -324,13 +323,11 @@ int cl_sync_chunk_iter(bin_packet_t *packet)
 
 void send_sync_repl(int sender, void *param)
 {
-	bin_packet_t sync_end_pkt;
+	bin_packet_t sync_end_pkt, *pkt, *next_pkt;
 	str bin_buffer;
 	struct local_cap *cap;
-	int rc, cluster_id;
+	int rc, cluster_id, pkt_no;
 	struct reply_rpc_params *p = (struct reply_rpc_params *)param;
-
-	lock_start_read(cl_list_lock);
 
 	for (cap = p->cluster->capabilities; cap; cap = cap->next)
 		if (!str_strcmp(&p->cap_name, &cap->reg.name))
@@ -338,7 +335,6 @@ void send_sync_repl(int sender, void *param)
 	if (!cap) {
 		LM_ERR("Sync request for unknown capability: %.*s\n",
 			p->cap_name.len, p->cap_name.s);
-		lock_stop_read(cl_list_lock);
 		return;
 	}
 
@@ -346,20 +342,30 @@ void send_sync_repl(int sender, void *param)
 
 	cap->reg.event_cb(SYNC_REQ_RCV, p->node_id);
 
-	if (sync_packet_snd) {
-		bin_get_buffer(sync_packet_snd, &bin_buffer);
+	lock_start_read(cl_list_lock);
+
+	if (sync_packets) {
+		bin_get_buffer(sync_packet_last, &bin_buffer);
 		*sync_last_chunk_sz = bin_buffer.len - sync_prev_buf_len;
 
 		/* send and free the lastly built packet */
-		msg_add_trailer(sync_packet_snd, p->cluster->cluster_id, p->node_id);
+		msg_add_trailer(sync_packet_last, p->cluster->cluster_id, p->node_id);
 
-		if ((rc = clusterer_send_msg(sync_packet_snd, p->cluster->cluster_id,
-			p->node_id, 0, 1))<0)
-			LM_ERR("Failed to send sync packet, rc=%d\n", rc);
+		for (pkt = sync_packets; pkt; pkt = next_pkt) {
+			next_pkt = pkt->next;
 
-		bin_free_packet(sync_packet_snd);
-		pkg_free(sync_packet_snd);
-		sync_packet_snd = NULL;
+			if ((rc = clusterer_send_msg(pkt, p->cluster->cluster_id,
+				p->node_id, 0, 1))<0)
+				LM_ERR("Failed to send sync packet, rc=%d\n", rc);
+
+			bin_free_packet(pkt);
+			free(pkt);
+		}
+
+		sync_packets = NULL;
+		pkt_no = sync_packets_cnt;
+		sync_packets_cnt = 0;
+		sync_packet_last = NULL;
 		sync_last_chunk_sz = NULL;
 	}
 
@@ -386,8 +392,8 @@ void send_sync_repl(int sender, void *param)
 
 	bin_free_packet(&sync_end_pkt);
 
-	LM_INFO("Sent all sync packets for capability '%.*s' to node %d, cluster "
-	        "%d\n", p->cap_name.len, p->cap_name.s, p->node_id, cluster_id);
+	LM_INFO("Sent all sync packets (%d) for capability '%.*s' to node %d, cluster "
+	        "%d\n", pkt_no, p->cap_name.len, p->cap_name.s, p->node_id, cluster_id);
 
 	shm_free(param);
 }
