@@ -95,6 +95,10 @@ int queue_sync_request(cluster_info_t *cluster, struct local_cap *lcap)
 {
 	lock_get(cluster->lock);
 	lcap->flags |= CAP_SYNC_PENDING;
+	if (sr_get_core_status() == STATE_INITIALIZING)
+		lcap->flags |= CAP_SYNC_STARTUP;
+	else
+		lcap->flags &= ~CAP_SYNC_STARTUP;
 
 	if (cluster->current_node->flags & NODE_IS_SEED)
 		gettimeofday(&lcap->sync_req_time, NULL);
