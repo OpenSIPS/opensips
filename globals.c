@@ -155,8 +155,12 @@ int process_no = 0;
 /* cfg parsing */
 int cfg_errors=0;
 
-/* start-up time */
-time_t startup_time = 0;
+/**
+ * @startup_time  - near to OpenSIPS launch time, see init_mi_uptime()
+ * @ready_time    - per process, denotes completion of mod_init + child_init
+ * @ready_delay   - difference between above two UNIX timestamps
+ */
+time_t startup_time, ready_time, ready_delay;
 
 /* shared memory (in MB) */
 unsigned long shm_mem_size=SHM_MEM_SIZE * 1024 * 1024;
