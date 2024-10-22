@@ -101,9 +101,14 @@ int queue_sync_request(cluster_info_t *cluster, struct local_cap *lcap)
 
 	lock_release(cluster->lock);
 
+	LM_INFO("Queue'ing sync request for capability '%.*s' in cluster %d "
+	    "(no donor available)\n", lcap->reg.name.len, lcap->reg.name.s,
+	    cluster->cluster_id);
+
 	sr_set_status(cl_srg, STR2CI(lcap->reg.sr_id), CAP_SR_SYNC_PENDING,
 		STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNC_PENDING)), 0);
-	if (sr_add_report_fmt(cl_srg, STR2CI(lcap->reg.sr_id), 0, "Sync requested"))
+	if (sr_add_report_fmt(cl_srg, STR2CI(lcap->reg.sr_id), 0,
+	        "Sync request postponed! (no donor available)"))
 		return -1;
 
 	return 0;
@@ -326,7 +331,7 @@ void send_sync_repl(int sender, void *param)
 	bin_packet_t sync_end_pkt, *pkt, *next_pkt;
 	str bin_buffer;
 	struct local_cap *cap;
-	int rc, cluster_id, pkt_no;
+	int rc, cluster_id, pkt_no = 0;
 	struct reply_rpc_params *p = (struct reply_rpc_params *)param;
 
 	for (cap = p->cluster->capabilities; cap; cap = cap->next)

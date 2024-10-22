@@ -100,8 +100,10 @@ void sync_check_timer(utime_t ticks, void *param)
 						sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCED,
 							STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
 						sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
-							"Donor node not found, fallback to synced state");
-						LM_INFO("No donor found, falling back to synced state\n");
+							"ERROR: Sync request aborted! (no donor found in due time)"
+							" => fallback to synced state");
+						LM_ERR("Sync request aborted! (no donor found in due time)"
+						    ", falling back to synced state\n");
 						/* send update about the state of this capability */
 						send_single_cap_update(cl, cap, 1);
 
