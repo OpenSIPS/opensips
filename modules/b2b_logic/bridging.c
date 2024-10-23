@@ -386,6 +386,8 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 		entity && tuple->bridge_initiator == entity)
 	{
 		entity_no = 3; // Bridge initiator
+	} else if (entity && entity->disconnected) {
+		entity_no = -1; // Probably a cross-bye - reply and don't do anything
 	} else {
 		entity_no = bridge_get_entityno(tuple, entity);
 		if(entity_no < 0)
@@ -404,7 +406,8 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 	rpl_data.text =&ok;
 	b2b_api.send_reply(&rpl_data);
 
-	return process_bridge_dialog_end(tuple, hash_index, entity_no, entity);
+	return (entity_no < 0 ? 0:
+			process_bridge_dialog_end(tuple, hash_index, entity_no, entity));
 }
 
 int process_bridge_negreply(b2bl_tuple_t* tuple,
