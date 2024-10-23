@@ -460,6 +460,7 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes)
 	str str_hdr = {NULL,0};
 	struct cell* t;
 	int res = -1;
+	struct cell* bkp_t;
 
 	if (!send_byes) {
 		dual_bye_event(dlg, NULL, 0);
@@ -472,8 +473,10 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes)
 		/* locate initial transaction */
 		LM_DBG("trying to find transaction with hash_index = %u and label = %u\n",
 				dlg->initial_t_hash_index,dlg->initial_t_label);
+		bkp_t = d_tmb.t_gett();
 		if (d_tmb.t_lookup_ident(&t,dlg->initial_t_hash_index,dlg->initial_t_label) < 0) {
 			LM_ERR("Initial transaction does not exist any more\n");
+			d_tmb.t_sett(bkp_t);
 			return -1;
 		}
 
@@ -485,6 +488,8 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes)
 
 		/* lookup_ident refs the transaction */
 		d_tmb.unref_cell(t);
+		d_tmb.t_sett(bkp_t);
+
 		return 0;
 	}
 
