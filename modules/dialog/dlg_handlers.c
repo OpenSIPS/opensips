@@ -1423,12 +1423,12 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	 */
 	dlg_lock_dlg(dlg);
 
-	if (ensure_leg_array(dlg->legs_no[DLG_LEGS_USED] + 1, dlg) != 0)
+	callee_leg = d_tmb.get_branch_index() + 1;
+	if (ensure_leg_array(callee_leg + 1, dlg) != 0)
 		goto out_free;
 
 	/* store the caller SDP into each callee leg, useful for Re-INVITE pings */
-	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
-	callee_leg = dlg->legs_no[DLG_LEGS_USED];
+	leg = &dlg->legs[callee_leg];
 
 	dlg_unlock_dlg(dlg);
 
