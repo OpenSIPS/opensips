@@ -928,9 +928,10 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		/* Reply from new bridge entity */
 		if(statuscode >= 200 &&
 			entity == (tuple->bridge_entities[2]?tuple->bridge_entities[2]:tuple->bridge_entities[1]) &&
-			tuple->bridge_flags & B2BL_BR_FLAG_NOTIFY && tuple->bridge_initiator != 0)
+			tuple->bridge_initiator != 0)
 		{
-			send_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg);
+			if (tuple->bridge_flags & B2BL_BR_FLAG_NOTIFY)
+				send_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg);
 			if(statuscode == 200 || !(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE))
 			{
 				if (!(tuple->bridge_flags & B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR)) {
