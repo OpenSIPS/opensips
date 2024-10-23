@@ -408,7 +408,7 @@ modparam("rtpengine", "set_column", "set_new")
 		<title>Set <varname>ping_enabled</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("rtpengine", "ping_enables", yes)
+modparam("rtpengine", "ping_enabled", yes)
 ...
 </programlisting>
 		</example>
@@ -1672,6 +1672,10 @@ $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 				<emphasis>status</emphasis> - <emphasis>active</emphasis> if
 				the RTPEngine instance responds to probing or
 				<emphasis>inactive</emphasis> if the instance was deactivated.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>set</emphasis> - the numeric id of the set
+				this RTPEngine instance is part of.
 			</para></listitem>
 		</itemizedlist>
 	</section>
