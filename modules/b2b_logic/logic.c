@@ -1593,6 +1593,17 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 
 			goto done;
 		}
+		if (entity->disconnected) {
+			/* if already disconnected, this is probably a cross BYE
+			 * that we no longer need to process, so we simply reply it */
+			memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
+			PREP_RPL_DATA(entity);
+			rpl_data.method =METHOD_BYE;
+			rpl_data.code =200;
+			rpl_data.text =&ok;
+			b2b_api.send_reply(&rpl_data);
+			goto done;
+		}
 
 		entity->disconnected = 1;
 		if(cbf && (tuple->cb.mask&B2B_BYE_CB))
