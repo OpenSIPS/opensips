@@ -595,10 +595,18 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		bin_pop_int(packet, &data_version);
 
 		lock_get(cluster->lock);
-		if (cap->flags & CAP_SYNC_IN_PROGRESS)
-			was_in_progress = 1;
-		/* buffer other types of packets during sync */
-		cap->flags |= CAP_SYNC_IN_PROGRESS;
+
+		/* if the cap's state is already OK (e.g. donor aborted sync mid-way,
+		 * then sync_check_timer() timed out the sync back to CAP_STATE_OK),
+		 * avoid forcing a state where repl packets queue indefinitely! */
+		if (!(cap->flags & CAP_STATE_OK)) {
+			if (cap->flags & CAP_SYNC_IN_PROGRESS)
+				was_in_progress = 1;
+
+			/* buffer other types of packets during sync */
+			cap->flags |= CAP_SYNC_IN_PROGRESS;
+		}
+
 		cap->last_sync_pkt = get_ticks();
 		lock_release(cluster->lock);
 
