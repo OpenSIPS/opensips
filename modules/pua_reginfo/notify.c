@@ -234,11 +234,8 @@ int process_body(str notify_body, udomain_t *domain)
 	str contact_uri = {0, 0};
 	str contact_params = {0, 0};
 	str param = {0, 0};
-	str received = {0, 0};
-	str path = {0, 0};
-	str user_agent = {0, 0};
-	int state, event, expires, result, final_result = RESULT_ERROR;
-	char *expires_char, *cseq_char;
+	int state = STATE_UNKNOWN, event, expires, result, final_result = RESULT_ERROR;
+	char *expires_char = NULL, *cseq_char = NULL,*state_attr = NULL, *event_attr = NULL, *param_name = NULL;
 	int cseq = 0;
 	int len;
 	urecord_t *ul_record = NULL;
@@ -265,8 +262,12 @@ int process_body(str notify_body, udomain_t *domain)
 		/* Only process registration sub-items */
 		if(xmlStrcasecmp(registrations->name, BAD_CAST "registration") != 0)
 			goto next_registration;
-		state = reginfo_parse_state(
-				xmlGetAttrContentByName(registrations, "state"));
+		state_attr = xmlGetAttrContentByName(registrations, "state");
+		if(state_attr) {
+			state = reginfo_parse_state(state_attr);
+			xmlFree(state_attr);
+			state_attr = NULL;
+		}
 		if(state == STATE_UNKNOWN) {
 			LM_ERR("No state for this contact!\n");
 			goto next_registration;
@@ -346,31 +347,15 @@ int process_body(str notify_body, udomain_t *domain)
 					callid.s = xmlGetAttrContentByName(contacts, "id");
 				callid.len = strlen(callid.s);
 				LM_DBG("Got Call-ID \"%.*s\"\n", callid.len, callid.s);
-				received.s = xmlGetAttrContentByName(contacts, "received");
-				if(received.s == NULL) {
-					LM_DBG("No received for this contact!\n");
-					received.len = 0;
-				} else {
-					received.len = strlen(received.s);
-				}
 
-				path.s = xmlGetAttrContentByName(contacts, "path");
-				if(path.s == NULL) {
-					LM_DBG("No path for this contact!\n");
-					path.len = 0;
-				} else {
-					path.len = strlen(path.s);
+				event_attr = xmlGetAttrContentByName(contacts, "event");
+				if(event_attr == NULL) {
+					LM_ERR("No event for this contact!\n");
+					goto next_contact;
 				}
-
-				user_agent.s = xmlGetAttrContentByName(contacts, "user_agent");
-				if(user_agent.s == NULL) {
-					LM_DBG("No user_agent for this contact!\n");
-					user_agent.len = 0;
-				} else {
-					user_agent.len = strlen(user_agent.s);
-				}
-				event = reginfo_parse_event(
-						xmlGetAttrContentByName(contacts, "event"));
+				event = reginfo_parse_event(event_attr);
+				xmlFree(event_attr);
+				event_attr = NULL;
 				if(event == EVENT_UNKNOWN) {
 					LM_ERR("No event for this contact!\n");
 					goto next_contact;
@@ -381,6 +366,8 @@ int process_body(str notify_body, udomain_t *domain)
 					goto next_contact;
 				}
 				expires = atoi(expires_char);
+				xmlFree(expires_char);
+				expires_char = NULL;				
 				if(expires < 0) {
 					LM_ERR("No valid expires for this contact!\n");
 					goto next_contact;
@@ -397,6 +384,8 @@ int process_body(str notify_body, udomain_t *domain)
 						LM_WARN("No valid cseq for this contact!\n");
 					}
 				}
+				xmlFree(cseq_char);
+				cseq_char = NULL;
 
 				// <unknown-param name="+g.oma.sip-im"></unknown-param>
 				// <unknown-param name="language">en,fr</unknown-param>
@@ -408,12 +397,18 @@ int process_body(str notify_body, udomain_t *domain)
 					if(xmlStrcasecmp(params->name, BAD_CAST "unknown-param")
 							!= 0)
 						goto next_param;
-					len += 1 /* ; */
-						   + strlen(xmlGetAttrContentByName(params, "name"));
+					param_name = xmlGetAttrContentByName(params, "name");
+					len += 1 /* ; */ + strlen(param_name);
 					param.s = (char *)xmlNodeGetContent(params);
 					param.len = strlen(param.s);
 					if(param.len > 0)
 						len += 1 /* = */ + param.len;
+					xmlFree(param_name);
+					param_name = NULL;
+					xmlFree(param.s);
+					param.s = NULL;
+					param.len = 0;
+
 				next_param:
 					params = params->next;
 				}
@@ -430,10 +425,11 @@ int process_body(str notify_body, udomain_t *domain)
 						if(xmlStrcasecmp(params->name, BAD_CAST "unknown-param")
 								!= 0)
 							goto next_param2;
+
+						param_name = xmlGetAttrContentByName(params, "name");
 						contact_params.len += snprintf(
 								contact_params.s + contact_params.len,
-								len - contact_params.len, ";%s",
-								xmlGetAttrContentByName(params, "name"));
+								len - contact_params.len, ";%s", param_name);
 						param.s = (char *)xmlNodeGetContent(params);
 						param.len = strlen(param.s);
 						if(param.len > 0)
@@ -444,6 +440,12 @@ int process_body(str notify_body, udomain_t *domain)
 
 						LM_DBG("Contact params are: %.*s\n", contact_params.len,
 								contact_params.s);
+
+						xmlFree(param_name);
+						param_name = NULL;
+						xmlFree(param.s);
+						param.s = NULL;
+						param.len = 0;
 
 					next_param2:
 						params = params->next;
@@ -489,10 +491,20 @@ int process_body(str notify_body, udomain_t *domain)
 					/* Process the result */
 					if(final_result != RESULT_CONTACTS_FOUND)
 						final_result = result;
+
+					xmlFree(contact_uri.s);
+					contact_uri.s = NULL;
+					contact_uri.len = 0;						
 				next_uri:
+				
 					uris = uris->next;
 				}
 			next_contact:
+				if(callid.s) {
+					xmlFree(callid.s);
+					callid.s = NULL;
+					callid.len = 0;
+				}			
 				contacts = contacts->next;
 			}
 		}
@@ -502,7 +514,16 @@ int process_body(str notify_body, udomain_t *domain)
 		/* Unlock the domain for this AOR: */
 		if(aor_key.len > 0)
 			ul.unlock_udomain(domain, &aor_key);
-
+		if(callid.s) {
+			xmlFree(callid.s);
+			callid.s = NULL;
+			callid.len = 0;
+		}
+		if(aor.s) {
+			xmlFree(aor.s);
+			aor.s = NULL;
+			aor.len = 0;
+		}
 		registrations = registrations->next;
 	}
 error:

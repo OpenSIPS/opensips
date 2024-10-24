@@ -21,6 +21,7 @@
  */
 #include "usrloc_cb.h"
 #include "pua_reginfo.h"
+#include "../../lib/str_buffer.h"
 #include <libxml/parser.h>
 #include "../pua/pua.h"
 #include "../presence/bind_presence.h"
@@ -50,6 +51,20 @@ Call-ID: 9ad9f89f-164d-bb86-1072-52e7e9eb5025.
 .</registration>
 </reginfo> */
 
+/** Formats ::str string for use in printf-like functions.
+ * This is a macro that prepares a ::str string for use in functions which 
+ * use printf-like formatting strings. This macro is necessary  because 
+ * ::str strings do not have to be zero-terminated and thus it is necessary 
+ * to provide printf-like functions with the number of characters in the 
+ * string manually. Here is an example how to use the macro: 
+ * \code printf("%.*s\n", STR_FMT(var));\endcode Note well that the correct 
+ * sequence in the formatting string is %.*, see the man page of printf for 
+ * more details.
+ */
+#define STR_FMT(_pstr_)	\
+  ((_pstr_ != (str *)0) ? (_pstr_)->len : 0), \
+  ((_pstr_ != (str *)0) ? (_pstr_)->s : "")
+
 static int _pua_reginfo_self_op = 0;
 
 static pres_ev_t *reginfo_event = NULL;
@@ -59,89 +74,216 @@ void pua_reginfo_update_self_op(int v)
 	_pua_reginfo_self_op = v;
 }
 
-str r_active = str_init("active");
-str r_terminated = str_init("terminated");
-str r_registered = str_init("registered");
-str r_refreshed = str_init("refreshed");
-str r_expired = str_init("expired");
-str r_unregistered = str_init("unregistered");
 #define VERSION_HOLDER "00000000000"
 
 str reginfo_key_etag = str_init("reginfo_etag");
 
-str *build_reginfo_full(urecord_t *record, ucontact_t *contact, str aor[], unsigned int aor_count, int type, int * count)
+
+static str xml_start = str_init("<?xml version=\"1.0\"?>\n");
+
+static str r_full = str_init("full");
+static str r_reginfo_s = str_init(
+		"<reginfo xmlns=\"urn:ietf:params:xml:ns:reginfo\" version=\"%s\" "
+		"state=\"%.*s\">\n"); // before 74 but calculated 76
+static str r_reginfo_e = str_init("</reginfo>\n");
+
+static str r_active = str_init("active");
+static str r_terminated = str_init("terminated");
+static str registration_s = str_init(
+		"\t<registration aor=\"%.*s\" id=\"%p\" state=\"%.*s\">\n");
+static str registration_e = str_init("\t</registration>\n");
+
+//richard: we only use reg unreg refrsh and expire
+static str r_registered = str_init("registered");
+static str r_refreshed = str_init("refreshed");
+static str r_expired = str_init("expired");
+static str r_unregistered = str_init("unregistered");
+static str contact_s =
+		str_init("\t\t<contact id=\"%p\" state=\"%.*s\" event=\"%.*s\" "
+						"expires=\"%d\" callid=\"%.*s\">\n");
+
+static str contact_s_q =
+		str_init("\t\t<contact id=\"%p\" state=\"%.*s\" "
+						"event=\"%.*s\" expires=\"%d\" q=\"%.3f\" callid=\"%.*s\">\n");
+static str contact_s_params_with_body = str_init(
+		"\t\t<unknown-param name=\"%.*s\">\"%.*s\"</unknown-param>\n");
+/**NOTIFY XML needs < to be replaced by &lt; and > to be replaced by &gt;*/
+/*For params that need to be fixed we pass in str removing first and last character and replace them with &lt; and &gt;**/
+static str contact_s_params_with_body_fix = str_init(
+		"\t\t<unknown-param name=\"%.*s\">\"&lt;%.*s&gt;\"</unknown-param>\n");
+static str contact_s_params_no_body = str_init(
+		"\t\t<unknown-param name=\"%.*s\"></unknown-param>\n"); // 1, but 47
+static str contact_e = str_init("\t\t</contact>\n");		// 13, but 14
+
+static str uri_s = str_init("\t\t\t<uri>");
+static str uri_e = str_init("</uri>\n");
+
+/*We currently only support certain unknown params to be sent in NOTIFY bodies
+ This prevents having compatability issues with UEs including non-standard params in contact header
+ Supported params:
+ */
+static str param_q = str_init("q");
+static str param_video = str_init("video");
+static str param_expires = str_init("expires");
+static str param_sip_instance = str_init("+sip.instance");
+static str param_3gpp_smsip = str_init("+g.3gpp.smsip");
+static str param_3gpp_icsi_ref = str_init("+g.3gpp.icsi-ref");
+
+static int inline supported_param(str *param_name)
 {
-	xmlDocPtr doc = NULL;
-	xmlNodePtr root_node = NULL;
-	xmlNodePtr registration_node = NULL;
-	xmlNodePtr contact_node = NULL;
-	xmlNodePtr uri_node = NULL;
-	str *body = NULL;
+
+	if(strncasecmp(param_name->s, param_q.s, param_name->len) == 0) {
+		return 0;
+	} else if(strncasecmp(param_name->s, param_video.s, param_name->len) == 0) {
+		return 0;
+	} else if(strncasecmp(param_name->s, param_expires.s, param_name->len)
+			  == 0) {
+		return 0;
+	} else if(strncasecmp(param_name->s, param_sip_instance.s, param_name->len)
+			  == 0) {
+		return 0;
+	} else if(strncasecmp(param_name->s, param_3gpp_smsip.s, param_name->len)
+			  == 0) {
+		return 0;
+	} else if(strncasecmp(param_name->s, param_3gpp_icsi_ref.s, param_name->len)
+			  == 0) {
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+static void process_xml_for_contact(str_buffer *buffer, ucontact_t *ptr, int expires, str state, str event)
+{
+	if(ptr->q != -1) {
+		float q = (float)ptr->q / 1000;
+
+		str_buffer_append_str_fmt(buffer, &contact_s_q, ptr,
+				STR_FMT(&state), STR_FMT(&event), expires, q, STR_FMT(&ptr->callid));
+	} else {
+		// XXX: before was it contact_s_q but no q so changed to contact_s
+		str_buffer_append_str_fmt(buffer, &contact_s, ptr,
+				STR_FMT(&state), STR_FMT(&event), expires, STR_FMT(&ptr->callid));
+	}
+
+	LM_DBG("Appending contact address: <%.*s>\n", STR_FMT(&ptr->c));
+
+	str_buffer_append_str(buffer, &uri_s);
+	str_buffer_append_str(buffer, &ptr->c);
+	str_buffer_append_str(buffer, &uri_e);
+
+	// param = ptr->params;
+	// while(param) {
+	// 	if(supported_param(&param->name) != 0) {
+	// 		param = param->next;
+	// 		continue;
+	// 	}
+
+	// 	if(param->body.len > 0) {
+	// 		LM_DBG("This contact has params name: [%.*s] body [%.*s]\n",
+	// 				STR_FMT(&param->name), STR_FMT(&param->body));
+
+	// 		if(param->body.s[0] == '<'
+	// 				&& param->body.s[param->body.len - 1] == '>') {
+	// 			str tmp = STR_NULL;
+	// 			LM_DBG("This param body starts with '<' and ends with '>' we "
+	// 				   "will clean these for the NOTIFY XML with &lt; and "
+	// 				   "&gt;\n");
+
+	// 			tmp.len = param->body.len - 2;
+	// 			tmp.s = param->body.s + 1;
+
+	// 			str_buffer_append_str_fmt(buffer, &contact_s_params_with_body_fix,
+	// 					STR_FMT(&param->name), STR_FMT(&tmp));
+	// 		} else {
+	// 			str_buffer_append_str_fmt(buffer, &contact_s_params_with_body,
+	// 					STR_FMT(&param->name), STR_FMT(&empty),
+	// 					STR_FMT(&param->body), STR_FMT(&empty));
+	// 		}
+	// 	} else {
+	// 		LM_DBG("This contact has params name: [%.*s] \n",
+	// 				STR_FMT(&param->name));
+
+	// 		str_buffer_append_str_fmt(
+	// 				buffer, &contact_s_params_no_body, STR_FMT(&param->name));
+	// 	}
+
+	// 	param = param->next;
+	// }
+
+	str_buffer_append_str(buffer, &contact_e);
+}
+
+str build_reginfo_full(urecord_t *record, ucontact_t *contact, str aor[], unsigned int aor_count, int type, int * count)
+{
+	str_buffer *buffer = NULL;
+	str x = STR_NULL;
 	str state = STR_NULL;
 	str event = STR_NULL;
 	ucontact_t *ptr;
-	char buf[512];
-	int reg_active = 0;
 	time_t cur_time = time(0);
 	int expires = 0;
 	int i = 0;
 
-	/* create the XML-Body */
-	doc = xmlNewDoc(BAD_CAST "1.0");
-	if(doc == 0) {
-		LM_ERR("Unable to create XML-Doc\n");
-		return NULL;
+	buffer = new_str_buffer();
+	if(!buffer) {
+		LM_ERR("Error allocating str_buffer\n");
+		return x;
 	}
+	str_buffer_append_str(buffer, &xml_start);
+	str_buffer_append_str_fmt(
+			buffer, &r_reginfo_s, VERSION_HOLDER, STR_FMT(&r_full));
 
-	root_node = xmlNewNode(NULL, BAD_CAST "reginfo");
-	if(root_node == 0) {
-		LM_ERR("Unable to create reginfo-XML-Element\n");
-		xmlFreeDoc(doc);
-		return NULL;
+	ptr = record->contacts;
+	LM_DBG("Records %p\n", ptr);
+	while(ptr) {
+		if(ptr == contact) {
+			switch(type) {
+					//richard we only use registered and refreshed and expired and unregistered
+				case UL_CONTACT_INSERT:
+				case UL_CONTACT_UPDATE:
+					state = r_active;
+					break;
+				case UL_CONTACT_EXPIRE:
+				case UL_CONTACT_DELETE:
+					state = r_terminated;
+					break;
+				default:
+					state = r_active;
+			}
+		} else {
+			if (VALID_CONTACT(ptr, cur_time)) {
+				state = r_active;
+			} else {
+				state = r_terminated;
+			}
+		}
+		ptr = ptr->next;
 	}
-	/* This is our Root-Element: */
-	xmlDocSetRootElement(doc, root_node);
-
-	xmlNewProp(root_node, BAD_CAST "xmlns",
-			BAD_CAST "urn:ietf:params:xml:ns:reginfo");
-
-	/* we set the version to 0 but it should be set to the correct value in the pua module */
-	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST VERSION_HOLDER);
-	xmlNewProp(root_node, BAD_CAST "state", BAD_CAST "full");
 
 	for (i = 0; i < aor_count; i++) {
 		/* Registration Node */
-		registration_node =
-				xmlNewChild(root_node, NULL, BAD_CAST "registration", NULL);
-		if(registration_node == NULL) {
-			LM_ERR("while adding child\n");
-			goto error;
-		}
-		reg_active = 0;
-
-		/* Add the properties to this Node for AOR and ID: */
-		xmlNewProp(registration_node, BAD_CAST "aor", BAD_CAST aor[i].s);
-		snprintf(buf, sizeof(buf), "%p.%i", record, i);
-		xmlNewProp(registration_node, BAD_CAST "id", BAD_CAST buf);
+		LM_DBG("Registration Node for AOR %.*s [%.*s]\n", aor[i].len, aor[i].s, STR_FMT(&state));
+		str_buffer_append_str_fmt(buffer, &registration_s,
+				STR_FMT(&aor[i]), record, STR_FMT(&state));
 
 		ptr = record->contacts;
 		LM_DBG("Records %p\n", ptr);
 		*count = 0;
 		while(ptr) {
 			expires = (int)(ptr->expires - cur_time);
-			LM_DBG("Contact %.*s (Expires %i, now %i, in %i)\n", ptr->c.len, ptr->c.s, (int)ptr->expires, (int)cur_time, expires);
+			LM_DBG("  Contact %.*s (Expires %i, now %i, in %i)\n", ptr->c.len, ptr->c.s, (int)ptr->expires, (int)cur_time, expires);
+			*count = *count + 1;
 			if(ptr == contact) {
 				switch(type) {
 						//richard we only use registered and refreshed and expired and unregistered
 					case UL_CONTACT_INSERT:
 						state = r_active;
 						event = r_registered;
-						reg_active = 1;
 						break;
 					case UL_CONTACT_UPDATE:
 						state = r_active;
 						event = r_refreshed;
-						reg_active = 1;
 						break;
 					case UL_CONTACT_EXPIRE:
 						state = r_terminated;
@@ -156,133 +298,45 @@ str *build_reginfo_full(urecord_t *record, ucontact_t *contact, str aor[], unsig
 					default:
 						state = r_active;
 						event = r_registered;
-						reg_active = 1;
 				}
 			} else {
 				if (VALID_CONTACT(ptr, cur_time)) {
 					state = r_active;
 					event = r_registered;
-					reg_active = 1;
 				} else {
 					state = r_terminated;
 					event = r_expired;
 					expires = 0;
 				}
 			}
-			*count = *count + 1;
-			LM_DBG("Contact %.*s\n", ptr->c.len, ptr->c.s);
-			/* Contact-Node */
-			contact_node = xmlNewChild(
-					registration_node, NULL, BAD_CAST "contact", NULL);
-			if(contact_node == NULL) {
-				LM_ERR("while adding child\n");
-				goto error;
-			}
-			memset(buf, 0, sizeof(buf));
-			snprintf(buf, sizeof(buf), "%p", ptr);
-			xmlNewProp(contact_node, BAD_CAST "id", BAD_CAST buf);
-			memset(buf, 0, sizeof(buf));
-			snprintf(buf, sizeof(buf), "%.*s", state.len, state.s);
-			xmlNewProp(contact_node, BAD_CAST "state", BAD_CAST buf);
-			memset(buf, 0, sizeof(buf));
-			snprintf(buf, sizeof(buf), "%.*s", event.len, event.s);
-			xmlNewProp(
-					contact_node, BAD_CAST "event", BAD_CAST buf);
-			memset(buf, 0, sizeof(buf));
-			snprintf(
-					buf, sizeof(buf), "%i", (int)expires);
-			xmlNewProp(contact_node, BAD_CAST "expires", BAD_CAST buf);
-			if(ptr->q != Q_UNSPECIFIED) {
-				float q = (float)ptr->q / 1000;
-				memset(buf, 0, sizeof(buf));
-				snprintf(buf, sizeof(buf), "%.3f", q);
-				xmlNewProp(contact_node, BAD_CAST "q", BAD_CAST buf);
-			}
-			/* CallID Attribute */
-			memset(buf, 0, sizeof(buf));
-			snprintf(buf, sizeof(buf), "%.*s", ptr->callid.len, ptr->callid.s);
-			xmlNewProp(contact_node, BAD_CAST "callid", BAD_CAST buf);
 
-			/* CSeq Attribute */
-			memset(buf, 0, sizeof(buf));
-			snprintf(buf, sizeof(buf), "%d", ptr->cseq);
-			xmlNewProp(contact_node, BAD_CAST "cseq", BAD_CAST buf);
-
-			if (ptr->received.len) {
-				/* received Attribute */
-				memset(buf, 0, sizeof(buf));
-				snprintf(buf, sizeof(buf), "%.*s", ptr->received.len,
-						ptr->received.s);
-				xmlNewProp(contact_node, BAD_CAST "received", BAD_CAST buf);
-			}
-
-			if (ptr->path.len) {
-				/* path Attribute */
-				memset(buf, 0, sizeof(buf));
-				snprintf(buf, sizeof(buf), "%.*s", ptr->path.len, ptr->path.s);
-				xmlNewProp(contact_node, BAD_CAST "path", BAD_CAST buf);
-			}
-
-			if (ptr->user_agent.len) {
-				/* user_agent Attribute */
-				memset(buf, 0, sizeof(buf));
-				snprintf(buf, sizeof(buf), "%.*s", ptr->user_agent.len,
-						ptr->user_agent.s);
-				xmlNewProp(contact_node, BAD_CAST "user_agent", BAD_CAST buf);
-			}
-
-			/* URI-Node */
-			memset(buf, 0, sizeof(buf));
-			snprintf(buf, sizeof(buf), "%.*s", ptr->c.len, ptr->c.s);
-			uri_node = xmlNewChild(
-					contact_node, NULL, BAD_CAST "uri", BAD_CAST buf);
-			if(uri_node == NULL) {
-				LM_ERR("while adding child\n");
-				goto error;
-			}
+			process_xml_for_contact(buffer, ptr, expires, state, event);
 			ptr = ptr->next;
 		}
 
-		/* add registration state (at least one active contact): */
-		if(reg_active == 0)
-			xmlNewProp(registration_node, BAD_CAST "state", BAD_CAST "terminated");
-		else
-			xmlNewProp(registration_node, BAD_CAST "state", BAD_CAST "active");
+		str_buffer_append_str(buffer, &registration_e);
 	}
 
-	/* create the body */
-	body = (str *)pkg_malloc(sizeof(str));
-	if(body == NULL) {
-		LM_ERR("while allocating memory\n");
-		return NULL;
+	str_buffer_append_str(buffer, &r_reginfo_e);
+
+	if(str_buffer_has_error(buffer)) {
+		LM_ERR("str_buffer had memory allocating errors while building\n");
+	} else if(!str_buffer_to_str(buffer, &x)) {
+		LM_ERR("no more pkg memory\n");
 	}
-	memset(body, 0, sizeof(str));
 
-	/* Write the XML into the body */
-	xmlDocDumpFormatMemory(
-			doc, (unsigned char **)(void *)&body->s, &body->len, 1);
+	free_str_buffer(buffer);
 
-	/*free the document */
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
+	LM_DBG("Returned full reg-info: [%.*s]\n", STR_FMT(&x));
 
-	return body;
-error:
-	if(body) {
-		if(body->s)
-			xmlFree(body->s);
-		pkg_free(body);
-	}
-	if(doc)
-		xmlFreeDoc(doc);
-	return NULL;
+	return x;
 }
 
 void reginfo_usrloc_cb(void *binding, ul_cb_type type, ul_cb_extra *_) {
 	ucontact_t *contact = (ucontact_t*)binding;
 	urecord_t *record = NULL;
 	event_t ev;
-	str *body = NULL;
+	str body = {NULL, 0};
 	publ_info_t publ;
 	presentity_t presentity;
 	str content_type;
@@ -303,9 +357,9 @@ void reginfo_usrloc_cb(void *binding, ul_cb_type type, ul_cb_extra *_) {
 	str s, str_dup;
 
 	/* Get the URecord for the contact */
-	LM_DBG("Searching urecord for contact-AOR %.*s (Contact %.*s)\n",
+	LM_ERR("Searching urecord for contact-AOR %.*s (Contact %.*s), type %i\n",
 		contact->aor->len, contact->aor->s,
-		contact->c.len, contact->c.s);
+		contact->c.len, contact->c.s, (int)type);
 	ul.get_urecord(ul_domain, contact->aor, &record);
 	if (record == NULL) {
 		LM_DBG("Unable to get urecord for contact-AOR %.*s (Contact %.*s)\n",
@@ -393,12 +447,12 @@ void reginfo_usrloc_cb(void *binding, ul_cb_type type, ul_cb_extra *_) {
 	
 	/* Build the XML-Body: */
 	body = build_reginfo_full(record, contact, aorlist, aor_count, type, &count);
-
-	if(body == NULL || body->s == NULL) {
+	if(body.s == NULL) {
 		LM_ERR("Error on creating XML-Body for publish\n");
 		goto error;
 	}
-	LM_DBG("XML-Body (%i entries):\n%.*s\n", count, body->len, body->s);
+
+	LM_DBG("XML-Body (%i entries):\n%.*s\n", count, body.len, body.s);
 
 	if (pres.update_presentity != NULL) {
 		if (reginfo_event == NULL) {
@@ -444,7 +498,12 @@ void reginfo_usrloc_cb(void *binding, ul_cb_type type, ul_cb_extra *_) {
 		  presentity.new_etag.len, presentity.new_etag.s,
 		  presentity.old_etag.len, presentity.old_etag.s);
 		
-		presentity.body = *body;
+		presentity.body = body;
+
+		memset(&new_value, 0, sizeof(int_str_t));
+		new_value.is_str = 1;
+		new_value.s = presentity.new_etag;
+		ul.put_urecord_key(record, &reginfo_key_etag, &new_value);
 
 		/* query the database and update or insert */
 		if(pres.update_presentity(&presentity) <0)
@@ -456,11 +515,6 @@ void reginfo_usrloc_cb(void *binding, ul_cb_type type, ul_cb_extra *_) {
 		LM_DBG("etag_new = %i, new_etag %.*s, old_etag %.*s\n", presentity.etag_new,
 		  presentity.new_etag.len, presentity.new_etag.s,
 		  presentity.old_etag.len, presentity.old_etag.s);
-
-		memset(&new_value, 0, sizeof(int_str_t));
-		new_value.is_str = 1;
-		new_value.s = presentity.new_etag;
-		ul.put_urecord_key(record, &reginfo_key_etag, &new_value);
 	}
 
 	if (publish_reginfo && pua.send_publish != NULL) {
@@ -471,7 +525,7 @@ void reginfo_usrloc_cb(void *binding, ul_cb_type type, ul_cb_extra *_) {
 		memset(&publ, 0, sizeof(publ_info_t));
 
 		publ.pres_uri = &uri;
-		publ.body = body;
+		publ.body = &body;
 		id_buf_len = snprintf(id_buf, sizeof(id_buf), "REGINFO_PUBLISH.%.*s@%.*s",
 				record->aor.len, record->aor.s, record->domain->len, record->domain->s);
 		publ.id.s = id_buf;
@@ -496,11 +550,8 @@ void reginfo_usrloc_cb(void *binding, ul_cb_type type, ul_cb_extra *_) {
 error:
 	for (i = 0; i < aor_count; i++)
 		pkg_free(aorlist[i].s);
-	if(body) {
-		if(body->s)
-			xmlFree(body->s);
-		pkg_free(body);
-	}
+	if(body.s)
+		pkg_free(body.s);
 
 	return;
 }
