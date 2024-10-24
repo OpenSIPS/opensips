@@ -344,7 +344,7 @@ void send_sync_repl(int sender, void *param)
 	if (!cap) {
 		LM_ERR("Sync request for unknown capability: %.*s\n",
 			p->cap_name.len, p->cap_name.s);
-		return;
+		goto out_free;
 	}
 
 	no_sync_chunks_sent = 0;
@@ -382,7 +382,7 @@ void send_sync_repl(int sender, void *param)
 	if (bin_init(&sync_end_pkt,&cl_extra_cap,CLUSTERER_SYNC_END,BIN_SYNC_VERSION,0)<0) {
 		LM_ERR("Failed to init bin packet\n");
 		lock_stop_read(cl_list_lock);
-		return;
+		goto out_free;
 	}
 	bin_push_str(&sync_end_pkt, &p->cap_name);
 	bin_push_int(&sync_end_pkt, no_sync_chunks_sent);
@@ -393,7 +393,7 @@ void send_sync_repl(int sender, void *param)
 		LM_ERR("Failed to send sync end message\n");
 		bin_free_packet(&sync_end_pkt);
 		lock_stop_read(cl_list_lock);
-		return;
+		goto out_free;
 	}
 
 	cluster_id = p->cluster->cluster_id;
@@ -403,7 +403,7 @@ void send_sync_repl(int sender, void *param)
 
 	LM_INFO("Sent all sync packets (%d) for capability '%.*s' to node %d, cluster "
 	        "%d\n", pkt_no, p->cap_name.len, p->cap_name.s, p->node_id, cluster_id);
-
+out_free:
 	shm_free(param);
 }
 
