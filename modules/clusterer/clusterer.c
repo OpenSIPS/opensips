@@ -305,9 +305,10 @@ int get_capability_status(cluster_info_t *cluster, str *capability)
 static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
 							int change_dest, int *ev_actions_required)
 {
-	int retr_send = 0;
+	struct timeval now;
 	node_info_t *chosen_dest = dest;
 	str send_buffer;
+	int retr_send = 0;
 
 	do {
 		lock_get(chosen_dest->lock);
@@ -346,6 +347,14 @@ static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
 			retr_send = 0;
 		}
 	} while (retr_send);
+
+	gettimeofday(&now, NULL);
+
+	/* sent a TCP BIN packet directly to @dest -> delay next ping */
+	lock_get(chosen_dest->lock);
+	if (chosen_dest->link_state == LS_UP)
+		chosen_dest->last_ping = now;
+	lock_release(chosen_dest->lock);
 
 	return 0;
 }
@@ -1023,6 +1032,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	int ev_actions_required = 0;
 	char *ip;
 	unsigned short port;
+	struct timeval now;
 
 	bin_pop_back_int(packet, &dest_id);
 	bin_pop_back_int(packet, &source_id);
@@ -1036,6 +1046,8 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		LM_ERR("Received message with bad source - same node id as this instance\n");
 		return;
 	}
+
+	gettimeofday(&now, NULL);
 
 	if (!db_mode && packet_type == CLUSTERER_REMOVE_NODE)
 		lock_start_write(cl_list_lock);
@@ -1070,6 +1082,9 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	}
 
 	lock_get(node->lock);
+
+	/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
+	node->last_pong = now;
 
 	if (!(node->flags & NODE_STATE_ENABLED)) {
 		lock_release(node->lock);
@@ -1207,6 +1222,10 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 		}
 
 		lock_get(node->lock);
+
+		/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
+		node->last_pong = now;
+
 		if (!(node->flags & NODE_STATE_ENABLED)) {
 			lock_release(node->lock);
 			LM_DBG("node disabled, ignoring received clusterer bin packet\n");
@@ -1291,6 +1310,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 {
 	struct capability_reg *cap;
 	struct local_cap *cl_cap;
+	struct timeval now;
 	unsigned short port;
 	int source_id, dest_id, cluster_id;
 	char *ip;
@@ -1318,6 +1338,8 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		LM_ERR("Failed to get bin callback parameter\n");
 		return;
 	}
+
+	gettimeofday(&now, NULL);
 
 	lock_start_read(cl_list_lock);
 
@@ -1348,6 +1370,9 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	}
 
 	lock_get(node->lock);
+
+	/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
+	node->last_pong = now;
 
 	if (!(node->flags & NODE_STATE_ENABLED)) {
 		lock_release(node->lock);
