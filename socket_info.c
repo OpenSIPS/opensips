@@ -134,6 +134,10 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 	si->proto=sid->proto;
 	si->flags=sid->flags;
 
+	if (sid->mark) {
+		si->mark = sid->mark;
+	}
+
 	if (sid->subnet_mask) {
 		si->subnet_mask = sid->subnet_mask;
 	}
