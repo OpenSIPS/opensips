@@ -56,7 +56,10 @@ struct socket_info {
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	unsigned short workers;
+	unsigned short subnet_mask;
 	struct scaling_profile *s_profile;
+
+	struct net* subnet;
 
 	/* these are IP-level local/remote ports used during the last write op via
 	 * this sock (or a connection belonging to this sock). These values are 
@@ -144,6 +147,8 @@ void print_aliases();
 
 struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 										unsigned short proto, int check_tag);
+
+struct socket_info* find_si_matching_subnet(str* host, unsigned short proto);
 
 struct socket_info* parse_sock_info(str *spec);
 

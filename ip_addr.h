@@ -122,6 +122,7 @@ struct socket_id {
 	int proto;
 	int port;
 	int workers;
+	int subnet_mask;
 	enum si_flags flags;
 	struct socket_id* next;
 };
