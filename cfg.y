@@ -165,6 +165,7 @@ struct listen_param {
 	struct socket_id *socket;
 	char *tag;
 	char *auto_scaling_profile;
+	int subnet_mask;
 } p_tmp;
 static void fill_socket_id(struct listen_param *param, struct socket_id *s);
 static void fill_alias_socket(struct listen_param *param, struct socket_id *s);
@@ -438,6 +439,7 @@ extern int cfg_parse_only_routes;
 %token LBRACK
 %token RBRACK
 %token SLASH
+%token SUBNET_MASK
 %token AS
 %token USE_WORKERS
 %token MARK
@@ -691,6 +693,12 @@ socket_def_param: ANYCAST { IFOR();
 					}
 				| MARK NUMBER { IFOR();
 					p_tmp.mark = $2;
+					}
+				| SUBNET_MASK NUMBER { IFOR();
+					p_tmp.subnet_mask=$2;
+					if (p_tmp.subnet_mask < 1 || p_tmp.subnet_mask > 32) {
+						yyerror("subnet_mask not valid, must be between 0 and 128 for IPv4 and IPv6\n");YYABORT;
+					}
 					}
 				| AS listen_id_def { IFOR();
 					p_tmp.socket = $2;
@@ -2636,6 +2644,7 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 {
 	s->flags |= param->flags;
 	s->mark = param->mark;
+	s->subnet_mask = param->subnet_mask;
 	s->workers = param->workers;
 	s->auto_scaling_profile = param->auto_scaling_profile;
 	if (param->socket)

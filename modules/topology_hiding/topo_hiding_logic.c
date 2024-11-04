@@ -25,6 +25,7 @@
 */
 
 #include "topo_hiding_logic.h"
+#include "../../socket_info.h"
 
 extern int force_dialog;
 extern struct tm_binds tm_api;
@@ -143,7 +144,9 @@ int topology_hiding_match(struct sip_msg *msg)
 
 	r_uri = &msg->parsed_uri;
 
-	if (check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1 && msg->route == NULL) {
+	if ((find_si_matching_subnet(&r_uri->host, 0) != 0 || 
+		check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1) 
+		&& msg->route == NULL) {
 		/* Seems we are in the topo hiding case :
 		 * we are in the R-URI and there are no other route headers */
 		for (i=0;i<r_uri->u_params_no;i++)

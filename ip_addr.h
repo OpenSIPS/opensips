@@ -123,6 +123,7 @@ struct socket_id {
 	int port;
 	int workers;
 	int mark;
+	int subnet_mask;
 	enum si_flags flags;
 	struct socket_id* next;
 };
