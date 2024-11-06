@@ -151,7 +151,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
-	" %.*s, %.*s, %.*s from %s where %.*s > %lu and mod(contact_id, %u) = %u",
+	" %.*s, %.*s, %.*s from %s where %.*s > %lld and mod(contact_id, %u) = %u",
 #else
 	" %.*s, %.*s, %.*s from %s where %.*s > %lld and contact_id %% %u = %u",
 #endif
