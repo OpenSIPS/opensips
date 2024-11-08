@@ -45,19 +45,29 @@
 #define is_valid_bin_packet(_p) \
 	(memcmp(_p, BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE) == 0)
 
+/* make sure a BIN packet has an exact version or a range of versions */
+#define ensure_bin_version(pkt, needed) _ensure_bin_version(pkt, needed, "")
+#define ensure_bin_version2(pkt, v1, v2) _ensure_bin_version2(pkt, v1, v2, "")
 #define _ensure_bin_version(pkt, needed, pkt_desc) \
 	do { \
-		if (get_bin_pkg_version(pkt) != (needed)) { \
-			if (pkt_desc && *pkt_desc) \
-				LM_INFO("discarding %s, ver %d: need ver %d\n", \
-				        pkt_desc, get_bin_pkg_version(pkt), (needed)); \
-			else \
-				LM_INFO("discarding packet type %d, ver %d: need ver %d\n", \
-				        pkt->type, get_bin_pkg_version(pkt), (needed)); \
-			return; \
-		} \
+		if (get_bin_pkg_version(pkt) != (needed)) \
+			_bin_version_error_return(pkt, pkt_desc, needed) \
 	} while (0)
-#define ensure_bin_version(pkt, needed) _ensure_bin_version(pkt, needed, "")
+#define _ensure_bin_version2(pkt, vmin, vmax, pkt_desc) \
+	do { \
+		if (get_bin_pkg_version(pkt)<(vmin) || get_bin_pkg_version(pkt)>(vmax)) \
+			_bin_version_error_return(pkt, pkt_desc, vmax) \
+	} while (0)
+#define _bin_version_error_return(pkt, pkt_desc, needed) \
+	{ \
+		if (pkt_desc && *pkt_desc) \
+			LM_INFO("discarding %s (%d), ver %d: need ver %d\n", \
+			        pkt_desc, pkt->type, get_bin_pkg_version(pkt), (needed)); \
+		else \
+			LM_INFO("discarding packet type %d, ver %d: need ver %d\n", \
+			        pkt->type, get_bin_pkg_version(pkt), (needed)); \
+		return; \
+	}
 
 typedef unsigned bin_packet_flags_t;
 #define BINFL_SYSMEM (1U<<0)

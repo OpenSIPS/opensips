@@ -229,7 +229,8 @@ void bin_push_contact(bin_packet_t *packet, urecord_t *r, ucontact_t *c,
 	bin_push_str(packet, c->sock?get_socket_internal_name(c->sock):NULL);
 	bin_push_int(packet, c->cseq);
 	bin_push_int(packet, c->flags);
-	bin_push_int(packet, c->cflags);
+	st = bitmask_to_flag_list(FLAG_TYPE_BRANCH, c->cflags);
+	bin_push_str(packet, &st);
 	bin_push_int(packet, c->methods);
 
 	st.s   = (char *)&c->last_modified;
@@ -317,7 +318,8 @@ void replicate_ucontact_update(urecord_t *r, ucontact_t *ct,
 	bin_push_str(&packet, ct->sock?get_socket_internal_name(ct->sock):NULL);
 	bin_push_int(&packet, ct->cseq);
 	bin_push_int(&packet, ct->flags);
-	bin_push_int(&packet, ct->cflags);
+	st = bitmask_to_flag_list(FLAG_TYPE_BRANCH, ct->cflags);
+	bin_push_str(&packet, &st);
 	bin_push_int(&packet, ct->methods);
 
 	st.s   = (char *)&ct->last_modified;
@@ -501,7 +503,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, contact_str, callid,
-		user_agent, path, attr, st, sock, kv_str;
+		user_agent, path, attr, st, sock, kv_str, cflags_str;
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact, *ct;
@@ -558,12 +560,18 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 		if (!ci.sock)
 			LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 	} else {
-		ci.sock =  NULL;
+		ci.sock = NULL;
 	}
 
 	bin_pop_int(packet, &ci.cseq);
 	bin_pop_int(packet, &ci.flags);
-	bin_pop_int(packet, &ci.cflags);
+	if (pkg_ver <= UL_BIN_V3) {
+		bin_pop_int(packet, &ci.cflags);
+	} else {
+		bin_pop_str(packet, &cflags_str);
+		ci.cflags = flag_list_to_bitmask(
+		        (str_const *)&cflags_str, FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
+	}
 	bin_pop_int(packet, &ci.methods);
 
 	bin_pop_str(packet, &st);
@@ -666,7 +674,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, contact_str, callid,
-		user_agent, path, attr, st, kv_str, sock;
+		user_agent, path, attr, st, kv_str, sock, cflags_str;
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
@@ -725,7 +733,13 @@ static int receive_ucontact_update(bin_packet_t *packet)
 
 	bin_pop_int(packet, &ci.cseq);
 	bin_pop_int(packet, &ci.flags);
-	bin_pop_int(packet, &ci.cflags);
+	if (pkg_ver <= UL_BIN_V3) {
+		bin_pop_int(packet, &ci.cflags);
+	} else {
+		bin_pop_str(packet, &cflags_str);
+		ci.cflags = flag_list_to_bitmask(
+		        (str_const *)&cflags_str, FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
+	}
 	bin_pop_int(packet, &ci.methods);
 
 	bin_pop_str(packet, &st);
@@ -912,48 +926,36 @@ void receive_binary_packets(bin_packet_t *pkt)
 {
 	int rc;
 
-	/* Supported smooth BIN transitions:
-		UL_BIN_V2 -> UL_BIN_V3: the "cmatch" has been added
-						(assume: CT_MATCH_CONTACT_CALLID if not present)
-	*/
-	short ver = get_bin_pkg_version(pkt);
-
 	LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
 	switch (pkt->type) {
 	case REPL_URECORD_INSERT:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc aor-ins packet");
 		rc = receive_urecord_insert(pkt);
 		break;
 
 	case REPL_URECORD_DELETE:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc aor-del packet");
 		rc = receive_urecord_delete(pkt);
 		break;
 
 	case REPL_UCONTACT_INSERT:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-ins packet");
 		rc = receive_ucontact_insert(pkt);
 		break;
 
 	case REPL_UCONTACT_UPDATE:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-upd packet");
 		rc = receive_ucontact_update(pkt);
 		break;
 
 	case REPL_UCONTACT_DELETE:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-del packet");
 		rc = receive_ucontact_delete(pkt);
 		break;
 
 	case SYNC_PACKET_TYPE:
-		if (ver != UL_BIN_V2)
-			_ensure_bin_version(pkt, UL_BIN_VERSION, "usrloc sync packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc sync packet");
 		rc = receive_sync_packet(pkt);
 		break;
 
