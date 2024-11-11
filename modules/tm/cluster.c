@@ -125,7 +125,7 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 	t = t_lookupOriginalT(&msg);
 	/* if transaction is not here, must be somebody else's */
 	if (!t) {
-		LM_DBG("Original transaction not here!\n");
+		LM_INFO("Original transaction not here!\n");
 		return;
 	}
 
@@ -149,7 +149,7 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 
 	t_set_reason(&msg, &stmp);
 	if (t_relay_to(&msg, NULL, 0) >= 0)
-		LM_DBG("successfully handled auto-CANCEL for %p\n", t);
+		LM_INFO("successfully handled auto-CANCEL for %p\n", t);
 	else
 		LM_ERR("cannot handle auto-CANCEL for %p!\n", t);
 
@@ -170,7 +170,7 @@ static void receive_tm_repl(bin_packet_t *packet)
 	struct receive_info ri;
 
 	memset(&ri, 0, sizeof ri);
-	LM_DBG("received %d packet from %d in cluster %d\n",
+	LM_INFO("received %d packet from %d in cluster %d\n",
 			packet->type, packet->src_id, tm_repl_cluster);
 
 	if (packet->type != TM_CLUSTER_REPLY &&
@@ -237,7 +237,7 @@ int tm_init_cluster(void)
 	str cid;
 
 	if (tm_repl_cluster == 0) {
-		LM_DBG("tm_replication_cluster not set - not engaging!\n");
+		LM_ERR("tm_replication_cluster not set - not engaging!\n");
 		return 0;
 	}
 
@@ -372,11 +372,11 @@ static void *tm_replicate_cancel(struct sip_msg *msg)
 	rc = cluster_api.send_all(&packet, tm_repl_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n",
+		LM_ERR("Current node is disabled in cluster: %d\n",
 				tm_repl_cluster);
 		break;
 	case CLUSTERER_DEST_DOWN:
-		LM_INFO("All nodes are disabled in cluster: %d\n",
+		LM_ERR("All nodes are disabled in cluster: %d\n",
 				tm_repl_cluster);
 		break;
 	case CLUSTERER_SEND_ERR:
@@ -404,11 +404,11 @@ static void tm_replicate_reply(struct sip_msg *msg, int cid)
 	rc = cluster_api.send_to(packet, tm_repl_cluster, cid);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n",
+		LM_ERR("Current node is disabled in cluster: %d\n",
 				tm_repl_cluster);
 		break;
 	case CLUSTERER_DEST_DOWN:
-		LM_INFO("%d node is disabled in cluster: %d\n", cid,
+		LM_ERR("%d node is disabled in cluster: %d\n", cid,
 				tm_repl_cluster);
 		break;
 	case CLUSTERER_SEND_ERR:
@@ -437,11 +437,11 @@ static int tm_replicate_broadcast(struct sip_msg *msg)
 	rc = cluster_api.send_all(packet, tm_repl_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n",
+		LM_ERR("Current node is disabled in cluster: %d\n",
 				tm_repl_cluster);
 		break;
 	case CLUSTERER_DEST_DOWN:
-		LM_INFO("All nodes are disabled in cluster: %d\n",
+		LM_ERR("All nodes are disabled in cluster: %d\n",
 				tm_repl_cluster);
 		break;
 	case CLUSTERER_SEND_ERR:
@@ -501,10 +501,10 @@ int tm_reply_replicate(struct sip_msg *msg)
 	if (cid < 0)
 		return 0;
 	if (cid == tm_node_id) {
-		LM_DBG("reply should be processed by us (%d)\n", cid);
+		LM_INFO("reply should be processed by us (%d)\n", cid);
 		return 0;
 	}
-	LM_DBG("reply should get to node %d\n", cid);
+	LM_INFO("reply should get to node %d\n", cid);
 	tm_replicate_reply(msg, cid);
 	return 1;
 }
@@ -560,17 +560,17 @@ int tm_anycast_replicate(struct sip_msg *msg)
 {
 
 	if (msg->REQ_METHOD != METHOD_CANCEL && msg->REQ_METHOD != METHOD_ACK) {
-		LM_DBG("only CANCEL and ACK can be replicated\n");
+		LM_ERR("only CANCEL and ACK can be replicated\n");
 		return -1;
 	}
 
 	if (!is_anycast(msg->rcv.bind_address)) {
-		LM_DBG("request not received on an anycast network\n");
+		LM_ERR("request not received on an anycast network\n");
 		return -1;
 	}
 
 	if (msg->msg_flags & FL_TM_REPLICATED) {
-		LM_DBG("message already replicated, shouldn't have got here\n");
+		LM_ERR("message already replicated, shouldn't have got here\n");
 		return -2;
 	}
 	if (msg->REQ_METHOD == METHOD_CANCEL && tm_existing_invite_trans(msg))
