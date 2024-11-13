@@ -820,7 +820,7 @@ int b2b_ua_server_init(struct sip_msg *msg, pv_spec_t *key_spec,
 
 	if (!(init_params->flags&UA_FL_SUPPRESS_NEW) &&
 		raise_ua_sess_event(key_ret, B2B_SERVER, UA_SESS_EV_NEW,
-		init_params->flags, msg, NULL) < 0) {
+		init_params->flags, msg, extra) < 0) {
 		LM_ERR("Failed to raise E_UA_SESSION event\n");
 		goto error;
 	}
