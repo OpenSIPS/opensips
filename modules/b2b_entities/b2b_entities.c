@@ -101,6 +101,7 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_ua_flags, fixup_free_ua_flags},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
 		REQUEST_ROUTE},
 	{"ua_session_update", (cmd_function)b2b_ua_update, {

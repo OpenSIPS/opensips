@@ -1361,7 +1361,7 @@ run_cb:
 		}
 
 		if (ua_ev_type != -1 && raise_ua_sess_event(&b2b_key, etype, ua_ev_type,
-			ua_flags, msg) < 0) {
+			ua_flags, msg, NULL) < 0) {
 			LM_ERR("Failed to raise E_UA_SESSION event\n");
 			return SCB_DROP_MSG;
 		}
@@ -3673,7 +3673,7 @@ done1:
 		else
 			ua_ev_type = UA_SESS_EV_REJECTED;
 
-		if (raise_ua_sess_event(b2b_key, etype, ua_ev_type, ua_flags, msg) < 0) {
+		if (raise_ua_sess_event(b2b_key, etype, ua_ev_type, ua_flags, msg, NULL) < 0) {
 			LM_ERR("Failed to raise E_UA_SESSION event\n");
 			goto error1;
 		}

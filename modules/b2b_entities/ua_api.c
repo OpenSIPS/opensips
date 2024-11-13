@@ -58,7 +58,7 @@ static str evi_ua_sess_name = str_init("E_UA_SESSION");
 static evi_params_p evi_ua_sess_params;
 static evi_param_p evi_key_param, evi_ev_type_param, evi_ent_type_param,
 	evi_status_param, evi_reason_param, evi_method_param, evi_body_param,
-	evi_headers_param;
+	evi_headers_param, evi_extra_param;
 
 static str evi_key_pname = str_init("key");
 static str evi_ent_type_pname = str_init("entity_type");
@@ -68,6 +68,7 @@ static str evi_reason_pname = str_init("reason");
 static str evi_method_pname = str_init("method");
 static str evi_body_pname = str_init("body");
 static str evi_headers_pname = str_init("headers");
+static str evi_extra_pname = str_init("extra_params");
 
 int ua_evi_init(void)
 {
@@ -115,6 +116,10 @@ int ua_evi_init(void)
 	evi_headers_param = evi_param_create(evi_ua_sess_params,
 		&evi_headers_pname);
 	if (evi_headers_param == NULL)
+		goto error;
+	evi_extra_param = evi_param_create(evi_ua_sess_params,
+		&evi_extra_pname);
+	if (evi_extra_param == NULL)
 		goto error;
 
 	return 0;
@@ -164,7 +169,7 @@ static str event_type_str[] = {
 static str entity_type_str[] = {str_init("UAS"), str_init("UAC")};
 
 int raise_ua_sess_event(str *key, enum b2b_entity_type ent_type,
-	enum ua_sess_event_type ev_type, unsigned int flags, struct sip_msg *msg)
+	enum ua_sess_event_type ev_type, unsigned int flags, struct sip_msg *msg, str *extra)
 {
 	str body = {0,0};
 	str hdrs = {0,0};
@@ -229,6 +234,11 @@ int raise_ua_sess_event(str *key, enum b2b_entity_type ent_type,
 
 	if (evi_param_set_str(evi_headers_param, &hdrs) < 0) {
 		LM_ERR("cannot set event parameter\n");
+		goto error;
+	}
+
+	if (evi_param_set_str(evi_extra_param, (extra?extra:&empty)) < 0) {
+		LM_ERR("cannot set event extra parameter\n");
 		goto error;
 	}
 
@@ -774,7 +784,7 @@ int b2b_ua_reply(struct sip_msg *msg, str *key, str *method, int *code,
 }
 
 int b2b_ua_server_init(struct sip_msg *msg, pv_spec_t *key_spec,
-	struct ua_sess_init_params *init_params)
+	struct ua_sess_init_params *init_params, str *extra)
 {
 	pv_value_t key_pval;
 	str *key_ret = NULL;
@@ -810,7 +820,7 @@ int b2b_ua_server_init(struct sip_msg *msg, pv_spec_t *key_spec,
 
 	if (!(init_params->flags&UA_FL_SUPPRESS_NEW) &&
 		raise_ua_sess_event(key_ret, B2B_SERVER, UA_SESS_EV_NEW,
-		init_params->flags, msg) < 0) {
+		init_params->flags, msg, NULL) < 0) {
 		LM_ERR("Failed to raise E_UA_SESSION event\n");
 		goto error;
 	}
