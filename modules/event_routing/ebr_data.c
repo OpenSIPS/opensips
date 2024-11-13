@@ -492,6 +492,7 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
 				if (job==NULL) {
 					LM_ERR("failed to allocated new IPC job, skipping..\n");
+					sub_next = sub->next;
 					continue; /* with the next subscription */
 				}
 				job->ev = ev;
@@ -504,6 +505,7 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				if (ipc_send_job( sub->proc_no, ebr_ipc_type , (void*)job)<0) {
 					LM_ERR("failed to send job via IPC, skipping...\n");
 					shm_free(job);
+					sub_next = sub->next;
 					continue; /* keep it and try next time */
 				}
 			}
@@ -556,6 +558,7 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 			job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
 			if (job==NULL) {
 				LM_ERR("failed to allocated new IPC job, skipping..\n");
+				sub_next = sub->next;
 				continue; /* with the next subscription */
 			}
 
@@ -653,8 +656,10 @@ void ebr_timeout(unsigned int ticks, void* param)
 								sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
 
 			/* skip valid and non WAIT subscriptions */
-			if ( (sub->flags&EBR_SUBS_TYPE_WAIT)==0 || sub->expire>my_time )
+			if ( (sub->flags&EBR_SUBS_TYPE_WAIT)==0 || sub->expire>my_time ) {
+				sub_next = sub->next;
 				continue;
+			}
 
 			LM_DBG("subscription type [%s] from process %d(pid %d) on "
 				"event <%.*s> expired at %d, now %d\n",
@@ -667,6 +672,7 @@ void ebr_timeout(unsigned int ticks, void* param)
 			job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
 			if (job==NULL) {
 				LM_ERR("failed to allocated new IPC job, skipping..\n");
+				sub_next = sub->next;
 				continue; /* with the next subscription */
 			}
 			job->ev = ev;
@@ -679,6 +685,7 @@ void ebr_timeout(unsigned int ticks, void* param)
 			if (ipc_send_job( sub->proc_no, ebr_ipc_type , (void*)job)<0) {
 				LM_ERR("failed to send job via IPC, skipping...\n");
 				shm_free(job);
+				sub_next = sub->next;
 				continue; /* with the next subscription */
 			}
 
