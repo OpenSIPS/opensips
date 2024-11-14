@@ -152,6 +152,7 @@ enum rtpe_operation {
 	OP_DELETE,
 	OP_START_RECORDING,
 	OP_STOP_RECORDING,
+	OP_PAUSE_RECORDING,
 	OP_QUERY,
 	OP_START_MEDIA,
 	OP_STOP_MEDIA,
@@ -233,6 +234,7 @@ static const char *command_strings[] = {
 	[OP_DELETE]		= "delete",
 	[OP_START_RECORDING]	= "start recording",
 	[OP_STOP_RECORDING]		= "stop recording",
+	[OP_PAUSE_RECORDING]	= "pause recording",
 	[OP_QUERY]		= "query",
 	[OP_START_MEDIA]= "play media",
 	[OP_STOP_MEDIA] = "stop media",
@@ -275,6 +277,8 @@ static char *gencookie();
 static int rtpe_test(struct rtpe_node*, int, int);
 static int start_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int stop_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int pause_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int start_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_offer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 		pv_spec_t *bpvar, str *body);
 static int rtpengine_answer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
@@ -442,6 +446,10 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rtpengine_stop_recording", (cmd_function)stop_recording_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		ALL_ROUTES},
+	{"rtpengine_pause_recording", (cmd_function)pause_recording_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
@@ -2998,7 +3006,7 @@ rtpe_test(struct rtpe_node *node, int isdisabled, int force)
 	}
 
 	if (isdisabled)
-		LM_INFO("rtp proxy <%s> found, support for it %senabled\n",
+		LM_DBG("rtp proxy <%s> found, support for it %senabled\n",
 				node->rn_url.s, force == 0 ? "re-" : "");
 
 	bencode_buffer_free(&bencbuf);
@@ -3519,6 +3527,12 @@ static int
 stop_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
 	return rtpe_function_call_simple(msg, OP_STOP_RECORDING, flags, NULL, NULL, spvar);
+}
+
+static int
+pause_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+{
+	return rtpe_function_call_simple(msg, OP_PAUSE_RECORDING, flags, NULL, NULL, spvar);
 }
 
 /**
