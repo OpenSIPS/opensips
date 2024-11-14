@@ -3006,7 +3006,7 @@ rtpe_test(struct rtpe_node *node, int isdisabled, int force)
 	}
 
 	if (isdisabled)
-		LM_DBG("rtp proxy <%s> found, support for it %senabled\n",
+		LM_INFO("rtp proxy <%s> found, support for it %senabled\n",
 				node->rn_url.s, force == 0 ? "re-" : "");
 
 	bencode_buffer_free(&bencbuf);

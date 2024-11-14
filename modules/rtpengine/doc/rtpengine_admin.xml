@@ -1026,13 +1026,15 @@ rtpengine_stop_recording();
 		</example>
 	</section>
 
-	<section id="func_rtpengine_stop_recording" xreflabel="rtpengine_pause_recording()">
+	<section id="func_rtpengine_pause_recording" xreflabel="rtpengine_pause_recording()">
 		<title>
 		<function moreinfo="none">rtpengine_pause_recording([flags [, sock_var]])</function>
 		</title>
 		<para>
 		This function will send a signal to the &rtp; proxy to pause
-		recording the RTP stream on the &rtp; proxy.
+		recording the RTP stream on the &rtp; proxy. Identical to stop recording except that it 
+		instructs the recording daemon not to close the recording file, but instead leave it open 
+		so that recording can later be resumed via another start recording message.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
