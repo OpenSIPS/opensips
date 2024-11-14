@@ -420,7 +420,7 @@ modparam("rtpengine", "set_column", "set_new")
 
    Example 1.14. Set ping_enabled parameter
 ...
-modparam("rtpengine", "ping_enables", yes)
+modparam("rtpengine", "ping_enabled", yes)
 ...
 
 1.5. Exported Functions
@@ -1274,6 +1274,8 @@ Q
      * socket - the socket that identifies the RTPEngine instance.
      * status - active if the RTPEngine instance responds to
        probing or inactive if the instance was deactivated.
+     * set - the numeric id of the set this RTPEngine instance is
+       part of.
 
 Chapter 2. Frequently Asked Questions
 
@@ -1345,7 +1347,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 236 130 6353 3152
+   1. Razvan Crainea (@razvancrainea) 237 131 6371 3153
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173

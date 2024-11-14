@@ -824,10 +824,12 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 			/* successfully sent out -> run callbacks */
 			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT) ) {
+				_tm_branch_index = i;
 				set_extra_tmcb_params( &t->uac[i].request.buffer,
 					&t->uac[i].request.dst);
 				run_trans_callbacks( TMCB_REQUEST_BUILT, t,
 					p_msg, 0, 0);
+				_tm_branch_index = 0;
 			}
 
 			do {

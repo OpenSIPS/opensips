@@ -92,7 +92,7 @@ int fixup_ua_flags(void** param);
 int fixup_free_ua_flags(void** param);
 
 int b2b_ua_server_init(struct sip_msg *msg, pv_spec_t *key_spec,
-	struct ua_sess_init_params *init_params);
+	struct ua_sess_init_params *init_params, str *extra);
 int b2b_ua_update(struct sip_msg *msg, str *key, str *method, str *body,
 	str *extra_headers, str *content_type);
 int b2b_ua_reply(struct sip_msg *msg, str *key, str *method, int *code,
@@ -112,6 +112,6 @@ mi_response_t *b2b_ua_session_list(const mi_params_t *params,
 
 int ua_evi_init(void);
 int raise_ua_sess_event(str *key, enum b2b_entity_type ent_type,
-	enum ua_sess_event_type ev_type, unsigned int flags, struct sip_msg *msg);
+	enum ua_sess_event_type ev_type, unsigned int flags, struct sip_msg *msg, str *extra);
 
 #endif

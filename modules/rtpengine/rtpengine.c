@@ -395,8 +395,10 @@ static event_id_t rtpengine_status_event = EVI_ERROR;
 static evi_params_p rtpengine_status_event_params;
 static str rtpengine_status_event_socket_s = str_init("socket");
 static str rtpengine_status_event_status_s = str_init("status");
+static str rtpengine_status_event_set_s = str_init("set");
 static evi_param_p rtpengine_status_event_socket;
 static evi_param_p rtpengine_status_event_status;
+static evi_param_p rtpengine_status_event_set;
 static inline void raise_rtpengine_status_event(struct rtpe_node *node);
 
 /* array with the sockets used by rtpengine (per process)*/
@@ -1016,6 +1018,7 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 			return -1;
 		}
 		memset(pnode, 0, sizeof(*pnode));
+		pnode->set = rtpe_list->id_set;
 		pnode->rn_recheck_ticks = 0;
 		pnode->rn_weight = weight;
 		pnode->rn_umode = 0;
@@ -1592,6 +1595,11 @@ mod_init(void)
 	if ((rtpengine_status_event_status = evi_param_create(rtpengine_status_event_params,
 				&rtpengine_status_event_status_s)) == NULL) {
 		LM_ERR("could not create RTPEngine Status status param\n");
+		return -1;
+	}
+	if ((rtpengine_status_event_set = evi_param_create(rtpengine_status_event_params,
+				&rtpengine_status_event_set_s)) == NULL) {
+		LM_ERR("could not create RTPEngine Status set param\n");
 		return -1;
 	}
 
@@ -4763,6 +4771,10 @@ static inline void raise_rtpengine_status_event(struct rtpe_node *node)
 	}
 	if (evi_param_set_str(rtpengine_status_event_status, node->rn_disabled?
 					&status_disconnected:&status_connected) < 0) {
+		LM_ERR("cannot set rtpengine status parameter\n");
+		return;
+	}
+	if (evi_param_set_int(rtpengine_status_event_set, &node->set) < 0) {
 		LM_ERR("cannot set rtpengine status parameter\n");
 		return;
 	}

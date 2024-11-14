@@ -524,7 +524,7 @@ struct T_ul_ct_update
   string(user_agent_len) user_agent;
 
   uint16              path_len;
-  string(path_len)      path;
+  string(path_len)    path;
 
   uint16              attr_len;
   string(attr_len)    attr;
@@ -536,7 +536,7 @@ struct T_ul_ct_update
   string(instance_len)    instance;
 
   uint16              expires_len;
-  int64              expires;
+  int64               expires;
 
   uint16              q_len;
   int32               q;
@@ -546,7 +546,17 @@ struct T_ul_ct_update
 
   uint32              cseq;
   uint32              flags;
-  uint32              cflags;
+
+  if (bin_version <= 3)
+  {
+      uint32              cflags;
+  }
+  else
+  {
+      uint16              cflags_len;
+      string(cflags_len)  cflags;
+  }
+
   uint32              methods;
 
   uint16             last_modified_len;
