@@ -144,6 +144,7 @@ int db_mysql_connect(struct my_con* ptr)
 			(tls_opts & MY_CON_TLS_CA_DIR) ? ptr->tls_dom->ca_directory:NULL,
 			(tls_opts & MY_CON_TLS_CIPHERS) ? ptr->tls_dom->ciphers_list:NULL);
 	}
+	mysql_options(ptr->con, MYSQL_OPT_SSL_ENFORCE, (void *)&use_tls);
 
 	/* set connect, read and write timeout, the value counts three times */
 	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT, (void *)&db_mysql_timeout_interval);
