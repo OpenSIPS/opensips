@@ -1026,6 +1026,41 @@ rtpengine_stop_recording();
 		</example>
 	</section>
 
+	<section id="func_rtpengine_pause_recording" xreflabel="rtpengine_pause_recording()">
+		<title>
+		<function moreinfo="none">rtpengine_pause_recording([flags [, sock_var]])</function>
+		</title>
+		<para>
+		This function will send a signal to the &rtp; proxy to pause
+		recording the RTP stream on the &rtp; proxy. Identical to stop recording except that it 
+		instructs the recording daemon not to close the recording file, but instead leave it open 
+		so that recording can later be resumed via another start recording message.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>flags(string, optional)</emphasis> - flags used to change the behavior
+		of the recorder. An importat value to set is the <emphasis>call-id</emphasis>
+		value, which can be used to start recording a different call than the requested one.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>sock_var(var, optional)</emphasis> - variable used to store the rtpengine
+		socket chosen for this call.
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>rtpengine_pause_recording</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_stop_recording();
+...
+		</programlisting>
+		</example>
+	</section>
+
 	<section id="func_rtpengine_play_media" xreflabel="rtpengine_play_media()">
 		<title>
 		<function moreinfo="none">rtpengine_play_media(flags, [duration_spec[, sock_var[, sockvar]]])</function>
