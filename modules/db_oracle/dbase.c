@@ -189,9 +189,13 @@ int db_oracle_free_result(db_con_t* _h, db_res_t* _r)
 {
 	ub4 i;
 
-	if (!_h || !_r) {
+	if (!_h) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
+	}
+
+	if (!_r) {
+		return 0; /* nothing to free */
 	}
 
 	if (RES_NAMES(_r))
@@ -415,7 +419,6 @@ badparam:
 			return -2;
 		}
 #undef _S_DIFF
-		if (_r) goto badparam;
 		cb._rs = NULL;
 	}
 
