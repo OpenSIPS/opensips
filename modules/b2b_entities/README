@@ -31,7 +31,9 @@ B2B_ENTITIES
 
         1.4. Exported Functions
 
-              1.4.1. ua_session_server_init([key], [flags])
+              1.4.1. ua_session_server_init([key], [flags],
+                      [extra_params])
+
               1.4.2. ua_session_update(key, method, [body],
                       [extra_headers], [content_type])
 
@@ -345,7 +347,7 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
 
 1.4. Exported Functions
 
-1.4.1.  ua_session_server_init([key], [flags])
+1.4.1.  ua_session_server_init([key], [flags], [extra_params])
 
    This function initializes a new UA session by processing an
    initial INVITE. Further requests/replies received belonging to
@@ -375,6 +377,9 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
           + n - do not trigger the E_UA_SESSION event (with
             event_type NEW) for initial INVITES handled with this
             function.
+     * extra_params (string, optional) - An arbitrary value to be
+       passed to the extra_params parameter in the E_UA_SESSION
+       event.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -613,6 +618,10 @@ opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
      * method - the SIP method name
      * body - SIP message body
      * headers - full list of all SIP headers in the message.
+     * extra_params - an arbitrary value. Currently only the
+       ua_session_server_init() function passes this if the
+       extra_params argument is used, and it only appears in the
+       NEW event_type.
 
 Chapter 2. Developer Guide
 
@@ -805,7 +814,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 183 94 6839 1860
    2. Vlad Patrascu (@rvlad-patrascu) 127 62 5443 1147
-   3. Razvan Crainea (@razvancrainea) 86 70 794 521
+   3. Razvan Crainea (@razvancrainea) 88 72 826 531
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 57 48 499 190
    5. Ovidiu Sas (@ovidiusas) 54 41 855 293
    6. Liviu Chircu (@liviuchircu) 21 17 97 128
@@ -840,7 +849,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Oct 2024
+   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Nov 2024
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
    3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
@@ -864,10 +873,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Carsten Bock, Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Ovidiu Sas
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Carsten Bock,
+   Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Vlad Paiu (@vladpaiu), Ovidiu Sas
    (@ovidiusas), Anca Vamanu.
 
    Documentation Copyrights:
