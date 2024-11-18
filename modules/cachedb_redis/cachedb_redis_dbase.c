@@ -273,7 +273,7 @@ int redis_connect(redis_con *con)
 		/* cluster instance mode */
 		con->flags |= REDIS_CLUSTER_INSTANCE;
 		con->slots_assigned = 0;
-		LM_DBG("cluster instance mode\n");
+		LM_DBG("cluster instance mode on %p\n",con);
 		if (build_cluster_nodes(con,rpl->str,rpl->len) < 0) {
 			LM_ERR("failed to parse Redis cluster info\n");
 			freeReplyObject(rpl);
