@@ -218,17 +218,19 @@ modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 		<title><varname>received_avp</varname> (str)</title>
 		<para>
 		The name of the Attribute-Value-Pair (AVP) used to store the URI
-		containing the received IP, port, and protocol. The URI is created
-		by fix_nated_register function of nathelper module and the attribute
-		is then used by the registrar to store the received parameters. Do
-		not forget to change the value of corresponding parameter in
-		registrar module if you change the value of this parameter.
+		containing the received IP, port and protocol. The URI is created
+		by the <xref linkend="func_fix_nated_register"/> function and this data
+		may then be also picked up by the registrar module, which will attach a
+		"Received=" attribute to the registration.  Do not forget to change the
+		value of corresponding parameter in the <ulink url='registrar'>registrar</ulink>
+		module whenever you change the value of this parameter.
 		</para>
 		<note>
 		<para>
-		You must set this parameter if you use "fix_nated_register". In such
-		case you must set the parameter with same name of "registrar"
-		module to same value.
+		You must set this parameter if you use <xref linkend="func_fix_nated_register"/>.
+		Additionally, if you are using registrar, you must also set its symmetric
+		<ulink url='registrar#received_avp'>received_avp</ulink> module parameter
+		to the <emphasis role='bold'>same value</emphasis>.
 		</para>
 		</note>
 		<para>
@@ -750,10 +752,11 @@ add_rcv_param(1); # add the parameter to the Contact URI
 		<function moreinfo="none">fix_nated_register()</function>
 		</title>
 		<para>
-		The function creates a URI consisting of the source IP, port, and
-		protocol and stores the URI in an Attribute-Value-Pair. The URI will
+		The function creates a URI consisting of the source IP, port and
+		protocol and stores it in the <xref linkend="param_received_avp"/> AVP. The URI will
 		be appended as "received" parameter to Contact in 200 OK and
-		registrar will store it in the user location database.
+		may also be stored in the user location database if the same AVP
+		is also configured for the <ulink url='registrar'>registrar</ulink> module.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
