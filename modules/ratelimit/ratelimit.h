@@ -140,6 +140,7 @@ int w_rl_check(struct sip_msg*, str *, int *, str *);
 int w_rl_dec(struct sip_msg*, str *);
 int w_rl_reset(struct sip_msg*, str *);
 int w_rl_set_count(str, int);
+int w_rl_values(struct sip_msg*, pv_spec_t *out, regex_t *regexp);
 int rl_stats(mi_item_t *, str *, str *, int);
 int rl_pipe_check(rl_pipe_t *);
 int rl_get_counter_value(str *);

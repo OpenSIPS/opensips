@@ -1169,3 +1169,50 @@ release:
 	RL_RELEASE_LOCK(hash_idx);
 	return ret;
 }
+
+int w_rl_values(struct sip_msg* msg, pv_spec_t *out, regex_t *regexp)
+{
+	int i;
+	map_iterator_t it;
+	str *key, nkey;
+	regmatch_t pmatch;
+	pv_value_t val;
+
+	val.flags = PV_VAL_STR;
+
+	/* iterate through each map */
+	for (i = 0; i < rl_htable.size; i++) {
+		RL_GET_LOCK(i);
+		/* iterate through all the entries */
+		if (map_first(rl_htable.maps[i], &it) < 0) {
+			LM_ERR("map doesn't exist\n");
+			continue;
+		}
+		for (; iterator_is_valid(&it);) {
+			key = iterator_key(&it);
+			if (!key) {
+				LM_ERR("cannot retrieve pipe key\n");
+				goto next_it;
+			}
+			if (regexp) {
+				if (pkg_nt_str_dup(&nkey, key) != 0) {
+					LM_ERR("oom for duplicating %.*s\n", key->len, key->s);
+					goto next_it;
+				}
+				if (regexec(regexp, nkey.s, 1, &pmatch, 0) != 0) {
+					pkg_free(nkey.s);
+					goto next_it;
+				}
+				pkg_free(nkey.s);
+			}
+			val.rs = *key;
+			if (pv_set_value(msg, out, 0, &val) != 0)
+				LM_ERR("could not set key %.*s\n", key->len, key->s);
+next_it:
+			if (iterator_next(&it) < 0)
+				break;
+		}
+		RL_RELEASE_LOCK(i);
+	}
+	return 1;
+}

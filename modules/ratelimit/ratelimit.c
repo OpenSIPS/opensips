@@ -122,6 +122,8 @@ static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_parse_rl_count(pv_spec_p sp, const str *in);
 
+static int fixup_avp(void** param);
+
 static const cmd_export_t cmds[] = {
 	{"rl_check", (cmd_function)w_rl_check, {
 		{CMD_PARAM_STR,0,0},
@@ -137,6 +139,10 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 		BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"rl_values", (cmd_function)w_rl_values, {
+		{CMD_PARAM_VAR,fixup_avp,0},
+		{CMD_PARAM_REGEX|CMD_PARAM_OPT,0, 0}, {0,0,0}},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -1126,4 +1132,14 @@ static int pv_parse_rl_count(pv_spec_p sp, const str *in)
 	sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
 	return 0;
 
+}
+
+static int fixup_avp(void** param)
+{
+	if (((pv_spec_t*)*param)->type != PVT_AVP) {
+		LM_ERR("invalid pvar type - only AVPs are allowed!\n");
+		return E_SCRIPT;
+	}
+
+	return 0;
 }
