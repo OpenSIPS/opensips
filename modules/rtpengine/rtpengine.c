@@ -275,7 +275,6 @@ static const str stat_maps[] = {
 
 static char *gencookie();
 static int rtpe_test(struct rtpe_node*, int, int);
-static int start_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int stop_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int pause_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int start_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
