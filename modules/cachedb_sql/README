@@ -196,7 +196,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 16 5 1001 87
-   2. Liviu Chircu (@liviuchircu) 10 8 41 58
+   2. Liviu Chircu (@liviuchircu) 11 9 42 59
    3. Razvan Crainea (@razvancrainea) 7 5 4 2
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 5 2
    5. Maksym Sobolyev (@sobomax) 4 2 1 2
@@ -228,9 +228,9 @@ Chapter 3. Contributors
                       Name                   Commit Activity
    1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    2.  Ovidiu Sas (@ovidiusas)             Apr 2022 - Apr 2022
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
+   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016

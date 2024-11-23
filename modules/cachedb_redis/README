@@ -257,7 +257,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Paiu (@vladpaiu) 31 18 1431 44
+   1. Vlad Paiu (@vladpaiu) 33 19 1446 50
    2. Liviu Chircu (@liviuchircu) 29 19 558 277
    3. Razvan Crainea (@razvancrainea) 16 13 130 35
    4. Vlad Patrascu (@rvlad-patrascu) 12 6 595 38
@@ -292,7 +292,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Oct 2011 - Sep 2024
+   1.  Vlad Paiu (@vladpaiu)               Oct 2011 - Nov 2024
    2.  tcresson                            Oct 2023 - Oct 2023
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Oct 2023
    4.  zhengsh                             Aug 2023 - Aug 2023

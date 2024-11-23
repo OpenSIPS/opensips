@@ -215,18 +215,19 @@ modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 1.4.5. received_avp (str)
 
    The name of the Attribute-Value-Pair (AVP) used to store the
-   URI containing the received IP, port, and protocol. The URI is
-   created by fix_nated_register function of nathelper module and
-   the attribute is then used by the registrar to store the
-   received parameters. Do not forget to change the value of
-   corresponding parameter in registrar module if you change the
-   value of this parameter.
+   URI containing the received IP, port and protocol. The URI is
+   created by the fix_nated_register() function and this data may
+   then be also picked up by the registrar module, which will
+   attach a "Received=" attribute to the registration. Do not
+   forget to change the value of corresponding parameter in the
+   registrar module whenever you change the value of this
+   parameter.
 
 Note
 
-   You must set this parameter if you use "fix_nated_register". In
-   such case you must set the parameter with same name of
-   "registrar" module to same value.
+   You must set this parameter if you use fix_nated_register().
+   Additionally, if you are using registrar, you must also set its
+   symmetric received_avp module parameter to the same value.
 
    Default value is "NULL" (disabled).
 
@@ -544,10 +545,11 @@ add_rcv_param(1); # add the parameter to the Contact URI
 
 1.5.4.  fix_nated_register()
 
-   The function creates a URI consisting of the source IP, port,
-   and protocol and stores the URI in an Attribute-Value-Pair. The
-   URI will be appended as "received" parameter to Contact in 200
-   OK and registrar will store it in the user location database.
+   The function creates a URI consisting of the source IP, port
+   and protocol and stores it in the received_avp AVP. The URI
+   will be appended as "received" parameter to Contact in 200 OK
+   and may also be stored in the user location database if the
+   same AVP is also configured for the registrar module.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -659,7 +661,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 156 123 2050 873
    2. Maksym Sobolyev (@sobomax) 153 45 3556 4790
-   3. Liviu Chircu (@liviuchircu) 49 39 438 313
+   3. Liviu Chircu (@liviuchircu) 50 40 452 324
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
    5. Razvan Crainea (@razvancrainea) 33 27 158 240
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
@@ -699,8 +701,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2024
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2024
    3.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2023
    4.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
