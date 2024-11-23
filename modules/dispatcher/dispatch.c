@@ -2781,7 +2781,9 @@ void ds_check_timer(unsigned int ticks, void* param)
 							&partition->ping_from:
 							&ds_ping_from),
 			&pack->params.uri, NULL, NULL,
-			pack->sock?pack->sock:probing_sock,
+			pack->sock?pack->sock:(partition->ping_sock.len?
+							partition->ping_sock_info:
+							probing_sock),
 			&dlg) != 0 ) {
 				LM_ERR("failed to create new TM dlg\n");
 					continue;

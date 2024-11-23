@@ -119,6 +119,9 @@ typedef struct _ds_partition
 	str ping_method;
 	int persistent_state;
 
+	str ping_sock;
+	struct socket_info *ping_sock_info;
+
 	db_con_t **db_handle;
 	db_func_t dbf;
 	ds_data_t **data;      /* dispatching data holder */
