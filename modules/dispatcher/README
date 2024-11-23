@@ -769,7 +769,7 @@ modparam("dispatcher", "partition",
                     ping_sock = udp:public_ip:public_port")
 
 modparam("dispatcher", "partition",
-                "prioxies:
+                "proxies:
                     db_url = mysql://user:passwd@localhost/database;
                     table_name = proxies;
                     ping_sock = udp:private_ip:private_port")
