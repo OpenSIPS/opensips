@@ -384,7 +384,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 94 44 3640 1114
-   2. Liviu Chircu (@liviuchircu) 22 18 166 115
+   2. Liviu Chircu (@liviuchircu) 28 21 442 148
    3. Razvan Crainea (@razvancrainea) 16 14 33 15
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 13 10 128 31
    5. Ovidiu Sas (@ovidiusas) 7 5 83 7
@@ -422,10 +422,10 @@ Chapter 2. Contributors
    3.  Ovidiu Sas (@ovidiusas)             Mar 2017 - Apr 2024
    4.  Bence Szigeti                       Jan 2024 - Jan 2024
    5.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Jul 2022
-   7.  Gang Zhuo                           Nov 2021 - Nov 2021
-   8.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   9.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2019
+   6.  Liviu Chircu (@liviuchircu)         Mar 2016 - Aug 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Jul 2022
+   8.  Gang Zhuo                           Nov 2021 - Nov 2021
+   9.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    10. Dan Pascu (@danpascu)               May 2019 - May 2019
 
    All remaining contributors: Peter Lemenkov (@lemenkov), Ionel
