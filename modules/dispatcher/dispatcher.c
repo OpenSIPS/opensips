@@ -773,7 +773,7 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 			LM_ERR("cannot duplicate ping_sock\n");
 			return -1;
 		}
-		partition->ping_sock_info = parse_sock_info(&partition->ping_sock);
+		partition->ping_sock_info = (struct socket_info *)parse_sock_info(&partition->ping_sock);
 		if (partition->ping_sock_info==NULL) {
 			LM_ERR("socket <%.*s> is not local to opensips (we must listen "
 				"on it\n", partition->ping_sock.len, partition->ping_sock.s);
