@@ -710,10 +710,24 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
 1.3.26. partition (string)
 
    Define a new partition (data source) with the following
-   properties: "db_url", "table_name", "dst_avp", "grp_avp",
+   properties: 
+   
+   "db_url", "table_name", "dst_avp", "grp_avp",
    "cnt_avp", "sock_avp", "attrs_avp", "script_attrs",
-   "ds_define_blacklist". All these properties are optional,
-   having appropriate default values.
+   "ds_define_blacklist", "ping_sock"
+   
+   All these properties are optional, having appropriate default values.
+
+   If the OpenSIPS server has multiple interfaces the "ping_sock" can be
+   used to specify the interface to be used for sending pings.
+   
+   For example, a server acting as an SBC may have a public and a private interface.
+   There can be two partitions defined, one for carriers and the other for proxies.
+   Using the "ping_sock" parameter, the server can send pings to the carriers over
+   the public interface and to the proxies over the private interface. Additional
+   value can be realized when multiple SBCs are able to use the same carriers and
+   proxies tables. In this case, each SBC can use its own public and private
+   interfaces to send pings to the carriers and proxies.
 
    The syntax is: "partition_name: param1 = value1; param2 =
    value2". Each value format is the same as the one used to
@@ -742,6 +756,23 @@ modparam("dispatcher", "partition",
                     table_name = dispatcher_trunks;
                     attrs_avp = $avp(ds_attr_trunks)")
 modparam("dispatcher", "partition", "default: trunks")
+...
+
+   Example 1.29.  Define the 'carriers' and 'proxies' partitions
+   using the 'ping_sock' to specify which interface is to be used
+   to send pings.
+...
+modparam("dispatcher", "partition",
+                "carriers:
+                    db_url = mysql://user:passwd@localhost/database;
+                    table_name = carriers;
+                    ping_sock = udp:public_ip:public_port")
+
+modparam("dispatcher", "partition",
+                "proxies:
+                    db_url = mysql://user:passwd@localhost/database;
+                    table_name = proxies;
+                    ping_sock = udp:private_ip:private_port")
 ...
 
 1.3.27. table_name (string)
