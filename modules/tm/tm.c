@@ -1333,11 +1333,6 @@ static int w_t_relay( struct sip_msg  *p_msg , void *flags, struct proxy_l *prox
 		tm_has_request_disponsition_no_cancel(p_msg)==0 )
 			t->flags|=T_MULTI_200OK_FLAG;
 
-		/* update the transaction only if in REQUEST route; for other types
-		   of routes we do not want to inherit the local changes */
-		if (route_type==REQUEST_ROUTE)
-			update_cloned_msg_from_msg( t->uas.request, p_msg);
-
 		if (route_type==FAILURE_ROUTE) {
 			/* If called from failure route we need reset the branch counter to
 			 * ignore the previous set of branches (already terminated) */
@@ -1347,6 +1342,12 @@ static int w_t_relay( struct sip_msg  *p_msg , void *flags, struct proxy_l *prox
 			 * created, better lock here to avoid any overlapping with 
 			 * branch injection from other processes */
 			LOCK_REPLIES(t);
+
+			/* update the transaction only if in REQUEST route; for other types
+			   of routes we do not want to inherit the local changes */
+			if (route_type==REQUEST_ROUTE)
+				update_cloned_msg_from_msg( t->uas.request, p_msg);
+
 			ret = t_forward_nonack( t, p_msg, p, 1/*reset*/,1/*locked*/);
 			UNLOCK_REPLIES(t);
 		}
