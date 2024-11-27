@@ -618,7 +618,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 					_d->table[sl].next_label = rlabel + 1;
 
 				if (r->next_clabel <= clabel || r->next_clabel == 0)
-					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+					r->next_clabel = CLABEL_NEXT(clabel);
 
 				r->label = rlabel;
 			}
@@ -658,7 +658,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			if (cid_regen && old_expires) {
 				/* rebuild the contact id for this contact */
 				ci->contact_id = pack_indexes(r->aorhash, r->label, r->next_clabel);
-				r->next_clabel = CLABEL_INC_AND_TEST(r->next_clabel);
+				r->next_clabel = CLABEL_NEXT(r->next_clabel);
 
 				ci->expires = old_expires;
 

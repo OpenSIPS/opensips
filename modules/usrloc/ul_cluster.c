@@ -506,7 +506,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 		user_agent, path, attr, st, sock, kv_str, cflags_str;
 	udomain_t *domain;
 	urecord_t *record;
-	ucontact_t *contact, *ct;
+	ucontact_t *contact;
 	int rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
@@ -604,33 +604,9 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 
 		record->label = rlabel;
 		sl = record->aorhash & (domain->size - 1);
-		if (domain->table[sl].next_label <= rlabel)
+		if (rlabel >= domain->table[sl].next_label)
 			domain->table[sl].next_label = rlabel + 1;
 	}
-
-	if (record->label != rlabel) {
-		int has_good_cts = 0;
-
-		for (ct = record->contacts; ct; ct = ct->next)
-			if (ct->expires != UL_EXPIRED_TIME) {
-				has_good_cts = 1;
-				break;
-			}
-
-		if (has_good_cts) {
-			LM_BUG("differring rlabels (%u vs. %u, ci: '%.*s')",
-			       record->label, rlabel, callid.len, callid.s);
-		} else {
-			/* no contacts -> it's safe to inherit the active node's rlabel */
-			record->label = rlabel;
-			sl = record->aorhash & (domain->size - 1);
-			if (domain->table[sl].next_label <= rlabel)
-				domain->table[sl].next_label = rlabel + 1;
-		}
-	}
-
-	if (record->next_clabel <= clabel)
-		record->next_clabel = CLABEL_INC_AND_TEST(clabel);
 
 	rc = get_ucontact(record, &contact_str, &callid, ci.cseq, &cmatch,
 		&contact);
@@ -641,7 +617,11 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	case -1:
 		/* received data is older than what we have */
 		break;
+
 	case 0:
+		ci.contact_id = pack_indexes((unsigned short)record->aorhash,
+					record->label, (unsigned short)contact->label);
+
 		/* received data is newer than what we have */
 		if (update_ucontact(record, contact, &ci, NULL, 1) != 0) {
 			LM_ERR("failed to update ucontact (ci: '%.*s')\n", callid.len, callid.s);
@@ -649,7 +629,18 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 			goto error;
 		}
 		break;
+
 	case 1:
+		if (clabel >= record->next_clabel) {
+			record->next_clabel = CLABEL_NEXT(clabel);
+		} else {
+			clabel = record->next_clabel;
+			record->next_clabel = CLABEL_NEXT(record->next_clabel);
+		}
+
+		ci.contact_id = pack_indexes((unsigned short)record->aorhash,
+					record->label, (unsigned short)clabel);
+
 		if (insert_ucontact(record, &contact_str, &ci, NULL, 1, &contact) != 0) {
 			LM_ERR("failed to insert ucontact (ci: '%.*s')\n", callid.len, callid.s);
 			unlock_udomain(domain, &aor);
@@ -787,7 +778,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 		}
 
 		if (record->next_clabel <= clabel)
-			record->next_clabel = CLABEL_INC_AND_TEST(clabel);
+			record->next_clabel = CLABEL_NEXT(clabel);
 	} else {
 		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &cmatch,
 			&contact);
@@ -803,7 +794,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 			}
 
 			if (record->next_clabel <= clabel)
-				record->next_clabel = CLABEL_INC_AND_TEST(clabel);
+				record->next_clabel = CLABEL_NEXT(clabel);
 
 		} else if (rc == 0) {
 			if (update_ucontact(record, contact, &ci, NULL, 1) != 0) {
