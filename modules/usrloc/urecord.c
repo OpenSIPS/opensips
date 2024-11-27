@@ -856,7 +856,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		        pack_indexes((unsigned short)_r->aorhash,
 		                                     _r->label,
 		                    ((unsigned short)_r->next_clabel));
-		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+		_r->next_clabel = CLABEL_NEXT(_r->next_clabel);
 	}
 
 	if (cluster_mode == CM_FULL_SHARING_CACHEDB && !_ci->cdb_key.s) {
@@ -1104,7 +1104,7 @@ uint64_t next_contact_id(urecord_t* _r)
 		pack_indexes((unsigned short)_r->aorhash,
 		                             _r->label,
 		            ((unsigned short)_r->next_clabel));
-		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+		_r->next_clabel = CLABEL_NEXT(_r->next_clabel);
 
 	return contact_id;
 }
