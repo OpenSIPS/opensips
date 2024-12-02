@@ -3130,9 +3130,12 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 		v[0].iov_base = gencookie();
 		v[0].iov_len = strlen(v[0].iov_base);
 		for (i = 0; i < rtpengine_retr; i++) {
-			if (rtpe_socks[node->idx] == -1 && !rtpengine_connect_node(node)) {
-				LM_ERR("cannot reconnect RTP engine socket!\n");
-				goto badproxy;
+			if (rtpe_socks[node->idx] == -1) {
+				if (!rtpengine_connect_node(node)) {
+					LM_ERR("cannot reconnect RTP engine socket!\n");
+					goto badproxy;
+				}
+				fds[0].fd = rtpe_socks[node->idx];
 			}
 			do {
 				len = writev(rtpe_socks[node->idx], v, vcnt);
