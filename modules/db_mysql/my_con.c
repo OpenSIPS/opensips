@@ -148,7 +148,7 @@ int db_mysql_connect(struct my_con* ptr)
 #if (MYSQL_VERSION_ID >= 50700)
 	mysql_options(ptr->con, MYSQL_OPT_SSL_ENFORCE, (void *)&use_tls);
 #endif
-#else
+#elif (MYSQL_VERSION_ID < 100000) /* fix error with older MariaDB libs */
 	tls_opts = (use_tls?SSL_MODE_PREFERRED:SSL_MODE_DISABLED);
 	mysql_options(ptr->con, MYSQL_OPT_SSL_MODE, (void *)&tls_opts);
 #endif
