@@ -1,0 +1,8 @@
+	<!-- Declaration of janus table-->
+	<db_table id="janus">
+		<table_name>janus</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>janus_id</field><type>DB_BLOB</type></column>
+		<column><field>janus_url</field><type>DB_BLOB</type></column>
+	</db_table>
