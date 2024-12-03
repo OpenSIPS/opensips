@@ -1652,6 +1652,9 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
+
+		async_status = ASYNC_NO_IO;
+
 		if ( ref_script_route_check_and_update(t->on_reply) &&
 		(run_top_route(sroutes->onreply[t->on_reply->idx],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
@@ -1671,6 +1674,19 @@ int reply_received( struct sip_msg  *p_msg )
 		if (onreply_avp_mode)
 			/* restore original avp list */
 			set_avp_list( backup_list );
+
+		if (async_status > 0) {
+			/* async was started in the onreply route, no need to do anything more here */
+			/* mark that the UAC received replies */
+			uac->flags |= T_UAC_HAS_RECV_REPLY;
+
+			if (onreply_avp_mode) {
+				UNLOCK_REPLIES( t );
+				set_avp_list( backup_list );
+			}
+			/* we exit and do not unref T, keep the ref for as long the async is in progress */
+			goto done_no_unref;
+		}
 	}
 
 	if (!onreply_avp_mode || !has_reply_route)
@@ -1749,6 +1765,7 @@ done:
 	 * simply do nothing; that will make the other party to
 	 * retransmit; hopefuly, we'll then be better off
 	 */
+done_no_unref:
 	_tm_branch_index = 0;
 	return 0;
 not_found:
