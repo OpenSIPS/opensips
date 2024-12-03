@@ -99,6 +99,7 @@ typedef struct _json_name
 
 pv_json_t * all;
 char buff[JSON_FILE_BUF_SIZE];
+int json_long_quoting;
 
 static int mod_init(void);
 static int child_init(int );
@@ -128,6 +129,12 @@ static const cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
+static const param_export_t mod_params[]={
+	{ "enable_long_quoting",         INT_PARAM, &json_long_quoting       },
+	{ 0,0,0 }
+};
+
+
 static const pv_export_t mod_items[] = {
 	{ str_const_init("json"),    PVT_JSON, pv_get_json,
 		pv_set_json, pv_parse_json_name, pv_parse_json_index, 0, 0},
@@ -143,15 +150,15 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,				 /* load function */
+	0,               /* load function */
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
 	0,               /* exported async functions */
-	0,      /* param exports */
-	0,       /* exported statistics */
-	0,         /* exported MI functions */
+	mod_params,      /* param exports */
+	0,               /* exported statistics */
+	0,               /* exported MI functions */
 	mod_items,       /* exported pseudo-variables */
-	0,			 	 /* exported transformations */
+	0,               /* exported transformations */
 	0,               /* extra processes */
 	0,               /* module pre-initialization function */
 	mod_init,        /* module initialization function */
@@ -415,6 +422,7 @@ int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int 
 	json_t * obj;
 	json_name * id = (json_name *) pvp->pvn.u.dname;
 	UNUSED(id);
+	int64_t int_value;
 
 	if( expand_tag_list( msg, ((json_name *)pvp->pvn.u.dname)->tags ) < 0)
 	{
@@ -457,10 +465,17 @@ int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int 
 
 	if( json_object_is_type(obj, json_type_int) )
 	{
-		val->rs.s = sint2str(json_object_get_int(obj), &val->rs.len);
-		val->ri = json_object_get_int(obj);;
-		val->flags |= PV_VAL_INT|PV_TYPE_INT|PV_VAL_STR;
+		int_value = json_object_get_int64(obj);
+		val->rs.s = sint2str(int_value, &val->rs.len);
 
+		if (!json_long_quoting || (int_value>=INT_MIN && int_value<=INT_MAX)) {
+			/* safe to store it as an INT in the pvar */
+			val->ri = int_value;
+			val->flags |= PV_VAL_INT|PV_TYPE_INT|PV_VAL_STR;
+		} else {
+			/* we would overflow/underflow, store as string only */
+			val->flags |= PV_VAL_STR;
+		}
 	}
 	else if( json_object_is_type(obj, json_type_string))
 	{
