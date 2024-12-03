@@ -457,10 +457,16 @@ int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int 
 
 	if( json_object_is_type(obj, json_type_int) )
 	{
-		val->rs.s = sint2str(json_object_get_int(obj), &val->rs.len);
-		val->ri = json_object_get_int(obj);;
-		val->flags |= PV_VAL_INT|PV_TYPE_INT|PV_VAL_STR;
-
+		int_value = json_object_get_int64(obj);
+		val->rs.s = sint2str(int_value, &val->rs.len);
+		if (int_value<=INT_MAX && int_value>=INT_MIN) {
+			/* safe to store it as an INT in the pvar */
+			val->ri = int_value;;
+			val->flags |= PV_VAL_INT|PV_TYPE_INT|PV_VAL_STR;
+		} else {
+			/* we would overflow/underflow, store as string only */
+			val->flags |= PV_VAL_STR;
+		}
 	}
 	else if( json_object_is_type(obj, json_type_string))
 	{
