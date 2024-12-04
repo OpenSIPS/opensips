@@ -127,7 +127,7 @@ static void do_action_trans_2(node_info_t *node, int *link_state_to_set)
 		} else {
 			LM_DBG("Sent ping retry to node [%d]\n", node->node_id);
 			*link_state_to_set = LS_RETRYING;
-			node->curr_no_retries = --node->no_ping_retries;
+			node->curr_no_retries = node->no_ping_retries - 1;
 		}
 	}
 }
