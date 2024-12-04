@@ -219,11 +219,13 @@ void heartbeats_timer(void)
 			if (node->link_state == LS_RESTART_PINGING) {
 				prev_ls = node->link_state;
 				lock_release(node->lock);
+				CL_DBG("case 0: RESTART_PINGING\n");
 
 				/* restart pinging sequence */
 				do_action_trans_0(node, &new_ls);
 			} else if (node->link_state == LS_RETRY_SEND_FAIL &&
 				last_ping_int >= (utime_t)ping_timeout*1000) {
+				CL_DBG("case 1: RETRY_SEND_FAIL and timeout\n");
 				prev_ls = node->link_state;
 				lock_release(node->lock);
 
@@ -232,6 +234,7 @@ void heartbeats_timer(void)
 			} else if ((node->link_state == LS_UP || node->link_state == LS_RESTARTED) &&
 				(ping_reply_int >= (time_t)ping_timeout*1000) &&
 				last_ping_int >= (utime_t)ping_timeout*1000) {
+				CL_DBG("case 2: LS_UP and timeout\n");
 				prev_ls = -2;
 				lock_release(node->lock);
 
@@ -241,6 +244,7 @@ void heartbeats_timer(void)
 			} else if (node->link_state == LS_RETRYING &&
 				(ping_reply_int >= (time_t)ping_timeout*1000) &&
 				last_ping_int >= (utime_t)ping_timeout*1000) {
+				CL_DBG("case 3: LS_RETRYING and timeout\n");
 				prev_ls = node->link_state;
 				lock_release(node->lock);
 
@@ -248,6 +252,7 @@ void heartbeats_timer(void)
 				do_action_trans_3(node, &new_ls);
 			} else if (node->link_state == LS_DOWN &&
 				last_ping_int >= (utime_t)node_timeout*1000000) {
+				CL_DBG("case 4: LS_DOWN and timeout\n");
 				prev_ls = node->link_state;
 				lock_release(node->lock);
 
@@ -255,13 +260,16 @@ void heartbeats_timer(void)
 				do_action_trans_4(node, &new_ls);
 			} else if (node->link_state == LS_UP &&
 				last_ping_int >= (utime_t)ping_interval*1000000) {
+				CL_DBG("case 5: LS_UP and timeout\n");
 				prev_ls = node->link_state;
 				lock_release(node->lock);
 
 				/* send regular ping */
 				do_action_trans_5(node, &new_ls, ev_actions_required, no_clusters);
-			} else
+			} else {
+				CL_DBG("case 6: do nothing\n");
 				lock_release(node->lock);
+			}
 
 			if (new_ls >= 0)
 				set_link_w_neigh_adv(prev_ls, new_ls, node);
