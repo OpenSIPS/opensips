@@ -386,14 +386,16 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 		entity && tuple->bridge_initiator == entity)
 	{
 		entity_no = 3; // Bridge initiator
-	} else if (entity && entity->disconnected) {
-		entity_no = -1; // Probably a cross-bye - reply and don't do anything
 	} else {
 		entity_no = bridge_get_entityno(tuple, entity);
 		if(entity_no < 0)
 		{
-			LM_ERR("No match found\n");
-			return -1;
+			if (!entity) {
+				LM_ERR("No match found\n");
+				return -1;
+			}
+			/* we've got a known entity, but no longer part of the
+			 * bridge - we gracefully reply and drop */
 		}
 	}
 
