@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "https://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="dr_partitions" xmlns:db="http://docbook.org/ns/docbook">
+	<name>dr_partitions</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Trie module to store
+		information about the partitions used in the script (url to database and table name).
+		More information can be found at: &OPENSIPS_MOD_DOC;trie.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Partition unique ID
+		</description>
+	</column>
+
+	<column id="partition_name">
+		<name>partition_name</name>
+		<type>string</type>
+		<size>255</size>
+		<description>The name of the partition.
+		</description>
+	</column>
+
+	<column id="db_url">
+		<name>db_url</name>
+		<type>string</type>
+		<size>255</size>
+		<description>The url to the database containing the tables: dr_rules, dr_groups,
+		dr_carriers and dr_gateways</description>
+	</column>
+
+	<column id="trie_table">
+		<name>trie_table</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of the trie_rules table in the given database (for the given partition).</description>
+	</column>
+</table>

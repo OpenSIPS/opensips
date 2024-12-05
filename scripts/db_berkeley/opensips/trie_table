@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) partition_name(str) db_url(str) trie_table(str)
+ruleid(int) prefix(str) attrs(str) priority(int)
 METADATA_KEY
 0 
 METADATA_READONLY
@@ -7,4 +7,6 @@ METADATA_READONLY
 METADATA_LOGFLAGS
 0
 METADATA_DEFAULTS
-NIL|NIL|NIL|NIL
+NIL|NIL|NULL|1
+trie_table|
+trie_table|1
