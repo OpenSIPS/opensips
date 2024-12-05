@@ -415,6 +415,7 @@ int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int 
 	json_t * obj;
 	json_name * id = (json_name *) pvp->pvn.u.dname;
 	UNUSED(id);
+	int64_t int_value;
 
 	if( expand_tag_list( msg, ((json_name *)pvp->pvn.u.dname)->tags ) < 0)
 	{
@@ -461,7 +462,7 @@ int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int 
 		val->rs.s = sint2str(int_value, &val->rs.len);
 		if (int_value<=INT_MAX && int_value>=INT_MIN) {
 			/* safe to store it as an INT in the pvar */
-			val->ri = int_value;;
+			val->ri = int_value;
 			val->flags |= PV_VAL_INT|PV_TYPE_INT|PV_VAL_STR;
 		} else {
 			/* we would overflow/underflow, store as string only */
