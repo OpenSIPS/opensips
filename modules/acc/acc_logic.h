@@ -122,8 +122,9 @@
 	tmb.t_ctx_put_ptr(_t, acc_tm_flags_ctx_idx, _ptr)
 
 #define ACC_GET_CTX() \
-	(acc_ctx_t *)context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
-			acc_flags_ctx_idx)
+	(acc_ctx_t *)(current_processing_ctx?\
+			context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
+			acc_flags_ctx_idx):NULL)
 
 #define ACC_PUT_CTX(_ptr) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, \
