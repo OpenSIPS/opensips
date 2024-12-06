@@ -102,7 +102,7 @@ int find_group_in_hash_table(struct address_list** table,
 
 
 
-#define PERM_MAX_SUBNETS 512
+#define PERM_MAX_SUBNETS 2048
 
 /*
  * Structure used to store a subnet
