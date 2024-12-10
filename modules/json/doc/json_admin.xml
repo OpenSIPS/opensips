@@ -56,9 +56,32 @@
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	
+	<section id="param_enable_long_quoting" xreflabel="enable_long_quoting">
+		<title><varname>enable_long_quoting</varname> (boolean)</title>
 		<para>
-		The module does not export any parameters.
+		Enable this parameter if your input JSONs contain signed integers which
+		do not fit into 4 bytes (e.g. larger than 2147483647, etc.).  If the
+		parameter is enabled, 4-byte integers will continue to be returned as
+		integers, while larger values will be returned as strings, in order to
+		avoid the integer overflow.
 		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>false</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>enable_long_quoting</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("json", "enable_long_quoting", true)
+...
+# normalize the "gateway_id" int/string value to be always a string
+$var(gateway_id) = "" + $json(body/gateway_id);
+...
+</programlisting>
+		</example>
+	</section>
 	
 	</section>
 
