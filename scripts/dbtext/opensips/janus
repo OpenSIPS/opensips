@@ -1,0 +1,2 @@
+id(int,auto) janus_id(string) janus_url(string) 
+janus:1
