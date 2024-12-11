@@ -2023,6 +2023,7 @@ static int mc_decompress(struct sip_msg* msg)
 	msg->set_global_address = tmp.set_global_address;
 	msg->set_global_address_via = tmp.set_global_address_via;
 	msg->set_global_port    = tmp.set_global_port;
+	msg->set_global_port_contact = tmp.set_global_port_contact;
 	msg->flags              = tmp.flags;
 	msg->msg_flags          = tmp.msg_flags;
 	msg->hash_index         = tmp.hash_index;

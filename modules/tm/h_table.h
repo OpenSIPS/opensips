@@ -156,6 +156,8 @@ typedef struct ua_client
 	str              adv_address_via;
 	/* the advertised port used for this branch */
 	str              adv_port;
+	/* the advertised contact port used for this branch */
+	str              adv_port_contact;
 	/* number of RR headers that were locally added for this branch */
 	unsigned int     added_rr;
 	/* if we store a reply (branch picking), this is where it is */

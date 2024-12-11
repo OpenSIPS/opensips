@@ -292,6 +292,18 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			faked_req->set_global_port.s = NULL;
 			faked_req->set_global_port.len = 0;
 		}
+		if (uac->adv_port_contact.s) {
+			faked_req->set_global_port_contact.s=pkg_malloc(uac->adv_port_contact.len);
+			if (!faked_req->set_global_port_contact.s) {
+				LM_ERR("out of pkg mem\n");
+				goto out6;
+			}
+			memcpy(faked_req->set_global_port_contact.s,
+				uac->adv_port_contact.s, uac->adv_port_contact.len);
+		} else {
+			faked_req->set_global_port_contact.s = NULL;
+			faked_req->set_global_port_contact.len = 0;
+		}
 
 	} else {
 
@@ -344,17 +356,27 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			memcpy(faked_req->set_global_port.s, shm_msg->set_global_port.s,
 				shm_msg->set_global_port.len);
 		}
+		if (shm_msg->set_global_port_contact.s) {
+			faked_req->set_global_port_contact.s=pkg_malloc
+				(shm_msg->set_global_port_contact.len);
+			if (!faked_req->set_global_port_contact.s) {
+				LM_ERR("out of pkg mem\n");
+				goto out6;
+			}
+			memcpy(faked_req->set_global_port_contact.s, shm_msg->set_global_port_contact.s,
+				shm_msg->set_global_port_contact.len);
+		}
 
 	}
 
 	if (fix_fake_req_headers(faked_req) < 0) {
 		LM_ERR("could not fix request headers!\n");
-		goto out6;
+		goto out7;
 	}
 
 	if (clone_sip_msg_body( shm_msg, faked_req, &faked_req->body, 0)!=0) {
 		LM_ERR("out of pkg mem - cannot clone body\n");
-		goto out7;
+		goto out8;
 	}
 
 	/* set as flags the global flags */
@@ -362,9 +384,12 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 
 	return 1;
 
-out7:
+out8:
 	if (faked_req->headers)
 		pkg_free(faked_req->headers);
+out7:
+	if (faked_req->set_global_port_contact.s)
+		pkg_free(faked_req->set_global_port_contact.s);
 out6:
 	if (faked_req->set_global_port.s)
 		pkg_free(faked_req->set_global_port.s);
@@ -413,6 +438,10 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 	if (faked_req->set_global_port.s) {
 		pkg_free(faked_req->set_global_port.s);
 		faked_req->set_global_port.s = NULL;
+	}
+	if (faked_req->set_global_port_contact.s) {
+		pkg_free(faked_req->set_global_port_contact.s);
+		faked_req->set_global_port_contact.s = NULL;
 	}
 
 	/* clean the pkg copy of the body */
