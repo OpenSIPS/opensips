@@ -59,10 +59,11 @@ char * parse_janus_url(char *start,char *end,struct janus_url *url)
 				goto error;
 			url->whole.s = p;
 			if (memcmp(p,"janusws",7) == 0) {
-				url->proto = PROTO_JANUSWS;
+				url->proto = JANUS_WS_PROTO;
 				p+=7;
 			} else if (memcmp(p,"januswss",7) == 0) {
-				url->proto = PROTO_JANUSWSS;
+				/* FIXME - this is not currently supported */
+				url->proto = JANUS_WSS_PROTO;
 				p+=8;
 			}
 			LM_DBG("At %c \n",*p);

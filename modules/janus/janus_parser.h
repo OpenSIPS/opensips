@@ -35,9 +35,11 @@
  * janus : ack & janus : event are ways of signaling a reply */
 enum janus_msg_type { JANUS_UNKNOWN=0, JANUS_REQUEST=1, JANUS_REPLY=2};
 
+enum janus_proto { JANUS_WS_PROTO=0, JANUS_WSS_PROTO=1 }; 
+
 struct janus_url {
 	str whole;
-	int proto;
+	enum janus_proto proto;
 	unsigned short port_no;
 	str host;
 	str port;
