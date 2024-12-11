@@ -174,7 +174,14 @@ static int child_init(int rank)
 
 static void mod_destroy(void)
 {
-	/* TODO - destroy */
+	struct list_head *_, *__;
+	janus_connection *sock = NULL;
+
+	list_for_each_safe(_, __, janus_sockets) {
+		sock = list_entry(_, janus_connection, list);
+
+		janus_free_connection(sock);
+	}
 }
 
 static int w_janus_send_request(struct sip_msg *msg, str *janus_id,str *request, pv_spec_t *reply_spec)
