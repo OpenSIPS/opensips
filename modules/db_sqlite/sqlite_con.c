@@ -60,7 +60,7 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 	url_buf[ptr->id->url.len - (sizeof(SQLITE_ID)-1)] = '\0';
 
 	if (sqlite3_open(url_buf, &con) != SQLITE_OK) {
-		LM_ERR("Can't open database: %s\n", sqlite3_errmsg((sqlite3*)ptr->con));
+		LM_ERR("Can't open database: %s\n", sqlite3_errmsg(con));
 		return -1;
 	}
 
@@ -90,8 +90,6 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 			return -1;
 		}
 	}
-
-
 
 	ptr->con = con;
 
