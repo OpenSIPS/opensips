@@ -33,9 +33,6 @@
 #define ALLOC_LIMIT 10
 #define LDEXT_LIST_DELIM ';'
 
-unsigned int db_sqlite_timeout_interval = 2;   /* Default is 6 seconds */
-unsigned int db_sliqte_exec_query_threshold = 0;   /* Warning in case DB query
-											takes too long disabled by default*/
 int db_sqlite_alloc_limit=ALLOC_LIMIT;
 
 
