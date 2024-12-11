@@ -46,7 +46,7 @@ static int db_sqlite_add_extension(modparam_t type, void *val);
 struct db_sqlite_extension_list *extension_list=0;
 
 /*
- * MySQL database module interface
+ * SQLite database module interface
  */
 static const cmd_export_t cmds[] = {
 	{"db_bind_api", (cmd_function)db_sqlite_bind_api, {{0,0,0}},0},
