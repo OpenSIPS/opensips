@@ -62,6 +62,11 @@ extern str tls_ciphers;
 extern struct httpd_cb *httpd_cb_list;
 static union sockaddr_union httpd_server_info;
 
+
+extern int receive_buf_size;
+extern char *httpd_receive_buff;
+extern int httpd_receive_buff_pos;
+
 static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
 static const str MI_HTTP_U_METHOD = str_init("<html><body>"
@@ -132,8 +137,6 @@ int httpd_get_val(void *e_data, void *data, void *r_data)
 	return 0;
 }
 
-static char httpd_full_buff[16384];
-static int httpd_full_buff_pos=0;
 int httpd_merge_data(void *e_data, void *data, void *r_data)
 {
 	str_str_t *kv = (str_str_t*)e_data;
@@ -144,8 +147,12 @@ int httpd_merge_data(void *e_data, void *data, void *r_data)
 			kv, kv->key.s, kv->val.s,
 			kv->key.len, kv->key.s,
 			kv->val.len, kv->val.s);
-		memcpy(httpd_full_buff+httpd_full_buff_pos,kv->val.s,kv->val.len);
-		httpd_full_buff_pos+=kv->val.len;
+		if (httpd_receive_buff_pos + kv->val.len > receive_buf_size) {
+			LM_ERR("Received too big HTTP request ( %d bytes ), increase receive_buf_size param value\n", httpd_receive_buff_pos + kv->val.len);
+		} else {
+			memcpy(httpd_receive_buff+httpd_receive_buff_pos,kv->val.s,kv->val.len);
+			httpd_receive_buff_pos+=kv->val.len;
+		}
 	}
 	return 0;
 }
@@ -516,11 +523,11 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 					if (cb) {
 						normalised_url = &url[cb->http_root->len+1];
 						LM_DBG("normalised_url=[%s]\n", normalised_url);
-						httpd_full_buff_pos=0;
+						httpd_receive_buff_pos=0;
 						slinkedl_traverse(pr->p_list,&httpd_merge_data, NULL, NULL);
-						if (httpd_full_buff_pos>0) {
-							saved_body.len = httpd_full_buff_pos;
-							saved_body.s = httpd_full_buff;
+						if (httpd_receive_buff_pos>0) {
+							saved_body.len = httpd_receive_buff_pos;
+							saved_body.s = httpd_receive_buff;
 						}
 						ret_code = cb->callback(cls, (void*)connection,
 								normalised_url,
