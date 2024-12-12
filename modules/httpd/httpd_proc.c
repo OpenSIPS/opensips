@@ -132,6 +132,24 @@ int httpd_get_val(void *e_data, void *data, void *r_data)
 	return 0;
 }
 
+static char httpd_full_buff[16384];
+static int httpd_full_buff_pos=0;
+int httpd_merge_data(void *e_data, void *data, void *r_data)
+{
+	str_str_t *kv = (str_str_t*)e_data;
+	if (kv==NULL) {
+		LM_ERR("null data\n");
+	} else {
+		LM_DBG("data=[%p] [%p][%p] [%.*s]->[%.*s]\n",
+			kv, kv->key.s, kv->val.s,
+			kv->key.len, kv->key.s,
+			kv->val.len, kv->val.s);
+		memcpy(httpd_full_buff+httpd_full_buff_pos,kv->val.s,kv->val.len);
+		httpd_full_buff_pos+=kv->val.len;
+	}
+	return 0;
+}
+
 /**
  * Function to print data stored in  slinkedl_list list elemnts.
  * For debugging purposes only.
@@ -498,9 +516,12 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 					if (cb) {
 						normalised_url = &url[cb->http_root->len+1];
 						LM_DBG("normalised_url=[%s]\n", normalised_url);
-						kv = slinkedl_peek(pr->p_list);
-						if (kv)
-							saved_body = ((str_str_t *)kv)->val;
+						httpd_full_buff_pos=0;
+						slinkedl_traverse(pr->p_list,&httpd_merge_data, NULL, NULL);
+						if (httpd_full_buff_pos>0) {
+							saved_body.len = httpd_full_buff_pos;
+							saved_body.s = httpd_full_buff;
+						}
 						ret_code = cb->callback(cls, (void*)connection,
 								normalised_url,
 								method, version,
@@ -527,11 +548,6 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 				if (pr->content_type<0) {
 					/* Unexpected Content-Type header:
 					err log printed in getConnectionHeader() */
-					return MHD_NO;
-				}
-				if (*upload_data_size != pr->content_len) {
-					/* For now, we don't support large POST with truncated data */
-					LM_ERR("got a truncated POST request\n");
 					return MHD_NO;
 				}
 				LM_DBG("got ContentType [%d] with len [%d]: %.*s\n",
