@@ -80,6 +80,7 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 						"Errmsg [%s]!\n",
 						iter->ldpath, iter->entry_point,
 						errmsg);
+				sqlite3_free(errmsg);
 				goto out_free;
 			}
 			LM_DBG("Extension [%s] loaded!\n", iter->ldpath);
