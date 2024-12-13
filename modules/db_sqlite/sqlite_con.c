@@ -66,8 +66,8 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 
 	/* trying to load extensions */
 	if (extension_list) {
-		if (sqlite3_enable_load_extension(con, 1)) {
-			LM_ERR("failed to enable extension loading\n");
+		if (sqlite3_db_config(con, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 1, NULL) != SQLITE_OK) {
+			LM_ERR("failed to enable extension loading: %s\n", sqlite3_errmsg(con));
 			return -1;
 		}
 
@@ -86,8 +86,8 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 			LM_DBG("Extension [%s] loaded!\n", iter->ldpath);
 		}
 
-		if (sqlite3_enable_load_extension(con, 0)) {
-			LM_ERR("failed to enable extension loading\n");
+		if (sqlite3_db_config(con, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 0, NULL) != SQLITE_OK) {
+			LM_ERR("failed to disable extension loading: %s\n", sqlite3_errmsg(con));
 			return -1;
 		}
 	}
