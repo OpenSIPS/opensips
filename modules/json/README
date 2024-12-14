@@ -12,6 +12,9 @@ JSON Module
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
+
+              1.3.1. enable_long_quoting (boolean)
+
         1.4. Exported Pseudo-Variables
 
               1.4.1. $json(id)
@@ -40,19 +43,20 @@ JSON Module
 
    List of Examples
 
-   1.1. Accessing the $json variable
-   1.2. Iterating through an array using variables
-   1.3. iteration over $json object keys
-   1.4. iteration over $json object values
-   1.5. iteration over $json array values
-   1.6. Appending integers to arrays
-   1.7. Deleting the last element in an array
-   1.8. Adding a string value to a json object
-   1.9. Initializing an array
-   1.10. Setting a boolean or null value
-   1.11. Adding a json to another json
-   1.12. Creating a reference
-   1.13. [LOGICAL ERROR] Creating a circular reference
+   1.1. Set enable_long_quoting parameter
+   1.2. Accessing the $json variable
+   1.3. Iterating through an array using variables
+   1.4. iteration over $json object keys
+   1.5. iteration over $json object values
+   1.6. iteration over $json array values
+   1.7. Appending integers to arrays
+   1.8. Deleting the last element in an array
+   1.9. Adding a string value to a json object
+   1.10. Initializing an array
+   1.11. Setting a boolean or null value
+   1.12. Adding a json to another json
+   1.13. Creating a reference
+   1.14. [LOGICAL ERROR] Creating a circular reference
 
 Chapter 1. Admin Guide
 
@@ -86,7 +90,24 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-   The module does not export any parameters.
+1.3.1. enable_long_quoting (boolean)
+
+   Enable this parameter if your input JSONs contain signed
+   integers which do not fit into 4 bytes (e.g. larger than
+   2147483647, etc.). If the parameter is enabled, 4-byte integers
+   will continue to be returned as integers, while larger values
+   will be returned as strings, in order to avoid the integer
+   overflow.
+
+   Default value is false.
+
+   Example 1.1. Set enable_long_quoting parameter
+...
+modparam("json", "enable_long_quoting", true)
+...
+# normalize the "gateway_id" int/string value to be always a string
+$var(gateway_id) = "" + $json(body/gateway_id);
+...
 
 1.4. Exported Pseudo-Variables
 
@@ -139,7 +160,7 @@ Chapter 1. Admin Guide
    printed in the log describing the value of the json and the
    path used
 
-   Example 1.1. Accessing the $json variable
+   Example 1.2. Accessing the $json variable
 ...
 $json(obj1/key) = "value"; #replace or insert the (key,value)
                            #pair into the json object;
@@ -152,7 +173,7 @@ xlog("$json(name/key1[0][-1]/key2)"); # a more complex example
 
 ...
 
-   Example 1.2. Iterating through an array using variables
+   Example 1.3. Iterating through an array using variables
 ...
 
 $json(ar1) := "[1,2,3,4]";
@@ -188,14 +209,14 @@ while( $json(ar1[$var(i)]) )
    values, you can use the .keys or .values suffix for the path
    specified in the id.
 
-   Example 1.3. iteration over $json object keys
+   Example 1.4. iteration over $json object keys
 ...
 $json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
 for ($var(k) in $(json(foo.keys)[*]))
     xlog("$var(k) ");
 ...
 
-   Example 1.4. iteration over $json object values
+   Example 1.5. iteration over $json object values
 ...
 $json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
 for ($var(v) in $(json(foo.values)[*]))
@@ -208,7 +229,7 @@ for ($var(v) in $(json(foo)[*]))
     xlog("$var(v) ");
 ...
 
-   Example 1.5. iteration over $json array values
+   Example 1.6. iteration over $json array values
 ...
 $json(foo) := "[1, 2, 3]";
 for ($var(v) in $(json(foo)[*]))
@@ -243,17 +264,17 @@ for ($var(v) in $(json(foo)[*]))
 
    Setting a value to NULL will cause it to be deleted.
 
-   Example 1.6. Appending integers to arrays
+   Example 1.7. Appending integers to arrays
 ...
 $json(array1[]) = 1;
 ...
 
-   Example 1.7. Deleting the last element in an array
+   Example 1.8. Deleting the last element in an array
 ...
 $json(array1[-1]) = NULL;
 ...
 
-   Example 1.8. Adding a string value to a json object
+   Example 1.9. Adding a string value to a json object
 ...
 $json(object1/some_key) = "some_value";
 ...
@@ -264,19 +285,19 @@ $json(object1/some_key) = "some_value";
    object ( e.g. this operator should be used to parse json inputs
    ).
 
-   Example 1.9. Initializing an array
+   Example 1.10. Initializing an array
 ...
 $json(array1) := "[]";
 ...
 
-   Example 1.10. Setting a boolean or null value
+   Example 1.11. Setting a boolean or null value
 ...
 $json(array1[]) := "null";
 $json(array1[]) := "true";
 $json(array1[]) := "false";
 ...
 
-   Example 1.11. Adding a json to another json
+   Example 1.12. Adding a json to another json
 ...
 
 $json(array) := "[1,2,3]";
@@ -323,7 +344,7 @@ $json(object/array) := $json(array) ;
    accidentally create a circular reference and try to get the
    value from the object you will crash OPENSIPS.
 
-   Example 1.12. Creating a reference
+   Example 1.13. Creating a reference
 ...
 
 $json(b) := "[{},{},{}]";
@@ -368,7 +389,7 @@ Test link :
 
 ...
 
-   Example 1.13. [LOGICAL ERROR] Creating a circular reference
+   Example 1.14. [LOGICAL ERROR] Creating a circular reference
 ...
 
 $json(b) := "[1]";
@@ -392,7 +413,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 19 16 50 89
+   1. Liviu Chircu (@liviuchircu) 20 17 93 94
    2. Andrei Dragus 18 4 1556 12
    3. Razvan Crainea (@razvancrainea) 15 12 49 78
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 27 30
@@ -426,9 +447,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Nov 2023
-   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   3.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jan 2021
+   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Dec 2024
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Nov 2023
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Apr 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
