@@ -1425,7 +1425,9 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 							hf->name.len, hf->name.s);
 					goto failed;
 				}
-				hf->parsed = (void*)(unsigned long)u_aux;
+				/* do not write back the value, let he MF module do its
+				 * own magic on how to store the parsed value */
+				//hf->parsed = (void*)(unsigned long)u_aux;
 				break;
 
 			case HDR_SUPPORTED_T:
