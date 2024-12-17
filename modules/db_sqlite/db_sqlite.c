@@ -32,9 +32,10 @@
 #include <sqlite3.h>
 #define ALLOC_LIMIT 10
 #define LDEXT_LIST_DELIM ';'
+#define BUSY_TIMEOUT 500
 
 int db_sqlite_alloc_limit=ALLOC_LIMIT;
-int db_sqlite_busy_timeout = 0;
+int db_sqlite_busy_timeout=BUSY_TIMEOUT;
 
 static int sqlite_mod_init(void);
 static void sqlite_mod_destroy(void);
