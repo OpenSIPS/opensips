@@ -116,7 +116,7 @@ modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so;sqlite3_extens
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0.
+			Default value is 500.
 		</emphasis>
 		</para>
 		<example>
