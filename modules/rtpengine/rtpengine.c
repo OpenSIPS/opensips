@@ -4146,7 +4146,7 @@ static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags,
 	dict = rtpe_function_call_ok(&bencbuf, msg, OP_STOP_MEDIA, flags,
 			NULL, spvar, NULL, NULL, NULL);
 	if (!dict) {
-		LM_ERR("could not start media!\n");
+		LM_ERR("could not stop media!\n");
 		return -1;
 	}
 
