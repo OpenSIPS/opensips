@@ -1,3 +1,369 @@
+=========================== Release 3.4.10 ==============================
+
+2024-12-18  Razvan Crainea  <razvan@opensips.org>
+        * [902f20532] :
+
+        b2b_logic: make retry list NULL terminated
+
+        (cherry picked from commit 8a547bdd6c35e8af17afed6bd54a1d49e75ec043)
+
+
+2024-12-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [ae38e5cf6] :
+
+        [sipmsgops] Fix messing up the max-fwd parsed value upon msg validation
+
+        For more details, see #3511 for the details.
+        Alternativ fix/workaround to #3511
+
+        (cherry picked from commit f1e3750a83dc606f96100baaaccc555e6a923ca7)
+
+
+2024-12-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [40c2e94ef] :
+
+        [dns_cache] Fix restoring IP array in hostend struct
+
+        When restoring (from cache) a hostend structure, be sure you end the "aliases" and "addresses" arrays with a NULL element.
+        Without that NULL terminator, when doing DNS-based failover on a cached hostend, OpenSIPS will use garbage IPs from the addresses array.
+
+        (cherry picked from commit 7d31fef29eefca30a8b8be668eebf1694e4df4a5)
+
+
+2024-12-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [1f3bb9d94] :
+
+        Merge pull request #3480 from ar45/fix-maxfwds
+
+        [maxfwd]: Fix bug `is_maxfwd_lt` function limit value
+
+        (cherry picked from commit e6a0c98e829eef5c62ff7507fb6afc0cd0b98d14)
+
+
+2024-12-15  OpenSIPS  <github@opensips.org>
+        * [d72113280] :
+
+        Rebuild documentation
+
+
+2024-12-10  Liviu Chircu  <liviu@opensips.org>
+        * [2ab7e9e5c] :
+
+        json: Fix handling for long integers
+
+        This patch adds the "enable_long_quoting" modparam (default: OFF), which
+        causes larger integers to be returned as strings, in order to avoid the
+        integer overflow and data loss.
+
+        (cherry picked from commit b191025b75afb07b96562f730a8e9631c8ea35fa)
+
+        Author: Vlad Paiu <vladpaiu@opensips.org>
+        Add support for bigints ( store as string when exposing to opensips script )
+
+        (cherry picked from commit f324a1a432b02137cab73978fe5df5e11005d938)
+
+        Author: Vlad Paiu <vladpaiu@opensips.org>
+        Fixed undefined int_value
+
+        (cherry picked from commit ae113c7271ef0a5baa4674972d3b713ac6def6c7)
+        (cherry picked from commit c1b23178a3a0535ee66bafcd36a0c3df8cdab3c3)
+
+
+2024-12-08  OpenSIPS  <github@opensips.org>
+        * [3e10b12ff] :
+
+        Rebuild documentation
+
+
+2024-12-04  Liviu Chircu  <liviu@opensips.org>
+        * [7cd555003] :
+
+        clusterer: Add some dev debugging logs
+
+        (cherry picked from commit 5eae5fb1580feb512cc9a065c558a72d85405afb)
+
+
+2024-12-04  Liviu Chircu  <liviu@opensips.org>
+        * [b1038d4a2] :
+
+        clusterer: Fix a subtle subtraction bug
+
+        The "--node->no_ping_retries" operation is bogus, because that field
+        is only written during DB reload, or when dynamically learning a new
+        node.  This can lead to the following state, where a node's link flips
+        between ON/OFF on each ping attempt:
+
+        [Nov 29 20:23:15] INFO:clusterer:do_action_trans_2: Ping reply not received, node [2] is down
+        [Nov 29 20:23:15] INFO:clusterer:handle_pong: Node [2] is UP
+        [Nov 29 20:23:42] INFO:clusterer:do_action_trans_2: Ping reply not received, node [2] is down
+        [Nov 29 20:23:42] INFO:clusterer:handle_pong: Node [2] is UP
+        [Nov 29 20:24:30] INFO:clusterer:do_action_trans_2: Ping reply not received, node [2] is down
+        [Nov 29 20:24:30] INFO:clusterer:handle_pong: Node [2] is UP
+
+        (cherry picked from commit 02c4d14d79ff6cfd76b4220cdece80c0853e4e1f)
+
+
+2024-12-04  Liviu Chircu  <liviu@opensips.org>
+        * [aa1aa937e] :
+
+        usrloc HA: Improve management for replicated "labels"
+
+        This patch aims to fix the occasional "differring rlabels"
+        debugging error messages which may occur after a restart in usrloc HA
+        scenarios, especially if the active SIP box is restarted while
+        processing REGISTER requests in parallel.
+
+        Since both record and contact labels are dynamic, per-instance and lost
+        on restart, conflicts are to be expected.  The idea behind the fix is to
+        simply adapt the replicated contact_id to the local instance, thus
+        preferring the local labels to the remote labels whenever detecting
+        conflict.
+
+        (cherry picked from commit 90a00795b1d0685394818c4a69c235f487389878)
+
+
+2024-12-04  Liviu Chircu  <liviu@opensips.org>
+        * [223d89a6b] :
+
+        clusterer: Fix links going down during sync; Optimize pinging
+
+        This patch makes it so *any* succesfully sent BIN packet is also
+        considered a Ping (for sender) and Pong (for receiver).  This helps
+        improve the stability of the inter-node links, which will no longer go
+        down during a lengthy sync operation (e.g. 50K+ registered phones, which
+        take a few seconds to sync, and which would also significantly delay any
+        Ping/Pong packets happening to be queued up on that same TCP stream).
+
+        Moreover, thanks to the "last ping" timestamp updates during regular
+        BIN replication mentioned above, the clusterer pinging timer will now
+        only generate Ping packets during idle times (no BIN traffic produced).
+
+        (cherry picked from commit 7d74f3dc6233cf0cd6ad517a2329b837e2bac8bb)
+
+
+2024-12-04  Razvan Crainea  <razvan@opensips.org>
+        * [ca35a937b] :
+
+        b2b_logic: do not discard BYEs of active entities
+
+        Completes/fixes ce19c70ec.
+
+        Many thanks go to Norm Brandinger for reporting and testing it!
+
+        (cherry picked from commit 8631e9835bef7bfdee9fac1c618096cd462e4ac3)
+
+
+2024-12-03  Liviu Chircu  <liviu@opensips.org>
+        * [518380f6f] :
+
+        proto_bin: Bump 'bin_async_max_postponed_chunks' 32 -> 1024
+
+        The default of 32 chunks was too low, considering that BIN TCP conns are
+        very low in count (often a handful of nodes!), while also transporting
+        large volums of data within short periods of time (e.g. dialog/usrloc
+        syncs), so async data buffering may often occur.
+
+        (cherry picked from commit 1f17e3076e6946bcc54e6c627299bee60cf4210b)
+
+
+2024-11-24  OpenSIPS  <github@opensips.org>
+        * [175743ca1] :
+
+        Rebuild documentation
+
+
+2024-11-21  Liviu Chircu  <liviu@opensips.org>
+        * [b5c1bb232] :
+
+        Merge pull request #3519 from vladpaiu/troubleshoot_redis_issue
+
+        Fix Cluster Master-Slave detection
+
+2024-11-21  Vlad Paiu  <vladpaiu@opensips.org>
+        * [9fed325f4] :
+
+        cachedb_redis: Fix Cluster Master-Slave detection; Add dbg logs
+
+
+2024-11-20  Liviu Chircu  <liviu@opensips.org>
+        * [6bf24a3ea] :
+
+        Fix more logs exposing URL passwords
+
+        Continuation of ed74875df6
+
+        (cherry picked from commit 1370ed710955ffef4f3e34c715f60821ce886da6)
+
+
+2024-11-19  Liviu Chircu  <liviu@opensips.org>
+        * [b3c7f70aa] :
+
+        nathelper: Improve docs on fix_nated_register() and received_avp
+
+        (cherry picked from commit 526b538cba8058f0829c21110597d82718d6bab4)
+
+
+2024-11-19  Liviu Chircu  <liviu@opensips.org>
+        * [9bd311bfc] :
+
+        dialog: Do not crash with previous table version (11)
+
+        This patch ensures OpenSIPS doesn't crash if the "dialog.script_flags"
+        column is still of INT type (previous DB schema, before OpenSIPS 3.4).
+
+        (cherry picked from commit a1b273828f3b20e1b99f9c8185d5a7bf78504d50)
+
+
+2024-11-17  OpenSIPS  <github@opensips.org>
+        * [448fdf959] :
+
+        Rebuild documentation
+
+
+2024-11-15  Gang Zhuo  <gang.zhuo@gmail.com>
+        * [d2bd39139] :
+
+        db_oracle: fix "invalid parameter value" error when do sql_query("update ...")
+
+        (cherry picked from commit b5133bde0020740185e2c8c459b3b73f58623f65)
+
+
+2024-11-15  Gang Zhuo  <gang.zhuo@gmail.com>
+        * [19c7631b6] :
+
+        usrloc: fix build error when ORACLE_USRLOC flag is present
+
+        (cherry picked from commit 1f998239078fd5a0a067f6c56b83c3c2f4cce40f)
+
+
+2024-11-15  Liviu Chircu  <liviu@opensips.org>
+        * [e7fcb8a01] :
+
+        event_routing: Clean up convoluted looping logic
+
+        (cherry picked from commit a9e8b9203f405fcefda8670e7b9bbe7d0a504bab)
+
+
+2024-11-15  Vlad Paiu  <vladpaiu@opensips.org>
+        * [1ba9ebe74] :
+
+        go to the next sub on continue
+
+        (cherry picked from commit 6ef166a4b1e09bdf6f535c15ed57ca62fcaab436)
+
+
+2024-11-12  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f17c60f79] :
+
+        [drouting] do not report error if replicated flags are the same
+
+        Avoid reporting error if the GW/Carrier replicated package does not change the existing status flags.
+
+        (cherry picked from commit 36b916a7e1333c7f539dcc25c93ba8c143d8016f)
+
+
+2024-10-27  OpenSIPS  <github@opensips.org>
+        * [653361b19] :
+
+        Rebuild documentation
+
+
+2024-10-24  Liviu Chircu  <liviu@opensips.org>
+        * [d6ad7687b] :
+
+        clusterer sync: Fix several SHM leaks on error cases (Donor side)
+
+        (cherry picked from commit 101396a59c23f91bc821c36b9bc1bd2e5daa1d35)
+
+
+2024-10-24  Liviu Chircu  <liviu@opensips.org>
+        * [8d6cd3740] :
+
+        clusterer: Fix sync edge-case causing SHM accumulation
+
+        This patch fixes a specific sync sequence leading to indefinite
+        accumulation of BIN packets and SHM exhaustion, as follows:
+
+        1) Sync Receiver node times out the sync in sync_check_timer()
+            (default timeout is 5s, by no means difficult to achieve)
+        2) Sync Donor continues to send SYNC packets
+            (on Receiver side, cap state is updated: PROGRESSING)
+        3) ! Sync Donor node loses link-state mid-sync, due to the pings being
+            on the same TCP connection (and delayed, way in the back)
+        4) Sync Donor fails & drops remaining SYNC + SYNC-END packets, as link
+            is down.  Due to this, the handle_sync_end(!is_timeout) procedure
+            is never ran on the Receiver, so the PROGRESSING flag is never
+            removed -> indefinite SHM buffering / memory leak
+
+        Thanks to Răzvan Crainea for helping with code & troubleshooting here!
+
+        (cherry picked from commit e5b2317ca9e9f33baef29205ecd792d8a5d5d2ed)
+
+
+2024-10-24  Razvan Crainea  <razvan@opensips.org>
+        * [fe9fac9d7] :
+
+        b2b_logic: a BYE for a disconnected entity should not influence the call
+
+        (cherry picked from commit 49ba1c37bfcd8dbc265c19c45895b3eee767b561)
+
+
+2024-10-24  Razvan Crainea  <razvan@opensips.org>
+        * [817adea7c] :
+
+        b2b_logic: always terminate a bridge initiator
+
+        Before this commit, only if the `notify` flag was used, the entity would
+        have been deleted.
+
+        (cherry picked from commit aff2d963126f097411753d699239bc938479c892)
+
+
+2024-10-24  Razvan Crainea  <razvan@opensips.org>
+        * [61c8ec659] :
+
+        b2b_logic: do not discard a recognized cross-BYE
+
+        (cherry picked from commit ce19c70ec7ca6cd6a7a12347a5acc0a282432c50)
+
+
+2024-10-24  Razvan Crainea  <razvan@opensips.org>
+        * [717940a01] :
+
+        b2b_entities: always unref a transaction created programatically
+
+        Ensure transactions do not leak by creating/replying them and not
+        unreffing when callback exits SCB_DROP_MSG
+
+        (cherry picked from commit 8b36f4cd6da33b26a8e2ce2bccf5cb075f2f1d04)
+
+
+2024-10-24  Razvan Crainea  <razvan@opensips.org>
+        * [06724800b] :
+
+        dialog: accurate match of outgoing legs
+
+        The initial code assumes that for each transaction branch, we serially
+        create a dialog leg - therefore, when a reply is received for a specific
+        branch, we match the leg based on its index.
+        This logic breaks when having a branch that has no outgoing leg/message
+        (i.e. when push notification is used), because the dialog legs id gets
+        offsetted by the number of "blind" branches, thus we are no longer able
+        to properly match the reply with the leg.
+        This fix makes sure that when creating a let, it has the same index as
+        the transaction's branch id, hence the reply is properly matched.
+
+        (cherry picked from commit 5280c86a100ad9414e9beeca620648d8388bab42)
+
+
+2024-10-24  Vlad Paiu  <vladpaiu@opensips.org>
+        * [e629e20af] :
+
+        Only update the TM UAS if we are in request context and are not running on top of a fake req
+
+        (cherry picked from commit 2031348d0c44da7b077b3a083973d3b525044b11)
+
+
 =========================== Release 3.4.9 ==============================
 
 2024-10-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
