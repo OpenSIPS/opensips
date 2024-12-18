@@ -2350,7 +2350,7 @@ int b2bl_push_bridge_retry(b2bl_tuple_t *tuple)
 	 * order they appear */
 	lock_get(b2bl_bridge_retry_lock);
 	retry->time = get_uticks();
-	retry->next = *b2bl_bridge_retry_head;
+	retry->next = NULL;
 	if (*b2bl_bridge_retry_last)
 		(*b2bl_bridge_retry_last)->next = retry;
 	else
