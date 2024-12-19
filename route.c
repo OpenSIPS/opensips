@@ -359,6 +359,7 @@ struct script_route_ref *dup_ref_script_route_in_shm(
 		sizeof(struct script_route_ref) + ref->name.len + 1);
 	if (s_ref==NULL) {
 		LM_ERR("failed to dup script route in shm\n");
+		return NULL;
 	} else {
 		memcpy( s_ref, ref,
 			sizeof(struct script_route_ref) + ref->name.len + 1 );
