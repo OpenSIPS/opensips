@@ -43,7 +43,7 @@ extern struct db_sqlite_pragma_list *pragma_list;
 
 #define SQLITE_ID "sqlite:/"
 #define URL_BUFSIZ 1024
-#define PRAGMA_BUFSIZE 255
+#define PRAGMA_BUFSIZE 256
 char url_buf[URL_BUFSIZ];
 
 int db_sqlite_connect(struct sqlite_con* ptr)
@@ -81,13 +81,18 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 	if (pragma_list) {
 		p_iter=pragma_list;
 		for (p_iter=pragma_list; p_iter; p_iter=p_iter->next) {
-			sprintf(pragma_sql, "PRAGMA %s;", p_iter->pragma);
+			if (strlen(p_iter->pragma) > (PRAGMA_BUFSIZE - 9)) {
+				LM_ERR("Pragma size is too big: %d (max: %d)\n", 
+					(int)strlen(p_iter->pragma), (int)(PRAGMA_BUFSIZE - 9));
+				continue;
+			}
+			snprintf(pragma_sql, PRAGMA_BUFSIZE, "PRAGMA %s;", p_iter->pragma);
 			if (sqlite3_exec(con, pragma_sql, NULL, NULL, &errmsg) != SQLITE_OK) {
 				LM_ERR("Failed to execute PRAGMA [%s]! Errmsg [%s]!\n",
 						p_iter->pragma, errmsg);
 				sqlite3_free(errmsg);
 			}
-			LM_DBG("Pragma [%s] executed\n", p_iter->pragma);
+			LM_DBG("Pragma [%s] executed\n", pragma_sql);
 		}
 	}
 
