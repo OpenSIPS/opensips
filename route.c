@@ -200,27 +200,30 @@ static struct script_route_ref * __ref_script_route_by_name(char *name, int l,
 	struct script_route_ref *ref;
 	unsigned int i;
 
-	/* first check if a reference to the route already exists */
-	for( ref=sroute_refs ; ref ; ref=ref->next ) {
-		if (ref->type==type && ref->name.len==l
-		&& strncmp(ref->name.s,name,l)==0) {
-			/* we found an already exists reference */
-			ref->u.refcnt++;
-			LM_DBG("returning existing %p [%.*s] with idx %d, "
-				"ver/cnt %d\n", ref,
-				ref->name.len, ref->name.s, ref->idx, ref->u.refcnt);
-			/* note that the returned reference may point to
-			 * no route, there is no guarantee to be a working one */
-			return ref;
+	if (!in_shm) {
+		/* first check if a reference to the route already exists */
+		for( ref=sroute_refs ; ref ; ref=ref->next ) {
+			if (ref->type==type && ref->name.len==l
+			&& strncmp(ref->name.s,name,l)==0) {
+				/* we found an already exists reference */
+				ref->u.refcnt++;
+				LM_DBG("returning existing %p [%.*s] with idx %d, "
+					"ver/cnt %d\n", ref,
+					ref->name.len, ref->name.s, ref->idx, ref->u.refcnt);
+				/* note that the returned reference may point to
+				 * no route, there is no guarantee to be a working one */
+				return ref;
+			}
 		}
+
+		/* no reference found, create a new one */
+		ref = pkg_malloc( sizeof *ref + l + 1 );
+	} else {
+		ref = shm_malloc( sizeof *ref + l + 1 );
 	}
 
-	/* no reference found, create a new one */
-	ref = in_shm
-		? shm_malloc( sizeof(struct script_route_ref) + l + 1 )
-		: pkg_malloc( sizeof(struct script_route_ref) + l + 1 );
 	if (ref==NULL) {
-		LM_ERR("failed to pkg allocate new sroute reference\n");
+		LM_ERR("failed to allocate new sroute reference\n");
 		return NULL;
 	}
 	ref->name.s = (char*)(ref+1);
