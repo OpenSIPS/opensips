@@ -75,10 +75,7 @@ static inline void run_resume_route( struct script_route_ref * resume_route,
 			exec_post_req_cb(msg);
 }
 
-
-/* function triggered from reactor in order to continue the processing
- */
-int t_resume_async(int fd, void *param, int was_timeout)
+int t_resume_async_request(int fd, void*param, int was_timeout)
 {
 	static struct sip_msg faked_req;
 	static struct ua_client uac;
@@ -90,176 +87,11 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	const struct socket_info* backup_si;
 	struct cell *t= ctx->t;
 	int route;
-	int msg_status;
-	int last_uac_status;
-	int branch;
-	int reply_status;
-	struct ua_client *reply_uac;
-	branch_bm_t cancel_bitmap;
-	utime_t timer;
 
 	if (valid_async_fd(fd))
-		LM_DBG("resuming on fd %d, transaction %p \n", fd, t);
+		LM_DBG("resuming request on fd %d, transaction %p \n", fd, t);
 	else
-		LM_DBG("resuming without a fd, transaction %p \n", t);
-
-	if (current_processing_ctx) {
-		LM_CRIT("BUG - a context is already set (%p), overwriting it...\n",
-		        current_processing_ctx);
-		set_global_context(NULL);
-	}
-
-	if (ctx->reply) {
-		/* enviroment setting */
-		current_processing_ctx = ctx->msg_ctx;
-		backup_t = get_t();
-		backup_e2eack_t = get_e2eack_t();
-		backup_cancelled_t = get_cancelled_t();
-
-		set_cancelled_t(ctx->cancelled_t);
-		set_e2eack_t(ctx->e2eack_t);
-		reset_kr();
-		set_kr(ctx->kr);
-
-		/* make available the avp list from transaction */
-		backup_list = set_avp_list( &t->user_avps );
-
-		/* avoid double lookup of our branch, just get it from ctx */
-		branch=ctx->branch;
-
-		/* fake transaction */
-		set_t( t );
-
-		cancel_bitmap=0;
-		msg_status=ctx->reply->REPLY_STATUS;
-		reply_uac=&t->uac[branch];
-		LM_DBG("org. status uas=%d, uac[%d]=%d local=%d is_invite=%d)\n",
-			t->uas.status, branch, reply_uac->last_received,
-			is_local(t), is_invite(t));
-		last_uac_status=reply_uac->last_received;
-
-		_tm_branch_index = branch;
-
-		/* call the resume function in order to read and handle data */
-		return_code = ((async_resume_module*)
-			(was_timeout ? ctx->async.timeout_f : ctx->async.resume_f))
-			( (valid_async_fd(fd) ? fd: ASYNC_FD_NONE), ctx->reply,
-			ctx->async.resume_param );
-
-		if (valid_async_fd(fd)) {
-			/* remove from reactor, we are done */
-			reactor_del_reader(fd, -1, IO_FD_CLOSING);
-		}
-
-		if (async_status == ASYNC_DONE_CLOSE_FD && valid_async_fd(fd))
-			close(fd);
-
-		/* run the resume_route (some type as the original one) */
-		swap_route_type(route, ctx->route_type);
-		/* do not run any post script callback, we are a reply */
-		run_resume_route( ctx->resume_route, ctx->reply, 0);
-		set_route_type(route);
-
-		/* DO TM suspended actions to decide if we need to relay */
-		LOCK_REPLIES( t );
-
-		/* we fire a cancel on spot if (a) branch is marked "to be canceled" or (b)
-		 * the whole transaction was canceled (received cancel) and no cancel sent
-		 * yet on this branch; and of course, only if a provisional reply :) */
-		if (t->uac[branch].flags&T_UAC_TO_CANCEL_FLAG ||
-		((t->flags&T_WAS_CANCELLED_FLAG) && !t->uac[branch].local_cancel.buffer.s)) {
-			if ( msg_status < 200 )
-				/* reply for an UAC with a pending cancel -> do cancel now */
-				cancel_branch(t, branch);
-			/* reset flag */
-			t->uac[branch].flags &= ~(T_UAC_TO_CANCEL_FLAG);
-		}
-
-		if (is_local(t)) {
-			reply_status = local_reply(t,ctx->reply, branch,msg_status,&cancel_bitmap);
-			if (reply_status == RPS_COMPLETED) {
-				cleanup_uac_timers(t);
-				if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
-				/* There is no need to call set_final_timer because we know
-				 * that the transaction is local */
-				put_on_wait(t);
-			}
-		} else {
-			reply_status = relay_reply(t,ctx->reply,branch,msg_status,&cancel_bitmap);
-			/* clean-up the transaction when transaction completed */
-			if (reply_status == RPS_COMPLETED) {
-				/* no more UAC FR/RETR (if I received a 2xx, there may
-				 * be still pending branches ...
-				 */
-				cleanup_uac_timers(t);
-				if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
-				/* FR for negative INVITES, WAIT anything else */
-				/* set_final_timer(t); */
-			}
-		}
-
-		if (reply_status!=RPS_PROVISIONAL)
-			goto restore_exit_reply;
-
-		/* update FR/RETR timers on provisional replies */
-		if (msg_status < 200 && (restart_fr_on_each_reply ||
-		((last_uac_status<msg_status) &&
-		((msg_status >= 180) || (last_uac_status == 0)))
-		) ) { /* provisional now */
-			if (is_invite(t)) {
-				/* invite: change FR to longer FR_INV, do not
-				 * attempt to restart retransmission any more
-				 */
-				timer = is_timeout_set(t->fr_inv_timeout) ?
-					t->fr_inv_timeout :
-					timer_id2timeout[FR_INV_TIMER_LIST];
-
-				LM_DBG("FR_INV_TIMER = %lld\n", timer);
-				set_timer(&reply_uac->request.fr_timer, FR_INV_TIMER_LIST, &timer);
-			} else {
-				/* non-invite: restart retransmissions (slow now) */
-				reply_uac->request.retr_list = RT_T2;
-				set_timer(&reply_uac->request.retr_timer, RT_T2, 0);
-			}
-		} /* provisional replies */
-restore_exit_reply:
-		t_unref(ctx->reply);
-
-		_tm_branch_index = 0;
-
-		/* cleanup any PKG lumps that we might have added in the resume route */
-		del_notflaged_lumps( &(ctx->reply->add_rm), LUMPFLAG_SHMEM );
-		del_notflaged_lumps( &(ctx->reply->body_lumps), LUMPFLAG_SHMEM );
-		del_nonshm_lump_rpl( &(ctx->reply->reply_lump) );
-
-
-		/* we need to cleaup the clone that we made
-		 * any internal callsback might try to do extra parsing which will
-		 * allocate pkg mem - free that now if outside our memory zone */
-		clean_msg_clone(ctx->reply,ctx->reply,ctx->reply+ctx->reply_length);
-		/* and free the message and context */
-		free_cloned_msg(ctx->reply);
-		shm_free(ctx);
-
-		/* free also the processing ctx if still set
-		 * NOTE: it may become null if inside the run_resume_route
-		 * another async jump was made (and context attached again
-		 * to transaction) */
-		if (current_processing_ctx) {
-			context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
-			pkg_free(current_processing_ctx);
-		}
-
-		/* restore original environment */
-		set_t(backup_t);
-		set_cancelled_t(backup_cancelled_t);
-		set_e2eack_t(backup_e2eack_t);
-		/* restore original avp list */
-		set_avp_list( backup_list );
-
-		current_processing_ctx = NULL;
-		return 0;
-	}
+		LM_DBG("resuming request without a fd, transaction %p \n", t);
 
 	/* prepare for resume route, by filling in a phony UAC structure to
 	 * trigger the inheritance of the branch specific values */
@@ -385,6 +217,242 @@ restore:
 	set_global_context(NULL);
 
 	return 0;
+}	
+
+int t_resume_async_reply(int fd, void*param, int was_timeout)
+{
+	async_tm_ctx *ctx = (async_tm_ctx *)param;
+	struct cell *backup_t;
+	struct cell *backup_cancelled_t;
+	struct cell *backup_e2eack_t;
+	struct usr_avp **backup_list;
+	struct cell *t= ctx->t;
+	int route;
+	int msg_status;
+	int last_uac_status;
+	int branch;
+	int reply_status;
+	struct ua_client *reply_uac;
+	branch_bm_t cancel_bitmap;
+	utime_t timer;
+
+	if (valid_async_fd(fd))
+		LM_DBG("resuming reply on fd %d, transaction %p \n", fd, t);
+	else
+		LM_DBG("resuming reply without a fd, transaction %p \n", t);
+
+
+	/* enviroment setting */
+	current_processing_ctx = ctx->msg_ctx;
+	backup_t = get_t();
+	backup_e2eack_t = get_e2eack_t();
+	backup_cancelled_t = get_cancelled_t();
+
+	set_cancelled_t(ctx->cancelled_t);
+	set_e2eack_t(ctx->e2eack_t);
+	reset_kr();
+	set_kr(ctx->kr);
+
+	/* make available the avp list from transaction */
+	backup_list = set_avp_list( &t->user_avps );
+
+	/* avoid double lookup of our branch, just get it from ctx */
+	branch=ctx->branch;
+
+	/* fake transaction */
+	set_t( t );
+
+	cancel_bitmap=0;
+	msg_status=ctx->reply->REPLY_STATUS;
+	reply_uac=&t->uac[branch];
+	LM_DBG("org. status uas=%d, uac[%d]=%d local=%d is_invite=%d)\n",
+		t->uas.status, branch, reply_uac->last_received,
+		is_local(t), is_invite(t));
+	last_uac_status=reply_uac->last_received;
+
+	_tm_branch_index = branch;
+
+	async_status = ASYNC_DONE; /* assume default status as done */
+
+	/* call the resume function in order to read and handle data */
+	return_code = ((async_resume_module*)
+		(was_timeout ? ctx->async.timeout_f : ctx->async.resume_f))
+		( (valid_async_fd(fd) ? fd: ASYNC_FD_NONE), ctx->reply,
+		ctx->async.resume_param );
+
+	if (async_status==ASYNC_CONTINUE) {
+		/* do not run the resume route */
+		goto restore;
+	} else if (async_status==ASYNC_DONE_NO_IO) {
+		/* don't do any change on the fd, since the module handled everything */
+		goto route;
+	} else if (async_status==ASYNC_CHANGE_FD) {
+		if (return_code<0) {
+			LM_ERR("ASYNC_CHANGE_FD: given file descriptor shall be positive!\n");
+			goto restore;
+		} else if (return_code > 0 && valid_async_fd(fd) && return_code == fd) {
+			/*trying to add the same fd; shall continue*/
+			LM_CRIT("You are trying to replace the old fd with the same fd!"
+					"Will act as in ASYNC_CONTINUE!\n");
+			goto restore;
+		}
+
+		/* if there was a file descriptor, remove it from the reactor */
+		reactor_del_reader(fd, -1, IO_FD_CLOSING);
+		fd=return_code;
+
+		/* insert the new fd inside the reactor */
+		if(reactor_add_reader(fd,F_SCRIPT_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0) {
+			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
+			do {
+				async_status = ASYNC_DONE;
+				return_code = ((async_resume_module*)ctx->async.resume_f)(
+						fd, ctx->reply,	ctx->async.resume_param );
+				if (async_status == ASYNC_CHANGE_FD)
+					fd=return_code;
+			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
+			goto route;
+		}
+
+		/* changed fd; now restore old state */
+		goto restore;
+	}
+
+	if (valid_async_fd(fd)) {
+		/* remove from reactor, we are done */
+		reactor_del_reader(fd, -1, IO_FD_CLOSING);
+	}
+
+route:
+	if (async_status == ASYNC_DONE_CLOSE_FD && valid_async_fd(fd))
+		close(fd);
+
+	/* run the resume_route (some type as the original one) */
+	swap_route_type(route, ctx->route_type);
+	/* do not run any post script callback, we are a reply */
+	run_resume_route( ctx->resume_route, ctx->reply, 0);
+	set_route_type(route);
+
+	/* DO TM suspended actions to decide if we need to relay */
+	LOCK_REPLIES( t );
+
+	/* we fire a cancel on spot if (a) branch is marked "to be canceled" or (b)
+	 * the whole transaction was canceled (received cancel) and no cancel sent
+	 * yet on this branch; and of course, only if a provisional reply :) */
+	if (t->uac[branch].flags&T_UAC_TO_CANCEL_FLAG ||
+	((t->flags&T_WAS_CANCELLED_FLAG) && !t->uac[branch].local_cancel.buffer.s)) {
+		if ( msg_status < 200 )
+			/* reply for an UAC with a pending cancel -> do cancel now */
+			cancel_branch(t, branch);
+		/* reset flag */
+		t->uac[branch].flags &= ~(T_UAC_TO_CANCEL_FLAG);
+	}
+
+	if (is_local(t)) {
+		reply_status = local_reply(t,ctx->reply, branch,msg_status,&cancel_bitmap);
+		if (reply_status == RPS_COMPLETED) {
+			cleanup_uac_timers(t);
+			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
+			/* There is no need to call set_final_timer because we know
+			 * that the transaction is local */
+			put_on_wait(t);
+		}
+	} else {
+		reply_status = relay_reply(t,ctx->reply,branch,msg_status,&cancel_bitmap);
+		/* clean-up the transaction when transaction completed */
+		if (reply_status == RPS_COMPLETED) {
+			/* no more UAC FR/RETR (if I received a 2xx, there may
+			 * be still pending branches ...
+			 */
+			cleanup_uac_timers(t);
+			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
+			/* FR for negative INVITES, WAIT anything else */
+			/* set_final_timer(t); */
+		}
+	}
+
+	if (reply_status!=RPS_PROVISIONAL)
+		goto restore_exit_reply;
+
+	/* update FR/RETR timers on provisional replies */
+	if (msg_status < 200 && (restart_fr_on_each_reply ||
+	((last_uac_status<msg_status) &&
+	((msg_status >= 180) || (last_uac_status == 0)))
+	) ) { /* provisional now */
+		if (is_invite(t)) {
+			/* invite: change FR to longer FR_INV, do not
+			 * attempt to restart retransmission any more
+			 */
+			timer = is_timeout_set(t->fr_inv_timeout) ?
+				t->fr_inv_timeout :
+				timer_id2timeout[FR_INV_TIMER_LIST];
+
+			LM_DBG("FR_INV_TIMER = %lld\n", timer);
+			set_timer(&reply_uac->request.fr_timer, FR_INV_TIMER_LIST, &timer);
+		} else {
+			/* non-invite: restart retransmissions (slow now) */
+			reply_uac->request.retr_list = RT_T2;
+			set_timer(&reply_uac->request.retr_timer, RT_T2, 0);
+		}
+	} /* provisional replies */
+restore_exit_reply:
+	t_unref(ctx->reply);
+
+	_tm_branch_index = 0;
+
+	/* cleanup any PKG lumps that we might have added in the resume route */
+	del_notflaged_lumps( &(ctx->reply->add_rm), LUMPFLAG_SHMEM );
+	del_notflaged_lumps( &(ctx->reply->body_lumps), LUMPFLAG_SHMEM );
+	del_nonshm_lump_rpl( &(ctx->reply->reply_lump) );
+
+
+	/* we need to cleaup the clone that we made
+	 * any internal callsback might try to do extra parsing which will
+	 * allocate pkg mem - free that now if outside our memory zone */
+	clean_msg_clone(ctx->reply,ctx->reply,ctx->reply+ctx->reply_length);
+	/* and free the message and context */
+	free_cloned_msg(ctx->reply);
+	shm_free(ctx);
+
+	/* free also the processing ctx if still set
+	 * NOTE: it may become null if inside the run_resume_route
+	 * another async jump was made (and context attached again
+	 * to transaction) */
+	if (current_processing_ctx) {
+		context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+		pkg_free(current_processing_ctx);
+	}
+
+restore:
+	/* restore original environment */
+	set_t(backup_t);
+	set_cancelled_t(backup_cancelled_t);
+	set_e2eack_t(backup_e2eack_t);
+	/* restore original avp list */
+	set_avp_list( backup_list );
+
+	current_processing_ctx = NULL;
+	return 0;
+}	
+
+/* function triggered from reactor in order to continue the processing
+ */
+int t_resume_async(int fd, void *param, int was_timeout)
+{
+	async_tm_ctx *ctx = (async_tm_ctx *)param;
+
+	if (current_processing_ctx) {
+		LM_CRIT("BUG - a context is already set (%p), overwriting it...\n",
+		        current_processing_ctx);
+		set_global_context(NULL);
+	}
+
+	/* for now we only support async in REQUEST and ONREPLY routes,
+	 * dispatch to the correct resume function */
+	if (ctx->reply) {
+		return t_resume_async_reply(fd,param,was_timeout); 
+	} else
+		return t_resume_async_request(fd,param,was_timeout); 
 }
 
 
