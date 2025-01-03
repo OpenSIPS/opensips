@@ -101,6 +101,8 @@ extern unsigned long (*shm_frag_line)(void *p);
 #define shm_frag_size qm_frag_size
 #elif defined HP_MALLOC
 #define shm_frag_size hp_frag_size
+#elif defined F_PARALLEL_MALLOC
+#define shm_frag_size parallel_frag_size
 #endif
 #else
 extern unsigned long (*shm_frag_size)(void *p);
@@ -398,6 +400,12 @@ inline static void* _shm_malloc(unsigned long size,
 {
 	void *p;
 
+	LM_ERR(" In the decider alloc dbg func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
+
 	shm_lock();
 
 	p = SHM_MALLOC(shm_block, size, file, function, line);
@@ -423,6 +431,12 @@ inline static void* _shm_malloc_unsafe(unsigned long size,
 {
 	void *p;
 
+	LM_ERR(" In the decider alloc unsafe func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
+
 	p = SHM_MALLOC_UNSAFE(shm_block, size, file, function, line);
 	shm_threshold_check();
 
@@ -441,6 +455,12 @@ inline static void* _shm_malloc_bulk(unsigned long size,
 	const char *file, const char *function, unsigned int line )
 {
 	void *p;
+
+	LM_ERR(" In the decider alloc bulk func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
 
 	p = SHM_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
@@ -462,6 +482,12 @@ inline static void* _shm_realloc(void *ptr, unsigned long size,
 		const char* file, const char* function, unsigned int line )
 {
 	void *p;
+
+	LM_ERR(" In the decider realloc func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
 
 	#ifdef SHM_EXTRA_STATS
 		unsigned long origin = 0;
@@ -500,6 +526,12 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned long size,
 {
 	void *p;
 
+	LM_ERR(" In the decider alloc unsafe func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
+
 	#ifdef SHM_EXTRA_STATS
 		unsigned long origin = 0;
 		if (ptr) {
@@ -531,6 +563,12 @@ inline static void _shm_free(void *ptr,
 {
 	int size = -1;
 
+	LM_ERR(" In the decider free func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
+
 	shm_lock();
 
 	#ifdef SHM_EXTRA_STATS
@@ -557,6 +595,13 @@ inline static void _shm_free(void *ptr,
 inline static void _shm_free_unsafe(void *ptr,
 		const char* file, const char* function, unsigned int line )
 {
+
+	LM_ERR(" In the decider free unsafe func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
+
 #ifdef SHM_EXTRA_STATS
 	if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
 		update_module_stats(-shm_frag_size(ptr), -(shm_frag_size(ptr) + shm_frag_overhead), -1, shm_stats_get_index(ptr));
@@ -577,6 +622,12 @@ inline static void _shm_free_bulk(void *ptr,
 		const char* file, const char* function, unsigned int line)
 {
 	int size;
+
+	LM_ERR(" In the decider free bulk func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
 
 	#ifdef SHM_EXTRA_STATS
 		if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
@@ -635,14 +686,31 @@ inline static void _shm_free_bulk(void *ptr,
 #define shm_malloc_func shm_malloc
 inline static void* shm_malloc(unsigned long size)
 {
-	void *p;
+	int bucket;
+	void *p,*block;
 
+	//LM_ERR(" In the decider alloc non-dbg func ! \n");
+
+#ifdef F_PARALLEL_MALLOC
+	//LM_ERR("COnvo alloc safe - yay ! \n");
+
+	bucket = rand() % 128;
+	block = shm_blocks[bucket];
+	//LM_ERR("Allocating %lu bytes in bucket %d, block %p \n",size,bucket,block);
+
+	//LM_ERR("Getting lock %p \n",hash_locks[bucket]);
+	lock_get(hash_locks[bucket]);
+	p = SHM_MALLOC(block, size);
+	lock_release(hash_locks[bucket]);
+
+#else
 	shm_lock();
 
 	p = SHM_MALLOC(shm_block, size);
 	shm_threshold_check();
 
 	shm_unlock();
+#endif
 
 #ifdef SHM_EXTRA_STATS
 	if (p) {
@@ -658,9 +726,28 @@ inline static void* shm_malloc(unsigned long size)
 #define shm_malloc_func_unsafe shm_malloc_unsafe
 inline static void* shm_malloc_unsafe(unsigned int size)
 {
-	void *p;
+	int bucket;
+	void *p, *block;
 
+#ifdef F_PARALLEL_MALLOC
+	//LM_ERR("COnvo alloc - yay ! \n");
+
+
+
+	/* TODO - ugly for now - if we are not fully init, always go to block 0 */
+	if (init_done == 0) {
+		block = shm_blocks[0];
+	} else {
+		bucket = rand() % 128;
+		block = shm_blocks[bucket];
+		//LM_ERR("Allocating %u bytes in bucket %d, block %p \n",size,bucket,block);
+	}
+
+	p = SHM_MALLOC_UNSAFE(block, size);
+
+#else
 	p = SHM_MALLOC_UNSAFE(shm_block, size);
+#endif
 
 	shm_threshold_check();
 
@@ -680,6 +767,12 @@ inline static void* shm_malloc_bulk(unsigned long size)
 {
 	void *p;
 
+	LM_ERR(" In the decider alloc bulk func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
+
 	p = SHM_MALLOC(shm_block, size);
 	shm_threshold_check();
 
@@ -697,9 +790,17 @@ inline static void* shm_malloc_bulk(unsigned long size)
 #define shm_realloc_func shm_realloc
 inline static void* shm_realloc(void *ptr, unsigned long size)
 {
-	void *p;
+	int bucket;
+	void *p, *block;
+
+	//LM_ERR(" In the decider non-dbg realloc safe func for %p! \n",ptr);
+#ifdef F_PARALLEL_MALLOC
+	/* we do not lock here, we do not know where to do that, only internals know */
+	//LM_ERR("COnvo realloc safe - yay ! \n");
+#else
 
 	shm_lock();
+#endif
 
 #ifdef SHM_EXTRA_STATS
 	unsigned long origin = 0;
@@ -709,10 +810,35 @@ inline static void* shm_realloc(void *ptr, unsigned long size)
 	}
 #endif
 
+#ifdef F_PARALLEL_MALLOC
+	if (!ptr) {
+		/* realloc with NULL is just alloc, pick a bucket */ 
+		bucket = rand() % 128;
+		block = shm_blocks[bucket];
+		//LM_ERR("Allocating %lu bytes in bucket!!! %d, block %p \n",size,bucket,block);
+	} else {
+		/* the allocator will reuse existing block from frag */
+		block = NULL;
+	}
+
+	if (block) {
+		//LM_ERR("Getting lock %p \n",hash_locks[bucket]);
+		lock_get(hash_locks[bucket]);
+	}
+	p = SHM_REALLOC(block, ptr, size);
+	if (block) {
+		//LM_ERR("Getting lock %p \n",hash_locks[bucket]);
+		lock_release(hash_locks[bucket]);
+	}
+#else
 	p = SHM_REALLOC(shm_block, ptr, size);
+#endif
 	shm_threshold_check();
 
+#ifdef F_PARALLEL_MALLOC
+#else
 	shm_unlock();
+#endif
 
 #ifdef SHM_EXTRA_STATS
 	if (p) {
@@ -732,7 +858,9 @@ inline static void* shm_realloc(void *ptr, unsigned long size)
 #define shm_realloc_func_unsafe shm_realloc_unsafe
 inline static void* shm_realloc_unsafe(void *ptr, unsigned long size)
 {
-	void *p;
+	int bucket;
+	void *p,*block;
+
 #ifdef SHM_EXTRA_STATS
 	unsigned long origin = 0;
 	if (ptr) {
@@ -741,7 +869,25 @@ inline static void* shm_realloc_unsafe(void *ptr, unsigned long size)
 	}
 #endif
 
+#ifdef F_PARALLEL_MALLOC
+	//LM_ERR("COnvo realloc - yay ! \n");
+
+	if (!ptr) {
+		/* realloc with NULL is just alloc, pick a bucket */ 
+		bucket = rand() % 128;
+		block = shm_blocks[bucket];
+		//LM_ERR("Allocating %lu bytes in bucket!!! %d, block %p \n",size,bucket,block);
+	} else {
+		/* the allocator will reuse existing block from frag */
+		block = NULL;
+	}
+
+	p = SHM_REALLOC_UNSAFE(block, ptr, size);
+
+#else
+
 	p = SHM_REALLOC_UNSAFE(shm_block, ptr, size);
+#endif
 	shm_threshold_check();
 
 #ifdef SHM_EXTRA_STATS
@@ -761,7 +907,12 @@ inline static void* shm_realloc_unsafe(void *ptr, unsigned long size)
 #define shm_free_func shm_free
 inline static void shm_free(void *_p)
 {
+#ifdef F_PARALLEL_MALLOC
+	/* we do not lock here, we do not know where to do that, only internals know */
+	//LM_ERR("COnvo free - yay ! \n");
+#else
 	shm_lock();
+#endif
 
 	#ifdef SHM_EXTRA_STATS
 		if (shm_stats_get_index(_p) !=  VAR_STAT(MOD_NAME)) {
@@ -774,10 +925,17 @@ inline static void shm_free(void *_p)
 		}
 	#endif
 
+#ifdef F_PARALLEL_MALLOC
+	SHM_FREE(NULL, _p);
+#else
 	SHM_FREE(shm_block, _p);
+#endif
 	shm_threshold_check();
 
+#ifdef F_PARALLEL_MALLOC
+#else
 	shm_unlock();
+#endif
 }
 
 #define shm_free_unsafe_func shm_free_unsafe
@@ -800,6 +958,12 @@ inline static void shm_free_unsafe(void *_p)
 #define shm_free_bulk_func shm_free_bulk
 inline static void shm_free_bulk(void *_p)
 {
+
+	LM_ERR(" In the decider free bulk func ! \n");
+#ifdef F_PARALLEL_MALLOC
+	/* TODO not supported for now, if it gets called, just abort */
+	abort();
+#endif
 	#ifdef SHM_EXTRA_STATS
 		if (shm_stats_get_index(_p) !=  VAR_STAT(MOD_NAME)) {
 				update_module_stats(-shm_frag_size(_p), -(shm_frag_size(_p) + shm_frag_overhead), -1, shm_stats_get_index(_p));
@@ -819,17 +983,29 @@ inline static void shm_free_bulk(void *_p)
 
 inline static void shm_status(void)
 {
+#ifdef F_PARALLEL_MALLOC
+#else
 	shm_lock();
+#endif
 	SHM_STATUS(shm_block);
+#ifdef F_PARALLEL_MALLOC
+#else
 	shm_unlock();
+#endif
 }
 
 
 inline static void shm_info(struct mem_info* mi)
 {
+#ifdef F_PARALLEL_MALLOC
+#else
 	shm_lock();
+#endif
 	SHM_INFO(shm_block, mi);
+#ifdef F_PARALLEL_MALLOC
+#else
 	shm_unlock();
+#endif
 }
 
 

@@ -23,30 +23,40 @@
 #ifndef mem_common_h
 #define mem_common_h
 
+#include "../lock_ops.h"
+
 extern void *mem_block;
 extern void *shm_block;
 extern void *shm_dbg_block;
 extern void *rpm_block;
+extern void **shm_blocks;
+extern int init_done;
+extern gen_lock_t *hash_locks[128];
 
 #include "meminfo.h"
 
-#if !defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC)
-#error "no memory allocator selected"
-/* if exactly an allocator was selected, let's inline it! */
-#elif ((!defined Q_MALLOC && !defined HP_MALLOC) || \
-	 (!defined F_MALLOC && !defined HP_MALLOC) || \
-	 (!defined F_MALLOC && !defined Q_MALLOC))
+#if !defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC)
+#error "no memory allocator selected"b
+
+/* if exactly one allocator was selected, let's inline it! */
+#elif ((!defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC)) || \
+    (!defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(F_PARALLEL_MALLOC)) || \
+    (!defined(F_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC)) || \
+    (!defined(Q_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC)))
 #define INLINE_ALLOC
 #endif
+
 
 enum osips_mm {
 	MM_NONE,
 	MM_F_MALLOC,
 	MM_Q_MALLOC,
 	MM_HP_MALLOC,
+	MM_F_PARALLEL_MALLOC,
 	MM_F_MALLOC_DBG,
 	MM_Q_MALLOC_DBG,
 	MM_HP_MALLOC_DBG,
+	MM_F_PARALLEL_MALLOC_DBG,
 };
 
 #if defined F_MALLOC
@@ -59,6 +69,10 @@ enum osips_mm {
 
 #if defined HP_MALLOC
 #include "hp_malloc.h"
+#endif
+
+#if defined F_PARALLEL_MALLOC
+#include "f_parallel_malloc.h"
 #endif
 
 extern int mem_warming_enabled;

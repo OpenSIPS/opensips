@@ -60,6 +60,11 @@ int parse_mm(const char *mm_name, enum osips_mm *mm)
 		return 0;
 	}
 
+	if (!strcasecmp(mm_name, "F_PARALLEL_MALLOC")) {
+		*mm = MM_F_PARALLEL_MALLOC;
+		return 0;
+	}
+
 #ifdef DBG_MALLOC
 	if (!strcasecmp(mm_name, "F_MALLOC_DBG")) {
 		*mm = MM_F_MALLOC_DBG;
@@ -73,6 +78,11 @@ int parse_mm(const char *mm_name, enum osips_mm *mm)
 
 	if (!strcasecmp(mm_name, "HP_MALLOC_DBG")) {
 		*mm = MM_HP_MALLOC_DBG;
+		return 0;
+	}
+
+	if (!strcasecmp(mm_name, "F_PARALLEL_MALLOC_DBG")) {
+		*mm = MM_F_PARALLEL_MALLOC_DBG;
 		return 0;
 	}
 #endif
