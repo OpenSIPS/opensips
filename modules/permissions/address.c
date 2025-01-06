@@ -122,7 +122,7 @@ int reload_address_table(struct pm_part_struct *part_struct)
 	db_val_t* val;
 
 	struct address_list **new_hash_table;
-	struct subnet *new_subnet_table;
+	struct subnet_table *new_subnet_table;
 	int i, mask, proto, group, port, id;
 	struct ip_addr *ip_addr;
 	struct net *subnet;
@@ -407,7 +407,7 @@ int init_address_part(struct pm_partition *partition)
     part_struct->subnet_table_2 = new_subnet_table();
     if (!part_struct->subnet_table_2) goto error;
 
-	part_struct->subnet_table = (struct subnet **)shm_malloc(sizeof(struct subnet *));
+	part_struct->subnet_table = (struct subnet_table **)shm_malloc(sizeof(struct subnet_table *));
 	if (!part_struct->subnet_table) goto error;
 
 	*part_struct->subnet_table = part_struct->subnet_table_1;
