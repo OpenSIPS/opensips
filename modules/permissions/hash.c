@@ -326,24 +326,22 @@ void pm_empty_hash(struct address_list** table) {
 /*
  * Create and initialize a subnet table
  */
-struct subnet_table* new_subnet_table(void)
+struct subnet* new_subnet_table(void)
 {
-	struct subnet_table* table;
+    struct subnet* ptr;
 
-	table = (struct subnet_table *)shm_malloc(sizeof(struct subnet_table));
-	if (!table) goto err;
+    /* subnet record [PERM_MAX_SUBNETS] contains in its grp field
+       the number of subnet records in the subnet table */
+    ptr = (struct subnet *)shm_malloc
+	(sizeof(struct subnet) * (PERM_MAX_SUBNETS + 1));
 
-	table->size = 0;
-	table->capacity = 128;
+    if (!ptr) {
+		LM_ERR("no shm memory for subnet table\n");
+		return 0;
+    }
 
-	table->subnets = (struct subnet *)shm_malloc(sizeof(struct subnet) * table->capacity);
-	if (!table->subnets) goto err;
-
-	return table;
-
-err:
-	LM_ERR("no shm memory for subnet table\n");
-	return 0;
+    ptr[PERM_MAX_SUBNETS].grp = 0;
+    return ptr;
 }
 
 
@@ -351,83 +349,70 @@ err:
  * Add <grp, subnet, mask, port> into subnet table so that table is
  * kept in increasing ordered according to grp.
  */
-int subnet_table_insert(struct subnet_table* table, unsigned int grp,
+int subnet_table_insert(struct subnet* table, unsigned int grp,
 			struct net *subnet,
 			unsigned int port, int proto, str* pattern, str *info)
 {
-	int i;
-	unsigned int count;
+    int i;
+    unsigned int count;
 
-	count = table->size;
+    count = table[PERM_MAX_SUBNETS].grp;
 
-	if (count == table->capacity) {
-		struct subnet *new_subnets;
-		unsigned int new_capacity;
+    if (count == PERM_MAX_SUBNETS) {
+		LM_CRIT("subnet table is full\n");
+		return 0;
+    }
 
-		LM_DBG("subnet table is full, doubling capacity\n");
+    i = count - 1;
 
-		new_capacity = table->capacity * 2;
-
-		new_subnets = (struct subnet *)shm_realloc(table->subnets, sizeof(struct subnet) * new_capacity);
-		if (!new_subnets) {
-			LM_ERR("no shm memory for subnet table\n");
-			return 0;
-		}
-
-		table->subnets = new_subnets;
-		table->capacity = new_capacity;
-	}
-
-	i = count - 1;
-
-	while (i >= 0 && table->subnets[i].grp > grp) {
-		table->subnets[i + 1] = table->subnets[i];
+    while (i >= 0 && table[i].grp > grp) {
+		table[i + 1] = table[i];
 		i--;
-	}
+    }
 
-	table->subnets[i + 1].grp = grp;
-	table->subnets[i + 1].port = port;
-	table->subnets[i + 1].proto = proto;
+    table[i + 1].grp = grp;
+    table[i + 1].port = port;
+	table[i + 1].proto = proto;
 
 	if (subnet) {
-		table->subnets[i + 1].subnet = (struct net*) shm_malloc(sizeof(struct net));
-		if (!table->subnets[i + 1].subnet) {
+		table[i + 1].subnet = (struct net*) shm_malloc(sizeof(struct net));
+		if (!table[i + 1].subnet) {
 			LM_ERR("cannot allocate shm memory for table subnet\n");
 			return -1;
 		}
-		memcpy(table->subnets[i + 1].subnet, subnet, sizeof(struct net));
+		memcpy(table[i + 1].subnet, subnet, sizeof(struct net));
 	}
 	else
-		table->subnets[i + 1].subnet = NULL;
+		table[i + 1].subnet = NULL;
 
 	if (info->len) {
-		table->subnets[i + 1].info = (char*) shm_malloc(info->len + 1);
-		if (!table->subnets[i + 1].info) {
+		table[i + 1].info = (char*) shm_malloc(info->len + 1);
+		if (!table[i + 1].info) {
 			LM_ERR("cannot allocate shm memory for table info\n");
 			return -1;
 		}
-		memcpy(table->subnets[i + 1].info, info->s, info->len);
-		table->subnets[i + 1].info[info->len] = 0;
+		memcpy(table[i + 1].info, info->s, info->len);
+		table[i + 1].info[info->len] = 0;
 	}
 	else
-		table->subnets[i + 1].info = NULL;
+		table[i + 1].info = NULL;
 
 	if (pattern->len) {
-		table->subnets[i + 1].pattern = (char*) shm_malloc(pattern->len + 1);
-		if (!table->subnets[i + 1].pattern) {
+		table[i + 1].pattern = (char*) shm_malloc(pattern->len + 1);
+		if (!table[i + 1].pattern) {
 			LM_ERR("cannot allocate shm memory for table pattern\n");
 			return -1;
 		}
-		memcpy(table->subnets[i + 1].pattern, pattern->s, pattern->len);
-		table->subnets[i + 1].pattern[ pattern->len ] = 0;
+		memcpy(table[i + 1].pattern, pattern->s, pattern->len);
+		table[i + 1].pattern[ pattern->len ] = 0;
 	}
 	else
-		table->subnets[i + 1].pattern = NULL;
+		table[i + 1].pattern = NULL;
 
 
-	table->size += 1;
+    table[PERM_MAX_SUBNETS].grp = count + 1;
 
-	return 1;
+    return 1;
 }
 
 
@@ -435,15 +420,15 @@ int subnet_table_insert(struct subnet_table* table, unsigned int grp,
  * Check if an entry exists in subnet table that matches given group, ip_addr,
  * and port.  Port 0 in subnet table matches any port.
  */
-int match_subnet_table(struct sip_msg *msg, struct subnet_table* table,
+int match_subnet_table(struct sip_msg *msg, struct subnet* table,
 			unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
 			char *pattern, pv_spec_t *info)
 {
-	unsigned int count, i;
+        unsigned int count, i;
 	pv_value_t pvt;
 	int match_res, found_group = 0;
 
-	count = table->size;
+	count = table[PERM_MAX_SUBNETS].grp;
 
 	if (count == 0) {
 		LM_DBG("subnet table is empty\n");
@@ -452,10 +437,10 @@ int match_subnet_table(struct sip_msg *msg, struct subnet_table* table,
 
 	if (grp != GROUP_ANY) {
 		for (i = 0; i < count; i++) {
-			if (table->subnets[i].grp == grp) {
+			if (table[i].grp == grp) {
 				found_group = 1;
 				break;
-			} else if (table->subnets[i].grp > grp) {
+			} else if (table[i].grp > grp) {
 				break;
 			}
 		}
@@ -468,23 +453,23 @@ int match_subnet_table(struct sip_msg *msg, struct subnet_table* table,
 
 	i = 0;
 	do {
-		if ((table->subnets[i].grp == grp || table->subnets[i].grp == GROUP_ANY
+		if ((table[i].grp == grp || table[i].grp == GROUP_ANY
 				|| grp == GROUP_ANY) &&
-			(table->subnets[i].port == port || table->subnets[i].port == PORT_ANY
+			(table[i].port == port || table[i].port == PORT_ANY
 				|| port == PORT_ANY) &&
-			(table->subnets[i].proto == proto || table->subnets[i].proto == PROTO_NONE
+			(table[i].proto == proto || table[i].proto == PROTO_NONE
 			 	|| proto == PROTO_NONE))
 			{
 
-				match_res = matchnet(ip, table->subnets[i].subnet);
+				match_res = matchnet(ip, table[i].subnet);
 
 				if (match_res != 1) {
 					i++;
 					continue;
 				}
 
-				if (table->subnets[i].pattern && pattern) {
-					match_res = fnmatch(table->subnets[i].pattern, pattern, FNM_PERIOD);
+				if (table[i].pattern && pattern) {
+					match_res = fnmatch(table[i].pattern, pattern, FNM_PERIOD);
 
 					if (match_res) {
 						i++;
@@ -494,43 +479,43 @@ int match_subnet_table(struct sip_msg *msg, struct subnet_table* table,
 
 				if (info) {
 					pvt.flags = PV_VAL_STR;
-					pvt.rs.s = table->subnets[i].info;
-					pvt.rs.len = table->subnets[i].info ? strlen(table->subnets[i].info) : 0;
+					pvt.rs.s = table[i].info;
+					pvt.rs.len = table[i].info ? strlen(table[i].info) : 0;
 
 					if (pv_set_value(msg, info, (int)EQ_T, &pvt) < 0) {
 						LM_ERR("setting of avp failed\n");
 						return -1;
-					}
+	    			}
 				}
 
 				LM_DBG("match found in the subnet table\n");
 				return 1;
 			}
 
-		if (table->subnets[i].grp > grp && grp != GROUP_ANY)
+		if (table[i].grp > grp && grp != GROUP_ANY)
 			break;
 		i++;
 
 	} while (i < count);
 
 	LM_DBG("no match in the subnet table\n");
-	return -1;
+    return -1;
 }
 
 
 /*
  * Print subnets stored in subnet table
  */
-int subnet_table_mi_print(struct subnet_table* table, mi_item_t *part_item,
+int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
 		struct pm_part_struct *pm)
 {
-	unsigned int count, i;
+    unsigned int count, i;
 	char *p, *ip, *mask, prbuf[PROTO_NAME_MAX_SIZE];
 	int len;
 	static char ip_buff[IP_ADDR_MAX_STR_SIZE];
 	mi_item_t *dests_arr, *dest_item;
 
-	count = table->size;
+	count = table[PERM_MAX_SUBNETS].grp;
 
 	dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
 	if (!dests_arr)
@@ -541,19 +526,19 @@ int subnet_table_mi_print(struct subnet_table* table, mi_item_t *part_item,
 		if (!dest_item)
 			return -1;
 
-		ip = ip_addr2a(&table->subnets[i].subnet->ip);
+		ip = ip_addr2a(&table[i].subnet->ip);
 		if (!ip) {
 			LM_ERR("cannot print ip address\n");
 			continue;
 		}
 		strcpy(ip_buff, ip);
-		mask = ip_addr2a(&table->subnets[i].subnet->mask);
+		mask = ip_addr2a(&table[i].subnet->mask);
 		if (!mask) {
 			LM_ERR("cannot print mask address\n");
 			continue;
 		}
 
-		if (add_mi_number(dest_item, MI_SSTR("grp"), table->subnets[i].grp) < 0)
+		if (add_mi_number(dest_item, MI_SSTR("grp"), table[i].grp) < 0)
 			return -1;
 
 		if (add_mi_string(dest_item, MI_SSTR("ip"), ip_buff, strlen(ip_buff)) < 0)
@@ -562,30 +547,30 @@ int subnet_table_mi_print(struct subnet_table* table, mi_item_t *part_item,
 		if (add_mi_string(dest_item, MI_SSTR("mask"), mask, strlen(mask)) < 0)
 			return -1;
 
-		if (add_mi_number(dest_item, MI_SSTR("port"), table->subnets[i].port) < 0)
+		if (add_mi_number(dest_item, MI_SSTR("port"), table[i].port) < 0)
 			return -1;
 
-		if (table->subnets[i].proto == PROTO_NONE) {
+		if (table[i].proto == PROTO_NONE) {
 			p = "any";
 			len = 3;
 		} else {
-			p = proto2str(table->subnets[i].proto, prbuf);
+			p = proto2str(table[i].proto, prbuf);
 			len = p - prbuf;
 			p = prbuf;
 		}
 		if (add_mi_string(dest_item, MI_SSTR("proto"), p, len) < 0)
 			return -1;
 
-		if (add_mi_string(dest_item, MI_SSTR("pattern"), table->subnets[i].pattern,
-		    table->subnets[i].pattern ? strlen(table->subnets[i].pattern) : 0) < 0
-		)
+		if (add_mi_string(dest_item, MI_SSTR("pattern"),
+			table[i].pattern,
+		    table[i].pattern ? strlen(table[i].pattern) : 0) < 0)
 		    return -1;
 
-		if (add_mi_string(dest_item, MI_SSTR("context_info"), table->subnets[i].info,
-		    table->subnets[i].info ? strlen(table->subnets[i].info) : 0) < 0
-		)
+		if (add_mi_string(dest_item, MI_SSTR("context_info"),
+			table[i].info,
+		    table[i].info ? strlen(table[i].info) : 0) < 0)
 		    return -1;
-	}
+    }
 
 	return 0;
 }
@@ -596,23 +581,23 @@ int subnet_table_mi_print(struct subnet_table* table, mi_item_t *part_item,
  * and port.  Port 0 in subnet table matches any port.  Return group of
  * first match or -1 if no match is found.
  */
-int find_group_in_subnet_table(struct subnet_table* table,
-                               struct ip_addr *ip, unsigned int port)
+int find_group_in_subnet_table(struct subnet* table,
+		                   struct ip_addr *ip, unsigned int port)
 {
 	unsigned int count, i, match_res;
 
-	count = table->size;
+	count = table[PERM_MAX_SUBNETS].grp;
 
 	i = 0;
 	while (i < count) {
-		if	(table->subnets[i].port == port || table->subnets[i].port == 0) {
-			match_res = matchnet(ip, table->subnets[i].subnet);
+		if	(table[i].port == port || table[i].port == 0) {
+			match_res = matchnet(ip, table[i].subnet);
 
 			if (match_res == 1)
-				return table->subnets[i].grp;
+		        return table[i].grp;
 
 		}
-		i++;
+	    i++;
 	}
 
 	return -1;
@@ -622,37 +607,39 @@ int find_group_in_subnet_table(struct subnet_table* table,
 /*
  * Empty contents of subnet table
  */
-void empty_subnet_table(struct subnet_table *table)
+void empty_subnet_table(struct subnet *table)
 {
 	int count, i;
 
 	if (!table)
 		return;
 
-	count = table->size;
+	count = table[PERM_MAX_SUBNETS].grp;
 
 	for (i = 0; i < count; i++) {
-		if (table->subnets[i].info)
-			shm_free(table->subnets[i].info);
-		if (table->subnets[i].pattern)
-			shm_free(table->subnets[i].pattern);
-		if (table->subnets[i].subnet)
-			shm_free(table->subnets[i].subnet);
+		if (table[i].info)
+			shm_free(table[i].info);
+		if (table[i].pattern)
+			shm_free(table[i].pattern);
+		if (table[i].subnet)
+			shm_free(table[i].subnet);
 	}
 
-	table->size = 0;
+	table[PERM_MAX_SUBNETS].grp = 0;
 }
 
 
 /*
  * Release memory allocated for a subnet table
  */
-void free_subnet_table(struct subnet_table* table)
+void free_subnet_table(struct subnet* table)
 {
 	empty_subnet_table(table);
 
-	if (table) {
-		if (table->subnets) shm_free(table->subnets);
-		shm_free(table);
-	}
+	if (table)
+	    shm_free(table);
 }
+
+
+
+

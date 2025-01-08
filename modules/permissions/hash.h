@@ -102,6 +102,7 @@ int find_group_in_hash_table(struct address_list** table,
 
 
 
+#define PERM_MAX_SUBNETS 2048
 
 /*
  * Structure used to store a subnet
@@ -115,23 +116,18 @@ struct subnet {
 	char *info;				 /* extra information */
 };
 
-struct subnet_table {
-	unsigned int capacity;
-	unsigned int size;
-	struct subnet *subnets;
-};
 
 /*
  * Create a subnet table
  */
-struct subnet_table* new_subnet_table(void);
+struct subnet* new_subnet_table(void);
 
 
 /*
  * Check if an entry exists in subnet table that matches given group, ip_addr,
  * and port.  Port 0 in subnet table matches any port.
  */
-int match_subnet_table(struct sip_msg *msg, struct subnet_table* table,
+int match_subnet_table(struct sip_msg *msg, struct subnet* table,
 		unsigned int group, struct ip_addr *ip, unsigned int port, int proto,
 		char *pattern, pv_spec_t* info);
 
@@ -141,19 +137,19 @@ int match_subnet_table(struct sip_msg *msg, struct subnet_table* table,
  * and port.  Port 0 in subnet table matches any port.  Returns group of
  * the first match or -1 if no match is found.
  */
-int find_group_in_subnet_table(struct subnet_table* table,
+int find_group_in_subnet_table(struct subnet* table,
 		struct ip_addr *ip, unsigned int port);
 
 /*
  * Empty contents of subnet table
  */
-void empty_subnet_table(struct subnet_table* table);
+void empty_subnet_table(struct subnet *table);
 
 
 /*
  * Release memory allocated for a subnet table
  */
-void free_subnet_table(struct subnet_table* table);
+void free_subnet_table(struct subnet* table);
 
 
 
@@ -161,7 +157,7 @@ void free_subnet_table(struct subnet_table* table);
  * Add <grp, subnet, mask, port> into subnet table so that table is
  * kept ordered according to subnet, port, grp.
  */
-int subnet_table_insert(struct subnet_table* table, unsigned int grp,
+int subnet_table_insert(struct subnet* table, unsigned int grp,
 		struct net *subnet, unsigned int port, int proto,
 		str* pattern, str *info);
 
@@ -169,8 +165,8 @@ int subnet_table_insert(struct subnet_table* table, unsigned int grp,
 /*
  * Print subnets stored in subnet table
  */
-/*void subnet_table_print(struct subnet_table* table, FILE* reply_file);*/
-int subnet_table_mi_print(struct subnet_table* table, mi_item_t *part_item,
+/*void subnet_table_print(struct subnet* table, FILE* reply_file);*/
+int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
 		struct pm_part_struct *pm);
 
 
