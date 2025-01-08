@@ -45,6 +45,9 @@ struct rtpe_node {
 	unsigned int		rn_recheck_ticks;
 	unsigned int		rn_last_ticks;
 	int					rn_flags;
+	socklen_t       ai_addrlen;
+	struct sockaddr ai_addr;
+
 	struct rtpe_node	*rn_next;
 };
 
