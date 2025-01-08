@@ -811,7 +811,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
 		<function moreinfo="none">rtpengine_delete([flags[, sock_var]])</function>
 		</title>
 		<para>
-		Tears down the RTPProxy session for the current call.
+		Tears down the RTPEngine session for the current call.
 		</para>
 		<para>
 		See rtpengine_offer() function description above for the meaning of the
@@ -835,7 +835,7 @@ rtpengine_delete();
         <function moreinfo="none">rtpengine_manage([flags[, sock_var[, sdp_var[, body]]]])</function>
         </title>
 		<para>
-		Manage the RTPProxy session - it combines the functionality of
+		Manage the RTPEngine session - it combines the functionality of
 		rtpengine_offer(), rtpengine_answer() and rtpengine_delete(), detecting
 		internally based on message type and method which one to execute.
 		</para>
