@@ -1883,3 +1883,97 @@ not_found:
 dlg_error:
 	return init_mi_error(403, MI_SSTR(MI_DLG_OPERATION_ERR));
 }
+
+mi_response_t *mi_set_dlg_profile(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str profile_name={0,0},profile_value={0,0},dialog_id={0,0};
+	struct dlg_cell * dlg = NULL;
+	int shtag_state = 1, db_update = 0, clear_values = 0;
+	struct dlg_profile_table *profile;
+
+	if ( d_table == NULL)
+		goto not_found;	
+
+	/* params : dialog_id profile_name [profile_value] */
+	if (get_mi_string_param(params, "DID",
+		&dialog_id.s, &dialog_id.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "profile",
+		&profile_name.s, &profile_name.len) < 0)
+		return init_mi_param_error();
+
+	get_mi_string_param(params, "value",
+		&profile_value.s, &profile_value.len);
+
+	get_mi_int_param(params, "clear_values",
+		&clear_values);
+
+	profile = search_dlg_profile(&profile_name);
+	if (!profile) {
+		LM_ERR("profile <%.*s> not defined\n", profile_name.len,profile_name.s);
+		goto bad_param;
+	}
+
+	/* Get the dialog based of the dialog_id. This may be a
+	 * numerical DID or a string SIP Call-ID */
+	dlg = get_dlg_by_dialog_id(&dialog_id);
+	if (dlg == NULL) {
+		goto not_found; 
+	}
+
+	if (dialog_repl_cluster) {
+		shtag_state = get_shtag_state(dlg);
+		if (shtag_state < 0) {
+			goto dlg_error;
+		} else if (shtag_state == 0) {
+			/* editing dlg profiles on backup servers - no no */
+			unref_dlg(dlg, 1);
+			return init_mi_error(403, MI_SSTR("Editing Backup"));
+		}
+	}
+
+	if (profile->has_value && profile_value.s) {
+
+		if (clear_values) {
+			if (unset_dlg_profile_all_values(dlg, profile) < 0) {
+				LM_DBG("dialog not found in profile %.*s\n",
+				       profile_name.len, profile_name.s);
+			}
+		}
+
+		if ( set_dlg_profile( dlg, &profile_value, profile, 0) < 0 ) {
+			LM_ERR("failed to set profile\n");
+			goto dlg_error;
+		}
+	} else {
+		if ( set_dlg_profile( dlg, NULL, profile, 0) < 0 ) {
+			LM_ERR("failed to set profile\n");
+			goto dlg_error;
+		}
+	}
+
+	if (dlg->state >= DLG_STATE_CONFIRMED && dlg_db_mode == DB_MODE_REALTIME) {
+		db_update = 1;
+	} else {
+		dlg->flags |= DLG_FLAG_CHANGED;
+		db_update = 0;
+	}
+
+	if (db_update)
+		update_dialog_timeout_info(dlg);
+	if (dialog_repl_cluster && shtag_state != SHTAG_STATE_BACKUP)
+		replicate_dialog_updated(dlg);
+
+	unref_dlg(dlg, 1);
+	return init_mi_result_ok();
+
+not_found:
+	return init_mi_error(404, MI_SSTR("Dialog Not Found"));
+bad_param:
+	return init_mi_error( 400, MI_SSTR("Bad param"));
+dlg_error:
+	unref_dlg(dlg, 1);
+	return init_mi_error(403, MI_SSTR("Dialog Error"));
+}

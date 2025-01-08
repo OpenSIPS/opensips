@@ -494,6 +494,8 @@ mi_response_t *mi_print_dlgs_cnt_ctx(const mi_params_t *params,
 
 mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+mi_response_t *mi_set_dlg_profile(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static inline void unref_dlg_destroy_safe(struct dlg_cell *dlg, unsigned int cnt)
 {

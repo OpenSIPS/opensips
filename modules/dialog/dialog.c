@@ -441,6 +441,12 @@ static const mi_export_t mi_cmds[] = {
 		{mi_send_sequential_dlg, {"callid", "method", "body", "mode", "headers", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
+	{ "dlg_set_profile", 0, 0, 0, {
+		{mi_set_dlg_profile, {"dlg_id", "profile", 0}},
+		{mi_set_dlg_profile, {"dlg_id", "profile","value", 0}},
+		{mi_set_dlg_profile, {"dlg_id", "profile","value", "clear_values", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
