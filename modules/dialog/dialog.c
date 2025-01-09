@@ -447,6 +447,11 @@ static const mi_export_t mi_cmds[] = {
 		{mi_set_dlg_profile, {"dlg_id", "profile","value", "clear_values", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
+	{ "dlg_unset_profile", 0, 0, 0, {
+		{mi_unset_dlg_profile, {"dlg_id", "profile", 0}},
+		{mi_unset_dlg_profile, {"dlg_id", "profile","value", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
