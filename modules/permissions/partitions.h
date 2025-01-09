@@ -22,6 +22,7 @@
  *
  */
 
+#include "hash.h"
 #ifndef PM_PARTITIONS_H
 #define PM_PARTITIONS_H 1
 #include "../../sr_module.h"
@@ -38,18 +39,16 @@ struct pm_partition {
 	struct pm_partition *next;
 };
 
+typedef struct p_address_table_t p_address_table_t;
+
 struct pm_part_struct {
 	str url;
 	str name;
 	str table;
 
-	struct address_list ***hash_table;     /* Pointer to current hash table pointer */
-	struct address_list **hash_table_1;   /* Pointer to hash table 1 */
-	struct address_list **hash_table_2;   /* Pointer to hash table 2 */
-
-	struct subnet **subnet_table;        /* Ptr to current subnet table */
-	struct subnet *subnet_table_1;       /* Ptr to subnet table 1 */
-	struct subnet *subnet_table_2;       /* Ptr to subnet table 2 */
+	p_address_table_t **hash_table;    /* Pointer to current hash table pointer */
+	p_address_table_t *hash_table_1;   /* Pointer to hash table 1 */
+	p_address_table_t *hash_table_2;   /* Pointer to hash table 2 */
 
 	db_con_t* db_handle;
 	db_func_t perm_dbf;
