@@ -24,151 +24,70 @@
 #ifndef PERM_HASH_H
 #define PERM_HASH_H
 
-
-#include <sys/types.h>
 #include "../../ip_addr.h"
-#include "../../str.h"
 #include "../../mi/mi.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_from.h"
+#include "../../sr_module.h"
+#include "../../str.h"
 #include "../../usr_avp.h"
-#include "partitions.h"
 
-#define PERM_HASH_SIZE 128
+#include "hash_table.h"
+#include "partitions.h"
+#include "subnet_prefix_tree.h"
+
+#include <sys/types.h>
+
+#define INITIAL_GROUP_BUCKET_COUNT 2
+#define INITIAL_ADDRESS_BUCKET_COUNT 16
 
 #define GROUP_ANY 0
 #define MASK_ANY 32
 #define PORT_ANY 0
 
-/*
- * Structure stored in address hash table
- */
-struct address_list {
-	struct ip_addr *ip;			/* IP */
-	unsigned int grp;			/* Group for the specified IP */
-    unsigned int port;			/* Port */
-	int proto;                  /* Protocol -- UDP, TCP, TLS, or SCTP */
-	char *pattern;              /* Pattern matching From header field */
-	char *info;       		    /* Extra information */
-	struct address_list *next;  /* Next element in the list */
-};
+typedef struct p_address_node_t p_address_node_t;
+typedef struct p_group_node_t p_group_node_t;
 
+typedef struct p_address_node_t {
+    p_address_node_t *next;
 
-/*
- * Create and initialize a hash table
- */
-struct address_list** pm_hash_create(void);
+    struct {
+        struct net *subnet;
+    } k;
+    struct {
+        unsigned int port;
+        int proto;
+        char *pattern;
+        char *info;
+    } v;
+} p_address_node_t;
 
+typedef struct p_group_node_t {
+    p_group_node_t *next;
 
-/*
- * Destroy a hash table and release memory
- */
-void pm_hash_destroy(struct address_list** table);
+    struct {
+        unsigned int group;
+    } k;
+    struct {
+        pht_hash_table_t address;
+        ppt_trie_node_t *ipv4_subnet;
+        ppt_trie_node_t *ipv6_subnet;
+    } v;
+} p_group_node_t;
 
+typedef struct p_address_table_t {
+    pht_hash_table_t group;
+} p_address_table_t;
 
-/*
- * Add <ip, group, port, proto, pattern> into hash table
- */
-int pm_hash_insert(struct address_list** table, struct ip_addr *ip,
-		unsigned int grp, unsigned int port, int proto,
-		str* pattern, str* info);
-
-
-/*
- * Check if an entry exists in hash table that has given group, ip,
- * port, protocol value and pattern that matches to From URI.
- */
-int pm_hash_match(struct sip_msg *msg, struct address_list** table,
-		unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
-		char *pattern, pv_spec_t* info);
-
-
-/*
- * Print entries stored in hash table
- */
-//void hash_print(struct address_list** hash_table, FILE* reply_file);
-int pm_hash_mi_print(struct address_list **table, mi_item_t *part_item,
-		struct pm_part_struct *pm);
-
-/*
- * Empty hash table
- */
-void pm_empty_hash(struct address_list** table);
-
-
-
-int find_group_in_hash_table(struct address_list** table,
-		struct ip_addr *ip, unsigned int port);
-
-
-
-#define PERM_MAX_SUBNETS 2048
-
-/*
- * Structure used to store a subnet
- */
-struct subnet {
-	unsigned int grp;        /* address group, subnet count in last record */
-	struct net *subnet;		 /* IP subnet + mask */
-	int proto;                  /* Protocol -- UDP, TCP, TLS, or SCTP */
-	char *pattern;              /* Pattern matching From header field */
-	unsigned int port;       /* port or 0 */
-	char *info;				 /* extra information */
-};
-
-
-/*
- * Create a subnet table
- */
-struct subnet* new_subnet_table(void);
-
-
-/*
- * Check if an entry exists in subnet table that matches given group, ip_addr,
- * and port.  Port 0 in subnet table matches any port.
- */
-int match_subnet_table(struct sip_msg *msg, struct subnet* table,
-		unsigned int group, struct ip_addr *ip, unsigned int port, int proto,
-		char *pattern, pv_spec_t* info);
-
-
-/*
- * Checks if an entry exists in subnet table that matches given ip_addr,
- * and port.  Port 0 in subnet table matches any port.  Returns group of
- * the first match or -1 if no match is found.
- */
-int find_group_in_subnet_table(struct subnet* table,
-		struct ip_addr *ip, unsigned int port);
-
-/*
- * Empty contents of subnet table
- */
-void empty_subnet_table(struct subnet *table);
-
-
-/*
- * Release memory allocated for a subnet table
- */
-void free_subnet_table(struct subnet* table);
-
-
-
-/*
- * Add <grp, subnet, mask, port> into subnet table so that table is
- * kept ordered according to subnet, port, grp.
- */
-int subnet_table_insert(struct subnet* table, unsigned int grp,
-		struct net *subnet, unsigned int port, int proto,
-		str* pattern, str *info);
-
-
-/*
- * Print subnets stored in subnet table
- */
-/*void subnet_table_print(struct subnet* table, FILE* reply_file);*/
-int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
-		struct pm_part_struct *pm);
-
-
+p_address_table_t *pm_hash_create(void);
+void pm_hash_destroy(p_address_table_t *table);
+int pm_hash_insert(p_address_table_t *table, struct net *subnet, unsigned int group_id,
+                   unsigned int port, int proto, str *pattern, str *info, int mask);
+int pm_hash_match(struct sip_msg *msg, p_address_table_t *table, unsigned int group_id,
+                  struct ip_addr *ip, unsigned int port, int proto, char *pattern, pv_spec_t *info);
+int pm_hash_mi_print(p_address_table_t *table, mi_item_t *part_item, struct pm_part_struct *pm,
+                     int is_subnet);
+void pm_empty_hash(p_address_table_t *table);
+int pm_hash_find_group(p_address_table_t *table, struct ip_addr *ip, unsigned int port);
 
 #endif /* PERM_HASH_H */
