@@ -571,8 +571,15 @@ ds_pvar_param_p ds_get_pvar_param(int id, str uri)
 	int len = ds_pattern_prefix.len + ds_pattern_infix.len + ds_pattern_suffix.len 
 				+ uri.len + str_id.len;
 
-	char buf[len]; /* XXX: check if this works for all compilers */
+	char *buf;
 	ds_pvar_param_p param;
+
+	param = shm_malloc(sizeof *param + len);
+	if (!param) {
+		LM_ERR("no more shm memory\n");
+		return NULL;
+	}
+	buf = param->buf;
 
 	if (ds_pattern_one>DS_PATTERN_NONE) {
 		name.len = 0;
@@ -597,12 +604,6 @@ ds_pvar_param_p ds_get_pvar_param(int id, str uri)
 		}
 		memcpy(name.s + name.len, ds_pattern_suffix.s, ds_pattern_suffix.len);
 		name.len += ds_pattern_suffix.len;
-	}
-
-	param = shm_malloc(sizeof(ds_pvar_param_t));
-	if (!param) {
-		LM_ERR("no more shm memory\n");
-		return NULL;
 	}
 
 	if (!pv_parse_spec(ds_pattern_one>DS_PATTERN_NONE ? &name : &ds_pattern_prefix,
