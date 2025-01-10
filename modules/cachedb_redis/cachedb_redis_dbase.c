@@ -1234,7 +1234,7 @@ next_item:
 			break;
 
 		case CDB_INT64:
-			i += sprintf(obj+i, "%ld", pair->val.val.i64);
+			i += sprintf(obj+i, "%lld", (long long)pair->val.val.i64);
 			break;
 
 		case CDB_NULL:
@@ -1479,6 +1479,9 @@ delete_query:
 	}
 
 set_expire:
+	if (fts_json_mset_expire <= 0)
+		goto out;
+
 	/* refresh the expiry on the JSON */
 	argv[0] = "EXPIRE";
 	argvlen[0] = strlen(argv[0]);
@@ -1510,6 +1513,7 @@ set_expire:
 
 	LM_DBG("successful EXPIRE query\n");
 
+out:
 	freeReplyObject(rpl);
 	pkg_free(argv[1]);
 	pkg_free(argv[3]);
