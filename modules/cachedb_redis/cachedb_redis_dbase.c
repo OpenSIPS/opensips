@@ -977,7 +977,6 @@ char *redis_mk_fts_filter(const cdb_filter_t *f)
 
 int redis_query(cachedb_con *_con, const cdb_filter_t *filter, cdb_res_t *res)
 {
-	//static char *keyspace = "usrloc"; /* FIXME */
 	redis_con *con = (redis_con *)_con->data;
 	const char *argv[REDIS_ARGV_MAX_LEN];
 	size_t argvlen[REDIS_ARGV_MAX_LEN];
@@ -1274,7 +1273,7 @@ int redis_update_subkeys(cachedb_con *_con, const cdb_filter_t *row_filter,
 	size_t argvlen[REDIS_ARGV_MAX_LEN];
 	cdb_pair_t *pair;
 	redisReply *rpl = NULL;
-	str skey, key_nt;
+	str skey;
 	int i, j, rc, subkeys_updated, subkeys_deleted;
 
 	memset(argv, 0, REDIS_ARGV_MAX_LEN * sizeof *argv);
@@ -1295,12 +1294,7 @@ int redis_update_subkeys(cachedb_con *_con, const cdb_filter_t *row_filter,
 	argv[2] = ".";
 	argvlen[2] = 1;
 
-	if (pkg_nt_str_dup(&key_nt, &row_filter->key.name) != 0) {
-		LM_ERR("oom\n");
-		goto error1;
-	}
-
-	if (cdb_dict_add_str((cdb_dict_t *)pairs, key_nt.s, key_nt.len, &row_filter->val.s) != 0) {
+	if (cdb_dict_add_str((cdb_dict_t *)pairs, row_filter->key.name.s, row_filter->key.name.len, &row_filter->val.s) != 0) {
 		LM_ERR("oom 2\n");
 		goto error1;
 	}
@@ -1403,6 +1397,11 @@ int redis_update_subkeys(cachedb_con *_con, const cdb_filter_t *row_filter,
 	LM_DBG("storing %d contacts at JSON key '%s' ...\n", (i-1)/3, argv[1]);
 
 	rc = redis_run_command_argv(_con, &rpl, &skey, i, (const char **)argv, argvlen);
+	for (i -= 3; i > 0; i -= 3) {
+		pkg_free(argv[i+1]); argv[i+1] = NULL;
+		pkg_free(argv[i+2]); argv[i+2] = NULL;
+	}
+
 	if (rc < 0) {
 		LM_ERR("failed to run JSON.MSET query (rc: %d), key: %s\n", rc, argv[1]);
 		goto error2;

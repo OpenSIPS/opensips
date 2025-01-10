@@ -478,7 +478,7 @@ next_item:
 			break;
 
 		case CDB_INT64:
-			i += sprintf(obj+i, "%ld", pair->val.val.i64);
+			i += sprintf(obj+i, "%lld", (long long)pair->val.val.i64);
 			break;
 
 		case CDB_NULL:
