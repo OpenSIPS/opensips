@@ -539,12 +539,36 @@ xlog("\nTest link :\n$json(stub)\n$json(b)\n\n");
 
 		</section>
 
-		
+		<section id="func_json_merge" xreflabel="json_merge()">
+			<title>
+			<function moreinfo="none">
+				json_merge(main_json_var,patch_json_var,output_var))
+				</function>
+			</title>
+			<para>
+				The function can be used to patch merge patch_json_var into main_json_var and the output will be populated into the output_var
+			</para>
+
+			<example>
+			<title>Using json_merge </title>
+			<programlisting format="linespecific">
+...
+
+$json(val1) := "{}";
+$json(val1/test1) = "test_val1";
+$json(val1/common_val) = "val_from1";
+
+$json(val2) := "{}";
+$json(val2/test2) = "test_val2";
+$json(val1/common_val) = "val_from2";
+
+json_merge($json(val1),$json(val2),$var(merged_json));
+xlog("we merged and got $var(merged_json) \n");
+# will print : 
+# we merged and got {"test1":"test_val1","common_val":"val_from2","test2":"test_val2"} 
+			</programlisting>
+			</example>
+		</section>
 	</section>
-
-	
-
-
-
 </chapter>
 
