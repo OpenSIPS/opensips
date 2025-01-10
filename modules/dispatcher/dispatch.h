@@ -109,6 +109,7 @@ typedef struct _ds_pvar_param
 {
 	pv_spec_t pvar;
 	int value;
+	char buf[0];
 } ds_pvar_param_t, *ds_pvar_param_p;
 
 
