@@ -70,23 +70,33 @@ rtpengine Module
               1.5.17. rtpengine_play_dtmf(code, [flags[,
                       sockvar]])
 
-        1.6. Exported Pseudo-Variables
+        1.6. Exported Asyncronous Functions
 
-              1.6.1. $rtpstat
-              1.6.2. $rtpstat(STAT)[index]
-              1.6.3. $rtpquery
+              1.6.1. rtpengine_offer([flags[, sock_pvar[,
+                      sdp_pvar[, body]]]])
 
-        1.7. Exported MI Functions
+              1.6.2. rtpengine_answer([flags[, sock_pvar[,
+                      sdp_pvar[, body]]]])
 
-              1.7.1. rtpengine_enable
-              1.7.2. rtpengine_show
-              1.7.3. rtpengine_reload
-              1.7.4. teardown
+              1.6.3. rtpengine_delete([flags[, sock_var]])
 
-        1.8. Exported Events
+        1.7. Exported Pseudo-Variables
 
-              1.8.1. E_RTPENGINE_NOTIFICATION
-              1.8.2. E_RTPENGINE_STATUS
+              1.7.1. $rtpstat
+              1.7.2. $rtpstat(STAT)[index]
+              1.7.3. $rtpquery
+
+        1.8. Exported MI Functions
+
+              1.8.1. rtpengine_enable
+              1.8.2. rtpengine_show
+              1.8.3. rtpengine_reload
+              1.8.4. teardown
+
+        1.9. Exported Events
+
+              1.9.1. E_RTPENGINE_NOTIFICATION
+              1.9.2. E_RTPENGINE_STATUS
 
    2. Frequently Asked Questions
    3. Contributors
@@ -146,13 +156,16 @@ rtpengine Module
    1.35. Example of rtpengine_start_forwarding usage
    1.36. Example of rtpengine_stop_forwarding usage
    1.37. Example of rtpengine_play_dtmf usage
-   1.38. $rtpstat Usage
-   1.39. $rtpstat(STAT)
-   1.40. $rtpquery Usage
-   1.41. rtpengine_enable usage
-   1.42. rtpengine_show usage
-   1.43. rtpengine_reload usage
-   1.44. teardown usage
+   1.38. Example of async rtpengine_offer() usage
+   1.39. Example of async rtpengine_answer() usage
+   1.40. Example of async rtpengine_delete() usage
+   1.41. $rtpstat Usage
+   1.42. $rtpstat(STAT)
+   1.43. $rtpquery Usage
+   1.44. rtpengine_enable usage
+   1.45. rtpengine_show usage
+   1.46. rtpengine_reload usage
+   1.47. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -759,7 +772,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
    an error received from a RTPEngine node. If matched the module
    tries to use a new node to handle the affected command.
 
-   This parameter can be used to extend the list (see ??? of
+   This parameter can be used to extend the list (see Failover of
    errors the module implicitely fails over.
 
    Note each declaration will define a single expression/matching
@@ -792,7 +805,7 @@ ached")
 
 1.5.4.  rtpengine_delete([flags[, sock_var]])
 
-   Tears down the RTPProxy session for the current call.
+   Tears down the RTPEngine session for the current call.
 
    See rtpengine_offer() function description above for the
    meaning of the parameters. Note that not all flags make sense
@@ -807,7 +820,7 @@ rtpengine_delete();
 
 1.5.5.  rtpengine_manage([flags[, sock_var[, sdp_var[, body]]]])
 
-   Manage the RTPProxy session - it combines the functionality of
+   Manage the RTPEngine session - it combines the functionality of
    rtpengine_offer(), rtpengine_answer() and rtpengine_delete(),
    detecting internally based on message type and method which one
    to execute.
@@ -1086,20 +1099,68 @@ rtpengine_stop_forwarding();
 rtpengine_play_dtmf("0"); # send the 0 code upstream
 ...
 
-1.6. Exported Pseudo-Variables
+1.6. Exported Asyncronous Functions
 
-1.6.1. $rtpstat
+1.6.1. rtpengine_offer([flags[, sock_pvar[, sdp_pvar[, body]]]])
+
+   The asynchronous flavor of the rtpengine_offer() function. It
+   receives the same parameters, with the same meanings.
+
+   Example 1.38. Example of async rtpengine_offer() usage
+...
+if (is_method("ACK") && has_totag() && has_body_part("application/sdp"))
+ {
+        async(rtpengine_offer(), resume_invite);
+}
+...
+route[resume_invite] {
+        t_relay();
+}
+...
+
+1.6.2. rtpengine_answer([flags[, sock_pvar[, sdp_pvar[, body]]]])
+
+   The asynchronous flavor of the rtpengine_answer() function. It
+   receives the same parameters, with the same meanings.
+
+   Example 1.39. Example of async rtpengine_answer() usage
+...
+if (is_method("ACK") && has_body_part("application/sdp")) {
+        # late negotiation
+        async(rtpengine_answer(), resume_ack);
+}
+...
+route[resume_ack] {
+        t_relay();
+}
+...
+
+1.6.3.  rtpengine_delete([flags[, sock_var]])
+
+   The asynchronous flavor of the rtpengine_delete() function. It
+   receives the same parameters, with the same meanings.
+
+   Example 1.40. Example of async rtpengine_delete() usage
+...
+if (is_method("BYE")) {
+        launch(rtpengine_delete());
+}
+...
+
+1.7. Exported Pseudo-Variables
+
+1.7.1. $rtpstat
 
    Returns the RTP statistics from the RTP proxy. The RTP
    statistics from the RTP proxy are provided as a string and it
    does contain several packet counters.
 
-   Example 1.38. $rtpstat Usage
+   Example 1.41. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
 
-1.6.2. $rtpstat(STAT)[index]
+1.7.2. $rtpstat(STAT)[index]
 
    Returnes one of the pre-fined statistics listed below:
      * MOS-average - without an index, it returns the average MOS
@@ -1167,7 +1228,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
    short, or if the phones do not properly report RTP statistics
    over RTCP). In these cases the variable returns the NULL value.
 
-   Example 1.39. $rtpstat(STAT)
+   Example 1.42. $rtpstat(STAT)
 ...
     xlog("Average MOS of the entire call is $rtpstat(MOS-average)\r\n");
     xlog("Average MOS of caller is $(rtpstat(MOS-average)[$ft])\r\n");
@@ -1176,7 +1237,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 pstat(MOS-min-at)[$ft])\r\n");
 ...
 
-1.6.3. $rtpquery
+1.7.3. $rtpquery
 
    Does a Query command to the RTP proxy and returns the answer in
    a JSON format. You can use this variable to fetch arbitrary
@@ -1187,15 +1248,15 @@ pstat(MOS-min-at)[$ft])\r\n");
    any information from the query, such as RTP statistics, or MOS
    values.
 
-   Example 1.40. $rtpquery Usage
+   Example 1.43. $rtpquery Usage
 ...
         $json(reply) := $rtpquery;
         xlog("Total RTP Stats: $json(reply/totals)\n");
 ...
 
-1.7. Exported MI Functions
+1.8. Exported MI Functions
 
-1.7.1. rtpengine_enable
+1.8.1. rtpengine_enable
 
    Enables/disables a RTP proxy.
 
@@ -1211,7 +1272,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    different set), all of its instances will be enabled/disabled
    IF no set ID is provided.
 
-   Example 1.41.  rtpengine_enable usage
+   Example 1.44.  rtpengine_enable usage
 ...
 ## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
@@ -1220,19 +1281,19 @@ $ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=
 1 setid=3
 ...
 
-1.7.2. rtpengine_show
+1.8.2. rtpengine_show
 
    Displays all the RTP proxies and their information: set and
    status (disabled or not, weight and recheck_ticks).
 
    No parameter.
 
-   Example 1.42.  rtpengine_show usage
+   Example 1.45.  rtpengine_show usage
 ...
 $ opensips-cli -x mi rtpengine_show
 ...
 
-1.7.3. rtpengine_reload
+1.8.3. rtpengine_reload
 
    Reloads all rtpengine sets from the database. Used only when
    the “db_url” parameter is set.
@@ -1246,13 +1307,13 @@ $ opensips-cli -x mi rtpengine_show
 
    No parameter.
 
-   Example 1.43.  rtpengine_reload usage
+   Example 1.46.  rtpengine_reload usage
 ...
 $ opensips-cli -x mi rtpengine_reload
 $ opensips-cli -x mi rtpengine_reload type=soft
 ...
 
-1.7.4. teardown
+1.8.4. teardown
 
    Terminates the SIP dialog by the SIP Call-ID given as
    parameter.
@@ -1265,15 +1326,15 @@ $ opensips-cli -x mi rtpengine_reload type=soft
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.44.  teardown usage
+   Example 1.47.  teardown usage
 ...
 $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZD
 Q
 ...
 
-1.8. Exported Events
+1.9. Exported Events
 
-1.8.1.  E_RTPENGINE_NOTIFICATION
+1.9.1.  E_RTPENGINE_NOTIFICATION
 
    This event is raised when a notification is received from
    RTPengine.
@@ -1293,7 +1354,7 @@ Q
      * duration - how long the digit was pressed
      * volume - volume of the tone
 
-1.8.2.  E_RTPENGINE_STATUS
+1.9.2.  E_RTPENGINE_STATUS
 
    This event is raised when a RTPEngine server changes it's
    status to active/inactive.
@@ -1375,21 +1436,22 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 238 132 6371 3154
+   1. Razvan Crainea (@razvancrainea) 240 134 6440 3157
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173
    5. Richard Fuchs 20 2 640 723
    6. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
-   7. Peter Lemenkov (@lemenkov) 10 7 27 62
-   8. Norman Brandinger (@NormB) 9 7 65 12
-   9. Eric Tamme (@etamme) 7 5 42 19
-   10. Nick Altmann (@nikbyte) 6 4 43 2
+   7. Norman Brandinger (@NormB) 10 8 66 13
+   8. Peter Lemenkov (@lemenkov) 10 7 27 62
+   9. Vlad Paiu (@vladpaiu) 8 1 566 94
+   10. Eric Tamme (@etamme) 7 5 42 19
 
-   All remaining contributors: Maksym Sobolyev (@sobomax), Ovidiu
-   Sas (@ovidiusas), Eddie Fiorentine, Zero King (@l2dy), Rob
-   Gagnon (@rgagnon24), Flavio E. Goncalves, Dan Pascu
-   (@danpascu), Oliver Severin Mulelid-Tynes (@olivermt).
+   All remaining contributors: Nick Altmann (@nikbyte), Maksym
+   Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas), Eddie Fiorentine,
+   Zero King (@l2dy), Rob Gagnon (@rgagnon24), Flavio E.
+   Goncalves, Dan Pascu (@danpascu), Oliver Severin Mulelid-Tynes
+   (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1411,21 +1473,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Nov 2024
-   2.  Eddie Fiorentine                    Nov 2024 - Nov 2024
-   3.  Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
-   4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   5.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   7.  John Burke (@john08burke)           Jun 2019 - Apr 2022
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
-   9.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   10. Flavio E. Goncalves                 Oct 2020 - Oct 2020
+   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jan 2025
+   2.  Vlad Paiu (@vladpaiu)               Jan 2025 - Jan 2025
+   3.  Norman Brandinger (@NormB)          Jun 2024 - Nov 2024
+   4.  Eddie Fiorentine                    Nov 2024 - Nov 2024
+   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   6.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   8.  John Burke (@john08burke)           Jun 2019 - Apr 2022
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
+   10. Nick Altmann (@nikbyte)             May 2021 - May 2021
 
-   All remaining contributors: Zero King (@l2dy), Ovidiu Sas
-   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Dan Pascu
-   (@danpascu), Oliver Severin Mulelid-Tynes (@olivermt), Rob
-   Gagnon (@rgagnon24), Eric Tamme (@etamme), Richard Fuchs.
+   All remaining contributors: Flavio E. Goncalves, Zero King
+   (@l2dy), Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Dan Pascu (@danpascu), Oliver Severin
+   Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24), Eric Tamme
+   (@etamme), Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1434,8 +1497,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Eddie Fiorentine, Razvan Crainea
-   (@razvancrainea), Norman Brandinger (@NormB), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Eddie
+   Fiorentine, Norman Brandinger (@NormB), Liviu Chircu
    (@liviuchircu), John Burke (@john08burke), Nick Altmann
    (@nikbyte), Flavio E. Goncalves, Peter Lemenkov (@lemenkov),
    Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu

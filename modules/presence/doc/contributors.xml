@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Edson Gellert Schubert, Alexandra Titoc, Stanislaw Pitucha, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Carsten Bock, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Angel Marin, Klaus Darilion, Carlos Oliva, Sergio Gutierrez, Kennard White, Elena-Ramona Modroiu, Jasper Hafkenscheid, Vasil Kolev, Benny Prijono, James Criscuolo, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Vallimamod Abdullah, UnixDev, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Denis Bilenko, Julián Moreno Patiño, John Riordan, Julien Blache.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Edson Gellert Schubert, Alexandra Titoc, Stanislaw Pitucha, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Carsten Bock, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Angel Marin, Klaus Darilion, Carlos Oliva, Sergio Gutierrez, Kennard White, Elena-Ramona Modroiu, Jasper Hafkenscheid, Vasil Kolev, Benny Prijono, James Criscuolo, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Vallimamod Abdullah, UnixDev, Denis Bilenko, Julián Moreno Patiño, John Riordan, Julien Blache.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Alexandra Titoc</entry>
-		<entry align="center">Sep 2024 - Sep 2024</entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">May 2024 - Nov 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
-		<entry align="center">May 2024 - May 2024</entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">Sep 2024 - Sep 2024</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
