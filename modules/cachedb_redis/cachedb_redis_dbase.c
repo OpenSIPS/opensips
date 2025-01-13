@@ -1055,7 +1055,7 @@ int redis_query(cachedb_con *_con, const cdb_filter_t *filter, cdb_res_t *res)
 		if (key->type != REDIS_REPLY_STRING || val->type != REDIS_REPLY_ARRAY
 		        || val->elements != 2) {
 			LM_ERR("unexpected reply format at idx %d: %d/%d/%lu, filters: %s\n",
-			        i, key->type, val->type, val->elements, argv[2]);
+			        i, key->type, val->type, (long)val->elements, argv[2]);
 			goto error;
 		}
 
