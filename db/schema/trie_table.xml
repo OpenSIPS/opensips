@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
+  "https://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="trie_table" xmlns:db="http://docbook.org/ns/docbook">
+	<name>trie_table</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Trie module in order to build the trie that it caches
+		More information can be found at: &OPENSIPS_MOD_DOC;trie.html.
+		</db:para>
+	</description>
+
+	<column id="ruleid">
+		<name>ruleid</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Rule unique ID
+		</description>
+	</column>
+
+	<column id="prefix">
+		<name>prefix</name>
+		<type>string</type>
+		<size>64</size>
+		<description>prefix to be cached</description>
+	</column>
+
+	<column id="attrs">
+		<name>attrs</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<default><null/></default>
+		<description>Generic string describing RULE attributes - this string is
+			to be interpreted from the script</description>
+	</column>
+
+	<column id="enabled">
+		<name>priority</name>
+		<type>int</type>
+		<size>11</size>
+		<default>1</default>
+		<description>1 if the rule is enabled, 0 if the rule is disabled.</description>
+	</column>
+
+</table>
