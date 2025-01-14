@@ -118,7 +118,7 @@ static int pv_parse_json_index(pv_spec_p sp, const str *in);
 static pv_json_t * get_pv_json (pv_param_t* );
 static int pv_add_json ( pv_param_t* , json_t * );
 static int expand_tag_list( struct sip_msg*, json_tag *);
-
+static int w_merge_json(struct sip_msg *msg, str *j1, str* j2, pv_spec_t *res);
 
 static const cmd_export_t cmds[]={
 	{"json_link",    (cmd_function)json_bind, {
@@ -126,6 +126,12 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_VAR, fixup_json_bind, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"json_merge",(cmd_function)w_merge_json, {
+		{CMD_PARAM_STR, 0, 0}, 
+		{CMD_PARAM_STR, 0, 0}, 
+		{CMD_PARAM_VAR, 0, 0}, 
+		{0,0,0}},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -1067,4 +1073,61 @@ int child_init(int rank)
 void mod_destroy(void)
 {
 
+}
+
+int w_merge_json(struct sip_msg *msg, str *j1, str* j2, pv_spec_t *res)
+{
+	cJSON *in1, *in2, *out;
+	char *p;
+	pv_value_t pv_val;
+
+	in1 = cJSON_Parse(j1->s);
+	if (!in1) {
+		LM_ERR("Failed to parse first param \n");
+		return -1;
+	}
+
+	in2 = cJSON_Parse(j2->s);
+	if (!in2) {
+		LM_ERR("Failed to parse second param \n");
+		cJSON_Delete(in1);
+		return -1;
+	}
+
+	out = cJSONUtils_MergePatch(in1,in2);
+	if (!out) {
+		LM_ERR("Failed to merge the two jsons \n");
+		cJSON_Delete(in1);
+		cJSON_Delete(in2);
+		return -1;
+	}
+
+	p = cJSON_Print(out);
+	if (!p) {
+		LM_ERR("Failed to merge the two jsons \n");
+		cJSON_Delete(in1);
+		cJSON_Delete(in2);
+		return -1;
+	}
+
+	cJSON_Minify(p);
+
+	pv_val.flags = PV_VAL_STR;
+	pv_val.rs.s = p;
+	pv_val.rs.len = strlen(p);
+
+
+	if (pv_set_value( msg, res, 0, &pv_val) != 0) {
+		LM_ERR("SET output value failed \n");
+		pkg_free(p);
+		cJSON_Delete(in1);
+		cJSON_Delete(in2);
+		return -1;
+	}
+
+	pkg_free(p);
+	cJSON_Delete(in1);
+	cJSON_Delete(in2);
+
+	return 1;
 }

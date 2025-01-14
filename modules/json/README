@@ -24,6 +24,9 @@ JSON Module
         1.5. Exported Functions
 
               1.5.1. json_link($json(dest_id), $json(source_id))
+              1.5.2.
+                      json_merge(main_json_var,patch_json_var,output
+                      _var))
 
    2. Contributors
 
@@ -57,6 +60,7 @@ JSON Module
    1.12. Adding a json to another json
    1.13. Creating a reference
    1.14. [LOGICAL ERROR] Creating a circular reference
+   1.15. Using json_merge
 
 Chapter 1. Admin Guide
 
@@ -405,6 +409,29 @@ xlog("\nTest link :\n$json(stub)\n$json(b)\n\n");
 
 
 ...
+
+1.5.2.  json_merge(main_json_var,patch_json_var,output_var))
+
+   The function can be used to patch merge patch_json_var into
+   main_json_var and the output will be populated into the
+   output_var
+
+   Example 1.15. Using json_merge
+...
+
+$json(val1) := "{}";
+$json(val1/test1) = "test_val1";
+$json(val1/common_val) = "val_from1";
+
+$json(val2) := "{}";
+$json(val2/test2) = "test_val2";
+$json(val1/common_val) = "val_from2";
+
+json_merge($json(val1),$json(val2),$var(merged_json));
+xlog("we merged and got $var(merged_json) \n");
+# will print :
+# we merged and got {"test1":"test_val1","common_val":"val_from2","test2
+":"test_val2"}
 
 Chapter 2. Contributors
 
