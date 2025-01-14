@@ -664,7 +664,6 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 				else if ( !new_msg->via2 )
 				{
 					LINK_SIBLING_HEADER(h_via1, new_hdr);
-					new_msg->h_via2 = new_hdr;
 					new_msg->via2 = via_body_cloner( new_msg->buf,
 						org_msg->buf, (struct via_body*)hdr->parsed, &p);
 					new_hdr->parsed  = (void*)new_msg->via2;

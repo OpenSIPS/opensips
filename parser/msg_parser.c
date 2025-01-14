@@ -589,20 +589,13 @@ int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_
 				link_sibling_hdr(h_via1,hf);
 				msg->parsed_flag|=HDR_VIA_F;
 				LM_DBG("via found, flags=%llx\n", (unsigned long long)flags);
-				if (sip_well_known_parse) {
-					if (msg->via1==0) {
-						LM_DBG("this is the first via\n");
-						msg->h_via1=hf;
-						msg->via1=hf->parsed;
-						if (msg->via1->next){
-							msg->via2=msg->via1->next;
-							msg->parsed_flag|=HDR_VIA2_F;
-						}
-					}else if (msg->via2==0){
-						msg->h_via2=hf;
-						msg->via2=hf->parsed;
+				if (sip_well_known_parse && msg->via1==0) {
+					LM_DBG("this is the first via\n");
+					msg->h_via1=hf;
+					msg->via1=hf->parsed;
+					if (msg->via1->next){
+						msg->via2=msg->via1->next;
 						msg->parsed_flag|=HDR_VIA2_F;
-						LM_DBG("parse_headers: this is the second via\n");
 					}
 				}
 				break;
