@@ -1,0 +1,320 @@
+<!-- Module User's Guide -->
+
+<chapter id="sec-admin-guide">
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+	The <emphasis>"janus"</emphasis> module is a C driver for the
+	Janus websocket protocol. It can interact with one or more
+	Janus servers either by issuing commands to them, or by receiving
+	events from them.
+	</para>
+	<para>
+	This driver can be seen as a centralized Janus connection manager.
+	It will connect to each Janus server, establish the connection hanler ID and the clients can be transparent from the connection handler ID point of view, simply passing the desired Janus commands that they want to run.
+	</para>
+	</section>
+
+	<section id="sec-external-dependencies">
+	<section id="sec-module-dependencies">
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded together with this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>an SQL DB module</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_janus_send_timeout" xreflabel="janus_send_timeout">
+		<title><varname>janus_send_timeout</varname> (integer)</title>
+		<para>
+		Time in milliseconds after a Janus WebSocket connection will be closed if it is not available for blocking writing in this interval (and OpenSIPS wants to send something on it).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1000</quote> (milliseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>janus_send_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("janus", "janus_send_timeout", 2000)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_janus_max_msg_chunks" xreflabel="janus_max_msg_chunks">
+		<title><varname>janus_max_msg_chunks</varname> (integer)</title>
+		<para>
+		The maximum number of chunks in which a Janus message is expected to arrive via WebSocket. If a received packet is more fragmented than this, the connection is dropped
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>4</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>janus_max_msg_chunks</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("janus", "janus_max_msg_chunks", 8)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_janus_cmd_timeout" xreflabel="janus_cmd_timeout">
+		<title><varname>janus_cmd_timeout</varname> (integer)</title>
+		<para>
+		The maximally allowed duration for the execution of an Janus command.
+		This interval does not include the connect duration.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>5000</quote> (milliseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>janus_cmd_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("janus", "janus_cmd_timeout", 3000)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_janus_cmd_polling_itv" xreflabel="janus_cmd_polling_itv">
+		<title><varname>janus_cmd_polling_itv</varname> (integer)</title>
+		<para>
+		The sleep interval used when polling for an Janus command response. Since the
+		value of this parameter imposes a minimal duration for any Janus command,
+		you should run OpenSIPS in debug mode in order to first determine an expected
+		response time for an arbitrary Janus command, then tune this parameter accordingly.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1000</quote> (microseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>janus_cmd_polling_itv</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("janus", "janus_cmd_polling_itv", 3000)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_janus_ping_interval" xreflabel="janus_ping_interval">
+		<title><varname>janus_ping_interval</varname> (integer)</title>
+		<para>
+		The time interval at which OpenSIPS will do keepalive pinging on the Janus connect
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>5</quote> (seconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>janus_ping_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("janus", "janus_ping_interval", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_janus_db_url" xreflabel="janus_db_url">
+		<title><varname>janus_db_url</varname> (string)</title>
+		<para>
+		The DB URL from where OpenSIPS will load the list of Janus connection
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>"none"</quote> (needs to be set for the module to start).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>janus_db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("janus", "janus_db_url", "mysql://root@localhost/opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_janus_db_table" xreflabel="janus_db_table">
+		<title><varname>janus_db_table</varname> (string)</title>
+		<para>
+		The DB Table from where OpenSIPS will load the list of Janus connection
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>janus</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>janus_db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("janus", "janus_db_table", "my_janus_table")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_janus_send_request" xreflabel="janus_send_requeest()">
+		<title>
+		<function moreinfo="none">janus_send_requeest(janus_id, janus_command[, response_var])</function>
+		</title>
+		<para>
+		Run an arbitrary command on an arbitrary Janus socket. The
+		janus_id must be defined in the database
+		</para>
+		<para>
+		The current OpenSIPS worker will block until an answer from Janus
+		arrives. The timeout for this operation can be controlled via the
+		<emphasis role='bold'>janus_cmd_timeout</emphasis> param.
+		</para>
+
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>janus_id</emphasis> (string) - the ID of the janus connection as defined in the databsae.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>janus_command</emphasis> (string) - the JANUS command to run.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>response_var (var, optional)</emphasis> - a
+			variable which will hold the text result of the Janus command.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para><emphasis role='bold'>Return value</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				1 (success) - the Janus command executed successfully and any
+				output variables were successfully written to. Note that this
+				does not say anything about the nature of the Janus answer (it
+				may well be a "-ERR" type of response)
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				-1 (failure) - internal error or the Janus command failed to
+				execute
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+			<title><function moreinfo="none">
+				<emphasis>janus_send_request()</emphasis></function> usage</title>
+		<programlisting format="linespecific">
+...
+# if the DB contains: 
+#       id: 1
+# janus_id: test_janus
+# janus_url: janusws://my_janus_host:80/janus?room=abcd
+
+	$var(rc) = janus_send_request("test_janus", "{
+  "janus": "attach",
+  "plugin": "janus.plugin.videoroom",
+  "transaction": "abcdef123456",
+  "session_id": 987654321
+}", $var(response));
+	if (!$var(rc)) {
+		xlog("failed to execute Janus command ($var(rc))\n");
+		return -1;
+	}
+	xlog("Janus response is $var(response) \n");
+...
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_E_JANUS_EVENT" xreflabel="E_JANUS_EVENT">
+		<title>
+		<function moreinfo="none">E_JANUS_EVENT</function>
+		</title>
+		<para>
+			This event is raised when a notification is received from a Janus server.
+		</para>
+        <para>
+			Parameters represent the janus_id and the janus_url that originated the notification, and the full janus_body of the event received
+        </para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>janus_id</emphasis> - the janus id as defined in the database
+			</para></listitem>
+			<listitem><para>
+				<emphasis>janus_url</emphasis> - the janus url as defined in the database
+			</para></listitem>
+			<listitem><para>
+				<emphasis>janus_body</emphasis> - full body of the notification received from janus
+			</para></listitem>
+		</itemizedlist>
+		<example>
+			<title><function moreinfo="none">
+				<emphasis>E_JANUS_EVENT</emphasis></function> example</title>
+		<programlisting format="linespecific">
+...
+# if the DB contains: 
+#       id: 1
+# janus_id: test_janus
+# janus_url: janusws://my_janus_host:80/janus?room=abcd
+
+event_route[E_JANUS_EVENT] {
+	xlog("Received janus event from $param(janus_id) - $param(janus_url) - $param(janus_body) \n");
+	$json(janus_body) := $param(janus_body);
+	$avp(janus_sender) =  $json(janus_body/sender);
+	if ($avp(janus_sender) != NULL) {
+		xlog("Received event from sender $avp(janus_sender) \n");
+	}
+}
+...
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+	</section>
+</chapter>
