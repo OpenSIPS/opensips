@@ -75,6 +75,11 @@ int hash_table_lookup (struct sip_msg *msg, str *domain, pv_spec_t *pv)
 	struct domain_list *np;
 	pv_value_t val;
 
+	if (!domain || domain->s) {
+		LM_ERR("NULL domain provided\n");
+		return -1;
+	}
+
 	for (np = (*hash_table)[dom_hash(domain)]; np != NULL; np = np->next) {
 		if ((np->domain.len == domain->len) &&
 			(strncasecmp(np->domain.s, domain->s, domain->len) == 0)) {

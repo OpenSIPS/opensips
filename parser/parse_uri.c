@@ -1638,6 +1638,8 @@ error_exit:
 	ser_error=E_BAD_URI;
 	uri->type=ERROR_URI_T;
 	update_stat(bad_URIs, 1);
+	/* zero out any URI fields that we had populated so far until triggering the error */
+	memset(uri, 0, sizeof(struct sip_uri));
 	return E_BAD_URI;
 }
 
