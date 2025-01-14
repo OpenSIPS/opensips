@@ -42,7 +42,7 @@ int ptree_children = 0;
 	trie_char2idx[ (unsigned char)(_c) ]
 
 #define IS_VALID_PREFIX_CHAR(_c) \
-	((((unsigned char)(_c))<DR_PREFIX_ARRAY_SIZE) && (char)IDX_OF_CHAR(_c)!=-1 )
+	((((unsigned char)(_c))<DR_PREFIX_ARRAY_SIZE) && ((int)IDX_OF_CHAR(_c) != -1))
 
 int init_prefix_tree( char *extra_prefix_chars )
 {
