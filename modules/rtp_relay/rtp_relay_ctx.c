@@ -99,7 +99,7 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 static int rtp_relay_delete(struct rtp_relay_session *info,
 		struct rtp_relay_ctx *ctx, struct rtp_relay_sess *sess, int leg);
 static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx,
-		struct sip_msg *msg, struct rtp_relay_sess *sess, int type);
+		struct sip_msg *rpl, struct sip_msg *req, struct rtp_relay_sess *sess, int type);
 static void rtp_relay_fill_dlg(struct rtp_relay_ctx *ctx, str *dlg_callid,
 		unsigned id, unsigned entry, str *callid, str *from_tag, str *to_tag);
 static void rtp_relay_delete_ctx(struct rtp_relay_ctx *ctx,
@@ -613,7 +613,7 @@ static void rtp_relay_b2b_reply_free(void *param)
 static void rtp_relay_b2b_tm_reply(struct cell* t, int type, struct tmcb_params *p)
 {
 	struct rtp_relay_b2b_reply *rpl = (*p->param);
-	handle_rtp_relay_ctx_leg_reply(rpl->ctx, p->rpl, rpl->sess, rpl->type);
+	handle_rtp_relay_ctx_leg_reply(rpl->ctx, p->rpl, NULL, rpl->sess, rpl->type);
 }
 
 static void rtp_relay_b2b_tm_req(struct cell* t, int type, struct tmcb_params *p)
@@ -1449,7 +1449,7 @@ static void rtp_relay_delete_ctx(struct rtp_relay_ctx *ctx,
 		info.callid = &ctx->dlg_callid;
 	info.from_tag = &ctx->from_tag;
 	info.to_tag = &ctx->to_tag;
-	info.branch = sess->index;
+	info.branch = RTP_RELAY_ALL_BRANCHES /* sess->index, but we need to remove everything */;
 	rtp_relay_delete(&info, ctx, sess, leg);
 }
 
@@ -1746,15 +1746,15 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 }
 
 static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx,
-		struct sip_msg *msg, struct rtp_relay_sess *sess, int type)
+		struct sip_msg *rpl, struct sip_msg *req, struct rtp_relay_sess *sess, int type)
 {
 	struct rtp_relay_session info;
 	memset(&info, 0, sizeof info);
-	info.msg = msg;
-	if (msg == FAKED_REPLY || msg->REPLY_STATUS >= 300) {
+	info.msg = rpl;
+	if (rpl == FAKED_REPLY || rpl->REPLY_STATUS >= 300) {
 		if (!rtp_sess_late(sess)) {
-			if (msg == FAKED_REPLY)
-				info.msg = NULL;
+			if (rpl == FAKED_REPLY)
+				info.msg = req;
 			rtp_relay_delete(&info, ctx, sess, type);
 		} else {
 			/* nothing to do */
@@ -1766,20 +1766,20 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx,
 	/* fill in tag's tag */
 	if (sess->legs[type] && sess->legs[type]->tag.len)
 		return 0;
-	if (parse_headers(msg, HDR_TO_F, 0) < 0 || !msg->to || parse_from_header(msg) < 0) {
+	if (parse_headers(rpl, HDR_TO_F, 0) < 0 || !rpl->to || parse_from_header(rpl) < 0) {
 		LM_ERR("bad request or missing To header\n");
 		return -1;
 	} else {
 		if (!sess->legs[type]) {
 			rtp_relay_push_sess_leg(sess, rtp_relay_new_leg(ctx,
-					&get_to(msg)->tag_value, sess->index), type);
+					&get_to(rpl)->tag_value, sess->index), type);
 			if (!sess->legs[type]) {
 				LM_ERR("could not create new leg\n");
 				return -1;
 			}
 		} else {
 			shm_str_sync(&sess->legs[type]->tag,
-					&get_to(msg)->tag_value);
+					&get_to(rpl)->tag_value);
 		}
 	}
 	return 0;
@@ -1831,6 +1831,7 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 	RTP_RELAY_CTX_LOCK(ctx);
 	switch (type) {
 		case TMCB_RESPONSE_FWDED:
+		case TMCB_ON_FAILURE:
 			/* first check if there's anything setup on this branch */
 			sess = rtp_relay_get_sess(ctx, rtp_relay_ctx_branch());
 			if (sess) {
@@ -1848,7 +1849,7 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 						rtp_sess_disabled(sess), rtp_sess_pending(sess));
 				goto end;
 			}
-			switch (handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, sess, RTP_RELAY_CALLEE)) {
+			switch (handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, p->req, sess, RTP_RELAY_CALLEE)) {
 				case 0:
 					rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess, RTP_RELAY_CALLEE);
 					break;
@@ -1930,7 +1931,7 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 
 			/* handles the replies to the original INVITE */
 			if (rtp_relay_tmb.register_tmcb(msg, 0,
-					TMCB_RESPONSE_FWDED|TMCB_REQUEST_FWDED,
+					TMCB_RESPONSE_FWDED|TMCB_REQUEST_FWDED|TMCB_ON_FAILURE,
 					rtp_relay_ctx_initial_cb, ctx, 0)!=1) {
 				LM_ERR("failed to install TM reply callback\n");
 				return -1;
