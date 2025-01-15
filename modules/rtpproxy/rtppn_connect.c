@@ -20,6 +20,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -66,6 +67,7 @@ int connect_rtpp_node(struct rtpp_node *pnode)
 	struct addrinfo hints, *res;
 	struct sockaddr_un sau;
 
+	assert(pnode->rn_umode != CM_RTPIO);
 	/*
 	 * This is UDP, TCP, UDP6 or TCP6. Detect host and port; lookup host;
 	 * do connect() in order to specify peer address

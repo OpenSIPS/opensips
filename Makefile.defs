@@ -1124,7 +1124,7 @@ endif	#ARCH, sparc64
 	#if ipaq/netwinder
 ifeq	($(ARCH), arm)
 		# if gcc
-ifeq		($(CC_NAME), gcc)
+ifeq		($(CC_NAME:clang=gcc), gcc)
 				#common stuff
 				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops  -Wcast-align $(PROFILE) \
 					-Wall -marm
@@ -1298,7 +1298,7 @@ endif	#ARCH, ppc
 #if  ppc64
 ifeq	($(ARCH), ppc64)
 		# if gcc
-ifeq		($(CC_NAME), gcc)
+ifeq		($(CC_NAME:clang=gcc), gcc)
 				#common stuff
 				CFLAGS+=$(CC_OPTIMIZE_FLAG) -funroll-loops $(PROFILE)  -Wall
 ifeq			($(CC_CLASS), 4.x)
