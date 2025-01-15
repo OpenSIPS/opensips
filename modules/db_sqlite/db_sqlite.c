@@ -33,9 +33,6 @@
 #define ALLOC_LIMIT 10
 #define LDEXT_LIST_DELIM ';'
 
-unsigned int db_sqlite_timeout_interval = 2;   /* Default is 6 seconds */
-unsigned int db_sliqte_exec_query_threshold = 0;   /* Warning in case DB query
-											takes too long disabled by default*/
 int db_sqlite_alloc_limit=ALLOC_LIMIT;
 
 
@@ -46,7 +43,7 @@ static int db_sqlite_add_extension(modparam_t type, void *val);
 struct db_sqlite_extension_list *extension_list=0;
 
 /*
- * MySQL database module interface
+ * SQLite database module interface
  */
 static const cmd_export_t cmds[] = {
 	{"db_bind_api", (cmd_function)db_sqlite_bind_api, {{0,0,0}},0},
