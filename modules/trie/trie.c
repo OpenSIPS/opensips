@@ -883,7 +883,7 @@ static int get_config_from_db(void) {
 	str partition_col = str_init("partition_name");
 	str db_url_col = str_init("db_url");
 	str table_col = str_init("trie_table");
-	int n_query_col = 4;
+	int n_query_col = 3;
 	db_key_t query_cols[] = {&partition_col, &db_url_col, &table_col};
 	/* query result processing stuff */
 	int nr_rows_db_config = 0 ;
