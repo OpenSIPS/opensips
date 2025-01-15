@@ -34,7 +34,7 @@
 #include "../../db/db_insertq.h"
 #include "../../db/db_id.h"
 #include "../../mem/mem.h"
-#include "my_con.h"
+#include "sqlite_con.h"
 #include "db_sqlite.h"
 
 extern struct db_sqlite_extension_list *extension_list;
@@ -43,7 +43,7 @@ extern struct db_sqlite_extension_list *extension_list;
 #define URL_BUFSIZ 1024
 char url_buf[URL_BUFSIZ];
 
-int db_sqlite_connect(struct my_con* ptr)
+int db_sqlite_connect(struct sqlite_con* ptr)
 {
 	sqlite3* con;
 	char* errmsg;
@@ -60,7 +60,7 @@ int db_sqlite_connect(struct my_con* ptr)
 	url_buf[ptr->id->url.len - (sizeof(SQLITE_ID)-1)] = '\0';
 
 	if (sqlite3_open(url_buf, &con) != SQLITE_OK) {
-		LM_ERR("Can't open database: %s\n", sqlite3_errmsg((sqlite3*)ptr->con));
+		LM_ERR("Can't open database: %s\n", sqlite3_errmsg(con));
 		return -1;
 	}
 
@@ -80,6 +80,7 @@ int db_sqlite_connect(struct my_con* ptr)
 						"Errmsg [%s]!\n",
 						iter->ldpath, iter->entry_point,
 						errmsg);
+				sqlite3_free(errmsg);
 				goto out_free;
 			}
 			LM_DBG("Extension [%s] loaded!\n", iter->ldpath);
@@ -90,8 +91,6 @@ int db_sqlite_connect(struct my_con* ptr)
 			return -1;
 		}
 	}
-
-
 
 	ptr->con = con;
 
@@ -110,23 +109,23 @@ out_free:
  * Create a new connection structure,
  * open the sqlite connection and set reference count to 1
  */
-struct my_con* db_sqlite_new_connection(const struct db_id* id)
+struct sqlite_con* db_sqlite_new_connection(const struct db_id* id)
 {
 
-	struct my_con* ptr;
+	struct sqlite_con* ptr;
 
 	if (!id) {
 		LM_ERR("invalid parameter value\n");
 		return 0;
 	}
 
-	ptr = (struct my_con*)pkg_malloc(sizeof(struct my_con));
+	ptr = (struct sqlite_con*)pkg_malloc(sizeof(struct sqlite_con));
 	if (!ptr) {
 		LM_ERR("no private memory left\n");
 		return 0;
 	}
 
-	memset(ptr, 0, sizeof(struct my_con));
+	memset(ptr, 0, sizeof(struct sqlite_con));
 	ptr->ref = 1;
 
 	ptr->id = (struct db_id*)id;
@@ -149,8 +148,8 @@ void db_sqlite_free_connection(struct pool_con* con)
 {
 	if (!con) return;
 
-	struct my_con * _c;
-	_c = (struct my_con*) con;
+	struct sqlite_con * _c;
+	_c = (struct sqlite_con*) con;
 
 	if (_c->id) free_db_id(_c->id);
 	if (_c->con) {
