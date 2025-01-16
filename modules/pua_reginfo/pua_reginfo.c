@@ -220,7 +220,8 @@ static int mod_init(void)
 		return -1;
 	}
 
-	ul_identities_key.len = strlen(ul_identities_key.s);
+	if (ul_identities_key.s)
+		ul_identities_key.len = strlen(ul_identities_key.s);
 
 	/*
 	 * Import use_domain parameter from usrloc
