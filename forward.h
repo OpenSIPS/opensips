@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2008-2025 OpenSIPS Project
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -15,16 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * -------
- *  2001-??-?? created by andrei
- *  ????-??-?? lots of changes by a lot of people
- *  2003-02-11 added inline msg_send (andrei)
- *  2003-04-07 changed all ports to host byte order (andrei)
- *  2003-04-12  FORCE_RPORT_T added (andrei)
- *  2003-04-15  added tcp_disable support (andrei)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /*!
@@ -48,13 +40,27 @@
 #include "socket_info.h"
 
 struct socket_info* get_send_socket(struct sip_msg* msg,
-									union sockaddr_union* su, int proto);
-struct socket_info* get_out_socket(union sockaddr_union* to, int proto);
+		union sockaddr_union* su, int proto);
+
+struct socket_info* get_out_socket(union sockaddr_union* to,
+		int proto);
+
 int check_self(str* host, unsigned short port, unsigned short proto);
+
+/*! \brief checks if the proto:host:port is one of the address we listen on
+ *
+ * if port==0, the  port number is expended to default
+ * if proto==0 (PROTO_NONE) the protocol is considered UDP
+ * returns 1 if true, 0 if false, -1 on error
+ */
+#define check_self_strict( _host, _port, _proto) \
+	check_self(_host,_port?_port:protos[_proto?_proto:PROTO_UDP].default_port,\
+		_proto?_proto:PROTO_UDP)
+
 int forward_request( struct sip_msg* msg,  struct proxy_l* p);
+
 int update_sock_struct_from_via( union sockaddr_union* to,
-								 struct sip_msg* msg,
-								 struct via_body* via );
+	 struct sip_msg* msg, struct via_body* via );
 
 /*! \brief use src_ip, port=src_port if rport, via port if via port, 5060 otherwise */
 #define update_sock_struct_from_ip(  to, msg ) \
