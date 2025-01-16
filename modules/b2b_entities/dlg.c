@@ -713,6 +713,7 @@ int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name)
 	return 0;
 }
 
+
 int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 {
 	str b2b_key;
@@ -766,8 +767,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 				rt->nameaddr.uri.len,rt->nameaddr.uri.s);
 			return SCB_RUN_ALL;
 		}
-		if (check_self( &puri.host, puri.port_no?puri.port_no:SIP_PORT,
-		puri.proto?puri.proto:PROTO_UDP)!= 1 ) {
+		if (check_self_strict( &puri.host, puri.port_no, puri.proto)!= 1 ) {
 			LM_DBG("First Route uri is not mine\n");
 			return SCB_RUN_ALL;  /* not for b2b */
 
@@ -785,13 +785,12 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 			}
 		}
 		if (rt) {
-			if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ) {
+			if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ){
 				LM_ERR("Second route uri is not valid <%.*s>\n",
 					rt->nameaddr.uri.len,rt->nameaddr.uri.s);
 				return SCB_RUN_ALL;
 			}
-			if (check_self( &puri.host, puri.port_no?puri.port_no:SIP_PORT,
-			puri.proto?puri.proto:PROTO_UDP)!= 1 ) {
+			if (check_self_strict( &puri.host, puri.port_no, puri.proto)!= 1 ){
 				LM_DBG("Second Route uri is not mine\n");
 				return SCB_RUN_ALL;  /* not for b2b */
 			}
@@ -822,7 +821,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	if(method_value!= METHOD_CANCEL)
 	{
 		LM_DBG("<uri> host:port [%.*s][%d]\n", host.len, host.s, port);
-		if (!check_self( &host, port ? port : SIP_PORT, msg->rcv.proto))
+		if (check_self_strict( &host, port, msg->parsed_uri.proto)!= 1 )
 		{
 			LM_DBG("RURI does not point to me\n");
 			return SCB_RUN_ALL;
