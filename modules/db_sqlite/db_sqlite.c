@@ -32,15 +32,17 @@
 #include <sqlite3.h>
 #define ALLOC_LIMIT 10
 #define LDEXT_LIST_DELIM ';'
+#define BUSY_TIMEOUT 500
 
 int db_sqlite_alloc_limit=ALLOC_LIMIT;
-
-
+int db_sqlite_busy_timeout=BUSY_TIMEOUT;
 
 static int sqlite_mod_init(void);
 static void sqlite_mod_destroy(void);
 static int db_sqlite_add_extension(modparam_t type, void *val);
 struct db_sqlite_extension_list *extension_list=0;
+static int db_sqlite_exec_pragma(modparam_t type, void *val);
+struct db_sqlite_pragma_list *pragma_list=0;
 
 /*
  * SQLite database module interface
@@ -55,8 +57,11 @@ static const cmd_export_t cmds[] = {
  */
 static const param_export_t params[] = {
 	{"alloc_limit", INT_PARAM, &db_sqlite_alloc_limit},
+	{"busy_timeout", INT_PARAM, &db_sqlite_busy_timeout},
 	{"load_extension", STR_PARAM|USE_FUNC_PARAM,
 								(void *)db_sqlite_add_extension},
+	{"exec_pragma", STR_PARAM|USE_FUNC_PARAM,
+								(void *)db_sqlite_exec_pragma},
 	{0, 0, 0}
 };
 
@@ -92,10 +97,17 @@ static int sqlite_mod_init(void)
 static void sqlite_mod_destroy(void)
 {
 	struct db_sqlite_extension_list *foo=NULL;
+	struct db_sqlite_pragma_list *p_iter=NULL;
+	
 	while (extension_list) {
 		foo=extension_list;
 		extension_list=extension_list->next;
 		pkg_free(foo);
+	}
+	while (pragma_list) {
+		p_iter=pragma_list;
+		pragma_list=pragma_list->next;
+		pkg_free(p_iter);
 	}
 }
 
@@ -148,6 +160,24 @@ static int db_sqlite_add_extension(modparam_t type, void *val)
 	/* Reduce the overhead of introducing in the end */
 	node->next=extension_list;
 	extension_list=node;
+
+	return 0;
+out:
+	LM_ERR("no more pkg mem\n");
+	return -1;
+}
+
+static int db_sqlite_exec_pragma(modparam_t type, void *val)
+{
+	struct db_sqlite_pragma_list *node;
+
+	node=pkg_malloc(sizeof(struct db_sqlite_pragma_list));
+	if (!node)
+		goto out;
+
+	node->pragma=(char *)val;
+	node->next=pragma_list;
+	pragma_list=node;
 
 	return 0;
 out:

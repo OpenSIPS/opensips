@@ -37,17 +37,22 @@
 #include "sqlite_con.h"
 #include "db_sqlite.h"
 
+extern int db_sqlite_busy_timeout;
 extern struct db_sqlite_extension_list *extension_list;
+extern struct db_sqlite_pragma_list *pragma_list;
 
 #define SQLITE_ID "sqlite:/"
 #define URL_BUFSIZ 1024
+#define PRAGMA_BUFSIZE 256
 char url_buf[URL_BUFSIZ];
 
 int db_sqlite_connect(struct sqlite_con* ptr)
 {
 	sqlite3* con;
-	char* errmsg;
+	char* errmsg = NULL;
+	char pragma_sql[PRAGMA_BUFSIZE];
 	struct db_sqlite_extension_list *iter;
+	struct db_sqlite_pragma_list *p_iter;
 
 	/* if connection already in use, close it first*/
 	if (ptr->init)
@@ -64,17 +69,44 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 		return -1;
 	}
 
+	/* enable busy timeout (can also be PRAGMA busy_timeout = milliseconds) */
+	if (sqlite3_busy_timeout(con, db_sqlite_busy_timeout) != SQLITE_OK) {
+		LM_ERR("Failed to set busy timeout: %s\n", sqlite3_errmsg(con));
+		return -1;
+	} else {
+		LM_DBG("Busy timeout is set to [%d]\n", db_sqlite_busy_timeout);
+	}
+
+	/* Executing pragmas */
+	if (pragma_list) {
+		p_iter=pragma_list;
+		for (p_iter=pragma_list; p_iter; p_iter=p_iter->next) {
+			if (strlen(p_iter->pragma) > (PRAGMA_BUFSIZE - 9)) {
+				LM_ERR("Pragma size is too big: %d (max: %d)\n", 
+					(int)strlen(p_iter->pragma), (int)(PRAGMA_BUFSIZE - 9));
+				continue;
+			}
+			snprintf(pragma_sql, PRAGMA_BUFSIZE, "PRAGMA %s;", p_iter->pragma);
+			if (sqlite3_exec(con, pragma_sql, NULL, NULL, &errmsg) != SQLITE_OK) {
+				LM_ERR("Failed to execute PRAGMA [%s]! Errmsg [%s]!\n",
+						p_iter->pragma, errmsg);
+				sqlite3_free(errmsg);
+			}
+			LM_DBG("Pragma [%s] executed\n", pragma_sql);
+		}
+	}
+
 	/* trying to load extensions */
 	if (extension_list) {
-		if (sqlite3_enable_load_extension(con, 1)) {
-			LM_ERR("failed to enable extension loading\n");
+		if (sqlite3_db_config(con, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 1, NULL) != SQLITE_OK) {
+			LM_ERR("failed to enable extension loading: %s\n", sqlite3_errmsg(con));
 			return -1;
 		}
 
 		iter=extension_list;
 		for (iter=extension_list; iter; iter=iter->next) {
 			if (sqlite3_load_extension(con, iter->ldpath,
-						iter->entry_point, &errmsg)) {
+					iter->entry_point, &errmsg) != SQLITE_OK) {
 				LM_ERR("failed to load!"
 						"Extension [%s]! Entry point [%s]!"
 						"Errmsg [%s]!\n",
@@ -86,8 +118,8 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 			LM_DBG("Extension [%s] loaded!\n", iter->ldpath);
 		}
 
-		if (sqlite3_enable_load_extension(con, 0)) {
-			LM_ERR("failed to enable extension loading\n");
+		if (sqlite3_db_config(con, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 0, NULL) != SQLITE_OK) {
+			LM_ERR("failed to disable extension loading: %s\n", sqlite3_errmsg(con));
 			return -1;
 		}
 	}
