@@ -1662,7 +1662,7 @@ fi
 
 
 %changelog
-* Thu Jan 18 2024 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+* Thu Jan 18 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - New module: trie
 
 * Mon Aug 19 2024 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
