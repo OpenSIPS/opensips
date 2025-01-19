@@ -443,9 +443,9 @@ Chapter 2. Contributors
    1. Liviu Chircu (@liviuchircu) 20 17 84 92
    2. Andrei Dragus 19 4 1556 12
    3. Razvan Crainea (@razvancrainea) 14 11 48 76
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 27 30
-   5. Vlad Patrascu (@rvlad-patrascu) 8 4 195 75
-   6. Vlad Paiu (@vladpaiu) 7 5 40 15
+   4. Vlad Paiu (@vladpaiu) 10 7 131 19
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 27 30
+   6. Vlad Patrascu (@rvlad-patrascu) 8 4 195 75
    7. Maksym Sobolyev (@sobomax) 5 3 12 12
    8. Björn Esser (@besser82) 5 2 124 44
    9. Ovidiu Sas (@ovidiusas) 4 2 17 4
@@ -474,8 +474,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Dec 2024
-   2.  Vlad Paiu (@vladpaiu)               Jul 2014 - Dec 2024
+   1.  Vlad Paiu (@vladpaiu)               Jul 2014 - Jan 2025
+   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Dec 2024
    3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    4.  Bence Szigeti                       Nov 2023 - Nov 2023
    5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
@@ -495,10 +495,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Nick Altmann
-   (@nikbyte), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
-   (@razvancrainea), Andrei Dragus.
+   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Andrei
+   Dragus.
 
    Documentation Copyrights:
 
