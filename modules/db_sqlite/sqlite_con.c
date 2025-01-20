@@ -98,7 +98,11 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 
 	/* trying to load extensions */
 	if (extension_list) {
+#ifdef SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION
 		if (sqlite3_db_config(con, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 1, NULL) != SQLITE_OK) {
+#else
+		if (sqlite3_enable_load_extension(con, 1)) {
+#endif
 			LM_ERR("failed to enable extension loading: %s\n", sqlite3_errmsg(con));
 			return -1;
 		}
