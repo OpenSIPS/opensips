@@ -1329,6 +1329,9 @@ static int bridging_start_new_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_ent
 	}
 
 	entity->no = 1;
+	entity->peer = old_entity;
+	if (!old_entity->peer)
+		old_entity->peer = entity;
 	tuple->bridge_entities[1] = entity;
 
 	return 0;
