@@ -76,7 +76,7 @@ typedef struct p_group_node_t {
 } p_group_node_t;
 
 typedef struct p_address_table_t {
-    pht_hash_table_t group;
+    p_group_node_t *group;
 } p_address_table_t;
 
 p_address_table_t *pm_hash_create(void);

@@ -92,18 +92,6 @@ err:
     return NULL;
 }
 
-static inline unsigned int group_hash(pht_hash_table_t *table, unsigned int group_id) {
-    return group_id % table->bucket_count;
-}
-
-unsigned int group_node_hash(pht_hash_table_t *table, void *node) {
-    p_group_node_t *group;
-
-    group = node;
-
-    return group_hash(table, group->k.group);
-}
-
 void delete_group_node(p_group_node_t *group) {
     int i;
     p_address_node_t *address;
@@ -151,11 +139,25 @@ p_group_node_t *new_group_node(unsigned int group_id, unsigned int bucket_count)
     return node;
 }
 
-p_group_node_t *find_group_bucket(p_address_table_t *table, unsigned int group_id) {
+void insert_group_node(p_address_table_t *table, p_group_node_t *new_group) {
+    p_group_node_t *group;
+
+    if (table->group == NULL || new_group->k.group < table->group->k.group) {
+        new_group->next = table->group;
+        table->group = new_group;
+    } else {
+        for (group = table->group;
+             group->next != NULL && group->next->k.group <= new_group->k.group; group = group->next)
+            ;
+        new_group->next = group->next;
+        group->next = new_group;
+    }
+}
+
+p_group_node_t *find_group_node(p_address_table_t *table, unsigned int group_id) {
     p_group_node_t *node = NULL;
 
-    for (node = (p_group_node_t *)table->group.bucket[group_hash(&table->group, group_id)]; node;
-         node = node->next) {
+    for (node = table->group; node; node = node->next) {
         if (node->k.group == group_id) break;
     }
 
@@ -170,11 +172,7 @@ p_address_table_t *pm_hash_create(void) {
         LM_ERR("no shm memory left for address table\n");
         return NULL;
     }
-    if (!pht_init(&table->group, INITIAL_GROUP_BUCKET_COUNT, group_node_hash)) {
-        LM_ERR("no shm memory left for group hash table\n");
-        shm_free(table);
-        return NULL;
-    }
+    table->group = NULL;
 
     return table;
 }
@@ -185,7 +183,6 @@ void pm_hash_destroy(p_address_table_t *table) {
         return;
     }
     pm_empty_hash(table);
-    shm_free(table->group.bucket);
     shm_free(table);
 }
 
@@ -200,7 +197,7 @@ int pm_hash_insert(p_address_table_t *table, struct net *subnet, unsigned int gr
         return -1;
     }
 
-    group = find_group_bucket(table, group_id);
+    group = find_group_node(table, group_id);
 
     if (!group) {
         group = new_group_node(group_id, INITIAL_ADDRESS_BUCKET_COUNT);
@@ -209,7 +206,7 @@ int pm_hash_insert(p_address_table_t *table, struct net *subnet, unsigned int gr
             delete_address_node(address);
             return -1;
         }
-        pht_insert(&table->group, group);
+        insert_group_node(table, group);
     }
 
     pht_insert(&group->v.address, address);
@@ -286,11 +283,9 @@ int pm_hash_match(struct sip_msg *msg, p_address_table_t *table, unsigned int gr
     p_group_node_t *group = NULL;
     p_address_node_t *address;
     pv_value_t pvt;
-    int i;
 
     if (group_id != GROUP_ANY) {
-        for (group = table->group.bucket[group_hash(&table->group, group_id)]; group;
-             group = group->next) {
+        for (group = table->group; group; group = group->next) {
             if (group->k.group == group_id) break;
         }
 
@@ -302,11 +297,9 @@ int pm_hash_match(struct sip_msg *msg, p_address_table_t *table, unsigned int gr
         address = match_in_group(group, ip, port, proto, pattern);
         if (address) goto found;
     } else {
-        for (i = 0; i < table->group.bucket_count; ++i) {
-            for (group = table->group.bucket[i]; group; group = group->next) {
-                address = match_in_group(group, ip, port, proto, pattern);
-                if (address) goto found;
-            }
+        for (group = table->group; group; group = group->next) {
+            address = match_in_group(group, ip, port, proto, pattern);
+            if (address) goto found;
         }
     }
 
@@ -333,24 +326,21 @@ int pm_hash_find_group(p_address_table_t *table, struct ip_addr *ip, unsigned in
     p_group_node_t *group;
     p_address_node_t *address;
     str str_ip;
-    int i;
 
     if (ip == NULL) return -1;
 
     str_ip.len = ip->len;
     str_ip.s = (char *)ip->u.addr;
 
-    for (i = 0; i < table->group.bucket_count; ++i) {
-        for (group = table->group.bucket[i]; group; group = group->next) {
-            for (address = group->v.address.bucket[address_hash(&group->v.address, &str_ip)];
-                 address; address = address->next) {
-                if ((address->v.port == PORT_ANY || address->v.port == port || port == PORT_ANY) &&
-                    (ip_addr_cmp(ip, &address->k.subnet->ip) || matchnet(ip, address->k.subnet))) {
-                    return group->k.group;
-                }
+    for (group = table->group; group; group = group->next) {
+        for (address = group->v.address.bucket[address_hash(&group->v.address, &str_ip)]; address;
+             address = address->next) {
+            if ((address->v.port == PORT_ANY || address->v.port == port || port == PORT_ANY) &&
+                (ip_addr_cmp(ip, &address->k.subnet->ip) || matchnet(ip, address->k.subnet))) {
+                return group->k.group;
             }
-            if (match_in_group(group, ip, port, PROTO_NONE, NULL)) return group->k.group;
         }
+        if (match_in_group(group, ip, port, PROTO_NONE, NULL)) return group->k.group;
     }
 
     return -1;
@@ -361,7 +351,7 @@ static const unsigned char ipv6_mask_128[16] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x
 
 int pm_hash_mi_print(p_address_table_t *table, mi_item_t *part_item, struct pm_part_struct *pm,
                      int is_subnet) {
-    int i, j, len, is_address;
+    int i, len, is_address;
     p_group_node_t *group;
     p_address_node_t *address;
     char *p, *mask, prbuf[PROTO_NAME_MAX_SIZE];
@@ -370,65 +360,62 @@ int pm_hash_mi_print(p_address_table_t *table, mi_item_t *part_item, struct pm_p
     dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
     if (!dests_arr) return -1;
 
-    for (i = 0; i < table->group.bucket_count; ++i) {
-        for (group = table->group.bucket[i]; group; group = group->next) {
-            for (j = 0; j < group->v.address.bucket_count; ++j) {
-                for (address = group->v.address.bucket[j]; address; address = address->next) {
-                    mask = ip_addr2a(&address->k.subnet->mask);
-                    if (!mask) {
-                        LM_ERR("cannot print mask address\n");
-                        continue;
-                    }
-                    if (memcmp(&address->k.subnet->mask.u, ipv6_mask_128,
-                               address->k.subnet->mask.len) == 0) {
-                        if (is_subnet) continue;
-                        is_address = 1;
+    for (group = table->group; group; group = group->next) {
+        for (i = 0; i < group->v.address.bucket_count; ++i) {
+            for (address = group->v.address.bucket[i]; address; address = address->next) {
+                mask = ip_addr2a(&address->k.subnet->mask);
+                if (!mask) {
+                    LM_ERR("cannot print mask address\n");
+                    continue;
+                }
+                if (memcmp(&address->k.subnet->mask.u, ipv6_mask_128,
+                           address->k.subnet->mask.len) == 0) {
+                    if (is_subnet) continue;
+                    is_address = 1;
+                } else {
+                    if (!is_subnet) continue;
+                    is_address = 0;
+                }
+
+                dest_item = add_mi_object(dests_arr, NULL, 0);
+                if (!dest_item) return -1;
+
+                if (add_mi_number(dest_item, MI_SSTR("grp"), group->k.group) < 0) return -1;
+
+                p = ip_addr2a(&address->k.subnet->ip);
+                if (add_mi_string(dest_item, MI_SSTR("ip"), p, strlen(p)) < 0) return -1;
+
+                if (is_address) {
+                    if (address->k.subnet->ip.af == AF_INET) {
+                        if (add_mi_string(dest_item, MI_SSTR("mask"), MI_SSTR("32")) < 0) return -1;
                     } else {
-                        if (!is_subnet) continue;
-                        is_address = 0;
-                    }
-
-                    dest_item = add_mi_object(dests_arr, NULL, 0);
-                    if (!dest_item) return -1;
-
-                    if (add_mi_number(dest_item, MI_SSTR("grp"), group->k.group) < 0) return -1;
-
-                    p = ip_addr2a(&address->k.subnet->ip);
-                    if (add_mi_string(dest_item, MI_SSTR("ip"), p, strlen(p)) < 0) return -1;
-
-                    if (is_address) {
-                        if (address->k.subnet->ip.af == AF_INET) {
-                            if (add_mi_string(dest_item, MI_SSTR("mask"), MI_SSTR("32")) < 0)
-                                return -1;
-                        } else {
-                            if (add_mi_string(dest_item, MI_SSTR("mask"), MI_SSTR("128")) < 0)
-                                return -1;
-                        }
-                    } else {
-                        if (add_mi_string(dest_item, MI_SSTR("mask"), mask, strlen(mask)) < 0)
+                        if (add_mi_string(dest_item, MI_SSTR("mask"), MI_SSTR("128")) < 0)
                             return -1;
                     }
-
-                    if (add_mi_number(dest_item, MI_SSTR("port"), address->v.port) < 0) return -1;
-
-                    if (address->v.proto == PROTO_NONE) {
-                        p = "any";
-                        len = 3;
-                    } else {
-                        p = proto2str(address->v.proto, prbuf);
-                        len = p - prbuf;
-                        p = prbuf;
-                    }
-                    if (add_mi_string(dest_item, MI_SSTR("proto"), p, len) < 0) return -1;
-
-                    if (add_mi_string(dest_item, MI_SSTR("pattern"), address->v.pattern,
-                                      address->v.pattern ? strlen(address->v.pattern) : 0) < 0)
-                        return -1;
-
-                    if (add_mi_string(dest_item, MI_SSTR("context_info"), address->v.info,
-                                      address->v.info ? strlen(address->v.info) : 0) < 0)
+                } else {
+                    if (add_mi_string(dest_item, MI_SSTR("mask"), mask, strlen(mask)) < 0)
                         return -1;
                 }
+
+                if (add_mi_number(dest_item, MI_SSTR("port"), address->v.port) < 0) return -1;
+
+                if (address->v.proto == PROTO_NONE) {
+                    p = "any";
+                    len = 3;
+                } else {
+                    p = proto2str(address->v.proto, prbuf);
+                    len = p - prbuf;
+                    p = prbuf;
+                }
+                if (add_mi_string(dest_item, MI_SSTR("proto"), p, len) < 0) return -1;
+
+                if (add_mi_string(dest_item, MI_SSTR("pattern"), address->v.pattern,
+                                  address->v.pattern ? strlen(address->v.pattern) : 0) < 0)
+                    return -1;
+
+                if (add_mi_string(dest_item, MI_SSTR("context_info"), address->v.info,
+                                  address->v.info ? strlen(address->v.info) : 0) < 0)
+                    return -1;
             }
         }
     }
@@ -437,18 +424,12 @@ int pm_hash_mi_print(p_address_table_t *table, mi_item_t *part_item, struct pm_p
 }
 
 void pm_empty_hash(p_address_table_t *table) {
-    int i;
+    p_group_node_t *group, *next = NULL;
 
-    p_group_node_t *group;
+    for (group = table->group; group; group = next) {
+        next = group->next;
+        delete_group_node(group);
+    }
 
-    for (i = 0; i < table->group.bucket_count; ++i) {
-        for (group = table->group.bucket[i]; group; group = group->next) {
-            delete_group_node(group);
-        }
-        table->group.bucket[i] = 0;
-    }
-    table->group.size = 0;
-    if (!pht_resize_bucket(&table->group, INITIAL_GROUP_BUCKET_COUNT)) {
-        LM_WARN("no shm memory left for group hash table shrink\n");
-    }
+    table->group = NULL;
 }
