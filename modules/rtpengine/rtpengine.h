@@ -34,6 +34,27 @@
 #define RTPE_TEARDOWN_SET     (1<<1)
 #define RTPE_TEARDOWN_SOCKETS (1<<2)
 
+enum rtpe_operation {
+	OP_OFFER = 1,
+	OP_ANSWER,
+	OP_DELETE,
+	OP_START_RECORDING,
+	OP_STOP_RECORDING,
+	OP_QUERY,
+	OP_START_MEDIA,
+	OP_STOP_MEDIA,
+	OP_BLOCK_MEDIA,
+	OP_UNBLOCK_MEDIA,
+	OP_BLOCK_DTMF,
+	OP_UNBLOCK_DTMF,
+	OP_START_FORWARD,
+	OP_STOP_FORWARD,
+	OP_PLAY_DTMF,
+	OP_SUBSCRIBE_REQUEST,
+	OP_SUBSCRIBE_ANSWER,
+	OP_UNSUBSCRIBE,
+};
+
 struct rtpe_node {
 	unsigned int		idx;			/* overall index */
 	str					rn_url;			/* unparsed, deletable, NULL-term */
