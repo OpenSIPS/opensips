@@ -122,7 +122,11 @@ int db_sqlite_connect(struct sqlite_con* ptr)
 			LM_DBG("Extension [%s] loaded!\n", iter->ldpath);
 		}
 
+#ifdef SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION
 		if (sqlite3_db_config(con, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 0, NULL) != SQLITE_OK) {
+#else
+		if (sqlite3_enable_load_extension(con, 1)) {
+#endif
 			LM_ERR("failed to disable extension loading: %s\n", sqlite3_errmsg(con));
 			return -1;
 		}
