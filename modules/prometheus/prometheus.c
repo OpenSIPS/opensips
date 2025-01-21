@@ -57,9 +57,14 @@ str prom_grp_label = str_init("group");
 httpd_api_t prom_httpd_api;
 str prometheus_script_route = {NULL, 0};
 struct script_route_ref *prometheus_route_ref = NULL;
+static str *prometheus_route_page = NULL;
+static str prometheus_route_page_stat = {0, 0};
+static int prometheus_route_page_max = 0;
 
 static int prom_stats_param( modparam_t type, void* val);
 static int prom_labels_param( modparam_t type, void* val);
+static int w_prom_declare_stat(struct sip_msg *msg, str *name, str *type, str *help);
+static int w_prom_push_stat(struct sip_msg *msg, int *label, str *labeln, str *labelv);
 
 /* module parameters */
 static const param_export_t mi_params[] = {
@@ -85,6 +90,22 @@ static const dep_export_t deps = {
 	},
 };
 
+static const cmd_export_t cmds[]={
+	{"prometheus_declare_stat", (cmd_function)w_prom_declare_stat, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{"prometheus_push_stat", (cmd_function)w_prom_push_stat, {
+		{CMD_PARAM_INT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
+};
+
 /* module exports */
 struct module_exports exports = {
 	"prometheus",				/* module name */
@@ -93,7 +114,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	0,							/* load function */
 	&deps,						/* OpenSIPS module dependencies */
-	NULL,						/* exported functions */
+	cmds,						/* exported functions */
 	NULL,						/* exported async functions */
 	mi_params,					/* exported parameters */
 	NULL,						/* exported statistics */
@@ -850,8 +871,16 @@ end:
 		/* set request route type */
 		set_route_type( REQUEST_ROUTE );
 
+		prometheus_route_page = page;
+		prometheus_route_page_max = buffer->len;
+		prometheus_route_page_stat.s = NULL;
+
 		/* run given hep route */
 		run_top_route( sroutes->request[prometheus_route_ref->idx], route_msg);
+
+		prometheus_route_page = NULL;
+		prometheus_route_page_max = 0;
+		prometheus_route_page_stat.s = NULL;
 
 		memset(&val, 0, sizeof(int_str));
 		if ((script_return_get(&val, 0) >= 1) && (val.flags & PV_VAL_STR)) {
@@ -975,4 +1004,106 @@ static int prom_labels_param(modparam_t type, void* val)
 	list_add_tail(&label->list, &prom_labels);
 
 	return 0;
+}
+
+static int w_prom_declare_stat(struct sip_msg *msg, str *name, str *type, str *help)
+{
+	int len = 0;
+	str _type = str_init("gauge");
+
+	if (!prometheus_route_ref || !prometheus_route_page) {
+		LM_ERR("this function should only be called inside '%s' route\n",
+				(!prometheus_route_ref?"script_route":prometheus_script_route.s));
+		return -2;
+	}
+	if (!type)
+		type = &_type;
+	if (help && help->len)
+		len = 7 /* '# HELP ' */ + name->len + 1 /* ' ' */ + help->len + 1 /* '\n' */;
+	len += 7 /* '# TYPE ' */ + name->len + 1 /* ' ' */ + type->len + 1 /* '\n' */;
+	if (prometheus_route_page->len + len >= prometheus_route_page_max) {
+		LM_ERR("declaring statistic overflows\n");
+		return -1;
+	}
+	if (help && help->len) {
+		memcpy(prometheus_route_page->s + prometheus_route_page->len, "# HELP ", 7);
+		prometheus_route_page->len += 7;
+		memcpy(prometheus_route_page->s + prometheus_route_page->len, name->s, name->len);
+		prometheus_route_page->len += name->len;
+		prometheus_route_page->s[prometheus_route_page->len++] = ' ';
+		memcpy(prometheus_route_page->s + prometheus_route_page->len, help->s, help->len);
+		prometheus_route_page->len += help->len;
+		prometheus_route_page->s[prometheus_route_page->len++] = '\n';
+	}
+	memcpy(prometheus_route_page->s + prometheus_route_page->len, "# TYPE ", 7);
+	prometheus_route_page->len += 7;
+	memcpy(prometheus_route_page->s + prometheus_route_page->len, name->s, name->len);
+	prometheus_route_page_stat.s = prometheus_route_page->s + prometheus_route_page->len;
+	prometheus_route_page_stat.len = name->len;
+	prometheus_route_page->len += name->len;
+	prometheus_route_page->s[prometheus_route_page->len++] = ' ';
+	memcpy(prometheus_route_page->s + prometheus_route_page->len, type->s, type->len);
+	prometheus_route_page->len += type->len;
+	prometheus_route_page->s[prometheus_route_page->len++] = '\n';
+	return 1;
+}
+
+static int w_prom_push_stat(struct sip_msg *msg, int *value, str *labeln, str *labelv)
+{
+	int len, ret = -1;
+	str labels = str_init("");
+	str val;
+
+	if (!prometheus_route_page_stat.s) {
+		LM_ERR("can not push stat if not previously declared! "
+				"use prometheus_declare_stat() first\n");
+		return -2;
+	}
+	if (labeln) {
+		if (labelv) {
+			/* we have both labels and value - build the string */
+			labels.s = pkg_malloc(5 /* '{="}' */ + labeln->len + labelv->len);
+			if (!labels.s) {
+				LM_ERR("oom for building labels\n");
+				return -1;
+			}
+			labels.s[0] = '{';
+			labels.len = 1;
+			memcpy(labels.s + labels.len, labeln->s, labeln->len);
+			labels.len += labeln->len;
+			labels.s[labels.len++] = '=';
+			labels.s[labels.len++] = '"';
+			memcpy(labels.s + labels.len, labelv->s, labelv->len);
+			labels.len += labelv->len;
+			labels.s[labels.len++] = '"';
+			labels.s[labels.len++] = '}';
+		} else {
+			labels = *labeln;
+		}
+	}
+	len = prometheus_route_page_stat.len + labels.len + 1 /* ' ' */ +
+		INT2STR_MAX_LEN + 1 /* \n' */;
+	if (prometheus_route_page->len + len >= prometheus_route_page_max) {
+		LM_ERR("pushing statistic overflows\n");
+		goto end;
+	}
+
+	memcpy(prometheus_route_page->s + prometheus_route_page->len,
+			prometheus_route_page_stat.s, prometheus_route_page_stat.len);
+	prometheus_route_page->len += prometheus_route_page_stat.len;
+	if (labels.len) {
+		memcpy(prometheus_route_page->s + prometheus_route_page->len,
+				labels.s, labels.len);
+		prometheus_route_page->len += labels.len;
+	}
+	val.s = int2str(*value, &val.len);
+	prometheus_route_page->s[prometheus_route_page->len++] = ' ';
+	memcpy(prometheus_route_page->s + prometheus_route_page->len, val.s, val.len);
+	prometheus_route_page->len += val.len;
+	prometheus_route_page->s[prometheus_route_page->len++] = '\n';
+	ret = 1;
+end:
+	if (labeln && labelv)
+		pkg_free(labels.s);
+	return ret;
 }

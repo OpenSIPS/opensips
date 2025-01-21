@@ -488,7 +488,8 @@ static int w_replace_to(struct sip_msg* msg, str *dsp, str *uri)
 
 static int w_uac_auth(struct sip_msg* msg, intptr_t _alg)
 {
-	return (uac_auth(msg, !_alg ? 0U:*(unsigned *)_alg)==0)?1:-1;
+
+	return (uac_auth(msg, _alg)==0)?1:-1;
 }
 
 

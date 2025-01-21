@@ -1228,12 +1228,12 @@ Chapter 2. Contributors
    6. Vlad Patrascu (@rvlad-patrascu) 22 5 384 764
    7. Liviu Chircu (@liviuchircu) 19 13 134 210
    8. Daniel-Constantin Mierla (@miconda) 9 7 34 30
-   9. Maksym Sobolyev (@sobomax) 4 2 5 5
-   10. Carsten Bock 3 1 64 15
+   9. Alexandra Titoc 5 3 13 2
+   10. Maksym Sobolyev (@sobomax) 4 2 5 5
 
-   All remaining contributors: Bob Atkins, Julián Moreno Patiño,
-   Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Iouri Kharon,
-   UnixDev, Zero King (@l2dy), ihsinme, Peter Lemenkov
+   All remaining contributors: Carsten Bock, Bob Atkins, Julián
+   Moreno Patiño, Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Iouri
+   Kharon, UnixDev, Zero King (@l2dy), ihsinme, Peter Lemenkov
    (@lemenkov), Walter Doekes (@wdoekes), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1256,21 +1256,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   3.  ihsinme                             Feb 2022 - Feb 2022
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Walter Doekes (@wdoekes)            May 2014 - May 2014
+   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   4.  ihsinme                             Feb 2022 - Feb 2022
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), UnixDev,
-   Henning Westerholt (@henningw), Sergio Gutierrez, Iouri Kharon,
-   Hardy Kahl, Daniel-Constantin Mierla (@miconda), Edson Gellert
-   Schubert, Bob Atkins, Carsten Bock, Jonas Appel.
+   All remaining contributors: Walter Doekes (@wdoekes), Ovidiu
+   Sas (@ovidiusas), UnixDev, Henning Westerholt (@henningw),
+   Sergio Gutierrez, Iouri Kharon, Hardy Kahl, Daniel-Constantin
+   Mierla (@miconda), Edson Gellert Schubert, Bob Atkins, Carsten
+   Bock, Jonas Appel.
 
    (1) including any documentation-related commits, excluding
    merge commits

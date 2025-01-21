@@ -67,7 +67,8 @@ int dauth_algorithm_check(const struct authenticate_body *auth,
 	if (!digest_algorithm_available(auth->algorithm))
 		return (0);
 	damp = (const struct dauth_algorithm_match *)mdp->argp;
-	return (ALG2ALGFLG(auth->algorithm) & damp->algmask);
+	return (ALG2ALGFLG(auth->algorithm==ALG_UNSPEC ? ALG_MD5:auth->algorithm)
+				& damp->algmask);
 }
 
 int dauth_fixup_algorithms(void** param)

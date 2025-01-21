@@ -101,10 +101,10 @@ struct ct_match {
  */
 typedef struct ucontact {
 	uint64_t contact_id;	/*!< 64 bit Contact identifier
-							  0-------0-------------0---------------0
-							  |0 - 13 |   14 - 45   |    46 - 61    |
-							  |aorhash| record label| contact label |
-							  0-------0-------------0---------------0
+							  0---------------0--------------0---------------0
+							  |     0 - 13    |   14 - 45    |    46 - 63    |
+							  | contact label | record label |    aorhash    |
+							  0---------------0--------------0---------------0
 							*/
 	str* domain;            /*!< Pointer to domain name (NULL terminated) */
 	str* aor;               /*!< Pointer to the AOR string in record structure*/
@@ -127,7 +127,7 @@ typedef struct ucontact {
 	unsigned int methods;   /*!< Supported methods */
 	str attr;               /*!< Additional registration info  */
 	struct proxy_l next_hop;/*!< SIP-wise determined next hop */
-	unsigned int label;     /*!< label to find the contact in contact list>*/
+	unsigned short label;   /*!< label to find the contact in contact list>*/
 	int sipping_latency;    /*!< useconds; not restart-persistent >*/
 	str shtag;              /*!< helps determine the logical owner node */
 	str cdb_key;            /*!< the key of the contact in cache_db; makes
@@ -144,10 +144,10 @@ typedef struct ucontact {
 
 typedef struct ucontact_info {
 	uint64_t contact_id;	/*!< 64 bit Contact identifier
-							  0-------0-------------0---------------0
-							  |0 - 15 |   16 - 47   |    48 - 63    |
-							  |aorhash| record label| contact label |
-							  0-------0-------------0---------------0
+							  0---------------0--------------0---------------0
+							  |     0 - 13    |   14 - 45    |    46 - 63    |
+							  | contact label | record label |    aorhash    |
+							  0---------------0--------------0---------------0
 							*/
 	str* c;
 	str received;

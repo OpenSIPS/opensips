@@ -58,6 +58,7 @@ static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
 static int fixup_init_flags(void** param);
+static int fixup_reply_flags(void** param);
 static int fixup_free_init_flags(void** param);
 static int fixup_bridge_flags(void** param);
 static int fixup_bridge_request_flags(void** param);
@@ -90,7 +91,7 @@ int b2bl_server_new(struct sip_msg *msg, str *id, str *adv_contact,
 	pv_spec_t *hnames, pv_spec_t *hvals);
 int b2bl_client_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
 	 str *from_dname, str *adv_contact, pv_spec_t *hnames, pv_spec_t *hvals);
-int b2b_handle_reply(struct sip_msg* msg);
+int b2b_handle_reply(struct sip_msg* msg, unsigned int flags);
 int b2b_pass_request(struct sip_msg *msg);
 int b2b_delete_entity(struct sip_msg *msg);
 int b2b_end_dlg_leg(struct sip_msg *msg);
@@ -221,7 +222,8 @@ static const cmd_export_t cmds[]=
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0}, {0,0,0}},
 		REQUEST_ROUTE},
-	{"b2b_handle_reply",(cmd_function)b2b_handle_reply, {{0,0,0}},
+	{"b2b_handle_reply",(cmd_function)b2b_handle_reply, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_reply_flags, NULL}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"b2b_pass_request",(cmd_function)b2b_pass_request, {{0,0,0}},
 		REQUEST_ROUTE},
@@ -942,6 +944,17 @@ static int fixup_init_flags(void** param)
 	}
 
 	return 0;
+}
+
+static str reply_flags[] =
+{
+	str_init("pass-3xx-contact"),	/* B2BL_RPL_FLAG_PASS_CONTACT */
+	STR_NULL
+};
+
+static int fixup_reply_flags(void** param)
+{
+	return fixup_named_flags(param, reply_flags, NULL, NULL);
 }
 
 static int fixup_free_init_flags(void** param)

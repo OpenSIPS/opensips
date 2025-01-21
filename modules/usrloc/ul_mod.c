@@ -456,7 +456,7 @@ int init_cachedb(void)
 
 	cdbc = cdbf.init(&cdb_url);
 	if (!cdbc) {
-		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
+		LM_ERR("cannot connect to cachedb_url %s\n", db_url_escape(&cdb_url));
 		return -1;
 	}
 
@@ -914,14 +914,14 @@ int ul_check_db(void)
 		cdb_url.len = strlen(cdb_url.s);
 
 		if (cachedb_bind_mod(&cdb_url, &cdbf) < 0) {
-			LM_ERR("cannot bind functions for cachedb_url %.*s\n",
-			       cdb_url.len, cdb_url.s);
+			LM_ERR("cannot bind functions for cachedb_url %s\n",
+			       db_url_escape(&cdb_url));
 			return -1;
 		}
 
 		if (!CACHEDB_CAPABILITY(&cdbf, CACHEDB_CAP_COL_ORIENTED)) {
-			LM_ERR("not enough capabilities for cachedb_url %.*s\n",
-			       cdb_url.len, cdb_url.s);
+			LM_ERR("not enough capabilities for cachedb_url %s\n",
+			       db_url_escape(&cdb_url));
 			return -1;
 		}
 	}
@@ -929,7 +929,7 @@ int ul_check_db(void)
 	/* use database if needed */
 	if (have_sql_con()) {
 		if (ZSTR(db_url)) {
-			LM_ERR("selected mode requires a db connection -> db_url \n");
+			LM_ERR("selected mode requires a db connection -> db_url\n");
 			return -1;
 		}
 

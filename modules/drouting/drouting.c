@@ -2068,8 +2068,8 @@ static int dr_init(void)
 
 		if( (*db_part->db_con =
 					db_part->db_funcs.init(&db_part->db_url)) == 0) {
-			LM_ERR("failed to connect to db url <%.*s>\n",
-				db_part->db_url.len, db_part->db_url.s);
+			LM_ERR("failed to connect to db url <%s>\n",
+				db_url_escape(&db_part->db_url));
 			goto error_cfg;
 		}
 

@@ -31,7 +31,9 @@ B2B_ENTITIES
 
         1.4. Exported Functions
 
-              1.4.1. ua_session_server_init([key], [flags])
+              1.4.1. ua_session_server_init([key], [flags],
+                      [extra_params])
+
               1.4.2. ua_session_update(key, method, [body],
                       [extra_headers], [content_type])
 
@@ -345,7 +347,7 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
 
 1.4. Exported Functions
 
-1.4.1.  ua_session_server_init([key], [flags])
+1.4.1.  ua_session_server_init([key], [flags], [extra_params])
 
    This function initializes a new UA session by processing an
    initial INVITE. Further requests/replies received belonging to
@@ -375,6 +377,9 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
           + n - do not trigger the E_UA_SESSION event (with
             event_type NEW) for initial INVITES handled with this
             function.
+     * extra_params (string, optional) - An arbitrary value to be
+       passed to the extra_params parameter in the E_UA_SESSION
+       event.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -613,6 +618,10 @@ opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
      * method - the SIP method name
      * body - SIP message body
      * headers - full list of all SIP headers in the message.
+     * extra_params - an arbitrary value. Currently only the
+       ua_session_server_init() function passes this if the
+       extra_params argument is used, and it only appears in the
+       NEW event_type.
 
 Chapter 2. Developer Guide
 
@@ -805,8 +814,8 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 183 94 6839 1860
    2. Vlad Patrascu (@rvlad-patrascu) 127 62 5443 1147
-   3. Razvan Crainea (@razvancrainea) 84 68 787 517
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 57 48 499 190
+   3. Razvan Crainea (@razvancrainea) 88 72 826 531
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 58 49 504 196
    5. Ovidiu Sas (@ovidiusas) 54 41 855 293
    6. Liviu Chircu (@liviuchircu) 21 17 97 128
    7. Vlad Paiu (@vladpaiu) 6 4 74 47
@@ -814,10 +823,11 @@ Chapter 3. Contributors
    9. Maksym Sobolyev (@sobomax) 6 4 29 22
    10. Nick Altmann (@nikbyte) 6 3 166 29
 
-   All remaining contributors: Giedrius, Stanislaw Pitucha, Peter
-   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita),
-   @DMOsipov, Stéphane Alnet (@shimaore), Henk Hesselink, Ryan
-   Bullock (@rrb3942), Walter Doekes (@wdoekes).
+   All remaining contributors: Alexandra Titoc, Giedrius,
+   Stanislaw Pitucha, Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), @DMOsipov, Stéphane Alnet (@shimaore),
+   Henk Hesselink, Ryan Bullock (@rrb3942), Walter Doekes
+   (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -839,21 +849,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
-   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2024
-   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Oct 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
-   6.  Giedrius                            Apr 2023 - May 2023
-   7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2023
-   8.  Carsten Bock                        Mar 2022 - Apr 2022
-   9.  Nick Altmann (@nikbyte)             Jan 2013 - Feb 2022
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jan 2025
+   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Nov 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
+   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
+   7.  Giedrius                            Apr 2023 - May 2023
+   8.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2023
+   9.  Carsten Bock                        Mar 2022 - Apr 2022
+   10. Nick Altmann (@nikbyte)             Jan 2013 - Feb 2022
 
-   All remaining contributors: @DMOsipov, Ionut Ionita
-   (@ionutrazvanionita), Walter Doekes (@wdoekes), Vlad Paiu
-   (@vladpaiu), Ryan Bullock (@rrb3942), Stéphane Alnet
-   (@shimaore), Anca Vamanu, Henk Hesselink, Stanislaw Pitucha.
+   All remaining contributors: Peter Lemenkov (@lemenkov),
+   @DMOsipov, Ionut Ionita (@ionutrazvanionita), Walter Doekes
+   (@wdoekes), Vlad Paiu (@vladpaiu), Ryan Bullock (@rrb3942),
+   Stéphane Alnet (@shimaore), Anca Vamanu, Henk Hesselink,
+   Stanislaw Pitucha.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -862,10 +873,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Carsten Bock, Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Ovidiu Sas
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Carsten Bock,
+   Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Vlad Paiu (@vladpaiu), Ovidiu Sas
    (@ovidiusas), Anca Vamanu.
 
    Documentation Copyrights:

@@ -87,8 +87,8 @@ int test_db(dp_connection_list_p dp_connection)
 	}
 
 	if (db_bind_mod(&dp_connection->db_url, &dp_connection->dp_dbf) < 0) {
-		LM_ERR("failed to find a client driver for DB URL: '%.*s'\n",
-		       dp_connection->db_url.len, dp_connection->db_url.s);
+		LM_ERR("failed to find a client driver for DB URL: '%s'\n",
+		       db_url_escape(&dp_connection->db_url));
 		return -1;
 	}
 

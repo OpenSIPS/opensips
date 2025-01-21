@@ -151,7 +151,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
-	" %.*s, %.*s, %.*s from %s where %.*s > %lu and mod(contact_id, %u) = %u",
+	" %.*s, %.*s, %.*s from %s where %.*s > %lld and mod(contact_id, %u) = %u",
 #else
 	" %.*s, %.*s, %.*s from %s where %.*s > %lld and contact_id %% %u = %u",
 #endif
@@ -572,7 +572,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 	int_str_t val;
 	cdb_pair_t *pair;
 	cdb_dict_t *contacts;
-	str contacts_key = str_init("contacts"); /* TODO */
+	str contacts_key = str_init("contacts"), aor_key = str_init("aor"); /* TODO */
 	str *aor;
 	enum cdb_filter_op rhs_op;
 	int shortage;
@@ -629,7 +629,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 		/* locate the 'aor' and 'contacts' fields */
 		list_for_each (__, &row->dict) {
 			pair = list_entry(__, cdb_pair_t, list);
-			if (pair->key.is_pk) {
+			if (pair->key.is_pk || str_match(&pair->key.name, &aor_key)) {
 				aor = &pair->val.val.st;
 				if (contacts)
 					goto pack_data;

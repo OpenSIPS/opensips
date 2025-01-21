@@ -288,10 +288,8 @@ static int qr_child_init(int rank)
 		return -1;
 	}
 
-	if (!(qr_db_hdl = qr_dbf.init(&db_url))) {
-		LM_ERR("failed to load db url %.*s\n", db_url.len, db_url.s);
-		return -1;
-	}
+	if (!(qr_db_hdl = qr_dbf.init(&db_url)))
+		LM_ERR("failed to load db url %s\n", db_url_escape(&db_url));
 
 	if (rank == 1 && ipc_send_rpc(process_no, rpc_qr_reload, NULL) < 0) {
 		LM_CRIT("failed to send RPC for data loading\n");
@@ -551,7 +549,7 @@ static int qr_check_db(void)
 	}
 
 	if (!(qr_db_hdl = qr_dbf.init(&db_url))) {
-		LM_ERR("failed to load db url %.*s\n", db_url.len, db_url.s);
+		LM_ERR("failed to load db url %s\n", db_url_escape(&db_url));
 		return -1;
 	}
 

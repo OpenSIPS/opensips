@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">507</entry>
-		<entry align="center">203</entry>
-		<entry align="center">16332</entry>
-		<entry align="center">10230</entry>
+		<entry align="center">508</entry>
+		<entry align="center">204</entry>
+		<entry align="center">16339</entry>
+		<entry align="center">10237</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -68,6 +68,14 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">5</entry>
+		<entry align="center">3</entry>
+		<entry align="center">7</entry>
+		<entry align="center">7</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">4</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">5</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Italo Rossi (<ulink url="https://github.com/italorossi">@italorossi</ulink>)</entry>
-		<entry align="center">2</entry>
-		<entry align="center">1</entry>
-		<entry align="center">6</entry>
-		<entry align="center">0</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Italo Rossi (<ulink url="https://github.com/italorossi">@italorossi</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,57 +129,57 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jul 2016 - May 2024</entry>
+		<entry align="center">Jul 2016 - Sep 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">Sep 2024 - Sep 2024</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Oct 2020 - Nov 2023</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - May 2023</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Mar 2017 - Jan 2023</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Apr 2017 - Feb 2022</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>)</entry>
 		<entry align="center">Jan 2022 - Jan 2022</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">May 2019 - May 2019</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Italo Rossi (<ulink url="https://github.com/italorossi">@italorossi</ulink>)</entry>
 		<entry align="center">Jul 2018 - Jul 2018</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Chad Attermann (<ulink url="https://github.com/attermann">@attermann</ulink>)</entry>
-		<entry align="center">Jun 2017 - Jul 2017</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Chad Attermann (<ulink url="https://github.com/attermann">@attermann</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

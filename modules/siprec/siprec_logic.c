@@ -238,7 +238,6 @@ int srec_register_callbacks(struct src_sess *sess)
 			"Will not be able to handle in-dialog for replicated sessions!\n");
 	LM_DBG("registered dialog callbacks for %p\n", sess);
 	sess->flags |= SIPREC_DLG_CBS;
-	raise_siprec_start_event(sess);
 	return 0;
 }
 
@@ -399,6 +398,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		LM_ERR("cannot register callback for terminating session\n");
 		goto no_recording;
 	}
+	raise_siprec_start_event(ss);
 
 	return 0;
 no_recording:

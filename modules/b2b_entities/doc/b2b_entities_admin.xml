@@ -375,7 +375,7 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
 		<title>Exported Functions</title>
 	<section id="func_ua_session_server_init" xreflabel="ua_session_server_init()">
 		<title>
-		<function moreinfo="none">ua_session_server_init([key], [flags])</function>
+		<function moreinfo="none">ua_session_server_init([key], [flags], [extra_params])</function>
 		</title>
 		<para>
 		This function initializes a new UA session by processing an initial INVITE.
@@ -428,6 +428,11 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
 					handled with this function.
 					</para></listitem>
 				</itemizedlist>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_params (string, optional)</emphasis> - An arbitrary
+				value to be passed to the <emphasis>extra_params</emphasis> parameter
+				in the <xref linkend="event_E_UA_SESSION"/> event.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -874,6 +879,12 @@ opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
 			<listitem><para>
 				<emphasis>headers</emphasis> - full list of all SIP headers in the
 				message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_params</emphasis> - an arbitrary value. Currently only
+				the <xref linkend="func_ua_session_server_init"/> function passes this
+				if the <emphasis>extra_params</emphasis> argument is used, and it only
+				appears in the <emphasis>NEW</emphasis> event_type.
 			</para></listitem>
 		</itemizedlist>
 	</section>

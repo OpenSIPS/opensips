@@ -139,6 +139,8 @@ dialog Module
               1.9.11. list_all_profiles
               1.9.12. dlg_push_var
               1.9.13. dlg_send_sequential
+              1.9.14. set_dlg_profile
+              1.9.15. unset_dlg_profile
 
         1.10. Exported Pseudo-Variables
 
@@ -2325,6 +2327,44 @@ GIwZjAzNGM1ZDY
                                 headers='Refer-To: sip:user@domain:50060
 '
 
+1.9.14. set_dlg_profile
+
+   Set the dialog identified by dialog ID / Call-ID into the given
+   profile ( with optional value and clearing of the old profile
+   values )
+
+   Name: set_dlg_profile
+
+   Parameters: It takes 2-4 parameters
+     * dlg_id - dialog ID or Call-ID for the respective dialog
+     * profile - profile name to be set
+     * value - optional, the profile value to be set
+     * clear_values - optional, clear previous values in the
+       profile before setting the new one
+
+   MI FIFO Command Format:
+                opensips-cli -x mi set_dlg_profile DID my_profile my_val
+ue 1
+
+1.9.15. unset_dlg_profile
+
+   Unsets the dialog identified by dialog ID / Call-ID from the
+   given profile ( with optional value and clearing of the old
+   profile values )
+
+   Name: set_dlg_profile
+
+   Parameters: It takes 2-3 parameters
+     * dlg_id - dialog ID or Call-ID for the respective dialog
+     * profile - profile name to be unset
+     * value - optional, the profile value to be unset. for
+       profiles with value, by omitting this parameter you can now
+       clear all values of the given profile.
+
+   MI FIFO Command Format:
+                opensips-cli -x mi unset_dlg_profile DID my_profile my_v
+alue
+
 1.10. Exported Pseudo-Variables
 
 1.10.1. $DLG_count
@@ -2605,10 +2645,10 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 459 288 13367 3546
-   2. Razvan Crainea (@razvancrainea) 288 215 5384 1660
-   3. Vlad Paiu (@vladpaiu) 257 146 7208 3027
+   2. Razvan Crainea (@razvancrainea) 292 217 5449 1774
+   3. Vlad Paiu (@vladpaiu) 262 149 7467 3027
    4. Vlad Patrascu (@rvlad-patrascu) 199 104 4330 3514
-   5. Liviu Chircu (@liviuchircu) 181 131 3123 1369
+   5. Liviu Chircu (@liviuchircu) 183 133 3128 1374
    6. Ovidiu Sas (@ovidiusas) 35 26 601 161
    7. Dan Pascu (@danpascu) 30 25 233 179
    8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
@@ -2617,17 +2657,18 @@ Chapter 4. Contributors
 
    All remaining contributors: Anca Vamanu, Walter Doekes
    (@wdoekes), Ionut Ionita (@ionutrazvanionita), Maksym Sobolyev
-   (@sobomax), Ionel Cerghit (@ionel-cerghit), Andrei Dragus, John
-   Riordan, Hugues Mitonneau, Carsten Bock, Peter Lemenkov
-   (@lemenkov), Jerome Martin, Klaus Darilion, Jarrod Baumann
-   (@jarrodb), Nick Altmann (@nikbyte), Zero King (@l2dy), Michel
-   Bensoussan, Richard Revels, Elena-Ramona Modroiu, Tavis
-   Paquette, Ryan Bullock, Andrei Datcu (@andrei-datcu), Jeffrey
-   Magder, Stefan-Cristian Mititelu, Ron Winacott, Andy Pyles,
-   Julián Moreno Patiño, Konstantin Bokarius, sergei lavrov, Alex
-   Massover, Damien Sandras (@dsandras), Alex Hermann, Dusan
-   Klinec (@ph4r05), Norman Brandinger (@NormB), UnixDev, Eliot
-   Gable, Ryan Bullock (@rrb3942), Edson Gellert Schubert.
+   (@sobomax), Ionel Cerghit (@ionel-cerghit), Andrei Dragus,
+   Alexandra Titoc, John Riordan, Hugues Mitonneau, Carsten Bock,
+   Peter Lemenkov (@lemenkov), Jerome Martin, Klaus Darilion,
+   Jarrod Baumann (@jarrodb), Nick Altmann (@nikbyte), Zero King
+   (@l2dy), Michel Bensoussan, Richard Revels, Elena-Ramona
+   Modroiu, Tavis Paquette, Ryan Bullock, Andrei Datcu
+   (@andrei-datcu), Jeffrey Magder, Stefan-Cristian Mititelu, Ron
+   Winacott, Andy Pyles, Julián Moreno Patiño, Konstantin
+   Bokarius, sergei lavrov, Alex Massover, Damien Sandras
+   (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05), Norman
+   Brandinger (@NormB), UnixDev, Eliot Gable, Ryan Bullock
+   (@rrb3942), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -2649,9 +2690,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2024
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Sep 2024
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2024
+   1.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2024
+   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2024
    5.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
    6.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
@@ -2661,19 +2702,19 @@ Chapter 4. Contributors
    10. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
 
    All remaining contributors: Nick Altmann (@nikbyte), Walter
-   Doekes (@wdoekes), sergei lavrov, Zero King (@l2dy), Dan Pascu
-   (@danpascu), Ionel Cerghit (@ionel-cerghit), Jarrod Baumann
-   (@jarrodb), Ionut Ionita (@ionutrazvanionita), Julián Moreno
-   Patiño, Dusan Klinec (@ph4r05), Eseanu Marius Cristian
-   (@eseanucristian), Andrei Datcu (@andrei-datcu), Norman
-   Brandinger (@NormB), Damien Sandras (@dsandras), Ryan Bullock
-   (@rrb3942), Anca Vamanu, Alex Massover, Andrei Dragus, John
-   Riordan, Hugues Mitonneau, Richard Revels, UnixDev, Alex
-   Hermann, Henning Westerholt (@henningw), Carsten Bock, Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Jerome Martin, Tavis
-   Paquette, Michel Bensoussan, Eliot Gable, Andy Pyles,
-   Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
+   Doekes (@wdoekes), Liviu Chircu (@liviuchircu), sergei lavrov,
+   Zero King (@l2dy), Dan Pascu (@danpascu), Ionel Cerghit
+   (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut Ionita
+   (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Eseanu Marius Cristian (@eseanucristian), Andrei
+   Datcu (@andrei-datcu), Norman Brandinger (@NormB), Damien
+   Sandras (@dsandras), Ryan Bullock (@rrb3942), Anca Vamanu, Alex
+   Massover, Andrei Dragus, John Riordan, Hugues Mitonneau,
+   Richard Revels, UnixDev, Alex Hermann, Henning Westerholt
+   (@henningw), Carsten Bock, Klaus Darilion, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Jerome Martin, Tavis Paquette, Michel Bensoussan, Eliot Gable,
+   Andy Pyles, Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -2682,12 +2723,12 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Stefan-Cristian Mititelu, Ryan Bullock, Vlad Patrascu
-   (@rvlad-patrascu), Vlad Paiu (@vladpaiu), Zero King (@l2dy),
-   Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov), Julián
-   Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Stefan-Cristian Mititelu, Ryan Bullock,
+   Vlad Patrascu (@rvlad-patrascu), Zero King (@l2dy), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno Patiño,
+   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
    Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
    Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,

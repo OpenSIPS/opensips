@@ -109,6 +109,7 @@ typedef struct b2b_rpl_data
 	str* text;
 	str* body;
 	str* extra_headers;
+	str* contact;
 	b2b_dlginfo_t* dlginfo;
 }b2b_rpl_data_t;
 

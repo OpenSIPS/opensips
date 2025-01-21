@@ -52,7 +52,7 @@ B2B_LOGIC
 
               1.5.5. b2b_bridge_retry(new_entity)
               1.5.6. b2b_pass_request()
-              1.5.7. b2b_handle_reply()
+              1.5.7. b2b_handle_reply([flags])
               1.5.8. b2b_send_reply(code, reason[, headers[,
                       body]])
 
@@ -731,7 +731,7 @@ route[b2b_logic_request] {
    }
 ...
 
-1.5.7.  b2b_handle_reply()
+1.5.7.  b2b_handle_reply([flags])
 
    This function processes the received reply by taking the
    appropriate actions for the current state of the ongoing B2B
@@ -740,6 +740,14 @@ route[b2b_logic_request] {
    all replies, if a b2b_logic reply route is defined.
 
    This function can be used from the b2b_logic reply routes.
+
+   Parameters:
+     * flags (string, optional) - a list of comma separated flags
+       that changes the behavior of the reply processing.
+       Supported values are:
+          + pass-3xx-contact - When a redirect reply (3xx) message
+            is received, pass the contact to the other peer just
+            as it is, without modifying it.
 
    Example 1.28. b2b_handle_reply usage
 ...
@@ -1266,18 +1274,18 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 237 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 34 19 1122 295
+   2. Razvan Crainea (@razvancrainea) 42 25 1206 310
    3. Nick Altmann (@nikbyte) 14 10 346 36
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 13 9 145 67
    5. Carsten Bock 12 5 679 23
-   6. Maksym Sobolyev (@sobomax) 7 5 31 31
-   7. Norman Brandinger (@NormB) 6 4 5 5
-   8. Liviu Chircu (@liviuchircu) 5 3 4 3
-   9. truong.hua 4 2 8 7
-   10. Aron Podrigal (@ar45) 3 1 1 1
+   6. Alexandra Titoc 11 9 14 14
+   7. Maksym Sobolyev (@sobomax) 7 5 31 31
+   8. Norman Brandinger (@NormB) 6 4 5 5
+   9. Liviu Chircu (@liviuchircu) 5 3 4 3
+   10. truong.hua 4 2 8 7
 
-   All remaining contributors: Rick Barenthin, Shanee Vanstone,
-   Zero King (@l2dy).
+   All remaining contributors: Aron Podrigal (@ar45), Rick
+   Barenthin, Shanee Vanstone, Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1299,19 +1307,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Sep 2024
-   2.  Norman Brandinger (@NormB)          May 2024 - Jun 2024
-   3.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Feb 2024
-   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   6.  Rick Barenthin                      Nov 2023 - Nov 2023
-   7.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
-   8.  Shanee Vanstone                     Apr 2023 - Apr 2023
-   9.  truong.hua                          Jan 2023 - Feb 2023
-   10. Nick Altmann (@nikbyte)             Feb 2021 - Oct 2022
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Dec 2024
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Norman Brandinger (@NormB)          May 2024 - Jun 2024
+   4.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Feb 2024
+   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   7.  Rick Barenthin                      Nov 2023 - Nov 2023
+   8.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
+   9.  Shanee Vanstone                     Apr 2023 - Apr 2023
+   10. truong.hua                          Jan 2023 - Feb 2023
 
-   All remaining contributors: Carsten Bock, Aron Podrigal
-   (@ar45), Zero King (@l2dy).
+   All remaining contributors: Nick Altmann (@nikbyte), Carsten
+   Bock, Aron Podrigal (@ar45), Zero King (@l2dy).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1320,9 +1328,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Norman Brandinger (@NormB), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Carsten Bock, Nick Altmann (@nikbyte).
+   Last edited by: Razvan Crainea (@razvancrainea), Norman
+   Brandinger (@NormB), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Carsten Bock, Nick Altmann
+   (@nikbyte).
 
    Documentation Copyrights:
 

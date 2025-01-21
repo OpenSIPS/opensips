@@ -58,6 +58,10 @@ static const param_export_t params[]={
 	{ "shutdown_on_error",           INT_PARAM,                &shutdown_on_error     },
 	{ "cachedb_url",                 STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
 	{ "use_tls",                     INT_PARAM,                &use_tls},
+	{ "ftsearch_index_name",         STR_PARAM,                &fts_index_name.s},
+	{ "ftsearch_json_prefix",        STR_PARAM,                &fts_json_prefix.s},
+	{ "ftsearch_max_results",        INT_PARAM,                &fts_max_results},
+	{ "ftsearch_json_mset_expire",   INT_PARAM,                &fts_json_mset_expire},
 	{0,0,0}
 };
 
@@ -121,6 +125,16 @@ static int mod_init(void)
 	cachedb_engine cde;
 
 	LM_NOTICE("initializing module cachedb_redis ...\n");
+
+	/* quick validations */
+	if (fts_max_results > 10000) {
+		LM_INFO("lowering 'fts_max_results' to 10000 (max value allowed)\n");
+		fts_max_results = 10000;
+	}
+
+	fts_index_name.len = strlen(fts_index_name.s);
+	fts_json_prefix.len = strlen(fts_json_prefix.s);
+
 	memset(&cde,0,sizeof(cachedb_engine));
 
 	cde.name = cache_mod_name;
@@ -131,8 +145,11 @@ static int mod_init(void)
 	cde.cdb_func.get_counter = redis_get_counter;
 	cde.cdb_func.set = redis_set;
 	cde.cdb_func.remove = redis_remove;
+	cde.cdb_func._remove = _redis_remove;
 	cde.cdb_func.add = redis_add;
 	cde.cdb_func.sub = redis_sub;
+	cde.cdb_func.query = redis_query;
+	cde.cdb_func.update = redis_update;
 	cde.cdb_func.raw_query = redis_raw_query;
 	cde.cdb_func.map_get = redis_map_get;
 	cde.cdb_func.map_set = redis_map_set;

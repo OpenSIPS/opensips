@@ -1199,6 +1199,7 @@ fi
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/topology_hiding.so
+%{_libdir}/opensips/modules/trie.so
 %{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uac_registrant.so
@@ -1296,6 +1297,7 @@ fi
 %doc docdir/README.tls
 %doc docdir/README.tm
 %doc docdir/README.topology_hiding
+%doc docdir/README.trie
 %doc docdir/README.uac
 %doc docdir/README.uac_redirect
 %doc docdir/README.uac_registrant
@@ -1660,6 +1662,9 @@ fi
 
 
 %changelog
+* Thu Jan 16 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+- New module: trie
+
 * Mon Aug 19 2024 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - Replace deprecated dependency for radius modules
 

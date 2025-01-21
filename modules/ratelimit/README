@@ -44,6 +44,7 @@ ratelimit Module
               1.7.1. rl_check(name, limit[, algorithm])
               1.7.2. rl_dec_count(name)
               1.7.3. rl_reset_count(name)
+              1.7.4. rl_values(ret_avp, regexp)
 
         1.8. Exported MI Functions
 
@@ -92,6 +93,7 @@ ratelimit Module
    1.14. rl_check usage
    1.15. rl_dec_count usage
    1.16. rl_reset_count usage
+   1.17. rl_values usage
 
 Chapter 1. Admin Guide
 
@@ -543,6 +545,27 @@ m
         };
 ...
 
+1.7.4.  rl_values(ret_avp, regexp)
+
+   Returns all the available pipes' names in the ret_avp output
+   variable.
+
+   Meaning of the parameters is as follows:
+     * ret_avp (string) - an AVP where the pipes' names will be
+       stored.
+     * regexp (regex, optional) - a regular expression used to
+       filter the names of the pipes. If missing, all the pipes
+       are returned.
+
+   This function can be used from any route.
+
+   Example 1.17. rl_values usage
+...
+        rl_values($avp(values));
+        for ($var(pipe) in $(avp(values)[*]))
+                xlog("RATELIMIT: $var(pipe): $rl_count($var(pipe))\n");
+...
+
 1.8. Exported MI Functions
 
 1.8.1.  rl_list
@@ -650,11 +673,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 132 61 3188 2699
+   1. Razvan Crainea (@razvancrainea) 134 62 3288 2699
    2. Ovidiu Sas (@ovidiusas) 39 17 2481 44
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 35 29 299 137
    4. Vlad Patrascu (@rvlad-patrascu) 31 17 359 558
-   5. Liviu Chircu (@liviuchircu) 26 20 127 189
+   5. Liviu Chircu (@liviuchircu) 27 21 131 193
    6. Eseanu Marius Cristian (@eseanucristian) 13 6 329 195
    7. Daniel-Constantin Mierla (@miconda) 9 7 24 18
    8. Maksym Sobolyev (@sobomax) 6 4 8 9
@@ -687,10 +710,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2024
    2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Jul 2023
-   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2021
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
    5.  Robert Moss                         Feb 2021 - Feb 2021
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    7.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
@@ -712,8 +735,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Vlad
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Eseanu Marius Cristian
    (@eseanucristian), Walter Doekes (@wdoekes), Arnaud Boussus,

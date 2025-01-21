@@ -32,6 +32,12 @@ struct db_sqlite_extension_list {
 	struct db_sqlite_extension_list *next;
 };
 
+struct db_sqlite_pragma_list {
+	char *pragma;
+
+	struct db_sqlite_pragma_list *next;
+};
+
 int db_sqlite_bind_api(const str* mod, db_func_t *dbb);
 
 #endif

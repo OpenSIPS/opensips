@@ -1058,7 +1058,7 @@ Chapter 3. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 226 114 4306 4609
    2. Jan Janak (@janakj) 146 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 139 39 3730 4180
-   4. Razvan Crainea (@razvancrainea) 100 66 2702 675
+   4. Razvan Crainea (@razvancrainea) 102 67 2705 677
    5. Liviu Chircu (@liviuchircu) 74 55 985 608
    6. Jiri Kuthan (@jiriatipteldotorg) 57 26 2272 660
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
@@ -1068,10 +1068,10 @@ Chapter 3. Contributors
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Maksym
    Sobolyev (@sobomax), Irina-Maria Stanescu, Karel Kozlik, Andrei
-   Pelinescu-Onciul, Dan Pascu (@danpascu), Juha Heinanen
-   (@juha-h), Elena-Ramona Modroiu, Ryan Bullock (@rrb3942),
-   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Sergio
-   Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier,
+   Pelinescu-Onciul, Alexandra Titoc, Dan Pascu (@danpascu), Juha
+   Heinanen (@juha-h), Elena-Ramona Modroiu, Ryan Bullock
+   (@rrb3942), Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes),
+   Sergio Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier,
    Konstantin Bokarius, Alexey Vasilyev (@vasilevalex), Jesus
    Rodrigues, Julien Blache, Julián Moreno Patiño, Peter Lemenkov
    (@lemenkov), Dusan Klinec (@ph4r05), Edson Gellert Schubert.
@@ -1096,27 +1096,27 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2024
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          Dec 2003 - Nov 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
-   6.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
-   7.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   8.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Dec 2024
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Dec 2003 - Nov 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   7.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
+   8.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   9.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Julián Moreno Patiño, Dusan Klinec
-   (@ph4r05), Vlad Paiu (@vladpaiu), Ryan Bullock (@rrb3942),
-   Irina-Maria Stanescu, Alex Massover, Sergio Gutierrez, Ovidiu
-   Sas (@ovidiusas), Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Jesus Rodrigues, Julien
-   Blache, Peter Nixon, Juha Heinanen (@juha-h), Jan Janak
-   (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
-   Pelinescu-Onciul, Elena-Ramona Modroiu, Nils Ohlmeier, Karel
-   Kozlik.
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Dusan Klinec (@ph4r05), Vlad Paiu
+   (@vladpaiu), Ryan Bullock (@rrb3942), Irina-Maria Stanescu,
+   Alex Massover, Sergio Gutierrez, Ovidiu Sas (@ovidiusas),
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Jesus Rodrigues, Julien Blache, Peter
+   Nixon, Juha Heinanen (@juha-h), Jan Janak (@janakj), Jiri
+   Kuthan (@jiriatipteldotorg), Andrei Pelinescu-Onciul,
+   Elena-Ramona Modroiu, Nils Ohlmeier, Karel Kozlik.
 
    (1) including any documentation-related commits, excluding
    merge commits

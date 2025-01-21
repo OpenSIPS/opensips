@@ -542,3 +542,34 @@ int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
 		cdb_slow_queries, cdb_total_queries);
 	return -2;
 }
+
+int lcache_htable_iter_keys(cachedb_con *con,
+                            int (*kv_func)(const str *_k, const str *_v))
+{
+	lcache_t* cache_htable;
+	lcache_col_t* cache_col;
+	lcache_entry_t* it;
+	int i, n = 0;
+
+	cache_col = ((lcache_con *)con->data)->col;
+	if (!cache_col) {
+		LM_ERR("url <%.*s> does not have any collection associated with!",
+		       con->url.len, con->url.s);
+		return -1;
+	}
+
+	cache_htable = cache_col->col_htable->htable;
+
+	for (i = 0; i < cache_col->size; i++) {
+		lock_get(&cache_htable[i].lock);
+
+		for (it = cache_htable[i].entries; it; it = it->next)
+			if (kv_func(&it->attr, &it->value) == 0)
+				n++;
+
+		lock_release(&cache_htable[i].lock);
+	}
+
+	/* number of successfully processed keys */
+	return n;
+}

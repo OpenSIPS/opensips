@@ -193,6 +193,25 @@ modparam("httpd", "post_buf_size", 4096)
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_receive_buf_size" xreflabel="receive_buf_size">
+		<title><varname>receive_buf_size</varname> (integer)</title>
+		<para>
+		It specifies the maximum length (in bytes) of the received HTTP requests.  
+		For receiving large POST request, the default value might require to be increased.
+		</para>
+		<para>
+		<emphasis> The default value is 1024.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>receive_buf_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "receive_buf_size", 4096)
+...
+</programlisting>
+		</example>
+	</section>
 	<section id="param_tls_cert_file" xreflabel="tls_cert_file">
 		<title><varname>tls_cert_file</varname> (string)</title>
 		<para>

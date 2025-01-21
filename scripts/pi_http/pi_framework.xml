@@ -1044,6 +1044,24 @@
 		<column><field>fromtag</field><type>DB_STR</type></column>
 		<column><field>direction</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of trie_table table-->
+	<db_table id="trie_table">
+		<table_name>trie_table</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>ruleid</field><type>DB_INT</type></column>
+		<column><field>prefix</field><type>DB_STR</type></column>
+		<column><field>attrs</field><type>DB_STR</type></column>
+		<column><field>priority</field><type>DB_INT</type></column>
+	</db_table>
+	<!-- Declaration of dr_partitions table-->
+	<db_table id="dr_partitions">
+		<table_name>dr_partitions</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>partition_name</field><type>DB_STR</type></column>
+		<column><field>db_url</field><type>DB_STR</type></column>
+		<column><field>trie_table</field><type>DB_STR</type></column>
+	</db_table>
 	<!-- Declaration of userblacklist table-->
 	<db_table id="userblacklist">
 		<table_name>userblacklist</table_name>
@@ -5061,6 +5079,88 @@
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
 			<db_table_id>sip_trace</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	<!-- trie_table provisionning -->
+	<mod><mod_name>trie_table</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>trie_table</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>ruleid</field><link_cmd>update</link_cmd></col>
+				<col><field>prefix</field></col>
+				<col><field>attrs</field></col>
+				<col><field>priority</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>trie_table</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>prefix</field></col>
+				<col><field>attrs</field></col>
+				<col><field>priority</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>trie_table</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>ruleid</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>prefix</field></col>
+				<col><field>attrs</field></col>
+				<col><field>priority</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>trie_table</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>ruleid</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	<!-- dr_partitions provisionning -->
+	<mod><mod_name>dr_partitions</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>dr_partitions</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>partition_name</field></col>
+				<col><field>db_url</field></col>
+				<col><field>trie_table</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>dr_partitions</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>partition_name</field></col>
+				<col><field>db_url</field></col>
+				<col><field>trie_table</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>dr_partitions</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>partition_name</field></col>
+				<col><field>db_url</field></col>
+				<col><field>trie_table</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>dr_partitions</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>

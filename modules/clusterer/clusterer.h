@@ -54,10 +54,11 @@
 #define NODE_IS_SEED		(1<<3)
 
 /* capability flags */
-#define CAP_STATE_OK		(1<<0)
-#define CAP_SYNC_PENDING	(1<<1)
-#define CAP_SYNC_IN_PROGRESS	(1<<2)
-#define CAP_STATE_ENABLED	(1<<3)
+#define CAP_STATE_OK         (1<<0)
+#define CAP_SYNC_STARTUP     (1<<1)
+#define CAP_SYNC_PENDING     (1<<2)
+#define CAP_SYNC_IN_PROGRESS (1<<3)
+#define CAP_STATE_ENABLED    (1<<4)
 
 #define CAP_DISABLED 0
 #define CAP_ENABLED  1
@@ -216,5 +217,11 @@ int run_rcv_mi_cmd(str *cmd_name, str *cmd_params_arr, int no_params);
 
 int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap,
 	int cluster_id);
+
+#ifdef CLUSTERER_DBG
+    #define CL_DBG(fmtargs...) LM_INFO(fmtargs)
+#else
+    #define CL_DBG(fmtargs...)
+#endif
 
 #endif  /* CLUSTERER_H */

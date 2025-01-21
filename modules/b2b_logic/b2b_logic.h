@@ -80,6 +80,9 @@ enum b2b_tuple_state {
 #define B2BL_BR_FLAG_PENDING_SDP                   (1<<7)
 #define B2BL_BR_FLAG_BR_MSG_LATE_BYE               (1<<8)
 
+/* reply flags */
+#define B2BL_RPL_FLAG_PASS_CONTACT                 (1<<0)
+
 /* modes to write in db */
 #define NO_DB         0
 #define WRITE_THROUGH 1

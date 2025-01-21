@@ -587,6 +587,7 @@ static int mod_init(void)
 	cde.cdb_func.add = lcache_htable_add;
 	cde.cdb_func.sub = lcache_htable_sub;
 	cde.cdb_func.is_replicated = lcache_is_replicated;
+	cde.cdb_func.iter_keys = lcache_htable_iter_keys;
 
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
 

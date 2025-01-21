@@ -33,6 +33,7 @@
 #include "../../lib/csv.h"
 
 #include <string.h>
+#include <sys/param.h>
 #include <hiredis/hiredis.h>
 
 #define QUERY_ATTEMPTS 2
@@ -42,8 +43,18 @@ int redis_query_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int redis_connnection_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int shutdown_on_error = 0;
 int use_tls = 0;
+int fts_max_results = 10000;
+str fts_index_name = str_init("idx:usrloc");
+str fts_json_prefix = str_init("usrloc:");
+int fts_json_mset_expire = 3600;
 
 struct tls_mgm_binds tls_api;
+
+static inline int is_redis_escaped_char(char c);
+static cdb_row_t *redis_mk_cdb_row(redisReply *rpl);
+static unsigned int redis_escape_string_json(char *dst, const str *src);
+static unsigned int redis_escape_string_fts_filter(char *dst, const str *src);
+static unsigned int redis_calc_escaped_len_json(str *s);
 
 redisContext *redis_get_ctx(char *ip, int port)
 {
@@ -246,6 +257,17 @@ int redis_connect(redis_con *con)
 		freeReplyObject(rpl);
 	}
 
+	rpl = redisCommand(ctx, "JSON.SET opensipsTestJSON . null");
+	if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
+		LM_INFO("no JSON support detected on Redis server %s:%d\n",
+		        con->host, con->port);
+	} else {
+		LM_INFO("detected JSON support in Redis server %s:%d\n",
+		        con->host, con->port);
+		con->flags |= REDIS_JSON_SUPPORT;
+	}
+	freeReplyObject(rpl);
+
 	rpl = redisCommand(ctx,"CLUSTER NODES");
 	if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 		/* single instace mode */
@@ -273,7 +295,7 @@ int redis_connect(redis_con *con)
 		/* cluster instance mode */
 		con->flags |= REDIS_CLUSTER_INSTANCE;
 		con->slots_assigned = 0;
-		LM_DBG("cluster instance mode\n");
+		LM_DBG("cluster instance mode on %p\n",con);
 		if (build_cluster_nodes(con,rpl->str,rpl->len) < 0) {
 			LM_ERR("failed to parse Redis cluster info\n");
 			freeReplyObject(rpl);
@@ -706,6 +728,35 @@ out_err:
 	return rc;
 }
 
+/**
+ * Note: this function's logic shamelessly assumes that cdb._remove()
+ * is only being used by federated usrloc.
+ */
+int _redis_remove(cachedb_con *con, str *attr, const str *_)
+{
+	str key;
+	int rc;
+
+	if (!attr) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	key.s = pkg_malloc(fts_json_prefix.len + attr->len + 1);
+	if (!key.s) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	key.len = sprintf(key.s, "%s%.*s", fts_json_prefix.s, attr->len, attr->s);
+
+	rc = redis_remove(con, &key);
+	LM_DBG("remove return code: %d\n", rc);
+
+	pkg_free(key.s);
+	return rc;
+}
+
 /* returns the new value of the counter */
 int redis_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
 {
@@ -781,6 +832,808 @@ int redis_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val
 out_err:
 	freeReplyObject(reply);
 	return rc;
+}
+
+static unsigned int redis_escape_string_json(char *dst, const str *src)
+{
+	char *start = dst, *p, *end = src->s + src->len;
+
+	for (p = src->s; p < end; p++) {
+		if (is_redis_escaped_char(*p)) {
+			*dst++ = '\\';
+			*dst++ = '\\';
+		}
+		*dst++ = *p;
+	}
+
+	return dst - start;
+}
+
+static unsigned int redis_escape_string_fts_filter(char *dst, const str *src)
+{
+	char *start = dst, *p, *end = src->s + src->len;
+
+	for (p = src->s; p < end; p++) {
+		if (is_redis_escaped_char(*p))
+			*dst++ = '\\';
+		*dst++ = *p;
+	}
+
+	return dst - start;
+}
+
+static unsigned int redis_calc_escaped_len_json(str *s)
+{
+	unsigned int esc_len = 0;
+	char *p = s->s, *end;
+
+	for (end = p + s->len; p < end; p++, esc_len++)
+		if (is_redis_escaped_char(*p))
+			esc_len += 2;
+
+	return esc_len;
+}
+
+
+void redis_unescape_string(char *inout)
+{
+	char *p = inout, *i, *end;
+
+	LM_DBG("escaped string: '%s'\n", inout);
+
+	for (i = p, end = p + strlen(inout); i < end; i++) {
+		if (*i != '\\') {
+			*p++ = *i;
+			continue;
+		}
+
+		i++;
+		if (i == end) {
+			*p++ = '\\';
+			i--;
+			continue;
+		}
+
+		*p++ = *i;
+	}
+
+	inout[p - inout] = '\0';
+	LM_DBG("unescaped string: '%s'\n", inout);
+}
+
+char *redis_mk_fts_filter(const cdb_filter_t *f)
+{
+	unsigned int i = 0, len = 1; /* \0 */
+	char *ret, *min_val, *max_val;
+	const cdb_filter_t *it;
+
+	for (it = f; it; it = it->next) {
+		if (it->val.is_str && it->op != CDB_OP_EQ) {
+			LM_ERR("no support for JSON string filter %d as of now\n", it->op);
+			return NULL;
+		}
+
+		len += 1 + 1 + it->key.name.len + 1 + (!it->val.is_str ? 1+10+1+10+1 : it->val.s.len*3);
+	}
+
+	ret = pkg_malloc(len);
+	if (!ret) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	i = 0;
+
+	for (it = f; it; it = it->next) {
+		if (it->val.is_str) {
+			i += sprintf(ret+i, "%s@%.*s:", it==f ? "":" ",
+			        it->key.name.len, it->key.name.s);
+			i += redis_escape_string_fts_filter(ret+i, &it->val.s);
+		} else {
+			switch (it->op) {
+			case CDB_OP_EQ:
+				i += sprintf(ret+i, "%s@%.*s:%d", it==f ? "":" ",
+				    it->key.name.len, it->key.name.s, it->val.i);
+				continue;
+
+			case CDB_OP_LT:
+				min_val = "-inf";
+				max_val = int2str(it->val.i - 1, NULL);
+				break;
+
+			case CDB_OP_LTE:
+				min_val = "-inf";
+				max_val = int2str(it->val.i, NULL);
+				break;
+
+			case CDB_OP_GT:
+				min_val = int2str(it->val.i + 1, NULL);
+				max_val = "+inf";
+				break;
+
+			case CDB_OP_GTE:
+				min_val = int2str(it->val.i, NULL);
+				max_val = "+inf";
+				break;
+			default:
+				LM_ERR("unsupported cdb comparison: %d\n", it->op);
+				pkg_free(ret);
+				return NULL;
+			}
+
+			i += sprintf(ret+i, "%s@%.*s:[%s %s]", it==f ? "":" ",
+			        it->key.name.len, it->key.name.s, min_val, max_val);
+		}
+	}
+
+	ret[i++] = '\0';
+	if (i > len)
+		LM_BUG("buffer overflow (%u > %u) in filter: '%s'\n", i, len, ret);
+
+	LM_DBG("FT.SEARCH escaped filter: '%s'\n", ret);
+	return ret;
+}
+
+
+int redis_query(cachedb_con *_con, const cdb_filter_t *filter, cdb_res_t *res)
+{
+	redis_con *con = (redis_con *)_con->data;
+	const char *argv[REDIS_ARGV_MAX_LEN];
+	size_t argvlen[REDIS_ARGV_MAX_LEN];
+	cdb_row_t *row;
+	redisReply *rpl = NULL, *key, *val, *v1, *v2;
+	str skey;
+	int i, rc, result_cnt;
+
+	if (!con)
+		return -1;
+
+	if (!(con->flags & REDIS_JSON_SUPPORT)) {
+		LM_ERR("connection to %s:%d has no JSON capability\n",
+		        con->host, con->port);
+		return -1;
+	}
+
+	cdb_res_init(res);
+
+	argv[0] = "FT.SEARCH";
+	argvlen[0] = strlen(argv[0]);
+
+	argv[1] = fts_index_name.s;
+	argvlen[1] = fts_index_name.len;
+
+	argv[2] = redis_mk_fts_filter(filter);
+	if (!argv[2]) {
+		LM_ERR("failed to build FT.SEARCH filter\n");
+		return -1;
+	}
+	argvlen[2] = strlen(argv[2]);
+
+	argv[3] = "LIMIT";
+	argvlen[3] = strlen(argv[3]);
+
+	argv[4] = "0";
+	argvlen[4] = strlen(argv[4]);
+
+	argv[5] = int2str(fts_max_results, NULL);
+	argvlen[5] = strlen(argv[5]);
+
+	skey.s = (char *)argv[1];
+	skey.len = argvlen[1];
+
+	rc = redis_run_command_argv(_con, &rpl, &skey, 6, argv, argvlen);
+	if (rc < 0) {
+		LM_ERR("failed to run FT.SEARCH query (rc: %d), filters: %s\n", rc, argv[2]);
+		goto error;
+	}
+
+	if (!rpl || rpl->type == REDIS_REPLY_ERROR) {
+		LM_ERR("error reply on FT.SEARCH query (rc: %d, rpl: %p), filters: %s\n",
+		        rc, rpl, argv[2]);
+		goto error;
+	}
+
+	if (rpl->type != REDIS_REPLY_ARRAY) {
+		LM_ERR("expected array in FT.SEARCH reply, got type %d, filters: %s\n",
+		        rpl->type, argv[2]);
+		goto error;
+	}
+
+	if (rpl->element[0]->type != REDIS_REPLY_INTEGER) {
+		LM_ERR("unexpected type in FT.SEARCH reply array[0], got %d, filters: %s\n",
+		        rpl->element[0]->type, argv[2]);
+		goto error;
+	}
+
+	LM_DBG("successful FT.SEARCH query, got %lld results (type: %d)\n", rpl->element[0]->integer, rpl->element[0]->type);
+
+	result_cnt = MIN(fts_max_results, rpl->element[0]->integer);
+	for (i = 0; i < result_cnt; i++) {
+		key = rpl->element[1+ i*2];
+		val = rpl->element[1+ i*2+1];
+
+		if (key->type != REDIS_REPLY_STRING || val->type != REDIS_REPLY_ARRAY
+		        || val->elements != 2) {
+			LM_ERR("unexpected reply format at idx %d: %d/%d/%lu, filters: %s\n",
+			        i, key->type, val->type, (long)val->elements, argv[2]);
+			goto error;
+		}
+
+		if (key->len < fts_json_prefix.len ||
+		       memcmp(key->str, fts_json_prefix.s, fts_json_prefix.len) != 0) {
+			LM_ERR("unexpected JSON key prefix at idx %d: '%s', skipping\n", i, key->str);
+			continue;
+		}
+
+		v1 = val->element[0];
+		v2 = val->element[1];
+
+		if (v1->type != REDIS_REPLY_STRING || strcmp(v1->str, "$")) {
+			LM_ERR("unexpected reply val#1 format at idx %d: %d/%s, filters: %s\n",
+			        i, v1->type, v1->str, argv[2]);
+			goto error;
+		}
+
+		if (v2->type != REDIS_REPLY_STRING || v2->str[0] != '{') {
+			LM_ERR("unexpected reply val#2 format at idx %d: %d/%s, filters: %s\n",
+			        i, v2->type, v2->str, argv[2]);
+			goto error;
+		}
+
+		LM_DBG("  key: '%s', val: '%s'\n", key->str, v2->str);
+		row = redis_mk_cdb_row(v2);
+		if (!row) {
+			LM_ERR("error while processing val: %s, in key: %s\n",
+			        key->str, v2->str);
+			goto error;
+		}
+
+		res->count++;
+		list_add_tail(&row->list, &res->rows);
+	}
+
+	LM_DBG("successfully parsed %d rows\n", res->count);
+
+	freeReplyObject(rpl);
+	pkg_free((void *)argv[2]);
+	return 0;
+
+error:
+	freeReplyObject(rpl);
+	pkg_free((void *)argv[2]);
+	cdb_free_rows(res);
+	return -1;
+}
+
+static char *redis_dict_to_json_root(const cdb_dict_t *dict,
+         unsigned int (*escape)(char *dst, const str *src),
+         unsigned int (*calc_escaped_len)(str *in), int skip_unsets,
+         int *subkeys_updated, int *subkeys_deleted)
+{
+#define MAX_OBJ_PAIRS 32
+	struct list_head *_;
+	cdb_pair_t *pair;
+	unsigned int len = 1; /* { */
+	char *obj = NULL, *objs[MAX_OBJ_PAIRS];
+	int obj_cnt = 0;
+	unsigned int i = 0, cnt = 0, o = 0;
+
+	*subkeys_updated = 0;
+	*subkeys_deleted = 0;
+
+	list_for_each (_, dict) {
+		pair = list_entry(_, cdb_pair_t, list);
+		if (pair->unset) {
+			(*subkeys_deleted)++;
+			if (skip_unsets)
+				continue;
+		}
+
+		switch (pair->val.type) {
+		case CDB_DICT:
+			if (pair->subkey.s) {
+				(*subkeys_updated)++;
+				len += 2; /* {} */
+			} else {
+				if (obj_cnt == MAX_OBJ_PAIRS) {
+					LM_ERR("max DICT pairs limit exceeded (%d)\n", MAX_OBJ_PAIRS);
+					goto error;
+				}
+
+				objs[obj_cnt] = cdb_dict_to_json(
+						&pair->val.val.dict, escape, calc_escaped_len);
+				if (!objs[obj_cnt]) {
+					LM_ERR("oom\n");
+					goto error;
+				}
+
+				len += strlen(objs[obj_cnt++]);
+			}
+			goto next_item;
+
+		case CDB_STR:
+			len += 2; /* "" */
+			if (!calc_escaped_len)
+				len += pair->val.val.st.len;
+			else
+				len += calc_escaped_len(&pair->val.val.st);
+			break;
+
+		case CDB_INT32:
+			len += 1 + 10;
+			break;
+
+		case CDB_INT64:
+			len += 1 + 20;
+			break;
+
+		case CDB_NULL:
+			len += 4;
+			break;
+
+		default:
+			LM_ERR("unsupported CDB type: %d\n", pair->val.type);
+			continue;
+		}
+
+next_item:
+		if (cnt++ > 0)
+			len++; /* , */
+
+		len += 1 + pair->key.name.len + 1 + 1;  /* "" : ??? */
+	}
+
+	len += 2; /* }\0 */
+	obj = pkg_malloc(len);
+	if (!obj) {
+		LM_ERR("oom\n");
+		goto error;
+	}
+
+	obj[i++] = '{';
+
+	cnt = 0;
+	list_for_each (_, dict) {
+		pair = list_entry(_, cdb_pair_t, list);
+		if (pair->unset && skip_unsets)
+			continue;
+
+		if (cnt++ > 0)
+			obj[i++] = ',';
+
+		i += sprintf(obj+i, "\"%.*s\":", pair->key.name.len, pair->key.name.s);
+
+		switch (pair->val.type) {
+		case CDB_DICT:
+			if (pair->subkey.s) {
+				i += sprintf(obj+i, "{}");
+			} else {
+				if (o == obj_cnt && o > 0) {
+					LM_BUG("bufer overflow (%d) in JSON key %.*s\n",
+					        o, pair->key.name.len, pair->key.name.s);
+					goto error;
+				}
+
+				i += sprintf(obj+i, "%s", objs[o++]);
+			}
+			break;
+
+		case CDB_STR:
+			if (!escape) {
+				i += sprintf(obj+i, "\"%.*s\"",
+				        pair->val.val.st.len, pair->val.val.st.s);
+			} else {
+				obj[i++] = '\"';
+				i += escape(obj+i, &pair->val.val.st);
+				obj[i++] = '\"';
+			}
+			break;
+
+		case CDB_INT32:
+			i += sprintf(obj+i, "%d", pair->val.val.i32);
+			break;
+
+		case CDB_INT64:
+			i += sprintf(obj+i, "%lld", (long long)pair->val.val.i64);
+			break;
+
+		case CDB_NULL:
+			i += sprintf(obj+i, "null");
+			break;
+
+		default:
+			LM_ERR("unsupported value type (%d), key: %.*s\n", pair->val.type,
+			        pair->key.name.len, pair->key.name.s);
+			break;
+		}
+	}
+
+	obj[i++] = '}';
+	obj[i++] = '\0';
+	if (i > len)
+		LM_BUG("buffer overflow (%u > %u) in JSON: '%s'\n", i, len, obj);
+
+	while (obj_cnt > 0)
+		pkg_free(objs[--obj_cnt]);
+	return obj;
+
+error:
+	while (obj_cnt > 0)
+		pkg_free(objs[--obj_cnt]);
+	pkg_free(obj);
+	return NULL;
+}
+
+
+int redis_update_subkeys(cachedb_con *_con, const cdb_filter_t *row_filter,
+							const cdb_dict_t *pairs)
+{
+	struct list_head *_;
+	char *argv[REDIS_ARGV_MAX_LEN];
+	size_t argvlen[REDIS_ARGV_MAX_LEN];
+	cdb_pair_t *pair;
+	redisReply *rpl = NULL;
+	str skey;
+	int i, j, rc, subkeys_updated, subkeys_deleted;
+
+	memset(argv, 0, REDIS_ARGV_MAX_LEN * sizeof *argv);
+
+	argv[0] = "JSON.SET";
+	argvlen[0] = strlen(argv[0]);
+
+	/* assuming we have exactly 1 filter at this point (check already done) */
+	argv[1] = pkg_malloc(fts_json_prefix.len + row_filter->val.s.len + 1);
+	if (!argv[1]) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	argvlen[1] = sprintf(argv[1], "%s%.*s", fts_json_prefix.s,
+	        row_filter->val.s.len, row_filter->val.s.s);
+
+	argv[2] = ".";
+	argvlen[2] = 1;
+
+	if (cdb_dict_add_str((cdb_dict_t *)pairs, row_filter->key.name.s, row_filter->key.name.len, &row_filter->val.s) != 0) {
+		LM_ERR("oom 2\n");
+		goto error1;
+	}
+
+	/* Q1: first, ensure an empty-object for each key.subkey target using
+	 * JSON.SET + NX flag, otherwise the JSON.MSET operation will return:
+	 *		"ERR new objects must be created at the root" */
+	argv[3] = redis_dict_to_json_root(pairs, redis_escape_string_json,
+	        redis_calc_escaped_len_json, 1, &subkeys_updated, &subkeys_deleted);
+	if (!argv[3]) {
+		LM_ERR("failed to build JSON (key: '%.*s')\n", (int)argvlen[1], argv[1]);
+		goto error1;
+	}
+	argvlen[3] = strlen(argv[3]);
+
+	argv[4] = "NX";
+	argvlen[4] = 2;
+
+	skey.s = argv[1];
+	skey.len = argvlen[1];
+
+	if (subkeys_updated == 0) {
+		pkg_free(argv[3]);
+		argv[3] = NULL;
+		LM_DBG("skip JSON.SET/JSON.MSET operations for key '%.*s'\n", skey.len, skey.s);
+		goto delete_query;
+	}
+
+	LM_DBG("storing JSON key '%s', value: '%s'\n", argv[1], argv[3]);
+
+	rc = redis_run_command_argv(_con, &rpl, &skey, 5, (const char **)argv, argvlen);
+	if (rc < 0) {
+		LM_ERR("failed to run JSON.SET query (rc: %d), key: %s\n", rc, argv[1]);
+		goto error1;
+	}
+
+	if (!rpl || rpl->type == REDIS_REPLY_NIL) {
+		LM_DBG("null reply on JSON.SET query (rc: %d), key: %s\n", rc, argv[1]);
+	} else if (rpl->type != REDIS_REPLY_STATUS) {
+		LM_ERR("error reply on JSON.SET query (rc: %d, rpl-type: %d, "
+		    "rpl-val: %lld, rpl-str: %s), key: %s\n", rc, rpl->type,
+		    rpl->integer, rpl->str, argv[1]);
+		goto error1;
+	} else if (rpl->integer != REDIS_OK) {
+		LM_ERR("error status on JSON.SET query (rc: %d, rpl-val: %lld), key: %s\n",
+		    rc, rpl->integer, argv[1]);
+		goto error1;
+	}
+
+	freeReplyObject(rpl);
+	rpl = NULL;
+	pkg_free(argv[3]);
+	argv[3] = NULL;
+
+	/* Q2: all JSON roots are now guaranteed to exist, so update all subkeys! */
+
+	argv[1] = argv[3] = NULL;
+
+	argv[0] = "JSON.MSET";
+	argvlen[0] = strlen(argv[0]);
+
+	/* assuming we have exactly 1 filter at this point (check already done) */
+
+	i = 1;
+	list_for_each (_, pairs) {
+		pair = list_entry(_, cdb_pair_t, list);
+		if (pair->val.type != CDB_DICT || !pair->subkey.s)
+			continue;
+
+		argv[i] = skey.s;
+		argvlen[i] = skey.len;
+
+		/* e.g. "$.contacts.liviu@10.0.0.10" */
+		argv[i+1] = pkg_malloc(2 + pair->key.name.len + 1 + pair->subkey.len + 1);
+		if (!argv[i+1]) {
+			LM_ERR("oom\n");
+			goto error2;
+		}
+
+		while (pair->subkey.len > 0 && pair->subkey.s[pair->subkey.len - 1] == '=')
+			pair->subkey.len--;
+
+		argvlen[i+1] = sprintf(argv[i+1], "$.%.*s.%.*s", pair->key.name.len,
+		        pair->key.name.s, pair->subkey.len, pair->subkey.s);
+
+		argv[i+2] = cdb_dict_to_json(&pair->val.val.dict,
+				redis_escape_string_json, redis_calc_escaped_len_json);
+		if (!argv[i+2]) {
+			LM_ERR("failed to build JSON (key: %s, i: %d)\n", skey.s, i);
+			goto error2;
+		}
+		argvlen[i+2] = strlen(argv[i+2]);
+
+		for (j = 0; j < 3; j++)
+			LM_DBG("argv[%d]: %.*s (%p)\n", i+j, (int)argvlen[i+j], argv[i+j], argv[i+j]);
+
+		i += 3;
+	}
+
+	LM_DBG("storing %d contacts at JSON key '%s' ...\n", (i-1)/3, argv[1]);
+
+	rc = redis_run_command_argv(_con, &rpl, &skey, i, (const char **)argv, argvlen);
+	for (i -= 3; i > 0; i -= 3) {
+		pkg_free(argv[i+1]); argv[i+1] = NULL;
+		pkg_free(argv[i+2]); argv[i+2] = NULL;
+	}
+
+	if (rc < 0) {
+		LM_ERR("failed to run JSON.MSET query (rc: %d), key: %s\n", rc, argv[1]);
+		goto error2;
+	}
+
+	if (!rpl || rpl->type == REDIS_REPLY_NIL) {
+		LM_ERR("null reply on JSON.MSET query (rc: %d), key: %s\n", rc, argv[1]);
+		goto error2;
+	} else if (rpl->type != REDIS_REPLY_STATUS) {
+		LM_ERR("error reply on JSON.MSET query (rc: %d, rpl-type: %d, "
+		    "rpl-val: %lld, rpl-str: %s), key: %s\n", rc, rpl->type,
+		    rpl->integer, rpl->str, argv[1]);
+		goto error2;
+	} else if (rpl->integer != REDIS_OK) {
+		LM_ERR("error status on JSON.MSET query (rc: %d, rpl-val: %lld), key: %s\n",
+		    rc, rpl->integer, argv[1]);
+		goto error2;
+	}
+
+	LM_DBG("successful query\n");
+
+delete_query:
+	if (subkeys_deleted == 0) {
+		LM_DBG("no JSON.DEL operations for key '%.*s'\n", skey.len, skey.s);
+		goto set_expire;
+	}
+
+	/* Q3: a JSON.DEL query, in case some subkeys need to be unset */
+
+	argv[1] = argv[3] = NULL;
+
+	argv[0] = "JSON.DEL";
+	argvlen[0] = strlen(argv[0]);
+
+	list_for_each (_, pairs) {
+		pair = list_entry(_, cdb_pair_t, list);
+		if (pair->val.type != CDB_NULL || !pair->subkey.s || !pair->unset)
+			continue;
+
+		argv[1] = skey.s;
+		argvlen[1] = skey.len;
+
+		/* e.g. "$.contacts.liviu@10.0.0.10" */
+		argv[2] = pkg_malloc(2 + pair->key.name.len + 1 + pair->subkey.len + 1);
+		if (!argv[2]) {
+			LM_ERR("oom\n");
+			goto error2;
+		}
+
+		argvlen[2] = sprintf(argv[2], "$.%.*s.%.*s", pair->key.name.len,
+		        pair->key.name.s, pair->subkey.len, pair->subkey.s);
+
+		LM_DBG("deleting contact from AoR key: '%s', path: %s\n", argv[1], argv[2]);
+
+		rc = redis_run_command_argv(_con, &rpl, &skey, 3, (const char **)argv, argvlen);
+		pkg_free(argv[2]);
+		argv[2] = NULL;
+
+		if (rc < 0) {
+			LM_ERR("failed to run JSON.DEL query (rc: %d), key: %s\n", rc, argv[1]);
+			goto error1;
+		}
+
+		if (!rpl) {
+			LM_ERR("null reply on JSON.DEL query (rc: %d), key: %s\n", rc, argv[1]);
+			goto error1;
+		} else if (rpl->type != REDIS_REPLY_INTEGER) {
+			LM_ERR("unexpected reply on JSON.DEL query (rc: %d, rpl-type: %d, "
+			    "rpl-val: %lld, rpl-str: %s), key: %s\n", rc, rpl->type,
+			    rpl->integer, rpl->str, argv[1]);
+			goto error1;
+		}
+
+		LM_DBG("successful JSON.DEL query (%lld contacts deleted)\n", rpl->integer);
+	}
+
+set_expire:
+	if (fts_json_mset_expire <= 0)
+		goto out;
+
+	/* refresh the expiry on the JSON */
+	argv[0] = "EXPIRE";
+	argvlen[0] = strlen(argv[0]);
+
+	argv[1] = skey.s;
+	argvlen[1] = skey.len;
+
+	{
+		int len;
+		argv[2] = int2str(fts_json_mset_expire, &len);
+		argvlen[2] = len;
+	}
+
+	rc = redis_run_command_argv(_con, &rpl, &skey, 3, (const char **)argv, argvlen);
+	if (rc < 0) {
+		LM_ERR("failed to run EXPIRE query (rc: %d), key: %s\n", rc, argv[1]);
+		goto error1;
+	}
+
+	if (!rpl) {
+		LM_ERR("null reply on EXPIRE query (rc: %d), key: %s\n", rc, argv[1]);
+		goto error1;
+	} else if (rpl->type != REDIS_REPLY_INTEGER) {
+		LM_ERR("unexpected reply on EXPIRE query (rc: %d, rpl-type: %d, "
+		    "rpl-val: %lld, rpl-str: %s), key: %s\n", rc, rpl->type,
+		    rpl->integer, rpl->str, argv[1]);
+		goto error1;
+	}
+
+	LM_DBG("successful EXPIRE query\n");
+
+out:
+	freeReplyObject(rpl);
+	pkg_free(argv[1]);
+	pkg_free(argv[3]);
+	return 0;
+
+error1:
+	freeReplyObject(rpl);
+	pkg_free(argv[1]);
+	pkg_free(argv[3]);
+	return -1;
+
+error2:
+	for (i = 2; argv[i] && i < REDIS_ARGV_MAX_LEN; i += 3)
+		pkg_free(argv[i]);
+
+	freeReplyObject(rpl);
+	pkg_free(argv[1]);
+	pkg_free(argv[3]);
+	return -1;
+}
+
+
+int redis_update(cachedb_con *_con, const cdb_filter_t *row_filter,
+                     const cdb_dict_t *pairs)
+{
+	redis_con *con = (redis_con *)_con->data;
+	char *argv[REDIS_ARGV_MAX_LEN];
+	size_t argvlen[REDIS_ARGV_MAX_LEN];
+	redisReply *rpl = NULL;
+	str skey;
+	int rc;
+
+	if (!con || !row_filter) {
+		LM_ERR("NULL con or filter (%p %p)\n", con, row_filter);
+		return -1;
+	}
+
+	if (!(con->flags & REDIS_JSON_SUPPORT)) {
+		LM_ERR("connection to %s:%d has no JSON capability\n",
+		        con->host, con->port);
+		return -1;
+	}
+
+	if (row_filter->next || !row_filter->key.is_pk) {
+		LM_ERR("unsupported filter (%.*s, %d)\n", row_filter->key.name.len,
+		        row_filter->key.name.s, row_filter->key.is_pk);
+		return -1;
+	}
+
+	if (row_filter->op != CDB_OP_EQ) {
+		LM_ERR("un-implemented filter operator: %d\n", row_filter->op);
+		return -1;
+	}
+
+	/* setting subkeys, eg. {"contacts": {"c1": {"user_agent": "Z 3.3",...}}
+	 *                         <key>    <subkey>       */
+	if (cdb_dict_has_subkeys(pairs))
+		return redis_update_subkeys(_con, row_filter, pairs);
+
+	argv[1] = argv[3] = NULL;
+
+	argv[0] = "JSON.SET";
+	argvlen[0] = strlen(argv[0]);
+
+	argv[1] = pkg_malloc(fts_json_prefix.len + row_filter->val.s.len + 1);
+	if (!argv[1]) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	argvlen[1] = sprintf(argv[1], "%s%.*s", fts_json_prefix.s,
+	        row_filter->val.s.len, row_filter->val.s.s);
+
+	argv[2] = ".";
+	argvlen[2] = 1;
+
+	argv[3] = cdb_dict_to_json(pairs, redis_escape_string_json, redis_calc_escaped_len_json);
+	if (!argv[3]) {
+		LM_ERR("failed to build JSON (key: '%.*s')\n", (int)argvlen[1], argv[1]);
+		goto error;
+	}
+	argvlen[3] = strlen(argv[3]);
+
+	skey.s = argv[1];
+	skey.len = argvlen[1];
+
+	LM_DBG("storing JSON key '%s', value: '%s'\n", argv[1], argv[3]);
+
+	rc = redis_run_command_argv(_con, &rpl, &skey, 4, (const char **)argv, argvlen);
+	if (rc < 0) {
+		LM_ERR("failed to run JSON.SET query (rc: %d), key: %s\n", rc, argv[1]);
+		goto error;
+	}
+
+	if (!rpl) {
+		LM_ERR("null reply on JSON.SET query (rc: %d), key: %s\n", rc, argv[1]);
+		goto error;
+	} else if (rpl->type != REDIS_REPLY_STATUS) {
+		LM_ERR("error reply on JSON.SET query (rc: %d, rpl-type: %d, "
+		    "rpl-val: %lld, rpl-str: %s), key: %s\n", rc, rpl->type,
+		    rpl->integer, rpl->str, argv[1]);
+		goto error;
+	} else if (rpl->integer != REDIS_OK) {
+		LM_ERR("error status on JSON.SET query (rc: %d, rpl-val: %lld), key: %s\n",
+		    rc, rpl->integer, argv[1]);
+		goto error;
+	}
+
+	LM_DBG("successfully set JSON for key '%.*s'\n", (int)argvlen[1], argv[1]);
+
+	freeReplyObject(rpl);
+	pkg_free(argv[1]);
+	pkg_free(argv[3]);
+	return 0;
+
+error:
+	freeReplyObject(rpl);
+	pkg_free(argv[1]);
+	pkg_free(argv[3]);
+	return -1;
 }
 
 int redis_get_counter(cachedb_con *connection,str *attr,int *val)
@@ -1367,4 +2220,160 @@ int redis_map_remove(cachedb_con *con, const str *key, const str *subkey)
 
 		return redis_remove(con, (str*)subkey);
 	}
+}
+
+static inline int is_redis_escaped_char(char c)
+{
+	return (int[]){
+		0 /* 0 NUL */,
+		0 /* 1 SOH */,
+		0 /* 2 STX */,
+		0 /* 3 ETX */,
+		0 /* 4 EOT */,
+		0 /* 5 ENQ */,
+		0 /* 6 ACK */,
+		0 /* 7 BEL */,
+		0 /* 8 BS */,
+		0 /* 9 HT */,
+		0 /* 10 LF */,
+		0 /* 11 VT */,
+		0 /* 12 FF */,
+		0 /* 13 CR */,
+		0 /* 14 SO */,
+		0 /* 15 SI */,
+		0 /* 16 DLE */,
+		0 /* 17 DC1 */,
+		0 /* 18 DC2 */,
+		0 /* 19 DC3 */,
+		0 /* 20 DC4 */,
+		0 /* 21 NAK */,
+		0 /* 22 SYN */,
+		0 /* 23 ETB */,
+		0 /* 24 CAN */,
+		0 /* 25 EM */,
+		0 /* 26 SUB */,
+		0 /* 27 ESC */,
+		0 /* 28 FS */,
+		0 /* 29 GS */,
+		0 /* 30 RS */,
+		0 /* 31 US */,
+		0 /* 32   */,
+		1 /* 33 ! */,
+		1 /* 34 " */,
+		1 /* 35 # */,
+		1 /* 36 $ */,
+		1 /* 37 % */,
+		1 /* 38 & */,
+		1 /* 39 ' */,
+		1 /* 40 ( */,
+		1 /* 41 ) */,
+		1 /* 42 * */,
+		1 /* 43 + */,
+		1 /* 44 , */,
+		1 /* 45 - */,
+		1 /* 46 . */,
+		0 /* 47 / */,
+		0 /* 48 0 */,
+		0 /* 49 1 */,
+		0 /* 50 2 */,
+		0 /* 51 3 */,
+		0 /* 52 4 */,
+		0 /* 53 5 */,
+		0 /* 54 6 */,
+		0 /* 55 7 */,
+		0 /* 56 8 */,
+		0 /* 57 9 */,
+		1 /* 58 : */,
+		1 /* 59 ; */,
+		1 /* 60 < */,
+		1 /* 61 = */,
+		1 /* 62 > */,
+		0 /* 63 ? */,
+		1 /* 64 @ */,
+		0 /* 65 A */,
+		0 /* 66 B */,
+		0 /* 67 C */,
+		0 /* 68 D */,
+		0 /* 69 E */,
+		0 /* 70 F */,
+		0 /* 71 G */,
+		0 /* 72 H */,
+		0 /* 73 I */,
+		0 /* 74 J */,
+		0 /* 75 K */,
+		0 /* 76 L */,
+		0 /* 77 M */,
+		0 /* 78 N */,
+		0 /* 79 O */,
+		0 /* 80 P */,
+		0 /* 81 Q */,
+		0 /* 82 R */,
+		0 /* 83 S */,
+		0 /* 84 T */,
+		0 /* 85 U */,
+		0 /* 86 V */,
+		0 /* 87 W */,
+		0 /* 88 X */,
+		0 /* 89 Y */,
+		0 /* 90 Z */,
+		1 /* 91 [ */,
+		0 /* 92 \ */,
+		1 /* 93 ] */,
+		1 /* 94 ^ */,
+		0 /* 95 _ */,
+		0 /* 96 ` */,
+		0 /* 97 a */,
+		0 /* 98 b */,
+		0 /* 99 c */,
+		0 /* 100 d */,
+		0 /* 101 e */,
+		0 /* 102 f */,
+		0 /* 103 g */,
+		0 /* 104 h */,
+		0 /* 105 i */,
+		0 /* 106 j */,
+		0 /* 107 k */,
+		0 /* 108 l */,
+		0 /* 109 m */,
+		0 /* 110 n */,
+		0 /* 111 o */,
+		0 /* 112 p */,
+		0 /* 113 q */,
+		0 /* 114 r */,
+		0 /* 115 s */,
+		0 /* 116 t */,
+		0 /* 117 u */,
+		0 /* 118 v */,
+		0 /* 119 w */,
+		0 /* 120 x */,
+		0 /* 121 y */,
+		0 /* 122 z */,
+		1 /* 123 { */,
+		0 /* 124 | */,
+		1 /* 125 } */,
+		1 /* 126 ~ */,
+		0 /* 127 DEL */
+	}[(int)c];
+}
+
+static cdb_row_t *redis_mk_cdb_row(redisReply *rpl)
+{
+	cdb_row_t *row;
+
+	row = pkg_malloc(sizeof *row);
+	if (!row) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	if (cdb_json_to_dict(rpl->str, &row->dict, redis_unescape_string) != 0) {
+		LM_ERR("failed to convert bson to dict\n");
+		goto out_err;
+	}
+
+	return row;
+
+out_err:
+	pkg_free(row);
+	return NULL;
 }

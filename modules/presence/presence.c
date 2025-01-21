@@ -267,7 +267,8 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	db_url.len = db_url.s ? strlen(db_url.s) : 0;
-	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len,db_url.s);
+	LM_DBG("db_url=%s\n", db_url_escape(&db_url));
+
 	presentity_table.len = strlen(presentity_table.s);
 	active_watchers_table.len = strlen(active_watchers_table.s);
 	watchers_table.len = strlen(watchers_table.s);
@@ -873,7 +874,7 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 		lock_get(&subs_htable[i].lock);
 		for (s = subs_htable[i].entries->next; s; s = s->next) {
 			if (from) {
-				/* print subscribtion if "from" and "to" match with given wildcard */
+				/* print subscription if "from" and "to" match with given wildcard */
 				rc = from_to_match_subs(s, &match_from, &match_to, from_w, to_w);
 				if (rc < 0)
 					goto error;

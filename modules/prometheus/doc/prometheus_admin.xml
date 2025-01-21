@@ -283,7 +283,7 @@ route[my_custom_prometheus_route] {
 	# the values field is an array itself, of name/value objects 
 	# used for individual stats publishing
 	return (1, '[{
-        "header": "# TYPE opensips_cps gauge",
+        "header": "# TYPE opensips_total_cps gauge",
         "values": [
             {
                 "name": "opensips_total_cps",
@@ -309,9 +309,109 @@ route[my_custom_prometheus_route] {
 
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
+	<section id="func_prometheus_declare_stat" xreflabel="prometheus_declare_stat">
+		<title>
+		<function moreinfo="none">prometheus_declare_stat(name, [type], [help])</function>
+		</title>
 		<para>
-		No function exported to be used from configuration file.
+			<emphasis>NOTE:</emphasis> this function can only be used in the
+			route declared in the <xref linkend="param_script_route"/> parameter.
 		</para>
+		<para>
+			Declares a custom statistic exported to Prometheus server. It specifies
+			its type and optionally a help string.
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>name</emphasis> (string) - the name of the statistic
+			</para>
+			<para><emphasis>type</emphasis> (string, optional) - the type of the
+			statistic (i.e. <emphasis>counter</emphasis> or <emphasis>gauge</emphasis>).
+			If missing the statistic is declared as <emphasis>gauge</emphasis>.
+			</para>
+			<para><emphasis>help</emphasis> (string, optional) - an optional value
+			used to describe the statistic meaning. If missing, it is not used.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			This function can only be used in the request
+			route declared in the <xref linkend="param_script_route"/> parameter.
+		</para>
+		<example>
+		<title><function moreinfo="none">prometheus_declare_stat</function> usage</title>
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+...
+route[my_custom_prometheus_route] {
+	...
+	prometheus_declare_stat("opensips_cps");
+	prometheus_push_stat(3);
+	...
+}
+		<programlisting format="linespecific">
+</programlisting>
+		</example>
+	</section>
+	<section id="func_prometheus_push_stat" xreflabel="prometheus_push_stat">
+		<title>
+		<function moreinfo="none">prometheus_push_stat(value, [label_name], [label_value])</function>
+		</title>
+		<para>
+			<emphasis>NOTE:</emphasis> this function can only be used in the
+			route declared in the <xref linkend="param_script_route"/> parameter.
+		</para>
+		<para>
+			Pushes a custom statistic value and optionally a set of labels
+			to the Prometheus server.
+		</para>
+		<para>
+			<emphasis>NOTE:</emphasis> a statistic's value should only be pushed
+			after it had been declared using the
+			<xref linkend="func_prometheus_declare_stat"/> function.
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>value</emphasis> (integer) - the value of the statistic
+			</para>
+			<para><emphasis>label_name</emphasis> (string, optional) - used to define
+			labels for the pushed statistic. If the <emphasis>label_value</emphasis>
+			parameter is missing, this parameter is appended to the name of the
+			statisic - this means that it should contain the whole set of labels
+				for the value (including curly brackets). If the
+			<emphasis>label_value</emphasis> is provided as well, then the parameter
+			should only contain one label's name.
+			</para>
+			<para><emphasis>label_value</emphasis> (string, optional) - the value that
+			should be used for the <emphasis>label_name</emphasis> parameter label.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			This function can only be used in the request
+			route declared in the <xref linkend="param_script_route"/> parameter.
+		</para>
+		<example>
+		<title><function moreinfo="none">prometheus_push_stat</function> usage</title>
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+...
+route[my_custom_prometheus_route] {
+	...
+	prometheus_declare_stat("opensips_cps");
+	prometheus_push_stat(3); # no label is being used
+	prometheus_declare_stat("opensips_cc");
+	# the next two are equivalent
+	prometheus_push_stat(10, "{gateway=\"gw1\"}"); # no label is being used
+	prometheus_push_stat(10, "gateway", "gw1"); # same as the above
+	...
+}
+		<programlisting format="linespecific">
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>

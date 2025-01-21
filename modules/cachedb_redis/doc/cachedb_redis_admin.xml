@@ -65,6 +65,27 @@
 	</section>
 
 	<section>
+	<title>Redis Stack Support</title>
+	<para>
+		Starting with OpenSIPS <emphasis role='bold'>3.6</emphasis>, the <emphasis>cachedb_redis</emphasis>
+		module implements the column-oriented cacheDB API functions.  This makes it a suitable
+		cacheDB storage in scenarios such as user location <emphasis>federation</emphasis>
+		and <emphasis>full-sharing</emphasis>, which require this API to be available.
+	</para>
+	<para>
+		The implementation makes use of <emphasis>RedisJSON</emphasis> and <emphasis>RediSearch</emphasis> --
+		these relatively new features are available in Redis Stack Server, instead of the usual Redis Server
+		(Redis OSS project).  More documentation is available on the Redis website.
+	</para>
+	<para>
+		OpenSIPS will auto-detect availability of the RedisJSON support when necessary and log
+		the appropriate messages.
+	</para>
+	<para>
+	</para>
+	</section>
+
+	<section>
 	<title>Limitations</title>
 
 
@@ -238,7 +259,7 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 
 		</section>
 
-		 <section id="param_use_tls" xreflabel="use_tls">
+		<section id="param_use_tls" xreflabel="use_tls">
 		<title><varname>use_tls</varname> (integer)</title>
 		<para>
 		Setting this parameter will allow you to use TLS for Redis connections.
@@ -274,6 +295,99 @@ modparam("tls_mgm", "ca_list",     "[redis]/etc/pki/tls/certs/ca.pem")
 modparam("cachedb_redis", "use_tls", 1)
 modparam("cachedb_redis", "cachedb_url","redis://localhost:6379/?tls_domain=redis")
 ...
+</programlisting>
+		</example>
+	</section>
+
+		<section id="param_ftsearch_index_name" xreflabel="ftsearch_index_name">
+		<title><varname>ftsearch_index_name</varname> (string)</title>
+		<para>
+			Only relevant with <emphasis>RedisJSON</emphasis> and
+			<emphasis>RediSearch</emphasis> server-side support.
+		</para>
+		<para>
+		A global index name to be used for all internal JSON full-text search operations.
+		Future extensions may add, e.g., a connection-level index name setting.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>"idx:usrloc"</emphasis>.
+		</para>
+		<example>
+		<title>Set the <varname>ftsearch_index_name</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("cachedb_redis", "ftsearch_index_name", "ix::usrloc")
+
+</programlisting>
+		</example>
+	</section>
+
+		<section id="param_ftsearch_json_prefix" xreflabel="ftsearch_json_prefix">
+		<title><varname>ftsearch_json_prefix</varname> (string)</title>
+		<para>
+			Only relevant with <emphasis>RedisJSON</emphasis> and
+			<emphasis>RediSearch</emphasis> server-side support.
+		</para>
+		<para>
+		A key naming prefix for all internally-created Redis JSON objects (e.g.
+		created with JSON.SET or JSON.MSET).
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>"usrloc:"</emphasis>.
+		</para>
+		<example>
+		<title>Set the <varname>ftsearch_json_prefix</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("cachedb_redis", "ftsearch_json_prefix", "userlocation:")
+
+</programlisting>
+		</example>
+	</section>
+
+		<section id="param_ftsearch_max_results" xreflabel="ftsearch_max_results">
+		<title><varname>ftsearch_max_results</varname> (integer)</title>
+		<para>
+			Only relevant with <emphasis>RedisJSON</emphasis> and
+			<emphasis>RediSearch</emphasis> server-side support.
+		</para>
+		<para>
+		The maximum number of results returned by each internally-triggered
+		FT.SEARCH JSON lookup query.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>10000</emphasis> max results.
+		</para>
+		<example>
+		<title>Set the <varname>ftsearch_max_results</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("cachedb_redis", "ftsearch_max_results", 100)
+
+</programlisting>
+		</example>
+	</section>
+
+		<section id="param_ftsearch_json_mset_expire" xreflabel="ftsearch_json_mset_expire">
+		<title><varname>ftsearch_json_mset_expire</varname> (integer)</title>
+		<para>
+			Only relevant with <emphasis>RedisJSON</emphasis> and
+			<emphasis>RediSearch</emphasis> server-side support.
+		</para>
+		<para>
+		A Redis EXPIRE timer to set/refresh on the JSON key after each JSON.MSET operation
+		(create the JSON or add/remove subkeys), in seconds.  A value of <emphasis role='bold'>0</emphasis>
+		disables the EXPIRE queries completely.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>3600</emphasis> seconds.
+		</para>
+		<example>
+		<title>Set the <varname>ftsearch_json_mset_expire</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
+
 </programlisting>
 		</example>
 	</section>

@@ -618,7 +618,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 					_d->table[sl].next_label = rlabel + 1;
 
 				if (r->next_clabel <= clabel || r->next_clabel == 0)
-					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+					r->next_clabel = CLABEL_NEXT(clabel);
 
 				r->label = rlabel;
 			}
@@ -658,7 +658,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			if (cid_regen && old_expires) {
 				/* rebuild the contact id for this contact */
 				ci->contact_id = pack_indexes(r->aorhash, r->label, r->next_clabel);
-				r->next_clabel = CLABEL_INC_AND_TEST(r->next_clabel);
+				r->next_clabel = CLABEL_NEXT(r->next_clabel);
 
 				ci->expires = old_expires;
 
@@ -883,7 +883,7 @@ cdb_load_urecord_locations(const udomain_t *_d, const str *_aor, urecord_t *_r)
 		row = list_entry(_, cdb_row_t, list);
 		pair = cdb_dict_fetch(&home_ip_key, &row->dict);
 		if (!pair) {
-			LM_ERR("metadata with no home_ip, aor: %.*s", _aor->len, _aor->s);
+			LM_ERR("metadata with no home_ip, aor: %.*s\n", _aor->len, _aor->s);
 			continue;
 		}
 
@@ -975,7 +975,8 @@ urecord_t* cdb_load_urecord(const udomain_t* _d, const str *_aor)
 	}
 
 	if (res.count != 1)
-		LM_BUG("more than 1 result for AoR %.*s\n", _aor->len, _aor->s);
+		LM_ERR("more than 1 result (%d) for AoR %.*s, consider a full clear "
+		        "of the cacheDB keys\n", res.count, _aor->len, _aor->s);
 
 	r = NULL;
 
@@ -990,7 +991,8 @@ urecord_t* cdb_load_urecord(const udomain_t* _d, const str *_aor)
 		}
 	}
 
-	LM_ERR("no 'contacts' field for AoR %.*s\n", _aor->len, _aor->s);
+	LM_ERR("no 'contacts' field for AoR %.*s (foreign cacheDB data?!)\n",
+	        _aor->len, _aor->s);
 	goto out_null;
 
 have_contacts:

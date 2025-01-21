@@ -34,7 +34,7 @@
 #include "../../db/db_insertq.h"
 #include "../../db/db_res.h"
 #include "../../ut.h"
-#include "my_con.h"
+#include "sqlite_con.h"
 #include "row.h"
 
 
@@ -374,8 +374,6 @@ static inline int db_sqlite_convert_rows(const db_con_t* _h, db_res_t* _r)
 
 	while (ret != SQLITE_DONE) {
 		ret = sqlite3_step(CON_SQLITE_PS(_h));
-		if (ret == SQLITE_BUSY)
-			continue;
 
 		if (ret == SQLITE_DONE) {
 			RES_ROW_N(_r) = RES_LAST_ROW(_r) = RES_NUM_ROWS(_r) = row;

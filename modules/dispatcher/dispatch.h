@@ -107,6 +107,7 @@ typedef struct _ds_pvar_param
 {
 	pv_spec_t pvar;
 	int value;
+	char buf[0];
 } ds_pvar_param_t, *ds_pvar_param_p;
 
 
@@ -118,6 +119,9 @@ typedef struct _ds_partition
 	str ping_from;
 	str ping_method;
 	int persistent_state;
+
+	str ping_sock;
+	struct socket_info *ping_sock_info;
 
 	db_con_t **db_handle;
 	db_func_t dbf;

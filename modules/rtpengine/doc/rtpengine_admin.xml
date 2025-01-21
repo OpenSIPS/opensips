@@ -408,7 +408,7 @@ modparam("rtpengine", "set_column", "set_new")
 		<title>Set <varname>ping_enabled</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("rtpengine", "ping_enables", yes)
+modparam("rtpengine", "ping_enabled", yes)
 ...
 </programlisting>
 		</example>
@@ -829,7 +829,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
 		</para>
 		<para>
 			This parameter can be used to extend the list
-			(see <xref linkend="para_failover"/> of errors the module
+			(see <xref linkend="param_failover"/> of errors the module
 			implicitely fails over.
 		</para>
 		<para>
@@ -881,7 +881,7 @@ modparam("rtpengine", "extra_failover_error", "Parallel session limit reached")
 		<function moreinfo="none">rtpengine_delete([flags[, sock_var]])</function>
 		</title>
 		<para>
-		Tears down the RTPProxy session for the current call.
+		Tears down the RTPEngine session for the current call.
 		</para>
 		<para>
 		See rtpengine_offer() function description above for the meaning of the
@@ -905,7 +905,7 @@ rtpengine_delete();
         <function moreinfo="none">rtpengine_manage([flags[, sock_var[, sdp_var[, body]]]])</function>
         </title>
 		<para>
-		Manage the RTPProxy session - it combines the functionality of
+		Manage the RTPEngine session - it combines the functionality of
 		rtpengine_offer(), rtpengine_answer() and rtpengine_delete(), detecting
 		internally based on message type and method which one to execute.
 		</para>
@@ -1018,6 +1018,41 @@ rtpengine_start_recording();
 		</para>
 		<example>
 		<title><function>rtpengine_stop_recording</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_stop_recording();
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_rtpengine_pause_recording" xreflabel="rtpengine_pause_recording()">
+		<title>
+		<function moreinfo="none">rtpengine_pause_recording([flags [, sock_var]])</function>
+		</title>
+		<para>
+		This function will send a signal to the &rtp; proxy to pause
+		recording the RTP stream on the &rtp; proxy. Identical to stop recording except that it 
+		instructs the recording daemon not to close the recording file, but instead leave it open 
+		so that recording can later be resumed via another start recording message.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>flags(string, optional)</emphasis> - flags used to change the behavior
+		of the recorder. An importat value to set is the <emphasis>call-id</emphasis>
+		value, which can be used to start recording a different call than the requested one.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>sock_var(var, optional)</emphasis> - variable used to store the rtpengine
+		socket chosen for this call.
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>rtpengine_pause_recording</function> usage</title>
 		<programlisting format="linespecific">
 ...
 rtpengine_stop_recording();
@@ -1312,6 +1347,72 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 	</section>
 
 
+	</section>
+
+	<section>
+	<title>Exported Asyncronous Functions</title>
+	<section id="afunc_rtpengine_offer" xreflabel="rtpengine_offer()">
+		<title><function moreinfo="none">rtpengine_offer([flags[, sock_pvar[, sdp_pvar[, body]]]])</function></title>
+		<para>
+			The asynchronous flavor of the <xref linkend="func_rtpengine_offer"/>
+			function. It receives the same parameters, with the same meanings.
+		</para>
+		<example>
+		<title>Example of async rtpengine_offer() usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("ACK") &amp;&amp; has_totag() &amp;&amp; has_body_part("application/sdp")) {
+	async(rtpengine_offer(), resume_invite);
+}
+...
+route[resume_invite] {
+	t_relay();
+}
+...
+		</programlisting>
+		</example>
+	</section>
+	<section id="afunc_rtpengine_answer" xreflabel="rtpengine_answer()">
+		<title><function moreinfo="none">rtpengine_answer([flags[, sock_pvar[, sdp_pvar[, body]]]])</function></title>
+		<para>
+			The asynchronous flavor of the <xref linkend="func_rtpengine_answer"/>
+			function. It receives the same parameters, with the same meanings.
+		</para>
+		<example>
+		<title>Example of async rtpengine_answer() usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("ACK") &amp;&amp; has_body_part("application/sdp")) {
+	# late negotiation
+	async(rtpengine_answer(), resume_ack);
+}
+...
+route[resume_ack] {
+	t_relay();
+}
+...
+		</programlisting>
+		</example>
+	</section>
+	<section id="afunc_rtpengine_delete" xreflabel="rtpengine_delete()">
+		<title>
+		<function moreinfo="none">rtpengine_delete([flags[, sock_var]])</function>
+		</title>
+		<para>
+			The asynchronous flavor of the <xref linkend="func_rtpengine_delete"/>
+			function. It receives the same parameters, with the same meanings.
+		</para>
+		<example>
+		<title>Example of async rtpengine_delete() usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("BYE")) {
+	launch(rtpengine_delete());
+}
+...
+		</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section id="exported_pseudo_variables">
@@ -1672,6 +1773,10 @@ $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 				<emphasis>status</emphasis> - <emphasis>active</emphasis> if
 				the RTPEngine instance responds to probing or
 				<emphasis>inactive</emphasis> if the instance was deactivated.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>set</emphasis> - the numeric id of the set
+				this RTPEngine instance is part of.
 			</para></listitem>
 		</itemizedlist>
 	</section>

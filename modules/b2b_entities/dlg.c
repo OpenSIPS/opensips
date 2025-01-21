@@ -713,6 +713,7 @@ int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name)
 	return 0;
 }
 
+
 int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 {
 	str b2b_key;
@@ -766,8 +767,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 				rt->nameaddr.uri.len,rt->nameaddr.uri.s);
 			return SCB_RUN_ALL;
 		}
-		if (check_self( &puri.host, puri.port_no?puri.port_no:SIP_PORT,
-		puri.proto?puri.proto:PROTO_UDP)!= 1 ) {
+		if (check_self_strict( &puri.host, puri.port_no, puri.proto)!= 1 ) {
 			LM_DBG("First Route uri is not mine\n");
 			return SCB_RUN_ALL;  /* not for b2b */
 
@@ -785,13 +785,12 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 			}
 		}
 		if (rt) {
-			if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ) {
+			if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ){
 				LM_ERR("Second route uri is not valid <%.*s>\n",
 					rt->nameaddr.uri.len,rt->nameaddr.uri.s);
 				return SCB_RUN_ALL;
 			}
-			if (check_self( &puri.host, puri.port_no?puri.port_no:SIP_PORT,
-			puri.proto?puri.proto:PROTO_UDP)!= 1 ) {
+			if (check_self_strict( &puri.host, puri.port_no, puri.proto)!= 1 ){
 				LM_DBG("Second Route uri is not mine\n");
 				return SCB_RUN_ALL;  /* not for b2b */
 			}
@@ -822,7 +821,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	if(method_value!= METHOD_CANCEL)
 	{
 		LM_DBG("<uri> host:port [%.*s][%d]\n", host.len, host.s, port);
-		if (!check_self( &host, port ? port : SIP_PORT, msg->rcv.proto))
+		if (check_self_strict( &host, port, msg->parsed_uri.proto)!= 1 )
 		{
 			LM_DBG("RURI does not point to me\n");
 			return SCB_RUN_ALL;
@@ -1013,9 +1012,6 @@ search_dialog:
 			if(method_value == METHOD_ACK)
 			{
 				tmb.t_newtran(msg);
-				tm_tran = tmb.t_gett();
-				if (tm_tran && tm_tran!=T_UNDEFINED)
-					tmb.unref_cell(tm_tran);
 			} else
 			if(method_value == METHOD_BYE)
 			{
@@ -1025,6 +1021,9 @@ search_dialog:
 				str ko = str_init("Call/Transaction Does Not Exist");
 				tmb.t_reply(msg, 481, &ko);
 			}
+			tm_tran = tmb.t_gett();
+			if (tm_tran && tm_tran!=T_UNDEFINED)
+				tmb.unref_cell(tm_tran);
 			B2BE_LOCK_RELEASE(table, hash_index);
 			return SCB_DROP_MSG;
 		}
@@ -1361,7 +1360,7 @@ run_cb:
 		}
 
 		if (ua_ev_type != -1 && raise_ua_sess_event(&b2b_key, etype, ua_ev_type,
-			ua_flags, msg) < 0) {
+			ua_flags, msg, NULL) < 0) {
 			LM_ERR("Failed to raise E_UA_SESSION event\n");
 			return SCB_DROP_MSG;
 		}
@@ -1775,7 +1774,9 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		return 0;
 	}
 */
-	if(et == B2B_CLIENT)
+	if (rpl_data->contact)
+		local_contact = *rpl_data->contact;
+	else if(et == B2B_CLIENT)
 		local_contact = dlg->contact[CALLER_LEG];
 	else
 		local_contact = dlg->contact[CALLEE_LEG];
@@ -3671,7 +3672,7 @@ done1:
 		else
 			ua_ev_type = UA_SESS_EV_REJECTED;
 
-		if (raise_ua_sess_event(b2b_key, etype, ua_ev_type, ua_flags, msg) < 0) {
+		if (raise_ua_sess_event(b2b_key, etype, ua_ev_type, ua_flags, msg, NULL) < 0) {
 			LM_ERR("Failed to raise E_UA_SESSION event\n");
 			goto error1;
 		}

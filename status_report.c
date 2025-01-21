@@ -697,6 +697,11 @@ static int _check_status(sr_group *srg, str *identifier, mi_item_t *id_item)
 
 int sr_set_core_status(enum sr_core_states status, char *txt_s, int txt_len)
 {
+	if (status == STATE_RUNNING) {
+		ready_time = time(NULL);
+		ready_delay = ready_time - startup_time;
+	}
+
 	return sr_set_status( srg_core, CHAR_INT_NULL /*main*/, status,
 		txt_s, txt_len, 0);
 }
