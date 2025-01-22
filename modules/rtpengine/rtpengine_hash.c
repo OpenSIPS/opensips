@@ -510,9 +510,16 @@ void rtpengine_hash_table_print(void)
 				// update total
 				rtpengine_hash_table->row_totals[i]--;
 			} else {
-				LM_INFO("hash_index=%d callid=%.*s tout=%u\n", i,
-						entry->callid.len, entry->callid.s,
-						entry->tout - get_ticks());
+				LM_INFO("hash_index=%d callid=[%.*s] viabranch=[%.*s] node=[%.*s] tout=%u\n",
+						i,
+						entry->callid.len,
+						entry->callid.s ? entry->callid.s : "(null)",
+						entry->viabranch.len,
+						entry->viabranch.s ? entry->viabranch.s : "(null)",
+						entry->node ? entry->node->rn_url.len : 0,
+						(entry->node && entry->node->rn_url.s) ? entry->node->rn_url.s : "(null)",
+						entry->tout - get_ticks()
+				);
 			}
 
 			last_entry = entry;
