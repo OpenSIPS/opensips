@@ -210,11 +210,12 @@ err_exit:
 }
 
 int del_tree(trie_node_t* t, osips_free_f free_f) {
+	int i;
     if (t == NULL) {
         return 0;
     }
 
-    for (int i = 0; i < ptree_children; i++) {
+    for (i = 0; i < ptree_children; i++) {
         trie_node_t *child = get_child(t, i);
         if (child != NULL) {
             if (child->info != NULL) {
