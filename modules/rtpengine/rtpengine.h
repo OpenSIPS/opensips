@@ -26,6 +26,7 @@
 #ifndef _RTPENGINE_H
 #define _RTPENGINE_H
 
+#include <sys/socket.h>
 #include "bencode.h"
 #include "../../str.h"
 
