@@ -2942,9 +2942,6 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			LM_ERR("setting rtpengine pvar failed\n");
 	}
 
-	if (flags_nt.s)
-		pkg_free(flags_nt.s);
-
 	if (use_hash_table) {
 		// Check if we have an existing entry, if so no need to insert the entry into the hash table
 		if(select_rtpe_node_assignment(ng_flags.call_id, ng_flags.viabranch, op)) {
@@ -3850,7 +3847,7 @@ static int rtpe_function_call_async(struct sip_msg *msg, async_ctx *ctx, str *fl
 	RTPE_START_READ();
 
 	/* FIXME - failover logic for async is disabled for now */
-	node = select_rtpe_node(ng_flags.call_id, set,NULL);
+	node = select_rtpe_node(ng_flags.call_id, ng_flags.viabranch, op, set, NULL);
 	if (!node) {
 		LM_ERR("no available proxies\n");
 		RTPE_STOP_READ();
