@@ -1790,6 +1790,22 @@ $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 			</example>
 		</section>
 
+		<section id="mi_rtpengine_dump" xreflabel="rtpengine_dump">
+			<title><function moreinfo="none">rtpengine_dump</function></title>
+			<para>
+			Dumps the hash table to log at INFO level.
+			</para>
+			<example>
+			<title>
+				<function moreinfo="none">rtpengine_dump</function> usage</title>
+			<programlisting format="linespecific">
+...
+$ opensips-cli -x mi rtpengine_dump
+...
+			</programlisting>
+			</example>
+		</section>
+
 
 
 	</section>
