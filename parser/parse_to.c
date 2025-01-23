@@ -903,3 +903,20 @@ int parse_to_header( struct sip_msg *msg)
 error:
 	return -1;
 }
+
+
+/*
+ * Parses the URI from a generic to_body structure
+ * Helper function (not specific to TO hdr)
+ */
+int parse_to_body_uri(struct to_body *to_b)
+{
+	if (to_b==NULL)
+		return -1;
+
+	if (parse_uri(to_b->uri.s, to_b->uri.len, &to_b->parsed_uri) < 0) {
+		memset( &to_b->parsed_uri, 0, sizeof(struct sip_uri));
+		return -1;
+	}
+	return 0;
+}
