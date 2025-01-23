@@ -1619,8 +1619,8 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 	struct hdr_field * ptr;
 	contact_t * contacts;
 	struct sip_uri test_contacts;
+	struct sip_uri *p_uri;
 	struct cseq_body * cbody;
-	struct to_body *from, *to;
 	pv_value_t pv_val;
 	char reason[MAX_REASON];
 	int ret = -SV_GENERIC_FAILURE;
@@ -1707,30 +1707,21 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 
 	/* test to header uri */
 	if(flags & SIP_PARSE_TO) {
-		if(!msg->to->parsed) {
-			if(parse_to_header(msg) < 0) {
-				strcpy(reason, "failed to parse 'To' header");
-				ret = SV_TO_PARSE_ERROR;
-				goto failed;
-			}
-		}
 
-		to = (struct to_body*)msg->to->parsed;
-
-		if(parse_uri(to->uri.s, to->uri.len, &to->parsed_uri) < 0) {
+		if ( (p_uri=parse_to_uri(msg))==NULL ) {
 			strcpy(reason, "failed to parse 'To' header");
 			ret = SV_TO_PARSE_ERROR;
 			goto failed;
 		}
 
 		/* check for valid domain format */
-		if(check_hostname(&to->parsed_uri.host) < 0) {
+		if(check_hostname(&p_uri->host) < 0) {
 			strcpy(reason, "invalid domain for 'To' header");
 			ret = SV_TO_DOMAIN_ERROR;
 			goto failed;
 		}
 
-		if(!is_username_str(&to->parsed_uri.user)) {
+		if(!is_username_str(&p_uri->user)) {
 			strcpy(reason, "invalid username for 'To' header");
 			ret = SV_TO_USERNAME_ERROR;
 			goto failed;
@@ -1739,30 +1730,21 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 
 	/* test from header uri */
 	if(flags & SIP_PARSE_FROM) {
-		if(!msg->from->parsed) {
-			if(parse_from_header(msg) < 0) {
-				strcpy(reason, "failed to parse 'From' header");
-				ret = SV_FROM_PARSE_ERROR;
-				goto failed;
-			}
-		}
 
-		from = (struct to_body*)msg->from->parsed;
-
-		if(parse_uri(from->uri.s, from->uri.len, &from->parsed_uri) < 0) {
+		if ( (p_uri=parse_from_uri(msg))==NULL ) {
 			strcpy(reason, "failed to parse 'From' header");
 			ret = SV_FROM_PARSE_ERROR;
 			goto failed;
 		}
 
 		/* check for valid domain format */
-		if(check_hostname(&from->parsed_uri.host) < 0) {
+		if(check_hostname(&p_uri->host) < 0) {
 			strcpy(reason, "invalid domain for 'From' header");
 			ret = SV_FROM_DOMAIN_ERROR;
 			goto failed;
 		}
 
-		if (!is_username_str(&from->parsed_uri.user)) {
+		if (!is_username_str(&p_uri->user)) {
 			strcpy(reason, "invalid username for 'From' header");
 			ret = SV_FROM_USERNAME_ERROR;
 			goto failed;
