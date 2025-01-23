@@ -1320,7 +1320,7 @@ set_cgpn:
 		goto cgpn_err;
 	}
 	pai = get_pai(sip_msg);
-	if (parse_uri(pai->uri.s, pai->uri.len, &pai->parsed_uri) < 0) {
+	if (parse_to_body_uri(pai) < 0) {
 		LM_ERR("Unable to parse P-Asserted-Identity URI\n");
 		goto cgpn_err;
 	}

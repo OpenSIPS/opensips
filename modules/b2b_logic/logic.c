@@ -2261,9 +2261,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl
 	{
 		if(msg->first_line.u.request.method_value==METHOD_REFER &&
 			parse_refer_to_header(msg)==0 && msg->refer_to!=NULL &&
-			get_refer_to(msg)!=NULL && parse_uri(get_refer_to(msg)->uri.s,
-							get_refer_to(msg)->uri.len,
-							&(get_refer_to(msg)->parsed_uri))==0)
+			parse_to_body_uri( get_refer_to(msg) )==0 )
 		{
 			/* We have a Refer-To header */
 			if(get_refer_to(msg)->parsed_uri.headers.s &&
