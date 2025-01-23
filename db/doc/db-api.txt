@@ -338,6 +338,7 @@ prefix). This function MUST be called __FIRST__ !
 The function takes two parameters, the first parameter must contain a database 
 connection URL or a database module name. The db_url is of the form 
 "mysql://username:password@host:port/database" or
+"mysql://username:password@unix(/named/socket/location)/database or
 "mysql" (database module name).
 In the case of a database connection URL, this function looks only at the first
 token (the database protocol). In the example above that would be "mysql":
@@ -368,7 +369,8 @@ function is called.
 
 The function takes one parameter, the parameter must contain database 
 connection URL. The URL is of the form 
-mysql://username:password@host:port/database where:
+mysql://username:password@host:port/database or
+mysql://username:password@unix(/named/socket/location)/database where:
 
 username: Username to use when logging into database (optional).
 password: password if it was set (optional)
@@ -376,6 +378,9 @@ host:     Hosname or IP address of the host where database server lives
           (mandatory)
 port:     Port number of the server if the port differs from default value 
           (optional)
+unix:    Indicates that a named socket location within parens follows.
+         If this is specified, the host and port are not allowed. The
+         host is internally set to "localhost".
 database: If the database server supports multiple databases, you must specify 
           name of the database (optional).
 
