@@ -250,6 +250,91 @@ modparam("rtpengine", "notification_sock", "127.0.0.1:9999")
 </programlisting>
 		</example>
 	</section>
+	<section id="param_use_hash_table" xreflabel="use_hash_table">
+		<title><varname>use_hash_table</varname> (integer)</title>
+		<para>
+		Enable tracking of all active node allocations by callid/viabranch in
+		a hash table. This allows nodes to be disabled without impacting ongoing
+		sessions where the hash algorithm would otherwise produce a different
+		node for subsequent calls for any dialog proceeding through the node
+		state change.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1</quote> - track all allocations in the hash table.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_hash_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Disable the hash table and revert to hashing algorithm calc for each request
+modparam("rtpengine", "use_hash_table", "0")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_hash_table_tout" xreflabel="hash_table_tout">
+		<title><varname>hash_table_tout</varname> (integer)</title>
+		<para>
+		Number of seconds after which rtpengine hash table entry is marked for deletion.
+		By default, this parameter is set to 3600 seconds.
+		</para>
+		<para>
+		To maintain information about a selected rtp machine node, for a given call, entries are added
+		in a hashtable of (callid/viabranch, node) pairs.
+		When command comes, lookup callid. If found, return chosen node. If not found, choose a new node,
+		insert it in the hashtable and return the chosen node.
+		</para>
+		<para>
+		NOTE: In the current implementation, the actual deletion happens <emphasis>on the fly</emphasis>,
+		while insert/remove/lookup the hashtable, <emphasis>only</emphasis> for
+		the entries in the insert/remove/lookup path.
+		</para>
+		<para>
+		NOTE: When configuring this parameter, one should consider maximum call time
+		VS share memory for unfinished calls.
+		</para>
+		<example>
+		<title>Set <varname>hash_table_tout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Set timeout to 4 hours
+modparam("rtpengine", "hash_table_tout", "14400")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_hash_table_size" xreflabel="hash_table_size">
+		<title><varname>hash_table_size</varname> (integer)</title>
+		<para>
+		Size of the hash table. Default value is 256.
+		</para>
+		<para>
+		This defines the number of rows in the table, each row is a linked list
+		of entries providing extendable capacity. Sessions are allocated to a row
+		in the hash table based on a simple hash of the callid and separate entries
+		are created for each viabranch. Collisions will simply append to the row and
+		a search is performed as each request arrives.
+		</para>
+		<para>
+		Tuning the value is based on the number of buckets we wish to provide and then
+		a trade-off between this and the number of entries we need to inspect when
+		performing checks and changes.
+		</para>
+		<para>
+		NOTE: If configured size is <emphasis>less than</emphasis> 1, the size will be defaulted to 1.
+		</para>
+		<example>
+		<title>Set <varname>hash_table_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Configure 1024 buckets
+modparam("rtpengine", "hash_table_size", "1024")
+...
+</programlisting>
+		</example>
+	</section>
 	<section id="param_extra_id_pv" xreflabel="extra_id_pv">
 		<title><varname>extra_id_pv</varname> (string)</title>
 		<para>
