@@ -1715,8 +1715,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 			goto failed;
 		}
 
-		/* check for valid domain format */
-		if(check_hostname(&p_uri->host) < 0) {
+		/* check for valid domain format, if SIP/SIPS types */
+		if ( (p_uri->type==SIP_URI_T || p_uri->type==SIPS_URI_T) &&
+		check_hostname(&p_uri->host) < 0 ) {
 			strcpy(reason, "invalid domain for 'To' header");
 			ret = SV_TO_DOMAIN_ERROR;
 			goto failed;
@@ -1738,8 +1739,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 			goto failed;
 		}
 
-		/* check for valid domain format */
-		if(check_hostname(&p_uri->host) < 0) {
+		/* check for valid domain format, if SIP/SIPS types */
+		if ( (p_uri->type==SIP_URI_T || p_uri->type==SIPS_URI_T) &&
+		check_hostname(&p_uri->host) < 0 ) {
 			strcpy(reason, "invalid domain for 'From' header");
 			ret = SV_FROM_DOMAIN_ERROR;
 			goto failed;
