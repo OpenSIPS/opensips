@@ -67,6 +67,7 @@ int run_unit_tests(void)
 		test_parser();
 		test_ut();
 		test_lib_digest_auth();
+		test_db();
 
 	/* module tests */
 	} else {
