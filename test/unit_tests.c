@@ -22,6 +22,7 @@
 
 #include <tap.h>
 
+#include "../db/test/test_db.h"
 #include "../cachedb/test/test_cachedb.h"
 #include "../lib/test/test_csv.h"
 #include "../lib/test/test_digest_auth.h"
