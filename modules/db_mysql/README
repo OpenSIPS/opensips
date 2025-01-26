@@ -240,8 +240,8 @@ Chapter 2. Contributors
    9. Vlad Patrascu (@rvlad-patrascu) 12 8 179 78
    10. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
 
-   All remaining contributors: Nils Ohlmeier, Maksym Sobolyev
-   (@sobomax), Norman Brandinger (@NormB), Peter Lemenkov
+   All remaining contributors: Nils Ohlmeier, Norman Brandinger
+   (@NormB), Maksym Sobolyev (@sobomax), Peter Lemenkov
    (@lemenkov), Eseanu Marius Cristian (@eseanucristian), Dan
    Pascu (@danpascu), Walter Doekes (@wdoekes), Ionut Ionita
    (@ionutrazvanionita), Ovidiu Sas (@ovidiusas), Konstantin
@@ -269,25 +269,25 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2024
-   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Mar 2024
-   4.  Vlad Paiu (@vladpaiu)               Feb 2011 - Jul 2023
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2021
-   7.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   8.  Peter Lemenkov (@lemenkov)          Nov 2017 - Jun 2018
-   9.  Augusto Caringi                     Jul 2017 - Jul 2017
-   10. Ovidiu Sas (@ovidiusas)             Mar 2017 - Mar 2017
+   1.  Norman Brandinger (@NormB)          Aug 2006 - Jan 2025
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2024
+   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2024
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Mar 2024
+   5.  Vlad Paiu (@vladpaiu)               Feb 2011 - Jul 2023
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2021
+   8.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   9.  Peter Lemenkov (@lemenkov)          Nov 2017 - Jun 2018
+   10. Augusto Caringi                     Jul 2017 - Jul 2017
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Eseanu Marius Cristian (@eseanucristian), Saúl Ibarra Corretgé
-   (@saghul), Razvan Pistolea, Norman Brandinger (@NormB), Sergio
-   Gutierrez, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Andreas Heise, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
-   Dan Pascu (@danpascu), Jiri Kuthan (@jiriatipteldotorg), Nils
-   Ohlmeier.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Ionut
+   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
+   (@eseanucristian), Saúl Ibarra Corretgé (@saghul), Razvan
+   Pistolea, Sergio Gutierrez, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Andreas Heise, Jan Janak (@janakj), Andrei
+   Pelinescu-Onciul, Dan Pascu (@danpascu), Jiri Kuthan
+   (@jiriatipteldotorg), Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
