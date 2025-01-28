@@ -118,12 +118,12 @@ Chapter 1. Admin Guide
    Example 1.1. Set cachedb_url parameter
 ...
 modparam("cachedb_cassandra", "cachedb_url",
-        "cassandra:group1://localhost:9042/keyspace1.users.counters");
+        "cassandra:group1://localhost:9042/keyspace1.users.counters")
 
 # Defining multiple contact points for a Cassandra cluster
 modparam("cachedb_cassandra", "cachedb_url",
         "cassandra:cluster1://10.0.0.10,10.0.0.15/keyspace2.keys.counter
-s");
+s")
 ...
 
    Example 1.2. Use Cassandra servers
