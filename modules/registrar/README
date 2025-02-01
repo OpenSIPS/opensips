@@ -1184,17 +1184,18 @@ if (is_registered("location",$fu)) {
 
    Example 1.35. is_contact_registered usage
 ...
-/*let's say you want to block users that are not registered*/
+/* block users which are not registered... */
 if (is_method("INVITE")) {
         if (!is_contact_registered("location")) {
                 sl_send_reply(401, "Unauthorized");
-        ...
+                ...
         }
 }
-/* you want to check the second contact from the message whether it is
-registered or not */
-if(is_method("INVITE")) {
-        if (is_contact_registered("location",$fu,$(ct[1]),))
+
+/* ... or check whether the 2nd Contact URI is registered or not */
+if (is_method("INVITE")) {
+        if (is_contact_registered("location", $fu, $(ct.fields(uri)[1]))
+)
                 xlog("caller is registered\n");
 }
 ...
@@ -1449,7 +1450,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 194 120 2851 3019
+   1. Liviu Chircu (@liviuchircu) 195 121 2856 3024
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 168 114 2383 2031
    3. Jan Janak (@janakj) 120 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
@@ -1492,7 +1493,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2024
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2025
    2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
    3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2023
    4.  Maksym Sobolyev (@sobomax)          Jul 2004 - Feb 2023
