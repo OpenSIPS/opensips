@@ -1186,17 +1186,18 @@ if (is_registered("location",$fu)) {
 
    Example 1.35. is_contact_registered usage
 ...
-/*let's say you want to block users that are not registered*/
+/* block users which are not registered... */
 if (is_method("INVITE")) {
         if (!is_contact_registered("location")) {
                 sl_send_reply(401, "Unauthorized");
-        ...
+                ...
         }
 }
-/* you want to check the second contact from the message whether it is
-registered or not */
-if(is_method("INVITE")) {
-        if (is_contact_registered("location",$fu,$(ct[1]),))
+
+/* ... or check whether the 2nd Contact URI is registered or not */
+if (is_method("INVITE")) {
+        if (is_contact_registered("location", $fu, $(ct.fields(uri)[1]))
+)
                 xlog("caller is registered\n");
 }
 ...
@@ -1451,7 +1452,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 195 121 2851 3020
+   1. Liviu Chircu (@liviuchircu) 196 122 2856 3025
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 170 115 2410 2047
    3. Jan Janak (@janakj) 121 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
@@ -1494,7 +1495,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Sep 2024
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2025
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Apr 2024
    3.  Dudu Ben Moshe                      Feb 2024 - Feb 2024
    4.  Maksym Sobolyev (@sobomax)          Jul 2004 - Nov 2023
@@ -1524,8 +1525,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Dudu Ben Moshe, Vlad Patrascu
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Dudu Ben Moshe, Vlad Patrascu
    (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Vlad Paiu
    (@vladpaiu), Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
