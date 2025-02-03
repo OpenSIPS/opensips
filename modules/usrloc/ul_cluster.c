@@ -69,10 +69,16 @@ int ul_init_cluster(void)
 
 static inline void bin_push_urecord(bin_packet_t *packet, urecord_t *r)
 {
+	str st;
+
 	bin_push_str(packet, r->domain);
 	bin_push_str(packet, &r->aor);
 	bin_push_int(packet, r->label);
 	bin_push_int(packet, r->next_clabel);
+
+	st = store_serialize(r->kv_storage);
+	bin_push_str(packet, &st);
+	store_free_buffer(&st);
 }
 
 void replicate_urecord_insert(urecord_t *r)
@@ -420,10 +426,11 @@ error:
  */
 static int receive_urecord_insert(bin_packet_t *packet)
 {
-	str d, aor;
+	str d, aor, kv_str;
 	urecord_t *r;
 	udomain_t *domain;
 	int sl;
+	short pkg_ver = get_bin_pkg_version(packet);
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
@@ -453,6 +460,11 @@ static int receive_urecord_insert(bin_packet_t *packet)
 	sl = r->aorhash & (domain->size - 1);
 	if (domain->table[sl].next_label <= r->label)
 		domain->table[sl].next_label = r->label + 1;
+
+	if (pkg_ver >= UL_BIN_V5) {
+		bin_pop_str(packet, &kv_str);
+		r->kv_storage = store_deserialize(&kv_str);
+	}
 
 out:
 	unlock_udomain(domain, &aor);
