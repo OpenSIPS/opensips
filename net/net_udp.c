@@ -198,7 +198,7 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 	}
 
 	/* tos */
-	optval=tos;
+	optval = (si->tos > 0) ? si->tos : tos;
 	if (optval > 0) {
 		if (addr->s.sa_family==AF_INET6){
 			if (setsockopt(si->socket,  IPPROTO_IPV6, IPV6_TCLASS, (void*)&optval, sizeof(optval)) ==-1){

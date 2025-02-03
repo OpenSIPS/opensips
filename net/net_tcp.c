@@ -234,7 +234,7 @@ static inline void set_sock_reuseport(int s)
 /*! \brief Set all socket/fd options:  disable nagle, tos lowdelay,
  * non-blocking
  * \return -1 on error */
-int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags socketflags)
+int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags socketflags, int sock_tos)
 {
 	int flags;
 	int optval;
@@ -247,7 +247,7 @@ int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags 
 	}
 #endif
 	/* tos*/
-	optval = tos;
+	optval = (sock_tos > 0) ? sock_tos : tos;
 	if (optval > 0) {
 		if (setsockopt(s, IPPROTO_IP, IP_TOS, (void*)&optval,sizeof(optval)) ==-1){
 			LM_WARN("setsockopt tos: %s\n",	strerror(errno));
@@ -377,7 +377,7 @@ int tcp_init_listener(struct socket_info *si)
 	}
 #endif
 	/* tos */
-	optval = tos;
+	optval = (si->tos > 0) ? si->tos : tos;
 	if (optval > 0) {
 		if (setsockopt(si->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
 		sizeof(optval)) ==-1){
@@ -1120,7 +1120,7 @@ static inline int handle_new_connect(const struct socket_info* si)
 	}
 
 	tcp_con_get_profile(&su, &si->su, si->proto, &prof);
-	if (tcp_init_sock_opt(new_sock, &prof, si->flags)<0){
+	if (tcp_init_sock_opt(new_sock, &prof, si->flags, si->tos)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		close(new_sock);
 		return 1; /* success, because the accept was successful */

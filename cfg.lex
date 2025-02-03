@@ -321,6 +321,7 @@ TICK		\'
 SLASH		"/"
 AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
 USE_WORKERS	{EAT_ABLE}("use_workers"|"USE_WORKERS"){EAT_ABLE}
+SOCK_TOS	{EAT_ABLE}("tos"|"TOS"){EAT_ABLE}
 USE_AUTO_SCALING_PROFILE {EAT_ABLE}("use_auto_scaling_profile"|"USE_AUTO_SCALING_PROFILE"){EAT_ABLE}
 SCALE_UP_TO		{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("up"|"UP"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
 SCALE_DOWN_TO	{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("down"|"DOWN"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
@@ -601,6 +602,7 @@ SPACE		[ ]
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
 <INITIAL>{USE_WORKERS}  { count(); return USE_WORKERS; }
+<INITIAL>{SOCK_TOS}	{ count(); return SOCK_TOS; }
 <INITIAL>{USE_AUTO_SCALING_PROFILE}  { count(); return USE_AUTO_SCALING_PROFILE; }
 <INITIAL>{COLON}	{ count(); return COLON; }
 <INITIAL>{RPAREN}	{ count(); return RPAREN; }

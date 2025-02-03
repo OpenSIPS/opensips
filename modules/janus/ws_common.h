@@ -718,7 +718,7 @@ static int janus_ws_sync_connect(janus_connection *sock)
 
 	tcp_con_get_profile(to_su, src_su, PROTO_TCP, &sock->profile);
 
-	s = tcp_sync_connect_fd(src_su, to_su, PROTO_TCP, &sock->profile,0);
+	s = tcp_sync_connect_fd(src_su, to_su, PROTO_TCP, &sock->profile,0,0);
 	if (s < 0) {
 		LM_ERR("cannot TCP connect to %.*s:%d\n",
 		sock->parsed_url.host.len,sock->parsed_url.host.s,
