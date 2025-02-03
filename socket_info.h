@@ -61,6 +61,7 @@ struct socket_info {
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	unsigned short workers;
+	unsigned short tos;
 	struct scaling_profile *s_profile;
 	void *extra_data;
 	enum sip_protos internal_proto;
