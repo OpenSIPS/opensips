@@ -248,9 +248,11 @@ int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags 
 #endif
 	/* tos*/
 	optval = tos;
-	if (setsockopt(s, IPPROTO_IP, IP_TOS, (void*)&optval,sizeof(optval)) ==-1){
-		LM_WARN("setsockopt tos: %s\n",	strerror(errno));
-		/* continue since this is not critical */
+	if (optval > 0) {
+		if (setsockopt(s, IPPROTO_IP, IP_TOS, (void*)&optval,sizeof(optval)) ==-1){
+			LM_WARN("setsockopt tos: %s\n",	strerror(errno));
+			/* continue since this is not critical */
+		}
 	}
 
 	if (probe_max_sock_buff(s,1,MAX_SEND_BUFFER_SIZE,BUFFER_INCREMENT)) {
@@ -376,10 +378,12 @@ int tcp_init_listener(struct socket_info *si)
 #endif
 	/* tos */
 	optval = tos;
-	if (setsockopt(si->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
-	sizeof(optval)) ==-1){
-		LM_WARN("setsockopt tos: %s\n", strerror(errno));
-		/* continue since this is not critical */
+	if (optval > 0) {
+		if (setsockopt(si->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
+		sizeof(optval)) ==-1){
+			LM_WARN("setsockopt tos: %s\n", strerror(errno));
+			/* continue since this is not critical */
+		}
 	}
 
 	if (probe_max_sock_buff(si->socket,1,MAX_SEND_BUFFER_SIZE,
