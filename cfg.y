@@ -1540,7 +1540,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		  }
 		| MCAST_TTL EQUAL error { yyerror("number expected as tos"); }
 		| TOS EQUAL NUMBER { IFOR(); tos = $3;
-							if (tos<=0)
+							if (tos<0)
 								yyerror("invalid tos value");
 		 }
 		| TOS EQUAL ID { IFOR();
