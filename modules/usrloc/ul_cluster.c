@@ -933,32 +933,32 @@ void receive_binary_packets(bin_packet_t *pkt)
 
 	switch (pkt->type) {
 	case REPL_URECORD_INSERT:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc aor-ins packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc aor-ins packet");
 		rc = receive_urecord_insert(pkt);
 		break;
 
 	case REPL_URECORD_DELETE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc aor-del packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc aor-del packet");
 		rc = receive_urecord_delete(pkt);
 		break;
 
 	case REPL_UCONTACT_INSERT:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-ins packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-ins packet");
 		rc = receive_ucontact_insert(pkt);
 		break;
 
 	case REPL_UCONTACT_UPDATE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-upd packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-upd packet");
 		rc = receive_ucontact_update(pkt);
 		break;
 
 	case REPL_UCONTACT_DELETE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-del packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-del packet");
 		rc = receive_ucontact_delete(pkt);
 		break;
 
 	case SYNC_PACKET_TYPE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc sync packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc sync packet");
 		rc = receive_sync_packet(pkt);
 		break;
 
