@@ -782,13 +782,13 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 	}
 
 	partition->persistent_state = ds_persistent_state;
-	if (str_strcmp(&db_head->persistent_state, const_str("0")) ||
-			str_strcmp(&db_head->persistent_state, const_str("no")) ||
-			str_strcmp(&db_head->persistent_state, const_str("off")))
+    if (str_strcmp(&db_head->persistent_state, const_str("0")) == 0 ||
+        str_strcmp(&db_head->persistent_state, const_str("no")) == 0 ||
+        str_strcmp(&db_head->persistent_state, const_str("off")) == 0)
 		partition->persistent_state = 0;
-	else if (str_strcmp(&db_head->persistent_state, const_str("1")) ||
-			str_strcmp(&db_head->persistent_state, const_str("yes")) ||
-			str_strcmp(&db_head->persistent_state, const_str("on")))
+    else if (str_strcmp(&db_head->persistent_state, const_str("1")) == 0 ||
+        str_strcmp(&db_head->persistent_state, const_str("yes")) == 0 ||
+        str_strcmp(&db_head->persistent_state, const_str("on")) == 0)
 		partition->persistent_state = 1;
 
 	if (partition->persistent_state)
