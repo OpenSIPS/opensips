@@ -2328,6 +2328,12 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					continue;
 				} else if (str_eq(&key, "directional")) {
 					ng_flags->directional = 1;
+					bitem = bencode_str(bencode_item_buffer(ng_flags->flags), &key);
+					if (!bitem) {
+						err = "no more memory for list value";
+						goto error;
+					}
+					BCHECK(bencode_list_add(ng_flags->flags, bitem));
 					continue;
 				}
 				break;
