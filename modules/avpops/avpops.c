@@ -106,6 +106,7 @@ static int fixup_free_check_avp_p2(void** param);
 static int fixup_free_avp_subst_p1(void** param);
 static int fixup_free_avp_subst_p2(void** param);
 static int fixup_free_pvname_list(void** param);
+static int fixup_free_avp_source(void** param);
 static int fixup_free_avp_dbparam(void** param);
 static int fixup_avp_shuffle_name(void** param);
 
@@ -146,7 +147,7 @@ static const cmd_export_t cmds[] = {
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
 	{"avp_db_load", (cmd_function)w_dbload_avps, {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_source, fixup_free_pkg},
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_source, fixup_free_avp_source},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_dbparam_scheme, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_avp_prefix, fixup_free_pkg}, {0, 0, 0}},
@@ -154,14 +155,14 @@ static const cmd_export_t cmds[] = {
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
 	{"avp_db_delete", (cmd_function)w_dbdelete_avps, {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_source, fixup_free_pkg},
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_source, fixup_free_avp_source},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_dbparam, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
 	{"avp_db_store", (cmd_function)w_dbstore_avps, {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_source, fixup_free_pkg},
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_source, fixup_free_avp_source},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_dbparam, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
@@ -574,6 +575,17 @@ static int fixup_db_avp_dbparam_scheme(void** param)
 static int fixup_db_avp_dbparam(void** param)
 {
 	return fixup_db_avp(param, 2, 0);
+}
+
+static int fixup_free_avp_source(void** param)
+{
+	struct fis_param* sp = (struct fis_param*)*param;
+
+	if ((sp->opd & AVPOPS_VAL_STR) && sp->u.s.s) {
+		pkg_free(sp->u.s.s);
+	}
+	pkg_free(sp);
+	return 0;
 }
 
 static int fixup_free_avp_dbparam(void** param)
