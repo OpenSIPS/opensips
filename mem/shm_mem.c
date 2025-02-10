@@ -800,8 +800,7 @@ int shm_mem_init(void)
 #endif /* USE_ANON_MMAP */
 	for (i=0;i<total_pools;i++) {
 
-		/* TODO - integrate 250 to script */
-		block_size=250*1024*1024;
+		block_size = shm_mem_size/total_pools;
 		shm_mempools[i] = shm_getmem(fd,NULL,block_size);
 		//LM_ERR("VLAD - allocated %p pool on idx %d\n",shm_mempools[i],i);
 
