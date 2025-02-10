@@ -25,13 +25,15 @@
 
 #include "../lock_ops.h"
 
+#define TOTAL_F_PARALLEL_POOLS 32
+
 extern void *mem_block;
 extern void *shm_block;
 extern void *shm_dbg_block;
 extern void *rpm_block;
 extern void **shm_blocks;
 extern int init_done;
-extern gen_lock_t *hash_locks[128];
+extern gen_lock_t *hash_locks[TOTAL_F_PARALLEL_POOLS];
 
 #include "meminfo.h"
 

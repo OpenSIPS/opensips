@@ -535,8 +535,7 @@ void parallel_status(struct parallel_block *fm)
 	struct mem_dbg_entry *it;
 #endif
 
-	/* TODO - 128 hardcode */
-	for (bucket=0;bucket<128;bucket++) {
+	for (bucket=0;bucket<TOTAL_F_PARALLEL_POOLS;bucket++) {
 		fm = shm_blocks[bucket]; 
 		lock_get(hash_locks[fm->idx]);
 

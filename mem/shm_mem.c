@@ -101,7 +101,7 @@ gen_lock_t *mem_lock;
 #endif
 
 #if defined F_PARALLEL_MALLOC
-gen_lock_t *hash_locks[128];
+gen_lock_t *hash_locks[TOTAL_F_PARALLEL_POOLS];
 #endif
 
 #ifdef HP_MALLOC
@@ -111,9 +111,7 @@ gen_lock_t *mem_locks;
 static void* shm_mempool=INVALID_MAP;
 void *shm_block;
 
-/* TODO - integrate to script */
-int total_pools = 128;
-/* we allocated 128 * 250 ~= 32 GB for the split pool */
+/* we allocated TOTAL_F_PARALLEL_POOLS mem blocks */
 static void** shm_mempools=NULL;
 void **shm_blocks;
 
@@ -776,19 +774,19 @@ int shm_mem_init(void)
 	}
 
 	/* TODO - full speed ahead, we don't care about allocator type, we will hardcode for testing */
-	shm_mempools = malloc(total_pools * sizeof(void*));
+	shm_mempools = malloc(TOTAL_F_PARALLEL_POOLS * sizeof(void*));
 	if (!shm_mempools) {
 		LM_ERR("Failed to init all the mempools \n");
 		return -1;
 	}
-	memset(shm_mempools,0,total_pools * sizeof(void *));
+	memset(shm_mempools,0,TOTAL_F_PARALLEL_POOLS * sizeof(void *));
 
-	shm_blocks = malloc(total_pools * sizeof(void *));
+	shm_blocks = malloc(TOTAL_F_PARALLEL_POOLS * sizeof(void *));
 	if (!shm_blocks) {
 		LM_ERR("Failed to init all the blocks \n");
 		return -1;
 	}
-	memset(shm_blocks,0,total_pools * sizeof(void *));
+	memset(shm_blocks,0,TOTAL_F_PARALLEL_POOLS * sizeof(void *));
 
 #ifndef USE_ANON_MMAP
 		//LM_ERR("Anon mmap \n");
@@ -798,11 +796,11 @@ int shm_mem_init(void)
 			return -1;
 		}
 #endif /* USE_ANON_MMAP */
-	for (i=0;i<total_pools;i++) {
+	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 
-		block_size = shm_mem_size/total_pools;
+		block_size = shm_mem_size/TOTAL_F_PARALLEL_POOLS;
 		shm_mempools[i] = shm_getmem(fd,NULL,block_size);
-		//LM_ERR("VLAD - allocated %p pool on idx %d\n",shm_mempools[i],i);
+		LM_ERR("VLAD - allocated %p pool on idx %d with size %ld\n",shm_mempools[i],i,block_size);
 
 		if (shm_mempools[i] == INVALID_MAP) {
 			LM_CRIT("could not attach shared memory segment %d: %s\n",

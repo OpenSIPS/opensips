@@ -694,7 +694,7 @@ inline static void* shm_malloc(unsigned long size)
 #ifdef F_PARALLEL_MALLOC
 	//LM_ERR("COnvo alloc safe - yay ! \n");
 
-	bucket = rand() % 128;
+	bucket = rand() % TOTAL_F_PARALLEL_POOLS;
 	block = shm_blocks[bucket];
 	//LM_ERR("Allocating %lu bytes in bucket %d, block %p \n",size,bucket,block);
 
@@ -738,7 +738,7 @@ inline static void* shm_malloc_unsafe(unsigned int size)
 	if (init_done == 0) {
 		block = shm_blocks[0];
 	} else {
-		bucket = rand() % 128;
+		bucket = rand() % TOTAL_F_PARALLEL_POOLS;
 		block = shm_blocks[bucket];
 		//LM_ERR("Allocating %u bytes in bucket %d, block %p \n",size,bucket,block);
 	}
@@ -813,7 +813,7 @@ inline static void* shm_realloc(void *ptr, unsigned long size)
 #ifdef F_PARALLEL_MALLOC
 	if (!ptr) {
 		/* realloc with NULL is just alloc, pick a bucket */ 
-		bucket = rand() % 128;
+		bucket = rand() % TOTAL_F_PARALLEL_POOLS;
 		block = shm_blocks[bucket];
 		//LM_ERR("Allocating %lu bytes in bucket!!! %d, block %p \n",size,bucket,block);
 	} else {
@@ -874,7 +874,7 @@ inline static void* shm_realloc_unsafe(void *ptr, unsigned long size)
 
 	if (!ptr) {
 		/* realloc with NULL is just alloc, pick a bucket */ 
-		bucket = rand() % 128;
+		bucket = rand() % TOTAL_F_PARALLEL_POOLS;
 		block = shm_blocks[bucket];
 		//LM_ERR("Allocating %lu bytes in bucket!!! %d, block %p \n",size,bucket,block);
 	} else {

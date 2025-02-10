@@ -139,7 +139,7 @@ static inline unsigned long parallel_get_size(struct parallel_block *fm)
 	int i;
 	unsigned long total_size=0;
 
-	for (i=0;i<128;i++) {
+	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 		total_size += ((struct parallel_block *)shm_blocks[i])->size;
 	}
 
@@ -150,7 +150,7 @@ static inline unsigned long parallel_get_used(struct parallel_block *fm)
 	int i;
 	unsigned long total_size=0;
 
-	for (i=0;i<128;i++) {
+	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 		total_size += ((struct parallel_block *)shm_blocks[i])->used;
 	}
 
@@ -161,7 +161,7 @@ static inline unsigned long parallel_get_free(struct parallel_block *fm)
 	int i;
 	unsigned long total_size=0;
 
-	for (i=0;i<128;i++) {
+	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 		total_size += ((struct parallel_block *)shm_blocks[i])->size - 
 			((struct parallel_block *)shm_blocks[i])->real_used;
 	}
@@ -173,7 +173,7 @@ static inline unsigned long parallel_get_real_used(struct parallel_block *fm)
 	int i;
 	unsigned long total_size=0;
 
-	for (i=0;i<128;i++) {
+	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 		total_size += ((struct parallel_block *)shm_blocks[i])->real_used;
 	}
 
@@ -184,7 +184,7 @@ static inline unsigned long parallel_get_max_real_used(struct parallel_block *fm
 	int i;
 	unsigned long total_size=0;
 
-	for (i=0;i<128;i++) {
+	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 		total_size += ((struct parallel_block *)shm_blocks[i])->max_real_used;
 	}
 
@@ -195,7 +195,7 @@ static inline unsigned long parallel_get_frags(struct parallel_block *fm)
 	int i;
 	unsigned long total_size=0;
 
-	for (i=0;i<128;i++) {
+	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 		total_size += ((struct parallel_block *)shm_blocks[i])->fragments;
 	}
 
