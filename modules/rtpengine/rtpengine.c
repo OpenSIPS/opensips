@@ -2893,6 +2893,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 				 * so we should ignore it and try another one */
 				if (!rtpe_add_ignore_node(&ignore_list, node)) {
 					LM_ERR("could not add node to ignore list!\n");
+					RTPE_STOP_READ();
 					goto error;
 				}
 				failed_node = NULL;
