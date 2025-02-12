@@ -39,57 +39,62 @@ unsigned int address_node_hash(pht_hash_table_t *table, void *node) {
 
     address = node;
 
-    str_ip.len = address->k.subnet->ip.len;
-    str_ip.s = (char *)address->k.subnet->ip.u.addr;
+    str_ip.len = address->k.subnet.ip.len;
+    str_ip.s = (char *)address->k.subnet.ip.u.addr;
 
     return address_hash(table, &str_ip);
 }
 
 void delete_address_node(p_address_node_t *node) {
-    if (node) {
-        if (node->k.subnet) shm_free(node->k.subnet);
-        if (node->v.pattern) shm_free(node->v.pattern);
-        if (node->v.info) shm_free(node->v.info);
-        shm_free(node);
-    }
+    if (node) shm_free(node);
 }
 
-char *str_dup(str *src) {
-    char *dest = NULL;
-    if (src->len) {
-        dest = shm_malloc(src->len + 1);
-        if (!dest) return NULL;
-        memcpy(dest, src->s, src->len);
-        dest[src->len] = '\0';
-    }
-    return dest;
+p_address_node_t *alloc_address_node(str *pattern, str *info) {
+    int total_size, pattern_len, info_len;
+    char *offset;
+    p_address_node_t *node;
+
+    pattern_len = pattern->len > 0 ? pattern->len + 1 : 0;
+    info_len = (info->len > 0 ? info->len + 1 : 0);
+
+    total_size = sizeof(p_address_node_t) + pattern_len + info_len;
+    offset = shm_malloc(total_size);
+    if (!offset) return NULL;
+
+    node = (p_address_node_t *)offset;
+
+    offset += sizeof(p_address_node_t);
+    node->v.pattern = pattern_len > 0 ? offset : NULL;
+
+    offset += pattern_len;
+    node->v.info = info_len > 0 ? offset : NULL;
+
+    return node;
 }
 
 p_address_node_t *new_address_node(struct net *subnet, unsigned int port, int proto, str *pattern,
                                    str *info) {
     p_address_node_t *node;
 
-    node = shm_malloc(sizeof(p_address_node_t));
+    node = alloc_address_node(pattern, info);
     if (!node) return NULL;
 
     node->v.port = port;
     node->v.proto = proto;
 
-    node->k.subnet = shm_malloc(sizeof(struct net));
-    if (!node->k.subnet) goto err;
-    memcpy(node->k.subnet, subnet, sizeof(struct net));
+    memcpy(&node->k.subnet, subnet, sizeof(struct net));
 
-    node->v.pattern = str_dup(pattern);
-    if (pattern->len && !node->v.pattern) goto err;
+    if (pattern->len > 0) {
+        memcpy(node->v.pattern, pattern->s, pattern->len);
+        node->v.pattern[pattern->len] = '\0';
+    }
 
-    node->v.info = str_dup(info);
-    if (info->len && !node->v.info) goto err;
+    if (info->len > 0) {
+        memcpy(node->v.info, info->s, info->len);
+        node->v.info[info->len] = '\0';
+    }
 
     return node;
-
-err:
-    delete_address_node(node);
-    return NULL;
 }
 
 void delete_group_node(p_group_node_t *group) {
@@ -227,7 +232,7 @@ int match_address(p_address_node_t *address, struct ip_addr *ip, unsigned int po
 
     if ((address->v.proto == PROTO_NONE || address->v.proto == proto || proto == PROTO_NONE) &&
         (address->v.port == PORT_ANY || address->v.port == port || port == PORT_ANY) &&
-        (ip_addr_cmp(ip, &address->k.subnet->ip) || matchnet(ip, address->k.subnet))) {
+        (ip_addr_cmp(ip, &address->k.subnet.ip) || matchnet(ip, &address->k.subnet))) {
         if (!address->v.pattern || !pattern) {
             LM_DBG("no pattern to match\n");
             return 1;
@@ -336,7 +341,7 @@ int pm_hash_find_group(p_address_table_t *table, struct ip_addr *ip, unsigned in
         for (address = group->v.address.bucket[address_hash(&group->v.address, &str_ip)]; address;
              address = address->next) {
             if ((address->v.port == PORT_ANY || address->v.port == port || port == PORT_ANY) &&
-                (ip_addr_cmp(ip, &address->k.subnet->ip) || matchnet(ip, address->k.subnet))) {
+                (ip_addr_cmp(ip, &address->k.subnet.ip) || matchnet(ip, &address->k.subnet))) {
                 return group->k.group;
             }
         }
@@ -363,13 +368,13 @@ int pm_hash_mi_print(p_address_table_t *table, mi_item_t *part_item, struct pm_p
     for (group = table->group; group; group = group->next) {
         for (i = 0; i < group->v.address.bucket_count; ++i) {
             for (address = group->v.address.bucket[i]; address; address = address->next) {
-                mask = ip_addr2a(&address->k.subnet->mask);
+                mask = ip_addr2a(&address->k.subnet.mask);
                 if (!mask) {
                     LM_ERR("cannot print mask address\n");
                     continue;
                 }
-                if (memcmp(&address->k.subnet->mask.u, ipv6_mask_128,
-                           address->k.subnet->mask.len) == 0) {
+                if (memcmp(&address->k.subnet.mask.u, ipv6_mask_128, address->k.subnet.mask.len) ==
+                    0) {
                     if (is_subnet) continue;
                     is_address = 1;
                 } else {
@@ -382,11 +387,11 @@ int pm_hash_mi_print(p_address_table_t *table, mi_item_t *part_item, struct pm_p
 
                 if (add_mi_number(dest_item, MI_SSTR("grp"), group->k.group) < 0) return -1;
 
-                p = ip_addr2a(&address->k.subnet->ip);
+                p = ip_addr2a(&address->k.subnet.ip);
                 if (add_mi_string(dest_item, MI_SSTR("ip"), p, strlen(p)) < 0) return -1;
 
                 if (is_address) {
-                    if (address->k.subnet->ip.af == AF_INET) {
+                    if (address->k.subnet.ip.af == AF_INET) {
                         if (add_mi_string(dest_item, MI_SSTR("mask"), MI_SSTR("32")) < 0) return -1;
                     } else {
                         if (add_mi_string(dest_item, MI_SSTR("mask"), MI_SSTR("128")) < 0)
