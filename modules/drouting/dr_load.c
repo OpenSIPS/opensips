@@ -394,9 +394,9 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			/* DB ID column */
-			if ( VAL_TYPE( ROW_VALUES(row) ) == DB_INT ) {
-				/* if INT type, convert it to string */
-				check_val( id_drd_col, ROW_VALUES(row), DB_INT, 1, 0);
+			if ( VAL_TYPE( ROW_VALUES(row) ) == DB_INT || VAL_TYPE( ROW_VALUES(row) ) == DB_BIGINT ) {
+				/* if INT or BIGINT type, convert it to string */
+				check_val2( id_drd_col, ROW_VALUES(row), DB_INT, DB_BIGINT, 1, 0);
 				/* int2bstr returns a null terminated string */
 				str_vals[STR_VALS_ID_DRD_COL] =
 					int2bstr((unsigned long)VAL_INT(ROW_VALUES(row)),
@@ -549,9 +549,9 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 			for(i=0; i < RES_ROW_N(res); i++) {
 				row = RES_ROWS(res) + i;
 				/* DB ID column */
-				if ( VAL_TYPE( ROW_VALUES(row) ) == DB_INT ) {
-					/* if INT type, convert it to string */
-					check_val( id_drc_col, ROW_VALUES(row), DB_INT, 1, 0);
+				if ( VAL_TYPE( ROW_VALUES(row) ) == DB_INT || VAL_TYPE( ROW_VALUES(row) ) == DB_BIGINT ) {
+					/* if INT or BIGINT type, convert it to string */
+					check_val2( id_drc_col, ROW_VALUES(row), DB_INT, DB_BIGINT, 1, 0);
 					/* int2bstr returns a null terminated string */
 					str_vals[STR_VALS_ID_DRC_COL] =
 						int2bstr((unsigned long)VAL_INT(ROW_VALUES(row)),
@@ -669,7 +669,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 			for(i=0; i < RES_ROW_N(res); i++) {
 				row = RES_ROWS(res) + i;
 				/* RULE_ID column */
-				check_val( rule_id_drr_col, ROW_VALUES(row), DB_INT, 1, 0);
+				check_val2( rule_id_drr_col, ROW_VALUES(row), DB_INT, DB_BIGINT, 1, 0);
 				int_vals[INT_VALS_RULE_ID_DRR_COL] = VAL_INT (ROW_VALUES(row));
 				/* GROUP column */
 				check_val( group_drr_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
