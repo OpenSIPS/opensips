@@ -2,7 +2,7 @@
 #define PERM_HASH_TABLE_H
 
 #define BUCKET_MAX_LOAD_FACTOR 1.0f
-#define BUCKET_GROW_FACTOR 1.5f
+#define BUCKET_GROW_FACTOR 2.0f
 
 typedef struct pht_node_t pht_node_t;
 typedef struct pht_hash_table_t pht_hash_table_t;
