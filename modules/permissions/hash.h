@@ -52,7 +52,7 @@ typedef struct p_address_node_t {
     p_address_node_t *next;
 
     struct {
-        struct net *subnet;
+        struct net subnet;
     } k;
     struct {
         unsigned int port;
