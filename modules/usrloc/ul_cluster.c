@@ -844,18 +844,27 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	if (get_urecord(domain, &aor, &record) != 0) {
 		LM_INFO("failed to fetch local urecord - ignoring request "
 			"(ci: '%.*s')\n", callid.len, callid.s);
-		unlock_udomain(domain, &aor);
 		goto out;
 	}
 
 	/* simply specify a higher cseq and completely avoid any complications */
 	rc = get_ucontact(record, &contact_str, &callid, cseq + 1, &cmatch,
 		&contact);
-	if (rc != 0 && rc != 2) {
-		LM_ERR("contact '%.*s' not found: (ci: '%.*s')\n", contact_str.len,
+	switch (rc) {
+	case -2:
+	case -1:
+		/* the DEL packet is too old (same or lower CSeq) */
+		LM_ERR("contact '%.*s' found, but DEL too old: (rc: %d, ci: '%.*s')\n",
+		        contact_str.len, contact_str.s, rc, callid.len, callid.s);
+		goto out;
+		break;
+
+	case 1:
+		LM_DBG("contact '%.*s' already deleted: (ci: '%.*s')\n", contact_str.len,
 			contact_str.s, callid.len, callid.s);
-		unlock_udomain(domain, &aor);
-		goto error;
+		goto out;
+		break;
+	default:;
 	}
 
 	if (skip_replicated_db_ops)
@@ -868,9 +877,8 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 		goto error;
 	}
 
-	unlock_udomain(domain, &aor);
-
 out:
+	unlock_udomain(domain, &aor);
 	free_pkg_str_list(cmatch.match_params);
 	return 0;
 
