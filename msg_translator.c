@@ -125,6 +125,9 @@
 #include "pt.h"
 #include "context.h"
 #include "net/trans.h"
+#include "parser/contact/parse_contact.h"
+#include "parser/hf.h"
+#include "parser/parse_uri.h"
 
 int disable_503_translation = 0;
 
@@ -449,7 +452,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	unsigned int s_offset, new_len;
 	unsigned int last_del;
 	struct lump *t, *r;
-	str *send_address_str, *send_port_str;
+	str *send_address_str, *send_port_str, *send_port_contact_str;
 	str *rcv_address_str=NULL;
 	str *rcv_port_str=NULL;
 
@@ -587,6 +590,37 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 				} else \
 					LM_BUG("null send_socket 4"); \
 				break; \
+			case SUBST_SND_ALL_CONTACT: \
+				if (send_sock){ \
+					new_len+=send_address_str->len; \
+					if ((send_sock->port_no!=SIP_PORT) || \
+							(send_port_contact_str!=&(send_sock->port_no_str))){ \
+						/* add :port_no */ \
+						new_len+=1+send_port_contact_str->len; \
+					}\
+					/*add;transport=xxx*/ \
+					switch(send_sock->proto){ \
+						case PROTO_NONE: \
+						case PROTO_UDP: \
+								break; /* udp is the default */ \
+						case PROTO_TCP: \
+						case PROTO_TLS: \
+						case PROTO_WSS: \
+								new_len+=TRANSPORT_PARAM_LEN+3; \
+								break; \
+						case PROTO_SCTP: \
+								new_len+=TRANSPORT_PARAM_LEN+4; \
+								break; \
+						case PROTO_WS: \
+								new_len+=TRANSPORT_PARAM_LEN+2; \
+								break; \
+						default: \
+						LM_CRIT("unknown proto %d\n", \
+								send_sock->proto); \
+					}\
+				} else \
+					LM_BUG("null send_socket 4"); \
+				break; \
 			case SUBST_NOP: /* do nothing */ \
 				break; \
 			default: \
@@ -617,6 +651,11 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 		send_port_str=default_global_port;
 	else
 		send_port_str=&(send_sock->port_no_str);
+
+	if (msg->set_global_port_contact.len)
+		send_port_contact_str=&(msg->set_global_port_contact);
+	else
+		send_port_contact_str=send_port_str;
 
 	/* init rcv_address_str & rcv_port_str */
 	if(msg->rcv.bind_address) {
@@ -758,7 +797,7 @@ void process_lumps(	struct sip_msg* msg,
 	char* orig;
 	unsigned int size, offset, s_offset;
 	unsigned int last_del;
-	str *send_address_str, *send_port_str;
+	str *send_address_str, *send_port_str, *send_port_contact_str;
 	str *rcv_address_str=NULL;
 	str *rcv_port_str=NULL;
 
@@ -929,6 +968,68 @@ void process_lumps(	struct sip_msg* msg,
 				LM_CRIT("null bind_address\n"); \
 			}; \
 			break; \
+		case SUBST_SND_ALL_CONTACT: \
+			if (send_sock){  \
+				/* address */ \
+				memcpy(new_buf+offset, send_address_str->s, \
+						send_address_str->len); \
+				offset+=send_address_str->len; \
+				/* :port */ \
+				if ((send_sock->port_no!=SIP_PORT) || \
+					(send_port_contact_str!=&(send_sock->port_no_str))){ \
+					new_buf[offset]=':'; offset++; \
+					memcpy(new_buf+offset, send_port_contact_str->s, \
+							send_port_contact_str->len); \
+					offset+=send_port_contact_str->len; \
+				}\
+				switch(send_sock->proto){ \
+					case PROTO_NONE: \
+					case PROTO_UDP: \
+						break; /* nothing to do, udp is default*/ \
+					case PROTO_TCP: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "tcp", 3); \
+						offset+=3; \
+						break; \
+					case PROTO_TLS: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "tls", 3); \
+						offset+=3; \
+						break; \
+					case PROTO_SCTP: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "sctp", 4); \
+						offset+=4; \
+						break; \
+					case PROTO_WS: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "ws", 2); \
+						offset+=2; \
+						break; \
+					case PROTO_WSS: \
+						memcpy(new_buf+offset, TRANSPORT_PARAM, \
+								TRANSPORT_PARAM_LEN); \
+						offset+=TRANSPORT_PARAM_LEN; \
+						memcpy(new_buf+offset, "wss", 3); \
+						offset+=3; \
+						break; \
+					default: \
+						LM_CRIT("unknown proto %d\n", \
+								send_sock->proto); \
+				} \
+			}else{  \
+				/*FIXME*/ \
+				LM_CRIT("null bind_address\n"); \
+			}; \
+			break; \
 		case SUBST_RCV_PROTO: \
 			if (msg->rcv.bind_address){ \
 				switch(msg->rcv.bind_address->proto){ \
@@ -1026,6 +1127,11 @@ void process_lumps(	struct sip_msg* msg,
 		send_port_str=default_global_port;
 	else
 		send_port_str=&(send_sock->port_no_str);
+
+	if (msg->set_global_port_contact.len)
+		send_port_contact_str=&(msg->set_global_port_contact);
+	else
+		send_port_contact_str=send_port_str;
 
 	/* init rcv_address_str & rcv_port_str */
 	if(msg->rcv.bind_address) {
@@ -2106,16 +2212,18 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 								struct socket_info* send_sock, int proto,
 								str *via_params, unsigned int flags)
 {
-	unsigned int len, new_len, received_len, rport_len, uri_len, via_len, body_delta;
+	unsigned int len, new_len, received_len, rport_len, uri_len, via_len, body_delta, contact_modified;
 	char *line_buf, *received_buf, *rport_buf, *new_buf, *buf, *id_buf;
 	unsigned int offset, s_offset, size, id_len;
-	struct lump *anchor, *via_insert_param;
-	str branch, extra_params, body;
+	struct lump *anchor, *via_insert_param, *contact_addr_insert_lump;
+	str branch, extra_params, body, contact;
 	struct hostport hp;
+	struct sip_uri contact_uri;
 
 	id_buf=0;
 	id_len=0;
 	via_insert_param=0;
+	contact_addr_insert_lump=0;
 	extra_params.len=0;
 	extra_params.s=0;
 	uri_len=0;
@@ -2128,6 +2236,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	rport_buf=0;
 	line_buf=0;
 	int via1_deleted = 0;
+	contact_modified = 0;
 
 	if (msg->path_vec.len) {
 		if (insert_path_as_route(msg, &msg->path_vec) < 0) {
@@ -2291,6 +2400,60 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		if (insert_new_lump_after(via_insert_param, rport_buf, rport_len,
 									HDR_VIA_T) ==0 )
 			goto error03; /* free rport_buf */
+	}
+
+	for (contact_addr_insert_lump = msg->add_rm; contact_addr_insert_lump; contact_addr_insert_lump = contact_addr_insert_lump->next) {
+		if (contact_addr_insert_lump->type == HDR_CONTACT_T && contact_addr_insert_lump->op == LUMP_DEL) {
+			contact_modified = 1;
+		}
+	}
+
+	if (!contact_modified && msg->set_global_port_contact.len) {
+		if (parse_contact(msg->contact) < 0 ||
+				((contact_body_t *)msg->contact->parsed)->contacts == NULL ||
+				((contact_body_t *)msg->contact->parsed)->contacts->next != NULL ) {
+			LM_ERR("Bad Contact HDR\n");
+		} else {
+			contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
+			if (parse_uri(contact.s, contact.len, &contact_uri) < 0) {
+				LM_ERR("Bad Contact URI\n");
+			} else {
+				contact_addr_insert_lump = del_lump(
+					msg,
+					msg->contact->body.s - msg->buf,
+					msg->contact->body.len,
+					HDR_CONTACT_T
+				);
+				if (contact_addr_insert_lump == 0) {
+					LM_ERR("Failed to delete contact body\n");
+				} else {
+					unsigned int prefix_len = (msg->contact->body.s[0] == '<' ? 1 : 0) + (contact_uri.type == SIPS_URI_T ? 5 : 4) + contact_uri.user.len + 1;
+					char* prefix = pkg_malloc(prefix_len);
+					memcpy(prefix, msg->contact->body.s, prefix_len);
+
+					if (!(contact_addr_insert_lump = insert_new_lump_after(contact_addr_insert_lump, prefix, prefix_len, 0))) {
+						LM_ERR("Failed to instert contact prefix\n");
+						pkg_free(prefix);
+					}
+
+					if (!(contact_addr_insert_lump = insert_subst_lump_after(contact_addr_insert_lump, SUBST_SND_ALL_CONTACT, HDR_CONTACT_T))) {
+						LM_ERR("Failed to instert contact address\n");
+					}
+
+					unsigned int addr_len = contact_uri.host.len + (contact_uri.port.len > 0 ? (1 + contact_uri.port.len) : 0);
+					unsigned int suffix_len = msg->contact->body.len - prefix_len - addr_len;
+					if (suffix_len > 0) {
+						char* suffix = pkg_malloc(suffix_len);
+						memcpy(suffix, msg->contact->body.s + prefix_len + addr_len, suffix_len);
+
+						if (!(contact_addr_insert_lump = insert_new_lump_after(contact_addr_insert_lump, suffix, suffix_len, 0))) {
+							LM_ERR("Failed to instert contact suffix\n");
+							pkg_free(suffix);
+						}
+					}
+				}
+			}
+		}
 	}
 
 build_msg:

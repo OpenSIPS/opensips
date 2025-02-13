@@ -49,6 +49,7 @@ enum lump_subst{ SUBST_NOP=0,                     /*!< do nothing */
 				 SUBST_RCV_PORT,  SUBST_SND_PORT, /*!< add port no */
 				 SUBST_RCV_PROTO, SUBST_SND_PROTO,/*!< add protocol(udp,tcp,tls)*/
 				 SUBST_RCV_ALL,   SUBST_SND_ALL   /*!<  ip:port;transport=proto */
+				 ,                SUBST_SND_ALL_CONTACT
 				};
 
 /*! \brief

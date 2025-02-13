@@ -607,7 +607,7 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, i
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if ((lump = insert_subst_lump_after(lump, SUBST_SND_ALL, 0)) == 0) {
+	if ((lump = insert_subst_lump_after(lump, SUBST_SND_ALL_CONTACT, 0)) == 0) {
 		LM_ERR("failed inserting SUBST_SND buf\n");
 		goto error;
 	}
@@ -1796,7 +1796,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 		goto error;
 	}
 
-	if (!(lump = insert_subst_lump_after(lump, SUBST_SND_ALL, 0))) {
+	if (!(lump = insert_subst_lump_after(lump, SUBST_SND_ALL_CONTACT, 0))) {
 		LM_ERR("failed inserting SUBST_SND buf\n");
 		goto error;
 	}

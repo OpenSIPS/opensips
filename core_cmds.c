@@ -93,6 +93,7 @@ static int w_add_local_rport(struct sip_msg *msg);
 static int w_force_tcp_alias(struct sip_msg *msg, int *port);
 static int w_set_adv_address(struct sip_msg *msg, str *adv_addr, str *adv_addr_via);
 static int w_set_adv_port(struct sip_msg *msg, str *adv_port);
+static int w_set_adv_port_contact(struct sip_msg *msg, str *adv_port);
 static int w_f_send_sock(struct sip_msg *msg, struct socket_info *si);
 static int w_f_close_tcp_sock(struct sip_msg *msg, str *host, int *port);
 static int w_serialize_branches(struct sip_msg *msg, int *clear_prev,
@@ -224,6 +225,9 @@ const cmd_export_t core_cmds[]={
 		{0,0,0}},
 		ALL_ROUTES},
 	{"set_advertised_port", (cmd_function)w_set_adv_port, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		ALL_ROUTES},
+	{"set_contact_advertised_port", (cmd_function)w_set_adv_port_contact, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"force_send_socket", (cmd_function)w_f_send_sock, {
@@ -1021,6 +1025,24 @@ static int w_set_adv_port(struct sip_msg *msg, str *adv_port)
 	}
 	memcpy(msg->set_global_port.s, adv_port->s, adv_port->len);
 	msg->set_global_port.len = adv_port->len;
+
+	return 1;
+}
+
+static int w_set_adv_port_contact(struct sip_msg *msg, str *adv_port)
+{
+	LM_DBG("setting contact adv port '%.*s'\n", adv_port->len, adv_port->s);
+
+	/* duplicate the advertised port into private memory */
+	if (adv_port->len > msg->set_global_port_contact.len) {
+		msg->set_global_port_contact.s = pkg_realloc(msg->set_global_port_contact.s, adv_port->len);
+		if (!msg->set_global_port_contact.s) {
+			LM_ERR("out of pkg mem\n");
+			return E_OUT_OF_MEM;
+		}
+	}
+	memcpy(msg->set_global_port_contact.s, adv_port->s, adv_port->len);
+	msg->set_global_port_contact.len = adv_port->len;
 
 	return 1;
 }
