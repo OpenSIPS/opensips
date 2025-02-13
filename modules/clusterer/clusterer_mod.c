@@ -100,7 +100,7 @@ static void heartbeats_timer_handler(unsigned int ticks, void *param);
 static void heartbeats_utimer_handler(utime_t ticks, void *param);
 
 int cmd_broadcast_req(struct sip_msg *msg, int *cluster_id, str *gen_msg,
-									pv_spec_t *param_tag);
+									pv_spec_t *param_tag, int *all);
 int cmd_send_req(struct sip_msg *msg, int *cluster_id, int *node_id,
 								str *gen_msg, pv_spec_t *param_tag);
 int cmd_send_rpl(struct sip_msg *msg, int *cluster_id, int *node_id,
@@ -118,7 +118,8 @@ static const cmd_export_t cmds[] = {
 	{"cluster_broadcast_req", (cmd_function)cmd_broadcast_req, {
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
 	{"cluster_send_req", (cmd_function)cmd_send_req, {
 		{CMD_PARAM_INT,0,0},
@@ -1267,7 +1268,7 @@ static inline void generate_msg_tag(pv_value_t *tag_val, int cluster_id)
 }
 
 int cmd_broadcast_req(struct sip_msg *msg, int *cluster_id, str *gen_msg,
-									pv_spec_t *param_tag)
+									pv_spec_t *param_tag, int *all)
 {
 	pv_value_t tag_val;
 	int rc;
@@ -1280,7 +1281,7 @@ int cmd_broadcast_req(struct sip_msg *msg, int *cluster_id, str *gen_msg,
 		return -1;
 	}
 
-	rc = bcast_gen_msg(*cluster_id, gen_msg, &tag_val.rs);
+	rc = bcast_gen_msg(*cluster_id, gen_msg, &tag_val.rs, (all && *all));
 	switch (rc) {
 		case 0:
 			return 1;
