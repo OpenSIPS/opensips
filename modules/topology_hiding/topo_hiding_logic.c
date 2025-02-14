@@ -2110,7 +2110,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		free_rr(&head);
 	pkg_free(dec_buf);
 
-	if (topo_no_dlg_encode_contact(msg,0,NULL) < 0) {
+	if (topo_no_dlg_encode_contact(msg,TOPOH_KEEP_USER,NULL) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
