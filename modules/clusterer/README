@@ -49,7 +49,8 @@ CLUSTERER Module
               1.5.2. cluster_send_rpl(cluster_id, dst_id, msg,
                       tag)
 
-              1.5.3. cluster_broadcast_req(cluster_id, msg, [tag])
+              1.5.3. cluster_broadcast_req(cluster_id, msg, [tag],
+                      [include_self])
 
               1.5.4. cluster_check_addr(cluster_id, ip, addr_type)
 
@@ -700,11 +701,14 @@ param(tag));
 }
 ...
 
-1.5.3.  cluster_broadcast_req(cluster_id, msg, [tag])
+1.5.3.  cluster_broadcast_req(cluster_id, msg, [tag], [include_self])
 
    This function has a similar behaviour to the cluster_send_req()
    function with the exception that the message is sent to all the
    nodes in the specified cluster.
+     * include_self (bool, optional, default: false) - raise the
+       event for current node as well, but without actually
+       sending a packet (both req and rpl).
 
    The function can return the following values:
      * 1 - successfully sent message to at least one node;
@@ -722,7 +726,8 @@ param(tag));
 
    Example 1.29. cluster_broadcast_req() usage
 ...
-cluster_broadcast_req($var(cl_id), $var(share_data));
+# also raise the event for current node
+cluster_broadcast_req($var(cl_id), $var(share_data), , true);
 ...
 
 1.5.4.  cluster_check_addr(cluster_id, ip, addr_type)
@@ -1449,7 +1454,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 364 135 13387 7101
-   2. Liviu Chircu (@liviuchircu) 68 52 801 522
+   2. Liviu Chircu (@liviuchircu) 70 53 848 532
    3. Eseanu Marius Cristian (@eseanucristian) 46 10 3142 534
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 31 16 1342 128
    5. Razvan Crainea (@razvancrainea) 27 21 327 148
@@ -1482,7 +1487,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2016 - Dec 2024
+   1.  Liviu Chircu (@liviuchircu)         Mar 2016 - Feb 2025
    2.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
    3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
