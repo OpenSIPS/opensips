@@ -2408,7 +2408,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		}
 	}
 
-	if (!contact_modified && msg->set_global_port_contact.len) {
+	if (msg->contact && !contact_modified && msg->set_global_port_contact.len) {
 		if (parse_contact(msg->contact) < 0 ||
 				((contact_body_t *)msg->contact->parsed)->contacts == NULL ||
 				((contact_body_t *)msg->contact->parsed)->contacts->next != NULL ) {
