@@ -45,6 +45,9 @@
 
 #define TABLE_VERSION 5
 
+extern int current_subnet_count;
+extern int current_address_count;
+
 str def_part = str_init("default");
 
 /* table & column names */
@@ -122,12 +125,15 @@ int reload_address_table(struct pm_part_struct *part_struct)
 	db_val_t* val;
 
 	p_address_table_t *new_hash_table;
-	int i, mask, proto, group, port, id;
+	int i, mask, proto, group, port, id, subnet_count, address_count;
 	struct ip_addr *ip_addr;
 	struct net *subnet;
 	str str_pattern = {NULL,0}, str_info={NULL,0};
 	str str_src_ip, str_proto;
 	UNUSED(id);
+
+	subnet_count = 0;
+	address_count = 0;
 
 	cols[0] = &ip_col;
 	cols[1] = &grp_col;
@@ -294,6 +300,11 @@ int reload_address_table(struct pm_part_struct *part_struct)
 				}
 				goto error;
 		}
+		if ((mask == 32 && ip_addr->af==AF_INET) || (mask == 128 && ip_addr->af==AF_INET6)) {
+			address_count += 1;
+		} else {
+			subnet_count += 1;
+		}
 		LM_DBG("Tuple <%.*s, %u, %u, %u, %.*s, %.*s> inserted into "
 				"address hash table\n", str_src_ip.len, str_src_ip.s,
 				group, port, proto, str_pattern.len, str_pattern.s,
@@ -307,6 +318,9 @@ int reload_address_table(struct pm_part_struct *part_struct)
 
 	*part_struct->hash_table = new_hash_table;
 	LM_DBG("address table reloaded successfully.\n");
+
+	current_subnet_count = subnet_count;
+	current_address_count = address_count;
 
 	return 1;
 error:

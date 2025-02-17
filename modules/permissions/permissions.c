@@ -191,6 +191,20 @@ static const mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
+int mod_stat_enabled = 1;
+
+int current_subnet_count;
+int current_address_count;
+
+stat_var *subnet_count_stat;
+stat_var *address_count_stat;
+
+static const stat_export_t mod_stats[] = {
+	{"subnet_count" , 0, &subnet_count_stat },
+	{"address_count" , 0, &address_count_stat },
+	{0,0,0}
+};
+
 /* Module interface */
 struct module_exports exports = {
 	"permissions",
@@ -202,7 +216,7 @@ struct module_exports exports = {
 	cmds,      /* Exported functions */
 	0,         /* Exported async functions */
 	params,    /* Exported parameters */
-	0,         /* exported statistics */
+	mod_stats, /* exported statistics */
 	mi_cmds,   /* exported MI functions */
 	0,         /* exported pseudo-variables */
 	0,		   /* exported transformations */
@@ -634,7 +648,10 @@ static int child_init(int rank)
 
 static int mi_address_child_init(void)
 {
-    return mi_init_address();
+	int res = mi_init_address();
+	if_update_stat(mod_stat_enabled, subnet_count_stat, current_subnet_count);
+	if_update_stat(mod_stat_enabled, address_count_stat, current_address_count);
+	return res;
 }
 
 /*
