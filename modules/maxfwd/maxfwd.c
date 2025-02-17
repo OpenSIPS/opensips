@@ -138,33 +138,33 @@ static int w_process_maxfwd_header(struct sip_msg* msg, int* mval)
 	int val;
 	str mf_value;
 
-	val=is_maxfwd_present(msg, &mf_value);
+	val = is_maxfwd_present(msg, &mf_value);
 	switch (val) {
 		/* header not found */
 		case -1:
-			if (add_maxfwd_header( msg, *mval)!=0)
-				goto error;
+			if (add_maxfwd_header(msg, *mval) !=0)
+				return -2;
 			return 2;
 		/* error */
 		case -2:
-			goto error;
-		/* found */
+			return -2;
+		/* found but zero */
 		case 0:
 			return -1;
+		/* found and greater than zero */
 		default:
-			if (val>max_limit){
+			if (val > max_limit) {
 				LM_DBG("value %d decreased to %d\n", val, max_limit);
-				val = max_limit+1;
+				val = max_limit + 1;
 			}
-			if ( decrement_maxfwd(msg, val, &mf_value)!=0 ) {
+
+			if (decrement_maxfwd(msg, val, &mf_value) != 0) {
 				LM_ERR("decrement failed!\n");
-				goto error;
+				return -2;
 			}
 	}
 
 	return 1;
-error:
-	return -2;
 }
 
 
