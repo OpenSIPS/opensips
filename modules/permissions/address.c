@@ -121,8 +121,7 @@ int reload_address_table(struct pm_part_struct *part_struct)
 	db_row_t* row;
 	db_val_t* val;
 
-	struct address_list **new_hash_table;
-	struct subnet *new_subnet_table;
+	p_address_table_t *new_hash_table;
 	int i, mask, proto, group, port, id;
 	struct ip_addr *ip_addr;
 	struct net *subnet;
@@ -158,15 +157,6 @@ int reload_address_table(struct pm_part_struct *part_struct)
 	} else {
 		pm_empty_hash(part_struct->hash_table_1);
 		new_hash_table = part_struct->hash_table_1;
-	}
-
-	/* Choose new subnet table */
-	if (*part_struct->subnet_table == part_struct->subnet_table_1) {
-		empty_subnet_table(part_struct->subnet_table_2);
-		new_subnet_table = part_struct->subnet_table_2;
-	} else {
-		empty_subnet_table(part_struct->subnet_table_1);
-		new_subnet_table = part_struct->subnet_table_1;
 	}
 
 	row = RES_ROWS(res);
@@ -295,40 +285,27 @@ int reload_address_table(struct pm_part_struct *part_struct)
 		port = (unsigned int) VAL_INT(val + 3);
 		mask = (unsigned int) VAL_INT(val + 2);
 
-		if ( (mask == 32 && ip_addr->af==AF_INET) ||
-		(mask == 128 && ip_addr->af==AF_INET6) ) {
-			if (pm_hash_insert(new_hash_table, ip_addr, group, port, proto,
-				&str_pattern, &str_info) == -1) {
-					LM_ERR("hash table insert error\n");
-					goto error;
-			}
-			LM_DBG("Tuple <%.*s, %u, %u, %u, %.*s, %.*s> inserted into "
-					"address hash table\n", str_src_ip.len, str_src_ip.s,
-					group, port, proto, str_pattern.len, str_pattern.s,
-					str_info.len,str_info.s);
-		} else {
-			subnet = mk_net_bitlen(ip_addr, mask);
-			if (subnet_table_insert(new_subnet_table, group, subnet,
-				port, proto, &str_pattern, &str_info) == -1) {
-					LM_ERR("subnet table problem\n");
-					if (subnet) {
-						pkg_free(subnet);
-					}
-					goto error;
+		subnet = mk_net_bitlen(ip_addr, mask);
+		if (pm_hash_insert(new_hash_table, subnet, group, port, proto,
+			&str_pattern, &str_info, mask) == -1) {
+				LM_ERR("hash table insert error\n");
+				if (subnet) {
+					pkg_free(subnet);
 				}
-			LM_DBG("Tuple <%.*s, %u, %u, %u> inserted into subnet table\n",
-					str_src_ip.len, str_src_ip.s, group, mask, port);
-			/* subnet in pkg; needs to be freed since was copied to shm */
-			if (subnet) {
-				pkg_free(subnet);
-			}
+				goto error;
+		}
+		LM_DBG("Tuple <%.*s, %u, %u, %u, %.*s, %.*s> inserted into "
+				"address hash table\n", str_src_ip.len, str_src_ip.s,
+				group, port, proto, str_pattern.len, str_pattern.s,
+				str_info.len,str_info.s);
+		if (subnet) {
+			pkg_free(subnet);
 		}
 	}
 
 	part_struct->perm_dbf.free_result(part_struct->db_handle, res);
 
 	*part_struct->hash_table = new_hash_table;
-	*part_struct->subnet_table = new_subnet_table;
 	LM_DBG("address table reloaded successfully.\n");
 
 	return 1;
@@ -395,22 +372,10 @@ int init_address_part(struct pm_partition *partition)
 	part_struct->hash_table_2  = pm_hash_create();
 	if (!part_struct->hash_table_2) goto error;
 
-	part_struct->hash_table = (struct address_list ***)shm_malloc
-							(sizeof(struct address_list **));
+	part_struct->hash_table = (p_address_table_t **)shm_malloc(sizeof(p_address_table_t*));
 	if (!part_struct->hash_table) goto error;
 
 	*part_struct->hash_table = part_struct->hash_table_1;
-
-	part_struct->subnet_table_1 = new_subnet_table();
-    if (!part_struct->subnet_table_1) goto error;
-
-    part_struct->subnet_table_2 = new_subnet_table();
-    if (!part_struct->subnet_table_2) goto error;
-
-	part_struct->subnet_table = (struct subnet **)shm_malloc(sizeof(struct subnet *));
-	if (!part_struct->subnet_table) goto error;
-
-	*part_struct->subnet_table = part_struct->subnet_table_1;
 
 	if (reload_address_table(part_struct) == -1) {
 		LM_CRIT("reload of address table failed\n");
@@ -438,19 +403,6 @@ error:
 		part_struct->hash_table = 0;
 	}
 
-	if (part_struct->subnet_table_1) {
-		free_subnet_table(part_struct->subnet_table_1);
-		part_struct->subnet_table_1 = 0;
-	}
-
-	if (part_struct->subnet_table_2) {
-		free_subnet_table(part_struct->subnet_table_2);
-		part_struct->subnet_table_2 = 0;
-    }
-	if (part_struct->subnet_table) {
-		shm_free(part_struct->subnet_table);
-		part_struct->subnet_table = 0;
-	}
 	part_struct->perm_dbf.close(part_struct->db_handle);
 	part_struct->db_handle = 0;
 
@@ -499,7 +451,6 @@ int check_addr(struct sip_msg* msg, int* grp, str* s_ip, int *port, long proto,
 				pv_spec_t *info, char *pattern, struct pm_part_struct *part)
 {
 	struct ip_addr *ip;
-	int hash_ret, subnet_ret;
 
 	/* ip addr */
 	if ( (ip=str2ip(s_ip))==NULL && (ip=str2ip6(s_ip))==NULL ) {
@@ -511,15 +462,8 @@ int check_addr(struct sip_msg* msg, int* grp, str* s_ip, int *port, long proto,
 		part->name.len, part->name.s, *grp,
 		s_ip->len, s_ip->s, (int)proto, *port, ZSW(pattern) );
 
-	hash_ret = pm_hash_match(msg, *part->hash_table, *grp,
+	return pm_hash_match(msg, *part->hash_table, *grp,
 			ip, *port, (int)proto, pattern, info);
-	if (hash_ret < 0) {
-		subnet_ret = match_subnet_table(msg, *part->subnet_table, *grp,
-				ip, *port, (int)proto, pattern, info);
-		hash_ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
-	}
-
-	return hash_ret;
 }
 
 
@@ -527,7 +471,6 @@ int check_src_addr(struct sip_msg *msg, int *grp,
 				pv_spec_t *info, char* pattern, struct pm_part_struct *part)
 {
 
-	int hash_ret, subnet_ret;
 	struct ip_addr *ip;
 
 	ip = &msg->rcv.src_ip;
@@ -536,15 +479,8 @@ int check_src_addr(struct sip_msg *msg, int *grp,
 		part->name.len, part->name.s, *grp,
 		ip_addr2a(ip), msg->rcv.proto, msg->rcv.src_port, ZSW(pattern) );
 
-	hash_ret = pm_hash_match(msg, *part->hash_table, *grp, ip,
+	return pm_hash_match(msg, *part->hash_table, *grp, ip,
 		msg->rcv.src_port, msg->rcv.proto, pattern, info);
-	if (hash_ret < 0) {
-			subnet_ret = match_subnet_table(msg, *part->subnet_table,
-				*grp, ip, msg->rcv.src_port, msg->rcv.proto, pattern,info);
-			hash_ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
-	}
-
-	return hash_ret;
 }
 
 
@@ -559,21 +495,9 @@ int get_source_group(struct sip_msg* msg, pv_spec_t *out_var,
 	LM_DBG("Looking for <%s, %u> in address table\n",
 			ip_addr2a(ip), msg->rcv.src_port);
 
-	group = find_group_in_hash_table(*part->hash_table,
+	group = pm_hash_find_group(*part->hash_table,
 		ip, msg->rcv.src_port);
-	if (group == -1) {
-
-		LM_DBG("Looking for <%x, %u> in subnet table\n",
-			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
-
-		group = find_group_in_subnet_table(*part->subnet_table,
-			ip, msg->rcv.src_port);
-		if (group == -1) {
-			LM_DBG("IP <%s:%u> not found in any group\n",
-					ip_addr2a(ip), msg->rcv.src_port);
-			return -1;
-		}
-	}
+	if (group == -1) return -1;
 	LM_DBG("Found <%d>\n", group);
 
 	pvt.flags = PV_VAL_INT|PV_TYPE_INT;
