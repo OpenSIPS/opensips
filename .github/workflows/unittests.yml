@@ -58,12 +58,12 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Cache the compiler cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: endsWith(matrix.compiler, '-qemu-cross')
         with:
           path: ccache
@@ -103,7 +103,7 @@ jobs:
         run: script -e unit_tests.log -c 'sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"'
 
       - name: Collect test logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: unit_tests-logs_${{ matrix.os }}_${{ matrix.compiler }}
           path: |
