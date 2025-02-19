@@ -1,3 +1,239 @@
+=========================== Release 3.5.4 ==============================
+
+2025-02-16  OpenSIPS  <github@opensips.org>
+        * [ef313413bf] :
+
+        Rebuild documentation
+
+
+2025-02-12  Razvan Crainea  <razvan@opensips.org>
+        * [ed27152694] :
+
+        dialog: ensure legs are atomically added to the dialog
+
+        (cherry picked from commit 147072a9405e216984db1cf9df39ce36a017080c)
+
+
+2025-02-12  Liviu Chircu  <liviu@opensips.org>
+        * [767922279b] :
+
+        usrloc: Silence ERR logs on failed contact DEL packets
+
+        (cherry picked from commit cfbfd3f7170f55f217d5e7bddccbc5c9c2cbd6d4)
+
+
+2025-02-09  OpenSIPS  <github@opensips.org>
+        * [a9ac5c48e1] :
+
+        Rebuild documentation
+
+
+2025-02-07  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [275750086a] :
+
+        Merge pull request #3574 from babakyakhchali/bugfix/3567
+
+        dispatcher: fix persistent_state
+        (cherry picked from commit a0feb32ab1bc0acda0022e805a43605f9cf3a3b4)
+
+
+2025-02-07  Liviu Chircu  <liviu@opensips.org>
+        * [e2eb015ace] :
+
+        CacheDB: Allow "@" in URL "params" part
+
+        (cherry picked from commit a6d16ddb0b4351b19855137c8a20b5bdd6ea6afb)
+
+
+2025-02-07  Razvan Crainea  <razvan@opensips.org>
+        * [7d421290f3] :
+
+        debian: mongodb package should check for libmongoc-1.0-0t64 package too
+
+        (cherry picked from commit be9bbe950938ab5a222db7eaf351f609657015f0)
+
+
+2025-02-07  Răzvan Crainea  <razvan@opensips.org>
+        * [5765dcea4e] :
+
+        Merge pull request #3572 from petekelly/3.4
+
+        Pass the directional flag to rtpengine if required
+
+        (cherry picked from commit 96d1e77507a1cef292b6340bdb27bd2592a8d03f)
+
+
+2025-02-02  OpenSIPS  <github@opensips.org>
+        * [6ae2651822] :
+
+        Rebuild documentation
+
+
+2025-01-28  Liviu Chircu  <liviu@opensips.org>
+        * [cb778f2b10] :
+
+        registrar docs: Fix misleading $(ct[1]) example input
+
+        The $(ct[1]) value is actually a full Contact header body, not just the
+        URI.  This, in turn, leads to a silent failure of
+        is_contact_registered() even on the happy path, which can be
+        time-consuming to debug...
+
+        Credits to Bogdan Iancu for spotting this!
+
+        (cherry picked from commit 8232ff0bb47dfa15edb2c2f4bfa944c895d64bd7)
+
+
+2025-01-28  Razvan Crainea  <razvan@opensips.org>
+        * [75320f7265] :
+
+        parser_authenticate: fix re-entrance of parse_authenticate_header
+
+        properly populate the picked_auth body when calling
+        parse_authenticate_header twice.
+
+        (cherry picked from commit 5f8376d211c993d1eea689258bda3821850df0c3)
+
+
+2025-01-26  OpenSIPS  <github@opensips.org>
+        * [5e1f4f90cd] :
+
+        Rebuild documentation
+
+
+2025-01-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [dba13a43b1] :
+
+        Fix dangling parsed_uri structure in to_body
+
+        Whenever the SIP URI parsing fails, be sure you reset to_body->parsed_uri, as other functions may later try to use it and we want to have it in a consistent format.
+        The issue was reported by @vladpaiu
+        Closes #3557
+
+        (cherry picked from commit 021172b5ea1db1f80489280c4f4913b4beb14cbd)
+
+
+2025-01-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [101cd304ad] :
+
+        [b2b_entities] fixed RURI matching against our sockets/listeners
+
+        The proto and port must be correctly expanded to default values, if not present
+        For example, if TLS, the default port is 5061 and not 5060
+        Fixes #3546
+
+        (cherry picked from commit 9f2aa5bb4920a06dcd037ee4b89b1f97a4b44f3d)
+
+
+2025-01-21  Razvan Crainea  <razvan@opensips.org>
+        * [c31dcdcf2b] :
+
+        b2b_logic: make sure old entity peer is stored when bridged
+
+        Prevents a crash when accessing NULL peer.
+        Many thanks to Norm Brandinger for reporting and providing valuable
+        information for troubleshooing and testing!
+
+        (cherry picked from commit cf8b3d5690d2cd2576518a9eec603894a6b873fd)
+
+
+2025-01-19  OpenSIPS  <github@opensips.org>
+        * [a6c390aacf] :
+
+        Rebuild documentation
+
+
+2025-01-15  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [b6b8c2c3d5] :
+
+        Merge pull request #3555 from vasilevalex/sqlite_fixes
+
+        Minor fixes to db_sqlite module
+
+        (cherry picked from commit 178c138bf7fdeb10e5857b7f60ad0914e5595a77)
+
+
+2025-01-14  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c7361941f3] :
+
+        [tm] fix format of trasaction identifier in t_reply MI cmd
+
+        besides the old (almost obsolete) format provided by t_write_fifo(), we must also support the new format provided by $T_id
+
+        (cherry picked from commit b8bb4446e114e612a5720b930d4b61b5aff94443)
+
+
+2025-01-14  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [8dabbae69e] :
+
+        Fix missing handling of certain hdr types when cloning MSG/HDRs
+
+        (cherry picked from commit cc7619070dab61029d2c023779e563ccfbb06b54)
+
+
+2025-01-12  OpenSIPS  <github@opensips.org>
+        * [1ea279bcc5] :
+
+        Rebuild documentation
+
+
+2025-01-10  Liviu Chircu  <liviu@opensips.org>
+        * [67e9294c87] :
+
+        dispatcher: Fix rare crash with 'pvar_algo_pattern'
+
+        This patch simply moves the name buffer for the 'pvar_algo_pattern' into
+        SHM rather than a stack buffer, in order to avoid invalid memory being
+        referenced past the function's return point.
+
+        Many thanks to Eric Tamme from Five9 for reporting & testing!
+
+        (cherry picked from commit fe1a50d2513296819179612b8b072ab70871b9eb)
+
+
+2025-01-08  Razvan Crainea  <razvan@opensips.org>
+        * [b3e6386e3f] :
+
+        rtpproxy: do not create dialog unless timeout notifications are enforced
+
+        (cherry picked from commit af495d7c73ff1e5fa92157bdcf75b791a17f65b7)
+
+
+2025-01-08  Razvan Crainea  <razvan@opensips.org>
+        * [be35ccf291] :
+
+        rtpengine: fix docs typos
+
+        (cherry picked from commit e7548529f9973b4a59edf814d7dbd000ea2da9fd)
+
+
+2024-12-22  OpenSIPS  <github@opensips.org>
+        * [8fcbd23518] :
+
+        Rebuild documentation
+
+
+2024-12-20  Liviu Chircu  <liviu@opensips.org>
+        * [472a54f797] :
+
+        script routes: Fix memory corruption with dialog routes
+
+        This patch fixes an issue which impacted the dlg_on_xxx() set of dialog
+        functions, where PKG and SHM memory could get mixed up when using the HA
+        clustering support.  The issue mostly caused the backup instance to
+        crash (dlg BIN receiver) instance.
+
+        (cherry picked from commit 36dbd1d419e3dcd6f7febdee7be79bc12660a0dd)
+
+
+2024-12-19  Liviu Chircu  <liviu@opensips.org>
+        * [02580bd817] :
+
+        script routes: Fix rare edge-case leading to crash
+
+        (cherry picked from commit 1b57607905c3bbad632fb2a7c7c1e7add9a09197)
+
+
 =========================== Release 3.5.3 ==============================
 
 2024-12-18  Razvan Crainea  <razvan@opensips.org>
