@@ -203,6 +203,10 @@ void janus_reconnects(void)
 		sock->janus_id.len, sock->janus_id.s,
 		sock->full_url.len,sock->full_url.s);
 
+		close(sock->fd);
+		sock->fd = -1;
+		sock->state = S_CONN_OK;
+
 		if (janus_reconnect(sock) < 0) {
 			LM_ERR("Failed to connect JANUS \n");
 			continue;
