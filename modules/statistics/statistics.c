@@ -98,8 +98,8 @@ union stat_series_slot {
 		unsigned int nr;
 	} avg;
 	struct {
-		unsigned long true;
-		unsigned long false;
+		unsigned long t;
+		unsigned long f;
 	} perc;
 	long acc;
 };
@@ -919,8 +919,8 @@ inline static void reset_stat_series_slot(struct stat_series *ss, union stat_ser
 			ss->cache.acc -= slot->acc;
 			break;
 		case STAT_ALG_PERC:
-			ss->cache.perc.true -= slot->perc.true;
-			ss->cache.perc.false -= slot->perc.false;
+			ss->cache.perc.t -= slot->perc.t;
+			ss->cache.perc.f -= slot->perc.f;
 			break;
 		default:
 			LM_ERR("unknown profile algorithm %d\n", ss->profile->algorithm);
@@ -984,9 +984,9 @@ static unsigned long get_stat_series(struct stat_series *ss)
 			ret = ss->cache.acc;
 			break;
 		case STAT_ALG_PERC:
-			total = ss->cache.perc.true + ss->cache.perc.false;
+			total = ss->cache.perc.t + ss->cache.perc.f;
 			if (total != 0)
-				ret = ss->cache.perc.true * ss->profile->factor / total;
+				ret = ss->cache.perc.t * ss->profile->factor / total;
 			break;
 		default:
 			LM_ERR("unknown profile algorithm %d\n", ss->profile->algorithm);
@@ -1072,11 +1072,11 @@ static int update_stat_series(struct stat_series *ss, int value)
 			break;
 		case STAT_ALG_PERC:
 			if (value > 0) {
-				s->perc.true += value;
-				ss->cache.perc.true += value;
+				s->perc.t += value;
+				ss->cache.perc.t += value;
 			} else {
-				s->perc.false -= value;
-				ss->cache.perc.false -= value;
+				s->perc.f -= value;
+				ss->cache.perc.f -= value;
 			}
 			break;
 		default:
