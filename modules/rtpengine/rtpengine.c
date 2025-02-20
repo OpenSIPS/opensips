@@ -372,7 +372,7 @@ static int pv_get_rtpstat_f(struct sip_msg *, pv_param_t *, pv_value_t *);
 static int pv_get_rtpquery_f(struct sip_msg *, pv_param_t *, pv_value_t *);
 
 /*mi commands*/
-static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
+static mi_response_t *mi_enable_rtpengine(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_show_rtpengines(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -757,8 +757,8 @@ static const param_export_t params[] = {
 
 static const mi_export_t mi_cmds[] = {
 	{ MI_ENABLE_RTP_ENGINE, 0, 0, 0, {
-		{mi_enable_rtp_proxy, {"url", "enable", 0}},
-		{mi_enable_rtp_proxy, {"url", "enable", "setid", 0}},
+		{mi_enable_rtpengine, {"url", "enable", 0}},
+		{mi_enable_rtpengine, {"url", "enable", "setid", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ MI_SHOW_RTP_ENGINES, 0, 0, 0, {
@@ -1167,7 +1167,7 @@ static int rtpengine_add_rtpengine_set( char * rtp_proxies, int set_id)
 	for(;*rtp_proxies && isspace(*rtp_proxies);rtp_proxies++);
 
 	if(!(*rtp_proxies)){
-		LM_ERR("script error -empty rtp_proxy list\n");
+		LM_ERR("script error -empty rtpengine list\n");
 		return -1;;
 	}
 
@@ -1252,7 +1252,7 @@ static int fixup_free_set_id(void **param)
 	return 0;
 }
 
-static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
+static mi_response_t *mi_enable_rtpengine(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str rtpe_url;
