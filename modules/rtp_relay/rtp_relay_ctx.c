@@ -418,6 +418,7 @@ static void rtp_relay_b2b_local_reply(struct cell* t, int type,
 	}
 	memset(&info, 0, sizeof info);
 	info.body = body;
+	info.msg = ps->rpl;
 	LM_RTP_DBG("sess=%p late=%d ongoing=%d index=%d\n",
 			sess, rtp_sess_late(sess), rtp_sess_ongoing(sess), leg->index);
 
