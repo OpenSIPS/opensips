@@ -78,6 +78,7 @@ static int parse_db_url(struct db_id* id, const str* url)
 		ST_SLASH2,     /* Second slash */
 		ST_USER_HOST,  /* Username or hostname */
 		ST_PASS_PORT,  /* Password or port part */
+		ST_PASSWORD,   /* Explicitly the password */
 		ST_HOST,       /* Hostname part */
 		ST_HOST6,      /* Hostname part IPv6 */
 		ST_PORT,       /* Port part */
@@ -175,11 +176,22 @@ static int parse_db_url(struct db_id* id, const str* url)
 				begin = url->s + i + 1;
 				break;
 
-			case '/':
-				id->host = prev_token; prev_token = NULL;
-				id->port = str2s(begin, url->s + i - begin, 0);
-				st = ST_DB;
+			case ':':  // Explicitly mark we are now in the password state
+				st = ST_PASSWORD;
+				if (dupl_string(&prev_token, begin, url->s + i) < 0) goto err;
 				begin = url->s + i + 1;
+				break;
+			}
+			break;
+
+		case ST_PASSWORD:
+			switch (url->s[i]) {
+			case '@':  // Only @ terminates password
+				st = ST_HOST;
+				id->username = prev_token; prev_token = NULL;
+				if (dupl_string(&id->password, begin, url->s + i) < 0) goto err;
+				begin = url->s + i + 1;
+				break;
 			}
 			break;
 
