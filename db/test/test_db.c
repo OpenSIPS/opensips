@@ -64,10 +64,10 @@ static void test_db_url(void)
 
 	i = 3;
 
-	DB_PARSE("mysql://user:pa/ss@host:3306/database?parameters");
+	DB_PARSE("mysql://user:pa/ss@host:6033/database?parameters");
 	ok(!strcmp(db->scheme, "mysql"),          "parse_db_url: %d-schema: '%s'", i, db->scheme);
 	ok(!strcmp(db->username, "user"),         "parse_db_url: %d-username: '%s'", i, db->username);
-	ok(!strcmp(db->password, "p/a,ss"),         "parse_db_url: %d-password: '%s'", i, db->password);
+	ok(!strcmp(db->password, "pa/ss"),         "parse_db_url: %d-password: '%s'", i, db->password);
 	ok(!strcmp(db->host, "host"),             "parse_db_url: %d-host: '%s'", i, db->host);
 	ok((db->port == 6033),                    "parse_db_url: %d-port: '%d'", i, db->port);
 	ok((db->unix_socket == NULL),             "parse_db_url: %d-unix_socket: '%s'", i, db->unix_socket);
@@ -76,10 +76,10 @@ static void test_db_url(void)
 
 	i = 4;
 
-	DB_PARSE("mysql://user@host:3306/database?parameters");
+	DB_PARSE("mysql://user@host:6033/database?parameters");
 	ok(!strcmp(db->scheme, "mysql"),          "parse_db_url: %d-schema: '%s'", i, db->scheme);
 	ok(!strcmp(db->username, "user"),         "parse_db_url: %d-username: '%s'", i, db->username);
-	ok(!strcmp(db->password, "p/a,ss"),         "parse_db_url: %d-password: '%s'", i, db->password);
+	ok((db->password == NULL),         "parse_db_url: %d-password: '%s'", i, db->password);
 	ok(!strcmp(db->host, "host"),             "parse_db_url: %d-host: '%s'", i, db->host);
 	ok((db->port == 6033),                    "parse_db_url: %d-port: '%d'", i, db->port);
 	ok((db->unix_socket == NULL),             "parse_db_url: %d-unix_socket: '%s'", i, db->unix_socket);
@@ -88,10 +88,10 @@ static void test_db_url(void)
 
 	i = 5;
 
-	DB_PARSE("mysql://user:p//a!,ss@host:3306/database?parameters");
+	DB_PARSE("mysql://user:p//a!,ss@host:6033/database?parameters");
 	ok(!strcmp(db->scheme, "mysql"),          "parse_db_url: %d-schema: '%s'", i, db->scheme);
 	ok(!strcmp(db->username, "user"),         "parse_db_url: %d-username: '%s'", i, db->username);
-	ok(!strcmp(db->password, "p/a,ss"),         "parse_db_url: %d-password: '%s'", i, db->password);
+	ok(!strcmp(db->password, "p//a!,ss"),         "parse_db_url: %d-password: '%s'", i, db->password);
 	ok(!strcmp(db->host, "host"),             "parse_db_url: %d-host: '%s'", i, db->host);
 	ok((db->port == 6033),                    "parse_db_url: %d-port: '%d'", i, db->port);
 	ok((db->unix_socket == NULL),             "parse_db_url: %d-unix_socket: '%s'", i, db->unix_socket);
@@ -100,10 +100,22 @@ static void test_db_url(void)
 
 	i = 6;
 
-	DB_PARSE("mysql://user:pa//ss@host:3306/database?parameters");
+	DB_PARSE("mysql://user:pa//ss@host:6033/database?parameters");
 	ok(!strcmp(db->scheme, "mysql"),          "parse_db_url: %d-schema: '%s'", i, db->scheme);
 	ok(!strcmp(db->username, "user"),         "parse_db_url: %d-username: '%s'", i, db->username);
-	ok(!strcmp(db->password, "p/a,ss"),         "parse_db_url: %d-password: '%s'", i, db->password);
+	ok(!strcmp(db->password, "pa//ss"),         "parse_db_url: %d-password: '%s'", i, db->password);
+	ok(!strcmp(db->host, "host"),             "parse_db_url: %d-host: '%s'", i, db->host);
+	ok((db->port == 6033),                    "parse_db_url: %d-port: '%d'", i, db->port);
+	ok((db->unix_socket == NULL),             "parse_db_url: %d-unix_socket: '%s'", i, db->unix_socket);
+	ok(!strcmp(db->database, "database"),     "parse_db_url: %d-database: '%s'", i, db->database);
+	ok(!strcmp(db->parameters, "parameters"), "parse_db_url: %d-parameters: '%s'", i, db->parameters);
+
+	i = 7;
+
+	DB_PARSE("mysql://user:@host:6033/database?parameters");
+	ok(!strcmp(db->scheme, "mysql"),          "parse_db_url: %d-schema: '%s'", i, db->scheme);
+	ok(!strcmp(db->username, "user"),         "parse_db_url: %d-username: '%s'", i, db->username);
+	ok(!strcmp(db->password, ""),         "parse_db_url: %d-password: '%s'", i, db->password);
 	ok(!strcmp(db->host, "host"),             "parse_db_url: %d-host: '%s'", i, db->host);
 	ok((db->port == 6033),                    "parse_db_url: %d-port: '%d'", i, db->port);
 	ok((db->unix_socket == NULL),             "parse_db_url: %d-unix_socket: '%s'", i, db->unix_socket);
