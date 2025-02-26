@@ -180,6 +180,7 @@ extern char *finame;
 struct listen_param {
 	enum si_flags flags;
 	int workers;
+	int tos;
 	struct socket_id *socket;
 	char *tag;
 	char *auto_scaling_profile;
@@ -458,6 +459,7 @@ extern int cfg_parse_only_routes;
 %token SLASH
 %token AS
 %token USE_WORKERS
+%token SOCK_TOS
 %token USE_AUTO_SCALING_PROFILE
 %token MAX
 %token MIN
@@ -732,6 +734,9 @@ socket_def_param: ANYCAST { IFOR();
 					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;
+					}
+				| SOCK_TOS NUMBER { IFOR();
+					p_tmp.tos=$2;
 					}
 				| AS listen_id_def { IFOR();
 					p_tmp.socket = $2;
@@ -1540,7 +1545,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		  }
 		| MCAST_TTL EQUAL error { yyerror("number expected as tos"); }
 		| TOS EQUAL NUMBER { IFOR(); tos = $3;
-							if (tos<=0)
+							if (tos<0)
 								yyerror("invalid tos value");
 		 }
 		| TOS EQUAL ID { IFOR();
@@ -2746,6 +2751,7 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 	while (s) {
 		s->flags |= param->flags;
 		s->workers = param->workers;
+		s->tos = param->tos;
 		s->auto_scaling_profile = param->auto_scaling_profile;
 		s->tag = param->tag;
 		if (param->socket) {
