@@ -54,6 +54,8 @@ mi_response_t *mi_get_size(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_fetch(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+mi_response_t *mi_fetch_bulk(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static pv_export_t mod_pvs[] = {
 	{ {"mqk",     sizeof("mqk") - 1},     1090, pv_get_mqk,     0,
@@ -97,8 +99,8 @@ static const stat_export_t mod_stats[] = {
 };
 
 #define MQH1 "Params: none ; Get the size of all memory queues."
-#define MQH2 "Params: [mqueue] ; Get the size of a memory queue."
-#define MQH3 "Params: [mqueue] ; Fetch a key-value pair from a memory queue."
+#define MQH2 "Params: mqueue; Get the size of a memory queue."
+#define MQH3 "Params: mqueue [limit]; Fetch one (or a max limit of) key-value pair from a memory queue."
 
 static const mi_export_t mi_cmds[] = {
 	{"mq_get_sizes", MQH1, 0, 0, {
@@ -111,6 +113,7 @@ static const mi_export_t mi_cmds[] = {
 	},
 	{"mq_fetch",     MQH3, 0, 0, {
 		{mi_fetch,     {"name", 0}},
+		{mi_fetch_bulk,{"name", "limit", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -422,3 +425,47 @@ error:
 	return NULL;
 }
 
+mi_response_t *mi_fetch_bulk(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *mq_item;
+	str mqueue_name;
+	int limit;
+	mq_head_t *mh;
+	mq_item_t *item = NULL;
+
+	if (get_mi_string_param(params, "name", &mqueue_name.s, &mqueue_name.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_int_param(params, "limit", &limit) < 0 || limit < 1)
+		return init_mi_param_error();
+
+	mh = mq_head_get(&mqueue_name);
+	if (!mh)
+		return init_mi_error(404, MI_SSTR("No such queue"));
+
+	resp = init_mi_result_array(&resp_obj);
+	if (!resp)
+		return NULL;
+
+	lock_get(&mh->lock);
+	do {
+		item = mq_head_fetch_item(mh);
+		if (!item)
+			break;
+		mq_item = add_mi_object(resp_obj, NULL, 0);
+		if (add_mi_string_fmt(mq_item, MI_SSTR("key"), item->key.s, item->key.len) < 0)
+			break;
+		if (add_mi_string_fmt(mq_item, MI_SSTR("value"), item->val.s, item->val.len) < 0)
+			break;
+		shm_free(item);
+		item = 0;
+	} while (--limit > 0);
+	lock_release(&mh->lock);
+
+	if (item)
+		shm_free(item);
+
+	return resp;
+}

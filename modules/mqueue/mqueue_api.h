@@ -73,6 +73,7 @@ int mq_head_defined(void);
 void mq_destroy(void);
 int mq_head_add(str *name, int msize, int addmode);
 int mq_head_fetch(str *name);
+mq_item_t *mq_head_fetch_item(mq_head_t *mh);
 void mq_pv_free(str *name);
 int mq_item_add(str *qname, str *key, str *val);
 mq_head_t *mq_head_get(str *name);
