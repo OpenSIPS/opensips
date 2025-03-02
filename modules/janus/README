@@ -72,7 +72,7 @@ Chapter 1. Admin Guide
    closed if it is not available for blocking writing in this
    interval (and OpenSIPS wants to send something on it).
 
-   Default value is "1000" (milliseconds).
+   Default value is “1000” (milliseconds).
 
    Example 1.1. Setting the janus_send_timeout parameter
 ...
@@ -85,7 +85,7 @@ modparam("janus", "janus_send_timeout", 2000)
    expected to arrive via WebSocket. If a received packet is more
    fragmented than this, the connection is dropped
 
-   Default value is "4"
+   Default value is “4”
 
    Example 1.2. Setting the janus_max_msg_chunks parameter
 ...
@@ -97,7 +97,7 @@ modparam("janus", "janus_max_msg_chunks", 8)
    The maximally allowed duration for the execution of an Janus
    command. This interval does not include the connect duration.
 
-   Default value is "5000" (milliseconds).
+   Default value is “5000” (milliseconds).
 
    Example 1.3. Setting the janus_cmd_timeout parameter
 ...
@@ -113,7 +113,7 @@ modparam("janus", "janus_cmd_timeout", 3000)
    time for an arbitrary Janus command, then tune this parameter
    accordingly.
 
-   Default value is "1000" (microseconds).
+   Default value is “1000” (microseconds).
 
    Example 1.4. Setting the janus_cmd_polling_itv parameter
 ...
@@ -125,7 +125,7 @@ modparam("janus", "janus_cmd_polling_itv", 3000)
    The time interval at which OpenSIPS will do keepalive pinging
    on the Janus connect
 
-   Default value is "5" (seconds).
+   Default value is “5” (seconds).
 
    Example 1.5. Setting the janus_ping_interval parameter
 ...
@@ -137,7 +137,7 @@ modparam("janus", "janus_ping_interval", 10)
    The DB URL from where OpenSIPS will load the list of Janus
    connection
 
-   Default value is ""none"" (needs to be set for the module to
+   Default value is “"none"” (needs to be set for the module to
    start).
 
    Example 1.6. Setting the janus_db_url parameter
@@ -150,7 +150,7 @@ modparam("janus", "janus_db_url", "mysql://root@localhost/opensips")
    The DB Table from where OpenSIPS will load the list of Janus
    connection
 
-   Default value is "janus"
+   Default value is “janus”
 
    Example 1.7. Setting the janus_db_table parameter
 ...
@@ -243,4 +243,4 @@ url) - $param(janus_body) \n");
 
    Documentation Copyrights:
 
-   Copyright � 2024 OpenSIPS Project;
+   Copyright © 2024 OpenSIPS Project;

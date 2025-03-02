@@ -220,10 +220,12 @@ opensips-cli -x mq_get_size xyz
 
 1.5.2. mq_fetch
 
-   Fetch a key-value pair from a memory queue.
+   Fetch one (or up to limit) key-value pair from a memory queue.
 
    Parameters:
      * name - the name of memory queue
+     * limit (optional) - if used, an array with up to limit
+       records are being returned.
 
    Example 1.8. mq_fetch usage
 ...
@@ -264,9 +266,10 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-               Name           DevScore Commits Lines ++ Lines --
-   1. Ovidiu Sas (@ovidiusas)    19       2      1843      34
-   2. Alexandra Titoc            3        1       13       9
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Ovidiu Sas (@ovidiusas)            19       2      1843      34
+   2. Razvan Crainea (@razvancrainea)    3        1       75       16
+   3. Alexandra Titoc                    3        1       13       9
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -287,9 +290,10 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-               Name             Commit Activity
-   1. Alexandra Titoc         Sep 2024 - Sep 2024
-   2. Ovidiu Sas (@ovidiusas) Feb 2024 - Feb 2024
+                   Name                 Commit Activity
+   1. Razvan Crainea (@razvancrainea) Feb 2025 - Feb 2025
+   2. Alexandra Titoc                 Sep 2024 - Sep 2024
+   3. Ovidiu Sas (@ovidiusas)         Feb 2024 - Feb 2024
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -298,7 +302,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Ovidiu Sas (@ovidiusas).
+   Last edited by: Razvan Crainea (@razvancrainea), Ovidiu Sas
+   (@ovidiusas).
 
    Documentation Copyrights:
 
