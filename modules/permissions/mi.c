@@ -110,7 +110,7 @@ mi_response_t *mi_address_dump(const mi_params_t *params,
 			it->name.s, it->name.len) < 0)
 			goto error;
 
-		if(pm_hash_mi_print(*it->hash_table, part_item, it)< 0)
+		if(pm_hash_mi_print(*it->hash_table, part_item, it, 0)< 0)
 			goto error;
 	}
 
@@ -146,7 +146,7 @@ mi_response_t *mi_address_dump_1(const mi_params_t *params,
 	if (add_mi_string(resp_obj, MI_SSTR("part"),ps->name.s, ps->name.len) < 0)
 		goto error;
 
-	if(pm_hash_mi_print(*ps->hash_table, resp_obj, ps)< 0)
+	if(pm_hash_mi_print(*ps->hash_table, resp_obj, ps, 0)< 0)
 		goto error;
 
 	return resp;
@@ -231,7 +231,7 @@ mi_response_t *mi_subnet_dump(const mi_params_t *params,
 		goto error;
 
 	for (it=get_part_structs(); it; it = it->next) {
-		if (it->subnet_table == NULL)
+		if (it->hash_table == NULL)
 			continue;
 
 		part_item = add_mi_object(parts_arr, NULL, 0);
@@ -242,7 +242,7 @@ mi_response_t *mi_subnet_dump(const mi_params_t *params,
 			it->name.s, it->name.len) < 0)
 			goto error;
 
-		if (subnet_table_mi_print(*it->subnet_table, part_item, it) <  0)
+		if (pm_hash_mi_print(*it->hash_table, part_item, it, 1) <  0)
 			goto error;
 	}
 
@@ -268,7 +268,7 @@ mi_response_t *mi_subnet_dump_1(const mi_params_t *params,
 	if (ps == NULL)
 		return init_mi_error(404, MI_SSTR("No such partition"));
 	
-	if (ps->subnet_table == NULL)
+	if (ps->hash_table == NULL)
 		return init_mi_result_ok();
 
 	resp = init_mi_result_object(&resp_obj);
@@ -278,7 +278,7 @@ mi_response_t *mi_subnet_dump_1(const mi_params_t *params,
 	if (add_mi_string(resp_obj, MI_SSTR("part"),ps->name.s, ps->name.len) < 0)
 		goto error;
 
-	if (subnet_table_mi_print(*ps->subnet_table, resp_obj, ps) <  0)
+	if (pm_hash_mi_print(*ps->hash_table, resp_obj, ps, 1) <  0)
 		goto error;
 
 	return resp;
