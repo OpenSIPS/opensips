@@ -820,7 +820,7 @@ int janus_populate_handler_id(janus_connection *sock)
 {
 	struct janus_ws_req *req;
 	enum ws_close_code ret_code = WS_ERR_NONE;
-	int total_bytes=0,bytes=0;
+	int bytes=0;
 
 	req = &sock->con_req;
 
@@ -839,7 +839,6 @@ read_again:
 				usleep(10000);
 				goto read_again;
 			}
-			total_bytes+=bytes;
 		}
 		ret_code = janus_ws_parse(req);
 		if (ret_code)
