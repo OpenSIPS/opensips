@@ -649,7 +649,7 @@ static struct tcp_connection* ws_sync_connect(const struct socket_info* send_soc
 		goto error;
 	}
 
-	if (tcp_init_sock_opt(s, prof, send_sock->flags)<0){
+	if (tcp_init_sock_opt(s, prof, send_sock->flags, send_sock->tos)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}

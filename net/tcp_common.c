@@ -146,7 +146,7 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 }
 
 int tcp_sync_connect_fd(const union sockaddr_union* src, const union sockaddr_union* dst,
-                 enum sip_protos proto, const struct tcp_conn_profile *prof, enum si_flags flags)
+                 enum sip_protos proto, const struct tcp_conn_profile *prof, enum si_flags flags, int sock_tos)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -158,7 +158,7 @@ int tcp_sync_connect_fd(const union sockaddr_union* src, const union sockaddr_un
 		goto error;
 	}
 
-	if (tcp_init_sock_opt(s, prof, flags)<0){
+	if (tcp_init_sock_opt(s, prof, flags, sock_tos)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
@@ -193,7 +193,7 @@ struct tcp_connection* tcp_sync_connect(const struct socket_info* send_sock,
 	struct tcp_connection* con;
 	int s;
 
-	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof, send_sock->flags);
+	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof, send_sock->flags, send_sock->tos);
 	if (s < 0)
 		return NULL;
 
@@ -237,7 +237,7 @@ int tcp_async_connect(const struct socket_info* send_sock,
 		return -1;
 	}
 
-	if (tcp_init_sock_opt(fd, prof, send_sock->flags)<0){
+	if (tcp_init_sock_opt(fd, prof, send_sock->flags, send_sock->tos)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
