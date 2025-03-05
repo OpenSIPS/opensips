@@ -7,7 +7,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=janus.so
-LIBS=
 
 include ../../Makefile.modules
 
