@@ -164,6 +164,7 @@ static const cmd_export_t cmds[] = {
 		ALL_ROUTES},
 
 	{"sql_query", (cmd_function)w_sql_query, {
+		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_avpname_list, fixup_free_pvname_list},
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
