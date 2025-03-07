@@ -2174,6 +2174,9 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 #define SOCK_AF_S             "af"
 #define SOCK_AF_LEN           (sizeof(SOCK_AF_S)-1)
 #define SOCK_AF_ID            8
+#define SOCK_FORCED_S         "forced"
+#define SOCK_FORCED_LEN       (sizeof(SOCK_FORCED_S)-1)
+#define SOCK_FORCED_ID        9
 
 static int pv_parse_socket_name(pv_spec_p sp, const str *in)
 {
@@ -2222,6 +2225,23 @@ static int pv_parse_socket_name(pv_spec_p sp, const str *in)
 	return 0;
 }
 
+static int pv_parse_socket_out_name(pv_spec_p sp, const str *in)
+{
+	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
+		return -1;
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
+
+	if (in->len==SOCK_FORCED_LEN &&
+	strncasecmp(in->s, SOCK_FORCED_S, SOCK_FORCED_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_FORCED_ID;
+		return 0;
+	} else {
+		return pv_parse_socket_name(sp, in);
+	}
+}
+
 
 static inline int get_socket_field( const struct socket_info *si,
 											pv_name_t *pvn, pv_value_t *res)
@@ -2232,6 +2252,7 @@ static inline int get_socket_field( const struct socket_info *si,
 	/* return the field */
 	switch (pvn->u.isname.name.n) {
 		case 0: /* return full socket description */
+		case SOCK_FORCED_ID: /* return forced socket description */
 			res->rs = si->sock_str;
 			res->flags = PV_VAL_STR;
 			break;
@@ -2323,6 +2344,9 @@ static int pv_get_socket_out_fields(struct sip_msg *msg, pv_param_t *param,
 
 	if(msg==NULL || res==NULL)
 		return -1;
+
+	if (param->pvn.u.isname.name.n == SOCK_FORCED_ID && !msg->force_send_socket)
+		return pv_get_null(msg, NULL, res);
 
 	si = (msg->force_send_socket) ?
 		msg->force_send_socket : msg->rcv.bind_address;
@@ -4274,7 +4298,7 @@ const pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{str_const_init("socket_out"), /* */
 		PVT_SOCKET_OUT, pv_get_socket_out_fields, NULL,
-		pv_parse_socket_name, 0, 0, 0},
+		pv_parse_socket_out_name, 0, 0, 0},
 	{str_const_init("si"), /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},
