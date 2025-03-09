@@ -1450,8 +1450,8 @@ Chapter 3. Contributors
    All remaining contributors: Nick Altmann (@nikbyte), Maksym
    Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas), Eddie Fiorentine,
    Zero King (@l2dy), Rob Gagnon (@rgagnon24), Flavio E.
-   Goncalves, Dan Pascu (@danpascu), Oliver Severin Mulelid-Tynes
-   (@olivermt).
+   Goncalves, hatee, Dan Pascu (@danpascu), Oliver Severin
+   Mulelid-Tynes (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1477,18 +1477,18 @@ Chapter 3. Contributors
    2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Feb 2025
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2025
    4.  Vlad Paiu (@vladpaiu)               Jan 2025 - Jan 2025
-   5.  Eddie Fiorentine                    Nov 2024 - Nov 2024
-   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   7.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
-   8.  John Burke (@john08burke)           Jun 2019 - Apr 2022
-   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
-   10. Nick Altmann (@nikbyte)             May 2021 - May 2021
+   5.  hatee                               Dec 2024 - Dec 2024
+   6.  Eddie Fiorentine                    Nov 2024 - Nov 2024
+   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   8.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
+   9.  John Burke (@john08burke)           Jun 2019 - Apr 2022
+   10. Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
 
-   All remaining contributors: Flavio E. Goncalves, Zero King
-   (@l2dy), Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu), Dan Pascu (@danpascu), Oliver Severin
-   Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24), Eric Tamme
-   (@etamme), Richard Fuchs.
+   All remaining contributors: Nick Altmann (@nikbyte), Flavio E.
+   Goncalves, Zero King (@l2dy), Ovidiu Sas (@ovidiusas), Vlad
+   Patrascu (@rvlad-patrascu), Dan Pascu (@danpascu), Oliver
+   Severin Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24),
+   Eric Tamme (@etamme), Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits

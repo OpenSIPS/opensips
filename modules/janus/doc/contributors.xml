@@ -26,6 +26,22 @@
 		<entry align="center">4387</entry>
 		<entry align="center">4</entry>
 	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+		<entry align="center">3</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -56,8 +72,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Mar 2025 - Mar 2025</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Dec 2024 - Feb 2025</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
+		<entry align="center">Feb 2025 - Feb 2025</entry>
 	</row>
 	</tbody>
 	</tgroup>

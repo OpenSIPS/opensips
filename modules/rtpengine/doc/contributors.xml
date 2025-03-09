@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Eddie Fiorentine, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Flavio E. Goncalves, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Eddie Fiorentine, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Flavio E. Goncalves, hatee, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -148,38 +148,38 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>hatee</entry>
+		<entry align="center">Dec 2024 - Dec 2024</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Eddie Fiorentine</entry>
 		<entry align="center">Nov 2024 - Nov 2024</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jan 2021 - Nov 2023</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Jul 2014 - May 2023</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
 		<entry align="center">Jun 2019 - Apr 2022</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Jun 2014 - Apr 2022</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
-		<entry align="center">May 2021 - May 2021</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Flavio E. Goncalves, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Richard Fuchs.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Flavio E. Goncalves, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Richard Fuchs.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
