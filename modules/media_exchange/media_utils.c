@@ -538,7 +538,7 @@ str *media_exchange_get_offer_sdp(rtp_ctx ctx, struct dlg_cell *dlg,
 				 RTP_RELAY_CALLER:RTP_RELAY_CALLEE),
 				&sbody) >= 0) {
 			/* the body towards the leg has changed, so we should update it */
-			if (shm_str_sync(&dlg->legs[leg].out_sdp, &sbody) < 0) {
+			if (shm_str_sync(&dlg->legs[other_leg(dlg, leg)].out_sdp, &sbody) < 0) {
 				LM_ERR("could not update dialog's out_sdp\n");
 				*release = 1;
 				return &sbody;
@@ -547,7 +547,7 @@ str *media_exchange_get_offer_sdp(rtp_ctx ctx, struct dlg_cell *dlg,
 		}
 	}
 
-	sbody = dlg_get_out_sdp(dlg, leg);
+	sbody = dlg_get_out_sdp(dlg, other_leg(dlg, leg));
 	return &sbody;
 }
 

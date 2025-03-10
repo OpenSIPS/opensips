@@ -680,9 +680,10 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 	if (!body) {
 		if (media_rtp.get_ctx_dlg) {
 			ctx = media_rtp.get_ctx_dlg(dlg);
-			body = media_exchange_get_offer_sdp(ctx, dlg, req_leg, &release);
+			body = media_exchange_get_offer_sdp(ctx, dlg,
+					DLG_MEDIA_SESSION_LEG(dlg, leg), &release);
 		} else {
-			sbody = dlg_get_out_sdp(dlg, req_leg);
+			sbody = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, other_leg(dlg, leg)));
 			body = &sbody;
 		}
 	}
