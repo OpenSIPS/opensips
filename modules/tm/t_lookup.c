@@ -1190,7 +1190,11 @@ int t_get_trans_ident(struct sip_msg* p_msg, unsigned int* hash_index,
 }
 
 
-
+/* Looks for the transaction with the given coordinates (index/label).
+ * If found, the transaction is ref'ed and retuned via parameter; note that
+ * the global T holder is not set.
+ * Returns 1 if transaction found, -1 otherwise.
+ */
 int t_lookup_ident(struct cell ** trans, unsigned int hash_index,
 															unsigned int label)
 {
@@ -1210,7 +1214,6 @@ int t_lookup_ident(struct cell ** trans, unsigned int hash_index,
 		if(p_cell->label == label){
 			REF_UNSAFE(p_cell);
 			UNLOCK_HASH(hash_index);
-			set_t(p_cell);
 			*trans=p_cell;
 			LM_DBG("transaction found\n");
 			return 1;
@@ -1218,7 +1221,6 @@ int t_lookup_ident(struct cell ** trans, unsigned int hash_index,
 	}
 
 	UNLOCK_HASH(hash_index);
-	set_t(0);
 	*trans=p_cell;
 
 	LM_DBG("transaction not found\n");
