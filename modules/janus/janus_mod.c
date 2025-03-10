@@ -229,7 +229,7 @@ static int w_janus_send_request(struct sip_msg *msg, str *janus_id,str *request,
 		return 1;
 	}
 
-	LM_DBG("Expecting reply for transaction %lu\n",reply_id);
+	LM_DBG("Expecting reply for transaction %lu\n", (unsigned long)reply_id);
 
 	for (total_us = 0; total_us < janus_cmd_timeout * 1000;
 	     total_us += janus_cmd_polling_itv) {
