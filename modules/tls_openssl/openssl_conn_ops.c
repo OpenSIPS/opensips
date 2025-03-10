@@ -25,6 +25,7 @@
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <openssl/x509v3.h>
 
 #include <poll.h>
 #include <errno.h>
@@ -199,6 +200,8 @@ int openssl_tls_update_fd(struct tcp_connection *c, int fd)
 
 int openssl_tls_conn_init(struct tcp_connection* c, struct tls_domain *tls_dom)
 {
+	X509_VERIFY_PARAM *param = NULL;
+
 	/*
 	* new connection within a single process, no lock necessary
 	*/
@@ -216,6 +219,15 @@ int openssl_tls_conn_init(struct tcp_connection* c, struct tls_domain *tls_dom)
 		LM_ERR("failed to create SSL structure (%d:%s)\n", errno, strerror(errno));
 		tls_print_errstack();
 		return -1;
+	}
+
+	if (tls_dom->verify_hostname) {
+		param = SSL_get0_param(c->extra_data);
+		X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+		if (!X509_VERIFY_PARAM_set1_host(param, c->hostname, strlen(c->hostname))) {
+			LM_ERR("failed to set hostname for SSL context\n");
+			return -1;
+		}
 	}
 
 	/* put pointers to the tcp_connection and tls_domain structs
