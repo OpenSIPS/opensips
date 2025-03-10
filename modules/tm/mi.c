@@ -716,12 +716,11 @@ mi_response_t *mi_tm_reply(const mi_params_t *params, str *new_hdrs, str *body)
 			return init_mi_error(400,MI_SSTR("Invalid label in old trans_id"));
 	}
 
+	if (get_mi_string_param(params, "to_tag", &totag.s, &totag.len) < 0)
+		return init_mi_param_error();
 
 	if( t_lookup_ident( &trans, hash_index, hash_label)<0 )
 		return init_mi_error(404, MI_SSTR("Transaction not found"));
-
-	if (get_mi_string_param(params, "to_tag", &totag.s, &totag.len) < 0)
-		return init_mi_param_error();
 
 	n = t_reply_with_body( trans, rpl_code, &reason, body, new_hdrs, &totag);
 
