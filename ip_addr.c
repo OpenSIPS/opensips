@@ -40,7 +40,7 @@
 
 char _ip_addr_A_buffs[IP_ADDR2STR_BUF_NO][IP_ADDR_MAX_STR_SIZE];
 
-struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask)
+struct net* mk_net(const struct ip_addr* ip, struct ip_addr* mask)
 {
 	struct net* n;
 	int warning;
@@ -78,7 +78,7 @@ error:
 
 
 
-struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen)
+struct net* mk_net_bitlen(const struct ip_addr* ip, unsigned int bitlen)
 {
 	struct ip_addr mask;
 	unsigned int r;
@@ -100,7 +100,7 @@ error:
 
 
 
-void print_ip(char* p, struct ip_addr* ip, char *s)
+void print_ip(char* p, const struct ip_addr* ip, char *s)
 {
 	switch(ip->af){
 		case AF_INET:

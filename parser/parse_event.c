@@ -72,6 +72,9 @@
 #define REFER_STR "refer"
 #define REFER_STR_LEN 5
 
+#define REG_STR "reg"
+#define REG_STR_LEN 3
+
 
 static inline char* skip_token(char* _b, int _l)
 {
@@ -144,6 +147,9 @@ int event_parser(char* _s, int _l, event_t* _e)
 	} else if ((_e->text.len == REFER_STR_LEN) &&
 		   !strncasecmp(REFER_STR, tmp.s, _e->text.len)) {
 		_e->parsed = EVENT_REFER;
+	} else if ((_e->text.len == REG_STR_LEN) &&
+		   !strncasecmp(REG_STR, tmp.s, _e->text.len)) {
+		_e->parsed = EVENT_REG;
 	} else {
 		_e->parsed = EVENT_OTHER;
 	}

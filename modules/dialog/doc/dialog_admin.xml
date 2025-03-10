@@ -1046,7 +1046,7 @@ modparam("dialog", "flags_column", "flags_c_name")
 	<section id="param_profiles_with_value" xreflabel="profiles_with_value">
 		<title><varname>profiles_with_value</varname> (string)</title>
 		<para>
-			List of names (alphanumerical) for profiles with values. Flags
+			List of names (alphanumerical/-/_) for profiles with values. Flags
 			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
 			profiles between &osips; instances using the clusterer module or a
 			CacheDB backend, respectively.
@@ -1069,7 +1069,7 @@ modparam("dialog", "profiles_with_value", "callerCC; gatewayCC; clientChannels/s
 	<section id="param_profiles_no_value" xreflabel="profiles_no_value">
 		<title><varname>profiles_no_value</varname> (string)</title>
 		<para>
-			List of names (alphanumerical) for profiles without values. Flags
+			List of names (alphanumerical/-/_) for profiles without values. Flags
 			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
 			profiles between &osips; instances using the clusterer module or a
 			CacheDB backend, respectively.
@@ -1270,6 +1270,9 @@ modparam("dialog", "profile_timeout", "43200")
 			and receiving all the dialog-related events (creation, update and
 			deletion) in the cluster.
 		</para>
+
+			&clusterer_sync_cap_para;
+
 		<para>
 		<emphasis>
 			Default value is <quote>0</quote> (no replication).
@@ -2605,6 +2608,45 @@ event_route[E_RTPPROXY_DTMF] {
 </programlisting>
 		</example>
 	</section>
+	<section id="func_dlg_inc_cseq" xreflabel="dlg_inc_cseq()">
+		<title>
+			<function moreinfo="none">dlg_inc_cseq([tag, ][inc])</function>
+		</title>
+		<para>Increments the dialog's generated CSeq associated to the leg
+		identified by the dialog's tag.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para><emphasis>tag (string, optional)</emphasis> -
+			the tag to increment the CSeq value for. If missing, the
+			message's <emphasis>To</emphasis> tag is used to identify
+			the leg to increment the CSeq for.
+			</para></listitem>
+			<listitem><para><emphasis>inc (integer, optional)</emphasis> - the
+			value used to increment/decrement (if negative) the CSeq of
+			the identified leg. If not used, the value is incremented with
+			<emphasis>1</emphasis>.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE routes.
+		</para>
+		<example>
+		<title><function>dlg_inc_cseq</function> usage</title>
+		<programlisting format="linespecific">
+...
+route {
+	...
+	if (has_totag()) {
+		if (loose_route())
+			dlg_inc_cseq(); # increment upstream CSeq after each in-dialog request
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 
@@ -3132,6 +3174,10 @@ event_route[E_RTPPROXY_DTMF] {
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
+			<listitem><para>
+				<emphasis>headers</emphasis> - (optional) can be used to specify some headers for
+					the initial sequential message.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 			This functions runs asynchronously and returns the status code and reason
@@ -3166,6 +3212,79 @@ event_route[E_RTPPROXY_DTMF] {
 				method=UPDATE
 		</programlisting>
 
+		<para>
+		MI Command used to send REFER to the callee, and add Refer-To header:
+		</para>
+		<programlisting  format="linespecific">
+			opensips-cli -x mi dlg_send_sequential \
+				callid=usR8FlGOSMfCTAIHebHCOQ.. \
+				method=REFER \
+				body=none \
+				mode=callee \
+				headers='Refer-To: sip:user@domain:50060'
+		</programlisting>
+
+		</section>
+
+		<section id="set_dlg_profile_mi" xreflabel="set_dlg_profile_mi">
+		<title><function moreinfo="none">set_dlg_profile</function></title>
+		<para>
+		Set the dialog identified by dialog ID / Call-ID into the given profile ( with optional value and clearing of the old profile values )
+		</para>
+		<para>
+		Name: <emphasis>set_dlg_profile</emphasis>
+		</para>
+		<para>Parameters: <emphasis>It takes 2-4 parameters</emphasis>
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>dlg_id</emphasis> - dialog ID or Call-ID for the respective dialog
+			</para></listitem>
+			<listitem><para>
+				<emphasis>profile</emphasis> - profile name to be set
+			</para></listitem>
+			<listitem><para>
+				<emphasis>value</emphasis> - optional, the profile value to be set 
+			</para></listitem>
+			<listitem><para>
+				<emphasis>clear_values</emphasis> - optional, clear previous values in the profile before setting the new one
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi set_dlg_profile DID my_profile my_value 1
+		</programlisting>
+		</section>
+
+		<section id="unset_dlg_profile_mi" xreflabel="unset_dlg_profile_mi">
+		<title><function moreinfo="none">unset_dlg_profile</function></title>
+		<para>
+		Unsets the dialog identified by dialog ID / Call-ID from the given profile ( with optional value and clearing of the old profile values )
+		</para>
+		<para>
+		Name: <emphasis>set_dlg_profile</emphasis>
+		</para>
+		<para>Parameters: <emphasis>It takes 2-3 parameters</emphasis>
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>dlg_id</emphasis> - dialog ID or Call-ID for the respective dialog
+			</para></listitem>
+			<listitem><para>
+				<emphasis>profile</emphasis> - profile name to be unset
+			</para></listitem>
+			<listitem><para>
+				<emphasis>value</emphasis> - optional, the profile value to be unset. for profiles with value, by omitting this parameter you can now clear all values of the given profile. 
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi unset_dlg_profile DID my_profile my_value
+		</programlisting>
 		</section>
 	</section>
 
@@ -3374,8 +3493,15 @@ event_route[E_RTPPROXY_DTMF] {
 			<para>
 			This is a read/write variable that allows access to the dialog
 			attribute named <emphasis>name</emphasis>. It can hold a string or
-			integer value. This PV will be available only for sequential requests,
-			after doing loose_route().
+			integer value.
+			</para>
+			<para>
+			Be sure and use this variable only when having a dialog context 
+			(like after create_dialog() or match_dialog() or equivalent).
+			</para>
+			<para>
+			The variable accepts dynamic names, meaning the name may contain
+			other variables.
 			</para>
 			<para>
 			NULL will be returned if there is no dialog for the request.

@@ -507,6 +507,9 @@ modparam("mid_registrar", "received_param", "rcv")
 		<programlisting format="linespecific">
 # NB: AVPs are cleared with every new SIP request
 modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_params)")
+
+# setting the AVP during SIP message processing
+$avp(extra_ct_params) = ";transport=tls";
 </programlisting>
 		</example>
 	</section>
@@ -856,8 +859,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> (string, optional) - string of
-			the following flags:
+			<emphasis>flags</emphasis> (string, optional) - string composed of
+				one or more of the following flags, comma-separated:
 			</para>
 			<itemizedlist>
 				&save_common_flags;

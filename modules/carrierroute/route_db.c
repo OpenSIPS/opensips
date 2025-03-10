@@ -385,6 +385,9 @@ static int store_carriers(struct carrier ** start){
 		LM_ERR("couldn't query table\n");
 		return -1;
 	}
+	if (!res)
+		return -1;
+
 	count = RES_ROW_N(res);
 	for(i=0; i<RES_ROW_N(res); i++){
 		if((nc = pkg_malloc(sizeof(struct carrier))) == NULL){

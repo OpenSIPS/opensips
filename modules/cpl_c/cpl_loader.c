@@ -126,6 +126,7 @@ int load_file( char *filename, str *xml)
 	/*start reading */
 	offset = 0;
 	while ( offset<xml->len ) {
+		/* coverity[overflow_sink: FALSE] */
 		n=read( fd, xml->s+offset, xml->len-offset);
 		if (n==-1) {
 			if (errno!=EINTR) {

@@ -81,7 +81,7 @@ static int pv_parse_xml_name(pv_spec_p , const str *);
 
 
 static const pv_export_t mod_items[] = {
-	{ {"xml", sizeof("xml")-1}, PVT_XML, pv_get_xml, pv_set_xml,
+	{ str_const_init("xml"), PVT_XML, pv_get_xml, pv_set_xml,
 		pv_parse_xml_name, 0, 0, 0},
 	  { {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

@@ -60,6 +60,8 @@
 
 #include "test/unit_tests.h"
 
+#include "libgen.h"
+
 struct sr_module* modules=0;
 
 #ifdef STATIC_EXEC
@@ -401,12 +403,48 @@ void add_mpath(const char *new_mpath)
 	nmpath->buf[nmpath->len] = '\0';
 }
 
+static struct {
+ char *module;
+ char *name;
+ unsigned int flags;
+} module_warnings[] = {
+	{ "rabbitmq", "'rabbitmq' module has been dropped - please use 'event_rabbitmq' instead!", MOD_WARN_EXIT },
+	{ "event_route", "'event_route' module has been integrated in core file. You no longer need to load the module.", MOD_WARN_SKIP }
+};
+
 /* returns 0 on success , <0 on error */
 int load_module(char* name)
 {
 	int i_tmp, len;
 	struct stat statf;
 	struct mpath *mp;
+	int module_warnings_len;
+	char *base_name;
+
+	base_name = basename(name);
+	len = strlen(base_name);
+	if (strstr(base_name, ".so"))
+		len -= 3;
+
+	module_warnings_len = sizeof(module_warnings) / sizeof(module_warnings[0]);
+
+	for (i_tmp = 0; i_tmp < module_warnings_len; i_tmp++) {
+		if (strncmp(base_name, module_warnings[i_tmp].module, len) == 0) {
+			switch (module_warnings[i_tmp].flags)
+			{
+				case MOD_WARN_EXIT:
+					LM_ERR("%s\n", module_warnings[i_tmp].name);
+					return -1;
+
+				case MOD_WARN_SKIP:
+					LM_WARN("%s\n", module_warnings[i_tmp].name);
+					return 0;
+
+				default:
+					break;
+			}
+		}
+	}
 
 	/* if this is a static module, load it directly */
 	if (load_static_module(name) == 0)
@@ -666,6 +704,7 @@ static int init_mod_child( struct sr_module* m, int rank, char *type,
 int init_child(int rank)
 {
 	char* type;
+	int rc;
 
 	type = 0;
 
@@ -683,7 +722,11 @@ int init_child(int rank)
 			type = "UNKNOWN";
 	}
 
-	return init_mod_child(modules, rank, type, 0);
+	rc = init_mod_child(modules, rank, type, 0);
+	ready_time = time(NULL);
+	ready_delay = ready_time - startup_time;
+
+	return rc;
 }
 
 
@@ -868,7 +911,6 @@ int start_module_procs(void)
 				flags = OSS_PROC_IS_EXTRA;
 				if (m->exports->procs[n].flags&PROC_FLAG_NEEDS_SCRIPT)
 					flags |= OSS_PROC_NEEDS_SCRIPT;
-				else
 				if ( (m->exports->procs[n].flags&PROC_FLAG_HAS_IPC)==0)
 					flags |= OSS_PROC_NO_IPC;
 				struct internal_fork_params ifp = {

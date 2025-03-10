@@ -54,12 +54,18 @@
 extern int port;
 extern str ip;
 extern str buffer;
+extern unsigned int hd_conn_timeout_s;
 extern int post_buf_size;
 extern str tls_cert_file;
 extern str tls_key_file;
 extern str tls_ciphers;
 extern struct httpd_cb *httpd_cb_list;
 static union sockaddr_union httpd_server_info;
+
+
+extern int receive_buf_size;
+extern char *httpd_receive_buff;
+extern int httpd_receive_buff_pos;
 
 static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
@@ -126,6 +132,26 @@ int httpd_get_val(void *e_data, void *data, void *r_data)
 				kv->key.len, kv->key.s,
 				kv->val.len, kv->val.s);
 			return 1;
+		}
+	}
+	return 0;
+}
+
+int httpd_merge_data(void *e_data, void *data, void *r_data)
+{
+	str_str_t *kv = (str_str_t*)e_data;
+	if (kv==NULL) {
+		LM_ERR("null data\n");
+	} else {
+		LM_DBG("data=[%p] [%p][%p] [%.*s]->[%.*s]\n",
+			kv, kv->key.s, kv->val.s,
+			kv->key.len, kv->key.s,
+			kv->val.len, kv->val.s);
+		if (httpd_receive_buff_pos + kv->val.len > receive_buf_size) {
+			LM_ERR("Received too big HTTP request ( %d bytes ), increase receive_buf_size param value\n", httpd_receive_buff_pos + kv->val.len);
+		} else {
+			memcpy(httpd_receive_buff+httpd_receive_buff_pos,kv->val.s,kv->val.len);
+			httpd_receive_buff_pos+=kv->val.len;
 		}
 	}
 	return 0;
@@ -453,6 +479,9 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 	cl_socket = (union sockaddr_union *)MHD_get_connection_info(connection,
 			MHD_CONNECTION_INFO_CLIENT_ADDRESS)->client_addr;
 
+	if (!MHD_set_connection_option(connection, MHD_CONNECTION_OPTION_TIMEOUT, hd_conn_timeout_s))
+		LM_ERR("failed to set connection timeout\n");
+
 #if ( MHD_VERSION >= 0x000092800 )
 	sv_sockfd = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CONNECTION_FD)->connect_fd;
 	if (getsockname( sv_sockfd, &httpd_server_info.s, &addrlen) < 0) {
@@ -494,9 +523,12 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 					if (cb) {
 						normalised_url = &url[cb->http_root->len+1];
 						LM_DBG("normalised_url=[%s]\n", normalised_url);
-						kv = slinkedl_peek(pr->p_list);
-						if (kv)
-							saved_body = ((str_str_t *)kv)->val;
+						httpd_receive_buff_pos=0;
+						slinkedl_traverse(pr->p_list,&httpd_merge_data, NULL, NULL);
+						if (httpd_receive_buff_pos>0) {
+							saved_body.len = httpd_receive_buff_pos;
+							saved_body.s = httpd_receive_buff;
+						}
 						ret_code = cb->callback(cls, (void*)connection,
 								normalised_url,
 								method, version,
@@ -523,11 +555,6 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 				if (pr->content_type<0) {
 					/* Unexpected Content-Type header:
 					err log printed in getConnectionHeader() */
-					return MHD_NO;
-				}
-				if (*upload_data_size != pr->content_len) {
-					/* For now, we don't support large POST with truncated data */
-					LM_ERR("got a truncated POST request\n");
 					return MHD_NO;
 				}
 				LM_DBG("got ContentType [%d] with len [%d]: %.*s\n",
@@ -747,6 +774,7 @@ void httpd_proc(int rank)
 
   		cert_pem = load_file(tls_cert_file.s);
 		if (NULL == cert_pem) {
+			free(key_pem);	
 			LM_ERR("unable to load tls certificate\n");
 			return;
 		}
@@ -920,7 +948,7 @@ static char * load_file(char * filename)
 	fseek(f, 0, SEEK_END);
 	long fsize = ftell(f);
 
-	if(fsize == 0) {
+	if(fsize <= 0) {
 		fclose(f);
 		return NULL;
 	}

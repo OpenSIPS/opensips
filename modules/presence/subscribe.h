@@ -56,7 +56,7 @@ struct subscription
 	str to_tag;
 	str from_tag;
 	str callid;
-	struct socket_info* sockinfo;
+	const struct socket_info* sockinfo;
 	unsigned int remote_cseq;
 	unsigned int local_cseq;
 	str contact;

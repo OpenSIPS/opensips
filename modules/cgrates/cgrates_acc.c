@@ -328,19 +328,6 @@ static int cgr_proc_cdr_acc_reply(struct cgr_conn *c, json_object *jobj,
 	return 1;
 }
 
-static inline int has_totag(struct sip_msg *msg)
-{
-	/* check if it has to tag */
-	if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
-		LM_ERR("bad request or missing TO hdr :-/\n");
-		return 0;
-	}
-	if (get_to(msg)->tag_value.s != 0 && get_to(msg)->tag_value.len != 0)
-		return 1;
-	return 0;
-}
-
-
 static inline str *cgr_get_sess_callid(struct sip_msg *msg,
 		struct cgr_session *s, str *msg_cid)
 {

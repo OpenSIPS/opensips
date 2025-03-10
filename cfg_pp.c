@@ -368,7 +368,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 				goto out_err;
 			}
 
-			line_len = strlen(line);
+			line_len = 0;
 			break;
 
 		} else if (line_len == 0) {

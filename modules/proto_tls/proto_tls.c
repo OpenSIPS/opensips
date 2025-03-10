@@ -122,8 +122,8 @@ static int tls_send_tout = 100;
 static int  mod_init(void);
 static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
-static int proto_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int proto_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
 static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
@@ -343,14 +343,14 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
-	pi->net.read			= (proto_net_read_f)tls_read_req;
-	pi->net.write			= (proto_net_write_f)tls_async_write;
-	pi->net.conn_init		= proto_tls_conn_init;
-	pi->net.conn_clean		= proto_tls_conn_clean;
+	pi->net.stream.read		= tls_read_req;
+	pi->net.stream.write		= tls_async_write;
+	pi->net.stream.conn.init	= proto_tls_conn_init;
+	pi->net.stream.conn.clean	= proto_tls_conn_clean;
 	if (cert_check_on_conn_reusage)
-		pi->net.conn_match		= tls_conn_extra_match;
+		pi->net.stream.conn.match	= tls_conn_extra_match;
 	else
-		pi->net.conn_match		= NULL;
+		pi->net.stream.conn.match	= NULL;
 	pi->net.report			= tls_report;
 
 	if (tls_async && !tcp_has_async_write()) {
@@ -360,7 +360,7 @@ static int proto_tls_init(struct proto_info *pi)
 	}
 
 	if (tls_async!=0)
-		pi->net.async_chunks= tls_async_max_postponed_chunks;
+		pi->net.stream.async_chunks= tls_async_max_postponed_chunks;
 
 	return 0;
 }
@@ -473,8 +473,8 @@ static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 	return;
 }
 
-static int proto_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int proto_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
 	struct tcp_connection *c;
@@ -561,7 +561,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 				/* attach the write buffer to it */
 				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
 					LM_ERR("Failed to add the initial write chunk\n");
-					len = -1; /* report an error - let the caller decide what to do */
+					rlen = -1; /* report an error - let the caller decide what to do */
 				}
 
 				LM_DBG("Successfully started async SSL connection \n");
@@ -615,8 +615,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, 0);
 	return rlen;
@@ -628,7 +628,7 @@ con_release:
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 {
-	int ret;
+	int ret, rc = 0;
 	int bytes;
 	int total_bytes;
 	struct tcp_req* req;
@@ -732,7 +732,7 @@ again:
 	int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
 			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : tls_max_msg_chunks;
 
-	switch (tcp_handle_req(req, con, max_chunks, 0) ) {
+	switch ((rc = tcp_handle_req(req, con, max_chunks, 0))) {
 		case 1:
 			goto again;
 		case -1:
@@ -742,8 +742,9 @@ again:
 	LM_DBG("tls_read_req end\n");
 done:
 	if (bytes_read) *bytes_read=total_bytes;
-	/* connection will be released */
-	return 0;
+
+	return rc == 2   ?  1  /* connection is already released! */
+	       /* 0,1? */:  0; /* connection will be released */
 error:
 	/* connection will be released as ERROR */
 	return -1;

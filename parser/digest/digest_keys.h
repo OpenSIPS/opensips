@@ -34,5 +34,6 @@
 #define _opaq_ 0x7161706f   /* "opaq" */
 #define _algo_ 0x6f676c61   /* "algo" */
 #define _rith_ 0x68746972   /* "rith" */
+#define _auts_ 0x73747561   /* "auts" */
 
 #endif /* DIGEST_KEYS_H */

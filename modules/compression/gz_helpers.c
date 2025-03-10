@@ -79,7 +79,7 @@ int gzip_compress(unsigned char* in, unsigned long ilen, str* out, unsigned long
 	if (!out->s) {
 		out->s = pkg_malloc(neededSize);
 		out->len = neededSize;
-		if (!out)
+		if (!out->s)
 			goto memerr;
 	} else if (ilen > out->len) {
 		out->s = pkg_realloc(out->s, neededSize);
@@ -124,8 +124,10 @@ int gzip_uncompress(unsigned char* in, unsigned long ilen, str* out, unsigned lo
 
 	/* Gzip holds the length of the original message
 		in the last 4 bytes */
-	*olen = (in[ilen-1] << 24) + (in[ilen-2] << 16) +
-				(in[ilen-3] << 8) + in[ilen-4];
+	*olen =	((unsigned long)in[ilen-1] << 24) +
+			((unsigned long)in[ilen-2] << 16) +
+			((unsigned long)in[ilen-3] << 8) +
+			(unsigned long)in[ilen-4];
 	neededSize = *olen+1; /*'\0'*/
 
 	zlibStream.zalloc = Z_NULL;

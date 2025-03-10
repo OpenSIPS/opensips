@@ -850,6 +850,39 @@ xlog("Current Unix timestamp: $var(sec) s, $var(usec) us\n");
 		</example>
 	</section>
 
+		<section id="func_shuffle_avps" xreflabel="shuffle_avps()">
+			<title>
+				<function moreinfo="none">shuffle_avps(name)
+				</function>
+			</title>
+			<para>
+			Randomly shuffles AVPs with <emphasis>name</emphasis>.
+			</para>
+			<para>Meaning of the parameters is as follows:</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>name (variable)</emphasis> - name of AVP to shuffle.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title><function>shuffle_avps</function> usage</title>
+				<programlisting format="linespecific">
+...
+$avp(foo) := "str1";
+$avp(foo)  = "str2";
+$avp(foo)  = "str3";
+xlog("Initial AVP list is: $(avp(foo)[*])\n");       # str3 str2 str1
+if(shuffle_avps( $avp(foo) ))
+    xlog("Shuffled AVP list is: $(avp(foo)[*])\n");  # str1, str3, str2 (for example)
+...
+				</programlisting>
+			</example>
+		</section>
 	</section>
 
 	<section>

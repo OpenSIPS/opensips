@@ -1,5 +1,3 @@
-# $Id$
-#
 # exec module makefile
 #
 # 

@@ -182,9 +182,9 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 				       msg->callid->body.len, msg->callid->body.s);
 
 			if (msg->REQ_METHOD == METHOD_ACK) {
-				rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+				rc = tm_api.t_check_trans(msg);
 				if (rc > 0)
-					tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+					tm_api.t_relay(msg, NULL, NULL);
 
 				return SCB_RUN_POST_CBS;
 			}
@@ -197,14 +197,14 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	if (msg->REQ_METHOD == METHOD_CANCEL) {
 		seq_request = 1;
 
-		rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		rc = tm_api.t_check_trans(msg);
 		if (rc > 0)
-			tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			tm_api.t_relay(msg, NULL, NULL);
 
 		return SCB_RUN_POST_CBS;
 	}
 
-	if (tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) == 0)
+	if (tm_api.t_check_trans(msg) == 0)
 		return SCB_RUN_POST_CBS;
 
 	/**
@@ -222,7 +222,7 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 			}
 		}
 
-		if (tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) < 0)
+		if (tm_api.t_relay(msg, NULL, NULL) < 0)
 			sl_api.reply(msg, 500, &status_500, NULL);
 
 		return SCB_RUN_POST_CBS;

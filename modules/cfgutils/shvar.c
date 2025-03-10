@@ -70,6 +70,12 @@ sh_var_t* add_shvar(const str *name)
 	hash_lock(sh_vars, e);
 
 	shv_holder = (sh_var_t **)hash_get(sh_vars, e, *name);
+	if (!shv_holder) {
+		LM_ERR("oom\n");
+		hash_unlock(sh_vars, e);
+		return NULL;
+	}
+
 	if (*shv_holder) {
 		hash_unlock(sh_vars, e);
 		return *shv_holder;
@@ -447,7 +453,8 @@ int mi_print_var(sh_var_t *shv, mi_item_t *var_item, int do_locking)
 			return -1;
 		}
 
-		unlock_shvar(shv);
+		if (do_locking)
+			unlock_shvar(shv);
 	} else {
 		ival = shv->v.value.n;
 		if (do_locking)
@@ -547,7 +554,7 @@ mi_response_t *mi_shvar_get_1(const mi_params_t *params, struct mi_handler *_)
 	if (!var_obj)
 		goto error;
 
-	if (mi_print_var(shv, var_obj, 0) < 0)
+	if (mi_print_var(shv, var_obj, 1) < 0)
 		goto error;
 
 	return resp;

@@ -81,7 +81,11 @@ int perl_exec_simple(struct sip_msg* _msg, str *_fnc_s, str *_param_s)
 	if (perl_checkfnc(fnc)) {
 		LM_DBG("running perl function \"%s\"\n", fnc);
 
+		ENTER;
+		SAVETMPS;
 		call_argv(fnc, flags, args);
+		FREETMPS;
+		LEAVE;
 		ret = 1;
 	} else {
 		LM_ERR("unknown function '%s' called.\n", fnc);

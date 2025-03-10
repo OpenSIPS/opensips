@@ -1,0 +1,387 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module is an implementation of a cachedb system designed to work with 
+		Amazon DynamoDB. It uses the AWS SDK library for C++ to connect to a DynamoDB instance.
+		It leverages the Key-Value interface exported from the core. 
+		<para>
+			<ulink url="https://aws.amazon.com/pm/dynamodb/"></ulink>
+		</para>
+	</para>
+	<para>
+	</para>
+
+		<section>
+		<title>Functionalities</title>
+		<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>set </emphasis>  - sets a key in DynamoDB using the  <emphasis>cachedb_store</emphasis> function
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>get </emphasis>  - queries a key from DynamoDB using the  <emphasis>cachedb_fetch</emphasis> function
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>remove </emphasis>  - removes a key from DynamoDB using the 
+				<emphasis>cachedb_remove</emphasis> function
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>get_counter </emphasis>  - queries a key with a numerical value
+				 from DynamoDB using the  <emphasis>cachedb_counter_fetch</emphasis> function
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>add </emphasis>  - increments the value of a specific item with a given value
+				 using the <emphasis>cachedb_add</emphasis> function 
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>sub </emphasis>  - decrements the value of a specific item with a given value
+				using the  <emphasis>cachedb_sub</emphasis> function
+				</para>
+			</listitem>
+		</itemizedlist>
+			
+			<para>
+			The following are internally used by OpenSIPS:
+			</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>map_get</emphasis>
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>map_set</emphasis>
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>map_remove</emphasis>
+				</para>
+			</listitem>
+		</itemizedlist>
+		</section>
+
+		<section>
+		<title>Table Format and TTL Option</title>
+		<para>
+			The tables used with DynamoDB must adhere to a specific format. 
+			Below is an example of creating a table:
+		</para>
+		<para>
+			<programlisting>
+aws dynamodb create-table \
+--table-name TableName \
+--attribute-definitions \
+	AttributeName=KeyName,AttributeType=S \
+--key-schema \
+	AttributeName=KeyName,KeyType=HASH \
+--provisioned-throughput \
+	ReadCapacityUnits=5,WriteCapacityUnits=5 \
+--table-class STANDARD
+			</programlisting>
+		</para>
+		
+		<para>
+			If you create the table using the above command, then you have to specify the key in the 
+			cachedb_url: <emphasis> modparam("cachedb_dynamodb", "cachedb_url", 
+			"dynamodb://localhost:8000/TableName?key=KeyName;val=ValName")"</emphasis>
+		</para>
+		<para>
+		For additional examples of how cachedb_url should be formatted, refer to the 
+		<link linkend="param_cachedb_url">cachedb_url (string)</link> section.
+		</para>
+
+		<para>
+			To enable TTL (Time to Live) for the table, which can be used with operations like set,
+			add, and subtract, you can update the table with the TTL option:
+		</para>
+		<para>
+			<programlisting>
+aws dynamodb update-time-to-live --table-name TableName --time-to-live-specification
+"Enabled=true, AttributeName=ttl"
+			</programlisting> 
+		</para>
+		<para>
+			For additional information about the table format and TTL options, follow these links:
+		</para>
+		<para>
+			<ulink url="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/getting-started-step-1.html">Creating a Table</ulink>
+		</para>
+		<para>
+			<ulink url="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/time-to-live-ttl-how-to.html">Time to Live (TTL)</ulink>
+		</para>
+		</section>
+
+
+	</section>
+
+
+	<section>
+	<title>Advantages</title>
+	<para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>scalable and fully managed NoSQL database service provided by AWS</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>integrated with other AWS services, providing robust security 
+				and scalability features</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>high availability and durability due to data replication across 
+				multiple AWS Availability Zones</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>serverless architecture, reducing operational overhead</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>offers single-digit response times, with DynamoDB Accelerator (DAX) 
+				for even lower latencies</emphasis>
+			</para>
+			</listitem>
+
+		</itemizedlist>
+	</para>
+	<para>
+	</para>
+	</section>
+
+	<section>
+	<title>Limitations</title>
+
+
+		<para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>relies heavily on indexes; without them, querying involves costly full table scans</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>does not support table joins, limiting complex queries involving multiple tables</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>item size limit:each item has a size limit of 400KB, which cannot be increased.</emphasis>
+			</para>
+			</listitem>
+
+		</itemizedlist>
+
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		There is no need to load any module before this module.
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>AWS SDK for C++:</emphasis>
+			</para>	
+			<para>By following these steps, you'll have the AWS SDK for C++ installed and 
+				configured on your Linux system, allowing you to integrate with DynamoDB:
+				<ulink url="https://docs.aws.amazon.com/sdk-for-cpp/v1/developer-guide/setup-linux.html">AWS SDK for C++ Installation Guide</ulink>
+			</para>
+			<para>
+				Additional instructions for installation can be found at:
+				<ulink url="https://github.com/aws/aws-sdk-cpp">AWS SDK for C++ GitHub Repository</ulink>
+			</para>
+
+			</listitem>
+			</itemizedlist>
+	</section>
+
+	<section>
+		<title>Deploying DynamoDB locally on your computer</title>
+		<para>
+		For testing purposes, you can run a DynamoDB locally. To achieve this, you should follow
+		<ulink url="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html">
+		these</ulink> steps in order to deploy dynamodb locally. 
+		</para>
+		<para>
+		Don't forget to always run the server using this command:
+		
+		<literal>java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb</literal>
+			in the directory where you extracted <emphasis>DynamoDBLocal.jar</emphasis>.
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
+		<title><varname>cachedb_url</varname> (string)</title>
+		<para>
+			The URLs of the server groups that OpenSIPS will connect to in order
+			to use, from script, the cache_store(), cache_fetch(), etc. operations.
+			It may be set more than once.  The prefix part of the URL will be
+			the identifier that will be used from the script.
+		</para>
+
+		<para>
+		There are some default parameters that can appear in the URL:
+		</para>
+		<itemizedlist>
+
+			<listitem>
+			<para>
+				<emphasis>region</emphasis> - specifies the AWS region where the DynamoDB table is located
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>key</emphasis> - specifies the table's Key column; default value is <emphasis>"opensipskey"</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>val</emphasis> - specifies the table's Value column on which cache operations such as cache_store, cache_fetch, etc., will be performed;
+				default value is <emphasis>"opensipsval"</emphasis>
+			</para>
+			</listitem>
+		</itemizedlist>
+
+
+		<para>
+		Syntax for <emphasis> cachedb_url </emphasis>
+		</para>
+		
+		<itemizedlist>
+		<listitem>
+		<para>when using a previously created table (you have to specify the key and value):</para>
+		
+			<itemizedlist>
+			
+			<listitem> 
+				<para>host and port</para>
+				<literal> <emphasis>"dynamodb://id_host:id_port/tableName?key=key1;val=val1"</emphasis></literal>
+			</listitem>
+			
+			<listitem> 
+				<para>region</para>
+				<literal> <emphasis>"dynamodb:///tableName?region=regionName;key=key2;val=val2"</emphasis></literal>
+			</listitem>
+
+			</itemizedlist>
+		</listitem>
+	
+		<listitem>
+		<para>when using the default key and value:</para>
+			<itemizedlist>
+			
+			<listitem> 
+				<para>host and port</para>
+				<literal> <emphasis>"dynamodb://id_host:id_port/tableName"</emphasis></literal>
+			</listitem>
+			
+			<listitem> 
+				<para>region</para>
+				<literal> <emphasis>"dynamodb:///tableName?region=regionName"</emphasis></literal>
+			</listitem>
+			
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+
+		<example>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+
+# single-instance URLs
+modparam("cachedb_dynamodb", "cachedb_url", "dynamodb://localhost:8000/table1")
+modparam("cachedb_dynamodb", "cachedb_url", "dynamodb:///table2?region=central-1")
+
+
+# multi-instance URL (will perform circular <emphasis role='bold'>failover</emphasis> on each query)
+modparam("cachedb_dynamodb", "cachedb_url", 
+	"dynamodb://localhost:8000/table1?key=Key;val=Val")
+modparam("cachedb_dynamodb", "cachedb_url", 
+	"dynamodb:///table2?region=central-1;key=Key;val=Val")
+
+
+...
+		</programlisting>
+			</example>
+
+			<example>
+			<title>Use Dynamodb servers </title>
+			<programlisting format="linespecific">
+...
+
+cache_store("dynamodb", "call1", "10");
+cache_store("dynamodb", "call2", "25", 150) // expires = 150s -optional
+cache_fetch("dynamodb", "call1", $var(total));
+cache_remove("dynamodb", "call1");
+
+
+cache_store("dynamodb", "counter1", "200");
+cache_sub("dynamodb", "counter1", 4, 1000); // expires = 1000s -mandatory parameter
+cache_add("dynamodb", "call2", 5, 0) // -this update will not expire  -mandatory parameter
+cache_remove("dynamodb", "counter1");
+
+...
+		</programlisting>
+			</example>
+		</section>
+
+
+	</section>
+
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+		<para>The module does not export functions to be used
+		in configuration script.</para>
+	</section>
+
+
+</chapter>
+

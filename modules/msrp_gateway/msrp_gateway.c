@@ -292,6 +292,7 @@ static int raise_failed_event(str *key, str *from, str *to, str *ruri,
 
 	if (msg && msg->first_line.type == SIP_REPLY &&
 		msg->REPLY_STATUS >= 300) {
+		/* coverity[overrun-buffer-val: FALSE] */
 		if (evi_param_set_int(evi_code_p, &msg->REPLY_STATUS) < 0) {
 			LM_ERR("cannot set event parameter\n");
 			return -1;

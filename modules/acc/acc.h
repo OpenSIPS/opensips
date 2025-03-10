@@ -73,6 +73,7 @@
 #include "acc_logic.h"
 
 extern struct dlg_binds dlg_api;
+extern db_func_t acc_dbf;
 
 
 int store_extra_values(extra_value_t* values, str *values_str,

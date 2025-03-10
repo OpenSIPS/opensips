@@ -1,6 +1,5 @@
 #!/bin/sh
 
-#$Id$
 #
 # finds CC version and prints it in the following format:
 # compiler_name version major_version

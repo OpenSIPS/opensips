@@ -34,7 +34,7 @@
 
 /* module functions */
 static int mod_init();
-static int destroy(void);
+static void destroy(void);
 int mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
@@ -177,10 +177,9 @@ static int mod_init(void)
 }
 
 
-int destroy(void)
+static void destroy(void)
 {
 	mi_http_destroy_async_lock();
-	return 0;
 }
 
 

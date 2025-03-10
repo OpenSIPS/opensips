@@ -26,8 +26,8 @@
  * by defining specific settings (per TCP path) using the "tcp_mgm" module */
 struct tcp_conn_profile tcp_con_df_profile;
 
-static int tcp_con_get_df_profile(union sockaddr_union *_,
-        union sockaddr_union *__, enum sip_protos ___,
+static int tcp_con_get_df_profile(const union sockaddr_union *_,
+        const union sockaddr_union *__, enum sip_protos ___,
         struct tcp_conn_profile *out_profile)
 {
 	*out_profile = tcp_con_df_profile;
@@ -36,8 +36,8 @@ static int tcp_con_get_df_profile(union sockaddr_union *_,
 
 
 /* global function/variable which may be overridden by tcp_mgm */
-int (*tcp_con_get_profile)(union sockaddr_union *remote,
-         union sockaddr_union *local, enum sip_protos proto,
+int (*tcp_con_get_profile)(const union sockaddr_union *remote,
+         const union sockaddr_union *local, enum sip_protos proto,
          struct tcp_conn_profile *out_profile) = tcp_con_get_df_profile;
 
 struct tcp_conn_attr_key tcp_con_attr[] = {

@@ -42,6 +42,8 @@ struct authenticate_body {
 	str nonce;
 	str opaque;
 	str qop;
+	str ik;
+	str ck;
 };
 
 /* casting macro for accessing the topmost www/proxy authenticate body */

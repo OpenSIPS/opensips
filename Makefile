@@ -112,11 +112,12 @@ endif
 
 modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_basenames=$(patsubst modules/%, %, $(modules))
+db_modules_basenames=$(filter db_%, $(modules_basenames))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf $(deps_gen)
 
-install_docs := README-MODULES AUTHORS NEWS README
+install_docs := AUTHORS NEWS README
 ifneq ($(skip-install-doc),yes)
 	install_docs += INSTALL
 endif
@@ -477,7 +478,8 @@ install-app: mk-install-dirs install-cfg install-bin \
 	install-app-doc install-man
 
 # Install all module stuff (except modules-docbook?)
-install-modules-all: install-modules install-modules-doc
+install-modules-files: install-modules install-modules-doc
+install-modules-all: install-modules-files install-modules-dbschema
 
 # Install everything (except modules-docbook?)
 install: install-app install-modules-all
@@ -546,6 +548,15 @@ install-modules: modules $(modules_prefix)/$(modules_dir)
 				$(MAKE) -C `dirname "$$r"` install_module_custom ; \
 			else \
 				echo "ERROR: module $$r not compiled" ; \
+			fi ;\
+		fi ; \
+	done
+
+install-modules-dbschema:
+	@for r in $(db_modules_basenames) "" ; do \
+		if [ -n "$$r" ]; then \
+			if [ -f modules/"$$r"/Makefile ]; then \
+				$(MAKE) -C modules/"$$r" install_module_dbschema ; \
 			fi ;\
 		fi ; \
 	done

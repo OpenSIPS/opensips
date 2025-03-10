@@ -100,6 +100,9 @@ enum _hdr_types_t {
 	HDR_SUCCESS_REPORT_T		     /**> MSRP Success-Report header field */,
 	HDR_STATUS_T				     /**> MSRP Status header field */,
 	HDR_USE_PATH_T				     /**> MSRP Use-Path header field */,
+	HDR_SECURITY_CLIENT_T		     /**> sec-agree RFC3329 Security-Client header field */,
+	HDR_SECURITY_SERVER_T		     /**> sec-agree RFC3329 Security-Server header field */,
+	HDR_SECURITY_VERIFY_T		     /**> sec-agree RFC3329 Security-Verify header field */,
 	HDR_EOH_T					     /**< Some other header field */
 };
 
@@ -174,6 +177,9 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_SUCCESS_REPORT_F		HDR_F_DEF(SUCCESS_REPORT)
 #define HDR_STATUS_F				HDR_F_DEF(STATUS)
 #define HDR_USE_PATH_F				HDR_F_DEF(USE_PATH)
+#define HDR_SECURITY_CLIENT_F		HDR_F_DEF(SECURITY_CLIENT)
+#define HDR_SECURITY_SERVER_F		HDR_F_DEF(SECURITY_SERVER)
+#define HDR_SECURITY_VERIFY_F		HDR_F_DEF(SECURITY_VERIFY)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;
@@ -223,6 +229,9 @@ static inline int hdr_allocs_parse(struct hdr_field* hdr)
 		case HDR_PROXY_AUTHENTICATE_T:
 		case HDR_ALLOW_T:
 		case HDR_SUPPORTED_T:
+		case HDR_SECURITY_CLIENT_T:
+		case HDR_SECURITY_SERVER_T:
+		case HDR_SECURITY_VERIFY_T:
 			return 1;
 		default:
 			return 0;

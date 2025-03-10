@@ -1,1 +1,1 @@
-id(int,auto) setid(int) destination(string) socket(string,null) state(int) probe_mode(int) weight(string) priority(int) attrs(string) description(string) 
+id(int,auto) setid(int) destination(string) socket(string,null) state(int) probe_mode(int) weight(string) priority(int) attrs(string,null) description(string,null) 

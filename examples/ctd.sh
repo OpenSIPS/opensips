@@ -1,7 +1,5 @@
 #!/bin/sh
 #
-# $Id$
-#
 # Usage: ctd.sh $FROM $TARGET
 # 
 # click-to-dial example using REFER

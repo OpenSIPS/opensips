@@ -1,5 +1,3 @@
-# $Id$
-#
 # mediaproxy module makefile
 #
 # 

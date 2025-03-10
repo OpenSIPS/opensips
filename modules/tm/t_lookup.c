@@ -942,8 +942,18 @@ int init_rb( struct retr_buf *rb, struct sip_msg *msg)
 {
 	int proto;
 
-	update_sock_struct_from_ip( &rb->dst.to, msg );
 	proto=msg->rcv.proto;
+
+	if (msg->msg_flags&FL_REPLY_TO_VIA) {
+		if (update_sock_struct_from_via( &(rb->dst.to), msg, msg->via1 )==-1) {
+			LM_ERR("cannot lookup reply dst: %.*s\n",
+					msg->via1->host.len, msg->via1->host.s );
+			ser_error=E_BAD_VIA;
+			return 0;
+		}
+	} else {
+		update_sock_struct_from_ip( &rb->dst.to, msg );
+	}
 	rb->dst.proto=proto;
 	rb->dst.proto_reserved1=msg->rcv.proto_reserved1;
 	/* use for sending replies the incoming interface of the request -bogdan */
@@ -1190,7 +1200,11 @@ int t_get_trans_ident(struct sip_msg* p_msg, unsigned int* hash_index,
 }
 
 
-
+/* Looks for the transaction with the given coordinates (index/label).
+ * If found, the transaction is ref'ed and retuned via parameter; note that
+ * the global T holder is not set.
+ * Returns 1 if transaction found, -1 otherwise.
+ */
 int t_lookup_ident(struct cell ** trans, unsigned int hash_index,
 															unsigned int label)
 {
@@ -1210,7 +1224,6 @@ int t_lookup_ident(struct cell ** trans, unsigned int hash_index,
 		if(p_cell->label == label){
 			REF_UNSAFE(p_cell);
 			UNLOCK_HASH(hash_index);
-			set_t(p_cell);
 			*trans=p_cell;
 			LM_DBG("transaction found\n");
 			return 1;
@@ -1218,7 +1231,6 @@ int t_lookup_ident(struct cell ** trans, unsigned int hash_index,
 	}
 
 	UNLOCK_HASH(hash_index);
-	set_t(0);
 	*trans=p_cell;
 
 	LM_DBG("transaction not found\n");

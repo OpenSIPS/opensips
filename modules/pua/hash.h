@@ -42,6 +42,7 @@
 #define XCAPDIFF_EVENT      1<<5
 #define DIALOG_EVENT        1<<6
 #define CALLINFO_EVENT      1<<7
+#define REGINFO_EVENT       1<<8
 
 #define UL_PUBLISH          1<<0
 #define BLA_PUBLISH         1<<1
@@ -55,6 +56,8 @@
 #define RLS_SUBSCRIBE       1<<9
 #define DIALOG_PUBLISH      1<<10
 #define CALLINFO_PUBLISH    1<<11
+#define REGINFO_SUBSCRIBE   1<<12
+#define REGINFO_PUBLISH     1<<13
 
 #define NO_UPDATEDB_FLAG    0
 #define UPDATEDB_FLAG       1

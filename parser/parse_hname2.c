@@ -93,6 +93,8 @@ static inline char* skip_ws(char* p, char *end)
 #include "case_succ.h"     /* Success-Report */
 #include "case_stat.h"     /* Status */
 #include "case_use_.h"     /* Use-Path */
+#include "case_secu.h"     /* Security-Client, Security-Server,
+                              Security-Verify */
 
 
 /*
@@ -160,6 +162,7 @@ static inline char* skip_ws(char* p, char *end)
 	case _succ_: succ_CASE; \
 	case _stat_: stat_CASE; \
 	case _use__: use__CASE; \
+	case _secu_: secu_CASE; \
 
 
 #define PARSE_COMPACT(id)      \

@@ -59,6 +59,8 @@ struct scaling_profile {
 };
 
 
+int init_auto_scaling(void);
+
 int create_auto_scaling_profile( char *name,
 	unsigned int max_procs, unsigned int up_threshold,
 	unsigned int up_cycles_needed, unsigned int up_cycles_tocheck,

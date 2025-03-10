@@ -41,8 +41,7 @@ static const param_export_t params[] = {
 };
 
 static const proc_export_t procs[] = {
-	{ "RabbitMQ Consumer", 0, 0, rmq_cons_process, 1,
-		PROC_FLAG_HAS_IPC },
+	{ "RabbitMQ Consumer", 0, 0, rmq_cons_process, 1, 0},
 	{ 0, 0, 0, 0, 0, 0 },
 };
 

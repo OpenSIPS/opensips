@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Răzvan Crainea <razvan@opensips.org>
 Build-Depends: bison,
-               debhelper (>= 9),
+               debhelper (>= 10),
                default-libmysqlclient-dev | libmysqlclient-dev,
                debhelper (>= 9.20160709) | dh-systemd (>= 1.5),
                dpkg-dev (>= 1.16.1.1),
@@ -24,6 +24,8 @@ Build-Depends: bison,
                liblua5.1-0-dev,
                libmemcached-dev,
                libmicrohttpd-dev,
+               libmnl-dev,
+               libjwt-dev | base-files,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
                libncurses5-dev,
@@ -66,6 +68,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-geoip-module,
           opensips-http-modules,
           opensips-identity-module,
+          opensips-ipsec-module,
           opensips-jabber-module,
           opensips-json-module,
           opensips-kafka-module,
@@ -164,6 +167,7 @@ Multi-Arch: foreign
 Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: opensips-berkeley-module, opensips-berkeley-schema
 Description: Berkeley Database module for OpenSIPS - helper program
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -180,6 +184,7 @@ Depends: db-util (>= 4.6.19),
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: opensips-berkeley-bin, opensips-berkeley-schema
 Description: Berkeley Database module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -188,6 +193,19 @@ Description: Berkeley Database module for OpenSIPS
  This package provides the berkeley database module for OpenSIPS, a
  high-performance embedded DB kernel. All database tables are stored
  in files, no additional server is necessary.
+
+Package: opensips-berkeley-dbschema
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-berkeley-bin, opensips-berkeley-module
+Description: Berkeley database schema for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the Berkeley database schema files for OpenSIPS.
 
 Package: opensips-carrierroute-module
 Architecture: any
@@ -342,6 +360,17 @@ Description: SIP Identity module for OpenSIPS
  .
  This package provides support for SIP Identity (see RFC 4474).
 
+Package: opensips-ipsec-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: IPSec proto module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides IMS IPSec connections (see TS 33.203).
+
 Package: opensips-jabber-module
 Architecture: any
 Multi-Arch: same
@@ -452,12 +481,26 @@ Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: opensips-mysql-dbschema
 Description: MySQL database connectivity module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
  This package provides the MySQL database driver for OpenSIPS.
+
+Package: opensips-mysql-dbschema
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-mysql-module
+Description: MySQL database schema for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the MySQL database schema files for OpenSIPS.
 
 Package: opensips-perl-modules
 Architecture: any
@@ -478,12 +521,26 @@ Depends: opensips (= ${binary:Version}),
          postgresql-client,
          ${misc:Depends},
          ${shlibs:Depends}
+Suggests: opensips-postgres-dbschema
 Description: PostgreSQL database connectivity module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
  This package provides the PostgreSQL database driver for OpenSIPS.
+
+Package: opensips-postgres-dbschema
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-postgres-module
+Description: PostgreSQL database schema for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the PostgreSQL database schema files for OpenSIPS.
 
 Package: opensips-presence-modules
 Architecture: any
@@ -630,12 +687,26 @@ Package: opensips-sqlite-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Suggests: opensips-sqlite-dbschema
 Description: SQLite database connectivity module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
  This package provides the SQLite database driver for OpenSIPS.
+
+Package: opensips-sqlite-dbschema
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-sqlite-module
+Description: SQLite database schema for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the SQLite database schema files for OpenSIPS.
 
 Package: opensips-stir-shaken-module
 Architecture: any

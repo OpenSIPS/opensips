@@ -31,13 +31,25 @@ int digest_algorithm_available(alg_t algorithm)
         case ALG_UNSPEC:
         case ALG_MD5:
         case ALG_MD5SESS:
+        case ALG_AKAv1_MD5:
+        case ALG_AKAv1_MD5SESS:
+        case ALG_AKAv2_MD5:
+        case ALG_AKAv2_MD5SESS:
 #if defined(SHA_256_ENABLE)
         case ALG_SHA256:
         case ALG_SHA256SESS:
+        case ALG_AKAv1_SHA256:
+        case ALG_AKAv1_SHA256SESS:
+        case ALG_AKAv2_SHA256:
+        case ALG_AKAv2_SHA256SESS:
 #endif
 #if defined(SHA_512_256_ENABLE)
         case ALG_SHA512_256:
         case ALG_SHA512_256SESS:
+        case ALG_AKAv1_SHA512_256:
+        case ALG_AKAv1_SHA512_256SESS:
+        case ALG_AKAv2_SHA512_256:
+        case ALG_AKAv2_SHA512_256SESS:
 #endif
 		return (1);
 
@@ -55,7 +67,8 @@ int dauth_algorithm_check(const struct authenticate_body *auth,
 	if (!digest_algorithm_available(auth->algorithm))
 		return (0);
 	damp = (const struct dauth_algorithm_match *)mdp->argp;
-	return (ALG2ALGFLG(auth->algorithm) & damp->algmask);
+	return (ALG2ALGFLG(auth->algorithm==ALG_UNSPEC ? ALG_MD5:auth->algorithm)
+				& damp->algmask);
 }
 
 int dauth_fixup_algorithms(void** param)

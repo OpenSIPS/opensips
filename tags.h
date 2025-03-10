@@ -72,7 +72,7 @@ inline static void init_tags( char *tag, char **suffix,
 		char *signature, char separator )
 {
 	str src[3];
-	struct socket_info* si;
+	const struct socket_info* si;
 
 	si=get_first_socket();
 	src[0].s=signature; src[0].len=strlen(signature);

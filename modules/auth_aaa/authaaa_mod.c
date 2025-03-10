@@ -61,6 +61,9 @@ static int check_service_type = -1;
 
 int use_ruri_flag = -1;
 char *use_ruri_flag_str = 0;
+/* Radius (RFC 5090) uses "Digest-Qop"
+ * Diameter (RFC 4740) uses "Digest-QoP" */
+static char *digest_qop_name = "Digest-QoP";
 
 /*
  * Exported functions
@@ -92,6 +95,7 @@ static const param_export_t params[] = {
 	{"auth_service_type",  INT_PARAM, &auth_service_type   },
 	{"check_service_type", INT_PARAM, &check_service_type  },
 	{"use_ruri_flag",      STR_PARAM, &use_ruri_flag_str   },
+	{"digest_qop_name",    STR_PARAM, &digest_qop_name     },
 	{0, 0, 0}
 };
 
@@ -168,7 +172,7 @@ static int mod_init(void)
 	attrs[A_DIGEST_OPAQUE].name			= "Digest-Opaque";
 	attrs[A_DIGEST_CNONCE].name			= "Digest-CNonce";
 	attrs[A_DIGEST_NONCE_COUNT].name	= "Digest-Nonce-Count";
-	attrs[A_DIGEST_QOP].name			= "Digest-Qop";
+	attrs[A_DIGEST_QOP].name			= digest_qop_name;
 	attrs[A_DIGEST_METHOD].name			= "Digest-Method";
 	attrs[A_DIGEST_URI].name			= "Digest-URI";
 	attrs[A_DIGEST_NONCE].name			= "Digest-Nonce";

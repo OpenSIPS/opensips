@@ -141,6 +141,12 @@ struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
 int fr_timeout;
 int fr_inv_timeout;
 
+static char* tm_local_reply_route_s;
+struct script_route_ref *tm_local_reply_route = NULL;
+
+static char* tm_local_request_route_s;
+struct script_route_ref *tm_local_request_route = NULL;
+
 #define TM_CANCEL_BRANCH_ALL    (1<<0)
 #define TM_CANCEL_BRANCH_OTHERS (1<<1)
 
@@ -340,6 +346,10 @@ static const param_export_t params[]={
 		&tm_cluster_param.s },
 	{ "cluster_auto_cancel",      INT_PARAM,
 		&tm_repl_auto_cancel },
+	{ "local_reply_route",        STR_PARAM,
+		&tm_local_reply_route_s },
+	{ "local_request_route",      STR_PARAM,
+		&tm_local_request_route_s },
 	{0,0,0}
 };
 
@@ -377,24 +387,24 @@ static const stat_export_t mod_stats[] = {
  * pseudo-variables exported by TM module
  */
 static const pv_export_t mod_items[] = {
-	{ {"T_branch_idx", sizeof("T_branch_idx")-1}, 900,
+	{ str_const_init("T_branch_idx"), 900,
 		pv_get_tm_branch_idx, NULL, NULL, NULL, NULL, 0 },
-	{ {"T_reply_code", sizeof("T_reply_code")-1}, 901,
+	{ str_const_init("T_reply_code"), 901,
 		pv_get_tm_reply_code, NULL, NULL, NULL, NULL, 0 },
-	{ {"T_ruri",       sizeof("T_ruri")-1},       902,
+	{ str_const_init("T_ruri"),       902,
 		pv_get_tm_ruri,       NULL, NULL, NULL, NULL, 0 },
-	{ {"bavp",         sizeof("bavp")-1},         903,
+	{ str_const_init("bavp"),         903,
 		pv_get_tm_branch_avp, pv_set_tm_branch_avp,
 		pv_parse_avp_name, pv_parse_index, NULL, 0 },
-	{ {"T_fr_timeout", sizeof("T_fr_timeout")-1}, 904,
+	{ str_const_init("T_fr_timeout"), 904,
 		pv_get_tm_fr_timeout, pv_set_tm_fr_timeout,
 		NULL, NULL, NULL, 0 },
-	{ {"T_fr_inv_timeout", sizeof("T_fr_inv_timeout")-1}, 905,
+	{ str_const_init("T_fr_inv_timeout"), 905,
 		pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout,
 		NULL, NULL, NULL, 0 },
-	{ {"T_id",         sizeof("T_id")-1},         906,
+	{ str_const_init("T_id"),         906,
 		pv_get_t_id, NULL, NULL, NULL, NULL, 0 },
-	{ {"T_branch_last_reply_code", sizeof("T_branch_last_reply_code")-1}, 907,
+	{ str_const_init("T_branch_last_reply_code"), 907,
 		pv_get_tm_branch_reply_code, NULL,
 		NULL, pv_parse_index, NULL, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
@@ -688,7 +698,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->register_tmcb = register_tmcb;
 
 	/* relay function */
-	tmb->t_relay = (cmd_function)w_t_relay;
+	tmb->t_relay = w_t_relay;
 
 	/* reply functions */
 	tmb->t_reply = (treply_f)w_t_reply;
@@ -698,7 +708,7 @@ int load_tm( struct tm_binds *tmb)
 	/* transaction location/status functions */
 	tmb->t_newtran = w_t_newtran;
 	tmb->t_is_local = t_is_local;
-	tmb->t_check_trans = (cmd_function)t_check_trans;
+	tmb->t_check_trans = t_check_trans;
 	tmb->t_get_trans_ident = t_get_trans_ident;
 	tmb->t_lookup_ident = t_lookup_ident;
 	tmb->t_gett = get_t;
@@ -945,6 +955,30 @@ static int mod_init(void)
 	if (tm_init_cluster() < 0) {
 		LM_ERR("cannot initialize cluster support for transactions!\n");
 		LM_WARN("running without cluster support for transactions!\n");
+	}
+
+	if (tm_local_reply_route_s)
+	{
+		tm_local_reply_route = ref_script_route_by_name(
+			tm_local_reply_route_s,
+			sroutes->onreply, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(tm_local_reply_route))
+		{
+			LM_ERR("route <%s> does not exist\n",tm_local_reply_route_s);
+			return -1;
+		}
+	}
+
+	if (tm_local_request_route_s)
+	{
+		tm_local_request_route = ref_script_route_by_name(
+			tm_local_request_route_s,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(tm_local_request_route))
+		{
+			LM_ERR("route <%s> does not exist\n",tm_local_request_route_s);
+			return -1;
+		}
 	}
 
 	return 0;
@@ -1299,11 +1333,6 @@ static int w_t_relay( struct sip_msg  *p_msg , void *flags, struct proxy_l *prox
 		tm_has_request_disponsition_no_cancel(p_msg)==0 )
 			t->flags|=T_MULTI_200OK_FLAG;
 
-		/* update the transaction only if in REQUEST route; for other types
-		   of routes we do not want to inherit the local changes */
-		if (route_type==REQUEST_ROUTE)
-			update_cloned_msg_from_msg( t->uas.request, p_msg);
-
 		if (route_type==FAILURE_ROUTE) {
 			/* If called from failure route we need reset the branch counter to
 			 * ignore the previous set of branches (already terminated) */
@@ -1313,6 +1342,12 @@ static int w_t_relay( struct sip_msg  *p_msg , void *flags, struct proxy_l *prox
 			 * created, better lock here to avoid any overlapping with 
 			 * branch injection from other processes */
 			LOCK_REPLIES(t);
+
+			/* update the transaction only if in REQUEST route; for other types
+			   of routes we do not want to inherit the local changes */
+			if (route_type==REQUEST_ROUTE)
+				update_cloned_msg_from_msg( t->uas.request, p_msg);
+
 			ret = t_forward_nonack( t, p_msg, p, 1/*reset*/,1/*locked*/);
 			UNLOCK_REPLIES(t);
 		}
@@ -1696,7 +1731,8 @@ static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if (route_type!=BRANCH_ROUTE && route_type!=ONREPLY_ROUTE) {
+	if (route_type!=BRANCH_ROUTE && route_type!=ONREPLY_ROUTE &&
+	route_type!=FAILURE_ROUTE) {
 		res->flags = PV_VAL_NULL;
 		return 0;
 	}
@@ -1995,7 +2031,8 @@ int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
 			val->ri = avp_value.n;
 			val->flags |= PV_VAL_INT|PV_TYPE_INT;
 		}
-	}
+	} else
+		pv_get_null(msg, param, val);
 
 	goto success;
 

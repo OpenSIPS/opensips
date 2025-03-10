@@ -4,11 +4,9 @@ CREATE TABLE subscriber (
     username VARCHAR(64) DEFAULT '' NOT NULL,
     domain VARCHAR(64) DEFAULT '' NOT NULL,
     password VARCHAR(25) DEFAULT '' NOT NULL,
-    email_address VARCHAR(64) DEFAULT '' NOT NULL,
     ha1 VARCHAR(64) DEFAULT '' NOT NULL,
     ha1_sha256 VARCHAR(64) DEFAULT '' NOT NULL,
     ha1_sha512t256 VARCHAR(64) DEFAULT '' NOT NULL,
-    rpid VARCHAR(64) DEFAULT NULL,
     CONSTRAINT subscriber_account_idx UNIQUE (username, domain)
 );
 

@@ -1,0 +1,59 @@
+# Diameter AVPs for AKA AV Diameter command
+
+VENDOR 10415 TGPP
+
+ATTRIBUTE Public-Identity                     601 string     10415
+ATTRIBUTE Server-Name                         602 string     10415
+ATTRIBUTE 3GPP-SIP-Number-Auth-Items          607 unsigned32 10415
+ATTRIBUTE 3GPP-SIP-Authentication-Scheme      608 utf8string 10415
+ATTRIBUTE 3GPP-SIP-Authenticate               609 hexstring  10415
+ATTRIBUTE 3GPP-SIP-Authorization              610 hexstring  10415
+ATTRIBUTE 3GPP-SIP-Authentication-Context     611 string     10415
+ATTRIBUTE 3GPP-SIP-Item-Number                613 unsigned32 10415
+ATTRIBUTE Confidentiality-Key                 625 hexstring  10415
+ATTRIBUTE Integrity-Key                       626 hexstring  10415
+
+
+ATTRIBUTE 3GPP-SIP-Auth-Data-Item             612 grouped    10415
+{
+	3GPP-SIP-Item-Number | OPTIONAL | 1
+	3GPP-SIP-Authentication-Scheme | OPTIONAL | 1
+	3GPP-SIP-Authenticate | OPTIONAL | 1
+	3GPP-SIP-Authorization | OPTIONAL | 1
+	3GPP-SIP-Authentication-Context | OPTIONAL | 1
+	Confidentiality-Key | OPTIONAL | 1
+	Integrity-Key | OPTIONAL | 1
+}
+
+APPLICATION-AUTH 16777216/10415 3GPP Cx
+
+REQUEST 303 Multimedia-Auth Request
+{
+	Session-Id | REQUIRED | 1
+	Origin-Host | REQUIRED | 1
+	Origin-Realm | REQUIRED | 1
+	Destination-Realm | REQUIRED | 1
+	Vendor-Specific-Application-Id | REQUIRED | 1
+	Auth-Session-State | REQUIRED | 1
+	User-Name | REQUIRED | 1
+	Public-Identity | REQUIRED | 1
+	3GPP-SIP-Number-Auth-Items | REQUIRED | 1
+	3GPP-SIP-Auth-Data-Item | REQUIRED | 1
+	Server-Name | REQUIRED | 1
+}
+
+ANSWER 303 Multimedia-Auth Answer
+{
+	Session-Id | REQUIRED | 1
+	Origin-Host | REQUIRED | 1
+	Origin-Realm | REQUIRED | 1
+	Destination-Host | OPTIONAL | 1
+	Destination-Realm | OPTIONAL | 1
+	Vendor-Specific-Application-Id | REQUIRED | 1
+	Auth-Session-State | REQUIRED | 1
+	User-Name | REQUIRED | 1
+	Public-Identity | REQUIRED | 1
+	3GPP-SIP-Number-Auth-Items | REQUIRED | 1
+	3GPP-SIP-Auth-Data-Item | REQUIRED | 1
+	Result-Code | REQUIRED | 1
+}

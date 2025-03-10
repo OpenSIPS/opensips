@@ -108,6 +108,8 @@ dialog Module
               1.7.25. dlg_send_sequential(method, leg, [, body] [,
                       content-type] [, headers])
 
+              1.7.26. dlg_inc_cseq([tag, ][inc])
+
         1.8. Exported Statistics
 
               1.8.1. active_dialogs
@@ -137,6 +139,8 @@ dialog Module
               1.9.11. list_all_profiles
               1.9.12. dlg_push_var
               1.9.13. dlg_send_sequential
+              1.9.14. set_dlg_profile
+              1.9.15. unset_dlg_profile
 
         1.10. Exported Pseudo-Variables
 
@@ -260,6 +264,7 @@ dialog Module
    1.75. dlg_on_timeout usage
    1.76. dlg_on_hangup usage
    1.77. dlg_send_sequential usage to convert DTMF codes
+   1.78. dlg_inc_cseq usage
 
 Chapter 1. Admin Guide
 
@@ -909,9 +914,10 @@ modparam("dialog", "flags_column", "flags_c_name")
 
 1.6.37. profiles_with_value (string)
 
-   List of names (alphanumerical) for profiles with values. Flags
-   /b or /s allow sharing profiles between OpenSIPS instances
-   using the clusterer module or a CacheDB backend, respectively.
+   List of names (alphanumerical/-/_) for profiles with values.
+   Flags /b or /s allow sharing profiles between OpenSIPS
+   instances using the clusterer module or a CacheDB backend,
+   respectively.
 
    Default value is “empty”.
 
@@ -923,7 +929,7 @@ annels/s; codecUsed/b;")
 
 1.6.38. profiles_no_value (string)
 
-   List of names (alphanumerical) for profiles without values.
+   List of names (alphanumerical/-/_) for profiles without values.
    Flags /b or /s allow sharing profiles between OpenSIPS
    instances using the clusterer module or a CacheDB backend,
    respectively.
@@ -1045,6 +1051,14 @@ modparam("dialog", "profile_timeout", "43200")
    clusterer module. This enables sending and receiving all the
    dialog-related events (creation, update and deletion) in the
    cluster.
+
+   This OpenSIPS cluster exposes the "dialog-dlg-repl" capability
+   in order to mark nodes as eligible for becoming data donors
+   during an arbitrary sync request. Consequently, the cluster
+   must have at least one node marked with the "seed" value as the
+   clusterer.flags column/property in order to be fully
+   functional. Consult the clusterer - Capabilities chapter for
+   more details.
 
    Default value is “0” (no replication).
 
@@ -1914,6 +1928,35 @@ event_route[E_RTPPROXY_DTMF] {
 }
 ...
 
+1.7.26.  dlg_inc_cseq([tag, ][inc])
+
+   Increments the dialog's generated CSeq associated to the leg
+   identified by the dialog's tag.
+
+   Parameters:
+     * tag (string, optional) - the tag to increment the CSeq
+       value for. If missing, the message's To tag is used to
+       identify the leg to increment the CSeq for.
+     * inc (integer, optional) - the value used to
+       increment/decrement (if negative) the CSeq of the
+       identified leg. If not used, the value is incremented with
+       1.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE routes.
+
+   Example 1.78. dlg_inc_cseq usage
+...
+route {
+        ...
+        if (has_totag()) {
+                if (loose_route())
+                        dlg_inc_cseq(); # increment upstream CSeq after
+each in-dialog request
+        }
+}
+...
+
 1.8. Exported Statistics
 
 1.8.1. active_dialogs
@@ -2249,6 +2292,8 @@ GIwZjAzNGM1ZDY
           + custom:CONTENT_TYPE:BODY - this can be used to specify
             a specific Content-Type ehader and body for the
             sequential message generated.
+     * headers - (optional) can be used to specify some headers
+       for the initial sequential message.
 
    This functions runs asynchronously and returns the status code
    and reason of the last reply received for either the challenge
@@ -2271,6 +2316,54 @@ GIwZjAzNGM1ZDY
                                 mode=challenge-callee \
                                 body=outbound \
                                 method=UPDATE
+
+   MI Command used to send REFER to the callee, and add Refer-To
+   header:
+                        opensips-cli -x mi dlg_send_sequential \
+                                callid=usR8FlGOSMfCTAIHebHCOQ.. \
+                                method=REFER \
+                                body=none \
+                                mode=callee \
+                                headers='Refer-To: sip:user@domain:50060
+'
+
+1.9.14. set_dlg_profile
+
+   Set the dialog identified by dialog ID / Call-ID into the given
+   profile ( with optional value and clearing of the old profile
+   values )
+
+   Name: set_dlg_profile
+
+   Parameters: It takes 2-4 parameters
+     * dlg_id - dialog ID or Call-ID for the respective dialog
+     * profile - profile name to be set
+     * value - optional, the profile value to be set
+     * clear_values - optional, clear previous values in the
+       profile before setting the new one
+
+   MI FIFO Command Format:
+                opensips-cli -x mi set_dlg_profile DID my_profile my_val
+ue 1
+
+1.9.15. unset_dlg_profile
+
+   Unsets the dialog identified by dialog ID / Call-ID from the
+   given profile ( with optional value and clearing of the old
+   profile values )
+
+   Name: set_dlg_profile
+
+   Parameters: It takes 2-3 parameters
+     * dlg_id - dialog ID or Call-ID for the respective dialog
+     * profile - profile name to be unset
+     * value - optional, the profile value to be unset. for
+       profiles with value, by omitting this parameter you can now
+       clear all values of the given profile.
+
+   MI FIFO Command Format:
+                opensips-cli -x mi unset_dlg_profile DID my_profile my_v
+alue
 
 1.10. Exported Pseudo-Variables
 
@@ -2402,8 +2495,12 @@ GIwZjAzNGM1ZDY
 
    This is a read/write variable that allows access to the dialog
    attribute named name. It can hold a string or integer value.
-   This PV will be available only for sequential requests, after
-   doing loose_route().
+
+   Be sure and use this variable only when having a dialog context
+   (like after create_dialog() or match_dialog() or equivalent).
+
+   The variable accepts dynamic names, meaning the name may
+   contain other variables.
 
    NULL will be returned if there is no dialog for the request.
 
@@ -2547,29 +2644,30 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 452 285 13276 3527
-   2. Razvan Crainea (@razvancrainea) 270 202 5072 1553
-   3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
-   4. Vlad Patrascu (@rvlad-patrascu) 198 104 4330 3514
-   5. Liviu Chircu (@liviuchircu) 175 126 3111 1362
-   6. Ovidiu Sas (@ovidiusas) 34 26 601 161
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 459 288 13367 3546
+   2. Razvan Crainea (@razvancrainea) 293 218 5456 1776
+   3. Vlad Paiu (@vladpaiu) 262 149 7467 3027
+   4. Vlad Patrascu (@rvlad-patrascu) 199 104 4330 3514
+   5. Liviu Chircu (@liviuchircu) 183 133 3128 1374
+   6. Ovidiu Sas (@ovidiusas) 35 26 601 161
    7. Dan Pascu (@danpascu) 30 25 233 179
-   8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
+   8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
    9. Daniel-Constantin Mierla (@miconda) 16 13 76 66
    10. Henning Westerholt (@henningw) 16 10 172 187
 
    All remaining contributors: Anca Vamanu, Walter Doekes
-   (@wdoekes), Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
-   (@ionel-cerghit), Andrei Dragus, Maksym Sobolyev (@sobomax),
-   John Riordan, Hugues Mitonneau, Carsten Bock, Peter Lemenkov
-   (@lemenkov), Jerome Martin, Klaus Darilion, Jarrod Baumann
-   (@jarrodb), Nick Altmann (@nikbyte), Zero King (@l2dy), Michel
-   Bensoussan, Richard Revels, Elena-Ramona Modroiu, Tavis
-   Paquette, Ryan Bullock, Andrei Datcu (@andrei-datcu), Jeffrey
-   Magder, Ron Winacott, Andy Pyles, Julián Moreno Patiño,
-   Konstantin Bokarius, sergei lavrov, Alex Massover, Damien
-   Sandras (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05),
-   Norman Brandinger (@NormB), UnixDev, Eliot Gable, Ryan Bullock
+   (@wdoekes), Ionut Ionita (@ionutrazvanionita), Maksym Sobolyev
+   (@sobomax), Ionel Cerghit (@ionel-cerghit), Andrei Dragus,
+   Alexandra Titoc, John Riordan, Hugues Mitonneau, Carsten Bock,
+   Peter Lemenkov (@lemenkov), Jerome Martin, Klaus Darilion,
+   Jarrod Baumann (@jarrodb), Nick Altmann (@nikbyte), Zero King
+   (@l2dy), Michel Bensoussan, Richard Revels, Elena-Ramona
+   Modroiu, Tavis Paquette, Ryan Bullock, Andrei Datcu
+   (@andrei-datcu), Jeffrey Magder, Stefan-Cristian Mititelu, Ron
+   Winacott, Andy Pyles, Julián Moreno Patiño, Konstantin
+   Bokarius, sergei lavrov, Alex Massover, Damien Sandras
+   (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05), Norman
+   Brandinger (@NormB), UnixDev, Eliot Gable, Ryan Bullock
    (@rrb3942), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -2592,19 +2690,20 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Aug 2023
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2023
-   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jun 2023
-   5.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
-   6.  Ryan Bullock                        May 2023 - May 2023
-   7.  Maksym Sobolyev (@sobomax)          Nov 2020 - Feb 2023
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
-   9.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
-   10. Nick Altmann (@nikbyte)             Oct 2013 - May 2021
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Feb 2025
+   2.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
+   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2024
+   5.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
+   6.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
+   8.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
+   9.  Ryan Bullock                        May 2023 - May 2023
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
 
-   All remaining contributors: Walter Doekes (@wdoekes), sergei
-   lavrov, Zero King (@l2dy), Dan Pascu (@danpascu), Ionel Cerghit
+   All remaining contributors: Nick Altmann (@nikbyte), Walter
+   Doekes (@wdoekes), Liviu Chircu (@liviuchircu), sergei lavrov,
+   Zero King (@l2dy), Dan Pascu (@danpascu), Ionel Cerghit
    (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut Ionita
    (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
    (@ph4r05), Eseanu Marius Cristian (@eseanucristian), Andrei
@@ -2624,18 +2723,19 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ryan Bullock, Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Vlad Paiu
-   (@vladpaiu), Zero King (@l2dy), Dan Pascu (@danpascu), Peter
-   Lemenkov (@lemenkov), Julián Moreno Patiño, Ionut Ionita
-   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
-   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
-   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
-   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
-   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Michel Bensoussan,
-   Andy Pyles, Elena-Ramona Modroiu.
+   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Stefan-Cristian Mititelu, Ryan Bullock,
+   Vlad Patrascu (@rvlad-patrascu), Zero King (@l2dy), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno Patiño,
+   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
+   Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
+   Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
+   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Michel Bensoussan, Andy Pyles, Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

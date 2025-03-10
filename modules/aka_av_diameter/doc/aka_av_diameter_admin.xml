@@ -1,0 +1,193 @@
+<!-- AKA_AV_DIAMETER Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module is an extension to the <emphasis>AKA_AUTH</emphasis> module
+		providing a Diameter AKA AV Manager that implements the Multimedia-Auth-Request
+		and Multimedia-Auth-Answer Diameter commands defined in the
+		<emphasis>Cx</emphasis> interface of the <emphasis>ETSI TS 129 229</emphasis>
+		specifications in order to fetch a set of authentication vectors and feed
+		them in the AKA authentication process.
+	</para>
+	<para>
+		When the <emphasis>AKA_AUTH</emphasis> module needs a new authentication
+		vector to do an <emphasis>aka_challenge()</emphasis>, it may require this
+		module to fetch a set of authentication vectors for the purpose. The module
+		packs the query in a <emphasis>MAR</emphasis> (Multimedia-Auth-Request)
+		command and sends it to an <emphasis>HSS</emphasis> Diameter server. When an
+		<emphasis>MAA</emphasis> (Multimedia-Auth-Answer) command is received in
+		response, the corresponding authentication vectors are gathered and fed back
+		to the <emphasis>AUTH_AKA</emphasis> engine.
+	</para>
+	<para>
+		It uses the <emphasis>AAA_Diameter</emphasis> module to perform the Diameter
+		requests. It may run in both a synchronous and asynchronous mode,
+		depending on how the <emphasis>AUTH_AKA</emphasis> module performs the query.
+	</para>
+	</section>
+
+	<section id="setup" xreflabel="Setup">
+	<title>Setup</title>
+	<para>
+		The module requires an <emphasis>aaa_diameter</emphasis> connection to an
+		<emphasis>HSS</emphasis> Diameter server that implements the
+		<emphasis>Cx</emphasis> interfaces and is able to provide authentication vectors
+		through the Multimedia-Auth-Request and Multimedia-Auth-Answer commands.
+	</para>
+	<para>
+		The format of the command, along with the required fields can be found in the
+		<emphasis>example/aka_av_diameter.dictionary</emphasis> file located in the
+		module's source directory, as well as in the
+		<xref linkend="example_diameter_commands"/> section.
+	</para>
+	<para>
+		<emphasis>Note:</emphasis> the module internals uses the AVPs names
+		found in the provided dictionary - changing the file may break the behavior
+		of the module.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The module depends on the following modules (in the other words
+			the listed modules must be loaded before this module):
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>auth_aka</emphasis> -- AKA Authentication
+				module that triggers the AKA authentication process</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>aaa_diameter</emphasis> -- AAA Diameter
+				module that implements the Diameter communication to the
+				<emphasis>HSS</emphasis> Server.</para>
+				</listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+			This module does not depend on any external library.
+			</para>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_aaa_url" xreflabel="aaa_url">
+		<title><varname>aaa_url</varname> (string)</title>
+		<para>
+		This is the url representing the connection to the AAA server.
+		<para>
+		<emphasis>Note:</emphasis> Currently the module only supports 
+		connections to a Diameter server. The path to the AVPs
+		configuration file is also required, otherwise the module will
+		not start, or not work properly.
+		</para>
+		</para>
+		<example>
+		<title><varname>aaa_url</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("auth_aaa", "aaa_url", "diameter:freeDiameter.conf;extra-avps-file:/etc/freeDiameter/aka_av_diameter.dictionary")
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_realm" xreflabel="Realm">
+		<title><varname>realm</varname> (string)</title>
+		<para>
+		The Realm used in the Origin Diameter commands.
+		</para>
+		<para>
+		Default value is <quote>diameter.test</quote>.
+		</para>
+		<example>
+		<title><varname>realm</varname> parameter usage</title>
+		<programlisting format="linespecific">
+		
+modparam("aka_av_diameter", "realm", "scscf.ims.mnc001.mcc001.3gppnetwork.org")
+		</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="example_diameter_commands" xreflabel="Diameter Commands Example">
+		<title>Diameter Commands File</title>
+		<para>
+		File that should be provided to the <emphasis>aaa_diameter</emphasis> connection.
+		</para>
+		<example>
+		<title>Diameter Commands File Example</title>
+		<programlisting format="linespecific">
+
+VENDOR 10415 TGPP
+
+ATTRIBUTE Public-Identity                     601 string     10415
+ATTRIBUTE Server-Name                         602 string     10415
+ATTRIBUTE 3GPP-SIP-Number-Auth-Items          607 unsigned32 10415
+ATTRIBUTE 3GPP-SIP-Authentication-Scheme      608 utf8string 10415
+ATTRIBUTE 3GPP-SIP-Authenticate               609 hexstring  10415
+ATTRIBUTE 3GPP-SIP-Authorization              610 hexstring  10415
+ATTRIBUTE 3GPP-SIP-Authentication-Context     611 string     10415
+ATTRIBUTE 3GPP-SIP-Item-Number                613 unsigned32 10415
+ATTRIBUTE Confidentiality-Key                 625 hexstring  10415
+ATTRIBUTE Integrity-Key                       626 hexstring  10415
+
+
+ATTRIBUTE 3GPP-SIP-Auth-Data-Item             612 grouped    10415
+{
+	3GPP-SIP-Item-Number | OPTIONAL | 1
+	3GPP-SIP-Authentication-Scheme | OPTIONAL | 1
+	3GPP-SIP-Authenticate | OPTIONAL | 1
+	3GPP-SIP-Authorization | OPTIONAL | 1
+	3GPP-SIP-Authentication-Context | OPTIONAL | 1
+	Confidentiality-Key | OPTIONAL | 1
+	Integrity-Key | OPTIONAL | 1
+}
+
+APPLICATION-AUTH 16777216/10415 3GPP Cx
+
+REQUEST 303 Multimedia-Auth Request
+{
+	Session-Id | REQUIRED | 1
+	Origin-Host | REQUIRED | 1
+	Origin-Realm | REQUIRED | 1
+	Destination-Realm | REQUIRED | 1
+	Vendor-Specific-Application-Id | REQUIRED | 1
+	Auth-Session-State | REQUIRED | 1
+	User-Name | REQUIRED | 1
+	Public-Identity | REQUIRED | 1
+	3GPP-SIP-Number-Auth-Items | REQUIRED | 1
+	3GPP-SIP-Auth-Data-Item | REQUIRED | 1
+	Server-Name | REQUIRED | 1
+}
+
+ANSWER 303 Multimedia-Auth Answer
+{
+	Session-Id | REQUIRED | 1
+	Origin-Host | REQUIRED | 1
+	Origin-Realm | REQUIRED | 1
+	Destination-Host | OPTIONAL | 1
+	Destination-Realm | OPTIONAL | 1
+	Vendor-Specific-Application-Id | REQUIRED | 1
+	Auth-Session-State | REQUIRED | 1
+	User-Name | REQUIRED | 1
+	Public-Identity | REQUIRED | 1
+	3GPP-SIP-Number-Auth-Items | REQUIRED | 1
+	3GPP-SIP-Auth-Data-Item | REQUIRED | 1
+	Result-Code | REQUIRED | 1
+}
+</programlisting>
+		</example>
+	</section>
+
+</chapter>
+

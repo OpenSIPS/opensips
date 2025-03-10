@@ -87,13 +87,17 @@ struct src_sess {
 	int streams_no;
 	str media;
 	str headers;
+	str from_uri;
+	str to_uri;
 	rtp_ctx rtp;
 	str initial_sdp;
 
 	/* SRS */
 	struct list_head srs;
 	str group;
-	struct socket_info *socket; /* socket used towards SRS */
+	const struct socket_info *socket; /* socket used towards SRS */
+	str group_custom_extension;
+	str session_custom_extension;
 
 	/* siprec */
 	siprec_uuid uuid;
@@ -119,6 +123,7 @@ struct src_sess {
 
 struct src_sess *src_new_session(str *srs, rtp_ctx rtp, struct srec_var *var);
 void src_free_session(struct src_sess *sess);
+void src_clean_session(struct src_sess *sess);
 int src_add_participant(struct src_sess *sess, str *aor, str *name, str *xml_val,
 		siprec_uuid *uuid, time_t *start);
 
@@ -176,5 +181,14 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params);
 void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params);
+void srec_dlg_read_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *params);
+void src_event_trigger(enum b2b_entity_type et, str *key,
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
+void src_event_received(enum b2b_entity_type et, str *key,
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
+int srs_add_nodes(struct src_sess *sess, str *srs);
 
 #endif /* _SIPREC_SESS_H_ */

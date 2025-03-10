@@ -1302,6 +1302,11 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 	/* EVP_DecodeBlock counts the terminating '=', but this padding character does not
 	belong to the signature.*/
 	p=strstr(identityHF , "=");
+	if (!p) {
+		pkg_free(sigbuf);
+		LM_ERR("String '=' not found\n");
+		return 0;
+	}
 	siglen-=strspn(p , "=");
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
@@ -1406,6 +1411,8 @@ static time_t parseX509Date(ASN1_STRING * dateString)
 {
 	unsigned char * tmp = NULL;
 	struct tm tmDate;
+
+	tmDate.tm_isdst = 0;
 
 	if(!dateString)
 	{

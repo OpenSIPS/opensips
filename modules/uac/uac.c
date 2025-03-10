@@ -85,6 +85,7 @@ static int w_replace_to(struct sip_msg* msg, str* p1, str* p2);
 static int w_restore_to(struct sip_msg* msg);
 
 static int w_uac_auth(struct sip_msg* msg, intptr_t _alg);
+static int w_uac_inc_cseq(struct sip_msg* msg, int *cseq);
 static int fixup_replace_disp_uri(void** param);
 static int fixup_free_s(void** param);
 static int mod_init(void);
@@ -111,6 +112,9 @@ static const cmd_export_t cmds[]={
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"uac_auth",        (cmd_function)w_uac_auth, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,dauth_fixup_algorithms,0}, {0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"uac_inc_cseq",        (cmd_function)w_uac_inc_cseq, {
+		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
@@ -489,3 +493,11 @@ static int w_uac_auth(struct sip_msg* msg, intptr_t _alg)
 }
 
 
+static int w_uac_inc_cseq(struct sip_msg* msg, int *cseq)
+{
+	if (!cseq) {
+		LM_ERR("scripting bug: uac_inc_cseq() without value!\n");
+		return E_SCRIPT;
+	}
+	return uac_inc_cseq(msg, *cseq);
+}

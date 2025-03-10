@@ -51,7 +51,7 @@ struct srs_sdp_stream {
 
 void srs_free_stream(struct srs_sdp_stream *stream);
 
-int srs_add_raw_sdp_stream(int label, int medianum, siprec_uuid *uuid,
+int srs_fill_sdp_stream(int label, int medianum, siprec_uuid *uuid,
 		struct src_sess *sess, struct src_part *part);
 int srs_build_body(struct src_sess *sess, str *sdp, str *body);
 

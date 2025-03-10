@@ -32,6 +32,7 @@
 #define REPLICATION_DLG_UPDATED		2
 #define REPLICATION_DLG_DELETED		3
 #define REPLICATION_DLG_CSEQ		4
+#define REPLICATION_DLG_VALUE		5
 
 #define DLG_BIN_V3      3
 #define DLG_BIN_V4      4
@@ -56,6 +57,7 @@ void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);
 void replicate_dialog_deleted(struct dlg_cell *dlg);
 void replicate_dialog_cseq_updated(struct dlg_cell *dlg, int leg);
+void replicate_dialog_value(struct dlg_cell *dlg, str *name, int_str *val, int type);
 
 int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	str *ftag, str *ttag, unsigned int hid, int safe, int from_sync);

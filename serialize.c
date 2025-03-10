@@ -94,7 +94,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before, int keep_order)
 	char *p;
 	str dst_uri, path, enc_info;
 	unsigned int flags;
-	struct socket_info *sock_info;
+	const struct socket_info *sock_info;
 	int_str val;
 	int idx;
 

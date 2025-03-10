@@ -182,6 +182,9 @@ cachedb_con *mongo_con_init(str *url)
 void mongo_free_connection(cachedb_pool_con *con)
 {
 	mongo_con *mcon = (mongo_con *)con;
+	
+	if (!mcon)
+		return;
 
 	mongoc_collection_destroy(mcon->collection);
 	mongoc_database_destroy(mcon->database);
@@ -207,6 +210,9 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	unsigned long ival;
 	char *p;
 	int ret = 0;
+
+	if (!con)
+		return -1;
 
 	LM_DBG("find %.*s in %s\n", attr->len, attr->s,
 	       MONGO_NAMESPACE(con));
@@ -295,6 +301,9 @@ int mongo_con_set(cachedb_con *con, str *attr, str *val, int expires)
 	struct timeval start;
 	int ret = 0;
 
+	if (!con)
+		return -1;
+
 	query = bson_new();
 	bson_append_utf8(query, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
@@ -328,6 +337,9 @@ int mongo_con_remove(cachedb_con *con, str *attr)
 	bson_error_t error;
 	struct timeval start;
 	int ret = 0;
+
+	if (!con)
+		return -1;
 
 	doc = bson_new();
 	bson_append_utf8(doc, MDB_PK, MDB_PKLEN, attr->s, attr->len);
@@ -368,6 +380,9 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 	int i, len, csz = 0, ret = -1;
 	const char *p;
 
+	if (!con)
+		return -1;
+
 	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
 		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
 		return -1;
@@ -406,7 +421,10 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 		v = bson_iter_value(&iter);
 		bson_init_static(&proj, v->value.v_doc.data, v->value.v_doc.data_len);
 #if MONGOC_CHECK_VERSION(1, 5, 0)
-		bson_append_document(opts, "projection", 10, &proj);
+		if (!bson_append_document(opts, "projection", 10, &proj)) {
+			LM_ERR("failed to append doc\n");
+			goto out_err;
+		}
 #else
 		fields = &proj;
 #endif
@@ -519,6 +537,9 @@ int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	const bson_value_t *v;
 	int ret, count = 0;
 
+	if (!con)
+		return -1;
+
 	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
 		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
 		return -1;
@@ -624,6 +645,9 @@ int mongo_raw_insert(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	const bson_value_t *v;
 	int ret, count = 0;
 
+	if (!con)
+		return -1;
+
 	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
 		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
 		return -1;
@@ -707,6 +731,9 @@ int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	struct timeval start;
 	const bson_value_t *v;
 	int ret, count = 0;
+
+	if (!con)
+		return -1;
 
 	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
 		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
@@ -806,6 +833,9 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	int ret = 0;
 	const char *p;
 	int csz = 0, i, len;
+
+	if (!con)
+		return -1;
 
 	LM_DBG("Get operation on namespace %s\n", MONGO_NAMESPACE(con));
 	start_expire_timer(start,mongo_exec_threshold);
@@ -966,6 +996,9 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 	struct timeval start;
 	int ret = 0;
 
+	if (!con)
+		return -1;
+
 	cmd = bson_new();
 	bson_append_utf8(cmd, "findAndModify", 13,
 	                 mongoc_collection_get_name(MONGO_COLLECTION(con)), -1);
@@ -1031,6 +1064,9 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 	bson_iter_t iter;
 	struct timeval start;
 	int ret = -2;
+
+	if (!con)
+		return -1;
 
 	query = bson_new();
 #if MONGOC_CHECK_VERSION(1, 5, 0)
@@ -1217,6 +1253,9 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	char *strf, *stro;
 	str st;
 
+	if (!con)
+		return -1;
+
 	*_r = NULL;
 
 	filter = bson_new();
@@ -1394,7 +1433,7 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						VAL_TYPE(cur_val) = DB_DATETIME;
 						VAL_TIME(cur_val) = bson_iter_date_time(&iter)/(int64_t)1000;
 						LM_DBG("Found time [%.*s]=[%d]\n",
-						       _c[c]->len, _c[c]->s, (int)VAL_TIME(cur_val));
+						       _c[c]->len, _c[c]->s, (int)(unsigned long)VAL_TIME(cur_val));
 						break;
 					case BSON_TYPE_OID:
 						bson_oid_to_string(bson_iter_oid(&iter), hex_oid);
@@ -1516,6 +1555,9 @@ int mongo_db_insert_trans(cachedb_con *con, const str *table,
 	mongoc_collection_t *col = NULL;
 	struct timeval start;
 
+	if (!con)
+		return -1;
+
 	doc = bson_new();
 	if (kvo_to_bson(_k, _v, NULL, _n, doc) != 0) {
 		LM_ERR("failed to build bson\n");
@@ -1564,6 +1606,9 @@ int mongo_db_delete_trans(cachedb_con *con, const str *table,
 	bson_error_t error;
 	mongoc_collection_t *col = NULL;
 	struct timeval start;
+
+	if (!con)
+		return -1;
 
 	doc = bson_new();
 	if (kvo_to_bson(_k, _v, _o, _n, doc) != 0) {
@@ -1614,6 +1659,9 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
 	bson_error_t error;
 	mongoc_collection_t *col = NULL;
 	struct timeval start;
+
+	if (!con)
+		return -1;
 
 	query = bson_new();
 	if (kvo_to_bson(_k, _v, _o, _n, query) != 0) {
@@ -1676,6 +1724,9 @@ int mongo_truncate(cachedb_con *con)
 	bson_error_t error;
 	struct timeval start;
 	int ret = 0;
+
+	if (!con)
+		return -1;
 
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_remove(MONGO_COLLECTION(con),
@@ -1894,6 +1945,9 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 	const bson_t *doc;
 	struct timeval start;
 
+	if (!con)
+		return -1;
+
 	LM_DBG("find all in %s\n", MONGO_NAMESPACE(con));
 
 	cdb_res_init(res);
@@ -2073,6 +2127,9 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	char has_set = 0, has_unset = 0;
 	cdb_pair_t *pair;
 	str key;
+
+	if (!con)
+		return -1;
 
 	if (mongo_cdb_filter_to_bson(row_filter, &filter) != 0) {
 		LM_ERR("failed to build bson filter\n");

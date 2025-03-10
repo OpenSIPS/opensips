@@ -307,7 +307,7 @@ error:
 }
 
 static void trace_script_su(struct sip_msg *msg,
-		union sockaddr_union **src, union sockaddr_union **dst)
+		const union sockaddr_union **src, const union sockaddr_union **dst)
 {
 	static union sockaddr_union dummy_su;
 	if (msg) {
@@ -325,7 +325,7 @@ static void trace_script_err(struct sip_msg *msg, str *method,
 		const char *error)
 {
 	str message;
-	union sockaddr_union *src, *dst;
+	const union sockaddr_union *src, *dst;
 	trace_script_su(msg, &src, &dst);
 	mi_trace_request(src, dst, method->s, method->len,
 			NULL, &backend, t_dst);
@@ -336,7 +336,7 @@ static void trace_script_err(struct sip_msg *msg, str *method,
 static void trace_script_request(struct sip_msg *msg, str *method,
 		mi_item_t *params)
 {
-	union sockaddr_union *src, *dst;
+	const union sockaddr_union *src, *dst;
 	trace_script_su(msg, &src, &dst);
 	mi_trace_request(src, dst, method->s, method->len,
 			params, &backend, t_dst);
@@ -344,7 +344,7 @@ static void trace_script_request(struct sip_msg *msg, str *method,
 
 static void trace_script_reply(struct sip_msg *msg, str *message)
 {
-	union sockaddr_union *src, *dst;
+	const union sockaddr_union *src, *dst;
 	trace_script_su(msg, &src, &dst);
 	mi_trace_reply(src, dst, message, t_dst);
 }
@@ -551,7 +551,8 @@ end:
 	if (r) {
 		init_str(&val.rs, err);
 		val.flags = PV_VAL_STR;
-		pv_set_value(msg, r, 0, &val);
+		if (pv_set_value(msg, r, 0, &val) < 0)
+			ret = -3;
 	}
 ret:
 	if (req)
@@ -638,6 +639,7 @@ static void mi_script_async_start_job(int sender, void *param)
 	struct mi_script_async_job *job = (struct mi_script_async_job *)param;
 	struct mi_handler *hdl = NULL;
 	mi_response_t *resp = NULL;
+	mi_request_t *req;
 
 	if (job->cmd->flags & MI_ASYNC_RPL_FLAG) {
 		hdl = shm_malloc(sizeof *hdl);
@@ -649,13 +651,17 @@ static void mi_script_async_start_job(int sender, void *param)
 		}
 	}
 
-	resp = handle_mi_request(job->req, job->cmd, hdl);
+	/* backup @req now, before exposing @job to other procs */
+	req = job->req;
+	job->req = NULL;
+
+	resp = handle_mi_request(req, job->cmd, hdl);
 	if (resp != MI_ASYNC_RPL) {
 		mi_script_async_job(resp, job);
 		free_mi_response(resp);
 	}
-	mi_script_free_request(job->req, 1);
-	job->req = NULL;
+
+	mi_script_free_request(req, 1);
 }
 
 /* we use this just for notifying that the request is terminated */
@@ -757,7 +763,8 @@ error:
 	if (r) {
 		init_str(&val.rs, err);
 		val.flags = PV_VAL_STR;
-		pv_set_value(msg, r, 0, &val);
+		if (pv_set_value(msg, r, 0, &val) < 0)
+			return -3;
 	}
 	mi_script_free_request(req, 1);
 	return -2;

@@ -34,7 +34,7 @@
 				shm_skip_sh_log = 1; \
 				hist = _sh_push(p, shm_hist, 1, \
 					shm_dbg_malloc_func, shm_dbg_free_func); \
-				_sh_log(shm_dbg_realloc_func, hist, (verb), "%s:%s:%d, %d", \
+				_sh_log(shm_dbg_realloc_func, hist, (verb), "%s:%s:%d, %lu", \
 					file, function, line, size); \
 				/* on oom, we'd rather crash here */ \
 				_sh_unref(hist, shm_dbg_free_func); \

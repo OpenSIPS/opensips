@@ -1,5 +1,3 @@
-# $Id$
-#
 # SPEEDDIAL Module
 #
 # 

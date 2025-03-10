@@ -47,7 +47,7 @@ extern int ssl_verifyhost;
 
 extern int curl_http_version;
 extern int no_concurrent_connects;
-extern int curl_conn_lifetime;
+extern unsigned int curl_conn_lifetime;
 
 /* handle for use with synchronous reqs */
 extern CURL *sync_handle;
@@ -58,6 +58,9 @@ enum rest_client_method {
 	REST_CLIENT_PUT,
 	REST_CLIENT_POST
 };
+#define rest_client_method_str(_m) ( \
+	(_m) == REST_CLIENT_GET ? "GET" : \
+	(_m) == REST_CLIENT_POST ? "POST" : "PUT")
 
 /* return codes for rest_client script functions */
 #define RCL_OK_LOCKED            2
@@ -112,6 +115,7 @@ typedef struct rest_async_param_ {
 	struct curl_slist *header_list;
 	str body;
 	str ctype;
+	unsigned long timeout_s; /* max possible duration for the entire cURL op */
 
 	rest_trace_param_t* tparam;
 

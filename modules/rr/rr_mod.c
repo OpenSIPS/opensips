@@ -135,7 +135,7 @@ static const param_export_t params[] ={
  * pseudo-variables exported by RR module
  */
 static const pv_export_t mod_items[] = {
-	{ {"rr_params", sizeof("rr_params")-1}, 900, pv_get_rr_params, 0,
+	{ str_const_init("rr_params"), 900, pv_get_rr_params, 0,
 		0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

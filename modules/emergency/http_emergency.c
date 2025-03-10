@@ -215,6 +215,11 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell, PARSED *parsed
 		call_cell->ert_srid = "";
 
 		char *r = strstr(call_cell->esgwri, "@");
+		if (!r) {
+			LM_ERR("String '@' not found\n");
+			return -1;
+		}
+
 		r++;
 		int tam_esgw = call_cell->esgwri + strlen(call_cell->esgwri) - r;
 

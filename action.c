@@ -114,7 +114,7 @@ static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
 /* (0 if drop or break encountered, 1 if not ) */
 static inline int run_actions(struct action* a, struct sip_msg* msg)
 {
-	int ret, _;
+	int ret, _, ret_lvl;
 	str top_route;
 
 	if (route_stack_size > ROUTE_MAX_REC_LEV) {
@@ -133,11 +133,15 @@ static inline int run_actions(struct action* a, struct sip_msg* msg)
 		goto error;
 	}
 
+	ret_lvl=script_return_push();
+
 	ret=run_action_list(a, msg);
 
 	/* if 'return', reset the flag */
 	if(action_flags&ACT_FL_RETURN)
 		action_flags &= ~ACT_FL_RETURN;
+
+	script_return_pop(ret_lvl);
 
 	return ret;
 
@@ -682,6 +686,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 				action_flags |= ACT_FL_EXIT;
 			break;
 		case RETURN_T:
+				if (a->elem[1].type == EXPR_ST)
+					script_return_set(msg, a->elem[1].u.data);
+				else
+					script_return_set(msg, NULL);
 				script_trace("core", "return", msg, a->file, a->line) ;
 				if (a->elem[0].type == SCRIPTVAR_ST)
 				{
@@ -1167,6 +1175,7 @@ error:
 
 static int for_each_handler(struct sip_msg *msg, struct action *a)
 {
+	struct sip_msg *msg_src = msg;
 	pv_spec_p iter, spec;
 	pv_param_t pvp;
 	pv_value_t val;
@@ -1189,6 +1198,13 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 		memset(&pvp, 0, sizeof pvp);
 		pvp.pvi.type = PV_IDX_INT;
 		pvp.pvn = spec->pvp.pvn;
+		if (spec->pvc && spec->pvc->contextf) {
+			msg_src = spec->pvc->contextf(msg);
+			if (!msg_src || msg_src == FAKED_REPLY) {
+				LM_BUG("Invalid pv context message: %p\n", msg_src);
+				return E_BUG;
+			}
+		}
 
 		/*
 		 * for $json iterators, better to assume script writer
@@ -1199,7 +1215,7 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 			op = COLONEQ_T;
 
 		for (;;) {
-			if (spec->getf(msg, &pvp, &val) != 0) {
+			if (spec->getf(msg_src, &pvp, &val) != 0) {
 				LM_ERR("failed to get spec value\n");
 				return E_BUG;
 			}

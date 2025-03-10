@@ -8,6 +8,8 @@
 <!ENTITY dispatcherlist SYSTEM "dispatcher.list">
 <!ENTITY dispatchercfg SYSTEM "dispatcher.cfg">
 <!ENTITY contrib SYSTEM "contributors.xml">
+<!ENTITY my_cl_sync_cap "dispatcher-status-repl">
+<!ENTITY clusterer_sync_cap_para SYSTEM "../../clusterer/doc/clusterer_sync_cap.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

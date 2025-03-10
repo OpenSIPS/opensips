@@ -1,0 +1,1018 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+
+	<section id="overview" xreflabel="Overview">
+		<title>Overview</title>
+		<para>
+		SQLops (SQL-operations) modules implements a set of script
+		functions for generic SQL standard queries (raw or structure queries).
+		It also provides a dedicated set of functions for DB manipulation
+		(loading/storing/removing) of user AVPs (preferences).
+		</para>
+	</section>
+	<section id="dependencies" xreflabel="Dependencies">
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>a database module</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+				The following libraries or applications must be installed
+				before running &osips; with this module loaded:
+				<itemizedlist>
+				<listitem>
+				<para>
+					<emphasis>None</emphasis>
+				</para>
+				</listitem>
+				</itemizedlist>
+			</para>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+		<section id="param_db_url" xreflabel="db_url">
+			<title><varname>db_url</varname> (string)</title>
+			<para>
+			DB URL for database connection. As the module allows the usage
+			of multiple DBs (DB URLs), the actual DB URL may be preceded by
+			an reference number. This reference number is to be passed to
+			AVPOPS function that what to explicitly use this DB connection.
+			If no reference number is given, 0 is assumed - this is the default
+			DB URL.
+			</para>
+			<para>
+				<emphasis>
+					This parameter is optional, it's default value being NULL.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>db_url</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+# default URL
+modparam("sqlops","db_url","mysql://user:passwd@host/database")
+# an additional DB URL
+modparam("sqlops","db_url","1 postgres://user:passwd@host2/opensips")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_usr_table" xreflabel="usr_table">
+			<title><varname>usr_table</varname> (string)</title>
+			<para>
+			DB table to be used for user preferences (AVPs)
+			</para>
+			<para>
+				<emphasis>
+					This parameter is optional, it's default value being
+					<quote>usr_preferences</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>usr_table</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","usr_table","avptable")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_db_scheme" xreflabel="db_scheme">
+			<title><varname>db_scheme</varname> (string)</title>
+			<para>
+				Definition of a DB scheme to be used for accessing
+				a non-standard User Preference -like table.
+			</para>
+			<para>
+			Definition of a DB scheme. Scheme syntax is:
+			<itemizedlist>
+				<listitem><para><emphasis>
+				db_scheme = name':'element[';'element]*
+				</emphasis></para></listitem>
+				<listitem><para><emphasis>element</emphasis> =
+					<itemizedlist>
+						<listitem><para>'uuid_col='string
+						</para></listitem>
+						<listitem><para>'username_col='string
+						</para></listitem>
+						<listitem><para>'domain_col='string
+						</para></listitem>
+						<listitem><para>'value_col='string
+						</para></listitem>
+						<listitem><para>'value_type='('integer'|'string')
+						</para></listitem>
+						<listitem><para>'table='string
+						</para></listitem>
+					</itemizedlist>
+				</para></listitem>
+			</itemizedlist>
+			</para>
+			<para>
+				<emphasis>Default value is <quote>NULL</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>db_scheme</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","db_scheme",
+"scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_use_domain" xreflabel="use_domain">
+			<title><varname>use_domain</varname> (integer)</title>
+			<para>
+				If the domain part of the a SIP URI should be used for
+				identifying an AVP in DB operations.
+			</para>
+			<para>
+				<emphasis>Default value is 0 (no).
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>use_domain</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","use_domain",1)
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_ps_id_max_buf_len" xreflabel="ps_id_max_buf_len">
+			<title><varname>ps_id_max_buf_len</varname> (integer)</title>
+			<para>
+			The maximum size of the buffer used to build the query IDs which
+			are used for managing the Prepare Statements when comes to the
+			"sql_select|update|insert|replace|delete()" functions
+			</para>
+			<para>
+			If the size is exceeded (when trying to build the PS query ID),
+			the PS support will be dropped for the query. If set to 0, the PS
+			support will be completly disabled.
+			</para>
+			<para>
+			<emphasis>Default value is 1024.
+			</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>ps_id_max_buf_len</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","ps_id_max_buf_len", 2048)
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="bigint_to_str" xreflabel="bigint_to_str">
+			<title><varname>bigint_to_str</varname> (int)</title>
+			<para>
+				Controls bigint conversion.
+				By default bigint values are returned as int.
+				If the value stored in bigint is out of the int range,
+				by enabling bigint to string conversion,
+				the bigint value will be returned as string.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>0</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>bigint_to_str</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+# Return bigint as string
+modparam("sqlops","bigint_to_str",1)
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_uuid_column" xreflabel="uuid_column">
+			<title><varname>uuid_column</varname> (string)</title>
+			<para>
+				Name of column containing the uuid (unique user id).
+			</para>
+			<para>
+				<emphasis>Default value is <quote>uuid</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>uuid_column</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","uuid_column","uuid")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_username_column" xreflabel="username_column">
+			<title><varname>username_column</varname> (string)</title>
+			<para>
+				Name of column containing the username.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>username</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>username_column</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","username_column","username")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_domain_column" xreflabel="domain_column">
+			<title><varname>domain_column</varname> (string)</title>
+			<para>
+				Name of column containing the domain name.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>domain</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>domain_column</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","domain_column","domain")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_attribute_column" xreflabel="attribute_column">
+			<title><varname>attribute_column</varname> (string)</title>
+			<para>
+				Name of column containing the attribute name (AVP name).
+			</para>
+			<para>
+				<emphasis>Default value is <quote>attribute</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>attribute_column</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","attribute_column","attribute")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_value_column" xreflabel="value_column">
+			<title><varname>value_column</varname> (string)</title>
+			<para>
+				Name of column containing the AVP value.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>value</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>value_column</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","value_column","value")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_type_column" xreflabel="type_column">
+			<title><varname>type_column</varname> (string)</title>
+			<para>
+				Name of column containing the AVP type.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>type</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>type_column</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("sqlops","type_column","type")
+...
+				</programlisting>
+			</example>
+		</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+
+		<section id="func_sql_query" xreflabel="sql_query()">
+			<title>
+				<function moreinfo="none">sql_query(query, [res_col_avps], [db_id])</function>
+			</title>
+			<para>
+			Make a database query and store the result in AVPs.
+			</para>
+			<para>
+			The meaning and usage of the parameters:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>query (string)</emphasis> - must be a valid SQL
+				query. The parameter can contain pseudo-variables.</para>
+				<para>You must escape any pseudo-variables manually to prevent
+				SQL injection attacks. You can use the existing transformations
+				<emphasis>escape.common</emphasis> and
+				<emphasis>unescape.common</emphasis>
+				to escape and unescape the content of any pseudo-variable.
+				Failing to escape the variables used in the query makes you
+				vulnerable to SQL injection, e.g. make it possible for an
+				outside attacker to alter your database content.
+				The function returns true if the query was successful, -2 in
+				case the query returned an empty result set, and -1 for all 
+				other types of errors.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>res_col_avps (string, optional, no expand)</emphasis> - a list with AVP names where
+				to store the result. The format is
+				<quote>$avp(name1);$avp(name2);...</quote>. If this parameter
+				is omitted, the result is stored in
+				<quote>$avp(1);$avp(2);...</quote>. If the result consists of
+				multiple rows, then multiple AVPs with corresponding names will
+				be added. The value type of the AVP (string or integer) will
+				be derived from the type of the columns. If the value in the
+				database is <emphasis>NULL</emphasis>, the returned avp will
+				be a string with the <emphasis>&lt;null&gt;</emphasis> value.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id (int, optional)</emphasis> - reference to a defined
+				DB URL (a numerical id) - see the <quote>db_url</quote>
+				module parameter. It can be either a constant, or a
+				string/int variable.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title><function>sql_query</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
+	"$avp(pass);$avp(hash)");
+sql_query("DELETE FROM subscriber");
+sql_query("DELETE FROM subscriber", , 2);
+
+$avp(id) = 2;
+sql_query("DELETE FROM subscriber", , $avp(id));
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="func_sql_query_one" xreflabel="sql_query_one()">
+			<title>
+				<function moreinfo="none">sql_query_one(query, [res_col_vars], [db_id])</function>
+			</title>
+			<para>
+			Similar to <xref linkend="func_sql_query"/>, it makes a generic raw
+			database query and returns the results, but with the following
+			differences:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>returns only one row</emphasis> - even if
+				the query results in a multi row result, only the first row
+				will be returned to script.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>return variables are not limited to AVPs</emphasis> -
+				the variables for returning the query result may any kind
+				of variable, of course, as time as it is writeable. NOTE that
+				the number of return vairable MUST match (as number) the number
+				of returned columns. If less variables are provided, the query
+				will fail.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>NULL is returned</emphasis> - any a DB NULL
+				value resulting from the query will be pushed as NULL indicator
+				(and NOT as <emphasis>&lt;null&gt;</emphasis> string) to the
+				script variables.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from any type of route.
+			</para>
+			<example>
+				<title><function>sql_query_one</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'",
+	"$var(pass);$var(hash)");
+# $var(pass) or $var(hash) may be NULL if the corresponding columns
+# are not populated
+...
+sql_query_one("SELECT value, type FROM usr_preferences WHERE username='$fU' and attribute='cfna'",
+	"$var(cf_uri);$var(type)");
+# the above query will return only one row, even if there are multiple `cfna`
+# attributes for the user
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="func_sql_select" xreflabel="sql_select()">
+			<title>
+				<function moreinfo="none">sql_select([columns],table,[filter],[order],[res_col_avps], [db_id])
+				</function>
+			</title>
+			<para>
+			Function to perform a structured (not raw) SQL SELECT operation.
+			The query is performed via OpenSIPS internal SQL interface, taking
+			advantages of the prepared-statements support (if the db backend
+			provides something like that). The selected columns are returned
+			into a set of AVPs (one to one matching the selected columns).
+			</para>
+			<warning>
+			<para>If using varibales in constructing the query, you must 
+			manually escape their values in order to prevent SQL injection 
+			attacks. You can use the existing transformations
+			<emphasis>escape.common</emphasis> and
+			<emphasis>unescape.common</emphasis>
+			to escape and unescape the content of any pseudo-variable.
+			Failing to escape the variables used in the query makes you
+			vulnerable to SQL injection, e.g. make it possible for an
+			outside attacker to alter your database content.
+			</para>
+			</warning>
+			<para>
+			The function returns true if the query was successful, -2 in
+			case the query returned an empty result set, and -1 for all 
+			other types of errors.
+			</para>
+			<para>
+			The meaning and usage of the parameters:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>columns (string,optional)</emphasis> - JSON
+				formated string holding an array of columns to be returned by
+				the select. Ex: <quote>["col1","col2"]</quote>.
+				If missing, a <quote>*</quote> (all columns) select will be
+				performed.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>table (string, mandatory)</emphasis> - the 
+				name of the table to be queried.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>filter (string, optional)</emphasis> - JSON 
+				formated string holding the "where" filter of the query. This 
+				must be  an array of (column, operator,value) pairs. The 
+				exact JSON syntax of such a pair is 
+				<quote>{"column":{"operator":"value"}}</quote>.; operators
+				may be `&gt;`, `&lt;`, `=`, `!=` or custom string; The values
+				may be string, integer or `null`. To simplify the usage with
+				the `=` operator, you can use <quote>{"column":"value"}</quote>
+				If missing, all rows will be selected.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>order (string, optional)</emphasis> - the 
+				name of the column to oder by (only ascending).
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>res_col_avps (string, optional, no expand)</emphasis> - a list with AVP names where
+				to store the result. The format is
+				<quote>$avp(name1);$avp(name2);...</quote>. If this parameter
+				is omitted, the result is stored in
+				<quote>$avp(1);$avp(2);...</quote>. If the result consists of
+				multiple rows, then multiple AVPs with corresponding names will
+				be added. The value type of the AVP (string or integer) will
+				be derived from the type of the columns. If the value in the
+				database is <emphasis>NULL</emphasis>, the returned avp will
+				be a string with the <emphasis>&lt;null&gt;</emphasis> value.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id (int, optional)</emphasis> - reference
+				to a defined DB URL (a numerical id) - see the
+				<xref linkend="param_db_url"/> module parameter. It can 
+				be either a constant, or a string/int variable.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from any type of route.
+			</para>
+			<example>
+				<title><function>sql_select</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_select('["password","ha1"]', 'subscriber',
+	'[ {"username": "$tu"}, {"domain": {"!=", null}}]', ,
+	'$avp(pass);$avp(hash)');
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="func_sql_select_one" xreflabel="sql_select_one()">
+			<title>
+				<function moreinfo="none">sql_select_one([columns],table,[filter],[order],[res_col_vars], [db_id])</function>
+			</title>
+			<para>
+			Similar to <xref linkend="func_sql_select"/>, it makes a SELECT SQL
+			query and returns the results, but with the following
+			differences:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>returns only one row</emphasis> - even if
+				the query results in a multi row result, only the first row
+				will be returned to script.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>return variables are not limited to AVPs</emphasis> -
+				the variables for returning the query result may any kind
+				of variable, of course, as time as it is writeable. NOTE that
+				the number of return vairable MUST match (as number) the number
+				of returned columns. If less variables are provided, the query
+				will fail.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>NULL is returned</emphasis> - any a DB NULL
+				value resulting from the query will be pushed as NULL indicator
+				(and NOT as <emphasis>&lt;null&gt;</emphasis> string) to the
+				script variables.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from any type of route.
+			</para>
+			<example>
+				<title><function>sql_select_one</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_select_one('["value","type"]', 'usr_preferences',
+	'[ {"username": "$tu"}, {"attribute": "cfna"}]', ,
+	'$var(cf_uri);$var(type)');
+# the above query will return only one row, even if there are multiple `cfna`
+# attributes for the user
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="func_sql_update" xreflabel="sql_update()">
+			<title>
+				<function moreinfo="none">sql_update(columns,table,[filter],[db_id])
+				</function>
+			</title>
+			<para>
+			Function to perform a structured (not raw) SQL UPDATE operation.
+			IMPORTANT: please see all the general notes from the 
+			<xref linkend="func_sql_select"/> function.
+			</para>
+			<para>
+			The function returns true if the query was successful.
+			</para>
+			<para>
+			The meaning and usage of the parameters:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>columns (string,mandatory)</emphasis> - JSON
+				formated string holding an array of (column,value) pairs to 
+				be updated by the query.
+				Ex: <quote>[{"col1":"val1"},{"col2":"val1"}]</quote>.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>table (string, mandatory)</emphasis> - the 
+				name of the table to be queried.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>filter (string, optional)</emphasis> - JSON 
+				formated string holding the "where" filter of the query. This 
+				must be  an array of (column, operator,value) pairs. The 
+				exact JSON syntax of such a pair is 
+				<quote>{"column":{"operator":"value"}}</quote>.; operators
+				may be `&gt;`, `&lt;`, `=`, `!=` or custom string; The values
+				may be string, integer or `null`. To simplify the usage with
+				the `=` operator, you can use <quote>{"column":"value"}</quote>
+				If missing, all rows will be updated.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id (int, optional)</emphasis> - reference
+				to a defined DB URL (a numerical id) - see the
+				<xref linkend="param_db_url"/> module parameter. It can 
+				be either a constant, or a string/int variable.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from any type of route.
+			</para>
+			<example>
+				<title><function>sql_update</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_update( '[{"password":"my_secret"}]', 'subscriber',
+	'[{"username": "$tu"}]');
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="func_sql_insert" xreflabel="sql_insert()">
+			<title>
+				<function moreinfo="none">sql_insert(table,columns,[db_id])
+				</function>
+			</title>
+			<para>
+			Function to perform a structured (not raw) SQL INSERT operation.
+			IMPORTANT: please see all the general notes from the 
+			<xref linkend="func_sql_select"/> function.
+			</para>
+			<para>
+			The function returns true if the query was successful.
+			</para>
+			<para>
+			The meaning and usage of the parameters:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>table (string, mandatory)</emphasis> - the 
+				name of the table to be queried.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>columns (string,mandatory)</emphasis> - JSON
+				formated string holding an array of (column,value) pairs to 
+				be inserted.
+				Ex: <quote>[{"col1":"val1"},{"col2":"val1"}]</quote>.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id (int, optional)</emphasis> - reference
+				to a defined DB URL (a numerical id) - see the
+				<xref linkend="param_db_url"/> module parameter. It can 
+				be either a constant, or a string/int variable.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from any type of route.
+			</para>
+			<example>
+				<title><function>sql_insert</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"location":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessions":2}]' );
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="func_sql_delete" xreflabel="sql_delete()">
+			<title>
+				<function moreinfo="none">sql_delete(table,[filter],[db_id])
+				</function>
+			</title>
+			<para>
+			Function to perform a structured (not raw) SQL DELETE operation.
+			IMPORTANT: please see all the general notes from the 
+			<xref linkend="func_sql_select"/> function.
+			</para>
+			<para>
+			The function returns true if the query was successful.
+			</para>
+			<para>
+			The meaning and usage of the parameters:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>table (string, mandatory)</emphasis> - the 
+				name of the table to delete from.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>filter (string, optional)</emphasis> - JSON 
+				formated string holding the "where" filter of the query. This 
+				must be  an array of (column, operator,value) pairs. The 
+				exact JSON syntax of such a pair is 
+				<quote>{"column":{"operator":"value"}}</quote>.; operators
+				may be `&gt;`, `&lt;`, `=`, `!=` or custom string; The values
+				may be string, integer or `null`. To simplify the usage with
+				the `=` operator, you can use <quote>{"column":"value"}</quote>
+				If missing, all rows will be updated.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id (int, optional)</emphasis> - reference
+				to a defined DB URL (a numerical id) - see the
+				<xref linkend="param_db_url"/> module parameter. It can 
+				be either a constant, or a string/int variable.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from any type of route.
+			</para>
+			<example>
+				<title><function>sql_delete</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_delete( 'subscriber', '[{"username": "$tu"}]');
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="func_sql_replace" xreflabel="sql_replace()">
+			<title>
+				<function moreinfo="none">sql_replace(table,columns,[db_id])
+				</function>
+			</title>
+			<para>
+			Function very similar to <xref linkend="func_sql_insert"/> function,
+			but performing an SQL REPLACE operation instead. Note that not all
+			SQL backend in OpenSIPS may support a REPLACE operation.
+			</para>
+			<para>
+			The function returns true if the query was successful.
+			</para>
+		</section>
+
+		<section id="func_sql_avp_load" xreflabel="sql_avp_load()">
+			<title>
+				<function moreinfo="none">sql_avp_load(source, name, [db_id], [prefix]])
+				</function>
+			</title>
+			<para>
+			Loads from DB into memory the AVPs corresponding to the given
+			<emphasis>source</emphasis>. If given, it sets the script flags
+			for loaded AVPs. It returns true if it loaded some values
+			in AVPs, false otherwise (db error, no avp loaded ...).
+			</para>
+			<para>
+			AVPs may be preceded by an optional <emphasis>prefix</emphasis>, in
+			order to avoid some conflicts.
+			</para>
+			<para>Meaning of the parameters is as follows:</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>source (string, no expand)</emphasis> - what info is used for
+				identifying the AVPs. Parameter syntax:
+				<itemizedlist>
+					<listitem><para><emphasis>
+					source = (pvar|str_value)
+					['/'('username'|'domain'|'uri'|'uuid')])
+					</emphasis></para></listitem>
+					<listitem><para><emphasis>
+					pvar = any pseudo variable defined in &osips;. If
+					the pvar is $ru (request uri), $fu (from uri), $tu (to uri)
+					or $ou (original uri), then the implicit flag is 'uri'.
+					Otherwise, the implicit flag is 'uuid'.
+					</emphasis></para></listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>name (string, no expand)</emphasis> - which AVPs will be loaded
+				from DB into memory. Parameter syntax is:
+				<itemizedlist>
+					<listitem><para><emphasis>
+					name = avp_spec['/'(table_name|'$'db_scheme)]
+					</emphasis></para></listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id (int, optional)</emphasis> - reference to a defined
+				DB URL (a numerical id) - see the <quote>db_url</quote>
+				module parameter.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>prefix (string, optional)</emphasis> - static string which will
+					precede the names of the AVPs populated by this function.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+
+			<example>
+				<title><function>sql_avp_load</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_avp_load("$fu", "$avp(678)");
+sql_avp_load("$ru/domain", "i/domain_preferences");
+sql_avp_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
+sql_avp_load("$ru", "$avp(123)/$some_scheme");
+
+# use DB URL id 3
+sql_avp_load("$ru", "$avp(1)", 3);
+
+# precede all loaded AVPs by the "caller_" prefix
+sql_avp_load("$ru", "$avp(100)", , "caller_");
+xlog("Loaded: $avp(caller_100)\n");
+
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="func_sql_avp_store" xreflabel="sql_avp_store()">
+			<title>
+				<function moreinfo="none">sql_avp_store(source, name, [db_id])</function>
+			</title>
+			<para>
+			Stores to DB the AVPs corresponding to the given
+			<emphasis>source</emphasis>.
+			</para>
+			<para>The meaning and usage of the parameters are identical as for
+			<emphasis>sql_avp_load(source, name)</emphasis>
+			function. Please refer to its description.
+			</para>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+
+			<example>
+				<title><function>sql_avp_store</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_avp_store("$tu", "$avp(678)");
+sql_avp_store("$ru/username", "$avp(email)");
+# use DB URL id 3
+sql_avp_store("$ru", "$avp(1)", 3);
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="func_sql_avp_delete" xreflabel="sql_avp_delete()">
+			<title>
+				<function moreinfo="none">sql_avp_delete(source, name, [db_id])</function>
+			</title>
+			<para>
+			Deletes from DB the AVPs corresponding to the given
+			<emphasis>source</emphasis>.
+			</para>
+			<para>The meaning and usage of the parameters are identical as for
+			<emphasis>sql_avp_load(source, name)</emphasis>
+			function. Please refer to its description.
+			</para>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title><function>sql_avp_delete</function> usage</title>
+				<programlisting format="linespecific">
+...
+sql_avp_delete("$tu", "$avp(678)");
+sql_avp_delete("$ru/username", "$avp(email)");
+sql_avp_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
+# use DB URL id 3
+sql_avp_delete("$ru", "$avp(1)", 3);
+...
+				</programlisting>
+			</example>
+		</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+		<section id="afunc_sql_query" xreflabel="sql_query()">
+			<title>
+				<function moreinfo="none">sql_query(query, [dest], [db_id])</function>
+			</title>
+			<para>
+			This function takes the same parameters and behaves identically
+			to <xref linkend="func_sql_query"/>, but asynchronously
+			(after launching the query, the current SIP worker pauses the
+			execution of the current SIP message until the result is available
+			and attempts to process more SIP traffic).
+			</para>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title><function>async sql_query</function> usage</title>
+				<programlisting format="linespecific">
+...
+{
+...
+/* Example of a slow MySQL query - it should take around 5 seconds */
+async(
+	sql_query(
+		"SELECT table_name, table_version, SLEEP(0.1) from version",
+		"$avp(tb_name); $avp(tb_ver); $avp(retcode)"),
+	my_resume_route);
+/* script execution is halted right after the async() call */
+}
+
+/* We will be called when data is ready - meanwhile, the worker is free */
+route [my_resume_route]
+{
+	xlog("Results: \n$(avp(tb_name)[*])\n
+-------------------\n$(avp(tb_ver)[*])\n
+-------------------\n$(avp(retcode)[*])\n");
+}
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="afunc_sql_query_one" xreflabel="sql_query_one()">
+			<title>
+				<function moreinfo="none">sql_query_one(query, [dest], [db_id])</function>
+			</title>
+			<para>
+			This function takes the same parameters and behaves identically
+			to <xref linkend="func_sql_query_one"/>, but asynchronously
+			(after launching the query, the current SIP worker pauses the
+			execution of the current SIP message until the result is available
+			and attempts to process more SIP traffic).
+			</para>
+			<para>
+			This function can be used from any route.
+			</para>
+			<example>
+				<title><function>async sql_query_one</function> usage</title>
+				<programlisting format="linespecific">
+...
+{
+...
+/* Example of a slow MySQL query - it should take around 5 seconds */
+async(
+	sql_query_one(
+		"SELECT table_name, table_version, SLEEP(0.1) from version",
+		"$var(tb_name); $var(tb_ver); $var(retcode)"),
+	my_resume_route);
+/* script execution is halted right after the async() call */
+}
+
+/* We will be called when data is ready - meanwhile, the worker is free */
+route [my_resume_route]
+{
+	xlog("Result: $var(tb_name) | $var(tb_ver) | $(var(retcode)\n");
+}
+...
+				</programlisting>
+			</example>
+		</section>
+
+	</section>
+
+
+</chapter>
+

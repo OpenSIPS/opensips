@@ -617,6 +617,8 @@ static void fifo_close_async(mi_response_t *resp, struct mi_handler *hdl, int do
 free_request:
 	if (done)
 		free_async_handler(hdl);
+	if (reply_stream)
+		fclose(reply_stream);
 	return;
 }
 

@@ -245,7 +245,7 @@ int insert_shtable(shtable_t htable,unsigned int hash_code, subs_t* subs)
 		goto error;
 	}
 
-	new_rec->expires+= (int)time(NULL);
+	new_rec->expires+= (unsigned int)(unsigned long)time(NULL);
 	if(fallback2db)
 		new_rec->db_flag= NO_UPDATEDB_FLAG;
 	else
@@ -348,7 +348,7 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 
 	if(type & REMOTE_TYPE)
 	{
-		s->expires= subs->expires+ (int)time(NULL);
+		s->expires= subs->expires+ (unsigned int)(unsigned long)time(NULL);
 		s->remote_cseq= subs->remote_cseq;
 	}
 	else

@@ -61,6 +61,7 @@
 #define DEFAULT_FULL_CACHING_EXPIRE 86400 /* 24h */
 #define DEFAULT_RELOAD_INTERVAL 60
 #define DEFAULT_FETCH_NR_ROWS 100
+#define DEFAULT_BIGINT2STR 0
 #define TEST_QUERY_STR "sql_cacher_test_query_key"
 #define TEST_QUERY_INT 555666555
 #define CDB_TEST_KEY_STR "sql_cacher_cdb_test_key"
@@ -84,7 +85,11 @@ typedef struct _cache_entry {
 	unsigned int on_demand;
 	unsigned int expire;
 	unsigned int nr_ints, nr_strs;
+
+	/* 0=int/1=str bitmask; bits 0 - n, represent each column,
+	 * where n = (entry.nr_columns - 1) */
 	long long column_types;
+
 	rw_lock_t *ref_lock;
 	struct _cache_entry *next;
 } cache_entry_t;
@@ -114,9 +119,9 @@ typedef struct _pv_name_fix
 	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
 	pv_elem_t *pv_elem_list;
-	int col_offset;
-	int col_nr;
-	int last_str;
+	int col_offset; /* this column's data offset in a cachedb value */
+	int col_nr;     /* index of this column in entry->columns */
+	int last_str;   /* 1 if this column is a str and is the last one */
 } pv_name_fix_t;
 
 #endif

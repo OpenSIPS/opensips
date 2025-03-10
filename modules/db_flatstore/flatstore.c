@@ -396,7 +396,7 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 		case DB_DATETIME:
 			/* guess this is 20 */
 			FLAT_ALLOC(20);
-			FLAT_PRINTF("%lu", VAL_TIME(v+i), i);
+			FLAT_PRINTF("%lld", (long long)VAL_TIME(v+i), i);
 			break;
 
 		case DB_BLOB:

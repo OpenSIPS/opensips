@@ -1,5 +1,3 @@
-# $Id$
-#
 # XCAP operations module for OpenSIPs
 #
 #

@@ -37,6 +37,11 @@
 #include "net/trans.h"
 #include "ut.h"
 
+struct last_real_ports {
+	unsigned short local;
+	unsigned short remote;
+};
+
 struct socket_info {
 	int socket;
 	str name; /*!< name - eg.: foo.bar or 10.0.0.1 */
@@ -56,7 +61,10 @@ struct socket_info {
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	unsigned short workers;
+	unsigned short tos;
 	struct scaling_profile *s_profile;
+	void *extra_data;
+	enum sip_protos internal_proto;
 
 	/* these are IP-level local/remote ports used during the last write op via
 	 * this sock (or a connection belonging to this sock). These values are 
@@ -65,13 +73,15 @@ struct socket_info {
 	 * they are simply overwritten by the next write op on this socket/conn.
 	 * IMPORTANT: when reading them, be sure you are just after a write ops,
 	 * otherwise you may read old data here */
-	unsigned short last_local_real_port;
-	unsigned short last_remote_real_port;
-
-	struct socket_info* next;
-	struct socket_info* prev;
+	struct last_real_ports *last_real_ports;
 };
 
+struct socket_info_full {
+	struct socket_info socket_info;
+	struct last_real_ports last_real_ports;
+	struct socket_info_full* next;
+	struct socket_info_full* prev;
+};
 
 #define get_socket_real_name(_s) \
 	(&(_s)->sock_str)
@@ -86,9 +96,9 @@ struct socket_info {
 #define PROTO_NAME_MAX_SIZE  8 /* CHANGEME if you define a bigger protocol name
 						   * currently hep_tcp - biggest proto */
 
-int new_sock2list(struct socket_id *sid, struct socket_info** list);
+int new_sock2list(struct socket_id *sid, struct socket_info_full** list);
 
-int fix_socket_list(struct socket_info **);
+int fix_socket_list(struct socket_info_full **);
 
 /*
  * This function will retrieve a list of all ip addresses and ports that
@@ -142,20 +152,20 @@ void print_aliases();
 #define grep_internal_sock_info(_host, _port, _proto) \
 	grep_sock_info_ext(_host, _port, _proto, 1)
 
-struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
+const struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 										unsigned short proto, int check_tag);
 
-struct socket_info* parse_sock_info(str *spec);
+const struct socket_info* parse_sock_info(str *spec);
 
-struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
+const struct socket_info* find_si(const struct ip_addr* ip, unsigned short port,
 												unsigned short proto);
 
 #define set_sip_defaults( _port, _proto) \
 	do { \
-		if (_proto==PROTO_NONE) _proto = PROTO_UDP; \
-		if (_port==0) { \
-			if (_proto==PROTO_TLS) _port = SIPS_PORT; else\
-			_port = SIP_PORT; \
+		if ((_proto)==PROTO_NONE) (_proto) = PROTO_UDP; \
+		if ((_port)==0) { \
+			if ((_proto)==PROTO_TLS) (_port) = SIPS_PORT; else\
+			(_port) = SIP_PORT; \
 		} \
 	} while(0)
 
@@ -177,13 +187,13 @@ static inline int next_proto(unsigned short proto)
 /*! \brief gets first non-null socket_info structure
  * (useful if for. e.g we are not listening on any udp sockets )
  */
-inline static struct socket_info* get_first_socket(void)
+inline static const struct socket_info* get_first_socket(void)
 {
 	int p;
 
 	for( p=0 ; p<PROTO_LAST ; p++ )
 		if (protos[p].listeners)
-			return protos[p].listeners;
+			return &protos[p].listeners->socket_info;
 
 	return NULL;
 }
@@ -203,6 +213,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 	/* must support 2-char arrays for ws
 	 * must support 3-char arrays for udp, tcp, tls, wss
 	 * must support 4-char arrays for sctp
+	 * must support 5-char arrays for ipsec
 	 * must support 7-char arrays for hep_tcp and hep_udp */
 	*proto=PROTO_NONE;
 	if ((len < 2 || len > 5) && len != 7) return -1;
@@ -232,6 +243,11 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				*proto=PROTO_BINS; return 0;
 			}
 			break;
+		case PROTO2UINT('i', 'p', 's'):
+			if(len==5 && (s[3]|0x20)=='e' && (s[4]|0x20)=='c') {
+				*proto=PROTO_IPSEC; return 0;
+			}
+			return -1;
 
 		case PROTO2UINT('h', 'e', 'p'):
 			if (len != 7 || s[3] != '_') return -1;
@@ -405,6 +421,13 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 's';
 			*(p++) = 's';
 			break;
+		case PROTO_IPSEC:
+			*(p++) = 'i';
+			*(p++) = 'p';
+			*(p++) = 's';
+			*(p++) = 'e';
+			*(p++) = 'c';
+			break;
 		case PROTO_BIN:
 			*(p++) = 'b';
 			*(p++) = 'i';
@@ -548,7 +571,7 @@ static inline char *proto2a(int proto)
       1 - advertised name
       2 - tagged name
 */
-static inline char* socket2str(struct socket_info *sock, char *s, int *len, int type)
+static inline char* socket2str(const struct socket_info *sock, char *s, int *len, int type)
 {
 	static char buf[MAX_SOCKET_STR];
 	char *p,*p1;
@@ -598,10 +621,14 @@ static inline char* socket2str(struct socket_info *sock, char *s, int *len, int 
 
 
 #define get_sock_info_list(_proto) \
-	((_proto>=PROTO_FIRST && _proto<PROTO_LAST)?(&protos[_proto].listeners):0)
+	(((_proto)>=PROTO_FIRST && (_proto)<PROTO_LAST)?(&protos[_proto].listeners):0)
 
 
 int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
 		int buff_increment);
+
+struct socket_id *socket_info2id(struct socket_info *si);
+struct socket_info_full* new_sock_info( struct socket_id *sid);
+void push_sock2list(struct socket_info_full *si);
 
 #endif

@@ -150,7 +150,7 @@ static inline int find_credentials(struct sip_msg* _m, str* _realm,
  * ACK and CANCEL
  */
 auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
-													struct hdr_field** _h)
+		struct hdr_field** _h, unsigned skip_flags)
 {
 	int ret, ecode;
 	auth_body_t* c;
@@ -197,6 +197,8 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 		LM_DBG("credentials with given realm not found\n");
 		return NO_CREDENTIALS;
 	}
+	if (skip_flags & AUTH_SKIP_CRED_CHECK)
+		return DO_AUTHORIZATION;
 
 	/* Pointer to the parsed credentials */
 	c = (auth_body_t*)((*_h)->parsed);
@@ -216,6 +218,9 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 		ecode = 500;
 		goto ereply;
 	}
+
+	if (skip_flags & AUTH_SKIP_NONCE_CHECK)
+		return DO_AUTHORIZATION;
 
 	struct nonce_params np;
 	if (decr_nonce(ncp, str2const(&dcp->nonce), &np) != 0) {
@@ -545,6 +550,7 @@ int bind_auth(auth_api_t* api)
 	api->check_response = check_response;
 	api->build_auth_hf = build_auth_hf;
 	api->build_auth_info_hf = build_auth_info_hf;
+	api->send_resp = send_resp;
 
 	get_rpid_avp( &api->rpid_avp, &api->rpid_avp_type );
 

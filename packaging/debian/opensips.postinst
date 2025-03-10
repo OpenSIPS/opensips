@@ -1,6 +1,4 @@
 #! /bin/sh
-#
-# $Id$
 
 PKG=opensips
 DEFAULTS=/etc/default/opensips

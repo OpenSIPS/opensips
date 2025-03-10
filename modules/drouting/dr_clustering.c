@@ -181,14 +181,16 @@ static int gw_status_update(bin_packet_t *packet, int raise_event)
 	lock_start_read(part->ref_lock);
 
 	gw = get_gw_by_id(part->rdata->pgw_tree, &gw_id);
-	if (gw && ((gw->flags&DR_DST_STAT_MASK)!=flags)) {
-		/* import the status flags */
-		gw->flags = ((~DR_DST_STAT_MASK)&gw->flags) | (DR_DST_STAT_MASK&flags);
-		/* set the DIRTY flag to force flushing to DB */
-		gw->flags |= DR_DST_STAT_DIRT_FLAG;
-		if (raise_event)
-			/* raise event for the status change */
-			dr_raise_event(part, gw, MI_SSTR("replicated info"));
+	if (gw) {
+		if ((gw->flags&DR_DST_STAT_MASK)!=flags) {
+			/* import the status flags */
+			gw->flags = ((~DR_DST_STAT_MASK)&gw->flags) | (DR_DST_STAT_MASK&flags);
+			/* set the DIRTY flag to force flushing to DB */
+			gw->flags |= DR_DST_STAT_DIRT_FLAG;
+			if (raise_event)
+				/* raise event for the status change */
+				dr_raise_event(part, gw, MI_SSTR("replicated info"));
+		}
 		lock_stop_read(part->ref_lock);
 		return 0;
 	}
@@ -218,12 +220,14 @@ static int cr_status_update(bin_packet_t *packet)
 	lock_start_read(part->ref_lock);
 
 	cr = get_carrier_by_id(part->rdata->carriers_tree, &cr_id);
-	if (cr && ((cr->flags&DR_CR_FLAG_IS_OFF)!=flags)) {
-		/* import the status flags */
-		cr->flags = ((~DR_CR_FLAG_IS_OFF)&cr->flags)|(DR_CR_FLAG_IS_OFF&flags);
-		/* set the DIRTY flag to force flushing to DB */
-		cr->flags |= DR_CR_FLAG_DIRTY;
-		dr_raise_cr_event( part, cr, MI_SSTR("replicated info"));
+	if (cr) {
+		if ((cr->flags&DR_CR_FLAG_IS_OFF)!=flags) {
+			/* import the status flags */
+			cr->flags = ((~DR_CR_FLAG_IS_OFF)&cr->flags)|(DR_CR_FLAG_IS_OFF&flags);
+			/* set the DIRTY flag to force flushing to DB */
+			cr->flags |= DR_CR_FLAG_DIRTY;
+			dr_raise_cr_event( part, cr, MI_SSTR("replicated info"));
+		}
 		lock_stop_read(part->ref_lock);
 		return 0;
 	}

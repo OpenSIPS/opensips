@@ -108,6 +108,8 @@ typedef int (*mod_proc_wrapper)();
 #define PROC_FLAG_HAS_IPC      (1<<1)
 #define PROC_FLAG_NEEDS_SCRIPT (1<<2)
 
+#define MOD_WARN_EXIT		   (1<<1)
+#define MOD_WARN_SKIP		   (1<<2)
 
 struct param_export_ {
 	const char* name;       /*!< null terminated param. name */

@@ -1,5 +1,4 @@
 <html>
-<!-- $Id$ -->
 <head>
 <title>
 Click-To-Dial

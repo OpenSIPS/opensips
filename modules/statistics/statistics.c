@@ -98,8 +98,8 @@ union stat_series_slot {
 		unsigned int nr;
 	} avg;
 	struct {
-		unsigned long true;
-		unsigned long false;
+		unsigned long t;
+		unsigned long f;
 	} perc;
 	long acc;
 };
@@ -178,7 +178,7 @@ static const param_export_t mod_params[]={
 
 
 static const pv_export_t mod_items[] = {
-	{ {"stat",     sizeof("stat")-1},      1100, pv_get_stat,
+	{ str_const_init("stat"),      1100, pv_get_stat,
 		pv_set_stat,    pv_parse_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -919,8 +919,8 @@ inline static void reset_stat_series_slot(struct stat_series *ss, union stat_ser
 			ss->cache.acc -= slot->acc;
 			break;
 		case STAT_ALG_PERC:
-			ss->cache.perc.true -= slot->perc.true;
-			ss->cache.perc.false -= slot->perc.false;
+			ss->cache.perc.t -= slot->perc.t;
+			ss->cache.perc.f -= slot->perc.f;
 			break;
 		default:
 			LM_ERR("unknown profile algorithm %d\n", ss->profile->algorithm);
@@ -984,9 +984,9 @@ static unsigned long get_stat_series(struct stat_series *ss)
 			ret = ss->cache.acc;
 			break;
 		case STAT_ALG_PERC:
-			total = ss->cache.perc.true + ss->cache.perc.false;
+			total = ss->cache.perc.t + ss->cache.perc.f;
 			if (total != 0)
-				ret = ss->cache.perc.true * ss->profile->factor / total;
+				ret = ss->cache.perc.t * ss->profile->factor / total;
 			break;
 		default:
 			LM_ERR("unknown profile algorithm %d\n", ss->profile->algorithm);
@@ -1002,7 +1002,17 @@ end:
 
 static struct stat_series *new_stat_series(struct stat_series_profile *profile, str *name)
 {
-	struct stat_series *ss = shm_malloc(sizeof *ss + name->len + 1 +
+	struct stat_series *ss;
+
+	/* we should first check whether there is an overlapping statistic with
+	 * this name, since we are not allowed to have that
+	 */
+	if (get_stat(name)) {
+		LM_DBG("%.*s stat already exists!\n", name->len, name->s);
+		return NULL;
+	}
+
+	ss = shm_malloc(sizeof *ss + name->len + 1 +
 			profile->slots * sizeof (*ss->slots));
 	if (!ss) {
 		LM_ERR("could not allocate new stat series!\n");
@@ -1062,11 +1072,11 @@ static int update_stat_series(struct stat_series *ss, int value)
 			break;
 		case STAT_ALG_PERC:
 			if (value > 0) {
-				s->perc.true += value;
-				ss->cache.perc.true += value;
+				s->perc.t += value;
+				ss->cache.perc.t += value;
 			} else {
-				s->perc.false -= value;
-				ss->cache.perc.false -= value;
+				s->perc.f -= value;
+				ss->cache.perc.f -= value;
 			}
 			break;
 		default:

@@ -501,7 +501,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 		}
 	} else {
 		if (d->verify_cert ) {
-			/* This is turned on by default in wolfSSL */
+			verify_mode = SSL_VERIFY_PEER;
 			LM_INFO("server verification activated.\n");
 		} else {
 			verify_mode = SSL_VERIFY_NONE;

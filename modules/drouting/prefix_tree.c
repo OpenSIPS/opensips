@@ -84,7 +84,7 @@ static inline rt_info_t*
 internal_check_rt(
 		ptree_node_t *ptn,
 		unsigned int rgid,
-		unsigned int *rgidx
+		int *rgidx
 		)
 {
 	int i,j;
@@ -126,8 +126,18 @@ check_rt(
 	unsigned int rgid
 	)
 {
-	unsigned int rgidx = 0;
+	int rgidx = 0;
 	return internal_check_rt( ptn, rgid, &rgidx);
+}
+
+rt_info_t*
+_check_rt(
+	ptree_node_t *ptn,
+	unsigned int rgid,
+	int *rgidx
+	)
+{
+	return internal_check_rt( ptn, rgid, rgidx);
 }
 
 
@@ -137,7 +147,7 @@ get_prefix(
 	str* prefix,
 	unsigned int rgid,
 	unsigned int *matched_len,
-	unsigned int *rgidx
+	int *rgidx
 	)
 {
 	rt_info_t *rt = NULL;
@@ -147,7 +157,7 @@ get_prefix(
 
 	if(NULL == ptree)
 		goto err_exit;
-	if(NULL == prefix)
+	if(NULL == prefix || prefix->len == 0)
 		goto err_exit;
 	tmp = prefix->s;
 	if (tmp == NULL)

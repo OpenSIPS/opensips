@@ -1154,6 +1154,8 @@ static inline int encode_log_attr(xmlNodePtr  node, char *node_ptr, char *buf_en
 		}
 		/* be sure there is a \0 at the end of string */
 		val.s[val.len++]=0;
+
+		/* coverity[overflow_sink: FALSE] */
 		append_str_attr(p,val, buf_end, error);
 	}
 
@@ -1458,6 +1460,7 @@ int encode_node( xmlNodePtr node, char *p, char *p_end)
 		foo++;
 	}
 
+	/* coverity[return_overflow: FALSE] */
 	return sub_tree_size;
 error:
 	return -1;

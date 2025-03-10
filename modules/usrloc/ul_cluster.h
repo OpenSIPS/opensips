@@ -40,19 +40,29 @@
 
 #define UL_BIN_V2      2
 #define UL_BIN_V3      3 // added "cmatch" (default: CT_MATCH_CONTACT_CALLID)
-
-#define UL_BIN_VERSION UL_BIN_V3
+#define UL_BIN_V4      4 // changed 'ct.cflags' from int bitmask to string repr
+#define UL_BIN_V5      5 // added 'r.kv_storage' to AoR INSERT packets
+#define UL_BIN_VERSION UL_BIN_V5
 
 extern int location_cluster;
 extern struct clusterer_binds clusterer_api;
 extern str ul_shtag_key;
 
+extern int ul_ha_cluster;
+extern str ul_ha_shtag;
+
 extern str contact_repl_cap;
 
 int ul_init_cluster(void);
+
 #define _is_my_ucontact(__ct) \
 	(!__ct->shtag.s || \
 	 clusterer_api.shtag_get(&__ct->shtag, location_cluster) \
+		== SHTAG_STATE_ACTIVE)
+
+#define ul_is_active_node() \
+	(!ul_ha_cluster || !ul_ha_shtag.s || \
+	 clusterer_api.shtag_get(&ul_ha_shtag, ul_ha_cluster) \
 		== SHTAG_STATE_ACTIVE)
 
 /* duplicate local events to other OpenSIPS instances */

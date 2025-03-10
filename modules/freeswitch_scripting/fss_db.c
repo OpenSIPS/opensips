@@ -154,6 +154,8 @@ int fss_db_reload(void)
 			continue;
 		}
 
+		fs_api.evs_set_flags(sock, FS_EVS_FL_DB);
+
 		evlist = _parse_csv_record(&events, CSV_SHM|CSV_DUP_FIELDS);
 		if (!evlist) {
 			LM_ERR("failed to parse events: %.*s\n", events.len, events.s);

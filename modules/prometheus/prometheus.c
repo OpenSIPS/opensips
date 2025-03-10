@@ -55,9 +55,16 @@ str prom_grp_prefix = str_init("");
 str prom_delimiter = str_init("_");
 str prom_grp_label = str_init("group");
 httpd_api_t prom_httpd_api;
+str prometheus_script_route = {NULL, 0};
+struct script_route_ref *prometheus_route_ref = NULL;
+static str *prometheus_route_page = NULL;
+static str prometheus_route_page_stat = {0, 0};
+static int prometheus_route_page_max = 0;
 
 static int prom_stats_param( modparam_t type, void* val);
 static int prom_labels_param( modparam_t type, void* val);
+static int w_prom_declare_stat(struct sip_msg *msg, str *name, str *type, str *help);
+static int w_prom_push_stat(struct sip_msg *msg, int *label, str *labeln, str *labelv);
 
 /* module parameters */
 static const param_export_t mi_params[] = {
@@ -69,6 +76,7 @@ static const param_export_t mi_params[] = {
 	{"group_mode",  INT_PARAM, &prom_grp_mode},
 	{"statistics",  STR_PARAM|USE_FUNC_PARAM, &prom_stats_param},
 	{"labels",      STR_PARAM|USE_FUNC_PARAM, &prom_labels_param},
+	{"script_route", STR_PARAM, &prometheus_script_route}, 
 	{0,0,0}
 };
 
@@ -82,6 +90,22 @@ static const dep_export_t deps = {
 	},
 };
 
+static const cmd_export_t cmds[]={
+	{"prometheus_declare_stat", (cmd_function)w_prom_declare_stat, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{"prometheus_push_stat", (cmd_function)w_prom_push_stat, {
+		{CMD_PARAM_INT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
+};
+
 /* module exports */
 struct module_exports exports = {
 	"prometheus",				/* module name */
@@ -90,7 +114,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	0,							/* load function */
 	&deps,						/* OpenSIPS module dependencies */
-	NULL,						/* exported functions */
+	cmds,						/* exported functions */
 	NULL,						/* exported async functions */
 	mi_params,					/* exported parameters */
 	NULL,						/* exported statistics */
@@ -137,6 +161,17 @@ static int mod_init(void)
 	prom_delimiter.len = strlen(prom_delimiter.s);
 	prom_grp_prefix.len = strlen(prom_grp_prefix.s);
 	prom_grp_label.len = strlen(prom_grp_label.s);
+
+	if (prometheus_script_route.s) {
+		prometheus_script_route.len = strlen(prometheus_script_route.s);
+
+		prometheus_route_ref = ref_script_route_by_name(prometheus_script_route.s,
+					sroutes->request, RT_NO , REQUEST_ROUTE, 0);
+		if ( !ref_script_route_is_valid(prometheus_route_ref) ) {
+			LM_ERR("Prometheus route <%s> not defined!\n", prometheus_script_route.s);
+			return -1;
+		}
+	}
 
 	if (prom_grp_mode < PROM_GROUP_MODE_NONE || prom_grp_mode >= PROM_GROUP_MODE_INVALID) {
 		LM_ERR("invalid group mode %d\n", prom_grp_mode);
@@ -597,6 +632,146 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len,
 		} \
 	} while(0)
 
+int process_extra_prometheus_entry(cJSON *obj,str *page, int max_len)
+{
+	cJSON *header,*values,*value, *name, *counter;
+	str val, cval;
+	int c;
+
+	if (!obj)
+		return -1;
+
+	if (obj->type != cJSON_Object) {
+		LM_ERR("Expecting a JSON object in the array but got %d \n",obj->type);
+		return -1;
+	}
+
+	header = cJSON_GetObjectItem(obj, "header");
+	values = cJSON_GetObjectItem(obj, "values");
+
+	if (!header || header->type != cJSON_String) {
+		LM_ERR("Invalid header provided \n");
+		return -1;
+	}
+
+	if (!values || values->type != cJSON_Array) {
+		LM_ERR("Invalid values provided \n");
+		return -1;
+	}
+
+	val.s = header->valuestring;
+	val.len = strlen(val.s);
+
+	if (!val.len) {
+		LM_ERR("No header content provided \n");
+		return -1;
+	}
+
+	if (page->len + val.len + 1 >= max_len) {
+		LM_ERR("No more HTTP buffer space, have %d, need extra %d into max %d\n",page->len,val.len + 1,max_len);
+		return -1;
+	}
+
+	memcpy(page->s + page->len,val.s,val.len);
+	page->len += val.len;	
+
+	memcpy(page->s + page->len, "\n", 1);
+	page->len += 1;
+
+	value = values->child;
+	while (value) {
+		if (value->type != cJSON_Object) {
+			LM_ERR("Expected value object and found type %d\n",value->type);
+			goto next_value;
+		}
+
+		name = cJSON_GetObjectItem(value, "name");
+		if (!name || name->type != cJSON_String) {
+			LM_ERR("Stat name not found \n");
+			goto next_value;
+		}
+
+		counter = cJSON_GetObjectItem(value, "value");
+		if (!counter || counter->type != cJSON_Number) {
+			LM_ERR("Stat name not found \n");
+			goto next_value;
+		}
+
+		val.s = name->valuestring; 
+		val.len = strlen(val.s);
+
+		c = counter->valueint;
+		cval.s = int2str(c,&cval.len);
+
+		if (page->len + val.len + cval.len + 2 /* blank & \n */ >= max_len) {
+			LM_ERR("No more HTTP buffer space, have %d, need extra %d into max %d\n",page->len,val.len + cval.len + 2,max_len);
+			return -1;
+		}
+
+		memcpy(page->s + page->len,val.s,val.len);
+		page->len += val.len;	
+
+		memcpy(page->s + page->len, " ", 1);
+		page->len += 1;
+
+		memcpy(page->s + page->len,cval.s,cval.len);
+		page->len += cval.len;	
+
+		memcpy(page->s + page->len, "\n", 1);
+		page->len += 1;
+next_value:
+		value = value->next;
+	}
+
+	return 0;
+}
+
+int process_extra_prometheus(char *extra, int len,str *page, int max_len)
+{
+	cJSON *j_obj=NULL,*arr;
+	char *extra_nt;
+
+	if (!extra || len <= 0) {
+		return -1;
+	}
+
+	extra_nt = pkg_malloc(len + 1);
+	if (!extra_nt) {
+		LM_ERR("could not allocate null terminated json\n");
+		return -1;
+	}
+	memcpy(extra_nt, extra, len);
+	extra_nt[len] = 0;
+
+	j_obj = cJSON_Parse(extra_nt);
+	if (j_obj == NULL) {
+		LM_ERR("Failed to parse JSON obj %s\n", extra_nt);
+		pkg_free(extra_nt);
+		return -1;
+	}
+	pkg_free(extra_nt);
+
+	if (j_obj->type != cJSON_Array) {
+		LM_ERR("Main JSON object expecting an array \n");
+		goto error;
+	}
+
+	arr = j_obj->child;
+	while (arr) {
+		if (process_extra_prometheus_entry(arr,page,max_len) < 0) {
+			LM_ERR("Failed to process JSON entry \n");
+			goto error;
+		}
+
+		arr=arr->next;
+	}
+error:
+	cJSON_Delete(j_obj);
+
+	return 0;
+}
+
+
 int prom_answer_to_connection (void *cls, void *connection,
 	const char *url, const char *method,
 	const char *version, const char *upload_data,
@@ -612,6 +787,8 @@ int prom_answer_to_connection (void *cls, void *connection,
 	module_stats *mod;
 	stat_var *stat;
 	int skip_type;
+	struct sip_msg *route_msg = NULL;
+	pv_value_t val;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"version=%s, upload_data[%d]=%p, *con_cls=%p\n",
@@ -682,6 +859,43 @@ end:
 			}
 		}
 	}
+
+	if (ref_script_route_is_valid(prometheus_route_ref)) {
+		/* get a dummy msg for our route */	
+		route_msg = get_dummy_sip_msg();
+		if (!route_msg) {
+			LM_ERR("Failed to get dummy msg for prometheus route \n");
+			goto final;
+		}
+
+		/* set request route type */
+		set_route_type( REQUEST_ROUTE );
+
+		prometheus_route_page = page;
+		prometheus_route_page_max = buffer->len;
+		prometheus_route_page_stat.s = NULL;
+
+		/* run given hep route */
+		run_top_route( sroutes->request[prometheus_route_ref->idx], route_msg);
+
+		prometheus_route_page = NULL;
+		prometheus_route_page_max = 0;
+		prometheus_route_page_stat.s = NULL;
+
+		memset(&val, 0, sizeof(int_str));
+		if ((script_return_get(&val, 0) >= 1) && (val.flags & PV_VAL_STR)) {
+			if (process_extra_prometheus(val.rs.s,val.rs.len,page,buffer->len) < 0)
+				LM_ERR("Failed to add custom prometheus stats \n");
+		}
+
+		/* free possible loaded avps */
+		reset_avps();
+
+		release_dummy_sip_msg(route_msg);
+	}
+
+final:
+
 	if (page->len + 1 >= buffer->len) {
 		LM_ERR("out of memory for stats\n");
 		prom_groups_free(&groups, &label_groups);
@@ -790,4 +1004,106 @@ static int prom_labels_param(modparam_t type, void* val)
 	list_add_tail(&label->list, &prom_labels);
 
 	return 0;
+}
+
+static int w_prom_declare_stat(struct sip_msg *msg, str *name, str *type, str *help)
+{
+	int len = 0;
+	str _type = str_init("gauge");
+
+	if (!prometheus_route_ref || !prometheus_route_page) {
+		LM_ERR("this function should only be called inside '%s' route\n",
+				(!prometheus_route_ref?"script_route":prometheus_script_route.s));
+		return -2;
+	}
+	if (!type)
+		type = &_type;
+	if (help && help->len)
+		len = 7 /* '# HELP ' */ + name->len + 1 /* ' ' */ + help->len + 1 /* '\n' */;
+	len += 7 /* '# TYPE ' */ + name->len + 1 /* ' ' */ + type->len + 1 /* '\n' */;
+	if (prometheus_route_page->len + len >= prometheus_route_page_max) {
+		LM_ERR("declaring statistic overflows\n");
+		return -1;
+	}
+	if (help && help->len) {
+		memcpy(prometheus_route_page->s + prometheus_route_page->len, "# HELP ", 7);
+		prometheus_route_page->len += 7;
+		memcpy(prometheus_route_page->s + prometheus_route_page->len, name->s, name->len);
+		prometheus_route_page->len += name->len;
+		prometheus_route_page->s[prometheus_route_page->len++] = ' ';
+		memcpy(prometheus_route_page->s + prometheus_route_page->len, help->s, help->len);
+		prometheus_route_page->len += help->len;
+		prometheus_route_page->s[prometheus_route_page->len++] = '\n';
+	}
+	memcpy(prometheus_route_page->s + prometheus_route_page->len, "# TYPE ", 7);
+	prometheus_route_page->len += 7;
+	memcpy(prometheus_route_page->s + prometheus_route_page->len, name->s, name->len);
+	prometheus_route_page_stat.s = prometheus_route_page->s + prometheus_route_page->len;
+	prometheus_route_page_stat.len = name->len;
+	prometheus_route_page->len += name->len;
+	prometheus_route_page->s[prometheus_route_page->len++] = ' ';
+	memcpy(prometheus_route_page->s + prometheus_route_page->len, type->s, type->len);
+	prometheus_route_page->len += type->len;
+	prometheus_route_page->s[prometheus_route_page->len++] = '\n';
+	return 1;
+}
+
+static int w_prom_push_stat(struct sip_msg *msg, int *value, str *labeln, str *labelv)
+{
+	int len, ret = -1;
+	str labels = str_init("");
+	str val;
+
+	if (!prometheus_route_page_stat.s) {
+		LM_ERR("can not push stat if not previously declared! "
+				"use prometheus_declare_stat() first\n");
+		return -2;
+	}
+	if (labeln) {
+		if (labelv) {
+			/* we have both labels and value - build the string */
+			labels.s = pkg_malloc(5 /* '{="}' */ + labeln->len + labelv->len);
+			if (!labels.s) {
+				LM_ERR("oom for building labels\n");
+				return -1;
+			}
+			labels.s[0] = '{';
+			labels.len = 1;
+			memcpy(labels.s + labels.len, labeln->s, labeln->len);
+			labels.len += labeln->len;
+			labels.s[labels.len++] = '=';
+			labels.s[labels.len++] = '"';
+			memcpy(labels.s + labels.len, labelv->s, labelv->len);
+			labels.len += labelv->len;
+			labels.s[labels.len++] = '"';
+			labels.s[labels.len++] = '}';
+		} else {
+			labels = *labeln;
+		}
+	}
+	len = prometheus_route_page_stat.len + labels.len + 1 /* ' ' */ +
+		INT2STR_MAX_LEN + 1 /* \n' */;
+	if (prometheus_route_page->len + len >= prometheus_route_page_max) {
+		LM_ERR("pushing statistic overflows\n");
+		goto end;
+	}
+
+	memcpy(prometheus_route_page->s + prometheus_route_page->len,
+			prometheus_route_page_stat.s, prometheus_route_page_stat.len);
+	prometheus_route_page->len += prometheus_route_page_stat.len;
+	if (labels.len) {
+		memcpy(prometheus_route_page->s + prometheus_route_page->len,
+				labels.s, labels.len);
+		prometheus_route_page->len += labels.len;
+	}
+	val.s = int2str(*value, &val.len);
+	prometheus_route_page->s[prometheus_route_page->len++] = ' ';
+	memcpy(prometheus_route_page->s + prometheus_route_page->len, val.s, val.len);
+	prometheus_route_page->len += val.len;
+	prometheus_route_page->s[prometheus_route_page->len++] = '\n';
+	ret = 1;
+end:
+	if (labeln && labelv)
+		pkg_free(labels.s);
+	return ret;
 }

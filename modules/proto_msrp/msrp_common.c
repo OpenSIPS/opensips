@@ -30,6 +30,7 @@
 #include "../../ut.h"
 #include "../../net/trans_trace.h"
 #include "../../net/tcp_common.h"
+#include "../../timer.h"
 #include "msrp_handler.h"
 #include "msrp_plain.h"
 #include "msrp_common.h"
@@ -555,9 +556,9 @@ error:
 /**************  SEND related functions ***************/
 
 /*! \brief Finds a tcpconn & sends on it */
-int proto_msrp_send(struct socket_info* send_sock,
+int proto_msrp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len,
-		union sockaddr_union* to, unsigned int id)
+		const union sockaddr_union* to, unsigned int id)
 {
 	struct tcp_connection *c;
 	struct tcp_conn_profile prof;
@@ -689,8 +690,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, 0);
 	return n;

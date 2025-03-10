@@ -1741,6 +1741,25 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 			if (strncasecmp(raw_uri_a->s,raw_uri_b->s,raw_uri_a->len) == 0)
 			{
 				LM_DBG("straight-forward URI match\n");
+				if (parse_uri(raw_uri_a->s,raw_uri_a->len,&first) < 0)
+				{
+					LM_ERR("Failed to parse first URI\n");
+					return -1;
+				}
+				if (parse_uri(raw_uri_b->s,raw_uri_b->len,&second) < 0)
+				{
+					LM_ERR("Failed to parse second URI\n");
+					return -1;
+				}
+				if (unescape_user(&first.user, &unescaped_userA) < 0 ||
+						unescape_user(&second.user, &unescaped_userB) < 0) {
+					LM_ERR("Failed to unescape user!\n");
+					return -1;
+				}
+				first.user = unescaped_userA;
+				second.user = unescaped_userB;
+				compare_uri_val(user,strncmp);
+				compare_uri_val(passwd,strncmp);
 				return 0;
 			}
 	}
@@ -1799,6 +1818,11 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 	compare_uri_val(method_val,strncasecmp);
 	compare_uri_val(lr_val,strncasecmp);
 	compare_uri_val(r2_val,strncasecmp);
+	compare_uri_val(gr_val,strncasecmp);
+	compare_uri_val(pn_provider_val,strncasecmp);
+	compare_uri_val(pn_prid_val,strncasecmp);
+	compare_uri_val(pn_param_val,strncasecmp);
+	compare_uri_val(pn_purr_val,strncasecmp);
 
 	if (first.u_params_no == 0 || second.u_params_no == 0)
 		/* one URI doesn't have other params,

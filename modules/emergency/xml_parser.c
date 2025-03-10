@@ -294,10 +294,15 @@ struct notify_body* parse_notify(char* xml){
 		return NULL;
 
 	notify = pkg_malloc(sizeof(struct notify_body));
+	if (!notify) {
+		LM_ERR("No more pkg mem!\n");
+		return NULL;
+	}
+
 	notify->params = pkg_malloc(sizeof(struct dialog_params));
 	notify->target = pkg_malloc(sizeof(struct target_info));
 
-	if(notify == NULL || notify->params == NULL || notify->target == NULL)
+	if(notify->params == NULL || notify->target == NULL)
 		return NULL;
 
 	pt_version = strstr(dialog_body,version);
@@ -396,6 +401,11 @@ PARSED* parse_xml(char* xml){
 	char *new_vpc, *new_destination, *new_ert;
 
 	PARSED *parsed = pkg_malloc(sizeof(PARSED));
+	if (!parsed) {
+		LM_ERR("No more pkg mem\n");
+		return NULL;
+	}
+
 	parsed->vpc =pkg_malloc(sizeof(NENA));
 	parsed->destination =pkg_malloc(sizeof(NENA));
 	parsed->ert =pkg_malloc(sizeof(ERT));
@@ -403,7 +413,7 @@ PARSED* parse_xml(char* xml){
 	if (check_str_between_init_tags(xml))
 		return NULL;
 
-	if(parsed == NULL || parsed->vpc == NULL || parsed->destination == NULL || parsed->ert == NULL)
+	if(parsed->vpc == NULL || parsed->destination == NULL || parsed->ert == NULL)
 		return NULL;
 
 	parsed->result = copy_str_between_two_tags(result,xml);

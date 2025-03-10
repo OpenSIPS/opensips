@@ -159,6 +159,7 @@ static int dlg_on_answer(struct sip_msg* msg, void *route_id);
 static int dlg_on_hangup(struct sip_msg* msg, void *route_id);
 static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 		str *body, str *ct, str *headers);
+static int dlg_inc_cseq(struct sip_msg *msg, str *tag, int *_count);
 
 
 /* item/pseudo-variables functions */
@@ -282,6 +283,10 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
+	{"dlg_inc_cseq", (cmd_function)dlg_inc_cseq, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"load_dlg", (cmd_function)load_dlg, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
@@ -433,35 +438,47 @@ static const mi_export_t mi_cmds[] = {
 		{mi_send_sequential_dlg, {"callid", "mode", "body", 0}},
 		{mi_send_sequential_dlg, {"callid", "method", "body", 0}},
 		{mi_send_sequential_dlg, {"callid", "method", "body", "mode", 0}},
+		{mi_send_sequential_dlg, {"callid", "method", "body", "mode", "headers", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dlg_set_profile", 0, 0, 0, {
+		{mi_set_dlg_profile, {"dlg_id", "profile", 0}},
+		{mi_set_dlg_profile, {"dlg_id", "profile","value", 0}},
+		{mi_set_dlg_profile, {"dlg_id", "profile","value", "clear_values", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dlg_unset_profile", 0, 0, 0, {
+		{mi_unset_dlg_profile, {"dlg_id", "profile", 0}},
+		{mi_unset_dlg_profile, {"dlg_id", "profile","value", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
 };
 
 static const pv_export_t mod_items[] = {
-	{ {"DLG_count",  sizeof("DLG_count")-1},     1000, pv_get_dlg_count,
+	{ str_const_init("DLG_count"),     1000, pv_get_dlg_count,
 		0,                 0, 0, 0, 0 },
-	{ {"DLG_lifetime",sizeof("DLG_lifetime")-1}, 1000, pv_get_dlg_lifetime,
+	{ str_const_init("DLG_lifetime"), 1000, pv_get_dlg_lifetime,
 		0,                 0, 0, 0, 0 },
-	{ {"DLG_status",  sizeof("DLG_status")-1},   1000, pv_get_dlg_status,
+	{ str_const_init("DLG_status"),   1000, pv_get_dlg_status,
 		0,                 0, 0, 0, 0 },
-	{ {"DLG_dir",     sizeof("DLG_dir")-1},      1000, pv_get_dlg_dir,
+	{ str_const_init("DLG_dir"),      1000, pv_get_dlg_dir,
 		0,                 0, 0, 0, 0},
-	{ {"DLG_flags",   sizeof("DLG_flags")-1},    1000, pv_get_dlg_flags,
+	{ str_const_init("DLG_flags"),    1000, pv_get_dlg_flags,
 		pv_set_dlg_flags,  0, 0, 0, 0 },
-	{ {"dlg_val",     sizeof("dlg_val")-1},      1000, pv_get_dlg_val,
+	{ str_const_init("dlg_val"),      1000, pv_get_dlg_val,
 		pv_set_dlg_val,    pv_parse_name, 0, 0, 0},
-	{ {"DLG_did",     sizeof("DLG_did")-1},      1000, pv_get_dlg_did,
+	{ str_const_init("DLG_did"),      1000, pv_get_dlg_did,
 		0,                 0, 0, 0, 0},
-	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},    1000,
+	{ str_const_init("DLG_end_reason"),    1000,
 		pv_get_dlg_end_reason,0,0, 0, 0, 0},
-	{ {"DLG_timeout",        sizeof("DLG_timeout")-1},       1000,
+	{ str_const_init("DLG_timeout"),       1000,
 		pv_get_dlg_timeout, pv_set_dlg_timeout,  0, 0, 0, 0 },
-	{ {"DLG_json",        sizeof("DLG_json")-1},       1000,
+	{ str_const_init("DLG_json"),       1000,
 		pv_get_dlg_json, 0,  0, 0, 0, 0 },
-	{ {"DLG_ctx_json",        sizeof("DLG_ctx_json")-1},       1000,
+	{ str_const_init("DLG_ctx_json"),       1000,
 		pv_get_dlg_ctx_json, 0,  0, 0, 0, 0 },
-	{ {"DLG_del_delay",     sizeof("DLG_del_delay")-1},       1000,
+	{ str_const_init("DLG_del_delay"),       1000,
 		pv_get_dlg_deldelay, pv_set_dlg_deldelay,  0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -1885,7 +1902,7 @@ int pv_set_dlg_deldelay(struct sip_msg *msg, pv_param_t *param,
 }
 
 
-#define DLG_CTX_JSON_BUFF_SIZE 8192
+#define DLG_CTX_JSON_BUFF_SIZE 32768
 #define DEC_AND_CHECK_LEN(_curr,_size)			\
 	 do {						\
 		_curr-=_size; 				\
@@ -1924,7 +1941,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		flag_list.len, flag_list.s,
 		dlg->callid.len,dlg->callid.s,
 		dlg->start_ts,
-		dlg->tl.timeout?((unsigned int)time(0) + dlg->tl.timeout - get_ticks()):0,
+		dlg->tl.timeout?((unsigned int)(unsigned long)time(0) + dlg->tl.timeout - get_ticks()):0,
 		dlg->from_uri.len,dlg->from_uri.s,
 		dlg->to_uri.len,dlg->to_uri.s);
 
@@ -2564,4 +2581,56 @@ static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 	return send_indialog_request(dlg, method, (leg == DLG_CALLER_LEG?leg:callee_idx(dlg)),
 			body, ct, headers, NULL, NULL) == 0?1:-1;
 
+}
+
+static int dlg_inc_cseq(struct sip_msg *msg, str *tag, int *_count)
+{
+	struct dlg_cell *dlg;
+	int count = (_count?*_count:1);
+	int leg, ret = -1;
+	str cseq;
+	unsigned int loc_seq;
+
+	if ( (dlg=get_current_dialog())==NULL ) {
+		LM_DBG("no current dialog found\n");
+		return -2;
+	}
+
+	if (!tag) {
+		if ((!msg->to && parse_headers(msg, HDR_TO_F, 0) < 0) || !msg->to) {
+			LM_ERR("inexisting or invalid to header!\n");
+			return -1;
+		}
+		tag = &get_to(msg)->tag_value;
+	}
+	dlg_lock_dlg(dlg);
+	for (leg = DLG_FIRST_CALLEE_LEG ; leg < dlg->legs_no[DLG_LEGS_USED]; leg++) {
+		if (str_match(tag, &dlg->legs[leg].tag))
+			break;
+	}
+	if (leg == dlg->legs_no[DLG_LEGS_USED]) {
+		LM_ERR("leg with tag <%.*s> not found\n", tag->len, tag->s);
+		goto end;
+	}
+	if (dlg->legs[leg].last_gen_cseq == 0) {
+		/*local sequence number*/
+		cseq = dlg->legs[leg].r_cseq;
+		if (!cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
+			LM_ERR("invalid cseq\n");
+			goto end;
+		}
+
+		dlg->legs[leg].last_gen_cseq = loc_seq + count;
+	} else {
+		dlg->legs[leg].last_gen_cseq += count;
+		loc_seq = -1;
+	}
+	LM_DBG("increasing leg=%d cseq=%u count=%d gen=%d\n",
+		leg, loc_seq, count, dlg->legs[leg].last_gen_cseq);
+	ret = 1;
+
+	dlg->flags |= DLG_FLAG_CSEQ_ENFORCE;
+end:
+	dlg_unlock_dlg(dlg);
+	return ret;
 }

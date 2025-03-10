@@ -866,7 +866,7 @@ int parse_hep_id(unsigned int type, void *val)
 /**
  *
  */
-static trace_message create_hep12_message(union sockaddr_union* from_su, union sockaddr_union* to_su,
+static trace_message create_hep12_message(const union sockaddr_union* from_su, const union sockaddr_union* to_su,
 		int net_proto, str* payload, int version)
 {
 	unsigned int totlen=0;
@@ -949,7 +949,7 @@ static trace_message create_hep12_message(union sockaddr_union* from_su, union s
 }
 
 
-static trace_message create_hep3_message(union sockaddr_union* from_su, union sockaddr_union* to_su,
+static trace_message create_hep3_message(const union sockaddr_union* from_su, const union sockaddr_union* to_su,
 		int net_proto, str* payload, int proto)
 {
 	int rc;
@@ -1441,7 +1441,7 @@ out_err:
 /*
  * create message function
  * */
-trace_message create_hep_message(union sockaddr_union* from_su, union sockaddr_union* to_su,
+trace_message create_hep_message(const union sockaddr_union* from_su, const union sockaddr_union* to_su,
 		int net_proto, str* payload, int pld_proto, trace_dest dest)
 {
 	hid_list_p hep_dest = (hid_list_p) dest;
@@ -1678,7 +1678,7 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 }
 
 
-int send_hep_message(trace_message message, trace_dest dest, struct socket_info* send_sock)
+int send_hep_message(trace_message message, trace_dest dest, const struct socket_info* send_sock)
 {
 	int len, ret=-1;
 	char* buf=0;

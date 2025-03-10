@@ -49,6 +49,7 @@
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
 #include "../../ipc.h"
+#include "../../pvar.h"
 
 #include "ul_mod.h"
 #include "dlist.h"           /* register_udomain */
@@ -61,6 +62,7 @@
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
+#include "kv_store.h"
 
 #define CONTACTID_COL  "contact_id"
 #define USER_COL       "username"
@@ -90,6 +92,9 @@ int ul_init_globals(void);
 int ul_check_config(void);
 int ul_check_db(void);
 int ul_deprec_shp(modparam_t _, void *modparam);
+
+/*! \brief Fixup functions */
+static int domain_fixup(void** param);
 
 //static int add_replication_dest(modparam_t type, void *val);
 
@@ -172,6 +177,9 @@ static char *nat_bflag_str = 0;
  */
 int location_cluster;
 
+int ul_ha_cluster;
+str ul_ha_shtag;
+
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
 
@@ -187,6 +195,26 @@ int latency_event_min_us;
  */
 static const cmd_export_t cmds[] = {
 	{"ul_bind_usrloc", (cmd_function)bind_usrloc, {{0,0,0}},0},
+        {"ul_add_key", (cmd_function)w_add_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
+        {"ul_get_key", (cmd_function)w_get_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_VAR, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
+       {"ul_del_key", (cmd_function)w_delete_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -238,6 +266,8 @@ static const param_export_t params[] = {
 
 	/* data replication through clusterer using TCP binary packets */
 	{ "location_cluster",	INT_PARAM, &location_cluster   },
+	{ "ha_cluster",	        INT_PARAM, &ul_ha_cluster },
+	{ "ha_shtag",	        STR_PARAM, &ul_ha_shtag.s },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops   },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
@@ -426,7 +456,7 @@ int init_cachedb(void)
 
 	cdbc = cdbf.init(&cdb_url);
 	if (!cdbc) {
-		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
+		LM_ERR("cannot connect to cachedb_url %s\n", db_url_escape(&cdb_url));
 		return -1;
 	}
 
@@ -704,6 +734,14 @@ int ul_check_config(void)
 			return -1;
 		}
 
+		if (!ul_ha_cluster)
+			LM_ERR("'ha_cluster' is not set! "
+			        "Backup node will also write to CacheDB!\n");
+
+		if (!ul_ha_shtag.s)
+			LM_ERR("'ha_shtag' is not set! "
+			        "Backup node will also write to CacheDB!\n");
+
 		if (!cdb_url.s) {
 			LM_ERR("no cache database URL defined! ('cachedb_url')\n");
 			return -1;
@@ -823,6 +861,8 @@ int ul_init_globals(void)
 	kv_store_col.len = strlen(kv_store_col.s);
 	attr_col.len = strlen(attr_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
+	if (ul_ha_shtag.s)
+		ul_ha_shtag.len = strlen(ul_ha_shtag.s);
 
 	if (ul_hash_size > 16) {
 		LM_WARN("hash too big! max 2 ^ 16\n");
@@ -874,14 +914,14 @@ int ul_check_db(void)
 		cdb_url.len = strlen(cdb_url.s);
 
 		if (cachedb_bind_mod(&cdb_url, &cdbf) < 0) {
-			LM_ERR("cannot bind functions for cachedb_url %.*s\n",
-			       cdb_url.len, cdb_url.s);
+			LM_ERR("cannot bind functions for cachedb_url %s\n",
+			       db_url_escape(&cdb_url));
 			return -1;
 		}
 
 		if (!CACHEDB_CAPABILITY(&cdbf, CACHEDB_CAP_COL_ORIENTED)) {
-			LM_ERR("not enough capabilities for cachedb_url %.*s\n",
-			       cdb_url.len, cdb_url.s);
+			LM_ERR("not enough capabilities for cachedb_url %s\n",
+			       db_url_escape(&cdb_url));
 			return -1;
 		}
 	}
@@ -889,7 +929,7 @@ int ul_check_db(void)
 	/* use database if needed */
 	if (have_sql_con()) {
 		if (ZSTR(db_url)) {
-			LM_ERR("selected mode requires a db connection -> db_url \n");
+			LM_ERR("selected mode requires a db connection -> db_url\n");
 			return -1;
 		}
 
@@ -932,4 +972,26 @@ int ul_check_db(void)
 	}
 
 	return 0;
+}
+
+/*! \brief
+ * Convert char* parameter to udomain_t* pointer
+ */
+static int domain_fixup(void** param)
+{
+        udomain_t* d;
+        str d_nt;
+
+        if (pkg_nt_str_dup(&d_nt, (str*)*param) < 0)
+                return E_OUT_OF_MEM;
+
+        if (register_udomain(d_nt.s, &d) < 0) {
+                LM_ERR("failed to register domain\n");
+                return E_UNSPEC;
+        }
+
+        pkg_free(d_nt.s);
+
+        *param = (void*)d;
+        return 0;
 }

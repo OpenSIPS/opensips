@@ -519,7 +519,7 @@ int dbt_cache_reload(const str *dbname, const str *name)
 
 			lock_release(&_dbt_cachetbl[i].sem);
 
-			if( name && !_tbc ) {
+			if( name && dbname && !_tbc ) {
 				LM_ERR("dbtext table [%.*s]->[%.*s] not exists and cannot be reloaded!\n", dbname->len, dbname->s, name->len, name->s);
 				lock_release(_dbt_cachesem);
 				return -1;

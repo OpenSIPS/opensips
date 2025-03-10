@@ -723,7 +723,8 @@ static int b2b_sdp_streams_from_avps(struct b2b_sdp_ctx *ctx,
 				tmp.len = p - tmp.s;
 				if (tmp.len == 0)
 					break;
-				str2int(&tmp, &itmp);
+				if (str2int(&tmp, &itmp) < 0)
+					return -1;
 				val.s.len -= (p - val.s.s);
 				val.s.s = p;
 
@@ -1027,7 +1028,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 			/* also notify the upstream */
 			body = b2b_sdp_mux_body(ctx);
 			if (body) {
-				/* we do a busy waiting if there's a different negociation happening */
+				/* we do a busy waiting if there's a different negotiation happening */
 				B2B_SDP_CLIENT_WAIT_FREE(ctx);
 				ctx->pending_no = 1;
 				lock_release(&ctx->lock);
@@ -1271,6 +1272,7 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 			ret = -2;
 			goto release;
 		}
+		ctx->success_no = 0;
 		/* we've actually completed all the upstream clients
 		 * therefore we need to respond to the server */
 		body = b2b_sdp_mux_body(ctx);
@@ -1361,6 +1363,10 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 		LM_ERR("request message %.*s not handled\n", msg->REQ_METHOD_S.len,
 				msg->REQ_METHOD_S.s);
 	} else {
+		lock_get(&client->ctx->lock);
+		if (!client->b2b_key.len && shm_str_dup(&client->b2b_key, key) < 0)
+			LM_ERR("could not copy b2b client key\n");
+		lock_release(&client->ctx->lock);
 		/* not interested in provisional replies */
 		if (msg->REPLY_STATUS < 200)
 			return 0;
@@ -1669,8 +1675,8 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 	struct list_head *it;
 	struct b2b_sdp_client *client;
 	client_info_t ci;
-	struct socket_info *si;
-	str *sess_ip;
+	const struct socket_info *si;
+	const str *sess_ip;
 
 	if (!msg->force_send_socket) {
 		si = uri2sock(msg, uri, &tmp_su, PROTO_NONE);
@@ -1738,13 +1744,16 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 			LM_ERR("could not create b2b sdp demux client!\n");
 			return -1;
 		}
-		if (shm_str_dup(&client->b2b_key, b2b_key) < 0) {
+		lock_get(&ctx->lock);
+		if (!client->b2b_key.len && shm_str_dup(&client->b2b_key, b2b_key) < 0) {
 			LM_ERR("could not copy b2b client key\n");
 			/* key is not yet stored, but INVITE sent - terminate it */
+			lock_release(&ctx->lock);
 			b2b_sdp_client_terminate(client, b2b_key, 1);
 			pkg_free(b2b_key);
 			return -1;
 		}
+		lock_release(&ctx->lock);
 		pkg_free(b2b_key);
 	}
 
@@ -1868,7 +1877,7 @@ static void b2b_sdp_server_event_trigger_create(struct b2b_sdp_ctx *ctx, bin_pac
 
 	bin_push_str(store, &ctx->callid);
 	bin_push_int(store, ctx->clients_no);
-	bin_push_int(store, ctx->sess_id);
+	bin_push_int(store, (int)(unsigned long)ctx->sess_id);
 	bin_push_str(store, &ctx->sess_ip);
 
 	list_for_each(c, &ctx->clients) {

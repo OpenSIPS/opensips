@@ -1,5 +1,3 @@
-$Id$
-
 This directory contains generic database support interface. The interface 
 should be used by all modules willing to communicate with a database. OpenSIPS
 can then switch from one database to another simply by loading a different 

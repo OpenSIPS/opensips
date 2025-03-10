@@ -38,6 +38,61 @@ typedef struct _str_dlist {
 	struct list_head list;
 } str_dlist;
 
+static inline str_list *_new_str_list(str *val, osips_malloc_t alloc_item)
+{
+	str_list *new_el;
+	if (!alloc_item)
+		return NULL;
+	new_el = alloc_item(sizeof *new_el + val->len + 1);
+	if (!new_el)
+		return NULL;
+	memset(new_el, 0, sizeof *new_el);
+	new_el->s.s = (char *)(new_el + 1);
+	str_cpy(&new_el->s, val);
+	new_el->s.s[new_el->s.len] = '\0';
+	return new_el;
+}
+
+#define new_pkg_str_list(val) \
+	_new_str_list(val, osips_pkg_malloc)
+
+#define new_shm_str_list(val) \
+	_new_str_list(val, osips_shm_malloc)
+
+static inline str_list *_insert_str_list(str_list **list, str *val, osips_malloc_t alloc_item)
+{
+	str_list *new_el = _new_str_list(val, alloc_item);
+	if (!new_el)
+		return NULL;
+
+	new_el->next = *list;
+	*list = new_el;
+	return *list;
+}
+
+#define insert_pkg_str_list(list, val) \
+	_insert_str_list(list, val, osips_pkg_malloc)
+
+#define insert_shm_str_list(list, val) \
+	_insert_str_list(list, val, osips_shm_malloc)
+
+static inline str_list *_add_str_list(str_list **list, str *val, osips_malloc_t alloc_item)
+{
+	str_list *new_el = _new_str_list(val, alloc_item);
+	if (!new_el)
+		return NULL;
+
+	add_last(new_el, *list);
+	return *list;
+}
+
+#define add_pkg_str_list(list, val) \
+	_add_str_list(list, val, osips_pkg_malloc)
+
+#define add_shm_str_list(list, val) \
+	_add_str_list(list, val, osips_shm_malloc)
+
+
 static inline void _free_str_list(str_list *list,
                         osips_free_t free_item, osips_free_t free_str)
 {
@@ -67,15 +122,10 @@ static inline str_list *dup_shm_str_list(const str_list *list)
 	const str_list *it;
 
 	for (it = list; it; it = it->next) {
-		item = shm_malloc(sizeof *item + it->s.len + 1);
+		item = new_shm_str_list((str *)&it->s);
 		if (!item)
 			goto oom;
 
-		item->s.s = (char *)(item + 1);
-		str_cpy(&item->s, &it->s);
-		item->s.s[item->s.len] = '\0';
-
-		item->next = NULL;
 		add_last(item, ret);
 	}
 

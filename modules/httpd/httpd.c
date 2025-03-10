@@ -51,7 +51,7 @@
 
 /* module functions */
 static int mod_init();
-static int destroy(void);
+static void destroy(void);
 
 static mi_response_t *mi_list_root_path(const mi_params_t *params,
 						struct mi_handler *async_hdl);
@@ -59,12 +59,16 @@ static mi_response_t *mi_list_root_path(const mi_params_t *params,
 int port = 8888;
 str ip = {NULL, 0};
 str buffer = {NULL, 0};
+unsigned int hd_conn_timeout_s = 30;
 str tls_cert_file = {NULL, 0};
 str tls_key_file = {NULL, 0};
 str tls_ciphers = {"SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2", 45};
 int post_buf_size = DEFAULT_POST_BUF_SIZE;
+int receive_buf_size = DEFAULT_POST_BUF_SIZE;
 struct httpd_cb *httpd_cb_list = NULL;
 
+char *httpd_receive_buff = NULL;
+int httpd_receive_buff_pos=0;
 
 static const proc_export_t mi_procs[] = {
 	{"HTTPD",  0,  0, httpd_proc, 1,
@@ -78,7 +82,9 @@ static const param_export_t params[] = {
 	{"port",          INT_PARAM, &port},
 	{"ip",            STR_PARAM, &ip.s},
 	{"buf_size",      INT_PARAM, &buffer.len},
+	{"conn_timeout",  INT_PARAM, &hd_conn_timeout_s},
 	{"post_buf_size", INT_PARAM, &post_buf_size},
+	{"receive_buf_size", INT_PARAM, &receive_buf_size},
 	{"tls_cert_file", STR_PARAM, &tls_cert_file.s},
 	{"tls_key_file", STR_PARAM,  &tls_key_file.s},
 	{"tls_ciphers", STR_PARAM, &tls_ciphers.s},
@@ -183,11 +189,17 @@ static int mod_init(void)
 		buffer.len = (pkg_mem_size/4);
 	LM_DBG("buf_size=[%d]\n", buffer.len);
 
+	httpd_receive_buff = pkg_malloc(receive_buf_size);
+	if (httpd_receive_buff == NULL) {
+		LM_ERR("No more pkg\n");
+		return -1;
+	}
+
 	return 0;
 }
 
 
-int destroy(void)
+static void destroy(void)
 {
 	struct httpd_cb *cb = httpd_cb_list;
 
@@ -198,7 +210,6 @@ int destroy(void)
 		shm_free(cb);
 		cb = httpd_cb_list;
 	}
-	return 0;
 }
 
 

@@ -88,6 +88,13 @@
 #define INVALID_IDENTITY_REASON "Invalid Identity Header"
 #define IERROR_CODE 500
 #define IERROR_REASON "Internal Server Error"
+#define IERROR_REASON_PARSE_HEADERS "Failed to parse headers"
+#define IERROR_REASON_PARSE_IDENTITY "Failed to parse identity header"
+#define IERROR_REASON_GET_CURRENT_TIME "Failed to get current time"
+#define IERROR_REASON_GET_TIME_FROM_DATE_HEADER "Failed to get UNIX time from Date header"
+#define IERROR_REASON_LOAD_CERTIFICATE "Failed to load certificate"
+#define IERROR_REASON_VALIDATE_CERTIFICATE "Error validating certificate"
+#define IERROR_REASON_VERIFY_SIGNATURE "Error while verifying signature"
 
 #define TN_AUTH_LIST_OID "1.3.6.1.5.5.7.1.26"
 #define TN_AUTH_LIST_LN "TNAuthorizationList"

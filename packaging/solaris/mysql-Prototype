@@ -12,7 +12,7 @@ d none /opt/opensips/mysql 0755 root root
 f none /opt/opensips/mysql/acc-create.sql 0644 root root
 f none /opt/opensips/mysql/alias_db-create.sql 0644 root root
 f none /opt/opensips/mysql/auth_db-create.sql 0644 root root
-f none /opt/opensips/mysql/avpops-create.sql 0644 root root
+f none /opt/opensips/mysql/sqlops-create.sql 0644 root root
 f none /opt/opensips/mysql/carrierroute-create.sql 0644 root root
 f none /opt/opensips/mysql/closeddial-create.sql 0644 root root
 f none /opt/opensips/mysql/cpl_create.sql 0644 root root

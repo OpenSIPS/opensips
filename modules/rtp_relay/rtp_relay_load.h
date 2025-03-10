@@ -37,7 +37,8 @@ struct rtp_relay_binds {
 	int (*answer)(rtp_ctx ctx, str *id, unsigned int flags, str *body);
 	int (*delete)(rtp_ctx ctx, str *id, unsigned int flags);
 	int (*copy_offer)(rtp_ctx ctx, str *id, str *flags,
-			unsigned int copy_flags, unsigned int streams, str *ret_body);
+			unsigned int copy_flags, unsigned int streams, str *ret_body,
+			struct rtp_relay_streams *ret_streams);
 	int (*copy_answer)(rtp_ctx ctx, str *id,
 			str *flags, str *body);
 	int (*copy_delete)(rtp_ctx ctx, str *id,
@@ -68,7 +69,8 @@ int rtp_relay_api_offer(rtp_ctx ctx, str *id, unsigned int flags, str *body);
 int rtp_relay_api_answer(rtp_ctx ctx, str *id, unsigned int flags, str *body);
 int rtp_relay_api_delete(rtp_ctx ctx, str *id, unsigned int flags);
 int rtp_relay_copy_offer(rtp_ctx ctx, str *id, str *flags,
-		unsigned int copy_flags, unsigned int streams, str *ret_body);
+		unsigned int copy_flags, unsigned int streams, str *ret_body,
+		struct rtp_relay_streams *ret_streams);
 int rtp_relay_copy_answer(rtp_ctx ctx, str *id,
 		str *flags, str *body);
 int rtp_relay_copy_delete(rtp_ctx ctx, str *id,

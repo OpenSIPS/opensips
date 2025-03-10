@@ -39,6 +39,7 @@
 #include "status_report.h"
 #include "cachedb/cachedb.h"
 #include "msg_translator.h"
+#include "mod_fix.h"
 /* needed by tcpconn_add_alias() */
 #include "net/tcp_conn_defs.h"
 
@@ -48,6 +49,8 @@ static int fixup_free_destination(void** param);
 static int fixup_mflag(void** param);
 static int fixup_bflag(void** param);
 static int fixup_qvalue(void** param);
+static int fixup_branch_keep(void** param);
+static int fixup_branch_index(void** param);
 static int fixup_f_send_sock(void** param);
 static int fixup_blacklist_name(void** param);
 static int fixup_blacklist(void** param);
@@ -62,6 +65,7 @@ static int fixup_format_string(void** param);
 static int fixup_nt_string(void** param);
 static int fixup_nt_str(void** param);
 static int fixup_nt_str_free(void** param);
+static int fixup_via_hdl(void** param);
 
 static int w_forward(struct sip_msg *msg, struct proxy_l *dest);
 static int w_send(struct sip_msg *msg, struct proxy_l *dest, str *headers);
@@ -82,6 +86,8 @@ static int w_strip(struct sip_msg *msg, int *nchars);
 static int w_strip_tail(struct sip_msg *msg, int *nchars);
 static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue);
 static int w_remove_branch(struct sip_msg *msg, int *branch);
+static int w_move_branch(struct sip_msg *msg, int *src_idx, int *dst_idx, int *keep);
+static int w_swap_branches(struct sip_msg *msg, int *src_idx, int *dst_idx);
 static int w_pv_printf(struct sip_msg *msg, pv_spec_t *var, str *fmt_str);
 static int w_revert_uri(struct sip_msg *msg);
 static int w_setdsturi(struct sip_msg *msg, str *uri);
@@ -122,6 +128,8 @@ static int w_get_timestamp(struct sip_msg *msg, pv_spec_t *sec_avp,
 static int w_script_trace(struct sip_msg *msg, int *log_level,
 					pv_elem_t *fmt_string, void *info_str);
 static int w_is_myself(struct sip_msg *msg, str *host, int *port);
+static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
+static int w_set_via_handling(struct sip_msg* msg, int flags);
 
 #ifndef FUZZ_BUILD
 static
@@ -191,6 +199,17 @@ const cmd_export_t core_cmds[]={
 	{"remove_branch", (cmd_function)w_remove_branch, {
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
+	{"move_branch", (cmd_function)w_move_branch, {
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_branch_keep, 0},
+		{0,0,0}},
+		ALL_ROUTES},
+	{"swap_branches", (cmd_function)w_swap_branches, {
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
+		{0,0,0}},
+		ALL_ROUTES},
 	{"pv_printf", (cmd_function)w_pv_printf, {
 		{CMD_PARAM_VAR, 0, 0},
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
@@ -238,7 +257,7 @@ const cmd_export_t core_cmds[]={
 	{"unuse_blacklist", (cmd_function)w_unuse_blacklist, {
 		{CMD_PARAM_STR, fixup_blacklist, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"check_blacklist", (cmd_function)w_check_blacklist, {
+	{"check_blacklist_rule", (cmd_function)w_check_blacklist, {
 		{CMD_PARAM_STR, fixup_blacklist, 0},
 		{CMD_PARAM_STR, fixup_blacklist_ip, fixup_blacklist_free}, /* ip */
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, /* port */
@@ -344,7 +363,11 @@ const cmd_export_t core_cmds[]={
 		{CMD_PARAM_STR, fixup_sr_group, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
-
+	{"avp_print", (cmd_function)w_print_avps, {{0, 0, 0}},
+		ALL_ROUTES},
+	{"set_via_handling", (cmd_function)w_set_via_handling, {
+		{CMD_PARAM_STR, fixup_via_hdl, 0}, {0,0,0}},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -447,13 +470,43 @@ static int fixup_qvalue(void** param)
 	return 0;
 }
 
+static int fixup_branch_keep(void** param)
+{
+	str *s = (str*)*param;
+
+	/* default value is to discard */
+	*param = (void*)(long)0;
+	if (!s)
+		return 0;
+
+	if (str_strcasecmp(s, _str("keep")) == 0)
+		*param = (void*)(long)1;
+	return 0;
+}
+
+static int fixup_branch_index(void** param)
+{
+	int *i = (int *)*param;
+
+	/* default value is -1 */
+	if (!i || *i < 0)
+		*param = NULL; /* normalize to NULL */
+	else if (*i >= MAX_BRANCHES) {
+		LM_ERR("invalid branch index %d\n", *i);
+		return -1;
+	}
+	/* else allow the branch provisioned */
+
+	return 0;
+}
+
 static int fixup_f_send_sock(void** param)
 {
 	str *s = (str*)*param;
 	str host, host_nt;
 	int proto=PROTO_NONE, port;
 	struct hostent* he;
-	struct socket_info* si;
+	const struct socket_info* si;
 	struct ip_addr ip;
 
 	if (parse_phostport(s->s, s->len, &host.s, &host.len, &port, &proto) != 0) {
@@ -481,7 +534,8 @@ static int fixup_f_send_sock(void** param)
 
 	pkg_free(host_nt.s);
 
-	*param = si;
+	const void **_param = (const void **)param;
+	*_param = si;
 	return 0;
 
 error:
@@ -869,6 +923,16 @@ static int w_remove_branch(struct sip_msg *msg, int *branch)
 	return (remove_branch(*branch)==0)?1:-1;
 }
 
+static int w_move_branch(struct sip_msg *msg, int *src_idx, int *dst_idx, int *keep)
+{
+	return (move_branch(msg, (src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1), (keep?1:0))==0)?1:-1;
+}
+
+static int w_swap_branches(struct sip_msg *msg, int *src_idx, int *dst_idx)
+{
+	return (swap_branches(msg, (src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1))==0)?1:-1;
+}
+
 static int w_pv_printf(struct sip_msg *msg, pv_spec_t *var, str *fmt_str)
 {
 	pv_value_t val;
@@ -1001,7 +1065,7 @@ static int w_set_adv_port(struct sip_msg *msg, str *adv_port)
 
 static int w_f_send_sock(struct sip_msg *msg, struct socket_info *si)
 {
-	msg->force_send_socket=si;
+	msg->force_send_socket=(const struct socket_info *)si;
 
 	return 1;
 }
@@ -1370,3 +1434,73 @@ static int w_is_myself(struct sip_msg *msg, str *host, int *port)
 	else
 		return -1;
 }
+
+static int w_print_avps(struct sip_msg* msg, char* foo, char *bar)
+{
+	struct usr_avp **avp_list;
+	struct usr_avp *avp;
+	int_str         val;
+	str            *name;
+
+	/* go through all list */
+	avp_list = get_avp_list();
+	avp = *avp_list;
+
+	LM_INFO("----------- All AVPs in this context --------\n");
+	LM_INFO("  (SIP txn, script event, timer route, etc.)\n");
+	for ( ; avp ; avp=avp->next)
+	{
+		LM_INFO("p=%p, flags=0x%04X\n",avp, avp->flags);
+		name = get_avp_name(avp);
+		LM_INFO("    name=<%.*s>\n",name->len,name->s);
+		LM_INFO("    id=<%d>\n",avp->id);
+		get_avp_val( avp, &val);
+		if (avp->flags&AVP_VAL_STR)
+		{
+			LM_INFO("    val_str=<%.*s / %d>\n",val.s.len,val.s.s,
+					val.s.len);
+		} else {
+			LM_INFO("    val_int=<%d>\n",val.n);
+		}
+	}
+	LM_INFO("---------------- END ALL AVPs ---------------\n");
+
+	return 1;
+}
+
+
+static str via_hdl_flag_names[] = {
+	str_init("force-rport"),
+	str_init("add-local-rport"),
+	str_init("reply-to-via"),
+	str_init("force-tcp-alias"),
+	STR_NULL
+};
+enum via_hdl_flags {
+	VIA_HDL_FORCE_RPORT,
+	VIA_HDL_ADD_LOCAL_RPORT,
+	VIA_HDL_REPLY_TO_VIA,
+	VIA_HDL_FORCE_TCP_ALIAS,
+};
+static int fixup_via_hdl(void** param)
+{
+	return fixup_named_flags(param, via_hdl_flag_names, NULL, NULL);
+}
+
+static int w_set_via_handling(struct sip_msg* msg, int flags)
+{
+	if (flags & (1<<VIA_HDL_FORCE_RPORT))
+		msg->msg_flags |= FL_FORCE_RPORT;
+
+	if (flags & (1<<VIA_HDL_ADD_LOCAL_RPORT))
+		msg->msg_flags|=FL_FORCE_LOCAL_RPORT;
+
+	if (flags & (1<<VIA_HDL_REPLY_TO_VIA))
+		msg->msg_flags |= FL_REPLY_TO_VIA;
+
+	if (flags & (1<<VIA_HDL_FORCE_TCP_ALIAS))
+		w_force_tcp_alias( msg, 0);
+
+	return 1;
+}
+

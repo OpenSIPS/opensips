@@ -1,3 +1,9 @@
+opensips (3.6.0-dev-1) beta; urgency=low
+
+  * Development Build.
+
+ -- Razvan Crainea <razvan@opensips.org>  Mon, 27 May 2024 16:00:00 +0300
+
 opensips (3.5.0-dev-1) beta; urgency=low
 
   * Development Build.

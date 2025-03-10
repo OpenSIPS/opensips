@@ -216,7 +216,7 @@ typedef int (*pv_init_param_f)(pv_spec_p sp, int param);
  * - $(class_name(inner_name)[index]{transformation})
  */
 typedef struct _pv_export {
-	const str name;                /*!< class name of PV */
+	const str_const name;          /*!< class name of PV */
 	pv_type_t type;                /*!< type of PV */
 	pv_getf_t  getf;               /*!< function to get the value */
 	pv_setf_t  setf;               /*!< function to set the value */

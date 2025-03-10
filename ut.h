@@ -271,13 +271,15 @@ static inline char* int2bstr(uint64_t l, char *s, int* len)
 /* INTeger-TO-STRing : convers a 64-bit integer to a string
  * returns a pointer to a static buffer containing l in asciiz & sets len */
 #define INT2STR_BUF_NO    7
+extern unsigned int int2str_buf_index;
 extern char int2str_buf[INT2STR_BUF_NO][INT2STR_MAX_LEN];
+static inline unsigned int getstrbufindex(void) {
+	return ((int2str_buf_index++) % INT2STR_BUF_NO);
+}
+
 static inline char* int2str(uint64_t l, int* len)
 {
-	static unsigned int it = 0;
-
-	if ((++it)==INT2STR_BUF_NO) it = 0;
-	return int2bstr( l, int2str_buf[it], len);
+	return int2bstr( l, int2str_buf[getstrbufindex()], len);
 }
 
 
@@ -301,11 +303,12 @@ static inline char* sint2str(long l, int* len)
 	return p;
 }
 
+#define DOUBLE2STR_MAX_LEN  INT2STR_MAX_LEN
 static inline char* double2str(double d, int* len)
 {
-	static int buf;
+	unsigned int buf;
 
-	buf = (buf + 1) % INT2STR_BUF_NO;
+	buf = getstrbufindex();
 	*len = snprintf(int2str_buf[buf], INT2STR_MAX_LEN - 1, "%0.*lf",
 	                FLOATING_POINT_PRECISION, d);
 	int2str_buf[buf][*len] = '\0';
@@ -313,6 +316,17 @@ static inline char* double2str(double d, int* len)
 	return int2str_buf[buf];
 }
 
+#define BIGINT2STR_MAX_LEN  INT2STR_MAX_LEN
+static inline char* bigint2str(long long l, int* len)
+{
+	unsigned int buf;
+
+	buf = getstrbufindex();
+	*len = snprintf(int2str_buf[buf], INT2STR_MAX_LEN - 1, "%lld", l);
+	int2str_buf[buf][*len] = '\0';
+
+	return int2str_buf[buf];
+}
 
 /* faster memchr version */
 static inline char* q_memchr(char* p, int c, unsigned int size)
@@ -469,6 +483,33 @@ inline static int string2hex(
 	return orig_len * 2;
 }
 
+inline static int hex2string(
+	/* input */ const char *str, int len,
+	/* output */ char *hex )
+{
+	int i;
+	for (i = 0; i < len / 2; i++) {
+		if(str[2*i]>='0' && str[2*i]<='9')
+			hex[i] = (str[2*i]-'0') << 4;
+		else if(str[2*i]>='a' && str[2*i]<='f')
+			hex[i] = (str[2*i]-'a'+10) << 4;
+		else if(str[2*i]>='A' && str[2*i]<='F')
+			hex[i] = (str[2*i]-'A'+10) << 4;
+		else goto error;
+
+		if(str[2*i+1]>='0' && str[2*i+1]<='9')
+			hex[i] += str[2*i+1]-'0';
+		else if(str[2*i+1]>='a' && str[2*i+1]<='f')
+			hex[i] += str[2*i+1]-'a'+10;
+		else if(str[2*i+1]>='A' && str[2*i+1]<='F')
+			hex[i] += str[2*i+1]-'A'+10;
+		else goto error;
+	}
+	return i;
+error:
+	return -1;
+}
+
 /* portable sleep in microseconds (no interrupt handling now) */
 
 inline static void sleep_us( unsigned int nusecs )
@@ -610,7 +651,8 @@ static inline void unescape_crlf(str *in_out)
 	}
 }
 
-static inline int _is_e164(const str* _user, int require_plus)
+/* @max_digits should be just 15, but there are exceptions to this rule! */
+static inline int _is_e164(const str* _user, int require_plus, int max_digits)
 {
 	char *d, *start, *end;
 
@@ -626,7 +668,7 @@ static inline int _is_e164(const str* _user, int require_plus)
 	}
 
 	end = _user->s + _user->len;
-	if (end - start < 2 || end - start > 15)
+	if (end - start < 2 || end - start > max_digits)
 		return -1;
 
 	for (d = start; d < end; d++)
@@ -635,7 +677,7 @@ static inline int _is_e164(const str* _user, int require_plus)
 
 	return 1;
 }
-#define is_e164(_user) _is_e164(_user, 1)
+#define is_e164(_user) _is_e164(_user, 1, 15)
 
 /*
  * Convert a string to lower case
@@ -1132,7 +1174,7 @@ static inline int str_casematch_nt(const str *a, const char *b)
 
 
 /*
- * search strb in stra
+ * search @strb in @stra, return pointer to 1st occurrence
  */
 static inline char* str_strstr(const str *stra, const str *strb)
 {
@@ -1159,6 +1201,48 @@ static inline char* str_strstr(const str *stra, const str *strb)
 
 		for (i=1; i<strb->len; i++)
 			if (stra->s[len+i]!=strb->s[i]) {
+				len++;
+				break;
+			}
+
+		if (i != strb->len)
+			continue;
+
+		return stra->s+len;
+	}
+
+
+	return NULL;
+}
+
+/*
+ * search @strb in @stra ignoring case of both, return pointer to 1st occurrence
+ */
+static inline char* str_strcasestr(const str *stra, const str *strb)
+{
+	int i;
+	int len;
+
+	if (stra==NULL || strb==NULL || stra->s==NULL || strb->s==NULL
+			|| stra->len<=0 || strb->len<=0) {
+#ifdef EXTRA_DEBUG
+		LM_DBG("bad parameters\n");
+#endif
+		return NULL;
+	}
+
+	if (strb->len > stra->len)
+		return NULL;
+
+	len=0;
+	while (stra->len-len >= strb->len){
+		if (tolower(stra->s[len]) != tolower(strb->s[0])) {
+			len++;
+			continue;
+		}
+
+		for (i=1; i<strb->len; i++)
+			if (tolower(stra->s[len+i])!=tolower(strb->s[i])) {
 				len++;
 				break;
 			}

@@ -339,6 +339,30 @@ failure_route[check_auth] {
 				</programlisting>
 			</example>
 		</section>
+
+		<section id="func_uac_inc_cseq" xreflabel="uac_inc_cseq(cseq)">
+			<title>
+				<function moreinfo="none">uac_inc_cseq()</function>
+			</title>
+			<para>
+			This function can be called to increase the CSeq of an ongoing request.
+			</para>
+			<para>
+			It receives as the <emphasis>cseq</emphasis> parameter the value that
+			the CSeq should be incremented with.
+			</para>
+			<para>
+			This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and  FAILURE_ROUTE.
+			</para>
+			<example>
+				<title><function>uac_inc_cseq</function> usage</title>
+				<programlisting format="linespecific">
+...
+uac_inc_cseq(1);
+...
+				</programlisting>
+			</example>
+		</section>
 	</section>
 
 </chapter>

@@ -1,5 +1,3 @@
-# $Id$
-#
 # WARNING: do not run this directly, it should be run by the master Makefile
 
 include ../../Makefile.defs
@@ -22,7 +20,7 @@ else
 endif 
 
 ifeq ($(CC_NAME), clang)
-	DEFS := $(filter-out -flto%,$(DEFS)) -Wno-ignored-optimization-argument
+	DEFS := $(filter-out -flto%,$(DEFS)) -Wno-ignored-optimization-argument -Qunused-arguments
 endif
 
 CFLAGS+=

@@ -1,0 +1,9 @@
+<para>
+This OpenSIPS cluster exposes the <emphasis role='bold'>"&my_cl_sync_cap;"</emphasis>
+capability in order to mark nodes as eligible for becoming data donors during an
+arbitrary sync request. Consequently, the cluster must have <emphasis>at least
+one node</emphasis> marked with the <emphasis role='bold'>"seed"</emphasis> value
+as the <emphasis>clusterer.flags</emphasis> column/property in order to be fully functional.
+Consult the <ulink url='clusterer#capabilities'>clusterer - Capabilities</ulink>
+chapter for more details.
+</para>

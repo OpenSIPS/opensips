@@ -88,13 +88,17 @@ cluster_node *get_redis_connection(redis_con *con,str *key)
 	unsigned short hash_slot;
 	cluster_node *it;
 
-	if (con->flags & REDIS_SINGLE_INSTANCE)
+	if (con->flags & REDIS_SINGLE_INSTANCE) {
+		LM_DBG("Single redis connection, returning %p\n",con->nodes);
 		return con->nodes;
-	else {
+	} else {
 		hash_slot = redisHash(con, key);
 		for (it=con->nodes;it;it=it->next) {
-			if (it->start_slot <= hash_slot && it->end_slot >= hash_slot)
+
+			if (it->start_slot <= hash_slot && it->end_slot >= hash_slot) {
+				LM_DBG("Redis cluster connection, matched con %p for slot %u \n",it,hash_slot);
 				return it;
+			}
 		}
 		return NULL;
 	}
@@ -230,6 +234,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 	// Cluster data into Array
 	if (explode(info,delimeters,newret1)) {
 		for (i=0;i<=newret1[0]->count;i++) {
+			LM_DBG("Nodes : %s\n",newret1[0]->redisdata[i]);
 
 			if ((strstr(newret1[0]->redisdata[i],"master") && (masters <= count)) || strstr(newret1[0]->redisdata[i],"myself,master")) {
 
@@ -243,10 +248,14 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 
 						if (strstr(newret1[0]->redisdata[i],"myself") && strstr(newret2[0]->redisdata[j],"myself")) {
 							//myself no ip
-							ip = con->id->host;
-							port = con->id->port;
-							if (i==0) masters--;
-			
+							if (ip == NULL) {
+								ip = con->id->host;
+								port = con->id->port;
+								LM_DBG("Myself and no IP, set ip to main host %s\n",con->id->host);
+								if (i==0) masters--;
+							} else
+								LM_DBG("Master already discovered to not be myself, not going to main host \n");
+
 						} else {
 							//Get the ip and port of other master
 							if (strstr(newret2[0]->redisdata[j],":") && (strlen(newret2[0]->redisdata[j]) > 5)) {
@@ -269,8 +278,6 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 
 				} else { block = "row to array"; goto error;}
 
-				LM_DBG("ip port start end %s %hu %hu %hu\n",ip,port,start_slot,end_slot);
-
 				if ( ip == NULL || !(port > 0) || (start_slot > end_slot) || !(end_slot > 0) ) {block = ":processing row"; goto error;}
 
 				len = strlen(ip);
@@ -287,6 +294,8 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 				new->port = port;
 				new->start_slot = start_slot;
 				new->end_slot = end_slot;
+
+				LM_DBG("Saving connection %p for ip %s port %hu start %hu end %hu\n",new,ip,port,start_slot,end_slot);
 
 				if (con->nodes == NULL)
 					con->nodes = new;

@@ -188,7 +188,6 @@
 #include "rtpproxy_vcmd.h"
 #include "rtppn_connect.h"
 #include "../rtp_relay/rtp_relay.h"
-
 #define NH_TABLE_VERSION  0
 
 #define DEFAULT_RTPP_SET_ID		0
@@ -322,13 +321,16 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 			str *flags, str *extra);
 static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void **_ctx, str *flags,
-		unsigned int copy_flags, unsigned int streams, str *body);
+		unsigned int copy_flags, unsigned int streams, str *body,
+		struct rtp_relay_streams *streams_map);
 static int rtpproxy_api_copy_answer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *_ctx, str *flags, str *body);
 static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *_ctx, str *flags);
 static int rtpproxy_api_copy_serialize(void *_ctx, bin_packet_t *packet);
 static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet);
+static void rtpproxy_api_copy_release(void **_ctx);
+
 
 int connect_rtpproxies(struct rtpp_set *filter);
 int update_rtpp_proxies(struct rtpp_set *filter);
@@ -903,7 +905,7 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 	int enable;
 	struct rtpp_set * rtpp_list;
 	struct rtpp_node * crt_rtpp;
-	int found;
+	int found, disabled, prev_disabled, recheck_ticks;
 
 	found = 0;
 
@@ -934,10 +936,25 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 				if(strncmp(crt_rtpp->rn_url.s, rtpp_url.s, rtpp_url.len) == 0){
 					/*set the enabled/disabled status*/
 					found = 1;
-					crt_rtpp->rn_recheck_ticks =
-						enable? MI_MIN_RECHECK_TICKS : MI_MAX_RECHECK_TICKS;
-					crt_rtpp->rn_disabled = enable?0:1;
-					raise_rtpproxy_event(crt_rtpp, crt_rtpp->rn_disabled);
+					prev_disabled = crt_rtpp->rn_disabled;
+					switch (enable) {
+						case 0: /* disable */
+							recheck_ticks = MI_MAX_RECHECK_TICKS;
+							disabled = 1;
+							break;
+						case 2: /* pending */
+							recheck_ticks = get_ticks() + rtpproxy_disable_tout;
+							disabled = 1;
+							break;
+						default: /* enable */
+							recheck_ticks = MI_MIN_RECHECK_TICKS;
+							disabled = 0;
+							break;
+					}
+					crt_rtpp->rn_recheck_ticks = recheck_ticks;
+					crt_rtpp->rn_disabled = disabled;
+					if (prev_disabled != crt_rtpp->rn_disabled)
+						raise_rtpproxy_event(crt_rtpp, crt_rtpp->rn_disabled);
 				}
 			}
 		}
@@ -1106,6 +1123,7 @@ static int mod_preinit(void)
 		.copy_delete = rtpproxy_api_copy_delete,
 		.copy_serialize = rtpproxy_api_copy_serialize,
 		.copy_deserialize = rtpproxy_api_copy_deserialize,
+		.copy_release = rtpproxy_api_copy_release,
 	};
 	if (!pv_parse_spec(&rtpproxy_relay_pvar_str, &media_pvar))
 		return -1;
@@ -2059,8 +2077,9 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 				"%s\n", node->rn_url.s, REQ_CPROTOVER);
 		goto error;
 	}
-	LM_INFO("rtp proxy <%s> found, support for it %senabled\n",
-	    node->rn_url.s, force == 0 ? "re-" : "");
+	if (isdisabled)
+		LM_INFO("rtp proxy <%s> found, support for it %senabled\n",
+				node->rn_url.s, force == 0 ? "re-" : "");
 	/* Check for optional capabilities */
 	if (rtpp_checkcap(node, RTP_CAP(REPACK)) > 0)
 		SET_CAP(node, REPACK);
@@ -2674,17 +2693,6 @@ rtpproxy_offer6_f(struct sip_msg *msg, str *param1, str *param2,
 				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5,
 				pv_spec_t *param6)
 {
-	if(rtpp_notify_socket.s)
-	{
-		if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
-			LM_ERR("bad request or missing TO hdr\n");
-			return -1;
-		}
-
-		/* if an initial request - create a new dialog */
-		if(get_to(msg)->tag_value.s == NULL && dlg_api.create_dlg)
-			dlg_api.create_dlg(msg,0);
-	}
 	return rtpproxy_offer_answer6_f(msg, param1, param2, param3, param4,
 			param5, param6, 1);
 }
@@ -2953,7 +2961,7 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 		if (!has_sdp) {
 			if (msg->first_line.type == SIP_REQUEST &&
 					(method_id == METHOD_INVITE ||  method_id == METHOD_UPDATE)) {
-				/* indicate there's an ongoing late negociation happening */
+				/* indicate there's an ongoing late negotiation happening */
 				value.s = late_name;
 				if (dlg_api.store_dlg_value(dlg, &late_name, &value,
 					DLG_VAL_TYPE_NONE) < 0) {
@@ -3448,7 +3456,9 @@ static inline int rtpp_get_error(char *command)
 {
 	int ret;
 	str val;
-	if (!command || command[0] != 'E')
+	if (!command)
+		return -1;
+	if (command[0] != 'E')
 		return 0;
 	val.s = command + 1;
 	val.len = strlen(val.s) - 1 /* newline */;
@@ -3778,6 +3788,16 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 
 	if (opts.s.s[0] == 'U') {
 		if(enable_notification && dlg_api.get_dlg) {
+
+			if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
+				LM_ERR("bad request or missing TO hdr\n");
+				goto error;
+			}
+
+			/* if an initial request - create a new dialog */
+			if(get_to(msg)->tag_value.s == NULL && dlg_api.create_dlg)
+				dlg_api.create_dlg(msg,0);
+
 			dlg = dlg_api.get_dlg();
 			if(dlg == NULL)
 			{
@@ -4555,6 +4575,10 @@ static inline int rtpproxy_stats_f(struct sip_msg *msg,
 		/* we are done reading -> unref the data */
 		lock_stop_read( nh_lock );
 	}
+	if (!ret) {
+		LM_DBG("nothing returned by RTPProxy!\n");
+		return -1;
+	}
 	error = rtpp_get_error(ret);
 	switch (error) {
 		case 0:
@@ -4653,6 +4677,10 @@ static inline int rtpproxy_all_stats_f(struct sip_msg *msg, pv_spec_t *pavp,
 	for (chunk = 0; chunk < rtpp_stats_chunks_no; chunk++) {
 		vstat->vu[nitems] = rtpp_stats_chunks[chunk];
 		result = send_rtpp_command(node, vstat, nitems + 1);
+		if (!result) {
+			LM_DBG("no result from RTPProxy!\n");
+			goto error;
+		}
 
 		error = rtpp_get_error(result);
 		if (error) {
@@ -4780,7 +4808,7 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 	else
 		while (media_start <= media_stop) {
 			vrec.vu[9].iov_base = int2str(media_start, (int *)&vrec.vu[9].iov_len);
-			vrec.vu[13] = vrec.vu[9];
+			memcpy(&vrec.vu[13], &vrec.vu[9], sizeof *vrec.vu);
 			send_rtpp_command(node, &vrec, nitems);
 			media_start++;
 		}
@@ -4821,7 +4849,7 @@ static int w_rtpproxy_stop_recording(struct sip_msg *msg, str *callid,
 		STR2IOVEC(*to_tag, vstrec.vu[7]);
 
 	vstrec.vu[5].iov_base = int2str(medianum, (int *)&vstrec.vu[5].iov_len);
-	vstrec.vu[9] = vstrec.vu[5];
+	memcpy(&vstrec.vu[9], &vstrec.vu[5], sizeof *vstrec.vu);
 	send_rtpp_command(node, &vstrec, vstrec.useritems);
 
 	return 1;
@@ -5582,9 +5610,34 @@ static int rtpproxy_gen_sdp_medias(struct rtpproxy_sdp_buf *buf,
 	return 0;
 }
 
+static void rtpproxy_api_copy_fill_streams(
+		struct rtpproxy_copy_ctx *ctx, struct rtp_relay_streams* streams)
+{
+	struct rtpproxy_copy_stream *stream;
+	struct list_head *it;
+	int leg, s;
+	streams->count = 0;
+	for (leg = RTP_RELAY_CALLER; leg <= RTP_RELAY_CALLEE; leg++) {
+		list_for_each(it, &ctx->streams[leg]) {
+			stream = list_entry(it, struct rtpproxy_copy_stream, list);
+			s = streams->count;
+			if (s == RTP_COPY_MAX_STREAMS) {
+				LM_WARN("maximum amount of streams %d reached!\n",
+						RTP_COPY_MAX_STREAMS);
+				return;
+			}
+			streams->streams[s].leg = leg;
+			streams->streams[s].label = stream->index;
+			streams->streams[s].medianum = stream->medianum;
+			streams->count++;
+		}
+	}
+}
+
 static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void **_ctx, str *flags,
-		unsigned int copy_flags, unsigned int streams, str *body)
+		unsigned int copy_flags, unsigned int streams, str *body,
+		struct rtp_relay_streams *streams_map)
 {
 	str *media_ip;
 	struct rtpproxy_sdp_buf *buf;
@@ -5608,6 +5661,9 @@ static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
 
 	if (rtpproxy_gen_sdp_medias(buf, ctx, sess) < 0)
 		goto error;
+
+	if (streams_map)
+		rtpproxy_api_copy_fill_streams(ctx, streams_map);
 
 	*body = buf->buffer;
 	*_ctx = ctx;
@@ -5892,7 +5948,6 @@ error:
 	if (nh_lock)
 		lock_stop_read(nh_lock);
 	rtpproxy_free_call_args(&args);
-	rtpproxy_copy_ctx_free(_ctx);
 	return ret <= 0?-1:1;
 }
 
@@ -5986,4 +6041,10 @@ static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 	}
 	*_ctx = ctx;
 	return -1;
+}
+
+static void rtpproxy_api_copy_release(void **_ctx)
+{
+	rtpproxy_copy_ctx_free(*_ctx);
+	*_ctx = NULL;
 }

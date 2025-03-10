@@ -406,6 +406,8 @@ encode_uri (str uri, str *encoding_prefix, str *public_ip,char separator, str * 
 	if (foo < 0)
 		{
 		LM_ERR("unable to encode Contact URI [%.*s].Return code %d\n",uri.len,uri.s,foo);
+
+		/* coverity[return_overflow: FALSE] - foo is min -10 */
 		return foo - 20;
 		}
 #ifdef DEBUG
@@ -597,6 +599,8 @@ decode_uri (str uri, char separator, str * result)
 	if (foo < 0)
 		{
 		LM_ERR("failed to decode Contact uri .Error code %d\n",foo);
+
+		/* coverity[return_overflow: FALSE] - foo is min -6 */
 		return foo - 20;
 		}
 	/* sanity check */

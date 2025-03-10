@@ -138,7 +138,7 @@ int w_calculate_hooks(dlg_t* _d)
 /*
  * Create a new dialog - internal function
  */
-static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _turi, str* _ruri, struct socket_info* sock, dlg_t** _d)
+static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _turi, str* _ruri, const struct socket_info* sock, dlg_t** _d)
 {
 	dlg_t* res;
 
@@ -198,7 +198,7 @@ int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _tur
 /*
  * Create a new dialog (auto mode)
  */
-int new_auto_dlg_uac( str* _luri, str* _turi, str* _ruri, str *callid, struct socket_info* _sock, dlg_t** _d)
+int new_auto_dlg_uac( str* _luri, str* _turi, str* _ruri, str *callid, const struct socket_info* _sock, dlg_t** _d)
 {
 	str fromtag, clid;
 

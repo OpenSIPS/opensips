@@ -79,7 +79,9 @@ int evi_param_set(evi_param_p element, const void *param, int flags);
 #define evi_param_set_int(p_el, p_int) \
 		evi_param_set(p_el, p_int, EVI_INT_VAL)
 
-/* sets a string value to a parameter */
+/* sets a string value to a parameter
+ * WARNING: the string is *not* duplicated, make sure to keep the buffer until
+ * all "EVI raise" operations have been issued */
 #define evi_param_set_str(p_el, p_str) \
 		evi_param_set(p_el, p_str, EVI_STR_VAL)
 

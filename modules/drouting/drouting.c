@@ -64,6 +64,9 @@
 #define MI_LAST_UPDATE_S "Date"
 #define MI_LAST_UPDATE_LEN (strlen(MI_LAST_UPDATE_S))
 
+#define MI_HASH_S "Hash"
+#define MI_HASH_LEN (strlen(MI_HASH_S))
+
 #define MI_DEFAULT_PROBING_STATE	1
 #define MI_PROBING_DISABLED_S "Gateways probing disabled from script"
 
@@ -74,7 +77,7 @@ struct tm_binds dr_tmb;
 str dr_probe_method = str_init("OPTIONS");
 str dr_probe_from = str_init("sip:prober@localhost");
 static str dr_probe_sock_s;
-struct socket_info *dr_probe_sock = NULL;
+const struct socket_info *dr_probe_sock = NULL;
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
 
@@ -87,6 +90,9 @@ struct custom_rule_table *custom_rule_tables;
 
 /* reload controll parametere */
 static int no_concurrent_reload = 0;
+
+/* generate drouting data md5 & attach that to reload status & status reports */
+static int generate_data_md5 = 0;
 
 /*** DB relatede stuff ***/
 /* parameters  */
@@ -426,7 +432,7 @@ static const cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE
 	},
 	{"dr_is_gw", (cmd_function)dr_is_gw,
 		{ {CMD_PARAM_STR, NULL, NULL},
@@ -505,7 +511,8 @@ static const param_export_t params[] = {
 	{"enable_restart_persistency",INT_PARAM, &dr_rpm_enable   },
 	{"extra_prefix_chars", STR_PARAM, &extra_prefix_chars     },
 	{"extra_id_chars",     STR_PARAM, &extra_id_chars.s       },
-	{"gw_socket_filter_mode", STR_PARAM, &gw_sock_filter_s  },
+	{"gw_socket_filter_mode", STR_PARAM, &gw_sock_filter_s    },
+	{"generate_data_checksum", INT_PARAM, &generate_data_md5       },
 	{0, 0, 0}
 };
 
@@ -851,7 +858,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 		 * to free the whole structure here */
 		param_prob_callback_t params;
 
-		struct socket_info *sock;
+		const struct socket_info *sock;
 		str uri;
 
 		struct gw_prob_pack *next;
@@ -1094,6 +1101,31 @@ static void dr_state_flusher(struct head_db* hd)
 	return;
 }
 
+static void bin_hash_to_hex(HASH _b, HASHHEX _h)
+{
+	unsigned short i;
+	unsigned char j;
+
+	for (i = 0; i < HASHLEN; i++) {
+		j = (_b[i] >> 4) & 0xf;
+		if (j <= 9) {
+			_h[i * 2] = (j + '0');
+		} else {
+			_h[i * 2] = (j + 'a' - 10);
+		}
+
+		j = _b[i] & 0xf;
+
+		if (j <= 9) {
+			_h[i * 2 + 1] = (j + '0');
+		} else {
+			_h[i * 2 + 1] = (j + 'a' - 10);
+		}
+	};
+
+	_h[HASHHEXLEN] = '\0';
+}
+
 /* Flushes to DB the state of carriers and gateways (if modified)
  * Locking is done to protect the data consistency */
 static void dr_state_timer(unsigned int ticks, void* param)
@@ -1146,6 +1178,9 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	time_t rawtime;
 	struct dr_prepare_part_params pp;
 	int ret = -1;
+	MD5_CTX Md5Ctx, *ctxp=NULL;
+	HASH bin_md5;
+	char hash_report_data[64];
 
 	void **dest;
 	map_iterator_t it;
@@ -1187,7 +1222,13 @@ static inline int dr_reload_data_head(struct head_db *hd,
 			CHAR_INT("data re-loading"), 0);
 
 	if (!uses_rule_table_query(hd, &rule_table_query)) {
-		new_data = dr_load_routing_info(hd, dr_persistent_state, &hd->drr_table, 1);
+
+		if (generate_data_md5) { 
+			MD5Init(&Md5Ctx);
+			ctxp = &Md5Ctx;
+		}
+
+		new_data = dr_load_routing_info(hd, dr_persistent_state, &hd->drr_table, 1, ctxp);
 		if (!new_data) {
 			LM_CRIT("failed to load routing info\n");
 			goto error;
@@ -1240,8 +1281,13 @@ static inline int dr_reload_data_head(struct head_db *hd,
 
 		dr_dbf->free_result(db_hdl, res);
 
+		if (generate_data_md5) { 
+			MD5Init(&Md5Ctx);
+			ctxp = &Md5Ctx;
+		}
+
 		new_data = dr_load_routing_info(hd, dr_persistent_state, rules_tables,
-		                                rules_no);
+		                                rules_no,ctxp);
 		if (!new_data) {
 			LM_CRIT("failed to load routing info\n");
 			goto error;
@@ -1264,6 +1310,11 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	/* update cache head */
 	if (hd->cache)
 		hd->cache->rdata = new_data;
+
+	if (generate_data_md5) {
+		MD5Final(bin_md5, &Md5Ctx);
+		bin_hash_to_hex(bin_md5,hd->md5);
+	}
 
 	lock_stop_write( (hd->ref_lock) );
 
@@ -1312,8 +1363,14 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	populate_dr_bls(hd->rdata->pgw_tree);
 
 success:
-	sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
-		CHAR_INT("data available"), 0);
+	if (generate_data_md5) {
+		sprintf(hash_report_data,"data available %s",hd->md5);
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
+			hash_report_data,strlen(hash_report_data), 0);
+	} else {
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
+	}
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
 	return 0;
@@ -1584,7 +1641,7 @@ struct head_cache *get_head_cache(str *part)
 void fix_cache_sockets(struct head_cache *cache)
 {
 	struct head_cache_socket *prev, *csock, *free;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	prev = NULL;
 	csock = cache->sockets;
@@ -2011,8 +2068,8 @@ static int dr_init(void)
 
 		if( (*db_part->db_con =
 					db_part->db_funcs.init(&db_part->db_url)) == 0) {
-			LM_ERR("failed to connect to db url <%.*s>\n",
-				db_part->db_url.len, db_part->db_url.s);
+			LM_ERR("failed to connect to db url <%s>\n",
+				db_url_escape(&db_part->db_url));
 			goto error_cfg;
 		}
 
@@ -2549,7 +2606,7 @@ static int use_next_gw(struct sip_msg* msg,
 	str ruri;
 	int ok = 0;
 	pgw_t * dst;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	if(part==NULL) {
 		LM_ERR("Partition is mandatory for use_next_gw.\n");
@@ -2925,11 +2982,11 @@ static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx)
 		}
 		if (weight_sum) {
 			/* randomly select number */
-			rand_no = (unsigned int)(weight_sum*((double)rand()/((double)RAND_MAX)));
+			rand_no = (unsigned int)(weight_sum*((double)rand()/((double)1+RAND_MAX)));
 			LM_DBG("random number is %d\n",rand_no);
 			/* select the element */
 			for( i=first ; i<size ; i++ )
-				if (running_sum[i]>=rand_no) break;
+				if (running_sum[i]>rand_no) break;
 			if (i==size) {
 				LM_CRIT("bug in weight sort, first=%u, size=%u, rand_no=%u, total weight=%u\n",
 					first, size, rand_no, weight_sum);
@@ -3174,7 +3231,7 @@ static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 	pgw_list_t *dst, *cdst;
 	pgw_list_t *wl_list;
 	unsigned int prefix_len;
-	unsigned int rule_idx;
+	int rule_idx;
 	struct head_db *current_partition=NULL;
 	unsigned short wl_len;
 	str username;
@@ -3305,7 +3362,7 @@ static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 		}
 		username = val.s;
 		/* still something to look for ? */
-		if (username.len==0) return -1;
+		if (username.len==0 && rule_idx<0) return -1;
 
 		/* original RURI to be used when building RURIs for new attempts */
 		if (search_first_avp( AVP_VAL_STR, current_partition->avpID_store_ruri,
@@ -3336,7 +3393,7 @@ search_again:
 		username.len = prefix_len -(rule_idx?0:1);
 		LM_DBG("doing internal fallback, prefix_len=%d,rule_idx=%d\n",
 				username.len, rule_idx);
-		if (username.len==0 && rule_idx==0) {
+		if (username.len==0 && rule_idx<=0) {
 			/* disable failover as nothing left */
 			flags = flags & ~DR_PARAM_RULE_FALLBACK;
 			goto error2;
@@ -3353,18 +3410,24 @@ search_again:
 	}
 
 	if (rt_info==0) {
-		LM_DBG("no matching for prefix \"%.*s\"\n",
-				username.len, username.s);
+		LM_DBG("no matching for prefix \"%.*s\" idx: %d\n",
+				username.len, username.s, rule_idx);
 		/* try prefixless rules */
-		rt_info = check_rt(&current_partition->rdata->noprefix,
-				(unsigned int)grp);
+		if (rule_idx >= 0)
+			rt_info = _check_rt(&current_partition->rdata->noprefix,
+					(unsigned int)grp, &rule_idx);
 		if (rt_info==0) {
 			LM_DBG("no prefixless matching for "
 					"grp %d\n", grp);
 			goto error2;
 		}
 		prefix_len = 0;
-		rule_idx = 0;
+
+		LM_DBG("prefixless matching successful, crt-index: %d\n", rule_idx);
+
+		/* "stop" marker for reaching the last prefixless route */
+		if (rule_idx == 0)
+			rule_idx = -1;
 	}
 
 	if ( ref_script_route_check_and_update(rt_info->route_ref) ) {
@@ -3382,7 +3445,7 @@ search_again:
 		goto no_gws;
 
 	/* do we have anything left to failover to ? */
-	if (prefix_len==0 && rule_idx==0)
+	if (prefix_len==0 && rule_idx<=0)
 		/* disable failover as nothing left */
 		flags = flags & ~DR_PARAM_RULE_FALLBACK;
 
@@ -3594,10 +3657,9 @@ no_gws:
 		if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
 			/* first time - we need to save some date, to be able to
 			 * do the rule fallback later in "next_gw" , but do it only if 
-			 * there is place for fallback (more rules or shorter prefix are 
-			 * available) */
-			if (prefix_len!=0 || rule_idx!=0) {
-				LM_DBG("saving rule_idx %d, prefix %.*s\n",rule_idx,
+			 * there is room for fallback (more rules are available) */
+			if (rule_idx>0) {
+				LM_DBG("saving rule_idx %d, prefix '%.*s'\n",rule_idx,
 						prefix_len - (rule_idx?0:1), username.s);
 				val.n = rule_idx;
 				if (add_avp( 0 , current_partition->avpID_store_index, val) ) {
@@ -5325,6 +5387,9 @@ static int mi_dr_print_rld_status(mi_item_t *part_item, struct head_db * partiti
 
 	if (add_mi_string(part_item, MI_SSTR(MI_LAST_UPDATE_S),
 		ch_time, strlen(ch_time)-1) < 0)
+		goto error;
+
+	if (generate_data_md5 && add_mi_string(part_item,MI_SSTR(MI_HASH_S),partition->md5,strlen(partition->md5)) < 0)
 		goto error;
 
 	lock_stop_read(partition->ref_lock);

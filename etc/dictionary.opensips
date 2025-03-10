@@ -12,8 +12,8 @@
 #### Attributes ###
 ATTRIBUTE Sip-Method           204  integer    # Proprietary, acc
 ATTRIBUTE Sip-Response-Code    205  integer    # Proprietary, acc
-ATTRIBUTE Sip-From-Tag         206  integer    # Proprietary, acc
-ATTRIBUTE Sip-To-Tag           207  integer    # Proprietary, acc
+ATTRIBUTE Sip-From-Tag         206  string     # Proprietary, acc
+ATTRIBUTE Sip-To-Tag           207  string     # Proprietary, acc
 ATTRIBUTE Sip-Uri-User         208  string     # Proprietary, auth_aaa
 ATTRIBUTE Sip-Uri-Host         209  string     # Proprietary, auth_aaa
 ATTRIBUTE Sip-Group            211  string     # Proprietary, group

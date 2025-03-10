@@ -235,11 +235,14 @@ build_query:
 
 			for (i=0;i<no_rows;i++)
 			{
+				if (off + 1 >= SQL_BUF_LEN) goto error0;
 				sql_buf[off++]='(';
 				ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off,
 										CON_HAS_PS(_h)?_v:buffered_rows[i], _n, val2str);
 				if (ret < 0) goto error;
 				off += ret;
+
+				if (off + 1 >= SQL_BUF_LEN) goto error0;
 				sql_buf[off++]=')';
 
 				if (i != (no_rows -1))

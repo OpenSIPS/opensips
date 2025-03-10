@@ -159,14 +159,14 @@ modparam("proto_bin", "bin_async", 0)
 		</para>
 		<para>
 		<emphasis>
-			Default value is 32.
+			Default value is 1024.
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>bin_async_max_postponed_chunks</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_bin", "bin_async_max_postponed_chunks", 16)
+modparam("proto_bin", "bin_async_max_postponed_chunks", 1024)
 ...
 </programlisting>
 		</example>

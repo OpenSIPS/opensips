@@ -19,15 +19,21 @@ SIPREC Module
 
               1.7.1. skip_failover_codes (string)
 
-        1.8. Exported Functions
+        1.8. Exported Events
 
-              1.8.1. siprec_start_recording(srs)
-              1.8.2. siprec_pause_recording()
-              1.8.3. siprec_resume_recording()
+              1.8.1. E_SIPREC_START
+              1.8.2. E_SIPREC_STOP
 
-        1.9. Exported Pseudo-Variables
+        1.9. Exported Functions
 
-              1.9.1. $siprec
+              1.9.1. siprec_start_recording(srs)
+              1.9.2. siprec_pause_recording()
+              1.9.3. siprec_resume_recording()
+              1.9.4. siprec_stop_recording()
+
+        1.10. Exported Pseudo-Variables
+
+              1.10.1. $siprec
 
    2. Contributors
 
@@ -56,8 +62,12 @@ SIPREC Module
           values for participants
 
    1.5. Use siprec_start_recording() function with custom headers
-   1.6. Use siprec_pause_recording()
-   1.7. Use siprec_resume_recording()
+   1.6. Use siprec_start_recording() function with custom group
+          and session extensions
+
+   1.7. Use siprec_pause_recording()
+   1.8. Use siprec_resume_recording()
+   1.9. Use siprec_stop_recording()
 
 Chapter 1. Admin Guide
 
@@ -148,7 +158,7 @@ Chapter 1. Admin Guide
        for us to postpone the media between the caller and callee
        to play a Recording Indicator message.
      * Cannot handle Recording Sessions initiated by SRS - we do
-       not support the scenario when an SRS suddently decides to
+       not support the scenario when an SRS suddenly decides to
        record a call in the middle of the dialog.
      * OpenSIPS cannot be “queried” for ongoing recording sessions
        - this is scheduled to be implemented in further releases.
@@ -192,9 +202,30 @@ modparam("siprec", "skip_failover_codes", "408|487")
 modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 ...
 
-1.8. Exported Functions
+1.8. Exported Events
 
-1.8.1.  siprec_start_recording(srs)
+1.8.1.  E_SIPREC_START
+
+   This event is raised when a SIPREC call is established and a
+   call starts to be recorded.
+
+   Parameters:
+     * dlg_id - dialog id (“did”) of the call being recorded;
+     * dlg_callid - Call-Id of the call being recorded;
+     * callid - Call-Id (B2B id) of the SIPREC call;
+     * session_id - SIPREC UUID of the recording call;
+     * server - the SIPREC server handing this call;
+
+1.8.2.  E_SIPREC_STOP
+
+   This event is raised when a SIPREC call is terminated.
+
+   This event exposes the same parameters as the E_SIPREC_START
+   event.
+
+1.9. Exported Functions
+
+1.9.1.  siprec_start_recording(srs)
 
    Calling this function on an initial INVITE engages call
    recording to SRS(s) for that call. Note that it does not
@@ -259,14 +290,25 @@ for $ci in inbound group\n");
         siprec_start_recording($var(srs));
         ...
 
-1.8.2.  siprec_pause_recording()
+   Example 1.6. Use siprec_start_recording() function with custom
+   group and session extensions
+        ...
+        $var(temp) = "<callcenterID> 17</callcenterID>";
+        $siprec(group_custom_extension) = $var(temp);
+        $siprec(session_custom_extension) = "<callcenterCode>dfgh3q45gsd
+fty5</callcenterCode>";
+
+        siprec_start_recording($var(srs));
+        ...
+
+1.9.2.  siprec_pause_recording()
 
    Pauses the recording for the ongoing call. Should be called
    after the dialog has matched.
 
    This function can be used from any route.
 
-   Example 1.6. Use siprec_pause_recording()
+   Example 1.7. Use siprec_pause_recording()
         ...
         if (has_totag() && is_method("INVITE")) {
                 if (is_audio_on_hold())
@@ -274,14 +316,14 @@ for $ci in inbound group\n");
         }
         ...
 
-1.8.3.  siprec_resume_recording()
+1.9.3.  siprec_resume_recording()
 
    Resumes the recording for the ongoing call. Should be called
    after the dialog has matched.
 
    This function can be used from any route.
 
-   Example 1.7. Use siprec_resume_recording()
+   Example 1.8. Use siprec_resume_recording()
         ...
         if (has_totag() && is_method("INVITE")) {
                 if (!is_audio_on_hold())
@@ -289,9 +331,24 @@ for $ci in inbound group\n");
         }
         ...
 
-1.9. Exported Pseudo-Variables
+1.9.4.  siprec_stop_recording()
 
-1.9.1. $siprec
+   Stops the recording for the ongoing call. Should be called for
+   SIPREC sessions that have been previously started.
+
+   This function can be used from any route.
+
+   Example 1.9. Use siprec_stop_recording()
+        ...
+        if (has_totag() && is_method("INVITE")) {
+                if (is_audio_on_hold())
+                        siprec_stop_recording();
+        }
+        ...
+
+1.10. Exported Pseudo-Variables
+
+1.10.1. $siprec
 
    Used to modify/describe different siprec sessions parameters
    that should be taken into account by the
@@ -304,24 +361,38 @@ for $ci in inbound group\n");
    Any of this setting is optional.
 
    Settings that can be provisioned:
-     * group - an apaque value that will be inserted in the SIPREC
+     * group - an opaque value that will be inserted in the SIPREC
        body and represents the name of the group that can be used
-       to clasify calls in certain profiles. If missing, no group
+       to classify calls in certain profiles. If missing, no group
        is added.
      * caller - an XML block containing information about the
-       caller. If absent, the From header is used to build the
-       value.
+       caller. If absent, the From header of the initial dialog is
+       used to build the value.
      * callee - an XML block containing information about the
-       callee. If absent, the To header is used to build the
-       value.
+       callee. If absent, the To header of the initial dialog is
+       used to build the value.
      * media - the IP that RTPProxy will be streaming media from.
-       If absent 127.0.0.1 will be used. NOTE: deprecated media_ip
-       is an alias for this param.
+       If absent 127.0.0.1 will be used. NOTE:media_ip has been
+       dropped.
      * headers - extra headers that are to be added in the initial
        request towards the SRS. NOTE: headers must be separated by
        \r\n and must end with \r\n.
      * socket - listening socket that the outgoing request towards
        SRS should be used.
+     * from_uri - the URI to appear in the From header of the
+       dialog. Default value is the request URI. Note that this
+       does not influence the caller information in the XML block,
+       which is taken from the initial dialog.
+     * to_uri - the URI to appear in the To header of the dialog.
+       Default value is the request URI. Note that this does not
+       influence the callee information in the XML block, which is
+       taken from the initial dialog.
+     * group_custom_extension - an optional XML block containing
+       custom information to be added under the group tag. NOTE:
+       if the group is absent this value will be ignored and not
+       used anywhere.
+     * session_custom_extension - an optional XML block containing
+       custom information to be added under the session tag.
 
 Chapter 2. Contributors
 
@@ -330,12 +401,13 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 138 71 4753 1708
+   1. Razvan Crainea (@razvancrainea) 171 90 5654 1971
    2. Vlad Patrascu (@rvlad-patrascu) 16 11 166 149
-   3. Liviu Chircu (@liviuchircu) 8 6 27 50
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 2
-   5. Maksym Sobolyev (@sobomax) 3 1 4 4
-   6. Norman Brandinger (@NormB) 3 1 4 4
+   3. Liviu Chircu (@liviuchircu) 9 7 35 53
+   4. Maksym Sobolyev (@sobomax) 6 4 12 11
+   5. Seyed Mehran Siadati 5 2 124 15
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 2
+   7. Norman Brandinger (@NormB) 3 1 4 4
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -357,12 +429,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jul 2023
-   2. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Mar 2023
-   3. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4. Norman Brandinger (@NormB)          Aug 2021 - Aug 2021
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
-   6. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2019
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Oct 2024
+   2. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   3. Seyed Mehran Siadati                Nov 2023 - Nov 2023
+   4. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2023
+   5. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Mar 2023
+   6. Norman Brandinger (@NormB)          Aug 2021 - Aug 2021
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -371,9 +444,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Norman
-   Brandinger (@NormB), Vlad Patrascu (@rvlad-patrascu), Liviu
-   Chircu (@liviuchircu).
+   Last edited by: Razvan Crainea (@razvancrainea), Seyed Mehran
+   Siadati, Norman Brandinger (@NormB), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
 

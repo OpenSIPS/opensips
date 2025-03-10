@@ -235,7 +235,7 @@ int media_fork_offer(struct media_session_leg *msl,
 {
 	if (media_rtp.copy_offer(msl->ms->rtp,
 			&media_exchange_name, NULL, mf->flags,
-			mf->streams, body) < 0) {
+			mf->streams, body, NULL) < 0) {
 		LM_ERR("could not get copy SDP\n");
 		return -1;
 	}
@@ -290,7 +290,7 @@ int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int res
 		flags |= RTP_COPY_MODE_DISABLE;
 
 	if (media_rtp.copy_offer(msl->ms->rtp,
-			&media_exchange_name, NULL, flags, todo, &body) < 0) {
+			&media_exchange_name, NULL, flags, todo, &body, NULL) < 0) {
 		LM_ERR("could not get copy SDP\n");
 		MEDIA_LEG_STATE_SET_UNSAFE(msl, MEDIA_SESSION_STATE_RUNNING);
 		return -1;
@@ -397,12 +397,13 @@ static void media_exchange_event_received_create(struct dlg_cell *dlg,
 	} else {
 		msl = NULL;
 	}
-	if (type == MEDIA_SESSION_TYPE_FORK)
-		msl->params = mf;
 
 	/* if we do not have a dialog, the drain is completed */
 	if (!msl)
 		return;
+
+	if (type == MEDIA_SESSION_TYPE_FORK)
+		msl->params = mf;
 
 	if (shm_str_dup(&msl->b2b_key, key) < 0) {
 		LM_ERR("could not duplicate b2b key!\n");
@@ -422,7 +423,7 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 {
 	struct media_session_leg *msl = NULL;
 	unsigned int flags, streams, paused;
-	struct media_fork_info *mf;
+	struct media_fork_info *mf = NULL;
 	struct media_session *ms;
 
 	if (dlg) {
@@ -438,8 +439,9 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 
 	if (msl && msl->type != MEDIA_SESSION_TYPE_FORK)
 		return;
+	if (msl)
+		mf = msl->params;
 
-	mf = msl->params;
 	bin_pop_int(store, &flags);
 	bin_pop_int(store, &streams);
 	bin_pop_int(store, &paused);
@@ -524,34 +526,41 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 }
 
 str *media_exchange_get_offer_sdp(rtp_ctx ctx, struct dlg_cell *dlg,
-		int mleg, int *release)
+		int leg, int *release)
 {
 	static str sbody;
 
 	*release = 0;
 	if (media_rtp.offer && ctx) {
-		sbody = dlg->legs[DLG_MEDIA_SESSION_LEG(dlg, mleg)].in_sdp;
+		sbody = dlg->legs[leg].in_sdp;
 		if (media_rtp.offer(ctx, &media_exchange_name,
-				(mleg == MEDIA_LEG_CALLER?
+				(leg == DLG_CALLER_LEG?
 				 RTP_RELAY_CALLER:RTP_RELAY_CALLEE),
 				&sbody) >= 0) {
-			*release = 1;
-			return &sbody;
+			/* the body towards the leg has changed, so we should update it */
+			if (shm_str_sync(&dlg->legs[other_leg(dlg, leg)].out_sdp, &sbody) < 0) {
+				LM_ERR("could not update dialog's out_sdp\n");
+				*release = 1;
+				return &sbody;
+			}
+			/* otherwise we return what has already been sync'ed */
 		}
 	}
 
-	sbody = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, mleg));
+	sbody = dlg_get_out_sdp(dlg, other_leg(dlg, leg));
 	return &sbody;
 }
 
-str *media_exchange_get_answer_sdp(rtp_ctx ctx, str *body,
-		int mleg, int *release)
+str *media_exchange_get_answer_sdp(rtp_ctx ctx, struct dlg_cell *dlg, str *body,
+		int leg, int *release)
 {
 	*release = 0;
 	if (media_rtp.answer && ctx && media_rtp.answer(ctx, &media_exchange_name,
-			(mleg == MEDIA_LEG_CALLER?
-			 RTP_RELAY_CALLER:RTP_RELAY_CALLEE),
+			(leg == DLG_CALLER_LEG?
+			 RTP_RELAY_CALLEE:RTP_RELAY_CALLER),
 			body) >= 0) {
+		if (dlg)
+			shm_str_sync(&dlg->legs[leg].out_sdp, body);
 		*release = 1;
 		return body;
 	}

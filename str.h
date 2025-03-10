@@ -67,10 +67,12 @@ typedef struct __str str;
 typedef struct __str_const str_const;
 
 /* str initialization */
-#define STR_NULL (str){NULL, 0}
-#define STR_NULL_const (str_const){NULL, 0}
-#define str_init(_string)  (str){_string, sizeof(_string) - 1}
-#define str_const_init(_string)  (str_const){_string, sizeof(_string) - 1}
+#define STR_NULL ((str){NULL, 0})
+#define STR_NULL_const ((str_const){NULL, 0})
+#define STR_EMPTY ((str){"", 0})
+#define STR_EMPTY_const ((str_const){"", 0})
+#define str_init(_string)  ((str){_string, sizeof(_string) - 1})
+#define str_const_init(_string)  ((str_const){_string, sizeof(_string) - 1})
 
 static inline const str_const *_cs2cc(const str *_sp) {return (const str_const *)(const void *)(_sp);}
 static inline str_const *_s2c(str *_sp) {return (str_const *)(void *)(_sp);}
@@ -85,12 +87,14 @@ static inline void init_str(str *dest, const char *src)
 #define ZSTR(_s)    (!(_s).s || (_s).len == 0)
 #define ZSTRP(_sp)  (!(_sp) || ZSTR(*(_sp)))
 
-static inline str *str_cpy(str *dest, const str *src)
+static inline str *_str_cpy(str *dest, const str_const *src)
 {
 	memcpy(dest->s, src->s, src->len);
 	dest->len = src->len;
 	return dest;
 }
+
+#define str_cpy(dest, src) _str_cpy(dest, str2const(src))
 
 #define STR_L(s) s, strlen(s)
 

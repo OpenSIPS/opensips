@@ -31,6 +31,7 @@ struct rtp_relay_binds media_rtp;
 
 static str b2b_media_exchange_cap = str_init("media_exchange");
 
+static int mod_preinit(void);
 static int mod_init(void);
 static int media_fork_to_uri(struct sip_msg *msg, str *uri,
 		int leg, str *headers, int *medianum);
@@ -174,7 +175,7 @@ struct module_exports exports = {
 	0,								/* exported pseudo-variables */
 	0,								/* extra processes */
 	0,								/* extra transformations */
-	0,								/* module pre-initialization function */
+	mod_preinit,							/* module pre-initialization function */
 	mod_init,						/* module initialization function */
 	NULL,							/* response handling function */
 	NULL,							/* destroy function */
@@ -182,13 +183,8 @@ struct module_exports exports = {
 	0								/* reload confirm function */
 };
 
-/**
- * init module function
- */
-static int mod_init(void)
+static int mod_preinit(void)
 {
-	LM_DBG("initializing media_exchange module ...\n");
-
 	if (load_dlg_api(&media_dlg) != 0) {
 		LM_ERR("dialog module not loaded! Cannot use media bridging module\n");
 		return -1;
@@ -205,6 +201,24 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (load_rtp_relay(&media_rtp) != 0)
+		LM_DBG("rtp_relay module not loaded! Cannot use streaming module\n");
+
+	if (init_media_sessions() < 0) {
+		LM_ERR("could not initialize media sessions!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
+ * init module function
+ */
+static int mod_init(void)
+{
+	LM_DBG("initializing media_exchange module ...\n");
+
 	if (media_b2b.register_cb(media_exchange_event_received,
 			B2BCB_RECV_EVENT, &b2b_media_exchange_cap) < 0) {
 		LM_ERR("could not register loaded callback!\n");
@@ -214,15 +228,6 @@ static int mod_init(void)
 	if (media_b2b.register_cb(media_exchange_event_trigger,
 			B2BCB_TRIGGER_EVENT, &b2b_media_exchange_cap) < 0) {
 		LM_ERR("could not register loaded callback!\n");
-		return -1;
-	}
-
-
-	if (load_rtp_relay(&media_rtp) != 0)
-		LM_DBG("rtp_relay module not loaded! Cannot use streaming module\n");
-
-	if (init_media_sessions() < 0) {
-		LM_ERR("could not initialize media sessions!\n");
 		return -1;
 	}
 
@@ -271,7 +276,7 @@ static int fixup_media_leg_both(void **param)
 	return 0;
 }
 
-static inline client_info_t *media_get_client_info(struct socket_info *si,
+static inline client_info_t *media_get_client_info(const struct socket_info *si,
 		str *uri, str *hdrs, str *body)
 {
 	static client_info_t ci;
@@ -291,7 +296,7 @@ static inline client_info_t *media_get_client_info(struct socket_info *si,
 	return &ci;
 }
 
-static int handle_media_fork_to_uri(struct media_session_leg *msl, struct socket_info *si,
+static int handle_media_fork_to_uri(struct media_session_leg *msl, const struct socket_info *si,
 		str *uri, str *headers, int medianum)
 {
 	static client_info_t *ci;
@@ -342,7 +347,7 @@ destroy:
 
 struct media_fork_params {
 	struct media_session_leg *msl;
-	struct socket_info *si;
+	const struct socket_info *si;
 	str uri;
 	str headers;
 	int medianum;
@@ -371,7 +376,7 @@ static int media_fork_to_uri(struct sip_msg *msg,
 		str *uri, int leg, str *headers, int *medianum)
 {
 	struct dlg_cell *dlg;
-	struct socket_info *si;
+	const struct socket_info *si;
 	struct media_session_leg *msl;
 	struct media_fork_params *mp;
 
@@ -585,7 +590,7 @@ static void media_session_tm_free(struct media_session_tm_param *p)
 	shm_free(p);
 }
 
-static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cell *dlg,
+static int handle_media_exchange_from_uri(const struct socket_info *si, struct dlg_cell *dlg,
 		str *uri, int leg, str *body, str *headers, int nohold,
 		rtp_ctx ctx, struct media_session_tm_param *p)
 {
@@ -641,7 +646,7 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 	struct cell *t = NULL;
 	struct dlg_cell *dlg;
 	int req_leg;
-	struct socket_info *si;
+	const struct socket_info *si;
 	struct media_session_tm_param *p = NULL;
 	rtp_ctx ctx = NULL;
 	int release = 0;
@@ -675,9 +680,10 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 	if (!body) {
 		if (media_rtp.get_ctx_dlg) {
 			ctx = media_rtp.get_ctx_dlg(dlg);
-			body = media_exchange_get_offer_sdp(ctx, dlg, leg, &release);
+			body = media_exchange_get_offer_sdp(ctx, dlg,
+					DLG_MEDIA_SESSION_LEG(dlg, leg), &release);
 		} else {
-			sbody = dlg_get_out_sdp(dlg, req_leg);
+			sbody = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, other_leg(dlg, leg)));
 			body = &sbody;
 		}
 	}
@@ -933,7 +939,7 @@ static int handle_media_indialog_fork(struct sip_msg *msg,
 {
 	MEDIA_LEG_LOCK(msl);
 	if (msl->state != MEDIA_SESSION_STATE_RUNNING) {
-		LM_DBG("this media leg is already involved in a different negociation! "
+		LM_DBG("this media leg is already involved in a different negotiation! "
 				"state=%d\n", msl->state);
 		MEDIA_LEG_UNLOCK(msl);
 		return -2; /* drop this request */
@@ -1256,11 +1262,11 @@ static int handle_media_session_reply_exchange(struct media_session_leg *msl,
 	str sbody;
 	struct dlg_cell *dlg;
 
-	if (msl->ms->rtp)
-		body = media_exchange_get_answer_sdp(msl->ms->rtp, body,
-				msl->leg, &release);
-
 	dlg = msl->ms->dlg;
+	if (msl->ms->rtp)
+		body = media_exchange_get_answer_sdp(msl->ms->rtp, dlg, body,
+				MEDIA_SESSION_DLG_LEG(msl), &release);
+
 	if (!p) {
 		/* here we were triggered outside of a request - simply reinvite the
 		 * other leg with the new body */
@@ -1434,6 +1440,11 @@ static int b2b_media_notify(struct sip_msg *msg, str *key, int type,
 				MEDIA_LEG_LOCK(msl);
 				initial_state = msl->state;
 				MEDIA_LEG_UNLOCK(msl);
+				if (msg == FAKED_REPLY) {
+					LM_ERR("could not stream media due to timeout (callid=%.*s)\n",
+							msl->ms->dlg->callid.len, msl->ms->dlg->callid.s);
+					goto terminate;
+				}
 				if (msg->REPLY_STATUS >= 300) {
 					LM_ERR("could not stream media due to negative reply %d (callid=%.*s)\n",
 							msg->REPLY_STATUS, msl->ms->dlg->callid.len, msl->ms->dlg->callid.s);
@@ -1506,7 +1517,7 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 	str shdrs, *hdrs;
 	str callid, leg, uri;
 	struct dlg_cell *dlg;
-	struct socket_info *si;
+	const struct socket_info *si;
 	union sockaddr_union tmp;
 	struct media_session_leg *msl;
 	rtp_ctx ctx = NULL;
@@ -1572,7 +1583,7 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 	str callid, leg, uri;
 	str body, shdrs, *hdrs, *pbody;
 	struct dlg_cell *dlg;
-	struct socket_info *si;
+	const struct socket_info *si;
 	union sockaddr_union tmp;
 	rtp_ctx ctx = NULL;
 	int release = 0;
@@ -1616,7 +1627,8 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 	if (try_get_mi_string_param(params, "body", &body.s, &body.len) < 0) {
 		if (media_rtp.get_ctx_dlg) {
 			ctx = media_rtp.get_ctx_dlg(dlg);
-			pbody = media_exchange_get_offer_sdp(ctx, dlg, media_leg, &release);
+			pbody = media_exchange_get_offer_sdp(ctx, dlg,
+					DLG_MEDIA_SESSION_LEG(dlg, media_leg), &release);
 		} else {
 			body = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, media_leg));
 			pbody = &body;
@@ -1629,12 +1641,12 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 			hdrs, nohold, ctx, NULL) < 0) {
 		media_dlg.dlg_unref(dlg, 1);
 		if (release)
-			pkg_free(&body.s);
+			pkg_free(pbody->s);
 		return init_mi_error(500, MI_SSTR("Could not start media session"));
 	}
 
 	if (release)
-		pkg_free(&body.s);
+		pkg_free(pbody->s);
 	/* all good now, unref the dialog as it is reffed by the ms */
 	media_dlg.dlg_unref(dlg, 1);
 	return init_mi_result_ok();

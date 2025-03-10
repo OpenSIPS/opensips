@@ -113,7 +113,7 @@ typedef struct SIP_Dialog {
 
 typedef struct NAT_Contact {
     char *uri;
-    struct socket_info *socket;
+    const struct socket_info *socket;
 
     time_t registration_expire;
     time_t subscription_expire;
@@ -242,9 +242,9 @@ static const param_export_t parameters[] = {
 };
 
 static const pv_export_t pvars[] = {
-    {str_init("keepalive.socket"), 1000, pv_get_keepalive_socket, NULL, pv_parse_nat_contact_name, NULL, NULL, 0},
-    {str_init("source_uri"), 1000, pv_get_source_uri, NULL, NULL, NULL, NULL, 0},
-    {str_init("nat_traversal.track_dialog"), 1000, pv_get_track_dialog, pv_set_track_dialog, NULL, NULL, NULL, 0},
+    {str_const_init("keepalive.socket"), 1000, pv_get_keepalive_socket, NULL, pv_parse_nat_contact_name, NULL, NULL, 0},
+    {str_const_init("source_uri"), 1000, pv_get_source_uri, NULL, NULL, NULL, NULL, 0},
+    {str_const_init("nat_traversal.track_dialog"), 1000, pv_get_track_dialog, pv_set_track_dialog, NULL, NULL, NULL, 0},
     {{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -410,7 +410,7 @@ SIP_Subscription_expire(NAT_Contact *contact, time_t now)
 //
 
 static NAT_Contact*
-NAT_Contact_new(char *uri, struct socket_info *socket)
+NAT_Contact_new(char *uri, const struct socket_info *socket)
 {
     NAT_Contact *contact;
 
@@ -895,7 +895,7 @@ get_register_expire(struct sip_msg *request, struct sip_msg *reply)
         }
     }
 
-    LM_DBG("maximum expire for all contacts: %u\n", (unsigned)expire);
+    LM_DBG("maximum expire for all contacts: %u\n", (unsigned)(unsigned long)expire);
 
     return (expire ? expire + now : 0);
 }
@@ -1189,7 +1189,7 @@ __dialog_destroy(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 //
 static void
 __sl_reply_out(struct sip_msg* request, str *buffer, int rpl_code,
-                union sockaddr_union *dst, struct socket_info *sock, int proto)
+                const union sockaddr_union *dst, const struct socket_info *sock, int proto)
 {
     struct sip_msg reply;
     time_t expire;
@@ -1545,7 +1545,7 @@ send_keepalive(NAT_Contact *contact)
     char buffer[8192], *from_uri, *ptr;
     static char from[64] = FROM_PREFIX;
     static char *from_ip = from + sizeof(FROM_PREFIX) - 1;
-    static struct socket_info *last_socket = NULL;
+    static const struct socket_info *last_socket = NULL;
     struct hostent* hostent;
     union sockaddr_union to;
     int nat_port, len, tolen;
@@ -1698,7 +1698,7 @@ restore_keepalive_state(void)
     char uri[64], socket[64];
     time_t rtime, stime, now;
     NAT_Contact *contact;
-    struct socket_info *sock;
+    const struct socket_info *sock;
     int port, proto, res;
     unsigned h;
     str host;
@@ -1719,7 +1719,8 @@ restore_keepalive_state(void)
     res = fscanf(f, STATE_FILE_HEADER); // skip header
 
     while (True) {
-        res = fscanf(f, "%63s %63s %ld %ld", uri, socket, &rtime, &stime);
+        res = fscanf(f, "%63s %63s %lld %lld", uri, socket,
+				(long long *)&rtime, (long long *)&stime);
         if (res == EOF) {
             if (ferror(f))
                 LM_ERR("error while reading keepalive state file: %s\n", strerror(errno));
@@ -1930,7 +1931,11 @@ reply_filter(struct sip_msg *reply)
     static str prefix = {NULL, 0};
     str call_id;
 
-    parse_headers(reply, HDR_VIA2_F, 0);
+    if (parse_headers(reply, HDR_VIA2_F, 0) < 0) {
+        LM_ERR("failed to parse message\n");
+        return -1;
+    }
+
     if (reply->via2)
         return 1;
 

@@ -861,6 +861,88 @@ modparam("tm", "cluster_auto_cancel", no)
 		</example>
 	</section>
 
+	<section id="param_local_request_route" xreflabel="local_request_route">
+		<title><varname>local_request_route</varname> (string)</title>
+		<para>
+		This parameter points to a route, which is executed whenever TM is
+		about to send out a locally generated request (e.g., through the 
+		B2B modules or through MI).
+		</para>
+		<para>
+		The purpose of this route is limited to exposing the content of the 
+		request as SIP message 
+		</para>
+		<para>
+		The route is executed with the generated message by TM, incorporating
+		all modifications.
+		</para>
+		<para>
+		IMPORTANT: this route is executed AFTER the local_route (if defined)
+		and it expose all the changes from that route.
+		</para>
+		<para>
+		IMPORTANT: this route is to be used in a read-only manner, inspection
+		only. Any changes you do here will discarded.
+		</para>
+		<para>
+		IMPORTANT: this route does not offer any message, transactional or
+		dialog context, so do not rely on any variables with scope (like AVPs).
+		</para>
+		<example>
+		<title>Set the <varname>local_request_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Execute the route "local_request_route" upon sending a request
+modparam("tm", "local_request_route", "tm_local_request")
+
+route[tm_local_request] {
+	if (is_method("INVITE") &amp;&amp; $rb(application/sdp) &amp;&amp; !has_totag()) {
+		$avp(sdp_request) := $rb(application/sdp);
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_local_reply_route" xreflabel="local_reply_route">
+		<title><varname>local_reply_route</varname> (string)</title>
+		<para>
+		This parameter points to a route, which is executed whenever TM is
+		about to send out a locally generated reply (e.g., through the 
+		B2B modules or through MI).
+		</para>
+		<para>
+		The purpose of this route is limited to exposing the content of the 
+		reply as SIP message 
+		</para>
+		<para>
+		IMPORTANT: this route is to be used in a read-only manner, inspection
+		only. Any changes you do here will discarded.
+		</para>
+		<para>
+		IMPORTANT: this route does not offer any message, transactional or
+		dialog context, so do not rely on any variables with scope (like AVPs).
+		</para>
+		<example>
+		<title>Set the <varname>local_reply_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Execute the route "tm_local_reply" upon sending a request
+modparam("tm", "local_reply_route", "tm_local_reply")
+
+route[tm_local_reply] {
+	if (is_method("BYE")) {
+		$var(rc) = rest_get("http://localhost/qos/delete",
+					$var(recv_body), $var(recv_ct), $var(rcode));
+	}
+}
+
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 
@@ -1953,9 +2035,10 @@ route{
 			<para>
 			<emphasis>$T_branch_idx</emphasis> - the index (starting with 0
 			for the first branch) of the currently proccessed branch. This
-			index makes sense only in BRANCH and REPLY routes (where there is
-			a concept of per branch processing). In all the other types of 
-			routes, the value of this index will be NULL.
+			index makes sense only in BRANCH and REPLY routes (where the
+			processing is per branch) and in FAILURE route (where it points
+			to the branch with the last final reply on the transaction). In all
+			the other types of routes, the value of this index will be NULL.
 			</para>
 		</section>
 		<section id="pv_T_reply_code" xreflabel="$T_reply_code">
@@ -1990,7 +2073,8 @@ route{
 			<para>
 			<emphasis>$T_fr_inv_timeout (R/W)</emphasis> - the timeout
 			for the final reply to an INVITE request, after a 1XX reply
-			was received
+			was received.  This variable may also be set in an onreply_route
+			(e.g. on 180 Ringing, after 100 Trying) and still take effect.
 			</para>
 			<para>
 			With each different request received,

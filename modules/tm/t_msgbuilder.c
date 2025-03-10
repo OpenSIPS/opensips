@@ -181,8 +181,8 @@ char *build_local(struct cell *Trans,unsigned int branch,
 
 	/* copy'n'paste Route headers that were sent out */
 	if (is_local(Trans) || (!is_local(Trans) &&
-	( (req && req->route) || /* at least one route was received*/
-	(Trans->uac[branch].path_vec.len!=0))) ) /* path was forced */
+	/* if there was a ROUTE received or added */
+	( req && (req->route || req->msg_flags&FL_HAS_ROUTE_LUMP))) )
 	{
 		buf_hdrs = extract_parsed_hdrs(Trans->uac[branch].request.buffer.s,
 			Trans->uac[branch].request.buffer.len );
@@ -454,7 +454,7 @@ char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
 	struct hostport hp;
 	struct rte* list;
 	str contact, ruri, *cont;
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 	str next_hop;
 
 
@@ -608,7 +608,7 @@ static inline int print_cseq_num(str* _s, dlg_t* _d)
 /*
  * Create Via header
  */
-static inline int assemble_via(str* dest, struct cell* t, struct socket_info* sock, int branch, str *extra)
+static inline int assemble_via(str* dest, struct cell* t, const struct socket_info* sock, int branch, str *extra)
 {
 	static char branch_buf[MAX_BRANCH_PARAM_LEN];
 	char* via;

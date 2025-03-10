@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding='UTF-8'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "mqueue_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+	<bookinfo>
+	<title>mqueue Module</title>
+	<productname class="trade">&osipsname;</productname>
+	</bookinfo>
+	<toc></toc>
+
+	&admin;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2010 Elena-Ramona Modroiu</para>
+	<para>&copyright; 2018-2020 Julien chavanton, Flowroute</para>
+	<para>&copyright; 2024 Ovidiu Sas, <ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink></para>
+</book>

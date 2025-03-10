@@ -1,5 +1,3 @@
-# $Id$
-#
 # opt_rpl module makefile
 #
 #

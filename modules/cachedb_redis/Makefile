@@ -12,8 +12,11 @@ NAME=cachedb_redis.so
 HAVE_REDIS_SSL=$(shell if [ -n "`ldconfig -p | grep hiredis_ssl`" ]; \
 	then echo "HAVE_REDIS_SSL"; fi)
 ifeq ($(HAVE_REDIS_SSL), HAVE_REDIS_SSL)
-	LIBS+=-lhiredis_ssl -lssl -lcrypto
-	DEFS+= -DHAVE_REDIS_SSL
+
+include ../../Makefile.openssl
+
+	LIBS += -lhiredis_ssl
+	DEFS += -DHAVE_REDIS_SSL
 endif
 
 ifeq ($(CROSS_COMPILE),)

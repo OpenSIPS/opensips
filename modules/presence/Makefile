@@ -1,5 +1,3 @@
-# $Id$
-#
 # Presence Agent
 #
 # 
@@ -10,8 +8,8 @@ auto_gen=
 NAME=presence.so
 
 ifeq ($(CROSS_COMPILE),)
-LIBS += -lxml2
-DEFS+=-I$(SYSBASE)/include/libxml2
+LIBS += -L$(LOCALBASE)/lib -lxml2
+DEFS+=-I$(SYSBASE)/include/libxml2 -I$(LOCALBASE)/include/libxml2
 else
 DEFS+=-I$(SYSBASE)/include/libxml2 -I$(LOCALBASE)/include/libxml2 \
       -I$(LOCALBASE)/include

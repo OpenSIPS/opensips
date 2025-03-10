@@ -90,7 +90,8 @@ nathelper Module
    1.21. fix_nated_sdp usage
    1.22. add_rcv_paramer usage
    1.23. fix_nated_register usage
-   1.24. nh_enable_ping usage
+   1.24. nat_uac_test usage
+   1.25. nh_enable_ping usage
 
 Chapter 1. Admin Guide
 
@@ -214,18 +215,19 @@ modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 1.4.5. received_avp (str)
 
    The name of the Attribute-Value-Pair (AVP) used to store the
-   URI containing the received IP, port, and protocol. The URI is
-   created by fix_nated_register function of nathelper module and
-   the attribute is then used by the registrar to store the
-   received parameters. Do not forget to change the value of
-   corresponding parameter in registrar module if you change the
-   value of this parameter.
+   URI containing the received IP, port and protocol. The URI is
+   created by the fix_nated_register() function and this data may
+   then be also picked up by the registrar module, which will
+   attach a "Received=" attribute to the registration. Do not
+   forget to change the value of corresponding parameter in the
+   registrar module whenever you change the value of this
+   parameter.
 
 Note
 
-   You must set this parameter if you use "fix_nated_register". In
-   such case you must set the parameter with same name of
-   "registrar" module to same value.
+   You must set this parameter if you use fix_nated_register().
+   Additionally, if you are using registrar, you must also set its
+   symmetric received_avp module parameter to the same value.
 
    Default value is "NULL" (disabled).
 
@@ -543,10 +545,11 @@ add_rcv_param(1); # add the parameter to the Contact URI
 
 1.5.4.  fix_nated_register()
 
-   The function creates a URI consisting of the source IP, port,
-   and protocol and stores the URI in an Attribute-Value-Pair. The
-   URI will be appended as "received" parameter to Contact in 200
-   OK and registrar will store it in the user location database.
+   The function creates a URI consisting of the source IP, port
+   and protocol and stores it in the received_avp AVP. The URI
+   will be appended as "received" parameter to Contact in 200 OK
+   and may also be stored in the user location database if the
+   same AVP is also configured for the registrar module.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -557,12 +560,13 @@ fix_nated_register();
 
 1.5.5.  nat_uac_test(flags)
 
-   Tries to guess if client's request originated behind a nat. The
-   parameter determines what heuristics is used.
+   Determines whether the received SIP message originated behind a
+   NAT, using one or more pre-defined checks.
 
-   Meaning of the flags (string) parameter is as follows:
+   The flags (string) parameter denotes a comma-separated list of
+   checks to be performed, as follows:
      * private-contact - (old 1 flag) Contact header field is
-       searched for occurrence of RFC1918 / RFC6598 addresses.
+       searched for occurrence of RFC1918 / RFC6598 addresses
      * diff-ip-src-via - (old 2 flag) the "received" test is used:
        address in Via is compared against source IP address of
        signaling
@@ -577,13 +581,19 @@ fix_nated_register();
      * diff-port-src-contact - (old 64 flag) Port in Contact is
        compared against source port of signaling
      * carrier-grade-nat - (old 128 flag) also include RFC 6333
-       addresses in the checks for ct, via and sdp flags.
+       addresses in the checks for Contact, Via and SDP
 
-   A CSV of the above flags can be provided, the test returns true
-   if any of the tests identified a NAT.
+   Returns true if any of the tests passed.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
+
+   Example 1.24. nat_uac_test usage
+...
+# check for private Contact or SDP media IP addresses
+if (nat_uac_test("private-contact,private-sdp"))
+        xlog("SIP message is NAT'ed (Call-ID: $ci)\n");
+...
 
 1.6. Exported MI Functions
 
@@ -597,7 +607,7 @@ fix_nated_register();
        parameter value greater than 0 or disables natping if
        parameter value is 0.
 
-   Example 1.24. nh_enable_ping usage
+   Example 1.25. nh_enable_ping usage
 ...
 $ opensips-cli -x mi nh_enable_ping
 Status:: 1
@@ -649,15 +659,15 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 121 2044 866
-   2. Maksym Sobolyev (@sobomax) 152 44 3552 4786
-   3. Liviu Chircu (@liviuchircu) 45 36 411 290
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 156 123 2050 873
+   2. Maksym Sobolyev (@sobomax) 153 45 3556 4790
+   3. Liviu Chircu (@liviuchircu) 50 40 452 324
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
    5. Razvan Crainea (@razvancrainea) 33 27 158 240
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
    7. Anca Vamanu 22 4 1602 185
-   8. Jan Janak (@janakj) 21 11 780 129
-   9. Andrei Pelinescu-Onciul 20 17 121 110
+   8. Andrei Pelinescu-Onciul 21 17 121 110
+   9. Jan Janak (@janakj) 21 11 780 129
    10. Vlad Patrascu (@rvlad-patrascu) 19 11 261 268
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
@@ -667,9 +677,9 @@ Chapter 3. Contributors
    Darilion, Sergio Gutierrez, Peter Lemenkov (@lemenkov), Nils
    Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman, Jeremie Le
    Hen, Bayan Towfiq, Laurent Schweizer, Jasper Hafkenscheid
-   (@hafkensite), Konstantin Bokarius, John Riordan, Walter Doekes
-   (@wdoekes), Elena-Ramona Modroiu, Nick Altmann (@nikbyte),
-   Edson Gellert Schubert.
+   (@hafkensite), Konstantin Bokarius, Alexandra Titoc, John
+   Riordan, Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Nick
+   Altmann (@nikbyte), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -691,27 +701,28 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2023
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
-   4.  Maksym Sobolyev (@sobomax)          May 2003 - Feb 2023
-   5.  Nick Altmann (@nikbyte)             May 2022 - May 2022
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   7.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
-   9.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
-   10. Dan Pascu (@danpascu)               May 2019 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2024
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2024
+   4.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2023
+   5.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   7.  Nick Altmann (@nikbyte)             May 2022 - May 2022
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   9.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
+   10. Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
 
-   All remaining contributors: Shlomi Gutman, Ovidiu Sas
-   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
-   (@wdoekes), Christophe Sollet (@csollet), Anca Vamanu, John
-   Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
-   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
-   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
-   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
+   All remaining contributors: Dan Pascu (@danpascu), Shlomi
+   Gutman, Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Walter Doekes (@wdoekes), Christophe
+   Sollet (@csollet), Anca Vamanu, John Riordan, Emmanuel Buu,
+   Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Ancuta
+   Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent
+   Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona
+   Modroiu, Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj),
+   Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -720,9 +731,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Nick Altmann
-   (@nikbyte), Jasper Hafkenscheid (@hafkensite), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Nick Altmann (@nikbyte), Jasper Hafkenscheid
+   (@hafkensite), Razvan Crainea (@razvancrainea), Bogdan-Andrei
    Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Ovidiu Sas
    (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
    (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu

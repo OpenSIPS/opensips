@@ -54,10 +54,11 @@
 #define NODE_IS_SEED		(1<<3)
 
 /* capability flags */
-#define CAP_STATE_OK		(1<<0)
-#define CAP_SYNC_PENDING	(1<<1)
-#define CAP_SYNC_IN_PROGRESS	(1<<2)
-#define CAP_STATE_ENABLED	(1<<3)
+#define CAP_STATE_OK         (1<<0)
+#define CAP_SYNC_STARTUP     (1<<1)
+#define CAP_SYNC_PENDING     (1<<2)
+#define CAP_SYNC_IN_PROGRESS (1<<3)
+#define CAP_STATE_ENABLED    (1<<4)
 
 #define CAP_DISABLED 0
 #define CAP_ENABLED  1
@@ -190,7 +191,7 @@ unsigned long clusterer_get_num_nodes(int state);
 
 enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);
-enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag);
+enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag, int all);
 enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 									mi_item_t *cmd_params_arr, int no_params);
 enum clusterer_send_ret bcast_remove_node(int cluster_id, int target_node);
@@ -216,5 +217,11 @@ int run_rcv_mi_cmd(str *cmd_name, str *cmd_params_arr, int no_params);
 
 int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap,
 	int cluster_id);
+
+#ifdef CLUSTERER_DBG
+    #define CL_DBG(fmtargs...) LM_INFO(fmtargs)
+#else
+    #define CL_DBG(fmtargs...)
+#endif
 
 #endif  /* CLUSTERER_H */

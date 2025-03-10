@@ -502,6 +502,27 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 	</programlisting>
 		</example>
 	</section>	
+	<section id="param_old_entity_term_delay" xreflabel="old_entity_term_delay">
+		<title><varname>old_entity_term_delay</varname> (int)</title>
+		<para>
+			When the <emphasis>b2b_bridge_request</emphasis> is being used with the
+			<emphasis>late_bye</emphasis> flag, this parameter can delay the moment
+			when the BYE is being sent to the terminating entity. Thus, instead of
+			terminating it when the new entity is established, the BYE is delayed
+			with the value of this param, expressed in seconds.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> - send BYE on the spot</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>old_entity_term_delay</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2 seconds
+...
+	</programlisting>
+		</example>
+	</section>	
 
 	</section>
 
@@ -510,7 +531,7 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 	<section id="func_b2b_init_request" xreflabel="b2b_init_request()">
 		<title>
 		<function moreinfo="none">b2b_init_request(id, [flags], [req_route],
-			[reply_route], [init_sdp_body], [init_sdp_ctype])</function>
+			[reply_route])</function>
 		</title>
 		<para>
 			This function initializes a new B2B session based on an initial INVITE.
@@ -563,7 +584,7 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 		This function can be used from REQUEST_ROUTE.
 	</para>
 	<note><para>
-		If you have a multi interface setup and want to chance the outbound interface,
+		If you have a multi interface setup and want to change the outbound interface,
 		it is mandatory to use the "force_send_socket()" core function before passing
 		control to b2b function. If you do not do it, the requests may be correctly routed,
 		but the SIP pacakge may be invalid (as Contact, Via, etc).
@@ -608,7 +629,7 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user()) {
 				advertise in generated messages.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>extra_hdrs (var, optioanl)</emphasis> - AVP variable holding a list
+				<emphasis>extra_hdrs (var, optional)</emphasis> - AVP variable holding a list
 				of extra headers (the header names) to be added for any request sent
 				to this entity.
 			</para></listitem>
@@ -739,12 +760,12 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 					it to the new entity.
 					</para></listitem>
 					<listitem><para>
-					<emphasis>no-late-sdp</emphasis> - Do not attempt late SDP negociation
+					<emphasis>no-late-sdp</emphasis> - Do not attempt late SDP negotiation
 					with the new entity. Start the bridging by first contacting the new entity
 					using the initial SDP received from the old entity. After the new entity
 					answers, send a reINVITE without body to the old entity. Use the current
 					SDP received in this new answer from the old entity to trigger a
-					renegociation with the new entity.
+					renegotiation with the new entity.
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
@@ -836,7 +857,7 @@ route[b2b_logic_request] {
 
 	<section id="func_b2b_handle_reply" xreflabel="b2b_handle_reply()">
 		<title>
-		<function moreinfo="none">b2b_handle_reply()</function>
+		<function moreinfo="none">b2b_handle_reply([flags])</function>
 		</title>
 		<para>
 			This function processes the received reply by taking the appropriate actions
@@ -848,6 +869,21 @@ route[b2b_logic_request] {
 		<para>
 		This function can be used from the b2b_logic reply routes.
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>flags (string, optional)</emphasis> - a list of comma
+				separated flags that changes the behavior of the reply processing.
+				Supported values are:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>pass-3xx-contact</emphasis> - When a redirect reply
+					(3xx) message is received, pass the contact to the other peer
+					just as it is, without modifying it.
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+		</itemizedlist>
 		<example>
 			<title><function>b2b_handle_reply</function> usage</title>
 		<programlisting format="linespecific">
@@ -958,7 +994,7 @@ route[b2b_logic_request] {
 
 	<section id="func_b2b_bridge_request" xreflabel="b2b_bridge_request()">
 		<title>
-		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no)</function>
+		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no, [adv_contact], [flags])</function>
 		</title>
 		<para>
 			This function will bridge an initial INVITE with one of the
@@ -974,6 +1010,20 @@ route[b2b_logic_request] {
 			<listitem><para>
 				<emphasis>entity_no (int)</emphasis> - an integer that
 				holds the entity of the entity/participant to bridge.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>adv_contact (string, optional)</emphasis> - Contact header to
+				advertise in generated messages.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>flags (string, optional)</emphasis> - Flags that can modify the
+				behavior of the function. Available flags are:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>late_bye</emphasis> - instead of terminating the replaced entity
+					on the stop, leave it pending until the new enity fully establishes.
+				</para></listitem>
+				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>
 		<example>

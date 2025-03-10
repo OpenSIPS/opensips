@@ -81,6 +81,9 @@ typedef struct cachedb_funcs_t {
 	        int expires, int *new_val);
 	int (*sub) (cachedb_con *con, str *attr, int val,
 	        int expires, int *new_val);
+	int (*iter_keys) (cachedb_con *con,
+	                  int (*kv_func)(const str *key, const str *value));
+
 	/* bi-dimensional array will be returned */
 	int (*raw_query) (cachedb_con *con, str *query, cdb_raw_entry ***reply,
 	                  int num_cols, int *num_rows);

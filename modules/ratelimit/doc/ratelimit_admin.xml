@@ -653,6 +653,42 @@ modparam("ratelimit", "slot_period", 100)
 </programlisting>
 		</example>
 	</section>
+	<section id="func_rl_values" xreflabel="rl_values()">
+		<title>
+		<function moreinfo="none">rl_values(ret_avp, regexp)</function>
+		</title>
+		<para>
+			Returns all the available pipes' names in the <emphasis>ret_avp</emphasis>
+			output variable.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>ret_avp</emphasis> (string) - an AVP where the pipes'
+				names will be stored.
+			</para>
+			</listitem>
+			<listitem><para>
+				<emphasis>regexp</emphasis> (regex, optional) - a regular expression
+				used to filter the names of the pipes. If missing, all the pipes
+				are returned.
+			</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from any route.
+		</para>
+		<example>
+		<title><function>rl_values</function> usage</title>
+		<programlisting format="linespecific">
+...
+	rl_values($avp(values));
+	for ($var(pipe) in $(avp(values)[*]))
+		xlog("RATELIMIT: $var(pipe): $rl_count($var(pipe))\n");
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 

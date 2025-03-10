@@ -111,7 +111,7 @@ struct dlg_leg {
 	struct dlg_leg_cseq_map *cseq_maps; /* used when translating ACKs */
 	char reply_received;
 	char reinvite_confirmed;
-	struct socket_info *bind_addr;
+	const struct socket_info *bind_addr;
 };
 
 #define leg_is_answered(dlg_leg) ((dlg_leg)->tag.s)
@@ -409,7 +409,7 @@ struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx);
 
 int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
-		str *contact, str *adv_ct, str *cseq, struct socket_info *sock,
+		str *contact, str *adv_ct, str *cseq, const struct socket_info *sock,
 		str *mangled_from,str *mangled_to,str *in_sdp, str *out_sdp);
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
@@ -493,6 +493,10 @@ mi_response_t *mi_print_dlgs_cnt_ctx(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 mi_response_t *mi_push_dlg_var(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_set_dlg_profile(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_unset_dlg_profile(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 static inline void unref_dlg_destroy_safe(struct dlg_cell *dlg, unsigned int cnt)

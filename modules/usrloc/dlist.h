@@ -110,7 +110,7 @@ udomain_t* get_next_udomain(udomain_t *_d);
 
 /*contact label may not be higher than 14 bits*/
 #define CLABEL_MASK ((1<<14)-1)
-#define CLABEL_INC_AND_TEST(_clabel_) ((_clabel_+1)&CLABEL_MASK)
+#define CLABEL_NEXT(_clabel_) ((_clabel_+1)&CLABEL_MASK)
 #define CID_GET_CLABEL(_cid) (_cid&CLABEL_MASK)
 #define CID_NEXT_RLABEL(_dom, _sl) (_dom->table[_sl].next_label++)
 
@@ -123,7 +123,7 @@ static inline void init_urecord_labels(urecord_t *r, udomain_t *d)
 static inline uint64_t
 pack_indexes(unsigned short aorhash, unsigned int rlabel, unsigned short clabel)
 {
-	return (clabel & CLABEL_MASK) +
+	return ((uint64_t)clabel & CLABEL_MASK) +
 		((uint64_t)rlabel << 14) + ((uint64_t)aorhash << 46);
 }
 

@@ -1,0 +1,453 @@
+<!-- Drouting Module User's Guide -->
+
+<chapter>
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<section>
+	<title>Introduction</title>
+
+	<para>Trie is a module for efficiently caching and lookup of a set of prefixes ( stored in a trie data structure )
+	</para>
+</section>
+
+</section>
+
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+
+			<listitem>
+			<para>
+				<emphasis>a database module</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="trie_table" xreflabel="trie_table">
+		<title><varname>trie_table</varname>(str)</title>
+		<para>
+		The name of the db table storing prefix rules.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>trie_table</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trie_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "trie_table", "my_prefix_table")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_no_concurrent_reload" xreflabel="no_concurrent_reload">
+		<title><varname>no_concurrent_reload</varname> (int)</title>
+		<para>
+			If enabled, the module will not allow do run multiple trie_reload
+			MI commands in parallel (with overlapping)  Any new reload will
+			be rejected (and discarded) while an existing reload is in
+			progress.
+			</para>
+			<para>
+			If you have a large routing set (millions of rules/prefixes), you
+			should consider disabling concurrent reload as they will exhaust
+			the shared memory (by reloading into memory, in the same time,
+			multiple instances of routing data).
+			</para>
+		<para>
+		<emphasis>Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>no_concurrent_reload</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# do not allow parallel reload operations
+modparam("trie", "no_concurrent_reload", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_use_partitions" xreflabel="use_partitions">
+		<title><varname>use_partitions</varname> (int)</title>
+		<para>
+		Flag to configure whether to use partitions for tries. If this
+		flag is set then the <varname>db_partitions_url</varname> and
+		<varname>db_partitions_table</varname>
+		variables become mandatory.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_partitions</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("trie", "use_partitions", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+<section id="param_db_partitions_url" xreflabel="db_partitions_url">
+		<title><varname>db_partitions_url</varname> (str)</title>
+		<para>
+		The url to the database containing partition-specific
+		information.The <varname>use_partitions</varname> parameter
+	    must be set to 1.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>"NULL"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_partitions_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("trie", "db_partitions_url", "mysql://user:password@localhost/opensips_partitions")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_db_partitions_table" xreflabel="db_partitions_table">
+		<title><varname>db_partitions_table</varname> (str)</title>
+		<para>
+		The name of the table containing partition definitions. To be
+		used with <varname>use_partitions</varname> and <varname>db_partitions_url</varname>.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>trie_partitions</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_partitions_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("trie", "db_partitions_table", "trie_partition_defs")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_extra_prefix_chars" xreflabel="extra_prefix_chars">
+		<title><varname>extra_prefix_chars</varname> (str)</title>
+		<para>
+			List of ASCII (0-127) characters to be additionally accepted in
+			the prefixes. By default only '0' - '9' chars (digits) are
+			accepted.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>extra_prefix_chars</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("trie", "extra_prefix_chars", "#-%")
+...
+</programlisting>
+		</example>
+	</section>
+</section>
+
+<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_trie_search" xreflabel="trie_search()">
+		<title>
+		<function moreinfo="none">trie_search(number, [flags], [trie_attrs_pvar], [match_prefix_pvar], [partition])</function>
+		</title>
+		<para>
+		Function to search for an entry ( number ) in a trie.
+		</para>
+		<para>
+		This function can be used from all routes.
+		</para>
+		<para>
+		If you set <varname>use_partitions</varname> to 1 the 
+		<emphasis role='bold'>partition</emphasis> last parameter becomes 
+		mandatory.
+		</para>
+		<para>
+		All parameters are optional. Any of them may be ignored, provided
+		the necessary separation marks "," are properly placed.
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>number</emphasis> (str) - number to be searched in the trie 
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>flags</emphasis> (string, optional) - a list
+			of letter-like flags for controlling the routing behavior.
+			Possible flags are:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>L</emphasis> - Do strict length matching
+				over the prefix - actually the trie engine will do full number 
+				matching and not prefix matching anymore.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>trie_attrs_pvar</emphasis> (var, optional) - a
+			writable variable which will be  populated with the attributes of the
+			matched trie rule.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>match_prefix_pvar</emphasis> (var, optional) - a
+			writable variable which will be the actual prefix matched in the trie.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>partition</emphasis> (string, optional) - the name
+			of the trie partition to be used. This parameter is to be defined
+			ONLY if the "use_partition" module parameter is turned on.
+			</para>
+		</listitem>
+
+		</itemizedlist>
+
+		<example>
+		<title><function>trie_search</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
+    # we found it in the trie, it's a match
+    xlog("We found $rU in the trie with attrs $avp(code_attrs) \n");
+}
+</programlisting>
+		</example>
+	</section>
+</section>
+
+
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+	<section id="trie_reload" xreflabel="trie_reload">
+		<title>
+		<function moreinfo="none">trie_reload</function>
+		</title>
+		<para>
+		Command to reload trie rules from database.
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 0 - all routing rules will be reloaded.
+
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1, the parameters are:
+					<itemizedlist>
+						<listitem><para>
+							<emphasis>partition_name</emphasis> (optional) - if not provided
+							all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
+						</para></listitem>
+					</itemizedlist>
+
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi trie_reload part_1
+		</programlisting>
+	</section>
+
+	<section>
+		<title><varname>trie_reload_status</varname></title>
+		<para>
+			Gets the time of the last reload for any partition.
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 0 - the function
+					doesn't receive any parameter. It will list the date of the
+					last reload for the default (and only) partition.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1, the parameters are:
+					<itemizedlist>
+						<listitem><para>
+							<emphasis>partition_name</emphasis> (optional) - if not provided
+							the function will list the time of the last update for every
+							partition. Otherwise, the function will list the time of the last
+							reload for the given partition.
+						</para></listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+		</itemizedlist>
+		<example>
+		<title><function>trie_reload_status</function> usage when <varname>use_partitions</varname> is 0</title>
+		<programlisting format="linespecific">
+$ opensips-cli -x mi dr_reload_status
+Date:: Tue Aug 12 12:26:00 2014
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>trie_search</varname></title>
+		<para>
+			Tries to match a number in the existing tries loaded from the database.
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1 the function
+					will have 2 parameters:
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>partition_name</emphasis></para>
+						</listitem>
+						<listitem>
+							<para><emphasis>number</emphasis> - the number to test against</para>
+						</listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 0 the function will have 1 parameter:
+					<itemizedlist>
+						<listitem><para>
+							<emphasis>number</emphasis> - the number to test against
+						</para></listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi trie_search partition_name=part1 number=012340987
+		</programlisting>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">trie_number_delete</function>
+		</title>
+		<para>
+		Deletes individual entries in the trie, without reloading all of the data
+		</para>
+
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1 the function
+					will have 2 parameters:
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>partition_name</emphasis></para>
+						</listitem>
+						<listitem>
+							<para><emphasis>number</emphasis> - the array of numbers to delete</para>
+						</listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi trie_number_delete partition_name=part1 number=["012340987","4858345"]
+		</programlisting>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">trie_number_upsert</function>
+		</title>
+		<para>
+		Upserts ( insert if not found, update is found ) an array of numbers in the trie, without reloading all of the data
+		</para>
+
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1 the function
+					will have 3 parameters:
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>partition_name</emphasis></para>
+						</listitem>
+						<listitem>
+							<para><emphasis>number</emphasis> - the array of numbers to update</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>attrs</emphasis> - the array of new attributes for the numbers</para>
+						</listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi trie_number_upsert partition_name=part1 number=["012340987"] attrs=["my_attrs"]
+		</programlisting>
+	</section>
+
+</section>
+
+
+<section>
+	<title>Installation</title>
+	<para>
+	The module requires some tables in the OpenSIPS database.
+	You can also find the complete database documentation on the project webpage, &osipsdbdocslink;.
+	</para>
+</section>
+
+</chapter>

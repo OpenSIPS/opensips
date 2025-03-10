@@ -765,6 +765,15 @@ static void test_cachedb_url(void)
 	ok(!db->database);
 	ok(!db->extra_options);
 
+	CDB_PARSE("redis://:pwd@172.31.180.127:6380/1");
+	ok(db->flags == 0);
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, "pwd"));
+	ok(!strcmp(db->host, "172.31.180.127"));
+	ok(db->port == 6380);
+	ok(!strcmp(db->database, "1"));
+	ok(!db->extra_options);
+
 	CDB_PARSE("redis:group1://:pwd@172.31.180.127:6379/d?x=1&q=2");
 	ok(db->flags == 0);
 	ok(!strcmp(db->username, ""));
@@ -887,6 +896,30 @@ static void test_cachedb_url(void)
 	ok(!strcmp(db->database, "d"));
 	ok(db->port == 0);
 
+	CDB_PARSE("redis:group1://user:@,pwd,foo,@h1,h2,h3:6379/d");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, "user"));
+	ok(!strcmp(db->password, "@,pwd,foo,"));
+	ok(!strcmp(db->host, "h1,h2,h3:6379"));
+	ok(!strcmp(db->database, "d"));
+	ok(db->port == 0);
+
+	CDB_PARSE("redis:group1://user:,pwd,@foo,@h1,h2,h3:6379/d");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, "user"));
+	ok(!strcmp(db->password, ",pwd,@foo,"));
+	ok(!strcmp(db->host, "h1,h2,h3:6379"));
+	ok(!strcmp(db->database, "d"));
+	ok(db->port == 0);
+
+	CDB_PARSE("redis:group1://user:,pwd,foo,@@h1,h2,h3:6379/d");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, "user"));
+	ok(!strcmp(db->password, ",pwd,foo,@"));
+	ok(!strcmp(db->host, "h1,h2,h3:6379"));
+	ok(!strcmp(db->database, "d"));
+	ok(db->port == 0);
+
 	CDB_PARSE("redis:group1://:,pwd,foo,@h1,h2,h3:6379/d");
 	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
 	ok(!strcmp(db->username, ""));
@@ -894,4 +927,17 @@ static void test_cachedb_url(void)
 	ok(!strcmp(db->host, "h1,h2,h3:6379"));
 	ok(!strcmp(db->database, "d"));
 	ok(db->port == 0);
+
+	CDB_PARSE("mongodb://opensips-voip-cosmosdb:"
+			"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+			"@opensips-voip-cosmosdb.mongo.cosmos.azure.com:10255"
+			"/?ssl=true&replicaSet=opensipsdb&retrywrites=false"
+				"&maxIdleTimeMS=120000&appName=@opensips-voip-cosmosdb@");
+	ok(db->flags == 0);
+	ok(!strcmp(db->username, "opensips-voip-cosmosdb"));
+	ok(!strcmp(db->password, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"));
+	ok(!strcmp(db->host, "opensips-voip-cosmosdb.mongo.cosmos.azure.com"));
+	ok(db->port == 10255);
+	ok(!strcmp(db->extra_options, "ssl=true&replicaSet=opensipsdb&retrywrites=false&maxIdleTimeMS=120000&appName=@opensips-voip-cosmosdb@"));
+	ok(!db->database);
 }

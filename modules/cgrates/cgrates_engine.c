@@ -91,7 +91,7 @@ static void cgr_conn_schedule(struct cgr_conn *c)
 
 #else /* HAVE_TIMER_FD */
 #warning Your GLIB is too old, disabling cgrates async re-connect!!!
-#define cgr_conn_schedule()
+#define cgr_conn_schedule(...)
 #endif /* HAVE_TIMER_FD */
 
 void cgrc_conn_rpc(int sender, void *p)
@@ -166,8 +166,8 @@ struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 	time_t now = time(NULL);
 
 	if (e->disable_time && e->disable_time + cgre_retry_tout > now) {
-		LM_DBG("engine=%p down now=%lu until=%lu\n", e, now,
-				e->disable_time + cgre_retry_tout);
+		LM_DBG("engine=%p down now=%lld until=%lld\n", e, (long long)now,
+				(long long)(e->disable_time + cgre_retry_tout));
 		return NULL;
 	}
 
@@ -191,8 +191,9 @@ struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 			return e->default_con;
 		}
 	} else {
-		LM_DBG("conn=%p state=%x now=%lu until=%lu\n", e->default_con,
-				e->default_con->state, now, e->default_con->disable_time + cgre_retry_tout);
+		LM_DBG("conn=%p state=%x now=%lld until=%lld\n", e->default_con,
+				e->default_con->state, (long long)now,
+				(long long)(e->default_con->disable_time + cgre_retry_tout));
 	}
 	return NULL;
 }
@@ -270,7 +271,7 @@ static int cgrc_conn(struct cgr_conn *c)
 
 	tcp_con_get_profile(&c->engine->su, src_su, PROTO_TCP, &prof);
 
-	s = tcp_sync_connect_fd(src_su, &c->engine->su, PROTO_TCP, &prof, 0);
+	s = tcp_sync_connect_fd(src_su, &c->engine->su, PROTO_TCP, &prof, 0, 0);
 	if (s < 0) {
 		LM_ERR("cannot connect to %.*s:%d\n", c->engine->host.len,
 				c->engine->host.s, c->engine->port);

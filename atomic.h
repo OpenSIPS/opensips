@@ -38,6 +38,13 @@
 #ifndef _ATOMIC_OPS_H_
 #define _ATOMIC_OPS_H_
 
+#ifdef HAVE_STDATOMIC
+#include <stdatomic.h>
+#undef NO_ATOMIC_OPS
+
+typedef _Atomic(unsigned long) atomic_t;
+#else /* HAVE_STDATOMIC */
+
 /************************* i386 & x86_64 ARCH ****************************/
 
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
@@ -204,21 +211,6 @@ static __inline__ void atomic_dec(atomic_t *v)
 
 #undef NO_ATOMIC_OPS
 
-/************************* other ARCH ****************************/
-
-#else
-
-#define NO_ATOMIC_OPS
-
-#endif
-
-#if defined(NO_ATOMIC_OPS) && defined(HAVE_STDATOMIC)
-#undef NO_ATOMIC_OPS
-#include <stdatomic.h>
-
-typedef _Atomic(unsigned long) atomic_t;
-#else
-
 /* C11 stdatomics wrappers */
 #define atomic_init(a, v) atomic_set(a, v)
 #define atomic_store(a, v) atomic_set(a, v)
@@ -228,6 +220,14 @@ typedef _Atomic(unsigned long) atomic_t;
 		atomic_add(v, a);\
 	else \
 		atomic_sub(-(v), a);
-#endif
+
+/************************* other ARCH ****************************/
+
+#else
+
+#define NO_ATOMIC_OPS
 
 #endif
+#endif /* HAVE_STDATOMIC */
+
+#endif /* _ATOMIC_OPS_H_ */

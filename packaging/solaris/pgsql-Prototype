@@ -11,7 +11,7 @@ d none /opt/opensips/postgres 0755 root root
 f none /opt/opensips/postgres/acc-create.sql 0644 root root
 f none /opt/opensips/postgres/alias_db-create.sql 0644 root root
 f none /opt/opensips/postgres/auth_db-create.sql 0644 root root
-f none /opt/opensips/postgres/avpops-create.sql 0644 root root
+f none /opt/opensips/postgres/sqlops-create.sql 0644 root root
 f none /opt/opensips/postgres/carrierroute-create.sql 0644 root root
 f none /opt/opensips/postgres/cpl_create.sql 0644 root root
 f none /opt/opensips/postgres/dialog-create.sql 0644 root root

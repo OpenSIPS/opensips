@@ -348,7 +348,7 @@ static inline int msrp_uri_cmp(struct msrp_url *a, struct msrp_url *b)
 
 
 static int run_msrp_socket_route(struct receive_info *rcv, char *d_schema_s,
-		str *d_host, struct socket_info **si)
+		str *d_host, const struct socket_info **si)
 {
 	pv_value_t pval;
 	struct sip_msg *dummy_msg;
@@ -404,7 +404,7 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 	int from_peer = 0;
 	struct msrp_url *my_url;
 	int report = 0;
-	struct socket_info *si;
+	const struct socket_info *si;
 
 	LM_DBG("Received MSRP request [%.*s]\n", req->fl.u.request.method.len,
 		req->fl.u.request.method.s);

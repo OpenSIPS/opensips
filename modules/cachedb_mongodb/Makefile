@@ -8,7 +8,6 @@ auto_gen=
 NAME=cachedb_mongodb.so
 
 include ../../lib/json/Makefile.json
-
 ifeq ($(CROSS_COMPILE),)
 MONGOC_BUILDER = $(shell \
 	if pkg-config --exists libmongoc-1.0; then \
@@ -17,8 +16,11 @@ MONGOC_BUILDER = $(shell \
 endif
 
 ifeq ($(MONGOC_BUILDER),)
+
+include ../../Makefile.openssl
+
 	DEFS += -I$(SYSBASE)/include/libmongoc-1.0 -I$(SYSBASE)/include/libbson-1.0
-	LIBS += -L$(LOCALBASE)/lib -lssl -lcrypto -lrt -lmongoc-1.0 -lbson-1.0
+	LIBS += -L$(LOCALBASE)/lib -lrt -lmongoc-1.0 -lbson-1.0
 	LIBS += -dl -Bsymbolic
 else
 	DEFS += $(shell $(MONGOC_BUILDER) --cflags)

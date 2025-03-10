@@ -36,6 +36,7 @@
 
 
 str _extra_cancel_hdrs = {NULL,0};
+extern int _tm_branch_index;
 
 
 /* determine which branches should be canceled; do it
@@ -116,9 +117,11 @@ void cancel_branch( struct cell *t, int branch )
 	crb->activ_type=TYPE_LOCAL_CANCEL;
 
 	if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT) ) {
+		_tm_branch_index = branch;
 		set_extra_tmcb_params( &crb->buffer, &crb->dst);
 		run_trans_callbacks( TMCB_REQUEST_BUILT,
 			t, t->uas.request, 0, 0);
+		_tm_branch_index = 0;
 	}
 
 	LM_DBG("sending cancel...\n");

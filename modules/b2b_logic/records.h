@@ -155,6 +155,18 @@ struct b2bl_route_ctx {
 	int flags;
 };
 
+struct b2b_term_t_list {
+	b2bl_entity_id_t *entity;
+	volatile unsigned int timeout;
+	struct b2b_term_t_list *next;
+};
+
+struct b2b_term_timer {
+	gen_lock_t *lock;
+	struct b2b_term_t_list *first;
+	struct b2b_term_t_list *last;
+};
+
 #define PREP_REQ_DATA(entity) do{		\
 	req_data.et =(entity)->type;		\
 	req_data.b2b_key =&(entity)->key;	\

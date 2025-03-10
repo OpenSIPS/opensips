@@ -76,4 +76,29 @@ struct _app_defs {
 extern struct _app_defs app_defs[];
 extern unsigned int n_app_ids;
 
+#ifdef PKG_MALLOC
+enum dict_avp_enc_type {
+	AVP_ENC_TYPE_IP = 0,
+	AVP_ENC_TYPE_HEX = 1,
+	AVP_ENC_TYPE_NONE
+};
+
+#define enc_type2str(t) ( \
+		t == AVP_ENC_TYPE_IP ? "ip" : \
+		t == AVP_ENC_TYPE_HEX ? "hexstring" : \
+		t == AVP_ENC_TYPE_NONE ? "none" : \
+		("unknown?? "#t))
+
+int dm_enc_add(int vendor, int code, enum dict_avp_enc_type enc);
+#else
+enum dict_avp_enc_type {
+	AVP_ENC_TYPE_IP = 0,
+	AVP_ENC_TYPE_HEX = 0,
+	AVP_ENC_TYPE_NONE = 0
+};
+#define dm_enc_add(_v, _c, _e) 0
+#define enc_type2str(_t) "unsupported"
+#endif
+
+
 #endif /* _APP_OPENSIPS_AVPS_H */

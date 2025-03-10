@@ -248,8 +248,8 @@ static inline int nodb_timer(urecord_t* _r)
 
 	while(ptr) {
 		if (!VALID_CONTACT(ptr, act_time)) {
-			/* run callbacks for EXPIRE event */
-			if (exists_ulcb_type(UL_CONTACT_EXPIRE))
+			/* for forcibly expired contacts, DELETE event is already run */
+			if (!FORCE_EXPIRED_CONTACT(ptr) && exists_ulcb_type(UL_CONTACT_EXPIRE))
 				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
@@ -282,10 +282,9 @@ static inline int ALLOW_UNUSED wt_timer(urecord_t* _r)
 
 	while(ptr) {
 		if (!VALID_CONTACT(ptr, act_time)) {
-			/* run callbacks for EXPIRE event */
-			if (exists_ulcb_type(UL_CONTACT_EXPIRE)) {
+			/* for forcibly expired contacts, DELETE event is already run */
+			if (!FORCE_EXPIRED_CONTACT(ptr) && exists_ulcb_type(UL_CONTACT_EXPIRE))
 				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
-			}
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
 				ptr->aor->len, ZSW(ptr->aor->s),
@@ -325,10 +324,9 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 
 	while(ptr) {
 		if (!VALID_CONTACT(ptr, act_time)) {
-			/* run callbacks for EXPIRE event */
-			if (exists_ulcb_type(UL_CONTACT_EXPIRE)) {
+			/* for forcibly expired contacts, DELETE event is already run */
+			if (!FORCE_EXPIRED_CONTACT(ptr) && exists_ulcb_type(UL_CONTACT_EXPIRE))
 				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
-			}
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
 				ptr->aor->len, ZSW(ptr->aor->s),
@@ -858,7 +856,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		        pack_indexes((unsigned short)_r->aorhash,
 		                                     _r->label,
 		                    ((unsigned short)_r->next_clabel));
-		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+		_r->next_clabel = CLABEL_NEXT(_r->next_clabel);
 	}
 
 	if (cluster_mode == CM_FULL_SHARING_CACHEDB && !_ci->cdb_key.s) {
@@ -1106,7 +1104,7 @@ uint64_t next_contact_id(urecord_t* _r)
 		pack_indexes((unsigned short)_r->aorhash,
 		                             _r->label,
 		            ((unsigned short)_r->next_clabel));
-		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+		_r->next_clabel = CLABEL_NEXT(_r->next_clabel);
 
 	return contact_id;
 }

@@ -34,7 +34,7 @@
 #include "../../db/db_insertq.h"
 #include "../../db/db_res.h"
 #include "../../ut.h"
-#include "my_con.h"
+#include "sqlite_con.h"
 #include "row.h"
 
 
@@ -299,38 +299,39 @@ int db_sqlite_realloc_rows(db_res_t* res, const unsigned int rows)
 	struct db_row* res_rows;
 	db_val_t *prev_values;
 
-	res->rows = pkg_realloc(RES_ROWS(res),rows * (sizeof(db_row_t)));
-	memset( res->rows + RES_ROW_N(res), 0 ,
-			(rows - RES_ROW_N(res)) * (sizeof(db_row_t)));
+	if (RES_ROW_N(res) >= rows)
+		return 0;
 
-	res_rows = res->rows;
+	res_rows = res->rows = pkg_realloc(RES_ROWS(res),rows * sizeof *res_rows);
 	if (!res_rows) {
 		LM_ERR("no memory left\n");
 		return -1;
 	}
 
+	memset(res_rows + RES_ROW_N(res), 0 ,
+			(rows - RES_ROW_N(res)) * sizeof *res_rows);
+
 	prev_values = res_rows[0].values;
 
 	res_rows[0].values =
 		pkg_realloc(res_rows[0].values, rows * sizeof(db_val_t) * RES_COL_N(res));
-	memset( res_rows[0].values + RES_COL_N(res)*RES_ROW_N(res),
-			0, (rows - RES_ROW_N(res)) * sizeof(db_val_t) * RES_COL_N(res));
-
 	if (! res_rows[0].values) {
 		LM_ERR("no memory left\n");
 		res_rows[0].values = prev_values;
 		return -1;
 	}
 
+	memset( res_rows[0].values + RES_COL_N(res)*RES_ROW_N(res),
+			0, (rows - RES_ROW_N(res)) * sizeof(db_val_t) * RES_COL_N(res));
+
 	/* if the values was relocated, we need to re-point all values to the new block,
 	 * otherwise only fix the new ones */
 	start = (res_rows[0].values == prev_values?RES_ROW_N(res):0);
-	start = RES_ROW_N(res);
 
 	for( i=start ; i<rows ; i++ ) {
 		/* the values of the row i */
 		res_rows[i].values = res_rows[0].values + RES_COL_N(res)*i;
-		res->rows[i].n = RES_COL_N(res);
+		res_rows[i].n = RES_COL_N(res);
 	}
 
 	return 0;
@@ -373,8 +374,6 @@ static inline int db_sqlite_convert_rows(const db_con_t* _h, db_res_t* _r)
 
 	while (ret != SQLITE_DONE) {
 		ret = sqlite3_step(CON_SQLITE_PS(_h));
-		if (ret == SQLITE_BUSY)
-			continue;
 
 		if (ret == SQLITE_DONE) {
 			RES_ROW_N(_r) = RES_LAST_ROW(_r) = RES_NUM_ROWS(_r) = row;

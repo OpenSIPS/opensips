@@ -82,14 +82,14 @@ int msrp_send_report(void *hdl, str *status,
 
 int msrp_fwd_request( void *hdl, struct msrp_msg *req,
 		str *hdrs, int hdrs_no,
-		struct socket_info *sock, union sockaddr_union *to_su,
+		const struct socket_info *sock, union sockaddr_union *to_su,
 		void *trans_param);
 
 int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell);
 
 int msrp_send_request(void *hdl, enum msrp_method method_id,
 		str *from, struct msrp_url *to,
-		struct socket_info *sock,  union sockaddr_union *to_su,
+		const struct socket_info *sock,  union sockaddr_union *to_su,
 		str *mime, str *body,
 		str *hdrs, int hdrs_no, char cont_flag,
 		void *trans_param);

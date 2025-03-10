@@ -44,7 +44,7 @@ extern char *stat_file;
 extern char* pid_file;
 extern char* pgid_file;
 
-extern struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
+extern const struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
 
 extern int auto_aliases;
 
@@ -144,7 +144,7 @@ extern int max_while_loops;
 
 extern int sl_fwd_disabled;
 
-extern time_t startup_time;
+extern time_t startup_time, ready_time, ready_delay;
 
 extern char *db_version_table;
 extern char *db_default_url;

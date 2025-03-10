@@ -259,9 +259,13 @@ void cpl_aux_process( int cmd_out, char *log_dir)
 		/* process the command*/
 		switch (cmd.code) {
 			case CPL_LOG_CMD:
+
+				/* coverity[tainted_data] */
 				write_log( &cmd );
 				break;
 			case CPL_MAIL_CMD:
+
+				/* coverity[tainted_data] */
 				send_mail( &cmd );
 				break;
 			default:

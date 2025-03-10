@@ -102,11 +102,11 @@ static const cmd_export_t cmds[] = {
 };
 
 static const pv_export_t pvars[] = {
-	{ str_init("cgr"), 2003, w_pv_get_cgr, w_pv_set_cgr,
+	{ str_const_init("cgr"), 2003, w_pv_get_cgr, w_pv_set_cgr,
 		pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
-	{ str_init("cgr_opt"), 2004, w_pv_get_cgr_opt, w_pv_set_cgr_opt,
+	{ str_const_init("cgr_opt"), 2004, w_pv_get_cgr_opt, w_pv_set_cgr_opt,
 		w_pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
-	{ str_init("cgr_ret"), 2005, pv_get_cgr_reply, 0,
+	{ str_const_init("cgr_ret"), 2005, pv_get_cgr_reply, 0,
 		pv_parse_cgr, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

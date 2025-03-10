@@ -6,6 +6,8 @@
 <!ENTITY admin SYSTEM "presence_admin.xml">
 <!ENTITY devel SYSTEM "presence_devel.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
+<!ENTITY my_cl_sync_cap "presence">
+<!ENTITY clusterer_sync_cap_para SYSTEM "../../clusterer/doc/clusterer_sync_cap.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

@@ -644,6 +644,29 @@ modparam("clusterer", "enable_stats", 0)
 			</example>
 		</section>
 
+		<section id="param_enable_rerouting" xreflabel="enable_rerouting">
+			<title><varname>enable_rerouting</varname> (integer)</title>
+			<para>
+				If packets should be rerouted via another node if a direct route
+				to destination is unavailible. Disabling may improve stability in
+				two-node topologies.
+				Set it to zero to disable or to non-zero to enable it.
+			</para>
+			<para>
+				<emphasis>
+					Default value is <quote>1 (enabled)</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>enable_rerouting</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("clusterer", "enable_rerouting", 0)
+...
+				</programlisting>
+			</example>
+		</section>
+
         </section>
 
         <section id="exported_functions" xreflabel="exported_functions">
@@ -769,11 +792,16 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 
 			<section id="func_cluster_broadcast_req" xreflabel="cluster_broadcast_req()">
 				<title>
-				<function moreinfo="none">cluster_broadcast_req(cluster_id, msg, [tag])</function>
+				<function moreinfo="none">cluster_broadcast_req(cluster_id, msg, [tag], [include_self])</function>
 				</title>
 				<para>
 					This function has a similar behaviour to the <function moreinfo="none">cluster_send_req()</function> function with the exception that the message is sent to all the nodes in the specified cluster.
 				</para>
+					<itemizedlist>
+					<listitem>
+						<para><emphasis>include_self</emphasis> (bool, optional, default: <emphasis>false</emphasis>) - raise the event for current node as well, but without actually sending a packet (both req and rpl).</para>
+					</listitem>
+					</itemizedlist>
 				<para>
 					The function can return the following values:
 					<itemizedlist>
@@ -801,7 +829,8 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 						<title>cluster_broadcast_req() usage</title>
 						<programlisting format="linespecific">
 ...
-cluster_broadcast_req($var(cl_id), $var(share_data));
+# also raise the event for current node
+cluster_broadcast_req($var(cl_id), $var(share_data), , true);
 ...
 				</programlisting>
 				</example>

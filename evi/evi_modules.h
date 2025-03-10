@@ -55,6 +55,19 @@ event_id_t evi_publish_event(str event_name);
  */
 int evi_raise_event(event_id_t id, evi_params_t* params);
 
+
+/*
+ * Used to dispatch and raise an event into an different process
+ * Parameters:
+ *  + event id
+ *  + parameters
+ *
+ * Returns:
+ *  - 0 on success or negative on error
+ */
+int evi_dispatch_event(event_id_t id, evi_params_t* params);
+
+
 /*
  * Used to raise an event that uses the message attached
  * Parameters:

@@ -192,9 +192,7 @@ static void print_ct_constants(void)
 		MAX_RECV_BUFFER_SIZE, MAX_LISTEN, MAX_URI_SIZE,
 		BUF_SIZE );
 	printf("poll method support: %s.\n", poll_support);
-#ifdef VERSIONTYPE
 	printf("%s revision: %s\n", core_scm_ver.type, core_scm_ver.rev);
-#endif
 }
 
 static int
@@ -227,6 +225,7 @@ static const struct main_script main_script[] = {
 	FN_HNDLR(init_db_support, !=, 0, "SQL database support"),
 	FN_HNDLR(init_cdb_support, !=, 0, "CacheDB support"),
 	FN_HNDLR(init_modules, !=, 0, "modules"),
+	FN_HNDLR(init_auto_scaling, !=, 0, "auto-scaling support"),
 	FN_HNDLR(init_xlog, <, 0, "xlog"),
 	FN_HNDLR(register_route_timers, <, 0, "route_timers"),
 	FN_HNDLR(init_pvar_support, !=, 0, "pseudo-variable support"),
@@ -389,7 +388,7 @@ error:
  */
 int main(int argc, char** argv)
 {
-	int c;
+	int c, n;
 	char *tmp;
 	int tmp_len;
 	int port;
@@ -408,7 +407,7 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
+	options="A:f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
 #ifdef UNIT_TESTS
 	"T:"
 #endif
@@ -619,6 +618,10 @@ int main(int argc, char** argv)
 			case 'o':
 					if (add_arg_var(optarg) < 0)
 						LM_ERR("cannot add option %s\n", optarg);
+					break;
+			case 'A':
+					default_global_address->s = optarg;
+					default_global_address->len = strlen(optarg);
 					break;
 #ifdef UNIT_TESTS
 			case 'T':
@@ -873,7 +876,7 @@ try_again:
 	LM_NOTICE("using system memory for private process memory\n");
 #endif
 
-	for (int n = 0; n < howmany(main_script, main_script[0]); n++) {
+	for (n = 0; n < howmany(main_script, main_script[0]); n++) {
 		int result = main_script[n].hndlr();
 		pred_cmp_f pred_cmp = cmps_ops[main_script[n].pval];
 		if (pred_cmp(result, main_script[n].pred)) {

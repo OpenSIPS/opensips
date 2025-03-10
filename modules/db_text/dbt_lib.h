@@ -49,9 +49,10 @@
 #define DBT_DELIM_R	'\n'
 
 /*
- *  * Module parameters variables
- *   */
+ * Module parameters variables
+ */
 extern int db_mode; /* Database usage mode: 0 = no cache, 1 = cache */
+extern int buffer_size; /* size of the buffer to allocate when reading file */
 
 typedef db_val_t dbt_val_t, *dbt_val_p;
 

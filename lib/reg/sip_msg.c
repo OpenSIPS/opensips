@@ -360,6 +360,25 @@ contact_t* get_first_contact(struct sip_msg* _m)
 	return __get_first_contact(_m, &act_contact_1);
 }
 
+contact_t* get_first_contact_matching(struct sip_msg* _m, const str *uri_chunk)
+{
+	contact_t *ct;
+
+	ct = __get_first_contact(_m, &act_contact_1);
+	if (!ct)
+		return NULL;
+	if (ZSTRP(uri_chunk))
+		return ct;
+
+	while (!str_strstr(&ct->uri, uri_chunk)) {
+		ct = __get_next_contact(ct, &act_contact_1);
+		if (!ct)
+			return NULL;
+	}
+
+	return ct;
+}
+
 contact_t* get_next_contact(contact_t* _c)
 {
 	return __get_next_contact(_c, &act_contact_1);

@@ -101,9 +101,9 @@ mod_init(void)
 
     bname = basename(script_name.s);
     i = strlen(bname);
-    if (bname[i - 1] == 'c' || bname[i - 1] == 'o')
+    if (i > 4 && (bname[i - 1] == 'c' || bname[i - 1] == 'o'))
         i -= 1;
-    if (bname[i - 3] == '.' && bname[i - 2] == 'p' && bname[i - 1] == 'y') {
+    if (i > 3 && memcmp(&bname[i - 3], ".py", 3) == 0) {
         bname[i - 3] = '\0';
     } else {
         LM_ERR("%s: script_name doesn't look like a python script\n",

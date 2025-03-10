@@ -447,8 +447,9 @@ int shtag_get(str *tag_name, int cluster_id)
 	return ret;
 }
 
+/* Note: assumes write-lock on @shtags_lock */
 static struct shtag_sync_status *_get_sync_status(struct sharing_tag *tag,
-	str *capability, int cluster_id, int *w_lock)
+	str *capability, int cluster_id)
 {
 	struct shtag_sync_status *status;
 	struct local_cap *cap;
@@ -458,12 +459,6 @@ static struct shtag_sync_status *_get_sync_status(struct sharing_tag *tag,
 		str_strcmp(&status->capability->reg.name, capability); status=status->next) ;
 
 	if (!status) {
-		if (*w_lock == 0) {
-			*w_lock = 1;
-			lock_stop_read(shtags_lock);
-			lock_start_write(shtags_lock);
-		}
-
 		status = shm_malloc(sizeof *status + capability->len);
 		if (!status) {
 			LM_ERR("No more shm memory!\n");
@@ -501,47 +496,39 @@ int shtag_get_sync_status(str *tag_name, int cluster_id, str *capability)
 	struct sharing_tag *tag;
 	struct shtag_sync_status *status;
 	int ret;
-	int w_lock = 0;
 
-	lock_start_read(shtags_lock);
+	lock_start_write(shtags_lock);
 
 	for (tag = *shtags_list;
 		tag && (tag->cluster_id!=cluster_id || str_strcmp(&tag->name, tag_name));
 		tag = tag->next) ;
 	if (!tag) {
-		lock_stop_read(shtags_lock);
-		lock_start_write(shtags_lock);
-
 		tag = shtag_get_unsafe(tag_name, cluster_id);
-		if (!tag) {
-			lock_stop_write(shtags_lock);
-			return -1;
-		}
+		if (!tag)
+			goto error;
 
-		w_lock = 1;
-		status = _get_sync_status(tag, capability, cluster_id, &w_lock);
+		status = _get_sync_status(tag, capability, cluster_id);
 		if (!status) {
 			LM_ERR("Failed to get sync status structure\n");
-			return -1;
+			goto error;
 		}
 		ret = status->status;
 
-		lock_stop_write(shtags_lock);
 	} else {
-		status = _get_sync_status(tag, capability, cluster_id, &w_lock);
+		status = _get_sync_status(tag, capability, cluster_id);
 		if (!status) {
 			LM_ERR("Failed to get sync status structure\n");
-			return -1;
+			goto error;
 		}
 		ret = status->status;
-
-		if (w_lock)
-			lock_stop_write(shtags_lock);
-		else
-			lock_stop_read(shtags_lock);
 	}
 
+	lock_stop_write(shtags_lock);
 	return ret;
+
+error:
+	lock_stop_write(shtags_lock);
+	return -1;
 }
 
 int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
@@ -549,7 +536,6 @@ int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
 {
 	struct sharing_tag *tag;
 	struct shtag_sync_status *status;
-	int w_lock = 1;
 
 	lock_start_write(shtags_lock);
 
@@ -558,15 +544,17 @@ int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
 			(tag_name && str_strcmp(&tag->name, tag_name)))
 			continue;
 
-		status = _get_sync_status(tag, capability, cluster_id, &w_lock);
+		status = _get_sync_status(tag, capability, cluster_id);
 		if (!status) {
 			LM_ERR("Failed to get sync status structure\n");
 			lock_stop_write(shtags_lock);
 			return -1;
 		}
 
-		if (status->capability->flags & (CAP_SYNC_PENDING|CAP_SYNC_IN_PROGRESS))
+		if (status->capability->flags & (CAP_SYNC_PENDING|CAP_SYNC_IN_PROGRESS)) {
+			lock_stop_write(shtags_lock);
 			return 0;
+		}
 
 		status->status = new_status;
 	}
@@ -578,15 +566,17 @@ int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
 			return -1;
 		}
 
-		status = _get_sync_status(tag, capability, cluster_id, &w_lock);
+		status = _get_sync_status(tag, capability, cluster_id);
 		if (!status) {
 			LM_ERR("Failed to get sync status structure\n");
 			lock_stop_write(shtags_lock);
 			return -1;
 		}
 
-		if (status->capability->flags & (CAP_SYNC_PENDING|CAP_SYNC_IN_PROGRESS))
+		if (status->capability->flags & (CAP_SYNC_PENDING|CAP_SYNC_IN_PROGRESS)) {
+			lock_stop_write(shtags_lock);
 			return 0;
+		}
 
 		status->status = new_status;
 	}
@@ -624,7 +614,6 @@ int shtag_sync_all_backup(int cluster_id, str *capability)
 	struct sharing_tag *tag;
 	struct shtag_sync_status *status;
 	int ret = 0;
-	int w_lock = 1;
 
 	lock_start_write(shtags_lock);
 
@@ -632,7 +621,7 @@ int shtag_sync_all_backup(int cluster_id, str *capability)
 		if (tag->cluster_id != cluster_id)
 			continue;
 
-		status = _get_sync_status(tag, capability, cluster_id, &w_lock);
+		status = _get_sync_status(tag, capability, cluster_id);
 		if (!status) {
 			LM_ERR("Failed to get sync status structure\n");
 			lock_stop_write(shtags_lock);
@@ -716,6 +705,10 @@ int shtag_activate(str *tag_name, int cluster_id, char *reason, int reason_len)
 	}
 
 	/* inform the other nodes that we are active now */
+
+	if (!tag)
+		goto stop;
+
 	for (node = cl->node_list; node; node = node->next) {
 		if (tag->send_active_msg)
 			for (ni = tag->active_msgs_sent;
@@ -739,13 +732,14 @@ int shtag_activate(str *tag_name, int cluster_id, char *reason, int reason_len)
 				return ret;
 			}
 			ni->node_id = node->node_id;
-			ni->next = tag->active_msgs_sent;
 			lock_switch_write(shtags_lock, lock_old_flag);
+			ni->next = tag->active_msgs_sent;
 			tag->active_msgs_sent = ni;
 			lock_switch_read(shtags_lock, lock_old_flag);
 		}
 	}
 
+stop:
 	lock_stop_sw_read(shtags_lock);
 
 	/* do we have a transition from BACKUP to ACTIVE? */
@@ -816,8 +810,8 @@ void shtag_flush_state(int c_id, int node_id)
 				return;
 			}
 			ni->node_id = node_id;
-			ni->next = tag->active_msgs_sent;
 			lock_switch_write(shtags_lock, lock_old_flag);
+			ni->next = tag->active_msgs_sent;
 			tag->active_msgs_sent = ni;
 			lock_switch_read(shtags_lock, lock_old_flag);
 		}

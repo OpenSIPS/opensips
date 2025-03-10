@@ -903,3 +903,44 @@ int parse_to_header( struct sip_msg *msg)
 error:
 	return -1;
 }
+
+/*
+ * Checks if From includes a To-tag -- good to identify
+ * if a request creates a new dialog
+ */
+int has_totag(struct sip_msg* _m)
+{
+	str tag;
+
+	if (!_m->to && parse_headers(_m, HDR_TO_F,0)==-1) {
+		LM_ERR("To parsing failed\n");
+		return 0;
+	}
+	if (!_m->to) {
+		LM_ERR("no To\n");
+		return 0;
+	}
+	tag=get_to(_m)->tag_value;
+	if (tag.s==0 || tag.len==0) {
+		LM_DBG("no totag\n");
+		return 0;
+	}
+	LM_DBG("totag found\n");
+	return 1;
+}
+
+/*
+ * Parses the URI from a generic to_body structure
+ * Helper function (not specific to TO hdr)
+ */
+int parse_to_body_uri(struct to_body *to_b)
+{
+	if (to_b==NULL)
+		return -1;
+
+	if (parse_uri(to_b->uri.s, to_b->uri.len, &to_b->parsed_uri) < 0) {
+		memset( &to_b->parsed_uri, 0, sizeof(struct sip_uri));
+		return -1;
+	}
+	return 0;
+}

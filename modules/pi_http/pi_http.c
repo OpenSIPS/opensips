@@ -42,7 +42,7 @@ extern ph_framework_t *ph_framework_data;
 /* module functions */
 static int mod_init();
 static int child_init(int);
-static int destroy(void);
+static void destroy(void);
 int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
@@ -225,11 +225,10 @@ static int child_init(int rank)
 }
 
 
-int destroy(void)
+static void destroy(void)
 {
 	destroy_http_db(ph_framework_data);
 	ph_destroy_async_lock();
-	return 0;
 }
 
 

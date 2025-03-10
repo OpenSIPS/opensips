@@ -313,6 +313,8 @@ static int kafka_enq_msg(kafka_job_t *job)
 		} else {
 			LM_DBG("Enqueued message for topic: %s\n", prod->conf_strings->next->s);
 		}
+
+	/* coverity[overflow_const: FALSE] - when retries = 0 the while loop stops */
 	} while (rc < 0 && retries-- > 0);
 
 	return rc;

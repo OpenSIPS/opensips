@@ -134,7 +134,8 @@ int end_sub_on_timeout= 1;
 pres_ev_t** pres_event_p= NULL;
 pres_ev_t** dialog_event_p= NULL;
 
-char *federation_mode_str;
+char *federation_mode_str = NULL;
+char *cluster_active_shtag_str = NULL;
 
 int phtable_size= 9;
 phtable_t* pres_htable = NULL;
@@ -186,6 +187,7 @@ static const param_export_t params[]={
 	{ "end_sub_on_timeout",     INT_PARAM, &end_sub_on_timeout},
 	{ "cluster_id",             INT_PARAM, &pres_cluster_id},
 	{ "cluster_federation_mode",STR_PARAM, &federation_mode_str},
+	{ "cluster_be_active_shtag",STR_PARAM, &cluster_active_shtag_str},
 	{ "cluster_pres_events",    STR_PARAM, &clustering_events.s},
 	{0,0,0}
 };
@@ -265,7 +267,8 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	db_url.len = db_url.s ? strlen(db_url.s) : 0;
-	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len,db_url.s);
+	LM_DBG("db_url=%s\n", db_url_escape(&db_url));
+
 	presentity_table.len = strlen(presentity_table.s);
 	active_watchers_table.len = strlen(active_watchers_table.s);
 	watchers_table.len = strlen(watchers_table.s);
@@ -328,18 +331,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (!federation_mode_str || !strcasecmp(federation_mode_str, "disabled")) {
-		cluster_federation = FEDERATION_DISABLED;
-	} else if (!strcasecmp(federation_mode_str, "on-demand-sharing")) {
-		cluster_federation = FEDERATION_ON_DEMAND;
-	} else if (!strcasecmp(federation_mode_str, "full-sharing")) {
-		cluster_federation = FEDERATION_FULL_SHARING;
-	} else {
-		LM_ERR("invalid cluster_federation_mode: '%s'\n", federation_mode_str);
-		return -1;
-	}
-
-	if (init_pres_clustering()<0) {
+	if (init_pres_clustering(federation_mode_str, cluster_active_shtag_str)<0) {
 		LM_ERR("failed to init clustering support\n");
 		return -1;
 	}
@@ -882,7 +874,7 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 		lock_get(&subs_htable[i].lock);
 		for (s = subs_htable[i].entries->next; s; s = s->next) {
 			if (from) {
-				/* print subscribtion if "from" and "to" match with given wildcard */
+				/* print subscription if "from" and "to" match with given wildcard */
 				rc = from_to_match_subs(s, &match_from, &match_to, from_w, to_w);
 				if (rc < 0)
 					goto error;
@@ -1486,7 +1478,7 @@ static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs
                 lock_release(&subs_htable[hash_code].lock);
                 return -1;
 			}
-			cs->expires-= (int)time(NULL);
+			cs->expires-= (unsigned int)(unsigned long)time(NULL);
 			cs->next= (*subs_array);
 			(*subs_array)= cs;
 			if(subs->status== TERMINATED_STATUS)

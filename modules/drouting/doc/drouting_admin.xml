@@ -1011,9 +1011,12 @@ modparam("drouting", "gw_socket_filter_mode", "ignore")
 		gateways. See the
 		<xref linkend="param_cluster_sharing_tag"/> option.
 		</para>
+
+			&clusterer_sync_cap_para;
+
 		<para>
 		For more info on how to define and populate a cluster (with OpenSIPS 
-		nodes) see the "clusterer" module.
+		nodes) see the <ulink url='clusterer'>clusterer</ulink> module.
 		</para>
 		<para>
 		<emphasis>
@@ -1409,6 +1412,21 @@ modparam("drouting", "rule_tables_query", "
 		SELECT 'dr_rules_a' UNION SELECT 'dr_rules_b'")
 ...
 </programlisting>
+		</example>
+	</section>
+
+	<section id="param_generate_data_checksum" xreflabel="generate_data_checksum">
+		<title><varname>generate_data_checksum</varname> (int)</title>
+		<para>
+			If enabled, it will generate a checksum ( MD5 ) for drouting loaded data, attach that to the reload_status MI command output and to the reload generated status reports
+		</para>
+		<example>
+		<title>Set the <varname>generate_data_checksum</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "generate_data_checksum", 1)
+...
+		</programlisting>
 		</example>
 	</section>
 
@@ -1829,7 +1847,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+		BRANCH_ROUTE, ONREPLY_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 
@@ -2341,13 +2359,15 @@ if ( dr_match( 1, , $var(did) ) )
 						</para></listitem>
 					</itemizedlist>
 
-					<listitem><para>
+					<itemizedlist>
+						<listitem><para>
 							<emphasis>inherit_state</emphasis> (optional) : whether inherit old state of the gateway , default is y.
 							<itemizedlist>
 								<listitem><para> <quote>n</quote>: no inherit state </para></listitem>
 								<listitem><para> <quote>y</quote>: inherit state </para></listitem>
 							</itemizedlist>
-					</para></listitem>
+						</para></listitem>
+					</itemizedlist>
 
 				</para>
 			</listitem>

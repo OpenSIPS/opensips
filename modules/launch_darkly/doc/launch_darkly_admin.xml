@@ -1,0 +1,235 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module implements support for the
+		<ulink url="https://launchdarkly.com/">Launch Darkly</ulink> feature
+		management cloud. The module provide the conectivity to the cloud and
+		the ability to query for feature flags.
+	</para>
+	<para>
+		OpenSIPS uses the <ulink url="https://launchdarkly.com/features/sdk/">server side C/C++ SDK</ulink> provided by Launch Darkly.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>ldserverapi</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			<emphasis>ldserverapi</emphasis> must be compiled and installed
+			from the official
+			<ulink url="https://github.com/launchdarkly/c-server-sdk">GITHUB repository </ulink>.
+		</para>
+		<para>
+		The instructions for a quick installations of the library (note that it has to be compiled as shared lib in order to be compatible with the OpenSIPS modules):
+		</para>
+		<programlisting format="linespecific">
+...
+	$ git clone https://github.com/launchdarkly/c-server-sdk.git
+	$ cd c-server-sdk
+	$ cmake -DBUILD_SHARED_LIBS=On -DBUILD_TESTING=OFF .
+	$ sudo make install
+...
+</programlisting>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+
+	<section id="param_sdk_key" xreflabel="sdk_key">
+		<title><varname>sdk_key</varname> (string)</title>
+		<para>
+		The LaunchDarkly SDK key used to connect to the service. This
+		is a mandatory parameter.
+		</para>
+		<example>
+		<title>Set <varname>sdk_key</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("launch_darkly", "sdk_key", "sdk-12345678-abcd-12ab-1234-0123456789abc")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ld_log_level" xreflabel="ld_log_level">
+		<title><varname>ld_log_level</varname> (string)</title>
+		<para>
+		The LaunchDarkly specific log level to be used by the LD SDK/libray to
+		log its internal messages. Note that these log produced by the LD
+		library (according to this ld_log_level) will be further subject to
+		filtering according to the overall OpenSIPS log_level.
+		</para>
+		<para>
+		Accepted values are 
+		<emphasis>LD_LOG_FATAL</emphasis>, 
+		<emphasis>LD_LOG_CRITICAL</emphasis>, 
+		<emphasis>LD_LOG_ERROR</emphasis>, 
+		<emphasis>LD_LOG_WARNING</emphasis>, 
+		<emphasis>LD_LOG_INFO</emphasis>, 
+		<emphasis>LD_LOG_DEBUG</emphasis>, 
+		<emphasis>LD_LOG_TRACE</emphasis>.
+		</para>
+		<para>
+		If not set or set to an unsupported value, the 
+		<emphasis>LD_LOG_WARNING</emphasis> level will be used by default.
+		</para>
+		<example>
+		<title>Set <varname>log_level</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("launch_darkly", "ld_log_level", "LD_LOG_CRITICAL")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_connect_wait" xreflabel="connect_wait">
+		<title><varname>connect_wait</varname> (integer)</title>
+		<para>
+		The time to wait (in miliseconds) when connecting to the LD service.
+		An initial failure in connecting to the LD service may be addressed 
+		by increasing this wait value.
+		</para>
+		<para>
+		The default value is 500 miliseconds.
+		</para>
+		<example>
+		<title>Set <varname>connect_wait</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("launch_darkly", "connect_wait", 100)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_re_init_interval" xreflabel="re_init_interval">
+		<title><varname>re_init_interval</varname> (integer)</title>
+		<para>
+		The minimum time interval (in seconds) to try again to init 
+		the LD client in the situation when the module was not able to init 
+		the LC connection at startup. In case of such failure, the module will 
+		automatically re-try to init its LD client on-demand, whnever the 
+		feature flag is checked from script, but not sooner than
+		`re_init_interval`. Note: if there are no flag checkings to be
+		performed, the re-init may be attempted longer than `re_init_interval`.
+		</para>
+		<para>
+		The default value is 10 seconds.
+		</para>
+		<example>
+		<title>Set <varname>re_init_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("launch_darkly", "re_init_interval", 30)
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_ld_feature_enabled" xreflabel="ld_feature_enabled()">
+		<title>
+			<function moreinfo="none">ld_feature_enabled( flag, user, [user_extra], [fallback])</function>
+		</title>
+		<para>
+			Function to evaluate a LaunchDarkly boolean feature flag 
+		</para>
+		<para>
+			Returns <emphasis>1</emphasis> if the flag was found TRUE
+			or <emphasis>-1</emphasis> otherwise.
+		</para>
+		<para>
+			In case of error, the fallback (TRUE or FALSE) value will be
+			returned  In such cases, a "fallback" TRUE is returned as 2 and a
+			fallback FALSE as -2, so you can may a difference between a real
+			TRUE (returned by the LD service) and a fallback TRUE due to an
+			error.
+		</para>
+		<para>
+			This function can be used from any route.
+		</para>
+		<para>
+		The function has the following parameters:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					<emphasis>flag</emphasis> (string) - the key of the flag
+					to evaluate. May not be NULL or empty.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>user</emphasis> (string) - the user to evaluate
+					the flag against. May not be NULL or empty.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>user_extra</emphasis> (AVP, optional) - an AVP
+					holding one or multiple key-value attributes to be 
+					attached to the user. The format of the AVP value is
+					"key=value".
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>fallback</emphasis> (int, optional) - the value
+					to be returned on error. By default FALSE will be returned.
+				</para>
+			</listitem>
+
+		</itemizedlist>
+		<example>
+		<title><function>ld_feature_enabled()</function> function usage</title>
+		<programlisting format="linespecific">
+	...
+	$avp(extra) = "domainId=123456";
+	if (ld_feature_enabled("my-flag","opensips", $avp(extra), false))
+		xlog("-------TRUE\n");
+	else
+		xlog("-------FALSE\n");
+	...
+	</programlisting>
+			</example>
+		</section>
+	</section>
+
+</chapter>

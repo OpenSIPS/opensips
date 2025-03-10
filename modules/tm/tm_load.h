@@ -47,8 +47,8 @@
 
 struct tm_binds {
 	register_tmcb_f  register_tmcb;
-	cmd_function     t_relay;
-	cmd_function     t_check_trans;
+	trelay_f         t_relay;
+	tcheck_trans_f   t_check_trans;
 
 	/* Return:
 	 *		1 (success)

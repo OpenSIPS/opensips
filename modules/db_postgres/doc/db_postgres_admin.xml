@@ -119,6 +119,34 @@ modparam("db_postgres", "timeout", 2)
         <section id="param_use_tls" xreflabel="use_tls">
 		<title><varname>use_tls</varname> (integer)</title>
 		<para>
+		Parameter to control the way the SSL support is used when connecting
+		to the Postgres server, as follows:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>use_tls=0</emphasis> (default) - the SSL support
+				is disabled and there is no attempt to use it;
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>use_tls=1</emphasis> with "tls_domain" present
+				in the DB URL - the SSL support is enabled, either 
+				"require", either "verify-ca", depending on the certificate
+				settings;
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>use_tls=1</emphasis> with no "tls_domain" present
+				in the DB URL - the SSL support is enabled in best effort mode
+				(or "prefer"); if supported by the server, it will be used,
+				otherwise it will fall back to non-SSL.
+			</para>
+			</listitem>
+		</itemizedlist>
+		<para>
 		Warning: the <emphasis>tls_openssl</emphasis> module cannot be used
 		when setting this parameter. Use the <emphasis>tls_wolfssl</emphasis>
 		module instead if a TLS/SSL Library is required.

@@ -134,8 +134,8 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
 	LM_DBG("CALLID OK in subs_hash\n");
 
 	time(&rawtime);
-	time_now = (int)rawtime;
-	LM_DBG("TIME : %d \n", (int)rawtime );
+	time_now = (int)(unsigned long)rawtime;
+	LM_DBG("TIME : %d \n", (int)(unsigned long)rawtime );
 
 	// get source ip address that send INVITE
 	vsp_addr = ip_addr2a(&msg->rcv.src_ip);
@@ -420,8 +420,8 @@ void notif_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
 			time_t rawtime;
 
 			time(&rawtime);
-			int time_now = (int)rawtime;
-			LM_DBG("TIME : %d \n", (int)rawtime );
+			int time_now = (int)(unsigned long)rawtime;
+			LM_DBG("TIME : %d \n", (int)(unsigned long)rawtime );
 
 			// update timeout
 			params_notify->timeout =  params_notify->expires + time_now;

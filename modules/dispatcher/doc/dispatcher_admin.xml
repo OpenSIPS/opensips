@@ -184,6 +184,8 @@ modparam("dispatcher", "attrs_avp", "$avp(script_attrs)")
 		The return value of the route is considered by the dispatcher module to
 		be the current weight of the dispatcher entry, and when using the 10
 		algo, the dispatcher entries are sorted in ascending weight order.
+
+		If the returned value from the algo route is negative, the current dispatcher entry will be automatically skipped from usage
 		</para>
 		<para>
 		<emphasis>
@@ -694,9 +696,12 @@ modparam("dispatcher", "persistent_state", 0)
 		destinations. See the
 		<xref linkend="param_cluster_sharing_tag"/> option.
 		</para>
+
+			&clusterer_sync_cap_para;
+
 		<para>
 		For more info on how to define and populate a cluster (with OpenSIPS 
-		nodes) see the "clusterer" module.
+		nodes) see the <ulink url='clusterer'>clusterer</ulink> module.
 		</para>
 		<para>
 		<emphasis>

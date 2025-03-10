@@ -189,6 +189,9 @@ static void sh_free(struct struct_hist *sh, osips_free_f free_f)
 
 void _sh_unref(struct struct_hist *sh, osips_free_f free_f)
 {
+	if (!sh)
+		return;
+
 	gen_lock_t *shl_lock = &sh->shlist->wlock;
 
 	lock_get(shl_lock);
@@ -271,6 +274,7 @@ int _sh_log(osips_realloc_f realloc_f, struct struct_hist *sh,
 		if (!new) {
 			lock_release(&sh->wlock);
 			LM_ERR("oom\n");
+			va_end(ap);
 			return -1;
 		}
 		/* CAREFUL: newly added actions are not memset, for speed reasons! */

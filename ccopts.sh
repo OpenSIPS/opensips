@@ -1,6 +1,5 @@
 #!/bin/sh
 
-#$Id$
 #
 # returns the CFLAGS for the given compiler (maximum optimizations)
 #

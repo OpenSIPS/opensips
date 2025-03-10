@@ -169,6 +169,7 @@ static void receive_tm_repl(bin_packet_t *packet)
 	str tmp;
 	struct receive_info ri;
 
+	memset(&ri, 0, sizeof ri);
 	LM_DBG("received %d packet from %d in cluster %d\n",
 			packet->type, packet->src_id, tm_repl_cluster);
 

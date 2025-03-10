@@ -21,17 +21,16 @@
 #ifndef __DBG_BACKTRACE__
 #define __DBG_BACKTRACE__
 
-#ifndef EXTRA_DEBUG
+#ifdef DBG_NO_BACKTRACE
 #define log_backtrace()
 #define _log_backtrace(logging_level)
 #else
 #include <execinfo.h>
 
-#include "backtrace.h"
 #include "../../mem/mem.h"
 
 /* logs the current function stack, using the L_DBG level */
-#define log_backtrace() _log_backtrace(L_DBG)
+#define log_backtrace() _log_backtrace(L_CRIT)
 
 /* logs the current function stack using a custom logging level */
 #define _log_backtrace(logging_level) \
@@ -48,11 +47,11 @@
 		___stkfuncs = backtrace_symbols(___stkbuf, ___nframes); \
 		LM_GEN1(logging_level, "===========\n"); \
 		for (___i = 0; ___i < ___nframes; ___i++) \
-			LM_INFO("%s\n", ___stkfuncs[___i]); \
+			LM_GEN1(logging_level, "%s\n", ___stkfuncs[___i]); \
 		LM_GEN1(logging_level, "===========\n"); \
 		free(___stkfuncs); \
 		pkg_free(___stkbuf); \
 	} while (0)
 
-#endif /* HAVE_DEBUG */
+#endif /* DBG_NO_BACKTRACE */
 #endif /* __DBG_BACKTRACE__ */

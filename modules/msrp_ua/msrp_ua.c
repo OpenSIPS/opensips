@@ -68,7 +68,7 @@ b2b_api_t b2b_api;
 str my_msrp_uri_str;
 struct msrp_url my_msrp_uri;
 
-struct socket_info *msrp_sock;
+const struct socket_info *msrp_sock;
 
 str adv_contact;
 
@@ -423,7 +423,7 @@ static int mod_init(void)
 		LM_ERR("no more shm memory\n");
 		return -1;
 	}
-	*next_sdp_id = time(NULL);
+	*next_sdp_id = (int)(unsigned long)time(NULL);
 
 	if (msrpua_evi_init() < 0) {
 		LM_ERR("Failed to init events\n");
@@ -1112,7 +1112,7 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 	switch (msg->REQ_METHOD) {
 	case METHOD_INVITE:
 		if (get_body(msg, &body) == 0 && body.len == 0) {
-			/* no SDP -> late negociation */
+			/* no SDP -> late negotiation */
 
 			if (msrpua_update_send_200ok(sess, etype) < 0)
 				LM_ERR("Failed to send 200 OK on reInvite with no SDP\n");
@@ -1171,7 +1171,7 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 			/* ACK for reINVITE */
 
 			if (get_body(msg, &body) == 0 && body.len == 0) {
-				/* no SDP -> no late negociation, just update state */
+				/* no SDP -> no late negotiation, just update state */
 				sess->dlg_state = MSRPUA_DLG_EST;
 			} else {
 				/* ACK with SDP -> update session */

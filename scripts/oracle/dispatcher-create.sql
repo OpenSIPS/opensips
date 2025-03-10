@@ -8,8 +8,8 @@ CREATE TABLE dispatcher (
     probe_mode NUMBER(10) DEFAULT 0 NOT NULL,
     weight VARCHAR2(64) DEFAULT 1 NOT NULL,
     priority NUMBER(10) DEFAULT 0 NOT NULL,
-    attrs VARCHAR2(128) DEFAULT '',
-    description VARCHAR2(64) DEFAULT ''
+    attrs VARCHAR2(128) DEFAULT NULL,
+    description VARCHAR2(64) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER dispatcher_tr

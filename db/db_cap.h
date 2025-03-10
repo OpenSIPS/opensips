@@ -48,6 +48,7 @@ typedef enum db_cap {
 	DB_CAP_LAST_INSERTED_ID = 1 << 8,  /**< driver can return the ID of the last insert operation   */
 	DB_CAP_INSERT_UPDATE    = 1 << 9,  /**< driver can insert data into database and update on duplicate */
 	DB_CAP_MULTIPLE_INSERT  = 1 << 10,  /**< driver can insert multiple rows at once */
+	DB_CAP_PREPARED_STMT    = 1 << 11,  /**< driver supports prep statements */
 } db_cap_t;
 
 

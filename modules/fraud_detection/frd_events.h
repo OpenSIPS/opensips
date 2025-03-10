@@ -32,9 +32,9 @@
 int frd_event_init(void);
 void frd_event_destroy(void);
 void raise_warning_event(str *param, unsigned int *val, unsigned int *thr,
-		str *user, str *number, unsigned int *ruleid);
+		str *user, str *number, unsigned int *ruleid, int *pid);
 void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
-		str *user, str *number, unsigned int *ruleid);
+		str *user, str *number, unsigned int *ruleid, int *pid);
 
 
 /* Dialog callback */
@@ -44,6 +44,7 @@ typedef struct {
 	str user;
 	str number;
 	unsigned int ruleid;
+	int pid;
 	unsigned int interval_id;
 
 	unsigned int calldur_warn;

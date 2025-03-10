@@ -56,8 +56,11 @@ extern int node_timeout;
 extern int ping_timeout;
 extern int seed_fb_interval;
 extern int sync_timeout;
+extern int clusterer_enable_rerouting;
 
 int dispatch_jobs = 1;
+
+void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_id);
 
 str cap_sr_details_str[] = {
 	str_init("not synced"),
@@ -72,6 +75,12 @@ void sync_check_timer(utime_t ticks, void *param)
 	cluster_info_t *cl;
 	struct local_cap *cap;
 	struct timeval now;
+
+	if (sr_get_core_status() != STATE_RUNNING) {
+		LM_DBG("opensips is not operational (state: %d), nothing "
+		        "to check for now\n", sr_get_core_status());
+		return;
+	}
 
 	gettimeofday(&now, NULL);
 
@@ -93,15 +102,18 @@ void sync_check_timer(utime_t ticks, void *param)
 					if ((cap->flags & CAP_SYNC_PENDING) &&
 						(cl->current_node->flags & NODE_IS_SEED) &&
 						(TIME_DIFF(cap->sync_req_time, now) >=
-						seed_fb_interval*1000000)) {
+							((cap->flags&CAP_SYNC_STARTUP ? ready_delay:0)
+								+ seed_fb_interval) * 1000000)) {
 
 						cap->flags |= CAP_STATE_OK;
-						cap->flags &= ~CAP_SYNC_PENDING;
+						cap->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 						sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCED,
 							STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
 						sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
-							"Donor node not found, fallback to synced state");
-						LM_INFO("No donor found, falling back to synced state\n");
+							"ERROR: Sync request aborted! (no donor found in due time)"
+							" => fallback to synced state");
+						LM_ERR("Sync request aborted! (no donor found in due time)"
+						    ", falling back to synced state\n");
 						/* send update about the state of this capability */
 						send_single_cap_update(cl, cap, 1);
 
@@ -295,9 +307,10 @@ int get_capability_status(cluster_info_t *cluster, str *capability)
 static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
 							int change_dest, int *ev_actions_required)
 {
-	int retr_send = 0;
+	struct timeval now;
 	node_info_t *chosen_dest = dest;
 	str send_buffer;
+	int retr_send = 0;
 
 	do {
 		lock_get(chosen_dest->lock);
@@ -337,6 +350,14 @@ static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
 		}
 	} while (retr_send);
 
+	gettimeofday(&now, NULL);
+
+	/* sent a TCP BIN packet directly to @dest -> delay next ping */
+	lock_get(chosen_dest->lock);
+	if (chosen_dest->link_state == LS_UP)
+		chosen_dest->last_ping = now;
+	lock_release(chosen_dest->lock);
+
 	return 0;
 }
 
@@ -373,12 +394,16 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	}
 	lock_release(cl->current_node->lock);
 
-	node = get_node_by_id(cl, dst_node_id);
-	if (!node) {
-		LM_ERR("Node id [%d] not found in cluster\n", dst_node_id);
-		if (!locked)
-			lock_stop_read(cl_list_lock);
-		return CLUSTERER_SEND_ERR;
+	if (dst_node_id == cl->current_node->node_id) {
+		node = cl->current_node;
+	} else {
+		node = get_node_by_id(cl, dst_node_id);
+		if (!node) {
+			LM_ERR("Node id [%d] not found in cluster\n", dst_node_id);
+			if (!locked)
+				lock_stop_read(cl_list_lock);
+			return CLUSTERER_SEND_ERR;
+		}
 	}
 
 	lock_get(node->lock);
@@ -403,7 +428,16 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 		}
 	}
 
-	rc = msg_send_retry(packet, node, 0, &ev_actions_required);
+	if (node == cl->current_node && packet->type == CLUSTERER_GENERIC_MSG) {
+		bin_remove_int_buffer_end(packet, 1);
+		bin_push_int(packet, node->node_id);
+		bin_get_capability(packet, &capability);
+		packet->front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
+		handle_cl_gen_msg(packet, cluster_id, node->node_id);
+		rc = 0;
+	} else {
+		rc = msg_send_retry(packet, node, 0, &ev_actions_required);
+	}
 
 	bin_remove_int_buffer_end(packet, 3);
 
@@ -489,6 +523,17 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 			down = 0;
 		if (rc == 0)	/* at least one message is sent successfully */
 			sent = 1;
+	}
+
+	if (match_op == NODE_CMP_ALL && packet->type == CLUSTERER_GENERIC_MSG) {
+		LM_DBG("broadcasting gen to self (cl: %d, node: %d)\n",
+		        dst_cid, dst_cl->current_node->node_id);
+		bin_remove_int_buffer_end(packet, 1);
+		bin_push_int(packet, dst_cl->current_node->node_id);
+		bin_get_capability(packet, &capability);
+		packet->front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
+
+		handle_cl_gen_msg(packet, dst_cid, dst_cl->current_node->node_id);
 	}
 
 	bin_remove_int_buffer_end(packet, 3);
@@ -596,7 +641,8 @@ enum clusterer_send_ret send_gen_msg(int cluster_id, int dst_id, str *gen_msg,
 	return rc;
 }
 
-enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag)
+enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg,
+        str *exchg_tag, int all)
 {
 	bin_packet_t packet;
 	int rc;
@@ -607,7 +653,8 @@ enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_t
 		return CLUSTERER_SEND_ERR;
 	}
 
-	rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY, 0);
+	rc = clusterer_bcast_msg(&packet, cluster_id,
+			all ? NODE_CMP_ALL : NODE_CMP_ANY, 0);
 
 	bin_free_packet(&packet);
 
@@ -864,7 +911,7 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 											node_id);
 						if (rc == CLUSTERER_SEND_SUCCESS) {
 							lock_get(source->cluster->lock);
-							lcap->flags &= ~CAP_SYNC_PENDING;
+							lcap->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 							lock_release(source->cluster->lock);
 						} else if (rc == CLUSTERER_SEND_ERR)
 							LM_ERR("Failed to send sync request to node: %d\n",
@@ -921,7 +968,7 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 	}
 }
 
-static void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_id)
+void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_id)
 {
 	int req_like;
 	str rcv_msg, rcv_tag;
@@ -1013,6 +1060,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	int ev_actions_required = 0;
 	char *ip;
 	unsigned short port;
+	struct timeval now;
 
 	bin_pop_back_int(packet, &dest_id);
 	bin_pop_back_int(packet, &source_id);
@@ -1026,6 +1074,8 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		LM_ERR("Received message with bad source - same node id as this instance\n");
 		return;
 	}
+
+	gettimeofday(&now, NULL);
 
 	if (!db_mode && packet_type == CLUSTERER_REMOVE_NODE)
 		lock_start_write(cl_list_lock);
@@ -1061,6 +1111,9 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 
 	lock_get(node->lock);
 
+	/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
+	node->last_pong = now;
+
 	if (!(node->flags & NODE_STATE_ENABLED)) {
 		lock_release(node->lock);
 		LM_DBG("node disabled, ignoring received clusterer bin packet\n");
@@ -1076,6 +1129,10 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		lock_release(node->lock);
 
 	if (dest_id != current_id) {
+		if (clusterer_enable_rerouting == 0) {
+			LM_WARN("Received message for destination id [%d] but rerouting disabled\n", dest_id);
+			goto exit;
+		}
 		/* route the message */
 		bin_push_int(packet, cluster_id);
 		bin_push_int(packet, source_id);
@@ -1193,6 +1250,10 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 		}
 
 		lock_get(node->lock);
+
+		/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
+		node->last_pong = now;
+
 		if (!(node->flags & NODE_STATE_ENABLED)) {
 			lock_release(node->lock);
 			LM_DBG("node disabled, ignoring received clusterer bin packet\n");
@@ -1277,6 +1338,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 {
 	struct capability_reg *cap;
 	struct local_cap *cl_cap;
+	struct timeval now;
 	unsigned short port;
 	int source_id, dest_id, cluster_id;
 	char *ip;
@@ -1304,6 +1366,8 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		LM_ERR("Failed to get bin callback parameter\n");
 		return;
 	}
+
+	gettimeofday(&now, NULL);
 
 	lock_start_read(cl_list_lock);
 
@@ -1334,6 +1398,9 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	}
 
 	lock_get(node->lock);
+
+	/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
+	node->last_pong = now;
 
 	if (!(node->flags & NODE_STATE_ENABLED)) {
 		lock_release(node->lock);
@@ -1432,7 +1499,7 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 	int no_dests = 0, i;
 	int timestamp;
 
-	timestamp = time(NULL);
+	timestamp = (int)(unsigned long)time(NULL);
 
 	lock_get(cluster->current_node->lock);
 
@@ -1499,7 +1566,7 @@ int send_cap_update(node_info_t *dest_node, int require_reply)
 	node_info_t *node;
 	int timestamp;
 
-	timestamp = time(NULL);
+	timestamp = (int)(unsigned long)time(NULL);
 
 	if (dest_node->cluster->capabilities)
 		nr_nodes++;
@@ -1638,7 +1705,7 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 				/* check pending sync replies */
 				for (n_cap = node->capabilities; n_cap; n_cap = n_cap->next) {
 					if (n_cap->flags & CAP_SYNC_PENDING) {
-						n_cap->flags &= ~CAP_SYNC_PENDING;
+						n_cap->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 						lock_release(node->lock);
 						/* reply now that the node is up */
 						if (ipc_dispatch_sync_reply(cl, node->node_id,
@@ -1691,7 +1758,7 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					 * a module tries to sync on node UP event */
 					if (rst_sync_pending) {
 						lock_get(cl->lock);
-						cap_it->flags &= ~CAP_SYNC_PENDING;
+						cap_it->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 						lock_release(cl->lock);
 					}
 				}

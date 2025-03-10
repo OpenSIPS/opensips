@@ -130,7 +130,7 @@ char* generate_correlation_id(int* len)
 }
 
 
-int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
+int trace_mi_message(const union sockaddr_union* src, const union sockaddr_union* dst,
 		struct mi_trace_param* pld_param, str* correlation_val, trace_dest trace_dst)
 {
 	/* FIXME is this the case for all mi impelementations?? */

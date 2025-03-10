@@ -137,7 +137,7 @@ void evi_remove_expired_subs(event_id_t id) {
 	while (subs) {
 		if (!subs->reply_sock) {
 			LM_ERR("unknown destination\n");
-			continue;
+			goto next_sub;
 		}
 		/* check expire */
 		if (!(subs->reply_sock->flags & EVI_PENDING) &&
@@ -163,6 +163,8 @@ void evi_remove_expired_subs(event_id_t id) {
 			}
 			continue;
 		}
+next_sub:
+		prev = subs;
 		subs = subs->next;
 	}
 	lock_release(events[id].lock);
@@ -769,6 +771,9 @@ mi_response_t *w_mi_subscribers_list_1(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Event not published"));
 	/* get the event id & before printing the subs list check for any expired subscribers and remove them*/
 	evid = evi_get_id(&event_s);
+	if (evid == -1)
+		return init_mi_error(404, MI_SSTR("Can't get the id"));
+
 	evi_remove_expired_subs(evid);
 
 	return mi_subscribers_list(event, NULL);
@@ -790,6 +795,9 @@ mi_response_t *w_mi_subscribers_list_2(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Event not published"));
 	/* get the event id & before printing the subs list check for any expired subscribers and remove them*/
 	evid = evi_get_id(&event_s);
+	if (evid == -1)
+		return init_mi_error(404, MI_SSTR("Can't get the id"));
+
 	evi_remove_expired_subs(evid);
 
 	if (get_mi_string_param(params, "socket", &subs_s.s, &subs_s.len) < 0)
@@ -897,19 +905,56 @@ error:
 	return NULL;
 }
 
-struct mi_raise_event_dispatch {
+struct rpc_raise_event_dispatch {
 	event_id_t id;
 	evi_params_p params;
 };
 
-void mi_raise_event_rpc(int sender, void *param)
+
+void rpc_raise_event(int sender, void *param)
 {
-	struct mi_raise_event_dispatch *p = (struct mi_raise_event_dispatch *)param;
+	struct rpc_raise_event_dispatch *p = (struct rpc_raise_event_dispatch *)param;
 	if (evi_raise_event(p->id, p->params))
 		LM_ERR("cannot raise event RPC\n");
 	evi_free_shm_params(p->params);
 	shm_free(p);
 }
+
+
+int evi_dispatch_event( event_id_t id, evi_params_p params)
+{
+	evi_params_p sparams = NULL;
+	struct rpc_raise_event_dispatch *djob;
+
+	if (params) {
+		sparams = evi_dup_shm_params(params);
+		evi_free_params(params);
+		if (!sparams) {
+			LM_ERR("could not shm duplicate evi params!\n");
+			goto error;
+		}
+	}
+
+	djob = shm_malloc(sizeof (*djob));
+	if (!djob) {
+		LM_ERR("could not allocate new job!\n");
+		goto error;
+	}
+	djob->id = id;
+	djob->params = sparams;
+
+	if (ipc_dispatch_rpc(rpc_raise_event, djob) < 0) {
+		LM_ERR("could not dispatch raise event job!\n");
+		goto error;
+	}
+
+	return 0;
+error:
+	if (sparams)
+		evi_free_shm_params(sparams);
+	return -1;
+}
+
 
 mi_response_t *w_mi_raise_event(const mi_params_t *params,
 								struct mi_handler *async_hdl)
@@ -919,8 +964,7 @@ mi_response_t *w_mi_raise_event(const mi_params_t *params,
 	str tparams;
 	event_id_t id;
 	mi_item_t *values;
-	evi_params_p eparams = NULL, sparams;
-	struct mi_raise_event_dispatch *djob;
+	evi_params_p eparams = NULL;
 
 	if (get_mi_string_param(params, "event", &event_s.s, &event_s.len) < 0)
 		return init_mi_param_error();
@@ -955,26 +999,7 @@ mi_response_t *w_mi_raise_event(const mi_params_t *params,
 			break;
 	}
 
-	if (eparams) {
-		sparams = evi_dup_shm_params(eparams);
-		evi_free_params(eparams);
-		eparams = NULL;
-		if (!sparams) {
-			LM_ERR("could not duplicate evi params!\n");
-			goto error;
-		}
-		eparams = sparams;
-	}
-
-	djob = shm_malloc(sizeof (*djob));
-	if (!djob) {
-		LM_ERR("could not allocate new job!\n");
-		goto error;
-	}
-	djob->id = id;
-	djob->params = eparams;
-
-	if (ipc_dispatch_rpc(mi_raise_event_rpc, djob) < 0) {
+	if (evi_dispatch_event( id, eparams)<0) {
 		LM_ERR("could not dispatch raise event job!\n");
 		goto error;
 	}
@@ -982,6 +1007,6 @@ mi_response_t *w_mi_raise_event(const mi_params_t *params,
 	return init_mi_result_ok();
 error:
 	if (eparams)
-		evi_free_shm_params(eparams);
+		evi_free_params(eparams);
 	return init_mi_error(500, MI_SSTR("Cannot Raise Event"));
 }

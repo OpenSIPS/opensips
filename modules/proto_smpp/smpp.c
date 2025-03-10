@@ -792,7 +792,7 @@ static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
 {
 	union sockaddr_union to;
 	union sockaddr_union server;
-	struct socket_info *send_socket;
+	const struct socket_info *send_socket;
 	struct tcp_conn_profile prof;
 
 	if (init_su(&to, &session->ip, session->port)) {

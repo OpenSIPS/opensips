@@ -117,7 +117,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	static str query_str;
 	static struct sip_uri puri;
 
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	struct proxy_l next_hop;
 	db_res_t *res = NULL;
 	db_row_t *row;
@@ -151,9 +151,9 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
-	" %.*s, %.*s, %.*s from %s where %.*s > %lu and mod(contact_id, %u) = %u",
+	" %.*s, %.*s, %.*s from %s where %.*s > %lld and mod(contact_id, %u) = %u",
 #else
-	" %.*s, %.*s, %.*s from %s where %.*s > %lu and contact_id %% %u = %u",
+	" %.*s, %.*s, %.*s from %s where %.*s > %lld and contact_id %% %u = %u",
 #endif
 		received_col.len, received_col.s,
 		contact_col.len, contact_col.s,
@@ -163,7 +163,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 		contactid_col.len, contactid_col.s,
 		d->name->s,
 		expires_col.len, expires_col.s,
-		now,
+		(long long)now,
 		part_max, part_idx);
 
 	LM_DBG("query: %.*s\n", (int)(sizeof query_buf), query_buf);
@@ -407,7 +407,7 @@ cdb_pack_ping_data(const str *aor, const cdb_pair_t *contact,
 	struct sip_uri puri;
 	struct list_head *_;
 	unsigned int cflags = 0;
-	struct socket_info *sock = NULL;
+	const struct socket_info *sock = NULL;
 	struct proxy_l next_hop;
 	str ct_uri, received = STR_NULL, path = STR_NULL;
 	int needed;
@@ -544,7 +544,7 @@ skip_coords:
 
 	*len -= needed;
 	if (pack_coords) {
-		memcpy(cp, &coords, sizeof(ucontact_coords));
+		memcpy(cp, coords, sizeof(ucontact_coords));
 		cp += sizeof(ucontact_coords);
 	}
 
@@ -572,7 +572,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 	int_str_t val;
 	cdb_pair_t *pair;
 	cdb_dict_t *contacts;
-	str contacts_key = str_init("contacts"); /* TODO */
+	str contacts_key = str_init("contacts"), aor_key = str_init("aor"); /* TODO */
 	str *aor;
 	enum cdb_filter_op rhs_op;
 	int shortage;
@@ -629,7 +629,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 		/* locate the 'aor' and 'contacts' fields */
 		list_for_each (__, &row->dict) {
 			pair = list_entry(__, cdb_pair_t, list);
-			if (pair->key.is_pk) {
+			if (pair->key.is_pk || str_match(&pair->key.name, &aor_key)) {
 				aor = &pair->val.val.st;
 				if (contacts)
 					goto pack_data;

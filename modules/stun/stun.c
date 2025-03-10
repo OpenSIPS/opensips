@@ -35,10 +35,10 @@
 #include "stun.h"
 
 /* Globals */
-struct socket_info* grep1 = NULL;
-struct socket_info* grep2 = NULL;
-struct socket_info* grep3 = NULL;
-struct socket_info* grep4 = NULL;
+const struct socket_info* grep1 = NULL;
+const struct socket_info* grep2 = NULL;
+const struct socket_info* grep3 = NULL;
+const struct socket_info* grep4 = NULL;
 int assign_once = FALSE;
 
 int sockfd4=-1;	/* ip2 port2 */
@@ -162,8 +162,8 @@ static struct stun_socket *add_sock_to_set(struct stun_socket_set *set,
 static int stun_mod_init(void)
 {
 	str s;
-	struct socket_info *si;
-	struct socket_info **si_list;
+	struct socket_info_full *sif;
+	struct socket_info_full **si_list;
 	int i = 0;
 	int ip;
 	struct stun_socket *sock;
@@ -171,8 +171,8 @@ static int stun_mod_init(void)
 
 	if (use_listeners_as_primary) {
 		si_list = get_sock_info_list(PROTO_UDP);
-		for (si = si_list ? *si_list : 0; si; si = si->next)
-			if (si->address.af == AF_INET)
+		for (sif = si_list ? *si_list : 0; sif; sif = sif->next)
+			if (sif->socket_info.address.af == AF_INET)
 				no_socket_sets++;
 	} else {
 		if (!primary_ip || primary_ip[0] == '\0') {
@@ -212,7 +212,8 @@ static int stun_mod_init(void)
 		}
 
 		si_list = get_sock_info_list(PROTO_UDP);
-		for (si = si_list ? *si_list : 0; si; si = si->next) {
+		for (sif = si_list ? *si_list : 0; sif; sif = sif->next) {
+			const struct socket_info *si = &sif->socket_info;
 			if (si->address.af != AF_INET || si == grep4)
 				continue;
 			else

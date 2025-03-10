@@ -42,6 +42,7 @@ static void mod_destroy(void);
 static int siprec_start_rec(struct sip_msg *msg, str *srs);
 static int siprec_pause_rec(struct sip_msg *msg);
 static int siprec_resume_rec(struct sip_msg *msg);
+static int siprec_stop_rec(struct sip_msg *msg);
 
 /* modules dependencies */
 static const dep_export_t deps = {
@@ -67,6 +68,8 @@ static const cmd_export_t cmds[] = {
 		{{0,0,0}}, ALL_ROUTES},
 	{"siprec_resume_recording",(cmd_function)siprec_resume_rec,
 		{{0,0,0}}, ALL_ROUTES},
+	{"siprec_stop_recording",(cmd_function)siprec_stop_rec,
+		{{0,0,0}}, ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -77,12 +80,11 @@ static const param_export_t params[] = {
 };
 
 static const pv_export_t vars[] = {
-	{ {"siprec", sizeof("siprec")-1}, 1000,
+	{ str_const_init("siprec"), 1000,
 		pv_get_siprec, pv_set_siprec, pv_parse_siprec,
 		0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
-
 
 /* module exports */
 struct module_exports exports = {
@@ -143,7 +145,6 @@ static int mod_preinit(void)
 	return 0;
 }
 
-
 /**
  * init module function
  */
@@ -182,6 +183,7 @@ static void mod_destroy(void)
 static void tm_src_unref_session(void *p)
 {
 	struct src_sess *ss = (struct src_sess *)p;
+	srec_dlg.dlg_unref(ss->dlg, 1); /* release the dialog */
 	srec_hlog(ss, SREC_UNREF, "start recording unref");
 	SIPREC_UNREF(ss);
 }
@@ -201,11 +203,25 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 	/* create the dialog, if does not exist yet */
 	dlg = srec_dlg.get_dlg();
 	if (!dlg) {
+		if (!msg) {
+			LM_ERR("no message or dialog available\n");
+			return -2;
+		}
 		if (srec_dlg.create_dlg(msg, 0) < 0) {
 			LM_ERR("cannot create dialog!\n");
 			return -2;
 		}
 		dlg = srec_dlg.get_dlg();
+	}
+	ss = (struct src_sess *)srec_dlg.dlg_ctx_get_ptr(dlg, srec_dlg_idx);
+	if (ss) {
+		LM_DBG("session %p already exists!\n", ss);
+		if (ss->flags & SIPREC_STARTED) {
+			LM_WARN("session already started!\n");
+			return -1;
+		}
+		srs_add_nodes(ss, srs);
+		goto start_recording;
 	}
 	rtp = srec_rtp.get_ctx();
 	if (!rtp) {
@@ -268,6 +284,9 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 		goto session_cleanup;
 	}
 
+	if (dlg->state > DLG_STATE_CONFIRMED_NA)
+		goto start_recording;
+
 	SIPREC_REF_UNSAFE(ss);
 	srec_hlog(ss, SREC_REF, "starting recording");
 	if (srec_tm.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, tm_start_recording,
@@ -280,7 +299,19 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 	return 1;
 
 session_cleanup:
+	srec_dlg.dlg_unref(dlg, 1);
 	src_free_session(ss);
+	return ret;
+start_recording:
+	if (dlg->state >= DLG_STATE_DELETED) {
+		LM_WARN("call already terminated!\n");
+		return -1;
+	}
+	SIPREC_LOCK(ss);
+	ret = src_start_recording(msg, ss);
+	if (ret < 0)
+		LM_ERR("cannot start recording!\n");
+	SIPREC_UNLOCK(ss);
 	return ret;
 }
 
@@ -292,4 +323,20 @@ static int siprec_pause_rec(struct sip_msg *msg)
 static int siprec_resume_rec(struct sip_msg *msg)
 {
 	return (src_resume_recording() < 0 ? -1: 1);
+}
+
+static int siprec_stop_rec(struct sip_msg *msg)
+{
+	struct dlg_cell *dlg = srec_dlg.get_dlg();
+	struct src_sess *ss;
+	if (!dlg) {
+		LM_ERR("dialog not found!\n");
+		return -2;
+	}
+	ss = (struct src_sess *)srec_dlg.dlg_ctx_get_ptr(dlg, srec_dlg_idx);
+	if (!ss) {
+		LM_DBG("no recording session started\n");
+		return -1;
+	}
+	return (srec_stop_recording(ss)<0?-1:1);
 }

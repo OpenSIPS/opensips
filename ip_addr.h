@@ -56,7 +56,7 @@
 
 
 enum sip_protos { PROTO_NONE = 0, PROTO_FIRST = 1, PROTO_UDP = 1, \
-	PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_WS, PROTO_WSS, PROTO_BIN,
+	PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_WS, PROTO_WSS, PROTO_IPSEC, PROTO_BIN,
 	PROTO_BINS, PROTO_HEP_UDP, PROTO_HEP_TCP, PROTO_HEP_TLS, PROTO_SMPP, PROTO_MSRP,
 	PROTO_MSRPS, PROTO_OTHER };
 #define PROTO_LAST PROTO_OTHER
@@ -98,7 +98,7 @@ union sockaddr_union{
 
 
 enum si_flags { SI_NONE=0, SI_IS_IP=1, SI_IS_LO=2, SI_IS_MCAST=4,
-	SI_IS_ANYCAST=8, SI_FRAG=16, SI_REUSEPORT=32 };
+	SI_IS_ANYCAST=8, SI_FRAG=16, SI_REUSEPORT=32, SI_INTERNAL=64 };
 
 struct receive_info {
 	struct ip_addr src_ip;
@@ -109,7 +109,7 @@ struct receive_info {
 	unsigned int proto_reserved1; /*!< tcp stores the connection id here */
 	unsigned int proto_reserved2;
 	union sockaddr_union src_su; /*!< useful for replies*/
-	struct socket_info* bind_address; /*!< sock_info structure on which the msg was received*/
+	const struct socket_info* bind_address; /*!< sock_info structure on which the msg was received*/
 	/* no need for dst_su yet */
 };
 
@@ -118,7 +118,7 @@ struct dest_info {
 	int proto;
 	unsigned int proto_reserved1; /*!< tcp stores the connection id here */
 	union sockaddr_union to;
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 };
 
 
@@ -131,6 +131,7 @@ struct socket_id {
 	int proto;
 	int port;
 	int workers;
+	int tos;
 	enum si_flags flags;
 	struct socket_id* next;
 };
@@ -180,12 +181,12 @@ struct socket_id {
  * we rely here on the fact at all the SIP protos are in a sequance */
 #define is_sip_proto(_proto) (PROTO_UDP<=(_proto) && (_proto)<=PROTO_WSS)
 
-struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask);
-struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen);
+struct net* mk_net(const struct ip_addr* ip, struct ip_addr* mask);
+struct net* mk_net_bitlen(const struct ip_addr* ip, unsigned int bitlen);
 /* parse a (struct net) out of a CIDR v4 or v6 address such as 1.2.3.4/28 */
 int mk_net_cidr(const str *cidr, struct net *out_net);
 
-void print_ip(char* prefix, struct ip_addr* ip, char* suffix);
+void print_ip(char* prefix, const struct ip_addr* ip, char* suffix);
 void stdout_print_ip(struct ip_addr* ip);
 void print_net(struct net* net);
 
@@ -221,7 +222,7 @@ inline static int matchnet(struct ip_addr* ip, struct net* net)
 
 
 /*! \brief inits an ip_addr pointer from a sockaddr structure*/
-static inline void sockaddr2ip_addr(struct ip_addr* ip, struct sockaddr* sa)
+static inline void sockaddr2ip_addr(struct ip_addr* ip, const struct sockaddr* sa)
 {
 	void *copyfrom;
 
@@ -275,7 +276,7 @@ static inline int su_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
 
 
 /*! \brief gets the port number (host byte order) */
-static inline unsigned short su_getport(union sockaddr_union* su)
+static inline unsigned short su_getport(const union sockaddr_union* su)
 {
 	if(su==0)
 		return 0;
@@ -307,7 +308,7 @@ static inline void su_setport(union sockaddr_union* su, unsigned short port)
 }
 
 /*! \brief inits an ip_addr pointer from a sockaddr_union ip address */
-static inline void su2ip_addr(struct ip_addr* ip, union sockaddr_union* su)
+static inline void su2ip_addr(struct ip_addr* ip, const union sockaddr_union* su)
 {
 	switch(su->s.sa_family){
 	case AF_INET:
@@ -335,7 +336,7 @@ static inline void su2ip_addr(struct ip_addr* ip, union sockaddr_union* su)
  * \return 0 if ok, -1 on error (unknown address family)
  * \note the port number is in host byte order */
 static inline int init_su( union sockaddr_union* su,
-							struct ip_addr* ip,
+							const struct ip_addr* ip,
 							unsigned short   port )
 {
 	memset(su, 0, sizeof(union sockaddr_union));/*needed on freebsd*/
@@ -369,7 +370,7 @@ static inline int init_su( union sockaddr_union* su,
  * WARNING: no index overflow  checks!
  * \return 0 if ok, -1 on error (unknown address family) */
 static inline int hostent2su( union sockaddr_union* su,
-								struct hostent* he,
+								const struct hostent* he,
 								unsigned int idx,
 								unsigned short   port )
 {

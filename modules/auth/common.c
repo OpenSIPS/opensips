@@ -88,5 +88,5 @@ int send_resp(struct sip_msg* _m, int _code, const str* _reason,
 		}
 	}
 
-	return sigb.reply(_m, _code, _reason, NULL);
+	return sigb.reply(_m, _code, (_reason?_reason:_str(error_text(_code))), NULL);
 }

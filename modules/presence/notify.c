@@ -389,7 +389,7 @@ str* get_wi_notify_body(subs_t* subs, subs_t* watcher_subs)
 	{
 		s= s->next;
 
-		if(s->expires< (int)time(NULL))
+		if(s->expires< (unsigned int)(unsigned long)time(NULL))
 		{
 			LM_DBG("expired record\n");
 			continue;
@@ -1520,7 +1520,7 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 
 		if(result->n <=0 )
 		{
-			LM_DBG("The query for subscribtion for [uri]= %.*s for [event]= %.*s"
+			LM_DBG("The query for subscription for [uri]= %.*s for [event]= %.*s"
 				" returned no result\n",pres_uri->len, pres_uri->s,
 				event->name.len, event->name.s);
 			pa_dbf.free_result(pa_db, result);
@@ -1597,10 +1597,10 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 			s.event= event;
 			s.local_cseq = row_vals[cseq_col].val.int_val;
 
-			if(row_vals[expires_col].val.int_val < (int)time(NULL))
+			if(row_vals[expires_col].val.int_val < (int)(unsigned long)time(NULL))
 				s.expires = 0;
 			else
-				s.expires = row_vals[expires_col].val.int_val -(int)time(NULL);
+				s.expires = row_vals[expires_col].val.int_val -(int)(unsigned long)time(NULL);
 			s.version = row_vals[version_col].val.int_val;
 
 			s_new= mem_copy_subs(&s, PKG_MEM_TYPE);
@@ -1660,7 +1660,7 @@ int update_in_list(subs_t* s, subs_t* s_array, int new_rec_no, int n)
 		strncmp(ls->from_tag.s, s->from_tag.s, s->from_tag.len)== 0 )
 		{
 			ls->local_cseq= s->local_cseq;
-			ls->expires= s->expires- (int)time(NULL);
+			ls->expires= s->expires- (unsigned int)(unsigned long)time(NULL);
 			ls->version= s->version;
 			ls->status= s->status;
 			return 1;
@@ -1692,7 +1692,7 @@ int presentity_has_subscribers(str* pres_uri, pres_ev_t* event)
 		s= s->next;
 
 		/* expired & active ? */
-		if ( (s->expires<(int)now) || (s->status!=ACTIVE_STATUS) ||
+		if ( (s->expires<(unsigned int)(unsigned long)now) || (s->status!=ACTIVE_STATUS) ||
 		(s->reason.len!=0) )
 			continue;
 
@@ -1807,7 +1807,7 @@ subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender,
 
 			printf_subs(s);
 
-			if(s->expires< (int)time(NULL))
+			if(s->expires< (unsigned int)(unsigned long)time(NULL))
 			{
 				LM_DBG("expired subs\n");
 				continue;
@@ -1829,7 +1829,7 @@ subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender,
 				lock_release(&subs_htable[hash_code].lock);
 				goto error;
 			}
-			s_new->expires-= (int)time(NULL);
+			s_new->expires-= (unsigned int)(unsigned long)time(NULL);
 			s_new->next= s_array;
 			s_array= s_new;
 			i++;
@@ -1877,7 +1877,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	while(s)
 	{
 		s->auth_rules_doc= rules_doc;
-		LM_INFO("notify\n");
+		LM_DBG("notify\n");
 		if(notify(s, NULL, notify_body?notify_body:body,
 			0, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, from_publish)< 0 )
 		{
@@ -1951,7 +1951,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 
 	while(s)
 	{
-		LM_INFO("notify\n");
+		LM_DBG("notify\n");
 		if(notify(s, watcher_subs, notify_body, 0, NULL, 0)< 0 )
 		{
 			LM_ERR("Could not send notify for [event]=%.*s\n",
@@ -2158,7 +2158,7 @@ jump_over_body:
 		goto error;
 	}
 
-	LM_INFO("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
+	LM_DBG("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
 		td->rem_uri.len, td->rem_uri.s, td->hooks.next_hop->len, td->hooks.next_hop->s,
 		td->loc_uri.len, td->loc_uri.s, subs->event->name.len, subs->event->name.s,
 		td->id.loc_tag.len, td->id.loc_tag.s, td->loc_seq.value);

@@ -27,12 +27,6 @@
 
 #include "../../parser/msg_parser.h"
 
-
-/*
- * Check if message includes a to-tag
- */
-int has_totag(struct sip_msg* _m, char* _foo, char* _bar);
-
 /*
  * Find if Request URI has a given parameter with/without matching value
  */

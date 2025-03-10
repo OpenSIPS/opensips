@@ -1,6 +1,3 @@
-#
-# $Id$
-#
 # Suppose that we have a PSTN gateway with IP address 1.2.3.4
 # We should prevent REGISTER messages that contain that IP
 # address in Contact header field because that can cause serious

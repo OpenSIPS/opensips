@@ -115,7 +115,7 @@ static inline int mi_add_aor_node(mi_item_t *aor_item, urecord_t* r,
 		if (add_mi_string(ct_item, MI_SSTR("Contact"), c->c.s, c->c.len) < 0)
 			return -1;
 
-		if (add_mi_string_fmt(ct_item, MI_SSTR("ContactID"), "%llu", c->contact_id) < 0)
+		if (add_mi_string_fmt(ct_item, MI_SSTR("ContactID"), "%lu", c->contact_id) < 0)
 			return -1;
 
 		if (c->expires == 0) {

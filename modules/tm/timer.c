@@ -118,6 +118,9 @@ static struct timer_table *timertable=0;
 static unsigned int timer_sets = 0;
 static struct timer detached_timer; /* just to have a value to compare with*/
 
+/* currently processed branch */
+extern int _tm_branch_index;
+
 #define DETACHED_LIST (&detached_timer)
 
 #define is_in_timer_list2(_tl) ( (_tl)->timer_list &&  \
@@ -248,6 +251,7 @@ static void fake_reply(struct cell *t, int branch, int code )
 	branch_bm_t cancel_bitmap = 0;
 	enum rps reply_status;
 
+	_tm_branch_index = branch;
 	if ( is_local(t) ) {
 		reply_status=local_reply( t, FAKED_REPLY, branch,
 					  code, &cancel_bitmap );
@@ -258,6 +262,7 @@ static void fake_reply(struct cell *t, int branch, int code )
 		reply_status=relay_reply( t, FAKED_REPLY, branch, code,
 			&cancel_bitmap );
 	}
+	_tm_branch_index = 0;
 	/* again, a final negative reply on a branch will never lead to a
 	 * situation to cancel other existing branches, so the
 	 * cancel_bitmap should be empty here (we use it as a dummy holder), so
@@ -610,8 +615,9 @@ struct timer_table *tm_init_timers( unsigned int sets )
 			init_timer_list( set, i );
 
 		/* exclusion timer */
-		if ((timertable[set].ex_lock = lock_init_rw()) == NULL) {
-			LM_CRIT("failed to init timer RW lock\n");
+		if ((timertable[set].ex_lock = lock_alloc()) == NULL ||
+		lock_init(timertable[set].ex_lock) == NULL) {
+			LM_CRIT("failed to init timer lock\n");
 			goto error0;
 		}
 
@@ -641,7 +647,7 @@ void free_timer_table(void)
 		for ( i=0 ; i<timer_sets*NR_OF_TIMER_LISTS ; i++ )
 			release_timerlist_lock( &timertable->timers[i] );
 		for ( i=0 ; i<timer_sets ; i++ )
-			lock_destroy_rw( timertable[i].ex_lock );
+			lock_destroy( timertable[i].ex_lock );
 		shm_free(timertable);
 	}
 }
@@ -1091,7 +1097,7 @@ void timer_routine(unsigned int ticks , void *set)
 
 	clock_gettime(CLOCK_REALTIME, &begin);
 
-	lock_start_write( timertable[(long)set].ex_lock );
+	lock_get( timertable[(long)set].ex_lock );
 
 	for( id=0 ; id<RT_T1_TO_1 ; id++ )
 	{
@@ -1113,7 +1119,7 @@ void timer_routine(unsigned int ticks , void *set)
 				break;
 		}
 	}
-	lock_stop_write( timertable[(long)set].ex_lock );
+	lock_release( timertable[(long)set].ex_lock );
 
 	clock_check_diff((double)TM_TIMER_ITV_S*1e9 * TM_TIMER_LOAD_WARN,
 	    "now at %d%%+ capacity, inuse_transactions: %lu", (int)(TM_TIMER_LOAD_WARN*100),
@@ -1130,7 +1136,7 @@ void utimer_routine(utime_t uticks , void *set)
 
 	clock_gettime(CLOCK_REALTIME, &begin);
 
-	lock_start_write( timertable[(long)set].ex_lock );
+	lock_get( timertable[(long)set].ex_lock );
 
 	for( id=RT_T1_TO_1 ; id<NR_OF_TIMER_LISTS ; id++ )
 	{
@@ -1148,7 +1154,7 @@ void utimer_routine(utime_t uticks , void *set)
 				break;
 		}
 	}
-	lock_stop_write( timertable[(long)set].ex_lock );
+	lock_release( timertable[(long)set].ex_lock );
 
 	clock_check_diff((double)TM_UTIMER_ITV_US*1000 * TM_TIMER_LOAD_WARN,
 	    "now at %d%%+ capacity, inuse_transactions: %lu", (int)(TM_TIMER_LOAD_WARN*100),

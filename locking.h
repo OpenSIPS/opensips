@@ -35,7 +35,7 @@
  *
  * Implements (in lock_ops.h & lock_alloc.h):
  *
- * simple locks:
+ * simple, thread-safe locks:
  * - type: gen_lock_t
  * - gen_lock_t* lock_alloc();                - allocates a lock in shared mem.
  * - gen_lock_t* lock_init(gen_lock_t* lock); - inits the lock

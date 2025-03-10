@@ -63,11 +63,11 @@ db_con_t* db_cachedb_init(const str* _url)
 
 	for (it=db_cachedb_script_urls;it;it=it->next) {
 		if (memcmp(it->url.s,p,len) == 0) {
-			LM_DBG("Found matching URL : [%.*s]\n",it->url.len,it->url.s);
+			LM_DBG("Found matching URL : [%s]\n", db_url_escape(&it->url));
 
 			if (cachedb_bind_mod(&it->url,&cdbf) < 0) {
-				LM_ERR("Cannot bind cachedb functions for URL [%.*s]\n",
-						it->url.len,it->url.s);
+				LM_ERR("Cannot bind cachedb functions for URL [%s]\n",
+						db_url_escape(&it->url));
 				return NULL;
 			}
 

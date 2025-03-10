@@ -629,7 +629,7 @@ static int kafka_evi_raise(struct sip_msg *msg, str* ev_name,
 	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx)
 {
 	kafka_job_t *job;
-	kafka_producer_t *prod = (kafka_producer_t *)sock->params;
+	kafka_producer_t *prod;
 	str payload;
 	str key = {0,0};
 
@@ -637,6 +637,8 @@ static int kafka_evi_raise(struct sip_msg *msg, str* ev_name,
 		LM_ERR("invalid evi socket\n");
 		return -1;
 	}
+
+	prod = (kafka_producer_t *)sock->params;
 	if (!prod) {
 		LM_ERR("Invalid producer instance in evi sock params\n");
 		return -1;

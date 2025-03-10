@@ -29,6 +29,7 @@ struct dlg_cell;
 struct dlg_cb_params {
 	struct sip_msg* msg;       /* sip msg related to the callback event */
 	unsigned int direction;    /* direction of the sip msg */
+	int dst_leg;               /* destination leg of the sip msg */
 	unsigned int is_active;    /* state of the node (active/backup) for this dialog */
 	void *dlg_data;            /* generic parameter, specific to callback */
 	void **param;              /* parameter passed at callback registration*/
@@ -240,6 +241,10 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
  * Registration:  per-dialog, "dlg" must be given
  * Trigger count: 0 - N times per dialog (e.g. for every update and create
  *                replicated packet received on the network)
+ * Params:
+ *   - (str *)params->dlg_data will hold the name of the variable that is being
+ *     replicated, if it was replicated after the dialog was confirmed, or
+ *     NULL if the variables were replicated in bulk
  */
 #define DLGCB_PROCESS_VARS (1<<14)
 
@@ -269,7 +274,7 @@ int register_dlgcb( struct dlg_cell* dlg, int types, dialog_cb f, void *param, p
 void run_create_callbacks(struct dlg_cell *dlg, struct sip_msg *msg);
 
 void run_dlg_callbacks( int type , struct dlg_cell *dlg, struct sip_msg *msg,
-		unsigned int dir, void *dlg_data, int locked, unsigned int is_active);
+		unsigned int dir, int leg, void *dlg_data, int locked, unsigned int is_active);
 
 void run_load_callback_per_dlg(struct dlg_cell *dlg);
 

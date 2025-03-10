@@ -628,13 +628,13 @@ static int mod_init(void)
 
 static int child_init(int rank)
 {
-	return 0;
+    return mi_init_address();
 }
 
 
 static int mi_address_child_init(void)
 {
-    return mi_init_address();
+    return 0;
 }
 
 /*

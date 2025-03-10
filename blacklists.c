@@ -918,6 +918,11 @@ static int parse_ip_net(char *in, int len, struct net *ipnet)
 	}
 
 	ip_tmp = (af == AF_INET) ? str2ip(&ip_s) : str2ip6(&ip_s);
+	if (!ip_tmp) {
+		LM_ERR("Invalid IP address\n");
+		return -1;
+	}
+
 	/* save the IP */
 	ip = *ip_tmp;
 
@@ -1238,6 +1243,7 @@ int fixup_blacklist_net(void** param)
 	struct bl_net_flags *nf = pkg_malloc(sizeof *nf);
 	if (!nf)
 		return E_OUT_OF_MEM;
+	memset(nf, 0, sizeof *nf);
 	trim(&tmp);
 	if (tmp.s[0] == '!') {
 		nf->flags = BLR_APPLY_CONTRARY;

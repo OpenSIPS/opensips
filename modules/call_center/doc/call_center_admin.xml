@@ -868,6 +868,44 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 		</example>
 	</section>
 
+	<section id="param_b2b_logic_ctx_param" xreflabel="b2b_logic_ctx_param">
+		<title><varname>b2b_logic_ctx_param</varname> (string)</title>
+		<para>
+		The name of the <emphasis>$b2b_logic.ctx</emphasis> variable that can be
+		used to retrieve the value of the parameter passed to
+		the <xref linkend="func_cc_handle_call"/> function.
+		</para>
+		<para>
+		This parameter will be copied throughout all the B2B scenarios started
+		by the call_center module. NOTE that you can change the value of the current
+		scenario by writing into it, but the change will not be reflected in a
+		different scenario.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>call_center</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2b_logic_ctx_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "b2b_logic_ctx_param", "b2b_callid")
+...
+route[handle_call_center] {
+    ...
+    cc_handle_call("flow", $ci);
+    ...
+}
+...
+route[b2b_handle_request] {
+    ...
+    xlog("Initial Callid is $b2b_logic.ctx(b2b_callid)\n");
+    ...
+}
+</programlisting>
+		</example>
+	</section>
+
 </section>
 
 
@@ -898,6 +936,10 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 				intended for custom integration of the call center module and 
 				it is 100% up to the script writer about the value and purpose
 				of this parameter, OpenSIPS will not touch or interpret it.
+				You can retrieve the value of this parameter using the
+				<emphasis>$b2b_logic.ctx</emphasis> variable with the name
+				defined in the <xref linkend="param_b2b_logic_ctx_param"/>
+				parameter.
 			</para></listitem>
 		</itemizedlist>
 		<para>

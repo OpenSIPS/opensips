@@ -113,7 +113,12 @@ again:
 #endif
 		{
 			err_len=sizeof(err);
-			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+			if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len) != 0) {
+				get_su_info( servaddr, ip, port);
+				LM_WARN("getsockopt error: fd=%d [server=%s:%d]: (%d) %s\n", fd,
+						ip, port, errno, strerror(errno));
+				goto error;
+			}
 			if ((err==0) && (poll_err==0)) goto end;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info( servaddr, ip, port);
@@ -140,8 +145,8 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 			tcp_connect_timeout);
 }
 
-int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
-                 enum sip_protos proto, struct tcp_conn_profile *prof, enum si_flags flags)
+int tcp_sync_connect_fd(const union sockaddr_union* src, const union sockaddr_union* dst,
+                 enum sip_protos proto, const struct tcp_conn_profile *prof, enum si_flags flags, int sock_tos)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -153,7 +158,7 @@ int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
 		goto error;
 	}
 
-	if (tcp_init_sock_opt(s, prof, flags)<0){
+	if (tcp_init_sock_opt(s, prof, flags, sock_tos)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
@@ -181,14 +186,14 @@ error:
 	return -1;
 }
 
-struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
-               union sockaddr_union* server, struct tcp_conn_profile *prof,
+struct tcp_connection* tcp_sync_connect(const struct socket_info* send_sock,
+               const union sockaddr_union* server, struct tcp_conn_profile *prof,
                int *fd, int send2main)
 {
 	struct tcp_connection* con;
 	int s;
 
-	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof, send_sock->flags);
+	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof, send_sock->flags, send_sock->tos);
 	if (s < 0)
 		return NULL;
 
@@ -202,8 +207,8 @@ struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 	return con;
 }
 
-int tcp_async_connect(struct socket_info* send_sock,
-            union sockaddr_union* server, struct tcp_conn_profile *prof,
+int tcp_async_connect(const struct socket_info* send_sock,
+            const union sockaddr_union* server, struct tcp_conn_profile *prof,
             int timeout, struct tcp_connection** c, int *ret_fd, int send2main)
 {
 	int fd, n;
@@ -232,7 +237,7 @@ int tcp_async_connect(struct socket_info* send_sock,
 		return -1;
 	}
 
-	if (tcp_init_sock_opt(fd, prof, send_sock->flags)<0){
+	if (tcp_init_sock_opt(fd, prof, send_sock->flags, send_sock->tos)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
@@ -316,7 +321,12 @@ again:
 #endif
 		{
 			err_len=sizeof(err);
-			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+			if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len) != 0) {
+				get_su_info(&server->s, ip, port);
+				LM_WARN("getsockopt error: fd=%d [server=%s:%d]: (%d) %s\n", fd,
+						ip, port, errno, strerror(errno));
+				goto error;
+			}
 			if ((err==0) && (poll_err==0)) goto local_connect;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info(&server->s, ip, port);

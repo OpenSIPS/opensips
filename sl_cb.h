@@ -36,7 +36,7 @@ enum sl_cb_type {SLCB_REPLY_OUT=0, SLCB_ACK_IN, SLCB_REQUEST_OUT,
 
 /* callback function prototype */
 typedef void (sl_cb_t) (struct sip_msg* req, str *buffer, int rpl_code,
-		union sockaddr_union *dst, struct socket_info *sock, int proto);
+		const union sockaddr_union *dst, const struct socket_info *sock, int proto);
 
 /* register callback function prototype */
 typedef int (*register_slcb_t)(enum sl_cb_type, unsigned int fmask, sl_cb_t f);
@@ -54,7 +54,7 @@ void slcb_run_reply_out(struct sip_msg *req, str *buffer,
 		union sockaddr_union *dst, int rpl_code);
 void slcb_run_ack_in(struct sip_msg *req);
 void slcb_run_req_out(struct sip_msg *req, str *buffer,
-		union sockaddr_union *dst, struct socket_info *sock, int proto);
+		const union sockaddr_union *dst, const struct socket_info *sock, int proto);
 
 #endif
 

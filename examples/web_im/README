@@ -1,7 +1,3 @@
-#
-# $Id$
-#
-
 This examle illustrate how to use ser's FIFO interface
 to initate sending an instant message from a webpage.
 

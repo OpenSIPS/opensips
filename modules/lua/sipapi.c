@@ -395,7 +395,7 @@ static int l_siplua_grepSockInfo(lua_State *L)
 {
   struct sip_uri puri;
   size_t len;
-  struct socket_info *si;
+  const struct socket_info *si;
 
   memset(&puri, '\0', sizeof(puri));
   puri.host.s = (char *)luaL_checklstring(L, 1, &len);

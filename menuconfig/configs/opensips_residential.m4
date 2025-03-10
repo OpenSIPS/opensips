@@ -185,8 +185,9 @@ loadmodule "mi_http.so"
 
 ',`')dnl
 loadmodule "proto_udp.so"
-ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')dnl
+ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
 ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
+loadmodule "tls_wolfssl.so"
 loadmodule "tls_mgm.so"
 modparam("tls_mgm","server_domain", "default")
 modparam("tls_mgm","match_ip_address", "[default]*")
@@ -207,7 +208,7 @@ ifelse(USE_NAT,`yes',`
 	# initial NAT handling; detect if the request comes from behind a NAT
 	# and apply contact fixing
 	force_rport();
-	if (nat_uac_test(23)) {
+	if (nat_uac_test("diff-port-src-via,private-via,diff-ip-src-via,private-contact")) {
 		if (is_method("REGISTER")) {
 			fix_nated_register();
 			setbflag("NAT");
@@ -501,7 +502,7 @@ branch_route[per_branch_ops] {
 
 
 onreply_route[handle_nat] {
-	ifelse(USE_NAT,`yes',`if (nat_uac_test(1))
+	ifelse(USE_NAT,`yes',`if (nat_uac_test("private-contact"))
 		fix_nated_contact();
 	if ( isflagset("NAT") && has_body("application/sdp") )
 		rtpproxy_answer("ro");',`')

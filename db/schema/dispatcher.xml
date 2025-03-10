@@ -90,7 +90,8 @@
         <name>attrs</name>
         <type>string</type>
         <size>128</size>
-        <default/>
+        <default><null/></default>
+        <null/>
         <description>Attribute string - custom, opaque string that
         will be pushed into script when this destination will 
         be selected</description>
@@ -100,7 +101,8 @@
         <name>description</name>
         <type>string</type>
         <size>64</size>
-        <default/>
+        <default><null/></default>
+        <null/>
         <description>Description for this destination</description>
     </column>
 

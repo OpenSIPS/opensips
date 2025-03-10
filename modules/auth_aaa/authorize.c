@@ -89,7 +89,7 @@ static inline int authorize(struct sip_msg* _msg, str* _realm,
 	domain.s = 0;
     }
 
-    ret = auth_api.pre_auth(_msg, &domain, _hftype, &h);
+    ret = auth_api.pre_auth(_msg, &domain, _hftype, &h, 0);
 
     if (ret != DO_AUTHORIZATION)
 	return ret;

@@ -214,7 +214,7 @@ error:
  *  -3 - internal error
  */
 int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
-	struct socket_info *sock, union sockaddr_union *to_su, void *trans_param)
+	const struct socket_info *sock, union sockaddr_union *to_su, void *trans_param)
 {
 	char *buf, *p, *s, bk;
 	struct msrp_url *to, *from;
@@ -284,13 +284,14 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
 	(to->next->secured?1:0)^(req->rcv.bind_address->proto==PROTO_MSRPS?1:0)) {
 		/* IN and OUT are different from the "secured" perspective, so
 		 * pick the first socket matching the outbound proto */
-		sock = protos[to->next->secured?PROTO_MSRPS:PROTO_MSRP].listeners;
-		if (sock==NULL) {
+		struct socket_info_full **_s = get_sock_info_list(to->next->secured?PROTO_MSRPS:PROTO_MSRP);
+		if (_s==NULL || _s[0]==NULL) {
 			LM_ERR("cannot find outbound interface - the URL requires %s, but"
 				" not such sockets are defined\n",
 				to->next->secured?"MSRPS":"MSRP");
 			return -2;
 		}
+		sock = &_s[0]->socket_info;
 	} else {
 		sock = req->rcv.bind_address;
 	}
@@ -810,7 +811,7 @@ error:
 
 int msrp_send_request(void *hdl, enum msrp_method method_id,
 		str *from, struct msrp_url *to,
-		struct socket_info *sock, union sockaddr_union *to_su,
+		const struct socket_info *sock, union sockaddr_union *to_su,
 		str *mime, str *body,
 		str *hdrs, int hdrs_no, char cont_flag,
 		void *trans_param)
@@ -889,13 +890,14 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 		}
 	} else {
 		 /* just pick the first socket matching the outbound proto */
-		sock = protos[to->secured?PROTO_MSRPS:PROTO_MSRP].listeners;
-		if (sock==NULL) {
+		struct socket_info_full **_s = get_sock_info_list(to->secured?PROTO_MSRPS:PROTO_MSRP);
+		if (_s==NULL || _s[0]==NULL) {
 			LM_ERR("cannot find outbound interface - the URL requires %s, but"
 				" not such sockets are defined\n",
 				to->secured?"MSRPS":"MSRP");
 			return -2;
 		}
+		sock = &_s[0]->socket_info;
 	}
 
 

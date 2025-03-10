@@ -457,8 +457,13 @@ badparam:
 	    query_data_t *pcb = con->pqdata;
 
 
-	    if (!pcb || !pcb->_rs)
+		if (!pcb)
 		    goto badparam;
+
+		if (!pcb->_rs) {
+			if (_r)	*_r = NULL;
+			return 0; /* No results */
+		}
 
 	    hs = *pcb->_rs;
 	    pcb->_rs = NULL; /* paranoid for next call */

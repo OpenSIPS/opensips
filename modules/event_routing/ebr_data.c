@@ -475,9 +475,8 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 
 	/* check the EBR subscription on this event and apply the filters */
 	sub_prev = NULL;
-	sub_next = NULL;
-	for ( sub=ev->subs ; sub ; sub_prev=sub,
-								sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
+	for ( sub=ev->subs ; sub ; sub_prev=sub, sub=sub_next) {
+		sub_next = sub->next;
 
 		/* discard expired subscriptions */
 		if (sub->expire<my_time) {
@@ -507,8 +506,7 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 					continue; /* keep it and try next time */
 				}
 			}
-			/* remove the subscription */
-			sub_next = sub->next;
+
 			/* unlink it */
 			if (sub_prev) sub_prev->next = sub_next;
 			else ev->subs = sub_next;
@@ -521,7 +519,6 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 
 		/* run the filters */
 		matches = 1;
-		sub_next = NULL;
 		for ( filter=sub->filters ; matches && filter ; filter=filter->next ) {
 
 			/* look for the evi param with the same name */
@@ -592,9 +589,7 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 					LM_ERR("failed to send job via IPC, skipping...\n");
 					shm_free(job);
 				}
-				/* remove the subscription, as it can be triggered only 
-				 * one time */
-				sub_next = sub->next;
+
 				/* unlink it */
 				if (sub_prev) sub_prev->next = sub_next;
 				else ev->subs = sub_next;
@@ -648,9 +643,8 @@ void ebr_timeout(unsigned int ticks, void* param)
 
 		/* check the EBR subscriptions on this event */
 		sub_prev = NULL;
-		sub_next = NULL;
-		for ( sub=ev->subs ; sub ; sub_prev=sub,
-								sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
+		for ( sub=ev->subs ; sub ; sub_prev=sub, sub=sub_next ) {
+			sub_next = sub->next;
 
 			/* skip valid and non WAIT subscriptions */
 			if ( (sub->flags&EBR_SUBS_TYPE_WAIT)==0 || sub->expire>my_time )
@@ -682,8 +676,6 @@ void ebr_timeout(unsigned int ticks, void* param)
 				continue; /* with the next subscription */
 			}
 
-			/* remove the subscription */
-			sub_next = sub->next;
 			/* unlink it */
 			if (sub_prev) sub_prev->next = sub_next;
 			else ev->subs = sub_next;

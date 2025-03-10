@@ -20,12 +20,11 @@ WOLFSSL_EXTRA_CFLAGS := -DWOLFSSL_DEBUG_MEMORY
 endif
 endif
 
-lib/lib/libwolfssl.a:
-	$(Q)cd ./lib/wolfssl; \
-	if [ ! -f "configure" ]; then \
-		./autogen.sh; \
-	fi; \
-	if [ ! -f "Makefile" ]; then \
+lib/wolfssl/configure:
+	$(Q)cd ./lib/wolfssl && ./autogen.sh
+
+lib/wolfssl/Makefile: lib/wolfssl/configure
+	$(Q)cd ./lib/wolfssl && \
 		env -u DEFS -u CFLAGS -u LDFLAGS -u LIBS ./configure \
 		--enable-all --disable-fpecc -disable-aligndata --disable-examples \
 		--enable-writedup --enable-tlsv10 --disable-shared --enable-static \
@@ -33,16 +32,27 @@ lib/lib/libwolfssl.a:
 		--prefix=$(MOD_DIR)/lib \
 		--exec-prefix=$(MOD_DIR)/lib \
 		C_EXTRA_FLAGS="-fPIC" \
-		CFLAGS="-DWOLFSSL_STATIC_RSA $(WOLFSSL_EXTRA_CFLAGS)"; \
-	fi;
+		CFLAGS="-DWOLFSSL_STATIC_RSA -DOPENSSL_EXTRA $(WOLFSSL_EXTRA_CFLAGS)"
+
+PATCHED_FILES = #lib/wolfssl/src/internal.c lib/wolfssl/src/ssl.c
+
+lib/lib/libwolfssl.a: lib/wolfssl/Makefile $(PATCHED_FILES)
 	$(Q)$(MAKE) -C ./lib/wolfssl install
 
+#lib/wolfssl/src/internal.c: lib/patches/wolfssl-internal-memleak-fix.patched
+#
+#lib/patches/wolfssl-internal-memleak-fix.patched: lib/patches/wolfssl-internal-memleak-fix.diff
+#	 $(Q)patch -sNR -p1 -d lib/wolfssl --dry-run < $< || patch -N -p1 -d lib/wolfssl  < $< && cp $< $@
+#
 clean:	clean-wolfssl-lib
 
 .PHONY: clean-wolfssl-lib
 clean-wolfssl-lib:
-	@if [ -f ./lib/wolfssl/Makefile ]; then \
+	-@if [ -f ./lib/wolfssl/Makefile ]; then \
 		$(MAKE) -C ./lib/wolfssl clean; \
 	fi;
-	@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share \
-	./lib/wolfssl/Makefile ./lib/wolfssl/configure
+#	-@patch -stNR -p1 -d lib/wolfssl < lib/patches/wolfssl-internal-memleak-fix.diff
+	-@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share \
+	./lib/wolfssl/Makefile ./lib/wolfssl/configure \
+
+#	lib/patches/wolfssl-internal-memleak-fix.patched

@@ -38,5 +38,8 @@ static inline void siprec_build_uuid(siprec_uuid uuid)
 	base64encode(uuid, tmp_uuid, sizeof(tmp_uuid));
 }
 
+#define siprec_cmp_uuid(a, b) \
+	memcmp(a, b, SIPREC_UUID_LEN)
+
 
 #endif /* _SIPREC_UUID_H_ */

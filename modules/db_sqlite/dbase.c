@@ -34,7 +34,7 @@
 #include "../../db/db_ut.h"
 #include "../../db/db_insertq.h"
 #include "../../db/db_res.h"
-#include "my_con.h"
+#include "sqlite_con.h"
 #include "val.h"
 #include "res.h"
 #include "row.h"
@@ -93,7 +93,7 @@ static inline int db_copy_rest_of_count(const str* _qh, str* count_query)
 	const str searched_str = {" from ", sizeof(" from ")-1};
 
 	count_query->len = sizeof(COUNT_QUERY)-1;
-	if ((found=str_strstr(_qh, &searched_str)) != NULL) {
+	if ((found=str_strcasestr(_qh, &searched_str)) != NULL) {
 		const int len=_qh->len-(found-_qh->s);
 		/* check for overflow */
 		if (len > COUNT_BUF_SIZE-(sizeof(COUNT_QUERY)-1)) {
@@ -117,10 +117,7 @@ db_sqlite_get_query_rows(const db_con_t* _h, const str* query, const db_val_t* _
 	int ret;
 	sqlite3_stmt* stmt;
 
-again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h), query->s, query->len, &stmt, NULL);
-	if (ret == SQLITE_BUSY)
-		goto again;
 
 	if (ret != SQLITE_OK) {
 		LM_ERR("failed to prepare query\n");
@@ -134,11 +131,7 @@ again:
 	}
 #endif
 
-again2:
 	ret=sqlite3_step(stmt);
-	if (ret == SQLITE_BUSY)
-		goto again2;
-
 	if (ret != SQLITE_ROW) {
 		sqlite3_finalize(stmt);
 		LM_ERR("failed to fetch query size\n");
@@ -180,12 +173,9 @@ int db_sqlite_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	}
 
 
-again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
 				query_holder.s, query_holder.len, &CON_SQLITE_PS(_h), NULL);
 
-	if (ret==SQLITE_BUSY)
-		goto again;
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n", sqlite3_errmsg(CON_CONNECTION(_h)));
 
@@ -204,7 +194,7 @@ again:
 		 * because later won't have the query string */
 		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
 	}
-	if( ret < 0 ){
+	if( ret < 0 && _r ){
 		db_sqlite_free_result_internal(_h,*_r);
 	}
 
@@ -383,11 +373,8 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 		return -1;
 	}
 
-again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
 				_s->s, _s->len, &CON_SQLITE_PS(_h), NULL);
-	if (ret==SQLITE_BUSY)
-		goto again;
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -399,7 +386,7 @@ again:
 		 * because later won't have the query string */
 		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
 	}
-	if( ret < 0 ){
+	if( ret < 0 && _r ){
 		db_sqlite_free_result_internal(_h,*_r);
 	}
 
@@ -432,11 +419,8 @@ int db_sqlite_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 		return ret;
 	}
 
-again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
 			query_holder.s, query_holder.len, &stmt, NULL);
-	if (ret==SQLITE_BUSY)
-		goto again;
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -448,10 +432,7 @@ again:
 	}
 #endif
 
-again2:
 	ret = sqlite3_step(stmt);
-	if (ret==SQLITE_BUSY)
-		goto again2;
 
 	if (ret != SQLITE_DONE) {
 		LM_ERR("insert query failed %s\n", sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -492,11 +473,8 @@ int db_sqlite_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	}
 
 
-again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
 			query_holder.s, query_holder.len, &stmt, NULL);
-	if (ret==SQLITE_BUSY)
-		goto again;
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -508,10 +486,7 @@ again:
 	}
 #endif
 
-again2:
 	ret = sqlite3_step(stmt);
-	if (ret==SQLITE_BUSY)
-		goto again2;
 
 	if (ret != SQLITE_DONE) {
 		LM_ERR("insert query failed %s\n", sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -554,11 +529,8 @@ int db_sqlite_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		return ret;
 	}
 
-again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
 			query_holder.s, query_holder.len, &stmt, NULL);
-	if (ret==SQLITE_BUSY)
-		goto again;
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -571,10 +543,7 @@ again:
 	}
 #endif
 
-again2:
 	ret = sqlite3_step(stmt);
-	if (ret==SQLITE_BUSY)
-		goto again2;
 
 	if (ret != SQLITE_DONE) {
 		LM_ERR("insert query failed %s\n", sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -611,11 +580,8 @@ int db_sqlite_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v
 		return ret;
 	}
 
-again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
 			query_holder.s, query_holder.len, &stmt, NULL);
-	if (ret==SQLITE_BUSY)
-		goto again;
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -627,10 +593,7 @@ again:
 	}
 #endif
 
-again2:
 	ret = sqlite3_step(stmt);
-	if (ret==SQLITE_BUSY)
-		goto again2;
 
 	if (ret != SQLITE_DONE) {
 		LM_ERR("insert query failed %s\n", sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -704,11 +667,8 @@ int db_last_inserted_id(const db_con_t* _h)
 	sql_str.s = sql_buf;
 	sql_str.len = off;
 
-again:
 	ret=sqlite3_prepare_v2(CON_CONNECTION(_h),
 			sql_str.s, sql_str.len, &stmt, NULL);
-	if (ret==SQLITE_BUSY)
-		goto again;
 	if (ret!=SQLITE_OK)
 		LM_ERR("failed to prepare: (%s)\n",
 				sqlite3_errmsg(CON_CONNECTION(_h)));
@@ -720,10 +680,7 @@ again:
 	}
 #endif
 
-again2:
 	ret = sqlite3_step(stmt);
-	if (ret==SQLITE_BUSY)
-		goto again2;
 
 	if (ret != SQLITE_DONE) {
 		LM_ERR("insert query failed %s\n", sqlite3_errmsg(CON_CONNECTION(_h)));

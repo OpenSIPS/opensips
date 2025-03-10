@@ -501,7 +501,7 @@ INPUT                  = ./ \
                          modules/auth \
                          modules/auth_aaa \
                          modules/auth_db \
-                         modules/avpops \
+                         modules/sqlops \
                          modules/b2b_entities \
                          modules/b2b_logic \
                          modules/b2b_sca \

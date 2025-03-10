@@ -1,5 +1,3 @@
-# $Id$
-#
 # sipcapture module makefile
 #
 # 

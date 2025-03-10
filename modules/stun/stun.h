@@ -208,7 +208,7 @@ struct stun_socket_set {
     struct stun_socket *sock2;  /* ip1 port2 */
     struct stun_socket *sock3;  /* ip2 port1 */
 
-    struct socket_info *si;
+    const struct socket_info *si;
 
     int ip1;
     int port1;

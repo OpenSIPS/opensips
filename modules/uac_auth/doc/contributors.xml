@@ -28,6 +28,14 @@
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">11</entry>
+		<entry align="center">8</entry>
+		<entry align="center">41</entry>
+		<entry align="center">62</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">11</entry>
 		<entry align="center">4</entry>
@@ -35,20 +43,12 @@
 		<entry align="center">260</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">10</entry>
 		<entry align="center">7</entry>
 		<entry align="center">229</entry>
 		<entry align="center">9</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">9</entry>
-		<entry align="center">7</entry>
-		<entry align="center">40</entry>
-		<entry align="center">61</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -112,18 +112,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2014 - Sep 2024</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Bence Szigeti</entry>
 		<entry align="center">Apr 2023 - Apr 2023</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Sep 2020 - Feb 2023</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - Aug 2021</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

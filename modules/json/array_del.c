@@ -31,8 +31,7 @@
 void json_object_array_del(struct json_object* obj, int idx)
 {
 #if JSON_C_VERSION_NUM >= JSON_C_VERSION_013
-	array_list_del_idx(json_object_get_array(obj), idx,
-		json_object_get_array(obj)->length);
+	array_list_del_idx(json_object_get_array(obj), idx, 1);
 #else
 	if(idx >= obj->o.c_array->length)
 		return;

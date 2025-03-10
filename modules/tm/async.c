@@ -80,7 +80,7 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	struct cell *backup_cancelled_t;
 	struct cell *backup_e2eack_t;
 	struct usr_avp **backup_list;
-	struct socket_info* backup_si;
+	const struct socket_info* backup_si;
 	struct cell *t= ctx->t;
 	int route;
 
@@ -249,7 +249,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 	} else {
 		/* update the cloned UAS (from transaction)
 		 * with data from current msg */
-		if (t->uas.request)
+		if ((t->uas.request) && (route_type==REQUEST_ROUTE) && ((msg->msg_flags & FL_TM_FAKE_REQ) == 0))
 			update_cloned_msg_from_msg( t->uas.request, msg);
 	}
 
@@ -268,6 +268,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 	}
 
 	memset(ctx,0,sizeof(async_tm_ctx));
+	ctx->async.timeout_s = timeout;
 
 	async_status = ASYNC_NO_IO; /*assume default status "no IO done" */
 	return_code = ((const acmd_export_t*)(a->elem[0].u.data_const))->function(msg,
@@ -341,6 +342,9 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 	reset_e2eack_t();
 
 	if (async_status!=ASYNC_NO_FD) {
+		LM_DBG("placing async job into reactor with timeouts %d/%d\n",
+		        timeout, ctx->async.timeout_s);
+
 		/* check if timeout should be used */
 		if (timeout && ctx->async.timeout_f==NULL) {
 			timeout = 0;
@@ -348,7 +352,10 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 			       "still using an infinite timeout!\n");
 		}
 
-		LM_DBG("placing async job into reactor with timeout %d\n", timeout);
+		if (ctx->async.timeout_f && ctx->async.timeout_s
+		        && (!timeout || ctx->async.timeout_s < timeout))
+			timeout = ctx->async.timeout_s;
+
 		/* place the FD + resume function (as param) into reactor */
 		if (reactor_add_reader_with_timeout( fd, F_SCRIPT_ASYNC,
 		RCT_PRIO_ASYNC, timeout, (void*)ctx)<0) {

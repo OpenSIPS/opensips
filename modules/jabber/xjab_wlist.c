@@ -436,6 +436,7 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 			_M_SHM_FREE(jwl->aliases->jdm);
 			_M_SHM_FREE(jwl->aliases);
 			jwl->aliases = NULL;
+			return -1;
 		}
 		strncpy(jwl->aliases->jdm->s, jd, jwl->aliases->jdm->len);
 #ifdef XJ_EXTRA_DEBUG

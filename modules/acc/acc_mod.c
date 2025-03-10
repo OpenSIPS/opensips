@@ -150,13 +150,13 @@ static int fixup_init_dburl(void **param);
  * pseudo-variables exported by acc module
  */
 static const pv_export_t mod_items[] = {
-	{ {"acc_extra", sizeof("acc_extra") - 1}, 2001, pv_get_acc_extra,
+	{ str_const_init("acc_extra"), 2001, pv_get_acc_extra,
 		pv_set_acc_extra, pv_parse_acc_extra_name,
 		0 /* parse index(won't use here) */, 0, 0},
-	{ {"acc_leg", sizeof("acc_leg") - 1}, 2002, pv_get_acc_leg,
+	{ str_const_init("acc_leg"), 2002, pv_get_acc_leg,
 		pv_set_acc_leg, pv_parse_acc_leg_name,
 		pv_parse_acc_leg_index, 0, 0},
-	{ {"acc_current_leg", sizeof("acc_current_leg") - 1}, 2003,
+	{ str_const_init("acc_current_leg"), 2003,
 		pv_get_acc_current_leg, 0, 0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

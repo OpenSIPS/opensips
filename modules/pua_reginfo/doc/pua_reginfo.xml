@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding='UTF-8'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+<!ENTITY admin SYSTEM "pua_reginfo_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
+
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book xmlns:xi="http://www.w3.org/2001/XInclude">
+    <bookinfo>
+	<title>pua_reginfo Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+		<author>
+			<firstname>Carsten</firstname>
+			<surname>Bock</surname>
+			<email>carsten@ng-voice.com</email>
+		</author>
+		<editor>
+			<firstname>Carsten</firstname>
+			<surname>Bock</surname>
+			<email>carsten@ng-voice.com</email>
+		</editor>
+	</authorgroup>
+  </bookinfo>
+    <toc></toc>
+
+    &admin;
+    &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2011-2023 Carsten Bock, carsten@ng-voice.com, http://www.ng-voice.com</para>
+
+
+</book>
+
+

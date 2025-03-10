@@ -113,18 +113,30 @@ static const mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
+char *rtp_relay_route_offer_name = "rtp_relay_offer";
+char *rtp_relay_route_answer_name = "rtp_relay_answer";
+char *rtp_relay_route_delete_name = "rtp_relay_delete";
+char *rtp_relay_route_copy_offer_name = "rtp_relay_copy_offer";
+char *rtp_relay_route_copy_answer_name = "rtp_relay_copy_answer";
+char *rtp_relay_route_copy_delete_name = "rtp_relay_copy_delete";
 
 static const param_export_t mod_params[] = {
+	{"route_offer",       STR_PARAM, &rtp_relay_route_offer_name},
+	{"route_answer",      STR_PARAM, &rtp_relay_route_answer_name},
+	{"route_delete",      STR_PARAM, &rtp_relay_route_delete_name},
+	{"route_copy_offer",  STR_PARAM, &rtp_relay_route_copy_offer_name},
+	{"route_copy_answer", STR_PARAM, &rtp_relay_route_copy_answer_name},
+	{"route_copy_delete", STR_PARAM, &rtp_relay_route_copy_delete_name},
 	{0, 0, 0}
 };
 
 static const pv_export_t mod_pvars[] = {
-	{ str_init("rtp_relay"), 2004, pv_get_rtp_relay_var, pv_set_rtp_relay_var,
+	{ str_const_init("rtp_relay"), 2004, pv_get_rtp_relay_var, pv_set_rtp_relay_var,
 		pv_parse_rtp_relay_var, pv_parse_rtp_relay_index, 0, 0},
-	{ str_init("rtp_relay_peer"), 2005, pv_get_rtp_relay_var,
+	{ str_const_init("rtp_relay_peer"), 2005, pv_get_rtp_relay_var,
 		pv_set_rtp_relay_var, pv_parse_rtp_relay_var,
 		pv_parse_rtp_relay_index, pv_init_rtp_relay_var, RTP_RELAY_PV_PEER},
-	{ str_init("rtp_relay_ctx"), 2006, pv_get_rtp_relay_ctx,
+	{ str_const_init("rtp_relay_ctx"), 2006, pv_get_rtp_relay_ctx,
 		pv_set_rtp_relay_ctx, pv_parse_rtp_relay_ctx,
 		NULL, NULL, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
@@ -155,10 +167,20 @@ struct module_exports exports = {
 
 static int mod_preinit(void)
 {
+	static struct rtp_relay_hooks rtp_relay;
 	if (rtp_relay_ctx_preinit() < 0) {
 		LM_ERR("could not pre-initialize rtp_relay ctx\n");
 		return -1;
 	}
+	struct rtp_relay_funcs binds = {
+		.offer = rtp_relay_route_offer,
+		.answer = rtp_relay_route_answer,
+		.delete = rtp_relay_route_delete,
+		.copy_offer = rtp_relay_route_copy_offer,
+		.copy_answer = rtp_relay_route_copy_answer,
+		.copy_delete = rtp_relay_route_copy_delete,
+	};
+	register_rtp_relay("route", &binds, &rtp_relay);
 	return 0;
 }
 
@@ -241,16 +263,28 @@ struct rtp_relay_leg *rtp_relay_get_leg(struct rtp_relay_ctx *ctx,
 	if (tag && !tag->len)
 		tag = NULL;
 
+	LM_RTP_DBG("searching for tag [%.*s] idx [%d]\n", tag?tag->len:0, tag?tag->s:"", idx);
+
+	if (tag) {
+		/* search only by tag */
+		list_for_each(it, &ctx->legs) {
+			leg = list_entry(it, struct rtp_relay_leg, list);
+			/* match by tag */
+			if (str_match(tag, &leg->tag))
+				return leg;
+		}
+		if (idx == RTP_RELAY_ALL_BRANCHES)
+			goto not_found;
+	}
+	/* search by index */
 	list_for_each(it, &ctx->legs) {
 		leg = list_entry(it, struct rtp_relay_leg, list);
-		if (tag) {
-			/* match by tag */
-			if (leg->tag.len && str_match(tag, &leg->tag))
-				return leg;
-		} else if (leg->index != PV_IDX_ALL && leg->index == idx)
+		if (leg->index == idx)
 			return leg;
 	}
 
+not_found:
+	LM_RTP_DBG("no leg for tag [%.*s] idx [%d]\n", tag?tag->len:0, tag?tag->s:"", idx);
 	return NULL;
 }
 
@@ -268,7 +302,7 @@ struct rtp_relay_leg *rtp_relay_new_leg(struct rtp_relay_ctx *ctx,
 	leg->index = idx;
 	leg->ref = 1;
 	list_add(&leg->list, &ctx->legs);
-	LM_RTP_DBG("new leg=%p index=%d\n", leg, idx);
+	LM_RTP_DBG("new leg=%p index=%d tag=[%.*s]\n", leg, idx, tag?tag->len:0, tag->s);
 	return leg;
 }
 
@@ -399,12 +433,10 @@ static struct rtp_relay_leg *pv_get_rtp_relay_leg(struct sip_msg *msg,
 				LM_ERR("cannot parse To header!\n");
 				return NULL;
 			}
-			if (get_to(msg)->tag_value.len) {
+			if (get_to(msg)->tag_value.len)
 				/* a sequential should always have a to_tag */
 				tag = get_to(msg)->tag_value;
-			} else {
-				idx = rtp_relay_ctx_branch();
-			}
+			idx = rtp_relay_ctx_branch();
 		} else if (route_type == LOCAL_ROUTE) {
 			/* we always force index 0 for local_route */
 			idx = rtp_relay_get_last_branch(ctx, msg);
@@ -435,7 +467,7 @@ static struct rtp_relay_leg *pv_get_rtp_relay_leg(struct sip_msg *msg,
 			if (!peer) {
 				if (!set)
 					return NULL;
-				peer = rtp_relay_new_leg(ctx, NULL, RTP_RELAY_ALL_BRANCHES);
+				peer = rtp_relay_new_leg(ctx, &get_from(msg)->tag_value, RTP_RELAY_ALL_BRANCHES);
 				if (!peer) {
 					LM_ERR("cannot create a new leg\n");
 					return NULL;
@@ -535,7 +567,7 @@ static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 
 	if (flag == RTP_RELAY_FLAGS_DISABLED) {
 		/* disabled is treated differently */
-		if (val->flags & PV_VAL_NULL)
+		if (!val || (val->flags & PV_VAL_NULL))
 			disabled = 0;
 		else if (pvv_is_int(val))
 			disabled = val->ri;
@@ -546,7 +578,7 @@ static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 		rtp_leg_set_disabled(leg, disabled);
 		goto end;
 	}
-	if (!(val->flags & PV_VAL_NULL)) {
+	if (val && !(val->flags & PV_VAL_NULL)) {
 		if (pvv_is_int(val))
 			s.s = int2str(val->ri, &s.len);
 		else
@@ -705,7 +737,7 @@ static int pv_set_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
 			break;
 	}
 	if (sync) {
-		if (!(val->flags & PV_VAL_NULL)) {
+		if (val && !(val->flags & PV_VAL_NULL)) {
 			if (pvv_is_int(val))
 				s.s = int2str(val->ri, &s.len);
 			else

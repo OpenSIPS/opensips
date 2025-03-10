@@ -215,9 +215,12 @@ int add_from_db(void)
 		LM_ERR("failed to querry table\n");
 		return -1;
 	}
-	if(r_res && r_res->n<=0)
+	if(!r_res)
 	{
 		LM_INFO("the query returned no result\n");
+		return 0;
+	} else if (r_res->n <= 0) {
+		LM_INFO("there are no rooms\n");
 		imc_dbf.free_result(imc_db, r_res);
 		r_res = NULL;
 		return 0;
@@ -262,7 +265,7 @@ int add_from_db(void)
 			goto error;
 		}
 
-		if(m_res && m_res->n <=0)
+		if(!m_res || m_res->n <=0)
 		{
 			LM_INFO("the query returned no result\n");
 			er_ret = 0;
@@ -380,7 +383,7 @@ static int mod_init(void)
 
 	/*  binding to mysql module */
 	init_db_url( db_url , 0 /*cannot be null*/);
-	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len, db_url.s);
+	LM_DBG("db_url=%s\n", db_url_escape(&db_url));
 
 	if (db_bind_mod(&db_url, &imc_dbf))
 	{

@@ -7,6 +7,8 @@
 <!ENTITY devel SYSTEM "b2b_entities_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
+<!ENTITY my_cl_sync_cap "b2be-entities-repl">
+<!ENTITY clusterer_sync_cap_para SYSTEM "../../clusterer/doc/clusterer_sync_cap.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

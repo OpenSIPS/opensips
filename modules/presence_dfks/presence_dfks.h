@@ -82,7 +82,7 @@
 #define MULTIPART_BOUNDARY_END_LEN (sizeof(MULTIPART_BOUNDARY_END)-1)
 
 #define XML_VERSION_STR "1.0"
-#define DFKS_NS_STR "http://www.ecmainternational.org/standards/ecma-323/csta/ed3"
+#define DFKS_NS_STR "http://www.ecma-international.org/standards/ecma-323/csta/ed3"
 #define XML_ENC "ISO-8859-1"
 
 #define DEVICE_NODE_NAME "device"

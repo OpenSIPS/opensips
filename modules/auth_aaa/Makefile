@@ -1,5 +1,3 @@
-# $Id$
-#
 # Digest Authentication - AAA generic support
 #
 # 

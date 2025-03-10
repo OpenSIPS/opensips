@@ -1,5 +1,3 @@
-# $Id$
-#
 # WARNING: do not run this directly, it should be run by the master Makefile
 
 include ../../Makefile.defs
@@ -37,7 +35,7 @@ endif
 
 include ../../Makefile.modules
 
-install_module_custom: 
+install_module_dbschema:
 	mkdir -p $(data_prefix)/$(data_dir)/postgres ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/postgres/*) ; do \
 		if [ -f $$FILE ] ; then \

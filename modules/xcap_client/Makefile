@@ -1,5 +1,3 @@
-# $Id$
-#
 # XCAP client for OpenSIPs
 #
 # 

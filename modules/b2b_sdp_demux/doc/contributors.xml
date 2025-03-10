@@ -21,18 +21,34 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">89</entry>
-		<entry align="center">56</entry>
-		<entry align="center">2938</entry>
-		<entry align="center">499</entry>
+		<entry align="center">92</entry>
+		<entry align="center">58</entry>
+		<entry align="center">2947</entry>
+		<entry align="center">500</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">5</entry>
+		<entry align="center">5</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">3</entry>
+		<entry align="center">2</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
-		<entry align="center">3</entry>
-		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -64,13 +80,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Feb 2023 - Feb 2023</entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">Sep 2024 - Sep 2024</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">May 2021 - Jan 2023</entry>
+		<entry align="center">May 2021 - Jul 2024</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">Jun 2024 - Jun 2024</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Nov 2023</entry>
 	</row>
 	</tbody>
 	</tgroup>

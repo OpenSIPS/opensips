@@ -2,8 +2,6 @@
 #
 # $OpenBSD$
 #
-# $Id$
-#
 
 COMMENT= "OpenSIPS"
 

@@ -59,18 +59,18 @@ static int hep_tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int hep_tls_read_req(struct tcp_connection* con, int* bytes_read);
 static int hep_tcp_or_tls_read_req(struct tcp_connection* con, int* bytes_read,
 		unsigned int is_tls);
-static int hep_udp_read_req(struct socket_info* si, int* bytes_read);
-static int hep_udp_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int hep_udp_read_req(const struct socket_info* si, int* bytes_read);
+static int hep_udp_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
-static int hep_tcp_or_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id, unsigned int is_tls);
-static int hep_tcp_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int hep_tcp_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
-static int hep_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int hep_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
 static void update_recv_info(struct receive_info* ri, struct hep_desc* h);
 void free_hep_context(void* ptr);
@@ -199,6 +199,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (protos[PROTO_HEP_TLS].listeners && load_tls_mgm_api(&tls_mgm_api)!=0) {
+		LM_DBG("failed to find TLS API - is tls_mgm module loaded?\n");
+		return -1;
+	}
+
 	if (payload_compression) {
 		load_compression =
 			(load_compression_f)find_export("load_compression", 0);
@@ -273,7 +278,7 @@ static int proto_hep_init_udp(struct proto_info* pi)
 	pi->tran.send          = hep_udp_send;
 
 	pi->net.flags          = PROTO_NET_USE_UDP;
-	pi->net.read           = (proto_net_read_f)hep_udp_read_req;
+	pi->net.dgram.read     = hep_udp_read_req;
 
 	return 0;
 }
@@ -290,13 +295,13 @@ static int proto_hep_init_tcp(struct proto_info* pi)
 
 	pi->net.flags          = PROTO_NET_USE_TCP;
 
-	pi->net.read           = (proto_net_read_f)hep_tcp_read_req;
-	pi->net.write          = (proto_net_write_f)tcp_async_write;
+	pi->net.stream.read    = hep_tcp_read_req;
+	pi->net.stream.write   = tcp_async_write;
 
 	pi->tran.send          = hep_tcp_send;
 
 	if (hep_async) {
-		pi->net.async_chunks= hep_async_max_postponed_chunks;
+		pi->net.stream.async_chunks= hep_async_max_postponed_chunks;
 	}
 
 	return 0;
@@ -304,10 +309,6 @@ static int proto_hep_init_tcp(struct proto_info* pi)
 
 static int proto_hep_init_tls(struct proto_info* pi)
 {
-	if (load_tls_mgm_api(&tls_mgm_api) != 0) {
-		LM_DBG("failed to find TLS API - is tls_mgm module loaded?\n");
-		return -1;
-	}
 
 	pi->id                  = PROTO_HEP_TLS;
 	pi->name                = "hep_tls";
@@ -318,13 +319,13 @@ static int proto_hep_init_tls(struct proto_info* pi)
 
 	pi->net.flags           = PROTO_NET_USE_TCP;
 
-	pi->net.read            = (proto_net_read_f)hep_tls_read_req;
-	pi->net.write           = (proto_net_write_f)hep_tls_async_write;
+	pi->net.stream.read     = hep_tls_read_req;
+	pi->net.stream.write    = hep_tls_async_write;
 
 	pi->tran.send           = hep_tls_send;
 
-	pi->net.conn_init       = proto_hep_tls_conn_init;
-	pi->net.conn_clean      = proto_hep_tls_conn_clean;
+	pi->net.stream.conn.init  = proto_hep_tls_conn_init;
+	pi->net.stream.conn.clean = proto_hep_tls_conn_clean;
 
 	if (hep_async && !tcp_has_async_write()) {
 		LM_WARN("TCP network layer does not have support for ASYNC write, "
@@ -333,7 +334,7 @@ static int proto_hep_init_tls(struct proto_info* pi)
 	}
 
 	if (hep_async != 0) {
-		pi->net.async_chunks= hep_async_max_postponed_chunks;
+		pi->net.stream.async_chunks= hep_async_max_postponed_chunks;
 	}
 
 	return 0;
@@ -344,8 +345,8 @@ static int proto_hep_init_udp_listener(struct socket_info* si)
 	return udp_init_listener(si, hep_async ? O_NONBLOCK : 0);
 }
 
-static int hep_udp_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int hep_udp_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
 	int n, tolen;
@@ -366,22 +367,22 @@ again:
 	return n;
 }
 
-static int hep_tcp_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int hep_tcp_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
 	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 0);
 }
 
-static int hep_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int hep_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
 	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 1);
 }
 
-static int hep_tcp_or_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id, unsigned int is_tls)
 {
 	struct tcp_connection* c;
@@ -392,7 +393,7 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 	if (to) {
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		n = tcp_conn_get(id, &ip, port, PROTO_HEP_TCP, NULL, &c, &fd, send_sock);
+		n = tcp_conn_get(id, &ip, port, is_tls ? PROTO_HEP_TLS : PROTO_HEP_TCP, NULL, &c, &fd, send_sock);
 	} else if (id) {
 		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
 	} else {
@@ -437,8 +438,8 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 
 				/* mark the ID of the used connection (tracing purposes) */
 				last_outgoing_tcp_id = c->id;
-				send_sock->last_local_real_port = c->rcv.dst_port;
-				send_sock->last_remote_real_port = c->rcv.src_port;
+				send_sock->last_real_ports->local = c->rcv.dst_port;
+				send_sock->last_real_ports->remote = c->rcv.src_port;
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when
 				 * connect will be completed */
@@ -508,8 +509,8 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 
 			/* mark the ID of the used connection (tracing purposes) */
 			last_outgoing_tcp_id = c->id;
-			send_sock->last_local_real_port = c->rcv.dst_port;
-			send_sock->last_remote_real_port = c->rcv.src_port;
+			send_sock->last_real_ports->local = c->rcv.dst_port;
+			send_sock->last_real_ports->remote = c->rcv.src_port;
 
 			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
@@ -553,8 +554,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, (n < len) ? 1 : 0 /*pending data in async mode?*/);
 
@@ -959,7 +960,7 @@ error:
 	return -1;
 }
 
-static int hep_udp_read_req(struct socket_info* si, int* bytes_read)
+static int hep_udp_read_req(const struct socket_info* si, int* bytes_read)
 {
 	struct receive_info ri;
 	int len;
@@ -1053,11 +1054,11 @@ static int hep_udp_read_req(struct socket_info* si, int* bytes_read)
 	 * needed */
 	set_global_context(ctx);
 	ret = run_hep_cbs();
+	set_global_context(NULL);
 	if (ret < 0) {
 		LM_ERR("failed to run hep callbacks\n");
 		return -1;
 	}
-	set_global_context(NULL);
 
 	if (hep_ctx->h.version == 3) {
 		/* HEPv3 */

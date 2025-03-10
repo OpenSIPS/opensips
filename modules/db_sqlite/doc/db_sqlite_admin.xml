@@ -94,7 +94,7 @@ modparam("db_sqlite", "alloc_limit", 25)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>db_sqlite_alloc_limit</varname> parameter</title>
+		<title>Set <varname>load_extension</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so")
@@ -103,7 +103,57 @@ modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so;sqlite3_extens
 </programlisting>
 		</example>
 	</section>
-
+	<section id="param_busy_timeout" xreflabel="busy_timeout">
+		<title><varname>busy_timeout</varname> (integer)</title>
+		<para>
+		This parameter sets the default busy_handler for the SQLite library, that sleeps for 
+		a specified amount of time when a table is locked. The handler will sleep multiple 
+		times until at least the specified "busy_timeout" duration (in milliseconds) has been 
+		reached. Setting this parameter to a value less than or equal to zero turns off all 
+		busy handlers. (read more in the  
+		<ulink url="https://www.sqlite.org/capi3ref.html#sqlite3_busy_timeout">SQLite 
+		official documentation</ulink>)
+		</para>
+		<para>
+		<emphasis>
+			Default value is 500.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>busy_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_sqlite", "busy_timeout", 5000)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_exec_pragma" xreflabel="exec_pragma">
+		<title><varname>exec_pragma</varname> (string)</title>
+		<para>
+		This parameter allows configuring an SQLite database with "PRAGMA" statements, (read 
+		more in the <ulink url="https://sqlite.org/pragma.html">SQLite official documentation</ulink>)
+		To use this functionality you must specify the exec_pragma parameter value as
+		"pragma-name=pragma-value". Multiple parameters with the same name can be specified, 
+		and they will be executed one by one on every database connection. If a parameter has an 
+		incorrect name or syntax, it will be ignored by SQLite without any error messages.
+		</para>
+		<para>
+		<emphasis>
+			By default, no PRAGMA statements are executed.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>exec_pragma</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_sqlite", "exec_pragma", "journal_mode=wal")
+modparam("db_sqlite", "exec_pragma", "synchronous=normal")
+modparam("db_sqlite", "exec_pragma", "cache_size=-2000")
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>

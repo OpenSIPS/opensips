@@ -62,6 +62,13 @@ int pua_add_events(void)
 		LM_ERR("while adding event presence\n");
 		return -1;
 	}
+	/* add application/reginfo+xml */
+	if(add_pua_event(REGINFO_EVENT, "reg", "application/reginfo+xml", 0)< 0)
+	{
+		LM_ERR("while adding event application/reginfo+xml with version "
+				"increase\n");
+		return -1;
+	}
 
 	return 0;
 }

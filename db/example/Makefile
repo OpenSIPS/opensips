@@ -1,4 +1,3 @@
-# $Id$
 #
 # database example module makefile
 #

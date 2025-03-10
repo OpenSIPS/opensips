@@ -45,7 +45,7 @@
 int save(struct sip_msg* _m, void* _d, void* _f, str* _s, str* _owtag);
 
 int _remove(struct sip_msg *msg, void *udomain, str *aor_gp, str *contact_gp,
-            str *next_hop_gp, str *sip_instance);
+            str *next_hop_gp, str *sip_instance, int *bflag);
 
 int _remove_ip_port(struct sip_msg *msg, str *ip, int *port, void *udomain, str* aor);
 

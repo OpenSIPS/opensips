@@ -219,7 +219,7 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 	db_ops[1] = OP_LT;
 	db_vals[1].type = DB_INT;
 	db_vals[1].nul = 0;
-	db_vals[1].val.int_val = (int)time(NULL) -10;
+	db_vals[1].val.int_val = (int)(unsigned long)time(NULL) -10;
 
 	last_expire_check = db_vals[1].val.int_val - 1;
 
@@ -358,9 +358,6 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 			LM_ERR("deleting from pres hash table\n");
 		}
 	}
-
-	if(result)
-		pa_dbf.free_result(pa_db, result);
 
 	/* now remove the expired records from DB ; just to be sure
 	 * that the presentity was handled (as expired) on all presence 
@@ -603,7 +600,7 @@ int handle_publish(struct sip_msg* msg, str* sender_uri)
 		presentity.sender= sender;
 	presentity.event= event;
 	presentity.expires = lexpire;
-	presentity.received_time= (int)time(NULL);
+	presentity.received_time= (int)(unsigned long)time(NULL);
 	if(extra_hdrs.s)
 		presentity.extra_hdrs = &extra_hdrs;
 	presentity.etag_new = etag_new;

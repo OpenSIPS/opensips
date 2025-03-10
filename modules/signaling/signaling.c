@@ -67,7 +67,7 @@ static const cmd_export_t cmds[]={
 
 /** pseudo-variables exported by the module */
 static const pv_export_t mod_pvars[] = {
-	{ {"sig_local_totag", sizeof("sig_local_totag") - 1}, 5003,
+	{ str_const_init("sig_local_totag"), 5003,
 		pv_get_local_totag, 0, 0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

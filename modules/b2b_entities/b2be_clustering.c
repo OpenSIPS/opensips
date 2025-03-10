@@ -315,9 +315,9 @@ end:
 	return;
 }
 
-static struct socket_info *fetch_socket_info(str *addr)
+static const struct socket_info *fetch_socket_info(str *addr)
 {
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	if (!addr || !addr->len)
 		return NULL;
 

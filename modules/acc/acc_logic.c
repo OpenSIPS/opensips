@@ -72,33 +72,6 @@ static query_list_t *mc_ins_list = NULL;
 
 int is_cdr_enabled=0;
 
-#define is_acc_flag_set(_mask, _type, _flag) ( _mask & ((_type * _flag)))
-
-#define is_log_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_LOG, _flag)
-#define is_log_acc_on(_mask)         is_log_flag_on(_mask, DO_ACC)
-#define is_log_cdr_on(_mask)         is_log_flag_on(_mask, DO_ACC_CDR)
-#define is_log_mc_on(_mask)          is_log_flag_on(_mask, DO_ACC_MISSED)
-#define is_log_failed_on(_mask)      is_log_flag_on(_mask, DO_ACC_FAILED)
-
-#define is_aaa_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_AAA, _flag)
-#define is_aaa_acc_on(_mask)         is_aaa_flag_on(_mask, DO_ACC)
-#define is_aaa_cdr_on(_mask)         is_aaa_flag_on(_mask, DO_ACC_CDR)
-#define is_aaa_mc_on(_mask)          is_aaa_flag_on(_mask, DO_ACC_MISSED)
-#define is_aaa_failed_on(_mask)      is_aaa_flag_on(_mask, DO_ACC_FAILED)
-
-#define is_db_flag_on(_mask, _flag)  is_acc_flag_set(_mask, DO_ACC_DB, _flag)
-#define is_db_acc_on(_mask)          is_db_flag_on(_mask, DO_ACC)
-#define is_db_cdr_on(_mask)          is_db_flag_on(_mask, DO_ACC_CDR)
-#define is_db_mc_on(_mask)           is_db_flag_on(_mask, DO_ACC_MISSED)
-#define is_db_failed_on(_mask)       is_db_flag_on(_mask, DO_ACC_FAILED)
-
-#define is_evi_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_EVI, _flag)
-#define is_evi_acc_on(_mask)         is_evi_flag_on(_mask, DO_ACC)
-#define is_evi_cdr_on(_mask)         is_evi_flag_on(_mask, DO_ACC_CDR)
-#define is_evi_mc_on(_mask)          is_evi_flag_on(_mask, DO_ACC_MISSED)
-#define is_evi_failed_on(_mask)      is_evi_flag_on(_mask, DO_ACC_FAILED)
-
-
 #define is_acc_on(_mask) \
 	( (is_log_acc_on(_mask)) || (is_db_acc_on(_mask)) \
 	|| (is_aaa_acc_on(_mask)) || (is_evi_acc_on(_mask)) )
@@ -449,19 +422,6 @@ int acc_comm_to_acc_param(struct sip_msg* rq, str* comm, struct acc_param* accp)
 	return 0;
 }
 
-static inline int has_totag(struct sip_msg *msg)
-{
-	/* check if it has to tag */
-	if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
-		LM_ERR("bad request or missing TO hdr :-/\n");
-		return 0;
-	}
-	if (get_to(msg)->tag_value.s != 0 && get_to(msg)->tag_value.len != 0)
-		return 1;
-	return 0;
-}
-
-
 /* is this reply of interest for accounting ? */
 static inline int should_acc_reply(struct sip_msg *req,struct sip_msg *rpl,
 								int code, unsigned long long* flags)
@@ -497,6 +457,7 @@ static inline void acc_onreply_in(struct cell *t, struct sip_msg *req,
 				|| (is_invite(t)
 					&& code >= 300
 					&& is_mc_acc_on(ctx->flags)))) {
+		/* coverity[check_return: FALSE] */
 		parse_headers(reply, HDR_TO_F, 0 );
 	}
 }
@@ -984,7 +945,7 @@ static void acc_cdr_cb( struct cell* t, int type, struct tmcb_params *ps )
 	}
 
 	if (is_aaa_acc_on(ctx->flags) && acc_aaa_cdrs(dlg, ps->req, ctx) < 0) {
-		LM_ERR("Cannot create radius accounting\n");
+		LM_ERR("Cannot perform radius accounting\n");
 		return;
 	}
 
@@ -1064,9 +1025,20 @@ unsigned long long do_acc_type_parser(str* token)
 		return DO_ACC_LOG;
 	} else if (token->len == do_acc_aaa_s.len &&
 			!strncasecmp(token->s, do_acc_aaa_s.s, token->len)) {
+		if (!proto.create_aaa_message) {
+			LM_ERR("do_accounting(\"aaa\") was used"
+			        ", but no 'aaa' module is loaded!\n");
+			return DO_ACC_ERR;
+		}
+
 		return DO_ACC_AAA;
 	} else if (token->len == do_acc_db_s.len &&
 			!strncasecmp(token->s, do_acc_db_s.s, token->len)) {
+		if (!acc_dbf.init) {
+			LM_ERR("do_accounting(\"db\") was used"
+			        ", but no 'db' module is loaded!\n");
+			return DO_ACC_ERR;
+		}
 		return DO_ACC_DB;
 	}  else if (token->len == do_acc_evi_s.len &&
 			!strncasecmp(token->s, do_acc_evi_s.s, token->len)) {
@@ -1257,7 +1229,7 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 		return 1;
 	}
 
-	flag_mask = *type + *type * (flags ? *flags : 0);
+	flag_mask = acc_bitmask_set(*type, flags);
 	if (is_cdr_acc_on(flag_mask)) {
 		/* setting this flag will allow us to register everything
 		 * that is needed for CDR accounting only once */
@@ -1384,22 +1356,15 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 int w_drop_acc(struct sip_msg* msg, unsigned long long *types,
 			unsigned long long *flags)
 {
-	unsigned long long flag_mask, _types, _flags;
+	acc_ctx_t *acc_ctx = try_fetch_ctx();
 
-	acc_ctx_t* acc_ctx=try_fetch_ctx();
-
-	if (acc_ctx == NULL) {
+	if (!acc_ctx) {
 		LM_ERR("do_accounting() not used! This function resets flags in "
 				"do_accounting()!\n");
 		return -1;
 	}
 
-	_types = (types ? *types : DO_ACC_LOG|DO_ACC_AAA|DO_ACC_DB|DO_ACC_EVI);
-	_flags = (flags ? *flags : ALL_ACC_FLAGS);
-
-	flag_mask = _types + _types * _flags;
-	reset_flags(acc_ctx->flags, flag_mask);
-
+	acc_ctx->flags = acc_bitmask_reset(types, flags, acc_ctx->flags);
 	return 1;
 }
 

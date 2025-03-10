@@ -69,10 +69,16 @@ int ul_init_cluster(void)
 
 static inline void bin_push_urecord(bin_packet_t *packet, urecord_t *r)
 {
+	str st;
+
 	bin_push_str(packet, r->domain);
 	bin_push_str(packet, &r->aor);
 	bin_push_int(packet, r->label);
 	bin_push_int(packet, r->next_clabel);
+
+	st = store_serialize(r->kv_storage);
+	bin_push_str(packet, &st);
+	store_free_buffer(&st);
 }
 
 void replicate_urecord_insert(urecord_t *r)
@@ -229,7 +235,8 @@ void bin_push_contact(bin_packet_t *packet, urecord_t *r, ucontact_t *c,
 	bin_push_str(packet, c->sock?get_socket_internal_name(c->sock):NULL);
 	bin_push_int(packet, c->cseq);
 	bin_push_int(packet, c->flags);
-	bin_push_int(packet, c->cflags);
+	st = bitmask_to_flag_list(FLAG_TYPE_BRANCH, c->cflags);
+	bin_push_str(packet, &st);
 	bin_push_int(packet, c->methods);
 
 	st.s   = (char *)&c->last_modified;
@@ -317,7 +324,8 @@ void replicate_ucontact_update(urecord_t *r, ucontact_t *ct,
 	bin_push_str(&packet, ct->sock?get_socket_internal_name(ct->sock):NULL);
 	bin_push_int(&packet, ct->cseq);
 	bin_push_int(&packet, ct->flags);
-	bin_push_int(&packet, ct->cflags);
+	st = bitmask_to_flag_list(FLAG_TYPE_BRANCH, ct->cflags);
+	bin_push_str(&packet, &st);
 	bin_push_int(&packet, ct->methods);
 
 	st.s   = (char *)&ct->last_modified;
@@ -418,10 +426,11 @@ error:
  */
 static int receive_urecord_insert(bin_packet_t *packet)
 {
-	str d, aor;
+	str d, aor, kv_str;
 	urecord_t *r;
 	udomain_t *domain;
 	int sl;
+	short pkg_ver = get_bin_pkg_version(packet);
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
@@ -451,6 +460,11 @@ static int receive_urecord_insert(bin_packet_t *packet)
 	sl = r->aorhash & (domain->size - 1);
 	if (domain->table[sl].next_label <= r->label)
 		domain->table[sl].next_label = r->label + 1;
+
+	if (pkg_ver >= UL_BIN_V5) {
+		bin_pop_str(packet, &kv_str);
+		r->kv_storage = store_deserialize(&kv_str);
+	}
 
 out:
 	unlock_udomain(domain, &aor);
@@ -501,10 +515,10 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, contact_str, callid,
-		user_agent, path, attr, st, sock, kv_str;
+		user_agent, path, attr, st, sock, kv_str, cflags_str;
 	udomain_t *domain;
 	urecord_t *record;
-	ucontact_t *contact, *ct;
+	ucontact_t *contact;
 	int rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
@@ -558,12 +572,18 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 		if (!ci.sock)
 			LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 	} else {
-		ci.sock =  NULL;
+		ci.sock = NULL;
 	}
 
 	bin_pop_int(packet, &ci.cseq);
 	bin_pop_int(packet, &ci.flags);
-	bin_pop_int(packet, &ci.cflags);
+	if (pkg_ver <= UL_BIN_V3) {
+		bin_pop_int(packet, &ci.cflags);
+	} else {
+		bin_pop_str(packet, &cflags_str);
+		ci.cflags = flag_list_to_bitmask(
+		        (str_const *)&cflags_str, FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
+	}
 	bin_pop_int(packet, &ci.methods);
 
 	bin_pop_str(packet, &st);
@@ -596,33 +616,9 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 
 		record->label = rlabel;
 		sl = record->aorhash & (domain->size - 1);
-		if (domain->table[sl].next_label <= rlabel)
+		if (rlabel >= domain->table[sl].next_label)
 			domain->table[sl].next_label = rlabel + 1;
 	}
-
-	if (record->label != rlabel) {
-		int has_good_cts = 0;
-
-		for (ct = record->contacts; ct; ct = ct->next)
-			if (ct->expires != UL_EXPIRED_TIME) {
-				has_good_cts = 1;
-				break;
-			}
-
-		if (has_good_cts) {
-			LM_BUG("differring rlabels (%u vs. %u, ci: '%.*s')",
-			       record->label, rlabel, callid.len, callid.s);
-		} else {
-			/* no contacts -> it's safe to inherit the active node's rlabel */
-			record->label = rlabel;
-			sl = record->aorhash & (domain->size - 1);
-			if (domain->table[sl].next_label <= rlabel)
-				domain->table[sl].next_label = rlabel + 1;
-		}
-	}
-
-	if (record->next_clabel <= clabel)
-		record->next_clabel = CLABEL_INC_AND_TEST(clabel);
 
 	rc = get_ucontact(record, &contact_str, &callid, ci.cseq, &cmatch,
 		&contact);
@@ -633,7 +629,11 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	case -1:
 		/* received data is older than what we have */
 		break;
+
 	case 0:
+		ci.contact_id = pack_indexes((unsigned short)record->aorhash,
+					record->label, (unsigned short)contact->label);
+
 		/* received data is newer than what we have */
 		if (update_ucontact(record, contact, &ci, NULL, 1) != 0) {
 			LM_ERR("failed to update ucontact (ci: '%.*s')\n", callid.len, callid.s);
@@ -641,7 +641,18 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 			goto error;
 		}
 		break;
+
 	case 1:
+		if (clabel >= record->next_clabel) {
+			record->next_clabel = CLABEL_NEXT(clabel);
+		} else {
+			clabel = record->next_clabel;
+			record->next_clabel = CLABEL_NEXT(record->next_clabel);
+		}
+
+		ci.contact_id = pack_indexes((unsigned short)record->aorhash,
+					record->label, (unsigned short)clabel);
+
 		if (insert_ucontact(record, &contact_str, &ci, NULL, 1, &contact) != 0) {
 			LM_ERR("failed to insert ucontact (ci: '%.*s')\n", callid.len, callid.s);
 			unlock_udomain(domain, &aor);
@@ -666,7 +677,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, contact_str, callid,
-		user_agent, path, attr, st, kv_str, sock;
+		user_agent, path, attr, st, kv_str, sock, cflags_str;
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
@@ -725,7 +736,13 @@ static int receive_ucontact_update(bin_packet_t *packet)
 
 	bin_pop_int(packet, &ci.cseq);
 	bin_pop_int(packet, &ci.flags);
-	bin_pop_int(packet, &ci.cflags);
+	if (pkg_ver <= UL_BIN_V3) {
+		bin_pop_int(packet, &ci.cflags);
+	} else {
+		bin_pop_str(packet, &cflags_str);
+		ci.cflags = flag_list_to_bitmask(
+		        (str_const *)&cflags_str, FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
+	}
 	bin_pop_int(packet, &ci.methods);
 
 	bin_pop_str(packet, &st);
@@ -773,7 +790,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 		}
 
 		if (record->next_clabel <= clabel)
-			record->next_clabel = CLABEL_INC_AND_TEST(clabel);
+			record->next_clabel = CLABEL_NEXT(clabel);
 	} else {
 		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &cmatch,
 			&contact);
@@ -789,7 +806,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 			}
 
 			if (record->next_clabel <= clabel)
-				record->next_clabel = CLABEL_INC_AND_TEST(clabel);
+				record->next_clabel = CLABEL_NEXT(clabel);
 
 		} else if (rc == 0) {
 			if (update_ucontact(record, contact, &ci, NULL, 1) != 0) {
@@ -853,18 +870,27 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	if (get_urecord(domain, &aor, &record) != 0) {
 		LM_INFO("failed to fetch local urecord - ignoring request "
 			"(ci: '%.*s')\n", callid.len, callid.s);
-		unlock_udomain(domain, &aor);
 		goto out;
 	}
 
 	/* simply specify a higher cseq and completely avoid any complications */
 	rc = get_ucontact(record, &contact_str, &callid, cseq + 1, &cmatch,
 		&contact);
-	if (rc != 0 && rc != 2) {
-		LM_ERR("contact '%.*s' not found: (ci: '%.*s')\n", contact_str.len,
+	switch (rc) {
+	case -2:
+	case -1:
+		/* the DEL packet is too old (same or lower CSeq) */
+		LM_ERR("contact '%.*s' found, but DEL too old: (rc: %d, ci: '%.*s')\n",
+		        contact_str.len, contact_str.s, rc, callid.len, callid.s);
+		goto out;
+		break;
+
+	case 1:
+		LM_DBG("contact '%.*s' already deleted: (ci: '%.*s')\n", contact_str.len,
 			contact_str.s, callid.len, callid.s);
-		unlock_udomain(domain, &aor);
-		goto error;
+		goto out;
+		break;
+	default:;
 	}
 
 	if (skip_replicated_db_ops)
@@ -877,9 +903,8 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 		goto error;
 	}
 
-	unlock_udomain(domain, &aor);
-
 out:
+	unlock_udomain(domain, &aor);
 	free_pkg_str_list(cmatch.match_params);
 	return 0;
 
@@ -912,48 +937,36 @@ void receive_binary_packets(bin_packet_t *pkt)
 {
 	int rc;
 
-	/* Supported smooth BIN transitions:
-		UL_BIN_V2 -> UL_BIN_V3: the "cmatch" has been added
-						(assume: CT_MATCH_CONTACT_CALLID if not present)
-	*/
-	short ver = get_bin_pkg_version(pkt);
-
 	LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
 	switch (pkt->type) {
 	case REPL_URECORD_INSERT:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc aor-ins packet");
 		rc = receive_urecord_insert(pkt);
 		break;
 
 	case REPL_URECORD_DELETE:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc aor-del packet");
 		rc = receive_urecord_delete(pkt);
 		break;
 
 	case REPL_UCONTACT_INSERT:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-ins packet");
 		rc = receive_ucontact_insert(pkt);
 		break;
 
 	case REPL_UCONTACT_UPDATE:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-upd packet");
 		rc = receive_ucontact_update(pkt);
 		break;
 
 	case REPL_UCONTACT_DELETE:
-		if (ver != UL_BIN_V2)
-			ensure_bin_version(pkt, UL_BIN_VERSION);
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-del packet");
 		rc = receive_ucontact_delete(pkt);
 		break;
 
 	case SYNC_PACKET_TYPE:
-		if (ver != UL_BIN_V2)
-			_ensure_bin_version(pkt, UL_BIN_VERSION, "usrloc sync packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc sync packet");
 		rc = receive_sync_packet(pkt);
 		break;
 

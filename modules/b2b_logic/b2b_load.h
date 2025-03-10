@@ -57,6 +57,8 @@ typedef struct b2bl_init_params {
 	str e2_to;
 	str e1_from_dname;
 	str e2_from_dname;
+	str ctx_key;
+	str ctx_val;
 } b2bl_init_params_t;
 
 
@@ -82,7 +84,8 @@ int b2bl_set_state(str* key, int state);
 int b2bl_bridge_2calls(str* key1, str* key2);
 typedef int (*b2bl_bridge_2calls_t)(str* key1, str* key2);
 
-int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct);
+int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
+	unsigned int flags, str *adv_ct);
 int b2bl_get_tuple_key(str *key, unsigned int *hash_index,
 		unsigned int *local_index);
 typedef int (*b2bl_bridge_msg_t)(struct sip_msg* msg, str* key, int entity_no);

@@ -96,6 +96,29 @@ struct script_route_ref {
 	struct script_route_ref *next;
 };
 
+enum script_return_type {
+	SCRIPT_ROUTE_RET_NULL,
+	SCRIPT_ROUTE_RET_INT,
+	SCRIPT_ROUTE_RET_STR,
+	SCRIPT_ROUTE_RET_VAR,
+};
+
+struct script_return_param {
+	union {
+		int rint;
+		struct _pv_spec *rspec;
+		str rstr;
+	};
+	unsigned int type;
+	struct script_return_param *next;
+};
+
+struct script_return_value {
+	pv_value_t val;
+	struct script_return_value *next;
+	char buf[0];
+};
+
 
 extern struct os_script_routes *sroutes;
 
@@ -205,6 +228,11 @@ int is_script_func_used(const char *name, int param_no);
 
 int is_script_async_func_used(const char *name, int param_no);
 
+void script_return_set(struct sip_msg *msg, struct script_return_param *params);
+int script_return_get(pv_value_t *res, int index);
+void script_return_free(struct script_return_value **values);
+int script_return_push(void);
+void script_return_pop(int level);
 
 void push(struct action* a, struct action** head);
 
