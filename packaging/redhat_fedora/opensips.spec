@@ -1148,6 +1148,7 @@ fi
 %{_libdir}/opensips/modules/gflags.so
 %{_libdir}/opensips/modules/group.so
 %{_libdir}/opensips/modules/imc.so
+%{_libdir}/opensips/modules/janus.so
 %{_libdir}/opensips/modules/jsonrpc.so
 %{_libdir}/opensips/modules/load_balancer.so
 %{_libdir}/opensips/modules/mangler.so
@@ -1248,6 +1249,7 @@ fi
 %doc docdir/README.gflags
 %doc docdir/README.group
 %doc docdir/README.imc
+%doc docdir/README.janus
 %doc docdir/README.jsonrpc
 %doc docdir/README.load_balancer
 %doc docdir/README.mangler
@@ -1662,6 +1664,9 @@ fi
 
 
 %changelog
+* Thu Mar 11 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+- New module: janus
+
 * Thu Jan 16 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - New module: trie
 
