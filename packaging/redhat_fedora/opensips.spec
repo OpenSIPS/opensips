@@ -1664,7 +1664,7 @@ fi
 
 
 %changelog
-* Thu Mar 11 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+* Tue Mar 11 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - New module: janus
 
 * Thu Jan 16 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
