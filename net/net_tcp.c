@@ -468,6 +468,21 @@ int tcp_get_correlation_id( unsigned int id, unsigned long long *cid)
 	return -1;
 }
 
+/* returns the correlation ID of a TCP connection */
+int tcp_get_rcv( unsigned int id, struct receive_info *ri)
+{
+	struct tcp_connection* c;
+
+	TCPCONN_LOCK(id);
+	if ( (c=_tcpconn_find(id))!=NULL ) {
+		memcpy(ri, &c->rcv, sizeof *ri);
+		TCPCONN_UNLOCK(id);
+		return 0;
+	}
+	TCPCONN_UNLOCK(id);
+	return -1;
+}
+
 
 /*! \brief _tcpconn_find with locks and acquire fd */
 int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,

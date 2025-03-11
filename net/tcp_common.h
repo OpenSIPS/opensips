@@ -67,4 +67,6 @@ void tcp_async_update_write(struct tcp_connection *con, int len);
 
 int tcp_read(struct tcp_connection *c,struct tcp_req *r);
 
+int tcp_check_con_data(struct tcp_connection *c,struct tcp_req *r);
+
 #endif /* _NET_TCP_COMMON_H_ */

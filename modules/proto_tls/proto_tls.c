@@ -651,6 +651,15 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 		req=&tls_current_req;
 	}
 
+	switch (check_tcp_proxy_protocol(con)) {
+	case 0:
+		goto done;
+	case -1:
+		goto error;
+	case 1:
+		break;
+	}
+
 	/* do this trick in order to trace whether if it's an error or not */
 	ret=tls_mgm_api.tls_fix_read_conn(con, con->fd, tls_handshake_tout, t_dst, 1);
 

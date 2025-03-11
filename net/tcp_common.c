@@ -23,7 +23,9 @@
 #include "net_tcp.h"
 #include "tcp_common.h"
 #include "tcp_conn_profile.h"
+#include "proxy_protocol.h"
 #include "../tsend.h"
+#include "proto_tcp/tcp_common_defs.h"
 
 /*! \brief blocking connect on a non-blocking fd; it will timeout after
  * tcp_connect_timeout

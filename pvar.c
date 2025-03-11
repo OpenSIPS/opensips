@@ -2462,6 +2462,50 @@ static int pv_parse_socket_name(pv_spec_p sp, const str *in)
 	return 0;
 }
 
+#define PROXY_PROTOCOL_SRC_IP_S         "src_ip"
+#define PROXY_PROTOCOL_SRC_IP_LEN       (sizeof(PROXY_PROTOCOL_SRC_IP_S)-1)
+#define PROXY_PROTOCOL_SRC_IP_ID        0
+#define PROXY_PROTOCOL_SRC_PORT_S       "src_port"
+#define PROXY_PROTOCOL_SRC_PORT_LEN     (sizeof(PROXY_PROTOCOL_SRC_PORT_S)-1)
+#define PROXY_PROTOCOL_SRC_PORT_ID      1
+#define PROXY_PROTOCOL_DST_IP_S         "dst_ip"
+#define PROXY_PROTOCOL_DST_IP_LEN       (sizeof(PROXY_PROTOCOL_DST_IP_S)-1)
+#define PROXY_PROTOCOL_DST_IP_ID        2
+#define PROXY_PROTOCOL_DST_PORT_S       "dst_port"
+#define PROXY_PROTOCOL_DST_PORT_LEN     (sizeof(PROXY_PROTOCOL_DST_PORT_S)-1)
+#define PROXY_PROTOCOL_DST_PORT_ID      3
+
+static int pv_parse_proxy_protocol(pv_spec_p sp, const str *in)
+{
+	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
+		return -1;
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
+
+	if (in->len==PROXY_PROTOCOL_SRC_IP_LEN &&
+	strncasecmp(in->s, PROXY_PROTOCOL_SRC_IP_S, PROXY_PROTOCOL_SRC_IP_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = PROXY_PROTOCOL_SRC_IP_ID;
+	} else
+	if (in->len==PROXY_PROTOCOL_SRC_PORT_LEN &&
+	strncasecmp(in->s, PROXY_PROTOCOL_SRC_PORT_S, PROXY_PROTOCOL_SRC_PORT_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = PROXY_PROTOCOL_SRC_PORT_ID;
+	} else
+	if (in->len==PROXY_PROTOCOL_DST_IP_LEN &&
+	strncasecmp(in->s, PROXY_PROTOCOL_DST_IP_S, PROXY_PROTOCOL_DST_IP_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = PROXY_PROTOCOL_DST_IP_ID;
+	} else
+	if (in->len==PROXY_PROTOCOL_DST_PORT_LEN &&
+	strncasecmp(in->s, PROXY_PROTOCOL_DST_PORT_S, PROXY_PROTOCOL_DST_PORT_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = PROXY_PROTOCOL_DST_PORT_ID;
+	} else {
+		LM_ERR("unsupported $proxy_protocol field <%.*s>\n",in->len,in->s);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int pv_parse_socket_out_name(pv_spec_p sp, const str *in)
 {
 	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
@@ -2591,6 +2635,43 @@ static int pv_get_socket_out_fields(struct sip_msg *msg, pv_param_t *param,
 	return get_socket_field( si, &param->pvn, res);
 }
 
+static int pv_get_proxy_protocol(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if (msg->rcv.real_ep.flags != PP_OK)
+		return pv_get_null(msg, NULL, res);
+
+	switch (param->pvn.u.isname.name.n) {
+		case PROXY_PROTOCOL_SRC_IP_ID:
+			res->rs.s = ip_addr2a(&msg->rcv.real_ep.src_ip);
+			res->rs.len = strlen(res->rs.s);
+			res->flags = PV_VAL_STR;
+			break;
+		case PROXY_PROTOCOL_SRC_PORT_ID:
+			res->ri = msg->rcv.real_ep.src_port;
+			res->rs.s = int2str((uint64_t)msg->rcv.real_ep.src_port, &res->rs.len);
+			res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+			break;
+		case PROXY_PROTOCOL_DST_IP_ID:
+			res->rs.s = ip_addr2a(&msg->rcv.real_ep.dst_ip);
+			res->rs.len = strlen(res->rs.s);
+			res->flags = PV_VAL_STR;
+			break;
+		case PROXY_PROTOCOL_DST_PORT_ID:
+			res->ri = msg->rcv.real_ep.dst_port;
+			res->rs.s = int2str((uint64_t)msg->rcv.real_ep.dst_port, &res->rs.len);
+			res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+			break;
+		default:
+			LM_CRIT("BUG - unsupported proxy_protocol ID %d\n",
+					param->pvn.u.isname.name.n);
+			return pv_get_null(NULL, NULL, res);
+	}
+	return 0;
+}
 
 
 
@@ -4644,6 +4725,9 @@ const pv_export_t _pv_names_table[] = {
 	{str_const_init("pU"), /* */
 		PVT_PPI_USERNAME, pv_get_ppi_attr, 0,
 		0, 0, pv_init_iname, 2},
+	{str_const_init("proxy_protocol"),
+		PVT_PROXY_PROTOCOL, pv_get_proxy_protocol, 0,
+		pv_parse_proxy_protocol, 0, 0, 0},
 	{str_const_init("rb"), /* */
 		PVT_MSG_BODY, pv_get_msg_body, 0,
 		0, pv_parse_index, 0, 0},

@@ -113,7 +113,7 @@ int pike_check_req(struct sip_msg *msg)
 	if (ip==0)
 		return -1;
 #else
-	ip = &(msg->rcv.src_ip);
+	ip = get_rcv_src_ip(&msg->rcv);
 #endif
 
 

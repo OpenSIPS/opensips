@@ -651,7 +651,7 @@ again:
  */
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 {
-	int bytes, rc;
+	int bytes, rc = 0;
 	int total_bytes;
 	struct tcp_req* req;
 
@@ -686,6 +686,15 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 		LM_DBG("Using the global ( per process ) buff for conn %p\n",con);
 		init_tcp_req(&tcp_current_req, 0);
 		req=&tcp_current_req;
+	}
+
+	switch (check_tcp_proxy_protocol(con)) {
+	case 0:
+		goto done;
+	case -1:
+		goto error;
+	case 1:
+		break;
 	}
 
 again:

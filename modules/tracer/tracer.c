@@ -2136,7 +2136,7 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info, int leg_flag)
 	}
 
 	set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-		&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
+		get_rcv_src_ip(&msg->rcv), get_rcv_src_port(&msg->rcv), msg->rcv.proto);
 
 	set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
 		TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
@@ -2223,7 +2223,7 @@ static int sip_trace_instance(struct sip_msg* msg,
 	}
 
 	set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-		&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
+		get_rcv_src_ip(&msg->rcv), get_rcv_src_port(&msg->rcv), msg->rcv.proto);
 
 	set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
 		TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
@@ -2449,9 +2449,11 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 {
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
-	struct ip_addr to_ip;
+	struct ip_addr to_ip, *ip;
+	struct receive_info ri;
 	trace_instance_p instance;
 	str from_tag;
+	unsigned int port;
 
 	if(parse_from_and_callid(msg, &from_tag) != 0)
 	{
@@ -2513,12 +2515,18 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	{
 		set_columns_to_any(db_vals[7], db_vals[8], db_vals[9]);
 	} else {
+		if (proto != PROTO_UDP && info->conn_id &&
+				tcp_get_rcv(info->conn_id, &ri) == 0) {
+			ip = get_rcv_src_ip(&ri);
+			port = get_rcv_src_port(&ri);
+		} else {
+			ip = &to_ip;
+			port = (unsigned int)(send_sock && send_sock->last_real_ports->remote?
+				send_sock->last_real_ports->remote:su_getport(to));
+		}
 		su2ip_addr(&to_ip, to);
 		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
-			&to_ip,
-			(unsigned long)(send_sock && send_sock->last_real_ports->remote?
-				send_sock->last_real_ports->remote:su_getport(to)),
-			proto);
+			ip, port, proto);
 	}
 
 	db_vals[10].val.time_val = time(NULL);
@@ -2621,7 +2629,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps,
 	db_vals[3].val.str_val.len = len;
 
 	set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-		&msg->rcv.src_ip,  msg->rcv.src_port, msg->rcv.proto);
+		get_rcv_src_ip(&msg->rcv), get_rcv_src_port(&msg->rcv), msg->rcv.proto);
 
 	if(trace_local_ip.s && trace_local_ip.len > 0){
 		set_columns_to_trace_local_ip(db_vals[7], db_vals[8], db_vals[9]);
@@ -2690,12 +2698,14 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	trace_instance_p instance;
 	struct sip_msg* msg;
-	struct ip_addr to_ip;
+	struct ip_addr to_ip, *ip;
+	struct receive_info ri;
 	int len;
 	char statusbuf[8];
 	str *sbuf;
 	struct dest_info *dst;
 	str from_tag;
+	unsigned int port;
 
 	trace_info_t info;
 
@@ -2797,13 +2807,19 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 	{
 		set_columns_to_any( db_vals[7], db_vals[8], db_vals[9]);
 	} else {
+		if (dst->proto != PROTO_UDP && info.conn_id &&
+				tcp_get_rcv(info.conn_id, &ri) == 0) {
+			ip = get_rcv_src_ip(&ri);
+			port = get_rcv_src_port(&ri);
+		} else {
+			ip = &to_ip;
+			port = (unsigned int)(dst->send_sock && dst->send_sock->last_real_ports->remote?
+				dst->send_sock->last_real_ports->remote:su_getport(&dst->to));
+		}
 		memset(&to_ip, 0, sizeof(struct ip_addr));
 		su2ip_addr(&to_ip, &dst->to);
 		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
-			&to_ip,
-			(unsigned long)(dst->send_sock && dst->send_sock->last_real_ports->remote?
-				dst->send_sock->last_real_ports->remote:su_getport(&dst->to)),
-			dst->proto);
+			ip, port, dst->proto);
 	}
 
 	db_vals[10].val.time_val = time(NULL);

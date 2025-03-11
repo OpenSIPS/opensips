@@ -37,6 +37,7 @@
 #include "../api_proto.h"
 #include "../api_proto_net.h"
 #include "../net_udp.h"
+#include "../proxy_protocol.h"
 #include "proto_udp.h"
 
 
@@ -149,14 +150,6 @@ static int udp_read_req(const struct socket_info *si, int* bytes_read)
 		return -2;
 	}
 
-	if (len<MIN_UDP_PACKET) {
-		LM_DBG("probing packet received len = %d\n", len);
-		return 0;
-	}
-
-	/* we must 0-term the messages, receive_msg expects it */
-	buf[len]=0; /* no need to save the previous char */
-
 	ri.bind_address = si;
 	ri.dst_port = si->port_no;
 	ri.dst_ip = si->address;
@@ -168,6 +161,17 @@ static int udp_read_req(const struct socket_info *si, int* bytes_read)
 
 	msg.s = buf;
 	msg.len = len;
+
+	if (check_udp_proxy_protocol(&msg.s, &msg.len, &ri) < 0)
+		return 0;
+
+	if (msg.len<MIN_UDP_PACKET) {
+		LM_DBG("probing packet received len = %d\n", msg.len);
+		return 0;
+	}
+
+	/* we must 0-term the messages, receive_msg expects it */
+	msg.s[msg.len]=0; /* no need to save the previous char */
 
 	/* run callbacks if looks like non-SIP message*/
 	if( !isalpha(msg.s[0]) ){    /* not-SIP related */
@@ -254,7 +258,6 @@ int register_udprecv_cb(udp_rcv_cb_f* func, void* param, char a, char b)
 
 	return 0;
 }
-
 
 
 

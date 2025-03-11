@@ -110,6 +110,9 @@ int tcp_conn_fcntl(struct receive_info *rcv, int attr, void *value);
 /* returns the correlation ID of a TCP connection */
 int tcp_get_correlation_id( unsigned int id, unsigned long long *cid);
 
+/* returns the receive_info of a TCP connection */
+int tcp_get_rcv(unsigned int id, struct receive_info *ri);
+
 int tcp_done_reading(struct tcp_connection* c);
 
 extern unsigned int last_outgoing_tcp_id;

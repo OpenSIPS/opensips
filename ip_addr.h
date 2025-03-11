@@ -41,6 +41,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include "str.h"
+#include "net/proxy_protocol.h"
 
 
 #include "dprint.h"
@@ -86,6 +87,17 @@ union sockaddr_union{
 		struct sockaddr_in6 sin6;
 };
 
+enum proxy_protocol_flags {
+	PP_INIT, PP_ERROR, PP_UNKNOWN, PP_OK
+};
+
+struct proxy_protocol {
+	enum proxy_protocol_flags flags;
+	struct ip_addr src_ip;
+	struct ip_addr dst_ip;
+	unsigned short src_port; /*!< host byte order */
+	unsigned short dst_port; /*!< host byte order */
+};
 
 
 enum si_flags { SI_NONE=0, SI_IS_IP=1, SI_IS_LO=2, SI_IS_MCAST=4,
@@ -101,8 +113,18 @@ struct receive_info {
 	unsigned int proto_reserved2;
 	union sockaddr_union src_su; /*!< useful for replies*/
 	const struct socket_info* bind_address; /*!< sock_info structure on which the msg was received*/
+	struct proxy_protocol real_ep; /*!< real endpoint of the mssage (behind a proxy protocol) */
 	/* no need for dst_su yet */
 };
+
+#define get_rcv_src_ip(_rcv) \
+	(((_rcv)->real_ep.flags == PP_OK)?&(_rcv)->real_ep.src_ip:&(_rcv)->src_ip)
+#define get_rcv_src_port(_rcv) \
+	(((_rcv)->real_ep.flags == PP_OK)?(_rcv)->real_ep.src_port:(_rcv)->src_port)
+#define get_rcv_dst_ip(_rcv) \
+	(((_rcv)->real_ep.flags == PP_OK)?&(_rcv)->real_ep.dst_ip:&(_rcv)->dst_ip)
+#define get_rcv_dst_port(_rcv) \
+	(((_rcv)->real_ep.flags == PP_OK)?(_rcv)->real_ep.dst_port:(_rcv)->dst_port)
 
 
 struct dest_info {

@@ -132,7 +132,7 @@ enum _pv_type {
 	PVT_XLOG_LEVEL,       PVT_AF,                PVT_HDR_NAME,
 	PVT_SOCKET_IN,        PVT_SOCKET_OUT,        PVT_BRANCH_FLAG,
 	PVT_SDP,              PVT_SDP_LINE,          PVT_SDP_STREAM,
-	PVT_SDP_SESSION,      PVT_MSG_FLAG,
+	PVT_SDP_SESSION,      PVT_MSG_FLAG,          PVT_PROXY_PROTOCOL,
 	/* registered by json module */
 	PVT_JSON,
 	/* registered by xml module */
