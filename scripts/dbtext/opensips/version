@@ -58,6 +58,7 @@ rtpproxy_sockets:0
 silo:6
 sip_trace:5
 smpp:1
+sockets:1
 speed_dial:3
 subscriber:8
 tcp_mgm:1

@@ -1,0 +1,327 @@
+<!-- Dynamic Sockets Management Module's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+        This module provides the means to provision and manage dynamic sockets
+		for OpenSIPS at runtime. The definition of the sockets is stored in
+		an SQL database and can be dynamically changed at runtime.
+	</para>
+	<para>
+		The module caches the entire table sockets and only adjusts the
+		dynamic socket list after a reload using the
+		<xref linkend="mi_sockets_reload"/> MI command.
+	</para>
+	</section>
+
+	<section id="pool" xreflabel="Sockets Pool">
+	<title>Sockets Pool</title>
+	<para>
+		A sockets pool groups dynamic sockets per &osips; process, allowing
+		multiple processes to manage them efficiently. Each pool has specific
+		settings, including the number of processes that can handle the
+		dynamic sockets, ensuring optimized resource allocation and
+		management.
+	</para>
+	<para>
+		Socket pools are statically defined in the configuration script and
+		can not be changed dynamically at runtime. See <xref linkend="param_pool"/>
+		parameter for configuring sockets pools.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following  modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>A database module is needed for fetching the sockets</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+			The database URL where the sockets are fetched from.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>&defaultdb;</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>db_url</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "db_url", "&exampledb;")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_table_name" xreflabel="table_name">
+		<title><varname>table_name</varname> (string)</title>
+		<para>
+			The database table name where the sockets are stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>sockets</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>table_name</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "table_name", "sockets_def")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_socket_column" xreflabel="socket_column">
+		<title><varname>socket_column</varname> (string)</title>
+		<para>
+			The database table column where the socket definition is stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>socket</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>socket_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "socket_column", "sock")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_pool_column" xreflabel="pool_column">
+		<title><varname>pool_column</varname> (string)</title>
+		<para>
+			The database table column where the pool definition is stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>pool</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>socket_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "pool_column", "group")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_pool" xreflabel="pool">
+		<title><varname>pool</varname> (string)</title>
+		<para>
+			Used to modify the parameters of a socket pool (see 
+			<xref linkend="pool"/> section for more information about sockets pool).
+		</para>
+		<para>
+			The <emphasis>default</emphasis> pool is always created and is being
+			assigned to all sockets that are not explicitely assigned a different pool.
+		</para>
+		<para>
+			A new pool, with the default settings, can be added by simply
+			defining the pool with no parameters.
+		</para>
+		<para>
+			The format of the <emphasis>pool</emphasis> parameter is <TODO/>.
+		</para>
+		<para>
+			The pool's parameters that can be adjusted are:
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>processes</emphasis> - (integer) the number of processes
+					used to handle the sockets within this pool. Default value is
+					<emphasis>8</emphasis> processes.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>max_sockets</emphasis> - (integer) the maximum number
+					of sockets that can be simultaneously defined in this pool.
+					<emphasis>Note</emphasis> that these sockets are rotated in
+					a round-robin fashion, so that a socket previously defined
+					might be reused after sequential reloads. Default value is
+					<emphasis>100</emphasis> processes.
+				</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			All parameters are optional and if are missing, the default values
+			are being used. If the same setting for the same pool is provided
+			multiple times, only the latest value is being used.
+		</para>
+		<example>
+		<title>Set <quote>pool</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+# create a new pool with the default values
+modparam("sockets_mgm", "pool", "TODO")
+...
+# modify the default pool's settings
+modparam("sockets_mgm", "pool", "TODO")
+...
+# modify and arbitrary pool's settings
+modparam("sockets_mgm", "pool", "TODO")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_example" xreflabel="example()">
+		<title>
+		<function moreinfo="none">example()</function>
+		</title>
+		<para>
+			Function that simply prints a message to log, saying that it has been called.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">example</function> usage</title>
+		<programlisting format="linespecific">
+...
+example();
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="func_example_str" xreflabel="example_str()">
+		<title>
+		<function moreinfo="none">example_str([string])</function>
+		</title>
+		<para>
+			Function that simply prints a message to log, saying that it has been called.
+			If a parameter is passed, it is printed in the log, otherwise the value of
+			<xref linkend="param_default_str"/> parameter is used.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>string (string, optional)</emphasis> - parameter to be logged
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">example_str()</function> usage</title>
+		<programlisting format="linespecific">
+...
+example_str("test");
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="func_example_int" xreflabel="example_int()">
+		<title>
+		<function moreinfo="none">example_int([int])</function>
+		</title>
+		<para>
+			Function that simply prints a message to log, saying that it has been called.
+			If a parameter is passed, it is printed in the log, otherwise the value of
+			<xref linkend="param_default_int"/> parameter is used.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>int (integer, optional)</emphasis> - parameter to be logged
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">example_int()</function> usage</title>
+		<programlisting format="linespecific">
+...
+example_int(10);
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+		<section id="mi_sockets_reload" xreflabel="sockets_reload">
+		<title>
+		<function moreinfo="none">sockets_reload</function>
+		</title>
+		<para>
+			MI command used to reload the sockets from the database.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## reload sockets from the database
+		opensips-mi sockets_reload
+		opensips-cli -x mi sockets_reload
+		</programlisting>
+		</section>
+		<section id="mi_sockets_list" xreflabel="sockets_list">
+		<title>
+		<function moreinfo="none">sockets_list</function>
+		</title>
+		<para>
+			MI command to list all the currently used dynamic sockets.
+		</para>
+		<para>Parameters are:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>full</emphasis> - (int, optional) if different
+				than <emphasis>0</emphasis>, the command prints all
+				the information stored about the socket.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## reload sockets from the database
+		opensips-mi sockets_list
+		opensips-cli -x mi sockets_list
+		</programlisting>
+		</section>
+	</section>
+
+</chapter>

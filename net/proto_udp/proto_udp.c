@@ -133,7 +133,7 @@ static int udp_read_req(const struct socket_info *si, int* bytes_read)
 
 	fromlen=sockaddru_len(si->su);
 	/* coverity[overrun-buffer-arg: FALSE] - union has 28 bytes, CID #200029 */
-	len=recvfrom(bind_address->socket, buf, BUF_SIZE,0,&ri.src_su.s,&fromlen);
+	len=recvfrom(si->socket, buf, BUF_SIZE,0,&ri.src_su.s,&fromlen);
 	if (len==-1){
 		if (errno==EAGAIN)
 			return 0;
