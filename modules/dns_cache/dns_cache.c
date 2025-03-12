@@ -841,8 +841,8 @@ int put_dnscache_value(char *name,int r_type,void *record,int rdata_len,
 	/* avoid caching records with TTL=0 */
 	if (!failure && ttl==0) {
 		/* RFC1035 states : "Zero TTL values are interpreted to mean that
-			 the RR can only be used for the transaction in progress, and
-			 should not be cached." */
+		   the RR can only be used for the transaction in progress, and
+		   should not be cached." */
 		return 1;
 	}
 
