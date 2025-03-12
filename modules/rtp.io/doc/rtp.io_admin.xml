@@ -1,0 +1,72 @@
+<!-- RTP.io Module Admin's Guide -->
+
+<chapter>
+    <title>&adminguide;</title>
+
+    <section id="overview" xreflabel="Overview">
+    <title>Overview</title>
+        <para>
+            The <acronym>RTP.io</acronym> module provides an integrated solution
+            for handling RTP traffic within &osips;, enabling RTP relaying and
+            processing directly inside the OpenSIPS process. This eliminates the
+            need for external processes such as RTPProxy, resulting in a more
+            streamlined, efficient, and manageable system for certain use cases.
+        </para>
+        <para>
+            The <emphasis>rtp.io</emphasis> module starts RTP handling threads in the main
+            OpenSIPS process and allows the <emphasis>rtpproxy</emphasis> module to access these
+            threads via a one-to-one socket pair. This tight integration facilitates efficient
+            RTP traffic management within OpenSIPS without relying on external RTP handling
+            services.
+        </para>
+        <para>
+            The module requires <productname>RTPProxy</productname> version 3.1 or higher, compiled
+            with the <option>--enable-librtpproxy</option> option to build. It utilizes the
+            <filename>librtpproxy</filename> library to manage RTP traffic and interfaces with the
+            existing <emphasis>rtpproxy</emphasis> module to generate commands, parse responses,
+            and process SIP messages.
+        </para>
+        <para>
+            When the <emphasis>rtpproxy</emphasis> module is loaded without arguments and the
+            <emphasis>rtp.io</emphasis> module is also loaded, the sockets exported by
+            <emphasis>rtp.io</emphasis> are used automatically in set <literal>0</literal>.
+            Alternatively, these sockets can be incorporated into other sets by using the
+            <literal>"rtp.io:auto"</literal> moniker.
+        </para>
+    </section>
+
+    <section id="dependencies" xreflabel="Dependencies">
+        <title>Dependencies</title>
+        <!-- To be filled based on specific dependencies -->
+    </section>
+
+    <section id="exported_parameters" xreflabel="Exported Parameters">
+        <title>Exported Parameters</title>
+        <section id="rtpproxy_args" xreflabel="rtpproxy_args">
+            <title><varname>rtpproxy_args</varname>(string)</title>
+            <para>
+                Command-line parameteres passed down to the embedded RTPProxy
+                module upon initialization.  Refer to the RTPProxy
+                documentation for the full list.
+            </para>
+            <para>
+                <emphasis>
+                    Parameter has no default value.
+                </emphasis>
+            </para>
+            <example>
+                <title>Set <varname>rtpproxy_args</varname> parameter</title>
+                <programlisting format="linespecific">
+...
+modparam("rtp.io", "rtpproxy_args", "-m 12000 -M 15000 -l 0.0.0.0 -6 /::")
+...
+</programlisting>
+            </example>
+        </section>
+    </section>
+
+    <section id="exported_functions" xreflabel="exported_functions">
+        <title>Exported Functions</title>
+        <!-- To be filled based on specific functions exported by the module -->
+    </section>
+</chapter>
