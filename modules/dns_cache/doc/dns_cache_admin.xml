@@ -70,6 +70,25 @@ modparam("dns_cache", "blacklist_timeout",7200) # 2 hours
 		</example>
 		
 		</section>
+
+		<section id="param_min_ttl" xreflabel="min_ttl">
+		<title><varname>min_ttl</varname> (int)</title>
+		<para>
+			The minimum number of seconds that a DNS record will be kept in
+			cache. If the TTL received in the DNS answer is lower than this
+			value, the record will be cached for min_ttl seconds.
+		</para>
+		
+		<example>
+		<title>Set <varname>min_ttl</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("min_ttl", "min_ttl",300) # 5 minutes
+...
+		</programlisting>
+		</example>
+		
+		</section>
 	</section>
 	
 

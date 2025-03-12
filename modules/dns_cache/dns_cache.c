@@ -58,7 +58,7 @@ static int min_ttl=0; /* seconds */
 static const param_export_t params[]={
 	{ "cachedb_url",                 STR_PARAM, &cachedb_url.s},
 	{ "blacklist_timeout",           INT_PARAM, &blacklist_timeout},
-  { "min_ttl",                     INT_PARAM, &min_ttl},
+	{ "min_ttl",                     INT_PARAM, &min_ttl},
 	{0,0,0}
 };
 
@@ -841,8 +841,8 @@ int put_dnscache_value(char *name,int r_type,void *record,int rdata_len,
 	/* avoid caching records with TTL=0 */
 	if (!failure && ttl==0) {
 		/* RFC1035 states : "Zero TTL values are interpreted to mean that
-		   the RR can only be used for the transaction in progress, and
-		   should not be cached." */
+			 the RR can only be used for the transaction in progress, and
+			 should not be cached." */
 		return 1;
 	}
 
@@ -880,10 +880,9 @@ int put_dnscache_value(char *name,int r_type,void *record,int rdata_len,
 
 		key_ttl = ttl;
 
-    if (min_ttl > 0 && key_ttl < min_ttl) {
-      LM_DBG("increasing ttl from %d to %d",key_ttl,min_ttl);
-      key_ttl = min_ttl;
-    }
+		if (min_ttl > 0 && key_ttl < min_ttl) {
+			key_ttl = min_ttl;
+		}
 	}
 
 	LM_INFO("putting key [%.*s] with value [%.*s] ttl = %d\n",

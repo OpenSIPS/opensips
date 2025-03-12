@@ -14,7 +14,6 @@ dns_cache Module
 
               1.3.1. cachedb_url (string)
               1.3.2. blacklist_timeout (int)
-              1.3.3. min_ttl (int)
 
         1.4. Exported Functions
 
@@ -81,17 +80,6 @@ modparam("dns_cache", "cachedb_url","memcached://192.168.2.130:8888/")
    Example 1.2. Set blacklist_timeout parameter
 ...
 modparam("dns_cache", "blacklist_timeout",7200) # 2 hours
-...
-
-1.3.3. min_ttl (int)
-
-   The minimum number of seconds that a DNS record will be kept in
-   cache. If the TTL receivd in the DNS answer is lower than this
-   value, the record will be cached for min_ttl seconds.
-
-   Example 1.3. Set min_ttl parameter
-...
-modparam("min_ttl", "min_ttl",300) # 5 minutes
 ...
 
 1.4. Exported Functions
