@@ -78,6 +78,11 @@ modparam("dns_cache", "blacklist_timeout",7200) # 2 hours
 			cache. If the TTL received in the DNS answer is lower than this
 			value, the record will be cached for min_ttl seconds.
 		</para>
+    <para>
+		<emphasis>
+			Default value is <emphasis role='bold'>0</emphasis> seconds (no minimum TTL is enforced).
+		</emphasis>
+		</para>
 		
 		<example>
 		<title>Set <varname>min_ttl</varname> parameter</title>
