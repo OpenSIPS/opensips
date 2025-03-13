@@ -872,7 +872,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	}
 	msg->unparsed=tmp;
 	/*find first Via: */
-	if (parse_headers(msg, flags, 0)==-1) goto error;
+	if (parse_headers(msg, flags, 0)==-1) goto parse_error;
 
 #ifdef EXTRA_DEBUG
 	/* dump parsed data */
@@ -923,6 +923,11 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 #endif
 
 	return 0;
+
+parse_error:
+	/* Free the SIP message if it has already been created to prevent memory leaks */
+	free_sip_msg(msg);
+	memset(msg, 0, sizeof(*msg));
 
 error:
 	/* more debugging, msg->orig is/should be null terminated*/
