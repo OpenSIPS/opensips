@@ -83,7 +83,7 @@ modparam("dns_cache", "blacklist_timeout",7200) # 2 hours
 		<title>Set <varname>min_ttl</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("min_ttl", "min_ttl",300) # 5 minutes
+modparam("dns_cache", "min_ttl",300) # 5 minutes
 ...
 		</programlisting>
 		</example>
