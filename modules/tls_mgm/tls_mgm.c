@@ -1171,29 +1171,12 @@ static int child_init(int rank)
 
 static void mod_destroy(void)
 {
-	struct tls_domain *d, *d_tmp;
-
-	if (dom_lock)
-		lock_destroy_rw(dom_lock);
-
-	d = *tls_server_domains;
-	while (d) {
-		d_tmp = d;
-		d = d->next;
-		tls_free_domain(d_tmp);
-	}
-	d = *tls_client_domains;
-	while (d) {
-		d_tmp = d;
-		d = d->next;
-		tls_free_domain(d_tmp);
-	}
-
-	shm_free(tls_server_domains);
-	shm_free(tls_client_domains);
-
-	map_destroy(server_dom_matching, map_free_node);
-	map_destroy(client_dom_matching, map_free_node);
+    /* XXX: this function used to free the domains, but that is not safe because
+     * the TCP connections can still have references to them, which will be
+     * dangling pointers, leading to a double-free, when mod_destroy() is called
+     * in the process of shutting down. Better just not to free anything in here.
+     * https://github.com/OpenSIPS/opensips/pull/3281
+     * */
 }
 
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
