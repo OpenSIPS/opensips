@@ -25,6 +25,7 @@
 #include "../socket_info.h"
 #include "tcp_conn_defs.h"
 #include "../ut.h"
+#include "../socket_info.h"
 
 #define PROXY_PROTOCOL_V1_HDR "PROXY "
 #define PROXY_PROTOCOL_V1_HDR_LEN (sizeof(PROXY_PROTOCOL_V1_HDR) - 1)
@@ -302,9 +303,14 @@ int check_tcp_proxy_protocol(struct tcp_connection *c)
 	if (c->flags & F_CONN_DATA_READY)
 		return 1;
 
+	if (!c->rcv.bind_address || (c->rcv.bind_address->flags & SI_PROXY) == 0) {
+		c->flags |= F_CONN_DATA_READY;
+		return 1;
+	}
+
 	len = tcp_peek(c, pp_buf, PROXY_PROTOCOL_BUF_MAX);
 	if (len < 0)
-		return len;
+		return -1;
 
 	switch (is_net_proxy_protocol(pp_buf, len)) {
 		case -1:
@@ -351,6 +357,10 @@ int check_udp_proxy_protocol(char **buf, int *size, struct receive_info *ri)
 		return -1;
 
 	ri->real_ep.flags = PP_INIT;
+
+	if (!ri->bind_address || (ri->bind_address->flags & SI_PROXY) == 0)
+		return 1;
+
 	msg = *buf;
 	len = *size;
 

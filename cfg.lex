@@ -345,6 +345,7 @@ ANYCAST	("anycast"|"ANYCAST")
 ACCEPT_SUBDOMAIN ("accept_subdomain"|"ACCEPT_SUBDOMAIN")
 FRAG	("frag"|"FRAG")
 REUSE_PORT	("reuse_port"|"REUSE_PORT")
+PROXY_PROTOCOL	(("allow"|"ALLOW")[-_])?("proxy"|"PROXY")([-_]("protocol"|"PROXY_PROTOCOL"))?
 
 
 COM_LINE	#
@@ -620,6 +621,7 @@ SPACE		[ ]
 <INITIAL>{ANYCAST}	{ count(); return ANYCAST; }
 <INITIAL>{ACCEPT_SUBDOMAIN}	{ count(); return ACCEPT_SUBDOMAIN; }
 <INITIAL>{REUSE_PORT}	{ count(); return REUSE_PORT; }
+<INITIAL>{PROXY_PROTOCOL}		{ count(); return PROXY_PROTOCOL; }
 <INITIAL>{FRAG}		{ count(); return FRAG; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
 <INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }

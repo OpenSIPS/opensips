@@ -471,6 +471,7 @@ extern int cfg_parse_only_routes;
 %token ACCEPT_SUBDOMAIN
 %token FRAG
 %token REUSE_PORT
+%token PROXY_PROTOCOL
 %token SCRIPTVARERR
 %token SCALE_UP_TO
 %token SCALE_DOWN_TO
@@ -743,6 +744,9 @@ socket_def_param: ANYCAST { IFOR();
 					}
 				| ACCEPT_SUBDOMAIN { IFOR();
 					p_tmp.flags |= SI_ACCEPT_SUBDOMAIN_ALIAS;
+					}
+				| PROXY_PROTOCOL { IFOR();
+					p_tmp.flags |= SI_PROXY;
 					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;
