@@ -24,6 +24,7 @@
  *  2015-02-17  initial version (Vlad Paiu)
 */
 
+#include "../../ut.h"
 #include "topo_hiding_logic.h"
 
 extern int force_dialog;
@@ -924,6 +925,11 @@ static void th_no_dlg_onreply_within(struct cell* t, int type, struct tmcb_param
 	_th_no_dlg_onreply(t,type,param,0,0);
 }
 
+static void th_no_dlg_user_onreply_within(struct cell* t, int type, struct tmcb_params *param)
+{
+	_th_no_dlg_onreply(t,type,param,TOPOH_KEEP_USER,0);
+}
+
 static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags)
 {
 	transaction_cb* used_cb;
@@ -1551,12 +1557,13 @@ error:
 
 /* We encode the RR headers, the actual Contact and the socket str for this leg */
 /* Via headers will be restored using the TM module, no need to save anything for them */
-static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len)
+static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len, int flags)
 {
-	short rr_len,ct_len,addr_len,enc_len;
+	short rr_len,ct_len,addr_len,flags_len,enc_len;
 	char *suffix_plain,*suffix_enc,*p,*s;
 	str rr_set = {NULL, 0};
 	str contact;
+	str flags_str;
 	int i,total_len;
 	struct sip_uri ctu;
 	struct th_ct_params* el;
@@ -1564,6 +1571,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	int is_req = (msg->first_line.type==SIP_REQUEST)?1:0;
 	int local_len = sizeof(short) /* RR length */ +
 			sizeof(short) /* Contact length */ +
+			sizeof(short) /* Flags length */ +
 			sizeof(short) /* bind addr */;
 
 	/* parse all headers as we can have multiple
@@ -1596,8 +1604,11 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 		ct_len = (short)contact.len;
 	}
 
+	flags_str.s = int2str(flags, &flags_str.len);
+	flags_len = (short)flags_str.len;
+	
 	addr_len = (short)msg->rcv.bind_address->sock_str.len;
-	local_len += rr_len + ct_len + addr_len; 
+	local_len += rr_len + ct_len + flags_len + addr_len; 
 	enc_len = th_ct_enc_scheme == ENC_BASE64 ?
 		calc_word64_encode_len(local_len) : calc_word32_encode_len(local_len);
 	total_len = enc_len +  
@@ -1666,6 +1677,10 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 		memcpy(p,contact.s,contact.len);
 		p+= contact.len;
 	}
+	memcpy(p,&flags_len,sizeof(short));
+	p+= sizeof(short);
+	memcpy(p,flags_str.s, flags_str.len);
+	p+= flags_str.len;
 	memcpy(p,&addr_len,sizeof(short));
 	p+= sizeof(short);
 	memcpy(p,msg->rcv.bind_address->sock_str.s,msg->rcv.bind_address->sock_str.len);
@@ -1742,6 +1757,8 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 		goto error;
 	}
 
+	LM_DBG("Flags '%d' passed for encoding Contact\n", flags);
+
 	prefix_len = 5; /* <sip: */
 	if (flags & TOPOH_KEEP_USER) {
 		if ( parse_contact(msg->contact)<0 ||
@@ -1781,7 +1798,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (!(suffix = build_encoded_contact_suffix(msg,routes,&suffix_len))) {
+	if (!(suffix = build_encoded_contact_suffix(msg, routes, &suffix_len, flags))) {
 		LM_ERR("Failed to build suffix \n");
 		goto error;
 	}
@@ -1818,10 +1835,10 @@ static inline void topo_no_dlg_seq_free(void *p)
 
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 {
-	int max_size,dec_len,i,size;
+	int max_size,dec_len,i,size,flags;
 	char *dec_buf,*p,*route=NULL,*hdrs,*remote_contact;
 	struct hdr_field *it;
-	str rr_buf,ct_buf,bind_buf;
+	str rr_buf,ct_buf,flags_buf,bind_buf;
 	rr_t *head = NULL, *rrp;
 	int next_strict=0;
 	struct sip_uri fru;
@@ -1831,6 +1848,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	int port,proto;
 	const struct socket_info *sock;
 	str *route_s = NULL, route_buf = {0, 0};
+	transaction_cb* used_cb;
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(msg, HDR_EOH_F, 0)< 0) {
@@ -1886,10 +1904,11 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	size = dec_len;
 	__extract_len_and_buf(p, size, rr_buf);
 	__extract_len_and_buf(p, size, ct_buf);
+	__extract_len_and_buf(p, size, flags_buf);
 	__extract_len_and_buf(p, size, bind_buf);
 
-	LM_DBG("extracted routes [%.*s] , ct [%.*s] and bind [%.*s]\n",
-		rr_buf.len,rr_buf.s,ct_buf.len,ct_buf.s,bind_buf.len,bind_buf.s);
+	LM_DBG("extracted routes [%.*s] , ct [%.*s] , flags [%.*s] and bind [%.*s]\n",
+		rr_buf.len,rr_buf.s,ct_buf.len,ct_buf.s,flags_buf.len,flags_buf.s,bind_buf.len,bind_buf.s);
 
 	if (rr_buf.len) {
 		if (parse_rr_body(rr_buf.s,rr_buf.len,&head) != 0) {
@@ -2076,9 +2095,23 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		}
 	}
 
+	if (flags_buf.len && flags_buf.s) {
+		if (str2int(&flags_buf, (unsigned int*) &flags) < 0) {
+			LM_WARN("Failed to convert string to integer, default to no flags\n");
+			flags = 0;
+		}
+	} else {
+		flags = 0;
+	}
+
+	if (flags & TOPOH_KEEP_USER)
+		used_cb = th_no_dlg_user_onreply_within;
+	else
+		used_cb = th_no_dlg_onreply_within;
+
 	/* register tm callback for response in  */
 	if (tm_api.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
-	th_no_dlg_onreply_within,route_s,topo_no_dlg_seq_free)<0 ) {
+	used_cb,route_s,topo_no_dlg_seq_free)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 	}
 
@@ -2100,7 +2133,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		free_rr(&head);
 	pkg_free(dec_buf);
 
-	if (topo_no_dlg_encode_contact(msg,0,NULL) < 0) {
+	if (topo_no_dlg_encode_contact(msg,flags,NULL) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
