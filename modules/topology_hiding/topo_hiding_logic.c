@@ -23,10 +23,8 @@
 * -------
 *  2015-02-17  initial version (Vlad Paiu)
 */
-#define MAX_INT_LEN 11 /* 2^32: 10 chars + 1 char sign */
 
-#include <stdio.h>
-
+#include "../../ut.h"
 #include "topo_hiding_logic.h"
 
 extern int force_dialog;
@@ -927,6 +925,11 @@ static void th_no_dlg_onreply_within(struct cell* t, int type, struct tmcb_param
 	_th_no_dlg_onreply(t,type,param,0,0);
 }
 
+static void th_no_dlg_user_onreply_within(struct cell* t, int type, struct tmcb_params *param)
+{
+	_th_no_dlg_onreply(t,type,param,TOPOH_KEEP_USER,0);
+}
+
 static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags)
 {
 	transaction_cb* used_cb;
@@ -1556,7 +1559,6 @@ error:
 /* Via headers will be restored using the TM module, no need to save anything for them */
 static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len, int flags)
 {
-	char flags_char[MAX_INT_LEN + 2];
 	short rr_len,ct_len,addr_len,flags_len,enc_len;
 	char *suffix_plain,*suffix_enc,*p,*s;
 	str rr_set = {NULL, 0};
@@ -1569,6 +1571,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	int is_req = (msg->first_line.type==SIP_REQUEST)?1:0;
 	int local_len = sizeof(short) /* RR length */ +
 			sizeof(short) /* Contact length */ +
+			sizeof(short) /* Flags length */ +
 			sizeof(short) /* bind addr */;
 
 	/* parse all headers as we can have multiple
@@ -1601,9 +1604,8 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 		ct_len = (short)contact.len;
 	}
 
-	flags_len = (short)sprintf(flags_char, "%d", flags);
-	flags_str.s = flags_char;
-	flags_str.len = flags_len;
+	flags_str.s = int2str(flags, &flags_str.len);
+	flags_len = (short)flags_str.len;
 	
 	addr_len = (short)msg->rcv.bind_address->sock_str.len;
 	local_len += rr_len + ct_len + flags_len + addr_len; 
@@ -1755,6 +1757,8 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 		goto error;
 	}
 
+	LM_DBG("Flags '%d' passed for encoding Contact\n", flags);
+
 	prefix_len = 5; /* <sip: */
 	if (flags & TOPOH_KEEP_USER) {
 		if ( parse_contact(msg->contact)<0 ||
@@ -1844,6 +1848,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	int port,proto;
 	struct socket_info *sock;
 	str *route_s = NULL, route_buf = {0, 0};
+	transaction_cb* used_cb;
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(msg, HDR_EOH_F, 0)< 0) {
@@ -2090,9 +2095,23 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		}
 	}
 
+	if (flags_buf.len && flags_buf.s) {
+		if (str2int(&flags_buf, (unsigned int*) &flags) < 0) {
+			LM_WARN("Failed to convert string to integer, default to no flags\n");
+			flags = 0;
+		}
+	} else {
+		flags = 0;
+	}
+
+	if (flags & TOPOH_KEEP_USER)
+		used_cb = th_no_dlg_user_onreply_within;
+	else
+		used_cb = th_no_dlg_onreply_within;
+
 	/* register tm callback for response in  */
 	if (tm_api.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
-	th_no_dlg_onreply_within,route_s,topo_no_dlg_seq_free)<0 ) {
+	used_cb,route_s,topo_no_dlg_seq_free)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 	}
 
@@ -2113,14 +2132,6 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	if (rr_buf.len)
 		free_rr(&head);
 	pkg_free(dec_buf);
-
-	if (flags_buf.len && flags_buf.s) {
-		if (sscanf(flags_buf.s, "%d", &flags) < 0) {
-			LM_ERR("Failed to convert string to integer\n");
-		}
-	} else {
-		flags = 0;
-	}
 
 	if (topo_no_dlg_encode_contact(msg,flags,NULL) < 0) {
 		LM_ERR("Failed to encode contact header \n");
