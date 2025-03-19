@@ -1016,8 +1016,8 @@ static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
 static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* res)
 {
 	static str out = {NULL, 0};
-	struct body_part *p, *it;
-	unsigned int out_offs, orig_offs, parts;
+	struct body_part *p = NULL, *it;
+	unsigned int out_offs, orig_offs, parts = 0;
 	pv_value_t val;
 
 
