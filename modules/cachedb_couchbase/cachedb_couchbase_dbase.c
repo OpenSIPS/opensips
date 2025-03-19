@@ -38,76 +38,96 @@ extern int couch_exec_threshold;
 
 volatile str get_res = {0,0};
 volatile int arithmetic_res = 0;
-volatile lcb_error_t op_error  = LCB_SUCCESS;
+volatile lcb_STATUS op_error  = LCB_SUCCESS;
 
-static void couchbase_get_cb(lcb_t instance,
-		const void *cookie, lcb_error_t error,
-		const lcb_get_resp_t *item)
+static void couchbase_get_cb(lcb_INSTANCE* instance,
+		const void *cookie, lcb_STATUS error,
+		const lcb_RESPGET *item)
 {
 	op_error = error;
 
+	const char *key, *value;
+	size_t nkey, nvalue;
+	lcb_respget_key(item, &key, &nkey);
+
 	if (error != LCB_SUCCESS) {
-		if (error != LCB_KEY_ENOENT) {
-			LM_ERR("Failure to get %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, error));
+		if (error != LCB_ERR_DOCUMENT_NOT_FOUND) {
+			LM_ERR("Failure to get %.*s - %s\n", (int)nkey, key, lcb_strerror_short(error));
 		}
 
 		return;
 	}
 
-	get_res.s = pkg_malloc((int)item->v.v0.nbytes);
+	lcb_respget_value(item, &value, &nvalue);
+
+	get_res.s = pkg_malloc((int)nvalue);
 	if (!get_res.s) {
 		LM_ERR("No more pkg mem\n");
 		return;
 	}
 
-	memcpy(get_res.s,item->v.v0.bytes,item->v.v0.nbytes);
-	get_res.len = item->v.v0.nbytes;
+	memcpy(get_res.s, value, nvalue);
+	get_res.len = nvalue;
 }
 
-static void couchbase_store_cb(lcb_t instance, const void *cookie,
-							lcb_storage_t operation,
-							lcb_error_t err,
-							const lcb_store_resp_t *item)
+static void couchbase_store_cb(lcb_INSTANCE* instance, const void *cookie,
+							lcb_STORE_OPERATION operation,
+							lcb_STATUS err,
+							const lcb_RESPSTORE *item)
 {
-
 	op_error = err;
 
+	const char *key;
+	size_t nkey;
+	lcb_respstore_key(item, &key, &nkey);
+
 	if (err != LCB_SUCCESS) {
-		LM_ERR("Failure to store %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, err));
+		LM_ERR("Failure to store %.*s - %s\n", (int)nkey, key, lcb_strerror_short(err));
 	}
 }
 
-static void couchbase_remove_cb(lcb_t instance,
+static void couchbase_remove_cb(lcb_INSTANCE* instance,
 							const void *cookie,
-							lcb_error_t err,
-							const lcb_remove_resp_t *item)
+							lcb_STATUS err,
+							const lcb_RESPREMOVE *item)
 {
 	op_error = err;
 
+	const char *key;
+	size_t nkey;
+	lcb_respremove_key(item, &key, &nkey);
+
 	if (err != LCB_SUCCESS) {
-		if (err != LCB_KEY_ENOENT) {
-			LM_ERR("Failure to remove %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, err));
+		if (err != LCB_ERR_DOCUMENT_NOT_FOUND) {
+			LM_ERR("Failure to remove %.*s - %s\n", (int)nkey, key, lcb_strerror_short(err));
 		}
 	}
 }
 
-static void couchbase_arithmetic_cb(lcb_t instance,
+static void couchbase_arithmetic_cb(lcb_INSTANCE* instance,
 								const void *cookie,
-								lcb_error_t error,
-								const lcb_arithmetic_resp_t *item)
+								lcb_STATUS error,
+								const lcb_RESPCOUNTER *item)
 {
 	op_error = error;
 
+	const char *key;
+	size_t nkey;
+	uint64_t value;
+
+	lcb_respcounter_key(item, &key, &nkey);
+
 	if (error != LCB_SUCCESS) {
-		LM_ERR("Failure to perform arithmetic %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, error));
+		LM_ERR("Failure to perform arithmetic %.*s - %s\n", (int)nkey, key, lcb_strerror_short(error));
 		return;
 	}
 
-	arithmetic_res = item->v.v0.value;
+	lcb_respcounter_value(item, &value);
+	arithmetic_res = value;
 }
 
-lcb_error_t cb_connect(lcb_t instance) {
-	lcb_error_t rc;
+lcb_STATUS cb_connect(lcb_INSTANCE* instance) {
+	lcb_STATUS rc;
 
 	rc = lcb_connect(instance);
 
@@ -115,7 +135,7 @@ lcb_error_t cb_connect(lcb_t instance) {
 		return rc;
 	}
 
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
@@ -126,34 +146,16 @@ lcb_error_t cb_connect(lcb_t instance) {
 	return rc;
 }
 
-lcb_error_t cb_get(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_get_cmd_t *const *commands) {
-	lcb_error_t rc;
+lcb_STATUS cb_get(lcb_INSTANCE* instance, const lcb_CMDGET *commands) {
+	lcb_STATUS rc;
 
-	rc = lcb_get(instance, command_cookie, num, commands);
-
-	if (rc != LCB_SUCCESS) {
-		return rc;
-	}
-
-	rc = lcb_wait(instance);
+	rc = lcb_get(instance, NULL, commands);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
 	}
 
-	return op_error;
-}
-
-lcb_error_t cb_store(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_store_cmd_t *const *commands) {
-	lcb_error_t rc;
-
-	rc = lcb_store(instance, command_cookie, num, commands);
-
-	if (rc != LCB_SUCCESS) {
-		return rc;
-	}
-
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
@@ -162,16 +164,16 @@ lcb_error_t cb_store(lcb_t instance, const void *command_cookie, lcb_size_t num,
 	return op_error;
 }
 
-lcb_error_t cb_arithmetic(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_arithmetic_cmd_t *const *commands) {
-	lcb_error_t rc;
+lcb_STATUS cb_store(lcb_INSTANCE* instance, const lcb_CMDSTORE *commands) {
+	lcb_STATUS rc;
 
-	rc = lcb_arithmetic(instance, command_cookie, num, commands);
+	rc = lcb_store(instance, NULL, commands);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
 	}
 
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
@@ -180,16 +182,34 @@ lcb_error_t cb_arithmetic(lcb_t instance, const void *command_cookie, lcb_size_t
 	return op_error;
 }
 
-lcb_error_t cb_remove(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_remove_cmd_t *const *commands) {
-	lcb_error_t rc;
+lcb_STATUS cb_counter(lcb_INSTANCE* instance, const lcb_CMDCOUNTER *commands) {
+	lcb_STATUS rc;
 
-	rc = lcb_remove(instance, command_cookie, num, commands);
+	rc = lcb_counter(instance, NULL, commands);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
 	}
 
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	return op_error;
+}
+
+lcb_STATUS cb_remove(lcb_INSTANCE* instance, const lcb_CMDREMOVE *commands) {
+	lcb_STATUS rc;
+
+	rc = lcb_remove(instance, NULL, commands);
+
+	if (rc != LCB_SUCCESS) {
+		return rc;
+	}
+
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
@@ -200,88 +220,16 @@ lcb_error_t cb_remove(lcb_t instance, const void *command_cookie, lcb_size_t num
 
 #define CBASE_BUF_SIZE	256
 
-/*
- * fill the options based on the id field
- * the buf and len are used to store the URL/Host in case we need to build it
- */
-int couchbase_fill_options(struct cachedb_id *id, struct lcb_create_st *opt,
-		char *buf, int len)
-{
-#if LCB_VERSION <= 0x020300
-	char *p;
-#endif
-	int l;
-	memset(opt, 0, sizeof(*opt));
-
-#if LCB_VERSION <= 0x020300
-	opt->version = 0;
-	opt->v.v0.user = id->username;
-	opt->v.v0.passwd = id->password;
-	opt->v.v0.bucket = id->database;
-	if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
-		p = q_memchr(id->host, ',', len);
-		if (p) {
-			l = p - id->host;
-			if (l >= len) {
-				LM_ERR("Not enough space for the host [%.*s]%d>=%d\n",
-						l, id->host, l, CBASE_BUF_SIZE);
-				return -1;
-			}
-			memcpy(buf, id->host, l);
-			buf[l] = 0;
-			LM_WARN("Version %s does not support multiple hosts connection! "
-					"Connecting only to first host: %s!\n",
-					LCB_VERSION_STRING, buf);
-			opt->v.v0.host = buf;
-		}
-	}
-	/* when it comes with multiple hosts, the port is already in the id->host
-	 * field, so we no longer need to worry to put it in the buffer */
-	if (id->port) {
-		if (snprintf(buf, len, "%s:%hu", id->host, id->port) >= len) {
-			LM_ERR("cannot print %s:%hu in %d buffer\n", id->host, id->port, len);
-			return -1;
-		}
-		opt->v.v0.host = buf;
-	} else if (!opt->v.v0.host) {
-		opt->v.v0.host = id->host;
-	}
-	LM_DBG("Connecting HOST: %s BUCKET: %s\n", opt->v.v0.host, opt->v.v0.bucket);
-#else
-	opt->version = 3;
-	opt->v.v3.username = id->username;
-	opt->v.v3.passwd = id->password;
-
-	/* we don't care whether it has CACHEDB_ID_MULTIPLE_HOSTS, because
-	 * - if it does, it does not have a port and it should be printed as
-	 *   string
-	 * - if it does not, simply port the host as string and port if necessary
-	 */
-	if (!id->port)
-		l = snprintf(buf, len, "couchbase://%s/%s", id->host, id->database);
-	else
-		l = snprintf(buf, len, "couchbase://%s:%hu/%s", id->host, id->port,
-				id->database);
-	if (l >= len) {
-		LM_ERR("not enough buffer to print the URL: %.*s\n", len, buf);
-		return -1;
-	}
-	opt->v.v3.connstr = buf;
-	LM_DBG("Connecting URL: %s\n", opt->v.v3.connstr);
-#endif
-
-	return 0;
-}
-
 couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 {
 	/* buffer used to temporary store the host, in case we need to build it */
 	char tmp_buf[CBASE_BUF_SIZE];
 	couchbase_con *con;
-	struct lcb_create_st options;
+	lcb_CREATEOPTS *options = NULL;
 	lcb_uint32_t tmo = 0;
-	lcb_t instance;
-	lcb_error_t rc;
+	lcb_INSTANCE* instance;
+	lcb_STATUS rc;
+	int l;
 
 	if (id == NULL) {
 		LM_ERR("null cachedb_id\n");
@@ -298,25 +246,43 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 	con->id = id;
 	con->ref = 1;
 
-	if (couchbase_fill_options(id, &options, tmp_buf, CBASE_BUF_SIZE) < 0) {
-		LM_ERR("cannot create connection options!\n");
+	lcb_createopts_create(&options, LCB_TYPE_BUCKET);
+
+	lcb_createopts_credentials(options, id->username, strlen(id->username), id->password, strlen(id->password));
+
+	/* we don't care whether it has CACHEDB_ID_MULTIPLE_HOSTS, because
+	 * - if it does, it does not have a port and it should be printed as
+	 *   string
+	 * - if it does not, simply port the host as string and port if necessary
+	 */
+	if (!id->port)
+		l = snprintf(tmp_buf, CBASE_BUF_SIZE, "couchbase://%s/%s", id->host, id->database);
+	else
+		l = snprintf(tmp_buf, CBASE_BUF_SIZE, "couchbase://%s:%hu/%s", id->host, id->port,
+				id->database);
+
+	if (l >= CBASE_BUF_SIZE) {
+		LM_ERR("not enough buffer to print the URL: %.*s\n", CBASE_BUF_SIZE, tmp_buf);
+		 lcb_createopts_destroy(options);
 		return 0;
 	}
 
-	rc=lcb_create(&instance, &options);
+	LM_DBG("Connecting URL: %s\n", tmp_buf);
+	lcb_createopts_connstr(options, tmp_buf, CBASE_BUF_SIZE);
+
+	rc=lcb_create(&instance, options);
+	lcb_createopts_destroy(options);
+
 	if (rc!=LCB_SUCCESS) {
 		LM_ERR("Failed to create libcouchbase instance: 0x%02x, %s\n",
-		       rc, lcb_strerror(NULL, rc));
+		       rc, lcb_strerror_short(rc));
 		return 0;
 	}
 
-	(void)lcb_set_get_callback(instance,
-			couchbase_get_cb);
-	(void)lcb_set_store_callback(instance,
-			couchbase_store_cb);
-	(void)lcb_set_remove_callback(instance,
-			couchbase_remove_cb);
-	(void)lcb_set_arithmetic_callback(instance,couchbase_arithmetic_cb);
+	(void)lcb_install_callback(instance, LCB_CALLBACK_GET, (lcb_RESPCALLBACK)couchbase_get_cb);
+	(void)lcb_install_callback(instance, LCB_CALLBACK_STORE, (lcb_RESPCALLBACK)couchbase_store_cb);
+	(void)lcb_install_callback(instance, LCB_CALLBACK_REMOVE, (lcb_RESPCALLBACK)couchbase_remove_cb);
+	(void)lcb_install_callback(instance, LCB_CALLBACK_COUNTER, (lcb_RESPCALLBACK)couchbase_arithmetic_cb);
 
 	//Set Timeout
 	tmo = (lcb_uint32_t)couch_timeout_usec;
@@ -328,15 +294,15 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 		/*Check connection*/
 		if (rc != LCB_SUCCESS) {
 			/*Consider these connect failurs as fatal*/
-			if(rc == LCB_AUTH_ERROR || rc == LCB_INVALID_HOST_FORMAT || rc == LCB_INVALID_CHAR) {
+			if(rc == LCB_ERR_AUTHENTICATION_FAILURE || rc == LCB_ERR_INVALID_HOST_FORMAT || rc == LCB_ERR_INVALID_CHAR) {
 				LM_ERR("Fatal connection error to Couchbase. Host: %s Bucket: %s Error: %s",
-					id->host, id->database, lcb_strerror(instance, rc));
+					id->host, id->database, lcb_strerror_short(rc));
 				lcb_destroy(instance);
 				return 0;
 			} else {
 			/* Non-fatal errors, we may be able to connect later */
 				LM_ERR("Non-Fatal connection error to Couchbase. Host: %s Bucket: %s Error: %s",
-					id->host, id->database, lcb_strerror(instance, rc));
+					id->host, id->database, lcb_strerror_short(rc));
 			}
 		} else {
 			LM_DBG("Successfully connected to Couchbase Server. Host: %s Bucket: %s\n", id->host, id->database);
@@ -374,7 +340,7 @@ void couchbase_destroy(cachedb_con *con)
 }
 
 /*Conditionally reconnect based on the error code*/
-int couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
+int couchbase_conditional_reconnect(cachedb_con *con, lcb_STATUS err) {
 	cachedb_pool_con *tmp;
 	void *newcon;
 
@@ -382,11 +348,10 @@ int couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
 
 	switch (err) {
 		/* Error codes to attempt reconnects on */
-		case LCB_EINTERNAL:
-		case LCB_CLIENT_ETMPFAIL:
-		case LCB_EBADHANDLE:
-		case LCB_NETWORK_ERROR:
-                case LCB_ETIMEDOUT:
+		case LCB_ERR_SDK_INTERNAL:
+		case LCB_ERR_NO_CONFIGURATION:
+		case LCB_ERR_NETWORK:
+		case LCB_ERR_TIMEOUT:
 		break;
 		default:
 			/*nothing to do*/
@@ -396,7 +361,7 @@ int couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
 
 	tmp = (cachedb_pool_con*)(con->data);
 	LM_ERR("Attempting reconnect to Couchbase. Host: %s Bucket: %s On Error: %s",
-		tmp->id->host, tmp->id->database, lcb_strerror(COUCHBASE_CON(con), err));
+		tmp->id->host, tmp->id->database, lcb_strerror_short(err));
 
 	newcon = couchbase_connect(tmp->id, 1);
 
@@ -416,28 +381,22 @@ int couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
 int couchbase_set(cachedb_con *connection,str *attr,
 		str *val,int expires)
 {
-	lcb_t instance;
-	lcb_error_t oprc;
-	lcb_store_cmd_t cmd;
-	const lcb_store_cmd_t *commands[1];
+	lcb_INSTANCE* instance;
+	lcb_STATUS oprc;
+	lcb_CMDSTORE *commands;
 	struct timeval start;
 
 	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
-
-	commands[0] = &cmd;
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.v.v0.operation = LCB_SET;
-	cmd.v.v0.key = attr->s;
-	cmd.v.v0.nkey = attr->len;
-	cmd.v.v0.bytes = val->s;
-	cmd.v.v0.nbytes = val->len;
-	cmd.v.v0.exptime = expires;
-
-	oprc = cb_store(instance, NULL, 1, commands);
+	lcb_cmdstore_create(&commands, LCB_STORE_UPSERT);
+	lcb_cmdstore_key(commands, attr->s, attr->len);
+	lcb_cmdstore_value(commands, val->s, val->len);
+	lcb_cmdstore_expiry(commands, expires);
+	oprc = cb_store(instance, commands);
+	lcb_cmdstore_destroy(commands);
 
 	if (oprc != LCB_SUCCESS) {
-		LM_ERR("Set request failed - %s\n", lcb_strerror(instance, oprc));
+		LM_ERR("Set request failed - %s\n", lcb_strerror_short(oprc));
 		//Attempt reconnect
 		if(couchbase_conditional_reconnect(connection, oprc) != 1) {
 			_stop_expire_timer(start,couch_exec_threshold,
@@ -448,10 +407,15 @@ int couchbase_set(cachedb_con *connection,str *attr,
 
 		//Try again
 		instance = COUCHBASE_CON(connection);
-		oprc = cb_store(instance, NULL, 1, commands);
+		lcb_cmdstore_create(&commands, LCB_STORE_UPSERT);
+		lcb_cmdstore_key(commands, attr->s, attr->len);
+		lcb_cmdstore_value(commands, val->s, val->len);
+		lcb_cmdstore_expiry(commands, expires);
+		oprc = cb_store(instance, commands);
+		lcb_cmdstore_destroy(commands);
 
 		if (oprc != LCB_SUCCESS) {
-			LM_ERR("Set command retry failed - %s\n", lcb_strerror(instance, oprc));
+			LM_ERR("Set command retry failed - %s\n", lcb_strerror_short(oprc));
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase set",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -468,29 +432,27 @@ int couchbase_set(cachedb_con *connection,str *attr,
 
 int couchbase_remove(cachedb_con *connection,str *attr)
 {
-	lcb_t instance;
-	lcb_error_t oprc;
-	lcb_remove_cmd_t cmd;
-	const lcb_remove_cmd_t *commands[1];
+	lcb_INSTANCE* instance;
+	lcb_STATUS oprc;
+	lcb_CMDREMOVE *commands;
 	struct timeval start;
 
 	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
-	commands[0] = &cmd;
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.v.v0.key = attr->s;
-	cmd.v.v0.nkey = attr->len;
-	oprc = cb_remove(instance, NULL, 1, commands);
+	lcb_cmdremove_create(&commands);
+	lcb_cmdremove_key(commands, attr->s, attr->len);
+	oprc = cb_remove(instance, commands);
+	lcb_cmdremove_destroy(commands);
 
 	if (oprc != LCB_SUCCESS) {
-		if (oprc == LCB_KEY_ENOENT) {
+		if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase remove",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
 			return -1;
 		}
 
-		LM_ERR("Failed to send the remove query - %s\n", lcb_strerror(instance, oprc));
+		LM_ERR("Failed to send the remove query - %s\n", lcb_strerror_short(oprc));
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase remove",attr->s,attr->len,0,
@@ -498,18 +460,22 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 			return -2;
 		};
 
+		//Try again
 		instance = COUCHBASE_CON(connection);
-		oprc = cb_remove(instance, NULL, 1, commands);
+		lcb_cmdremove_create(&commands);
+		lcb_cmdremove_key(commands, attr->s, attr->len);
+		oprc = cb_remove(instance, commands);
+		lcb_cmdremove_destroy(commands);
 
 		if (oprc != LCB_SUCCESS) {
-			if (oprc == LCB_KEY_ENOENT) {
+			if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 				LM_ERR("Remove command successfully retried\n");
 				_stop_expire_timer(start,couch_exec_threshold,
 					"cachedb_couchbase remove",attr->s,attr->len,0,
 					cdb_slow_queries, cdb_total_queries);
 				return -1;
 			}
-			LM_ERR("Remove command retry failed - %s\n", lcb_strerror(instance, oprc));
+			LM_ERR("Remove command retry failed - %s\n", lcb_strerror_short(oprc));
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase remove",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -527,24 +493,21 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 
 int couchbase_get(cachedb_con *connection,str *attr,str *val)
 {
-	lcb_t instance;
-	lcb_error_t oprc;
-	lcb_get_cmd_t cmd;
-	const lcb_get_cmd_t *commands[1];
+	lcb_INSTANCE* instance;
+	lcb_STATUS oprc;
+	lcb_CMDGET *commands;
 	struct timeval start;
 
 	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
-
-	commands[0] = &cmd;
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.v.v0.key = attr->s;
-	cmd.v.v0.nkey = attr->len;
-	oprc = cb_get(instance, NULL, 1, commands);
+	lcb_cmdget_create(&commands);
+	lcb_cmdget_key(commands, attr->s, attr->len);
+	oprc = cb_get(instance, commands);
+	lcb_cmdget_destroy(commands);
 
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
-		if (oprc == LCB_KEY_ENOENT) {
+		if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase get",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -559,18 +522,21 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 			return -2;
 		}
 
-		//Try Again
+		//Try again
 		instance = COUCHBASE_CON(connection);
-		oprc = cb_get(instance, NULL, 1, commands);
+		lcb_cmdget_create(&commands);
+		lcb_cmdget_key(commands, attr->s, attr->len);
+		oprc = cb_get(instance, commands);
+		lcb_cmdget_destroy(commands);
 		if (oprc != LCB_SUCCESS) {
-			if (oprc == LCB_KEY_ENOENT) {
+			if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 				LM_ERR("Get command successfully retried\n");
 				_stop_expire_timer(start,couch_exec_threshold,
 					"cachedb_couchbase get",attr->s,attr->len,0,
 					cdb_slow_queries, cdb_total_queries);
 				return -1;
 			}
-			LM_ERR("Get command retry failed - %s\n", lcb_strerror(instance, oprc));
+			LM_ERR("Get command retry failed - %s\n", lcb_strerror_short(oprc));
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase get",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -596,34 +562,30 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 
 int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
 {
-	lcb_t instance;
-	lcb_error_t oprc;
-	lcb_arithmetic_cmd_t cmd;
-	const lcb_arithmetic_cmd_t *commands[1];
+	lcb_INSTANCE* instance;
+	lcb_STATUS oprc;
+	lcb_CMDCOUNTER *commands;
 	struct timeval start;
 
 	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
-
-	commands[0] = &cmd;
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.v.v0.key = attr->s;
-	cmd.v.v0.nkey = attr->len;
-	cmd.v.v0.delta = val;
-	cmd.v.v0.create = 1;
-	cmd.v.v0.initial = val;
-	cmd.v.v0.exptime = expires;
-	oprc = cb_arithmetic(instance, NULL, 1, commands);
+	lcb_cmdcounter_create(&commands);
+	lcb_cmdcounter_key(commands, attr->s, attr->len);
+	lcb_cmdcounter_delta(commands, val);
+	lcb_cmdcounter_initial(commands, val);
+	lcb_cmdcounter_expiry(commands, expires);
+	oprc = cb_counter(instance, commands);
+	lcb_cmdcounter_destroy(commands);
 
 	if (oprc != LCB_SUCCESS) {
-		if (oprc == LCB_KEY_ENOENT) {
+		if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 			return -1;
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase add",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
 		}
 
-		LM_ERR("Failed to send the arithmetic query - %s\n", lcb_strerror(instance, oprc));
+		LM_ERR("Failed to send the arithmetic query - %s\n", lcb_strerror_short(oprc));
 		//Attempt reconnect
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
 			_stop_expire_timer(start,couch_exec_threshold,
@@ -634,17 +596,23 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 
 		//Try again
 		instance = COUCHBASE_CON(connection);
-		oprc = cb_arithmetic(instance, NULL, 1, commands);
+		lcb_cmdcounter_create(&commands);
+		lcb_cmdcounter_key(commands, attr->s, attr->len);
+		lcb_cmdcounter_delta(commands, val);
+		lcb_cmdcounter_initial(commands, val);
+		lcb_cmdcounter_expiry(commands, expires);
+		oprc = cb_counter(instance, commands);
+		lcb_cmdcounter_destroy(commands);
 
 		if (oprc != LCB_SUCCESS) {
-			if (oprc == LCB_KEY_ENOENT) {
+			if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 				LM_ERR("Arithmetic command successfully retried\n");
 				_stop_expire_timer(start,couch_exec_threshold,
 					"cachedb_couchbase add",attr->s,attr->len,0,
 					cdb_slow_queries, cdb_total_queries);
 				return -1;
 			}
-			LM_ERR("Arithmetic command retry failed - %s\n", lcb_strerror(instance, oprc));
+			LM_ERR("Arithmetic command retry failed - %s\n", lcb_strerror_short(oprc));
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase add",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -669,24 +637,21 @@ int couchbase_sub(cachedb_con *connection,str *attr,int val,int expires,int *new
 
 int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 {
-	lcb_t instance;
-	lcb_error_t oprc;
-	lcb_get_cmd_t cmd;
-	const lcb_get_cmd_t *commands[1];
+	lcb_INSTANCE* instance;
+	lcb_STATUS oprc;
+	lcb_CMDGET *commands;
 	struct timeval start;
 
 	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
-
-	commands[0] = &cmd;
-	memset(&cmd, 0, sizeof(cmd));
-	cmd.v.v0.key = attr->s;
-	cmd.v.v0.nkey = attr->len;
-	oprc = cb_get(instance, NULL, 1, commands);
+	lcb_cmdget_create(&commands);
+	lcb_cmdget_key(commands, attr->s, attr->len);
+	oprc = cb_get(instance, commands);
+	lcb_cmdget_destroy(commands);
 
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
-		if (oprc == LCB_KEY_ENOENT) {
+		if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase get counter",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -701,18 +666,21 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 			return -2;
 		}
 
-		//Try Again
+		//Try again
 		instance = COUCHBASE_CON(connection);
-		oprc = cb_get(instance, NULL, 1, commands);
+		lcb_cmdget_create(&commands);
+		lcb_cmdget_key(commands, attr->s, attr->len);
+		oprc = cb_get(instance, commands);
+		lcb_cmdget_destroy(commands);
 		if (oprc != LCB_SUCCESS) {
-			if (oprc == LCB_KEY_ENOENT) {
+			if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 				LM_ERR("Get counter command successfully retried\n");
 				_stop_expire_timer(start,couch_exec_threshold,
 					"cachedb_couchbase get counter",attr->s,attr->len,0,
 					cdb_slow_queries, cdb_total_queries);
 				return -1;
 			}
-			LM_ERR("Get counter command retry failed - %s\n", lcb_strerror(instance, oprc));
+			LM_ERR("Get counter command retry failed - %s\n", lcb_strerror_short(oprc));
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase get counter",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
