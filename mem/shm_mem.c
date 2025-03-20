@@ -275,13 +275,14 @@ void *shm_getmem(int fd, void *force_addr, unsigned long size)
 }
 
 
-#if !defined INLINE_ALLOC && defined HP_MALLOC
+#if !defined(INLINE_ALLOC) && (defined(HP_MALLOC) || defined(F_PARALLEL_MALLOC))
 /* startup optimization */
 int shm_use_global_lock;
 #endif
 
 int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 {
+	LM_ERR("Initing mallocs\n");
 #ifdef HP_MALLOC
 	int i;
 #endif
@@ -298,6 +299,9 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	if (mem_allocator_shm == MM_NONE)
 		mem_allocator_shm = mem_allocator;
 
+	LM_ERR("Not inlined, shm allocator = %d\n",mem_allocator_shm);
+
+
 #ifdef HP_MALLOC
 	if (mem_allocator_shm == MM_HP_MALLOC
 	        || mem_allocator_shm == MM_HP_MALLOC_DBG) {
@@ -311,6 +315,17 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 		shm_use_global_lock = 1;
 	}
 #endif
+
+#ifdef F_PARALLEL_MALLOC
+	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||
+	mem_allocator_shm == MM_F_PARALLEL_MALLOC_DBG) {
+		shm_use_global_lock = 0;
+	} else {
+		shm_use_global_lock = 1;
+	}
+#endif
+
+	LM_ERR("Here1\n");
 
 #ifdef SHM_EXTRA_STATS
 	switch (mem_allocator_shm) {
@@ -369,6 +384,8 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	}
 #endif
 
+	LM_ERR("Frag size \n");
+
 	switch (mem_allocator_shm) {
 #ifdef F_MALLOC
 	case MM_F_MALLOC:
@@ -403,13 +420,13 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	switch (mem_allocator_shm) {
 #ifdef F_PARALLEL_MALLOC
 	case MM_F_PARALLEL_MALLOC:
-		//LM_ERR("VLAD initializing block %d \n",idx);
+		LM_ERR("VLAD initializing block %d \n",idx);
 		shm_blocks[idx] = parallel_malloc_init(mempool, pool_size, "shm", idx);
 		if (!shm_blocks[idx]) {
 			LM_CRIT("parallel alloc init :( \n");
 			goto err_destroy;	
 		}
-		//LM_ERR("Done allocating - setting func pointers \n");
+		LM_ERR("Done allocating - setting func pointers \n");
 		gen_shm_malloc         = (osips_block_malloc_f)parallel_malloc;
 		gen_shm_malloc_unsafe  = (osips_block_malloc_f)parallel_malloc;
 		gen_shm_realloc        = (osips_block_realloc_f)parallel_realloc;
@@ -548,6 +565,8 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 		return -1;
 	}
 #endif
+
+	LM_ERR("Initted global funcs \n");
 
 	if (mem_allocator_shm != MM_F_PARALLEL_MALLOC) {
 		if (!shm_block){
@@ -796,6 +815,7 @@ int shm_mem_init(void)
 			return -1;
 		}
 #endif /* USE_ANON_MMAP */
+	LM_ERR("Total pools size is %d\n",TOTAL_F_PARALLEL_POOLS);
 	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 
 		block_size = shm_mem_size/TOTAL_F_PARALLEL_POOLS;
