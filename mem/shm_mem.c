@@ -667,8 +667,9 @@ err_destroy:
 		shm_mem_destroy();
 		return -1;
 	}
+#endif
 
-#elif defined F_MALLOC || defined Q_MALLOC
+#if defined F_MALLOC || defined Q_MALLOC
 	mem_lock = shm_malloc_unsafe(sizeof *mem_lock);
 	if (!mem_lock) {
 		LM_CRIT("could not allocate the shm lock\n");

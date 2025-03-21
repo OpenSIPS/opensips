@@ -287,8 +287,6 @@ void parallel_free(struct parallel_block *fm, void *p, const char *file,
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	fm->fragments -= 1;
 #endif
-	pkg_threshold_check();
-
 	LM_ERR("Succes in freeing ! \n");
 
 	lock_release(hash_locks[fm->idx]);
@@ -321,7 +319,9 @@ void parallel_free_unsafe(struct parallel_block *fm, void *p, const char *file,
 	}
 
 	f = F_PARALLEL_FRAG(p);
+	fm = f->block_ptr;
 
+	lock_get(hash_locks[fm->idx]);
 	check_double_free(p, f, fm);
 
 #ifdef DBG_MALLOC
@@ -352,8 +352,7 @@ void parallel_free_unsafe(struct parallel_block *fm, void *p, const char *file,
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	fm->fragments -= 1;
 #endif
-	pkg_threshold_check();
-
+	lock_release(hash_locks[fm->idx]);
 	//LM_ERR("Succes in freeing ! \n");
 }
 
@@ -413,7 +412,6 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 			#endif
 		}
 
-		pkg_threshold_check();
 		return 0;
 	}
 
