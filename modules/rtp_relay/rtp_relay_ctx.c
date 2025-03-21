@@ -1493,7 +1493,8 @@ static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_para
 	rtp_relay_delete_ctx(ctx, ctx->established, ltype);
 	RTP_RELAY_CTX_UNLOCK(ctx);
 	lock_start_write(rtp_relay_contexts_lock);
-	list_del(&ctx->list);
+	if (list_is_valid(&ctx->list))
+		list_del(&ctx->list);
 	lock_stop_write(rtp_relay_contexts_lock);
 }
 
