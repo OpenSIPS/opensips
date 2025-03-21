@@ -48,7 +48,7 @@
 #include "resolve.h"
 #include "ip_addr.h"
 #include "globals.h"
-
+#include "redact_pii.h"
 
 struct proxy_l* proxies=0;
 
@@ -216,7 +216,7 @@ struct proxy_l* mk_proxy(str* name, unsigned short port, unsigned short proto,
 	if (!he || !he->h_addr_list[0]) {
 		ser_error=E_BAD_ADDRESS;
 		LM_CRIT("could not resolve hostname: \"%.*s\"%s\n",
-		        name->len, name->s, he ? " (0 results)" : "");
+		        name->len, redact_pii(name->s), he ? " (0 results)" : "");
 		pkg_free(p);
 		goto error;
 	}
