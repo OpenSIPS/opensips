@@ -37,6 +37,7 @@
 #include "parse.h"
 #include "dr_cb.h"
 #include "dr_cb_sorting.h"
+#include "../../redact_pii.h"
 
 
 #define is_valid_gw_char(_c) \
@@ -663,11 +664,11 @@ add_dst(
 	if (proxy==NULL) {
 		if(dr_force_dns) {
 			LM_ERR("cannot resolve <%.*s>\n",
-					uri.host.len, uri.host.s);
+					uri.host.len, redact_pii(uri.host.s));
 			goto err_exit;
 		} else {
 			LM_DBG("cannot resolve <%.*s> - won't be used"
-					" by is_from_gw()\n", uri.host.len, uri.host.s);
+					" by is_from_gw()\n", uri.host.len, redact_pii(uri.host.s));
 			goto done;
 		}
 	}
