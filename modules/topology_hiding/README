@@ -341,8 +341,9 @@ Chapter 2. Contributors
    4. Liviu Chircu (@liviuchircu) 16 14 80 55
    5. Vlad Patrascu (@rvlad-patrascu) 9 6 82 72
    6. Maksym Sobolyev (@sobomax) 6 4 7 8
-   7. Alexey Vasilyev (@vasilevalex) 4 2 3 15
-   8. Peter Lemenkov (@lemenkov) 4 2 2 2
+   7. David Trihy 4 2 58 25
+   8. Alexey Vasilyev (@vasilevalex) 4 2 3 15
+   9. Peter Lemenkov (@lemenkov) 4 2 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -364,14 +365,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2024
-   2. Liviu Chircu (@liviuchircu)         Mar 2015 - May 2024
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Feb 2024
-   4. Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2020
-   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jan 2020
-   7. Alexey Vasilyev (@vasilevalex)      Sep 2019 - Sep 2019
-   8. Vlad Paiu (@vladpaiu)               Feb 2015 - Mar 2016
+   1. David Trihy                         Mar 2025 - Mar 2025
+   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2024
+   3. Liviu Chircu (@liviuchircu)         Mar 2015 - May 2024
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Feb 2024
+   5. Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2020
+   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Jan 2020
+   8. Alexey Vasilyev (@vasilevalex)      Sep 2019 - Sep 2019
+   9. Vlad Paiu (@vladpaiu)               Feb 2015 - Mar 2016
 
    (1) including any documentation-related commits, excluding
    merge commits
