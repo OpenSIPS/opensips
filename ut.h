@@ -39,6 +39,7 @@
 #include "str.h"
 #include "evi/evi_modules.h"
 #include "evi/evi_core.h"
+#include "redact_pii.h"
 
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
@@ -1364,12 +1365,12 @@ static inline void log_expiry(int time_diff,int expire,
 			LM_WARN("threshold exceeded : tcp took too long : "
 				"con_get=%d, rcv_fd=%d, send=%d. Source : %.*s\n",
 				tcp_timeout_con_get,tcp_timeout_receive_fd,
-				tcp_timeout_send,dbg_len,extra_dbg);
+				tcp_timeout_send,dbg_len,redact_pii(extra_dbg));
 			time_diff = tcp_timeout_send + tcp_timeout_receive_fd +
 				tcp_timeout_con_get;
 		} else
 			LM_WARN("threshold exceeded : %s took too long - %d us."
-					"Source : %.*s\n",func_info,time_diff,dbg_len,extra_dbg);
+					"Source : %.*s\n",func_info,time_diff,dbg_len,redact_pii(extra_dbg));
 
 		if (memcmp(func_info,"msg",3) == 0) {
 			for (i=0;i<LONGEST_ACTION_SIZE;i++) {
