@@ -116,6 +116,23 @@ modparam("aka_av_diameter", "realm", "scscf.ims.mnc001.mcc001.3gppnetwork.org")
 		</programlisting>
 		</example>
 	</section>
+	<section id="param_server_uri" xreflabel="Server-URI">
+		<title><varname>server_uri</varname> (string)</title>
+		<para>
+		The Server-URI used in the Diameter commands.
+		</para>
+		<para>
+		Default value is <quote>sip:diameter.test</quote>.
+		</para>
+		<example>
+		<title><varname>server_uri</varname> parameter usage</title>
+		<programlisting format="linespecific">
+		
+modparam("aka_av_diameter", "server_uri", "sip:scscf.ims.mnc001.mcc001.3gppnetwork.org")
+		</programlisting>
+		</example>
+	</section>
+
 
 	</section>
 
