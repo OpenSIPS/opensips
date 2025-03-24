@@ -49,10 +49,8 @@ struct process_table {
 	/* various flags describing properties of this process */
 	unsigned int flags;
 
-	/* pipe used by the process to receive designated jobs (used by IPC)
-	 * [1] for writting into by other process,
-	 * [0] to listen on by this process */
-	int ipc_pipe[2];
+	/* pipe used by the process to receive designated jobs (used by IPC) */
+	int ipc_pipe;
 	/* same as above, but the holder used when the corresponding process
 	 * does not exist */
 	int ipc_pipe_holder[2];
@@ -61,7 +59,7 @@ struct process_table {
 	 * this pipe should only be used by a process to synchronously receive a
 	 * message after he knows that some other process will send it for sure,
 	 * and there's no other job that can overlap in the meantime */
-	int ipc_sync_pipe[2];
+	int ipc_sync_pipe;
 	/* same as above, but holder for non-existing processes */
 	int ipc_sync_pipe_holder[2];
 
