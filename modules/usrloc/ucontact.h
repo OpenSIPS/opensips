@@ -126,6 +126,7 @@ typedef struct ucontact {
 	time_t last_modified;   /*!< When the record was last modified */
 	unsigned int methods;   /*!< Supported methods */
 	str attr;               /*!< Additional registration info  */
+	param_t *params;        /*!< Params header details> */
 	struct proxy_l next_hop;/*!< SIP-wise determined next hop */
 	unsigned short label;   /*!< label to find the contact in contact list>*/
 	int sipping_latency;    /*!< useconds; not restart-persistent >*/
@@ -167,6 +168,7 @@ typedef struct ucontact_info {
 	time_t last_modified;
 	str *packed_kv_storage;
 	str *attr;
+	param_t *params;        /*!< Params header details> */
 	str shtag;
 	str cdb_key;
 	int refresh_time;

@@ -42,6 +42,7 @@
 #include "../../dprint.h"
 #include "../../db/db.h"
 #include "../../db/db_insertq.h"
+#include "../../lib/str_buffer.h"
 
 #include "ul_mod.h"
 #include "ul_callback.h"
@@ -55,6 +56,12 @@
 #include "utime.h"
 #include "usrloc.h"
 #include "kv_store.h"
+
+/**
+ * @brief Format for param string building.
+ *
+ */
+static str param_fmt = str_init("%.*s%s%.*s%s");
 
 /*
  * Determines the IP address of the next hop on the way to given contact based
@@ -103,6 +110,9 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 	struct sip_uri ct_uri;
 	ucontact_t *c;
 	int_str_t shtag, *shtagp;
+    param_t *prev = NULL;
+    param_t *curr, *param;
+    int first = 1;	
 
 	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
 	if (!c) {
@@ -148,6 +158,38 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 	if (_ci->attr && _ci->attr->len) {
 		if (shm_str_dup( &c->attr, _ci->attr) < 0) goto mem_error;
 	}
+
+    /*Copy parameter list into shm**/
+    param = _ci->params;
+    while(param) {
+		/*Copy first param in curr*/
+		curr = shm_malloc(sizeof (param_t));
+		curr->len = param->len;
+		curr->type = param->type;
+		curr->next = 0;
+		if (param->body.len > 0 && param->body.s) {
+			if (shm_str_dup(&curr->body, &param->body) < 0) goto mem_error;
+		} else {
+			curr->body.s = 0;
+			curr->body.len = 0;
+		}
+		if (param->name.len > 0 && param->name.s) {
+			if (shm_str_dup(&curr->name, &param->name) < 0) goto mem_error;
+		} else {
+			curr->name.s = 0;
+			curr->name.len = 0;
+		}
+		
+		if(first) {
+			c->params = curr;
+			first = 0;
+		} else {
+			prev->next = curr;
+		}
+		prev = curr;
+		param = param->next;
+	}
+
 
 	if (_ci->cdb_key.s && _ci->cdb_key.len) {
 		if (shm_str_dup( &c->cdb_key, &_ci->cdb_key) < 0) goto mem_error;
@@ -211,6 +253,16 @@ out_free:
 	if (c->cdb_key.s) shm_free(c->cdb_key.s);
 	if (c->shtag.s) shm_free(c->shtag.s);
 	if (c->kv_storage) store_destroy(c->kv_storage);
+	if (c->params) {
+		param = c->params;
+		while(param) {
+			curr = param;
+			param = param->next;
+			if (curr->name.s) shm_free(curr->name.s);
+			if (curr->body.s) shm_free(curr->body.s);
+			shm_free(curr);
+		}
+	}
 	shm_free(c);
 	return NULL;
 }
@@ -222,6 +274,8 @@ out_free:
  */
 void free_ucontact(ucontact_t* _c)
 {
+	param_t *curr, *param;
+
 	if (!_c) return;
 
 	if (_c->flags & FL_EXTRA_HOP)
@@ -237,6 +291,16 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->cdb_key.s) shm_free(_c->cdb_key.s);
 	if (_c->shtag.s) shm_free(_c->shtag.s);
 	if (_c->kv_storage) store_destroy(_c->kv_storage);
+	if (_c->params) {
+		param = _c->params;
+		while(param) {
+			curr = param;
+			param = param->next;
+			if (curr->name.s) shm_free(curr->name.s);
+			if (curr->body.s) shm_free(curr->body.s);
+			shm_free(curr);
+		}
+	}	
 
 skip_fields:
 	shm_free( _c );
@@ -520,6 +584,8 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 {
 	int nr_vals = UL_COLS - 1;
 	int start = 0;
+	str_buffer *buffer = NULL;
+	str params = STR_NULL;	
 
 	static db_ps_t myI_ps = NULL;
 	static db_ps_t myR_ps = NULL;
@@ -555,6 +621,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	keys[15] = &sip_instance_col;
 	keys[16] = &kv_store_col;
 	keys[17] = &attr_col;
+	keys[18] = &params_col;
 	keys[UL_COLS - 1] = &domain_col; /* "domain" always stays last */
 
 	memset(vals, 0, sizeof vals);
@@ -653,6 +720,49 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		vals[17].val.str_val.len = _c->attr.len;
 	}
 
+	vals[18].type = DB_STR;
+	if (_c->params == 0) {
+		vals[18].nul = 1;
+	} else {
+		buffer = new_str_buffer();
+		if(!buffer) {
+			LM_ERR("Error allocating str_buffer\n");
+			return -1;
+		}
+	
+		{
+			param_t *param = _c->params;
+			while(param) {
+				if(param->name.len > 0) {
+					if(param->body.len > 0) {
+						str_buffer_append_str_fmt(buffer, &param_fmt,
+								param->name.len, param->name.s, "=", param->body.len, param->body.s,
+								param->next ? ";" : "");
+					} else {
+						str_buffer_append_str_fmt(buffer, &param_fmt,
+								param->name.len, param->name.s, "", 0, NULL,
+								param->next ? ";" : "");
+					}
+				}
+	
+				param = param->next;
+			}
+		}
+	
+		if(str_buffer_has_error(buffer)) {
+			LM_ERR("str_buffer had memory allocating errors while building\n");
+			free_str_buffer(buffer);
+			return -1;
+		} else if(!str_buffer_to_str(buffer, &params)) {
+			LM_ERR("str_buffer unable to get result\n");
+			free_str_buffer(buffer);
+			return -1;
+		}
+	
+		free_str_buffer(buffer);
+		vals[18].val.str_val = params;		
+	}
+
 	if (use_domain) {
 		vals[UL_COLS - 1].type = DB_STR;
 
@@ -698,9 +808,11 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	}
 
 	store_free_buffer(&vals[16].val.str_val);
+	pkg_free(params.s);
 	return 0;
 out_err:
 	store_free_buffer(&vals[16].val.str_val);
+	pkg_free(params.s);
 	return -1;
 }
 
