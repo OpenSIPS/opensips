@@ -122,7 +122,9 @@ modparam("aka_av_diameter", "realm", "scscf.ims.mnc001.mcc001.3gppnetwork.org")
 		The Server-URI used in the Diameter commands.
 		</para>
 		<para>
-		Default value is <quote>sip:diameter.test</quote>.
+		If it is left empty, the Server-Name will be created by adding "sip:" in front of the realm
+		parameter value
+		(e.g. <quote>sip:scscf.ims.mnc001.mcc001.3gppnetwork.org</quote>).
 		</para>
 		<example>
 		<title><varname>server_uri</varname> parameter usage</title>
