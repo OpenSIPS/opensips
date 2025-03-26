@@ -90,8 +90,9 @@ static int parse_db_url(struct db_id* id, const str* url)
 	enum state st;
 	unsigned int len, i, ipv6_flag = 0;
 	const char* begin;
-	char* prev_token = NULL;
+	char* prev_token = NULL, *p;
 	str unix_socket_host = str_init("localhost");
+	int have_pass = 0;
 
 	if (!id || !url || !url->s) {
 		return -1;
@@ -106,6 +107,11 @@ static int parse_db_url(struct db_id* id, const str* url)
 	memset(id, 0, sizeof(struct db_id));
 	st = ST_SCHEME;
 	begin = url->s;
+
+	/* to allow support for '/' characters in password => look ahead! */
+	p = q_memchr(url->s, ':', len);
+	if (p && q_memchr(p, '@', len - (p - url->s)))
+		have_pass = 1;
 
 	for(i = 0; i < len; i++) {
 		switch(st) {
@@ -150,7 +156,10 @@ static int parse_db_url(struct db_id* id, const str* url)
 				break;
 
 			case ':':
-				st = ST_PASS_PORT;
+				if (have_pass)
+					st = ST_PASSWORD;
+				else
+					st = ST_PORT;
 				if (dupl_string(&prev_token, begin, url->s + i) < 0) goto err;
 				begin = url->s + i + 1;
 				break;
@@ -176,9 +185,10 @@ static int parse_db_url(struct db_id* id, const str* url)
 				begin = url->s + i + 1;
 				break;
 
-			case ':':  // Explicitly mark we are now in the password state
-				st = ST_PASSWORD;
-				if (dupl_string(&prev_token, begin, url->s + i) < 0) goto err;
+			case '/':
+				id->host = prev_token; prev_token = NULL;
+				id->port = str2s(begin, url->s + i - begin, 0);
+				st = ST_DB;
 				begin = url->s + i + 1;
 				break;
 			}
@@ -248,6 +258,10 @@ static int parse_db_url(struct db_id* id, const str* url)
 		case ST_PORT:
 			switch(url->s[i]) {
 			case '/':
+				if (!have_pass) {
+					id->host = prev_token;
+					prev_token = NULL;
+				}
 				id->port = str2s(begin, url->s + i - begin, 0);
 				st = ST_DB;
 				begin = url->s + i + 1;
