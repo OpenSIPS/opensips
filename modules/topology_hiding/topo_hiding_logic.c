@@ -1115,7 +1115,7 @@ void th_loaded_callback(struct dlg_cell *dlg, int type,
 {
 	int_str isval;
 	int val_type;
-	struct th_params params, *pparams;
+	struct th_params params, *pparams = NULL;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch message flags\n");
