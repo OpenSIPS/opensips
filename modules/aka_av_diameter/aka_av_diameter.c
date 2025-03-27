@@ -47,6 +47,7 @@ static aka_av_api aka_api;
 static diameter_conn *dm_conn;
 static str dm_aaa_url = {NULL, 0};
 static str aka_av_dm_realm = {"diameter.test", 0};
+static str aka_av_server_uri = {"", 0};
 
 static int aka_av_diameter_fetch(str *realm, str *impu, str *impi,
 		str *resync, int algmask, int no, int async);
@@ -92,6 +93,7 @@ static const dep_export_t deps = {
 static const param_export_t params[] = {
 	{ "aaa_url", STR_PARAM, &dm_aaa_url.s },
 	{ "realm", STR_PARAM,   &aka_av_dm_realm.s },
+	{ "server_uri", STR_PARAM,   &aka_av_server_uri.s },	
 	{0, 0, 0}
 };
 
@@ -137,6 +139,18 @@ static int mod_init(void)
 
 	dm_aaa_url.len = strlen(dm_aaa_url.s);
 	aka_av_dm_realm.len = strlen(aka_av_dm_realm.s);
+	aka_av_server_uri.len = strlen(aka_av_server_uri.s);
+	if (aka_av_server_uri.len == 0) {
+		aka_av_server_uri.s = pkg_malloc(aka_av_dm_realm.len + 4 /* "sip:" */ + 1 /* '\0' */);
+		if (!aka_av_server_uri.s) {
+			LM_ERR("oom for server uri\n");
+			return -1;
+		}
+		memcpy(aka_av_server_uri.s, "sip:", 4);
+		memcpy(aka_av_server_uri.s + 4, aka_av_dm_realm.s, aka_av_dm_realm.len);
+		aka_av_server_uri.s[aka_av_server_uri.len + 4] = '\0';
+		aka_av_server_uri.len = aka_av_dm_realm.len + 4;
+	}
 
 	if (diameter_bind_api(&dm_api) < 0)
 		return -1;
@@ -531,7 +545,7 @@ static int aka_av_diameter_fetch(str *realm, str *impu, str *impi,
 	cJSON_ADD_OBJ(req, AKA_AV_DM_AUTH_SESS, cJSON_CreateNumber(1)); /* NO_STATE_MAINTAINED */
 	cJSON_ADD_OBJ(req, AKA_AV_DM_USER_NAME, cJSON_CreateStr(impi->s, impi->len));
 	cJSON_ADD_OBJ(req, AKA_AV_DM_PUBLIC_ID, cJSON_CreateStr(impu->s, impu->len));
-	cJSON_ADD_OBJ(req, AKA_AV_DM_SERVER_NAME, cJSON_CreateStr(realm->s, realm->len)); /* TODO */
+	cJSON_ADD_OBJ(req, AKA_AV_DM_SERVER_NAME, cJSON_CreateStr(aka_av_server_uri.s, aka_av_server_uri.len));
 	cJSON_ADD_OBJ(req, AKA_AV_DM_AUTH_ITEMS, cJSON_CreateNumber(count));
 	tmp = cJSON_CreateArray();
 	if (!tmp) {
