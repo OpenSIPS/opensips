@@ -336,16 +336,33 @@ int db_print_where(const db_con_t* _c, char* _b, const int _l, const db_key_t* _
 
 	for(i = 0; i < _n; i++) {
 		if (_o) {
-			ret = snprintf(_b + len, _l - len, "%.*s%s",
-				_k[i]->len, _k[i]->s, _o[i]);
-			if (ret < 0 || ret >= (_l - len)) goto error;
-			len += ret;
+			/* Special case: if there is unary operator and
+			 * we use a prepared statement, we must still
+			 * consume one value, even though we're not
+			 * using it. Otherwise the number of values will
+			 * be incorrect. */
+			if ((_o[i] == OP_IS_NULL || _o[i] == OP_IS_NOT_NULL) &&
+					CON_HAS_PS(_c)) {
+				/* ?=NULL will never be true; so we're
+				 * safely consuming a single argument */
+				ret = snprintf(_b + len, _l - len, "(%.*s%s OR ?=NULL)",
+						_k[i]->len, _k[i]->s, _o[i]);
+				if (ret < 0 || ret >= (_l - len)) goto error;
+				len += ret;
+			} else {
+				ret = snprintf(_b + len, _l - len, "%.*s%s",
+						_k[i]->len, _k[i]->s, _o[i]);
+				if (ret < 0 || ret >= (_l - len)) goto error;
+				len += ret;
+			}
 		} else {
 			ret = snprintf(_b + len, _l - len, "%.*s=", _k[i]->len, _k[i]->s);
 			if (ret < 0 || ret >= (_l - len)) goto error;
 			len += ret;
 		}
-		if (CON_HAS_PS(_c)) {
+		if (_o && (_o[i] == OP_IS_NULL || _o[i] == OP_IS_NOT_NULL)) {
+			;
+		} else if (CON_HAS_PS(_c)) {
 			*(_b+len++) = '?';
 		} else {
 			l = _l - len;
