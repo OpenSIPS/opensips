@@ -359,6 +359,8 @@ static int fixup_aka_alg(void** param)
 			aka_algs_mask |= (1<<alg);
 		for (alg = ALG_AKAv2_FIRST; alg <= ALG_AKAv2_LAST; alg++)
 			aka_algs_mask |= (1<<alg);
+		// Allow MD5
+		aka_algs_mask |= ALG_MD5;			
 	}
 
 	if (*param == NULL) {
@@ -510,6 +512,14 @@ static int aka_challenge_pre(struct sip_msg *_msg, str *realm, int _code,
 			auts = &cred->auts;
 			nonce = &cred->nonce;
 		}
+		if (cred->alg.alg_parsed == ALG_MD5) {
+			/* MD5 requires a nonce */
+			if (ret & E_DIG_NONCE) {
+				LM_ERR("MD5 algorithm requires a \"nonce\"\n");
+				return -1;
+			}
+			nonce = &cred->nonce;
+		}		
 
 		if (mark_authorized_cred(_msg, *h) < 0) {
 			LM_ERR("could not mark credentials\n");
@@ -559,6 +569,8 @@ static int aka_count_avs(int algmask)
 	for (alg = ALG_AKAv2_FIRST; alg <= ALG_AKAv2_LAST; alg++)
 		if (algmask & ALG2ALGFLG(alg))
 			n++;
+	if (algmask & ALG_MD5)
+		n++;			
 	return n;
 }
 
@@ -578,20 +590,31 @@ static char *build_aka_auth_hf(struct aka_av *av, str *_realm,
 	const str *alg_val = print_digest_algorithm(alg);
 
 	LM_DBG("Challenging with av %p\n", av);
-	*_len =_hf_name->len +
-		CSL(AKA_DIGEST_REALM) +
-		_realm->len +
-		CSL(AKA_DIGEST_NONCE) +
-		av->authenticate.len +
-		CSL(AKA_DIGEST_ALGORITHM) +
-		alg_val->len +
-		CSL(AKA_DIGEST_CK) +
-		av->ck.len +
-		CSL(AKA_DIGEST_IK) +
-		av->ik.len +
-		qop_param.len +
-		CRLF_LEN + 1;
-
+	if (alg == ALG_MD5) {
+		*_len =_hf_name->len +
+			CSL(AKA_DIGEST_REALM) +
+			_realm->len +
+			CSL(AKA_DIGEST_NONCE) +
+			av->authenticate.len +
+			CSL(AKA_DIGEST_ALGORITHM) +
+			alg_val->len +
+			qop_param.len +
+			CRLF_LEN + 1;
+	} else {
+		*_len =_hf_name->len +
+			CSL(AKA_DIGEST_REALM) +
+			_realm->len +
+			CSL(AKA_DIGEST_NONCE) +
+			av->authenticate.len +
+			CSL(AKA_DIGEST_ALGORITHM) +
+			alg_val->len +
+			CSL(AKA_DIGEST_CK) +
+			av->ck.len +
+			CSL(AKA_DIGEST_IK) +
+			av->ik.len +
+			qop_param.len +
+			CRLF_LEN + 1;
+	}	
 
 	p = hf = pkg_malloc(*_len + 1);
 	if (!hf) {
@@ -612,16 +635,18 @@ static char *build_aka_auth_hf(struct aka_av *av, str *_realm,
 	p += CSL(AKA_DIGEST_ALGORITHM);
 	memcpy(p, alg_val->s, alg_val->len);
 	p += alg_val->len;
-	memcpy(p, AKA_DIGEST_CK, CSL(AKA_DIGEST_CK));
-	p += CSL(AKA_DIGEST_CK);
-	memcpy(p, av->ck.s, av->ck.len);
-	p += av->ck.len;
-	memcpy(p, AKA_DIGEST_IK, CSL(AKA_DIGEST_IK));
-	p += CSL(AKA_DIGEST_IK);
-	memcpy(p, av->ik.s, av->ik.len);
-	p += av->ik.len;
-	memcpy(p, AKA_DIGEST_END, CSL(AKA_DIGEST_END));
-	p += CSL(AKA_DIGEST_END);
+	if (alg != ALG_MD5) {
+		memcpy(p, AKA_DIGEST_CK, CSL(AKA_DIGEST_CK));
+		p += CSL(AKA_DIGEST_CK);
+		memcpy(p, av->ck.s, av->ck.len);
+		p += av->ck.len;
+		memcpy(p, AKA_DIGEST_IK, CSL(AKA_DIGEST_IK));
+		p += CSL(AKA_DIGEST_IK);
+		memcpy(p, av->ik.s, av->ik.len);
+		p += av->ik.len;
+		memcpy(p, AKA_DIGEST_END, CSL(AKA_DIGEST_END));
+		p += CSL(AKA_DIGEST_END);
+	}
 	if (qop_param.len) {
 		memcpy(p, qop_param.s, qop_param.len);
 		p += qop_param.len;
