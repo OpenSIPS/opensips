@@ -2315,7 +2315,7 @@ static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg,
 
 	int ret = rtp_relay_dlg.send_indialog_request(tmp->dlg,
 			&inv, leg, body, &content_type_sdp, NULL,
-			rtp_relay_reinvite_reply, tmp);
+			rtp_relay_reinvite_reply, tmp, NULL);
 	if (body && release_body)
 		pkg_free(body->s);
 	return ret;
