@@ -716,14 +716,34 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 	return 1;
 }
 
+static void media_session_exchange_server_release(void *param)
+{
+	struct media_session_leg **mslp = (struct media_session_leg **)param;
+	if (!mslp) {
+		LM_BUG("media_session_leg should be here!\n");
+		return;
+	}
+	if (*mslp) {
+		MSL_UNREF((*mslp));
+		*mslp = NULL;
+	}
+	shm_free(mslp);
+}
+
+/* used just to indicate whether the session has been handled or not */
 static int media_session_exchange_server_reply(struct sip_msg *msg, int status, void *param)
 {
-	struct media_session_leg *msl;
+	struct media_session_leg *msl, **mslp;
 	str reason, body, *pbody;
+	int ret = -1;
 
 	if (status < 200) /* don't mind about provisional */
 		return 0;
-	msl = (struct media_session_leg *)param;
+	mslp = (struct media_session_leg **)param;
+
+	if (*mslp == NULL)
+		return 0;
+	msl = *mslp;
 
 	/* final reply here - unref the session */
 	if (msg == FAKED_REPLY || status >= 300)
@@ -746,7 +766,7 @@ static int media_session_exchange_server_reply(struct sip_msg *msg, int status, 
 		/* we need to put the other party on hold */
 		pbody = media_session_get_hold_sdp(msl);
 		if (!pbody)
-			goto error;
+			return -1; /* we don't unref - a reply might get through */
 		/* XXX: should we care whether the other party is properly on hold? */
 		if (media_session_reinvite(msl,
 				MEDIA_SESSION_DLG_OTHER_LEG(msl), pbody) < 0)
@@ -755,23 +775,19 @@ static int media_session_exchange_server_reply(struct sip_msg *msg, int status, 
 	}
 
 	/* finished processing this reply */
-	MSL_UNREF(msl);
-	return 0;
+	ret = 0;
+	goto end;
 
 terminate:
 	/* the client declined the invite - propagate the code */
 	reason.s = error_text(status);
 	reason.len = strlen(reason.s);
 	media_session_rpl(msl, METHOD_INVITE, status, &reason, NULL);
-
 	MSL_UNREF(msl);
-	/* no need of this session leg - remote it */
-	media_session_leg_free(msl);
-	return -1;
-
-error:
+end:
+	*mslp = NULL;
 	MSL_UNREF(msl);
-	return -1;
+	return ret;
 }
 
 static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int *nohold)
@@ -780,7 +796,7 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 	str contact;
 	str *b2b_key;
 	struct dlg_cell *dlg;
-	struct media_session_leg *msl;
+	struct media_session_leg *msl, **mslp;
 	static str inv = str_init("INVITE");
 
 	if (leg == MEDIA_LEG_UNSPEC) {
@@ -829,10 +845,19 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 		goto destroy;
 	}
 	msl->b2b_entity = B2B_SERVER;
+
+	mslp = shm_malloc(sizeof *mslp);
+	if (!mslp) {
+		LM_ERR("oom for new mslp\n");
+		goto destroy;
+	}
+	*mslp = msl;
+
 	/* all good - send the invite to the client */
 	MSL_REF(msl);
-	if (media_dlg.send_indialog_request(dlg, &inv, MEDIA_SESSION_DLG_LEG(msl),
-			&body, &msg->content_type->body, NULL, media_session_exchange_server_reply, msl) < 0) {
+	if (media_dlg.send_indialog_request(dlg, &inv, MEDIA_SESSION_DLG_LEG(msl), &body,
+			&msg->content_type->body, NULL, media_session_exchange_server_reply, mslp,
+			media_session_exchange_server_release) < 0) {
 		LM_ERR("could not send indialog request for callid %.*s\n", callid->len, callid->s);
 		MSL_UNREF(msl);
 		goto destroy;
@@ -1246,7 +1271,7 @@ static void handle_media_session_negative(struct media_session_leg *msl)
 		body = &sbody;
 	if (media_dlg.send_indialog_request(msl->ms->dlg,
 			&inv, dlg_leg, body, &content_type_sdp, NULL,
-			media_session_exchange_negative_reply, msl) < 0) {
+			media_session_exchange_negative_reply, msl, NULL) < 0) {
 		LM_ERR("could not forward INVITE!\n");
 		media_send_fail(p->t, msl->ms->dlg, dlg_leg);
 		msl->params = NULL;

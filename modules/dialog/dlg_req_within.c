@@ -1009,11 +1009,14 @@ struct dlg_indialog_req_param {
 	struct dlg_cell *dlg;
 	indialog_reply_f func;
 	void *param;
+	indialog_release_f release;
 };
 
 static void dlg_indialog_reply_release(void *param)
 {
 	struct dlg_indialog_req_param *p = (struct dlg_indialog_req_param *)param;
+	if (p->release)
+		p->release(p->param);
 	unref_dlg(p->dlg, 1);
 	shm_free(p);
 }
@@ -1042,8 +1045,8 @@ static void dlg_indialog_reply(struct cell* t, int type, struct tmcb_params* ps)
 
 }
 
-int send_indialog_request(struct dlg_cell *dlg, str *method,
-		int dstleg, str *body, str *ct, str *hdrs, indialog_reply_f func, void *param)
+int send_indialog_request(struct dlg_cell *dlg, str *method, int dstleg, str *body,
+		str *ct, str *hdrs, indialog_reply_f func, void *param, indialog_release_f release)
 {
 	str extra_headers;
 	struct dlg_indialog_req_param *p;
@@ -1066,6 +1069,7 @@ int send_indialog_request(struct dlg_cell *dlg, str *method,
 	p->dlg = dlg;
 	p->func = func;
 	p->param = param;
+	p->release = release;
 	p->leg = dstleg;
 
 	ref_dlg(dlg, 1);

@@ -892,7 +892,7 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 
 	if (call_dlg_api.send_indialog_request(dlg, &refer,
 			(caller?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL, refer_hdr,
-			mi_call_transfer_reply, async_hdl) < 0) {
+			mi_call_transfer_reply, async_hdl, NULL) < 0) {
 		LM_ERR("could not send the transfer message!\n");
 		isval.s = empty_str;
 		call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &isval,
@@ -1037,7 +1037,7 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 
 	if (call_dlg_api.send_indialog_request(dlgA, &refer,
 			(callerA?DLG_CALLER_LEG:callee_idx(dlgA)), NULL, NULL, refer_hdr,
-			mi_call_transfer_reply, async_hdl) < 0) {
+			mi_call_transfer_reply, async_hdl, NULL) < 0) {
 		LM_ERR("could not send the transfer message!\n");
 		isval.s = empty_str;
 		call_dlg_api.store_dlg_value((dlgB?dlgB:dlgA),
@@ -1179,7 +1179,7 @@ static int call_put_leg_onhold(struct dlg_cell *dlg, int leg)
 
 	/* send it out */
 	ret = call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
-			NULL, mi_call_hold_reply, (void *)(long)param);
+			NULL, mi_call_hold_reply, (void *)(long)param, NULL);
 	pkg_free(body.s);
 	if (ret < 0) {
 		init_str(&state, "fail");
@@ -1227,7 +1227,7 @@ static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg)
 
 	RAISE_CALL_EVENT(HOLD, &dlg->callid, &sleg, &action, &state, NULL);
 	if (call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
-			NULL, mi_call_hold_reply, (void *)(long)param) < 0) {
+			NULL, mi_call_hold_reply, (void *)(long)param, NULL) < 0) {
 		init_str(&state, "fail");
 		RAISE_CALL_EVENT(HOLD, &dlg->callid, &sleg, &action, &state, NULL);
 		LM_ERR("could not resume leg %d\n", leg);
@@ -1411,7 +1411,7 @@ static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
 
 	if (call_dlg_api.send_indialog_request(dlg, &refer,
 			(leg == DLG_CALLER_LEG?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL,
-			refer_hdr, mi_call_transfer_reply, NULL) < 0) {
+			refer_hdr, mi_call_transfer_reply, NULL, NULL) < 0) {
 		LM_ERR("could not send the transfer message!\n");
 		isval.s = empty_str;
 		call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &isval,
@@ -1498,7 +1498,7 @@ static int w_call_attended_transfer(struct sip_msg *req, int leg,
 
 	if (call_dlg_api.send_indialog_request(dlgA, &refer,
 			(leg == DLG_CALLER_LEG?DLG_CALLER_LEG:callee_idx(dlgA)), NULL, NULL,
-			refer_hdr, mi_call_transfer_reply, NULL) < 0) {
+			refer_hdr, mi_call_transfer_reply, NULL, NULL) < 0) {
 		LM_ERR("could not send the transfer message!\n");
 		isval.s = empty_str;
 		call_dlg_api.store_dlg_value(dlgB, &call_transfer_callid_param, &isval,
