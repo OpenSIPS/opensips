@@ -98,19 +98,14 @@ static inline void parallel_insert_free(struct parallel_block *fm, struct parall
 	struct parallel_frag **f;
 	int hash;
 
-//	LM_ERR("Inserting free size frag %p in block %p, total size = %lu\n",frag,fm,frag->size);
-
 	hash=F_PARALLEL_GET_HASH(frag->size);
-//	LM_ERR("Gos to hash %d\n",hash);
 	f=&(fm->free_hash[hash].first);
 	if (*f)
 		(*f)->block_ptr = fm;
 	if (frag->size > F_PARALLEL_MALLOC_OPTIMIZE){ /* because of '<=' in GET_HASH,
 											(different from 0.8.1[24] on
 											 purpose --andrei ) */
-//		LM_ERR("We optimize it, first is %p!! \n",*f);
 		for(; *f; f=&((*f)->u.nxt_free)){
-			//LM_ERR("Iterating over next free \n");
 			(*f)->block_ptr = fm;
 			if (frag->size <= (*f)->size) break;
 		}
@@ -118,7 +113,6 @@ static inline void parallel_insert_free(struct parallel_block *fm, struct parall
 
 	/*insert it here*/
 	if (*f) {
-		//LM_ERR("Setting back-pointer \n");
 		(*f)->block_ptr = fm;
 	}
 
@@ -126,19 +120,14 @@ static inline void parallel_insert_free(struct parallel_block *fm, struct parall
 	frag->u.nxt_free=*f;
 	frag->block_ptr = fm;
 
-	//LM_ERR("Linking %p with %p \n",frag,*f);
-
 	if( *f ) {
 		(*f)->block_ptr = fm;
 		(*f)->prev = &(frag->u.nxt_free);
 		frag->u.nxt_free->block_ptr = fm;
 	}
 
-	//LM_ERR("Putting at %p\n",f);
 	*f=frag;
 	fm->free_hash[hash].no++;
-	//LM_ERR("Free hash no = %lu in block %p\n",fm->free_hash[hash].no,fm);
-	//LM_ERR("After insert, we are left with %lu \n",frag->size);
 
 	frag->block_ptr = fm;
 	parallel_free_plus(fm, frag->size);
@@ -168,8 +157,6 @@ static inline void parallel_remove_free(struct parallel_block *fm, struct parall
 	n->prev = NULL;
 	n->block_ptr = fm;
 
-	//LM_ERR("Removing free size frag %p in block %p, total size = %lu\n",n,fm,n->size);
-
 	parallel_free_minus(fm , n->size);
 
 };
@@ -186,8 +173,6 @@ struct parallel_block *parallel_malloc_init(char *address, unsigned long size, c
 	char *end;
 	struct parallel_block *fm;
 	unsigned long init_overhead;
-
-	//LM_ERR("Init parallel block %p of size %lu\n", address,size);
 
 	/* make address and size multiple of 8*/
 	start=(char*)ROUNDUP((unsigned long) address);
@@ -213,7 +198,6 @@ struct parallel_block *parallel_malloc_init(char *address, unsigned long size, c
 	}
 	end=start+size;
 	fm=(struct parallel_block *)start;
-	//LM_ERR("Actual parallel block is %p \n",fm);
 	memset(fm, 0, sizeof(struct parallel_block));
 	fm->name = name;
 	fm->size=size;
@@ -260,8 +244,6 @@ void parallel_stats_core_init(struct parallel_block *fm, int core_index)
 {
 	struct parallel_frag *f;
 
-	LM_ERR("Extra stats ?? \n");
-
 	for (f=fm->first_frag; (char *)f < (char *)fm->last_frag; f=F_PARALLEL_FRAG_NEXT(f))
 		if (!frag_is_free(f))
 			f->statistic_index = core_index;
@@ -277,10 +259,8 @@ void parallel_stats_core_init(struct parallel_block *fm, int core_index)
 void parallel_info(struct parallel_block *fm, struct mem_info *info)
 {
 	memset(info,0, sizeof(*info));
-	/* Not implemented, need an array here, no real use for it now */
+	/* TODO - Not implemented, need an array here */
 	return;
 }
-
-
 
 #endif

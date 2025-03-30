@@ -282,7 +282,6 @@ int shm_use_global_lock;
 
 int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 {
-	LM_ERR("Initing mallocs\n");
 #ifdef HP_MALLOC
 	int i;
 #endif
@@ -294,10 +293,10 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	shm_block = qm_malloc_init(mempool, pool_size, "shm");
 #elif defined HP_MALLOC
 	shm_block = hp_shm_malloc_init(mempool, pool_size, "shm");
+#elif define F_PARALEL_MALLOC
+	shm_blocks[idx] = parallel_malloc_init(mempool, pool_size, "shm", idx);
 #endif
 #else
-	LM_ERR("Not inlined, shm allocator = %d\n",mem_allocator_shm);
-
 
 #ifdef HP_MALLOC
 	if (mem_allocator_shm == MM_HP_MALLOC
@@ -321,8 +320,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 		shm_use_global_lock = 1;
 	}
 #endif
-
-	LM_ERR("Here1\n");
 
 #ifdef SHM_EXTRA_STATS
 	switch (mem_allocator_shm) {
@@ -381,8 +378,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	}
 #endif
 
-	LM_ERR("Frag size \n");
-
 	switch (mem_allocator_shm) {
 #ifdef F_MALLOC
 	case MM_F_MALLOC:
@@ -418,13 +413,11 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 #ifdef F_PARALLEL_MALLOC
 	case MM_F_PARALLEL_MALLOC:
 	case MM_F_PARALLEL_MALLOC_DBG:
-		LM_ERR("VLAD initializing block %d \n",idx);
 		shm_blocks[idx] = parallel_malloc_init(mempool, pool_size, "shm", idx);
 		if (!shm_blocks[idx]) {
 			LM_CRIT("parallel alloc init :( \n");
 			goto err_destroy;	
 		}
-		LM_ERR("Done allocating - setting func pointers \n");
 		gen_shm_malloc         = (osips_block_malloc_f)parallel_malloc;
 		gen_shm_malloc_unsafe  = (osips_block_malloc_f)parallel_malloc;
 		gen_shm_realloc        = (osips_block_realloc_f)parallel_realloc;
@@ -564,17 +557,13 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	}
 #endif
 
-	LM_ERR("Initted global funcs \n");
-
-	if (mem_allocator_shm != MM_F_PARALLEL_MALLOC) {
+	if (mem_allocator_shm != MM_F_PARALLEL_MALLOC && mem_allocator_shm != MM_F_PARALLEL_MALLOC_DBG) {
 		if (!shm_block){
 err_destroy:
 			LM_CRIT("could not initialize shared malloc\n");
 			shm_mem_destroy();
 			return -1;
 		}
-	} else {
-		//LM_ERR("VLAD - no global check for PARALLEL_ALLOC \n");
 	}
 
 #if defined(SHM_EXTRA_STATS) && defined(SHM_SHOW_DEFAULT_GROUP)
@@ -652,7 +641,6 @@ err_destroy:
 #endif
 
 #if defined F_PARALLEL_MALLOC
-	//LM_ERR("Vlad - init multi locks here on idx %d \n",idx);
 	hash_locks[idx] = shm_malloc_unsafe(sizeof(gen_lock_t));
 	if (!hash_locks[idx]) {
 		LM_CRIT("could not initialize lock on idx %d\n",idx);
@@ -822,12 +810,12 @@ int shm_mem_init(void)
 #ifdef F_PARALLEL_MALLOC
 	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||
 	mem_allocator_shm == MM_F_PARALLEL_MALLOC_DBG) {
-		LM_ERR("Total pools size is %d\n",TOTAL_F_PARALLEL_POOLS);
+		LM_DBG("Paralel malloc, total pools size is %d\n",TOTAL_F_PARALLEL_POOLS);
 		for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
 
 			block_size = shm_mem_size/TOTAL_F_PARALLEL_POOLS;
 			shm_mempools[i] = shm_getmem(fd,NULL,block_size);
-			LM_ERR("VLAD - allocated %p pool on idx %d with size %ld\n",shm_mempools[i],i,block_size);
+			LM_DBG("Allocated %p pool on idx %d with size %ld\n",shm_mempools[i],i,block_size);
 
 			if (shm_mempools[i] == INVALID_MAP) {
 				LM_CRIT("could not attach shared memory segment %d: %s\n",

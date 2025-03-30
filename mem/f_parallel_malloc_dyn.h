@@ -27,18 +27,15 @@ void parallel_split_frag(struct parallel_block *fm, struct parallel_frag *frag,
 	unsigned long rest;
 	struct parallel_frag *n;
 
-	//LM_ERR("VLAD - F_PARALLEL split block %p for size %lu of frag %p \n",fm,size,frag);
 	frag->block_ptr = fm;
 
 	rest=frag->size-size;
 	#ifdef MEM_FRAG_AVOIDANCE
-	//LM_ERR("FRAG avoidance \n");
 	if ((rest> (F_PARALLEL_FRAG_OVERHEAD+F_PARALLEL_MALLOC_OPTIMIZE))||
 		(rest>=(F_PARALLEL_FRAG_OVERHEAD+size))){ /* the residue fragm. is big enough*/
 	#else
 	if (rest>(F_PARALLEL_FRAG_OVERHEAD+MIN_FRAG_SIZE)){
 	#endif
-		//LM_ERR("We-re splliting frag %p from block %p\n",frag,fm);
 		frag->size=size;
 		/*split the fragment*/
 		n=F_PARALLEL_FRAG_NEXT(frag);
@@ -87,20 +84,13 @@ void *parallel_malloc(struct parallel_block *fm, unsigned long size,
 	unsigned int hash;
 	int bucket;
 
-	LM_ERR("VLAD - F_PARALLEL malloc block %p for size %lu\n",fm,size);
-
 	if (init_done == 0) {
-		LM_ERR("Not init, going to block 0 \n");
 		fm = shm_blocks[0];
 	} else {
 		bucket = rand() % TOTAL_F_PARALLEL_POOLS;
 		fm = shm_blocks[bucket];
-		LM_ERR("Fully init, Allocating %u bytes in bucket %d, block %p \n",size,bucket,fm);
 		lock_get(hash_locks[fm->idx]);
-		LM_ERR("Locking %p \n",fm);
 	}
-
-	LM_ERR("Continuing to alloc in %p \n",fm);
 
 	#ifdef DBG_MALLOC
 	LM_GEN1(memlog, "%s_malloc(%lu), called from %s: %s(%d)\n", fm->name, size, file, func,
@@ -112,13 +102,9 @@ void *parallel_malloc(struct parallel_block *fm, unsigned long size,
 
 	/*search for a suitable free frag*/
 
-	//LM_ERR("big Hash = %lu , current hash size = %lu\n",F_PARALLEL_HASH_SIZE,F_PARALLEL_GET_HASH(size));
-
 	for(hash=F_PARALLEL_GET_HASH(size);hash<F_PARALLEL_HASH_SIZE;hash++){
 		frag=fm->free_hash[hash].first;
-		//LM_ERR("Checking in hash %d, first is frag %p\n",hash,frag);
 		for( ; frag; frag = frag->u.nxt_free ) {
-			//LM_ERR("Vlad searching %lu size, in frag %p size %lu , hash %d\n",size,frag,frag->size,hash);
 			if ( frag->size >= size ) goto found;
 		/* try in a bigger bucket */
 		}
@@ -179,7 +165,6 @@ void *parallel_malloc(struct parallel_block *fm, unsigned long size,
 
 	if (init_done) {	
 		lock_release(hash_locks[fm->idx]);
-		LM_ERR("UnLocking %p \n",fm);
 	}
 	return 0;
 
@@ -216,11 +201,9 @@ solved:
 
 	frag->block_ptr = fm;
 	if (init_done) {
-		LM_ERR("Releasing %d\n",fm->idx);
 		lock_release(hash_locks[fm->idx]);
 	}
 
-	LM_ERR("Alloc done ok ! - return frag %p with size %lu \n",frag,frag->size);
 	return (char*)frag+sizeof(struct parallel_frag);
 }
 
@@ -252,10 +235,7 @@ void parallel_free(struct parallel_block *fm, void *p, const char *file,
 	f = F_PARALLEL_FRAG(p);
 	fm = f->block_ptr;
 
-	LM_ERR("VLAD - F_PARALLEL free in block %p of %p with idx %d \n",fm,p,fm->idx);
-
 	lock_get(hash_locks[fm->idx]);
-	LM_ERR("Locking %p \n",fm);
 
 	check_double_free(p, f, fm);
 
@@ -287,10 +267,7 @@ void parallel_free(struct parallel_block *fm, void *p, const char *file,
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	fm->fragments -= 1;
 #endif
-	LM_ERR("Succes in freeing ! \n");
-
 	lock_release(hash_locks[fm->idx]);
-	LM_ERR("UnLocking %p \n",fm);
 }
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
@@ -353,7 +330,6 @@ void parallel_free_unsafe(struct parallel_block *fm, void *p, const char *file,
 	fm->fragments -= 1;
 #endif
 	lock_release(hash_locks[fm->idx]);
-	//LM_ERR("Succes in freeing ! \n");
 }
 
 
@@ -379,17 +355,10 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 
 	if (p) {
 		fm = F_PARALLEL_FRAG(p)->block_ptr;
-
-		LM_ERR("Vlad - forcing our way into the same block for realloc %p, idx = %d \n",fm,fm->idx);
 	} else {
-		LM_ERR("Vlad - realloc as init alloc \n");
-
 		bucket = rand() % TOTAL_F_PARALLEL_POOLS;
 		fm = shm_blocks[bucket];
 	}
-
-	LM_ERR("VLAD - F_PARALLEL realloc in block %p of %p \n",fm,p);
-
 
 	#ifdef DBG_MALLOC
 	LM_GEN1(memlog, "%s_realloc(%p, %lu->%lu), called from %s: %s(%d)\n",
@@ -402,7 +371,6 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 
 	if (size == 0) {
 		if (p) {
-			LM_ERR("Vlad - realloc as free \n");
 			#if !defined INLINE_ALLOC && defined DBG_MALLOC
 			parallel_free_dbg(fm, p, file, func, line);
 			#elif !defined F_PARALLEL_MALLOC_DYN && !defined DBG_MALLOC
@@ -426,7 +394,6 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 	}
 
 	lock_get(hash_locks[fm->idx]);
-	LM_ERR("Locking %p \n",fm);
 	f = F_PARALLEL_FRAG(p);
 
 	#ifdef DBG_MALLOC
@@ -438,7 +405,6 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 	orig_size = f->size;
 
 	if (f->size > size) {
-		//LM_ERR("Vlad - shrink realloc \n");
 		/* shrink */
 		#ifdef DBG_MALLOC
 		LM_GEN1(memlog, "shrinking from %lu to %lu\n", f->size, size);
@@ -453,7 +419,6 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 		#endif
 
 	} else if (f->size < size) {
-		//LM_ERR("Vlad - grow realloc \n");
 		/* grow */
 		#ifdef DBG_MALLOC
 		LM_GEN1(memlog, "growing from %lu to %lu\n", f->size, size);
@@ -465,8 +430,6 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 
 		if (((char*)n < (char*)fm->last_frag) && frag_is_free(n) &&
 		 ((n->size+F_PARALLEL_FRAG_OVERHEAD)>=diff)) {
-			//LM_ERR("Attempting join \n");
-
 			parallel_remove_free(fm,n);
 			/* join */
 			f->size += n->size + F_PARALLEL_FRAG_OVERHEAD;
@@ -488,10 +451,8 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 			}
 		} else {
 			lock_release(hash_locks[fm->idx]);
-			LM_ERR("UnLocking %p \n",fm);
 
 			/* could not join => realloc */
-			//LM_ERR("Attempting full realloc \n");
 
 			#if !defined INLINE_ALLOC && defined DBG_MALLOC
 			ptr = parallel_malloc_dbg(fm, size, file, func, line);
@@ -504,8 +465,6 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 			if (ptr) {
 				/* copy, need by libssl */
 				memcpy(ptr, p, orig_size);
-
-				//LM_ERR("Free inside of realloc !!! :( \n");
 
 				#if !defined INLINE_ALLOC && defined DBG_MALLOC
 				parallel_free_dbg(fm, p, file, func, line);
@@ -537,7 +496,6 @@ void *parallel_realloc(struct parallel_block *fm, void *p, unsigned long size,
 
 	if (input) {
 		lock_release(hash_locks[fm->idx]);
-		LM_ERR("UnLocking %p \n",fm);
 	}
 
 	return p;
@@ -555,8 +513,6 @@ void parallel_status(struct parallel_block *fm)
 	int unused;
 	unsigned long size;
 
-	//LM_ERR("VLAD - F_PARALLEL status in block %p \n",fm);
-
 #ifdef DBG_MALLOC
 	mem_dbg_htable_t allocd;
 	struct mem_dbg_entry *it;
@@ -565,7 +521,6 @@ void parallel_status(struct parallel_block *fm)
 	for (bucket=0;bucket<TOTAL_F_PARALLEL_POOLS;bucket++) {
 		fm = shm_blocks[bucket]; 
 		lock_get(hash_locks[fm->idx]);
-		LM_ERR("Locking %p \n",fm);
 
 		LM_GEN1(memdump, "fm_status (%p):\n", fm);
 		if (!fm) return;
@@ -633,7 +588,6 @@ void parallel_status(struct parallel_block *fm)
 		LM_GEN1(memdump, "-----------------------------\n");
 
 		lock_release(hash_locks[fm->idx]);
-		LM_ERR("UnLocking %p \n",fm);
 	}
 }
 

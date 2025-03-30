@@ -400,11 +400,7 @@ inline static void* _shm_malloc(unsigned long size,
 {
 	void *p;
 
-	LM_ERR("Use global lock is %d, global lock is %p\n",shm_use_global_lock,mem_lock);
-
 	shm_lock();
-
-	LM_ERR(" In the decider alloc dbg func to %p ! \n",shm_block);
 
 	p = SHM_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
@@ -429,7 +425,6 @@ inline static void* _shm_malloc_unsafe(unsigned long size,
 {
 	void *p;
 
-	LM_ERR(" In the decider alloc unsafe func ! \n");
 	p = SHM_MALLOC_UNSAFE(shm_block, size, file, function, line);
 	shm_threshold_check();
 
@@ -448,8 +443,6 @@ inline static void* _shm_malloc_bulk(unsigned long size,
 	const char *file, const char *function, unsigned int line )
 {
 	void *p;
-
-	LM_ERR(" In the decider alloc bulk func ! \n");
 
 	p = SHM_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
@@ -471,8 +464,6 @@ inline static void* _shm_realloc(void *ptr, unsigned long size,
 		const char* file, const char* function, unsigned int line )
 {
 	void *p;
-
-	LM_ERR(" In the decider realloc func ! \n");
 
 	#ifdef SHM_EXTRA_STATS
 		unsigned long origin = 0;
@@ -511,8 +502,6 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned long size,
 {
 	void *p;
 
-	LM_ERR(" In the decider alloc unsafe func ! \n");
-
 	#ifdef SHM_EXTRA_STATS
 		unsigned long origin = 0;
 		if (ptr) {
@@ -544,8 +533,6 @@ inline static void _shm_free(void *ptr,
 {
 	int size = -1;
 
-	LM_ERR(" In the decider free func ! \n");
-
 	shm_lock();
 
 	#ifdef SHM_EXTRA_STATS
@@ -573,8 +560,6 @@ inline static void _shm_free_unsafe(void *ptr,
 		const char* file, const char* function, unsigned int line )
 {
 
-	LM_ERR(" In the decider free unsafe func ! \n");
-
 #ifdef SHM_EXTRA_STATS
 	if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
 		update_module_stats(-shm_frag_size(ptr), -(shm_frag_size(ptr) + shm_frag_overhead), -1, shm_stats_get_index(ptr));
@@ -595,8 +580,6 @@ inline static void _shm_free_bulk(void *ptr,
 		const char* file, const char* function, unsigned int line)
 {
 	int size;
-
-	LM_ERR(" In the decider free bulk func ! \n");
 
 	#ifdef SHM_EXTRA_STATS
 		if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
@@ -657,8 +640,6 @@ inline static void* shm_malloc(unsigned long size)
 {
 	void *p;
 
-	LM_ERR(" In the decider alloc non-dbg func ! \n");
-
 	shm_lock();
 
 	p = SHM_MALLOC(shm_block, size);
@@ -682,8 +663,6 @@ inline static void* shm_malloc_unsafe(unsigned int size)
 {
 	void *p;
 
-	LM_ERR("main alloc - yay ! \n");
-
 	p = SHM_MALLOC_UNSAFE(shm_block, size);
 
 	shm_threshold_check();
@@ -704,8 +683,6 @@ inline static void* shm_malloc_bulk(unsigned long size)
 {
 	void *p;
 
-	LM_ERR(" In the decider alloc bulk func ! \n");
-
 	p = SHM_MALLOC(shm_block, size);
 	shm_threshold_check();
 
@@ -724,8 +701,6 @@ inline static void* shm_malloc_bulk(unsigned long size)
 inline static void* shm_realloc(void *ptr, unsigned long size)
 {
 	void *p;
-
-	LM_ERR(" In the decider non-dbg realloc safe func for %p! \n",ptr);
 
 #ifdef SHM_EXTRA_STATS
 	unsigned long origin = 0;
@@ -828,7 +803,6 @@ inline static void shm_free_unsafe(void *_p)
 inline static void shm_free_bulk(void *_p)
 {
 
-	LM_ERR(" In the decider free bulk func ! \n");
 	#ifdef SHM_EXTRA_STATS
 		if (shm_stats_get_index(_p) !=  VAR_STAT(MOD_NAME)) {
 				update_module_stats(-shm_frag_size(_p), -(shm_frag_size(_p) + shm_frag_overhead), -1, shm_stats_get_index(_p));
