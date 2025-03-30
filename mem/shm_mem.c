@@ -296,9 +296,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	shm_block = hp_shm_malloc_init(mempool, pool_size, "shm");
 #endif
 #else
-	if (mem_allocator_shm == MM_NONE)
-		mem_allocator_shm = mem_allocator;
-
 	LM_ERR("Not inlined, shm allocator = %d\n",mem_allocator_shm);
 
 
@@ -420,6 +417,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	switch (mem_allocator_shm) {
 #ifdef F_PARALLEL_MALLOC
 	case MM_F_PARALLEL_MALLOC:
+	case MM_F_PARALLEL_MALLOC_DBG:
 		LM_ERR("VLAD initializing block %d \n",idx);
 		shm_blocks[idx] = parallel_malloc_init(mempool, pool_size, "shm", idx);
 		if (!shm_blocks[idx]) {
@@ -793,7 +791,8 @@ int shm_mem_init(void)
 		return -1;
 	}
 
-	/* TODO - full speed ahead, we don't care about allocator type, we will hardcode for testing */
+#ifdef F_PARALLEL_MALLOC
+	/* we will need multiple pools, malloc pointers here */
 	shm_mempools = malloc(TOTAL_F_PARALLEL_POOLS * sizeof(void*));
 	if (!shm_mempools) {
 		LM_ERR("Failed to init all the mempools \n");
@@ -807,41 +806,72 @@ int shm_mem_init(void)
 		return -1;
 	}
 	memset(shm_blocks,0,TOTAL_F_PARALLEL_POOLS * sizeof(void *));
-
-#ifndef USE_ANON_MMAP
-		//LM_ERR("Anon mmap \n");
-		fd=open("/dev/zero", O_RDWR);
-		if (fd==-1){
-			LM_CRIT("could not open /dev/zero: %s\n", strerror(errno));
-			return -1;
-		}
-#endif /* USE_ANON_MMAP */
-	LM_ERR("Total pools size is %d\n",TOTAL_F_PARALLEL_POOLS);
-	for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
-
-		block_size = shm_mem_size/TOTAL_F_PARALLEL_POOLS;
-		shm_mempools[i] = shm_getmem(fd,NULL,block_size);
-		LM_ERR("VLAD - allocated %p pool on idx %d with size %ld\n",shm_mempools[i],i,block_size);
-
-		if (shm_mempools[i] == INVALID_MAP) {
-			LM_CRIT("could not attach shared memory segment %d: %s\n",
-					i,strerror(errno));
-			return -1;
-		}
-
-		if (shm_mem_init_mallocs(shm_mempools[i], block_size,i)) {
-			LM_CRIT("could not init shared memory segment %d\n",i);
-			return -1;
-		}
-	}
-
-#ifdef F_PARALLEL_MALLOC
-	init_done = 1;
 #endif
 
-	//LM_ERR("All Done in init ! \n");
+#ifndef USE_ANON_MMAP
+	fd=open("/dev/zero", O_RDWR);
+	if (fd==-1){
+		LM_CRIT("could not open /dev/zero: %s\n", strerror(errno));
+		return -1;
+	}
+#endif /* USE_ANON_MMAP */
 
-	return 0;
+	if (mem_allocator_shm == MM_NONE)
+		mem_allocator_shm = mem_allocator;
+
+#ifdef F_PARALLEL_MALLOC
+	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||
+	mem_allocator_shm == MM_F_PARALLEL_MALLOC_DBG) {
+		LM_ERR("Total pools size is %d\n",TOTAL_F_PARALLEL_POOLS);
+		for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
+
+			block_size = shm_mem_size/TOTAL_F_PARALLEL_POOLS;
+			shm_mempools[i] = shm_getmem(fd,NULL,block_size);
+			LM_ERR("VLAD - allocated %p pool on idx %d with size %ld\n",shm_mempools[i],i,block_size);
+
+			if (shm_mempools[i] == INVALID_MAP) {
+				LM_CRIT("could not attach shared memory segment %d: %s\n",
+						i,strerror(errno));
+				return -1;
+			}
+
+			if (shm_mem_init_mallocs(shm_mempools[i], block_size,i)) {
+				LM_CRIT("could not init shared memory segment %d\n",i);
+				return -1;
+			}
+		}
+
+		init_done = 1;
+	} else {
+		shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
+#ifndef USE_ANON_MMAP
+		close(fd);
+#endif /* USE_ANON_MMAP */
+		if (shm_mempool == INVALID_MAP) {
+			LM_CRIT("could not attach shared memory segment: %s\n",
+					strerror(errno));
+			/* destroy segment*/
+			shm_mem_destroy();
+			return -1;
+		}
+
+		return shm_mem_init_mallocs(shm_mempool, shm_mem_size,0);
+	}
+#else
+	shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
+#ifndef USE_ANON_MMAP
+	close(fd);
+#endif /* USE_ANON_MMAP */
+	if (shm_mempool == INVALID_MAP) {
+		LM_CRIT("could not attach shared memory segment: %s\n",
+				strerror(errno));
+		/* destroy segment*/
+		shm_mem_destroy();
+		return -1;
+	}
+
+	return shm_mem_init_mallocs(shm_mempool, shm_mem_size,0);
+#endif
 
 //	shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
 //#ifndef USE_ANON_MMAP
