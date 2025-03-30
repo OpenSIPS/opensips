@@ -702,6 +702,8 @@ inline static void* shm_realloc(void *ptr, unsigned long size)
 {
 	void *p;
 
+	shm_lock();
+
 #ifdef SHM_EXTRA_STATS
 	unsigned long origin = 0;
 	if (ptr) {
@@ -822,29 +824,17 @@ inline static void shm_free_bulk(void *_p)
 
 inline static void shm_status(void)
 {
-#ifdef F_PARALLEL_MALLOC
-#else
 	shm_lock();
-#endif
 	SHM_STATUS(shm_block);
-#ifdef F_PARALLEL_MALLOC
-#else
 	shm_unlock();
-#endif
 }
 
 
 inline static void shm_info(struct mem_info* mi)
 {
-#ifdef F_PARALLEL_MALLOC
-#else
 	shm_lock();
-#endif
 	SHM_INFO(shm_block, mi);
-#ifdef F_PARALLEL_MALLOC
-#else
 	shm_unlock();
-#endif
 }
 
 
