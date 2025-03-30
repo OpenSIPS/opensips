@@ -93,8 +93,10 @@ int parse_mm(const char *mm_name, enum osips_mm *mm);
 	 (mm) == MM_F_MALLOC ? "F_MALLOC" : \
 	 (mm) == MM_Q_MALLOC ? "Q_MALLOC" : \
 	 (mm) == MM_HP_MALLOC ? "HP_MALLOC" : \
+	 (mm) == MM_F_PARALLEL_MALLOC ? "F_PARALLEL_MALLOC" : \
 	 (mm) == MM_F_MALLOC_DBG ? "F_MALLOC_DBG" : \
 	 (mm) == MM_Q_MALLOC_DBG ? "Q_MALLOC_DBG" : \
+	 (mm) == MM_F_PARALLEL_MALLOC_DBG ? "F_PARALLEL_MALLOC_DBG" : \
 	 (mm) == MM_HP_MALLOC_DBG ? "HP_MALLOC_DBG" : "unknown")
 
 #ifdef DBG_MALLOC

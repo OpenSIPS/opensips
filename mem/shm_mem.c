@@ -842,6 +842,7 @@ int shm_mem_init(void)
 		}
 
 		init_done = 1;
+		return 0;
 	} else {
 		shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
 #ifndef USE_ANON_MMAP
@@ -872,20 +873,6 @@ int shm_mem_init(void)
 
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size,0);
 #endif
-
-//	shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
-//#ifndef USE_ANON_MMAP
-//	close(fd);
-//#endif /* USE_ANON_MMAP */
-//	if (shm_mempool == INVALID_MAP) {
-//		LM_CRIT("could not attach shared memory segment: %s\n",
-//				strerror(errno));
-//		/* destroy segment*/
-//		shm_mem_destroy();
-//		return -1;
-//	}
-
-//	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
 }
 
 #ifdef DBG_MALLOC
