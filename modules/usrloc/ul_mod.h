@@ -97,9 +97,9 @@ static inline int tags_in_use(void)
  */
 
 
-#define UL_TABLE_VERSION 1013
+#define UL_TABLE_VERSION 1014
 
-#define UL_COLS 19
+#define UL_COLS 20
 extern str contactid_col;
 extern str user_col;
 extern str domain_col;
@@ -119,6 +119,7 @@ extern str kv_store_col;
 extern str attr_col;
 extern str last_mod_col;
 extern str sip_instance_col;
+extern str params_col;
 
 extern str db_url;
 extern enum usrloc_modes db_mode;
