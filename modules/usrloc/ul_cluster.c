@@ -69,10 +69,16 @@ int ul_init_cluster(void)
 
 static inline void bin_push_urecord(bin_packet_t *packet, urecord_t *r)
 {
+	str st;
+
 	bin_push_str(packet, r->domain);
 	bin_push_str(packet, &r->aor);
 	bin_push_int(packet, r->label);
 	bin_push_int(packet, r->next_clabel);
+
+	st = store_serialize(r->kv_storage);
+	bin_push_str(packet, &st);
+	store_free_buffer(&st);
 }
 
 void replicate_urecord_insert(urecord_t *r)
@@ -420,10 +426,11 @@ error:
  */
 static int receive_urecord_insert(bin_packet_t *packet)
 {
-	str d, aor;
+	str d, aor, kv_str;
 	urecord_t *r;
 	udomain_t *domain;
 	int sl;
+	short pkg_ver = get_bin_pkg_version(packet);
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
@@ -453,6 +460,11 @@ static int receive_urecord_insert(bin_packet_t *packet)
 	sl = r->aorhash & (domain->size - 1);
 	if (domain->table[sl].next_label <= r->label)
 		domain->table[sl].next_label = r->label + 1;
+
+	if (pkg_ver >= UL_BIN_V5) {
+		bin_pop_str(packet, &kv_str);
+		r->kv_storage = store_deserialize(&kv_str);
+	}
 
 out:
 	unlock_udomain(domain, &aor);
@@ -858,18 +870,27 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	if (get_urecord(domain, &aor, &record) != 0) {
 		LM_INFO("failed to fetch local urecord - ignoring request "
 			"(ci: '%.*s')\n", callid.len, callid.s);
-		unlock_udomain(domain, &aor);
 		goto out;
 	}
 
 	/* simply specify a higher cseq and completely avoid any complications */
 	rc = get_ucontact(record, &contact_str, &callid, cseq + 1, &cmatch,
 		&contact);
-	if (rc != 0 && rc != 2) {
-		LM_ERR("contact '%.*s' not found: (ci: '%.*s')\n", contact_str.len,
+	switch (rc) {
+	case -2:
+	case -1:
+		/* the DEL packet is too old (same or lower CSeq) */
+		LM_ERR("contact '%.*s' found, but DEL too old: (rc: %d, ci: '%.*s')\n",
+		        contact_str.len, contact_str.s, rc, callid.len, callid.s);
+		goto out;
+		break;
+
+	case 1:
+		LM_DBG("contact '%.*s' already deleted: (ci: '%.*s')\n", contact_str.len,
 			contact_str.s, callid.len, callid.s);
-		unlock_udomain(domain, &aor);
-		goto error;
+		goto out;
+		break;
+	default:;
 	}
 
 	if (skip_replicated_db_ops)
@@ -882,9 +903,8 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 		goto error;
 	}
 
-	unlock_udomain(domain, &aor);
-
 out:
+	unlock_udomain(domain, &aor);
 	free_pkg_str_list(cmatch.match_params);
 	return 0;
 
@@ -921,32 +941,32 @@ void receive_binary_packets(bin_packet_t *pkt)
 
 	switch (pkt->type) {
 	case REPL_URECORD_INSERT:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc aor-ins packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc aor-ins packet");
 		rc = receive_urecord_insert(pkt);
 		break;
 
 	case REPL_URECORD_DELETE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc aor-del packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc aor-del packet");
 		rc = receive_urecord_delete(pkt);
 		break;
 
 	case REPL_UCONTACT_INSERT:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-ins packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-ins packet");
 		rc = receive_ucontact_insert(pkt);
 		break;
 
 	case REPL_UCONTACT_UPDATE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-upd packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-upd packet");
 		rc = receive_ucontact_update(pkt);
 		break;
 
 	case REPL_UCONTACT_DELETE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc ct-del packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-del packet");
 		rc = receive_ucontact_delete(pkt);
 		break;
 
 	case SYNC_PACKET_TYPE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V4, "usrloc sync packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc sync packet");
 		rc = receive_sync_packet(pkt);
 		break;
 

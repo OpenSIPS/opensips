@@ -31,7 +31,7 @@ int tcp_connect_blocking_timeout(int fd, const struct sockaddr *servaddr,
 
 
 int tcp_sync_connect_fd(const union sockaddr_union* src, const union sockaddr_union* dst,
-                 enum sip_protos proto, const struct tcp_conn_profile *prof, enum si_flags flags);
+                 enum sip_protos proto, const struct tcp_conn_profile *prof, enum si_flags flags, int sock_tos);
 
 struct tcp_connection* tcp_sync_connect(const struct socket_info* send_sock,
                const union sockaddr_union* server, struct tcp_conn_profile *prof,

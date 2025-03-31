@@ -35,7 +35,7 @@ typedef struct {
 	unsigned int ref;
 	struct cachedb_pool_con_t *next;
 
-	lcb_t couchcon;
+	lcb_INSTANCE* couchcon;
 } couchbase_con;
 
 #define COUCHBASE_CON(cdb_con) (((couchbase_con*)((cdb_con)->data))->couchcon)

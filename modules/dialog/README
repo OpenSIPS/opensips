@@ -139,6 +139,8 @@ dialog Module
               1.9.11. list_all_profiles
               1.9.12. dlg_push_var
               1.9.13. dlg_send_sequential
+              1.9.14. set_dlg_profile
+              1.9.15. unset_dlg_profile
 
         1.10. Exported Pseudo-Variables
 
@@ -2325,6 +2327,44 @@ GIwZjAzNGM1ZDY
                                 headers='Refer-To: sip:user@domain:50060
 '
 
+1.9.14. set_dlg_profile
+
+   Set the dialog identified by dialog ID / Call-ID into the given
+   profile ( with optional value and clearing of the old profile
+   values )
+
+   Name: set_dlg_profile
+
+   Parameters: It takes 2-4 parameters
+     * dlg_id - dialog ID or Call-ID for the respective dialog
+     * profile - profile name to be set
+     * value - optional, the profile value to be set
+     * clear_values - optional, clear previous values in the
+       profile before setting the new one
+
+   MI FIFO Command Format:
+                opensips-cli -x mi set_dlg_profile DID my_profile my_val
+ue 1
+
+1.9.15. unset_dlg_profile
+
+   Unsets the dialog identified by dialog ID / Call-ID from the
+   given profile ( with optional value and clearing of the old
+   profile values )
+
+   Name: set_dlg_profile
+
+   Parameters: It takes 2-3 parameters
+     * dlg_id - dialog ID or Call-ID for the respective dialog
+     * profile - profile name to be unset
+     * value - optional, the profile value to be unset. for
+       profiles with value, by omitting this parameter you can now
+       clear all values of the given profile.
+
+   MI FIFO Command Format:
+                opensips-cli -x mi unset_dlg_profile DID my_profile my_v
+alue
+
 1.10. Exported Pseudo-Variables
 
 1.10.1. $DLG_count
@@ -2605,8 +2645,8 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 459 288 13367 3546
-   2. Razvan Crainea (@razvancrainea) 292 217 5449 1774
-   3. Vlad Paiu (@vladpaiu) 257 146 7208 3027
+   2. Razvan Crainea (@razvancrainea) 293 218 5456 1776
+   3. Vlad Paiu (@vladpaiu) 262 149 7467 3027
    4. Vlad Patrascu (@rvlad-patrascu) 199 104 4330 3514
    5. Liviu Chircu (@liviuchircu) 183 133 3128 1374
    6. Ovidiu Sas (@ovidiusas) 35 26 601 161
@@ -2650,8 +2690,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2024
-   2.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2024
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Feb 2025
+   2.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
    3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2024
    5.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
@@ -2683,12 +2723,12 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Stefan-Cristian Mititelu, Ryan Bullock, Vlad Patrascu
-   (@rvlad-patrascu), Vlad Paiu (@vladpaiu), Zero King (@l2dy),
-   Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov), Julián
-   Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Stefan-Cristian Mititelu, Ryan Bullock,
+   Vlad Patrascu (@rvlad-patrascu), Zero King (@l2dy), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno Patiño,
+   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
    Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
    Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,

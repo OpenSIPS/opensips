@@ -228,6 +228,24 @@ mq_pv_t *mq_pv_get(str *name)
 /**
  *
  */
+mq_item_t *mq_head_fetch_item(mq_head_t *mh)
+{
+	mq_item_t *ret;
+
+	if(mh->ifirst == NULL)
+		return NULL;
+
+	ret = mh->ifirst;
+	mh->ifirst = mh->ifirst->next;
+	if(mh->ifirst == NULL)
+		mh->ilast = NULL;
+	mh->csize--;
+	return ret;
+}
+
+/**
+ *
+ */
 int mq_head_fetch(str *name)
 {
 	mq_head_t *mh = NULL;
@@ -245,21 +263,10 @@ int mq_head_fetch(str *name)
 		return -1;
 	lock_get(&mh->lock);
 
-	if(mh->ifirst == NULL) {
-		/* empty queue */
-		lock_release(&mh->lock);
-		return -2;
-	}
-
-	mp->item = mh->ifirst;
-	mh->ifirst = mh->ifirst->next;
-	if(mh->ifirst == NULL) {
-		mh->ilast = NULL;
-	}
-	mh->csize--;
+	mp->item = mq_head_fetch_item(mh);
 
 	lock_release(&mh->lock);
-	return 0;
+	return (mp->item?0:-2);
 }
 
 /**

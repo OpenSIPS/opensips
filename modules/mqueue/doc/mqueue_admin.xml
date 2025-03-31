@@ -277,11 +277,15 @@ opensips-cli -x mq_get_size xyz
 	</section>
 	<section id="mi_mq_fetch" xreflabel="mq_fetch">
 		<title>mq_fetch</title>
-		<para>Fetch a key-value pair from a memory queue.</para>
+		<para>Fetch one (or up to limit) key-value pair from a memory queue.</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem>
 				<emphasis>name</emphasis> - the name of memory queue
+			</listitem>
+			<listitem>
+				<emphasis>limit</emphasis> (optional) - if used, an array
+				with up to <emphasis>limit</emphasis> records are being returned.
 			</listitem>
 		</itemizedlist>
 		<example>

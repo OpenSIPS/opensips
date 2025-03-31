@@ -258,6 +258,8 @@ int cJSON_NumberIsInt(cJSON *item);
 /* Macro for iterating over an array */
 #define cJSON_ArrayForEach(pos, head) for(pos = (head)->child; pos != NULL; pos = pos->next)
 
+cJSON * cJSONUtils_MergePatch(cJSON *target, const cJSON * const patch);
+
 #ifdef __cplusplus
 }
 #endif

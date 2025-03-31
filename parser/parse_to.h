@@ -43,7 +43,9 @@ struct to_body{
 	str uri;                      /* URI */
 	str display;                  /* Display Name */
 	str tag_value;                /* Value of tag */
-	struct sip_uri parsed_uri;    /* Parsed URI */
+	struct sip_uri parsed_uri;    /* Parsed URI
+	                               * IMPORTANT - be sure you set it to 0
+	                               * upon parse URI failure !!!!!! */
 	struct to_param *param_lst;   /* Linked list of parameters */
 	struct to_param *last_param;  /* Last parameter in the list */
 	struct to_body *next;         /* Next body if multi-instance header */
@@ -70,5 +72,7 @@ void free_to_params(struct to_body *tb);
 char* parse_multi_to(char* buffer, char *end, struct to_body *to_b);
 
 int has_totag(struct sip_msg* _m);
+
+int parse_to_body_uri(struct to_body *to_b);
 
 #endif

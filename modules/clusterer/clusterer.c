@@ -60,6 +60,8 @@ extern int clusterer_enable_rerouting;
 
 int dispatch_jobs = 1;
 
+void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_id);
+
 str cap_sr_details_str[] = {
 	str_init("not synced"),
 	str_init("sync pending"),
@@ -392,12 +394,16 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	}
 	lock_release(cl->current_node->lock);
 
-	node = get_node_by_id(cl, dst_node_id);
-	if (!node) {
-		LM_ERR("Node id [%d] not found in cluster\n", dst_node_id);
-		if (!locked)
-			lock_stop_read(cl_list_lock);
-		return CLUSTERER_SEND_ERR;
+	if (dst_node_id == cl->current_node->node_id) {
+		node = cl->current_node;
+	} else {
+		node = get_node_by_id(cl, dst_node_id);
+		if (!node) {
+			LM_ERR("Node id [%d] not found in cluster\n", dst_node_id);
+			if (!locked)
+				lock_stop_read(cl_list_lock);
+			return CLUSTERER_SEND_ERR;
+		}
 	}
 
 	lock_get(node->lock);
@@ -422,7 +428,16 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 		}
 	}
 
-	rc = msg_send_retry(packet, node, 0, &ev_actions_required);
+	if (node == cl->current_node && packet->type == CLUSTERER_GENERIC_MSG) {
+		bin_remove_int_buffer_end(packet, 1);
+		bin_push_int(packet, node->node_id);
+		bin_get_capability(packet, &capability);
+		packet->front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
+		handle_cl_gen_msg(packet, cluster_id, node->node_id);
+		rc = 0;
+	} else {
+		rc = msg_send_retry(packet, node, 0, &ev_actions_required);
+	}
 
 	bin_remove_int_buffer_end(packet, 3);
 
@@ -508,6 +523,17 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 			down = 0;
 		if (rc == 0)	/* at least one message is sent successfully */
 			sent = 1;
+	}
+
+	if (match_op == NODE_CMP_ALL && packet->type == CLUSTERER_GENERIC_MSG) {
+		LM_DBG("broadcasting gen to self (cl: %d, node: %d)\n",
+		        dst_cid, dst_cl->current_node->node_id);
+		bin_remove_int_buffer_end(packet, 1);
+		bin_push_int(packet, dst_cl->current_node->node_id);
+		bin_get_capability(packet, &capability);
+		packet->front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
+
+		handle_cl_gen_msg(packet, dst_cid, dst_cl->current_node->node_id);
 	}
 
 	bin_remove_int_buffer_end(packet, 3);
@@ -615,7 +641,8 @@ enum clusterer_send_ret send_gen_msg(int cluster_id, int dst_id, str *gen_msg,
 	return rc;
 }
 
-enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag)
+enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg,
+        str *exchg_tag, int all)
 {
 	bin_packet_t packet;
 	int rc;
@@ -626,7 +653,8 @@ enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_t
 		return CLUSTERER_SEND_ERR;
 	}
 
-	rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY, 0);
+	rc = clusterer_bcast_msg(&packet, cluster_id,
+			all ? NODE_CMP_ALL : NODE_CMP_ANY, 0);
 
 	bin_free_packet(&packet);
 
@@ -940,7 +968,7 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 	}
 }
 
-static void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_id)
+void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_id)
 {
 	int req_like;
 	str rcv_msg, rcv_tag;

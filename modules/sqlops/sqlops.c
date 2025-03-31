@@ -79,6 +79,7 @@ static int fixup_pvname_list(void** param);
 static int fixup_avpname_list(void** param);
 
 static int fixup_free_pvname_list(void** param);
+static int fixup_free_avp_source(void** param);
 static int fixup_free_avp_dbparam(void** param);
 
 static int w_sql_avp_load(struct sip_msg* msg, void* source,
@@ -136,7 +137,7 @@ static const cmd_export_t cmds[] = {
 
 	{"sql_avp_load", (cmd_function)w_sql_avp_load, {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_sql_avp_source, fixup_free_pkg},
+			fixup_sql_avp_source, fixup_free_avp_source},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
 			fixup_sql_avp_dbparam_scheme, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0},
@@ -146,7 +147,7 @@ static const cmd_export_t cmds[] = {
 
 	{"sql_avp_delete", (cmd_function)w_sql_avp_delete, {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_sql_avp_source, fixup_free_pkg},
+			fixup_sql_avp_source, fixup_free_avp_source},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
 			fixup_sql_avp_dbparam, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0},
@@ -155,7 +156,7 @@ static const cmd_export_t cmds[] = {
 
 	{"sql_avp_store", (cmd_function)w_sql_avp_store, {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_sql_avp_source, fixup_free_pkg},
+			fixup_sql_avp_source, fixup_free_avp_source},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
 			fixup_sql_avp_dbparam, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0},
@@ -542,6 +543,17 @@ static int fixup_sql_avp_dbparam_scheme(void** param)
 static int fixup_sql_avp_dbparam(void** param)
 {
 	return fixup_sql_avp(param, 2, 0);
+}
+
+static int fixup_free_avp_source(void** param)
+{
+	struct fis_param* sp = (struct fis_param*)*param;
+
+	if ((sp->opd & SQLOPS_VAL_STR) && sp->u.s.s) {
+		pkg_free(sp->u.s.s);
+	}
+	pkg_free(sp);
+	return 0;
 }
 
 static int fixup_free_avp_dbparam(void** param)

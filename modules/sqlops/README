@@ -729,15 +729,16 @@ Chapter 2. Contributors
    7. Henning Westerholt (@henningw) 12 8 112 133
    8. Vlad Paiu (@vladpaiu) 9 7 39 2
    9. Ionut Ionita (@ionutrazvanionita) 8 5 180 12
-   10. Kobi Eshun (@ekobi) 7 1 300 146
+   10. Norman Brandinger (@NormB) 7 5 37 10
 
-   All remaining contributors: Norman Brandinger (@NormB), Andrei
+   All remaining contributors: Kobi Eshun (@ekobi), Andrei
    Pelinescu-Onciul, Anca Vamanu, Maksym Sobolyev (@sobomax),
    Ovidiu Sas (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Klaus
-   Darilion, John Burke (@john08burke), Andrey Vorobiev, Olle E.
-   Johansson, Kennard White, Julián Moreno Patiño, Konstantin
-   Bokarius, Walter Doekes (@wdoekes), Andreas Granig, Peter
-   Lemenkov (@lemenkov), Sergio Gutierrez, Edson Gellert Schubert.
+   Darilion, John Burke (@john08burke), Andrey Vorobiev, Nick
+   Altmann (@nikbyte), Olle E. Johansson, Kennard White, Julián
+   Moreno Patiño, Konstantin Bokarius, Walter Doekes (@wdoekes),
+   Andreas Granig, Peter Lemenkov (@lemenkov), Sergio Gutierrez,
+   Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -759,25 +760,25 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Norman Brandinger (@NormB)          Aug 2006 - May 2024
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2024
-   3.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2024
-   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
-   7.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   8.  John Burke (@john08burke)           Jun 2022 - Jun 2022
-   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Norman Brandinger (@NormB)          Aug 2006 - Mar 2025
+   2.  Nick Altmann (@nikbyte)             Feb 2025 - Feb 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2024
+   4.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2024
+   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   7.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
+   8.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   9.  John Burke (@john08burke)           Jun 2022 - Jun 2022
+   10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
 
-   All remaining contributors: Andrey Vorobiev, Julián Moreno
-   Patiño, Ionut Ionita (@ionutrazvanionita), Walter Doekes
-   (@wdoekes), Anca Vamanu, Kennard White, Sergio Gutierrez, Kobi
-   Eshun (@ekobi), Henning Westerholt (@henningw), Olle E.
-   Johansson, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Klaus
-   Darilion, Andreas Granig, Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu.
+   All remaining contributors: Peter Lemenkov (@lemenkov), Andrey
+   Vorobiev, Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Walter Doekes (@wdoekes), Anca Vamanu,
+   Kennard White, Sergio Gutierrez, Kobi Eshun (@ekobi), Henning
+   Westerholt (@henningw), Olle E. Johansson, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Klaus Darilion, Andreas Granig, Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

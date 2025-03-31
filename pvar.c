@@ -64,6 +64,8 @@
 #include "parser/parse_pai.h"
 #include "parser/digest/digest.h"
 #include "parser/contact/parse_contact.h"
+#include "parser/parse_authenticate.h"
+#include "lib/digest_auth/digest_auth.h"
 
 #define is_in_str(p, in) (p<in->s+in->len && *p)
 
@@ -1816,6 +1818,66 @@ static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 }
 
 
+static int pv_get_cauthattr(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	struct authenticate_body *auth = NULL;
+	str *s;
+
+	if(msg==NULL)
+		return -1;
+
+	if (msg->first_line.type!=SIP_REPLY) {
+		LM_DBG("{Proxy,WWW}-Authenticate header should be only in replies\n");
+		return pv_get_null(msg, param, res);
+	}
+	switch (msg->REPLY_STATUS) {
+		case 401:
+			parse_www_authenticate_header(msg, NULL, &auth);
+			break;
+		case 407:
+			parse_proxy_authenticate_header(msg, NULL, &auth);
+			break;
+		default:
+			LM_DBG("bad reply code for a challenge!\n");
+			break;
+	}
+	if (!auth) {
+		LM_DBG("no {Proxy,WWW}-Authenticate header\n");
+		return pv_get_null(msg, param, res);
+	}
+
+	switch (param->pvn.u.isname.name.n) {
+		case 1:
+			s = (str *)print_digest_algorithm(auth->algorithm);
+			break;
+		case 2:
+			s = &auth->realm;
+			break;
+		case 3:
+			s = &auth->nonce;
+			break;
+		case 4:
+			s = &auth->opaque;
+			break;
+		case 5:
+			s = &auth->qop;
+			break;
+		case 6:
+			s = &auth->ik;
+			break;
+		case 7:
+			s = &auth->ck;
+			break;
+		default:
+			LM_BUG("unhandled mode %d\n", param->pvn.u.isname.name.n);
+			return pv_get_null(msg, param, res);
+	}
+
+	return pv_get_strval(msg, param, res, s);
+}
+
+
 static inline str *cred_user(struct sip_msg *rq)
 {
 	struct hdr_field* h;
@@ -2112,6 +2174,9 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 #define SOCK_AF_S             "af"
 #define SOCK_AF_LEN           (sizeof(SOCK_AF_S)-1)
 #define SOCK_AF_ID            8
+#define SOCK_FORCED_S         "forced"
+#define SOCK_FORCED_LEN       (sizeof(SOCK_FORCED_S)-1)
+#define SOCK_FORCED_ID        9
 
 static int pv_parse_socket_name(pv_spec_p sp, const str *in)
 {
@@ -2160,6 +2225,23 @@ static int pv_parse_socket_name(pv_spec_p sp, const str *in)
 	return 0;
 }
 
+static int pv_parse_socket_out_name(pv_spec_p sp, const str *in)
+{
+	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
+		return -1;
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
+
+	if (in->len==SOCK_FORCED_LEN &&
+	strncasecmp(in->s, SOCK_FORCED_S, SOCK_FORCED_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_FORCED_ID;
+		return 0;
+	} else {
+		return pv_parse_socket_name(sp, in);
+	}
+}
+
 
 static inline int get_socket_field( const struct socket_info *si,
 											pv_name_t *pvn, pv_value_t *res)
@@ -2170,6 +2252,7 @@ static inline int get_socket_field( const struct socket_info *si,
 	/* return the field */
 	switch (pvn->u.isname.name.n) {
 		case 0: /* return full socket description */
+		case SOCK_FORCED_ID: /* return forced socket description */
 			res->rs = si->sock_str;
 			res->flags = PV_VAL_STR;
 			break;
@@ -2261,6 +2344,9 @@ static int pv_get_socket_out_fields(struct sip_msg *msg, pv_param_t *param,
 
 	if(msg==NULL || res==NULL)
 		return -1;
+
+	if (param->pvn.u.isname.name.n == SOCK_FORCED_ID && !msg->force_send_socket)
+		return pv_get_null(msg, NULL, res);
 
 	si = (msg->force_send_socket) ?
 		msg->force_send_socket : msg->rcv.bind_address;
@@ -3955,6 +4041,27 @@ const pv_export_t _pv_names_table[] = {
 	{str_const_init("aU"), /* */
 		PVT_AUTH_USERNAME_WHOLE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 99},
+	{str_const_init("challenge.algorithm"), /* */
+		PVT_AUTH_USERNAME, pv_get_cauthattr, 0,
+		0, 0, pv_init_iname, 1},
+	{str_const_init("challenge.realm"),
+		PVT_AUTH_REALM, pv_get_cauthattr, 0,
+		0, 0, pv_init_iname, 2},
+	{str_const_init("challenge.nonce"),
+		PVT_AUTH_DURI, pv_get_cauthattr, 0,
+		0, 0, pv_init_iname, 3},
+	{str_const_init("challenge.opaque"),
+		PVT_AUTH_DOMAIN, pv_get_cauthattr, 0,
+		0, 0, pv_init_iname, 4},
+	{str_const_init("challenge.qop"),
+		PVT_AUTH_NONCE, pv_get_cauthattr, 0,
+		0, 0, pv_init_iname, 5},
+	{str_const_init("challenge.ik"), /* */
+		PVT_AUTH_NONCE, pv_get_cauthattr, 0,
+		0, 0, pv_init_iname, 6},
+	{str_const_init("challenge.ck"), /* */
+		PVT_AUTH_RESPONSE, pv_get_cauthattr, 0,
+		0, 0, pv_init_iname, 7},
 	{str_const_init("Au"), /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
@@ -4191,7 +4298,7 @@ const pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{str_const_init("socket_out"), /* */
 		PVT_SOCKET_OUT, pv_get_socket_out_fields, NULL,
-		pv_parse_socket_name, 0, 0, 0},
+		pv_parse_socket_out_name, 0, 0, 0},
 	{str_const_init("si"), /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},

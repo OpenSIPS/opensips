@@ -41,7 +41,8 @@
 #define UL_BIN_V2      2
 #define UL_BIN_V3      3 // added "cmatch" (default: CT_MATCH_CONTACT_CALLID)
 #define UL_BIN_V4      4 // changed 'ct.cflags' from int bitmask to string repr
-#define UL_BIN_VERSION UL_BIN_V4
+#define UL_BIN_V5      5 // added 'r.kv_storage' to AoR INSERT packets
+#define UL_BIN_VERSION UL_BIN_V5
 
 extern int location_cluster;
 extern struct clusterer_binds clusterer_api;

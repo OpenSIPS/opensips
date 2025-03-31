@@ -1148,6 +1148,7 @@ fi
 %{_libdir}/opensips/modules/gflags.so
 %{_libdir}/opensips/modules/group.so
 %{_libdir}/opensips/modules/imc.so
+%{_libdir}/opensips/modules/janus.so
 %{_libdir}/opensips/modules/jsonrpc.so
 %{_libdir}/opensips/modules/load_balancer.so
 %{_libdir}/opensips/modules/mangler.so
@@ -1199,6 +1200,7 @@ fi
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/topology_hiding.so
+%{_libdir}/opensips/modules/trie.so
 %{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uac_registrant.so
@@ -1247,6 +1249,7 @@ fi
 %doc docdir/README.gflags
 %doc docdir/README.group
 %doc docdir/README.imc
+%doc docdir/README.janus
 %doc docdir/README.jsonrpc
 %doc docdir/README.load_balancer
 %doc docdir/README.mangler
@@ -1296,6 +1299,7 @@ fi
 %doc docdir/README.tls
 %doc docdir/README.tm
 %doc docdir/README.topology_hiding
+%doc docdir/README.trie
 %doc docdir/README.uac
 %doc docdir/README.uac_redirect
 %doc docdir/README.uac_registrant
@@ -1660,6 +1664,12 @@ fi
 
 
 %changelog
+* Tue Mar 11 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+- New module: janus
+
+* Thu Jan 16 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+- New module: trie
+
 * Mon Aug 19 2024 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - Replace deprecated dependency for radius modules
 

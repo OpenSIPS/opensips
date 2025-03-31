@@ -1164,7 +1164,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 71 40 2183 695
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 74 43 2199 725
    2. Liviu Chircu (@liviuchircu) 59 27 809 1510
    3. Razvan Crainea (@razvancrainea) 48 21 2956 120
    4. Vlad Paiu (@vladpaiu) 16 8 663 123
@@ -1177,8 +1177,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Bence Szigeti, Julián Moreno
    Patiño, Fabian Gast (@fgast), Alexey Vasilyev (@vasilevalex),
-   Jarrod Baumann (@jarrodb), Ezequiel Lovelle (@lovelle), Walter
-   Doekes (@wdoekes), Nick Altmann (@nikbyte), Ionut Ionita
+   Jarrod Baumann (@jarrodb), Ubuntu, Ezequiel Lovelle (@lovelle),
+   Walter Doekes (@wdoekes), Nick Altmann (@nikbyte), Ionut Ionita
    (@ionutrazvanionita), Dan Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1201,22 +1201,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2024
-   2.  Vlad Paiu (@vladpaiu)               Feb 2012 - May 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - May 2024
-   4.  Bence Szigeti                       May 2023 - May 2023
-   5.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
-   6.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
-   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   9.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
-   10. Fabian Gast (@fgast)                Nov 2018 - Nov 2018
+   1.  Ubuntu                              Mar 2025 - Mar 2025
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jan 2025
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2024
+   4.  Vlad Paiu (@vladpaiu)               Feb 2012 - May 2024
+   5.  Bence Szigeti                       May 2023 - May 2023
+   6.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
+   7.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
+   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   10. Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Ovidiu
-   Sas (@ovidiusas), Jarrod Baumann (@jarrodb), Julián Moreno
-   Patiño, Ionut Ionita (@ionutrazvanionita), Ezequiel Lovelle
-   (@lovelle), Mihai Tiganus (@tallicamike), Boris Ratner, Nick
-   Altmann (@nikbyte), Walter Doekes (@wdoekes).
+   All remaining contributors: Fabian Gast (@fgast), Peter
+   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Jarrod Baumann
+   (@jarrodb), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Ezequiel Lovelle (@lovelle), Mihai
+   Tiganus (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte),
+   Walter Doekes (@wdoekes).
 
    (1) including any documentation-related commits, excluding
    merge commits

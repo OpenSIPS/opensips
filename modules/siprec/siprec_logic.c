@@ -415,6 +415,8 @@ no_recording:
 					req.b2b_key->len, req.b2b_key->s);
 	}
 	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
+	if (ss->flags & SIPREC_STARTED)
+		raise_siprec_stop_event(ss);
 	srec_logic_destroy(ss, 0);
 
 	if (!(ss->flags & SIPREC_DLG_CBS)) {

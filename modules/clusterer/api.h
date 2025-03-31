@@ -74,6 +74,7 @@ enum clusterer_event {
 
 enum cl_node_match_op {
 	NODE_CMP_ANY,
+	NODE_CMP_ALL, /* same as ANY, but additionally includes current node */
 	NODE_CMP_EQ_SIP_ADDR,
 	NODE_CMP_NEQ_SIP_ADDR
 };

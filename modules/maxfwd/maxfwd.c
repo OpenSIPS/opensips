@@ -52,7 +52,7 @@ static int max_limit = MAXFWD_UPPER_LIMIT;
 
 static int fixup_maxfwd_header(void** param);
 static int w_process_maxfwd_header(struct sip_msg* msg, int* mval);
-static int is_maxfwd_lt(struct sip_msg *msg, char *slimit, char *foo);
+static int is_maxfwd_lt(struct sip_msg *msg, int *limit);
 static int mod_init(void);
 
 
@@ -169,21 +169,19 @@ error:
 
 
 
-static int is_maxfwd_lt(struct sip_msg *msg, char *slimit, char *foo)
+static int is_maxfwd_lt(struct sip_msg *msg, int *limit)
 {
 	str mf_value;
-	int limit;
 	int val;
 
-	limit = (int)(long)slimit;
 	val = is_maxfwd_present( msg, &mf_value);
-	LM_DBG("value = %d \n",val);
+	LM_DBG("value = %d, limit = %d\n", val, *limit);
 
 	if ( val<0 ) {
 		/* error or not found */
 		/* coverity[return_overflow: FALSE] */
 		return val-1;
-	} else if ( val>=limit ) {
+	} else if ( val >= *limit ) {
 		/* greater or equal than/to limit */
 		return -1;
 	}

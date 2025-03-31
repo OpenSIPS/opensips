@@ -1014,6 +1014,7 @@ int match_node(const node_info_t *a, const node_info_t *b,
 {
 	switch (match_op) {
 	case NODE_CMP_ANY:
+	case NODE_CMP_ALL:
 		break;
 	case NODE_CMP_EQ_SIP_ADDR:
 		lock_get(a->lock);

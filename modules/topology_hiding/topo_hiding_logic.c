@@ -1,29 +1,30 @@
 /**
- * Topology Hiding Module
- *
- * Copyright (C) 2015 OpenSIPS Foundation
- *
- * This file is part of opensips, a free SIP server.
- *
- * opensips is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version
- *
- * opensips is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+* Topology Hiding Module
+*
+* Copyright (C) 2015 OpenSIPS Foundation
+*
+* This file is part of opensips, a free SIP server.
+*
+* opensips is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version
+*
+* opensips is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  * History
  * -------
  *  2015-02-17  initial version (Vlad Paiu)
 */
 
+#include "../../ut.h"
 #include "topo_hiding_logic.h"
 
 extern int force_dialog;
@@ -43,9 +44,12 @@ struct th_ct_params {
 static struct th_ct_params *th_param_list=NULL;
 static struct th_ct_params *th_hdr_param_list=NULL;
 
-static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,struct dlg_cell* dlg,int extra_flags);
-static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags);
-static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, int leg);
+static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,
+		struct dlg_cell* dlg,int extra_flags,struct th_params *params);
+static int topo_hiding_no_dlg(struct sip_msg *req,
+		struct cell* t,int extra_flags,struct th_params *params);
+static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg,
+		int leg, str *ct_user);
 static int topo_delete_vias(struct sip_msg* req);
 static int topo_delete_record_routes(struct sip_msg *req); 
 static struct lump* delete_existing_contact(struct sip_msg *msg, int del_hdr);
@@ -58,14 +62,14 @@ static void th_down_onreply(struct cell* t, int type,struct tmcb_params *param);
 static void th_up_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params *param);
-static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags,str *routes);
+static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags,str *routes,str *ct_user);
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info);
 static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
 		int init_req, int dir, int dst_leg);
 
 /* exposed logic below */
 
-int topology_hiding(struct sip_msg *req,int extra_flags)
+int topology_hiding(struct sip_msg *req,int extra_flags, struct th_params *params)
 {
 	struct dlg_cell *dlg;
 	struct cell* t;
@@ -109,12 +113,12 @@ int topology_hiding(struct sip_msg *req,int extra_flags)
 		}
 
 		if (!dlg)
-			return topo_hiding_no_dlg(req,t,extra_flags);
+			return topo_hiding_no_dlg(req,t,extra_flags,params);
 		else
-			return topo_hiding_with_dlg(req,t,dlg,extra_flags);
+			return topo_hiding_with_dlg(req,t,dlg,extra_flags,params);
 	}
 
-	return topo_hiding_no_dlg(req,t,extra_flags);
+	return topo_hiding_no_dlg(req,t,extra_flags,params);
 }
 
 int topo_parse_passed_ct_params(str *params)
@@ -379,7 +383,8 @@ static char * topo_ct_param_copy(char *buf, str *name, str *val, int should_quot
 	return buf;
 }
 
-static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, int leg)
+static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg,
+		int leg, str *ct_user)
 {
 	char *prefix=NULL,*suffix=NULL,*p,*p_init,*ct_username=NULL;
 	int prefix_len,suffix_len,ct_username_len=0,n,i;
@@ -430,7 +435,11 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, i
 	prefix_len = 5; /* <sip: */
 
 	memset(&ctu, 0, sizeof(ctu));
-	if (dlg_api.is_mod_flag_set(dlg,TOPOH_KEEP_USER)) {
+	if (ct_user && ct_user->len) {
+		ct_username = ct_user->s;
+		ct_username_len = ct_user->len;
+		prefix_len += 1 + /* @ */ + ct_username_len;
+	} else if (dlg_api.is_mod_flag_set(dlg,TOPOH_KEEP_USER)) {
 		if ( parse_contact(msg->contact)<0 ||
 			((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
 			((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
@@ -837,13 +846,19 @@ err_free_rport:
 	return NULL;
 }
 
+struct th_no_dlg_param {
+	str routes;
+	str username;
+};
+
+
 #define RECORD_ROUTE "Record-Route: "
 #define RECORD_ROUTE_LEN (sizeof(RECORD_ROUTE)-1)
 static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param,int flags, int do_rr)
 {
 	struct lump* lmp;
 	str rr_set;
-	str *route_s = (str *)*param->param;
+	struct th_no_dlg_param *p = *(param->param);
 	struct sip_msg *req = param->req;
 	struct sip_msg *rpl = param->rpl;
 	char *route;
@@ -866,7 +881,8 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 	}
 
 	if ( !(rpl->REPLY_STATUS>=300 && rpl->REPLY_STATUS<400) ) {
-		if (topo_no_dlg_encode_contact(rpl,flags,route_s) < 0) {
+		if (topo_no_dlg_encode_contact(rpl,flags,
+				(p?&p->routes:NULL),(p?&p->username:NULL)) < 0) {
 			LM_ERR("Failed to encode contact header \n");
 			return;
 		}
@@ -924,9 +940,22 @@ static void th_no_dlg_onreply_within(struct cell* t, int type, struct tmcb_param
 	_th_no_dlg_onreply(t,type,param,0,0);
 }
 
-static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags)
+static void th_no_dlg_user_onreply_within(struct cell* t, int type, struct tmcb_params *param)
+{
+	_th_no_dlg_onreply(t,type,param,TOPOH_KEEP_USER,0);
+}
+
+static void shm_free_wrap(void *param)
+{
+	if (param)
+		shm_free(param);
+}
+
+static int topo_hiding_no_dlg(struct sip_msg *req,
+		struct cell* t,int extra_flags,struct th_params *params)
 {
 	transaction_cb* used_cb;
+	struct th_no_dlg_param *p = NULL;
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(req, HDR_EOH_F, 0)< 0) {
@@ -944,15 +973,26 @@ static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags
 		return -1;
 	}
 
-	if (topo_no_dlg_encode_contact(req,extra_flags,NULL) < 0) {
+	if (topo_no_dlg_encode_contact(req,extra_flags,NULL, &params->ct_caller_user) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
 
-	if (extra_flags & TOPOH_KEEP_USER)
+	if (extra_flags & TOPOH_KEEP_USER) {
 		used_cb = th_no_dlg_user_onreply;
-	else
+	} else {
 		used_cb = th_no_dlg_onreply;
+		if (params && params->ct_callee_user.len) {
+			p = shm_malloc(sizeof *p + params->ct_callee_user.len);
+			if (p) {
+				memset(p, 0, sizeof *p);
+				p->username.s = (char *)(p + 1);
+				p->username.len =  params->ct_callee_user.len;
+				memcpy(p->username.s,  params->ct_callee_user.s,
+						params->ct_callee_user.len);
+			}
+		}
+	}
 
 	if (extra_flags & TOPOH_HIDE_CALLID)
 		LM_WARN("Cannot hide callid when dialog support is not engaged!\n");
@@ -960,7 +1000,7 @@ static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags
 		LM_WARN("Cannot store DID in user when dialog support is not engaged!\n");
 
 	if (tm_api.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-	used_cb,NULL, NULL)<0 ) {
+	used_cb,p, (p?shm_free_wrap:NULL))<0 ) {
 		LM_ERR("failed to register TMCB\n");
 		return -1;
 	}
@@ -968,9 +1008,32 @@ static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags
 	return 1;
 }
 
-static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,struct dlg_cell* dlg,int extra_flags)
+static struct th_params *th_params_dup(struct th_params *params)
+{
+	struct th_params *ret;
+	if (!params || (!params->ct_caller_user.len && !params->ct_callee_user.len))
+		return NULL;
+	ret = shm_malloc(sizeof *ret +
+			params->ct_caller_user.len + params->ct_callee_user.len);
+	if (!ret) {
+		LM_ERR("oom for username dup\n");
+		return NULL;
+	}
+	ret->ct_caller_user.s = (char *)(ret + 1);
+	memcpy(ret->ct_caller_user.s, params->ct_caller_user.s, params->ct_caller_user.len);
+	ret->ct_caller_user.len = params->ct_caller_user.len;
+	ret->ct_callee_user.s = ret->ct_caller_user.s;
+	memcpy(ret->ct_callee_user.s, params->ct_callee_user.s, params->ct_callee_user.len);
+	ret->ct_callee_user.len = params->ct_callee_user.len;
+	return ret;
+}
+
+static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,
+		struct dlg_cell* dlg,int extra_flags,struct th_params *params)
 {
 	int already_engaged = dlg_api.is_mod_flag_set(dlg,TOPOH_ONGOING);
+	struct th_params *saved_params = NULL;
+	int_str isval;
 
 	dlg_api.set_mod_flag(dlg, TOPOH_ONGOING | extra_flags );
 	if (already_engaged) {
@@ -984,39 +1047,76 @@ static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,struct dlg_ce
 		return -1;
 	}
 
+	if (params && (params->ct_caller_user.len || params->ct_callee_user.len)) {
+		if (params->ct_caller_user.len) {
+			isval.s = params->ct_caller_user;
+			if (dlg_api.store_dlg_value(dlg,
+					&th_contact_caller_var, &isval, DLG_VAL_TYPE_STR) < 0) {
+				LM_ERR("Failed to store caller dialog var\n");
+				return -1;
+			}
+			LM_DBG("advertising caller user <%.*s> in contact\n",
+					isval.s.len, isval.s.s);
+		}
+		if (params->ct_callee_user.len) {
+			isval.s = params->ct_callee_user;
+			if (dlg_api.store_dlg_value(dlg,
+					&th_contact_callee_var, &isval, DLG_VAL_TYPE_STR) < 0) {
+				LM_ERR("Failed to store callee dialog var\n");
+				return -1;
+			}
+			LM_DBG("advertising callee user <%.*s> in contact\n",
+					isval.s.len, isval.s.s);
+		}
+		saved_params = th_params_dup(params);
+		if (!saved_params) {
+			LM_ERR("could not dup contact user\n");
+			return -1;
+		}
+	}
+
 	if (topo_delete_record_routes(req) < 0) {
 		LM_ERR("Failed to remove Record Route header \n");
-		return -1;
+		goto error;
 	}
 
 	if(topo_delete_vias(req) < 0) {
 		LM_ERR("Failed to remove via headers\n");
-		return -1;
+		goto error;
 	}
 
-	if(topo_dlg_replace_contact(req, dlg, -1) < 0) {
+	if(topo_dlg_replace_contact(req, dlg, -1, (params?&params->ct_callee_user:NULL)) < 0) {
 		LM_ERR("Failed to replace contact\n");
-		return -1;
+		goto error;
 	}
 
-	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, topo_dlg_initial_reply, NULL, NULL)) {
+	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, topo_dlg_initial_reply,
+			NULL, NULL)) {
 		LM_ERR("cannot register callback for fwded replies in dialog\n");
-		return -1;
+		goto error;
 	}
 
 	if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_REQ_WITHIN,
-	topo_dlg_onroute, NULL , NULL)) {
+	topo_dlg_onroute, saved_params, (saved_params?shm_free_wrap:NULL))) {
 		LM_ERR("cannot register callback for sequential requests\n");
-		return -1;
+		goto error;
 	}
 
 	return 1;
+error:
+	if (saved_params)
+		shm_free(saved_params);
+	return -1;
 }
 
 /* restore callbacks */
 void th_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params)
 {
+	int_str isval;
+	int val_type;
+	struct th_params params, *pparams = NULL;
+
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch message flags\n");
 		return;
@@ -1026,17 +1126,32 @@ void th_loaded_callback(struct dlg_cell *dlg, int type,
 		LM_DBG("no topo hiding for dlg %p\n", dlg);
 		return;
 	}
+	memset(&params, 0, sizeof params);
 
-	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, topo_dlg_initial_reply, NULL, NULL)) {
+	if (dlg_api.fetch_dlg_value(dlg, &th_contact_caller_var,
+			&val_type, &isval, 0) >= 0)
+		params.ct_caller_user = isval.s;
+	if (dlg_api.fetch_dlg_value(dlg, &th_contact_callee_var,
+			&val_type, &isval, 0) >= 0)
+		params.ct_callee_user = isval.s;
+	if (params.ct_caller_user.len || params.ct_callee_user.len)
+		pparams = th_params_dup(&params);
+
+	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, topo_dlg_initial_reply,
+			NULL, NULL)) {
 		LM_ERR("cannot register callback for fwded replies in dialog\n");
-		return ;
+		goto error;
 	}
 
 	if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_REQ_WITHIN,
-	topo_dlg_onroute, NULL , NULL)) {
+	topo_dlg_onroute, pparams, (pparams?shm_free_wrap:NULL))) {
 		LM_ERR("cannot register callback for sequential requests\n");
-		return ;
+		goto error;
 	}
+	return;
+error:
+	if (pparams)
+		shm_free(pparams);
 }
 
 static void topo_unref_dialog(void *dialog)
@@ -1069,6 +1184,7 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 	int dir = params->direction;
 	struct sip_msg *req = params->msg;
 	int adv_leg = -1, leg;
+	str *ct_user = (str *)(*params->param);
 
 	if (!req) {
 		LM_ERR("Called with NULL SIP message \n");
@@ -1121,7 +1237,7 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 	}
 
 	/* replace contact*/
-	if(topo_dlg_replace_contact(req, dlg, adv_leg) < 0) {
+	if(topo_dlg_replace_contact(req, dlg, adv_leg, ct_user) < 0) {
 		LM_ERR("Failed to replace contact\n");
 		return;
 	}
@@ -1145,6 +1261,9 @@ static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl,
 	char* route;
 	struct dlg_leg* leg;
 	int adv_leg = -1;
+	str *ct_user, *ct_var;
+	int val_type;
+	int_str value;
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(rpl, HDR_EOH_F, 0)< 0) {
@@ -1171,7 +1290,16 @@ static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl,
 	/* replace contact, but not if a redirect reply for initial INVITE */
 	if ( !(init_req && dir == DLG_DIR_UPSTREAM &&
 	rpl->REPLY_STATUS>=300 && rpl->REPLY_STATUS<400) ) {
-		if(topo_dlg_replace_contact(rpl, dlg, adv_leg) < 0) {
+		if (dst_leg == DLG_CALLER_LEG)
+			ct_var = &th_contact_caller_var;
+		else
+			ct_var = &th_contact_callee_var;
+		if (dlg_api.fetch_dlg_value(dlg, ct_var, &val_type, &value, 0) < 0)
+			ct_user = NULL;
+		else
+			ct_user = &value.s;
+
+		if(topo_dlg_replace_contact(rpl, dlg, adv_leg, ct_user) < 0) {
 			LM_ERR("Failed to replace contact\n");
 			return -1;
 		}
@@ -1551,12 +1679,13 @@ error:
 
 /* We encode the RR headers, the actual Contact and the socket str for this leg */
 /* Via headers will be restored using the TM module, no need to save anything for them */
-static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len)
+static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len, int flags)
 {
-	short rr_len,ct_len,addr_len,enc_len;
+	short rr_len,ct_len,addr_len,flags_len,enc_len;
 	char *suffix_plain,*suffix_enc,*p,*s;
 	str rr_set = {NULL, 0};
 	str contact;
+	str flags_str;
 	int i,total_len;
 	struct sip_uri ctu;
 	struct th_ct_params* el;
@@ -1564,6 +1693,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	int is_req = (msg->first_line.type==SIP_REQUEST)?1:0;
 	int local_len = sizeof(short) /* RR length */ +
 			sizeof(short) /* Contact length */ +
+			sizeof(short) /* Flags length */ +
 			sizeof(short) /* bind addr */;
 
 	/* parse all headers as we can have multiple
@@ -1573,7 +1703,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 		return NULL;
 	}
 
-	if (routes) {
+	if (routes && routes->len) {
 		rr_set = *routes;
 		rr_len = (short)routes->len;
 	} else if(msg->record_route){
@@ -1596,8 +1726,11 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 		ct_len = (short)contact.len;
 	}
 
+	flags_str.s = int2str(flags, &flags_str.len);
+	flags_len = (short)flags_str.len;
+	
 	addr_len = (short)msg->rcv.bind_address->sock_str.len;
-	local_len += rr_len + ct_len + addr_len; 
+	local_len += rr_len + ct_len + flags_len + addr_len; 
 	enc_len = th_ct_enc_scheme == ENC_BASE64 ?
 		calc_word64_encode_len(local_len) : calc_word32_encode_len(local_len);
 	total_len = enc_len +  
@@ -1666,6 +1799,10 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 		memcpy(p,contact.s,contact.len);
 		p+= contact.len;
 	}
+	memcpy(p,&flags_len,sizeof(short));
+	p+= sizeof(short);
+	memcpy(p,flags_str.s, flags_str.len);
+	p+= flags_str.len;
 	memcpy(p,&addr_len,sizeof(short));
 	p+= sizeof(short);
 	memcpy(p,msg->rcv.bind_address->sock_str.s,msg->rcv.bind_address->sock_str.len);
@@ -1720,7 +1857,7 @@ error:
 	return NULL;
 }
 
-static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes) 
+static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes, str *ct_user)
 {
 	struct lump* lump;
 	char *prefix=NULL,*suffix=NULL,*ct_username=NULL;
@@ -1742,8 +1879,14 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 		goto error;
 	}
 
+	LM_DBG("Flags '%d' passed for encoding Contact\n", flags);
+
 	prefix_len = 5; /* <sip: */
-	if (flags & TOPOH_KEEP_USER) {
+	if (ct_user && ct_user->len) {
+		ct_username = ct_user->s;
+		ct_username_len = ct_user->len;
+		prefix_len += 1 + /* @ */ + ct_username_len;
+	} else if (flags & TOPOH_KEEP_USER) {
 		if ( parse_contact(msg->contact)<0 ||
 			((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
 			((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
@@ -1769,7 +1912,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 		goto error;
 	}
 	memcpy(prefix,"<sip:",5);
-	if (flags & TOPOH_KEEP_USER && ct_username_len > 0) {
+	if (ct_username_len > 0) {
 		memcpy(prefix+5,ct_username,ct_username_len);
 		prefix[prefix_len-1] = '@';
 	}
@@ -1781,7 +1924,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (!(suffix = build_encoded_contact_suffix(msg,routes,&suffix_len))) {
+	if (!(suffix = build_encoded_contact_suffix(msg, routes, &suffix_len, flags))) {
 		LM_ERR("Failed to build suffix \n");
 		goto error;
 	}
@@ -1810,18 +1953,12 @@ error:
 #define ROUTE_SUFF ">\r\n"
 #define ROUTE_SUFF_LEN (sizeof(ROUTE_SUFF) -1)
 
-static inline void topo_no_dlg_seq_free(void *p)
-{
-	if (p)
-		shm_free(p);
-}
-
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 {
-	int max_size,dec_len,i,size;
+	int max_size,dec_len,i,size,flags;
 	char *dec_buf,*p,*route=NULL,*hdrs,*remote_contact;
 	struct hdr_field *it;
-	str rr_buf,ct_buf,bind_buf;
+	str rr_buf,ct_buf,flags_buf,bind_buf;
 	rr_t *head = NULL, *rrp;
 	int next_strict=0;
 	struct sip_uri fru;
@@ -1830,7 +1967,9 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	str host;
 	int port,proto;
 	const struct socket_info *sock;
-	str *route_s = NULL, route_buf = {0, 0};
+	str route_buf = {0, 0};
+	struct th_no_dlg_param *param = NULL;
+	transaction_cb* used_cb;
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(msg, HDR_EOH_F, 0)< 0) {
@@ -1886,10 +2025,11 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	size = dec_len;
 	__extract_len_and_buf(p, size, rr_buf);
 	__extract_len_and_buf(p, size, ct_buf);
+	__extract_len_and_buf(p, size, flags_buf);
 	__extract_len_and_buf(p, size, bind_buf);
 
-	LM_DBG("extracted routes [%.*s] , ct [%.*s] and bind [%.*s]\n",
-		rr_buf.len,rr_buf.s,ct_buf.len,ct_buf.s,bind_buf.len,bind_buf.s);
+	LM_DBG("extracted routes [%.*s] , ct [%.*s] , flags [%.*s] and bind [%.*s]\n",
+		rr_buf.len,rr_buf.s,ct_buf.len,ct_buf.s,flags_buf.len,flags_buf.s,bind_buf.len,bind_buf.s);
 
 	if (rr_buf.len) {
 		if (parse_rr_body(rr_buf.s,rr_buf.len,&head) != 0) {
@@ -2068,17 +2208,32 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		}
 	}
 	if (route_buf.s && route_buf.len) {
-		route_s = shm_malloc(sizeof *route_s + route_buf.len);
-		if (route_s) {
-			route_s->s = (char *)(route_s + 1);
-			memcpy(route_s->s, route_buf.s, route_buf.len);
-			route_s->len = route_buf.len;
+		param = shm_malloc(sizeof *param + route_buf.len);
+		if (param) {
+			memset(param, 0, sizeof *param);
+			param->routes.s = (char *)(param + 1);
+			param->routes.len = route_buf.len;
+			memcpy(param->routes.s, route_buf.s, route_buf.len);
 		}
 	}
 
+	if (flags_buf.len && flags_buf.s) {
+		if (str2int(&flags_buf, (unsigned int*) &flags) < 0) {
+			LM_WARN("Failed to convert string to integer, default to no flags\n");
+			flags = 0;
+		}
+	} else {
+		flags = 0;
+	}
+
+	if (flags & TOPOH_KEEP_USER)
+		used_cb = th_no_dlg_user_onreply_within;
+	else
+		used_cb = th_no_dlg_onreply_within;
+
 	/* register tm callback for response in  */
 	if (tm_api.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
-	th_no_dlg_onreply_within,route_s,topo_no_dlg_seq_free)<0 ) {
+	used_cb,param,(param?shm_free_wrap:NULL))<0 ) {
 		LM_ERR("failed to register TMCB\n");
 	}
 
@@ -2100,7 +2255,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		free_rr(&head);
 	pkg_free(dec_buf);
 
-	if (topo_no_dlg_encode_contact(msg,0,NULL) < 0) {
+	if (topo_no_dlg_encode_contact(msg,flags,NULL,NULL) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}

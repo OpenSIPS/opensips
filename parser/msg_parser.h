@@ -240,7 +240,6 @@ struct sip_msg {
 	 * (WARNING: do not deallocate them twice!)*/
 
 	struct hdr_field* h_via1;
-	struct hdr_field* h_via2;
 	struct hdr_field* callid;
 	struct hdr_field* to;
 	struct hdr_field* cseq;

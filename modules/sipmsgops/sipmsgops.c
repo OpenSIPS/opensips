@@ -1016,8 +1016,8 @@ static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
 static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* res)
 {
 	static str out = {NULL, 0};
-	struct body_part *p, *it;
-	unsigned int out_offs, orig_offs, parts;
+	struct body_part *p = NULL, *it;
+	unsigned int out_offs, orig_offs, parts = 0;
 	pv_value_t val;
 
 
@@ -1426,7 +1426,9 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 							hf->name.len, hf->name.s);
 					goto failed;
 				}
-				hf->parsed = (void*)(unsigned long)u_aux;
+				/* do not write back the value, let he MF module do its
+				 * own magic on how to store the parsed value */
+				//hf->parsed = (void*)(unsigned long)u_aux;
 				break;
 
 			case HDR_SUPPORTED_T:
@@ -1618,8 +1620,8 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 	struct hdr_field * ptr;
 	contact_t * contacts;
 	struct sip_uri test_contacts;
+	struct sip_uri *p_uri;
 	struct cseq_body * cbody;
-	struct to_body *from, *to;
 	pv_value_t pv_val;
 	char reason[MAX_REASON];
 	int ret = -SV_GENERIC_FAILURE;
@@ -1706,30 +1708,22 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 
 	/* test to header uri */
 	if(flags & SIP_PARSE_TO) {
-		if(!msg->to->parsed) {
-			if(parse_to_header(msg) < 0) {
-				strcpy(reason, "failed to parse 'To' header");
-				ret = SV_TO_PARSE_ERROR;
-				goto failed;
-			}
-		}
 
-		to = (struct to_body*)msg->to->parsed;
-
-		if(parse_uri(to->uri.s, to->uri.len, &to->parsed_uri) < 0) {
+		if ( (p_uri=parse_to_uri(msg))==NULL ) {
 			strcpy(reason, "failed to parse 'To' header");
 			ret = SV_TO_PARSE_ERROR;
 			goto failed;
 		}
 
-		/* check for valid domain format */
-		if(check_hostname(&to->parsed_uri.host) < 0) {
+		/* check for valid domain format, if SIP/SIPS types */
+		if ( (p_uri->type==SIP_URI_T || p_uri->type==SIPS_URI_T) &&
+		check_hostname(&p_uri->host) < 0 ) {
 			strcpy(reason, "invalid domain for 'To' header");
 			ret = SV_TO_DOMAIN_ERROR;
 			goto failed;
 		}
 
-		if(!is_username_str(&to->parsed_uri.user)) {
+		if(!is_username_str(&p_uri->user)) {
 			strcpy(reason, "invalid username for 'To' header");
 			ret = SV_TO_USERNAME_ERROR;
 			goto failed;
@@ -1738,30 +1732,22 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 
 	/* test from header uri */
 	if(flags & SIP_PARSE_FROM) {
-		if(!msg->from->parsed) {
-			if(parse_from_header(msg) < 0) {
-				strcpy(reason, "failed to parse 'From' header");
-				ret = SV_FROM_PARSE_ERROR;
-				goto failed;
-			}
-		}
 
-		from = (struct to_body*)msg->from->parsed;
-
-		if(parse_uri(from->uri.s, from->uri.len, &from->parsed_uri) < 0) {
+		if ( (p_uri=parse_from_uri(msg))==NULL ) {
 			strcpy(reason, "failed to parse 'From' header");
 			ret = SV_FROM_PARSE_ERROR;
 			goto failed;
 		}
 
-		/* check for valid domain format */
-		if(check_hostname(&from->parsed_uri.host) < 0) {
+		/* check for valid domain format, if SIP/SIPS types */
+		if ( (p_uri->type==SIP_URI_T || p_uri->type==SIPS_URI_T) &&
+		check_hostname(&p_uri->host) < 0 ) {
 			strcpy(reason, "invalid domain for 'From' header");
 			ret = SV_FROM_DOMAIN_ERROR;
 			goto failed;
 		}
 
-		if (!is_username_str(&from->parsed_uri.user)) {
+		if (!is_username_str(&p_uri->user)) {
 			strcpy(reason, "invalid username for 'From' header");
 			ret = SV_FROM_USERNAME_ERROR;
 			goto failed;

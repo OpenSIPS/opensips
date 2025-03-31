@@ -41,19 +41,23 @@ str topo_hiding_seed = str_init("OpenSIPS");
 str topo_hiding_ct_encode_pw = str_init("ToPoCtPaSS");
 str th_contact_encode_param = str_init("thinfo");
 str th_contact_encode_scheme = str_init("base64");
+str th_contact_caller_var = str_init("_th_contact_caller_username_var_");
+str th_contact_callee_var = str_init("_th_contact_callee_username_var_");
 
 int th_ct_enc_scheme;
 
 static int mod_init(void);
 static void mod_destroy(void);
 static int fixup_mmode(void **param);
-int w_topology_hiding(struct sip_msg *req, str *flags_s);
+static int fixup_th_params(void **param);
+int w_topology_hiding(struct sip_msg *req, str *flags_s, struct th_params *params);
 int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val);
 static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
 static const cmd_export_t cmds[]={
 	{"topology_hiding",(cmd_function)w_topology_hiding, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_th_params,fixup_free_pkg}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"topology_hiding_match",(cmd_function)w_topology_hiding_match, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mmode, 0}, {0,0,0}},
@@ -70,7 +74,9 @@ static const param_export_t params[] = {
 	{ "th_callid_prefix",            STR_PARAM, &topo_hiding_prefix.s        },
 	{ "th_contact_encode_passwd",    STR_PARAM, &topo_hiding_ct_encode_pw.s  },
 	{ "th_contact_encode_param",     STR_PARAM, &th_contact_encode_param.s   },
-	{ "th_contact_encode_scheme",    STR_PARAM, &th_contact_encode_scheme.s   },
+	{ "th_contact_encode_scheme",    STR_PARAM, &th_contact_encode_scheme.s  },
+	{ "th_contact_caller_username_var", STR_PARAM, &th_contact_caller_var.s  },
+	{ "th_contact_callee_username_var", STR_PARAM, &th_contact_callee_var.s  },
 	{0, 0, 0}
 };
 
@@ -142,6 +148,8 @@ static int mod_init(void)
 		topo_hiding_ct_hdr_params.len = strlen(topo_hiding_ct_hdr_params.s);
 		topo_parse_passed_hdr_ct_params(&topo_hiding_ct_hdr_params);
 	}
+	th_contact_caller_var.len = strlen(th_contact_caller_var.s);
+	th_contact_callee_var.len = strlen(th_contact_callee_var.s);
 	th_contact_encode_scheme.len = strlen(th_contact_encode_scheme.s);
 	if (!str_strcmp(&th_contact_encode_scheme, const_str("base64")))
 		th_ct_enc_scheme = ENC_BASE64;
@@ -204,7 +212,75 @@ static int fixup_mmode(void **param)
 	return 0;
 }
 
-int w_topology_hiding(struct sip_msg *req, str *flags_s)
+#define DIALOG_TH_PARAMS_SEP '/'
+
+static int fixup_th_params(void **param)
+{
+	char *p;
+	struct th_params *params = NULL;
+	str *contacts = (str*)*param;
+	str ct, caller;
+
+	if (!contacts)
+		return E_BUG;
+	trim(contacts);
+
+	if (!contacts->len) {
+		*param = NULL;
+		return 0;
+	}
+
+	params = pkg_malloc(sizeof *params + contacts->len);
+	if (!params) {
+		LM_ERR("oom for params\n");
+		return E_OUT_OF_MEM;
+	}
+	memset(params, 0, sizeof *params);
+	ct = *contacts;
+
+	if (ct.s[0] == DIALOG_TH_PARAMS_SEP) {
+		/* search for a second contact */
+		ct.s++;
+		ct.len--;
+		caller = ct;
+		p = q_memchr(ct.s, DIALOG_TH_PARAMS_SEP, ct.len);
+		if (p) {
+			/* we might have a callee as well; caller ends here */
+			caller.s = ct.s;
+			caller.len = p - ct.s;
+			ct.len -= caller.len + 1;
+			ct.s = p + 1;
+			trim(&ct);
+		} else {
+			ct.len = 0;
+		}
+
+		trim(&caller);
+		if (caller.len > 0) {
+			params->ct_caller_user.s = (char *)(params + 1);
+			params->ct_caller_user.len = caller.len;
+			memcpy(params->ct_caller_user.s, caller.s, caller.len);
+		}
+		if (ct.len) {
+			if (caller.len > 0)
+				params->ct_callee_user.s = params->ct_caller_user.s + caller.len;
+			else
+				params->ct_callee_user.s = (char *)(params + 1);
+			params->ct_callee_user.len = ct.len;
+			memcpy(params->ct_callee_user.s, ct.s, ct.len);
+		}
+	} else {
+		/* the contact is for both - copy it accordingly */
+		params->ct_caller_user.s = params->ct_callee_user.s = (char *)(params + 1);
+		params->ct_caller_user.len = params->ct_callee_user.len = ct.len;
+		memcpy(params->ct_caller_user.s, ct.s, ct.len);
+	}
+
+	*param = params;
+	return 0;
+}
+
+int w_topology_hiding(struct sip_msg *req, str *flags_s, struct th_params *params)
 {
 	int flags=0;
 	char *p;
@@ -239,7 +315,7 @@ int w_topology_hiding(struct sip_msg *req, str *flags_s)
 			}
 		}
 
-	return topology_hiding(req,flags);
+	return topology_hiding(req,flags,params);
 }
 
 int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val)

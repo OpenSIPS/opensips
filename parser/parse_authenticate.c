@@ -355,9 +355,10 @@ int parse_authenticate_header(struct hdr_field *authenticate,
 {
 	void **parsed;
 	struct authenticate_body *auth_body, *ret_auth;
-	int rc;
+	int rc, prev_parsed;
 
 	parsed = &(authenticate->parsed);
+	prev_parsed = (*parsed != NULL);
 	ret_auth = NULL;
 
 	while(*parsed == NULL)
@@ -388,6 +389,14 @@ int parse_authenticate_header(struct hdr_field *authenticate,
 			parsed = &(authenticate->parsed);
 		else
 			break;
+	}
+	if (prev_parsed) {
+		while (!ret_auth && authenticate) {
+			if (authenticate->parsed &&
+					(md == NULL || md->matchf(authenticate->parsed, md)))
+				ret_auth = authenticate->parsed;
+			authenticate = authenticate->sibling;
+		}
 	}
 	*picked_auth = ret_auth;
 

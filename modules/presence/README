@@ -1084,11 +1084,11 @@ Chapter 3. Contributors
    Maksym Sobolyev (@sobomax), Vlad Paiu (@vladpaiu), Juha
    Heinanen (@juha-h), Edson Gellert Schubert, Alexandra Titoc,
    Stanislaw Pitucha, Damien Sandras (@dsandras), Kobi Eshun
-   (@ekobi), Carsten Bock, Dusan Klinec (@ph4r05), Angel Marin,
-   Klaus Darilion, Carlos Oliva, Sergio Gutierrez, Kennard White,
-   Elena-Ramona Modroiu, Jasper Hafkenscheid, Vasil Kolev, Benny
-   Prijono, James Criscuolo, Peter Lemenkov (@lemenkov),
-   Vallimamod Abdullah, UnixDev, Norman Brandinger (@NormB), Denis
+   (@ekobi), Carsten Bock, Norman Brandinger (@NormB), Dusan
+   Klinec (@ph4r05), Angel Marin, Klaus Darilion, Carlos Oliva,
+   Sergio Gutierrez, Kennard White, Elena-Ramona Modroiu, Jasper
+   Hafkenscheid, Vasil Kolev, Benny Prijono, James Criscuolo,
+   Peter Lemenkov (@lemenkov), Vallimamod Abdullah, UnixDev, Denis
    Bilenko, Julián Moreno Patiño, John Riordan, Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1111,8 +1111,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   2.  Norman Brandinger (@NormB)          May 2024 - May 2024
+   1.  Norman Brandinger (@NormB)          May 2024 - Nov 2024
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2024
    4.  Carsten Bock                        Mar 2024 - Mar 2024
    5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023

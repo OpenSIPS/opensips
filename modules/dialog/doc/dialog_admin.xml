@@ -3225,6 +3225,67 @@ route {
 		</programlisting>
 
 		</section>
+
+		<section id="set_dlg_profile_mi" xreflabel="set_dlg_profile_mi">
+		<title><function moreinfo="none">set_dlg_profile</function></title>
+		<para>
+		Set the dialog identified by dialog ID / Call-ID into the given profile ( with optional value and clearing of the old profile values )
+		</para>
+		<para>
+		Name: <emphasis>set_dlg_profile</emphasis>
+		</para>
+		<para>Parameters: <emphasis>It takes 2-4 parameters</emphasis>
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>dlg_id</emphasis> - dialog ID or Call-ID for the respective dialog
+			</para></listitem>
+			<listitem><para>
+				<emphasis>profile</emphasis> - profile name to be set
+			</para></listitem>
+			<listitem><para>
+				<emphasis>value</emphasis> - optional, the profile value to be set 
+			</para></listitem>
+			<listitem><para>
+				<emphasis>clear_values</emphasis> - optional, clear previous values in the profile before setting the new one
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi set_dlg_profile DID my_profile my_value 1
+		</programlisting>
+		</section>
+
+		<section id="unset_dlg_profile_mi" xreflabel="unset_dlg_profile_mi">
+		<title><function moreinfo="none">unset_dlg_profile</function></title>
+		<para>
+		Unsets the dialog identified by dialog ID / Call-ID from the given profile ( with optional value and clearing of the old profile values )
+		</para>
+		<para>
+		Name: <emphasis>set_dlg_profile</emphasis>
+		</para>
+		<para>Parameters: <emphasis>It takes 2-3 parameters</emphasis>
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>dlg_id</emphasis> - dialog ID or Call-ID for the respective dialog
+			</para></listitem>
+			<listitem><para>
+				<emphasis>profile</emphasis> - profile name to be unset
+			</para></listitem>
+			<listitem><para>
+				<emphasis>value</emphasis> - optional, the profile value to be unset. for profiles with value, by omitting this parameter you can now clear all values of the given profile. 
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi unset_dlg_profile DID my_profile my_value
+		</programlisting>
+		</section>
 	</section>
 
 	<section id="exported_pseudo_variables">

@@ -2693,17 +2693,6 @@ rtpproxy_offer6_f(struct sip_msg *msg, str *param1, str *param2,
 				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5,
 				pv_spec_t *param6)
 {
-	if(rtpp_notify_socket.s)
-	{
-		if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
-			LM_ERR("bad request or missing TO hdr\n");
-			return -1;
-		}
-
-		/* if an initial request - create a new dialog */
-		if(get_to(msg)->tag_value.s == NULL && dlg_api.create_dlg)
-			dlg_api.create_dlg(msg,0);
-	}
 	return rtpproxy_offer_answer6_f(msg, param1, param2, param3, param4,
 			param5, param6, 1);
 }
@@ -3799,6 +3788,16 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 
 	if (opts.s.s[0] == 'U') {
 		if(enable_notification && dlg_api.get_dlg) {
+
+			if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
+				LM_ERR("bad request or missing TO hdr\n");
+				goto error;
+			}
+
+			/* if an initial request - create a new dialog */
+			if(get_to(msg)->tag_value.s == NULL && dlg_api.create_dlg)
+				dlg_api.create_dlg(msg,0);
+
 			dlg = dlg_api.get_dlg();
 			if(dlg == NULL)
 			{

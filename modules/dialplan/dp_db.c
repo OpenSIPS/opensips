@@ -79,7 +79,7 @@ void list_hash(dpl_id_t * , rw_lock_t *);
 
 dp_connection_list_p dp_conns;
 
-int test_db(dp_connection_list_p dp_connection)
+int dp_test_db(dp_connection_list_p dp_connection)
 {
 	if (!dp_connection->partition.s) {
 		LM_ERR("NULL partition name\n");
@@ -880,7 +880,7 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 
 	/* *el->dp_db_handle is set to null at the end of test_db;
 	 * no need to do it again here */
-	if (test_db(el) != 0) {
+	if (dp_test_db(el) != 0) {
 		LM_ERR("Unable to test db\n");
 		shm_free(el);
 		return NULL;

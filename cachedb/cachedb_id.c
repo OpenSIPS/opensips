@@ -89,7 +89,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 
 	enum state st;
 	unsigned int len, i, ipv6_flag=0, multi_hosts=0;
-	char* begin, *last_at;
+	char* begin, *last_at, *last_slash, *last_qm;
 	char* prev_token,*start_host=NULL,*start_prev=NULL,*ptr;
 
 	prev_token = 0;
@@ -112,7 +112,15 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	if (dupl_string(&id->initial_url,url->s,url->s+url->len) < 0)
 		goto err;
 
-	last_at = q_memrchr(url->s, '@', url->len);
+	last_slash = q_memrchr(url->s, '/', url->len);
+	last_qm = q_memrchr(url->s, '?', url->len);
+
+	/* ignore any '@' characters inside the "params" part */
+	if (last_qm || last_slash)
+		last_at = q_memrchr(url->s, '@',
+		        last_slash ? (last_slash-url->s) : (last_qm-url->s));
+	else
+		last_at = q_memrchr(url->s, '@', url->len);
 
 	for(i = 0; i < len; i++) {
 		switch(st) {

@@ -1520,7 +1520,7 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 
 		if(result->n <=0 )
 		{
-			LM_DBG("The query for subscribtion for [uri]= %.*s for [event]= %.*s"
+			LM_DBG("The query for subscription for [uri]= %.*s for [event]= %.*s"
 				" returned no result\n",pres_uri->len, pres_uri->s,
 				event->name.len, event->name.s);
 			pa_dbf.free_result(pa_db, result);

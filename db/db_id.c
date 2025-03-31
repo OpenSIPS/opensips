@@ -78,9 +78,11 @@ static int parse_db_url(struct db_id* id, const str* url)
 		ST_SLASH2,     /* Second slash */
 		ST_USER_HOST,  /* Username or hostname */
 		ST_PASS_PORT,  /* Password or port part */
+		ST_PASSWORD,   /* Explicitly the password */
 		ST_HOST,       /* Hostname part */
 		ST_HOST6,      /* Hostname part IPv6 */
 		ST_PORT,       /* Port part */
+		ST_UNIX_SOCKET, /* Unix socket */
 		ST_DB,         /* Database part */
 		ST_PARAMS       /* Parameters part */
 	};
@@ -88,7 +90,9 @@ static int parse_db_url(struct db_id* id, const str* url)
 	enum state st;
 	unsigned int len, i, ipv6_flag = 0;
 	const char* begin;
-	char* prev_token = NULL;
+	char* prev_token = NULL, *p;
+	str unix_socket_host = str_init("localhost");
+	int have_pass = 0;
 
 	if (!id || !url || !url->s) {
 		return -1;
@@ -103,6 +107,11 @@ static int parse_db_url(struct db_id* id, const str* url)
 	memset(id, 0, sizeof(struct db_id));
 	st = ST_SCHEME;
 	begin = url->s;
+
+	/* to allow support for '/' characters in password => look ahead! */
+	p = q_memchr(url->s, ':', len);
+	if (p && q_memchr(p, '@', len - (p - url->s)))
+		have_pass = 1;
 
 	for(i = 0; i < len; i++) {
 		switch(st) {
@@ -147,7 +156,10 @@ static int parse_db_url(struct db_id* id, const str* url)
 				break;
 
 			case ':':
-				st = ST_PASS_PORT;
+				if (have_pass)
+					st = ST_PASSWORD;
+				else
+					st = ST_PORT;
 				if (dupl_string(&prev_token, begin, url->s + i) < 0) goto err;
 				begin = url->s + i + 1;
 				break;
@@ -178,10 +190,28 @@ static int parse_db_url(struct db_id* id, const str* url)
 				id->port = str2s(begin, url->s + i - begin, 0);
 				st = ST_DB;
 				begin = url->s + i + 1;
+				break;
+			}
+			break;
+
+		case ST_PASSWORD:
+			switch (url->s[i]) {
+			case '@':  // Only @ terminates password
+				st = ST_HOST;
+				id->username = prev_token; prev_token = NULL;
+				if (dupl_string(&id->password, begin, url->s + i) < 0) goto err;
+				begin = url->s + i + 1;
+				break;
 			}
 			break;
 
 		case ST_HOST:
+			if (strncasecmp(begin, "unix(", 5) == 0) {
+				st = ST_UNIX_SOCKET;
+				i+=5;
+				begin = url->s + i;
+				break;
+			}
 			switch(url->s[i]) {
 			case '[':
 				st = ST_HOST6;
@@ -211,9 +241,27 @@ static int parse_db_url(struct db_id* id, const str* url)
 			}
 			break;
 
+		case ST_UNIX_SOCKET:
+			switch(url->s[i]) {
+			case ')':
+				if (dupl_string(&id->unix_socket, begin, url->s + i) < 0) goto err;
+				if (dupl_string(&id->host, unix_socket_host.s, unix_socket_host.s + unix_socket_host.len) < 0) goto err;
+				begin = url->s + i + 1;
+				if (*begin == '/') {
+					i++;
+					begin = url->s + i + 1;
+				}
+				st = ST_DB;
+			}
+			break;
+
 		case ST_PORT:
 			switch(url->s[i]) {
 			case '/':
+				if (!have_pass) {
+					id->host = prev_token;
+					prev_token = NULL;
+				}
 				id->port = str2s(begin, url->s + i - begin, 0);
 				st = ST_DB;
 				begin = url->s + i + 1;
@@ -249,6 +297,7 @@ static int parse_db_url(struct db_id* id, const str* url)
 	if (id->username) pkg_free(id->username);
 	if (id->password) pkg_free(id->password);
 	if (id->host) pkg_free(id->host);
+	if (id->unix_socket) pkg_free(id->unix_socket);
 	if (id->database) pkg_free(id->database);
 	if (prev_token) pkg_free(prev_token);
 	return -1;
@@ -321,6 +370,12 @@ unsigned char cmp_db_id(const struct db_id* id1, const struct db_id* id2)
 
 	if (strcasecmp(id1->host, id2->host)) return 0;
 
+	if (id1->unix_socket!=0 && id2->unix_socket!=0) {
+		if (strcasecmp(id1->unix_socket, id2->unix_socket)) return 0;
+	} else {
+		if (id1->unix_socket!=0 || id2->unix_socket!=0) return 0;
+	}
+
 	if (strcmp(id1->database, id2->database)) return 0;
 
 	if (id1->parameters != 0 && id2->parameters != 0) {
@@ -345,6 +400,7 @@ void free_db_id(struct db_id* id)
 	if (id->username) pkg_free(id->username);
 	if (id->password) pkg_free(id->password);
 	if (id->host) pkg_free(id->host);
+	if (id->unix_socket) pkg_free(id->unix_socket);
 	if (id->database) pkg_free(id->database);
 	if (id->parameters) pkg_free(id->parameters);
 	pkg_free(id);

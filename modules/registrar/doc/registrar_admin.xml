@@ -894,17 +894,17 @@ if (is_registered("location",$fu)) {
 		<title><function>is_contact_registered</function> usage</title>
 		<programlisting format="linespecific">
 ...
-/*let's say you want to block users that are not registered*/
+/* block users which are not registered... */
 if (is_method("INVITE")) {
 	if (!is_contact_registered("location")) {
 		sl_send_reply(401, "Unauthorized");
-	...
+		...
 	}
 }
-/* you want to check the second contact from the message whether it is
-registered or not */
-if(is_method("INVITE")) {
-	if (is_contact_registered("location",$fu,$(ct[1]),))
+
+/* ... or check whether the 2nd Contact URI is registered or not */
+if (is_method("INVITE")) {
+	if (is_contact_registered("location", $fu, $(ct.fields(uri)[1])))
 		xlog("caller is registered\n");
 }
 ...

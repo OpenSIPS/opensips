@@ -61,7 +61,13 @@ void cdb_free_entries(cdb_dict_t *dict, void (*free_val_str) (void *val));
 struct cdb_pair *cdb_dict_fetch(const struct cdb_key *key,
                                 const cdb_dict_t *dict);
 int cdb_dict_has_pair(const cdb_dict_t *haystack, const struct cdb_pair *pair);
+int cdb_dict_has_subkeys(const cdb_dict_t *dict);
 struct cdb_pair *nth_pair(const cdb_dict_t *dict, int nth);
+char *cdb_dict_to_json(const cdb_dict_t *dict,
+         unsigned int (*escape)(char *dst, const str *src),
+         unsigned int (*calc_escaped_len)(str *in));
+int cdb_json_to_dict(const char *json, cdb_dict_t *out,
+         void (*unescape)(char *inout));
 int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b);
 int val_cmp(const struct cdb_val *v1, const struct cdb_val *v2);
 

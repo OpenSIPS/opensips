@@ -362,7 +362,7 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error)
 	pv_value_t res;
 	str sessid;
 	int appid, cmdcode, rc;
-	unsigned long fd_req;
+	uint64_t fd_req;
 
 	if (route_type != EVENT_ROUTE) {
 		LM_ERR("can only run 'dm_send_answer()' inside an EVENT_ROUTE\n");

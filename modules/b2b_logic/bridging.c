@@ -386,14 +386,16 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 		entity && tuple->bridge_initiator == entity)
 	{
 		entity_no = 3; // Bridge initiator
-	} else if (entity && entity->disconnected) {
-		entity_no = -1; // Probably a cross-bye - reply and don't do anything
 	} else {
 		entity_no = bridge_get_entityno(tuple, entity);
 		if(entity_no < 0)
 		{
-			LM_ERR("No match found\n");
-			return -1;
+			if (!entity) {
+				LM_ERR("No match found\n");
+				return -1;
+			}
+			/* we've got a known entity, but no longer part of the
+			 * bridge - we gracefully reply and drop */
 		}
 	}
 
@@ -1329,6 +1331,9 @@ static int bridging_start_new_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_ent
 	}
 
 	entity->no = 1;
+	entity->peer = old_entity;
+	if (!old_entity->peer)
+		old_entity->peer = entity;
 	tuple->bridge_entities[1] = entity;
 
 	return 0;
@@ -2450,7 +2455,7 @@ int b2bl_push_bridge_retry(b2bl_tuple_t *tuple)
 	 * order they appear */
 	lock_get(b2bl_bridge_retry_lock);
 	retry->time = get_uticks();
-	retry->next = *b2bl_bridge_retry_head;
+	retry->next = NULL;
 	if (*b2bl_bridge_retry_last)
 		(*b2bl_bridge_retry_last)->next = retry;
 	else

@@ -176,6 +176,7 @@ struct socket_info_full* new_sock_info( struct socket_id *sid)
 	} else {
 		if (sid->workers)
 			si->workers = sid->workers;
+		si->tos = sid->tos;
 		if (sid->auto_scaling_profile) {
 			si->s_profile = get_scaling_profile(sid->auto_scaling_profile);
 			if (si->s_profile==NULL) {
@@ -440,6 +441,7 @@ static int expand_interface(const struct socket_info *si, struct socket_info_ful
 	sid.port = si->port_no;
 	sid.proto = si->proto;
 	sid.workers = si->workers;
+	sid.tos = si->tos;
 	sid.auto_scaling_profile = si->s_profile?si->s_profile->name:NULL;
 	sid.adv_port = si->adv_port;
 	sid.adv_name = si->adv_name_str.s; /* it is NULL terminated */
