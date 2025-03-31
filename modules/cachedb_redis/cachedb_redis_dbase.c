@@ -257,7 +257,7 @@ int redis_connect(redis_con *con)
 		freeReplyObject(rpl);
 	}
 
-	rpl = redisCommand(ctx, "JSON.SET opensipsTestJSON . null");
+	rpl = redisCommand(ctx, "JSON.DEBUG help");
 	if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 		LM_INFO("no JSON support detected on Redis server %s:%d\n",
 		        con->host, con->port);
