@@ -2863,11 +2863,10 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		 * toward a specific RTPEngine instance.
 		 */
 		if (spvar && (socket_val.rs.len > 0)) {
-			LM_DBG("Attempting to send command [%d] to RTPEngine socket: [%d] [%.*s] set id: [%d]\n", op, socket_val.rs.len, socket_val.rs.s, set->id_set);
 			node = get_rtpe_node(&socket_val.rs, set);
 
 			if (node == NULL) {
-				LM_ERR("WARNING --- node is NULL when socket: [%.*s] set [%d] has been specified\n", socket_val.rs.len, socket_val.rs.s, set->id_set);
+				LM_ERR("WARNING --- node is NULL when socket is specified\n");
 				RTPE_STOP_READ();
 				goto error;
 			}
@@ -2940,7 +2939,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		val.flags = PV_VAL_STR;
 		val.rs = node->rn_url;
 		if(pv_set_value(msg, spvar, (int)EQ_T, &val)<0)
-		    LM_ERR("Storing rtpengine socket pvar failed [%.*s]\n", val.rs.len, val.rs.s);
+		    LM_ERR("Storing rtpengine socket pvar failed\n");
 	}
 
 	return resp;
