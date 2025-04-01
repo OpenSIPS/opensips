@@ -344,6 +344,7 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list, char * rtpengine);
 static int fixup_set_id(void ** param);
 static int fixup_free_set_id(void ** param);
 static int set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param);
+static int set_rtpengine_set_from_avp(struct sip_msg *msg);
 static struct rtpe_set * select_rtpe_set(int id_set);
 static struct rtpe_node *select_rtpe_node(str, struct rtpe_set *, struct rtpe_ignore_node *);
 static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe_url);
@@ -2827,24 +2828,51 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	pv_value_t val;
 	struct rtpe_ignore_node *ignore_list = NULL;
 	int ret;
-
 	memset(&ng_flags, 0, sizeof(ng_flags));
 	error.len = 0;
 	error.s = "";
+	pv_value_t socket_val;
 
 	/*** get & init basic stuff needed ***/
 	if (rtpe_function_call_prepare(bencbuf, msg, op, &ng_flags, flags_str, body_in, extra_dict,&err) < 0)
 		goto error;
 
-	/*** send it out ***/
-	if (!set && (set=rtpe_ctx_set_get())==NULL )
-		set = *default_rtpe_set;
+	/*** determine the setid used to perform an RTPEngine lookup ***/
+	if (!set) {
+		set_rtpengine_set_from_avp(msg);
+		if ((set=rtpe_ctx_set_get())==NULL)
+			set = *default_rtpe_set;
+	}
 
 	failed_node = NULL;
 
 	RTPE_START_READ();
 	do {
-		if (snode && snode->s) {
+		/* If the spvar "sock_var" has been specified, parse it into a (socket_val) STR variable */
+		if (spvar) {
+			memset(&socket_val, 0, sizeof(pv_value_t));
+			pv_get_spec_value(msg, spvar, &socket_val);
+		}
+
+		/*
+		 * Many rtpengine_* commands allow a "sock_var" to be specified by the script writer.
+		 * The "sock_var" will be populated by the rtpengine_* command with the RTPEngine that
+		 * was chosen for the operation.
+		 *
+		 * The "sock_var" can be used by subsequent rtpengine_* commands to direct the command
+		 * toward a specific RTPEngine instance.
+		 */
+		if (spvar && (socket_val.rs.len > 0)) {
+			LM_DBG("Attempting to send command [%d] to RTPEngine socket: [%d] [%.*s] set id: [%d]\n", op, socket_val.rs.len, socket_val.rs.s, set->id_set);
+			node = get_rtpe_node(&socket_val.rs, set);
+
+			if (node == NULL) {
+				LM_ERR("WARNING --- node is NULL when socket: [%.*s] set [%d] has been specified\n", socket_val.rs.len, socket_val.rs.s, set->id_set);
+				RTPE_STOP_READ();
+				goto error;
+			}
+
+		} else if (snode && snode->s) {
 			if ((node = get_rtpe_node(snode, set)) == NULL && op == OP_OFFER)
 				node = select_rtpe_node(ng_flags.call_id, set, ignore_list);
 			snode = NULL;
@@ -2912,7 +2940,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		val.flags = PV_VAL_STR;
 		val.rs = node->rn_url;
 		if(pv_set_value(msg, spvar, (int)EQ_T, &val)<0)
-			LM_ERR("setting rtpengine pvar failed\n");
+		    LM_ERR("Storing rtpengine socket pvar failed [%.*s]\n", val.rs.len, val.rs.s);
 	}
 
 	return resp;
@@ -3026,6 +3054,7 @@ rtpe_test(struct rtpe_node *node, int isdisabled, int force)
 {
 	bencode_buffer_t bencbuf;
 	bencode_item_t *dict;
+	bencode_item_t *resp;
 	char *cp;
 	int ret;
 
@@ -3055,14 +3084,14 @@ rtpe_test(struct rtpe_node *node, int isdisabled, int force)
 		goto error;
 	}
 
-	dict = bencode_decode_expect(&bencbuf, cp, ret, BENCODE_DICTIONARY);
-	if (!dict || bencode_dictionary_get_strcmp(dict, "result", "pong")) {
+	resp = bencode_decode_expect(&bencbuf, cp, ret, BENCODE_DICTIONARY);
+	if (!resp || bencode_dictionary_get_strcmp(resp, "result", "pong")) {
 		LM_ERR("proxy responded with invalid response\n");
 		goto error;
 	}
 
 	if (isdisabled)
-		LM_INFO("rtp proxy <%s> found, support for it %senabled\n",
+		LM_DBG("rtpengine <%s> found, support for it %senabled\n",
 				node->rn_url.s, force == 0 ? "re-" : "");
 
 	bencode_buffer_free(&bencbuf);
