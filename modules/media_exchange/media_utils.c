@@ -148,10 +148,18 @@ str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg, int ct)
 }
 
 
+struct media_fork_info {
+	unsigned int flags;
+	unsigned int streams;
+	unsigned int paused;
+	str instance;
+};
+
 int media_forks_stop(struct media_session_leg *msl)
 {
+	struct media_fork_info *mf = msl->params;
 	if (media_rtp.copy_delete(msl->ms->rtp,
-			&media_exchange_name, NULL) < 0) {
+			&mf->instance, NULL) < 0) {
 		LM_ERR("could not stop forking!\n");
 		return -1;
 	}
@@ -160,16 +168,11 @@ int media_forks_stop(struct media_session_leg *msl)
 	return 0;
 }
 
-struct media_fork_info {
-	unsigned int flags;
-	unsigned int streams;
-	unsigned int paused;
-};
-
-static inline struct media_fork_info *media_fork_info(unsigned int flags, unsigned int streams)
+static inline struct media_fork_info *media_fork_info(unsigned int flags,
+		unsigned int streams, str *instance)
 {
 	struct media_fork_info *mf;
-	mf = shm_malloc(sizeof *mf);
+	mf = shm_malloc(sizeof *mf + media_exchange_name.len + 1 /* ' ' */ + instance->len);
 	if (!mf) {
 		LM_ERR("could not allocate new media fork!\n");
 		return NULL;
@@ -177,6 +180,11 @@ static inline struct media_fork_info *media_fork_info(unsigned int flags, unsign
 	memset(mf, 0, sizeof *mf);
 	mf->flags = flags;
 	mf->streams = streams;
+	mf->instance.s = (char *)(mf + 1);
+	memcpy(mf->instance.s, media_exchange_name.s, media_exchange_name.len);
+	mf->instance.s[media_exchange_name.len] = '_';
+	memcpy(mf->instance.s + media_exchange_name.len + 1, instance->s, instance->len);
+	mf->instance.len = media_exchange_name.len + 1 + instance->len;
 	return mf;
 }
 
@@ -207,7 +215,7 @@ struct media_fork_info *media_get_fork_sdp(struct media_session_leg *msl,
 	else
 		streams = 1 << medianum;
 
-	mf = media_fork_info(flags, streams);
+	mf = media_fork_info(flags, streams, &msl->instance);
 	if (!mf)
 		return NULL;
 
@@ -223,7 +231,7 @@ int media_fork_answer(struct media_session_leg *msl,
 		struct media_fork_info *mf, str *body)
 {
 	if (media_rtp.copy_answer(msl->ms->rtp,
-			&media_exchange_name, NULL, body) < 0) {
+			&mf->instance, NULL, body) < 0) {
 		LM_ERR("could not start forking!\n");
 		return -1;
 	}
@@ -234,7 +242,7 @@ int media_fork_offer(struct media_session_leg *msl,
 		struct media_fork_info *mf, str *body)
 {
 	if (media_rtp.copy_offer(msl->ms->rtp,
-			&media_exchange_name, NULL, mf->flags,
+			&mf->instance, NULL, mf->flags,
 			mf->streams, body, NULL) < 0) {
 		LM_ERR("could not get copy SDP\n");
 		return -1;
@@ -290,7 +298,7 @@ int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int res
 		flags |= RTP_COPY_MODE_DISABLE;
 
 	if (media_rtp.copy_offer(msl->ms->rtp,
-			&media_exchange_name, NULL, flags, todo, &body, NULL) < 0) {
+			&mf->instance, NULL, flags, todo, &body, NULL) < 0) {
 		LM_ERR("could not get copy SDP\n");
 		MEDIA_LEG_STATE_SET_UNSAFE(msl, MEDIA_SESSION_STATE_RUNNING);
 		return -1;
@@ -305,6 +313,7 @@ int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int res
 			mf->paused &= ~todo;
 		else
 			mf->paused |= todo;
+		ret = 1;
 	}
 	pkg_free(body.s);
 
@@ -325,6 +334,7 @@ static void media_exchange_event_create(struct media_session_leg *msl,
 		bin_push_int(store, mf->flags);
 		bin_push_int(store, mf->streams);
 		bin_push_int(store, mf->paused);
+		bin_push_str(store, &msl->instance);
 	}
 }
 
@@ -337,10 +347,22 @@ static void media_exchange_event_update(struct media_session_leg *msl,
 	if (msl->type != MEDIA_SESSION_TYPE_FORK)
 		return;
 
+	bin_push_str(store, &msl->instance);
 	mf = msl->params;
 	bin_push_int(store, mf->flags);
 	bin_push_int(store, mf->streams);
 	bin_push_int(store, mf->paused);
+}
+
+static void media_exchange_event_delete(struct media_session_leg *msl,
+		bin_packet_t *store)
+{
+	bin_push_int(store, msl->type);
+	/* we only need to update forked sessions */
+	if (msl->type != MEDIA_SESSION_TYPE_FORK)
+		return;
+
+	bin_push_str(store, &msl->instance);
 }
 
 void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
@@ -361,8 +383,10 @@ void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
 		case B2B_EVENT_UPDATE:
 			media_exchange_event_update(msl, store);
 			break;
+		case B2B_EVENT_DELETE:
+			media_exchange_event_delete(msl, store);
+			break;
 		default:
-			/* nothing else to do for delete */
 			break;
 	}
 }
@@ -375,6 +399,7 @@ static void media_exchange_event_received_create(struct dlg_cell *dlg,
 	struct media_fork_info *mf = NULL;
 	unsigned int flags, streams, paused;
 	struct media_session_leg *msl;
+	str instance;
 
 	if (bin_pop_int(store, &type) != 0)
 		return;
@@ -385,13 +410,14 @@ static void media_exchange_event_received_create(struct dlg_cell *dlg,
 		bin_pop_int(store, &flags);
 		bin_pop_int(store, &streams);
 		bin_pop_int(store, &paused);
-		mf = media_fork_info(flags, streams);
+		bin_pop_int(store, &instance);
+		mf = media_fork_info(flags, streams, &instance);
 		if (mf)
 			mf->paused = paused;
 	}
 
 	if (dlg) {
-		msl = media_session_new_leg(dlg, type, leg, nohold);
+		msl = media_session_new_leg(dlg, type, leg, nohold, (instance.len?&instance:NULL));
 		if (!msl)
 			LM_ERR("cannot create new leg!\n");
 	} else {
@@ -425,11 +451,13 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 	unsigned int flags, streams, paused;
 	struct media_fork_info *mf = NULL;
 	struct media_session *ms;
+	str instance;
 
+	bin_pop_str(store, &instance);
 	if (dlg) {
 		ms = media_session_get(dlg);
 		if (ms) {
-			msl = media_session_get_leg(ms, leg);
+			msl = media_session_get_leg(ms, leg, MEDIA_SESSION_TYPE_FORK, &instance);
 			if (!msl)
 				LM_ERR("could not get media session leg!\n");
 		} else {
@@ -446,7 +474,7 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 	bin_pop_int(store, &streams);
 	bin_pop_int(store, &paused);
 	if (!mf) {
-		mf = media_fork_info(flags, streams);
+		mf = media_fork_info(flags, streams, &instance);
 		if (!mf) {
 			LM_ERR("could not create media fork instance\n");
 			return;
@@ -459,20 +487,28 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 	mf->paused = paused;
 }
 
-static void media_exchange_event_received_delete(struct dlg_cell *dlg, int leg)
+static void media_exchange_event_received_delete(struct dlg_cell *dlg,
+		int leg, bin_packet_t *store)
 {
+	int type;
+	str instance;
 	struct media_session *ms;
 	struct media_session_leg *msl;
 
 	if (!dlg)
 		return; /* nothing to draing */
+	bin_pop_int(store, &type);
+	if (type == MEDIA_SESSION_TYPE_FORK)
+		bin_pop_str(store, &instance);
+	else
+		instance.len = 0;
 
 	ms = media_session_get(dlg);
 	if (!ms) {
 		LM_ERR("could not get media session!\n");
 		return;
 	}
-	msl = media_session_get_leg(ms, leg);
+	msl = media_session_get_leg(ms, leg, type, (instance.len?&instance:NULL));
 	if (!msl) {
 		LM_ERR("could not get media session leg!\n");
 		return;
@@ -513,7 +549,7 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 			media_exchange_event_received_update(dlg, leg, store);
 			break;
 		case B2B_EVENT_DELETE:
-			media_exchange_event_received_delete(dlg, leg);
+			media_exchange_event_received_delete(dlg, leg, store);
 			break;
 		default:
 			LM_WARN("unhandled B2B event %d\n", event_type);

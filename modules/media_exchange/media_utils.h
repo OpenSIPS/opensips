@@ -24,6 +24,10 @@
 #include "../../parser/sdp/sdp.h"
 #include "../../bin_interface.h"
 
+#define MEDIA_DEFAULT_INSTANCE "default"
+#define MEDIA_INSTANCE(_i) ((_i) != NULL?(_i):&media_default_instance)
+
+extern str media_default_instance;
 extern str content_type_sdp;
 extern str content_type_sdp_hdr;
 
