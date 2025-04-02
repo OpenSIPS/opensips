@@ -320,10 +320,15 @@ route:
 		LOCK_REPLIES(t);
 
 	/* run the resume_route (some type as the original one) */
-	swap_route_type(route, ctx->route_type);
-	/* do not run any post script callback, we are a reply */
-	run_resume_route( ctx->resume_route, ctx->reply, 0);
-	set_route_type(route);
+	if (!ref_script_route_check_and_update(ctx->resume_route)) {
+		LM_ERR("resume route [%s] not present in cfg anymore\n",
+			ctx->resume_route->name.s);
+	} else {
+		swap_route_type(route, ctx->route_type);
+		/* do not run any post script callback, we are a reply */
+		run_resume_route( ctx->resume_route, ctx->reply, 0);
+		set_route_type(route);
+	}
 
 	/* DO TM suspended actions to decide if we need to relay */
 	if (!onreply_avp_mode)
@@ -349,6 +354,8 @@ route:
 	clean_msg_clone(ctx->reply,ctx->reply,ctx->reply+ctx->reply_length);
 	/* and free the message and context */
 	free_cloned_msg(ctx->reply);
+	if (ctx->resume_route)
+		shm_free(ctx->resume_route);
 	shm_free(ctx);
 
 	/* free also the processing ctx if still set
