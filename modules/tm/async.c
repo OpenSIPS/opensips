@@ -242,13 +242,6 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 	/* enviroment setting */
 	current_processing_ctx = ctx->msg_ctx;
 	backup_t = get_t();
-	backup_e2eack_t = get_e2eack_t();
-	backup_cancelled_t = get_cancelled_t();
-
-	set_cancelled_t(ctx->cancelled_t);
-	set_e2eack_t(ctx->e2eack_t);
-	reset_kr();
-	set_kr(ctx->kr);
 
 	/* make available the avp list from transaction */
 	backup_list = set_avp_list( &t->user_avps );
@@ -364,8 +357,6 @@ route:
 restore:
 	/* restore original environment */
 	set_t(backup_t);
-	set_cancelled_t(backup_cancelled_t);
-	set_e2eack_t(backup_e2eack_t);
 	/* restore original avp list */
 	set_avp_list( backup_list );
 
