@@ -43,6 +43,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs);
 static int siprec_pause_rec(struct sip_msg *msg);
 static int siprec_resume_rec(struct sip_msg *msg);
 static int siprec_stop_rec(struct sip_msg *msg);
+static int siprec_send_indialog(struct sip_msg *msg, str *hdrs, str *body);
 
 /* modules dependencies */
 static const dep_export_t deps = {
@@ -70,6 +71,11 @@ static const cmd_export_t cmds[] = {
 		{{0,0,0}}, ALL_ROUTES},
 	{"siprec_stop_recording",(cmd_function)siprec_stop_rec,
 		{{0,0,0}}, ALL_ROUTES},
+	{"siprec_send_indialog",(cmd_function)siprec_send_indialog, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{0,0,0}},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -339,4 +345,9 @@ static int siprec_stop_rec(struct sip_msg *msg)
 		return -1;
 	}
 	return (srec_stop_recording(ss)<0?-1:1);
+}
+
+static int siprec_send_indialog(struct sip_msg *msg, str *hdrs, str *body)
+{
+	return (src_send_indialog(msg, hdrs, body) < 0 ? -1: 1);
 }
