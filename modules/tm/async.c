@@ -552,20 +552,26 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 		goto sync;
 	}
 
-	if (route_type!=REQUEST_ROUTE) {
-		if (route_type == ONREPLY_ROUTE) {
-			ctx->reply = sip_msg_cloner(msg,&ctx->reply_length,1);
-			if (ctx->reply == NULL) {
-				LM_ERR("Failed to store reply copy \n");
-				goto failure;
-			}
-			ctx->branch = _tm_branch_index;
-			/* we fall-through to do async */
-		} else {
-			LM_WARN("async detected in non-request or reply route\n");
-			goto sync;	
+	if (route_type == REQUEST_ROUTE) {
+		/* for request route we allow async,
+		 * no prep needs to be done, just go there */
+		goto async;
+	} else if (route_type == ONREPLY_ROUTE) {
+		/* for reply route we allow async,
+		 * but need to first clone the reply in shm */
+		ctx->reply = sip_msg_cloner(msg,&ctx->reply_length,1);
+		if (ctx->reply == NULL) {
+			LM_ERR("Failed to store reply copy \n");
+			goto failure;
 		}
+		ctx->branch = _tm_branch_index;
+		goto async;
+	} else {
+		LM_WARN("async detected in non-request or reply route\n");
+		goto sync;
 	}
+
+async:
 
 	ctx->resume_route = dup_ref_script_route_in_shm(resume_route, 0);
 	if (!ref_script_route_is_valid(ctx->resume_route)) {
