@@ -3901,7 +3901,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 			LM_ERR("could not allocate space for new body\n");
 			goto error;
 		}
-		allocated_body = args->body.len;
+		allocated_body = 1;
 		body->len = 0;
 	}
 
