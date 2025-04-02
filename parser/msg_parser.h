@@ -363,7 +363,11 @@ struct sip_msg {
 
 extern int via_cnt;
 
-int parse_msg(char* buf, unsigned int len, struct sip_msg* msg);
+#define parse_msg( _buf, _len, _msg) \
+	parse_msg_opt( _buf, _len, _msg, 1)
+
+int parse_msg_opt(char* buf, unsigned int len, struct sip_msg* msg,
+		int free_on_err);
 
 #define parse_headers(msg, flags,next) 	parse_headers_aux(msg,flags,next, 1)
 
