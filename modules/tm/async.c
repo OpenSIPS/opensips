@@ -231,10 +231,7 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 	int msg_status;
 	int last_uac_status;
 	int branch;
-	int reply_status;
 	struct ua_client *reply_uac;
-	branch_bm_t cancel_bitmap;
-	utime_t timer;
 
 	if (valid_async_fd(fd))
 		LM_DBG("resuming reply on fd %d, transaction %p \n", fd, t);
@@ -262,7 +259,6 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 	/* fake transaction */
 	set_t( t );
 
-	cancel_bitmap=0;
 	msg_status=ctx->reply->REPLY_STATUS;
 	reply_uac=&t->uac[branch];
 	LM_DBG("org. status uas=%d, uac[%d]=%d local=%d is_invite=%d)\n",
@@ -336,66 +332,8 @@ route:
 	/* DO TM suspended actions to decide if we need to relay */
 	LOCK_REPLIES( t );
 
-	/* we fire a cancel on spot if (a) branch is marked "to be canceled" or (b)
-	 * the whole transaction was canceled (received cancel) and no cancel sent
-	 * yet on this branch; and of course, only if a provisional reply :) */
-	if (t->uac[branch].flags&T_UAC_TO_CANCEL_FLAG ||
-	((t->flags&T_WAS_CANCELLED_FLAG) && !t->uac[branch].local_cancel.buffer.s)) {
-		if ( msg_status < 200 )
-			/* reply for an UAC with a pending cancel -> do cancel now */
-			cancel_branch(t, branch);
-		/* reset flag */
-		t->uac[branch].flags &= ~(T_UAC_TO_CANCEL_FLAG);
-	}
+	process_reply_and_timer(t,branch,msg_status,ctx->reply,last_uac_status,reply_uac);
 
-	if (is_local(t)) {
-		reply_status = local_reply(t,ctx->reply, branch,msg_status,&cancel_bitmap);
-		if (reply_status == RPS_COMPLETED) {
-			cleanup_uac_timers(t);
-			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
-			/* There is no need to call set_final_timer because we know
-			 * that the transaction is local */
-			put_on_wait(t);
-		}
-	} else {
-		reply_status = relay_reply(t,ctx->reply,branch,msg_status,&cancel_bitmap);
-		/* clean-up the transaction when transaction completed */
-		if (reply_status == RPS_COMPLETED) {
-			/* no more UAC FR/RETR (if I received a 2xx, there may
-			 * be still pending branches ...
-			 */
-			cleanup_uac_timers(t);
-			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
-			/* FR for negative INVITES, WAIT anything else */
-			/* set_final_timer(t); */
-		}
-	}
-
-	if (reply_status!=RPS_PROVISIONAL)
-		goto restore_exit_reply;
-
-	/* update FR/RETR timers on provisional replies */
-	if (msg_status < 200 && (restart_fr_on_each_reply ||
-	((last_uac_status<msg_status) &&
-	((msg_status >= 180) || (last_uac_status == 0)))
-	) ) { /* provisional now */
-		if (is_invite(t)) {
-			/* invite: change FR to longer FR_INV, do not
-			 * attempt to restart retransmission any more
-			 */
-			timer = is_timeout_set(t->fr_inv_timeout) ?
-				t->fr_inv_timeout :
-				timer_id2timeout[FR_INV_TIMER_LIST];
-
-			LM_DBG("FR_INV_TIMER = %lld\n", timer);
-			set_timer(&reply_uac->request.fr_timer, FR_INV_TIMER_LIST, &timer);
-		} else {
-			/* non-invite: restart retransmissions (slow now) */
-			reply_uac->request.retr_list = RT_T2;
-			set_timer(&reply_uac->request.retr_timer, RT_T2, 0);
-		}
-	} /* provisional replies */
-restore_exit_reply:
 	t_unref(ctx->reply);
 
 	_tm_branch_index = 0;
