@@ -128,6 +128,8 @@ int is_on_allowlist(const char* name) {
 	str res;
 	char wkey[ALLOWLIST_MAX_KEY_LEN];
 
+	if (!allowlist.s) return 1;
+
 	create_allowlist_key(wkey, &key, name);
 
 	if (cdbf.get(cdbc, &key, &res) < 0) return 0;
@@ -152,6 +154,7 @@ static int mod_init(void)
 	/* set pointers that resolver will use for caching */
 	dnscache_fetch_func=get_dnscache_value;
 	dnscache_put_func=put_dnscache_value;
+	dnscache_is_domain_allowed_func=is_on_allowlist;
 
 	return 0;
 }
@@ -878,8 +881,6 @@ int put_dnscache_value(char *name,int r_type,void *record,int rdata_len,
 		/* assume dns request before forking - cache is not ready yet */
 		return 1;
 	}
-
-	if (allowlist.s && !is_on_allowlist(name)) return 1;
 
 	/* avoid caching records with TTL=0 */
 	if (!failure && ttl==0) {
