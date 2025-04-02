@@ -223,8 +223,6 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 {
 	async_tm_ctx *ctx = (async_tm_ctx *)param;
 	struct cell *backup_t;
-	struct cell *backup_cancelled_t;
-	struct cell *backup_e2eack_t;
 	struct usr_avp **backup_list;
 	struct cell *t= ctx->t;
 	int route;
@@ -316,6 +314,11 @@ route:
 	if (async_status == ASYNC_DONE_CLOSE_FD && valid_async_fd(fd))
 		close(fd);
 
+
+	/* we run the resume route under lock, if needed */
+	if (onreply_avp_mode)
+		LOCK_REPLIES(t);
+
 	/* run the resume_route (some type as the original one) */
 	swap_route_type(route, ctx->route_type);
 	/* do not run any post script callback, we are a reply */
@@ -323,7 +326,10 @@ route:
 	set_route_type(route);
 
 	/* DO TM suspended actions to decide if we need to relay */
-	LOCK_REPLIES( t );
+	if (!onreply_avp_mode)
+		/* if we haven't locked above to run route under lock,
+		 * lock things now as we process the reply */
+		LOCK_REPLIES(t);
 
 	process_reply_and_timer(t,branch,msg_status,ctx->reply,last_uac_status,reply_uac);
 
