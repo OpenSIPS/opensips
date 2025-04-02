@@ -152,7 +152,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 	msg->msg_flags=msg_flags;
 	msg->ruri_q = Q_UNSPECIFIED;
 
-	if (parse_msg(in_buff.s,len, msg)!=0){
+	if (parse_msg_opt(in_buff.s,len, msg, 0)!=0){
 		tmp=ip_addr2a(&(rcv_info->src_ip));
 		LM_ERR("Unable to parse msg received from [%s:%d]\n",
 			tmp, rcv_info->src_port);
