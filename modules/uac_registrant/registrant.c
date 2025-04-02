@@ -1148,6 +1148,14 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 			rec->td.loc_uri.s, rec->td.loc_uri.len) < 0)
 			goto error;
 
+	if (rec->td.send_sock)
+	{
+		p = socket2str(rec->td.send_sock, NULL, &len, 0);
+		if (p)
+			if (add_mi_string(record_item, MI_SSTR("socket"), p, len) < 0)
+				goto error;
+	}
+
 	if (rec->td.obp.s && rec->td.obp.len)
 		if (add_mi_string(record_item, MI_SSTR("proxy"),
 			rec->td.obp.s, rec->td.obp.len) < 0)
