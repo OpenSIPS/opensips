@@ -52,6 +52,7 @@
 
 fetch_dns_cache_f *dnscache_fetch_func=NULL;
 put_dns_cache_f *dnscache_put_func=NULL;
+is_dns_cache_allowed_f *dnscache_is_domain_allowed_func=NULL;
 
 /* stuff related to DNS failover */
 #define DNS_NODE_SRV   1
@@ -138,6 +139,13 @@ static inline unsigned int dns_get32(const u_char *src) {
 
 	DNS_GET32(dst, src);
 	return dst;
+}
+
+int is_cache_enabled(const char* name) {
+	if (!dnscache_fetch_func || !dnscache_put_func || !dnscache_is_domain_allowed_func) {
+		return 0;
+	}
+	return dnscache_is_domain_allowed_func(name);
 }
 
 int get_dns_answer(union dns_query *answer,int anslen,char *qname,int qtype,int *min_ttl)
@@ -458,6 +466,9 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 	struct timeval start;
 	struct ip_addr *ip;
 	str s;
+	int cache;
+
+	cache = is_cache_enabled(name);
 
 	if (!no_ip_test) {
 		s.s = (char *)name;
@@ -475,7 +486,7 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 	if (dns_try_ipv6) {
 		/* try ipv6 */
 	#ifdef HAVE_GETHOSTBYNAME2
-		if (dnscache_fetch_func)
+		if (cache)
 	        he = own_gethostbyname2(name,AF_INET6);
 		else
 			he = gethostbyname2(name, AF_INET6);
@@ -494,7 +505,7 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 			goto out;
 	}
 
-	if (dnscache_fetch_func)
+	if (cache)
 		he = own_gethostbyname2(name,AF_INET);
 	else
 		he = gethostbyname(name);
@@ -602,7 +613,15 @@ query:
 
 struct hostent* rev_resolvehost(struct ip_addr *ip)
 {
-	if (dnscache_fetch_func != NULL) {
+	void *addr = ip;
+	const unsigned char *uaddr = (const u_char *)addr;
+	static const u_char mapped[] = { 0,0, 0,0, 0,0, 0,0, 0,0, 0xff,0xff };
+	static const u_char tunnelled[] = { 0,0, 0,0, 0,0, 0,0, 0,0, 0,0 };
+
+	if ((ip)->af == AF_INET6 && (ip)->len == 16 && (!memcmp(uaddr, mapped, sizeof mapped) || !memcmp(uaddr, tunnelled, sizeof tunnelled))) {
+		addr += sizeof mapped;
+	}
+	if (is_cache_enabled(addr)) {
 		return own_gethostbyaddr((char*)(ip)->u.addr, (ip)->len, (ip)->af);
 	} else
 		return gethostbyaddr((char*)(ip)->u.addr, (ip)->len, (ip)->af);
@@ -1075,8 +1094,11 @@ struct rdata* get_record(char* name, int type)
 	struct ebl_rdata* ebl_rd;
 	struct timeval start;
 	int rdata_buf_len=0;
+	int cache;
 
-	if (dnscache_fetch_func != NULL) {
+	cache = is_cache_enabled(name);
+
+	if (cache) {
 		head = (struct rdata *)dnscache_fetch_func(name,type,0);
 		if (head == NULL) {
 			LM_DBG("not found in cache or other internal error\n");
@@ -1098,7 +1120,7 @@ query:
 
 	if (size<0) {
 		LM_DBG("lookup(%s, %d) failed\n", name, type);
-		if (dnscache_put_func != NULL) {
+		if (cache) {
 			if (dnscache_put_func(name,type,NULL,0,1,0) < 0)
 				LM_ERR("Failed to store %s - %d in cache\n",name,type);
 		}
@@ -1177,7 +1199,7 @@ query:
 			LM_ERR("out of pkg memory\n");
 			goto error;
 		}
-		if (dnscache_put_func)
+		if (cache)
 			rdata_buf_len+=rdata_struct_len;
 		rd->type=rtype;
 		rd->class=class;
@@ -1187,7 +1209,7 @@ query:
 			case T_SRV:
 				srv_rd= dns_srv_parser(buff.buff, end, p);
 				if (srv_rd==0) goto error_parse;
-				if (dnscache_put_func)
+				if (cache)
 					rdata_buf_len+=4*sizeof(unsigned short) +
 					sizeof(unsigned int ) + srv_rd->name_len+1;
 				rd->rdata=(void*)srv_rd;
@@ -1212,7 +1234,7 @@ query:
 			case T_A:
 				rd->rdata=(void*) dns_a_parser(p,end);
 				if (rd->rdata==0) goto error_parse;
-				if (dnscache_put_func)
+				if (cache)
 					rdata_buf_len+=sizeof(struct a_rdata);
 				*last=rd; /* last points to the last "next" or the list head*/
 				last=&(rd->next);
@@ -1220,7 +1242,7 @@ query:
 			case T_AAAA:
 				rd->rdata=(void*) dns_aaaa_parser(p,end);
 				if (rd->rdata==0) goto error_parse;
-				if (dnscache_put_func)
+				if (cache)
 					rdata_buf_len+=sizeof(struct aaaa_rdata);
 				*last=rd;
 				last=&(rd->next);
@@ -1228,7 +1250,7 @@ query:
 			case T_CNAME:
 				rd->rdata=(void*) dns_cname_parser(buff.buff, end, p);
 				if(rd->rdata==0) goto error_parse;
-				if (dnscache_put_func)
+				if (cache)
 					rdata_buf_len+=
 					strlen(((struct cname_rdata *)rd->rdata)->name) +
 					1 + sizeof(int);
@@ -1239,7 +1261,7 @@ query:
 				naptr_rd = dns_naptr_parser(buff.buff,end,p);
 				rd->rdata=(void*) naptr_rd;
 				if(rd->rdata==0) goto error_parse;
-				if (dnscache_put_func)
+				if (cache)
 					rdata_buf_len+=2*sizeof(unsigned short) +
 					4*sizeof(unsigned int) + naptr_rd->flags_len+1 +
 					+ naptr_rd->services_len+1+naptr_rd->regexp_len +
@@ -1251,7 +1273,7 @@ query:
 				txt_rd = dns_txt_parser(buff.buff, end, p);
 				rd->rdata=(void*) txt_rd;
 				if(rd->rdata==0) goto error_parse;
-				if (dnscache_put_func)
+				if (cache)
 					rdata_buf_len+=sizeof(int)+strlen(txt_rd->txt)+1;
 				*last=rd;
 				last=&(rd->next);
@@ -1260,7 +1282,7 @@ query:
 				ebl_rd = dns_ebl_parser(buff.buff, end, p);
 				rd->rdata=(void*) ebl_rd;
 				if(rd->rdata==0) goto error_parse;
-				if (dnscache_put_func)
+				if (cache)
 					rdata_buf_len+=sizeof(unsigned char)+
 					2*sizeof(unsigned int)+ebl_rd->apex_len + 1 +
 					ebl_rd->separator_len + 1;
@@ -1278,7 +1300,7 @@ query:
 
 	}
 
-	if (dnscache_put_func != NULL) {
+	if (cache) {
 		if (dnscache_put_func(name,type,head,rdata_buf_len,0,min_ttl) < 0)
 			LM_ERR("Failed to store %s - %d in cache\n",name,type);
 	}

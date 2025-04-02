@@ -63,9 +63,11 @@
 typedef void* (fetch_dns_cache_f)(char *name,int r_type,int name_len);
 typedef int (put_dns_cache_f)(char *name,int r_type,void *record,int rdata_len,
 				int failure,int ttl);
+typedef int (is_dns_cache_allowed_f)(const char* name);
 
 extern fetch_dns_cache_f *dnscache_fetch_func;
 extern put_dns_cache_f *dnscache_put_func;
+extern is_dns_cache_allowed_f *dnscache_is_domain_allowed_func;
 
 /*! \brief query union*/
 union dns_query{
