@@ -2867,7 +2867,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		 * toward a specific RTPEngine instance.
 		 */
 		if (spvar && (socket_val.rs.len > 0)) {
-			LM_DBG("Sending command [%d] to RTPEngine socket: [%.*s] set id: [%d]\n", op, (int)(socket_val.rs.len), (char *)(socket_val.rs.s, set->id_set));
+			LM_DBG("Sending command [%d] to RTPEngine socket: [%.*s] set id: [%d]\n", op, (int)(socket_val.rs.len), (char *)(socket_val.rs.s), set->id_set);
 			node = lookup_rtpe_node(set, &socket_val.rs);
 			if (node == NULL) {
 				RTPE_STOP_READ();
