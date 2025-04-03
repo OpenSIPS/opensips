@@ -86,6 +86,7 @@ DEFS+= -DF_MALLOC #Fast memory allocator with minimal runtime overhead
 DEFS+= -DQ_MALLOC #Quality assurance memory allocator with runtime safety checks
 DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 DEFS+= -DDBG_MALLOC #Include additional, debug-enabled allocator flavors
+DEFS+= -DF_PARALLEL_MALLOC #Fast memory allocator with paralel buckets
 #DEFS+= -DQM_DBG_MALLOC_HIST=3 #Size of debug history for Q_MALLOC (default is 1)
 #DEFS+= -DNO_DEBUG #Compile out all debug messages
 #DEFS+= -DNO_LOG #Compile out all logging
