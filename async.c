@@ -386,7 +386,7 @@ report:
 	if (ctx->report_route)
 		shm_free(ctx->report_route);
 	shm_free(ctx);
-	if (!ref_script_route_is_valid(report_route))
+	if (!ref_script_route_check_and_update(report_route))
 		return 1;
 
 	/* run the report route inline */
