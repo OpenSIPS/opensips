@@ -1866,7 +1866,6 @@ static int connect_rtpengines(int force_test)
 		return 0;
 	LM_DBG("[Re]connecting sockets (%d > %d)\n", *rtpe_no, rtpe_number);
 
-
 	if (*rtpe_no > rtpe_number) {
 		rtpe_socks = (int*)pkg_realloc(rtpe_socks, *rtpe_no * sizeof(int));
 		if (rtpe_socks==NULL) {
@@ -2837,7 +2836,12 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	if (rtpe_function_call_prepare(bencbuf, msg, op, &ng_flags, flags_str, body_in, extra_dict,&err) < 0)
 		goto error;
 
-	/*** determine the setid used to perform an RTPEngine lookup ***/
+	/*
+	 * If the Set is not specified as a parameter into this routine:
+	 *
+	 * Otherwise, eet the RTPEngine setid from the specified AVP,
+	 * or from the default default_rtpe_set().
+	 */
 	if (!set) {
 		set_rtpengine_set_from_avp(msg);
 		if ((set=rtpe_ctx_set_get())==NULL)
@@ -2863,10 +2867,9 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		 * toward a specific RTPEngine instance.
 		 */
 		if (spvar && (socket_val.rs.len > 0)) {
-			node = get_rtpe_node(&socket_val.rs, set);
-
+			LM_DBG("Sending command [%d] to RTPEngine socket: [%.*s] set id: [%d]\n", op, (int)(socket_val.rs.len), (char *)(socket_val.rs.s, set->id_set));
+			node = lookup_rtpe_node(set, &socket_val.rs);
 			if (node == NULL) {
-				LM_ERR("WARNING --- node is NULL when socket is specified\n");
 				RTPE_STOP_READ();
 				goto error;
 			}
@@ -2875,9 +2878,11 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			if ((node = get_rtpe_node(snode, set)) == NULL && op == OP_OFFER)
 				node = select_rtpe_node(ng_flags.call_id, set, ignore_list);
 			snode = NULL;
+
 		} else {
 			node = select_rtpe_node(ng_flags.call_id, set, ignore_list);
 		}
+
 		if (!node) {
 			if (!err && !error.len)
 				err = "no available proxies";
@@ -2939,7 +2944,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		val.flags = PV_VAL_STR;
 		val.rs = node->rn_url;
 		if(pv_set_value(msg, spvar, (int)EQ_T, &val)<0)
-		    LM_ERR("Storing rtpengine socket pvar failed\n");
+			LM_ERR("setting rtpengine pvar failed\n");
 	}
 
 	return resp;
