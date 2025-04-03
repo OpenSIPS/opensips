@@ -133,6 +133,7 @@ int is_on_allowlist(const char* name) {
 	create_allowlist_key(wkey, &key, name);
 
 	if (cdbf.get(cdbc, &key, &res) < 0) return 0;
+	pkg_free(res.s);
 	return 1;
 }
 
