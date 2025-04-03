@@ -32,6 +32,8 @@ extern int restart_fr_on_each_reply;
 extern int onreply_avp_mode;
 extern struct script_route_ref *tm_local_reply_route;
 
+struct ua_client;
+
 /* reply processing status */
 enum rps {
 	/* something bad happened */
@@ -150,6 +152,9 @@ int t_retransmit_reply( struct cell *t );
 void tm_init_tags();
 
 int unixsock_t_reply(str* msg);
+
+void process_reply_and_timer(struct cell *t,int branch,int msg_status, 
+	struct sip_msg *p_msg,int last_uac_status, struct ua_client *uac);
 
 #endif
 
