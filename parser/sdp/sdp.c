@@ -45,24 +45,6 @@
 #define HOLD_IP_LEN 7
 
 /**
- * Creates and initialize a new sdp_info structure
- */
-static inline sdp_info_t* new_sdp(void)
-{
-	sdp_info_t* sdp;
-
-	sdp = (sdp_info_t*)pkg_malloc(sizeof(sdp_info_t));
-	if (sdp == NULL) {
-		LM_ERR("No memory left\n");
-		return NULL;
-	}
-	memset( sdp, 0, sizeof(sdp_info_t));
-
-	return sdp;
-}
-
-
-/**
  * Alocate a new session cell.
  */
 static inline sdp_session_cell_t *add_sdp_session(sdp_info_t* _sdp, int session_num, str* cnt_disp, str body)
@@ -707,7 +689,7 @@ sdp_info_t* parse_sdp(struct sip_msg* _m)
 	sdp_info_t *sdp, *ret;
 
 	if ( parse_sip_body(_m)<0 || _m->body==NULL) {
-		LM_DBG("message body has length zero\n");
+		LM_DBG("message body has length zero: %p\n", _m->body);
 		return NULL;
 	}
 
