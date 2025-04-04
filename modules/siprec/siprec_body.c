@@ -238,14 +238,14 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 
 	SIPREC_COPY("\r\n\t<session session_id=\"", buf);
 	SIPREC_COPY_UUID(sess->uuid, buf);
-	if (!sess->group.s && !sess->dlg && !sess->session_custom_extension.s)
+	if (!sess->group.s && !sess->ctx->dlg && !sess->session_custom_extension.s)
 		SIPREC_COPY("\"/>\r\n", buf);
 	else {
 		SIPREC_COPY("\">", buf);
-		if (sess->dlg) {
+		if (sess->ctx->dlg) {
 			SIPREC_COPY("\r\n\t\t", buf);
 			SIPREC_COPY_OPEN_TAG("sipSessionID", buf);
-			SIPREC_COPY_STR(sess->dlg->callid, buf);
+			SIPREC_COPY_STR(sess->ctx->dlg->callid, buf);
 			SIPREC_COPY_CLOSE_TAG("sipSessionID", buf);
 		}
 		if (sess->group.s) {
