@@ -16,6 +16,7 @@ AKA Authentication Vector Diameter Module
 
               1.4.1. aaa_url (string)
               1.4.2. realm (string)
+              1.4.3. server_uri (string)
 
         1.5. Diameter Commands File
 
@@ -39,7 +40,8 @@ AKA Authentication Vector Diameter Module
 
    1.1. aaa_url parameter usage
    1.2. realm parameter usage
-   1.3. Diameter Commands File Example
+   1.3. server_uri parameter usage
+   1.4. Diameter Commands File Example
 
 Chapter 1. Admin Guide
 
@@ -122,11 +124,24 @@ ile:/etc/freeDiameter/aka_av_diameter.dictionary")
 modparam("aka_av_diameter", "realm", "scscf.ims.mnc001.mcc001.3gppnetwor
 k.org")
 
+1.4.3. server_uri (string)
+
+   The Server-URI used in the Diameter commands.
+
+   If it is left empty, the Server-Name will be created by adding
+   "sip:" in front of the realm parameter value (e.g.
+   “sip:scscf.ims.mnc001.mcc001.3gppnetwork.org”).
+
+   Example 1.3. server_uri parameter usage
+
+modparam("aka_av_diameter", "server_uri", "sip:scscf.ims.mnc001.mcc001.3
+gppnetwork.org")
+
 1.5. Diameter Commands File
 
    File that should be provided to the aaa_diameter connection.
 
-   Example 1.3. Diameter Commands File Example
+   Example 1.4. Diameter Commands File Example
 
 VENDOR 10415 TGPP
 
@@ -194,6 +209,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea)    13       4      941       4
+   2. LarryLaffer-dev                    6        4       57       24
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -215,7 +231,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Mar 2024 - Mar 2024
+   1. LarryLaffer-dev                 Mar 2025 - Mar 2025
+   2. Razvan Crainea (@razvancrainea) Mar 2024 - Mar 2024
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -224,7 +241,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea).
+   Last edited by: LarryLaffer-dev, Razvan Crainea
+   (@razvancrainea).
 
    Documentation Copyrights:
 
