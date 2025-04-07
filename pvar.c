@@ -1747,6 +1747,18 @@ end:
 	return pv_get_strval(msg, param, res, &s);
 }
 
+
+static int pv_get_sdp(struct sip_msg *msg, pv_param_t *_, pv_value_t *res)
+{
+	pv_param_t param;
+
+	memset(&param, 0, sizeof param);
+	param.pvn.u.isname.name.n = ((TYPE_APPLICATION<<16)+SUBTYPE_SDP);
+
+	return pv_get_msg_body(msg, &param, res);
+}
+
+
 static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
