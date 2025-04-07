@@ -2837,9 +2837,8 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		goto error;
 
 	/*
-	 * If the Set is not specified as a parameter into this routine:
-	 *
-	 * Otherwise, eet the RTPEngine setid from the specified AVP,
+	 * If the Set is not specified as a parameter into this routine
+	 * try to determine. Using the specified setid_avp module parameter,
 	 * or from the default default_rtpe_set().
 	 */
 	if (!set) {
