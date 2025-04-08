@@ -106,9 +106,10 @@ typedef int (*terminate_dlg_f)(const str *callid, unsigned int h_entry,
 		unsigned int h_id, const str *reason);
 typedef int (*indialog_reply_f) (struct sip_msg *msg, int statuscode,
 		void *param);
+typedef void (*indialog_release_f) (void *param);
 typedef int (*send_indialog_req_f)(struct dlg_cell *dlg, str *method,
 		int leg, str *body, str *ct, str *hdrs, indialog_reply_f func,
-		void *param);
+		void *param, indialog_release_f release);
 
 
 void init_dlg_handlers(int default_timeout);
@@ -136,7 +137,7 @@ int terminate_dlg(const str *callid, unsigned int h_entry, unsigned int h_id,
 
 int send_indialog_request(struct dlg_cell *dlg, str *method,
 		int leg, str *body, str *ct, str *hdrs, indialog_reply_f func,
-		void *param);
+		void *param, indialog_release_f release);
 
 void unreference_dialog(void *dialog);
 

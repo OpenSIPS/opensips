@@ -30,20 +30,24 @@ struct b2b_api media_b2b;
 struct rtp_relay_binds media_rtp;
 
 static str b2b_media_exchange_cap = str_init("media_exchange");
+str media_default_instance = str_init(MEDIA_DEFAULT_INSTANCE);
 
 static int mod_preinit(void);
 static int mod_init(void);
 static int media_fork_to_uri(struct sip_msg *msg, str *uri,
-		int leg, str *headers, int *medianum);
+		int leg, str *headers, int *medianum, str *instance);
 static int media_fork_from_call(struct sip_msg *msg, str *callid,
-		int leg, int *medianum);
-static int media_fork_pause(struct sip_msg *msg, int leg, int *medianum);
-static int media_fork_resume(struct sip_msg *msg, int leg, int *medianum);
+		int leg, int *medianum, str *instance);
+static int media_fork_pause(struct sip_msg *msg,
+		int leg, int *medianum, str *instance);
+static int media_fork_resume(struct sip_msg *msg,
+		int leg, int *medianum, str *instance);
 static int media_exchange_from_uri(struct sip_msg *msg, str *uri,
 		int leg, str *body, str *headers, int *nohold);
 static int media_exchange_to_call(struct sip_msg *msg, str *callid,
 		int leg, int *nohold);
-static int media_terminate(struct sip_msg *msg, int leg, int *nohold);
+static int media_terminate(struct sip_msg *msg,
+		int leg, int *nohold, str *instance);
 static int media_indialog(struct sip_msg *msg);
 static int fixup_media_leg(void **param);
 static int fixup_media_leg_both(void **param);
@@ -97,24 +101,29 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* headers */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* instance */
 		{0,0,0}}, ALL_ROUTES},
 	{"media_fork_from_call",(cmd_function)media_fork_from_call, {
 		{CMD_PARAM_STR,0,0}, /* callid */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* instance */
 		{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE},
 	{"media_fork_pause",(cmd_function)media_fork_pause, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* instance */
 		{0,0,0}}, ALL_ROUTES},
 	{"media_fork_resume",(cmd_function)media_fork_resume, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* instance */
 		{0,0,0}}, ALL_ROUTES},
 	{"media_terminate",(cmd_function)media_terminate, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* instance */
 		{0,0,0}}, ALL_ROUTES},
 	{"media_handle_indialog",(cmd_function)media_indialog, {
 		{0,0,0}},
@@ -133,6 +142,9 @@ static const mi_export_t mi_cmds[] = {
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", 0}},
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "headers", 0}},
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", "instance", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "headers", "instance", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", "headers", "instance", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "media_exchange_from_call_to_uri", 0, 0, 0, {
@@ -154,6 +166,9 @@ static const mi_export_t mi_cmds[] = {
 		{mi_media_terminate, {"callid", "leg", 0}},
 		{mi_media_terminate, {"callid", "nohold", 0}},
 		{mi_media_terminate, {"callid", "leg", "nohold", 0}},
+		{mi_media_terminate, {"callid", "leg", "instance", 0}},
+		{mi_media_terminate, {"callid", "nohold", "instance", 0}},
+		{mi_media_terminate, {"callid", "leg", "nohold", "instance", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -304,10 +319,11 @@ static int handle_media_fork_to_uri(struct media_session_leg *msl, const struct 
 	str *b2b_key, body;
 
 	MEDIA_LEG_LOCK(msl);
+
 	if (msl->params) {
-		LM_WARN("already an ongoing forking for this leg!\n");
+		LM_DBG("already an ongoing forking for this leg, probably retransmission!\n");
 		MEDIA_LEG_UNLOCK(msl);
-		goto destroy;
+		return 0;
 	}
 	mf = media_get_fork_sdp(msl, medianum, &body);
 	if (!mf) {
@@ -373,7 +389,7 @@ static void media_fork_start(struct cell *t, int type, struct tmcb_params *ps)
 }
 
 static int media_fork_to_uri(struct sip_msg *msg,
-		str *uri, int leg, str *headers, int *medianum)
+		str *uri, int leg, str *headers, int *medianum, str *instance)
 {
 	struct dlg_cell *dlg;
 	const struct socket_info *si;
@@ -406,7 +422,7 @@ static int media_fork_to_uri(struct sip_msg *msg,
 			leg = MEDIA_LEG_CALLEE;
 	}
 
-	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, leg, 0);
+	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, leg, 0, MEDIA_INSTANCE(instance));
 	if (!msl) {
 		LM_ERR("cannot create new exchange leg!\n");
 		return -2;
@@ -449,7 +465,7 @@ static int media_fork_to_uri(struct sip_msg *msg,
 			goto destroy;
 		}
 	} else if (dlg->state < DLG_STATE_DELETED) {
-		if (handle_media_fork_to_uri(msl, si, uri, headers, (medianum?*medianum:-1)) < 0) {
+		if (handle_media_fork_to_uri(msl, si, uri, headers, (medianum?*medianum:-1)) <= 0) {
 			LM_ERR("could not start media forking!\n");
 			goto destroy;
 		}
@@ -465,7 +481,8 @@ destroy:
 	return -3;
 }
 
-static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *medianum)
+static int media_fork_from_call(struct sip_msg *msg,
+		str *callid, int leg, int *medianum, str *instance)
 {
 	str contact;
 	str *b2b_key;
@@ -503,7 +520,7 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 		return -2;
 	}
 
-	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, leg, 0);
+	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, leg, 0, MEDIA_INSTANCE(instance));
 	if (!msl) {
 		LM_ERR("cannot create new fetch leg!\n");
 		goto unref;
@@ -598,7 +615,7 @@ static int handle_media_exchange_from_uri(const struct socket_info *si, struct d
 	static client_info_t *ci;
 	str *b2b_key;
 
-	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_EXCHANGE, leg, nohold);
+	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_EXCHANGE, leg, nohold, NULL);
 	if (!msl) {
 		LM_ERR("cannot create new exchange leg!\n");
 		return -2;
@@ -716,14 +733,34 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 	return 1;
 }
 
+static void media_session_exchange_server_release(void *param)
+{
+	struct media_session_leg **mslp = (struct media_session_leg **)param;
+	if (!mslp) {
+		LM_BUG("media_session_leg should be here!\n");
+		return;
+	}
+	if (*mslp) {
+		MSL_UNREF((*mslp));
+		*mslp = NULL;
+	}
+	shm_free(mslp);
+}
+
+/* used just to indicate whether the session has been handled or not */
 static int media_session_exchange_server_reply(struct sip_msg *msg, int status, void *param)
 {
-	struct media_session_leg *msl;
+	struct media_session_leg *msl, **mslp;
 	str reason, body, *pbody;
+	int ret = -1;
 
 	if (status < 200) /* don't mind about provisional */
 		return 0;
-	msl = (struct media_session_leg *)param;
+	mslp = (struct media_session_leg **)param;
+
+	if (*mslp == NULL)
+		return 0;
+	msl = *mslp;
 
 	/* final reply here - unref the session */
 	if (msg == FAKED_REPLY || status >= 300)
@@ -746,7 +783,7 @@ static int media_session_exchange_server_reply(struct sip_msg *msg, int status, 
 		/* we need to put the other party on hold */
 		pbody = media_session_get_hold_sdp(msl);
 		if (!pbody)
-			goto error;
+			return -1; /* we don't unref - a reply might get through */
 		/* XXX: should we care whether the other party is properly on hold? */
 		if (media_session_reinvite(msl,
 				MEDIA_SESSION_DLG_OTHER_LEG(msl), pbody) < 0)
@@ -755,23 +792,19 @@ static int media_session_exchange_server_reply(struct sip_msg *msg, int status, 
 	}
 
 	/* finished processing this reply */
-	MSL_UNREF(msl);
-	return 0;
+	ret = 0;
+	goto end;
 
 terminate:
 	/* the client declined the invite - propagate the code */
 	reason.s = error_text(status);
 	reason.len = strlen(reason.s);
 	media_session_rpl(msl, METHOD_INVITE, status, &reason, NULL);
-
 	MSL_UNREF(msl);
-	/* no need of this session leg - remote it */
-	media_session_leg_free(msl);
-	return -1;
-
-error:
+end:
+	*mslp = NULL;
 	MSL_UNREF(msl);
-	return -1;
+	return ret;
 }
 
 static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int *nohold)
@@ -780,7 +813,7 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 	str contact;
 	str *b2b_key;
 	struct dlg_cell *dlg;
-	struct media_session_leg *msl;
+	struct media_session_leg *msl, **mslp;
 	static str inv = str_init("INVITE");
 
 	if (leg == MEDIA_LEG_UNSPEC) {
@@ -810,7 +843,7 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 	}
 
 	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_EXCHANGE, leg,
-			((nohold && *nohold)?1:0));
+			((nohold && *nohold)?1:0), NULL);
 	if (!msl) {
 		LM_ERR("cannot create new exchange leg!\n");
 		goto unref;
@@ -829,10 +862,19 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 		goto destroy;
 	}
 	msl->b2b_entity = B2B_SERVER;
+
+	mslp = shm_malloc(sizeof *mslp);
+	if (!mslp) {
+		LM_ERR("oom for new mslp\n");
+		goto destroy;
+	}
+	*mslp = msl;
+
 	/* all good - send the invite to the client */
 	MSL_REF(msl);
-	if (media_dlg.send_indialog_request(dlg, &inv, MEDIA_SESSION_DLG_LEG(msl),
-			&body, &msg->content_type->body, NULL, media_session_exchange_server_reply, msl) < 0) {
+	if (media_dlg.send_indialog_request(dlg, &inv, MEDIA_SESSION_DLG_LEG(msl), &body,
+			&msg->content_type->body, NULL, media_session_exchange_server_reply, mslp,
+			media_session_exchange_server_release) < 0) {
 		LM_ERR("could not send indialog request for callid %.*s\n", callid->len, callid->s);
 		MSL_UNREF(msl);
 		goto destroy;
@@ -847,7 +889,7 @@ unref:
 	return -2;
 }
 
-static int media_terminate(struct sip_msg *msg, int leg, int *nohold)
+static int media_terminate(struct sip_msg *msg, int leg, int *nohold, str *instance)
 {
 	struct dlg_cell *dlg;
 	struct media_session *ms;
@@ -880,7 +922,7 @@ static int media_terminate(struct sip_msg *msg, int leg, int *nohold)
 			proxied = 1;
 		}
 	}
-	if (media_session_end(ms, leg, ((nohold && *nohold)?1:0), proxied) < 0) {
+	if (media_session_end(ms, leg, ((nohold && *nohold)?1:0), proxied, instance) < 0) {
 		LM_ERR("could not terminate media session!\n");
 		return -2;
 	}
@@ -961,35 +1003,45 @@ static int handle_media_indialog_fork(struct sip_msg *msg,
 static int handle_media_indialog_refresh(struct sip_msg *msg,
 		struct media_session *ms, str *body)
 {
-	int ret = -1;
+	int ret = -1, ret_tmp;
 	str sbody;
 	int req_leg;
 	struct cell *t;
 	struct media_session_tm_param *p;
-	struct media_session_leg *leg, *oleg;
+	struct media_session_leg *leg, *tleg, *oleg;
+	tleg = oleg = NULL;
+
+	t = media_tm.t_gett();
+	if (t == T_UNDEFINED)
+		t = NULL;
 
 	if (media_dlg.get_direction() == DLG_DIR_DOWNSTREAM)
 		req_leg = DLG_CALLER_LEG;
 	else
 		req_leg = callee_idx(ms->dlg);
-	leg = media_session_get_leg(ms,
-			(req_leg==DLG_CALLER_LEG?MEDIA_LEG_CALLER:MEDIA_LEG_CALLEE));
-	oleg = media_session_get_leg(ms,
-			(req_leg==DLG_CALLER_LEG?MEDIA_LEG_CALLEE:MEDIA_LEG_CALLER));
-	if (!leg && !oleg) {
-		LM_DBG("no legs involved!\n");
-		return -1;
-	}
-	t = media_tm.t_gett();
-	if (t == T_UNDEFINED)
-		t = NULL;
 
-	if (!leg) {
+	/* we shall iterate on all legs and decide what to do depending on their type */
+	for (leg = ms->legs; leg; leg = leg->next) {
+		if (leg->type == MEDIA_SESSION_TYPE_FORK) {
+			ret_tmp = handle_media_indialog_fork(msg, leg);
+			if (ret_tmp == -2)
+				ret = -2;
+			else if (ret_tmp < ret)
+				ret = ret_tmp;
+		} else {
+			/* we've got an exchange session - check if tleg or oleg */
+			if ((req_leg == DLG_CALLER_LEG && leg->leg == MEDIA_LEG_CALLER) ||
+					(req_leg != DLG_CALLER_LEG && leg->leg == MEDIA_LEG_CALLEE))
+				tleg = leg;
+			else
+				oleg = leg;
+		}
+	}
+
+	if (!tleg) {
 		/* here, we have a sequential request, but this leg is not involved in
 		 * any media session */
-		if (oleg->type == MEDIA_SESSION_TYPE_FORK) {
-			return handle_media_indialog_fork(msg, oleg);
-		} else {
+		if (oleg) {
 			/* we should reply with whatever reply we last sent to it and
 			 * drop the request - if this is not correct, but unfortunately
 			 * we can't bother the other leg with a re-invite, as he's already
@@ -1005,23 +1057,8 @@ static int handle_media_indialog_refresh(struct sip_msg *msg,
 			}
 			return -2;
 		}
-	}
-
-	/* here, we still have the initial leg */
-	if (leg->type == MEDIA_SESSION_TYPE_FORK) {
-		ret = handle_media_indialog_fork(msg, leg);
-
-		if (oleg && oleg->type != MEDIA_SESSION_TYPE_FORK) {
-			/* reply to current leg whatever was last sent */
-			sbody = dlg_get_out_sdp(ms->dlg, other_leg(ms->dlg, req_leg));
-			media_send_ok(t, ms->dlg, req_leg, body);
-			ret = -2;
-		}
 	} else {
-		if (oleg && oleg->type == MEDIA_SESSION_TYPE_FORK)
-			handle_media_indialog_fork(msg, oleg);
-
-		/* here leg is part of an exchange - proxy it */
+		/* here, we still have the initial leg - it is part of an exchange - proxy it */
 		if (media_session_req(leg, INVITE, body) < 0) {
 			media_send_fail(t, ms->dlg, req_leg);
 			ret = -3;
@@ -1110,7 +1147,8 @@ static int media_send_fail(struct cell *t, struct dlg_cell *dlg, int leg)
 	return ret;
 }
 
-static int media_fork_pause(struct sip_msg *msg, int leg, int *medianum)
+static int media_fork_pause(struct sip_msg *msg,
+		int leg, int *medianum, str *instance)
 {
 	struct dlg_cell *dlg;
 	struct media_session *ms;
@@ -1131,15 +1169,20 @@ static int media_fork_pause(struct sip_msg *msg, int leg, int *medianum)
 		return -1;
 	}
 	if (leg == MEDIA_LEG_UNSPEC) {
-		for (msl = ms->legs; msl; msl = msl->next)
-			ret += media_fork_pause_resume(msl, medianum?*medianum:-1, 0);
+		for (msl = ms->legs; msl; msl = msl->next) {
+			if (media_session_match_leg(msl, msl->leg, MEDIA_SESSION_TYPE_FORK, instance))
+				ret += media_fork_pause_resume(msl, medianum?*medianum:-1, 0);
+		}
 	} else {
-		msl = media_session_get_leg(ms, leg);
+		msl = media_session_get_leg(ms, leg, MEDIA_SESSION_TYPE_FORK, instance);
 		if (!msl) {
 			LM_WARN("media session leg %d does not exist!\n", leg);
 			return -1;
 		}
-		ret = media_fork_pause_resume(msl, medianum?*medianum:-1, 0);
+		do {
+			ret += media_fork_pause_resume(msl, medianum?*medianum:-1, 0);
+			msl = media_session_get_next_leg(msl, leg, MEDIA_SESSION_TYPE_FORK, instance);
+		} while (msl);
 	}
 
 	if (ret == 0) {
@@ -1149,7 +1192,8 @@ static int media_fork_pause(struct sip_msg *msg, int leg, int *medianum)
 	return ret;
 }
 
-static int media_fork_resume(struct sip_msg *msg, int leg, int *medianum)
+static int media_fork_resume(struct sip_msg *msg,
+		int leg, int *medianum, str *instance)
 {
 	struct dlg_cell *dlg;
 	struct media_session *ms;
@@ -1170,15 +1214,20 @@ static int media_fork_resume(struct sip_msg *msg, int leg, int *medianum)
 		return -1;
 	}
 	if (leg == MEDIA_LEG_UNSPEC) {
-		for (msl = ms->legs; msl; msl = msl->next)
-			ret += media_fork_pause_resume(msl, medianum?*medianum:-1, 1);
+		for (msl = ms->legs; msl; msl = msl->next) {
+			if (media_session_match_leg(msl, msl->leg, MEDIA_SESSION_TYPE_FORK, instance))
+				ret += media_fork_pause_resume(msl, medianum?*medianum:-1, 1);
+		}
 	} else {
-		msl = media_session_get_leg(ms, leg);
+		msl = media_session_get_leg(ms, leg, MEDIA_SESSION_TYPE_FORK, instance);
 		if (!msl) {
 			LM_WARN("media session leg %d does not exist!\n", leg);
 			return -1;
 		}
-		ret = media_fork_pause_resume(msl, medianum?*medianum:-1, 1);
+		do {
+			ret += media_fork_pause_resume(msl, medianum?*medianum:-1, 1);
+			msl = media_session_get_next_leg(msl, leg, MEDIA_SESSION_TYPE_FORK, instance);
+		} while (msl);
 	}
 
 	if (ret == 0) {
@@ -1246,7 +1295,7 @@ static void handle_media_session_negative(struct media_session_leg *msl)
 		body = &sbody;
 	if (media_dlg.send_indialog_request(msl->ms->dlg,
 			&inv, dlg_leg, body, &content_type_sdp, NULL,
-			media_session_exchange_negative_reply, msl) < 0) {
+			media_session_exchange_negative_reply, msl, NULL) < 0) {
 		LM_ERR("could not forward INVITE!\n");
 		media_send_fail(p->t, msl->ms->dlg, dlg_leg);
 		msl->params = NULL;
@@ -1514,8 +1563,8 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 {
 	int medianum;
 	int media_leg;
-	str shdrs, *hdrs;
-	str callid, leg, uri;
+	str shdrs, *hdrs, *inst;
+	str callid, leg, uri, instance;
 	struct dlg_cell *dlg;
 	const struct socket_info *si;
 	union sockaddr_union tmp;
@@ -1535,8 +1584,13 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 		medianum = -1;
 	if (try_get_mi_string_param(params, "headers", &shdrs.s, &shdrs.len) < 0)
 		hdrs = NULL;
+	if (try_get_mi_string_param(params, "instance", &instance.s, &instance.len) < 0)
+		inst = &media_default_instance;
 	else
-		hdrs = &shdrs;
+		inst = &instance;
+
+	if (try_get_mi_int_param(params, "medianum", &medianum) < 0)
+		medianum = -1;
 
 	media_leg = fixup_get_media_leg_both(&leg);
 	if (media_leg < 0)
@@ -1558,14 +1612,14 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 			return init_mi_error(404, MI_SSTR("Media context not found"));
 	}
 
-	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, media_leg, 0);
+	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, media_leg, 0, inst);
 	if (!msl) {
 		LM_ERR("cannot create new exchange leg!\n");
 		return init_mi_error(500, MI_SSTR("Could not create media forking"));
 	}
 	msl->ms->rtp = ctx;
 
-	if (handle_media_fork_to_uri(msl, si, &uri, hdrs, medianum) < 0) {
+	if (handle_media_fork_to_uri(msl, si, &uri, hdrs, medianum) <= 0) {
 		media_dlg.dlg_unref(dlg, 1);
 		return init_mi_error(500, MI_SSTR("Could not start media forking"));
 	}
@@ -1657,7 +1711,7 @@ static mi_response_t *mi_media_terminate(const mi_params_t *params,
 {
 	int nohold;
 	int media_leg;
-	str callid, leg;
+	str callid, leg, instance, *inst = NULL;
 	struct dlg_cell *dlg;
 	struct media_session *ms;
 
@@ -1686,6 +1740,8 @@ static mi_response_t *mi_media_terminate(const mi_params_t *params,
 		default:
 			return init_mi_param_error();
 	}
+	if (try_get_mi_string_param(params, "instance", &instance.s, &instance.len) >= 0)
+		inst = &instance;
 
 	/* params are now ok, let's lookup the media session */
 	dlg = media_dlg.get_dlg_by_callid(&callid, 1);
@@ -1699,7 +1755,7 @@ static mi_response_t *mi_media_terminate(const mi_params_t *params,
 	}
 
 	/* all good - implement the logic now */
-	if (media_session_end(ms, media_leg, nohold, 0) < 0) {
+	if (media_session_end(ms, media_leg, nohold, 0, inst) < 0) {
 		media_dlg.dlg_unref(dlg, 1);
 		return init_mi_error(500, MI_SSTR("Terminate failed"));
 	}

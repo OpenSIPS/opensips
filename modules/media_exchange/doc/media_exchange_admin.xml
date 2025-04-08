@@ -128,12 +128,17 @@
 		<title>Exported Functions</title>
 		<section id="func_media_fork_to_uri" xreflabel="media_fork_to_uri()">
 			<title>
-			<function moreinfo="none">media_fork_to_uri(URI[, leg[, headers[, medianum]]])</function>
+			<function moreinfo="none">media_fork_to_uri(URI[, leg][, headers][, medianum][, instance])</function>
 			</title>
 			<para>
 				Behaves as a B2B user agent client to initiate a call to a SIP
 				URI and then stream the media to the SDP received in the 200
 				OK response.
+			</para>
+			<para>
+				Can be called multiple times, and will create a new call for
+				each invocation. The generated calls can be identified using
+				the <emphasis>instance</emphasis> parameter.
 			</para>
 			<para>
 				Parameters:
@@ -157,6 +162,11 @@
 						stream that will be forked within the call. First index is 0.
 						If missing, all media streams of that leg(s) are streamed.
 				</para></listitem>
+				<listitem><para>
+					<emphasis>instance</emphasis> (string, optional) - a unique name
+					for identifying the forking instance. If missing, the
+					<emphasis>default</emphasis> name is assumed.
+				</para></listitem>
 				</itemizedlist>
 			</para>
 			<para>
@@ -175,12 +185,17 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 		</section>
 		<section id="func_media_fork_from_call" xreflabel="media_fork_from_call()">
 			<title>
-			<function moreinfo="none">media_fork_from_call(callid[, leg[, medianum]])</function>
+			<function moreinfo="none">media_fork_from_call(callid[, leg][, medianum][, instance])</function>
 			</title>
 			<para>
 				Starts streaming the media of an existing proxied call, identified
 				by the <emphasis>callid</emphasis> parameter to the SDP in the
 				request's body.
+			</para>
+			<para>
+				Can be called multiple times, and will accept a new call for
+				each invocation. The calls can be identified using
+				the <emphasis>instance</emphasis> parameter.
 			</para>
 			<para>
 				Parameters:
@@ -205,6 +220,11 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 						therefore you need to make sure that the INVITE has enough SDP
 						streams to handle all the media streams selected to fork.
 					</para>
+				</para></listitem>
+				<listitem><para>
+					<emphasis>instance</emphasis> (string, optional) - a unique name
+					for identifying the forking instance. If missing, the
+					<emphasis>default</emphasis> name is assumed.
 				</para></listitem>
 				</itemizedlist>
 			</para>
@@ -242,7 +262,7 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 		</section>
 		<section id="func_media_fork_pause" xreflabel="media_fork_pause()">
 			<title>
-			<function moreinfo="none">media_fork_pause([leg[, medianum]])</function>
+			<function moreinfo="none">media_fork_pause([leg][, medianum][, instance])</function>
 			</title>
 			<para>
 				Pauses an existing RTP media streaming session. This function does
@@ -264,6 +284,10 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 						If missing, all ongoing media streams associated to the
 						selected leg will be paused.
 				</para></listitem>
+				<listitem><para>
+					<emphasis>instance</emphasis> (string, optional) - the forking
+					instance to be paused. If missing, all instances are paused.
+				</para></listitem>
 				</itemizedlist>
 			</para>
 			<para>
@@ -282,7 +306,7 @@ if (has_totag() &amp;&amp; is_method("INVITE"))
 		</section>
 		<section id="func_media_fork_resume" xreflabel="media_fork_resume()">
 			<title>
-			<function moreinfo="none">media_fork_resume([leg[, medianum]])</function>
+			<function moreinfo="none">media_fork_resume([leg][, medianum][, instance])</function>
 			</title>
 			<para>
 				Resumes the RTP media stream of an existing session/call. This function
@@ -303,6 +327,10 @@ if (has_totag() &amp;&amp; is_method("INVITE"))
 						If missing, all ongoing media streams associated to the
 						selected leg will be paused.
 				</para></listitem>
+				<listitem><para>
+					<emphasis>instance</emphasis> (string, optional) - the forking
+					instance to be resumed. If missing, all instances are resumed.
+				</para></listitem>
 				</itemizedlist>
 			</para>
 			<para>
@@ -321,7 +349,7 @@ if (has_totag() &amp;&amp; is_method("INVITE"))
 		</section>
 		<section id="func_media_exchange_from_uri" xreflabel="media_exchange_from_uri()">
 			<title>
-			<function moreinfo="none">media_exchange_from_uri(URI[, leg[, body[, headers[, nohold]]]])</function>
+			<function moreinfo="none">media_exchange_from_uri(URI[, leg][, body][, headers][, nohold])</function>
 			</title>
 			<para>
 				Originates a call to the specified URI. The SDP in the response is
@@ -380,7 +408,7 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; is_audio_on_hold())
 		</section>
 		<section id="func_media_exchange_to_call" xreflabel="media_exchange_to_call()">
 			<title>
-			<function moreinfo="none">media_exchange_to_call(callid[, leg[, nohold]])</function>
+			<function moreinfo="none">media_exchange_to_call(callid[, leg][, nohold])</function>
 			</title>
 			<para>
 				Pushes the SDP of a new call received in an existing proxied
@@ -431,7 +459,7 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 		</section>
 		<section id="func_media_terminate" xreflabel="media_terminate()">
 			<title>
-			<function moreinfo="none">media_terminate([leg[, nohold]])</function>
+			<function moreinfo="none">media_terminate([leg][, nohold][, instance])</function>
 			</title>
 			<para>
 				Terminates an ongoing media session exchange, whether the media is
@@ -458,6 +486,15 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 						itself should be relayed further to do that. This behavior
 						can be changed by explicitly setting the
 						<emphasis>nohold</emphasis> parameter
+				</para></listitem>
+				<listitem><para>
+					<emphasis>instance</emphasis> (string, optional) - should only be
+					used when terminating a forking instance, and represents the
+					instance to terminate. It must be ommitted when terminating an
+					streaming session. However, for fallback compatibility, if the
+					parameter is missing, and no streaming session is found, the
+					command terminates the <emphasis>default</emphasis> forking
+					instance, if it exists.
 				</para></listitem>
 				</itemizedlist>
 			</para>
@@ -582,6 +619,11 @@ if (has_totag() &amp;&amp; loose_route()) {
 					stream that will be forked within the call. First index is 0.
 					If missing, all media streams of that leg(s) are streamed.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>instance</emphasis> (string, optional) - the unique
+				name of the forking instance. If missing, the
+				<emphasis>default</emphasis> name is assumed.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
@@ -687,6 +729,15 @@ opensips-cli -x mi media_exchange_from_call_to_uri \
 					and has a non-zero value, the leg that is being terminated
 					is not put on hold if the other participant still has an
 					ongoing media session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>instance</emphasis> (string, optional) - should only be
+				used when terminating a forking instance, and represents the
+				instance to terminate. It must be ommitted when terminating an
+				streaming session. However, for fallback compatibility, if the
+				parameter is missing, and no streaming session is found, the
+				command terminates the <emphasis>default</emphasis> forking
+				instance, if it exists.
 			</para></listitem>
 		</itemizedlist>
 		<para>

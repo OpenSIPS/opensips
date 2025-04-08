@@ -13,21 +13,25 @@ Media Exchange Module
 
         1.3. Exported Functions
 
-              1.3.1. media_fork_to_uri(URI[, leg[, headers[,
-                      medianum]]])
+              1.3.1. media_fork_to_uri(URI[, leg][, headers][,
+                      medianum][, instance])
 
-              1.3.2. media_fork_from_call(callid[, leg[,
-                      medianum]])
+              1.3.2. media_fork_from_call(callid[, leg][,
+                      medianum][, instance])
 
-              1.3.3. media_fork_pause([leg[, medianum]])
-              1.3.4. media_fork_resume([leg[, medianum]])
-              1.3.5. media_exchange_from_uri(URI[, leg[, body[,
-                      headers[, nohold]]]])
+              1.3.3. media_fork_pause([leg][, medianum][,
+                      instance])
 
-              1.3.6. media_exchange_to_call(callid[, leg[,
-                      nohold]])
+              1.3.4. media_fork_resume([leg][, medianum][,
+                      instance])
 
-              1.3.7. media_terminate([leg[, nohold]])
+              1.3.5. media_exchange_from_uri(URI[, leg][, body][,
+                      headers][, nohold])
+
+              1.3.6. media_exchange_to_call(callid[, leg][,
+                      nohold])
+
+              1.3.7. media_terminate([leg][, nohold][, instance])
               1.3.8. media_handle_indialog()
 
         1.4. Exported MI Functions
@@ -149,11 +153,16 @@ Chapter 1. Admin Guide
 
 1.3. Exported Functions
 
-1.3.1.  media_fork_to_uri(URI[, leg[, headers[, medianum]]])
+1.3.1.  media_fork_to_uri(URI[, leg][, headers][, medianum][,
+instance])
 
    Behaves as a B2B user agent client to initiate a call to a SIP
    URI and then stream the media to the SDP received in the 200 OK
    response.
+
+   Can be called multiple times, and will create a new call for
+   each invocation. The generated calls can be identified using
+   the instance parameter.
 
    Parameters:
      * URI (string) - destination where to push the current call's
@@ -166,6 +175,9 @@ Chapter 1. Admin Guide
      * medianum (integer, optional) - the media stream that will
        be forked within the call. First index is 0. If missing,
        all media streams of that leg(s) are streamed.
+     * instance (string, optional) - a unique name for identifying
+       the forking instance. If missing, the default name is
+       assumed.
 
    This function can be used from any route.
 
@@ -176,11 +188,15 @@ if (!has_totag() && is_method("INVITE"))
         media_fork_to_uri("sip:record@127.0.0.1:5080");
 ...
 
-1.3.2.  media_fork_from_call(callid[, leg[, medianum]])
+1.3.2.  media_fork_from_call(callid[, leg][, medianum][, instance])
 
    Starts streaming the media of an existing proxied call,
    identified by the callid parameter to the SDP in the request's
    body.
+
+   Can be called multiple times, and will accept a new call for
+   each invocation. The calls can be identified using the instance
+   parameter.
 
    Parameters:
      * callid (string) - the identifier of the callid to
@@ -195,6 +211,9 @@ if (!has_totag() && is_method("INVITE"))
        Note: RTPProxy does not do any media mixing, therefore you
        need to make sure that the INVITE has enough SDP streams to
        handle all the media streams selected to fork.
+     * instance (string, optional) - a unique name for identifying
+       the forking instance. If missing, the default name is
+       assumed.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
@@ -219,7 +238,7 @@ if (!has_totag() && is_method("INVITE") && $hdr(X-CallID) != NULL)
         media_fork_from_call($hdr(X-CallID), "caller", 0);
 ...
 
-1.3.3.  media_fork_pause([leg[, medianum]])
+1.3.3.  media_fork_pause([leg][, medianum][, instance])
 
    Pauses an existing RTP media streaming session. This function
    does not terminate the forking call, but only stops sending the
@@ -233,6 +252,8 @@ if (!has_totag() && is_method("INVITE") && $hdr(X-CallID) != NULL)
      * medianum (integer, optional) - the media stream to be
        paused. First index is 0. If missing, all ongoing media
        streams associated to the selected leg will be paused.
+     * instance (string, optional) - the forking instance to be
+       paused. If missing, all instances are paused.
 
    This function can be used from any route.
 
@@ -243,7 +264,7 @@ if (has_totag() && is_method("INVITE"))
         media_fork_pause();
 ...
 
-1.3.4.  media_fork_resume([leg[, medianum]])
+1.3.4.  media_fork_resume([leg][, medianum][, instance])
 
    Resumes the RTP media stream of an existing session/call. This
    function relies on the fact that a media fork session has been
@@ -256,6 +277,8 @@ if (has_totag() && is_method("INVITE"))
      * medianum (integer, optional) - the media stream to be
        paused. First index is 0. If missing, all ongoing media
        streams associated to the selected leg will be paused.
+     * instance (string, optional) - the forking instance to be
+       resumed. If missing, all instances are resumed.
 
    This function can be used from any route.
 
@@ -266,8 +289,8 @@ if (has_totag() && is_method("INVITE"))
         media_fork_resume();
 ...
 
-1.3.5.  media_exchange_from_uri(URI[, leg[, body[, headers[,
-nohold]]]])
+1.3.5.  media_exchange_from_uri(URI[, leg][, body][, headers][,
+nohold])
 
    Originates a call to the specified URI. The SDP in the response
    is fetched and pushed towards one of the call's legs, resulting
@@ -303,7 +326,7 @@ if (has_totag() && is_method("INVITE") && is_audio_on_hold())
         media_exchange_from_uri("sip:moh@127.0.0.1:5080");
 ...
 
-1.3.6.  media_exchange_to_call(callid[, leg[, nohold]])
+1.3.6.  media_exchange_to_call(callid[, leg][, nohold])
 
    Pushes the SDP of a new call received in an existing proxied
    call, resulting in two-way audio between a Media Server that
@@ -335,7 +358,7 @@ if (!has_totag() && is_method("INVITE") && $hdr(X-CallID) != NULL)
         media_exchange_to_call($hdr(X-CallID), "caller");
 ...
 
-1.3.7.  media_terminate([leg[, nohold]])
+1.3.7.  media_terminate([leg][, nohold][, instance])
 
    Terminates an ongoing media session exchange, whether the media
    is only streamed, or two way audio is flowing. If the
@@ -354,6 +377,13 @@ if (!has_totag() && is_method("INVITE") && $hdr(X-CallID) != NULL)
        as the re-INVITE itself should be relayed further to do
        that. This behavior can be changed by explicitly setting
        the nohold parameter
+     * instance (string, optional) - should only be used when
+       terminating a forking instance, and represents the instance
+       to terminate. It must be ommitted when terminating an
+       streaming session. However, for fallback compatibility, if
+       the parameter is missing, and no streaming session is
+       found, the command terminates the default forking instance,
+       if it exists.
 
    This function can be used from any route.
 
@@ -427,6 +457,8 @@ if (has_totag() && loose_route()) {
      * medianum (integer, optional) - the media stream that will
        be forked within the call. First index is 0. If missing,
        all media streams of that leg(s) are streamed.
+     * instance (string, optional) - the unique name of the
+       forking instance. If missing, the default name is assumed.
 
    MI FIFO Command Format:
 # start streaming a callid to record media server
@@ -488,6 +520,13 @@ opensips-cli -x mi media_exchange_from_call_to_uri \
        non-zero value, the leg that is being terminated is not put
        on hold if the other participant still has an ongoing media
        session.
+     * instance (string, optional) - should only be used when
+       terminating a forking instance, and represents the instance
+       to terminate. It must be ommitted when terminating an
+       streaming session. However, for fallback compatibility, if
+       the parameter is missing, and no streaming session is
+       found, the command terminates the default forking instance,
+       if it exists.
 
    MI FIFO Command Format:
 # terminate a caller announcement
@@ -502,7 +541,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 160 67 6190 2485
+   1. Razvan Crainea (@razvancrainea) 167 69 6532 2615
    2. Vlad Patrascu (@rvlad-patrascu) 6 4 19 11
    3. Maksym Sobolyev (@sobomax) 4 2 12 12
    4. Alexandra Titoc 4 2 6 4
@@ -531,7 +570,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Feb 2020 - Mar 2025
+   1. Razvan Crainea (@razvancrainea)     Feb 2020 - Apr 2025
    2. Alexandra Titoc                     Sep 2024 - Sep 2024
    3. Liviu Chircu (@liviuchircu)         Jul 2022 - Jul 2024
    4. Norman Brandinger (@NormB)          Jun 2024 - Jun 2024

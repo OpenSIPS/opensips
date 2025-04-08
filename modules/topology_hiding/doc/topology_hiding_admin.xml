@@ -217,6 +217,45 @@ modparam("topology_hiding", "th_contact_encode_scheme", "base32")
 		</example>
 	</section>
 
+	<section id="param_th_contact_caller_username_var" xreflabel="th_contact_caller_username_var">
+		<title><varname>th_contact_caller_username_var</varname> (string)</title>
+		<para>
+			Variable used to store the value of the contact username advertised to the caller.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>_th_contact_caller_username_var_</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_contact_caller_username_var</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("topology_hiding", "th_contact_caller_username_var", "__topo_hiding_username_var__")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_th_contact_callee_username_var" xreflabel="th_contact_callee_username_var">
+		<title><varname>th_contact_callee_username_var</varname> (string)</title>
+		<para>
+			Variable used to store the value of the contact username advertised to the callee.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>_th_contact_callee_username_var_</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_contact_callee_username_var</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("topology_hiding", "th_contact_callee_username_var", "__topo_hiding_username_var__")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
@@ -286,6 +325,16 @@ modparam("topology_hiding", "th_contact_encode_scheme", "base32")
 				</listitem>
 			</itemizedlist>
 		</para>
+		<para>
+			The second parameter can be used to advertise a particular
+			<emphasis>username</emphasis> in the Contact header URI, either on the
+			<emphasis>caller</emphasis>, either on the <emphasis>callee</emphasis>
+			leg, separated by <emphasis>/</emphasis>. The format of the parameter is 
+			<emphasis>caller_username|/[caller_contact_username][/callee_contact_username]</emphasis>.
+			If the separator is missing, the same contact username is advertised on
+			both legs. If the separator is being used, you can control the username
+			put in contact per leg.
+		</para>
 		<example>
 		<title><function>topology_hiding</function> usage</title>
 		<programlisting format="linespecific">
@@ -297,6 +346,27 @@ if(!has_totag() &amp;&amp; is_method("INVITE")) {
 ...
 if(!has_totag() &amp;&amp; is_method("INVITE")) {
 	topology_hiding("U");
+}
+...
+# set "opensips" for both caller and the callee's Contact username
+if(!has_totag() &amp;&amp; is_method("INVITE")) {
+	topology_hiding("U", "opensips");
+}
+...
+# set "caller" in the caller's Contact username
+if(!has_totag() &amp;&amp; is_method("INVITE")) {
+	topology_hiding("U", "/caller");
+}
+...
+# set "callee" in the callee's Contact username
+if(!has_totag() &amp;&amp; is_method("INVITE")) {
+	topology_hiding("U", "//callee");
+}
+...
+# set "caller" in the caller's Contact username and
+# "callee" in the callee's Contact username
+if(!has_totag() &amp;&amp; is_method("INVITE")) {
+	topology_hiding("U", "/caller/callee");
 }
 ...
 </programlisting>

@@ -343,7 +343,18 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 	if (type != B2B_REPLY)
 		return srec_b2b_req(msg, ss);
 
-	LM_DBG("received b2b reply with code %d\n", msg->REPLY_STATUS);
+	if (!msg->cseq && ((parse_headers(msg, HDR_CSEQ_F, 0) < 0) || !msg->cseq)) {
+		LM_ERR("could not parse reply method\n");
+		return 0;
+	}
+
+	LM_DBG("received b2b reply with code %d for %.*s\n",
+			msg->REPLY_STATUS, get_cseq(msg)->method.len, get_cseq(msg)->method.s);
+	if (get_cseq(msg)->method_id != METHOD_INVITE && get_cseq(msg) ->method_id != METHOD_UPDATE) {
+		LM_DBG("reply for %.*s not updating dialog\n",
+			get_cseq(msg)->method.len, get_cseq(msg)->method.s);
+		return 0;
+	}
 
 	ret = 0;
 	/* check if the reply was successful */
@@ -784,4 +795,27 @@ int src_resume_recording(void)
 end:
 	SIPREC_UNLOCK(sess);
 	return ret;
+}
+
+int src_send_indialog(struct sip_msg *msg, str *hdrs, str *body)
+{
+	struct b2b_req_data req;
+	struct src_sess *sess = src_get_session();
+	if (!sess)
+		return -2;
+
+	memset(&req, 0, sizeof(req));
+	req.et = B2B_CLIENT;
+	req.b2b_key = &sess->b2b_key;
+	req.method = &msg->REQ_METHOD_S;
+	req.extra_headers = hdrs;
+	req.dlginfo = sess->dlginfo;
+	req.body = body;
+
+	if (srec_b2b.send_request(&req) < 0) {
+		LM_ERR("Cannot send indialog in recording session for key %.*s\n",
+				req.b2b_key->len, req.b2b_key->s);
+		return -1;
+	}
+	return 0;
 }

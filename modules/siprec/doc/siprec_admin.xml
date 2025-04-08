@@ -447,6 +447,40 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	</programlisting>
 			</example>
 		</section>
+		<section id="func_siprec_send_indialog" xreflabel="siprec_send_indialog([hdrs[, body]])">
+			<title>
+			<function moreinfo="none">siprec_send_indialog([hdrs[, body]])</function>
+			</title>
+			<para>
+				Sends an arbitrary in-dialog request to the SRS.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>headers</emphasis> (string, optional) - a set of headers
+					that will be added to the generated request.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>body</emphasis> (string, optional) - the body that
+					will be added to the generated request.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<example>
+			<title>Use <function>siprec_send_indialog()</function> </title>
+			<programlisting format="linespecific">
+	...
+	if (has_totag() &amp;&amp; is_method("INFO")) {
+		siprec_send_indialog("Content-Type: $hdr(Content-Type)\r\n", $rb);
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
 	</section>
 
 	<section id="exported_pseudo_variables">
