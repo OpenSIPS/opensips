@@ -2579,7 +2579,7 @@ static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 		LM_WARN("body without content type! This request might be rejected by uac!\n");
 
 	return send_indialog_request(dlg, method, (leg == DLG_CALLER_LEG?leg:callee_idx(dlg)),
-			body, ct, headers, NULL, NULL) == 0?1:-1;
+			body, ct, headers, NULL, NULL, NULL) == 0?1:-1;
 
 }
 
