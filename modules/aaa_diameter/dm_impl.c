@@ -525,7 +525,7 @@ skip:
 out:
 	cJSON_Delete(item);
 
-	LM_DBG("------------ END AVP iteration ----------------\n");
+	LM_DBG("------------ END AVP iteration (failure) ----------------\n");
 	return -1;
 }
 
