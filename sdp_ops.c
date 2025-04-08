@@ -107,6 +107,30 @@ error:
 	return -1;
 }
 
+int sdp_get_custom_body(struct sip_msg *msg, str *body)
+{
+	struct sdp_body_part_ops *ops = msg->sdp_ops;
+
+	if (!ops || !ops->sdp.s)
+		return -1;
+
+	if (ops->flags & SDP_OPS_FL_NULL) {
+		*body = STR_NULL;
+		return 0;
+	}
+
+	if (!(ops->flags & SDP_OPS_FL_DIRTY))
+		goto out;
+
+	/* TODO: actually rebuild .sdp */
+
+	ops->flags &= ~SDP_OPS_FL_DIRTY;
+
+out:
+	*body = ops->sdp;
+	return 0;
+}
+
 
 void free_sdp_ops(struct sdp_body_part_ops *ops)
 {
