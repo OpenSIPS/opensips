@@ -30,6 +30,7 @@ SIPREC Module
               1.9.2. siprec_pause_recording()
               1.9.3. siprec_resume_recording()
               1.9.4. siprec_stop_recording()
+              1.9.5. siprec_send_indialog([hdrs[, body]])
 
         1.10. Exported Pseudo-Variables
 
@@ -68,6 +69,7 @@ SIPREC Module
    1.7. Use siprec_pause_recording()
    1.8. Use siprec_resume_recording()
    1.9. Use siprec_stop_recording()
+   1.10. Use siprec_send_indialog()
 
 Chapter 1. Admin Guide
 
@@ -346,6 +348,26 @@ fty5</callcenterCode>";
         }
         ...
 
+1.9.5.  siprec_send_indialog([hdrs[, body]])
+
+   Sends an arbitrary in-dialog request to the SRS.
+
+   This function can be used from any route.
+
+   Parameters:
+     * headers (string, optional) - a set of headers that will be
+       added to the generated request.
+     * body (string, optional) - the body that will be added to
+       the generated request.
+
+   Example 1.10. Use siprec_send_indialog()
+        ...
+        if (has_totag() && is_method("INFO")) {
+                siprec_send_indialog("Content-Type: $hdr(Content-Type)\r
+\n", $rb);
+        }
+        ...
+
 1.10. Exported Pseudo-Variables
 
 1.10.1. $siprec
@@ -401,7 +423,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 172 91 5656 1971
+   1. Razvan Crainea (@razvancrainea) 174 92 5737 1972
    2. Vlad Patrascu (@rvlad-patrascu) 16 11 166 149
    3. Liviu Chircu (@liviuchircu) 9 7 35 53
    4. Maksym Sobolyev (@sobomax) 6 4 12 11
@@ -429,7 +451,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Mar 2025
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Apr 2025
    2. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    3. Seyed Mehran Siadati                Nov 2023 - Nov 2023
    4. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2023

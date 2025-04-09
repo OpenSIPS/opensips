@@ -428,9 +428,9 @@ int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	isval.s = param->pvv;
 	if (fetch_dlg_value(dlg, &name, &type, &isval, 1)!=0)
 		return pv_get_null(msg, param, res);
-	param->pvv = isval.s;
 
 	if (type == DLG_VAL_TYPE_STR) {
+		param->pvv = isval.s;
 		res->flags = PV_VAL_STR;
 		res->rs = isval.s;
 	} else {
