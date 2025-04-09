@@ -57,6 +57,7 @@
 #include "../../pt.h"
 #include "../../parser/msg_parser.h"
 #include "../../pvar.h"
+#include "../../redact_pii.h"
 
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../tls_mgm/api.h"
@@ -722,8 +723,8 @@ again:
 	if (req->error!=TCP_REQ_OK){
 		LM_ERR("bad request, state=%d, error=%d "
 				  "buf:\n%.*s\nparsed:\n%.*s\n", req->state, req->error,
-				  (int)(req->pos-req->buf), req->buf,
-				  (int)(req->parsed-req->start), req->start);
+				  (int)(req->pos-req->buf), redact_pii(req->buf),
+				  (int)(req->parsed-req->start), redact_pii(req->start));
 		LM_DBG("- received from: port %d\n", con->rcv.src_port);
 		print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
 		goto error;

@@ -30,6 +30,7 @@
 #include "../../ut.h"
 #include "../../net/trans_trace.h"
 #include "../../net/tcp_common.h"
+#include "../../redact_pii.h"
 #include "msrp_handler.h"
 #include "msrp_plain.h"
 #include "msrp_common.h"
@@ -524,8 +525,8 @@ again:
 	if (req->tcp.error!=TCP_REQ_OK){
 		LM_ERR("bad request, state=%d, error=%d "
 				  "buf:\n%.*s\nparsed:\n%.*s\n", req->state, req->tcp.error,
-				  (int)(req->tcp.pos-req->tcp.buf), req->tcp.buf,
-				  (int)(req->tcp.parsed-req->tcp.start), req->tcp.start);
+				  (int)(req->tcp.pos-req->tcp.buf), redact_pii(req->tcp.buf),
+				  (int)(req->tcp.parsed-req->tcp.start), redact_pii(req->tcp.start));
 		LM_DBG("- received from: port %d\n", con->rcv.src_port);
 		print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
 		goto error;

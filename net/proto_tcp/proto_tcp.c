@@ -41,6 +41,7 @@
 #include "../../tsend.h"
 #include "../../trace_api.h"
 #include "../../net/net_tcp_dbg.h"
+#include "../../redact_pii.h"
 
 #include "tcp_common_defs.h"
 #include "proto_tcp_handler.h"
@@ -723,8 +724,8 @@ again:
 	if (req->error!=TCP_REQ_OK){
 		LM_ERR("bad request, state=%d, error=%d "
 				  "buf:\n%.*s\nparsed:\n%.*s\n", req->state, req->error,
-				  (int)(req->pos-req->buf), req->buf,
-				  (int)(req->parsed-req->start), req->start);
+				  (int)(req->pos-req->buf), redact_pii(req->buf),
+				  (int)(req->parsed-req->start), redact_pii(req->start));
 		LM_DBG("- received from: port %d\n", con->rcv.src_port);
 		print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
 		goto error;
