@@ -446,12 +446,15 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 		con->ref = 1;
 		con->flags |= multi_hosts; /* if the case */
 
-		/* if doing failover Redises, only connect the 1st one for now! */
-		if (!cons && redis_connect(con) < 0) {
-			LM_ERR("failed to connect to DB\n");
-			if (shutdown_on_error)
-				goto out_err;
-		}
+		/* We don't actually connect just yet. The connection will be made when
+		   it is first used.
+		   If we connect to redis now then any sockets that won't get used will
+		   get stuck in CLOSE_WAIT forever if the redis server disconnects (e.g.
+		   when it restarts).
+		   By deferring connection until first use, we expect that any sockets
+		   that get disconnected will eventually get reconnected, because they
+		   wouldn't have got connected in the first place if they weren't
+		   in use. */
 
 		_add_last(con, cons, next_con);
 	}
