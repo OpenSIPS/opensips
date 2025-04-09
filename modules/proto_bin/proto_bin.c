@@ -41,6 +41,7 @@
 #include "../../bin_interface.h"
 #include "proto_bin.h"
 #include "../../ut.h"
+#include "../../redact_pii.h"
 
 
 static int mod_init(void);
@@ -337,7 +338,7 @@ static int bin_read_req(struct tcp_connection* con, int* bytes_read){
 	if (req->error!=TCP_REQ_OK){
 		LM_ERR("bad request, state=%d, error=%d "
 				  "buf:\n%.*s\nparsed:\n%d\n", req->state, req->error,
-				  (int)(req->pos-req->buf), req->buf,
+				  (int)(req->pos-req->buf), redact_pii(req->buf),
 				  (int)(req->parsed-req->buf));
 		LM_DBG("- received from: port %d\n", con->rcv.src_port);
 		print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
