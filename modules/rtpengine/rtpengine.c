@@ -2836,27 +2836,22 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	if (rtpe_function_call_prepare(bencbuf, msg, op, &ng_flags, flags_str, body_in, extra_dict,&err) < 0)
 		goto error;
 
-	/*
-	 * If the Set is not specified as a parameter into this routine
-	 * try to determine. Using the specified setid_avp module parameter,
-	 * or from the default default_rtpe_set().
-	 */
+	/*** set can be passed into this routine. If it is NULL, then attempt to determine it. ***/
 	if (!set) {
-		set_rtpengine_set_from_avp(msg);
 		if ((set=rtpe_ctx_set_get())==NULL)
 			set = *default_rtpe_set;
+	}
+
+	/*** If the spvar "sock_var" has been specified, parse it into a (socket_val) STR variable ***/
+	if (spvar) {
+		memset(&socket_val, 0, sizeof(pv_value_t));
+		pv_get_spec_value(msg, spvar, &socket_val);
 	}
 
 	failed_node = NULL;
 
 	RTPE_START_READ();
 	do {
-		/* If the spvar "sock_var" has been specified, parse it into a (socket_val) STR variable */
-		if (spvar) {
-			memset(&socket_val, 0, sizeof(pv_value_t));
-			pv_get_spec_value(msg, spvar, &socket_val);
-		}
-
 		/*
 		 * Many rtpengine_* commands allow a "sock_var" to be specified by the script writer.
 		 * The "sock_var" will be populated by the rtpengine_* command with the RTPEngine that
