@@ -30,6 +30,7 @@
 #include "h_table.h"
 #include "t_lookup.h"
 #include "t_msgbuilder.h"
+#include "t_cancel.h"
 
 
 typedef struct _async_tm_ctx {
@@ -52,9 +53,15 @@ typedef struct _async_tm_ctx {
 	/* e2e ACK */
 	struct cell *e2eack_t;
 
+	/* reply related things */
+	struct sip_msg *reply;
+	int reply_length;
+	int branch;
+
 } async_tm_ctx;
 
 extern int return_code; /* from action.c, return code */
+extern int _tm_branch_index; /* TM branch index */
 
 
 
@@ -68,10 +75,7 @@ static inline void run_resume_route( struct script_route_ref * resume_route,
 			exec_post_req_cb(msg);
 }
 
-
-/* function triggered from reactor in order to continue the processing
- */
-int t_resume_async(int fd, void *param, int was_timeout)
+int t_resume_async_request(int fd, void*param, int was_timeout)
 {
 	static struct sip_msg faked_req;
 	static struct ua_client uac;
@@ -85,15 +89,9 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	int route;
 
 	if (valid_async_fd(fd))
-		LM_DBG("resuming on fd %d, transaction %p \n", fd, t);
+		LM_DBG("resuming request on fd %d, transaction %p \n", fd, t);
 	else
-		LM_DBG("resuming without a fd, transaction %p \n", t);
-
-	if (current_processing_ctx) {
-		LM_CRIT("BUG - a context is already set (%p), overwriting it...\n",
-		        current_processing_ctx);
-		set_global_context(NULL);
-	}
+		LM_DBG("resuming request without a fd, transaction %p \n", t);
 
 	/* prepare for resume route, by filling in a phony UAC structure to
 	 * trigger the inheritance of the branch specific values */
@@ -219,6 +217,184 @@ restore:
 	set_global_context(NULL);
 
 	return 0;
+}	
+
+int t_resume_async_reply(int fd, void*param, int was_timeout)
+{
+	async_tm_ctx *ctx = (async_tm_ctx *)param;
+	struct cell *backup_t;
+	struct usr_avp **backup_list;
+	struct cell *t= ctx->t;
+	int route;
+	int msg_status;
+	int last_uac_status;
+	int branch;
+	struct ua_client *reply_uac;
+
+	if (valid_async_fd(fd))
+		LM_DBG("resuming reply on fd %d, transaction %p \n", fd, t);
+	else
+		LM_DBG("resuming reply without a fd, transaction %p \n", t);
+
+
+	/* enviroment setting */
+	current_processing_ctx = ctx->msg_ctx;
+	backup_t = get_t();
+
+	/* make available the avp list from transaction */
+	backup_list = set_avp_list( &t->user_avps );
+
+	/* avoid double lookup of our branch, just get it from ctx */
+	branch=ctx->branch;
+
+	/* fake transaction */
+	set_t( t );
+
+	msg_status=ctx->reply->REPLY_STATUS;
+	reply_uac=&t->uac[branch];
+	LM_DBG("org. status uas=%d, uac[%d]=%d local=%d is_invite=%d)\n",
+		t->uas.status, branch, reply_uac->last_received,
+		is_local(t), is_invite(t));
+	last_uac_status=reply_uac->last_received;
+
+	_tm_branch_index = branch;
+
+	async_status = ASYNC_DONE; /* assume default status as done */
+
+	/* call the resume function in order to read and handle data */
+	return_code = ((async_resume_module*)
+		(was_timeout ? ctx->async.timeout_f : ctx->async.resume_f))
+		( (valid_async_fd(fd) ? fd: ASYNC_FD_NONE), ctx->reply,
+		ctx->async.resume_param );
+
+	if (async_status==ASYNC_CONTINUE) {
+		/* do not run the resume route */
+		goto restore;
+	} else if (async_status==ASYNC_DONE_NO_IO) {
+		/* don't do any change on the fd, since the module handled everything */
+		goto route;
+	} else if (async_status==ASYNC_CHANGE_FD) {
+		if (return_code<0) {
+			LM_ERR("ASYNC_CHANGE_FD: given file descriptor shall be positive!\n");
+			goto restore;
+		} else if (return_code > 0 && valid_async_fd(fd) && return_code == fd) {
+			/*trying to add the same fd; shall continue*/
+			LM_CRIT("You are trying to replace the old fd with the same fd!"
+					"Will act as in ASYNC_CONTINUE!\n");
+			goto restore;
+		}
+
+		/* if there was a file descriptor, remove it from the reactor */
+		reactor_del_reader(fd, -1, IO_FD_CLOSING);
+		fd=return_code;
+
+		/* insert the new fd inside the reactor */
+		if(reactor_add_reader(fd,F_SCRIPT_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0) {
+			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
+			do {
+				async_status = ASYNC_DONE;
+				return_code = ((async_resume_module*)ctx->async.resume_f)(
+						fd, ctx->reply,	ctx->async.resume_param );
+				if (async_status == ASYNC_CHANGE_FD)
+					fd=return_code;
+			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
+			goto route;
+		}
+
+		/* changed fd; now restore old state */
+		goto restore;
+	}
+
+	if (valid_async_fd(fd)) {
+		/* remove from reactor, we are done */
+		reactor_del_reader(fd, -1, IO_FD_CLOSING);
+	}
+
+route:
+	if (async_status == ASYNC_DONE_CLOSE_FD && valid_async_fd(fd))
+		close(fd);
+
+
+	/* we run the resume route under lock, if needed */
+	if (onreply_avp_mode)
+		LOCK_REPLIES(t);
+
+	/* run the resume_route (some type as the original one) */
+	if (!ref_script_route_check_and_update(ctx->resume_route)) {
+		LM_ERR("resume route [%s] not present in cfg anymore\n",
+			ctx->resume_route->name.s);
+	} else {
+		swap_route_type(route, ctx->route_type);
+		/* do not run any post script callback, we are a reply */
+		run_resume_route( ctx->resume_route, ctx->reply, 0);
+		set_route_type(route);
+	}
+
+	/* DO TM suspended actions to decide if we need to relay */
+	if (!onreply_avp_mode)
+		/* if we haven't locked above to run route under lock,
+		 * lock things now as we process the reply */
+		LOCK_REPLIES(t);
+
+	process_reply_and_timer(t,branch,msg_status,ctx->reply,last_uac_status,reply_uac);
+
+	t_unref(ctx->reply);
+
+	_tm_branch_index = 0;
+
+	/* cleanup any PKG lumps that we might have added in the resume route */
+	del_notflaged_lumps( &(ctx->reply->add_rm), LUMPFLAG_SHMEM );
+	del_notflaged_lumps( &(ctx->reply->body_lumps), LUMPFLAG_SHMEM );
+	del_nonshm_lump_rpl( &(ctx->reply->reply_lump) );
+
+
+	/* we need to cleaup the clone that we made
+	 * any internal callsback might try to do extra parsing which will
+	 * allocate pkg mem - free that now if outside our memory zone */
+	clean_msg_clone(ctx->reply,ctx->reply,ctx->reply+ctx->reply_length);
+	/* and free the message and context */
+	free_cloned_msg(ctx->reply);
+	if (ctx->resume_route)
+		shm_free(ctx->resume_route);
+	shm_free(ctx);
+
+	/* free also the processing ctx if still set
+	 * NOTE: it may become null if inside the run_resume_route
+	 * another async jump was made (and context attached again
+	 * to transaction) */
+	if (current_processing_ctx) {
+		context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+		pkg_free(current_processing_ctx);
+	}
+
+restore:
+	/* restore original environment */
+	set_t(backup_t);
+	/* restore original avp list */
+	set_avp_list( backup_list );
+
+	current_processing_ctx = NULL;
+	return 0;
+}	
+
+/* function triggered from reactor in order to continue the processing
+ */
+int t_resume_async(int fd, void *param, int was_timeout)
+{
+	async_tm_ctx *ctx = (async_tm_ctx *)param;
+
+	if (current_processing_ctx) {
+		LM_CRIT("BUG - a context is already set (%p), overwriting it...\n",
+		        current_processing_ctx);
+		set_global_context(NULL);
+	}
+
+	/* for now we only support async in REQUEST and ONREPLY routes,
+	 * dispatch to the correct resume function */
+	if (ctx->reply) {
+		return t_resume_async_reply(fd,param,was_timeout); 
+	} else
+		return t_resume_async_request(fd,param,was_timeout); 
 }
 
 
@@ -318,10 +494,26 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 		goto sync;
 	}
 
-	if (route_type!=REQUEST_ROUTE) {
-		LM_WARN("async detected in non-request route, switching to sync\n");
+	if (route_type == REQUEST_ROUTE) {
+		/* for request route we allow async,
+		 * no prep needs to be done, just go there */
+		goto async;
+	} else if (route_type == ONREPLY_ROUTE) {
+		/* for reply route we allow async,
+		 * but need to first clone the reply in shm */
+		ctx->reply = sip_msg_cloner(msg,&ctx->reply_length,1);
+		if (ctx->reply == NULL) {
+			LM_ERR("Failed to store reply copy \n");
+			goto failure;
+		}
+		ctx->branch = _tm_branch_index;
+		goto async;
+	} else {
+		LM_WARN("async detected in non-request or reply route\n");
 		goto sync;
 	}
+
+async:
 
 	ctx->resume_route = dup_ref_script_route_in_shm(resume_route, 0);
 	if (!ref_script_route_is_valid(ctx->resume_route)) {

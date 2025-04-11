@@ -1527,6 +1527,74 @@ error:
 	return RPS_ERROR;
 }
 
+void process_reply_and_timer(struct cell *t,int branch,int msg_status, 
+	struct sip_msg *p_msg,int last_uac_status, struct ua_client *uac)
+{
+	int reply_status;
+	branch_bm_t cancel_bitmap=0;
+	utime_t timer;
+
+	/* we fire a cancel on spot if (a) branch is marked "to be canceled" or (b)
+	 * the whole transaction was canceled (received cancel) and no cancel sent
+	 * yet on this branch; and of course, only if a provisional reply :) */
+	if (t->uac[branch].flags&T_UAC_TO_CANCEL_FLAG ||
+	((t->flags&T_WAS_CANCELLED_FLAG) && !t->uac[branch].local_cancel.buffer.s)) {
+		if ( msg_status < 200 )
+			/* reply for an UAC with a pending cancel -> do cancel now */
+			cancel_branch(t, branch);
+		/* reset flag */
+		t->uac[branch].flags &= ~(T_UAC_TO_CANCEL_FLAG);
+	}
+
+	if (is_local(t)) {
+		reply_status = local_reply(t,p_msg, branch,msg_status,&cancel_bitmap);
+		if (reply_status == RPS_COMPLETED) {
+			cleanup_uac_timers(t);
+			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
+			/* There is no need to call set_final_timer because we know
+			 * that the transaction is local */
+			put_on_wait(t);
+		}
+	} else {
+		reply_status = relay_reply(t,p_msg,branch,msg_status,&cancel_bitmap);
+		/* clean-up the transaction when transaction completed */
+		if (reply_status == RPS_COMPLETED) {
+			/* no more UAC FR/RETR (if I received a 2xx, there may
+			 * be still pending branches ...
+			 */
+			cleanup_uac_timers(t);
+			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
+			/* FR for negative INVITES, WAIT anything else */
+			/* set_final_timer(t); */
+		}
+	}
+
+	if (reply_status!=RPS_PROVISIONAL)
+		return;
+
+	/* update FR/RETR timers on provisional replies */
+	if (msg_status < 200 && (restart_fr_on_each_reply ||
+	((last_uac_status<msg_status) &&
+	((msg_status >= 180) || (last_uac_status == 0)))
+	) ) { /* provisional now */
+		if (is_invite(t)) {
+			/* invite: change FR to longer FR_INV, do not
+			 * attempt to restart retransmission any more
+			 */
+			timer = is_timeout_set(t->fr_inv_timeout) ?
+				t->fr_inv_timeout :
+				timer_id2timeout[FR_INV_TIMER_LIST];
+
+			LM_DBG("FR_INV_TIMER = %lld\n", timer);
+			set_timer(&uac->request.fr_timer, FR_INV_TIMER_LIST, &timer);
+		} else {
+			/* non-invite: restart retransmissions (slow now) */
+			uac->request.retr_list = RT_T2;
+			set_timer(&uac->request.retr_timer, RT_T2, 0);
+		}
+	} /* provisional replies */
+
+}
 
 /*  This function is called whenever a reply for our module is received;
   * we need to register  this function on module initialization;
@@ -1538,10 +1606,7 @@ int reply_received( struct sip_msg  *p_msg )
 	int msg_status;
 	int last_uac_status;
 	int branch;
-	int reply_status;
-	utime_t timer;
 	/* has the transaction completed now and we need to clean-up? */
-	branch_bm_t cancel_bitmap;
 	struct ua_client *uac;
 	struct cell *t;
 	struct usr_avp **backup_list;
@@ -1561,7 +1626,6 @@ int reply_received( struct sip_msg  *p_msg )
 	t = get_t();
 	if ((t == 0) || (t == T_UNDEFINED)) goto not_found;
 
-	cancel_bitmap=0;
 	msg_status=p_msg->REPLY_STATUS;
 
 	uac=&t->uac[branch];
@@ -1652,6 +1716,9 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
+
+		async_status = ASYNC_NO_IO;
+
 		if ( ref_script_route_check_and_update(t->on_reply) &&
 		(run_top_route(sroutes->onreply[t->on_reply->idx],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
@@ -1671,6 +1738,19 @@ int reply_received( struct sip_msg  *p_msg )
 		if (onreply_avp_mode)
 			/* restore original avp list */
 			set_avp_list( backup_list );
+
+		if (async_status > 0) {
+			/* async was started in the onreply route, no need to do anything more here */
+			/* mark that the UAC received replies */
+			uac->flags |= T_UAC_HAS_RECV_REPLY;
+
+			if (onreply_avp_mode) {
+				UNLOCK_REPLIES( t );
+				set_avp_list( backup_list );
+			}
+			/* we exit and do not unref T, keep the ref for as long the async is in progress */
+			goto done_no_unref;
+		}
 	}
 
 	if (!onreply_avp_mode || !has_reply_route)
@@ -1680,65 +1760,7 @@ int reply_received( struct sip_msg  *p_msg )
 	/* mark that the UAC received replies */
 	uac->flags |= T_UAC_HAS_RECV_REPLY;
 
-	/* we fire a cancel on spot if (a) branch is marked "to be canceled" or (b)
-	 * the whole transaction was canceled (received cancel) and no cancel sent
-	 * yet on this branch; and of course, only if a provisional reply :) */
-	if (t->uac[branch].flags&T_UAC_TO_CANCEL_FLAG ||
-	((t->flags&T_WAS_CANCELLED_FLAG) && !t->uac[branch].local_cancel.buffer.s)) {
-		if ( msg_status < 200 )
-			/* reply for an UAC with a pending cancel -> do cancel now */
-			cancel_branch(t, branch);
-		/* reset flag */
-		t->uac[branch].flags &= ~(T_UAC_TO_CANCEL_FLAG);
-	}
-
-	if (is_local(t)) {
-		reply_status = local_reply(t,p_msg, branch,msg_status,&cancel_bitmap);
-		if (reply_status == RPS_COMPLETED) {
-			cleanup_uac_timers(t);
-			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
-			/* There is no need to call set_final_timer because we know
-			 * that the transaction is local */
-			put_on_wait(t);
-		}
-	} else {
-		reply_status = relay_reply(t,p_msg,branch,msg_status,&cancel_bitmap);
-		/* clean-up the transaction when transaction completed */
-		if (reply_status == RPS_COMPLETED) {
-			/* no more UAC FR/RETR (if I received a 2xx, there may
-			 * be still pending branches ...
-			 */
-			cleanup_uac_timers(t);
-			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
-			/* FR for negative INVITES, WAIT anything else */
-			/* set_final_timer(t); */
-		}
-	}
-
-	if (reply_status!=RPS_PROVISIONAL)
-		goto done;
-
-	/* update FR/RETR timers on provisional replies */
-	if (msg_status < 200 && (restart_fr_on_each_reply ||
-	((last_uac_status<msg_status) &&
-	((msg_status >= 180) || (last_uac_status == 0)))
-	) ) { /* provisional now */
-		if (is_invite(t)) {
-			/* invite: change FR to longer FR_INV, do not
-			 * attempt to restart retransmission any more
-			 */
-			timer = is_timeout_set(t->fr_inv_timeout) ?
-				t->fr_inv_timeout :
-				timer_id2timeout[FR_INV_TIMER_LIST];
-
-			LM_DBG("FR_INV_TIMER = %lld\n", timer);
-			set_timer(&uac->request.fr_timer, FR_INV_TIMER_LIST, &timer);
-		} else {
-			/* non-invite: restart retransmissions (slow now) */
-			uac->request.retr_list = RT_T2;
-			set_timer(&uac->request.retr_timer, RT_T2, 0);
-		}
-	} /* provisional replies */
+	process_reply_and_timer(t,branch,msg_status,p_msg,last_uac_status,uac);
 
 done:
 	/* we are done with the transaction, so unref it - the reference
@@ -1749,6 +1771,7 @@ done:
 	 * simply do nothing; that will make the other party to
 	 * retransmit; hopefuly, we'll then be better off
 	 */
+done_no_unref:
 	_tm_branch_index = 0;
 	return 0;
 not_found:
