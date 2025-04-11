@@ -23,6 +23,14 @@
 #include "ut.h"
 #include "parser/sdp/sdp.h"
 
+enum sdp_pv_name {
+	SDP_PV_NAME_P1_NAME,
+	SDP_PV_NAME_P2_STREAM,
+	SDP_PV_NAME_P3_LINE,
+	SDP_PV_NAME_P4_TOKEN,
+};
+
+
 int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 			int op, pv_value_t *val)
 {
@@ -106,6 +114,83 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 error:
 	return -1;
 }
+
+
+int pv_parse_sdp_name(pv_spec_p sp, const str *_in)
+{
+	str in = *_in, tok;
+	int escape = 0, i;
+	enum sdp_pv_name nm = SDP_PV_NAME_P3_LINE;
+	struct sdp_pv_param *param;
+
+	if (!sp)
+		return -1;
+
+	LM_DBG("parse sdp name: '%.*s'\n", in.len, in.s);
+	trim(&in);
+	if (!in.s || in.len == 0)
+		goto done;
+
+	if (in.s[0] == PV_MARKER) {
+		LM_ERR("no support for dynamic names in $sdp.line\n");
+		return -1;
+	} else if (in.s[0] == '@') {
+		// TODO: impl custom SDP holders (perhaps using a map)
+		return -1;
+	}
+
+	param = pkg_malloc(sizeof *param);
+	if (!param) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(param, 0, sizeof *param);
+
+	tok.s = in.s;
+	for (i = 0; i < in.len; i++) {
+		if (escape && (in.s[i] == '\\' || in.s[i] == '/')) {
+			memmove(&in.s[i-1], &in.s[i], in.len - i);
+			in.len--;
+			i--;
+			escape = 0;
+			continue;
+		}
+
+		if (in.s[i] == '\\') {
+			escape = 1;
+			continue;
+		}
+		escape = 0;
+
+		if (in.s[i] == '/' && nm <= SDP_PV_NAME_P4_TOKEN) {
+			tok.len = i - (tok.s - in.s);
+			// save tok
+			switch (nm) {
+			case SDP_PV_NAME_P1_NAME:
+			case SDP_PV_NAME_P2_STREAM:
+			case SDP_PV_NAME_P3_LINE:
+				param->match_line.prefix = tok;
+				tok.s = in.s + i + 1;
+				nm++;
+				break;
+			case SDP_PV_NAME_P4_TOKEN:
+				param->match_token.prefix = tok;
+				break;
+			}
+
+			continue;
+		}
+	}
+
+	LM_DBG("parse sdp name: '%.*s'\n", in.len, in.s);
+
+	sp->pvp.pvn.type = PV_NAME_PVAR;
+	sp->pvp.pvn.u.dname = param;
+
+done:
+	return 0;
+}
+
 
 int sdp_get_custom_body(struct sip_msg *msg, str *body)
 {
