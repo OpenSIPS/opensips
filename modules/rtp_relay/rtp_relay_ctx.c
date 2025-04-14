@@ -1879,6 +1879,13 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 					rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess, RTP_RELAY_CALLEE);
 					break;
 				case 1:
+					struct dlg_cell *dlg;
+					dlg = rtp_relay_dlg.get_dlg();
+					if (!dlg) {
+						LM_ERR("could not find dialog!\n");
+					} else{
+						RTP_RELAY_PUT_DLG_CTX(dlg, ctx);
+					}
 					lock_start_write(rtp_relay_contexts_lock);
 					if (list_is_valid(&ctx->list))
 						list_del(&ctx->list);
