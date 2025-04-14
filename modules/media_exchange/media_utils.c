@@ -410,10 +410,12 @@ static void media_exchange_event_received_create(struct dlg_cell *dlg,
 		bin_pop_int(store, &flags);
 		bin_pop_int(store, &streams);
 		bin_pop_int(store, &paused);
-		bin_pop_int(store, &instance);
+		bin_pop_str(store, &instance);
 		mf = media_fork_info(flags, streams, &instance);
 		if (mf)
 			mf->paused = paused;
+	} else {
+		instance.len = 0;
 	}
 
 	if (dlg) {
