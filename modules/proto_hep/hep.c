@@ -51,6 +51,8 @@
 #define HEP_PROTO_SIP  0x01
 
 static int control_id = -1;
+static int hep_failed_retries = 0;
+static time_t hep_last_attempt = 0;
 
 struct hep_message_id {
 	char* proto;
@@ -71,6 +73,8 @@ static hid_list_p hid_list=NULL;
 static hid_list_p *hid_dyn_list=NULL;
 static gen_lock_t *hid_dyn_lock=NULL;
 
+extern int hep_max_retries;
+extern int hep_retry_cooldown;
 extern int hep_capture_id;
 extern int payload_compression;
 extern int homer5_on;
@@ -1726,14 +1730,33 @@ int send_hep_message(trace_message message, trace_dest dest, const struct socket
 
 	hostent2su(to, &p->host, p->addr_idx, p->port?p->port:HEP_PORT);
 
+	time_t now = time(NULL);
+
+	// Check cooldown logic
+	if (hep_failed_retries >= hep_max_retries && (now - hep_last_attempt) < hep_retry_cooldown) {
+		LM_ERR("HEP send suppressed: too many failures (%d), in cooldown (%ld seconds left)\n", hep_failed_retries, hep_retry_cooldown - (now - hep_last_attempt));
+		free_proxy(p);
+		pkg_free(p);
+		pkg_free(to);
+		pkg_free(buf);
+		goto end;
+	}
+
+	hep_last_attempt = now;
+
 	do {
 		if (msg_send(send_sock, hep_dest->transport, to, 0, buf, len, NULL) < 0) {
-			LM_ERR("Cannot send hep message!\n");
+			LM_ERR("Cannot send HEP message!\n");
+			hep_failed_retries++;
 			continue;
 		}
-		ret=0;
+
+		// Success: reset retry state
+		hep_failed_retries = 0;
+		ret = 0;
 		break;
-	} while ( get_next_su( p, to, 0)==0);
+	} while (get_next_su(p, to, 0) == 0);
+
 
 	free_proxy(p);
 	pkg_free(p);
