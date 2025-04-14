@@ -33,6 +33,7 @@
 #include <strings.h>
 #include "str.h"
 #include "dprint.h"
+#include "ip_addr.h"
 #include "mem/mem.h"
 
 
@@ -41,6 +42,7 @@ struct host_alias{
 	str alias;
 	unsigned short port;
 	unsigned short proto;
+	enum si_flags flags;
 	struct host_alias* next;
 };
 
@@ -65,17 +67,39 @@ static inline int grep_aliases(char* name, int len, unsigned short port,
 {
 	struct  host_alias* a;
 	struct alias_function *af;
+	char *name_to_compare, *alias_to_compare;
+	int len_to_compare, index_offset;
 
 	if ((len>2)&&((*name)=='[')&&(name[len-1]==']')){
 		/* ipv6 reference, skip [] */
 		name++;
 		len-=2;
 	}
-	for(a=aliases;a;a=a->next)
-		if ((a->alias.len==len) && ((a->port==0) || (port==0) ||
-				(a->port==port)) && ((a->proto==0) || (proto==0) ||
-				(a->proto==proto)) && (strncasecmp(a->alias.s, name, len)==0))
-			return 1;
+
+	for(a=aliases;a;a=a->next) {
+		if (((a->port==0) || (port==0) || (a->port==port)) &&
+		    ((a->proto==0) || (proto==0) || (a->proto==proto))) {
+			/* Check if the alias is a subdomain alias and if so calculate the index offset to start the comparison
+			 * Given an alias my.domain.com or my.great.domain.com and a subdomain of domain.com the comparison should start at domain.com
+			 * a host of domain.com will also match, if the flag is not set then do a strict comparison
+			 */
+			if (a->flags & SI_IS_SUBDOMAIN_ALIAS) {
+				index_offset = len - a->alias.len;
+				if (index_offset < 0) // the host we're checking is a shorter len than the alias so no need to compare
+					continue;
+
+				name_to_compare = name + index_offset;
+				alias_to_compare = a->alias.s;
+
+				len_to_compare = a->alias.len;
+
+				if (strncasecmp(alias_to_compare, name_to_compare, len_to_compare)==0)
+					return 1;
+			} else if (len == a->alias.len && strncasecmp(a->alias.s, name, len)==0) {
+				return 1;
+			}
+		}
+	}
 
 	for( af=alias_fcts ; af ; af=af->next ) {
 		if ( af->alias_f(name,len,port,proto)>0 )
@@ -84,9 +108,8 @@ static inline int grep_aliases(char* name, int len, unsigned short port,
 	return 0;
 }
 
-
 /* adds an alias to the list (only if it isn't already there) */
-int add_alias(char* name, int len, unsigned short port, unsigned short proto);
+int add_alias(char* name, int len, unsigned short port, unsigned short proto, enum si_flags flags);
 
 /* register a new function for detecting aliases */
 int register_alias_fct( is_alias_fct *fct );
