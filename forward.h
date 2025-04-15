@@ -46,6 +46,7 @@
 #include "sl_cb.h"
 #include "net/trans.h"
 #include "socket_info.h"
+#include "redact_pii.h"
 
 struct socket_info* get_send_socket(struct sip_msg* msg,
 									union sockaddr_union* su, int proto);
@@ -123,7 +124,7 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to,id)<0){
 		get_su_info(to, ip, port);
 		LM_ERR("send() to %s:%hu for proto %s/%d failed\n",
-				ip, port, proto2a(proto),proto);
+				redact_pii(ip), port, proto2a(proto),proto);
 		goto error;
 	}
 

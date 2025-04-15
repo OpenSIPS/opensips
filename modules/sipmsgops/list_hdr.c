@@ -23,6 +23,7 @@
 #include "../../mem/mem.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_list_hdr.h"
+#include "../../redact_pii.h"
 
 #include "list_hdr.h"
 
@@ -104,7 +105,7 @@ int list_hdr_has_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 		/* parse the body of the header */
 		if (parse_list_hdr( hdr->body.s, hdr->body.len, &lh)!=0) {
 			LM_ERR("failed to parse body <%.*s> as CSV for hdr <%.*s>\n",
-				hdr->body.len, hdr->body.s, hdr->name.len, hdr->name.s);
+				hdr->body.len, redact_pii(hdr->body.s), hdr->name.len, hdr->name.s);
 			return -1;
 		}
 
@@ -278,7 +279,7 @@ int list_hdr_add_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 		/* parse the body, to be sure it is valid */
 		if (parse_list_hdr( body.s, body.len, &lh)<0) {
 			LM_ERR("failed to parse body <%.*s> as CSV for hdr <%.*s>\n",
-				body.len, body.s, hdr->name.len, hdr->name.s);
+				body.len, redact_pii(body.s), hdr->name.len, hdr->name.s);
 			return -1;
 		}
 		// TODO - check for duplicates ??
@@ -369,7 +370,7 @@ int list_hdr_remove_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 			/* parse the body, to be sure it is valid */
 			if (parse_list_hdr( body.s, body.len, &lh)<0) {
 				LM_ERR("failed to parse body <%.*s> as CSV for hdr <%.*s>\n",
-					body.len, body.s, hdr->name.len, hdr->name.s);
+					body.len, redact_pii(body.s), hdr->name.len, hdr->name.s);
 				return -1;
 			}
 

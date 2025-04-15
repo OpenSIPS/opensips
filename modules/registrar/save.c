@@ -59,6 +59,7 @@
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../lib/reg/common.h"
+#include "../../redact_pii.h"
 
 #include "../usrloc/usrloc.h"
 
@@ -295,13 +296,13 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 
 		if (pn_enable && pn_add_reply_purr(c) != 0)
 			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
-			       _c->uri.len, _c->uri.s);
+			       _c->uri.len, redact_pii(_c->uri.s));
 
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
 				LM_ERR("failed to parse contact <%.*s>\n",
-						_c->uri.len, _c->uri.s);
+						_c->uri.len, redact_pii(_c->uri.s));
 			} else if ( is_tcp_based_proto(uri.proto) ) {
 				if (e_max) {
 					LM_WARN("multiple TCP contacts on single REGISTER\n");
@@ -528,13 +529,13 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 		if (pn_enable && pn_add_reply_purr(c) != 0)
 			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
-			       _c->uri.len, _c->uri.s);
+			       _c->uri.len, redact_pii(_c->uri.s));
 
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
 				LM_ERR("failed to parse contact <%.*s>\n",
-						_c->uri.len, _c->uri.s);
+						_c->uri.len, redact_pii(_c->uri.s));
 			} else if (is_tcp_based_proto(uri.proto)) {
 				if (e_max>0) {
 					LM_WARN("multiple TCP contacts on single REGISTER\n");
@@ -961,7 +962,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 		he = sip_resolvehost(match_next_hop, &delete_port, NULL, 0, NULL);
 		if (!he) {
 			LM_ERR("cannot resolve given host: '%.*s'\n",
-			       match_next_hop->len, match_next_hop->s);
+			       match_next_hop->len, redact_pii(match_next_hop->s));
 			ret = E_UNSPEC;
 			goto out_unlock;
 		}
@@ -990,8 +991,8 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 		                     &contact->next_hop.proto, 0, NULL);
 		if (!he) {
 			LM_ERR("failed to resolve next hop %.*s of contact '%.*s'\n",
-				contact->next_hop.name.len, contact->next_hop.name.s,
-				contact->c.len, contact->c.s);
+				contact->next_hop.name.len, redact_pii(contact->next_hop.name.s),
+				contact->c.len, redact_pii(contact->c.s));
 			continue;
 		}
 
@@ -1047,8 +1048,8 @@ int _remove_ip_port_urecord(urecord_t* record, str *ip, int* port)
 		                     &contact->next_hop.proto, 0, NULL);
 		if (!he) {
 			LM_ERR("failed to resolve next hop %.*s of contact '%.*s'\n",
-				contact->next_hop.name.len, contact->next_hop.name.s,
-				contact->c.len, contact->c.s);
+				contact->next_hop.name.len, redact_pii(contact->next_hop.name.s),
+				contact->c.len, redact_pii(contact->c.s));
 			continue;
 		}
 

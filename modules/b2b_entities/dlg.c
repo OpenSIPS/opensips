@@ -43,6 +43,7 @@
 #include "../presence/hash.h"
 #include "../../action.h"
 #include "../../trim.h"
+#include "../../redact_pii.h"
 #include "dlg.h"
 #include "b2b_entities.h"
 #include "b2be_db.h"
@@ -763,7 +764,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		/* check if first route is local*/
 		if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ) {
 			LM_ERR("Route uri is not valid <%.*s>\n",
-				rt->nameaddr.uri.len,rt->nameaddr.uri.s);
+				rt->nameaddr.uri.len,redact_pii(rt->nameaddr.uri.s));
 			return SCB_RUN_ALL;
 		}
 		if (check_self( &puri.host, puri.port_no?puri.port_no:SIP_PORT,
@@ -787,7 +788,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		if (rt) {
 			if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ) {
 				LM_ERR("Second route uri is not valid <%.*s>\n",
-					rt->nameaddr.uri.len,rt->nameaddr.uri.s);
+					rt->nameaddr.uri.len,redact_pii(rt->nameaddr.uri.s));
 				return SCB_RUN_ALL;
 			}
 			if (check_self( &puri.host, puri.port_no?puri.port_no:SIP_PORT,

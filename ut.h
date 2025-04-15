@@ -571,7 +571,7 @@ inline static int un_escape(str *user, str *new_user )
 			value=(hi<<4)+lo;
 			if (value < 32 || value > 126) {
 				LM_ERR("non-ASCII escaped character in '%.*s' @ %d\n",
-					user->len, user->s, i );
+					user->len, redact_pii(user->s), i );
 				goto error;
 			}
 			new_user->s[j] = value;

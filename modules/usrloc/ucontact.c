@@ -42,6 +42,7 @@
 #include "../../dprint.h"
 #include "../../db/db.h"
 #include "../../db/db_insertq.h"
+#include "../../redact_pii.h"
 
 #include "ul_mod.h"
 #include "ul_callback.h"
@@ -80,7 +81,7 @@ static int compute_next_hop(ucontact_t *contact)
 		uri = contact->c;
 
 	if (parse_uri(uri.s, uri.len, &puri) < 0) {
-		LM_ERR("failed to parse URI of next hop: '%.*s'\n", uri.len, uri.s);
+		LM_ERR("failed to parse URI of next hop: '%.*s'\n", uri.len, redact_pii(uri.s));
 		return -1;
 	}
 
@@ -123,7 +124,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 
 	if (parse_uri(_contact->s, _contact->len, &ct_uri) < 0) {
 		LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
-			  _contact->len, _contact->s);
+			  _contact->len, redact_pii(_contact->s));
 		goto out_free;
 	}
 
@@ -353,7 +354,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 
 	if (compute_next_hop(_c) != 0)
 		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",
-		        _c->next_hop.name.len, _c->next_hop.name.s);
+		        _c->next_hop.name.len, redact_pii(_c->next_hop.name.s));
 
 	if (_c->refresh_time)
 		start_refresh_timer(_c);

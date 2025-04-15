@@ -46,6 +46,7 @@
 #include "../../db/db_res.h"
 #include "../../str.h"
 #include "../../rw_locking.h"
+#include "../../redact_pii.h"
 #include <fnmatch.h>
 
 #include "dispatch.h"
@@ -191,7 +192,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 	/* check uri */
 	if(parse_uri(uri.s, uri.len, &puri)!=0 || puri.host.len>254)
 	{
-		LM_ERR("bad uri [%.*s]\n", uri.len, uri.s);
+		LM_ERR("bad uri [%.*s]\n", uri.len, redact_pii(uri.s));
 		goto err;
 	}
 
@@ -298,7 +299,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 			break;
 		default:
 			LM_CRIT("BUG: unknown state %d for destination %.*s\n",
-				state, uri.len, uri.s);
+				state, uri.len, redact_pii(uri.s));
 	}
 	switch (probe_mode) {
 		case 0:
@@ -308,7 +309,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 			break;
 		default:
 			LM_CRIT("BUG: unknown probing_mode %d for destination %.*s\n",
-				probe_mode, uri.len, uri.s);
+				probe_mode, uri.len, redact_pii(uri.s));
 	}
 
 	/* Do a DNS-Lookup for the Host-Name: */
@@ -316,7 +317,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 		(puri.type==SIPS_URI_T));
 	if (proxy==NULL) {
 		LM_ERR("could not resolve %.*s, skipping it\n",
-			puri.host.len, puri.host.s);
+			puri.host.len, redact_pii(puri.host.s));
 		goto err;
 	}
 	hostent2ip_addr( &dp->ips[0], &proxy->host, proxy->addr_idx);
@@ -363,7 +364,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 		} else if (sp->redo_weights && dp->weight > max_freeswitch_weight) {
 			LM_WARN("(set %d) truncating static weight in uri %.*s to"
 			           "\"max_freeswitch_weight\"! (%d -> %d)\n", id,
-			           uri.len, uri.s, weight, max_freeswitch_weight);
+			           uri.len, redact_pii(uri.s), weight, max_freeswitch_weight);
 			dp->weight = max_freeswitch_weight;
 		}
 	}
@@ -1139,7 +1140,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 				probe_mode, attrs, description, d_data)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
-				uri.len,uri.s,id);
+				uri.len,redact_pii(uri.s),id);
 			discarded_dst++;
 			continue;
 		} else {
@@ -1311,7 +1312,7 @@ static inline int get_uri_hash_keys(str* key1, str* key2,
 	{
 		if (parse_uri(uri->s, uri->len, &tmp_p_uri)<0)
 		{
-			LM_ERR("invalid uri %.*s\n", uri->len, uri->len?uri->s:"");
+			LM_ERR("invalid uri %.*s\n", uri->len, uri->len?redact_pii(uri->s):"");
 			goto error;
 		}
 		parsed_uri=&tmp_p_uri;
@@ -1320,7 +1321,7 @@ static inline int get_uri_hash_keys(str* key1, str* key2,
 	if (parsed_uri->host.s==0)
 	{
 			LM_ERR("invalid uri, no host present: %.*s\n",
-					uri->len, uri->len?uri->s:"");
+					uri->len, uri->len?redact_pii(uri->s):"");
 			goto error;
 	}
 
@@ -1344,7 +1345,7 @@ static inline int get_uri_hash_keys(str* key1, str* key2,
 	}
 	if (key1->s==0)
 	{
-		LM_WARN("empty username in: %.*s\n", uri->len, uri->len?uri->s:"");
+		LM_WARN("empty username in: %.*s\n", uri->len, uri->len?redact_pii(uri->s):"");
 	}
 	return 0;
 error:

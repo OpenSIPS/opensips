@@ -24,6 +24,7 @@
 #include "tcp_common.h"
 #include "tcp_conn_profile.h"
 #include "../tsend.h"
+#include "../redact_pii.h"
 
 /*! \brief blocking connect on a non-blocking fd; it will timeout after
  * tcp_connect_timeout
@@ -68,7 +69,7 @@ again:
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
 			get_su_info( servaddr, ip, port);
-			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
+			LM_ERR("[server=%s:%d] (%d) %s\n",redact_pii(ip), port, errno, strerror(errno));
 			goto error;
 		}
 	}else goto end;
@@ -99,7 +100,7 @@ again:
 			if (errno==EINTR) continue;
 			get_su_info( servaddr, ip, port);
 			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
-				ip, port, errno, strerror(errno));
+				redact_pii(ip), port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
@@ -118,7 +119,7 @@ again:
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info( servaddr, ip, port);
 				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
-					ip, port, err, strerror(err));
+					redact_pii(ip), port, err, strerror(err));
 				goto error;
 			}
 		}
@@ -283,7 +284,7 @@ again:
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
 			get_su_info(&server->s, ip, port);
-			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno,strerror(errno));
+			LM_ERR("[server=%s:%d] (%d) %s\n",redact_pii(ip), port, errno,strerror(errno));
 			goto error;
 		}
 	} else goto local_connect;
@@ -317,7 +318,7 @@ again:
 			if (errno==EINTR) continue;
 			get_su_info(&server->s, ip, port);
 			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
-				ip, port, errno, strerror(errno));
+				redact_pii(ip), port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
@@ -335,7 +336,7 @@ again:
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info(&server->s, ip, port);
 				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
-					ip, port, err, strerror(err));
+					redact_pii(ip), port, err, strerror(err));
 				goto error;
 			}
 		}

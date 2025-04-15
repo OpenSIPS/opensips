@@ -36,6 +36,7 @@
 #include "dset.h"
 #include "mem/mem.h"
 #include "ip_addr.h"
+#include "redact_pii.h"
 
 #define CONTACT "Contact: "
 #define CONTACT_LEN (sizeof(CONTACT) - 1)
@@ -329,7 +330,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	}
 
 	if (luri.len > MAX_URI_SIZE - 1) {
-		LM_ERR("too long uri: %.*s\n", luri.len, luri.s);
+		LM_ERR("too long uri: %.*s\n", luri.len, redact_pii(luri.s));
 		return -1;
 	}
 
@@ -341,7 +342,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		branches[nr_branches].dst_uri_len = 0;
 	} else {
 		if (dst_uri->len > MAX_URI_SIZE - 1) {
-			LM_ERR("too long dst_uri: %.*s\n", dst_uri->len, dst_uri->s);
+			LM_ERR("too long dst_uri: %.*s\n", dst_uri->len, redact_pii(dst_uri->s));
 			return -1;
 		}
 		memcpy(branches[nr_branches].dst_uri, dst_uri->s, dst_uri->len);
@@ -412,7 +413,7 @@ int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
 		} else {
 			if ((*dst_uri)->len > MAX_URI_SIZE - 1) {
 				LM_ERR("too long dst_uri: %.*s\n",
-					(*dst_uri)->len, (*dst_uri)->s);
+					(*dst_uri)->len, redact_pii((*dst_uri)->s));
 				return -1;
 			}
 			memcpy(branches[idx].dst_uri, (*dst_uri)->s, (*dst_uri)->len);

@@ -40,6 +40,7 @@
 #include "../../ut.h"
 #include "../../hash_func.h"
 #include "../../db/db_insertq.h"
+#include "../../redact_pii.h"
 
 #include "ul_mod.h"
 #include "utime.h"
@@ -993,7 +994,7 @@ static inline struct ucontact* contact_params_match(ucontact_t* contacts,
 	str v1, v2;
 
 	if (parse_uri(_c->s, _c->len, &ct) != 0) {
-		LM_ERR("failed to parse Contact: '%.*s'\n", _c->len, _c->s);
+		LM_ERR("failed to parse Contact: '%.*s'\n", _c->len, redact_pii(_c->s));
 		return NULL;
 	}
 
@@ -1003,7 +1004,7 @@ static inline struct ucontact* contact_params_match(ucontact_t* contacts,
 
 		if (parse_uri(contacts->c.s, contacts->c.len, &cti) != 0) {
 			LM_ERR("failed to parse Contact: '%.*s'\n",
-			       contacts->c.len, contacts->c.s);
+			       contacts->c.len, redact_pii(contacts->c.s));
 			return NULL;
 		}
 

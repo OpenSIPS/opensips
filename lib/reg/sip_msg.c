@@ -23,6 +23,7 @@
 
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_uri.h"
+#include "../../redact_pii.h"
 
 #include "common.h"
 
@@ -401,7 +402,7 @@ int calc_contact_q(param_t* _q, qvalue_t* _r)
 		if (rc < 0) {
 			rerrno = R_INV_Q; /* Invalid q parameter */
 			LM_ERR("invalid qvalue (%.*s): %s\n",
-					_q->body.len, _q->body.s, qverr2str(rc));
+					_q->body.len, redact_pii(_q->body.s), qverr2str(rc));
 			return -1;
 		}
 	}

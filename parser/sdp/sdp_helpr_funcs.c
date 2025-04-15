@@ -29,6 +29,7 @@
 
 
 #include "../../ut.h"
+#include "../../redact_pii.h"
 #include "../msg_parser.h"
 #include "../parser_f.h"
 #include "../parse_hname2.h"
@@ -410,7 +411,7 @@ int extract_mediaip(str *body, str *mediaip, int *pf, char *line)
 		cp = eat_space_end(cp + len + 1, mediaip->s + mediaip->len);
 	}
 	if (nextisip != 2 || mediaip->len == 0) {
-		LM_ERR("no `IP[4|6]' in `%s' field\n",line);
+		LM_ERR("no `IP[4|6]' in `%s' field\n",redact_pii(line));
 		return -1;
 	}
 	return 1;

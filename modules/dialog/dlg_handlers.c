@@ -34,6 +34,7 @@
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_hname2.h"
 #include "../../parser/parser_f.h"
+#include "../../redact_pii.h"
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
 #include "dlg_hash.h"
@@ -426,7 +427,7 @@ static inline str* extract_mangled_touri(str *mangled_to_hdr)
 
 	parse_to(tmp,end,&to_b);
 	if (to_b.error == PARSE_ERROR) {
-		LM_ERR("bad to header [%.*s]\n",mangled_to_hdr->len,mangled_to_hdr->s);
+		LM_ERR("bad to header [%.*s]\n",mangled_to_hdr->len,redact_pii(mangled_to_hdr->s));
 		return NULL;
 	}
 
@@ -463,7 +464,7 @@ static inline str* extract_mangled_fromuri(str *mangled_from_hdr)
 
 	parse_to(tmp,end,&from_b);
 	if (from_b.error == PARSE_ERROR) {
-		LM_ERR("bad from header [%.*s]\n",mangled_from_hdr->len,mangled_from_hdr->s);
+		LM_ERR("bad from header [%.*s]\n",mangled_from_hdr->len,redact_pii(mangled_from_hdr->s));
 		return NULL;
 	}
 
@@ -632,10 +633,10 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 					mangled_to.s = NULL;
 				} else {
 					if ((req->msg_flags & FL_USE_UAC_FROM) && (mangled_from.len == 0 || mangled_from.s == NULL))
-						LM_CRIT("extract_ftc_hdrs ok but no from extracted : [%.*s]\n",req_out_buff->len,req_out_buff->s);
+						LM_CRIT("extract_ftc_hdrs ok but no from extracted : [%.*s]\n",req_out_buff->len,redact_pii(req_out_buff->s));
 
 					if ((req->msg_flags & FL_USE_UAC_TO) && (mangled_to.len == 0 || mangled_to.s == NULL))
-						LM_CRIT("extract_ftc_hdrs ok but no to extracted : [%.*s]\n",req_out_buff->len,req_out_buff->s);
+						LM_CRIT("extract_ftc_hdrs ok but no to extracted : [%.*s]\n",req_out_buff->len,redact_pii(req_out_buff->s));
 				}
 			}
 			push_reply_in_dialog( req, rpl, t, dlg,&mangled_from,&mangled_to, &leg_idx);
@@ -1538,7 +1539,7 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		trim_leading(&contact);
 		if (parse_contacts(&contact, &ct) < 0) {
 			LM_WARN("INVITE or UPDATE w/ broken contact [%.*s] - not updating!\n",
-				contact.len, contact.s);
+				contact.len, redact_pii(contact.s));
 			return 0;
 		}
 		contact = ct->uri;
@@ -2967,7 +2968,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		if (compare_uris(rr_uri,0,&leg->contact,0))
 		{
 			LM_ERR("failed to validate remote contact: dlg=[%.*s] , req=[%.*s]\n",
-					leg->contact.len,leg->contact.s,rr_uri->len,rr_uri->s);
+					leg->contact.len,redact_pii(leg->contact.s),rr_uri->len,redact_pii(rr_uri->s));
 			return -2;
 		}
 	}
@@ -3010,8 +3011,8 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 			if (compare_uris(&route_uris[i],0,&leg->route_uris[i],0))
 			{
 				LM_ERR("Check failed for route number %d. req=[%.*s],dlg=[%.*s]\n",
-						i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
-						leg->route_uris[i].s);
+						i,route_uris[i].len,redact_pii(route_uris[i].s),leg->route_uris[i].len,
+						redact_pii(leg->route_uris[i].s));
 				return -3;
 			}
 		}

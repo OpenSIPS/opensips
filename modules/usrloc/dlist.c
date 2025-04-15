@@ -46,6 +46,7 @@
 #include "../../socket_info.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
+#include "../../redact_pii.h"
 #include "dlist.h"
 #include "udomain.h"           /* new_udomain, free_udomain */
 #include "utime.h"
@@ -300,19 +301,19 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 				}
 				if (parse_uri(uri.s, uri.len, &puri) < 0) {
 					LM_ERR("failed to parse path URI of next hop: '%.*s'\n",
-					        p1_len, p1);
+					        p1_len, redact_pii(p1));
 					return -1;
 				}
 			} else if (r_len > 0) { 
 				if (parse_uri(r, r_len, &puri) < 0) {
 					LM_ERR("failed to parse contact of next hop: '%.*s'\n",
-					        r_len, r);
+					        r_len, redact_pii(r));
 					return -1;
 				}
 			} else {
 				if (parse_uri(p, p_len, &puri) < 0) {
 					LM_ERR("failed to parse contact of next hop: '%.*s'\n",
-					        p_len, p);
+					        p_len, redact_pii(p));
 					return -1;
 				}
 			}
@@ -529,7 +530,7 @@ skip_coords:
 		}
 		if (parse_uri(next_hop_uri.s, next_hop_uri.len, &puri) < 0) {
 			LM_ERR("failed to parse URI of next hop: '%.*s'\n",
-				   next_hop_uri.len, next_hop_uri.s);
+				   next_hop_uri.len, react_pii(next_hop_uri.s));
 			goto out_free;
 		}
 	}

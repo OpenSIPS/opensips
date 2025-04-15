@@ -21,6 +21,7 @@
 
 #include <fnmatch.h>
 #include "../../mem/mem.h"
+#include "../../redact_pii.h"
 #include "msrp_parser.h"
 #include "msrp_signaling.h"
 #include "msrp_handler.h"
@@ -197,7 +198,7 @@ int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 
 		if (_dispatch_req_to_handler( msg )<0) {
 			LM_ERR("Request for [%.*s] not handled by any handler :(\n",
-				msg->to_path->body.len, msg->to_path->body.s);
+				msg->to_path->body.len, redact_pii(msg->to_path->body.s));
 			goto parse_error;  // FIXME a 4xx reply ??
 		}
 

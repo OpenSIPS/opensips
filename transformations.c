@@ -54,6 +54,7 @@
 #include "sha1.h"
 #include "sha256.h"
 #include "sha512.h"
+#include "redact_pii.h"
 
 #define TR_BUFFER_SIZE 65536
 
@@ -1130,7 +1131,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		if(parse_uri(_tr_uri.s, _tr_uri.len, &_tr_parsed_uri)!=0)
 		{
 			LM_ERR("invalid uri [%.*s]\n", val->rs.len,
-					val->rs.s);
+					redact_pii(val->rs.s));
 			if(_tr_uri_params != NULL)
 			{
 				free_params(_tr_uri_params);
@@ -1333,7 +1334,7 @@ int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		parse_via(_tr_via.s, _tr_via.s+_tr_via.len+4, _tr_parsed_via);
 		if(_tr_parsed_via->error != PARSE_OK) {
 			LM_ERR("invalid via [%.*s]\n", val->rs.len,
-					val->rs.s);
+					redact_pii(val->rs.s));
 			goto error;
 		}
 	}
@@ -1947,7 +1948,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			if ( (p_ip=str2ip(&val->rs))==NULL &&
 			(p_ip=str2ip6(&val->rs))==NULL ) {
 				LM_ERR("Invalid input IP address <%.*s>\n",
-					val->rs.len,val->rs.s);
+					val->rs.len,redact_pii(val->rs.s));
 				goto error;
 			}
 			ip = *p_ip;
@@ -1972,7 +1973,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			if ( (p_ip=str2ip(&val->rs))==NULL &&
 			(p_ip=str2ip6(&val->rs))==NULL ) {
 				LM_ERR("Invalid parameter IP address <%.*s>\n",
-					val->rs.len,val->rs.s);
+					val->rs.len,redact_pii(val->rs.s));
 				goto error;
 			}
 			val->rs.s = p+1;

@@ -31,6 +31,7 @@
 #include "../../ut.h"
 #include "../../hash_func.h"
 #include "../../cachedb/cachedb.h"
+#include "../../redact_pii.h"
 
 #include "ul_mod.h"            /* usrloc module parameters */
 #include "ul_evi.h"
@@ -538,8 +539,8 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 					user.len, user.s, domain);
 				user.s = uri;
 				if (user.s[user.len]!=0) {
-					LM_CRIT("URI '%.*s@%s' longer than %d\n", user.len, user.s,
-							domain,	MAX_URI_SIZE);
+					LM_CRIT("URI '%.*s@%s' longer than %d\n", user.len, redact_pii(user.s),
+							redact_pii(domain),	MAX_URI_SIZE);
 					continue;
 				}
 			}

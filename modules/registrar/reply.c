@@ -40,6 +40,7 @@
 #include "../../parser/parse_supported.h"
 #include "../../data_lump_rpl.h"
 #include "../../lib/reg/common.h"
+#include "../../redact_pii.h"
 
 #include "../usrloc/usrloc.h"
 
@@ -492,7 +493,7 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 	}
 
 	if (sigb.reply(_m, code, &msg, NULL) == -1) {
-		LM_ERR("failed to send %ld %.*s\n", code, msg.len,msg.s);
+		LM_ERR("failed to send %ld %.*s\n", code, msg.len,redact_pii(msg.s));
 		return -1;
 	} else return 0;
 }

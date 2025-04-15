@@ -25,6 +25,7 @@
  */
 
 #include "../tm/h_table.h"
+#include "../../redact_pii.h"
 #include "../../parser/contact/parse_contact.h"
 
 
@@ -126,7 +127,7 @@ static inline int add_contacts_to_loc_set(struct sip_msg* msg,
 			/* add the uri to location set */
 			if (add_location(loc_set,&contacts->uri,0,prio,CPL_LOC_DUPL)!=0) {
 				LM_ERR("unable to add <%.*s>\n",
-					contacts->uri.len,contacts->uri.s);
+					contacts->uri.len,redact_pii(contacts->uri.s));
 			}
 		}
 	}

@@ -26,6 +26,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_from.h"
 #include "../tm/tm_load.h"
+#include "../../redact_pii.h"
 
 #include "../msrp_ua/api.h"
 
@@ -530,12 +531,12 @@ static int msrpgw_answer(struct sip_msg *msg, str *key, str *content_types,
 
 	if (parse_uri(from->s, from->len, &sip_uri) < 0) {
 		LM_ERR("Not a valid sip uri in From param [%.*s]\n",
-			from->len, from->s);
+			from->len, redact_pii(from->s));
 		return -1;
 	}
 	if (parse_uri(to->s, to->len, &sip_uri) < 0) {
 		LM_ERR("Not a valid sip uri in To param [%.*s]\n",
-			to->len, to->s);
+			to->len, redact_pii(to->s));
 		return -1;
 	}
 
@@ -546,7 +547,7 @@ static int msrpgw_answer(struct sip_msg *msg, str *key, str *content_types,
 	}
 	if (parse_uri(ruri->s, ruri->len, &sip_uri) < 0) {
 		LM_ERR("Not a valid sip uri in RURI param [%.*s]\n",
-			ruri->len, ruri->s);
+			ruri->len, redact_pii(ruri->s));
 		return -1;
 	}
 

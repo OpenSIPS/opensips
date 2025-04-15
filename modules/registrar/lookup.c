@@ -37,6 +37,7 @@
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_from.h"
 #include "../../lib/reg/common.h"
+#include "../../redact_pii.h"
 #include "../usrloc/usrloc.h"
 
 #include "reg_mod.h"
@@ -364,12 +365,12 @@ int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *ip_spec,p
 		/* extract the IP from contact */
 		if (parse_uri(uri.s, uri.len, &tmp_uri) < 0) {
 			LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
-				  uri.len, uri.s);
+				  uri.len, redact_pii(uri.s));
 		}
 		if ( (ipp=str2ip(&tmp_uri.host))==NULL &&
 		(ipp=str2ip6(&tmp_uri.host))==NULL ) {
 			LM_ERR("failed to get IP from contact/received <%.*s>, skipping\n",
-				tmp_uri.host.len, tmp_uri.host.s);
+				tmp_uri.host.len, redact_pii(tmp_uri.host.s));
 			continue;
 		}
 		ip = *ipp;
@@ -380,7 +381,7 @@ int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *ip_spec,p
 			if ( (ipp=str2ip(&pv_host))==NULL &&
 			(ipp=str2ip6(&pv_host))==NULL ) {
 				LM_ERR("param IP  <%.*s> is not valid, skipping\n",
-					pv_host.len, pv_host.s);
+					pv_host.len, redact_pii(pv_host.s));
 				continue;
 			}
 
@@ -411,7 +412,7 @@ int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *ip_spec,p
 				if ( (ipp=str2ip(&pv_host))==NULL &&
 				(ipp=str2ip6(&pv_host))==NULL ) {
 					LM_ERR("param IP  <%.*s> is not valid, skipping\n",
-						pv_host.len, pv_host.s);
+						pv_host.len, redact_pii(pv_host.s));
 					continue;
 				}
 

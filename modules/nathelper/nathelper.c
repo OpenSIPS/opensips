@@ -72,6 +72,7 @@
 #include "../../parser/sdp/sdp_helpr_funcs.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/contact/parse_contact.h"
+#include "../../redact_pii.h"
 #include "../usrloc/usrloc.h"
 #include "../usrloc/ul_mod.h"
 
@@ -419,7 +420,7 @@ static int get_natping_socket(char *socket,
 
 	he = sip_resolvehost( &host, port, (unsigned short*)(void*)&lproto, 0, 0);
 	if (he==0) {
-		LM_ERR("could not resolve hostname:\"%.*s\"\n", host.len, host.s);
+		LM_ERR("could not resolve hostname:\"%.*s\"\n", host.len, redact_pii(host.s));
 		return -1;
 	}
 	if (he->h_addrtype != AF_INET) {
@@ -1097,13 +1098,13 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip, int forc
 		if (extract_mediaip(&body1, &oldip, &pf,line) == -1)
 			break;
 		if (pf != AF_INET) {
-			LM_ERR("not an IPv4 address in '%s' SDP\n",line);
+			LM_ERR("not an IPv4 address in '%s' SDP\n",redact_pii(line));
 				return -1;
 			}
 		if (!pf1)
 			pf1 = pf;
 		else if (pf != pf1) {
-			LM_ERR("mismatching address families in '%s' SDP\n",line);
+			LM_ERR("mismatching address families in '%s' SDP\n",redact_pii(line));
 			return -1;
 		}
 		body2.s = oldip.s + oldip.len;
@@ -1112,14 +1113,14 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip, int forc
 					!(get_field_flag(line[0])&skip_oldip),
 					line[0], forcenulladdr) == -1) {
 					/*if flag set do not set oldmediaip field*/
-			LM_ERR("can't alter '%s' IP\n",line);
+			LM_ERR("can't alter '%s' IP\n",redact_pii(line));
 			return -1;
 		}
 		hasreplaced = 1;
 		body1 = body2;
 	}
 	if (!hasreplaced) {
-		LM_ERR("can't extract '%s' IP from the SDP\n",line);
+		LM_ERR("can't extract '%s' IP from the SDP\n",redact_pii(line));
 		return -1;
 	}
 

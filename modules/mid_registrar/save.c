@@ -40,6 +40,7 @@
 #include "../../parser/parse_supported.h"
 #include "../../parser/parse_allow.h"
 #include "../../dset.h"
+#include "../../redact_pii.h"
 
 #include "../../parser/parse_from.h"
 #include "../../status_report.h"
@@ -547,7 +548,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 		if (e != new_expires &&
 		    replace_expires(c, req, new_expires, &exp_header_done) != 0) {
 			LM_ERR("failed to replace expires for ct '%.*s'\n",
-			       c->uri.len, c->uri.s);
+			       c->uri.len, redact_pii(c->uri.s));
 		}
 	}
 }
@@ -955,7 +956,7 @@ static contact_t *match_contact(ucontact_id ctid, struct sip_msg *msg)
 
 		if (parse_uri(c->uri.s, c->uri.len, &puri) < 0) {
 			LM_ERR("failed to parse reply contact uri <%.*s>\n",
-			       c->uri.len, c->uri.s);
+			       c->uri.len, redact_pii(c->uri.s));
 			return NULL;
 		}
 
@@ -1321,7 +1322,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req,
 		if (hdr->type == HDR_CONTACT_T &&
 		     !del_lump(rpl, hdr->name.s - rpl->buf, hdr->len, HDR_CONTACT_T)) {
 			LM_ERR("failed to delete contact '%.*s'\n", hdr->name.len,
-			       hdr->name.s);
+			       redact_pii(hdr->name.s));
 			goto error;
 		}
 	}
@@ -1458,7 +1459,7 @@ update_usrloc:
 
 		if (pn_enable && pn_add_reply_purr(c) != 0)
 			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
-			       ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
+			       ctmap->req_ct_uri.len, redact_pii(ctmap->req_ct_uri.s));
 
 		ctmap->uc = c;
 
@@ -1466,7 +1467,7 @@ update_usrloc:
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri(ctmap->req_ct_uri.s, ctmap->req_ct_uri.len, &uri)<0) {
 				LM_ERR("failed to parse contact <%.*s>\n",
-						ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
+						ctmap->req_ct_uri.len, redact_pii(ctmap->req_ct_uri.s));
 			} else if ( is_tcp_based_proto(uri.proto) ) {
 				if (e_max) {
 					LM_WARN("multiple TCP contacts on single REGISTER\n");
@@ -1591,7 +1592,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 		if (del_lump(rpl, rpl->contact->name.s - rpl->buf,
 		                  rpl->contact->len, HDR_CONTACT_T) == NULL) {
 			LM_ERR("failed to delete contact '%.*s'\n", rpl->contact->name.len,
-			       rpl->contact->name.s);
+			       redact_pii(rpl->contact->name.s));
 			goto out_clear_err;
 		}
 	}
@@ -1613,7 +1614,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 		if (!_c) {
 			if (ctmap->expires != 0)
 				LM_ERR("200 OK from main registrar is missing Contact '%.*s'\n",
-				       ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
+				       ctmap->req_ct_uri.len, redact_pii(ctmap->req_ct_uri.s));
 			goto update_usrloc;
 		}
 
@@ -1714,7 +1715,7 @@ update_usrloc:
 
 		if (pn_enable && pn_add_reply_purr(c) != 0)
 			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
-			       ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
+			       ctmap->req_ct_uri.len, redact_pii(ctmap->req_ct_uri.s));
 
 		ctmap->uc = c;
 
@@ -1722,7 +1723,7 @@ update_usrloc:
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri(ctmap->req_ct_uri.s, ctmap->req_ct_uri.len, &uri)<0) {
 				LM_ERR("failed to parse contact <%.*s>\n",
-				       ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
+				       ctmap->req_ct_uri.len, redact_pii(ctmap->req_ct_uri.s));
 			} else if ( is_tcp_based_proto(uri.proto) ) {
 				if (e_max) {
 					LM_WARN("multiple TCP contacts on single REGISTER\n");

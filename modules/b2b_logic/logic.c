@@ -48,6 +48,7 @@
 #include "../presence/hash.h"
 #include "../presence/utils_func.h"
 #include "../../lib/csv.h"
+#include "../../redact_pii.h"
 
 #include "records.h"
 #include "b2b_logic.h"
@@ -494,7 +495,7 @@ int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact
 		if (msg) {
 			memset(&ct_uri, 0, sizeof(struct sip_uri));
 			if (contact_user && parse_uri(from_uri->s, from_uri->len, &ct_uri) < 0) {
-				LM_ERR("Not a valid sip uri [%.*s]\n", from_uri->len, from_uri->s);
+				LM_ERR("Not a valid sip uri [%.*s]\n", from_uri->len, redact_pii(from_uri->s));
 				return -1;
 			}
 
@@ -739,7 +740,7 @@ int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 			memset(&ct_uri, 0, sizeof(struct sip_uri));
 			if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0)
 			{
-				LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
+				LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, redact_pii(ci.from_uri.s));
 				goto error;
 			}
 			get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
@@ -2518,7 +2519,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	memset(&ct_uri, 0, sizeof(struct sip_uri));
 	if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0) {
-		LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
+		LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, redact_pii(ci.from_uri.s));
 		goto error;
 	}
 	get_local_contact((ci.send_sock?ci.send_sock:ci.pref_sock), &ct_uri.user, &ci.local_contact);
@@ -2695,7 +2696,7 @@ str *b2b_scenario_hdrs(struct b2bl_new_entity *entity)
 			if (!tmp_buf) {
 				LM_ERR("not enough memory to add header <%.*s: %.*s>\n",
 					name_value.s.len, name_value.s.s,
-					body_value.s.len, body_value.s.s);
+					body_value.s.len, redact_pii(body_value.s.s));
 				continue;
 			}
 			b2b_hdrs_buf.s = tmp_buf;
@@ -3256,7 +3257,7 @@ static struct b2bl_new_entity *tmp_client_new(struct sip_msg *msg, str *id,
 		if (parse_uri(entity->dest_uri.s, entity->dest_uri.len,
 			&sip_uri) < 0) {
 			LM_ERR("Not a valid sip uri [%.*s]\n",
-				entity->dest_uri.len, entity->dest_uri.s);
+				entity->dest_uri.len, redact_pii(entity->dest_uri.s));
 			goto error;
 		}
 	}
@@ -3274,7 +3275,7 @@ static struct b2bl_new_entity *tmp_client_new(struct sip_msg *msg, str *id,
 		if (parse_uri(entity->proxy.s, entity->proxy.len,
 			&sip_uri) < 0) {
 			LM_ERR("Not a valid sip uri [%.*s]\n",
-				entity->proxy.len, entity->proxy.s);
+				entity->proxy.len, redact_pii(entity->proxy.s));
 			goto error;
 		}
 	}
@@ -3623,7 +3624,7 @@ int b2bl_entity_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
 		if (parse_uri(entity->dest_uri.s, entity->dest_uri.len,
 			&sip_uri) < 0) {
 			LM_ERR("Not a valid sip uri [%.*s]\n",
-				entity->dest_uri.len, entity->dest_uri.s);
+				entity->dest_uri.len, redact_pii(entity->dest_uri.s));
 			goto error;
 		}
 	}
@@ -3642,7 +3643,7 @@ int b2bl_entity_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
 		if (parse_uri(entity->proxy.s, entity->proxy.len,
 			&sip_uri) < 0) {
 			LM_ERR("Not a valid sip uri [%.*s]\n",
-				entity->proxy.len, entity->proxy.s);
+				entity->proxy.len, redact_pii(entity->proxy.s));
 			goto error;
 		}
 	}

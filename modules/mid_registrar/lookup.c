@@ -34,6 +34,7 @@
 #include "../../dset.h"
 #include "../../mod_fix.h"
 #include "../../lib/reg/common.h"
+#include "../../redact_pii.h"
 
 #include "../usrloc/usrloc.h"
 #include "../usrloc/urecord.h"
@@ -79,7 +80,7 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d,
 
 	if (parse_uri(uri->s, uri->len, &puri) < 0) {
 		LM_ERR("failed to parse R-URI <%.*s>, ci: %.*s\n", uri->len,
-		       uri->s, req->callid->body.len, req->callid->body.s);
+		       redact_pii(uri->s), req->callid->body.len, req->callid->body.s);
 		return -1;
 	}
 
@@ -88,20 +89,20 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d,
 		if (pos < 0) {
 			LM_ERR("failed to locate our ';%.*s=' param in %sURI '%.*s', "
 			       "ci = %.*s!\n", ctid_param.len, ctid_param.s,
-			       uri ? "" : "R-", uri->len, uri->s, req->callid->body.len,
+			       uri ? "" : "R-", uri->len, redact_pii(uri->s), req->callid->body.len,
 			       req->callid->body.s);
 			return -1;
 		}
 		if (str2int64(&puri.u_val[pos], &contact_id) != 0) {
 			LM_ERR("invalid contact_id in %sURI '%.*s', ci: %.*s\n",
-			       uri ? "" : "R-", uri->len, uri->s, req->callid->body.len,
+			       uri ? "" : "R-", uri->len, redact_pii(uri->s), req->callid->body.len,
 			       req->callid->body.s);
 			return -1;
 		}
 	} else {
 		if (str2int64(&puri.user, &contact_id) != 0) {
 			LM_ERR("invalid contact_id in %sURI '%.*s', ci: %.*s\n",
-			       uri ? "" : "R-", uri->len, uri->s, req->callid->body.len,
+			       uri ? "" : "R-", uri->len, redact_pii(uri->s), req->callid->body.len,
 			       req->callid->body.s);
 			return -1;
 		}

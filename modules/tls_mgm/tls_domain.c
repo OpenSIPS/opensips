@@ -35,6 +35,7 @@
 
 #include "../../mem/mem.h"
 #include "../../lib/csv.h"
+#include "../../redact_pii.h"
 #include "tls_domain.h"
 #include "tls_params.h"
 #include "api.h"
@@ -614,7 +615,7 @@ static int parse_domain_address(char *val, unsigned int len, struct ip_addr **ip
 	s.len = p - s.s;
 	p++;
 	if ((*ip = str2ip(&s)) == NULL && (*ip = str2ip6(&s)) == NULL) {
-		LM_ERR("[%.*s] is not an ip\n", s.len, s.s);
+		LM_ERR("[%.*s] is not an ip\n", s.len, redact_pii(s.s));
 		goto parse_err;
 	}
 
@@ -629,7 +630,7 @@ static int parse_domain_address(char *val, unsigned int len, struct ip_addr **ip
 	return 0;
 
 parse_err:
-	LM_ERR("invalid TLS domain address [%s]\n", val);
+	LM_ERR("invalid TLS domain address [%s]\n", redact_pii(val));
 	return -1;
 }
 

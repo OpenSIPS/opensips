@@ -40,6 +40,7 @@
 #include "../../parser/contact/parse_contact.h"
 #include "../../data_lump.h"
 #include "../../mem/mem.h"
+#include "../../redact_pii.h"
 #include "osp_mod.h"
 #include "destination.h"
 #include "timeapi.h"
@@ -149,7 +150,7 @@ void ospCopyStrToBuffer(
     if (source->len >= bufsize) {
         LM_ERR("buffer for copying '%.*s' is too small, will copy the first '%d' bytes\n",
             source->len,
-            source->s,
+            redact_pii(source->s),
             bufsize - 1);
         copybytes = bufsize;
     } else {
@@ -1094,7 +1095,7 @@ int ospGetOspToken(
             } else {
                 LM_ERR("failed to base64 decode token (%d)\n", errorcode);
                 LM_ERR("header '%.*s' length %d\n",
-                    hf->body.len, hf->body.s, hf->body.len);
+                    hf->body.len, redact_pii(hf->body.s), hf->body.len);
             }
         }
     } else {
@@ -1275,7 +1276,7 @@ int ospGetRouteParam(
         } else if (!(rt = (rr_t*)hf->parsed)) {
             LM_ERR("route headers are not parsed\n");
         } else if (parse_uri(rt->nameaddr.uri.s, rt->nameaddr.uri.len, &uri) != 0) {
-            LM_ERR("failed to parse the Route uri '%.*s'\n", rt->nameaddr.uri.len, rt->nameaddr.uri.s);
+            LM_ERR("failed to parse the Route uri '%.*s'\n", rt->nameaddr.uri.len, redact_pii(rt->nameaddr.uri.s));
         } else if (check_self(&uri.host, uri.port_no ? uri.port_no : SIP_PORT, PROTO_NONE) != 1) {
             LM_DBG("the Route uri is NOT mine\n");
             LM_DBG("host '%.*s' port '%d'\n", uri.host.len, uri.host.s, uri.port_no);
@@ -1584,7 +1585,7 @@ int ospGetNextHop(
                     } else {
                         LM_ERR("failed to parse route uri '%.*s'\n",
                             rt->nameaddr.uri.len,
-                            rt->nameaddr.uri.s);
+                            redact_pii(rt->nameaddr.uri.s));
                     }
                 }
                 if (found == 1) {

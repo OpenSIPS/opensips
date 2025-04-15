@@ -994,7 +994,7 @@ int set_dst_host_port(struct sip_msg *msg, str *host, str *port)
 		return -1;
 	}
 	if (parse_uri(tmp, len, &uri)<0) {
-		LM_ERR("bad uri <%.*s>, dropping packet\n", len, tmp);
+		LM_ERR("bad uri <%.*s>, dropping packet\n", len, redact_pii(tmp));
 		return -1;
 	}
 	new_uri=pkg_malloc(MAX_URI_SIZE);
@@ -1102,7 +1102,7 @@ int rewrite_ruri(struct sip_msg *msg, str *sval, int ival,
 		len=msg->first_line.u.request.uri.len;
 	}
 	if (parse_uri(tmp, len, &uri)<0){
-		LM_ERR("bad uri <%.*s>, dropping packet\n", len, tmp);
+		LM_ERR("bad uri <%.*s>, dropping packet\n", len, redact_pii(tmp));
 		return -1;
 	}
 

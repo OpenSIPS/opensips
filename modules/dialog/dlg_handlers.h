@@ -29,6 +29,7 @@
 #include "../../str.h"
 #include "../../pvar.h"
 #include "../../ut.h"
+#include "../../redact_pii.h"
 #include "../tm/t_hooks.h"
 #include "dlg_timer.h"
 
@@ -181,7 +182,7 @@ static inline int pre_match_parse( struct sip_msg *req, str *callid,
 
 	if (parse_from_header(req)<0 || get_from(req)->tag_value.len==0) {
 		LM_ERR("failed to get From header(%.*s) (hdr=%p,parsed=%p,tag_len=%d) "
-			"callid=<%.*s>\n",req->from->body.len, req->from->body.s,
+			"callid=<%.*s>\n",req->from->body.len, redact_pii(req->from->body.s),
 			req->from, req->from?req->from->parsed:NULL,
 			req->from?(req->from->parsed?get_from(req)->tag_value.len:0):0,
 			req->callid->body.len, req->callid->body.s);

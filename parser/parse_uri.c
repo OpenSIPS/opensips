@@ -204,7 +204,7 @@ int print_uri(struct sip_uri *uri, str *out_buf)
 	do { \
 		if (bytes + uri->field.len > out_buf->len) { \
 			LM_ERR("no more space left! printed so far: '%.*s'\n", \
-		           bytes, out_buf->s); \
+		           bytes, redact_pii(out_buf->s)); \
 			return -1; \
 		} \
 		memcpy(out_buf->s + bytes, uri->field.s, uri->field.len); \
@@ -215,7 +215,7 @@ int print_uri(struct sip_uri *uri, str *out_buf)
 	do { \
 		if (bytes + 1 > out_buf->len) { \
 			LM_ERR("no more space left! printed so far: '%.*s'\n", \
-		           bytes, out_buf->s); \
+		           bytes, redact_pii(out_buf->s)); \
 			return -1; \
 		} \
 		out_buf->s[bytes++] = ch; \
@@ -237,7 +237,7 @@ int print_uri(struct sip_uri *uri, str *out_buf)
 			append_char(';'); \
 			if (bytes + uri->u_name[idx].len > out_buf->len) { \
 				LM_ERR("no more space left! printed so far: '%.*s'\n", \
-			           bytes, out_buf->s); \
+			           bytes, redact_pii(out_buf->s)); \
 				return -1; \
 			} \
 			memcpy(out_buf->s + bytes, uri->u_name[idx].s, uri->u_name[idx].len); \
@@ -246,7 +246,7 @@ int print_uri(struct sip_uri *uri, str *out_buf)
 				append_char('='); \
 				if (bytes + uri->u_val[idx].len > out_buf->len) { \
 					LM_ERR("no more space left! printed so far: '%.*s'\n", \
-				           bytes, out_buf->s); \
+				           bytes, redact_pii(out_buf->s)); \
 					return -1; \
 				} \
 				memcpy(out_buf->s + bytes, uri->u_val[idx].s, uri->u_val[idx].len); \
@@ -1624,8 +1624,8 @@ error_bad_port:
 	goto error_exit;
 error_bad_uri:
 	LM_ERR("bad uri, state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
-			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len,
-			 ZSW(buf), len);
+			 state, (int)(p-buf), redact_pii(ZSW(buf)), (int)(p-buf), len,
+			 redact_pii(ZSW(buf)), len);
 	goto error_exit;
 error_headers:
 	LM_ERR("bad uri headers: <%.*s>(%d) / <%.*s>(%d)\n",
@@ -1657,7 +1657,7 @@ int parse_sip_msg_uri(struct sip_msg* msg)
 		tmp_len=msg->first_line.u.request.uri.len;
 	}
 	if (parse_uri(tmp, tmp_len, &msg->parsed_uri)<0){
-		LM_ERR("bad uri <%.*s>\n", tmp_len, tmp);
+		LM_ERR("bad uri <%.*s>\n", tmp_len, redact_pii(tmp));
 		msg->parsed_uri_ok=0;
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM, "error parsing r-uri");
 		set_err_reply(400, "bad r-uri");
@@ -1678,7 +1678,7 @@ int parse_orig_ruri(struct sip_msg* msg)
 	uri = &REQ_LINE(msg).uri;
 
 	if (parse_uri(uri->s, uri->len, &msg->parsed_orig_ruri)<0) {
-		LM_ERR("bad uri <%.*s>\n", uri->len, ZSW(uri->s));
+		LM_ERR("bad uri <%.*s>\n", uri->len, redact_pii(ZSW(uri->s)));
 		msg->parsed_orig_ruri_ok = 0;
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 				"error parsing incoming uri");

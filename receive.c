@@ -60,6 +60,7 @@
 #include "core_stats.h"
 #include "ut.h"
 #include "context.h"
+#include "redact_pii.h"
 
 
 #ifdef DEBUG_DMALLOC
@@ -155,7 +156,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 	if (parse_msg(in_buff.s,len, msg)!=0){
 		tmp=ip_addr2a(&(rcv_info->src_ip));
 		LM_ERR("Unable to parse msg received from [%s:%d]\n",
-			tmp, rcv_info->src_port);
+			redact_pii(tmp), rcv_info->src_port);
 		/* if a REQUEST msg was detected (first line was successfully parsed)
 		   we should trigger the error route */
 		if ( msg->first_line.type==SIP_REQUEST && sroutes->error.a!=NULL ) {

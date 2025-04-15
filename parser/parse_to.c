@@ -35,6 +35,7 @@
 #include "../ut.h"
 #include "../mem/mem.h"
 #include "../errinfo.h"
+#include "../redact_pii.h"
 
 
 enum {
@@ -479,7 +480,7 @@ endofheader:
 
 parse_error:
 	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
-	    tmp < end? *tmp : *(end-1),status, (int)(tmp-buffer), ZSW(buffer));
+	    tmp < end? *tmp : *(end-1),status, (int)(tmp-buffer), redact_pii(ZSW(buffer)));
 error:
 	if (param) pkg_free(param);
 	free_to_params(to_b);
@@ -816,7 +817,7 @@ endofheader:
 
 parse_error:
 	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
-	    tmp < end? *tmp : *(end-1), status, (int)(tmp-buffer), buffer);
+	    tmp < end? *tmp : *(end-1), status, (int)(tmp-buffer), redact_pii(buffer));
 error:
 	first_b->error=PARSE_ERROR;
 	free_to_params(first_b);

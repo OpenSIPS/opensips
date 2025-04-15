@@ -27,6 +27,7 @@
 #include "../../socket_info.h"
 #include "../../bin_interface.h"
 #include "../../parser/parse_cseq.h"
+#include "../../redact_pii.h"
 
 str tm_cid;
 int tm_repl_cluster = 0;
@@ -83,7 +84,7 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 		if (parse_msg(buf->s, buf->len, &msg) != 0) {
 			tmp = ip_addr2a(&(ri->src_ip));
 			LM_ERR("Unable to parse replicated CANCEL received from [%s:%d]\n",
-				tmp, ri->src_port);
+				redact_pii(tmp), ri->src_port);
 			return;
 		}
 
@@ -142,7 +143,7 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 		if (parse_msg(buf->s, buf->len, &msg) != 0) {
 			tmp = ip_addr2a(&(ri->src_ip));
 			LM_ERR("Unable to parse replicated CANCEL received from [%s:%d]\n",
-				tmp, ri->src_port);
+				redact_pii(tmp), ri->src_port);
 			goto cleanup;
 		}
 	}

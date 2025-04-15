@@ -37,6 +37,7 @@
 #include "ip_addr.h"
 #include "dprint.h"
 #include "mem/mem.h"
+#include "redact_pii.h"
 
 char _ip_addr_A_buffs[IP_ADDR2STR_BUF_NO][IP_ADDR_MAX_STR_SIZE];
 
@@ -251,7 +252,7 @@ int mk_net_cidr(const str *cidr, struct net *out_net)
 	}
 
 	if (!(ip=str2ip(&ip_str)) && !(ip=str2ip6(&ip_str))) {
-		LM_ERR("invalid IP address <%.*s>\n", ip_str.len, ip_str.s);
+		LM_ERR("invalid IP address <%.*s>\n", ip_str.len, redact_pii(ip_str.s));
 		goto error;
 	}
 
@@ -262,7 +263,7 @@ int mk_net_cidr(const str *cidr, struct net *out_net)
 	if ((ip->af==AF_INET && prefix_len>32) ||
 	        (ip->af==AF_INET6 && prefix_len>128)) {
 		LM_ERR("network prefix length %d too large for AF %d (ip: %.*s)\n",
-		        prefix_len, ip->af, ip_str.len, ip_str.s);
+		        prefix_len, ip->af, ip_str.len, redact_pii(ip_str.s));
 		goto error;
 	}
 

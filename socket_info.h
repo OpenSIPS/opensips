@@ -36,6 +36,7 @@
 #include "globals.h"
 #include "net/trans.h"
 #include "ut.h"
+#include "redact_pii.h"
 
 struct socket_info {
 	int socket;
@@ -362,16 +363,16 @@ inline static int parse_phostport(char* s, int slen, char** host, int* hlen,
 	}
 	return 0;
 error_brackets:
-	LM_ERR("too many brackets in %s\n", s);
+	LM_ERR("too many brackets in %s\n", redact_pii(s));
 	return -1;
 error_colons:
-	LM_ERR(" too many colons in %s\n", s);
+	LM_ERR(" too many colons in %s\n", redact_pii(s));
 	return -1;
 error_proto:
-	LM_ERR("bad protocol in %s\n", s);
+	LM_ERR("bad protocol in %s\n", redact_pii(s));
 	return -1;
 error_port:
-	LM_ERR("bad port number in %s\n", s);
+	LM_ERR("bad port number in %s\n", redact_pii(s));
 	return -1;
 }
 

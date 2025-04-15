@@ -33,6 +33,7 @@
 #include "../../dprint.h"
 #include "../../str.h"
 #include "../../ut.h"
+#include "../../redact_pii.h"
 #include "CPL_tree.h"
 #include "sub_list.h"
 #include "cpl_log.h"
@@ -848,7 +849,7 @@ static inline int encode_location_attr(xmlNodePtr  node, char *node_ptr,
 				/* check if it's a valid SIP URL -> just call
 				 * parse uri function and see if returns error ;-) */
 				if (parse_uri( val.s, val.len, &uri)!=0) {
-					LM_ERR("<%s> is not a valid SIP URL\n",val.s);
+					LM_ERR("<%s> is not a valid SIP URL\n",redact_pii(val.s));
 					goto error;
 				}
 				val.len++; /*copy also the \0 */
@@ -913,7 +914,7 @@ static inline int encode_rmvloc_attr(xmlNodePtr  node, char *node_ptr, char *buf
 				/* check if it's a valid SIP URL -> just call
 				 * parse uri function and see if returns error ;-) */
 				if (parse_uri( val.s, val.len, &uri)!=0) {
-					LM_ERR("<%s> is not a valid SIP URL\n",val.s);
+					LM_ERR("<%s> is not a valid SIP URL\n",redact_pii(val.s));
 					goto error;
 				}
 				val.len++; /*copy also the \0 */
