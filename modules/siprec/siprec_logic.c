@@ -135,7 +135,7 @@ static void srec_tm_unref(void *p)
 	SIPREC_UNREF(ss);
 }
 
-int srec_stop_recording(struct src_sess *ss)
+static int srec_stop_recording(struct src_sess *ss)
 {
 	struct b2b_req_data req;
 	str bye = str_init(BYE);
@@ -866,4 +866,12 @@ int src_send_indialog(struct sip_msg *msg, str *hdrs, str *body, str *instance)
 		return -1;
 	}
 	return 0;
+}
+
+int src_stop_recording(str *instance)
+{
+	struct src_sess *sess = _src_get_session(instance);
+	if (!sess)
+		return -2;
+	return srec_stop_recording(sess);
 }

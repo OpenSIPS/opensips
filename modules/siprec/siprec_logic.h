@@ -38,8 +38,8 @@ int src_pause_recording(str *instance);
 int src_resume_recording(str *instance);
 int srec_late_recording(struct src_sess *ss);
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess);
-int srec_stop_recording(struct src_sess *ss);
 int src_send_indialog(struct sip_msg *msg, str *hdrs, str *body, str *instance);
+int src_stop_recording(str *instance);
 
 extern int srec_dlg_idx;
 extern struct b2b_api srec_b2b;

@@ -364,22 +364,10 @@ static int siprec_resume_rec(struct sip_msg *msg, str *instance)
 
 static int siprec_stop_rec(struct sip_msg *msg, str *instance)
 {
-	struct dlg_cell *dlg = srec_dlg.get_dlg();
-	struct src_sess *ss;
-
-	if (!dlg) {
-		LM_ERR("dialog not found!\n");
-		return -2;
-	}
 	if (!instance)
 		instance = &siprec_default_instance;
 
-	ss = (struct src_sess *)srec_dlg.dlg_ctx_get_ptr(dlg, srec_dlg_idx);
-	if (!ss) {
-		LM_DBG("no recording session started\n");
-		return -1;
-	}
-	return (srec_stop_recording(ss)<0?-1:1);
+	return (src_stop_recording(instance) < 0 ? -1: 1);
 }
 
 static int siprec_send_indialog(struct sip_msg *msg, str *hdrs, str *body,
