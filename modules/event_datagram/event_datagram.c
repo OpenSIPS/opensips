@@ -27,7 +27,6 @@
 #include "../../evi/evi_transport.h"
 #include "../../resolve.h"
 #include "../../ut.h"
-#include "../../redact_pii.h"
 #include "event_datagram.h"
 #include <string.h>
 #include <fcntl.h>
@@ -175,7 +174,7 @@ static evi_reply_sock* datagram_parse(str socket, int is_unix)
 	if (!is_unix) {
 		p = memchr(host, COLON_C, len);
 		if (!p || p == host) {
-			LM_ERR("port not specified <%.*s>\n", len, redact_pii(host));
+			LM_ERR("port not specified <%.*s>\n", len, host);
 			return NULL;
 		}
 		port = str2s(p + 1, host + len - p - 1, 0);
@@ -190,7 +189,7 @@ static evi_reply_sock* datagram_parse(str socket, int is_unix)
 
 	/* host */
 	if (!host || len <= 0) {
-		LM_ERR("malformed address %s\n", redacted_pii(host));
+		LM_ERR("malformed address %s\n", host);
 		goto error;
 	}
 	sock = shm_malloc(sizeof(evi_reply_sock) + len);
@@ -210,11 +209,11 @@ static evi_reply_sock* datagram_parse(str socket, int is_unix)
 		*p = 0;
 		hentity = resolvehost(host, 0);
 		if (!hentity) {
-			LM_ERR("cannot resolve host %s\n", redact_pii(host));
+			LM_ERR("cannot resolve host %s\n", host);
 			goto error;
 		}
 		if(hostent2su(&sock->src_addr.udp_addr, hentity, 0, port)){
-			LM_ERR("failed to resolve %s\n", redact_pii(host));
+			LM_ERR("failed to resolve %s\n", host);
 			goto error;
 		}
 		/* restore colon */

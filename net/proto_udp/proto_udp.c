@@ -34,7 +34,6 @@
 #include "../../timer.h"
 #include "../../socket_info.h"
 #include "../../receive.h"
-#include "../../redact_pii.h"
 #include "../api_proto.h"
 #include "../api_proto_net.h"
 #include "../net_udp.h"
@@ -211,7 +210,7 @@ again:
 	if (n==-1){
 		if (errno==EINTR || errno==EAGAIN) goto again;
 		LM_ERR("sendto(sock,%p,%d,0,%p,%d): %s(%d) [%s:%hu]\n", buf,len,to,
-				tolen,strerror(errno),errno,redact_pii(inet_ntoa(to->sin.sin_addr)),
+				tolen,strerror(errno),errno,inet_ntoa(to->sin.sin_addr),
 				ntohs(to->sin.sin_port));
 		if (errno==EINVAL) {
 			LM_CRIT("invalid sendtoparameters\n"

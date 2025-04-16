@@ -47,7 +47,6 @@
 #include "../../action.h"
 #include "../../socket_info.h"
 #include "../../ipc.h"
-#include "../../redact_pii.h"
 
 /* BPF structure */
 #ifdef __OS_linux
@@ -3729,14 +3728,14 @@ static int w_set_hep(struct sip_msg* msg, void *id, str *data_s,
 		data_len = sizeof(struct in_addr);
 		if (inet_pton(AF_INET, data_s->s, &addr4)<=0) {
 			LM_ERR("not an IPv4 address <<%.*s>>!\n",
-					data_s->len, redact_pii(data_s->s));
+					data_s->len, data_s->s);
 			return -1;
 		}
 	} else if (data_type == TYPE_INET6_ADDR) {
 		data_len = sizeof(struct in6_addr);
 		if (inet_pton(AF_INET6, data_s->s, &addr6)<=0) {
 			LM_ERR("not an IPv6 address <<%.*s>>!\n",
-					data_s->len, redact_pii(data_s->s));
+					data_s->len, data_s->s);
 			return -1;
 		}
 	} else {
@@ -4271,7 +4270,7 @@ static int w_hep_relay(struct sip_msg *msg)
 
 	uri_s=GET_NEXT_HOP(msg);
 	if (parse_uri(uri_s->s, uri_s->len, &uri) < 0) {
-		LM_ERR("bad uri <%.*s>!\n", uri_s->len, redact_pii(uri_s->s));
+		LM_ERR("bad uri <%.*s>!\n", uri_s->len, uri_s->s);
 		return -1;
 	}
 

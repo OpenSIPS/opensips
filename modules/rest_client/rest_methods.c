@@ -34,7 +34,6 @@
 #include "../../trace_api.h"
 #include "../../resolve.h"
 #include "../../timer.h"
-#include "../../redact_pii.h"
 
 #include "../tls_mgm/api.h"
 
@@ -491,7 +490,7 @@ cleanup:
 	do { \
 		w_curl_easy_setopt(handle, CURLOPT_POST, 1); \
 		if (set_upload_opts(handle, ctype, body) != 0) { \
-			LM_ERR("failed to init POST to %s\n", redact_pii(url)); \
+			LM_ERR("failed to init POST to %s\n", url); \
 			goto cleanup; \
 		} \
 	} while (0)
@@ -500,7 +499,7 @@ cleanup:
 	do { \
 		w_curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT"); \
 		if (set_upload_opts(handle, ctype, body) != 0) { \
-			LM_ERR("failed to init PUT to %s\n", redact_pii(url)); \
+			LM_ERR("failed to init PUT to %s\n", url); \
 			goto cleanup; \
 		} \
 	} while (0)
@@ -549,7 +548,7 @@ static inline int rcl_get_url_host(const char *url, char **out_host)
 	return 0;
 
 bad_url:
-	LM_ERR("failed to parse URL: '%s'\n", redact_pii(url));
+	LM_ERR("failed to parse URL: '%s'\n", url);
 	return -1;
 }
 
@@ -562,7 +561,7 @@ int rcl_acquire_url(const char *url, char **url_host)
 
 	rc = rcl_get_url_host(url, &host);
 	if (rc != 0) {
-		LM_ERR("failed to parse URL: '%s'\n", redact_pii(url));
+		LM_ERR("failed to parse URL: '%s'\n", url);
 		return RCL_INTERNAL_ERR;
 	}
 	LM_DBG("returned URL host is: '%s'\n", host);
@@ -658,18 +657,18 @@ static inline char rest_easy_perform(
 		return RCL_OK;
 
 	case CURLE_COULDNT_CONNECT:
-		LM_ERR("connect refused for %s\n", redact_pii(url));
+		LM_ERR("connect refused for %s\n", url);
 		return RCL_CONNECT_REFUSED;
 
 	case CURLE_OPERATION_TIMEDOUT:
 		curl_easy_getinfo(handle, CURLINFO_CONNECT_TIME, &connect_time);
 		if (connect_time == 0) {
-			LM_ERR("connect timeout on %s (%lds)\n", redact_pii(url), connection_timeout);
+			LM_ERR("connect timeout on %s (%lds)\n", url, connection_timeout);
 			return RCL_CONNECT_TIMEOUT;
 		}
 
 		LM_ERR("connected, but transfer timed out for %s (%lds)\n",
-		       redact_pii(url), curl_timeout);
+		       url, curl_timeout);
 		return RCL_TRANSFER_TIMEOUT;
 
 	default:
@@ -704,7 +703,7 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 
 	curl_easy_reset(sync_handle);
 	if (init_transfer(sync_handle, url) != 0) {
-		LM_ERR("failed to init transfer to %s\n", redact_pii(url));
+		LM_ERR("failed to init transfer to %s\n", url);
 		goto cleanup;
 	}
 
@@ -837,7 +836,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	}
 
 	if (init_transfer(handle, url) != 0) {
-		LM_ERR("failed to init transfer to %s\n", redact_pii(url));
+		LM_ERR("failed to init transfer to %s\n", url);
 		goto cleanup;
 	}
 
@@ -918,19 +917,19 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 				break;
 
 			case CURLE_COULDNT_CONNECT:
-				LM_ERR("connect refused for %s\n", redact_pii(url));
+				LM_ERR("connect refused for %s\n", url);
 				ret = RCL_CONNECT_REFUSED;
 				goto error;
 
 			case CURLE_OPERATION_TIMEDOUT:
 				if (http_rc == 0) {
-					LM_ERR("connect timeout on %s (%lds)\n", redact_pii(url),
+					LM_ERR("connect timeout on %s (%lds)\n", url,
 							connection_timeout);
 					ret = RCL_CONNECT_TIMEOUT;
 					goto error;
 				}
 
-				LM_ERR("connected, but transfer timed out for %s\n", redact_pii(url));
+				LM_ERR("connected, but transfer timed out for %s\n", url);
 				ret = RCL_TRANSFER_TIMEOUT;
 				goto error;
 
@@ -1003,7 +1002,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		}
 	}
 
-	LM_ERR("connect timeout on %s (%lds)\n", redact_pii(url), connection_timeout);
+	LM_ERR("connect timeout on %s (%lds)\n", url, connection_timeout);
 	ret = RCL_CONNECT_TIMEOUT;
 	goto error;
 
@@ -1057,7 +1056,7 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 		char *url = NULL;
 		curl_easy_getinfo(param->handle, CURLINFO_EFFECTIVE_URL, &url);
 		LM_ERR("async %s timed out, URL: %s\n",
-		        rest_client_method_str(param->method), redact_pii(url));
+		        rest_client_method_str(param->method), url);
 		goto cleanup;
 	}
 
@@ -1324,7 +1323,7 @@ static int trace_rest_message( rest_trace_param_t* tparam )
 	if ( inet_pton( AF_INET, tparam->remote_ip, &addr) <= 0) {
 		/* check IPV6 */
 		if ( inet_pton( AF_INET6, tparam->remote_ip, &addr6) <= 0 ){
-			LM_ERR("Invalid remote ip from curl <%s>\n", redact_pii(tparam->remote_ip));
+			LM_ERR("Invalid remote ip from curl <%s>\n", tparam->remote_ip);
 			return -1;
 		} else {
 			remote_su.sin6.sin6_family = AF_INET6;

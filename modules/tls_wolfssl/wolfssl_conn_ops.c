@@ -31,7 +31,6 @@
 
 #include "../../net/tcp_conn_defs.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
-#include "../../redact_pii.h"
 #include "../tls_mgm/tls_helper.h"
 
 #include "wolfssl_trace.h"
@@ -424,7 +423,7 @@ again:
 					if (errno == EINTR)
 						goto again;
 					LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
-							redact_pii(ip_addr2a(&con->rcv.src_ip)), con->rcv.src_port,
+							ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
 							errno, strerror(errno));
 					goto failure;
 				}else if (n==0) /* timeout */
@@ -444,7 +443,7 @@ again:
 						continue; /* retry ssl connect */
 					if (err!=EINPROGRESS && err!=EALREADY){
 						LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
-								redact_pii(ip_addr2a(&con->rcv.src_ip)), con->rcv.src_port,
+								ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
 								err, strerror(err));
 						goto failure;
 					}
@@ -455,7 +454,7 @@ again:
 					strerror(errno), errno);
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
-					redact_pii(ip_addr2a(&con->rcv.src_ip)), con->rcv.src_port);
+					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);
 				LM_ERR("TLS connect error: %d, %s\n", err,
 					wolfSSL_ERR_error_string(err, err_buf));
 
@@ -517,7 +516,7 @@ int _wolfssl_tls_write(struct tcp_connection *c, int fd, const void *buf,
 			return 0;
 		default:
 			LM_ERR("TLS connection to %s:%d write failed (%d:%d:%d)\n",
-				redact_pii(ip_addr2a(&c->rcv.src_ip)), c->rcv.src_port, err, ret, errno);
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port, err, ret, errno);
 			LM_ERR("TLS write error: %d, %s\n",err,
 				wolfSSL_ERR_error_string(err, err_buf));
 			c->state = S_CONN_BAD;
@@ -616,7 +615,7 @@ static int _wolfssl_tls_accept(struct tcp_connection *c, short *poll_events)
 			default:
 				c->state = S_CONN_BAD;
 				LM_ERR("New TLS connection from %s:%d failed to accept\n",
-					redact_pii(ip_addr2a(&c->rcv.src_ip)), c->rcv.src_port);
+					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 				LM_ERR("TLS accept error: %d, %s\n", err,
 					wolfSSL_ERR_error_string(err, err_buf));
 
@@ -721,7 +720,7 @@ static int _wolfssl_tls_connect(struct tcp_connection *c, short *poll_events,
 				/* fall through */
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
-					redact_pii(ip_addr2a(&c->rcv.src_ip)), c->rcv.src_port);
+					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 				LM_ERR("TLS connect error: %d, %s\n", err,
 					wolfSSL_ERR_error_string(err, err_buf));
 				c->state = S_CONN_BAD;
@@ -925,7 +924,7 @@ static int _wolfssl_read(struct tcp_connection *c, void *buf, size_t len)
 			/* fall through */
 		default:
 			LM_ERR("TLS connection to %s:%d read failed\n",
-				redact_pii(ip_addr2a(&c->rcv.src_ip)), c->rcv.src_port);
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 			LM_ERR("TLS read error: %d, %s\n",err,
 				wolfSSL_ERR_error_string(err, err_buf));
 			c->state = S_CONN_BAD;

@@ -33,7 +33,6 @@
 
 #include "../../net/tcp_conn_defs.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
-#include "../../redact_pii.h"
 #include "../tls_mgm/tls_helper.h"
 
 #include "openssl_trace.h"
@@ -455,7 +454,7 @@ static int openssl_tls_connect(struct tcp_connection *c, short *poll_events,
 				/* fall through */
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
-					redact_pii(ip_addr2a(&c->rcv.src_ip)), c->rcv.src_port);
+					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 
 				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
 					err,ret,strerror(errno), errno);
@@ -599,7 +598,7 @@ static int openssl_tls_accept(struct tcp_connection *c, short *poll_events)
 			default:
 				c->state = S_CONN_BAD;
 				LM_ERR("New TLS connection from %s:%d failed to accept\n",
-				       redact_pii(ip_addr2a(&c->rcv.src_ip)), c->rcv.src_port);
+				       ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 
 				if (errno != 0) {
 					LM_ERR("TLS error: (ret=%d, err=%d, errno=%d/%s):\n",
@@ -699,7 +698,7 @@ int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 			#endif
 
 			LM_ERR("Failed to connect to %s:%d %d:%d (%s)\n",
-					redact_pii(ip_addr2a(&con->rcv.src_ip)), con->rcv.src_port,
+					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
 					err, errno, strerror(errno));
 
 			goto failure;
@@ -742,7 +741,7 @@ again:
 					if (errno == EINTR)
 						goto again;
 					LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
-							redact_pii(ip_addr2a(&con->rcv.src_ip)), con->rcv.src_port,
+							ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
 							errno, strerror(errno));
 					goto failure;
 				}else if (n==0) /* timeout */
@@ -762,7 +761,7 @@ again:
 						continue; /* retry ssl connect */
 					if (err!=EINPROGRESS && err!=EALREADY){
 						LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
-								redact_pii(ip_addr2a(&con->rcv.src_ip)), con->rcv.src_port,
+								ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
 								err, strerror(err));
 						goto failure;
 					}
@@ -777,7 +776,7 @@ again:
 					strerror(errno), errno);
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
-					redact_pii(ip_addr2a(&con->rcv.src_ip)), con->rcv.src_port);
+					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);
 
 				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
 					err, n, strerror(errno), errno);
@@ -869,7 +868,7 @@ int openssl_tls_write(struct tcp_connection *c, int fd, const void *buf,
 			return 0;
 		default:
 			LM_ERR("TLS connection to %s:%d write failed (%d:%d:%d)\n",
-				redact_pii(ip_addr2a(&c->rcv.src_ip)), c->rcv.src_port, err, ret, errno);
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port, err, ret, errno);
 			LM_ERR("TLS write error:\n");
 			c->state = S_CONN_BAD;
 			tls_print_errstack();
@@ -1085,7 +1084,7 @@ static int openssl_read(struct tcp_connection *c, void *buf, size_t len)
 			/* fall through */
 		default:
 			LM_ERR("TLS connection to %s:%d read failed\n",
-				redact_pii(ip_addr2a(&c->rcv.src_ip)), c->rcv.src_port);
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 			LM_ERR("TLS read error: %d\n",err);
 			c->state = S_CONN_BAD;
 			tls_print_errstack();

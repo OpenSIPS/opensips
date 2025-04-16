@@ -26,7 +26,6 @@
 #include "../../net/tcp_common.h"
 #include "../../resolve.h"
 #include "../../async.h"
-#include "../../redact_pii.h"
 
 #include "../../lib/timerfd.h"
 
@@ -255,14 +254,14 @@ static int cgrc_conn(struct cgr_conn *c)
 		he = resolvehost(c->engine->host.s, 1);
 		if (!he || hostent2su(&c->engine->su, he, 0, c->engine->port) < 0) {
 			LM_ERR("cannot resolve %.*s:%d\n", c->engine->host.len,
-					redact_pii(c->engine->host.s), c->engine->port);
+					c->engine->host.s, c->engine->port);
 			return -1;
 		}
 	}
 
 	if (cgre_bind_ip.s) {
 		if ((ip = str2ip(&cgre_bind_ip)) == NULL) {
-			LM_ERR("invalid ip in bind_ip: %s\n", redact_pii(cgre_bind_ip.s));
+			LM_ERR("invalid ip in bind_ip: %s\n", cgre_bind_ip.s);
 			goto error;
 		}
 		init_su(&_src_su, ip, 0);
@@ -274,7 +273,7 @@ static int cgrc_conn(struct cgr_conn *c)
 	s = tcp_sync_connect_fd(src_su, &c->engine->su, PROTO_TCP, &prof, 0);
 	if (s < 0) {
 		LM_ERR("cannot connect to %.*s:%d\n", c->engine->host.len,
-				redact_pii(c->engine->host.s), c->engine->port);
+				c->engine->host.s, c->engine->port);
 		goto error;
 	}
 

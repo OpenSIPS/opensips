@@ -57,7 +57,6 @@
 #include "../../dset.h"
 #include "../../data_lump.h"
 #include "../../parser/parse_methods.h"
-#include "../../redact_pii.h"
 
 #include "ut.h"
 #include "h_table.h"
@@ -582,7 +581,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	if (SEND_BUFFER(request) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n",
 			dialog->hooks.next_hop->len,
-			redact_pii(dialog->hooks.next_hop->s));
+			dialog->hooks.next_hop->s);
 	}
 	reset_bavp_list();
 

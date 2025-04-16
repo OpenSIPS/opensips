@@ -37,7 +37,6 @@
 #include "../../parser/parse_from.h"
 #include "../../mod_fix.h"
 #include "../../resolve.h"
-#include "../../redact_pii.h"
 
 #include "permissions.h"
 #include "hash.h"
@@ -469,7 +468,7 @@ int check_addr(struct sip_msg* msg, int* grp, str* s_ip, int *port, long proto,
 
 	/* ip addr */
 	if ( (ip=str2ip(s_ip))==NULL && (ip=str2ip6(s_ip))==NULL ) {
-		LM_ERR("invalid ip address <%.*s>!\n", s_ip->len, redact_pii(s_ip->s));
+		LM_ERR("invalid ip address <%.*s>!\n", s_ip->len, s_ip->s);
 		return -1;
 	}
 

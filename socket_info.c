@@ -757,10 +757,10 @@ int fix_socket_list(struct socket_info **list)
 		if (si->subnet_mask > 0) {
 			si->subnet = mk_net_bitlen(&si->address, si->subnet_mask);
 			if (si->subnet == 0) {
-				LM_ERR("Failed to add subnet mask '%d 'to socket '%s'\n", si->subnet_mask, redact_pii(si->address_str.s));
+				LM_ERR("Failed to add subnet mask '%d 'to socket '%s'\n", si->subnet_mask, si->address_str.s);
 				goto error;
 			}
-			LM_DBG("Added subnet mask '%d 'to socket '%s'\n", si->subnet_mask, redact_pii(si->address_str.s));
+			LM_DBG("Added subnet mask '%d 'to socket '%s'\n", si->subnet_mask, si->address_str.s);
 		}
 
 		/* set is_ip (1 if name is an ip address, 0 otherwise) */

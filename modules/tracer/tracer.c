@@ -49,7 +49,6 @@
 #include "../dialog/dlg_load.h"
 #include "../b2b_logic/b2b_load.h"
 #include "../../mod_fix.h"
-#include "../../redact_pii.h"
 #include "tracer.h"
 
 /* trace info context position */
@@ -624,7 +623,7 @@ static int parse_siptrace_id(str *suri)
 					(__uri->s++, __uri->len--);                         \
 			                                                            \
 			if (!__uri->len || __uri->s[0] != ']') {                    \
-				LM_ERR("bad name [%.*s]!\n", __uri->len, redact_pii(__uri->s));     \
+				LM_ERR("bad name [%.*s]!\n", __uri->len, __uri->s);     \
 				return -1;                                              \
 			}                                                           \
 			(__uri->s++, __uri->len--);                                 \
@@ -652,7 +651,7 @@ static int parse_siptrace_id(str *suri)
 
 	/* we consider the str trimmed before the function */
 	if (suri->s[0] != '[') {
-		LM_ERR("bad format for uri {%.*s}\n", suri->len, redact_pii(suri->s));
+		LM_ERR("bad format for uri {%.*s}\n", suri->len, suri->s);
 		return -1;
 	} else {
 		suri->s++;
@@ -662,7 +661,7 @@ static int parse_siptrace_id(str *suri)
 	PARSE_NAME(suri, name); /*parse '[<name>]'*/
 
 	if (parse_siptrace_uri(suri, &trace_uri, &param1) < 0) {
-		LM_ERR("invalid uri <%.*s>\n", suri->len, redact_pii(suri->s));
+		LM_ERR("invalid uri <%.*s>\n", suri->len, suri->s);
 		return -1;
 	}
 
@@ -687,7 +686,7 @@ static int parse_siptrace_id(str *suri)
 	if (uri_type == TYPE_DB) {
 		if (get_db_struct(&trace_uri, &param1, &elem->el.db) < 0) {
 			LM_ERR("Invalid parameters extracted!url <%.*s>! table name <%.*s>!\n",
-					trace_uri.len, redact_pii(trace_uri.s), param1.len, param1.s);
+					trace_uri.len, trace_uri.s, param1.len, param1.s);
 			return -1;
 		}
 	} else if (uri_type == TYPE_SIP) {
@@ -721,7 +720,7 @@ int parse_trace_id(unsigned int type, void *val)
 	str_trim_spaces_lr(suri);
 
 	if (parse_siptrace_id(&suri) < 0) {
-		LM_ERR("failed to parse tracer uri [%.*s]\n", suri.len, redact_pii(suri.s));
+		LM_ERR("failed to parse tracer uri [%.*s]\n", suri.len, suri.s);
 		return -1;
 	}
 
@@ -3642,7 +3641,7 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 		return 0;
 	}
 
-	LM_ERR("host <%.*s> is not an IP\n",host_uri.len,redact_pii(host_uri.s));
+	LM_ERR("host <%.*s> is not an IP\n",host_uri.len,host_uri.s);
 	return -1;
 }
 
