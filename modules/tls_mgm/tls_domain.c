@@ -97,11 +97,14 @@ void map_remove_tls_dom(struct tls_domain *dom)
 
 		val = iterator_val(&it_tmp);
 		doms_array = (struct dom_filt_array *)*val;
-		for (i = 0; i < doms_array->size; i++)
+		for (i = 0; i < doms_array->size;)
 			if (doms_array->arr[i].dom_link == dom) {
 				for (j = i + 1; j < doms_array->size; j++)
 					doms_array->arr[j-1] = doms_array->arr[j];
 				doms_array->size--;
+			}
+			else {
+				i++;
 			}
 		if (doms_array->size == 0) {
 			map_free_node(doms_array);
