@@ -657,7 +657,6 @@ int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 	poll_err=0;
 	elapsed = 0;
 	to = timeout*1000;
-	fd = con->fd;
 
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 	FD_ZERO(&orig_set);
