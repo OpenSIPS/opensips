@@ -2,9 +2,8 @@
 
 set -e
 
-. $(dirname $0)/dockerize.sub
-
 . $(dirname $0)/build.conf.sub
+. $(dirname $0)/dockerize.sub
 
 ccache --max-size=100M
 ccache --cleanup

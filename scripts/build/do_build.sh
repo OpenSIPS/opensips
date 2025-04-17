@@ -2,9 +2,8 @@
 
 set -e
 
-. $(dirname $0)/dockerize.sub
-
 . $(dirname $0)/build.conf.sub
+. $(dirname $0)/dockerize.sub
 
 EXCLUDE_MODULES="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase \
   cachedb_mongodb auth_jwt event_kafka aaa_diameter launch_darkly http2d \

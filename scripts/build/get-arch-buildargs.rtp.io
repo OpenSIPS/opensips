@@ -44,6 +44,12 @@ platformopts() {
       ;;
     esac
     ;;
+  ubuntu*)
+    case "${TARGETPLATFORM}" in
+    linux/arm64/v8)
+      out="${out} QEMU_CPU=cortex-a53"
+      ;;
+    esac
   esac
   echo "${out}"
   echo "${@}"
