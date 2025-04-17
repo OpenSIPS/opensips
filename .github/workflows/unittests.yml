@@ -20,40 +20,30 @@ jobs:
     continue-on-error: true
     env:
       COMPILER: ${{ matrix.compiler }}
-      BUILD_OS: ${{ matrix.os }}
+      BUILD_OS: ubuntu-${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
-        os: [ubuntu-20.04]
+        os: [22.04]
+        compiler: ['gcc', 'clang', 'gcc-11', 'gcc-12', 'clang-11', 'clang-12', 'clang-13', 'clang-14', 'clang-15', 'gcc-arm64-qemu-cross', 'gcc-arm32-qemu-cross', 'clang-arm64-qemu-cross', 'clang-arm32-qemu-cross']
         include:
-          - compiler: 'gcc'
-            os: ubuntu-22.04
-          - compiler: 'clang'
-            os: ubuntu-22.04
-          - compiler: 'gcc-11'
-            os: ubuntu-22.04
-          - compiler: 'gcc-12'
-            os: ubuntu-22.04
-          - compiler: 'clang-11'
-            os: ubuntu-22.04
-          - compiler: 'clang-12'
-            os: ubuntu-22.04
-          - compiler: 'clang-13'
-            os: ubuntu-22.04
-          - compiler: 'clang-14'
-            os: ubuntu-22.04
-          - compiler: 'clang-15'
-            os: ubuntu-22.04
-          - compiler: 'gcc-arm64-qemu-cross'
-            os: ubuntu-22.04
-          - compiler: 'gcc-arm32-qemu-cross'
-            os: ubuntu-22.04
-          - compiler: 'clang-arm64-qemu-cross'
-            os: ubuntu-22.04
-          - compiler: 'clang-arm32-qemu-cross'
-            os: ubuntu-22.04
+          - os: 24.04
+            compiler: 'gcc'
+          - os: 24.04
+            compiler: 'clang'
+          - os: 24.04
+            compiler: 'gcc-13'
+          - os: 24.04
+            compiler: 'gcc-14'
+          - os: 24.04
+            compiler: 'clang-16'
+          - os: 24.04
+            compiler: 'clang-17'
+          - os: 24.04
+            compiler: 'clang-18'
+          - os: 24.04
+            compiler: 'clang-19'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:

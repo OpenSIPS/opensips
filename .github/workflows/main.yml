@@ -27,17 +27,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [20.04, 22.04, 24.04]
+        os: [22.04, 24.04]
         compiler: ['gcc', 'clang']
         include:
-          - os: 20.04
-            compiler: 'gcc-9'
-          - os: 20.04
-            compiler: 'gcc-10'
-          - os: 20.04
-            compiler: 'clang-9'
-          - os: 20.04
-            compiler: 'clang-10'
           - os: 22.04
             compiler: 'gcc-11'
           - os: 22.04
@@ -56,6 +48,8 @@ jobs:
             compiler: 'clang-16'
           - os: 24.04
             compiler: 'clang-17'
+          - os: 24.04
+            compiler: 'clang-18'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:

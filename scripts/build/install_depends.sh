@@ -15,6 +15,10 @@ do
   then
     pkg="python-dev-is-python3"
   fi
+  if [ "${BUILD_OS%-*}" = "debian" -a "${pkg}" = libmysqlclient-dev ]
+  then
+    pkg="libmariadb-dev"
+  fi
   _PKGS="${_PKGS} ${pkg}"
 done
 PKGS="${_PKGS}"
