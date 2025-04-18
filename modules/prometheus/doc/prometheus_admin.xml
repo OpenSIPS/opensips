@@ -278,10 +278,11 @@ modparam("prometheus", "labels", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/")
 modparam("prometheus", "script_route", "my_custom_prometheus_route")
 ...
 route[my_custom_prometheus_route] {
-	# the returned JSON needs to contain an array of objects containing a header and a values field
-	# the header field to contain the custom prometheus stats header
-	# the values field is an array itself, of name/value objects 
-	# used for individual stats publishing
+	# * the returned JSON needs to contain an array of objects
+	#   containing a header and a values field
+	# * the header field to contain the custom prometheus stats header
+	# * the values field is an array itself, of name/value objects
+	#   used for individual stats publishing
 	return (1, '[{
         "header": "# TYPE opensips_total_cps gauge",
         "values": [
@@ -341,6 +342,7 @@ route[my_custom_prometheus_route] {
 		</para>
 		<example>
 		<title><function moreinfo="none">prometheus_declare_stat</function> usage</title>
+		<programlisting format="linespecific">
 ...
 modparam("prometheus", "script_route", "my_custom_prometheus_route")
 ...
@@ -350,7 +352,6 @@ route[my_custom_prometheus_route] {
 	prometheus_push_stat(3);
 	...
 }
-		<programlisting format="linespecific">
 </programlisting>
 		</example>
 	</section>
@@ -395,6 +396,7 @@ route[my_custom_prometheus_route] {
 		</para>
 		<example>
 		<title><function moreinfo="none">prometheus_push_stat</function> usage</title>
+		<programlisting format="linespecific">
 ...
 modparam("prometheus", "script_route", "my_custom_prometheus_route")
 ...
@@ -408,7 +410,6 @@ route[my_custom_prometheus_route] {
 	prometheus_push_stat(10, "gateway", "gw1"); # same as the above
 	...
 }
-		<programlisting format="linespecific">
 </programlisting>
 		</example>
 	</section>
