@@ -204,6 +204,8 @@ jobs:
     needs: [build_rtp_io_dock, set_env]
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' }}
+    permissions:
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -219,6 +221,13 @@ jobs:
       uses: docker/setup-qemu-action@v3
       with:
         platforms: ${{ env.TARGETPLATFORM }}
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test ${{ env.TARGETPLATFORM }}
       run: |

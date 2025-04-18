@@ -1715,7 +1715,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		case TR_SDP_STREAM_DEL:
 			/* determine the media type we are talking about
 			 * either by index or by name */
-			media.s = NULL;
+			media = STR_NULL;
 			entryNo = 0;
 			switch (tp->type) {
 				case TR_PARAM_NUMBER:

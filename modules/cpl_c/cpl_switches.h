@@ -190,7 +190,7 @@ static inline char *run_address_switch( struct cpl_interpreter *intr )
 							goto script_error;
 					}
 					LM_DBG("extracted val. is <%.*s>\n",
-						(msg_val==0)?0:msg_val->len, (msg_val==0)?0:msg_val->s);
+						(msg_val==0)?0:msg_val->len, (msg_val==0)?"":msg_val->s);
 				}
 				/* does the value from script match the one from message? */
 				switch (attr_name) {
