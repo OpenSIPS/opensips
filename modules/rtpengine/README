@@ -442,6 +442,15 @@ modparam("rtpengine", "ping_enabled", yes)
 
 1.5. Exported Functions
 
+    Many rtpengine_* functions accept a "sock_var" parameter that
+    will be populated with the socket of the RTPEngine chosen for
+    the particular operation. The format of the data stored in
+    "sock_var" is: "proto:ip:port".  If the "sock_var" has
+    been specified and it is non-NULL then it will be used to
+    determine the specific RTPEngine to use.  Note that the socket
+    specified by "sock_var" must be a member of the current RTPEngine
+    Set context.
+
 1.5.1.  rtpengine_use_set(setid)
 
    Sets the ID of the RTP proxy set to be used for the next
