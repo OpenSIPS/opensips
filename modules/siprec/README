@@ -26,10 +26,10 @@ SIPREC Module
 
         1.9. Exported Functions
 
-              1.9.1. siprec_start_recording(srs)
-              1.9.2. siprec_pause_recording()
-              1.9.3. siprec_resume_recording()
-              1.9.4. siprec_stop_recording()
+              1.9.1. siprec_start_recording(srs[, instance])
+              1.9.2. siprec_pause_recording([instance])
+              1.9.3. siprec_resume_recording([instance])
+              1.9.4. siprec_stop_recording([instance])
               1.9.5. siprec_send_indialog([hdrs[, body]])
 
         1.10. Exported Pseudo-Variables
@@ -217,6 +217,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
      * callid - Call-Id (B2B id) of the SIPREC call;
      * session_id - SIPREC UUID of the recording call;
      * server - the SIPREC server handing this call;
+     * instance - the SIPREC instance this event is triggered for;
 
 1.8.2.  E_SIPREC_STOP
 
@@ -227,7 +228,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 
 1.9. Exported Functions
 
-1.9.1.  siprec_start_recording(srs)
+1.9.1.  siprec_start_recording(srs[, instance])
 
    Calling this function on an initial INVITE engages call
    recording to SRS(s) for that call. Note that it does not
@@ -244,6 +245,9 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
      * srs (string) - a comma-separated list of SRS URIs. These
        URIs are used in the order specified. See
        siprec_srs_failover for more information.
+     * instance (string, optional) - used to start a particular
+       SIPREC instance. When missing, the default instance is
+       started.
 
    The function returns false when an internal error is triggered
    and the call recording setup fails. Otherwise, if all the
@@ -303,10 +307,15 @@ fty5</callcenterCode>";
         siprec_start_recording($var(srs));
         ...
 
-1.9.2.  siprec_pause_recording()
+1.9.2.  siprec_pause_recording([instance])
 
    Pauses the recording for the ongoing call. Should be called
    after the dialog has matched.
+
+   Parameters:
+     * instance (string, optional) - used to pause a particular
+       SIPREC instance. When missing, the default instance is
+       paused.
 
    This function can be used from any route.
 
@@ -318,10 +327,15 @@ fty5</callcenterCode>";
         }
         ...
 
-1.9.3.  siprec_resume_recording()
+1.9.3.  siprec_resume_recording([instance])
 
    Resumes the recording for the ongoing call. Should be called
    after the dialog has matched.
+
+   Parameters:
+     * instance (string, optional) - used to resume a particular
+       SIPREC instance. When missing, the default instance is
+       resumed.
 
    This function can be used from any route.
 
@@ -333,10 +347,15 @@ fty5</callcenterCode>";
         }
         ...
 
-1.9.4.  siprec_stop_recording()
+1.9.4.  siprec_stop_recording([instance])
 
    Stops the recording for the ongoing call. Should be called for
    SIPREC sessions that have been previously started.
+
+   Parameters:
+     * instance (string, optional) - used to stop a particular
+       SIPREC instance. When missing, the default instance is
+       stopped.
 
    This function can be used from any route.
 
@@ -359,6 +378,9 @@ fty5</callcenterCode>";
        added to the generated request.
      * body (string, optional) - the body that will be added to
        the generated request.
+     * instance (string, optional) - used to send a request within
+       a particular SIPREC instance. When missing, the request is
+       sent in to the default instance.
 
    Example 1.10. Use siprec_send_indialog()
         ...
@@ -375,6 +397,10 @@ fty5</callcenterCode>";
    Used to modify/describe different siprec sessions parameters
    that should be taken into account by the
    siprec_start_recording() function.
+
+   The variable can be indexed with the instance the user wants to
+   tune the variable for. If missing, the the default instance is
+   being altered.
 
    The context of this variable is only limited to the current
    message processed - it is not available at the transaction or
@@ -423,7 +449,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 174 92 5737 1972
+   1. Razvan Crainea (@razvancrainea) 185 95 6350 2208
    2. Vlad Patrascu (@rvlad-patrascu) 16 11 166 149
    3. Liviu Chircu (@liviuchircu) 9 7 35 53
    4. Maksym Sobolyev (@sobomax) 6 4 12 11
