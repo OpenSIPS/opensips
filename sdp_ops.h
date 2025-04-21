@@ -26,6 +26,17 @@
 #define SDP_OPS_FL_DIRTY  (1<<0) /* the SDP buffer requires a rebuild */
 #define SDP_OPS_FL_NULL   (1<<1) /* the message has no SDP body */
 
+struct sdp_chunk_match {
+	str prefix;
+	int idx;
+};
+
+struct sdp_pv_param {
+	struct sdp_chunk_match match_stream;
+	struct sdp_chunk_match match_line;
+	struct sdp_chunk_match match_token;
+};
+
 struct sdp_body_part_ops {
 	str content_type;
 	str sdp;
@@ -36,5 +47,10 @@ struct sdp_body_part_ops {
 void free_sdp_ops(struct sdp_body_part_ops *ops);
 
 int pv_set_sdp(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
+int pv_parse_sdp_name(pv_spec_p sp, const str *in);
+
+int pv_get_sdp_line(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_set_sdp_line(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
+int pv_parse_sdp_line_name(pv_spec_p sp, const str *in);
 
 #endif /* __SDP_OPS_H__ */
