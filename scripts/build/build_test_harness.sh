@@ -2,6 +2,7 @@
 
 set -e
 
+. $(dirname $0)/build.conf.sub
 . $(dirname $0)/dockerize.sub
 
 make Makefile.conf

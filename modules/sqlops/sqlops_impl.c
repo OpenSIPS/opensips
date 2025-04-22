@@ -843,7 +843,7 @@ err1:
 int ops_sql_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
 		str *table, str *filter, str * order, pvname_list_t* dest, int one_col)
 {
-	cJSON *Jcols, *Jfilter;
+	cJSON *Jcols = NULL, *Jfilter;
 	int ret;
 
 	ret = _parse_json_col_and_filter( cols, filter, &Jcols, &Jfilter);
@@ -868,7 +868,7 @@ int ops_sql_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
 int ops_sql_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
 		str *table, str *filter)
 {
-	cJSON *Jcols, *Jfilter;
+	cJSON *Jcols = NULL, *Jfilter;
 	int ret;
 
 	ret = _parse_json_col_and_filter( cols, filter, &Jcols, &Jfilter);
@@ -892,7 +892,7 @@ int ops_sql_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
 int ops_sql_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 		str *cols)
 {
-	cJSON *Jcols, *Jfilter;
+	cJSON *Jcols = NULL, *Jfilter;
 	int ret;
 
 	ret = _parse_json_col_and_filter( cols, NULL, &Jcols, &Jfilter);
@@ -916,7 +916,7 @@ int ops_sql_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 int ops_sql_api_delete(struct db_url *url, struct sip_msg* msg,
 		str *table, str *filter)
 {
-	cJSON *Jcols, *Jfilter;
+	cJSON *Jcols = NULL, *Jfilter;
 	int ret;
 
 	ret = _parse_json_col_and_filter( NULL, filter, &Jcols, &Jfilter);
@@ -940,7 +940,7 @@ int ops_sql_api_delete(struct db_url *url, struct sip_msg* msg,
 int ops_sql_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 		str *cols)
 {
-	cJSON *Jcols, *Jfilter;
+	cJSON *Jcols = NULL, *Jfilter;
 	int ret;
 
 	ret = _parse_json_col_and_filter( cols, NULL, &Jcols, &Jfilter);
