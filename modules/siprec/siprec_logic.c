@@ -594,15 +594,16 @@ unlock:
 }
 
 
+/* this function is being called with the lock taken */
 int srec_late_recording(struct src_sess *sess)
 {
-	SIPREC_REF(sess);
+	SIPREC_REF_UNSAFE(sess);
 	sess->flags |= SIPREC_LATE;
 	if (srec_dlg.register_dlgcb(sess->ctx->dlg, DLGCB_REQ_WITHIN,
 			srec_dlg_late, sess, dlg_src_unref_session)){
 		LM_ERR("cannot register callback for late negotiation\n");
 		sess->flags &= ~SIPREC_LATE;
-		SIPREC_UNREF(sess);
+		SIPREC_UNREF_UNSAFE(sess);
 		return -1;
 	}
 	return 0;
