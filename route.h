@@ -176,7 +176,7 @@ void get_route_name(int idx, str *name);
 	((_ref)!=NULL && (_ref)->idx!=-1)
 
 #define ref_script_route_check_and_update(_ref) \
-	((_ref)!=NULL && (\
+	(sroutes && (_ref)!=NULL && (\
 		((_ref)->u.version==sroutes->version)\
 		||\
 		(update_script_route_ref(_ref)==0 && ((_ref)->u.version=sroutes->version))\
