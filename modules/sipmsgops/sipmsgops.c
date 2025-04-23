@@ -1362,7 +1362,7 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 						}
 						if (parse_uri( to->uri.s, to->uri.len, &uri2)<0) {
 							LM_ERR("invalid uri [%.*s] in second [%.*s] "
-								"value\n", to->uri.len, redat_pii(to->uri.s),
+								"value\n", to->uri.len, redact_pii(to->uri.s),
 								hf2->name.len, hf2->name.s);
 							goto failed;
 						}
