@@ -702,7 +702,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 		do { \
 			int w; \
 			for(w=0;w<rla_idx;w++) \
-				LM_CRIT("[%d]-> [%s]",w,rla[w]); \
+				LM_CRIT("[%d]-> [%s]\n",w,rla[w]); \
 		} while(0)
 
 	if ((fd<0) || (fd>=h->max_fd_no)){
