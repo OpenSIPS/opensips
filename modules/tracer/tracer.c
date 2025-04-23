@@ -3294,7 +3294,7 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 			break;
 		case TYPE_SIP:
 			if (parse_uri(p_uri, uri.len, &elem->elem.el.uri) < 0) {
-				LM_ERR("failed to parse the [%.*s] URI\n", uri.len, recat_pii(p_uri));
+				LM_ERR("failed to parse the [%.*s] URI\n", uri.len, redact_pii(p_uri));
 				goto error;
 			}
 			break;

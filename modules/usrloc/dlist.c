@@ -530,7 +530,7 @@ skip_coords:
 		}
 		if (parse_uri(next_hop_uri.s, next_hop_uri.len, &puri) < 0) {
 			LM_ERR("failed to parse URI of next hop: '%.*s'\n",
-				   next_hop_uri.len, react_pii(next_hop_uri.s));
+				   next_hop_uri.len, redact_pii(next_hop_uri.s));
 			goto out_free;
 		}
 	}
