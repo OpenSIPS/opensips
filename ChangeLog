@@ -1,3 +1,355 @@
+=========================== Release 3.5.5 ==============================
+
+2025-04-23  Liviu Chircu  <liviu@opensips.org>
+        * [83c32524fc] :
+
+        Fix TCP Main crash with E_SHM_THRESHOLD
+
+        TCP Main has NULL @sroutes, so it would crash while raising the event.
+
+        (cherry picked from commit be8877214be8bfa0e930d20e3519129d98d6da30)
+
+
+2025-04-23  Liviu Chircu  <liviu@opensips.org>
+        * [b775af73d8] :
+
+        event_route: Fix crash when out of SHM
+
+        (cherry picked from commit 56c2c8eb890e9ab32deba626c9b8dece22d4bb0c)
+
+
+2025-04-20  OpenSIPS  <github@opensips.org>
+        * [25d3f7a7af] :
+
+        Rebuild documentation
+
+
+2025-04-17  jupiter  <36952362@qq.com>
+        * [77d1dab591] :
+
+        fix tls_mgm release domain issue
+
+        (cherry picked from commit 959beeb588917893ac31a555bb70e53bd903f723)
+
+
+2025-04-17  Your Name  <your-email@example.com>
+        * [0485ed1bf5] :
+
+        tls_openssl: fix openssl_tls_async_connect
+
+        The `fd` value here is used with `poll()`/`select()` in the event that `SSL_connect()`
+        gives an `SSL_ERROR_WANT_WRITE` error. So we need to be polling/selecting on the fd that
+        is used by the underlying socket, which is the fd passed as an argument to the function,
+        rather than `con->fd`.
+
+        It seems to me that `handle_io()` updates `con->fd` to match the received fd number only
+        when the socket wants reading and not when it wants writing. When the socket wants writing
+        the correct fd to use is the one that is passed in the function argument, not the one
+        that is in `con->fd`.
+
+        The reasons this mostly worked before are:
+
+        1.  on a box that is not heavily-loaded you often end up with the same worker setting up
+            the TLS session as opened the socket in the first place, so the fd in `con->fd happens
+            to be correct.
+        2.  if `SSL_connect()` happily connects straight away, without an `SSL_ERROR_WANT_WRITE`,
+            then you never run into a code path that uses the value in `fd` anyway.
+
+        (cherry picked from commit 58977a99484120d32e1bf7968a54c140e6465e78)
+
+
+2025-04-16  Liviu Chircu  <liviu@opensips.org>
+        * [4e34d08a6d] :
+
+        clusterer: Fix node pinging regression in 7d74f3dc
+
+        While commit 7d74f3dc fixed links going down during pinging, it
+        introduced a bug where node links could flip/flop between Up/Down state
+        intermittently on some setups.  This patch addresses the new issue.
+
+        (cherry picked from commit f98189afa57b4ce2b8c87cab0c4f015d3d81e8ec)
+
+
+2025-04-06  OpenSIPS  <github@opensips.org>
+        * [2ee8374753] :
+
+        Rebuild documentation
+
+
+2025-04-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [afd497a4d9] :
+
+        [async] make the resume route checking more tolerant to script reload
+
+        (cherry picked from commit 2a761a7805203935c2142259fee1a533fe1541ef)
+
+
+2025-04-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [659ff95c65] :
+
+        Fix launch crash if the resume route is not defined in script.
+
+        Also, if the route is not in found, do not run in sync, but rather run the cmd still in async mode, but without triggering the route.
+
+        (cherry picked from commit f3b33c482e6a76b79778d89c9d3e3c6b089e8aff)
+
+
+2025-04-02  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [744dbbb577] :
+
+        Fix 0'ed msg passed to callbacks on parse error.
+
+        This is a complition to af754d951b
+        In receive_msg(), even upon a parse error, we need the cripled msg to be passed to "error" handling callbacks (like pike or error_route).
+
+        (cherry picked from commit 1ad77d28050ac8acf2b2e7d23b7b5fb74624f057)
+
+
+2025-04-02  Razvan Crainea  <razvan@opensips.org>
+        * [3ef7f3a01b] :
+
+        dialog: restore buffer only if STR value
+
+        If an integer is returned, the buffer is no longer available, thus if it
+        will be used as a string next time, it will crash.
+
+        Completes #3135
+
+        (cherry picked from commit 2a28d960e0e7779d4a34c78d3526c41608a25cf3)
+
+
+2025-03-31  Razvan Crainea  <razvan@opensips.org>
+        * [3a1721fd16] :
+
+        dialog: add release function to send indialog callbacks
+
+        This fixes a bug in media_exchange where a reply callback is called
+        multiple times for retransmissions, unreffing the session multiple
+        times.
+
+        (cherry picked from commit 6d0f9e5c2fbaa4a2d1e9b5bcbf727a68fa619fb4)
+
+
+2025-03-30  OpenSIPS  <github@opensips.org>
+        * [f247e7d072] :
+
+        Rebuild documentation
+
+
+2025-03-26  Peter Lemenkov  <lemenkov@gmail.com>
+        * [25fe9ccb55] :
+
+        Fix pointer type on 32-bin ix86 machines
+
+        ```
+        aaa_diameter.c: In function ‘dm_send_answer’:
+        aaa_diameter.c:420:60: error: passing argument 4 of ‘reverse_hex2int64’ from incompatible pointer type [-Wincompatible-pointer-types]
+          420 |                 reverse_hex2int64(res.rs.s, res.rs.len, 1, &fd_req);
+              |                                                            ^~~~~~~
+              |                                                            |
+              |                                                            long unsigned int *
+        In file included from aaa_diameter.c:26:
+        ../../ut.h:399:78: note: expected ‘uint64_t *’ {aka ‘long long unsigned int *’} but argument is of type ‘long unsigned int *’
+          399 | inline static int reverse_hex2int64( char *c, int len, int unsafe, uint64_t *r)
+              |                                                                    ~~~~~~~~~~^
+        make[1]: *** [../../Makefile.rules:28: aaa_diameter.o] Error 1
+        make[1]: *** Waiting for unfinished jobs....
+        ```
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 12bc40870e776f57e9f1449227408999d8d4f0fa)
+
+
+2025-03-23  OpenSIPS  <github@opensips.org>
+        * [153fd25e37] :
+
+        Rebuild documentation
+
+
+2025-03-21  Razvan Crainea  <razvan@opensips.org>
+        * [5bae87bbf9] :
+
+        rtp_relay: prevent removing the context twice
+
+        (cherry picked from commit d40b04ec500c373c2312abce62585e235069582c)
+
+
+2025-03-21  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [241bf540d1] :
+
+        [tm] advertise T during t_inject()
+
+        This is a side effect of e00f63e0f7a58cdd914bf54b9555c3d4e6a47486.
+        The t_foraward_nonack() doesn;t internally need the T (as it take the transaction as parameter), but it triggers the branch route, where you may use different functions which do need the T.
+
+        (cherry picked from commit e2b6b02f375c2f2c4ef47ad043602a68533bfa44)
+
+
+2025-03-20  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [7f63b20c1a] :
+
+        Merge pull request #3604 from ovidiusas/master
+
+        sipmsgops: fix warning: ‘*’ may be used uninitialized [-Wmaybe-uninit…
+        (cherry picked from commit aef55070187fbdbf62a7243c6cbf16f9543e1af2)
+
+
+2025-03-19  Liviu Chircu  <liviu@opensips.org>
+        * [95b03e9c9d] :
+
+        event_stream: Avoid double-free of @con.pending_buffer
+
+        Fully zeroize the (str), avoid leaving a dangling pointer.
+
+        Credits to Steve Frecinaux for the report!
+
+        (cherry picked from commit d554d964992a40a449ddf826e04810c7c615c33c)
+
+
+2025-03-18  Răzvan Crainea  <razvan@opensips.org>
+        * [aeed29aaa0] :
+
+        Merge pull request #3598 from purecloudlabs/fix/encode_flags_thinfo
+
+        Preserving the flags of the topology_hiding in non dialog mode in thi…
+
+        (cherry picked from commit 26d0ab0586e908463943c1381c2d70e100ecc8d5)
+
+
+2025-03-16  OpenSIPS  <github@opensips.org>
+        * [320901c147] :
+
+        Rebuild documentation
+
+
+2025-03-13  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [25bafb885f] :
+
+        Merge pull request #3599 from nikbyte/master
+
+        Ensure proper memory deallocation in case of parsing errors in parse_msg()
+
+        (cherry picked from commit 6ba378a3097164911c73d0973b6f5c1d27a6180c)
+
+
+2025-03-11  Razvan Crainea  <razvan@opensips.org>
+        * [5617a32764] :
+
+        rtp_relay: remove session on timeout
+
+        (cherry picked from commit 619ee7b195a031e5ee46e6c8f26d822bef14a6ed)
+
+
+2025-03-10  Razvan Crainea  <razvan@opensips.org>
+        * [3690653cf8] :
+
+        media_exchange: fix leg detection on media_exchange_from_uri
+
+        (cherry picked from commit db99d0ea4cd924c3b38851f9afb06c0bedb3794f)
+
+
+2025-03-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f1cc204de1] :
+
+        [tm] t_lookup_ident() must not mess up with T
+
+        As t_lookup_ident() returns the found transaction via a parameter, it must not touch T. Everywhere where it is used, the code does not need/rely on T, but is always using only the trasaction from the returned param.
+        Setting the T is actually creating problem, as it it should set/restor T after a lookup.
+        This is an alternative fix to #3502
+
+        (cherry picked from commit e00f63e0f7a58cdd914bf54b9555c3d4e6a47486)
+
+
+2025-03-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a0c9e7630b] :
+
+        [tm] avoid missing transaction unref if `to_tag` is missing in `tm_reply` MI cmd
+
+        (cherry picked from commit 1097b4d9716772d71b762fd5970f1f7893ef7885)
+
+
+2025-03-09  OpenSIPS  <github@opensips.org>
+        * [881600e375] :
+
+        Rebuild documentation
+
+
+2025-03-07  Liviu Chircu  <liviu@opensips.org>
+        * [754d0ee295] :
+
+        clusterer: Fix sharing tag deadlock during dialog sync
+
+        * fix edge-cases with "return 0" without releasing lock
+        * fix convoluted logic mixing up read/write lock state on return
+        * undo premature optimization on read/write locking (just write-lock it)
+
+        (cherry picked from commit 4ae0537f46af3f86505426e42cac1d9c43f9ae0c)
+
+
+2025-03-06  Norm Brandinger  <n.brandinger@gmail.com>
+        * [798aea3e6d] :
+
+        Fix sql_query required parameters
+
+        (cherry picked from commit 28c554f0f67b058c7570597d3815cf429df856ac)
+
+
+2025-03-05  Răzvan Crainea  <razvan@opensips.org>
+        * [f065926ae3] :
+
+        Merge pull request #3532 from hateeyan/fd
+
+        rtpengine: Update fd when node reconnects
+        (cherry picked from commit 84c6b81265ddac8369250fe17eaf0c4a9b2066aa)
+
+
+2025-03-03  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [200f1dc878] :
+
+        Merge pull request #3528 from vladpaiu/fix_inject_before_relay
+
+        fix: update cloned msg under lock to avoid races with branch injection
+        (cherry picked from commit b868e00a20210e006127ab8a4f9a10e0ddda1c36)
+
+
+2025-03-02  OpenSIPS  <github@opensips.org>
+        * [aaa2999dda] :
+
+        Rebuild documentation
+
+
+2025-02-26  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [5325f8cbc0] :
+
+        Merge pull request #3576 from nikbyte/memfix_sqlops
+
+        Fix sqlops memory leak in sql_avp_load / sql_avp_delete / sql_avp_store (for 3.5 and master)
+
+        (cherry picked from commit 523ed18adb3dba46bcee2561da985a5d7d540dd1)
+
+
+2025-02-23  OpenSIPS  <github@opensips.org>
+        * [3348de9c1a] :
+
+        Rebuild documentation
+
+
+2025-02-21  Razvan Crainea  <razvan@opensips.org>
+        * [d75bc9d89b] :
+
+        rtp_relay: provide message for B2B local replies
+
+        Reported in #3580
+
+        (cherry picked from commit d792db2e2e4f00daddbf01b8022562da88674894)
+
+
+2025-02-19  Liviu Chircu  <liviu@opensips.org>
+        * [d4694ffcd3] :
+
+        Use actions/cache@v4, actions/upload-artifact@v4, actions/checkout@v4
+
+
 =========================== Release 3.5.4 ==============================
 
 2025-02-16  OpenSIPS  <github@opensips.org>
