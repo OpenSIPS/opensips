@@ -53,4 +53,8 @@ int pv_get_sdp_line(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_sdp_line(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
 int pv_parse_sdp_line_name(pv_spec_p sp, const str *in);
 
+int pv_get_sdp_stream(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_set_sdp_stream(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
+int pv_parse_sdp_stream_name(pv_spec_p sp, const str *in);
+
 #endif /* __SDP_OPS_H__ */
