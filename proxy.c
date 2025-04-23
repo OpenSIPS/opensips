@@ -312,7 +312,7 @@ struct proxy_l* mk_shm_proxy(str* name, unsigned short port, unsigned short prot
 		disable_dns_failover?0:&p->dn );
 	if (he==0){
 		ser_error=E_BAD_ADDRESS;
-		LM_CRIT("could not resolve hostname: \"%.*s\"\n", name->len, name->s);
+		LM_CRIT("could not resolve hostname: \"%.*s\"\n", name->len, redact_pii(name->s));
 		shm_free(p);
 		goto error;
 	}

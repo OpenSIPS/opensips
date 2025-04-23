@@ -42,6 +42,7 @@
 /* needed by tcpconn_add_alias() */
 #include "net/tcp_conn_defs.h"
 #include "net/net_tcp.h"
+#include "redact_pii.h"
 
 static int fixup_forward_dest(void** param);
 static int fixup_destination(void** param);
@@ -479,7 +480,7 @@ static int fixup_f_send_sock(void** param)
 
 	he=resolvehost(host_nt.s,0);
 	if (he==0){
-		LM_ERR(" could not resolve %s\n", host_nt.s);
+		LM_ERR(" could not resolve %s\n", redact_pii(host_nt.s));
 		goto error;
 	}
 	hostent2ip_addr(&ip, he, 0);

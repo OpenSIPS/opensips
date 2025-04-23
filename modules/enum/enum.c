@@ -35,6 +35,7 @@
 #include "../../regexp.h"
 #include "../../pvar.h"
 #include "../../mod_fix.h"
+#include "../../redact_pii.h"
 
 /*
  * Input: E.164 number w/o leading +
@@ -348,7 +349,7 @@ int is_from_user_enum(struct sip_msg* _msg, str* suffix, str* service)
 			if(parse_uri(result.s, result.len, &luri) < 0)
 			{
 				LM_ERR("Parsing of URI <%.*s> failed\n",
-				       result.len, result.s);
+				       result.len, redact_pii(result.s));
 				free_rdata_list(head); /*clean up*/
 				return -7;
 			}
@@ -362,7 +363,7 @@ int is_from_user_enum(struct sip_msg* _msg, str* suffix, str* service)
 				(luri.type==SIPS_URI_T)?1:0 , 0);
 			if (he == NULL){
 				LM_ERR("Resolving URI <%.*s> failed\n",
-					   result.len, result.s);
+					   result.len, redact_pii(result.s));
 				free_rdata_list(head); /*clean up*/
 				return -9;
 			}
@@ -606,7 +607,7 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
 	    new_result.len = MAX_URI_SIZE;
 	    if (add_uri_param(&result, &param, &new_result) == 0) {
 		LM_ERR("Parsing of URI <%.*s> failed\n",
-		       result.len, result.s);
+		       result.len, redact_pii(result.s));
 		continue;
 	    }
 	    if (new_result.len > 0) {

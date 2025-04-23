@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <strings.h>
 #include "../mem/mem.h"
+#include "../redact_pii.h"
 #include "parse_list_hdr.h"
 
 
@@ -100,7 +101,7 @@ int parse_list_hdr(char *body, int len, struct list_hdr **lh)
 
 parse_error:
 	LM_ERR("parse error in list hdr body [%.*s] around position "
-		"%d\n", len, body, (int)(long)(p-body));
+		"%d\n", len, redact_pii(body), (int)(long)(p-body));
 error:
 	free_list_hdr( head );
 	return -1;
@@ -128,7 +129,7 @@ int list_hdr_has_option(struct hdr_field *hdr, str *opt)
 		if (parse_list_hdr( hdr->body.s, hdr->body.len, &lh)!=0) {
 
 			LM_ERR("failed to parse body <%.*s> as CSV for hdr <%.*s>\n",
-				hdr->body.len, hdr->body.s, hdr->name.len, hdr->name.s);
+				hdr->body.len, redact_pii(hdr->body.s), hdr->name.len, hdr->name.s);
 			/* skip this header, try next */
 
 		} else {

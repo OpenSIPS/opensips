@@ -31,6 +31,7 @@
 #include "../../ut.h"
 #include "../../lib/csv.h"
 #include "../../status_report.h"
+#include "../../redact_pii.h"
 
 #include "dr_load.h"
 #include "prefix_tree.h"
@@ -4348,7 +4349,7 @@ static int _uri_to_ip_port(str *uri, struct ip_addr *ip, int *port, int *proto)
 
 	memset( &puri, 0, sizeof(struct sip_uri));
 	if (parse_uri(uri->s, uri->len, &puri)!=0) {
-		LM_ERR("invalid sip uri <%.*s>\n", uri->len, uri->s);
+		LM_ERR("invalid sip uri <%.*s>\n", uri->len, redact_pii(uri->s));
 		return -1;
 	}
 
@@ -4422,7 +4423,7 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 	int proto;
 
 	if (_uri_to_ip_port( uri, &ip, &port, &proto)!=0) {
-		LM_ERR("failed to extract IP/port from uri <%.*s>\n", uri->len,uri->s);
+		LM_ERR("failed to extract IP/port from uri <%.*s>\n", uri->len,redact_pii(uri->s));
 		return -1;
 	}
 

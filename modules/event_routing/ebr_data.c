@@ -27,6 +27,7 @@
 #include "../../action.h"
 #include "../../route.h"
 #include "../../evi/evi_modules.h"
+#include "../../redact_pii.h"
 #include "../tm/tm_load.h"
 
 #include "ebr_data.h"
@@ -403,7 +404,7 @@ static inline int ebr_filter_match_evp(const ebr_filter *filter,
 
 		if (parse_uri(e_param->val.s.s, e_param->val.s.len, &puri) != 0) {
 			LM_ERR("failed to parse URI: '%.*s'\n",
-			       e_param->val.s.len, e_param->val.s.s);
+			       e_param->val.s.len, redact_pii(e_param->val.s.s));
 			return 0;
 		}
 

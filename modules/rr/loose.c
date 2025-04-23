@@ -51,6 +51,7 @@
 #include "../../parser/parse_from.h"
 #include "../../mem/mem.h"
 #include "../../dset.h"
+#include "../../redact_pii.h"
 #include "loose.h"
 #include "rr_cb.h"
 #include "rr_mod.h"
@@ -530,7 +531,7 @@ static inline int after_strict(struct sip_msg* _m)
 		} else {
 			if (enable_socket_mismatch_warning)
 				LM_WARN("no socket found to match 2nd RR [%d][%.*s:%d]\n",
-					puri.proto, puri.host.len, puri.host.s, puri.port_no);
+					puri.proto, puri.host.len, redact_pii(puri.host.s), puri.port_no);
 		}
 
 		/* mark route hdr as deleted */
@@ -573,7 +574,7 @@ static inline int after_strict(struct sip_msg* _m)
 		} else {
 			if (enable_socket_mismatch_warning)
 				LM_WARN("no socket found to match RR [%d][%.*s:%d]\n",
-					proto, _m->parsed_uri.host.len, _m->parsed_uri.host.s, port);
+					proto, _m->parsed_uri.host.len, redact_pii(_m->parsed_uri.host.s), port);
 		}
 	}
 
@@ -787,7 +788,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 			} else {
 				if (enable_socket_mismatch_warning)
 					LM_WARN("no socket found to match 2nd RR [%d][%.*s:%d]\n",
-						puri.proto, puri.host.len, puri.host.s, puri.port_no);
+						puri.proto, puri.host.len, redact_pii(puri.host.s), puri.port_no);
 			}
 
 			rt->deleted = 1;

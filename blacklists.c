@@ -40,6 +40,7 @@
 #include "context.h"
 #include "timer.h"
 #include "ut.h"
+#include "redact_pii.h"
 
 static struct bl_head *blst_heads;
 static unsigned int bl_default_marker;
@@ -1065,7 +1066,7 @@ static mi_response_t *mi_check_all_blacklists(const mi_params_t *params,
 		if (add_mi_string(resp_arr, NULL, 0, blst_heads[i].name.s,
 				blst_heads[i].name.len) < 0) {
 			LM_ERR("cannot add blacklist %.*s\n",
-					blst_heads[i].name.len, blst_heads[i].name.s);
+					blst_heads[i].name.len, redact_pii(blst_heads[i].name.s));
 			free_mi_response(resp);
 			resp = NULL;
 			goto end;

@@ -42,6 +42,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../mi/mi.h"
+#include "../../redact_pii.h"
 #include "../tm/tm_load.h"
 #include "../signaling/signaling.h"
 #include "../presence/bind_presence.h"
@@ -868,7 +869,7 @@ mi_response_t *mi_update_subscriptions(const mi_params_t *params,
 
 	if (parse_uri(uri.s, uri.len, &parsed_uri) < 0)
 	{
-		LM_ERR("bad uri: %.*s\n", uri.len, uri.s);
+		LM_ERR("bad uri: %.*s\n", uri.len, redact_pii(uri.s));
 		return 0;
 	}
 

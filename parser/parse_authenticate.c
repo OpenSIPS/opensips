@@ -30,6 +30,7 @@
 #include "../ut.h"
 #include "../lib/turbocompare.h"
 #include "../mem/mem.h"
+#include "../redact_pii.h"
 #include "msg_parser.h"
 #include "parse_authenticate.h"
 
@@ -320,7 +321,7 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 
 	return ret;
 parse_error:
-	LM_ERR("parse error in <%.*s> around %ld\n", body.len, body.s, (long)(body.len));
+	LM_ERR("parse error in <%.*s> around %ld\n", body.len, redact_pii(body.s), (long)(body.len));
 error:
 	return -1;
 }

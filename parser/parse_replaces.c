@@ -28,6 +28,7 @@
 #include "../ut.h"
 #include "../errinfo.h"
 #include "../mem/mem.h"
+#include "../redact_pii.h"
 #include "parse_replaces.h"
 
 /*
@@ -282,7 +283,7 @@ int parse_replaces_body(char* buf, int buf_len, struct replaces_body* replaces_b
 
 		default:
 			LM_CRIT("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
-			state, (int)(p-buf), ZSW(buf), (int)(p-buf), buf_len, ZSW(buf), buf_len);
+			state, (int)(p-buf), redact_pii(ZSW(buf)), (int)(p-buf), buf_len, redact_pii(ZSW(buf)), buf_len);
 			return -1;
 		}
 	}
@@ -335,7 +336,7 @@ int parse_replaces_body(char* buf, int buf_len, struct replaces_body* replaces_b
 
 	default:
 		LM_CRIT("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
-			state, (int)(p-buf), ZSW(buf), (int)(p-buf), buf_len, ZSW(buf), buf_len);
+			state, (int)(p-buf), redact_pii(ZSW(buf)), (int)(p-buf), buf_len, redact_pii(ZSW(buf)), buf_len);
 		return -1;
 	}
 

@@ -27,6 +27,7 @@
 #include "siprec_body.h"
 #include "../../mod_fix.h"
 #include "../../error.h"
+#include "../../redact_pii.h"
 
 int srec_dlg_idx;
 struct b2b_api srec_b2b;
@@ -481,7 +482,7 @@ static int srs_send_invite(struct src_sess *sess)
 		pkg_free(ci.extra_headers->s);
 	if (!client) {
 		LM_ERR("cannot start recording with %.*s!\n",
-				ci.req_uri.len, ci.req_uri.s);
+				ci.req_uri.len, redact_pii(ci.req_uri.s));
 		return -1;
 	}
 

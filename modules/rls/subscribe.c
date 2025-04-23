@@ -38,6 +38,7 @@
 #include "../../parser/parse_supported.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_rr.h"
+#include "../../redact_pii.h"
 #include "../presence/subscribe.h"
 #include "../presence/utils_func.h"
 #include "../presence/hash.h"
@@ -813,12 +814,12 @@ int send_resource_subs(char* uri, void* param)
 	send_sock = uri2sock(NULL, dest_uri, &dummy_su, PROTO_NONE);
 	if (send_sock == NULL) {
 		// if defined, s->outbound_proxy->s is null terminated because it is the presence_server modparam
-		LM_ERR("Failed to get sending socket for %s (outbound proxy = %s)\n", uri, s->outbound_proxy ? s->outbound_proxy->s : "none");
+		LM_ERR("Failed to get sending socket for %s (outbound proxy = %s)\n", redact_pii(uri), s->outbound_proxy ? s->outbound_proxy->s : "none");
 		return 1;
 	}
 
 	if (get_local_contact(send_sock, &contact_user, &contact) < 0) {
-		LM_ERR("Failed to get local contact for %s\n", uri);
+		LM_ERR("Failed to get local contact for %s\n", redact_pii(uri));
 		return 1;
 	}
 
@@ -846,7 +847,7 @@ int send_resource_subs(char* uri, void* param)
 	{
 		LM_WARN("%.*s has %.*s multiple times in the same resource list\n",
 				s->watcher_uri->len, s->watcher_uri->s,
-				s->pres_uri->len, s->pres_uri->s);
+				s->pres_uri->len, redact_pii(s->pres_uri->s));
 		return 1;
 	}
 

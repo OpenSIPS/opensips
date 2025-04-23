@@ -78,7 +78,7 @@ inline static struct proxy_l *uri2proxy( str *uri, int forced_proto )
 	enum sip_protos proto;
 
 	if (parse_uri(uri->s, uri->len, &parsed_uri) < 0) {
-		LM_ERR("bad_uri: %.*s\n", uri->len, uri->s );
+		LM_ERR("bad_uri: %.*s\n", uri->len, redact_pii(uri->s) );
 		return 0;
 	}
 

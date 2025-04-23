@@ -41,6 +41,7 @@
 #include "rest_methods.h"
 #include "../../ssl_init_tweaks.h"
 #include "../../pt.h"
+#include "../../redact_pii.h"
 
 /*
  * Module parameters
@@ -422,7 +423,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		curl_out = curl_easy_escape(sync_handle, input_str.s, input_str.len);
 		if (!curl_out) {
 			LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
-			       input_str.len, input_str.s);
+			       input_str.len, redact_pii(input_str.s));
 			goto error;
 		}
 
@@ -432,7 +433,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		curl_out = curl_escape(input_str.s, input_str.len);
 		if (!curl_out) {
 			LM_ERR("failed to execute curl_escape on '%.*s'\n",
-			       input_str.len, input_str.s);
+			       input_str.len, redact_pii(input_str.s));
 			goto error;
 		}
 
@@ -463,7 +464,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		curl_out = curl_easy_unescape(sync_handle, input_str.s, input_str.len, NULL);
 		if (!curl_out) {
 			LM_ERR("failed to execute curl_easy_unescape on '%.*s'\n",
-			       input_str.len, input_str.s);
+			       input_str.len, redact_pii(input_str.s));
 			goto error;
 		}
 
@@ -473,7 +474,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		curl_out = curl_unescape(input_str.s, input_str.len);
 		if (!curl_out) {
 			LM_ERR("failed to execute curl_unescape on '%.*s'\n",
-			       input_str.len, input_str.s);
+			       input_str.len, redact_pii(input_str.s));
 			goto error;
 		}
 

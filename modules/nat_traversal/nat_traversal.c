@@ -47,6 +47,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_expires.h"
 #include "../../parser/contact/parse_contact.h"
+#include "../../redact_pii.h"
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
 #include "clustering.h"
@@ -1989,7 +1990,7 @@ pv_parse_nat_contact_name(pv_spec_p sp, const str *in)
         }
         s = pv_parse_spec(in, nsp);
         if (s==NULL) {
-            LM_ERR("invalid name [%.*s]\n", in->len, in->s);
+            LM_ERR("invalid name [%.*s]\n", in->len, redact_pii(in->s));
             pv_spec_free(nsp);
             return -1;
         }

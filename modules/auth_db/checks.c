@@ -41,6 +41,7 @@
 #include "../../pvar.h"
 #include "../../script_var.h"
 #include "../../mod_fix.h"
+#include "../../redact_pii.h"
 #include "authdb_mod.h"
 #include "checks.h"
 
@@ -296,7 +297,7 @@ int get_auth_id(struct sip_msg* _msg, str *_table, str* uri,
 	if (parse_uri(uri->s, uri->len, &sip_uri) < 0
 	&& (sip_uri.user.s == NULL || sip_uri.user.len <= 0)) {
 		LM_ERR("First parameter must be a URI with username (val = '%.*s').",
-			uri->len, uri->s);
+			uri->len, redact_pii(uri->s));
 		return -1;
 	}
 

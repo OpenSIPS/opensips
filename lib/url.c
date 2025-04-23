@@ -25,6 +25,7 @@
 
 #include "../mem/mem.h"
 #include "../ut.h"
+#include "../redact_pii.h"
 
 #include "csv.h"
 
@@ -52,7 +53,7 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 #define ENSURE_N_LEFT(n) \
 	do { \
 		if (st.len < n) { \
-			LM_ERR("incomplete URL: '%.*s'\n", in->len, in->s); \
+			LM_ERR("incomplete URL: '%.*s'\n", in->len, redact_pii(in->s)); \
 			goto out_err; \
 		} \
 	} while (0)
@@ -96,14 +97,14 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 	if (opts & (URL_REQ_SCHEME|URL_REQ_SCHEME_GROUP)) {
 		if (!url->scheme.s || url->scheme.len <= 0) {
 			LM_ERR("incomplete \"scheme://\" part in URL %.*s\n",
-			       in->len, in->s);
+			       in->len, redact_pii(in->s));
 			goto out_err;
 		}
 
 		if ((opts & URL_REQ_SCHEME_GROUP) &&
 		    (!url->group_name.s || url->group_name.len <= 0)) {
 			LM_ERR("bad or missing \"scheme:group://\" part in URL %.*s\n",
-			       in->len, in->s);
+			       in->len, redact_pii(in->s));
 			goto out_err;
 		}
 	}
@@ -130,14 +131,14 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 
 	if (opts & URL_REQ_USER) {
 		if (!url->username.s || url->username.len <= 0) {
-			LM_ERR("missing \"username\" part in URL %.*s\n", in->len, in->s);
+			LM_ERR("missing \"username\" part in URL %.*s\n", in->len, redact_pii(in->s));
 			goto out_err;
 		}
 	}
 
 	if (opts & URL_REQ_PASS) {
 		if (!url->password.s || url->password.len <= 0) {
-			LM_ERR("missing \"password\" part in URL %.*s\n", in->len, in->s);
+			LM_ERR("missing \"password\" part in URL %.*s\n", in->len, redact_pii(in->s));
 			goto out_err;
 		}
 	}
@@ -149,14 +150,14 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 	hosts_chunk = __parse_csv_record(&hosts_db->s, 0, '/');
 
 	if (!hosts_chunk->s.s || hosts_chunk->s.len <= 0) {
-		LM_ERR("empty/missing \"host\" part in URL %.*s\n", in->len, in->s);
+		LM_ERR("empty/missing \"host\" part in URL %.*s\n", in->len, redact_pii(in->s));
 		goto out_err;
 	}
 
 	/* host1[:port1][,host2[:port2]...]] */
 	hosts = parse_csv_record(&hosts_chunk->s);
 	if (hosts->next && !(opts & URL_ALLOW_EXTRA_HOSTS)) {
-		LM_ERR("multiple hosts not allowed in URL %.*s\n", in->len, in->s);
+		LM_ERR("multiple hosts not allowed in URL %.*s\n", in->len, redact_pii(in->s));
 		goto out_err;
 	}
 
@@ -180,18 +181,18 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 		ch = memchr(rec->s.s, ':', rec->s.len);
 		if (ch) {
 			if (ch == rec->s.s) {
-				LM_ERR("empty \"host\" in URL %.*s\n", in->len, in->s);
+				LM_ERR("empty \"host\" in URL %.*s\n", in->len, redact_pii(in->s));
 				goto out_err;
 			}
 
 			port.len = rec->s.len - (ch + 1 - rec->s.s);
 			port.s = ch + 1;
 			if (port.len <= 0 && (opts & URL_REQ_PORT)) {
-				LM_ERR("empty \"port\" in URL %.*s\n", in->len, in->s);
+				LM_ERR("empty \"port\" in URL %.*s\n", in->len, redact_pii(in->s));
 				goto out_err;
 			}
 			if (str2short(&port, &hostlist->port) != 0) {
-				LM_ERR("bad \"port\" in URL %.*s\n", in->len, in->s);
+				LM_ERR("bad \"port\" in URL %.*s\n", in->len, redact_pii(in->s));
 				goto out_err;
 			}
 
@@ -208,7 +209,7 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 			url->database = hosts_chunk->next->s;
 
 	if (!url->database.s && (opts & URL_REQ_DB)) {
-		LM_ERR("missing \"database\" part in URL %.*s\n", in->len, in->s);
+		LM_ERR("missing \"database\" part in URL %.*s\n", in->len, redact_pii(in->s));
 		goto out_err;
 	}
 
@@ -237,7 +238,7 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 			if (ch) {
 				if (ch == rec->s.s) {
 					LM_ERR("empty \"key\" parameter part in URL %.*s\n",
-					       in->len, in->s);
+					       in->len, redact_pii(in->s));
 					goto out_err;
 				}
 
@@ -254,7 +255,7 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 	}
 
 	if (!url->params && (opts & URL_REQ_PARAMS)) {
-		LM_ERR("missing \"parameters\" part in URL %.*s\n", in->len, in->s);
+		LM_ERR("missing \"parameters\" part in URL %.*s\n", in->len, redact_pii(in->s));
 		goto out_err;
 	}
 

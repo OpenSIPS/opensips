@@ -62,6 +62,7 @@
 #include "../../mem/mem.h"
 #include "../../pvar.h"
 #include "../../mod_fix.h"
+#include "../../redact_pii.h"
 
 #include "sip_msg.h"
 #include "h_table.h"
@@ -553,13 +554,13 @@ static int fixup_phostport2proxy(void** param)
 	}
 
 	if (parse_phostport(s.s, s.len, &host.s, &host.len, &port, &proto)!=0){
-		LM_CRIT("invalid parameter <%.*s>\n",s.len, s.s);
+		LM_CRIT("invalid parameter <%.*s>\n",s.len, redact_pii(s.s));
 		return E_UNSPEC;
 	}
 
 	proxy = mk_proxy( &host, port, proto, 0);
 	if (proxy==0) {
-		LM_ERR("failed to resolve <%.*s>\n", host.len, host.s );
+		LM_ERR("failed to resolve <%.*s>\n", host.len, redact_pii(host.s) );
 		return ser_error;
 	}
 	*(param)=proxy;
@@ -1488,7 +1489,7 @@ static int w_t_new_request(struct sip_msg* msg, str *method,
 	if (body!=NULL) {
 		if ( (p=q_memchr(body->s, ' ', body->len))==NULL ) {
 			LM_ERR("Content Type not found in the beginning of body <%.*s>\n",
-				body->len, body->s);
+				body->len, redact_pii(body->s));
 			return -1;
 		}
 		/* build the Content-type header */

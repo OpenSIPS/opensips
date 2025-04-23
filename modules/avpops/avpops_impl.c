@@ -43,6 +43,7 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 #include "../../mem/mem.h"
+#include "../../redact_pii.h"
 #include "avpops_impl.h"
 #include "avpops_db.h"
 
@@ -296,7 +297,7 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 			/* check that uri contains user part */
 			if(!uri.user.s|| !uri.user.len)
 			{
-				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, redact_pii(uuid.s));
 				goto error;
 			}
 			else
@@ -309,7 +310,7 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 			/* check that uri contains host part */
 			if(!uri.host.len|| !uri.host.s)
 			{
-				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, redact_pii(uuid.s));
 				goto error;
 			}
 			else
@@ -474,7 +475,7 @@ int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
 			/* check that uri contains user part */
 			if(!uri.user.s|| !uri.user.len)
 			{
-				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, redact_pii(uuid.s));
 				goto error;
 			}
 			else
@@ -487,7 +488,7 @@ int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
 			/* check tah uri contains host part */
 			if(!uri.host.len|| !uri.host.s)
 			{
-				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, redact_pii(uuid.s));
 				goto error;
 			}
 			else
@@ -607,7 +608,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			/* check tha uri contains user part */
 			if(!uri.user.s|| !uri.user.len)
 			{
-				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, uuid.s);
+				LM_ERR("incomplet uri <%.*s> missing user\n", uuid.len, redact_pii(uuid.s));
 				goto error;
 			}
 			else
@@ -620,7 +621,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			/* check that uri contains host part */
 			if(!uri.host.len|| !uri.host.s)
 			{
-				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, uuid.s);
+				LM_ERR("incomplet uri <%.*s> missing host\n", uuid.len, redact_pii(uuid.s));
 				goto error;
 			}
 			else

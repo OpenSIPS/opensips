@@ -27,6 +27,7 @@
 #include "../../usr_avp.h"
 #include "../../mod_fix.h"
 #include "../../ut.h"
+#include "../../redact_pii.h"
 
 #include "mmgeoip.h"
 
@@ -143,7 +144,7 @@ static int mmg_lookup_cmd(struct sip_msg *msg, str *_fields, str *ipaddr_str,
 		if(rslt.s.len<0 || rslt.s.len>sizeof rslt_buf ||
 		add_avp(dstType|AVP_VAL_STR,dst_name,rslt)==-1 ) {
 			LM_ERR("Internal error processing field/IP '%s/%s'.\n",
-				token,ipaddr_buf);
+				token,redact_pii(ipaddr_buf));
 			geoip_free_lookup_res(lookup_res);
 			return -1;
 		}

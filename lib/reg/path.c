@@ -26,6 +26,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../ut.h"
 #include "../../strcommon.h"
+#include "../../redact_pii.h"
 
 #include "path.h"
 #include "config.h"
@@ -122,7 +123,7 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received,
 				                           &unescape_buf) != 0)
 					LM_ERR("failed to unescape received=%.*s\n",
 					       hooks.contact.received->body.len,
-					       hooks.contact.received->body.s);
+					       redact_pii(hooks.contact.received->body.s));
 				else
 					*received = unescape_buf;
 			}

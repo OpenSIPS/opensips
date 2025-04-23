@@ -28,6 +28,7 @@
 #include "../../usr_avp.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
+#include "../../redact_pii.h"
 
 #include "../../modules/usrloc/ul_evi.h"
 #include "../../modules/event_routing/api.h"
@@ -280,7 +281,7 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 	int i, is_cap_query = 1, is_handled_upstream = 0;
 
 	if (parse_uri(ct_uri->s, ct_uri->len, &puri) != 0) {
-		LM_ERR("failed to parse Contact URI '%.*s'\n", ct_uri->len, ct_uri->s);
+		LM_ERR("failed to parse Contact URI '%.*s'\n", ct_uri->len, redact_pii(ct_uri->s));
 		return -1;
 	}
 
@@ -551,7 +552,7 @@ static struct usr_avp *pn_trim_pn_params(evi_params_t *params)
               pn_has_uri_params(&p->val.s, &puri)) {
 			if (pn_remove_uri_params(&puri, p->val.s.len, &_sval) != 0) {
 				LM_ERR("failed to remove PN params from Contact '%.*s'\n",
-				       p->val.s.len, p->val.s.s);
+				       p->val.s.len, redact_pii(p->val.s.s));
 				sval = &p->val.s;
 			} else {
 				sval = &_sval;
@@ -631,13 +632,13 @@ int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz)
 	for (end = cts + sz; cts < end; cts++) {
 		if (parse_uri((*cts)->c.s, (*cts)->c.len, &puri) != 0) {
 			LM_ERR("failed to parse Contact '%.*s'\n",
-			       (*cts)->c.len, (*cts)->c.s);
+			       (*cts)->c.len, redact_pii((*cts)->c.s));
 			continue;
 		}
 
 		if (pn_trigger_pn(req, *cts, &puri) != 0) {
 			LM_ERR("failed to trigger PN for Contact: '%.*s'\n",
-			       (*cts)->c.len, (*cts)->c.s);
+			       (*cts)->c.len, redact_pii((*cts)->c.s));
 			continue;
 		}
 
@@ -660,7 +661,7 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 		if (get_uri_param_val(ct_uri, &f->uri_param_key, &f->val) != 0) {
 			LM_ERR("failed to locate '%.*s' URI param in Contact '%.*s'\n",
 			       f->uri_param_key.len, f->uri_param_key.s,
-			       ct->c.len, ct->c.s);
+			       ct->c.len, redact_pii(ct->c.s));
 			return -1;
 		}
 	}
@@ -668,7 +669,7 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 	if (ebr.notify_on_event(req, ev_ct_update, pn_ebr_filters,
 	        pn_trim_pn_params, pn_inject_branch, pn_refresh_timeout) != 0) {
 		LM_ERR("failed to EBR-subscribe to "UL_EV_CT_UPDATE", Contact: %.*s\n",
-		       ct->c.len, ct->c.s);
+		       ct->c.len, redact_pii(ct->c.s));
 		return -1;
 	}
 
@@ -693,7 +694,7 @@ int pn_has_uri_params(const str *ct, struct sip_uri *puri)
 		puri = &_puri;
 
 	if (parse_uri(ct->s, ct->len, puri) != 0) {
-		LM_ERR("failed to parse contact: '%.*s'\n", ct->len, ct->s);
+		LM_ERR("failed to parse contact: '%.*s'\n", ct->len, redact_pii(ct->s));
 		return 0;
 	}
 
@@ -791,7 +792,7 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 	/* locate "pn-purr" in the R-URI */
 	if (parse_sip_msg_uri(req) < 0) {
 		LM_ERR("failed to parse R-URI: '%.*s'\n",
-		       GET_RURI(req)->len, GET_RURI(req)->s);
+		       GET_RURI(req)->len, redact_pii(GET_RURI(req)->s));
 		return -1;
 	}
 
@@ -814,7 +815,7 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 
 	rt_uri = &((rr_t *)req->route->parsed)->nameaddr.uri;
 	if (parse_uri(rt_uri->s, rt_uri->len, &puri) != 0) {
-		LM_ERR("failed to parse Route URI: '%.*s'\n", rt_uri->len, rt_uri->s);
+		LM_ERR("failed to parse Route URI: '%.*s'\n", rt_uri->len, redact_pii(rt_uri->s));
 		return -1;
 	}
 
@@ -843,7 +844,7 @@ have_purr:
 	       purr->len, purr->s);
 
 	if (parse_uri(c->c.s, c->c.len, &puri) != 0) {
-		LM_ERR("failed to parse Contact: '%.*s'\n", c->c.len, c->c.s);
+		LM_ERR("failed to parse Contact: '%.*s'\n", c->c.len, redact_pii(c->c.s));
 		goto err_unlock;
 	}
 
@@ -852,7 +853,7 @@ have_purr:
 		if (get_uri_param_val(&puri, &f->uri_param_key, &f->val) != 0) {
 			LM_ERR("failed to locate '%.*s' URI param in Contact '%.*s'\n",
 			       f->uri_param_key.len, f->uri_param_key.s,
-			       c->c.len, c->c.s);
+			       c->c.len, redact_pii(c->c.s));
 			goto err_unlock;
 		}
 	}
@@ -861,7 +862,7 @@ have_purr:
 	if (ebr.async_wait_for_event(req, ctx, ev_ct_update, pn_ebr_filters,
 	          pn_trim_pn_params, pn_refresh_timeout) != 0) {
 		LM_ERR("failed to EBR-subscribe to "UL_EV_CT_UPDATE", ct: '%.*s'\n",
-		       c->c.len, c->c.s);
+		       c->c.len, redact_pii(c->c.s));
 		goto err_unlock;
 	}
 
@@ -892,7 +893,7 @@ int pn_add_reply_purr(const ucontact_t *ct)
 		return 0;
 
 	if (parse_uri(ct->c.s, ct->c.len, &puri) != 0) {
-		LM_ERR("failed to parse Contact URI: '%.*s'\n", ct->c.len, ct->c.s);
+		LM_ERR("failed to parse Contact URI: '%.*s'\n", ct->c.len, redact_pii(ct->c.s));
 		return -1;
 	}
 

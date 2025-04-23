@@ -79,6 +79,7 @@
 #include "blacklists.h"
 #include "msg_callbacks.h"
 #include "md5utils.h"
+#include "redact_pii.h"
 
 
 
@@ -486,7 +487,7 @@ int forward_reply(struct sip_msg* msg)
 					msg->via1->port?msg->via1->port:SIP_PORT,
 					msg->via1->proto)!=1){
 			LM_ERR("host in first via!=me : %.*s:%d\n",
-				msg->via1->host.len, msg->via1->host.s,	msg->via1->port);
+				msg->via1->host.len, redact_pii(msg->via1->host.s), msg->via1->port);
 			/* send error msg back? */
 			goto error;
 		}
