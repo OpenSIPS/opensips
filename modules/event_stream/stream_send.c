@@ -432,6 +432,8 @@ static void handle_new_stream(stream_send_t *stream)
 		}
 	}
 
+	return;
+
 error:
 	if (stream->async_ctx.status_cb)
 		stream_dispatch_status_cb(&stream->async_ctx, EVI_STATUS_FAIL);
