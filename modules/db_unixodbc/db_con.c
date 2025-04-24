@@ -190,12 +190,13 @@ err2:
 /*
  * Close the connection and release memory
  */
-void db_unixodbc_free_connection(struct my_con* con)
+void db_unixodbc_free_connection(struct pool_con* con)
 {
-	if (!con) return;
-	SQLFreeHandle(SQL_HANDLE_ENV, con->env);
-	SQLDisconnect(con->dbc);
-	SQLFreeHandle(SQL_HANDLE_DBC, con->dbc);
+	struct my_con* mcon = (struct my_con*)con;
+	if (!mcon) return;
+	SQLFreeHandle(SQL_HANDLE_ENV, mcon->env);
+	SQLDisconnect(mcon->dbc);
+	SQLFreeHandle(SQL_HANDLE_DBC, mcon->dbc);
 	pkg_free(con);
 }
 
