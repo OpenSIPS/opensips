@@ -181,6 +181,15 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 		goto error;
 	}
 
+	if (si->flags & SI_REUSEPORT) {
+		optval=1;
+		if (setsockopt(si->socket, SOL_SOCKET, SO_REUSEPORT ,
+						(void*)&optval, sizeof(optval)) ==-1){
+			LM_ERR("setsockopt: %s\n", strerror(errno));
+			goto error;
+		}
+	}
+
 	if (si->flags & SI_FRAG) {
 		/* no DF */
 #if defined(IP_MTU_DISCOVER)

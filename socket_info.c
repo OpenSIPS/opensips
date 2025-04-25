@@ -426,7 +426,54 @@ void push_sock2list(struct socket_info_full *si)
 	sock_listadd(&protos[si->socket_info.proto].listeners, si);
 }
 
+void pop_sock2list(struct socket_info_full *si)
+{
+	sock_listrm(&protos[si->socket_info.proto].listeners, si);
+}
 
+int update_default_socket_info(struct socket_info *si)
+{
+	switch (si->address.af) {
+		case AF_INET:
+			if (protos[si->proto].sendipv4 &&
+					(protos[si->proto].sendipv4->flags&SI_IS_LO) == 0)
+				return 0;
+			protos[si->proto].sendipv4 = si;
+			return 1;
+		case AF_INET6:
+			if (protos[si->proto].sendipv6 &&
+					(protos[si->proto].sendipv6->flags&SI_IS_LO) == 0)
+				return 0;
+			protos[si->proto].sendipv6 = si;
+			return 1;
+		default:
+			/* do nothing */
+			return 0;
+	}
+}
+
+void remove_default_socket_info(struct socket_info *si)
+{
+	struct socket_info_full *sif;
+	switch (si->address.af) {
+		case AF_INET:
+			if (si != protos[si->proto].sendipv4)
+				return;
+			protos[si->proto].sendipv4 = NULL;
+			break;
+		case AF_INET6:
+			if (si != protos[si->proto].sendipv6)
+				return;
+			protos[si->proto].sendipv6 = NULL;
+			break;
+		default:
+			/* do nothing */
+			return;
+	}
+	for (sif = protos[si->proto].listeners; sif; sif = sif->next)
+		if (update_default_socket_info(&sif->socket_info))
+			return;
+}
 
 /* add all family type addresses of interface if_name to the socket_info array
  * WARNING: it only works with ipv6 addresses on FreeBSD

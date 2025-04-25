@@ -633,6 +633,9 @@ int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
 struct socket_id *socket_info2id(struct socket_info *si);
 struct socket_info_full* new_sock_info( struct socket_id *sid);
 void push_sock2list(struct socket_info_full *si);
+void pop_sock2list(struct socket_info_full *si);
 void free_sock_info(struct socket_info_full* si);
+int update_default_socket_info(struct socket_info *si);
+void remove_default_socket_info(struct socket_info *si);
 
 #endif

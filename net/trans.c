@@ -252,12 +252,7 @@ int trans_init_udp_listeners(void)
 					}
 				}
 				/* set first IPv4 and IPv6 listeners for this proto */
-				if ((si->address.af==AF_INET) &&
-				(!protos[i].sendipv4 || (protos[i].sendipv4->flags&SI_IS_LO)))
-					protos[i].sendipv4=si;
-				if ((si->address.af==AF_INET6) &&
-				(!protos[i].sendipv6 || (protos[i].sendipv6->flags&SI_IS_LO)))
-					protos[i].sendipv6=si;
+				update_default_socket_info(si);
 			}
 
 	return 0;
