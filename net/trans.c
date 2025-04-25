@@ -243,6 +243,12 @@ int trans_init_all_listeners(void)
 						protos[i].name );
 					return -1;
 				}
+				if (protos[i].tran.bind_listener && protos[i].tran.bind_listener(si)<0) {
+					LM_ERR("failed to bind listener [%.*s], proto %s\n",
+						si->name.len, si->name.s,
+						protos[i].name );
+					return -1;
+				}
 				/* set first IPv4 and IPv6 listeners for this proto */
 				if ((si->address.af==AF_INET) &&
 				(!protos[i].sendipv4 || (protos[i].sendipv4->flags&SI_IS_LO)))

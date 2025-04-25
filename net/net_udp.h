@@ -47,7 +47,10 @@ int udp_start_processes(int *chd_rank, int *startup_done);
 
 struct socket_info* udp_find_listener(union sockaddr_union* to, int proto);
 
-/* initializes an already defined TCP listener */
+/* initializes an already defined UDP listener */
 int udp_init_listener(struct socket_info *si, int status_flags);
+
+/* binds and initialized UDP listener */
+int udp_bind_listener(struct socket_info *si);
 
 #endif /* _NET_UDP_H_ */

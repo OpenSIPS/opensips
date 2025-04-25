@@ -54,6 +54,7 @@ static int proto_hep_init_udp(struct proto_info* pi);
 static int proto_hep_init_tcp(struct proto_info* pi);
 static int proto_hep_init_tls(struct proto_info* pi);
 static int proto_hep_init_udp_listener(struct socket_info* si);
+static int proto_hep_bind_udp_listener(struct socket_info* si);
 static int hep_tls_async_write(struct tcp_connection* con, int fd);
 static int hep_tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int hep_tls_read_req(struct tcp_connection* con, int* bytes_read);
@@ -274,6 +275,7 @@ static int proto_hep_init_udp(struct proto_info* pi)
 	pi->name               = "hep_udp";
 	pi->default_port       = hep_port;
 	pi->tran.init_listener = proto_hep_init_udp_listener;
+	pi->tran.bind_listener = proto_hep_bind_udp_listener;
 
 	pi->tran.send          = hep_udp_send;
 
@@ -343,6 +345,11 @@ static int proto_hep_init_tls(struct proto_info* pi)
 static int proto_hep_init_udp_listener(struct socket_info* si)
 {
 	return udp_init_listener(si, hep_async ? O_NONBLOCK : 0);
+}
+
+static int proto_hep_bind_udp_listener(struct socket_info* si)
+{
+	return udp_bind_listener(si);
 }
 
 static int hep_udp_send(const struct socket_info* send_sock,

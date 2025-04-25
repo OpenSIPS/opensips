@@ -268,6 +268,15 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 	if (probe_max_sock_buff(si->socket,0,MAX_RECV_BUFFER_SIZE,
 				BUFFER_INCREMENT)==-1) goto error;
 
+	return 0;
+
+error:
+	return -1;
+}
+
+int udp_bind_listener(struct socket_info *si)
+{
+	union sockaddr_union* addr = &si->su;
 	if (bind(si->socket,  &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s: %s\n", si->socket, &addr->s,
 				(unsigned)sockaddru_len(*addr),	si->address_str.s,
@@ -275,12 +284,9 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 		if (addr->s.sa_family==AF_INET6)
 			LM_ERR("might be caused by using a link "
 					" local address, try site local or global\n");
-		goto error;
+		return -1;
 	}
 	return 0;
-
-error:
-	return -1;
 }
 
 

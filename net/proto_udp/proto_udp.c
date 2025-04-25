@@ -43,6 +43,7 @@
 static int mod_init(void);
 static int proto_udp_init(struct proto_info *pi);
 static int proto_udp_init_listener(struct socket_info *si);
+static int proto_udp_bind_listener(struct socket_info *si);
 static int proto_udp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
@@ -104,6 +105,7 @@ static int proto_udp_init(struct proto_info *pi)
 	pi->default_port		= udp_port;
 
 	pi->tran.init_listener	= proto_udp_init_listener;
+	pi->tran.bind_listener	= proto_udp_bind_listener;
 	pi->tran.send			= proto_udp_send;
 
 	pi->net.flags			= PROTO_NET_USE_UDP;
@@ -120,6 +122,10 @@ static int proto_udp_init_listener(struct socket_info *si)
 	return udp_init_listener(si, O_NONBLOCK);
 }
 
+static int proto_udp_bind_listener(struct socket_info *si)
+{
+	return udp_bind_listener(si);
+}
 
 static int udp_read_req(const struct socket_info *si, int* bytes_read)
 {
