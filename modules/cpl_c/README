@@ -504,8 +504,8 @@ Chapter 2. Contributors
    6. Henning Westerholt (@henningw) 16 12 108 132
    7. Vlad Patrascu (@rvlad-patrascu) 11 8 117 111
    8. Andrei Pelinescu-Onciul 9 7 107 60
-   9. Jiri Kuthan (@jiriatipteldotorg) 7 2 372 25
-   10. Maksym Sobolyev (@sobomax) 6 4 8 10
+   9. Maksym Sobolyev (@sobomax) 7 5 9 11
+   10. Jiri Kuthan (@jiriatipteldotorg) 7 2 372 25
 
    All remaining contributors: Elena-Ramona Modroiu, Alexandra
    Titoc, Eric Tamme (@etamme), Dan Pascu (@danpascu), Nick
@@ -534,11 +534,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - May 2023
-   5.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2023
+   1.  Maksym Sobolyev (@sobomax)          Feb 2017 - Apr 2025
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - May 2023
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017

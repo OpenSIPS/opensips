@@ -252,11 +252,12 @@ modparam("prometheus", "labels", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/
 modparam("prometheus", "script_route", "my_custom_prometheus_route")
 ...
 route[my_custom_prometheus_route] {
-        # the returned JSON needs to contain an array of objects contain
-ing a header and a values field
-        # the header field to contain the custom prometheus stats header
-        # the values field is an array itself, of name/value objects
-        # used for individual stats publishing
+        # * the returned JSON needs to contain an array of objects
+        #   containing a header and a values field
+        # * the header field to contain the custom prometheus stats head
+er
+        # * the values field is an array itself, of name/value objects
+        #   used for individual stats publishing
         return (1, '[{
         "header": "# TYPE opensips_total_cps gauge",
         "values": [
@@ -299,11 +300,15 @@ ing a header and a values field
    the script_route parameter.
 
    Example 1.10. prometheus_declare_stat usage
-   ... modparam("prometheus", "script_route",
-   "my_custom_prometheus_route") ...
-   route[my_custom_prometheus_route] { ...
-   prometheus_declare_stat("opensips_cps");
-   prometheus_push_stat(3); ... }
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+...
+route[my_custom_prometheus_route] {
+        ...
+        prometheus_declare_stat("opensips_cps");
+        prometheus_push_stat(3);
+        ...
+}
 
 1.4.2.  prometheus_push_stat(value, [label_name], [label_value])
 
@@ -332,15 +337,20 @@ ing a header and a values field
    the script_route parameter.
 
    Example 1.11. prometheus_push_stat usage
-   ... modparam("prometheus", "script_route",
-   "my_custom_prometheus_route") ...
-   route[my_custom_prometheus_route] { ...
-   prometheus_declare_stat("opensips_cps");
-   prometheus_push_stat(3); # no label is being used
-   prometheus_declare_stat("opensips_cc"); # the next two are
-   equivalent prometheus_push_stat(10, "{gateway=\"gw1\"}"); # no
-   label is being used prometheus_push_stat(10, "gateway", "gw1");
-   # same as the above ... }
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+...
+route[my_custom_prometheus_route] {
+        ...
+        prometheus_declare_stat("opensips_cps");
+        prometheus_push_stat(3); # no label is being used
+        prometheus_declare_stat("opensips_cc");
+        # the next two are equivalent
+        prometheus_push_stat(10, "{gateway=\"gw1\"}"); # no label is bei
+ng used
+        prometheus_push_stat(10, "gateway", "gw1"); # same as the above
+        ...
+}
 
 1.5. Examples
 
@@ -370,8 +380,9 @@ Chapter 2. Contributors
    2. Maksym Sobolyev (@sobomax)         4        2       2        3
    3. Dudu Ben Moshe                     4        1      272       0
    4. Vlad Paiu (@vladpaiu)              3        1       6        6
-   5. Liviu Chircu (@liviuchircu)        3        1       1        1
-   6. OpenSIPS                           3        1       1        1
+   5. Ovidiu Sas (@ovidiusas)            3        1       6        5
+   6. Liviu Chircu (@liviuchircu)        3        1       1        1
+   7. OpenSIPS                           3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -393,12 +404,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Feb 2021 - Nov 2024
-   2. Vlad Paiu (@vladpaiu)           May 2024 - May 2024
-   3. Dudu Ben Moshe                  Feb 2024 - Feb 2024
-   4. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
-   5. Liviu Chircu (@liviuchircu)     Aug 2022 - Aug 2022
-   6. OpenSIPS                        Feb 2021 - Feb 2021
+   1. Ovidiu Sas (@ovidiusas)         Apr 2025 - Apr 2025
+   2. Razvan Crainea (@razvancrainea) Feb 2021 - Nov 2024
+   3. Vlad Paiu (@vladpaiu)           May 2024 - May 2024
+   4. Dudu Ben Moshe                  Feb 2024 - Feb 2024
+   5. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
+   6. Liviu Chircu (@liviuchircu)     Aug 2022 - Aug 2022
+   7. OpenSIPS                        Feb 2021 - Feb 2021
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -407,8 +419,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Dudu Ben
-   Moshe, Liviu Chircu (@liviuchircu), OpenSIPS.
+   Last edited by: Ovidiu Sas (@ovidiusas), Razvan Crainea
+   (@razvancrainea), Dudu Ben Moshe, Liviu Chircu (@liviuchircu),
+   OpenSIPS.
 
    Documentation Copyrights:
 
