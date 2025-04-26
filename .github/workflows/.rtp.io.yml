@@ -41,7 +41,7 @@ jobs:
     - name: Set dynamic environment
       id: set-env
       run: |
-        BUILD_OS="`echo ${{ inputs.rtpp-tag }} | sed 's|-.*|| ; s|_|-|g'`"
+        BUILD_OS="`echo ${{ inputs.rtpp-tag }} | sed 's|-.*|| ; s|_|:|g'`"
         PLATFORMS="`docker manifest inspect ${{ env.BASE_IMAGE }} | \
           jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)\(if .platform.variant != null then "/\(.platform.variant)" else "" end)"' | \
           sort -u | grep -v unknown | BUILD_OS="${BUILD_OS}" ./scripts/build/get-arch-buildargs.rtp.io fltplatforms | paste -sd ','`"
@@ -169,7 +169,8 @@ jobs:
       id: set-env
       run: |
         OUTPUT_TAG="myimage:`echo ${{ matrix.platform }} | sed 's|/|-|g'`"
-        OUTPUT_IMAGE_N="image-${BUILD_OS}-`echo ${{ matrix.platform }} | sed 's|/|-|g'`"
+        _BUILD_OS="`echo ${BUILD_OS} | sed 's|:|-|g'`"
+        OUTPUT_IMAGE_N="image-${_BUILD_OS}-`echo ${{ matrix.platform }} | sed 's|/|-|g'`"
         OUTPUT_IMAGE="./${OUTPUT_IMAGE_N}.tar"
         CACHE_SPEC="type=gha,scope=${OUTPUT_IMAGE_N}-buildcache"
         echo OUTPUT_TAG="${OUTPUT_TAG}" >> $GITHUB_ENV
@@ -255,7 +256,8 @@ jobs:
       id: set-env
       run: |
         OUTPUT_TAG="myimage:`echo ${{ matrix.platform }} | sed 's|/|-|g'`"
-        OUTPUT_IMAGE_N="image-${BUILD_OS}-`echo ${{ matrix.platform }} | sed 's|/|-|g'`"
+        _BUILD_OS="`echo ${BUILD_OS} | sed 's|:|-|g'`"
+        OUTPUT_IMAGE_N="image-${_BUILD_OS}-`echo ${{ matrix.platform }} | sed 's|/|-|g'`"
         OUTPUT_IMAGE="./${OUTPUT_IMAGE_N}.tar"
         echo OUTPUT_TAG="${OUTPUT_TAG}" >> $GITHUB_ENV
         echo OUTPUT_IMAGE="${OUTPUT_IMAGE}" >> $GITHUB_ENV

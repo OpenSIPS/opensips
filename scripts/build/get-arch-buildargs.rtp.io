@@ -4,7 +4,7 @@ set -e
 
 isbrokenplatform() {
   case "${BUILD_OS}" in
-  debian*)
+  debian:*)
     case "${TARGETPLATFORM}" in
     linux/386 | linux/arm/v7 | linux/mips64le | linux/ppc64le | linux/s390x)
       exit 1
@@ -24,7 +24,7 @@ isbrokenplatform() {
 
 fltplatforms() {
    case "${BUILD_OS}" in
-   debian*)
+   debian:*)
      FILT="grep -v -e ^linux/arm/v5\$" # broken 64-bit stdatomics
      ;;
    *)
@@ -37,7 +37,7 @@ fltplatforms() {
 platformopts() {
   out="COMPILER=clang-${LLVM_VER} LINKER=lld-${LLVM_VER}"
   case "${BUILD_OS}" in
-  debian*)
+  debian:*)
     case "${TARGETPLATFORM}" in
     linux/ppc64le | linux/arm/v7 | linux/mips64le | linux/arm/v5)
       out="COMPILER=clang-${LLVM_VER_OLD} LINKER=lld-${LLVM_VER_OLD}"
