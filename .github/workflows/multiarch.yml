@@ -17,7 +17,6 @@ jobs:
   build_multiarch:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    continue-on-error: true
     container:
       image: ubuntu:${{ matrix.os }}
       options: >-
@@ -71,16 +70,10 @@ jobs:
         if: endsWith(matrix.compiler, '-qemu-cross')
         run: scripts/build/print_ccache_stats.sh
 
-  notify:
-    runs-on: ubuntu-latest
+  all_done:
     needs: build_multiarch
-    steps:
-      - name: Notify slack fail
-        if: failure() && github.repository == 'OpenSIPS/opensips'
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
-        with:
-          channel: devel
-          status: FAILED
-          color: danger
+    uses: ./.github/workflows/.notify.yml
+    with:
+      job_name: "Multi-Architecture Build"
+      job_result: ${{ needs.build_multiarch.result }}
+    if: ${{ always() }}
