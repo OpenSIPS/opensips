@@ -277,7 +277,7 @@ void *shm_getmem(int fd, void *force_addr, unsigned long size)
 
 #if !defined(INLINE_ALLOC) && (defined(HP_MALLOC) || defined(F_PARALLEL_MALLOC))
 /* startup optimization */
-int shm_use_global_lock;
+int shm_use_global_lock = 1;
 #endif
 
 int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
@@ -307,8 +307,8 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 		shm_stats[4].stat_pointer = &shm_rused;
 		shm_stats[5].flags = STAT_NO_RESET;
 		shm_stats[5].stat_pointer = &shm_frags;
-	} else {
-		shm_use_global_lock = 1;
+
+		shm_use_global_lock = 0;
 	}
 #endif
 
@@ -316,8 +316,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||
 	mem_allocator_shm == MM_F_PARALLEL_MALLOC_DBG) {
 		shm_use_global_lock = 0;
-	} else {
-		shm_use_global_lock = 1;
 	}
 #endif
 
