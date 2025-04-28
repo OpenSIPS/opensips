@@ -130,3 +130,11 @@ jobs:
       fail-fast: false
       matrix:
         rtpp-tag: [debian_12-slim, ubuntu_latest]
+
+  all_done:
+    needs: build_test_rtp_io_dock
+    uses: ./.github/workflows/.notify.yml
+    with:
+      job_name: "rtp.io"
+      job_result: ${{ needs.build_test_rtp_io_dock.result }}
+    if: ${{ always() }}

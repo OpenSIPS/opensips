@@ -9,11 +9,11 @@ PKGS=$(cat "$(dirname $0)/apt_requirements.txt")
 _PKGS=""
 for pkg in ${PKGS}
 do
-  if [ "${BUILD_OS}" != ubuntu-20.04 -a "${BUILD_OS}" != ubuntu-18.04 -a "${pkg}" = python-dev ]
+  if [ "${BUILD_OS}" != "ubuntu:20.04" -a "${BUILD_OS}" != "ubuntu:18.04" -a "${pkg}" = python-dev ]
   then
     pkg="python-dev-is-python3"
   fi
-  if [ "${BUILD_OS%-*}" = "debian" -a "${pkg}" = libmysqlclient-dev ]
+  if [ "${BUILD_OS%:*}" = "debian" -a "${pkg}" = libmysqlclient-dev ]
   then
     pkg="libmariadb-dev"
   fi

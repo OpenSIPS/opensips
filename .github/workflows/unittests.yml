@@ -16,11 +16,14 @@ jobs:
   # This workflow contains a single job called "build"
   build_and_test:
     # The type of runner that the job will run on
-    runs-on: ubuntu-${{ matrix.os }}
-    continue-on-error: true
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:${{ matrix.os }}
+      options: >-
+        -v sources:/__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
     env:
       COMPILER: ${{ matrix.compiler }}
-      BUILD_OS: ubuntu-${{ matrix.os }}
+      BUILD_OS: ubuntu:${{ matrix.os }}
 
     strategy:
       fail-fast: false
@@ -28,6 +31,18 @@ jobs:
         os: [22.04]
         compiler: ['gcc', 'clang', 'gcc-11', 'gcc-12', 'clang-11', 'clang-12', 'clang-13', 'clang-14', 'clang-15', 'gcc-arm64-qemu-cross', 'gcc-arm32-qemu-cross', 'clang-arm64-qemu-cross', 'clang-arm32-qemu-cross']
         include:
+          - os: 20.04
+            compiler: 'gcc'
+          - os: 20.04
+            compiler: 'clang'
+          - os: 20.04
+            compiler: 'gcc-9'
+          - os: 20.04
+            compiler: 'gcc-10'
+          - os: 20.04
+            compiler: 'clang-9'
+          - os: 20.04
+            compiler: 'clang-10'
           - os: 24.04
             compiler: 'gcc'
           - os: 24.04
@@ -47,6 +62,11 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: Install git
+        run: |
+          apt-get update
+          apt-get install -y git lsb-release gnupg2 wget
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
         with:
@@ -99,17 +119,10 @@ jobs:
           path: |
             unit_tests.log
 
-  notify:
-    runs-on: ubuntu-latest
+  all_done:
     needs: build_and_test
-    steps:
-      - name: Notify slack fail
-        if: failure() && github.repository == 'OpenSIPS/opensips'
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
-        with:
-          channel: devel
-          status: FAILED
-          color: danger
-
+    uses: ./.github/workflows/.notify.yml
+    with:
+      job_name: "Unit Tests"
+      job_result: ${{ needs.build_and_test.result }}
+    if: ${{ always() }}

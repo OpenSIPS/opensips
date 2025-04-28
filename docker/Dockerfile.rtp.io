@@ -14,7 +14,7 @@ WORKDIR /src
 ARG LLVM_VER=18
 ARG LLVM_VER_OLD=16
 ARG TARGETPLATFORM
-ARG BUILD_OS=ubuntu-latest
+ARG BUILD_OS=ubuntu:latest
 RUN --mount=type=bind,source=scripts/build,target=scripts/build \
  --mount=type=cache,target=/var/cache/apt,sharing=locked \
  env `./scripts/build/get-arch-buildargs.rtp.io platformopts` \
