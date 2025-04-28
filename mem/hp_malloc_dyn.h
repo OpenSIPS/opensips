@@ -1484,7 +1484,7 @@ void hp_status(struct hp_block *hpb)
 		update_shm_stats(hpb);
 #endif
 
-	LM_GEN1(memdump, "hp_status (%p, ROUNDTO=%ld):\n", hpb, ROUNDTO);
+	LM_GEN1(memdump, "hp_status (%p):\n", hpb);
 	if (!hpb)
 		return;
 
