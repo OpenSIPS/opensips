@@ -28,14 +28,7 @@
 
 #undef ROUNDTO
 
-#if defined(__CPU_sparc64) || defined(__CPU_sparc)
-/* tricky, on sun in 32 bits mode long long must be 64 bits aligned
- * but long can be 32 bits aligned => malloc should return long long
- * aligned memory */
-	#define ROUNDTO		sizeof(long long)
-#else
-	#define ROUNDTO		sizeof(void *) /* address alignment, in bytes (2^n) */
-#endif
+#define ROUNDTO 8UL /* address alignment, in bytes */
 
 #define F_PARALLEL_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
 
