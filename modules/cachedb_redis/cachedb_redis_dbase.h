@@ -48,6 +48,17 @@ typedef struct cluster_nodes {
 	struct cluster_nodes *next;
 } cluster_node;
 
+typedef struct {
+    const char *s;
+    int len;
+} const_str;
+
+typedef struct {
+    int slot;
+    const_str endpoint;
+    int port;
+} redis_moved;
+
 
 #define CACHEDB_REDIS_DEFAULT_TIMEOUT 5000
 

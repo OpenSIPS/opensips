@@ -26,10 +26,31 @@
 #ifndef CACHEDB_REDIS_UTILSH
 #define CACHEDB_REDIS_UTILSH
 
+#define REDIS_DF_PORT  6379
+
+#define MOVED_PREFIX "MOVED "
+#define MOVED_PREFIX_LEN (sizeof(MOVED_PREFIX) - 1)
+
+#define ASK_PREFIX   "ASK "
+#define ASK_PREFIX_LEN (sizeof(ASK_PREFIX) - 1)
+
+#define ERR_INVALID_REPLY -1
+#define ERR_INVALID_SLOT -2
+#define ERR_INVALID_PORT -3
+
 #include "cachedb_redis_dbase.h"
 
 int build_cluster_nodes(redis_con *con,char *info,int size);
 cluster_node *get_redis_connection(redis_con *con,str *key);
+cluster_node *get_redis_connection_by_endpoint(redis_con *con, redis_moved *redis_info);
 void destroy_cluster_nodes(redis_con *con);
+
+static inline int match_prefix(const char *buf, size_t len, const char *prefix, size_t prefix_len) {
+    if (len < prefix_len) return 0;
+    for (size_t i = 0; i < prefix_len; ++i) {
+        if (buf[i] != prefix[i]) return 0;
+    }
+    return 1;
+}
 
 #endif
