@@ -44,6 +44,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size);
 cluster_node *get_redis_connection(redis_con *con,str *key);
 cluster_node *get_redis_connection_by_endpoint(redis_con *con, redis_moved *redis_info);
 void destroy_cluster_nodes(redis_con *con);
+int parse_moved_reply(redisReply *reply, redis_moved *out);
 
 static inline int match_prefix(const char *buf, size_t len, const char *prefix, size_t prefix_len) {
     if (len < prefix_len) return 0;
