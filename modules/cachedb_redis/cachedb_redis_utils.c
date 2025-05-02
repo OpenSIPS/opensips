@@ -367,10 +367,6 @@ int parse_moved_reply(redisReply *reply, redis_moved *out) {
     if (!reply || !reply->str || reply->len < MOVED_PREFIX_LEN || !out)
         return ERR_INVALID_REPLY;
 
-    // Check if the length of the reply buffer is too short
-    if (reply->len < MOVED_PREFIX_LEN) {
-	    return ERR_INVALID_REPLY;
-    }
 
     const char *p = reply->str;
     const char *end = reply->str + reply->len;
