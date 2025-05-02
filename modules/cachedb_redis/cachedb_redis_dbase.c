@@ -610,8 +610,6 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 					break;
 				}
 			} else {
-    				freeReplyObject(reply);
-    				reply = NULL;
 				break;
 			}
 		}
