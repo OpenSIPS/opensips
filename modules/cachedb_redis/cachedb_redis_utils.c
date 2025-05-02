@@ -25,6 +25,7 @@
 
 #include "../../dprint.h"
 #include "cachedb_redis_dbase.h"
+#include "cachedb_redis_utils.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../cachedb/cachedb.h"
