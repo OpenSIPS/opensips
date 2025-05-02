@@ -31,9 +31,6 @@
 #define MOVED_PREFIX "MOVED "
 #define MOVED_PREFIX_LEN (sizeof(MOVED_PREFIX) - 1)
 
-#define ASK_PREFIX   "ASK "
-#define ASK_PREFIX_LEN (sizeof(ASK_PREFIX) - 1)
-
 #define ERR_INVALID_REPLY -1
 #define ERR_INVALID_SLOT -2
 #define ERR_INVALID_PORT -3
