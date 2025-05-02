@@ -563,6 +563,9 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 					redis_moved *moved_info = pkg_malloc(sizeof(redis_moved));
     					if (!moved_info) {
         					LM_ERR("cachedb_redis: Unable to allocate redis_moved struct, no more pkg memory\n");
+    						freeReplyObject(reply);
+    						reply = NULL;
+    						goto try_next_con;
 					} else {
     						if (parse_moved_reply(reply, moved_info) < 0) {
 							LM_ERR("cachedb_redis: Unable to parse MOVED reply\n");
