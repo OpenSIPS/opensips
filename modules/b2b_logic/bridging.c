@@ -60,6 +60,7 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 	str *body, struct sip_msg *msg, int set_maxfwd);
 static int bridging_start_old_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
 	b2bl_entity_id_t *new_entity, str *provmedia_uri, str *body);
+static int b2bl_search_other_entity(b2bl_tuple_t *tuple, str *entity_str);
 
 int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 	b2bl_entity_id_t *entity, struct b2bl_new_entity *new_entity);
@@ -81,7 +82,6 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 	int ret;
 	int entity_no;
 	str entity_str = str_init("");
-	b2bl_entity_id_t **head;
 
 	if (get_mi_string_param(params, "dialog_id", &key.s, &key.len) < 0)
 		return init_mi_param_error();
@@ -152,16 +152,12 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 
 	local_ctx_tuple = tuple;
 	if (!_entity_no && entity_str.len) {
-		old_entity = b2bl_search_entity(tuple, &entity_str, B2B_SERVER, &head);
-		if (!old_entity) {
-			old_entity = b2bl_search_entity(tuple, &entity_str, B2B_CLIENT, &head);
-			if (!old_entity) {
-				LM_ERR("Can not determine entity to bridge [%.*s]\n",
-					entity_str.len, entity_str.s);
-				goto error;
-			}
+		entity_no = b2bl_search_other_entity(tuple, &entity_str);
+		if (entity_no < 0) {
+			LM_ERR("Can not determine entity to bridge [%.*s]\n",
+				entity_str.len, entity_str.s);
+			goto error;
 		}
-		entity_no = old_entity->no;
 	}
 
 	if (!tuple->bridge_entities[entity_no] ||
@@ -2546,4 +2542,24 @@ void b2bl_timer_bridge_retry(unsigned int ticks, void* param)
 		shm_free(it);
 		it = next;
 	}
+}
+
+static int b2bl_search_other_entity(b2bl_tuple_t *tuple, str *entity_str)
+{
+	b2bl_entity_id_t *entity;
+	b2bl_entity_id_t **head;
+
+	/* search for current entity */
+	entity = b2bl_search_entity(tuple, entity_str, B2B_SERVER, &head);
+	if (!entity) {
+		entity = b2bl_search_entity(tuple, entity_str, B2B_CLIENT, &head);
+		if (!entity)
+			return -1;
+	}
+	/* retrieve the peer */
+	if (tuple->bridge_entities[0] == entity)
+		return 1;
+	if (tuple->bridge_entities[1] == entity)
+		return 0;
+	return -1;
 }
