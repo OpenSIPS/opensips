@@ -3530,7 +3530,7 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 
 	if (tuple->bridge_flags & B2BL_BR_FLAG_NOTIFY) {
 		if (remote_tuple) {
-			ret = b2bl_get_tuple_key(remote_tuple, &remote_tuple_hash_index, &local_index);
+			ret = b2bl_get_tuple_key(remote_tuple, &remote_tuple_hash_index, &local_index, NULL);
 			if(ret < 0)
 			{
 				if (ret == -1)
@@ -3839,7 +3839,7 @@ int b2bl_get_stats(str* key, b2bl_dlg_stat_t* stat)
 }
 
 int b2bl_get_tuple_key(str *key, unsigned int *hash_index,
-		unsigned int *local_index)
+		unsigned int *local_index, str *entity_str)
 {
 	int ret;
 	str callid, from_tag, to_tag, *tuple;
@@ -3865,7 +3865,7 @@ int b2bl_get_tuple_key(str *key, unsigned int *hash_index,
 	to_tag.len = key->s + key->len - to_tag.s;
 
 	/* we've got the entity's coordinates, try to find the entity now */
-	tuple = b2b_api.get_b2bl_key(&callid, &from_tag, &to_tag, NULL);
+	tuple = b2b_api.get_b2bl_key(&callid, &from_tag, &to_tag, entity_str);
 	if(!tuple) {
 		LM_DBG("cannot find entity [%.*s]\n", key->len, key->s);
 		return -2;

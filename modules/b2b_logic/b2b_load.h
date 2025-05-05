@@ -87,7 +87,7 @@ typedef int (*b2bl_bridge_2calls_t)(str* key1, str* key2);
 int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
 	unsigned int flags, str *adv_ct);
 int b2bl_get_tuple_key(str *key, unsigned int *hash_index,
-		unsigned int *local_index);
+		unsigned int *local_index, str *entity_str);
 typedef int (*b2bl_bridge_msg_t)(struct sip_msg* msg, str* key, int entity_no);
 
 int b2bl_get_stats(str* key, b2bl_dlg_stat_t* stat);

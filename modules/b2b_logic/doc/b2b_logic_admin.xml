@@ -1226,7 +1226,9 @@ if(is_method("REFER") &amp;&amp; !has_totag()) {
 			</listitem>
 			<listitem>
 				<para><emphasis>flag</emphasis> (optional) - used to specify that the callee must be bridged to the new destination. If not present the caller will be bridged. Possible values are
-				'0' or '1'.</para>
+				'0' or '1'.</para>. If missing and the <emphasis>b2b_logic key</emphasis> is in the
+				<emphasis>callid;from-tag;to-tag</emphasis> form, the module determines the entity
+				based on the key used.
 			</listitem>
 			<listitem>
 				<para><emphasis>prov_media_uri</emphasis> (optional) - the uri of a media server able to play 

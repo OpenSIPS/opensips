@@ -65,7 +65,7 @@ int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 	b2bl_entity_id_t *entity, struct b2bl_new_entity *new_entity);
 
 mi_response_t *mi_b2b_bridge(const mi_params_t *params,
-							int entity_no, str *prov_media)
+							int *_entity_no, str *prov_media)
 {
 	str key;
 	b2bl_tuple_t* tuple;
@@ -79,6 +79,9 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
 	int ret;
+	int entity_no;
+	str entity_str = str_init("");
+	b2bl_entity_id_t **head;
 
 	if (get_mi_string_param(params, "dialog_id", &key.s, &key.len) < 0)
 		return init_mi_param_error();
@@ -95,8 +98,13 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 	/* if 'flag' parameter is 1 - >
 	 * means that destination from the current call must be
 	 * bridged to the new destination */
-	if (entity_no != 0 && entity_no != 1)
-		return init_mi_error(404, MI_SSTR("Invalid 'flag' parameter"));
+	if (_entity_no) {
+		entity_no = *_entity_no;
+		if (entity_no != 0 && entity_no != 1)
+			return init_mi_error(404, MI_SSTR("Invalid 'flag' parameter"));
+	} else {
+		entity_no = 0;
+	}
 
 	if (prov_media) {
 		/* parse new uri */
@@ -114,7 +122,7 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		}
 	}
 
-	ret = b2bl_get_tuple_key(&key, &hash_index, &local_index);
+	ret = b2bl_get_tuple_key(&key, &hash_index, &local_index, &entity_str);
 	if(ret < 0)
 	{
 		if (ret == -1)
@@ -143,6 +151,18 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 	}
 
 	local_ctx_tuple = tuple;
+	if (!_entity_no && entity_str.len) {
+		old_entity = b2bl_search_entity(tuple, &entity_str, B2B_SERVER, &head);
+		if (!old_entity) {
+			old_entity = b2bl_search_entity(tuple, &entity_str, B2B_CLIENT, &head);
+			if (!old_entity) {
+				LM_ERR("Can not determine entity to bridge [%.*s]\n",
+					entity_str.len, entity_str.s);
+				goto error;
+			}
+		}
+		entity_no = old_entity->no;
+	}
 
 	if (!tuple->bridge_entities[entity_no] ||
 	tuple->bridge_entities[entity_no]->disconnected)
@@ -2162,7 +2182,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
 		return -1;
 	}
 
-	ret = b2bl_get_tuple_key(key, &hash_index, &local_index);
+	ret = b2bl_get_tuple_key(key, &hash_index, &local_index, NULL);
 	if(ret < 0)
 	{
 		if (ret == -1)

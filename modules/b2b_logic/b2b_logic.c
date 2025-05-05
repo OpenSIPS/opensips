@@ -1304,7 +1304,7 @@ static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
 	if (get_mi_string_param(params, "key", &key.s, &key.len) < 0)
 		return init_mi_param_error();
 
-	if (b2bl_get_tuple_key(&key, &hash_index, &local_index) < 0)
+	if (b2bl_get_tuple_key(&key, &hash_index, &local_index, NULL) < 0)
 		return init_mi_error(404, MI_SSTR("B2B session not found"));
 
 	B2BL_LOCK_GET(hash_index);
@@ -1349,7 +1349,7 @@ static mi_response_t *mi_b2b_bridge_f(const mi_params_t *params,
 	if (get_mi_int_param(params, "flag", &flag) < 0)
 		return init_mi_param_error();
 
-	return mi_b2b_bridge(params, flag, NULL);
+	return mi_b2b_bridge(params, &flag, NULL);
 }
 
 static mi_response_t *mi_b2b_bridge_pmu(const mi_params_t *params,
@@ -1377,7 +1377,7 @@ static mi_response_t *mi_b2b_bridge_4(const mi_params_t *params,
 		&prov_media.s, &prov_media.len) < 0)
 		return init_mi_param_error();
 
-	return mi_b2b_bridge(params, flag, &prov_media);
+	return mi_b2b_bridge(params, &flag, &prov_media);
 }
 
 static inline int internal_mi_print_b2bl_entity_id(mi_item_t *item, b2bl_entity_id_t *c)
