@@ -83,6 +83,22 @@
 #define parsed_ctx_set(_ptr) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, parsed_ctx_idx, _ptr)
 
+#define SS_LOCK \
+	do { \
+		if (ss_openssl_lock) \
+			lock_get(ss_openssl_lock); \
+		else \
+			LM_DBG("cannot lock openssl\n"); \
+	} while (0)
+#define SS_UNLOCK \
+	do { \
+		if (ss_openssl_lock) \
+			lock_release(ss_openssl_lock); \
+	} while (0)
+
+/*
+ * Module core functions
+ */
 static int mod_init(void);
 static void mod_destroy(void);
 
@@ -118,6 +134,7 @@ static int tn_authlist_nid;
 static int parsed_ctx_idx =-1;
 
 static X509_STORE *store;
+static gen_lock_t *ss_openssl_lock;
 
 static const param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
@@ -229,6 +246,12 @@ static int init_cert_validation(void)
 		}
 		X509_STORE_set_flags(store,
 			X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+	}
+
+	ss_openssl_lock = lock_alloc();
+	if (!ss_openssl_lock || !lock_init(ss_openssl_lock)) {
+		LM_ERR("could not allocate openssl lock\n");
+		ss_openssl_lock = NULL;
 	}
 
 	return 0;
@@ -853,12 +876,14 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 		LM_ERR("Unable to create BIO buf\n");
 		return -1;
 	}
+	SS_LOCK;
 
 	/* parse end-entity certificate */
 	*cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
 	if (*cert == NULL) {
 		LM_ERR("Failed to parse certificate\n");
 		BIO_free(cbio);
+		SS_UNLOCK;
 		return -1;
 	}
 
@@ -870,6 +895,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 			X509_free(*cert);
 			*cert = NULL;
 			BIO_free(cbio);
+			SS_UNLOCK;
 			return -1;
 		}
 
@@ -880,6 +906,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 			*cert = NULL;
 			BIO_free(cbio);
 			sk_X509_free(stack);
+			SS_UNLOCK;
 			return -1;
 		}
 
@@ -902,6 +929,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 	} else {
 		BIO_free(cbio);
 	}
+	SS_UNLOCK;
 
 	return 0;
 }
@@ -916,14 +944,17 @@ static int load_pkey(EVP_PKEY **pkey, str *pkey_buf)
 		return -1;
 	}
 
+	SS_LOCK;
 	*pkey = PEM_read_bio_PrivateKey(kbio, NULL, NULL, NULL);
 	if (*pkey == NULL) {
 		LM_ERR("Failed to load private key from buffer\n");
 		BIO_free(kbio);
+		SS_UNLOCK;
 		return -1;
 	}
 
 	BIO_free(kbio);
+	SS_UNLOCK;
 
 	return 0;
 }
