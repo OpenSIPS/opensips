@@ -231,6 +231,8 @@ int ipc_dispatch_job(ipc_handler_type type, void *payload)
 
 int ipc_send_rpc(int dst_proc, ipc_rpc_f *rpc, void *param)
 {
+	/* wait for the write IPC FD to be available, for a maximum 200ms */
+	busy_wait_for(IPC_FD_WRITE(dst_proc) >= 0, 200000, 10);
 	return __ipc_send_job(IPC_FD_WRITE(dst_proc), dst_proc,
 		ipc_rpc_type, rpc, param);
 }
