@@ -1689,8 +1689,19 @@ static void tcp_main_server(void)
 		if ( is_tcp_based_proto(n) )
 			for( sif=protos[n].listeners ; sif ; sif=sif->next ) {
 				struct socket_info* si = &sif->socket_info;
-				if ( (si->socket!=-1) &&
-				reactor_add_reader( si->socket, F_TCP_LISTENER,
+				if (protos[n].tran.init_listener(si)<0) {
+					LM_ERR("failed to init listener [%.*s], proto %s\n",
+						si->name.len, si->name.s,
+						protos[n].name );
+					goto error;
+				}
+				if (protos[n].tran.bind_listener && protos[n].tran.bind_listener(si)<0) {
+					LM_ERR("failed to bind listener [%.*s], proto %s\n",
+						si->name.len, si->name.s,
+						protos[n].name );
+					goto error;
+				}
+				if(reactor_add_reader( si->socket, F_TCP_LISTENER,
 				RCT_PRIO_NET, si)<0 ) {
 					LM_ERR("failed to add listen socket to reactor\n");
 					goto error;
