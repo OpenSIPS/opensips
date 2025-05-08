@@ -101,6 +101,8 @@ extern unsigned long (*shm_frag_line)(void *p);
 #define shm_frag_size qm_frag_size
 #elif defined HP_MALLOC
 #define shm_frag_size hp_frag_size
+#elif defined F_PARALLEL_MALLOC
+#define shm_frag_size parallel_frag_size
 #endif
 #else
 extern unsigned long (*shm_frag_size)(void *p);
@@ -284,7 +286,7 @@ inline static void shm_threshold_check(void)
  #define shm_threshold_check()
 #endif
 
-#ifdef HP_MALLOC
+#if defined(HP_MALLOC) || defined(F_PARALLEL_MALLOC)
 	#ifdef INLINE_ALLOC
 	#define shm_lock()
 	#define shm_unlock()
@@ -557,6 +559,7 @@ inline static void _shm_free(void *ptr,
 inline static void _shm_free_unsafe(void *ptr,
 		const char* file, const char* function, unsigned int line )
 {
+
 #ifdef SHM_EXTRA_STATS
 	if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
 		update_module_stats(-shm_frag_size(ptr), -(shm_frag_size(ptr) + shm_frag_overhead), -1, shm_stats_get_index(ptr));
@@ -733,6 +736,7 @@ inline static void* shm_realloc(void *ptr, unsigned long size)
 inline static void* shm_realloc_unsafe(void *ptr, unsigned long size)
 {
 	void *p;
+
 #ifdef SHM_EXTRA_STATS
 	unsigned long origin = 0;
 	if (ptr) {
@@ -800,6 +804,7 @@ inline static void shm_free_unsafe(void *_p)
 #define shm_free_bulk_func shm_free_bulk
 inline static void shm_free_bulk(void *_p)
 {
+
 	#ifdef SHM_EXTRA_STATS
 		if (shm_stats_get_index(_p) !=  VAR_STAT(MOD_NAME)) {
 				update_module_stats(-shm_frag_size(_p), -(shm_frag_size(_p) + shm_frag_overhead), -1, shm_stats_get_index(_p));
