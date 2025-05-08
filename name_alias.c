@@ -39,7 +39,7 @@ struct alias_function* alias_fcts = NULL;
  * if proto==0, the alias will match all the protocols
  * returns 1 if a new alias was added, 0 if a matching alias was already on
  * the list and  -1 on error */
-int add_alias(char* name, int len, unsigned short port, unsigned short proto, enum si_flags flags)
+int add_alias(char* name, int len, unsigned short port, unsigned short proto, int accept_subdomain)
 {
 	struct host_alias* a;
 
@@ -62,7 +62,7 @@ int add_alias(char* name, int len, unsigned short port, unsigned short proto, en
 	a->alias.s[len]=0; /* null terminate for easier printing*/
 	a->port=port;
 	a->proto=proto;
-	a->flags=flags;
+	a->accept_subdomain=accept_subdomain;
 	a->next=aliases;
 	aliases=a;
 	return 1;

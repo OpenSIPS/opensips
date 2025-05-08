@@ -602,6 +602,8 @@ error:
 
 #define STR_IMATCH(str, buf) ((str).len==strlen(buf) && strncasecmp(buf, (str).s, (str).len)==0)
 
+#define ACCEPT_SUBDOMAIN_ALIAS(flags) flags & SI_ACCEPT_SUBDOMAIN_ALIAS
+
 /* fixes a socket list => resolve addresses,
  * interface names, fills missing members, remove duplicates */
 int fix_socket_list(struct socket_info_full **list)
@@ -668,7 +670,7 @@ int fix_socket_list(struct socket_info_full **list)
 		/* check if we got the official name */
 		if (strcasecmp(he->h_name, si->name.s)!=0){
 			if (auto_aliases && add_alias(si->name.s, si->name.len,
-							si->port_no, si->proto, si->flags)<0){
+							si->port_no, si->proto, ACCEPT_SUBDOMAIN_ALIAS(si->flags))<0){
 				LM_ERR("add_alias failed\n");
 			}
 			/* change the official name */
@@ -684,7 +686,7 @@ int fix_socket_list(struct socket_info_full **list)
 		/* add the aliases*/
 		if (auto_aliases) {
 			for(h=he->h_aliases; h && *h; h++)
-				if (add_alias(*h, strlen(*h), si->port_no, si->proto, si->flags)<0){
+				if (add_alias(*h, strlen(*h), si->port_no, si->proto, ACCEPT_SUBDOMAIN_ALIAS(si->flags))<0){
 					LM_ERR("add_alias failed\n");
 				}
 		}
@@ -724,11 +726,11 @@ int fix_socket_list(struct socket_info_full **list)
 				}else{
 					/* add the aliases*/
 					if (add_alias(he->h_name, strlen(he->h_name),
-									si->port_no, si->proto, si->flags)<0){
+									si->port_no, si->proto, ACCEPT_SUBDOMAIN_ALIAS(si->flags))<0){
 						LM_ERR("add_alias failed\n");
 					}
 					for(h=he->h_aliases; h && *h; h++)
-						if (add_alias(*h,strlen(*h),si->port_no,si->proto, si->flags)<0){
+						if (add_alias(*h,strlen(*h),si->port_no,si->proto, ACCEPT_SUBDOMAIN_ALIAS(si->flags))<0){
 							LM_ERR(" add_alias failed\n");
 						}
 				}
@@ -859,7 +861,7 @@ int fix_socket_list(struct socket_info_full **list)
 						(sl->name.len!=si->name.len)||
 						(strncmp(sl->name.s, si->name.s, si->name.len)!=0))
 					)
-					if (add_alias(sl->name.s,sl->name.len,sl->port_no,sl->proto,sl->flags)<0)
+					if (add_alias(l->name.s,l->name.len,l->port_no,l->proto,ACCEPT_SUBDOMAIN_ALIAS(l->flags))<0)
 						LM_ERR(" add_alias failed\n");
 
 				/* remove l*/

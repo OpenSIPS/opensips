@@ -206,7 +206,7 @@ static struct multi_str *tmp_mod;
 #define get_cfg_file_name \
 	((finame) ? finame : cfg_file ? cfg_file : "default")
 
-
+#define si_subdomain_to_alias_flag(_flags) (int) _flags & SI_ACCEPT_SUBDOMAIN_ALIAS
 
 #define mk_action_(_res, _type, _no, _elems) \
 	do { \
@@ -467,7 +467,7 @@ extern int cfg_parse_only_routes;
 %token COLON
 %token ANY
 %token ANYCAST
-%token SUBDOMAIN
+%token ACCEPT_SUBDOMAIN
 %token FRAG
 %token REUSE_PORT
 %token SCRIPTVARERR
@@ -710,22 +710,12 @@ any_alias:	listen_id						{ IFOR();
 		 | phostport
 		 ;
 
-id_lst_param: SUBDOMAIN { IFOR();
-				p_tmp.flags |= SI_IS_SUBDOMAIN_ALIAS;
+alias_def: any_alias			      { $$=$1; }
+		 | any_alias ACCEPT_SUBDOMAIN {
+				$$=$1;
+				$$->flags |= SI_ACCEPT_SUBDOMAIN_ALIAS;
 				}
-			;
-
-id_lst_params:	id_lst_param
-			 |	id_lst_param id_lst_params
-			 ;
-
-alias_def:	any_alias			{ $$=$1; }
-			| any_alias { IFOR();
-					memset(&p_tmp, 0, sizeof(p_tmp));
-				} id_lst_params	{ IFOR();
-					$$=$1; fill_alias_socket(&p_tmp, $$);
-				}
-			;
+		 ;
 
 id_lst:		alias_def		{ IFOR();  $$=$1 ; }
 		| alias_def id_lst	{ IFOR(); $$=$1; $$->next=$2; }
@@ -750,8 +740,8 @@ socket_def_param: ANYCAST { IFOR();
 				| REUSE_PORT { IFOR();
 					p_tmp.flags |= SI_REUSEPORT;
 					}
-				| SUBDOMAIN { IFOR();
-					p_tmp.flags |= SI_IS_SUBDOMAIN_ALIAS;
+				| ACCEPT_SUBDOMAIN { IFOR();
+					p_tmp.flags |= SI_ACCEPT_SUBDOMAIN_ALIAS;
 					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;
@@ -1507,7 +1497,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| ALIAS EQUAL  id_lst { IFOR();
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next)
 								add_alias(lst_tmp->name, strlen(lst_tmp->name),
-											lst_tmp->port, lst_tmp->proto, lst_tmp->flags);
+											lst_tmp->port, lst_tmp->proto, si_subdomain_to_alias_flag(lst_tmp->flags));
 							  }
 		| ALIAS  EQUAL error  { yyerror("hostname expected (use quotes"
 							" if the hostname includes config keywords)"); }
