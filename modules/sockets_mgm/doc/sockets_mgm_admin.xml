@@ -16,21 +16,102 @@
 		dynamic socket list after a reload using the
 		<xref linkend="mi_sockets_reload"/> MI command.
 	</para>
+	<para>
+		The <xref linkend="mi_sockets_list"/> MI command.
+		can be used to show all the dynamic sockets OpenSIPS is listening on.
+	</para>
 	</section>
 
-	<section id="pool" xreflabel="Sockets Pool">
-	<title>Sockets Pool</title>
+	<section id="sockets" xreflabel="Sockets">
+	<title>Sockets</title>
 	<para>
-		A sockets pool groups dynamic sockets per &osips; process, allowing
-		multiple processes to manage them efficiently. Each pool has specific
-		settings, including the number of processes that can handle the
-		dynamic sockets, ensuring optimized resource allocation and
-		management.
+		The module exclusively handles sockets used for SIP traffic (e.g.,
+		UDP, TCP, TLS, WSS). It does not support BIN or HEP listeners, as
+		these cannot be dynamically utilized or enforced in the script.
 	</para>
 	<para>
-		Socket pools are statically defined in the configuration script and
-		can not be changed dynamically at runtime. See <xref linkend="param_pool"/>
-		parameter for configuring sockets pools.
+		The management of dynamic sockets is divided into two behaviors,
+		depending on whether the traffic is UDP-based or TCP-based. Based on
+		the nature of your traffic, ensure that your settings are
+		properly tuned to accommodate any sockets you may provision
+		dynamically.
+	</para>
+	<section id="section_udp" xreflabel="UDP handling">
+	<title>UDP handling</title>
+	<para>
+		All dynamically added UDP sockets are assigned to a group of dedicated
+		extra processes. The number of these processes can be adjusted using
+		the <xref linkend="param_processes"/> parameter. These processes handle
+		UDP-based socket traffic evenly by balancing requests across the less
+		loaded processes. The difference, however, is that static sockets are
+		bound to designated processes, while dynamic sockets share the pool of
+		extra processes.
+    </para>
+	<para>
+	</para>
+	</section>
+	<section id="section_tcp" xreflabel="TCP handling">
+	<title>TCP handling</title>
+	<para>
+		In contrast to UDP traffic handling, TCP traffic is processed in the
+		same way as all other TCP traffic: requests are dispatched to one of
+		the existing static TCP processes.
+	</para>
+	</section>
+	</section>
+
+	<section id="limitations" xreflabel="Limitations">
+	<title>Limitations</title>
+	<para>
+		Although traffic processing by dynamic workers closely resembles that
+		of static ones, there are certain limitations associated with using
+		dynamic sockets:
+	</para>
+	<para>
+		<itemizedlist>
+		<listitem>
+		<para>
+			UDP socket handling does not currently benefit from the
+			autoscaling feature for the designated extra
+			processes. This means that the number of
+			<xref linkend="param_processes"/> defined at startup will
+			always be forked, and only these processes will handle all
+			traffic associated with dynamically added UDP sockets.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			As stated earlier, the module only supports SIP based dynamic
+			listener, no HEP or BIN.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			Sockets defined in the database cannot be expanded to more than
+			one listener. This means you cannot use an interface name or an
+			alias that resolves to multiple IPs as a host. Only a single
+			IP:port socket will be created, so provisioning should ideally be
+			done with an explicit IP.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			Due to some internal limitations, the dynamic sockets need to be
+			pre-allocated at startup. This means that the number of dynamic
+			sockets used at runtime have to be limited by a static value,
+			defined at startup. This is why it is recommended to use a fairly
+			high value for the sockets in the <xref linkend="param_max_sockets"/>
+			parameter - we're defaulting a confortable 100 sockets.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			The sockets defined in the  <xref linkend="param_max_sockets"/> are
+			being rotated in a FIFO manner - this way we are trying to avoid
+			overlapping sockets in a short period of time.
+        </para>
+		</listitem>
+		</itemizedlist>
 	</para>
 	</section>
 
@@ -124,156 +205,117 @@ modparam("sockets_mgm", "socket_column", "sock")
 </programlisting>
 		</example>
 	</section>
-	<section id="param_pool_column" xreflabel="pool_column">
-		<title><varname>pool_column</varname> (string)</title>
+	<section id="param_advertised_column" xreflabel="advertised_column">
+		<title><varname>advertised_column</varname> (string)</title>
 		<para>
-			The database table column where the pool definition is stored.
+			The database table column where the advertised definition is stored.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>pool</quote>.
+			Default value is <quote>advertised</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <quote>socket_column</quote> parameter</title>
+		<title>Set <quote>advertised_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("sockets_mgm", "pool_column", "group")
+modparam("advertiseds_mgm", "advertised_column", "adv")
 ...
 </programlisting>
 		</example>
 	</section>
-	<section id="param_pool" xreflabel="pool">
-		<title><varname>pool</varname> (string)</title>
+	<section id="param_tag_column" xreflabel="tag_column">
+		<title><varname>tag_column</varname> (string)</title>
 		<para>
-			Used to modify the parameters of a socket pool (see 
-			<xref linkend="pool"/> section for more information about sockets pool).
+			The database table column where the tag definition is stored.
 		</para>
 		<para>
-			The <emphasis>default</emphasis> pool is always created and is being
-			assigned to all sockets that are not explicitely assigned a different pool.
-		</para>
-		<para>
-			A new pool, with the default settings, can be added by simply
-			defining the pool with no parameters.
-		</para>
-		<para>
-			The format of the <emphasis>pool</emphasis> parameter is <TODO/>.
-		</para>
-		<para>
-			The pool's parameters that can be adjusted are:
-			<itemizedlist>
-				<listitem><para>
-					<emphasis>processes</emphasis> - (integer) the number of processes
-					used to handle the sockets within this pool. Default value is
-					<emphasis>8</emphasis> processes.
-				</para></listitem>
-				<listitem><para>
-					<emphasis>max_sockets</emphasis> - (integer) the maximum number
-					of sockets that can be simultaneously defined in this pool.
-					<emphasis>Note</emphasis> that these sockets are rotated in
-					a round-robin fashion, so that a socket previously defined
-					might be reused after sequential reloads. Default value is
-					<emphasis>100</emphasis> processes.
-				</para></listitem>
-			</itemizedlist>
-		</para>
-		<para>
-			All parameters are optional and if are missing, the default values
-			are being used. If the same setting for the same pool is provided
-			multiple times, only the latest value is being used.
+		<emphasis>
+			Default value is <quote>tag</quote>.
+		</emphasis>
 		</para>
 		<example>
-		<title>Set <quote>pool</quote> parameter</title>
+		<title>Set <quote>tag_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-# create a new pool with the default values
-modparam("sockets_mgm", "pool", "TODO")
-...
-# modify the default pool's settings
-modparam("sockets_mgm", "pool", "TODO")
-...
-# modify and arbitrary pool's settings
-modparam("sockets_mgm", "pool", "TODO")
+modparam("tags_mgm", "tag_column", "sock")
 ...
 </programlisting>
 		</example>
 	</section>
-	</section>
-
-	<section id="exported_functions" xreflabel="exported_functions">
-	<title>Exported Functions</title>
-	<section id="func_example" xreflabel="example()">
-		<title>
-		<function moreinfo="none">example()</function>
-		</title>
+	<section id="param_flags_column" xreflabel="flags_column">
+		<title><varname>flags_column</varname> (string)</title>
 		<para>
-			Function that simply prints a message to log, saying that it has been called.
+			The database table column where the flags definition is stored.
 		</para>
 		<para>
-		This function can be used from any route.
+		<emphasis>
+			Default value is <quote>flags</quote>.
+		</emphasis>
 		</para>
 		<example>
-		<title><function moreinfo="none">example</function> usage</title>
+		<title>Set <quote>flags_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-example();
+modparam("flagss_mgm", "flags_column", "sock")
 ...
 </programlisting>
 		</example>
 	</section>
-	<section id="func_example_str" xreflabel="example_str()">
-		<title>
-		<function moreinfo="none">example_str([string])</function>
-		</title>
+	<section id="param_tos_column" xreflabel="tos_column">
+		<title><varname>tos_column</varname> (string)</title>
 		<para>
-			Function that simply prints a message to log, saying that it has been called.
-			If a parameter is passed, it is printed in the log, otherwise the value of
-			<xref linkend="param_default_str"/> parameter is used.
+			The database table column where the tos definition is stored.
 		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>string (string, optional)</emphasis> - parameter to be logged
-			</para>
-		</listitem>
-		</itemizedlist>
 		<para>
-		This function can be used from any route.
+		<emphasis>
+			Default value is <quote>tos</quote>.
+		</emphasis>
 		</para>
 		<example>
-		<title><function moreinfo="none">example_str()</function> usage</title>
+		<title>Set <quote>tos_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-example_str("test");
+modparam("toss_mgm", "tos_column", "sock")
 ...
 </programlisting>
 		</example>
 	</section>
-	<section id="func_example_int" xreflabel="example_int()">
-		<title>
-		<function moreinfo="none">example_int([int])</function>
-		</title>
+	<section id="param_processes" xreflabel="processes">
+		<title><varname>processes</varname> (integer)</title>
 		<para>
-			Function that simply prints a message to log, saying that it has been called.
-			If a parameter is passed, it is printed in the log, otherwise the value of
-			<xref linkend="param_default_int"/> parameter is used.
+			The number of processes designated to handle UDP sockets.
 		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>int (integer, optional)</emphasis> - parameter to be logged
-			</para>
-		</listitem>
-		</itemizedlist>
 		<para>
-		This function can be used from any route.
+		<emphasis>
+			Default value is <quote>8</quote>.
+		</emphasis>
 		</para>
 		<example>
-		<title><function moreinfo="none">example_int()</function> usage</title>
+		<title>Set <quote>processes</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-example_int(10);
+modparam("sockets_mgm", "processes", 32)
+...
+</programlisting>
+		</example>
+	</section>
+		<section id="param_max_sockets" xreflabel="max_sockets">
+		<title><varname>max_sockets</varname> (integer)</title>
+		<para>
+			The maximum number of sockets that can be defined dinamically.
+			See the <xref linkend="limitations"/> section for more information.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>100</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>max_sockets</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "max_sockets", 2000)
 ...
 </programlisting>
 		</example>
@@ -297,22 +339,14 @@ example_int(10);
 		opensips-mi sockets_reload
 		opensips-cli -x mi sockets_reload
 		</programlisting>
-		</section>
-		<section id="mi_sockets_list" xreflabel="sockets_list">
+	</section>
+	<section id="mi_sockets_list" xreflabel="sockets_list">
 		<title>
 		<function moreinfo="none">sockets_list</function>
 		</title>
 		<para>
 			MI command to list all the currently used dynamic sockets.
 		</para>
-		<para>Parameters are:</para>
-		<itemizedlist>
-			<listitem><para>
-				<emphasis>full</emphasis> - (int, optional) if different
-				than <emphasis>0</emphasis>, the command prints all
-				the information stored about the socket.
-			</para></listitem>
-		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>

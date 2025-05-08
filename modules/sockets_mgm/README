@@ -1,4 +1,4 @@
-Example Module
+Dynamic Sockets Management Module
      __________________________________________________________
 
    Table of Contents
@@ -6,21 +6,33 @@ Example Module
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. Sockets
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.2.1. UDP handling
+              1.2.2. TCP handling
 
-        1.3. Exported Parameters
+        1.3. Limitations
+        1.4. Dependencies
 
-              1.3.1. default_str (string)
-              1.3.2. default_int (integer)
+              1.4.1. OpenSIPS Modules
+              1.4.2. External Libraries or Applications
 
-        1.4. Exported Functions
+        1.5. Exported Parameters
 
-              1.4.1. example()
-              1.4.2. example_str([string])
-              1.4.3. example_int([int])
+              1.5.1. db_url (string)
+              1.5.2. table_name (string)
+              1.5.3. socket_column (string)
+              1.5.4. advertised_column (string)
+              1.5.5. tag_column (string)
+              1.5.6. flags_column (string)
+              1.5.7. tos_column (string)
+              1.5.8. processes (integer)
+              1.5.9. max_sockets (integer)
+
+        1.6. Exported MI Functions
+
+              1.6.1. sockets_reload
+              1.6.2. sockets_list
 
    2. Contributors
 
@@ -40,105 +52,228 @@ Example Module
 
    List of Examples
 
-   1.1. Set “default_str” parameter
-   1.2. Set “default_int” parameter
-   1.3. example usage
-   1.4. example_str() usage
-   1.5. example_int() usage
+   1.1. Set "db_url" parameter
+   1.2. Set "table_name" parameter
+   1.3. Set "socket_column" parameter
+   1.4. Set "advertised_column" parameter
+   1.5. Set "tag_column" parameter
+   1.6. Set "flags_column" parameter
+   1.7. Set "tos_column" parameter
+   1.8. Set "processes" parameter
+   1.9. Set "max_sockets" parameter
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This module serves as an example of how to write a module in
-   OpenSIPS. Its primary goal is to simplify the development of
-   new modules for newcomers, providing a clear and accessible
-   starting point.
+   This module provides the means to provision and manage dynamic
+   sockets for OpenSIPS at runtime. The definition of the sockets
+   is stored in an SQL database and can be dynamically changed at
+   runtime.
 
-1.2. Dependencies
+   The module caches the entire table sockets and only adjusts the
+   dynamic socket list after a reload using the sockets_reload MI
+   command.
 
-1.2.1. OpenSIPS Modules
+   The sockets_list MI command. can be used to show all the
+   dynamic sockets OpenSIPS is listening on.
+
+1.2. Sockets
+
+   The module exclusively handles sockets used for SIP traffic
+   (e.g., UDP, TCP, TLS, WSS). It does not support BIN or HEP
+   listeners, as these cannot be dynamically utilized or enforced
+   in the script.
+
+   The management of dynamic sockets is divided into two
+   behaviors, depending on whether the traffic is UDP-based or
+   TCP-based. Based on the nature of your traffic, ensure that
+   your settings are properly tuned to accommodate any sockets you
+   may provision dynamically.
+
+1.2.1. UDP handling
+
+   All dynamically added UDP sockets are assigned to a group of
+   dedicated extra processes. The number of these processes can be
+   adjusted using the processes parameter. These processes handle
+   UDP-based socket traffic evenly by balancing requests across
+   the less loaded processes. The difference, however, is that
+   static sockets are bound to designated processes, while dynamic
+   sockets share the pool of extra processes.
+
+1.2.2. TCP handling
+
+   In contrast to UDP traffic handling, TCP traffic is processed
+   in the same way as all other TCP traffic: requests are
+   dispatched to one of the existing static TCP processes.
+
+1.3. Limitations
+
+   Although traffic processing by dynamic workers closely
+   resembles that of static ones, there are certain limitations
+   associated with using dynamic sockets:
+
+     * UDP socket handling does not currently benefit from the
+       autoscaling feature for the designated extra processes.
+       This means that the number of processes defined at startup
+       will always be forked, and only these processes will handle
+       all traffic associated with dynamically added UDP sockets.
+     * As stated earlier, the module only supports SIP based
+       dynamic listener, no HEP or BIN.
+     * Sockets defined in the database cannot be expanded to more
+       than one listener. This means you cannot use an interface
+       name or an alias that resolves to multiple IPs as a host.
+       Only a single IP:port socket will be created, so
+       provisioning should ideally be done with an explicit IP.
+     * Due to some internal limitations, the dynamic sockets need
+       to be pre-allocated at startup. This means that the number
+       of dynamic sockets used at runtime have to be limited by a
+       static value, defined at startup. This is why it is
+       recommended to use a fairly high value for the sockets in
+       the max_sockets parameter - we're defaulting a confortable
+       100 sockets.
+     * The sockets defined in the max_sockets are being rotated in
+       a FIFO manner - this way we are trying to avoid overlapping
+       sockets in a short period of time.
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSIPS modules.
+     * A database module is needed for fetching the sockets.
 
-1.2.2. External Libraries or Applications
+1.4.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.3. Exported Parameters
+1.5. Exported Parameters
 
-1.3.1. default_str (string)
+1.5.1. db_url (string)
 
-   The default parameter used when the example_str() function is
-   called without any parameter.
+   The database URL where the sockets are fetched from.
 
-   Default value is “” (empty sring).
+   Default value is
+   "mysql://opensips:opensipsrw@localhost/opensips".
 
-   Example 1.1. Set “default_str” parameter
+   Example 1.1. Set "db_url" parameter
 ...
-modparam("example", "default_str", "TEST")
-...
-
-1.3.2. default_int (integer)
-
-   The default parameter used when the example_int() function is
-   called without any parameter.
-
-   Default value is “0”.
-
-   Example 1.2. Set “default_int” parameter
-...
-modparam("example", "default_int", -1)
+modparam("sockets_mgm", "db_url", "dbdriver://username:password@dbhost/d
+bname")
 ...
 
-1.4. Exported Functions
+1.5.2. table_name (string)
 
-1.4.1.  example()
+   The database table name where the sockets are stored.
 
-   Function that simply prints a message to log, saying that it
-   has been called.
+   Default value is "sockets".
 
-   This function can be used from any route.
-
-   Example 1.3. example usage
+   Example 1.2. Set "table_name" parameter
 ...
-example();
+modparam("sockets_mgm", "table_name", "sockets_def")
 ...
 
-1.4.2.  example_str([string])
+1.5.3. socket_column (string)
 
-   Function that simply prints a message to log, saying that it
-   has been called. If a parameter is passed, it is printed in the
-   log, otherwise the value of default_str parameter is used.
+   The database table column where the socket definition is
+   stored.
 
-   Meaning of the parameters is as follows:
-     * string (string, optional) - parameter to be logged
+   Default value is "socket".
 
-   This function can be used from any route.
-
-   Example 1.4. example_str() usage
+   Example 1.3. Set "socket_column" parameter
 ...
-example_str("test");
+modparam("sockets_mgm", "socket_column", "sock")
 ...
 
-1.4.3.  example_int([int])
+1.5.4. advertised_column (string)
 
-   Function that simply prints a message to log, saying that it
-   has been called. If a parameter is passed, it is printed in the
-   log, otherwise the value of default_int parameter is used.
+   The database table column where the advertised definition is
+   stored.
 
-   Meaning of the parameters is as follows:
-     * int (integer, optional) - parameter to be logged
+   Default value is "advertised".
 
-   This function can be used from any route.
-
-   Example 1.5. example_int() usage
+   Example 1.4. Set "advertised_column" parameter
 ...
-example_int(10);
+modparam("advertiseds_mgm", "advertised_column", "adv")
 ...
+
+1.5.5. tag_column (string)
+
+   The database table column where the tag definition is stored.
+
+   Default value is "tag".
+
+   Example 1.5. Set "tag_column" parameter
+...
+modparam("tags_mgm", "tag_column", "sock")
+...
+
+1.5.6. flags_column (string)
+
+   The database table column where the flags definition is stored.
+
+   Default value is "flags".
+
+   Example 1.6. Set "flags_column" parameter
+...
+modparam("flagss_mgm", "flags_column", "sock")
+...
+
+1.5.7. tos_column (string)
+
+   The database table column where the tos definition is stored.
+
+   Default value is "tos".
+
+   Example 1.7. Set "tos_column" parameter
+...
+modparam("toss_mgm", "tos_column", "sock")
+...
+
+1.5.8. processes (integer)
+
+   The number of processes designated to handle UDP sockets.
+
+   Default value is "8".
+
+   Example 1.8. Set "processes" parameter
+...
+modparam("sockets_mgm", "processes", 32)
+...
+
+1.5.9. max_sockets (integer)
+
+   The maximum number of sockets that can be defined dinamically.
+   See the Limitations section for more information.
+
+   Default value is "100".
+
+   Example 1.9. Set "max_sockets" parameter
+...
+modparam("sockets_mgm", "max_sockets", 2000)
+...
+
+1.6. Exported MI Functions
+
+1.6.1.  sockets_reload
+
+   MI command used to reload the sockets from the database.
+
+   MI FIFO Command Format:
+                ## reload sockets from the database
+                opensips-mi sockets_reload
+                opensips-cli -x mi sockets_reload
+
+1.6.2.  sockets_list
+
+   MI command to list all the currently used dynamic sockets.
+
+   MI FIFO Command Format:
+                ## reload sockets from the database
+                opensips-mi sockets_list
+                opensips-cli -x mi sockets_list
 
 Chapter 2. Contributors
 
@@ -182,4 +317,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2024 OpenSIPS Solutions;
+   Copyright � 2025 OpenSIPS Solutions;
