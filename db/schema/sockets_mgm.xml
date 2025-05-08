@@ -37,14 +37,43 @@
 		</description>
 	</column>
 	<column>
-		<name>pool</name>
+		<name>advertised</name>
 		<type>string</type>
 		<size>128</size>
-		<description>The definition of the pool this socket belongs to.
-			Example: "vpn". If missing, the sockets is assigned to the default pool.
+		<description>The advertised address and port.
+			If missing, the sockets itself is advertised in messages.
 		</description>
 		<default><null/></default>
 		<null/>
 	</column>
-
+	<column>
+		<name>tag</name>
+		<type>string</type>
+		<size>128</size>
+		<description>Optional tag to be used to match this socket.
+		</description>
+		<default><null/></default>
+		<null/>
+	</column>
+	<column>
+		<name>flags</name>
+		<type>string</type>
+		<size>128</size>
+		<description>Optional, comma separated flags assigned to the
+		socket. Possible values are anycast, reuse_port, frag.
+		</description>
+		<default><null/></default>
+		<null/>
+	</column>
+	<column>
+		<name>tos</name>
+		<type>string</type>
+		<size>32</size>
+		<description>ToS values to be used for the socket. This can be
+		specified as an integer, or one of the following values: IPTOS_LOWDELAY,
+		IPTOS_THROUGHPUT, IPTOS_RELIABILITY, IPTOS_MINCOST, IPTOS_LOWCOST.
+		</description>
+		<default><null/></default>
+		<null/>
+	</column>
 </table>

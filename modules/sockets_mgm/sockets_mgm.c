@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <netinet/ip.h>
 
 #include "../../sr_module.h"
 #include "../../dprint.h"
@@ -38,6 +39,7 @@
 #include "../../reactor.h"
 #include "../../cfg_reload.h"
 #include "../../net/tcp_passfd.h"
+#include "../../mod_fix.h"
 
 #define SOCKET_MGM_INTERNAL_TIMEOUT 100000 /* microseconds */
 #define SOCKET_MGM_INTERNAL_INCREMENT 10   /* microseconds */
@@ -48,6 +50,10 @@
 static str sock_mgm_db_url = {NULL, 0};
 static str sock_mgm_table = str_init("sockets");
 static str sock_mgm_socket_col = str_init("socket");
+static str sock_mgm_adv_col = str_init("advertised");
+static str sock_mgm_tag_col = str_init("tag");
+static str sock_mgm_flags_col = str_init("flags");
+static str sock_mgm_tos_col = str_init("tos");
 static db_con_t *sock_mgm_db_con = NULL;
 static db_func_t sock_mgm_db_func;
 
@@ -105,12 +111,16 @@ static proc_export_t procs[] = {
 };
 
 static const param_export_t params[]={
-	{ "db_url",          STR_PARAM, &sock_mgm_db_url.s},
-	{ "table_name",      STR_PARAM, &sock_mgm_table.s},
-	{ "socket_column",   STR_PARAM, &sock_mgm_socket_col.s},
-	{ "processes",       INT_PARAM|USE_FUNC_PARAM,
+	{ "db_url",           STR_PARAM, &sock_mgm_db_url.s},
+	{ "table_name",       STR_PARAM, &sock_mgm_table.s},
+	{ "socket_column",    STR_PARAM, &sock_mgm_socket_col.s},
+	{ "advertised_column",STR_PARAM, &sock_mgm_adv_col.s},
+	{ "tag_column",       STR_PARAM, &sock_mgm_tag_col.s},
+	{ "flags_column",     STR_PARAM, &sock_mgm_flags_col.s},
+	{ "tos_column",       STR_PARAM, &sock_mgm_tos_col.s},
+	{ "processes",        INT_PARAM|USE_FUNC_PARAM,
 		&sock_mgm_procs_func},
-	{ "max_sockets",     INT_PARAM, &sock_mgm_max_sockets},
+	{ "max_sockets",      INT_PARAM, &sock_mgm_max_sockets},
 	{0,0,0}
 };
 
@@ -163,6 +173,10 @@ static int mod_init(void)
 
 	sock_mgm_table.len = strlen(sock_mgm_table.s);
 	sock_mgm_socket_col.len = strlen(sock_mgm_socket_col.s);
+	sock_mgm_adv_col.len = strlen(sock_mgm_adv_col.s);
+	sock_mgm_tag_col.len = strlen(sock_mgm_tag_col.s);
+	sock_mgm_flags_col.len = strlen(sock_mgm_flags_col.s);
+	sock_mgm_tos_col.len = strlen(sock_mgm_tos_col.s);
 
 	if(db_bind_mod(&sock_mgm_db_url, &sock_mgm_db_func) == -1) {
 		LM_ERR("Failed bind to database\n");
@@ -268,6 +282,12 @@ struct sock_mgm {
 	int index;
 	int port, proto;
 	str socket;
+	str adv, tag;
+	str adv_str;
+	str adv_port_str;
+	int adv_port;
+	int tos;
+	unsigned int flags;
 	unsigned long version;
 	struct list_head list;
 };
@@ -287,11 +307,14 @@ static struct sock_mgm_list *sock_mgm_new_list(void)
 	return lst;
 }
 
-static struct sock_mgm *sock_mgm_new(str *socket)
+static struct sock_mgm *sock_mgm_new(str *socket, str *adv, int adv_port,
+		str *tag, unsigned int flags, int tos)
 {
 	str host;
 	int port, proto;
 	struct sock_mgm *sock;
+	str port_str;
+	char *p;
 
 	if (parse_phostport(socket->s, socket->len, &host.s, &host.len,
 		&port, &proto) != 0) {
@@ -302,8 +325,19 @@ static struct sock_mgm *sock_mgm_new(str *socket)
 		LM_ERR("unsupported protocol %s for dynamic sockets\n", proto2a(proto));
 		return NULL;
 	}
+	if (adv->len) {
+		if (!adv_port)
+			adv_port = port;
+		port_str.s = int2str(adv_port, &port_str.len);
+	} else {
+		port_str = str_init("");
+	}
 
-	sock = shm_malloc(sizeof *sock + socket->len + host.len + 1);
+	sock = shm_malloc(sizeof *sock + socket->len +
+			host.len + 1 /* '\0' */ +
+			tag->len + 1 /* '\0' */ +
+			2 * (adv->len + 1 /* '\0' */ +
+			     port_str.len + 1 /* '\0' */));
 	if (!sock) {
 		LM_ERR("oom for a new socket sock\n");
 		return NULL;
@@ -318,6 +352,37 @@ static struct sock_mgm *sock_mgm_new(str *socket)
 	sock->host.len = host.len;
 	memcpy(sock->host.s, host.s, host.len);
 	sock->host.s[host.len] = '\0';
+	p = sock->host.s + sock->host.len + 1;
+	sock->adv_port = adv_port;
+	if (tag->len) {
+		sock->tag.s = p;
+		memcpy(sock->tag.s, tag->s, tag->len);
+		sock->tag.len = tag->len;
+		sock->tag.s[sock->tag.len] = '\0';
+		p += tag->len + 1;
+	}
+	if (adv->len) {
+		sock->adv.s = p;
+		memcpy(sock->adv.s, adv->s, adv->len);
+		sock->adv.len = adv->len;
+		sock->adv.s[sock->adv.len] = '\0';
+		p += adv->len + 1;
+		sock->adv_port_str.s = p;
+		memcpy(sock->adv_port_str.s, port_str.s, port_str.len);
+		sock->adv_port_str.len = port_str.len;
+		sock->adv_port_str.s[sock->adv_port_str.len] = '\0';
+		p += port_str.len + 1;
+		sock->adv_str.s = p;
+		sock->adv_str.len = adv->len;
+		memcpy(sock->adv_str.s, adv->s, adv->len);
+		sock->adv_str.s[sock->adv_str.len++] = ':';
+		p += sock->adv_str.len;
+		memcpy(p, port_str.s, port_str.len);
+		sock->adv_str.len += port_str.len;
+		sock->adv_str.s[sock->adv_str.len] = '\0';
+	}
+	sock->flags = flags;
+	sock->tos = tos;
 	sock->index = -1;
 	sock->ref = 1; /* the current process */
 	LM_DBG("sock=%p new\n", sock);
@@ -376,7 +441,14 @@ static inline int sock_mgm_match(struct sock_mgm *sock1, struct sock_mgm *sock2)
 		return 0;
 	if (!str_match(&sock1->host, &sock2->host))
 		return 0;
-	/* TODO: handle other fields */
+	if (!str_match(&sock1->adv_str, &sock2->adv_str))
+		return 0;
+	if (!str_match(&sock1->tag, &sock2->tag))
+		return 0;
+	if (sock1->tos != sock2->tos)
+		return 0;
+	if (sock1->flags != sock2->flags)
+		return 0;
 	return 1;
 }
 
@@ -410,24 +482,127 @@ static inline int sock_mgm_get_index(void)
 	return last;
 }
 
+static int sock_mgm_parse_adv(str *adv, int *adv_port)
+{
+	char *p = q_memchr(adv->s, ':', adv->len);
+	str tmp;
+
+	if (!p) {
+		*adv_port = 0;
+		return 0;
+	}
+	tmp.s = p + 1;
+	tmp.len = adv->s + adv->len - tmp.s;
+	adv->len = p - adv->s;
+	if (tmp.len <= 0)
+		return -1;
+	if (str2sint(&tmp, adv_port) < 0)
+		return -1;
+	LM_DBG("advertised socket: %.*s:%d\n", adv->len, adv->s, *adv_port);
+	return 0;
+}
+
+static str sock_mgm_flag_names[] = {
+	str_init("anycast"),   /* SI_ANYCAST */
+	str_init("frag"),      /* SI_FRAG */
+	str_init("reuse_port"),/* SI_REUSEPORT */
+	STR_NULL
+};
+
+static int sock_mgm_parse_flags(str *adv, unsigned int *flags)
+{
+	void *param = adv;
+	unsigned int tmp;
+	*flags = 0;
+	if (fixup_named_flags(&param, sock_mgm_flag_names, NULL, NULL) < 0) {
+		LM_ERR("Failed to parse flags\n");
+		return -1;
+	}
+	tmp = (unsigned int)(unsigned long)(void *)param;
+	/* translate to SI flags */
+	if (tmp & 0x1)
+		*flags |=  SI_IS_ANYCAST;
+	if (tmp & 0x2)
+		*flags |=  SI_FRAG;
+	if (tmp & 0x4)
+		*flags |=  SI_REUSEPORT;
+	return 0;
+}
+
+static str *sock_mgm_print_flags(unsigned int flags)
+{
+	static char buf[256];
+	static str sflags = { NULL, 0};
+	char *p = buf;
+	if (!sflags.s)
+		sflags.s = buf;
+	if (flags & SI_IS_ANYCAST) {
+		memcpy(p, "anycast", 7);
+		p += 7;
+	}
+	if (flags & SI_FRAG) {
+		if (p != buf)
+			*p++ = ',';
+		memcpy(p, "frag", 4);
+		p += 4;
+	}
+	if (flags & SI_REUSEPORT) {
+		if (p != buf)
+			*p++ = ',';
+		memcpy(p, "reuse_port", 11);
+		p += 11;
+	}
+	sflags.len = p - buf;
+
+	return &sflags;
+}
+
+static int sock_mgm_parse_tos(str *adv, int *tos)
+{
+	*tos = 0;
+	if (str_match(adv, const_str("IPTOS_LOWDELAY")))
+		*tos = IPTOS_LOWDELAY;
+	else if (str_match(adv, const_str("IPTOS_THROUGHPUT")))
+		*tos = IPTOS_THROUGHPUT;
+	else if (str_match(adv, const_str("IPTOS_RELIABILITY")))
+		*tos = IPTOS_RELIABILITY;
+#if defined(IPTOS_MINCOST)
+	else if (str_match(adv, const_str("IPTOS_MINCOST")))
+		*tos = IPTOS_MINCOST;
+#endif
+#if defined(IPTOS_LOWCOST)
+	else if (str_match(adv, const_str("IPTOS_LOWCOST")))
+		*tos = IPTOS_LOWCOST;
+#endif
+	return 0;
+}
+
 static struct sock_mgm_list *load_sockets(void)
 {
-	db_key_t colsToReturn[2];
+	db_key_t colsToReturn[5];
 	db_res_t *result = NULL;
 	str socket;
+	str adv, tag, tmp;
+	int adv_port = 0;
 	int rowCount = 0;
 	db_row_t *row;
+	int tos;
+	unsigned int flags;
 	struct sock_mgm_list *ret = NULL;
 	struct sock_mgm *head = NULL;
 
 	colsToReturn[0] = &sock_mgm_socket_col;
+	colsToReturn[1] = &sock_mgm_adv_col;
+	colsToReturn[2] = &sock_mgm_tag_col;
+	colsToReturn[3] = &sock_mgm_flags_col;
+	colsToReturn[4] = &sock_mgm_tos_col;
 
 	if (sock_mgm_db_func.use_table(sock_mgm_db_con, &sock_mgm_table) < 0) {
 		LM_ERR("Error trying to use %.*s table\n", sock_mgm_table.len, sock_mgm_table.s);
 		return NULL;
 	}
 
-	if (sock_mgm_db_func.query(sock_mgm_db_con, 0, 0, 0,colsToReturn, 0, 1, 0,
+	if (sock_mgm_db_func.query(sock_mgm_db_con, 0, 0, 0,colsToReturn, 0, 5, 0,
 				&result) < 0) {
 		LM_ERR("Error querying database\n");
 		goto error;
@@ -470,7 +645,88 @@ static struct sock_mgm_list *load_sockets(void)
 				continue;
 		}
 
-		head = sock_mgm_new(&socket);
+		if (!VAL_NULL(ROW_VALUES(row) + 1)) {
+			switch (VAL_TYPE(ROW_VALUES(row) + 1)) {
+				case DB_STR:
+					adv = VAL_STR(ROW_VALUES(row) + 1);
+					break;
+				case DB_STRING:
+					adv.s = (char *)VAL_STRING(ROW_VALUES(row) + 1);
+					adv.len = strlen(adv.s);
+					break;
+				default:
+					LM_ERR("unknown advertised column type %d\n", VAL_TYPE(ROW_VALUES(row) + 1));
+					continue;
+			}
+			if (sock_mgm_parse_adv(&adv, &adv_port) < 0) {
+				LM_ERR("could not parse advertised column %.*s\n", adv.len, adv.s);
+				continue;
+			}
+		} else {
+			adv = str_init("");
+			adv_port = 0;
+		}
+
+		if (!VAL_NULL(ROW_VALUES(row) + 2)) {
+			switch (VAL_TYPE(ROW_VALUES(row) + 2)) {
+				case DB_STR:
+					tag = VAL_STR(ROW_VALUES(row) + 2);
+					break;
+				case DB_STRING:
+					tag.s = (char *)VAL_STRING(ROW_VALUES(row) + 2);
+					tag.len = strlen(tag.s);
+					break;
+				default:
+					LM_ERR("unknown tag column type %d\n", VAL_TYPE(ROW_VALUES(row) + 2));
+					continue;
+			}
+		} else {
+			tag = str_init("");
+		}
+
+		if (!VAL_NULL(ROW_VALUES(row) + 3)) {
+			switch (VAL_TYPE(ROW_VALUES(row) + 3)) {
+				case DB_STR:
+					tmp = VAL_STR(ROW_VALUES(row) + 3);
+					break;
+				case DB_STRING:
+					tmp.s = (char *)VAL_STRING(ROW_VALUES(row) + 3);
+					tmp.len = strlen(tmp.s);
+					break;
+				default:
+					LM_ERR("unknown flags column type %d\n", VAL_TYPE(ROW_VALUES(row) + 3));
+					continue;
+			}
+			if (sock_mgm_parse_flags(&tmp, &flags) < 0) {
+				LM_ERR("could not parse flags column %.*s\n", tmp.len, tmp.s);
+				continue;
+			}
+		} else {
+			flags = 0;
+		}
+
+		if (!VAL_NULL(ROW_VALUES(row) + 4)) {
+			switch (VAL_TYPE(ROW_VALUES(row) + 4)) {
+				case DB_STR:
+					tmp = VAL_STR(ROW_VALUES(row) + 4);
+					break;
+				case DB_STRING:
+					tmp.s = (char *)VAL_STRING(ROW_VALUES(row) + 4);
+					tmp.len = strlen(tmp.s);
+					break;
+				default:
+					LM_ERR("unknown tos column type %d\n", VAL_TYPE(ROW_VALUES(row) + 4));
+					continue;
+			}
+			if (sock_mgm_parse_tos(&tmp, &tos) < 0) {
+				LM_ERR("could not parse tos column %.*s\n", tmp.len, tmp.s);
+				continue;
+			}
+		} else {
+			tos = 0;
+		}
+
+		head = sock_mgm_new(&socket, &adv, adv_port, &tag, flags, tos);
 		if (!head) {
 			LM_ERR("could not create new socket struct for %.*s\n",
 					socket.len, socket.s);
@@ -559,6 +815,7 @@ static mi_response_t *mi_sockets_list(const mi_params_t *params,
 	struct sock_mgm *sock;
 	mi_response_t *resp;
 	mi_item_t *arr, *item;
+	str *flags;
 
 	resp = init_mi_result_array(&arr);
 	if (!resp)
@@ -572,7 +829,20 @@ static mi_response_t *mi_sockets_list(const mi_params_t *params,
 			goto error;
 		if (add_mi_string(item, MI_SSTR("socket"), sock->socket.s, sock->socket.len) < 0)
 			goto error;
-		/* TODO: add other fields */
+		if (sock->adv_str.len && add_mi_string(item, MI_SSTR("advertised"),
+				sock->adv_str.s, sock->adv_str.len) < 0)
+			goto error;
+		if (sock->tag.len && add_mi_string(item, MI_SSTR("tag"),
+				sock->tag.s, sock->tag.len) < 0)
+			goto error;
+		if (sock->flags) {
+			flags = sock_mgm_print_flags(sock->flags);
+			if (add_mi_string(item, MI_SSTR("flags"),
+					flags->s, flags->len) < 0)
+				goto error;
+		}
+		if (sock->tos && add_mi_number(item, MI_SSTR("tos"), sock->tos) < 0)
+			goto error;
 	}
 	lock_release(sock_mgm_lock);
 
@@ -695,12 +965,40 @@ static int sock_mgm_fill_socket(struct sock_mgm *sock, struct socket_info_full *
 		LM_ERR("oom for si name\n");
 		return -1;
 	}
+	if (sock->tag.len) {
+		if (pkg_nt_str_dup(&si->tag, &sock->tag) < 0) {
+			LM_ERR("oom for si tag\n");
+			goto error;
+		}
+	}
+	if (sock->adv.len) {
+		if (pkg_nt_str_dup(&si->adv_name_str, &sock->adv) < 0) {
+			LM_ERR("oom for si advertised\n");
+			goto error;
+		}
+		if (pkg_nt_str_dup(&si->adv_port_str, &sock->adv_port_str) < 0) {
+			LM_ERR("oom for si advertised port\n");
+			goto error;
+		}
+	}
+	si->adv_port = sock->adv_port;
+	si->flags = sock->flags;
+	si->tos = sock->tos;
 	si->last_real_ports = &sif->last_real_ports;
 	si->port_no=sock->port;
 	si->proto=sock->proto;
 	if (is_udp_based_proto(sock->proto))
-		si->flags |= SI_REUSEPORT; /* TODO: add other flags as well */
+		si->flags |= SI_REUSEPORT;
 	return 0;
+error:
+	pkg_free(si->name.s);
+	if (si->tag.s)
+		pkg_free(si->tag.s);
+	if (si->adv_name_str.s)
+		pkg_free(si->adv_name_str.s);
+	if (si->adv_port_str.s)
+		pkg_free(si->adv_port_str.s);
+	return -1;
 }
 
 static void sock_mgm_update_fd(struct sock_mgm *sock, int fd)

@@ -6,7 +6,10 @@
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>socket</field></col>
-				<col><field>pool</field></col>
+				<col><field>advertised</field></col>
+				<col><field>tag</field></col>
+				<col><field>flags</field></col>
+				<col><field>tos</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -14,7 +17,10 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>socket</field></col>
-				<col><field>pool</field></col>
+				<col><field>advertised</field></col>
+				<col><field>tag</field></col>
+				<col><field>flags</field></col>
+				<col><field>tos</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -25,7 +31,10 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>socket</field></col>
-				<col><field>pool</field></col>
+				<col><field>advertised</field></col>
+				<col><field>tag</field></col>
+				<col><field>flags</field></col>
+				<col><field>tos</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
