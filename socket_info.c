@@ -861,7 +861,7 @@ int fix_socket_list(struct socket_info_full **list)
 						(sl->name.len!=si->name.len)||
 						(strncmp(sl->name.s, si->name.s, si->name.len)!=0))
 					)
-					if (add_alias(l->name.s,l->name.len,l->port_no,l->proto,ACCEPT_SUBDOMAIN_ALIAS(l->flags))<0)
+					if (add_alias(sl->name.s,sl->name.len,sl->port_no,sl->proto,ACCEPT_SUBDOMAIN_ALIAS(sl->flags))<0)
 						LM_ERR(" add_alias failed\n");
 
 				/* remove l*/

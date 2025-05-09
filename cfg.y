@@ -185,7 +185,6 @@ struct listen_param {
 	char *auto_scaling_profile;
 } p_tmp;
 static void fill_socket_id(struct listen_param *param, struct socket_id *s);
-static void fill_alias_socket(struct listen_param *param, struct socket_id *s);
 
 union route_name_var {
 	int iname;
@@ -2782,10 +2781,6 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 		param->socket = param->socket->next;
 		pkg_free(socket);
 	}
-}
-
-static void fill_alias_socket(struct listen_param *param, struct socket_id *s) {
-	s->flags |= param->flags;
 }
 
 static struct multi_str *new_string(char *s)
