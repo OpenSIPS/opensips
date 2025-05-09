@@ -409,11 +409,11 @@ static char* get_plain_uri(const str* uri)
 static int allow_routing(struct sip_msg* msg, int idx)
 {
 	struct hdr_field *from;
-	int len, q;
+	int len;
 	static char from_str[EXPRESSION_LENGTH+1];
 	static char ruri_str[EXPRESSION_LENGTH+1];
 	char* uri_str;
-	str branch;
+	struct msg_branch *branch;
 	int br_idx;
 
 	/* turn off control, allow any routing */
@@ -486,9 +486,8 @@ static int allow_routing(struct sip_msg* msg, int idx)
 	}
 
  check_branches:
-	for( br_idx=0 ; (branch.s=get_branch(br_idx,&branch.len,&q,0,0,0,0))!=0 ;
-	br_idx++ ) {
-		uri_str = get_plain_uri(&branch);
+	for( br_idx=0 ; (branch=get_msg_branch(br_idx))!=NULL ; br_idx++ ) {
+		uri_str = get_plain_uri(&branch->uri);
 		if (!uri_str) {
 			LM_ERR("failed to extract plain URI\n");
 			return -1;

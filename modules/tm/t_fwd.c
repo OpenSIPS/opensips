@@ -693,14 +693,12 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	int branch_ret, lowest_ret;
 	str current_uri;
 	branch_bm_t  added_branches;
-	int i, q;
 	struct cell *t_invite;
-	int success_branch;
-	str dst_uri;
+	int i, success_branch;
 	const struct socket_info *bk_sock;
-	unsigned int br_flags, bk_bflags;
+	unsigned int bk_bflags;
+	struct msg_branch *branch;
 	int idx;
-	str path;
 	str bk_path;
 
 	/* before doing enything, update the t flags from msg */
@@ -775,10 +773,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 		lowest_ret=branch_ret;
 
 	/* ....and now add the remaining additional branches */
-	for( idx=0; (current_uri.s=get_branch( idx, &current_uri.len, &q,
-	&dst_uri, &path, &br_flags, &p_msg->force_send_socket))!=0 ; idx++ ) {
-		branch_ret = add_uac( t, p_msg, &current_uri, &dst_uri,
-			br_flags, &path, proxy);
+	for( idx=0; (branch=get_msg_branch(idx))!=NULL ; idx++ ) {
+		p_msg->force_send_socket = branch->force_send_socket;
+		branch_ret = add_uac( t, p_msg, &branch->uri, &branch->dst_uri,
+			branch->bflags, &branch->path, proxy);
 		/* pick some of the errors in case things go wrong;
 		   note that picking lowest error is just as good as
 		   any other algorithm which picks any other negative
@@ -789,7 +787,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			lowest_ret=branch_ret;
 	}
 	/* consume processed branches */
-	clear_branches();
+	clear_dset();
 
 	/* restore original stuff */
 	p_msg->new_uri=backup_uri;
@@ -1087,12 +1085,12 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 			/* current message is a reply, so take the first branch from dset
 			 * and move it into the faked msg (that will be used by t_fwd 
 			 * function)*/
-			if (move_branch_to_ruri( 0, &faked_req)<0) {
+			if (move_msg_branch_to_ruri( 0, &faked_req)<0) {
 				LM_ERR("no branch found to be moved as new destination\n");
 				goto error;
 			}
 			/* remove it from set */
-			remove_branch(0);
+			remove_msg_branch(0);
 		}
 	}
 
@@ -1153,7 +1151,7 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 		return -1;
 	}
 
-	if ( branch_uri2dset( GET_RURI(p_msg) )!=0 ) {
+	if ( msg_branch_uri2dset( GET_RURI(p_msg) )!=0 ) {
 		LM_ERR("failed to convert uri to dst\n");
 		return -1;
 	}

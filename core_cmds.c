@@ -890,13 +890,20 @@ static int w_strip_tail(struct sip_msg *msg, int *nchars)
 
 static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
 {
+	struct msg_branch branch;
 	int ret;
 	qvalue_t q = (int)(long)qvalue;
 
+	memset( &branch, 0, sizeof branch);
+
 	if (!uri) {
-		ret = append_branch(msg, 0, &msg->dst_uri, &msg->path_vec,
-			(q==Q_UNSPECIFIED) ? get_ruri_q(msg) : q,
-			getb0flags(msg), msg->force_send_socket);
+		branch.uri = *GET_RURI(msg);
+		branch.dst_uri = msg->dst_uri;
+		branch.path = msg->path_vec;
+		branch.q = (q==Q_UNSPECIFIED) ? get_ruri_q(msg) : q;
+		branch.force_send_socket = msg->force_send_socket;
+		branch.bflags = msg->ruri_bflags;
+		ret = append_msg_branch(&branch);
 		/* reset all branch info */
 		msg->force_send_socket = 0;
 		setb0flags(msg,0);
@@ -912,25 +919,31 @@ static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
 
 		return ret;
 	} else {
-		return append_branch(msg, uri, &msg->dst_uri,
-			&msg->path_vec, q, getb0flags(msg),
-			msg->force_send_socket);
+		branch.uri = *uri;
+		branch.dst_uri = msg->dst_uri;
+		branch.path = msg->path_vec;
+		branch.q = q;
+		branch.force_send_socket = msg->force_send_socket;
+		branch.bflags = msg->ruri_bflags;
+		return append_msg_branch(&branch);
 	}
 }
 
 static int w_remove_branch(struct sip_msg *msg, int *branch)
 {
-	return (remove_branch(*branch)==0)?1:-1;
+	return (remove_msg_branch(*branch)==0) ? 1 : -1 ;
 }
 
 static int w_move_branch(struct sip_msg *msg, int *src_idx, int *dst_idx, int *keep)
 {
-	return (move_branch(msg, (src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1), (keep?1:0))==0)?1:-1;
+	return (move_msg_branch(msg,
+		(src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1), (keep?1:0))==0) ? 1 : -1;
 }
 
 static int w_swap_branches(struct sip_msg *msg, int *src_idx, int *dst_idx)
 {
-	return (swap_branches(msg, (src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1))==0)?1:-1;
+	return (swap_msg_branches(msg,
+		(src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1))==0) ? 1 : -1 ;
 }
 
 static int w_pv_printf(struct sip_msg *msg, pv_spec_t *var, str *fmt_str)

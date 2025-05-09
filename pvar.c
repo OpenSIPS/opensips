@@ -2028,48 +2028,43 @@ static int pv_parse_branch_name(pv_spec_p sp, const str *in)
 
 static inline int get_branch_field( int idx, pv_name_t *pvn, pv_value_t *res)
 {
-	str uri;
-	qvalue_t q;
-	str duri;
-	str path;
-	unsigned int flags;
-	const struct socket_info *si;
+	struct msg_branch *branch;
 
-	uri.s = get_branch(idx, &uri.len, &q, &duri, &path, &flags, &si);
-	if (!uri.s)
+	branch = get_msg_branch(idx);
+	if (branch==NULL)
 		return pv_get_null( NULL, NULL, res);
 
 	/* got a valid branch, return the field */
 	switch (pvn->u.isname.name.n) {
 		case 0:
 		case BR_URI_ID: /* return URI */
-			res->rs = uri;
+			res->rs = branch->uri;
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_Q_ID: /* return Q */
-			res->rs.s = q2str(q, (unsigned int*)&res->rs.len);
+			res->rs.s = q2str(branch->q, (unsigned int*)&res->rs.len);
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_DURI_ID: /* return DURI */
-			if ( !duri.s || !duri.len)
+			if ( ZSTR(branch->dst_uri) )
 				return pv_get_null(NULL, NULL, res);
-			res->rs = duri;
+			res->rs = branch->dst_uri;
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_PATH_ID: /* return PATH */
-			if ( !path.s || !path.len)
+			if ( ZSTR(branch->path) )
 				return pv_get_null(NULL, NULL, res);
-			res->rs = path;
+			res->rs = branch->path;
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_FLAGS_ID: /* return FLAGS */
-			res->rs = bitmask_to_flag_list(FLAG_TYPE_BRANCH, flags);
+			res->rs = bitmask_to_flag_list(FLAG_TYPE_BRANCH, branch->bflags);
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_SOCKET_ID: /* return SOCKET */
-			if ( !si )
+			if ( branch->force_send_socket==NULL )
 				return pv_get_null(NULL, NULL, res);
-			res->rs = si->sock_str;
+			res->rs = branch->force_send_socket->sock_str;
 			res->flags = PV_VAL_STR;
 			break;
 		default:
@@ -2083,6 +2078,7 @@ static inline int get_branch_field( int idx, pv_name_t *pvn, pv_value_t *res)
 static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
+	int size;
 	int idx;
 	int idxf;
 	char *p;
@@ -2090,7 +2086,7 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if (get_nr_branches() == 0)
+	if ( (size=get_dset_size()) == 0)
 		return pv_get_null(msg, param, res);
 
 	/* get the index */
@@ -2109,7 +2105,7 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 		p = pv_local_buf;
 		idx = 0;
 
-		while ( idx<get_nr_branches() ) {
+		while ( idx<size ) {
 
 			get_branch_field( idx, &param->pvn, res);
 
@@ -2138,9 +2134,9 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 	/* numerical index */
 	if (idx<0) {
 		/* index from the end */
-		if (-idx > get_nr_branches())
+		if (-idx > size)
 			return pv_get_null(msg, param, res);
-		idx = get_nr_branches() + idx;
+		idx = size + idx;
 	}
 
 	/* return the request branch info */
@@ -3221,6 +3217,8 @@ static int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 static int pv_set_branch(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
+	struct msg_branch branch;
+
 	if (msg==NULL || param==NULL) {
 		LM_ERR("bad parameters\n");
 		return -1;
@@ -3232,7 +3230,10 @@ static int pv_set_branch(struct sip_msg* msg, pv_param_t *param,
 		return -1;
 	}
 
-	if (append_branch( msg, &val->rs, NULL, NULL, Q_UNSPECIFIED,  0, NULL)!=1){
+	memset( &branch, 0, sizeof branch);
+	branch.uri = val->rs;
+	branch.q = Q_UNSPECIFIED;
+	if (append_msg_branch( &branch )!=1){
 		LM_ERR("failed to append new branch\n");
 		return -1;
 	}
@@ -3244,6 +3245,7 @@ static int pv_set_branch(struct sip_msg* msg, pv_param_t *param,
 static int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
+	int size;
 	int idx;
 	int idxf;
 	str *s;
@@ -3270,13 +3272,14 @@ static int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 		return -1;
 	}
 
+	size = get_dset_size();
+
 	if (idx<0) {
-		idx = get_nr_branches() + idx;
+		idx = size + idx;
 	}
 
-	if (idx<0 || idx>=get_nr_branches()) {
-		LM_ERR("SCRIPT BUG - inexisting branch assignment [%d/%d]\n",
-			get_nr_branches(), idx);
+	if (idx<0 || idx>=size) {
+		LM_ERR("inexisting branch assignment [%d/%d]\n", size, idx);
 		return -1;
 	}
 
@@ -3288,32 +3291,28 @@ static int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 				return -1;
 			}
 			s = &val->rs;
-			return update_branch( idx, &s, NULL,
-				NULL, NULL, NULL, NULL);
+			return update_msg_branch_uri( idx, s);
 		case BR_Q_ID: /* set Q */
 			if ( val && !(val->flags&PV_VAL_INT) ) {
 				LM_ERR("INT value required to set the branch Q\n");
 				return -1;
 			}
 			q = (!val||val->flags&PV_VAL_NULL)? Q_UNSPECIFIED : val->ri;
-			return update_branch( idx, NULL, NULL,
-				NULL, &q, NULL, NULL);
+			return update_msg_branch_q( idx, q);
 		case BR_DURI_ID: /* set DURI */
 			if ( val && !(val->flags&PV_VAL_STR) ) {
 				LM_ERR("STR value required to set the branch DURI\n");
 				return -1;
 			}
 			s = (!val||val->flags&PV_VAL_NULL)? NULL : &val->rs;
-			return update_branch( idx, NULL, &s,
-				NULL, NULL, NULL, NULL);
+			return update_msg_branch_dst_uri( idx, s);
 		case BR_PATH_ID: /* set PATH */
 			if ( val && !(val->flags&PV_VAL_STR) ) {
 				LM_ERR("STR value required to set the branch PATH\n");
 				return -1;
 			}
 			s = (!val||val->flags&PV_VAL_NULL)? NULL : &val->rs;
-			return update_branch( idx, NULL, NULL,
-				&s, NULL, NULL, NULL);
+			return update_msg_branch_path( idx, s);
 		case BR_FLAGS_ID: /* set FLAGS */
 			if ( val && !(val->flags&PV_VAL_STR) ) {
 				LM_ERR("string value required to set the branch FLAGS\n");
@@ -3321,8 +3320,7 @@ static int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 			}
 			flags = (!val||val->flags&PV_VAL_NULL)?
 				0 : flag_list_to_bitmask(str2const(&val->rs), FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
-			return update_branch( idx, NULL, NULL,
-				NULL, NULL, &flags, NULL);
+			return update_msg_branch_bflags( idx, flags);
 		case BR_SOCKET_ID: /* set SOCKET */
 			if ( val && !(val->flags&PV_VAL_STR) ) {
 				LM_ERR("STR value required to set the branch SOCKET\n");
@@ -3335,8 +3333,7 @@ static int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 				if (si==NULL)
 					return -1;
 			}
-			return update_branch( idx, NULL, NULL,
-				NULL, NULL, NULL, &si);
+			return update_msg_branch_socket( idx, si);
 		default:
 			LM_CRIT("BUG - unsupported ID %d\n",param->pvn.u.isname.type);
 			return -1;
@@ -3897,6 +3894,7 @@ static int branch_flag_parse_name(pv_spec_p sp, const str *in)
 static int branch_flag_set(struct sip_msg* msg, pv_param_t *param, int op,
 															pv_value_t *val)
 {
+	int size;
 	int idx;
 	int idxf;
 
@@ -3922,13 +3920,14 @@ static int branch_flag_set(struct sip_msg* msg, pv_param_t *param, int op,
 		return -1;
 	}
 
+	size = get_dset_size();
+
 	if (idx<0) {
-		idx = get_nr_branches() + idx;
+		idx = size + idx;
 	}
 
-	if (idx<0 || idx>=get_nr_branches()) {
-		LM_DBG("inexisting branch flag assignment [%d/%d]\n",
-			get_nr_branches(), idx);
+	if (idx<0 || idx>=size) {
+		LM_DBG("inexisting branch flag assignment [%d/%d]\n", size, idx);
 		return -1;
 	}
 
@@ -3943,6 +3942,7 @@ static int branch_flag_set(struct sip_msg* msg, pv_param_t *param, int op,
 
 static int branch_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
+	int size;
 	int idx;
 	int idxf;
 
@@ -3962,13 +3962,14 @@ static int branch_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *
 		return -1;
 	}
 
+	size = get_dset_size();
+
 	if (idx<0) {
-		idx = get_nr_branches() + idx;
+		idx = size + idx;
 	}
 
-	if (idx<0 || idx>=get_nr_branches()) {
-		LM_DBG("inexisting branch flag reading [%d/%d]\n",
-			get_nr_branches(), idx);
+	if (idx<0 || idx>=size) {
+		LM_DBG("inexisting branch flag reading [%d/%d]\n", size, idx);
 		return -1;
 	}
 
