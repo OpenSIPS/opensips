@@ -66,6 +66,8 @@ static int fixup_nt_string(void** param);
 static int fixup_nt_str(void** param);
 static int fixup_nt_str_free(void** param);
 static int fixup_via_hdl(void** param);
+static int fixup_append_mbranch_flags(void** param);
+
 
 static int w_forward(struct sip_msg *msg, struct proxy_l *dest);
 static int w_send(struct sip_msg *msg, struct proxy_l *dest, str *headers);
@@ -84,10 +86,14 @@ static int w_seturi(struct sip_msg *msg, str *uri);
 static int w_prefix(struct sip_msg *msg, str *prefix);
 static int w_strip(struct sip_msg *msg, int *nchars);
 static int w_strip_tail(struct sip_msg *msg, int *nchars);
-static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue);
-static int w_remove_branch(struct sip_msg *msg, int *branch);
-static int w_move_branch(struct sip_msg *msg, int *src_idx, int *dst_idx, int *keep);
-static int w_swap_branches(struct sip_msg *msg, int *src_idx, int *dst_idx);
+static int w_append_branch_old(struct sip_msg *msg, str *uri, int *qvalue);
+static int w_append_msg_branch(struct sip_msg *msg, str *uri, int *qvalue,
+		void *flags);
+static int w_remove_msg_branch(struct sip_msg *msg, int *branch);
+static int w_move_msg_branch(struct sip_msg *msg,
+		int *src_idx, int *dst_idx, int *keep);
+static int w_swap_msg_branches(struct sip_msg *msg,
+		int *src_idx, int *dst_idx);
 static int w_pv_printf(struct sip_msg *msg, pv_spec_t *var, str *fmt_str);
 static int w_revert_uri(struct sip_msg *msg);
 static int w_setdsturi(struct sip_msg *msg, str *uri);
@@ -191,21 +197,28 @@ const cmd_export_t core_cmds[]={
 	{"strip_tail", (cmd_function)w_strip_tail, {
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"append_branch", (cmd_function)w_append_branch, {
+	{"append_branch_old", (cmd_function)w_append_branch_old, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_qvalue, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"remove_branch", (cmd_function)w_remove_branch, {
+	{"append_msg_branch", (cmd_function)w_append_msg_branch, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_qvalue, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_append_mbranch_flags,0},
+		{0,0,0}},
+		ALL_ROUTES},
+	{"remove_msg_branch", (cmd_function)w_remove_msg_branch, {
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"move_branch", (cmd_function)w_move_branch, {
+	{"move_msg_branch", (cmd_function)w_move_msg_branch, {
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_branch_keep, 0},
 		{0,0,0}},
 		ALL_ROUTES},
-	{"swap_branches", (cmd_function)w_swap_branches, {
+	{"swap_msg_branches", (cmd_function)w_swap_msg_branches, {
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
 		{0,0,0}},
@@ -888,7 +901,7 @@ static int w_strip_tail(struct sip_msg *msg, int *nchars)
 	return rewrite_ruri(msg, 0, *nchars, RW_RURI_STRIP_TAIL) ? -1 : 1;
 }
 
-static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
+static int w_append_branch_old(struct sip_msg *msg, str *uri, int *qvalue)
 {
 	struct msg_branch branch;
 	int ret;
@@ -929,18 +942,60 @@ static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
 	}
 }
 
-static int w_remove_branch(struct sip_msg *msg, int *branch)
+
+static str append_mbranch_flag_names[] =
+{
+	str_init("inherite"),
+	STR_NULL
+};
+
+static int fixup_append_mbranch_flags(void** param)
+{
+	return fixup_named_flags(param, append_mbranch_flag_names, NULL, NULL);
+}
+
+
+static int w_append_msg_branch(struct sip_msg *msg, str *uri, int *qvalue,
+																void *flags)
+{
+	unsigned int opts = (unsigned int)(unsigned long)flags;
+	struct msg_branch branch;
+	qvalue_t q = (int)(long)qvalue;
+
+	if (ZSTRP(uri)) {
+		LM_ERR("appending emptry URI :(\n");
+		return -1;
+	}
+
+	memset( &branch, 0, sizeof branch);
+	branch.uri = *uri;
+
+	if ( opts & (1<<0) ) {
+		/* inherite the rest of the branch attrs from RURI branch */
+		branch.dst_uri = msg->dst_uri;
+		branch.path = msg->path_vec;
+		branch.q = (q==Q_UNSPECIFIED) ? get_ruri_q(msg) : q;
+		branch.force_send_socket = msg->force_send_socket;
+		branch.bflags = msg->ruri_bflags;
+	} else {
+		branch.q = q;
+	}
+	return append_msg_branch(&branch);
+}
+
+static int w_remove_msg_branch(struct sip_msg *msg, int *branch)
 {
 	return (remove_msg_branch(*branch)==0) ? 1 : -1 ;
 }
 
-static int w_move_branch(struct sip_msg *msg, int *src_idx, int *dst_idx, int *keep)
+static int w_move_msg_branch(struct sip_msg *msg, int *src_idx,
+													int *dst_idx, int *keep)
 {
 	return (move_msg_branch(msg,
 		(src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1), (keep?1:0))==0) ? 1 : -1;
 }
 
-static int w_swap_branches(struct sip_msg *msg, int *src_idx, int *dst_idx)
+static int w_swap_msg_branches(struct sip_msg *msg, int *src_idx, int *dst_idx)
 {
 	return (swap_msg_branches(msg,
 		(src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1))==0) ? 1 : -1 ;
