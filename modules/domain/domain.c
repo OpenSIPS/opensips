@@ -129,6 +129,8 @@ int db_table_lookup(struct sip_msg *msg, str *lookup_domain, str *host, pv_spec_
 	if (RES_ROW_N(res) > 0) {
 		values = ROW_VALUES(RES_ROWS(res));
 
+		// If we have a row then we need to get the accept_subdomain column first
+		// If the host does not strictly match this ensures the accept_subdomain can match the subdomain
 		if (VAL_NULL(values + 2)) {
 			accept_subdomain = 0;
 		} else if (VAL_TYPE(values + 2) == DB_INT) {
@@ -188,14 +190,18 @@ int is_domain_local_pvar(struct sip_msg *msg, str* _host, pv_spec_t *pv)
 
 		next_domain = strchr(lookup_domain.s, '.');
 
+		// If the _host string originally supplied is not a domain eg. sip.com but rather sipcom then strchr will return NULL
+		// This conditional is for the first strchr check, subsequent runs will not happen based on reverse check in the while condition
 		if (next_domain == NULL)
 			break;
 
-		next_domain++;
+		next_domain++; // Remove the '.'
 
+		// strlen(next_domain) will not work here as the _host->s char* pointer contains the SIP request domain including port and params
+		// The bounds checking is done based on the supplied len and this calculation will decrement host part and '.' removed
 		lookup_domain.len = lookup_domain.len - (next_domain - lookup_domain.s);
 		lookup_domain.s = next_domain;
-	} while(strrchr(next_domain, '.') != NULL);
+	} while(strrchr(next_domain, '.') != NULL); // Exits if the next domain that has been parsed has no '.'
 
 	return -1;
 }
