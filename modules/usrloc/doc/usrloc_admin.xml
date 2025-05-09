@@ -1608,7 +1608,7 @@ ul_add_key("location", "$tU@$td", "service_route", "$hdr(Service-Route)");
 		<title><function>ul_get_key</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (ul_get_key("location", "$tU@$td", "service_route", "$avp(service_route)")) {
+if (ul_get_key("location", "$tU@$td", "service_route", $avp(service_route))) {
         append_to_reply("Service-Route: $avp(service_route)\r\n");
 }
 ...
