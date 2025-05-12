@@ -48,6 +48,7 @@
 struct domain_list {
 	str domain;
 	str attrs;
+	int accept_subdomain;
 	struct domain_list *next;
 };
 
@@ -61,10 +62,11 @@ typedef struct param_source {
 /*
  * Module parameters variables
  */
-extern int db_mode;             /* Database usage mode: 0 = no cache, 1 = cache */
-extern str domain_table;	/* Domain table name */
-extern str domain_col;   	/* Domain column name */
-extern str domain_attrs_col;   	/* Domain attributes column name */
+extern int db_mode;                      /* Database usage mode: 0 = no cache, 1 = cache */
+extern str domain_table;                 /* Domain table name */
+extern str domain_col;                   /* Domain column name */
+extern str domain_attrs_col;             /* Domain attributes column name */
+extern str domain_accept_subdomain_col;  /* Domain accept subdomain column name */
 
 
 /*

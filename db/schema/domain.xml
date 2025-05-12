@@ -44,6 +44,13 @@
         <null/>
     </column>
 
+    <column id="accept_subdomain">
+        <name>accept_subdomain</name>
+        <type>unsigned int</type>
+        <size>11</size>
+        <default>0</default>
+        <description>Accept subdomain</description>
+    </column>
 
     <column>
         <name>last_modified</name>
