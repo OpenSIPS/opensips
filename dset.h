@@ -30,6 +30,7 @@
 #include "ip_addr.h"
 #include "qvalue.h"
 #include "str.h"
+#include "usr_avp.h"
 
 
 struct msg_branch
@@ -48,7 +49,7 @@ struct msg_branch
 
 	unsigned int bflags;
 
-	struct usr_avp *bavps;
+	struct usr_avp *attrs;
 };
 
 
@@ -156,5 +157,12 @@ int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
  */
 int move_msg_branch(struct sip_msg *msg, int src_idx, int dst_idx,
 		int keep_src);
+
+
+int get_msg_branch_attr(unsigned int b_idx, int name_id,
+		unsigned short *flags, int_str *val);
+
+int set_msg_branch_attr(unsigned int b_idx, int name_id,
+		unsigned short flags, int_str val);
 
 #endif /* _DSET_H */

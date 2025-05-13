@@ -79,6 +79,14 @@ struct dset_ctx
 	 * (-1 because of the default branch, #0)
 	 */
 	struct msg_branch_wrap *branches;
+
+	/*!
+	 * this is the set of attrs (brnach avps) corresponding to the
+	 * RURI branch (the 0-branch); we do not want to keep them into the
+	 * SIP msg (due to cloning issues), so we store them here (anyhow
+	 * the lifespan of this hook is short, only during request route)
+	 */
+	struct usr_avp *ruri_attrs;
 };
 
 static int dset_ctx_idx = -1;
@@ -100,12 +108,25 @@ int get_dset_size(void)
 	return !dsct ? 0 : dsct->nr_branches;
 }
 
+/* empties/frees the content of a dset without free'ing the dset itself */
+static inline void _empty_branches(struct dset_ctx *dsct)
+{
+	int i;
+
+	for( i = 0 ; i < dsct->nr_branches ; i++ )
+		destroy_avp_list( &dsct->branches[i].branch.attrs );
+	pkg_free( dsct->branches );
+	dsct->branches = NULL;
+}
 
 /*! Frees a destination set which used to be stored in the global context */
 static void dset_destroy(void *dsct)
 {
-	pkg_free(((struct dset_ctx *)dsct)->branches);
-	pkg_free(dsct);
+	/* emptry all branches */
+	_empty_branches( (struct dset_ctx *)dsct );
+	/* free attrs/avp for the RURI/0 branch */
+	destroy_avp_list( &((struct dset_ctx *)dsct)->ruri_attrs );
+	pkg_free( dsct );
 }
 
 
@@ -174,8 +195,8 @@ void clear_dset(void)
 	struct dset_ctx *dsct = get_dset_ctx();
 
 	if (dsct) {
+		_empty_branches( dsct );
 		dsct->nr_branches = 0;
-		pkg_free(dsct->branches);
 	}
 }
 
@@ -851,4 +872,76 @@ int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask)
 	return 1;
 }
 
+
+int get_msg_branch_attr(unsigned int b_idx, int name_id,
+									unsigned short *flags, int_str *val)
+{
+	struct dset_ctx *dsct = get_dset_ctx();
+	struct usr_avp **attrs;
+	struct usr_avp *avp;
+	struct usr_avp** old_list;
+
+	if (!dsct)
+		return -1;
+
+	if (b_idx==0)
+		attrs = &(dsct->ruri_attrs);
+	else if (b_idx-1 < get_dset_size())
+		attrs = &dsct->branches[b_idx - 1].branch.attrs;
+	else {
+		LM_DBG("index %d out of rante (available branches %d)\n",
+			b_idx, get_dset_size() );
+		return -1;
+	}
+
+	/* operate on the list of ATTRS/AVPS of the branch */
+	old_list = set_avp_list( attrs );
+
+	avp = search_first_avp(0, name_id, val, 0);
+
+	set_avp_list( old_list );
+
+	if (avp)
+		*flags = avp->flags&AVP_SCRIPT_MASK;
+	else
+		*flags = AVP_VAL_NULL;
+
+	return avp ? 1 : -1 ;
+}
+
+
+int set_msg_branch_attr(unsigned int b_idx, int name_id,
+										unsigned short flags, int_str val)
+{
+	struct dset_ctx *dsct = get_dset_ctx();
+	struct usr_avp **attrs;
+	struct usr_avp *avp;
+	struct usr_avp** old_list;
+
+	if (!dsct)
+		return -1;
+
+	if (b_idx==0)
+		attrs = &(dsct->ruri_attrs);
+	else if (b_idx-1 < get_dset_size())
+		attrs = &dsct->branches[b_idx - 1].branch.attrs;
+	else {
+		LM_DBG("index %d out of rante (available branches %d)\n",
+			b_idx, get_dset_size() );
+		return -1;
+	}
+
+	/* operate on the list of ATTRS/AVPS of the branch */
+	old_list = set_avp_list( attrs );
+
+	if ( (avp=search_first_avp( 0, name_id, NULL, 0))!=NULL )
+		destroy_avp(avp);
+
+	if ( !(flags|AVP_VAL_NULL) )
+		add_avp( flags, name_id, val);
+
+	set_avp_list( old_list );
+
+	return 1;
+}
 
