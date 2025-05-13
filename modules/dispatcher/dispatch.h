@@ -69,7 +69,7 @@ typedef struct _ds_dest
 	str attrs;
 	str script_attrs;
 	str description;
-	int flags;
+	int flags;      /* e.g. DS_INACTIVE_DST, etc. */
 	unsigned short weight;    /* dynamic weight - may change at runtime */
 	unsigned short rr_count; /* times it was chosen in a row for weighted round-robin */
 	unsigned short running_weight;
@@ -85,6 +85,7 @@ typedef struct _ds_dest
 	void *param;
 	int route_algo_value;
 	fs_evs *fs_sock;
+	gen_lock_t wlock;      /* serialize any concurrent R/W on this dest */
 	struct _ds_dest *next;
 } ds_dest_t, *ds_dest_p;
 
