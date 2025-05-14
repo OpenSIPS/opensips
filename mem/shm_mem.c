@@ -102,6 +102,9 @@ gen_lock_t *mem_lock;
 
 #if defined F_PARALLEL_MALLOC
 gen_lock_t *hash_locks[TOTAL_F_PARALLEL_POOLS];
+/* we allocated TOTAL_F_PARALLEL_POOLS mem blocks */
+static void** shm_mempools=NULL;
+void **shm_blocks;
 #endif
 
 #ifdef HP_MALLOC
@@ -110,10 +113,6 @@ gen_lock_t *mem_locks;
 
 static void* shm_mempool=INVALID_MAP;
 void *shm_block;
-
-/* we allocated TOTAL_F_PARALLEL_POOLS mem blocks */
-static void** shm_mempools=NULL;
-void **shm_blocks;
 
 int init_done=0;
 
@@ -557,7 +556,9 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 
 	if (mem_allocator_shm != MM_F_PARALLEL_MALLOC && mem_allocator_shm != MM_F_PARALLEL_MALLOC_DBG) {
 		if (!shm_block){
+#ifdef F_PARALLEL_MALLOC
 err_destroy:
+#endif
 			LM_CRIT("could not initialize shared malloc\n");
 			shm_mem_destroy();
 			return -1;
@@ -764,8 +765,7 @@ int shm_dbg_mem_init_mallocs(void* mempool, unsigned long pool_size)
 
 int shm_mem_init(void)
 {
-	int fd = -1,i=0;
-	unsigned long block_size;
+	int fd = -1;
 	LM_INFO("allocating SHM block\n");
 
 #ifdef SHM_MMAP
@@ -808,8 +808,10 @@ int shm_mem_init(void)
 #ifdef F_PARALLEL_MALLOC
 	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||
 	mem_allocator_shm == MM_F_PARALLEL_MALLOC_DBG) {
+		int i;
 		LM_DBG("Paralel malloc, total pools size is %d\n",TOTAL_F_PARALLEL_POOLS);
 		for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
+			unsigned long block_size;
 
 			block_size = shm_mem_size/TOTAL_F_PARALLEL_POOLS;
 			shm_mempools[i] = shm_getmem(fd,NULL,block_size);
