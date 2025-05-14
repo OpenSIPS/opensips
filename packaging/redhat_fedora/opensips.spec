@@ -1191,6 +1191,7 @@ fi
 %{_libdir}/opensips/modules/status_report.so
 %{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so
+%{_libdir}/opensips/modules/sockets_mgm.so
 %{_libdir}/opensips/modules/speeddial.so
 %{_libdir}/opensips/modules/sql_cacher.so
 %{_libdir}/opensips/modules/sst.so
@@ -1289,6 +1290,7 @@ fi
 %doc docdir/README.status_report
 %doc docdir/README.tracer
 %doc docdir/README.sl
+%doc docdir/README.sockets_mgm
 %doc docdir/README.speeddial
 %doc docdir/README.sql_cacher
 %doc docdir/README.sst
@@ -1664,6 +1666,9 @@ fi
 
 
 %changelog
+* Tue May 13 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+- New module: sockets_mgm
+
 * Tue Mar 11 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - New module: janus
 
