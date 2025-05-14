@@ -1122,6 +1122,7 @@ fi
 %{_libdir}/opensips/modules/callops.so
 %{_libdir}/opensips/modules/cfgutils.so
 %{_libdir}/opensips/modules/clusterer.so
+%{_libdir}/opensips/modules/config.so
 %{_libdir}/opensips/modules/db_cachedb.so
 %{_libdir}/opensips/modules/db_flatstore.so
 %{_libdir}/opensips/modules/db_text.so
@@ -1225,6 +1226,7 @@ fi
 %doc docdir/README.callops
 %doc docdir/README.cfgutils
 %doc docdir/README.clusterer
+%doc docdir/README.config
 %doc docdir/README.db_flatstore
 %doc docdir/README.db_text
 %doc docdir/README.db_virtual
@@ -1666,6 +1668,9 @@ fi
 
 
 %changelog
+* Wed May 14 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
+- New module: config
+
 * Tue May 13 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - New module: sockets_mgm
 

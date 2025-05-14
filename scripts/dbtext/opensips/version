@@ -14,6 +14,7 @@ cc_cdrs:2
 cc_flows:2
 closeddial:1
 clusterer:4
+config:1
 cpl:2
 dbaliases:2
 dialog:12
