@@ -132,6 +132,7 @@ p_group_node_t *new_group_node(unsigned int group_id, unsigned int bucket_count)
     if (!node->v.ipv4_subnet) {
         LM_ERR("no shm memory left for IPv4 subnet prefix tree\n");
         shm_free(node);
+        return NULL;
     }
 
     node->v.ipv6_subnet = ppt_create_node();
@@ -139,6 +140,7 @@ p_group_node_t *new_group_node(unsigned int group_id, unsigned int bucket_count)
         LM_ERR("no shm memory left for IPv6 subnet prefix tree\n");
         ppt_free_trie(node->v.ipv4_subnet);
         shm_free(node);
+        return NULL;
     }
 
     return node;
