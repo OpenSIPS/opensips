@@ -99,13 +99,13 @@ p_address_node_t *new_address_node(struct net *subnet, unsigned int port, int pr
 
 void delete_group_node(p_group_node_t *group) {
     int i;
-    p_address_node_t *address;
+    p_address_node_t *address, *next;
 
     if (!group) return;
 
     for (i = 0; i < group->v.address.bucket_count; ++i) {
-        for (address = (p_address_node_t *)group->v.address.bucket[i]; address;
-             address = address->next) {
+        for (address = (p_address_node_t *)group->v.address.bucket[i]; address; address = next) {
+            next = address->next;
             delete_address_node(address);
         }
     }
