@@ -25,6 +25,7 @@
 
 #include "../../dprint.h"
 #include "cachedb_redis_dbase.h"
+#include "cachedb_redis_utils.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../cachedb/cachedb.h"
@@ -100,6 +101,31 @@ cluster_node *get_redis_connection(redis_con *con,str *key)
 				return it;
 			}
 		}
+		return NULL;
+	}
+}
+
+cluster_node *get_redis_connection_by_endpoint(redis_con *con, redis_moved *redis_info)
+{
+	cluster_node *it;
+
+	if (con->flags & REDIS_SINGLE_INSTANCE) {
+		LM_DBG("Single redis connection, returning %p\n",con->nodes);
+		return con->nodes;
+	} else {
+		for (it=con->nodes;it;it=it->next) {
+			if (match_prefix(redis_info->endpoint.s, redis_info->endpoint.len, it->ip, strlen(it->ip))) {
+				if (it->port == redis_info->port) {
+					// Removed slot comparison as it may be a little too aggressive of a match
+					// Code is still here in the event that it needs to be added back in
+					//if (it->start_slot <= redis_info->slot && it->end_slot >= redis_info->slot) {
+						LM_DBG("Redis cluster connection, matched con %p for endpoint: %.*s:%d slot: [%u] %u [%u] \n", it, redis_info->endpoint.len, redis_info->endpoint.s, redis_info->port, it->start_slot, redis_info->slot, it->end_slot);
+						return it;
+					//}
+				}
+			}
+		}
+		LM_ERR("Redis cluster connection, No match found for endpoint: %.*s:%d slot %u\n", redis_info->endpoint.len, redis_info->endpoint.s, redis_info->port, redis_info->slot);
 		return NULL;
 	}
 }
@@ -318,4 +344,94 @@ error:
 	LM_ERR("Error while parsing cluster nodes in %s\n",block);
 	destroy_cluster_nodes(con);
 	return -1;
+}
+
+/*
+ When Redis is operating as a cluster, it is possible (very likely)
+ that a MOVED redirection will be returned by the Redis nodes that
+ received the request. The general format of the reply from Redis is:
+ MOVED slot [IP|FQDN]:port
+
+ This routine will parse the Redis MOVED reply into its components.
+ Note that the redisReply struct MUST be released outside of this routine
+ to avoid a memory leak. The out->endpoint pointer must not be used after
+ the redisReply has been released.
+
+ The parsed data is stored into the following redis_moved struct:
+ 
+ typedef struct {
+	int slot;
+	const_str endpoint;
+	int port;
+ } redis_moved;
+
+*/
+int parse_moved_reply(redisReply *reply, redis_moved *out) {
+	if (!reply || !reply->str || reply->len < MOVED_PREFIX_LEN || !out)
+		return ERR_INVALID_REPLY;
+
+	const char *p = reply->str;
+	const char *end = reply->str + reply->len;
+
+	for (int i = 0; i < MOVED_PREFIX_LEN; ++i) {
+		if (p[i] != MOVED_PREFIX[i]) {
+		return ERR_INVALID_REPLY;
+		}
+	}
+	p += MOVED_PREFIX_LEN;
+
+	// Parse slot number
+	int slot = 0;
+	while (p < end && *p >= '0' && *p <= '9') {
+		slot = slot * 10 + (*p - '0');
+		p++;
+	}
+	if (slot == 0 && (p == reply->str + MOVED_PREFIX_LEN || *(p - 1) < '0' || *(p - 1) > '9'))
+		return ERR_INVALID_SLOT;
+
+	// Skip spaces
+	while (p < end && *p == ' ') p++;
+
+	// Parse host and port
+	const char *host_start = p;
+	const char *colon = NULL;
+	while (p < end) {
+		if (*p == ':') {
+			colon = p;
+			break;
+		}
+		p++;
+	}
+
+	out->endpoint.s = NULL;
+	out->endpoint.len = 0;
+
+	int port = REDIS_DF_PORT; // Default to Redis standard port
+
+	if (colon) {
+		out->endpoint.s = host_start;
+		out->endpoint.len = colon - host_start;
+
+		// Parse port
+		const char *port_start = colon + 1;
+		p = port_start;
+		if (p < end) {
+			port = 0;
+			while (p < end && *p >= '0' && *p <= '9') {
+				port = port * 10 + (*p - '0');
+				p++;
+			}
+			if (port < 0 || port > 65535 || port_start == p)
+				return ERR_INVALID_PORT;
+		}
+	} else if (out->endpoint.s < end) {
+		out->endpoint.s = host_start;
+		out->endpoint.len = end - host_start;
+	}
+
+	// Fill output
+	out->slot = slot;
+	out->port = port;
+
+	return 0;
 }

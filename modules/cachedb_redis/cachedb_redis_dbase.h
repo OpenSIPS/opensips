@@ -48,6 +48,21 @@ typedef struct cluster_nodes {
 	struct cluster_nodes *next;
 } cluster_node;
 
+// Helper typedef to store the endpoint from a redisReply.
+typedef struct {
+	const char *s;
+	int len;
+} const_str;
+
+// When a MOVED is returned from Redis, it is parsed
+// and its componenets are stored using the following
+// typedef.
+typedef struct {
+	int slot;
+	const_str endpoint;
+	int port;
+} redis_moved;
+
 
 #define CACHEDB_REDIS_DEFAULT_TIMEOUT 5000
 
