@@ -114,12 +114,14 @@ cluster_node *get_redis_connection_by_endpoint(redis_con *con, redis_moved *redi
 		return con->nodes;
 	} else {
 		for (it=con->nodes;it;it=it->next) {
-            if (match_prefix(redis_info->endpoint.s, redis_info->endpoint.len, it->ip, strlen(it->ip))) {
+			if (match_prefix(redis_info->endpoint.s, redis_info->endpoint.len, it->ip, strlen(it->ip))) {
 				if (it->port == redis_info->port) {
-					if (it->start_slot <= redis_info->slot && it->end_slot >= redis_info->slot) {
+					// Removed slot comparison as it may be a little too aggressive of a match
+					// Code is still here in the event that it needs to be added back in
+					//if (it->start_slot <= redis_info->slot && it->end_slot >= redis_info->slot) {
 						LM_DBG("Redis cluster connection, matched con %p for endpoint: %.*s:%d slot: [%u] %u [%u] \n", it, redis_info->endpoint.len, redis_info->endpoint.s, redis_info->port, it->start_slot, redis_info->slot, it->end_slot);
 						return it;
-					}
+					//}
 				}
 			}
 		}
@@ -358,79 +360,78 @@ error:
  The parsed data is stored into the following redis_moved struct:
  
  typedef struct {
-    int slot;
-    const_str endpoint;
-    int port;
+	int slot;
+	const_str endpoint;
+	int port;
  } redis_moved;
 
 */
 int parse_moved_reply(redisReply *reply, redis_moved *out) {
-    if (!reply || !reply->str || reply->len < MOVED_PREFIX_LEN || !out)
-        return ERR_INVALID_REPLY;
+	if (!reply || !reply->str || reply->len < MOVED_PREFIX_LEN || !out)
+		return ERR_INVALID_REPLY;
 
+	const char *p = reply->str;
+	const char *end = reply->str + reply->len;
 
-    const char *p = reply->str;
-    const char *end = reply->str + reply->len;
+	for (int i = 0; i < MOVED_PREFIX_LEN; ++i) {
+		if (p[i] != MOVED_PREFIX[i]) {
+		return ERR_INVALID_REPLY;
+		}
+	}
+	p += MOVED_PREFIX_LEN;
 
-    for (int i = 0; i < MOVED_PREFIX_LEN; ++i) {
-    	if (p[i] != MOVED_PREFIX[i]) {
-        	return ERR_INVALID_REPLY;
-    	}
-    }
-    p += MOVED_PREFIX_LEN;
+	// Parse slot number
+	int slot = 0;
+	while (p < end && *p >= '0' && *p <= '9') {
+		slot = slot * 10 + (*p - '0');
+		p++;
+	}
+	if (slot == 0 && (p == reply->str + MOVED_PREFIX_LEN || *(p - 1) < '0' || *(p - 1) > '9'))
+		return ERR_INVALID_SLOT;
 
-    // Parse slot number
-    int slot = 0;
-    while (p < end && *p >= '0' && *p <= '9') {
-        slot = slot * 10 + (*p - '0');
-        p++;
-    }
-    if (slot == 0 && (p == reply->str + MOVED_PREFIX_LEN || *(p - 1) < '0' || *(p - 1) > '9'))
-        return ERR_INVALID_SLOT;
+	// Skip spaces
+	while (p < end && *p == ' ') p++;
 
-    // Skip spaces
-    while (p < end && *p == ' ') p++;
+	// Parse host and port
+	const char *host_start = p;
+	const char *colon = NULL;
+	while (p < end) {
+		if (*p == ':') {
+			colon = p;
+			break;
+		}
+		p++;
+	}
 
-    // Parse host and port
-    const char *host_start = p;
-    const char *colon = NULL;
-    while (p < end) {
-        if (*p == ':') {
-            colon = p;
-            break;
-        }
-        p++;
-    }
+	out->endpoint.s = NULL;
+	out->endpoint.len = 0;
 
-    out->endpoint.s = NULL;
-    out->endpoint.len = 0;
+	int port = REDIS_DF_PORT; // Default to Redis standard port
 
-    int port = REDIS_DF_PORT; // Default to Redis standard port
+	if (colon) {
+		out->endpoint.s = host_start;
+		out->endpoint.len = colon - host_start;
 
-    if (colon) {
-	out->endpoint.s = host_start;
-	out->endpoint.len = colon - host_start;
+		// Parse port
+		const char *port_start = colon + 1;
+		p = port_start;
+		if (p < end) {
+			port = 0;
+			while (p < end && *p >= '0' && *p <= '9') {
+				port = port * 10 + (*p - '0');
+				p++;
+			}
+			if (port < 0 || port > 65535 || port_start == p)
+				return ERR_INVALID_PORT;
+		}
+	} else if (out->endpoint.s < end) {
+		out->endpoint.s = host_start;
+		out->endpoint.len = end - host_start;
+	}
 
-        // Parse port
-        const char *port_start = colon + 1;
-        p = port_start;
-        if (p < end) {
-            port = 0;
-            while (p < end && *p >= '0' && *p <= '9') {
-                port = port * 10 + (*p - '0');
-                p++;
-            }
-            if (port < 0 || port > 65535 || port_start == p)
-                return ERR_INVALID_PORT;
-        }
-    } else if (out->endpoint.s < end) {
-	out->endpoint.s = host_start;
-	out->endpoint.len = end - host_start;
-    }
+	// Fill output
+	out->slot = slot;
+	out->port = port;
 
-    // Fill output
-    out->slot = slot;
-    out->port = port;
-
-    return 0;
+	return 0;
 }

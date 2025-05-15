@@ -561,29 +561,29 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 				if (match_prefix(reply->str, reply->len, MOVED_PREFIX, MOVED_PREFIX_LEN)) {
     					// It's a MOVED response
 					redis_moved *moved_info = pkg_malloc(sizeof(redis_moved));
-    					if (!moved_info) {
-        					LM_ERR("cachedb_redis: Unable to allocate redis_moved struct, no more pkg memory\n");
-    						freeReplyObject(reply);
-    						reply = NULL;
-    						goto try_next_con;
+						if (!moved_info) {
+						LM_ERR("cachedb_redis: Unable to allocate redis_moved struct, no more pkg memory\n");
+							freeReplyObject(reply);
+							reply = NULL;
+							goto try_next_con;
 					} else {
-    						if (parse_moved_reply(reply, moved_info) < 0) {
+							if (parse_moved_reply(reply, moved_info) < 0) {
 							LM_ERR("cachedb_redis: Unable to parse MOVED reply\n");
 							pkg_free(moved_info);
 							moved_info = NULL;
-    							freeReplyObject(reply);
+								freeReplyObject(reply);
 							goto try_next_con;
 						}
 
-        					LM_DBG("cachedb_redis: MOVED slot: [%d] endpoint: [%.*s] port: [%d]\n", moved_info->slot, moved_info->endpoint.len, moved_info->endpoint.s, moved_info->port);
+						LM_DBG("cachedb_redis: MOVED slot: [%d] endpoint: [%.*s] port: [%d]\n", moved_info->slot, moved_info->endpoint.len, moved_info->endpoint.s, moved_info->port);
 						node = get_redis_connection_by_endpoint(con, moved_info);
 
 						pkg_free(moved_info);
 						moved_info = NULL;
 						freeReplyObject(reply);
-    						reply = NULL;
+						reply = NULL;
 
-            					if (node == NULL) {
+						if (node == NULL) {
 							LM_ERR("Unable to locate connection by endpoint\n");
 							last_err = -10;
 							goto try_next_con;
@@ -602,8 +602,8 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 					}
 				}
 
-    				freeReplyObject(reply);
-    				reply = NULL;
+				freeReplyObject(reply);
+				reply = NULL;
 
 				if (node->context->err == REDIS_OK || redis_reconnect_node(con,node) < 0) {
 					i = 0;
