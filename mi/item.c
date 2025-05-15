@@ -638,6 +638,46 @@ int get_mi_arr_param_int(const mi_item_t *array, int pos, int *value)
 	return -1;
 }
 
+int try_get_mi_arr_param_object(const mi_item_t *array, int pos,
+						mi_item_t **s)
+{
+	if (!array) {
+		param_err_type = MI_PARAM_ERR_MISSING;
+		return MI_PARAM_ERR_MISSING;
+	}
+
+	*s = cJSON_GetArrayItem(array, pos);
+	if (!*s) {
+		param_err_type = MI_PARAM_ERR_MISSING;
+		return MI_PARAM_ERR_MISSING;
+	}
+
+	if (!((*s)->type & (cJSON_Object))) {
+		param_err_type = MI_PARAM_ERR_ARR_BAD_TYPE;
+		return MI_PARAM_ERR_ARR_BAD_TYPE;
+	}
+
+	return 0;
+}
+
+int get_mi_arr_param_object(const mi_item_t *array, int pos,
+						mi_item_t **s)
+{
+	switch (try_get_mi_arr_param_object(array, pos, s))
+	{
+		case MI_PARAM_ERR_MISSING:
+			LM_ERR("Array index out of bounds\n");
+			break;
+		case MI_PARAM_ERR_ARR_BAD_TYPE:
+			LM_ERR("Bad data type for array item\n");
+			break;
+		case 0:
+			return 0;
+	}
+	return -1;
+}
+
+
 mi_response_t *init_mi_param_error(void)
 {
 	char param_err_buf[MI_PARAM_ERR_BUFLEN];
