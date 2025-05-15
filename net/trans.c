@@ -228,7 +228,7 @@ error:
 }
 
 
-int trans_init_all_listeners(void)
+int trans_init_udp_listeners(void)
 {
 	struct socket_info_full *sif;
 	int i;
@@ -237,19 +237,22 @@ int trans_init_all_listeners(void)
 		if (protos[i].id != PROTO_NONE)
 			for( sif=protos[i].listeners ; sif ; sif=sif->next ) {
 				struct socket_info *si = &sif->socket_info;
-				if (protos[i].tran.init_listener(si)<0) {
-					LM_ERR("failed to init listener [%.*s], proto %s\n",
-						si->name.len, si->name.s,
-						protos[i].name );
-					return -1;
+				if (is_udp_based_proto(si->proto)) {
+					if (protos[i].tran.init_listener(si)<0) {
+						LM_ERR("failed to init listener [%.*s], proto %s\n",
+							si->name.len, si->name.s,
+							protos[i].name );
+						return -1;
+					}
+					if (protos[i].tran.bind_listener && protos[i].tran.bind_listener(si)<0) {
+						LM_ERR("failed to bind listener [%.*s], proto %s\n",
+							si->name.len, si->name.s,
+							protos[i].name );
+						return -1;
+					}
 				}
 				/* set first IPv4 and IPv6 listeners for this proto */
-				if ((si->address.af==AF_INET) &&
-				(!protos[i].sendipv4 || (protos[i].sendipv4->flags&SI_IS_LO)))
-					protos[i].sendipv4=si;
-				if ((si->address.af==AF_INET6) &&
-				(!protos[i].sendipv6 || (protos[i].sendipv6->flags&SI_IS_LO)))
-					protos[i].sendipv6=si;
+				update_default_socket_info(si);
 			}
 
 	return 0;

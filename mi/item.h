@@ -204,6 +204,10 @@ int try_get_mi_array_param(const mi_params_t *params, char *name,
 int try_get_mi_arr_param_string(const mi_item_t *array, int pos,
 		char **value, int *value_len);
 int try_get_mi_arr_param_int(const mi_item_t *array, int pos, int *value);
+int try_get_mi_arr_param_object(const mi_item_t *array, int pos,
+		mi_item_t **obj);
+int get_mi_arr_param_object(const mi_item_t *array, int pos,
+		mi_item_t **obj);
 
 /* Initializes a standard MI Response with details about the last
  * parameter error produced by a parameter getter function

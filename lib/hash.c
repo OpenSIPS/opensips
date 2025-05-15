@@ -20,12 +20,32 @@
 
 #include "hash.h"
 #include "../hash_func.h"
+#include "../mem/rpm_mem.h"
 
-gen_hash_t *hash_init(unsigned int size)
+int hash_init_locks(gen_hash_t *h)
+{
+	unsigned int n;
+	gen_lock_set_t *locks = NULL;
+
+	for (n = h->size; n >= 1 && !locks; n/=2) {
+		locks = lock_set_alloc(n);
+		if (locks && lock_set_init(locks))
+			break;
+	}
+
+	if (!locks) {
+		LM_ERR("could not allocate hash locks\n");
+		return -1;
+	}
+	h->locks = locks;
+	h->locks_no = n;
+	return 0;
+}
+
+gen_hash_t *hash_init_flags(unsigned int size, unsigned int flags)
 {
 	unsigned int n;
 	gen_hash_t *h;
-	gen_lock_set_t *locks = NULL;
 
 	/* initialized the hash table */
 	for (n=0 ; n<(8*sizeof(n) - 1) ; n++) {
@@ -39,34 +59,45 @@ gen_hash_t *hash_init(unsigned int size)
 			break;
 		}
 	}
-	for (n = size; n >= 1 && !locks; n/=2) {
-		locks = lock_set_alloc(n);
-		if (locks && lock_set_init(locks))
-			break;
-	}
 
-	if (!locks) {
-		LM_ERR("could not allocate hash locks\n");
-		return NULL;
-	}
-	h = shm_malloc(sizeof *h + size * sizeof(*h->entries));
+	if (flags & HASH_MAP_PERSIST)
+		h = rpm_malloc(sizeof *h + size * sizeof(*h->entries));
+	else
+		h = shm_malloc(sizeof *h + size * sizeof(*h->entries));
 	if (!h) {
 		LM_ERR("could not alloc hash of %d elements!\n", size);
 		return NULL;
 	}
+	memset(h, 0, sizeof *h + size * sizeof(*h->entries));
 	h->entries = (map_t *)(h + 1);
 	h->size = size;
-	h->locks = locks;
-	h->locks_no = n;
+	h->flags = flags;
+	if (hash_init_locks(h) < 0) {
+		LM_ERR("could not alloc locks for hash!\n");
+		goto error;
+	}
+
 	for (n = 0; n < h->size; n++) {
-		h->entries[n] = map_create(AVLMAP_SHARED);
+		h->entries[n] = map_create(
+				((flags&HASH_MAP_PERSIST)?AVLMAP_PERSISTENT:AVLMAP_SHARED));
 		if (!h->entries[n]) {
 			h->size = n; /* we only account for what we've already created */
-			hash_destroy(h, NULL);
-			return NULL;
+			goto error;
 		}
 	}
 	return h;
+error:
+	hash_destroy(h, NULL);
+	return NULL;
+}
+
+void hash_destroy_locks(gen_hash_t *hash)
+{
+	if (!hash->locks)
+		return;
+	lock_set_destroy(hash->locks);
+	lock_set_dealloc(hash->locks);
+	hash->locks = NULL;
 }
 
 void hash_destroy(gen_hash_t *hash, hash_destroy_func destroy)
@@ -76,11 +107,14 @@ void hash_destroy(gen_hash_t *hash, hash_destroy_func destroy)
 	if (!hash)
 		return;
 
-	lock_set_destroy(hash->locks);
-	lock_set_dealloc(hash->locks);
+	hash_destroy_locks(hash);
 
 	for (n = 0; n < hash->size; n++)
-		map_destroy(hash->entries[n], destroy);
+		if (hash->entries[n])
+			map_destroy(hash->entries[n], destroy);
 
-	shm_free(hash);
+	if (hash->flags & HASH_MAP_PERSIST)
+		rpm_free(hash);
+	else
+		shm_free(hash);
 }

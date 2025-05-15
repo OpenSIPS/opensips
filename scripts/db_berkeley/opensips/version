@@ -40,6 +40,8 @@ closeddial|
 closeddial|1
 clusterer|
 clusterer|4
+config|
+config|1
 cpl|
 cpl|2
 dbaliases|
@@ -130,8 +132,8 @@ sip_trace|
 sip_trace|5
 smpp|
 smpp|1
-METADATA_DEFAULTS
-NIL|NIL
+sockets|
+sockets|1
 speed_dial|
 speed_dial|3
 subscriber|

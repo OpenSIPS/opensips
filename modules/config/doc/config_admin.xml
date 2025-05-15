@@ -1,0 +1,425 @@
+<!-- Config Module's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		The <emphasis>config</emphasis>
+		module enables dynamic, runtime configuration of OpenSIPS
+		parameters by loading them from persistent storage at startup and
+		exposing them to the script level via the <xref linkend="pv_config"/>
+		pseudo-variable.
+	</para>
+	<para>
+		All configuration variables are stored in OpenSIPS' internal
+		cache, allowing fast access during SIP processing to maintain high
+		performance. The cache can be updated in three ways:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>Script</emphasis> – Assigning a value to the
+			<xref linkend="pv_config"/> pseudo-variable updates the
+			in-memory cache, but this change is not persisted to the database.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>MI Commands</emphasis> – Using
+			<xref linkend="mi_config_push"/> or
+			<xref linkend="mi_config_push_bulk"/> updates one or more variables
+			in the runtime cache. These updates are also not saved to the database.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>Database</emphasis> – Manually modifying values in the
+				database, then triggering the <xref linkend="mi_config_reload"/>
+				command, will refresh the in-memory cache with updated values from
+				the database.
+			</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+
+	<section id="restart_persistent_memory" xreflabel="Restart Persistent Memory">
+		<title>Restart Persistent Memory</title>
+		<para>
+			By default, the configuration cache is initialized
+			at startup by reading from the database and
+			persists only during the runtime. Any temporary
+			changes made through the script or MI commands
+			that are not explicitly flushed to the database
+			using the
+			<xref linkend="mi_config_flush"/>
+			command will be lost after a restart.
+		</para>
+		<para>
+			In such cases, restart persistent memory becomes useful. When enabled
+			via the <xref linkend="param_enable_rpm"/> parameter, OpenSIPS no longer
+			loads configuration values from the database on startup. Instead, it
+			restores the previously saved in-memory cache, preserving runtime changes
+			across restarts.
+		</para>
+		<para>
+			If needed, you can still manually re-initialize the cache from the
+			database by running the <xref linkend="mi_config_reload"/> MI command.
+		</para>
+	</section>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following  modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>A database module is needed to read the initial cache</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+			Database URL used to load the initial configuration values,
+			and flush them at runtime using the
+			<xref linkend="mi_config_flush"/> MI command.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>&defaultdb;</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>db_url</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("config", "db_url", "&exampledb;")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_table_name" xreflabel="table_name">
+		<title><varname>table_name</varname> (string)</title>
+		<para>Name of the table where configuration entries are stored.</para>
+		<para>
+		<emphasis>
+			Default value is <quote>config</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>table_name</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("config", "table_name", "configuration")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_name_column" xreflabel="name_column">
+		<title><varname>name_column</varname> (string)</title>
+		<para>Name of the column storing configuration variable names.</para>
+		<para>
+		<emphasis>
+			Default value is <quote>name</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>name_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("config", "name_column", "key")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_value_column" xreflabel="value_column">
+		<title><varname>value_column</varname> (string)</title>
+		<para>Name of the column storing configuration variable values.</para>
+		<para>
+		<emphasis>
+			Default value is <quote>value</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>value_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("config", "value_column", "val")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_description_column" xreflabel="description_column">
+		<title><varname>description_column</varname> (string)</title>
+		<para>Name of the column storing variable descriptions.</para>
+		<para>
+		<emphasis>
+			Default value is <quote>description</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>desctiption_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("config", "description_column", "desc")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_enable_rpm" xreflabel="enable_restart_persistency">
+		<title><varname>enable_restart_persistency</varname> (integer)</title>
+		<para>
+			Enables restart persistency. Check the
+			<xref linkend="restart_persistent_memory"/> for more information.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 / disabled</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>restart_persistent_memory</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("config", "restart_persistent_memory", yes)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_hash_size" xreflabel="hash_size">
+		<title><varname>hash_size</varname> (integer)</title>
+		<para>Size of the internal hash table used to store config variables.
+		Must be a power of 2 number, otherwise its value will be rounded to the
+		closest value of 2 smaller than the provided value.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>16</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>hash_size</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("config", "hash_size", 32)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_pv" xreflabel="Exported Pseudo-Variables">
+	<title>Exported Pseudo-Variables</title>
+
+	<section id="pv_config" xreflabel="$config(...)">
+		<title><varname>$config(name)</varname></title>
+		<para>
+			Returns the value of the given config variable by name.
+			Can also be used for temporarily changing the value.
+		</para>
+		<example>
+			<title>Usage of <varname>$config(...)</varname></title>
+			<programlisting format="linespecific">
+			...
+			xlog("Config value: $config(debug_mode)\n"); # reading the value
+			$config(debug_mode) = 1; # temporarily changing the value
+			...
+			</programlisting>
+		</example>
+	</section>
+
+	<section id="pv_config_desc" xreflabel="$config.description(...)">
+		<title><varname>$config.description(name)</varname></title>
+		<para>
+			Returns the description of a config variable if available.
+		</para>
+		<para>
+			This variable is read-only.
+		</para>
+		<example>
+			<title>Usage of <varname>$config.description(name)</varname></title>
+			<programlisting format="linespecific">
+			...
+			xlog("Description: $config.description(debug_mode)\n");
+			...
+			</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="mi_commands" xreflabel="MI Commands">
+	<title>MI Commands</title>
+
+	<section id="mi_config_reload" xreflabel="config_reload">
+		<title><command>config_reload</command></title>
+		<para>Reloads all configuration variables from the database.</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## reload configuration cache from the database
+		opensips-mi config_reload
+		opensips-cli -x mi config_reload
+		</programlisting>
+	</section>
+
+	<section id="mi_config_list" xreflabel="config_list">
+		<title><command>config_list</command></title>
+		<para>Lists all config variables currently loaded in cache,
+		printing temporary values as well.
+		If the optional <emphasis>description</emphasis> parameter
+		is provided and different than <emphasis>0</emphasis>, it
+		returns an array containing the description of the values
+		as well.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## list all configuration cache
+		opensips-mi config_list
+		opensips-cli -x mi config_list 1
+		</programlisting>
+	</section>
+
+	<section id="mi_config_push" xreflabel="config_push">
+		<title><command>config_push</command></title>
+		<para>
+			Temporarily pushes a single configuration variable.
+		</para>
+		<para>
+			Expected parameters are:
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>name</emphasis> – (string) the name of the variable
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>value</emphasis> – (string) the value of the variable
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>description</emphasis> – (string, optional) the
+				description of the variable; if missing the description is
+				inheritted, or a null value is used if the variable is new.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## push temporarily debug_mode configuration value
+		opensips-mi config_push debug_mode 1 "Enable Debug mode"
+		opensips-cli -x mi config_list 1
+		</programlisting>
+	</section>
+
+	<section id="mi_config_push_bulk" xreflabel="config_push_bulk">
+		<title><command>config_push_bulk</command></title>
+		<para>
+			Pushes multiple temporarily configuration variables in memory.
+		</para>
+		<para>
+			Expected parameters are:
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>configs</emphasis> – (json) a JSON
+				array containing a set of variables to be pushed. Each
+				variable should be described as a JSON object with the following
+				keys:
+				<itemizedlist>
+				<listitem>
+					<para><emphasis>name</emphasis> – (string) the
+					name of the variable to be changed.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>value</emphasis> – (string or null) the
+					new value of the variable.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>description</emphasis> – (string, optional)
+					the description of the variable.
+					</para>
+				</listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## push bulk temporarily values to the config cache
+		opensips-mi config_push_bulk -j '[[{"name":"debug_mode","value":"1"},{"name":"debug_level","value":"5"}]]'
+		</programlisting>
+		<para>
+		The command returns the number of values successfully pushed.
+		</para>
+	</section>
+
+	<section id="mi_config_flush" xreflabel="config_flush">
+		<title><command>config_flush</command></title>
+		<para>
+			Flushes the variables from the memory to the database.
+		</para>
+		<para>
+			Expected parameters are:
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>name</emphasis> – (string, optional) if present,
+				flushes only a specific config variable in database, otherwise
+				the entire cache.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## Flush config variables to the database
+		opensips-mi config_flush
+		opensips-cli -x mi config_flush debug_mode
+		</programlisting>
+		<para>
+		The command returns the number of values successfully flushed.
+		</para>
+	</section>
+
+	</section>
+
+</chapter>

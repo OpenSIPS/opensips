@@ -56,8 +56,8 @@
 
 
 enum sip_protos { PROTO_NONE = 0, PROTO_FIRST = 1, PROTO_UDP = 1, \
-	PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_WS, PROTO_WSS, PROTO_IPSEC, PROTO_BIN,
-	PROTO_BINS, PROTO_HEP_UDP, PROTO_HEP_TCP, PROTO_HEP_TLS, PROTO_SMPP, PROTO_MSRP,
+	PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_WS, PROTO_WSS, PROTO_IPSEC, PROTO_SIP_LAST = PROTO_IPSEC,
+	PROTO_BIN, PROTO_BINS, PROTO_HEP_UDP, PROTO_HEP_TCP, PROTO_HEP_TLS, PROTO_SMPP, PROTO_MSRP,
 	PROTO_MSRPS, PROTO_OTHER };
 #define PROTO_LAST PROTO_OTHER
 
@@ -170,7 +170,7 @@ struct socket_id {
 
 /* checks if the given protocol is a SIP one (versus HEP, BIN, SMPP, etc) 
  * we rely here on the fact at all the SIP protos are in a sequance */
-#define is_sip_proto(_proto) (PROTO_UDP<=(_proto) && (_proto)<=PROTO_WSS)
+#define is_sip_proto(_proto) (PROTO_UDP<=(_proto) && (_proto)<=PROTO_SIP_LAST)
 
 struct net* mk_net(const struct ip_addr* ip, struct ip_addr* mask);
 struct net* mk_net_bitlen(const struct ip_addr* ip, unsigned int bitlen);

@@ -70,6 +70,14 @@ int ipc_send_job(int dst_proc, ipc_handler_type type, void *payload);
  */
 int ipc_send_rpc(int dst_proc, ipc_rpc_f *rpc, void *param);
 
+/*
+ * Push the execution of a function, remotely, on all the processes
+ * that have IPC
+ *
+ * Return: number of processes the function was sent to
+ */
+int ipc_send_rpc_all(ipc_rpc_f *rpc, void *param);
+
 
 /*
  * Send a synchronous message to a specific "dst_proc" process

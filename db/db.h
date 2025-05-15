@@ -49,6 +49,8 @@
 #include "db_pool.h"
 #include "../globals.h"
 
+struct pool_con;
+
 extern stat_var *sql_total_queries;
 extern stat_var *sql_slow_queries;
 

@@ -206,7 +206,7 @@ error:
 
 
 /*  delete a socket_info struct */
-static void free_sock_info(struct socket_info_full* sif)
+void free_sock_info(struct socket_info_full* sif)
 {
 	if(sif){
 		struct socket_info *si = &sif->socket_info;
@@ -426,7 +426,54 @@ void push_sock2list(struct socket_info_full *si)
 	sock_listadd(&protos[si->socket_info.proto].listeners, si);
 }
 
+void pop_sock2list(struct socket_info_full *si)
+{
+	sock_listrm(&protos[si->socket_info.proto].listeners, si);
+}
 
+int update_default_socket_info(struct socket_info *si)
+{
+	switch (si->address.af) {
+		case AF_INET:
+			if (protos[si->proto].sendipv4 &&
+					(protos[si->proto].sendipv4->flags&SI_IS_LO) == 0)
+				return 0;
+			protos[si->proto].sendipv4 = si;
+			return 1;
+		case AF_INET6:
+			if (protos[si->proto].sendipv6 &&
+					(protos[si->proto].sendipv6->flags&SI_IS_LO) == 0)
+				return 0;
+			protos[si->proto].sendipv6 = si;
+			return 1;
+		default:
+			/* do nothing */
+			return 0;
+	}
+}
+
+void remove_default_socket_info(struct socket_info *si)
+{
+	struct socket_info_full *sif;
+	switch (si->address.af) {
+		case AF_INET:
+			if (si != protos[si->proto].sendipv4)
+				return;
+			protos[si->proto].sendipv4 = NULL;
+			break;
+		case AF_INET6:
+			if (si != protos[si->proto].sendipv6)
+				return;
+			protos[si->proto].sendipv6 = NULL;
+			break;
+		default:
+			/* do nothing */
+			return;
+	}
+	for (sif = protos[si->proto].listeners; sif; sif = sif->next)
+		if (update_default_socket_info(&sif->socket_info))
+			return;
+}
 
 /* add all family type addresses of interface if_name to the socket_info array
  * WARNING: it only works with ipv6 addresses on FreeBSD
@@ -604,6 +651,223 @@ error:
 
 #define STR_IMATCH(str, buf) ((str).len==strlen(buf) && strncasecmp(buf, (str).s, (str).len)==0)
 
+int is_localhost(struct socket_info *si)
+{
+	return (STR_IMATCH(si->name, "localhost") ||
+			STR_IMATCH(si->name, "127.0.0.1") ||
+			STR_IMATCH(si->name, "0:0:0:0:0:0:0:1") || STR_IMATCH(si->name, "::1"));
+}
+
+int fix_socket(struct socket_info_full *sif, int add_aliases)
+{
+	char** h;
+	char* tmp;
+	int len;
+	struct hostent* he;
+	struct socket_info *si = &sif->socket_info;
+
+	/* fix the number of processes per interface */
+	if (!si->workers && is_udp_based_proto(si->proto))
+		si->workers = udp_workers_no;
+	if (si->port_no==0)
+		si->port_no= protos[si->proto].default_port;
+
+	tmp=int2str(si->port_no, &len);
+	if (len>=MAX_PORT_LEN){
+		LM_ERR("bad port number: %d\n", si->port_no);
+		return -1;
+	}
+
+	si->port_no_str.s=(char*)pkg_malloc(len+1);
+	if (si->port_no_str.s==0){
+		LM_ERR("out of pkg memory.\n");
+		goto error;
+	}
+	memcpy(si->port_no_str.s, tmp, len+1);
+	si->port_no_str.len=len;
+	/* get "official hostnames", all the aliases etc. */
+	he=resolvehost(si->name.s,0);
+	if (he==0){
+		LM_ERR("could not resolve %s\n", si->name.s);
+		goto error;
+	}
+	/* check if we got the official name */
+	if (strcasecmp(he->h_name, si->name.s)!=0){
+		if (add_aliases && add_alias(si->name.s, si->name.len,
+						si->port_no, si->proto)<0){
+			LM_ERR("add_alias failed\n");
+		}
+		/* change the official name */
+		pkg_free(si->name.s);
+		si->name.s=(char*)pkg_malloc(strlen(he->h_name)+1);
+		if (si->name.s==0){
+			LM_ERR("out of pkg memory.\n");
+			goto error;
+		}
+		si->name.len=strlen(he->h_name);
+		memcpy(si->name.s, he->h_name, si->name.len+1);
+	}
+	/* add the aliases*/
+	if (add_aliases) {
+		for(h=he->h_aliases; h && *h; h++)
+			if (add_alias(*h, strlen(*h), si->port_no, si->proto)<0){
+				LM_ERR("add_alias failed\n");
+			}
+	}
+	hostent2ip_addr(&si->address, he, 0); /*convert to ip_addr
+													 format*/
+	if ((tmp=ip_addr2a(&si->address))==0) goto error;
+	if (si->address.af == AF_INET6) {
+		si->address_str.s=(char*)pkg_malloc(strlen(tmp)+1+2);
+		if (si->address_str.s==0){
+			LM_ERR("out of pkg memory.\n");
+			goto error;
+		}
+		si->address_str.s[0] = '[';
+		memcpy( si->address_str.s+1 , tmp, strlen(tmp));
+		si->address_str.s[1+strlen(tmp)] = ']';
+		si->address_str.s[2+strlen(tmp)] = '\0';
+		si->address_str.len=strlen(tmp) + 2;
+	} else {
+		si->address_str.s=(char*)pkg_malloc(strlen(tmp)+1);
+		if (si->address_str.s==0){
+			LM_ERR("out of pkg memory.\n");
+			goto error;
+		}
+		memcpy(si->address_str.s, tmp, strlen(tmp)+1);
+		si->address_str.len=strlen(tmp);
+	}
+	/* set is_ip (1 if name is an ip address, 0 otherwise) */
+	if ( auto_aliases && (si->address_str.len==si->name.len) &&
+			(strncasecmp(si->address_str.s, si->name.s,
+							si->address_str.len)==0)
+		){
+			si->flags|=SI_IS_IP;
+			/* do rev. DNS on it (for aliases)*/
+			he=rev_resolvehost(&si->address);
+			if (he==0){
+				LM_WARN("could not rev. resolve %s\n", si->name.s);
+			}else{
+				/* add the aliases*/
+				if (add_alias(he->h_name, strlen(he->h_name),
+								si->port_no, si->proto)<0){
+					LM_ERR("add_alias failed\n");
+				}
+				for(h=he->h_aliases; h && *h; h++)
+					if (add_alias(*h,strlen(*h),si->port_no,si->proto)<0){
+						LM_ERR(" add_alias failed\n");
+					}
+			}
+	}
+
+	/* Now build an ip_addr structure for the adv_name, if there is one
+	 * so that find_si can find it later easily.  Doing this so that
+	 * we can force_send_socket() on an advertised name.  Generally there
+	 * is little interest in dealing with an advertised name as anything
+	 * other than an opaque string that we blindly put into the SIP
+	 * message.
+	 */
+    if(si->adv_name_str.len) {
+		/* If adv_name_str is already an IP, this is kinda foolish cus it
+		 * converts it to ip_addr, then to he, then here we go back to
+		 * ip_addr, but it's either that, or we duplicate the logic to
+		 * check for an ip address here, and still we might have to call
+		 * resolvehost().
+		 */
+		he=resolvehost(si->adv_name_str.s,0);
+		if (he==0){
+			LM_ERR("ERROR: fix_socket_list: could not resolve "
+					"advertised name %s\n", si->adv_name_str.s);
+			goto error;
+		}
+		hostent2ip_addr(&si->adv_address, he, 0); /*convert to ip_addr */
+
+		if (si->adv_address.af == AF_INET6 /* translates to IPv6 */
+		&& str2ip6(&si->adv_name_str)!=NULL /* it's an actual IP */
+		&& si->adv_name_str.s[0]!='['  )    /* not enclosed */
+		{
+			tmp = pkg_malloc( si->adv_name_str.len +2 );
+			if (tmp==NULL) {
+				LM_ERR("failed to convert advertized IPv6 "
+					"to enclosed format\n");
+				goto error;
+			}
+			tmp[0] = '[';
+			memcpy( tmp+1, si->adv_name_str.s, si->adv_name_str.len);
+			tmp[si->adv_name_str.len+1] = ']';
+			pkg_free(si->adv_name_str.s);
+			si->adv_name_str.s = tmp;
+			si->adv_name_str.len += 2;
+		}
+
+		/* build and set string encoding for the adv socket info
+		 * This is usefful for the usrloc module when it's generating
+		 * or updating the socket on a location record, so we'll generate
+		 * it up front just like the regular sock_str so we don't have
+		 * to worry about it later.
+		 */
+		tmp = socket2str( si, 0, &si->adv_sock_str.len, 1);
+		if (tmp==0) {
+			LM_ERR("ERROR: fix_socket_list: failed to convert "
+				    "socket to string (adv)\n");
+			goto error;
+		}
+		si->adv_sock_str.s=(char*)pkg_malloc(si->adv_sock_str.len);
+		if (si->adv_sock_str.s==0) {
+			LM_ERR("ERROR: fix_socket_list: out of memory.\n");
+			goto error;
+		}
+		memcpy(si->adv_sock_str.s, tmp, si->adv_sock_str.len);
+	}
+
+	if (si->tag.len) {
+		/* build and set string encoding for the tagged socket info */
+		tmp = socket2str( si, 0, &si->tag_sock_str.len, 2);
+		if (tmp==0) {
+			LM_ERR("failed to convert tag socket to string\n");
+			goto error;
+		}
+		si->tag_sock_str.s=(char*)pkg_malloc(si->tag_sock_str.len);
+		if (si->tag_sock_str.s==0) {
+			LM_ERR("out of pkg memory.\n");
+			goto error;
+		}
+		memcpy(si->tag_sock_str.s, tmp, si->tag_sock_str.len);
+	}
+
+	/* build and set string encoding for the real socket info */
+	tmp = socket2str( si, 0, &si->sock_str.len, 0);
+	if (tmp==0) {
+		LM_ERR("failed to convert socket to string\n");
+		goto error;
+	}
+	si->sock_str.s=(char*)pkg_malloc(si->sock_str.len);
+	if (si->sock_str.s==0) {
+		LM_ERR("out of pkg memory.\n");
+		goto error;
+	}
+	memcpy(si->sock_str.s, tmp, si->sock_str.len);
+
+#ifdef USE_MCAST
+	/* Check if it is an multicast address and
+	 * set the flag if so
+	 */
+	if (is_mcast(&si->address)) {
+		si->flags |= SI_IS_MCAST;
+	}
+#endif /* USE_MCAST */
+
+#ifdef EXTRA_DEBUG
+	printf("              %.*s [%s]:%s%s%s\n", si->name.len,
+		si->name.s, si->address_str.s, si->port_no_str.s,
+	                si->flags & SI_IS_MCAST ? " mcast" : "",
+	                is_anycast(si) ? " anycast" : "");
+#endif
+	return 0;
+error:
+	return -1;
+}
+
 /* fixes a socket list => resolve addresses,
  * interface names, fills missing members, remove duplicates */
 int fix_socket_list(struct socket_info_full **list)
@@ -612,10 +876,6 @@ int fix_socket_list(struct socket_info_full **list)
 	struct socket_info* si;
 	struct socket_info_full* l;
 	struct socket_info_full* next;
-	char* tmp;
-	int len;
-	struct hostent* he;
-	char** h;
 
 	/* try to change all the interface names into addresses
 	 *  --ugly hack */
@@ -625,11 +885,8 @@ int fix_socket_list(struct socket_info_full **list)
 		si = &sif->socket_info;
 		// fix the SI_IS_LO flag for sockets specified by IP/hostname as expand_interface
 		// below will only do it for sockets specified using the network interface name
-		if (STR_IMATCH(si->name, "localhost") ||
-			STR_IMATCH(si->name, "127.0.0.1") ||
-			STR_IMATCH(si->name, "0:0:0:0:0:0:0:1") || STR_IMATCH(si->name, "::1")) {
+		if (is_localhost(si))
 			si->flags |= SI_IS_LO;
-		}
 		if (expand_interface(si, list)!=-1){
 			/* success => remove current entry (shift the entire array)*/
 			sock_listrm(list, sif);
@@ -643,202 +900,10 @@ int fix_socket_list(struct socket_info_full **list)
 #endif
 	for (sif=*list;sif;sif=sif->next){
 		si = &sif->socket_info;
-		/* fix the number of processes per interface */
-		if (!si->workers && is_udp_based_proto(si->proto))
-			si->workers = udp_workers_no;
-		if (si->port_no==0)
-			si->port_no= protos[si->proto].default_port;
-
-		tmp=int2str(si->port_no, &len);
-		if (len>=MAX_PORT_LEN){
-			LM_ERR("bad port number: %d\n", si->port_no);
-			goto error;
+		if (fix_socket(sif, auto_aliases) < 0) {
+			sock_listrm(list, sif);
+			free_sock_info(sif);
 		}
-		si->port_no_str.s=(char*)pkg_malloc(len+1);
-		if (si->port_no_str.s==0){
-			LM_ERR("out of pkg memory.\n");
-			goto error;
-		}
-		memcpy(si->port_no_str.s, tmp, len+1);
-		si->port_no_str.len=len;
-		/* get "official hostnames", all the aliases etc. */
-		he=resolvehost(si->name.s,0);
-		if (he==0){
-			LM_ERR("could not resolve %s\n", si->name.s);
-			goto error;
-		}
-		/* check if we got the official name */
-		if (strcasecmp(he->h_name, si->name.s)!=0){
-			if (auto_aliases && add_alias(si->name.s, si->name.len,
-							si->port_no, si->proto)<0){
-				LM_ERR("add_alias failed\n");
-			}
-			/* change the official name */
-			pkg_free(si->name.s);
-			si->name.s=(char*)pkg_malloc(strlen(he->h_name)+1);
-			if (si->name.s==0){
-				LM_ERR("out of pkg memory.\n");
-				goto error;
-			}
-			si->name.len=strlen(he->h_name);
-			memcpy(si->name.s, he->h_name, si->name.len+1);
-		}
-		/* add the aliases*/
-		if (auto_aliases) {
-			for(h=he->h_aliases; h && *h; h++)
-				if (add_alias(*h, strlen(*h), si->port_no, si->proto)<0){
-					LM_ERR("add_alias failed\n");
-				}
-		}
-		hostent2ip_addr(&si->address, he, 0); /*convert to ip_addr
-														 format*/
-		if ((tmp=ip_addr2a(&si->address))==0) goto error;
-		if (si->address.af == AF_INET6) {
-			si->address_str.s=(char*)pkg_malloc(strlen(tmp)+1+2);
-			if (si->address_str.s==0){
-				LM_ERR("out of pkg memory.\n");
-				goto error;
-			}
-			si->address_str.s[0] = '[';
-			memcpy( si->address_str.s+1 , tmp, strlen(tmp));
-			si->address_str.s[1+strlen(tmp)] = ']';
-			si->address_str.s[2+strlen(tmp)] = '\0';
-			si->address_str.len=strlen(tmp) + 2;
-		} else {
-			si->address_str.s=(char*)pkg_malloc(strlen(tmp)+1);
-			if (si->address_str.s==0){
-				LM_ERR("out of pkg memory.\n");
-				goto error;
-			}
-			memcpy(si->address_str.s, tmp, strlen(tmp)+1);
-			si->address_str.len=strlen(tmp);
-		}
-		/* set is_ip (1 if name is an ip address, 0 otherwise) */
-		if ( auto_aliases && (si->address_str.len==si->name.len) &&
-				(strncasecmp(si->address_str.s, si->name.s,
-								si->address_str.len)==0)
-			){
-				si->flags|=SI_IS_IP;
-				/* do rev. DNS on it (for aliases)*/
-				he=rev_resolvehost(&si->address);
-				if (he==0){
-					LM_WARN("could not rev. resolve %s\n", si->name.s);
-				}else{
-					/* add the aliases*/
-					if (add_alias(he->h_name, strlen(he->h_name),
-									si->port_no, si->proto)<0){
-						LM_ERR("add_alias failed\n");
-					}
-					for(h=he->h_aliases; h && *h; h++)
-						if (add_alias(*h,strlen(*h),si->port_no,si->proto)<0){
-							LM_ERR(" add_alias failed\n");
-						}
-				}
-		}
-
-		/* Now build an ip_addr structure for the adv_name, if there is one
-		 * so that find_si can find it later easily.  Doing this so that
-		 * we can force_send_socket() on an advertised name.  Generally there
-		 * is little interest in dealing with an advertised name as anything
-		 * other than an opaque string that we blindly put into the SIP
-		 * message.
-		 */
-        if(si->adv_name_str.len) {
-			/* If adv_name_str is already an IP, this is kinda foolish cus it
-			 * converts it to ip_addr, then to he, then here we go back to
-			 * ip_addr, but it's either that, or we duplicate the logic to
-			 * check for an ip address here, and still we might have to call
-			 * resolvehost().
-			 */
-			he=resolvehost(si->adv_name_str.s,0);
-			if (he==0){
-				LM_ERR("ERROR: fix_socket_list: could not resolve "
-						"advertised name %s\n", si->adv_name_str.s);
-				goto error;
-			}
-			hostent2ip_addr(&si->adv_address, he, 0); /*convert to ip_addr */
-
-			if (si->adv_address.af == AF_INET6 /* translates to IPv6 */
-			&& str2ip6(&si->adv_name_str)!=NULL /* it's an actual IP */
-			&& si->adv_name_str.s[0]!='['  )    /* not enclosed */
-			{
-				tmp = pkg_malloc( si->adv_name_str.len +2 );
-				if (tmp==NULL) {
-					LM_ERR("failed to convert advertized IPv6 "
-						"to enclosed format\n");
-					goto error;
-				}
-				tmp[0] = '[';
-				memcpy( tmp+1, si->adv_name_str.s, si->adv_name_str.len);
-				tmp[si->adv_name_str.len+1] = ']';
-				pkg_free(si->adv_name_str.s);
-				si->adv_name_str.s = tmp;
-				si->adv_name_str.len += 2;
-			}
-
-			/* build and set string encoding for the adv socket info
-			 * This is usefful for the usrloc module when it's generating
-			 * or updating the socket on a location record, so we'll generate
-			 * it up front just like the regular sock_str so we don't have
-			 * to worry about it later.
-			 */
-			tmp = socket2str( si, 0, &si->adv_sock_str.len, 1);
-			if (tmp==0) {
-				LM_ERR("ERROR: fix_socket_list: failed to convert "
-					    "socket to string (adv)\n");
-				goto error;
-			}
-			si->adv_sock_str.s=(char*)pkg_malloc(si->adv_sock_str.len);
-			if (si->adv_sock_str.s==0) {
-				LM_ERR("ERROR: fix_socket_list: out of memory.\n");
-				goto error;
-			}
-			memcpy(si->adv_sock_str.s, tmp, si->adv_sock_str.len);
-		}
-
-		if (si->tag.len) {
-			/* build and set string encoding for the tagged socket info */
-			tmp = socket2str( si, 0, &si->tag_sock_str.len, 2);
-			if (tmp==0) {
-				LM_ERR("failed to convert tag socket to string\n");
-				goto error;
-			}
-			si->tag_sock_str.s=(char*)pkg_malloc(si->tag_sock_str.len);
-			if (si->tag_sock_str.s==0) {
-				LM_ERR("out of pkg memory.\n");
-				goto error;
-			}
-			memcpy(si->tag_sock_str.s, tmp, si->tag_sock_str.len);
-		}
-
-		/* build and set string encoding for the real socket info */
-		tmp = socket2str( si, 0, &si->sock_str.len, 0);
-		if (tmp==0) {
-			LM_ERR("failed to convert socket to string\n");
-			goto error;
-		}
-		si->sock_str.s=(char*)pkg_malloc(si->sock_str.len);
-		if (si->sock_str.s==0) {
-			LM_ERR("out of pkg memory.\n");
-			goto error;
-		}
-		memcpy(si->sock_str.s, tmp, si->sock_str.len);
-
-#ifdef USE_MCAST
-		/* Check if it is an multicast address and
-		 * set the flag if so
-		 */
-		if (is_mcast(&si->address)) {
-			si->flags |= SI_IS_MCAST;
-		}
-#endif /* USE_MCAST */
-
-#ifdef EXTRA_DEBUG
-		printf("              %.*s [%s]:%s%s%s\n", si->name.len,
-				si->name.s, si->address_str.s, si->port_no_str.s,
-		                si->flags & SI_IS_MCAST ? " mcast" : "",
-		                is_anycast(si) ? " anycast" : "");
-#endif
 	}
 	/* removing duplicate addresses*/
 	for (sif=*list;sif; sif=sif->next){
@@ -894,8 +959,6 @@ int fix_socket_list(struct socket_info_full **list)
 #endif /* USE_MCAST */
 
 	return 0;
-error:
-	return -1;
 }
 
 
