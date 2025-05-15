@@ -76,8 +76,16 @@ p_address_node_t *new_address_node(struct net *subnet, unsigned int port, int pr
                                    str *info) {
     p_address_node_t *node;
 
+    if (subnet == NULL) {
+        LM_ERR("subnet is empty\n");
+        return NULL;
+    }
+
     node = alloc_address_node(pattern, info);
-    if (!node) return NULL;
+    if (!node) {
+        LM_ERR("no shm memory left for new address node\n");
+        return NULL;
+    }
 
     node->v.port = port;
     node->v.proto = proto;
@@ -199,10 +207,7 @@ int pm_hash_insert(p_address_table_t *table, struct net *subnet, unsigned int gr
     p_address_node_t *address;
 
     address = new_address_node(subnet, port, proto, pattern, info);
-    if (!address) {
-        LM_ERR("no shm memory left for new address node\n");
-        return -1;
-    }
+    if (!address) return -1;
 
     group = find_group_node(table, group_id);
 
