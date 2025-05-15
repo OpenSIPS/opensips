@@ -37,6 +37,7 @@
 #include "../../parser/parse_from.h"
 #include "../../mod_fix.h"
 #include "../../resolve.h"
+#include "../../redact_pii.h"
 
 #include "permissions.h"
 #include "hash.h"
@@ -312,7 +313,7 @@ int reload_address_table(struct pm_part_struct *part_struct)
 					str_info.len,str_info.s);
 			pkg_free(subnet);
 		} else {
-			LM_ERR("invalid address: %.*s/%d\n", str_src_ip.len, str_src_ip.s, mask);
+			LM_ERR("invalid address: %.*s/%d\n", str_src_ip.len, redact_pii(str_src_ip.s), mask);
 		}
 	}
 
