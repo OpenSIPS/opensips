@@ -2216,8 +2216,8 @@ static int pv_get_msg_branch_fields(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	if (idxf!=PV_IDX_ALL && idx==0) {
-		/* no index specified -> return the first branch */
-		return get_msg_branch_field( msg, 0, field, res);
+		/* no index specified -> operate with the last branch */
+		return get_msg_branch_field( msg, size-1, field, res);
 	}
 
 	if(idxf==PV_IDX_ALL) {
@@ -2354,6 +2354,13 @@ static int pv_get_msg_branch_attr(struct sip_msg *msg,  pv_param_t *param,
 	return 0;
 }
 
+static int pv_get_msg_branch_lastidx(struct sip_msg *msg,  pv_param_t *param,
+															pv_value_t *res)
+{
+	/* the last index is the size -1, counting all branches, as RURI as 
+	 * branch 0 followed by the added branches in dset */
+	return get_dset_size();
+}
 
 
 /******** LISTENING SOCKETS related vars & functions **********/
@@ -4554,8 +4561,9 @@ const pv_export_t _pv_names_table[] = {
 	{str_const_init("msg.branch.attr"), /* */
 		PVT_BRANCH, pv_get_msg_branch_attr, pv_set_msg_branch_attr,
 		pv_parse_avp_name, pv_parse_index, 0, 0},
-
-
+	{str_const_init("msg.branch.last_idx"), /* */
+		PVT_BRANCH, pv_get_msg_branch_lastidx, NULL,
+		NULL, NULL, 0, 0},
 	{str_const_init("mi"), /* */
 		PVT_MSGID, pv_get_msgid, 0,
 		0, 0, 0, 0},
