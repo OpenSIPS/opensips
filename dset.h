@@ -165,4 +165,6 @@ int get_msg_branch_attr(unsigned int b_idx, int name_id,
 int set_msg_branch_attr(unsigned int b_idx, int name_id,
 		unsigned short flags, int_str val);
 
+struct usr_avp **ruri_branch_attrs_head(void);
+
 #endif /* _DSET_H */

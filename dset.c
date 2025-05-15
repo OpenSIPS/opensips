@@ -201,10 +201,15 @@ void clear_dset(void)
 }
 
 
-/* copies and fills in a branch_wrap with the values from a msg_branch */
+/* copies and fills in a branch_wrap with the values from a msg_branch 
+ * IMPORTANT: if any attrs are attached the `branch`, they will be moved
+ * into the dset!!! */
 static inline int _set_msg_branch(struct msg_branch_wrap *br, 
 													struct msg_branch *branch)
 {
+	/* be sure and clear the attrs from target branch */
+	destroy_avp_list( &br->branch.attrs );
+
 	/* do full copy, copy the buffers later */
 	br->branch = *branch;
 
@@ -452,6 +457,9 @@ int remove_msg_branch(unsigned int idx)
 	if (!dsct || !dsct->enabled || idx >= dsct->nr_branches)
 		return -1;
 
+	/* destroy any attrs the branch may have */
+	destroy_avp_list( &dsct->branches[idx].branch.attrs );
+
 	/* not last branch? */
 	if (idx + 1 != dsct->nr_branches) {
 		memmove( dsct->branches + idx, dsct->branches + idx + 1,
@@ -462,7 +470,7 @@ int remove_msg_branch(unsigned int idx)
 	}
 
 	dsct->nr_branches--;
-	/* not really needed, but cleanup the slot not used */
+	/* cleanup the slot not used anymore */
 	memset(  dsct->branches + dsct->nr_branches, 0, sizeof *dsct->branches );
 
 	return 0;
@@ -597,57 +605,8 @@ int msg_branch_uri2dset( str *new_uri )
 }
 
 
-int move_msg_branch_to_ruri(int idx, struct sip_msg *msg)
-{
-	struct dset_ctx *dsct = get_dset_ctx();
-	struct msg_branch *branch;
-
-	/* no branches have been added yet */
-	if (!dsct) {
-		LM_DBG("no branches found\n");
-		return -1;
-	}
-
-	if (idx >= dsct->nr_branches) {
-		LM_DBG("trying to move inexisting branch idx %d, out of %d\n",
-			idx, dsct->nr_branches);
-		return -1;
-	}
-
-	branch = &dsct->branches[idx].branch;
-
-	/* move RURI */
-	if (set_ruri( msg, &branch->uri)<0) {
-		LM_ERR("failed to set new RURI\n");
-		return -1;
-	}
-
-	/* move DURI (empty is accepted as reset) */
-	if (set_dst_uri( msg, &branch->dst_uri)<0) {
-		LM_ERR("failed to set DST URI\n");
-		return -1;
-	}
-
-	/* move PATH  (empty is accepted as reset) */
-	if (set_path_vector( msg, &branch->path)<0) {
-		LM_ERR("failed to set PATH\n");
-		return -1;
-	}
-
-	/* Qval */
-	set_ruri_q( msg, branch->q );
-
-	/* BFLAGS */
-	setb0flags( msg, branch->bflags );
-
-	/* socket info */
-	msg->force_send_socket = branch->force_send_socket;
-
-	return 0;
-}
-
-
-static inline int _branch_2_msg(struct msg_branch_wrap *br,struct sip_msg *msg)
+static inline int _branch_2_msg(struct dset_ctx *dsct,
+							struct msg_branch_wrap *br,struct sip_msg *msg)
 {
 	if (set_ruri( msg, &br->branch.uri))
 		return -1;
@@ -662,11 +621,15 @@ static inline int _branch_2_msg(struct msg_branch_wrap *br,struct sip_msg *msg)
 	msg->force_send_socket = br->branch.force_send_socket;
 	msg->ruri_bflags = br->branch.bflags;
 
+	destroy_avp_list( &dsct->ruri_attrs );
+	dsct->ruri_attrs = clone_avp_list(br->branch.attrs);
+
 	return 0;
 }
 
 
-static inline int _msg_2_branch(struct sip_msg *msg,struct msg_branch_wrap *br)
+static inline int _msg_2_branch(struct dset_ctx *dsct,
+							struct sip_msg *msg, struct msg_branch_wrap *br)
 {
 	struct msg_branch branch;
 
@@ -678,6 +641,8 @@ static inline int _msg_2_branch(struct sip_msg *msg,struct msg_branch_wrap *br)
 	branch.q = msg->ruri_q;
 	branch.force_send_socket = msg->force_send_socket;
 	branch.bflags = msg->ruri_bflags;
+	branch.attrs = clone_avp_list(dsct->ruri_attrs);
+	/* the cloned list ^^ will remain attached to the branch */
 
 	if (_set_msg_branch( br, &branch)<0)
 		return -1;
@@ -686,26 +651,33 @@ static inline int _msg_2_branch(struct sip_msg *msg,struct msg_branch_wrap *br)
 }
 
 
-static inline int _copy_branch(struct sip_msg *msg,struct msg_branch_wrap *brs,
+static inline int _copy_branch(struct sip_msg *msg, struct dset_ctx *dsct,
 													int src_idx, int dst_idx)
 {
+	struct msg_branch_wrap *brs = dsct->branches;
 	int ret = 0;
 
 	if (dst_idx>=0) {
 		/* we copy into a branch */
 		if (src_idx>=0) {
 			/* we copy from a branch */
+			/* destroy the avps of the dst branch before the bulk copy */
+			destroy_avp_list( &brs[dst_idx].branch.attrs );
+			/* do the copy */
 			brs[dst_idx] = brs[src_idx];
 			_post_copy_branch_update( brs+dst_idx );
+			/* clone the list of attrs from src to dst now */
+			brs[dst_idx].branch.attrs =
+				clone_avp_list( brs[src_idx].branch.attrs );
 		} else {
 			/* we copy from msg */
-			ret = _msg_2_branch( msg, &brs[dst_idx]);
+			ret = _msg_2_branch( dsct, msg, &brs[dst_idx]);
 		}
 	} else {
 		/* we copy into msg */
 		if (src_idx>=0) {
 			/* we copy from a branch */
-			ret = _branch_2_msg( &brs[src_idx], msg);
+			ret = _branch_2_msg( dsct, &brs[src_idx], msg);
 		} else {
 			/* this should not happen, it is a NOP */
 		}
@@ -715,11 +687,37 @@ static inline int _copy_branch(struct sip_msg *msg,struct msg_branch_wrap *brs,
 }
 
 
+int move_msg_branch_to_ruri(int idx, struct sip_msg *msg)
+{
+	struct dset_ctx *dsct = get_dset_ctx();
+
+	/* no branches have been added yet */
+	if (!dsct) {
+		LM_DBG("no branches found\n");
+		return -1;
+	}
+
+	if (idx >= dsct->nr_branches) {
+		LM_DBG("trying to move inexisting branch idx %d, out of %d\n",
+			idx, dsct->nr_branches);
+		return -1;
+	}
+
+	if (_branch_2_msg( dsct, &dsct->branches[idx], msg)!=0) {
+		LM_ERR("failed to move brnach to RURI\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 int swap_msg_branches(struct sip_msg *msg, int src_idx, int dst_idx)
 {
 	struct dset_ctx *dsct = get_dset_ctx();
 	struct msg_branch_wrap *brs;
 	struct msg_branch_wrap bk;
+	struct usr_avp *bk_attrs;
 
 	if (src_idx==dst_idx)
 		/* this is a NOP */
@@ -738,19 +736,28 @@ int swap_msg_branches(struct sip_msg *msg, int src_idx, int dst_idx)
 
 	brs = dsct->branches;
 
+	/* to avoid useless cloning of the attr lists, better detach them
+	 * before doing anything and swap them at the end */
+
 	/* backup the info from dst branch, so we can write into it */
 	if (dst_idx>=0) {
+		/* detach the attrs */
+		bk_attrs = brs[dst_idx].branch.attrs;
+		brs[dst_idx].branch.attrs = NULL;
 		/* backup the dst branch */
 		bk = brs[dst_idx];
 		_post_copy_branch_update( &bk );
 	} else {
+		/* detach the attrs */
+		bk_attrs = dsct->ruri_attrs;
+		dsct->ruri_attrs = NULL;
 		/* backup the msg branch */
-		if (_msg_2_branch( msg, &bk)<0)
+		if (_msg_2_branch(dsct, msg, &bk)<0)
 			return -1;
 	}
 
 	/* copy dst over src */
-	if (_copy_branch( msg, brs, src_idx, dst_idx)<0)
+	if (_copy_branch( msg, dsct, src_idx, dst_idx)<0)
 		return -1;
 
 	/* now copy the original dst (from bk) into src */
@@ -758,10 +765,14 @@ int swap_msg_branches(struct sip_msg *msg, int src_idx, int dst_idx)
 		/* copy bk into a branch */
 		brs[src_idx] = bk;
 		_post_copy_branch_update( brs+src_idx );
+		/* attach the dst list of attrs */
+		brs[src_idx].branch.attrs = bk_attrs;
 	} else {
 		/* copy bk in msg */
-		if (_branch_2_msg( &bk, msg)<0)
+		if (_branch_2_msg( dsct, &bk, msg)<0)
 			return -1; //we may have an inconsistent msg branch :(
+		/* attach the dst list of attrs */
+		dsct->ruri_attrs = bk_attrs;
 	}
 
 	return 0;
@@ -789,7 +800,7 @@ int move_msg_branch(struct sip_msg *msg, int src_idx, int dst_idx,
 	}
 
 	/* copy dst over src */
-	if (_copy_branch( msg, dsct->branches, src_idx, dst_idx)<0)
+	if (_copy_branch( msg, dsct, src_idx, dst_idx)<0)
 		return -1;
 
 	if (!keep_src && src_idx>0)
@@ -945,3 +956,13 @@ int set_msg_branch_attr(unsigned int b_idx, int name_id,
 	return 1;
 }
 
+
+struct usr_avp **get_ruri_branch_head(void)
+{
+	struct dset_ctx *dsct = get_dset_ctx();
+
+	if (!dsct)
+		return NULL;
+
+	return &dsct->ruri_attrs;
+}
