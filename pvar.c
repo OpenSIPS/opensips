@@ -50,6 +50,7 @@
 #include "transformations.h"
 #include "script_var.h"
 #include "pvar.h"
+#include "sdp_ops.h"
 #include "flags.h"
 #include "xlog.h"
 
@@ -1745,6 +1746,18 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 end:
 	return pv_get_strval(msg, param, res, &s);
 }
+
+
+static int pv_get_sdp(struct sip_msg *msg, pv_param_t *_, pv_value_t *res)
+{
+	pv_param_t param;
+
+	memset(&param, 0, sizeof param);
+	param.pvn.u.isname.name.n = ((TYPE_APPLICATION<<16)+SUBTYPE_SDP);
+
+	return pv_get_msg_body(msg, &param, res);
+}
+
 
 static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
@@ -4284,6 +4297,21 @@ const pv_export_t _pv_names_table[] = {
 	{str_const_init("ruri.user"), /* */
 		PVT_RURI_USERNAME, pv_get_ruri_attr, pv_set_ruri_user,
 		0, 0, pv_init_iname, 1},
+	{str_const_init("sdp"), /* */
+		PVT_SDP, pv_get_sdp, pv_set_sdp,
+		0, 0, pv_init_iname, 1},
+	{str_const_init("sdp"), /* */
+		PVT_SDP, pv_get_sdp, pv_set_sdp,
+		pv_parse_sdp_name, 0, pv_init_iname, 1},
+	{str_const_init("sdp.line"), /* */
+		PVT_SDP_LINE, pv_get_sdp_line, pv_set_sdp_line,
+		pv_parse_sdp_line_name, 0, 0, 0},
+	{str_const_init("sdp.stream"), /* */
+		PVT_SDP_STREAM, pv_get_sdp_stream, pv_set_sdp_stream,
+		pv_parse_sdp_stream_name, 0, 0, 0},
+	{str_const_init("sdp.session"), /* */
+		PVT_SDP_SESSION, pv_get_sdp_session, pv_set_sdp_session,
+		pv_parse_sdp_session_name, 0, 0, 0},
 	{str_const_init("src_ip"), /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},

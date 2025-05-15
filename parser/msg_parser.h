@@ -286,6 +286,8 @@ struct sip_msg {
 	struct hdr_field* security_verify;
 
 	struct sip_msg_body *body;
+	/* optional, real-time changes performed on the first SDP body part */
+	struct sdp_body_part_ops *sdp_ops;
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/
@@ -339,7 +341,7 @@ struct sip_msg {
 
 	/* flags used by core - allows to set various flags on the message; may
 	 * be used for simple inter-module communication or remembering
-	 * processing state reached */
+	 * processing state reached, e.g. FL_FORCE_RPORT */
 	unsigned int msg_flags;
 
 	str set_global_address;
@@ -362,6 +364,7 @@ struct sip_msg {
 #define FAKED_REPLY     ((struct sip_msg *) -1)
 
 extern int via_cnt;
+extern int sdp_get_custom_body(struct sip_msg *msg, str *body);
 
 #define parse_msg( _buf, _len, _msg) \
 	parse_msg_opt( _buf, _len, _msg, 1)
@@ -429,6 +432,11 @@ inline static int get_body(struct sip_msg *msg, str *body)
 {
 	unsigned int hdrs_len;
 	int ct_len;
+
+	if (sdp_get_custom_body(msg, body) == 0) {
+		LM_DBG("found custom 'SDP ops' body, len: %d\n", body->len);
+		return 0;
+	}
 
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 		return -1;

@@ -131,7 +131,8 @@ enum _pv_type {
 	PVT_LINE_NUMBER,      PVT_CFG_FILE_NAME,     PVT_LOG_LEVEL,
 	PVT_XLOG_LEVEL,       PVT_AF,                PVT_HDR_NAME,
 	PVT_SOCKET_IN,        PVT_SOCKET_OUT,        PVT_BRANCH_FLAG,
-	PVT_MSG_FLAG,
+	PVT_SDP,              PVT_SDP_LINE,          PVT_SDP_STREAM,
+	PVT_SDP_SESSION,      PVT_MSG_FLAG,
 	/* registered by json module */
 	PVT_JSON,
 	/* registered by xml module */

@@ -215,6 +215,24 @@ void print_sdp_session(sdp_session_cell_t* sdp_session, int log_level);
 void print_sdp_stream(sdp_stream_cell_t *stream, int log_level);
 
 /**
+ * Creates and initialize a new sdp_info structure
+ */
+static inline sdp_info_t* new_sdp(void)
+{
+	sdp_info_t* sdp;
+
+	sdp = (sdp_info_t*)pkg_malloc(sizeof(sdp_info_t));
+	if (sdp == NULL) {
+		LM_ERR("No memory left\n");
+		return NULL;
+	}
+	memset( sdp, 0, sizeof(sdp_info_t));
+
+	return sdp;
+}
+
+
+/**
  * Get the first SDP from the body
  */
 static inline sdp_info_t* get_sdp(struct sip_msg* _m)
