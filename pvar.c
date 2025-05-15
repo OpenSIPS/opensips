@@ -4099,14 +4099,14 @@ static int pv_get_return_value(struct sip_msg *msg,  pv_param_t *param, pv_value
 
 /************** Boolean consts *****************/
 
-static const pv_value_t pv_true = {
+const pv_value_t pv_true = {
 	.ri = 1,
 	.rs = str_init("true"),
 	.flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT,
 };
 
 
-static const pv_value_t pv_false = {
+const pv_value_t pv_false = {
 	.ri = 0,
 	.rs = str_init("false"),
 	.flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT,
