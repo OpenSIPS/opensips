@@ -2206,8 +2206,7 @@ static int pv_get_msg_branch_fields(struct sip_msg *msg, pv_param_t *param,
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	if ( (size=get_dset_size()) == 0)
-		return pv_get_null(msg, param, res);
+	size = get_dset_size() + 1;
 
 	/* get the index */
 	if(pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
@@ -2215,9 +2214,9 @@ static int pv_get_msg_branch_fields(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	if (idxf!=PV_IDX_ALL && idx==0) {
+	if (idxf==0 && idx==0) {
 		/* no index specified -> operate with the last branch */
-		return get_msg_branch_field( msg, size-1, field, res);
+		return get_msg_branch_field( msg, size-1 , field, res);
 	}
 
 	if(idxf==PV_IDX_ALL) {
@@ -2327,15 +2326,18 @@ static int pv_get_msg_branch_attr(struct sip_msg *msg,  pv_param_t *param,
 		return -1;
 	}
 
+	size = get_dset_size() + 1 /* ruri branch*/;
+	/* if no branch set, consider the last one */
+	if (idxf==0 && idx==0)
+		idx = size - 1;
+
 	/* numerical index */
 	if (idx<0) {
-		size = get_dset_size() + 1 /* ruri branch*/;
 		/* index from the end */
 		if (-idx > size)
-			return pv_get_null(msg, param, res);
+			return -1;
 		idx = size + idx;
 	}
-
 
 	n = get_msg_branch_attr( idx, attr_name, &attr_flags, &val);
 	if ( n<0 || attr_flags&AVP_VAL_NULL)
@@ -2357,9 +2359,16 @@ static int pv_get_msg_branch_attr(struct sip_msg *msg,  pv_param_t *param,
 static int pv_get_msg_branch_lastidx(struct sip_msg *msg,  pv_param_t *param,
 															pv_value_t *res)
 {
+	int idx;
+
 	/* the last index is the size -1, counting all branches, as RURI as 
 	 * branch 0 followed by the added branches in dset */
-	return get_dset_size();
+	idx = get_dset_size();
+	res->flags = PV_VAL_STR;
+	res->rs.s = sint2str( idx, &res->rs.len);
+	res->ri = idx;
+	res->flags |= PV_VAL_INT|PV_TYPE_INT;
+	return 0;
 }
 
 
@@ -3486,29 +3495,37 @@ static int _int_pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 		return -1;
 	}
 
-	if(idxf==PV_IDX_ALL) {
+	if (idxf==PV_IDX_ALL) {
 		LM_ERR("SCRIPT BUG - * not allowed in branch assignment\n");
 		return -1;
 	}
 
 	if (has_ruri_branch) {
+		size = get_dset_size() + 1 ;
+		/* no branch set, consider the last one */
+		if (idxf==0 && idx==0)
+			idx = size - 1;
+		else
+		/* if negative, count from the end */
+		if (idx<0)
+			idx = size + idx;
+		/* now evaluate and ajust the idx to dset only */
 		if (idx==0) {
 			is_ruri_branch = 1;
 		} else {
 			/* offset with -1 */
 			idx--;
 		}
+	} else {
+		size = get_dset_size();
+		/* if negative, count from the end */
+		if (idx<0)
+			idx = size + idx;
 	}
 
 	if (!is_ruri_branch) {
 		/* if not RURI branch, it is a msg branch, so check the idx*/
-		size = get_dset_size();
-
-		if (idx<0) {
-			idx = size + idx;
-		}
-
-		if (idx<0 || idx>=size) {
+		if (idx<0 || idx>=get_dset_size()) {
 			LM_ERR("inexisting branch assignment [%d/%d]\n", size, idx);
 			return -1;
 		}
@@ -3666,9 +3683,13 @@ static int pv_set_msg_branch_attr(struct sip_msg* msg, pv_param_t *param,
 		return -1;
 	}
 
+	size = get_dset_size() + 1 /* ruri branch*/;
+	/* if no branch set, consider the last one */
+	if (idxf==0 && idx==0)
+		idx = size - 1;
+
 	/* numerical index */
 	if (idx<0) {
-		size = get_dset_size() + 1 /* ruri branch*/;
 		/* index from the end */
 		if (-idx > size)
 			return -1;
@@ -3689,7 +3710,6 @@ static int pv_set_msg_branch_attr(struct sip_msg* msg, pv_param_t *param,
 
 	return (n>=0) ? 0 : -1 ;
 }
-
 
 
 static int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
@@ -4272,7 +4292,11 @@ static int msg_branch_flag_set(struct sip_msg* msg, pv_param_t *param, int op,
 		return -1;
 	}
 
-	size = get_dset_size();
+	size = get_dset_size() + 1;
+
+	/* if no idx, work with the last branch */
+	if (idxf==0 && idx==0)
+		idx = size - 1;
 
 	if (idx<0) {
 		idx = size + idx;

@@ -905,6 +905,8 @@ int get_msg_branch_attr(unsigned int b_idx, int name_id,
 		return -1;
 	}
 
+	//LM_DBG("getting attr [%d] on branch %d/ptr=%p\n",name_id, b_idx, attrs);
+
 	/* operate on the list of ATTRS/AVPS of the branch */
 	old_list = set_avp_list( attrs );
 
@@ -913,7 +915,7 @@ int get_msg_branch_attr(unsigned int b_idx, int name_id,
 	set_avp_list( old_list );
 
 	if (avp)
-		*flags = avp->flags&AVP_SCRIPT_MASK;
+		*flags = avp->flags;
 	else
 		*flags = AVP_VAL_NULL;
 
@@ -942,13 +944,15 @@ int set_msg_branch_attr(unsigned int b_idx, int name_id,
 		return -1;
 	}
 
+	//LM_DBG("setting attr [%d] on branch %d/ptr=%p\n",name_id, b_idx, attrs);
+
 	/* operate on the list of ATTRS/AVPS of the branch */
 	old_list = set_avp_list( attrs );
 
 	if ( (avp=search_first_avp( 0, name_id, NULL, 0))!=NULL )
 		destroy_avp(avp);
 
-	if ( !(flags|AVP_VAL_NULL) )
+	if ( !(flags&AVP_VAL_NULL) )
 		add_avp( flags, name_id, val);
 
 	set_avp_list( old_list );
@@ -957,7 +961,7 @@ int set_msg_branch_attr(unsigned int b_idx, int name_id,
 }
 
 
-struct usr_avp **get_ruri_branch_head(void)
+struct usr_avp **ruri_branch_attrs_head(void)
 {
 	struct dset_ctx *dsct = get_dset_ctx();
 
