@@ -92,6 +92,8 @@ static int hep_tls_async_handshake_connect_timeout = 10;
 int hep_ctx_idx = 0;
 int hep_capture_id = 1;
 int payload_compression = 0;
+int hep_max_retries = 5;
+int hep_retry_cooldown = 3600; //seconds
 
 int homer5_on = 1;
 str homer5_delim = {":", 0};
