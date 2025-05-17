@@ -60,7 +60,7 @@
 		<title>Set <varname>trie_table</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "trie_table", "my_prefix_table")
+modparam("trie", "trie_table", "my_prefix_table")
 ...
 </programlisting>
 		</example>
@@ -327,7 +327,7 @@ if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
 		<example>
 		<title><function>trie_reload_status</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi dr_reload_status
+$ opensips-cli -x mi trie_reload_status
 Date:: Tue Aug 12 12:26:00 2014
 </programlisting>
 		</example>
