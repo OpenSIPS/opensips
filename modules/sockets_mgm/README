@@ -52,15 +52,15 @@ Dynamic Sockets Management Module
 
    List of Examples
 
-   1.1. Set "db_url" parameter
-   1.2. Set "table_name" parameter
-   1.3. Set "socket_column" parameter
-   1.4. Set "advertised_column" parameter
-   1.5. Set "tag_column" parameter
-   1.6. Set "flags_column" parameter
-   1.7. Set "tos_column" parameter
-   1.8. Set "processes" parameter
-   1.9. Set "max_sockets" parameter
+   1.1. Set “db_url” parameter
+   1.2. Set “table_name” parameter
+   1.3. Set “socket_column” parameter
+   1.4. Set “advertised_column” parameter
+   1.5. Set “tag_column” parameter
+   1.6. Set “flags_column” parameter
+   1.7. Set “tos_column” parameter
+   1.8. Set “processes” parameter
+   1.9. Set “max_sockets” parameter
 
 Chapter 1. Admin Guide
 
@@ -156,9 +156,9 @@ Chapter 1. Admin Guide
    The database URL where the sockets are fetched from.
 
    Default value is
-   "mysql://opensips:opensipsrw@localhost/opensips".
+   “mysql://opensips:opensipsrw@localhost/opensips”.
 
-   Example 1.1. Set "db_url" parameter
+   Example 1.1. Set “db_url” parameter
 ...
 modparam("sockets_mgm", "db_url", "dbdriver://username:password@dbhost/d
 bname")
@@ -168,9 +168,9 @@ bname")
 
    The database table name where the sockets are stored.
 
-   Default value is "sockets".
+   Default value is “sockets”.
 
-   Example 1.2. Set "table_name" parameter
+   Example 1.2. Set “table_name” parameter
 ...
 modparam("sockets_mgm", "table_name", "sockets_def")
 ...
@@ -180,9 +180,9 @@ modparam("sockets_mgm", "table_name", "sockets_def")
    The database table column where the socket definition is
    stored.
 
-   Default value is "socket".
+   Default value is “socket”.
 
-   Example 1.3. Set "socket_column" parameter
+   Example 1.3. Set “socket_column” parameter
 ...
 modparam("sockets_mgm", "socket_column", "sock")
 ...
@@ -192,9 +192,9 @@ modparam("sockets_mgm", "socket_column", "sock")
    The database table column where the advertised definition is
    stored.
 
-   Default value is "advertised".
+   Default value is “advertised”.
 
-   Example 1.4. Set "advertised_column" parameter
+   Example 1.4. Set “advertised_column” parameter
 ...
 modparam("advertiseds_mgm", "advertised_column", "adv")
 ...
@@ -203,9 +203,9 @@ modparam("advertiseds_mgm", "advertised_column", "adv")
 
    The database table column where the tag definition is stored.
 
-   Default value is "tag".
+   Default value is “tag”.
 
-   Example 1.5. Set "tag_column" parameter
+   Example 1.5. Set “tag_column” parameter
 ...
 modparam("tags_mgm", "tag_column", "sock")
 ...
@@ -214,9 +214,9 @@ modparam("tags_mgm", "tag_column", "sock")
 
    The database table column where the flags definition is stored.
 
-   Default value is "flags".
+   Default value is “flags”.
 
-   Example 1.6. Set "flags_column" parameter
+   Example 1.6. Set “flags_column” parameter
 ...
 modparam("flagss_mgm", "flags_column", "sock")
 ...
@@ -225,9 +225,9 @@ modparam("flagss_mgm", "flags_column", "sock")
 
    The database table column where the tos definition is stored.
 
-   Default value is "tos".
+   Default value is “tos”.
 
-   Example 1.7. Set "tos_column" parameter
+   Example 1.7. Set “tos_column” parameter
 ...
 modparam("toss_mgm", "tos_column", "sock")
 ...
@@ -236,9 +236,9 @@ modparam("toss_mgm", "tos_column", "sock")
 
    The number of processes designated to handle UDP sockets.
 
-   Default value is "8".
+   Default value is “8”.
 
-   Example 1.8. Set "processes" parameter
+   Example 1.8. Set “processes” parameter
 ...
 modparam("sockets_mgm", "processes", 32)
 ...
@@ -248,9 +248,9 @@ modparam("sockets_mgm", "processes", 32)
    The maximum number of sockets that can be defined dinamically.
    See the Limitations section for more information.
 
-   Default value is "100".
+   Default value is “100”.
 
-   Example 1.9. Set "max_sockets" parameter
+   Example 1.9. Set “max_sockets” parameter
 ...
 modparam("sockets_mgm", "max_sockets", 2000)
 ...
@@ -282,7 +282,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    4        1      349       0
+   1. Razvan Crainea (@razvancrainea)    33       4      2207     572
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -304,7 +304,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Jul 2024 - Jul 2024
+   1. Razvan Crainea (@razvancrainea) Mar 2025 - May 2025
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -317,4 +317,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2025 OpenSIPS Solutions;
+   Copyright © 2025 OpenSIPS Solutions;
