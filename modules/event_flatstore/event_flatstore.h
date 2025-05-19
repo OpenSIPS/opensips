@@ -34,8 +34,17 @@
 
 #define FLAT_DEFAULT_MAX_FD 100
 
+#define ROTATE_REASON_COUNT  "count"
+#define ROTATE_REASON_SIZE   "size"
+#define ROTATE_REASON_PERIOD "period"
+#define ROTATE_REASON_MI     "mi"
+
 struct flat_file {
-	str path;
+	str path; // original path from module config (may include $var(...) placeholders)
+	char *pathname; // resolved absolute path after variable expansion
+	char *old_pathname; // previous pathname kept between rotations (used in ROTATION events)
+	unsigned long record_count;
+	unsigned long bytes_written;
 	unsigned int file_index_process;
 	unsigned int counter_open;
 	unsigned int rotate_version;
