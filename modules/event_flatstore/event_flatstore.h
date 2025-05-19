@@ -36,6 +36,7 @@
 
 struct flat_file {
 	str path;
+	char *pathname;
 	unsigned int file_index_process;
 	unsigned int counter_open;
 	unsigned int rotate_version;

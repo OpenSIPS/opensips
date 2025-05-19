@@ -37,6 +37,8 @@
 #include "../../evi/evi_transport.h"
 #include "../../mem/shm_mem.h"
 #include "../../locking.h"
+#include "../../timer.h"
+#include "../../ipc.h"
 #include "../../ut.h"
 
 static int mod_init(void);
@@ -51,6 +53,8 @@ mi_response_t *mi_rotate(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
 	evi_params_t *params, evi_async_ctx_t *async_ctx);
+
+static void event_flatstore_timer(unsigned int ticks, void *param);
 
 static int *opened_fds;
 static int *rotate_version;
@@ -70,6 +74,9 @@ static int initial_capacity = FLAT_DEFAULT_MAX_FD;
 static int suppress_event_name = 0;
 static str file_permissions;
 static mode_t file_permissions_oct;
+static int file_rotate_period;
+static str file_suffix;
+static pv_elem_p file_suffix_format;
 
 static const mi_export_t mi_cmds[] = {
 	{ "evi_flat_rotate", "rotates the files the module dumps events into", 0,0,{
@@ -84,6 +91,8 @@ static const param_export_t mod_params[] = {
 	{"delimiter",STR_PARAM, &delimiter.s},
 	{"file_permissions", STR_PARAM, &file_permissions.s},
 	{"suppress_event_name", INT_PARAM, &suppress_event_name},
+	{"rotate_period", INT_PARAM, &file_rotate_period},
+	{"suffix", STR_PARAM, &file_suffix.s},
 	{0,0,0}
 };
 
@@ -133,6 +142,20 @@ static int mod_init(void) {
 	dirc = NULL;
 
 	LM_NOTICE("initializing module ...\n");
+
+	if (file_rotate_period && file_rotate_period < 0) {
+		LM_WARN("\"rotate_period\" parameter needs to be a positive integer (%d)! "
+				"Disabling auto-rotate!\n", file_rotate_period);
+		file_rotate_period = 0;
+	}
+
+	if (file_suffix.s) {
+		file_suffix.len = strlen(file_suffix.s);
+		if (pv_parse_format(&file_suffix, &file_suffix_format) < 0) {
+			LM_ERR("could not parse file suffix format!\n");
+			return -1;
+		}
+	}
 
 	if (register_event_mod(&trans_export_flat)) {
 		LM_ERR("cannot register transport functions for SCRIPTROUTE\n");
@@ -219,6 +242,13 @@ static int mod_init(void) {
 
 	for(i = 0; i < initial_capacity; i++)
 		opened_fds[i] = -1;
+
+	if (file_rotate_period &&
+		register_timer("event_flatstore", event_flatstore_timer, 0,
+			1, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+		LM_ERR("could not add event flatstore routine\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -490,12 +520,67 @@ error:
 	return NULL;
 }
 
+static char *get_file_path(struct flat_file *file)
+{
+	str format;
+	char *filepath;
+	static struct sip_msg req;
+
+	/*  if suffix not used, the path is always the same */
+	if (!file_suffix_format) {
+		file->pathname = file->path.s;
+		goto end;
+	}
+
+	req.first_line.u.request.method.s= "DUMMY";
+	req.first_line.u.request.method.len= 5;
+	req.first_line.u.request.uri.s= "sip:user@domain.com";
+	req.first_line.u.request.uri.len= 19;
+	req.rcv.src_ip.af = AF_INET;
+	req.rcv.dst_ip.af = AF_INET;
+
+	if (pv_printf_s(&req, file_suffix_format, &format) < 0) {
+		LM_ERR("could not print the file's format!\n");
+		goto error;
+	}
+
+	if (!file->pathname) {
+		filepath = shm_malloc(file->path.len + format.len + 1);
+		if (!filepath) {
+			LM_ERR("could not allocate new file's name!\n");
+			goto error;
+		}
+		/* the file path is always the same */
+		memcpy(filepath, file->path.s, file->path.len);
+	} else {
+		filepath = shm_realloc(file->pathname, file->path.len + format.len + 1);
+		if (!filepath) {
+			LM_ERR("could not re-allocate new file's name!\n");
+			goto error;
+		}
+	}
+	memcpy(filepath + file->path.len, format.s, format.len);
+	filepath[file->path.len + format.len] = '\0';
+	file->pathname = filepath;
+	goto end;
+
+error:
+	/* if there was a previous file, dump data in the same file
+	 * otherwise, in the initial path, no suffix*/
+	if (!file->pathname)
+		file->pathname = file->path.s;
+end:
+	LM_DBG("filepath for socket [%s] is [%s]\n", file->path.s, file->pathname);
+	return file->pathname;
+}
+
 /*  check if the local 'version' of the file descriptor asociated with entry fs
 	is different from the global version, if it is different reopen the file
 */
 static void rotating(struct flat_file *file){
 	int index;
 	int rc;
+	char *filepath;
 
 	if (!file)
 		return;
@@ -505,7 +590,14 @@ static void rotating(struct flat_file *file){
 	index = file->file_index_process;
 
 	if (opened_fds[index] == -1) {
-		opened_fds[index] = open(file->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
+		/* fd not opened in this process */
+
+		if (!file->pathname)
+			filepath = get_file_path(file);
+		else
+			/* different process already filled it in */
+			filepath = file->pathname;
+		opened_fds[index] = open(filepath, O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
 		if (opened_fds[index] < 0) {
 			LM_ERR("Opening socket error\n");
 			lock_release(global_lock);
@@ -517,9 +609,9 @@ static void rotating(struct flat_file *file){
 
 		lock_release(global_lock);
 		return;
-	}
 
-	if (rotate_version[index] != file->rotate_version && opened_fds[index] != -1) {
+	} else if (rotate_version[index] != file->rotate_version) {
+		/* fd is opened in this process */
 
 	   /* update version */
 		rotate_version[index] = file->rotate_version;
@@ -532,7 +624,7 @@ static void rotating(struct flat_file *file){
 			return;
 		}
 
-		opened_fds[index] = open(file->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
+		opened_fds[index] = open(file->pathname, O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
 		if (opened_fds[index] < 0) {
 			LM_ERR("Opening socket error\n");
 			return;
@@ -708,6 +800,44 @@ static str flat_print(evi_reply_sock *sock){
 	return fs->file->path;
 }
 
+void event_flatstore_rotate(int sender, void *param)
+{
+	/* we've been instructed to double check the versions of our sockets */
+	struct flat_file* file;
+	int index;
+
+	lock_get(global_lock);
+	for (file = *list_files; file; file = file->next) {
+		index = file->file_index_process;
+		if (opened_fds[index] != -1 && rotate_version[index] != file->rotate_version) {
+			close(opened_fds[index]);
+			opened_fds[index] = -1; /* open it next time we have an event */
+			file->counter_open--;
+		}
+	}
+	lock_release(global_lock);
+}
+
+static void event_flatstore_timer(unsigned int ticks, void *param)
+{
+	struct flat_file* file;
+
+	/* we only run when ticks is multiple of file_rotate_period */
+	if (time(NULL) % file_rotate_period != 0)
+		return;
+
+	lock_get(global_lock);
+	for (file = *list_files; file; file = file->next) {
+		file->rotate_version++;
+		file->pathname = get_file_path(file);
+		LM_DBG("File %s is being rotated at %u - new file is %s\n",
+				file->path.s, ticks, file->pathname);
+	}
+	/* inform everyone they need to rotate */
+	ipc_broadcast_rpc(event_flatstore_rotate, 0);
+	lock_release(global_lock);
+}
+
 static void verify_delete(void) {
 	struct flat_delete *del_it, *del_prev, *del_tmp;
 
@@ -749,6 +879,10 @@ static void verify_delete(void) {
 				del_prev->next = del_it->next;
 			else
 				*list_delete = del_it->next;
+
+			if (del_it->file->pathname &&
+					del_it->file->pathname != del_it->file->path.s)
+				shm_free(del_it->file->pathname);
 
 			del_tmp = del_it;
 			del_it = del_it->next;
