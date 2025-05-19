@@ -106,6 +106,35 @@ modparam("event_flatstore", "delimiter", ";")
 </programlisting>
 		</example>
 	</section>
+	<section id="param_escape_delimiter" xreflabel="escape_delimiter">
+		<title><varname>escape_delimiter</varname> (string)</title>
+		<para>
+			Optional replacement sequence that will be written <emphasis>instead
+			of</emphasis> the <link linkend="param_delimiter"><varname>delimiter</varname></link>
+			whenever this character (or sequence) occurs inside a string
+			parameter.
+			This allows you to keep the log file parse-friendly even when user
+			data itself may contain delimiter symbols.
+		</para>
+		<para>
+			If set, its length <emphasis>must be exactly equal</emphasis> to the
+			length of <varname>delimiter</varname>.
+		</para>
+	<para>
+	<emphasis>
+			Default value is <quote>""</quote> (escaping disabled).
+	</emphasis>
+	</para>
+	<example>
+	<title>Enable escaping of ',' with '|'</title>
+	<programlisting format="linespecific">
+...
+modparam("event_flatstore", "delimiter", ",")
+modparam("event_flatstore", "escape_delimiter", "|")
+...
+	</programlisting>
+	</example>
+	</section>
 	<section id="param_file_permissions" xreflabel="file_permissions">
 		<title><varname>file_permissions</varname> (string)</title>
 		<para>
@@ -260,9 +289,7 @@ modparam("event_flatstore", "suffix", "$time(%Y)")
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-...
 opensips-cli -x mi evi_flat_rotate _path_to_log_file_
-...
 		</programlisting>
 	</section>
 	</section>
@@ -298,7 +325,8 @@ opensips-cli -x mi evi_flat_rotate _path_to_log_file_
 		<emphasis>filename</emphasis> – full path of the new log file.
 	</para></listitem>
 	<listitem><para>
-		<emphasis>old_filename</emphasis> – full path of the previous log file.
+		<emphasis>old_filename</emphasis> – full path of the previous
+		log file, or empty string if none existed.
 	</para></listitem>
 	</itemizedlist>
 	</section>

@@ -82,6 +82,7 @@ static unsigned long file_rotate_count;
 static unsigned long file_rotate_size;
 static str file_suffix;
 static pv_elem_p file_suffix_format;
+static str escape_delimiter = {0, 0};
 
 static void raise_rotation_event(struct flat_file *file, const char *reason);
 static void update_counters_and_rotate(struct flat_file *file,
@@ -114,6 +115,7 @@ static const param_export_t mod_params[] = {
 	{"rotate_count",  INT_PARAM|STR_PARAM|USE_FUNC_PARAM, (void*)rotate_count_param},
 	{"rotate_size",   INT_PARAM|STR_PARAM|USE_FUNC_PARAM, (void*)rotate_size_param},
 	{"suffix", STR_PARAM, &file_suffix.s},
+	{"escape_delimiter", STR_PARAM, &escape_delimiter.s},
 	{0,0,0}
 };
 
@@ -279,6 +281,17 @@ static int mod_init(void) {
 	} else {
 		delimiter.len = strlen(delimiter.s);
 		LM_DBG("The delimiter for separating columns in files was set at %.*s\n", delimiter.len, delimiter.s);
+	}
+
+	if (escape_delimiter.s) {
+		escape_delimiter.len = strlen(escape_delimiter.s);
+		if (escape_delimiter.len != delimiter.len) {
+			LM_ERR("\"escape_delimiter\" length (%d) must match \"delimiter\" length (%d)\n",
+			escape_delimiter.len, delimiter.len);
+			return -1;
+		}
+		LM_DBG("Delimiter escaping enabled: \"%.*s\" → \"%.*s\"\n",
+			delimiter.len,  delimiter.s, escape_delimiter.len, escape_delimiter.s);
 	}
 
 	if (initial_capacity <= 0 || initial_capacity > 65535) {
@@ -878,6 +891,27 @@ static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
 					}
 				}
 
+				/* if escape_delimiter is configured, replace any in-value
+				 * occurrences of the delimiter with the escape sequence     */
+				if (escape_delimiter.s) {
+					if (delimiter.len == 1) {           /* fast single-char */
+						for (i = 0; i < param->val.s.len; i++)
+							if (param->val.s.s[i] == delimiter.s[0])
+								param->val.s.s[i] = escape_delimiter.s[0];
+					} else {                            /* multi-char delim  */
+						char *p   = param->val.s.s;
+						char *end = p + param->val.s.len - delimiter.len;
+						while (p <= end) {
+							if (memcmp(p, delimiter.s, delimiter.len) == 0) {
+								memcpy(p, escape_delimiter.s, delimiter.len);
+								p += delimiter.len;
+								end = param->val.s.s + param->val.s.len - delimiter.len;
+							} else {
+								p++;
+							}
+						}
+					}
+				}
 				io_param[idx].iov_base = param->val.s.s;
 				io_param[idx].iov_len = param->val.s.len;
 				idx++;
