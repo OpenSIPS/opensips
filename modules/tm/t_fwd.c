@@ -396,7 +396,8 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
    may break the function logic!
 */
 static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
-		str* next_hop, unsigned int bflags, str* path, struct proxy_l *proxy)
+		str* next_hop, unsigned int bflags, str* path,
+		int q, struct usr_avp **attrs, struct proxy_l *proxy)
 {
 	unsigned short branch;
 	struct sip_msg_body *body_clone=NO_BODY_CLONE_MARKER;
@@ -423,6 +424,16 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 	request->dst_uri=*next_hop;
 	request->path_vec=*path;
 	request->ruri_bflags=bflags;
+
+	/* we attach the attrs here as we need to see them in branch route
+	 * (inside pre_print_uac_request())
+	 * They will remain attached here if the UAC is successfully created;
+	 * if we exit with return the attrs will be freed by clean_branch().
+	 * Bottom line, we take over the attr list handling, so we NULL the
+	 * received holder (so the upper level will havve nothing to care furhter)
+	 */
+	t->uac[branch].battrs = *attrs;
+	*attrs = NULL;
 
 	if ( pre_print_uac_request( t, branch, request, &body_clone)!= 0 ) {
 		ret = -1;
@@ -471,6 +482,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 	t->uac[branch].uri.len=request->new_uri.len;
 	t->uac[branch].br_flags = request->ruri_bflags;
 	t->uac[branch].added_rr = count_local_rr( request );
+	t->uac[branch].q = q;
 	t->nr_of_outgoings++;
 
 	/* done! */
@@ -766,7 +778,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 	/* as first branch, use current R-URI, bflags, etc. */
 	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst,
-		getb0flags(p_msg), &p_msg->path_vec, proxy);
+		getb0flags(p_msg), &p_msg->path_vec, p_msg->ruri_q,
+		ruri_branch_attrs_head() , proxy);
 	if (branch_ret>=0)
 		added_branches |= 1<<branch_ret;
 	else
@@ -776,7 +789,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	for( idx=0; (branch=get_msg_branch(idx))!=NULL ; idx++ ) {
 		p_msg->force_send_socket = branch->force_send_socket;
 		branch_ret = add_uac( t, p_msg, &branch->uri, &branch->dst_uri,
-			branch->bflags, &branch->path, proxy);
+			branch->bflags, &branch->path, branch->q, &branch->attrs, proxy);
 		/* pick some of the errors in case things go wrong;
 		   note that picking lowest error is just as good as
 		   any other algorithm which picks any other negative
