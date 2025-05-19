@@ -238,6 +238,10 @@ typedef struct _pv_elem
 	struct _pv_elem *next;
 } pv_elem_t, *pv_elem_p;
 
+
+extern const pv_value_t pv_true;
+extern const pv_value_t pv_false;
+
 extern int pv_print_buf_size;
 int init_pvar_support(void);
 

@@ -170,6 +170,8 @@ static inline void force_retr(struct retr_buf *rb)
 			free_f((br).duri.s); \
 		if ((br).user_avps) \
 			avp_destr_f(&(br).user_avps); \
+		if ((br).battrs) \
+			avp_destr_f(&(br).battrs); \
 	} while (0)
 
 #define clean_branch(br) \

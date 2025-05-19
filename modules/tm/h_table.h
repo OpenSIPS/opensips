@@ -143,6 +143,17 @@ typedef struct ua_client
 	   timer may fire and interfere with whoever tries to
 	   rewrite it */
 	struct retr_buf local_cancel;
+	/* UAC specific flags */
+	short            flags;
+	/* the onreply_route to be processed only for this branch */
+	struct script_route_ref *on_reply;
+	/* if we store a reply (branch picking), this is where it is */
+	struct sip_msg  *reply;
+	/* if we don't store, we at least want to know the status */
+	short            last_received;
+	/* number of RR headers that were locally added for this branch */
+	unsigned int     added_rr;
+
 	/* pointer to retransmission buffer where uri is printed;
 	   good for generating ACK/CANCEL */
 	str              uri;
@@ -154,19 +165,13 @@ typedef struct ua_client
 	str              adv_address;
 	/* the advertised port used for this branch */
 	str              adv_port;
-	/* number of RR headers that were locally added for this branch */
-	unsigned int     added_rr;
-	/* if we store a reply (branch picking), this is where it is */
-	struct sip_msg  *reply;
-	/* if we don't store, we at least want to know the status */
-	short            last_received;
-	/* UAC specific flags */
-	short            flags;
 	/* script flags, specific to this branch */
 	int              br_flags;
-	/* the onreply_route to be processed only for this branch */
-	struct script_route_ref *on_reply;
-	/* head list for avps */
+	/* q value of this branch */
+	int              q;
+	/* head list for branch attrs */
+	struct usr_avp   *battrs;
+	/* head list for script bavps */
 	struct usr_avp *user_avps;
 }ua_client_type;
 

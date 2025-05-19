@@ -544,6 +544,7 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
     struct rdata* l;
     struct naptr_rdata* naptr;
     str pattern, replacement, result, new_result;
+	struct msg_branch branch;
 
     head = get_record(name, T_NAPTR);
 
@@ -622,14 +623,17 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
 	    first = 0;
 	    curr_prio = ((naptr->order) << 16) + naptr->pref;
 	} else {
-	    priority = ((naptr->order) << 16) + naptr->pref;
-	    if (priority > curr_prio) {
-		q = q - 10;
-		curr_prio = priority;
-	    }
-	    if (append_branch(_msg, &result, 0, 0, q, 0, 0) == -1) {
-		goto done;
-	    }
+		priority = ((naptr->order) << 16) + naptr->pref;
+		if (priority > curr_prio) {
+			q = q - 10;
+			curr_prio = priority;
+		}
+		memset( &branch, 0, sizeof branch);
+		branch.uri = result;
+		branch.q = q;
+		if (append_msg_branch(&branch) == -1) {
+			goto done;
+		}
 	}
     }
 
