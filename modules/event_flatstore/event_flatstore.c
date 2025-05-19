@@ -29,12 +29,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
+#include <time.h>
+#include <ctype.h>
 
 #include "event_flatstore.h"
 #include "../../mem/mem.h"
 #include "../../locking.h"
 #include "../../sr_module.h"
 #include "../../evi/evi_transport.h"
+#include "../../evi/evi_params.h"
 #include "../../mem/shm_mem.h"
 #include "../../locking.h"
 #include "../../timer.h"
@@ -75,8 +78,24 @@ static int suppress_event_name = 0;
 static str file_permissions;
 static mode_t file_permissions_oct;
 static int file_rotate_period;
+static unsigned long file_rotate_count;
+static unsigned long file_rotate_size;
 static str file_suffix;
 static pv_elem_p file_suffix_format;
+
+static void raise_rotation_event(struct flat_file *file, const char *reason);
+static void update_counters_and_rotate(struct flat_file *file,
+                                       ssize_t bytes_inc);
+
+static char *ensure_file_path(struct flat_file *file, int reset);
+static void event_flatstore_rotate(int sender, void *param);
+static int rotate_count_param(modparam_t type, void *val);
+static int rotate_size_param(modparam_t type, void *val);
+
+/* event */
+static str flatstore_event = str_init("E_FLATSTORE_ROTATION");
+static event_id_t flatstore_evi_id;
+static const char flat_empty_str[] = "";
 
 static const mi_export_t mi_cmds[] = {
 	{ "evi_flat_rotate", "rotates the files the module dumps events into", 0,0,{
@@ -91,7 +110,9 @@ static const param_export_t mod_params[] = {
 	{"delimiter",STR_PARAM, &delimiter.s},
 	{"file_permissions", STR_PARAM, &file_permissions.s},
 	{"suppress_event_name", INT_PARAM, &suppress_event_name},
-	{"rotate_period", INT_PARAM, &file_rotate_period},
+	{"rotate_period", INT_PARAM,  &file_rotate_period},
+	{"rotate_count",  INT_PARAM|STR_PARAM|USE_FUNC_PARAM, (void*)rotate_count_param},
+	{"rotate_size",   INT_PARAM|STR_PARAM|USE_FUNC_PARAM, (void*)rotate_size_param},
 	{"suffix", STR_PARAM, &file_suffix.s},
 	{0,0,0}
 };
@@ -129,6 +150,64 @@ static const evi_export_t trans_export_flat = {
 	FLAT_FLAG					/* flags */
 };
 
+static int rotate_count_param(modparam_t type, void *val)
+{
+	if (type == INT_PARAM) {
+		file_rotate_count = (unsigned long)(long)val;
+		return 0;
+	}
+
+	/* STR_PARAM: accept plain number */
+	char *s = (char *)val;
+	char *end = NULL;
+	unsigned long num = strtoul(s, &end, 10);
+
+	if (end == s) {
+		LM_ERR("rotate_count: invalid numeric value '%s'\n", s);
+		return -1;
+	}
+
+	file_rotate_count = num;
+	LM_DBG("rotate_count parsed as %lu lines\n", file_rotate_count);
+
+	return 0;
+}
+
+/* convert KB / MB / GB suffix to multiplier */
+static unsigned long suffix_mult(char suf)
+{
+	switch (tolower((unsigned char)suf)) {
+	case 'k': return 1024UL;
+	case 'm': return 1024UL * 1024UL;
+	case 'g': return 1024UL * 1024UL * 1024UL;
+	default:  return 1UL;
+	}
+}
+
+static int rotate_size_param(modparam_t type, void *val)
+{
+	if (type == INT_PARAM) {
+		file_rotate_size = (unsigned long)(long)val;
+		return 0;
+	}
+
+	/* STR_PARAM: accept plain number or number+suffix */
+	char *s = (char *)val;
+	char *end = NULL;
+	unsigned long num = strtoul(s, &end, 10);
+
+	if (end == s) {
+		LM_ERR("rotate_size: invalid numeric value '%s'\n", s);
+		return -1;
+	}
+
+	/* optional multiplier suffix */
+	file_rotate_size = num * suffix_mult(*end);
+	LM_DBG("rotate_size parsed as %lu bytes\n", file_rotate_size);
+
+	return 0;
+}
+
 /* initialize function */
 static int mod_init(void) {
 	int i;
@@ -159,6 +238,12 @@ static int mod_init(void) {
 
 	if (register_event_mod(&trans_export_flat)) {
 		LM_ERR("cannot register transport functions for SCRIPTROUTE\n");
+		return -1;
+	}
+
+	flatstore_evi_id = evi_publish_event(flatstore_event);
+	if (flatstore_evi_id == EVI_ERROR) {
+		LM_ERR("cannot register %.*s event\n", flatstore_event.len, flatstore_event.s);
 		return -1;
 	}
 
@@ -196,7 +281,7 @@ static int mod_init(void) {
 		LM_DBG("The delimiter for separating columns in files was set at %.*s\n", delimiter.len, delimiter.s);
 	}
 
-    if (initial_capacity <= 0 || initial_capacity > 65535) {
+	if (initial_capacity <= 0 || initial_capacity > 65535) {
 		LM_WARN("bad value for maximum open sockets (%d)\n", initial_capacity);
 		initial_capacity = FLAT_DEFAULT_MAX_FD;
 	} else
@@ -272,6 +357,13 @@ static void destroy(void){
 	while (file_it != NULL) {
 		file_tmp = file_it;
 		file_it = file_it->next;
+		if (file_tmp->old_pathname &&
+			file_tmp->old_pathname != file_tmp->path.s &&
+			file_tmp->old_pathname != flat_empty_str)
+
+			shm_free(file_tmp->old_pathname);
+		if (file_tmp->pathname && file_tmp->pathname != file_tmp->path.s)
+			shm_free(file_tmp->pathname);
 		shm_free(file_tmp);
 	}
 
@@ -295,6 +387,17 @@ static void destroy(void){
 
 	shm_free(list_sockets);
 
+	if (buff)
+		pkg_free(buff);
+	if (io_param)
+		pkg_free(io_param);
+	if (dirc)
+		pkg_free(dirc);
+
+	if (opened_fds)
+		pkg_free(opened_fds);
+	if (rotate_version)
+		pkg_free(rotate_version);
 }
 
 /* it does not do nothing */
@@ -349,8 +452,14 @@ mi_response_t *mi_rotate(const mi_params_t *params,
 		found_fd->path.s, found_fd->rotate_version + 1);
 
 	found_fd->rotate_version++;
+	found_fd->record_count  = 0;
+	found_fd->bytes_written = 0;
+	ensure_file_path(found_fd, 1);
 
 	lock_release(global_lock);
+
+	raise_rotation_event(found_fd, ROTATE_REASON_MI);
+	ipc_broadcast_rpc(event_flatstore_rotate, 0);
 
 	return init_mi_result_ok();
 }
@@ -520,16 +629,58 @@ error:
 	return NULL;
 }
 
-static char *get_file_path(struct flat_file *file)
+/* Builds (or rebuilds) the suffixed pathname for a flat_file.
+ * file  – target structure
+ * reset – if non-zero, force recreation: free old suffixed name,
+ *         clear pathname and build a fresh one
+ * Returns: valid pathname */
+static char *ensure_file_path(struct flat_file *file, int reset)
 {
 	str format;
 	char *filepath;
 	static struct sip_msg req;
 
-	/*  if suffix not used, the path is always the same */
+	if (reset) { /* free old pathname before saving a new one */
+		if (file->old_pathname &&
+			file->old_pathname != file->path.s &&
+			file->old_pathname != flat_empty_str) {
+
+			shm_free(file->old_pathname);
+		}
+		file->old_pathname = NULL;
+	}
+
+	/* reuse existing pathname when no reset requested */
+	if (!reset && file->pathname)
+		return file->pathname;
+
+	/* save current pathname before regenerating */
+	if (reset) {
+		if (file->pathname) {
+			size_t len = strlen(file->pathname);
+			char *dup  = shm_malloc(len + 1);
+			if (!dup) {
+				LM_ERR("OOM while duplicating old pathname\n");
+				return NULL;
+			} else {
+				memcpy(dup, file->pathname, len + 1);
+				file->old_pathname = dup;
+			}
+		} else {
+			file->old_pathname = (char *)flat_empty_str;
+		}
+	}
+
+	/* drop current suffixed name if it was allocated */
+	if (reset && file->pathname && file->pathname != file->path.s) {
+		shm_free(file->pathname);
+		file->pathname = NULL;
+	}
+
+	/*  if suffix disabled use original path */
 	if (!file_suffix_format) {
 		file->pathname = file->path.s;
-		goto end;
+		return file->pathname;
 	}
 
 	req.first_line.u.request.method.s= "DUMMY";
@@ -565,8 +716,14 @@ static char *get_file_path(struct flat_file *file)
 	goto end;
 
 error:
-	/* if there was a previous file, dump data in the same file
-	 * otherwise, in the initial path, no suffix*/
+	if (file->old_pathname &&
+		file->old_pathname != file->path.s &&
+		file->old_pathname != flat_empty_str) {
+
+		shm_free(file->old_pathname);
+	}
+	file->old_pathname = NULL;
+
 	if (!file->pathname)
 		file->pathname = file->path.s;
 end:
@@ -580,7 +737,6 @@ end:
 static void rotating(struct flat_file *file){
 	int index;
 	int rc;
-	char *filepath;
 
 	if (!file)
 		return;
@@ -592,12 +748,13 @@ static void rotating(struct flat_file *file){
 	if (opened_fds[index] == -1) {
 		/* fd not opened in this process */
 
-		if (!file->pathname)
-			filepath = get_file_path(file);
-		else
-			/* different process already filled it in */
-			filepath = file->pathname;
-		opened_fds[index] = open(filepath, O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
+		ensure_file_path(file, 0);
+		if (!file->pathname) {
+			LM_ERR("no pathname for %s\n", file->path.s);
+			lock_release(global_lock);
+			return;
+		}
+		opened_fds[index] = open(file->pathname, O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
 		if (opened_fds[index] < 0) {
 			LM_ERR("Opening socket error\n");
 			lock_release(global_lock);
@@ -605,7 +762,7 @@ static void rotating(struct flat_file *file){
 		}
 		rotate_version[index] = file->rotate_version;
 		file->counter_open++;
-		LM_DBG("File %s is opened %d time\n", file->path.s, file->counter_open);
+		LM_DBG("File %s is opened %d time\n", file->pathname, file->counter_open);
 
 		lock_release(global_lock);
 		return;
@@ -645,6 +802,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
 	char *ptr_buff;
 	int nr_params = 0;
 	int f_idx;
+	int i;
 
 	if (!entry) {
 		LM_ERR("invalid socket specification\n");
@@ -714,6 +872,12 @@ static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
 				offset_buff += len;
 				idx++;
 			} else if ((param->flags & EVI_STR_VAL) && param->val.s.len && param->val.s.s) {
+				for(i=0; i<param->val.s.len; i++) {
+					if (param->val.s.s[i] == delimiter.s[0]) {
+						param->val.s.s[i] = ' ';
+					}
+				}
+
 				io_param[idx].iov_base = param->val.s.s;
 				io_param[idx].iov_len = param->val.s.len;
 				idx++;
@@ -740,6 +904,8 @@ static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
 		LM_ERR("cannot write to socket\n");
 		return -1;
 	}
+
+	update_counters_and_rotate(entry->file, nwritten);
 
 	return 0;
 }
@@ -812,7 +978,8 @@ void event_flatstore_rotate(int sender, void *param)
 		if (opened_fds[index] != -1 && rotate_version[index] != file->rotate_version) {
 			close(opened_fds[index]);
 			opened_fds[index] = -1; /* open it next time we have an event */
-			file->counter_open--;
+			if (file->counter_open > 0)
+				file->counter_open--;
 		}
 	}
 	lock_release(global_lock);
@@ -829,7 +996,10 @@ static void event_flatstore_timer(unsigned int ticks, void *param)
 	lock_get(global_lock);
 	for (file = *list_files; file; file = file->next) {
 		file->rotate_version++;
-		file->pathname = get_file_path(file);
+		file->record_count  = 0;
+		file->bytes_written = 0;
+		ensure_file_path(file, 1);
+		raise_rotation_event(file, ROTATE_REASON_PERIOD);
 		LM_DBG("File %s is being rotated at %u - new file is %s\n",
 				file->path.s, ticks, file->pathname);
 	}
@@ -856,12 +1026,29 @@ static void verify_delete(void) {
 			LM_DBG("Closing file %s from current process, open_counter is %d\n",
 				del_it->file->path.s, del_it->file->counter_open - 1);
 			close(opened_fds[del_it->file->file_index_process]);
-			del_it->file->counter_open--;
+			if (del_it->file->counter_open > 0)
+				del_it->file->counter_open--;
 			opened_fds[del_it->file->file_index_process] = -1;
 		}
 
 		/* free file from list if all other processes closed it */
 		if (del_it->file->counter_open == 0) {
+			char *pname = NULL, *oldp = NULL;
+
+			/* save extra buffers before we lose the struct */
+			if (del_it->file->pathname &&
+				del_it->file->pathname != del_it->file->path.s) {
+
+				pname = del_it->file->pathname;
+			}
+
+			if (del_it->file->old_pathname &&
+				del_it->file->old_pathname != del_it->file->path.s &&
+				del_it->file->old_pathname != flat_empty_str) {
+
+				oldp = del_it->file->old_pathname;
+			}
+
 			LM_DBG("File %s is deleted globally, count open reached 0\n",
 				del_it->file->path.s);
 			if (del_it->file->prev)
@@ -880,9 +1067,11 @@ static void verify_delete(void) {
 			else
 				*list_delete = del_it->next;
 
-			if (del_it->file->pathname &&
-					del_it->file->pathname != del_it->file->path.s)
-				shm_free(del_it->file->pathname);
+			/* free extra buffers after struct is gone */
+			if (pname)
+				shm_free(pname);
+			if (oldp)
+				shm_free(oldp);
 
 			del_tmp = del_it;
 			del_it = del_it->next;
@@ -894,4 +1083,87 @@ static void verify_delete(void) {
 	}
 
 	lock_release(global_lock);
+}
+
+static str ts_name = str_init("timestamp");
+static str rn_name = str_init("reason");
+static str fn_name = str_init("filename");
+static str oldfn_name = str_init("old_filename");
+
+
+static void raise_rotation_event(struct flat_file *file, const char *reason)
+{
+	if (flatstore_evi_id == EVI_ERROR || !evi_probe_event(flatstore_evi_id))
+		return;
+
+	evi_params_p list = evi_get_params();
+	if (!list) {
+		LM_ERR("cannot create event params\n");
+		return;
+	}
+
+	/* build strings */
+	char ts_buf[32];
+	str  ts_val  = { ts_buf, 0 };
+
+	str fn_val = { file->pathname, strlen(file->pathname) };
+
+	if (!file->old_pathname)
+		file->old_pathname = (char *)flat_empty_str;
+
+	str oldfn_val = { file->old_pathname, strlen(file->old_pathname) };
+
+
+	str reason_val = { (char*)reason, strlen(reason) };
+
+	ts_val.len = snprintf(ts_buf, sizeof(ts_buf), "%ld", (long)time(NULL));
+
+	if (evi_param_add_str(list, &ts_name, &ts_val) < 0 ||
+		evi_param_add_str(list, &rn_name, &reason_val) < 0 ||
+		evi_param_add_str(list, &fn_name, &fn_val) < 0 ||
+		evi_param_add_str(list, &oldfn_name, &oldfn_val) < 0) {
+
+		evi_free_params(list);
+		return;
+	}
+
+	if (evi_raise_event(flatstore_evi_id, list))
+		LM_ERR("unable to send flatstore rotation event\n");
+
+	/* clean old_pathname */
+	if (file->old_pathname && file->old_pathname != file->path.s && file->old_pathname != flat_empty_str) {
+		shm_free(file->old_pathname);
+	}
+	file->old_pathname = NULL;
+}
+
+static void update_counters_and_rotate(struct flat_file *file, ssize_t bytes_inc)
+{
+	int hit_cnt = 0, hit_sz = 0;
+
+	lock_get(global_lock);
+	file->record_count++;
+	file->bytes_written += (unsigned long)bytes_inc;
+
+	if (file_rotate_count &&
+		file->record_count >= file_rotate_count)
+		hit_cnt = 1;
+
+	if (!hit_cnt && file_rotate_size &&
+		file->bytes_written >= file_rotate_size)
+		hit_sz = 1;
+
+	if (hit_cnt || hit_sz) {
+		file->rotate_version++;
+		file->record_count  = 0;
+		file->bytes_written = 0;
+		ensure_file_path(file, 1);
+	}
+	lock_release(global_lock);
+
+	if (hit_cnt || hit_sz) {
+		raise_rotation_event(file,
+			hit_cnt ? ROTATE_REASON_COUNT : ROTATE_REASON_SIZE);
+		ipc_broadcast_rpc(event_flatstore_rotate, 0);
+	}
 }

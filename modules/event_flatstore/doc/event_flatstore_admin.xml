@@ -48,7 +48,7 @@
 			</itemizedlist>
 		</para>
 	</section>
-    </section>
+	</section>
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
@@ -166,6 +166,42 @@ modparam("event_flatstore", "rotate_period", 3660) # rotate every hour
 ...
 </programlisting>
 		</example>
+`	</section>
+	<section id="param_rotate_count" xreflabel="rotate_count">
+		<title><varname>rotate_count</varname> (int|string)</title>
+		<para>
+			Defines after how many written lines the log file is rotated.
+			The value may exceed the 32-bit integer limit; in that case pass
+			it <emphasis>as a string</emphasis>, e.g. "5000000000".
+		</para>
+		<para><emphasis>Default value is <quote>0/OFF</quote>.</emphasis></para>
+		<example>
+		<title>Rotate after five billion lines</title>
+		<programlisting format="linespecific">
+...
+modparam("event_flatstore", "rotate_count", "5000000000")
+...
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_rotate_size" xreflabel="rotate_size">
+	<title><varname>rotate_size</varname> (int|string)</title>
+	<para>
+		Sets the maximum size of a file before it is rotated.  A size
+		suffix of <quote>k</quote>, <quote>m</quote> or <quote>g</quote>
+		(multiples of 1024) may be provided.
+		Very large values can be supplied as strings, e.g.
+		"8589934592" for 8 GiB.
+	</para>
+	<para><emphasis>Default value is <quote>0/OFF</quote>.</emphasis></para>
+	<example>
+		<title>Rotate at 2 GiB</title>
+<programlisting format="linespecific">
+...
+modparam("event_flatstore", "rotate_size", "2g")
+...
+</programlisting>
+	</example>
 	</section>
 	<section id="param_suffix" xreflabel="suffix">
 		<title><varname>suffix</varname> (string)</title>
@@ -223,11 +259,48 @@ modparam("event_flatstore", "suffix", "$time(%Y)")
  		<para>
 		MI FIFO Command Format:
 		</para>
-        <programlisting  format="linespecific">
-		opensips-cli -x mi evi_flat_rotate _path_to_log_file_
+		<programlisting  format="linespecific">
+...
+opensips-cli -x mi evi_flat_rotate _path_to_log_file_
+...
 		</programlisting>
 	</section>
-    </section>
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+
+	<section id="event_E_FLATSTORE_ROTATION" xreflabel="E_FLATSTORE_ROTATION">
+	<title>
+	<function moreinfo="none">E_FLATSTORE_ROTATION</function>
+	</title>
+
+	<para>
+		The event is raised every time <emphasis>event_flatstore</emphasis>
+		opens a new log file (manual <command>evi_flat_rotate</command>,
+		auto-rotate by <varname>rotate_period</varname>, or
+		thresholds <varname>rotate_count</varname>/<varname>rotate_size</varname>).
+		External apps can subscribe to monitor log-rotation activity.
+	</para>
+
+	<para>Parameters:</para>
+	<itemizedlist>
+	<listitem><para>
+		<emphasis>timestamp</emphasis> – Unix epoch (seconds) when the
+		rotation was performed.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>reason</emphasis> – one of the strings
+		<emphasis>count</emphasis>, <emphasis>size</emphasis>,
+		<emphasis>period</emphasis> or <emphasis>mi</emphasis>.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>filename</emphasis> – full path of the new log file.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>old_filename</emphasis> – full path of the previous log file.
+	</para></listitem>
+	</itemizedlist>
+	</section>
+	</section>
 </chapter>
-
-
