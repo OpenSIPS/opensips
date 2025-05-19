@@ -472,7 +472,7 @@ mi_response_t *mi_rotate(const mi_params_t *params,
 	lock_release(global_lock);
 
 	raise_rotation_event(found_fd, ROTATE_REASON_MI);
-	ipc_broadcast_rpc(event_flatstore_rotate, 0);
+	ipc_send_rpc_all(event_flatstore_rotate, 0);
 
 	return init_mi_result_ok();
 }
@@ -1038,8 +1038,8 @@ static void event_flatstore_timer(unsigned int ticks, void *param)
 				file->path.s, ticks, file->pathname);
 	}
 	/* inform everyone they need to rotate */
-	ipc_broadcast_rpc(event_flatstore_rotate, 0);
 	lock_release(global_lock);
+	ipc_send_rpc_all(event_flatstore_rotate, 0);
 }
 
 static void verify_delete(void) {
@@ -1198,6 +1198,6 @@ static void update_counters_and_rotate(struct flat_file *file, ssize_t bytes_inc
 	if (hit_cnt || hit_sz) {
 		raise_rotation_event(file,
 			hit_cnt ? ROTATE_REASON_COUNT : ROTATE_REASON_SIZE);
-		ipc_broadcast_rpc(event_flatstore_rotate, 0);
+		ipc_send_rpc_all(event_flatstore_rotate, 0);
 	}
 }
