@@ -1388,7 +1388,7 @@ onreply_route[3] {
 
 	<section id="func_t_new_request" xreflabel="t_new_request()">
 		<title>
-		<function moreinfo="none">t_new_request(method,RURI,from,to[,body[,ctx]])</function>
+		<function moreinfo="none">t_new_request( method, RURI, from, to [, body[, ctx]])</function>
 		</title>
 		<para>
 		This function generates and sends out a new SIP request (in a stateful way).
@@ -2023,6 +2023,44 @@ route{
 		</example>
 	</section>
 
+	<section id="func_t_get_branch_idx_by_attr" xreflabel="t_get_branch_idx_by_attr()">
+		<title>
+		<function moreinfo="none">t_get_branch_idx_by_attr(attr, [val_str], [val_int], [result_var], [offset])</function>
+		</title>
+		<para>
+		This function may be used to search for the index of another branch
+		of the current transaction. The searching is done based on the
+		per-branch attribute - you need to provide the name of the attribute
+		at least. Optionally you can provide a value (string or integer) for
+		the attribute used for searching. As input, the function may take an
+		optional branch offset (absolute value, covering all branches of the 
+		transaction) where the search should start from.
+		</para>
+		<para>
+		The function returns true if a branch (having the given name and
+		value for the attribute) was found. The status of the branch (like
+		if ongoing, completed ) is not relevant. If found, the "result_var" 
+		variable will be populated with the branch index (as integer).
+		</para>
+		<para>
+		This function can be used from ONREPLY_ROUTE, BRANCH_ROUTE and
+		FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>t_get_branch_idx_by_attr</function> usage</title>
+		<programlisting format="linespecific">
+...
+	# search for a branch which has the "name" attribute
+	# with string value "pstn"
+	if (t_get_branch_idx_by_attr("name", "pstn", , $var(idx))) {
+		xlog("found branch has index $var(idx)\n");
+	}
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	</section>
 
 	<section id="exported_pseudo_variables" xreflabel="Exported Pseudo-Variables">
@@ -2121,7 +2159,147 @@ route{
 				specified, the last reply for the current branch is retrieved.
 			</para>
 		</section>
-
+		<section id="pv_tm_branch_uri" xreflabel="$tm.branch.uri">
+		<title>$tm.branch.uri[]</title>
+			<para>
+				<emphasis>$tm.branch.uri</emphasis> - gives read-only 
+				access over the Request URI (as string) of a TM existing
+				branch. The status of the  branch (completed, ongoing, etc)
+				is not relevant.
+			</para>
+			<para>
+				The TM (UAC side) branches are created when the request is
+				sent to new destinations via "t_relay()" or "t_inject()".
+			</para>
+			<para>
+				The indexing of the branches starts from 0, giving access to 
+				all branches (past and active) of the transaction. Nevertheless
+				the indexing supports two optional suffixes, to simplify the
+				scripting:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>/active</emphasis> - the indexing starts also
+					from 0, but it is relative to the last set of branches -
+					the parallel branches created by the last "t_relay()"-ing.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>/all</emphasis> - similar to "no suffix" case, 
+					meaning it is an absolute index, covering all the 
+					branches of the trasactions (resulted from all "t_relay()"s
+					performed over the transaction).
+					</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				IF no index is specified, the current branch used. This depends
+				on the scripting context. Like in reply route, the current
+				branch is the branch the reply came for; in branch route, the
+				current branch is the branch to be sent out; in failure route,
+				the current branch is the winning branch.
+			</para>
+			<para>
+				NOTES:
+				<itemizedlist>
+					<listitem><para>
+					The index ALL ( "*" ) is not supported;
+					</para></listitem>
+					<listitem><para>
+					In branch route, only the "$tm.branch.attr" and 
+					"$tm.branch.flag" variables work for the current branch 
+					(the rest of the branch related variables will return NULL)
+					</para></listitem>
+					<listitem><para>
+					Negative values are accepted, meaning indexing from the 
+					end ( -1 is the latest/higher branch)
+					</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				The variable can be used in BRANCH, ONREPLY and FAILURE routes.
+			</para>
+		</section>
+		<section id="pv_tm_branch_duri" xreflabel="$tm.branch.duri">
+		<title>$tm.branch.duri[]</title>
+			<para>
+				<emphasis>$tm.branch.duri</emphasis> - 100% similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but returning the Detination-URI value of the branch.
+			</para>
+		</section>
+		<section id="pv_tm_branch_path" xreflabel="$tm.branch.path">
+		<title>$tm.branch.path[]</title>
+			<para>
+				<emphasis>$tm.branch.path</emphasis> - 100% similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but returning the PATH value of the branch.
+			</para>
+		</section>
+		<section id="pv_tm_branch_q" xreflabel="$tm.branch.q">
+		<title>$tm.branch.q[]</title>
+			<para>
+				<emphasis>$tm.branch.q</emphasis> - 100% similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but returning the Q value of the branch.
+			</para>
+		</section>
+		<section id="pv_tm_branch_flags" xreflabel="$tm.branch.flags">
+		<title>$tm.branch.flags[]</title>
+			<para>
+				<emphasis>$tm.branch.flags</emphasis> - 100% similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but returning the list (comma separated) of per-branch flags which are 
+				set for the branch.
+			</para>
+		</section>
+		<section id="pv_tm_branch_socket" xreflabel="$tm.branch.socket">
+		<title>$tm.branch.socket[]</title>
+			<para>
+				<emphasis>$tm.branch.socket</emphasis> - 100% similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but returning the socket description (proto:ip:port) used for sending the
+				branch out.
+			</para>
+		</section>
+		<section id="pv_tm_branch_flag" xreflabel="$tm.branch.flag">
+		<title>$tm.branch.flag()[]</title>
+			<para>
+				<emphasis>$tm.branch.flag(name)</emphasis> - similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but gives read/write access to a single branch flag (by its name).
+			</para>
+			<para>
+				The accepted values are 0 for FALSE, pozitive non-zero for
+				TRUE. The returned values are 0 for FALSE and 1 for TRUE.
+			</para>
+			<para>
+				The flags operated here are the same as the bflags you can
+				operated with via the "[re]setbflag()" functions.
+			</para>
+		</section>
+		<section id="pv_tm_branch_attr" xreflabel="$tm.branch.attr">
+		<title>$tm.branch.attr()[]</title>
+			<para>
+				<emphasis>$tm.branch.attr(name)</emphasis> - similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but gives read/write access to the attributed attached to the branch.
+			</para>
+			<para>
+				An attribute can have whatever name (no need to be 
+				pre-defined) and it can have a single value (at a time),
+				string or integer.
+			</para>
+		</section>
+		<section id="pv_tm_branch_last_received" xreflabel="$tm.branch.last_received">
+		<title>$tm.branch.last_received[]</title>
+			<para>
+				<emphasis>$tm.branch.last_received</emphasis> - 100% similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but returning the reply code of the last received reply (from the
+				network) on this branch. NULL is returned in no reply was
+				received so far.
+			</para>
+		</section>
+		<section id="pv_tm_branch_type" xreflabel="$tm.branch.type">
+		<title>$tm.branch.type[]</title>
+			<para>
+				<emphasis>$tm.branch.type</emphasis> - 100% similar to
+				<emphasis role='bold'><xref linkend="pv_tm_branch_uri"/></emphasis>, but returning the type of the current branch. This may be "phone" if it 
+				not a real branch (has no SIP signalling, used by waiting for
+				branch injection) or "sip" (a real signalling branch).
+			</para>
+		</section>
 	</section>
 
 
