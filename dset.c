@@ -247,6 +247,19 @@ static inline int _set_msg_branch(struct msg_branch_wrap *br,
 }
 
 
+static inline int _dst_malloc(struct dset_ctx **dsct)
+{
+	*dsct = pkg_malloc(sizeof **dsct);
+	if (*dsct==NULL) {
+		LM_ERR("oom 1\n");
+		return E_OUT_OF_MEM;
+	}
+	memset(*dsct, 0, sizeof **dsct);
+	(*dsct)->enabled = 1;
+	store_dset_ctx(*dsct);
+	return 0;
+}
+
 /* ! \brief
  * Add a new branch to current transaction
  */
@@ -259,16 +272,8 @@ int append_msg_branch(struct msg_branch *branch)
 	if (dsct && !dsct->enabled)
 		return -1;
 
-	if (!dsct) {
-		dsct = pkg_malloc(sizeof *dsct);
-		if (!dsct) {
-			LM_ERR("oom 1\n");
-			return E_OUT_OF_MEM;
-		}
-		memset(dsct, 0, sizeof *dsct);
-		dsct->enabled = 1;
-		store_dset_ctx(dsct);
-	}
+	if (dsct==NULL &&  _dst_malloc(&dsct)==0 )
+		return -1;
 
 	idx = dsct->nr_branches;
 
@@ -905,7 +910,7 @@ int get_msg_branch_attr(unsigned int b_idx, int name_id,
 		return -1;
 	}
 
-	//LM_DBG("getting attr [%d] on branch %d/ptr=%p\n",name_id, b_idx, attrs);
+	LM_DBG("getting attr [%d] on branch %d/ptr=%p\n",name_id, b_idx, attrs);
 
 	/* operate on the list of ATTRS/AVPS of the branch */
 	old_list = set_avp_list( attrs );
@@ -931,7 +936,9 @@ int set_msg_branch_attr(unsigned int b_idx, int name_id,
 	struct usr_avp *avp;
 	struct usr_avp** old_list;
 
-	if (!dsct)
+	/* if we have to set an ATTR for RURI branch, we need to have the dset
+	 * allocated (as the attr holder is there) */
+	if (dsct==NULL && (b_idx!=0 || (b_idx==0 && _dst_malloc(&dsct)<0)) )
 		return -1;
 
 	if (b_idx==0)
@@ -944,7 +951,7 @@ int set_msg_branch_attr(unsigned int b_idx, int name_id,
 		return -1;
 	}
 
-	//LM_DBG("setting attr [%d] on branch %d/ptr=%p\n",name_id, b_idx, attrs);
+	LM_DBG("setting attr [%d] on branch %d/ptr=%p\n",name_id, b_idx, attrs);
 
 	/* operate on the list of ATTRS/AVPS of the branch */
 	old_list = set_avp_list( attrs );
