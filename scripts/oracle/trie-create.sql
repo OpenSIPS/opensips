@@ -14,19 +14,19 @@ END trie_table_tr;
 /
 BEGIN map2users('trie_table'); END;
 /
-INSERT INTO version (table_name, table_version) values ('dr_partitions','1');
-CREATE TABLE dr_partitions (
+INSERT INTO version (table_name, table_version) values ('trie_partitions','1');
+CREATE TABLE trie_partitions (
     id NUMBER(10) PRIMARY KEY,
     partition_name VARCHAR2(255),
     db_url VARCHAR2(255),
     trie_table VARCHAR2(255)
 );
 
-CREATE OR REPLACE TRIGGER dr_partitions_tr
-before insert on dr_partitions FOR EACH ROW
+CREATE OR REPLACE TRIGGER trie_partitions_tr
+before insert on trie_partitions FOR EACH ROW
 BEGIN
   auto_id(:NEW.id);
-END dr_partitions_tr;
+END trie_partitions_tr;
 /
-BEGIN map2users('dr_partitions'); END;
+BEGIN map2users('trie_partitions'); END;
 /

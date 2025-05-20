@@ -9,7 +9,7 @@
 
 <table id="domain" xmlns:db="http://docbook.org/ns/docbook">
     <name>domain</name>
-    <version>3</version>
+    <version>4</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used by the domain module to determine if a host part of a URI is "local" or not. More information about the domain module can be found at: &OPENSIPS_MOD_DOC;domain.html

@@ -39,7 +39,7 @@
 #include "../../str.h"
 #include "../../name_alias.h"
 
-#define DOMAIN_TABLE_VERSION 3
+#define DOMAIN_TABLE_VERSION 4
 
 static db_con_t* db_handle=0;
 static db_func_t domain_dbf;
