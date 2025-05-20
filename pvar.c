@@ -3710,6 +3710,7 @@ static int pv_set_msg_branch_attr(struct sip_msg* msg, pv_param_t *param,
 	}
 
 	if (!val || val->flags&PV_VAL_NULL) {
+		attr_val.n = 0; //useless, makes compiler happy
 		attr_flags |= AVP_VAL_NULL;
 	} else
 	if(val->flags&PV_TYPE_INT) {
