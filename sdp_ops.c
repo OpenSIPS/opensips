@@ -459,6 +459,8 @@ int pv_parse_sdp_line_name(pv_spec_p sp, const str *_in)
 					matches[midx++]->prefix = tok;
 					break;
 				}
+			} else {
+				p = in.s + i;
 			}
 
 			// slash here
