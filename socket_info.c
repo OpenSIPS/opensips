@@ -650,6 +650,7 @@ error:
 
 
 #define STR_IMATCH(str, buf) ((str).len==strlen(buf) && strncasecmp(buf, (str).s, (str).len)==0)
+#define ACCEPT_SUBDOMAIN_ALIAS(flags) flags & SI_ACCEPT_SUBDOMAIN_ALIAS
 
 int is_localhost(struct socket_info *si)
 {
@@ -694,7 +695,7 @@ int fix_socket(struct socket_info_full *sif, int add_aliases)
 	/* check if we got the official name */
 	if (strcasecmp(he->h_name, si->name.s)!=0){
 		if (add_aliases && add_alias(si->name.s, si->name.len,
-						si->port_no, si->proto)<0){
+				si->port_no, si->proto, ACCEPT_SUBDOMAIN_ALIAS(si->flags))<0){
 			LM_ERR("add_alias failed\n");
 		}
 		/* change the official name */
@@ -710,7 +711,8 @@ int fix_socket(struct socket_info_full *sif, int add_aliases)
 	/* add the aliases*/
 	if (add_aliases) {
 		for(h=he->h_aliases; h && *h; h++)
-			if (add_alias(*h, strlen(*h), si->port_no, si->proto)<0){
+			if (add_alias(*h, strlen(*h), si->port_no, si->proto,
+			        ACCEPT_SUBDOMAIN_ALIAS(si->flags))<0){
 				LM_ERR("add_alias failed\n");
 			}
 	}
@@ -750,11 +752,12 @@ int fix_socket(struct socket_info_full *sif, int add_aliases)
 			}else{
 				/* add the aliases*/
 				if (add_alias(he->h_name, strlen(he->h_name),
-								si->port_no, si->proto)<0){
+					si->port_no, si->proto, ACCEPT_SUBDOMAIN_ALIAS(si->flags))<0){
 					LM_ERR("add_alias failed\n");
 				}
 				for(h=he->h_aliases; h && *h; h++)
-					if (add_alias(*h,strlen(*h),si->port_no,si->proto)<0){
+					if (add_alias(*h,strlen(*h),si->port_no,si->proto,
+						ACCEPT_SUBDOMAIN_ALIAS(si->flags))<0){
 						LM_ERR(" add_alias failed\n");
 					}
 			}
@@ -926,7 +929,8 @@ int fix_socket_list(struct socket_info_full **list)
 						(sl->name.len!=si->name.len)||
 						(strncmp(sl->name.s, si->name.s, si->name.len)!=0))
 					)
-					if (add_alias(sl->name.s,sl->name.len,sl->port_no,sl->proto)<0)
+					if (add_alias(sl->name.s,sl->name.len,sl->port_no,sl->proto,
+							ACCEPT_SUBDOMAIN_ALIAS(sl->flags))<0)
 						LM_ERR(" add_alias failed\n");
 
 				/* remove l*/
