@@ -38,6 +38,7 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 													unsigned char flag)
 {
 	struct location *foo;
+	struct msg_branch branch;
 	int bflags;
 	int r;
 
@@ -75,8 +76,12 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 		bflags = ((*locs)->flags&CPL_LOC_NATED) ? cpl_fct.ulb.nat_flag : 0 ;
 		LM_DBG("appending branch <%.*s>, flags %d\n",
 			(*locs)->addr.uri.len, (*locs)->addr.uri.s, bflags);
-		if(append_branch(msg, &(*locs)->addr.uri, &(*locs)->addr.received,0,
-		Q_UNSPECIFIED, bflags, 0)==-1){
+		memset( &branch, 0, sizeof branch);
+		branch.uri = (*locs)->addr.uri;
+		branch.dst_uri = (*locs)->addr.received;
+		branch.q = Q_UNSPECIFIED;
+		branch.bflags = bflags;
+		if (append_msg_branch(&branch)==-1){
 			LM_ERR("failed when appending branch <%s>\n",(*locs)->addr.uri.s);
 			goto error;
 		}
