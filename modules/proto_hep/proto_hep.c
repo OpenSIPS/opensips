@@ -143,7 +143,7 @@ static const param_export_t params[] = {
 	{ "homer5_on",                       INT_PARAM, &homer5_on                      },
 	{ "homer5_delim",                    STR_PARAM, &homer5_delim.s                 },
 	{ "hep_max_retries",                 INT_PARAM, &hep_max_retries                },
-	{ "hep_retry_cooldown",              STR_PARAM, &hep_retry_cooldown             },
+	{ "hep_retry_cooldown",              INT_PARAM, &hep_retry_cooldown             },
 	{0, 0, 0}
 };
 
