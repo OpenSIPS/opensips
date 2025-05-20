@@ -25,10 +25,16 @@
 
 #define SDP_OPS_FL_DIRTY  (1<<0) /* the SDP buffer requires a rebuild */
 #define SDP_OPS_FL_NULL   (1<<1) /* the message has no SDP body */
+#define SDP_OPS_FL_PARSED (1<<2) /* the SDP lines are parsed */
 
 struct sdp_chunk_match {
 	str prefix;
 	int idx;
+};
+
+struct sdp_ops_line {
+	str line;
+	int newbuf;
 };
 
 struct sdp_pv_param {
@@ -39,7 +45,7 @@ struct sdp_pv_param {
 
 struct sdp_body_part_ops {
 	str content_type;
-	str sdp;
+	str sdp, sep;
 
 	int flags;  /* e.g. SDP_OPS_FL_DIRTY */
 };
