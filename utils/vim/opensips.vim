@@ -72,7 +72,7 @@ syn region	osVarIndex	contained	start="\[" end="]" contains=osNumber,osVarNamed,
 syn region	osVarCon	contained matchgroup=varHi start="[a-zA-Z_.0-9]\+(" end=")"
 syn region	osVar		matchgroup=varHi start="\$(" end=")" contains=osVarCtx,osVarCon,osTransfm,osVarIndex
 syn region	osVarNamed	matchgroup=varHi start="\$[a-zA-Z_.0-9]\+(" end=")"
-syn match	osVarNamedS	/\$[a-zA-Z_.0-9]\+[^a-zA-Z_0-9(]/me=e-1,he=e-1
+syn match	osVarNamedS	/\$[a-zA-Z_.0-9]\+[^a-zA-Z_.0-9(]/me=e-1,he=e-1
 
 syn region	osString	start=+"+ skip=+\\\\\|\\"+ end=+"+ extend contains=osSpecial,osVar,osVarNamed,osVarNamedS
 
