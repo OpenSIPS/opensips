@@ -272,7 +272,7 @@ int append_msg_branch(struct msg_branch *branch)
 	if (dsct && !dsct->enabled)
 		return -1;
 
-	if (dsct==NULL &&  _dst_malloc(&dsct)==0 )
+	if (dsct==NULL &&  _dst_malloc(&dsct)<0 )
 		return -1;
 
 	idx = dsct->nr_branches;
