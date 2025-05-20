@@ -51,8 +51,8 @@
 #define HEP_PROTO_SIP  0x01
 
 static int control_id = -1;
-static int hep_failed_retries = 0;
-static time_t hep_last_attempt = 0;
+atomic_ulong *hep_failed_retries;
+atomic_ulong *hep_last_attempt;
 
 struct hep_message_id {
 	char* proto;
@@ -1745,23 +1745,23 @@ int send_hep_message(trace_message message, trace_dest dest, const struct socket
 	time_t now = time(NULL);
 
 	// Check cooldown logic
-	if (hep_failed_retries >= hep_max_retries && (now - hep_last_attempt) < hep_retry_cooldown) {
-		LM_ERR("HEP send suppressed: too many failures (%d), in cooldown (%ld seconds left)\n", hep_failed_retries, hep_retry_cooldown - (now - hep_last_attempt));
+	if (atomic_load(hep_failed_retries) >= (long)hep_max_retries && (long)(now - atomic_load(hep_last_attempt)) < (long)hep_retry_cooldown) {
+		LM_ERR("HEP send suppressed: too many failures (%ld), in cooldown (%ld seconds left)\n", atomic_load(hep_failed_retries), hep_retry_cooldown - (now - atomic_load(hep_last_attempt)));
 		free_hep_send_resources(p, to, buf);
 		goto end;
 	}
 
-	hep_last_attempt = now;
+	atomic_store(hep_last_attempt, now);
 
 	do {
 		if (msg_send(send_sock, hep_dest->transport, to, 0, buf, len, NULL) < 0) {
 			LM_ERR("Cannot send HEP message!\n");
-			hep_failed_retries++;
+			atomic_fetch_add(hep_failed_retries, 1);
 			continue;
 		}
 
 		// Success: reset retry state
-		hep_failed_retries = 0;
+		atomic_store(hep_failed_retries, 0);
 		ret = 0;
 		break;
 	} while (get_next_su(p, to, 0) == 0);

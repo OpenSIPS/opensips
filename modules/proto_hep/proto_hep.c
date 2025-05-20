@@ -94,6 +94,8 @@ int hep_capture_id = 1;
 int payload_compression = 0;
 int hep_max_retries = 5;
 int hep_retry_cooldown = 3600; //seconds
+extern atomic_ulong *hep_failed_retries;
+extern atomic_ulong *hep_last_attempt;
 
 int homer5_on = 1;
 str homer5_delim = {":", 0};
@@ -140,6 +142,8 @@ static const param_export_t params[] = {
 	{ "hep_id",                          STR_PARAM|USE_FUNC_PARAM, parse_hep_id     },
 	{ "homer5_on",                       INT_PARAM, &homer5_on                      },
 	{ "homer5_delim",                    STR_PARAM, &homer5_delim.s                 },
+	{ "hep_max_retries",                 INT_PARAM, &hep_max_retries                },
+	{ "hep_retry_cooldown",              STR_PARAM, &hep_retry_cooldown             },
 	{0, 0, 0}
 };
 
@@ -190,6 +194,11 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
+	struct {
+		atomic_ulong hep_failed_retries;
+		atomic_ulong hep_last_attempt;
+	} *sh_holders;
+
 	/* check if any listeners defined for this proto */
 	if (!protos[PROTO_HEP_UDP].listeners && !protos[PROTO_HEP_TCP].listeners
 		&& !protos[PROTO_HEP_TLS].listeners) {
@@ -201,6 +210,15 @@ static int mod_init(void)
 		LM_ERR("could not initialize HEP id list!\n");
 		return -1;
 	}
+
+	sh_holders = shm_malloc(sizeof *sh_holders);
+	if (!sh_holders) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(sh_holders, 0, sizeof *sh_holders);
+	hep_failed_retries = &sh_holders->hep_failed_retries;
+	hep_last_attempt = &sh_holders->hep_last_attempt;
 
 	if (protos[PROTO_HEP_TLS].listeners && load_tls_mgm_api(&tls_mgm_api)!=0) {
 		LM_DBG("failed to find TLS API - is tls_mgm module loaded?\n");
