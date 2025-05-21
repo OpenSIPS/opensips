@@ -64,6 +64,7 @@ speed_dial:3
 subscriber:8
 tcp_mgm:1
 tls_mgm:3
+trie_partitions:1
 trie_table:1
 uri:2
 userblacklist:2

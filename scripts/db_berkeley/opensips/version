@@ -142,6 +142,8 @@ tcp_mgm|
 tcp_mgm|1
 tls_mgm|
 tls_mgm|3
+trie_partitions|
+trie_partitions|1
 trie_table|
 trie_table|1
 uri|
