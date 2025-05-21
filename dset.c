@@ -293,6 +293,8 @@ int append_msg_branch(struct msg_branch *branch)
 			LM_ERR("oom 2\n");
 			return E_OUT_OF_MEM;
 		}
+		memset((char *)new_br + idx * sizeof *new_br, 0,
+				DSET_INCREMENT * sizeof *new_br);
 
 		dsct->branches = new_br;
 	}

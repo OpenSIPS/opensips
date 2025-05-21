@@ -432,8 +432,10 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 	 * Bottom line, we take over the attr list handling, so we NULL the
 	 * received holder (so the upper level will havve nothing to care furhter)
 	 */
-	t->uac[branch].battrs = *attrs;
-	*attrs = NULL;
+	if (attrs) {
+		t->uac[branch].battrs = *attrs;
+		*attrs = NULL;
+	}
 
 	if ( pre_print_uac_request( t, branch, request, &body_clone)!= 0 ) {
 		ret = -1;
