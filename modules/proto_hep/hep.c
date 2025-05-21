@@ -51,8 +51,8 @@
 #define HEP_PROTO_SIP  0x01
 
 static int control_id = -1;
-atomic_ulong *hep_failed_retries;
-atomic_ulong *hep_last_attempt;
+atomic_t *hep_failed_retries;
+atomic_t *hep_last_attempt;
 
 struct hep_message_id {
 	char* proto;

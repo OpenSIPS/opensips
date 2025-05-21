@@ -94,8 +94,8 @@ int hep_capture_id = 1;
 int payload_compression = 0;
 int hep_max_retries = 5;
 int hep_retry_cooldown = 3600; //seconds
-extern atomic_ulong *hep_failed_retries;
-extern atomic_ulong *hep_last_attempt;
+extern atomic_t *hep_failed_retries;
+extern atomic_t *hep_last_attempt;
 
 int homer5_on = 1;
 str homer5_delim = {":", 0};
@@ -195,8 +195,8 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	struct {
-		atomic_ulong hep_failed_retries;
-		atomic_ulong hep_last_attempt;
+		atomic_t hep_failed_retries;
+		atomic_t hep_last_attempt;
 	} *sh_holders;
 
 	/* check if any listeners defined for this proto */
