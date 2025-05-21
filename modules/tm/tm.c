@@ -1812,6 +1812,7 @@ static int t_get_branch_idx_by_attr(struct sip_msg* msg,
 			attr->len,attr->s);
 		return -2;
 	}
+	memset(&in_val, 0, sizeof in_val);
 
 	if (val_s) {
 		in_val.flags = PV_VAL_STR;
