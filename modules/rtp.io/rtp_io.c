@@ -43,6 +43,9 @@ static const dep_export_t deps = {
         { MOD_TYPE_DEFAULT, "rtpproxy", DEP_SILENT|DEP_REVERSE },
         { MOD_TYPE_NULL, NULL, 0 },
     },
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
 };
 
 static int rtp_io_getchildsock(int);
