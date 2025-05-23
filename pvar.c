@@ -4715,7 +4715,7 @@ const pv_export_t _pv_names_table[] = {
 		pv_parse_sdp_name, 0, pv_init_iname, 1},
 	{str_const_init("sdp.line"), /* */
 		PVT_SDP_LINE, pv_get_sdp_line, pv_set_sdp_line,
-		pv_parse_sdp_line_name, 0, 0, 0},
+		pv_parse_sdp_line_name, pv_parse_sdp_index, 0, 0},
 	{str_const_init("sdp.stream"), /* */
 		PVT_SDP_STREAM, pv_get_sdp_stream, pv_set_sdp_stream,
 		pv_parse_sdp_stream_name, 0, 0, 0},
