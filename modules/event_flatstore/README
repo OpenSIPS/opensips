@@ -16,13 +16,22 @@ event_flatstore Module
 
               1.5.1. max_open_sockets (integer)
               1.5.2. delimiter (string)
-              1.5.3. file_permissions (string)
-              1.5.4. suppress_event_name (int)
+              1.5.3. escape_delimiter (string)
+              1.5.4. file_permissions (string)
+              1.5.5. suppress_event_name (int)
+              1.5.6. rotate_period (int)
+              1.5.7. rotate_count (int|string)
+              1.5.8. rotate_size (int|string)
+              1.5.9. suffix (string)
 
         1.6. Exported Functions
         1.7. Exported MI Functions
 
               1.7.1. evi_flat_rotate
+
+        1.8. Exported Events
+
+              1.8.1. E_FLATSTORE_ROTATION
 
    2. Contributors
 
@@ -44,8 +53,13 @@ event_flatstore Module
 
    1.1. Set max_open_sockets parameter
    1.2. Set delimiter parameter
-   1.3. Set file_permissions parameter
-   1.4. Set suppress_event_name parameter
+   1.3. Enable escaping of ',' with '|'
+   1.4. Set file_permissions parameter
+   1.5. Set suppress_event_name parameter
+   1.6. Set rotate_period parameter
+   1.7. Rotate after five billion lines
+   1.8. Rotate at 2 GiB
+   1.9. Set suffix parameter
 
 Chapter 1. Admin Guide
 
@@ -109,27 +123,111 @@ modparam("event_flatstore", "max_open_sockets", 200)
 modparam("event_flatstore", "delimiter", ";")
 ...
 
-1.5.3. file_permissions (string)
+1.5.3. escape_delimiter (string)
+
+   Optional replacement sequence that will be written instead of
+   the delimiter whenever this character (or sequence) occurs
+   inside a string parameter. This allows you to keep the log file
+   parse-friendly even when user data itself may contain delimiter
+   symbols.
+
+   If set, its length must be exactly equal to the length of
+   delimiter.
+
+   Default value is “""” (escaping disabled).
+
+   Example 1.3. Enable escaping of ',' with '|'
+...
+modparam("event_flatstore", "delimiter", ",")
+modparam("event_flatstore", "escape_delimiter", "|")
+...
+
+1.5.4. file_permissions (string)
 
    Sets the permissions for the newly created logs. It expects a
    string representation of a octal value.
 
    Default value is “644”.
 
-   Example 1.3. Set file_permissions parameter
+   Example 1.4. Set file_permissions parameter
 ...
 modparam("event_flatstore", "file_permissions", "664")
 ...
 
-1.5.4. suppress_event_name (int)
+1.5.5. suppress_event_name (int)
 
    Suppresses the name of the event in the log file.
 
    Default value is “0/OFF” (the event's name is printed).
 
-   Example 1.4. Set suppress_event_name parameter
+   Example 1.5. Set suppress_event_name parameter
 ...
 modparam("event_flatstore", "suppress_event_name", 1)
+...
+
+1.5.6. rotate_period (int)
+
+   When used, it triggers a file auto-rotate. The period is
+   matched against the absolute time of the machine, can be useful
+   to trigger auto-rotate every minute, or every hour.
+
+   Default value is “0/OFF” (the file is never auto-rotated)
+
+   Example 1.6. Set rotate_period parameter
+...
+modparam("event_flatstore", "rotate_period", 60) # rotate every minute
+modparam("event_flatstore", "rotate_period", 3660) # rotate every hour
+...
+
+   `
+
+1.5.7. rotate_count (int|string)
+
+   Defines after how many written lines the log file is rotated.
+   The value may exceed the 32-bit integer limit; in that case
+   pass it as a string, e.g. "5000000000".
+
+   Default value is “0/OFF”.
+
+   Example 1.7. Rotate after five billion lines
+...
+modparam("event_flatstore", "rotate_count", "5000000000")
+...
+
+1.5.8. rotate_size (int|string)
+
+   Sets the maximum size of a file before it is rotated. A size
+   suffix of “k”, “m” or “g” (multiples of 1024) may be provided.
+   Very large values can be supplied as strings, e.g. "8589934592"
+   for 8 GiB.
+
+   Default value is “0/OFF”.
+
+   Example 1.8. Rotate at 2 GiB
+...
+modparam("event_flatstore", "rotate_size", "2g")
+...
+
+1.5.9. suffix (string)
+
+   Modifies the file that OpenSIPS writes events into by appending
+   a suffix to the the file specified in the flatstore socket.
+
+   The suffix can contain string formats (i.e. variables mixed
+   with strings). The path of the resulted file is evaluated when
+   the first event is raised/written in the file after a reload
+   happend, or when the rotate_period, if specified, triggers a
+   rotate.
+
+   This parameter does not affect the matching of the event socket
+   - the matching will be done exclusively using the flatstore
+   socket registered.
+
+   Default value is “""” (no suffix is added)
+
+   Example 1.9. Set suffix parameter
+...
+modparam("event_flatstore", "suffix", "$time(%Y)")
 ...
 
 1.6. Exported Functions
@@ -151,7 +249,24 @@ modparam("event_flatstore", "suppress_event_name", 1)
    Parameters: path_to_file
 
    MI FIFO Command Format:
-                opensips-cli -x mi evi_flat_rotate _path_to_log_file_
+opensips-cli -x mi evi_flat_rotate _path_to_log_file_
+
+1.8. Exported Events
+
+1.8.1.  E_FLATSTORE_ROTATION
+
+   The event is raised every time event_flatstore opens a new log
+   file (manual evi_flat_rotate, auto-rotate by rotate_period, or
+   thresholds rotate_count/rotate_size). External apps can
+   subscribe to monitor log-rotation activity.
+
+   Parameters:
+     * timestamp – Unix epoch (seconds) when the rotation was
+       performed.
+     * reason – one of the strings count, size, period or mi.
+     * filename – full path of the new log file.
+     * old_filename – full path of the previous log file, or empty
+       string if none existed.
 
 Chapter 2. Contributors
 
@@ -160,14 +275,15 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 26 16 482 303
+   1. Vlad Patrascu (@rvlad-patrascu) 27 16 482 303
    2. Ionel Cerghit (@ionel-cerghit) 23 13 770 135
    3. Liviu Chircu (@liviuchircu) 12 9 31 62
    4. Razvan Crainea (@razvancrainea) 9 7 36 5
-   5. Eseanu Marius Cristian (@eseanucristian) 7 3 254 9
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 7 4
-   7. Maksym Sobolyev (@sobomax) 5 3 4 4
-   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   5. Nick Altmann (@nikbyte) 8 1 612 8
+   6. Eseanu Marius Cristian (@eseanucristian) 7 3 254 9
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 7 4
+   8. Maksym Sobolyev (@sobomax) 5 3 4 4
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -189,14 +305,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2023
-   2. Liviu Chircu (@liviuchircu)              Jan 2016 - Dec 2021
-   3. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - Jul 2020
-   4. Razvan Crainea (@razvancrainea)          Aug 2015 - Sep 2019
-   5. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2018 - Apr 2019
-   6. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   7. Ionel Cerghit (@ionel-cerghit)           Jun 2015 - Jul 2015
-   8. Eseanu Marius Cristian (@eseanucristian) Jun 2015 - Jul 2015
+   1. Nick Altmann (@nikbyte)                  May 2025 - May 2025
+   2. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2023
+   3. Liviu Chircu (@liviuchircu)              Jan 2016 - Dec 2021
+   4. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - Jul 2020
+   5. Razvan Crainea (@razvancrainea)          Aug 2015 - Sep 2019
+   6. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2018 - Apr 2019
+   7. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   8. Ionel Cerghit (@ionel-cerghit)           Jun 2015 - Jul 2015
+   9. Eseanu Marius Cristian (@eseanucristian) Jun 2015 - Jul 2015
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -205,9 +322,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Ionel Cerghit (@ionel-cerghit).
+   Last edited by: Nick Altmann (@nikbyte), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionel Cerghit
+   (@ionel-cerghit).
 
    Documentation Copyrights:
 

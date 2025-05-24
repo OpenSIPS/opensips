@@ -258,11 +258,11 @@ Chapter 2. Contributors
    10. Henning Westerholt (@henningw) 4 2 8 8
 
    All remaining contributors: Walter Doekes (@wdoekes), Maksym
-   Sobolyev (@sobomax), Zero King (@l2dy), Anca Vamanu, Dan Pascu
-   (@danpascu), Elena-Ramona Modroiu, Konstantin Bokarius, Vlad
-   Paiu (@vladpaiu), Andreas Granig, Julián Moreno Patiño,
-   Octavian Cerna, Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Dror Wald.
+   Sobolyev (@sobomax), Zero King (@l2dy), Dror Wald, Anca Vamanu,
+   Dan Pascu (@danpascu), Elena-Ramona Modroiu, Konstantin
+   Bokarius, Vlad Paiu (@vladpaiu), Andreas Granig, Julián Moreno
+   Patiño, Octavian Cerna, Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

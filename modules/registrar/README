@@ -563,14 +563,14 @@ onreply_route[do_save] {
 
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
-   (in memory, db or both) at every registrar 'save'. When a
-   registrar 'lookup' or 'is_registered' function is called, the
-   attr_avp is populated with the value saved at [re]registration.
+   (in memory, db or both) at every registrar 'save()'. When a
+   registrar 'lookup()' or 'is_registered()' function is called,
+   the stored information is pushed into a message branch
+   attribute with the same name as attr_avp (see
+   $msg.branch.attr() core variable)
 
-   When doing call forking, the avp will hold multiple values. The
-   position of the corresponding attribute information in attr_avp
-   is equal to the branch index. An example scenario is given
-   below.
+   When doing parallel call forking, the contact attributes will
+   be pushed to the attributes of the corresponding branch
 
    Default value is NULL.
 
@@ -587,11 +587,20 @@ if (is_method("REGISTER")) {
 }
 ...
 lookup("location");
+# list all resulted branches and their attribute
+$var(i) = 0;
+while ($(msg.branch.uri[$var(i)])!=NULL) {
+        xlog("branch $var(i): $(msg.branch.uri[$var(i)]), attr=$(msg.bra
+nch.attr(attr)[$var(i)])\n");
+        $var(i) = $var(i) + 1;
+}
+....
 t_on_branch("parallel_fork");
+t_relay();
 ...
 branch_route [parallel_fork] {
-        xlog("Attributes for branch $T_branch_idx: $(avp(attr)[$T_branch
-_idx])\n");
+        xlog("Attributes for branch $T_branch_idx: $tm.branch.attr(attr)
+\n");
 }
 
 
@@ -1452,9 +1461,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 196 122 2856 3025
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 170 115 2410 2047
-   3. Jan Janak (@janakj) 121 73 3465 1102
+   1. Liviu Chircu (@liviuchircu) 199 123 2864 3030
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 171 116 2426 2055
+   3. Jan Janak (@janakj) 122 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
    5. Vlad Paiu (@vladpaiu) 21 12 729 96
    6. Vlad Patrascu (@rvlad-patrascu) 21 9 243 497
@@ -1495,8 +1504,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2025
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Apr 2024
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - May 2025
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2025
    3.  Dudu Ben Moshe                      Feb 2024 - Feb 2024
    4.  Maksym Sobolyev (@sobomax)          Jul 2004 - Nov 2023
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
@@ -1525,8 +1534,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Dudu Ben Moshe, Vlad Patrascu
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Dudu Ben Moshe, Vlad Patrascu
    (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Vlad Paiu
    (@vladpaiu), Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann

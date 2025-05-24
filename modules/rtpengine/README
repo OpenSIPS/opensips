@@ -227,6 +227,15 @@ Chapter 1. Admin Guide
    You can use the extra_failover_error parameter to extend the
    above list.
 
+   Many rtpengine_* functions accept a "sock_var" parameter that
+   will be populated with the socket of the RTPEngine chosen for
+   the particular operation. The format of the data stored in
+   "sock_var" is: "proto:ip:port". If the "sock_var" has been
+   specified and it is non-NULL then it will be used to determine
+   the specific RTPEngine to use. Note that the socket specified
+   by "sock_var" must be a member of the current RTPEngine Set
+   context.
+
 1.3. Dependencies
 
 1.3.1. OpenSIPS Modules
@@ -441,15 +450,6 @@ modparam("rtpengine", "ping_enabled", yes)
 ...
 
 1.5. Exported Functions
-
-    Many rtpengine_* functions accept a "sock_var" parameter that
-    will be populated with the socket of the RTPEngine chosen for
-    the particular operation. The format of the data stored in
-    "sock_var" is: "proto:ip:port".  If the "sock_var" has
-    been specified and it is non-NULL then it will be used to
-    determine the specific RTPEngine to use.  Note that the socket
-    specified by "sock_var" must be a member of the current RTPEngine
-    Set context.
 
 1.5.1.  rtpengine_use_set(setid)
 
@@ -1445,7 +1445,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 242 135 6446 3157
+   1. Razvan Crainea (@razvancrainea) 243 135 6446 3157
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173
@@ -1458,9 +1458,9 @@ Chapter 3. Contributors
 
    All remaining contributors: Nick Altmann (@nikbyte), Maksym
    Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas), Eddie Fiorentine,
-   Zero King (@l2dy), Rob Gagnon (@rgagnon24), Flavio E.
-   Goncalves, hatee, Dan Pascu (@danpascu), Oliver Severin
-   Mulelid-Tynes (@olivermt).
+   Zero King (@l2dy), Norm Brandinger, Rob Gagnon (@rgagnon24),
+   Flavio E. Goncalves, hatee, Dan Pascu (@danpascu), Oliver
+   Severin Mulelid-Tynes (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1481,23 +1481,24 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                      Name                   Commit Activity
-   1.  Norman Brandinger (@NormB)          Jun 2024 - Feb 2025
-   2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Feb 2025
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2025
-   4.  Vlad Paiu (@vladpaiu)               Jan 2025 - Jan 2025
-   5.  hatee                               Dec 2024 - Dec 2024
-   6.  Eddie Fiorentine                    Nov 2024 - Nov 2024
-   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   8.  Liviu Chircu (@liviuchircu)         Jul 2014 - May 2023
-   9.  John Burke (@john08burke)           Jun 2019 - Apr 2022
-   10. Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
+                    Name                 Commit Activity
+   1.  Norm Brandinger                 May 2025 - May 2025
+   2.  Norman Brandinger (@NormB)      Jun 2024 - Feb 2025
+   3.  Razvan Crainea (@razvancrainea) Jun 2014 - Feb 2025
+   4.  Peter Lemenkov (@lemenkov)      Jun 2018 - Feb 2025
+   5.  Vlad Paiu (@vladpaiu)           Jan 2025 - Jan 2025
+   6.  hatee                           Dec 2024 - Dec 2024
+   7.  Eddie Fiorentine                Nov 2024 - Nov 2024
+   8.  Maksym Sobolyev (@sobomax)      Jan 2021 - Nov 2023
+   9.  Liviu Chircu (@liviuchircu)     Jul 2014 - May 2023
+   10. John Burke (@john08burke)       Jun 2019 - Apr 2022
 
-   All remaining contributors: Nick Altmann (@nikbyte), Flavio E.
-   Goncalves, Zero King (@l2dy), Ovidiu Sas (@ovidiusas), Vlad
-   Patrascu (@rvlad-patrascu), Dan Pascu (@danpascu), Oliver
-   Severin Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24),
-   Eric Tamme (@etamme), Richard Fuchs.
+   All remaining contributors: Bogdan-Andrei Iancu
+   (@bogdan-iancu), Nick Altmann (@nikbyte), Flavio E. Goncalves,
+   Zero King (@l2dy), Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Dan Pascu (@danpascu), Oliver Severin
+   Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24), Eric Tamme
+   (@etamme), Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1506,12 +1507,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Eddie
-   Fiorentine, Norman Brandinger (@NormB), Liviu Chircu
-   (@liviuchircu), John Burke (@john08burke), Nick Altmann
-   (@nikbyte), Flavio E. Goncalves, Peter Lemenkov (@lemenkov),
-   Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Richard Fuchs.
+   Last edited by: Norm Brandinger, Razvan Crainea
+   (@razvancrainea), Eddie Fiorentine, Norman Brandinger (@NormB),
+   Liviu Chircu (@liviuchircu), John Burke (@john08burke), Nick
+   Altmann (@nikbyte), Flavio E. Goncalves, Peter Lemenkov
+   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Richard Fuchs.
 
    Documentation Copyrights:
 
