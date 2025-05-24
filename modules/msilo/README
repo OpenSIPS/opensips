@@ -723,7 +723,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Daniel-Constantin Mierla (@miconda) 124 66 4163 1410
+   1. Daniel-Constantin Mierla (@miconda) 125 66 4163 1410
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 45 38 191 277
    3. Andrei Pelinescu-Onciul 18 10 115 382
    4. Liviu Chircu (@liviuchircu) 17 14 73 89
@@ -731,7 +731,7 @@ Chapter 2. Contributors
    6. Razvan Crainea (@razvancrainea) 12 10 33 28
    7. Jiri Kuthan (@jiriatipteldotorg) 9 6 180 33
    8. Henning Westerholt (@henningw) 9 6 114 110
-   9. Vlad Patrascu (@rvlad-patrascu) 8 5 69 123
+   9. Vlad Patrascu (@rvlad-patrascu) 9 5 69 123
    10. Vlad Paiu (@vladpaiu) 7 4 90 80
 
    All remaining contributors: Juha Heinanen (@juha-h), Andrea

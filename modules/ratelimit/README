@@ -123,7 +123,7 @@ Chapter 1. Admin Guide
 
    Starting with OpenSIPS 3.2, choosing whether to replicate a
    pipe over CacheDB backends or bin replication is triggered by
-   the flags specified when the pipe is created: adding the /s
+   the flags specified when the pipe is created: adding the /r
    suffix to the pipe's name will replicate through CacheDB, and
    adding /b will replicate through bin/clusterer.
 
@@ -673,7 +673,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 134 62 3288 2699
+   1. Razvan Crainea (@razvancrainea) 136 63 3289 2700
    2. Ovidiu Sas (@ovidiusas) 39 17 2481 44
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 35 29 299 137
    4. Vlad Patrascu (@rvlad-patrascu) 31 17 359 558
@@ -710,7 +710,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2024
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2025
    2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Jul 2023
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021

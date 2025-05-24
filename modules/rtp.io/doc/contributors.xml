@@ -26,6 +26,14 @@
 		<entry align="center">660</entry>
 		<entry align="center">0</entry>
 	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+		<entry align="center">3</entry>
+		<entry align="center">0</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -56,6 +64,11 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">May 2025 - May 2025</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jun 2024 - Jun 2024</entry>
 	</row>

@@ -187,7 +187,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Alexandra Titoc                    27       7      1629     366
+   1. Alexandra Titoc                    28       7      1629     366
    2. Razvan Crainea (@razvancrainea)    5        3       9        4
 
    (1) DevScore = author_commits + author_lines_added /
