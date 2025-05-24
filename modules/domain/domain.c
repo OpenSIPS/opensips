@@ -330,6 +330,8 @@ int reload_domain_table ( void )
 			accept_subdomain = 0;
 		} else if (VAL_TYPE(val + 2) == DB_INT) {
 			accept_subdomain = VAL_INT(val + 2);
+		} else if (VAL_TYPE(val + 2) == DB_BIGINT) {
+			accept_subdomain = VAL_BIGINT(val + 2);
 		} else {
 			LM_ERR("Database problem on accept_subdomain column\n");
 			domain_dbf.free_result(db_handle, res);
