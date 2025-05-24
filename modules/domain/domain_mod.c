@@ -60,7 +60,7 @@ static int mi_child_init(void);
  * increment this value if you change the table in
  * an backwards incompatible way
  */
-#define TABLE_VERSION 3
+#define DOMAIN_TABLE_VERSION 4
 
 #define DOMAIN_TABLE "domain"
 #define DOMAIN_TABLE_LEN (sizeof(DOMAIN_TABLE) - 1)
@@ -205,7 +205,7 @@ static int mod_init(void)
 		if (domain_db_init(&db_url)<0) return -1;
 
 		/* Check table version */
-		if (domain_db_ver(&domain_table, TABLE_VERSION) < 0) {
+		if (domain_db_ver(&domain_table, DOMAIN_TABLE_VERSION) < 0) {
 		    LM_ERR("error during check of domain table version\n");
 		    goto error;
 		}
