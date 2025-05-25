@@ -236,8 +236,13 @@ int parse_sip_body(struct sip_msg * msg)
 	str delimiter, body;
 
 	/* is body already parsed ? */
-	if (msg->body && !have_sdp_ops(msg))
-		return 0;
+	if (msg->body) {
+		if (!have_sdp_ops(msg))
+			return 0;
+
+		free_sip_body(msg->body);
+		msg->body = NULL;
+	}
 
 	if ( get_body(msg,&body)!=0 || body.len==0)
 		return 0;
