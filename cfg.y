@@ -2473,6 +2473,9 @@ return_params: return_param { $$ = $1; }
 cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5);
 			}
+		| ASSERT LPAREN exp RPAREN	 {
+			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, NULL);
+			}
 		| DROP				 {mk_action0( $$, DROP_T); }
 		| DROP LPAREN RPAREN {mk_action0( $$, DROP_T); }
 		| EXIT				 {mk_action0( $$, EXIT_T); }
