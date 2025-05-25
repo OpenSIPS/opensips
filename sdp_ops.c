@@ -1649,5 +1649,6 @@ void free_sdp_ops(struct sdp_body_part_ops *ops)
 
 	free_sdp_ops_lines(ops);
 	pkg_free(ops->sdp.s);
+	pkg_free(ops->rebuilt_sdp.s);
 	pkg_free(ops);
 }

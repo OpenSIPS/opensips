@@ -71,7 +71,7 @@ static inline int have_sdp_ops(struct sip_msg *msg)
 {
 	return msg->sdp_ops && (
 		msg->sdp_ops->flags & (SDP_OPS_FL_DIRTY|SDP_OPS_FL_NULL)
-			|| msg->sdp_ops->sdp.s);
+			|| msg->sdp_ops->sdp.s || msg->sdp_ops->rebuilt_sdp.s);
 }
 void free_sdp_ops(struct sdp_body_part_ops *ops);
 
