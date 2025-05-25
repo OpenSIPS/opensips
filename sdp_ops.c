@@ -49,6 +49,50 @@ struct sdp_body_part_ops *mk_sdp_ops(void)
 	return ops;
 }
 
+
+/* fetch the value of a static/dynamic index */
+static inline int IDX(struct sip_msg *msg, struct sdp_pv_idx *idx)
+{
+	pv_value_t val;
+
+	if (!idx->is_pv_idx)
+		return idx->idx;
+
+	if (pv_get_spec_value(msg, &idx->idx_pv, &val) != 0) {
+		LM_ERR("failed to get idx spec value\n");
+		return -1;
+	}
+
+	if (!(val.flags & PV_VAL_INT)) {
+		LM_ERR("SDP idx spec contains non-INT value ('%.*s')\n",
+		        val.rs.len, val.rs.s);
+		return -1;
+	}
+
+	return val.ri;
+}
+
+
+/* returns a string representation of the index (useful for debugging) */
+static inline char *IDX_STR(struct sdp_pv_idx *idx)
+{
+#define idx_buf_cnt 4
+	static char buf[idx_buf_cnt][20];
+	static int buf_idx;
+	char *p;
+
+	p = buf[buf_idx];
+	buf_idx = (buf_idx+1) % idx_buf_cnt;
+
+	if (!idx->is_pv_idx)
+		sprintf(p, "%d", idx->idx);
+	else
+		sprintf(p, "pv type %d", idx->idx_pv.type);
+
+	return p;
+}
+
+
 int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 			int op, pv_value_t *val)
 {
@@ -123,8 +167,6 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 			return -1;
 		}
 
-		ops->flags &= ~SDP_OPS_FL_NULL;
-
 		/* detect separator */
 		ops->sep[0] = ops->sdp.s[ops->sdp.len-1];
 		if (ops->sep[0] != '\n' && ops->sep[0] != '\r') {
@@ -149,6 +191,10 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 		}
 
 		free_sdp_ops_lines(ops);
+		if (ops->rebuilt_sdp.s) {
+			pkg_free(ops->rebuilt_sdp.s);
+			ops->rebuilt_sdp = STR_NULL;
+		}
 
 		LM_DBG("separator: %d %d (%d)\n", ops->sdp.s[ops->sdp.len-2],
 		        ops->sdp.s[ops->sdp.len-1], ops->sep_len);
@@ -160,10 +206,25 @@ error:
 }
 
 
-static char *parse_sdp_pv_index(char *in, int len, int *idx)
+static char *parse_sdp_pv_index(char *in, int len, struct sdp_pv_idx *idx)
 {
 	char *lim = in + len, *end;
 	long val = -1;
+
+	if (len <= 0)
+		return NULL;
+
+	if (in[0] == PV_MARKER) {
+		str input = {.s = in, .len = len};
+
+		if (!(end = pv_parse_spec(&input, &idx->idx_pv))) {
+			LM_ERR("failed to parse spec idx!  input: '%.*s'\n", len, in);
+			return NULL;
+		}
+
+		idx->is_pv_idx = 1;
+		goto parse_bracket;
+	}
 
 	val = strtol(in, &end, 10);
 	if (errno == ERANGE) {
@@ -176,6 +237,7 @@ static char *parse_sdp_pv_index(char *in, int len, int *idx)
 		return NULL;
 	}
 
+parse_bracket:
 	while (end < lim && is_ws(*end))
 		end++;
 
@@ -187,7 +249,7 @@ static char *parse_sdp_pv_index(char *in, int len, int *idx)
 	while (end+1 < lim && is_ws(*(end+1)))
 		end++;
 
-	*idx = val;
+	idx->idx = val;
 	return end;
 }
 
@@ -226,7 +288,7 @@ int pv_parse_sdp_name(pv_spec_p sp, const str *_in)
 
 	tok.s = in.s;
 	for (i = 0; i < in.len; i++) {
-		int idx = 0;
+		struct sdp_pv_idx idx = {0};
 
 		if (escape && (in.s[i] == '\\' || in.s[i] == '/')) {
 			memmove(&in.s[i-1], &in.s[i], in.len - i);
@@ -288,7 +350,7 @@ done:
 }
 
 
-int pv_parse_sdp_index(pv_spec_p sp, const str *in)
+int pv_parse_sdp_line_index(pv_spec_p sp, const str *in)
 {
 	#define SDP_INSERT_IDX  "insert"
 	#define SDP_AINSERT_IDX "insertAfter"
@@ -364,24 +426,24 @@ int sdp_ops_parse_lines(struct sdp_body_part_ops *ops, str *body)
 		} \
 	}while(0)
 
-/* Note: MAY return the very "next last" line idx, to enable INSERT ops */
-int sdp_ops_find_line(struct sdp_body_part_ops *ops, int idx,
-                          str *prefix, str *token)
+/* @until_line: non-inclusive (i.e. must be next-after last valid line) */
+int _sdp_ops_find_line(struct sdp_body_part_ops *ops, int idx,
+            str *prefix, str *token, int from_line, int until_line)
 {
 	int i;
 
-	if (idx > ops->lines_sz || idx >= SDP_MAX_LINES ||
-	        (token->s && idx == ops->lines_sz)) {
+	if ((from_line+idx) > until_line || (from_line+idx) >= SDP_MAX_LINES ||
+	        (token->s && (from_line+idx) == until_line)) {
 		LM_DBG("index out of bounds (trying to fetch line %d, prefix: %.*s/%d"
 		            ", have %d lines)\n",
-		        idx, prefix->len, prefix->s, prefix->len, ops->lines_sz);
+		        idx, prefix->len, prefix->s, prefix->len, until_line);
 		return -1;
 	}
 
 	if (prefix->len == 0)
-		return idx;
+		return from_line + idx;
 
-	for (i = 0; i < ops->lines_sz; i++) {
+	for (i = from_line; i < until_line; i++) {
 		/* have prefix and doesn't match current line => skip it */
 		if (prefix->len > ops->lines[i].line.len
 		        || strncasecmp(prefix->s, ops->lines[i].line.s, prefix->len))
@@ -398,6 +460,64 @@ int sdp_ops_find_line(struct sdp_body_part_ops *ops, int idx,
 	}
 
 	return -1;
+}
+
+/* Note: MAY return the very "next last" line idx, to enable INSERT ops */
+static inline int sdp_ops_find_line(struct sip_msg *msg, struct sdp_body_part_ops *ops, int idx,
+        int by_session, struct sdp_chunk_match *by_stream, str *prefix, str *token)
+{
+	int i, j, have_stream = 0, stream_idx;
+	struct sdp_ops_line *lines;
+
+	if (!by_stream) {
+		if (!by_session)
+			return _sdp_ops_find_line(ops, idx, prefix, token, 0, ops->lines_sz);
+
+		/* the SDP session ends at the first m= line */
+		lines = ops->lines;
+		for (i = 0; i < ops->lines_sz; i++) {
+			if (lines[i].line.len < 2 || strncasecmp("m=", lines[i].line.s, 2))
+				continue;
+			break;
+		}
+
+		idx = _sdp_ops_find_line(ops, idx, prefix, token, 0, i);
+		return (idx > i || (idx == i && by_session == 1)) ? -1 : idx;
+	}
+
+	lines = ops->lines;
+	stream_idx = IDX(msg, &by_stream->idx);
+	for (i = 0; i < ops->lines_sz; i++) {
+		if (lines[i].line.len < 2 || strncasecmp("m=", lines[i].line.s, 2))
+			continue;
+
+		if (by_stream->prefix.len > (lines[i].line.len-2)
+		        || strncasecmp(by_stream->prefix.s, lines[i].line.s+2, by_stream->prefix.len))
+			continue;
+
+		if (stream_idx-- > 0)
+			continue;
+
+		have_stream = 1;
+		break;
+	}
+
+	if (!have_stream) {
+		LM_DBG("failed to locate a stream by prefix: '%.*s', index: %d\n",
+		        by_stream->prefix.len, by_stream->prefix.s, IDX(msg, &by_stream->idx));
+		return -1;
+	}
+
+	for (j = i+1; j < ops->lines_sz; j++) {
+		if (lines[j].line.len < 2 || strncasecmp("m=", lines[j].line.s, 2))
+			continue;
+		break;
+	}
+
+	LM_DBG("located stream by prefix: '%.*s', idx: %d; interval: [%d, %d)\n",
+		        by_stream->prefix.len, by_stream->prefix.s, IDX(msg, &by_stream->idx), i, j);
+
+	return _sdp_ops_find_line(ops, idx, prefix, token, i, j);
 }
 
 
@@ -446,8 +566,8 @@ int pv_get_sdp_line(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		ops = msg->sdp_ops;
 	}
 
-	idx = sdp_ops_find_line(ops, pvp->match_line.idx,  &pvp->match_line.prefix,
-	                               &pvp->match_token.prefix);
+	idx = sdp_ops_find_line(msg, ops, IDX(msg, &pvp->match_line.idx), 0, NULL,
+					&pvp->match_line.prefix, &pvp->match_token.prefix);
 	if (idx < 0 || idx >= ops->lines_sz)    // out of bounds
 		return pv_get_null(msg, param, res);
 
@@ -456,7 +576,7 @@ int pv_get_sdp_line(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	if (!pvp->match_token.prefix.s)
 		return pv_get_strval(msg, param, res, &line);
 
-	idx = pvp->match_token.idx;
+	idx = IDX(msg, &pvp->match_token.idx);
 	pfx = pvp->match_token.prefix;
 	start = line.s;
 	lim = line.s + line.len;
@@ -546,7 +666,7 @@ int pv_set_sdp_line(struct sip_msg *msg, pv_param_t *param,
 		ops = msg->sdp_ops;
 	}
 
-	idx = pvp->match_line.idx;
+	idx = IDX(msg, &pvp->match_line.idx);
 	switch (param->pvi.type) {
 	case SDP_PV_IDX_INSERT:
 		insert = 1;
@@ -561,12 +681,12 @@ int pv_set_sdp_line(struct sip_msg *msg, pv_param_t *param,
 		break;
 	}
 
-	idx = sdp_ops_find_line(ops, idx, &pvp->match_line.prefix,
+	idx = sdp_ops_find_line(msg, ops, idx, 0, NULL, &pvp->match_line.prefix,
 	                             &pvp->match_token.prefix);
 	if (idx < 0) {
 		LM_ERR("failed to locate SDP line for writing for line %d, match_token: "
-		        "'%.*s'\n", pvp->match_line.idx, pvp->match_line.prefix.len,
-		        pvp->match_line.prefix.s);
+		        "'%.*s'\n", IDX(msg, &pvp->match_line.idx),
+		        pvp->match_line.prefix.len, pvp->match_line.prefix.s);
 		return -1;
 	}
 
@@ -585,6 +705,7 @@ int pv_set_sdp_line(struct sip_msg *msg, pv_param_t *param,
 			pkg_free(ops->lines[idx].line.s);
 
 		memmove(&ops->lines[idx], &ops->lines[idx+1], (ops->lines_sz-idx-1)*sizeof *ops->lines);
+		ops->lines[idx].have_gap = 1;
 		ops->lines_sz--;
 		goto out_success;
 	}
@@ -606,19 +727,14 @@ int pv_set_sdp_line(struct sip_msg *msg, pv_param_t *param,
 		/* insert line operation */
 		memmove(&ops->lines[idx+1], &ops->lines[idx], (ops->lines_sz-idx)*sizeof *ops->lines);
 		ops->lines_sz++;
-
-		ops->lines[idx].line = dup_line;
-		ops->lines[idx].newbuf = 1;
-
 	} else {
 		/* edit line operation -> ignore the PV index */
 		if (ops->lines[idx].newbuf)
 			pkg_free(ops->lines[idx].line.s);
-
-		ops->lines[idx].line = dup_line;
-		ops->lines[idx].newbuf = 1;
 	}
 
+	ops->lines[idx].line = dup_line;
+	ops->lines[idx].newbuf = 1;
 	goto out_success;
 
 handle_token_edit:
@@ -714,11 +830,11 @@ int pv_parse_sdp_line_name(pv_spec_p sp, const str *_in)
 		}
 	}
 
-	LM_DBG("parse sdp.line name: '%.*s', c1: '%.*s/%p'[%d], c2: '%.*s/%p'[%d], c3: '%.*s/%p'[%d]\n",
+	LM_DBG("parse sdp.line name: '%.*s', c1: '%.*s/%p'[%s], c2: '%.*s/%p'[%s], c3: '%.*s/%p'[%s]\n",
 	        in.len, in.s,
-			param->match_stream.prefix.len, param->match_stream.prefix.s, param->match_stream.prefix.s, param->match_stream.idx,
-			param->match_line.prefix.len, param->match_line.prefix.s, param->match_line.prefix.s, param->match_line.idx,
-			param->match_token.prefix.len, param->match_token.prefix.s, param->match_token.prefix.s, param->match_token.idx);
+			param->match_stream.prefix.len, param->match_stream.prefix.s, param->match_stream.prefix.s, IDX_STR(&param->match_stream.idx),
+			param->match_line.prefix.len, param->match_line.prefix.s, param->match_line.prefix.s, IDX_STR(&param->match_line.idx),
+			param->match_token.prefix.len, param->match_token.prefix.s, param->match_token.prefix.s, IDX_STR(&param->match_token.idx));
 
 	sp->pvp.pvn.type = PV_NAME_PVAR;
 	sp->pvp.pvn.u.dname = param;
@@ -728,34 +844,17 @@ done:
 }
 
 
-int pv_get_sdp_stream(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
-{
-	if (!msg || !res)
-		return -1;
-
-	return pv_get_strval(msg, param, res, &msg->first_line.u.request.uri);
-}
-
-
-int pv_set_sdp_stream(struct sip_msg *msg, pv_param_t *param,
-			int op, pv_value_t *val)
-{
-	return 0;
-}
-
-
 int pv_parse_sdp_stream_name(pv_spec_p sp, const str *_in)
 {
 	str in = *_in, tok;
-	int escape = 0, i;
-	enum sdp_pv_name nm = SDP_PV_NAME_P3_LINE;
+	int escape = 0, i, midx = 0;
 	struct sdp_pv_param *param;
+	struct sdp_chunk_match *matches[4];
+	char *p;
 
 	if (!sp)
 		return -1;
 
-	LM_DBG("parse sdp name: '%.*s'\n", in.len, in.s);
-	trim(&in);
 	if (!in.s || in.len == 0)
 		goto done;
 
@@ -774,8 +873,16 @@ int pv_parse_sdp_stream_name(pv_spec_p sp, const str *_in)
 	}
 	memset(param, 0, sizeof *param);
 
+	matches[0] = &param->match_stream;
+	matches[1] = &param->match_line;
+	matches[2] = &param->match_token;
+	matches[3] = NULL;
+
 	tok.s = in.s;
 	for (i = 0; i < in.len; i++) {
+		if (!matches[midx])
+			break;
+
 		if (escape && (in.s[i] == '\\' || in.s[i] == '/')) {
 			memmove(&in.s[i-1], &in.s[i], in.len - i);
 			in.len--;
@@ -790,27 +897,48 @@ int pv_parse_sdp_stream_name(pv_spec_p sp, const str *_in)
 		}
 		escape = 0;
 
-		if (in.s[i] == '/' && nm <= SDP_PV_NAME_P4_TOKEN) {
+		if (in.s[i] == '[' || in.s[i] == '/') {
 			tok.len = i - (tok.s - in.s);
-			// save tok
-			switch (nm) {
-			case SDP_PV_NAME_P1_NAME:
-			case SDP_PV_NAME_P2_STREAM:
-			case SDP_PV_NAME_P3_LINE:
-				param->match_line.prefix = tok;
-				tok.s = in.s + i + 1;
-				nm++;
-				break;
-			case SDP_PV_NAME_P4_TOKEN:
-				param->match_token.prefix = tok;
-				break;
+			trim_leading(&tok);
+
+			if (in.s[i] == '[') {
+				p = parse_sdp_pv_index(in.s + i + 1, in.len - i - 1, &matches[midx]->idx);
+				if (!p) {
+					LM_ERR("error while parsing index in $sdp name: '%.*s'\n", in.len, in.s);
+					return -1;
+				}
+
+				p = q_memchr(p, '/', in.s + in.len - p);
+				if (!p) {
+					matches[midx++]->prefix = tok;
+					break;
+				}
+			} else {
+				p = in.s + i;
 			}
 
-			continue;
+			// slash here
+			i = p - in.s;
+			matches[midx++]->prefix = tok;
+			tok.s = in.s + i+1;
+		}
+
+		if ((i+1) == in.len) {
+			tok.len = i+1 - (tok.s - in.s);
+			trim_leading(&tok);
+			matches[midx++]->prefix = tok;
 		}
 	}
 
-	LM_DBG("parse sdp name: '%.*s'\n", in.len, in.s);
+	LM_DBG("parse sdp.stream name: '%.*s',"
+	            " c1: '%.*s/%p'[%s], c2: '%.*s/%p'[%s], c3: '%.*s/%p'[%s]\n",
+	        in.len, in.s,
+			param->match_stream.prefix.len, param->match_stream.prefix.s,
+				param->match_stream.prefix.s, IDX_STR(&param->match_stream.idx),
+			param->match_line.prefix.len, param->match_line.prefix.s,
+				param->match_line.prefix.s, IDX_STR(&param->match_line.idx),
+			param->match_token.prefix.len, param->match_token.prefix.s,
+				param->match_token.prefix.s, IDX_STR(&param->match_token.idx));
 
 	sp->pvp.pvn.type = PV_NAME_PVAR;
 	sp->pvp.pvn.u.dname = param;
@@ -820,18 +948,507 @@ done:
 }
 
 
-int pv_get_sdp_session(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+int pv_get_sdp_stream(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
+	struct sdp_pv_param *pvp = (struct sdp_pv_param *)param->pvn.u.dname;
+	struct sdp_body_part_ops *ops;
+	struct sip_msg_body *sbody;
+	struct body_part *body_part;
+	str body, line = STR_NULL, pfx, token = STR_NULL;
+	char *p, *lim, *start;
+	int idx;
+
 	if (!msg || !res)
+		return pv_get_null(msg, param, res);
+
+	if (msg->body_lumps) {
+		/* TODO: rebuild SDP body, clear the body lumps; assert lines_sz == 0 */
+	}
+
+	if (!have_sdp_ops(msg) || msg->sdp_ops->lines_sz == 0) {
+		if (parse_sip_body(msg)<0 || !(sbody=msg->body)) {
+			LM_ERR("current SIP message has no SDP body!\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		first_part_by_mime( &sbody->first, body_part, (TYPE_APPLICATION<<16)+SUBTYPE_SDP );
+		if (!body_part) {
+			LM_ERR("current SIP message has a body, but no SDP part!\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		ops = msg->sdp_ops;
+		/* first time working with SDP ops => allocate DS */
+		if (!ops && !(ops = msg->sdp_ops = mk_sdp_ops())) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		body = body_part->body;
+		if (ops->lines_sz == 0 && sdp_ops_parse_lines(ops, &body) != 0) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+	} else {
+		ops = msg->sdp_ops;
+	}
+
+	idx = sdp_ops_find_line(msg, ops, IDX(msg, &pvp->match_line.idx), 0,
+				&pvp->match_stream, &pvp->match_line.prefix,
+	            &pvp->match_token.prefix);
+	if (idx < 0 || idx >= ops->lines_sz)    // out of bounds
+		return pv_get_null(msg, param, res);
+
+	line = ops->lines[idx].line;
+
+	if (!pvp->match_token.prefix.s)
+		return pv_get_strval(msg, param, res, &line);
+
+	idx = IDX(msg, &pvp->match_token.idx);
+	pfx = pvp->match_token.prefix;
+	start = line.s;
+	lim = line.s + line.len;
+	while (start < lim && is_ws(*start))
+		start++;
+
+	for (p = start; p <= lim; p++) {
+		if (p < lim && !is_ws(*p))
+			continue;
+
+		/* have prefix and doesn't match current token => skip token */
+		if (pfx.len && (pfx.len > (p-start) || strncasecmp(pfx.s, start, pfx.len))) {
+			while (p < lim && is_ws(*p))
+				p++;
+			start = p;
+			continue;
+		}
+
+		if (idx > 0) {
+			idx--;
+			start = p;
+			while (start < lim && is_ws(*start))
+				start++;
+			continue;
+		}
+
+		token.s = start;
+		token.len = p - start;
+		break;
+	}
+
+	if (!token.s)
+		return pv_get_null(msg, param, res);
+
+	return pv_get_strval(msg, param, res, &token);
+}
+
+
+int pv_set_sdp_stream(struct sip_msg *msg, pv_param_t *param,
+			int op, pv_value_t *val)
+{
+	struct sdp_pv_param *pvp = (struct sdp_pv_param *)param->pvn.u.dname;
+	struct sip_msg_body *sbody;
+	struct sdp_body_part_ops *ops;
+	struct body_part *body_part;
+	str body, dup_line, src_line;
+	int idx, insert = 0;
+
+	if (!msg)
 		return -1;
 
-	return pv_get_strval(msg, param, res, &msg->first_line.u.request.uri);
+	if (val && !(val->flags & PV_VAL_STR)) {
+		LM_ERR("refusing to set SDP line to non-string value (val flags: %d)\n",
+		            val->flags);
+		return -1;
+	}
+
+	if (msg->body_lumps) {
+		/* TODO: rebuild SDP body, clear the body lumps; assert lines_sz == 0 */
+	}
+
+	if (!have_sdp_ops(msg) || msg->sdp_ops->lines_sz == 0) {
+		if (parse_sip_body(msg)<0 || !(sbody=msg->body)) {
+			LM_ERR("current SIP message has no SDP body!\n");
+			return -1;
+		}
+
+		first_part_by_mime( &sbody->first, body_part, (TYPE_APPLICATION<<16)+SUBTYPE_SDP );
+		if (!body_part) {
+			LM_ERR("current SIP message has a body, but no SDP part!\n");
+			return -1;
+		}
+
+		ops = msg->sdp_ops;
+		/* first time working with SDP ops => allocate DS */
+		if (!ops && !(ops = msg->sdp_ops = mk_sdp_ops())) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		body = body_part->body;
+		if (ops->lines_sz == 0 && sdp_ops_parse_lines(ops, &body) != 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+	} else {
+		ops = msg->sdp_ops;
+	}
+
+	idx = IDX(msg, &pvp->match_line.idx);
+	switch (param->pvi.type) {
+	case SDP_PV_IDX_INSERT:
+		insert = 1;
+		break;
+
+	case SDP_PV_IDX_AINSERT:
+		insert = 1;
+		idx++; /* convert it to "INSERT" operation */
+		break;
+
+	default:
+		break;
+	}
+
+	idx = sdp_ops_find_line(msg, ops, idx, 0, &pvp->match_stream,
+				&pvp->match_line.prefix, &pvp->match_token.prefix);
+	if (idx < 0) {
+		LM_ERR("failed to locate SDP line for writing for line %d, match_token: "
+		        "'%.*s'\n", IDX(msg, &pvp->match_line.idx), pvp->match_line.prefix.len,
+		        pvp->match_line.prefix.s);
+		return -1;
+	}
+
+	if (pvp->match_token.prefix.s)
+		goto handle_token_edit;
+
+	/* delete line operation -> ignore the index */
+	if (!val) {
+		if (idx == ops->lines_sz) {
+			LM_ERR("index out of bounds (trying to delete SDP line %d, have %d lines)\n",
+			        idx, ops->lines_sz);
+			return -1;
+		}
+
+		if (ops->lines[idx].newbuf) {
+			pkg_free(ops->lines[idx].line.s);
+			memset(&ops->lines[idx], 0, sizeof ops->lines[idx]);
+		}
+
+		memmove(&ops->lines[idx], &ops->lines[idx+1], (ops->lines_sz-idx-1)*sizeof *ops->lines);
+		ops->lines[idx].have_gap = 1;
+		ops->lines_sz--;
+		goto out_success;
+	}
+
+	/* trim any trailing \n, \r or \r\n from the input */
+	src_line = val->rs;
+	if (src_line.len > 0 && (src_line.s[src_line.len-1] == '\n' || src_line.s[src_line.len-1] == '\r')) {
+		src_line.len--;
+		if (src_line.len > 0 && src_line.s[src_line.len] == '\n' && src_line.s[src_line.len-1] == '\r')
+			src_line.len--;
+	}
+
+	if (pkg_str_dup(&dup_line, &src_line) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (insert) {
+		/* insert line operation */
+		memmove(&ops->lines[idx+1], &ops->lines[idx], (ops->lines_sz-idx)*sizeof *ops->lines);
+		ops->lines_sz++;
+	} else {
+		/* edit line operation -> ignore the PV index */
+		if (ops->lines[idx].newbuf)
+			pkg_free(ops->lines[idx].line.s);
+	}
+
+	ops->lines[idx].line = dup_line;
+	ops->lines[idx].newbuf = 1;
+	goto out_success;
+
+handle_token_edit:
+	
+out_success:
+	ops->flags |= SDP_OPS_FL_DIRTY;
+	return 0;
+}
+
+
+int pv_get_sdp_stream_idx(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	struct sdp_pv_param *pvp = (struct sdp_pv_param *)param->pvn.u.dname;
+	struct sdp_body_part_ops *ops;
+	struct sip_msg_body *sbody;
+	struct body_part *body_part;
+	str body;
+	int idx;
+
+	if (!msg || !res)
+		return pv_get_null(msg, param, res);
+
+	if (msg->body_lumps) {
+		/* TODO: rebuild SDP body, clear the body lumps; assert lines_sz == 0 */
+	}
+
+	if (!have_sdp_ops(msg) || msg->sdp_ops->lines_sz == 0) {
+		if (parse_sip_body(msg)<0 || !(sbody=msg->body)) {
+			LM_ERR("current SIP message has no SDP body!\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		first_part_by_mime( &sbody->first, body_part, (TYPE_APPLICATION<<16)+SUBTYPE_SDP );
+		if (!body_part) {
+			LM_ERR("current SIP message has a body, but no SDP part!\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		ops = msg->sdp_ops;
+		/* first time working with SDP ops => allocate DS */
+		if (!ops && !(ops = msg->sdp_ops = mk_sdp_ops())) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		body = body_part->body;
+		if (ops->lines_sz == 0 && sdp_ops_parse_lines(ops, &body) != 0) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+	} else {
+		ops = msg->sdp_ops;
+	}
+
+	idx = sdp_ops_find_line(msg, ops, IDX(msg, &pvp->match_line.idx), 0,
+				&pvp->match_stream, &pvp->match_line.prefix,
+	            &pvp->match_token.prefix);
+	if (idx < 0 || idx >= ops->lines_sz)    // out of bounds
+		return pv_get_null(msg, param, res);
+
+	return pv_get_sintval(msg, param, res, idx);
+}
+
+
+int pv_get_sdp_session(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	struct sdp_pv_param *pvp = (struct sdp_pv_param *)param->pvn.u.dname;
+	struct sdp_body_part_ops *ops;
+	struct sip_msg_body *sbody;
+	struct body_part *body_part;
+	str body, line = STR_NULL, pfx, token = STR_NULL;
+	char *p, *lim, *start;
+	int idx;
+
+	if (!msg || !res)
+		return pv_get_null(msg, param, res);
+
+	if (msg->body_lumps) {
+		/* TODO: rebuild SDP body, clear the body lumps; assert lines_sz == 0 */
+	}
+
+	if (!have_sdp_ops(msg) || msg->sdp_ops->lines_sz == 0) {
+		if (parse_sip_body(msg)<0 || !(sbody=msg->body)) {
+			LM_ERR("current SIP message has no SDP body!\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		first_part_by_mime( &sbody->first, body_part, (TYPE_APPLICATION<<16)+SUBTYPE_SDP );
+		if (!body_part) {
+			LM_ERR("current SIP message has a body, but no SDP part!\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		ops = msg->sdp_ops;
+		/* first time working with SDP ops => allocate DS */
+		if (!ops && !(ops = msg->sdp_ops = mk_sdp_ops())) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		body = body_part->body;
+		if (ops->lines_sz == 0 && sdp_ops_parse_lines(ops, &body) != 0) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+	} else {
+		ops = msg->sdp_ops;
+	}
+
+	idx = sdp_ops_find_line(msg, ops, IDX(msg, &pvp->match_line.idx), 1,
+				NULL, &pvp->match_line.prefix, &pvp->match_token.prefix);
+	if (idx < 0 || idx >= ops->lines_sz)    // out of bounds
+		return pv_get_null(msg, param, res);
+
+	line = ops->lines[idx].line;
+
+	if (!pvp->match_token.prefix.s)
+		return pv_get_strval(msg, param, res, &line);
+
+	idx = IDX(msg, &pvp->match_token.idx);
+	pfx = pvp->match_token.prefix;
+	start = line.s;
+	lim = line.s + line.len;
+	while (start < lim && is_ws(*start))
+		start++;
+
+	for (p = start; p <= lim; p++) {
+		if (p < lim && !is_ws(*p))
+			continue;
+
+		/* have prefix and doesn't match current token => skip token */
+		if (pfx.len && (pfx.len > (p-start) || strncasecmp(pfx.s, start, pfx.len))) {
+			while (p < lim && is_ws(*p))
+				p++;
+			start = p;
+			continue;
+		}
+
+		if (idx > 0) {
+			idx--;
+			start = p;
+			while (start < lim && is_ws(*start))
+				start++;
+			continue;
+		}
+
+		token.s = start;
+		token.len = p - start;
+		break;
+	}
+
+	if (!token.s)
+		return pv_get_null(msg, param, res);
+
+	return pv_get_strval(msg, param, res, &token);
 }
 
 
 int pv_set_sdp_session(struct sip_msg *msg, pv_param_t *param,
 			int op, pv_value_t *val)
 {
+	struct sdp_pv_param *pvp = (struct sdp_pv_param *)param->pvn.u.dname;
+	struct sip_msg_body *sbody;
+	struct sdp_body_part_ops *ops;
+	struct body_part *body_part;
+	str body, dup_line, src_line;
+	int idx, insert = 0;
+
+	if (!msg)
+		return -1;
+
+	if (val && !(val->flags & PV_VAL_STR)) {
+		LM_ERR("refusing to set SDP line to non-string value (val flags: %d)\n",
+		            val->flags);
+		return -1;
+	}
+
+	if (msg->body_lumps) {
+		/* TODO: rebuild SDP body, clear the body lumps; assert lines_sz == 0 */
+	}
+
+	if (!have_sdp_ops(msg) || msg->sdp_ops->lines_sz == 0) {
+		if (parse_sip_body(msg)<0 || !(sbody=msg->body)) {
+			LM_ERR("current SIP message has no SDP body!\n");
+			return -1;
+		}
+
+		first_part_by_mime( &sbody->first, body_part, (TYPE_APPLICATION<<16)+SUBTYPE_SDP );
+		if (!body_part) {
+			LM_ERR("current SIP message has a body, but no SDP part!\n");
+			return -1;
+		}
+
+		ops = msg->sdp_ops;
+		/* first time working with SDP ops => allocate DS */
+		if (!ops && !(ops = msg->sdp_ops = mk_sdp_ops())) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		body = body_part->body;
+		if (ops->lines_sz == 0 && sdp_ops_parse_lines(ops, &body) != 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+	} else {
+		ops = msg->sdp_ops;
+	}
+
+	idx = IDX(msg, &pvp->match_line.idx);
+	switch (param->pvi.type) {
+	case SDP_PV_IDX_INSERT:
+		insert = 1;
+		break;
+
+	case SDP_PV_IDX_AINSERT:
+		insert = 1;
+		idx++; /* convert it to "INSERT" operation */
+		break;
+
+	default:
+		break;
+	}
+
+	idx = sdp_ops_find_line(msg, ops, idx, 2, NULL,
+				&pvp->match_line.prefix, &pvp->match_token.prefix);
+	if (idx < 0) {
+		LM_ERR("failed to locate SDP line for writing for line %d, match_token: "
+		        "'%.*s'\n", IDX(msg, &pvp->match_line.idx), pvp->match_line.prefix.len,
+		        pvp->match_line.prefix.s);
+		return -1;
+	}
+
+	if (pvp->match_token.prefix.s)
+		goto handle_token_edit;
+
+	/* delete line operation -> ignore the index */
+	if (!val) {
+		if (idx == ops->lines_sz) {
+			LM_ERR("index out of bounds (trying to delete SDP line %d, have %d lines)\n",
+			        idx, ops->lines_sz);
+			return -1;
+		}
+
+		if (ops->lines[idx].newbuf)
+			pkg_free(ops->lines[idx].line.s);
+
+		memmove(&ops->lines[idx], &ops->lines[idx+1], (ops->lines_sz-idx-1)*sizeof *ops->lines);
+		ops->lines[idx].have_gap = 1;
+		ops->lines_sz--;
+		goto out_success;
+	}
+
+	/* trim any trailing \n, \r or \r\n from the input */
+	src_line = val->rs;
+	if (src_line.len > 0 && (src_line.s[src_line.len-1] == '\n' || src_line.s[src_line.len-1] == '\r')) {
+		src_line.len--;
+		if (src_line.len > 0 && src_line.s[src_line.len] == '\n' && src_line.s[src_line.len-1] == '\r')
+			src_line.len--;
+	}
+
+	if (pkg_str_dup(&dup_line, &src_line) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (insert) {
+		/* insert line operation */
+		memmove(&ops->lines[idx+1], &ops->lines[idx], (ops->lines_sz-idx)*sizeof *ops->lines);
+		ops->lines_sz++;
+	} else {
+		/* edit line operation -> ignore the PV index */
+		if (ops->lines[idx].newbuf)
+			pkg_free(ops->lines[idx].line.s);
+	}
+
+	ops->lines[idx].line = dup_line;
+	ops->lines[idx].newbuf = 1;
+	goto out_success;
+
+handle_token_edit:
+	
+out_success:
+	ops->flags |= SDP_OPS_FL_DIRTY;
 	return 0;
 }
 
@@ -957,7 +1574,7 @@ int sdp_get_custom_body(struct sip_msg *msg, str *body)
 	rem = len;
 
 	for (i = 0; i < ops->lines_sz; i++) {
-		if (lines[i].newbuf) {
+		if (lines[i].newbuf || lines[i].have_gap) {
 			if (start_cpy) {
 				memcpy(p, start_cpy, cpy_len);
 				p += cpy_len;
@@ -1017,9 +1634,11 @@ void free_sdp_ops_lines(struct sdp_body_part_ops *ops)
 		if (ops->lines[i].newbuf) {
 			pkg_free(ops->lines[i].line.s);
 			ops->lines[i].newbuf = 0;
+			ops->lines[i].have_gap = 0;
 		}
 
 	ops->lines_sz = 0;
+	ops->flags &= ~SDP_OPS_FL_PARSED; /* TODO - optimize with lazy parsing */
 }
 
 

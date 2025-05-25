@@ -29,20 +29,28 @@
 
 #define SDP_MAX_LINES 500
 
-struct sdp_chunk_match {
-	str prefix;
-	int idx;
+struct sdp_pv_idx {
+	int is_pv_idx;
+	union {
+		int idx;
+		pv_spec_t idx_pv;
+	};
 };
 
-struct sdp_ops_line {
-	str line;
-	int newbuf;
+struct sdp_chunk_match {
+	str prefix;
+	struct sdp_pv_idx idx;
 };
 
 struct sdp_pv_param {
 	struct sdp_chunk_match match_stream;
 	struct sdp_chunk_match match_line;
 	struct sdp_chunk_match match_token;
+};
+
+struct sdp_ops_line {
+	str line;
+	int newbuf, have_gap;
 };
 
 struct sdp_body_part_ops {
@@ -69,15 +77,17 @@ void free_sdp_ops(struct sdp_body_part_ops *ops);
 
 int pv_set_sdp(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
 int pv_parse_sdp_name(pv_spec_p sp, const str *in);
-int pv_parse_sdp_index(pv_spec_p sp, const str *in);
 
 int pv_get_sdp_line(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_sdp_line(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
 int pv_parse_sdp_line_name(pv_spec_p sp, const str *in);
+int pv_parse_sdp_line_index(pv_spec_p sp, const str *in);
 
 int pv_get_sdp_stream(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_sdp_stream(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
 int pv_parse_sdp_stream_name(pv_spec_p sp, const str *in);
+
+int pv_get_sdp_stream_idx(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
 int pv_get_sdp_session(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_sdp_session(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);

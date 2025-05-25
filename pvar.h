@@ -246,6 +246,7 @@ extern int pv_print_buf_size;
 int init_pvar_support(void);
 
 int pv_print_spec(struct sip_msg* msg, const pv_spec_p sp, char *buf, int *len);
+/* @return: the @in pointer is moved immediately after the spec (+1) */
 char* pv_parse_spec(const str *in, const pv_spec_p sp);
 int pv_get_spec_value(struct sip_msg* msg, const pv_spec_p sp, pv_value_t *value);
 int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len);
