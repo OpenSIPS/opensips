@@ -662,7 +662,12 @@ int do_action(struct action* a, struct sip_msg* msg)
 						if (v<=0) {
 							ret=0;
 
-							LM_CRIT("ASSERTION FAILED - %s\n", a->elem[1].u.string);
+							if (a->elem[1].u.string)
+								LM_CRIT("ASSERTION FAILED (%s) at %s:%d\n",
+								        a->elem[1].u.string, a->file, a->line);
+							else
+								LM_CRIT("ASSERTION FAILED at %s:%d\n",
+								        a->file, a->line);
 
 							if (abort_on_assert) {
 								abort();
