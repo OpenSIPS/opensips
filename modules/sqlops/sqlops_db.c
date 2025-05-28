@@ -525,15 +525,16 @@ error:
 
 
 static inline int _json_to_filters(cJSON *Jfilter,
-					db_key_t** _k, db_op_t** _o, db_val_t** _v, int only_equal)
+					db_key_t** _k, db_op_t** _o, db_val_t** _v, int are_keys)
 {
-	static db_key_t *keys;
-	static db_op_t  *ops;
-	static db_val_t *vals;
-	static unsigned int keys_size = 0;
+	/* first set if for filters, second for keys (only for udpates) */
+	static db_key_t *keys[2];
+	static db_op_t  *ops[2];
+	static db_val_t *vals[2];
+	static unsigned int keys_size[2] = {0,0};
 	cJSON *filter, *node;
 	str *str_keys;
-	int nk, i;
+	int nk, i, x = are_keys?1:0 ;
 
 	if (Jfilter->type != cJSON_Array) {
 		LM_ERR("bad JSON format, 'filter' must be an array\n");
@@ -554,63 +555,63 @@ static inline int _json_to_filters(cJSON *Jfilter,
 	}
 
 	/* resize the array of cols if we need more */
-	if (nk>keys_size) {
+	if (nk>keys_size[x]) {
 		/* need a larger set of keys */
-		keys = (db_key_t*)pkg_realloc( keys,
+		keys[x] = (db_key_t*)pkg_realloc( keys[x],
 			nk*(sizeof(db_key_t)+sizeof(str)+sizeof(db_op_t)+sizeof(db_val_t))
 		);
-		if (keys==NULL) {
-			keys_size = 0;
+		if (keys[x]==NULL) {
+			keys_size[x] = 0;
 			LM_ERR("failed to allocate the needed %d keys/cols\n",nk);
 			goto error;
 		}
-		str_keys = (str*)( keys+nk );
-		ops  = (db_op_t*)(str_keys+nk);
-		vals = (db_val_t*)(ops+nk);
+		str_keys = (str*)( keys[x]+nk );
+		ops[x]  = (db_op_t*)(str_keys+nk);
+		vals[x] = (db_val_t*)(ops[x]+nk);
 		/* link db_keys to strs */
 		for ( i=0 ; i<nk ; i++)
-			keys[i] = &str_keys[i];
+			keys[x][i] = &str_keys[i];
 
-		keys_size = nk;
+		keys_size[x] = nk;
 	}
 
 	/* iterate again to fill in the cols */
 	for( filter=Jfilter->child,i=0 ; filter ; filter=filter->next,i++ ) {
 		/* name of the key/col */
 		node = filter->child;
-		keys[i]->s = node->string;
-		keys[i]->len = strlen(node->string);
+		keys[x][i]->s = node->string;
+		keys[x][i]->len = strlen(node->string);
 		/* operator */
 		if (node->type==cJSON_Object) {
 			node = node->child;
-			ops[i] = node->string;
-			if (only_equal && memcmp(ops[i],OP_EQ,sizeof(OP_EQ))) {
+			ops[x][i] = node->string;
+			if (are_keys && memcmp(ops[i],OP_EQ,sizeof(OP_EQ))) {
 				LM_ERR("only equal allowed between keys and values at "
 					"pos %d\n",i);
 				goto error;
 			}
 		} else {
-			ops[i] = OP_EQ;
+			ops[x][i] = OP_EQ;
 		}
 		/* value */
 		switch (node->type) {
 			case cJSON_NULL:
-				vals[i].type = 0;
-				vals[i].nul = 1;
-				vals[i].free = 0;
-				vals[i].val.bigint_val = 0;
+				vals[x][i].type = 0;
+				vals[x][i].nul = 1;
+				vals[x][i].free = 0;
+				vals[x][i].val.bigint_val = 0;
 				break;
 			case cJSON_String:
-				vals[i].type = DB_STRING;
-				vals[i].nul = 0;
-				vals[i].free = 0;
-				vals[i].val.string_val = node->valuestring;
+				vals[x][i].type = DB_STRING;
+				vals[x][i].nul = 0;
+				vals[x][i].free = 0;
+				vals[x][i].val.string_val = node->valuestring;
 				break;
 			case cJSON_Number:
-				vals[i].type = DB_INT;
-				vals[i].nul = 0;
-				vals[i].free = 0;
-				vals[i].val.int_val = node->valueint;
+				vals[x][i].type = DB_INT;
+				vals[x][i].nul = 0;
+				vals[x][i].free = 0;
+				vals[x][i].val.int_val = node->valueint;
 				break;
 			default:
 				LM_ERR("unsupported value node %d\n",node->type);
@@ -618,9 +619,9 @@ static inline int _json_to_filters(cJSON *Jfilter,
 		}
 	}
 
-	*_k = keys;
-	*_o = ops;
-	*_v = vals;
+	*_k = keys[x];
+	*_o = ops[x];
+	*_v = vals[x];
 
 	return nk;
 error:

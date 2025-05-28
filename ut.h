@@ -1653,4 +1653,13 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 #endif
 #define howmany(x, y) (sizeof(x) / sizeof(y))
 
+/* waits for maximum _timeout microseconds for the _cond condition to be
+ * satisfied, sleeping every _inc microseconds */
+#define busy_wait_for(_cond, _timeout, _inc) \
+	do { \
+		unsigned _retries = (_timeout)/(_inc);\
+		while (!(_cond) && --_retries > 0) \
+			usleep(_inc); \
+	} while (0)
+
 #endif

@@ -60,7 +60,7 @@ static int mi_child_init(void);
  * increment this value if you change the table in
  * an backwards incompatible way
  */
-#define TABLE_VERSION 3
+#define DOMAIN_TABLE_VERSION 4
 
 #define DOMAIN_TABLE "domain"
 #define DOMAIN_TABLE_LEN (sizeof(DOMAIN_TABLE) - 1)
@@ -71,6 +71,9 @@ static int mi_child_init(void);
 #define DOMAIN_ATTRS_COL "attrs"
 #define DOMAIN_ATTRS_COL_LEN (sizeof(DOMAIN_ATTRS_COL) - 1)
 
+#define DOMAIN_ACCEPT_SUBDOMAIN_COL "accept_subdomain"
+#define DOMAIN_ACCEPT_SUBDOMAIN_COL_LEN (sizeof(DOMAIN_ACCEPT_SUBDOMAIN_COL) - 1)
+
 /*
  * Module parameter variables
  */
@@ -79,6 +82,7 @@ int db_mode = 0;			/* Database usage mode: 0 = no cache, 1 = cache */
 str domain_table = {DOMAIN_TABLE, DOMAIN_TABLE_LEN}; /* Name of domain table */
 str domain_col = {DOMAIN_COL, DOMAIN_COL_LEN};       /* Name of domain column */
 str domain_attrs_col = {DOMAIN_ATTRS_COL, DOMAIN_ATTRS_COL_LEN}; /* Name of attributes column */
+str domain_accept_subdomain_col = {DOMAIN_ACCEPT_SUBDOMAIN_COL, DOMAIN_ATTRS_COL_LEN}; /* Name of accept_subdomain column */
 
 /*
  * Other module variables
@@ -116,11 +120,12 @@ static const cmd_export_t cmds[] = {
  * Exported parameters
  */
 static const param_export_t params[] = {
-	{"db_url",         STR_PARAM, &db_url.s      },
-	{"db_mode",        INT_PARAM, &db_mode       },
-	{"domain_table",   STR_PARAM, &domain_table.s},
-	{"domain_col",     STR_PARAM, &domain_col.s  },
-	{"attrs_col",     STR_PARAM, &domain_attrs_col.s  },
+	{"db_url",                   STR_PARAM, &db_url.s      },
+	{"db_mode",                  INT_PARAM, &db_mode       },
+	{"domain_table",             STR_PARAM, &domain_table.s},
+	{"domain_col",               STR_PARAM, &domain_col.s  },
+	{"attrs_col",                STR_PARAM, &domain_attrs_col.s  },
+	{"accept_subdomain_col",     STR_PARAM, &domain_accept_subdomain_col.s  },
 	{0, 0, 0}
 };
 
@@ -189,6 +194,7 @@ static int mod_init(void)
 	domain_table.len = strlen(domain_table.s);
 	domain_col.len = strlen(domain_col.s);
 	domain_attrs_col.len = strlen(domain_attrs_col.s);
+	domain_accept_subdomain_col.len = strlen(domain_accept_subdomain_col.s);
 
 	/* Check if database module has been loaded */
 	if (domain_db_bind(&db_url) < 0)  return -1;
@@ -199,7 +205,7 @@ static int mod_init(void)
 		if (domain_db_init(&db_url)<0) return -1;
 
 		/* Check table version */
-		if (domain_db_ver(&domain_table, TABLE_VERSION) < 0) {
+		if (domain_db_ver(&domain_table, DOMAIN_TABLE_VERSION) < 0) {
 		    LM_ERR("error during check of domain table version\n");
 		    goto error;
 		}

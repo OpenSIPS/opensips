@@ -101,7 +101,7 @@ struct sip_msg_body {
 	 * in the SIP parts */
 	unsigned char updated_part_count;
 
-	/* multi purpose flags */
+	/* multi purpose flags, e.g. SIP_BODY_FLAG_NEW */
 	unsigned char flags;
 
 	/* entire body (as received) */

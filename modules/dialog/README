@@ -2644,10 +2644,10 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 459 288 13367 3546
-   2. Razvan Crainea (@razvancrainea) 295 220 5467 1782
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 460 288 13367 3546
+   2. Razvan Crainea (@razvancrainea) 296 220 5467 1782
    3. Vlad Paiu (@vladpaiu) 262 149 7467 3027
-   4. Vlad Patrascu (@rvlad-patrascu) 199 104 4330 3514
+   4. Vlad Patrascu (@rvlad-patrascu) 200 104 4330 3514
    5. Liviu Chircu (@liviuchircu) 183 133 3128 1374
    6. Ovidiu Sas (@ovidiusas) 35 26 601 161
    7. Dan Pascu (@danpascu) 30 25 233 179
@@ -2661,8 +2661,8 @@ Chapter 4. Contributors
    Alexandra Titoc, John Riordan, Hugues Mitonneau, Carsten Bock,
    Peter Lemenkov (@lemenkov), Jerome Martin, Klaus Darilion,
    Jarrod Baumann (@jarrodb), Nick Altmann (@nikbyte), Zero King
-   (@l2dy), Michel Bensoussan, Richard Revels, Elena-Ramona
-   Modroiu, Tavis Paquette, Ryan Bullock, Andrei Datcu
+   (@l2dy), Michel Bensoussan, Richard Revels, Tavis Paquette,
+   Elena-Ramona Modroiu, Ryan Bullock, Andrei Datcu
    (@andrei-datcu), Jeffrey Magder, Stefan-Cristian Mititelu, Ron
    Winacott, Andy Pyles, Julián Moreno Patiño, Konstantin
    Bokarius, sergei lavrov, Alex Massover, Damien Sandras

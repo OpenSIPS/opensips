@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
+  "https://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="config" xmlns:db="http://docbook.org/ns/docbook">
+	<name>config</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used to store configuration values used by opensips.
+		More information can be found at: &OPENSIPS_MOD_DOC;config.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Unique ID</description>
+	</column>
+
+	<column id="name">
+		<name>name</name>
+		<type>string</type>
+		<size>&description_len;</size>
+		<description>The name of the configuration parameter.
+			Arbitrary value. Example: "drain".
+		</description>
+		<unique/>
+	</column>
+	<column>
+		<name>value</name>
+		<type>text</type>
+		<size>4096</size>
+		<description>The value of the configuration parameter.
+			Arbitrary value. Example: "no".
+		</description>
+		<default><null/></default>
+		<null/>
+	</column>
+	<column>
+		<name>description</name>
+		<type>string</type>
+		<size>&description_len;</size>
+		<description>Arbitrary value describing the purpose of the value.
+		</description>
+		<default><null/></default>
+		<null/>
+	</column>
+	<index>
+		<name>name_idx</name>
+		<colref linkend="name"/>
+		<unique/>
+	</index>
+</table>

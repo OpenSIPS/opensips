@@ -1136,6 +1136,7 @@ append_branch(self, branch = NULL, qval = NULL)
 	int err = 0;
 	struct action *act = NULL;
 	str branch_s;
+	struct msg_branch mbranch;
   INIT:
   CODE:
   	if (!msg) {
@@ -1162,10 +1163,16 @@ append_branch(self, branch = NULL, qval = NULL)
 			}
 		}
 
-		if (RETVAL != -1)
-			RETVAL = append_branch(msg, branch_s.s ? &branch_s : NULL,
-						&msg->dst_uri, &msg->path_vec, q, getb0flags(msg),
-						msg->force_send_socket);
+		if (RETVAL != -1) {
+			memset( &mbranch, 0, sizeof mbranch);
+			mbranch.uri = branch_s.s ? branch_s : *GET_RURI(msg);
+			mbranch.dst_uri = msg->dst_uri;
+			mbranch.path = msg->path_vec;
+			mbranch.q = q;
+			mbranch.bflags = getb0flags(msg);
+			mbranch.force_send_socket = msg->force_send_socket;
+			RETVAL = append_msg_branch( &mbranch );
+		}
 	}
   OUTPUT:
 	RETVAL

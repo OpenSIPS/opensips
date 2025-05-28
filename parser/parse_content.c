@@ -444,7 +444,6 @@ int parse_content_type_hdr( struct sip_msg *msg )
 	}
 	memset(rez, 0, sizeof (content_t));
 
-
 	/* it seams we have to parse it! :-( */
 	end = msg->content_type->body.s + msg->content_type->body.len;
 	ret = decode_mime_type(msg->content_type->body.s, end , &mime, rez);

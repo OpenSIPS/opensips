@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020-2024 OpenSIPS Solutions
+# Copyright (C) 2020-2025 OpenSIPS Solutions
 #
 # This file is part of opensips, a free SIP server.
 #
@@ -25,6 +25,13 @@ BEGIN
 
 
 # provisioning-data tables which can be copied 1:1
+CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'config');          -- new in 3.6
+CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'janus');           -- new in 3.6
+CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'sockets');         -- new in 3.6
+CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'trie_partitions'); -- new in 3.6
+CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'trie_table');      -- new in 3.6
+CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'subscriber');      -- changed in 3.6
+
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'acc');
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'address');
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'cachedb');
@@ -78,7 +85,6 @@ CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'silo');
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'sip_trace');
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'smpp');
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'speed_dial');
-CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'subscriber');
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'tls_mgm');
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'tcp_mgm');
 CALL OSIPS_TB_COPY_3_5_TO_3_6(old_db, new_db, 'uri');

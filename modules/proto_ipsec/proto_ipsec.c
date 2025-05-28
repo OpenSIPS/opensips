@@ -61,6 +61,7 @@ static int mod_init(void);
 static void mod_destroy(void);
 static int proto_ipsec_init(struct proto_info *pi);
 static int proto_ipsec_init_listener(struct socket_info *si);
+static int proto_ipsec_bind_listener(struct socket_info *si);
 static int proto_ipsec_send(const struct socket_info* source,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
@@ -349,6 +350,7 @@ static int proto_ipsec_init(struct proto_info *pi)
 	pi->default_port		= ipsec_port;
 
 	pi->tran.init_listener	= proto_ipsec_init_listener;
+	pi->tran.bind_listener	= proto_ipsec_bind_listener;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 	pi->tran.send			= proto_ipsec_send;
 
@@ -377,6 +379,12 @@ static int proto_ipsec_init_listener(struct socket_info *si)
 	si->socket = -1;
 	/* re-initialize as UDP now */
 	return udp_init_listener(si, O_NONBLOCK);
+}
+
+static int proto_ipsec_bind_listener(struct socket_info *si)
+{
+	/* we only need to bind the UDP listener */
+	return udp_bind_listener(si);
 }
 
 static int proto_ipsec_send(const struct socket_info* source,

@@ -52,6 +52,7 @@
 #include "../core_stats.h"
 #include "../errinfo.h"
 #include "../dset.h"
+#include "../sdp_ops.h"
 #include "parse_hname2.h"
 #include "parse_uri.h"
 #include "parse_content.h"
@@ -975,6 +976,8 @@ void free_sip_msg(struct sip_msg* msg)
 		free_lump_list(msg->add_rm);
 	if (msg->body_lumps)
 		free_lump_list(msg->body_lumps);
+	if (msg->sdp_ops )
+		free_sdp_ops(msg->sdp_ops);
 	if (msg->reply_lump)
 		free_reply_lump(msg->reply_lump);
 	if (msg->body )

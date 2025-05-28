@@ -40,6 +40,8 @@ closeddial|
 closeddial|1
 clusterer|
 clusterer|4
+config|
+config|1
 cpl|
 cpl|2
 dbaliases|
@@ -51,7 +53,7 @@ dialplan|5
 dispatcher|
 dispatcher|9
 domain|
-domain|3
+domain|4
 domainpolicy|
 domainpolicy|3
 dr_carriers|
@@ -130,8 +132,8 @@ sip_trace|
 sip_trace|5
 smpp|
 smpp|1
-METADATA_DEFAULTS
-NIL|NIL
+sockets|
+sockets|1
 speed_dial|
 speed_dial|3
 subscriber|
@@ -140,6 +142,8 @@ tcp_mgm|
 tcp_mgm|1
 tls_mgm|
 tls_mgm|3
+trie_partitions|
+trie_partitions|1
 trie_table|
 trie_table|1
 uri|

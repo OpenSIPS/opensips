@@ -623,6 +623,9 @@ static inline char* socket2str(const struct socket_info *sock, char *s, int *len
 #define get_sock_info_list(_proto) \
 	(((_proto)>=PROTO_FIRST && (_proto)<PROTO_LAST)?(&protos[_proto].listeners):0)
 
+int is_localhost(struct socket_info *si);
+int fix_socket(struct socket_info_full *sif, int add_aliases);
+
 
 int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
 		int buff_increment);
@@ -630,5 +633,9 @@ int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
 struct socket_id *socket_info2id(struct socket_info *si);
 struct socket_info_full* new_sock_info( struct socket_id *sid);
 void push_sock2list(struct socket_info_full *si);
+void pop_sock2list(struct socket_info_full *si);
+void free_sock_info(struct socket_info_full* si);
+int update_default_socket_info(struct socket_info *si);
+void remove_default_socket_info(struct socket_info *si);
 
 #endif

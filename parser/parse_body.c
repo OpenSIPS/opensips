@@ -22,6 +22,7 @@
 
 #include "../mem/mem.h"
 #include "../ut.h"
+#include "../sdp_ops.h"
 #include "parse_body.h"
 #include "parse_content.h"
 #include "parse_hname2.h"
@@ -230,20 +231,29 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 int parse_sip_body(struct sip_msg * msg)
 {
 	char *start, *end;
-	int type = 0;
+	int type = 0, new_sdp = 0;
 	struct body_part *part, *last;
 	str delimiter, body;
 
 	/* is body already parsed ? */
-	if (msg->body)
-		return 0;
+	if (msg->body) {
+		if (!have_sdp_ops(msg))
+			return 0;
+
+		free_sip_body(msg->body);
+		msg->body = NULL;
+	}
 
 	if ( get_body(msg,&body)!=0 || body.len==0)
 		return 0;
 
 	type = parse_content_type_hdr(msg);
-	if (type <= 0)
-		return 0;
+	if (type <= 0) {
+		if (!msg->sdp_ops || msg->sdp_ops->sdp.len == 0)
+			return 0;
+		type = (TYPE_APPLICATION<<16) + SUBTYPE_SDP;
+		new_sdp = 1;
+	}
 
 	msg->body = pkg_malloc(sizeof (struct sip_msg_body));
 	if (msg->body == 0)
@@ -255,7 +265,8 @@ int parse_sip_body(struct sip_msg * msg)
 
 	msg->body->body = body;
 
-	msg->body->boundary = ((content_t *) msg->content_type->parsed)->boundary;
+	if (!new_sdp)
+		msg->body->boundary = ((content_t *) msg->content_type->parsed)->boundary;
 
 	if ((type >> 16) == TYPE_MULTIPART)
 	{
@@ -269,7 +280,7 @@ int parse_sip_body(struct sip_msg * msg)
 		if (start == NULL) {
 			LM_ERR("Unable to parse multipart type:"
 				" malformed - missing start delimiters\n");
-			return 0;
+			goto out_free;
 		}
 
 		/* mark as first part (no previous one) */
@@ -293,7 +304,7 @@ int parse_sip_body(struct sip_msg * msg)
 			/* add 4 to delimiter 2 for "--"*/
 			if (parse_single_part(part, start + delimiter.len + 2, end)!=0) {
 				LM_ERR("Unable to parse part:[%.*s]\n",(int)(end-start),start);
-				return -1;
+				goto out_free;
 			}
 
 			/* set the parsing for the next cycle */
@@ -314,7 +325,7 @@ int parse_sip_body(struct sip_msg * msg)
 		part = &msg->body->first;
 
 		part->mime = type;
-		part->mime_s = msg->content_type->body;
+		part->mime_s = !new_sdp ? msg->content_type->body : str_init("application/sdp\r\n");
 		part->body = body;
 		part->headers.s = NULL;
 		part->headers.len = 0;
@@ -325,7 +336,11 @@ int parse_sip_body(struct sip_msg * msg)
 
 	return 0;
 
-};
+out_free:
+	free_sip_body(msg->body);
+	msg->body = NULL;
+	return -1;
+}
 
 
 struct body_part* add_body_part(struct sip_msg *msg, str *mime_s,

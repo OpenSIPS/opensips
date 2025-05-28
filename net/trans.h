@@ -115,7 +115,7 @@ int fix_all_socket_lists(void);
 /*
  * init all registered listening sockets
  */
-int trans_init_all_listeners(void);
+int trans_init_udp_listeners(void);
 
 void print_all_socket_lists(void);
 

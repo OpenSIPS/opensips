@@ -33,14 +33,16 @@
 #include <strings.h>
 #include "str.h"
 #include "dprint.h"
+#include "ip_addr.h"
 #include "mem/mem.h"
 
-
+#define si_alias_accept_subdomain(_flags) (int) _flags & SI_ACCEPT_SUBDOMAIN_ALIAS
 
 struct host_alias{
 	str alias;
 	unsigned short port;
 	unsigned short proto;
+	int accept_subdomain;
 	struct host_alias* next;
 };
 
@@ -58,6 +60,29 @@ struct alias_function {
 
 extern struct alias_function* alias_fcts;
 
+static inline int match_domain(char* alias, int alias_len, char* host, int host_len, int accept_subdomain) {
+	int index_offset;
+
+	/* Check if the alias is a subdomain alias and if so calculate the index offset to start the comparison
+	 * Given an alias my.domain.com or my.great.domain.com and a subdomain of domain.com the comparison should start at domain.com
+	 * a host of domain.com will also match, if the flag is not set then do a strict comparison
+	 */
+	if (accept_subdomain) {
+		index_offset = host_len - alias_len;
+		// the host we're checking is a shorter len than the alias so no need to compare
+		if (index_offset < 0) return 0;
+		// if the offset is greater than 0 we need to ensure the host we're checking has a preceding '.' to ensure it's a subdomain
+		else if (index_offset > 0 && !(*((host + index_offset) - 1) == '.')) return 0;
+
+		if (strncasecmp(alias, host + index_offset, alias_len)==0)
+			return 1;
+	} else if (host_len == alias_len && strncasecmp(alias, host, host_len)==0) {
+		return 1;
+	}
+
+	return 0;
+}
+
 /* returns 1 if  name is in the alias list; if port=0, port no is ignored
  * if proto=0, proto is ignored*/
 static inline int grep_aliases(char* name, int len, unsigned short port,
@@ -71,11 +96,14 @@ static inline int grep_aliases(char* name, int len, unsigned short port,
 		name++;
 		len-=2;
 	}
-	for(a=aliases;a;a=a->next)
-		if ((a->alias.len==len) && ((a->port==0) || (port==0) ||
-				(a->port==port)) && ((a->proto==0) || (proto==0) ||
-				(a->proto==proto)) && (strncasecmp(a->alias.s, name, len)==0))
-			return 1;
+
+	for(a=aliases;a;a=a->next) {
+		if (((a->port==0) || (port==0) || (a->port==port)) &&
+		    ((a->proto==0) || (proto==0) || (a->proto==proto))) {
+			if (match_domain(a->alias.s, a->alias.len, name, len, a->accept_subdomain))
+				return 1;
+		}
+	}
 
 	for( af=alias_fcts ; af ; af=af->next ) {
 		if ( af->alias_f(name,len,port,proto)>0 )
@@ -84,9 +112,8 @@ static inline int grep_aliases(char* name, int len, unsigned short port,
 	return 0;
 }
 
-
 /* adds an alias to the list (only if it isn't already there) */
-int add_alias(char* name, int len, unsigned short port, unsigned short proto);
+int add_alias(char* name, int len, unsigned short port, unsigned short proto, int accept_subdomain);
 
 /* register a new function for detecting aliases */
 int register_alias_fct( is_alias_fct *fct );

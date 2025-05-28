@@ -124,6 +124,7 @@
 #include "ut.h"
 #include "pt.h"
 #include "context.h"
+#include "sdp_ops.h"
 #include "net/trans.h"
 
 int disable_503_translation = 0;
@@ -328,7 +329,9 @@ char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 		LM_ERR("no message body found (missing crlf?)");
 		return 0;
 	}
-	value = body.len + diff;
+
+	/* with SDP ops, the body len is fully known (ignore diff) */
+	value = body.len + (have_sdp_ops(msg) ? 0 : diff);
 	value_s=int2str(value, &value_len);
 	LM_DBG("content-length: %d (%s)\n", value, value_s);
 
@@ -1316,7 +1319,7 @@ unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 				 * inside this part */
 				orig_offs = part->body.s - msg->buf;
 				lump = msg->body_lumps;
-				while ( lump && lump->u.offset<(part->body.s-msg->buf) )
+				while ( lump && lump->u.offset < orig_offs )
 					lump=lump->next;
 				if (lump) {
 					LM_DBG("lumps found in the part, applying...\n");
@@ -1883,6 +1886,21 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 static inline int calculate_body_diff(struct sip_msg *msg,
 													const struct socket_info *sock )
 {
+	str body, rcv_body = STR_NULL;
+	struct sdp_body_part_ops *ops;
+
+	if (have_sdp_ops(msg)) {
+		if (get_body(msg, &body) != 0 || body.len==0)
+			return 0;
+
+		ops = msg->sdp_ops;
+		msg->sdp_ops = NULL;
+		get_body(msg, &rcv_body);
+		msg->sdp_ops = ops;
+
+		return body.len - rcv_body.len;
+	}
+
 	if (msg->body==NULL) {
 		/* no body parsed, no advanced ops done, just dummy lumps over body */
 		return lumps_len(msg, msg->body_lumps, sock, -1);
@@ -1903,9 +1921,25 @@ static inline void apply_msg_changes(struct sip_msg *msg,
 							unsigned int max_offset)
 {
 	unsigned int size;
+	str body;
 
 	/* apply changes over the SIP headers */
 	process_lumps(msg, msg->add_rm, new_buf, new_offs, orig_offs, sock, -1);
+
+	/* real-time SDP changes */
+	if (have_sdp_ops(msg)) {
+		if (get_body(msg, &body) != 0 || body.len==0)
+			return;
+
+		memcpy(new_buf+*new_offs, msg->sdp_ops->sep, msg->sdp_ops->sep_len);
+		*new_offs += msg->sdp_ops->sep_len;
+
+		memcpy(new_buf+*new_offs, body.s, body.len);
+		*new_offs += body.len;
+		return;
+	}
+
+	/* lumps-based SDP changes */
 	if (msg->body==NULL) {
 		/* no body parsed, no advanced ops done, just dummy lumps over body */
 		process_lumps(msg, msg->body_lumps, new_buf, new_offs,
@@ -2296,7 +2330,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 
 build_msg:
 	/* adjust len to the useful part of the message */
-	if (get_body(msg, &body) == 0 && body.len)
+	if (!have_sdp_ops(msg) && get_body(msg, &body) == 0 && body.len)
 		len -= (msg->buf + msg->len - body.s - body.len);
 
 	/* compute new msg len and fix overlapping zones*/

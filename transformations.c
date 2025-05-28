@@ -23,21 +23,9 @@
  * \brief Support for transformations
  */
 
+/* make strptime available */
 #define _GNU_SOURCE
-#define _XOPEN_SOURCE 600          /* glibc2 on linux, bsd */
-#define _XOPEN_SOURCE_EXTENDED 1   /* solaris */
-
-/**
- * _XOPEN_SOURCE creates conflict in swab definition in Solaris
- */
-#ifdef __OS_solaris
-	#undef _XOPEN_SOURCE
-#endif
-
 #include <time.h>
-
-#undef _XOPEN_SOURCE
-#undef _XOPEN_SOURCE_EXTENDED
 
 #include <stdio.h>
 #include <string.h>
@@ -1727,7 +1715,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		case TR_SDP_STREAM_DEL:
 			/* determine the media type we are talking about
 			 * either by index or by name */
-			media.s = NULL;
+			media = STR_NULL;
 			entryNo = 0;
 			switch (tp->type) {
 				case TR_PARAM_NUMBER:

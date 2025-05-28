@@ -71,6 +71,9 @@ void *cl_srg=NULL;
 
 str node_st_sr_ident = str_init("node_states");
 
+long ping_timeout_us;
+long ping_interval_us;
+
 /* module interface functions */
 static int mod_init(void);
 static int child_init(int rank);
@@ -414,6 +417,9 @@ static int mod_init(void)
 		LM_WARN("Invalid ping_timeout parameter, using default value\n");
 		ping_timeout = DEFAULT_PING_TIMEOUT;
 	}
+	ping_timeout_us = ping_timeout * 1000;
+	ping_interval_us = ping_interval * 1000000;
+
 	if (seed_fb_interval < 0) {
 		LM_WARN("Invalid seed_fallback_interval parameter, using default value\n");
 		seed_fb_interval = DEFAULT_SEED_FB_INTERVAL;

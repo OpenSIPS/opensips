@@ -94,7 +94,9 @@
 #ifdef __OS_linux
 #include <features.h>     /* for GLIBC version testing */
 #endif
+#ifdef EXTRA_DEBUG
 #include "lib/dbg/backtrace.h"
+#endif
 
 #ifndef FD_TYPE_DEFINED
 typedef int fd_type;
@@ -700,7 +702,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 		do { \
 			int w; \
 			for(w=0;w<rla_idx;w++) \
-				LM_CRIT("[%d]-> [%s]",w,rla[w]); \
+				LM_CRIT("[%d]-> [%s]\n",w,rla[w]); \
 		} while(0)
 
 	if ((fd<0) || (fd>=h->max_fd_no)){
@@ -732,13 +734,17 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 		if (!(idx>=0 && idx<h->fd_no)) {
 			LM_CRIT("[%s] FD index check failed, idx=%d, max=%d"
 				" operating on %d\n",h->name, idx, h->fd_no, fd );
+#ifdef EXTRA_DEBUG
 			log_backtrace();
+#endif
 			rla_dump();
 			idx = -1;
 		} else if (h->fd_array[idx].fd!=fd) {
 			LM_CRIT("[%s] FD consistency check failed, idx=%d points to fd=%d,"
 				" but operating on %d\n",h->name, idx, h->fd_array[idx].fd, fd );
+#ifdef EXTRA_DEBUG
 			log_backtrace();
+#endif
 			rla_dump();
 			idx = -1;
 		}

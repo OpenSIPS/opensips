@@ -31,7 +31,7 @@
 	<para>
 		Starting with &osips; 3.2, choosing whether to replicate a pipe over
 		CacheDB backends or bin replication is triggered by the flags specified
-		when the pipe is created: adding the <emphasis>/s</emphasis> suffix to the
+		when the pipe is created: adding the <emphasis>/r</emphasis> suffix to the
 		pipe's name will replicate through CacheDB, and adding <emphasis>/b</emphasis>
 		will replicate through bin/clusterer.
 	</para>

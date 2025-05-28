@@ -7,8 +7,8 @@
 
 ]>
 
-<table id="dr_partitions" xmlns:db="http://docbook.org/ns/docbook">
-	<name>dr_partitions</name>
+<table id="trie_partitions" xmlns:db="http://docbook.org/ns/docbook">
+	<name>trie_partitions</name>
 	<version>1</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>

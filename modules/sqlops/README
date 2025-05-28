@@ -720,11 +720,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 247 73 6018 7507
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 250 74 6054 7542
    2. Daniel-Constantin Mierla (@miconda) 105 44 2927 2158
    3. Liviu Chircu (@liviuchircu) 54 28 1116 948
    4. Elena-Ramona Modroiu 52 11 4040 390
-   5. Razvan Crainea (@razvancrainea) 20 14 149 246
+   5. Razvan Crainea (@razvancrainea) 21 14 149 246
    6. Elena-Ramona Modroiu 18 5 1051 192
    7. Henning Westerholt (@henningw) 12 8 112 133
    8. Vlad Paiu (@vladpaiu) 9 7 39 2
@@ -732,7 +732,7 @@ Chapter 2. Contributors
    10. Norman Brandinger (@NormB) 7 5 37 10
 
    All remaining contributors: Kobi Eshun (@ekobi), Andrei
-   Pelinescu-Onciul, Anca Vamanu, Maksym Sobolyev (@sobomax),
+   Pelinescu-Onciul, Maksym Sobolyev (@sobomax), Anca Vamanu,
    Ovidiu Sas (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Klaus
    Darilion, John Burke (@john08burke), Andrey Vorobiev, Nick
    Altmann (@nikbyte), Olle E. Johansson, Kennard White, Julián
@@ -760,14 +760,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Norman Brandinger (@NormB)          Aug 2006 - Mar 2025
-   2.  Nick Altmann (@nikbyte)             Feb 2025 - Feb 2025
-   3.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2024
-   4.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2024
-   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   7.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
-   8.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - May 2025
+   2.  Maksym Sobolyev (@sobomax)          Oct 2022 - Apr 2025
+   3.  Norman Brandinger (@NormB)          Aug 2006 - Mar 2025
+   4.  Nick Altmann (@nikbyte)             Feb 2025 - Feb 2025
+   5.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2024
+   6.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
+   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   8.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
    9.  John Burke (@john08burke)           Jun 2022 - Jun 2022
    10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
 

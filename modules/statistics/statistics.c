@@ -806,8 +806,8 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 			//shm_free(name->u.isname.name.s.s);
 			name->u.isname.name.s.s = NULL;
 			name->u.isname.name.s.len = 0;
-			name->type = PV_NAME_PVAR;
 			name->u.dname = (void*)*stat;
+			name->type = PV_NAME_PVAR;
 		}
 	} else {
 		/* stat already found ! */

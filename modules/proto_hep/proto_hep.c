@@ -54,6 +54,7 @@ static int proto_hep_init_udp(struct proto_info* pi);
 static int proto_hep_init_tcp(struct proto_info* pi);
 static int proto_hep_init_tls(struct proto_info* pi);
 static int proto_hep_init_udp_listener(struct socket_info* si);
+static int proto_hep_bind_udp_listener(struct socket_info* si);
 static int hep_tls_async_write(struct tcp_connection* con, int fd);
 static int hep_tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int hep_tls_read_req(struct tcp_connection* con, int* bytes_read);
@@ -91,6 +92,10 @@ static int hep_tls_async_handshake_connect_timeout = 10;
 int hep_ctx_idx = 0;
 int hep_capture_id = 1;
 int payload_compression = 0;
+int hep_max_retries = 5;
+int hep_retry_cooldown = 3600; //seconds
+extern atomic_t *hep_failed_retries;
+extern atomic_t *hep_last_attempt;
 
 int homer5_on = 1;
 str homer5_delim = {":", 0};
@@ -137,6 +142,8 @@ static const param_export_t params[] = {
 	{ "hep_id",                          STR_PARAM|USE_FUNC_PARAM, parse_hep_id     },
 	{ "homer5_on",                       INT_PARAM, &homer5_on                      },
 	{ "homer5_delim",                    STR_PARAM, &homer5_delim.s                 },
+	{ "hep_max_retries",                 INT_PARAM, &hep_max_retries                },
+	{ "hep_retry_cooldown",              INT_PARAM, &hep_retry_cooldown             },
 	{0, 0, 0}
 };
 
@@ -187,6 +194,11 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
+	struct {
+		atomic_t hep_failed_retries;
+		atomic_t hep_last_attempt;
+	} *sh_holders;
+
 	/* check if any listeners defined for this proto */
 	if (!protos[PROTO_HEP_UDP].listeners && !protos[PROTO_HEP_TCP].listeners
 		&& !protos[PROTO_HEP_TLS].listeners) {
@@ -198,6 +210,15 @@ static int mod_init(void)
 		LM_ERR("could not initialize HEP id list!\n");
 		return -1;
 	}
+
+	sh_holders = shm_malloc(sizeof *sh_holders);
+	if (!sh_holders) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(sh_holders, 0, sizeof *sh_holders);
+	hep_failed_retries = &sh_holders->hep_failed_retries;
+	hep_last_attempt = &sh_holders->hep_last_attempt;
 
 	if (protos[PROTO_HEP_TLS].listeners && load_tls_mgm_api(&tls_mgm_api)!=0) {
 		LM_DBG("failed to find TLS API - is tls_mgm module loaded?\n");
@@ -274,6 +295,7 @@ static int proto_hep_init_udp(struct proto_info* pi)
 	pi->name               = "hep_udp";
 	pi->default_port       = hep_port;
 	pi->tran.init_listener = proto_hep_init_udp_listener;
+	pi->tran.bind_listener = proto_hep_bind_udp_listener;
 
 	pi->tran.send          = hep_udp_send;
 
@@ -343,6 +365,11 @@ static int proto_hep_init_tls(struct proto_info* pi)
 static int proto_hep_init_udp_listener(struct socket_info* si)
 {
 	return udp_init_listener(si, hep_async ? O_NONBLOCK : 0);
+}
+
+static int proto_hep_bind_udp_listener(struct socket_info* si)
+{
+	return udp_bind_listener(si);
 }
 
 static int hep_udp_send(const struct socket_info* send_sock,

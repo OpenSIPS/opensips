@@ -299,6 +299,7 @@ Chapter 2. Contributors
    5. Maksym Sobolyev (@sobomax) 4 2 3 4
    6. Peter Lemenkov (@lemenkov) 4 2 2 2
    7. Alexandra Titoc 3 1 1 1
+   8. Ryan Bullock 2 1 2 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -320,13 +321,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Apr 2018 - Mar 2025
-   2. Alexandra Titoc                     Sep 2024 - Sep 2024
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2020 - Jun 2023
-   4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
-   6. Razvan Crainea (@razvancrainea)     Mar 2018 - Jan 2020
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2019 - Apr 2019
+   1. Ryan Bullock                        Apr 2025 - Apr 2025
+   2. Liviu Chircu (@liviuchircu)         Apr 2018 - Mar 2025
+   3. Alexandra Titoc                     Sep 2024 - Sep 2024
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2020 - Jun 2023
+   5. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
+   7. Razvan Crainea (@razvancrainea)     Mar 2018 - Jan 2020
+   8. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2019 - Apr 2019
 
    (1) including any documentation-related commits, excluding
    merge commits

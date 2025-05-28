@@ -16,20 +16,27 @@ jobs:
   # This workflow contains a single job called "build"
   build_multiarch:
     # The type of runner that the job will run on
-    runs-on: ${{ matrix.os }}
-    continue-on-error: true
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:${{ matrix.os }}
+      options: >-
+        -v sources:/__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
     env:
       COMPILER: ${{ matrix.compiler }}
-      BUILD_OS: ${{ matrix.os }}
-
+      BUILD_OS: ubuntu:${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         compiler: ['gcc-i386-cross', 'clang-i386-cross', 'gcc-mips64-cross', 'gcc-arm32-cross', 'gcc-arm64-cross',  'gcc-arm32-qemu-cross', 'gcc-arm64-qemu-cross', 'clang-arm32-qemu-cross', 'clang-arm64-qemu-cross']
-        os: [ubuntu-22.04]
+        os: [22.04]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: Install git
+        run: |
+          apt-get update
+          apt-get install -y git lsb-release gnupg2 wget
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
         with:
@@ -63,16 +70,10 @@ jobs:
         if: endsWith(matrix.compiler, '-qemu-cross')
         run: scripts/build/print_ccache_stats.sh
 
-  notify:
-    runs-on: ubuntu-latest
+  all_done:
     needs: build_multiarch
-    steps:
-      - name: Notify slack fail
-        if: failure() && github.repository == 'OpenSIPS/opensips'
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
-        with:
-          channel: devel
-          status: FAILED
-          color: danger
+    uses: ./.github/workflows/.notify.yml
+    with:
+      job_name: "Multi-Architecture Build"
+      job_result: ${{ needs.build_multiarch.result }}
+    if: ${{ always() }}

@@ -26,6 +26,7 @@
 #include "../../hash_func.h"
 #include "../../mem/shm_mem.h"
 #include "../../mi/mi.h"
+#include "../../name_alias.h"
 #include "domain_mod.h"
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +37,7 @@
 
 
 /* Add domain to hash table */
-int hash_table_install (struct domain_list **hash_table, str *d, str *a)
+int hash_table_install (struct domain_list **hash_table, str *d, str *a, int as)
 {
 	struct domain_list *np;
 	unsigned int hash_val;
@@ -61,6 +62,8 @@ int hash_table_install (struct domain_list **hash_table, str *d, str *a)
 		np->attrs.s = NULL;
 	}
 
+	np->accept_subdomain = as;
+
 	hash_val = dom_hash(&np->domain);
 	np->next = hash_table[hash_val];
 	hash_table[hash_val] = np;
@@ -70,14 +73,13 @@ int hash_table_install (struct domain_list **hash_table, str *d, str *a)
 
 
 /* Check if domain exists in hash table */
-int hash_table_lookup (struct sip_msg *msg, str *domain, pv_spec_t *pv)
+int hash_table_lookup (struct sip_msg *msg, str *lookup_domain, str *host, pv_spec_t *pv)
 {
 	struct domain_list *np;
 	pv_value_t val;
 
-	for (np = (*hash_table)[dom_hash(domain)]; np != NULL; np = np->next) {
-		if ((np->domain.len == domain->len) &&
-			(strncasecmp(np->domain.s, domain->s, domain->len) == 0)) {
+	for (np = (*hash_table)[dom_hash(lookup_domain)]; np != NULL; np = np->next) {
+		if (match_domain(np->domain.s, np->domain.len, host->s, host->len, np->accept_subdomain)) {
 			if (pv && np->attrs.s) {
 				val.rs = np->attrs;
 				val.flags = PV_VAL_STR;

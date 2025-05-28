@@ -1,8 +1,9 @@
-INSERT INTO version (table_name, table_version) values ('domain','3');
+INSERT INTO version (table_name, table_version) values ('domain','4');
 CREATE TABLE domain (
     id NUMBER(10) PRIMARY KEY,
     domain VARCHAR2(64) DEFAULT '',
     attrs VARCHAR2(255) DEFAULT NULL,
+    accept_subdomain NUMBER(10) DEFAULT 0 NOT NULL,
     last_modified DATE DEFAULT to_date('1900-01-01 00:00:01','yyyy-mm-dd hh24:mi:ss'),
     CONSTRAINT domain_domain_idx  UNIQUE (domain)
 );

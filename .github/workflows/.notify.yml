@@ -1,0 +1,31 @@
+name: notify
+
+on:
+  workflow_call:
+    inputs:
+      job_name:
+        required: true
+        type: string
+      job_result:
+        required: true
+        type: string
+
+jobs:
+  notify_slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify slack fail
+        if: ${{ inputs.job_result == 'failure' && github.repository == 'OpenSIPS/opensips' }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel: devel
+          status: FAILED
+          color: danger
+
+      - name: Post Fail
+        if: ${{ inputs.job_result == 'failure' }}
+        run: |
+          echo "💥 \"${{ inputs.job_name }}\" failed – marking workflow 💩" >&2
+          exit 1

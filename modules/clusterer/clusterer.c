@@ -353,10 +353,7 @@ static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
 	gettimeofday(&now, NULL);
 
 	/* sent a TCP BIN packet directly to @dest -> delay next ping */
-	lock_get(chosen_dest->lock);
-	if (chosen_dest->link_state == LS_UP)
-		chosen_dest->last_ping = now;
-	lock_release(chosen_dest->lock);
+	chosen_dest->last_sent = now;
 
 	return 0;
 }
@@ -1110,9 +1107,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	}
 
 	lock_get(node->lock);
-
-	/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
-	node->last_pong = now;
+	node->last_recv = now;
 
 	if (!(node->flags & NODE_STATE_ENABLED)) {
 		lock_release(node->lock);
@@ -1250,9 +1245,8 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 		}
 
 		lock_get(node->lock);
-
-		/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
-		node->last_pong = now;
+		if (packet_type != CLUSTERER_PONG)
+			node->last_recv = now;
 
 		if (!(node->flags & NODE_STATE_ENABLED)) {
 			lock_release(node->lock);
@@ -1398,9 +1392,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	}
 
 	lock_get(node->lock);
-
-	/* bump "last pong" ts, since we fully read a valid TCP BIN packet */
-	node->last_pong = now;
+	node->last_recv = now;
 
 	if (!(node->flags & NODE_STATE_ENABLED)) {
 		lock_release(node->lock);

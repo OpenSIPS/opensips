@@ -100,12 +100,21 @@ static int shm_shmid=-1; /*shared memory id*/
 gen_lock_t *mem_lock;
 #endif
 
+#if defined F_PARALLEL_MALLOC
+gen_lock_t *hash_locks[TOTAL_F_PARALLEL_POOLS];
+/* we allocated TOTAL_F_PARALLEL_POOLS mem blocks */
+static void** shm_mempools=NULL;
+void **shm_blocks;
+#endif
+
 #ifdef HP_MALLOC
 gen_lock_t *mem_locks;
 #endif
 
 static void* shm_mempool=INVALID_MAP;
 void *shm_block;
+
+int init_done=0;
 
 #ifdef DBG_MALLOC
 gen_lock_t *mem_dbg_lock;
@@ -265,12 +274,12 @@ void *shm_getmem(int fd, void *force_addr, unsigned long size)
 }
 
 
-#if !defined INLINE_ALLOC && defined HP_MALLOC
+#if !defined(INLINE_ALLOC) && (defined(HP_MALLOC) || defined(F_PARALLEL_MALLOC))
 /* startup optimization */
-int shm_use_global_lock;
+int shm_use_global_lock = 1;
 #endif
 
-int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
+int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 {
 #ifdef HP_MALLOC
 	int i;
@@ -283,10 +292,10 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	shm_block = qm_malloc_init(mempool, pool_size, "shm");
 #elif defined HP_MALLOC
 	shm_block = hp_shm_malloc_init(mempool, pool_size, "shm");
+#elif define F_PARALEL_MALLOC
+	shm_blocks[idx] = parallel_malloc_init(mempool, pool_size, "shm", idx);
 #endif
 #else
-	if (mem_allocator_shm == MM_NONE)
-		mem_allocator_shm = mem_allocator;
 
 #ifdef HP_MALLOC
 	if (mem_allocator_shm == MM_HP_MALLOC
@@ -297,8 +306,15 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_stats[4].stat_pointer = &shm_rused;
 		shm_stats[5].flags = STAT_NO_RESET;
 		shm_stats[5].stat_pointer = &shm_frags;
-	} else {
-		shm_use_global_lock = 1;
+
+		shm_use_global_lock = 0;
+	}
+#endif
+
+#ifdef F_PARALLEL_MALLOC
+	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||
+	mem_allocator_shm == MM_F_PARALLEL_MALLOC_DBG) {
+		shm_use_global_lock = 0;
 	}
 #endif
 
@@ -340,6 +356,18 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_frag_line = hp_frag_line;
 		break;
 #endif
+#ifdef F_PARALLEL_MALLOC
+	case MM_F_PARALLEL_MALLOC:
+	case MM_F_PARALLEL_MALLOC_DBG:
+		shm_stats_core_init = (osips_shm_stats_init_f)parallel_stats_core_init;
+		shm_stats_get_index = parallel_stats_get_index;
+		shm_stats_set_index = parallel_stats_set_index;
+		shm_frag_overhead = F_PARALLEL_FRAG_OVERHEAD;
+		shm_frag_file = parallel_frag_file;
+		shm_frag_func = parallel_frag_func;
+		shm_frag_line = parallel_frag_line;
+		break;
+#endif
 	default:
 		LM_ERR("current build does not include support for "
 		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
@@ -366,6 +394,12 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_frag_size = hp_frag_size;
 		break;
 #endif
+#ifdef F_PARALLEL_MALLOC
+	case MM_F_PARALLEL_MALLOC:
+	case MM_F_PARALLEL_MALLOC_DBG:
+		shm_frag_size = parallel_frag_size;
+		break;
+#endif
 	default:
 		LM_ERR("current build does not include support for "
 		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
@@ -373,6 +407,30 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	}
 
 	switch (mem_allocator_shm) {
+#ifdef F_PARALLEL_MALLOC
+	case MM_F_PARALLEL_MALLOC:
+	case MM_F_PARALLEL_MALLOC_DBG:
+		shm_blocks[idx] = parallel_malloc_init(mempool, pool_size, "shm", idx);
+		if (!shm_blocks[idx]) {
+			LM_CRIT("parallel alloc init :( \n");
+			goto err_destroy;	
+		}
+		gen_shm_malloc         = (osips_block_malloc_f)parallel_malloc;
+		gen_shm_malloc_unsafe  = (osips_block_malloc_f)parallel_malloc;
+		gen_shm_realloc        = (osips_block_realloc_f)parallel_realloc;
+		gen_shm_realloc_unsafe = (osips_block_realloc_f)parallel_realloc;
+		gen_shm_free           = (osips_block_free_f)parallel_free;
+		gen_shm_free_unsafe    = (osips_block_free_f)parallel_free;
+		gen_shm_info           = (osips_mem_info_f)parallel_info;
+		gen_shm_status         = (osips_mem_status_f)parallel_status;
+		gen_shm_get_size       = (osips_get_mmstat_f)parallel_get_size;
+		gen_shm_get_used       = (osips_get_mmstat_f)parallel_get_used;
+		gen_shm_get_rused      = (osips_get_mmstat_f)parallel_get_real_used;
+		gen_shm_get_mused      = (osips_get_mmstat_f)parallel_get_max_real_used;
+		gen_shm_get_free       = (osips_get_mmstat_f)parallel_get_free;
+		gen_shm_get_frags      = (osips_get_mmstat_f)parallel_get_frags;
+		break;
+#endif
 #ifdef F_MALLOC
 	case MM_F_MALLOC:
 		shm_block = fm_malloc_init(mempool, pool_size, "shm");
@@ -496,10 +554,15 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	}
 #endif
 
-	if (!shm_block){
-		LM_CRIT("could not initialize shared malloc\n");
-		shm_mem_destroy();
-		return -1;
+	if (mem_allocator_shm != MM_F_PARALLEL_MALLOC && mem_allocator_shm != MM_F_PARALLEL_MALLOC_DBG) {
+		if (!shm_block){
+#ifdef F_PARALLEL_MALLOC
+err_destroy:
+#endif
+			LM_CRIT("could not initialize shared malloc\n");
+			shm_mem_destroy();
+			return -1;
+		}
 	}
 
 #if defined(SHM_EXTRA_STATS) && defined(SHM_SHOW_DEFAULT_GROUP)
@@ -574,6 +637,21 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	}
 
 	memset(shm_hash_usage, 0, HP_TOTAL_HASH_SIZE * sizeof *shm_hash_usage);
+#endif
+
+#if defined F_PARALLEL_MALLOC
+	hash_locks[idx] = shm_malloc_unsafe(sizeof(gen_lock_t));
+	if (!hash_locks[idx]) {
+		LM_CRIT("could not initialize lock on idx %d\n",idx);
+		shm_mem_destroy();
+		return -1;
+	}
+
+	if (!lock_init(hash_locks[idx])) {
+		LM_CRIT("could not initialize lock on idx %d\n",idx);
+		shm_mem_destroy();
+		return -1;
+	}
 #endif
 
 #if defined F_MALLOC || defined Q_MALLOC
@@ -699,6 +777,23 @@ int shm_mem_init(void)
 		return -1;
 	}
 
+#ifdef F_PARALLEL_MALLOC
+	/* we will need multiple pools, malloc pointers here */
+	shm_mempools = malloc(TOTAL_F_PARALLEL_POOLS * sizeof(void*));
+	if (!shm_mempools) {
+		LM_ERR("Failed to init all the mempools \n");
+		return -1;
+	}
+	memset(shm_mempools,0,TOTAL_F_PARALLEL_POOLS * sizeof(void *));
+
+	shm_blocks = malloc(TOTAL_F_PARALLEL_POOLS * sizeof(void *));
+	if (!shm_blocks) {
+		LM_ERR("Failed to init all the blocks \n");
+		return -1;
+	}
+	memset(shm_blocks,0,TOTAL_F_PARALLEL_POOLS * sizeof(void *));
+#endif
+
 #ifndef USE_ANON_MMAP
 	fd=open("/dev/zero", O_RDWR);
 	if (fd==-1){
@@ -707,6 +802,51 @@ int shm_mem_init(void)
 	}
 #endif /* USE_ANON_MMAP */
 
+	if (mem_allocator_shm == MM_NONE)
+		mem_allocator_shm = mem_allocator;
+
+#ifdef F_PARALLEL_MALLOC
+	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||
+	mem_allocator_shm == MM_F_PARALLEL_MALLOC_DBG) {
+		int i;
+		LM_DBG("Paralel malloc, total pools size is %d\n",TOTAL_F_PARALLEL_POOLS);
+		for (i=0;i<TOTAL_F_PARALLEL_POOLS;i++) {
+			unsigned long block_size;
+
+			block_size = shm_mem_size/TOTAL_F_PARALLEL_POOLS;
+			shm_mempools[i] = shm_getmem(fd,NULL,block_size);
+			LM_DBG("Allocated %p pool on idx %d with size %ld\n",shm_mempools[i],i,block_size);
+
+			if (shm_mempools[i] == INVALID_MAP) {
+				LM_CRIT("could not attach shared memory segment %d: %s\n",
+						i,strerror(errno));
+				return -1;
+			}
+
+			if (shm_mem_init_mallocs(shm_mempools[i], block_size,i)) {
+				LM_CRIT("could not init shared memory segment %d\n",i);
+				return -1;
+			}
+		}
+
+		init_done = 1;
+		return 0;
+	} else {
+		shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
+#ifndef USE_ANON_MMAP
+		close(fd);
+#endif /* USE_ANON_MMAP */
+		if (shm_mempool == INVALID_MAP) {
+			LM_CRIT("could not attach shared memory segment: %s\n",
+					strerror(errno));
+			/* destroy segment*/
+			shm_mem_destroy();
+			return -1;
+		}
+
+		return shm_mem_init_mallocs(shm_mempool, shm_mem_size,0);
+	}
+#else
 	shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
 #ifndef USE_ANON_MMAP
 	close(fd);
@@ -719,7 +859,8 @@ int shm_mem_init(void)
 		return -1;
 	}
 
-	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
+	return shm_mem_init_mallocs(shm_mempool, shm_mem_size,0);
+#endif
 }
 
 #ifdef DBG_MALLOC
@@ -938,6 +1079,11 @@ void shm_mem_destroy(void)
 
 #ifndef SHM_MMAP
 	struct shmid_ds shm_info;
+#endif
+
+#ifdef F_PARALLEL_MALLOC
+	/* just let OS free for us, for now */
+	return;
 #endif
 
 #ifdef HP_MALLOC

@@ -39,10 +39,10 @@
 			</clause_cols>
 		</cmd>
 	</mod>
-	<!-- dr_partitions provisionning -->
-	<mod><mod_name>dr_partitions</mod_name>
+	<!-- trie_partitions provisionning -->
+	<mod><mod_name>trie_partitions</mod_name>
 		<cmd><cmd_name>show</cmd_name>
-			<db_table_id>dr_partitions</db_table_id>
+			<db_table_id>trie_partitions</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
@@ -52,7 +52,7 @@
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
-			<db_table_id>dr_partitions</db_table_id>
+			<db_table_id>trie_partitions</db_table_id>
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>partition_name</field></col>
@@ -61,7 +61,7 @@
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
-			<db_table_id>dr_partitions</db_table_id>
+			<db_table_id>trie_partitions</db_table_id>
 			<cmd_type>DB_UPDATE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>
@@ -73,7 +73,7 @@
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
-			<db_table_id>dr_partitions</db_table_id>
+			<db_table_id>trie_partitions</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>

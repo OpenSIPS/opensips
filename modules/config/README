@@ -1,0 +1,352 @@
+Config Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+
+              1.1.1. Restart Persistent Memory
+
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. db_url (string)
+              1.3.2. table_name (string)
+              1.3.3. name_column (string)
+              1.3.4. value_column (string)
+              1.3.5. description_column (string)
+              1.3.6. enable_restart_persistency (integer)
+              1.3.7. hash_size (integer)
+
+        1.4. Exported Pseudo-Variables
+
+              1.4.1. $config(name)
+              1.4.2. $config.description(name)
+
+        1.5. MI Commands
+
+              1.5.1. config_reload
+              1.5.2. config_list
+              1.5.3. config_push
+              1.5.4. config_push_bulk
+              1.5.5. config_flush
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set “db_url” parameter
+   1.2. Set “table_name” parameter
+   1.3. Set “name_column” parameter
+   1.4. Set “value_column” parameter
+   1.5. Set “desctiption_column” parameter
+   1.6. Set “restart_persistent_memory” parameter
+   1.7. Set “hash_size” parameter
+   1.8. Usage of $config(...)
+   1.9. Usage of $config.description(name)
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The config module enables dynamic, runtime configuration of
+   OpenSIPS parameters by loading them from persistent storage at
+   startup and exposing them to the script level via the
+   $config(...) pseudo-variable.
+
+   All configuration variables are stored in OpenSIPS' internal
+   cache, allowing fast access during SIP processing to maintain
+   high performance. The cache can be updated in three ways:
+     * Script – Assigning a value to the $config(...)
+       pseudo-variable updates the in-memory cache, but this
+       change is not persisted to the database.
+     * MI Commands – Using config_push or config_push_bulk updates
+       one or more variables in the runtime cache. These updates
+       are also not saved to the database.
+     * Database – Manually modifying values in the database, then
+       triggering the config_reload command, will refresh the
+       in-memory cache with updated values from the database.
+
+1.1.1. Restart Persistent Memory
+
+   By default, the configuration cache is initialized at startup
+   by reading from the database and persists only during the
+   runtime. Any temporary changes made through the script or MI
+   commands that are not explicitly flushed to the database using
+   the config_flush command will be lost after a restart.
+
+   In such cases, restart persistent memory becomes useful. When
+   enabled via the enable_restart_persistency parameter, OpenSIPS
+   no longer loads configuration values from the database on
+   startup. Instead, it restores the previously saved in-memory
+   cache, preserving runtime changes across restarts.
+
+   If needed, you can still manually re-initialize the cache from
+   the database by running the config_reload MI command.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * A database module is needed to read the initial cache.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. db_url (string)
+
+   Database URL used to load the initial configuration values, and
+   flush them at runtime using the config_flush MI command.
+
+   Default value is
+   “mysql://opensips:opensipsrw@localhost/opensips”.
+
+   Example 1.1. Set “db_url” parameter
+...
+modparam("config", "db_url", "dbdriver://username:password@dbhost/dbname
+")
+...
+
+1.3.2. table_name (string)
+
+   Name of the table where configuration entries are stored.
+
+   Default value is “config”.
+
+   Example 1.2. Set “table_name” parameter
+...
+modparam("config", "table_name", "configuration")
+...
+
+1.3.3. name_column (string)
+
+   Name of the column storing configuration variable names.
+
+   Default value is “name”.
+
+   Example 1.3. Set “name_column” parameter
+...
+modparam("config", "name_column", "key")
+...
+
+1.3.4. value_column (string)
+
+   Name of the column storing configuration variable values.
+
+   Default value is “value”.
+
+   Example 1.4. Set “value_column” parameter
+...
+modparam("config", "value_column", "val")
+...
+
+1.3.5. description_column (string)
+
+   Name of the column storing variable descriptions.
+
+   Default value is “description”.
+
+   Example 1.5. Set “desctiption_column” parameter
+...
+modparam("config", "description_column", "desc")
+...
+
+1.3.6. enable_restart_persistency (integer)
+
+   Enables restart persistency. Check the Restart Persistent
+   Memory for more information.
+
+   Default value is “0 / disabled”.
+
+   Example 1.6. Set “restart_persistent_memory” parameter
+...
+modparam("config", "restart_persistent_memory", yes)
+...
+
+1.3.7. hash_size (integer)
+
+   Size of the internal hash table used to store config variables.
+   Must be a power of 2 number, otherwise its value will be
+   rounded to the closest value of 2 smaller than the provided
+   value.
+
+   Default value is “16”.
+
+   Example 1.7. Set “hash_size” parameter
+...
+modparam("config", "hash_size", 32)
+...
+
+1.4. Exported Pseudo-Variables
+
+1.4.1. $config(name)
+
+   Returns the value of the given config variable by name. Can
+   also be used for temporarily changing the value.
+
+   Example 1.8. Usage of $config(...)
+                        ...
+                        xlog("Config value: $config(debug_mode)\n"); # r
+eading the value
+                        $config(debug_mode) = 1; # temporarily changing
+the value
+                        ...
+
+1.4.2. $config.description(name)
+
+   Returns the description of a config variable if available.
+
+   This variable is read-only.
+
+   Example 1.9. Usage of $config.description(name)
+                        ...
+                        xlog("Description: $config.description(debug_mod
+e)\n");
+                        ...
+
+1.5. MI Commands
+
+1.5.1. config_reload
+
+   Reloads all configuration variables from the database.
+
+   MI FIFO Command Format:
+                ## reload configuration cache from the database
+                opensips-mi config_reload
+                opensips-cli -x mi config_reload
+
+1.5.2. config_list
+
+   Lists all config variables currently loaded in cache, printing
+   temporary values as well. If the optional description parameter
+   is provided and different than 0, it returns an array
+   containing the description of the values as well.
+
+   MI FIFO Command Format:
+                ## list all configuration cache
+                opensips-mi config_list
+                opensips-cli -x mi config_list 1
+
+1.5.3. config_push
+
+   Temporarily pushes a single configuration variable.
+
+   Expected parameters are:
+     * name – (string) the name of the variable
+     * value – (string) the value of the variable
+     * description – (string, optional) the description of the
+       variable; if missing the description is inheritted, or a
+       null value is used if the variable is new.
+
+   MI FIFO Command Format:
+                ## push temporarily debug_mode configuration value
+                opensips-mi config_push debug_mode 1 "Enable Debug mode"
+                opensips-cli -x mi config_list 1
+
+1.5.4. config_push_bulk
+
+   Pushes multiple temporarily configuration variables in memory.
+
+   Expected parameters are:
+     * configs – (json) a JSON array containing a set of variables
+       to be pushed. Each variable should be described as a JSON
+       object with the following keys:
+          + name – (string) the name of the variable to be
+            changed.
+          + value – (string or null) the new value of the
+            variable.
+          + description – (string, optional) the description of
+            the variable.
+
+   MI FIFO Command Format:
+                ## push bulk temporarily values to the config cache
+                opensips-mi config_push_bulk -j '[[{"name":"debug_mode",
+"value":"1"},{"name":"debug_level","value":"5"}]]'
+
+   The command returns the number of values successfully pushed.
+
+1.5.5. config_flush
+
+   Flushes the variables from the memory to the database.
+
+   Expected parameters are:
+     * name – (string, optional) if present, flushes only a
+       specific config variable in database, otherwise the entire
+       cache.
+
+   MI FIFO Command Format:
+                ## Flush config variables to the database
+                opensips-mi config_flush
+                opensips-cli -x mi config_flush debug_mode
+
+   The command returns the number of values successfully flushed.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea)    14       1      1437      0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Razvan Crainea (@razvancrainea) May 2025 - May 2025
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Razvan Crainea (@razvancrainea).
+
+   Documentation Copyrights:
+
+   Copyright © 2025 OpenSIPS Solutions;

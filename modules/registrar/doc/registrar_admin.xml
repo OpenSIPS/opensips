@@ -374,15 +374,15 @@ onreply_route[do_save] {
 		<title><varname>attr_avp</varname> (string)</title>
 		<para>
 		AVP to store specific additional information for each registration.
-		This information is read from the AVP and stored (in memory, db or both)
-		at every registrar 'save'. When a registrar 'lookup' or 'is_registered'
-		function is called, the <emphasis>attr_avp</emphasis> is populated with
-		the value saved at [re]registration.
+		This information is read from the AVP and stored (in memory, db
+		or both) at every registrar 'save()'. When a registrar 'lookup()' or
+		'is_registered()' function is called, the stored information is
+		pushed into a message branch attribute with the same name as 
+		<emphasis>attr_avp</emphasis> (see $msg.branch.attr() core variable)
 		</para>
 		<para>
-		When doing call forking, the avp will hold multiple values. The position of
-		the corresponding attribute information in <emphasis>attr_avp</emphasis> is
-		equal to the branch index. An example scenario is given below.
+		When doing parallel call forking, the contact attributes will be 
+		pushed to the attributes of the corresponding branch 
 		</para>
 		<para>
 		<emphasis>
@@ -404,10 +404,18 @@ if (is_method("REGISTER")) {
 }
 ...
 lookup("location");
+# list all resulted branches and their attribute
+$var(i) = 0;
+while ($(msg.branch.uri[$var(i)])!=NULL) {
+	xlog("branch $var(i): $(msg.branch.uri[$var(i)]), attr=$(msg.branch.attr(attr)[$var(i)])\n");
+	$var(i) = $var(i) + 1;
+}
+....
 t_on_branch("parallel_fork");
+t_relay();
 ...
 branch_route [parallel_fork] {
-	xlog("Attributes for branch $T_branch_idx: $(avp(attr)[$T_branch_idx])\n");
+	xlog("Attributes for branch $T_branch_idx: $tm.branch.attr(attr)\n");
 }
 
 		</programlisting>

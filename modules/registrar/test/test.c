@@ -121,6 +121,7 @@ static void test_lookup(void)
 	/* test the "r" flag (branch lookup) */
 	{
 		str aor2 = str_init("bob"), aor3 = str_init("carol");
+		struct msg_branch branch;
 
 		ul.lock_udomain(d, &aor2);
 		ok(ul.insert_urecord(d, &aor2, &r, 0) == 0, "create AoR 2");
@@ -134,16 +135,18 @@ static void test_lookup(void)
 		ul.unlock_udomain(d, &aor3);
 
 		/* ensure the AoR expansion process doesn't stop on a non-existing AoR */
-		str ruri1 = str_init("sip:FOOBAR@foobar.com");
-		ok(append_branch(NULL, &ruri1, NULL, NULL, 1, 0, NULL) == 1, "append AoR-2");
+		memset(&branch, 0, sizeof branch);
+		branch.uri = str_init("sip:FOOBAR@foobar.com");
+		branch.q = 1;
+		ok(append_msg_branch(&branch) == 1, "append AoR-2");
 
-		str ruri2 = str_init("sip:carol@foobar.com");
-		ok(append_branch(NULL, &ruri2, NULL, NULL, 1, 0, NULL) == 1, "append AoR-3");
+		branch.uri = str_init("sip:carol@foobar.com");
+		ok(append_msg_branch(&branch) == 1, "append AoR-3");
 
 		set_ruri(&msg, &aor_ruri);
 		flags.flags = REG_BRANCH_AOR_LOOKUP_FLAG;
 		ok(reg_lookup(&msg, d, &flags, NULL) == LOOKUP_OK, "lookup-8");
-		ok(get_nr_branches() == 1, "get-nr-branches");
+		ok(get_dset_size() == 1, "get-nr-branches");
 	}
 }
 

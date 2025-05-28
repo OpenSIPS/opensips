@@ -17,12 +17,11 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    continue-on-error: true
     container:
       image: ubuntu:${{ matrix.os }}
     env:
       COMPILER: ${{ matrix.compiler }}
-      BUILD_OS: ubuntu-${{ matrix.os }}
+      BUILD_OS: ubuntu:${{ matrix.os }}
 
     strategy:
       fail-fast: false
@@ -56,10 +55,11 @@ jobs:
             compiler: 'clang-16'
           - os: 24.04
             compiler: 'clang-17'
+          - os: 24.04
+            compiler: 'clang-18'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Install git
         run: |
           apt-get update
@@ -78,16 +78,10 @@ jobs:
       - name: Build
         run: sh -x scripts/build/do_build.sh
 
-  notify:
-    runs-on: ubuntu-latest
+  all_done:
     needs: build
-    steps:
-      - name: Notify slack fail
-        if: failure() && github.repository == 'OpenSIPS/opensips'
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
-        with:
-          channel: devel
-          status: FAILED
-          color: danger
+    uses: ./.github/workflows/.notify.yml
+    with:
+      job_name: "Main CI"
+      job_result: ${{ needs.build.result }}
+    if: ${{ always() }}

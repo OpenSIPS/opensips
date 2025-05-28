@@ -6,8 +6,8 @@ CREATE TABLE trie_table (
     priority INTEGER DEFAULT 1 NOT NULL
 );
 
-INSERT INTO version (table_name, table_version) values ('dr_partitions','1');
-CREATE TABLE dr_partitions (
+INSERT INTO version (table_name, table_version) values ('trie_partitions','1');
+CREATE TABLE trie_partitions (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     partition_name CHAR(255) NOT NULL,
     db_url CHAR(255) NOT NULL,

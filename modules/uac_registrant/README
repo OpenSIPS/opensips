@@ -525,8 +525,8 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 17 14 57 68
    4. Vlad Patrascu (@rvlad-patrascu) 16 7 732 118
    5. Razvan Crainea (@razvancrainea) 11 9 26 36
-   6. Maksym Sobolyev (@sobomax) 5 3 20 16
-   7. Nick Altmann (@nikbyte) 4 2 35 4
+   6. Nick Altmann (@nikbyte) 5 3 43 4
+   7. Maksym Sobolyev (@sobomax) 5 3 20 16
    8. James Stanley 4 2 21 14
    9. Vlad Paiu (@vladpaiu) 4 2 6 3
    10. sagarmalam 3 1 15 1
@@ -554,19 +554,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  okhowang(王沛文)                       Jul 2024 - Jul 2024
-   2.  James Stanley                       Dec 2023 - Jun 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - May 2024
-   4.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
-   5.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
-   6.  James Stanley                       Mar 2023 - Mar 2023
-   7.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
-   8.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
-   9.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   10. sagarmalam                          Jan 2021 - Jan 2021
+   1.  Nick Altmann (@nikbyte)             Nov 2015 - Mar 2025
+   2.  okhowang(王沛文)                       Jul 2024 - Jul 2024
+   3.  James Stanley                       Dec 2023 - Jun 2024
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - May 2024
+   5.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
+   6.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
+   7.  James Stanley                       Mar 2023 - Mar 2023
+   8.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
+   9.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
+   10. Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
-   Peter Lemenkov (@lemenkov), Nick Altmann (@nikbyte), Vlad Paiu
+   All remaining contributors: sagarmalam, Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Vlad Paiu
    (@vladpaiu).
 
    (1) including any documentation-related commits, excluding

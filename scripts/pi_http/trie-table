@@ -7,9 +7,9 @@
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>priority</field><type>DB_INT</type></column>
 	</db_table>
-	<!-- Declaration of dr_partitions table-->
-	<db_table id="dr_partitions">
-		<table_name>dr_partitions</table_name>
+	<!-- Declaration of trie_partitions table-->
+	<db_table id="trie_partitions">
+		<table_name>trie_partitions</table_name>
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>partition_name</field><type>DB_STR</type></column>

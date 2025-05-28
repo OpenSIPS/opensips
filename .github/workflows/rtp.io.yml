@@ -1,0 +1,140 @@
+# This is a basic workflow to help you get started with Actions
+
+name: rtp.io
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on all push or pull request events
+  push:
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  LLVM_VER: 18
+  LLVM_VER_OLD: 16
+  GHCR_REPO: ghcr.io/${{ github.repository_owner }}/opensips
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build_test_rtp_io_quick:
+    name: Build & Test rtp.io module (Quick)
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    container:
+      image: sippylabs/rtpproxy:latest
+      options: --cap-add=SYS_PTRACE --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0
+    env:
+      PYTHON_VERSION: 3.12
+      BUILD_OS: ubuntu-latest
+    outputs:
+      llvm_ver: ${{ steps.set_outputs.outputs.LLVM_VER }}
+      llvm_ver_old: ${{ steps.set_outputs.outputs.LLVM_VER_OLD }}
+      ghcr-repo: ${{ steps.set_outputs.outputs.GHCR_REPO }}
+
+    steps:
+    - name: Set up environment
+      run: echo "COMPILER=clang-${LLVM_VER}" >> $GITHUB_ENV
+
+    - name: Install git
+      run: |
+        apt-get update
+        apt-get install -y git lsb-release gnupg2 wget
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Checkout VoIPTests repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'sippy/voiptests'
+        path: dist/voiptests
+
+    - name: Checkout RTPProxy repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'sippy/rtpproxy'
+        path: dist/rtpproxy
+
+    - name: Install dependencies
+      run: |
+        sh -x scripts/build/reset_sources.sh
+        sh -x scripts/build/install_depends.sh
+
+    - name: Build
+      run: |
+        KEEP_MODULES="dialog sipmsgops sl tm rr maxfwd rtp.io rtpproxy textops"
+        SKIP_MODULES="usrloc event_routing clusterer rtp_relay"
+        mkdir tmp
+        cd modules
+        mv ${KEEP_MODULES} ${SKIP_MODULES} ../tmp
+        rm -rf *
+        cd ../tmp
+        mv ${KEEP_MODULES} ${SKIP_MODULES} ../modules
+        cd ..
+        rmdir tmp
+        EXCLUDE_MODULES_ADD="${SKIP_MODULES}" sh -x scripts/build/do_build.sh
+
+    - name: Build rtp.io module
+      run: |
+        apt-get install -y libsrtp2-dev
+        ONE_MODULE=rtp.io LDFLAGS=-flto CFLAGS=-flto sh -x scripts/build/do_build.sh
+
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Define PYTHON_CMD
+      run: |
+        PYTHON_VER="`echo ${{ env.PYTHON_VERSION }} | sed 's|-dev$||'`"
+        echo "PYTHON_CMD=python${PYTHON_VER}" >> $GITHUB_ENV
+
+    - name: Test rtp.io module
+      env:
+        MM_TYPE: opensips
+        MM_BRANCH: master
+        MM_ROOT: ../..
+        RTPP_BRANCH: DOCKER
+        RTPPC_TYPE: rtp.io
+        RTPPROXY_DIST: ../../dist/rtpproxy
+      run: |
+        export CC="${COMPILER}"
+        cd dist/rtpproxy
+        ./configure
+        cd ../../dist/voiptests
+        python -m pip install -r requirements.txt
+        DEBIAN_FRONTEND=noninteractive apt-get install -y gpp
+        sh -x ./test_run.sh
+
+    - name: Pass Environment
+      id: set_outputs
+      run: |
+        echo "LLVM_VER=${LLVM_VER}" >> $GITHUB_OUTPUT
+        echo "LLVM_VER_OLD=${LLVM_VER_OLD}" >> $GITHUB_OUTPUT
+        GHCR_REPO="ghcr.io/${{ github.repository_owner }}/opensips"
+        echo "GHCR_REPO=${GHCR_REPO}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_OUTPUT
+
+  build_test_rtp_io_dock:
+    name: Build & Test OpenSIPS+rtp.io
+    needs: build_test_rtp_io_quick
+    uses: ./.github/workflows/.rtp.io.yml
+    with:
+      rtpp-tag: ${{ matrix.rtpp-tag }}
+      llvm-version: ${{ needs.build_test_rtp_io_quick.outputs.llvm_ver }}
+      llvm-version-old: ${{ needs.build_test_rtp_io_quick.outputs.llvm_ver_old }}
+      ghcr-repo: ${{ needs.build_test_rtp_io_quick.outputs.ghcr-repo }}
+    strategy:
+      fail-fast: false
+      matrix:
+        rtpp-tag: [debian_12-slim, ubuntu_latest]
+
+  all_done:
+    needs: build_test_rtp_io_dock
+    uses: ./.github/workflows/.notify.yml
+    with:
+      job_name: "rtp.io"
+      job_result: ${{ needs.build_test_rtp_io_dock.result }}
+    if: ${{ always() }}

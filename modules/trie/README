@@ -39,6 +39,22 @@ Trie Module
 
         1.6. Installation
 
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
    List of Examples
 
    1.1. Set trie_table parameter
@@ -80,7 +96,7 @@ Chapter 1. Admin Guide
 
    Example 1.1. Set trie_table parameter
 ...
-modparam("drouting", "trie_table", "my_prefix_table")
+modparam("trie", "trie_table", "my_prefix_table")
 ...
 
 1.3.2. no_concurrent_reload (int)
@@ -219,7 +235,7 @@ if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
             time of the last reload for the given partition.
 
    Example 1.8. trie_reload_status usage when use_partitions is 0
-$ opensips-cli -x mi dr_reload_status
+$ opensips-cli -x mi trie_reload_status
 Date:: Tue Aug 12 12:26:00 2014
 
 1.5.3. trie_search
@@ -271,6 +287,48 @@ t1 number=["012340987"] attrs=["my_attrs"]
    can also find the complete database documentation on the
    project webpage,
    https://opensips.org/docs/db/db-schema-devel.html.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Vlad Paiu (@vladpaiu)              28       4      2652      4
+   2. Razvan Crainea (@razvancrainea)    4        2       2        2
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Vlad Paiu (@vladpaiu)           Dec 2024 - May 2025
+   2. Razvan Crainea (@razvancrainea) Jan 2025 - Jan 2025
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

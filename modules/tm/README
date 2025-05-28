@@ -56,9 +56,8 @@ tm Module
               1.4.7. t_local_replied(reply)
               1.4.8. t_was_cancelled()
               1.4.9. t_cancel_branch([flags])
-              1.4.10.
-                      t_new_request(method,RURI,from,to[,body[,ctx]
-                      ])
+              1.4.10. t_new_request( method, RURI, from, to [,
+                      body[, ctx]])
 
               1.4.11. t_on_failure(failure_route)
               1.4.12. t_on_reply(reply_route)
@@ -77,6 +76,9 @@ tm Module
               1.4.23. t_reply_by_callid(code, reason_phrase,
                       [callid], [cseq])
 
+              1.4.24. t_get_branch_idx_by_attr(attr, [val_str],
+                      [val_int], [result_var], [offset])
+
         1.5. Exported Pseudo-Variables
 
               1.5.1. $T_branch_idx
@@ -87,6 +89,16 @@ tm Module
               1.5.6. $bavp(name)
               1.5.7. $T_id
               1.5.8. $T_branch_last_reply_code
+              1.5.9. $tm.branch.uri[]
+              1.5.10. $tm.branch.duri[]
+              1.5.11. $tm.branch.path[]
+              1.5.12. $tm.branch.q[]
+              1.5.13. $tm.branch.flags[]
+              1.5.14. $tm.branch.socket[]
+              1.5.15. $tm.branch.flag()[]
+              1.5.16. $tm.branch.attr()[]
+              1.5.17. $tm.branch.last_received[]
+              1.5.18. $tm.branch.type[]
 
         1.6. Exported MI Functions
 
@@ -188,6 +200,7 @@ tm Module
    1.45. t_flush_flags usage
    1.46. t_anycast_replicate usage
    1.47. t_reply_by_callid usage
+   1.48. t_get_branch_idx_by_attr usage
 
 Chapter 1. Admin Guide
 
@@ -1067,7 +1080,7 @@ onreply_route[3] {
 ...
 }
 
-1.4.10.  t_new_request(method,RURI,from,to[,body[,ctx]])
+1.4.10.  t_new_request( method, RURI, from, to [, body[, ctx]])
 
    This function generates and sends out a new SIP request (in a
    stateful way). The new request is completly unrelated to the
@@ -1508,6 +1521,36 @@ _in(ip):$socket_in(port)\r\n");
 }
 ...
 
+1.4.24.  t_get_branch_idx_by_attr(attr, [val_str], [val_int],
+[result_var], [offset])
+
+   This function may be used to search for the index of another
+   branch of the current transaction. The searching is done based
+   on the per-branch attribute - you need to provide the name of
+   the attribute at least. Optionally you can provide a value
+   (string or integer) for the attribute used for searching. As
+   input, the function may take an optional branch offset
+   (absolute value, covering all branches of the transaction)
+   where the search should start from.
+
+   The function returns true if a branch (having the given name
+   and value for the attribute) was found. The status of the
+   branch (like if ongoing, completed ) is not relevant. If found,
+   the "result_var" variable will be populated with the branch
+   index (as integer).
+
+   This function can be used from ONREPLY_ROUTE, BRANCH_ROUTE and
+   FAILURE_ROUTE.
+
+   Example 1.48. t_get_branch_idx_by_attr usage
+...
+        # search for a branch which has the "name" attribute
+        # with string value "pstn"
+        if (t_get_branch_idx_by_attr("name", "pstn", , $var(idx))) {
+                xlog("found branch has index $var(idx)\n");
+        }
+...
+
 1.5. Exported Pseudo-Variables
 
    Exported variables are listed in the next sections.
@@ -1576,6 +1619,103 @@ _in(ip):$socket_in(port)\r\n");
    received for a branch specified as parameter. If no parameter
    is specified, the last reply for the current branch is
    retrieved.
+
+1.5.9. $tm.branch.uri[]
+
+   $tm.branch.uri - gives read-only access over the Request URI
+   (as string) of a TM existing branch. The status of the branch
+   (completed, ongoing, etc) is not relevant.
+
+   The TM (UAC side) branches are created when the request is sent
+   to new destinations via "t_relay()" or "t_inject()".
+
+   The indexing of the branches starts from 0, giving access to
+   all branches (past and active) of the transaction. Nevertheless
+   the indexing supports two optional suffixes, to simplify the
+   scripting:
+     * /active - the indexing starts also from 0, but it is
+       relative to the last set of branches - the parallel
+       branches created by the last "t_relay()"-ing.
+     * /all - similar to "no suffix" case, meaning it is an
+       absolute index, covering all the branches of the
+       trasactions (resulted from all "t_relay()"s performed over
+       the transaction).
+
+   IF no index is specified, the current branch used. This depends
+   on the scripting context. Like in reply route, the current
+   branch is the branch the reply came for; in branch route, the
+   current branch is the branch to be sent out; in failure route,
+   the current branch is the winning branch.
+
+   NOTES:
+     * The index ALL ( "*" ) is not supported;
+     * In branch route, only the "$tm.branch.attr" and
+       "$tm.branch.flag" variables work for the current branch
+       (the rest of the branch related variables will return NULL)
+     * Negative values are accepted, meaning indexing from the end
+       ( -1 is the latest/higher branch)
+
+   The variable can be used in BRANCH, ONREPLY and FAILURE routes.
+
+1.5.10. $tm.branch.duri[]
+
+   $tm.branch.duri - 100% similar to $tm.branch.uri, but returning
+   the Detination-URI value of the branch.
+
+1.5.11. $tm.branch.path[]
+
+   $tm.branch.path - 100% similar to $tm.branch.uri, but returning
+   the PATH value of the branch.
+
+1.5.12. $tm.branch.q[]
+
+   $tm.branch.q - 100% similar to $tm.branch.uri, but returning
+   the Q value of the branch.
+
+1.5.13. $tm.branch.flags[]
+
+   $tm.branch.flags - 100% similar to $tm.branch.uri, but
+   returning the list (comma separated) of per-branch flags which
+   are set for the branch.
+
+1.5.14. $tm.branch.socket[]
+
+   $tm.branch.socket - 100% similar to $tm.branch.uri, but
+   returning the socket description (proto:ip:port) used for
+   sending the branch out.
+
+1.5.15. $tm.branch.flag()[]
+
+   $tm.branch.flag(name) - similar to $tm.branch.uri, but gives
+   read/write access to a single branch flag (by its name).
+
+   The accepted values are 0 for FALSE, pozitive non-zero for
+   TRUE. The returned values are 0 for FALSE and 1 for TRUE.
+
+   The flags operated here are the same as the bflags you can
+   operated with via the "[re]setbflag()" functions.
+
+1.5.16. $tm.branch.attr()[]
+
+   $tm.branch.attr(name) - similar to $tm.branch.uri, but gives
+   read/write access to the attributed attached to the branch.
+
+   An attribute can have whatever name (no need to be pre-defined)
+   and it can have a single value (at a time), string or integer.
+
+1.5.17. $tm.branch.last_received[]
+
+   $tm.branch.last_received - 100% similar to $tm.branch.uri, but
+   returning the reply code of the last received reply (from the
+   network) on this branch. NULL is returned in no reply was
+   received so far.
+
+1.5.18. $tm.branch.type[]
+
+   $tm.branch.type - 100% similar to $tm.branch.uri, but returning
+   the type of the current branch. This may be "phone" if it not a
+   real branch (has no SIP signalling, used by waiting for branch
+   injection) or "sip" (a real signalling branch).
 
 1.6. Exported MI Functions
 
@@ -1768,19 +1908,19 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1100 640 22154 16824
-   2. Jiri Kuthan (@jiriatipteldotorg) 537 198 18723 11167
-   3. Jan Janak (@janakj) 161 76 6462 1840
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1115 643 22953 16870
+   2. Jiri Kuthan (@jiriatipteldotorg) 541 198 18723 11167
+   3. Jan Janak (@janakj) 162 76 6462 1840
    4. Andrei Pelinescu-Onciul 146 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 144 111 2065 866
-   6. Liviu Chircu (@liviuchircu) 114 88 1303 913
-   7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
-   8. Vlad Patrascu (@rvlad-patrascu) 40 18 916 826
-   9. Anca Vamanu 37 19 778 651
-   10. Vlad Paiu (@vladpaiu) 30 26 179 63
+   5. Razvan Crainea (@razvancrainea) 145 112 2066 866
+   6. Liviu Chircu (@liviuchircu) 118 90 1318 946
+   7. Vlad Paiu (@vladpaiu) 45 33 675 339
+   8. Daniel-Constantin Mierla (@miconda) 43 37 322 166
+   9. Vlad Patrascu (@rvlad-patrascu) 40 18 916 826
+   10. Anca Vamanu 37 19 778 651
 
-   All remaining contributors: Dan Pascu (@danpascu), Henning
-   Westerholt (@henningw), Maksym Sobolyev (@sobomax), Ovidiu Sas
+   All remaining contributors: Henning Westerholt (@henningw), Dan
+   Pascu (@danpascu), Maksym Sobolyev (@sobomax), Ovidiu Sas
    (@ovidiusas), Juha Heinanen (@juha-h), Ionut Ionita
    (@ionutrazvanionita), Raphael Coeffic, Nils Ohlmeier, Klaus
    Darilion, Peter Lemenkov (@lemenkov), Andreas Granig, Elias
@@ -1814,10 +1954,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Mar 2025
-   2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jan 2025
-   3.  Vlad Paiu (@vladpaiu)               Jun 2011 - Nov 2024
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2024
+   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2025
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2025
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - May 2025
+   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Apr 2025
    5.  Carsten Bock                        Mar 2024 - Mar 2024
    6.  Maksym Sobolyev (@sobomax)          Mar 2004 - Nov 2023
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
@@ -1848,8 +1988,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Carsten Bock, Razvan Crainea
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Carsten Bock, Razvan Crainea
    (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Fabian Gast
    (@fgast), Alexey Vasilyev (@vasilevalex), Peter Lemenkov
    (@lemenkov), Nick Altmann (@nikbyte), Ovidiu Sas (@ovidiusas),

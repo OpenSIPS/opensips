@@ -1,8 +1,3 @@
-enable_ubuntu_toolchain_test() {
-	${SUDO} env DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common
-	${SUDO} add-apt-repository -y ppa:ubuntu-toolchain-r/test
-}
-
 setup_qemu() {
 	ARCH1="${1}"
 	ARCH2="${2}"
@@ -41,17 +36,15 @@ gcc-i386-cross)
 	export CC="gcc"
 	CC_EXTRA_OPTS="-Werror -m32"
 	MAKE_TGT="opensips"
-	DOCKR_BASE="ubuntu:18.04"
 	DOCKR_PLATFORM="x86_64"
-	export BUILD_OS="ubuntu-18.04"
+	export BUILD_OS="ubuntu:18.04"
 	PRE_INSTALL_CMD="${SUDO} dpkg --add-architecture i386"
 	PKGS="`exclude_pkgs 2.3.7` gcc g++ libc6-dev:i386 libstdc++6:i386 lib32gcc-7-dev"
 	;;
 gcc-mips64-cross)
 	MAKE_TGT="opensips"
-	DOCKR_BASE="ubuntu:18.04"
 	DOCKR_PLATFORM="x86_64"
-	export BUILD_OS="ubuntu-18.04"
+	export BUILD_OS="ubuntu:18.04"
 	export CC="mips64-linux-gnuabi64-gcc"
 	export AR="mips64-linux-gnuabi64-ar"
 	export RANLIB="mips64-linux-gnuabi64-ranlib"
@@ -64,8 +57,7 @@ gcc-arm32-cross)
 	export AR="arm-linux-gnueabihf-ar"
 	export RANLIB="arm-linux-gnueabihf-ranlib"
 	POST_INSTALL_CMD="setup_qemu arm gnueabihf"
-	export BUILD_OS="ubuntu-18.04"
-	DOCKR_BASE="ubuntu:18.04"
+	export BUILD_OS="ubuntu:18.04"
 	DOCKR_PLATFORM="x86_64"
 	PKGS="`exclude_pkgs 2.3.7` gcc-arm-linux-gnueabihf libc-dev-armhf-cross qemu-user-static"
 	;;
@@ -75,15 +67,13 @@ gcc-arm64-cross)
 	export AR="aarch64-linux-gnu-ar"
 	export RANLIB="aarch64-linux-gnu-ranlib"
 	POST_INSTALL_CMD="setup_qemu aarch64 gnu"
-	export BUILD_OS="ubuntu-18.04"
-	DOCKR_BASE="ubuntu:18.04"
+	export BUILD_OS="ubuntu:18.04"
 	DOCKR_PLATFORM="x86_64"
 	PKGS="`exclude_pkgs 2.3.7` gcc-aarch64-linux-gnu libc-dev-arm64-cross qemu-user-static"
 	;;
 gcc-arm32-qemu-cross)
 	export CC="/usr/lib/ccache/gcc"
 	export CCACHE_DIR="`pwd`/ccache"
-	DOCKR_BASE="ubuntu"
 	DOCKR_PLATFORM="arm/v7"
 	PKGS="`exclude_pkgs 2.3.7` gcc g++ ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
@@ -91,7 +81,6 @@ gcc-arm32-qemu-cross)
 clang-arm32-qemu-cross)
 	export CC="/usr/lib/ccache/clang"
 	export CCACHE_DIR="`pwd`/ccache"
-	DOCKR_BASE="ubuntu"
 	DOCKR_PLATFORM="arm/v7"
 	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
@@ -99,7 +88,6 @@ clang-arm32-qemu-cross)
 gcc-arm64-qemu-cross)
 	export CC="/usr/lib/ccache/gcc"
 	export CCACHE_DIR="`pwd`/ccache"
-	DOCKR_BASE="ubuntu"
 	DOCKR_PLATFORM="arm64/v8"
 	PKGS="`exclude_pkgs 2.3.7` gcc g++ ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
@@ -107,7 +95,6 @@ gcc-arm64-qemu-cross)
 clang-arm64-qemu-cross)
 	export CC="/usr/lib/ccache/clang"
 	export CCACHE_DIR="`pwd`/ccache"
-	DOCKR_BASE="ubuntu"
 	DOCKR_PLATFORM="arm64/v8"
 	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
@@ -123,9 +110,8 @@ clang-i386-cross)
 	export CC="clang"
 	CC_EXTRA_OPTS="-Werror -m32"
 	MAKE_TGT="opensips"
-	DOCKR_BASE="ubuntu:18.04"
 	DOCKR_PLATFORM="x86_64"
-	export BUILD_OS="ubuntu-18.04"
+	export BUILD_OS="ubuntu:18.04"
 	PRE_INSTALL_CMD="${SUDO} dpkg --add-architecture i386"
 	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev libc6-dev:i386 libstdc++6:i386 lib32gcc-7-dev"
 	;;
@@ -133,8 +119,8 @@ gcc-*)
 	export CC="${COMPILER}"
 	export AR="gcc-ar-${COMPILER_VER}"
 	export RANLIB="gcc-ranlib-${COMPILER_VER}"
+	export CPP_CMD="cpp-${COMPILER_VER}"
 	export GCOV_CMD="gcov-${COMPILER_VER}"
-	PRE_INSTALL_CMD="enable_ubuntu_toolchain_test"
 	PKGS="${PKGS} gcc-${COMPILER_VER} g++-${COMPILER_VER}"
 	;;
 clang-*)

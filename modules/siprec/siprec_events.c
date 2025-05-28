@@ -36,11 +36,13 @@ static str siprec_state_event_dlg_callid_s = str_init("dlg_callid");
 static str siprec_state_event_callid_s = str_init("callid");
 static str siprec_state_event_session_s = str_init("session_id");
 static str siprec_state_event_server_s = str_init("server");
+static str siprec_state_event_instance_s = str_init("instance");
 static evi_param_p siprec_state_event_did;
 static evi_param_p siprec_state_event_dlg_callid;
 static evi_param_p siprec_state_event_callid;
 static evi_param_p siprec_state_event_session;
 static evi_param_p siprec_state_event_server;
+static evi_param_p siprec_state_event_instance;
 
 int src_init_events(void)
 {
@@ -93,6 +95,13 @@ int src_init_events(void)
 		goto error;
 	}
 
+	if ((siprec_state_event_instance = evi_param_create(siprec_state_event_params,
+				&siprec_state_event_instance_s)) == NULL) {
+		LM_ERR("could not create %s param for %s event\n",
+				siprec_state_event_instance_s.s, siprec_event_start_name.s);
+		goto error;
+	}
+
 	return 0;
 error:
 	evi_free_params(siprec_state_event_params);
@@ -108,7 +117,7 @@ static void raise_siprec_state_event(event_id_t event, char *name, struct src_se
 		return;
 	}
 
-	if (!sess->dlg) {
+	if (!sess->ctx->dlg) {
 		LM_DBG("no dialog for %s event - skipping!\n", name);
 		return;
 	}
@@ -116,13 +125,13 @@ static void raise_siprec_state_event(event_id_t event, char *name, struct src_se
 	sess_uuid.s = (char *)sess->uuid;
 	sess_uuid.len = SIPREC_UUID_LEN;
 
-	if (evi_param_set_str(siprec_state_event_did, srec_dlg.get_dlg_did(sess->dlg)) < 0) {
+	if (evi_param_set_str(siprec_state_event_did, srec_dlg.get_dlg_did(sess->ctx->dlg)) < 0) {
 		LM_ERR("cannot set %s event %s parameter\n",
 				name, siprec_state_event_did_s.s);
 		return;
 	}
 
-	if (evi_param_set_str(siprec_state_event_dlg_callid, &sess->dlg->callid) < 0) {
+	if (evi_param_set_str(siprec_state_event_dlg_callid, &sess->ctx->dlg->callid) < 0) {
 		LM_ERR("cannot set %s event %s parameter\n",
 				name, siprec_state_event_dlg_callid_s.s);
 		return;
@@ -145,6 +154,13 @@ static void raise_siprec_state_event(event_id_t event, char *name, struct src_se
 				name, siprec_state_event_server_s.s);
 		return;
 	}
+
+	if (evi_param_set_str(siprec_state_event_instance, &SIPREC_SRS(sess)) < 0) {
+		LM_ERR("cannot set %s event %s parameter\n",
+				name, siprec_state_event_instance_s.s);
+		return;
+	}
+
 	if (evi_raise_event(event, siprec_state_event_params))
 		LM_ERR("unable to send %s event\n", name);
 }
