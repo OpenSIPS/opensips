@@ -30,8 +30,10 @@ RUN --mount=type=bind,source=dist/voiptests/requirements.txt,target=requirements
 COPY --exclude=.git --exclude=.github --exclude=docker --exclude=dist \
  . .
 
-ARG KEEP_MODULES="dialog sipmsgops sl tm rr maxfwd rtp.io rtpproxy textops"
-ARG SKIP_MODULES="usrloc event_routing clusterer rtp_relay"
+ARG KEEP_MODULES="dialog sipmsgops sl tm rr maxfwd rtp.io rtpproxy textops \
+ signaling mi_fifo usrloc registrar acc rtp_relay siprec b2b_entities \
+ uac_auth presence pua alias_db b2b_logic"
+ARG SKIP_MODULES="event_routing clusterer"
 RUN mkdir tmp && cd modules && mv ${KEEP_MODULES} ${SKIP_MODULES} ../tmp && \
  rm -rf * && cd ../tmp && mv ${KEEP_MODULES} ${SKIP_MODULES} ../modules && \
  cd .. && rmdir tmp
