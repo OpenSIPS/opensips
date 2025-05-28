@@ -93,7 +93,7 @@ jwt_secrets|1
 load_balancer|
 load_balancer|3
 location|
-location|1013
+location|1014
 missed_calls|
 missed_calls|5
 presentity|
@@ -130,8 +130,6 @@ sip_trace|
 sip_trace|5
 smpp|
 smpp|1
-METADATA_DEFAULTS
-NIL|NIL
 speed_dial|
 speed_dial|3
 subscriber|
