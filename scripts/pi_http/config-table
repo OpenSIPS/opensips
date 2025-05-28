@@ -1,0 +1,9 @@
+	<!-- Declaration of config table-->
+	<db_table id="config">
+		<table_name>config</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>name</field><type>DB_STR</type></column>
+		<column><field>value</field><type>DB_BLOB</type></column>
+		<column><field>description</field><type>DB_STR</type></column>
+	</db_table>

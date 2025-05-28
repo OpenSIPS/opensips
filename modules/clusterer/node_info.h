@@ -87,8 +87,8 @@ struct node_info {
 	/* fields protected by node lock */
 	clusterer_link_state link_state;	/* state of the "link" with this node */
 	int last_ping_state;				/* state(success/error) of the last ping sent to this node */
-	struct timeval last_ping;       	/* last ping sent to this node */
-	struct timeval last_pong;       	/* last pong received from this node */
+	struct timeval last_ping, last_sent;  /* last ping/packet sent to this node */
+	struct timeval last_pong, last_recv;  /* last pong/packet received from this node */
 	struct neighbour *neighbour_list;   /* list of directly reachable neighbours */
 	int ls_seq_no;                      /* sequence number of the last link state update */
 	int top_seq_no;                     /* sequence number of the last topology update message */

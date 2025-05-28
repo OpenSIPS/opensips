@@ -338,8 +338,8 @@ static void route_received(int sender, void *param)
 	suppress_proc_log_event();
 
 	if (!ref_script_route_check_and_update(route_s->ev_route)){
-		LM_ERR("event route [%.s] no longer available in script\n",
-			route_s->ev_route->name.s);
+		LM_ERR("event route [%s] no longer available in script\n",
+			!route_s->ev_route ? "null" : route_s->ev_route->name.s);
 		goto cleanup;
 	}
 

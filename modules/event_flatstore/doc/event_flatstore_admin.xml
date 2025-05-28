@@ -3,7 +3,7 @@
 <chapter>
 
 	<title>&adminguide;</title>
-	
+
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
@@ -48,11 +48,11 @@
 			</itemizedlist>
 		</para>
 	</section>
-    </section>
+	</section>
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -106,6 +106,35 @@ modparam("event_flatstore", "delimiter", ";")
 </programlisting>
 		</example>
 	</section>
+	<section id="param_escape_delimiter" xreflabel="escape_delimiter">
+		<title><varname>escape_delimiter</varname> (string)</title>
+		<para>
+			Optional replacement sequence that will be written <emphasis>instead
+			of</emphasis> the <link linkend="param_delimiter"><varname>delimiter</varname></link>
+			whenever this character (or sequence) occurs inside a string
+			parameter.
+			This allows you to keep the log file parse-friendly even when user
+			data itself may contain delimiter symbols.
+		</para>
+		<para>
+			If set, its length <emphasis>must be exactly equal</emphasis> to the
+			length of <varname>delimiter</varname>.
+		</para>
+	<para>
+	<emphasis>
+			Default value is <quote>""</quote> (escaping disabled).
+	</emphasis>
+	</para>
+	<example>
+	<title>Enable escaping of ',' with '|'</title>
+	<programlisting format="linespecific">
+...
+modparam("event_flatstore", "delimiter", ",")
+modparam("event_flatstore", "escape_delimiter", "|")
+...
+	</programlisting>
+	</example>
+	</section>
 	<section id="param_file_permissions" xreflabel="file_permissions">
 		<title><varname>file_permissions</varname> (string)</title>
 		<para>
@@ -145,6 +174,96 @@ modparam("event_flatstore", "suppress_event_name", 1)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_rotate_period" xreflabel="rotate_period">
+		<title><varname>rotate_period</varname> (int)</title>
+		<para>
+			When used, it triggers a file auto-rotate. The period is matched
+			against the absolute time of the machine, can be useful to trigger
+			auto-rotate every minute, or every hour.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0/OFF</quote> (the file is never auto-rotated)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rotate_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_flatstore", "rotate_period", 60) # rotate every minute
+modparam("event_flatstore", "rotate_period", 3660) # rotate every hour
+...
+</programlisting>
+		</example>
+`	</section>
+	<section id="param_rotate_count" xreflabel="rotate_count">
+		<title><varname>rotate_count</varname> (int|string)</title>
+		<para>
+			Defines after how many written lines the log file is rotated.
+			The value may exceed the 32-bit integer limit; in that case pass
+			it <emphasis>as a string</emphasis>, e.g. "5000000000".
+		</para>
+		<para><emphasis>Default value is <quote>0/OFF</quote>.</emphasis></para>
+		<example>
+		<title>Rotate after five billion lines</title>
+		<programlisting format="linespecific">
+...
+modparam("event_flatstore", "rotate_count", "5000000000")
+...
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_rotate_size" xreflabel="rotate_size">
+	<title><varname>rotate_size</varname> (int|string)</title>
+	<para>
+		Sets the maximum size of a file before it is rotated.  A size
+		suffix of <quote>k</quote>, <quote>m</quote> or <quote>g</quote>
+		(multiples of 1024) may be provided.
+		Very large values can be supplied as strings, e.g.
+		"8589934592" for 8 GiB.
+	</para>
+	<para><emphasis>Default value is <quote>0/OFF</quote>.</emphasis></para>
+	<example>
+		<title>Rotate at 2 GiB</title>
+<programlisting format="linespecific">
+...
+modparam("event_flatstore", "rotate_size", "2g")
+...
+</programlisting>
+	</example>
+	</section>
+	<section id="param_suffix" xreflabel="suffix">
+		<title><varname>suffix</varname> (string)</title>
+		<para>
+			Modifies the file that &osips; writes events into by
+			appending a suffix to the the file specified in the flatstore
+			<emphasis>socket</emphasis>.
+		</para>
+		<para>
+			The suffix can contain string formats (i.e. variables mixed with
+			strings). The path of the resulted file is evaluated when the first
+			event is raised/written in the file after a reload happend, or when
+			the <emphasis>rotate_period</emphasis>, if specified, triggers a rotate.
+		</para>
+		<para>
+			This parameter does not affect the matching of the event socket -
+			the matching will be done exclusively using the flatstore
+			<emphasis>socket</emphasis> registered.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>""</quote> (no suffix is added)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>suffix</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_flatstore", "suffix", "$time(%Y)")
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
@@ -169,11 +288,47 @@ modparam("event_flatstore", "suppress_event_name", 1)
  		<para>
 		MI FIFO Command Format:
 		</para>
-        <programlisting  format="linespecific">
-		opensips-cli -x mi evi_flat_rotate _path_to_log_file_
+		<programlisting  format="linespecific">
+opensips-cli -x mi evi_flat_rotate _path_to_log_file_
 		</programlisting>
-	</section>	
-    </section>
+	</section>
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+
+	<section id="event_E_FLATSTORE_ROTATION" xreflabel="E_FLATSTORE_ROTATION">
+	<title>
+	<function moreinfo="none">E_FLATSTORE_ROTATION</function>
+	</title>
+
+	<para>
+		The event is raised every time <emphasis>event_flatstore</emphasis>
+		opens a new log file (manual <command>evi_flat_rotate</command>,
+		auto-rotate by <varname>rotate_period</varname>, or
+		thresholds <varname>rotate_count</varname>/<varname>rotate_size</varname>).
+		External apps can subscribe to monitor log-rotation activity.
+	</para>
+
+	<para>Parameters:</para>
+	<itemizedlist>
+	<listitem><para>
+		<emphasis>timestamp</emphasis> – Unix epoch (seconds) when the
+		rotation was performed.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>reason</emphasis> – one of the strings
+		<emphasis>count</emphasis>, <emphasis>size</emphasis>,
+		<emphasis>period</emphasis> or <emphasis>mi</emphasis>.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>filename</emphasis> – full path of the new log file.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>old_filename</emphasis> – full path of the previous
+		log file, or empty string if none existed.
+	</para></listitem>
+	</itemizedlist>
+	</section>
+	</section>
 </chapter>
-
-

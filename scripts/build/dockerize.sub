@@ -1,4 +1,9 @@
 if [ -e /tmp/docker_opensips.cid ]
 then
-  exec docker exec -w `pwd` --env COMPILER --env BUILD_OS --env MAKE_TGT `cat /tmp/docker_opensips.cid` sh -x "${0}" "${@}"
+  if [ "${DOCKR_PLATFORM}" = "arm64/v8" ]
+  then
+    DOCKR_ARGS="-e QEMU_CPU=cortex-a53"
+  fi
+  CID="`cat /tmp/docker_opensips.cid`"
+  exec docker exec -w `pwd` --env COMPILER --env BUILD_OS --env MAKE_TGT ${DOCKR_ARGS} "${CID}" sh -x "${0}" "${@}"
 fi

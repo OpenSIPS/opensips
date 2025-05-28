@@ -1,0 +1,1 @@
+id(int,auto) partition_name(string) db_url(string) trie_table(string,null) 

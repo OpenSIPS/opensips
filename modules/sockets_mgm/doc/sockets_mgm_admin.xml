@@ -1,0 +1,361 @@
+<!-- Dynamic Sockets Management Module's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+        This module provides the means to provision and manage dynamic sockets
+		for OpenSIPS at runtime. The definition of the sockets is stored in
+		an SQL database and can be dynamically changed at runtime.
+	</para>
+	<para>
+		The module caches the entire table sockets and only adjusts the
+		dynamic socket list after a reload using the
+		<xref linkend="mi_sockets_reload"/> MI command.
+	</para>
+	<para>
+		The <xref linkend="mi_sockets_list"/> MI command.
+		can be used to show all the dynamic sockets OpenSIPS is listening on.
+	</para>
+	</section>
+
+	<section id="sockets" xreflabel="Sockets">
+	<title>Sockets</title>
+	<para>
+		The module exclusively handles sockets used for SIP traffic (e.g.,
+		UDP, TCP, TLS, WSS). It does not support BIN or HEP listeners, as
+		these cannot be dynamically utilized or enforced in the script.
+	</para>
+	<para>
+		The management of dynamic sockets is divided into two behaviors,
+		depending on whether the traffic is UDP-based or TCP-based. Based on
+		the nature of your traffic, ensure that your settings are
+		properly tuned to accommodate any sockets you may provision
+		dynamically.
+	</para>
+	<section id="section_udp" xreflabel="UDP handling">
+	<title>UDP handling</title>
+	<para>
+		All dynamically added UDP sockets are assigned to a group of dedicated
+		extra processes. The number of these processes can be adjusted using
+		the <xref linkend="param_processes"/> parameter. These processes handle
+		UDP-based socket traffic evenly by balancing requests across the less
+		loaded processes. The difference, however, is that static sockets are
+		bound to designated processes, while dynamic sockets share the pool of
+		extra processes.
+    </para>
+	<para>
+	</para>
+	</section>
+	<section id="section_tcp" xreflabel="TCP handling">
+	<title>TCP handling</title>
+	<para>
+		In contrast to UDP traffic handling, TCP traffic is processed in the
+		same way as all other TCP traffic: requests are dispatched to one of
+		the existing static TCP processes.
+	</para>
+	</section>
+	</section>
+
+	<section id="limitations" xreflabel="Limitations">
+	<title>Limitations</title>
+	<para>
+		Although traffic processing by dynamic workers closely resembles that
+		of static ones, there are certain limitations associated with using
+		dynamic sockets:
+	</para>
+	<para>
+		<itemizedlist>
+		<listitem>
+		<para>
+			UDP socket handling does not currently benefit from the
+			autoscaling feature for the designated extra
+			processes. This means that the number of
+			<xref linkend="param_processes"/> defined at startup will
+			always be forked, and only these processes will handle all
+			traffic associated with dynamically added UDP sockets.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			As stated earlier, the module only supports SIP based dynamic
+			listener, no HEP or BIN.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			Sockets defined in the database cannot be expanded to more than
+			one listener. This means you cannot use an interface name or an
+			alias that resolves to multiple IPs as a host. Only a single
+			IP:port socket will be created, so provisioning should ideally be
+			done with an explicit IP.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			Due to some internal limitations, the dynamic sockets need to be
+			pre-allocated at startup. This means that the number of dynamic
+			sockets used at runtime have to be limited by a static value,
+			defined at startup. This is why it is recommended to use a fairly
+			high value for the sockets in the <xref linkend="param_max_sockets"/>
+			parameter - we're defaulting a confortable 100 sockets.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			The sockets defined in the  <xref linkend="param_max_sockets"/> are
+			being rotated in a FIFO manner - this way we are trying to avoid
+			overlapping sockets in a short period of time.
+        </para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following  modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>A database module is needed for fetching the sockets</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+			The database URL where the sockets are fetched from.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>&defaultdb;</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>db_url</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "db_url", "&exampledb;")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_table_name" xreflabel="table_name">
+		<title><varname>table_name</varname> (string)</title>
+		<para>
+			The database table name where the sockets are stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>sockets</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>table_name</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "table_name", "sockets_def")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_socket_column" xreflabel="socket_column">
+		<title><varname>socket_column</varname> (string)</title>
+		<para>
+			The database table column where the socket definition is stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>socket</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>socket_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "socket_column", "sock")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_advertised_column" xreflabel="advertised_column">
+		<title><varname>advertised_column</varname> (string)</title>
+		<para>
+			The database table column where the advertised definition is stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>advertised</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>advertised_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("advertiseds_mgm", "advertised_column", "adv")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_tag_column" xreflabel="tag_column">
+		<title><varname>tag_column</varname> (string)</title>
+		<para>
+			The database table column where the tag definition is stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>tag</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>tag_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tags_mgm", "tag_column", "sock")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_flags_column" xreflabel="flags_column">
+		<title><varname>flags_column</varname> (string)</title>
+		<para>
+			The database table column where the flags definition is stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>flags</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>flags_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("flagss_mgm", "flags_column", "sock")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_tos_column" xreflabel="tos_column">
+		<title><varname>tos_column</varname> (string)</title>
+		<para>
+			The database table column where the tos definition is stored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>tos</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>tos_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("toss_mgm", "tos_column", "sock")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_processes" xreflabel="processes">
+		<title><varname>processes</varname> (integer)</title>
+		<para>
+			The number of processes designated to handle UDP sockets.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>8</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>processes</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "processes", 32)
+...
+</programlisting>
+		</example>
+	</section>
+		<section id="param_max_sockets" xreflabel="max_sockets">
+		<title><varname>max_sockets</varname> (integer)</title>
+		<para>
+			The maximum number of sockets that can be defined dinamically.
+			See the <xref linkend="limitations"/> section for more information.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>100</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>max_sockets</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sockets_mgm", "max_sockets", 2000)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+		<section id="mi_sockets_reload" xreflabel="sockets_reload">
+		<title>
+		<function moreinfo="none">sockets_reload</function>
+		</title>
+		<para>
+			MI command used to reload the sockets from the database.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## reload sockets from the database
+		opensips-mi sockets_reload
+		opensips-cli -x mi sockets_reload
+		</programlisting>
+	</section>
+	<section id="mi_sockets_list" xreflabel="sockets_list">
+		<title>
+		<function moreinfo="none">sockets_list</function>
+		</title>
+		<para>
+			MI command to list all the currently used dynamic sockets.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## reload sockets from the database
+		opensips-mi sockets_list
+		opensips-cli -x mi sockets_list
+		</programlisting>
+		</section>
+	</section>
+
+</chapter>

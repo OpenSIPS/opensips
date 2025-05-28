@@ -1,0 +1,11 @@
+	<!-- Declaration of sockets table-->
+	<db_table id="sockets">
+		<table_name>sockets</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>socket</field><type>DB_STR</type></column>
+		<column><field>advertised</field><type>DB_STR</type></column>
+		<column><field>tag</field><type>DB_STR</type></column>
+		<column><field>flags</field><type>DB_STR</type></column>
+		<column><field>tos</field><type>DB_STR</type></column>
+	</db_table>

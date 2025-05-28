@@ -1377,7 +1377,7 @@ Chapter 5. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bastian Friedrich 116 38 8597 284
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 49 31 704 684
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 51 32 715 688
    3. Razvan Crainea (@razvancrainea) 23 21 99 60
    4. Liviu Chircu (@liviuchircu) 22 18 62 133
    5. Vlad Patrascu (@rvlad-patrascu) 20 10 264 408
@@ -1412,9 +1412,9 @@ Chapter 5. Contributors
 
    Table 5.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Aaron Meriwether                    May 2024 - May 2024
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Mar 2024
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - May 2025
+   2.  Aaron Meriwether                    May 2024 - May 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2020
    6.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020

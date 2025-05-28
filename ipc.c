@@ -231,8 +231,29 @@ int ipc_dispatch_job(ipc_handler_type type, void *payload)
 
 int ipc_send_rpc(int dst_proc, ipc_rpc_f *rpc, void *param)
 {
+	/* wait for the write IPC FD to be available, for a maximum 200ms */
+	busy_wait_for(IPC_FD_WRITE(dst_proc) >= 0, 200000, 10);
 	return __ipc_send_job(IPC_FD_WRITE(dst_proc), dst_proc,
 		ipc_rpc_type, rpc, param);
+}
+
+int ipc_send_rpc_all(ipc_rpc_f *rpc, void *param)
+{
+	int p, count = 0;
+
+	for (p = 1; p < counted_max_processes; p++) {
+		if (pt[p].flags & OSS_PROC_NO_IPC)
+			continue;
+		if (p == process_no) {
+			/* run line the cmd for the proc itself */
+			rpc(process_no, param);
+			count++;
+		} else {
+			if (ipc_send_rpc(p, rpc, param) >= 0)
+				count++;
+		}
+	}
+	return count;
 }
 
 int ipc_dispatch_rpc( ipc_rpc_f *rpc, void *param)

@@ -90,6 +90,32 @@ static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_get_tm_branch_reply_code(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+static int pv_get_tm_branch_uri(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_duri(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_q(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_path(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_sock(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_flags(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_flag(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_attr(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_lastrecv(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_get_tm_branch_type(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+static int pv_set_tm_branch_flag(struct sip_msg* msg, pv_param_t *param,int op,
+		pv_value_t *val);
+static int pv_set_tm_branch_attr(struct sip_msg* msg, pv_param_t *param,int op,
+		pv_value_t *val);
+static int tm_branch_flag_parse_name(pv_spec_p sp, const str *in);
+static int pv_parse_branch_index(pv_spec_p sp, const str *in);
 
 /* fixup functions */
 static int fixup_local_replied(void** param);
@@ -132,7 +158,10 @@ static int w_t_new_request(struct sip_msg* msg, str *method,
 static int t_wait_for_new_branches(struct sip_msg* msg,
 			unsigned int* br_to_wait);
 static int w_t_wait_no_more_branches(struct sip_msg* msg);
-static int t_reply_by_callid(struct sip_msg* msg, unsigned int* code, str* text, str* callid, str* cseq);
+static int t_reply_by_callid(struct sip_msg* msg,
+		unsigned int* code, str* text, str* callid, str* cseq);
+static int t_get_branch_idx_by_attr(struct sip_msg* msg,
+		str* attr, str* val_s, int *val_i, pv_spec_t *result, int *offset);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -297,6 +326,13 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
+	{"t_get_branch_idx_by_attr", (cmd_function)t_get_branch_idx_by_attr, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"load_tm", (cmd_function)load_tm, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
@@ -387,26 +423,60 @@ static const stat_export_t mod_stats[] = {
  * pseudo-variables exported by TM module
  */
 static const pv_export_t mod_items[] = {
-	{ str_const_init("T_branch_idx"), 900,
-		pv_get_tm_branch_idx, NULL, NULL, NULL, NULL, 0 },
-	{ str_const_init("T_reply_code"), 901,
-		pv_get_tm_reply_code, NULL, NULL, NULL, NULL, 0 },
-	{ str_const_init("T_ruri"),       902,
-		pv_get_tm_ruri,       NULL, NULL, NULL, NULL, 0 },
-	{ str_const_init("bavp"),         903,
-		pv_get_tm_branch_avp, pv_set_tm_branch_avp,
+	{ str_const_init("T_branch_idx"),
+		900, pv_get_tm_branch_idx, NULL,
+		NULL, NULL, NULL, 0 },
+	{ str_const_init("T_reply_code"),
+		901, pv_get_tm_reply_code, NULL,
+		NULL, NULL, NULL, 0 },
+	{ str_const_init("T_ruri"),
+		902, pv_get_tm_ruri, NULL,
+		NULL, NULL, NULL, 0 },
+	{ str_const_init("bavp"),
+		903, pv_get_tm_branch_avp, pv_set_tm_branch_avp,
 		pv_parse_avp_name, pv_parse_index, NULL, 0 },
-	{ str_const_init("T_fr_timeout"), 904,
-		pv_get_tm_fr_timeout, pv_set_tm_fr_timeout,
+	{ str_const_init("T_fr_timeout"),
+		904, pv_get_tm_fr_timeout, pv_set_tm_fr_timeout,
 		NULL, NULL, NULL, 0 },
-	{ str_const_init("T_fr_inv_timeout"), 905,
-		pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout,
+	{ str_const_init("T_fr_inv_timeout"),
+		905, pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout,
 		NULL, NULL, NULL, 0 },
-	{ str_const_init("T_id"),         906,
-		pv_get_t_id, NULL, NULL, NULL, NULL, 0 },
-	{ str_const_init("T_branch_last_reply_code"), 907,
-		pv_get_tm_branch_reply_code, NULL,
+	{ str_const_init("T_id"),
+		906, pv_get_t_id, NULL,
+		NULL, NULL, NULL, 0 },
+	{ str_const_init("T_branch_last_reply_code"),
+		907, pv_get_tm_branch_reply_code, NULL,
 		NULL, pv_parse_index, NULL, 0 },
+	{str_const_init("tm.branch.uri"), /* */
+		908, pv_get_tm_branch_uri, NULL,
+		NULL, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.duri"), /* */
+		909, pv_get_tm_branch_duri, NULL,
+		NULL, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.path"), /* */
+		910, pv_get_tm_branch_path, NULL,
+		NULL, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.q"), /* */
+		911, pv_get_tm_branch_q, NULL,
+		NULL, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.flags"), /* */
+		912, pv_get_tm_branch_flags, NULL,
+		NULL, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.socket"), /* */
+		913, pv_get_tm_branch_sock, NULL,
+		NULL, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.flag"), /* */
+		914, pv_get_tm_branch_flag, pv_set_tm_branch_flag,
+		tm_branch_flag_parse_name, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.attr"), /* */
+		915, pv_get_tm_branch_attr, pv_set_tm_branch_attr,
+		pv_parse_avp_name, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.last_received"), /* */
+		916, pv_get_tm_branch_lastrecv, NULL,
+		NULL, pv_parse_branch_index, NULL, 0},
+	{str_const_init("tm.branch.type"), /* */
+		917, pv_get_tm_branch_type, NULL,
+		NULL, pv_parse_branch_index, NULL, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -1720,6 +1790,94 @@ static int t_reply_by_callid(struct sip_msg* msg, unsigned int* code, str* text,
 }
 
 
+static int t_get_branch_idx_by_attr(struct sip_msg* msg,
+			str* attr, str* val_s, int *val_i, pv_spec_t *result, int *offset)
+{
+	struct cell *t;
+	int attr_id;
+	int branch;
+	struct usr_avp *avp;
+	int_str avp_val;
+	pv_value_t ret_val, in_val;
+
+	t=get_t();
+
+	if (t==NULL || t==T_UNDEFINED) {
+		/* no transaction */
+		return -2;
+	}
+
+	if ( (attr_id=get_avp_id(attr))<0 ) {
+		LM_ERR("failed to get ID for the <%.*s> attribute\n",
+			attr->len,attr->s);
+		return -2;
+	}
+	memset(&in_val, 0, sizeof in_val);
+
+	if (val_s) {
+		in_val.flags = PV_VAL_STR;
+		in_val.rs = *val_s;
+	} else if (val_i) {
+		in_val.flags = PV_VAL_INT;
+		in_val.ri = *val_i;
+	} else {
+		in_val.flags = PV_VAL_NULL;
+	}
+
+	for ( branch=offset?*offset:0 ; branch<t->nr_of_outgoings ; branch++) {
+		/* iterate the attrs for matching the name */
+		for ( avp=t->uac[branch].battrs ; avp ; avp=avp->next) {
+			if (attr_id == avp->id) {
+				/* attr name matching */
+				if (val_s==NULL && val_i==NULL) {
+					/* no value searched , so we have a finding here */
+					get_avp_val( avp, &avp_val );
+					break;
+				} else {
+					get_avp_val( avp, &avp_val );
+					/* do some complex matching between the pv_value and AVP */
+					if ( (avp->flags&AVP_VAL_NULL && in_val.flags&PV_VAL_NULL)
+					  ||     /*      ^^^^ both values are null */
+					(!(avp->flags&AVP_VAL_STR) && in_val.flags&PV_VAL_INT &&
+					avp_val.n==in_val.ri )
+					  ||     /*      ^^^^ both values are int */
+					(avp->flags&AVP_VAL_STR && in_val.flags&PV_VAL_STR &&
+					str_match(&avp_val.s,&in_val.rs)==1)
+					)  {    /*      ^^^^ both values are str */
+						/* we have a matching */
+						break;
+					}
+				}
+			}
+		}
+		/* anything founds? */
+		if (avp) {
+			if (result) {
+				ret_val.flags = PV_TYPE_INT|PV_VAL_INT;
+				ret_val.ri = branch;
+				if (pv_set_value(msg, result, 0, &ret_val) != 0) {
+					LM_ERR("failed to set the output attr value!\n");
+					return -1;
+				}
+			}
+
+			return 1;
+		}
+	}
+
+	/* nothing found, return NULL and -1 retcode */
+	if (result) {
+		ret_val.flags = PV_VAL_NULL;
+		if (pv_set_value(msg, result, 0, &ret_val) != 0) {
+			LM_ERR("failed to set the output attr value!\n");
+			return -1;
+		}
+	}
+
+	return -1;
+}
+
+
 /******************** pseudo-variable functions *************************/
 
 static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
@@ -2284,3 +2442,403 @@ static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 
 	return 0;
 }
+
+
+#define BR_URI_ID        1
+#define BR_DURI_ID       2
+#define BR_Q_ID          3
+#define BR_PATH_ID       4
+#define BR_FLAGS_ID      5
+#define BR_FLAG_ID       6
+#define BR_SOCKET_ID     7
+#define BR_ATTR_ID       8
+#define BR_LASTRECV_ID   9
+#define BR_TYPE_ID      10
+
+static int tm_branch_flag_parse_name(pv_spec_p sp, const str *in)
+{
+	unsigned int idx;
+	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
+		return -1;
+
+	if ( (idx=fixup_flag(FLAG_TYPE_BRANCH, in))==NAMED_FLAG_ERROR) {
+		LM_ERR("failed to fix the flag <%.*s>\n",in->len,in->s);
+		return -1;
+	}
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
+
+	sp->pvp.pvn.u.isname.name.n = idx;
+
+	return 0;
+}
+
+
+# define BRANCH_IDX_ACTIVE_MASK  (1<<16)
+static int pv_parse_branch_index(pv_spec_p sp, const str *in)
+{
+	#define BRANCH_IDX_SUFFIX_ALL "all"
+	#define BRANCH_IDX_SUFFIX_ACTIVE "active"
+	char *p;
+	str suffix, new_in;
+	unsigned int mask = 0;
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+
+	new_in = *in;
+
+	if ( (p=q_memrchr( in->s, '/', in->len))!=NULL) {
+		/* we do may have a suffix */
+		suffix.s = p+1;
+		suffix.len = in->s+in->len - suffix.s;
+		if ( (suffix.len==(sizeof(BRANCH_IDX_SUFFIX_ALL)-1)) &&
+		strncasecmp(suffix.s,BRANCH_IDX_SUFFIX_ALL,suffix.len)==0) {
+			/* ok, this is the default, nothing to change */
+			mask = 0;
+			new_in.len = p - in->s;
+		} else
+		if ( (suffix.len==(sizeof(BRANCH_IDX_SUFFIX_ACTIVE)-1)) &&
+		strncasecmp(suffix.s,BRANCH_IDX_SUFFIX_ACTIVE,suffix.len)==0) {
+			mask = BRANCH_IDX_ACTIVE_MASK;
+			new_in.len = p - in->s;
+		} else {
+			/* just ignore, do not take it into consideration, we do not
+			 * know what it is, maybe part of a pvar as index */
+		}
+	}
+	LM_DBG("-XX---XX---|%.*s|\n",new_in.len,new_in.s);
+	if (pv_parse_index( sp, &new_in)<0)
+		return -1;
+	sp->pvp.pvi.type |= mask; /* take care and remove this mask BEFORE
+	* evaluating the idx with the generic functions (as the type will 
+	* not be recognized */
+	return 0;
+}
+
+
+static inline int _pv_get_tm_branch_field(struct sip_msg *msg,
+								pv_param_t *param, pv_value_t *res, int field)
+{
+	struct cell *t;
+	int idx, idxf;
+	int_str attr_val;
+	int attr_name;
+	unsigned short attr_flags;
+	struct usr_avp **old_list, *avp;
+	int active_indexing = 0;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	t = get_t();
+	if (t==NULL || t==T_UNDEFINED)
+		return -1;
+
+	/* get the index */
+	if (param->pvn.type & BRANCH_IDX_ACTIVE_MASK) {
+		active_indexing = 1;
+		param->pvn.type &= ~BRANCH_IDX_ACTIVE_MASK;
+	}
+	if (pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
+	if (idxf==PV_IDX_ALL) {
+		LM_ERR("STAR/ALL index not supported\n");
+		return -1;
+	}
+
+	if (idxf==0 && idx==0) {
+		/* no index used at all, return for the current branch */
+		idx = get_branch_index();
+	} else {
+		/* must be numerical index */
+		if (active_indexing)
+			idx += t->first_branch;
+		if (idx<0) {
+			/* index from the end */
+			if (-idx > t->nr_of_outgoings) /* underflow */
+				return pv_get_null(NULL, NULL, res);
+			idx = t->nr_of_outgoings + idx;
+		} else
+		if (idx >= t->nr_of_outgoings) /*overflow*/
+			return pv_get_null(NULL, NULL, res);
+	}
+
+	/* we have a valid TM-branch index now */
+	switch (field) {
+		case BR_URI_ID: /* return URI */
+			res->rs = t->uac[idx].uri;
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_Q_ID: /* return Q */
+			res->rs.s = q2str(t->uac[idx].q, (unsigned int*)&res->rs.len);
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_DURI_ID: /* return DURI */
+			if ( ZSTR(t->uac[idx].duri) )
+				return pv_get_null(NULL, NULL, res);
+			res->rs = t->uac[idx].duri;
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_PATH_ID: /* return PATH */
+			if ( ZSTR(t->uac[idx].path_vec) )
+				return pv_get_null(NULL, NULL, res);
+			res->rs = t->uac[idx].path_vec;
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_FLAGS_ID: /* return all FLAGS */
+			if (param->pvn.type==PV_NAME_INTSTR) {
+				/* we have the name of a flag */
+			}
+			res->rs = bitmask_to_flag_list(FLAG_TYPE_BRANCH,
+				t->uac[idx].br_flags);
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_FLAG_ID: /* return value of one FLAG */
+			if ( t->uac[idx].br_flags & param->pvn.u.isname.name.n ) {
+				*res = pv_true;
+			} else {
+				*res = pv_false;
+			}
+			break;
+		case BR_SOCKET_ID: /* return SOCKET */
+			if ( t->uac[idx].request.dst.send_sock==NULL )
+				return pv_get_null(NULL, NULL, res);
+			res->rs = t->uac[idx].request.dst.send_sock->sock_str;
+			res->flags = PV_VAL_STR;
+			break;
+		case BR_ATTR_ID: /* get one attribute */
+			/* get the name of the attribute */
+			if (pv_get_avp_name(msg, param, &attr_name, &attr_flags)!=0) {
+				LM_ALERT("BUG in getting ATTR name\n");
+				return -1;
+			}
+			/* get the attr now */
+			old_list = set_avp_list( &t->uac[idx].battrs );
+			avp = search_first_avp( 0, attr_name, &attr_val, 0);
+			set_avp_list( old_list );
+			/* now return the value */
+			if ( avp==NULL || avp->flags&AVP_VAL_NULL)
+				return pv_get_null(msg, param, res);
+			res->flags = PV_VAL_STR;
+			if (avp->flags & AVP_VAL_STR) {
+				res->rs = attr_val.s;
+			} else {
+				res->rs.s = sint2str(attr_val.n, &res->rs.len);
+				res->ri = attr_val.n;
+				res->flags |= PV_VAL_INT|PV_TYPE_INT;
+			}
+			break;
+		case BR_LASTRECV_ID: /* return LAST RECEIVED */
+			if (t->uac[idx].last_received==0)
+				return pv_get_null(msg, param, res);
+			res->rs.s = sint2str(t->uac[idx].last_received, &res->rs.len);
+			res->ri = t->uac[idx].last_received;
+			res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+			break;
+		case BR_TYPE_ID: /* return TYPE */
+			res->flags = PV_VAL_STR;
+			if (t->uac[idx].flags | T_UAC_IS_PHONY) {
+				res->rs.s = "phony";
+				res->rs.len = 5;
+			} else {
+				res->rs.s = "sip";
+				res->rs.len = 3;
+			}
+			break;
+
+		default:
+			LM_CRIT("BUG - unsupported branch ID %d\n",field);
+			return pv_get_null(NULL, NULL, res);
+	}
+	return 0;
+}
+
+
+static int pv_get_tm_branch_uri(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_URI_ID);
+}
+
+static int pv_get_tm_branch_duri(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_DURI_ID);
+}
+
+static int pv_get_tm_branch_q(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_Q_ID);
+}
+
+static int pv_get_tm_branch_path(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_PATH_ID);
+}
+
+static int pv_get_tm_branch_flags(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_FLAGS_ID);
+}
+
+static int pv_get_tm_branch_flag(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_FLAG_ID);
+}
+
+static int pv_get_tm_branch_sock(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_SOCKET_ID);
+}
+
+static int pv_get_tm_branch_attr(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_ATTR_ID);
+}
+
+static int pv_get_tm_branch_lastrecv(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_LASTRECV_ID);
+}
+
+static int pv_get_tm_branch_type(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	return _pv_get_tm_branch_field( msg, param, res, BR_TYPE_ID);
+}
+
+
+static inline int _pv_set_tm_branch_field(struct sip_msg* msg,
+						pv_param_t *param,int op, pv_value_t *val, int field)
+{
+	struct cell *t;
+	int idx, idxf;
+	int_str attr_val;
+	int attr_name;
+	unsigned int *flags;
+	unsigned short attr_flags;
+	struct usr_avp **old_list, *avp;
+	int active_indexing = 0;
+
+	if(msg==NULL || param==NULL)
+		return -1;
+
+	if (route_type!=BRANCH_ROUTE && route_type!=ONREPLY_ROUTE &&
+	route_type!=FAILURE_ROUTE) {
+		LM_ERR("illegal route type %d\n",route_type);
+		return -1;
+	}
+
+	t = get_t();
+	if (t==NULL || t==T_UNDEFINED)
+		return -1;
+
+	/* get the index */
+	if (param->pvn.type & BRANCH_IDX_ACTIVE_MASK) {
+		active_indexing = 1;
+		param->pvn.type &= ~BRANCH_IDX_ACTIVE_MASK;
+	}
+	if (pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
+	if (idxf==PV_IDX_ALL) {
+		LM_ERR("STAR/ALL index not supported\n");
+		return -1;
+	}
+
+	if (idxf==0 && idx==0) {
+		/* no index used at all, return for the current branch */
+		idx = get_branch_index();
+	} else {
+		/* must be numerical index */
+		if (active_indexing)
+			idx += t->first_branch;
+		if (idx<0) {
+			/* index from the end */
+			if (-idx > t->nr_of_outgoings) /* underflow */
+				return -1;
+			idx = t->nr_of_outgoings + idx;
+		} else
+		if (idx >= t->nr_of_outgoings) /*overflow*/
+			return -1;
+	}
+
+	/* we have a valid TM-branch index now */
+	switch (field) {
+		case BR_FLAG_ID: /* set one FLAG */
+			if (val==NULL || (val->flags&(PV_VAL_NULL|PV_VAL_NONE))!=0 ||
+			(val->flags&PV_TYPE_INT)==0 ) {
+				LM_ERR("input for FLAG field found not to be an integer\n");
+				return -1;
+			}
+			/* a bit of a hack, to be able to work on the bflags of the 
+			 * current branch in BRANCH route too (as the branch flags are
+			 * in MSG, not T->UAC during branch route)*/
+			if (route_type==BRANCH_ROUTE && idx==t->nr_of_outgoings)
+				flags = &msg->ruri_bflags;
+			else
+				flags = (unsigned int*)&t->uac[idx].br_flags;
+			if (val->ri==0)
+				/* reset */
+				*flags &=  ~param->pvn.u.isname.name.n;
+			else
+				/* set */
+				*flags |=  param->pvn.u.isname.name.n;
+			break;
+		case BR_ATTR_ID: /* set one attribute */
+			/* get the name of the attribute */
+			if (pv_get_avp_name(msg, param, &attr_name, &attr_flags)!=0) {
+				LM_ALERT("BUG in getting ATTR name\n");
+				return -1;
+			}
+			/* get ready the value */
+			if (!val || val->flags&PV_VAL_NULL) {
+				attr_flags |= AVP_VAL_NULL;
+			} else
+			if(val->flags&PV_TYPE_INT) {
+				attr_val.n = val->ri;
+			} else {
+				attr_val.s = val->rs;
+				attr_flags |= AVP_VAL_STR;
+			}
+			/* set the attr now */
+			old_list = set_avp_list( &t->uac[idx].battrs );
+			if ( (avp=search_first_avp( 0, attr_name, NULL, 0))!=NULL )
+				destroy_avp(avp);
+			if ( !(attr_flags&AVP_VAL_NULL) )
+				add_avp( attr_flags, attr_name, attr_val);
+			set_avp_list( old_list );
+			break;
+		default:
+			LM_CRIT("BUG - unsupported branch ID %d\n",field);
+			return -1;
+	}
+	return 0;
+}
+
+static int pv_set_tm_branch_flag(struct sip_msg* msg, pv_param_t *param,
+													int op, pv_value_t *val)
+{
+	return _pv_set_tm_branch_field( msg, param, op, val, BR_FLAG_ID);
+}
+
+static int pv_set_tm_branch_attr(struct sip_msg* msg, pv_param_t *param,
+													int op, pv_value_t *val)
+{
+	return _pv_set_tm_branch_field( msg, param, op, val, BR_ATTR_ID);
+}
+

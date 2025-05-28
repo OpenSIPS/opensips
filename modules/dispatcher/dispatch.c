@@ -368,6 +368,11 @@ int add_dest2list(int id, str uri, const struct socket_info *sock, str *comsock,
 		}
 	}
 
+	if (!lock_init(&dp->wlock)) {
+		LM_ERR("failed to init lock\n");
+		goto err;
+	}
+
 	/*
 	 * search the proper place based on priority
 	 * put them in reverse order, since they will be reindexed
@@ -642,6 +647,8 @@ int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set,
 	}
 
 	for (i = 0, cnt = 0; i < set->nr - (ds_use_default?1:0); i++) {
+		int locked = 0;
+
 		if ( !dst_is_active(set->dlist[i]) ) {
 			/* move to the end of the list */
 			sset[end_idx--] = &set->dlist[i];
@@ -656,15 +663,38 @@ int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set,
 					   set->dlist[i].uri.len, set->dlist[i].uri.s);
 				continue;
 			}
-			set->dlist[i].param = (void *)param;
+
+			/* concurrent access -- avoid SHM leak */
+			lock_get(&set->dlist[i].wlock);
+			if (set->dlist[i].param) {
+				shm_free(param);
+				param = (ds_pvar_param_p)set->dlist[i].param;
+			} else {
+				set->dlist[i].param = (void *)param;
+			}
+			lock_release(&set->dlist[i].wlock);
 		} else {
 			param = (ds_pvar_param_p)set->dlist[i].param;
 		}
+
+		/* until the underlying (stat *) struct is created, we cannot
+		 * perform READ/WRITE against this pv_spec_t concurrently */
+		if (!pv_has_dname(&param->pvar)) {
+			locked = 1;
+			lock_get(&set->dlist[i].wlock);
+		}
+
 		if (pv_get_spec_value(msg, &param->pvar, &val) < 0) {
+			if (locked)
+				lock_release(&set->dlist[i].wlock);
 			LM_ERR("cannot get spec value for spec %.*s\n",
 				   set->dlist[i].uri.len, set->dlist[i].uri.s);
 			continue;
 		}
+
+		if (locked)
+			lock_release(&set->dlist[i].wlock);
+
 		if (!(val.flags & PV_VAL_NULL)) {
 			if (!(val.flags & PV_VAL_INT)) {
 				/* last attempt to retrieve value */

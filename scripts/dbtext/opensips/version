@@ -14,12 +14,13 @@ cc_cdrs:2
 cc_flows:2
 closeddial:1
 clusterer:4
+config:1
 cpl:2
 dbaliases:2
 dialog:12
 dialplan:5
 dispatcher:9
-domain:3
+domain:4
 domainpolicy:3
 dr_carriers:3
 dr_gateways:6
@@ -58,10 +59,12 @@ rtpproxy_sockets:0
 silo:6
 sip_trace:5
 smpp:1
+sockets:1
 speed_dial:3
 subscriber:8
 tcp_mgm:1
 tls_mgm:3
+trie_partitions:1
 trie_table:1
 uri:2
 userblacklist:2

@@ -283,6 +283,48 @@ modparam("proto_hep", "hep_capture_id", 234)
 		</example>
 	</section>
 
+	<section id="param_hep_retry_cooldown" xreflabel="hep_retry_cooldown">
+		<title><varname>hep_retry_cooldown</varname> (integer)</title>
+		<para>
+			This parameter defines how many seconds OpenSIPS should wait before retrying a TCP connection to the HEP destination after reaching the maximum number of failed attempts set by hep_max_retries.
+		Limitation: 16-bit integer.
+		</para>
+		<para>
+		<emphasis>
+		Default value is "3600".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>hep_retry_cooldown</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "hep_retry_cooldown", 60)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_hep_max_retries" xreflabel="hep_max_retries">
+		<title><varname>hep_max_retries</varname> (integer)</title>
+		<para>
+			This parameter defines the maximum number of attempts OpenSIPS will make to establish a TCP connection with the HEP destination.
+		Limitation: 16-bit integer.
+		</para>
+		<para>
+		<emphasis>
+		Default value is "5".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>hep_max_retries</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "hep_max_retries", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_hep_async_local_connect_timeout" xreflabel="hep_async_local_connect_timeout">
 		<title><varname>hep_async_local_connect_timeout</varname> (integer)</title>
 		<para>

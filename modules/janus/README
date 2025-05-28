@@ -27,6 +27,22 @@ JANUS Module
 
               1.4.2. Exported Events
 
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
    List of Examples
 
    1.1. Setting the janus_send_timeout parameter
@@ -240,6 +256,50 @@ url) - $param(janus_body) \n");
 }
 ...
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Vlad Paiu (@vladpaiu)              45       7      4390      5
+   2. Razvan Crainea (@razvancrainea)    4        2       1        3
+   3. Nick Altmann (@nikbyte)            3        1       1        1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Vlad Paiu (@vladpaiu)           Dec 2024 - May 2025
+   2. Razvan Crainea (@razvancrainea) Mar 2025 - Mar 2025
+   3. Nick Altmann (@nikbyte)         Feb 2025 - Feb 2025
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

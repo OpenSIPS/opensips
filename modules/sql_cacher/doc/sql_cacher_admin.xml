@@ -291,10 +291,64 @@ modparam("sql_cacher", "bigint_to_str", 1)
 </section>
 
 <section id="exported_functions" xreflabel="exported_functions">
-	<title>Exported Functions</title>
-		<para>
-		No function exported to be used from configuration file.
-		</para>
+<title>Exported Functions</title>
+<section id="func_sql_cache_dump" xreflabel="sql_cache_dump()">
+	<title>
+	<function moreinfo="none">sql_cache_dump(caching_id, columns, result_avps)</function>
+	</title>
+	<para>
+	Dump all <emphasis>columns</emphasis> cached within the given <emphasis>caching_id</emphasis>,
+	and write them to their respective <emphasis>result_avps</emphasis>.
+	</para>
+
+	<para>Parameters:</para>
+	<itemizedlist>
+		<listitem><para>
+			<emphasis>caching_id</emphasis> (string) - Identifier for the SQL cache
+		</para></listitem>
+		<listitem><para>
+			<emphasis>columns</emphasis> (string) - the desired SQL columns to be dumped,
+				specified as comma-separated values
+		</para></listitem>
+		<listitem><para>
+			<emphasis>result_avps</emphasis> (string) - comma-separated list of AVPs where
+				the results will be written to
+		</para></listitem>
+	</itemizedlist>
+
+	<para>Return Codes:</para>
+	<itemizedlist>
+		<listitem><para>
+			<emphasis role='bold'>-1</emphasis> - Internal Error
+		</para></listitem>
+		<listitem><para>
+			<emphasis role='bold'>-2</emphasis> - Zero Results Returned
+		</para></listitem>
+		<listitem><para>
+			<emphasis role='bold'>1, 2, 3, ...</emphasis> - Number of results returned into each output AVP
+		</para></listitem>
+	</itemizedlist>
+
+
+	<para>
+	This function can be used from any route.
+	</para>
+	<example>
+	<title><function moreinfo="none">sql_cache_dump</function> usage</title>
+	<programlisting format="linespecific">
+...
+# Example of pulling all cached CNAM records
+$var(n) = sql_cache_dump("cnam", "caller,callee,calling_name,fraud_score",
+                "$avp(caller),$avp(callee),$avp(cnam),$avp(fraud)");
+$var(i) = 0;
+while ($var(i) &lt; $var(n)) {
+	xlog("Caller $(avp(caller)[$var(i)]) has CNAM $(avp(cnam)[$var(i)])\n");
+	$var(i) += 1;
+}
+...
+</programlisting>
+		</example>
+	</section>
 </section>
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">

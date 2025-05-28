@@ -206,7 +206,7 @@ static struct multi_str *tmp_mod;
 #define get_cfg_file_name \
 	((finame) ? finame : cfg_file ? cfg_file : "default")
 
-
+#define si_subdomain_to_alias_flag(_flags) (int) _flags & SI_ACCEPT_SUBDOMAIN_ALIAS
 
 #define mk_action_(_res, _type, _no, _elems) \
 	do { \
@@ -468,6 +468,7 @@ extern int cfg_parse_only_routes;
 %token COLON
 %token ANY
 %token ANYCAST
+%token ACCEPT_SUBDOMAIN
 %token FRAG
 %token REUSE_PORT
 %token SCRIPTVARERR
@@ -493,6 +494,7 @@ extern int cfg_parse_only_routes;
 %type <sockid> socket_def
 %type <sockid> id_lst
 %type <sockid> alias_def
+%type <sockid> any_alias
 %type <sockid> listen_id_def
 %type <sockid> phostport phostportrange
 %type <intval> proto port any_proto
@@ -696,7 +698,7 @@ phostportrange: proto COLON MULT				{ IFOR();
 			}
 			;
 
-alias_def:	listen_id						{ IFOR();
+any_alias:	listen_id						{ IFOR();
 				$$=mk_listen_id($1, PROTO_NONE, 0); }
 		 |	ANY COLON listen_id				{ IFOR();
 		 		$$=mk_listen_id($3, PROTO_NONE, 0); }
@@ -707,6 +709,13 @@ alias_def:	listen_id						{ IFOR();
 				yyerror(" port number expected");
 				}
 		 | phostport
+		 ;
+
+alias_def: any_alias			      { $$=$1; }
+		 | any_alias ACCEPT_SUBDOMAIN {
+				$$=$1;
+				$$->flags |= SI_ACCEPT_SUBDOMAIN_ALIAS;
+				}
 		 ;
 
 id_lst:		alias_def		{ IFOR();  $$=$1 ; }
@@ -731,6 +740,9 @@ socket_def_param: ANYCAST { IFOR();
 					}
 				| REUSE_PORT { IFOR();
 					p_tmp.flags |= SI_REUSEPORT;
+					}
+				| ACCEPT_SUBDOMAIN { IFOR();
+					p_tmp.flags |= SI_ACCEPT_SUBDOMAIN_ALIAS;
 					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;
@@ -1489,7 +1501,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| ALIAS EQUAL  id_lst { IFOR();
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next)
 								add_alias(lst_tmp->name, strlen(lst_tmp->name),
-											lst_tmp->port, lst_tmp->proto);
+											lst_tmp->port, lst_tmp->proto, si_subdomain_to_alias_flag(lst_tmp->flags));
 							  }
 		| ALIAS  EQUAL error  { yyerror("hostname expected (use quotes"
 							" if the hostname includes config keywords)"); }
@@ -2460,6 +2472,9 @@ return_params: return_param { $$ = $1; }
 
 cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5);
+			}
+		| ASSERT LPAREN exp RPAREN	 {
+			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, NULL);
 			}
 		| DROP				 {mk_action0( $$, DROP_T); }
 		| DROP LPAREN RPAREN {mk_action0( $$, DROP_T); }

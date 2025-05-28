@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "janus_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -18,6 +19,7 @@
     <toc></toc>
 
 	&admin;
+	&contrib;
 
 	&docCopyrights;
 	<para>&copyright; 2024 OpenSIPS Project;</para>

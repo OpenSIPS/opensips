@@ -24,8 +24,11 @@
 #include "../map.h"
 #include "../locking.h"
 
+#define HASH_MAP_SHARED  (1 << 0)
+#define HASH_MAP_PERSIST (1 << 1)
+
 typedef struct gen_hash {
-	unsigned int size, locks_no;
+	unsigned int size, locks_no, flags;
 	map_t *entries;
 	gen_lock_set_t *locks;
 } gen_hash_t;
@@ -37,13 +40,20 @@ typedef void (*hash_destroy_func)(void *);
  * - a non-sero return code will cause processing to stop */
 typedef  int (*hash_entry_func)(void *param, str key, void *value);
 
-/* initializes a hash of specified size */
-gen_hash_t *hash_init(unsigned int size);
+/* initializes a hash of specified size with certain flags */
+gen_hash_t *hash_init_flags(unsigned int size, unsigned int flags);
+
+#define hash_init(size) hash_init_flags(size, HASH_MAP_SHARED)
 
 /* destroyes an allocated hash
  * - uses the destroy func to call for each value found in hash */
 void hash_destroy(gen_hash_t *hash, hash_destroy_func destroy);
 
+/* initializes hash locks */
+int hash_init_locks(gen_hash_t *h);
+
+/* releases the hash's locks */
+void hash_destroy_locks(gen_hash_t *hash);
 
 /* returns the size of the hash map */
 #define hash_size(_h) ((_h)->size)

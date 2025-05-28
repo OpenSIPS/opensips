@@ -46,7 +46,10 @@
 #include "db_cap.h"
 #include "db_row.h"
 #include "db_ps.h"
+#include "db_pool.h"
 #include "../globals.h"
+
+struct pool_con;
 
 extern stat_var *sql_total_queries;
 extern stat_var *sql_slow_queries;
@@ -407,7 +410,7 @@ int db_bind_mod(const str* mod, db_func_t* dbf);
  * \return returns a pointer to the db_con_t representing the connection if it was
    successful, otherwise 0 is returned.
  */
-db_con_t* db_do_init(const str* url, void* (*new_connection)());
+db_con_t* db_do_init(const str* url, void* (*new_connection)(const struct db_id *));
 
 
 /**
@@ -418,7 +421,7 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)());
  * \param _h database connection handle
  * \param (*free_connection) Pointer to the db specifc free_connection method
  */
-void db_do_close(db_con_t* _h, void (*free_connection)());
+void db_do_close(db_con_t* _h, void (*free_connection)(struct pool_con*));
 
 
 /**

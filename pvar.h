@@ -131,7 +131,8 @@ enum _pv_type {
 	PVT_LINE_NUMBER,      PVT_CFG_FILE_NAME,     PVT_LOG_LEVEL,
 	PVT_XLOG_LEVEL,       PVT_AF,                PVT_HDR_NAME,
 	PVT_SOCKET_IN,        PVT_SOCKET_OUT,        PVT_BRANCH_FLAG,
-	PVT_MSG_FLAG,
+	PVT_SDP,              PVT_SDP_LINE,          PVT_SDP_STREAM,
+	PVT_SDP_SESSION,      PVT_MSG_FLAG,
 	/* registered by json module */
 	PVT_JSON,
 	/* registered by xml module */
@@ -237,10 +238,15 @@ typedef struct _pv_elem
 	struct _pv_elem *next;
 } pv_elem_t, *pv_elem_p;
 
+
+extern const pv_value_t pv_true;
+extern const pv_value_t pv_false;
+
 extern int pv_print_buf_size;
 int init_pvar_support(void);
 
 int pv_print_spec(struct sip_msg* msg, const pv_spec_p sp, char *buf, int *len);
+/* @return: the @in pointer is moved immediately after the spec (+1) */
 char* pv_parse_spec(const str *in, const pv_spec_p sp);
 int pv_get_spec_value(struct sip_msg* msg, const pv_spec_p sp, pv_value_t *value);
 int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len);
