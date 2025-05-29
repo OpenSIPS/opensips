@@ -221,13 +221,14 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 	char *ip, *block = NULL;
 	unsigned short port,start_slot,end_slot;
 	int len;
+	struct datavalues **newret1, **newret2, **newret3;
 
 	// Define **pointers for new structures 
-	struct datavalues **newret1 = pkg_malloc(sizeof(struct datavalues *));
+	newret1 = pkg_malloc(sizeof(struct datavalues *));
 	if (!chkmalloc3(newret1)) goto error;
-	struct datavalues **newret2 = pkg_malloc(sizeof(struct datavalues *));
+	newret2 = pkg_malloc(sizeof(struct datavalues *));
 	if (!chkmalloc3(newret2)) goto error;
-	struct datavalues **newret3 = pkg_malloc(sizeof(struct datavalues *));
+	newret3 = pkg_malloc(sizeof(struct datavalues *));
 	if (!chkmalloc3(newret3)) goto error;
 
 	// Allocate space for the structures
@@ -367,13 +368,22 @@ error:
 
 */
 int parse_moved_reply(redisReply *reply, redis_moved *out) {
+	int i;
+	int slot = 0;
+	const char *p;
+	const char *end;
+	const char *host_start;
+	const char *colon = NULL;
+	const char *port_start;
+	int port = REDIS_DF_PORT; // Default to Redis standard port
+
 	if (!reply || !reply->str || reply->len < MOVED_PREFIX_LEN || !out)
 		return ERR_INVALID_REPLY;
 
-	const char *p = reply->str;
-	const char *end = reply->str + reply->len;
+	p = reply->str;
+	end = reply->str + reply->len;
 
-	for (int i = 0; i < MOVED_PREFIX_LEN; ++i) {
+	for (i = 0; i < MOVED_PREFIX_LEN; ++i) {
 		if (p[i] != MOVED_PREFIX[i]) {
 		return ERR_INVALID_REPLY;
 		}
@@ -381,7 +391,6 @@ int parse_moved_reply(redisReply *reply, redis_moved *out) {
 	p += MOVED_PREFIX_LEN;
 
 	// Parse slot number
-	int slot = 0;
 	while (p < end && *p >= '0' && *p <= '9') {
 		slot = slot * 10 + (*p - '0');
 		p++;
@@ -393,8 +402,7 @@ int parse_moved_reply(redisReply *reply, redis_moved *out) {
 	while (p < end && *p == ' ') p++;
 
 	// Parse host and port
-	const char *host_start = p;
-	const char *colon = NULL;
+	host_start = p;
 	while (p < end) {
 		if (*p == ':') {
 			colon = p;
@@ -406,14 +414,12 @@ int parse_moved_reply(redisReply *reply, redis_moved *out) {
 	out->endpoint.s = NULL;
 	out->endpoint.len = 0;
 
-	int port = REDIS_DF_PORT; // Default to Redis standard port
-
 	if (colon) {
 		out->endpoint.s = host_start;
 		out->endpoint.len = colon - host_start;
 
 		// Parse port
-		const char *port_start = colon + 1;
+		port_start = colon + 1;
 		p = port_start;
 		if (p < end) {
 			port = 0;
