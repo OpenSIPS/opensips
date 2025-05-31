@@ -302,7 +302,7 @@ Chapter 3. Contributors
    Kuthan (@jiriatipteldotorg), @coxx, Konstantin Bokarius, Klaus
    Darilion, Anca Vamanu, Norman Brandinger (@NormB), Peter
    Lemenkov (@lemenkov), Stefan Darius, UnixDev, Andreas Granig,
-   John Burke (@john08burke).
+   John Burke (@john08burke), Ovidiu Sas (@ovidiusas).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -325,22 +325,23 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2025
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2025
-   3.  David Trihy                         May 2025 - May 2025
-   4.  Stefan Darius                       Jul 2024 - Jul 2024
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  John Burke (@john08burke)           Jan 2022 - Jan 2022
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. @coxx                               Mar 2010 - Mar 2010
+   2.  Ovidiu Sas (@ovidiusas)             May 2025 - May 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2025
+   4.  David Trihy                         May 2025 - May 2025
+   5.  Stefan Darius                       Jul 2024 - Jul 2024
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7.  John Burke (@john08burke)           Jan 2022 - Jan 2022
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Anca Vamanu, UnixDev, Juha Heinanen
-   (@juha-h), Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Elena-Ramona Modroiu, Dan Pascu (@danpascu), Norman Brandinger
-   (@NormB), Andreas Granig, Klaus Darilion, Jan Janak (@janakj),
-   Andrei Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: @coxx, Anca Vamanu, UnixDev, Juha
+   Heinanen (@juha-h), Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elena-Ramona Modroiu, Dan Pascu (@danpascu),
+   Norman Brandinger (@NormB), Andreas Granig, Klaus Darilion, Jan
+   Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
+   (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits
