@@ -1573,7 +1573,7 @@ static b2bl_tuple_t *ctx_search_tuple(struct b2b_context *ctx, int *locked)
 	if (!tuple) {
 		LM_ERR("Tuple [%u, %u] not found\n", ctx->hash_index, ctx->local_index);
 		B2BL_LOCK_RELEASE_AUX(ctx->hash_index);
-		locked = 0;
+		*locked = 0;
 		return NULL;
 	}
 
