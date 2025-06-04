@@ -245,7 +245,7 @@ modparam("sockets_mgm", "processes", 32)
 
 1.5.9. max_sockets (integer)
 
-   The maximum number of sockets that can be defined dinamically.
+   The maximum number of sockets that can be defined dynamically.
    See the Limitations section for more information.
 
    Default value is “100”.
