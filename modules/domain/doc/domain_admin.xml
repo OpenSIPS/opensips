@@ -123,6 +123,23 @@ modparam("domain", "attrs_col", "attributes")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>subdomain_col</varname> (int)</title>
+		<para>
+		Name of the "accept_subdomain" column in the domain table.
+		A positive value for the column means the domain accepts subdomains.
+		A 0 value means it does not.
+		</para>
+		<para>
+		Default value is <quote>accept_subdomain</quote>.
+		</para>
+		<example>
+		<title>Setting subdomain_col parameter</title>
+		<programlisting format="linespecific">
+modparam("domain", "subdomain_col", "has_subdomain")
+</programlisting>
+		</example>
+	</section>
 	
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
