@@ -303,7 +303,7 @@ modparam("sockets_mgm", "processes", 32)
 		<section id="param_max_sockets" xreflabel="max_sockets">
 		<title><varname>max_sockets</varname> (integer)</title>
 		<para>
-			The maximum number of sockets that can be defined dinamically.
+			The maximum number of sockets that can be defined dynamically.
 			See the <xref linkend="limitations"/> section for more information.
 		</para>
 		<para>
