@@ -26,6 +26,14 @@
 		<entry align="center">2207</entry>
 		<entry align="center">572</entry>
 	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Norm Brandinger</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">5</entry>
+		<entry align="center">5</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -56,6 +64,11 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Norm Brandinger</entry>
+		<entry align="center">Jun 2025 - Jun 2025</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Mar 2025 - May 2025</entry>
 	</row>
@@ -73,7 +86,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Norm Brandinger, Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
 </section>
 
 </chapter>
