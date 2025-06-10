@@ -76,8 +76,16 @@ p_address_node_t *new_address_node(struct net *subnet, unsigned int port, int pr
                                    str *info) {
     p_address_node_t *node;
 
+    if (subnet == NULL) {
+        LM_ERR("subnet is empty\n");
+        return NULL;
+    }
+
     node = alloc_address_node(pattern, info);
-    if (!node) return NULL;
+    if (!node) {
+        LM_ERR("no shm memory left for new address node\n");
+        return NULL;
+    }
 
     node->v.port = port;
     node->v.proto = proto;
@@ -99,13 +107,13 @@ p_address_node_t *new_address_node(struct net *subnet, unsigned int port, int pr
 
 void delete_group_node(p_group_node_t *group) {
     int i;
-    p_address_node_t *address;
+    p_address_node_t *address, *next;
 
     if (!group) return;
 
     for (i = 0; i < group->v.address.bucket_count; ++i) {
-        for (address = (p_address_node_t *)group->v.address.bucket[i]; address;
-             address = address->next) {
+        for (address = (p_address_node_t *)group->v.address.bucket[i]; address; address = next) {
+            next = address->next;
             delete_address_node(address);
         }
     }
@@ -132,6 +140,7 @@ p_group_node_t *new_group_node(unsigned int group_id, unsigned int bucket_count)
     if (!node->v.ipv4_subnet) {
         LM_ERR("no shm memory left for IPv4 subnet prefix tree\n");
         shm_free(node);
+        return NULL;
     }
 
     node->v.ipv6_subnet = ppt_create_node();
@@ -139,6 +148,7 @@ p_group_node_t *new_group_node(unsigned int group_id, unsigned int bucket_count)
         LM_ERR("no shm memory left for IPv6 subnet prefix tree\n");
         ppt_free_trie(node->v.ipv4_subnet);
         shm_free(node);
+        return NULL;
     }
 
     return node;
@@ -197,10 +207,7 @@ int pm_hash_insert(p_address_table_t *table, struct net *subnet, unsigned int gr
     p_address_node_t *address;
 
     address = new_address_node(subnet, port, proto, pattern, info);
-    if (!address) {
-        LM_ERR("no shm memory left for new address node\n");
-        return -1;
-    }
+    if (!address) return -1;
 
     group = find_group_node(table, group_id);
 

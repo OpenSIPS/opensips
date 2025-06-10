@@ -286,20 +286,22 @@ int reload_address_table(struct pm_part_struct *part_struct)
 		mask = (unsigned int) VAL_INT(val + 2);
 
 		subnet = mk_net_bitlen(ip_addr, mask);
-		if (pm_hash_insert(new_hash_table, subnet, group, port, proto,
-			&str_pattern, &str_info, mask) == -1) {
-				LM_ERR("hash table insert error\n");
-				if (subnet) {
-					pkg_free(subnet);
-				}
-				goto error;
-		}
-		LM_DBG("Tuple <%.*s, %u, %u, %u, %.*s, %.*s> inserted into "
-				"address hash table\n", str_src_ip.len, str_src_ip.s,
-				group, port, proto, str_pattern.len, str_pattern.s,
-				str_info.len,str_info.s);
 		if (subnet) {
+			if (pm_hash_insert(new_hash_table, subnet, group, port, proto,
+				&str_pattern, &str_info, mask) == -1) {
+					LM_ERR("hash table insert error\n");
+					if (subnet) {
+						pkg_free(subnet);
+					}
+					goto error;
+			}
+			LM_DBG("Tuple <%.*s, %u, %u, %u, %.*s, %.*s> inserted into "
+					"address hash table\n", str_src_ip.len, str_src_ip.s,
+					group, port, proto, str_pattern.len, str_pattern.s,
+					str_info.len,str_info.s);
 			pkg_free(subnet);
+		} else {
+			LM_ERR("invalid address: %.*s/%d\n", str_src_ip.len, str_src_ip.s, mask);
 		}
 	}
 
