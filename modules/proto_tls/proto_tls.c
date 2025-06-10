@@ -618,7 +618,7 @@ send_it:
 	send_sock->last_real_ports->local = c->rcv.dst_port;
 	send_sock->last_real_ports->remote = c->rcv.src_port;
 
-	tcp_conn_release(c, 0);
+	tcp_conn_release(c, c->async && c->async->pending?1:0);
 	return rlen;
 con_release:
 	sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);

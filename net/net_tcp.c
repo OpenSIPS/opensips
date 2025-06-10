@@ -1506,6 +1506,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
+			tcp_connections_no++;
 			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_READ;
 			break;
@@ -1519,6 +1520,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
+			tcp_connections_no++;
 			/* FIXME - now we have lifetime==default_lifetime - should we
 			 * set a shorter one when waiting for a connect ??? */
 			/* only maintain the socket in the IO_WATCH_WRITE watcher
