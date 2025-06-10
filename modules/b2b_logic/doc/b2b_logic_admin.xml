@@ -1470,6 +1470,26 @@ route[b2b_logic_request] {
 	</example>
 	</section>
 
+	<section id="b2b_logic.peer" xreflabel="$b2b_logic.peer">
+	<title>
+		<varname>$b2b_logic.peer(b2b_key)</varname>
+	</title>
+	<para>
+		This is a read-only variable that returns the peer discussing with
+		the associated b2b_key, provided in the
+		<emphasis>callid;from-tag;to-tag</emphasis> format.
+	</para>
+	<example>
+	<title><varname>$b2b_logic.peer</varname> usage</title>
+	<programlisting format="linespecific">
+...
+	$var(b2b_key) = $ci + ';' + $ft + ';' + $tt;
+	xlog("$var(b2b_key) is talking to $b2b_logic.peer($var(b2b_key))\n");
+...
+	</programlisting>
+	</example>
+	</section>
+
 </section>
 
 </chapter>

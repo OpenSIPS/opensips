@@ -60,7 +60,6 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 	str *body, struct sip_msg *msg, int set_maxfwd);
 static int bridging_start_old_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
 	b2bl_entity_id_t *new_entity, str *provmedia_uri, str *body);
-static int b2bl_search_other_entity(b2bl_tuple_t *tuple, str *entity_str);
 
 int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 	b2bl_entity_id_t *entity, struct b2bl_new_entity *new_entity);
@@ -2544,7 +2543,7 @@ void b2bl_timer_bridge_retry(unsigned int ticks, void* param)
 	}
 }
 
-static int b2bl_search_other_entity(b2bl_tuple_t *tuple, str *entity_str)
+int b2bl_search_other_entity(b2bl_tuple_t *tuple, str *entity_str)
 {
 	b2bl_entity_id_t *entity;
 	b2bl_entity_id_t **head;
