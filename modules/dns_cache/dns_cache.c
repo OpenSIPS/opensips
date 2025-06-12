@@ -223,7 +223,7 @@ static char* serialize_he_rdata(struct hostent *he,int *buf_len,int do_encoding)
 
 	/* copy aliases, if any */
 	if (he->h_aliases)
-		for (i=0;he->h_aliases[i];i++) {
+		for (i=0;i<alias_no;i++) {
 			len=strlen(he->h_aliases[i])+1;
 			/* copy alias length */
 			memcpy(p,&len,sizeof(int));
@@ -239,7 +239,7 @@ static char* serialize_he_rdata(struct hostent *he,int *buf_len,int do_encoding)
 
 	/* copy addresses */
 	if (he->h_addr_list)
-		for (i=0;he->h_addr_list[i];i++) {
+		for (i=0;i<addr_no;i++) {
 			/* copy addreses. length will be known from the addrtype field */
 			len=he->h_length;
 			memcpy(p,he->h_addr_list[i],len);
