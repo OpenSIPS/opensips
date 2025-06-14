@@ -204,8 +204,12 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
    disabled for those participants.
 
    Note that the call recording is not started right away, but
-   only when the call is actually answered - 200 OK is sent by the
-   callee.
+   only when the callee provides an SDP as well (usually in a 200
+   OK, or possibly a 183 Ringing).
+
+   Note if you only want to start recording when the call is
+   established (200 OK is received), then you should call this
+   function in the onreply route processing that 200 OK.
 
    Parameters:
      * srs (string) - a comma-separated list of SRS URIs. These
@@ -330,7 +334,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 148 79 4859 1773
+   1. Razvan Crainea (@razvancrainea) 149 80 4867 1775
    2. Vlad Patrascu (@rvlad-patrascu) 16 11 166 149
    3. Liviu Chircu (@liviuchircu) 9 7 35 53
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 2
@@ -357,7 +361,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jul 2024
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jun 2025
    2. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2023
    3. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Mar 2023
    4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
