@@ -457,18 +457,18 @@ static int wait_for_event_sync(struct sip_msg* msg,
 		/* do the init of the event*/
 		if (init_ebr_event(event) < 0) {
 			LM_ERR("failed to init event\n");
-			goto done;
+			goto done1;
 		}
 	}
 
 	swait_data = (struct swait_pack*)shm_malloc( sizeof(struct swait_pack) );
 	if (swait_data==NULL) {
 		LM_ERR("failed to allocated SWAIT data\n");
-		goto done;
+		goto done1;
 	}
 	if (cond_init(&swait_data->cond) != 0) {
 		LM_ERR("could not initialize subscription cond\n");
-		goto done;
+		goto done2;
 	}
 	swait_data->ret_avps = NULL; /*to be populated on resume*/
 
@@ -477,7 +477,7 @@ static int wait_for_event_sync(struct sip_msg* msg,
 	    *timeout, NULL, (void*)swait_data, EBR_SUBS_TYPE_SWAIT) < 0) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 		       event->event_id);
-		goto done1;
+		goto done3;
 	}
 
 	/* now just wait on the codition */
@@ -499,10 +499,13 @@ static int wait_for_event_sync(struct sip_msg* msg,
 	}
 
 	return rc == 0 ? 1 : rc;
-done1:
+done3:
 	cond_destroy(&swait_data->cond);
-done:
+done2:
 	shm_free(swait_data);
+done1:
+	shm_free_all(filters);
+done:
 	return rc;
 }
 
