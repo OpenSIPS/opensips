@@ -1368,10 +1368,7 @@ $ opensips-cli -x mi clusterer_list_cap
 				<emphasis>name</emphasis> - The name of the sharing tag.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>cluster_id</emphasis> - The cluster ID.
-			</para></listitem>
-			<listitem><para>
-				<emphasis>node_id</emphasis> - The ID of the node.
+				<emphasis>cluster</emphasis> - The cluster ID.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>state</emphasis> - The new state of the sharing tag,
