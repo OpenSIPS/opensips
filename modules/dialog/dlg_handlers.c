@@ -2249,6 +2249,8 @@ after_unlock5:
 					req->msg_flags |= FL_USE_UAC_CSEQ;
 				}
 
+				if (dialog_repl_cluster)
+					replicate_dialog_cseq_updated(dlg, dst_leg);
 				dlg_unlock( d_table, d_entry );
 
 				LM_DBG("nonACK req [%d],NULL,%d)\n",
@@ -2288,6 +2290,8 @@ after_unlock5:
 				else {
 					LM_DBG("update_val=[%d]\n", update_val);
 				}
+				if (dialog_repl_cluster)
+					replicate_dialog_cseq_updated(dlg, dst_leg);
 				dlg_unlock( d_table, d_entry );
 
 				if (update_val && update_msg_cseq(req,0,update_val) != 0) {
