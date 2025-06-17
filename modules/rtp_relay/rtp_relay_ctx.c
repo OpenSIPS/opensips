@@ -1633,9 +1633,9 @@ static void rtp_relay_fill_dlg(struct rtp_relay_ctx *ctx, str *dlg_callid,
 		LM_ERR("could not store dialog callid in context\n");
 	if (callid && !ctx->callid.len &&  shm_str_sync(&ctx->callid, callid) < 0)
 		LM_ERR("could not store callid in context\n");
-	if (from_tag && !ctx->from_tag.s && shm_str_sync(&ctx->from_tag, from_tag) < 0)
+	if (from_tag && from_tag->len && !ctx->from_tag.s && shm_str_sync(&ctx->from_tag, from_tag) < 0)
 		LM_ERR("could not store from tag in context\n");
-	if (to_tag && !ctx->to_tag.s && shm_str_sync(&ctx->to_tag, to_tag) < 0)
+	if (to_tag && to_tag->len && !ctx->to_tag.s && shm_str_sync(&ctx->to_tag, to_tag) < 0)
 		LM_ERR("could not store to tag in context\n");
 }
 

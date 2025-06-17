@@ -4389,7 +4389,7 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		bencode_list_add_string(list, "all");
 	} else if (copy_flags & RTP_COPY_LEG_CALLER && sess->from_tag) {
 		bencode_dictionary_add_str(dict, "from-tag", sess->from_tag);
-	} else if (sess->to_tag) {
+	} else if (sess->to_tag && sess->to_tag->len) {
 		bencode_dictionary_add_str(dict, "from-tag", sess->to_tag);
 	}
 	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
