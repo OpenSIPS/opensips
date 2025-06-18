@@ -884,8 +884,8 @@ static inline void tcpconn_ref(struct tcp_connection* c)
 
 
 static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
-                    struct socket_info* si, struct tcp_conn_profile *prof,
-                    int state, int flags)
+				struct socket_info* si, const struct tcp_conn_profile *prof,
+				int state, int flags, int in_main_proc)
 {
 	struct tcp_connection *c;
 	union sockaddr_union local_su;
@@ -952,8 +952,8 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 			goto error;
 		}
 	}
-
-	tcp_connections_no++;
+	if(in_main_proc)
+		tcp_connections_no++;
 	return c;
 
 error:
@@ -980,7 +980,7 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 		tcp_con_get_profile(su, &si->su, si->proto, prof);
 
 	/* create the connection structure */
-	c = tcpconn_new(sock, su, si, prof, state, 0);
+	c = tcpconn_new(sock, su, si, prof, state, 0, !send2main);
 	if (c==NULL) {
 		LM_ERR("tcpconn_new failed\n");
 		return NULL;
@@ -1123,7 +1123,7 @@ static inline int handle_new_connect(struct socket_info* si)
 	}
 
 	/* add socket to list */
-	tcpconn=tcpconn_new(new_sock, &su, si, &prof, S_CONN_OK, F_CONN_ACCEPTED);
+	tcpconn=tcpconn_new(new_sock, &su, si, &prof, S_CONN_OK, F_CONN_ACCEPTED, 1);
 	if (tcpconn){
 		tcpconn->refcnt++; /* safe, not yet available to the
 							  outside world */
@@ -1502,6 +1502,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
+			tcp_connections_no++;
 			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_READ;
 			break;
@@ -1515,6 +1516,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
+			tcp_connections_no++;
 			/* FIXME - now we have lifetime==default_lifetime - should we
 			 * set a shorter one when waiting for a connect ??? */
 			/* only maintain the socket in the IO_WATCH_WRITE watcher
