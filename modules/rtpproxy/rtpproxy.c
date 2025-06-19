@@ -188,7 +188,7 @@
 #include "rtpproxy_vcmd.h"
 #include "rtppn_connect.h"
 #include "../rtp_relay/rtp_relay.h"
-#include "../rtp.io/rtp_io_api.h"
+#include "notification_process.h"
 
 #define NH_TABLE_VERSION  0
 
@@ -494,6 +494,7 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"load_rtpproxy", (cmd_function)load_rtpproxy, {{0,0,0}}, 0},
+	{"rtpproxy_is_nproc", (cmd_function)rtpproxy_is_nproc, {{0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -568,7 +569,7 @@ struct module_exports exports = {
 	mi_cmds,     /* exported MI functions */
 	0,           /* exported pseudo-variables */
 	0,			 /* exported transformations */
-	0,           /* extra processes */
+	procs,       /* extra processes */
 	mod_preinit,
 	mod_init,
 	0,           /* reply processing */
@@ -633,8 +634,6 @@ static int rtpproxy_set_notify(modparam_t type, void * val)
 
 	rtpp_notify_cfg.name.s = p;
 	rtpp_notify_cfg.name.len = strlen(p);
-
-	exports.procs = procs;
 
 	return 0;
 }
@@ -1310,11 +1309,11 @@ mod_init(void)
 				" timeout notification feature\n");
 			return -1;
 		}
+	}
 
-		if (init_rtpp_notify() < 0) {
-			LM_ERR("cannot init notify handlers\n");
-			return -1;
-		}
+	if (init_rtpp_notify() < 0) {
+		LM_ERR("cannot init notify handlers\n");
+		return -1;
 	}
 
 	ei_id = evi_publish_event(event_name);
@@ -1489,9 +1488,14 @@ error:
 static int
 child_init(int rank)
 {
+	LM_INFO("rtpproxy: child_init(%d)\n", rank);
 	/* we need DB conn in the worker processes only */
-	if (rank<1)
+	if (rank<1) {
+		if (rank < 0) {
+			assert(rtpproxy_is_nproc(NPROC_SET) == 0);
+		}
 		return 0;
+	}
 
 	if(*rtpp_set_list==NULL )
 		return 0;
@@ -1541,6 +1545,12 @@ int connect_rtpproxies(struct rtpp_set *filter)
 					if (gcs_f == NULL) {
 						LM_ERR("rtp.io is not loaded\n");
 						return -1;
+					}
+					if (rtpp_notify_cfg.name.s == NULL) {
+						if (fill_rtp_io_rnsock() != 0) {
+							LM_ERR("rtp.io notification socket cannot be initialized\n");
+							return -1;
+						}
 					}
 					rtpp_socks[pnode->idx].fd = gcs_f(myrank);
 				}
@@ -1647,7 +1657,7 @@ static void mod_destroy(void)
 		nh_lock = NULL;
 	}
 
-	if (rtpp_notify_cfg.sock.rn_umode == CM_UNIX) {
+	if (rtpp_notify_cfg.name.s != NULL && rtpp_notify_cfg.sock.rn_umode == CM_UNIX) {
 		if (unlink(rtpp_notify_cfg.name.s)) {
 			LM_ERR("cannot remove the notification socket(%s:%d)\n",
 					strerror(errno), errno);
