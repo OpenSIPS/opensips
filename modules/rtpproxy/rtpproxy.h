@@ -57,6 +57,16 @@ struct rtpp_node {
 	struct rtpp_node	*rn_next;
 };
 
+struct rtpp_sock {
+	int fd;
+	enum comm_modes rn_umode;
+};
+
+struct rtpp_notify_cfg {
+	str name;
+	struct rtpp_sock sock;
+};
+
 #define CM_STREAM(ndp) ((ndp)->rn_umode == CM_TCP || (ndp)->rn_umode == CM_TCP6 || \
     (ndp)->rn_umode == CM_CUNIX || (ndp)->rn_umode == CM_RTPIO)
 
@@ -150,8 +160,7 @@ struct rtpp_dtmf_event {
 int rtpproxy_raise_dtmf_event(struct rtpp_dtmf_event *dtmf);
 
 extern rw_lock_t *nh_lock;
-extern str rtpp_notify_socket;
-extern int rtpp_notify_socket_un;
+extern struct rtpp_notify_cfg rtpp_notify_cfg;
 extern struct dlg_binds dlg_api;
 extern int detect_rtp_idle;
 extern int rtpproxy_tout;
