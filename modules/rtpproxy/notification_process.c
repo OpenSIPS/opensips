@@ -273,19 +273,18 @@ static int rtpproxy_io_callback(int fd, void *fs, int was_timeout)
 static int rtpproxy_io_new_callback(int fd, void *fs, int was_timeout)
 {
 	int size;
-	struct sockaddr_storage rtpp_info;
+	struct sockaddr_storage rtpp_info = {0};
 	struct rtpp_node *node;
 	struct rtpp_notify *notify;
 
 	size = sizeof(rtpp_info);
-	memset(&rtpp_info, 0, size);
 	fd = accept(fd, (struct sockaddr *)&rtpp_info, (socklen_t *)&size);
 	if(fd < 0) {
 		LM_ERR("socket accept failed: %s(%d)\n", strerror(errno), errno);
 		return -1;
 	}
 
-	if (rtpp_notify_socket_un) {
+	if (rtpp_notify_cfg.sock.rn_umode == CM_UNIX) {
 		LM_DBG("trusting unix socket connection\n");
 		if (reactor_proc_add_fd(fd, rtpproxy_io_callback, NULL)<0) {
 			LM_CRIT("failed to add RTPProxy new connection to reactor\n");
@@ -337,29 +336,30 @@ void notification_listener_process(int rank)
 	int len, n;
 	int optval = 1;
 	int socket_fd;
+	str *rn_name = &rtpp_notify_cfg.name;
 
 	*rtpp_notify_process_no = process_no;
 
-	if (!rtpp_notify_socket_un) {
-		p = strrchr(rtpp_notify_socket.s, ':');
+	if (rtpp_notify_cfg.sock.rn_umode == CM_TCP) {
+		p = strrchr(rn_name->s, ':');
 		if (!p) {
-			LM_ERR("invalid udp address <%.*s>\n", rtpp_notify_socket.len, rtpp_notify_socket.s);
+			LM_ERR("invalid udp address <%.*s>\n", rn_name->len, rn_name->s);
 			return;
 		}
-		n = p- rtpp_notify_socket.s;
-		rtpp_notify_socket.s[n] = 0;
+		n = p - rn_name->s;
+		rn_name->s[n] = 0;
 
 		id.s = p+1;
-		id.len = rtpp_notify_socket.len - n -1;
+		id.len = rn_name->len - n - 1;
 		port= str2s(id.s, id.len, &n);
 		if(n) {
 			LM_ERR("Bad format for socket name. Expected ip:port\n");
 			return;
 		}
 		/* skip here tcp part */
-		rtpp_notify_socket.s += 4;
+		rn_name->s += 4;
 		memset(&saddr_in, 0, sizeof(saddr_in));
-		saddr_in.sin_addr.s_addr = inet_addr(rtpp_notify_socket.s);
+		saddr_in.sin_addr.s_addr = inet_addr(rn_name->s);
 		saddr_in.sin_family = AF_INET;
 		saddr_in.sin_port = htons(port);
 
@@ -370,7 +370,7 @@ void notification_listener_process(int rank)
 		}
 		saddr = (struct sockaddr*)&saddr_in;
 		len = sizeof(saddr_in);
-		LM_DBG("binding socket %d to %s:%d\n", socket_fd, rtpp_notify_socket.s, port);
+		LM_DBG("binding socket %d to %s:%d\n", socket_fd, rn_name->s, port);
 	} else {
 		/* create socket */
 		socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -381,11 +381,11 @@ void notification_listener_process(int rank)
 
 		memset(&saddr_un, 0, sizeof(struct sockaddr_un));
 		saddr_un.sun_family = AF_LOCAL;
-		strncpy(saddr_un.sun_path, rtpp_notify_socket.s,
+		strncpy(saddr_un.sun_path, rn_name->s,
 				sizeof(saddr_un.sun_path) - 1);
 		saddr = (struct sockaddr*)&saddr_un;
 		len = sizeof(saddr_un);
-		LM_DBG("binding unix socket %s\n", rtpp_notify_socket.s);
+		LM_DBG("binding unix socket %s\n", rn_name->s);
 	}
 
 	if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (void*)&optval,
