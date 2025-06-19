@@ -101,5 +101,8 @@ ipc_shutdown_rtpp_host(int sender, void *param)
         if (rpi_descp->socks->holder[i] != -1)
             close(rpi_descp->socks->holder[i]);
     }
+    if (rpi_descp->n_sock.fds.rtpp != -1) {
+        close(rpi_descp->n_sock.fds.rtpp);
+    }
     free(rpi_descp->socks);
 }

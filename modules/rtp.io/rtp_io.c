@@ -29,6 +29,7 @@
 #include "../../dprint.h"
 #include "../../timer.h"
 
+#include "../rtpproxy/rtpproxy.h"
 #include "rtp_io.h"
 #include "rtp_io_util.h"
 #include "rtp_io_params.h"
@@ -49,12 +50,14 @@ static const dep_export_t deps = {
 };
 
 static int rtp_io_getchildsock(int);
+static int rtp_io_getrnsock(struct rtpp_notify_cfg *);
 
 /*
  * Exported functions
  */
 static const cmd_export_t cmds[] = {
     {"rtp_io_getchildsock", (cmd_function)rtp_io_getchildsock, {0}, 0},
+    {"rtp_io_getrnsock", (cmd_function)rtp_io_getrnsock, {0}, 0},
     {0}
 };
 
@@ -162,17 +165,29 @@ static int mod_init(void)
         ENV_ADD(argv_stat[i], e1);
     }
 
+    struct rtpp_n_sock *n_sock = &rpi_descp->n_sock;
+    int *fdp = n_sock->_fds;
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdp) < 0)
+        goto e1;
+    snprintf(n_sock->_name, sizeof(n_sock->_name), "fd:%d", n_sock->fds.rtpp);
+    n_sock->name.s = n_sock->_name;
+    n_sock->name.len = strlen(n_sock->_name);
+    ENV_ADD("-n", e2);
+    ENV_ADD("%s", e2, n_sock->name.s);
     for (int i = 0; i < nsocks; i++) {
         int *fdp = &rpi_descp->socks->holder[i * 2];
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdp) < 0)
-            goto e1;
-        ENV_ADD("-s", e1);
-        ENV_ADD("fd:%d", e1, fdp[0]);
+            goto e2;
+        ENV_ADD("-s", e2);
+        ENV_ADD("fd:%d", e2, fdp[0]);
     }
 
     rpi_descp->socks->n = nsocks;
 
     return 0;
+e2:
+    close(n_sock->_fds[0]);
+    close(n_sock->_fds[1]);
 e1:
     free(rpi_descp->socks);
 e0:
@@ -240,3 +255,12 @@ static int rtp_io_getchildsock(int rank)
     int *fdp = &rpi_descp->socks->holder[(rank - 1) * 2];
     return (fdp[1]);
 }
+
+static int rtp_io_getrnsock(struct rtpp_notify_cfg *rn_cfg)
+{
+
+    rn_cfg->name = rpi_descp->n_sock.name;
+    rn_cfg->sock.rn_umode = CM_RTPIO;
+    rn_cfg->sock.fd = rpi_descp->n_sock.fds.osips;
+    return (0);
+};
