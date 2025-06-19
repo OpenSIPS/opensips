@@ -420,7 +420,7 @@ void notification_listener_process(int rank)
 		socket_fd = rn_sock->fd;
 		len = -1;
 		saddr = NULL;
-		LM_DBG("using rtp.io notification socket %d\n", socket_fd);
+		LM_INFO("using rtp.io notification socket %d\n", socket_fd);
 		break;
 	default:
 		abort();
