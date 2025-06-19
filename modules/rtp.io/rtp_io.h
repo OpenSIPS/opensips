@@ -25,10 +25,23 @@ struct rtp_io_socks {
     int holder[];
 };
 
+struct rtpp_n_sock {
+    char _name[32];
+    str name;
+    union {
+        struct {
+            int rtpp;
+            int osips;
+        } fds;
+        int _fds[2];
+    };
+};
+
 struct rtp_io_desc {
     struct rtpp_cfg *rtpp_cfsp;
     struct rtpp_env_hd env;
     struct rtp_io_socks *socks;
+    struct rtpp_n_sock n_sock;
 };
 
 extern struct rtp_io_desc *rpi_descp;

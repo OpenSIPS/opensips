@@ -85,11 +85,27 @@ int rtp_io_close_serv_socks(void)
 
     for (int i = 0; i < (rpi_descp->socks->n * 2); i+=2) {
         if (rpi_descp->socks->holder[i] != -1) {
-            close(rpi_descp->socks->holder[i]);
+            if (close(rpi_descp->socks->holder[i]) != 0)
+                return -1;
             rpi_descp->socks->holder[i] = -1;
         }
     }
+    if (rpi_descp->n_sock.fds.rtpp != -1) {
+        if (close(rpi_descp->n_sock.fds.rtpp) != 0)
+            return -1;
+        rpi_descp->n_sock.fds.rtpp = -1;
+    }
     return (0);
+}
+
+int rtp_io_close_cnlt_nsock(void)
+{
+    if (rpi_descp->n_sock.fds.osips != -1) {
+	if (close(rpi_descp->n_sock.fds.osips) != 0)
+            return -1;
+	rpi_descp->n_sock.fds.osips = -1;
+    }
+    return 0;
 }
 
 int rtp_io_close_cnlt_socks(void)
@@ -97,7 +113,8 @@ int rtp_io_close_cnlt_socks(void)
 
     for (int i = 0; i < (rpi_descp->socks->n * 2); i+=2) {
         if (rpi_descp->socks->holder[i+1] != -1) {
-            close(rpi_descp->socks->holder[i+1]);
+            if (close(rpi_descp->socks->holder[i+1]) != 0)
+                return -1;
             rpi_descp->socks->holder[i+1] = -1;
         }
     }
