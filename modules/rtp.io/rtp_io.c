@@ -231,7 +231,7 @@ child_init(int rank)
         return -1;
     }
     int is_nproc = is_nproc_f(NPROC_CHECK);
-    LM_DBG("rtp.io: child_init(%d), notifier: %d\n", rank, is_nproc);
+    LM_INFO("rtp.io: child_init(%d), notifier: %d\n", rank, is_nproc);
     if (rank > rpi_descp->socks->n) {
         LM_ERR("BUG: rank is higher than the number of sockets!\n");
         return -1;
