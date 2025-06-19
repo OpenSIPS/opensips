@@ -72,6 +72,8 @@ void rtpproxy_host_process(int rank)
         goto e1;
     if (rtp_io_close_cnlt_socks() != 0)
         goto e1;
+    if (rtp_io_close_cnlt_nsock() != 0)
+        goto e1;
 
     OPT_RESTORE();
     rpi_descp->rtpp_cfsp = rtpp_main(argc, argv);
@@ -100,6 +102,9 @@ ipc_shutdown_rtpp_host(int sender, void *param)
     for (int i = 0; i < (rpi_descp->socks->n * 2); i++) {
         if (rpi_descp->socks->holder[i] != -1)
             close(rpi_descp->socks->holder[i]);
+    }
+    if (rpi_descp->n_sock.fds.rtpp != -1) {
+        close(rpi_descp->n_sock.fds.rtpp);
     }
     free(rpi_descp->socks);
 }
