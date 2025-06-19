@@ -30,6 +30,7 @@
 #include "../../pvar.h"
 #include "../dialog/dlg_load.h"
 #include "../../rw_locking.h"
+#include "../rtp.io/rtp_io_api.h"
 
 struct rtpproxy_vcmd;
 
@@ -168,6 +169,7 @@ extern struct rtpp_set_head ** rtpp_set_list;
 int init_rtpp_notify();
 void update_rtpp_notify();
 void notification_listener_process(int rank);
+int fill_rtp_io_rnsock(void);
 
 /* Functions from nathelper */
 struct rtpp_set *get_rtpp_set(nh_set_param_t *);
