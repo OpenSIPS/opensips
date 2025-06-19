@@ -622,6 +622,9 @@ send_it:
 	return rlen;
 con_release:
 	sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);
+	/* close the fd if this process is not meant to own it */
+	if (c->proc_id != process_no)
+		close(fd);
 	tcp_conn_release(c, (rlen < 0)?0:1);
 	return rlen;
 }
