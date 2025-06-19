@@ -372,12 +372,7 @@ static int myrand = 0;
 static unsigned int myseqn = 0;
 static int myrank = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
-str rtpp_notify_socket = {0, 0};
-/*
- * 0 - Unix socket
- * 1 - TCP socket
- */
-int rtpp_notify_socket_un = 0;
+struct rtpp_notify_cfg rtpp_notify_cfg = {.name = {0, 0}};
 
 /* used in rtpproxy_set_store() */
 static int rtpp_sets=0;
@@ -387,11 +382,6 @@ static int rtpp_set_count = 0;
 struct rtpp_set_head ** rtpp_set_list =0;
 struct rtpp_set ** default_rtpp_set=0;
 static int default_rtpp_set_no = DEFAULT_RTPP_SET_ID;
-
-struct rtpp_sock {
-	int fd;
-	enum comm_modes rn_umode;
-};
 
 /* array with the sockets used by rtpporxy (per process)*/
 static struct rtpp_sock *rtpp_socks = NULL;
@@ -641,8 +631,8 @@ static int rtpproxy_set_notify(modparam_t type, void * val)
 		return 0;
 	}
 
-	rtpp_notify_socket.s = p;
-	rtpp_notify_socket.len = strlen(p);
+	rtpp_notify_cfg.name.s = p;
+	rtpp_notify_cfg.name.len = strlen(p);
 
 	exports.procs = procs;
 
@@ -1161,6 +1151,7 @@ mod_init(void)
 	int i;
 	int tmp;
 	float timeout;
+	str *rn_name = &rtpp_notify_cfg.name;
 
 	if (rtpproxy_autobridge != 0) {
 		LM_WARN("Auto bridging does not properly function when doing "
@@ -1304,16 +1295,16 @@ mod_init(void)
 			parse_bavp(&param3_bavp_name, &param3_spec) < 0)
 		LM_DBG("cannot parse bavps\n");
 
-	if(rtpp_notify_socket.s) {
-		if (strncmp("tcp:", rtpp_notify_socket.s, 4) == 0) {
-				rtpp_notify_socket_un = 0;
+	if (rn_name->s) {
+		if (strncmp("tcp:", rn_name->s, 4) == 0) {
+				rtpp_notify_cfg.sock.rn_umode = CM_TCP;
 		} else {
-			if (strncmp("unix:", rtpp_notify_socket.s, 5) == 0)
-				rtpp_notify_socket.s += 5;
-			rtpp_notify_socket_un = 1;
+			if (strncmp("unix:", rn_name->s, 5) == 0)
+				rn_name->s += 5;
+			rtpp_notify_cfg.sock.rn_umode = CM_UNIX;
 		}
 		/* check if the notify socket parameter is set */
-		rtpp_notify_socket.len = strlen(rtpp_notify_socket.s);
+		rn_name->len = strlen(rn_name->s);
 		if(dlg_api.get_dlg == 0) {
 			LM_ERR("You need to load dialog module if you want to use the"
 				" timeout notification feature\n");
@@ -1656,8 +1647,8 @@ static void mod_destroy(void)
 		nh_lock = NULL;
 	}
 
-	if (rtpp_notify_socket_un) {
-		if (unlink(rtpp_notify_socket.s)) {
+	if (rtpp_notify_cfg.sock.rn_umode == CM_UNIX) {
+		if (unlink(rtpp_notify_cfg.name.s)) {
 			LM_ERR("cannot remove the notification socket(%s:%d)\n",
 					strerror(errno), errno);
 		}
@@ -3592,7 +3583,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 	char *adv_address = NULL;
 	struct dlg_cell * dlg;
 	str dtmf_tag = {0, 0}, timeout_tag = {0, 0};
-	str notification_socket = rtpp_notify_socket;
+	str rn_name = rtpp_notify_cfg.name;
 	int allocated_body = 0;
 	str *did;
 	int ret = -1;
@@ -3689,9 +3680,9 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 			enable_notification = 1;
 			/* check to see if we have a notification socket */
 			if (cp[1] != '\0' && cp[1] == '<') {
-				notification_socket.s = &cp[2];
+				rn_name.s = &cp[2];
 				for (; cp[1] != '\0' && cp[1] != '>'; cp++);
-				notification_socket.len = &cp[1] - notification_socket.s;
+				rn_name.len = &cp[1] - rn_name.s;
 				cp++;
 			}
 			break;
@@ -3821,7 +3812,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 	STR2IOVEC(args->from_tag, vup.vu[11]);
 	STR2IOVEC(args->to_tag, vup.vu[15]);
 
-	if (notification_socket.s == 0 || notification_socket.len == 0) {
+	if (rn_name.s == 0 || rn_name.len == 0) {
 		if (enable_notification)
 			LM_WARN("cannot receive notifications because"
 					"notification socket is not specified\n");
@@ -4086,9 +4077,9 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 				node_has_notification = enable_notification && HAS_CAP(args->node, NOTIFY);
 				if (node_has_dtmf_catch || node_has_notification) {
 					if (opts.s.s[0] == 'U') {
-						STR2IOVEC(notification_socket, vup.vu[vcnt + 1]);
-						if (!HAS_CAP(args->node, NOTIFY_WILD) && !rtpp_notify_socket_un &&
-								notification_socket.s == rtpp_notify_socket.s) {
+						STR2IOVEC(rn_name, vup.vu[vcnt + 1]);
+						if (!HAS_CAP(args->node, NOTIFY_WILD) && rtpp_notify_cfg.sock.rn_umode == CM_TCP &&
+								rn_name.s == rtpp_notify_cfg.name.s) {
 							vup.vu[vcnt + 1].iov_base += 4;
 							vup.vu[vcnt + 1].iov_len -= 4;
 						}
