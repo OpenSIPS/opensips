@@ -111,11 +111,24 @@ static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
 	return ctx->acc;
 }
 
+static struct cgr_acc_ctx *cgr_fetch_acc_ctx(struct dlg_cell *dlg)
+{
+	int_str ctxstr;
+	int val_type;
+
+	/* search for the accounting ctx */
+	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &val_type, &ctxstr, 0) < 0)
+		return NULL;
+	if (ctxstr.s.len != sizeof(struct cgr_acc_ctx *)) {
+		LM_BUG("Invalid ctx pointer size %d\n", ctxstr.s.len);
+		return NULL;
+	}
+	return *(struct cgr_acc_ctx **)ctxstr.s.s;
+}
+
 struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 {
 	struct cgr_acc_ctx *acc_ctx;
-	int_str ctxstr;
-	int val_type;
 	struct cgr_kv *kv;
 	struct list_head *l, *sl;
 	struct list_head *t, *st;
@@ -132,14 +145,8 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 	dlg = cgr_dlgb.get_dlg();
 	if (!dlg) /* dialog not found yet, moving later */
 		return NULL;
-	/* search for the accounting ctx */
-	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &val_type, &ctxstr, 0) < 0)
-		return NULL;
-	if (ctxstr.s.len != sizeof(struct cgr_acc_ctx *)) {
-		LM_BUG("Invalid ctx pointer size %d\n", ctxstr.s.len);
-		return NULL;
-	}
-	acc_ctx = *(struct cgr_acc_ctx **)ctxstr.s.s;
+
+	acc_ctx = cgr_fetch_acc_ctx(dlg);
 	if (!acc_ctx) /* nothing to do now */
 		return NULL;
 
@@ -856,6 +863,16 @@ static void cgr_dlg_onwrite(struct dlg_cell *dlg, int type,
 		pkg_free(sessions_kvs);
 }
 
+static void cgr_dlg_destroy(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params)
+{
+	struct cgr_acc_ctx *ctx = cgr_fetch_acc_ctx(dlg);
+	if (ctx)
+		cgr_ref_acc_ctx(ctx, -1, "destroy");
+	else
+		LM_DBG("context already released\n");
+}
+
 int w_cgr_acc(struct sip_msg* msg, void *flag_c, str* acc_c, str *dst_c,
 		str *tag_c)
 {
@@ -962,6 +979,10 @@ int w_cgr_acc(struct sip_msg* msg, void *flag_c, str* acc_c, str *dst_c,
 			LM_ERR("cannot register callback for context serialization!\n");
 			return -1;
 		}
+
+		if (cgr_dlgb.register_dlgcb(dlg, DLGCB_DESTROY,
+					cgr_dlg_destroy, NULL, NULL) != 0)
+			LM_ERR("cannot register callback for context release! context might leak!\n");
 		ctx->engaged = 1;
 	}
 
@@ -1277,6 +1298,16 @@ store:
 		LM_ERR("cannot register callback for database accounting\n");
 		goto internal_error;
 	}
+	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_WRITE_VP,
+				cgr_dlg_onwrite, ctx, NULL) != 0) {
+		LM_ERR("cannot register callback for context serialization!\n");
+		goto internal_error;
+	}
+
+	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_DESTROY,
+				cgr_dlg_destroy, NULL, NULL) != 0)
+		LM_ERR("cannot register callback for context release! context might leak!\n");
+	ctx->engaged = 1;
 	LM_DBG("successfully loaded acc ctx=%p\n", ctx);
 	return;
 internal_error:
