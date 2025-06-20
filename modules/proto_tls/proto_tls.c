@@ -649,13 +649,6 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 
 	/* do this trick in order to trace whether if it's an error or not */
 	ret=tls_mgm_api.tls_fix_read_conn(con, con->fd, tls_handshake_tout, t_dst, 1);
-	if (ret < 0) {
-		LM_ERR("failed to do pre-tls handshake!\n");
-		return -1;
-	} else if (ret == 0) {
-		LM_DBG("SSL accept/connect still pending!\n");
-		return 0;
-	}
 
 	/* if there is pending tracing data on an accepted connection, flush it
 	 * As this is a read op, we look only for accepted conns, not to conflict
@@ -675,9 +668,12 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 		con->proto_flags &= ~( F_TLS_TRACE_READY );
 	}
 
-	if ( ret != 1 ) {
-		LM_ERR("failed to do pre-tls reading\n");
+	if (ret < 0) {
+		LM_ERR("failed to do pre-tls handshake!\n");
 		goto error;
+	} else if (ret == 0) {
+		LM_DBG("SSL accept/connect still pending!\n");
+		return 0;
 	}
 
 	if(con->state!=S_CONN_OK)
