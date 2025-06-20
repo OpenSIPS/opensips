@@ -778,7 +778,6 @@ static int allow_uri(struct sip_msg* msg, int idx, str *uri_p)
 	int len;
 	static char from_str[EXPRESSION_LENGTH+1];
 	static char uri_str[EXPRESSION_LENGTH+1];
-	pv_value_t pv_val;
 
 	/* turn off control, allow any uri */
 	if ((!allow[idx].rules) && (!deny[idx].rules)) {
