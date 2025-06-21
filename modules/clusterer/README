@@ -1075,8 +1075,7 @@ f-repl 1
 
    Parameters:
      * name - The name of the sharing tag.
-     * cluster_id - The cluster ID.
-     * node_id - The ID of the node.
+     * cluster - The cluster ID.
      * state - The new state of the sharing tag, the possible
        values: "active" or "backup".
      * reason - short text describing what triggered the change of
@@ -1456,7 +1455,7 @@ Chapter 3. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 366 135 13387 7101
    2. Liviu Chircu (@liviuchircu) 73 55 915 595
    3. Eseanu Marius Cristian (@eseanucristian) 46 10 3142 534
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 31 16 1342 128
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 32 17 1343 132
    5. Razvan Crainea (@razvancrainea) 27 21 327 148
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Maksym Sobolyev (@sobomax) 8 6 12 13
@@ -1487,10 +1486,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2016 - Apr 2025
-   2.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
-   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Jun 2025
+   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - Apr 2025
+   3.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
+   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
    5.  Shanee Vanstone                     Mar 2024 - Mar 2024
    6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    7.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
@@ -1509,8 +1508,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Shanee Vanstone,
-   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Patrascu
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Shanee Vanstone, Vlad Patrascu
    (@rvlad-patrascu), Jasper Hafkenscheid, Fabian Gast (@fgast),
    Razvan Crainea (@razvancrainea), Peter Lemenkov (@lemenkov),
    Eseanu Marius Cristian (@eseanucristian).
