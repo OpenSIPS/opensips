@@ -1292,8 +1292,6 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 		else if (ctx->dlg_callid.len)
 			info->callid = &ctx->dlg_callid;
 	}
-	if (!info->from_tag && ctx->from_tag.len)
-		info->from_tag = &ctx->from_tag;
 	if (!info->to_tag && ctx->to_tag.len)
 		info->to_tag = &ctx->to_tag;
 
@@ -1447,7 +1445,6 @@ static void rtp_relay_delete_ctx(struct rtp_relay_ctx *ctx,
 	info.callid = &ctx->callid;
 	if (!info.callid->len)
 		info.callid = &ctx->dlg_callid;
-	info.from_tag = &ctx->from_tag;
 	info.to_tag = &ctx->to_tag;
 	info.branch = RTP_RELAY_ALL_BRANCHES /* sess->index, but we need to remove everything */;
 	rtp_relay_delete(&info, ctx, sess, leg);
