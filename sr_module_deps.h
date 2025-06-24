@@ -74,10 +74,12 @@ enum module_type {
 #define DEP_WARN	(1 << 1) /* re-order init & destroy; warn if dep n/f */
 #define DEP_ABORT	(1 << 2) /* re-order init & destroy; exit if dep n/f */
 /* in some cases, the dependency direction will be reversed */
-#define DEP_REVERSE_INIT    (1 << 3) /* if A->B, A inits before B */
+#define DEP_REVERSE_MINIT   (1 << 3) /* if A->B, A.mod_init() before B.mod_init() */
 #define DEP_REVERSE_DESTROY (1 << 4) /* if A->B, B destroys before A */
+#define DEP_REVERSE_CINIT   (1 << 5) /* if A->B, A.child_init() before B.child_init() */
 
-#define DEP_REVERSE (DEP_REVERSE_INIT|DEP_REVERSE_DESTROY)
+#define DEP_REVERSE_INIT (DEP_REVERSE_MINIT|DEP_REVERSE_CINIT)
+#define DEP_REVERSE      (DEP_REVERSE_INIT|DEP_REVERSE_DESTROY)
 
 typedef struct module_dependency {
 	enum module_type mod_type;
