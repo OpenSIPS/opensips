@@ -1,3 +1,276 @@
+=========================== Release 3.4.13 ==============================
+
+2025-06-25  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [849bd63f6] :
+
+        Merge pull request #3634 from jes/proto-tls-fd
+
+        Stop leaving sockets in CLOSE_WAIT on failed TLS connections
+
+        (cherry picked from commit fde3ff3e37695054ad12dfdf4850be847170bf26)
+
+
+2025-06-24  Razvan Crainea  <razvan@opensips.org>
+        * [6c738f417] :
+
+        dialog: ensure legs are atomically added to the dialog
+
+        (cherry picked from commit 147072a9405e216984db1cf9df39ce36a017080c)
+
+
+2025-06-22  OpenSIPS  <github@opensips.org>
+        * [7cb11380e] :
+
+        Rebuild documentation
+
+
+2025-06-20  Razvan Crainea  <razvan@opensips.org>
+        * [41eff48ef] :
+
+        cgrates: make sure ctx is released on backup node
+
+        when cgrates ctx is being replicated, we need to release it when the
+        dialog is destroyed, otherwise it will leak.
+
+        Many thanks for @NicoFrLy on GitHub for reporting it.
+        Close #3656
+
+        (cherry picked from commit 30c5fdfd862cf10bc249f531dd8d7f3b8e5b5521)
+
+
+2025-06-20  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e7a76d8e7] :
+
+        [proto_tls] fix HEP leak upon failed TLS accepts
+
+        Be sure and flush all pending HEP (tracing) messages on a TLS conn, even if the SSL negociation failed.
+        Closes #3496.
+
+        (cherry picked from commit 5d599a85574dee55c1e390c8b3ca818325de2481)
+
+
+2025-06-20  Razvan Crainea  <razvan@opensips.org>
+        * [e3353dbfe] :
+
+        permissions: remove unused variable
+
+
+2025-06-20  vladpaiu  <vladpaiu@opensips.org>
+        * [77d5fa32d] :
+
+        Disable TLS tickets for 1.2 and 1.3 in order to support reconnects after OpenSIPS restarts (#3673)
+
+        (cherry picked from commit 00305a4edf6aa9dc946b8064dfbced294c125e03)
+
+
+2025-06-19  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [70c07b9f1] :
+
+        Merge pull request #3654 from 36952362/master
+
+        Resolve the issue of incomplete transmission of large SIP message over TLS protocol
+
+        (cherry picked from commit 0c54ee7df9c3fe1e6453e8fc52c4b9e9892f5ee6)
+
+
+2025-06-18  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c0c9a42a1] :
+
+        [permissions] fix allow_uri() URI parameter
+
+        The parameter is a string, not pvar, so does not need to be evaluated
+        Fixes #3645
+        Reported by @gostkov
+
+
+2025-06-18  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [1acc79812] :
+
+        Merge pull request #3664 from 36952362/tcp_connection
+
+        Resolve the issue of inaccurate tcp_connections_no
+
+        (cherry picked from commit 38efd080d3cd01174384b26c6f86ee9a20480346)
+
+
+2025-06-17  Razvan Crainea  <razvan@opensips.org>
+        * [73f66db7f] :
+
+        rtp*: guard from empty to_tag
+
+        (cherry picked from commit cdd47254443b43a8139dffc2c739b05cc77deb69)
+
+
+2025-06-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [9cd22f02b] :
+
+        Merge pull request #3672 from jes/dnscache-fix
+
+        Fix buffer overflow in dnscache (#3669)
+
+        (cherry picked from commit 03719466e15d7ce7a30ef4434761886bd8d3ac37)
+
+
+2025-06-16  Razvan Crainea  <razvan@opensips.org>
+        * [937fecf24] :
+
+        dialog: replicate cseq changes on every reqlayed request
+
+        (cherry picked from commit d2c682cbf67d584f731311a69f9d28e2e50acf33)
+
+
+2025-06-15  OpenSIPS  <github@opensips.org>
+        * [5e72d1740] :
+
+        Rebuild documentation
+
+
+2025-06-10  Razvan Crainea  <razvan@opensips.org>
+        * [148473d8c] :
+
+        siprec: docs clarify when recoring is started
+
+        Thanks to Walter Schober on mailing list for reporing the inconsistency
+
+        (cherry picked from commit 6da409d4c825f67bab96986e2c6ba97d0c76afc2)
+
+
+2025-06-08  OpenSIPS  <github@opensips.org>
+        * [98d7f8d75] :
+
+        Rebuild documentation
+
+
+2025-06-03  Razvan Crainea  <razvan@opensips.org>
+        * [77b2c8877] :
+
+        b2b_logic: fix typo on tuple error
+
+        (cherry picked from commit 4754e12bbcc1a6fcbc37b49c9cf8cdaaa07366b1)
+
+
+2025-05-25  OpenSIPS  <github@opensips.org>
+        * [8baf2c305] :
+
+        Rebuild documentation
+
+
+2025-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [a81011ab2] :
+
+        ratelimit: fix replication suffix (r instead of s)
+
+        Many thanks to Nick Altmann for reporting it!
+
+        (cherry picked from commit 5123cb8ff2f981e02afc85bd17bece763c63bf64)
+
+
+2025-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [288431ca0] :
+
+        media_exchange: fix media_exchange fork command SDP
+
+        (cherry picked from commit 5ef5cbdc2f5fd187f6f0513a2e83bf596f8cd542)
+
+
+2025-05-18  OpenSIPS  <github@opensips.org>
+        * [1545bf23c] :
+
+        Rebuild documentation
+
+
+2025-05-13  Liviu Chircu  <liviu@opensips.org>
+        * [db782c477] :
+
+        dispatcher: Fix rare crash with 'pvar_algo_pattern' (part 2)
+
+        Commit fe1a50d251 was a quick-fix attempt, but the race condition was
+        still there, and continuing to cause rare crashes during 'ds_reload' if
+        using the 'pvar_algo_pattern' feature.
+
+        Long story short: pv_get_spec_value() on SHM-allocated structs has a
+        high risk of running into concurrency issues, depending on the spec in
+        use.  Here, the issue happened to be with the $stat(xxx) algo pattern,
+        where 2 or more SIP workers performed concurrent READ/WRITE on it,
+        leading to a crash.
+
+        Many thanks to Eric Tamme from Five9 for reporting & testing!
+
+        (cherry picked from commit 063435dfefb229703b06bf2c22ca8e159d166def)
+
+
+2025-05-11  OpenSIPS  <github@opensips.org>
+        * [d1079afe1] :
+
+        Rebuild documentation
+
+
+2025-05-06  Liviu Chircu  <liviu@opensips.org>
+        * [f525db97f] :
+
+        tm: Fix rare crashes during SRV failover (part 1)
+
+        Fix a specific edge-case where OpenSIPS crashes with double pkg_free(),
+        whenever:
+
+        - SRV failover is engaged (SRV dest with a 408 or 503 reply from downstream)
+        - a branch route is in use
+        - script developer does a READ and WRITE on the $ru or $du, from this
+          branch route
+
+        Many thanks to Bogdan Iancu for helping troubleshoot this!
+
+        (cherry picked from commit 6f786660cffd97f73445c8307dc96bfab7073701)
+
+
+2025-05-05  Razvan Crainea  <razvan@opensips.org>
+        * [b614f7b05] :
+
+        stir_shaken: add global lock for loading the certificate
+
+        This prevents a crash generated by openssl internals regarding resetting
+        the error stack.
+
+        Many thanks go to ConnexCS for the valuable reports and testing fixes!
+
+        (cherry picked from commit d49e090c903ce0d4d631eee1ea28cf97e1c6358d)
+
+
+2025-04-27  OpenSIPS  <github@opensips.org>
+        * [e279fbce6] :
+
+        Rebuild documentation
+
+
+2025-04-24  Razvan Crainea  <razvan@opensips.org>
+        * [6093f87f9] :
+
+        rtp_relay: do not store to_tag unless dialog is confirmed
+
+        Even if the media dialog establishes on early media, we should not store
+        the to_tag in the context, as it might change when a 200 OK comes.
+
+        (cherry picked from commit d22fa0da57c577ca08d93601c404963335fe9021)
+
+
+2025-04-24  Ryan Bullock  <ryan@piratel.com>
+        * [cf39e946a] :
+
+        Don't run error handling when there was no error (#3626)
+
+        (cherry picked from commit 640132b47ef9206794d259bf59604c07bfb49c18)
+
+
+2025-04-24  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [b8e3902d6] :
+
+        Merge pull request #3633 from lemenkov/strict_type_checking
+
+        Fix FTBFS with recent GCC
+
+        (cherry picked from commit 4f1059b6aaaeed0401a0b58cb0d7842d9a8f896e)
+
+
 =========================== Release 3.4.12 ==============================
 
 2025-04-23  Liviu Chircu  <liviu@opensips.org>
