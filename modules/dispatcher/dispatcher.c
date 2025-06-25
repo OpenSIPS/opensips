@@ -221,6 +221,7 @@ static int mi_child_init(void);
 
 static int set_partition_arguments(unsigned int type, void * val);
 static int set_probing_list(unsigned int type, void * val);
+static int set_df_persistent_state(unsigned int type, void * val);
 
 static const cmd_export_t cmds[] = {
 	{"ds_select_dst",    (cmd_function)w_ds_select_dst, {
@@ -301,14 +302,14 @@ static const param_export_t params[]={
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
-	{"description_col",       STR_PARAM, &ds_dest_description_col.s},
-	{"probe_mode_col",        STR_PARAM, &ds_dest_probe_mode_col.s},
+	{"description_col", STR_PARAM, &ds_dest_description_col.s},
+	{"probe_mode_col",  STR_PARAM, &ds_dest_probe_mode_col.s},
 	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp.s},
 	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp.s},
 	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},
 	{"sock_avp",        STR_PARAM, &default_db_head.sock_avp.s},
 	{"attrs_avp",       STR_PARAM, &default_db_head.attrs_avp.s},
-	{"script_attrs_avp",       STR_PARAM, &default_db_head.script_attrs_avp.s},
+	{"script_attrs_avp",STR_PARAM, &default_db_head.script_attrs_avp.s},
 	{"algo_route",      STR_PARAM, &algo_route_param.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
@@ -322,10 +323,12 @@ static const param_export_t params[]={
 	{"ds_probing_mode",       INT_PARAM, &ds_probing_mode},
 	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
 	{"ds_probing_sock",       STR_PARAM, &probing_sock_s.s},
-	{"ds_probing_list",       STR_PARAM|USE_FUNC_PARAM, (void*)set_probing_list},
+	{"ds_probing_list",       STR_PARAM|USE_FUNC_PARAM,
+										(void*)set_probing_list},
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
-	{"persistent_state",      INT_PARAM, &ds_persistent_state},
-	{"fetch_freeswitch_stats", INT_PARAM, &fetch_freeswitch_stats},
+	{"persistent_state",      INT_PARAM|USE_FUNC_PARAM,
+										(void*)set_df_persistent_state},
+	{"fetch_freeswitch_stats",INT_PARAM, &fetch_freeswitch_stats},
 	{"max_freeswitch_weight", INT_PARAM, &max_freeswitch_weight},
 	{"cluster_id",            INT_PARAM, &ds_cluster_id },
 	{"cluster_sharing_tag",   STR_PARAM, &ds_cluster_shtag },
@@ -562,6 +565,21 @@ static int set_probing_list(unsigned int type, void *val) {
 }
 
 
+/* coverts the persistent state for the default partiton from int to str */
+static int set_df_persistent_state(unsigned int type, void * val)
+{
+	if ( (int)(long)val == 0) {
+		default_db_head.persistent_state.s = "0";
+		default_db_head.persistent_state.len = 1;
+	} else {
+		default_db_head.persistent_state.s = "1";
+		default_db_head.persistent_state.len = 1;
+	}
+
+	return 0;
+}
+
+
 /* We parse the "partition" argument as: partition_name:arg1=val1; arg2=val2;*/
 
 static int set_partition_arguments(unsigned int type, void *val)
@@ -643,6 +661,8 @@ static int set_partition_arguments(unsigned int type, void *val)
 
 static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 {
+	LM_DBG("initializing partition <%.*s>\n",
+		db_head->partition_name.len, db_head->partition_name.s);
 
 	/* Load stuff from DB. URL cannot be null!*/
 	if (db_head->db_url.s == NULL){
@@ -781,18 +801,18 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 		}
 	}
 
-	partition->persistent_state = ds_persistent_state;
-    if (str_strcmp(&db_head->persistent_state, const_str("0")) == 0 ||
-        str_strcmp(&db_head->persistent_state, const_str("no")) == 0 ||
-        str_strcmp(&db_head->persistent_state, const_str("off")) == 0)
+	if (str_strcmp(&db_head->persistent_state, const_str("0")) == 0 ||
+	str_strcmp(&db_head->persistent_state, const_str("no")) == 0 ||
+	str_strcmp(&db_head->persistent_state, const_str("off")) == 0)
 		partition->persistent_state = 0;
-    else if (str_strcmp(&db_head->persistent_state, const_str("1")) == 0 ||
-        str_strcmp(&db_head->persistent_state, const_str("yes")) == 0 ||
-        str_strcmp(&db_head->persistent_state, const_str("on")) == 0)
+	else if (str_strcmp(&db_head->persistent_state, const_str("1")) == 0 ||
+	str_strcmp(&db_head->persistent_state, const_str("yes")) == 0 ||
+	str_strcmp(&db_head->persistent_state, const_str("on")) == 0)
 		partition->persistent_state = 1;
 
 	if (partition->persistent_state)
 		ds_persistent_state_enable = 1;
+
 	return 0;
 }
 
@@ -1046,6 +1066,10 @@ next_part:
 		}
 
 	}
+
+	LM_DBG("options are fetch_freeswitch_stats=%d, "
+		"ds_persistent_state_enable=%d\n",
+		fetch_freeswitch_stats, ds_persistent_state_enable);
 
 	/* Register the weight-recalculation timer */
 	if (fetch_freeswitch_stats &&
