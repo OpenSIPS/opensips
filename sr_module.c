@@ -675,7 +675,7 @@ static int init_mod_child( struct sr_module* m, int rank, char *type,
 	if (!skip_others && init_mod_child(m->next, rank, type, 0) != 0)
 		return -1;
 
-	for (dep = m->sr_deps_init; dep; dep = dep->next)
+	for (dep = m->sr_deps_cinit; dep; dep = dep->next)
 		if (!dep->mod->init_child_done)
 			if (init_mod_child(dep->mod, rank, type, 1) != 0)
 				return -1;
