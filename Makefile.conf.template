@@ -22,6 +22,7 @@
 #dialplan= Implements generic string translations based on matching and replacement rules | PCRE development library, typically libpcre-dev
 #emergency= Provides emergency call treatment for OpenSIPS | CURL dev library - typically libcurl4-openssl-dev
 #event_rabbitmq= Provides the implementation of a RabbitMQ client for the Event Interface | RabbitMQ development library, librabbitmq-dev
+#event_sqs= Provides the implementation of a Amazon SQS client for the Event Interface | AWS SDK C++, aws-sdk-cpp
 #event_kafka= Provides the implementation of an Apache Kafka producer for the Event Interface | Kafka development library, librdkafka-dev
 #h350= Enables access to SIP account data stored in an LDAP [RFC4510] directory containing H.350 commObjects | OpenLDAP library & development files, typically libldap and libldap-dev
 #regex= Offers matching operations against regular expressions using the powerful PCRE library. | Development library for PCRE, typically libpcre-dev
@@ -59,6 +60,7 @@
 #python= Easily implement your own OpenSIPS extensions in Python | Shared Python runtime library, libpython
 #rest_client= Simple HTTP client | CURL library - libcurl
 #rls= Resource List Server implementation following the specification in RFC 4662 and RFC 4826 | parsing/building XML library, typically libxml-dev
+#rtp.io= Implements internal RTP proxy based on library of RTPProxy >=3.1 | librtpproxy
 #sngtc= Voice Transcoding using the D-series Sangoma transcoding cards | libsngtc_node
 #siprec= SIP Call Recording to an external/passive recorder | uuid-dev
 #snmpstats= Provides an SNMP management interface to OpenSIPS | NetSNMP v5.3
