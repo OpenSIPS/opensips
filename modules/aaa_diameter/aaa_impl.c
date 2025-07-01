@@ -240,11 +240,11 @@ static int dm_avps2json(void *root, cJSON *avps)
 			memset(&ar, 0, sizeof ar);
 			ar.avp_code = h->avp_code;
 			ar.avp_vendor = h->avp_vendor;
-			FD_CHECK_GT(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE_AND_VENDOR,
-					&ar, &obj, ENOENT));
+			__FD_CHECK_GT(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE_AND_VENDOR,
+					&ar, &obj, ENOENT), 0, skip);
 		} else {
-			FD_CHECK_GT(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
-					&h->avp_code, &obj, ENOENT));
+			__FD_CHECK_GT(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
+					&h->avp_code, &obj, ENOENT), 0, skip);
 		}
 		FD_CHECK_GT(fd_dict_getval(obj, &dm_avp));
 
@@ -329,6 +329,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 		cJSON_AddItemToObject(item, dm_avp.avp_name, val);
 		cJSON_AddItemToArray(avps, item);
 
+skip:
 		FD_CHECK_GT(fd_msg_browse(it, MSG_BRW_NEXT, &it, NULL));
 		i++;
 	}
@@ -339,7 +340,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 out:
 	cJSON_Delete(item);
 
-	LM_DBG("------------ END AVP iteration ----------------\n");
+	LM_DBG("------------ END AVP iteration (failure) ----------------\n");
 	return -1;
 }
 
