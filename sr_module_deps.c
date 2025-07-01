@@ -295,7 +295,7 @@ int solve_module_dependencies(struct sr_module *modules)
 
 		this = md->mod;
 		dep_type = md->type;
-		int byname = (md->dep.s != NULL) ? 1 : 0;
+		int byname = !!md->dep.s;
 		mod_type = md->mod_type;
 
 		/*
@@ -324,20 +324,20 @@ int solve_module_dependencies(struct sr_module *modules)
 						mod_type, mod->exports->name,
 						mod->exports->type);
 			}
-			md = make_dep(md, dep_type, DEP_REVERSE_MINIT, this, mod);
-			if (!md)
+
+			if (!make_dep(md, dep_type, DEP_REVERSE_MINIT, this, mod))
 				return -1;
-			md = make_dep(NULL, dep_type, DEP_REVERSE_DESTROY, mod, this);
-			if (!md)
+			md = NULL;
+
+			if (!make_dep(NULL, dep_type, DEP_REVERSE_DESTROY, mod, this))
 				return -1;
-			md = make_dep(NULL, dep_type, DEP_REVERSE_CINIT, this, mod);
-			if (!md)
+
+			if (!make_dep(NULL, dep_type, DEP_REVERSE_CINIT, this, mod))
 				return -1;
 
 			dep_solved++;
 			if (byname)
 				break;
-			md = NULL;
 		}
 
 		/* reverse-init dependencies are always solved! */
