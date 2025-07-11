@@ -824,6 +824,9 @@ struct module_exports exports = {
 static char *rtpe_default_failover_errors[] = {
 	"Parallel session limit reached",
 	"Ran out of ports",
+	"CPU usage limit exceeded",
+	"Load limit exceeded",
+	"Bandwidth limit exceeded",
 };
 
 static void rtpe_stats_free(struct rtpe_stats *stats)
