@@ -721,7 +721,7 @@ return_minus_one:
 	return -1;
 }
 
-#define MAX_FORCED_BINDING_LEN 256
+#define MAX_FORCED_BINDING_LEN 512
 int save(struct sip_msg* _m, void* _d, void* _f, str* _s, str* _owtag)
 {
 	struct sip_msg* msg = _m;
@@ -843,7 +843,7 @@ int save(struct sip_msg* _m, void* _d, void* _f, str* _s, str* _owtag)
 								forced_binding.s);
 							break;
 						} else {
-							LM_ERR("forced binding to BIG:"
+							LM_ERR("forced binding too BIG:"
 								" %d > MAX_FORCED_BINDING_LEN\n",
 								forced_binding.len);
 							goto done;
