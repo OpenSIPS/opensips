@@ -74,6 +74,15 @@
 			<listitem><para>
 				Ran out of ports
 			</para></listitem>
+			<listitem><para>
+				CPU usage limit exceeded
+			</para></listitem>
+			<listitem><para>
+				Load limit exceeded
+			</para></listitem>
+			<listitem><para>
+				Bandwidth limit exceeded
+			</para></listitem>
 		</itemizedlist>
 		You can use the <xref linkend="param_extra_failover_error"/> parameter
 		to extend the above list.
