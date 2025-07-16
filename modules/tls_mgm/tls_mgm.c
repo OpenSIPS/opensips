@@ -124,6 +124,7 @@ static const param_export_t params[] = {
 	{ "tls_method",    STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_method     },
 	{ "verify_cert",   STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_verify     },
 	{ "require_cert",  STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_require    },
+	{ "verify_hostname", STR_PARAM|USE_FUNC_PARAM, (void*)tlsp_set_verify_hostname },
 	{ "certificate",   STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_certificate},
 	{ "private_key",   STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_pk         },
 	{ "crl_check_all", STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_crl_check  },
@@ -141,6 +142,7 @@ static const param_export_t params[] = {
 	{ "tls_method_col",	STR_PARAM,  &method_col.s	},
 	{ "verify_cert_col",	STR_PARAM,  &verify_cert_col.s	},
 	{ "require_cert_col",	STR_PARAM,  &require_cert_col.s	},
+	{ "verify_hostname_col", STR_PARAM, &verify_hostname_col.s },
 	{ "certificate_col",	STR_PARAM,  &certificate_col.s	},
 	{ "private_key_col",	STR_PARAM,  &pk_col.s		},
 	{ "crl_check_all_col",	STR_PARAM,  &crl_check_col.s	},
@@ -417,6 +419,7 @@ int load_info(struct tls_domain **serv_dom, struct tls_domain **cli_dom,
 	columns[14] = &cplist_col;
 	columns[15] = &dhparams_col;
 	columns[16] = &eccurve_col;
+	columns[17] = &verify_hostname_col;
 
 	/* checking if the table version is up to date*/
 	if (db_check_table_version(&dr_dbf, db_hdl, &tls_db_table, TLS_TABLE_VERSION) != 0)
@@ -435,7 +438,7 @@ int load_info(struct tls_domain **serv_dom, struct tls_domain **cli_dom,
 			goto error;
 		}
 		no_rows = estimate_available_rows(4 + 45 + 4 + 45 + 4 + 4 + 45 +
-			45 + 4 + 45 + 45 + 4 * 4096, db_cols);
+			45 + 4 + 45 + 45 + 4 * 4096 + 4, db_cols);
 		if (no_rows == 0) no_rows = 5;
 		if (dr_dbf.fetch_result(db_hdl, &res, no_rows) < 0) {
 			LM_ERR("Error fetching rows\n");
@@ -516,6 +519,9 @@ int load_info(struct tls_domain **serv_dom, struct tls_domain **cli_dom,
 
 			check_val(eccurve_col, ROW_VALUES(row) + 16, DB_STRING, 0, 0);
 			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 16);
+
+			check_val(verify_hostname_col, ROW_VALUES(row) + 17, DB_INT, 0, 0);
+			int_vals[INT_VALS_VERIFY_HOSTNAME_COL] = VAL_INT(ROW_VALUES(row) + 17);
 
 			if (db_add_domain(str_vals, int_vals, blob_vals, serv_dom, cli_dom,
 								script_srv_doms, script_cli_doms) < 0) {
@@ -994,6 +1000,7 @@ static int mod_init(void) {
 		method_col.len = strlen(method_col.s);
 		verify_cert_col.len = strlen(verify_cert_col.s);
 		require_cert_col.len = strlen(require_cert_col.s);
+		verify_hostname_col.len = strlen(verify_hostname_col.s);
 		certificate_col.len = strlen(certificate_col.s);
 		pk_col.len = strlen(pk_col.s);
 		crl_check_col.len = strlen(crl_check_col.s);
@@ -1251,6 +1258,9 @@ static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
 			goto error;
 
 		if (add_mi_bool(domain_item, MI_SSTR("REQ_CLI_CERT"), d->require_client_cert) < 0)
+			goto error;
+
+		if (add_mi_bool(domain_item, MI_SSTR("VERIFY_HOSTNAME"), d->verify_hostname) < 0)
 			goto error;
 
 		if (add_mi_bool(domain_item, MI_SSTR("CRL_CHECKALL"), d->crl_check_all) < 0)
