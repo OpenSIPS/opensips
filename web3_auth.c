@@ -425,7 +425,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     cred = (auth_body_t *)h->parsed;
 
     // Use our Web3 authentication instead of traditional password-based auth
-    rauth = web3_auth_check_response(&(cred->digest), method, NULL);
+    rauth = web3_auth_check_response(&(cred->digest), method);
     
     if (rauth == AUTHENTICATED) {
         ret = AUTH_OK;
