@@ -42,6 +42,25 @@ MODULE_VERSION
 #define DEFAULT_WEB3_CONTRACT_ADDRESS "0xE773BB79689379d32Ad1Db839868b6756B493aea"
 
 /*
+ * Load auth API from the base auth module
+ */
+static inline int load_auth_api(auth_api_s_t *api)
+{
+    bind_auth_s_f bind_auth;
+
+    bind_auth = (bind_auth_s_f)find_export("bind_auth_s", 0, 0);
+    if (bind_auth == 0) {
+        LM_ERR("cannot find bind_auth_s\n");
+        return -1;
+    }
+    if (bind_auth(api) < 0) {
+        LM_ERR("cannot bind auth api\n");
+        return -1;
+    }
+    return 0;
+}
+
+/*
  * Module destroy function prototype
  */
 static void destroy(void);
