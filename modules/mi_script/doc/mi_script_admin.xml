@@ -109,9 +109,9 @@ modparam("mi_script", "pretty_printing", 1)
 		<title>Set <varname>trace_destination</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+modparam("proto_hep", "trace_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
-modparam("mi_stream", "trace_destination", "hep_dest")
+modparam("mi_script", "trace_destination", "hep_dest")
 ...
 </programlisting>
 		</example>
@@ -151,11 +151,11 @@ modparam("mi_stream", "trace_destination", "hep_dest")
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced
-modparam("mi_stream", "trace_bwlist", "b: ps, which")
+modparam("mi_script", "trace_bwlist", "b: ps, which")
 ...
 ## allow only sip_trace mi command
 ## all the other commands will not be traced
-modparam("mi_stream", "trace_bwlist", "w: sip_trace")
+modparam("mi_script", "trace_bwlist", "w: sip_trace")
 ...
 </programlisting>
 		</example>
