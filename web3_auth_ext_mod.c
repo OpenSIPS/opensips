@@ -28,9 +28,9 @@
 #include "../../core/sr_module.h"
 #include "../../core/dprint.h"
 #include "../../core/error.h"
+#include "../../modules/auth/api.h"
 #include "../../core/mod_fix.h"
 #include "../../core/kemi.h"
-#include "../../modules/auth/api.h"
 #include "web3_auth_ext_mod.h"
 #include "web3_auth.h"
 #include "api.h"
@@ -239,22 +239,6 @@ static int fixup_web3_auth(void **param, int param_no)
         case 2:
             return fixup_var_str_12(param, 1);
     }
-    return 0;
-}
-
-/*
- * API binding function
- */
-int bind_web3_auth(web3_auth_api_t *api)
-{
-    if (!api) {
-        LM_ERR("invalid parameter value\n");
-        return -1;
-    }
-
-    api->digest_authenticate = web3_digest_authenticate;
-    api->check_response = web3_auth_check_response;
-
     return 0;
 }
 
