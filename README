@@ -1,0 +1,146 @@
+Web3 Authentication Extension Module
+
+DESCRIPTION
+-----------
+
+The web3_auth_ext module provides blockchain-based authentication for Kamailio
+SIP server. This module extends the base auth module by replacing traditional
+password-based authentication with Web3 smart contract verification.
+
+Instead of storing passwords in databases, user credentials are verified against
+a smart contract deployed on a blockchain network. The module maintains full
+compatibility with SIP digest authentication while using blockchain as the
+backend verification system.
+
+FEATURES
+--------
+
+* Blockchain-based authentication using Web3 smart contracts
+* Full compatibility with SIP digest authentication (MD5, SHA-256, SHA-512)
+* Drop-in replacement for traditional auth_db functions
+* Configurable RPC endpoint and smart contract address
+* Debug mode for development and troubleshooting
+* Timeout configuration for blockchain calls
+* Support for both WWW-Authenticate and Proxy-Authenticate headers
+
+DEPENDENCIES
+------------
+
+* Base auth module (required dependency)
+* libcurl (for Web3 RPC calls)
+* OpenSSL (for digest calculations)
+
+CONFIGURATION
+-------------
+
+Module Parameters:
+
+* web3_rpc_url (string)
+  Default: "https://testnet.sapphire.oasis.dev"
+  The Web3 RPC endpoint URL for blockchain communication.
+
+* web3_contract_address (string) 
+  Default: "0xE773BB79689379d32Ad1Db839868b6756B493aea"
+  The smart contract address containing authentication logic.
+
+* web3_debug_mode (integer)
+  Default: 1
+  Enable/disable debug logging (0=disabled, 1=enabled).
+
+* web3_timeout (integer)
+  Default: 10
+  Timeout in seconds for Web3 RPC calls.
+
+EXPORTED FUNCTIONS
+------------------
+
+* web3_www_authenticate(realm, method)
+  Performs WWW authentication using Web3 backend.
+  
+* web3_proxy_authenticate(realm, method)
+  Performs Proxy authentication using Web3 backend.
+
+USAGE EXAMPLE
+-------------
+
+# Load required modules
+loadmodule "auth.so"
+loadmodule "web3_auth_ext.so"
+
+# Configure Web3 parameters
+modparam("web3_auth_ext", "web3_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
+modparam("web3_auth_ext", "web3_contract_address", "0x1234567890abcdef...")
+modparam("web3_auth_ext", "web3_debug_mode", 0)
+modparam("web3_auth_ext", "web3_timeout", 15)
+
+# Use in routing logic
+route[AUTH] {
+    if (!web3_www_authenticate("mycompany.com", "$rm")) {
+        www_challenge("mycompany.com", "0");
+        exit;
+    }
+}
+
+SMART CONTRACT INTERFACE
+-------------------------
+
+The module expects a smart contract with the following function:
+
+function authenticateUser(
+    string memory username,
+    string memory realm, 
+    string memory method,
+    string memory uri,
+    string memory nonce,
+    uint8 algorithm,
+    bytes memory response
+) public view returns (bool)
+
+The contract should return true if authentication succeeds, false otherwise.
+
+ALGORITHM SUPPORT
+-----------------
+
+* 0 = MD5 (default)
+* 1 = SHA-256  
+* 2 = SHA-512
+
+INTEGRATION
+-----------
+
+This module is designed as an extension to the base auth module. It provides
+the same authentication interface but uses blockchain verification instead of
+database lookups.
+
+For migration from auth_db:
+1. Replace auth_db functions with web3_auth_ext equivalents
+2. Configure Web3 parameters
+3. Deploy and configure smart contract
+4. No changes needed to SIP clients
+
+API BINDING
+-----------
+
+Other modules can bind to the Web3 authentication API:
+
+#include "modules/web3_auth_ext/api.h"
+
+web3_auth_api_t web3_api;
+if (web3_auth_load_api(&web3_api) != 0) {
+    // Handle error
+}
+
+// Use web3_api.digest_authenticate() or web3_api.check_response()
+
+AUTHORS
+-------
+
+Jonathan Kandel <jonathan@example.com>
+
+COPYRIGHT
+---------
+
+Copyright (C) 2025 Jonathan Kandel
+
+This module is licensed under the GNU General Public License v2.0.
+See LICENSE file for details. 

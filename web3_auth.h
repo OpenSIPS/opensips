@@ -1,0 +1,86 @@
+/*
+ * Web3 Authentication Extension - Core Authentication Functions
+ *
+ * Copyright (C) 2025 Jonathan Kandel
+ *
+ * This file is part of Kamailio, a free SIP server.
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Kamailio is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * Kamailio is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+#ifndef _WEB3_AUTH_H_
+#define _WEB3_AUTH_H_
+
+#include "../../core/str.h"
+#include "../../core/parser/msg_parser.h"
+#include "../../core/parser/digest/digest.h"
+#include "../../modules/auth/api.h"
+#include <curl/curl.h>
+
+/*
+ * Web3 response structure for curl callbacks
+ */
+struct Web3ResponseData {
+    char *memory;
+    size_t size;
+};
+
+/*
+ * Core Web3 authentication functions
+ */
+
+/**
+ * @brief Main Web3 authentication function that replaces traditional digest auth
+ * @param msg SIP message
+ * @param realm Authentication realm
+ * @param hftype Header field type (Authorization or Proxy-Authorization)
+ * @param method SIP method
+ * @return Authentication result
+ */
+int web3_digest_authenticate(struct sip_msg *msg, str *realm, 
+                           hdr_types_t hftype, str *method);
+
+/**
+ * @brief Core blockchain verification function
+ * @param cred Digest credentials from SIP message
+ * @param method SIP method
+ * @param ha1 HA1 hash (not used in Web3 auth but kept for API compatibility)
+ * @return AUTHENTICATED, NOT_AUTHENTICATED, or error code
+ */
+int web3_auth_check_response(dig_cred_t *cred, str *method, char *ha1);
+
+/**
+ * @brief Curl callback function for Web3 RPC responses
+ * @param contents Response data
+ * @param size Size of each element
+ * @param nmemb Number of elements
+ * @param data Web3ResponseData structure
+ * @return Number of bytes processed
+ */
+size_t web3_curl_callback(void *contents, size_t size, size_t nmemb, 
+                         struct Web3ResponseData *data);
+
+/**
+ * @brief Convert hex string to bytes
+ * @param hex_str Input hex string
+ * @param bytes Output byte array
+ * @param max_bytes Maximum number of bytes to convert
+ * @return Number of bytes converted, or -1 on error
+ */
+int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes);
+
+#endif /* _WEB3_AUTH_H_ */ 
