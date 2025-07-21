@@ -120,8 +120,8 @@ static int mod_init(void)
     LM_INFO("Web3 Authentication Extension module initializing\n");
 
     /* Load the base auth module API */
-    bind_auth_s_f bind_auth;
-    bind_auth = (bind_auth_s_f)find_export("bind_auth_s", 0, 0);
+    bind_auth_s_t bind_auth;
+    bind_auth = (bind_auth_s_t)find_export("bind_auth_s", 0, 0);
     if (bind_auth == 0) {
         LM_ERR("cannot find bind_auth_s\n");
         return -1;
