@@ -29,7 +29,6 @@
 #include "../../modules/auth/api.h"
 #include "../../core/parser/msg_parser.h"
 #include <curl/curl.h>
-#include "web3_auth.h"
 
 /*
  * Web3 Authentication Module Parameters
@@ -43,5 +42,21 @@ extern int web3_timeout;
  * Base auth module API
  */
 extern auth_api_s_t auth_api;
+
+/*
+ * Web3 response structure for curl callbacks
+ */
+struct Web3ResponseData {
+    char *memory;
+    size_t size;
+};
+
+/*
+ * Function prototypes
+ */
+int web3_auth_check_response(dig_cred_t *cred, str *method, char *ha1);
+size_t web3_curl_callback(void *contents, size_t size, size_t nmemb, 
+                         struct Web3ResponseData *data);
+int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes);
 
 #endif /* WEB3_AUTH_EXT_MOD_H */ 
