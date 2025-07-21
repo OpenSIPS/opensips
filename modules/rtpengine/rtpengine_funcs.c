@@ -200,6 +200,11 @@ int extract_body(struct sip_msg *msg, str *body )
 int
 get_to_tag(struct sip_msg* _m, str* _tag)
 {
+	if (!_m) {
+		_tag->s = NULL; /* fixes gcc 4.0 warnings */
+		_tag->len = 0;
+		return 0;
+	}
 
         if (!_m->to && ((parse_headers(_m, HDR_TO_F, 0) == -1) || (!_m->to))) {
                 LM_ERR("To header field missing\n");
