@@ -58,10 +58,9 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
  * @brief Core blockchain verification function
  * @param cred Digest credentials from SIP message
  * @param method SIP method
- * @param ha1 HA1 hash (not used in Web3 auth but kept for API compatibility)
  * @return AUTHENTICATED, NOT_AUTHENTICATED, or error code
  */
-int web3_auth_check_response(dig_cred_t *cred, str *method, char *ha1);
+int web3_auth_check_response(dig_cred_t *cred, str *method);
 
 /**
  * @brief Curl callback function for Web3 RPC responses
