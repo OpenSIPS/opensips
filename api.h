@@ -40,7 +40,7 @@ typedef int (*web3_digest_authenticate_f)(struct sip_msg *msg, str *realm,
  * Web3 check response function signature
  * This is the core blockchain verification function
  */
-typedef int (*web3_check_response_f)(dig_cred_t *cred, str *method, char *ha1);
+typedef int (*web3_check_response_f)(dig_cred_t *cred, str *method);
 
 /**
  * @brief Web3 Authentication API structure
