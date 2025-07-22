@@ -1,0 +1,59 @@
+CC=gcc
+CFLAGS=-Wall -Wextra -std=c99 -g
+LDFLAGS=-lcurl
+
+# Target executable
+TARGET=test_complete_auth_c
+
+# Source file
+SRC=test_complete_auth_c.c
+
+# Object file
+OBJ=$(SRC:.c=.o)
+
+.PHONY: all clean help test
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
+
+$(OBJ): $(SRC)
+	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ)
+
+test: $(TARGET)
+	@echo "🧪 Running Complete Authentication Test..."
+	@echo "Format: auth_username client_digest ens_name"
+	@echo "Testing: jonathan f32a55131aa9fe5dc27eeea25f0b9194 jonathan123.eth"
+	./$(TARGET) jonathan f32a55131aa9fe5dc27eeea25f0b9194 jonathan123.eth
+
+test-manual: $(TARGET)
+	@echo "🧪 Manual Test Examples:"
+	@echo "Simple format:"
+	@echo "./$(TARGET) jonathan f32a55131aa9fe5dc27eeea25f0b9194 jonathan123.eth"
+	@echo ""
+	@echo "Full SIP parameters:"
+	@echo "./$(TARGET) jonathan f32a55131aa9fe5dc27eeea25f0b9194 jonathan123.eth sipserver.local REGISTER sip:sipserver.local 1234567890"
+	@echo ""
+	@echo "NOTE: You need to provide the correct function selector for authenticateUser first!"
+
+test-wrong-digest: $(TARGET)
+	@echo "🧪 Testing Wrong Digest..."
+	./$(TARGET) jonathan wrongdigest123 jonathan123.eth
+
+test-non-ens: $(TARGET)
+	@echo "🧪 Testing Non-ENS User..."
+	./$(TARGET) regularuser f58eed2d5ac021f8da6c85900bbe884b regularuser
+
+clean:
+	rm -f $(OBJ) $(TARGET)
+
+help:
+	@echo "Available targets:"
+	@echo "  all           - Build the test program"
+	@echo "  test          - Run complete authentication test"
+	@echo "  test-manual   - Show manual test instructions"
+	@echo "  test-wrong-digest - Test with wrong digest"
+	@echo "  test-non-ens  - Test non-ENS authentication"
+	@echo "  clean         - Remove build files"
+	@echo "  help          - Show this help message" 

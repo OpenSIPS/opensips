@@ -34,12 +34,16 @@
 #include "web3_auth_ext_mod.h"
 #include "web3_auth.h"
 #include "api.h"
+#include "keccak256.h"
 
 MODULE_VERSION
 
 /* Default Web3 configuration */
 #define DEFAULT_WEB3_RPC_URL "https://testnet.sapphire.oasis.dev"
 #define DEFAULT_WEB3_CONTRACT_ADDRESS "0xE773BB79689379d32Ad1Db839868b6756B493aea"
+#define DEFAULT_ENS_REGISTRY_ADDRESS "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+#define DEFAULT_ENS_NAME_WRAPPER_ADDRESS "0x0635513f179D50A207757E05759CbD106d7dFcE8"
+#define DEFAULT_ENS_RPC_URL "https://ethereum-sepolia-rpc.publicnode.com"  // Sepolia testnet for ENS
 
 /*
  * Module destroy function prototype
@@ -56,9 +60,17 @@ static int mod_init(void);
  */
 static int child_init(int rank);
 
-/* Module parameters */
-char *web3_rpc_url = DEFAULT_WEB3_RPC_URL;
-char *web3_contract_address = DEFAULT_WEB3_CONTRACT_ADDRESS;
+/*
+ * Configuration initialization from environment variables
+ */
+static void init_config_from_env(void);
+
+/* Module parameters - can be overridden by environment variables */
+char *web3_rpc_url = NULL;
+char *web3_contract_address = NULL;
+char *ens_registry_address = NULL;
+char *ens_name_wrapper_address = NULL;
+char *ens_rpc_url = NULL;
 int web3_debug_mode = 1;
 int web3_timeout = 10;
 
@@ -91,6 +103,9 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
     {"web3_rpc_url", PARAM_STRING, &web3_rpc_url},
     {"web3_contract_address", PARAM_STRING, &web3_contract_address},
+    {"ens_registry_address", PARAM_STRING, &ens_registry_address},
+    {"ens_name_wrapper_address", PARAM_STRING, &ens_name_wrapper_address},
+    {"ens_rpc_url", PARAM_STRING, &ens_rpc_url},
     {"web3_debug_mode", PARAM_INT, &web3_debug_mode},
     {"web3_timeout", PARAM_INT, &web3_timeout},
     {0, 0, 0}
@@ -137,10 +152,16 @@ static int mod_init(void)
         return -1;
     }
 
+    /* Initialize configuration from environment variables */
+    init_config_from_env();
+
     if (web3_debug_mode) {
         LM_INFO("Web3Auth Extension initialized:\n");
-        LM_INFO("  RPC URL: %s\n", web3_rpc_url);
-        LM_INFO("  Contract: %s\n", web3_contract_address);
+        LM_INFO("  RPC URL: %s\n", web3_rpc_url ? web3_rpc_url : "(using default)");
+        LM_INFO("  Contract: %s\n", web3_contract_address ? web3_contract_address : "(using default)");
+        LM_INFO("  ENS Registry: %s\n", ens_registry_address ? ens_registry_address : "(using default)");
+        LM_INFO("  ENS Name Wrapper: %s\n", ens_name_wrapper_address ? ens_name_wrapper_address : "(using default)");
+        LM_INFO("  ENS RPC URL: %s\n", ens_rpc_url ? ens_rpc_url : "(using default)");
         LM_INFO("  Debug: %s\n", web3_debug_mode ? "enabled" : "disabled");
         LM_INFO("  Timeout: %d seconds\n", web3_timeout);
     }
@@ -168,6 +189,77 @@ static void destroy(void)
     
     /* Cleanup curl */
     curl_global_cleanup();
+}
+
+/*
+ * Configuration initialization from environment variables
+ */
+static void init_config_from_env(void)
+{
+    char *env_web3_rpc_url = getenv("WEB3_RPC_URL");
+    if (env_web3_rpc_url) {
+        web3_rpc_url = strdup(env_web3_rpc_url);
+        if (!web3_rpc_url) {
+            LM_ERR("failed to allocate memory for web3_rpc_url\n");
+            web3_rpc_url = DEFAULT_WEB3_RPC_URL;
+        }
+    } else {
+        web3_rpc_url = DEFAULT_WEB3_RPC_URL;
+    }
+
+    char *env_web3_contract_address = getenv("WEB3_CONTRACT_ADDRESS");
+    if (env_web3_contract_address) {
+        web3_contract_address = strdup(env_web3_contract_address);
+        if (!web3_contract_address) {
+            LM_ERR("failed to allocate memory for web3_contract_address\n");
+            web3_contract_address = DEFAULT_WEB3_CONTRACT_ADDRESS;
+        }
+    } else {
+        web3_contract_address = DEFAULT_WEB3_CONTRACT_ADDRESS;
+    }
+
+    char *env_ens_registry_address = getenv("ENS_REGISTRY_ADDRESS");
+    if (env_ens_registry_address) {
+        ens_registry_address = strdup(env_ens_registry_address);
+        if (!ens_registry_address) {
+            LM_ERR("failed to allocate memory for ens_registry_address\n");
+            ens_registry_address = DEFAULT_ENS_REGISTRY_ADDRESS;
+        }
+    } else {
+        ens_registry_address = DEFAULT_ENS_REGISTRY_ADDRESS;
+    }
+
+    char *env_ens_name_wrapper_address = getenv("ENS_NAME_WRAPPER_ADDRESS");
+    if (env_ens_name_wrapper_address) {
+        ens_name_wrapper_address = strdup(env_ens_name_wrapper_address);
+        if (!ens_name_wrapper_address) {
+            LM_ERR("failed to allocate memory for ens_name_wrapper_address\n");
+            ens_name_wrapper_address = DEFAULT_ENS_NAME_WRAPPER_ADDRESS;
+        }
+    } else {
+        ens_name_wrapper_address = DEFAULT_ENS_NAME_WRAPPER_ADDRESS;
+    }
+
+    char *env_ens_rpc_url = getenv("ENS_RPC_URL");
+    if (env_ens_rpc_url) {
+        ens_rpc_url = strdup(env_ens_rpc_url);
+        if (!ens_rpc_url) {
+            LM_ERR("failed to allocate memory for ens_rpc_url\n");
+            ens_rpc_url = DEFAULT_ENS_RPC_URL;
+        }
+    } else {
+        ens_rpc_url = DEFAULT_ENS_RPC_URL;
+    }
+
+    char *env_web3_debug_mode = getenv("WEB3_DEBUG_MODE");
+    if (env_web3_debug_mode) {
+        web3_debug_mode = atoi(env_web3_debug_mode);
+    }
+
+    char *env_web3_timeout = getenv("WEB3_TIMEOUT");
+    if (env_web3_timeout) {
+        web3_timeout = atoi(env_web3_timeout);
+    }
 }
 
 /*

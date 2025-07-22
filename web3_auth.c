@@ -31,9 +31,11 @@
 #include "../../core/dprint.h"
 #include "../../core/mem/mem.h"
 #include "../../core/parser/digest/digest.h"
+#include "../../core/parser/parse_to.h"
 #include "../../modules/auth/api.h"
 #include "web3_auth.h"
 #include "web3_auth_ext_mod.h"
+#include "keccak256.h"
 
 /**
  * Convert hex string to bytes
@@ -72,6 +74,430 @@ size_t web3_curl_callback(void *contents, size_t size, size_t nmemb,
     data->size += realsize;
     data->memory[data->size] = 0;
     return realsize;
+}
+
+/**
+ * Helper function to make blockchain calls for ENS and Oasis queries
+ * Now accepts rpc_url parameter to support different networks
+ */
+static int web3_blockchain_call(const char *rpc_url, const char *to_address, const char *data, char *result_buffer, size_t buffer_size)
+{
+    CURL *curl;
+    CURLcode res;
+    struct Web3ResponseData web3_response = {0};
+    struct curl_slist *headers = NULL;
+    int result = -1;
+
+    curl = curl_easy_init();
+    if (!curl) {
+        LM_ERR("Web3Auth: Failed to initialize curl for blockchain call\n");
+        return -1;
+    }
+
+    char payload[4096];
+    snprintf(payload, sizeof(payload),
+             "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"%s\",\"data\":\"%s\"},\"latest\"],\"id\":1}",
+             to_address, data);
+
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Blockchain call to %s using RPC: %s\n", to_address, rpc_url);
+        LM_INFO("Web3Auth: Call data: %s\n", data);
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, rpc_url);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, web3_curl_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web3_response);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)web3_timeout);
+
+    headers = curl_slist_append(NULL, "Content-Type: application/json");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+    res = curl_easy_perform(curl);
+
+    if (res != CURLE_OK) {
+        LM_ERR("Web3Auth: curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        goto cleanup;
+    }
+
+    if (!web3_response.memory) {
+        LM_ERR("Web3Auth: No response from blockchain\n");
+        goto cleanup;
+    }
+
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Blockchain response: %s\n", web3_response.memory);
+    }
+
+    // Parse JSON response to extract the result
+    char *result_start = strstr(web3_response.memory, "\"result\":\"");
+    if (!result_start) {
+        // Check if it's an error response
+        char *error_start = strstr(web3_response.memory, "\"error\":");
+        if (error_start) {
+            // Check for specific error messages
+            char *message_start = strstr(web3_response.memory, "\"message\":");
+            if (message_start && strstr(message_start, "User not found")) {
+                if (web3_debug_mode) {
+                    LM_INFO("Web3Auth: Contract returned 'User not found' - treating as zero address\n");
+                }
+                strcpy(result_buffer, "0x0000000000000000000000000000000000000000");
+                result = 0;
+                goto cleanup;
+            }
+        }
+        LM_ERR("Web3Auth: Invalid blockchain response format\n");
+        goto cleanup;
+    }
+
+    result_start += 10; // Skip "result":"
+    char *result_end = strchr(result_start, '"');
+    if (!result_end) {
+        LM_ERR("Web3Auth: Malformed blockchain response\n");
+        goto cleanup;
+    }
+
+    // Copy result to buffer
+    size_t result_len = result_end - result_start;
+    if (result_len >= buffer_size) {
+        LM_ERR("Web3Auth: Result too long for buffer\n");
+        goto cleanup;
+    }
+
+    memcpy(result_buffer, result_start, result_len);
+    result_buffer[result_len] = '\0';
+    result = 0;
+
+cleanup:
+    if (headers)
+        curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+    if (web3_response.memory)
+        free(web3_response.memory);
+
+    return result;
+}
+
+// Convert bytes to hex string
+static void bytes_to_hex(const unsigned char *bytes, size_t len, char *hex) {
+    for (size_t i = 0; i < len; i++) {
+        sprintf(hex + 2*i, "%02x", bytes[i]);
+    }
+    hex[2*len] = '\0';
+}
+
+// Professional ENS namehash implementation using proper keccak256
+static void ens_namehash(const char *name, char *hash_hex)
+{
+    unsigned char hash[32] = {0}; // Start with 32 zero bytes
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Computing namehash for: %s\n", name);
+    }
+    
+    // Handle empty string (root domain)
+    if (strlen(name) == 0) {
+        bytes_to_hex(hash, 32, hash_hex);
+        return;
+    }
+    
+    // Split domain into labels and process from right to left
+    char *name_copy = pkg_malloc(strlen(name) + 1);
+    if (!name_copy) {
+        LM_ERR("Web3Auth: Failed to allocate memory for name copy\n");
+        memset(hash_hex, '0', 64);
+        hash_hex[64] = '\0';
+        return;
+    }
+    strcpy(name_copy, name);
+    
+    char *labels[64]; // Max 64 labels should be enough
+    int label_count = 0;
+    
+    // Split by dots
+    char *token = strtok(name_copy, ".");
+    while (token != NULL && label_count < 64) {
+        size_t token_len = strlen(token);
+        labels[label_count] = pkg_malloc(token_len + 1);
+        if (!labels[label_count]) {
+            LM_ERR("Web3Auth: Failed to allocate memory for label %d\n", label_count);
+            // Cleanup already allocated labels
+            for (int j = 0; j < label_count; j++) {
+                pkg_free(labels[j]);
+            }
+            pkg_free(name_copy);
+            memset(hash_hex, '0', 64);
+            hash_hex[64] = '\0';
+            return;
+        }
+        strcpy(labels[label_count], token);
+        label_count++;
+        token = strtok(NULL, ".");
+    }
+    
+    // Process labels from right to left (reverse order)
+    for (int i = label_count - 1; i >= 0; i--) {
+        SHA3_CTX ctx;
+        unsigned char label_hash[32];
+        unsigned char combined[64]; // hash + label_hash
+        
+        // Hash the current label
+        keccak_init(&ctx);
+        keccak_update(&ctx, (const unsigned char*)labels[i], strlen(labels[i]));
+        keccak_final(&ctx, label_hash);
+        
+        if (web3_debug_mode) {
+            char label_hash_hex[65];
+            bytes_to_hex(label_hash, 32, label_hash_hex);
+            LM_INFO("Web3Auth: Label '%s' hash: %s\n", labels[i], label_hash_hex);
+        }
+        
+        // Combine current hash + label hash
+        memcpy(combined, hash, 32);
+        memcpy(combined + 32, label_hash, 32);
+        
+        // Hash the combination
+        keccak_init(&ctx);
+        keccak_update(&ctx, combined, 64);
+        keccak_final(&ctx, hash);
+        
+        if (web3_debug_mode) {
+            char current_hash_hex[65];
+            bytes_to_hex(hash, 32, current_hash_hex);
+            LM_INFO("Web3Auth: After processing '%s': %s\n", labels[i], current_hash_hex);
+        }
+    }
+    
+    // Convert final hash to hex string
+    bytes_to_hex(hash, 32, hash_hex);
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Final namehash for '%s': %s\n", name, hash_hex);
+    }
+    
+    // Cleanup
+    for (int i = 0; i < label_count; i++) {
+        pkg_free(labels[i]);
+    }
+    pkg_free(name_copy);
+}
+
+/**
+ * Get what address the ENS name resolves to (not the owner!)
+ */
+int web3_ens_resolve_address(const char *ens_name, char *resolved_address)
+{
+    char namehash_hex[65];
+    char resolver_address[43] = {0};
+    char call_data[256];
+    char result[256];
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Resolving ENS name to address: %s\n", ens_name);
+    }
+    
+    // Step 1: Get namehash
+    ens_namehash(ens_name, namehash_hex);
+    
+    // Step 2: Get resolver address from registry
+    // resolver(bytes32) function selector: 0x0178b8bf
+    snprintf(call_data, sizeof(call_data), "0x0178b8bf%s", namehash_hex);
+    
+    const char *rpc_url = ens_rpc_url ? ens_rpc_url : web3_rpc_url;
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Using RPC for ENS registry query: %s\n", rpc_url);
+    }
+    
+    if (web3_blockchain_call(rpc_url, ens_registry_address, call_data, result, sizeof(result)) != 0) {
+        LM_ERR("Web3Auth: Failed to get resolver from ENS registry\n");
+        return -1;
+    }
+    
+    // Extract resolver address (last 40 characters)
+    if (strlen(result) >= 40) {
+        snprintf(resolver_address, 43, "0x%s", result + strlen(result) - 40);
+    } else {
+        LM_ERR("Web3Auth: Invalid resolver response format\n");
+        return -1;
+    }
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: ENS resolver address: %s\n", resolver_address);
+    }
+    
+    // Check if resolver is zero (ENS not found)
+    if (strcmp(resolver_address, "0x0000000000000000000000000000000000000000") == 0) {
+        LM_ERR("Web3Auth: ENS name %s has no resolver (not registered)\n", ens_name);
+        strcpy(resolved_address, "0x0000000000000000000000000000000000000000");
+        return 0; // Not an error, just not found
+    }
+    
+    // Step 3: Call resolver's addr(bytes32) function to get resolved address
+    // addr(bytes32) function selector: 0x3b3b57de
+    snprintf(call_data, sizeof(call_data), "0x3b3b57de%s", namehash_hex);
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Getting resolved address from resolver\n");
+    }
+    
+    if (web3_blockchain_call(rpc_url, resolver_address, call_data, result, sizeof(result)) != 0) {
+        LM_ERR("Web3Auth: Failed to resolve address from ENS resolver\n");
+        return -1;
+    }
+    
+    // Extract resolved address (last 40 characters)
+    if (strlen(result) >= 40) {
+        snprintf(resolved_address, 43, "0x%s", result + strlen(result) - 40);
+    } else {
+        LM_ERR("Web3Auth: Invalid resolution response format\n");
+        return -1;
+    }
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: ENS name %s resolves to: %s\n", ens_name, resolved_address);
+    }
+    
+    return 0;
+}
+
+/**
+ * Get wallet address from Oasis contract using getWalletAddress function
+ */
+int web3_oasis_get_wallet_address(const char *username, char *wallet_address)
+{
+    char call_data[512];
+    char result[256];
+    int pos = 0;
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Getting Oasis wallet address for username: %s\n", username);
+    }
+    
+    // Function selector for getWalletAddress(string) - found by testing: 08f20630
+    pos += snprintf(call_data + pos, sizeof(call_data) - pos, "08f20630");
+    
+    // Offset to data (32 bytes from start)
+    pos += snprintf(call_data + pos, sizeof(call_data) - pos, "0000000000000000000000000000000000000000000000000000000000000020");
+    
+    // String length (username length in bytes)
+    size_t username_len = strlen(username);
+    pos += snprintf(call_data + pos, sizeof(call_data) - pos, "%064lx", username_len);
+    
+    // String data (username in hex, padded to 32-byte boundary)
+    for (size_t i = 0; i < username_len; i++) {
+        pos += snprintf(call_data + pos, sizeof(call_data) - pos, "%02x", (unsigned char)username[i]);
+    }
+    
+    // Pad to 32-byte boundary
+    size_t padding = (32 - (username_len % 32)) % 32;
+    for (size_t i = 0; i < padding; i++) {
+        pos += snprintf(call_data + pos, sizeof(call_data) - pos, "00");
+    }
+    
+    // Prepend 0x
+    char final_call_data[1024];
+    snprintf(final_call_data, sizeof(final_call_data), "0x%s", call_data);
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Using main RPC for Oasis query: %s\n", web3_rpc_url);
+    }
+    
+    if (web3_blockchain_call(web3_rpc_url, web3_contract_address, final_call_data, result, sizeof(result)) != 0) {
+        LM_ERR("Web3Auth: Failed to call Oasis contract\n");
+        return -1;
+    }
+    
+    // Extract address from result (last 40 hex chars of the 64-char response)
+    if (strlen(result) >= 40) {
+        snprintf(wallet_address, 43, "0x%s", result + strlen(result) - 40);
+    } else {
+        LM_ERR("Web3Auth: Invalid Oasis response format\n");
+        return -1;
+    }
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Oasis wallet address for %s: %s\n", username, wallet_address);
+    }
+    
+    return 0;
+}
+
+/**
+ * Check if username is ENS format and validate against Oasis contract
+ */
+int web3_ens_validate(const char *username, dig_cred_t *cred, str *method)
+{
+    // Check if username contains "." (ENS format)
+    if (!strchr(username, '.')) {
+        // Not an ENS name, proceed with normal authentication
+        return web3_auth_check_response(cred, method);
+    }
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Detected ENS name: %s\n", username);
+    }
+    
+    char ens_resolved_address[43] = {0};
+    char oasis_wallet_address[43] = {0};
+    
+    // Extract auth username from credentials for Oasis contract
+    char auth_username[256];
+    if (cred->username.user.len >= sizeof(auth_username)) {
+        LM_ERR("Web3Auth: Auth username too long (%d chars)\n", cred->username.user.len);
+        return NOT_AUTHENTICATED;
+    }
+    memcpy(auth_username, cred->username.user.s, cred->username.user.len);
+    auth_username[cred->username.user.len] = '\0';
+    
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: ENS name (from From field): %s\n", username);
+        LM_INFO("Web3Auth: Auth username (for Oasis): %s\n", auth_username);
+    }
+    
+    // Step 1: Resolve ENS name to get what address it points to
+    if (web3_ens_resolve_address(username, ens_resolved_address) != 0) {
+        LM_ERR("Web3Auth: Failed to resolve ENS name %s\n", username);
+        return 402; // ENS not valid
+    }
+    
+    // Check if ENS resolution is zero (ENS not found or not set)
+    if (strcmp(ens_resolved_address, "0x0000000000000000000000000000000000000000") == 0) {
+        LM_ERR("Web3Auth: ENS name %s does not resolve to any address\n", username);
+        return 402; // ENS not valid
+    }
+    
+    // Step 2: Get wallet address from Oasis contract (use auth username)
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: Calling Oasis contract with auth username: %s\n", auth_username);
+    }
+    if (web3_oasis_get_wallet_address(auth_username, oasis_wallet_address) != 0) {
+        LM_ERR("Web3Auth: Failed to get wallet address from Oasis for %s\n", auth_username);
+        return NOT_AUTHENTICATED;
+    }
+    
+    // Step 3: Compare resolved addresses
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: ENS resolved address: %s (what %s points to)\n", ens_resolved_address, username);
+        LM_INFO("Web3Auth: Oasis wallet address: %s (from Oasis contract for %s)\n", oasis_wallet_address, auth_username);
+    }
+    
+    if (strcasecmp(ens_resolved_address, oasis_wallet_address) == 0) {
+        if (web3_debug_mode) {
+            LM_INFO("Web3Auth: ENS validation successful! Addresses match: %s\n", ens_resolved_address);
+            LM_INFO("Web3Auth: ENS '%s' points to the same address as Oasis user '%s'\n", username, auth_username);
+        }
+        return AUTHENTICATED; // 200 - Success
+    } else {
+        // Check if both addresses are non-zero
+        if (strcmp(oasis_wallet_address, "0x0000000000000000000000000000000000000000") != 0) {
+            LM_ERR("Web3Auth: Address mismatch - ENS points to: %s, Oasis wallet: %s\n", 
+                   ens_resolved_address, oasis_wallet_address);
+            return NOT_AUTHENTICATED; // 401 - Invalid
+        } else {
+            LM_ERR("Web3Auth: No wallet address found in Oasis for %s\n", auth_username);
+            return NOT_AUTHENTICATED; // 401 - Invalid
+        }
+    }
 }
 
 /**
@@ -378,10 +804,30 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     auth_body_t *cred;
     auth_cfg_result_t ret;
     auth_result_t rauth;
+    char from_username[256] = {0};
 
     if (web3_debug_mode) {
         LM_INFO("Web3Auth: Starting digest authentication for realm=%.*s\n", 
                 realm->len, realm->s);
+    }
+
+    // Extract username from "From" header field
+    if (msg->from && msg->from->parsed) {
+        struct to_body *from_body = (struct to_body *)msg->from->parsed;
+        if (from_body->uri.user.len > 0 && from_body->uri.user.len < sizeof(from_username)) {
+            memcpy(from_username, from_body->uri.user.s, from_body->uri.user.len);
+            from_username[from_body->uri.user.len] = '\0';
+            
+            if (web3_debug_mode) {
+                LM_INFO("Web3Auth: Extracted from username: %s\n", from_username);
+            }
+        } else {
+            LM_ERR("Web3Auth: Invalid or missing username in From header\n");
+            return AUTH_ERROR;
+        }
+    } else {
+        LM_ERR("Web3Auth: No From header found\n");
+        return AUTH_ERROR;
     }
 
     // Use the base auth module for pre-authentication processing
@@ -424,9 +870,10 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
 
     cred = (auth_body_t *)h->parsed;
 
-    // Use our Web3 authentication instead of traditional password-based auth
-    rauth = web3_auth_check_response(&(cred->digest), method);
+    // Use ENS validation which includes fallback to normal Web3 authentication
+    rauth = web3_ens_validate(from_username, &(cred->digest), method);
     
+    // Handle different return codes from ENS validation
     if (rauth == AUTHENTICATED) {
         ret = AUTH_OK;
         // Use base auth module for post-authentication processing
@@ -437,6 +884,10 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
                 ret = AUTH_ERROR;
                 break;
         }
+    } else if (rauth == 402) {
+        // ENS validation failed - return specific error
+        ret = AUTH_ERROR;  // or define a specific AUTH_ENS_INVALID if available
+        LM_ERR("Web3Auth: ENS validation failed for %s\n", from_username);
     } else {
         if (rauth == NOT_AUTHENTICATED)
             ret = AUTH_INVALID_PASSWORD;

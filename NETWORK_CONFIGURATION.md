@@ -1,0 +1,132 @@
+# Multi-Network ENS Configuration Guide
+
+## Overview
+
+The Web3 Authentication Extension now supports **dual-network authentication**, allowing ENS contracts and Oasis authentication contracts to operate on different blockchain networks.
+
+## Configuration Parameters
+
+### Main Network (Oasis)
+- `web3_rpc_url`: RPC endpoint for Oasis authentication contract
+- `web3_contract_address`: Oasis authentication contract address
+
+### ENS Network (Ethereum/Sepolia)
+- `ens_rpc_url`: **NEW** - RPC endpoint for ENS queries (optional)
+- `ens_registry_address`: ENS Registry contract address
+- `ens_name_wrapper_address`: ENS Name Wrapper contract address
+
+## Network Flow
+
+### Scenario 1: Same Network (Fallback Mode)
+```
+ens_rpc_url = NULL (not configured)
+```
+- ✅ ENS queries → `web3_rpc_url`
+- ✅ Oasis queries → `web3_rpc_url`
+- Use case: Both contracts on same network
+
+### Scenario 2: Different Networks (Multi-Network Mode)
+```
+web3_rpc_url = "https://testnet.sapphire.oasis.dev"
+ens_rpc_url = "https://sepolia.infura.io/v3/YOUR_KEY"
+```
+- ✅ ENS queries → `ens_rpc_url` (Sepolia)
+- ✅ Oasis queries → `web3_rpc_url` (Oasis Sapphire)
+- Use case: ENS on Ethereum, Oasis on Oasis network
+
+## Common Network Configurations
+
+### Production Setup
+```bash
+# Oasis Mainnet + Ethereum Mainnet
+web3_rpc_url = "https://sapphire.oasis.io"
+ens_rpc_url = "https://mainnet.infura.io/v3/YOUR_KEY"
+ens_registry_address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+ens_name_wrapper_address = "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401"
+```
+
+### Testing Setup
+```bash
+# Oasis Testnet + Ethereum Sepolia
+web3_rpc_url = "https://testnet.sapphire.oasis.dev"
+ens_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
+ens_registry_address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+ens_name_wrapper_address = "0x0635513f179D50A207757E05759CbD106d7dFcE8"
+```
+
+### Development Setup
+```bash
+# Both on same testnet
+web3_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
+# ens_rpc_url not set - will use web3_rpc_url
+```
+
+## Kamailio Configuration Example
+
+```kamailio
+loadmodule "web3_auth_ext.so"
+
+# Oasis authentication network
+modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("web3_auth_ext", "web3_contract_address", "0xYourOasisContract")
+
+# ENS network (Sepolia testnet)
+modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
+
+modparam("web3_auth_ext", "web3_debug_mode", 1)
+```
+
+## Testing Your Configuration
+
+Use the provided test program to verify network configuration:
+
+```bash
+# Compile test program
+make -f Makefile.test
+
+# Test with your configuration
+./test_ens_validation jonathan 123123 jonathan123.eth
+
+# Check debug output for network usage:
+# "ENS call using RPC: https://ethereum-sepolia-rpc.publicnode.com"
+# "Oasis call using main RPC: https://testnet.sapphire.oasis.dev"
+```
+
+## Benefits
+
+1. **Network Separation**: Keep ENS queries on Ethereum while using Oasis for authentication
+2. **Cost Optimization**: Use cheaper testnets for ENS during development
+3. **Performance**: Separate network load between ENS and authentication calls
+4. **Flexibility**: Easy migration between networks
+5. **Backward Compatibility**: Existing single-network setups continue to work
+6. **No API Keys Required**: PublicNode provides free, reliable RPC access
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Network Connectivity**: Ensure PublicNode RPC is accessible from your server
+2. **Network Mismatch**: Verify contract addresses match the configured network
+3. **Fallback Behavior**: If `ens_rpc_url` is empty, ENS uses `web3_rpc_url`
+4. **Rate Limiting**: PublicNode has fair usage limits for free tier
+
+### Debug Information
+
+Enable debug mode to see which RPC is used for each call:
+```
+modparam("web3_auth_ext", "web3_debug_mode", 1)
+```
+
+Look for log messages:
+- `ENS call using RPC: [url] (ENS-specific: yes/no)`
+- `Oasis call using main RPC: [url]`
+
+### Why PublicNode?
+
+- ✅ **Free**: No API keys required
+- ✅ **Fast**: Low latency, high availability
+- ✅ **Privacy-focused**: No tracking or data collection
+- ✅ **Reliable**: Professional infrastructure
+- ✅ **Multiple networks**: Supports many blockchain networks

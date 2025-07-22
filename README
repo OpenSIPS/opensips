@@ -1,146 +1,151 @@
-Web3 Authentication Extension Module
+Web3 Authentication Extension Module for Kamailio
+=================================================
 
-DESCRIPTION
------------
+This module extends Kamailio's authentication capabilities to support Web3/blockchain-based authentication with ENS (Ethereum Name Service) integration.
 
-The web3_auth_ext module provides blockchain-based authentication for Kamailio
-SIP server. This module extends the base auth module by replacing traditional
-password-based authentication with Web3 smart contract verification.
+## Features
 
-Instead of storing passwords in databases, user credentials are verified against
-a smart contract deployed on a blockchain network. The module maintains full
-compatibility with SIP digest authentication while using blockchain as the
-backend verification system.
+### Core Web3 Authentication
+- Replaces traditional digest authentication with blockchain-based verification
+- Uses smart contract calls to validate user credentials
+- Supports multiple hashing algorithms (MD5, SHA-256, SHA-512)
 
-FEATURES
---------
+### ENS Integration (NEW)
+- Validates ENS names in the "From" field of SIP messages
+- Queries ENS Registry for resolver addresses
+- Supports ENS Name Wrapper for wrapped domains
+- Cross-validates ENS ownership with Oasis authentication contract
+- Returns appropriate error codes:
+  - 200: Successful ENS validation and address match
+  - 401: Address mismatch or authentication failure
+  - 402: ENS not valid (not found, no owner, etc.)
 
-* Blockchain-based authentication using Web3 smart contracts
-* Full compatibility with SIP digest authentication (MD5, SHA-256, SHA-512)
-* Drop-in replacement for traditional auth_db functions
-* Configurable RPC endpoint and smart contract address
-* Debug mode for development and troubleshooting
-* Timeout configuration for blockchain calls
-* Support for both WWW-Authenticate and Proxy-Authenticate headers
+## Module Parameters
 
-DEPENDENCIES
-------------
+### Basic Configuration
+- `web3_rpc_url`: Blockchain RPC endpoint (default: Oasis Sapphire testnet)
+- `web3_contract_address`: Oasis authentication contract address
+- `web3_debug_mode`: Enable debug logging (1 = enabled, 0 = disabled)
+- `web3_timeout`: RPC call timeout in seconds
 
-* Base auth module (required dependency)
-* libcurl (for Web3 RPC calls)
-* OpenSSL (for digest calculations)
+### ENS Configuration (NEW)
+- `ens_registry_address`: ENS Registry contract address (default: Ethereum mainnet)
+- `ens_name_wrapper_address`: ENS Name Wrapper contract address (default: Ethereum mainnet)
+- `ens_rpc_url`: ENS-specific RPC endpoint (optional, falls back to web3_rpc_url if not provided)
 
-CONFIGURATION
--------------
+## Network Flexibility
 
-Module Parameters:
+The module supports **multi-network authentication** where ENS contracts and Oasis contracts can be on different networks:
 
-* web3_rpc_url (string)
-  Default: "https://testnet.sapphire.oasis.dev"
-  The Web3 RPC endpoint URL for blockchain communication.
+- **ENS Network**: Configure via `ens_rpc_url` (e.g., Sepolia testnet for ENS)
+- **Oasis Network**: Uses `web3_rpc_url` (e.g., Oasis Sapphire testnet)
+- **Fallback**: If `ens_rpc_url` is not provided, ENS queries use the main `web3_rpc_url`
 
-* web3_contract_address (string) 
-  Default: "0xE773BB79689379d32Ad1Db839868b6756B493aea"
-  The smart contract address containing authentication logic.
+This allows you to:
+- Use ENS contracts on Ethereum Sepolia testnet
+- Use Oasis authentication contracts on Oasis Sapphire
+- Mix and match networks as needed for your deployment
 
-* web3_debug_mode (integer)
-  Default: 1
-  Enable/disable debug logging (0=disabled, 1=enabled).
+## Authentication Flow
 
-* web3_timeout (integer)
-  Default: 10
-  Timeout in seconds for Web3 RPC calls.
+### Standard Authentication
+1. Extract digest credentials from SIP message
+2. Build ABI-encoded call to authenticateUser function
+3. Execute blockchain call via JSON-RPC
+4. Validate response and return authentication result
 
-EXPORTED FUNCTIONS
-------------------
+### ENS Authentication Flow (NEW)
+1. Extract username from "From" field (not auth username)
+2. Check if username contains "." (ENS format)
+3. If ENS format detected:
+   a. Query ENS Registry for resolver address
+   b. Check if resolver is Name Wrapper
+   c. Get owner from Name Wrapper or Registry
+   d. Query Oasis contract for getWalletAddress(username)
+   e. Compare ENS owner with Oasis wallet address
+4. If not ENS format, fallback to standard authentication
 
-* web3_www_authenticate(realm, method)
-  Performs WWW authentication using Web3 backend.
-  
-* web3_proxy_authenticate(realm, method)
-  Performs Proxy authentication using Web3 backend.
+## Usage
 
-USAGE EXAMPLE
--------------
+### Kamailio Configuration Example
 
-# Load required modules
-loadmodule "auth.so"
+```
 loadmodule "web3_auth_ext.so"
 
-# Configure Web3 parameters
-modparam("web3_auth_ext", "web3_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
-modparam("web3_auth_ext", "web3_contract_address", "0x1234567890abcdef...")
-modparam("web3_auth_ext", "web3_debug_mode", 0)
-modparam("web3_auth_ext", "web3_timeout", 15)
+# Basic configuration
+modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("web3_auth_ext", "web3_contract_address", "0xYourContractAddress")
 
-# Use in routing logic
+# ENS configuration
+modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
+
+# ENS network configuration (optional - for different networks)
+modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+
+# Debug mode
+modparam("web3_auth_ext", "web3_debug_mode", 1)
+
+# In your route block
 route[AUTH] {
-    if (!web3_www_authenticate("mycompany.com", "$rm")) {
-        www_challenge("mycompany.com", "0");
-        exit;
+    if (!web3_www_authenticate("$td", "$rm")) {
+        switch ($retcode) {
+            case -402:
+                sl_send_reply("402", "ENS domain not valid");
+                exit;
+            case -401:
+                sl_send_reply("401", "Unauthorized");
+                exit;
+            default:
+                sl_send_reply("500", "Authentication error");
+                exit;
+        }
     }
+    # Authentication successful, continue processing
 }
+```
 
-SMART CONTRACT INTERFACE
--------------------------
+## Smart Contract Requirements
 
-The module expects a smart contract with the following function:
-
+### Oasis Authentication Contract
+Must implement:
+```solidity
 function authenticateUser(
     string memory username,
-    string memory realm, 
+    string memory realm,
     string memory method,
     string memory uri,
     string memory nonce,
-    uint8 algorithm,
+    uint8 algo,
     bytes memory response
-) public view returns (bool)
+) public view returns (bool);
 
-The contract should return true if authentication succeeds, false otherwise.
+function getWalletAddress(
+    string memory username
+) public view returns (address);
+```
 
-ALGORITHM SUPPORT
------------------
+### ENS Integration
+- Connects to standard ENS Registry and Name Wrapper contracts
+- Queries resolver addresses and ownership information
+- Validates ENS domains against registered wallet addresses
 
-* 0 = MD5 (default)
-* 1 = SHA-256  
-* 2 = SHA-512
+## Error Handling
 
-INTEGRATION
------------
+- Standard HTTP auth error codes for compatibility
+- Specific 402 error code for ENS validation failures
+- Detailed logging in debug mode
+- Graceful fallback to standard authentication for non-ENS usernames
 
-This module is designed as an extension to the base auth module. It provides
-the same authentication interface but uses blockchain verification instead of
-database lookups.
+## Security Features
 
-For migration from auth_db:
-1. Replace auth_db functions with web3_auth_ext equivalents
-2. Configure Web3 parameters
-3. Deploy and configure smart contract
-4. No changes needed to SIP clients
+- Cross-validation between ENS ownership and contract registration
+- Protection against ENS spoofing attacks
+- Validation of zero addresses (0x000...000)
+- Comprehensive error checking and logging
 
-API BINDING
------------
+## Dependencies
 
-Other modules can bind to the Web3 authentication API:
-
-#include "modules/web3_auth_ext/api.h"
-
-web3_auth_api_t web3_api;
-if (web3_auth_load_api(&web3_api) != 0) {
-    // Handle error
-}
-
-// Use web3_api.digest_authenticate() or web3_api.check_response()
-
-AUTHORS
--------
-
-Jonathan Kandel <jonathan@example.com>
-
-COPYRIGHT
----------
-
-Copyright (C) 2025 Jonathan Kandel
-
-This module is licensed under the GNU General Public License v2.0.
-See LICENSE file for details. 
+- libcurl for HTTP/RPC calls
+- Kamailio core and auth module APIs
+- Standard C libraries 

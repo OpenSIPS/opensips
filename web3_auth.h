@@ -44,23 +44,20 @@ struct Web3ResponseData {
  */
 
 /**
- * @brief Main Web3 authentication function that replaces traditional digest auth
- * @param msg SIP message
- * @param realm Authentication realm
- * @param hftype Header field type (Authorization or Proxy-Authorization)
+ * Main web3 authentication check function
+ * @param cred Digest credentials
  * @param method SIP method
  * @return Authentication result
  */
-int web3_digest_authenticate(struct sip_msg *msg, str *realm, 
-                           hdr_types_t hftype, str *method);
+int web3_auth_check_response(dig_cred_t *cred, str *method);
 
 /**
- * @brief Core blockchain verification function
- * @param cred Digest credentials from SIP message
- * @param method SIP method
- * @return AUTHENTICATED, NOT_AUTHENTICATED, or error code
+ * Digest authentication function
+ * @param msg SIP message
+ * @param realm Authentication realm
+ * @return Authentication result
  */
-int web3_auth_check_response(dig_cred_t *cred, str *method);
+int web3_digest_authenticate(struct sip_msg* msg, char* realm);
 
 /**
  * @brief Curl callback function for Web3 RPC responses
@@ -81,5 +78,10 @@ size_t web3_curl_callback(void *contents, size_t size, size_t nmemb,
  * @return Number of bytes converted, or -1 on error
  */
 int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes);
+
+// ENS validation functions
+int web3_ens_validate(const char *username, dig_cred_t *cred, str *method);
+int web3_ens_resolve_address(const char *ens_name, char *resolved_address);
+int web3_oasis_get_wallet_address(const char *username, char *wallet_address);
 
 #endif /* _WEB3_AUTH_H_ */ 
