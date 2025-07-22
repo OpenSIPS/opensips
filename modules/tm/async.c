@@ -261,6 +261,12 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 
+	/* we run the resume callback under lock, if needed 
+	 * the resume function might touch the AVP list, so
+	 * we need to protect that from other incoming replies on this transaction */
+	if (onreply_avp_mode)
+		LOCK_REPLIES(t);
+
 	/* call the resume function in order to read and handle data */
 	return_code = ((async_resume_module*)
 		(was_timeout ? ctx->async.timeout_f : ctx->async.resume_f))
@@ -269,6 +275,8 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 
 	if (async_status==ASYNC_CONTINUE) {
 		/* do not run the resume route */
+		if (onreply_avp_mode)
+			UNLOCK_REPLIES(t);
 		goto restore;
 	} else if (async_status==ASYNC_DONE_NO_IO) {
 		/* don't do any change on the fd, since the module handled everything */
@@ -281,6 +289,8 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 			/*trying to add the same fd; shall continue*/
 			LM_CRIT("You are trying to replace the old fd with the same fd!"
 					"Will act as in ASYNC_CONTINUE!\n");
+			if (onreply_avp_mode)
+				UNLOCK_REPLIES(t);
 			goto restore;
 		}
 
@@ -302,6 +312,8 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 		}
 
 		/* changed fd; now restore old state */
+		if (onreply_avp_mode)
+			UNLOCK_REPLIES(t);
 		goto restore;
 	}
 
@@ -313,11 +325,6 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 route:
 	if (async_status == ASYNC_DONE_CLOSE_FD && valid_async_fd(fd))
 		close(fd);
-
-
-	/* we run the resume route under lock, if needed */
-	if (onreply_avp_mode)
-		LOCK_REPLIES(t);
 
 	/* run the resume_route (some type as the original one) */
 	if (!ref_script_route_check_and_update(ctx->resume_route)) {
