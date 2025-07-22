@@ -234,7 +234,7 @@ static const struct main_script main_script[] = {
 	FN_HNDLR(fix_rls, !=, 0, "routing lists"),
 	FN_HNDLR(init_log_level, !=, 0, "logging levels"),
 	FN_HNDLR(init_log_event_cons, <, 0, "log event consumer"),
-	FN_HNDLR(trans_init_udp_listeners, <, 0, "all SIP listeners"),
+	FN_HNDLR(trans_init_all_listeners, <, 0, "all SIP listeners"),
 	FN_HNDLR(init_script_reload, <, 0, "cfg reload ctx"),
 	FN_HNDLR(init_suid, ==, -1, "do_suid"),
 	FN_HNDLR(run_post_fork_handlers, <, 0, "post-fork handlers"),

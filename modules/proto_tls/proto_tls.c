@@ -339,6 +339,7 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->default_port		= tls_port_no;
 
 	pi->tran.init_listener	= proto_tls_init_listener;
+	pi->tran.bind_listener	= tcp_bind_listener;
 	pi->tran.send			= proto_tls_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 

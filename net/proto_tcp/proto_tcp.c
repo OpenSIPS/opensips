@@ -203,6 +203,7 @@ static int proto_tcp_init(struct proto_info *pi)
 	pi->default_port		= tcp_port;
 
 	pi->tran.init_listener	= proto_tcp_init_listener;
+	pi->tran.bind_listener	= tcp_bind_listener;
 	pi->tran.send			= proto_tcp_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 

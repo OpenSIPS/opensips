@@ -182,6 +182,7 @@ static int proto_ws_init(struct proto_info *pi)
 	pi->default_port		= ws_port;
 
 	pi->tran.init_listener	= proto_ws_init_listener;
+	pi->tran.bind_listener	= tcp_bind_listener;
 	pi->tran.send			= proto_ws_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
