@@ -140,6 +140,7 @@ static int smpp_init(struct proto_info *pi)
 	pi->default_port	= smpp_port;
 
 	pi->tran.init_listener	= smpp_init_listener;
+	pi->tran.bind_listener	= tcp_bind_listener;
 	pi->tran.send		= smpp_send;
 	pi->tran.dst_attr	= tcp_conn_fcntl;
 

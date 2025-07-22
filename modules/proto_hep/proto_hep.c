@@ -312,6 +312,7 @@ static int proto_hep_init_tcp(struct proto_info* pi)
 	pi->name               = "hep_tcp";
 	pi->default_port       = hep_port;
 	pi->tran.init_listener = tcp_init_listener;
+	pi->tran.bind_listener = tcp_bind_listener;
 
 	pi->tran.dst_attr      = tcp_conn_fcntl;
 
@@ -336,6 +337,7 @@ static int proto_hep_init_tls(struct proto_info* pi)
 	pi->name                = "hep_tls";
 	pi->default_port        = hep_port;
 	pi->tran.init_listener  = tcp_init_listener;
+	pi->tran.bind_listener  = tcp_bind_listener;
 
 	pi->tran.dst_attr       = tcp_conn_fcntl;
 

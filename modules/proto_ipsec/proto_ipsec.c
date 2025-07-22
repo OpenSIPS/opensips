@@ -49,6 +49,7 @@
 #define IPSEC_CTX_TM_PUT(t, ctx) tm_ipsec.t_ctx_put_ptr(t, ipsec_ctx_tm_idx, ctx)
 
 
+extern int is_tcp_main;
 static int ipsec_default_client_port = 0;
 static int ipsec_default_server_port = 0;
 static str ipsec_allowed_algorithms;
@@ -383,8 +384,15 @@ static int proto_ipsec_init_listener(struct socket_info *si)
 
 static int proto_ipsec_bind_listener(struct socket_info *si)
 {
-	/* we only need to bind the UDP listener */
-	return udp_bind_listener(si);
+	int socket = si->socket; /* backup socket */
+	if (udp_bind_listener(si) < 0)
+		return -1;
+	if (is_tcp_main) {
+		if (tcp_bind_listener(si) < 0)
+			return -1;
+		si->socket = socket;
+	}
+	return 0;
 }
 
 static int proto_ipsec_send(const struct socket_info* source,
