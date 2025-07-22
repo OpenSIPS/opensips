@@ -54,10 +54,12 @@ int web3_auth_check_response(dig_cred_t *cred, str *method);
 /**
  * Digest authentication function
  * @param msg SIP message
- * @param realm Authentication realm
+ * @param realm Authentication realm  
+ * @param hftype Header field type
+ * @param method SIP method
  * @return Authentication result
  */
-int web3_digest_authenticate(struct sip_msg* msg, char* realm);
+int web3_digest_authenticate(struct sip_msg* msg, str* realm, hdr_types_t hftype, str* method);
 
 /**
  * @brief Curl callback function for Web3 RPC responses

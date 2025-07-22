@@ -32,6 +32,7 @@
 #include "../../core/mem/mem.h"
 #include "../../core/parser/digest/digest.h"
 #include "../../core/parser/parse_to.h"
+#include "../../core/parser/parse_uri.h"
 #include "../../modules/auth/api.h"
 #include "web3_auth.h"
 #include "web3_auth_ext_mod.h"
@@ -814,9 +815,17 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     // Extract username from "From" header field
     if (msg->from && msg->from->parsed) {
         struct to_body *from_body = (struct to_body *)msg->from->parsed;
-        if (from_body->uri.user.len > 0 && from_body->uri.user.len < sizeof(from_username)) {
-            memcpy(from_username, from_body->uri.user.s, from_body->uri.user.len);
-            from_username[from_body->uri.user.len] = '\0';
+        struct sip_uri parsed_uri;
+        
+        // Parse the URI to extract user part
+        if (parse_uri(from_body->uri.s, from_body->uri.len, &parsed_uri) < 0) {
+            LM_ERR("Web3Auth: Failed to parse From URI\n");
+            return AUTH_ERROR;
+        }
+        
+        if (parsed_uri.user.len > 0 && parsed_uri.user.len < sizeof(from_username)) {
+            memcpy(from_username, parsed_uri.user.s, parsed_uri.user.len);
+            from_username[parsed_uri.user.len] = '\0';
             
             if (web3_debug_mode) {
                 LM_INFO("Web3Auth: Extracted from username: %s\n", from_username);
