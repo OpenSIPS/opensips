@@ -1728,7 +1728,6 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 			return -1;
 		}
 		/* reset old pointers */
-		RTP_RELAY_CTX_REF_UNSAFE(ctx, -1);
 		RTP_RELAY_PUT_TM_CTX(t, NULL);
 		RTP_RELAY_PUT_CTX(NULL);
 
@@ -1753,7 +1752,6 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 
 		if (rtp_relay_dlg_callbacks(dlg, ctx, to_tag) < 0) {
 			/* restore the state */
-			RTP_RELAY_CTX_REF_UNSAFE(ctx, 1);
 			RTP_RELAY_PUT_TM_CTX(t, ctx);
 			return -1;
 		}
@@ -1969,7 +1967,7 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 			/* handles the replies to the original INVITE */
 			if (rtp_relay_tmb.register_tmcb(msg, 0,
 					TMCB_RESPONSE_FWDED|TMCB_REQUEST_FWDED|TMCB_ON_FAILURE,
-					rtp_relay_ctx_initial_cb, ctx, 0)!=1) {
+					rtp_relay_ctx_initial_cb, ctx, rtp_relay_ctx_release)!=1) {
 				LM_ERR("failed to install TM reply callback\n");
 				return -1;
 			}
