@@ -1,3 +1,451 @@
+=========================== Release 3.6.0 ==============================
+
+2025-07-23  Razvan Crainea  <razvan@opensips.org>
+        * [808efb1810] :
+
+        db_unixodbc: explicit add $(LOCALBASE)/include/odbc
+
+        This fixes compile on FreeBSD.
+        Close #3689
+
+        (cherry picked from commit bebda2e5a6d6a73519f79271765146539b7add55)
+
+
+2025-07-23  Razvan Crainea  <razvan@opensips.org>
+        * [8c216ae5cc] :
+
+        rtp_relay: let tm manage ref counting for failed sessions
+
+        Close #3623
+        Close #3539
+
+        (cherry picked from commit 7bb7900d4a4a51920ef87b8b37805b38497ea069)
+
+
+2025-07-23  Razvan Crainea  <razvan@opensips.org>
+        * [5e301ccdf8] :
+
+        net: init all protos, but bind TCP only in main
+
+        (cherry picked from commit 0dad8231382063dfe12f72cb5e36277d10a26daf)
+
+
+2025-07-22  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [7e008d9ac2] :
+
+        Merge pull request #3688 from vladpaiu/fix_async_lock_replies
+
+        run reply async resume callback under reply lock, as it might make changes to AVPs
+
+        (cherry picked from commit 64a18da003127f6fb60ed03620030d3af79c3f00)
+
+
+2025-07-22  Andrej Solovjov  <solovjov@kompaas.tech>
+        * [376954f407] :
+
+        registrar: increase MAX_FORCED_BINDING_LEN in save function
+
+        Sometimes the SIP Contact header field URI can be larger than 256 chars.
+        For example, 'pn-provider', 'pn-prid' and 'pn-param' should be in the
+        URI if SIP UA requests push notifications and they can be quite long.
+
+        (cherry picked from commit 6416b570892c6884eebeb8888cf832bbc89db2ac)
+
+
+2025-07-21  Razvan Crainea  <razvan@opensips.org>
+        * [cc99ea8ca8] :
+
+        rtpengine: guard from NULL msg
+
+        Thanks to @goharahmed for his report. Close #3652
+
+        (cherry picked from commit 528f06be27fc75876bc72cd49812b4f111f5f2ef)
+
+
+2025-07-21  Razvan Crainea  <razvan@opensips.org>
+        * [7265bc4740] :
+
+        mi_script: fix documentation typos
+
+        Many thangs to @QuincyGao on GitHub for reporting them.
+        Close #3683
+
+        (cherry picked from commit e34c7ba19f23b774ac138d6faed90a75da685852)
+
+
+2025-07-15  Artiom Druz  <38580109+Shkiperon@users.noreply.github.com>
+        * [a248f3032d] :
+
+        Added menuconfig options to disable event_sqs and rtp.io module builds (#3678)
+
+
+
+2025-07-13  OpenSIPS  <github@opensips.org>
+        * [bc7d36dd5d] :
+
+        Rebuild documentation
+
+
+2025-07-09  Razvan Crainea  <razvan@opensips.org>
+        * [d5fb72aaec] :
+
+        auth_aka: fix SIP-Authorization header build
+
+        Before this commit, the RAND||AUTS would have been built in a buffer
+        that would have been destroyed afterwards.
+
+        (cherry picked from commit fba5079da4dcba7bfacc0622da72ed062b61dcb9)
+
+
+2025-07-06  OpenSIPS  <github@opensips.org>
+        * [623562f722] :
+
+        Rebuild documentation
+
+
+2025-07-01  Liviu Chircu  <liviu@opensips.org>
+        * [75f2990a55] :
+
+        core: Minor code refactoring
+
+        Skip unnecessary @md assignments, space out the code for readability.
+
+        Related to #3675
+
+        (cherry picked from commit e144adc85d6c34b96510ef4efe7036216c3cd3aa)
+
+
+2025-07-01  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [cdbd52ed71] :
+
+        core: split DEP_REVERSE_INIT into _MINIT and _CINIT parts
+
+        Add DEP_REVERSE_CINIT and DEP_REVERSE_MINIT dependency flags
+        allowing to reverse mod_init() and child_init() init order
+        independently.
+
+        Make DEP_REVERSE_INIT be (DEP_REVERSE_CINIT|DEP_REVERSE_MINIT).
+
+        (cherry picked from commit c8770b66f34850c0cf6f2d8fb6f9e1781ba9a898)
+
+
+2025-07-01  Larry Laffer  <larrylaffer130@gmail.com>
+        * [e0ae3c207b] :
+
+        [aaa_diameter] Ignore unknown AVPS in Diameter Replies (#3655)
+
+        * Ignore unknown AVPs in replies
+
+        * Clarify Log
+
+        (cherry picked from commit d449aabc29296cd0b88bcf6335a6e6cbc63365f0)
+
+
+2025-06-29  OpenSIPS  <github@opensips.org>
+        * [23387ae2f7] :
+
+        Rebuild documentation
+
+
+2025-06-27  Razvan Crainea  <razvan@opensips.org>
+        * [adfb884768] :
+
+        rtp_relay: do not enforce from_tag for delete command
+
+        (cherry picked from commit 12ed692ecde861561c23474248aa0b65d6318cfe)
+
+
+2025-06-25  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [19bc7d04d2] :
+
+        Merge pull request #3634 from jes/proto-tls-fd
+
+        Stop leaving sockets in CLOSE_WAIT on failed TLS connections
+
+        (cherry picked from commit fde3ff3e37695054ad12dfdf4850be847170bf26)
+
+
+2025-06-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [56c5232424] :
+
+        [tm] remove some devel related DBG message
+
+        (cherry picked from commit f560625e1a391ae14c59fa1f7f9b60c9f36c7287)
+
+
+2025-06-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [0b80b066ae] :
+
+        [dispatcher] fix resetting the persistent_state for default partition
+
+        The modparam (as per docs) must change the default partition settings only
+        Fixes #3635, reported by @nikbyte
+
+        (cherry picked from commit e86b121b9b1d907a62a8809d7957be86b5dd462e)
+
+
+2025-06-24  Razvan Crainea  <razvan@opensips.org>
+        * [85cc8cb044] :
+
+        permissions: remove unused variable
+
+
+2025-06-24  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [01428c34aa] :
+
+        [permissions] fix allow_uri() URI parameter
+
+        The parameter is a string, not pvar, so does not need to be evaluated
+        Fixes #3645
+        Reported by @gostkov
+
+
+2025-06-22  OpenSIPS  <github@opensips.org>
+        * [1d06cb0cc6] :
+
+        Rebuild documentation
+
+
+2025-06-20  Razvan Crainea  <razvan@opensips.org>
+        * [4ae022e2db] :
+
+        cgrates: make sure ctx is released on backup node
+
+        when cgrates ctx is being replicated, we need to release it when the
+        dialog is destroyed, otherwise it will leak.
+
+        Many thanks for @NicoFrLy on GitHub for reporting it.
+        Close #3656
+
+        (cherry picked from commit 30c5fdfd862cf10bc249f531dd8d7f3b8e5b5521)
+
+
+2025-06-20  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [65af8f10cd] :
+
+        [proto_tls] fix HEP leak upon failed TLS accepts
+
+        Be sure and flush all pending HEP (tracing) messages on a TLS conn, even if the SSL negociation failed.
+        Closes #3496.
+
+        (cherry picked from commit 5d599a85574dee55c1e390c8b3ca818325de2481)
+
+
+2025-06-20  vladpaiu  <vladpaiu@opensips.org>
+        * [e464a5ac7a] :
+
+        Disable TLS tickets for 1.2 and 1.3 in order to support reconnects after OpenSIPS restarts (#3673)
+
+        (cherry picked from commit 00305a4edf6aa9dc946b8064dfbced294c125e03)
+
+
+2025-06-19  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [233d97cf2f] :
+
+        Merge pull request #3654 from 36952362/master
+
+        Resolve the issue of incomplete transmission of large SIP message over TLS protocol
+
+        (cherry picked from commit 0c54ee7df9c3fe1e6453e8fc52c4b9e9892f5ee6)
+
+
+2025-06-18  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [2533ae6d77] :
+
+        Merge pull request #3664 from 36952362/tcp_connection
+
+        Resolve the issue of inaccurate tcp_connections_no
+
+        (cherry picked from commit 38efd080d3cd01174384b26c6f86ee9a20480346)
+
+
+2025-06-17  Razvan Crainea  <razvan@opensips.org>
+        * [bfa7ef442e] :
+
+        rtp*: guard from empty to_tag
+
+        (cherry picked from commit cdd47254443b43a8139dffc2c739b05cc77deb69)
+
+
+2025-06-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [dbbc576cc8] :
+
+        Merge pull request #3670 from purecloudlabs/hotfix/permission-module-issues
+
+        `permissions`: Stabilize the new storage backend
+
+        (cherry picked from commit 12085550c5015c06c4815dfa3411535e908e352e)
+
+
+2025-06-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [9ddd2acd64] :
+
+        Merge pull request #3666 from NormB/NormB-clusterer-doc
+
+        Update clusterer_admin.xml
+
+        (cherry picked from commit 45f498b18f75ec879324d23b35b4fed92c5da9a2)
+
+
+2025-06-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [7281b12bb2] :
+
+        Remove wrapping for exclude_modules line
+
+        This is not supported by the menuconfig tool
+        Reported by @rrb3942, closes #3658
+
+        (cherry picked from commit be61940db5c3819287f22813d0753bd3b877a7eb)
+
+
+2025-06-16  Razvan Crainea  <razvan@opensips.org>
+        * [de8f40e625] :
+
+        dialog: replicate cseq changes on every reqlayed request
+
+        (cherry picked from commit d2c682cbf67d584f731311a69f9d28e2e50acf33)
+
+
+2025-06-15  OpenSIPS  <github@opensips.org>
+        * [3fa24f8a7b] :
+
+        Rebuild documentation
+
+
+2025-06-10  Razvan Crainea  <razvan@opensips.org>
+        * [5a06fb31b3] :
+
+        siprec: docs clarify when recoring is started
+
+        Thanks to Walter Schober on mailing list for reporing the inconsistency
+
+        (cherry picked from commit 6da409d4c825f67bab96986e2c6ba97d0c76afc2)
+
+
+2025-06-08  OpenSIPS  <github@opensips.org>
+        * [71bd96ed48] :
+
+        Rebuild documentation
+
+
+2025-06-04  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [9c382cb7f7] :
+
+        Merge pull request #3661 from NormB/patch-1
+
+        Documentation spelling update
+
+        (cherry picked from commit 224beb4924c57fe9137794272d305758c44b913c)
+
+
+2025-06-03  Razvan Crainea  <razvan@opensips.org>
+        * [144e7253e4] :
+
+        b2b_logic: fix typo on tuple error
+
+        (cherry picked from commit 4754e12bbcc1a6fcbc37b49c9cf8cdaaa07366b1)
+
+
+2025-06-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [5654476038] :
+
+        [domain] updated docs
+
+        Added new "subdomain_col" mod param
+
+        (cherry picked from commit a1caf3b62102367e391d4fe140ebc882289f5352)
+
+
+2025-06-01  OpenSIPS  <github@opensips.org>
+        * [f4ce3ce40f] :
+
+        Rebuild documentation
+
+
+2025-05-30  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [c665418943] :
+
+        Merge pull request #3653 from ovidiusas/master
+
+        domain: accept BIGINT type for accept_subdomain column
+        (cherry picked from commit ad540e9c9834d70ff41a66e1c1e661ea7515ac58)
+
+
+2025-05-29  Razvan Crainea  <razvan@opensips.org>
+        * [41848b7cc1] :
+
+        cachedb_redis: fix c99 requirements
+
+        (cherry picked from commit f7109b1df184ea3956267746804873a7115a593b)
+
+
+2025-05-25  Liviu Chircu  <liviu@opensips.org>
+        * [37a5053eaf] :
+
+        SDP variables: Integrate into SIP msg processing
+
+        Initial SDP operations integration, relaying seems to work as expected.
+
+        (cherry picked from commit b108c1cd0729363f6518c166f5d144bbe9b87874)
+
+
+2025-05-25  Liviu Chircu  <liviu@opensips.org>
+        * [886cb38127] :
+
+        SDP variables: Rework to allow PV as indexes (stream/line/token)
+
+        (cherry picked from commit 5afd61a37cd3fa075fecc4c74a1033777616c0b6)
+
+
+2025-05-25  Liviu Chircu  <liviu@opensips.org>
+        * [25bd2b79ae] :
+
+        SDP variables: Add test suites for $sdp.stream and $sdp.session
+
+        (cherry picked from commit da64ab99cc0d3c04efddec53132e6570ac5fafbe)
+
+
+2025-05-25  Liviu Chircu  <liviu@opensips.org>
+        * [5f3eeadcef] :
+
+        "assert" cfg statement: Few improvements
+
+        * make the 2nd param (assert description) optional
+        * add file/line to the error log, as a replacement for lack of param #2
+
+        (cherry picked from commit 63c76aaeecada9cb897a8d36f360aeee119b1a1e)
+
+
+2025-05-25  OpenSIPS  <github@opensips.org>
+        * [7bac0cb15c] :
+
+        Rebuild documentation
+
+
+2025-05-24  Razvan Crainea  <razvan@opensips.org>
+        * [742bbe3935] :
+
+        domain: usr correct table version and bump it properly
+
+        (cherry picked from commit 78a49b1e7bf252ed96df8ab4215fa75a27572741)
+
+
+2025-05-23  Liviu Chircu  <liviu@opensips.org>
+        * [8c23662ad1] :
+
+        $sdp.line: Minimize SDP buffer rebuilds during READ/WRITE ops
+
+        (cherry picked from commit 9561fe48368cc8cd34dea8898f950523ee8ee01d)
+
+
+2025-05-23  Liviu Chircu  <liviu@opensips.org>
+        * [818c846fae] :
+
+        SDP variables: Add test suite for $sdp and $sdp.line
+
+        (cherry picked from commit 4902037a7c34c38d42e0bd384615655d5dc6e2b4)
+
+
 =========================== Release 3.6.0-beta ==============================
 
 2025-05-21  Liviu Chircu  <liviu at opensips dot org>
