@@ -5,6 +5,7 @@ auto_gen=
 NAME=db_unixodbc.so
 
 ifeq ($(CROSS_COMPILE),)
+DEFS += -I$(LOCALBASE)/include/odbc
 LIBS += -lodbc
 else
 # sql.h locations (freebsd,openbsd  solaris)
