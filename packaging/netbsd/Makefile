@@ -6,7 +6,7 @@
 COMMENT= "OpenSIPS"
 
 PORTNAME= opensips
-PORTVERSION= 3.6.0-beta
+PORTVERSION= 3.6.0
 CATEGORIES= net
 MASTER_SITES= https://opensips.org/pub/opensips/3.6.0/
 

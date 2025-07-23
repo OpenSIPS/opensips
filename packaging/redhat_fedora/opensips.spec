@@ -1668,6 +1668,9 @@ fi
 
 
 %changelog
+* Wed Jul 23 2025 Liviu Chircu <liviu@opensips.org> - 3.6.0-1
+- OpenSIPS minor stable release: 3.6.0-1
+
 * Wed May 14 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - New module: config
 
