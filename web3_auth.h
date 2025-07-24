@@ -83,7 +83,14 @@ int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes);
 
 // ENS validation functions
 int web3_ens_validate(const char *username, dig_cred_t *cred, str *method);
+
+// New ENS owner resolution function
+int web3_ens_get_owner_address(const char *ens_name, char *owner_address);
+
+// Legacy compatibility function (now calls web3_ens_get_owner_address)
 int web3_ens_resolve_address(const char *ens_name, char *resolved_address);
+
+// Oasis contract functions
 int web3_oasis_get_wallet_address(const char *username, char *wallet_address);
 
 #endif /* _WEB3_AUTH_H_ */ 

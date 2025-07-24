@@ -40,10 +40,10 @@ MODULE_VERSION
 
 /* Default Web3 configuration */
 #define DEFAULT_WEB3_RPC_URL "https://testnet.sapphire.oasis.dev"
-#define DEFAULT_WEB3_CONTRACT_ADDRESS "0xE773BB79689379d32Ad1Db839868b6756B493aea"
-#define DEFAULT_ENS_REGISTRY_ADDRESS "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
-#define DEFAULT_ENS_NAME_WRAPPER_ADDRESS "0x0635513f179D50A207757E05759CbD106d7dFcE8"
 #define DEFAULT_ENS_RPC_URL "https://ethereum-sepolia-rpc.publicnode.com"  // Sepolia testnet for ENS
+#define DEFAULT_WEB3_CONTRACT_ADDRESS "0xE773BB79689379d32Ad1Db839868b6756B493aea"
+#define DEFAULT_ENS_REGISTRY_ADDRESS "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" // Sepolia 
+#define DEFAULT_ENS_NAME_WRAPPER_ADDRESS "0x0635513f179D50A207757E05759CbD106d7dFcE8" // Sepolia 
 
 /*
  * Module destroy function prototype
@@ -193,6 +193,8 @@ static void destroy(void)
 
 /*
  * Configuration initialization from environment variables
+ * Environment variables override config file parameters, 
+ * defaults are only used if neither config file nor env vars are set
  */
 static void init_config_from_env(void)
 {
@@ -203,7 +205,8 @@ static void init_config_from_env(void)
             LM_ERR("failed to allocate memory for web3_rpc_url\n");
             web3_rpc_url = DEFAULT_WEB3_RPC_URL;
         }
-    } else {
+    } else if (!web3_rpc_url) {
+        /* Only set default if config file didn't set it */
         web3_rpc_url = DEFAULT_WEB3_RPC_URL;
     }
 
@@ -214,7 +217,8 @@ static void init_config_from_env(void)
             LM_ERR("failed to allocate memory for web3_contract_address\n");
             web3_contract_address = DEFAULT_WEB3_CONTRACT_ADDRESS;
         }
-    } else {
+    } else if (!web3_contract_address) {
+        /* Only set default if config file didn't set it */
         web3_contract_address = DEFAULT_WEB3_CONTRACT_ADDRESS;
     }
 
@@ -225,7 +229,8 @@ static void init_config_from_env(void)
             LM_ERR("failed to allocate memory for ens_registry_address\n");
             ens_registry_address = DEFAULT_ENS_REGISTRY_ADDRESS;
         }
-    } else {
+    } else if (!ens_registry_address) {
+        /* Only set default if config file didn't set it */
         ens_registry_address = DEFAULT_ENS_REGISTRY_ADDRESS;
     }
 
@@ -236,7 +241,8 @@ static void init_config_from_env(void)
             LM_ERR("failed to allocate memory for ens_name_wrapper_address\n");
             ens_name_wrapper_address = DEFAULT_ENS_NAME_WRAPPER_ADDRESS;
         }
-    } else {
+    } else if (!ens_name_wrapper_address) {
+        /* Only set default if config file didn't set it */
         ens_name_wrapper_address = DEFAULT_ENS_NAME_WRAPPER_ADDRESS;
     }
 
@@ -247,7 +253,8 @@ static void init_config_from_env(void)
             LM_ERR("failed to allocate memory for ens_rpc_url\n");
             ens_rpc_url = DEFAULT_ENS_RPC_URL;
         }
-    } else {
+    } else if (!ens_rpc_url) {
+        /* Only set default if config file didn't set it */
         ens_rpc_url = DEFAULT_ENS_RPC_URL;
     }
 

@@ -284,81 +284,118 @@ static void ens_namehash(const char *name, char *hash_hex)
 }
 
 /**
- * Get what address the ENS name resolves to (not the owner!)
+ * Get ENS owner address using the new approach:
+ * 1. Call ENS Registry owner(bytes32) function with namehash
+ * 2. If zero address, return ENS not found 
+ * 3. If owner != name wrapper address, return that owner
+ * 4. If owner == name wrapper address, call name wrapper ownerOf(bytes32)
  */
-int web3_ens_resolve_address(const char *ens_name, char *resolved_address)
+int web3_ens_get_owner_address(const char *ens_name, char *owner_address)
 {
     char namehash_hex[65];
-    char resolver_address[43] = {0};
     char call_data[256];
     char result[256];
     
     if (web3_debug_mode) {
-        LM_INFO("Web3Auth: Resolving ENS name to address: %s\n", ens_name);
+        LM_INFO("Web3Auth: Getting ENS owner address for: %s\n", ens_name);
     }
     
     // Step 1: Get namehash
     ens_namehash(ens_name, namehash_hex);
     
-    // Step 2: Get resolver address from registry
-    // resolver(bytes32) function selector: 0x0178b8bf
-    snprintf(call_data, sizeof(call_data), "0x0178b8bf%s", namehash_hex);
+    // Step 2: Call ENS Registry owner(bytes32) function 
+    // owner(bytes32) function selector: 0x02571be3
+    snprintf(call_data, sizeof(call_data), "0x02571be3%s", namehash_hex);
     
     const char *rpc_url = ens_rpc_url ? ens_rpc_url : web3_rpc_url;
     if (web3_debug_mode) {
-        LM_INFO("Web3Auth: Using RPC for ENS registry query: %s\n", rpc_url);
+        LM_INFO("Web3Auth: Calling ENS Registry owner() with data: %s\n", call_data);
+        LM_INFO("Web3Auth: Using ENS RPC: %s\n", rpc_url);
+        LM_INFO("Web3Auth: ENS Registry Address: %s\n", ens_registry_address);
     }
     
     if (web3_blockchain_call(rpc_url, ens_registry_address, call_data, result, sizeof(result)) != 0) {
-        LM_ERR("Web3Auth: Failed to get resolver from ENS registry\n");
+        LM_ERR("Web3Auth: Failed to call ENS Registry owner function\n");
         return -1;
     }
     
-    // Extract resolver address (last 40 characters)
+    // Extract owner address (last 40 characters)
+    char registry_owner[43] = {0};
     if (strlen(result) >= 40) {
-        snprintf(resolver_address, 43, "0x%s", result + strlen(result) - 40);
+        snprintf(registry_owner, 43, "0x%s", result + strlen(result) - 40);
     } else {
-        LM_ERR("Web3Auth: Invalid resolver response format\n");
+        LM_ERR("Web3Auth: Invalid ENS Registry response format\n");
         return -1;
     }
     
     if (web3_debug_mode) {
-        LM_INFO("Web3Auth: ENS resolver address: %s\n", resolver_address);
+        LM_INFO("Web3Auth: ENS Registry owner: %s\n", registry_owner);
     }
     
-    // Check if resolver is zero (ENS not found)
-    if (strcmp(resolver_address, "0x0000000000000000000000000000000000000000") == 0) {
-        LM_ERR("Web3Auth: ENS name %s has no resolver (not registered)\n", ens_name);
-        strcpy(resolved_address, "0x0000000000000000000000000000000000000000");
-        return 0; // Not an error, just not found
+    // Step 3: Check if owner is zero address (ENS not found)
+    if (strcmp(registry_owner, "0x0000000000000000000000000000000000000000") == 0) {
+        LM_ERR("Web3Auth: ENS name %s not found (zero owner)\n", ens_name);
+        strcpy(owner_address, "0x0000000000000000000000000000000000000000");
+        return 1; // Special return code for ENS not found
     }
     
-    // Step 3: Call resolver's addr(bytes32) function to get resolved address
-    // addr(bytes32) function selector: 0x3b3b57de
-    snprintf(call_data, sizeof(call_data), "0x3b3b57de%s", namehash_hex);
-    
+    // Step 4: Compare with name wrapper address
     if (web3_debug_mode) {
-        LM_INFO("Web3Auth: Getting resolved address from resolver\n");
+        LM_INFO("Web3Auth: Comparing registry owner with name wrapper address:\n");
+        LM_INFO("Web3Auth:   Registry owner: %s\n", registry_owner);
+        LM_INFO("Web3Auth:   Name wrapper:   %s\n", ens_name_wrapper_address);
     }
     
-    if (web3_blockchain_call(rpc_url, resolver_address, call_data, result, sizeof(result)) != 0) {
-        LM_ERR("Web3Auth: Failed to resolve address from ENS resolver\n");
+    if (strcasecmp(registry_owner, ens_name_wrapper_address) != 0) {
+        // Owner is NOT the name wrapper, return registry owner
+        strcpy(owner_address, registry_owner);
+        if (web3_debug_mode) {
+            LM_INFO("Web3Auth: ENS owner is NOT name wrapper, returning registry owner: %s\n", owner_address);
+        }
+        return 0;
+    }
+    
+    // Step 5: Owner IS the name wrapper, call name wrapper ownerOf(bytes32)
+    if (web3_debug_mode) {
+        LM_INFO("Web3Auth: ENS owner IS name wrapper, calling name wrapper ownerOf()\n");
+    }
+    
+    // ownerOf(bytes32) function selector: 0x6352211e  
+    snprintf(call_data, sizeof(call_data), "0x6352211e%s", namehash_hex);
+    
+    if (web3_blockchain_call(rpc_url, ens_name_wrapper_address, call_data, result, sizeof(result)) != 0) {
+        LM_ERR("Web3Auth: Failed to call Name Wrapper ownerOf function\n");
         return -1;
     }
     
-    // Extract resolved address (last 40 characters)
+    // Extract NFT owner address (last 40 characters)
     if (strlen(result) >= 40) {
-        snprintf(resolved_address, 43, "0x%s", result + strlen(result) - 40);
+        snprintf(owner_address, 43, "0x%s", result + strlen(result) - 40);
     } else {
-        LM_ERR("Web3Auth: Invalid resolution response format\n");
+        LM_ERR("Web3Auth: Invalid Name Wrapper response format\n");
         return -1;
     }
     
     if (web3_debug_mode) {
-        LM_INFO("Web3Auth: ENS name %s resolves to: %s\n", ens_name, resolved_address);
+        LM_INFO("Web3Auth: Name Wrapper NFT owner: %s\n", owner_address);
+    }
+    
+    // Check if NFT owner is zero address  
+    if (strcmp(owner_address, "0x0000000000000000000000000000000000000000") == 0) {
+        LM_ERR("Web3Auth: Name Wrapper returned zero owner for %s\n", ens_name);
+        return 1; // ENS not found
     }
     
     return 0;
+}
+
+/**
+ * Legacy function name for compatibility - now calls the new owner resolution
+ * This maintains compatibility with existing code that calls web3_ens_resolve_address
+ */
+int web3_ens_resolve_address(const char *ens_name, char *resolved_address) 
+{
+    return web3_ens_get_owner_address(ens_name, resolved_address);
 }
 
 /**
@@ -425,6 +462,7 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address)
 
 /**
  * Check if username is ENS format and validate against Oasis contract
+ * Now uses ENS owner resolution instead of address resolution
  */
 int web3_ens_validate(const char *username, dig_cred_t *cred, str *method)
 {
@@ -438,7 +476,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method)
         LM_INFO("Web3Auth: Detected ENS name: %s\n", username);
     }
     
-    char ens_resolved_address[43] = {0};
+    char ens_owner_address[43] = {0};
     char oasis_wallet_address[43] = {0};
     
     // Extract auth username from credentials for Oasis contract
@@ -455,15 +493,13 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method)
         LM_INFO("Web3Auth: Auth username (for Oasis): %s\n", auth_username);
     }
     
-    // Step 1: Resolve ENS name to get what address it points to
-    if (web3_ens_resolve_address(username, ens_resolved_address) != 0) {
-        LM_ERR("Web3Auth: Failed to resolve ENS name %s\n", username);
+    // Step 1: Get ENS owner address (new approach)
+    int ens_result = web3_ens_get_owner_address(username, ens_owner_address);
+    if (ens_result == 1) {
+        LM_ERR("Web3Auth: ENS name %s not found or has zero owner\n", username);
         return 402; // ENS not valid
-    }
-    
-    // Check if ENS resolution is zero (ENS not found or not set)
-    if (strcmp(ens_resolved_address, "0x0000000000000000000000000000000000000000") == 0) {
-        LM_ERR("Web3Auth: ENS name %s does not resolve to any address\n", username);
+    } else if (ens_result != 0) {
+        LM_ERR("Web3Auth: Failed to get ENS owner address for %s\n", username);
         return 402; // ENS not valid
     }
     
@@ -476,23 +512,23 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method)
         return NOT_AUTHENTICATED;
     }
     
-    // Step 3: Compare resolved addresses
+    // Step 3: Compare owner addresses
     if (web3_debug_mode) {
-        LM_INFO("Web3Auth: ENS resolved address: %s (what %s points to)\n", ens_resolved_address, username);
+        LM_INFO("Web3Auth: ENS owner address: %s (owner of ENS name %s)\n", ens_owner_address, username);
         LM_INFO("Web3Auth: Oasis wallet address: %s (from Oasis contract for %s)\n", oasis_wallet_address, auth_username);
     }
     
-    if (strcasecmp(ens_resolved_address, oasis_wallet_address) == 0) {
+    if (strcasecmp(ens_owner_address, oasis_wallet_address) == 0) {
         if (web3_debug_mode) {
-            LM_INFO("Web3Auth: ENS validation successful! Addresses match: %s\n", ens_resolved_address);
-            LM_INFO("Web3Auth: ENS '%s' points to the same address as Oasis user '%s'\n", username, auth_username);
+            LM_INFO("Web3Auth: ENS validation successful! Addresses match: %s\n", ens_owner_address);
+            LM_INFO("Web3Auth: ENS '%s' owner matches Oasis user '%s' wallet\n", username, auth_username);
         }
         return AUTHENTICATED; // 200 - Success
     } else {
         // Check if both addresses are non-zero
         if (strcmp(oasis_wallet_address, "0x0000000000000000000000000000000000000000") != 0) {
-            LM_ERR("Web3Auth: Address mismatch - ENS points to: %s, Oasis wallet: %s\n", 
-                   ens_resolved_address, oasis_wallet_address);
+            LM_ERR("Web3Auth: Address mismatch - ENS owner: %s, Oasis wallet: %s\n", 
+                   ens_owner_address, oasis_wallet_address);
             return NOT_AUTHENTICATED; // 401 - Invalid
         } else {
             LM_ERR("Web3Auth: No wallet address found in Oasis for %s\n", auth_username);

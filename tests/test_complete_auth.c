@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
-#include "keccak256.h"
+#include "../keccak256.h"
 
 // Configuration - configurable via environment variables for better modularity
 static char *web3_rpc_url = NULL;
@@ -83,6 +83,17 @@ static void init_config() {
 #define AUTHENTICATED 200
 #define NOT_AUTHENTICATED 401
 #define ENS_NOT_VALID 402
+
+// Function declarations
+void ens_namehash(const char *name, char *hash_hex);
+int web3_ens_get_owner_address(const char *ens_name, char *owner_address);
+int web3_ens_resolve_address(const char *ens_name, char *resolved_address); // Legacy compatibility
+int web3_oasis_get_wallet_address(const char *username, char *wallet_address);
+int web3_oasis_authenticate_user(const char *username, const char *realm, const char *method, 
+                                 const char *uri, const char *nonce, int algo, const char *response, 
+                                 char *auth_result);
+static int web3_blockchain_call(const char *rpc_url, const char *to_address, const char *data, char *result_buffer, size_t buffer_size);
+int test_ens_owner_resolution_only(const char *ens_name);
 
 // Response structure for curl
 struct web3_response {
@@ -289,6 +300,120 @@ void ens_namehash(const char *name, char *hash_hex)
         free(labels[i]);
     }
     free(name_copy);
+}
+
+/**
+ * Get ENS owner address using the new approach:
+ * 1. Call ENS Registry owner(bytes32) function with namehash
+ * 2. If zero address, return ENS not found 
+ * 3. If owner != name wrapper address, return that owner
+ * 4. If owner == name wrapper address, call name wrapper ownerOf(bytes32)
+ */
+int web3_ens_get_owner_address(const char *ens_name, char *owner_address)
+{
+    char namehash_hex[65];
+    char call_data[256];
+    char result[256];
+    
+    if (web3_debug_mode) {
+        printf("INFO: Getting ENS owner address for: %s\n", ens_name);
+    }
+    
+    // Step 1: Get namehash
+    ens_namehash(ens_name, namehash_hex);
+    
+    // Step 2: Call ENS Registry owner(bytes32) function 
+    // owner(bytes32) function selector: 0x02571be3
+    snprintf(call_data, sizeof(call_data), "0x02571be3%s", namehash_hex);
+    
+    if (web3_debug_mode) {
+        printf("INFO: Calling ENS Registry owner() with data: %s\n", call_data);
+        printf("INFO: Using ENS RPC: %s\n", ens_rpc_url);
+        printf("INFO: ENS Registry Address: %s\n", ens_registry_address);
+    }
+    
+    if (web3_blockchain_call(ens_rpc_url, ens_registry_address, call_data, result, sizeof(result)) != 0) {
+        printf("ERROR: Failed to call ENS Registry owner function\n");
+        return -1;
+    }
+    
+    // Extract owner address (last 40 characters)
+    char registry_owner[43] = {0};
+    if (strlen(result) >= 40) {
+        snprintf(registry_owner, 43, "0x%s", result + strlen(result) - 40);
+    } else {
+        printf("ERROR: Invalid ENS Registry response format\n");
+        return -1;
+    }
+    
+    if (web3_debug_mode) {
+        printf("INFO: ENS Registry owner: %s\n", registry_owner);
+    }
+    
+    // Step 3: Check if owner is zero address (ENS not found)
+    if (strcmp(registry_owner, "0x0000000000000000000000000000000000000000") == 0) {
+        printf("ERROR: ENS name %s not found (zero owner)\n", ens_name);
+        strcpy(owner_address, "0x0000000000000000000000000000000000000000");
+        return 1; // Special return code for ENS not found
+    }
+    
+    // Step 4: Compare with name wrapper address
+    if (web3_debug_mode) {
+        printf("INFO: Comparing registry owner with name wrapper address:\n");
+        printf("  Registry owner: %s\n", registry_owner);
+        printf("  Name wrapper:   %s\n", ens_name_wrapper_address);
+    }
+    
+    if (strcasecmp(registry_owner, ens_name_wrapper_address) != 0) {
+        // Owner is NOT the name wrapper, return registry owner
+        strcpy(owner_address, registry_owner);
+        if (web3_debug_mode) {
+            printf("INFO: ENS owner is NOT name wrapper, returning registry owner: %s\n", owner_address);
+        }
+        return 0;
+    }
+    
+    // Step 5: Owner IS the name wrapper, call name wrapper ownerOf(bytes32)
+    if (web3_debug_mode) {
+        printf("INFO: ENS owner IS name wrapper, calling name wrapper ownerOf()\n");
+    }
+    
+    // ownerOf(bytes32) function selector: 0x6352211e  
+    snprintf(call_data, sizeof(call_data), "0x6352211e%s", namehash_hex);
+    
+    if (web3_blockchain_call(ens_rpc_url, ens_name_wrapper_address, call_data, result, sizeof(result)) != 0) {
+        printf("ERROR: Failed to call Name Wrapper ownerOf function\n");
+        return -1;
+    }
+    
+    // Extract NFT owner address (last 40 characters)
+    if (strlen(result) >= 40) {
+        snprintf(owner_address, 43, "0x%s", result + strlen(result) - 40);
+    } else {
+        printf("ERROR: Invalid Name Wrapper response format\n");
+        return -1;
+    }
+    
+    if (web3_debug_mode) {
+        printf("INFO: Name Wrapper NFT owner: %s\n", owner_address);
+    }
+    
+    // Check if NFT owner is zero address  
+    if (strcmp(owner_address, "0x0000000000000000000000000000000000000000") == 0) {
+        printf("ERROR: Name Wrapper returned zero owner for %s\n", ens_name);
+        return 1; // ENS not found
+    }
+    
+    return 0;
+}
+
+/**
+ * Legacy function name for compatibility - now calls the new owner resolution
+ * This maintains compatibility with existing test code
+ */
+int web3_ens_resolve_address(const char *ens_name, char *resolved_address) 
+{
+    return web3_ens_get_owner_address(ens_name, resolved_address);
 }
 
 // Get wallet address from Oasis contract
@@ -521,82 +646,6 @@ int web3_oasis_authenticate_user(const char *username, const char *realm, const 
     }
 }
 
-// Resolve ENS name to address
-int web3_ens_resolve_address(const char *ens_name, char *resolved_address)
-{
-    char namehash_hex[65];
-    char resolver_address[43] = {0};
-    char call_data[256];
-    char result[256];
-    
-    if (web3_debug_mode) {
-        printf("INFO: Resolving ENS name to address: %s\n", ens_name);
-    }
-    
-    // Step 1: Get namehash
-    ens_namehash(ens_name, namehash_hex);
-    
-    // Step 2: Get resolver address from registry
-    // resolver(bytes32) function selector: 0x0178b8bf
-    snprintf(call_data, sizeof(call_data), "0x0178b8bf%s", namehash_hex);
-    
-    const char *rpc_url = ens_rpc_url ? ens_rpc_url : web3_rpc_url;
-    if (web3_debug_mode) {
-        printf("INFO: Using RPC for ENS registry query: %s\n", rpc_url);
-    }
-    
-    if (web3_blockchain_call(rpc_url, ens_registry_address, call_data, result, sizeof(result)) != 0) {
-        printf("ERROR: Failed to get resolver from ENS registry\n");
-        return -1;
-    }
-    
-    // Extract resolver address (last 40 characters)
-    if (strlen(result) >= 40) {
-        snprintf(resolver_address, 43, "0x%s", result + strlen(result) - 40);
-    } else {
-        printf("ERROR: Invalid resolver response format\n");
-        return -1;
-    }
-    
-    if (web3_debug_mode) {
-        printf("INFO: ENS resolver address: %s\n", resolver_address);
-    }
-    
-    // Check if resolver is zero (ENS not found)
-    if (strcmp(resolver_address, "0x0000000000000000000000000000000000000000") == 0) {
-        printf("ERROR: ENS name %s has no resolver (not registered)\n", ens_name);
-        strcpy(resolved_address, "0x0000000000000000000000000000000000000000");
-        return 0; // Not an error, just not found
-    }
-    
-    // Step 3: Call resolver's addr(bytes32) function to get resolved address
-    // addr(bytes32) function selector: 0x3b3b57de
-    snprintf(call_data, sizeof(call_data), "0x3b3b57de%s", namehash_hex);
-    
-    if (web3_debug_mode) {
-        printf("INFO: Getting resolved address from resolver\n");
-    }
-    
-    if (web3_blockchain_call(rpc_url, resolver_address, call_data, result, sizeof(result)) != 0) {
-        printf("ERROR: Failed to resolve address from ENS resolver\n");
-        return -1;
-    }
-    
-    // Extract resolved address (last 40 characters)
-    if (strlen(result) >= 40) {
-        snprintf(resolved_address, 43, "0x%s", result + strlen(result) - 40);
-    } else {
-        printf("ERROR: Invalid resolution response format\n");
-        return -1;
-    }
-    
-    if (web3_debug_mode) {
-        printf("INFO: ENS name %s resolves to: %s\n", ens_name, resolved_address);
-    }
-    
-    return 0;
-}
-
 // Complete authentication test
 int complete_authentication_test(const char *auth_username, const char *client_digest, const char *ens_name_from_to, 
                                  const char *realm, const char *method, const char *uri, const char *nonce, int algo)
@@ -640,7 +689,7 @@ int complete_authentication_test(const char *auth_username, const char *client_d
     printf("--- Step 2: ENS Detection ---\n");
     printf("✅ Detected ENS name: %s\n", ens_name_from_to);
     
-    char ens_resolved_address[43] = {0};
+    char ens_owner_address[43] = {0};
     char oasis_wallet_address[43] = {0};
     
     // Step 3: Get Oasis wallet address (using getWalletAddress for address comparison)
@@ -655,28 +704,27 @@ int complete_authentication_test(const char *auth_username, const char *client_d
         return NOT_AUTHENTICATED;
     }
     
-    // Step 4: Resolve ENS name
-    printf("--- Step 4: ENS Resolution ---\n");
-    if (web3_ens_resolve_address(ens_name_from_to, ens_resolved_address) != 0) {
-        printf("ERROR: Failed to resolve ENS name\n");
+    // Step 4: Get ENS owner address (new approach)
+    printf("--- Step 4: ENS Owner Resolution ---\n");
+    int ens_result = web3_ens_get_owner_address(ens_name_from_to, ens_owner_address);
+    if (ens_result == 1) {
+        printf("ERROR: ENS name '%s' not found or has zero owner\n", ens_name_from_to);
         return ENS_NOT_VALID;
-    }
-    
-    if (strcmp(ens_resolved_address, "0x0000000000000000000000000000000000000000") == 0) {
-        printf("ERROR: ENS name '%s' does not resolve to any address\n", ens_name_from_to);
+    } else if (ens_result != 0) {
+        printf("ERROR: Failed to get ENS owner address\n");
         return ENS_NOT_VALID;
     }
     
     // Step 5: Compare addresses
     printf("--- Step 5: Address Comparison ---\n");
-    printf("Oasis Address: %s\n", oasis_wallet_address);
-    printf("ENS Address:   %s\n", ens_resolved_address);
+    printf("Oasis Wallet Address: %s (from Oasis contract for user '%s')\n", oasis_wallet_address, auth_username);
+    printf("ENS Owner Address:    %s (owner of ENS name '%s')\n", ens_owner_address, ens_name_from_to);
     
-    if (strcasecmp(ens_resolved_address, oasis_wallet_address) == 0) {
-        printf("✅ ADDRESSES MATCH!\n");
+    if (strcasecmp(ens_owner_address, oasis_wallet_address) == 0) {
+        printf("✅ ADDRESSES MATCH! ENS owner matches Oasis wallet\n");
         return AUTHENTICATED;
     } else {
-        printf("❌ ADDRESS MISMATCH!\n");
+        printf("❌ ADDRESS MISMATCH! ENS owner != Oasis wallet\n");
         return NOT_AUTHENTICATED;
     }
 }

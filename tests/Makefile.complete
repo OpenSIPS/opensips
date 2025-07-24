@@ -3,23 +3,28 @@ CFLAGS=-Wall -Wextra -std=c99 -g
 LDFLAGS=-lcurl
 
 # Target executable
-TARGET=test_complete_auth_c
+TARGET=test_complete_auth
 
-# Source file
-SRC=test_complete_auth_c.c
+# Source files
+SRC1=test_complete_auth.c
+SRC2=../keccak256.c
 
-# Object file
-OBJ=$(SRC:.c=.o)
+# Object files
+OBJ1=test_complete_auth.o
+OBJ2=keccak256.o
 
 .PHONY: all clean help test
 
 all: $(TARGET)
 
-$(TARGET): $(OBJ)
-	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
+$(TARGET): $(OBJ1) $(OBJ2)
+	$(CC) $(OBJ1) $(OBJ2) -o $(TARGET) $(LDFLAGS)
 
-$(OBJ): $(SRC)
-	$(CC) $(CFLAGS) -c $(SRC) -o $(OBJ)
+$(OBJ1): $(SRC1)
+	$(CC) $(CFLAGS) -c $(SRC1) -o $(OBJ1)
+
+$(OBJ2): $(SRC2)
+	$(CC) $(CFLAGS) -c $(SRC2) -o $(OBJ2)
 
 test: $(TARGET)
 	@echo "🧪 Running Complete Authentication Test..."
@@ -46,7 +51,7 @@ test-non-ens: $(TARGET)
 	./$(TARGET) regularuser f58eed2d5ac021f8da6c85900bbe884b regularuser
 
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -f $(OBJ1) $(OBJ2) $(TARGET)
 
 help:
 	@echo "Available targets:"
