@@ -559,7 +559,7 @@ int parse_attr_def(char *line, FILE *fp)
 	unsigned int vendor_id = -1;
 	size_t buflen = strlen(line);
 	int i, len = buflen, attr_len = strlen("ATTRIBUTE"), name_len, avp_code;
-	char *name, *nt_name, *newp, *p = line, *end = p + len;
+	char *name, *nt_name = NULL, *newp, *p = line, *end = p + len;
 	enum dict_avp_basetype avp_type;
 
 	if (len < attr_len || strncasecmp(p, "ATTRIBUTE", attr_len))
