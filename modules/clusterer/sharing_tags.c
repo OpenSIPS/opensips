@@ -682,7 +682,7 @@ int shtag_activate(str *tag_name, int cluster_id, char *reason, int reason_len)
 {
 	struct sharing_tag *tag;
 	int lock_old_flag;
-	int ret, old_state;
+	int ret, old_state = SHTAG_STATE_BACKUP;
 	struct n_send_info *ni;
 	node_info_t *node;
 	cluster_info_t *cl;
