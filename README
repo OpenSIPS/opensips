@@ -29,22 +29,26 @@ Jonathan Kandel
               4.6. ens_name_wrapper_address (string)
               4.7. contract_debug_mode (integer)
               4.8. rpc_timeout (integer)
-              4.9. Environment Variable Configuration
+              4.9. Network Configuration Table
+              4.10. RPC Endpoints Reference
+              4.11. Environment Variable Configuration
 
         5. Functions
 
               5.1. Function Summary
-              5.2. web3_www_authenticate(realm, method)
-              5.3. web3_proxy_authenticate(realm, method)
-              5.4. API Functions
+              5.2. Return Codes Reference
+              5.3. web3_www_authenticate(realm, method)
+              5.4. web3_proxy_authenticate(realm, method)
+              5.5. API Functions
 
-                    5.4.1. bind_web3_auth(api)
+                    5.5.1. API Function Summary
+                    5.5.2. bind_web3_auth(api)
 
-              5.5. ENS Technical Details
+              5.6. ENS Technical Details
 
-                    5.5.1. Namehash Calculation
-                    5.5.2. Ownership Resolution
-                    5.5.3. Multi-Network Support
+                    5.6.1. Namehash Calculation
+                    5.6.2. Ownership Resolution
+                    5.6.3. Multi-Network Support
 
         6. Usage Examples
 
@@ -56,10 +60,19 @@ Jonathan Kandel
         8. Security Considerations
         9. Frequently Asked Questions
 
+              9.1. Troubleshooting Reference
+              9.2. Error Code Details
+
    List of Tables
 
    1.1. web3_auth_ext Module Parameters
-   1.2. web3_auth_ext Module Functions
+   1.2. Supported Network Configurations
+   1.3. Common RPC Endpoints
+   1.4. web3_auth_ext Module Functions
+   1.5. Authentication Function Return Codes
+   1.6. Available API Functions
+   1.7. Common Issues and Solutions
+   1.8. Detailed Error Code Reference
 
    List of Examples
 
@@ -96,22 +109,26 @@ Chapter 1. Admin Guide
         4.6. ens_name_wrapper_address (string)
         4.7. contract_debug_mode (integer)
         4.8. rpc_timeout (integer)
-        4.9. Environment Variable Configuration
+        4.9. Network Configuration Table
+        4.10. RPC Endpoints Reference
+        4.11. Environment Variable Configuration
 
    5. Functions
 
         5.1. Function Summary
-        5.2. web3_www_authenticate(realm, method)
-        5.3. web3_proxy_authenticate(realm, method)
-        5.4. API Functions
+        5.2. Return Codes Reference
+        5.3. web3_www_authenticate(realm, method)
+        5.4. web3_proxy_authenticate(realm, method)
+        5.5. API Functions
 
-              5.4.1. bind_web3_auth(api)
+              5.5.1. API Function Summary
+              5.5.2. bind_web3_auth(api)
 
-        5.5. ENS Technical Details
+        5.6. ENS Technical Details
 
-              5.5.1. Namehash Calculation
-              5.5.2. Ownership Resolution
-              5.5.3. Multi-Network Support
+              5.6.1. Namehash Calculation
+              5.6.2. Ownership Resolution
+              5.6.3. Multi-Network Support
 
    6. Usage Examples
 
@@ -122,6 +139,9 @@ Chapter 1. Admin Guide
    7. Performance Considerations
    8. Security Considerations
    9. Frequently Asked Questions
+
+        9.1. Troubleshooting Reference
+        9.2. Error Code Details
 
 1. Overview
 
@@ -180,7 +200,9 @@ make
    4.6. ens_name_wrapper_address (string)
    4.7. contract_debug_mode (integer)
    4.8. rpc_timeout (integer)
-   4.9. Environment Variable Configuration
+   4.9. Network Configuration Table
+   4.10. RPC Endpoints Reference
+   4.11. Environment Variable Configuration
 
 4.1. Parameter Summary
 
@@ -325,7 +347,31 @@ modparam("web3_auth_ext", "contract_debug_mode", 0)
    Example 1.7. rpc_timeout parameter
 modparam("web3_auth_ext", "rpc_timeout", 15)
 
-4.9. Environment Variable Configuration
+4.9. Network Configuration Table
+
+   Table 1.2. Supported Network Configurations
+   Configuration Authentication Network ENS Network Use Case
+   Production (Mainnet) Oasis Sapphire Mainnet Ethereum Mainnet Production
+   deployments with real ENS domains
+   Testing (Testnet) Oasis Sapphire Testnet Ethereum Sepolia Development
+   and testing with test ENS domains
+   Single Network Oasis Sapphire (Any) Same as Authentication Simplified
+   setup, no cross-chain ENS
+   Custom Network Custom RPC Endpoint Custom RPC Endpoint Private networks
+   or alternative providers
+
+4.10. RPC Endpoints Reference
+
+   Table 1.3. Common RPC Endpoints
+   Network RPC URL Network Type
+   Oasis Sapphire Mainnet https://sapphire.oasis.io Production
+   Oasis Sapphire Testnet https://testnet.sapphire.oasis.dev Testing
+   Ethereum Mainnet https://mainnet.infura.io/v3/YOUR_KEY Production
+   Ethereum Sepolia https://ethereum-sepolia-rpc.publicnode.com Testing
+   Ethereum Sepolia (Alternative) https://sepolia.infura.io/v3/YOUR_KEY
+   Testing
+
+4.11. Environment Variable Configuration
 
    All parameters can be configured via environment variables for
    containerized deployments. Environment variables take precedence over
@@ -346,28 +392,44 @@ loadmodule "web3_auth_ext.so"
 5. Functions
 
    5.1. Function Summary
-   5.2. web3_www_authenticate(realm, method)
-   5.3. web3_proxy_authenticate(realm, method)
-   5.4. API Functions
+   5.2. Return Codes Reference
+   5.3. web3_www_authenticate(realm, method)
+   5.4. web3_proxy_authenticate(realm, method)
+   5.5. API Functions
 
-        5.4.1. bind_web3_auth(api)
+        5.5.1. API Function Summary
+        5.5.2. bind_web3_auth(api)
 
-   5.5. ENS Technical Details
+   5.6. ENS Technical Details
 
-        5.5.1. Namehash Calculation
-        5.5.2. Ownership Resolution
-        5.5.3. Multi-Network Support
+        5.6.1. Namehash Calculation
+        5.6.2. Ownership Resolution
+        5.6.3. Multi-Network Support
 
 5.1. Function Summary
 
-   Table 1.2. web3_auth_ext Module Functions
-   Function Parameters Description
-   web3_www_authenticate realm, method Web3 authentication with ENS
-   support for WWW-Authenticate
-   web3_proxy_authenticate realm, method Web3 authentication with ENS
-   support for Proxy-Authenticate
+   Table 1.4. web3_auth_ext Module Functions
+   Function Parameters Return Type Route Context Description
+   web3_www_authenticate realm, method integer REQUEST_ROUTE Web3
+   authentication with ENS support for WWW-Authenticate headers
+   web3_proxy_authenticate realm, method integer REQUEST_ROUTE Web3
+   authentication with ENS support for Proxy-Authenticate headers
+   bind_web3_auth api integer MODULE_INIT API binding function for other
+   Kamailio modules
 
-5.2.  web3_www_authenticate(realm, method)
+5.2. Return Codes Reference
+
+   Table 1.5. Authentication Function Return Codes
+   Return Code Meaning Recommended Action
+   > 0 Authentication successful Continue processing request
+   -1 Generic error Send challenge or 500 error
+   -2 Invalid credentials/blockchain verification failed Send challenge
+   with stale=false
+   -3 Stale nonce Send challenge with stale=true
+   -4 No credentials provided Send initial challenge
+   -5 Network timeout (RPC call failed) Send 503 Service Unavailable
+
+5.3.  web3_www_authenticate(realm, method)
 
    Verifies credentials using blockchain-based authentication via Web3
    smart contract calls with integrated ENS support. Automatically detects
@@ -422,7 +484,7 @@ if ($(fU{s.contains,"."})) {
     xlog("L_INFO", "ENS domain $fU authenticated\n");
 }
 
-5.3.  web3_proxy_authenticate(realm, method)
+5.4.  web3_proxy_authenticate(realm, method)
 
    Verifies credentials using blockchain-based authentication via Web3
    smart contract calls with ENS support for proxy authentication.
@@ -463,12 +525,23 @@ route[RELAY] {
     t_relay();
 }
 
-5.4. API Functions
+5.5. API Functions
 
    The module provides an API for other Kamailio modules to access Web3
    authentication and ENS validation functions programmatically.
 
-5.4.1.  bind_web3_auth(api)
+5.5.1. API Function Summary
+
+   Table 1.6. Available API Functions
+   API Function Parameters Return Type Description
+   digest_authenticate msg, realm, hdr_type, method auth_result_t Core
+   authentication with ENS support
+   check_response username, realm, password, nonce, method, uri,
+   algorithm, response auth_result_t Low-level credential verification
+   ens_validate domain, wallet_address int ENS domain ownership validation
+   ens_get_owner domain str* ENS ownership resolution
+
+5.5.2.  bind_web3_auth(api)
 
    Allows other modules to bind to the Web3 authentication API with ENS
    support.
@@ -497,25 +570,25 @@ if (web3_auth_load_api(&web3_api) != 0) {
 result = web3_api.digest_authenticate(msg, &realm,
                                       HDR_AUTHORIZATION_T, &method);
 
-5.5. ENS Technical Details
+5.6. ENS Technical Details
 
    The module implements comprehensive ENS integration with the following
    technical features:
 
-5.5.1. Namehash Calculation
+5.6.1. Namehash Calculation
 
    Implements proper ENS namehash calculation according to EIP-137 for
    converting human-readable names like "alice.eth" into bytes32 hashes
    used by ENS contracts.
 
-5.5.2. Ownership Resolution
+5.6.2. Ownership Resolution
 
    Handles complex ENS ownership scenarios:
      * Direct ownership via ENS Registry
      * Wrapped domain ownership via Name Wrapper contract
      * Zero address detection for unregistered domains
 
-5.5.3. Multi-Network Support
+5.6.3. Multi-Network Support
 
      * ENS queries on Ethereum mainnet/testnet
      * Authentication contracts on Oasis Sapphire (required)
@@ -603,6 +676,9 @@ loadmodule "web3_auth_ext.so"
        emergencies
 
 9. Frequently Asked Questions
+
+   9.1. Troubleshooting Reference
+   9.2. Error Code Details
 
    9.1. How does ENS integration work?
    9.2. Which networks are supported?
@@ -706,3 +782,40 @@ loadmodule "web3_auth_ext.so"
    rate limits and no SLA. For production, use paid providers (Infura,
    Alchemy) for better reliability. For Oasis Sapphire, use official
    endpoints.
+
+9.1. Troubleshooting Reference
+
+   Table 1.7. Common Issues and Solutions
+   Issue Possible Cause Solution
+   Return code -5 (Network timeout) RPC endpoint unreachable or slow Check
+   network connectivity, increase rpc_timeout, use reliable RPC provider
+   Return code -2 (Auth failed) Invalid credentials or contract error
+   Verify contract address, check authentication logic, enable debug mode
+   ENS validation fails Domain not owned or wrapped Check ENS ownership on
+   etherscan, verify wallet matches contract data
+   Module won't load Missing dependencies or misconfiguration Verify
+   libcurl and OpenSSL installed, check module path
+   High latency Network delays or inefficient RPC provider Use faster RPC
+   provider, optimize network routing, consider caching
+   Intermittent failures RPC provider rate limiting Upgrade to paid RPC
+   plan, implement retries, use multiple providers
+   No authentication header SIP client or header parsing issue Check
+   client configuration, verify header format, enable debug logs
+   Contract call errors Wrong contract address or ABI mismatch Verify
+   contract address, check function signatures match required interface
+
+9.2. Error Code Details
+
+   Table 1.8. Detailed Error Code Reference
+   Return Code Error Type Debug Information Client Response
+   1 Success Authentication completed successfully Continue processing
+   -1 Generic Error Check logs for specific error details Send 500
+   Internal Server Error
+   -2 Auth Failed Contract returned false or credential mismatch Send 401
+   with challenge (stale=false)
+   -3 Stale Nonce Nonce already used or expired Send 401 with challenge
+   (stale=true)
+   -4 No Credentials Authorization header missing or malformed Send 401
+   with initial challenge
+   -5 Network Timeout RPC call failed or timed out Send 503 Service
+   Unavailable
