@@ -39,11 +39,11 @@
 MODULE_VERSION
 
 /* Default Web3 configuration */
-#define DEFAULT_AUTHENTICATION_RPC_URL "https://testnet.sapphire.oasis.dev"
-#define DEFAULT_ENS_RPC_URL "https://ethereum-sepolia-rpc.publicnode.com"  // Sepolia testnet for ENS
-#define DEFAULT_AUTHENTICATION_CONTRACT_ADDRESS "0xE773BB79689379d32Ad1Db839868b6756B493aea"
-#define DEFAULT_ENS_REGISTRY_ADDRESS "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" // Sepolia 
-#define DEFAULT_ENS_NAME_WRAPPER_ADDRESS "0x0635513f179D50A207757E05759CbD106d7dFcE8" // Sepolia 
+#define DEFAULT_AUTHENTICATION_RPC_URL              "https://testnet.sapphire.oasis.dev" // Oasis Sapphire testnet
+#define DEFAULT_ENS_RPC_URL                         "https://ethereum-sepolia-rpc.publicnode.com"  // Sepolia testnet for ENS
+#define DEFAULT_AUTHENTICATION_CONTRACT_ADDRESS     "0xE773BB79689379d32Ad1Db839868b6756B493aea" // Oasis Sapphire authentication contract
+#define DEFAULT_ENS_REGISTRY_ADDRESS                "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" // Sepolia ENS registry
+#define DEFAULT_ENS_NAME_WRAPPER_ADDRESS            "0x0635513f179D50A207757E05759CbD106d7dFcE8" // Sepolia ENS name wrapper
 
 /*
  * Module destroy function prototype
