@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"
+	[ <!ENTITY % local.common.attrib
+	 "xmlns:xi CDATA #FIXED 'http://www.w3.org/2001/XInclude'">
+	 <!-- Include general documentation entities -->
+	 <!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+	 %docentities;
+	]
+>
+
+<book id="web3_auth_ext" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <bookinfo>
+	<title>The Web3 Auth Extension Module</title>
+	<authorgroup>
+	    <author>
+		<firstname>Jonathan</firstname>
+		<surname>Kandel</surname>
+		<affiliation><orgname>Cellact B.V.</orgname></affiliation>
+		<email>jonathan@cellact.com</email>
+	    </author>
+	</authorgroup>
+
+	<copyright>
+	    <year>2025</year>
+	    <holder>Jonathan Kandel</holder>
+	</copyright>
+
+    </bookinfo>
+    <toc></toc>
+
+    <chapter>
+	<title>Admin Guide</title>
+    <section id="web3_auth_ext.overview">
+	<title>Overview</title>
+	<para>
+	    The Web3 Auth Extension module provides advanced blockchain-based authentication for Kamailio
+	    with integrated ENS (Ethereum Name Service) support. This module replaces traditional 
+	    password-based verification with Web3 smart contract calls while adding seamless ENS 
+	    domain validation capabilities.
+	</para>
+	<para>
+	    The module serves as a drop-in replacement for traditional auth modules while maintaining 
+	    full compatibility with SIP digest authentication protocols. The ENS integration allows 
+	    users to authenticate using human-readable domain names (e.g., alice.eth) instead of 
+	    complex wallet addresses, providing a superior user experience for Web3 communications.
+	</para>
+	<para>
+	    Key features:
+	    <itemizedlist>
+		<listitem>
+		    <para><emphasis>Blockchain-based authentication</emphasis> via Web3 smart contracts</para>
+		</listitem>
+		<listitem>
+		    <para><emphasis>ENS integration</emphasis> with automatic domain ownership validation</para>
+		</listitem>
+		<listitem>
+		    <para><emphasis>Multi-network support</emphasis> - ENS on Ethereum, auth contracts on any EVM chain</para>
+		</listitem>
+		<listitem>
+		    <para><emphasis>Drop-in replacement</emphasis> for traditional auth_db modules</para>
+		</listitem>
+		<listitem>
+		    <para><emphasis>RFC2617 compliance</emphasis> - full digest authentication support</para>
+		</listitem>
+		<listitem>
+		    <para><emphasis>Multiple algorithms</emphasis> - MD5, SHA-256, and SHA-512 support</para>
+		</listitem>
+		<listitem>
+		    <para><emphasis>Environment variable configuration</emphasis> for containerized deployments</para>
+		</listitem>
+		<listitem>
+		    <para><emphasis>Comprehensive debugging</emphasis> with detailed logging capabilities</para>
+		</listitem>
+		<listitem>
+		    <para><emphasis>Flexible RPC configuration</emphasis> with fallback mechanisms</para>
+		</listitem>
+	    </itemizedlist>
+	</para>
+    </section>
+
+    <section id="web3_auth_ext.ens_integration">
+	<title>ENS Integration</title>
+	<para>
+	    The Web3 Auth Extension module includes comprehensive ENS (Ethereum Name Service) 
+	    integration that allows users to authenticate using readable domain names like 
+	    "alice.eth" instead of wallet addresses.
+	</para>
+	<section id="web3_auth_ext.ens_features">
+	    <title>ENS Features</title>
+	    <para>
+		<itemizedlist>
+		    <listitem>
+			<para><emphasis>Automatic ENS Detection</emphasis> - Detects ENS names in SIP From headers</para>
+		    </listitem>
+		    <listitem>
+			<para><emphasis>Owner Resolution</emphasis> - Queries ENS Registry and Name Wrapper contracts</para>
+		    </listitem>
+		    <listitem>
+			<para><emphasis>Cross-validation</emphasis> - Verifies ENS ownership matches authentication contract</para>
+		    </listitem>
+		    <listitem>
+			<para><emphasis>Multi-network Support</emphasis> - ENS on Ethereum, auth contracts on other chains</para>
+		    </listitem>
+		    <listitem>
+			<para><emphasis>Fallback Authentication</emphasis> - Non-ENS names use standard Web3 auth</para>
+		    </listitem>
+		</itemizedlist>
+	    </para>
+	</section>
+	
+	<section id="web3_auth_ext.ens_flow">
+	    <title>ENS Authentication Flow</title>
+	    <para>
+		<orderedlist>
+		    <listitem><para>Extract username from SIP "From" field</para></listitem>
+		    <listitem><para>Check if username contains "." (ENS format detection)</para></listitem>
+		    <listitem><para>If ENS format detected:</para>
+			<orderedlist>
+			    <listitem><para>Query ENS Registry for domain owner</para></listitem>
+			    <listitem><para>If owner is Name Wrapper, query Name Wrapper for final owner</para></listitem>
+			    <listitem><para>Query authentication contract for user's wallet address</para></listitem>
+			    <listitem><para>Compare ENS owner with authentication contract wallet</para></listitem>
+			</orderedlist>
+		    </listitem>
+		    <listitem><para>If not ENS format, fallback to standard Web3 authentication</para></listitem>
+		</orderedlist>
+	    </para>
+	</section>
+    </section>
+
+    <section id="web3_auth_ext.dep">
+	<title>Dependencies</title>
+	<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>auth</emphasis> - base authentication module.
+			</para>
+			</listitem>
+			</itemizedlist>
+	</para>
+	<para>
+		External dependencies:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libcurl</emphasis> - HTTP client library for Web3 RPC calls.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>OpenSSL</emphasis> - cryptographic library for digest calculations.
+			</para>
+			</listitem>
+			</itemizedlist>
+	</para>
+    </section>
+
+	<section id="web3_auth_ext.config">
+        <title>Configuration Examples</title>
+        
+        <section id="web3_auth_ext.config.basic">
+            <title>Basic Configuration</title>
+            <para>
+                <programlisting>
+# Load required modules
+loadmodule "auth.so"
+loadmodule "web3_auth_ext.so"
+
+# Basic Web3 configuration
+modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("web3_auth_ext", "web3_contract_address", "0xE773BB79689379d32Ad1Db839868b6756B493aea")
+
+# ENS configuration (optional - uses defaults if not set)
+modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
+
+# Debug and timeout configuration
+modparam("web3_auth_ext", "web3_debug_mode", 1)
+modparam("web3_auth_ext", "web3_timeout", 10)
+                </programlisting>
+            </para>
+        </section>
+
+        <section id="web3_auth_ext.config.multinetwork">
+            <title>Multi-Network Configuration</title>
+            <para>
+                Configure ENS on Ethereum and authentication contracts on other networks:
+                <programlisting>
+# Load required modules
+loadmodule "auth.so"
+loadmodule "web3_auth_ext.so"
+
+# Oasis authentication network
+modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("web3_auth_ext", "web3_contract_address", "0xYourOasisContract")
+
+# ENS network (Ethereum Sepolia)
+modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
+
+# Production ENS (Ethereum Mainnet)
+# modparam("web3_auth_ext", "ens_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
+# modparam("web3_auth_ext", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401")
+                </programlisting>
+            </para>
+        </section>
+
+        <section id="web3_auth_ext.config.environment">
+            <title>Environment Variable Configuration</title>
+            <para>
+                Configure using environment variables for containerized deployments:
+                <programlisting>
+# .env file
+WEB3_RPC_URL="https://testnet.sapphire.oasis.dev"
+WEB3_CONTRACT_ADDRESS="0xYourContractAddress"
+ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+ENS_REGISTRY_ADDRESS="0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+ENS_NAME_WRAPPER_ADDRESS="0x0635513f179D50A207757E05759CbD106d7dFcE8"
+WEB3_DEBUG_MODE="1"
+WEB3_TIMEOUT="10"
+
+# Kamailio configuration (minimal - reads from environment)
+loadmodule "auth.so"
+loadmodule "web3_auth_ext.so"
+# No modparam needed - automatically reads environment variables
+                </programlisting>
+            </para>
+        </section>
+
+        <section id="web3_auth_ext.config.usage">
+            <title>Usage in Request Routing</title>
+            <para>
+                <programlisting>
+# Enhanced Web3 + ENS Authentication Route
+route[WEB3_AUTH] {
+    # Check if request has credentials
+    if (!has_credentials("$fd")) {
+        # No credentials - send challenge
+        www_challenge("$fd", "0");
+        exit;
+    }
+
+    # Authenticate using Web3 blockchain with ENS support
+    if (!web3_www_authenticate("$fd", "$rm")) {
+        switch ($retcode) {
+            case -1:
+                xlog("L_INFO", "Web3 Auth: Authentication error for $fU\n");
+                www_challenge("$fd", "0");
+                break;
+            case -2:
+                xlog("L_INFO", "Web3 Auth: Invalid credentials for $fU\n");
+                www_challenge("$fd", "16"); # stale=true
+                break;
+            case -3:
+                xlog("L_INFO", "Web3 Auth: Stale nonce for $fU\n");
+                www_challenge("$fd", "16"); # stale=true
+                break;
+            case -5:
+                xlog("L_ERR", "Web3 Auth: Timeout for $fU - network issue?\n");
+                sl_send_reply("503", "Service Temporarily Unavailable");
+                break;
+            default:
+                xlog("L_ERR", "Web3 Auth: Authentication error for $fU\n");
+                sl_send_reply("500", "Server Internal Error");
+        }
+        exit;
+    }
+
+    # Authentication successful!
+    if ($(fU{s.contains,"."})) {
+        xlog("L_INFO", "ENS Auth: ENS domain $fU authenticated successfully\n");
+    } else {
+        xlog("L_INFO", "Web3 Auth: User $fU authenticated via blockchain\n");
+    }
+    
+    # For REGISTER, save location
+    if (is_method("REGISTER")) {
+        save("location");
+    }
+}
+
+# ENS-aware routing
+route[ENS_ROUTING] {
+    # Check if To URI contains ENS domain
+    if ($(tU{s.contains,".eth}") || $(tU{s.contains,"."})) {
+        xlog("L_INFO", "Routing to ENS domain: $tU\n");
+        # Custom ENS routing logic here
+    }
+}
+                </programlisting>
+            </para>
+        </section>
+
+        <section id="web3_auth_ext.config.migration">
+            <title>Migration from auth_db</title>
+            <para>
+                Migrating from auth_db to web3_auth_ext with ENS support:
+                <programlisting>
+# Old auth_db configuration
+# loadmodule "auth_db.so"
+# modparam("auth_db", "db_url", "mysql://user:pass@localhost/db")
+# if (!www_authenticate("$td", "subscriber")) {
+
+# New web3_auth_ext configuration with ENS
+loadmodule "web3_auth_ext.so"
+modparam("web3_auth_ext", "web3_rpc_url", "https://your-rpc-endpoint")
+modparam("web3_auth_ext", "web3_contract_address", "0xYourContract")
+# ENS support automatically enabled with defaults
+if (!web3_www_authenticate("$td", "$rm")) {
+
+# Support both traditional users and ENS domains
+# ENS domains automatically detected and validated
+# Traditional usernames use Web3 contract authentication
+                </programlisting>
+            </para>
+        </section>
+    </section>
+    
+    <xi:include href="web3_auth_ext_params.xml"/>
+    <xi:include href="web3_auth_ext_functions.xml"/>
+    <xi:include href="web3_auth_ext_faq.xml"/>
+
+    </chapter>
+
+    <xi:include href="web3_auth_ext_admin.xml"/>
+
+</book> 

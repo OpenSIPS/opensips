@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+%docentities;
+
+]>
+
+<section id="web3_auth_ext.faq" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+    <title>Frequently Asked Questions</title>
+
+    <qandaset>
+        <qandaentry>
+            <question>
+                <para>What is the difference between web3_auth and web3_auth_ext?</para>
+            </question>
+            <answer>
+                <para>
+                    The web3_auth module is a standalone authentication system that completely
+                    replaces traditional auth modules. The web3_auth_ext module is an extension
+                    that works alongside the base auth module, providing Web3 authentication
+                    capabilities with integrated ENS support while maintaining compatibility 
+                    with existing auth infrastructure.
+                    
+                    web3_auth_ext is designed as a drop-in replacement for auth_db, making
+                    migration easier for existing Kamailio deployments. The "ext" version also
+                    includes advanced ENS integration for human-readable domain authentication.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>How does ENS integration work?</para>
+            </question>
+            <answer>
+                <para>
+                    ENS integration allows users to authenticate using domain names like "alice.eth" 
+                    instead of wallet addresses. The module:
+                    <orderedlist>
+                        <listitem><para>Detects ENS names in SIP From headers (usernames containing ".")</para></listitem>
+                        <listitem><para>Queries ENS Registry to find the domain owner</para></listitem>
+                        <listitem><para>Handles wrapped domains via ENS Name Wrapper contract</para></listitem>
+                        <listitem><para>Queries your authentication contract for the user's wallet address</para></listitem>
+                        <listitem><para>Validates that the ENS owner matches the wallet address from your contract</para></listitem>
+                    </orderedlist>
+                    
+                    This provides a seamless user experience where users can register as "alice.eth" 
+                    and the system automatically validates that they own both the ENS domain and 
+                    the corresponding wallet address in your authentication system.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Can I use ENS on one network and authentication contracts on another?</para>
+            </question>
+            <answer>
+                <para>
+                    Yes! This is one of the key features of web3_auth_ext. You can configure:
+                    <itemizedlist>
+                        <listitem><para>ENS queries on Ethereum mainnet or testnet using ens_rpc_url</para></listitem>
+                        <listitem><para>Authentication contracts on Oasis, Polygon, or any EVM chain using web3_rpc_url</para></listitem>
+                        <listitem><para>Different RPC providers for optimal performance and cost</para></listitem>
+                    </itemizedlist>
+                    
+                    Example configuration:
+                    <programlisting>
+# ENS on Ethereum Sepolia (free public RPC)
+modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+
+# Authentication on Oasis Sapphire (privacy-focused, low cost)
+modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
+                    </programlisting>
+                    
+                    If you don't set ens_rpc_url, ENS queries will use the same network as web3_rpc_url.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Which blockchain networks are supported?</para>
+            </question>
+            <answer>
+                <para>
+                    The module supports any blockchain network that provides JSON-RPC endpoints
+                    compatible with Ethereum's eth_call method. This includes:
+                    <itemizedlist>
+                        <listitem><para>Ethereum mainnet and testnets (Sepolia, Holesky)</para></listitem>
+                        <listitem><para>Oasis Sapphire (mainnet and testnet) - privacy-focused with confidential smart contracts</para></listitem>
+                        <listitem><para>Polygon, BSC, Avalanche, and other EVM-compatible chains</para></listitem>
+                        <listitem><para>Layer 2 solutions (Arbitrum, Optimism, etc.)</para></listitem>
+                        <listitem><para>Local development networks (Ganache, Hardhat, Anvil)</para></listitem>
+                    </itemizedlist>
+                    
+                    For ENS specifically, it works on:
+                    <itemizedlist>
+                        <listitem><para>Ethereum mainnet (production ENS domains)</para></listitem>
+                        <listitem><para>Ethereum Sepolia testnet (test ENS domains)</para></listitem>
+                    </itemizedlist>
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>How do I deploy a compatible smart contract?</para>
+            </question>
+            <answer>
+                <para>
+                    Your smart contract must implement two key functions for full ENS support:
+                    <programlisting>
+// Standard authentication function
+function authenticateUser(
+    string memory username,
+    string memory realm, 
+    string memory method,
+    string memory uri,
+    string memory nonce,
+    uint8 algorithm,
+    bytes memory response
+) public view returns (bool)
+
+// ENS support function - maps usernames to wallet addresses
+function getWalletAddress(
+    string memory username
+) public view returns (address)
+                    </programlisting>
+                    
+                    The authenticateUser function handles traditional digest authentication,
+                    while getWalletAddress enables ENS cross-validation by returning the
+                    wallet address associated with a username in your system.
+                    
+                    Example implementation:
+                    <programlisting>
+contract SIPAuthenticationWithENS {
+    mapping(string => bytes32) private userPasswords;
+    mapping(string => address) private userWallets;
+    
+    function setUser(string memory username, bytes32 passwordHash, address wallet) public {
+        userPasswords[username] = passwordHash;
+        userWallets[username] = wallet;
+    }
+    
+    function getWalletAddress(string memory username) public view returns (address) {
+        return userWallets[username];
+    }
+    
+    // ... implement authenticateUser with RFC2617 digest verification
+}
+                    </programlisting>
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>What happens if ENS or blockchain networks are down?</para>
+            </question>
+            <answer>
+                <para>
+                    If blockchain networks are unreachable or RPC endpoints are down,
+                    authentication requests will fail after the configured timeout period.
+                    The module provides different error codes to help distinguish issues:
+                    
+                    <itemizedlist>
+                        <listitem><para><emphasis>-5 (timeout)</emphasis>: Network connectivity issues</para></listitem>
+                        <listitem><para><emphasis>402 (ENS not valid)</emphasis>: ENS domain not found or invalid</para></listitem>
+                        <listitem><para><emphasis>401 (auth failed)</emphasis>: ENS owner doesn't match wallet</para></listitem>
+                    </itemizedlist>
+                    
+                    For high availability, consider:
+                    <itemizedlist>
+                        <listitem><para>Using reliable RPC providers with SLA guarantees (Infura, Alchemy, QuickNode)</para></listitem>
+                        <listitem><para>Configuring multiple RPC endpoints with load balancing</para></listitem>
+                        <listitem><para>Setting appropriate timeout values for your network conditions</para></listitem>
+                        <listitem><para>Implementing fallback authentication mechanisms for emergencies</para></listitem>
+                        <listitem><para>Monitoring blockchain network status and RPC endpoint health</para></listitem>
+                        <listitem><para>Using free public RPCs like PublicNode for backup</para></listitem>
+                    </itemizedlist>
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Can I use this module with existing SIP clients?</para>
+            </question>
+            <answer>
+                <para>
+                    Yes! The module maintains full compatibility with standard SIP digest
+                    authentication protocols (RFC 2617/7616). Existing SIP clients require no
+                    modifications - they continue to use their standard digest authentication
+                    mechanisms.
+                    
+                    For ENS support:
+                    <itemizedlist>
+                        <listitem><para>Users can register with ENS domains as usernames (e.g., "alice.eth")</para></listitem>
+                        <listitem><para>SIP clients authenticate normally using username/password</para></listitem>
+                        <listitem><para>The server automatically detects ENS format and validates ownership</para></listitem>
+                        <listitem><para>No client-side changes needed for ENS support</para></listitem>
+                    </itemizedlist>
+                    
+                    The blockchain verification and ENS resolution happen transparently on 
+                    the server side, while clients continue to use traditional username/password 
+                    combinations.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>How do I troubleshoot ENS authentication failures?</para>
+            </question>
+            <answer>
+                <para>
+                    To troubleshoot ENS authentication issues:
+                    <orderedlist>
+                        <listitem><para>Enable debug mode: modparam("web3_auth_ext", "web3_debug_mode", 1)</para></listitem>
+                        <listitem><para>Check Kamailio logs for detailed ENS resolution steps</para></listitem>
+                        <listitem><para>Verify ENS domain ownership using ENS tools or etherscan.io</para></listitem>
+                        <listitem><para>Test RPC endpoints manually for both ENS and auth networks</para></listitem>
+                        <listitem><para>Verify contract addresses and function signatures</para></listitem>
+                        <listitem><para>Check timeout settings for network conditions</para></listitem>
+                    </orderedlist>
+                    
+                    Common ENS issues:
+                    <itemizedlist>
+                        <listitem><para>Incorrect ENS Registry or Name Wrapper addresses</para></listitem>
+                        <listitem><para>ENS domain not registered or expired</para></listitem>
+                        <listitem><para>Wrapped domain with wrong Name Wrapper address</para></listitem>
+                        <listitem><para>Wallet address mismatch between ENS owner and auth contract</para></listitem>
+                        <listitem><para>Network connectivity to Ethereum vs auth network</para></listitem>
+                        <listitem><para>Case sensitivity in domain names</para></listitem>
+                    </itemizedlist>
+                    
+                    Debug output will show:
+                    <itemizedlist>
+                        <listitem><para>ENS namehash calculations</para></listitem>
+                        <listitem><para>Registry and Name Wrapper contract calls</para></listitem>
+                        <listitem><para>Owner address resolution steps</para></listitem>
+                        <listitem><para>Authentication contract wallet lookups</para></listitem>
+                        <listitem><para>Address comparison results</para></listitem>
+                    </itemizedlist>
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Is this module suitable for production use?</para>
+            </question>
+            <answer>
+                <para>
+                    The module is designed for production use, but consider the following factors:
+                    <itemizedlist>
+                        <listitem><para>
+                            <emphasis>Network reliability</emphasis>: Blockchain networks can experience
+                            congestion or downtime. Use reliable RPC providers and monitor network status.
+                        </para></listitem>
+                        <listitem><para>
+                            <emphasis>Latency</emphasis>: Blockchain calls add latency compared to
+                            database lookups. ENS resolution may require multiple calls.
+                        </para></listitem>
+                        <listitem><para>
+                            <emphasis>Costs</emphasis>: Most networks charge fees for contract calls,
+                            though read-only calls (view functions) are typically free.
+                        </para></listitem>
+                        <listitem><para>
+                            <emphasis>Security</emphasis>: Ensure your smart contracts are properly
+                            audited and secure. Use established networks for production.
+                        </para></listitem>
+                        <listitem><para>
+                            <emphasis>ENS considerations</emphasis>: ENS domains can expire, be transferred,
+                            or wrapped/unwrapped, affecting authentication.
+                        </para></listitem>
+                    </itemizedlist>
+                    
+                    Production recommendations:
+                    <itemizedlist>
+                        <listitem><para>Use Ethereum mainnet for ENS (production domains)</para></listitem>
+                        <listitem><para>Choose fast, low-cost networks for authentication contracts</para></listitem>
+                        <listitem><para>Implement comprehensive monitoring and alerting</para></listitem>
+                        <listitem><para>Have fallback authentication mechanisms ready</para></listitem>
+                        <listitem><para>Test thoroughly with your specific ENS and contract setup</para></listitem>
+                        <listitem><para>Use environment variables for flexible configuration</para></listitem>
+                    </itemizedlist>
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>How do I migrate from auth_db to web3_auth_ext?</para>
+            </question>
+            <answer>
+                <para>
+                    Migration steps for ENS-enabled Web3 authentication:
+                    <orderedlist>
+                        <listitem><para>Deploy your authentication smart contract with ENS support</para></listitem>
+                        <listitem><para>Populate contract with existing user data and wallet addresses</para></listitem>
+                        <listitem><para>Replace "auth_db" with "web3_auth_ext" in loadmodule</para></listitem>
+                        <listitem><para>Replace database parameters with Web3 and ENS parameters</para></listitem>
+                        <listitem><para>Replace www_authenticate calls with web3_www_authenticate</para></listitem>
+                        <listitem><para>Test authentication flows for both traditional and ENS users</para></listitem>
+                        <listitem><para>Gradually migrate users to ENS domains if desired</para></listitem>
+                        <listitem><para>Monitor for any issues after deployment</para></listitem>
+                    </orderedlist>
+                    
+                    Migration can be done gradually:
+                    <programlisting>
+# Phase 1: Run both systems in parallel
+route[AUTH_MIGRATION] {
+    if ($(fU{s.contains,"."})) {
+        # ENS users use new system
+        web3_www_authenticate("$td", "$rm");
+    } else {
+        # Traditional users use old system
+        www_authenticate("$td", "subscriber");
+    }
+}
+
+# Phase 2: All users on new system
+route[AUTH_FINAL] {
+    # Both ENS and traditional users use Web3 auth
+    web3_www_authenticate("$td", "$rm");
+}
+                    </programlisting>
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>What authentication algorithms are supported?</para>
+            </question>
+            <answer>
+                <para>
+                    The module supports all standard SIP digest authentication algorithms:
+                    <itemizedlist>
+                        <listitem><para><emphasis>MD5</emphasis> (algorithm code 0) - Default, widely supported but less secure</para></listitem>
+                        <listitem><para><emphasis>SHA-256</emphasis> (algorithm code 1) - More secure, modern standard</para></listitem>
+                        <listitem><para><emphasis>SHA-512</emphasis> (algorithm code 2) - Highest security level</para></listitem>
+                    </itemizedlist>
+                    
+                    The algorithm used depends on the base auth module configuration and client capabilities.
+                    Your smart contract should handle all algorithm types you plan to support.
+                    
+                    For ENS authentication, the same algorithms apply - the ENS integration
+                    is orthogonal to the digest algorithm choice.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>How do I configure environment variables for Docker/Kubernetes?</para>
+            </question>
+            <answer>
+                <para>
+                    The module fully supports environment variable configuration, making it
+                    ideal for containerized deployments:
+                    
+                    <programlisting>
+# Docker Compose example
+version: '3.8'
+services:
+  kamailio:
+    image: your-kamailio-image
+    environment:
+      - WEB3_RPC_URL=https://testnet.sapphire.oasis.dev
+      - WEB3_CONTRACT_ADDRESS=0xYourContract
+      - ENS_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+      - ENS_REGISTRY_ADDRESS=0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e
+      - ENS_NAME_WRAPPER_ADDRESS=0x0635513f179D50A207757E05759CbD106d7dFcE8
+      - WEB3_DEBUG_MODE=0
+      - WEB3_TIMEOUT=15
+
+# Kubernetes ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web3-auth-config
+data:
+  WEB3_RPC_URL: "https://testnet.sapphire.oasis.dev"
+  ENS_RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com"
+  WEB3_DEBUG_MODE: "0"
+
+# Kubernetes Deployment
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: kamailio
+        envFrom:
+        - configMapRef:
+            name: web3-auth-config
+        env:
+        - name: WEB3_CONTRACT_ADDRESS
+          valueFrom:
+            secretKeyRef:
+              name: web3-secrets
+              key: contract-address
+                    </programlisting>
+                    
+                    Benefits of environment variables:
+                    <itemizedlist>
+                        <listitem><para>No need to rebuild images for different environments</para></listitem>
+                        <listitem><para>Secure handling of sensitive data via Kubernetes secrets</para></listitem>
+                        <listitem><para>Easy CI/CD pipeline integration</para></listitem>
+                        <listitem><para>Configuration versioning and rollback capabilities</para></listitem>
+                    </itemizedlist>
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Can I use free RPC providers for production?</para>
+            </question>
+            <answer>
+                <para>
+                    Free RPC providers can be suitable for certain production scenarios, but 
+                    consider the limitations:
+                    
+                    <emphasis>Free providers (e.g., PublicNode):</emphasis>
+                    <itemizedlist>
+                        <listitem><para>Good for: Development, testing, low-volume production</para></listitem>
+                        <listitem><para>Limitations: Rate limiting, no SLA, potential reliability issues</para></listitem>
+                        <listitem><para>Benefits: No cost, easy setup, no API key management</para></listitem>
+                    </itemizedlist>
+                    
+                    <emphasis>Paid providers (Infura, Alchemy, QuickNode):</emphasis>
+                    <itemizedlist>
+                        <listitem><para>Good for: High-volume production, mission-critical applications</para></listitem>
+                        <listitem><para>Benefits: SLA guarantees, higher rate limits, dedicated support</para></listitem>
+                        <listitem><para>Considerations: Monthly costs, API key management</para></listitem>
+                    </itemizedlist>
+                    
+                    <emphasis>Hybrid approach:</emphasis>
+                    <programlisting>
+# Primary: Paid provider for authentication contracts (critical path)
+WEB3_RPC_URL="https://your-premium-rpc-provider.com"
+
+# Secondary: Free provider for ENS (less critical, cacheable)
+ENS_RPC_URL="https://ethereum-rpc.publicnode.com"
+                    </programlisting>
+                    
+                    This approach optimizes costs while maintaining reliability for critical authentication operations.
+                </para>
+            </answer>
+        </qandaentry>
+
+    </qandaset>
+
+</section> 

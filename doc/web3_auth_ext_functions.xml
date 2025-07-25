@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+%docentities;
+
+]>
+
+<section id="web3_auth_ext.functions" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+    <title>Functions</title>
+
+	<section id="web3_auth_ext.f.web3_www_authenticate">
+		<title>
+			<function moreinfo="none">web3_www_authenticate(realm, method)</function>
+		</title>
+		<para>
+		The function verifies credentials using blockchain-based authentication
+		via Web3 smart contract calls with integrated ENS support. If the credentials 
+		are verified successfully then the function will succeed and mark the credentials 
+		as authorized. If the function was unable to verify the credentials for some 
+		reason then it will fail and the script should call 
+		<function moreinfo="none">www_challenge</function> which will challenge the user again.
+		</para>
+		<para>
+		This function automatically detects ENS names in the From field and performs
+		ENS owner validation when applicable. For usernames containing "." (dot), it:
+		<orderedlist>
+			<listitem><para>Queries ENS Registry for domain ownership</para></listitem>
+			<listitem><para>Handles wrapped domains via Name Wrapper contract</para></listitem>
+			<listitem><para>Cross-validates ENS owner with authentication contract wallet</para></listitem>
+			<listitem><para>Falls back to standard authentication for non-ENS domains</para></listitem>
+		</orderedlist>
+		</para>
+		<para>
+		This function serves as a drop-in replacement for traditional 
+		www_authenticate functions, but instead of checking against a database,
+		it verifies credentials against smart contracts with ENS integration.
+		</para>
+		<para>Return codes and their meanings:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>Positive value</emphasis> - Authentication successful
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-1 (generic error)</emphasis> - Some generic error occurred
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-2 (invalid credentials)</emphasis> - Blockchain verification failed
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-3 (stale nonce)</emphasis> - The nonce has expired
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-4 (no credentials)</emphasis> - Request does not contain
+			an Authorization header with the correct realm
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-5 (timeout)</emphasis> - Blockchain or ENS RPC call timed out
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		Special ENS-related behavior:
+		<itemizedlist>
+			<listitem><para>
+			ENS domains return success (200) when ENS owner matches auth contract wallet
+			</para></listitem>
+			<listitem><para>
+			ENS domains return auth failure (401) when addresses don't match
+			</para></listitem>
+			<listitem><para>
+			Invalid ENS domains return ENS error (402) when domain not found or has no owner
+			</para></listitem>
+		</itemizedlist>
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>realm</emphasis> - Realm is an opaque string that
+			the user agent should present to the user so he can decide what
+			username and password to use. Usually this is domain of the host
+			the server is running on.
+			</para>
+			<para>
+			It must not be empty string <quote></quote>. In case of REGISTER
+			requests To header field domain (e.g., variable $td) can be used
+			(because this header field represents a user being registered),
+			for all other messages From header field domain can be used
+			(e.g., variable $fd).
+			</para>
+			<para>
+			The string may contain pseudo variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>method</emphasis> - the SIP method to be used for
+			authentication. This parameter is optional and if not set
+			the method from the request-line is used. The string may contain 
+			pseudo variables.</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">web3_www_authenticate</function>
+		usage with ENS support</title>
+		<programlisting format="linespecific">
+# Web3 blockchain + ENS authentication
+if (!web3_www_authenticate("$td", "$rm")) {
+	switch ($retcode) {
+		case -2:
+			xlog("L_INFO", "Auth failed for $fU\n");
+			www_challenge("$td", "16"); # stale=true
+			break;
+		case -5:
+			xlog("L_ERR", "Network timeout for $fU\n");
+			sl_send_reply("503", "Service Temporarily Unavailable");
+			break;
+		default:
+			www_challenge("$td", "1");
+	}
+	exit;
+}
+
+# Check if ENS domain was authenticated
+if ($(fU{s.contains,"."})) {
+	xlog("L_INFO", "ENS domain $fU authenticated successfully\n");
+} else {
+	xlog("L_INFO", "Web3 user $fU authenticated successfully\n");
+}
+
+# ENS-aware authentication with detailed error handling
+route[ENS_AUTH] {
+	if (!web3_www_authenticate("$fd", "$rm")) {
+		if ($retcode == -2) {
+			if ($(fU{s.contains,"."})) {
+				xlog("L_INFO", "ENS validation failed: owner mismatch for $fU\n");
+			} else {
+				xlog("L_INFO", "Web3 auth failed for $fU\n");
+			}
+		}
+		www_challenge("$fd", "1");
+		exit;
+	}
+}
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="web3_auth_ext.f.web3_proxy_authenticate">
+		<title>
+			<function moreinfo="none">web3_proxy_authenticate(realm, method)</function>
+		</title>
+		<para>
+		The function verifies credentials using blockchain-based authentication
+		via Web3 smart contract calls with ENS support for proxy authentication. 
+		If the credentials are verified successfully then the function will succeed 
+		and mark the credentials as authorized. If the function was unable to verify 
+		the credentials for some reason then it will fail and the script should call
+		<function moreinfo="none">proxy_challenge</function> which will challenge 
+		the user again.
+		</para>
+		<para>
+		This function is identical to web3_www_authenticate but operates on
+		Proxy-Authorization headers instead of Authorization headers. It includes
+		the same ENS integration capabilities and serves as a drop-in replacement 
+		for traditional proxy_authenticate functions.
+		</para>
+		<para>
+		ENS domain detection and validation works the same way as in 
+		web3_www_authenticate, providing seamless ENS support for proxy authentication.
+		</para>
+		<para>
+		The return codes and parameter meanings are identical to 
+		<function moreinfo="none">web3_www_authenticate</function>.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title>web3_proxy_authenticate usage with ENS</title>
+		<programlisting format="linespecific">
+# Web3 blockchain + ENS proxy authentication
+if (!web3_proxy_authenticate("$fd", "$rm")) {
+	proxy_challenge("$fd", "1");
+	exit;
+}
+
+# Use in proxy routing logic with ENS awareness
+route[RELAY] {
+    if (!web3_proxy_authenticate("proxy.domain.com", "$rm")) {
+        switch ($retcode) {
+            case -2:
+                if ($(fU{s.contains,"."})) {
+                    xlog("L_INFO", "ENS proxy auth failed for $fU\n");
+                } else {
+                    xlog("L_INFO", "Web3 proxy auth failed for $fU\n");
+                }
+                break;
+            case -5:
+                xlog("L_ERR", "Proxy auth timeout for $fU\n");
+                sl_send_reply("503", "Service Temporarily Unavailable");
+                exit;
+        }
+        proxy_challenge("proxy.domain.com", "0");
+        exit;
+    }
+    
+    # Authentication successful - forward the request
+    if ($(fU{s.contains,"."})) {
+        xlog("L_INFO", "ENS user $fU authenticated via proxy\n");
+    }
+    t_relay();
+}
+
+# ENS-aware proxy authentication
+route[PROXY_ENS_AUTH] {
+    if (!web3_proxy_authenticate("$td", "$rm")) {
+        proxy_challenge("$td", "1");
+        exit;
+    }
+    
+    # Log successful ENS or Web3 authentication
+    if ($(Pn{s.contains,"."})) {
+        xlog("L_INFO", "Proxy: ENS domain $Pn authenticated\n");
+    } else {
+        xlog("L_INFO", "Proxy: Web3 user $Pn authenticated\n");
+    }
+}
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="web3_auth_ext.f.web3_ens_validate">
+		<title>
+			<function moreinfo="none">web3_ens_validate(username, credentials, method)</function>
+		</title>
+		<para>
+		Internal function for ENS domain validation that can be used by other modules
+		or for custom ENS validation logic. This function specifically handles ENS
+		domain authentication by:
+		<orderedlist>
+			<listitem><para>Detecting ENS format usernames (containing ".")</para></listitem>
+			<listitem><para>Resolving ENS domain ownership via Registry and Name Wrapper</para></listitem>
+			<listitem><para>Querying authentication contract for user wallet address</para></listitem>
+			<listitem><para>Comparing ENS owner with authentication contract wallet</para></listitem>
+		</orderedlist>
+		</para>
+		<para>
+		This function is primarily used internally by web3_www_authenticate and 
+		web3_proxy_authenticate but can be accessed for custom implementations.
+		</para>
+		<para>ENS-specific return codes:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>200</emphasis> - ENS validation successful, addresses match
+			</para></listitem>
+			<listitem><para>
+			<emphasis>401</emphasis> - ENS validation failed, address mismatch
+			</para></listitem>
+			<listitem><para>
+			<emphasis>402</emphasis> - ENS not valid (domain not found, no owner, etc.)
+			</para></listitem>
+			<listitem><para>
+			<emphasis>Other negative values</emphasis> - Standard Web3 auth errors
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE for custom ENS validation logic.
+		</para>
+		<example>
+		<title>web3_ens_validate usage</title>
+		<programlisting format="linespecific">
+# Custom ENS validation logic
+route[CUSTOM_ENS_CHECK] {
+    if ($(fU{s.contains,"."})) {
+        # This is potentially an ENS domain
+        $var(ens_result) = web3_ens_validate("$fU", "$digestcred", "$rm");
+        
+        switch ($var(ens_result)) {
+            case 200:
+                xlog("L_INFO", "ENS $fU validated successfully\n");
+                # Continue processing
+                break;
+            case 401:
+                xlog("L_INFO", "ENS $fU owner mismatch\n");
+                www_challenge("$td", "1");
+                exit;
+            case 402:
+                xlog("L_INFO", "ENS $fU not found or invalid\n");
+                sl_send_reply("404", "ENS Domain Not Found");
+                exit;
+            default:
+                xlog("L_ERR", "ENS validation error for $fU\n");
+                sl_send_reply("500", "ENS Validation Error");
+                exit;
+        }
+    }
+}
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="web3_auth_ext.f.bind_web3_auth">
+		<title>
+			<function moreinfo="none">bind_web3_auth(api)</function>
+		</title>
+		<para>
+		This function allows other modules to bind to the Web3 authentication API
+		with ENS support. It provides access to the core authentication functions 
+		for modules that need to perform blockchain-based authentication with ENS 
+		validation programmatically.
+		</para>
+		<para>
+		The API structure provides the following functions:
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>digest_authenticate</emphasis> - Core authentication function with ENS support
+			</para></listitem>
+			<listitem><para>
+				<emphasis>check_response</emphasis> - Low-level credential verification
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ens_validate</emphasis> - ENS domain validation function
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ens_get_owner</emphasis> - ENS ownership resolution
+			</para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		The enhanced API includes ENS-specific functions that can be used by other
+		modules for custom ENS integration or validation logic.
+		</para>
+		<para>
+		This function is intended for use by other Kamailio modules and is not
+		typically called from configuration scripts.
+		</para>
+		<example>
+		<title>bind_web3_auth usage in C modules with ENS</title>
+		<programlisting format="linespecific">
+#include "modules/web3_auth_ext/api.h"
+
+web3_auth_api_t web3_api;
+
+// In module initialization
+if (web3_auth_load_api(&amp;web3_api) != 0) {
+    LM_ERR("cannot bind web3_auth api\n");
+    return -1;
+}
+
+// Use the standard API
+result = web3_api.digest_authenticate(msg, &amp;realm, HDR_AUTHORIZATION_T, &amp;method);
+
+// Use ENS-specific API functions
+if (contains_dot(username)) {
+    char ens_owner[43];
+    int ens_result = web3_api.ens_get_owner(username, ens_owner);
+    if (ens_result == 0) {
+        LM_INFO("ENS owner: %s\n", ens_owner);
+    }
+    
+    // Validate ENS domain
+    int validation = web3_api.ens_validate(username, &amp;cred, &amp;method);
+    if (validation == 200) {
+        LM_INFO("ENS validation successful\n");
+    }
+}
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="web3_auth_ext.f.ens_helper_functions">
+		<title>ENS Helper Functions</title>
+		<para>
+		The module provides several internal helper functions for ENS operations
+		that can be useful for understanding the ENS integration:
+		</para>
+		
+		<section id="web3_auth_ext.f.ens_namehash">
+			<title>ENS Namehash Calculation</title>
+			<para>
+			The module implements proper ENS namehash calculation according to EIP-137:
+			<programlisting>
+// Internal function - not directly callable from config
+static void ens_namehash(const char *name, char *hash_hex);
+			</programlisting>
+			This function converts human-readable ENS names like "alice.eth" into 
+			the bytes32 hash used by ENS contracts.
+			</para>
+		</section>
+		
+		<section id="web3_auth_ext.f.ens_owner_resolution">
+			<title>ENS Owner Resolution</title>
+			<para>
+			The module handles complex ENS ownership scenarios:
+			<itemizedlist>
+				<listitem><para>Direct ownership via ENS Registry</para></listitem>
+				<listitem><para>Wrapped domain ownership via Name Wrapper contract</para></listitem>
+				<listitem><para>Subdomain resolution and inheritance</para></listitem>
+				<listitem><para>Zero address detection (unregistered domains)</para></listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		
+		<section id="web3_auth_ext.f.multi_network">
+			<title>Multi-Network Support</title>
+			<para>
+			The ENS integration supports flexible network configurations:
+			<itemizedlist>
+				<listitem><para>ENS queries on Ethereum mainnet/testnet</para></listitem>
+				<listitem><para>Authentication contracts on any EVM-compatible chain</para></listitem>
+				<listitem><para>Automatic RPC endpoint selection</para></listitem>
+				<listitem><para>Fallback to single-network mode when ens_rpc_url not set</para></listitem>
+			</itemizedlist>
+			</para>
+		</section>
+	</section>
+
+</section> 

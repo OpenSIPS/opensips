@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+	"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+%docentities;
+
+]>
+
+<section id="web3_auth_ext.parameters" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+    <title>Parameters</title>
+    
+    <section id="web3_auth_ext.p.web3_rpc_url">
+	<title><varname>web3_rpc_url</varname> (string)</title>
+	<para>
+		The RPC URL for the blockchain network endpoint used for authentication contracts.
+		This is used to make HTTP calls to verify user credentials via smart contracts. 
+		The URL should point to a valid JSON-RPC endpoint that supports eth_call method 
+		for smart contract interaction.
+	</para>
+	<para>
+		Common endpoints include:
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>Oasis Sapphire Testnet</emphasis>: https://testnet.sapphire.oasis.dev
+			</para></listitem>
+			<listitem><para>
+				<emphasis>Oasis Sapphire Mainnet</emphasis>: https://sapphire.oasis.io
+			</para></listitem>
+			<listitem><para>
+				<emphasis>Ethereum Mainnet</emphasis>: https://mainnet.infura.io/v3/YOUR_KEY
+			</para></listitem>
+			<listitem><para>
+				<emphasis>Polygon</emphasis>: https://polygon-rpc.com
+			</para></listitem>
+			<listitem><para>
+				<emphasis>Local node</emphasis>: http://localhost:8545
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		<emphasis>Environment Variable</emphasis>: WEB3_RPC_URL
+	</para>
+	<para>
+		Default value is "https://testnet.sapphire.oasis.dev".
+	</para>
+	<example>
+	    <title>web3_rpc_url example</title>
+	    <programlisting>
+# Use Oasis Sapphire mainnet
+modparam("web3_auth_ext", "web3_rpc_url", "https://sapphire.oasis.io")
+
+# Use Ethereum mainnet via Infura
+modparam("web3_auth_ext", "web3_rpc_url", "https://mainnet.infura.io/v3/YOUR_PROJECT_ID")
+
+# Use local blockchain node
+modparam("web3_auth_ext", "web3_rpc_url", "http://localhost:8545")
+
+# Environment variable (no modparam needed)
+# export WEB3_RPC_URL="https://testnet.sapphire.oasis.dev"
+	    </programlisting>
+	</example>
+    </section>
+
+    <section id="web3_auth_ext.p.web3_contract_address">
+	<title><varname>web3_contract_address</varname> (string)</title>
+	<para>
+		The smart contract address that handles user authentication verification.
+		This contract must implement the authenticateUser function that takes
+		the digest authentication parameters and returns a boolean indicating
+		whether the authentication is valid.
+	</para>
+	<para>
+		The contract interface expected by this module:
+		<programlisting>
+function authenticateUser(
+    string memory username,
+    string memory realm, 
+    string memory method,
+    string memory uri,
+    string memory nonce,
+    uint8 algorithm,
+    bytes memory response
+) public view returns (bool)
+
+function getWalletAddress(
+    string memory username
+) public view returns (address)
+		</programlisting>
+	</para>
+	<para>
+		Where algorithm values are:
+		<itemizedlist>
+			<listitem><para><emphasis>0</emphasis> - MD5</para></listitem>
+			<listitem><para><emphasis>1</emphasis> - SHA-256</para></listitem>
+			<listitem><para><emphasis>2</emphasis> - SHA-512</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		<emphasis>Environment Variable</emphasis>: WEB3_CONTRACT_ADDRESS
+	</para>
+	<para>
+		Default value is "0xE773BB79689379d32Ad1Db839868b6756B493aea".
+	</para>
+	<example>
+	    <title>web3_contract_address example</title>
+	    <programlisting>
+# Set custom contract address
+modparam("web3_auth_ext", "web3_contract_address", "0x1234567890abcdef1234567890abcdef12345678")
+
+# Environment variable (no modparam needed)
+# export WEB3_CONTRACT_ADDRESS="0x1234567890abcdef1234567890abcdef12345678"
+	    </programlisting>
+	</example>
+    </section>
+
+    <section id="web3_auth_ext.p.ens_rpc_url">
+	<title><varname>ens_rpc_url</varname> (string)</title>
+	<para>
+		The RPC URL specifically for ENS (Ethereum Name Service) queries. This parameter
+		enables multi-network authentication where ENS contracts are on Ethereum while
+		authentication contracts are on other blockchain networks (e.g., Oasis).
+	</para>
+	<para>
+		If not set, ENS queries will use the main web3_rpc_url, allowing single-network
+		deployments where both ENS and authentication contracts are on the same chain.
+	</para>
+	<para>
+		Common ENS endpoints:
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>Ethereum Mainnet</emphasis>: https://mainnet.infura.io/v3/YOUR_KEY
+			</para></listitem>
+			<listitem><para>
+				<emphasis>Ethereum Sepolia Testnet</emphasis>: https://ethereum-sepolia-rpc.publicnode.com
+			</para></listitem>
+			<listitem><para>
+				<emphasis>PublicNode (Free)</emphasis>: https://ethereum-rpc.publicnode.com
+			</para></listitem>
+			<listitem><para>
+				<emphasis>Alchemy</emphasis>: https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		<emphasis>Environment Variable</emphasis>: ENS_RPC_URL
+	</para>
+	<para>
+		Default value is "https://ethereum-sepolia-rpc.publicnode.com".
+	</para>
+	<example>
+	    <title>ens_rpc_url example</title>
+	    <programlisting>
+# Use Ethereum mainnet for ENS
+modparam("web3_auth_ext", "ens_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
+
+# Use Sepolia testnet for development
+modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+
+# Don't set - use same network as web3_rpc_url
+# modparam("web3_auth_ext", "ens_rpc_url", "")
+
+# Environment variable
+# export ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+	    </programlisting>
+	</example>
+    </section>
+
+    <section id="web3_auth_ext.p.ens_registry_address">
+	<title><varname>ens_registry_address</varname> (string)</title>
+	<para>
+		The contract address of the ENS Registry. This is the core ENS contract that
+		maintains the mapping of domain names to their owners and resolvers. The
+		registry address is the same on both Ethereum mainnet and testnets.
+	</para>
+	<para>
+		The ENS Registry implements the following interface for ownership queries:
+		<programlisting>
+function owner(bytes32 node) external view returns (address);
+		</programlisting>
+	</para>
+	<para>
+		Standard ENS Registry addresses:
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>Ethereum Mainnet and Sepolia</emphasis>: 0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		<emphasis>Environment Variable</emphasis>: ENS_REGISTRY_ADDRESS
+	</para>
+	<para>
+		Default value is "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e".
+	</para>
+	<example>
+	    <title>ens_registry_address example</title>
+	    <programlisting>
+# Use standard ENS Registry (usually not needed as it's the default)
+modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+
+# Environment variable
+# export ENS_REGISTRY_ADDRESS="0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+	    </programlisting>
+	</example>
+    </section>
+
+    <section id="web3_auth_ext.p.ens_name_wrapper_address">
+	<title><varname>ens_name_wrapper_address</varname> (string)</title>
+	<para>
+		The contract address of the ENS Name Wrapper. The Name Wrapper is used for
+		wrapped ENS domains that provide additional functionality like subdomain
+		control and enhanced permissions. When a domain is wrapped, the Name Wrapper
+		becomes the owner in the ENS Registry.
+	</para>
+	<para>
+		The Name Wrapper implements the ERC-1155 interface for ownership queries:
+		<programlisting>
+function ownerOf(uint256 tokenId) external view returns (address);
+		</programlisting>
+	</para>
+	<para>
+		Name Wrapper addresses differ between networks:
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>Ethereum Mainnet</emphasis>: 0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401
+			</para></listitem>
+			<listitem><para>
+				<emphasis>Ethereum Sepolia</emphasis>: 0x0635513f179D50A207757E05759CbD106d7dFcE8
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		<emphasis>Environment Variable</emphasis>: ENS_NAME_WRAPPER_ADDRESS
+	</para>
+	<para>
+		Default value is "0x0635513f179D50A207757E05759CbD106d7dFcE8" (Sepolia).
+	</para>
+	<example>
+	    <title>ens_name_wrapper_address example</title>
+	    <programlisting>
+# Ethereum mainnet Name Wrapper
+modparam("web3_auth_ext", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401")
+
+# Sepolia testnet Name Wrapper (default)
+modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
+
+# Environment variable
+# export ENS_NAME_WRAPPER_ADDRESS="0x0635513f179D50A207757E05759CbD106d7dFcE8"
+	    </programlisting>
+	</example>
+    </section>
+
+    <section id="web3_auth_ext.p.web3_debug_mode">
+	<title><varname>web3_debug_mode</varname> (integer)</title>
+	<para>
+		Enable debug logging for Web3 authentication calls and ENS resolution.
+		When enabled, detailed information about blockchain calls, ENS queries,
+		request/response data, and authentication flow will be logged to help 
+		with development and troubleshooting.
+	</para>
+	<para>
+		Debug output includes:
+		<itemizedlist>
+			<listitem><para>
+				RPC request URLs and payloads for both auth and ENS calls
+			</para></listitem>
+			<listitem><para>
+				Blockchain response data and parsing details
+			</para></listitem>
+			<listitem><para>
+				ENS namehash calculations and resolution steps
+			</para></listitem>
+			<listitem><para>
+				Authentication parameter extraction and validation
+			</para></listitem>
+			<listitem><para>
+				Network selection (which RPC endpoint is used for what)
+			</para></listitem>
+			<listitem><para>
+				Error details and failure reasons with context
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		<emphasis>Warning:</emphasis> Debug mode may log sensitive authentication
+		data and private information. Only enable in development environments or 
+		when troubleshooting specific issues.
+	</para>
+	<para>
+		<emphasis>Environment Variable</emphasis>: WEB3_DEBUG_MODE
+	</para>
+	<para>
+		Possible values:
+		<itemizedlist>
+			<listitem><para><emphasis>0</emphasis> - Debug disabled</para></listitem>
+			<listitem><para><emphasis>1</emphasis> - Debug enabled</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		Default value is 1 (enabled).
+	</para>
+	<example>
+	    <title>web3_debug_mode example</title>
+	    <programlisting>
+# Disable debug mode for production
+modparam("web3_auth_ext", "web3_debug_mode", 0)
+
+# Enable debug mode for development
+modparam("web3_auth_ext", "web3_debug_mode", 1)
+
+# Environment variable
+# export WEB3_DEBUG_MODE="0"  # Disable debug
+# export WEB3_DEBUG_MODE="1"  # Enable debug
+	    </programlisting>
+	</example>
+    </section>
+
+    <section id="web3_auth_ext.p.web3_timeout">
+	<title><varname>web3_timeout</varname> (integer)</title>
+	<para>
+		Timeout in seconds for blockchain RPC calls, including both authentication
+		and ENS queries. This prevents the module from hanging if blockchain networks
+		are slow, unresponsive, or experiencing high latency. If a request exceeds 
+		this timeout, the authentication will fail and an appropriate error will be logged.
+	</para>
+	<para>
+		Consider the following when setting timeout values:
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>Low values (1-5s)</emphasis>: Fast response but may cause
+				false negatives on slow networks or during network congestion
+			</para></listitem>
+			<listitem><para>
+				<emphasis>Medium values (10-30s)</emphasis>: Good balance for most
+				production environments with reasonable user experience
+			</para></listitem>
+			<listitem><para>
+				<emphasis>High values (30s+)</emphasis>: More reliable for unstable
+				networks but may impact user experience and SIP timeouts
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		Note that ENS queries may require multiple RPC calls (Registry + Name Wrapper),
+		so the total ENS resolution time could be up to 2x the timeout value in worst case.
+	</para>
+	<para>
+		<emphasis>Environment Variable</emphasis>: WEB3_TIMEOUT
+	</para>
+	<para>
+		Default value is 10 seconds.
+	</para>
+	<example>
+	    <title>web3_timeout example</title>
+	    <programlisting>
+# Fast timeout for local development
+modparam("web3_auth_ext", "web3_timeout", 5)
+
+# Standard timeout for production
+modparam("web3_auth_ext", "web3_timeout", 15)
+
+# Longer timeout for unreliable networks
+modparam("web3_auth_ext", "web3_timeout", 30)
+
+# Conservative timeout for high-latency environments
+modparam("web3_auth_ext", "web3_timeout", 60)
+
+# Environment variable
+# export WEB3_TIMEOUT="15"
+	    </programlisting>
+	</example>
+    </section>
+
+    <section id="web3_auth_ext.p.environment_variables">
+	<title>Environment Variable Configuration</title>
+	<para>
+		All module parameters can be configured using environment variables, making
+		it ideal for containerized deployments and CI/CD pipelines. Environment
+		variables take precedence over modparam configurations.
+	</para>
+	<para>
+		Supported environment variables:
+		<itemizedlist>
+			<listitem><para><emphasis>WEB3_RPC_URL</emphasis> - Blockchain RPC endpoint for auth contracts</para></listitem>
+			<listitem><para><emphasis>WEB3_CONTRACT_ADDRESS</emphasis> - Authentication contract address</para></listitem>
+			<listitem><para><emphasis>ENS_RPC_URL</emphasis> - RPC endpoint for ENS queries</para></listitem>
+			<listitem><para><emphasis>ENS_REGISTRY_ADDRESS</emphasis> - ENS Registry contract address</para></listitem>
+			<listitem><para><emphasis>ENS_NAME_WRAPPER_ADDRESS</emphasis> - ENS Name Wrapper contract address</para></listitem>
+			<listitem><para><emphasis>WEB3_DEBUG_MODE</emphasis> - Debug logging (0/1 or false/true)</para></listitem>
+			<listitem><para><emphasis>WEB3_TIMEOUT</emphasis> - RPC timeout in seconds</para></listitem>
+		</itemizedlist>
+	</para>
+	<example>
+	    <title>Environment variable configuration</title>
+	    <programlisting>
+# .env file for Docker deployment
+WEB3_RPC_URL="https://testnet.sapphire.oasis.dev"
+WEB3_CONTRACT_ADDRESS="0xE773BB79689379d32Ad1Db839868b6756B493aea"
+ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+ENS_REGISTRY_ADDRESS="0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+ENS_NAME_WRAPPER_ADDRESS="0x0635513f179D50A207757E05759CbD106d7dFcE8"
+WEB3_DEBUG_MODE="0"
+WEB3_TIMEOUT="15"
+
+# Kamailio config (minimal when using env vars)
+loadmodule "auth.so"
+loadmodule "web3_auth_ext.so"
+# No modparam needed - reads from environment
+
+# Docker run command
+docker run --env-file .env your-kamailio-image
+
+# Kubernetes deployment
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: kamailio
+        envFrom:
+        - configMapRef:
+            name: web3-auth-config
+	    </programlisting>
+	</example>
+    </section>
+
+</section> 

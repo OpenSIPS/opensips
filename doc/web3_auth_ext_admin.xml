@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+%docentities;
+
+]>
+
+<chapter id="web3_auth_ext.admin" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+    <title>Web3 Auth Extension Module (web3_auth_ext)</title>
+
+    <section id="web3_auth_ext.admin.overview">
+	<title>Overview</title>
+	<para>
+	    The Web3 Auth Extension module provides blockchain-based authentication for Kamailio
+	    with integrated ENS (Ethereum Name Service) support. This module replaces traditional 
+	    password-based verification with Web3 smart contract calls while adding seamless ENS 
+	    domain validation capabilities for Web3 communications.
+	</para>
+	<para>
+	    Key advantages over traditional authentication:
+	    <itemizedlist>
+		<listitem><para>Decentralized authentication without central databases</para></listitem>
+		<listitem><para>ENS domain support for human-readable usernames (alice.eth)</para></listitem>
+		<listitem><para>Multi-network support (ENS on Ethereum, auth on other chains)</para></listitem>
+		<listitem><para>Cryptographically secure credential verification</para></listitem>
+		<listitem><para>Immutable authentication logs on blockchain</para></listitem>
+		<listitem><para>Environment variable configuration for containerized deployments</para></listitem>
+	    </itemizedlist>
+	</para>
+    </section>
+
+    <section id="web3_auth_ext.admin.ens_architecture">
+	<title>ENS Integration Architecture</title>
+	
+	<section id="web3_auth_ext.admin.ens_flow">
+	    <title>ENS Authentication Flow</title>
+	    <para>
+		The ENS integration provides seamless authentication for users with ENS domains:
+		<orderedlist>
+		    <listitem><para>User registers with SIP client using ENS domain (e.g., "alice.eth")</para></listitem>
+		    <listitem><para>Module detects ENS format (contains ".")</para></listitem>
+		    <listitem><para>Queries ENS Registry to find domain owner address</para></listitem>
+		    <listitem><para>If domain is wrapped, queries Name Wrapper for final owner</para></listitem>
+		    <listitem><para>Queries authentication contract for user's associated wallet</para></listitem>
+		    <listitem><para>Validates ENS owner matches authentication contract wallet</para></listitem>
+		    <listitem><para>Returns success if addresses match, failure otherwise</para></listitem>
+		</orderedlist>
+	    </para>
+	</section>
+	
+	<section id="web3_auth_ext.admin.multi_network">
+	    <title>Multi-Network Configuration</title>
+	    <para>
+		One of the key features is the ability to use different networks for ENS and authentication:
+		<itemizedlist>
+		    <listitem><para><emphasis>ENS Network</emphasis>: Typically Ethereum mainnet or Sepolia testnet</para></listitem>
+		    <listitem><para><emphasis>Auth Network</emphasis>: Can be Oasis, Polygon, or any EVM-compatible chain</para></listitem>
+		    <listitem><para><emphasis>RPC Flexibility</emphasis>: Different providers for cost and performance optimization</para></listitem>
+		    <listitem><para><emphasis>Fallback Support</emphasis>: Single-network mode when ens_rpc_url not configured</para></listitem>
+		</itemizedlist>
+	    </para>
+	</section>
+    </section>
+
+    <section id="web3_auth_ext.admin.deployment">
+	<title>Deployment Guide</title>
+	
+	<section id="web3_auth_ext.admin.smart_contract">
+	    <title>Smart Contract Requirements</title>
+	    <para>
+		Your authentication contract must implement two key functions for ENS support:
+		<programlisting>
+// Standard digest authentication
+function authenticateUser(
+    string memory username,
+    string memory realm, 
+    string memory method,
+    string memory uri,
+    string memory nonce,
+    uint8 algorithm,
+    bytes memory response
+) public view returns (bool)
+
+// ENS cross-validation support
+function getWalletAddress(
+    string memory username
+) public view returns (address)
+		</programlisting>
+	    </para>
+	</section>
+	
+	<section id="web3_auth_ext.admin.production_config">
+	    <title>Production Configuration</title>
+	    <para>
+		Recommended production setup:
+		<programlisting>
+# Environment variables for production
+WEB3_RPC_URL="https://sapphire.oasis.io"
+WEB3_CONTRACT_ADDRESS="0xYourProductionContract"
+ENS_RPC_URL="https://mainnet.infura.io/v3/YOUR_KEY"
+ENS_REGISTRY_ADDRESS="0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+ENS_NAME_WRAPPER_ADDRESS="0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401"
+WEB3_DEBUG_MODE="0"
+WEB3_TIMEOUT="15"
+
+# Kamailio configuration
+loadmodule "auth.so"
+loadmodule "web3_auth_ext.so"
+# Configuration read from environment variables
+		</programlisting>
+	    </para>
+	</section>
+    </section>
+
+    <section id="web3_auth_ext.admin.monitoring">
+	<title>Monitoring and Troubleshooting</title>
+	
+	<section id="web3_auth_ext.admin.debugging">
+	    <title>Debug Mode</title>
+	    <para>
+		Enable debug mode for troubleshooting:
+		<programlisting>
+# Enable debug logging
+modparam("web3_auth_ext", "web3_debug_mode", 1)
+
+# Or via environment
+export WEB3_DEBUG_MODE="1"
+		</programlisting>
+		
+		Debug output includes:
+		<itemizedlist>
+		    <listitem><para>ENS namehash calculations and resolution steps</para></listitem>
+		    <listitem><para>RPC endpoint selection and call details</para></listitem>
+		    <listitem><para>Registry and Name Wrapper contract interactions</para></listitem>
+		    <listitem><para>Address comparison and validation results</para></listitem>
+		</itemizedlist>
+	    </para>
+	</section>
+	
+	<section id="web3_auth_ext.admin.common_issues">
+	    <title>Common Issues</title>
+	    <para>
+		<variablelist>
+		    <varlistentry>
+			<term>ENS domain not found (402 error)</term>
+			<listitem>
+			    <para>
+				Domain may be unregistered, expired, or on wrong network.
+				Verify domain ownership on etherscan.io or ENS app.
+			    </para>
+			</listitem>
+		    </varlistentry>
+		    <varlistentry>
+			<term>Address mismatch (401 error)</term>
+			<listitem>
+			    <para>
+				ENS owner doesn't match wallet in authentication contract.
+				Update contract with correct wallet address or transfer ENS domain.
+			    </para>
+			</listitem>
+		    </varlistentry>
+		    <varlistentry>
+			<term>Network timeouts</term>
+			<listitem>
+			    <para>
+				Increase timeout values or switch to more reliable RPC providers.
+				Consider using multiple RPC endpoints for redundancy.
+			    </para>
+			</listitem>
+		    </varlistentry>
+		</variablelist>
+	    </para>
+	</section>
+    </section>
+
+    <section id="web3_auth_ext.admin.migration">
+	<title>Migration from auth_db</title>
+	
+	<para>
+	    Migration process with ENS support:
+	    <orderedlist>
+		<listitem><para>Deploy authentication contract with ENS support functions</para></listitem>
+		<listitem><para>Migrate user data and associate wallet addresses</para></listitem>
+		<listitem><para>Replace auth_db with web3_auth_ext in configuration</para></listitem>
+		<listitem><para>Configure ENS parameters for desired networks</para></listitem>
+		<listitem><para>Test with both traditional users and ENS domains</para></listitem>
+		<listitem><para>Gradually migrate users to ENS domains if desired</para></listitem>
+	    </orderedlist>
+	</para>
+	
+	<para>
+	    Parallel deployment example:
+	    <programlisting>
+# Support both authentication methods during migration
+route[AUTH_MIGRATION] {
+    if ($(fU{s.contains,"."})) {
+        # ENS domains use new Web3 auth
+        if (!web3_www_authenticate("$td", "$rm")) {
+            www_challenge("$td", "1");
+            exit;
+        }
+    } else {
+        # Traditional users use old auth_db
+        if (!www_authenticate("$td", "subscriber")) {
+            www_challenge("$td", "1");
+            exit;
+        }
+    }
+}
+	    </programlisting>
+	</para>
+    </section>
+
+    <section id="web3_auth_ext.admin.best_practices">
+	<title>Best Practices</title>
+	
+	<para>
+	    <itemizedlist>
+		<listitem><para><emphasis>Network Selection</emphasis>: Use Ethereum mainnet for production ENS, cheaper networks for authentication contracts</para></listitem>
+		<listitem><para><emphasis>RPC Reliability</emphasis>: Use paid RPC providers with SLA for production, free providers for development</para></listitem>
+		<listitem><para><emphasis>Timeout Configuration</emphasis>: Set appropriate timeouts based on network conditions (15-30s recommended)</para></listitem>
+		<listitem><para><emphasis>Environment Variables</emphasis>: Use environment variables for configuration in containerized deployments</para></listitem>
+		<listitem><para><emphasis>Monitoring</emphasis>: Implement comprehensive monitoring for blockchain network status and authentication success rates</para></listitem>
+		<listitem><para><emphasis>Fallback Mechanisms</emphasis>: Have backup authentication methods for emergency situations</para></listitem>
+		<listitem><para><emphasis>Security</emphasis>: Audit smart contracts thoroughly and use established networks for production</para></listitem>
+	    </itemizedlist>
+	</para>
+    </section>
+
+</chapter> 
