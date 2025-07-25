@@ -35,13 +35,13 @@
 	<title>Overview</title>
 	<para>
 	    The Web3 Auth Extension module provides advanced blockchain-based authentication for Kamailio
-	    with integrated ENS (Ethereum Name Service) support. This module replaces traditional 
-	    password-based verification with Web3 smart contract calls while adding seamless ENS 
-	    domain validation capabilities.
+	    with integrated ENS (Ethereum Name Service) support. This comprehensive authentication solution 
+	    replaces traditional password-based verification with Web3 smart contract calls deployed on 
+	    Oasis Sapphire while adding seamless ENS domain validation capabilities.
 	</para>
 	<para>
-	    The module serves as a drop-in replacement for traditional auth modules while maintaining 
-	    full compatibility with SIP digest authentication protocols. The ENS integration allows 
+	    This single, unified module serves as a complete authentication system that maintains 
+	    full compatibility with SIP digest authentication protocols. The integrated ENS support allows 
 	    users to authenticate using human-readable domain names (e.g., alice.eth) instead of 
 	    complex wallet addresses, providing a superior user experience for Web3 communications.
 	</para>
@@ -55,7 +55,7 @@
 		    <para><emphasis>ENS integration</emphasis> with automatic domain ownership validation</para>
 		</listitem>
 		<listitem>
-		    <para><emphasis>Multi-network support</emphasis> - ENS on Ethereum, auth contracts on any EVM chain</para>
+		    <para><emphasis>Multi-network support</emphasis> - ENS on Ethereum, auth contracts on Oasis Sapphire</para>
 		</listitem>
 		<listitem>
 		    <para><emphasis>Drop-in replacement</emphasis> for traditional auth_db modules</para>
@@ -100,7 +100,7 @@
 			<para><emphasis>Cross-validation</emphasis> - Verifies ENS ownership matches authentication contract</para>
 		    </listitem>
 		    <listitem>
-			<para><emphasis>Multi-network Support</emphasis> - ENS on Ethereum, auth contracts on other chains</para>
+			<para><emphasis>Multi-network Support</emphasis> - ENS on Ethereum, auth contracts on Oasis Sapphire</para>
 		    </listitem>
 		    <listitem>
 			<para><emphasis>Fallback Authentication</emphasis> - Non-ENS names use standard Web3 auth</para>
@@ -169,18 +169,19 @@
 loadmodule "auth.so"
 loadmodule "web3_auth_ext.so"
 
-# Basic Web3 configuration
-modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
-modparam("web3_auth_ext", "web3_contract_address", "0xE773BB79689379d32Ad1Db839868b6756B493aea")
+# Oasis Sapphire authentication configuration (required)
+modparam("web3_auth_ext", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("web3_auth_ext", "authentication_contract_address", "0xE773BB79689379d32Ad1Db839868b6756B493aea")
 
-# ENS configuration (optional - uses defaults if not set)
+# ENS configuration (optional - defaults to Sepolia ENS)
+# See https://sepolia.app.ens.domains/ for Sepolia ENS domains
 modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
 modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
 modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
 
 # Debug and timeout configuration
-modparam("web3_auth_ext", "web3_debug_mode", 1)
-modparam("web3_auth_ext", "web3_timeout", 10)
+modparam("web3_auth_ext", "contract_debug_mode", 1)
+modparam("web3_auth_ext", "rpc_timeout", 10)
                 </programlisting>
             </para>
         </section>
@@ -188,17 +189,17 @@ modparam("web3_auth_ext", "web3_timeout", 10)
         <section id="web3_auth_ext.config.multinetwork">
             <title>Multi-Network Configuration</title>
             <para>
-                Configure ENS on Ethereum and authentication contracts on other networks:
+                Configure ENS on Ethereum and authentication contracts on Oasis Sapphire:
                 <programlisting>
 # Load required modules
 loadmodule "auth.so"
 loadmodule "web3_auth_ext.so"
 
-# Oasis authentication network
-modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
-modparam("web3_auth_ext", "web3_contract_address", "0xYourOasisContract")
+# Oasis Sapphire authentication network (REQUIRED - only supported network)
+modparam("web3_auth_ext", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("web3_auth_ext", "authentication_contract_address", "0xYourOasisSapphireContract")
 
-# ENS network (Ethereum Sepolia)
+# ENS network (Ethereum Sepolia) - see https://sepolia.app.ens.domains/
 modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
 modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
 modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
@@ -216,13 +217,13 @@ modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E0
                 Configure using environment variables for containerized deployments:
                 <programlisting>
 # .env file
-WEB3_RPC_URL="https://testnet.sapphire.oasis.dev"
-WEB3_CONTRACT_ADDRESS="0xYourContractAddress"
+AUTHENTICATION_RPC_URL="https://testnet.sapphire.oasis.dev"
+AUTHENTICATION_CONTRACT_ADDRESS="0xYourOasisSapphireContract"
 ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
 ENS_REGISTRY_ADDRESS="0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
 ENS_NAME_WRAPPER_ADDRESS="0x0635513f179D50A207757E05759CbD106d7dFcE8"
-WEB3_DEBUG_MODE="1"
-WEB3_TIMEOUT="10"
+CONTRACT_DEBUG_MODE="1"
+RPC_TIMEOUT="10"
 
 # Kamailio configuration (minimal - reads from environment)
 loadmodule "auth.so"
@@ -296,29 +297,7 @@ route[ENS_ROUTING] {
             </para>
         </section>
 
-        <section id="web3_auth_ext.config.migration">
-            <title>Migration from auth_db</title>
-            <para>
-                Migrating from auth_db to web3_auth_ext with ENS support:
-                <programlisting>
-# Old auth_db configuration
-# loadmodule "auth_db.so"
-# modparam("auth_db", "db_url", "mysql://user:pass@localhost/db")
-# if (!www_authenticate("$td", "subscriber")) {
 
-# New web3_auth_ext configuration with ENS
-loadmodule "web3_auth_ext.so"
-modparam("web3_auth_ext", "web3_rpc_url", "https://your-rpc-endpoint")
-modparam("web3_auth_ext", "web3_contract_address", "0xYourContract")
-# ENS support automatically enabled with defaults
-if (!web3_www_authenticate("$td", "$rm")) {
-
-# Support both traditional users and ENS domains
-# ENS domains automatically detected and validated
-# Traditional usernames use Web3 contract authentication
-                </programlisting>
-            </para>
-        </section>
     </section>
     
     <xi:include href="web3_auth_ext_params.xml"/>

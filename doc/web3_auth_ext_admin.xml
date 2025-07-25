@@ -16,9 +16,10 @@
 	<title>Overview</title>
 	<para>
 	    The Web3 Auth Extension module provides blockchain-based authentication for Kamailio
-	    with integrated ENS (Ethereum Name Service) support. This module replaces traditional 
-	    password-based verification with Web3 smart contract calls while adding seamless ENS 
-	    domain validation capabilities for Web3 communications.
+	    with integrated ENS (Ethereum Name Service) support. This comprehensive authentication 
+	    solution replaces traditional password-based verification with Web3 smart contract calls 
+	    deployed on Oasis Sapphire while adding seamless ENS domain validation capabilities for 
+	    Web3 communications.
 	</para>
 	<para>
 	    Key advantages over traditional authentication:
@@ -57,8 +58,8 @@
 	    <para>
 		One of the key features is the ability to use different networks for ENS and authentication:
 		<itemizedlist>
-		    <listitem><para><emphasis>ENS Network</emphasis>: Typically Ethereum mainnet or Sepolia testnet</para></listitem>
-		    <listitem><para><emphasis>Auth Network</emphasis>: Can be Oasis, Polygon, or any EVM-compatible chain</para></listitem>
+		    <listitem><para><emphasis>ENS Network</emphasis>: Ethereum mainnet, Sepolia testnet, or custom ENS deployments</para></listitem>
+		    <listitem><para><emphasis>Auth Network</emphasis>: ONLY Oasis Sapphire (mainnet or testnet) - privacy-focused confidential smart contracts</para></listitem>
 		    <listitem><para><emphasis>RPC Flexibility</emphasis>: Different providers for cost and performance optimization</para></listitem>
 		    <listitem><para><emphasis>Fallback Support</emphasis>: Single-network mode when ens_rpc_url not configured</para></listitem>
 		</itemizedlist>
@@ -72,7 +73,8 @@
 	<section id="web3_auth_ext.admin.smart_contract">
 	    <title>Smart Contract Requirements</title>
 	    <para>
-		Your authentication contract must implement two key functions for ENS support:
+		Your authentication contract must be deployed on Oasis Sapphire and implement 
+		two key functions for ENS support:
 		<programlisting>
 // Standard digest authentication
 function authenticateUser(
@@ -90,6 +92,9 @@ function getWalletAddress(
     string memory username
 ) public view returns (address)
 		</programlisting>
+		
+		<emphasis>IMPORTANT</emphasis>: This contract must be deployed on Oasis Sapphire 
+		(testnet or mainnet) as it's the only supported network for authentication contracts.
 	    </para>
 	</section>
 	
@@ -99,13 +104,13 @@ function getWalletAddress(
 		Recommended production setup:
 		<programlisting>
 # Environment variables for production
-WEB3_RPC_URL="https://sapphire.oasis.io"
-WEB3_CONTRACT_ADDRESS="0xYourProductionContract"
+AUTHENTICATION_RPC_URL="https://sapphire.oasis.io"
+AUTHENTICATION_CONTRACT_ADDRESS="0xYourOasisSapphireContract"
 ENS_RPC_URL="https://mainnet.infura.io/v3/YOUR_KEY"
 ENS_REGISTRY_ADDRESS="0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
 ENS_NAME_WRAPPER_ADDRESS="0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401"
-WEB3_DEBUG_MODE="0"
-WEB3_TIMEOUT="15"
+CONTRACT_DEBUG_MODE="0"
+RPC_TIMEOUT="15"
 
 # Kamailio configuration
 loadmodule "auth.so"
@@ -125,10 +130,10 @@ loadmodule "web3_auth_ext.so"
 		Enable debug mode for troubleshooting:
 		<programlisting>
 # Enable debug logging
-modparam("web3_auth_ext", "web3_debug_mode", 1)
+modparam("web3_auth_ext", "contract_debug_mode", 1)
 
 # Or via environment
-export WEB3_DEBUG_MODE="1"
+export CONTRACT_DEBUG_MODE="1"
 		</programlisting>
 		
 		Debug output includes:
@@ -220,13 +225,13 @@ route[AUTH_MIGRATION] {
 	
 	<para>
 	    <itemizedlist>
-		<listitem><para><emphasis>Network Selection</emphasis>: Use Ethereum mainnet for production ENS, cheaper networks for authentication contracts</para></listitem>
-		<listitem><para><emphasis>RPC Reliability</emphasis>: Use paid RPC providers with SLA for production, free providers for development</para></listitem>
+		<listitem><para><emphasis>Network Selection</emphasis>: Use Ethereum mainnet for production ENS, Oasis Sapphire for authentication contracts (REQUIRED)</para></listitem>
+		<listitem><para><emphasis>RPC Reliability</emphasis>: Use official Oasis Sapphire endpoints for authentication, paid RPC providers for ENS in production</para></listitem>
 		<listitem><para><emphasis>Timeout Configuration</emphasis>: Set appropriate timeouts based on network conditions (15-30s recommended)</para></listitem>
 		<listitem><para><emphasis>Environment Variables</emphasis>: Use environment variables for configuration in containerized deployments</para></listitem>
-		<listitem><para><emphasis>Monitoring</emphasis>: Implement comprehensive monitoring for blockchain network status and authentication success rates</para></listitem>
+		<listitem><para><emphasis>Monitoring</emphasis>: Implement comprehensive monitoring for Oasis Sapphire and ENS network status</para></listitem>
 		<listitem><para><emphasis>Fallback Mechanisms</emphasis>: Have backup authentication methods for emergency situations</para></listitem>
-		<listitem><para><emphasis>Security</emphasis>: Audit smart contracts thoroughly and use established networks for production</para></listitem>
+		<listitem><para><emphasis>Security</emphasis>: Audit smart contracts thoroughly and leverage Oasis Sapphire's confidential computing capabilities</para></listitem>
 	    </itemizedlist>
 	</para>
     </section>

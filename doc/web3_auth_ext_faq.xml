@@ -13,24 +13,7 @@
     <title>Frequently Asked Questions</title>
 
     <qandaset>
-        <qandaentry>
-            <question>
-                <para>What is the difference between web3_auth and web3_auth_ext?</para>
-            </question>
-            <answer>
-                <para>
-                    The web3_auth module is a standalone authentication system that completely
-                    replaces traditional auth modules. The web3_auth_ext module is an extension
-                    that works alongside the base auth module, providing Web3 authentication
-                    capabilities with integrated ENS support while maintaining compatibility 
-                    with existing auth infrastructure.
-                    
-                    web3_auth_ext is designed as a drop-in replacement for auth_db, making
-                    migration easier for existing Kamailio deployments. The "ext" version also
-                    includes advanced ENS integration for human-readable domain authentication.
-                </para>
-            </answer>
-        </qandaentry>
+
 
         <qandaentry>
             <question>
@@ -64,20 +47,23 @@
                     Yes! This is one of the key features of web3_auth_ext. You can configure:
                     <itemizedlist>
                         <listitem><para>ENS queries on Ethereum mainnet or testnet using ens_rpc_url</para></listitem>
-                        <listitem><para>Authentication contracts on Oasis, Polygon, or any EVM chain using web3_rpc_url</para></listitem>
+                        <listitem><para>Authentication contracts on Oasis Sapphire (REQUIRED) using authentication_rpc_url</para></listitem>
                         <listitem><para>Different RPC providers for optimal performance and cost</para></listitem>
                     </itemizedlist>
                     
+                    <emphasis>IMPORTANT</emphasis>: Authentication contracts are only supported on Oasis Sapphire 
+                    network due to its privacy-focused confidential smart contract capabilities.
+                    
                     Example configuration:
                     <programlisting>
-# ENS on Ethereum Sepolia (free public RPC)
+# ENS on Ethereum Sepolia (free public RPC) - see https://sepolia.app.ens.domains/
 modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
 
-# Authentication on Oasis Sapphire (privacy-focused, low cost)
-modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
+# Authentication on Oasis Sapphire (REQUIRED - only supported network)
+modparam("web3_auth_ext", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
                     </programlisting>
                     
-                    If you don't set ens_rpc_url, ENS queries will use the same network as web3_rpc_url.
+                    If you don't set ens_rpc_url, ENS queries will use the same network as authentication_rpc_url.
                 </para>
             </answer>
         </qandaentry>
@@ -88,20 +74,18 @@ modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
             </question>
             <answer>
                 <para>
-                    The module supports any blockchain network that provides JSON-RPC endpoints
-                    compatible with Ethereum's eth_call method. This includes:
+                    <emphasis>For Authentication Contracts</emphasis>: Only Oasis Sapphire is supported due to its 
+                    privacy-focused confidential smart contract capabilities:
                     <itemizedlist>
-                        <listitem><para>Ethereum mainnet and testnets (Sepolia, Holesky)</para></listitem>
-                        <listitem><para>Oasis Sapphire (mainnet and testnet) - privacy-focused with confidential smart contracts</para></listitem>
-                        <listitem><para>Polygon, BSC, Avalanche, and other EVM-compatible chains</para></listitem>
-                        <listitem><para>Layer 2 solutions (Arbitrum, Optimism, etc.)</para></listitem>
-                        <listitem><para>Local development networks (Ganache, Hardhat, Anvil)</para></listitem>
+                        <listitem><para>Oasis Sapphire Mainnet (https://sapphire.oasis.io)</para></listitem>
+                        <listitem><para>Oasis Sapphire Testnet (https://testnet.sapphire.oasis.dev)</para></listitem>
                     </itemizedlist>
                     
-                    For ENS specifically, it works on:
+                    <emphasis>For ENS</emphasis>: Works on any network with ENS contracts:
                     <itemizedlist>
                         <listitem><para>Ethereum mainnet (production ENS domains)</para></listitem>
-                        <listitem><para>Ethereum Sepolia testnet (test ENS domains)</para></listitem>
+                        <listitem><para>Ethereum Sepolia testnet (test ENS domains) - see https://sepolia.app.ens.domains/</para></listitem>
+                        <listitem><para>Any custom network with deployed ENS contracts</para></listitem>
                     </itemizedlist>
                 </para>
             </answer>
@@ -221,7 +205,7 @@ contract SIPAuthenticationWithENS {
                 <para>
                     To troubleshoot ENS authentication issues:
                     <orderedlist>
-                        <listitem><para>Enable debug mode: modparam("web3_auth_ext", "web3_debug_mode", 1)</para></listitem>
+                        <listitem><para>Enable debug mode: modparam("web3_auth_ext", "contract_debug_mode", 1)</para></listitem>
                         <listitem><para>Check Kamailio logs for detailed ENS resolution steps</para></listitem>
                         <listitem><para>Verify ENS domain ownership using ENS tools or etherscan.io</para></listitem>
                         <listitem><para>Test RPC endpoints manually for both ENS and auth networks</para></listitem>
@@ -294,46 +278,7 @@ contract SIPAuthenticationWithENS {
             </answer>
         </qandaentry>
 
-        <qandaentry>
-            <question>
-                <para>How do I migrate from auth_db to web3_auth_ext?</para>
-            </question>
-            <answer>
-                <para>
-                    Migration steps for ENS-enabled Web3 authentication:
-                    <orderedlist>
-                        <listitem><para>Deploy your authentication smart contract with ENS support</para></listitem>
-                        <listitem><para>Populate contract with existing user data and wallet addresses</para></listitem>
-                        <listitem><para>Replace "auth_db" with "web3_auth_ext" in loadmodule</para></listitem>
-                        <listitem><para>Replace database parameters with Web3 and ENS parameters</para></listitem>
-                        <listitem><para>Replace www_authenticate calls with web3_www_authenticate</para></listitem>
-                        <listitem><para>Test authentication flows for both traditional and ENS users</para></listitem>
-                        <listitem><para>Gradually migrate users to ENS domains if desired</para></listitem>
-                        <listitem><para>Monitor for any issues after deployment</para></listitem>
-                    </orderedlist>
-                    
-                    Migration can be done gradually:
-                    <programlisting>
-# Phase 1: Run both systems in parallel
-route[AUTH_MIGRATION] {
-    if ($(fU{s.contains,"."})) {
-        # ENS users use new system
-        web3_www_authenticate("$td", "$rm");
-    } else {
-        # Traditional users use old system
-        www_authenticate("$td", "subscriber");
-    }
-}
 
-# Phase 2: All users on new system
-route[AUTH_FINAL] {
-    # Both ENS and traditional users use Web3 auth
-    web3_www_authenticate("$td", "$rm");
-}
-                    </programlisting>
-                </para>
-            </answer>
-        </qandaentry>
 
         <qandaentry>
             <question>
@@ -446,14 +391,15 @@ spec:
                     
                     <emphasis>Hybrid approach:</emphasis>
                     <programlisting>
-# Primary: Paid provider for authentication contracts (critical path)
-WEB3_RPC_URL="https://your-premium-rpc-provider.com"
+# Primary: Oasis Sapphire for authentication contracts (REQUIRED)
+AUTHENTICATION_RPC_URL="https://sapphire.oasis.io"
 
 # Secondary: Free provider for ENS (less critical, cacheable)
 ENS_RPC_URL="https://ethereum-rpc.publicnode.com"
                     </programlisting>
                     
-                    This approach optimizes costs while maintaining reliability for critical authentication operations.
+                    <emphasis>NOTE</emphasis>: For Oasis Sapphire (authentication), use the official RPC endpoints
+                    as they're optimized for confidential smart contracts.
                 </para>
             </answer>
         </qandaentry>
