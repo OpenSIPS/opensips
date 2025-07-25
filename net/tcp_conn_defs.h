@@ -182,6 +182,7 @@ struct tcp_connection{
 	struct tcp_async_data *async;
 	/* protocol specific data attached to this connection */
 	void *proto_data;
+	char hostname[256]; /* remote side hostname (used for TLS certificate hostname verification) */
 };
 
 
