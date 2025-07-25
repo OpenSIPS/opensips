@@ -156,6 +156,18 @@
 			</listitem>
 			</itemizedlist>
 	</para>
+	<para>
+		Third-party code acknowledgments:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>Keccak256 implementation</emphasis> - ENS namehash calculation uses 
+				code by Aleksey Kravchenko based on the Keccak SHA-3 submission by 
+				Guido Bertoni, Joan Daemen, Michaël Peeters and Gilles Van Assche.
+			</para>
+			</listitem>
+			</itemizedlist>
+	</para>
     </section>
 
 	<section id="web3_auth_ext.config">

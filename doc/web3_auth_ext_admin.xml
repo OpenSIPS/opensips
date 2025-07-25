@@ -236,4 +236,29 @@ route[AUTH_MIGRATION] {
 	</para>
     </section>
 
+    <section id="web3_auth_ext.admin.credits">
+	<title>Credits and Acknowledgments</title>
+	
+	<para>
+	    The Web3 Auth Extension module incorporates third-party code for cryptographic operations:
+	</para>
+	
+	<section id="web3_auth_ext.admin.keccak256_credit">
+	    <title>Keccak256 Implementation</title>
+	    <para>
+		The ENS namehash calculation uses a Keccak256 implementation based on the SHA-3 
+		submission to NIST (Round 3), 2011 by Guido Bertoni, Joan Daemen, Michaël Peeters 
+		and Gilles Van Assche.
+	    </para>
+	    <para>
+		<emphasis>Copyright:</emphasis> 2013 Aleksey Kravchenko &lt;rhash.admin@gmail.com&gt;
+	    </para>
+	    <para>
+		This implementation is provided under a permissive license allowing free use, 
+		modification, and distribution. The complete license text is available in the 
+		keccak256.c and keccak256.h source files.
+	    </para>
+	</section>
+    </section>
+
 </chapter> 
