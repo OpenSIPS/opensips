@@ -17,11 +17,13 @@
 	<para>
 	    <table frame="all">
 		<title>web3_auth_ext Module Functions</title>
-		<tgroup cols="3" align="left" colsep="1" rowsep="1">
+		<tgroup cols="5" align="left" colsep="1" rowsep="1">
 		    <thead>
 			<row>
 			    <entry>Function</entry>
 			    <entry>Parameters</entry>
+			    <entry>Return Type</entry>
+			    <entry>Route Context</entry>
 			    <entry>Description</entry>
 			</row>
 		    </thead>
@@ -29,12 +31,73 @@
 			<row>
 			    <entry>web3_www_authenticate</entry>
 			    <entry>realm, method</entry>
-			    <entry>Web3 authentication with ENS support for WWW-Authenticate</entry>
+			    <entry>integer</entry>
+			    <entry>REQUEST_ROUTE</entry>
+			    <entry>Web3 authentication with ENS support for WWW-Authenticate headers</entry>
 			</row>
 			<row>
 			    <entry>web3_proxy_authenticate</entry>
 			    <entry>realm, method</entry>
-			    <entry>Web3 authentication with ENS support for Proxy-Authenticate</entry>
+			    <entry>integer</entry>
+			    <entry>REQUEST_ROUTE</entry>
+			    <entry>Web3 authentication with ENS support for Proxy-Authenticate headers</entry>
+			</row>
+			<row>
+			    <entry>bind_web3_auth</entry>
+			    <entry>api</entry>
+			    <entry>integer</entry>
+			    <entry>MODULE_INIT</entry>
+			    <entry>API binding function for other Kamailio modules</entry>
+			</row>
+		    </tbody>
+		</tgroup>
+	    </table>
+	</para>
+    </section>
+
+    <section id="web3_auth_ext.return_codes">
+	<title>Return Codes Reference</title>
+	<para>
+	    <table frame="all">
+		<title>Authentication Function Return Codes</title>
+		<tgroup cols="3" align="left" colsep="1" rowsep="1">
+		    <thead>
+			<row>
+			    <entry>Return Code</entry>
+			    <entry>Meaning</entry>
+			    <entry>Recommended Action</entry>
+			</row>
+		    </thead>
+		    <tbody>
+			<row>
+			    <entry>&gt; 0</entry>
+			    <entry>Authentication successful</entry>
+			    <entry>Continue processing request</entry>
+			</row>
+			<row>
+			    <entry>-1</entry>
+			    <entry>Generic error</entry>
+			    <entry>Send challenge or 500 error</entry>
+			</row>
+			<row>
+			    <entry>-2</entry>
+			    <entry>Invalid credentials/blockchain verification failed</entry>
+			    <entry>Send challenge with stale=false</entry>
+			</row>
+			<row>
+			    <entry>-3</entry>
+			    <entry>Stale nonce</entry>
+			    <entry>Send challenge with stale=true</entry>
+			</row>
+			<row>
+			    <entry>-4</entry>
+			    <entry>No credentials provided</entry>
+			    <entry>Send initial challenge</entry>
+			</row>
+			<row>
+			    <entry>-5</entry>
+			    <entry>Network timeout (RPC call failed)</entry>
+			    <entry>Send 503 Service Unavailable</entry>
 			</row>
 		    </tbody>
 		</tgroup>
@@ -170,6 +233,51 @@ route[RELAY] {
 		The module provides an API for other Kamailio modules to access Web3 authentication 
 		and ENS validation functions programmatically.
 		</para>
+
+		<section id="web3_auth_ext.api_summary">
+		    <title>API Function Summary</title>
+		    <para>
+			<table frame="all">
+			    <title>Available API Functions</title>
+			    <tgroup cols="4" align="left" colsep="1" rowsep="1">
+				<thead>
+				    <row>
+					<entry>API Function</entry>
+					<entry>Parameters</entry>
+					<entry>Return Type</entry>
+					<entry>Description</entry>
+				    </row>
+				</thead>
+				<tbody>
+				    <row>
+					<entry>digest_authenticate</entry>
+					<entry>msg, realm, hdr_type, method</entry>
+					<entry>auth_result_t</entry>
+					<entry>Core authentication with ENS support</entry>
+				    </row>
+				    <row>
+					<entry>check_response</entry>
+					<entry>username, realm, password, nonce, method, uri, algorithm, response</entry>
+					<entry>auth_result_t</entry>
+					<entry>Low-level credential verification</entry>
+				    </row>
+				    <row>
+					<entry>ens_validate</entry>
+					<entry>domain, wallet_address</entry>
+					<entry>int</entry>
+					<entry>ENS domain ownership validation</entry>
+				    </row>
+				    <row>
+					<entry>ens_get_owner</entry>
+					<entry>domain</entry>
+					<entry>str*</entry>
+					<entry>ENS ownership resolution</entry>
+				    </row>
+				</tbody>
+			    </tgroup>
+			</table>
+		    </para>
+		</section>
 		
 		<section id="web3_auth_ext.f.bind_web3_auth">
 			<title>

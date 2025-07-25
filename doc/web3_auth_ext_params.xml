@@ -268,6 +268,96 @@ modparam("web3_auth_ext", "rpc_timeout", 15)
 	</example>
     </section>
 
+    <section id="web3_auth_ext.network_configuration">
+	<title>Network Configuration Table</title>
+	<para>
+	    <table frame="all">
+		<title>Supported Network Configurations</title>
+		<tgroup cols="4" align="left" colsep="1" rowsep="1">
+		    <thead>
+			<row>
+			    <entry>Configuration</entry>
+			    <entry>Authentication Network</entry>
+			    <entry>ENS Network</entry>
+			    <entry>Use Case</entry>
+			</row>
+		    </thead>
+		    <tbody>
+			<row>
+			    <entry>Production (Mainnet)</entry>
+			    <entry>Oasis Sapphire Mainnet</entry>
+			    <entry>Ethereum Mainnet</entry>
+			    <entry>Production deployments with real ENS domains</entry>
+			</row>
+			<row>
+			    <entry>Testing (Testnet)</entry>
+			    <entry>Oasis Sapphire Testnet</entry>
+			    <entry>Ethereum Sepolia</entry>
+			    <entry>Development and testing with test ENS domains</entry>
+			</row>
+			<row>
+			    <entry>Single Network</entry>
+			    <entry>Oasis Sapphire (Any)</entry>
+			    <entry>Same as Authentication</entry>
+			    <entry>Simplified setup, no cross-chain ENS</entry>
+			</row>
+			<row>
+			    <entry>Custom Network</entry>
+			    <entry>Custom RPC Endpoint</entry>
+			    <entry>Custom RPC Endpoint</entry>
+			    <entry>Private networks or alternative providers</entry>
+			</row>
+		    </tbody>
+		</tgroup>
+	    </table>
+	</para>
+    </section>
+
+    <section id="web3_auth_ext.rpc_endpoints">
+	<title>RPC Endpoints Reference</title>
+	<para>
+	    <table frame="all">
+		<title>Common RPC Endpoints</title>
+		<tgroup cols="3" align="left" colsep="1" rowsep="1">
+		    <thead>
+			<row>
+			    <entry>Network</entry>
+			    <entry>RPC URL</entry>
+			    <entry>Network Type</entry>
+			</row>
+		    </thead>
+		    <tbody>
+			<row>
+			    <entry>Oasis Sapphire Mainnet</entry>
+			    <entry>https://sapphire.oasis.io</entry>
+			    <entry>Production</entry>
+			</row>
+			<row>
+			    <entry>Oasis Sapphire Testnet</entry>
+			    <entry>https://testnet.sapphire.oasis.dev</entry>
+			    <entry>Testing</entry>
+			</row>
+			<row>
+			    <entry>Ethereum Mainnet</entry>
+			    <entry>https://mainnet.infura.io/v3/YOUR_KEY</entry>
+			    <entry>Production</entry>
+			</row>
+			<row>
+			    <entry>Ethereum Sepolia</entry>
+			    <entry>https://ethereum-sepolia-rpc.publicnode.com</entry>
+			    <entry>Testing</entry>
+			</row>
+			<row>
+			    <entry>Ethereum Sepolia (Alternative)</entry>
+			    <entry>https://sepolia.infura.io/v3/YOUR_KEY</entry>
+			    <entry>Testing</entry>
+			</row>
+		    </tbody>
+		</tgroup>
+	    </table>
+	</para>
+    </section>
+
     <section id="web3_auth_ext.p.environment_variables">
 	<title>Environment Variable Configuration</title>
 	<para>

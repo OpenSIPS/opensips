@@ -158,4 +158,121 @@ loadmodule "web3_auth_ext.so"
 
     </qandaset>
 
+    <section id="web3_auth_ext.troubleshooting_table">
+	<title>Troubleshooting Reference</title>
+	<para>
+	    <table frame="all">
+		<title>Common Issues and Solutions</title>
+		<tgroup cols="3" align="left" colsep="1" rowsep="1">
+		    <thead>
+			<row>
+			    <entry>Issue</entry>
+			    <entry>Possible Cause</entry>
+			    <entry>Solution</entry>
+			</row>
+		    </thead>
+		    <tbody>
+			<row>
+			    <entry>Return code -5 (Network timeout)</entry>
+			    <entry>RPC endpoint unreachable or slow</entry>
+			    <entry>Check network connectivity, increase rpc_timeout, use reliable RPC provider</entry>
+			</row>
+			<row>
+			    <entry>Return code -2 (Auth failed)</entry>
+			    <entry>Invalid credentials or contract error</entry>
+			    <entry>Verify contract address, check authentication logic, enable debug mode</entry>
+			</row>
+			<row>
+			    <entry>ENS validation fails</entry>
+			    <entry>Domain not owned or wrapped</entry>
+			    <entry>Check ENS ownership on etherscan, verify wallet matches contract data</entry>
+			</row>
+			<row>
+			    <entry>Module won't load</entry>
+			    <entry>Missing dependencies or misconfiguration</entry>
+			    <entry>Verify libcurl and OpenSSL installed, check module path</entry>
+			</row>
+			<row>
+			    <entry>High latency</entry>
+			    <entry>Network delays or inefficient RPC provider</entry>
+			    <entry>Use faster RPC provider, optimize network routing, consider caching</entry>
+			</row>
+			<row>
+			    <entry>Intermittent failures</entry>
+			    <entry>RPC provider rate limiting</entry>
+			    <entry>Upgrade to paid RPC plan, implement retries, use multiple providers</entry>
+			</row>
+			<row>
+			    <entry>No authentication header</entry>
+			    <entry>SIP client or header parsing issue</entry>
+			    <entry>Check client configuration, verify header format, enable debug logs</entry>
+			</row>
+			<row>
+			    <entry>Contract call errors</entry>
+			    <entry>Wrong contract address or ABI mismatch</entry>
+			    <entry>Verify contract address, check function signatures match required interface</entry>
+			</row>
+		    </tbody>
+		</tgroup>
+	    </table>
+	</para>
+    </section>
+
+    <section id="web3_auth_ext.error_codes_detail">
+	<title>Error Code Details</title>
+	<para>
+	    <table frame="all">
+		<title>Detailed Error Code Reference</title>
+		<tgroup cols="4" align="left" colsep="1" rowsep="1">
+		    <thead>
+			<row>
+			    <entry>Return Code</entry>
+			    <entry>Error Type</entry>
+			    <entry>Debug Information</entry>
+			    <entry>Client Response</entry>
+			</row>
+		    </thead>
+		    <tbody>
+			<row>
+			    <entry>1</entry>
+			    <entry>Success</entry>
+			    <entry>Authentication completed successfully</entry>
+			    <entry>Continue processing</entry>
+			</row>
+			<row>
+			    <entry>-1</entry>
+			    <entry>Generic Error</entry>
+			    <entry>Check logs for specific error details</entry>
+			    <entry>Send 500 Internal Server Error</entry>
+			</row>
+			<row>
+			    <entry>-2</entry>
+			    <entry>Auth Failed</entry>
+			    <entry>Contract returned false or credential mismatch</entry>
+			    <entry>Send 401 with challenge (stale=false)</entry>
+			</row>
+			<row>
+			    <entry>-3</entry>
+			    <entry>Stale Nonce</entry>
+			    <entry>Nonce already used or expired</entry>
+			    <entry>Send 401 with challenge (stale=true)</entry>
+			</row>
+			<row>
+			    <entry>-4</entry>
+			    <entry>No Credentials</entry>
+			    <entry>Authorization header missing or malformed</entry>
+			    <entry>Send 401 with initial challenge</entry>
+			</row>
+			<row>
+			    <entry>-5</entry>
+			    <entry>Network Timeout</entry>
+			    <entry>RPC call failed or timed out</entry>
+			    <entry>Send 503 Service Unavailable</entry>
+			</row>
+		    </tbody>
+		</tgroup>
+	    </table>
+	</para>
+    </section>
+
 </section> 
