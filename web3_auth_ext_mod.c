@@ -39,9 +39,9 @@
 MODULE_VERSION
 
 /* Default Web3 configuration */
-#define DEFAULT_WEB3_RPC_URL "https://testnet.sapphire.oasis.dev"
+#define DEFAULT_AUTHENTICATION_RPC_URL "https://testnet.sapphire.oasis.dev"
 #define DEFAULT_ENS_RPC_URL "https://ethereum-sepolia-rpc.publicnode.com"  // Sepolia testnet for ENS
-#define DEFAULT_WEB3_CONTRACT_ADDRESS "0xE773BB79689379d32Ad1Db839868b6756B493aea"
+#define DEFAULT_AUTHENTICATION_CONTRACT_ADDRESS "0xE773BB79689379d32Ad1Db839868b6756B493aea"
 #define DEFAULT_ENS_REGISTRY_ADDRESS "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" // Sepolia 
 #define DEFAULT_ENS_NAME_WRAPPER_ADDRESS "0x0635513f179D50A207757E05759CbD106d7dFcE8" // Sepolia 
 
@@ -66,13 +66,13 @@ static int child_init(int rank);
 static void init_config_from_env(void);
 
 /* Module parameters - can be overridden by environment variables */
-char *web3_rpc_url = NULL;
-char *web3_contract_address = NULL;
+char *authentication_rpc_url = NULL;
+char *authentication_contract_address = NULL;
 char *ens_registry_address = NULL;
 char *ens_name_wrapper_address = NULL;
 char *ens_rpc_url = NULL;
-int web3_debug_mode = 1;
-int web3_timeout = 10;
+int contract_debug_mode = 1;
+int rpc_timeout = 10;
 
 /* Base auth module API */
 auth_api_s_t auth_api;
@@ -101,13 +101,13 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-    {"web3_rpc_url", PARAM_STRING, &web3_rpc_url},
-    {"web3_contract_address", PARAM_STRING, &web3_contract_address},
-    {"ens_registry_address", PARAM_STRING, &ens_registry_address},
-    {"ens_name_wrapper_address", PARAM_STRING, &ens_name_wrapper_address},
-    {"ens_rpc_url", PARAM_STRING, &ens_rpc_url},
-    {"web3_debug_mode", PARAM_INT, &web3_debug_mode},
-    {"web3_timeout", PARAM_INT, &web3_timeout},
+    	{"authentication_rpc_url", PARAM_STRING, &authentication_rpc_url},
+	{"authentication_contract_address", PARAM_STRING, &authentication_contract_address},
+	{"ens_registry_address", PARAM_STRING, &ens_registry_address},
+	{"ens_name_wrapper_address", PARAM_STRING, &ens_name_wrapper_address},
+	{"ens_rpc_url", PARAM_STRING, &ens_rpc_url},
+	{"contract_debug_mode", PARAM_INT, &contract_debug_mode},
+	{"rpc_timeout", PARAM_INT, &rpc_timeout},
     {0, 0, 0}
 };
 
@@ -155,16 +155,16 @@ static int mod_init(void)
     /* Initialize configuration from environment variables */
     init_config_from_env();
 
-    if (web3_debug_mode) {
-        LM_INFO("Web3Auth Extension initialized:\n");
-        LM_INFO("  RPC URL: %s\n", web3_rpc_url ? web3_rpc_url : "(using default)");
-        LM_INFO("  Contract: %s\n", web3_contract_address ? web3_contract_address : "(using default)");
-        LM_INFO("  ENS Registry: %s\n", ens_registry_address ? ens_registry_address : "(using default)");
-        LM_INFO("  ENS Name Wrapper: %s\n", ens_name_wrapper_address ? ens_name_wrapper_address : "(using default)");
-        LM_INFO("  ENS RPC URL: %s\n", ens_rpc_url ? ens_rpc_url : "(using default)");
-        LM_INFO("  Debug: %s\n", web3_debug_mode ? "enabled" : "disabled");
-        LM_INFO("  Timeout: %d seconds\n", web3_timeout);
-    }
+    	if (contract_debug_mode) {
+		LM_INFO("Web3Auth Extension initialized:\n");
+		LM_INFO("  Authentication RPC URL: %s\n", authentication_rpc_url ? authentication_rpc_url : "(using default)");
+		LM_INFO("  Authentication Contract: %s\n", authentication_contract_address ? authentication_contract_address : "(using default)");
+		LM_INFO("  ENS Registry: %s\n", ens_registry_address ? ens_registry_address : "(using default)");
+		LM_INFO("  ENS Name Wrapper: %s\n", ens_name_wrapper_address ? ens_name_wrapper_address : "(using default)");
+		LM_INFO("  ENS RPC URL: %s\n", ens_rpc_url ? ens_rpc_url : "(using default)");
+		LM_INFO("  Debug: %s\n", contract_debug_mode ? "enabled" : "disabled");
+		LM_INFO("  Timeout: %d seconds\n", rpc_timeout);
+	}
 
     return 0;
 }
@@ -174,9 +174,9 @@ static int mod_init(void)
  */
 static int child_init(int rank)
 {
-    if (web3_debug_mode) {
-        LM_INFO("Web3Auth Extension child %d initialized\n", rank);
-    }
+    	if (contract_debug_mode) {
+		LM_INFO("Web3Auth Extension child %d initialized\n", rank);
+	}
     return 0;
 }
 
@@ -198,28 +198,28 @@ static void destroy(void)
  */
 static void init_config_from_env(void)
 {
-    char *env_web3_rpc_url = getenv("WEB3_RPC_URL");
-    if (env_web3_rpc_url) {
-        web3_rpc_url = strdup(env_web3_rpc_url);
-        if (!web3_rpc_url) {
-            LM_ERR("failed to allocate memory for web3_rpc_url\n");
-            web3_rpc_url = DEFAULT_WEB3_RPC_URL;
+    char *env_authentication_rpc_url = getenv("AUTHENTICATION_RPC_URL");
+    if (env_authentication_rpc_url) {
+        authentication_rpc_url = strdup(env_authentication_rpc_url);
+        if (!authentication_rpc_url) {
+            LM_ERR("failed to allocate memory for authentication_rpc_url\n");
+            authentication_rpc_url = DEFAULT_AUTHENTICATION_RPC_URL;
         }
-    } else if (!web3_rpc_url) {
+    } else if (!authentication_rpc_url) {
         /* Only set default if config file didn't set it */
-        web3_rpc_url = DEFAULT_WEB3_RPC_URL;
+        authentication_rpc_url = DEFAULT_AUTHENTICATION_RPC_URL;
     }
 
-    char *env_web3_contract_address = getenv("WEB3_CONTRACT_ADDRESS");
-    if (env_web3_contract_address) {
-        web3_contract_address = strdup(env_web3_contract_address);
-        if (!web3_contract_address) {
-            LM_ERR("failed to allocate memory for web3_contract_address\n");
-            web3_contract_address = DEFAULT_WEB3_CONTRACT_ADDRESS;
+    char *env_authentication_contract_address = getenv("AUTHENTICATION_CONTRACT_ADDRESS");
+    if (env_authentication_contract_address) {
+        authentication_contract_address = strdup(env_authentication_contract_address);
+        if (!authentication_contract_address) {
+            LM_ERR("failed to allocate memory for authentication_contract_address\n");
+            authentication_contract_address = DEFAULT_AUTHENTICATION_CONTRACT_ADDRESS;
         }
-    } else if (!web3_contract_address) {
+    } else if (!authentication_contract_address) {
         /* Only set default if config file didn't set it */
-        web3_contract_address = DEFAULT_WEB3_CONTRACT_ADDRESS;
+        authentication_contract_address = DEFAULT_AUTHENTICATION_CONTRACT_ADDRESS;
     }
 
     char *env_ens_registry_address = getenv("ENS_REGISTRY_ADDRESS");
@@ -258,15 +258,15 @@ static void init_config_from_env(void)
         ens_rpc_url = DEFAULT_ENS_RPC_URL;
     }
 
-    char *env_web3_debug_mode = getenv("WEB3_DEBUG_MODE");
-    if (env_web3_debug_mode) {
-        web3_debug_mode = atoi(env_web3_debug_mode);
-    }
+    	char *env_contract_debug_mode = getenv("CONTRACT_DEBUG_MODE");
+	if (env_contract_debug_mode) {
+		contract_debug_mode = atoi(env_contract_debug_mode);
+	}
 
-    char *env_web3_timeout = getenv("WEB3_TIMEOUT");
-    if (env_web3_timeout) {
-        web3_timeout = atoi(env_web3_timeout);
-    }
+	char *env_rpc_timeout = getenv("RPC_TIMEOUT");
+	if (env_rpc_timeout) {
+		rpc_timeout = atoi(env_rpc_timeout);
+	}
 }
 
 /*

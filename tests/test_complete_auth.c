@@ -18,25 +18,25 @@
 #include "../keccak256.h"
 
 // Configuration - configurable via environment variables for better modularity
-static char *web3_rpc_url = NULL;
-static char *web3_contract_address = NULL;
+static char *authentication_rpc_url = NULL;
+static char *authentication_contract_address = NULL;
 static char *ens_rpc_url = NULL;
 static char *ens_registry_address = NULL;
 static char *ens_name_wrapper_address __attribute__((unused)) = NULL; // May be used in future features
-static int web3_debug_mode = 1;
-static int web3_timeout = 10;
+static int contract_debug_mode = 1;
+static int rpc_timeout = 10;
 
 // Initialize configuration from environment variables with fallback defaults
 static void init_config() {
     // Web3/Oasis configuration
-    web3_rpc_url = getenv("WEB3_RPC_URL");
-    if (!web3_rpc_url) {
-        web3_rpc_url = "https://testnet.sapphire.oasis.dev"; // Default fallback
+    authentication_rpc_url = getenv("AUTHENTICATION_RPC_URL");
+    if (!authentication_rpc_url) {
+        authentication_rpc_url = "https://testnet.sapphire.oasis.dev"; // Default fallback
     }
     
-    web3_contract_address = getenv("WEB3_CONTRACT_ADDRESS");
-    if (!web3_contract_address) {
-        web3_contract_address = "0xE773BB79689379d32Ad1Db839868b6756B493aea"; // Default fallback
+    authentication_contract_address = getenv("AUTHENTICATION_CONTRACT_ADDRESS");
+    if (!authentication_contract_address) {
+        authentication_contract_address = "0xE773BB79689379d32Ad1Db839868b6756B493aea"; // Default fallback
     }
     
     // ENS configuration
@@ -56,26 +56,26 @@ static void init_config() {
     }
     
     // Debug and timeout configuration
-    char *debug_env = getenv("WEB3_DEBUG_MODE");
+    char *debug_env = getenv("CONTRACT_DEBUG_MODE");
     if (debug_env) {
-        web3_debug_mode = (strcmp(debug_env, "1") == 0 || strcmp(debug_env, "true") == 0);
+        contract_debug_mode = (strcmp(debug_env, "1") == 0 || strcmp(debug_env, "true") == 0);
     }
     
-    char *timeout_env = getenv("WEB3_TIMEOUT");
+    char *timeout_env = getenv("RPC_TIMEOUT");
     if (timeout_env) {
-        web3_timeout = atoi(timeout_env);
-        if (web3_timeout <= 0) web3_timeout = 10; // Minimum timeout
+        rpc_timeout = atoi(timeout_env);
+        if (rpc_timeout <= 0) rpc_timeout = 10; // Minimum timeout
     }
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("DEBUG: Configuration loaded:\n");
-        printf("  WEB3_RPC_URL: %s\n", web3_rpc_url);
-        printf("  WEB3_CONTRACT_ADDRESS: %s\n", web3_contract_address);
+        printf("  AUTHENTICATION_RPC_URL: %s\n", authentication_rpc_url);
+        printf("  AUTHENTICATION_CONTRACT_ADDRESS: %s\n", authentication_contract_address);
         printf("  ENS_RPC_URL: %s\n", ens_rpc_url);
         printf("  ENS_REGISTRY_ADDRESS: %s\n", ens_registry_address);
         printf("  ENS_NAME_WRAPPER_ADDRESS: %s\n", ens_name_wrapper_address);
-        printf("  WEB3_DEBUG_MODE: %d\n", web3_debug_mode);
-        printf("  WEB3_TIMEOUT: %d\n", web3_timeout);
+        printf("  CONTRACT_DEBUG_MODE: %d\n", contract_debug_mode);
+        printf("  RPC_TIMEOUT: %d\n", rpc_timeout);
     }
 }
 
@@ -140,7 +140,7 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address, con
         "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":\"%s\",\"data\":\"%s\"},\"latest\"],\"id\":1}",
         to_address, data);
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("DEBUG: Blockchain call to %s\n", to_address);
         printf("DEBUG: Using RPC: %s\n", rpc_url);
         printf("DEBUG: Call data: %s\n", data);
@@ -152,7 +152,7 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address, con
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web3_response);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, web3_timeout);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, rpc_timeout);
     
     struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -166,7 +166,7 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address, con
         goto cleanup;
     }
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("DEBUG: Blockchain response: %s\n", web3_response.memory);
     }
     
@@ -178,7 +178,7 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address, con
         if (error_start) {
             char *message_start = strstr(web3_response.memory, "\"message\":");
             if (message_start && strstr(message_start, "User not found")) {
-                if (web3_debug_mode) {
+                if (contract_debug_mode) {
                     printf("INFO: Contract returned 'User not found' - treating as zero address\n");
                 }
                 strcpy(result_buffer, "0x0000000000000000000000000000000000000000");
@@ -233,7 +233,7 @@ void ens_namehash(const char *name, char *hash_hex)
 {
     unsigned char hash[32] = {0}; // Start with 32 zero bytes
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("DEBUG: Computing namehash for: %s\n", name);
     }
     
@@ -266,7 +266,7 @@ void ens_namehash(const char *name, char *hash_hex)
         keccak_update(&ctx, (const unsigned char*)labels[i], strlen(labels[i]));
         keccak_final(&ctx, label_hash);
         
-        if (web3_debug_mode) {
+        if (contract_debug_mode) {
             char label_hash_hex[65];
             bytes_to_hex(label_hash, 32, label_hash_hex);
             printf("DEBUG: Label '%s' hash: %s\n", labels[i], label_hash_hex);
@@ -281,7 +281,7 @@ void ens_namehash(const char *name, char *hash_hex)
         keccak_update(&ctx, combined, 64);
         keccak_final(&ctx, hash);
         
-        if (web3_debug_mode) {
+        if (contract_debug_mode) {
             char current_hash_hex[65];
             bytes_to_hex(hash, 32, current_hash_hex);
             printf("DEBUG: After processing '%s': %s\n", labels[i], current_hash_hex);
@@ -291,7 +291,7 @@ void ens_namehash(const char *name, char *hash_hex)
     // Convert final hash to hex string
     bytes_to_hex(hash, 32, hash_hex);
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("DEBUG: Final namehash for '%s': %s\n", name, hash_hex);
     }
     
@@ -315,7 +315,7 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address)
     char call_data[256];
     char result[256];
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: Getting ENS owner address for: %s\n", ens_name);
     }
     
@@ -326,7 +326,7 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address)
     // owner(bytes32) function selector: 0x02571be3
     snprintf(call_data, sizeof(call_data), "0x02571be3%s", namehash_hex);
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: Calling ENS Registry owner() with data: %s\n", call_data);
         printf("INFO: Using ENS RPC: %s\n", ens_rpc_url);
         printf("INFO: ENS Registry Address: %s\n", ens_registry_address);
@@ -346,7 +346,7 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address)
         return -1;
     }
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: ENS Registry owner: %s\n", registry_owner);
     }
     
@@ -358,7 +358,7 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address)
     }
     
     // Step 4: Compare with name wrapper address
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: Comparing registry owner with name wrapper address:\n");
         printf("  Registry owner: %s\n", registry_owner);
         printf("  Name wrapper:   %s\n", ens_name_wrapper_address);
@@ -367,14 +367,14 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address)
     if (strcasecmp(registry_owner, ens_name_wrapper_address) != 0) {
         // Owner is NOT the name wrapper, return registry owner
         strcpy(owner_address, registry_owner);
-        if (web3_debug_mode) {
+        if (contract_debug_mode) {
             printf("INFO: ENS owner is NOT name wrapper, returning registry owner: %s\n", owner_address);
         }
         return 0;
     }
     
     // Step 5: Owner IS the name wrapper, call name wrapper ownerOf(bytes32)
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: ENS owner IS name wrapper, calling name wrapper ownerOf()\n");
     }
     
@@ -394,7 +394,7 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address)
         return -1;
     }
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: Name Wrapper NFT owner: %s\n", owner_address);
     }
     
@@ -423,7 +423,7 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address)
     char result[256];
     int pos = 0;
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: Getting Oasis wallet address for username: %s\n", username);
     }
     
@@ -452,11 +452,11 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address)
     char final_call_data[1024];
     snprintf(final_call_data, sizeof(final_call_data), "0x%s", call_data);
     
-    if (web3_debug_mode) {
-        printf("INFO: Using main RPC for Oasis query: %s\n", web3_rpc_url);
+    if (contract_debug_mode) {
+        printf("INFO: Using main RPC for Oasis query: %s\n", authentication_rpc_url);
     }
     
-    if (web3_blockchain_call(web3_rpc_url, web3_contract_address, final_call_data, result, sizeof(result)) != 0) {
+    if (web3_blockchain_call(authentication_rpc_url, authentication_contract_address, final_call_data, result, sizeof(result)) != 0) {
         printf("ERROR: Failed to call Oasis contract\n");
         return -1;
     }
@@ -469,7 +469,7 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address)
         return -1;
     }
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: Oasis wallet address for %s: %s\n", username, wallet_address);
     }
     
@@ -485,7 +485,7 @@ int web3_oasis_authenticate_user(const char *username, const char *realm, const 
     char result[256];
     int pos = 0;
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("INFO: Calling Oasis authenticateUser for: %s\n", username);
         printf("DEBUG: realm=%s, method=%s, uri=%s, nonce=%s, algo=%d\n", realm, method, uri, nonce, algo);
         printf("DEBUG: response=%s\n", response);
@@ -495,7 +495,7 @@ int web3_oasis_authenticate_user(const char *username, const char *realm, const 
     // Selector: 0xdd02fd8e
     pos += snprintf(call_data + pos, sizeof(call_data) - pos, "dd02fd8e");
     
-    if (web3_debug_mode) {
+    if (contract_debug_mode) {
         printf("DEBUG: Using function selector: dd02fd8e\n");
     }
     
@@ -613,12 +613,12 @@ int web3_oasis_authenticate_user(const char *username, const char *realm, const 
     char final_call_data[4096];
     snprintf(final_call_data, sizeof(final_call_data), "0x%s", call_data);
     
-    if (web3_debug_mode) {
-        printf("INFO: Using main RPC for Oasis authentication: %s\n", web3_rpc_url);
+    if (contract_debug_mode) {
+        printf("INFO: Using main RPC for Oasis authentication: %s\n", authentication_rpc_url);
         printf("DEBUG: Call data length: %zu\n", strlen(final_call_data));
     }
     
-    if (web3_blockchain_call(web3_rpc_url, web3_contract_address, final_call_data, result, sizeof(result)) != 0) {
+    if (web3_blockchain_call(authentication_rpc_url, authentication_contract_address, final_call_data, result, sizeof(result)) != 0) {
         printf("ERROR: Failed to call Oasis authenticateUser\n");
         return -1;
     }
@@ -629,13 +629,13 @@ int web3_oasis_authenticate_user(const char *username, const char *realm, const 
         char *last_char = result + strlen(result) - 1;
         if (*last_char == '1') {
             strcpy(auth_result, "true");
-            if (web3_debug_mode) {
+            if (contract_debug_mode) {
                 printf("INFO: Oasis authentication SUCCESS for %s\n", username);
             }
             return 0; // Success
         } else {
             strcpy(auth_result, "false");
-            if (web3_debug_mode) {
+            if (contract_debug_mode) {
                 printf("INFO: Oasis authentication FAILED for %s\n", username);
             }
             return 1; // Auth failed
@@ -743,13 +743,13 @@ int main(int argc, char *argv[])
         printf("  uri             - SIP URI\n");
         printf("  nonce           - SIP nonce\n");
         printf("\nOptional Environment Variables (with defaults):\n");
-        printf("  WEB3_RPC_URL           - Oasis RPC endpoint\n");
-        printf("  WEB3_CONTRACT_ADDRESS  - Authentication contract address\n");
+        printf("  AUTHENTICATION_RPC_URL           - Oasis RPC endpoint\n");
+        printf("  AUTHENTICATION_CONTRACT_ADDRESS  - Authentication contract address\n");
         printf("  ENS_RPC_URL           - Ethereum RPC for ENS resolution\n");
         printf("  ENS_REGISTRY_ADDRESS  - ENS registry contract address\n");
         printf("  ENS_NAME_WRAPPER_ADDRESS - ENS name wrapper contract\n");
-        printf("  WEB3_DEBUG_MODE       - Enable debug output (1/true or 0/false)\n");
-        printf("  WEB3_TIMEOUT          - Request timeout in seconds\n");
+        printf("  CONTRACT_DEBUG_MODE       - Enable debug output (1/true or 0/false)\n");
+        printf("  RPC_TIMEOUT          - Request timeout in seconds\n");
         printf("\nAll command line parameters are required - no default values.\n");
         printf("Configuration can be customized via environment variables for different networks.\n");
         return 1;

@@ -7,8 +7,8 @@ The Web3 Authentication Extension now supports **dual-network authentication**, 
 ## Configuration Parameters
 
 ### Main Network (Oasis)
-- `web3_rpc_url`: RPC endpoint for Oasis authentication contract
-- `web3_contract_address`: Oasis authentication contract address
+- `authentication_rpc_url`: RPC endpoint for Oasis authentication contract
+- `authentication_contract_address`: Oasis authentication contract address
 
 ### ENS Network (Ethereum/Sepolia)
 - `ens_rpc_url`: **NEW** - RPC endpoint for ENS queries (optional)
@@ -21,17 +21,17 @@ The Web3 Authentication Extension now supports **dual-network authentication**, 
 ```
 ens_rpc_url = NULL (not configured)
 ```
-- ✅ ENS queries → `web3_rpc_url`
-- ✅ Oasis queries → `web3_rpc_url`
+- ✅ ENS queries → `authentication_rpc_url`
+- ✅ Oasis queries → `authentication_rpc_url`
 - Use case: Both contracts on same network
 
 ### Scenario 2: Different Networks (Multi-Network Mode)
 ```
-web3_rpc_url = "https://testnet.sapphire.oasis.dev"
+authentication_rpc_url = "https://testnet.sapphire.oasis.dev"
 ens_rpc_url = "https://sepolia.infura.io/v3/YOUR_KEY"
 ```
 - ✅ ENS queries → `ens_rpc_url` (Sepolia)
-- ✅ Oasis queries → `web3_rpc_url` (Oasis Sapphire)
+- ✅ Oasis queries → `authentication_rpc_url` (Oasis Sapphire)
 - Use case: ENS on Ethereum, Oasis on Oasis network
 
 ## Common Network Configurations
@@ -39,7 +39,7 @@ ens_rpc_url = "https://sepolia.infura.io/v3/YOUR_KEY"
 ### Production Setup
 ```bash
 # Oasis Mainnet + Ethereum Mainnet
-web3_rpc_url = "https://sapphire.oasis.io"
+authentication_rpc_url = "https://sapphire.oasis.io"
 ens_rpc_url = "https://mainnet.infura.io/v3/YOUR_KEY"
 ens_registry_address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
 ens_name_wrapper_address = "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401"
@@ -48,7 +48,7 @@ ens_name_wrapper_address = "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401"
 ### Testing Setup
 ```bash
 # Oasis Testnet + Ethereum Sepolia
-web3_rpc_url = "https://testnet.sapphire.oasis.dev"
+authentication_rpc_url = "https://testnet.sapphire.oasis.dev"
 ens_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
 ens_registry_address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
 ens_name_wrapper_address = "0x0635513f179D50A207757E05759CbD106d7dFcE8"
@@ -57,8 +57,8 @@ ens_name_wrapper_address = "0x0635513f179D50A207757E05759CbD106d7dFcE8"
 ### Development Setup
 ```bash
 # Both on same testnet
-web3_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
-# ens_rpc_url not set - will use web3_rpc_url
+authentication_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
+# ens_rpc_url not set - will use authentication_rpc_url
 ```
 
 ## Kamailio Configuration Example
@@ -67,15 +67,15 @@ web3_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
 loadmodule "web3_auth_ext.so"
 
 # Oasis authentication network
-modparam("web3_auth_ext", "web3_rpc_url", "https://testnet.sapphire.oasis.dev")
-modparam("web3_auth_ext", "web3_contract_address", "0xYourOasisContract")
+modparam("web3_auth_ext", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("web3_auth_ext", "authentication_contract_address", "0xYourOasisContract")
 
 # ENS network (Sepolia testnet)
 modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
 modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
 modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
 
-modparam("web3_auth_ext", "web3_debug_mode", 1)
+modparam("web3_auth_ext", "contract_debug_mode", 1)
 ```
 
 ## Testing Your Configuration
@@ -109,14 +109,14 @@ make -f Makefile.test
 
 1. **Network Connectivity**: Ensure PublicNode RPC is accessible from your server
 2. **Network Mismatch**: Verify contract addresses match the configured network
-3. **Fallback Behavior**: If `ens_rpc_url` is empty, ENS uses `web3_rpc_url`
+3. **Fallback Behavior**: If `ens_rpc_url` is empty, ENS uses `authentication_rpc_url`
 4. **Rate Limiting**: PublicNode has fair usage limits for free tier
 
 ### Debug Information
 
 Enable debug mode to see which RPC is used for each call:
 ```
-modparam("web3_auth_ext", "web3_debug_mode", 1)
+modparam("web3_auth_ext", "contract_debug_mode", 1)
 ```
 
 Look for log messages:
