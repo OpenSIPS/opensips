@@ -219,6 +219,25 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 		</example>
 		</section>
 
+		<section id="param_max_json_log_size" xreflabel="max_json_log_size">
+		<title><varname>max_json_log_size (integer)</varname></title>
+		<para>
+			When an error log is printed due to malformed JSON, this parameter indicates
+			how many characters from the JSON should be printed at console. A higher value
+			might overcrowd the logs, but can be useful for troubleshooting.
+		</para>
+		<para>
+			Default value is <emphasis>512</emphasis> characters.
+		</para>
+		<example>
+		<title>Setting the <varname>max_json_log_size</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("aaa_diameter", "max_json_log_size", 4096)
+
+</programlisting>
+		</example>
+		</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">

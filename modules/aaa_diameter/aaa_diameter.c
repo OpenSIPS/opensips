@@ -51,6 +51,7 @@ str dm_realm = str_init("diameter.test");
 str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
 static str dm_aaa_url = {NULL, 0};
 int dm_answer_timeout = 2000; /* ms */
+int dm_max_json_log_size   = 512;
 int dm_server_autoreply_error; /* ensures we always reply with *something* */
 
 static const cmd_export_t cmds[]= {
@@ -92,6 +93,7 @@ static const param_export_t params[] =
 	{ "peer_identity",   STR_PARAM, &dm_peer_identity.s  },
 	{ "aaa_url",         STR_PARAM, &dm_aaa_url.s        },
 	{ "answer_timeout",   INT_PARAM, &dm_answer_timeout  },
+	{ "max_json_log_size",INT_PARAM, &dm_max_json_log_size},
 	{ NULL, 0, NULL },
 };
 
@@ -269,7 +271,15 @@ static int dm_bind_api(diameter_api *api)
 }
 
 
-
+#define LM_ERR_DM_JSON(_err, _j) \
+	do { \
+		if ((_j)->len > dm_max_json_log_size) \
+			LM_ERR(_err " ('%.*s' ..., total: %d)\n", \
+					dm_max_json_log_size, (_j)->s, (_j)->len); \
+		else \
+			LM_ERR(_err " ('%.*s', len: %d)\n", \
+					(_j)->len, (_j)->s, (_j)->len); \
+	} while (0)
 static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 				str *avp_json, pv_spec_t *rpl_avps_pv)
 {
@@ -297,14 +307,12 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 
 	avps = cJSON_Parse(avp_json->s);
 	if (!avps) {
-		LM_ERR("failed to parse input JSON ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("failed to parse input JSON", avp_json);
 		return -1;
 	}
 
 	if (avps->type != cJSON_Array) {
-		LM_ERR("bad JSON type: must be Array ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("bad JSON type: must be Array", avp_json);
 		goto error;
 	}
 
@@ -316,8 +324,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 
 	if (dm_build_avps(&((struct dm_message *)(dmsg->avpair))->avps,
 	                     avps->child) != 0) {
-		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("failed to unpack JSON", avp_json);
 		_dm_destroy_message(dmsg);
 		goto error;
 	}
@@ -376,14 +383,12 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error)
 
 	avps = cJSON_Parse(avp_json->s);
 	if (!avps) {
-		LM_ERR("failed to parse input JSON ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("failed to parse input JSON", avp_json);
 		return -1;
 	}
 
 	if (avps->type != cJSON_Array) {
-		LM_ERR("bad JSON type: must be Array ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("bad JSON type: must be Array", avp_json);
 		goto error;
 	}
 
@@ -431,8 +436,7 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error)
 		dm->error_bit = 1;
 
 	if (dm_build_avps(&dm->avps, avps->child) != 0) {
-		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("failed to unpack JSON", avp_json);
 		goto error;
 	}
 
@@ -560,14 +564,12 @@ static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 
 	avps = cJSON_Parse(avp_json->s);
 	if (!avps) {
-		LM_ERR("failed to parse input JSON ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("failed to parse input JSON", avp_json);
 		return -1;
 	}
 
 	if (avps->type != cJSON_Array) {
-		LM_ERR("bad JSON type: must be Array ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("bad JSON type: must be Array", avp_json);
 		goto error;
 	}
 
@@ -579,8 +581,7 @@ static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 
 	if (dm_build_avps(&((struct dm_message *)(dmsg->avpair))->avps,
 	                     avps->child) != 0) {
-		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		LM_ERR_DM_JSON("failed to unpack JSON", avp_json);
 		_dm_destroy_message(dmsg);
 		goto error;
 	}
