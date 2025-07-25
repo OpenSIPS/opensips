@@ -187,7 +187,7 @@ static void bytes_to_hex(const unsigned char *bytes, size_t len, char *hex) {
     hex[2*len] = '\0';
 }
 
-// Professional ENS namehash implementation using proper keccak256
+// ENS namehash implementation using proper keccak256
 static void ens_namehash(const char *name, char *hash_hex)
 {
     unsigned char hash[32] = {0}; // Start with 32 zero bytes
