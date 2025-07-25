@@ -33,6 +33,7 @@
  #define me64_to_le_str(to, from, length) memcpy((to), (from), (length))
  
  /* constants */
+
  
  //const uint8_t round_constant_info[] PROGMEM = {
  //const uint8_t constants[] PROGMEM = {
