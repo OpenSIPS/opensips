@@ -1469,9 +1469,9 @@ Chapter 3. Contributors
    Carsten Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus
    Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus Darilion,
    Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius,
-   Jesus Rodrigues, Dusan Klinec (@ph4r05), Ruslan Bukin, Saúl
-   Ibarra Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
-   Schubert.
+   Andrej Solovjov, Jesus Rodrigues, Dusan Klinec (@ph4r05),
+   Ruslan Bukin, Saúl Ibarra Corretgé (@saghul), @jalung, Tolga
+   Tarhan, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1493,28 +1493,28 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2025
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
-   3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2023
-   4.  Maksym Sobolyev (@sobomax)          Jul 2004 - Feb 2023
-   5.  Vlad Paiu (@vladpaiu)               Sep 2011 - Nov 2022
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jan 2022
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   8.  @jalung                             Aug 2017 - Aug 2017
-   9.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
-   10. Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
+   1.  Andrej Solovjov                     Jul 2025 - Jul 2025
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2025
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   4.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2023
+   5.  Maksym Sobolyev (@sobomax)          Jul 2004 - Feb 2023
+   6.  Vlad Paiu (@vladpaiu)               Sep 2011 - Nov 2022
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jan 2022
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   9.  @jalung                             Aug 2017 - Aug 2017
+   10. Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
 
-   All remaining contributors: Julián Moreno Patiño, Dusan Klinec
-   (@ph4r05), Nick Altmann (@nikbyte), Tolga Tarhan, Saúl Ibarra
-   Corretgé (@saghul), Ruslan Bukin, Irina-Maria Stanescu, Kobi
-   Eshun (@ekobi), Phil D'Amore, Sergio Gutierrez, Klaus Darilion,
-   Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jesus
-   Rodrigues, Dan Pascu (@danpascu), Ancuta Onofrei, Marcus
-   Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Jeffrey
-   Magder, Carsten Bock, Andreas Granig, Dmitry Semyonov, Jan
-   Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
-   (@jiriatipteldotorg).
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Dusan Klinec (@ph4r05), Nick Altmann
+   (@nikbyte), Tolga Tarhan, Saúl Ibarra Corretgé (@saghul),
+   Ruslan Bukin, Irina-Maria Stanescu, Kobi Eshun (@ekobi), Phil
+   D'Amore, Sergio Gutierrez, Klaus Darilion, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Dan Pascu
+   (@danpascu), Ancuta Onofrei, Marcus Hunger, Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Jeffrey Magder, Carsten Bock,
+   Andreas Granig, Dmitry Semyonov, Jan Janak (@janakj), Andrei
+   Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits
