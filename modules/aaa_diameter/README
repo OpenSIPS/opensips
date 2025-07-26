@@ -20,6 +20,7 @@ AAA_DIAMETER MODULE
               1.5.3. peer_identity (string)
               1.5.4. aaa_url (string)
               1.5.5. answer_timeout (integer)
+              1.5.6. max_json_log_size (integer)
 
         1.6. Exported Functions
 
@@ -61,10 +62,11 @@ AAA_DIAMETER MODULE
    1.4. Setting the aaa_url parameter
    1.5. Setting the aaa_url parameter
    1.6. Setting the answer_timeout parameter
-   1.7. dictionary.opensips extended syntax
-   1.8. dm_send_request usage
-   1.9. dm_send_answer() usage
-   1.10. dm_send_request asynchronous usage
+   1.7. Setting the max_json_log_size parameter
+   1.8. dictionary.opensips extended syntax
+   1.9. dm_send_request usage
+   1.10. dm_send_answer() usage
+   1.11. dm_send_request asynchronous usage
 
 Chapter 1. Admin Guide
 
@@ -208,6 +210,20 @@ xtra-avps-file:dictionary.opensips")
 modparam("aaa_diameter", "answer_timeout", 5000)
 
 
+1.5.6. max_json_log_size (integer)
+
+   When an error log is printed due to malformed JSON, this
+   parameter indicates how many characters from the JSON should be
+   printed at console. A higher value might overcrowd the logs,
+   but can be useful for troubleshooting.
+
+   Default value is 512 characters.
+
+   Example 1.7. Setting the max_json_log_size parameter
+
+modparam("aaa_diameter", "max_json_log_size", 4096)
+
+
 1.6. Exported Functions
 
 1.6.1.  dm_send_request(app_id, cmd_code, avps_json, [rpl_avps_pv])
@@ -239,7 +255,7 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 
    This function can be used from any route.
 
-   Example 1.7. dictionary.opensips extended syntax
+   Example 1.8. dictionary.opensips extended syntax
 
 # Example of defining custom Diameter AVPs, Application IDs,
 # Requests and Replies in the "dictionary.opensips" file
@@ -304,7 +320,7 @@ ANSWER 92001 My-Custom-Answer
 }
 
 
-   Example 1.8. dm_send_request usage
+   Example 1.9. dm_send_request usage
 
 # Building an sending an My-Custom-Request (92001) for the
 # My Diameter Application (42)
@@ -357,7 +373,7 @@ $json(avps) := $var(rpl_avps);
 
    This function can only be used from an EVENT_ROUTE.
 
-   Example 1.9. dm_send_answer() usage
+   Example 1.10. dm_send_answer() usage
 
 event_route [E_DM_REQUEST] {
   xlog("Req: $param(sess_id) / $param(app_id) / $param(cmd_code)\n");
@@ -393,7 +409,7 @@ event_route [E_DM_REQUEST] {
 
    Uses the same parameters and return codes as dm_send_request().
 
-   Example 1.10. dm_send_request asynchronous usage
+   Example 1.11. dm_send_request asynchronous usage
 
 # Building an sending an My-Custom-Request (92001) for the
 # My Diameter Application (42)
@@ -461,7 +477,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu)       114      37      6850     1105
-   2. Razvan Crainea (@razvancrainea)    35      18      1361     248
+   2. Razvan Crainea (@razvancrainea)    36      19      1400     267
    3. Alexandra Titoc                    6        4       11       2
    4. Larry Laffer                       3        1       6        5
    5. Maksym Sobolyev (@sobomax)         3        1       5        5
@@ -487,10 +503,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Larry Laffer                    Jul 2025 - Jul 2025
-   2. Alexandra Titoc                 Sep 2024 - Sep 2024
-   3. Peter Lemenkov (@lemenkov)      Jul 2024 - Jul 2024
-   4. Razvan Crainea (@razvancrainea) May 2023 - May 2024
+   1. Razvan Crainea (@razvancrainea) May 2023 - Jul 2025
+   2. Larry Laffer                    Jul 2025 - Jul 2025
+   3. Alexandra Titoc                 Sep 2024 - Sep 2024
+   4. Peter Lemenkov (@lemenkov)      Jul 2024 - Jul 2024
    5. Liviu Chircu (@liviuchircu)     May 2021 - Mar 2024
    6. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
 
@@ -501,8 +517,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 
