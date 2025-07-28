@@ -79,7 +79,7 @@
 	<title>Installation</title>
 	<para>
 	    <emphasis>Compilation:</emphasis>
-	    <programlisting>
+	    <programlisting format="linespecific" role="shell">
 # Build with Kamailio source
 make include_modules="auth_web3" cfg
 make all
@@ -108,11 +108,12 @@ make
 	<section id="auth_web3.minimal_config">
 	    <title>Minimal Configuration</title>
 	    <para>
-		<programlisting>
+		<programlisting format="linespecific" role="kamailio">
+# Load required modules
 loadmodule "auth.so"
 loadmodule "auth_web3.so"
 
-# Required parameters
+# Configure authentication contract
 modparam("auth_web3", "authentication_contract_address", 
          "0xE773BB79689379d32Ad1Db839868b6756B493aea")
 
@@ -130,13 +131,14 @@ route[AUTH] {
 	<section id="auth_web3.ens_config">
 	    <title>ENS Configuration</title>
 	    <para>
-		<programlisting>
-# ENS + Web3 authentication
+		<programlisting format="linespecific" role="kamailio">
+# Multi-network configuration (ENS on Ethereum, Auth on Oasis)
 modparam("auth_web3", "authentication_rpc_url", 
          "https://testnet.sapphire.oasis.dev")
 modparam("auth_web3", "ens_rpc_url", 
          "https://ethereum-sepolia-rpc.publicnode.com")
 
+# Enhanced authentication with error handling
 route[ENS_AUTH] {
     if (!web3_www_authenticate("$fd", "$rm")) {
         switch ($retcode) {
@@ -152,6 +154,7 @@ route[ENS_AUTH] {
         exit;
     }
     
+    # Log ENS domain authentication
     if ($(fU{s.contains,"."})) {
         xlog("L_INFO", "ENS domain $fU authenticated\n");
     }
@@ -163,14 +166,17 @@ route[ENS_AUTH] {
 	<section id="auth_web3.container_config">
 	    <title>Container Configuration</title>
 	    <para>
-		<programlisting>
+		<programlisting format="linespecific" role="env">
 # Environment variables (.env file)
 AUTHENTICATION_RPC_URL="https://testnet.sapphire.oasis.dev"
 AUTHENTICATION_CONTRACT_ADDRESS="0xYourContract"
 ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
 CONTRACT_DEBUG_MODE="0"
 RPC_TIMEOUT="15"
-
+		</programlisting>
+	    </para>
+	    <para>
+		<programlisting format="linespecific" role="kamailio">
 # Kamailio config (reads environment automatically)
 loadmodule "auth.so"
 loadmodule "auth_web3.so"

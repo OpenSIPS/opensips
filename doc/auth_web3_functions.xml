@@ -15,29 +15,101 @@
     <section id="auth_web3.function_summary">
 	<title>Function Summary</title>
 	<para>
-	    <programlisting>
-Function                   Parameters      Return Type   Route Context   Description
---------------------------------------------------------------------------------------------
-web3_www_authenticate      realm, method   integer       REQUEST_ROUTE   Web3 authentication with ENS support for WWW-Authenticate headers
-web3_proxy_authenticate    realm, method   integer       REQUEST_ROUTE   Web3 authentication with ENS support for Proxy-Authenticate headers  
-bind_auth_web3             api             integer       MODULE_INIT     API binding function for other Kamailio modules
-	    </programlisting>
+	    <table frame="all">
+		<title>Function Summary</title>
+		<tgroup cols="5" align="left" colsep="1" rowsep="1">
+		    <colspec colname="col1" colwidth="25*"/>
+		    <colspec colname="col2" colwidth="20*"/>
+		    <colspec colname="col3" colwidth="15*"/>
+		    <colspec colname="col4" colwidth="15*"/>
+		    <colspec colname="col5" colwidth="25*"/>
+		    <thead>
+			<row>
+			    <entry>Function</entry>
+			    <entry>Parameters</entry>
+			    <entry>Return Type</entry>
+			    <entry>Route Context</entry>
+			    <entry>Description</entry>
+			</row>
+		    </thead>
+		    <tbody>
+			<row>
+			    <entry>web3_www_authenticate</entry>
+			    <entry>realm, method</entry>
+			    <entry>integer</entry>
+			    <entry>REQUEST_ROUTE</entry>
+			    <entry>Web3 authentication with ENS support for WWW-Authenticate headers</entry>
+			</row>
+			<row>
+			    <entry>web3_proxy_authenticate</entry>
+			    <entry>realm, method</entry>
+			    <entry>integer</entry>
+			    <entry>REQUEST_ROUTE</entry>
+			    <entry>Web3 authentication with ENS support for Proxy-Authenticate headers</entry>
+			</row>
+			<row>
+			    <entry>bind_auth_web3</entry>
+			    <entry>api</entry>
+			    <entry>integer</entry>
+			    <entry>MODULE_INIT</entry>
+			    <entry>API binding function for other Kamailio modules</entry>
+			</row>
+		    </tbody>
+		</tgroup>
+	    </table>
 	</para>
     </section>
 
     <section id="auth_web3.return_codes">
 	<title>Return Codes Reference</title>
 	<para>
-	    <programlisting>
-Return Code   Meaning                                       Recommended Action
-----------------------------------------------------------------------------------
-> 0           Authentication successful                     Continue processing request
--1            Generic error                                 Send challenge or 500 error
--2            Invalid credentials/blockchain verification   Send challenge with stale=false
--3            Stale nonce                                   Send challenge with stale=true
--4            No credentials provided                       Send initial challenge
--5            Network timeout (RPC call failed)            Send 503 Service Unavailable
-	    </programlisting>
+	    <table frame="all">
+		<title>Return Codes Reference</title>
+		<tgroup cols="3" align="left" colsep="1" rowsep="1">
+		    <colspec colname="col1" colwidth="15*"/>
+		    <colspec colname="col2" colwidth="35*"/>
+		    <colspec colname="col3" colwidth="50*"/>
+		    <thead>
+			<row>
+			    <entry>Return Code</entry>
+			    <entry>Meaning</entry>
+			    <entry>Recommended Action</entry>
+			</row>
+		    </thead>
+		    <tbody>
+			<row>
+			    <entry>> 0</entry>
+			    <entry>Authentication successful</entry>
+			    <entry>Continue processing request</entry>
+			</row>
+			<row>
+			    <entry>-1</entry>
+			    <entry>Generic error</entry>
+			    <entry>Send challenge or 500 error</entry>
+			</row>
+			<row>
+			    <entry>-2</entry>
+			    <entry>Invalid credentials/blockchain verification</entry>
+			    <entry>Send challenge with stale=false</entry>
+			</row>
+			<row>
+			    <entry>-3</entry>
+			    <entry>Stale nonce</entry>
+			    <entry>Send challenge with stale=true</entry>
+			</row>
+			<row>
+			    <entry>-4</entry>
+			    <entry>No credentials provided</entry>
+			    <entry>Send initial challenge</entry>
+			</row>
+			<row>
+			    <entry>-5</entry>
+			    <entry>Network timeout (RPC call failed)</entry>
+			    <entry>Send 503 Service Unavailable</entry>
+			</row>
+		    </tbody>
+		</tgroup>
+	    </table>
 	</para>
     </section>
 
@@ -82,14 +154,14 @@ Return Code   Meaning                                       Recommended Action
 		</para>
 		<example>
 		<title>web3_www_authenticate usage</title>
-		<programlisting format="linespecific">
+		<programlisting format="linespecific" role="kamailio">
 # Basic Web3 + ENS authentication
 if (!web3_www_authenticate("$fd", "$rm")) {
     www_challenge("$fd", "0");
     exit;
 }
 
-# Enhanced error handling
+# Enhanced error handling with specific responses
 if (!web3_www_authenticate("$td", "$rm")) {
     switch ($retcode) {
         case -2:
@@ -106,7 +178,7 @@ if (!web3_www_authenticate("$td", "$rm")) {
     exit;
 }
 
-# Check if ENS domain was authenticated
+# Log ENS domain authentication
 if ($(fU{s.contains,"."})) {
     xlog("L_INFO", "ENS domain $fU authenticated\n");
 }
@@ -135,14 +207,14 @@ if ($(fU{s.contains,"."})) {
 		</para>
 		<example>
 		<title>web3_proxy_authenticate usage</title>
-		<programlisting format="linespecific">
+		<programlisting format="linespecific" role="kamailio">
 # Basic proxy authentication
 if (!web3_proxy_authenticate("proxy.domain.com", "$rm")) {
     proxy_challenge("proxy.domain.com", "0");
     exit;
 }
 
-# Proxy routing with ENS awareness
+# Proxy routing with ENS awareness and error handling
 route[RELAY] {
     if (!web3_proxy_authenticate("$fd", "$rm")) {
         switch ($retcode) {
@@ -154,6 +226,7 @@ route[RELAY] {
         exit;
     }
     
+    # Log ENS user authentication
     if ($(fU{s.contains,"."})) {
         xlog("L_INFO", "ENS user $fU authenticated via proxy\n");
     }
@@ -173,15 +246,49 @@ route[RELAY] {
 		<section id="auth_web3.api_summary">
 		    <title>API Function Summary</title>
 		    <para>
-			<programlisting>
-API Function          Parameters                                                 Return Type      Description
------------------------------------------------------------------------------------------------------------
-digest_authenticate   msg, realm, hdr_type, method                              auth_result_t    Core authentication with ENS support
-check_response        username, realm, password, nonce, method, uri, algorithm, auth_result_t    Low-level credential verification
-                      response
-ens_validate          domain, wallet_address                                     int              ENS domain ownership validation
-ens_get_owner         domain                                                     str*             ENS ownership resolution
-			</programlisting>
+			<table frame="all">
+			    <title>API Function Summary</title>
+			    <tgroup cols="4" align="left" colsep="1" rowsep="1">
+				<colspec colname="col1" colwidth="20*"/>
+				<colspec colname="col2" colwidth="30*"/>
+				<colspec colname="col3" colwidth="15*"/>
+				<colspec colname="col4" colwidth="35*"/>
+				<thead>
+				    <row>
+					<entry>API Function</entry>
+					<entry>Parameters</entry>
+					<entry>Return Type</entry>
+					<entry>Description</entry>
+				    </row>
+				</thead>
+				<tbody>
+				    <row>
+					<entry>digest_authenticate</entry>
+					<entry>msg, realm, hdr_type, method</entry>
+					<entry>auth_result_t</entry>
+					<entry>Core authentication with ENS support</entry>
+				    </row>
+				    <row>
+					<entry>check_response</entry>
+					<entry>username, realm, password, nonce, method, uri, algorithm, response</entry>
+					<entry>auth_result_t</entry>
+					<entry>Low-level credential verification</entry>
+				    </row>
+				    <row>
+					<entry>ens_validate</entry>
+					<entry>domain, wallet_address</entry>
+					<entry>int</entry>
+					<entry>ENS domain ownership validation</entry>
+				    </row>
+				    <row>
+					<entry>ens_get_owner</entry>
+					<entry>domain</entry>
+					<entry>str*</entry>
+					<entry>ENS ownership resolution</entry>
+				    </row>
+				</tbody>
+			    </tgroup>
+			</table>
 		    </para>
 		</section>
 		
@@ -206,7 +313,7 @@ ens_get_owner         domain                                                    
 			</para>
 			<example>
 			<title>API usage in C modules</title>
-			<programlisting format="linespecific">
+			<programlisting format="linespecific" role="c">
 #include "modules/auth_web3/api.h"
 
 auth_web3_api_t auth_web3_api;
