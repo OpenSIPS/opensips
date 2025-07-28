@@ -63,6 +63,15 @@ Jonathan Kandel
               9.1. Troubleshooting Reference
               9.2. Error Code Details
 
+   List of Tables
+
+   1.1. Parameter Summary
+   1.2. Function Summary
+   1.3. Return Codes Reference
+   1.4. API Function Summary
+   1.5. Troubleshooting Reference
+   1.6. Error Code Details
+
    List of Examples
 
    1.1. authentication_rpc_url parameter
@@ -195,24 +204,21 @@ make
 
 4.1. Parameter Summary
 
-Parameter                          Type      Default
-     Description
---------------------------------------------------------------------------------
-----------
-authentication_rpc_url             string    https://testnet.sapphire.oasis.dev
-    Oasis Sapphire RPC endpoint for authentication contracts
-authentication_contract_address    string    0xE773BB79689379d32Ad1Db839868b67..
-.   Authentication contract address on Oasis Sapphire
-ens_rpc_url                        string    https://ethereum-sepolia-rpc.public
-... RPC endpoint for ENS queries (optional)
-ens_registry_address               string    0x00000000000C2E074eC69A0dFb2997BA.
-.. ENS Registry contract address
-ens_name_wrapper_address           string    0x0635513f179D50A207757E05759CbD10.
-.. ENS Name Wrapper contract address
-contract_debug_mode                integer   1
-     Enable debug logging (0=off, 1=on)
-rpc_timeout                        integer   10
-     RPC call timeout in seconds
+   Table 1.1. Parameter Summary
+   Parameter Type Default Description
+   authentication_rpc_url string https://testnet.sapphire.oasis.dev Oasis
+   Sapphire RPC endpoint for authentication contracts
+   authentication_contract_address string
+   0xE773BB79689379d32Ad1Db839868b67... Authentication contract address on
+   Oasis Sapphire
+   ens_rpc_url string https://ethereum-sepolia-rpc.public... RPC endpoint
+   for ENS queries (optional)
+   ens_registry_address string 0x00000000000C2E074eC69A0dFb2997BA... ENS
+   Registry contract address
+   ens_name_wrapper_address string 0x0635513f179D50A207757E05759CbD10...
+   ENS Name Wrapper contract address
+   contract_debug_mode integer 1 Enable debug logging (0=off, 1=on)
+   rpc_timeout integer 10 RPC call timeout in seconds
 
 4.2. authentication_rpc_url (string)
 
@@ -406,34 +412,26 @@ loadmodule "auth_web3.so"
 
 5.1. Function Summary
 
-Function                   Parameters      Return Type   Route Context   Descrip
-tion
---------------------------------------------------------------------------------
-------------
-web3_www_authenticate      realm, method   integer       REQUEST_ROUTE   Web3 au
-thentication with ENS support for WWW-Authenticate headers
-web3_proxy_authenticate    realm, method   integer       REQUEST_ROUTE   Web3 au
-thentication with ENS support for Proxy-Authenticate headers
-bind_auth_web3             api             integer       MODULE_INIT     API bin
-ding function for other Kamailio modules
+   Table 1.2. Function Summary
+   Function Parameters Return Type Route Context Description
+   web3_www_authenticate realm, method integer REQUEST_ROUTE Web3
+   authentication with ENS support for WWW-Authenticate headers
+   web3_proxy_authenticate realm, method integer REQUEST_ROUTE Web3
+   authentication with ENS support for Proxy-Authenticate headers
+   bind_auth_web3 api integer MODULE_INIT API binding function for other
+   Kamailio modules
 
 5.2. Return Codes Reference
 
-Return Code   Meaning                                       Recommended Action
---------------------------------------------------------------------------------
---
-> 0           Authentication successful                     Continue processing
-request
--1            Generic error                                 Send challenge or 50
-0 error
--2            Invalid credentials/blockchain verification   Send challenge with
-stale=false
--3            Stale nonce                                   Send challenge with
-stale=true
--4            No credentials provided                       Send initial challen
-ge
--5            Network timeout (RPC call failed)            Send 503 Service Unav
-ailable
+   Table 1.3. Return Codes Reference
+   Return Code Meaning Recommended Action
+   > 0 Authentication successful Continue processing request
+   -1 Generic error Send challenge or 500 error
+   -2 Invalid credentials/blockchain verification Send challenge with
+   stale=false
+   -3 Stale nonce Send challenge with stale=true
+   -4 No credentials provided Send initial challenge
+   -5 Network timeout (RPC call failed) Send 503 Service Unavailable
 
 5.3.  web3_www_authenticate(realm, method)
 
@@ -468,7 +466,7 @@ if (!web3_www_authenticate("$fd", "$rm")) {
     exit;
 }
 
-# Enhanced error handling
+# Enhanced error handling with specific responses
 if (!web3_www_authenticate("$td", "$rm")) {
     switch ($retcode) {
         case -2:
@@ -485,7 +483,7 @@ if (!web3_www_authenticate("$td", "$rm")) {
     exit;
 }
 
-# Check if ENS domain was authenticated
+# Log ENS domain authentication
 if ($(fU{s.contains,"."})) {
     xlog("L_INFO", "ENS domain $fU authenticated\n");
 }
@@ -513,7 +511,7 @@ if (!web3_proxy_authenticate("proxy.domain.com", "$rm")) {
     exit;
 }
 
-# Proxy routing with ENS awareness
+# Proxy routing with ENS awareness and error handling
 route[RELAY] {
     if (!web3_proxy_authenticate("$fd", "$rm")) {
         switch ($retcode) {
@@ -525,6 +523,7 @@ route[RELAY] {
         exit;
     }
 
+    # Log ENS user authentication
     if ($(fU{s.contains,"."})) {
         xlog("L_INFO", "ENS user $fU authenticated via proxy\n");
     }
@@ -538,19 +537,14 @@ route[RELAY] {
 
 5.5.1. API Function Summary
 
-API Function          Parameters
- Return Type      Description
---------------------------------------------------------------------------------
----------------------------
-digest_authenticate   msg, realm, hdr_type, method
-auth_result_t    Core authentication with ENS support
-check_response        username, realm, password, nonce, method, uri, algorithm,
-auth_result_t    Low-level credential verification
-                      response
-ens_validate          domain, wallet_address
- int              ENS domain ownership validation
-ens_get_owner         domain
- str*             ENS ownership resolution
+   Table 1.4. API Function Summary
+   API Function Parameters Return Type Description
+   digest_authenticate msg, realm, hdr_type, method auth_result_t Core
+   authentication with ENS support
+   check_response username, realm, password, nonce, method, uri,
+   algorithm, response auth_result_t Low-level credential verification
+   ens_validate domain, wallet_address int ENS domain ownership validation
+   ens_get_owner domain str* ENS ownership resolution
 
 5.5.2.  bind_auth_web3(api)
 
@@ -614,10 +608,11 @@ result = web3_api.digest_authenticate(msg, &realm,
 
 6.1. Minimal Configuration
 
+# Load required modules
 loadmodule "auth.so"
 loadmodule "auth_web3.so"
 
-# Required parameters
+# Configure authentication contract
 modparam("auth_web3", "authentication_contract_address",
          "0xE773BB79689379d32Ad1Db839868b6756B493aea")
 
@@ -631,12 +626,13 @@ route[AUTH] {
 
 6.2. ENS Configuration
 
-# ENS + Web3 authentication
+# Multi-network configuration (ENS on Ethereum, Auth on Oasis)
 modparam("auth_web3", "authentication_rpc_url",
          "https://testnet.sapphire.oasis.dev")
 modparam("auth_web3", "ens_rpc_url",
          "https://ethereum-sepolia-rpc.publicnode.com")
 
+# Enhanced authentication with error handling
 route[ENS_AUTH] {
     if (!web3_www_authenticate("$fd", "$rm")) {
         switch ($retcode) {
@@ -652,6 +648,7 @@ route[ENS_AUTH] {
         exit;
     }
 
+    # Log ENS domain authentication
     if ($(fU{s.contains,"."})) {
         xlog("L_INFO", "ENS domain $fU authenticated\n");
     }
@@ -795,60 +792,37 @@ loadmodule "auth_web3.so"
 
 9.1. Troubleshooting Reference
 
-Issue                               Possible Cause                          Solu
-tion
---------------------------------------------------------------------------------
-------------------------
-Return code -5 (Network timeout)   RPC endpoint unreachable or slow        Check
- network connectivity, increase rpc_timeout,
-                                                                            use
-reliable RPC provider
-Return code -2 (Auth failed)       Invalid credentials or contract error   Verif
-y contract address, check authentication
-                                                                            logi
-c, enable debug mode
-ENS validation fails               Domain not owned or wrapped             Check
- ENS ownership on etherscan, verify wallet
-                                                                            matc
-hes contract data
-Module won't load                  Missing dependencies or misconfiguration Veri
-fy libcurl and OpenSSL installed, check
-                                                                            modu
-le path
-High latency                       Network delays or inefficient RPC provider Us
-e faster RPC provider, optimize network routing,
-                                                                            cons
-ider caching
-Intermittent failures              RPC provider rate limiting              Upgra
-de to paid RPC plan, implement retries,
-                                                                            use
-multiple providers
-No authentication header           SIP client or header parsing issue      Check
- client configuration, verify header format,
-                                                                            enab
-le debug logs
-Contract call errors               Wrong contract address or ABI mismatch  Verif
-y contract address, check function signatures
-                                                                            matc
-h required interface
+   Table 1.5. Troubleshooting Reference
+   Issue Possible Cause Solution
+   Return code -5 (Network timeout) RPC endpoint unreachable or slow Check
+   network connectivity, increase rpc_timeout, use reliable RPC provider
+   Return code -2 (Auth failed) Invalid credentials or contract error
+   Verify contract address, check authentication logic, enable debug mode
+   ENS validation fails Domain not owned or wrapped Check ENS ownership on
+   etherscan, verify wallet matches contract data
+   Module won't load Missing dependencies or misconfiguration Verify
+   libcurl and OpenSSL installed, check module path
+   High latency Network delays or inefficient RPC provider Use faster RPC
+   provider, optimize network routing, consider caching
+   Intermittent failures RPC provider rate limiting Upgrade to paid RPC
+   plan, implement retries, use multiple providers
+   No authentication header SIP client or header parsing issue Check
+   client configuration, verify header format, enable debug logs
+   Contract call errors Wrong contract address or ABI mismatch Verify
+   contract address, check function signatures match required interface
 
 9.2. Error Code Details
 
-Return Code   Error Type       Debug Information                       Client Re
-sponse
---------------------------------------------------------------------------------
---------
-1             Success          Authentication completed successfully   Continue
-processing
--1            Generic Error    Check logs for specific error details   Send 500
-Internal Server Error
--2            Auth Failed      Contract returned false or credential   Send 401
-with challenge (stale=false)
-                               mismatch
--3            Stale Nonce      Nonce already used or expired          Send 401 w
-ith challenge (stale=true)
--4            No Credentials   Authorization header missing or        Send 401 w
-ith initial challenge
-                               malformed
--5            Network Timeout  RPC call failed or timed out           Send 503 S
-ervice Unavailable
+   Table 1.6. Error Code Details
+   Return Code Error Type Debug Information Client Response
+   1 Success Authentication completed successfully Continue processing
+   -1 Generic Error Check logs for specific error details Send 500
+   Internal Server Error
+   -2 Auth Failed Contract returned false or credential mismatch Send 401
+   with challenge (stale=false)
+   -3 Stale Nonce Nonce already used or expired Send 401 with challenge
+   (stale=true)
+   -4 No Credentials Authorization header missing or malformed Send 401
+   with initial challenge
+   -5 Network Timeout RPC call failed or timed out Send 503 Service
+   Unavailable
