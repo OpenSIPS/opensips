@@ -8,15 +8,15 @@
 
 ]>
 
-<section id="web3_auth_ext.functions" xmlns:xi="http://www.w3.org/2001/XInclude">
+<section id="web3_auth.functions" xmlns:xi="http://www.w3.org/2001/XInclude">
 
     <title>Functions</title>
 
-    <section id="web3_auth_ext.function_summary">
+    <section id="web3_auth.function_summary">
 	<title>Function Summary</title>
 	<para>
 	    <table frame="all">
-		<title>web3_auth_ext Module Functions</title>
+		<title>web3_auth Module Functions</title>
 		<tgroup cols="5" align="left" colsep="1" rowsep="1">
 		    <thead>
 			<row>
@@ -55,7 +55,7 @@
 	</para>
     </section>
 
-    <section id="web3_auth_ext.return_codes">
+    <section id="web3_auth.return_codes">
 	<title>Return Codes Reference</title>
 	<para>
 	    <table frame="all">
@@ -105,7 +105,7 @@
 	</para>
     </section>
 
-	<section id="web3_auth_ext.f.web3_www_authenticate">
+	<section id="web3_auth.f.web3_www_authenticate">
 		<title>
 			<function moreinfo="none">web3_www_authenticate(realm, method)</function>
 		</title>
@@ -178,7 +178,7 @@ if ($(fU{s.contains,"."})) {
 		</example>
 	</section>
 
-	<section id="web3_auth_ext.f.web3_proxy_authenticate">
+	<section id="web3_auth.f.web3_proxy_authenticate">
 		<title>
 			<function moreinfo="none">web3_proxy_authenticate(realm, method)</function>
 		</title>
@@ -227,14 +227,14 @@ route[RELAY] {
 		</example>
 	</section>
 
-	<section id="web3_auth_ext.api">
+	<section id="web3_auth.api">
 		<title>API Functions</title>
 		<para>
 		The module provides an API for other Kamailio modules to access Web3 authentication 
 		and ENS validation functions programmatically.
 		</para>
 
-		<section id="web3_auth_ext.api_summary">
+		<section id="web3_auth.api_summary">
 		    <title>API Function Summary</title>
 		    <para>
 			<table frame="all">
@@ -279,7 +279,7 @@ route[RELAY] {
 		    </para>
 		</section>
 		
-		<section id="web3_auth_ext.f.bind_web3_auth">
+		<section id="web3_auth.f.bind_web3_auth">
 			<title>
 				<function moreinfo="none">bind_web3_auth(api)</function>
 			</title>
@@ -301,7 +301,7 @@ route[RELAY] {
 			<example>
 			<title>API usage in C modules</title>
 			<programlisting format="linespecific">
-#include "modules/web3_auth_ext/api.h"
+#include "modules/web3_auth/api.h"
 
 web3_auth_api_t web3_api;
 
@@ -319,13 +319,13 @@ result = web3_api.digest_authenticate(msg, &amp;realm,
 		</section>
 	</section>
 
-	<section id="web3_auth_ext.ens_technical">
+	<section id="web3_auth.ens_technical">
 	    <title>ENS Technical Details</title>
 	    <para>
 		The module implements comprehensive ENS integration with the following technical features:
 	    </para>
 	    
-	    <section id="web3_auth_ext.ens_namehash">
+	    <section id="web3_auth.ens_namehash">
 		<title>Namehash Calculation</title>
 		<para>
 		    Implements proper ENS namehash calculation according to EIP-137 for converting 
@@ -333,7 +333,7 @@ result = web3_api.digest_authenticate(msg, &amp;realm,
 		</para>
 	    </section>
 	    
-	    <section id="web3_auth_ext.ens_ownership">
+	    <section id="web3_auth.ens_ownership">
 		<title>Ownership Resolution</title>
 		<para>
 		    Handles complex ENS ownership scenarios:
@@ -345,7 +345,7 @@ result = web3_api.digest_authenticate(msg, &amp;realm,
 		</para>
 	    </section>
 	    
-	    <section id="web3_auth_ext.multi_network">
+	    <section id="web3_auth.multi_network">
 		<title>Multi-Network Support</title>
 		<para>
 		    <itemizedlist>

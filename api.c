@@ -1,5 +1,5 @@
 /*
- * Web3 Authentication Extension - API Implementation
+ * Web3 Authentication  - API Implementation
  *
  * Copyright (C) 2025 Jonathan Kandel
  *
@@ -26,7 +26,7 @@
 #include "../../core/sr_module.h"
 #include "api.h"
 #include "web3_auth.h"
-#include "web3_auth_ext_mod.h"
+#include "web3_auth_mod.h"
 
 /**
  * @brief Bind Web3 authentication API

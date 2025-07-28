@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Web3 Authentication Extension now supports **dual-network authentication**, allowing ENS contracts and Oasis authentication contracts to operate on different blockchain networks.
+The Web3 Authentication now supports **dual-network authentication**, allowing ENS contracts and Oasis authentication contracts to operate on different blockchain networks.
 
 ## Configuration Parameters
 
@@ -64,18 +64,18 @@ authentication_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
 ## Kamailio Configuration Example
 
 ```kamailio
-loadmodule "web3_auth_ext.so"
+loadmodule "web3_auth.so"
 
 # Oasis authentication network
-modparam("web3_auth_ext", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
-modparam("web3_auth_ext", "authentication_contract_address", "0xYourOasisContract")
+modparam("web3_auth", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("web3_auth", "authentication_contract_address", "0xYourOasisContract")
 
 # ENS network (Sepolia testnet)
-modparam("web3_auth_ext", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
-modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
-modparam("web3_auth_ext", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
+modparam("web3_auth", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+modparam("web3_auth", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+modparam("web3_auth", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
 
-modparam("web3_auth_ext", "contract_debug_mode", 1)
+modparam("web3_auth", "contract_debug_mode", 1)
 ```
 
 ## Testing Your Configuration
@@ -116,7 +116,7 @@ make -f Makefile.test
 
 Enable debug mode to see which RPC is used for each call:
 ```
-modparam("web3_auth_ext", "contract_debug_mode", 1)
+modparam("web3_auth", "contract_debug_mode", 1)
 ```
 
 Look for log messages:

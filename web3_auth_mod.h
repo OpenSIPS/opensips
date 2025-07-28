@@ -1,5 +1,5 @@
 /*
- * Web3 Authentication Extension Module
+ * Web3 Authentication Module
  *
  * Copyright (C) 2025 Jonathan Kandel
  *
@@ -22,14 +22,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef WEB3_AUTH_EXT_MOD_H
-#define WEB3_AUTH_EXT_MOD_H
+#ifndef WEB3_AUTH_MOD_H
+#define WEB3_AUTH_MOD_H
 
 #include "../../core/str.h"
 #include "../../modules/auth/api.h"
 #include "../../core/parser/msg_parser.h"
 #include <curl/curl.h>
-#include "web3_auth.h"
+#include "web3_imple.h"
 
 /*
  * Web3 Authentication Module Parameters
@@ -47,4 +47,4 @@ extern int rpc_timeout;
  */
 extern auth_api_s_t auth_api;
 
-#endif /* WEB3_AUTH_EXT_MOD_H */ 
+#endif /* WEB3_AUTH_MOD_H */ 

@@ -1,4 +1,4 @@
-docs = web3_auth_ext.xml
+docs = web3_auth.xml
 
 docbook_dir = ../../../../doc/docbook
 include $(docbook_dir)/Makefile.module 

@@ -8,15 +8,15 @@
 
 ]>
 
-<section id="web3_auth_ext.parameters" xmlns:xi="http://www.w3.org/2001/XInclude">
+<section id="web3_auth.parameters" xmlns:xi="http://www.w3.org/2001/XInclude">
 
     <title>Parameters</title>
     
-    <section id="web3_auth_ext.parameter_summary">
+    <section id="web3_auth.parameter_summary">
 	<title>Parameter Summary</title>
 	<para>
 	    <table frame="all">
-		<title>web3_auth_ext Module Parameters</title>
+		<title>web3_auth Module Parameters</title>
 		<tgroup cols="4" align="left" colsep="1" rowsep="1">
 		    <thead>
 			<row>
@@ -75,7 +75,7 @@
 	</para>
     </section>
 
-    <section id="web3_auth_ext.p.authentication_rpc_url">
+    <section id="web3_auth.p.authentication_rpc_url">
 	<title><varname>authentication_rpc_url</varname> (string)</title>
 	<para>
 		RPC URL for the Oasis Sapphire network endpoint. Used for authentication 
@@ -97,12 +97,12 @@
 	<example>
 	    <title>authentication_rpc_url parameter</title>
 	    <programlisting>
-modparam("web3_auth_ext", "authentication_rpc_url", "https://sapphire.oasis.io")
+modparam("web3_auth", "authentication_rpc_url", "https://sapphire.oasis.io")
 	    </programlisting>
 	</example>
     </section>
 
-    <section id="web3_auth_ext.p.authentication_contract_address">
+    <section id="web3_auth.p.authentication_contract_address">
 	<title><varname>authentication_contract_address</varname> (string)</title>
 	<para>
 		Smart contract address on Oasis Sapphire that handles authentication.
@@ -135,12 +135,12 @@ function getWalletAddress(
 	<example>
 	    <title>authentication_contract_address parameter</title>
 	    <programlisting>
-modparam("web3_auth_ext", "authentication_contract_address", "0x1234567890abcdef1234567890abcdef12345678")
+modparam("web3_auth", "authentication_contract_address", "0x1234567890abcdef1234567890abcdef12345678")
 	    </programlisting>
 	</example>
     </section>
 
-    <section id="web3_auth_ext.p.ens_rpc_url">
+    <section id="web3_auth.p.ens_rpc_url">
 	<title><varname>ens_rpc_url</varname> (string)</title>
 	<para>
 		RPC URL for ENS queries. Enables multi-network authentication where 
@@ -163,12 +163,12 @@ modparam("web3_auth_ext", "authentication_contract_address", "0x1234567890abcdef
 	<example>
 	    <title>ens_rpc_url parameter</title>
 	    <programlisting>
-modparam("web3_auth_ext", "ens_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
+modparam("web3_auth", "ens_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
 	    </programlisting>
 	</example>
     </section>
 
-    <section id="web3_auth_ext.p.ens_registry_address">
+    <section id="web3_auth.p.ens_registry_address">
 	<title><varname>ens_registry_address</varname> (string)</title>
 	<para>
 		ENS Registry contract address. Standard address on Ethereum mainnet and testnets.
@@ -182,12 +182,12 @@ modparam("web3_auth_ext", "ens_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY"
 	<example>
 	    <title>ens_registry_address parameter</title>
 	    <programlisting>
-modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+modparam("web3_auth", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
 	    </programlisting>
 	</example>
     </section>
 
-    <section id="web3_auth_ext.p.ens_name_wrapper_address">
+    <section id="web3_auth.p.ens_name_wrapper_address">
 	<title><varname>ens_name_wrapper_address</varname> (string)</title>
 	<para>
 		ENS Name Wrapper contract address for wrapped domains. Different addresses 
@@ -209,12 +209,12 @@ modparam("web3_auth_ext", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2
 	<example>
 	    <title>ens_name_wrapper_address parameter</title>
 	    <programlisting>
-modparam("web3_auth_ext", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401")
+modparam("web3_auth", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401")
 	    </programlisting>
 	</example>
     </section>
 
-    <section id="web3_auth_ext.p.contract_debug_mode">
+    <section id="web3_auth.p.contract_debug_mode">
 	<title><varname>contract_debug_mode</varname> (integer)</title>
 	<para>
 		Enable debug logging for authentication and ENS operations.
@@ -236,12 +236,12 @@ modparam("web3_auth_ext", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5
 	<example>
 	    <title>contract_debug_mode parameter</title>
 	    <programlisting>
-modparam("web3_auth_ext", "contract_debug_mode", 0)
+modparam("web3_auth", "contract_debug_mode", 0)
 	    </programlisting>
 	</example>
     </section>
 
-    <section id="web3_auth_ext.p.rpc_timeout">
+    <section id="web3_auth.p.rpc_timeout">
 	<title><varname>rpc_timeout</varname> (integer)</title>
 	<para>
 		Timeout in seconds for RPC calls to blockchain networks. 
@@ -263,12 +263,12 @@ modparam("web3_auth_ext", "contract_debug_mode", 0)
 	<example>
 	    <title>rpc_timeout parameter</title>
 	    <programlisting>
-modparam("web3_auth_ext", "rpc_timeout", 15)
+modparam("web3_auth", "rpc_timeout", 15)
 	    </programlisting>
 	</example>
     </section>
 
-    <section id="web3_auth_ext.network_configuration">
+    <section id="web3_auth.network_configuration">
 	<title>Network Configuration Table</title>
 	<para>
 	    <table frame="all">
@@ -313,7 +313,7 @@ modparam("web3_auth_ext", "rpc_timeout", 15)
 	</para>
     </section>
 
-    <section id="web3_auth_ext.rpc_endpoints">
+    <section id="web3_auth.rpc_endpoints">
 	<title>RPC Endpoints Reference</title>
 	<para>
 	    <table frame="all">
@@ -358,7 +358,7 @@ modparam("web3_auth_ext", "rpc_timeout", 15)
 	</para>
     </section>
 
-    <section id="web3_auth_ext.p.environment_variables">
+    <section id="web3_auth.p.environment_variables">
 	<title>Environment Variable Configuration</title>
 	<para>
 		All parameters can be configured via environment variables for 
@@ -377,7 +377,7 @@ RPC_TIMEOUT="15"
 
 # Minimal Kamailio config
 loadmodule "auth.so"
-loadmodule "web3_auth_ext.so"
+loadmodule "web3_auth.so"
 	    </programlisting>
 	</example>
     </section>

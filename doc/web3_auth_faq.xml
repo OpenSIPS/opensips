@@ -8,7 +8,7 @@
 
 ]>
 
-<section id="web3_auth_ext.faq" xmlns:xi="http://www.w3.org/2001/XInclude">
+<section id="web3_auth.faq" xmlns:xi="http://www.w3.org/2001/XInclude">
 
     <title>Frequently Asked Questions</title>
 
@@ -98,7 +98,7 @@ function getWalletAddress(string memory username)
             <answer>
                 <para>
                     <orderedlist>
-                        <listitem><para>Enable debug mode: modparam("web3_auth_ext", "contract_debug_mode", 1)</para></listitem>
+                        <listitem><para>Enable debug mode: modparam("web3_auth", "contract_debug_mode", 1)</para></listitem>
                         <listitem><para>Check Kamailio logs for detailed error information</para></listitem>
                         <listitem><para>Verify ENS domain ownership on etherscan.io</para></listitem>
                         <listitem><para>Test RPC endpoints manually</para></listitem>
@@ -137,7 +137,7 @@ RPC_TIMEOUT="15"
 
 # Minimal Kamailio config
 loadmodule "auth.so"
-loadmodule "web3_auth_ext.so"
+loadmodule "web3_auth.so"
                     </programlisting>
                 </para>
             </answer>
@@ -158,7 +158,7 @@ loadmodule "web3_auth_ext.so"
 
     </qandaset>
 
-    <section id="web3_auth_ext.troubleshooting_table">
+    <section id="web3_auth.troubleshooting_table">
 	<title>Troubleshooting Reference</title>
 	<para>
 	    <table frame="all">
@@ -218,7 +218,7 @@ loadmodule "web3_auth_ext.so"
 	</para>
     </section>
 
-    <section id="web3_auth_ext.error_codes_detail">
+    <section id="web3_auth.error_codes_detail">
 	<title>Error Code Details</title>
 	<para>
 	    <table frame="all">

@@ -1,5 +1,5 @@
 /*
- * Web3 Authentication Extension - Core Authentication Implementation
+ * Web3 Authentication - Core Authentication Implementation
  *
  * Copyright (C) 2025 Jonathan Kandel
  *
@@ -35,7 +35,7 @@
 #include "../../core/parser/parse_uri.h"
 #include "../../modules/auth/api.h"
 #include "web3_auth.h"
-#include "web3_auth_ext_mod.h"
+#include "web3_auth_mod.h"
 #include "keccak256.h"
 
 /**
@@ -617,7 +617,7 @@ int web3_auth_check_response(dig_cred_t *cred, str *method)
 
     // Determine algorithm: 0 for MD5, 1 for SHA256, 2 for SHA512
     uint8_t algo = 0; // Default to MD5
-    // Note: In the extension module, we need to get auth_algorithm from the base auth module
+    // Note: In the module, we need to get auth_algorithm from the base auth module
     // For now, defaulting to MD5
 
     // Convert hex string response to bytes

@@ -1,5 +1,5 @@
 /*
- * Web3 Authentication Extension Module
+ * Web3 Authentication Module
  *
  * Copyright (C) 2025 Jonathan Kandel
  *
@@ -31,8 +31,8 @@
 #include "../../modules/auth/api.h"
 #include "../../core/mod_fix.h"
 #include "../../core/kemi.h"
-#include "web3_auth_ext_mod.h"
-#include "web3_auth.h"
+#include "web3_auth_mod.h"
+#include "web3_imple.h"
 #include "api.h"
 #include "keccak256.h"
 
@@ -115,7 +115,7 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-    "web3_auth_ext",    /* module name */
+    "web3_auth",        /* module name */
     DEFAULT_DLFLAGS,    /* dlopen flags */
     cmds,               /* exported functions */
     params,             /* exported parameters */
@@ -132,7 +132,7 @@ struct module_exports exports = {
  */
 static int mod_init(void)
 {
-    LM_INFO("Web3 Authentication Extension module initializing\n");
+    LM_INFO("Web3 Authentication module initializing\n");
 
     /* Load the base auth module API */
     bind_auth_s_t bind_auth;
@@ -156,7 +156,7 @@ static int mod_init(void)
     init_config_from_env();
 
     	if (contract_debug_mode) {
-		LM_INFO("Web3Auth Extension initialized:\n");
+		LM_INFO("Web3Auth initialized:\n");
 		LM_INFO("  Authentication RPC URL: %s\n", authentication_rpc_url ? authentication_rpc_url : "(using default)");
 		LM_INFO("  Authentication Contract: %s\n", authentication_contract_address ? authentication_contract_address : "(using default)");
 		LM_INFO("  ENS Registry: %s\n", ens_registry_address ? ens_registry_address : "(using default)");
@@ -175,7 +175,7 @@ static int mod_init(void)
 static int child_init(int rank)
 {
     	if (contract_debug_mode) {
-		LM_INFO("Web3Auth Extension child %d initialized\n", rank);
+		LM_INFO("Web3Auth child %d initialized\n", rank);
 	}
     return 0;
 }
@@ -185,7 +185,7 @@ static int child_init(int rank)
  */
 static void destroy(void)
 {
-    LM_INFO("Web3 Authentication Extension module shutting down\n");
+    LM_INFO("Web3 Authentication module shutting down\n");
     
     /* Cleanup curl */
     curl_global_cleanup();
@@ -364,12 +364,12 @@ static int ki_web3_proxy_authenticate(sip_msg_t *msg, str *realm, str *method)
  * KEMI exports
  */
 static sr_kemi_t sr_kemi_web3_auth_exports[] = {
-    { str_init("web3_auth_ext"), str_init("web3_www_authenticate"),
+    { str_init("web3_auth"), str_init("web3_www_authenticate"),
         SR_KEMIP_INT, ki_web3_www_authenticate,
         { SR_KEMIP_STR, SR_KEMIP_STR, SR_KEMIP_NONE,
             SR_KEMIP_NONE, SR_KEMIP_NONE, SR_KEMIP_NONE }
     },
-    { str_init("web3_auth_ext"), str_init("web3_proxy_authenticate"),
+    { str_init("web3_auth"), str_init("web3_proxy_authenticate"),
         SR_KEMIP_INT, ki_web3_proxy_authenticate,
         { SR_KEMIP_STR, SR_KEMIP_STR, SR_KEMIP_NONE,
             SR_KEMIP_NONE, SR_KEMIP_NONE, SR_KEMIP_NONE }

@@ -1,1 +1,4 @@
-.history    
+.history 
+.vscode 
+build/
+tests

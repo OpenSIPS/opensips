@@ -9,9 +9,9 @@
 	]
 >
 
-<book id="web3_auth_ext" xmlns:xi="http://www.w3.org/2001/XInclude">
+<book id="web3_auth" xmlns:xi="http://www.w3.org/2001/XInclude">
     <bookinfo>
-	<title>Web3 Auth Extension Module (web3_auth_ext)</title>
+	<title>Web3 Auth Module (web3_auth)</title>
 	<authorgroup>
 	    <author>
 		<firstname>Jonathan</firstname>
@@ -32,10 +32,10 @@
     <chapter>
 	<title>Admin Guide</title>
 
-    <section id="web3_auth_ext.overview">
+    <section id="web3_auth.overview">
 	<title>Overview</title>
 	<para>
-	    The Web3 Auth Extension module provides blockchain-based authentication for Kamailio
+	    The Web3 Auth module provides blockchain-based authentication for Kamailio
 	    with integrated ENS (Ethereum Name Service) support. This module replaces traditional 
 	    password-based verification with Web3 smart contract calls while maintaining full 
 	    SIP digest authentication compatibility.
@@ -53,9 +53,9 @@
 	</para>
     </section>
 
-    <section id="web3_auth_ext.dependencies">
+    <section id="web3_auth.dependencies">
 	<title>Dependencies</title>
-	<section id="web3_auth_ext.kamailio_modules">
+	<section id="web3_auth.kamailio_modules">
 	    <title>Kamailio Modules</title>
 	    <para>
 		The following modules must be loaded before this module:
@@ -64,7 +64,7 @@
 		</itemizedlist>
 	    </para>
 	</section>
-	<section id="web3_auth_ext.external_libraries">
+	<section id="web3_auth.external_libraries">
 	    <title>External Libraries</title>
 	    <para>
 		<itemizedlist>
@@ -75,17 +75,17 @@
 	</section>
     </section>
 
-    <section id="web3_auth_ext.installation">
+    <section id="web3_auth.installation">
 	<title>Installation</title>
 	<para>
 	    <emphasis>Compilation:</emphasis>
 	    <programlisting>
 # Build with Kamailio source
-make include_modules="web3_auth_ext" cfg
+make include_modules="web3_auth" cfg
 make all
 
 # Or compile as module
-cd modules/web3_auth_ext
+cd modules/web3_auth
 make
 	    </programlisting>
 	</para>
@@ -99,21 +99,21 @@ make
 	</para>
     </section>
 
-    <xi:include href="web3_auth_ext_params.xml"/>
-    <xi:include href="web3_auth_ext_functions.xml"/>
+    <xi:include href="web3_auth_params.xml"/>
+    <xi:include href="web3_auth_functions.xml"/>
 
-    <section id="web3_auth_ext.usage">
+    <section id="web3_auth.usage">
 	<title>Usage Examples</title>
 	
-	<section id="web3_auth_ext.minimal_config">
+	<section id="web3_auth.minimal_config">
 	    <title>Minimal Configuration</title>
 	    <para>
 		<programlisting>
 loadmodule "auth.so"
-loadmodule "web3_auth_ext.so"
+loadmodule "web3_auth.so"
 
 # Required parameters
-modparam("web3_auth_ext", "authentication_contract_address", 
+modparam("web3_auth", "authentication_contract_address", 
          "0xE773BB79689379d32Ad1Db839868b6756B493aea")
 
 # Basic authentication route
@@ -127,14 +127,14 @@ route[AUTH] {
 	    </para>
 	</section>
 
-	<section id="web3_auth_ext.ens_config">
+	<section id="web3_auth.ens_config">
 	    <title>ENS Configuration</title>
 	    <para>
 		<programlisting>
 # ENS + Web3 authentication
-modparam("web3_auth_ext", "authentication_rpc_url", 
+modparam("web3_auth", "authentication_rpc_url", 
          "https://testnet.sapphire.oasis.dev")
-modparam("web3_auth_ext", "ens_rpc_url", 
+modparam("web3_auth", "ens_rpc_url", 
          "https://ethereum-sepolia-rpc.publicnode.com")
 
 route[ENS_AUTH] {
@@ -160,7 +160,7 @@ route[ENS_AUTH] {
 	    </para>
 	</section>
 
-	<section id="web3_auth_ext.container_config">
+	<section id="web3_auth.container_config">
 	    <title>Container Configuration</title>
 	    <para>
 		<programlisting>
@@ -173,13 +173,13 @@ RPC_TIMEOUT="15"
 
 # Kamailio config (reads environment automatically)
 loadmodule "auth.so"
-loadmodule "web3_auth_ext.so"
+loadmodule "web3_auth.so"
 		</programlisting>
 	    </para>
 	</section>
     </section>
 
-    <section id="web3_auth_ext.performance">
+    <section id="web3_auth.performance">
 	<title>Performance Considerations</title>
 	<para>
 	    <itemizedlist>
@@ -191,7 +191,7 @@ loadmodule "web3_auth_ext.so"
 	</para>
     </section>
 
-    <section id="web3_auth_ext.security">
+    <section id="web3_auth.security">
 	<title>Security Considerations</title>
 	<para>
 	    <itemizedlist>
@@ -204,7 +204,7 @@ loadmodule "web3_auth_ext.so"
 	</para>
     </section>
 
-    <xi:include href="web3_auth_ext_faq.xml"/>
+    <xi:include href="web3_auth_faq.xml"/>
 
     </chapter>
 </book> 

@@ -1,5 +1,5 @@
 /*
- * Web3 Authentication Extension - Core Authentication Functions
+ * Web3 Authentication - Core Authentication Functions
  *
  * Copyright (C) 2025 Jonathan Kandel
  *

@@ -1,8 +1,8 @@
-# Web3 Authentication Extension Module Makefile
+# Web3 Authentication Module Makefile
 
 include ../../Makefile.defs
 auto_gen=
-NAME=web3_auth_ext.so
+NAME=web3_auth.so
 
 # Include additional source files
 EXTRA_SRCS=keccak256.c
