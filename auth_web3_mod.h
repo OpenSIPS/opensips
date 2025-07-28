@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef WEB3_AUTH_MOD_H
-#define WEB3_AUTH_MOD_H
+#ifndef AUTH_WEB3_MOD_H
+#define AUTH_WEB3_MOD_H
 
 #include "../../core/str.h"
 #include "../../modules/auth/api.h"
@@ -47,4 +47,4 @@ extern int rpc_timeout;
  */
 extern auth_api_s_t auth_api;
 
-#endif /* WEB3_AUTH_MOD_H */ 
+#endif /* AUTH_WEB3_MOD_H */ 

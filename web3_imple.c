@@ -35,7 +35,7 @@
 #include "../../core/parser/parse_uri.h"
 #include "../../modules/auth/api.h"
 #include "web3_imple.h"
-#include "web3_auth_mod.h"
+#include "auth_web3_mod.h"
 #include "keccak256.h"
 
 /**
@@ -469,7 +469,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method)
     // Check if username contains "." (ENS format)
     if (!strchr(username, '.')) {
         // Not an ENS name, proceed with normal authentication
-        return web3_auth_check_response(cred, method);
+        return auth_web3_check_response(cred, method);
     }
     
     if (contract_debug_mode) {
@@ -541,7 +541,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method)
  * Core blockchain verification function
  * This is the main authentication logic that replaces password-based auth
  */
-int web3_auth_check_response(dig_cred_t *cred, str *method)
+int auth_web3_check_response(dig_cred_t *cred, str *method)
 {
     CURL *curl;
     CURLcode res;

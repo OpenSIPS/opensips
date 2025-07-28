@@ -8,15 +8,15 @@
 
 ]>
 
-<section id="web3_auth.functions" xmlns:xi="http://www.w3.org/2001/XInclude">
+<section id="auth_web3.functions" xmlns:xi="http://www.w3.org/2001/XInclude">
 
     <title>Functions</title>
 
-    <section id="web3_auth.function_summary">
+    <section id="auth_web3.function_summary">
 	<title>Function Summary</title>
 	<para>
 	    <table frame="all">
-		<title>web3_auth Module Functions</title>
+		<title>auth_web3 Module Functions</title>
 		<tgroup cols="5" align="left" colsep="1" rowsep="1">
 		    <thead>
 			<row>
@@ -43,7 +43,7 @@
 			    <entry>Web3 authentication with ENS support for Proxy-Authenticate headers</entry>
 			</row>
 			<row>
-			    <entry>bind_web3_auth</entry>
+			    <entry>bind_auth_web3</entry>
 			    <entry>api</entry>
 			    <entry>integer</entry>
 			    <entry>MODULE_INIT</entry>
@@ -55,7 +55,7 @@
 	</para>
     </section>
 
-    <section id="web3_auth.return_codes">
+    <section id="auth_web3.return_codes">
 	<title>Return Codes Reference</title>
 	<para>
 	    <table frame="all">
@@ -105,7 +105,7 @@
 	</para>
     </section>
 
-	<section id="web3_auth.f.web3_www_authenticate">
+	<section id="auth_web3.f.web3_www_authenticate">
 		<title>
 			<function moreinfo="none">web3_www_authenticate(realm, method)</function>
 		</title>
@@ -178,7 +178,7 @@ if ($(fU{s.contains,"."})) {
 		</example>
 	</section>
 
-	<section id="web3_auth.f.web3_proxy_authenticate">
+	<section id="auth_web3.f.web3_proxy_authenticate">
 		<title>
 			<function moreinfo="none">web3_proxy_authenticate(realm, method)</function>
 		</title>
@@ -227,14 +227,14 @@ route[RELAY] {
 		</example>
 	</section>
 
-	<section id="web3_auth.api">
+	<section id="auth_web3.api">
 		<title>API Functions</title>
 		<para>
 		The module provides an API for other Kamailio modules to access Web3 authentication 
 		and ENS validation functions programmatically.
 		</para>
 
-		<section id="web3_auth.api_summary">
+		<section id="auth_web3.api_summary">
 		    <title>API Function Summary</title>
 		    <para>
 			<table frame="all">
@@ -279,9 +279,9 @@ route[RELAY] {
 		    </para>
 		</section>
 		
-		<section id="web3_auth.f.bind_web3_auth">
+		<section id="auth_web3.f.bind_auth_web3">
 			<title>
-				<function moreinfo="none">bind_web3_auth(api)</function>
+				<function moreinfo="none">bind_auth_web3(api)</function>
 			</title>
 			<para>
 			Allows other modules to bind to the Web3 authentication API with ENS support.
@@ -301,13 +301,13 @@ route[RELAY] {
 			<example>
 			<title>API usage in C modules</title>
 			<programlisting format="linespecific">
-#include "modules/web3_auth/api.h"
+#include "modules/auth_web3/api.h"
 
-web3_auth_api_t web3_api;
+auth_web3_api_t auth_web3_api;
 
 // Module initialization
-if (web3_auth_load_api(&amp;web3_api) != 0) {
-    LM_ERR("cannot bind web3_auth api\n");
+if (auth_web3_load_api(&amp;auth_web3_api) != 0) {
+    LM_ERR("cannot bind auth_web3 api\n");
     return -1;
 }
 
@@ -319,13 +319,13 @@ result = web3_api.digest_authenticate(msg, &amp;realm,
 		</section>
 	</section>
 
-	<section id="web3_auth.ens_technical">
+	<section id="auth_web3.ens_technical">
 	    <title>ENS Technical Details</title>
 	    <para>
 		The module implements comprehensive ENS integration with the following technical features:
 	    </para>
 	    
-	    <section id="web3_auth.ens_namehash">
+	    <section id="auth_web3.ens_namehash">
 		<title>Namehash Calculation</title>
 		<para>
 		    Implements proper ENS namehash calculation according to EIP-137 for converting 
@@ -333,7 +333,7 @@ result = web3_api.digest_authenticate(msg, &amp;realm,
 		</para>
 	    </section>
 	    
-	    <section id="web3_auth.ens_ownership">
+	    <section id="auth_web3.ens_ownership">
 		<title>Ownership Resolution</title>
 		<para>
 		    Handles complex ENS ownership scenarios:
@@ -345,7 +345,7 @@ result = web3_api.digest_authenticate(msg, &amp;realm,
 		</para>
 	    </section>
 	    
-	    <section id="web3_auth.multi_network">
+	    <section id="auth_web3.multi_network">
 		<title>Multi-Network Support</title>
 		<para>
 		    <itemizedlist>

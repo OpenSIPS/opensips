@@ -1,4 +1,4 @@
 kamailio_module(
-    web3_auth
+    auth_web3
     REQUIRED_LIBRARIES curl
 ) 

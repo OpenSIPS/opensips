@@ -64,18 +64,18 @@ authentication_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
 ## Kamailio Configuration Example
 
 ```kamailio
-loadmodule "web3_auth.so"
+loadmodule "auth_web3.so"
 
 # Oasis authentication network
-modparam("web3_auth", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
-modparam("web3_auth", "authentication_contract_address", "0xYourOasisContract")
+modparam("auth_web3", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("auth_web3", "authentication_contract_address", "0xYourOasisContract")
 
 # ENS network (Sepolia testnet)
-modparam("web3_auth", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
-modparam("web3_auth", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
-modparam("web3_auth", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
+modparam("auth_web3", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+modparam("auth_web3", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
 
-modparam("web3_auth", "contract_debug_mode", 1)
+modparam("auth_web3", "contract_debug_mode", 1)
 ```
 
 ## Testing Your Configuration
@@ -116,7 +116,7 @@ make -f Makefile.test
 
 Enable debug mode to see which RPC is used for each call:
 ```
-modparam("web3_auth", "contract_debug_mode", 1)
+modparam("auth_web3", "contract_debug_mode", 1)
 ```
 
 Look for log messages:

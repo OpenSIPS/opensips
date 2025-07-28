@@ -31,7 +31,7 @@
 #include "../../modules/auth/api.h"
 #include "../../core/mod_fix.h"
 #include "../../core/kemi.h"
-#include "web3_auth_mod.h"
+#include "auth_web3_mod.h"
 #include "web3_imple.h"
 #include "api.h"
 #include "keccak256.h"
@@ -115,7 +115,7 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-    "web3_auth",        /* module name */
+    "auth_web3",        /* module name */
     DEFAULT_DLFLAGS,    /* dlopen flags */
     cmds,               /* exported functions */
     params,             /* exported parameters */
@@ -364,12 +364,12 @@ static int ki_web3_proxy_authenticate(sip_msg_t *msg, str *realm, str *method)
  * KEMI exports
  */
 static sr_kemi_t sr_kemi_web3_auth_exports[] = {
-    { str_init("web3_auth"), str_init("web3_www_authenticate"),
+    { str_init("auth_web3"), str_init("web3_www_authenticate"),
         SR_KEMIP_INT, ki_web3_www_authenticate,
         { SR_KEMIP_STR, SR_KEMIP_STR, SR_KEMIP_NONE,
             SR_KEMIP_NONE, SR_KEMIP_NONE, SR_KEMIP_NONE }
     },
-    { str_init("web3_auth"), str_init("web3_proxy_authenticate"),
+    { str_init("auth_web3"), str_init("web3_proxy_authenticate"),
         SR_KEMIP_INT, ki_web3_proxy_authenticate,
         { SR_KEMIP_STR, SR_KEMIP_STR, SR_KEMIP_NONE,
             SR_KEMIP_NONE, SR_KEMIP_NONE, SR_KEMIP_NONE }

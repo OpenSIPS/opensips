@@ -2,7 +2,7 @@
 
 include ../../Makefile.defs
 auto_gen=
-NAME=web3_auth.so
+NAME=auth_web3.so
 
 # Include additional source files
 EXTRA_SRCS=keccak256.c

@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _WEB3_AUTH_H_
-#define _WEB3_AUTH_H_
+#ifndef _AUTH_WEB3_H_
+#define _AUTH_WEB3_H_
 
 #include "../../core/str.h"
 #include "../../core/parser/msg_parser.h"
@@ -49,7 +49,7 @@ struct Web3ResponseData {
  * @param method SIP method
  * @return Authentication result
  */
-int web3_auth_check_response(dig_cred_t *cred, str *method);
+int auth_web3_check_response(dig_cred_t *cred, str *method);
 
 /**
  * Digest authentication function
@@ -93,4 +93,4 @@ int web3_ens_resolve_address(const char *ens_name, char *resolved_address);
 // Oasis contract functions
 int web3_oasis_get_wallet_address(const char *username, char *wallet_address);
 
-#endif /* _WEB3_AUTH_H_ */ 
+#endif /* _AUTH_WEB3_H_ */ 

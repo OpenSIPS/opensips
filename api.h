@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _WEB3_AUTH_API_H_
-#define _WEB3_AUTH_API_H_
+#ifndef _AUTH_WEB3_API_H_
+#define _AUTH_WEB3_API_H_
 
 #include "../../core/sr_module.h"
 #include "../../core/parser/msg_parser.h"
@@ -71,4 +71,4 @@ static inline int web3_auth_load_api(web3_auth_api_t *api)
     return 0;
 }
 
-#endif /* _WEB3_AUTH_API_H_ */ 
+#endif /* _AUTH_WEB3_API_H_ */ 
