@@ -15,9 +15,12 @@
     <section id="auth_web3.parameter_summary">
 	<title>Parameter Summary</title>
 	<para>
-	    <table frame="all">
-		<title>auth_web3 Module Parameters</title>
+	    <informaltable frame="all">
 		<tgroup cols="4" align="left" colsep="1" rowsep="1">
+		    <colspec colwidth="1*"/>
+		    <colspec colwidth="1*"/>
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="3*"/>
 		    <thead>
 			<row>
 			    <entry>Parameter</entry>
@@ -71,7 +74,7 @@
 			</row>
 		    </tbody>
 		</tgroup>
-	    </table>
+	    </informaltable>
 	</para>
     </section>
 
@@ -271,9 +274,12 @@ modparam("auth_web3", "rpc_timeout", 15)
     <section id="auth_web3.network_configuration">
 	<title>Network Configuration Table</title>
 	<para>
-	    <table frame="all">
-		<title>Supported Network Configurations</title>
+	    <informaltable frame="all">
 		<tgroup cols="4" align="left" colsep="1" rowsep="1">
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="3*"/>
 		    <thead>
 			<row>
 			    <entry>Configuration</entry>
@@ -309,16 +315,18 @@ modparam("auth_web3", "rpc_timeout", 15)
 			</row>
 		    </tbody>
 		</tgroup>
-	    </table>
+	    </informaltable>
 	</para>
     </section>
 
     <section id="auth_web3.rpc_endpoints">
 	<title>RPC Endpoints Reference</title>
 	<para>
-	    <table frame="all">
-		<title>Common RPC Endpoints</title>
+	    <informaltable frame="all">
 		<tgroup cols="3" align="left" colsep="1" rowsep="1">
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="3*"/>
+		    <colspec colwidth="1*"/>
 		    <thead>
 			<row>
 			    <entry>Network</entry>
@@ -354,7 +362,7 @@ modparam("auth_web3", "rpc_timeout", 15)
 			</row>
 		    </tbody>
 		</tgroup>
-	    </table>
+	    </informaltable>
 	</para>
     </section>
 

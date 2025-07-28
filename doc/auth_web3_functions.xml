@@ -15,9 +15,13 @@
     <section id="auth_web3.function_summary">
 	<title>Function Summary</title>
 	<para>
-	    <table frame="all">
-		<title>auth_web3 Module Functions</title>
+	    <informaltable frame="all">
 		<tgroup cols="5" align="left" colsep="1" rowsep="1">
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="1*"/>
+		    <colspec colwidth="1*"/>
+		    <colspec colwidth="1*"/>
+		    <colspec colwidth="3*"/>
 		    <thead>
 			<row>
 			    <entry>Function</entry>
@@ -51,16 +55,18 @@
 			</row>
 		    </tbody>
 		</tgroup>
-	    </table>
+	    </informaltable>
 	</para>
     </section>
 
     <section id="auth_web3.return_codes">
 	<title>Return Codes Reference</title>
 	<para>
-	    <table frame="all">
-		<title>Authentication Function Return Codes</title>
+	    <informaltable frame="all">
 		<tgroup cols="3" align="left" colsep="1" rowsep="1">
+		    <colspec colwidth="1*"/>
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="2*"/>
 		    <thead>
 			<row>
 			    <entry>Return Code</entry>
@@ -101,7 +107,7 @@
 			</row>
 		    </tbody>
 		</tgroup>
-	    </table>
+	    </informaltable>
 	</para>
     </section>
 
@@ -237,9 +243,12 @@ route[RELAY] {
 		<section id="auth_web3.api_summary">
 		    <title>API Function Summary</title>
 		    <para>
-			<table frame="all">
-			    <title>Available API Functions</title>
+			<informaltable frame="all">
 			    <tgroup cols="4" align="left" colsep="1" rowsep="1">
+				<colspec colwidth="2*"/>
+				<colspec colwidth="3*"/>
+				<colspec colwidth="1*"/>
+				<colspec colwidth="2*"/>
 				<thead>
 				    <row>
 					<entry>API Function</entry>
@@ -275,7 +284,7 @@ route[RELAY] {
 				    </row>
 				</tbody>
 			    </tgroup>
-			</table>
+			</informaltable>
 		    </para>
 		</section>
 		

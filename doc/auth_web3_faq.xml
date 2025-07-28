@@ -160,9 +160,11 @@ loadmodule "auth_web3.so"
     <section id="auth_web3.troubleshooting_table">
 	<title>Troubleshooting Reference</title>
 	<para>
-	    <table frame="all">
-		<title>Common Issues and Solutions</title>
+	    <informaltable frame="all">
 		<tgroup cols="3" align="left" colsep="1" rowsep="1">
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="3*"/>
 		    <thead>
 			<row>
 			    <entry>Issue</entry>
@@ -213,16 +215,19 @@ loadmodule "auth_web3.so"
 			</row>
 		    </tbody>
 		</tgroup>
-	    </table>
+	    </informaltable>
 	</para>
     </section>
 
     <section id="auth_web3.error_codes_detail">
 	<title>Error Code Details</title>
 	<para>
-	    <table frame="all">
-		<title>Detailed Error Code Reference</title>
+	    <informaltable frame="all">
 		<tgroup cols="4" align="left" colsep="1" rowsep="1">
+		    <colspec colwidth="1*"/>
+		    <colspec colwidth="1*"/>
+		    <colspec colwidth="2*"/>
+		    <colspec colwidth="2*"/>
 		    <thead>
 			<row>
 			    <entry>Return Code</entry>
@@ -270,7 +275,7 @@ loadmodule "auth_web3.so"
 			</row>
 		    </tbody>
 		</tgroup>
-	    </table>
+	    </informaltable>
 	</para>
     </section>
 
