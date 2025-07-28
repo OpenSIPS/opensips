@@ -26,7 +26,7 @@
 #include "../../core/sr_module.h"
 #include "api.h"
 #include "web3_imple.h"
-#include "web3_auth_mod.h"
+#include "auth_web3_mod.h"
 
 /**
  * @brief Bind Web3 authentication API
@@ -42,7 +42,7 @@ int bind_web3_auth(web3_auth_api_t *api)
 
     /* Bind the core functions */
     api->digest_authenticate = web3_digest_authenticate;
-    api->check_response = web3_auth_check_response;
+    api->check_response = auth_web3_check_response;
 
     LM_INFO("Web3 Authentication API successfully bound\n");
     return 0;
