@@ -25,7 +25,7 @@
 #include "../../core/dprint.h"
 #include "../../core/sr_module.h"
 #include "api.h"
-#include "web3_auth.h"
+#include "web3_imple.h"
 #include "web3_auth_mod.h"
 
 /**

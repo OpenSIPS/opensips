@@ -34,7 +34,7 @@
 #include "../../core/parser/parse_to.h"
 #include "../../core/parser/parse_uri.h"
 #include "../../modules/auth/api.h"
-#include "web3_auth.h"
+#include "web3_imple.h"
 #include "web3_auth_mod.h"
 #include "keccak256.h"
 
