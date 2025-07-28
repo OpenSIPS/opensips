@@ -1,0 +1,854 @@
+Web3 Auth Module (auth_web3)
+
+Jonathan Kandel
+
+   Cellact B.V.
+   <jonathan@cellact.com>
+
+   Copyright © 2025 Jonathan Kandel
+     __________________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1. Overview
+        2. Dependencies
+
+              2.1. Kamailio Modules
+              2.2. External Libraries
+
+        3. Installation
+        4. Parameters
+
+              4.1. Parameter Summary
+              4.2. authentication_rpc_url (string)
+              4.3. authentication_contract_address (string)
+              4.4. ens_rpc_url (string)
+              4.5. ens_registry_address (string)
+              4.6. ens_name_wrapper_address (string)
+              4.7. contract_debug_mode (integer)
+              4.8. rpc_timeout (integer)
+              4.9. Network Configuration Table
+              4.10. RPC Endpoints Reference
+              4.11. Environment Variable Configuration
+
+        5. Functions
+
+              5.1. Function Summary
+              5.2. Return Codes Reference
+              5.3. web3_www_authenticate(realm, method)
+              5.4. web3_proxy_authenticate(realm, method)
+              5.5. API Functions
+
+                    5.5.1. API Function Summary
+                    5.5.2. bind_auth_web3(api)
+
+              5.6. ENS Technical Details
+
+                    5.6.1. Namehash Calculation
+                    5.6.2. Ownership Resolution
+                    5.6.3. Multi-Network Support
+
+        6. Usage Examples
+
+              6.1. Minimal Configuration
+              6.2. ENS Configuration
+              6.3. Container Configuration
+
+        7. Performance Considerations
+        8. Security Considerations
+        9. Frequently Asked Questions
+
+              9.1. Troubleshooting Reference
+              9.2. Error Code Details
+
+   List of Examples
+
+   1.1. authentication_rpc_url parameter
+   1.2. authentication_contract_address parameter
+   1.3. ens_rpc_url parameter
+   1.4. ens_registry_address parameter
+   1.5. ens_name_wrapper_address parameter
+   1.6. contract_debug_mode parameter
+   1.7. rpc_timeout parameter
+   1.8. Complete environment configuration
+   1.9. web3_www_authenticate usage
+   1.10. web3_proxy_authenticate usage
+   1.11. API usage in C modules
+
+Chapter 1. Admin Guide
+
+   Table of Contents
+
+   1. Overview
+   2. Dependencies
+
+        2.1. Kamailio Modules
+        2.2. External Libraries
+
+   3. Installation
+   4. Parameters
+
+        4.1. Parameter Summary
+        4.2. authentication_rpc_url (string)
+        4.3. authentication_contract_address (string)
+        4.4. ens_rpc_url (string)
+        4.5. ens_registry_address (string)
+        4.6. ens_name_wrapper_address (string)
+        4.7. contract_debug_mode (integer)
+        4.8. rpc_timeout (integer)
+        4.9. Network Configuration Table
+        4.10. RPC Endpoints Reference
+        4.11. Environment Variable Configuration
+
+   5. Functions
+
+        5.1. Function Summary
+        5.2. Return Codes Reference
+        5.3. web3_www_authenticate(realm, method)
+        5.4. web3_proxy_authenticate(realm, method)
+        5.5. API Functions
+
+              5.5.1. API Function Summary
+              5.5.2. bind_auth_web3(api)
+
+        5.6. ENS Technical Details
+
+              5.6.1. Namehash Calculation
+              5.6.2. Ownership Resolution
+              5.6.3. Multi-Network Support
+
+   6. Usage Examples
+
+        6.1. Minimal Configuration
+        6.2. ENS Configuration
+        6.3. Container Configuration
+
+   7. Performance Considerations
+   8. Security Considerations
+   9. Frequently Asked Questions
+
+        9.1. Troubleshooting Reference
+        9.2. Error Code Details
+
+1. Overview
+
+   The Web3 Auth module provides blockchain-based authentication for
+   Kamailio with integrated ENS (Ethereum Name Service) support. This
+   module replaces traditional password-based verification with Web3 smart
+   contract calls while maintaining full SIP digest authentication
+   compatibility.
+
+   Key Features:
+     * Blockchain authentication via Oasis Sapphire smart contracts
+     * ENS domain support (alice.eth authentication)
+     * Multi-network support (ENS on Ethereum, auth on Oasis)
+     * RFC2617/7616 digest authentication compliance
+     * Environment variable configuration for containers
+     * Drop-in replacement for auth_db module
+
+2. Dependencies
+
+   2.1. Kamailio Modules
+   2.2. External Libraries
+
+2.1. Kamailio Modules
+
+   The following modules must be loaded before this module:
+     * auth - base authentication module
+
+2.2. External Libraries
+
+     * libcurl - HTTP client library for Web3 RPC calls
+     * OpenSSL - cryptographic library for digest calculations
+
+3. Installation
+
+   Compilation:
+# Build with Kamailio source
+make include_modules="auth_web3" cfg
+make all
+
+# Or compile as module
+cd modules/auth_web3
+make
+
+   Smart Contract Requirements:
+    1. Deploy authentication contract on Oasis Sapphire
+    2. Implement required interface (see Functions section)
+    3. Configure contract address in Kamailio
+
+4. Parameters
+
+   4.1. Parameter Summary
+   4.2. authentication_rpc_url (string)
+   4.3. authentication_contract_address (string)
+   4.4. ens_rpc_url (string)
+   4.5. ens_registry_address (string)
+   4.6. ens_name_wrapper_address (string)
+   4.7. contract_debug_mode (integer)
+   4.8. rpc_timeout (integer)
+   4.9. Network Configuration Table
+   4.10. RPC Endpoints Reference
+   4.11. Environment Variable Configuration
+
+4.1. Parameter Summary
+
+Parameter                          Type      Default
+     Description
+--------------------------------------------------------------------------------
+----------
+authentication_rpc_url             string    https://testnet.sapphire.oasis.dev
+    Oasis Sapphire RPC endpoint for authentication contracts
+authentication_contract_address    string    0xE773BB79689379d32Ad1Db839868b67..
+.   Authentication contract address on Oasis Sapphire
+ens_rpc_url                        string    https://ethereum-sepolia-rpc.public
+... RPC endpoint for ENS queries (optional)
+ens_registry_address               string    0x00000000000C2E074eC69A0dFb2997BA.
+.. ENS Registry contract address
+ens_name_wrapper_address           string    0x0635513f179D50A207757E05759CbD10.
+.. ENS Name Wrapper contract address
+contract_debug_mode                integer   1
+     Enable debug logging (0=off, 1=on)
+rpc_timeout                        integer   10
+     RPC call timeout in seconds
+
+4.2. authentication_rpc_url (string)
+
+   RPC URL for the Oasis Sapphire network endpoint. Used for
+   authentication contract calls via eth_call method.
+
+   Supported Networks:
+     * Oasis Sapphire Testnet: https://testnet.sapphire.oasis.dev
+     * Oasis Sapphire Mainnet: https://sapphire.oasis.io
+
+   Environment Variable: AUTHENTICATION_RPC_URL
+
+   Default: "https://testnet.sapphire.oasis.dev"
+
+   Example 1.1. authentication_rpc_url parameter
+modparam("auth_web3", "authentication_rpc_url", "https://sapphire.oasis.io")
+
+4.3. authentication_contract_address (string)
+
+   Smart contract address on Oasis Sapphire that handles authentication.
+   Must implement authenticateUser() and getWalletAddress() functions.
+
+   Required Contract Interface:
+function authenticateUser(
+    string memory username,
+    string memory realm,
+    string memory method,
+    string memory uri,
+    string memory nonce,
+    uint8 algorithm,
+    bytes memory response
+) public view returns (bool)
+
+function getWalletAddress(
+    string memory username
+) public view returns (address)
+
+   Environment Variable: AUTHENTICATION_CONTRACT_ADDRESS
+
+   Default: "0xE773BB79689379d32Ad1Db839868b6756B493aea"
+
+   Example 1.2. authentication_contract_address parameter
+modparam("auth_web3", "authentication_contract_address", "0x1234567890abcdef1234
+567890abcdef12345678")
+
+4.4. ens_rpc_url (string)
+
+   RPC URL for ENS queries. Enables multi-network authentication where ENS
+   is on Ethereum while authentication contracts are on Oasis Sapphire. If
+   not set, uses authentication_rpc_url for ENS queries.
+
+   Common Endpoints:
+     * Ethereum Mainnet: https://mainnet.infura.io/v3/YOUR_KEY
+     * Ethereum Sepolia: https://ethereum-sepolia-rpc.publicnode.com
+
+   Environment Variable: ENS_RPC_URL
+
+   Default: "https://ethereum-sepolia-rpc.publicnode.com"
+
+   Example 1.3. ens_rpc_url parameter
+modparam("auth_web3", "ens_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
+
+4.5. ens_registry_address (string)
+
+   ENS Registry contract address. Standard address on Ethereum mainnet and
+   testnets.
+
+   Environment Variable: ENS_REGISTRY_ADDRESS
+
+   Default: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
+
+   Example 1.4. ens_registry_address parameter
+modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997B
+A6C7d2e1e")
+
+4.6. ens_name_wrapper_address (string)
+
+   ENS Name Wrapper contract address for wrapped domains. Different
+   addresses on mainnet vs testnets.
+
+   Network Addresses:
+     * Ethereum Mainnet: 0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401
+     * Ethereum Sepolia: 0x0635513f179D50A207757E05759CbD106d7dFcE8
+
+   Environment Variable: ENS_NAME_WRAPPER_ADDRESS
+
+   Default: "0x0635513f179D50A207757E05759CbD106d7dFcE8" (Sepolia)
+
+   Example 1.5. ens_name_wrapper_address parameter
+modparam("auth_web3", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5D6C2
+BbDBE25686401")
+
+4.7. contract_debug_mode (integer)
+
+   Enable debug logging for authentication and ENS operations. Warning:
+   May log sensitive authentication data.
+
+   Values:
+     * 0 - Debug disabled
+     * 1 - Debug enabled
+
+   Environment Variable: CONTRACT_DEBUG_MODE
+
+   Default: 1
+
+   Example 1.6. contract_debug_mode parameter
+modparam("auth_web3", "contract_debug_mode", 0)
+
+4.8. rpc_timeout (integer)
+
+   Timeout in seconds for RPC calls to blockchain networks. Includes both
+   authentication and ENS queries.
+
+   Recommended Values:
+     * 5-10s - Development/testing
+     * 15-30s - Production
+
+   Environment Variable: RPC_TIMEOUT
+
+   Default: 10
+
+   Example 1.7. rpc_timeout parameter
+modparam("auth_web3", "rpc_timeout", 15)
+
+4.9. Network Configuration Table
+
+Configuration            Authentication Network      ENS Network              Us
+e Case
+--------------------------------------------------------------------------------
+---------
+Production (Mainnet)     Oasis Sapphire Mainnet     Ethereum Mainnet         Pro
+duction deployments with real ENS domains
+Testing (Testnet)        Oasis Sapphire Testnet     Ethereum Sepolia         Dev
+elopment and testing with test ENS domains
+Single Network           Oasis Sapphire (Any)       Same as Authentication   Sim
+plified setup, no cross-chain ENS
+Custom Network           Custom RPC Endpoint        Custom RPC Endpoint      Pri
+vate networks or alternative providers
+
+4.10. RPC Endpoints Reference
+
+Network                        RPC URL                                         N
+etwork Type
+--------------------------------------------------------------------------------
+------------
+Oasis Sapphire Mainnet        https://sapphire.oasis.io                      Pro
+duction
+Oasis Sapphire Testnet        https://testnet.sapphire.oasis.dev             Tes
+ting
+Ethereum Mainnet              https://mainnet.infura.io/v3/YOUR_KEY          Pro
+duction
+Ethereum Sepolia              https://ethereum-sepolia-rpc.publicnode.com    Tes
+ting
+Ethereum Sepolia (Alternative) https://sepolia.infura.io/v3/YOUR_KEY         Tes
+ting
+
+4.11. Environment Variable Configuration
+
+   All parameters can be configured via environment variables for
+   containerized deployments. Environment variables take precedence over
+   modparam configurations.
+
+   Example 1.8. Complete environment configuration
+# Environment variables
+AUTHENTICATION_RPC_URL="https://testnet.sapphire.oasis.dev"
+AUTHENTICATION_CONTRACT_ADDRESS="0xYourContract"
+ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+CONTRACT_DEBUG_MODE="0"
+RPC_TIMEOUT="15"
+
+# Minimal Kamailio config
+loadmodule "auth.so"
+loadmodule "auth_web3.so"
+
+5. Functions
+
+   5.1. Function Summary
+   5.2. Return Codes Reference
+   5.3. web3_www_authenticate(realm, method)
+   5.4. web3_proxy_authenticate(realm, method)
+   5.5. API Functions
+
+        5.5.1. API Function Summary
+        5.5.2. bind_auth_web3(api)
+
+   5.6. ENS Technical Details
+
+        5.6.1. Namehash Calculation
+        5.6.2. Ownership Resolution
+        5.6.3. Multi-Network Support
+
+5.1. Function Summary
+
+Function                   Parameters      Return Type   Route Context   Descrip
+tion
+--------------------------------------------------------------------------------
+------------
+web3_www_authenticate      realm, method   integer       REQUEST_ROUTE   Web3 au
+thentication with ENS support for WWW-Authenticate headers
+web3_proxy_authenticate    realm, method   integer       REQUEST_ROUTE   Web3 au
+thentication with ENS support for Proxy-Authenticate headers
+bind_auth_web3             api             integer       MODULE_INIT     API bin
+ding function for other Kamailio modules
+
+5.2. Return Codes Reference
+
+Return Code   Meaning                                       Recommended Action
+--------------------------------------------------------------------------------
+--
+> 0           Authentication successful                     Continue processing
+request
+-1            Generic error                                 Send challenge or 50
+0 error
+-2            Invalid credentials/blockchain verification   Send challenge with
+stale=false
+-3            Stale nonce                                   Send challenge with
+stale=true
+-4            No credentials provided                       Send initial challen
+ge
+-5            Network timeout (RPC call failed)            Send 503 Service Unav
+ailable
+
+5.3.  web3_www_authenticate(realm, method)
+
+   Verifies credentials using blockchain-based authentication via Web3
+   smart contract calls with integrated ENS support. Automatically detects
+   ENS names and performs domain ownership validation when applicable.
+
+   ENS Integration: For usernames containing "." (dot), performs ENS owner
+   validation by querying ENS Registry, handling wrapped domains, and
+   cross-validating with authentication contract wallet addresses.
+
+   Return codes:
+     * Positive value - Authentication successful
+     * -1 - Generic error
+     * -2 - Invalid credentials/blockchain verification failed
+     * -3 - Stale nonce
+     * -4 - No credentials
+     * -5 - Network timeout
+
+   Parameters:
+     * realm (string) - Authentication realm. Use $td for REGISTER, $fd
+       for other methods
+     * method (string, optional) - SIP method. Defaults to request-line
+       method if not set
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.9. web3_www_authenticate usage
+# Basic Web3 + ENS authentication
+if (!web3_www_authenticate("$fd", "$rm")) {
+    www_challenge("$fd", "0");
+    exit;
+}
+
+# Enhanced error handling
+if (!web3_www_authenticate("$td", "$rm")) {
+    switch ($retcode) {
+        case -2:
+            xlog("L_INFO", "Auth failed for $fU\n");
+            www_challenge("$td", "16"); # stale=true
+            break;
+        case -5:
+            xlog("L_ERR", "Network timeout for $fU\n");
+            sl_send_reply("503", "Service Unavailable");
+            exit;
+        default:
+            www_challenge("$td", "0");
+    }
+    exit;
+}
+
+# Check if ENS domain was authenticated
+if ($(fU{s.contains,"."})) {
+    xlog("L_INFO", "ENS domain $fU authenticated\n");
+}
+
+5.4.  web3_proxy_authenticate(realm, method)
+
+   Verifies credentials using blockchain-based authentication via Web3
+   smart contract calls with ENS support for proxy authentication.
+   Operates on Proxy-Authorization headers instead of Authorization
+   headers.
+
+   Includes the same ENS integration capabilities as web3_www_authenticate
+   and serves as a drop-in replacement for traditional proxy_authenticate
+   functions.
+
+   Return codes and parameter meanings are identical to
+   web3_www_authenticate.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.10. web3_proxy_authenticate usage
+# Basic proxy authentication
+if (!web3_proxy_authenticate("proxy.domain.com", "$rm")) {
+    proxy_challenge("proxy.domain.com", "0");
+    exit;
+}
+
+# Proxy routing with ENS awareness
+route[RELAY] {
+    if (!web3_proxy_authenticate("$fd", "$rm")) {
+        switch ($retcode) {
+            case -5:
+                sl_send_reply("503", "Service Unavailable");
+                exit;
+        }
+        proxy_challenge("$fd", "0");
+        exit;
+    }
+
+    if ($(fU{s.contains,"."})) {
+        xlog("L_INFO", "ENS user $fU authenticated via proxy\n");
+    }
+    t_relay();
+}
+
+5.5. API Functions
+
+   The module provides an API for other Kamailio modules to access Web3
+   authentication and ENS validation functions programmatically.
+
+5.5.1. API Function Summary
+
+API Function          Parameters
+ Return Type      Description
+--------------------------------------------------------------------------------
+---------------------------
+digest_authenticate   msg, realm, hdr_type, method
+auth_result_t    Core authentication with ENS support
+check_response        username, realm, password, nonce, method, uri, algorithm,
+auth_result_t    Low-level credential verification
+                      response
+ens_validate          domain, wallet_address
+ int              ENS domain ownership validation
+ens_get_owner         domain
+ str*             ENS ownership resolution
+
+5.5.2.  bind_auth_web3(api)
+
+   Allows other modules to bind to the Web3 authentication API with ENS
+   support.
+
+   API Functions:
+     * digest_authenticate - Core authentication with ENS support
+     * check_response - Low-level credential verification
+     * ens_validate - ENS domain validation
+     * ens_get_owner - ENS ownership resolution
+
+   This function is intended for use by other Kamailio modules, not
+   configuration scripts.
+
+   Example 1.11. API usage in C modules
+#include "modules/auth_web3/api.h"
+
+auth_web3_api_t auth_web3_api;
+
+// Module initialization
+if (auth_web3_load_api(&auth_web3_api) != 0) {
+    LM_ERR("cannot bind auth_web3 api\n");
+    return -1;
+}
+
+// Use authentication API
+result = web3_api.digest_authenticate(msg, &realm,
+                                      HDR_AUTHORIZATION_T, &method);
+
+5.6. ENS Technical Details
+
+   The module implements comprehensive ENS integration with the following
+   technical features:
+
+5.6.1. Namehash Calculation
+
+   Implements proper ENS namehash calculation according to EIP-137 for
+   converting human-readable names like "alice.eth" into bytes32 hashes
+   used by ENS contracts.
+
+5.6.2. Ownership Resolution
+
+   Handles complex ENS ownership scenarios:
+     * Direct ownership via ENS Registry
+     * Wrapped domain ownership via Name Wrapper contract
+     * Zero address detection for unregistered domains
+
+5.6.3. Multi-Network Support
+
+     * ENS queries on Ethereum mainnet/testnet
+     * Authentication contracts on Oasis Sapphire (required)
+     * Automatic RPC endpoint selection
+     * Fallback to single-network mode when ens_rpc_url not configured
+
+6. Usage Examples
+
+   6.1. Minimal Configuration
+   6.2. ENS Configuration
+   6.3. Container Configuration
+
+6.1. Minimal Configuration
+
+loadmodule "auth.so"
+loadmodule "auth_web3.so"
+
+# Required parameters
+modparam("auth_web3", "authentication_contract_address",
+         "0xE773BB79689379d32Ad1Db839868b6756B493aea")
+
+# Basic authentication route
+route[AUTH] {
+    if (!web3_www_authenticate("$fd", "$rm")) {
+        www_challenge("$fd", "0");
+        exit;
+    }
+}
+
+6.2. ENS Configuration
+
+# ENS + Web3 authentication
+modparam("auth_web3", "authentication_rpc_url",
+         "https://testnet.sapphire.oasis.dev")
+modparam("auth_web3", "ens_rpc_url",
+         "https://ethereum-sepolia-rpc.publicnode.com")
+
+route[ENS_AUTH] {
+    if (!web3_www_authenticate("$fd", "$rm")) {
+        switch ($retcode) {
+            case -2:
+                xlog("L_INFO", "Auth failed for $fU\n");
+                break;
+            case -5:
+                xlog("L_ERR", "Network timeout for $fU\n");
+                sl_send_reply("503", "Service Unavailable");
+                exit;
+        }
+        www_challenge("$fd", "0");
+        exit;
+    }
+
+    if ($(fU{s.contains,"."})) {
+        xlog("L_INFO", "ENS domain $fU authenticated\n");
+    }
+}
+
+6.3. Container Configuration
+
+# Environment variables (.env file)
+AUTHENTICATION_RPC_URL="https://testnet.sapphire.oasis.dev"
+AUTHENTICATION_CONTRACT_ADDRESS="0xYourContract"
+ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+CONTRACT_DEBUG_MODE="0"
+RPC_TIMEOUT="15"
+
+# Kamailio config (reads environment automatically)
+loadmodule "auth.so"
+loadmodule "auth_web3.so"
+
+7. Performance Considerations
+
+     * Latency: Blockchain calls add 100-1000ms vs database queries
+     * Timeouts: Set appropriate RPC timeouts (10-30s recommended)
+     * ENS Overhead: ENS resolution may require 2 RPC calls
+     * RPC Providers: Use reliable providers for production
+
+8. Security Considerations
+
+     * Smart Contract Audits: Audit authentication contracts thoroughly
+     * Oasis Sapphire: Leverage confidential computing capabilities
+     * Network Security: Use HTTPS for all RPC endpoints
+     * ENS Validation: Verify ENS ownership matches wallet addresses
+     * Fallback Mechanisms: Implement backup authentication for
+       emergencies
+
+9. Frequently Asked Questions
+
+   9.1. Troubleshooting Reference
+   9.2. Error Code Details
+
+   9.1. How does ENS integration work?
+   9.2. Which networks are supported?
+   9.3. What smart contract interface is required?
+   9.4. What happens if networks are down?
+   9.5. Do SIP clients need modifications?
+   9.6. How do I troubleshoot authentication failures?
+   9.7. Is this suitable for production?
+   9.8. How do I configure for containers?
+   9.9. Can I use free RPC providers?
+
+   9.1.
+
+   How does ENS integration work?
+
+   ENS integration allows authentication using domain names like
+   "alice.eth". The module detects ENS names (containing "."), queries ENS
+   Registry for ownership, handles wrapped domains, and validates that the
+   ENS owner matches the wallet address in your authentication contract.
+
+   9.2.
+
+   Which networks are supported?
+
+   Authentication: Only Oasis Sapphire (testnet/mainnet) due to
+   confidential smart contract requirements.
+
+   ENS: Ethereum mainnet, Sepolia testnet, or any network with ENS
+   contracts deployed.
+
+   9.3.
+
+   What smart contract interface is required?
+
+   Your contract must implement:
+function authenticateUser(
+    string memory username, string memory realm, string memory method,
+    string memory uri, string memory nonce, uint8 algorithm,
+    bytes memory response
+) public view returns (bool)
+
+function getWalletAddress(string memory username)
+    public view returns (address)
+
+   9.4.
+
+   What happens if networks are down?
+
+   Authentication fails after the configured timeout. Use reliable RPC
+   providers, appropriate timeout values, and implement fallback
+   authentication for high availability production environments.
+
+   9.5.
+
+   Do SIP clients need modifications?
+
+   No. The module maintains full RFC 2617/7616 compatibility. Clients use
+   standard digest authentication. ENS validation happens transparently on
+   the server side.
+
+   9.6.
+
+   How do I troubleshoot authentication failures?
+
+    1. Enable debug mode: modparam("auth_web3", "contract_debug_mode", 1)
+    2. Check Kamailio logs for detailed error information
+    3. Verify ENS domain ownership on etherscan.io
+    4. Test RPC endpoints manually
+    5. Verify contract addresses and function signatures
+
+   9.7.
+
+   Is this suitable for production?
+
+   Yes, but consider: network reliability (use reliable RPC providers),
+   latency (blockchain calls add 100-1000ms), security (audit smart
+   contracts), and monitoring (implement comprehensive network status
+   monitoring).
+
+   9.8.
+
+   How do I configure for containers?
+
+   Use environment variables for all parameters:
+AUTHENTICATION_RPC_URL="https://testnet.sapphire.oasis.dev"
+AUTHENTICATION_CONTRACT_ADDRESS="0xYourContract"
+ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
+CONTRACT_DEBUG_MODE="0"
+RPC_TIMEOUT="15"
+
+# Minimal Kamailio config
+loadmodule "auth.so"
+loadmodule "auth_web3.so"
+
+   9.9.
+
+   Can I use free RPC providers?
+
+   Free providers work for development and low-volume production but have
+   rate limits and no SLA. For production, use paid providers (Infura,
+   Alchemy) for better reliability. For Oasis Sapphire, use official
+   endpoints.
+
+9.1. Troubleshooting Reference
+
+Issue                               Possible Cause                          Solu
+tion
+--------------------------------------------------------------------------------
+------------------------
+Return code -5 (Network timeout)   RPC endpoint unreachable or slow        Check
+ network connectivity, increase rpc_timeout,
+                                                                            use
+reliable RPC provider
+Return code -2 (Auth failed)       Invalid credentials or contract error   Verif
+y contract address, check authentication
+                                                                            logi
+c, enable debug mode
+ENS validation fails               Domain not owned or wrapped             Check
+ ENS ownership on etherscan, verify wallet
+                                                                            matc
+hes contract data
+Module won't load                  Missing dependencies or misconfiguration Veri
+fy libcurl and OpenSSL installed, check
+                                                                            modu
+le path
+High latency                       Network delays or inefficient RPC provider Us
+e faster RPC provider, optimize network routing,
+                                                                            cons
+ider caching
+Intermittent failures              RPC provider rate limiting              Upgra
+de to paid RPC plan, implement retries,
+                                                                            use
+multiple providers
+No authentication header           SIP client or header parsing issue      Check
+ client configuration, verify header format,
+                                                                            enab
+le debug logs
+Contract call errors               Wrong contract address or ABI mismatch  Verif
+y contract address, check function signatures
+                                                                            matc
+h required interface
+
+9.2. Error Code Details
+
+Return Code   Error Type       Debug Information                       Client Re
+sponse
+--------------------------------------------------------------------------------
+--------
+1             Success          Authentication completed successfully   Continue
+processing
+-1            Generic Error    Check logs for specific error details   Send 500
+Internal Server Error
+-2            Auth Failed      Contract returned false or credential   Send 401
+with challenge (stale=false)
+                               mismatch
+-3            Stale Nonce      Nonce already used or expired          Send 401 w
+ith challenge (stale=true)
+-4            No Credentials   Authorization header missing or        Send 401 w
+ith initial challenge
+                               malformed
+-5            Network Timeout  RPC call failed or timed out           Send 503 S
+ervice Unavailable
