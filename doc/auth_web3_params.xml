@@ -15,66 +15,17 @@
     <section id="auth_web3.parameter_summary">
 	<title>Parameter Summary</title>
 	<para>
-	    <informaltable frame="all">
-		<tgroup cols="4" align="left" colsep="1" rowsep="1">
-		    <colspec colwidth="1*"/>
-		    <colspec colwidth="1*"/>
-		    <colspec colwidth="2*"/>
-		    <colspec colwidth="3*"/>
-		    <thead>
-			<row>
-			    <entry>Parameter</entry>
-			    <entry>Type</entry>
-			    <entry>Default</entry>
-			    <entry>Description</entry>
-			</row>
-		    </thead>
-		    <tbody>
-			<row>
-			    <entry>authentication_rpc_url</entry>
-			    <entry>string</entry>
-			    <entry>https://testnet.sapphire.oasis.dev</entry>
-			    <entry>Oasis Sapphire RPC endpoint for authentication contracts</entry>
-			</row>
-			<row>
-			    <entry>authentication_contract_address</entry>
-			    <entry>string</entry>
-			    <entry>0xE773BB79689379d32Ad1Db839868b6756B493aea</entry>
-			    <entry>Authentication contract address on Oasis Sapphire</entry>
-			</row>
-			<row>
-			    <entry>ens_rpc_url</entry>
-			    <entry>string</entry>
-			    <entry>https://ethereum-sepolia-rpc.publicnode.com</entry>
-			    <entry>RPC endpoint for ENS queries (optional)</entry>
-			</row>
-			<row>
-			    <entry>ens_registry_address</entry>
-			    <entry>string</entry>
-			    <entry>0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e</entry>
-			    <entry>ENS Registry contract address</entry>
-			</row>
-			<row>
-			    <entry>ens_name_wrapper_address</entry>
-			    <entry>string</entry>
-			    <entry>0x0635513f179D50A207757E05759CbD106d7dFcE8</entry>
-			    <entry>ENS Name Wrapper contract address</entry>
-			</row>
-			<row>
-			    <entry>contract_debug_mode</entry>
-			    <entry>integer</entry>
-			    <entry>1</entry>
-			    <entry>Enable debug logging (0=off, 1=on)</entry>
-			</row>
-			<row>
-			    <entry>rpc_timeout</entry>
-			    <entry>integer</entry>
-			    <entry>10</entry>
-			    <entry>RPC call timeout in seconds</entry>
-			</row>
-		    </tbody>
-		</tgroup>
-	    </informaltable>
+	    <programlisting>
+Parameter                          Type      Default                                 Description
+------------------------------------------------------------------------------------------
+authentication_rpc_url             string    https://testnet.sapphire.oasis.dev     Oasis Sapphire RPC endpoint for authentication contracts
+authentication_contract_address    string    0xE773BB79689379d32Ad1Db839868b67...   Authentication contract address on Oasis Sapphire  
+ens_rpc_url                        string    https://ethereum-sepolia-rpc.public... RPC endpoint for ENS queries (optional)
+ens_registry_address               string    0x00000000000C2E074eC69A0dFb2997BA... ENS Registry contract address
+ens_name_wrapper_address           string    0x0635513f179D50A207757E05759CbD10... ENS Name Wrapper contract address
+contract_debug_mode                integer   1                                       Enable debug logging (0=off, 1=on)
+rpc_timeout                        integer   10                                      RPC call timeout in seconds
+	    </programlisting>
 	</para>
     </section>
 
@@ -274,95 +225,29 @@ modparam("auth_web3", "rpc_timeout", 15)
     <section id="auth_web3.network_configuration">
 	<title>Network Configuration Table</title>
 	<para>
-	    <informaltable frame="all">
-		<tgroup cols="4" align="left" colsep="1" rowsep="1">
-		    <colspec colwidth="2*"/>
-		    <colspec colwidth="2*"/>
-		    <colspec colwidth="2*"/>
-		    <colspec colwidth="3*"/>
-		    <thead>
-			<row>
-			    <entry>Configuration</entry>
-			    <entry>Authentication Network</entry>
-			    <entry>ENS Network</entry>
-			    <entry>Use Case</entry>
-			</row>
-		    </thead>
-		    <tbody>
-			<row>
-			    <entry>Production (Mainnet)</entry>
-			    <entry>Oasis Sapphire Mainnet</entry>
-			    <entry>Ethereum Mainnet</entry>
-			    <entry>Production deployments with real ENS domains</entry>
-			</row>
-			<row>
-			    <entry>Testing (Testnet)</entry>
-			    <entry>Oasis Sapphire Testnet</entry>
-			    <entry>Ethereum Sepolia</entry>
-			    <entry>Development and testing with test ENS domains</entry>
-			</row>
-			<row>
-			    <entry>Single Network</entry>
-			    <entry>Oasis Sapphire (Any)</entry>
-			    <entry>Same as Authentication</entry>
-			    <entry>Simplified setup, no cross-chain ENS</entry>
-			</row>
-			<row>
-			    <entry>Custom Network</entry>
-			    <entry>Custom RPC Endpoint</entry>
-			    <entry>Custom RPC Endpoint</entry>
-			    <entry>Private networks or alternative providers</entry>
-			</row>
-		    </tbody>
-		</tgroup>
-	    </informaltable>
+	    <programlisting>
+Configuration            Authentication Network      ENS Network              Use Case
+-----------------------------------------------------------------------------------------
+Production (Mainnet)     Oasis Sapphire Mainnet     Ethereum Mainnet         Production deployments with real ENS domains
+Testing (Testnet)        Oasis Sapphire Testnet     Ethereum Sepolia         Development and testing with test ENS domains  
+Single Network           Oasis Sapphire (Any)       Same as Authentication   Simplified setup, no cross-chain ENS
+Custom Network           Custom RPC Endpoint        Custom RPC Endpoint      Private networks or alternative providers
+	    </programlisting>
 	</para>
     </section>
 
     <section id="auth_web3.rpc_endpoints">
 	<title>RPC Endpoints Reference</title>
 	<para>
-	    <informaltable frame="all">
-		<tgroup cols="3" align="left" colsep="1" rowsep="1">
-		    <colspec colwidth="2*"/>
-		    <colspec colwidth="3*"/>
-		    <colspec colwidth="1*"/>
-		    <thead>
-			<row>
-			    <entry>Network</entry>
-			    <entry>RPC URL</entry>
-			    <entry>Network Type</entry>
-			</row>
-		    </thead>
-		    <tbody>
-			<row>
-			    <entry>Oasis Sapphire Mainnet</entry>
-			    <entry>https://sapphire.oasis.io</entry>
-			    <entry>Production</entry>
-			</row>
-			<row>
-			    <entry>Oasis Sapphire Testnet</entry>
-			    <entry>https://testnet.sapphire.oasis.dev</entry>
-			    <entry>Testing</entry>
-			</row>
-			<row>
-			    <entry>Ethereum Mainnet</entry>
-			    <entry>https://mainnet.infura.io/v3/YOUR_KEY</entry>
-			    <entry>Production</entry>
-			</row>
-			<row>
-			    <entry>Ethereum Sepolia</entry>
-			    <entry>https://ethereum-sepolia-rpc.publicnode.com</entry>
-			    <entry>Testing</entry>
-			</row>
-			<row>
-			    <entry>Ethereum Sepolia (Alternative)</entry>
-			    <entry>https://sepolia.infura.io/v3/YOUR_KEY</entry>
-			    <entry>Testing</entry>
-			</row>
-		    </tbody>
-		</tgroup>
-	    </informaltable>
+	    <programlisting>
+Network                        RPC URL                                         Network Type
+--------------------------------------------------------------------------------------------
+Oasis Sapphire Mainnet        https://sapphire.oasis.io                      Production
+Oasis Sapphire Testnet        https://testnet.sapphire.oasis.dev             Testing
+Ethereum Mainnet              https://mainnet.infura.io/v3/YOUR_KEY          Production  
+Ethereum Sepolia              https://ethereum-sepolia-rpc.publicnode.com    Testing
+Ethereum Sepolia (Alternative) https://sepolia.infura.io/v3/YOUR_KEY         Testing
+	    </programlisting>
 	</para>
     </section>
 
