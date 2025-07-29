@@ -60,6 +60,57 @@
 		</para>
 	</section>
 
+	<section id="auth_web3.ens_technical">
+		<title>ENS Technical Details</title>
+		<para>
+			The module implements comprehensive ENS integration with the following technical features:
+		</para>
+		
+		<section id="auth_web3.ens_namehash">
+			<title>Namehash Calculation</title>
+			<para>
+				Implements proper ENS namehash calculation according to EIP-137 for converting 
+				human-readable names like "alice.eth" into bytes32 hashes used by ENS contracts.
+			</para>
+		</section>
+		
+		<section id="auth_web3.ens_ownership">
+			<title>Ownership Resolution</title>
+			<para>
+				Handles complex ENS ownership scenarios:
+				<itemizedlist>
+					<listitem><para>Direct ownership via ENS Registry</para></listitem>
+					<listitem><para>Wrapped domain ownership via Name Wrapper contract</para></listitem>
+					<listitem><para>Zero address detection for unregistered domains</para></listitem>
+				</itemizedlist>
+			</para>
+		</section>
+		
+		<section id="auth_web3.multi_network">
+			<title>Multi-Network Support</title>
+			<para>
+				<itemizedlist>
+					<listitem><para>ENS queries on Ethereum mainnet/testnet</para></listitem>
+					<listitem><para>Authentication contracts on Oasis Sapphire (required)</para></listitem>
+					<listitem><para>Automatic RPC endpoint selection</para></listitem>
+					<listitem><para>Fallback to single-network mode when ens_rpc_url not configured</para></listitem>
+				</itemizedlist>
+			</para>
+		</section>
+		
+		<section id="auth_web3.smart_contract_req">
+			<title>Smart Contract Requirements</title>
+			<para>
+				To use this module, you must deploy and configure a smart contract on Oasis Sapphire:
+				<itemizedlist>
+					<listitem><para>Deploy authentication contract on Oasis Sapphire network</para></listitem>
+					<listitem><para>Implement required interface functions (see Functions section for details)</para></listitem>
+					<listitem><para>Configure contract address in Kamailio parameters</para></listitem>
+				</itemizedlist>
+			</para>
+		</section>
+	</section>
+
 	<section id="auth_web3.dep">
 		<title>Dependencies</title>
 		<para>

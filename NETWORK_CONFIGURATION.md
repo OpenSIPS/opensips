@@ -28,9 +28,9 @@ ens_rpc_url = NULL (not configured)
 ### Scenario 2: Different Networks (Multi-Network Mode)
 ```
 authentication_rpc_url = "https://testnet.sapphire.oasis.dev"
-ens_rpc_url = "https://sepolia.infura.io/v3/YOUR_KEY"
+ens_rpc_url = "https://eth.drpc.org"
 ```
-- ✅ ENS queries → `ens_rpc_url` (Sepolia)
+- ✅ ENS queries → `ens_rpc_url` (Mainnet)
 - ✅ Oasis queries → `authentication_rpc_url` (Oasis Sapphire)
 - Use case: ENS on Ethereum, Oasis on Oasis network
 
@@ -40,7 +40,7 @@ ens_rpc_url = "https://sepolia.infura.io/v3/YOUR_KEY"
 ```bash
 # Oasis Mainnet + Ethereum Mainnet
 authentication_rpc_url = "https://sapphire.oasis.io"
-ens_rpc_url = "https://mainnet.infura.io/v3/YOUR_KEY"
+ens_rpc_url = "https://eth.drpc.org"
 ens_registry_address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
 ens_name_wrapper_address = "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401"
 ```

@@ -28,17 +28,6 @@
             with authentication contract wallet addresses.
         </para>
         <para>
-            <emphasis>Return codes:</emphasis>
-            <itemizedlist>
-                <listitem><para><emphasis>Positive value</emphasis> - Authentication successful</para></listitem>
-                <listitem><para><emphasis>-1</emphasis> - Generic error</para></listitem>
-                <listitem><para><emphasis>-2</emphasis> - Invalid credentials/blockchain verification failed</para></listitem>
-                <listitem><para><emphasis>-3</emphasis> - Stale nonce</para></listitem>
-                <listitem><para><emphasis>-4</emphasis> - No credentials</para></listitem>
-                <listitem><para><emphasis>-5</emphasis> - Network timeout</para></listitem>
-            </itemizedlist>
-        </para>
-        <para>
             <emphasis>Parameters:</emphasis>
             <itemizedlist>
                 <listitem>
@@ -52,18 +41,32 @@
         <para>
             <emphasis>Return Type:</emphasis> integer
         </para>
+                <para>
+            <emphasis>Return codes:</emphasis>
+            <itemizedlist>
+                <listitem><para><emphasis>Positive value</emphasis> - Authentication successful</para></listitem>
+                <listitem><para><emphasis>-1</emphasis> - Generic error</para></listitem>
+                <listitem><para><emphasis>-2</emphasis> - Invalid credentials/blockchain verification failed</para></listitem>
+                <listitem><para><emphasis>-3</emphasis> - Stale nonce</para></listitem>
+                <listitem><para><emphasis>-4</emphasis> - No credentials</para></listitem>
+                <listitem><para><emphasis>-5</emphasis> - Network timeout</para></listitem>
+            </itemizedlist>
+        </para>
         <para>
             This function can be used from REQUEST_ROUTE.
         </para>
         <example>
             <title>web3_www_authenticate usage</title>
             <programlisting format="linespecific">
+...
 # Basic Web3 + ENS authentication
 if (!web3_www_authenticate("$fd", "$rm")) {
     www_challenge("$fd", "0");
     exit;
 }
+...
 
+...
 # Enhanced error handling with specific responses
 if (!web3_www_authenticate("$td", "$rm")) {
     switch ($retcode) {
@@ -80,11 +83,14 @@ if (!web3_www_authenticate("$td", "$rm")) {
     }
     exit;
 }
+... 
 
+...
 # Log ENS domain authentication
 if ($(fU{s.contains,"."})) {
     xlog("L_INFO", "ENS domain $fU authenticated\n");
 }
+...
             </programlisting>
         </example>
     </section>
@@ -96,11 +102,8 @@ if ($(fU{s.contains,"."})) {
         <para>
             Verifies credentials using blockchain-based authentication via Web3 smart contract calls 
             with ENS support for proxy authentication. Operates on Proxy-Authorization headers instead 
-            of Authorization headers. Includes the same ENS integration capabilities as web3_www_authenticate 
+            of Authorization headers. Includes the same ENS integration capabilities as <function>web3_www_authenticate</function> 
             and serves as a drop-in replacement for traditional proxy_authenticate functions.
-        </para>
-        <para>
-            <emphasis>Return codes:</emphasis> Identical to web3_www_authenticate
         </para>
         <para>
             <emphasis>Parameters:</emphasis>
@@ -117,17 +120,23 @@ if ($(fU{s.contains,"."})) {
             <emphasis>Return Type:</emphasis> integer
         </para>
         <para>
+            <emphasis>Return codes:</emphasis> Identical to <function>web3_www_authenticate</function>
+        </para>
+        <para>
             This function can be used from REQUEST_ROUTE.
         </para>
         <example>
             <title>web3_proxy_authenticate usage</title>
             <programlisting format="linespecific">
+...
 # Basic proxy authentication
 if (!web3_proxy_authenticate("proxy.domain.com", "$rm")) {
     proxy_challenge("proxy.domain.com", "0");
     exit;
 }
+...
 
+...
 # Proxy routing with ENS awareness and error handling
 route[RELAY] {
     if (!web3_proxy_authenticate("$fd", "$rm")) {
@@ -146,39 +155,73 @@ route[RELAY] {
     }
     t_relay();
 }
+...
             </programlisting>
         </example>
     </section>
 
-    <section id="auth_web3.f.bind_auth_web3">
+    <section id="auth_web3.f.bind_web3_auth">
         <title>
-            <function moreinfo="none">bind_auth_web3(api)</function>
+            <function moreinfo="none">bind_web3_auth(api)</function>
         </title>
         <para>
             Allows other modules to bind to the Web3 authentication API with ENS support. This function 
-            provides programmatic access to Web3 authentication and ENS validation functions for other 
-            Kamailio modules.
+            provides programmatic access to Web3 authentication functions for other 
+            Kamailio modules. The API structure contains core authentication and ENS validation functions 
+            that handle both standard Web3 authentication and ENS validation internally.
+        </para>
+		<para>
+            Note: This function is intended for use by other Kamailio modules, not configuration scripts.
         </para>
         <para>
             <emphasis>Parameters:</emphasis>
             <itemizedlist>
                 <listitem>
-                    <para><emphasis>api</emphasis> (auth_web3_api_t*) - Pointer to API structure to be populated</para>
+                    <para><emphasis>api</emphasis> (web3_auth_api_t*) - Pointer to API structure to be populated</para>
                 </listitem>
             </itemizedlist>
         </para>
         <para>
-            <emphasis>Return Type:</emphasis> integer (0 on success, -1 on failure)
+            <emphasis>API Functions Available:</emphasis>
+            <itemizedlist>
+                <listitem>
+                    <para><emphasis>digest_authenticate(msg, realm, hdr_type, method)</emphasis> - Core authentication function with ENS support</para>
+                    <para>Parameters: msg (sip_msg_t*), realm (str*), hdr_type (hdr_types_t), method (str*)</para>
+                    <para>Return: auth_result_t (structure containing authentication result)</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>check_response(cred, method)</emphasis> - Low-level credential verification function</para>
+                    <para>Parameters: cred (dig_cred_t*), method (str*)</para>
+                    <para>Return: auth_result_t (structure containing verification result)</para>
+                </listitem>
+				<listitem>
+                    <para><emphasis>ens_validate(domain, wallet_address)</emphasis> - ENS domain ownership validation function</para>
+                    <para>Parameters: domain (str*), wallet_address (str*)</para>
+                    <para>Return: int (1 for valid ownership, 0 for invalid, -1 for error)</para>
+                </listitem>
+				<listitem>
+                    <para><emphasis>ens_get_owner(domain)</emphasis> - ENS ownership resolution function</para>
+                    <para>Parameters: domain (str*)</para>
+                    <para>Return: str* (pointer to owner address string, NULL if not found)</para>
+                </listitem>
+            </itemizedlist>
+        </para>
+		<para>
+            <emphasis>Return Type:</emphasis> integer
         </para>
         <para>
-            This function is intended for use by other Kamailio modules, not configuration scripts.
+            <emphasis>Return codes:</emphasis> Identical to <function>web3_www_authenticate</function>
+        </para>
+		<para>
+            This function can be used from MODULE_INIT.
         </para>
         <example>
             <title>API usage in C modules</title>
             <programlisting format="linespecific">
+...
 #include "modules/auth_web3/api.h"
 
-auth_web3_api_t auth_web3_api;
+web3_auth_api_t auth_web3_api;
 
 // Module initialization
 if (auth_web3_load_api(&amp;auth_web3_api) != 0) {
@@ -189,144 +232,9 @@ if (auth_web3_load_api(&amp;auth_web3_api) != 0) {
 // Use authentication API
 result = web3_api.digest_authenticate(msg, &amp;realm, 
                                       HDR_AUTHORIZATION_T, &amp;method);
+...
             </programlisting>
         </example>
-    </section>
-
-    <section id="auth_web3.f.digest_authenticate">
-        <title>
-            <function moreinfo="none">digest_authenticate(msg, realm, hdr_type, method)</function>
-        </title>
-        <para>
-            Core authentication function with ENS support. This function performs the main authentication 
-            logic including ENS domain validation when usernames contain "." characters. It handles the 
-            complete authentication flow from credential parsing to blockchain verification.
-        </para>
-        <para>
-            <emphasis>Parameters:</emphasis>
-            <itemizedlist>
-                <listitem>
-                    <para><emphasis>msg</emphasis> (sip_msg_t*) - SIP message structure</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>realm</emphasis> (str*) - Authentication realm string</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>hdr_type</emphasis> (int) - Header type (HDR_AUTHORIZATION_T or HDR_PROXYAUTH_T)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>method</emphasis> (str*) - SIP method string</para>
-                </listitem>
-            </itemizedlist>
-        </para>
-        <para>
-            <emphasis>Return Type:</emphasis> auth_result_t (structure containing authentication result)
-        </para>
-        <para>
-            This function is part of the internal API and is called by the public authentication functions.
-        </para>
-    </section>
-
-    <section id="auth_web3.f.check_response">
-        <title>
-            <function moreinfo="none">check_response(username, realm, password, nonce, method, uri, algorithm, response)</function>
-        </title>
-        <para>
-            Low-level credential verification function. This function handles the detailed verification 
-            of authentication credentials including digest calculation and blockchain verification. It 
-            performs the core cryptographic operations required for authentication.
-        </para>
-        <para>
-            <emphasis>Parameters:</emphasis>
-            <itemizedlist>
-                <listitem>
-                    <para><emphasis>username</emphasis> (str*) - Username from authentication header</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>realm</emphasis> (str*) - Authentication realm</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>password</emphasis> (str*) - Password (not used in Web3 auth)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>nonce</emphasis> (str*) - Nonce value from challenge</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>method</emphasis> (str*) - SIP method</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>uri</emphasis> (str*) - Request URI</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>algorithm</emphasis> (str*) - Digest algorithm</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>response</emphasis> (str*) - Response from authentication header</para>
-                </listitem>
-            </itemizedlist>
-        </para>
-        <para>
-            <emphasis>Return Type:</emphasis> auth_result_t (structure containing verification result)
-        </para>
-        <para>
-            This function is part of the internal API and handles the cryptographic verification of credentials.
-        </para>
-    </section>
-
-    <section id="auth_web3.f.ens_validate">
-        <title>
-            <function moreinfo="none">ens_validate(domain, wallet_address)</function>
-        </title>
-        <para>
-            ENS domain ownership validation function. This function checks if a given wallet address 
-            owns the specified ENS domain by querying the ENS Registry and handling wrapped domains. 
-            It performs the complete ENS validation workflow including namehash calculation and 
-            cross-validation with authentication contract data.
-        </para>
-        <para>
-            <emphasis>Parameters:</emphasis>
-            <itemizedlist>
-                <listitem>
-                    <para><emphasis>domain</emphasis> (str*) - ENS domain name (e.g., "alice.eth")</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>wallet_address</emphasis> (str*) - Wallet address to validate against</para>
-                </listitem>
-            </itemizedlist>
-        </para>
-        <para>
-            <emphasis>Return Type:</emphasis> int (1 for valid ownership, 0 for invalid, -1 for error)
-        </para>
-        <para>
-            This function handles complex ENS scenarios including direct ownership, wrapped domains, 
-            and zero address detection for unregistered domains.
-        </para>
-    </section>
-
-    <section id="auth_web3.f.ens_get_owner">
-        <title>
-            <function moreinfo="none">ens_get_owner(domain)</function>
-        </title>
-        <para>
-            ENS ownership resolution function. This function retrieves the owner address for a given 
-            ENS domain by querying the ENS Registry. It handles both direct ownership and wrapped 
-            domain scenarios, returning the actual owner address.
-        </para>
-        <para>
-            <emphasis>Parameters:</emphasis>
-            <itemizedlist>
-                <listitem>
-                    <para><emphasis>domain</emphasis> (str*) - ENS domain name (e.g., "alice.eth")</para>
-                </listitem>
-            </itemizedlist>
-        </para>
-        <para>
-            <emphasis>Return Type:</emphasis> str* (pointer to owner address string, NULL if not found)
-        </para>
-        <para>
-            This function implements proper ENS namehash calculation according to EIP-137 and handles 
-            the complete ownership resolution workflow including wrapped domain detection.
-        </para>
     </section>
 
 </section> 

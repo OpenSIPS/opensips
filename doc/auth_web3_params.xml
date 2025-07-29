@@ -32,9 +32,11 @@
             <emphasis>Default:</emphasis> "https://testnet.sapphire.oasis.dev"
         </para>
         <example>
-            <title>authentication_rpc_url parameter</title>
+            <title>Setting the <varname>authentication_rpc_url</varname> parameter</title>
             <programlisting>
+...
 modparam("auth_web3", "authentication_rpc_url", "https://sapphire.oasis.io")
+...
             </programlisting>
         </example>
     </section>
@@ -70,9 +72,11 @@ function getWalletAddress(
             <emphasis>Default:</emphasis> "0xE773BB79689379d32Ad1Db839868b6756B493aea"
         </para>
         <example>
-            <title>authentication_contract_address parameter</title>
+            <title>Setting the <varname>authentication_contract_address</varname> parameter</title>
             <programlisting>
+...
 modparam("auth_web3", "authentication_contract_address", "0x1234567890abcdef1234567890abcdef12345678")
+...
             </programlisting>
         </example>
     </section>
@@ -87,7 +91,7 @@ modparam("auth_web3", "authentication_contract_address", "0x1234567890abcdef1234
         <para>
             <emphasis>Common Endpoints:</emphasis>
             <itemizedlist>
-                <listitem><para>Ethereum Mainnet: https://mainnet.infura.io/v3/YOUR_KEY</para></listitem>
+                <listitem><para>Ethereum Mainnet: https://eth.drpc.org</para></listitem>
                 <listitem><para>Ethereum Sepolia: https://ethereum-sepolia-rpc.publicnode.com</para></listitem>
             </itemizedlist>
         </para>
@@ -98,9 +102,11 @@ modparam("auth_web3", "authentication_contract_address", "0x1234567890abcdef1234
             <emphasis>Default:</emphasis> "https://ethereum-sepolia-rpc.publicnode.com"
         </para>
         <example>
-            <title>ens_rpc_url parameter</title>
+            <title>Setting the <varname>ens_rpc_url</varname> parameter</title>
             <programlisting>
-modparam("auth_web3", "ens_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
+...			
+modparam("auth_web3", "ens_rpc_url", "https://eth.drpc.org")
+...
             </programlisting>
         </example>
     </section>
@@ -117,9 +123,11 @@ modparam("auth_web3", "ens_rpc_url", "https://mainnet.infura.io/v3/YOUR_KEY")
             <emphasis>Default:</emphasis> "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
         </para>
         <example>
-            <title>ens_registry_address parameter</title>
+            <title>Setting the <varname>ens_registry_address</varname> parameter</title>
             <programlisting>
+...
 modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+...
             </programlisting>
         </example>
     </section>
@@ -144,9 +152,11 @@ modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997B
             <emphasis>Default:</emphasis> "0x0635513f179D50A207757E05759CbD106d7dFcE8" (Sepolia)
         </para>
         <example>
-            <title>ens_name_wrapper_address parameter</title>
+            <title>Setting the <varname>ens_name_wrapper_address</varname> parameter</title>
             <programlisting>
+...
 modparam("auth_web3", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401")
+...
             </programlisting>
         </example>
     </section>
@@ -171,9 +181,11 @@ modparam("auth_web3", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5D6C2
             <emphasis>Default:</emphasis> 1
         </para>
         <example>
-            <title>contract_debug_mode parameter</title>
+            <title>Setting the <varname>contract_debug_mode</varname> parameter</title>
             <programlisting>
+...
 modparam("auth_web3", "contract_debug_mode", 0)
+...
             </programlisting>
         </example>
     </section>
@@ -198,85 +210,13 @@ modparam("auth_web3", "contract_debug_mode", 0)
             <emphasis>Default:</emphasis> 10
         </para>
         <example>
-            <title>rpc_timeout parameter</title>
+            <title>Setting the <varname>rpc_timeout</varname> parameter</title>
             <programlisting>
+...
 modparam("auth_web3", "rpc_timeout", 15)
+...
             </programlisting>
         </example>
     </section>
-
-    <!-- <section id="auth_web3.network_configuration">
-        <title>Network Configuration</title>
-        <para>
-            The auth_web3 module supports various network configurations for different deployment scenarios.
-            You can configure authentication and ENS to use different networks or the same network.
-        </para>
-        <para>
-            <emphasis>Production (Mainnet) Configuration:</emphasis>
-            Use Oasis Sapphire Mainnet for authentication contracts and Ethereum Mainnet for ENS queries.
-            This setup is ideal for production deployments with real ENS domains.
-        </para>
-        <para>
-            <emphasis>Testing (Testnet) Configuration:</emphasis>
-            Use Oasis Sapphire Testnet for authentication contracts and Ethereum Sepolia for ENS queries.
-            This setup is perfect for development and testing with test ENS domains.
-        </para>
-        <para>
-            <emphasis>Single Network Configuration:</emphasis>
-            Use the same network for both authentication and ENS queries.
-            This simplified setup is suitable when you don't need cross-chain ENS functionality.
-        </para>
-        <para>
-            <emphasis>Custom Network Configuration:</emphasis>
-            Use custom RPC endpoints for both authentication and ENS queries.
-            This setup is useful for private networks or alternative providers.
-        </para>
-    </section>
-
-    <section id="auth_web3.rpc_endpoints">
-        <title>RPC Endpoints Reference</title>
-        <para>
-            The following RPC endpoints are commonly used with the auth_web3 module:
-        </para>
-        <para>
-            <emphasis>Oasis Sapphire Mainnet:</emphasis> https://sapphire.oasis.io (Production network)
-        </para>
-        <para>
-            <emphasis>Oasis Sapphire Testnet:</emphasis> https://testnet.sapphire.oasis.dev (Testing network)
-        </para>
-        <para>
-            <emphasis>Ethereum Mainnet:</emphasis> https://mainnet.infura.io/v3/YOUR_KEY (Production network)
-        </para>
-        <para>
-            <emphasis>Ethereum Sepolia:</emphasis> https://ethereum-sepolia-rpc.publicnode.com (Testing network)
-        </para>
-        <para>
-            <emphasis>Ethereum Sepolia (Alternative):</emphasis> https://sepolia.infura.io/v3/YOUR_KEY (Testing network)
-        </para>
-    </section>
-
-    <section id="auth_web3.environment_variables">
-        <title>Environment Variable Configuration</title>
-        <para>
-            All parameters can be configured via environment variables for 
-            containerized deployments. Environment variables take precedence 
-            over modparam configurations.
-        </para>
-        <example>
-            <title>Complete environment configuration</title>
-            <programlisting>
-# Environment variables
-AUTHENTICATION_RPC_URL="https://testnet.sapphire.oasis.dev"
-AUTHENTICATION_CONTRACT_ADDRESS="0xYourContract"
-ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
-CONTRACT_DEBUG_MODE="0"
-RPC_TIMEOUT="15"
-
-# Minimal Kamailio config
-loadmodule "auth.so"
-loadmodule "auth_web3.so"
-            </programlisting>
-        </example>
-    </section> -->
 
 </section> 
