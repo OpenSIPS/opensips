@@ -19,15 +19,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
 #ifndef _AUTH_WEB3_H_
 #define _AUTH_WEB3_H_
 
-#include "../../core/str.h"
-#include "../../core/parser/msg_parser.h"
 #include "../../core/parser/digest/digest.h"
+#include "../../core/parser/msg_parser.h"
+#include "../../core/str.h"
 #include "../../modules/auth/api.h"
 #include <curl/curl.h>
 
@@ -35,8 +35,8 @@
  * Web3 response structure for curl callbacks
  */
 struct Web3ResponseData {
-    char *memory;
-    size_t size;
+  char *memory;
+  size_t size;
 };
 
 /*
@@ -54,12 +54,13 @@ int auth_web3_check_response(dig_cred_t *cred, str *method);
 /**
  * Digest authentication function
  * @param msg SIP message
- * @param realm Authentication realm  
+ * @param realm Authentication realm
  * @param hftype Header field type
  * @param method SIP method
  * @return Authentication result
  */
-int web3_digest_authenticate(struct sip_msg* msg, str* realm, hdr_types_t hftype, str* method);
+int web3_digest_authenticate(struct sip_msg *msg, str *realm,
+                             hdr_types_t hftype, str *method);
 
 /**
  * @brief Curl callback function for Web3 RPC responses
@@ -69,8 +70,8 @@ int web3_digest_authenticate(struct sip_msg* msg, str* realm, hdr_types_t hftype
  * @param data Web3ResponseData structure
  * @return Number of bytes processed
  */
-size_t web3_curl_callback(void *contents, size_t size, size_t nmemb, 
-                         struct Web3ResponseData *data);
+size_t web3_curl_callback(void *contents, size_t size, size_t nmemb,
+                          struct Web3ResponseData *data);
 
 /**
  * @brief Convert hex string to bytes
@@ -93,4 +94,4 @@ int web3_ens_resolve_address(const char *ens_name, char *resolved_address);
 // Oasis contract functions
 int web3_oasis_get_wallet_address(const char *username, char *wallet_address);
 
-#endif /* _AUTH_WEB3_H_ */ 
+#endif /* _AUTH_WEB3_H_ */

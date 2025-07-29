@@ -19,31 +19,30 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
+#include "api.h"
 #include "../../core/dprint.h"
 #include "../../core/sr_module.h"
-#include "api.h"
-#include "web3_imple.h"
 #include "auth_web3_mod.h"
+#include "web3_imple.h"
 
 /**
  * @brief Bind Web3 authentication API
  * @param api API structure to fill
  * @return 0 on success, -1 on error
  */
-int bind_web3_auth(web3_auth_api_t *api)
-{
-    if (!api) {
-        LM_ERR("invalid parameter value\n");
-        return -1;
-    }
+int bind_web3_auth(web3_auth_api_t *api) {
+  if (!api) {
+    LM_ERR("invalid parameter value\n");
+    return -1;
+  }
 
-    /* Bind the core functions */
-    api->digest_authenticate = web3_digest_authenticate;
-    api->check_response = auth_web3_check_response;
+  /* Bind the core functions */
+  api->digest_authenticate = web3_digest_authenticate;
+  api->check_response = auth_web3_check_response;
 
-    LM_INFO("Web3 Authentication API successfully bound\n");
-    return 0;
-} 
+  LM_INFO("Web3 Authentication API successfully bound\n");
+  return 0;
+}

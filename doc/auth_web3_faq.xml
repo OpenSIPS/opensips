@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
 %docentities;
-
 ]>
 
-<section id="auth_web3.faq" xmlns:xi="http://www.w3.org/2001/XInclude">
-
+<chapter>
     <title>Frequently Asked Questions</title>
 
-    <qandaset>
+    <qandaset defaultlabel="number">
         <qandaentry>
             <question>
                 <para>How does ENS integration work?</para>
@@ -155,130 +152,125 @@ loadmodule "auth_web3.so"
             </answer>
         </qandaentry>
 
+        <qandaentry>
+            <question>
+                <para>What are common troubleshooting scenarios?</para>
+            </question>
+            <answer>
+                <para>
+                    Here are the most common issues and their solutions:
+                </para>
+                <para>
+                    <emphasis>Return code -5 (Network timeout):</emphasis> This occurs when the RPC endpoint is unreachable or slow. 
+                    Check your network connectivity, increase the rpc_timeout parameter, and use a reliable RPC provider.
+                </para>
+                <para>
+                    <emphasis>Return code -2 (Auth failed):</emphasis> This indicates invalid credentials or a contract error. 
+                    Verify your contract address, check the authentication logic, and enable debug mode for more details.
+                </para>
+                <para>
+                    <emphasis>ENS validation fails:</emphasis> This happens when the domain is not owned or is wrapped. 
+                    Check ENS ownership on etherscan.io and verify that the wallet matches the contract data.
+                </para>
+                <para>
+                    <emphasis>Module won't load:</emphasis> This is usually due to missing dependencies or misconfiguration. 
+                    Verify that libcurl and OpenSSL are installed and check the module path.
+                </para>
+                <para>
+                    <emphasis>High latency:</emphasis> This is caused by network delays or inefficient RPC providers. 
+                    Use a faster RPC provider, optimize network routing, and consider implementing caching.
+                </para>
+                <para>
+                    <emphasis>Intermittent failures:</emphasis> This is often due to RPC provider rate limiting. 
+                    Upgrade to a paid RPC plan, implement retries, or use multiple providers for redundancy.
+                </para>
+                <para>
+                    <emphasis>No authentication header:</emphasis> This indicates a SIP client or header parsing issue. 
+                    Check client configuration, verify header format, and enable debug logs.
+                </para>
+                <para>
+                    <emphasis>Contract call errors:</emphasis> This occurs with wrong contract addresses or ABI mismatches. 
+                    Verify the contract address and check that function signatures match the required interface.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>What do the error codes mean?</para>
+            </question>
+            <answer>
+                <para>
+                    The module returns specific error codes that indicate different authentication states:
+                </para>
+                <para>
+                    <emphasis>Return code 1:</emphasis> Success - Authentication completed successfully. Continue processing the request.
+                </para>
+                <para>
+                    <emphasis>Return code -1:</emphasis> Generic Error - Check the logs for specific error details. Send a 500 Internal Server Error response.
+                </para>
+                <para>
+                    <emphasis>Return code -2:</emphasis> Auth Failed - The contract returned false or there was a credential mismatch. Send a 401 response with challenge (stale=false).
+                </para>
+                <para>
+                    <emphasis>Return code -3:</emphasis> Stale Nonce - The nonce has already been used or expired. Send a 401 response with challenge (stale=true).
+                </para>
+                <para>
+                    <emphasis>Return code -4:</emphasis> No Credentials - The Authorization header is missing or malformed. Send a 401 response with initial challenge.
+                </para>
+                <para>
+                    <emphasis>Return code -5:</emphasis> Network Timeout - The RPC call failed or timed out. Send a 503 Service Unavailable response.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Where can I find more about &kamailio;?</para>
+            </question>
+            <answer>
+                <para>
+                    Take a look at &kamailiohomelink;.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Where can I post a question about this module?</para>
+            </question>
+            <answer>
+                <para>
+                    First check if your question was already answered on one of our mailing lists:
+                </para>
+                <itemizedlist>
+                    <listitem>
+                    <para>User Mailing List - &kamailiouserslink;</para>
+                    </listitem>
+                    <listitem>
+                    <para>Developer Mailing List - &kamailiodevlink;</para>
+                    </listitem>
+                </itemizedlist>
+                <para>
+                    E-mails regarding any stable &kamailio; release should be sent to
+                    &kamailiousersmail; and e-mails regarding development versions
+                    should be sent to &kamailiodevmail;.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>How can I report a bug?</para>
+            </question>
+            <answer>
+                <para>
+                    Please follow the guidelines provided at:
+                    &kamailiobugslink;.
+                </para>
+            </answer>
+        </qandaentry>
+
     </qandaset>
 
-    <section id="auth_web3.troubleshooting_table">
-	<title>Troubleshooting Reference</title>
-	<para>
-	    <table frame="all">
-		<title>Troubleshooting Reference</title>
-		<tgroup cols="3" align="left" colsep="1" rowsep="1">
-		    <colspec colname="col1" colwidth="25*"/>
-		    <colspec colname="col2" colwidth="25*"/>
-		    <colspec colname="col3" colwidth="50*"/>
-		    <thead>
-			<row>
-			    <entry>Issue</entry>
-			    <entry>Possible Cause</entry>
-			    <entry>Solution</entry>
-			</row>
-		    </thead>
-		    <tbody>
-			<row>
-			    <entry>Return code -5 (Network timeout)</entry>
-			    <entry>RPC endpoint unreachable or slow</entry>
-			    <entry>Check network connectivity, increase rpc_timeout, use reliable RPC provider</entry>
-			</row>
-			<row>
-			    <entry>Return code -2 (Auth failed)</entry>
-			    <entry>Invalid credentials or contract error</entry>
-			    <entry>Verify contract address, check authentication logic, enable debug mode</entry>
-			</row>
-			<row>
-			    <entry>ENS validation fails</entry>
-			    <entry>Domain not owned or wrapped</entry>
-			    <entry>Check ENS ownership on etherscan, verify wallet matches contract data</entry>
-			</row>
-			<row>
-			    <entry>Module won't load</entry>
-			    <entry>Missing dependencies or misconfiguration</entry>
-			    <entry>Verify libcurl and OpenSSL installed, check module path</entry>
-			</row>
-			<row>
-			    <entry>High latency</entry>
-			    <entry>Network delays or inefficient RPC provider</entry>
-			    <entry>Use faster RPC provider, optimize network routing, consider caching</entry>
-			</row>
-			<row>
-			    <entry>Intermittent failures</entry>
-			    <entry>RPC provider rate limiting</entry>
-			    <entry>Upgrade to paid RPC plan, implement retries, use multiple providers</entry>
-			</row>
-			<row>
-			    <entry>No authentication header</entry>
-			    <entry>SIP client or header parsing issue</entry>
-			    <entry>Check client configuration, verify header format, enable debug logs</entry>
-			</row>
-			<row>
-			    <entry>Contract call errors</entry>
-			    <entry>Wrong contract address or ABI mismatch</entry>
-			    <entry>Verify contract address, check function signatures match required interface</entry>
-			</row>
-		    </tbody>
-		</tgroup>
-	    </table>
-	</para>
-    </section>
-
-    <section id="auth_web3.error_codes_detail">
-	<title>Error Code Details</title>
-	<para>
-	    <table frame="all">
-		<title>Error Code Details</title>
-		<tgroup cols="4" align="left" colsep="1" rowsep="1">
-		    <colspec colname="col1" colwidth="15*"/>
-		    <colspec colname="col2" colwidth="20*"/>
-		    <colspec colname="col3" colwidth="30*"/>
-		    <colspec colname="col4" colwidth="35*"/>
-		    <thead>
-			<row>
-			    <entry>Return Code</entry>
-			    <entry>Error Type</entry>
-			    <entry>Debug Information</entry>
-			    <entry>Client Response</entry>
-			</row>
-		    </thead>
-		    <tbody>
-			<row>
-			    <entry>1</entry>
-			    <entry>Success</entry>
-			    <entry>Authentication completed successfully</entry>
-			    <entry>Continue processing</entry>
-			</row>
-			<row>
-			    <entry>-1</entry>
-			    <entry>Generic Error</entry>
-			    <entry>Check logs for specific error details</entry>
-			    <entry>Send 500 Internal Server Error</entry>
-			</row>
-			<row>
-			    <entry>-2</entry>
-			    <entry>Auth Failed</entry>
-			    <entry>Contract returned false or credential mismatch</entry>
-			    <entry>Send 401 with challenge (stale=false)</entry>
-			</row>
-			<row>
-			    <entry>-3</entry>
-			    <entry>Stale Nonce</entry>
-			    <entry>Nonce already used or expired</entry>
-			    <entry>Send 401 with challenge (stale=true)</entry>
-			</row>
-			<row>
-			    <entry>-4</entry>
-			    <entry>No Credentials</entry>
-			    <entry>Authorization header missing or malformed</entry>
-			    <entry>Send 401 with initial challenge</entry>
-			</row>
-			<row>
-			    <entry>-5</entry>
-			    <entry>Network Timeout</entry>
-			    <entry>RPC call failed or timed out</entry>
-			    <entry>Send 503 Service Unavailable</entry>
-			</row>
-		    </tbody>
-		</tgroup>
-	    </table>
-	</para>
-    </section>
-
-</section> 
+</chapter> 

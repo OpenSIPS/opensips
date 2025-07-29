@@ -11,206 +11,75 @@
 
 <book id="auth_web3" xmlns:xi="http://www.w3.org/2001/XInclude">
     <bookinfo>
-	<title>Web3 Auth Module (auth_web3)</title>
-	<authorgroup>
-	    <author>
-		<firstname>Jonathan</firstname>
-		<surname>Kandel</surname>
-		<affiliation><orgname>Cellact B.V.</orgname></affiliation>
-		<email>jonathan@cellact.com</email>
-	    </author>
-	</authorgroup>
+        <title>The Web3 Auth Module</title>
+        <authorgroup>
+            <author>
+                <firstname>Jonathan</firstname>
+                <surname>Kandel</surname>
+                <affiliation><orgname>Cellact B.V.</orgname></affiliation>
+                <email>jonathan@cellact.com</email>
+            </author>
+        </authorgroup>
 
-	<copyright>
-	    <year>2025</year>
-	    <holder>Jonathan Kandel</holder>
-	</copyright>
+        <copyright>
+            <year>2025</year>
+            <holder>Cellact B.V.</holder>
+        </copyright>
 
     </bookinfo>
     <toc></toc>
 
     <chapter>
-	<title>Admin Guide</title>
+        <title>Admin Guide</title>
 
     <section id="auth_web3.overview">
-	<title>Overview</title>
-	<para>
-	    The Web3 Auth module provides blockchain-based authentication for Kamailio
-	    with integrated ENS (Ethereum Name Service) support. This module replaces traditional 
-	    password-based verification with Web3 smart contract calls while maintaining full 
-	    SIP digest authentication compatibility.
-	</para>
-	<para>
-	    <emphasis>Key Features:</emphasis>
-	    <itemizedlist>
-		<listitem><para>Blockchain authentication via Oasis Sapphire smart contracts</para></listitem>
-		<listitem><para>ENS domain support (alice.eth authentication)</para></listitem>
-		<listitem><para>Multi-network support (ENS on Ethereum, auth on Oasis)</para></listitem>
-		<listitem><para>RFC2617/7616 digest authentication compliance</para></listitem>
-		<listitem><para>Environment variable configuration for containers</para></listitem>
-		<listitem><para>Drop-in replacement for auth_db module</para></listitem>
-	    </itemizedlist>
-	</para>
-    </section>
-
-    <section id="auth_web3.dependencies">
-	<title>Dependencies</title>
-	<section id="auth_web3.kamailio_modules">
-	    <title>Kamailio Modules</title>
-	    <para>
-		The following modules must be loaded before this module:
-		<itemizedlist>
-		    <listitem><para><emphasis>auth</emphasis> - base authentication module</para></listitem>
-		</itemizedlist>
-	    </para>
-	</section>
-	<section id="auth_web3.external_libraries">
-	    <title>External Libraries</title>
-	    <para>
-		<itemizedlist>
-		    <listitem><para><emphasis>libcurl</emphasis> - HTTP client library for Web3 RPC calls</para></listitem>
-		    <listitem><para><emphasis>OpenSSL</emphasis> - cryptographic library for digest calculations</para></listitem>
-		</itemizedlist>
-	    </para>
-	</section>
-    </section>
-
-    <section id="auth_web3.installation">
-	<title>Installation</title>
-	<para>
-	    <emphasis>Compilation:</emphasis>
-	    <programlisting format="linespecific" role="shell">
-# Build with Kamailio source
-make include_modules="auth_web3" cfg
-make all
-
-# Or compile as module
-cd modules/auth_web3
-make
-	    </programlisting>
-	</para>
-	<para>
-	    <emphasis>Smart Contract Requirements:</emphasis>
-	    <orderedlist>
-		<listitem><para>Deploy authentication contract on Oasis Sapphire</para></listitem>
-		<listitem><para>Implement required interface (see Functions section)</para></listitem>
-		<listitem><para>Configure contract address in Kamailio</para></listitem>
-	    </orderedlist>
-	</para>
-    </section>
-
-    <xi:include href="auth_web3_params.xml"/>
-    <xi:include href="auth_web3_functions.xml"/>
-
-    <section id="auth_web3.usage">
-	<title>Usage Examples</title>
-	
-	<section id="auth_web3.minimal_config">
-	    <title>Minimal Configuration</title>
-	    <para>
-		<programlisting format="linespecific" role="kamailio">
-# Load required modules
-loadmodule "auth.so"
-loadmodule "auth_web3.so"
-
-# Configure authentication contract
-modparam("auth_web3", "authentication_contract_address", 
-         "0xE773BB79689379d32Ad1Db839868b6756B493aea")
-
-# Basic authentication route
-route[AUTH] {
-    if (!web3_www_authenticate("$fd", "$rm")) {
-        www_challenge("$fd", "0");
-        exit;
-    }
-}
-		</programlisting>
-	    </para>
+		<title>Overview</title>
+		<para>
+			The Web3 Auth module provides blockchain-based authentication for Kamailio
+			with integrated ENS (Ethereum Name Service) support. This module replaces 
+			traditional password-based verification with Web3 smart contract calls while 
+			maintaining full SIP digest authentication compatibility.
+		</para>
+		<para>
+			The module maintains full compatibility with standard <emphasis>SIP</emphasis> 
+			digest authentication while using blockchain smart contracts to verify user 
+			credentials. It supports all standard auth functions including 
+			<emphasis>WWW-Authenticate</emphasis>, <emphasis>Proxy-Authenticate</emphasis>, 
+			and various authentication challenges.
+		</para>
+		<para>
+			Key features:
+			<itemizedlist>
+				<listitem><para>Blockchain authentication via Oasis Sapphire smart contracts</para></listitem>
+				<listitem><para>ENS domain support (alice.eth authentication)</para></listitem>
+				<listitem><para>Multi-network support (ENS on Ethereum, auth on Oasis)</para></listitem>
+				<listitem><para>RFC2617/7616 digest authentication compliance</para></listitem>
+				<listitem><para>Environment variable configuration for containers</para></listitem>
+				<listitem><para>Drop-in replacement for auth_db module</para></listitem>
+			</itemizedlist>
+		</para>
 	</section>
 
-	<section id="auth_web3.ens_config">
-	    <title>ENS Configuration</title>
-	    <para>
-		<programlisting format="linespecific" role="kamailio">
-# Multi-network configuration (ENS on Ethereum, Auth on Oasis)
-modparam("auth_web3", "authentication_rpc_url", 
-         "https://testnet.sapphire.oasis.dev")
-modparam("auth_web3", "ens_rpc_url", 
-         "https://ethereum-sepolia-rpc.publicnode.com")
-
-# Enhanced authentication with error handling
-route[ENS_AUTH] {
-    if (!web3_www_authenticate("$fd", "$rm")) {
-        switch ($retcode) {
-            case -2:
-                xlog("L_INFO", "Auth failed for $fU\n");
-                break;
-            case -5:
-                xlog("L_ERR", "Network timeout for $fU\n");
-                sl_send_reply("503", "Service Unavailable");
-                exit;
-        }
-        www_challenge("$fd", "0");
-        exit;
-    }
-    
-    # Log ENS domain authentication
-    if ($(fU{s.contains,"."})) {
-        xlog("L_INFO", "ENS domain $fU authenticated\n");
-    }
-}
-		</programlisting>
-	    </para>
+	<section id="auth_web3.dep">
+		<title>Dependencies</title>
+		<para>
+			The following modules must be loaded before this module:
+			<itemizedlist>
+				<listitem><para><emphasis>auth</emphasis> - base authentication module</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			External dependencies:
+			<itemizedlist>
+				<listitem><para><emphasis>libcurl</emphasis> - HTTP client library for blockchain RPC calls</para></listitem>
+				<listitem><para><emphasis>OpenSSL</emphasis> - cryptographic library for digest calculations</para></listitem>
+			</itemizedlist>
+		</para>
 	</section>
 
-	<section id="auth_web3.container_config">
-	    <title>Container Configuration</title>
-	    <para>
-		<programlisting format="linespecific" role="env">
-# Environment variables (.env file)
-AUTHENTICATION_RPC_URL="https://testnet.sapphire.oasis.dev"
-AUTHENTICATION_CONTRACT_ADDRESS="0xYourContract"
-ENS_RPC_URL="https://ethereum-sepolia-rpc.publicnode.com"
-CONTRACT_DEBUG_MODE="0"
-RPC_TIMEOUT="15"
-		</programlisting>
-	    </para>
-	    <para>
-		<programlisting format="linespecific" role="kamailio">
-# Kamailio config (reads environment automatically)
-loadmodule "auth.so"
-loadmodule "auth_web3.so"
-		</programlisting>
-	    </para>
-	</section>
-    </section>
-
-    <section id="auth_web3.performance">
-	<title>Performance Considerations</title>
-	<para>
-	    <itemizedlist>
-		<listitem><para><emphasis>Latency:</emphasis> Blockchain calls add 100-1000ms vs database queries</para></listitem>
-		<listitem><para><emphasis>Timeouts:</emphasis> Set appropriate RPC timeouts (10-30s recommended)</para></listitem>
-		<listitem><para><emphasis>ENS Overhead:</emphasis> ENS resolution may require 2 RPC calls</para></listitem>
-		<listitem><para><emphasis>RPC Providers:</emphasis> Use reliable providers for production</para></listitem>
-	    </itemizedlist>
-	</para>
-    </section>
-
-    <section id="auth_web3.security">
-	<title>Security Considerations</title>
-	<para>
-	    <itemizedlist>
-		<listitem><para><emphasis>Smart Contract Audits:</emphasis> Audit authentication contracts thoroughly</para></listitem>
-		<listitem><para><emphasis>Oasis Sapphire:</emphasis> Leverage confidential computing capabilities</para></listitem>
-		<listitem><para><emphasis>Network Security:</emphasis> Use HTTPS for all RPC endpoints</para></listitem>
-		<listitem><para><emphasis>ENS Validation:</emphasis> Verify ENS ownership matches wallet addresses</para></listitem>
-		<listitem><para><emphasis>Fallback Mechanisms:</emphasis> Implement backup authentication for emergencies</para></listitem>
-	    </itemizedlist>
-	</para>
-    </section>
-
-    <xi:include href="auth_web3_faq.xml"/>
+	<xi:include href="auth_web3_params.xml"/>
+	<xi:include href="auth_web3_functions.xml"/>
+	<xi:include href="auth_web3_faq.xml"/>
 
     </chapter>
 </book> 
