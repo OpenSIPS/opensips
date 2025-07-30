@@ -19,8 +19,12 @@
         <para>
             Verifies credentials using blockchain-based authentication via Web3 smart contract calls 
             with integrated ENS support. Automatically detects ENS names and performs domain ownership 
-            validation when applicable. This function operates on WWW-Authenticate headers and serves 
-            as a drop-in replacement for traditional www_authenticate functions.
+            validation when applicable. This function operates on <emphasis>Authorization</emphasis> headers 
+            and serves as a drop-in replacement for traditional www_authenticate functions.
+        </para>
+        <para>
+            <emphasis>Use Case:</emphasis> Standard SIP user authentication scenarios including REGISTER, 
+            INVITE, and other direct client-to-server authentication flows.
         </para>
         <para>
             <emphasis>ENS Integration:</emphasis> For usernames containing "." (dot), performs ENS 
@@ -101,9 +105,19 @@ if ($(fU{s.contains,"."})) {
         </title>
         <para>
             Verifies credentials using blockchain-based authentication via Web3 smart contract calls 
-            with ENS support for proxy authentication. Operates on Proxy-Authorization headers instead 
-            of Authorization headers. Includes the same ENS integration capabilities as <function>web3_www_authenticate</function> 
-            and serves as a drop-in replacement for traditional proxy_authenticate functions.
+            with ENS support for proxy authentication scenarios. This function operates on 
+            <emphasis>Proxy-Authorization</emphasis> headers instead of Authorization headers, making it 
+            suitable for proxy server authentication flows. Includes the same ENS integration capabilities 
+            as <function>web3_www_authenticate</function> and serves as a drop-in replacement for traditional 
+            proxy_authenticate functions.
+        </para>
+        <para>
+            <emphasis>Use Case:</emphasis> Proxy server authentication scenarios where your Kamailio 
+            instance acts as a proxy requiring authentication, or when routing through authenticated proxies.
+        </para>
+        <para>
+            <emphasis>Technical Note:</emphasis> Both functions use the same core authentication logic 
+            but differ in the HTTP header type they process - Authorization vs. Proxy-Authorization headers.
         </para>
         <para>
             <emphasis>Parameters:</emphasis>
@@ -160,15 +174,66 @@ route[RELAY] {
         </example>
     </section>
 
+    <section id="auth_web3.f.function_comparison">
+        <title>Authentication Function Comparison</title>
+        <para>
+            Both <function>web3_www_authenticate</function> and <function>web3_proxy_authenticate</function> 
+            provide identical Web3 blockchain authentication and ENS integration capabilities, but differ 
+            in their intended use cases and HTTP header processing:
+        </para>
+        <informaltable frame="all">
+            <tgroup cols="3">
+                <thead>
+                    <row>
+                        <entry>Aspect</entry>
+                        <entry>web3_www_authenticate</entry>
+                        <entry>web3_proxy_authenticate</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>HTTP Header Type</entry>
+                        <entry>Authorization</entry>
+                        <entry>Proxy-Authorization</entry>
+                    </row>
+                    <row>
+                        <entry>Challenge Function</entry>
+                        <entry>www_challenge()</entry>
+                        <entry>proxy_challenge()</entry>
+                    </row>
+                    <row>
+                        <entry>Use Case</entry>
+                        <entry>Direct client authentication</entry>
+                        <entry>Proxy server authentication</entry>
+                    </row>
+                    <row>
+                        <entry>SIP Methods</entry>
+                        <entry>REGISTER, INVITE, etc.</entry>
+                        <entry>Proxy routing scenarios</entry>
+                    </row>
+                    <row>
+                        <entry>Implementation</entry>
+                        <entry>HDR_AUTHORIZATION_T</entry>
+                        <entry>HDR_PROXYAUTH_T</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </informaltable>
+        <para>
+            <emphasis>Note:</emphasis> Both functions share identical parameters, return codes, 
+            ENS integration features, and Web3 blockchain authentication logic.
+        </para>
+    </section>
+
     <section id="auth_web3.f.bind_web3_auth">
         <title>
             <function moreinfo="none">bind_web3_auth(api)</function>
         </title>
         <para>
-            Allows other modules to bind to the Web3 authentication API with ENS support. This function 
+            Allows other modules to bind to the Web3 authentication API with integrated ENS support. This function 
             provides programmatic access to Web3 authentication functions for other 
-            Kamailio modules. The API structure contains core authentication and ENS validation functions 
-            that handle both standard Web3 authentication and ENS validation internally.
+            Kamailio modules. The API structure contains core authentication functions that handle both 
+            standard Web3 blockchain authentication and automatic ENS validation internally.
         </para>
 		<para>
             Note: This function is intended for use by other Kamailio modules, not configuration scripts.
@@ -187,24 +252,18 @@ route[RELAY] {
                 <listitem>
                     <para><emphasis>digest_authenticate(msg, realm, hdr_type, method)</emphasis> - Core authentication function with ENS support</para>
                     <para>Parameters: msg (sip_msg_t*), realm (str*), hdr_type (hdr_types_t), method (str*)</para>
-                    <para>Return: auth_result_t (structure containing authentication result)</para>
+                    <para>Return: int (authentication result code - same as web3_www_authenticate)</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>check_response(cred, method)</emphasis> - Low-level credential verification function</para>
                     <para>Parameters: cred (dig_cred_t*), method (str*)</para>
-                    <para>Return: auth_result_t (structure containing verification result)</para>
-                </listitem>
-				<listitem>
-                    <para><emphasis>ens_validate(domain, wallet_address)</emphasis> - ENS domain ownership validation function</para>
-                    <para>Parameters: domain (str*), wallet_address (str*)</para>
-                    <para>Return: int (1 for valid ownership, 0 for invalid, -1 for error)</para>
-                </listitem>
-				<listitem>
-                    <para><emphasis>ens_get_owner(domain)</emphasis> - ENS ownership resolution function</para>
-                    <para>Parameters: domain (str*)</para>
-                    <para>Return: str* (pointer to owner address string, NULL if not found)</para>
+                    <para>Return: int (verification result code)</para>
                 </listitem>
             </itemizedlist>
+        </para>
+        <para>
+            <emphasis>Note:</emphasis> ENS validation is automatically integrated within the digest_authenticate 
+            function when usernames contain "." (dot) characters. Separate ENS functions are not exposed in the current API.
         </para>
 		<para>
             <emphasis>Return Type:</emphasis> integer
@@ -224,14 +283,21 @@ route[RELAY] {
 web3_auth_api_t auth_web3_api;
 
 // Module initialization
-if (auth_web3_load_api(&amp;auth_web3_api) != 0) {
+if (web3_auth_load_api(&amp;auth_web3_api) != 0) {
     LM_ERR("cannot bind auth_web3 api\n");
     return -1;
 }
 
-// Use authentication API
-result = web3_api.digest_authenticate(msg, &amp;realm, 
-                                      HDR_AUTHORIZATION_T, &amp;method);
+// Use authentication API for WWW authentication
+result = auth_web3_api.digest_authenticate(msg, &amp;realm, 
+                                          HDR_AUTHORIZATION_T, &amp;method);
+
+// Use authentication API for Proxy authentication  
+result = auth_web3_api.digest_authenticate(msg, &amp;realm, 
+                                          HDR_PROXYAUTH_T, &amp;method);
+
+// Low-level credential checking
+result = auth_web3_api.check_response(&amp;credentials, &amp;method);
 ...
             </programlisting>
         </example>
