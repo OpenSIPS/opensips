@@ -35,7 +35,8 @@ Jonathan Kandel
 
               5.1. web3_www_authenticate(realm, method)
               5.2. web3_proxy_authenticate(realm, method)
-              5.3. bind_web3_auth(api)
+              5.3. Authentication Function Comparison
+              5.4. bind_web3_auth(api)
 
    List of Examples
 
@@ -77,7 +78,8 @@ Chapter 1. Admin Guide
 
         5.1. web3_www_authenticate(realm, method)
         5.2. web3_proxy_authenticate(realm, method)
-        5.3. bind_web3_auth(api)
+        5.3. Authentication Function Comparison
+        5.4. bind_web3_auth(api)
 
 1. Overview
 
@@ -143,7 +145,7 @@ Chapter 1. Admin Guide
 3. Dependencies
 
    The following modules must be loaded before this module:
-     * auth - base authentication module
+     * none
 
    External dependencies:
      * libcurl - HTTP client library for blockchain RPC calls
@@ -300,15 +302,20 @@ modparam("auth_web3", "rpc_timeout", 15)
 
    5.1. web3_www_authenticate(realm, method)
    5.2. web3_proxy_authenticate(realm, method)
-   5.3. bind_web3_auth(api)
+   5.3. Authentication Function Comparison
+   5.4. bind_web3_auth(api)
 
 5.1.  web3_www_authenticate(realm, method)
 
    Verifies credentials using blockchain-based authentication via Web3
    smart contract calls with integrated ENS support. Automatically detects
    ENS names and performs domain ownership validation when applicable.
-   This function operates on WWW-Authenticate headers and serves as a
-   drop-in replacement for traditional www_authenticate functions.
+   This function operates on Authorization headers and serves as a drop-in
+   replacement for traditional www_authenticate functions.
+
+   Use Case: Standard SIP user authentication scenarios including
+   REGISTER, INVITE, and other direct client-to-server authentication
+   flows.
 
    ENS Integration: For usernames containing "." (dot), performs ENS owner
    validation by querying ENS Registry, handling wrapped domains, and
@@ -370,11 +377,20 @@ if ($(fU{s.contains,"."})) {
 5.2.  web3_proxy_authenticate(realm, method)
 
    Verifies credentials using blockchain-based authentication via Web3
-   smart contract calls with ENS support for proxy authentication.
-   Operates on Proxy-Authorization headers instead of Authorization
-   headers. Includes the same ENS integration capabilities as
+   smart contract calls with ENS support for proxy authentication
+   scenarios. This function operates on Proxy-Authorization headers
+   instead of Authorization headers, making it suitable for proxy server
+   authentication flows. Includes the same ENS integration capabilities as
    web3_www_authenticate and serves as a drop-in replacement for
    traditional proxy_authenticate functions.
+
+   Use Case: Proxy server authentication scenarios where your Kamailio
+   instance acts as a proxy requiring authentication, or when routing
+   through authenticated proxies.
+
+   Technical Note: Both functions use the same core authentication logic
+   but differ in the HTTP header type they process - Authorization vs.
+   Proxy-Authorization headers.
 
    Parameters:
      * realm (string) - Authentication realm. Use $td for REGISTER, $fd
@@ -418,13 +434,30 @@ route[RELAY] {
 }
 ...
 
-5.3.  bind_web3_auth(api)
+5.3. Authentication Function Comparison
 
-   Allows other modules to bind to the Web3 authentication API with ENS
-   support. This function provides programmatic access to Web3
-   authentication functions for other Kamailio modules. The API structure
-   contains core authentication and ENS validation functions that handle
-   both standard Web3 authentication and ENS validation internally.
+   Both web3_www_authenticate and web3_proxy_authenticate provide
+   identical Web3 blockchain authentication and ENS integration
+   capabilities, but differ in their intended use cases and HTTP header
+   processing:
+         Aspect          web3_www_authenticate       web3_proxy_authenticate
+   HTTP Header Type   Authorization                Proxy-Authorization
+   Challenge Function www_challenge()              proxy_challenge()
+   Use Case           Direct client authentication Proxy server authentication
+   SIP Methods        REGISTER, INVITE, etc.       Proxy routing scenarios
+   Implementation     HDR_AUTHORIZATION_T          HDR_PROXYAUTH_T
+
+   Note: Both functions share identical parameters, return codes, ENS
+   integration features, and Web3 blockchain authentication logic.
+
+5.4.  bind_web3_auth(api)
+
+   Allows other modules to bind to the Web3 authentication API with
+   integrated ENS support. This function provides programmatic access to
+   Web3 authentication functions for other Kamailio modules. The API
+   structure contains core authentication functions that handle both
+   standard Web3 blockchain authentication and automatic ENS validation
+   internally.
 
    Note: This function is intended for use by other Kamailio modules, not
    configuration scripts.
@@ -437,18 +470,16 @@ route[RELAY] {
        authentication function with ENS support
        Parameters: msg (sip_msg_t*), realm (str*), hdr_type (hdr_types_t),
        method (str*)
-       Return: auth_result_t (structure containing authentication result)
+       Return: int (authentication result code - same as
+       web3_www_authenticate)
      * check_response(cred, method) - Low-level credential verification
        function
        Parameters: cred (dig_cred_t*), method (str*)
-       Return: auth_result_t (structure containing verification result)
-     * ens_validate(domain, wallet_address) - ENS domain ownership
-       validation function
-       Parameters: domain (str*), wallet_address (str*)
-       Return: int (1 for valid ownership, 0 for invalid, -1 for error)
-     * ens_get_owner(domain) - ENS ownership resolution function
-       Parameters: domain (str*)
-       Return: str* (pointer to owner address string, NULL if not found)
+       Return: int (verification result code)
+
+   Note: ENS validation is automatically integrated within the
+   digest_authenticate function when usernames contain "." (dot)
+   characters. Separate ENS functions are not exposed in the current API.
 
    Return Type: integer
 
@@ -463,14 +494,21 @@ route[RELAY] {
 web3_auth_api_t auth_web3_api;
 
 // Module initialization
-if (auth_web3_load_api(&auth_web3_api) != 0) {
+if (web3_auth_load_api(&auth_web3_api) != 0) {
     LM_ERR("cannot bind auth_web3 api\n");
     return -1;
 }
 
-// Use authentication API
-result = web3_api.digest_authenticate(msg, &realm,
-                                      HDR_AUTHORIZATION_T, &method);
+// Use authentication API for WWW authentication
+result = auth_web3_api.digest_authenticate(msg, &realm,
+                                          HDR_AUTHORIZATION_T, &method);
+
+// Use authentication API for Proxy authentication
+result = auth_web3_api.digest_authenticate(msg, &realm,
+                                          HDR_PROXYAUTH_T, &method);
+
+// Low-level credential checking
+result = auth_web3_api.check_response(&credentials, &method);
 ...
 
 Chapter 2. Frequently Asked Questions
@@ -485,11 +523,6 @@ Chapter 2. Frequently Asked Questions
    2.8. Are there any known limitations with blockchain authentication?
    2.9. How do I configure for containers?
    2.10. Can I use free RPC providers?
-   2.11. What are common troubleshooting scenarios?
-   2.12. What do the error codes mean?
-   2.13. Where can I find more about Kamailio?
-   2.14. Where can I post a question about this module?
-   2.15. How can I report a bug?
 
    2.1.
 
@@ -621,7 +654,6 @@ RPC_TIMEOUT="15"
 
 ...
 # Minimal Kamailio config
-loadmodule "auth.so"
 loadmodule "auth_web3.so"
 ...
 
@@ -647,95 +679,3 @@ loadmodule "auth_web3.so"
 
    Ethereum Sepolia: https://ethereum-sepolia-rpc.publicnode.com (Testing
    network)
-
-   2.11.
-
-   What are common troubleshooting scenarios?
-
-   Here are the most common issues and their solutions:
-
-   Return code -5 (Network timeout): This occurs when the RPC endpoint is
-   unreachable or slow. Check your network connectivity, increase the
-   rpc_timeout parameter, and use a reliable RPC provider.
-
-   Return code -2 (Auth failed): This indicates invalid credentials or a
-   contract error. Verify your contract address, check the authentication
-   logic, and enable debug mode for more details.
-
-   ENS validation fails: This happens when the domain is not owned or is
-   wrapped. Check ENS ownership on etherscan.io and verify that the wallet
-   matches the contract data.
-
-   Module won't load: This is usually due to missing dependencies or
-   misconfiguration. Verify that libcurl and OpenSSL are installed and
-   check the module path.
-
-   High latency: This is caused by network delays or inefficient RPC
-   providers. Use a faster RPC provider, optimize network routing, and
-   consider implementing caching.
-
-   Intermittent failures: This is often due to RPC provider rate limiting.
-   Upgrade to a paid RPC plan, implement retries, or use multiple
-   providers for redundancy.
-
-   No authentication header: This indicates a SIP client or header parsing
-   issue. Check client configuration, verify header format, and enable
-   debug logs.
-
-   Contract call errors: This occurs with wrong contract addresses or ABI
-   mismatches. Verify the contract address and check that function
-   signatures match the required interface.
-
-   2.12.
-
-   What do the error codes mean?
-
-   The module returns specific error codes that indicate different
-   authentication states:
-
-   Return code 1: Success - Authentication completed successfully.
-   Continue processing the request.
-
-   Return code -1: Generic Error - Check the logs for specific error
-   details. Send a 500 Internal Server Error response.
-
-   Return code -2: Auth Failed - The contract returned false or there was
-   a credential mismatch. Send a 401 response with challenge
-   (stale=false).
-
-   Return code -3: Stale Nonce - The nonce has already been used or
-   expired. Send a 401 response with challenge (stale=true).
-
-   Return code -4: No Credentials - The Authorization header is missing or
-   malformed. Send a 401 response with initial challenge.
-
-   Return code -5: Network Timeout - The RPC call failed or timed out.
-   Send a 503 Service Unavailable response.
-
-   2.13.
-
-   Where can I find more about Kamailio?
-
-   Take a look at https://www.kamailio.org/.
-
-   2.14.
-
-   Where can I post a question about this module?
-
-   First check if your question was already answered on one of our mailing
-   lists:
-     * User Mailing List -
-       https://lists.kamailio.org/cgi-bin/mailman/listinfo/sr-users
-     * Developer Mailing List -
-       https://lists.kamailio.org/cgi-bin/mailman/listinfo/sr-dev
-
-   E-mails regarding any stable Kamailio release should be sent to
-   <sr-users@lists.kamailio.org> and e-mails regarding development
-   versions should be sent to <sr-dev@lists.kamailio.org>.
-
-   2.15.
-
-   How can I report a bug?
-
-   Please follow the guidelines provided at:
-   https://github.com/kamailio/kamailio/issues.
