@@ -116,7 +116,7 @@
 		<para>
 			The following modules must be loaded before this module:
 			<itemizedlist>
-				<listitem><para><emphasis>auth</emphasis> - base authentication module</para></listitem>
+				<listitem><para>none</para></listitem>
 			</itemizedlist>
 		</para>
 		<para>
