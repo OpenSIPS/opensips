@@ -101,7 +101,6 @@ Chapter 1. Admin Guide
      * Multi-network support (ENS on Ethereum, auth on Oasis)
      * RFC2617/7616 digest authentication compliance
      * Environment variable configuration for containers
-     * Drop-in replacement for auth_db module
 
 2. ENS Technical Details
 
