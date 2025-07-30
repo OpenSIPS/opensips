@@ -1889,7 +1889,7 @@ int dm_build_avps(struct list_head *out_avps, cJSON *array)
 				goto error;
 			}
 		} else if (avp->type & cJSON_Number) {
-			LM_DBG("dbg::: AVP %d (name: '%s', int-val: %d)\n", code, name, avp->valueint);
+			LM_DBG("dbg::: AVP %d (name: '%s', int-val: %d, double-val: %lf)\n", code, name, avp->valueint, avp->valuedouble);
 			if (_dm_avp_add(NULL, out_avps, &my_avp, &avp->valuedouble,
 							dm_avp_inttype[dm_avp.avp_basetype], 0) != 0) {
 				LM_ERR("failed to add AVP %d, aborting request\n", code);
