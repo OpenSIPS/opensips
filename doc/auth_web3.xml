@@ -55,7 +55,6 @@
 				<listitem><para>Multi-network support (ENS on Ethereum, auth on Oasis)</para></listitem>
 				<listitem><para>RFC2617/7616 digest authentication compliance</para></listitem>
 				<listitem><para>Environment variable configuration for containers</para></listitem>
-				<listitem><para>Drop-in replacement for auth_db module</para></listitem>
 			</itemizedlist>
 		</para>
 	</section>
