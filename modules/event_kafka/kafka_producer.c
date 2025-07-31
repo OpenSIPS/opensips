@@ -379,7 +379,7 @@ void kafka_report_status(int sender, void *param)
 {
 	struct kafka_report_param *p =
 		(struct kafka_report_param *)param;
-	script_job_data_t *job_data;
+	script_job_data_t *job_data = NULL;
 
 	if (p->job->type == KAFKA_JOB_EVI) {
 		evi_job_data_t *job_data = (evi_job_data_t *)p->job->data;

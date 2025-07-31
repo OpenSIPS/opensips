@@ -135,7 +135,7 @@ static int h2_send_response(struct sip_msg *msg, int *code,
 		str *headers_json, str *body)
 {
 #define H_STATUS ":status"
-	cJSON *hdrs, *it;
+	cJSON *hdrs = NULL, *it;
 	struct h2_response *r;
 	int nh = 1;
 
