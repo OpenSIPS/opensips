@@ -297,10 +297,8 @@ REQUEST 92001 My-Custom-Request
         Origin-Host | REQUIRED | 1
         Origin-Realm | REQUIRED | 1
         Destination-Realm | REQUIRED | 1
-        Transaction-Id | REQUIRED | 1
         Sip-From-Tag | REQUIRED | 1
         Sip-To-Tag | REQUIRED | 1
-        Acct-Session-Id | REQUIRED | 1
         Sip-Call-Duration | REQUIRED | 1
         Sip-Call-Setuptime | REQUIRED | 1
         Sip-Call-Created | REQUIRED | 1
@@ -315,7 +313,6 @@ ANSWER 92001 My-Custom-Answer
         Origin-Host | REQUIRED | 1
         Origin-Realm | REQUIRED | 1
         Destination-Realm | REQUIRED | 1
-        Transaction-Id | REQUIRED | 1
         Result-Code | REQUIRED | 1
 }
 
@@ -330,13 +327,13 @@ $var(payload) = "[
         { \"Destination-Realm\": \"diameter.test\" },
         { \"Sip-From-Tag\": \"dc93-4fba-91db\" },
         { \"Sip-To-Tag\": \"ae12-47d6-816a\" },
-        { \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+        { \"Session-Id\": \"a59c-dff0d9efd167\" },
         { \"Sip-Call-Duration\": 6 },
         { \"Sip-Call-Setuptime\": 1 },
         { \"Sip-Call-Created\": 1652372541 },
         { \"Sip-Call-MSDuration\": 5850 },
         { \"out_gw\": \"GW-774\" },
-        { \"cost\": \"10.84\" },
+        { \"call_cost\": 10 },
         { \"Cost-Information\": [
                 {\"Unit-Value\": [{\"Value-Digits\": 1000}]},
                 {\"Currency-Code\": 35}
@@ -419,13 +416,13 @@ $var(payload) = "[
         { \"Destination-Realm\": \"diameter.test\" },
         { \"Sip-From-Tag\": \"dc93-4fba-91db\" },
         { \"Sip-To-Tag\": \"ae12-47d6-816a\" },
-        { \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+        { \"Session-Id\": \"a59c-dff0d9efd167\" },
         { \"Sip-Call-Duration\": 6 },
         { \"Sip-Call-Setuptime\": 1 },
         { \"Sip-Call-Created\": 1652372541 },
         { \"Sip-Call-MSDuration\": 5850 },
         { \"out_gw\": \"GW-774\" },
-        { \"cost\": \"10.84\" },
+        { \"call_cost\": 10 },
         { \"Cost-Information\": [
                 {\"Unit-Value\": [{\"Value-Digits\": 1000}]},
                 {\"Currency-Code\": 35}
@@ -476,12 +473,13 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu)       114      37      6850     1105
+   1. Liviu Chircu (@liviuchircu)       115      38      6851     1106
    2. Razvan Crainea (@razvancrainea)    36      19      1400     267
    3. Alexandra Titoc                    6        4       11       2
    4. Larry Laffer                       3        1       6        5
    5. Maksym Sobolyev (@sobomax)         3        1       5        5
-   6. Peter Lemenkov (@lemenkov)         3        1       1        1
+   6. Darius Stefan                      3        1       4        7
+   7. Peter Lemenkov (@lemenkov)         3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -503,12 +501,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) May 2023 - Jul 2025
-   2. Larry Laffer                    Jul 2025 - Jul 2025
-   3. Alexandra Titoc                 Sep 2024 - Sep 2024
-   4. Peter Lemenkov (@lemenkov)      Jul 2024 - Jul 2024
-   5. Liviu Chircu (@liviuchircu)     May 2021 - Mar 2024
-   6. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
+   1. Liviu Chircu (@liviuchircu)     May 2021 - Jul 2025
+   2. Razvan Crainea (@razvancrainea) May 2023 - Jul 2025
+   3. Darius Stefan                   Jul 2025 - Jul 2025
+   4. Larry Laffer                    Jul 2025 - Jul 2025
+   5. Alexandra Titoc                 Sep 2024 - Sep 2024
+   6. Peter Lemenkov (@lemenkov)      Jul 2024 - Jul 2024
+   7. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -517,8 +516,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu).
+   Last edited by: Razvan Crainea (@razvancrainea), Darius Stefan,
+   Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
 
