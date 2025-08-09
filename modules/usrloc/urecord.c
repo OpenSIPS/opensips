@@ -40,6 +40,7 @@
 #include "../../ut.h"
 #include "../../hash_func.h"
 #include "../../db/db_insertq.h"
+#include "../../lib/str_buffer.h"
 
 #include "ul_mod.h"
 #include "utime.h"
@@ -491,12 +492,20 @@ int db_delete_urecord(urecord_t* _r)
 	return 0;
 }
 
+/**
+ * @brief Format for param string building.
+ *
+ */
+static str param_fmt = str_init("%.*s%s%.*s%s");
+
 int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 {
 	cdb_pair_t *pair;
 	cdb_dict_t *ct_fields;
 	cdb_key_t contacts_key;
 	str printed_flags;
+	str_buffer *buffer = NULL;
+	str params = STR_NULL;		
 
 	cdb_key_init(&contacts_key, "contacts");
 
@@ -583,8 +592,52 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 			return -1;
 	}
 
+	if (ct->params == 0) {
+		if (CDB_DICT_ADD_NULL(ct_fields, "params") != 0)
+			return -1;
+	} else {
+		buffer = new_str_buffer();
+		if(!buffer) {
+			LM_ERR("Error allocating str_buffer\n");
+			return -1;
+		}
+	
+		{
+			param_t *param = ct->params;
+			while(param) {
+				if(param->name.len > 0) {
+					if(param->body.len > 0) {
+						str_buffer_append_str_fmt(buffer, &param_fmt,
+								param->name.len, param->name.s, "=", param->body.len, param->body.s,
+								param->next ? ";" : "");
+					} else {
+						str_buffer_append_str_fmt(buffer, &param_fmt,
+								param->name.len, param->name.s, "", 0, NULL,
+								param->next ? ";" : "");
+					}
+				}
+	
+				param = param->next;
+			}
+		}
+	
+		if(str_buffer_has_error(buffer)) {
+			LM_ERR("str_buffer had memory allocating errors while building\n");
+			free_str_buffer(buffer);
+			return -1;
+		} else if(!str_buffer_to_str(buffer, &params)) {
+			LM_ERR("str_buffer unable to get result\n");
+			free_str_buffer(buffer);
+			return -1;
+		}
+		free_str_buffer(buffer);
+		if (CDB_DICT_ADD_STR(ct_fields, "params", &params) != 0)
+			return -1;
+	}
+
 done:
 	cdb_dict_add(pair, updates);
+	pkg_free(params.s);
 	return 0;
 }
 
