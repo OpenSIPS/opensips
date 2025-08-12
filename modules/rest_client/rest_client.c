@@ -616,9 +616,6 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	if (no_concurrent_connects && (lrc=rcl_acquire_url(url, &host)) < RCL_OK)
 		return lrc;
 
-	param->timeout_s = (ctx->timeout_s && ctx->timeout_s < curl_timeout) ?
-			ctx->timeout_s : curl_timeout;
-
 	rc = start_async_http_req(msg, method, url, body, ctype,
 			param, &param->body, ctype_pv ? &param->ctype : NULL, &read_fd);
 
@@ -635,7 +632,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 
 		/* keep default async status of NO_IO */
 		pkg_free(param);
-		goto done;
+		return rc;
 
 	/* no need for async - transfer already completed! */
 	} else if (read_fd == ASYNC_SYNC) {
@@ -647,8 +644,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 			val.ri = (int)http_rc;
 			if (pv_set_value(msg, (pv_spec_p)code_pv, 0, &val) != 0) {
 				LM_ERR("failed to set output code pv\n");
-				rc = RCL_INTERNAL_ERR;
-				goto done;
+				return RCL_INTERNAL_ERR;
 			}
 		}
 
@@ -656,16 +652,14 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		val.rs = param->body;
 		if (pv_set_value(msg, (pv_spec_p)body_pv, 0, &val) != 0) {
 			LM_ERR("failed to set output body pv\n");
-			rc = RCL_INTERNAL_ERR;
-			goto done;
+			return RCL_INTERNAL_ERR;
 		}
 
 		if (ctype_pv) {
 			val.rs = param->ctype;
 			if (pv_set_value(msg, (pv_spec_p)ctype_pv, 0, &val) != 0) {
 				LM_ERR("failed to set output ctype pv\n");
-				rc = RCL_INTERNAL_ERR;
-				goto done;
+				return RCL_INTERNAL_ERR;
 			}
 		}
 
@@ -676,7 +670,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		pkg_free(param);
 
 		async_status = ASYNC_SYNC;
-		goto done;
+		return rc;
 	}
 
 	/* the TCP connection is established, async started with success */
@@ -685,8 +679,8 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		rcl_release_url(host, rc == RCL_OK);
 
 	ctx->resume_f = resume_async_http_req;
+	ctx->timeout_s = curl_timeout;
 	ctx->timeout_f = time_out_async_http_req;
-	ctx->timeout_s = param->timeout_s;
 
 	param->method = method;
 	param->body_pv = (pv_spec_p)body_pv;
@@ -696,11 +690,6 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 
 	async_status = read_fd;
 	return 1;
-
-done:
-	if (lrc == RCL_OK_LOCKED)
-		rcl_release_url(host, rc == RCL_OK);
-	return rc;
 }
 
 static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
