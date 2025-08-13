@@ -1157,7 +1157,7 @@ void receive_dlg_repl(bin_packet_t *pkt)
 	}
 
 	if (rc != 0)
-		LM_ERR("Failed to process a binary packet!\n");
+		LM_ERR("Failed to process a binary packet %d!\n", pkt->type);
 	dlg_event_is_replicated = 0;
 }
 
