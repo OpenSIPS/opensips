@@ -39,7 +39,7 @@
 
 #include "mi_datagram.h"
 
-#define DATAGRAM_SOCK_BUF_SIZE 65457
+extern int mi_sock_buf_size;
 
 #define MI_PARSE_ERROR					 "400 Parse_error"
 #define MI_PARSE_ERROR_LEN               (sizeof(MI_PARSE_ERROR)-1)

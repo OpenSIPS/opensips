@@ -284,6 +284,26 @@ modparam("mi_fifo", "pretty_printing", 1)
 		</example>
 	</section>
 
+	<section id="param_socket_buf_size" xreflabel="socket_buf_size">
+		<title><varname>socket_buf_size</varname> (integer)</title>
+		<para>
+		Maximum buffer size used when receiving and sending.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 65457.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>socket_buf_size</varname> parameter</title>
+		<programlisting format="linespecific">
+		...
+		modparam("mi_datagram", "socket_buf_size", 131072)
+		...
+		</programlisting>
+		</example>
+	</section>
+
 
 
 	</section>
