@@ -72,6 +72,8 @@ sockaddr_dtgram mi_dtgram_addr;
 /* socket definition parameter */
 static char *mi_socket = 0;
 int mi_socket_timeout = 2000;
+const int mi_sock_buf_size_default = 65457;
+int mi_sock_buf_size = mi_sock_buf_size_default;
 static rx_tx_sockets sockets;
 
 /* unixsock specific parameters */
@@ -103,6 +105,7 @@ static const param_export_t mi_params[] = {
 	{"children_count",      INT_PARAM,    &mi_procs[0].no           },
 	{"socket_name",         STR_PARAM,    &mi_socket                },
 	{"socket_timeout",      INT_PARAM,    &mi_socket_timeout        },
+	{"socket_buf_size",     INT_PARAM,    &mi_sock_buf_size         },
 	{"unix_socket_mode",    INT_PARAM,    &mi_unix_socket_mode      },
 	{"unix_socket_group",   STR_PARAM,    &mi_unix_socket_gid_s     },
 	{"unix_socket_group",   INT_PARAM,    &mi_unix_socket_gid       },
@@ -147,6 +150,12 @@ static int mi_mod_init(void)
 	struct hostent * host;
 	char *p, *host_s;
 	str port_str;
+
+	if (mi_sock_buf_size <= 0) {
+		LM_WARN("invalid 'socket_buf_size' (%d), resetting to default %d\n",
+				mi_sock_buf_size, mi_sock_buf_size_default);
+		mi_sock_buf_size = mi_sock_buf_size_default;
+	}
 
 	/* checking the mi_socket module param */
 	LM_DBG("testing socket existence...\n");
