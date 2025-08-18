@@ -1805,6 +1805,7 @@ static int connect_rtpengines(int force_test)
 
 static int child_init(int rank)
 {
+	int ret;
 	mypid = getpid();
 	myrand = rand()%10000;
 	myrank = rank;
@@ -1829,7 +1830,10 @@ static int child_init(int rank)
 	}
 
 	/* Iterate known RTP proxies - create sockets */
-	return connect_rtpengines(1);
+	RTPE_START_READ();
+	ret = connect_rtpengines(1);
+	RTPE_STOP_READ();
+	return ret;
 }
 
 static int update_rtpengines(int force_test)
