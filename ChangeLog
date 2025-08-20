@@ -1,3 +1,188 @@
+=========================== Release 3.5.7 ==============================
+
+2025-08-20  Liviu Chircu  <liviu@opensips.org>
+        * [a82f94e944] :
+
+        call_center: Check "cc_calls" against the "realtime" DB URL
+
+        Per documentation: "To be more specific, the only runtime table we have
+        so far is the "cc_calls" table."
+
+        (cherry picked from commit 69ad46c9f8e0931f965f39f65031510b0aedf0ea)
+
+
+2025-08-18  Razvan Crainea  <razvan@opensips.org>
+        * [e87b05806b] :
+
+        rtpengine: reload servers under lock
+
+        This prevents a crash running the child_init in the same time with a reload
+
+        Many thanks go to ConnexCS for reporting and testing the fix!
+
+        (cherry picked from commit ab3ffa1d16c880e2daab9042330caac7cb271734)
+
+
+2025-08-10  OpenSIPS  <github@opensips.org>
+        * [b3fc6a3d68] :
+
+        Rebuild documentation
+
+
+2025-08-06  Razvan Crainea  <razvan@opensips.org>
+        * [9dbc44c0fb] :
+
+        rtp_relay: rework failed rtp_relay_update requests handling
+
+        (cherry picked from commit 9b8c8edda4f68306a6f0ddfb8fe288221983f85d)
+
+
+2025-08-03  OpenSIPS  <github@opensips.org>
+        * [c01068c30d] :
+
+        Rebuild documentation
+
+
+2025-07-29  Razvan Crainea  <razvan@opensips.org>
+        * [cba7707cd0] :
+
+        proto_ipsec: fix documentation xml typo
+
+        (cherry picked from commit 9f3b78a1ab706a371e1ea80bdd1465b1723d9c9a)
+
+
+2025-07-27  OpenSIPS  <github@opensips.org>
+        * [d81919fb39] :
+
+        Rebuild documentation
+
+
+2025-07-23  Razvan Crainea  <razvan@opensips.org>
+        * [c16e0c7119] :
+
+        db_unixodbc: explicit add $(LOCALBASE)/include/odbc
+
+        This fixes compile on FreeBSD.
+        Close #3689
+
+        (cherry picked from commit bebda2e5a6d6a73519f79271765146539b7add55)
+
+
+2025-07-23  Razvan Crainea  <razvan@opensips.org>
+        * [d7086aa94c] :
+
+        rtp_relay: let tm manage ref counting for failed sessions
+
+        Close #3623
+        Close #3539
+
+        (cherry picked from commit 7bb7900d4a4a51920ef87b8b37805b38497ea069)
+
+
+2025-07-22  Andrej Solovjov  <solovjov@kompaas.tech>
+        * [6d557223ce] :
+
+        registrar: increase MAX_FORCED_BINDING_LEN in save function
+
+        Sometimes the SIP Contact header field URI can be larger than 256 chars.
+        For example, 'pn-provider', 'pn-prid' and 'pn-param' should be in the
+        URI if SIP UA requests push notifications and they can be quite long.
+
+        (cherry picked from commit 6416b570892c6884eebeb8888cf832bbc89db2ac)
+
+
+2025-07-21  Razvan Crainea  <razvan@opensips.org>
+        * [442bf0a09d] :
+
+        rtpengine: guard from NULL msg
+
+        Thanks to @goharahmed for his report. Close #3652
+
+        (cherry picked from commit 528f06be27fc75876bc72cd49812b4f111f5f2ef)
+
+
+2025-07-21  Razvan Crainea  <razvan@opensips.org>
+        * [4dfa6f086c] :
+
+        mi_script: fix documentation typos
+
+        Many thangs to @QuincyGao on GitHub for reporting them.
+        Close #3683
+
+        (cherry picked from commit e34c7ba19f23b774ac138d6faed90a75da685852)
+
+
+2025-07-13  OpenSIPS  <github@opensips.org>
+        * [d0f98bdf66] :
+
+        Rebuild documentation
+
+
+2025-07-09  Razvan Crainea  <razvan@opensips.org>
+        * [05a788dce2] :
+
+        auth_aka: fix SIP-Authorization header build
+
+        Before this commit, the RAND||AUTS would have been built in a buffer
+        that would have been destroyed afterwards.
+
+        (cherry picked from commit fba5079da4dcba7bfacc0622da72ed062b61dcb9)
+
+
+2025-07-07  Ibrahim Shahzad  <48486042+IbrahimShahzad@users.noreply.github.com>
+        * [43f3d96463] :
+
+        fix for transaction reset for reply (#3680)
+
+        (cherry picked from commit d49884f3052db41f82db847f1b5f69d6fb275436)
+
+
+2025-07-07  Razvan Crainea  <razvan@opensips.org>
+        * [5cff49d936] :
+
+        rtp_relay: do not enforce from_tag for delete command
+
+        (cherry picked from commit 12ed692ecde861561c23474248aa0b65d6318cfe)
+
+
+2025-07-06  OpenSIPS  <github@opensips.org>
+        * [581ee06063] :
+
+        Rebuild documentation
+
+
+2025-07-01  Larry Laffer  <larrylaffer130@gmail.com>
+        * [d6b50fc7d1] :
+
+        [aaa_diameter] Ignore unknown AVPS in Diameter Replies (#3655)
+
+        * Ignore unknown AVPs in replies
+
+        * Clarify Log
+
+        (cherry picked from commit e0ae3c207bb1f4113f23f4e34b07a91d5fd44a76)
+
+
+2025-06-29  OpenSIPS  <github@opensips.org>
+        * [ba41901791] :
+
+        Rebuild documentation
+
+
+2025-06-27  Razvan Crainea  <razvan@opensips.org>
+        * [66e3ab7f59] :
+
+        cgrates: make sure ctx is released on backup node
+
+        when cgrates ctx is being replicated, we need to release it when the
+        dialog is destroyed, otherwise it will leak.
+
+        Many thanks for @NicoFrLy on GitHub for reporting it.
+        Close #3656
+
+        (cherry picked from commit 30c5fdfd862cf10bc249f531dd8d7f3b8e5b5521)
+
+
 =========================== Release 3.5.6 ==============================
 
 2025-06-25  Bogdan Andrei IANCU  <bogdan@opensips.org>
