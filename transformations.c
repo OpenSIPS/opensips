@@ -3870,7 +3870,7 @@ int tr_parse_re(str *in,trans_t *t)
 		}
 		p++;
 		LM_DBG("preparing to parse param\n");
-		if (tr_parse_sparam(p, in, &tp, 0) == NULL)
+		if (tr_parse_sparam(p, in, &tp, 1) == NULL)
 			goto error;
 		t->params = tp;
 		tp = 0;
