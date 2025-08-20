@@ -1,3 +1,62 @@
+=========================== Release 3.6.1 ==============================
+
+2025-08-20  Liviu Chircu  <liviu@opensips.org>
+        * [4cc991eaf0] :
+
+        call_center: Check "cc_calls" against the "realtime" DB URL
+
+        Per documentation: "To be more specific, the only runtime table we have
+        so far is the "cc_calls" table."
+
+        (cherry picked from commit 69ad46c9f8e0931f965f39f65031510b0aedf0ea)
+
+
+2025-08-18  Razvan Crainea  <razvan@opensips.org>
+        * [d3ba9d24c6] :
+
+        rtpengine: reload servers under lock
+
+        This prevents a crash running the child_init in the same time with a reload
+
+        Many thanks go to ConnexCS for reporting and testing the fix!
+
+        (cherry picked from commit ab3ffa1d16c880e2daab9042330caac7cb271734)
+
+
+2025-08-10  OpenSIPS  <github@opensips.org>
+        * [269000ba01] :
+
+        Rebuild documentation
+
+
+2025-08-06  Razvan Crainea  <razvan@opensips.org>
+        * [fbde267694] :
+
+        rtp_relay: rework failed rtp_relay_update requests handling
+
+        (cherry picked from commit 9b8c8edda4f68306a6f0ddfb8fe288221983f85d)
+
+
+2025-08-03  OpenSIPS  <github@opensips.org>
+        * [a773753115] :
+
+        Rebuild documentation
+
+
+2025-07-29  Razvan Crainea  <razvan@opensips.org>
+        * [f1f875f0a5] :
+
+        proto_ipsec: fix documentation xml typo
+
+        (cherry picked from commit 9f3b78a1ab706a371e1ea80bdd1465b1723d9c9a)
+
+
+2025-07-27  OpenSIPS  <github@opensips.org>
+        * [d2eafb3290] :
+
+        Rebuild documentation
+
+
 =========================== Release 3.6.0 ==============================
 
 2025-07-23  Razvan Crainea  <razvan@opensips.org>
