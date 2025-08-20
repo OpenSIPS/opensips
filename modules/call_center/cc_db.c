@@ -267,7 +267,7 @@ int init_cc_db(const str *db_url)
 		return -1;
 	}
 
-	if(db_check_table_version(&cc_dbf, cc_db_handle,
+	if(db_check_table_version(&cc_rt_dbf, cc_db_handle,
 	&cc_calls_table_name, CC_CALLS_TABLE_VERSION) < 0) {
 		LM_ERR("error during CALLS table version check.\n");
 		return -1;
