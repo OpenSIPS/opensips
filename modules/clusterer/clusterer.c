@@ -470,6 +470,7 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 		LM_ERR("cluster shutdown - cannot send new messages!\n");
 		return CLUSTERER_CURR_DISABLED;
 	}
+
 	lock_start_read(cl_list_lock);
 
 	dst_cl = get_cluster_by_id(dst_cid);
@@ -551,6 +552,82 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 		return CLUSTERER_SEND_ERR;
 }
 
+
+static enum clusterer_send_ret
+clusterer_bridges_bcast_msg(bin_packet_t *packet, int src_cid)
+{
+	int send_ok = 0, have_shtag = 0;
+	cluster_info_t *src_cl;
+	str bin_buffer;
+	cluster_bridge_t *br;
+	cluster_bridge_dst_t *dst;
+
+	if (!cl_list_lock) {
+		LM_ERR("cluster shutdown - cannot send new messages!\n");
+		return CLUSTERER_CURR_DISABLED;
+	}
+
+	lock_start_read(cl_list_lock);
+
+	src_cl = get_cluster_by_id(src_cid);
+	if (!src_cl) {
+		LM_ERR("Unknown cluster, id [%d]\n", src_cid);
+		lock_stop_read(cl_list_lock);
+		return CLUSTERER_SEND_ERR;
+	}
+
+	if (!src_cl->bridges) {
+		lock_stop_read(cl_list_lock);
+		return CLUSTERER_SEND_OK_NOP;
+	}
+
+	for (br = src_cl->bridges; br; br = br->next) {
+		if (shtag_get(&br->snd_shtag, src_cid) != SHTAG_STATE_ACTIVE)
+			continue;
+		have_shtag = 1;
+
+		if (!packet) /* NOP mode - useful for establishing shtags state */
+			continue;
+
+		bin_remove_int_buffer_end(packet, 3);
+		bin_push_int(packet, br->cluster_b);
+		bin_push_int(packet, current_id);
+		bin_push_int(packet, AGG_DST_ID);
+		bin_get_buffer(packet, &bin_buffer);
+
+		for (dst = br->dsts; dst; dst = dst->next) {
+			struct ip_addr ip;
+
+			if (msg_send(src_cl->send_sock, dst->proto, &dst->addr, 0,
+			        bin_buffer.s, bin_buffer.len, NULL) == 0) {
+				LM_DBG("successfully sent over bridge, msg len: %d\n", bin_buffer.len);
+				send_ok = 1; /* at least 1 successful replication */
+				break;
+			}
+
+			su2ip_addr(&ip, &dst->addr);
+			LM_ERR("failed to send msg to remote cluster node: %s:%d\n",
+			        ip_addr2a(&ip), su_getport(&dst->addr));
+		}
+	}
+
+	if (packet)
+		bin_remove_int_buffer_end(packet, 4);
+	lock_stop_read(cl_list_lock);
+
+	if (!have_shtag) {
+		LM_DBG("current node has 'backup' shtag in all bridge "
+		        "links from cluster %d, skipped bcast\n", src_cid);
+		return CLUSTERER_SEND_OK_NOP;
+	}
+
+	if (!packet || send_ok)
+		return CLUSTERER_SEND_SUCCESS;
+
+	return CLUSTERER_SEND_ERR;
+}
+
+
 int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id)
 {
 	if (bin_push_int(packet, cluster_id) < 0)
@@ -562,6 +639,7 @@ int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id)
 
 	return 0;
 }
+
 
 static int prep_gen_msg(bin_packet_t *packet, int cluster_id, int dst_id,
 							str *gen_msg, str *exchg_tag, int req_like)
@@ -588,6 +666,20 @@ static int prep_gen_msg(bin_packet_t *packet, int cluster_id, int dst_id,
 	return 0;
 }
 
+int has_bridge(int src_cluster_id)
+{
+	cluster_info_t *cl;
+	int ret = 0;
+
+	lock_start_read(cl_list_lock);
+	cl = get_cluster_by_id(src_cluster_id);
+	if (cl && cl->bridges)
+		ret = 1;
+	lock_stop_read(cl_list_lock);
+
+	return ret;
+}
+
 enum clusterer_send_ret cl_send_to(bin_packet_t *packet, int cluster_id, int node_id)
 {
 	if (msg_add_trailer(packet, cluster_id, node_id) < 0) {
@@ -606,6 +698,22 @@ enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
 	}
 
 	return clusterer_bcast_msg(packet, cluster_id, NODE_CMP_ANY, 1);
+}
+
+enum clusterer_send_ret cl_send_all_bridges(bin_packet_t *packet, int my_cluster)
+{
+	if (packet) {
+		if (bin_push_int(packet, my_cluster) < 0)
+			return -1;
+
+		/* the dst cluster ID will be known during bridge iteration */
+		if (msg_add_trailer(packet, -1 /* dummy value */, AGG_DST_ID) < 0) {
+			LM_ERR("Failed to add trailer to module's message\n");
+			return CLUSTERER_SEND_ERR;
+		}
+	}
+
+	return clusterer_bridges_bcast_msg(packet, my_cluster);
 }
 
 enum clusterer_send_ret
@@ -1278,6 +1386,7 @@ void run_mod_packet_cb(int sender, void *param)
 	int data_version;
 
 	bin_init_buffer(&packet, p->pkt_buf.s, p->pkt_buf.len);
+	packet.size += BIN_CL_RSV_SZ;
 	packet.src_id = p->pkt_src_id;
 	packet.type = p->pkt_type;
 
@@ -1304,7 +1413,7 @@ int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap,
 {
 	struct packet_rpc_params *params;
 
-	params = shm_malloc(sizeof *params + packet->buffer.len);
+	params = shm_malloc(sizeof *params + packet->buffer.len + BIN_CL_RSV_SZ);
 	if (!params) {
 		LM_ERR("oom!\n");
 		return -1;
@@ -1334,21 +1443,29 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	struct local_cap *cl_cap;
 	struct timeval now;
 	unsigned short port;
-	int source_id, dest_id, cluster_id;
+	int source_id, dest_id, src_cluster_id, cluster_id;
 	char *ip;
 	node_info_t *node = NULL;
 	cluster_info_t *cl;
-	int ev_actions_required = 0;
+	int ev_actions_required = 0, agg_packet = 0;
 	int rc;
+
+	get_su_info(&ri->src_su.s, ip, port);
 
 	/* pop the source and destination from the bin packet */
 	bin_pop_back_int(packet, &dest_id);
 	bin_pop_back_int(packet, &source_id);
 	bin_pop_back_int(packet, &cluster_id);
 
-	get_su_info(&ri->src_su.s, ip, port);
-	LM_DBG("received bin packet from: %s:%hu with source id: %d and cluster id: %d\n",
-			ip, port, source_id, cluster_id);
+	if (dest_id != AGG_DST_ID) {
+		LM_DBG("received bin packet from: %s:%hu with source id: %d and cluster id: %d\n",
+				ip, port, source_id, cluster_id);
+	} else {
+		bin_pop_back_int(packet, &src_cluster_id);
+		agg_packet = 1;
+		LM_DBG("received bin agg-packet from: %s:%hu with source id: %d and "
+		    "cluster ids: %d->%d\n", ip, port, source_id, src_cluster_id, cluster_id);
+	}
 
 	if (source_id == current_id) {
 		LM_ERR("Received message with bad source - same node id as this instance\n");
@@ -1378,6 +1495,9 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		goto exit;
 	}
 	lock_release(cl->current_node->lock);
+
+	if (agg_packet)
+		goto pass_message;
 
 	node = get_node_by_id(cl, source_id);
 	if (!node) {
@@ -1443,6 +1563,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 				do_actions_node_ev(cl, &ev_actions_required, 1);
 		}
 	} else {
+pass_message:
 		/* try to pass message to registered callback */
 
 		for (cl_cap = cl->capabilities; cl_cap; cl_cap = cl_cap->next)

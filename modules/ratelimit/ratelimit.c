@@ -67,6 +67,7 @@ int rl_timer_interval = RL_TIMER_INTERVAL;
 int rl_limit_per_interval = 0;
 
 int rl_repl_cluster = 0;
+int rl_br_replication;
 struct clusterer_binds clusterer_api;
 
 int rl_window_size=10;   /* how many seconds the window shall hold*/
@@ -76,7 +77,9 @@ static str db_url = {0,0};
 str db_prefix = str_init("rl_pipe_");
 
 unsigned int rl_repl_timer_expire = RL_TIMER_INTERVAL;
+unsigned int rl_br_repl_timer_expire = RL_BR_CLEANUP_TOUT;
 static unsigned int rl_repl_timer_interval = RL_TIMER_BCAST;
+static unsigned int rl_br_repl_timer_interval = RL_BR_TIMER_BCAST;
 
 /* === */
 
@@ -95,6 +98,9 @@ static unsigned int rl_repl_timer_interval = RL_TIMER_BCAST;
 	lock_release(l); \
 	LM_INFO("%d: - release\n", __LINE__); \
 } while (0)
+#endif
+#ifndef MAX
+#define MAX(a,b) ( ((a)>(b))?(a):(b))
 #endif
 
 /* module functions */
@@ -156,6 +162,9 @@ static const param_export_t params[] = {
 	{ "repl_buffer_threshold",	INT_PARAM,	&rl_buffer_th			},
 	{ "repl_timer_interval",	INT_PARAM,	&rl_repl_timer_interval		},
 	{ "repl_timer_expire",		INT_PARAM,	&rl_repl_timer_expire		},
+	{ "bridge_replication",     INT_PARAM,	&rl_br_replication		},
+	{ "bridge_repl_timer_interval",INT_PARAM,	&rl_br_repl_timer_interval		},
+	{ "bridge_repl_timer_expire",	INT_PARAM,	&rl_br_repl_timer_expire		},
 	{ "pipe_replication_cluster",	INT_PARAM,	&rl_repl_cluster		},
 	{ "window_size",            INT_PARAM,  &rl_window_size},
 	{ "slot_period",            INT_PARAM,  &rl_slot_period},
@@ -423,16 +432,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	_rl_repl_timer_expire = rl_repl_timer_expire;
+
 	/* register timer to reset counters */
 	if (register_utimer("rl-timer", rl_timer, NULL,
 	rl_timer_interval*1000*1000U, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
 		LM_ERR("could not register timer function\n");
-		return -1;
-	}
-	if(rl_repl_cluster)
-	if (register_utimer("rl-utimer", rl_timer_repl, NULL,
-			rl_repl_timer_interval * 1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
-		LM_ERR("failed to register utimer\n");
 		return -1;
 	}
 
@@ -458,6 +463,26 @@ static int mod_init(void)
 		LM_ERR("cannot allocate the table\n");
 		return -1;
 	}
+
+	if (rl_repl_cluster && register_utimer("rl-broadcast", rl_broadcast, NULL,
+			rl_repl_timer_interval * 1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+		LM_ERR("failed to register replication timer\n");
+		return -1;
+	}
+
+	if (rl_br_replication && rl_repl_cluster && clusterer_api.has_bridge(rl_repl_cluster)) {
+		/* grace seconds should be larger, as pipes arriving
+		    over bridge links will typically have higher timeouts */
+		_rl_repl_timer_expire = MAX(rl_repl_timer_expire, rl_br_repl_timer_expire);
+
+		if (register_utimer("rl-agg-broadcast", rl_broadcast_wan, NULL,
+			    rl_br_repl_timer_interval * 1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+
+			LM_ERR("failed to register agg-replication timer\n");
+			return -1;
+		}
+	}
+
 
 	if (rl_repl_init() < 0) {
 		LM_ERR("cannot init bin replication\n");
@@ -1041,7 +1066,7 @@ mi_response_t *mi_dump_pipe(const mi_params_t *params,
 			goto error;
 		pipe_total += d->counter;
 		
-		if(add_mi_number(machine_item,MI_SSTR("MachineID"), d->machine_id) < 0)
+		if(add_mi_number(machine_item,MI_SSTR("MachineID"), d->id.machine) < 0)
 			goto error;
 		if(add_mi_number(machine_item,MI_SSTR("NodeCounter"), d->counter) < 0)
 			goto error;

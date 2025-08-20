@@ -29,7 +29,12 @@
 #include "crc.h"
 #include "net/proto_tcp/tcp_common_defs.h"
 
-#define BIN_MAX_BUF_LEN TCP_BUF_SIZE
+/* this padding helps us simply "cast" a received packet as a sending packet
+ * with zero overhead; otherwise, we'd need to memcpy it from SHM->PKG */
+#define BIN_CL_RSV_SZ ((1+3+1) * sizeof(int))
+         // req_like + msg_add_trailer() + src_cluster (agg)
+
+#define BIN_MAX_BUF_LEN (TCP_BUF_SIZE - BIN_CL_RSV_SZ)
 #define BIN_PACKET_MARKER      "P4CK"
 #define BIN_PACKET_MARKER_SIZE 4
 #define PKG_LEN_FIELD_SIZE     4
@@ -113,6 +118,7 @@ static inline void set_bin_pkg_version(bin_packet_t *packet, short new_version)
  * returns the capability from the message
  */
 void bin_get_capability(bin_packet_t *packet, str *capability);
+void bin_set_packet_type(bin_packet_t *packet, int packet_type);
 
 
 /**

@@ -26,12 +26,17 @@
 #ifndef _RATELIMIT_H_
 #define _RATELIMIT_H_
 
-#define RL_DEFAULT_EXPIRE	3600
-#define RL_HASHSIZE			1024
-#define RL_TIMER_INTERVAL	10   /* s */
-#define RL_TIMER_BCAST		200  /* ms */
-#define RL_PIPE_PENDING		(1<<0)
-#define BIN_VERSION         1
+#define RL_DEFAULT_EXPIRE		3600
+#define RL_HASHSIZE				1024
+#define RL_TIMER_INTERVAL		10   /* s */
+#define RL_BR_CLEANUP_TOUT		20   /* s */
+#define RL_TIMER_BCAST			200  /* ms */
+#define RL_BR_TIMER_BCAST		500  /* ms */
+#define RL_PIPE_PENDING			(1<<0)
+#define RL_REPL_MAX_ZERO_SENDS 3
+
+#define RL_REPL_VER_PIPES       1
+#define RL_REPL_VER_MPIPES      1
 
 #ifndef RL_DEBUG_PIPES
 # define RL_DBG(...)
@@ -62,11 +67,21 @@ typedef enum {
 	PIPE_ALGO_HISTORY
 } rl_algo_t;
 
+enum rl_dst_type {
+	RL_DST_LOCAL_CL,
+	RL_DST_REMOTE_CL,
+};
+
 typedef struct rl_repl_counter {
 	int counter;
 	time_t update;
-        int machine_id;
-        struct rl_repl_counter *next;
+	union {
+		int machine; /* intra-cluster repl; differentiate by cl node ID */
+		int cluster; /* inter-cluster repl; differentiate by cl ID */
+	} id;
+	enum rl_dst_type repl_type;
+
+	struct rl_repl_counter *next;
 } rl_repl_counter_t;
 
 
@@ -86,8 +101,8 @@ typedef struct rl_pipe {
 #endif
 	unsigned int flags;			/* pipe's flags */
 	int limit;					/* limit used by algorithm */
-	int counter;				/* countes the accesses */
-	int my_counter;				/* countes the accesses of this instance */
+	int counter;				/* countes the accesses of *this* node */
+	int my_counter;				/* CDB only: last value in cache */
 	int my_last_counter;		/* countes the last accesses of this instance */
 	int last_counter;			/* last counter */
 	int load;					/* countes the accesses */
@@ -96,6 +111,7 @@ typedef struct rl_pipe {
 	time_t last_local_used;		/* timestamp when the pipe was last locally accessed */
 	rl_repl_counter_t *dsts;	/* counters per destination */
 	int repl_zero_cnt;			/* only broadcast a zero counter N times */
+	int br_repl_zero_cnt;		/* only broadcast zero agg counters N times */
 	rl_window_t rwin;			/* window of requests */
 } rl_pipe_t;
 
@@ -124,7 +140,9 @@ extern int *rl_feedback_limit;
 extern int *rl_network_count;
 extern int *rl_network_load;
 extern str rl_default_algo_s;
+extern rl_algo_t rl_default_algo;
 extern str db_prefix;
+extern int rl_br_replication;
 extern int rl_repl_cluster;
 extern int rl_window_size;
 extern int rl_slot_period;
@@ -151,7 +169,8 @@ void pid_setpoint_limit(int);
 
 /* timer */
 void rl_timer(utime_t, void *);
-void rl_timer_repl(utime_t, void *);
+void rl_broadcast(utime_t, void *);
+void rl_broadcast_wan(utime_t, void *);
 
 /* cachedb functions */
 int init_cachedb(str*);
@@ -160,14 +179,19 @@ void destroy_cachedb(void);
 /* bin functions */
 extern int rl_buffer_th;
 extern unsigned int rl_repl_timer_expire;
+extern unsigned int rl_br_repl_timer_expire;
+extern unsigned int _rl_repl_timer_expire;
 int rl_repl_init(void);
 int rl_get_all_counters(rl_pipe_t *pipe);
+int rl_get_local_counters(rl_pipe_t *pipe);
 int rl_add_repl_dst(modparam_t type, void *val);
 
 void hist_set_count(rl_pipe_t *pipe, long int value);
 int hist_get_count(rl_pipe_t *pipe);
 
-#define RL_PIPE_COUNTER		0
+#define RL_PIPE_COUNTER			0
+#define RL_PIPE_AGG_CTR_EDGE	10
+#define RL_PIPE_AGG_CTR_CORE	11
 #define RL_EXPIRE_TIMER		10
 #define RL_BUF_THRESHOLD	32767
 

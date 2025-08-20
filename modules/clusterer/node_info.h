@@ -35,10 +35,15 @@
 #define NO_DB_STR_VALS 4
 #define NO_DB_COLS (NO_DB_INT_VALS + NO_DB_STR_VALS)
 
+#define NO_CLNK_INTS 3
+#define NO_CLNK_STRS 2
+#define NO_CLNK_COLS (NO_CLNK_INTS + NO_CLNK_STRS)
+
 #define DEFAULT_NO_PING_RETRIES 3
 #define DEFAULT_PRIORITY 50
 
 #define CLUSTERER_TABLE_VERSION 4
+#define CLUSTERER_LINK_TABLE_VERSION 1
 
 #define MAX_NO_NODES 128
 #define MAX_NO_CLUSTERS 64
@@ -105,6 +110,19 @@ struct node_info {
 	struct node_info *next;
 };
 
+typedef struct cluster_bridge_dst {
+	union sockaddr_union addr;
+	enum sip_protos proto;
+	struct cluster_bridge_dst *next;
+} cluster_bridge_dst_t;
+
+typedef struct cluster_bridge {
+	int cluster_b;
+	str snd_shtag;
+	cluster_bridge_dst_t *dsts;
+	struct cluster_bridge *next;
+} cluster_bridge_t;
+
 struct cluster_info {
 	int cluster_id;
 	int no_nodes;                   /* number of nodes in the cluster */
@@ -117,11 +135,36 @@ struct cluster_info {
 	int top_version;        		/* topology version */
 	struct local_cap *capabilities;	/* capabilities registered for this cluster */
 
+	cluster_bridge_t *bridges;          /* replication links to other clusters */
+
 	struct cluster_info *next;
 };
 
 typedef struct node_info node_info_t;
 typedef struct cluster_info cluster_info_t;
+
+extern str db_table;
+extern str db_bridges_table;
+
+extern str clusterer_db_url;
+extern str id_col;
+extern str cluster_id_col;
+extern str node_id_col;
+extern str url_col;
+extern str state_col;
+extern str ls_seq_no_col;
+extern str top_seq_no_col;
+extern str no_ping_retries_col;
+extern str priority_col;
+extern str sip_addr_col;
+extern str flags_col;
+extern str description_col;
+
+extern str clnk_id_col;
+extern str clnk_cla_col;
+extern str clnk_clb_col;
+extern str clnk_shtag_col;
+extern str clnk_dst_node_col;
 
 extern int current_id;
 extern int db_mode;
@@ -129,7 +172,7 @@ extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
 int update_db_state(int cluster_id, int node_id, int state);
-int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_info_t **cl_list);
+int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,

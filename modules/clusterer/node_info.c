@@ -31,27 +31,34 @@
 #include "../../rw_locking.h"
 #include "../../resolve.h"
 #include "../../socket_info.h"
+#include "../../lib/csv.h"
 
 #include "api.h"
 #include "node_info.h"
 #include "topology.h"
 #include "clusterer.h"
 
-/* DB */
-extern str clusterer_db_url;
-extern str db_table;
-extern str id_col;
-extern str cluster_id_col;
-extern str node_id_col;
-extern str url_col;
-extern str state_col;
-extern str ls_seq_no_col;
-extern str top_seq_no_col;
-extern str no_ping_retries_col;
-extern str priority_col;
-extern str sip_addr_col;
-extern str flags_col;
-extern str description_col;
+str db_table = str_init("clusterer");
+str db_bridges_table = str_init("clusterer_bridge");
+
+/* clusterer */
+str id_col = str_init("id");  /* PK */
+str cluster_id_col = str_init("cluster_id");
+str node_id_col = str_init("node_id");
+str url_col = str_init("url");
+str state_col = str_init("state");
+str no_ping_retries_col = str_init("no_ping_retries");
+str priority_col = str_init("priority");
+str sip_addr_col = str_init("sip_addr");
+str flags_col = str_init("flags");
+str description_col = str_init("description");
+
+/* clusterer_bridge */
+str cbr_id_col = str_init("id");  /* PK */
+str cbr_cla_col = str_init("cluster_a");
+str cbr_clb_col = str_init("cluster_b");
+str cbr_shtag_col = str_init("send_shtag");
+str cbr_dst_node_col = str_init("dst_node_csv");
 
 int parse_param_node_info(str *descr, int *int_vals, str *str_vals);
 
@@ -66,6 +73,8 @@ static db_val_t *clusterer_cluster_id_value;
 rw_lock_t *cl_list_lock;
 
 cluster_info_t **cluster_list;
+
+int load_cluster_bridges(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
 					str *str_vals)
@@ -295,7 +304,7 @@ error:
 	return -1;
 }
 
-#define check_val( _col, _val, _type, _not_null, _is_empty_str) \
+#define check_val( _col, _val, _type, _not_null, _is_empty_check) \
     do { \
         if ((_val)->type!=_type) { \
             LM_ERR("column %.*s has a bad type\n", _col.len, _col.s); \
@@ -305,7 +314,7 @@ error:
             LM_ERR("column %.*s is null\n", _col.len, _col.s); \
             return 2; \
         } \
-        if (_is_empty_str && !VAL_STRING(_val)) { \
+        if (_is_empty_check && !VAL_STRING(_val)) { \
             LM_ERR("column %.*s (str) is empty\n", _col.len, _col.s); \
             return 2; \
         } \
@@ -330,8 +339,7 @@ static void check_seed_flag(cluster_info_t **cl_list)
 }
 
 /* loads info from the db */
-int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
-					cluster_info_t **cl_list)
+int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, cluster_info_t **cl_list)
 {
 	int int_vals[NO_DB_INT_VALS];
 	str str_vals[NO_DB_STR_VALS];
@@ -363,11 +371,11 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 
 	CON_OR_RESET(db_hdl);
 
-	if (db_check_table_version(dr_dbf, db_hdl, db_table, CLUSTERER_TABLE_VERSION))
+	if (db_check_table_version(dr_dbf, db_hdl, &db_table, CLUSTERER_TABLE_VERSION))
 		goto error;
 
-	if (dr_dbf->use_table(db_hdl, db_table) < 0) {
-		LM_ERR("cannot select table: \"%.*s\"\n", db_table->len, db_table->s);
+	if (dr_dbf->use_table(db_hdl, &db_table) < 0) {
+		LM_ERR("cannot select table: \"%.*s\"\n", db_table.len, db_table.s);
 		goto error;
 	}
 
@@ -385,7 +393,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	}
 
 	LM_DBG("%d rows found in %.*s\n",
-		RES_ROW_N(res), db_table->len, db_table->s);
+		RES_ROW_N(res), db_table.len, db_table.s);
 
 	if (RES_ROW_N(res) > MAX_NO_CLUSTERS) {
 		LM_ERR("Defined: %d clusters for local node, maximum number of clusters "
@@ -442,7 +450,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	}
 
 	LM_DBG("%d rows found in %.*s\n",
-		RES_ROW_N(res), db_table->len, db_table->s);
+		RES_ROW_N(res), db_table.len, db_table.s);
 
 	if (RES_ROW_N(res) > MAX_NO_NODES) {
 		LM_ERR("Defined: %d nodes in local node's clusters, maximum number of nodes "
@@ -515,8 +523,12 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	if (RES_ROW_N(res) == 1)
 		LM_INFO("The local node is the only one in the cluster\n");
 
-	dr_dbf->free_result(db_hdl, res);
+	if (load_cluster_bridges(*cl_list) != 0) {
+		LM_ERR("error while loading inter-cluster bridges\n");
+		goto error;
+	}
 
+	dr_dbf->free_result(db_hdl, res);
 	return 0;
 error:
 	if (res)
@@ -524,6 +536,192 @@ error:
 	if (*cl_list)
 		free_info(*cl_list);
 	*cl_list = NULL;
+	return -1;
+}
+
+
+static cluster_bridge_dst_t *cl_make_bridge_dsts(str *dst_node_csv)
+{
+	csv_record *dst, *dsts;
+	cluster_bridge_dst_t *ret = NULL;
+
+	dsts = parse_csv_record(dst_node_csv);
+	if (!dsts) {
+		LM_ERR("failed to parse remote destinations in csv: '%.*s'\n",
+		        dst_node_csv->len, dst_node_csv->s);
+		return NULL;
+	}
+
+	for (dst = dsts; dst; dst = dst->next) {
+		cluster_bridge_dst_t *d;
+		char *host;
+		int hlen, port, proto;
+		str st;
+		struct hostent *he;
+
+		if (parse_phostport(dst->s.s, dst->s.len, &host, &hlen,
+			&port, &proto) < 0) {
+			LM_ERR("Bad bridge dst URL: '%.*s'\n", dst->s.len, dst->s.s);
+			continue;
+		}
+		st.s = host;
+		st.len = hlen;
+
+		if (proto == PROTO_NONE)
+			proto = PROTO_BIN;
+		else if (proto != PROTO_BIN && proto != PROTO_BINS) {
+			LM_ERR("unknown protocol in bridge dst: '%.*s' (%d)\n",
+			        dst->s.len, dst->s.s, proto);
+			continue;
+		}
+
+		d = shm_malloc(sizeof *d);
+		if (!d) {
+			LM_ERR("oom\n");
+			continue;
+		}
+		memset(d, 0, sizeof *d);
+
+		d->proto = proto;
+
+		he = sip_resolvehost(&st, (unsigned short *) &port,
+			(unsigned short *)&proto, 0, 0);
+		if (!he) {
+			LM_ERR("Cannot resolve bridge dst host: %.*s\n", hlen, host);
+			continue;
+		}
+
+		hostent2su(&d->addr, he, 0, port);
+
+		{
+			struct ip_addr ip;
+			su2ip_addr(&ip, &d->addr);
+			LM_DBG("resolved bridge dst: %s:%d\n", ip_addr2a(&ip), port);
+		}
+
+		add_last(d, ret);
+	}
+
+	return ret;
+}
+
+int load_cluster_bridges(cluster_info_t *cl_list)
+{
+	db_key_t columns[NO_CLNK_COLS];
+	db_res_t *res = NULL;
+	db_row_t *row;
+	cluster_info_t *cl;
+	int i, br_id, cla, clb, found;
+	str shtag, dst_node_csv;
+	cluster_bridge_dst_t *dsts;
+
+	CON_OR_RESET(db_hdl);
+
+	if (dr_dbf.use_table(db_hdl, &db_bridges_table) < 0) {
+		LM_ERR("failed to use '%.*s' table (bad input?)\n",
+		        db_bridges_table.len, db_bridges_table.s);
+		return 0;
+	}
+
+	switch (db_check_table_version(&dr_dbf, db_hdl, &db_bridges_table, CLUSTERER_LINK_TABLE_VERSION)) {
+	case -2:
+		LM_INFO("the '%.*s' table is not present, disabling "
+		        "inter-cluster replication\n", db_bridges_table.len, db_bridges_table.s);
+		return 0;
+	case -1:
+		return -1;
+	}
+
+	columns[0] = &cbr_id_col;
+	columns[1] = &cbr_cla_col;
+	columns[2] = &cbr_clb_col;
+	columns[3] = &cbr_shtag_col;
+	columns[4] = &cbr_dst_node_col;
+
+	dr_dbf.use_table(db_hdl, &db_bridges_table);
+
+	/* first we see in which clusters the local node runs*/
+	if (dr_dbf.query(db_hdl, NULL, NULL, NULL, columns, 0, NO_CLNK_COLS, NULL, &res) < 0) {
+		LM_ERR("failed to scan all cluster bridges from DB\n");
+		goto error;
+	}
+
+	LM_DBG("found %d rows in %.*s\n", RES_ROW_N(res),
+	        db_bridges_table.len, db_bridges_table.s);
+
+	for (i = 0; i < RES_ROW_N(res); i++) {
+		row = RES_ROWS(res) + i;
+
+		check_val(cbr_id_col, &ROW_VALUES(row)[0], DB_INT, 1, 0);
+		br_id = VAL_INT(ROW_VALUES(row));
+
+		check_val(cbr_cla_col, &ROW_VALUES(row)[1], DB_INT, 1, 0);
+		cla = VAL_INT(ROW_VALUES(row) + 1);
+
+		check_val(cbr_clb_col, &ROW_VALUES(row)[2], DB_INT, 1, 0);
+		clb = VAL_INT(ROW_VALUES(row) + 2);
+
+		check_val(cbr_shtag_col, &ROW_VALUES(row)[3], DB_STRING, 1, 1);
+		init_str(&shtag, (char *)VAL_STRING(ROW_VALUES(row) + 3));
+
+		check_val(cbr_dst_node_col, &ROW_VALUES(row)[4], DB_BLOB, 1, 1);
+		init_str(&dst_node_csv, (char *)VAL_STRING(ROW_VALUES(row) + 4));
+
+		for (found = 0, cl = cl_list; cl; cl = cl->next) {
+			if (cl->cluster_id != cla)
+				continue;
+			found = 1;
+		}
+		if (!found) {
+			LM_DBG("skipping bridge-id %d (not part of any of my clusters)\n", br_id);
+			continue;
+		}
+
+		/* walk the list of clusters my node is part of, try to match bridge */
+		for (cl = cl_list; cl; cl = cl->next) {
+			struct cluster_bridge *br;
+			struct {
+				struct cluster_bridge br;
+				char shtag_buf[shtag.len + 1];
+			} *_br;
+
+			if (cl->cluster_id != cla)
+				continue;
+
+			if (!(dsts = cl_make_bridge_dsts(&dst_node_csv))) {
+				LM_ERR("oom\n");
+				goto error;
+			}
+
+			_br = shm_malloc(sizeof *_br);
+			if (!_br) {
+				LM_ERR("oom\n");
+				goto error;
+			}
+			br = &_br->br;
+			memset(br, 0, sizeof *br);
+
+			br->cluster_b = clb;
+
+			br->snd_shtag.s = _br->shtag_buf;
+			str_cpy(&br->snd_shtag, &shtag);
+			br->snd_shtag.s[shtag.len] = '\0';
+
+			br->dsts = dsts;
+
+			br->next = cl->bridges;
+			cl->bridges = br;
+			break;
+		}
+	}
+
+	if (res)
+		dr_dbf.free_result(db_hdl, res);
+	return 0;
+
+error:
+	if (res)
+		dr_dbf.free_result(db_hdl, res);
 	return -1;
 }
 
@@ -715,8 +913,8 @@ void free_node_info(node_info_t *info)
 void free_info(cluster_info_t *cl_list)
 {
 	cluster_info_t *tmp_cl;
+	cluster_bridge_t *br, *br_next;
 	node_info_t *info, *tmp_info;
-	struct local_cap *cl_cap, *tmp_cl_cap;
 
 	while (cl_list != NULL) {
 		tmp_cl = cl_list;
@@ -731,11 +929,12 @@ void free_info(cluster_info_t *cl_list)
 			shm_free(tmp_info);
 		}
 
-		cl_cap = tmp_cl->capabilities;
-		while (cl_cap != NULL) {
-			tmp_cl_cap = cl_cap;
-			cl_cap = cl_cap->next;
-			shm_free(tmp_cl_cap);
+		shm_free_all(tmp_cl->capabilities);
+
+		for (br = tmp_cl->bridges; br; br = br_next) {
+			br_next = br->next;
+			shm_free_all(br->dsts);
+			shm_free(br);
 		}
 
 		if (tmp_cl->lock) {

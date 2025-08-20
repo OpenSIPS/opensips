@@ -38,8 +38,8 @@ cc_flows|
 cc_flows|2
 closeddial|
 closeddial|1
-clusterer|
-clusterer|4
+METADATA_DEFAULTS
+NIL|NIL|NIL|NIL|1|3|50|NIL|NIL|NIL
 config|
 config|1
 cpl|

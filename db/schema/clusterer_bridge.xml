@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "https://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="clusterer_bridge" xmlns:db="http://docbook.org/ns/docbook">
+    <name>clusterer_bridge</name>
+    <version>1</version>
+    <type db="mysql">&MYSQL_TABLE_TYPE;</type>
+    <description>
+		<db:para>This table is used to define explicit and efficient replication
+				links between different OpenSIPS clusters.
+        </db:para>
+    </description>
+
+    <column id="id">
+        <name>id</name>
+        <type>int</type>
+        <size>10</size>
+        <autoincrement/>
+        <primary/>
+        <type db="dbtext">int,auto</type>
+        <description>Unique bridge ID</description>
+    </column>
+
+    <column id="cluster_a">
+        <name>cluster_a</name>
+        <type>int</type>
+        <size>10</size>
+        <description>Source OpenSIPS cluster ID</description>
+    </column>
+
+    <column id="cluster_b">
+        <name>cluster_b</name>
+        <type>int</type>
+        <size>10</size>
+        <description>Destination OpenSIPS cluster ID</description>
+    </column>
+
+    <column id="send_shtag">
+        <name>send_shtag</name>
+        <type>string</type>
+        <size>32</size>
+        <description>Sharing tag designating sender node</description>
+    </column>
+
+    <column id="dst_node_csv">
+        <name>dst_node_csv</name>
+        <type>text</type>
+        <null/>
+        <description>List of destination BIN sockets to be tried, in failover mode.</description>
+    </column>
+
+    <index>
+        <name>clusterer_bridge_idx</name>
+        <colref linkend="cluster_a"/>
+        <colref linkend="cluster_b"/>
+        <unique/>
+    </index>
+
+</table>
