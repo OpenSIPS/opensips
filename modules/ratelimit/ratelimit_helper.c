@@ -48,7 +48,8 @@ int rl_expire_time = RL_DEFAULT_EXPIRE;
 unsigned int rl_hash_size = RL_HASHSIZE;
 
 str rl_default_algo_s = str_init("TAILDROP");
-static rl_algo_t rl_default_algo = PIPE_ALGO_NOP;
+rl_algo_t rl_default_algo = PIPE_ALGO_NOP;
+unsigned int _rl_repl_timer_expire;
 
 /* other functions */
 static rl_algo_t get_rl_algo(str);
@@ -90,9 +91,9 @@ static str pipe_repl_cap = str_init("ratelimit-pipe-repl");
 #define RL_USE_BIN(_p) \
 	 ((_p)->flags&RL_PIPE_REPLICATE_BIN)
 
-
-
 static str rl_name_buffer = {0, 0};
+
+static inline void rl_replicate(bin_packet_t *packet);
 
 static inline int rl_set_name(str * name)
 {
@@ -486,7 +487,7 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 		}
 	} else {
 		pipe->counter++;
-		pipe->repl_zero_cnt = 3;
+		pipe->repl_zero_cnt = RL_REPL_MAX_ZERO_SENDS;
 	}
 
 	ret = rl_pipe_check(pipe);
@@ -558,7 +559,7 @@ void rl_timer(utime_t uticks, void *param)
 				 * have sent us replicated packets - after that, we can delete
 				 * the pipe; the condition is always true if pipe is not
 				 * replicated */
-				(pipe->last_used + (RL_USE_BIN(pipe)?rl_repl_timer_expire:0) < now)) {
+				(pipe->last_used + (RL_USE_BIN(pipe)?_rl_repl_timer_expire:0) < now)) {
 				/* this pipe is engaged in a transaction */
 				del = it;
 				if (iterator_next(&it) < 0)
@@ -821,13 +822,14 @@ int w_rl_reset(struct sip_msg *_m, str *_n)
 	return w_rl_change_counter(_m, _n, 0);
 }
 
-static rl_repl_counter_t* find_destination(rl_pipe_t *pipe, int machine_id)
+static rl_repl_counter_t *find_destination(rl_pipe_t *pipe,
+        int src_id, enum rl_dst_type dst_type)
 {
 	rl_repl_counter_t *head;
 
 	head = pipe->dsts;
 	while(head != NULL){
-		if( head->machine_id ==  machine_id )
+		if( head->repl_type == dst_type && head->id.machine ==  src_id )
 			break;
 		head=head->next;
 	}
@@ -838,7 +840,13 @@ static rl_repl_counter_t* find_destination(rl_pipe_t *pipe, int machine_id)
 			LM_ERR("no more shm memory\n");
 			goto error;
 		}
-		head->machine_id = machine_id;
+
+		head->repl_type = dst_type;
+		if (dst_type == RL_DST_LOCAL_CL)
+			head->id.machine = src_id;
+		else
+			head->id.cluster = src_id;
+
 		head->next = pipe->dsts;
 		pipe->dsts = head;
 	}
@@ -856,14 +864,44 @@ void rl_rcv_bin(bin_packet_t *packet)
 {
 	rl_algo_t algo;
 	int limit;
-	int counter;
+	int counter, src_id = -1, src_cluster = -1, agg_packet = 0;
 	str name;
 	rl_pipe_t **pipe;
 	unsigned int hash_idx, flags;
+	enum rl_dst_type dst_type;
 	time_t now;
 	rl_repl_counter_t *destination;
 
-	if (packet->type != RL_PIPE_COUNTER) {
+	switch (packet->type) {
+	case RL_PIPE_COUNTER:
+		src_id = packet->src_id;
+		dst_type = RL_DST_LOCAL_CL;
+		break;
+
+	case RL_PIPE_AGG_CTR_EDGE:
+		LM_DBG("broadcasting agg packet within local cl: %d\n", rl_repl_cluster);
+		bin_set_packet_type(packet, RL_PIPE_AGG_CTR_CORE);
+		rl_replicate(packet);
+		/* break;  -- intentional fallback! */
+
+	case RL_PIPE_AGG_CTR_CORE:
+		if (!rl_br_replication) {
+			LM_DBG("bridge-replication is off! dropping packet %d\n", packet->type);
+			return;
+		}
+
+		agg_packet = 1;
+		LM_DBG("received agg packet within local cl: %d\n", rl_repl_cluster);
+
+		if (bin_pop_int(packet, &src_cluster) < 0) {
+			LM_ERR("cannot pop src cluster\n");
+			return;
+		}
+		src_id = src_cluster;
+		dst_type = RL_DST_REMOTE_CL;
+		break;
+
+	default:;
 		LM_WARN("Invalid binary packet command: %d (from node: %d in cluster: %d)\n",
 			packet->type, packet->src_id, rl_repl_cluster);
 		return;
@@ -909,11 +947,11 @@ void rl_rcv_bin(bin_packet_t *packet)
 			/* if the pipe does not exist, allocate it in case we need it later */
 			if (!(*pipe = rl_create_pipe(limit, algo, &name, flags)))
 				goto release;
-			LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
-				name.len, name.s, *pipe);
+			LM_DBG("Pipe %.*s (src_cl: %d) doesn't exist, but was created %p\n",
+				name.len, name.s, src_cluster, *pipe);
 		} else {
-			LM_DBG("Pipe %.*s found: %p - last used %lld\n",
-				name.len, name.s, *pipe, (long long)(*pipe)->last_used);
+			LM_DBG("Pipe %.*s (src_cl: %d) found: %p - last used %lld\n",
+				name.len, name.s, src_cluster, *pipe, (long long)(*pipe)->last_used);
 			if ((*pipe)->algo != algo)
 				LM_WARN("algorithm %d different from the initial one %d for "
 				"pipe %.*s", algo, (*pipe)->algo, name.len, name.s);
@@ -928,10 +966,12 @@ void rl_rcv_bin(bin_packet_t *packet)
 		/* set the last used time */
 		(*pipe)->last_used = time(0);
 		/* set the destination's counter */
-		destination = find_destination(*pipe, packet->src_id);
+		destination = find_destination(*pipe, src_id, dst_type);
 		if (!destination)
 			goto release;
 		destination->counter = counter;
+		if (agg_packet)
+			(*pipe)->br_repl_zero_cnt = RL_REPL_MAX_ZERO_SENDS;
 		destination->update = now;
 		RL_DBG(*pipe, "counter=%d id=%d", counter, packet->src_id);
 		RL_RELEASE_LOCK(hash_idx);
@@ -941,6 +981,7 @@ void rl_rcv_bin(bin_packet_t *packet)
 release:
 	RL_RELEASE_LOCK(hash_idx);
 }
+
 
 /*
  * same as hist_check() in ratelimit.c but this one
@@ -1028,7 +1069,27 @@ error:
 	LM_ERR("Failed to replicate ratelimit pipes\n");
 }
 
-void rl_timer_repl(utime_t ticks, void *param)
+static inline void rl_replicate_agg(bin_packet_t *packet)
+{
+	int rc;
+
+	rc = clusterer_api.send_all_bridges(packet, rl_repl_cluster);
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", rl_repl_cluster);
+		goto error;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending over WAN links from cl: %d\n", rl_repl_cluster);
+		goto error;
+	}
+
+	return;
+
+error:
+	LM_ERR("Failed to replicate ratelimit agg pipes\n");
+}
+
+void rl_broadcast(utime_t ticks, void *param)
 {
 	unsigned int i = 0;
 	map_iterator_t it;
@@ -1039,8 +1100,9 @@ void rl_timer_repl(utime_t ticks, void *param)
 	bin_packet_t packet;
 	time_t now = time(0);
 
-	if (bin_init(&packet, &pipe_repl_cap, RL_PIPE_COUNTER, BIN_VERSION, 0) < 0) {
-		LM_ERR("cannot initiate bin buffer\n");
+	if (bin_init(&packet, &pipe_repl_cap, RL_PIPE_COUNTER,
+	        RL_REPL_VER_PIPES, 0) < 0) {
+		LM_ERR("failed to initialize rl-pipes packet\n");
 		return;
 	}
 
@@ -1123,6 +1185,120 @@ error:
 	bin_free_packet(&packet);
 }
 
+void rl_broadcast_wan(utime_t ticks, void *param)
+{
+	unsigned int i = 0;
+	map_iterator_t it;
+	rl_pipe_t **ppipe, *pipe;
+	str *key;
+	int nr = 0, local_cnt;
+	int ret = 0;
+	bin_packet_t packet;
+	time_t now = time(0);
+
+	/* yes, there is a race condition with the below .send_all_bridges() call,
+	 * but it's harmless (just some extra CPU when it occurs) */
+	if (clusterer_api.send_all_bridges(NULL, rl_repl_cluster)
+	        == CLUSTERER_SEND_OK_NOP) {
+		LM_DBG("current node is in 'backup' mode on all links, skip run\n");
+		return;
+	}
+
+	if (bin_init(&packet, &pipe_repl_cap, RL_PIPE_AGG_CTR_EDGE,
+	        RL_REPL_VER_MPIPES, 0) < 0) {
+		LM_ERR("failed to initialize rl-agg-pipes packet\n");
+		return;
+	}
+
+	if (bin_push_int(&packet, rl_repl_cluster) < 0)
+		goto error;
+
+	/* iterate through each map */
+	for (i = 0; i < rl_htable.size; i++) {
+		RL_GET_LOCK(i);
+		/* iterate through all the entries */
+		if (map_first(rl_htable.maps[i], &it) < 0) {
+			LM_ERR("map doesn't exist\n");
+			goto next_map;
+		}
+		for (; iterator_is_valid(&it);) {
+			ppipe = (rl_pipe_t **) iterator_val(&it);
+			if (!ppipe || !(pipe = *ppipe)) {
+				LM_ERR("[BUG] bogus map[%d] state\n", i);
+				goto next_pipe;
+			}
+
+			if (pipe->algo != PIPE_ALGO_TAILDROP) {
+				LM_ERR("only WAN-replicating TAILDROP pipes for now "
+				        "(other algs currently not implemented)\n");
+				goto next_pipe;
+			}
+
+			/* fetch local cluster counters, including our own => replicate */
+			local_cnt = rl_get_local_counters(pipe);
+
+			/* ignore cachedb replicated stuff */
+			if (!RL_USE_BIN(pipe)
+			        /* ... or pipes with value: 0 after 'cnt' agg broadcasts */
+			        || (local_cnt == 0 && pipe->br_repl_zero_cnt-- <= 0)
+			        /* ... and do not replicate if about to expire */
+			        || pipe->last_local_used + rl_expire_time < now)
+				goto next_pipe;
+
+			key = iterator_key(&it);
+			if (!key) {
+				LM_ERR("cannot retrieve pipe key\n");
+				goto next_pipe;
+			}
+
+			if (bin_push_str(&packet, key) < 0)
+				goto error;
+
+			if (bin_push_int(&packet, pipe->flags) < 0)
+				goto error;
+
+			if (bin_push_int(&packet, pipe->algo) < 0)
+				goto error;
+
+			if (bin_push_int(&packet, pipe->limit) < 0)
+				goto error;
+
+			/*
+			 * for the SBT algorithm it is safe to replicate the current
+			 * counter, since it is always updating according to the window
+			 */
+			RL_DBG(p, "replicate=%d", local_cnt);
+			if ((ret = bin_push_int(&packet, local_cnt)) < 0)
+				goto error;
+			nr++;
+
+next_pipe:
+			if (iterator_next(&it) < 0)
+				break;
+		}
+next_map:
+		RL_RELEASE_LOCK(i);
+		if (ret > rl_buffer_th) {
+			/* send the buffer */
+			if (nr)
+				rl_replicate_agg(&packet);
+			bin_reset_back_pointer(&packet);
+			nr = 0;
+		}
+	}
+	/* if there is anything else to send, do it now */
+	if (nr)
+		rl_replicate_agg(&packet);
+	bin_free_packet(&packet);
+	return;
+error:
+	LM_ERR("cannot add pipe info in buffer\n");
+	RL_RELEASE_LOCK(i);
+	if (nr)
+		rl_replicate_agg(&packet);
+	bin_free_packet(&packet);
+}
+
 int rl_get_all_counters(rl_pipe_t *pipe)
 {
 	unsigned counter = 0;
@@ -1131,11 +1307,33 @@ int rl_get_all_counters(rl_pipe_t *pipe)
 
 	for (d = pipe->dsts; d; d = d->next) {
 		/* if the replication expired, reset its counter */
+		if ((d->update + (d->repl_type == RL_DST_REMOTE_CL ?
+		            rl_br_repl_timer_expire : rl_repl_timer_expire)) < now)
+			d->counter = 0;
+		else
+			counter += d->counter;
+	}
+
+	return counter + pipe->counter;
+}
+
+int rl_get_local_counters(rl_pipe_t *pipe)
+{
+	unsigned counter = 0;
+	time_t now = time(0);
+	rl_repl_counter_t *d;
+
+	for (d = pipe->dsts; d; d = d->next) {
+		if (d->repl_type != RL_DST_LOCAL_CL)
+			continue;
+
+		/* if the replication expired, reset its counter */
 		if ((d->update + rl_repl_timer_expire) < now)
 			d->counter = 0;
 		else
 			counter += d->counter;
 	}
+
 	return counter + pipe->counter;
 }
 

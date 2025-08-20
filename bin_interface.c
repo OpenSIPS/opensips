@@ -98,6 +98,20 @@ int _bin_init(bin_packet_t *packet, str *capability, int packet_type,
 	return 0;
 }
 
+void bin_set_packet_type(bin_packet_t *packet, int packet_type)
+{
+	str cap;
+
+	bin_get_capability(packet, &cap);
+
+	packet->type = packet_type;
+
+	if (cap.len)
+		memcpy(packet->buffer.s + BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE
+				+ VERSION_FIELD_SIZE + LEN_FIELD_SIZE + cap.len,
+			&packet_type, sizeof(packet_type));
+}
+
 void bin_get_capability(bin_packet_t *packet, str *capability)
 {
 	unsigned short len;
