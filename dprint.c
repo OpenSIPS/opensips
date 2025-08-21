@@ -724,9 +724,9 @@ int register_log_consumer(char *name, log_print_f print_func,
 	return 0;
 }
 
-int init_log_json_buf(int realloc)
+int init_log_json_buf(int realloc_buf)
 {
-	if (realloc && log_json_buf) {
+	if (realloc_buf && log_json_buf) {
 		log_json_buf = pkg_realloc(log_json_buf, log_json_buf_size+1);
 		if (!log_json_buf) {
 			LM_ERR("no pkg memory left\n");
@@ -743,9 +743,9 @@ int init_log_json_buf(int realloc)
 	return 0;
 }
 
-int init_log_msg_buf(int realloc)
+int init_log_msg_buf(int realloc_buf)
 {
-	if (realloc && log_msg_buf) {
+	if (realloc_buf && log_msg_buf) {
 		log_msg_buf = pkg_realloc(log_msg_buf, log_msg_buf_size+1);
 		if (!log_msg_buf) {
 			LM_ERR("no pkg memory left\n");

@@ -188,12 +188,21 @@ void sys_free(void *, const char *, const char *, unsigned int);
 #ifndef SYSTEM_MALLOC
 #define SYSTEM_MALLOC
 #endif
+#ifdef DBG_MALLOC
 #define pkg_malloc_func sys_malloc
 #define pkg_malloc(s) sys_malloc((s), __FILE__, __FUNCTION__, __LINE__)
-#define func_pkg_relloc sys_realloc
+#define pkg_realloc_func sys_realloc
 #define pkg_realloc(ptr, s) sys_realloc((ptr), (s), __FILE__, __FUNCTION__, __LINE__)
 #define pkg_free_func sys_free
 #define pkg_free(p) sys_free((p), __FILE__, __FUNCTION__, __LINE__)
+#else /* DBG_MALLOC */
+#define pkg_malloc_func malloc
+#define pkg_malloc(s) malloc((s))
+#define pkg_realloc_func realloc
+#define pkg_realloc(ptr, s) realloc((ptr), (s))
+#define pkg_free_func free
+#define pkg_free(p) free((p))
+#endif /* DBG_MALLOC */
 #define pkg_status()
 #define PKG_GET_SIZE()
 #define PKG_GET_USED()
