@@ -57,15 +57,23 @@ int disable_dns_failover=0;
 
 int hostent_shm_cpy(struct hostent *dst, struct hostent* src)
 {
+	unsigned int len;
 	int  i;
 	char *p;
+
+	len = strlen(src->h_name)+1;
+	dst->h_name = (char*)shm_malloc(sizeof(char) * len);
+	if (dst->h_name) strncpy(dst->h_name, src->h_name, len);
+	else return -1;
 
 	for( i=0 ; src->h_addr_list[i] ; i++ );
 
 	dst->h_addr_list = (char**)shm_malloc
 		(i * (src->h_length + sizeof(char*)) + sizeof(char*));
-	if (dst->h_addr_list==NULL)
+	if (dst->h_addr_list==NULL) {
+		shm_free(dst->h_name);
 		return -1;
+	}
 
 	p = ((char*)dst->h_addr_list) + (i+1)*sizeof(char*);
 	dst->h_addr_list[i] = 0;
@@ -85,6 +93,8 @@ int hostent_shm_cpy(struct hostent *dst, struct hostent* src)
 
 void free_shm_hostent(struct hostent *dst)
 {
+	if (dst->h_name)
+		shm_free(dst->h_name);
 	if (dst->h_addr_list)
 		shm_free(dst->h_addr_list);
 }

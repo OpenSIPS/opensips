@@ -59,13 +59,14 @@
 #define STR_VALS_CPLIST_COL         6
 #define STR_VALS_ECCURVE_COL        7
 
-#define NO_INT_VALS 5
+#define NO_INT_VALS 6
 
 #define INT_VALS_ID_COL             0
 #define INT_VALS_TYPE_COL           1
 #define INT_VALS_VERIFY_CERT_COL    2
 #define INT_VALS_REQUIRE_CERT_COL   3
 #define INT_VALS_CRL_CHECK_COL      4
+#define INT_VALS_VERIFY_HOSTNAME_COL 5
 
 #define NO_BLOB_VALS 4
 
@@ -74,7 +75,7 @@
 #define BLOB_VALS_CALIST_COL         2
 #define BLOB_VALS_DHPARAMS_COL       3
 
-#define NO_DB_COLS 17
+#define NO_DB_COLS 18
 
 #define CLIENT_DOMAIN_TYPE       1
 #define SERVER_DOMAIN_TYPE       2
