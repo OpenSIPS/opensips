@@ -21,18 +21,18 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">114</entry>
-		<entry align="center">37</entry>
-		<entry align="center">6850</entry>
-		<entry align="center">1105</entry>
+		<entry align="center">115</entry>
+		<entry align="center">38</entry>
+		<entry align="center">6851</entry>
+		<entry align="center">1106</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">35</entry>
-		<entry align="center">18</entry>
-		<entry align="center">1361</entry>
-		<entry align="center">248</entry>
+		<entry align="center">36</entry>
+		<entry align="center">19</entry>
+		<entry align="center">1400</entry>
+		<entry align="center">267</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -44,6 +44,14 @@
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Larry Laffer</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">6</entry>
+		<entry align="center">5</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -51,7 +59,15 @@
 		<entry align="center">5</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
+		<entry>Darius Stefan</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">4</entry>
+		<entry align="center">7</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -88,26 +104,36 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">May 2021 - Jul 2025</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">May 2023 - Jul 2025</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Darius Stefan</entry>
+		<entry align="center">Jul 2025 - Jul 2025</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Larry Laffer</entry>
+		<entry align="center">Jul 2025 - Jul 2025</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Alexandra Titoc</entry>
 		<entry align="center">Sep 2024 - Sep 2024</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>6. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jul 2024 - Jul 2024</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">May 2023 - May 2024</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">May 2021 - Mar 2024</entry>
-	</row>
-	<row>
-		<entry>5. </entry>
+		<entry>7. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Feb 2023 - Feb 2023</entry>
 	</row>
@@ -125,7 +151,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Darius Stefan, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>).</para>
 </section>
 
 </chapter>

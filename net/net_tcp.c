@@ -326,6 +326,17 @@ static int send2worker(struct tcp_connection* tcpconn,int rw)
 /* initializes an already defined TCP listener */
 int tcp_init_listener(struct socket_info *si)
 {
+	union sockaddr_union* addr = &si->su;
+	if (init_su(addr, &si->address, si->port_no)<0){
+		LM_ERR("could no init sockaddr_union\n");
+		return -1;
+	}
+	return 0;
+}
+
+/* binding an defined TCP listener */
+int tcp_bind_listener(struct socket_info *si)
+{
 	union sockaddr_union* addr;
 	int optval;
 #ifdef DISABLE_NAGLE
@@ -344,10 +355,6 @@ int tcp_init_listener(struct socket_info *si)
 #endif
 
 	addr = &si->su;
-	if (init_su(addr, &si->address, si->port_no)<0){
-		LM_ERR("could no init sockaddr_union\n");
-		goto error;
-	}
 	si->socket = socket(AF2PF(addr->s.sa_family), SOCK_STREAM, 0);
 	if (si->socket==-1){
 		LM_ERR("socket failed with [%s]\n", strerror(errno));
@@ -889,7 +896,7 @@ static inline void tcpconn_ref(struct tcp_connection* c)
 
 static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* su,
                     const struct socket_info* si, const struct tcp_conn_profile *prof,
-                    int state, int flags)
+                    int state, int flags, int in_main_proc)
 {
 	struct tcp_connection *c;
 	union sockaddr_union local_su;
@@ -956,8 +963,8 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 			goto error;
 		}
 	}
-
-	tcp_connections_no++;
+	if(in_main_proc)
+		tcp_connections_no++;
 	return c;
 
 error:
@@ -984,7 +991,7 @@ struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
 		tcp_con_get_profile(su, &si->su, si->proto, prof);
 
 	/* create the connection structure */
-	c = tcpconn_new(sock, su, si, prof, state, 0);
+	c = tcpconn_new(sock, su, si, prof, state, 0, !send2main);
 	if (c==NULL) {
 		LM_ERR("tcpconn_new failed\n");
 		return NULL;
@@ -1127,7 +1134,7 @@ static inline int handle_new_connect(const struct socket_info* si)
 	}
 
 	/* add socket to list */
-	tcpconn=tcpconn_new(new_sock, &su, si, &prof, S_CONN_OK, F_CONN_ACCEPTED);
+	tcpconn=tcpconn_new(new_sock, &su, si, &prof, S_CONN_OK, F_CONN_ACCEPTED, 1);
 	if (tcpconn){
 		tcpconn->refcnt++; /* safe, not yet available to the
 							  outside world */
@@ -1506,6 +1513,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
+			tcp_connections_no++;
 			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_READ;
 			break;
@@ -1519,6 +1527,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->s=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
+			tcp_connections_no++;
 			/* FIXME - now we have lifetime==default_lifetime - should we
 			 * set a shorter one when waiting for a connect ??? */
 			/* only maintain the socket in the IO_WATCH_WRITE watcher
@@ -1689,19 +1698,14 @@ static void tcp_main_server(void)
 		if ( is_tcp_based_proto(n) )
 			for( sif=protos[n].listeners ; sif ; sif=sif->next ) {
 				struct socket_info* si = &sif->socket_info;
-				if (protos[n].tran.init_listener(si)<0) {
-					LM_ERR("failed to init listener [%.*s], proto %s\n",
-						si->name.len, si->name.s,
-						protos[n].name );
-					goto error;
-				}
 				if (protos[n].tran.bind_listener && protos[n].tran.bind_listener(si)<0) {
 					LM_ERR("failed to bind listener [%.*s], proto %s\n",
-						si->name.len, si->name.s,
-						protos[n].name );
+							si->name.len, si->name.s,
+							protos[n].name );
 					goto error;
 				}
-				if(reactor_add_reader( si->socket, F_TCP_LISTENER,
+				if ( (si->socket!=-1) &&
+				reactor_add_reader( si->socket, F_TCP_LISTENER,
 				RCT_PRIO_NET, si)<0 ) {
 					LM_ERR("failed to add listen socket to reactor\n");
 					goto error;

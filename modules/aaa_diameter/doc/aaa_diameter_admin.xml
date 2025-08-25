@@ -219,6 +219,25 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 		</example>
 		</section>
 
+		<section id="param_max_json_log_size" xreflabel="max_json_log_size">
+		<title><varname>max_json_log_size (integer)</varname></title>
+		<para>
+			When an error log is printed due to malformed JSON, this parameter indicates
+			how many characters from the JSON should be printed at console. A higher value
+			might overcrowd the logs, but can be useful for troubleshooting.
+		</para>
+		<para>
+			Default value is <emphasis>512</emphasis> characters.
+		</para>
+		<example>
+		<title>Setting the <varname>max_json_log_size</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("aaa_diameter", "max_json_log_size", 4096)
+
+</programlisting>
+		</example>
+		</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -321,10 +340,8 @@ REQUEST 92001 My-Custom-Request
 	Origin-Host | REQUIRED | 1
 	Origin-Realm | REQUIRED | 1
 	Destination-Realm | REQUIRED | 1
-	Transaction-Id | REQUIRED | 1
 	Sip-From-Tag | REQUIRED | 1
 	Sip-To-Tag | REQUIRED | 1
-	Acct-Session-Id | REQUIRED | 1
 	Sip-Call-Duration | REQUIRED | 1
 	Sip-Call-Setuptime | REQUIRED | 1
 	Sip-Call-Created | REQUIRED | 1
@@ -339,7 +356,6 @@ ANSWER 92001 My-Custom-Answer
 	Origin-Host | REQUIRED | 1
 	Origin-Realm | REQUIRED | 1
 	Destination-Realm | REQUIRED | 1
-	Transaction-Id | REQUIRED | 1
 	Result-Code | REQUIRED | 1
 }
 
@@ -358,13 +374,13 @@ $var(payload) = "[
 	{ \"Destination-Realm\": \"diameter.test\" },
 	{ \"Sip-From-Tag\": \"dc93-4fba-91db\" },
 	{ \"Sip-To-Tag\": \"ae12-47d6-816a\" },
-	{ \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+	{ \"Session-Id\": \"a59c-dff0d9efd167\" },
 	{ \"Sip-Call-Duration\": 6 },
 	{ \"Sip-Call-Setuptime\": 1 },
 	{ \"Sip-Call-Created\": 1652372541 },
 	{ \"Sip-Call-MSDuration\": 5850 },
 	{ \"out_gw\": \"GW-774\" },
-	{ \"cost\": \"10.84\" },
+	{ \"call_cost\": 10 },
 	{ \"Cost-Information\": [
 		{\"Unit-Value\": [{\"Value-Digits\": 1000}]},
 		{\"Currency-Code\": 35}
@@ -486,13 +502,13 @@ $var(payload) = "[
 	{ \"Destination-Realm\": \"diameter.test\" },
 	{ \"Sip-From-Tag\": \"dc93-4fba-91db\" },
 	{ \"Sip-To-Tag\": \"ae12-47d6-816a\" },
-	{ \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+	{ \"Session-Id\": \"a59c-dff0d9efd167\" },
 	{ \"Sip-Call-Duration\": 6 },
 	{ \"Sip-Call-Setuptime\": 1 },
 	{ \"Sip-Call-Created\": 1652372541 },
 	{ \"Sip-Call-MSDuration\": 5850 },
 	{ \"out_gw\": \"GW-774\" },
-	{ \"cost\": \"10.84\" },
+	{ \"call_cost\": 10 },
 	{ \"Cost-Information\": [
 		{\"Unit-Value\": [{\"Value-Digits\": 1000}]},
 		{\"Currency-Code\": 35}

@@ -2508,7 +2508,6 @@ static int pv_parse_branch_index(pv_spec_p sp, const str *in)
 			 * know what it is, maybe part of a pvar as index */
 		}
 	}
-	LM_DBG("-XX---XX---|%.*s|\n",new_in.len,new_in.s);
 	if (pv_parse_index( sp, &new_in)<0)
 		return -1;
 	sp->pvp.pvi.type |= mask; /* take care and remove this mask BEFORE

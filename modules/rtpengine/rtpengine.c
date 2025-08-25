@@ -824,6 +824,9 @@ struct module_exports exports = {
 static char *rtpe_default_failover_errors[] = {
 	"Parallel session limit reached",
 	"Ran out of ports",
+	"CPU usage limit exceeded",
+	"Load limit exceeded",
+	"Bandwidth limit exceeded",
 };
 
 static void rtpe_stats_free(struct rtpe_stats *stats)
@@ -1894,6 +1897,7 @@ static int connect_rtpengines(int force_test)
 
 static int child_init(int rank)
 {
+	int ret;
 	mypid = getpid();
 	myrand = rand()%10000;
 	myrank = rank;
@@ -1918,7 +1922,10 @@ static int child_init(int rank)
 	}
 
 	/* Iterate known RTP proxies - create sockets */
-	return connect_rtpengines(1);
+	RTPE_START_READ();
+	ret = connect_rtpengines(1);
+	RTPE_STOP_READ();
+	return ret;
 }
 
 static int update_rtpengines(int force_test)
@@ -2778,7 +2785,7 @@ static int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg 
 		|| (msg->first_line.type == SIP_REPLY && op == OP_DELETE)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER))))
 	{
-		if (!from_tag_exist)
+		if (!from_tag_exist && op != OP_DELETE)
 			bencode_dictionary_add_str(ng_flags->dict, "from-tag", &ng_flags->from_tag);
 		if (op != OP_START_MEDIA && op != OP_STOP_MEDIA) {
 			/* no need of to-tag if we are just playing media */
@@ -5109,7 +5116,7 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		bencode_list_add_string(list, "all");
 	} else if (copy_flags & RTP_COPY_LEG_CALLER && sess->from_tag) {
 		bencode_dictionary_add_str(dict, "from-tag", sess->from_tag);
-	} else if (sess->to_tag) {
+	} else if (sess->to_tag && sess->to_tag->len) {
 		bencode_dictionary_add_str(dict, "from-tag", sess->to_tag);
 	}
 	if (copy_flags & RTP_COPY_MODE_DISABLE) {

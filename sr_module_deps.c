@@ -229,6 +229,50 @@ int add_module_dependencies(struct sr_module *mod)
 	return 0;
 }
 
+static struct sr_module_dep *make_dep(struct sr_module_dep *md,
+    unsigned int dep_type, unsigned int df, struct sr_module *mod_a,
+    struct sr_module *mod_b)
+{
+	struct sr_module_dep **dip_a, **dip_b;
+
+	switch (df) {
+	case DEP_REVERSE_MINIT:
+		dip_a = &mod_a->sr_deps_init;
+		dip_b = &mod_b->sr_deps_init;
+		break;
+	case DEP_REVERSE_CINIT:
+		dip_a = &mod_a->sr_deps_cinit;
+		dip_b = &mod_b->sr_deps_cinit;
+		break;
+	case DEP_REVERSE_DESTROY:
+		dip_a = &mod_a->sr_deps_destroy;
+		dip_b = &mod_b->sr_deps_destroy;
+		break;
+	default:
+		LM_ERR("BUG, unhandled dep_type: %d\n", df);
+		abort();
+	}
+
+	if (md == NULL) {
+		md = pkg_malloc(sizeof *md);
+		if (!md) {
+			LM_ERR("no more pkg\n");
+			return NULL;
+		}
+		memset(md, 0, sizeof *md);
+	}
+
+	if (dep_type & df) {
+		md->mod = mod_a;
+		md->next = *dip_b;
+		*dip_b = md;
+	} else {
+		md->mod = mod_b;
+		md->next = *dip_a;
+		*dip_a = md;
+	}
+	return md;
+}
 
 int solve_module_dependencies(struct sr_module *modules)
 {
@@ -251,111 +295,53 @@ int solve_module_dependencies(struct sr_module *modules)
 
 		this = md->mod;
 		dep_type = md->type;
+		int byname = !!md->dep.s;
+		mod_type = md->mod_type;
 
 		/*
 		 * for generic dependencies (e.g. dialog depends on MOD_TYPE_SQLDB),
 		 * first load all modules of given type
+		 *
+		 * re-purpose this @md structure by linking it into a module's
+		 * list of dependencies (will be used at init time)
+		 *
+		 * md->mod used to point to (highlighted with []):
+		 *		[sr_module A] ---> "mod_name"
+		 *
+		 * now, the dependency is solved. md->mod will point to:
+		 *		sr_module A  ---> [sr_module B]
 		 */
-		if (!md->dep.s) {
-			/*
-			 * re-purpose this @md structure by linking it into a module's
-			 * list of dependencies (will be used at init time)
-			 *
-			 * md->mod used to point to (highlighted with []):
-			 *		[sr_module A] ---> "mod_name"
-			 *
-			 * now, the dependency is solved. md->mod will point to:
-			 *		sr_module A  ---> [sr_module B]
-			 */
-			mod_type = md->mod_type;
 
-			for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
-				if (mod != this && mod->exports->type == mod_type) {
-					if (!md) {
-						md = pkg_malloc(sizeof *md);
-						if (!md) {
-							LM_ERR("no more pkg\n");
-							return -1;
-						}
-						memset(md, 0, sizeof *md);
-					}
-
-					if (dep_type & DEP_REVERSE_INIT) {
-						md->mod = this;
-						md->next = mod->sr_deps_init;
-						mod->sr_deps_init = md;
-					} else {
-						md->mod = mod;
-						md->next = this->sr_deps_init;
-						this->sr_deps_init = md;
-					}
-
-					md = pkg_malloc(sizeof *md);
-					if (!md) {
-						LM_ERR("no more pkg\n");
-						return -1;
-					}
-					memset(md, 0, sizeof *md);
-
-					if (dep_type & DEP_REVERSE_DESTROY) {
-						md->mod = mod;
-						md->next = this->sr_deps_destroy;
-						this->sr_deps_destroy = md;
-					} else {
-						md->mod = this;
-						md->next = mod->sr_deps_destroy;
-						mod->sr_deps_destroy = md;
-					}
-
-					md = NULL;
-					dep_solved++;
-				}
-			}
-		} else {
-			for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
+		for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
+			if (!byname) {
+				if (mod == this || mod->exports->type != mod_type)
+					continue;
+			} else {
 				if (strcmp(mod->exports->name, md->dep.s) != 0)
 					continue;
-
-				/* quick sanity check */
-				if (mod->exports->type != md->mod_type)
+				if (mod->exports->type != mod_type)
 					LM_BUG("[%.*s %d] -> [%s %d]\n", md->dep.len, md->dep.s,
-							md->mod_type, mod->exports->name,
-							mod->exports->type);
-
-				/* same re-purposing technique as above */
-				if (dep_type & DEP_REVERSE_INIT) {
-					md->next = mod->sr_deps_init;
-					mod->sr_deps_init = md;
-				} else {
-					md->mod = mod;
-					md->next = this->sr_deps_init;
-					this->sr_deps_init = md;
-				}
-
-				md = pkg_malloc(sizeof *md);
-				if (!md) {
-					LM_ERR("no more pkg\n");
-					return -1;
-				}
-				memset(md, 0, sizeof *md);
-
-				if (dep_type & DEP_REVERSE_DESTROY) {
-					md->mod = mod;
-					md->next = this->sr_deps_destroy;
-					this->sr_deps_destroy = md;
-				} else {
-					md->mod = this;
-					md->next = mod->sr_deps_destroy;
-					mod->sr_deps_destroy = md;
-				}
-
-				dep_solved++;
-				break;
+						mod_type, mod->exports->name,
+						mod->exports->type);
 			}
+
+			if (!make_dep(md, dep_type, DEP_REVERSE_MINIT, this, mod))
+				return -1;
+			md = NULL;
+
+			if (!make_dep(NULL, dep_type, DEP_REVERSE_DESTROY, mod, this))
+				return -1;
+
+			if (!make_dep(NULL, dep_type, DEP_REVERSE_CINIT, this, mod))
+				return -1;
+
+			dep_solved++;
+			if (byname)
+				break;
 		}
 
 		/* reverse-init dependencies are always solved! */
-		if (dep_solved || dep_type & DEP_REVERSE_INIT)
+		if (dep_solved || dep_type & DEP_REVERSE_MINIT)
 			continue;
 
 		/* treat unmet dependencies using the intended behaviour */

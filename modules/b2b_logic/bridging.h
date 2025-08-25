@@ -19,7 +19,7 @@
  */
 
 mi_response_t *mi_b2b_bridge(const mi_params_t *params,
-	int entity_no, str *prov_media);
+	int *_entity_no, str *prov_media);
 int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 	str *provmedia_uri, struct b2b_bridge_params *params);
 int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str);
@@ -35,6 +35,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	b2bl_entity_id_t* entity);
 int bridge_msg_term_entity(b2bl_entity_id_t *old_entity,
 	unsigned int *hash_index);
+int b2bl_search_other_entity(b2bl_tuple_t *tuple, str *entity_str);
 
 int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	unsigned hash_index, b2bl_entity_id_t *old_entity,

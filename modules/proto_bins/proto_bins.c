@@ -158,6 +158,7 @@ static int proto_bins_init(struct proto_info *pi)
 	pi->default_port		= bins_port;
 
 	pi->tran.init_listener	= proto_bins_init_listener;
+	pi->tran.bind_listener	= tcp_bind_listener;
 	pi->tran.send			= proto_bins_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 

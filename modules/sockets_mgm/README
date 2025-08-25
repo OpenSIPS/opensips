@@ -196,7 +196,7 @@ modparam("sockets_mgm", "socket_column", "sock")
 
    Example 1.4. Set “advertised_column” parameter
 ...
-modparam("advertiseds_mgm", "advertised_column", "adv")
+modparam("sockets_mgm", "advertised_column", "adv")
 ...
 
 1.5.5. tag_column (string)
@@ -207,7 +207,7 @@ modparam("advertiseds_mgm", "advertised_column", "adv")
 
    Example 1.5. Set “tag_column” parameter
 ...
-modparam("tags_mgm", "tag_column", "sock")
+modparam("sockets_mgm", "tag_column", "sock")
 ...
 
 1.5.6. flags_column (string)
@@ -218,7 +218,7 @@ modparam("tags_mgm", "tag_column", "sock")
 
    Example 1.6. Set “flags_column” parameter
 ...
-modparam("flagss_mgm", "flags_column", "sock")
+modparam("sockets_mgm", "flags_column", "sock")
 ...
 
 1.5.7. tos_column (string)
@@ -229,7 +229,7 @@ modparam("flagss_mgm", "flags_column", "sock")
 
    Example 1.7. Set “tos_column” parameter
 ...
-modparam("toss_mgm", "tos_column", "sock")
+modparam("sockets_mgm", "tos_column", "sock")
 ...
 
 1.5.8. processes (integer)
@@ -245,7 +245,7 @@ modparam("sockets_mgm", "processes", 32)
 
 1.5.9. max_sockets (integer)
 
-   The maximum number of sockets that can be defined dinamically.
+   The maximum number of sockets that can be defined dynamically.
    See the Limitations section for more information.
 
    Default value is “100”.
@@ -283,6 +283,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea)    33       4      2207     572
+   2. Norm Brandinger                    4        2       5        5
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -304,7 +305,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Mar 2025 - May 2025
+   1. Norm Brandinger                 Jun 2025 - Jun 2025
+   2. Razvan Crainea (@razvancrainea) Mar 2025 - May 2025
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -313,7 +315,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea).
+   Last edited by: Norm Brandinger, Razvan Crainea
+   (@razvancrainea).
 
    Documentation Copyrights:
 

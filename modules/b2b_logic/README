@@ -80,6 +80,7 @@ B2B_LOGIC
               1.7.2. $b2b_logic.entity(field)[idx]
               1.7.3. $b2b_logic.ctx(key)
               1.7.4. $b2b_logic.scenario(key)
+              1.7.5. $b2b_logic.peer(b2b_key)
 
    2. Developer Guide
 
@@ -147,6 +148,7 @@ B2B_LOGIC
    1.35. $b2b_logic.entity usage
    1.36. $b2b_logic.ctx usage
    1.37. $b2b_logic.scenario usage
+   1.38. $b2b_logic.peer usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -961,6 +963,9 @@ nsips.org
      * flag (optional) - used to specify that the callee must be
        bridged to the new destination. If not present the caller
        will be bridged. Possible values are '0' or '1'.
+       . If missing and the b2b_logic key is in the
+       callid;from-tag;to-tag form, the module determines the
+       entity based on the key used.
      * prov_media_uri (optional) - the uri of a media server able
        to play provisional media starting from the beginning of
        the bridging scenario to the end of it. It is optional. If
@@ -1121,6 +1126,19 @@ route[b2b_logic_request] {
 }
 ...
 
+1.7.5.  $b2b_logic.peer(b2b_key)
+
+   This is a read-only variable that returns the peer discussing
+   with the associated b2b_key, provided in the
+   callid;from-tag;to-tag format.
+
+   Example 1.38. $b2b_logic.peer usage
+...
+        $var(b2b_key) = $ci + ';' + $ft + ';' + $tt;
+        xlog("$var(b2b_key) is talking to $b2b_logic.peer($var(b2b_key))
+\n");
+...
+
 Chapter 2. Developer Guide
 
    The module provides an API that can be used from other OpenSIPS
@@ -1274,7 +1292,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 239 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 43 26 1209 310
+   2. Razvan Crainea (@razvancrainea) 48 30 1414 332
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 11 152 76
    4. Nick Altmann (@nikbyte) 14 10 346 36
    5. Carsten Bock 12 5 679 23
@@ -1307,8 +1325,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2025
-   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jan 2025
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jun 2025
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2025
    3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Norman Brandinger (@NormB)          May 2024 - Jun 2024
    5.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024

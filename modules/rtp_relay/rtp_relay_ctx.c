@@ -1316,8 +1316,6 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 		else if (ctx->dlg_callid.len)
 			info->callid = &ctx->dlg_callid;
 	}
-	if (!info->from_tag && ctx->from_tag.len)
-		info->from_tag = &ctx->from_tag;
 	if (!info->to_tag && ctx->to_tag.len)
 		info->to_tag = &ctx->to_tag;
 
@@ -1471,7 +1469,6 @@ static void rtp_relay_delete_ctx(struct rtp_relay_ctx *ctx,
 	info.callid = &ctx->callid;
 	if (!info.callid->len)
 		info.callid = &ctx->dlg_callid;
-	info.from_tag = &ctx->from_tag;
 	info.to_tag = &ctx->to_tag;
 	info.branch = RTP_RELAY_ALL_BRANCHES /* sess->index, but we need to remove everything */;
 	rtp_relay_delete(&info, ctx, sess, leg);
@@ -1657,9 +1654,9 @@ static void rtp_relay_fill_dlg(struct rtp_relay_ctx *ctx, str *dlg_callid,
 		LM_ERR("could not store dialog callid in context\n");
 	if (callid && !ctx->callid.len &&  shm_str_sync(&ctx->callid, callid) < 0)
 		LM_ERR("could not store callid in context\n");
-	if (from_tag && !ctx->from_tag.s && shm_str_sync(&ctx->from_tag, from_tag) < 0)
+	if (from_tag && from_tag->len && !ctx->from_tag.s && shm_str_sync(&ctx->from_tag, from_tag) < 0)
 		LM_ERR("could not store from tag in context\n");
-	if (to_tag && !ctx->to_tag.s && shm_str_sync(&ctx->to_tag, to_tag) < 0)
+	if (to_tag && to_tag->len && !ctx->to_tag.s && shm_str_sync(&ctx->to_tag, to_tag) < 0)
 		LM_ERR("could not store to tag in context\n");
 }
 
@@ -1731,7 +1728,6 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 			return -1;
 		}
 		/* reset old pointers */
-		RTP_RELAY_CTX_REF_UNSAFE(ctx, -1);
 		RTP_RELAY_PUT_TM_CTX(t, NULL);
 		RTP_RELAY_PUT_CTX(NULL);
 
@@ -1756,7 +1752,6 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 
 		if (rtp_relay_dlg_callbacks(dlg, ctx, to_tag) < 0) {
 			/* restore the state */
-			RTP_RELAY_CTX_REF_UNSAFE(ctx, 1);
 			RTP_RELAY_PUT_TM_CTX(t, ctx);
 			return -1;
 		}
@@ -1972,7 +1967,7 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 			/* handles the replies to the original INVITE */
 			if (rtp_relay_tmb.register_tmcb(msg, 0,
 					TMCB_RESPONSE_FWDED|TMCB_REQUEST_FWDED|TMCB_ON_FAILURE,
-					rtp_relay_ctx_initial_cb, ctx, 0)!=1) {
+					rtp_relay_ctx_initial_cb, ctx, rtp_relay_ctx_release)!=1) {
 				LM_ERR("failed to install TM reply callback\n");
 				return -1;
 			}
@@ -2136,7 +2131,8 @@ static struct rtp_async_param *rtp_relay_new_async_param(
 
 struct rtp_relay_tmp {
 	enum {
-		RTP_RELAY_TMP_FAIL,
+		RTP_RELAY_TMP_FAIL_OFFER,
+		RTP_RELAY_TMP_FAIL_ANSWER,
 		RTP_RELAY_TMP_OFFER,
 		RTP_RELAY_TMP_ANSWER,
 	} state;
@@ -2262,6 +2258,8 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 	int success = 0;
 	int ret;
 	str sret;
+	int sdp_leg, dst_leg;
+	str callid;
 
 	/* not interested in provisional replies */
 	if (statuscode < 200)
@@ -2272,6 +2270,7 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 		return -1;
 	}
 
+	callid = tmp->dlg->callid;
 	if (msg == NULL || msg == FAKED_REPLY) {
 		/* we only care about actual replies */
 		goto error;
@@ -2281,7 +2280,7 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 		case RTP_RELAY_TMP_OFFER:
 			pbody = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 			if (!pbody) {
-				LM_WARN("reply without SDP - dropping\n");
+				LM_WARN("%.*s: reply without SDP - dropping\n", callid.len, callid.s);
 				goto error;
 			}
 			/* answer caller's SDP tp get SDP for callee */
@@ -2296,54 +2295,86 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 			ret = rtp_relay_answer(&info, tmp->ctx, tmp->sess,
 					RTP_RELAY_CALLER, &body);
 			if (ret < 0) {
-				LM_ERR("cannot answer RTP relay for callee SDP\n");
+				LM_ERR("%.*s: cannot answer RTP relay for callee SDP\n", callid.len, callid.s);
 				goto error;
 			}
 
 			tmp->state = RTP_RELAY_TMP_ANSWER;
 			return rtp_relay_reinvite(tmp, callee_idx(tmp->dlg), &body, 1);
 
+		case RTP_RELAY_TMP_FAIL_OFFER:
+
+			if (statuscode >= 300) {
+				LM_ERR("%.*s: caller returned negative reply\n", callid.len, callid.s);
+				goto release;
+			}
+			body = tmp->dlg->legs[DLG_CALLER_LEG].in_sdp;
+			tmp->state = RTP_RELAY_TMP_ANSWER;
+			return rtp_relay_reinvite(tmp, callee_idx(tmp->dlg), &body, 0);
+
 		case RTP_RELAY_TMP_ANSWER:
 			if (statuscode >= 300) {
-				LM_ERR("callee returned negative reply\n");
+				LM_ERR("%.*s: callee returned negative reply\n", callid.len, callid.s);
 				goto error;
 			}
 			success = 1;
-			/* fallback */
-		case RTP_RELAY_TMP_FAIL:
-			/* nothing to do, just release with error! */
-			p = tmp->param;
-			ret = rtp_relay_release_tmp(tmp, success);
-			if (ret != 0) {
-				/* complete */
-				if (p->async) {
-					sret.s = retbuf;
-					memcpy(sret.s, "Sessions: ", 10);
-					sret.len = 10;
-					body.s = int2str(abs(ret), &body.len);
-					memcpy(sret.s + 10, body.s, body.len);
-					sret.len += body.len;
-					if (ret > 0)
-						resp = init_mi_result_string(sret.s, sret.len);
-					else
-						resp = init_mi_error_extra(400, MI_SSTR("Failed"), sret.s, sret.len);
-					p-> async->handler_f(resp, p->async, 1);
-					shm_free(p);
-				}
-			}
-			return (success?0:-1);
+			goto release;
+
+		case RTP_RELAY_TMP_FAIL_ANSWER:
+			goto release;
+
 		default:
 
-			LM_BUG("unknown tmp context state %d\n", tmp->state);
+			LM_BUG("%.*s: unknown tmp context state %d\n", callid.len, callid.s, tmp->state);
 			goto error;
 	}
 	return 0;
 error:
-	/* we presume that only caller was updated - send whatever was
-	 * last in the out buffer */
-	tmp->state = RTP_RELAY_TMP_FAIL;
-	body = tmp->dlg->legs[DLG_CALLER_LEG].in_sdp;
-	return rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body, 0);
+	switch(tmp->state) {
+		case RTP_RELAY_TMP_OFFER:
+			tmp->state = RTP_RELAY_TMP_FAIL_OFFER;
+			sdp_leg = callee_idx(tmp->dlg);
+			dst_leg = DLG_CALLER_LEG;
+			break;
+		case RTP_RELAY_TMP_ANSWER:
+			tmp->state = RTP_RELAY_TMP_FAIL_ANSWER;
+			sdp_leg = DLG_CALLER_LEG;
+			dst_leg = callee_idx(tmp->dlg);
+			break;
+		default:
+			tmp->state = RTP_RELAY_TMP_FAIL_ANSWER;
+			goto release;
+	}
+	body = tmp->dlg->legs[sdp_leg].in_sdp;
+	return rtp_relay_reinvite(tmp, dst_leg, &body, 0);
+release:
+	/* nothing to do, just release with error! */
+	if (success)
+		LM_DBG("%.*s: releasing context with success\n",
+				callid.len, callid.s);
+	else
+		LM_INFO("%.*s: releasing context with error %d\n",
+				callid.len, callid.s, tmp->state);
+	p = tmp->param;
+	ret = rtp_relay_release_tmp(tmp, success);
+	if (ret != 0) {
+		/* complete */
+		if (p->async) {
+			sret.s = retbuf;
+			memcpy(sret.s, "Sessions: ", 10);
+			sret.len = 10;
+			body.s = int2str(abs(ret), &body.len);
+			memcpy(sret.s + 10, body.s, body.len);
+			sret.len += body.len;
+			if (ret > 0)
+				resp = init_mi_result_string(sret.s, sret.len);
+			else
+				resp = init_mi_error_extra(400, MI_SSTR("Failed"), sret.s, sret.len);
+			p-> async->handler_f(resp, p->async, 1);
+			shm_free(p);
+		}
+	}
+	return (success?0:-1);
 }
 
 static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg,

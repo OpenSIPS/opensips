@@ -17,6 +17,8 @@ Event (based) Routing Module
               1.4.1. notify_on_event(event, filter, route,
                       timeout)
 
+              1.4.2. wait_for_event(event,filter,timeout)
+
         1.5. Exported Asynchronous Functions
 
               1.5.1. wait_for_event(event,filter,timeout)
@@ -51,8 +53,9 @@ Event (based) Routing Module
 
    1.1. notify_on_event() usage
    1.2. wait_for_event usage
-   1.3. Push Notification script
-   1.4. Call Pickup script
+   1.3. wait_for_event usage
+   1.4. Push Notification script
+   1.5. Call Pickup script
 
 Chapter 1. Admin Guide
 
@@ -173,6 +176,28 @@ route[reg_done] {
 ");
 }
 
+1.4.2.  wait_for_event(event,filter,timeout)
+
+   Exactly as the async wait_for_event() function, but
+   sync/blocking version. The script execution will block and wait
+   until the event is delivered or the timeout hits
+
+   The function return 1 upon success (an event was received), -1
+   in error case or -2 in timeout case (no event was received).
+
+   This function can be used from any type of route.
+
+   Example 1.2. wait_for_event usage
+...
+# block until the callee to register
+$avp(filter) = "aor="+$rU+"@"+$rd
+wait_for_event("E_UL_AOR_INSERT",$avp(filter), 40);
+if ($rc>0) {
+        xlog("user $avp(aor) is now registered\n");
+        lookup("location");
+        t_relay();
+}
+
 1.5. Exported Asynchronous Functions
 
 1.5.1.  wait_for_event(event,filter,timeout)
@@ -185,7 +210,7 @@ route[reg_done] {
    The meaning of the parameters is the same as for
    notify_on_event.
 
-   Example 1.2. wait_for_event usage
+   Example 1.3. wait_for_event usage
 ...
 # wait for callee to register
 $avp(filter) = "aor="+$rU+"@"+$rd
@@ -214,7 +239,7 @@ route[resume_call] {
    notification, we add the new contact as a new branch to the
    ongoing transaction (ringing) to user.
 
-   Example 1.3. Push Notification script
+   Example 1.4. Push Notification script
 ...
 route[route_to_user] {
 
@@ -273,7 +298,7 @@ route[fork_call]
    cancel the branches to Bob and inject the registered contacts
    for the user calling to pickup group (Charlie).
 
-   Example 1.4. Call Pickup script
+   Example 1.5. Call Pickup script
 ...
 route[handle_call]
     if ($rU=="33") {
@@ -376,10 +401,10 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 29 20 494 220
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 29 12 1801 52
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 32 13 1969 64
+   2. Liviu Chircu (@liviuchircu) 29 20 494 220
    3. Vlad Patrascu (@rvlad-patrascu) 9 5 75 148
-   4. Razvan Crainea (@razvancrainea) 6 4 9 5
+   4. Razvan Crainea (@razvancrainea) 7 5 18 11
    5. Fabian Gast (@fgast) 4 2 27 7
    6. Maksym Sobolyev (@sobomax) 4 2 5 6
    7. Vlad Paiu (@vladpaiu) 3 1 8 1
@@ -406,13 +431,13 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Sep 2017 - Nov 2024
-   2. Vlad Paiu (@vladpaiu)               Nov 2024 - Nov 2024
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - May 2023
-   4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2020
-   6. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7. Razvan Crainea (@razvancrainea)     Apr 2017 - Sep 2019
+   1. Razvan Crainea (@razvancrainea)     Apr 2017 - Jun 2025
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Jun 2025
+   3. Liviu Chircu (@liviuchircu)         Sep 2017 - Nov 2024
+   4. Vlad Paiu (@vladpaiu)               Nov 2024 - Nov 2024
+   5. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2020
+   7. Zero King (@l2dy)                   Mar 2020 - Mar 2020
    8. Fabian Gast (@fgast)                Nov 2018 - Dec 2018
    9. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
@@ -423,9 +448,10 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Zero King (@l2dy),
-   Vlad Patrascu (@rvlad-patrascu), Fabian Gast (@fgast), Peter
-   Lemenkov (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Zero King (@l2dy), Vlad Patrascu
+   (@rvlad-patrascu), Fabian Gast (@fgast), Peter Lemenkov
+   (@lemenkov).
 
    Documentation Copyrights:
 

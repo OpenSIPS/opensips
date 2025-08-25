@@ -145,6 +145,9 @@ struct sr_module{
 	/* modules which must be initialized before this module */
 	struct sr_module_dep *sr_deps_init;
 
+	/* modules which childs must be initialized before this module */
+	struct sr_module_dep *sr_deps_cinit;
+
 	/* modules which must be destroyed before this module */
 	struct sr_module_dep *sr_deps_destroy;
 

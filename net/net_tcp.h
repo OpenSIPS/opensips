@@ -77,6 +77,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 
 /* initializes an already defined TCP listener */
 int tcp_init_listener(struct socket_info *si);
+int tcp_bind_listener(struct socket_info *si);
 
 /* helper function to set all TCP related options to a socket */
 int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags socketflags, int sock_tos);

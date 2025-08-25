@@ -20,6 +20,7 @@ AAA_DIAMETER MODULE
               1.5.3. peer_identity (string)
               1.5.4. aaa_url (string)
               1.5.5. answer_timeout (integer)
+              1.5.6. max_json_log_size (integer)
 
         1.6. Exported Functions
 
@@ -61,10 +62,11 @@ AAA_DIAMETER MODULE
    1.4. Setting the aaa_url parameter
    1.5. Setting the aaa_url parameter
    1.6. Setting the answer_timeout parameter
-   1.7. dictionary.opensips extended syntax
-   1.8. dm_send_request usage
-   1.9. dm_send_answer() usage
-   1.10. dm_send_request asynchronous usage
+   1.7. Setting the max_json_log_size parameter
+   1.8. dictionary.opensips extended syntax
+   1.9. dm_send_request usage
+   1.10. dm_send_answer() usage
+   1.11. dm_send_request asynchronous usage
 
 Chapter 1. Admin Guide
 
@@ -208,6 +210,20 @@ xtra-avps-file:dictionary.opensips")
 modparam("aaa_diameter", "answer_timeout", 5000)
 
 
+1.5.6. max_json_log_size (integer)
+
+   When an error log is printed due to malformed JSON, this
+   parameter indicates how many characters from the JSON should be
+   printed at console. A higher value might overcrowd the logs,
+   but can be useful for troubleshooting.
+
+   Default value is 512 characters.
+
+   Example 1.7. Setting the max_json_log_size parameter
+
+modparam("aaa_diameter", "max_json_log_size", 4096)
+
+
 1.6. Exported Functions
 
 1.6.1.  dm_send_request(app_id, cmd_code, avps_json, [rpl_avps_pv])
@@ -239,7 +255,7 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 
    This function can be used from any route.
 
-   Example 1.7. dictionary.opensips extended syntax
+   Example 1.8. dictionary.opensips extended syntax
 
 # Example of defining custom Diameter AVPs, Application IDs,
 # Requests and Replies in the "dictionary.opensips" file
@@ -281,10 +297,8 @@ REQUEST 92001 My-Custom-Request
         Origin-Host | REQUIRED | 1
         Origin-Realm | REQUIRED | 1
         Destination-Realm | REQUIRED | 1
-        Transaction-Id | REQUIRED | 1
         Sip-From-Tag | REQUIRED | 1
         Sip-To-Tag | REQUIRED | 1
-        Acct-Session-Id | REQUIRED | 1
         Sip-Call-Duration | REQUIRED | 1
         Sip-Call-Setuptime | REQUIRED | 1
         Sip-Call-Created | REQUIRED | 1
@@ -299,12 +313,11 @@ ANSWER 92001 My-Custom-Answer
         Origin-Host | REQUIRED | 1
         Origin-Realm | REQUIRED | 1
         Destination-Realm | REQUIRED | 1
-        Transaction-Id | REQUIRED | 1
         Result-Code | REQUIRED | 1
 }
 
 
-   Example 1.8. dm_send_request usage
+   Example 1.9. dm_send_request usage
 
 # Building an sending an My-Custom-Request (92001) for the
 # My Diameter Application (42)
@@ -314,13 +327,13 @@ $var(payload) = "[
         { \"Destination-Realm\": \"diameter.test\" },
         { \"Sip-From-Tag\": \"dc93-4fba-91db\" },
         { \"Sip-To-Tag\": \"ae12-47d6-816a\" },
-        { \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+        { \"Session-Id\": \"a59c-dff0d9efd167\" },
         { \"Sip-Call-Duration\": 6 },
         { \"Sip-Call-Setuptime\": 1 },
         { \"Sip-Call-Created\": 1652372541 },
         { \"Sip-Call-MSDuration\": 5850 },
         { \"out_gw\": \"GW-774\" },
-        { \"cost\": \"10.84\" },
+        { \"call_cost\": 10 },
         { \"Cost-Information\": [
                 {\"Unit-Value\": [{\"Value-Digits\": 1000}]},
                 {\"Currency-Code\": 35}
@@ -357,7 +370,7 @@ $json(avps) := $var(rpl_avps);
 
    This function can only be used from an EVENT_ROUTE.
 
-   Example 1.9. dm_send_answer() usage
+   Example 1.10. dm_send_answer() usage
 
 event_route [E_DM_REQUEST] {
   xlog("Req: $param(sess_id) / $param(app_id) / $param(cmd_code)\n");
@@ -393,7 +406,7 @@ event_route [E_DM_REQUEST] {
 
    Uses the same parameters and return codes as dm_send_request().
 
-   Example 1.10. dm_send_request asynchronous usage
+   Example 1.11. dm_send_request asynchronous usage
 
 # Building an sending an My-Custom-Request (92001) for the
 # My Diameter Application (42)
@@ -403,13 +416,13 @@ $var(payload) = "[
         { \"Destination-Realm\": \"diameter.test\" },
         { \"Sip-From-Tag\": \"dc93-4fba-91db\" },
         { \"Sip-To-Tag\": \"ae12-47d6-816a\" },
-        { \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+        { \"Session-Id\": \"a59c-dff0d9efd167\" },
         { \"Sip-Call-Duration\": 6 },
         { \"Sip-Call-Setuptime\": 1 },
         { \"Sip-Call-Created\": 1652372541 },
         { \"Sip-Call-MSDuration\": 5850 },
         { \"out_gw\": \"GW-774\" },
-        { \"cost\": \"10.84\" },
+        { \"call_cost\": 10 },
         { \"Cost-Information\": [
                 {\"Unit-Value\": [{\"Value-Digits\": 1000}]},
                 {\"Currency-Code\": 35}
@@ -460,11 +473,13 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu)       114      37      6850     1105
-   2. Razvan Crainea (@razvancrainea)    35      18      1361     248
+   1. Liviu Chircu (@liviuchircu)       115      38      6851     1106
+   2. Razvan Crainea (@razvancrainea)    36      19      1400     267
    3. Alexandra Titoc                    6        4       11       2
-   4. Maksym Sobolyev (@sobomax)         3        1       5        5
-   5. Peter Lemenkov (@lemenkov)         3        1       1        1
+   4. Larry Laffer                       3        1       6        5
+   5. Maksym Sobolyev (@sobomax)         3        1       5        5
+   6. Darius Stefan                      3        1       4        7
+   7. Peter Lemenkov (@lemenkov)         3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -486,11 +501,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Alexandra Titoc                 Sep 2024 - Sep 2024
-   2. Peter Lemenkov (@lemenkov)      Jul 2024 - Jul 2024
-   3. Razvan Crainea (@razvancrainea) May 2023 - May 2024
-   4. Liviu Chircu (@liviuchircu)     May 2021 - Mar 2024
-   5. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
+   1. Liviu Chircu (@liviuchircu)     May 2021 - Jul 2025
+   2. Razvan Crainea (@razvancrainea) May 2023 - Jul 2025
+   3. Darius Stefan                   Jul 2025 - Jul 2025
+   4. Larry Laffer                    Jul 2025 - Jul 2025
+   5. Alexandra Titoc                 Sep 2024 - Sep 2024
+   6. Peter Lemenkov (@lemenkov)      Jul 2024 - Jul 2024
+   7. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -499,8 +516,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Darius Stefan,
+   Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
 

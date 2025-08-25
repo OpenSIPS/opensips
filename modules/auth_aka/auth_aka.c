@@ -413,7 +413,7 @@ static int fixup_check_var(void** param)
 
 static int aka_build_resync(str *nonce, str* auts, str *resync)
 {
-	unsigned char auth_buf[AKA_AUTHORIZATION_LEN];
+	static unsigned char auth_buf[AKA_AUTHORIZATION_LEN];
 	int len;
 
 	/* check what we have */

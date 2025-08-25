@@ -137,6 +137,7 @@ static int proto_msrp_init(struct proto_info *pi)
 	pi->name				= "msrp";
 
 	pi->tran.init_listener	= proto_msrp_init_listener;
+	pi->tran.bind_listener	= tcp_bind_listener;
 	pi->tran.send			= proto_msrp_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
@@ -154,6 +155,7 @@ static int proto_msrps_init(struct proto_info *pi)
 	pi->name				= "msrps";
 
 	pi->tran.init_listener	= proto_msrp_init_listener;
+	pi->tran.bind_listener	= tcp_bind_listener;
 	pi->tran.send			= proto_msrp_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 

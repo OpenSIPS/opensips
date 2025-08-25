@@ -223,6 +223,9 @@ Chapter 1. Admin Guide
    failover if the node returns one of the following errors:
      * Parallel session limit reached
      * Ran out of ports
+     * CPU usage limit exceeded
+     * Load limit exceeded
+     * Bandwidth limit exceeded
 
    You can use the extra_failover_error parameter to extend the
    above list.
@@ -1445,7 +1448,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 243 135 6446 3157
+   1. Razvan Crainea (@razvancrainea) 248 140 6467 3160
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173
@@ -1460,7 +1463,7 @@ Chapter 3. Contributors
    Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas), Eddie Fiorentine,
    Zero King (@l2dy), Norm Brandinger, Rob Gagnon (@rgagnon24),
    Flavio E. Goncalves, hatee, Dan Pascu (@danpascu), Oliver
-   Severin Mulelid-Tynes (@olivermt).
+   Severin Mulelid-Tynes (@olivermt), Steven Ayre.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1482,23 +1485,23 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Norm Brandinger                 May 2025 - May 2025
-   2.  Norman Brandinger (@NormB)      Jun 2024 - Feb 2025
-   3.  Razvan Crainea (@razvancrainea) Jun 2014 - Feb 2025
-   4.  Peter Lemenkov (@lemenkov)      Jun 2018 - Feb 2025
-   5.  Vlad Paiu (@vladpaiu)           Jan 2025 - Jan 2025
-   6.  hatee                           Dec 2024 - Dec 2024
-   7.  Eddie Fiorentine                Nov 2024 - Nov 2024
-   8.  Maksym Sobolyev (@sobomax)      Jan 2021 - Nov 2023
-   9.  Liviu Chircu (@liviuchircu)     Jul 2014 - May 2023
-   10. John Burke (@john08burke)       Jun 2019 - Apr 2022
+   1.  Razvan Crainea (@razvancrainea) Jun 2014 - Aug 2025
+   2.  Steven Ayre                     Jul 2025 - Jul 2025
+   3.  Norm Brandinger                 May 2025 - May 2025
+   4.  Norman Brandinger (@NormB)      Jun 2024 - Feb 2025
+   5.  Peter Lemenkov (@lemenkov)      Jun 2018 - Feb 2025
+   6.  Vlad Paiu (@vladpaiu)           Jan 2025 - Jan 2025
+   7.  hatee                           Dec 2024 - Dec 2024
+   8.  Eddie Fiorentine                Nov 2024 - Nov 2024
+   9.  Maksym Sobolyev (@sobomax)      Jan 2021 - Nov 2023
+   10. Liviu Chircu (@liviuchircu)     Jul 2014 - May 2023
 
-   All remaining contributors: Bogdan-Andrei Iancu
-   (@bogdan-iancu), Nick Altmann (@nikbyte), Flavio E. Goncalves,
-   Zero King (@l2dy), Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu), Dan Pascu (@danpascu), Oliver Severin
-   Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24), Eric Tamme
-   (@etamme), Richard Fuchs.
+   All remaining contributors: John Burke (@john08burke),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Nick Altmann (@nikbyte),
+   Flavio E. Goncalves, Zero King (@l2dy), Ovidiu Sas
+   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Dan Pascu
+   (@danpascu), Oliver Severin Mulelid-Tynes (@olivermt), Rob
+   Gagnon (@rgagnon24), Eric Tamme (@etamme), Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1507,12 +1510,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Norm Brandinger, Razvan Crainea
-   (@razvancrainea), Eddie Fiorentine, Norman Brandinger (@NormB),
-   Liviu Chircu (@liviuchircu), John Burke (@john08burke), Nick
-   Altmann (@nikbyte), Flavio E. Goncalves, Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Richard Fuchs.
+   Last edited by: Razvan Crainea (@razvancrainea), Norm
+   Brandinger, Eddie Fiorentine, Norman Brandinger (@NormB), Liviu
+   Chircu (@liviuchircu), John Burke (@john08burke), Nick Altmann
+   (@nikbyte), Flavio E. Goncalves, Peter Lemenkov (@lemenkov),
+   Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Richard Fuchs.
 
    Documentation Copyrights:
 

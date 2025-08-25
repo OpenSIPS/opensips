@@ -1847,6 +1847,8 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 			LM_DBG("Reset transaction- send final reply [%p], uas_tran=0\n", dlg);
 			if(sip_method == METHOD_UPDATE)
 				dlg->update_tran = NULL;
+			else if (sip_method == METHOD_PRACK)
+				dlg->prack_tran = NULL;
 			else
 				dlg->uas_tran = NULL;
 		}

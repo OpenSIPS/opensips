@@ -176,6 +176,39 @@ route[reg_done] {
 		</example>
 	</section>
 
+	<section id="func_wait_for_event" xreflabel="wait_for_event()">
+		<title>
+		<function moreinfo="none">wait_for_event(event,filter,timeout)</function>
+		</title>
+		<para>
+		Exactly as the async <xref linkend="afunc_wait_for_event"/> function,
+		but sync/blocking version. The script execution will block and wait
+		until the event is delivered or the timeout hits 
+		</para>
+		<para>
+		The function return 1 upon success (an event was received), -1 in error
+		case or -2 in timeout case (no event was received).
+		</para>
+		<para>
+		This function can be used from any type of route.
+		</para>
+		<example>
+		<title><function>wait_for_event</function> usage</title>
+		<programlisting format="linespecific">
+...
+# block until the callee to register
+$avp(filter) = "aor="+$rU+"@"+$rd
+wait_for_event("E_UL_AOR_INSERT",$avp(filter), 40);
+if ($rc>0) {
+	xlog("user $avp(aor) is now registered\n");
+	lookup("location");
+	t_relay();
+}
+</programlisting>
+		</example>
+	</section>
+
+
 	</section>
 
 

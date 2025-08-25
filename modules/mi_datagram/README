@@ -27,6 +27,7 @@ mi_datagram Module
               1.4.7. trace_destination (string)
               1.4.8. trace_bwlist (string)
               1.4.9. pretty_printing (int)
+              1.4.10. socket_buf_size (integer)
 
         1.5. Exported Functions
         1.6. Example
@@ -59,7 +60,8 @@ mi_datagram Module
    1.7. Set trace_destination parameter
    1.8. Set trace_destination parameter
    1.9. Set pretty_printing parameter
-   1.10. DATAGRAM request
+   1.10. Set socket_buf_size parameter
+   1.11. DATAGRAM request
 
 Chapter 1. Admin Guide
 
@@ -230,6 +232,17 @@ modparam("mi_datagram", "trace_bwlist", "w: sip_trace")
 modparam("mi_fifo", "pretty_printing", 1)
 ...
 
+1.4.10. socket_buf_size (integer)
+
+   Maximum buffer size used when receiving and sending.
+
+   Default value is 65457.
+
+   Example 1.10. Set socket_buf_size parameter
+                ...
+                modparam("mi_datagram", "socket_buf_size", 131072)
+                ...
+
 1.5. Exported Functions
 
    No function exported to be used from configuration file.
@@ -239,7 +252,7 @@ modparam("mi_fifo", "pretty_printing", 1)
    This is an example showing the DATAGRAM format for the
    “get_statistics dialog: tm:” MI commad: request.
 
-   Example 1.10. DATAGRAM request
+   Example 1.11. DATAGRAM request
 
 {"jsonrpc":"2.0","method":"get_statistics","id":"1065","params":[["dialo
 g:","tm:"]]}
@@ -304,16 +317,17 @@ Chapter 3. Contributors
    2. Ancuta Onofrei 28 2 2423 252
    3. Vlad Patrascu (@rvlad-patrascu) 22 2 189 1049
    4. Liviu Chircu (@liviuchircu) 14 11 31 67
-   5. Razvan Crainea (@razvancrainea) 12 10 50 34
+   5. Razvan Crainea (@razvancrainea) 13 11 54 38
    6. Daniel-Constantin Mierla (@miconda) 9 7 18 16
    7. Ionut Ionita (@ionutrazvanionita) 8 4 252 25
    8. Henning Westerholt (@henningw) 5 3 9 11
    9. Maksym Sobolyev (@sobomax) 4 2 1 2
-   10. Klaus Darilion 3 1 4 4
+   10. Bence Szigeti 3 1 39 10
 
-   All remaining contributors: Walter Doekes (@wdoekes), Julián
-   Moreno Patiño, Konstantin Bokarius, Dusan Klinec (@ph4r05),
-   Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
+   All remaining contributors: Klaus Darilion, Walter Doekes
+   (@wdoekes), Julián Moreno Patiño, Konstantin Bokarius, Dusan
+   Klinec (@ph4r05), Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -335,20 +349,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2007 - Apr 2021
-   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   10. Walter Doekes (@wdoekes)            May 2014 - May 2014
+   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Aug 2025
+   2.  Bence Szigeti                       Aug 2025 - Aug 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2007 - Apr 2021
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Klaus Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Ancuta Onofrei.
+   All remaining contributors: Walter Doekes (@wdoekes), Henning
+   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Ancuta Onofrei.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -357,12 +372,13 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut Ionita
-   (@ionutrazvanionita), Julián Moreno Patiño, Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Ancuta Onofrei.
+   Last edited by: Bence Szigeti, Liviu Chircu (@liviuchircu),
+   Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
+   Ionut Ionita (@ionutrazvanionita), Julián Moreno Patiño,
+   Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
+   (@razvancrainea), Klaus Darilion, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Ancuta
+   Onofrei.
 
    Documentation Copyrights:
 

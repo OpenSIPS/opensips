@@ -233,23 +233,17 @@ modparam("proto_ipsec", "default_server_port", 6100)
 
    Multiple algorithms pairs can be specified separated by comma.
 
-   Currently supported algorithms are: <itemizedList> <listitem>
-
-   Authentication algorithms: <itemizedList>
-   <listitem>hmac-md5-96</listitem> - deprecated by TS 33.203 V13
-   <listitem>hmac-sha-1-96</listitem> - not recomended by TS
-   33.203 V17 <listitem>aes-gmac</listitem>
-   <listitem>null</listitem> - must only be used with aes-gcm
-   encryption </itemizedList>
-   </listitem> <listitem>
-
-   Encryption algorithms: <itemizedList>
-   <listitem>des-ede3-cbc</listitem> - not recommended
-   <listitem>aes-cbc</listitem> - not recomended by TS 33.203 V17
-   <listitem>aes-gcm</listitem> <listitem>null</listitem> - no
-   encryption </itemizedList>
-   </listitem>
-   </itemizedList>
+   Currently supported algorithms are:
+     * Authentication algorithms:
+          + hmac-md5-96
+          + hmac-sha-1-96
+          + aes-gmac
+          + null
+     * Encryption algorithms:
+          + des-ede3-cbc
+          + aes-cbc
+          + aes-gcm
+          + null
 
    Default value is none - this means that all algorithms can be
    used.
@@ -267,14 +261,9 @@ ac=aes-gcm")
    Indicates whether we should ignore deprecated algorithms, as
    defined in TS 33.203 (3G Security: Access Security for IP-based
    Services). At the moment, this disables the following
-   algorithms: <itemizedList> <listitem>
-
-   hmac-md5-96 and hmac-sha-1-96 authentication algorithms
-   </listitem> <listitem>
-
-   des-ede3-cbc and aes-cbc encryption algorithms
-   </listitem>
-   </itemizedList>
+   algorithms:
+     * hmac-md5-96 and hmac-sha-1-96 authentication algorithms
+     * des-ede3-cbc and aes-cbc encryption algorithms
 
    Default value is false - all algorihms can be used.
 
@@ -383,7 +372,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    62      17      4491     373
+   1. Razvan Crainea (@razvancrainea)    64      19      4509     383
    2. Liviu Chircu (@liviuchircu)        4        2       23       15
    3. Alexandra Titoc                    3        1       1        1
 
@@ -407,7 +396,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Apr 2024 - Apr 2025
+   1. Razvan Crainea (@razvancrainea) Apr 2024 - Jul 2025
    2. Alexandra Titoc                 Sep 2024 - Sep 2024
    3. Liviu Chircu (@liviuchircu)     May 2024 - May 2024
 

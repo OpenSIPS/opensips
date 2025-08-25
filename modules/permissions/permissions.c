@@ -82,7 +82,7 @@ static int fix_part(void** param);
 
 static int allow_routing(struct sip_msg* msg, int idx);
 static int allow_register(struct sip_msg* msg, int idx);
-static int allow_uri(struct sip_msg* msg, int idx, pv_spec_t *sp);
+static int allow_uri(struct sip_msg* msg, int idx, str *sp);
 
 static int mod_init(void);
 static void mod_exit(void);
@@ -772,13 +772,12 @@ static int allow_register(struct sip_msg* msg, int idx)
  * -1:	deny
  * 1:	allow
  */
-static int allow_uri(struct sip_msg* msg, int idx, pv_spec_t *sp)
+static int allow_uri(struct sip_msg* msg, int idx, str *uri_p)
 {
 	struct hdr_field *from;
 	int len;
 	static char from_str[EXPRESSION_LENGTH+1];
 	static char uri_str[EXPRESSION_LENGTH+1];
-	pv_value_t pv_val;
 
 	/* turn off control, allow any uri */
 	if ((!allow[idx].rules) && (!deny[idx].rules)) {
@@ -786,22 +785,11 @@ static int allow_uri(struct sip_msg* msg, int idx, pv_spec_t *sp)
 		return 1;
 	}
 
-	/* looking for FROM HF */
-        if ((!msg->from) && (parse_headers(msg, HDR_FROM_F, 0) == -1)) {
-                LM_ERR("failed to parse message\n");
-                return -1;
-        }
-
-	if (!msg->from) {
-		LM_ERR("FROM header field not found\n");
+	/* we must call parse_from_header explicitly */
+	if (parse_from_header(msg) < 0) {
+		LM_ERR("failed to parse From body\n");
 		return -1;
 	}
-
-	/* we must call parse_from_header explicitly */
-        if ((!(msg->from)->parsed) && (parse_from_header(msg) < 0)) {
-                LM_ERR("failed to parse From body\n");
-                return -1;
-        }
 
 	from = msg->from;
 	len = ((struct to_body*)from->parsed)->uri.len;
@@ -812,26 +800,16 @@ static int allow_uri(struct sip_msg* msg, int idx, pv_spec_t *sp)
 	strncpy(from_str, ((struct to_body*)from->parsed)->uri.s, len);
 	from_str[len] = '\0';
 
-	if (sp && (pv_get_spec_value(msg, sp, &pv_val) == 0)) {
-	    if (pv_val.flags & PV_VAL_STR) {
-		if (pv_val.rs.len > EXPRESSION_LENGTH) {
-		    LM_ERR("pseudo variable value is too "
-					"long: %d chars\n", pv_val.rs.len);
-		    return -1;
-		}
-		strncpy(uri_str, pv_val.rs.s, pv_val.rs.len);
-		uri_str[pv_val.rs.len] = '\0';
-	    } else {
-		LM_ERR("pseudo variable value is not string\n");
+	if (uri_p->len > EXPRESSION_LENGTH) {
+		LM_ERR("URI value is too "
+			"long: %d chars\n", uri_p->len);
 		return -1;
-	    }
-	} else {
-	    LM_ERR("cannot get pseudo variable value\n");
-	    return -1;
 	}
+	strncpy(uri_str, uri_p->s, uri_p->len);
+	uri_str[uri_p->len] = '\0';
 
-    LM_DBG("looking for From: %s URI: %s\n", from_str, uri_str);
-	     /* rule exists in allow file */
+	LM_DBG("looking for From: %s URI: %s\n", from_str, uri_str);
+	/* rule exists in allow file */
 	if (search_rule(allow[idx].rules, from_str, uri_str)) {
     		LM_DBG("allow rule found => URI is allowed\n");
 		return 1;

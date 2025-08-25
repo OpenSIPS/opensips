@@ -297,8 +297,14 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 			</para>
 			<para>
 				<emphasis>Note</emphasis> that the call recording is not
-				started right away, but only when the call is actually
-				answered - 200 OK is sent by the callee.
+				started right away, but only when the callee provides an
+				SDP as well (usually in a 200 OK, or possibly a 183 Ringing).
+			</para>
+			<para>
+				<emphasis>Note</emphasis> if you only want to start recording
+				when the call is established (200 OK is received), then you
+				should call this function in the onreply route processing that
+				200 OK.
 			</para>
 			<para>
 				Parameters:

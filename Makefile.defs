@@ -64,8 +64,8 @@ TOP_SRCDIR?=    $(shell realpath `dirname $(_makefile_defs_path)`)
 MAIN_NAME=opensips
 
 #version number
-VERSION_MAJOR = 3
-VERSION_MINOR = 7
+VERSION_MAJOR = 4
+VERSION_MINOR = 0
 VERSION_SUBMINOR = 0
 VERSION_BUILD = dev
 

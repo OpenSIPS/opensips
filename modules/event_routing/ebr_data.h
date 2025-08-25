@@ -24,6 +24,7 @@
 #define _MODULE_EBR_H
 
 #include "../../locking.h"
+#include "../../lib/cond.h"
 #include "../tm/t_lookup.h"
 
 #define EVI_ROUTING_NAME "routing"
@@ -42,8 +43,14 @@ struct _ebr_event;
 
 #define EBR_SUBS_TYPE_WAIT  (1<<0)
 #define EBR_SUBS_TYPE_NOTY  (1<<1)
-#define EBR_DATA_TYPE_ROUT  (1<<2)
-#define EBR_DATA_TYPE_FUNC  (1<<3)
+#define EBR_SUBS_TYPE_SWAIT (1<<2)
+#define EBR_DATA_TYPE_ROUT  (1<<3)
+#define EBR_DATA_TYPE_FUNC  (1<<4)
+
+#define EBR_SUBS_TYPE(_s) \
+	( ((_s)->flags&EBR_SUBS_TYPE_WAIT)?"WAIT": \
+		(((_s)->flags&EBR_SUBS_TYPE_SWAIT)?"SWAIT":"NOTIFY") )
+
 
 typedef struct usr_avp *(*ebr_pack_params_cb) (evi_params_t *params);
 
@@ -55,8 +62,8 @@ typedef struct _ebr_subscription {
 	ebr_pack_params_cb pack_params;
 	void *data;
 	int expire;
-	/* Transaction ID data */
-	struct tm_id tm ;
+	/* Transaction ID data , used for NOTIFY */
+	struct tm_id tm;
 	struct _ebr_subscription *next;
 } ebr_subscription;
 
@@ -69,6 +76,13 @@ typedef struct _ebr_event {
 	ebr_subscription *subs;
 	struct _ebr_event *next;
 } ebr_event;
+
+
+struct swait_pack {
+	gen_cond_t cond;
+	struct usr_avp *ret_avps;
+};
+
 
 ebr_event * search_ebr_event( const str *name );
 

@@ -22,6 +22,7 @@
 #dialplan= Implements generic string translations based on matching and replacement rules | PCRE development library, typically libpcre-dev
 #emergency= Provides emergency call treatment for OpenSIPS | CURL dev library - typically libcurl4-openssl-dev
 #event_rabbitmq= Provides the implementation of a RabbitMQ client for the Event Interface | RabbitMQ development library, librabbitmq-dev
+#event_sqs= Provides the implementation of a Amazon SQS client for the Event Interface | AWS SDK C++, aws-sdk-cpp
 #event_kafka= Provides the implementation of an Apache Kafka producer for the Event Interface | Kafka development library, librdkafka-dev
 #h350= Enables access to SIP account data stored in an LDAP [RFC4510] directory containing H.350 commObjects | OpenLDAP library & development files, typically libldap and libldap-dev
 #regex= Offers matching operations against regular expressions using the powerful PCRE library. | Development library for PCRE, typically libpcre-dev
@@ -59,6 +60,7 @@
 #python= Easily implement your own OpenSIPS extensions in Python | Shared Python runtime library, libpython
 #rest_client= Simple HTTP client | CURL library - libcurl
 #rls= Resource List Server implementation following the specification in RFC 4662 and RFC 4826 | parsing/building XML library, typically libxml-dev
+#rtp.io= Implements internal RTP proxy based on library of RTPProxy >=3.1 | librtpproxy
 #sngtc= Voice Transcoding using the D-series Sangoma transcoding cards | libsngtc_node
 #siprec= SIP Call Recording to an external/passive recorder | uuid-dev
 #snmpstats= Provides an SNMP management interface to OpenSIPS | NetSNMP v5.3
@@ -71,18 +73,8 @@
 #xmpp= Gateway between OpenSIPS and a jabber server. It enables the exchange of IMs between SIP clients and XMPP(jabber) clients. | parsing/building XML files, typically libexpat1-devel
 #uuid= UUID generator | uuid-dev
 
-exclude_modules?= aaa_diameter aaa_radius auth_jwt b2b_logic_xml \
- cachedb_cassandra cachedb_couchbase cachedb_dynamodb cachedb_memcached \
- cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c \
- db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite \
- db_unixodbc dialplan emergency event_rabbitmq event_kafka event_sqs h350 \
- httpd http2d identity jabber json launch_darkly ldap lua mi_xmlrpc_ng \
- mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi \
- presence_reginfo presence_xml presence_dfks proto_ipsec proto_sctp proto_tls \
- proto_wss pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp \
- python regex rabbitmq_consumer rest_client rls siprec sngtc snmpstats \
- stir_shaken tls_mgm tls_openssl tls_wolfssl uuid xcap xcap_client xml \
- xmpp rtp.io
+# the below definition must be one single line (no wrapping) to make the "menuconfig" tool happy
+exclude_modules?= aaa_diameter aaa_radius auth_jwt b2b_logic_xml cachedb_cassandra cachedb_couchbase cachedb_dynamodb cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq event_kafka event_sqs h350 httpd http2d identity jabber json launch_darkly ldap lua mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_reginfo presence_xml presence_dfks proto_ipsec proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp python regex rabbitmq_consumer rest_client rls rtp.io siprec sngtc snmpstats stir_shaken tls_mgm tls_openssl tls_wolfssl uuid xcap xcap_client xml xmpp
 
 include_modules?=
 

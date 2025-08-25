@@ -106,6 +106,8 @@ str* b2bl_init_extern(struct b2b_params *init_params,
 	b2bl_init_params_t *scen_params, str *e1_id, str *e2_id,
 	b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask);
 
+static int pv_get_b2bl_peer(struct sip_msg *msg,  pv_param_t *param, pv_value_t *tv);
+static int pv_parse_b2bl_peer(pv_spec_p sp, const str *in);
 int pv_get_b2bl_key(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_scenario(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_parse_entity_name(pv_spec_p sp, const str *in);
@@ -311,6 +313,8 @@ static const pv_export_t mod_items[] = {
 		0, pv_parse_entity_name, pv_parse_entity_index, 0, 0},
 	{str_const_init("b2b_logic.ctx"), 1000, pv_get_ctx,
 		pv_set_ctx, pv_parse_ctx_name, 0, 0, 0},
+	{str_const_init("b2b_logic.peer"), 1000, pv_get_b2bl_peer,
+		NULL, pv_parse_b2bl_peer, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -1304,7 +1308,7 @@ static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
 	if (get_mi_string_param(params, "key", &key.s, &key.len) < 0)
 		return init_mi_param_error();
 
-	if (b2bl_get_tuple_key(&key, &hash_index, &local_index) < 0)
+	if (b2bl_get_tuple_key(&key, &hash_index, &local_index, NULL) < 0)
 		return init_mi_error(404, MI_SSTR("B2B session not found"));
 
 	B2BL_LOCK_GET(hash_index);
@@ -1349,7 +1353,7 @@ static mi_response_t *mi_b2b_bridge_f(const mi_params_t *params,
 	if (get_mi_int_param(params, "flag", &flag) < 0)
 		return init_mi_param_error();
 
-	return mi_b2b_bridge(params, flag, NULL);
+	return mi_b2b_bridge(params, &flag, NULL);
 }
 
 static mi_response_t *mi_b2b_bridge_pmu(const mi_params_t *params,
@@ -1377,7 +1381,7 @@ static mi_response_t *mi_b2b_bridge_4(const mi_params_t *params,
 		&prov_media.s, &prov_media.len) < 0)
 		return init_mi_param_error();
 
-	return mi_b2b_bridge(params, flag, &prov_media);
+	return mi_b2b_bridge(params, &flag, &prov_media);
 }
 
 static inline int internal_mi_print_b2bl_entity_id(mi_item_t *item, b2bl_entity_id_t *c)
@@ -1573,7 +1577,7 @@ static b2bl_tuple_t *ctx_search_tuple(struct b2b_context *ctx, int *locked)
 	if (!tuple) {
 		LM_ERR("Tuple [%u, %u] not found\n", ctx->hash_index, ctx->local_index);
 		B2BL_LOCK_RELEASE_AUX(ctx->hash_index);
-		locked = 0;
+		*locked = 0;
 		return NULL;
 	}
 
@@ -2373,4 +2377,125 @@ int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param,
 	B2BL_LOCK_RELEASE(hash_index);
 
 	return 0;
+}
+
+static int pv_parse_b2bl_peer(pv_spec_p sp, const str *in)
+{
+	char *p;
+	char *s;
+	pv_spec_p nsp = 0;
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+	p = in->s;
+	if(*p==PV_MARKER)
+	{
+		nsp = (pv_spec_p)pkg_malloc(sizeof(pv_spec_t));
+		if(nsp==NULL)
+		{
+			LM_ERR("no more memory\n");
+			return -1;
+		}
+		s = pv_parse_spec(in, nsp);
+		if(s==NULL)
+		{
+			LM_ERR("invalid name [%.*s]\n", in->len, in->s);
+			pv_spec_free(nsp);
+			return -1;
+		}
+		sp->pvp.pvn.type = PV_NAME_PVAR;
+		sp->pvp.pvn.u.dname = (void*)nsp;
+		return 0;
+	}
+	/* remember it was a string, so we can retrieve it later */
+	sp->pvp.pvn.u.isname.name.s = *in;
+	sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
+	return 0;
+
+}
+
+static int pv_get_b2bl_peer(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	#define B2BL_PEER_BUF_SIZE 2048
+	int ret;
+	char _buf[B2BL_PEER_BUF_SIZE], *p = _buf;
+	pv_value_t tv;
+	b2bl_tuple_t* tuple;
+	unsigned int hash_index, local_index;
+	b2bl_entity_id_t *entity;
+	int entity_no;
+	str entity_str;
+
+	if(msg==NULL || res==NULL || param==NULL)
+		return -1;
+
+	if(param->pvn.type == PV_NAME_PVAR)
+	{
+		if(pv_get_spec_name(msg, param, &tv)!=0 || (!(tv.flags&PV_VAL_STR)))
+		{
+			LM_ERR("invalid name\n");
+			return -1;
+		}
+	} else {
+		tv.rs = param->pvn.u.isname.name.s;
+	}
+	ret = b2bl_get_tuple_key(&tv.rs, &hash_index, &local_index, &entity_str);
+	if(ret < 0)
+	{
+		if (ret == -1)
+			LM_ERR("Failed to parse key or find an entity [%.*s]\n",
+					tv.rs.len, tv.rs.s);
+		else
+			LM_ERR("Could not find entity [%.*s]\n",
+					tv.rs.len, tv.rs.s);
+		return -1;
+	}
+	B2BL_LOCK_GET(hash_index);
+
+	ret = -1;
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("No tuple found for %.*s\n", tv.rs.len, tv.rs.s);
+		goto end;
+	}
+	entity_no = b2bl_search_other_entity(tuple, &entity_str);
+	if (entity_no < 0) {
+		LM_ERR("Can not determine entity [%.*s]\n",
+			entity_str.len, entity_str.s);
+		goto end;
+	}
+	entity = tuple->bridge_entities[entity_no];
+	if (!entity) {
+		LM_ERR("Can not find entity [%.*s]\n",
+			tv.rs.len, tv.rs.s);
+		goto end;
+	}
+	if (!entity->dlginfo) {
+		LM_ERR("no dialog for entity [%.*s]\n",
+			tv.rs.len, tv.rs.s);
+		goto end;
+	}
+	if (entity->dlginfo->callid.len + entity->dlginfo->fromtag.len +
+			entity->dlginfo->totag.len + 2 /* two ';' */ >= B2BL_PEER_BUF_SIZE) {
+		LM_ERR("buffer too small (%d) for dialog info entity[%.*s]\n",
+				B2BL_PEER_BUF_SIZE, tv.rs.len, tv.rs.s);
+		goto end;
+	}
+	memcpy(p, entity->dlginfo->callid.s, entity->dlginfo->callid.len);
+	p += entity->dlginfo->callid.len;
+	*p++ = ';';
+	memcpy(p, entity->dlginfo->fromtag.s, entity->dlginfo->fromtag.len);
+	p += entity->dlginfo->fromtag.len;
+	*p++ = ';';
+	memcpy(p, entity->dlginfo->totag.s, entity->dlginfo->totag.len);
+	p += entity->dlginfo->totag.len;
+	#undef B2BL_PEER_BUF_SIZE
+	res->flags = PV_VAL_STR;
+	res->rs.s = _buf;
+	res->rs.len = p - _buf;
+	ret = 0;
+end:
+	B2BL_LOCK_RELEASE(hash_index);
+	return (ret < 0?pv_get_null(msg, param, res):ret);
 }

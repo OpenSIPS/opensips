@@ -219,7 +219,7 @@ modparam("sockets_mgm", "socket_column", "sock")
 		<title>Set <quote>advertised_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("advertiseds_mgm", "advertised_column", "adv")
+modparam("sockets_mgm", "advertised_column", "adv")
 ...
 </programlisting>
 		</example>
@@ -238,7 +238,7 @@ modparam("advertiseds_mgm", "advertised_column", "adv")
 		<title>Set <quote>tag_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("tags_mgm", "tag_column", "sock")
+modparam("sockets_mgm", "tag_column", "sock")
 ...
 </programlisting>
 		</example>
@@ -257,7 +257,7 @@ modparam("tags_mgm", "tag_column", "sock")
 		<title>Set <quote>flags_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("flagss_mgm", "flags_column", "sock")
+modparam("sockets_mgm", "flags_column", "sock")
 ...
 </programlisting>
 		</example>
@@ -276,7 +276,7 @@ modparam("flagss_mgm", "flags_column", "sock")
 		<title>Set <quote>tos_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("toss_mgm", "tos_column", "sock")
+modparam("sockets_mgm", "tos_column", "sock")
 ...
 </programlisting>
 		</example>
@@ -303,7 +303,7 @@ modparam("sockets_mgm", "processes", 32)
 		<section id="param_max_sockets" xreflabel="max_sockets">
 		<title><varname>max_sockets</varname> (integer)</title>
 		<para>
-			The maximum number of sockets that can be defined dinamically.
+			The maximum number of sockets that can be defined dynamically.
 			See the <xref linkend="limitations"/> section for more information.
 		</para>
 		<para>

@@ -22,6 +22,7 @@
 #include "../../ut.h"
 #include "../../ipc.h"
 #include "../../mod_fix.h"
+#include "../../lib/cond.h"
 #include "../../evi/evi_transport.h"
 #include "../../evi/evi_modules.h"
 #include "../tm/tm_load.h"
@@ -40,6 +41,8 @@ static int mod_init(void);
 static int cfg_validate(void);
 static int notify_on_event(struct sip_msg *msg, ebr_event* event,
 		pv_spec_t *avp_filter, void *route, int *timeout);
+static int wait_for_event_sync(struct sip_msg* msg,
+		ebr_event* event, pv_spec_t* avp_filter, int* timeout);
 static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 		ebr_event* event, pv_spec_t* avp_filter, int* timeout);
 
@@ -83,6 +86,11 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR, fix_notification_route, free_notification_route},
 		{CMD_PARAM_INT, 0 ,0}, {0,0,0}},
 		EVENT_ROUTE|REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
+	{"wait_for_event",  (cmd_function)wait_for_event_sync, {
+		{CMD_PARAM_STR, fix_event_name, 0},
+		{CMD_PARAM_VAR, fixup_check_avp, 0},
+		{CMD_PARAM_INT, 0 ,0}, {0,0,0}},
+		ALL_ROUTES},
 	{"ebr_bind", (cmd_function)ebr_bind, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
@@ -430,6 +438,78 @@ int api_wait_for_event(struct sip_msg *msg, async_ctx *ctx,
 
 	return _wait_for_event(msg, ctx, event, filters_cpy, timeout, pack_params);
 }
+
+
+static int wait_for_event_sync(struct sip_msg* msg,
+					ebr_event* event, pv_spec_t* avp_filter, int* timeout)
+{
+	struct swait_pack *swait_data;
+	ebr_filter *filters;
+	int rc = -1;
+
+	if (pack_ebr_filters(msg, avp_filter->pvp.pvn.u.isname.name.n,
+	                     &filters) < 0) {
+		LM_ERR("failed to build list of EBR filters\n");
+		goto done;
+	}
+
+	if (event->event_id == -1) {
+		/* do the init of the event*/
+		if (init_ebr_event(event) < 0) {
+			LM_ERR("failed to init event\n");
+			goto done1;
+		}
+	}
+
+	swait_data = (struct swait_pack*)shm_malloc( sizeof(struct swait_pack) );
+	if (swait_data==NULL) {
+		LM_ERR("failed to allocated SWAIT data\n");
+		goto done1;
+	}
+	if (cond_init(&swait_data->cond) != 0) {
+		LM_ERR("could not initialize subscription cond\n");
+		goto done2;
+	}
+	swait_data->ret_avps = NULL; /*to be populated on resume*/
+
+	/* we have a valid EBR event here, let's subscribe on it */
+	if (add_ebr_subscription(msg, event, filters,
+	    *timeout, NULL, (void*)swait_data, EBR_SUBS_TYPE_SWAIT) < 0) {
+		LM_ERR("failed to add ebr subscription for event %d\n",
+		       event->event_id);
+		goto done3;
+	}
+
+	/* now just wait on the codition */
+	cond_lock(&swait_data->cond);
+	cond_wait(&swait_data->cond);
+	cond_unlock(&swait_data->cond);
+
+	/* timeout or event received ? */
+	if (swait_data->ret_avps==((void*)(long)-1) ) {
+		/* was a timeout */
+		rc = -2;
+	} else {
+		/* event data received */
+		if (swait_data->ret_avps!=NULL)
+			/* push the received event AVPs into the current list */
+			ebr_resume_from_wait( NULL, NULL, (void*)swait_data->ret_avps);
+		/* success */
+		rc = 1;
+	}
+
+	return rc == 0 ? 1 : rc;
+done3:
+	cond_destroy(&swait_data->cond);
+done2:
+	shm_free(swait_data);
+done1:
+	shm_free_all(filters);
+done:
+	return rc;
+}
+
+
 
 /************ implementation of the EVI transport API *******************/
 
