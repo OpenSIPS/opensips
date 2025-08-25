@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1013');
+INSERT INTO version (table_name, table_version) values ('location','1014');
 CREATE TABLE location (
     contact_id  INTEGER PRIMARY KEY AUTOINCREMENT  NOT NULL,
     username CHAR(64) DEFAULT '' NOT NULL,
@@ -18,6 +18,7 @@ CREATE TABLE location (
     methods INTEGER DEFAULT NULL,
     sip_instance CHAR(255) DEFAULT NULL,
     kv_store TEXT(512) DEFAULT NULL,
-    attr CHAR(255) DEFAULT NULL
+    attr CHAR(255) DEFAULT NULL,
+    params TEXT(512) DEFAULT NULL
 );
 
