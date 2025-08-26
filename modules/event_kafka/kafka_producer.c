@@ -419,7 +419,7 @@ void kafka_report_status(int sender, void *param)
 	}
 
 free:
-	if (p->job->type == KAFKA_JOB_SCRIPT && job_data->report_rt)
+	if (p->job->type == KAFKA_JOB_SCRIPT && job_data && job_data->report_rt)
 		shm_free(job_data->report_rt);
 	shm_free(p->job);
 	shm_free(p);

@@ -679,7 +679,8 @@ create_avp:;
 	if (enc_type != AVP_ENC_TYPE_NONE &&
 			dm_enc_add((vendor_id != -1?vendor_id:0), avp_code, enc_type) != 0) {
 		LOG_ERROR("failed to add encoding type\n");
-		free(nt_name);
+		if (nt_name)
+			free(nt_name);
 		return -1;
 	}
 
