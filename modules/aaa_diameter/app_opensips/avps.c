@@ -579,7 +579,7 @@ int parse_attr_def(char *line, FILE *fp)
 
 	nt_name = malloc(name_len + 1);
 	if (!nt_name) {
-		LOG_ERROR("Malloc failed\n");
+		printf("ERROR: Malloc failed\n");
 		return -1;
 	}
 	memcpy(nt_name, name, name_len);
@@ -711,7 +711,8 @@ create_avp:;
 	return 0;
 error:
 	printf("ERROR: failed to parse line: %s\n", line);
-	free(nt_name);
+	if (nt_name)
+		free(nt_name);
 	return -1;
 }
 
