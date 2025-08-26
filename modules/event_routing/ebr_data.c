@@ -50,7 +50,7 @@ typedef struct _ebr_ipc_job {
 } ebr_ipc_job;
 
 /* IPC type registered with the IPC layer */
-extern int ebr_ipc_type;
+extern ipc_handler_type ebr_ipc_type;
 
 /* TM API */
 extern struct tm_binds ebr_tmb;
