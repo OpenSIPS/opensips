@@ -13,11 +13,11 @@ ifeq (,$(PYTHON))
 PYTHON=python
 endif
 
-PYTHON_VERSION=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('VERSION'))"}
-PYTHON_LIBDIR=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('LIBDIR'))"}
-PYTHON_LDFLAGS=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('LINKFORSHARED'))"}
-PYTHON_LDLIB=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('LDLIBRARY'))" | sed 's/^lib\(python.*\)\.so/\1/'}
-PYTHON_INCDIR=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_python_inc())"}
+PYTHON_VERSION=${shell ${PYTHON} -c "import sysconfig;print(sysconfig.get_config_var('VERSION'))"}
+PYTHON_LIBDIR=${shell ${PYTHON} -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))"}
+PYTHON_LDFLAGS=${shell ${PYTHON} -c "import sysconfig;print(sysconfig.get_config_var('LINKFORSHARED'))"}
+PYTHON_LDLIB=${shell ${PYTHON} -c "import sysconfig, re; L = sysconfig.get_config_var('LDLIBRARY'); R = re.match('lib(python[0-9]+\\\\.[0-9]+).so', L); print(R.group(1) if R else L)"}
+PYTHON_INCDIR=${shell ${PYTHON} -c "import sysconfig;print(sysconfig.get_path('include'))"}
 
 LIBS += -L${PYTHON_LIBDIR} ${PYTHON_LDFLAGS} -l${PYTHON_LDLIB}
 
