@@ -57,6 +57,7 @@
 
 #define MAX_CTIME_LEN 128
 #define MAX_NB_PORT	  65535
+#define MI_SOCK_BUF_SIZE_DEFAULT 65457
 
 static int mi_mod_init(void);
 static int mi_child_init(int rank);
@@ -72,8 +73,7 @@ sockaddr_dtgram mi_dtgram_addr;
 /* socket definition parameter */
 static char *mi_socket = 0;
 int mi_socket_timeout = 2000;
-const int mi_sock_buf_size_default = 65457;
-int mi_sock_buf_size = mi_sock_buf_size_default;
+int mi_sock_buf_size = MI_SOCK_BUF_SIZE_DEFAULT;
 static rx_tx_sockets sockets;
 
 /* unixsock specific parameters */
@@ -153,8 +153,8 @@ static int mi_mod_init(void)
 
 	if (mi_sock_buf_size <= 0) {
 		LM_WARN("invalid 'socket_buf_size' (%d), resetting to default %d\n",
-				mi_sock_buf_size, mi_sock_buf_size_default);
-		mi_sock_buf_size = mi_sock_buf_size_default;
+				mi_sock_buf_size, MI_SOCK_BUF_SIZE_DEFAULT);
+		mi_sock_buf_size = MI_SOCK_BUF_SIZE_DEFAULT;
 	}
 
 	/* checking the mi_socket module param */
