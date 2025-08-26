@@ -32,13 +32,13 @@
 /*
  * Check if host in From uri is local
  */
-int is_from_local(struct sip_msg* _msg, char* _s1, char* _s2);
+int is_from_local(struct sip_msg* _msg, pv_spec_t* _s1);
 
 
 /*
  * Check if host in Request URI is local
  */
-int is_uri_host_local(struct sip_msg* _msg, char* _s1, char* _s2);
+int is_uri_host_local(struct sip_msg* _msg, pv_spec_t* _s1);
 
 
 /*
