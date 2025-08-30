@@ -1463,8 +1463,8 @@ Chapter 3. Contributors
    9. Jasper Hafkenscheid 4 2 107 2
    10. Fabian Gast (@fgast) 4 2 3 3
 
-   All remaining contributors: Gohar Ahmed (@goharahmed), kworm83,
-   Norm Brandinger, Peter Lemenkov (@lemenkov), Shanee Vanstone.
+   All remaining contributors: Peter Lemenkov (@lemenkov), Gohar
+   Ahmed (@goharahmed), kworm83, Norm Brandinger, Shanee Vanstone.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1486,20 +1486,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Norm Brandinger                     Jun 2025 - Jun 2025
-   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - Apr 2025
-   3.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
-   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
-   6.  Shanee Vanstone                     Mar 2024 - Mar 2024
-   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   8.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
-   9.  Jasper Hafkenscheid                 May 2022 - Jul 2022
-   10. kworm83                             Feb 2021 - Feb 2021
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
+   2.  Norm Brandinger                     Jun 2025 - Jun 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2016 - Apr 2025
+   4.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
+   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
+   7.  Shanee Vanstone                     Mar 2024 - Mar 2024
+   8.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   9.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
+   10. Jasper Hafkenscheid                 May 2022 - Jul 2022
 
-   All remaining contributors: Fabian Gast (@fgast), Gohar Ahmed
-   (@goharahmed), Peter Lemenkov (@lemenkov), Ionel Cerghit
-   (@ionel-cerghit), Eseanu Marius Cristian (@eseanucristian).
+   All remaining contributors: kworm83, Fabian Gast (@fgast),
+   Gohar Ahmed (@goharahmed), Ionel Cerghit (@ionel-cerghit),
+   Eseanu Marius Cristian (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits

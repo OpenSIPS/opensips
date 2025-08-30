@@ -407,9 +407,9 @@ Chapter 4. Contributors
    4. Razvan Crainea (@razvancrainea) 7 5 18 11
    5. Fabian Gast (@fgast) 4 2 27 7
    6. Maksym Sobolyev (@sobomax) 4 2 5 6
-   7. Vlad Paiu (@vladpaiu) 3 1 8 1
-   8. Zero King (@l2dy) 3 1 2 2
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. Peter Lemenkov (@lemenkov) 4 2 2 2
+   8. Vlad Paiu (@vladpaiu) 3 1 8 1
+   9. Zero King (@l2dy) 3 1 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -431,15 +431,15 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Apr 2017 - Jun 2025
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Jun 2025
-   3. Liviu Chircu (@liviuchircu)         Sep 2017 - Nov 2024
-   4. Vlad Paiu (@vladpaiu)               Nov 2024 - Nov 2024
-   5. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2020
-   7. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   8. Fabian Gast (@fgast)                Nov 2018 - Dec 2018
-   9. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
+   2. Razvan Crainea (@razvancrainea)     Apr 2017 - Jun 2025
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Jun 2025
+   4. Liviu Chircu (@liviuchircu)         Sep 2017 - Nov 2024
+   5. Vlad Paiu (@vladpaiu)               Nov 2024 - Nov 2024
+   6. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2020
+   8. Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   9. Fabian Gast (@fgast)                Nov 2018 - Dec 2018
 
    (1) including any documentation-related commits, excluding
    merge commits
