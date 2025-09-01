@@ -1,16 +1,22 @@
-opensips (3.6.0-dev-1) beta; urgency=low
+opensips (4.0.0-1) dev; urgency=low
+
+  * Development Build.
+
+ -- Razvan Crainea <razvan@opensips.org>  Wed, 23 Jul 2025 16:00:00 +0300
+
+opensips (3.6.0-1) stable; urgency=low
 
   * Development Build.
 
  -- Razvan Crainea <razvan@opensips.org>  Mon, 27 May 2024 16:00:00 +0300
 
-opensips (3.5.0-dev-1) beta; urgency=low
+opensips (3.5.0-1) stable; urgency=low
 
   * Development Build.
 
  -- Nick Altmann <nick@altmann.pro>  Thu, 18 May 2023 16:00:00 +0300
 
-opensips (3.4.0-1) beta; urgency=low
+opensips (3.4.0-1) stable; urgency=low
 
   * Major Public Release.
 
