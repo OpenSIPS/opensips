@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
 #include <signal.h>
 #include <unistd.h>
 
@@ -51,6 +52,7 @@
 #include "../../locking.h"
 
 #include "kill.h"
+#include "../../daemonize.h"
 
 
 static gen_lock_t *kill_lock=NULL;
@@ -157,6 +159,7 @@ pid_t __popen3(const char* cmd, FILE** strm_w, FILE** strm_r, FILE** strm_e)
 		LM_WARN("no descriptor redirect required\n");
 	}
 
+
 	OPEN_PIPE(strm_w, w_fds);
 	OPEN_PIPE(strm_r, r_fds);
 	OPEN_PIPE(strm_e, e_fds);
@@ -172,6 +175,7 @@ pid_t __popen3(const char* cmd, FILE** strm_w, FILE** strm_r, FILE** strm_e)
 
 		/* error pipe */
 		CLOSE_AND_REDIRECT(strm_e, e_fds, 0, 1, STDERR_FILENO);
+		close_open_fds();
 
 		execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
 

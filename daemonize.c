@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <sys/resource.h> /* setrlimit */
+#include <sys/syscall.h>
 #include <unistd.h>
 #ifdef __OS_linux
 #include <sys/prctl.h>
@@ -357,14 +358,7 @@ int daemonize(char* name, int * own_pgid)
 
 	/* close any open file descriptors */
 	closelog();
-
-	/* 32 is the maximum number of inherited open file descriptors */
-	for (r=3; r < 32; r++){
-		/* future children must still inherit
-		 * and write to this pipe end */
-		if (r != status_pipe[1])
-			close(r);
-	}
+	close_open_fds_except(status_pipe[1]);
 
 	if (syslog_enabled)
 		openlog(name, LOG_PID|LOG_CONS, log_facility);
@@ -559,3 +553,31 @@ error:
 	return -1;
 }
 
+
+int get_open_fds_limit(void)
+{
+	struct rlimit rl;
+	int open_max;
+	if (open_files_limit > 0)
+		return open_files_limit;
+	if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
+		open_max = sysconf(_SC_OPEN_MAX);
+		return (open_max < 0?_POSIX_OPEN_MAX:open_max);
+	}
+	return rl.rlim_cur;
+}
+
+void close_open_fds(void)
+{
+	int fd, open_max = get_open_fds_limit();
+	for (fd = 3; fd < open_max; fd++)
+		syscall(SYS_close, fd); /* does not set errno */
+}
+
+void close_open_fds_except(int except)
+{
+	int fd, open_max = get_open_fds_limit();
+	for (fd = 3; fd < open_max; fd++)
+		if (fd != except)
+			syscall(SYS_close, fd);
+}

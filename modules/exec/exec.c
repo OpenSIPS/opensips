@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#define __USE_GNU
 #include <unistd.h>
 #include <fcntl.h>
 /*
@@ -47,6 +48,7 @@
 #include "../../ut.h"
 #include "../../trim.h"
 #include "../../mod_fix.h"
+#include "../../daemonize.h"
 
 #include "exec.h"
 #include "kill.h"
@@ -103,6 +105,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input,
 	} else {
 		pid = fork();
 		if (pid == 0) {
+			close_open_fds();
 			execl("/bin/sh", "/bin/sh", "-c", command->s, NULL);
 			exit(-1);
 		} else if (pid < 0) {

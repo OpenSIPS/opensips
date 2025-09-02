@@ -33,6 +33,9 @@ int daemonize(char* name, int * own_pgid);
 int do_suid(const int uid, const int gid);
 int set_open_fds_limit(void);
 int set_core_dump(int enable, unsigned int size);
+int get_open_fds_limit(void);
+void close_open_fds(void);
+void close_open_fds_except(int except);
 
 int send_status_code(char val);
 void clean_read_pipeend(void);

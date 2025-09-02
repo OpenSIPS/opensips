@@ -35,6 +35,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
 #include "../../dprint.h"
+#include "../../daemonize.h"
 #include "cpl_nonsig.h"
 #include "CPL_tree.h"
 
@@ -153,9 +154,7 @@ static inline void send_mail( struct cpl_cmd *cmd)
 	} else if (pid==0) {
 		/* child -> close all descriptors excepting pfd[0] */
 		/* 32 is the maximum number of inherited open file descriptors */
-		for (i=3; i < 32; i++)
-			if (i!=pfd[0])
-				close(i);
+		close_open_fds_except(pfd[0]);
 		if (pfd[0] != STDIN_FILENO) {
 			dup2(pfd[0], STDIN_FILENO);
 			close(pfd[0]);
