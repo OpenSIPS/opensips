@@ -916,10 +916,6 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		}
 		bentity0->state = B2BL_ENT_NEW;
 
-		if (shm_str_sync(&bentity1->in_sdp, body) < 0) {
-			LM_ERR("Failed to save SDP\n");
-			return -1;
-		}
 		if (shm_str_sync(&bentity0->out_sdp, body) < 0) {
 			LM_ERR("Failed to save SDP\n");
 			return -1;
