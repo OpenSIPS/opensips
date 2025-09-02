@@ -611,6 +611,9 @@ int parse_attr_def(char *line, FILE *fp)
 		        || (len >= strlen("hexstring") && !strncasecmp(p, STR_L("hexstring")))) {
 			avp_type = AVP_TYPE_OCTETSTRING;
 			enc_type = AVP_ENC_TYPE_HEX;
+		} else if (len >= strlen("time") && !strncasecmp(p, STR_L("time"))) {
+			avp_type = AVP_TYPE_OCTETSTRING;
+			enc_type = AVP_ENC_TYPE_TIME;
 		} else if ((len >= strlen("utf8string") && !strncasecmp(p, STR_L("utf8string")))
 		        || (len >= strlen("string") && !strncasecmp(p, STR_L("string"))))
 			avp_type = AVP_TYPE_OCTETSTRING;

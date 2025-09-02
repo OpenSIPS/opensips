@@ -80,12 +80,14 @@ extern unsigned int n_app_ids;
 enum dict_avp_enc_type {
 	AVP_ENC_TYPE_IP = 0,
 	AVP_ENC_TYPE_HEX = 1,
+	AVP_ENC_TYPE_TIME = 2,
 	AVP_ENC_TYPE_NONE
 };
 
 #define enc_type2str(t) ( \
 		t == AVP_ENC_TYPE_IP ? "ip" : \
 		t == AVP_ENC_TYPE_HEX ? "hexstring" : \
+		t == AVP_ENC_TYPE_TIME ? "time" : \
 		t == AVP_ENC_TYPE_NONE ? "none" : \
 		("unknown?? "#t))
 
@@ -94,6 +96,7 @@ int dm_enc_add(int vendor, int code, enum dict_avp_enc_type enc);
 enum dict_avp_enc_type {
 	AVP_ENC_TYPE_IP = 0,
 	AVP_ENC_TYPE_HEX = 0,
+	AVP_ENC_TYPE_TIME = 0,
 	AVP_ENC_TYPE_NONE = 0
 };
 #define dm_enc_add(_v, _c, _e) 0
