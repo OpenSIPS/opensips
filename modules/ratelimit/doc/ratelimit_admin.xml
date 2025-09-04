@@ -36,6 +36,7 @@
 		will replicate through bin/clusterer.
 	</para>
 	</section>
+
 	<section>
 	<title>Use Cases</title>
 	<para>
@@ -72,6 +73,7 @@
 		response.
 	</para>
 	</section>
+
 	<section>
 	<title>Static Rate Limiting Algorithms</title>
 	<para>
@@ -140,6 +142,7 @@
 		</para>
 	</section>
 	</section>
+
 	<section>
 	<title>Dynamic Rate Limiting Algorithms</title>
 	<para>
@@ -186,6 +189,30 @@
 		</para>
 	</section>
 	</section>
+
+	<section id="bridge_replication">
+	<title>Cluster-Bridge Replication</title>
+	<para>
+		<emphasis>(added in OpenSIPS 4.0)</emphasis>
+	</para>
+	<para>
+		Cluster-bridge replication can be useful in some specific scenarios
+		where you have multiple clusters of OpenSIPS servers, geographically
+		spread across the country or beyond.  In this case, as an improvement
+		to the standard, full-mesh replication strategy, you can alternatively
+		group them into multiple cluster IDs based on geo-location, then define
+		the replication "bridges" between them.  Full details in the
+		<ulink url='clusterer#bridge_replication'>cluster-bridge replication</ulink>
+		chapter of the clusterer module.
+	</para>
+	<para>
+		At ratelimit level, you only need to enable <xref linkend="param_bridge_replication"/>,
+		after which the CPS pipes should start flowing to remote clusters.  Make
+		sure to tweak <xref linkend="param_bridge_repl_timer_interval"/> and
+		<xref linkend="param_bridge_repl_timer_expire"/> as needed.
+	</para>
+	</section>
+
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
@@ -448,6 +475,71 @@ modparam("ratelimit", "repl_timer_expire", 10)
 		<programlisting format="linespecific">
 ...
 modparam("ratelimit", "pipe_replication_cluster", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_bridge_replication" xreflabel="bridge_replication">
+		<title><varname>bridge_replication</varname> (boolean)</title>
+		<para>
+			Enable the <ulink url='clusterer#bridge_replication'>cluster-bridge replication</ulink>
+			feature, if applicable (e.g. the current <xref linkend="param_pipe_replication_cluster"/> has
+			at least one bridge definition to a foreign cluster).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>false</emphasis>. (disabled)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bridge_replication</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("ratelimit", "bridge_replication", true)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_bridge_repl_timer_interval" xreflabel="bridge_repl_timer_interval">
+		<title><varname>bridge_repl_timer_interval</varname> (string)</title>
+		<para>
+		Timer in milliseconds, used to specify how often the module
+		should replicate its cluster-local counters to remote clusters,
+		if <ulink url='clusterer#bridge_replication'>bridged replication</ulink>
+		is in use, as long as it holds the required sharing tag(s).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 500 ms.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bridge_repl_timer_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("ratelimit", "bridge_repl_timer_interval", 500)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_bridge_repl_timer_expire" xreflabel="bridge_repl_timer_expire">
+		<title><varname>bridge_repl_timer_expire</varname> (string)</title>
+		<para>
+		Timer in seconds, used to specify when the counter received
+		from a different cluster should no longer be taken into account.
+		This is used to prevent obsolete values, in case an entire cluster
+		(data center) is down and stops replicating its counters.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 20 s.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bridge_repl_timer_expire</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("ratelimit", "bridge_repl_timer_expire", 20)
 ...
 </programlisting>
 		</example>
