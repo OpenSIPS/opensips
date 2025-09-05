@@ -117,10 +117,14 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 	if (!val) {
 		LM_ERR("sdp-set: NULL\n");
 		ops->flags |= SDP_OPS_FL_NULL;
+		ops->flags &= ~SDP_OPS_FL_DIRTY;
 		if (msg->body) {
 			free_sip_body(msg->body);
 			msg->body = NULL;
 		}
+		free_sdp_ops_lines(ops);
+		pkg_free(ops->rebuilt_sdp.s);
+		ops->rebuilt_sdp.s = NULL;
 
 	} else {
 		LM_ERR("sdp-set: non-NULL!\n");
@@ -1552,7 +1556,8 @@ int sdp_get_custom_body(struct sip_msg *msg, str *body)
 			return -1;
 		}
 
-		LM_DBG("found previously re-built custom SDP => quick-return\n");
+		LM_DBG("found previously re-built custom SDP => quick-return (%d / %d)\n",
+		        !ops->rebuilt_sdp.s, !ops->sdp.s);
 		goto out;
 	}
 
