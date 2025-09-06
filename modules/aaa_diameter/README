@@ -461,7 +461,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu)       114      37      6850     1105
-   2. Razvan Crainea (@razvancrainea)    36      19      1362     248
+   2. Razvan Crainea (@razvancrainea)    37      20      1422     250
    3. Alexandra Titoc                    6        4       11       2
    4. Peter Lemenkov (@lemenkov)         4        2       2        2
    5. Larry Laffer                       3        1       6        5
@@ -487,7 +487,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) May 2023 - Aug 2025
+   1. Razvan Crainea (@razvancrainea) May 2023 - Sep 2025
    2. Peter Lemenkov (@lemenkov)      Jul 2024 - Jul 2025
    3. Larry Laffer                    Jul 2025 - Jul 2025
    4. Alexandra Titoc                 Sep 2024 - Sep 2024
