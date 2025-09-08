@@ -26,6 +26,8 @@
 #define SDP_OPS_FL_DIRTY  (1<<0) /* the SDP buffer requires a rebuild */
 #define SDP_OPS_FL_NULL   (1<<1) /* a NULL SDP body has been forced */
 #define SDP_OPS_FL_PARSED (1<<2) /* all lines in .sdp are parsed */
+#define SDP_OPS_FL_NO_LLF (1<<3) /* the input SDP had no LF on last line
+                                    ; for now not used, output is normalized */
 
 #define SDP_MAX_LINES 500
 
