@@ -1928,7 +1928,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		}
 	}
 
-	if (!pv_name->c_entry->on_demand)
+	if (!pv_name->c_entry->on_demand && !CACHEDB_CAPABILITY(&pv_name->db_hdls->cdbf, CACHEDB_CAP_SYNCHRONIZED))
 		lock_start_read(pv_name->c_entry->ref_lock);
 
 	rc = cdb_fetch(pv_name, &cdb_res, &entry_rld_vers);
@@ -1942,13 +1942,16 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	if (!pv_name->c_entry->on_demand) {
 		if (rc == -2) {
 			LM_DBG("key: %.*s not found\n", pv_name->key.len, pv_name->key.s);
-			lock_stop_read(pv_name->c_entry->ref_lock);
+			if (!CACHEDB_CAPABILITY(&pv_name->db_hdls->cdbf, CACHEDB_CAP_SYNCHRONIZED))
+				lock_stop_read(pv_name->c_entry->ref_lock);
 			return pv_get_null(msg, param, res);
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
 				LM_DBG("key: %.*s not found in SQL db\n",
 						pv_name->key.len, pv_name->key.s);
-				lock_stop_read(pv_name->c_entry->ref_lock);
+
+				if (!CACHEDB_CAPABILITY(&pv_name->db_hdls->cdbf, CACHEDB_CAP_SYNCHRONIZED))
+					lock_stop_read(pv_name->c_entry->ref_lock);
 				pkg_free(cdb_res.s);
 				return pv_get_null(msg, param, res);
 			}
@@ -1958,7 +1961,8 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			rc2 = cdb_val_decode(pv_name, &cdb_res, entry_rld_vers, &str_res,
 									&int_res);
 
-			lock_stop_read(pv_name->c_entry->ref_lock);
+			if (!CACHEDB_CAPABILITY(&pv_name->db_hdls->cdbf, CACHEDB_CAP_SYNCHRONIZED))
+				lock_stop_read(pv_name->c_entry->ref_lock);
 
 			if (rc2 == 2)
 				goto out_free_null;

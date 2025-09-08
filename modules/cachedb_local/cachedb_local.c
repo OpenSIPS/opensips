@@ -447,6 +447,7 @@ static int mod_init(void)
 	cde.cdb_func.is_replicated = lcache_is_replicated;
 
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
+	cde.cdb_func.capability |= CACHEDB_CAP_SYNCHRONIZED;
 
 	if(cache_clean_period <= 0 )
 	{
