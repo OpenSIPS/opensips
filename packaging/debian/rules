@@ -50,10 +50,10 @@ endif
 # Used to index the make variable below, which has details about each package
 ALL_MODPKG_LIST := \
 	AUTH BERKELEY CARRIERROUTE CGRATES COMPRESSION CPL \
-	DBHTTP DIALPLAN EMERGENCY GEOIP HTTP IDENTITY JABBER \
-	JSON KAFKA LDAP LUA MEMCACHED MSRP MYSQL PERL POSTGRES \
+	DBHTTP EMERGENCY GEOIP HTTP IDENTITY JABBER \
+	JSON LDAP LUA MEMCACHED MSRP MYSQL PERL POSTGRES \
 	PRESENCE PROMETHEUS PROTO_TLS PROTO_WSS PYTHON RABBITMQ \
-	REDIS RADIUS REGEX REST_CLIENT SIPREC SNMPSTATS SQLITE STIR_SHAKEN \
+	REDIS RADIUS REST_CLIENT SIPREC SNMPSTATS SQLITE STIR_SHAKEN \
 	TLS_MGM TLS_OPENSSL TLS_WOLFSSL UNIXODBC UUID XML XMLRPC XMPP IPSEC
 
 
@@ -148,9 +148,6 @@ CPL_MOD_PATH=$(addprefix modules/, $(CPL_MODULES))
 DBHTTP_PKGNAME = opensips-dbhttp-module
 DBHTTP_MODULES = db_http
 DBHTTP_MOD_PATH=$(addprefix modules/, $(DBHTTP_MODULES))
-DIALPLAN_PKGNAME = opensips-dialplan-module
-DIALPLAN_MODULES = dialplan
-DIALPLAN_MOD_PATH=$(addprefix modules/, $(DIALPLAN_MODULES))
 DIAMETER_PKGNAME = opensips-diameter-module
 DIAMETER_MODULES = aaa_diameter aka_av_diameter
 DIAMETER_MOD_PATH=$(addprefix modules/, $(DIAMETER_MODULES))
@@ -172,9 +169,6 @@ JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
 JSON_PKGNAME = opensips-json-module
 JSON_MODULES = json
 JSON_MOD_PATH=$(addprefix modules/, $(JSON_MODULES))
-KAFKA_PKGNAME = opensips-kafka-module
-KAFKA_MODULES = event_kafka
-KAFKA_MOD_PATH=$(addprefix modules/, $(KAFKA_MODULES))
 LDAP_PKGNAME = opensips-ldap-modules
 LDAP_MODULES = ldap h350
 LDAP_MOD_PATH=$(addprefix modules/, $(LDAP_MODULES))
@@ -228,9 +222,6 @@ REDIS_MOD_PATH=$(addprefix modules/, $(REDIS_MODULES))
 RADIUS_PKGNAME = opensips-radius-modules
 RADIUS_MODULES = aaa_radius peering
 RADIUS_MOD_PATH=$(addprefix modules/, $(RADIUS_MODULES))
-REGEX_PKGNAME = opensips-regex-module
-REGEX_MODULES = regex
-REGEX_MOD_PATH=$(addprefix modules/, $(REGEX_MODULES))
 REST_CLIENT_PKGNAME = opensips-restclient-module
 REST_CLIENT_MODULES = rest_client
 REST_CLIENT_MOD_PATH=$(addprefix modules/, $(REST_CLIENT_MODULES))

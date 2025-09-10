@@ -19,7 +19,6 @@ Build-Depends: bison,
                libhiredis-dev,
                libjson-c-dev,
                libjwt-dev | base-files,
-               librdkafka-dev,
                libldap2-dev,
                liblua5.1-0-dev,
                libmemcached-dev,
@@ -29,7 +28,6 @@ Build-Depends: bison,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
                libncurses5-dev,
-               libpcre3-dev,
                libperl-dev,
                libpq-dev,
                librabbitmq-dev,
@@ -62,7 +60,6 @@ Suggests: opensips-auth-jwt-module,
           opensips-compression-module,
           opensips-cpl-module,
           opensips-dbhttp-module,
-          opensips-dialplan-module,
           opensips-diameter-module,
           opensips-emergency-module,
           opensips-geoip-module,
@@ -71,7 +68,6 @@ Suggests: opensips-auth-jwt-module,
           opensips-ipsec-module,
           opensips-jabber-module,
           opensips-json-module,
-          opensips-kafka-module,
           opensips-ldap-modules,
           opensips-lua-module,
           opensips-memcached-module,
@@ -86,7 +82,6 @@ Suggests: opensips-auth-jwt-module,
           opensips-rabbitmq-modules,
           opensips-radius-modules,
           opensips-redis-module,
-          opensips-regex-module,
           opensips-restclient-module,
           opensips-sctp-module [linux-any],
           opensips-siprec-module,
@@ -281,19 +276,6 @@ Description: HTTP database connectivity module for OpenSIPS
  .
  This package provides the HTTP-based database driver for OpenSIPS
 
-Package: opensips-dialplan-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Generic string translation module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides dialplan module that implements generic string
- translations based on matching and replacement rules. It can be used to
- manipulate R-URI or a PV and to translated to a new format/value.
-
 Package: opensips-diameter-module
 Architecture: any
 Multi-Arch: same
@@ -395,20 +377,6 @@ Description: Support for JSON handling in OpenSIPS script
  serialization and de-serialization from JSON format. The script variable
  provides ways to access (from script) objects and arrays to add,replace or
  delete values from the script.
-
-Package: opensips-kafka-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Implementation of an Apache Kafka producer
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module is an implementation of an Apache Kafka producer.
- It serves as a transport backend for the Event Interface and
- also provides a stand-alone connector to be used from the
- OpenSIPS script in order to publish messages to Kafka brokers.
 
 Package: opensips-ldap-modules
 Architecture: any
@@ -618,20 +586,6 @@ Description: Interface module to interact with a Redis server
  work with a Redis server. It uses hiredis client library to connect
  to either a single Redis server instance, or to a Redis Server inside
  a Redis Cluster. It uses the Key-Value interface exported from the core.
-
-Package: opensips-regex-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: PCRE regexp modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a module for matching operations against regular
- expressions using the powerful PCRE library. By default, OpenSIPS support
- sed-like regular expressions; PCRE library brings perl-like regular
- expressions.
 
 Package: opensips-restclient-module
 Architecture: any
