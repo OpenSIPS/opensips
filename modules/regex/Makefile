@@ -9,11 +9,11 @@ NAME=regex.so
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-PCRE_BUILDER = $(shell \
-	if which pcre-config >/dev/null 2>/dev/null; then \
-		echo 'pcre-config'; \
-	elif pkg-config --exists libcre; then \
-		echo 'pkg-config libpcre'; \
+PCRE_BUILDER := $(shell \
+	if which pcre2-config >/dev/null 2>/dev/null; then \
+		echo 'pcre2-config'; \
+	elif pkg-config --exists libpcre2-8; then \
+		echo 'pkg-config libpcre2-8'; \
 	fi)
 endif
 
