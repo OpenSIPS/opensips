@@ -6,8 +6,8 @@ include ../../Makefile.defs
 auto_gen=
 NAME=lua.so
 
-MYSQLCFG=$(shell which mysql_config)
-LIB_LUA_NAME?=$(shell \
+MYSQLCFG := $(shell which mysql_config)
+LIB_LUA_NAME ?= $(shell \
 	if pkg-config --exists lua; then echo lua; \
 	elif pkg-config --exists lua5.3; then echo lua5.3; \
 	elif pkg-config --exists lua-5.3; then echo lua-5.3; \
@@ -19,8 +19,8 @@ LIB_LUA_NAME?=$(shell \
 	elif pkg-config --exists lua-5.1; then echo lua-5.1; \
 	elif pkg-config --exists lua51; then echo lua51; fi)
 
-LIB_LUA = $(shell pkg-config --libs $(LIB_LUA_NAME) 2>/dev/null)
-FLAGS_LUA = $(shell pkg-config --cflags $(LIB_LUA_NAME) 2>/dev/null)
+LIB_LUA := $(shell pkg-config --libs $(LIB_LUA_NAME) 2>/dev/null)
+FLAGS_LUA := $(shell pkg-config --cflags $(LIB_LUA_NAME) 2>/dev/null)
 ifeq (,$(findstring -l,$(LIB_LUA)))
 LIB_LUA = -llua
 endif
