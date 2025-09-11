@@ -2,7 +2,7 @@
 
 include ../../Makefile.defs
 
-HAS_BUILDER = $(shell if which net-snmp-config >/dev/null 2>/dev/null;then echo YES; fi)
+HAS_BUILDER := $(shell if which net-snmp-config >/dev/null 2>/dev/null;then echo YES; fi)
 
 ifeq ($(CROSS_COMPILE),)
 ifeq ($(HAS_BUILDER),YES)
