@@ -8,7 +8,7 @@ NAME=httpd.so
 # the autodetection
 # CROSS_COMPILE=true
 ifeq ($(CROSS_COMPILE),)
-LIBMICROHTTPD_BUILDER=$(shell \
+LIBMICROHTTPD_BUILDER := $(shell \
 	if pkg-config --exists libmicrohttpd; then \
 		echo 'pkg-config libmicrohttpd'; \
 	fi)

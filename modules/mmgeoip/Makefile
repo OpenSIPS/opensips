@@ -29,7 +29,7 @@ auto_gen=
 NAME=mmgeoip.so
 
 ifeq ($(GEOIP),)
-GEOIP=$(shell if [ -n "`ldconfig -p | grep maxminddb`" ]; then echo "GEOIP2"; \
+GEOIP := $(shell if [ -n "`ldconfig -p | grep maxminddb`" ]; then echo "GEOIP2"; \
 	elif [ -n "`ldconfig -p | grep libGeoIP`" ];then echo "GEOIPLEGACY"; fi)
 endif
 

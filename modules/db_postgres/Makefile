@@ -11,7 +11,7 @@ SCRIPTS_DIR?=../../scripts/
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-HAS_PGCFG=$(shell if which pg_config >/dev/null 2>/dev/null;then echo YES; fi)
+HAS_PGCFG := $(shell if which pg_config >/dev/null 2>/dev/null;then echo YES; fi)
 endif
 
 

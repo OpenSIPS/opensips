@@ -8,8 +8,8 @@ auto_gen=
 NAME=xcap_client.so
 
 ifeq ($(CROSS_COMPILE),)
-XML2CFG=$(shell which xml2-config)
-CURL_BUILDER=$(shell \
+XML2CFG := $(shell which xml2-config)
+CURL_BUILDER := $(shell \
 	if pkg-config --exists libcurl; then \
 		echo 'pkg-config libcurl'; \
 	else \
