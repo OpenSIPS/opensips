@@ -90,7 +90,6 @@ Suggests: opensips-auth-jwt-module,
           opensips-stir-shaken-module,
           opensips-tls-module,
           opensips-tls-openssl-module,
-          opensips-tls-wolfssl-module,
           opensips-tlsmgm-module,
           opensips-unixodbc-module,
           opensips-uuid-module,
@@ -702,20 +701,6 @@ Description: TLS transport module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the OpenSSL implementation for TLS in OpenSIPS.
-
-Package: opensips-tls-wolfssl-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-tlsmgm-module (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: TLS transport module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the wolfSSL implementation for TLS in OpenSIPS.
 
 Package: opensips-tlsmgm-module
 Architecture: any
