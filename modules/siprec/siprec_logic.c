@@ -345,7 +345,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		goto no_recording;
 	}
 
-	if (ss->dlg->state > DLG_STATE_DELETED) {
+	if (ss->dlg->state >= DLG_STATE_DELETED) {
 		LM_ERR("dialog already in deleted state!\n");
 		goto no_recording;
 	}
@@ -375,7 +375,10 @@ no_recording:
 			LM_ERR("Cannot send bye for recording session with key %.*s\n",
 					req.b2b_key->len, req.b2b_key->s);
 	}
-	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
+	if (ss->dlg->state >= DLG_STATE_DELETED)
+		LM_DBG("rtp context already destroyed!\n");
+	else
+		srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
 	srec_logic_destroy(ss, 0);
 
 	if (!(ss->flags & SIPREC_DLG_CBS)) {
