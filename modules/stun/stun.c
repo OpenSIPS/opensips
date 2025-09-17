@@ -403,16 +403,21 @@ void stun_loop(int rank)
 		}
 	} else {
 		for (i = 0; i < no_socket_sets; i++) {
-			if (reactor_proc_add_fd( socket_sets[i].sock2->sockfd,
-			stun_callback, socket_sets[i].sock2)<0) {
+			if (!socket_sets[i].sock2->is_in_reactor
+			        && reactor_proc_add_fd( socket_sets[i].sock2->sockfd,
+			            stun_callback, socket_sets[i].sock2)<0) {
 				LM_CRIT("failed to add STUN listen socket to reactor\n");
 				return;
 			}
-			if (reactor_proc_add_fd( socket_sets[i].sock3->sockfd,
-			stun_callback, socket_sets[i].sock3)<0) {
+			socket_sets[i].sock2->is_in_reactor = 1;
+
+			if (!socket_sets[i].sock3->is_in_reactor
+			        && reactor_proc_add_fd(socket_sets[i].sock3->sockfd,
+				        stun_callback, socket_sets[i].sock3)<0) {
 				LM_CRIT("failed to add STUN listen socket to reactor\n");
 				return;
 			}
+			socket_sets[i].sock3->is_in_reactor = 1;
 		}
 	}
 
