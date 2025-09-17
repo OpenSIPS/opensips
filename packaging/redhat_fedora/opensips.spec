@@ -79,7 +79,7 @@ BuildRequires:  openldap-devel
 BuildRequires:  curl-devel
 # BuildRequires:  GeoIP-devel
 BuildRequires:  libmaxminddb-devel
-BuildRequires:  pcre-devel
+BuildRequires:  pcre2-devel
 %if 0%{?_with_python3:1}
 BuildRequires:  python3-devel
 %else

@@ -31,7 +31,8 @@
 
 #include "../../db/db.h"
 #include "../../re.h"
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 #define REGEX_OP	1
 #define EQUAL_OP	0
