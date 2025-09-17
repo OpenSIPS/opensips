@@ -17,11 +17,11 @@
 #db_postgres= Provides Postgres connectivity for OpenSIPS | PostgreSQL library and development library - tipically libpq5 and libpq-dev
 #db_sqlite= Provides SQLite connectivity for OpenSIPS | SQLite library and development library - tipically libsqlite3 and libsqlite3-dev
 #db_unixodbc= Allows to use the unixodbc package with OpenSIPS | ODBC library and ODBC development library
-#dialplan= Implements generic string translations based on matching and replacement rules | PCRE development library, tipically libpcre-dev
+#dialplan= Implements generic string translations based on matching and replacement rules | PCRE development library, tipically libpcre2-dev
 #emergency= Provides emergency call treatment for OpenSIPS | CURL dev library - tipically libcurl4-openssl-dev
 #event_rabbitmq= Provides the implementation of a RabbitMQ client for the Event Interface | RabbitMQ development library, librabbitmq-dev
 #h350= Enables access to SIP account data stored in an LDAP [RFC4510] directory containing H.350 commObjects | OpenLDAP library & development files, tipically libldap and libldap-dev
-#regex= Offers matching operations against regular expressions using the powerful PCRE library. | Development library for PCRE, tipically libpcre-dev
+#regex= Offers matching operations against regular expressions using the powerful PCRE library. | Development library for PCRE, tipically libpcre2-dev
 #identity= Adds support for SIP Identity (see RFC 4474). | SSL library, tipically libssl
 #jabber= Integrates XODE XML parser for parsing Jabber messages | Expat library.
 #json= Introduces a new type of variable that provides both serialization and de-serialization from JSON format. | JSON library, libjson
