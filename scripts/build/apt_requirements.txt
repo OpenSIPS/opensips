@@ -6,6 +6,8 @@ libsctp-dev
 libradcli-dev
 libhiredis-dev
 odbcinst
+patch
+python3-dev
 unixodbc
 unixodbc-dev
 libconfuse-dev

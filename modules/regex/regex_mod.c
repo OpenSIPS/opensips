@@ -22,6 +22,9 @@
  * History:
  * --------
  *  2009-01-14  initial version (Iñaki Baz Castillo)
+ *  2023-08-12  export pcres_match to MI (Fabien Aunay)
+ *  2023-08-12  export pcres_match_group to MI (Fabien Aunay)
+ *  2025-09-17  switch to libpcre2 (Steven Ayre)
  */
 
 
@@ -37,7 +40,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 #include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../pt.h"
