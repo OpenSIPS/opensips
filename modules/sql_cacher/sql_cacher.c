@@ -872,6 +872,19 @@ static int inc_cache_rld_vers(db_handlers_t *db_hdls, int *rld_vers)
 	return 0;
 }
 
+// These have to be inline functions as we can't put a macro in another macro
+static inline void _lock_start_read(db_handlers_t *cdb_hdl) {
+	if(!CACHEDB_CAPABILITY(&cdb_hdl->cdbf, CACHEDB_CAP_SYNCHRONIZED)) {
+		lock_start_read(cdb_hdl->c_entry->ref_lock);
+	}
+}
+
+static inline void _lock_stop_read(db_handlers_t *cdb_hdl) {
+	if(!CACHEDB_CAPABILITY(&cdb_hdl->cdbf, CACHEDB_CAP_SYNCHRONIZED)) {
+		lock_stop_read(cdb_hdl->c_entry->ref_lock);
+	}
+}
+
 static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 								int inc_rld_vers)
 {
@@ -1498,7 +1511,7 @@ static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_versi
 		goto error;
 	memcpy(&int_val, int_buf, 4);
 
-	if (reload_version != int_val)
+	if (!pv_name->c_entry->ref_lock->w_flag && reload_version != int_val)
 		return 3;
 
 	/* null integer value in db */
@@ -1929,26 +1942,27 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	}
 
 	if (!pv_name->c_entry->on_demand)
-		lock_start_read(pv_name->c_entry->ref_lock);
+		_lock_start_read(pv_name->db_hdls);
 
 	rc = cdb_fetch(pv_name, &cdb_res, &entry_rld_vers);
 	if (rc == -1) {
 		LM_ERR("Error fetching from cachedb\n");
 		if (!pv_name->c_entry->on_demand)
-			lock_stop_read(pv_name->c_entry->ref_lock);
+			_lock_stop_read(pv_name->db_hdls);
 		return pv_get_null(msg, param, res);
 	}
 
 	if (!pv_name->c_entry->on_demand) {
 		if (rc == -2) {
 			LM_DBG("key: %.*s not found\n", pv_name->key.len, pv_name->key.s);
-			lock_stop_read(pv_name->c_entry->ref_lock);
+			_lock_stop_read(pv_name->db_hdls);
 			return pv_get_null(msg, param, res);
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
 				LM_DBG("key: %.*s not found in SQL db\n",
 						pv_name->key.len, pv_name->key.s);
-				lock_stop_read(pv_name->c_entry->ref_lock);
+
+				_lock_stop_read(pv_name->db_hdls);
 				pkg_free(cdb_res.s);
 				return pv_get_null(msg, param, res);
 			}
@@ -1958,7 +1972,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			rc2 = cdb_val_decode(pv_name, &cdb_res, entry_rld_vers, &str_res,
 									&int_res);
 
-			lock_stop_read(pv_name->c_entry->ref_lock);
+			_lock_stop_read(pv_name->db_hdls);
 
 			if (rc2 == 2)
 				goto out_free_null;

@@ -110,7 +110,8 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 #define lock_stop_read(_lock) \
 	do { \
 		lock_get((_lock)->lock); \
-		(_lock)->r_count--; \
+		if ((_lock)->r_count >= 1) \
+			(_lock)->r_count--; \
 		lock_release((_lock)->lock); \
 	} while (0)
 
