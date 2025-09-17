@@ -883,6 +883,10 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 		| blst_elem_list error { yyerror("bad black list element");}
 		;
 
+mpath_def_list: mpath_def_list COLON STRING {IFOR(); add_mpath($3);}
+		| STRING { IFOR(); add_mpath($1);}
+		;
+
 auto_scale_profile_def:
 		  ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
 				NUMBER CYCLES_WITHIN NUMBER
@@ -1589,8 +1593,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 							}
 		 }
 		| TOS EQUAL error { yyerror("number expected"); }
-		| MPATH EQUAL STRING {IFOR();
-				add_mpath($3); }
+		| MPATH EQUAL mpath_def_list {IFOR();}
 		| MPATH EQUAL error  { yyerror("string value expected"); }
 		| DISABLE_DNS_FAILOVER EQUAL NUMBER { IFOR();
 										disable_dns_failover=$3;
