@@ -88,18 +88,19 @@ switch_expr T_type_cl_internal_switch
   case (packet_type == 3) : var T_opensips Type = T_opensips::icluster_topo_update;
   case (packet_type == 4) : var T_opensips Type = T_opensips::icluster_unknown_id;
   case (packet_type == 5) : var T_opensips Type = T_opensips::icluster_node_desc;
-  case (packet_type == 8) : var T_opensips Type = T_opensips::icluster_cap_update;
+  case (packet_type == 9) : var T_opensips Type = T_opensips::icluster_cap_update;
   default : print ("default case");
 }
 
 switch_expr T_type_cl_extra_switch
 {
-  case (packet_type == 6) : var T_opensips Type = T_opensips::cluster_generic_msg;
-  case (packet_type == 7) : var T_opensips Type = T_opensips::cluster_mi_cmd;
-  case (packet_type == 9) : var T_opensips Type = T_opensips::cluster_sync_req;
-  case (packet_type == 10) : var T_opensips Type = T_opensips::cluster_sync_data;
-  case (packet_type == 11) : var T_opensips Type = T_opensips::cluster_sync_end;
-  case (packet_type == 12) : var T_opensips Type = T_opensips::cluster_shtag_on;
+  case (packet_type == 6) : var T_opensips Type = T_opensips::icluster_node_desc;
+  case (packet_type == 7) : var T_opensips Type = T_opensips::cluster_generic_msg;
+  case (packet_type == 8) : var T_opensips Type = T_opensips::cluster_mi_cmd;
+  case (packet_type == 10) : var T_opensips Type = T_opensips::cluster_sync_req;
+  case (packet_type == 11) : var T_opensips Type = T_opensips::cluster_sync_data;
+  case (packet_type == 12) : var T_opensips Type = T_opensips::cluster_sync_end;
+  case (packet_type == 13) : var T_opensips Type = T_opensips::cluster_shtag_on;
   default : print ("default case");
 }
 
@@ -588,6 +589,9 @@ struct T_bin_ul_ct_delete
 struct T_bin_cl_ping
 {
   T_msg_header_type   header;
+  uint32              cluster_id;
+  uint32              node_id;
+  uint32              req_node_list;
 }
 
 struct T_bin_cl_pong
@@ -600,14 +604,69 @@ struct T_bin_cl_pong
   uint32[known_node_count] known_nodes;
 }
 
+struct T_bin_cl_update_path
+{
+  uint32              path_len;
+  hide var uint32 path_no = path_len;
+  while (path_no > 0) {
+    uint32            path_node_id;
+    set path_no = path_no - 1;
+  }
+}
+
+struct T_bin_cl_update_id
+{
+  uint32              cluster_id;
+  uint32              node_id;
+  uint32              seq;
+  uint32              timestamp;
+}
+
+
 struct T_bin_cl_ls_update
 {
   T_msg_header_type   header;
+  T_bin_cl_update_id  cluster;
+  uint32              neighbour_id;
+  uint32              link_state;
+  T_bin_cl_update_path path;
+}
+
+struct T_bin_str
+{
+  uint16              len;
+  if (len > 0) {
+    string(len)       s;
+  }
+}
+
+struct T_bin_cl_ft_update_node
+{
+  hide uint32         node_id;
+  hide uint32         has_desc;
+  if (has_desc > 0) {
+    T_bin_str         desc;
+  }
+  uint32              node_seq;
+  uint32              node_timestamp;
+  hide uint32         neighbours_no;
+  while (neighbours_no > 0) {
+    uint32            neighbour_id;
+    set neighbours_no = neighbours_no - 1;
+  }
 }
 
 struct T_bin_cl_ft_update
 {
   T_msg_header_type   header;
+  T_bin_cl_update_id  cluster;
+  uint32              nodes_count;
+  hide var uint32 no_nodes = nodes_count;
+  while (no_nodes > 0) {
+    T_bin_cl_ft_update_node node;
+    set no_nodes = no_nodes - 1;
+  }
+  T_bin_cl_update_path path;
 }
 
 struct T_bin_cl_unknown_id
@@ -620,9 +679,33 @@ struct T_bin_cl_node_desc
   T_msg_header_type   header;
 }
 
+struct T_bin_cl_cap
+{
+  T_bin_str           cap;
+  uint32              state;
+}
+
+struct T_bin_cl_caps
+{
+  hide uint32         node_id;
+  hide uint32         caps_no;
+  while (caps_no > 0) {
+    T_bin_cl_cap      capability;
+    set caps_no = caps_no - 1;
+  }
+}
+
 struct T_bin_cl_cap_update
 {
   T_msg_header_type   header;
+  T_bin_cl_update_id  cluster;
+  uint32              node_no;
+  while (node_no > 0) {
+    T_bin_cl_caps     capabilities;
+    set node_no = node_no - 1;
+  }
+  uint32               require_reply;
+  T_bin_cl_update_path path;
 }
 
 ###############################################################################
@@ -641,10 +724,9 @@ struct T_bin_cl_mi_cmd
 
 struct T_cl_sync_scope
 {
-  uint16                mod_cap_len;
-  string(mod_cap_len)   mod_cap;
+  T_bin_str             cap;
 
-  if (packet_type == 10 && bin_version == 2)
+  if (packet_type == 11 && bin_version == 2)
   {
     uint32              data_version;
   }
@@ -731,20 +813,15 @@ struct T_bin_cl_sync_end
 {
   T_msg_header_type   header;
   T_cl_sync_scope     sync_scope;
+  uint32              chunks;
   T_bin_cl_trailer    clusterer;
 }
 
 struct T_bin_cl_shtag_active
 {
   T_msg_header_type   header;
-}
-
-struct T_bin_str
-{
-  uint16              len;
-  if (len > 0) {
-    string(len)       s;
-  }
+  T_bin_str           cap;
+  T_bin_cl_trailer    clusterer;
 }
 
 struct T_bin_tm_msg
