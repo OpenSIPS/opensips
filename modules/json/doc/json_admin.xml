@@ -405,7 +405,7 @@ $json(object/array) := $json(array) ;
 		<title><varname>$json_pretty(id)</varname></title>
 		<para>
 			The <varname>json_pretty</varname> variable has the
-			same purpose as the <varname>json</varname> variable,
+			same purpose as the <xref linkend="pv_json"/> variable,
 			but prints the JSON object in a pretty format, adding
 			spaces and tabs to make the output more readable.
 		</para>
@@ -414,10 +414,35 @@ $json(object/array) := $json(array) ;
 		<title><varname>$json_compact(id)</varname></title>
 		<para>
 			The <varname>json_compact</varname> variable has the
-			same purpose as the <varname>json</varname> variable,
+			same purpose as the <xref linkend="pv_json"/> variable,
 			but prints the JSON object in a more compact form,
 			without formatting spaces.
 		</para>
+	</section>
+	<section id="pv_json_compact_noescape" xreflabel="$json_compact_noescape">
+		<title><varname>$json_compact_noescape(id)</varname></title>
+		<para>
+			The <varname>json_compact_noescape</varname> variable has the
+			same purpose as the <xref linkend="pv_json_compact"/> variable,
+			printing the JSON object in the compact form, but without
+			escaping the slashes.
+		</para>
+			<example>
+			<title>Difference between json_compact and json_compact_noescape</title>
+			<programlisting format="linespecific">
+...
+$json(obj) := "{}";
+$json(obj/path) = "/path/to/some/file";
+xlog("The json is: $json_compact(obj)\n");
+# will print:
+# The json is: {"path":"\/path\/to\/some\/file"}
+
+xlog("The json no escape is: $json_compact_noescape(obj)\n");
+# will print:
+# The json no escape is: {"path":"/path/to/some/file"}
+...
+			</programlisting>
+			</example>
 	</section>
 	</section>
 

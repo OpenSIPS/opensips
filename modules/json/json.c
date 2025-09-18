@@ -108,6 +108,7 @@ static int fixup_json_bind(void**);
 static int pv_set_json (struct sip_msg*,  pv_param_t*, int , pv_value_t* );
 static int pv_get_json (struct sip_msg*,  pv_param_t*, pv_value_t* );
 static int pv_get_json_compact(struct sip_msg*,  pv_param_t*, pv_value_t* );
+static int pv_get_json_compact_noescape(struct sip_msg*,  pv_param_t*, pv_value_t* );
 static int pv_get_json_pretty(struct sip_msg*,  pv_param_t*, pv_value_t* );
 static int pv_get_json_ext(struct sip_msg*,  pv_param_t*, pv_value_t* , int flags);
 static int json_bind(struct sip_msg* , pv_spec_t* , pv_spec_t* );
@@ -147,6 +148,8 @@ static const pv_export_t mod_items[] = {
 	{ str_const_init("json_compact"), PVT_JSON, pv_get_json_compact,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
 	{ str_const_init("json_pretty"), PVT_JSON, pv_get_json_pretty,
+		pv_set_json, pv_parse_json_name, 0, 0, 0},
+	{ str_const_init("json_compact_noescape"), PVT_JSON, pv_get_json_compact_noescape,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -367,6 +370,11 @@ int pv_get_json(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 int pv_get_json_compact(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 {
 	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_PLAIN);
+}
+
+int pv_get_json_compact_noescape(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
+{
+	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
 }
 
 int pv_get_json_pretty(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
