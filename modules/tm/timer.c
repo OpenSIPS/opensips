@@ -310,10 +310,14 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 
 			set_t(T_UNDEFINED);
 			switch(r_buf->retr_list) {
-			case RT_T1_TO_1: update_stat( tm_retran_req_T11, 1); break;
-			case RT_T1_TO_2: update_stat( tm_retran_req_T12, 1); break;
-			case RT_T1_TO_3: update_stat( tm_retran_req_T13, 1); break;
-			case RT_T2: update_stat( tm_retran_req_T2, 1);break;
+			case RT_T1_TO_1:
+				if_update_stat(tm_enable_stats, tm_retran_req_T11, 1); break;
+			case RT_T1_TO_2:
+				if_update_stat(tm_enable_stats, tm_retran_req_T12, 1); break;
+			case RT_T1_TO_3:
+				if_update_stat(tm_enable_stats, tm_retran_req_T13, 1); break;
+			case RT_T2:
+				if_update_stat(tm_enable_stats, tm_retran_req_T2, 1);break;
 			default:;
 			}
 	} else {
@@ -322,7 +326,7 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 			set_t(r_buf->my_T);
 			t_retransmit_reply(r_buf->my_T);
 			set_t(T_UNDEFINED);
-			update_stat( tm_retran_rpl_T2, 1);
+			if_update_stat(tm_enable_stats, tm_retran_rpl_T2, 1);
 	}
 
 	id = r_buf->retr_list;
@@ -414,8 +418,10 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 	}
 
 	switch(r_buf->retr_list) {
-	case FR_TIMER_LIST: update_stat( tm_timeout_fr, 1); break;
-	case FR_INV_TIMER_LIST: update_stat( tm_timeout_fr_inv, 1); break;
+	case FR_TIMER_LIST:
+		if_update_stat(tm_enable_stats, tm_timeout_fr, 1); break;
+	case FR_INV_TIMER_LIST:
+		if_update_stat(tm_enable_stats, tm_timeout_fr_inv, 1); break;
 	default:;
 	}
 	/* lock reply processing to determine how to proceed reliably */
