@@ -9,7 +9,7 @@ NAME=cachedb_mongodb.so
 
 include ../../lib/json/Makefile.json
 ifeq ($(CROSS_COMPILE),)
-MONGOC_BUILDER = $(shell \
+MONGOC_BUILDER := $(shell \
 	if pkg-config --exists libmongoc-1.0; then \
 		echo 'pkg-config libmongoc-1.0'; \
 	fi)

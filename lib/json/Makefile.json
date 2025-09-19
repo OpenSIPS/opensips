@@ -17,7 +17,7 @@ DEFS += -I$(JSONPATH)
 endif
 
 ifeq ($(CROSS_COMPILE),)
-JSON_BUILDER = $(shell \
+JSON_BUILDER := $(shell \
 	if pkg-config --exists json 2> /dev/null; then \
 		echo 'pkg-config json'; \
 	elif pkg-config --exists json-c 2> /dev/null; then\
@@ -30,16 +30,16 @@ ifeq ($(JSON_BUILDER),)
 	DEFS += -I$(LOCALBASE)/include -I$(SYSBASE)/include
 	LIBS += -L$(LOCALBASE)/lib -l$(JSONLIB)
 else
-	JSON_PKG_VER = $(shell $(JSON_BUILDER) --modversion)
-	JSON_PKG_MAJOR = $(shell \
+	JSON_PKG_VER := $(shell $(JSON_BUILDER) --modversion)
+	JSON_PKG_MAJOR := $(shell \
 		ver_tmp=`echo '$(JSON_PKG_VER)' | cut -f1 -d.`; \
 		if [ -z "$$ver_tmp" ]; then ver_tmp=0; fi; \
 		echo "$$ver_tmp";)
-	JSON_PKG_MINOR = $(shell \
+	JSON_PKG_MINOR := $(shell \
 		ver_tmp=`echo '$(JSON_PKG_VER)' | cut -f2 -d.`; \
 		if [ -z "$$ver_tmp" ]; then ver_tmp=0; fi; \
 		echo "$$ver_tmp";)
-	JSON_PKG_MICRO = $(shell \
+	JSON_PKG_MICRO := $(shell \
 		ver_tmp=`echo '$(JSON_PKG_VER)' | cut -f3 -d.`; \
 		if [ -z "$$ver_tmp" ]; then ver_tmp=0; fi; \
 		echo "$$ver_tmp";)

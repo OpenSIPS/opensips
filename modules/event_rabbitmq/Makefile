@@ -7,7 +7,7 @@ auto_gen=
 NAME=event_rabbitmq.so
 
 ifeq ($(CROSS_COMPILE),)
-RABBITMQ_BUILDER = $(shell \
+RABBITMQ_BUILDER := $(shell \
 	if pkg-config --exists librabbitmq; then \
 		echo 'pkg-config librabbitmq'; \
 	fi)
