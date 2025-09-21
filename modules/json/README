@@ -20,6 +20,7 @@ JSON Module
               1.4.1. $json(id)
               1.4.2. $json_pretty(id)
               1.4.3. $json_compact(id)
+              1.4.4. $json_compact_noescape(id)
 
         1.5. Exported Functions
 
@@ -58,9 +59,10 @@ JSON Module
    1.10. Initializing an array
    1.11. Setting a boolean or null value
    1.12. Adding a json to another json
-   1.13. Creating a reference
-   1.14. [LOGICAL ERROR] Creating a circular reference
-   1.15. Using json_merge
+   1.13. Difference between json_compact and json_compact_noescape
+   1.14. Creating a reference
+   1.15. [LOGICAL ERROR] Creating a circular reference
+   1.16. Using json_merge
 
 Chapter 1. Admin Guide
 
@@ -311,15 +313,35 @@ $json(object/array) := $json(array) ;
 
 1.4.2. $json_pretty(id)
 
-   The json_pretty variable has the same purpose as the json
+   The json_pretty variable has the same purpose as the $json
    variable, but prints the JSON object in a pretty format, adding
    spaces and tabs to make the output more readable.
 
 1.4.3. $json_compact(id)
 
-   The json_compact variable has the same purpose as the json
+   The json_compact variable has the same purpose as the $json
    variable, but prints the JSON object in a more compact form,
    without formatting spaces.
+
+1.4.4. $json_compact_noescape(id)
+
+   The json_compact_noescape variable has the same purpose as the
+   $json_compact variable, printing the JSON object in the compact
+   form, but without escaping the slashes.
+
+   Example 1.13. Difference between json_compact and
+   json_compact_noescape
+...
+$json(obj) := "{}";
+$json(obj/path) = "/path/to/some/file";
+xlog("The json is: $json_compact(obj)\n");
+# will print:
+# The json is: {"path":"\/path\/to\/some\/file"}
+
+xlog("The json no escape is: $json_compact_noescape(obj)\n");
+# will print:
+# The json no escape is: {"path":"/path/to/some/file"}
+...
 
 1.5. Exported Functions
 
@@ -348,7 +370,7 @@ $json(object/array) := $json(array) ;
    accidentally create a circular reference and try to get the
    value from the object you will crash OPENSIPS.
 
-   Example 1.13. Creating a reference
+   Example 1.14. Creating a reference
 ...
 
 $json(b) := "[{},{},{}]";
@@ -393,7 +415,7 @@ Test link :
 
 ...
 
-   Example 1.14. [LOGICAL ERROR] Creating a circular reference
+   Example 1.15. [LOGICAL ERROR] Creating a circular reference
 ...
 
 $json(b) := "[1]";
@@ -416,7 +438,7 @@ xlog("\nTest link :\n$json(stub)\n$json(b)\n\n");
    main_json_var and the output will be populated into the
    output_var
 
-   Example 1.15. Using json_merge
+   Example 1.16. Using json_merge
 ...
 
 $json(val1) := "{}";
@@ -451,8 +473,8 @@ Chapter 2. Contributors
    9. Ovidiu Sas (@ovidiusas) 4 2 17 4
    10. Nick Altmann (@nikbyte) 3 1 47 15
 
-   All remaining contributors: Anca Vamanu, Peter Lemenkov
-   (@lemenkov), Bence Szigeti, Julián Moreno Patiño.
+   All remaining contributors: Darius Stefan, Anca Vamanu, Peter
+   Lemenkov (@lemenkov), Bence Szigeti, Julián Moreno Patiño.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -474,19 +496,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Jul 2014 - Jan 2025
-   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Dec 2024
-   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   4.  Bence Szigeti                       Nov 2023 - Nov 2023
-   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Apr 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
-   10. Björn Esser (@besser82)             Dec 2017 - Dec 2017
+   1.  Darius Stefan                       Sep 2025 - Sep 2025
+   2.  Vlad Paiu (@vladpaiu)               Jul 2014 - Jan 2025
+   3.  Liviu Chircu (@liviuchircu)         Oct 2013 - Dec 2024
+   4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   5.  Bence Szigeti                       Nov 2023 - Nov 2023
+   6.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Apr 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
 
-   All remaining contributors: Julián Moreno Patiño, Ovidiu Sas
-   (@ovidiusas), Anca Vamanu, Andrei Dragus.
+   All remaining contributors: Björn Esser (@besser82), Julián
+   Moreno Patiño, Ovidiu Sas (@ovidiusas), Anca Vamanu, Andrei
+   Dragus.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -495,10 +518,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Andrei
+   Last edited by: Darius Stefan, Vlad Paiu (@vladpaiu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Nick Altmann (@nikbyte), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Andrei
    Dragus.
 
    Documentation Copyrights:
