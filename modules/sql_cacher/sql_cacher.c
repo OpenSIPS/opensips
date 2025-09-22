@@ -174,6 +174,11 @@ static int parse_cache_entry(unsigned int type, void *val)
 		new_entry->column_types = 0;
 		new_entry->ref_lock = NULL;
 
+#if (__STDC_VERSION__ >= 201112L)
+		atomic_store(&new_entry->w_flag, false);
+		new_entry->eventual_consistency = 1;
+#endif
+
 #define PARSE_TOKEN(_ptr1, _ptr2, field, field_name_str, field_name_len) \
 	do { \
 		(_ptr2) = memchr((_ptr1), '=', parse_str.len - \
@@ -872,19 +877,6 @@ static int inc_cache_rld_vers(db_handlers_t *db_hdls, int *rld_vers)
 	return 0;
 }
 
-// These have to be inline functions as we can't put a macro in another macro
-static inline void _lock_start_read(db_handlers_t *cdb_hdl) {
-	if(!CACHEDB_CAPABILITY(&cdb_hdl->cdbf, CACHEDB_CAP_SYNCHRONIZED)) {
-		lock_start_read(cdb_hdl->c_entry->ref_lock);
-	}
-}
-
-static inline void _lock_stop_read(db_handlers_t *cdb_hdl) {
-	if(!CACHEDB_CAPABILITY(&cdb_hdl->cdbf, CACHEDB_CAP_SYNCHRONIZED)) {
-		lock_stop_read(cdb_hdl->c_entry->ref_lock);
-	}
-}
-
 static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 								int inc_rld_vers)
 {
@@ -949,10 +941,10 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 
 	pkg_free(query_cols);
 
-	lock_start_write(db_hdls->c_entry->ref_lock);
+	_lock_start_write(db_hdls->c_entry);
 
 	if (inc_rld_vers && inc_cache_rld_vers(db_hdls, &reload_vers) < 0) {
-		lock_stop_write(db_hdls->c_entry->ref_lock);
+		_lock_stop_write(db_hdls->c_entry);
 		goto error;
 	}
 
@@ -963,7 +955,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
 	if (get_column_types(c_entry, values + 1, ROW_N(row) - 1) < 0) {
-		lock_stop_write(db_hdls->c_entry->ref_lock);
+		_lock_stop_write(db_hdls->c_entry);
 		goto error;
 	}
 
@@ -975,7 +967,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			if (!VAL_NULL(values)) {
 				if (insert_in_cachedb(c_entry, db_hdls, values ,values + 1,
 					reload_vers, ROW_N(row) - 1) < 0) {
-					lock_stop_write(db_hdls->c_entry->ref_lock);
+					_lock_stop_write(db_hdls->c_entry);
 					goto error;
 				}
 				loaded_rec++;
@@ -986,7 +978,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			if (db_hdls->db_funcs.fetch_result(db_hdls->db_con,&sql_res,fetch_nr_rows)<0) {
 				LM_ERR("Error fetching rows (1) from SQL DB: %.*s\n",
 					c_entry->db_url.len, c_entry->db_url.s);
-				lock_stop_write(db_hdls->c_entry->ref_lock);
+				_lock_stop_write(db_hdls->c_entry);
 				goto error;
 			}
 		} else {
@@ -998,7 +990,7 @@ done:
 	LM_INFO("SQL cache loaded. ID: %.*s, rows: %d -> %d\n", db_hdls->c_entry->id.len, db_hdls->c_entry->id.s, db_hdls->c_entry->rec_count, loaded_rec);
 	db_hdls->c_entry->rec_count = loaded_rec;
 
-	lock_stop_write(db_hdls->c_entry->ref_lock);
+	_lock_stop_write(db_hdls->c_entry);
 
 	db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
 
@@ -1197,7 +1189,7 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key, str *entry_id)
 					lock_get(it->wait_sql_query);
 				}
 			} else {
-				lock_start_write(db_hdls->c_entry->ref_lock);
+				_lock_start_write(db_hdls->c_entry);
 			}
 
 			if ((rld_vers = get_rld_vers_from_cache(db_hdls->c_entry, db_hdls)) < 0) {
@@ -1208,7 +1200,7 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key, str *entry_id)
 					else
 						lock_release(queries_lock);
 				} else {
-					lock_stop_write(db_hdls->c_entry->ref_lock);
+					_lock_stop_write(db_hdls->c_entry);
 				}
 
 				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
@@ -1225,7 +1217,7 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key, str *entry_id)
 				else
 					lock_release(queries_lock);
 			} else {
-				lock_stop_write(db_hdls->c_entry->ref_lock);
+				_lock_stop_write(db_hdls->c_entry);
 			}
 
 			if (rc == -1)
@@ -1511,8 +1503,10 @@ static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_versi
 		goto error;
 	memcpy(&int_val, int_buf, 4);
 
-	if (!pv_name->c_entry->ref_lock->w_flag && reload_version != int_val)
-		return 3;
+	if (reload_version != int_val) {
+	    if (!is_writing(pv_name->c_entry) || (is_writing(pv_name->c_entry) && reload_version != int_val +1))
+			return 3;
+	}
 
 	/* null integer value in db */
 	if (!memcmp(cdb_val->s + pv_name->col_offset, zeroes, INT_B64_ENC_LEN))
@@ -1942,27 +1936,27 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	}
 
 	if (!pv_name->c_entry->on_demand)
-		_lock_start_read(pv_name->db_hdls);
+		_lock_start_read(pv_name->c_entry);
 
 	rc = cdb_fetch(pv_name, &cdb_res, &entry_rld_vers);
 	if (rc == -1) {
 		LM_ERR("Error fetching from cachedb\n");
 		if (!pv_name->c_entry->on_demand)
-			_lock_stop_read(pv_name->db_hdls);
+			_lock_stop_read(pv_name->c_entry);
 		return pv_get_null(msg, param, res);
 	}
 
 	if (!pv_name->c_entry->on_demand) {
 		if (rc == -2) {
 			LM_DBG("key: %.*s not found\n", pv_name->key.len, pv_name->key.s);
-			_lock_stop_read(pv_name->db_hdls);
+			_lock_stop_read(pv_name->c_entry);
 			return pv_get_null(msg, param, res);
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
 				LM_DBG("key: %.*s not found in SQL db\n",
 						pv_name->key.len, pv_name->key.s);
 
-				_lock_stop_read(pv_name->db_hdls);
+				_lock_stop_read(pv_name->c_entry);
 				pkg_free(cdb_res.s);
 				return pv_get_null(msg, param, res);
 			}
@@ -1972,7 +1966,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			rc2 = cdb_val_decode(pv_name, &cdb_res, entry_rld_vers, &str_res,
 									&int_res);
 
-			_lock_stop_read(pv_name->db_hdls);
+			_lock_stop_read(pv_name->c_entry);
 
 			if (rc2 == 2)
 				goto out_free_null;

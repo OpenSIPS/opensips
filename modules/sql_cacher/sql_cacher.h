@@ -29,6 +29,42 @@
 #include "../../db/db.h"
 #include "../../cachedb/cachedb.h"
 
+#if (__STDC_VERSION__ >= 201112L)
+#include <stdatomic.h>
+#define true 1
+#define false 0
+#define _lock_start_write(c_entry) \
+	do { \
+		atomic_store(&c_entry->w_flag, true); \
+		lock_start_write(c_entry->ref_lock); \
+	} while (0)
+#define _lock_stop_write(c_entry) \
+	do { \
+		atomic_store(&c_entry->w_flag, false); \
+		lock_stop_write(c_entry->ref_lock); \
+	} while (0)
+#define _lock_start_read(c_entry) \
+	do { \
+		if (!c_entry->eventual_consistency) { \
+			lock_start_read(c_entry->ref_lock); \
+		} \
+	} while (0)
+	
+#define _lock_stop_read(c_entry) \
+	do { \
+		if (!c_entry->eventual_consistency) { \
+			lock_stop_read(c_entry->ref_lock); \
+		} \
+	} while (0)
+#define is_writing(c_entry) (c_entry->eventual_consistency && atomic_load(&c_entry->w_flag))
+#else
+#define _lock_start_write(c_entry) lock_start_write(c_entry->ref_lock)
+#define _lock_stop_write(c_entry) lock_stop_write(c_entry->ref_lock)
+#define _lock_start_read(c_entry) lock_start_read(c_entry->ref_lock)
+#define _lock_stop_read(c_entry) lock_stop_read(c_entry->ref_lock)
+#define is_writing(c_entry) 0
+#endif
+
 #define DEFAULT_SPEC_DELIM "\n"
 #define DEFAULT_COLUMNS_DELIM " "
 #define DEFAULT_PVAR_DELIM ":"
@@ -86,6 +122,10 @@ typedef struct _cache_entry {
 	unsigned int nr_ints, nr_strs;
 	long long column_types;
 	rw_lock_t *ref_lock;
+#if (__STDC_VERSION__ >= 201112L)
+	volatile atomic_bool w_flag;
+	int eventual_consistency;
+#endif
 	struct _cache_entry *next;
 	int rec_count;
 } cache_entry_t;
