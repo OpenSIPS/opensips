@@ -1882,7 +1882,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 
 	<section id="func_load_dialog_ctx" xreflabel="load_dialog_ctx()">
 		<title>
-		<function moreinfo="none">load_dialog_ctx( dialog [, id_type])</function>
+		<function moreinfo="none">load_dialog_ctx( dialog [, id_type] [, active_only])</function>
 		</title>
 		<para>
 		The function loads and switches to the context of the given dialog.
@@ -1908,6 +1908,13 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 			<emphasis>callid</emphasis> (SIP Call-ID) or 
 			<emphasis>did</emphasis> (internal Dialog ID). By default callid
 			will be assumed.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>id_type (integer,optional)</emphasis> - if
+			set to something different than <emphasis>0</emphasis>,
+			it only considers active dialogs - dialogs that are not
+			deleted.
 			</para>
 		</listitem>
 		</itemizedlist>
