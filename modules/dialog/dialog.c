@@ -149,7 +149,7 @@ static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
 		pv_spec_t *v_val, str *callid);
 static int w_tsl_dlg_flag(struct sip_msg *msg, void *_idx, int *_val);
 static int w_set_dlg_shtag(struct sip_msg *msg, str *shtag);
-static int load_dlg_ctx(struct sip_msg *msg, str *callid, void* lmode);
+static int load_dlg_ctx(struct sip_msg *msg, str *callid, void* lmode, int *active);
 static int unload_dlg_ctx(struct sip_msg *msg);
 
 static int fixup_route(void** param);
@@ -263,7 +263,8 @@ static const cmd_export_t cmds[]={
 		REQUEST_ROUTE},
 	{"load_dialog_ctx",(cmd_function)load_dlg_ctx, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_lmode,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_lmode,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"unload_dialog_ctx",(cmd_function)unload_dlg_ctx,
 		{{0,0,0}}, ALL_ROUTES},
@@ -2409,10 +2410,11 @@ static int fixup_leg(void **param)
 }
 
 
-static int load_dlg_ctx(struct sip_msg *msg, str *callid, void *lmode)
+static int load_dlg_ctx(struct sip_msg *msg, str *callid, void *lmode, int *active)
 {
 	struct dlg_cell *dlg = NULL;
 	int mode;
+	int active_only = (active?*active:0);
 
 	if (lmode)
 		mode = (int)(long)lmode;
@@ -2427,12 +2429,12 @@ static int load_dlg_ctx(struct sip_msg *msg, str *callid, void *lmode)
 	switch (mode) {
 		case DLG_CTX_LOAD_BY_CALLID:
 			/* callid */
-			dlg = get_dlg_by_callid( callid, 0 );
+			dlg = get_dlg_by_callid( callid, active_only );
 			break;
 
 		case DLG_CTX_LOAD_BY_DID:
 			/* did */
-			dlg = get_dlg_by_did( callid, 0);
+			dlg = get_dlg_by_did( callid, active_only );
 			break;
 	}
 
