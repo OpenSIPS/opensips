@@ -427,6 +427,13 @@ $json(object/array) := $json(array) ;
 			printing the JSON object in the compact form, but without
 			escaping the slashes.
 		</para>
+		<para>
+			<emphasis>NOTICE:</emphasis> due to the libjson-c library
+			limitations, this variable only skips the slashes escaping
+			starting with version <emphasis>0.13</emphasis> - older versions
+			of the library make the variable behave just like the
+			<xref linkend="pv_json_compact"/> variable.
+		</para>
 			<example>
 			<title>Difference between json_compact and json_compact_noescape</title>
 			<programlisting format="linespecific">

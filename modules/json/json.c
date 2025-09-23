@@ -374,7 +374,11 @@ int pv_get_json_compact(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 
 int pv_get_json_compact_noescape(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 {
-	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_PLAIN | JSON_C_TO_STRING_NOSLASHESCAPE);
+	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_PLAIN
+#if JSON_C_VERSION_NUM >= JSON_C_VERSION_013
+			| JSON_C_TO_STRING_NOSLASHESCAPE
+#endif
+			);
 }
 
 int pv_get_json_pretty(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
