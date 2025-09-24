@@ -50,7 +50,6 @@ typedef enum {
 	CACHEDB_CAP_MAP_REMOVE = 1<<12,
 	CACHEDB_CAP_MAP =
 		(CACHEDB_CAP_MAP_GET|CACHEDB_CAP_MAP_SET|CACHEDB_CAP_MAP_REMOVE),
-	CACHEDB_CAP_SYNCHRONIZED = 1<<13,
 } cachedb_cap;
 
 #define CACHEDB_CAPABILITY(cdbf,cpv) (((cdbf)->capability & (cpv)) == (cpv))
