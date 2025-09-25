@@ -679,13 +679,14 @@ int load_cluster_bridges(cluster_info_t *cl_list)
 
 		/* walk the list of clusters my node is part of, try to match bridge */
 		for (cl = cl_list; cl; cl = cl->next) {
+			#define MAX_SHTAG_COL_SZ 32
 			struct cluster_bridge *br;
 			struct {
 				struct cluster_bridge br;
-				char shtag_buf[shtag.len + 1];
+				char shtag_buf[MAX_SHTAG_COL_SZ+1];
 			} *_br;
 
-			if (cl->cluster_id != cla)
+			if (cl->cluster_id != cla || shtag.len > MAX_SHTAG_COL_SZ)
 				continue;
 
 			if (!(dsts = cl_make_bridge_dsts(&dst_node_csv))) {
