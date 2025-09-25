@@ -60,6 +60,7 @@ typedef struct clusterer_node {
 enum clusterer_send_ret {
 	CLUSTERER_SEND_SUCCESS = 0,
 	CLUSTERER_CURR_DISABLED = 1,  /* current node disabled */
+	CLUSTERER_SEND_OK_NOP = 2,    /* node is eligible for sending, quick-exit */
 	CLUSTERER_DEST_DOWN = -1,     /* destination node(s) already down or probing */
 	CLUSTERER_SEND_ERR = -2       /* error */
 };
@@ -131,14 +132,28 @@ typedef int (*get_my_sip_addr_f)(int cluster_id, str *out_addr);
 typedef int (*get_my_index_f)(int cluster_id, str *capability, int *nr_nodes);
 
 /*
+ * Returns 1 or 0 if the current node has has at least one OUTGOING bridge
+ * link within @src_cluster_id.  This function may be extended with direction
+ * filtering semantics (currently not needed).
+ *
+ * @src_cluster_id - the cluster id to check.
+ */
+typedef int (*has_bridge_f)(int src_cluster_id);
+
+/*
  * Send a message to a specific node in the cluster.
  */
 typedef enum clusterer_send_ret (*send_to_f)(bin_packet_t *packet, int cluster_id,
 												int node_id);
 /*
- * Send a message to all the nodes in the cluster.
+ * Broadcast a message to all nodes in the given cluster, except current node.
  */
 typedef enum clusterer_send_ret (*send_all_f)(bin_packet_t *packet, int cluster_id);
+
+/*
+ * Broadcast a message over the inter-cluster bridges of the given cluster.
+ */
+typedef enum clusterer_send_ret (*send_all_bridges_f)(bin_packet_t *packet, int my_cluster);
 
 /*
  * Send a message to all @dst_cluster_id nodes (excluding self)
@@ -281,8 +296,10 @@ struct clusterer_binds {
 	get_my_id_f get_my_id;
 	get_my_sip_addr_f get_my_sip_addr;
 	get_my_index_f get_my_index;
+	has_bridge_f has_bridge;
 	send_to_f send_to;
 	send_all_f send_all;
+	send_all_bridges_f send_all_bridges;
 	send_all_having_f send_all_having;
 	get_next_hop_f get_next_hop;
 	free_next_hop_f free_next_hop;

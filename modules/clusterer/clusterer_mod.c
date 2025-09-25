@@ -51,17 +51,6 @@ int db_mode = 1;
 int clusterer_enable_rerouting = 1;
 
 str clusterer_db_url = {NULL, 0};
-str db_table = str_init("clusterer");
-str id_col = str_init("id");	/* PK column */
-str cluster_id_col = str_init("cluster_id");
-str node_id_col = str_init("node_id");
-str url_col = str_init("url");
-str state_col = str_init("state");
-str no_ping_retries_col = str_init("no_ping_retries");
-str priority_col = str_init("priority");
-str sip_addr_col = str_init("sip_addr");
-str flags_col = str_init("flags");
-str description_col = str_init("description");
 
 extern db_con_t *db_hdl;
 extern db_func_t dr_dbf;
@@ -148,22 +137,23 @@ static const cmd_export_t cmds[] = {
  * Exported parameters
  */
 static const param_export_t params[] = {
-	{"enable_stats",		INT_PARAM,  &clusterer_enable_stats	},
+	{"enable_stats",		INT_PARAM,	&clusterer_enable_stats	},
 	{"db_url",				STR_PARAM,	&clusterer_db_url.s	},
 	{"db_table",			STR_PARAM,	&db_table.s			},
+	{"db_bridges_table",	STR_PARAM,	&db_bridges_table.s	},
 	{"my_node_id",			INT_PARAM,	&current_id			},
 	{"ping_interval",		INT_PARAM,	&ping_interval		},
 	{"node_timeout",		INT_PARAM,	&node_timeout		},
 	{"ping_timeout",		INT_PARAM,	&ping_timeout		},
 	{"seed_fallback_interval", INT_PARAM, &seed_fb_interval	},
-	{"sync_timeout",        INT_PARAM,  &sync_timeout		},
+	{"sync_timeout",		INT_PARAM,	&sync_timeout		},
 	{"id_col",				STR_PARAM,	&id_col.s			},
 	{"cluster_id_col",		STR_PARAM,	&cluster_id_col.s	},
 	{"node_id_col",			STR_PARAM,	&node_id_col.s		},
 	{"url_col",				STR_PARAM,	&url_col.s			},
 	{"state_col",			STR_PARAM,	&state_col.s		},
 	{"no_ping_retries_col",	STR_PARAM,	&no_ping_retries_col.s	},
-	{"priority_col",		STR_PARAM,  &priority_col.s		},
+	{"priority_col",		STR_PARAM,	&priority_col.s		},
 	{"sip_addr_col",		STR_PARAM,	&sip_addr_col.s		},
 	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
@@ -387,6 +377,7 @@ static int mod_init(void)
 	LM_INFO("Clusterer module - initializing\n");
 
 	db_table.len = strlen(db_table.s);
+	db_bridges_table.len = strlen(db_bridges_table.s);
 	id_col.len = strlen(id_col.s);
 	cluster_id_col.len = strlen(cluster_id_col.s);
 	node_id_col.len = strlen(node_id_col.s);
@@ -476,7 +467,7 @@ static int mod_init(void)
 			LM_ERR("cannot initialize database connection\n");
 			goto error;
 		}
-		if (load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) != 0) {
+		if (load_db_info(&dr_dbf, db_hdl, cluster_list) != 0) {
 			LM_ERR("Failed to load info from DB\n");
 			goto error;
 		}
@@ -582,7 +573,7 @@ mi_response_t *clusterer_reload(const mi_params_t *params,
 		return init_mi_error(400, MI_SSTR("Non-DB mode"));
 	}
 
-	if (load_db_info(&dr_dbf, db_hdl, &db_table, &new_info) != 0) {
+	if (load_db_info(&dr_dbf, db_hdl, &new_info) != 0) {
 		LM_ERR("Failed to load info from DB\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
@@ -1419,8 +1410,10 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->get_my_id = cl_get_my_id;
 	binds->get_my_sip_addr = cl_get_my_sip_addr;
 	binds->get_my_index = cl_get_my_index;
+	binds->has_bridge = has_bridge;
 	binds->send_to = cl_send_to;
 	binds->send_all = cl_send_all;
+	binds->send_all_bridges = cl_send_all_bridges;
 	binds->send_all_having = cl_send_all_having;
 	binds->get_next_hop = api_get_next_hop;
 	binds->free_next_hop = api_free_next_hop;

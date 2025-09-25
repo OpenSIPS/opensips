@@ -9,4 +9,5 @@
 <database xmlns:xi="http://www.w3.org/2001/XInclude">
     <name>Clusterer support</name>
     <xi:include href="clusterer.xml"/>
+    <xi:include href="clusterer_bridge.xml"/>
 </database>

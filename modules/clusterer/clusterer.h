@@ -44,6 +44,7 @@
 
 #define TAG_RAND_LEN 24
 #define TAG_FIX_MAXLEN 6	/* "XX-YY-" */
+#define AGG_DST_ID    0xC0000000
 
 #define MI_CMD_MAX_NR_PARAMS 15
 
@@ -199,8 +200,10 @@ enum clusterer_send_ret bcast_remove_node(int cluster_id, int target_node);
 int cl_set_state(int cluster_id, int node_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, str *ip_str,
 							enum node_addr_type check_type);
+int has_bridge(int src_cluster_id);
 enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
 enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
+enum clusterer_send_ret cl_send_all_bridges(bin_packet_t *, int my_cluster);
 enum clusterer_send_ret
 cl_send_all_having(bin_packet_t *packet, int dst_cluster_id,
                    enum cl_node_match_op match_op);

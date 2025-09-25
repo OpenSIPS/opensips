@@ -43,6 +43,87 @@
 	</para>
 	</section>
 
+	<section id="bridge_replication" xreflabel="Cluster-Bridge Replication">
+	<title>Cluster-Bridge Replication</title>
+	<para>
+		<emphasis>(added in OpenSIPS 4.0)</emphasis>
+	</para>
+	<para>
+		Cluster-Bridge Replication (or "bridge replication") allows modules to
+		exchange data across <emphasis>different</emphasis> clusters.  This
+		is meant to serve as a topology/data flow optimization feature, and it
+		could be useful in some OpenSIPS cluster setups with multiple data
+		centers.  In such cases, it might be desirable to minimize the amount
+		of inter-DC replication channels, for example:
+	</para>
+	<para>
+		<programlisting format="linespecific">
+
+      Before (standard, full-mesh replication):
+
+                    DC #1         DC #2
+                          WAN link
+                      A &lt;─────────> C
+                      ^ \        /  ^
+                      │   \   /     │         4 x OpenSIPS nodes, 1 x cluster
+                      │      X      │       (8 inter-DC replication channels)
+                      │    /   \    │         AC, AD, BC, BD, CA, CB, DA, DB
+                      v  /       \  v
+                      B &lt;─────────> D
+                          WAN link
+                       cluster_id: 1
+
+      After (cluster-bridged replication):
+
+                    DC #1         DC #2
+                          WAN link
+                      A ──────────> C
+                      ^             ^
+                      │             │          4 x OpenSIPS nodes, 2 x clusters
+                      │             │       (2 inter-DC replication channels)
+                      │             │                   AC, DB
+                      v             v
+                      B &lt;────────── D
+                          WAN link
+            cluster_id: 1           cluster_id: 2
+            sender: <emphasis role='bold'>wan1</emphasis> shtag      sender: <emphasis role='bold'>wan1</emphasis> shtag
+		</programlisting>
+
+	</para>
+	<para>
+		A <emphasis>new table</emphasis> has been added to represent the
+		inter-cluster replication bridges, named
+		<link linkend="param_db_bridge_table">clusterer_bridge</link>:
+		<programlisting>
+
+    mysql> select * from clusterer_bridge;
+    +----+-----------+-----------+------------+-------------------------------+
+    | id | cluster_a | cluster_b | send_shtag | dst_node_csv                  |
+    +----+-----------+-----------+------------+-------------------------------+
+    |  1 |         1 |         2 | wan1       | bin:10.0.0.213,bin:10.0.0.214 |
+    |  2 |         2 |         1 | wan1       | bin:10.0.0.210,bin:10.0.0.212 |
+    +----+-----------+-----------+------------+-------------------------------+
+    2 rows in set (0,00 sec)
+		</programlisting>
+		<emphasis>Example of a bi-directional bridge between clusters "1" and "2".</emphasis>
+	</para>
+	<para>
+		The "send_shtag" controls the originator node for each cluster bridge defined in the table.
+		Only the node with the "active" tag will actually send data over the network.
+		Sharing tags can be defined using the <xref linkend="param_sharing_tag"/> module parameter.
+	</para>
+	<para>
+		The "dst_node_csv" functions as a list of remote cluster nodes to try.
+		The module will attempt a single TCP send per node, in failover fashion (always same order).
+	</para>
+
+	<para>
+		At the time of writing, the only module using the new bridge replication
+		feature is <ulink url='ratelimit#bridge_replication'>ratelimit</ulink>,
+		in order to optimize its "CPS pipes broadcasting" replication mechanism.
+	</para>
+	</section>
+
         <section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
@@ -170,6 +251,26 @@ modparam("clusterer", "db_url",
 		<programlisting format="linespecific">
 ...
 modparam("clusterer", "db_table", "clusterer")
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_db_bridge_table" xreflabel="db_bridge_table">
+            <title><varname>db_bridge_table</varname></title>
+            <para>
+                The name of the table storing the inter-cluster bridge definitions.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>clusterer_bridge</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>db_bridge_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "db_bridge_table", "clusterer_bridge")
 ...
 		</programlisting>
 		</example>
