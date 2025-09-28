@@ -594,7 +594,7 @@ Chapter 3. Contributors
    10. franklyfox 4 2 44 5
 
    All remaining contributors: Jarrod Baumann (@jarrodb), Eric
-   Tamme (@etamme), Julián Moreno Patiño, Walter Doekes
+   Tamme (@etamme), Julián Moreno Patiño, Ken Rice, Walter Doekes
    (@wdoekes), Vlad Paiu (@vladpaiu).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -617,20 +617,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   2.  Razvan Crainea (@razvancrainea)     Jan 2017 - Sep 2024
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
-   4.  Liviu Chircu (@liviuchircu)         Apr 2018 - May 2023
-   5.  Maksym Sobolyev (@sobomax)          Jul 2017 - Feb 2023
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
-   7.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
-   9.  Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Ken Rice                            Sep 2025 - Sep 2025
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Razvan Crainea (@razvancrainea)     Jan 2017 - Sep 2024
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
+   5.  Liviu Chircu (@liviuchircu)         Apr 2018 - May 2023
+   6.  Maksym Sobolyev (@sobomax)          Jul 2017 - Feb 2023
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
+   8.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
+   10. Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Eric Tamme
-   (@etamme), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
-   (@vladpaiu), franklyfox.
+   All remaining contributors: Julián Moreno Patiño, Ovidiu Sas
+   (@ovidiusas), Eric Tamme (@etamme), Ionut Ionita
+   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), franklyfox.
 
    (1) including any documentation-related commits, excluding
    merge commits

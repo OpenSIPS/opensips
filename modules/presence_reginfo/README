@@ -125,6 +125,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Carsten Bock 8 1 771 0
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 14 17
+   3. Ken Rice 3 1 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -146,8 +147,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2024 - Apr 2024
-   2. Carsten Bock                        Mar 2024 - Mar 2024
+   1. Ken Rice                            Sep 2025 - Sep 2025
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2024 - Apr 2024
+   3. Carsten Bock                        Mar 2024 - Mar 2024
 
    (1) including any documentation-related commits, excluding
    merge commits

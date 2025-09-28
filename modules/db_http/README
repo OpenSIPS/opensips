@@ -478,7 +478,7 @@ Chapter 2. Contributors
    10. Dusan Klinec (@ph4r05) 3 1 50 26
 
    All remaining contributors: Ovidiu Sas (@ovidiusas), Anca
-   Vamanu, Ezequiel Lovelle (@lovelle), Peter Lemenkov
+   Vamanu, Ezequiel Lovelle (@lovelle), Ken Rice, Peter Lemenkov
    (@lemenkov), Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -501,20 +501,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2024
-   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
-   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   6.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2009 - Apr 2019
-   8.  Ryan Bullock (@rrb3942)             Jan 2019 - Feb 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   1.  Ken Rice                            Sep 2025 - Sep 2025
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2024
+   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
+   7.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2009 - Apr 2019
+   9.  Ryan Bullock (@rrb3942)             Jan 2019 - Feb 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Ezequiel Lovelle (@lovelle),
-   Stephane Alnet, Vlad Paiu (@vladpaiu), Anca Vamanu, Andrei
-   Dragus.
+   All remaining contributors: Dusan Klinec (@ph4r05), Ezequiel
+   Lovelle (@lovelle), Stephane Alnet, Vlad Paiu (@vladpaiu), Anca
+   Vamanu, Andrei Dragus.
 
    (1) including any documentation-related commits, excluding
    merge commits

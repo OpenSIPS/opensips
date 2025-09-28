@@ -275,7 +275,8 @@ Chapter 2. Contributors
    10. @jalung 3 1 97 56
 
    All remaining contributors: tcresson, Maksym Sobolyev
-   (@sobomax), Julián Moreno Patiño, Peter Lemenkov (@lemenkov).
+   (@sobomax), Julián Moreno Patiño, Ken Rice, Peter Lemenkov
+   (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -297,19 +298,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
-   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2024
-   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   4.  Vlad Paiu (@vladpaiu)               Jan 2013 - Aug 2024
-   5.  tcresson                            Oct 2023 - Oct 2023
-   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
-   9.  Alessio Garzi (@Ozzyboshi)          Nov 2019 - Dec 2019
-   10. Dan Pascu (@danpascu)               May 2019 - May 2019
+   1.  Ken Rice                            Sep 2025 - Sep 2025
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
+   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2024
+   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   5.  Vlad Paiu (@vladpaiu)               Jan 2013 - Aug 2024
+   6.  tcresson                            Oct 2023 - Oct 2023
+   7.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
+   10. Alessio Garzi (@Ozzyboshi)          Nov 2019 - Dec 2019
 
-   All remaining contributors: Peter Lemenkov (@lemenkov),
-   @jalung, Julián Moreno Patiño, Ovidiu Sas (@ovidiusas).
+   All remaining contributors: Dan Pascu (@danpascu), Peter
+   Lemenkov (@lemenkov), @jalung, Julián Moreno Patiño, Ovidiu Sas
+   (@ovidiusas).
 
    (1) including any documentation-related commits, excluding
    merge commits

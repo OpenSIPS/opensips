@@ -18,46 +18,50 @@ ratelimit Module
 
               1.4.1. Feedback Algorithm (FEEDBACK)
 
-        1.5. Dependencies
+        1.5. Cluster-Bridge Replication
+        1.6. Dependencies
 
-              1.5.1. OpenSIPS Modules
-              1.5.2. External Libraries or Applications
+              1.6.1. OpenSIPS Modules
+              1.6.2. External Libraries or Applications
 
-        1.6. Exported Parameters
+        1.7. Exported Parameters
 
-              1.6.1. timer_interval (integer)
-              1.6.2. limit_per_interval (integer)
-              1.6.3. expire_time (integer)
-              1.6.4. hash_size (integer)
-              1.6.5. default_algorithm (string)
-              1.6.6. cachedb_url (string)
-              1.6.7. db_prefix (string)
-              1.6.8. repl_buffer_threshold (string)
-              1.6.9. repl_timer_interval (string)
-              1.6.10. repl_timer_expire (string)
-              1.6.11. pipe_replication_cluster (integer)
-              1.6.12. window_size (int)
-              1.6.13. slot_period (int)
+              1.7.1. timer_interval (integer)
+              1.7.2. limit_per_interval (integer)
+              1.7.3. expire_time (integer)
+              1.7.4. hash_size (integer)
+              1.7.5. default_algorithm (string)
+              1.7.6. cachedb_url (string)
+              1.7.7. db_prefix (string)
+              1.7.8. repl_buffer_threshold (string)
+              1.7.9. repl_timer_interval (string)
+              1.7.10. repl_timer_expire (string)
+              1.7.11. pipe_replication_cluster (integer)
+              1.7.12. bridge_replication (boolean)
+              1.7.13. bridge_repl_timer_interval (string)
+              1.7.14. bridge_repl_timer_expire (string)
+              1.7.15. window_size (int)
+              1.7.16. slot_period (int)
 
-        1.7. Exported Functions
+        1.8. Exported Functions
 
-              1.7.1. rl_check(name, limit[, algorithm])
-              1.7.2. rl_dec_count(name)
-              1.7.3. rl_reset_count(name)
-              1.7.4. rl_values(ret_avp, regexp)
+              1.8.1. rl_check(name, limit[, algorithm])
+              1.8.2. rl_dec_count(name)
+              1.8.3. rl_reset_count(name)
+              1.8.4. rl_values(ret_avp, regexp)
 
-        1.8. Exported MI Functions
+        1.9. Exported MI Functions
 
-              1.8.1. rl_list
-              1.8.2. rl_dump_pipe
-              1.8.3. rl_reset_pipe
-              1.8.4. rl_set_pid
-              1.8.5. rl_get_pid
-              1.8.6. rl_bin_status
+              1.9.1. rl_list
+              1.9.2. rl_dump_pipe
+              1.9.3. rl_reset_pipe
+              1.9.4. rl_set_pid
+              1.9.5. rl_get_pid
+              1.9.6. rl_bin_status
 
-        1.9. Exported Pseudo-Variables
+        1.10. Exported Pseudo-Variables
 
-              1.9.1. $rl_count(name)
+              1.10.1. $rl_count(name)
 
    2. Contributors
 
@@ -88,12 +92,15 @@ ratelimit Module
    1.9. Set repl_timer_interval parameter
    1.10. Set repl_timer_expire parameter
    1.11. Set pipe_replication_cluster parameter
-   1.12. Set window_size parameter
-   1.13. Set slot_period parameter
-   1.14. rl_check usage
-   1.15. rl_dec_count usage
-   1.16. rl_reset_count usage
-   1.17. rl_values usage
+   1.12. Set bridge_replication parameter
+   1.13. Set bridge_repl_timer_interval parameter
+   1.14. Set bridge_repl_timer_expire parameter
+   1.15. Set window_size parameter
+   1.16. Set slot_period parameter
+   1.17. rl_check usage
+   1.18. rl_dec_count usage
+   1.19. rl_reset_count usage
+   1.20. rl_values usage
 
 Chapter 1. Admin Guide
 
@@ -252,22 +259,40 @@ Chapter 1. Admin Guide
    be the same (only one value). Again, this limitation are
    specific to this algorithm and not to the implementation.
 
-1.5. Dependencies
+1.5. Cluster-Bridge Replication
 
-1.5.1. OpenSIPS Modules
+   (added in OpenSIPS 4.0)
+
+   Cluster-bridge replication can be useful in some specific
+   scenarios where you have multiple clusters of OpenSIPS servers,
+   geographically spread across the country or beyond. In this
+   case, as an improvement to the standard, full-mesh replication
+   strategy, you can alternatively group them into multiple
+   cluster IDs based on geo-location, then define the replication
+   "bridges" between them. Full details in the cluster-bridge
+   replication chapter of the clusterer module.
+
+   At ratelimit level, you only need to enable bridge_replication,
+   after which the CPS pipes should start flowing to remote
+   clusters. Make sure to tweak bridge_repl_timer_interval and
+   bridge_repl_timer_expire as needed.
+
+1.6. Dependencies
+
+1.6.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * No dependencies on other OpenSIPS modules.
 
-1.5.2. External Libraries or Applications
+1.6.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.6. Exported Parameters
+1.7. Exported Parameters
 
-1.6.1. timer_interval (integer)
+1.7.1. timer_interval (integer)
 
    The timer interval in seconds when the Network and Feedback
    algorithms run their queries, and the other algorithms reset
@@ -283,7 +308,7 @@ Chapter 1. Admin Guide
 modparam("ratelimit", "timer_interval", 5)
 ...
 
-1.6.2. limit_per_interval (integer)
+1.7.2. limit_per_interval (integer)
 
    This parameter configures the way that a pipe's limit is
    specified in the rl_check function and only affects the
@@ -297,7 +322,7 @@ modparam("ratelimit", "timer_interval", 5)
 modparam("ratelimit", "limit_per_interval", 1)
 ...
 
-1.6.3. expire_time (integer)
+1.7.3. expire_time (integer)
 
    This parameter specifies how long a pipe should be kept in
    memory after it becomes idle (no more operations are performed
@@ -310,7 +335,7 @@ modparam("ratelimit", "limit_per_interval", 1)
 modparam("ratelimit", "expire_time", 1800)
 ...
 
-1.6.4. hash_size (integer)
+1.7.4. hash_size (integer)
 
    The size of the hash table internally used to keep the pipes. A
    larger table is much faster but consumes more memory. The hash
@@ -323,7 +348,7 @@ modparam("ratelimit", "expire_time", 1800)
 modparam("ratelimit", "hash_size", 512)
 ...
 
-1.6.5. default_algorithm (string)
+1.7.5. default_algorithm (string)
 
    Specifies which algorithm should be assumed in case it isn't
    explicitly specified in the rl_check function.
@@ -335,7 +360,7 @@ modparam("ratelimit", "hash_size", 512)
 modparam("ratelimit", "default_algorithm", "RED")
 ...
 
-1.6.6. cachedb_url (string)
+1.7.6. cachedb_url (string)
 
    Enables distributed rate limiting and specifies the backend
    that should be used by the CacheDB interface.
@@ -347,7 +372,7 @@ modparam("ratelimit", "default_algorithm", "RED")
 modparam("ratelimit", "cachedb_url", "redis://root:root@127.0.0.1/")
 ...
 
-1.6.7. db_prefix (string)
+1.7.7. db_prefix (string)
 
    Specifies what prefix should be added to the pipe name. This is
    only used when distributed rate limiting is enabled.
@@ -359,7 +384,7 @@ modparam("ratelimit", "cachedb_url", "redis://root:root@127.0.0.1/")
 modparam("ratelimit", "db_prefix", "ratelimit_")
 ...
 
-1.6.8. repl_buffer_threshold (string)
+1.7.8. repl_buffer_threshold (string)
 
    Used to specify the length of the buffer used by the binary
    replication, in bytes, when a flush should be performed - the
@@ -374,7 +399,7 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
 modparam("ratelimit", "repl_buffer_threshold", 500)
 ...
 
-1.6.9. repl_timer_interval (string)
+1.7.9. repl_timer_interval (string)
 
    Timer in milliseconds, used to specify how often the module
    should replicate its counters to the other instances.
@@ -386,7 +411,7 @@ modparam("ratelimit", "repl_buffer_threshold", 500)
 modparam("ratelimit", "repl_timer_interval", 100)
 ...
 
-1.6.10. repl_timer_expire (string)
+1.7.10. repl_timer_expire (string)
 
    Timer in seconds, used to specify when the counter received
    from a different instance should no longer be taken into
@@ -400,7 +425,7 @@ modparam("ratelimit", "repl_timer_interval", 100)
 modparam("ratelimit", "repl_timer_expire", 10)
 ...
 
-1.6.11. pipe_replication_cluster (integer)
+1.7.11. pipe_replication_cluster (integer)
 
    Specifies the cluster ID where pipes will be replicated to and
    received from.
@@ -412,18 +437,60 @@ modparam("ratelimit", "repl_timer_expire", 10)
 modparam("ratelimit", "pipe_replication_cluster", 1)
 ...
 
-1.6.12. window_size (int)
+1.7.12. bridge_replication (boolean)
+
+   Enable the cluster-bridge replication feature, if applicable
+   (e.g. the current pipe_replication_cluster has at least one
+   bridge definition to a foreign cluster).
+
+   Default value is false. (disabled)
+
+   Example 1.12. Set bridge_replication parameter
+...
+modparam("ratelimit", "bridge_replication", true)
+...
+
+1.7.13. bridge_repl_timer_interval (string)
+
+   Timer in milliseconds, used to specify how often the module
+   should replicate its cluster-local counters to remote clusters,
+   if bridged replication is in use, as long as it holds the
+   required sharing tag(s).
+
+   Default value is 500 ms.
+
+   Example 1.13. Set bridge_repl_timer_interval parameter
+...
+modparam("ratelimit", "bridge_repl_timer_interval", 500)
+...
+
+1.7.14. bridge_repl_timer_expire (string)
+
+   Timer in seconds, used to specify when the counter received
+   from a different cluster should no longer be taken into
+   account. This is used to prevent obsolete values, in case an
+   entire cluster (data center) is down and stops replicating its
+   counters.
+
+   Default value is 20 s.
+
+   Example 1.14. Set bridge_repl_timer_expire parameter
+...
+modparam("ratelimit", "bridge_repl_timer_expire", 20)
+...
+
+1.7.15. window_size (int)
 
    How long the history in SBT should be in seconds.
 
    Default value is “10”.
 
-   Example 1.12. Set window_size parameter
+   Example 1.15. Set window_size parameter
 ...
 modparam("ratelimit", "window_size", 5)
 ...
 
-1.6.13. slot_period (int)
+1.7.16. slot_period (int)
 
    Value of one slot in milliseconds. This parameter determines
    how granular the algorithm should be. The number of slots will
@@ -431,16 +498,16 @@ modparam("ratelimit", "window_size", 5)
 
    Default value is “200”.
 
-   Example 1.13. Set slot_period parameter
+   Example 1.16. Set slot_period parameter
 ...
 modparam("ratelimit", "window_size", 5)
 #we will have 50 slots of 100 milliseconds
 modparam("ratelimit", "slot_period", 100)
 ...
 
-1.7. Exported Functions
+1.8. Exported Functions
 
-1.7.1.  rl_check(name, limit[, algorithm])
+1.8.1.  rl_check(name, limit[, algorithm])
 
    Check the current request against the pipe identified by name
    and changes/updates the limit. If no pipe is found, then a new
@@ -477,7 +544,7 @@ modparam("ratelimit", "slot_period", 100)
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE,
    TIMER_ROUTE and EVENT_ROUTE.
 
-   Example 1.14. rl_check usage
+   Example 1.17. rl_check usage
 ...
         # perform a pipe match for all INVITE methods using RED algorith
 m
@@ -503,7 +570,7 @@ m
         };
 ...
 
-1.7.2.  rl_dec_count(name)
+1.8.2.  rl_dec_count(name)
 
    This function decreases a counter that could have been
    previously increased by rl_check function.
@@ -515,7 +582,7 @@ m
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE,
    TIMER_ROUTE and EVENT_ROUTE.
 
-   Example 1.15. rl_dec_count usage
+   Example 1.18. rl_dec_count usage
 ...
         if (!rl_check("gw_$ru", 100, "TAILDROP")) {
                 exit;
@@ -524,7 +591,7 @@ m
         };
 ...
 
-1.7.3.  rl_reset_count(name)
+1.8.3.  rl_reset_count(name)
 
    This function resets a counter that could have been previously
    increased by rl_check function.
@@ -536,7 +603,7 @@ m
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE,
    TIMER_ROUTE and EVENT_ROUTE.
 
-   Example 1.16. rl_reset_count usage
+   Example 1.19. rl_reset_count usage
 ...
         if (!rl_check("gw_$ru", 100, "TAILDROP")) {
                 exit;
@@ -545,7 +612,7 @@ m
         };
 ...
 
-1.7.4.  rl_values(ret_avp, regexp)
+1.8.4.  rl_values(ret_avp, regexp)
 
    Returns all the available pipes' names in the ret_avp output
    variable.
@@ -559,16 +626,16 @@ m
 
    This function can be used from any route.
 
-   Example 1.17. rl_values usage
+   Example 1.20. rl_values usage
 ...
         rl_values($avp(values));
         for ($var(pipe) in $(avp(values)[*]))
                 xlog("RATELIMIT: $var(pipe): $rl_count($var(pipe))\n");
 ...
 
-1.8. Exported MI Functions
+1.9. Exported MI Functions
 
-1.8.1.  rl_list
+1.9.1.  rl_list
 
    Lists the parameters and variabiles in the ratelimit module.
 
@@ -594,7 +661,7 @@ m
                 opensips-cli -x mi rl_list pipe=gw_10.0.0.1
                 opensips-cli -x mi rl_list filter=gw_*
 
-1.8.2.  rl_dump_pipe
+1.9.2.  rl_dump_pipe
 
    Exposes all the details about the current runtime data
    (specific to the pipe's algorithm) of a pipe. Currently make
@@ -608,7 +675,7 @@ m
    MI FIFO Command Format:
                 opensips-cli -x mi rl_dump_pipe gw_10.0.0.1
 
-1.8.3.  rl_reset_pipe
+1.9.3.  rl_reset_pipe
 
    Resets the counter of a specified pipe.
 
@@ -621,7 +688,7 @@ m
    MI FIFO Command Format:
                 opensips-cli -x mi rl_reset_pipe gw_10.0.0.1
 
-1.8.4.  rl_set_pid
+1.9.4.  rl_set_pid
 
    Sets the PID Controller parameters for the Feedback Algorithm.
 
@@ -635,7 +702,7 @@ m
    MI FIFO Command Format:
                 opensips-cli -x mi rl_set_pid 0.5 0.5 0.5
 
-1.8.5.  rl_get_pid
+1.9.5.  rl_get_pid
 
    Gets the list of in use PID Controller parameters.
 
@@ -646,7 +713,7 @@ m
    MI FIFO Command Format:
                 opensips-cli -x mi rl_get_pid
 
-1.8.6.  rl_bin_status
+1.9.6.  rl_bin_status
 
    Dumps each destination used for replication, as well as the
    timestamp of the last message received from them.
@@ -658,9 +725,9 @@ m
    MI FIFO Command Format:
                 opensips-cli -x mi rl_bin_status
 
-1.9. Exported Pseudo-Variables
+1.10. Exported Pseudo-Variables
 
-1.9.1. $rl_count(name)
+1.10.1. $rl_count(name)
 
    Returns the counter of a pipe. The variable is read-only.
 
@@ -676,8 +743,8 @@ Chapter 2. Contributors
    1. Razvan Crainea (@razvancrainea) 136 63 3289 2700
    2. Ovidiu Sas (@ovidiusas) 39 17 2481 44
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 35 29 299 137
-   4. Vlad Patrascu (@rvlad-patrascu) 31 17 359 558
-   5. Liviu Chircu (@liviuchircu) 27 21 131 193
+   4. Liviu Chircu (@liviuchircu) 32 23 500 223
+   5. Vlad Patrascu (@rvlad-patrascu) 31 17 359 558
    6. Eseanu Marius Cristian (@eseanucristian) 13 6 329 195
    7. Daniel-Constantin Mierla (@miconda) 9 7 24 18
    8. Maksym Sobolyev (@sobomax) 6 4 8 9
@@ -710,10 +777,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2025
-   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Jul 2023
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2025
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2025
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Jul 2023
    5.  Robert Moss                         Feb 2021 - Feb 2021
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    7.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
@@ -735,8 +802,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Eseanu Marius Cristian
    (@eseanucristian), Walter Doekes (@wdoekes), Arnaud Boussus,

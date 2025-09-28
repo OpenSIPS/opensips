@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">73</entry>
-		<entry align="center">55</entry>
-		<entry align="center">915</entry>
-		<entry align="center">595</entry>
+		<entry align="center">82</entry>
+		<entry align="center">58</entry>
+		<entry align="center">1445</entry>
+		<entry align="center">647</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2016 - Sep 2025</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jul 2025</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Norm Brandinger</entry>
 		<entry align="center">Jun 2025 - Jun 2025</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2016 - Apr 2025</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Norm Brandinger, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Shanee Vanstone, Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Jasper Hafkenscheid, Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Norm Brandinger, Shanee Vanstone, Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Jasper Hafkenscheid, Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>).</para>
 </section>
 
 </chapter>

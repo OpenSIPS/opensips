@@ -1233,8 +1233,9 @@ Chapter 2. Contributors
 
    All remaining contributors: Carsten Bock, Bob Atkins, Julián
    Moreno Patiño, Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Iouri
-   Kharon, UnixDev, Zero King (@l2dy), ihsinme, Peter Lemenkov
-   (@lemenkov), Walter Doekes (@wdoekes), Edson Gellert Schubert.
+   Kharon, UnixDev, Zero King (@l2dy), ihsinme, Ken Rice, Peter
+   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1256,22 +1257,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   4.  ihsinme                             Feb 2022 - Feb 2022
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Ken Rice                            Sep 2025 - Sep 2025
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   5.  ihsinme                             Feb 2022 - Feb 2022
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Walter Doekes (@wdoekes), Ovidiu
-   Sas (@ovidiusas), UnixDev, Henning Westerholt (@henningw),
-   Sergio Gutierrez, Iouri Kharon, Hardy Kahl, Daniel-Constantin
-   Mierla (@miconda), Edson Gellert Schubert, Bob Atkins, Carsten
-   Bock, Jonas Appel.
+   All remaining contributors: Julián Moreno Patiño, Walter Doekes
+   (@wdoekes), Ovidiu Sas (@ovidiusas), UnixDev, Henning
+   Westerholt (@henningw), Sergio Gutierrez, Iouri Kharon, Hardy
+   Kahl, Daniel-Constantin Mierla (@miconda), Edson Gellert
+   Schubert, Bob Atkins, Carsten Bock, Jonas Appel.
 
    (1) including any documentation-related commits, excluding
    merge commits
