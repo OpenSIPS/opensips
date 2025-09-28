@@ -34,6 +34,14 @@
 		<entry align="center">14</entry>
 		<entry align="center">17</entry>
 	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Ken Rice</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -64,11 +72,16 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Ken Rice</entry>
+		<entry align="center">Sep 2025 - Sep 2025</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Apr 2024 - Apr 2024</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Carsten Bock</entry>
 		<entry align="center">Mar 2024 - Mar 2024</entry>
 	</row>
