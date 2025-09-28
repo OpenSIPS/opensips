@@ -87,7 +87,9 @@ dialog Module
                       get_dialogs_by_profile(name,value,out_avp,out_
                       dlg_no)
 
-              1.7.9. load_dialog_ctx( dialog [, id_type])
+              1.7.9. load_dialog_ctx( dialog [, id_type] [,
+                      active_only])
+
               1.7.10. unload_dialog_ctx()
               1.7.11. set_dlg_profile(profile, [value],
                       [clear_values])
@@ -1456,7 +1458,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
 }
 ...
 
-1.7.9.  load_dialog_ctx( dialog [, id_type])
+1.7.9.  load_dialog_ctx( dialog [, id_type] [, active_only])
 
    The function loads and switches to the context of the given
    dialog. The context of a dialog is given by the dialog flags,
@@ -1475,6 +1477,9 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
        was used in the first parameter. It can be callid (SIP
        Call-ID) or did (internal Dialog ID). By default callid
        will be assumed.
+     * id_type (integer,optional) - if set to something different
+       than 0, it only considers active dialogs - dialogs that are
+       not deleted.
 
    This function can be used from any type of route.
 
@@ -2645,7 +2650,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 460 288 13367 3546
-   2. Razvan Crainea (@razvancrainea) 300 223 5500 1805
+   2. Razvan Crainea (@razvancrainea) 301 224 5515 1811
    3. Vlad Paiu (@vladpaiu) 262 149 7467 3027
    4. Vlad Patrascu (@rvlad-patrascu) 200 104 4330 3514
    5. Liviu Chircu (@liviuchircu) 183 133 3128 1374
@@ -2723,10 +2728,10 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Stefan-Cristian Mititelu, Ryan Bullock,
-   Vlad Patrascu (@rvlad-patrascu), Zero King (@l2dy), Dan Pascu
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Stefan-Cristian Mititelu, Ryan Bullock, Vlad
+   Patrascu (@rvlad-patrascu), Zero King (@l2dy), Dan Pascu
    (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno Patiño,
    Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
