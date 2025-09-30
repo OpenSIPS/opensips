@@ -44,6 +44,8 @@
 #define EVENT_LINE_SEIZE     9
 #define EVENT_AS_FEATURE     10
 #define EVENT_REFER          11
+/* keep this one updated, pointing to the last EVENT above */
+#define EVENT_LAST           EVENT_REFER
 
 typedef struct event {
 	str text;       /* Original string representation */
