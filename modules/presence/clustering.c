@@ -34,7 +34,7 @@ str clustering_events = {NULL,0};
 
 int *cluster_active = NULL;
 
-static unsigned char clustered_events[EVENT_LINE_SEIZE];
+static unsigned char clustered_events[EVENT_LAST];
 
 struct clusterer_binds c_api;
 
