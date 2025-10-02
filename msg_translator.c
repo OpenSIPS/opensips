@@ -1931,8 +1931,12 @@ static inline void apply_msg_changes(struct sip_msg *msg,
 		if (get_body(msg, &body) != 0 || body.len==0)
 			return;
 
-		memcpy(new_buf+*new_offs, msg->sdp_ops->sep, msg->sdp_ops->sep_len);
-		*new_offs += msg->sdp_ops->sep_len;
+		size = msg->body->body.s ?
+			((msg->body->body.s - msg->buf) - *orig_offs)  /* msg had body */
+			: (msg->len - *orig_offs);                     /* no body at all */
+		memcpy(new_buf+*new_offs, msg->buf+*orig_offs, size );
+		*new_offs += size;
+		*orig_offs += size;
 
 		memcpy(new_buf+*new_offs, body.s, body.len);
 		*new_offs += body.len;
@@ -2144,7 +2148,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	char *line_buf, *received_buf, *rport_buf, *new_buf, *buf, *id_buf;
 	unsigned int offset, s_offset, size, id_len;
 	struct lump *anchor, *via_insert_param;
-	str branch, extra_params, body;
+	str branch, extra_params, body = STR_NULL;
 	struct hostport hp;
 
 	id_buf=0;
