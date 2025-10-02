@@ -198,7 +198,7 @@ struct module_exports exports = {
 
 static int parse_cache_entry(unsigned int type, void *val)
 {
-	cache_entry_t *new_entry;
+	cache_entry_t *new_entry = NULL;
 	char *p1, *p2, *tmp, *c_tmp1, *c_tmp2;
 	int col_idx;
 	int rc = -1;
