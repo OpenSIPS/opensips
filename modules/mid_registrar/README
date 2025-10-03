@@ -58,6 +58,8 @@ mid_registrar Module
               1.5.31. pn_skip_pn_interval (integer)
               1.5.32. pn_refresh_timeout (integer)
               1.5.33. pn_enable_purr (boolean)
+              1.5.34. min_expires_avp (string)
+              1.5.35. max_expires_avp (string)
 
         1.6. Exported Functions
 
@@ -122,9 +124,11 @@ mid_registrar Module
    1.31. Setting the pn_skip_pn_interval parameter
    1.32. Setting the pn_refresh_timeout parameter
    1.33. Setting the pn_enable_purr parameter
-   1.34. mid_registrar_save usage
-   1.35. mid_registrar_lookup usage
-   1.36. async pn_process_purr() usage
+   1.34. Setting the min_expires_avp module parameter
+   1.35. Setting the max_expires_avp module parameter
+   1.36. mid_registrar_save usage
+   1.37. mid_registrar_lookup usage
+   1.38. async pn_process_purr() usage
 
 Chapter 1. Admin Guide
 
@@ -980,9 +984,40 @@ modparam("mid_registrar", "pn_refresh_timeout", 10)
 modparam("mid_registrar", "pn_enable_purr", true)
 ...
 
+1.5.34. min_expires_avp (string)
+
+   Optional pseudo-variable specification evaluated for each REGISTER
+   processed by mid_registrar_save(). If it resolves to a positive
+   integer, the value overrides the effective minimum expiry used when
+   clamping Contact "expires" parameters or the Expires header field for
+   that specific request. Non-integer, NULL or non-positive results are
+   ignored and the existing minimum (from either the global
+   min_expires parameter or per-call flags) is preserved.
+
+   Default value is NULL (unset).
+
+   Example 1.34. Setting the min_expires_avp module parameter
+modparam("mid_registrar", "min_expires_avp", "$avp(mr_min)")
+
+1.5.35. max_expires_avp (string)
+
+   Optional pseudo-variable specification evaluated per REGISTER to
+   override the effective maximum expiry. When it resolves to a positive
+   integer, the value supersedes the current maximum (from the global
+   max_expires parameter or per-call flags) before the module clamps the
+   UA supplied expires interval. Non-integer, NULL or non-positive
+   results are ignored. If the resulting minimum exceeds the maximum,
+   the minimum will be clamped to the maximum and a warning will be
+   logged.
+
+   Default value is NULL (unset).
+
+   Example 1.35. Setting the max_expires_avp module parameter
+modparam("mid_registrar", "max_expires_avp", "$avp(mr_max)")
+
 1.6. Exported Functions
 
-1.6.1.  mid_registrar_save(domain[, flags[, aor[, outgoing_expires[,
+1.6.1.  mid_registrar_save(domain[, flags[, aor[, outgoing_expires[, 
 ownership_tag]]]])
 
    Function to be called when handling REGISTER requests. This
@@ -1116,7 +1151,7 @@ ownership_tag]]]])
 
    This function can only be used from the request route.
 
-   Example 1.34. mid_registrar_save usage
+   Example 1.36. mid_registrar_save usage
 ...
 if (is_method("REGISTER")) {
         mid_registrar_save("location");
@@ -1273,7 +1308,7 @@ if (is_method("REGISTER")) {
 
    This function can only be used from the request route.
 
-   Example 1.35. mid_registrar_lookup usage
+   Example 1.37. mid_registrar_lookup usage
 ...
         # initial invites from the main registrar - need to look them up
 !
@@ -1318,7 +1353,7 @@ if (is_method("REGISTER")) {
        foreign PURR or offline contact)
      * -1 - Internal Error
 
-   Example 1.36. async pn_process_purr() usage
+   Example 1.38. async pn_process_purr() usage
 route {
         ...
         if (has_totag()) {

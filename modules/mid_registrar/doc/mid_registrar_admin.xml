@@ -608,6 +608,52 @@ modparam("mid_registrar", "max_expires", 7200)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_min_expires_avp" xreflabel="min_expires_avp">
+		<title><varname>min_expires_avp</varname> (string)</title>
+		<para>
+		Optional pseudo-variable specification evaluated during
+		<xref linkend="func_mid_registrar_save"/>. If it resolves to a positive
+		integer, the value overrides the effective minimum expiry for that
+		REGISTER before the module clamps Contact <quote>expires</quote>
+		parameters or the Expires header field. NULL, non-integer or
+		non-positive results are ignored and the existing minimum remains in
+		effect.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>NULL</emphasis> (unset)
+		</para>
+		<example>
+		<title>Setting the <emphasis>min_expires_avp</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "min_expires_avp", "$avp(mr_min)")
+</programlisting>
+		</example>
+	</section>
+	<section id="param_max_expires_avp" xreflabel="max_expires_avp">
+		<title><varname>max_expires_avp</varname> (string)</title>
+		<para>
+		Optional pseudo-variable specification evaluated per REGISTER to
+		override the effective maximum expiry. When it resolves to a positive
+		integer, the value supersedes the current maximum before clamping takes
+		place. NULL, non-integer or non-positive results are ignored.
+		</para>
+		<para>
+		If the resulting minimum exceeds the maximum, the module clamps the
+		minimum to the maximum and logs a warning. The internal
+		<varname>default_expires</varname> value is also clamped into the final
+		effective window so that REGISTER requests without explicit Expires
+		information honour the override.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>NULL</emphasis> (unset)
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_expires_avp</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "max_expires_avp", "$avp(mr_max)")
+</programlisting>
+		</example>
+	</section>
 	<section id="param_default_q" xreflabel="default_q">
 		<title><varname>default_q</varname> (integer)</title>
 		<para>
@@ -1065,4 +1111,3 @@ if (is_method("REGISTER")) {
 
 
 </chapter>
-

@@ -39,6 +39,7 @@
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_supported.h"
 #include "../../parser/parse_allow.h"
+#include "../../parser/parse_expires.h"
 #include "../../dset.h"
 
 #include "../../parser/parse_from.h"
@@ -47,6 +48,7 @@
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 #include "../../lib/reg/common.h"
+#include "../../pvar.h"
 
 #include "../../trim.h"
 #include "../../strcommon.h"
@@ -69,22 +71,45 @@ int prepare_rpl_path(struct sip_msg *req, str *path, int flags, struct sip_msg *
  * @_e: output param (integer) - value of the ";expires" Contact hf param or "Expires" hf
  */
 void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
-                          int enforce_expires_limits)
+			  int enforce_expires_limits, struct save_ctx *sctx)
 {
+	int eff_min = min_expires;
+	int eff_max = max_expires;
+	int eff_default = default_expires;
+	int use_local = enforce_expires_limits && sctx;
+
+	if (use_local) {
+		if (sctx->min_expires)
+			eff_min = sctx->min_expires;
+		if (sctx->max_expires)
+			eff_max = sctx->max_expires;
+		if (sctx->expires)
+			eff_default = sctx->expires;
+	}
+
 	if (!_ep || !_ep->body.len) {
-		*_e = get_expires_hf(_m);
+		if (_m->expires) {
+			exp_body_t *p = (exp_body_t *)_m->expires->parsed;
+			if (p && p->valid) {
+				*_e = p->val;
+			} else {
+				*_e = eff_default;
+			}
+		} else {
+			*_e = eff_default;
+		}
 	} else {
 		if (str2int(&_ep->body, (unsigned int*)_e) < 0) {
-			*_e = default_expires;
+			*_e = eff_default;
 		}
 	}
 
 	if (enforce_expires_limits) {
-		if ((*_e != 0) && min_expires && ((*_e) < min_expires))
-			*_e = min_expires;
+		if ((*_e != 0) && eff_min && ((*_e) < eff_min))
+			*_e = eff_min;
 
-		if ((*_e != 0) && max_expires && ((*_e) > max_expires))
-			*_e = max_expires;
+		if ((*_e != 0) && eff_max && ((*_e) > eff_max))
+			*_e = eff_max;
 	}
 
 	LM_DBG("expires: %d\n", *_e);
@@ -118,7 +143,71 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
 	LM_DBG("outgoing expires: %d\n", *_e);
 }
 
-static int trim_to_single_contact(struct sip_msg *msg, str *aor, int expires)
+
+static void apply_expires_overrides(struct sip_msg *msg, struct save_ctx *sctx)
+{
+	pv_value_t pv;
+	int eff_min = sctx->min_expires;
+	int eff_max = sctx->max_expires;
+	int eff_default = sctx->expires ? sctx->expires : default_expires;
+	int clamped_default = eff_default;
+
+	if (min_expires_avp.getf) {
+		memset(&pv, 0, sizeof(pv));
+		if (pv_get_spec_value(msg, &min_expires_avp, &pv) == 0) {
+			if (pvv_is_int(&pv) && pv.ri > 0) {
+				eff_min = pv.ri;
+			} else if (!(pv.flags & PV_VAL_NULL)) {
+				LM_DBG("ignoring min_expires_avp override (value=%d flags=%d)\n",
+				        pv.ri, pv.flags);
+			}
+		} else {
+			LM_DBG("failed to resolve min_expires_avp override\n");
+		}
+	}
+
+	if (max_expires_avp.getf) {
+		memset(&pv, 0, sizeof(pv));
+		if (pv_get_spec_value(msg, &max_expires_avp, &pv) == 0) {
+			if (pvv_is_int(&pv) && pv.ri > 0) {
+				eff_max = pv.ri;
+			} else if (!(pv.flags & PV_VAL_NULL)) {
+				LM_DBG("ignoring max_expires_avp override (value=%d flags=%d)\n",
+				        pv.ri, pv.flags);
+			}
+		} else {
+			LM_DBG("failed to resolve max_expires_avp override\n");
+		}
+	}
+
+	if (eff_max > 0 && eff_min > eff_max) {
+		LM_WARN("effective min_expires (%d) greater than max_expires (%d); "
+		        "clamping min to %d\n", eff_min, eff_max, eff_max);
+		eff_min = eff_max;
+	}
+
+	if (eff_min && clamped_default < eff_min) {
+		LM_WARN("default_expires (%d) below effective min_expires (%d); "
+		        "raising to %d\n", eff_default, eff_min, eff_min);
+		clamped_default = eff_min;
+	}
+
+	if (eff_max && clamped_default > eff_max) {
+		LM_WARN("default_expires (%d) above effective max_expires (%d); "
+		        "lowering to %d\n", eff_default, eff_max, eff_max);
+		clamped_default = eff_max;
+	}
+
+	LM_DBG("effective expires window: min=%d max=%d default=%d\n",
+	       eff_min, eff_max, clamped_default);
+
+	sctx->min_expires = eff_min;
+	sctx->max_expires = eff_max;
+	sctx->expires = clamped_default;
+}
+
+static int trim_to_single_contact(struct sip_msg *msg, str *aor, int expires,
+				 struct save_ctx *sctx)
 {
 	contact_t *c = NULL;
 	const struct socket_info *send_sock;
@@ -151,7 +240,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor, int expires)
 
 	for (c = ((contact_body_t *)ct->parsed)->contacts; c;
 	     c = get_next_contact(c)) {
-		calc_contact_expires(msg, c->expires, &e, 1);
+		calc_contact_expires(msg, c->expires, &e, 1, sctx);
 		if (e != 0)
 			is_dereg = 0;
 
@@ -532,14 +621,15 @@ static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
 	return 0;
 }
 
-void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri)
+void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri,
+				       struct save_ctx *sctx)
 {
 	contact_t *c;
 	int e, expiry_tick, new_expires;
 	int exp_header_done = 0;
 
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
-		calc_contact_expires(req, c->expires, &e, 1);
+		calc_contact_expires(req, c->expires, &e, 1, sctx);
 		calc_ob_contact_expires(req, c->expires, &expiry_tick, mri->expires_out);
 		new_expires = expiry_tick == 0 ? 0 : expiry_tick - get_act_time();
 
@@ -554,7 +644,8 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 	}
 }
 
-int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri)
+int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri,
+		struct save_ctx *sctx)
 {
 	contact_t *c;
 	struct ct_mapping *ctmap;
@@ -596,7 +687,7 @@ int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri)
 		}
 
 		update_act_time();
-		calc_contact_expires(req, c->expires, &ctmap->expires, 1);
+		calc_contact_expires(req, c->expires, &ctmap->expires, 1, sctx);
 
 		/* q */
 		if (calc_contact_q(c->q, &ctmap->q) < 0) {
@@ -686,11 +777,11 @@ void mid_reg_req_fwded(struct cell *_, int __, struct tmcb_params *params)
 		goto out;
 
 	if (reg_mode != MID_REG_MIRROR)
-		overwrite_contact_expirations(req, mri);
+		overwrite_contact_expirations(req, mri, sctx);
 
 	if (reg_mode == MID_REG_THROTTLE_AOR) {
 		LM_DBG("trimming all Contact URIs into one...\n");
-		if (trim_to_single_contact(req, &mri->aor, mri->expires_out)) {
+		if (trim_to_single_contact(req, &mri->aor, mri->expires_out, sctx)) {
 			LM_ERR("failed to overwrite Contact URI\n");
 			goto out;
 		}
@@ -705,7 +796,7 @@ void mid_reg_req_fwded(struct cell *_, int __, struct tmcb_params *params)
 	 * earliest, before sending out the request and almost ignore the
 	 * un-parsable "req" sip_msg provided during TMCB_RESPONSE_IN.
 	 */
-	if (dup_req_info(req, mri) != 0) {
+	if (dup_req_info(req, mri, sctx) != 0) {
 		LM_ERR("oom\n");
 		goto out;
 	}
@@ -1558,7 +1649,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 	/* in MID_REG_THROTTLE_AOR mode, replies should contain only 1 contact */
 	_c = get_first_contact_matching(rpl, &esc_aor);
 	if (_c)
-		calc_contact_expires(rpl, _c->expires, &e_out, 0);
+		calc_contact_expires(rpl, _c->expires, &e_out, 0, NULL);
 
 	ul.lock_udomain(mri->dom, &mri->aor);
 	ul.get_urecord(mri->dom, &mri->aor, &r);
@@ -2208,7 +2299,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(msg); ct; ct = get_next_contact(ct)) {
-		calc_contact_expires(msg, ct->expires, &e, 1);
+		calc_contact_expires(msg, ct->expires, &e, 1, _sctx);
 		if (e == 0) {
 			LM_DBG("forwarding REGISTER (ct with expires == 0)\n");
 			return 1;
@@ -2393,7 +2484,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
-		calc_contact_expires(req, ct->expires, &e, 1);
+		calc_contact_expires(req, ct->expires, &e, 1, _sctx);
 		if (e > e_out) {
 			LM_DBG("reducing contact expiration from %d sec to %d sec!\n",
 			       e, e_out);
@@ -2538,6 +2629,9 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, struct save_flags *flags,
 	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
 	sctx.cmatch.mode = CT_MATCH_NONE;
+	sctx.min_expires = min_expires;
+	sctx.max_expires = max_expires;
+	sctx.expires = default_expires;
 	sctx.max_contacts = max_contacts;
 
 	LM_DBG("saving to %.*s...\n", d->name->len, d->name->s);
@@ -2555,6 +2649,8 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, struct save_flags *flags,
 		rerrno = R_NOT_IMPL;
 		goto out_error;
 	}
+
+	apply_expires_overrides(msg, &sctx);
 
 	if (parse_reg_headers(msg) != 0) {
 		LM_ERR("failed to parse req headers\n");
