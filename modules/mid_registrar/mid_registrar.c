@@ -529,6 +529,9 @@ struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 		shm_str_dup(&new->main_reg_next_hop, &mri->main_reg_next_hop);
 
 	new->pn_provider_state = mri->pn_provider_state;
+	new->eff_min_expires = mri->eff_min_expires;
+	new->eff_max_expires = mri->eff_max_expires;
+	new->eff_default_expires = mri->eff_default_expires;
 
 	new->cmatch.mode = mri->cmatch.mode;
 	if (mri->cmatch.match_params)
