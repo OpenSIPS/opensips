@@ -32,6 +32,7 @@
 
 #include "../../parser/msg_parser.h"
 #include "../../parser/contact/contact.h"
+#include "../../pvar.h"
 #include "../../script_cb.h"
 #include "../../socket_info.h"
 
@@ -126,6 +127,9 @@ extern struct sig_binds sig_api;
 
 extern int retry_after;
 extern unsigned int outgoing_expires;
+
+extern pv_spec_t min_expires_avp;
+extern pv_spec_t max_expires_avp;
 
 extern enum mid_reg_mode reg_mode;
 extern enum mid_reg_insertion_mode ctid_insertion;
