@@ -397,7 +397,7 @@ static evi_reply_sock* rmq_parse(str socket)
 			case '@':
 				st = ST_HOST;
 				if (dupl_string(&tmp, begin, socket.s + i)) goto err;
-				memcpy(param->conn.uri.user, tmp.s, tmp.len);
+				param->conn.uri.user = tmp.s;
 				param->conn.uri.user[tmp.len] = '\0';
 				begin = socket.s + i + 1;
 				param->conn.flags |= RMQ_PARAM_USER;
@@ -422,12 +422,12 @@ static evi_reply_sock* rmq_parse(str socket)
 			switch(socket.s[i]) {
 			case '@':
 				st = ST_HOST;
-				memcpy(param->conn.uri.user, prev_token.s, prev_token.len);
+				param->conn.uri.user = prev_token.s;
 				param->conn.flags |= RMQ_PARAM_USER;
 				prev_token.s = 0;
 				if (dupl_string(&tmp, begin, socket.s + i) < 0)
 					goto err;
-				memcpy(param->conn.uri.password, tmp.s, tmp.len);
+				param->conn.uri.password = tmp.s;
 				param->conn.flags |= RMQ_PARAM_PASS;
 				begin = socket.s + i + 1;
 				break;
