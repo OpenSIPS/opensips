@@ -451,6 +451,14 @@ opensips-cli -x mi call_transfer \
 				<emphasis>callid</emphasis> (string) - the callid of the
 					dialog that is being put on hold.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>leg</emphasis> (string, optional) - put only a
+					specific participant on hold. Possible values are
+					<emphasis>caller</emphasis>, <emphasis>callee</emphasis>
+					and <emphasis>bold</emphasis> and indicate the leg that
+					is being put on hold. If not used, both legs are being
+					put on hold.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
@@ -484,6 +492,13 @@ opensips-cli -x mi call_hold \
 			<listitem><para>
 				<emphasis>callid</emphasis> (string) - the callid of the
 					dialog that is being resumed.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>leg</emphasis> (string, optional) - resume only a
+					specific participant on hold. Possible values are
+					<emphasis>caller</emphasis>, <emphasis>callee</emphasis>
+					and <emphasis>bold</emphasis> and indicate the leg that
+					is being resumed. If not used, both legs are resumed.
 			</para></listitem>
 		</itemizedlist>
 		<para>
