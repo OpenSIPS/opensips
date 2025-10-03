@@ -222,11 +222,13 @@ static const mi_export_t mi_cmds[] = {
 	{ "call_hold", 0, 0, 0, {
 		{mi_call_hold, {"callid", 0}},
 		{mi_call_hold, {"callid", "leg", 0}},
+		{mi_call_hold, {"callid", "leg", "headers", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "call_unhold", 0, 0, 0, {
 		{mi_call_unhold, {"callid", 0}},
 		{mi_call_unhold, {"callid", "leg", 0}},
+		{mi_call_unhold, {"callid", "leg", "headers", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -1171,7 +1173,7 @@ static int call_get_hold_body(struct dlg_cell *dlg, int leg, unsigned mode, str 
 	return 1;
 }
 
-static int call_put_leg_onhold(struct dlg_cell *dlg, int leg, unsigned mode)
+static int call_put_leg_onhold(struct dlg_cell *dlg, int leg, unsigned mode, str *hdrs)
 {
 	int ret;
 	unsigned int param;
@@ -1214,7 +1216,7 @@ static int call_put_leg_onhold(struct dlg_cell *dlg, int leg, unsigned mode)
 
 	/* send it out */
 	ret = call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
-			NULL, mi_call_hold_reply, (void *)(long)param, NULL);
+			hdrs, mi_call_hold_reply, (void *)(long)param, NULL);
 	pkg_free(body.s);
 	if (ret < 0) {
 		init_str(&state, "fail");
@@ -1225,7 +1227,7 @@ static int call_put_leg_onhold(struct dlg_cell *dlg, int leg, unsigned mode)
 	return 1;
 }
 
-static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg, unsigned mode)
+static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg, unsigned mode, str *hdrs)
 {
 	str body;
 	str invite = str_init("INVITE");
@@ -1275,7 +1277,7 @@ static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg, unsigned mode)
 
 	RAISE_CALL_EVENT(HOLD, &dlg->callid, &sleg, &action, &state, NULL);
 	if (call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
-			NULL, mi_call_hold_reply, (void *)(long)param, NULL) < 0) {
+			hdrs, mi_call_hold_reply, (void *)(long)param, NULL) < 0) {
 		init_str(&state, "fail");
 		RAISE_CALL_EVENT(HOLD, &dlg->callid, &sleg, &action, &state, NULL);
 		LM_ERR("could not resume leg %d\n", leg);
@@ -1284,12 +1286,82 @@ static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg, unsigned mode)
 	return 1;
 }
 
+static mi_response_t *mi_parse_call_hold(const mi_params_t *params, str *callid,
+		str *leg, unsigned *caller_mode, unsigned *callee_mode,
+		str *caller_hdrs, str *callee_hdrs)
+{
+	int hdrs_no;
+	str tmp;
+	mi_item_t *hdrs_arr;
+	caller_hdrs->len = callee_hdrs->len = 0;
+	caller_hdrs->s = callee_hdrs->s = NULL;
+
+	*caller_mode = CALLOPS_SEND_OFF | CALLOPS_RECV_OFF;
+	*callee_mode = CALLOPS_SEND_OFF | CALLOPS_RECV_OFF;
+
+	if (get_mi_string_param(params, "callid",
+			&callid->s, &callid->len) < 0)
+		return init_mi_param_error();
+
+	switch (try_get_mi_string_param(params, "leg", &leg->s, &leg->len)) {
+		case -2:
+			return init_mi_param_error();
+		case -1:
+			break;
+		default:
+			if (str_match_nt(leg, "caller")) {
+				*caller_mode = CALLOPS_RECV_OFF;
+				*callee_mode = CALLOPS_SEND_OFF;
+			} else if (str_match_nt(leg, "callee")) {
+				*caller_mode = CALLOPS_SEND_OFF;
+				*callee_mode = CALLOPS_RECV_OFF;
+			} else if (!str_match_nt(leg, "both")) {
+				return init_mi_error(420, MI_SSTR("Bad leg"));
+			}
+	}
+
+	/* we try to parse it as string, and if it does not work, as array of two
+	 * elements - first is the caller's headers, second is the callee's
+	 * headers */
+	switch (try_get_mi_string_param(params, "headers", &tmp.s, &tmp.len)) {
+		case -2:
+			/* bad type - could be an array ? */
+			switch (try_get_mi_array_param(params, "headers", &hdrs_arr, &hdrs_no)) {
+				case -1:
+				case -3:
+					break;
+				case -2:
+					return init_mi_param_error();
+				default:
+					if (hdrs_no > 0 && get_mi_arr_param_string(hdrs_arr, 0,
+							&caller_hdrs->s, &caller_hdrs->len) < 0)
+						return init_mi_param_error();
+					unescape_crlf(caller_hdrs);
+					if (hdrs_no > 1 && get_mi_arr_param_string(hdrs_arr, 1,
+							&callee_hdrs->s, &callee_hdrs->len) < 0)
+						return init_mi_param_error();
+					unescape_crlf(callee_hdrs);
+					break;
+			}
+			break;
+		case -1:
+			break;
+		default:
+			unescape_crlf(&tmp);
+			*caller_hdrs = tmp;
+			*callee_hdrs = tmp;
+			break;
+	}
+
+	return NULL;
+}
 
 static mi_response_t *mi_call_hold(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str callid;
 	str leg, action, state;
+	str caller_hdrs, callee_hdrs;
 	struct dlg_cell *dlg;
 	mi_response_t *ret = NULL;
 	int ret_callee;
@@ -1297,26 +1369,9 @@ static mi_response_t *mi_call_hold(const mi_params_t *params,
 	unsigned caller_mode = CALLOPS_SEND_OFF | CALLOPS_RECV_OFF;
 	unsigned callee_mode = CALLOPS_SEND_OFF | CALLOPS_RECV_OFF;
 
-	if (get_mi_string_param(params, "callid",
-			&callid.s, &callid.len) < 0)
-		return init_mi_param_error();
-
-	switch (try_get_mi_string_param(params, "leg", &leg.s, &leg.len)) {
-		case -2:
-			return init_mi_param_error();
-		case -1:
-			break;
-		default:
-			if (str_match_nt(&leg, "caller")) {
-				caller_mode = CALLOPS_RECV_OFF;
-				callee_mode = CALLOPS_SEND_OFF;
-			} else if (str_match_nt(&leg, "callee")) {
-				caller_mode = CALLOPS_SEND_OFF;
-				callee_mode = CALLOPS_RECV_OFF;
-			} else if (!str_match_nt(&leg, "both")) {
-				return init_mi_error(420, MI_SSTR("Bad leg"));
-			}
-	}
+	if ((ret = mi_parse_call_hold(params, &callid, &leg,
+			&caller_mode, &callee_mode, &caller_hdrs, &callee_hdrs)) != NULL)
+		return ret;
 
 	dlg = call_dlg_api.get_dlg_by_callid(&callid, 1);
 	if (!dlg)
@@ -1326,17 +1381,17 @@ static mi_response_t *mi_call_hold(const mi_params_t *params,
 		ret = init_mi_error(410, MI_SSTR("Dialog not ready"));
 		goto unref;
 	}
-	ret_caller = call_put_leg_onhold(dlg, DLG_CALLER_LEG, caller_mode);
+	ret_caller = call_put_leg_onhold(dlg, DLG_CALLER_LEG, caller_mode, &caller_hdrs);
 	if (ret_caller < 0)
 		goto unref;
-	ret_callee = call_put_leg_onhold(dlg, callee_idx(dlg), callee_mode);
+	ret_callee = call_put_leg_onhold(dlg, callee_idx(dlg), callee_mode, &callee_hdrs);
 	if (ret_callee < 0) {
 		if (ret_caller != 0) {
 			init_str(&leg, "caller");
 			init_str(&state, "state");
 			init_str(&action, "action");
 			RAISE_CALL_EVENT(HOLD, &dlg->callid, &leg, &action, &state, NULL);
-			call_resume_leg_onhold(dlg, DLG_CALLER_LEG, caller_mode);
+			call_resume_leg_onhold(dlg, DLG_CALLER_LEG, caller_mode, &caller_hdrs);
 		}
 		goto unref;
 	}
@@ -1357,29 +1412,13 @@ static mi_response_t *mi_call_unhold(const mi_params_t *params,
 	struct dlg_cell *dlg;
 	mi_response_t *ret = NULL;
 	int ret_caller, ret_callee;
-	unsigned caller_mode = CALLOPS_SEND_OFF | CALLOPS_RECV_OFF;
-	unsigned callee_mode = CALLOPS_SEND_OFF | CALLOPS_RECV_OFF;
+	str caller_hdrs, callee_hdrs;
+	unsigned caller_mode;
+	unsigned callee_mode;
 
-	if (get_mi_string_param(params, "callid",
-			&callid.s, &callid.len) < 0)
-		return init_mi_param_error();
-
-	switch (try_get_mi_string_param(params, "leg", &leg.s, &leg.len)) {
-		case -2:
-			return init_mi_param_error();
-		case -1:
-			break;
-		default:
-			if (str_match_nt(&leg, "caller")) {
-				caller_mode = CALLOPS_RECV_OFF;
-				callee_mode = CALLOPS_SEND_OFF;
-			} else if (str_match_nt(&leg, "callee")) {
-				caller_mode = CALLOPS_SEND_OFF;
-				callee_mode = CALLOPS_RECV_OFF;
-			} else if (!str_match_nt(&leg, "both")) {
-				return init_mi_error(420, MI_SSTR("Bad leg"));
-			}
-	}
+	if ((ret = mi_parse_call_hold(params, &callid, &leg,
+			&caller_mode, &callee_mode, &caller_hdrs, &callee_hdrs)) != NULL)
+		return ret;
 
 	dlg = call_dlg_api.get_dlg_by_callid(&callid, 1);
 	if (!dlg)
@@ -1389,8 +1428,8 @@ static mi_response_t *mi_call_unhold(const mi_params_t *params,
 		ret = init_mi_error(410, MI_SSTR("Dialog not ready"));
 		goto unref;
 	}
-	ret_callee = call_resume_leg_onhold(dlg, callee_idx(dlg), callee_mode);
-	ret_caller = call_resume_leg_onhold(dlg, DLG_CALLER_LEG, caller_mode);
+	ret_callee = call_resume_leg_onhold(dlg, callee_idx(dlg), callee_mode, &callee_hdrs);
+	ret_caller = call_resume_leg_onhold(dlg, DLG_CALLER_LEG, caller_mode, &caller_hdrs);
 	if (ret_caller == 0 && ret_callee == 0)
 		ret = init_mi_error(480, MI_SSTR("No dialog legs on hold"));
 	else if (ret_caller > 0 || ret_callee > 0)
