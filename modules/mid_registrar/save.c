@@ -747,6 +747,12 @@ void mid_reg_req_fwded(struct cell *_, int __, struct tmcb_params *params)
 	struct sip_msg *req = params->req;
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
 	str *next_hop = NULL;
+	struct save_ctx override_ctx;
+
+	memset(&override_ctx, 0, sizeof override_ctx);
+	override_ctx.min_expires = mri->eff_min_expires;
+	override_ctx.max_expires = mri->eff_max_expires;
+	override_ctx.expires = mri->eff_default_expires;
 
 	lock_start_write(mri->tm_lock);
 
@@ -777,11 +783,12 @@ void mid_reg_req_fwded(struct cell *_, int __, struct tmcb_params *params)
 		goto out;
 
 	if (reg_mode != MID_REG_MIRROR)
-		overwrite_contact_expirations(req, mri, sctx);
+		overwrite_contact_expirations(req, mri, &override_ctx);
 
 	if (reg_mode == MID_REG_THROTTLE_AOR) {
 		LM_DBG("trimming all Contact URIs into one...\n");
-		if (trim_to_single_contact(req, &mri->aor, mri->expires_out, sctx)) {
+		if (trim_to_single_contact(req, &mri->aor, mri->expires_out,
+		                          &override_ctx)) {
 			LM_ERR("failed to overwrite Contact URI\n");
 			goto out;
 		}
@@ -796,7 +803,7 @@ void mid_reg_req_fwded(struct cell *_, int __, struct tmcb_params *params)
 	 * earliest, before sending out the request and almost ignore the
 	 * un-parsable "req" sip_msg provided during TMCB_RESPONSE_IN.
 	 */
-	if (dup_req_info(req, mri, sctx) != 0) {
+	if (dup_req_info(req, mri, &override_ctx) != 0) {
 		LM_ERR("oom\n");
 		goto out;
 	}
@@ -2037,6 +2044,10 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *d,
 		if (!mri->cmatch.match_params)
 			goto oom;
 	}
+
+	mri->eff_min_expires = sctx->min_expires;
+	mri->eff_max_expires = sctx->max_expires;
+	mri->eff_default_expires = sctx->expires;
 
 	if (parse_from_header(msg) != 0) {
 		LM_ERR("failed to parse From hf\n");
