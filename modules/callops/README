@@ -344,6 +344,17 @@ opensips-cli -x mi call_transfer \
    Parameters
      * callid (string) - the callid of the dialog that is being
        put on hold.
+     * leg (string, optional) - put only a specific participant on
+       hold. Possible values are caller, callee and bold and
+       indicate the leg that is being put on hold. If not used,
+       both legs are being put on hold.
+     * headers (string or array, optional) - extra headers to be
+       added to the outgoing re-INVITE. If a string is provided,
+       the headers go to both caller and callee. If a two string
+       elements array is provided, the first element represents
+       the headers that go to the caller, the second one headers
+       that go to the callee. Use empty string for no headers to
+       be passed at caller.
 
    MI FIFO Command Format:
 # put a call on hold
@@ -363,6 +374,17 @@ opensips-cli -x mi call_hold \
    Parameters
      * callid (string) - the callid of the dialog that is being
        resumed.
+     * leg (string, optional) - resume only a specific participant
+       on hold. Possible values are caller, callee and bold and
+       indicate the leg that is being resumed. If not used, both
+       legs are resumed.
+     * headers (string or array, optional) - extra headers to be
+       added to the outgoing re-INVITE. If a string is provided,
+       the headers go to both caller and callee. If a two string
+       elements array is provided, the first element represents
+       the headers that go to the caller, the second one headers
+       that go to the callee. Use empty string for no headers to
+       be passed at caller.
 
    MI FIFO Command Format:
 opensips-cli -x mi call_unhold \
@@ -438,7 +460,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 46 23 2273 163
+   1. Razvan Crainea (@razvancrainea) 52 25 2536 269
    2. Vlad Patrascu (@rvlad-patrascu) 5 1 123 66
    3. Maksym Sobolyev (@sobomax) 4 2 4 5
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
@@ -464,7 +486,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     May 2020 - Mar 2025
+   1. Razvan Crainea (@razvancrainea)     May 2020 - Oct 2025
    2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2023 - Apr 2023
    3. Vlad Patrascu (@rvlad-patrascu)     Mar 2023 - Mar 2023
    4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
