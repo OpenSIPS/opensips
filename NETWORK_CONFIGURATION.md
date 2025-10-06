@@ -94,29 +94,40 @@ make -f Makefile.test
 # "Oasis call using main RPC: https://testnet.sapphire.oasis.dev"
 ```
 
-## Dynamic Name Wrapper Detection
+## Dynamic Name Wrapper Detection with Resolver Resolution
 
-The module now **automatically detects** Name Wrapper contracts without requiring manual configuration. This eliminates the need for the `ens_name_wrapper_address` parameter.
+The module now **automatically detects** Name Wrapper contracts and resolves addresses through the ENS resolver system. This eliminates the need for the `ens_name_wrapper_address` parameter and provides more reliable address resolution.
 
 ### How It Works
 
-1. **Query ENS Registry**: Get the owner address for the ENS domain
-2. **Check Contract Name**: Call `name()` function on the owner contract
-3. **Verify Identity**: If the contract returns "NameWrapper", proceed to step 4
-4. **Get Actual Owner**: Call `ownerOf()` on the Name Wrapper to get the real owner
+1. **Query ENS Registry**: Call `owner(bytes32)` to get the owner address for the ENS domain
+2. **Check Contract Identity**: Call `name()` function on the owner contract to verify if it's a Name Wrapper
+3. **Verify Identity**: If the contract returns "NameWrapper", it's a wrapped domain
+4. **Get Resolver**: Call ENS Registry `resolver(bytes32)` to get the resolver contract address
+5. **Resolve Address**: Call resolver's `addr(bytes32)` to get the actual Ethereum address associated with the domain
+
+### Why Resolver-Based Resolution?
+
+- **Standard ENS Resolution**: Uses the official ENS resolver pattern (`resolver()` → `addr()`)
+- **Consistent Behavior**: Works the same way as ENS resolution in other applications
+- **Proper Delegation**: Respects the resolver set by the domain owner
+- **Multi-Coin Support**: Resolvers can support multiple address types (future-proof)
 
 ### Benefits of Dynamic Detection
 
 - **Network Agnostic**: Works on mainnet, testnets, and any future networks
 - **No Configuration Needed**: One less parameter to configure
-- **Future-Proof**: Automatically adapts to Name Wrapper contract upgrades
+- **Future-Proof**: Automatically adapts to Name Wrapper and resolver upgrades
 - **Zero Errors**: No risk of configuring wrong Name Wrapper addresses
+- **Standard Compliant**: Follows EIP-137 (ENS) and EIP-181 (reverse resolution) standards
 
 ### Compatibility
 
 - ✅ Works with both wrapped and unwrapped ENS domains
-- ✅ Compatible with all Ethereum networks (mainnet, Sepolia, etc.)
-- ✅ Handles non-Name Wrapper owners gracefully
+- ✅ Compatible with all Ethereum networks (mainnet, Sepolia, Holesky, etc.)
+- ✅ Handles non-Name Wrapper owners gracefully (returns registry owner directly)
+- ✅ Supports custom resolvers set by domain owners
+- ✅ Works with Public Resolver and custom resolver implementations
 
 ## Benefits
 

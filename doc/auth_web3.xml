@@ -74,14 +74,22 @@
 		</section>
 		
 		<section id="auth_web3.ens_ownership">
-			<title>Ownership Resolution</title>
+			<title>Address Resolution</title>
 			<para>
-				Handles complex ENS ownership scenarios:
+				Implements comprehensive ENS address resolution following EIP-137 standards:
 				<itemizedlist>
-					<listitem><para>Direct ownership via ENS Registry</para></listitem>
-					<listitem><para>Wrapped domain ownership via Name Wrapper contract</para></listitem>
+					<listitem><para>Direct ownership resolution via ENS Registry owner() function</para></listitem>
+					<listitem><para>Dynamic Name Wrapper detection by calling name() on owner contract</para></listitem>
+					<listitem><para>Resolver-based address resolution for wrapped domains (resolver() → addr())</para></listitem>
+					<listitem><para>Fallback to registry owner for non-wrapped domains</para></listitem>
 					<listitem><para>Zero address detection for unregistered domains</para></listitem>
+					<listitem><para>Custom resolver support (respects domain owner's resolver configuration)</para></listitem>
 				</itemizedlist>
+			</para>
+			<para>
+				For wrapped ENS domains, the module uses the standard ENS resolver pattern instead of 
+				directly querying the Name Wrapper contract. This ensures consistent behavior with 
+				other ENS-enabled applications and respects the resolver configuration set by the domain owner.
 			</para>
 		</section>
 		
