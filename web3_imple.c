@@ -306,9 +306,6 @@ static int is_name_wrapper_contract(const char *rpc_url, const char *contract_ad
   char result[1024];
   int ret;
   char *result_start;
-  char *result_end;
-  size_t result_len;
-  size_t data_offset;
   size_t string_length;
   char *string_data;
   size_t i;
@@ -414,7 +411,6 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
   char result[256];
   const char *rpc_url;
   char registry_owner[43] = {0};
-  char wrapper_owner[43] = {0};
   int ret;
   int is_wrapper;
 
@@ -761,7 +757,6 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   char *hex_start;
   int hex_len;
   char last_char;
-  const char *algo_name;
 
   /* Extract username from credentials */
   if (cred->username.user.len >= sizeof(username_str)) {
@@ -824,15 +819,14 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   memcpy(response_str, cred->response.s, cred->response.len);
   response_str[cred->response.len] = '\0';
 
-  // Determine algorithm: 0 for MD5, 1 for SHA256, 2 for SHA512
-  uint8_t algo = 0; // Default to MD5
-  // Note: In the module, we need to get auth_algorithm from the base auth
-  // module For now, defaulting to MD5
+  /* Determine algorithm: 0 for MD5, 1 for SHA256, 2 for SHA512 */
+  algo = 0; /* Default to MD5 */
+  /* Note: In the module, we need to get auth_algorithm from the base auth
+   * module For now, defaulting to MD5 */
 
-  // Convert hex string response to bytes
-  int response_byte_len = strlen(response_str) / 2;
-  unsigned char response_bytes[64]; // Max 64 bytes for SHA-512
-  int actual_byte_len =
+  /* Convert hex string response to bytes */
+  response_byte_len = strlen(response_str) / 2;
+  actual_byte_len =
       hex_to_bytes(response_str, response_bytes, sizeof(response_bytes));
 
   if (actual_byte_len != response_byte_len) {
@@ -840,40 +834,42 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
     goto cleanup;
   }
 
-  // Calculate string lengths
-  size_t len1 = strlen(username_str), len2 = strlen(realm_str),
-         len3 = strlen(method_str);
-  size_t len4 = strlen(uri_str), len5 = strlen(nonce_str);
+  /* Calculate string lengths */
+  len1 = strlen(username_str);
+  len2 = strlen(realm_str);
+  len3 = strlen(method_str);
+  len4 = strlen(uri_str);
+  len5 = strlen(nonce_str);
 
-  // Calculate padded lengths (round up to 32-byte boundaries)
-  size_t padded_len1 = ((len1 + 31) / 32) * 32;
-  size_t padded_len2 = ((len2 + 31) / 32) * 32;
-  size_t padded_len3 = ((len3 + 31) / 32) * 32;
-  size_t padded_len4 = ((len4 + 31) / 32) * 32;
-  size_t padded_len5 = ((len5 + 31) / 32) * 32;
-  size_t padded_len7 = ((actual_byte_len + 31) / 32) * 32; // For response bytes
+  /* Calculate padded lengths (round up to 32-byte boundaries) */
+  padded_len1 = ((len1 + 31) / 32) * 32;
+  padded_len2 = ((len2 + 31) / 32) * 32;
+  padded_len3 = ((len3 + 31) / 32) * 32;
+  padded_len4 = ((len4 + 31) / 32) * 32;
+  padded_len5 = ((len5 + 31) / 32) * 32;
+  padded_len7 = ((actual_byte_len + 31) / 32) * 32; /* For response bytes */
 
-  // Calculate offsets (selector + 7 offset words = 0xE0 for first string)
-  size_t offset1 = 0xE0;
-  size_t offset2 = offset1 + 32 + padded_len1;
-  size_t offset3 = offset2 + 32 + padded_len2;
-  size_t offset4 = offset3 + 32 + padded_len3;
-  size_t offset5 = offset4 + 32 + padded_len4;
-  size_t offset7 = offset5 + 32 + padded_len5;
+  /* Calculate offsets (selector + 7 offset words = 0xE0 for first string) */
+  offset1 = 0xE0;
+  offset2 = offset1 + 32 + padded_len1;
+  offset3 = offset2 + 32 + padded_len2;
+  offset4 = offset3 + 32 + padded_len3;
+  offset5 = offset4 + 32 + padded_len4;
+  offset7 = offset5 + 32 + padded_len5;
 
-  // Calculate total length needed for ABI encoding
-  int total_len = 10 + (7 * 64) + (32 + padded_len1) + (32 + padded_len2) +
-                  (32 + padded_len3) + (32 + padded_len4) + (32 + padded_len5) +
-                  (32 + padded_len7);
+  /* Calculate total length needed for ABI encoding */
+  total_len = 10 + (7 * 64) + (32 + padded_len1) + (32 + padded_len2) +
+              (32 + padded_len3) + (32 + padded_len4) + (32 + padded_len5) +
+              (32 + padded_len7);
 
   call_data = (char *)pkg_malloc(total_len * 2 +
-                                 1); // *2 for hex encoding + null terminator
+                                 1); /* *2 for hex encoding + null terminator */
   if (!call_data) {
     LM_ERR("Failed to allocate memory for ABI data");
     goto cleanup;
   }
 
-  int   pos = 0;
+  pos = 0;
 
   /* Function selector for authenticateUser */
   ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "dd02fd8e");
@@ -1107,36 +1103,34 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
     LM_INFO("Blockchain response: %s", web3_response.memory);
   }
 
-  // Parse JSON response to extract the boolean result
-  char *result_start = strstr(web3_response.memory, "\"result\":\"");
+  /* Parse JSON response to extract the boolean result */
+  result_start = strstr(web3_response.memory, "\"result\":\"");
   if (!result_start) {
     LM_ERR("Invalid blockchain response format");
     goto cleanup;
   }
 
-  result_start += 10; // Skip "result":"
-  char *result_end = strchr(result_start, '"');
+  result_start += 10; /* Skip "result":" */
+  result_end = strchr(result_start, '"');
   if (!result_end) {
     LM_ERR("Malformed blockchain response");
     goto cleanup;
   }
 
-  // Extract the result (should be 0x followed by 64 hex chars)
-  char *hex_start = result_start;
+  /* Extract the result (should be 0x followed by 64 hex chars) */
+  hex_start = result_start;
   if (strncmp(hex_start, "0x", 2) == 0) {
     hex_start += 2;
   }
 
-  int hex_len = result_end - hex_start;
+  hex_len = result_end - hex_start;
   if (hex_len < 64) {
-    LM_ERR(
-        "Web3Auth: Invalid result length from blockchain: %d (expected 64)",
-        hex_len);
+    LM_ERR("Invalid result length from blockchain: %d (expected 64)", hex_len);
     goto cleanup;
   }
 
-  // Check if the last character is '1' (true) or '0' (false)
-  char last_char = hex_start[hex_len - 1];
+  /* Check if the last character is '1' (true) or '0' (false) */
+  last_char = hex_start[hex_len - 1];
   if (last_char == '1') {
     if (web3_contract_debug_mode) {
       LM_INFO("Authentication successful! Contract returned true");
