@@ -193,7 +193,7 @@ cleanup:
   return result;
 }
 
-// Convert bytes to hex string
+/* Convert bytes to hex string */
 static void bytes_to_hex(const unsigned char *bytes, size_t len, char *hex) {
   for (size_t i = 0; i < len; i++) {
     sprintf(hex + 2 * i, "%02x", bytes[i]);
@@ -201,21 +201,21 @@ static void bytes_to_hex(const unsigned char *bytes, size_t len, char *hex) {
   hex[2 * len] = '\0';
 }
 
-// ENS namehash implementation using proper keccak256
+/* ENS namehash implementation using proper keccak256 */
 static void ens_namehash(const char *name, char *hash_hex) {
-  unsigned char hash[32] = {0}; // Start with 32 zero bytes
+  unsigned char hash[32] = {0}; /* Start with 32 zero bytes */
 
   if (web3_contract_debug_mode) {
     LM_INFO("Computing namehash for: %s", name);
   }
 
-  // Handle empty string (root domain)
+  /* Handle empty string (root domain) */
   if (strlen(name) == 0) {
     bytes_to_hex(hash, 32, hash_hex);
     return;
   }
 
-  // Split domain into labels and process from right to left
+  /* Split domain into labels and process from right to left */
   char *name_copy = pkg_malloc(strlen(name) + 1);
   if (!name_copy) {
     LM_ERR("Failed to allocate memory for name copy");
@@ -225,17 +225,17 @@ static void ens_namehash(const char *name, char *hash_hex) {
   }
   strcpy(name_copy, name);
 
-  char *labels[64]; // Max 64 labels should be enough
+  char *labels[64]; /* Max 64 labels should be enough */
   int label_count = 0;
 
-  // Split by dots
+  /* Split by dots */
   char *token = strtok(name_copy, ".");
   while (token != NULL && label_count < 64) {
     size_t token_len = strlen(token);
     labels[label_count] = pkg_malloc(token_len + 1);
     if (!labels[label_count]) {
       LM_ERR("Failed to allocate memory for label %d", label_count);
-      // Cleanup already allocated labels
+      /* Cleanup already allocated labels */
       for (int j = 0; j < label_count; j++) {
         pkg_free(labels[j]);
       }
@@ -249,13 +249,13 @@ static void ens_namehash(const char *name, char *hash_hex) {
     token = strtok(NULL, ".");
   }
 
-  // Process labels from right to left (reverse order)
+  /* Process labels from right to left (reverse order) */
   for (int i = label_count - 1; i >= 0; i--) {
     SHA3_CTX ctx;
     unsigned char label_hash[32];
-    unsigned char combined[64]; // hash + label_hash
+    unsigned char combined[64]; /* hash + label_hash */
 
-    // Hash the current label
+    /* Hash the current label */
     keccak_init(&ctx);
     keccak_update(&ctx, (const unsigned char *)labels[i], strlen(labels[i]));
     keccak_final(&ctx, label_hash);
@@ -266,11 +266,11 @@ static void ens_namehash(const char *name, char *hash_hex) {
       LM_INFO("Label '%s' hash: %s", labels[i], label_hash_hex);
     }
 
-    // Combine current hash + label hash
+    /* Combine current hash + label hash */
     memcpy(combined, hash, 32);
     memcpy(combined + 32, label_hash, 32);
 
-    // Hash the combination
+    /* Hash the combination */
     keccak_init(&ctx);
     keccak_update(&ctx, combined, 64);
     keccak_final(&ctx, hash);
@@ -283,14 +283,14 @@ static void ens_namehash(const char *name, char *hash_hex) {
     }
   }
 
-  // Convert final hash to hex string
+  /* Convert final hash to hex string */
   bytes_to_hex(hash, 32, hash_hex);
 
   if (web3_contract_debug_mode) {
     LM_INFO("Final namehash for '%s': %s", name, hash_hex);
   }
 
-  // Cleanup
+  /* Cleanup */
   for (int i = 0; i < label_count; i++) {
     pkg_free(labels[i]);
   }
@@ -625,7 +625,7 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
     return -1;
   }
 
-  // Extract address from result (last 40 hex chars of the 64-char response)
+  /* Extract address from result (last 40 hex chars of the 64-char response) */
   if (strlen(result) >= 40) {
     snprintf(wallet_address, 43, "0x%s", result + strlen(result) - 40);
   } else {
@@ -646,9 +646,9 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
  * Now uses ENS owner resolution instead of address resolution
  */
 int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
-  // Check if username contains "." (ENS format)
+  /* Check if username contains "." (ENS format) */
   if (!strchr(username, '.')) {
-    // Not an ENS name, proceed with normal authentication
+    /* Not an ENS name, proceed with normal authentication */
     return auth_web3_check_response(cred, method);
   }
 
@@ -659,7 +659,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
   char ens_owner_address[43] = {0};
   char oasis_wallet_address[43] = {0};
 
-  // Extract auth username from credentials for Oasis contract
+  /* Extract auth username from credentials for Oasis contract */
   char auth_username[256];
   if (cred->username.user.len >= sizeof(auth_username)) {
     LM_ERR("Auth username too long (%d chars)",
@@ -674,17 +674,17 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
     LM_INFO("Auth username (for Oasis): %s", auth_username);
   }
 
-  // Step 1: Get ENS owner address (new approach)
+  /* Step 1: Get ENS owner address (new approach) */
   int ens_result = web3_ens_get_owner_address(username, ens_owner_address);
   if (ens_result == 1) {
     LM_ERR("ENS name %s not found or has zero owner", username);
-    return 402; // ENS not valid
+    return 402; /* ENS not valid */
   } else if (ens_result != 0) {
     LM_ERR("Failed to get ENS owner address for %s", username);
-    return 402; // ENS not valid
+    return 402; /* ENS not valid */
   }
 
-  // Step 2: Get wallet address from Oasis contract (use auth username)
+  /* Step 2: Get wallet address from Oasis contract (use auth username) */
   if (web3_contract_debug_mode) {
     LM_INFO("Calling Oasis contract with auth username: %s",
             auth_username);
@@ -695,7 +695,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
     return NOT_AUTHENTICATED;
   }
 
-  // Step 3: Compare owner addresses
+  /* Step 3: Compare owner addresses */
   if (web3_contract_debug_mode) {
     LM_INFO("ENS owner address: %s (owner of ENS name %s)",
             ens_owner_address, username);
@@ -710,18 +710,18 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
       LM_INFO("ENS '%s' owner matches Oasis user '%s' wallet",
               username, auth_username);
     }
-    return AUTHENTICATED; // 200 - Success
+    return AUTHENTICATED; /* 200 - Success */
   } else {
-    // Check if both addresses are non-zero
+    /* Check if both addresses are non-zero */
     if (strcmp(oasis_wallet_address,
                "0x0000000000000000000000000000000000000000") != 0) {
       LM_ERR("Address mismatch - ENS owner: %s, Oasis wallet: %s",
              ens_owner_address, oasis_wallet_address);
-      return NOT_AUTHENTICATED; // 401 - Invalid
+      return NOT_AUTHENTICATED; /* 401 - Invalid */
     } else {
       LM_ERR("No wallet address found in Oasis for %s",
              auth_username);
-      return NOT_AUTHENTICATED; // 401 - Invalid
+      return NOT_AUTHENTICATED; /* 401 - Invalid */
     }
   }
 }
@@ -757,6 +757,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   char *hex_start;
   int hex_len;
   char last_char;
+  const char *algo_name;
 
   /* Extract username from credentials */
   if (cred->username.user.len >= sizeof(username_str)) {
@@ -780,7 +781,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
     return NOT_AUTHENTICATED;
   }
 
-  // Extract realm
+  /* Extract realm */
   if (cred->realm.len >= sizeof(realm_str)) {
     LM_ERR("Realm too long (%d chars)", cred->realm.len);
     goto cleanup;
@@ -788,15 +789,15 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   memcpy(realm_str, cred->realm.s, cred->realm.len);
   realm_str[cred->realm.len] = '\0';
 
-  // Extract method (from the method parameter)
+  /* Extract method (from the method parameter) */
   if (method && method->len < sizeof(method_str)) {
     memcpy(method_str, method->s, method->len);
     method_str[method->len] = '\0';
   } else {
-    strcpy(method_str, "REGISTER"); // Default method
+    strcpy(method_str, "REGISTER"); /* Default method */
   }
 
-  // Extract URI and nonce from digest credentials
+  /* Extract URI and nonce from digest credentials */
   if (cred->uri.len >= sizeof(uri_str)) {
     LM_ERR("URI too long (%d chars)", cred->uri.len);
     goto cleanup;
@@ -811,7 +812,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   memcpy(nonce_str, cred->nonce.s, cred->nonce.len);
   nonce_str[cred->nonce.len] = '\0';
 
-  // Extract user's response
+  /* Extract user's response */
   if (cred->response.len >= sizeof(response_str)) {
     LM_ERR("Response too long (%d chars)", cred->response.len);
     goto cleanup;
@@ -1070,9 +1071,9 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   }
 
   if (web3_contract_debug_mode) {
-    const char *algo_name = (algo == 0)   ? "MD5"
-                            : (algo == 1) ? "SHA-256"
-                                          : "SHA-512";
+    algo_name = (algo == 0)   ? "MD5"
+                : (algo == 1) ? "SHA-256"
+                              : "SHA-512";
     LM_INFO("Algorithm: %s (%d)", algo_name, algo);
     LM_INFO("Calling authenticateUser with payload: %s", payload);
   }
@@ -1174,12 +1175,12 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
             realm->len, realm->s);
   }
 
-  // Extract username from "From" header field
+  /* Extract username from "From" header field */
   if (msg->from && msg->from->parsed) {
     struct to_body *from_body = (struct to_body *)msg->from->parsed;
     struct sip_uri parsed_uri;
 
-    // Parse the URI to extract user part
+    /* Parse the URI to extract user part */
     if (parse_uri(from_body->uri.s, from_body->uri.len, &parsed_uri) < 0) {
       LM_ERR("Failed to parse From URI");
       return AUTH_ERROR;
@@ -1202,7 +1203,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     return AUTH_ERROR;
   }
 
-  // Use the base auth module for pre-authentication processing
+  /* Use the base auth module for pre-authentication processing */
   switch (auth_api.pre_auth(msg, realm, hftype, &h, NULL)) {
   case NONCE_REUSED:
     LM_DBG("nonce reused");
@@ -1242,13 +1243,13 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
 
   cred = (auth_body_t *)h->parsed;
 
-  // Use ENS validation which includes fallback to normal Web3 authentication
+  /* Use ENS validation which includes fallback to normal Web3 authentication */
   rauth = web3_ens_validate(from_username, &(cred->digest), method);
 
-  // Handle different return codes from ENS validation
+  /* Handle different return codes from ENS validation */
   if (rauth == AUTHENTICATED) {
     ret = AUTH_OK;
-    // Use base auth module for post-authentication processing
+    /* Use base auth module for post-authentication processing */
     switch (auth_api.post_auth(msg, h, NULL)) {
     case AUTHENTICATED:
       break;
@@ -1257,8 +1258,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       break;
     }
   } else if (rauth == 402) {
-    // ENS validation failed - return specific error
-    ret = AUTH_ERROR; // or define a specific AUTH_ENS_INVALID if available
+    /* ENS validation failed - return specific error */
+    ret = AUTH_ERROR; /* or define a specific AUTH_ENS_INVALID if available */
     LM_ERR("ENS validation failed for %s", from_username);
   } else {
     if (rauth == NOT_AUTHENTICATED)
