@@ -209,13 +209,17 @@ static void init_config_from_env(void) {
   char *env_ens_rpc_url;
   char *env_contract_debug_mode;
   char *env_rpc_timeout;
+  size_t len;
   
   env_authentication_rpc_url = getenv("AUTHENTICATION_RPC_URL");
   if (env_authentication_rpc_url) {
-    web3_authentication_rpc_url = strdup(env_authentication_rpc_url);
+    len = strlen(env_authentication_rpc_url);
+    web3_authentication_rpc_url = (char *)pkg_malloc(len + 1);
     if (!web3_authentication_rpc_url) {
-      LM_ERR("failed to allocate memory for authentication_rpc_url");
+      LM_ERR("failed to allocate PKG memory for authentication_rpc_url");
       web3_authentication_rpc_url = DEFAULT_AUTHENTICATION_RPC_URL;
+    } else {
+      memcpy(web3_authentication_rpc_url, env_authentication_rpc_url, len + 1);
     }
   } else if (!web3_authentication_rpc_url) {
     /* Only set default if config file didn't set it */
@@ -224,11 +228,13 @@ static void init_config_from_env(void) {
 
   env_authentication_contract_address = getenv("AUTHENTICATION_CONTRACT_ADDRESS");
   if (env_authentication_contract_address) {
-    web3_authentication_contract_address =
-        strdup(env_authentication_contract_address);
+    len = strlen(env_authentication_contract_address);
+    web3_authentication_contract_address = (char *)pkg_malloc(len + 1);
     if (!web3_authentication_contract_address) {
-      LM_ERR("failed to allocate memory for authentication_contract_address");
+      LM_ERR("failed to allocate PKG memory for authentication_contract_address");
       web3_authentication_contract_address = DEFAULT_AUTHENTICATION_CONTRACT_ADDRESS;
+    } else {
+      memcpy(web3_authentication_contract_address, env_authentication_contract_address, len + 1);
     }
   } else if (!web3_authentication_contract_address) {
     /* Only set default if config file didn't set it */
@@ -237,10 +243,13 @@ static void init_config_from_env(void) {
 
   env_ens_registry_address = getenv("ENS_REGISTRY_ADDRESS");
   if (env_ens_registry_address) {
-    web3_ens_registry_address = strdup(env_ens_registry_address);
+    len = strlen(env_ens_registry_address);
+    web3_ens_registry_address = (char *)pkg_malloc(len + 1);
     if (!web3_ens_registry_address) {
-      LM_ERR("failed to allocate memory for ens_registry_address");
+      LM_ERR("failed to allocate PKG memory for ens_registry_address");
       web3_ens_registry_address = DEFAULT_ENS_REGISTRY_ADDRESS;
+    } else {
+      memcpy(web3_ens_registry_address, env_ens_registry_address, len + 1);
     }
   } else if (!web3_ens_registry_address) {
     /* Only set default if config file didn't set it */
@@ -249,10 +258,13 @@ static void init_config_from_env(void) {
 
   env_ens_rpc_url = getenv("ENS_RPC_URL");
   if (env_ens_rpc_url) {
-    web3_ens_rpc_url = strdup(env_ens_rpc_url);
+    len = strlen(env_ens_rpc_url);
+    web3_ens_rpc_url = (char *)pkg_malloc(len + 1);
     if (!web3_ens_rpc_url) {
-      LM_ERR("failed to allocate memory for ens_rpc_url");
+      LM_ERR("failed to allocate PKG memory for ens_rpc_url");
       web3_ens_rpc_url = DEFAULT_ENS_RPC_URL;
+    } else {
+      memcpy(web3_ens_rpc_url, env_ens_rpc_url, len + 1);
     }
   } else if (!web3_ens_rpc_url) {
     /* Only set default if config file didn't set it */
@@ -332,6 +344,15 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
 
 /*
  * Fixup function for authentication functions
+ * 
+ * This function applies parameter fixups for web3_www_authenticate and 
+ * web3_proxy_authenticate functions. The switch statement handles:
+ * - param 1 (realm): Converts to variable string format
+ * - param 2 (method): Converts to variable string format
+ * 
+ * Parameters beyond param 2 need no fixup and return 0 (success).
+ * This allows proper handling of realm and method parameters which may 
+ * contain pseudo-variables like $td, $fd, $rm that need runtime evaluation.
  */
 static int fixup_web3_auth(void **param, int param_no) {
   if (strlen((char *)*param) <= 0) {

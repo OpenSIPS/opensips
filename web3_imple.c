@@ -32,6 +32,8 @@
 #include "auth_web3_mod.h"
 #include "keccak256.h"
 #include <curl/curl.h>
+#include <ctype.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,18 +43,43 @@
 /**
  * Convert hex string to bytes
  */
-int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes) {
-  int len = strlen(hex_str);
+static int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes) {
+  int len;
+  int byte_len;
+  int i;
+  char *endptr;
+  long val;
+  
+  len = strlen(hex_str);
   if (len % 2 != 0)
-    return -1; // Invalid hex string
+    return -1; /* Invalid hex string */
 
-  int byte_len = len / 2;
+  byte_len = len / 2;
   if (byte_len > max_bytes)
-    return -1; // Too many bytes
+    return -1; /* Too many bytes */
 
-  for (int i = 0; i < byte_len; i++) {
+  for (i = 0; i < byte_len; i++) {
     char hex_byte[3] = {hex_str[i * 2], hex_str[i * 2 + 1], '\0'};
-    bytes[i] = (unsigned char)strtol(hex_byte, NULL, 16);
+    
+    /* Check for valid hex characters before calling strtol */
+    if (!isxdigit((unsigned char)hex_byte[0]) || !isxdigit((unsigned char)hex_byte[1])) {
+      return -1; /* Invalid hex character */
+    }
+    
+    errno = 0;
+    val = strtol(hex_byte, &endptr, 16);
+    
+    /* Check for conversion errors */
+    if (errno != 0 || endptr == hex_byte || *endptr != '\0') {
+      return -1; /* Conversion failed */
+    }
+    
+    /* Check for out of range values */
+    if (val < 0 || val > 255) {
+      return -1; /* Value out of byte range */
+    }
+    
+    bytes[i] = (unsigned char)val;
   }
 
   return byte_len;
