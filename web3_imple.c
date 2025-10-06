@@ -139,9 +139,7 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address,
   }
 
   if (web3_contract_debug_mode) {
-    LM_INFO("Blockchain call to %s using RPC: %s", to_address,
-            rpc_url);
-    LM_INFO("Call data: %s", data);
+    LM_DBG("Blockchain call: %s", to_address);
   }
 
   curl_easy_setopt(curl, CURLOPT_URL, rpc_url);
@@ -164,10 +162,6 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address,
   if (!web3_response.memory) {
     LM_ERR("No response from blockchain");
     goto cleanup;
-  }
-
-  if (web3_contract_debug_mode) {
-    LM_INFO("Blockchain response: %s", web3_response.memory);
   }
 
   /* Parse JSON response to extract the result */
@@ -233,7 +227,7 @@ static void ens_namehash(const char *name, char *hash_hex) {
   unsigned char hash[32] = {0}; /* Start with 32 zero bytes */
 
   if (web3_contract_debug_mode) {
-    LM_INFO("Computing namehash for: %s", name);
+    LM_DBG("Computing namehash for: %s", name);
   }
 
   /* Handle empty string (root domain) */
@@ -287,12 +281,6 @@ static void ens_namehash(const char *name, char *hash_hex) {
     keccak_update(&ctx, (const unsigned char *)labels[i], strlen(labels[i]));
     keccak_final(&ctx, label_hash);
 
-    if (web3_contract_debug_mode) {
-      char label_hash_hex[65];
-      bytes_to_hex(label_hash, 32, label_hash_hex);
-      LM_INFO("Label '%s' hash: %s", labels[i], label_hash_hex);
-    }
-
     /* Combine current hash + label hash */
     memcpy(combined, hash, 32);
     memcpy(combined + 32, label_hash, 32);
@@ -301,20 +289,13 @@ static void ens_namehash(const char *name, char *hash_hex) {
     keccak_init(&ctx);
     keccak_update(&ctx, combined, 64);
     keccak_final(&ctx, hash);
-
-    if (web3_contract_debug_mode) {
-      char current_hash_hex[65];
-      bytes_to_hex(hash, 32, current_hash_hex);
-      LM_INFO("After processing '%s': %s", labels[i],
-              current_hash_hex);
-    }
   }
 
   /* Convert final hash to hex string */
   bytes_to_hex(hash, 32, hash_hex);
 
   if (web3_contract_debug_mode) {
-    LM_INFO("Final namehash for '%s': %s", name, hash_hex);
+    LM_DBG("Namehash computed for '%s'", name);
   }
 
   /* Cleanup */
@@ -339,10 +320,6 @@ static int is_name_wrapper_contract(const char *rpc_url, const char *contract_ad
   char decoded_name[256];
   size_t decoded_pos;
 
-  if (web3_contract_debug_mode) {
-    LM_INFO("Checking if %s is a Name Wrapper contract", contract_address);
-  }
-
   /* Call name() function - selector: 0x06fdde03 */
   ret = snprintf(call_data, sizeof(call_data), "0x06fdde03");
   if (ret < 0 || ret >= (int)sizeof(call_data)) {
@@ -352,9 +329,6 @@ static int is_name_wrapper_contract(const char *rpc_url, const char *contract_ad
 
   /* Make the blockchain call */
   if (web3_blockchain_call(rpc_url, contract_address, call_data, result, sizeof(result)) != 0) {
-    if (web3_contract_debug_mode) {
-      LM_INFO("Contract does not support name() function");
-    }
     return 0; /* Not a Name Wrapper - doesn't support name() */
   }
 
@@ -416,21 +390,11 @@ static int is_name_wrapper_contract(const char *rpc_url, const char *contract_ad
   }
   decoded_name[decoded_pos] = '\0';
 
-  if (web3_contract_debug_mode) {
-    LM_INFO("Contract name() returned: '%s'", decoded_name);
-  }
-
   /* Check if it equals "NameWrapper" */
   if (strcmp(decoded_name, "NameWrapper") == 0) {
-    if (web3_contract_debug_mode) {
-      LM_INFO("Confirmed: This is a Name Wrapper contract");
-    }
     return 1;
   }
 
-  if (web3_contract_debug_mode) {
-    LM_INFO("Not a Name Wrapper contract (name: '%s')", decoded_name);
-  }
   return 0;
 }
 
@@ -470,12 +434,6 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
   }
 
   rpc_url = web3_ens_rpc_url ? web3_ens_rpc_url : web3_authentication_rpc_url;
-  if (web3_contract_debug_mode) {
-    LM_INFO("Calling ENS Registry owner() with data: %s",
-            call_data);
-    LM_INFO("Using ENS RPC: %s", rpc_url);
-    LM_INFO("ENS Registry Address: %s", web3_ens_registry_address);
-  }
 
   if (web3_blockchain_call(rpc_url, web3_ens_registry_address, call_data, result,
                            sizeof(result)) != 0) {
@@ -493,10 +451,6 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
   } else {
     LM_ERR("Invalid ENS Registry response format");
     return -1;
-  }
-
-  if (web3_contract_debug_mode) {
-    LM_INFO("ENS Registry owner: %s", registry_owner);
   }
 
   /* Step 3: Check if owner is zero address (ENS not found) */
@@ -518,16 +472,12 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
   if (is_wrapper == 0) {
     /* Not a Name Wrapper contract, return registry owner directly */
     strcpy(owner_address, registry_owner);
-    if (web3_contract_debug_mode) {
-      LM_INFO("Registry owner is not a Name Wrapper, returning: %s",
-              owner_address);
-    }
     return 0;
   }
 
   /* Step 5: Owner IS a Name Wrapper, use resolver approach */
   if (web3_contract_debug_mode) {
-    LM_INFO("Registry owner is a Name Wrapper, getting resolver from ENS Registry");
+    LM_INFO("ENS name is wrapped, resolving via Name Wrapper");
   }
 
   /* Step 5a: Call ENS Registry resolver(bytes32) function
@@ -554,10 +504,6 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
   } else {
     LM_ERR("Invalid ENS Registry resolver response format");
     return -1;
-  }
-
-  if (web3_contract_debug_mode) {
-    LM_INFO("ENS resolver address: %s", resolver_address);
   }
 
   /* Check if resolver is zero address */
@@ -593,10 +539,6 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
     return -1;
   }
 
-  if (web3_contract_debug_mode) {
-    LM_INFO("Resolved address from resolver: %s", owner_address);
-  }
-
   /* Check if resolved address is zero address */
   if (strcmp(owner_address, "0x0000000000000000000000000000000000000000") == 0) {
     LM_ERR("Resolver returned zero address for %s", ens_name);
@@ -627,11 +569,6 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
   size_t padding;
   size_t i;
   char final_call_data[1024];
-
-  if (web3_contract_debug_mode) {
-    LM_INFO("Getting Oasis wallet address for username: %s",
-            username);
-  }
 
   /* Function selector for getWalletAddress(string) - found by testing: 08f20630 */
   ret = snprintf(call_data + pos, sizeof(call_data) - pos, "08f20630");
@@ -690,11 +627,6 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
     return -1;
   }
 
-  if (web3_contract_debug_mode) {
-    LM_INFO("Using main RPC for Oasis query: %s",
-            web3_authentication_rpc_url);
-  }
-
   if (web3_blockchain_call(web3_authentication_rpc_url,
                            web3_authentication_contract_address, final_call_data,
                            result, sizeof(result)) != 0) {
@@ -708,11 +640,6 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
   } else {
     LM_ERR("Invalid Oasis response format");
     return -1;
-  }
-
-  if (web3_contract_debug_mode) {
-    LM_INFO("Oasis wallet address for %s: %s", username,
-            wallet_address);
   }
 
   return 0;
@@ -729,10 +656,6 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
     return auth_web3_check_response(cred, method);
   }
 
-  if (web3_contract_debug_mode) {
-    LM_INFO("Detected ENS name: %s", username);
-  }
-
   char ens_owner_address[43] = {0};
   char oasis_wallet_address[43] = {0};
 
@@ -747,8 +670,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
   auth_username[cred->username.user.len] = '\0';
 
   if (web3_contract_debug_mode) {
-    LM_INFO("ENS name (from From field): %s", username);
-    LM_INFO("Auth username (for Oasis): %s", auth_username);
+    LM_INFO("ENS authentication: %s -> Oasis user: %s", username, auth_username);
   }
 
   /* Step 1: Get ENS owner address (new approach) */
@@ -762,10 +684,6 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
   }
 
   /* Step 2: Get wallet address from Oasis contract (use auth username) */
-  if (web3_contract_debug_mode) {
-    LM_INFO("Calling Oasis contract with auth username: %s",
-            auth_username);
-  }
   if (web3_oasis_get_wallet_address(auth_username, oasis_wallet_address) != 0) {
     LM_ERR("Failed to get wallet address from Oasis for %s",
            auth_username);
@@ -773,24 +691,13 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
   }
 
   /* Step 3: Compare owner addresses */
-  if (web3_contract_debug_mode) {
-    LM_INFO("ENS owner address: %s (owner of ENS name %s)",
-            ens_owner_address, username);
-    LM_INFO("Oasis wallet address: %s (from Oasis contract for %s)",
-            oasis_wallet_address, auth_username);
-  }
 
   if (strcasecmp(ens_owner_address, oasis_wallet_address) == 0) {
     if (web3_contract_debug_mode) {
-      LM_INFO("ENS validation successful! Addresses match: %s",
-              ens_owner_address);
-      LM_INFO("ENS '%s' owner matches Oasis user '%s' wallet",
+      LM_INFO("ENS '%s' matches Oasis user '%s', verifying password",
               username, auth_username);
     }
     /* ENS ownership verified, now verify the password/digest response */
-    if (web3_contract_debug_mode) {
-      LM_INFO("Now verifying digest authentication (password check)");
-    }
     return auth_web3_check_response(cred, method);
   } else {
     /* Check if both addresses are non-zero */
