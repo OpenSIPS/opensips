@@ -73,15 +73,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
 size_t web3_curl_callback(void *contents, size_t size, size_t nmemb,
                           struct Web3ResponseData *data);
 
-/**
- * @brief Convert hex string to bytes
- * @param hex_str Input hex string
- * @param bytes Output byte array
- * @param max_bytes Maximum number of bytes to convert
- * @return Number of bytes converted, or -1 on error
- */
-int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes);
-
 // ENS validation functions
 int web3_ens_validate(const char *username, dig_cred_t *cred, str *method);
 
