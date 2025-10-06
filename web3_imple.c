@@ -787,7 +787,11 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
       LM_INFO("ENS '%s' owner matches Oasis user '%s' wallet",
               username, auth_username);
     }
-    return AUTHENTICATED; /* 200 - Success */
+    /* ENS ownership verified, now verify the password/digest response */
+    if (web3_contract_debug_mode) {
+      LM_INFO("Now verifying digest authentication (password check)");
+    }
+    return auth_web3_check_response(cred, method);
   } else {
     /* Check if both addresses are non-zero */
     if (strcmp(oasis_wallet_address,
