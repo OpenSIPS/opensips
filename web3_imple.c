@@ -64,7 +64,7 @@ int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes) {
 size_t web3_curl_callback(void *contents, size_t size, size_t nmemb,
                           struct Web3ResponseData *data) {
   size_t realsize = size * nmemb;
-  char *ptr = realloc(data->memory, data->size + realsize + 1);
+  char *ptr = pkg_realloc(data->memory, data->size + realsize + 1);
   if (!ptr)
     return 0;
 
@@ -87,30 +87,41 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address,
   struct Web3ResponseData web3_response = {0};
   struct curl_slist *headers = NULL;
   int result = -1;
+  char payload[4096];
+  int ret;
+  char *result_start;
+  char *result_end;
+  char *error_start;
+  char *message_start;
+  size_t result_len;
 
   curl = curl_easy_init();
   if (!curl) {
-    LM_ERR("Web3Auth: Failed to initialize curl for blockchain call\n");
+    LM_ERR("Failed to initialize curl for blockchain call");
     return -1;
   }
 
-  char payload[4096];
-  snprintf(payload, sizeof(payload),
+  ret = snprintf(payload, sizeof(payload),
            "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":"
            "\"%s\",\"data\":\"%s\"},\"latest\"],\"id\":1}",
            to_address, data);
+  if (ret < 0 || ret >= (int)sizeof(payload)) {
+    LM_ERR("Failed to create JSON-RPC payload");
+    curl_easy_cleanup(curl);
+    return -1;
+  }
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Blockchain call to %s using RPC: %s\n", to_address,
+  if (web3_contract_debug_mode) {
+    LM_INFO("Blockchain call to %s using RPC: %s", to_address,
             rpc_url);
-    LM_INFO("Web3Auth: Call data: %s\n", data);
+    LM_INFO("Call data: %s", data);
   }
 
   curl_easy_setopt(curl, CURLOPT_URL, rpc_url);
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, web3_curl_callback);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web3_response);
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)rpc_timeout);
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)web3_rpc_timeout);
 
   headers = curl_slist_append(NULL, "Content-Type: application/json");
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -118,53 +129,53 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address,
   res = curl_easy_perform(curl);
 
   if (res != CURLE_OK) {
-    LM_ERR("Web3Auth: curl_easy_perform() failed: %s\n",
+    LM_ERR("curl_easy_perform() failed: %s",
            curl_easy_strerror(res));
     goto cleanup;
   }
 
   if (!web3_response.memory) {
-    LM_ERR("Web3Auth: No response from blockchain\n");
+    LM_ERR("No response from blockchain");
     goto cleanup;
   }
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Blockchain response: %s\n", web3_response.memory);
+  if (web3_contract_debug_mode) {
+    LM_INFO("Blockchain response: %s", web3_response.memory);
   }
 
-  // Parse JSON response to extract the result
-  char *result_start = strstr(web3_response.memory, "\"result\":\"");
+  /* Parse JSON response to extract the result */
+  result_start = strstr(web3_response.memory, "\"result\":\"");
   if (!result_start) {
-    // Check if it's an error response
-    char *error_start = strstr(web3_response.memory, "\"error\":");
+    /* Check if it's an error response */
+    error_start = strstr(web3_response.memory, "\"error\":");
     if (error_start) {
-      // Check for specific error messages
-      char *message_start = strstr(web3_response.memory, "\"message\":");
+      /* Check for specific error messages */
+      message_start = strstr(web3_response.memory, "\"message\":");
       if (message_start && strstr(message_start, "User not found")) {
-        if (contract_debug_mode) {
-          LM_INFO("Web3Auth: Contract returned 'User not found' - treating as "
-                  "zero address\n");
+        if (web3_contract_debug_mode) {
+          LM_INFO("Contract returned 'User not found' - treating as "
+                  "zero address");
         }
         strcpy(result_buffer, "0x0000000000000000000000000000000000000000");
         result = 0;
         goto cleanup;
       }
     }
-    LM_ERR("Web3Auth: Invalid blockchain response format\n");
+    LM_ERR("Invalid blockchain response format");
     goto cleanup;
   }
 
-  result_start += 10; // Skip "result":"
-  char *result_end = strchr(result_start, '"');
+  result_start += 10; /* Skip "result":" */
+  result_end = strchr(result_start, '"');
   if (!result_end) {
-    LM_ERR("Web3Auth: Malformed blockchain response\n");
+    LM_ERR("Malformed blockchain response");
     goto cleanup;
   }
 
-  // Copy result to buffer
-  size_t result_len = result_end - result_start;
+  /* Copy result to buffer */
+  result_len = result_end - result_start;
   if (result_len >= buffer_size) {
-    LM_ERR("Web3Auth: Result too long for buffer\n");
+    LM_ERR("Result too long for buffer");
     goto cleanup;
   }
 
@@ -177,7 +188,7 @@ cleanup:
     curl_slist_free_all(headers);
   curl_easy_cleanup(curl);
   if (web3_response.memory)
-    free(web3_response.memory);
+    pkg_free(web3_response.memory);
 
   return result;
 }
@@ -194,8 +205,8 @@ static void bytes_to_hex(const unsigned char *bytes, size_t len, char *hex) {
 static void ens_namehash(const char *name, char *hash_hex) {
   unsigned char hash[32] = {0}; // Start with 32 zero bytes
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Computing namehash for: %s\n", name);
+  if (web3_contract_debug_mode) {
+    LM_INFO("Computing namehash for: %s", name);
   }
 
   // Handle empty string (root domain)
@@ -207,7 +218,7 @@ static void ens_namehash(const char *name, char *hash_hex) {
   // Split domain into labels and process from right to left
   char *name_copy = pkg_malloc(strlen(name) + 1);
   if (!name_copy) {
-    LM_ERR("Web3Auth: Failed to allocate memory for name copy\n");
+    LM_ERR("Failed to allocate memory for name copy");
     memset(hash_hex, '0', 64);
     hash_hex[64] = '\0';
     return;
@@ -223,7 +234,7 @@ static void ens_namehash(const char *name, char *hash_hex) {
     size_t token_len = strlen(token);
     labels[label_count] = pkg_malloc(token_len + 1);
     if (!labels[label_count]) {
-      LM_ERR("Web3Auth: Failed to allocate memory for label %d\n", label_count);
+      LM_ERR("Failed to allocate memory for label %d", label_count);
       // Cleanup already allocated labels
       for (int j = 0; j < label_count; j++) {
         pkg_free(labels[j]);
@@ -249,10 +260,10 @@ static void ens_namehash(const char *name, char *hash_hex) {
     keccak_update(&ctx, (const unsigned char *)labels[i], strlen(labels[i]));
     keccak_final(&ctx, label_hash);
 
-    if (contract_debug_mode) {
+    if (web3_contract_debug_mode) {
       char label_hash_hex[65];
       bytes_to_hex(label_hash, 32, label_hash_hex);
-      LM_INFO("Web3Auth: Label '%s' hash: %s\n", labels[i], label_hash_hex);
+      LM_INFO("Label '%s' hash: %s", labels[i], label_hash_hex);
     }
 
     // Combine current hash + label hash
@@ -264,10 +275,10 @@ static void ens_namehash(const char *name, char *hash_hex) {
     keccak_update(&ctx, combined, 64);
     keccak_final(&ctx, hash);
 
-    if (contract_debug_mode) {
+    if (web3_contract_debug_mode) {
       char current_hash_hex[65];
       bytes_to_hex(hash, 32, current_hash_hex);
-      LM_INFO("Web3Auth: After processing '%s': %s\n", labels[i],
+      LM_INFO("After processing '%s': %s", labels[i],
               current_hash_hex);
     }
   }
@@ -275,8 +286,8 @@ static void ens_namehash(const char *name, char *hash_hex) {
   // Convert final hash to hex string
   bytes_to_hex(hash, 32, hash_hex);
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Final namehash for '%s': %s\n", name, hash_hex);
+  if (web3_contract_debug_mode) {
+    LM_INFO("Final namehash for '%s': %s", name, hash_hex);
   }
 
   // Cleanup
@@ -287,113 +298,236 @@ static void ens_namehash(const char *name, char *hash_hex) {
 }
 
 /**
- * Get ENS owner address using the new approach:
+ * Check if a contract address is a Name Wrapper by calling name() function
+ * Returns 1 if it's a Name Wrapper, 0 if not, -1 on error
+ */
+static int is_name_wrapper_contract(const char *rpc_url, const char *contract_address) {
+  char call_data[256];
+  char result[1024];
+  int ret;
+  char *result_start;
+  char *result_end;
+  size_t result_len;
+  size_t data_offset;
+  size_t string_length;
+  char *string_data;
+  size_t i;
+  char decoded_name[256];
+  size_t decoded_pos;
+
+  if (web3_contract_debug_mode) {
+    LM_INFO("Checking if %s is a Name Wrapper contract", contract_address);
+  }
+
+  /* Call name() function - selector: 0x06fdde03 */
+  ret = snprintf(call_data, sizeof(call_data), "0x06fdde03");
+  if (ret < 0 || ret >= (int)sizeof(call_data)) {
+    LM_ERR("Failed to encode name() call data");
+    return -1;
+  }
+
+  /* Make the blockchain call */
+  if (web3_blockchain_call(rpc_url, contract_address, call_data, result, sizeof(result)) != 0) {
+    if (web3_contract_debug_mode) {
+      LM_INFO("Contract does not support name() function");
+    }
+    return 0; /* Not a Name Wrapper - doesn't support name() */
+  }
+
+  /* Parse the ABI-encoded string response
+   * Format: offset(32 bytes) + length(32 bytes) + data(padded to 32 bytes)
+   * Result is hex string without 0x prefix */
+  
+  if (strlen(result) < 128) {
+    LM_ERR("Response too short for valid string");
+    return 0;
+  }
+
+  /* Skip the first 64 hex chars (32 bytes = offset pointer) */
+  /* Next 64 hex chars are the length */
+  result_start = result + 64;
+  
+  /* Parse string length from hex */
+  string_length = 0;
+  for (i = 0; i < 64 && result_start[i] != '\0'; i++) {
+    char c = result_start[i];
+    string_length *= 16;
+    if (c >= '0' && c <= '9') {
+      string_length += c - '0';
+    } else if (c >= 'a' && c <= 'f') {
+      string_length += c - 'a' + 10;
+    } else if (c >= 'A' && c <= 'F') {
+      string_length += c - 'A' + 10;
+    }
+  }
+
+  if (string_length == 0 || string_length > 255) {
+    LM_ERR("Invalid string length: %zu", string_length);
+    return 0;
+  }
+
+  /* Now decode the actual string data (starts at position 128) */
+  string_data = result + 128;
+  decoded_pos = 0;
+  
+  for (i = 0; i < string_length * 2 && string_data[i] != '\0' && decoded_pos < sizeof(decoded_name) - 1; i += 2) {
+    char hex_byte[3] = {string_data[i], string_data[i + 1], '\0'};
+    unsigned int byte_val;
+    if (sscanf(hex_byte, "%x", &byte_val) == 1) {
+      decoded_name[decoded_pos++] = (char)byte_val;
+    } else {
+      LM_ERR("Failed to decode hex byte");
+      return 0;
+    }
+  }
+  decoded_name[decoded_pos] = '\0';
+
+  if (web3_contract_debug_mode) {
+    LM_INFO("Contract name() returned: '%s'", decoded_name);
+  }
+
+  /* Check if it equals "NameWrapper" */
+  if (strcmp(decoded_name, "NameWrapper") == 0) {
+    if (web3_contract_debug_mode) {
+      LM_INFO("Confirmed: This is a Name Wrapper contract");
+    }
+    return 1;
+  }
+
+  if (web3_contract_debug_mode) {
+    LM_INFO("Not a Name Wrapper contract (name: '%s')", decoded_name);
+  }
+  return 0;
+}
+
+/**
+ * Get ENS owner address using dynamic Name Wrapper detection:
  * 1. Call ENS Registry owner(bytes32) function with namehash
  * 2. If zero address, return ENS not found
- * 3. If owner != name wrapper address, return that owner
- * 4. If owner == name wrapper address, call name wrapper ownerOf(bytes32)
+ * 3. Check if owner is a Name Wrapper contract by calling name() function
+ * 4. If it's a Name Wrapper, call ownerOf(bytes32) to get the actual owner
+ * 5. If not a Name Wrapper, return the registry owner directly
  */
 int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
   char namehash_hex[65];
   char call_data[256];
   char result[256];
+  const char *rpc_url;
+  char registry_owner[43] = {0};
+  char wrapper_owner[43] = {0};
+  int ret;
+  int is_wrapper;
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Getting ENS owner address for: %s\n", ens_name);
+  if (web3_contract_debug_mode) {
+    LM_INFO("Getting ENS owner address for: %s", ens_name);
   }
 
-  // Step 1: Get namehash
+  /* Step 1: Get namehash */
   ens_namehash(ens_name, namehash_hex);
 
-  // Step 2: Call ENS Registry owner(bytes32) function
-  // owner(bytes32) function selector: 0x02571be3
-  snprintf(call_data, sizeof(call_data), "0x02571be3%s", namehash_hex);
+  /* Step 2: Call ENS Registry owner(bytes32) function
+   * owner(bytes32) function selector: 0x02571be3 */
+  ret = snprintf(call_data, sizeof(call_data), "0x02571be3%s", namehash_hex);
+  if (ret < 0 || ret >= (int)sizeof(call_data)) {
+    LM_ERR("Failed to encode ENS Registry call data");
+    return -1;
+  }
 
-  const char *rpc_url = ens_rpc_url ? ens_rpc_url : authentication_rpc_url;
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Calling ENS Registry owner() with data: %s\n",
+  rpc_url = web3_ens_rpc_url ? web3_ens_rpc_url : web3_authentication_rpc_url;
+  if (web3_contract_debug_mode) {
+    LM_INFO("Calling ENS Registry owner() with data: %s",
             call_data);
-    LM_INFO("Web3Auth: Using ENS RPC: %s\n", rpc_url);
-    LM_INFO("Web3Auth: ENS Registry Address: %s\n", ens_registry_address);
+    LM_INFO("Using ENS RPC: %s", rpc_url);
+    LM_INFO("ENS Registry Address: %s", web3_ens_registry_address);
   }
 
-  if (web3_blockchain_call(rpc_url, ens_registry_address, call_data, result,
+  if (web3_blockchain_call(rpc_url, web3_ens_registry_address, call_data, result,
                            sizeof(result)) != 0) {
-    LM_ERR("Web3Auth: Failed to call ENS Registry owner function\n");
+    LM_ERR("Failed to call ENS Registry owner function");
     return -1;
   }
 
-  // Extract owner address (last 40 characters)
-  char registry_owner[43] = {0};
+  /* Extract owner address (last 40 characters) */
   if (strlen(result) >= 40) {
-    snprintf(registry_owner, 43, "0x%s", result + strlen(result) - 40);
+    ret = snprintf(registry_owner, 43, "0x%s", result + strlen(result) - 40);
+    if (ret < 0 || ret >= 43) {
+      LM_ERR("Failed to format registry owner address");
+      return -1;
+    }
   } else {
-    LM_ERR("Web3Auth: Invalid ENS Registry response format\n");
+    LM_ERR("Invalid ENS Registry response format");
     return -1;
   }
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: ENS Registry owner: %s\n", registry_owner);
+  if (web3_contract_debug_mode) {
+    LM_INFO("ENS Registry owner: %s", registry_owner);
   }
 
-  // Step 3: Check if owner is zero address (ENS not found)
+  /* Step 3: Check if owner is zero address (ENS not found) */
   if (strcmp(registry_owner, "0x0000000000000000000000000000000000000000") ==
       0) {
-    LM_ERR("Web3Auth: ENS name %s not found (zero owner)\n", ens_name);
+    LM_ERR("ENS name %s not found (zero owner)", ens_name);
     strcpy(owner_address, "0x0000000000000000000000000000000000000000");
-    return 1; // Special return code for ENS not found
+    return 1; /* Special return code for ENS not found */
   }
 
-  // Step 4: Compare with name wrapper address
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Comparing registry owner with name wrapper address:\n");
-    LM_INFO("Web3Auth:   Registry owner: %s\n", registry_owner);
-    LM_INFO("Web3Auth:   Name wrapper:   %s\n", ens_name_wrapper_address);
+  /* Step 4: Check if owner is a Name Wrapper contract dynamically */
+  is_wrapper = is_name_wrapper_contract(rpc_url, registry_owner);
+  
+  if (is_wrapper == -1) {
+    LM_ERR("Error checking if contract is Name Wrapper");
+    return -1;
   }
-
-  if (strcasecmp(registry_owner, ens_name_wrapper_address) != 0) {
-    // Owner is NOT the name wrapper, return registry owner
+  
+  if (is_wrapper == 0) {
+    /* Not a Name Wrapper contract, return registry owner directly */
     strcpy(owner_address, registry_owner);
-    if (contract_debug_mode) {
-      LM_INFO("Web3Auth: ENS owner is NOT name wrapper, returning registry "
-              "owner: %s\n",
+    if (web3_contract_debug_mode) {
+      LM_INFO("Registry owner is not a Name Wrapper, returning: %s",
               owner_address);
     }
     return 0;
   }
 
-  // Step 5: Owner IS the name wrapper, call name wrapper ownerOf(bytes32)
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: ENS owner IS name wrapper, calling name wrapper "
-            "ownerOf()\n");
+  /* Step 5: Owner IS a Name Wrapper contract, call ownerOf(bytes32) */
+  if (web3_contract_debug_mode) {
+    LM_INFO("Registry owner is a Name Wrapper, calling ownerOf()");
   }
 
-  // ownerOf(bytes32) function selector: 0x6352211e
-  snprintf(call_data, sizeof(call_data), "0x6352211e%s", namehash_hex);
+  /* ownerOf(bytes32) function selector: 0x6352211e */
+  ret = snprintf(call_data, sizeof(call_data), "0x6352211e%s", namehash_hex);
+  if (ret < 0 || ret >= (int)sizeof(call_data)) {
+    LM_ERR("Failed to encode Name Wrapper call data");
+    return -1;
+  }
 
-  if (web3_blockchain_call(rpc_url, ens_name_wrapper_address, call_data, result,
+  if (web3_blockchain_call(rpc_url, registry_owner, call_data, result,
                            sizeof(result)) != 0) {
-    LM_ERR("Web3Auth: Failed to call Name Wrapper ownerOf function\n");
+    LM_ERR("Failed to call Name Wrapper ownerOf function");
     return -1;
   }
 
-  // Extract NFT owner address (last 40 characters)
+  /* Extract NFT owner address (last 40 characters) */
   if (strlen(result) >= 40) {
-    snprintf(owner_address, 43, "0x%s", result + strlen(result) - 40);
+    ret = snprintf(owner_address, 43, "0x%s", result + strlen(result) - 40);
+    if (ret < 0 || ret >= 43) {
+      LM_ERR("Failed to format NFT owner address");
+      return -1;
+    }
   } else {
-    LM_ERR("Web3Auth: Invalid Name Wrapper response format\n");
+    LM_ERR("Invalid Name Wrapper response format");
     return -1;
   }
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Name Wrapper NFT owner: %s\n", owner_address);
+  if (web3_contract_debug_mode) {
+    LM_INFO("Name Wrapper NFT owner: %s", owner_address);
   }
 
-  // Check if NFT owner is zero address
+  /* Check if NFT owner is zero address */
   if (strcmp(owner_address, "0x0000000000000000000000000000000000000000") ==
       0) {
-    LM_ERR("Web3Auth: Name Wrapper returned zero owner for %s\n", ens_name);
-    return 1; // ENS not found
+    LM_ERR("Name Wrapper returned zero owner for %s", ens_name);
+    return 1; /* ENS not found */
   }
 
   return 0;
@@ -415,50 +549,83 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
   char call_data[512];
   char result[256];
   int pos = 0;
+  int ret;
+  size_t username_len;
+  size_t padding;
+  size_t i;
+  char final_call_data[1024];
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Getting Oasis wallet address for username: %s\n",
+  if (web3_contract_debug_mode) {
+    LM_INFO("Getting Oasis wallet address for username: %s",
             username);
   }
 
-  // Function selector for getWalletAddress(string) - found by testing: 08f20630
-  pos += snprintf(call_data + pos, sizeof(call_data) - pos, "08f20630");
+  /* Function selector for getWalletAddress(string) - found by testing: 08f20630 */
+  ret = snprintf(call_data + pos, sizeof(call_data) - pos, "08f20630");
+  if (ret < 0 || ret >= (int)(sizeof(call_data) - pos)) {
+    LM_ERR("Failed to encode function selector");
+    return -1;
+  }
+  pos += ret;
 
-  // Offset to data (32 bytes from start)
-  pos += snprintf(
+  /* Offset to data (32 bytes from start) */
+  ret = snprintf(
       call_data + pos, sizeof(call_data) - pos,
       "0000000000000000000000000000000000000000000000000000000000000020");
+  if (ret < 0 || ret >= (int)(sizeof(call_data) - pos)) {
+    LM_ERR("Failed to encode data offset");
+    return -1;
+  }
+  pos += ret;
 
-  // String length (username length in bytes)
-  size_t username_len = strlen(username);
-  pos += snprintf(call_data + pos, sizeof(call_data) - pos, "%064lx",
+  /* String length (username length in bytes) */
+  username_len = strlen(username);
+  ret = snprintf(call_data + pos, sizeof(call_data) - pos, "%064lx",
                   username_len);
+  if (ret < 0 || ret >= (int)(sizeof(call_data) - pos)) {
+    LM_ERR("Failed to encode username length");
+    return -1;
+  }
+  pos += ret;
 
-  // String data (username in hex, padded to 32-byte boundary)
-  for (size_t i = 0; i < username_len; i++) {
-    pos += snprintf(call_data + pos, sizeof(call_data) - pos, "%02x",
+  /* String data (username in hex, padded to 32-byte boundary) */
+  for (i = 0; i < username_len; i++) {
+    ret = snprintf(call_data + pos, sizeof(call_data) - pos, "%02x",
                     (unsigned char)username[i]);
+    if (ret < 0 || ret >= (int)(sizeof(call_data) - pos)) {
+      LM_ERR("Failed to encode username data");
+      return -1;
+    }
+    pos += ret;
   }
 
-  // Pad to 32-byte boundary
-  size_t padding = (32 - (username_len % 32)) % 32;
-  for (size_t i = 0; i < padding; i++) {
-    pos += snprintf(call_data + pos, sizeof(call_data) - pos, "00");
+  /* Pad to 32-byte boundary */
+  padding = (32 - (username_len % 32)) % 32;
+  for (i = 0; i < padding; i++) {
+    ret = snprintf(call_data + pos, sizeof(call_data) - pos, "00");
+    if (ret < 0 || ret >= (int)(sizeof(call_data) - pos)) {
+      LM_ERR("Failed to encode padding");
+      return -1;
+    }
+    pos += ret;
   }
 
-  // Prepend 0x
-  char final_call_data[1024];
-  snprintf(final_call_data, sizeof(final_call_data), "0x%s", call_data);
-
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Using main RPC for Oasis query: %s\n",
-            authentication_rpc_url);
+  /* Prepend 0x */
+  ret = snprintf(final_call_data, sizeof(final_call_data), "0x%s", call_data);
+  if (ret < 0 || ret >= (int)sizeof(final_call_data)) {
+    LM_ERR("Failed to create final call data");
+    return -1;
   }
 
-  if (web3_blockchain_call(authentication_rpc_url,
-                           authentication_contract_address, final_call_data,
+  if (web3_contract_debug_mode) {
+    LM_INFO("Using main RPC for Oasis query: %s",
+            web3_authentication_rpc_url);
+  }
+
+  if (web3_blockchain_call(web3_authentication_rpc_url,
+                           web3_authentication_contract_address, final_call_data,
                            result, sizeof(result)) != 0) {
-    LM_ERR("Web3Auth: Failed to call Oasis contract\n");
+    LM_ERR("Failed to call Oasis contract");
     return -1;
   }
 
@@ -466,12 +633,12 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
   if (strlen(result) >= 40) {
     snprintf(wallet_address, 43, "0x%s", result + strlen(result) - 40);
   } else {
-    LM_ERR("Web3Auth: Invalid Oasis response format\n");
+    LM_ERR("Invalid Oasis response format");
     return -1;
   }
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Oasis wallet address for %s: %s\n", username,
+  if (web3_contract_debug_mode) {
+    LM_INFO("Oasis wallet address for %s: %s", username,
             wallet_address);
   }
 
@@ -489,8 +656,8 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
     return auth_web3_check_response(cred, method);
   }
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Detected ENS name: %s\n", username);
+  if (web3_contract_debug_mode) {
+    LM_INFO("Detected ENS name: %s", username);
   }
 
   char ens_owner_address[43] = {0};
@@ -499,52 +666,52 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
   // Extract auth username from credentials for Oasis contract
   char auth_username[256];
   if (cred->username.user.len >= sizeof(auth_username)) {
-    LM_ERR("Web3Auth: Auth username too long (%d chars)\n",
+    LM_ERR("Auth username too long (%d chars)",
            cred->username.user.len);
     return NOT_AUTHENTICATED;
   }
   memcpy(auth_username, cred->username.user.s, cred->username.user.len);
   auth_username[cred->username.user.len] = '\0';
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: ENS name (from From field): %s\n", username);
-    LM_INFO("Web3Auth: Auth username (for Oasis): %s\n", auth_username);
+  if (web3_contract_debug_mode) {
+    LM_INFO("ENS name (from From field): %s", username);
+    LM_INFO("Auth username (for Oasis): %s", auth_username);
   }
 
   // Step 1: Get ENS owner address (new approach)
   int ens_result = web3_ens_get_owner_address(username, ens_owner_address);
   if (ens_result == 1) {
-    LM_ERR("Web3Auth: ENS name %s not found or has zero owner\n", username);
+    LM_ERR("ENS name %s not found or has zero owner", username);
     return 402; // ENS not valid
   } else if (ens_result != 0) {
-    LM_ERR("Web3Auth: Failed to get ENS owner address for %s\n", username);
+    LM_ERR("Failed to get ENS owner address for %s", username);
     return 402; // ENS not valid
   }
 
   // Step 2: Get wallet address from Oasis contract (use auth username)
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Calling Oasis contract with auth username: %s\n",
+  if (web3_contract_debug_mode) {
+    LM_INFO("Calling Oasis contract with auth username: %s",
             auth_username);
   }
   if (web3_oasis_get_wallet_address(auth_username, oasis_wallet_address) != 0) {
-    LM_ERR("Web3Auth: Failed to get wallet address from Oasis for %s\n",
+    LM_ERR("Failed to get wallet address from Oasis for %s",
            auth_username);
     return NOT_AUTHENTICATED;
   }
 
   // Step 3: Compare owner addresses
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: ENS owner address: %s (owner of ENS name %s)\n",
+  if (web3_contract_debug_mode) {
+    LM_INFO("ENS owner address: %s (owner of ENS name %s)",
             ens_owner_address, username);
-    LM_INFO("Web3Auth: Oasis wallet address: %s (from Oasis contract for %s)\n",
+    LM_INFO("Oasis wallet address: %s (from Oasis contract for %s)",
             oasis_wallet_address, auth_username);
   }
 
   if (strcasecmp(ens_owner_address, oasis_wallet_address) == 0) {
-    if (contract_debug_mode) {
-      LM_INFO("Web3Auth: ENS validation successful! Addresses match: %s\n",
+    if (web3_contract_debug_mode) {
+      LM_INFO("ENS validation successful! Addresses match: %s",
               ens_owner_address);
-      LM_INFO("Web3Auth: ENS '%s' owner matches Oasis user '%s' wallet\n",
+      LM_INFO("ENS '%s' owner matches Oasis user '%s' wallet",
               username, auth_username);
     }
     return AUTHENTICATED; // 200 - Success
@@ -552,11 +719,11 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
     // Check if both addresses are non-zero
     if (strcmp(oasis_wallet_address,
                "0x0000000000000000000000000000000000000000") != 0) {
-      LM_ERR("Web3Auth: Address mismatch - ENS owner: %s, Oasis wallet: %s\n",
+      LM_ERR("Address mismatch - ENS owner: %s, Oasis wallet: %s",
              ens_owner_address, oasis_wallet_address);
       return NOT_AUTHENTICATED; // 401 - Invalid
     } else {
-      LM_ERR("Web3Auth: No wallet address found in Oasis for %s\n",
+      LM_ERR("No wallet address found in Oasis for %s",
              auth_username);
       return NOT_AUTHENTICATED; // 401 - Invalid
     }
@@ -575,36 +742,52 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   int result = NOT_AUTHENTICATED;
   char username_str[256];
   char *call_data = NULL;
+  char realm_str[256], method_str[16], uri_str[256], nonce_str[256],
+      response_str[256];
+  uint8_t algo;
+  int response_byte_len;
+  unsigned char response_bytes[64];
+  int actual_byte_len;
+  size_t len1, len2, len3, len4, len5;
+  size_t padded_len1, padded_len2, padded_len3, padded_len4, padded_len5, padded_len7;
+  size_t offset1, offset2, offset3, offset4, offset5, offset7;
+  int total_len;
+  int pos;
+  size_t i;
+  char payload[32768];
+  int ret;
+  char *result_start;
+  char *result_end;
+  char *hex_start;
+  int hex_len;
+  char last_char;
+  const char *algo_name;
 
-  // Extract username from credentials
+  /* Extract username from credentials */
   if (cred->username.user.len >= sizeof(username_str)) {
-    LM_ERR("Web3Auth: Username too long (%d chars)\n", cred->username.user.len);
+    LM_ERR("Username too long (%d chars)", cred->username.user.len);
     return NOT_AUTHENTICATED;
   }
 
   memcpy(username_str, cred->username.user.s, cred->username.user.len);
   username_str[cred->username.user.len] = '\0';
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Authenticating user=%s, realm=%.*s\n", username_str,
+  if (web3_contract_debug_mode) {
+    LM_INFO("Authenticating user=%s, realm=%.*s", username_str,
             cred->realm.len, cred->realm.s);
-    LM_INFO("Web3Auth: User provided response=%.*s\n", cred->response.len,
+    LM_INFO("User provided response=%.*s", cred->response.len,
             cred->response.s);
   }
 
   curl = curl_easy_init();
   if (!curl) {
-    LM_ERR("Web3Auth: Failed to initialize curl\n");
+    LM_ERR("Failed to initialize curl");
     return NOT_AUTHENTICATED;
   }
 
-  // Extract parameters from SIP message context
-  char realm_str[256], method_str[16], uri_str[256], nonce_str[256],
-      response_str[256];
-
   // Extract realm
   if (cred->realm.len >= sizeof(realm_str)) {
-    LM_ERR("Web3Auth: Realm too long (%d chars)\n", cred->realm.len);
+    LM_ERR("Realm too long (%d chars)", cred->realm.len);
     goto cleanup;
   }
   memcpy(realm_str, cred->realm.s, cred->realm.len);
@@ -620,14 +803,14 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
 
   // Extract URI and nonce from digest credentials
   if (cred->uri.len >= sizeof(uri_str)) {
-    LM_ERR("Web3Auth: URI too long (%d chars)\n", cred->uri.len);
+    LM_ERR("URI too long (%d chars)", cred->uri.len);
     goto cleanup;
   }
   memcpy(uri_str, cred->uri.s, cred->uri.len);
   uri_str[cred->uri.len] = '\0';
 
   if (cred->nonce.len >= sizeof(nonce_str)) {
-    LM_ERR("Web3Auth: Nonce too long (%d chars)\n", cred->nonce.len);
+    LM_ERR("Nonce too long (%d chars)", cred->nonce.len);
     goto cleanup;
   }
   memcpy(nonce_str, cred->nonce.s, cred->nonce.len);
@@ -635,7 +818,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
 
   // Extract user's response
   if (cred->response.len >= sizeof(response_str)) {
-    LM_ERR("Web3Auth: Response too long (%d chars)\n", cred->response.len);
+    LM_ERR("Response too long (%d chars)", cred->response.len);
     goto cleanup;
   }
   memcpy(response_str, cred->response.s, cred->response.len);
@@ -653,7 +836,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
       hex_to_bytes(response_str, response_bytes, sizeof(response_bytes));
 
   if (actual_byte_len != response_byte_len) {
-    LM_ERR("Web3Auth: Failed to convert hex response to bytes\n");
+    LM_ERR("Failed to convert hex response to bytes");
     goto cleanup;
   }
 
@@ -686,110 +869,223 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   call_data = (char *)pkg_malloc(total_len * 2 +
                                  1); // *2 for hex encoding + null terminator
   if (!call_data) {
-    LM_ERR("Web3Auth: Failed to allocate memory for ABI data\n");
+    LM_ERR("Failed to allocate memory for ABI data");
     goto cleanup;
   }
 
-  int pos = 0;
+  int   pos = 0;
 
-  // Function selector for authenticateUser
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "dd02fd8e");
+  /* Function selector for authenticateUser */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "dd02fd8e");
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode function selector");
+    goto cleanup;
+  }
+  pos += ret;
 
-  // Offset words (32 bytes each, as 64 hex chars)
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset1);
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset2);
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset3);
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset4);
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset5);
+  /* Offset words (32 bytes each, as 64 hex chars) */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset1);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode offset1");
+    goto cleanup;
+  }
+  pos += ret;
 
-  // uint8 algo parameter (padded to 32 bytes)
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064x", algo);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset2);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode offset2");
+    goto cleanup;
+  }
+  pos += ret;
 
-  // Offset for response bytes
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset7);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset3);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode offset3");
+    goto cleanup;
+  }
+  pos += ret;
 
-  // String 1: username - length + padded data
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len1);
-  for (size_t i = 0; i < len1; i++) {
-    pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset4);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode offset4");
+    goto cleanup;
+  }
+  pos += ret;
+
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset5);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode offset5");
+    goto cleanup;
+  }
+  pos += ret;
+
+  /* uint8 algo parameter (padded to 32 bytes) */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064x", algo);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode algo parameter");
+    goto cleanup;
+  }
+  pos += ret;
+
+  /* Offset for response bytes */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset7);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode offset7");
+    goto cleanup;
+  }
+  pos += ret;
+
+  /* String 1: username - length + padded data */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len1);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode username length");
+    goto cleanup;
+  }
+  pos += ret;
+  
+  for (i = 0; i < len1; i++) {
+    ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
                     (unsigned char)username_str[i]);
+    if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+      LM_ERR("Failed to encode username data");
+      goto cleanup;
+    }
+    pos += ret;
   }
-  for (size_t i = len1 * 2; i < padded_len1 * 2; i++) {
+  for (i = len1 * 2; i < padded_len1 * 2; i++) {
     call_data[pos++] = '0';
   }
 
-  // String 2: realm - length + padded data
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len2);
-  for (size_t i = 0; i < len2; i++) {
-    pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
+  /* String 2: realm - length + padded data */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len2);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode realm length");
+    goto cleanup;
+  }
+  pos += ret;
+  
+  for (i = 0; i < len2; i++) {
+    ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
                     (unsigned char)realm_str[i]);
+    if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+      LM_ERR("Failed to encode realm data");
+      goto cleanup;
+    }
+    pos += ret;
   }
-  for (size_t i = len2 * 2; i < padded_len2 * 2; i++) {
+  for (i = len2 * 2; i < padded_len2 * 2; i++) {
     call_data[pos++] = '0';
   }
 
-  // String 3: method - length + padded data
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len3);
-  for (size_t i = 0; i < len3; i++) {
-    pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
+  /* String 3: method - length + padded data */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len3);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode method length");
+    goto cleanup;
+  }
+  pos += ret;
+  
+  for (i = 0; i < len3; i++) {
+    ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
                     (unsigned char)method_str[i]);
+    if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+      LM_ERR("Failed to encode method data");
+      goto cleanup;
+    }
+    pos += ret;
   }
-  for (size_t i = len3 * 2; i < padded_len3 * 2; i++) {
+  for (i = len3 * 2; i < padded_len3 * 2; i++) {
     call_data[pos++] = '0';
   }
 
-  // String 4: uri - length + padded data
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len4);
-  for (size_t i = 0; i < len4; i++) {
-    pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
+  /* String 4: uri - length + padded data */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len4);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode uri length");
+    goto cleanup;
+  }
+  pos += ret;
+  
+  for (i = 0; i < len4; i++) {
+    ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
                     (unsigned char)uri_str[i]);
+    if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+      LM_ERR("Failed to encode uri data");
+      goto cleanup;
+    }
+    pos += ret;
   }
-  for (size_t i = len4 * 2; i < padded_len4 * 2; i++) {
+  for (i = len4 * 2; i < padded_len4 * 2; i++) {
     call_data[pos++] = '0';
   }
 
-  // String 5: nonce - length + padded data
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len5);
-  for (size_t i = 0; i < len5; i++) {
-    pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
+  /* String 5: nonce - length + padded data */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len5);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode nonce length");
+    goto cleanup;
+  }
+  pos += ret;
+  
+  for (i = 0; i < len5; i++) {
+    ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
                     (unsigned char)nonce_str[i]);
+    if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+      LM_ERR("Failed to encode nonce data");
+      goto cleanup;
+    }
+    pos += ret;
   }
-  for (size_t i = len5 * 2; i < padded_len5 * 2; i++) {
+  for (i = len5 * 2; i < padded_len5 * 2; i++) {
     call_data[pos++] = '0';
   }
 
-  // Bytes 7: response - length + padded data
-  pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064x",
+  /* Bytes 7: response - length + padded data */
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064x",
                   actual_byte_len);
-  for (int i = 0; i < actual_byte_len; i++) {
-    pos += snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
-                    response_bytes[i]);
+  if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+    LM_ERR("Failed to encode response length");
+    goto cleanup;
   }
-  for (size_t i = actual_byte_len * 2; i < padded_len7 * 2; i++) {
+  pos += ret;
+  
+  for (i = 0; i < (size_t)actual_byte_len; i++) {
+    ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%02x",
+                    response_bytes[i]);
+    if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
+      LM_ERR("Failed to encode response data");
+      goto cleanup;
+    }
+    pos += ret;
+  }
+  for (i = actual_byte_len * 2; i < padded_len7 * 2; i++) {
     call_data[pos++] = '0';
   }
 
   call_data[pos] = '\0';
 
-  char payload[32768]; // Increased buffer size for larger call data
-  snprintf(payload, sizeof(payload),
+  ret = snprintf(payload, sizeof(payload),
            "{\"jsonrpc\":\"2.0\",\"method\":\"eth_call\",\"params\":[{\"to\":"
            "\"%s\",\"data\":\"0x%s\"},\"latest\"],\"id\":1}",
-           authentication_contract_address, call_data);
+           web3_authentication_contract_address, call_data);
+  if (ret < 0 || ret >= (int)sizeof(payload)) {
+    LM_ERR("Failed to encode JSON-RPC payload");
+    goto cleanup;
+  }
 
-  if (contract_debug_mode) {
+  if (web3_contract_debug_mode) {
     const char *algo_name = (algo == 0)   ? "MD5"
                             : (algo == 1) ? "SHA-256"
                                           : "SHA-512";
-    LM_INFO("Web3Auth: Algorithm: %s (%d)\n", algo_name, algo);
-    LM_INFO("Web3Auth: Calling authenticateUser with payload: %s\n", payload);
+    LM_INFO("Algorithm: %s (%d)", algo_name, algo);
+    LM_INFO("Calling authenticateUser with payload: %s", payload);
   }
 
-  curl_easy_setopt(curl, CURLOPT_URL, authentication_rpc_url);
+  curl_easy_setopt(curl, CURLOPT_URL, web3_authentication_rpc_url);
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, web3_curl_callback);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web3_response);
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)rpc_timeout);
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)web3_rpc_timeout);
 
   headers = curl_slist_append(NULL, "Content-Type: application/json");
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -797,31 +1093,31 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   res = curl_easy_perform(curl);
 
   if (res != CURLE_OK) {
-    LM_ERR("Web3Auth: curl_easy_perform() failed: %s\n",
+    LM_ERR("curl_easy_perform() failed: %s",
            curl_easy_strerror(res));
     goto cleanup;
   }
 
   if (!web3_response.memory) {
-    LM_ERR("Web3Auth: No response from blockchain\n");
+    LM_ERR("No response from blockchain");
     goto cleanup;
   }
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Blockchain response: %s\n", web3_response.memory);
+  if (web3_contract_debug_mode) {
+    LM_INFO("Blockchain response: %s", web3_response.memory);
   }
 
   // Parse JSON response to extract the boolean result
   char *result_start = strstr(web3_response.memory, "\"result\":\"");
   if (!result_start) {
-    LM_ERR("Web3Auth: Invalid blockchain response format\n");
+    LM_ERR("Invalid blockchain response format");
     goto cleanup;
   }
 
   result_start += 10; // Skip "result":"
   char *result_end = strchr(result_start, '"');
   if (!result_end) {
-    LM_ERR("Web3Auth: Malformed blockchain response\n");
+    LM_ERR("Malformed blockchain response");
     goto cleanup;
   }
 
@@ -834,7 +1130,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   int hex_len = result_end - hex_start;
   if (hex_len < 64) {
     LM_ERR(
-        "Web3Auth: Invalid result length from blockchain: %d (expected 64)\n",
+        "Web3Auth: Invalid result length from blockchain: %d (expected 64)",
         hex_len);
     goto cleanup;
   }
@@ -842,17 +1138,17 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   // Check if the last character is '1' (true) or '0' (false)
   char last_char = hex_start[hex_len - 1];
   if (last_char == '1') {
-    if (contract_debug_mode) {
-      LM_INFO("Web3Auth: Authentication successful! Contract returned true\n");
+    if (web3_contract_debug_mode) {
+      LM_INFO("Authentication successful! Contract returned true");
     }
     result = AUTHENTICATED;
   } else if (last_char == '0') {
-    if (contract_debug_mode) {
-      LM_INFO("Web3Auth: Authentication failed! Contract returned false\n");
+    if (web3_contract_debug_mode) {
+      LM_INFO("Authentication failed! Contract returned false");
     }
     result = NOT_AUTHENTICATED;
   } else {
-    LM_ERR("Web3Auth: Invalid boolean result from contract: %c\n", last_char);
+    LM_ERR("Invalid boolean result from contract: %c", last_char);
     result = NOT_AUTHENTICATED;
   }
 
@@ -861,7 +1157,7 @@ cleanup:
     curl_slist_free_all(headers);
   curl_easy_cleanup(curl);
   if (web3_response.memory)
-    free(web3_response.memory);
+    pkg_free(web3_response.memory);
   if (call_data)
     pkg_free(call_data);
 
@@ -879,8 +1175,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   auth_result_t rauth;
   char from_username[256] = {0};
 
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Starting digest authentication for realm=%.*s\n",
+  if (web3_contract_debug_mode) {
+    LM_INFO("Starting digest authentication for realm=%.*s",
             realm->len, realm->s);
   }
 
@@ -891,7 +1187,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
 
     // Parse the URI to extract user part
     if (parse_uri(from_body->uri.s, from_body->uri.len, &parsed_uri) < 0) {
-      LM_ERR("Web3Auth: Failed to parse From URI\n");
+      LM_ERR("Failed to parse From URI");
       return AUTH_ERROR;
     }
 
@@ -900,47 +1196,47 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       memcpy(from_username, parsed_uri.user.s, parsed_uri.user.len);
       from_username[parsed_uri.user.len] = '\0';
 
-      if (contract_debug_mode) {
-        LM_INFO("Web3Auth: Extracted from username: %s\n", from_username);
+      if (web3_contract_debug_mode) {
+        LM_INFO("Extracted from username: %s", from_username);
       }
     } else {
-      LM_ERR("Web3Auth: Invalid or missing username in From header\n");
+      LM_ERR("Invalid or missing username in From header");
       return AUTH_ERROR;
     }
   } else {
-    LM_ERR("Web3Auth: No From header found\n");
+    LM_ERR("No From header found");
     return AUTH_ERROR;
   }
 
   // Use the base auth module for pre-authentication processing
   switch (auth_api.pre_auth(msg, realm, hftype, &h, NULL)) {
   case NONCE_REUSED:
-    LM_DBG("Web3Auth: nonce reused\n");
+    LM_DBG("nonce reused");
     ret = AUTH_NONCE_REUSED;
     goto end;
   case STALE_NONCE:
-    LM_DBG("Web3Auth: stale nonce\n");
+    LM_DBG("stale nonce");
     ret = AUTH_STALE_NONCE;
     goto end;
   case NO_CREDENTIALS:
-    LM_DBG("Web3Auth: no credentials\n");
+    LM_DBG("no credentials");
     ret = AUTH_NO_CREDENTIALS;
     goto end;
   case ERROR:
   case BAD_CREDENTIALS:
-    LM_DBG("Web3Auth: error or bad credentials\n");
+    LM_DBG("error or bad credentials");
     ret = AUTH_ERROR;
     goto end;
   case CREATE_CHALLENGE:
-    LM_ERR("Web3Auth: CREATE_CHALLENGE is not a valid state\n");
+    LM_ERR("CREATE_CHALLENGE is not a valid state");
     ret = AUTH_ERROR;
     goto end;
   case DO_RESYNCHRONIZATION:
-    LM_ERR("Web3Auth: DO_RESYNCHRONIZATION is not a valid state\n");
+    LM_ERR("DO_RESYNCHRONIZATION is not a valid state");
     ret = AUTH_ERROR;
     goto end;
   case NOT_AUTHENTICATED:
-    LM_DBG("Web3Auth: not authenticated\n");
+    LM_DBG("not authenticated");
     ret = AUTH_ERROR;
     goto end;
   case DO_AUTHENTICATION:
@@ -969,7 +1265,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   } else if (rauth == 402) {
     // ENS validation failed - return specific error
     ret = AUTH_ERROR; // or define a specific AUTH_ENS_INVALID if available
-    LM_ERR("Web3Auth: ENS validation failed for %s\n", from_username);
+    LM_ERR("ENS validation failed for %s", from_username);
   } else {
     if (rauth == NOT_AUTHENTICATED)
       ret = AUTH_INVALID_PASSWORD;
@@ -978,8 +1274,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   }
 
 end:
-  if (contract_debug_mode) {
-    LM_INFO("Web3Auth: Authentication result: %d\n", ret);
+  if (web3_contract_debug_mode) {
+    LM_INFO("Authentication result: %d", ret);
   }
 
   return ret;

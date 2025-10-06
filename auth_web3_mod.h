@@ -34,13 +34,12 @@
 /*
  * Web3 Authentication Module Parameters
  */
-extern char *authentication_rpc_url;
-extern char *authentication_contract_address;
-extern char *ens_registry_address;
-extern char *ens_name_wrapper_address;
-extern char *ens_rpc_url;
-extern int contract_debug_mode;
-extern int rpc_timeout;
+extern char *web3_authentication_rpc_url;
+extern char *web3_authentication_contract_address;
+extern char *web3_ens_registry_address;
+extern char *web3_ens_rpc_url;
+extern int web3_contract_debug_mode;
+extern int web3_rpc_timeout;
 
 /*
  * Base auth module API

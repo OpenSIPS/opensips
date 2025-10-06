@@ -132,35 +132,6 @@ modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997B
         </example>
     </section>
 
-    <section id="auth_web3.p.ens_name_wrapper_address">
-        <title><varname>ens_name_wrapper_address</varname> (string)</title>
-        <para>
-            ENS Name Wrapper contract address for wrapped domains. Different addresses 
-            on mainnet vs testnets.
-        </para>
-        <para>
-            <emphasis>Network Addresses:</emphasis>
-            <itemizedlist>
-                <listitem><para>Ethereum Mainnet: 0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401</para></listitem>
-                <listitem><para>Ethereum Sepolia: 0x0635513f179D50A207757E05759CbD106d7dFcE8</para></listitem>
-            </itemizedlist>
-        </para>
-        <para>
-            <emphasis>Environment Variable:</emphasis> ENS_NAME_WRAPPER_ADDRESS
-        </para>
-        <para>
-            <emphasis>Default:</emphasis> "0x0635513f179D50A207757E05759CbD106d7dFcE8" (Sepolia)
-        </para>
-        <example>
-            <title>Setting the <varname>ens_name_wrapper_address</varname> parameter</title>
-            <programlisting>
-...
-modparam("auth_web3", "ens_name_wrapper_address", "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401")
-...
-            </programlisting>
-        </example>
-    </section>
-
     <section id="auth_web3.p.contract_debug_mode">
         <title><varname>contract_debug_mode</varname> (integer)</title>
         <para>

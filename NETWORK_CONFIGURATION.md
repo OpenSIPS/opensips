@@ -13,7 +13,7 @@ The Web3 Authentication now supports **dual-network authentication**, allowing E
 ### ENS Network (Ethereum/Sepolia)
 - `ens_rpc_url`: **NEW** - RPC endpoint for ENS queries (optional)
 - `ens_registry_address`: ENS Registry contract address
-- `ens_name_wrapper_address`: ENS Name Wrapper contract address
+- **Name Wrapper Detection**: Automatically detects Name Wrapper contracts dynamically
 
 ## Network Flow
 
@@ -42,7 +42,7 @@ ens_rpc_url = "https://eth.drpc.org"
 authentication_rpc_url = "https://sapphire.oasis.io"
 ens_rpc_url = "https://eth.drpc.org"
 ens_registry_address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
-ens_name_wrapper_address = "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401"
+# Name Wrapper is automatically detected - no configuration needed
 ```
 
 ### Testing Setup
@@ -51,7 +51,7 @@ ens_name_wrapper_address = "0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401"
 authentication_rpc_url = "https://testnet.sapphire.oasis.dev"
 ens_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
 ens_registry_address = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e"
-ens_name_wrapper_address = "0x0635513f179D50A207757E05759CbD106d7dFcE8"
+# Name Wrapper is automatically detected - no configuration needed
 ```
 
 ### Development Setup
@@ -73,7 +73,7 @@ modparam("auth_web3", "authentication_contract_address", "0xYourOasisContract")
 # ENS network (Sepolia testnet)
 modparam("auth_web3", "ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
 modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
-modparam("auth_web3", "ens_name_wrapper_address", "0x0635513f179D50A207757E05759CbD106d7dFcE8")
+# Name Wrapper is automatically detected - no need to configure
 
 modparam("auth_web3", "contract_debug_mode", 1)
 ```
@@ -94,6 +94,30 @@ make -f Makefile.test
 # "Oasis call using main RPC: https://testnet.sapphire.oasis.dev"
 ```
 
+## Dynamic Name Wrapper Detection
+
+The module now **automatically detects** Name Wrapper contracts without requiring manual configuration. This eliminates the need for the `ens_name_wrapper_address` parameter.
+
+### How It Works
+
+1. **Query ENS Registry**: Get the owner address for the ENS domain
+2. **Check Contract Name**: Call `name()` function on the owner contract
+3. **Verify Identity**: If the contract returns "NameWrapper", proceed to step 4
+4. **Get Actual Owner**: Call `ownerOf()` on the Name Wrapper to get the real owner
+
+### Benefits of Dynamic Detection
+
+- **Network Agnostic**: Works on mainnet, testnets, and any future networks
+- **No Configuration Needed**: One less parameter to configure
+- **Future-Proof**: Automatically adapts to Name Wrapper contract upgrades
+- **Zero Errors**: No risk of configuring wrong Name Wrapper addresses
+
+### Compatibility
+
+- ✅ Works with both wrapped and unwrapped ENS domains
+- ✅ Compatible with all Ethereum networks (mainnet, Sepolia, etc.)
+- ✅ Handles non-Name Wrapper owners gracefully
+
 ## Benefits
 
 1. **Network Separation**: Keep ENS queries on Ethereum while using Oasis for authentication
@@ -102,6 +126,7 @@ make -f Makefile.test
 4. **Flexibility**: Easy migration between networks
 5. **Backward Compatibility**: Existing single-network setups continue to work
 6. **No API Keys Required**: PublicNode provides free, reliable RPC access
+7. **Smart Detection**: Automatic Name Wrapper identification across all networks
 
 ## Troubleshooting
 
