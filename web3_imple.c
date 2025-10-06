@@ -333,16 +333,22 @@ static int is_name_wrapper_contract(const char *rpc_url, const char *contract_ad
 
   /* Parse the ABI-encoded string response
    * Format: offset(32 bytes) + length(32 bytes) + data(padded to 32 bytes)
-   * Result is hex string without 0x prefix */
+   * Result is hex string WITH 0x prefix */
   
-  if (strlen(result) < 128) {
+  /* Skip "0x" prefix if present */
+  result_start = result;
+  if (result_start[0] == '0' && (result_start[1] == 'x' || result_start[1] == 'X')) {
+    result_start += 2;
+  }
+  
+  if (strlen(result_start) < 128) {
     LM_ERR("Response too short for valid string");
     return 0;
   }
 
   /* Skip the first 64 hex chars (32 bytes = offset pointer) */
   /* Next 64 hex chars are the length */
-  result_start = result + 64;
+  result_start = result_start + 64;
   
   /* Parse string length from hex */
   string_length = 0;
@@ -363,8 +369,12 @@ static int is_name_wrapper_contract(const char *rpc_url, const char *contract_ad
     return 0;
   }
 
-  /* Now decode the actual string data (starts at position 128) */
-  string_data = result + 128;
+  /* Now decode the actual string data (starts at position 128 after 0x) */
+  string_data = result;
+  if (string_data[0] == '0' && (string_data[1] == 'x' || string_data[1] == 'X')) {
+    string_data += 2;
+  }
+  string_data += 128;
   decoded_pos = 0;
   
   for (i = 0; i < string_length * 2 && string_data[i] != '\0' && decoded_pos < sizeof(decoded_name) - 1; i += 2) {
