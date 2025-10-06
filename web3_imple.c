@@ -412,7 +412,9 @@ static int is_name_wrapper_contract(const char *rpc_url, const char *contract_ad
  * 1. Call ENS Registry owner(bytes32) function with namehash
  * 2. If zero address, return ENS not found
  * 3. Check if owner is a Name Wrapper contract by calling name() function
- * 4. If it's a Name Wrapper, call ownerOf(bytes32) to get the actual owner
+ * 4. If it's a Name Wrapper:
+ *    a. Call ENS Registry resolver(bytes32) to get the resolver address
+ *    b. Call resolver's addr(bytes32) to get the associated address
  * 5. If not a Name Wrapper, return the registry owner directly
  */
 int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
@@ -421,6 +423,7 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
   char result[256];
   const char *rpc_url;
   char registry_owner[43] = {0};
+  char resolver_address[43] = {0};
   int ret;
   int is_wrapper;
 
@@ -495,45 +498,82 @@ int web3_ens_get_owner_address(const char *ens_name, char *owner_address) {
     return 0;
   }
 
-  /* Step 5: Owner IS a Name Wrapper contract, call ownerOf(bytes32) */
+  /* Step 5: Owner IS a Name Wrapper, use resolver approach */
   if (web3_contract_debug_mode) {
-    LM_INFO("Registry owner is a Name Wrapper, calling ownerOf()");
+    LM_INFO("Registry owner is a Name Wrapper, getting resolver from ENS Registry");
   }
 
-  /* ownerOf(bytes32) function selector: 0x6352211e */
-  ret = snprintf(call_data, sizeof(call_data), "0x6352211e%s", namehash_hex);
+  /* Step 5a: Call ENS Registry resolver(bytes32) function
+   * resolver(bytes32) function selector: 0x0178b8bf */
+  ret = snprintf(call_data, sizeof(call_data), "0x0178b8bf%s", namehash_hex);
   if (ret < 0 || ret >= (int)sizeof(call_data)) {
-    LM_ERR("Failed to encode Name Wrapper call data");
+    LM_ERR("Failed to encode ENS Registry resolver() call data");
     return -1;
   }
 
-  if (web3_blockchain_call(rpc_url, registry_owner, call_data, result,
+  if (web3_blockchain_call(rpc_url, web3_ens_registry_address, call_data, result,
                            sizeof(result)) != 0) {
-    LM_ERR("Failed to call Name Wrapper ownerOf function");
+    LM_ERR("Failed to call ENS Registry resolver function");
     return -1;
   }
 
-  /* Extract NFT owner address (last 40 characters) */
+  /* Extract resolver address (last 40 characters) */
   if (strlen(result) >= 40) {
-    ret = snprintf(owner_address, 43, "0x%s", result + strlen(result) - 40);
+    ret = snprintf(resolver_address, 43, "0x%s", result + strlen(result) - 40);
     if (ret < 0 || ret >= 43) {
-      LM_ERR("Failed to format NFT owner address");
+      LM_ERR("Failed to format resolver address");
       return -1;
     }
   } else {
-    LM_ERR("Invalid Name Wrapper response format");
+    LM_ERR("Invalid ENS Registry resolver response format");
     return -1;
   }
 
   if (web3_contract_debug_mode) {
-    LM_INFO("Name Wrapper NFT owner: %s", owner_address);
+    LM_INFO("ENS resolver address: %s", resolver_address);
   }
 
-  /* Check if NFT owner is zero address */
-  if (strcmp(owner_address, "0x0000000000000000000000000000000000000000") ==
-      0) {
-    LM_ERR("Name Wrapper returned zero owner for %s", ens_name);
-    return 1; /* ENS not found */
+  /* Check if resolver is zero address */
+  if (strcmp(resolver_address, "0x0000000000000000000000000000000000000000") == 0) {
+    LM_ERR("No resolver set for %s", ens_name);
+    strcpy(owner_address, "0x0000000000000000000000000000000000000000");
+    return 1; /* ENS not properly configured */
+  }
+
+  /* Step 5b: Call resolver's addr(bytes32) function
+   * addr(bytes32) function selector: 0x3b3b57de */
+  ret = snprintf(call_data, sizeof(call_data), "0x3b3b57de%s", namehash_hex);
+  if (ret < 0 || ret >= (int)sizeof(call_data)) {
+    LM_ERR("Failed to encode resolver addr() call data");
+    return -1;
+  }
+
+  if (web3_blockchain_call(rpc_url, resolver_address, call_data, result,
+                           sizeof(result)) != 0) {
+    LM_ERR("Failed to call resolver addr function");
+    return -1;
+  }
+
+  /* Extract address from resolver (last 40 characters) */
+  if (strlen(result) >= 40) {
+    ret = snprintf(owner_address, 43, "0x%s", result + strlen(result) - 40);
+    if (ret < 0 || ret >= 43) {
+      LM_ERR("Failed to format resolved address");
+      return -1;
+    }
+  } else {
+    LM_ERR("Invalid resolver addr response format");
+    return -1;
+  }
+
+  if (web3_contract_debug_mode) {
+    LM_INFO("Resolved address from resolver: %s", owner_address);
+  }
+
+  /* Check if resolved address is zero address */
+  if (strcmp(owner_address, "0x0000000000000000000000000000000000000000") == 0) {
+    LM_ERR("Resolver returned zero address for %s", ens_name);
+    return 1; /* ENS not properly configured */
   }
 
   return 0;
