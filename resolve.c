@@ -399,6 +399,9 @@ struct hostent* own_gethostbyname2(char *name,int af)
 	struct hostent *cached_he;
 	static union dns_query buff;
 	int min_ttl = INT_MAX;
+	int cname_chain_depth = 0;
+	char *query_name;
+	static char cname_chain_name[DNS_MAX_NAME];
 
 	switch (af) {
 		case AF_INET:
@@ -430,16 +433,57 @@ query:
 	global_he.h_addrtype=af;
 	global_he.h_length=size;
 
-	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
-	if (size < 0) {
-		LM_DBG("Domain name not found\n");
-		if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,NULL,0,1,0) < 0)
-			LM_ERR("Failed to store %s - %d in cache\n",name,af);
-		return NULL;
+	query_name = name;
+
+	/* Follow CNAME chain - RFC 1034 recommends max depth of ~8-16 */
+	#define MAX_CNAME_CHAIN_DEPTH 10
+
+	while (cname_chain_depth < MAX_CNAME_CHAIN_DEPTH) {
+		size=res_search(query_name, C_IN, type, buff.buff, sizeof(buff));
+		if (size < 0) {
+			LM_DBG("Domain name not found: %s\n", query_name);
+			if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,NULL,0,1,0) < 0)
+				LM_ERR("Failed to store %s - %d in cache\n",name,af);
+			return NULL;
+		}
+
+		if (get_dns_answer(&buff,size,query_name,type,&min_ttl) < 0) {
+			LM_ERR("Failed to get dns answer for %s\n", query_name);
+			return NULL;
+		}
+
+		/* Check if we got actual addresses or just a CNAME */
+		if (global_he.h_addr_list && global_he.h_addr_list[0] != NULL) {
+			/* We have addresses, done */
+			LM_DBG("Resolved %s to addresses (CNAME chain depth: %d)\n",
+				name, cname_chain_depth);
+			break;
+		}
+
+		/* No addresses - check if we have a CNAME to follow */
+		if (global_he.h_name && strcmp(global_he.h_name, query_name) != 0) {
+			/* We have a CNAME, follow it */
+			LM_DBG("Following CNAME: %s -> %s\n", query_name, global_he.h_name);
+
+			/* Copy canonical name for next iteration */
+			if (strlen(global_he.h_name) >= DNS_MAX_NAME) {
+				LM_ERR("CNAME target too long: %s\n", global_he.h_name);
+				return NULL;
+			}
+			strcpy(cname_chain_name, global_he.h_name);
+			query_name = cname_chain_name;
+			cname_chain_depth++;
+		} else {
+			/* No addresses and no CNAME to follow - this is an error */
+			LM_WARN("No addresses and no CNAME for %s\n", query_name);
+			if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,NULL,0,1,0) < 0)
+				LM_ERR("Failed to store %s - %d in cache\n",name,af);
+			return NULL;
+		}
 	}
 
-	if (get_dns_answer(&buff,size,name,type,&min_ttl) < 0) {
-		LM_ERR("Failed to get dns answer\n");
+	if (cname_chain_depth >= MAX_CNAME_CHAIN_DEPTH) {
+		LM_ERR("CNAME chain too deep for %s (depth: %d)\n", name, cname_chain_depth);
 		return NULL;
 	}
 
