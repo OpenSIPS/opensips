@@ -896,6 +896,12 @@ try_again:
 		goto error;
 	}
 
+	/* init pseudo-variable support */
+	if (init_pvar_support() != 0) {
+		LM_ERR("failed to init pvar support\n");
+		goto error;
+	}
+
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
@@ -911,12 +917,6 @@ try_again:
 	/* register route timers */
 	if(register_route_timers() < 0) {
 		LM_ERR("Failed to register timer\n");
-		goto error;
-	}
-
-	/* init pseudo-variable support */
-	if (init_pvar_support() != 0) {
-		LM_ERR("failed to init pvar support\n");
 		goto error;
 	}
 
