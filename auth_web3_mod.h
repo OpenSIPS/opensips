@@ -3,16 +3,16 @@
  *
  * Copyright (C) 2025 Jonathan Kandel
  *
- * This file is part of Kamailio, a free SIP server.
+ * This file is part of OpenSIPS, a free SIP server.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Kamailio is free software; you can redistribute it and/or modify
+ * OpenSIPS is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * Kamailio is distributed in the hope that it will be useful,
+ * OpenSIPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -27,7 +27,6 @@
 
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
-#include "../../modules/auth/api.h"
 #include "web3_imple.h"
 #include <curl/curl.h>
 
@@ -42,8 +41,7 @@ extern int web3_contract_debug_mode;
 extern int web3_rpc_timeout;
 
 /*
- * Base auth module API
+ * Base auth module API - removed for OpenSIPS compatibility
  */
-extern auth_api_t auth_api;
 
 #endif /* AUTH_WEB3_MOD_H */

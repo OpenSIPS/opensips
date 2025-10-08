@@ -3,16 +3,16 @@
  *
  * Copyright (C) 2025 Jonathan Kandel
  *
- * This file is part of Kamailio, a free SIP server.
+ * This file is part of OpenSIPS, a free SIP server.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Kamailio is free software; you can redistribute it and/or modify
+ * OpenSIPS is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * Kamailio is distributed in the hope that it will be useful,
+ * OpenSIPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -1206,35 +1206,19 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     return AUTH_ERROR;
   }
 
-  /* Use the base auth module for pre-authentication processing */
-  switch (auth_api.pre_auth(msg, realm, hftype, &h, 0)) {
-  case NONCE_REUSED:
-    LM_DBG("nonce reused");
-    ret = AUTH_NONCE_REUSED;
-    goto end;
-    goto end;
-  case NO_CREDENTIALS:
+  /* For OpenSIPS, we'll implement direct authentication without base auth module */
+  /* Extract credentials from Authorization header */
+  if (msg->authorization) {
+    h = msg->authorization;
+    cred = (auth_body_t *)h->parsed;
+    if (!cred) {
+      LM_ERR("Failed to parse Authorization header");
+      return AUTH_ERROR;
+    }
+  } else {
     LM_DBG("no credentials");
-    ret = AUTH_NO_CREDENTIALS;
-    goto end;
-  case ERROR:
-  case BAD_CREDENTIALS:
-    LM_DBG("error or bad credentials");
-    ret = AUTH_ERROR;
-    goto end;
-  case CREATE_CHALLENGE:
-    LM_ERR("CREATE_CHALLENGE is not a valid state");
-    ret = AUTH_ERROR;
-    goto end;
-    LM_ERR("DO_RESYNCHRONIZATION is not a valid state");
-    LM_DBG("not authenticated");
-    ret = AUTH_ERROR;
-    goto end;
-    break;
-  case AUTHENTICATED:
+    return AUTH_NO_CREDENTIALS;
   }
-
-  cred = (auth_body_t *)h->parsed;
 
   /* Use ENS validation which includes fallback to normal Web3 authentication */
   rauth = web3_ens_validate(from_username, &(cred->digest), method);
@@ -1242,14 +1226,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   /* Handle different return codes from ENS validation */
   if (rauth == AUTHENTICATED) {
     ret = AUTH_OK;
-    /* Use base auth module for post-authentication processing */
-    switch (auth_api.post_auth(msg, h)) {
-    case AUTHENTICATED:
-      break;
-    default:
-      ret = AUTH_ERROR;
-      break;
-    }
+    /* For OpenSIPS, authentication is complete at this point */
   } else if (rauth == 402) {
     /* ENS validation failed - return specific error */
     ret = AUTH_ERROR; /* or define a specific AUTH_ENS_INVALID if available */

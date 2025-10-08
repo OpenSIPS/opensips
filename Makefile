@@ -7,7 +7,7 @@ NAME=auth_web3.so
 # Include additional source files
 EXTRA_SRCS=keccak256.c
 
-DEFS+=-DKAMAILIO_MOD_INTERFACE
+DEFS+=-DOPENSIPS_MOD_INTERFACE
 
 LIBS=-lcurl
 

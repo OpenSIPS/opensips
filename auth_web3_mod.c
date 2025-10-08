@@ -3,16 +3,16 @@
  *
  * Copyright (C) 2025 Jonathan Kandel
  *
- * This file is part of Kamailio, a free SIP server.
+ * This file is part of OpenSIPS, a free SIP server.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Kamailio is free software; you can redistribute it and/or modify
+ * OpenSIPS is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * Kamailio is distributed in the hope that it will be useful,
+ * OpenSIPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -27,13 +27,15 @@
 #include "../../error.h"
 #include "../../mod_fix.h"
 #include "../../sr_module.h"
-#include "../../modules/auth/api.h"
 #include "api.h"
 #include "keccak256.h"
 #include "web3_imple.h"
 #include <curl/curl.h>
 #include <stdio.h>
 #include <string.h>
+
+/* Module version */
+#define MODULE_VERSION "1.0.0"
 
 
 /* Default Web3 configuration */
@@ -75,8 +77,7 @@ char *web3_ens_rpc_url = NULL;
 int web3_contract_debug_mode = 1;
 int web3_rpc_timeout = 10;
 
-/* Base auth module API */
-auth_api_t auth_api;
+/* Base auth module API - removed for OpenSIPS compatibility */
 
 /* Function prototypes for exported functions */
 static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
@@ -116,44 +117,25 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"auth_web3",
-	MOD_TYPE_DEFAULT,
-	MODULE_VERSION,
-	0,
-	0,
-	0,
-	cmds,
-	0,
-	params,
-	0,
-	0,
-	0,
-	0,
-	0,
-	mod_init,
-	0,
-	destroy,
-	child_init,
-	0
+	"auth_web3",           /* module name */
+	MODULE_VERSION,         /* module version */
+	0,                      /* default dlopen flags */
+	cmds,                   /* exported functions */
+	params,                 /* exported parameters */
+	0,                      /* exported statistics */
+	0,                      /* exported MI functions */
+	0,                      /* exported pseudo-variables */
+	0,                      /* extra processes */
+	mod_init,               /* module initialization function */
+	0,                      /* response processing function */
+	destroy,                /* destroy function */
+	child_init              /* per-child init function */
 };
 /*
  * Module initialization function
  */
 static int mod_init(void) {
-  bind_auth_t bind_auth;
-  
   LM_INFO("Authentication module initializing");
-
-  /* Load the base auth module API */
-  bind_auth = (bind_auth_t)find_export("bind_auth", 0);
-  if (bind_auth == 0) {
-    LM_ERR("cannot find bind_auth_s");
-    return -1;
-  }
-  if (bind_auth(&auth_api) < 0) {
-    LM_ERR("cannot bind auth api");
-    return -1;
-  }
 
   /* Initialize curl globally */
   if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) {
