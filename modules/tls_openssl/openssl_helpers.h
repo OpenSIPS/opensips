@@ -78,7 +78,12 @@ SSL_METHOD     *ssl_methods[TLS_USE_TLSv1_2 + 1];
 /*
  * Wrappers around OpenSIPS shared memory functions
  * (which can be macros)
+ *
+ * These are only used for OpenSSL 1.x. For OpenSSL 3.x, we use
+ * pkg_malloc wrappers with double-free protection (see below).
  */
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 static void* os_malloc(size_t size, const char *file, int line)
 #else
@@ -122,6 +127,9 @@ static void os_free(void *ptr)
 #endif
 }
 
+#endif /* OPENSSL_VERSION_NUMBER < 0x30000000L */
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
 /*
  * Wrappers around OpenSIPS package (private) memory functions with
  * double-free protection for OpenSSL 3.x fork() safety
@@ -279,6 +287,7 @@ static void os_pkg_free(void *ptr)
 	pkg_free(hdr);
 }
 
+#endif /* OPENSSL_VERSION_NUMBER >= 0x30000000L */
 
 
 inline static unsigned long tls_get_id(void)
