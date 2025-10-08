@@ -84,7 +84,6 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
                                    char *method, char *param3, char *param4, char *param5, char *param6);
 static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
                                      char *method, char *param3, char *param4, char *param5, char *param6);
-static int fixup_web3_auth(void **param, int param_no);
 
 /* API binding function */
 int bind_web3_auth(web3_auth_api_t *api);
@@ -333,25 +332,6 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
   return web3_digest_authenticate(msg, &srealm, HDR_PROXYAUTH_T, &smethod);
 }
 
-/*
- * Fixup function for authentication functions
- * 
- * This function applies parameter fixups for web3_www_authenticate and 
- * web3_proxy_authenticate functions. The switch statement handles:
- * - param 1 (realm): Converts to variable string format
- * - param 2 (method): Converts to variable string format
- * 
- * Parameters beyond param 2 need no fixup and return 0 (success).
- * This allows proper handling of realm and method parameters which may 
- * contain pseudo-variables like $td, $fd, $rm that need runtime evaluation.
- */
-static int fixup_web3_auth(void **param, int param_no) {
-  if (param_no == 1 || param_no == 2) {
-    /* realm and method parameters - convert to pvar */
-    return fixup_pvar(param);
-  }
-  return 0;
-}
 
 /*
  * Kamailio integration functions for KEMI
