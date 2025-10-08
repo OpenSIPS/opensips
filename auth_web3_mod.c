@@ -93,11 +93,11 @@ int bind_web3_auth(web3_auth_api_t *api);
  */
 static cmd_export_t cmds[] = {
     {"web3_www_authenticate", (cmd_function)w_web3_www_authenticate, 2,
-     fixup_web3_auth, 0, REQUEST_ROUTE},
+     {fixup_web3_auth, 0, REQUEST_ROUTE}},
     {"web3_proxy_authenticate", (cmd_function)w_web3_proxy_authenticate, 2,
-     fixup_web3_auth, 0, REQUEST_ROUTE},
-    {"bind_web3_auth", (cmd_function)bind_web3_auth, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0}};
+     {fixup_web3_auth, 0, REQUEST_ROUTE}},
+    {"bind_web3_auth", (cmd_function)bind_web3_auth, 0, {0, 0, 0}},
+    {0, 0, 0, {0, 0, 0}}};
 
 /*
  * Exported parameters
@@ -117,7 +117,7 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"auth_web3",           /* module name */
-	MODULE_VERSION,         /* module version */
+	"1.0",                  /* module version */
 	DEFAULT_DLFLAGS,        /* default dlopen flags */
 	cmds,                   /* exported cmds */
 	params,                 /* module parameters */
