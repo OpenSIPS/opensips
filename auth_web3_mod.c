@@ -37,6 +37,8 @@
 /* Module version */
 #define MODULE_VERSION "1.0.0"
 
+/* Default dlopen flags */
+#define DEFAULT_DLFLAGS 0
 
 /* Default Web3 configuration */
 #define DEFAULT_AUTHENTICATION_RPC_URL                                         \
@@ -119,13 +121,16 @@ static param_export_t params[] = {
 struct module_exports exports = {
 	"auth_web3",           /* module name */
 	MODULE_VERSION,         /* module version */
-	0,                      /* default dlopen flags */
-	cmds,                   /* exported functions */
-	params,                 /* exported parameters */
+	DEFAULT_DLFLAGS,        /* default dlopen flags */
+	0,                      /* deps */
+	cmds,                   /* exported cmds */
+	0,                      /* exported async cmds */
+	params,                 /* module parameters */
 	0,                      /* exported statistics */
 	0,                      /* exported MI functions */
 	0,                      /* exported pseudo-variables */
-	0,                      /* extra processes */
+	0,                      /* transformations */
+	0,                      /* extra procs */
 	mod_init,               /* module initialization function */
 	0,                      /* response processing function */
 	destroy,                /* destroy function */
