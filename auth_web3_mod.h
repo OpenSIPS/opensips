@@ -25,8 +25,8 @@
 #ifndef AUTH_WEB3_MOD_H
 #define AUTH_WEB3_MOD_H
 
-#include "../../core/parser/msg_parser.h"
-#include "../../core/str.h"
+#include "../../parser/msg_parser.h"
+#include "../../str.h"
 #include "../../modules/auth/api.h"
 #include "web3_imple.h"
 #include <curl/curl.h>
@@ -44,6 +44,6 @@ extern int web3_rpc_timeout;
 /*
  * Base auth module API
  */
-extern auth_api_s_t auth_api;
+extern auth_api_t auth_api;
 
 #endif /* AUTH_WEB3_MOD_H */

@@ -23,11 +23,11 @@
  */
 
 #include "web3_imple.h"
-#include "../../core/dprint.h"
-#include "../../core/mem/mem.h"
-#include "../../core/parser/digest/digest.h"
-#include "../../core/parser/parse_to.h"
-#include "../../core/parser/parse_uri.h"
+#include "../../dprint.h"
+#include "../../mem/mem.h"
+#include "../../parser/digest/digest.h"
+#include "../../parser/parse_to.h"
+#include "../../parser/parse_uri.h"
 #include "../../modules/auth/api.h"
 #include "auth_web3_mod.h"
 #include "keccak256.h"
@@ -39,6 +39,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+/* OpenSIPS auth constants mapping */
+#define NOT_AUTHENTICATED ERROR
+#define AUTHENTICATED AUTHORIZED
+#define AUTH_OK AUTHORIZED
+#define AUTH_ERROR ERROR
+#define AUTH_NONCE_REUSED ERROR
+#define AUTH_STALE_NONCE STALE_NONCE
+#define AUTH_NO_CREDENTIALS NO_CREDENTIALS
+#define AUTH_INVALID_PASSWORD INVALID_PASSWORD
+#define NONCE_REUSED STALE_NONCE
+#define BAD_CREDENTIALS INVALID_PASSWORD
+#define CREATE_CHALLENGE DO_AUTHORIZATION
+#define DO_RESYNCHRONIZATION DO_AUTHORIZATION
+#define DO_AUTHENTICATION DO_AUTHORIZATION
 
 /**
  * Convert hex string to bytes
@@ -1154,7 +1169,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
                              hdr_types_t hftype, str *method) {
   struct hdr_field *h;
   auth_body_t *cred;
-  auth_cfg_result_t ret;
+  auth_result_t ret;
   auth_result_t rauth;
   char from_username[256] = {0};
 
@@ -1192,14 +1207,11 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   }
 
   /* Use the base auth module for pre-authentication processing */
-  switch (auth_api.pre_auth(msg, realm, hftype, &h, NULL)) {
+  switch (auth_api.pre_auth(msg, realm, hftype, &h, 0)) {
   case NONCE_REUSED:
     LM_DBG("nonce reused");
     ret = AUTH_NONCE_REUSED;
     goto end;
-  case STALE_NONCE:
-    LM_DBG("stale nonce");
-    ret = AUTH_STALE_NONCE;
     goto end;
   case NO_CREDENTIALS:
     LM_DBG("no credentials");
@@ -1214,19 +1226,12 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     LM_ERR("CREATE_CHALLENGE is not a valid state");
     ret = AUTH_ERROR;
     goto end;
-  case DO_RESYNCHRONIZATION:
     LM_ERR("DO_RESYNCHRONIZATION is not a valid state");
-    ret = AUTH_ERROR;
-    goto end;
-  case NOT_AUTHENTICATED:
     LM_DBG("not authenticated");
     ret = AUTH_ERROR;
     goto end;
-  case DO_AUTHENTICATION:
     break;
   case AUTHENTICATED:
-    ret = AUTH_OK;
-    goto end;
   }
 
   cred = (auth_body_t *)h->parsed;
@@ -1238,7 +1243,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   if (rauth == AUTHENTICATED) {
     ret = AUTH_OK;
     /* Use base auth module for post-authentication processing */
-    switch (auth_api.post_auth(msg, h, NULL)) {
+    switch (auth_api.post_auth(msg, h)) {
     case AUTHENTICATED:
       break;
     default:

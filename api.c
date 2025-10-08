@@ -23,8 +23,8 @@
  */
 
 #include "api.h"
-#include "../../core/dprint.h"
-#include "../../core/sr_module.h"
+#include "../../dprint.h"
+#include "../../sr_module.h"
 #include "auth_web3_mod.h"
 #include "web3_imple.h"
 

@@ -25,9 +25,9 @@
 #ifndef WEB3_AUTH_EXT_MOD_H
 #define WEB3_AUTH_EXT_MOD_H
 
-#include "../../core/str.h"
+#include "../../str.h"
 #include "../../modules/auth/api.h"
-#include "../../core/parser/msg_parser.h"
+#include "../../parser/msg_parser.h"
 #include <curl/curl.h>
 
 /*

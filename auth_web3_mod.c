@@ -23,11 +23,10 @@
  */
 
 #include "auth_web3_mod.h"
-#include "../../core/dprint.h"
-#include "../../core/error.h"
-#include "../../core/kemi.h"
-#include "../../core/mod_fix.h"
-#include "../../core/sr_module.h"
+#include "../../dprint.h"
+#include "../../error.h"
+#include "../../mod_fix.h"
+#include "../../sr_module.h"
 #include "../../modules/auth/api.h"
 #include "api.h"
 #include "keccak256.h"
@@ -36,7 +35,6 @@
 #include <stdio.h>
 #include <string.h>
 
-MODULE_VERSION
 
 /* Default Web3 configuration */
 #define DEFAULT_AUTHENTICATION_RPC_URL                                         \
@@ -78,14 +76,14 @@ int web3_contract_debug_mode = 1;
 int web3_rpc_timeout = 10;
 
 /* Base auth module API */
-auth_api_s_t auth_api;
+auth_api_t auth_api;
 
 /* Function prototypes for exported functions */
 static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
                                    char *method);
 static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
                                      char *method);
-static int fixup_web3_auth(void **param, int param_no);
+static int fixup_web3_auth(void **param);
 
 /* API binding function */
 int bind_web3_auth(web3_auth_api_t *api);
@@ -105,41 +103,49 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-    {"authentication_rpc_url", PARAM_STRING, &web3_authentication_rpc_url},
-    {"authentication_contract_address", PARAM_STRING,
+    {"authentication_rpc_url", STR_PARAM, &web3_authentication_rpc_url},
+    {"authentication_contract_address", STR_PARAM,
      &web3_authentication_contract_address},
-    {"ens_registry_address", PARAM_STRING, &web3_ens_registry_address},
-    {"ens_rpc_url", PARAM_STRING, &web3_ens_rpc_url},
-    {"contract_debug_mode", PARAM_INT, &web3_contract_debug_mode},
-    {"rpc_timeout", PARAM_INT, &web3_rpc_timeout},
+    {"ens_registry_address", STR_PARAM, &web3_ens_registry_address},
+    {"ens_rpc_url", STR_PARAM, &web3_ens_rpc_url},
+    {"contract_debug_mode", INT_PARAM, &web3_contract_debug_mode},
+    {"rpc_timeout", INT_PARAM, &web3_rpc_timeout},
     {0, 0, 0}};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-    "auth_web3",     /* module name */
-    DEFAULT_DLFLAGS, /* dlopen flags */
-    cmds,            /* exported functions */
-    params,          /* exported parameters */
-    0,               /* RPC methods */
-    0,               /* pseudo-variables exports */
-    0,               /* response function */
-    mod_init,        /* module initialization function */
-    child_init,      /* child initialization function */
-    destroy          /* destroy function */
+	"auth_web3",
+	MOD_TYPE_DEFAULT,
+	MODULE_VERSION,
+	0,
+	0,
+	0,
+	cmds,
+	0,
+	params,
+	0,
+	0,
+	0,
+	0,
+	0,
+	mod_init,
+	0,
+	destroy,
+	child_init,
+	0
 };
-
 /*
  * Module initialization function
  */
 static int mod_init(void) {
-  bind_auth_s_t bind_auth;
+  bind_auth_t bind_auth;
   
   LM_INFO("Authentication module initializing");
 
   /* Load the base auth module API */
-  bind_auth = (bind_auth_s_t)find_export("bind_auth_s", 0, 0);
+  bind_auth = (bind_auth_t)find_export("bind_auth", 0);
   if (bind_auth == 0) {
     LM_ERR("cannot find bind_auth_s");
     return -1;
@@ -290,10 +296,8 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
   str srealm = {0, 0};
   str smethod = {0, 0};
 
-  if (get_str_fparam(&srealm, msg, (fparam_t *)realm) < 0) {
-    LM_ERR("failed to get realm value");
-    return AUTH_ERROR;
-  }
+  srealm.s = realm;
+  srealm.len = strlen(realm);
 
   if (srealm.len == 0) {
     LM_ERR("invalid realm value - empty content");
@@ -301,10 +305,8 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
   }
 
   if (method) {
-    if (get_str_fparam(&smethod, msg, (fparam_t *)method) < 0) {
-      LM_ERR("failed to get method value");
-      return AUTH_ERROR;
-    }
+    smethod.s = method;
+    smethod.len = strlen(method);
   } else {
     smethod = msg->first_line.u.request.method;
   }
@@ -320,10 +322,9 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
   str srealm = {0, 0};
   str smethod = {0, 0};
 
-  if (get_str_fparam(&srealm, msg, (fparam_t *)realm) < 0) {
-    LM_ERR("failed to get realm value");
-    return AUTH_ERROR;
-  }
+  srealm.s = realm;
+  srealm.s = realm;
+  srealm.len = strlen(realm);
 
   if (srealm.len == 0) {
     LM_ERR("invalid realm value - empty content");
@@ -331,10 +332,8 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
   }
 
   if (method) {
-    if (get_str_fparam(&smethod, msg, (fparam_t *)method) < 0) {
-      LM_ERR("failed to get method value");
-      return AUTH_ERROR;
-    }
+    smethod.s = method;
+    smethod.len = strlen(method);
   } else {
     smethod = msg->first_line.u.request.method;
   }
@@ -354,53 +353,15 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
  * This allows proper handling of realm and method parameters which may 
  * contain pseudo-variables like $td, $fd, $rm that need runtime evaluation.
  */
-static int fixup_web3_auth(void **param, int param_no) {
+static int fixup_web3_auth(void **param) {
   if (strlen((char *)*param) <= 0) {
-    LM_ERR("empty parameter %d not allowed", param_no);
+    LM_ERR("empty parameter not allowed");
     return -1;
   }
 
-  switch (param_no) {
-  case 1:
-  case 2:
-    return fixup_var_str_12(param, 1);
-  }
   return 0;
 }
 
 /*
  * Kamailio integration functions for KEMI
  */
-static int ki_web3_www_authenticate(sip_msg_t *msg, str *realm, str *method) {
-  return web3_digest_authenticate(msg, realm, HDR_AUTHORIZATION_T, method);
-}
-
-static int ki_web3_proxy_authenticate(sip_msg_t *msg, str *realm, str *method) {
-  return web3_digest_authenticate(msg, realm, HDR_PROXYAUTH_T, method);
-}
-
-/*
- * KEMI exports
- */
-static sr_kemi_t sr_kemi_web3_auth_exports[] = {
-    {str_init("auth_web3"),
-     str_init("web3_www_authenticate"),
-     SR_KEMIP_INT,
-     ki_web3_www_authenticate,
-     {SR_KEMIP_STR, SR_KEMIP_STR, SR_KEMIP_NONE, SR_KEMIP_NONE, SR_KEMIP_NONE,
-      SR_KEMIP_NONE}},
-    {str_init("auth_web3"),
-     str_init("web3_proxy_authenticate"),
-     SR_KEMIP_INT,
-     ki_web3_proxy_authenticate,
-     {SR_KEMIP_STR, SR_KEMIP_STR, SR_KEMIP_NONE, SR_KEMIP_NONE, SR_KEMIP_NONE,
-      SR_KEMIP_NONE}},
-    {{0, 0}, {0, 0}, 0, NULL, {0, 0, 0, 0, 0, 0}}};
-
-/*
- * Module register function
- */
-int mod_register(char *path, int *dlflags, void *p1, void *p2) {
-  sr_kemi_modules_add(sr_kemi_web3_auth_exports);
-  return 0;
-}

@@ -25,9 +25,9 @@
 #ifndef _AUTH_WEB3_H_
 #define _AUTH_WEB3_H_
 
-#include "../../core/parser/digest/digest.h"
-#include "../../core/parser/msg_parser.h"
-#include "../../core/str.h"
+#include "../../parser/digest/digest.h"
+#include "../../parser/msg_parser.h"
+#include "../../str.h"
 #include "../../modules/auth/api.h"
 #include <curl/curl.h>
 

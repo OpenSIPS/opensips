@@ -25,9 +25,9 @@
 #ifndef _AUTH_WEB3_API_H_
 #define _AUTH_WEB3_API_H_
 
-#include "../../core/parser/digest/digest.h"
-#include "../../core/parser/msg_parser.h"
-#include "../../core/sr_module.h"
+#include "../../parser/digest/digest.h"
+#include "../../parser/msg_parser.h"
+#include "../../sr_module.h"
 
 /*
  * Web3 authentication function signature
@@ -58,7 +58,7 @@ typedef int (*bind_web3_auth_f)(web3_auth_api_t *api);
 static inline int web3_auth_load_api(web3_auth_api_t *api) {
   bind_web3_auth_f bindweb3auth;
 
-  bindweb3auth = (bind_web3_auth_f)find_export("bind_web3_auth", 0, 0);
+  bindweb3auth = (bind_web3_auth_f)find_export("bind_web3_auth", 0);
   if (bindweb3auth == 0) {
     LM_ERR("cannot find bind_web3_auth\n");
     return -1;
