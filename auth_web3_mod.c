@@ -280,22 +280,31 @@ static void init_config_from_env(void) {
  * WWW authentication wrapper function
  */
 static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
-                                   char *method) {
+                                   char *method, char *param3, char *param4, char *param5, char *param6) {
   str srealm = {0, 0};
   str smethod = {0, 0};
+  pv_value_t val;
 
-  srealm.s = realm;
-  srealm.len = strlen(realm);
+  /* Get realm value from pvar */
+  if (fixup_get_svalue(msg, (gparam_p)realm, &val) != 0) {
+    LM_ERR("invalid realm parameter");
+    return -1;
+  }
+  srealm = val.rs;
 
   if (srealm.len == 0) {
     LM_ERR("invalid realm value - empty content");
-    return AUTH_ERROR;
+    return -1;
   }
 
-  if (method) {
-    smethod.s = method;
-    smethod.len = strlen(method);
-  } else {
+  /* Get method value from pvar */
+  if (fixup_get_svalue(msg, (gparam_p)method, &val) != 0) {
+    LM_ERR("invalid method parameter");
+    return -1;
+  }
+  smethod = val.rs;
+
+  if (smethod.len == 0) {
     smethod = msg->first_line.u.request.method;
   }
 
@@ -306,23 +315,31 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
  * Proxy authentication wrapper function
  */
 static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
-                                     char *method) {
+                                     char *method, char *param3, char *param4, char *param5, char *param6) {
   str srealm = {0, 0};
   str smethod = {0, 0};
+  pv_value_t val;
 
-  srealm.s = realm;
-  srealm.s = realm;
-  srealm.len = strlen(realm);
+  /* Get realm value from pvar */
+  if (fixup_get_svalue(msg, (gparam_p)realm, &val) != 0) {
+    LM_ERR("invalid realm parameter");
+    return -1;
+  }
+  srealm = val.rs;
 
   if (srealm.len == 0) {
     LM_ERR("invalid realm value - empty content");
-    return AUTH_ERROR;
+    return -1;
   }
 
-  if (method) {
-    smethod.s = method;
-    smethod.len = strlen(method);
-  } else {
+  /* Get method value from pvar */
+  if (fixup_get_svalue(msg, (gparam_p)method, &val) != 0) {
+    LM_ERR("invalid method parameter");
+    return -1;
+  }
+  smethod = val.rs;
+
+  if (smethod.len == 0) {
     smethod = msg->first_line.u.request.method;
   }
 
@@ -341,12 +358,11 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
  * This allows proper handling of realm and method parameters which may 
  * contain pseudo-variables like $td, $fd, $rm that need runtime evaluation.
  */
-static int fixup_web3_auth(void **param) {
-  if (strlen((char *)*param) <= 0) {
-    LM_ERR("empty parameter not allowed");
-    return -1;
+static int fixup_web3_auth(void **param, int param_no) {
+  if (param_no == 1 || param_no == 2) {
+    /* realm and method parameters - convert to pvar */
+    return fixup_pvar(param);
   }
-
   return 0;
 }
 
