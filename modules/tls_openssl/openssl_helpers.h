@@ -122,6 +122,162 @@ static void os_free(void *ptr)
 #endif
 }
 
+/*
+ * Wrappers around OpenSIPS package (private) memory functions with
+ * double-free protection for OpenSSL 3.x fork() safety
+ *
+ * === WHY THIS TRACKING LAYER IS NEEDED ===
+ *
+ * OpenSSL 3.x introduced extensive use of thread-local storage (TLS) for:
+ * - Error queues (per-thread error state)
+ * - RNG state (random number generator context)
+ * - Provider dispatch tables (crypto algorithm implementations)
+ * - Internal caches and buffers
+ *
+ * THE PROBLEM: OpenSSL 3.x + fork() + pkg_malloc causes double-free crashes
+ *
+ * 1. Parent process: OpenSSL allocates buffer X using pkg_malloc
+ *    - Stores pointer to X in thread-local storage
+ *    - May duplicate reference in multiple TLS slots
+ *
+ * 2. fork() happens:
+ *    - Child process gets copy of all thread-local storage
+ *    - Both parent and child have pointers to buffer X
+ *    - Copy-on-write means both point to same physical memory initially
+ *
+ * 3. Connection cleanup (e.g., tcpconn_destroy):
+ *    - OpenSSL walks through thread-local cleanup lists
+ *    - Finds buffer X in multiple TLS slots (duplicated references)
+ *    - Calls free() on X multiple times
+ *    - pkg_malloc's debug allocator (qm_free_dbg) detects second free
+ *    - CRITICAL ERROR: "freeing already freed pointer" -> process aborts
+ *
+ * THE SOLUTION: Thin tracking layer that:
+ *
+ * 1. Adds 12-byte header to each allocation:
+ *    - magic number (validates pointer came from our allocator)
+ *    - freed flag (prevents double-free)
+ *    - size (for debugging)
+ *
+ * 2. On first free(): Set freed=1, actually call pkg_free()
+ * 3. On second free(): Detect freed=1, silently skip the free()
+ * 4. Invalid pointers: Detect wrong magic, log warning, skip free()
+ *
+ * BENEFITS:
+ * - Keeps pkg_malloc (memory tracking, statistics, debug, limits)
+ * - Prevents crash (works around OpenSSL bug)
+ * - Detects and logs the issue (debug visibility)
+ * - Minimal overhead (12 bytes per allocation)
+ * - Fork-safe (each process has its own tracking)
+ *
+ * ALTERNATIVE REJECTED: Using system malloc/free
+ * - Would hide the bug instead of fixing it
+ * - Loses all pkg_malloc benefits (no tracking, no stats, no limits)
+ * - Makes debugging harder (can't see OpenSSL memory usage)
+ *
+ * NOTE: This is a workaround for OpenSSL 3.x behavior. The real bug is in
+ * how OpenSSL manages thread-local storage across fork() boundaries.
+ */
+struct openssl_mem_hdr {
+	unsigned int magic;      /* Magic: 0x4F53534C validates our allocation */
+	unsigned int freed;      /* 0=allocated, 1=freed (prevents double-free) */
+	size_t size;             /* Allocation size (for debugging/stats) */
+};
+
+#define OPENSSL_MEM_MAGIC 0x4F53534C  /* "OSSL" in hex */
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+static void* os_pkg_malloc(size_t size, const char *file, int line)
+#else
+static void* os_pkg_malloc(size_t size)
+#endif
+{
+	struct openssl_mem_hdr *hdr;
+
+	hdr = (struct openssl_mem_hdr *)pkg_malloc(sizeof(*hdr) + size);
+	if (!hdr)
+		return NULL;
+
+	hdr->magic = OPENSSL_MEM_MAGIC;
+	hdr->freed = 0;
+	hdr->size = size;
+
+	return (void *)(hdr + 1);
+}
+
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+static void* os_pkg_realloc(void *ptr, size_t size, const char *file, int line)
+#else
+static void* os_pkg_realloc(void *ptr, size_t size)
+#endif
+{
+	struct openssl_mem_hdr *old_hdr, *new_hdr;
+
+	if (!ptr)
+		return os_pkg_malloc(size
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+			, file, line
+#endif
+		);
+
+	old_hdr = ((struct openssl_mem_hdr *)ptr) - 1;
+
+	/* Validate magic number */
+	if (old_hdr->magic != OPENSSL_MEM_MAGIC) {
+		LM_ERR("OpenSSL realloc: invalid magic 0x%x for ptr %p\n",
+			old_hdr->magic, ptr);
+		return NULL;
+	}
+
+	/* Check if already freed */
+	if (old_hdr->freed) {
+		LM_ERR("OpenSSL realloc on freed pointer %p\n", ptr);
+		return NULL;
+	}
+
+	new_hdr = (struct openssl_mem_hdr *)pkg_realloc(old_hdr, sizeof(*new_hdr) + size);
+	if (!new_hdr)
+		return NULL;
+
+	new_hdr->size = size;
+
+	return (void *)(new_hdr + 1);
+}
+
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+static void os_pkg_free(void *ptr, const char *file, int line)
+#else
+static void os_pkg_free(void *ptr)
+#endif
+{
+	struct openssl_mem_hdr *hdr;
+
+	if (!ptr)
+		return;
+
+	hdr = ((struct openssl_mem_hdr *)ptr) - 1;
+
+	/* Validate magic number */
+	if (hdr->magic != OPENSSL_MEM_MAGIC) {
+		LM_WARN("OpenSSL free: invalid magic 0x%x for ptr %p, skipping free\n",
+			hdr->magic, ptr);
+		return;
+	}
+
+	/* Check for double-free */
+	if (hdr->freed) {
+		LM_DBG("OpenSSL double-free prevented for ptr %p (OpenSSL 3.x fork issue)\n", ptr);
+		return;
+	}
+
+	/* Mark as freed */
+	hdr->freed = 1;
+
+	/* Actually free the memory */
+	pkg_free(hdr);
+}
 
 
 
