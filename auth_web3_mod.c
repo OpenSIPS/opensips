@@ -284,28 +284,19 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
                                    char *method, char *param3, char *param4, char *param5, char *param6) {
   str srealm = {0, 0};
   str smethod = {0, 0};
-  pv_value_t val;
 
-  /* Get realm value from pvar */
-  if (fixup_get_svalue(msg, (gparam_p)realm, &val) != 0) {
-    LM_ERR("invalid realm parameter");
-    return -1;
-  }
-  srealm = val.rs;
+  srealm.s = realm;
+  srealm.len = strlen(realm);
 
   if (srealm.len == 0) {
     LM_ERR("invalid realm value - empty content");
     return -1;
   }
 
-  /* Get method value from pvar */
-  if (fixup_get_svalue(msg, (gparam_p)method, &val) != 0) {
-    LM_ERR("invalid method parameter");
-    return -1;
-  }
-  smethod = val.rs;
-
-  if (smethod.len == 0) {
+  if (method) {
+    smethod.s = method;
+    smethod.len = strlen(method);
+  } else {
     smethod = msg->first_line.u.request.method;
   }
 
@@ -319,28 +310,19 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
                                      char *method, char *param3, char *param4, char *param5, char *param6) {
   str srealm = {0, 0};
   str smethod = {0, 0};
-  pv_value_t val;
 
-  /* Get realm value from pvar */
-  if (fixup_get_svalue(msg, (gparam_p)realm, &val) != 0) {
-    LM_ERR("invalid realm parameter");
-    return -1;
-  }
-  srealm = val.rs;
+  srealm.s = realm;
+  srealm.len = strlen(realm);
 
   if (srealm.len == 0) {
     LM_ERR("invalid realm value - empty content");
     return -1;
   }
 
-  /* Get method value from pvar */
-  if (fixup_get_svalue(msg, (gparam_p)method, &val) != 0) {
-    LM_ERR("invalid method parameter");
-    return -1;
-  }
-  smethod = val.rs;
-
-  if (smethod.len == 0) {
+  if (method) {
+    smethod.s = method;
+    smethod.len = strlen(method);
+  } else {
     smethod = msg->first_line.u.request.method;
   }
 
@@ -361,8 +343,8 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
  */
 static int fixup_web3_auth(void **param, int param_no) {
   if (param_no == 1 || param_no == 2) {
-    /* realm and method parameters - convert to pvar */
-    return fixup_pvar(param);
+    /* realm and method parameters - convert to string */
+    return fixup_str_null(param, 1);
   }
   return 0;
 }
