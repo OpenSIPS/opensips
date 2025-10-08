@@ -117,18 +117,25 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"auth_web3",           /* module name */
-	"1.0",                  /* module version */
-	DEFAULT_DLFLAGS,        /* default dlopen flags */
-	cmds,                   /* exported cmds */
-	params,                 /* module parameters */
+	MOD_TYPE_DEFAULT,       /* class of this module */
+	MODULE_VERSION,         /* module version */
+	DEFAULT_DLFLAGS,        /* dlopen flags */
+	0,                      /* load function */
+	NULL,                   /* OpenSIPS module dependencies */
+	cmds,                   /* exported functions */
+	0,                      /* exported async cmds */
+	params,                 /* param exports */
 	0,                      /* exported statistics */
 	0,                      /* exported MI functions */
 	0,                      /* exported pseudo-variables */
-	0,                      /* extra procs */
+	0,                      /* exported transformations */
+	0,                      /* extra processes */
+	0,                      /* module pre-initialization function */
 	mod_init,               /* module initialization function */
-	0,                      /* response processing function */
-	destroy,                /* destroy function */
-	child_init              /* per-child init function */
+	(response_function) 0,  /* response processing function */
+	(destroy_function) destroy, /* module exit function */
+	child_init,             /* per-child init function */
+	0                       /* reload confirm function */
 };
 /*
  * Module initialization function
