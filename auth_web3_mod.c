@@ -27,6 +27,7 @@
 #include "../../error.h"
 #include "../../mod_fix.h"
 #include "../../sr_module.h"
+#include "../../pvar.h"
 #include "api.h"
 #include "keccak256.h"
 #include "web3_imple.h"
@@ -80,10 +81,10 @@ int web3_rpc_timeout = 10;
 
 /* Function prototypes for exported functions */
 static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
-                                   char *method);
+                                   char *method, char *param3, char *param4, char *param5, char *param6);
 static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
-                                     char *method);
-static int fixup_web3_auth(void **param);
+                                     char *method, char *param3, char *param4, char *param5, char *param6);
+static int fixup_web3_auth(void **param, int param_no);
 
 /* API binding function */
 int bind_web3_auth(web3_auth_api_t *api);
