@@ -1238,7 +1238,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       ret = AUTH_ERROR;
   }
 
-end:
   if (web3_contract_debug_mode) {
     LM_INFO("Authentication result: %d", ret);
   }

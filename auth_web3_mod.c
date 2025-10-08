@@ -34,9 +34,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Module version */
-#define MODULE_VERSION "1.0.0"
-
 /* Default dlopen flags */
 #define DEFAULT_DLFLAGS 0
 
