@@ -93,12 +93,16 @@ int bind_web3_auth(web3_auth_api_t *api);
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-    {"web3_www_authenticate", (cmd_function)w_web3_www_authenticate, 2,
-     fixup_web3_auth, 0, REQUEST_ROUTE},
-    {"web3_proxy_authenticate", (cmd_function)w_web3_proxy_authenticate, 2,
-     fixup_web3_auth, 0, REQUEST_ROUTE},
-    {"bind_web3_auth", (cmd_function)bind_web3_auth, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0}};
+    {"web3_www_authenticate", (cmd_function)w_web3_www_authenticate, {
+        {CMD_PARAM_STR, 0, 0}, /* realm */
+        {CMD_PARAM_STR, 0, 0}, /* method */
+        {0, 0, 0}}, REQUEST_ROUTE},
+    {"web3_proxy_authenticate", (cmd_function)w_web3_proxy_authenticate, {
+        {CMD_PARAM_STR, 0, 0}, /* realm */
+        {CMD_PARAM_STR, 0, 0}, /* method */
+        {0, 0, 0}}, REQUEST_ROUTE},
+    {"bind_web3_auth", (cmd_function)bind_web3_auth, {{0, 0, 0}}, 0},
+    {0, 0, {{0, 0, 0}}, 0}};
 
 /*
  * Exported parameters
@@ -343,8 +347,8 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
  */
 static int fixup_web3_auth(void **param, int param_no) {
   if (param_no == 1 || param_no == 2) {
-    /* realm and method parameters - convert to string */
-    return fixup_str_null(param, 1);
+    /* realm and method parameters - convert to pvar */
+    return fixup_pvar(param);
   }
   return 0;
 }
