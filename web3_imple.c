@@ -1207,13 +1207,21 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   }
 
   /* For OpenSIPS, we'll implement direct authentication without base auth module */
-  /* Extract credentials from Authorization header */
-  if (msg->authorization) {
+  /* Extract credentials from the appropriate header based on hftype */
+  if (hftype == HDR_AUTHORIZATION_T) {
     h = msg->authorization;
+  } else if (hftype == HDR_PROXYAUTH_T) {
+    h = msg->proxy_auth;
+  } else {
+    LM_ERR("Unsupported header type: %d", hftype);
+    return AUTH_ERROR;
+  }
+  
+  if (h) {
     
-    /* Get the raw Authorization header content */
+    /* Get the raw header content */
     if (!h->body.s || h->body.len <= 0) {
-      LM_ERR("Empty Authorization header");
+      LM_ERR("Empty authentication header");
       return AUTH_ERROR;
     }
     
@@ -1221,9 +1229,9 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     char *auth_header = h->body.s;
     int auth_len = h->body.len;
     
-    LM_INFO("Authorization header: %.*s", auth_len, auth_header);
+    LM_INFO("Authentication header: %.*s", auth_len, auth_header);
     
-    /* Extract all digest parameters from the Authorization header */
+    /* Extract all digest parameters from the authentication header */
     char username[256] = {0};
     char realm[256] = {0};
     char nonce[256] = {0};
