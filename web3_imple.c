@@ -1207,9 +1207,15 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   }
 
   /* For OpenSIPS, we'll implement direct authentication without base auth module */
-  /* Extract credentials from Authorization header */
-  if (msg->authorization) {
+  /* Extract credentials from Authorization or Proxy-Authorization header */
+  if (hftype == HDR_AUTHORIZATION_T && msg->authorization) {
     h = msg->authorization;
+  } else if (hftype == HDR_PROXYAUTH_T && msg->proxy_auth) {
+    h = msg->proxy_auth;
+  } else {
+    LM_DBG("no credentials");
+    return AUTH_NO_CREDENTIALS;
+  }
     
     /* Get the raw Authorization header content */
     if (!h->body.s || h->body.len <= 0) {
@@ -1357,8 +1363,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     
     /* Set method */
     str method_str = {0};
-    method_str.s = "REGISTER";
-    method_str.len = 8;
+    method_str.s = method->s;
+    method_str.len = method->len;
     
     /* Call web3_ens_validate with proper parameters */
     int result = web3_ens_validate(from_username, &cred, &method_str);
@@ -1369,33 +1375,4 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     } else {
       LM_ERR("Web3 authentication failed for ENS: %s", from_username);
       return NOT_AUTHENTICATED;
-    }
-  } else {
-    LM_DBG("no credentials");
-    return AUTH_NO_CREDENTIALS;
-  }
-
-  /* Use ENS validation which includes fallback to normal Web3 authentication */
-  rauth = web3_ens_validate(from_username, &(cred->digest), method);
-
-  /* Handle different return codes from ENS validation */
-  if (rauth == AUTHENTICATED) {
-    ret = AUTH_OK;
-    /* For OpenSIPS, authentication is complete at this point */
-  } else if (rauth == 402) {
-    /* ENS validation failed - return specific error */
-    ret = AUTH_ERROR; /* or define a specific AUTH_ENS_INVALID if available */
-    LM_ERR("ENS validation failed for %s", from_username);
-  } else {
-    if (rauth == NOT_AUTHENTICATED)
-      ret = AUTH_INVALID_PASSWORD;
-    else
-      ret = AUTH_ERROR;
-  }
-
-  if (web3_contract_debug_mode) {
-    LM_INFO("Authentication result: %d", ret);
-  }
-
-  return ret;
 }
