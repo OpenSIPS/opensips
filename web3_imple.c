@@ -1372,4 +1372,5 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     } else {
       LM_ERR("Web3 authentication failed for ENS: %s", from_username);
       return NOT_AUTHENTICATED;
+    }
 }
