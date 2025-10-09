@@ -1320,6 +1320,9 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
         memcpy(algorithm, algorithm_start, algorithm_len);
         algorithm[algorithm_len] = '\0';
       }
+    } else {
+      /* Default to MD5 if not specified */
+      strcpy(algorithm, "MD5");
     }
     
     LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
