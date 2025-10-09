@@ -168,7 +168,7 @@ int rmq_error(char const *context, amqp_rpc_reply_t x)
 /*
  * function used to reconnect a RabbitMQ server
  */
-int rmq_reconnect(rmq_connection_t *conn, int max_frames, str cid)
+int rmq_server_reconnect(rmq_connection_t *conn, int max_frames, str cid)
 {
 #if defined AMQP_VERSION_v04
 	amqp_socket_t *amqp_sock;
@@ -656,7 +656,7 @@ void rmq_connect_servers(void)
 	list_for_each(it, &rmq_servers) {
 		srv = container_of(it, struct rmq_server, list);
 
-		ret = rmq_reconnect(&srv->conn, srv->max_frames, srv->cid); 
+		ret = rmq_server_reconnect(&srv->conn, srv->max_frames, srv->cid);
 
 		if (ret == -1) {
 			if (amqp_destroy_connection(srv->conn.conn) < 0)
@@ -743,7 +743,7 @@ no_close:
 #endif
 }
 
-int rmq_basic_publish(rmq_connection_t *conn, int max_frames,
+int rmq_basic_server_publish(rmq_connection_t *conn, int max_frames,
 							str *cid, amqp_bytes_t akey, amqp_bytes_t abody,
 							amqp_basic_properties_t *props, int retries) {
 	int ret;
@@ -754,7 +754,7 @@ int rmq_basic_publish(rmq_connection_t *conn, int max_frames,
 	}
 								
 	do {
-		ret = rmq_reconnect(conn, max_frames, *cid); 
+		ret = rmq_server_reconnect(conn, max_frames, *cid);
 
 		if (ret == -1) {
 			if (amqp_destroy_connection(conn->conn) < 0)
@@ -860,7 +860,7 @@ int rmq_send_rm(struct rmq_server *srv, str *rkey, str *body, str *ctype,
 		props.content_type.bytes = ctype->s;
 	}
 
-	ret = rmq_basic_publish(&srv->conn,
+	ret = rmq_basic_server_publish(&srv->conn,
 			srv->max_frames,
 			&srv->cid,
 			akey,

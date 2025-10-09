@@ -398,6 +398,7 @@ static evi_reply_sock* rmq_parse(str socket)
 				st = ST_HOST;
 				if (dupl_string(&tmp, begin, socket.s + i)) goto err;
 				param->conn.uri.user = tmp.s;
+				//param->conn.uri.user[tmp.len] = '\0';
 				begin = socket.s + i + 1;
 				param->conn.flags |= RMQ_PARAM_USER;
 				break;
@@ -566,6 +567,7 @@ success:
 		goto err;
 	}
 
+	param->conn.state = RMQS_PREINIT;
 	param->conn.heartbeat = heartbeat;
 	sock->params = param;
 	sock->flags |= EVI_PARAMS | RMQ_FLAG | EVI_ASYNC_STATUS;

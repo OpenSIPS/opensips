@@ -74,7 +74,7 @@ typedef struct _rmq_uri {
 #endif
 
 
-enum rmq_server_state { RMQS_OFF, RMQS_INIT, RMQS_CONN, RMQS_ON };
+enum rmq_server_state { RMQS_OFF, RMQS_INIT, RMQS_CONN, RMQS_ON, RMQS_PREINIT };
 
 #define RMQF_IMM	(1<<0) /* message MUST be delivered to a consumer immediately. */
 #define RMQF_MAND	(1<<1) /* message MUST be routed to a queue */
