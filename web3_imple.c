@@ -1165,7 +1165,8 @@ cleanup:
 /**
  * Main Web3 authentication function that integrates with the base auth module
  */
-int web3_digest_www_authenticate(struct sip_msg *msg, str *realm, str *method) {
+int web3_digest_authenticate(struct sip_msg *msg, str *realm,
+                             hdr_types_t hftype, str *method) {
   struct hdr_field *h;
   auth_body_t *cred;
   auth_result_t ret;
@@ -1206,8 +1207,15 @@ int web3_digest_www_authenticate(struct sip_msg *msg, str *realm, str *method) {
   }
 
   /* For OpenSIPS, we'll implement direct authentication without base auth module */
-  /* Extract credentials from Authorization header */
-  h = msg->authorization;
+  /* Extract credentials from the appropriate header based on hftype */
+  if (hftype == HDR_AUTHORIZATION_T) {
+    h = msg->authorization;
+  } else if (hftype == HDR_PROXYAUTH_T) {
+    h = msg->proxy_auth;
+  } else {
+    LM_ERR("Unsupported header type: %d", hftype);
+    return AUTH_ERROR;
+  }
   
   if (h) {
     
@@ -1374,215 +1382,28 @@ int web3_digest_www_authenticate(struct sip_msg *msg, str *realm, str *method) {
     LM_DBG("no credentials");
     return AUTH_NO_CREDENTIALS;
   }
-}
 
-/**
- * Web3 proxy authentication function for INVITE requests
- */
-int web3_digest_proxy_authenticate(struct sip_msg *msg, str *realm, str *method) {
-  struct hdr_field *h;
-  char from_username[256] = {0};
+  /* Use ENS validation which includes fallback to normal Web3 authentication */
+  rauth = web3_ens_validate(from_username, &(cred->digest), method);
+
+  /* Handle different return codes from ENS validation */
+  if (rauth == AUTHENTICATED) {
+    ret = AUTH_OK;
+    /* For OpenSIPS, authentication is complete at this point */
+  } else if (rauth == 402) {
+    /* ENS validation failed - return specific error */
+    ret = AUTH_ERROR; /* or define a specific AUTH_ENS_INVALID if available */
+    LM_ERR("ENS validation failed for %s", from_username);
+  } else {
+    if (rauth == NOT_AUTHENTICATED)
+      ret = AUTH_INVALID_PASSWORD;
+    else
+      ret = AUTH_ERROR;
+  }
 
   if (web3_contract_debug_mode) {
-    LM_INFO("Starting proxy digest authentication for realm=%.*s",
-            realm->len, realm->s);
+    LM_INFO("Authentication result: %d", ret);
   }
 
-  /* Extract username from "From" header field */
-  if (msg->from && msg->from->parsed) {
-    struct to_body *from_body = (struct to_body *)msg->from->parsed;
-    struct sip_uri parsed_uri;
-
-    /* Parse the URI to extract user part */
-    if (parse_uri(from_body->uri.s, from_body->uri.len, &parsed_uri) < 0) {
-      LM_ERR("Failed to parse From URI");
-      return AUTH_ERROR;
-    }
-
-    if (parsed_uri.user.len > 0 &&
-        parsed_uri.user.len < sizeof(from_username)) {
-      memcpy(from_username, parsed_uri.user.s, parsed_uri.user.len);
-      from_username[parsed_uri.user.len] = '\0';
-
-      if (web3_contract_debug_mode) {
-        LM_INFO("Extracted from username: %s", from_username);
-      }
-    } else {
-      LM_ERR("Invalid or missing username in From header");
-      return AUTH_ERROR;
-    }
-  } else {
-    LM_ERR("No From header found");
-    return AUTH_ERROR;
-  }
-
-  /* For OpenSIPS, we'll implement direct authentication without base auth module */
-  /* Extract credentials from Proxy-Authorization header */
-  h = msg->proxy_auth;
-  
-  if (h) {
-    
-    /* Get the raw header content */
-    if (!h->body.s || h->body.len <= 0) {
-      LM_ERR("Empty proxy authentication header");
-      return AUTH_ERROR;
-    }
-    
-    /* Parse the digest parameters manually */
-    char *auth_header = h->body.s;
-    int auth_len = h->body.len;
-    
-    LM_INFO("Proxy-Authentication header: %.*s", auth_len, auth_header);
-    
-    /* Extract all digest parameters from the proxy authentication header */
-    char username[256] = {0};
-    char realm_parsed[256] = {0}; // Renamed to avoid conflict with function parameter
-    char nonce[256] = {0};
-    char uri[256] = {0};
-    char response[256] = {0};
-    char algorithm[16] = {0};
-
-    /* Parse username */
-    char *username_start = strstr(auth_header, "username=\"");
-    if (!username_start) {
-      LM_ERR("No username found in Proxy-Authorization header");
-      return AUTH_ERROR;
-    }
-    username_start += 10; /* Skip "username=\"" */
-    char *username_end = strchr(username_start, '"');
-    if (!username_end) {
-      LM_ERR("Malformed username in Proxy-Authorization header");
-      return AUTH_ERROR;
-    }
-    int username_len = username_end - username_start;
-    if (username_len >= sizeof(username)) {
-      LM_ERR("Username too long");
-      return AUTH_ERROR;
-    }
-    memcpy(username, username_start, username_len);
-    username[username_len] = '\0';
-
-    /* Parse realm */
-    char *realm_start = strstr(auth_header, "realm=\"");
-    if (realm_start) {
-      realm_start += 7; /* Skip "realm=\"" */
-      char *realm_end = strchr(realm_start, '"');
-      if (realm_end) {
-        int realm_len = realm_end - realm_start;
-        if (realm_len < sizeof(realm_parsed)) {
-          memcpy(realm_parsed, realm_start, realm_len);
-          realm_parsed[realm_len] = '\0';
-        }
-      }
-    }
-
-    /* Parse nonce */
-    char *nonce_start = strstr(auth_header, "nonce=\"");
-    if (nonce_start) {
-      nonce_start += 7; /* Skip "nonce=\"" */
-      char *nonce_end = strchr(nonce_start, '"');
-      if (nonce_end) {
-        int nonce_len = nonce_end - nonce_start;
-        if (nonce_len < sizeof(nonce)) {
-          memcpy(nonce, nonce_start, nonce_len);
-          nonce[nonce_len] = '\0';
-        }
-      }
-    }
-
-    /* Parse uri */
-    char *uri_start = strstr(auth_header, "uri=\"");
-    if (uri_start) {
-      uri_start += 5; /* Skip "uri=\"" */
-      char *uri_end = strchr(uri_start, '"');
-      if (uri_end) {
-        int uri_len = uri_end - uri_start;
-        if (uri_len < sizeof(uri)) {
-          memcpy(uri, uri_start, uri_len);
-          uri[uri_len] = '\0';
-        }
-      }
-    }
-
-    /* Parse response */
-    char *response_start = strstr(auth_header, "response=\"");
-    if (response_start) {
-      response_start += 10; /* Skip "response=\"" */
-      char *response_end = strchr(response_start, '"');
-      if (response_end) {
-        int response_len = response_end - response_start;
-        if (response_len < sizeof(response)) {
-          memcpy(response, response_start, response_len);
-          response[response_len] = '\0';
-        }
-      }
-    }
-
-    /* Parse algorithm - search backwards from the end since it's at the end */
-    char *algorithm_start = NULL;
-    for (int i = auth_len - 9; i >= 0; i--) {
-      if (strncmp(auth_header + i, "algorithm=", 9) == 0) {
-        algorithm_start = auth_header + i;
-        break;
-      }
-    }
-
-    if (algorithm_start && algorithm_start < auth_header + auth_len) {
-      algorithm_start += 9; /* Skip "algorithm=" */
-      /* Algorithm is at the end, so no comma to find */
-      int algorithm_len = (auth_header + auth_len) - algorithm_start;
-      if (algorithm_len < sizeof(algorithm) && algorithm_len > 0) {
-        memcpy(algorithm, algorithm_start, algorithm_len);
-        algorithm[algorithm_len] = '\0';
-      }
-    } else {
-      /* Default to MD5 if not specified */
-      strcpy(algorithm, "MD5");
-    }
-
-    LM_INFO("Parsed proxy digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s",
-            username, realm_parsed, nonce, uri, response, algorithm);
-
-    /* Create dig_cred_t structure */
-    dig_cred_t cred = {0};
-
-    /* Set username */
-    cred.username.user.s = username;
-    cred.username.user.len = strlen(username);
-
-    /* Set realm */
-    cred.realm.s = realm_parsed;
-    cred.realm.len = strlen(realm_parsed);
-
-    /* Set nonce */
-    cred.nonce.s = nonce;
-    cred.nonce.len = strlen(nonce);
-
-    /* Set uri */
-    cred.uri.s = uri;
-    cred.uri.len = strlen(uri);
-
-    /* Set response */
-    cred.response.s = response;
-    cred.response.len = strlen(response);
-
-    /* Set method */
-    str method_str = {0};
-    method_str.s = "INVITE";
-    method_str.len = 6;
-
-    /* Call web3_ens_validate with proper parameters */
-    int result = web3_ens_validate(from_username, &cred, &method_str);
-
-    if (result == AUTHENTICATED) {
-      LM_INFO("Web3 proxy authentication successful for ENS: %s", from_username);
-      return AUTHENTICATED;
-    } else {
-      LM_ERR("Web3 proxy authentication failed for ENS: %s", from_username);
-      return NOT_AUTHENTICATED;
-    }
-  } else {
-    LM_DBG("no proxy credentials");
-    return AUTH_NO_CREDENTIALS;
-  }
+  return ret;
 }

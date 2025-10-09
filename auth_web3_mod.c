@@ -85,10 +85,6 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
 static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
                                      char *method, char *param3, char *param4, char *param5, char *param6);
 
-/* Internal function prototypes */
-int web3_digest_www_authenticate(struct sip_msg *msg, str *realm, str *method);
-int web3_digest_proxy_authenticate(struct sip_msg *msg, str *realm, str *method);
-
 /* API binding function */
 int bind_web3_auth(web3_auth_api_t *api);
 
@@ -307,7 +303,14 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
     smethod = msg->first_line.u.request.method;
   }
 
-  return web3_digest_www_authenticate(msg, &srealm, &smethod);
+  /* Smart header detection: use Authorization for REGISTER, Proxy-Authorization for INVITE */
+  hdr_types_t hftype = HDR_AUTHORIZATION_T;
+  if (msg->first_line.u.request.method.len == 6 && 
+      strncmp(msg->first_line.u.request.method.s, "INVITE", 6) == 0) {
+    hftype = HDR_PROXYAUTH_T;
+  }
+  
+  return web3_digest_authenticate(msg, &srealm, hftype, &smethod);
 }
 
 /*
@@ -333,7 +336,7 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
     smethod = msg->first_line.u.request.method;
   }
 
-  return web3_digest_proxy_authenticate(msg, &srealm, &smethod);
+  return web3_digest_authenticate(msg, &srealm, HDR_PROXYAUTH_T, &smethod);
 }
 
 
