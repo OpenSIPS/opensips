@@ -1229,6 +1229,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     char nonce[256] = {0};
     char uri[256] = {0};
     char response[256] = {0};
+    char algorithm[16] = {0};
     
     /* Parse username */
     char *username_start = strstr(auth_header, "username=\"");
@@ -1306,8 +1307,23 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       }
     }
     
-    LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s", 
-            username, realm, nonce, uri, response);
+    /* Parse algorithm */
+    char *algorithm_start = strstr(auth_header, "algorithm=");
+    if (algorithm_start) {
+      algorithm_start += 9; /* Skip "algorithm=" */
+      char *algorithm_end = strchr(algorithm_start, ',');
+      if (!algorithm_end) {
+        algorithm_end = algorithm_start + strlen(algorithm_start);
+      }
+      int algorithm_len = algorithm_end - algorithm_start;
+      if (algorithm_len < sizeof(algorithm)) {
+        memcpy(algorithm, algorithm_start, algorithm_len);
+        algorithm[algorithm_len] = '\0';
+      }
+    }
+    
+    LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
+            username, realm, nonce, uri, response, algorithm);
     
     /* Create dig_cred_t structure */
     dig_cred_t cred = {0};
