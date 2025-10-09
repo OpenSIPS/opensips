@@ -1222,6 +1222,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     int auth_len = h->body.len;
     
     LM_INFO("Authorization header: %.*s", auth_len, auth_header);
+    LM_INFO("DEBUG: auth_header length: %d", auth_len);
+    LM_INFO("DEBUG: auth_header content: '%s'", auth_header);
     
     /* Extract all digest parameters from the Authorization header */
     char username[256] = {0};
@@ -1230,6 +1232,9 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     char uri[256] = {0};
     char response[256] = {0};
     char algorithm[16] = {0};
+    char cnonce[256] = {0};
+    char nc[16] = {0};
+    char qop[16] = {0};
     
     /* Parse username */
     char *username_start = strstr(auth_header, "username=\"");
@@ -1307,20 +1312,20 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       }
     }
     
-    /* Parse algorithm - search only within the Authorization header body */
-    char *algorithm_start = strstr(auth_header, "algorithm=");
+    /* Parse algorithm - search backwards from the end since it's at the end */
+    char *algorithm_start = NULL;
+    for (int i = auth_len - 9; i >= 0; i--) {
+      if (strncmp(auth_header + i, "algorithm=", 9) == 0) {
+        algorithm_start = auth_header + i;
+        break;
+      }
+    }
+    
     if (algorithm_start && algorithm_start < auth_header + auth_len) {
       algorithm_start += 9; /* Skip "algorithm=" */
       LM_INFO("DEBUG: Found algorithm= at position, remaining: %s", algorithm_start);
-      char *algorithm_end = strchr(algorithm_start, ',');
-      if (!algorithm_end) {
-        /* No comma found, algorithm is at the end of the header */
-        algorithm_end = auth_header + auth_len; /* End of Authorization header */
-        LM_INFO("DEBUG: No comma found, algorithm_end set to end of auth header");
-      } else {
-        LM_INFO("DEBUG: Found comma at position");
-      }
-      int algorithm_len = algorithm_end - algorithm_start;
+      /* Algorithm is at the end, so no comma to find */
+      int algorithm_len = (auth_header + auth_len) - algorithm_start;
       LM_INFO("DEBUG: Algorithm length: %d", algorithm_len);
       if (algorithm_len < sizeof(algorithm) && algorithm_len > 0) {
         memcpy(algorithm, algorithm_start, algorithm_len);
