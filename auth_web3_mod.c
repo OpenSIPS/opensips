@@ -85,6 +85,10 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
 static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
                                      char *method, char *param3, char *param4, char *param5, char *param6);
 
+/* Internal function prototypes */
+int web3_digest_www_authenticate(struct sip_msg *msg, str *realm, str *method);
+int web3_digest_proxy_authenticate(struct sip_msg *msg, str *realm, str *method);
+
 /* API binding function */
 int bind_web3_auth(web3_auth_api_t *api);
 
@@ -303,7 +307,7 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
     smethod = msg->first_line.u.request.method;
   }
 
-  return web3_digest_authenticate(msg, &srealm, HDR_AUTHORIZATION_T, &smethod);
+  return web3_digest_www_authenticate(msg, &srealm, &smethod);
 }
 
 /*
@@ -329,7 +333,7 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
     smethod = msg->first_line.u.request.method;
   }
 
-  return web3_digest_authenticate(msg, &srealm, HDR_PROXYAUTH_T, &smethod);
+  return web3_digest_proxy_authenticate(msg, &srealm, &smethod);
 }
 
 
