@@ -1211,19 +1211,23 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   if (msg->authorization) {
     h = msg->authorization;
     
-    /* Parse the Authorization header if not already parsed */
-    if (!h->parsed) {
-      if (parse_authorization_header(h) < 0) {
-        LM_ERR("Failed to parse Authorization header");
-        return AUTH_ERROR;
-      }
-    }
-    
-    cred = (auth_body_t *)h->parsed;
-    if (!cred) {
-      LM_ERR("Failed to get parsed Authorization header");
+    /* Get the raw Authorization header content */
+    if (!h->body.s || h->body.len <= 0) {
+      LM_ERR("Empty Authorization header");
       return AUTH_ERROR;
     }
+    
+    /* For now, we'll extract basic info from the header */
+    /* The header format is: Digest username="...", realm="...", nonce="...", etc. */
+    char *auth_header = h->body.s;
+    int auth_len = h->body.len;
+    
+    LM_INFO("Authorization header: %.*s", auth_len, auth_header);
+    
+    /* TODO: Parse the digest parameters manually */
+    /* For now, just return AUTH_ERROR to indicate we need to implement parsing */
+    LM_ERR("Manual Authorization header parsing not yet implemented");
+    return AUTH_ERROR;
   } else {
     LM_DBG("no credentials");
     return AUTH_NO_CREDENTIALS;
