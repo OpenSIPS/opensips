@@ -1222,8 +1222,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     int auth_len = h->body.len;
     
     LM_INFO("Authorization header: %.*s", auth_len, auth_header);
-    LM_INFO("DEBUG: auth_header length: %d", auth_len);
-    LM_INFO("DEBUG: auth_header content: '%s'", auth_header);
     
     /* Extract all digest parameters from the Authorization header */
     char username[256] = {0};
@@ -1232,9 +1230,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     char uri[256] = {0};
     char response[256] = {0};
     char algorithm[16] = {0};
-    char cnonce[256] = {0};
-    char nc[16] = {0};
-    char qop[16] = {0};
     
     /* Parse username */
     char *username_start = strstr(auth_header, "username=\"");
@@ -1323,19 +1318,15 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     
     if (algorithm_start && algorithm_start < auth_header + auth_len) {
       algorithm_start += 9; /* Skip "algorithm=" */
-      LM_INFO("DEBUG: Found algorithm= at position, remaining: %s", algorithm_start);
       /* Algorithm is at the end, so no comma to find */
       int algorithm_len = (auth_header + auth_len) - algorithm_start;
-      LM_INFO("DEBUG: Algorithm length: %d", algorithm_len);
       if (algorithm_len < sizeof(algorithm) && algorithm_len > 0) {
         memcpy(algorithm, algorithm_start, algorithm_len);
         algorithm[algorithm_len] = '\0';
-        LM_INFO("DEBUG: Parsed algorithm: '%s'", algorithm);
       }
     } else {
       /* Default to MD5 if not specified */
       strcpy(algorithm, "MD5");
-      LM_INFO("DEBUG: Algorithm not found in Authorization header, defaulting to MD5");
     }
     
     LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
