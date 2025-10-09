@@ -1307,22 +1307,22 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       }
     }
     
-    /* Parse algorithm */
+    /* Parse algorithm - search only within the Authorization header body */
     char *algorithm_start = strstr(auth_header, "algorithm=");
-    if (algorithm_start) {
+    if (algorithm_start && algorithm_start < auth_header + auth_len) {
       algorithm_start += 9; /* Skip "algorithm=" */
       LM_INFO("DEBUG: Found algorithm= at position, remaining: %s", algorithm_start);
       char *algorithm_end = strchr(algorithm_start, ',');
       if (!algorithm_end) {
         /* No comma found, algorithm is at the end of the header */
-        algorithm_end = algorithm_start + strlen(algorithm_start);
-        LM_INFO("DEBUG: No comma found, algorithm_end set to end");
+        algorithm_end = auth_header + auth_len; /* End of Authorization header */
+        LM_INFO("DEBUG: No comma found, algorithm_end set to end of auth header");
       } else {
         LM_INFO("DEBUG: Found comma at position");
       }
       int algorithm_len = algorithm_end - algorithm_start;
       LM_INFO("DEBUG: Algorithm length: %d", algorithm_len);
-      if (algorithm_len < sizeof(algorithm)) {
+      if (algorithm_len < sizeof(algorithm) && algorithm_len > 0) {
         memcpy(algorithm, algorithm_start, algorithm_len);
         algorithm[algorithm_len] = '\0';
         LM_INFO("DEBUG: Parsed algorithm: '%s'", algorithm);
@@ -1330,7 +1330,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     } else {
       /* Default to MD5 if not specified */
       strcpy(algorithm, "MD5");
-      LM_INFO("DEBUG: Algorithm not found, defaulting to MD5");
+      LM_INFO("DEBUG: Algorithm not found in Authorization header, defaulting to MD5");
     }
     
     LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
