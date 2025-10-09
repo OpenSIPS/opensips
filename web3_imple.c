@@ -1210,9 +1210,18 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   /* Extract credentials from Authorization header */
   if (msg->authorization) {
     h = msg->authorization;
+    
+    /* Parse the Authorization header if not already parsed */
+    if (!h->parsed) {
+      if (parse_authorization_header(h) < 0) {
+        LM_ERR("Failed to parse Authorization header");
+        return AUTH_ERROR;
+      }
+    }
+    
     cred = (auth_body_t *)h->parsed;
     if (!cred) {
-      LM_ERR("Failed to parse Authorization header");
+      LM_ERR("Failed to get parsed Authorization header");
       return AUTH_ERROR;
     }
   } else {
