@@ -1217,17 +1217,140 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       return AUTH_ERROR;
     }
     
-    /* For now, we'll extract basic info from the header */
-    /* The header format is: Digest username="...", realm="...", nonce="...", etc. */
+    /* Parse the digest parameters manually */
     char *auth_header = h->body.s;
     int auth_len = h->body.len;
     
     LM_INFO("Authorization header: %.*s", auth_len, auth_header);
     
-    /* TODO: Parse the digest parameters manually */
-    /* For now, just return AUTH_ERROR to indicate we need to implement parsing */
-    LM_ERR("Manual Authorization header parsing not yet implemented");
-    return AUTH_ERROR;
+    /* Extract all digest parameters from the Authorization header */
+    char username[256] = {0};
+    char realm[256] = {0};
+    char nonce[256] = {0};
+    char uri[256] = {0};
+    char response[256] = {0};
+    char cnonce[256] = {0};
+    char nc[16] = {0};
+    char qop[16] = {0};
+    char algorithm[16] = {0};
+    
+    /* Parse username */
+    char *username_start = strstr(auth_header, "username=\"");
+    if (!username_start) {
+      LM_ERR("No username found in Authorization header");
+      return AUTH_ERROR;
+    }
+    username_start += 10; /* Skip "username=\"" */
+    char *username_end = strchr(username_start, '"');
+    if (!username_end) {
+      LM_ERR("Malformed username in Authorization header");
+      return AUTH_ERROR;
+    }
+    int username_len = username_end - username_start;
+    if (username_len >= sizeof(username)) {
+      LM_ERR("Username too long");
+      return AUTH_ERROR;
+    }
+    memcpy(username, username_start, username_len);
+    username[username_len] = '\0';
+    
+    /* Parse realm */
+    char *realm_start = strstr(auth_header, "realm=\"");
+    if (realm_start) {
+      realm_start += 7; /* Skip "realm=\"" */
+      char *realm_end = strchr(realm_start, '"');
+      if (realm_end) {
+        int realm_len = realm_end - realm_start;
+        if (realm_len < sizeof(realm)) {
+          memcpy(realm, realm_start, realm_len);
+          realm[realm_len] = '\0';
+        }
+      }
+    }
+    
+    /* Parse nonce */
+    char *nonce_start = strstr(auth_header, "nonce=\"");
+    if (nonce_start) {
+      nonce_start += 7; /* Skip "nonce=\"" */
+      char *nonce_end = strchr(nonce_start, '"');
+      if (nonce_end) {
+        int nonce_len = nonce_end - nonce_start;
+        if (nonce_len < sizeof(nonce)) {
+          memcpy(nonce, nonce_start, nonce_len);
+          nonce[nonce_len] = '\0';
+        }
+      }
+    }
+    
+    /* Parse uri */
+    char *uri_start = strstr(auth_header, "uri=\"");
+    if (uri_start) {
+      uri_start += 5; /* Skip "uri=\"" */
+      char *uri_end = strchr(uri_start, '"');
+      if (uri_end) {
+        int uri_len = uri_end - uri_start;
+        if (uri_len < sizeof(uri)) {
+          memcpy(uri, uri_start, uri_len);
+          uri[uri_len] = '\0';
+        }
+      }
+    }
+    
+    /* Parse response */
+    char *response_start = strstr(auth_header, "response=\"");
+    if (response_start) {
+      response_start += 10; /* Skip "response=\"" */
+      char *response_end = strchr(response_start, '"');
+      if (response_end) {
+        int response_len = response_end - response_start;
+        if (response_len < sizeof(response)) {
+          memcpy(response, response_start, response_len);
+          response[response_len] = '\0';
+        }
+      }
+    }
+    
+    LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s", 
+            username, realm, nonce, uri, response);
+    
+    /* Create dig_cred_t structure */
+    dig_cred_t cred = {0};
+    
+    /* Set username */
+    cred.username.user.s = username;
+    cred.username.user.len = strlen(username);
+    
+    /* Set realm */
+    cred.realm.s = realm;
+    cred.realm.len = strlen(realm);
+    
+    /* Set nonce */
+    cred.nonce.s = nonce;
+    cred.nonce.len = strlen(nonce);
+    
+    /* Set uri */
+    cred.uri.s = uri;
+    cred.uri.len = strlen(uri);
+    
+    /* Set response */
+    cred.response.s = response;
+    cred.response.len = strlen(response);
+    
+    /* Set method */
+    str method_str = {0};
+    method_str.s = "REGISTER";
+    method_str.len = 8;
+    
+    /* Call web3_ens_validate with proper parameters */
+    int result = web3_ens_validate(from_username, &cred, &method_str);
+    
+    if (result == AUTHENTICATED) {
+      LM_INFO("Web3 authentication successful for ENS: %s", from_username);
+      return AUTHENTICATED;
+    } else {
+      LM_ERR("Web3 authentication failed for ENS: %s", from_username);
+      return NOT_AUTHENTICATED;
+    }
   } else {
     LM_DBG("no credentials");
     return AUTH_NO_CREDENTIALS;
