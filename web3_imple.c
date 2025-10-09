@@ -1310,19 +1310,16 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       }
     }
     
-    /* Parse algorithm - search backwards from the end since it's at the end */
-    char *algorithm_start = NULL;
-    for (int i = auth_len - 9; i >= 0; i--) {
-      if (strncmp(auth_header + i, "algorithm=", 9) == 0) {
-        algorithm_start = auth_header + i;
-        break;
-      }
-    }
-    
+    /* Parse algorithm - look for algorithm= at the end of the header */
+    char *algorithm_start = strstr(auth_header, "algorithm=");
     if (algorithm_start && algorithm_start < auth_header + auth_len) {
       algorithm_start += 9; /* Skip "algorithm=" */
-      /* Algorithm is at the end, so no comma to find */
-      int algorithm_len = (auth_header + auth_len) - algorithm_start;
+      /* Find the end of the algorithm value (end of string or comma) */
+      char *algorithm_end = strchr(algorithm_start, ',');
+      if (!algorithm_end) {
+        algorithm_end = auth_header + auth_len; /* End of string */
+      }
+      int algorithm_len = algorithm_end - algorithm_start;
       if (algorithm_len < sizeof(algorithm) && algorithm_len > 0) {
         memcpy(algorithm, algorithm_start, algorithm_len);
         algorithm[algorithm_len] = '\0';
