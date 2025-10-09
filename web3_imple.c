@@ -1174,8 +1174,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   char from_username[256] = {0};
 
   if (web3_contract_debug_mode) {
-    LM_INFO("Starting digest authentication for realm=%.*s",
-            realm->len, realm->s);
+    LM_INFO("Starting digest authentication for realm=%.*s, method=%.*s, hftype=%d",
+            realm->len, realm->s, method->len, method->s, hftype);
   }
 
   /* Extract username from "From" header field */
@@ -1367,6 +1367,11 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     str method_str = {0};
     method_str.s = method->s;
     method_str.len = method->len;
+    
+    LM_INFO("web3_digest_authenticate: Received method parameter: %.*s (len=%d)", 
+            method->len, method->s, method->len);
+    LM_INFO("web3_digest_authenticate: Method string set to: %.*s (len=%d)", 
+            method_str.len, method_str.s, method_str.len);
     
     /* Call web3_ens_validate with proper parameters */
     int result = web3_ens_validate(from_username, &cred, &method_str);
