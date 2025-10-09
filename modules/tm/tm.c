@@ -133,6 +133,7 @@ static int fixup_free_proxy(void **param);
 
 /* init functions */
 static int mod_init(void);
+static int mod_load(void);
 static int child_init(int rank);
 
 
@@ -524,7 +525,7 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,				 /* load function */
+	mod_load,		 /* load function */
 	&deps,           /* OpenSIPS module dependencies */
 	cmds,      /* exported functions */
 	NULL,      /* exported async functions */
@@ -884,6 +885,19 @@ static int script_init( struct sip_msg *msg, void *bar)
 	return SCB_RUN_ALL;
 }
 
+static int mod_load(void)
+{
+	if(register_pv_context("request", tm_pv_context_request)< 0) {
+		LM_ERR("Failed to register pv contexts\n");
+		return -1;
+	}
+
+	if(register_pv_context("reply", tm_pv_context_reply)< 0) {
+		LM_ERR("Failed to register pv contexts\n");
+		return -1;
+	}
+	return 0;
+}
 
 static int mod_init(void)
 {
@@ -999,16 +1013,6 @@ static int mod_init(void)
 	}
 	if (register_script_cb( script_init, PRE_SCRIPT_CB|REQ_TYPE_CB , 0)<0 ) {
 		LM_ERR("failed to register PRE request callback\n");
-		return -1;
-	}
-
-	if(register_pv_context("request", tm_pv_context_request)< 0) {
-		LM_ERR("Failed to register pv contexts\n");
-		return -1;
-	}
-
-	if(register_pv_context("reply", tm_pv_context_reply)< 0) {
-		LM_ERR("Failed to register pv contexts\n");
 		return -1;
 	}
 
