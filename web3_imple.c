@@ -1363,10 +1363,10 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     cred.response.s = response;
     cred.response.len = strlen(response);
     
-    /* Set method */
+    /* Set method from parameter */
     str method_str = {0};
-    method_str.s = "REGISTER";
-    method_str.len = 8;
+    method_str.s = method->s;
+    method_str.len = method->len;
     
     /* Call web3_ens_validate with proper parameters */
     int result = web3_ens_validate(from_username, &cred, &method_str);
