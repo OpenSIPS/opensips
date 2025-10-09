@@ -1168,9 +1168,6 @@ cleanup:
 int web3_digest_authenticate(struct sip_msg *msg, str *realm,
                              hdr_types_t hftype, str *method) {
   struct hdr_field *h;
-  auth_body_t *cred;
-  auth_result_t ret;
-  auth_result_t rauth;
   char from_username[256] = {0};
 
   if (web3_contract_debug_mode) {
@@ -1231,7 +1228,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     
     /* Extract all digest parameters from the Authorization header */
     char username[256] = {0};
-    char realm[256] = {0};
+    char realm_parsed[256] = {0};
     char nonce[256] = {0};
     char uri[256] = {0};
     char response[256] = {0};
@@ -1264,9 +1261,9 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       char *realm_end = strchr(realm_start, '"');
       if (realm_end) {
         int realm_len = realm_end - realm_start;
-        if (realm_len < sizeof(realm)) {
-          memcpy(realm, realm_start, realm_len);
-          realm[realm_len] = '\0';
+        if (realm_len < sizeof(realm_parsed)) {
+          memcpy(realm_parsed, realm_start, realm_len);
+          realm_parsed[realm_len] = '\0';
         }
       }
     }
@@ -1336,7 +1333,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     }
     
     LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
-            username, realm, nonce, uri, response, algorithm);
+            username, realm_parsed, nonce, uri, response, algorithm);
     
     /* Create dig_cred_t structure */
     dig_cred_t cred = {0};
@@ -1346,8 +1343,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     cred.username.user.len = strlen(username);
     
     /* Set realm */
-    cred.realm.s = realm;
-    cred.realm.len = strlen(realm);
+    cred.realm.s = realm_parsed;
+    cred.realm.len = strlen(realm_parsed);
     
     /* Set nonce */
     cred.nonce.s = nonce;
