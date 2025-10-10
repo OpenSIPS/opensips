@@ -1380,6 +1380,12 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     
   /* Use the method parameter passed to the function */
   str method_str = {0};
+  
+  LM_INFO("DEBUG: method=%p", method);
+  if (method) {
+    LM_INFO("DEBUG: method->s=%p, method->len=%d", method->s, method->len);
+  }
+  
   if (method && method->s && method->len > 0) {
     /* Copy method to local buffer to avoid memory issues */
     char method_buffer[32];
@@ -1392,7 +1398,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     
     LM_INFO("Using method from parameter: '%s' (len=%d)", method_buffer, copy_len);
   } else {
-    LM_ERR("Invalid method parameter - s=%p, len=%d", method ? method->s : NULL, method ? method->len : 0);
+    LM_ERR("Invalid method parameter - method=%p, s=%p, len=%d", 
+           method, method ? method->s : NULL, method ? method->len : 0);
   }
     
     /* Call web3_ens_validate with proper parameters */
