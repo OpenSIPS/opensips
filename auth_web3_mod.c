@@ -299,11 +299,8 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
   if (method) {
     smethod.s = method;
     smethod.len = strlen(method);
-    LM_INFO("w_web3_www_authenticate: Using method parameter: %s (len=%d)", method, smethod.len);
   } else {
     smethod = msg->first_line.u.request.method;
-    LM_INFO("w_web3_www_authenticate: Using SIP message method: %.*s (len=%d)", 
-            smethod.len, smethod.s, smethod.len);
   }
 
   /* Smart header detection: use Authorization for REGISTER, Proxy-Authorization for INVITE */
@@ -311,13 +308,7 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
   if (msg->first_line.u.request.method.len == 6 && 
       strncmp(msg->first_line.u.request.method.s, "INVITE", 6) == 0) {
     hftype = HDR_PROXYAUTH_T;
-    LM_INFO("w_web3_www_authenticate: Detected INVITE, using HDR_PROXYAUTH_T");
-  } else {
-    LM_INFO("w_web3_www_authenticate: Using HDR_AUTHORIZATION_T");
   }
-  
-  LM_INFO("w_web3_www_authenticate: Calling web3_digest_authenticate with method: %.*s", 
-          smethod.len, smethod.s);
   
   return web3_digest_authenticate(msg, &srealm, hftype, &smethod);
 }
