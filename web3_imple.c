@@ -1078,6 +1078,17 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
                 : (algo == 1) ? "SHA-256"
                               : "SHA-512";
     LM_INFO("Algorithm: %s (%d)", algo_name, algo);
+    LM_INFO("=== FINAL PARAMETERS BEING SENT TO CONTRACT ===");
+    LM_INFO("Username: '%s' (len=%d)", username_str, (int)strlen(username_str));
+    LM_INFO("Realm: '%s' (len=%d)", realm_str, (int)strlen(realm_str));
+    LM_INFO("Method: '%s' (len=%d)", method_str, (int)strlen(method_str));
+    LM_INFO("URI: '%s' (len=%d)", uri_str, (int)strlen(uri_str));
+    LM_INFO("Nonce: '%s' (len=%d)", nonce_str, (int)strlen(nonce_str));
+    LM_INFO("Response: '%s' (len=%d)", response_str, (int)strlen(response_str));
+    LM_INFO("Response bytes: %d bytes", actual_byte_len);
+    LM_INFO("Contract address: %s", web3_authentication_contract_address);
+    LM_INFO("RPC URL: %s", web3_authentication_rpc_url);
+    LM_INFO("=== END FINAL PARAMETERS ===");
     LM_INFO("Calling authenticateUser with payload: %s", payload);
   }
 
@@ -1293,6 +1304,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       }
     }
     
+    
     /* Parse response */
     char *response_start = strstr(auth_header, "response=\"");
     if (response_start) {
@@ -1329,8 +1341,19 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       strcpy(algorithm, "MD5");
     }
     
-    LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
-            username, realm, nonce, uri, response, algorithm);
+  LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
+           username, realm, nonce, uri, response, algorithm);
+  
+  /* Log all parameters before sending to contract */
+  LM_INFO("=== PARAMETERS TO SEND TO CONTRACT ===");
+  LM_INFO("Username: '%s' (len=%d)", username, (int)strlen(username));
+  LM_INFO("Realm: '%s' (len=%d)", realm, (int)strlen(realm));
+  LM_INFO("Method: '%s' (len=%d)", method_str, (int)strlen(method_str));
+  LM_INFO("URI: '%s' (len=%d)", uri, (int)strlen(uri));
+  LM_INFO("Nonce: '%s' (len=%d)", nonce, (int)strlen(nonce));
+  LM_INFO("Response: '%s' (len=%d)", response, (int)strlen(response));
+  LM_INFO("Algorithm: '%s' (len=%d)", algorithm, (int)strlen(algorithm));
+  LM_INFO("=== END PARAMETERS ===");
     
     /* Create dig_cred_t structure */
     dig_cred_t cred = {0};
