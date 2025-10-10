@@ -734,9 +734,6 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
  * This is the main authentication logic that replaces password-based auth
  */
 int auth_web3_check_response(dig_cred_t *cred, str *method) {
-  LM_INFO("auth_web3_check_response: Received method parameter: %.*s (len=%d)", 
-          method->len, method->s, method->len);
-  
   CURL *curl;
   CURLcode res;
   struct Web3ResponseData web3_response = {0};
@@ -799,10 +796,8 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   if (method && method->len < sizeof(method_str)) {
     memcpy(method_str, method->s, method->len);
     method_str[method->len] = '\0';
-    LM_INFO("auth_web3_check_response: Extracted method from parameter: %s", method_str);
   } else {
     strcpy(method_str, "REGISTER"); /* Default method */
-    LM_INFO("auth_web3_check_response: Using default method: %s", method_str);
   }
 
   /* Extract URI and nonce from digest credentials */
@@ -1179,8 +1174,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   char from_username[256] = {0};
 
   if (web3_contract_debug_mode) {
-    LM_INFO("Starting digest authentication for realm=%.*s, method=%.*s",
-            realm->len, realm->s, method->len, method->s);
+    LM_INFO("Starting digest authentication for realm=%.*s",
+            realm->len, realm->s);
   }
 
   /* Extract username from "From" header field */
@@ -1212,21 +1207,13 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   }
 
   /* For OpenSIPS, we'll implement direct authentication without base auth module */
-  /* Extract credentials from the appropriate header based on hftype */
-  if (hftype == HDR_AUTHORIZATION_T) {
+  /* Extract credentials from Authorization header */
+  if (msg->authorization) {
     h = msg->authorization;
-  } else if (hftype == HDR_PROXYAUTH_T) {
-    h = msg->proxy_auth;
-  } else {
-    LM_ERR("Unsupported header type: %d", hftype);
-    return AUTH_ERROR;
-  }
-  
-  if (h) {
     
-    /* Get the raw header content */
+    /* Get the raw Authorization header content */
     if (!h->body.s || h->body.len <= 0) {
-      LM_ERR("Empty authentication header");
+      LM_ERR("Empty Authorization header");
       return AUTH_ERROR;
     }
     
@@ -1234,9 +1221,9 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     char *auth_header = h->body.s;
     int auth_len = h->body.len;
     
-    LM_INFO("Authentication header: %.*s", auth_len, auth_header);
+    LM_INFO("Authorization header: %.*s", auth_len, auth_header);
     
-    /* Extract all digest parameters from the authentication header */
+    /* Extract all digest parameters from the Authorization header */
     char username[256] = {0};
     char realm[256] = {0};
     char nonce[256] = {0};
@@ -1368,14 +1355,12 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     cred.response.s = response;
     cred.response.len = strlen(response);
     
-    /* Set method from parameter */
+    /* Set method */
     str method_str = {0};
-    method_str.s = method->s;
-    method_str.len = method->len;
+    method_str.s = "REGISTER";
+    method_str.len = 8;
     
     /* Call web3_ens_validate with proper parameters */
-    LM_INFO("web3_digest_authenticate: Calling web3_ens_validate with method: %.*s", 
-            method_str.len, method_str.s);
     int result = web3_ens_validate(from_username, &cred, &method_str);
     
     if (result == AUTHENTICATED) {

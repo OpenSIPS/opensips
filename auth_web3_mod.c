@@ -303,14 +303,7 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
     smethod = msg->first_line.u.request.method;
   }
 
-  /* Smart header detection: use Authorization for REGISTER, Proxy-Authorization for INVITE */
-  hdr_types_t hftype = HDR_AUTHORIZATION_T;
-  if (msg->first_line.u.request.method.len == 6 && 
-      strncmp(msg->first_line.u.request.method.s, "INVITE", 6) == 0) {
-    hftype = HDR_PROXYAUTH_T;
-  }
-  
-  return web3_digest_authenticate(msg, &srealm, hftype, &smethod);
+  return web3_digest_authenticate(msg, &srealm, HDR_AUTHORIZATION_T, &smethod);
 }
 
 /*
