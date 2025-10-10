@@ -734,6 +734,9 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
  * This is the main authentication logic that replaces password-based auth
  */
 int auth_web3_check_response(dig_cred_t *cred, str *method) {
+  LM_INFO("auth_web3_check_response: Received method parameter: %.*s (len=%d)", 
+          method->len, method->s, method->len);
+  
   CURL *curl;
   CURLcode res;
   struct Web3ResponseData web3_response = {0};
@@ -796,8 +799,10 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   if (method && method->len < sizeof(method_str)) {
     memcpy(method_str, method->s, method->len);
     method_str[method->len] = '\0';
+    LM_INFO("auth_web3_check_response: Extracted method from parameter: %s", method_str);
   } else {
     strcpy(method_str, "REGISTER"); /* Default method */
+    LM_INFO("auth_web3_check_response: Using default method: %s", method_str);
   }
 
   /* Extract URI and nonce from digest credentials */
@@ -1369,6 +1374,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     method_str.len = method->len;
     
     /* Call web3_ens_validate with proper parameters */
+    LM_INFO("web3_digest_authenticate: Calling web3_ens_validate with method: %.*s", 
+            method_str.len, method_str.s);
     int result = web3_ens_validate(from_username, &cred, &method_str);
     
     if (result == AUTHENTICATED) {
