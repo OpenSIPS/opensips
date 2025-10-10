@@ -1348,7 +1348,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   LM_INFO("=== PARAMETERS TO SEND TO CONTRACT ===");
   LM_INFO("Username: '%s' (len=%d)", username, (int)strlen(username));
   LM_INFO("Realm: '%s' (len=%d)", realm, (int)strlen(realm));
-  LM_INFO("Method: '%s' (len=%d)", method_str, (int)strlen(method_str));
+  LM_INFO("Method: '%.*s' (len=%d)", method->len, method->s, method->len);
   LM_INFO("URI: '%s' (len=%d)", uri, (int)strlen(uri));
   LM_INFO("Nonce: '%s' (len=%d)", nonce, (int)strlen(nonce));
   LM_INFO("Response: '%s' (len=%d)", response, (int)strlen(response));
