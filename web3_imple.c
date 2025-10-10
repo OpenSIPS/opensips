@@ -1379,7 +1379,15 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     cred.response.len = strlen(response);
     
   /* Use the method parameter passed to the function */
-  str method_str = *method;
+  str method_str = {0};
+  if (method && method->s && method->len > 0) {
+    method_str.s = method->s;
+    method_str.len = method->len;
+    LM_INFO("Using method from parameter: '%.*s'", method_str.len, method_str.s);
+  } else {
+    LM_ERR("Invalid method parameter");
+    return AUTHENTICATION_FAILED;
+  }
     
     /* Call web3_ens_validate with proper parameters */
     int result = web3_ens_validate(from_username, &cred, &method_str);
