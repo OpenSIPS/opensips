@@ -299,10 +299,13 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
   if (method) {
     smethod.s = method;
     smethod.len = strlen(method);
+    LM_INFO("Using provided method: '%.*s'", smethod.len, smethod.s);
   } else {
     smethod = msg->first_line.u.request.method;
+    LM_INFO("Using request method: '%.*s'", smethod.len, smethod.s);
   }
 
+  LM_INFO("Final method being passed to web3_digest_authenticate: '%.*s'", smethod.len, smethod.s);
   return web3_digest_authenticate(msg, &srealm, HDR_AUTHORIZATION_T, &smethod);
 }
 
