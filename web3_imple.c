@@ -1174,7 +1174,8 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   char from_username[256] = {0};
 
   if (web3_contract_debug_mode) {
-    LM_INFO("Starting digest authentication for realm=%.*s",
+    LM_INFO("Starting %s authentication for realm=%.*s", 
+            (hftype == HDR_AUTHORIZATION_T) ? "WWW" : "Proxy",
             realm->len, realm->s);
   }
 
@@ -1196,6 +1197,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
 
       if (web3_contract_debug_mode) {
         LM_INFO("Extracted from username: %s", from_username);
+        LM_INFO("Method: %.*s", method->len, method->s);
       }
     } else {
       LM_ERR("Invalid or missing username in From header");
@@ -1207,21 +1209,28 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   }
 
   /* For OpenSIPS, we'll implement direct authentication without base auth module */
-  /* Extract credentials from Authorization header */
+  /* Extract credentials from Authorization or Proxy-Authorization header */
   if (msg->authorization) {
     h = msg->authorization;
-    
-    /* Get the raw Authorization header content */
-    if (!h->body.s || h->body.len <= 0) {
-      LM_ERR("Empty Authorization header");
-      return AUTH_ERROR;
-    }
-    
-    /* Parse the digest parameters manually */
-    char *auth_header = h->body.s;
-    int auth_len = h->body.len;
-    
-    LM_INFO("Authorization header: %.*s", auth_len, auth_header);
+  } else if (msg->proxy_auth) {
+    h = msg->proxy_auth;
+  } else {
+    LM_DBG("no credentials");
+    return AUTH_NO_UTHORIZATION;
+  }
+  
+  /* Get the raw header content based on header type */
+  if (!h->body.s || h->body.len <= 0) {
+    LM_ERR("Empty Authorization/Proxy-Authorization header");
+    return AUTH_ERROR;
+  }
+  
+  char *auth_header = h->body.s;
+  int auth_len = h->body.len;
+  
+  LM_INFO("%s header: %.*s", 
+          (h->type == HDR_AUTHORIZATION_T) ? "Authorization" : "Proxy-Authorization",
+          auth_len, auth_header);
     
     /* Extract all digest parameters from the Authorization header */
     char username[256] = {0};
