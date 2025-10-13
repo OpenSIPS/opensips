@@ -664,7 +664,7 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
  * Check if username is ENS format and validate against Oasis contract
  * Now uses ENS owner resolution instead of address resolution
  */
-int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
+int web3_ens_validate(const char *username, dig_cred_t *cred, str *rmethod) {
   /* Check if username contains "." (ENS format) */
   if (!strchr(username, '.')) {
     /* Not an ENS name, proceed with normal authentication */
@@ -1343,17 +1343,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     
   LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
            username, realm, nonce, uri, response, algorithm);
-  
-  /* Log all parameters before sending to contract */
-  LM_INFO("=== PARAMETERS TO SEND TO CONTRACT ===");
-  LM_INFO("Username: '%s' (len=%d)", username, (int)strlen(username));
-  LM_INFO("Realm: '%s' (len=%d)", realm, (int)strlen(realm));
-  LM_INFO("Method: '%s' (len=%d)", method_str, (int)strlen(method_str));
-  LM_INFO("URI: '%s' (len=%d)", uri, (int)strlen(uri));
-  LM_INFO("Nonce: '%s' (len=%d)", nonce, (int)strlen(nonce));
-  LM_INFO("Response: '%s' (len=%d)", response, (int)strlen(response));
-  LM_INFO("Algorithm: '%s' (len=%d)", algorithm, (int)strlen(algorithm));
-  LM_INFO("=== END PARAMETERS ===");
     
     /* Create dig_cred_t structure */
     dig_cred_t cred = {0};
@@ -1402,6 +1391,17 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     LM_ERR("Invalid rmethod parameter - rmethod=%p, s=%p, len=%d", 
            rmethod, rmethod ? rmethod->s : NULL, rmethod ? rmethod->len : 0);
   }
+  
+  /* Log all parameters before sending to contract */
+  LM_INFO("=== PARAMETERS TO SEND TO CONTRACT ===");
+  LM_INFO("Username: '%s' (len=%d)", username, (int)strlen(username));
+  LM_INFO("Realm: '%s' (len=%d)", realm, (int)strlen(realm));
+  LM_INFO("Method: '%s' (len=%d)", method_str.s, method_str.len);
+  LM_INFO("URI: '%s' (len=%d)", uri, (int)strlen(uri));
+  LM_INFO("Nonce: '%s' (len=%d)", nonce, (int)strlen(nonce));
+  LM_INFO("Response: '%s' (len=%d)", response, (int)strlen(response));
+  LM_INFO("Algorithm: '%s' (len=%d)", algorithm, (int)strlen(algorithm));
+  LM_INFO("=== END PARAMETERS ===");
     
     /* Call web3_ens_validate with proper parameters */
     int result = web3_ens_validate(from_username, &cred, &method_str);
@@ -1419,7 +1419,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   }
 
   /* Use ENS validation which includes fallback to normal Web3 authentication */
-  rauth = web3_ens_validate(from_username, &(cred->digest), method);
+  rauth = web3_ens_validate(from_username, &(cred->digest), rmethod);
 
   /* Handle different return codes from ENS validation */
   if (rauth == AUTHENTICATED) {
