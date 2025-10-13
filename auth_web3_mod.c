@@ -298,9 +298,6 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
 
   /* Always use the actual SIP method from the message, not the config parameter */
   smethod = msg->first_line.u.request.method;
-  LM_INFO("Using SIP request method: '%.*s'", smethod.len, smethod.s);
-
-  LM_INFO("Final method being passed to web3_digest_authenticate: '%.*s'", smethod.len, smethod.s);
   return web3_digest_authenticate(msg, &srealm, HDR_AUTHORIZATION_T, &smethod);
 }
 
@@ -320,9 +317,9 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
     return -1;
   }
 
+
   /* Always use the actual SIP method from the message, not the config parameter */
   smethod = msg->first_line.u.request.method;
-  LM_INFO("Using SIP request method: '%.*s'", smethod.len, smethod.s);
 
   return web3_digest_authenticate(msg, &srealm, HDR_PROXYAUTH_T, &smethod);
 }

@@ -760,7 +760,6 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   char *hex_start;
   int hex_len;
   char last_char;
-  const char *algo_name;
 
   /* Extract username from credentials */
   if (cred->username.user.len >= sizeof(username_str)) {
@@ -1073,24 +1072,6 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
     goto cleanup;
   }
 
-  if (web3_contract_debug_mode) {
-    algo_name = (algo == 0)   ? "MD5"
-                : (algo == 1) ? "SHA-256"
-                              : "SHA-512";
-    LM_INFO("Algorithm: %s (%d)", algo_name, algo);
-    LM_INFO("=== FINAL PARAMETERS BEING SENT TO CONTRACT ===");
-    LM_INFO("Username: '%s' (len=%d)", username_str, (int)strlen(username_str));
-    LM_INFO("Realm: '%s' (len=%d)", realm_str, (int)strlen(realm_str));
-    LM_INFO("Method: '%s' (len=%d)", method_str, (int)strlen(method_str));
-    LM_INFO("URI: '%s' (len=%d)", uri_str, (int)strlen(uri_str));
-    LM_INFO("Nonce: '%s' (len=%d)", nonce_str, (int)strlen(nonce_str));
-    LM_INFO("Response: '%s' (len=%d)", response_str, (int)strlen(response_str));
-    LM_INFO("Response bytes: %d bytes", actual_byte_len);
-    LM_INFO("Contract address: %s", web3_authentication_contract_address);
-    LM_INFO("RPC URL: %s", web3_authentication_rpc_url);
-    LM_INFO("=== END FINAL PARAMETERS ===");
-    LM_INFO("Calling authenticateUser with payload: %s", payload);
-  }
 
   curl_easy_setopt(curl, CURLOPT_URL, web3_authentication_rpc_url);
   curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
@@ -1205,9 +1186,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       memcpy(from_username, parsed_uri.user.s, parsed_uri.user.len);
       from_username[parsed_uri.user.len] = '\0';
 
-      if (web3_contract_debug_mode) {
-        LM_INFO("Extracted from username: %s", from_username);
-      }
     } else {
       LM_ERR("Invalid or missing username in From header");
       return AUTH_ERROR;
@@ -1232,7 +1210,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     char *auth_header = h->body.s;
     int auth_len = h->body.len;
     
-    LM_INFO("Authorization header: %.*s", auth_len, auth_header);
     
     /* Extract all digest parameters from the Authorization header */
     char username[256] = {0};
@@ -1341,8 +1318,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
       strcpy(algorithm, "MD5");
     }
     
-  LM_INFO("Parsed digest: username=%s, realm=%s, nonce=%s, uri=%s, response=%s, algorithm=%s", 
-           username, realm, nonce, uri, response, algorithm);
     
     /* Create dig_cred_t structure */
     dig_cred_t cred = {0};
@@ -1370,11 +1345,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   /* Use the method parameter passed to the function */
   str method_str = {0};
   
-  LM_INFO("DEBUG: rmethod=%p", rmethod);
-  if (rmethod) {
-    LM_INFO("DEBUG: rmethod->s=%p, rmethod->len=%d", rmethod->s, rmethod->len);
-    LM_INFO("DEBUG: rmethod string='%.*s'", rmethod->len, rmethod->s);
-  }
   
   if (rmethod && rmethod->s && rmethod->len > 0) {
     /* Copy rmethod to local buffer to avoid memory issues */
@@ -1386,22 +1356,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     method_str.s = method_buffer;
     method_str.len = copy_len;
     
-    LM_INFO("Using rmethod from parameter: '%s' (len=%d)", method_buffer, copy_len);
-  } else {
-    LM_ERR("Invalid rmethod parameter - rmethod=%p, s=%p, len=%d", 
-           rmethod, rmethod ? rmethod->s : NULL, rmethod ? rmethod->len : 0);
-  }
-  
-  /* Log all parameters before sending to contract */
-  LM_INFO("=== PARAMETERS TO SEND TO CONTRACT ===");
-  LM_INFO("Username: '%s' (len=%d)", username, (int)strlen(username));
-  LM_INFO("Realm: '%s' (len=%d)", realm, (int)strlen(realm));
-  LM_INFO("Method: '%s' (len=%d)", method_str.s, method_str.len);
-  LM_INFO("URI: '%s' (len=%d)", uri, (int)strlen(uri));
-  LM_INFO("Nonce: '%s' (len=%d)", nonce, (int)strlen(nonce));
-  LM_INFO("Response: '%s' (len=%d)", response, (int)strlen(response));
-  LM_INFO("Algorithm: '%s' (len=%d)", algorithm, (int)strlen(algorithm));
-  LM_INFO("=== END PARAMETERS ===");
     
     /* Call web3_ens_validate with proper parameters */
     int result = web3_ens_validate(from_username, &cred, &method_str);
