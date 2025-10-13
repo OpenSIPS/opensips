@@ -1354,21 +1354,9 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     
     method_str.s = method_buffer;
     method_str.len = copy_len;
-    
-    
-    /* Call web3_ens_validate with proper parameters */
-    int result = web3_ens_validate(from_username, &cred, &method_str);
-    
-    if (result == AUTHENTICATED) {
-      LM_INFO("Web3 authentication successful for ENS: %s", from_username);
-      return AUTHENTICATED;
-    } else {
-      LM_ERR("Web3 authentication failed for ENS: %s", from_username);
-      return NOT_AUTHENTICATED;
-    }
   } else {
-    LM_DBG("no credentials");
-    return AUTH_NO_CREDENTIALS;
+    LM_ERR("Invalid method parameter");
+    return AUTH_ERROR;
   }
 
   /* Use ENS validation which includes fallback to normal Web3 authentication */
