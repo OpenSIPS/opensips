@@ -394,7 +394,7 @@ modparam("auth_web3", "rpc_timeout", 15)
 
 web3_auth_api_t web3_api;
 
-if (bind_web3_auth(&web3_api) &lt; 0) {
+if (bind_web3_auth(&amp;web3_api) &lt; 0) {
     LM_ERR("Failed to bind Web3 auth API");
     return -1;
 }
