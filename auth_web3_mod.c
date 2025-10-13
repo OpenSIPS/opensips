@@ -80,8 +80,10 @@ int web3_rpc_timeout = 10;
 /* Base auth module API - removed for OpenSIPS compatibility */
 
 /* Function prototypes for exported functions */
-static int w_web3_www_authenticate(struct sip_msg *msg, char *realm, char *method);
-static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm, char *method);
+static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
+                                   char *method, char *param3, char *param4, char *param5, char *param6);
+static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
+                                     char *method, char *param3, char *param4, char *param5, char *param6);
 
 /* API binding function */
 int bind_web3_auth(web3_auth_api_t *api);
@@ -90,10 +92,16 @@ int bind_web3_auth(web3_auth_api_t *api);
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-    {"web3_www_authenticate", (cmd_function)w_web3_www_authenticate, 2, 0, 0, REQUEST_ROUTE},
-    {"web3_proxy_authenticate", (cmd_function)w_web3_proxy_authenticate, 2, 0, 0, REQUEST_ROUTE},
-    {"bind_web3_auth", (cmd_function)bind_web3_auth, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0}};
+    {"web3_www_authenticate", (cmd_function)w_web3_www_authenticate, {
+        {CMD_PARAM_STR, 0, 0}, /* realm */
+        {CMD_PARAM_STR, 0, 0}, /* method */
+        {0, 0, 0}}, REQUEST_ROUTE},
+    {"web3_proxy_authenticate", (cmd_function)w_web3_proxy_authenticate, {
+        {CMD_PARAM_STR, 0, 0}, /* realm */
+        {CMD_PARAM_STR, 0, 0}, /* method */
+        {0, 0, 0}}, REQUEST_ROUTE},
+    {"bind_web3_auth", (cmd_function)bind_web3_auth, {{0, 0, 0}}, 0},
+    {0, 0, {{0, 0, 0}}, 0}};
 
 /*
  * Exported parameters
@@ -275,7 +283,8 @@ static void init_config_from_env(void) {
 /*
  * WWW authentication wrapper function
  */
-static int w_web3_www_authenticate(struct sip_msg *msg, char *realm, char *method) {
+static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
+                                   char *method, char *param3, char *param4, char *param5, char *param6) {
   str srealm = {0, 0};
   str smethod = {0, 0};
 
@@ -287,6 +296,8 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm, char *metho
     return -1;
   }
 
+  LM_INFO("DEBUG: method parameter = '%s' (len=%d)", method ? method : "NULL", method ? strlen(method) : 0);
+  
   if (method) {
     smethod.s = method;
     smethod.len = strlen(method);
