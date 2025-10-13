@@ -1358,9 +1358,13 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     LM_ERR("Invalid method parameter");
     return AUTH_ERROR;
   }
+} else {
+  LM_ERR("No Authorization header found");
+  return AUTH_ERROR;
+}
 
   /* Use ENS validation which includes fallback to normal Web3 authentication */
-  rauth = web3_ens_validate(from_username, &cred, rmethod);
+  rauth = web3_ens_validate(from_username, &cred, &method_str);
 
   /* Handle different return codes from ENS validation */
   if (rauth == AUTHENTICATED) {
