@@ -11,32 +11,32 @@
         <title>The Web3 Auth Module</title>
         <authorgroup>
             <author>
-                <firstname>Your</firstname>
-                <surname>Name</surname>
-                <affiliation><orgname>Your Organization</orgname></affiliation>
-                <email>your.email@example.com</email>
+                <firstname>Ron</firstname>
+                <surname>Terman</surname>
+                <affiliation><orgname>Cellact B.V.</orgname></affiliation>
+                <email>ron@cellact.com</email>
             </author>
         </authorgroup>
 
         <copyright>
             <year>2025</year>
-            <holder>Your Organization</holder>
+            <holder>Cellact B.V.</holder>
         </copyright>
 
     </bookinfo>
     <toc></toc>
-    
+
     <chapter id="auth_web3-overview">
-        <title>Overview</title>
-        <para>
+		<title>Overview</title>
+		<para>
             The <emphasis>auth_web3</emphasis> module provides Web3-based authentication 
             for OpenSIPS, enabling SIP authentication through blockchain technology and 
             ENS (Ethereum Name Service) resolution.
-        </para>
-        <para>
+		</para>
+		<para>
             This module integrates with the Oasis Sapphire blockchain network to verify 
             SIP digest authentication responses and resolve ENS names to wallet addresses.
-        </para>
+		</para>
         
         <section id="auth_web3-dependencies">
             <title>Dependencies</title>
@@ -47,21 +47,21 @@
                 </listitem>
             </itemizedlist>
             <para>External libraries or applications:</para>
-            <itemizedlist>
+			<itemizedlist>
                 <listitem>
                     <para><emphasis>libcurl</emphasis> - For HTTP RPC calls to blockchain networks</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>OpenSSL</emphasis> - For cryptographic operations</para>
                 </listitem>
-            </itemizedlist>
-        </section>
+			</itemizedlist>
+	</section>
 
         <section id="auth_web3-ens-technical">
-            <title>ENS Technical Details</title>
-            <para>
+		<title>ENS Technical Details</title>
+		<para>
                 The module supports ENS (Ethereum Name Service) authentication with the following features:
-            </para>
+		</para>
             <itemizedlist>
                 <listitem>
                     <para><emphasis>Namehash Resolution</emphasis> - Converts ENS names to namehash for contract calls</para>
@@ -121,11 +121,11 @@
                 Performs Web3-based authentication for WWW-Authenticate challenges.
                 Verifies SIP digest authentication through blockchain contracts and ENS resolution.
             </para>
-            <para>
+			<para>
                 This function extracts digest parameters from the Authorization header,
                 resolves ENS names to wallet addresses, and verifies the digest response
                 on the blockchain.
-            </para>
+			</para>
             <para><emphasis>Parameters:</emphasis></para>
             <itemizedlist>
                 <listitem>
@@ -138,28 +138,10 @@
             <para><emphasis>Return value:</emphasis></para>
             <itemizedlist>
                 <listitem>
-                    <para><emphasis>1</emphasis> - Authentication successful</para>
+                    <para><emphasis>1 (AUTHORIZED)</emphasis> - Authentication successful</para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>-1</emphasis> - Authentication failed (invalid credentials)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-2</emphasis> - Bad credentials (malformed or missing)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-3</emphasis> - Stale nonce (nonce expired or invalid)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-4</emphasis> - No credentials found</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-5</emphasis> - RPC timeout (blockchain call timed out)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-6</emphasis> - ENS resolution failed</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-7</emphasis> - Contract call failed</para>
+                    <para><emphasis>-1 (ERROR)</emphasis> - Authentication failed or error occurred</para>
                 </listitem>
             </itemizedlist>
             <para><emphasis>Example:</emphasis></para>
@@ -175,21 +157,13 @@ if (is_method("REGISTER")) {
         save("location");
         exit;
     } else {
-        switch($retcode) {
-            case -2: send_reply(400, "Bad Request"); break;
-            case -3: send_reply(401, "Stale Nonce"); break;
-            case -4: send_reply(401, "Unauthorized"); break;
-            case -5: send_reply(408, "Request Timeout"); break;
-            case -6: send_reply(401, "ENS Resolution Failed"); break;
-            case -7: send_reply(500, "Contract Error"); break;
-            default: send_reply(401, "Unauthorized"); break;
-        }
+        send_reply(401, "Unauthorized");
         exit;
     }
 }
             </programlisting>
-        </section>
-
+		</section>
+		
         <section id="web3_proxy_authenticate">
             <title>
                 <function>web3_proxy_authenticate(realm, method)</function>
@@ -198,7 +172,7 @@ if (is_method("REGISTER")) {
                 Performs Web3-based authentication for Proxy-Authenticate challenges.
                 Similar to web3_www_authenticate but for proxy authentication scenarios.
             </para>
-            <para>
+			<para>
                 This function works identically to web3_www_authenticate but is designed
                 for proxy authentication flows where Proxy-Authorization headers are used.
             </para>
@@ -214,28 +188,10 @@ if (is_method("REGISTER")) {
             <para><emphasis>Return value:</emphasis></para>
             <itemizedlist>
                 <listitem>
-                    <para><emphasis>1</emphasis> - Authentication successful</para>
+                    <para><emphasis>1 (AUTHORIZED)</emphasis> - Authentication successful</para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>-1</emphasis> - Authentication failed (invalid credentials)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-2</emphasis> - Bad credentials (malformed or missing)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-3</emphasis> - Stale nonce (nonce expired or invalid)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-4</emphasis> - No credentials found</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-5</emphasis> - RPC timeout (blockchain call timed out)</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-6</emphasis> - ENS resolution failed</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>-7</emphasis> - Contract call failed</para>
+                    <para><emphasis>-1 (ERROR)</emphasis> - Authentication failed or error occurred</para>
                 </listitem>
             </itemizedlist>
             <para><emphasis>Example:</emphasis></para>
@@ -249,15 +205,7 @@ if (is_method("INVITE")) {
     if (web3_proxy_authenticate("$fd", "INVITE")) {
         # Authentication successful
     } else {
-        switch($retcode) {
-            case -2: send_reply(400, "Bad Request"); break;
-            case -3: send_reply(401, "Stale Nonce"); break;
-            case -4: send_reply(401, "Unauthorized"); break;
-            case -5: send_reply(408, "Request Timeout"); break;
-            case -6: send_reply(401, "ENS Resolution Failed"); break;
-            case -7: send_reply(500, "Contract Error"); break;
-            default: send_reply(407, "Proxy Authentication Required"); break;
-        }
+        send_reply(407, "Proxy Authentication Required");
         exit;
     }
 }
@@ -275,7 +223,7 @@ if (is_method("INVITE")) {
             <para>
                 RPC URL for the blockchain network (e.g., Oasis Sapphire testnet or mainnet).
                 This parameter specifies the endpoint for blockchain communication.
-            </para>
+			</para>
             <para><emphasis>Default value:</emphasis> None (must be configured)</para>
             <para><emphasis>Example:</emphasis></para>
             <programlisting format="linespecific">
@@ -287,46 +235,46 @@ modparam("auth_web3", "authentication_rpc_url", "https://testnet.sapphire.oasis.
             <title>
                 <varname>authentication_contract_address</varname> (string)
             </title>
-            <para>
+			<para>
                 Address of the smart contract that handles authentication verification.
                 This contract must implement the authenticateUser function for digest verification.
-            </para>
+			</para>
             <para><emphasis>Default value:</emphasis> None (must be configured)</para>
             <para><emphasis>Example:</emphasis></para>
             <programlisting format="linespecific">
 modparam("auth_web3", "authentication_contract_address", "0xE773BB79689379d32Ad1Db839868b6756B493aea")
             </programlisting>
-        </section>
-
+		</section>
+		
         <section id="ens_rpc_url">
             <title>
                 <varname>ens_rpc_url</varname> (string)
             </title>
-            <para>
+			<para>
                 RPC URL for the Ethereum network used for ENS resolution.
                 This should point to an Ethereum mainnet RPC endpoint for ENS name resolution.
-            </para>
+			</para>
             <para><emphasis>Default value:</emphasis> None (must be configured)</para>
             <para><emphasis>Example:</emphasis></para>
             <programlisting format="linespecific">
 modparam("auth_web3", "ens_rpc_url", "https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY")
             </programlisting>
-        </section>
-
+		</section>
+		
         <section id="ens_registry_address">
             <title>
                 <varname>ens_registry_address</varname> (string)
             </title>
-            <para>
+			<para>
                 Address of the ENS registry contract on Ethereum mainnet.
                 This is used for resolving ENS names to wallet addresses.
-            </para>
+			</para>
             <para><emphasis>Default value:</emphasis> 0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e (ENS Registry)</para>
             <para><emphasis>Example:</emphasis></para>
             <programlisting format="linespecific">
 modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
             </programlisting>
-        </section>
+		</section>
 
         <section id="contract_debug_mode">
             <title>
@@ -341,7 +289,7 @@ modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997B
             <programlisting format="linespecific">
 modparam("auth_web3", "contract_debug_mode", 1)
             </programlisting>
-        </section>
+	</section>
 
         <section id="rpc_timeout">
             <title>
@@ -369,25 +317,25 @@ modparam("auth_web3", "rpc_timeout", 15)
             <title>
                 <function>bind_web3_auth(api)</function>
             </title>
-            <para>
+		<para>
                 Binds the Web3 authentication API to a module interface structure.
                 This allows other modules to use Web3 authentication functions directly.
             </para>
             <para><emphasis>Parameters:</emphasis></para>
-            <itemizedlist>
+			<itemizedlist>
                 <listitem>
                     <para><emphasis>api</emphasis> (web3_auth_api_t*) - Pointer to API structure to bind</para>
                 </listitem>
-            </itemizedlist>
+			</itemizedlist>
             <para><emphasis>Return value:</emphasis></para>
-            <itemizedlist>
+			<itemizedlist>
                 <listitem>
                     <para><emphasis>0</emphasis> - Success</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>-1</emphasis> - Failure</para>
                 </listitem>
-            </itemizedlist>
+			</itemizedlist>
             <para><emphasis>Example:</emphasis></para>
             <programlisting format="linespecific">
 #include "web3_auth_api.h"
@@ -401,7 +349,7 @@ if (bind_web3_auth(&amp;web3_api) &lt; 0) {
 
 // Use web3_api.web3_digest_authenticate(...)
             </programlisting>
-        </section>
+	</section>
     </chapter>
 
     <chapter id="auth_web3-faq">
@@ -557,4 +505,4 @@ if (bind_web3_auth(&amp;web3_api) &lt; 0) {
         </qandaset>
     </chapter>
 
-</book>
+</book> 
