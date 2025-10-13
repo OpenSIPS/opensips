@@ -60,7 +60,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *method);
  * @return Authentication result
  */
 int web3_digest_authenticate(struct sip_msg *msg, str *realm,
-                             hdr_types_t hftype, str *method);
+                             hdr_types_t hftype, str *rmethod);
 
 /**
  * @brief Curl callback function for Web3 RPC responses

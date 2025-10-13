@@ -296,8 +296,6 @@ static int w_web3_www_authenticate(struct sip_msg *msg, char *realm,
     return -1;
   }
 
-  LM_INFO("DEBUG: method parameter = '%s' (len=%d)", method ? method : "NULL", method ? strlen(method) : 0);
-  
   if (method) {
     smethod.s = method;
     smethod.len = strlen(method);

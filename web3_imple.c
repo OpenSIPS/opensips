@@ -668,7 +668,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
   /* Check if username contains "." (ENS format) */
   if (!strchr(username, '.')) {
     /* Not an ENS name, proceed with normal authentication */
-    return auth_web3_check_response(cred, method);
+    return auth_web3_check_response(cred, rmethod);
   }
 
   char ens_owner_address[43] = {0};
@@ -713,7 +713,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
               username, auth_username);
     }
     /* ENS ownership verified, now verify the password/digest response */
-    return auth_web3_check_response(cred, method);
+    return auth_web3_check_response(cred, rmethod);
   } else {
     /* Check if both addresses are non-zero */
     if (strcmp(oasis_wallet_address,
@@ -733,7 +733,7 @@ int web3_ens_validate(const char *username, dig_cred_t *cred, str *method) {
  * Core blockchain verification function
  * This is the main authentication logic that replaces password-based auth
  */
-int auth_web3_check_response(dig_cred_t *cred, str *method) {
+int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   CURL *curl;
   CURLcode res;
   struct Web3ResponseData web3_response = {0};
@@ -792,10 +792,10 @@ int auth_web3_check_response(dig_cred_t *cred, str *method) {
   memcpy(realm_str, cred->realm.s, cred->realm.len);
   realm_str[cred->realm.len] = '\0';
 
-  /* Extract method (from the method parameter) */
-  if (method && method->len < sizeof(method_str)) {
-    memcpy(method_str, method->s, method->len);
-    method_str[method->len] = '\0';
+  /* Extract method (from the rmethod parameter) */
+  if (rmethod && rmethod->len < sizeof(method_str)) {
+    memcpy(method_str, rmethod->s, rmethod->len);
+    method_str[rmethod->len] = '\0';
   } else {
     strcpy(method_str, "REGISTER"); /* Default method */
   }
@@ -1177,7 +1177,7 @@ cleanup:
  * Main Web3 authentication function that integrates with the base auth module
  */
 int web3_digest_authenticate(struct sip_msg *msg, str *realm,
-                             hdr_types_t hftype, str *method) {
+                             hdr_types_t hftype, str *rmethod) {
   struct hdr_field *h;
   auth_body_t *cred;
   auth_result_t ret;
@@ -1348,7 +1348,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   LM_INFO("=== PARAMETERS TO SEND TO CONTRACT ===");
   LM_INFO("Username: '%s' (len=%d)", username, (int)strlen(username));
   LM_INFO("Realm: '%s' (len=%d)", realm, (int)strlen(realm));
-  LM_INFO("Method: '%.*s' (len=%d)", method->len, method->s, method->len);
+  LM_INFO("Method: '%s' (len=%d)", method_str, (int)strlen(method_str));
   LM_INFO("URI: '%s' (len=%d)", uri, (int)strlen(uri));
   LM_INFO("Nonce: '%s' (len=%d)", nonce, (int)strlen(nonce));
   LM_INFO("Response: '%s' (len=%d)", response, (int)strlen(response));
@@ -1381,26 +1381,26 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   /* Use the method parameter passed to the function */
   str method_str = {0};
   
-  LM_INFO("DEBUG: method=%p", method);
-  if (method) {
-    LM_INFO("DEBUG: method->s=%p, method->len=%d", method->s, method->len);
-    LM_INFO("DEBUG: method string='%.*s'", method->len, method->s);
+  LM_INFO("DEBUG: rmethod=%p", rmethod);
+  if (rmethod) {
+    LM_INFO("DEBUG: rmethod->s=%p, rmethod->len=%d", rmethod->s, rmethod->len);
+    LM_INFO("DEBUG: rmethod string='%.*s'", rmethod->len, rmethod->s);
   }
   
-  if (method && method->s && method->len > 0) {
-    /* Copy method to local buffer to avoid memory issues */
+  if (rmethod && rmethod->s && rmethod->len > 0) {
+    /* Copy rmethod to local buffer to avoid memory issues */
     char method_buffer[32];
-    int copy_len = (method->len < sizeof(method_buffer) - 1) ? method->len : sizeof(method_buffer) - 1;
-    memcpy(method_buffer, method->s, copy_len);
+    int copy_len = (rmethod->len < sizeof(method_buffer) - 1) ? rmethod->len : sizeof(method_buffer) - 1;
+    memcpy(method_buffer, rmethod->s, copy_len);
     method_buffer[copy_len] = '\0';
     
     method_str.s = method_buffer;
     method_str.len = copy_len;
     
-    LM_INFO("Using method from parameter: '%s' (len=%d)", method_buffer, copy_len);
+    LM_INFO("Using rmethod from parameter: '%s' (len=%d)", method_buffer, copy_len);
   } else {
-    LM_ERR("Invalid method parameter - method=%p, s=%p, len=%d", 
-           method, method ? method->s : NULL, method ? method->len : 0);
+    LM_ERR("Invalid rmethod parameter - rmethod=%p, s=%p, len=%d", 
+           rmethod, rmethod ? rmethod->s : NULL, rmethod ? rmethod->len : 0);
   }
     
     /* Call web3_ens_validate with proper parameters */

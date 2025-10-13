@@ -34,7 +34,7 @@
  * This function performs blockchain-based authentication
  */
 typedef int (*web3_digest_authenticate_f)(struct sip_msg *msg, str *realm,
-                                          hdr_types_t hftype, str *method);
+                                          hdr_types_t hftype, str *rmethod);
 
 /*
  * Web3 check response function signature
