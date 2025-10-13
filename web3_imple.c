@@ -1196,6 +1196,11 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
 
   /* For OpenSIPS, we'll implement direct authentication without base auth module */
   /* Extract credentials from Authorization header */
+  
+  /* Declare variables outside the if block so they're accessible throughout the function */
+  dig_cred_t cred = {0};
+  str method_str = {0};
+  
   if (msg->authorization) {
     h = msg->authorization;
     
@@ -1319,7 +1324,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     
     
     /* Create dig_cred_t structure */
-    dig_cred_t cred = {0};
     
     /* Set username */
     cred.username.user.s = username;
@@ -1342,7 +1346,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     cred.response.len = strlen(response);
     
   /* Use the method parameter passed to the function */
-  str method_str = {0};
   
   
   if (rmethod && rmethod->s && rmethod->len > 0) {
