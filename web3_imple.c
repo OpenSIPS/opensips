@@ -1160,7 +1160,6 @@ cleanup:
 int web3_digest_authenticate(struct sip_msg *msg, str *realm,
                              hdr_types_t hftype, str *rmethod) {
   struct hdr_field *h;
-  auth_body_t *cred;
   auth_result_t ret;
   auth_result_t rauth;
   char from_username[256] = {0};
@@ -1373,7 +1372,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   }
 
   /* Use ENS validation which includes fallback to normal Web3 authentication */
-  rauth = web3_ens_validate(from_username, &(cred->digest), rmethod);
+  rauth = web3_ens_validate(from_username, &cred, rmethod);
 
   /* Handle different return codes from ENS validation */
   if (rauth == AUTHENTICATED) {
