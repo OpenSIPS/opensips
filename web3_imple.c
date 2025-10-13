@@ -1384,6 +1384,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   LM_INFO("DEBUG: method=%p", method);
   if (method) {
     LM_INFO("DEBUG: method->s=%p, method->len=%d", method->s, method->len);
+    LM_INFO("DEBUG: method string='%.*s'", method->len, method->s);
   }
   
   if (method && method->s && method->len > 0) {
