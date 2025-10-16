@@ -177,6 +177,7 @@ int rmq_server_reconnect(rmq_connection_t *conn, int max_frames, str cid)
 
 	switch (conn->state) {
 	case RMQS_OFF:
+	case RMQS_PREINIT:
 		if (!(conn->conn = amqp_new_connection())) {
 			LM_ERR("cannot create amqp connection!\n");
 			return -1;
@@ -669,7 +670,7 @@ void rmq_connect_servers(void)
 				srv->conn.uri.host, srv->conn.uri.port);
 		}
 		if (ret == -2) {
-			rmq_destroy_connection(&srv->conn);
+			rmq_destroy_connection(&srv->conn, 1);
 		}
 	}
 }
@@ -733,7 +734,7 @@ int amqp_check_status(rmq_connection_t *conn, int r, int *retry, str cid)
 			break;
 	}
 	/* we close the connection here to be able to re-connect later */
-	rmq_destroy_connection(conn);
+	rmq_destroy_connection(conn, 1);
 no_close:
 	if (retry && *retry > 0) {
 		(*retry)--;
@@ -768,7 +769,7 @@ int rmq_basic_server_publish(rmq_connection_t *conn, int max_frames,
 			return ret;
 		}
 		if (ret == -2) {
-			rmq_destroy_connection(conn);
+			rmq_destroy_connection(conn, 1);
 			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
 				conn->uri.host, conn->uri.port);
 				return ret;

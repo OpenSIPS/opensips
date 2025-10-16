@@ -151,7 +151,7 @@ void rmq_free_param(rmq_params_t *rmqp)
 		shm_free(rmqp->routing_key.s);
 }
 
-void rmq_destroy_connection(rmq_connection_t *conn)
+void rmq_destroy_connection(rmq_connection_t *conn, int temporarely)
 {
 	switch (conn->state)
 	{
@@ -171,7 +171,10 @@ void rmq_destroy_connection(rmq_connection_t *conn)
 		LM_WARN("Unknown rmq server state %d\n", conn->state);
 	}
 
-	conn->state = RMQS_OFF;
+	if (temporarely)
+		conn->state = RMQS_PREINIT;
+	else
+		conn->state = RMQS_OFF;
 
 	if (conn->tls_dom) {
 		tls_api.release_domain(conn->tls_dom);
@@ -188,7 +191,7 @@ void rmq_destroy(evi_reply_sock *sock)
 	if ((sock->flags & EVI_PARAMS) && sock->params) {
 		rmq_free_param((rmq_params_t *)sock->params);
 		rmq_params_t *rmqp = (rmq_params_t *)sock->params;
-		rmq_destroy_connection(&rmqp->conn);
+		rmq_destroy_connection(&rmqp->conn, 0);
 	}
 	shm_free(sock);
 }
@@ -420,7 +423,7 @@ static int rmq_basic_publish(rmq_connection_t *conn, int max_frames,
 			return ret;
 		}
 		if (ret == -2) {
-			rmq_destroy_connection(conn);
+			rmq_destroy_connection(conn, 1);
 			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
 				conn->uri.host, conn->uri.port);
 				return ret;
@@ -440,7 +443,7 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
 	int ret;
-	int re_publish = 0;
+	int re_publish = 2;
 	amqp_basic_properties_t props;
 
 	if (!rmqp || !(rmqp->conn.flags & RMQF_MAND)) {
