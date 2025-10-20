@@ -138,58 +138,6 @@ struct srec_buffer {
 		tmp.s = int2str(_i, &tmp.len); \
 		SIPREC_COPY_STR(tmp, _b); \
 	} while(0)
-#define SIPREC_COPY_CHAR(_c, _b); \
-	do { \
-		SIPREC_ENSURE_SIZE(1, _b); \
-		(_b)->buffer->s[(_b)->buffer->len++] = (_c); \
-	} while(0)
-
-#if 0
-static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
-{
-	int p;
-	str media_ip;
-	struct srs_sdp_stream *stream;
-	struct list_head *it;
-	/*
-	 * SDP body format we use:
-	 *
-	 * v=0
-	 * o=- <timestamp> <version> IN IP4 <mediaip>
-	 * s=-
-	 * c=IN IP4 <mediaip>
-	 * t=0 0
-	 * <streams*>
-	 */
-	str header1 = str_init("v=0" CRLF "o=- ");
-	str header2 = str_init(" IN IP4 ");
-	str header3 = str_init(CRLF "s=-" CRLF "c=IN IP4 ");
-	str header4 = str_init("t=0 0" CRLF);
-	str localh = str_init("127.0.0.1");
-	str crlf_str = str_init(CRLF);
-
-	media_ip = (sess->media.s?sess->media:localh);
-
-	SIPREC_COPY_STR(header1, buf);
-	SIPREC_COPY_INT(sess->ts, buf);
-	SIPREC_COPY_CHAR(' ', buf);
-	SIPREC_COPY_INT(sess->version, buf);
-	SIPREC_COPY_STR(header2, buf);
-	SIPREC_COPY_STR(media_ip, buf);
-	SIPREC_COPY_STR(header3, buf);
-	SIPREC_COPY_STR(media_ip, buf);
-	SIPREC_COPY_STR(crlf_str, buf);
-	SIPREC_COPY_STR(header4, buf);
-	for (p = 0; p < sess->participants_no; p++) {
-		list_for_each(it, &sess->participants[p].streams) {
-			stream = list_entry(it, struct srs_sdp_stream, list);
-			SIPREC_COPY_STR(stream->body, buf);
-		}
-	}
-
-	return 1;
-}
-#endif
 
 #define SIPREC_COPY_OPEN_TAG(_t, _b) \
 		SIPREC_COPY("<" _t ">", _b);
