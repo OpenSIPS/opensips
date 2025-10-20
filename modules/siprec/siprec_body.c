@@ -151,6 +151,48 @@ struct srec_buffer {
 		SIPREC_COPY_STR(tmp, buf); \
 	} while(0)
 
+static int siprec_get_xml_size(str *b)
+{
+	int out = 0, i;
+	for (i = 0; i < b->len; i++) {
+		switch ((unsigned char)b->s[i]) {
+			case '&':  out += 5; break;  // &amp;
+			case '<':  out += 4; break;  // &lt;
+			case '>':  out += 4; break;  // &gt;
+			case '"':  out += 6; break;  // &quot;
+			case '\'': out += 6; break;  // &apos;
+			default:   out += 1; break;
+		}
+	}
+	return out;
+}
+
+static void siprec_copy_xml(str *s, struct srec_buffer *b)
+{
+	int i, rlen;
+	const char *rep;
+
+	for (i = 0; i < s->len; i++) {
+		switch (s->s[i]) {
+			case '&':  rep = "&amp;";  rlen = 5; break;
+			case '<':  rep = "&lt;";   rlen = 4; break;
+			case '>':  rep = "&gt;";   rlen = 4; break;
+			case '"':  rep = "&quot;"; rlen = 6; break;
+			case '\'': rep = "&apos;"; rlen = 6; break;
+			default:
+				b->buffer->s[b->buffer->len++] = s->s[i];
+				continue;
+        }
+		memcpy(b->buffer->s + b->buffer->len, rep, rlen);
+        b->buffer->len += rlen;
+    }
+}
+#define SIPREC_COPY_VAL(_s, _b) \
+	do { \
+		SIPREC_ENSURE_SIZE(siprec_get_xml_size(&_s), _b); \
+		siprec_copy_xml(&_s, _b); \
+	} while(0)
+
 static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 {
 	str ts;
@@ -169,7 +211,7 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 	SIPREC_COPY_CLOSE_TAG("datamode", buf);
 	if (sess->group.s) {
 		SIPREC_COPY("\r\n\t<group group_id=\"", buf);
-		SIPREC_COPY_STR(sess->group, buf);
+		SIPREC_COPY_VAL(sess->group, buf);
 		SIPREC_COPY("\"/>", buf);
 	}
 	SIPREC_COPY("\r\n\t<session session_id=\"", buf);
@@ -181,13 +223,13 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 		if (sess->dlg) {
 			SIPREC_COPY("\r\n\t\t", buf);
 			SIPREC_COPY_OPEN_TAG("sipSessionID", buf);
-			SIPREC_COPY_STR(sess->dlg->callid, buf);
+			SIPREC_COPY_VAL(sess->dlg->callid, buf);
 			SIPREC_COPY_CLOSE_TAG("sipSessionID", buf);
 		}
 		if (sess->group.s) {
 			SIPREC_COPY("\r\n\t\t", buf);
 			SIPREC_COPY_OPEN_TAG("group-ref", buf);
-			SIPREC_COPY_STR(sess->group, buf);
+			SIPREC_COPY_VAL(sess->group, buf);
 			SIPREC_COPY_CLOSE_TAG("group-ref", buf);
 		}
 		SIPREC_COPY("\r\n\t</session>\r\n", buf);
