@@ -128,6 +128,13 @@ typedef void (*osips_shm_stats_init_f) (void *block, int core_index);
 #ifdef DBG_MALLOC
 #define check_double_free(ptr, frag, block) \
 	do { \
+		/* may still ocasionally give false negatives, since we're assuming
+		 * dangling memory can be read here ... a best-effort check */ \
+		if (!frag_seems_valid(frag, block)) { \
+			LM_CRIT("freeing dangling %s pointer (%p) - aborting!\n", \
+					(block)->name, ptr); \
+			abort(); \
+		} \
 		if (frag_is_free(frag)) { \
 			LM_CRIT("freeing already freed %s pointer (%p), first free: " \
 			        "%s: %s(%ld) - aborting!\n", (block)->name, ptr, \
