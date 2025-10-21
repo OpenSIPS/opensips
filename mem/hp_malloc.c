@@ -53,6 +53,8 @@
 
 #define FRAG_OVERHEAD	   HP_FRAG_OVERHEAD
 #define frag_is_free(_f)   ((_f)->prev)
+#define frag_seems_valid(_f, _b) (!(_f)->prev || \
+		(((_b)->first_frag <= *(_f)->prev && *(_f)->prev <= (_b)->last_frag)))
 
 /* used when detaching free fragments */
 static unsigned int optimized_get_indexes[HP_HASH_SIZE];
