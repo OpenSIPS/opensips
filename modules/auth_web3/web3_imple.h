@@ -1,18 +1,18 @@
 /*
  * Web3 Authentication - Core Authentication Functions
  *
- * Copyright (C) 2025 Jonathan Kandel
+ * Copyright (C) 2025 Cellact B.V.
  *
- * This file is part of Kamailio, a free SIP server.
+ * This file is part of OpenSIPS, a free SIP server.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Kamailio is free software; you can redistribute it and/or modify
+ * OpenSIPS is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * Kamailio is distributed in the hope that it will be useful,
+ * OpenSIPS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.

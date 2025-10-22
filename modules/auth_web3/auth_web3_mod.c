@@ -1,7 +1,7 @@
 /*
  * Web3 Authentication Module
  *
- * Copyright (C) 2025 Jonathan Kandel
+ * Copyright (C) 2025 Cellact B.V.
  *
  * This file is part of OpenSIPS, a free SIP server.
  *
@@ -326,5 +326,5 @@ static int w_web3_proxy_authenticate(struct sip_msg *msg, char *realm,
 
 
 /*
- * Kamailio integration functions for KEMI
+ * OpenSIPS integration functions for KEMI
  */

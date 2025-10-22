@@ -186,14 +186,14 @@ if (is_method("REGISTER")) {
                 </listitem>
             </itemizedlist>
             <para><emphasis>Return value:</emphasis></para>
-            <itemizedlist>
+				<itemizedlist>
                 <listitem>
                     <para><emphasis>1 (AUTHORIZED)</emphasis> - Authentication successful</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>-1 (ERROR)</emphasis> - Authentication failed or error occurred</para>
                 </listitem>
-            </itemizedlist>
+				</itemizedlist>
             <para><emphasis>Example:</emphasis></para>
             <programlisting format="linespecific">
 # INVITE authentication with proxy auth
