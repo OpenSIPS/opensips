@@ -1,3 +1,416 @@
+=========================== Release 3.5.8 ==============================
+
+2025-10-22  Liviu Chircu  <liviu@opensips.org>
+        * [c183e81070] :
+
+        Mitigate dprint() deadlocks with dbg allocators
+
+        Only concerns F_MALLOC_DBG, HP_MALLOC_DBG and F_PARALLEL_MALLOC_DBG
+        allocators, and reduces the chance of a self-deadlock in LIBC whenever
+        an OpenSIPS worker crashes inside any kind of dprint() statement.
+
+        Related to #3742
+
+        (cherry picked from commit 6c914e388be971fd4b7d341506a0856533e6e5b7)
+
+        Fix HP_MALLOC issue in prev commit
+
+        (cherry picked from commit 1377c59e1ad66cb859b33256efbb3fc28317fddd)
+
+
+2025-10-20  Razvan Crainea  <razvan@opensips.org>
+        * [05fc8ceaf4] :
+
+        siprec: xml escape callid and group's name
+
+        Many thanks to @SteveAyre for reporting it!
+        Fixes #3723
+
+
+2025-10-20  Razvan Crainea  <razvan@opensips.org>
+        * [7d876788b4] :
+
+        siprec: drop useless code
+
+
+2025-10-12  OpenSIPS  <github@opensips.org>
+        * [9381f5efe6] :
+
+        Rebuild documentation
+
+
+2025-10-09  Razvan Crainea  <razvan@opensips.org>
+        * [9e41f9b2b4] :
+
+        tm: register context functions before initializing
+
+        Fixes bug introduced by 1bd9e8bb, where context initialization failed
+        because it was not registered after variables had been parsed. The
+        commit ensures that when the variables are initialized, the context
+        functions exist.
+
+        Many thanks to Nick Altmann for reporting it!
+
+        (cherry picked from commit 8bb39a2679b41551ec57b34efd9a4587a8daaf7f)
+
+
+2025-10-07  Razvan Crainea  <razvan@opensips.org>
+        * [38d9ea6b8d] :
+
+        pvar: init buffers before initializing modules
+
+        (cherry picked from commit 1bd9e8bb20161326021ee0bfe8aeac5312c7b61f)
+
+
+2025-10-05  OpenSIPS  <github@opensips.org>
+        * [16912a5c47] :
+
+        Rebuild documentation
+
+
+2025-09-30  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [5def15055a] :
+
+        [presence] fix bogus array size for events to be clustered.
+
+        The badly allocated size could generate an overflow for the newly added events.
+        Credits got to @razvancrainea for spotting the issue
+
+        (cherry picked from commit c7f99eef734812809ecffb0b901e66ca96b5235b)
+
+
+2025-09-28  OpenSIPS  <github@opensips.org>
+        * [6e19ec629e] :
+
+        Rebuild documentation
+
+
+2025-09-23  Razvan Crainea  <razvan@opensips.org>
+        * [2d2e3f3053] :
+
+        pike: guard from 0-length IPs crashes
+
+        (cherry picked from commit 69abc4f9fb80f8548f2bcc8b477685221abc7728)
+
+
+2025-09-23  Razvan Crainea  <razvan@opensips.org>
+        * [2154a4956c] :
+
+        receive: restore static info about errored messages
+
+        (cherry picked from commit f62135500e2af26418051a1b198dbbf849e0a979)
+
+
+2025-09-21  OpenSIPS  <github@opensips.org>
+        * [a852fd5ad1] :
+
+        Rebuild documentation
+
+
+2025-09-18  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [2b5fffcf91] :
+
+        [tm] fix crash on stats update when stats are disabled
+
+        Do proper testing on enabled/disabled status of the stats
+        Closes #3718
+        Reported by @juliansanter-konverto and @MrM0bi
+
+        (cherry picked from commit b415545a5844b4e4155c8c197bf27f578e3f0a77)
+
+
+2025-09-17  Liviu Chircu  <liviu@opensips.org>
+        * [4a58c0a0a6] :
+
+        stun: Fix regression in 'use_listeners_as_primary' feature
+
+        In commit 8e6000d5f0d8d, it was missed that FD_SET(fd_x...) calls are
+        idempotent, while reactor_add_reader(fd_x...) calls are not. So when you
+        perform them multiple times (which the 'use_listeners_as_primary'
+        feature MAY do), OpenSIPS startup would now ERROR and abort.
+
+        Many thanks to Bernard Buitenhuis for an accurate report and sponsoring
+        the fix!
+
+        (cherry picked from commit 561a15515fd1bfac942c34bdbb8d9ce3c0c3ea3a)
+
+
+2025-09-15  Razvan Crainea  <razvan@opensips.org>
+        * [81254fca3e] :
+
+        atomic: define helper functions in case stdatomics is not used
+
+        (cherry picked from commit c87400631d6db8c8db12eb3ef4297371bc0b5aba)
+
+
+2025-09-15  Liviu Chircu  <liviu@opensips.org>
+        * [a6794b563e] :
+
+        mem/module_info.c: Clean up includes
+
+        This series of commits fixes mem/module_info.c atomic.h redefinition
+        warnings when -DSHM_EXTRA_STATS is enabled.
+
+        (cherry picked from commit cd39cc8821cd3002607038bf3445ea069cd28a96)
+
+
+2025-09-15  Razvan Crainea  <razvan@opensips.org>
+        * [ef72bf9967] :
+
+        atomic: always use stdatomic.h if available
+
+        Do not use our atomic operations if the standard ones are available.
+        This prevents redefine compile errors of the atomic_* operations.
+
+        (cherry picked from commit 0509fa15fae9d75cd6364bce4053bd4f1929f211)
+
+
+2025-09-14  OpenSIPS  <github@opensips.org>
+        * [0d8b2df4a1] :
+
+        Rebuild documentation
+
+
+2025-09-12  Razvan Crainea  <razvan@opensips.org>
+        * [5f484a9245] :
+
+        siprec: make timeout handling more robust
+
+        Make sure we are not trying to access the RTP context that has been
+        destroyed along with the dialog moving in state 5.
+
+        (cherry picked from commit bbfa2b0c19a6e43c6118b60fd3bf05136bbefd70)
+
+
+2025-09-12  Razvan Crainea  <razvan@opensips.org>
+        * [295da158f7] :
+
+        siprec: do not try to engage siprec if media not established
+
+        (cherry picked from commit c5fd8adfcc3172f74b2aa634f3f434f533dfa787)
+
+
+2025-09-07  OpenSIPS  <github@opensips.org>
+        * [52e38454e1] :
+
+        Rebuild documentation
+
+
+2025-09-05  Razvan Crainea  <razvan@opensips.org>
+        * [d2e033dfe1] :
+
+        dialog: avoid creating dialog multiple times if deleted
+
+        When an update command is received, the dialog is searched: before this
+        commit, if the dialog was not found, `dlg` was returned as `null`, and a
+        new dialog, **with the same coordinates** was created.
+        This commit makes sure that the dialog is no longer created if already
+        in deleted state, thus avoiding creating the dialog multiple times with
+        the same coordinates.
+
+        (cherry picked from commit 22b5a6b4158a92441aee33707f4b0ca8977a5a51)
+
+
+2025-09-02  Razvan Crainea  <razvan@opensips.org>
+        * [05120686b3] :
+
+        b2b_logic: avoid crash when copying sdp to deleted entity
+
+        (cherry picked from commit 380c06446e4fe715b72f7b9ff67f40293b20d0bd)
+
+
+2025-09-02  Razvan Crainea  <razvan@opensips.org>
+        * [ae4ce63ef3] :
+
+        aaa_diameter: add support for time AVPs
+
+        (cherry picked from commit a1ef1d828a0ed57e359632fcb62109f8fa78d9cd)
+
+
+2025-09-01  Razvan Crainea  <razvan@opensips.org>
+        * [f7ac0a6cc4] :
+
+        python: fix Makefile lib name and includes
+
+        (cherry picked from commit 2702eade95567cd2e5e0bfb0827605bafa2747b2)
+
+
+2025-08-31  OpenSIPS  <github@opensips.org>
+        * [57fcc1878c] :
+
+        Rebuild documentation
+
+
+2025-08-28  Razvan Crainea  <razvan@opensips.org>
+        * [e456d93449] :
+
+        b2b_sdp_demux: Fix leak in b2b server key creation
+
+        Many thanks to Nuno Ferreira from Five9 for spotting, reporting and
+        fixing this.
+
+        (cherry picked from commit cc11d0aaffe6e791264ca290b17f3810f560a178)
+
+
+2025-08-26  Razvan Crainea  <razvan@opensips.org>
+        * [261187bb3e] :
+
+        Avoid crashes in case variable are NULL
+
+        Completes #3690
+
+        (cherry picked from commit c25a8fff733d8b1755e649b6de03415313f117c6)
+
+
+2025-08-26  Alexandra Titoc  <oanatitoc@gmail.com>
+        * [8d49f2b047] :
+
+        aaa_diameter: Fix memory leak
+
+        CID #417728
+
+        (cherry picked from commit d8bcc140276b1a3932564d3a9e2e63d4fc99e6c6)
+
+
+2025-08-26  Peter Lemenkov  <lemenkov@gmail.com>
+        * [bdf608c20d] :
+
+        Make GCC happy
+
+        GCC erroneously believes that `hdrs` may be used uninitialized. Let's
+        help him understand the situation better.
+
+        ```
+        Compiling http2d.c
+        gcc -fPIC -DPIC -O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -DMOD_NAME='http2d' -DPKG_MALLOC  -DSHM_MMAP  -DUSE_MCAST  -DDISABLE_NAGLE  -DSTATISTICS  -DHAVE_RESOLV_RES  -DF_MALLOC  -DQ_MALLOC  -DHP_MALLOC  -DDBG_MALLOC  -DF_PARALLEL_MALLOC  -DHAVE_STDATOMIC -DHAVE_GENERICS  -DNAME='"opensips"' -DVERSION='"3.6.0"' -DARCH='"x86_64"' -DOS='"linux"' -DCOMPILER='"gcc 15"' -D__CPU_x86_64 -D__OS_linux -D__SMP_yes -DCFG_DIR='"/etc/opensips/"'  -DVERSIONTYPE='"git"' -DTHISREVISION='"07da80880"' -DFAST_LOCK -DADAPTIVE_WAIT -DADAPTIVE_WAIT_LOOPS=1024 -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H -DHAVE_TIMEGM -DHAVE_EPOLL -DHAVE_SIGIO_RT -DHAVE_SELECT -I/usr/include -c http2d.c -o http2d.o
+        http2d.c: In function ‘h2_send_response’:
+        http2d.c:267:25: warning: ‘hdrs’ may be used uninitialized [-Wmaybe-uninitialized]
+          267 |                 for (it = hdrs->child; it; it = it->next, nh++, r->hdrs_len++) {
+              |                      ~~~^~~~~~~~~~~~~
+        http2d.c:138:16: note: ‘hdrs’ was declared here
+          138 |         cJSON *hdrs, *it;
+              |                ^~~~
+        ```
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 19e2fac6f8f6064128f01b2a56ecbc3cc32b6408)
+
+
+2025-08-26  Peter Lemenkov  <lemenkov@gmail.com>
+        * [7980a7f03c] :
+
+        Make GCC happy
+
+        GCC erroneously believes that `job_data` may be used uninitialized.
+        Let's help him understand the situation better.
+
+        ```
+        Compiling kafka_producer.c
+        gcc -fPIC -DPIC -O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -DMOD_NAME='event_kafka' -DPKG_MALLOC  -DSHM_MMAP  -DUSE_MCAST  -DDISABLE_NAGLE  -DSTATISTICS  -DHAVE_RESOLV_RES  -DF_MALLOC  -DQ_MALLOC  -DHP_MALLOC  -DDBG_MALLOC  -DF_PARALLEL_MALLOC  -DHAVE_STDATOMIC -DHAVE_GENERICS  -DNAME='"opensips"' -DVERSION='"3.6.0"' -DARCH='"x86_64"' -DOS='"linux"' -DCOMPILER='"gcc 15"' -D__CPU_x86_64 -D__OS_linux -D__SMP_yes -DCFG_DIR='"/etc/opensips/"'  -DVERSIONTYPE='"git"' -DTHISREVISION='"07da80880"' -DFAST_LOCK -DADAPTIVE_WAIT -DADAPTIVE_WAIT_LOOPS=1024 -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H -DHAVE_TIMEGM -DHAVE_EPOLL -DHAVE_SIGIO_RT -DHAVE_SELECT -DWITH_GZFILEOP -c kafka_producer.c -o kafka_producer.o
+        kafka_producer.c: In function ‘kafka_report_status’:
+        kafka_producer.c:422:57: warning: ‘job_data’ may be used uninitialized [-Wmaybe-uninitialized]
+          422 |         if (p->job->type == KAFKA_JOB_SCRIPT && job_data->report_rt)
+              |                                                 ~~~~~~~~^~~~~~~~~~~
+        kafka_producer.c:382:28: note: ‘job_data’ was declared here
+          382 |         script_job_data_t *job_data;
+              |                            ^~~~~~~~
+        ```
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 9472e648132e463d1e4c33c92d216c57808776b4)
+
+
+2025-08-26  Peter Lemenkov  <lemenkov@gmail.com>
+        * [474da90907] :
+
+        Possible use of unitialized variable
+
+        Variable `old_state` can be used w/o being initialized. This patch fixed
+        it.
+
+        ```
+        Compiling sharing_tags.c
+        gcc -fPIC -DPIC -O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -DMOD_NAME='clusterer' -DPKG_MALLOC  -DSHM_MMAP  -DUSE_MCAST  -DDISABLE_NAGLE  -DSTATISTICS  -DHAVE_RESOLV_RES  -DF_MALLOC  -DQ_MALLOC  -DHP_MALLOC  -DDBG_MALLOC  -DF_PARALLEL_MALLOC  -DHAVE_STDATOMIC -DHAVE_GENERICS  -DNAME='"opensips"' -DVERSION='"3.6.0"' -DARCH='"x86_64"' -DOS='"linux"' -DCOMPILER='"gcc 15"' -D__CPU_x86_64 -D__OS_linux -D__SMP_yes -DCFG_DIR='"/etc/opensips/"'  -DVERSIONTYPE='"git"' -DTHISREVISION='"07da80880"' -DFAST_LOCK -DADAPTIVE_WAIT -DADAPTIVE_WAIT_LOOPS=1024 -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H -DHAVE_TIMEGM -DHAVE_EPOLL -DHAVE_SIGIO_RT -DHAVE_SELECT -c sharing_tags.c -o sharing_tags.o
+        sharing_tags.c: In function ‘shtag_activate’:
+        sharing_tags.c:746:49: warning: ‘old_state’ may be used uninitialized [-Wmaybe-uninitialized]
+          746 |         if (ret==SHTAG_STATE_ACTIVE && old_state!=SHTAG_STATE_ACTIVE) {
+        sharing_tags.c:685:18: note: ‘old_state’ was declared here
+          685 |         int ret, old_state;
+              |                  ^~~~~~~~~
+        ```
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 1c31a680e3456e9afa12f7071f9ac92fbbb89b4c)
+
+
+2025-08-26  Peter Lemenkov  <lemenkov@gmail.com>
+        * [7ed2e62eb4] :
+
+        Possible free of unitialized variable
+
+        It is possible that we can jump to `error` where we free `nt_name` right
+        before initialization. So better to initialize it first.
+
+        ```
+        Compiling app_opensips/avps.c
+        gcc -fPIC -DPIC -O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -DMOD_NAME='aaa_diameter' -DPKG_MALLOC  -DSHM_MMAP  -DUSE_MCAST  -DDISABLE_NAGLE  -DSTATISTICS  -DHAVE_RESOLV_RES  -DF_MALLOC  -DQ_MALLOC  -DHP_MALLOC  -DDBG_MALLOC  -DF_PARALLEL_MALLOC  -DHAVE_STDATOMIC -DHAVE_GENERICS  -DNAME='"opensips"' -DVERSION='"3.6.0"' -DARCH='"x86_64"' -DOS='"linux"' -DCOMPILER='"gcc 15"' -D__CPU_x86_64 -D__OS_linux -D__SMP_yes -DCFG_DIR='"/etc/opensips/"'  -DVERSIONTYPE='"git"' -DTHISREVISION='"07da80880"' -DFAST_LOCK -DADAPTIVE_WAIT -DADAPTIVE_WAIT_LOOPS=1024 -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H -DHAVE_TIMEGM -DHAVE_EPOLL -DHAVE_SIGIO_RT -DHAVE_SELECT -c app_opensips/avps.c -o app_opensips/avps.o
+        app_opensips/avps.c: In function ‘parse_attr_def’:
+        app_opensips/avps.c:732:9: warning: ‘nt_name’ may be used uninitialized [-Wmaybe-uninitialized]
+          732 |         free(nt_name);
+              |         ^~~~~~~~~~~~~
+        app_opensips/avps.c:564:22: note: ‘nt_name’ was declared here
+          564 |         char *name, *nt_name, *newp, *p = line, *end = p + len;
+              |                      ^~~~~~~
+        ```
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 233769bc12106c6478f4186547455fecdc9b2375)
+
+
+2025-08-26  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [599ef20bd9] :
+
+        Merge pull request #3693 from lemenkov/type_mismatch
+
+        Fix various function or variable type mismatch
+
+        (cherry picked from commit be32acabdff83d3899fafd2e33b707719f94365d)
+
+
+2025-08-26  Peter Lemenkov  <lemenkov@gmail.com>
+        * [b6a196199d] :
+
+        Replace distutils completely (#3697)
+
+        The package distutils was deprecated in Python 3.10 and removed in 3.12.
+        Let's switch to modern alternative. Also remove one extra shell call.
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 5a986df0d0e056bd35f17322c237fba73ed709fb)
+
+
+2025-08-24  OpenSIPS  <github@opensips.org>
+        * [f89c5cf1fd] :
+
+        Rebuild documentation
+
+
+2025-08-21  Razvan Crainea  <razvan@opensips.org>
+        * [8fe95efda1] :
+
+        mem: allow using system allocator without debugging
+
+        (cherry picked from commit 7fcf09dbd2f4221a848527d27b6fca6f207f36b0)
+
+
+2025-08-21  Razvan Crainea  <razvan@opensips.org>
+        * [1d245e74ee] :
+
+        transformations: re.subst may contain whitespaces
+
+        (cherry picked from commit 65fc660cea02497c1c5558985fb1ebd3a473d34c)
+
+
 =========================== Release 3.5.7 ==============================
 
 2025-08-20  Liviu Chircu  <liviu@opensips.org>
