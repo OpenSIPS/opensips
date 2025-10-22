@@ -1,7 +1,7 @@
-# auth_web3 Module
+# OpenSIPS auth_web3 Module
 
 ## Overview
-The `auth_web3` module provides Web3-based authentication for OpenSIPS, enabling SIP authentication through blockchain technology and ENS (Ethereum Name Service) resolution.
+The `auth_web3` module provides Web3-based authentication for OpenSIPS, enabling SIP authentication through blockchain technology and ENS (Ethereum Name Service) resolution. This module is specifically designed and developed for OpenSIPS.
 
 ## Features
 - **ENS Authentication**: Authenticate users using Ethereum Name Service (ENS) domains

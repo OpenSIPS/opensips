@@ -1,7 +1,7 @@
 /*
  * Web3 Authentication  - API Implementation
  *
- * Copyright (C) 2025 Jonathan Kandel
+ * Copyright (C) 2025 Cellact B.V.
  *
  * This file is part of OpenSIPS, a free SIP server.
  *

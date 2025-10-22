@@ -61,9 +61,9 @@ authentication_rpc_url = "https://ethereum-sepolia-rpc.publicnode.com"
 # ens_rpc_url not set - will use authentication_rpc_url
 ```
 
-## Kamailio Configuration Example
+## OpenSIPS Configuration Example
 
-```kamailio
+```opensips
 loadmodule "auth_web3.so"
 
 # Oasis authentication network

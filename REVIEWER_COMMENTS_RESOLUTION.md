@@ -9,7 +9,7 @@
 
 ## Summary
 
-This document details the response to the code review feedback received for the auth_web3 Kamailio module. The review identified 18 items requiring attention, ranging from code quality improvements to architectural questions. All items have been addressed through code modifications, documentation improvements, or technical clarification.
+This document details the response to the code review feedback received for the auth_web3 OpenSIPS module. The review identified 18 items requiring attention, ranging from code quality improvements to architectural questions. All items have been addressed through code modifications, documentation improvements, or technical clarification.
 
 **Resolution Status:**
 - 13 items fixed with code changes
@@ -33,7 +33,7 @@ This document details the response to the code review feedback received for the 
 
 ### 2. Module Name in Log Statements
 
-**Issue**: Log statements included redundant module name prefixes like "Web3Auth:" since Kamailio automatically prefixes the module name.
+**Issue**: Log statements included redundant module name prefixes like "Web3Auth:" since OpenSIPS automatically prefixes the module name.
 
 **Resolution**: Removed all module name prefixes from LM_INFO, LM_ERR, and LM_DBG statements throughout the codebase.
 
@@ -104,9 +104,9 @@ Updated all references across the codebase and header files.
 
 ### 7. PKG Memory Allocation
 
-**Issue**: Code used system `strdup()` instead of Kamailio's PKG memory functions.
+**Issue**: Code used system `strdup()` instead of OpenSIPS's PKG memory functions.
 
-**Resolution**: Replaced all `strdup()` calls in `init_config_from_env()` with `pkg_malloc()` + `memcpy()`. This ensures proper memory tracking and leak detection within Kamailio's memory management system.
+**Resolution**: Replaced all `strdup()` calls in `init_config_from_env()` with `pkg_malloc()` + `memcpy()`. This ensures proper memory tracking and leak detection within OpenSIPS's memory management system.
 
 **Implementation**:
 ```c
@@ -187,7 +187,7 @@ Added required includes: `<ctype.h>`, `<errno.h>`
 file(GLOB MODULE_SOURCES "*.c")
 add_library(${module_name} SHARED ${MODULE_SOURCES})
 find_package(CURL REQUIRED)
-target_compile_definitions(${module_name} PRIVATE KAMAILIO_MOD_INTERFACE)
+target_compile_definitions(${module_name} PRIVATE OPENSIPS_MOD_INTERFACE)
 target_link_libraries(${module_name} PRIVATE CURL::libcurl)
 ```
 
@@ -282,9 +282,9 @@ Added documentation to clarify this. The implementation is correct as-is.
 
 ### 17. cmake/groups.cmake
 
-**Comment**: Changes in main Kamailio cmake directory look inconsistent.
+**Comment**: Changes in main OpenSIPS cmake directory look inconsistent.
 
-**Response**: This file is part of the main Kamailio cmake infrastructure, not the auth_web3 module. No changes made as it's outside the module's scope.
+**Response**: This file is part of the main OpenSIPS cmake infrastructure, not the auth_web3 module. No changes made as it's outside the module's scope.
 
 ---
 
@@ -304,7 +304,7 @@ Added documentation to clarify this. The implementation is correct as-is.
 
 **Response**: This is a deliberate design choice:
 - Each call is independent (no shared state)
-- Thread-safe across Kamailio worker processes
+- Thread-safe across OpenSIPS worker processes
 - `curl_easy_init()` overhead (~1ms) is negligible compared to blockchain latency (500-2000ms)
 - `curl_global_init()` is called once in `mod_init()`
 
