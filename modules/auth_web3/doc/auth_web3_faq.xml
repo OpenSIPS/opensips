@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"
+	[ <!ENTITY % local.common.attrib
+	 "xmlns:xi CDATA #FIXED 'http://www.w3.org/2001/XInclude'">
+	 <!-- Include general documentation entities -->
+	 <!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+	 %docentities;
+	]
+>
+
+<section id="auth_web3-faq" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>FAQ</title>
+
+    <qandaset>
+        <qandaentry>
+            <question>
+                <para>What is Web3 authentication and how does it work?</para>
+            </question>
+            <answer>
+                <para>
+                    Web3 authentication uses blockchain technology to verify SIP digest authentication.
+                    Instead of storing passwords in a database, the module verifies authentication
+                    responses against a smart contract deployed on the Oasis Sapphire blockchain.
+                    ENS (Ethereum Name Service) names are resolved to wallet addresses for user identification.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>What blockchain networks are supported?</para>
+            </question>
+            <answer>
+                <para>
+                    Currently, the module supports Oasis Sapphire testnet and mainnet.
+                    The module can be extended to support other EVM-compatible networks
+                    by modifying the RPC URL configuration.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>How do I set up ENS names for authentication?</para>
+            </question>
+            <answer>
+                <para>
+                    Users need to register ENS names (e.g., alice.eth) and ensure their
+                    wallet addresses are properly configured in the Oasis contract.
+                    The module will resolve ENS names to wallet addresses and verify
+                    that the wallet owner matches the authentication request.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>What smart contract functions are required?</para>
+            </question>
+            <answer>
+                <para>
+                    The smart contract must implement the authenticateUser function with
+                    the following signature:
+                    authenticateUser(string username, string realm, string method, string uri, string nonce, bytes response)
+                    This function should return true if the digest authentication is valid.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Is this module compatible with standard SIP clients?</para>
+            </question>
+            <answer>
+                <para>
+                    Yes, the module uses standard SIP digest authentication (RFC 3261).
+                    SIP clients will work normally - they just need to use ENS names
+                    as usernames instead of traditional usernames.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>How do I debug authentication issues?</para>
+            </question>
+            <answer>
+                <para>
+                    Enable debug mode by setting web3_contract_debug_mode to 1.
+                    This will provide detailed logs of blockchain interactions,
+                    ENS resolution, and digest verification processes.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>What are the performance implications?</para>
+            </question>
+            <answer>
+                <para>
+                    Each authentication requires blockchain RPC calls, which may add
+                    latency compared to traditional database authentication.
+                    Consider using appropriate RPC timeouts and potentially caching
+                    ENS resolution results for better performance.
+                </para>
+            </answer>
+        </qandaentry>
+
+        <qandaentry>
+            <question>
+                <para>Can I use this module alongside traditional authentication?</para>
+            </question>
+            <answer>
+                <para>
+                    Yes, you can configure different realms or routes to use different
+                    authentication methods. The module only handles requests that
+                    explicitly call the web3_www_authenticate or web3_proxy_authenticate functions.
+                </para>
+            </answer>
+        </qandaentry>
+
+    </qandaset>
+
+</section>
