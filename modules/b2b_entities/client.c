@@ -257,10 +257,11 @@ str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	tmb.setlocalTholder(NULL);
 
 	LM_DBG("new client entity [%p] callid=[%.*s] tag=[%.*s] param=[%.*s]"
-			" last method=[%d] dlg->uac_tran=[%p]\n",
+			" last method=[%.*s]\n",
 			dlg, callid->len, callid->s,
-			dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
-			dlg->logic_key.len, dlg->logic_key.s, dlg->last_method, dlg->uac_tran);
+			from_tag.len, from_tag.s,
+			(logic_key?logic_key->len:4), (logic_key?logic_key->s:"NONE"),
+			ci->method.len, ci->method.s);
 
 	return callid;
 
