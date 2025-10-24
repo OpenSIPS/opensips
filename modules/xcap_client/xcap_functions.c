@@ -558,9 +558,9 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 
 	curl_easy_setopt(curl_handle, CURLOPT_URL, path);
 
-	curl_easy_setopt(curl_handle, CURLOPT_PORT, xcap_port);
+	curl_easy_setopt(curl_handle, CURLOPT_PORT, (long)xcap_port);
 
-	curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
+	curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
 
 	curl_easy_setopt(curl_handle,  CURLOPT_STDERR, stdout);
 
@@ -581,7 +581,7 @@ char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 	}
 
 	/* non-2xx => error */
-	curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1);
+	curl_easy_setopt(curl_handle, CURLOPT_FAILONERROR, 1L);
 
 	ret_code= curl_easy_perform(curl_handle );
 
