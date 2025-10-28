@@ -665,16 +665,12 @@ static void rtp_relay_b2b_tm_req(struct cell* t, int type, struct tmcb_params *p
 		}
 	} else {
 		leg = rtp_relay_get_leg(ctx, NULL, last_branch);
-	}
-	if (!leg) {
-		if (!peer_leg->peer) {
+		if (!leg) {
 			leg = rtp_relay_new_leg(ctx, NULL, last_branch);
 			if (!leg) {
 				LM_ERR("could not create a new leg\n");
 				return;
-				}
-		} else {
-			leg = peer_leg->peer;
+			}
 		}
 	}
 	if (ctx->established) {
