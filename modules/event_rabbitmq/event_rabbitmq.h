@@ -79,10 +79,10 @@ extern struct timeval conn_timeout_tv;
 extern struct timeval rpc_timeout_tv;
 
 int rmq_error(char const *context, amqp_rpc_reply_t x);
-void rmq_destroy_connection(rmq_connection_t *conn);
-int rmq_reconnect(rmq_connection_t *conn, int max_frames, str cid);
+void rmq_destroy_connection(rmq_connection_t *conn, int temporarely);
+int rmq_server_reconnect(rmq_connection_t *conn, int max_frames, str cid);
 int amqp_check_status(rmq_connection_t *conn, int r, int* retry, str cid);
-int rmq_basic_publish(rmq_connection_t *conn, int max_frames,
+int rmq_basic_server_publish(rmq_connection_t *conn, int max_frames,
 							 str *cid, amqp_bytes_t akey, amqp_bytes_t abody,
 							 amqp_basic_properties_t *props, int retries);
 
