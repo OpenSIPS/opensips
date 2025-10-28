@@ -756,7 +756,8 @@ void src_event_trigger(enum b2b_entity_type et, str *key,
 		str *logic_key, void *param, enum b2b_event_type event_type,
 		bin_packet_t *store, int backend)
 {
-	struct src_ctx *ctx = (struct src_ctx *)param;
+	struct src_sess *ss = (struct src_sess *)param;
+	struct src_ctx *ctx = ss->ctx;
 
 	switch (event_type) {
 		case B2B_EVENT_CREATE:
