@@ -407,7 +407,7 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
-	options="A:f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
+	options="A:f:cCm:M:b:l:n:N:irRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
 #ifdef UNIT_TESTS
 	"T:"
 #endif
@@ -518,6 +518,9 @@ int main(int argc, char** argv)
 			case 's':
 			case 'e':
 					/* ignoring, parsed previously */
+					break;
+			case 'i':
+					modload_check_rev = 0;
 					break;
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);

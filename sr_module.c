@@ -63,6 +63,7 @@
 #include "libgen.h"
 
 struct sr_module* modules=0;
+int modload_check_rev=1;
 
 #ifdef STATIC_EXEC
 	extern struct module_exports exec_exports;
@@ -242,7 +243,7 @@ static inline int version_control(const struct module_exports* exp, char *path)
 			core_scm_ver.type, exp->ver_info.scm.type, hint);
 		return 0;
 	}
-	if (strcmp(core_scm_ver.rev, exp->ver_info.scm.rev) != 0) {
+	if (modload_check_rev && strcmp(core_scm_ver.rev, exp->ver_info.scm.rev)) {
 		LM_CRIT("module %s revision mismatch for %s "
 			" \ncore: %s \nmodule: %s %s\n", scm_nm, exp->name,
 			core_scm_ver.rev, exp->ver_info.scm.rev, hint);

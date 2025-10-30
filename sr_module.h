@@ -209,6 +209,7 @@ struct module_exports{
 void add_mpath(const char *new_mpath);
 
 extern struct sr_module* modules; /*!< global module list*/
+extern int modload_check_rev;
 
 int register_builtin_modules();
 int register_module(const struct module_exports*, char*,  void*);
