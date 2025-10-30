@@ -83,6 +83,7 @@ Options:\n\
     -F           Daemon mode, but leave main process foreground\n\
     -E           Option deprecated since version 3.4, set the \n\
                  \"stderror_enabled=yes\" configuration parameter instead\n\
+    -i           Ignore SCM revision differences for loaded modules\n\
     -N processes Number of TCP worker processes (default: equal to `-n`)\n\
     -W method    poll method\n\
     -V           Version number\n\
