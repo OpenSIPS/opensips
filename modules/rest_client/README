@@ -731,9 +731,9 @@ Chapter 2. Contributors
    9. Ryan Bullock (@rrb3942) 5 2 91 77
    10. Aron Podrigal (@ar45) 4 2 15 7
 
-   All remaining contributors: Maksym Sobolyev (@sobomax), John
-   Burke (@john08burke), Peter Lemenkov (@lemenkov), Andrey
-   Vorobiev (@andrey-vorobiev).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Maksym
+   Sobolyev (@sobomax), John Burke (@john08burke), Andrey Vorobiev
+   (@andrey-vorobiev).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -755,15 +755,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Sep 2024
-   2.  Aron Podrigal (@ar45)               Sep 2024 - Sep 2024
-   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   5.  John Burke (@john08burke)           Apr 2021 - Apr 2021
-   6.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
-   7.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2025
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Sep 2024
+   3.  Aron Podrigal (@ar45)               Sep 2024 - Sep 2024
+   4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
+   6.  John Burke (@john08burke)           Apr 2021 - Apr 2021
+   7.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
+   8.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    10. Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
 
    All remaining contributors: Andrey Vorobiev (@andrey-vorobiev),
