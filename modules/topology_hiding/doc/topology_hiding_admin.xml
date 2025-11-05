@@ -217,6 +217,26 @@ modparam("topology_hiding", "th_contact_encode_scheme", "base32")
 		</example>
 	</section>
 
+	<section id="param_th_internal_trusted_tag" xreflabel="th_internal_trusted_tag">
+		<title><varname>th_internal_trusted_tag</varname> (string)</title>
+		<para>
+			Tag of one of the sockets in OpenSIPs to define if topology hiding should be applied to that socket
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty</quote> - no tag
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_internal_trusted_tag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("topology_hiding", "th_internal_trusted_tag", "TopoInternalTag")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>

@@ -37,6 +37,7 @@ extern str topo_hiding_prefix;
 extern str topo_hiding_seed;
 extern str topo_hiding_ct_encode_pw;
 extern str th_contact_encode_param;
+extern str th_internal_trusted_tag;
 extern int th_ct_enc_scheme;
 
 struct th_ct_params {
@@ -47,7 +48,7 @@ static struct th_ct_params *th_param_list=NULL;
 static struct th_ct_params *th_hdr_param_list=NULL;
 
 static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,struct dlg_cell* dlg,int extra_flags);
-static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags);
+static int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_flags);
 static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, int leg);
 static int topo_delete_vias(struct sip_msg* req);
 static int topo_delete_record_routes(struct sip_msg *req); 
@@ -61,33 +62,33 @@ static void th_down_onreply(struct cell* t, int type,struct tmcb_params *param);
 static void th_up_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params *param);
-static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags,str *routes);
+static int topo_no_dlg_encode_contact(struct sip_msg *req, unsigned int flags, str *routes);
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info);
+static inline int th_no_dlg_one_way_hiding(struct sip_msg *msg, struct socket_info *socket);
 static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
 		int init_req, int dir);
 
 /* exposed logic below */
 
-int topology_hiding(struct sip_msg *req,int extra_flags)
+int topology_hiding(struct sip_msg *req, int extra_flags)
 {
 	struct dlg_cell *dlg;
 	struct cell* t;
-	str tag;
+	int is_sequential = 0;
 
 	/* we should only initialize topology hiding for initial requests */
-        if (!req->to && parse_headers(req, HDR_TO_F,0)==-1) {
-                LM_ERR("To parsing failed\n");
-                return -1;
-        }
-        if (!req->to) {
-                LM_ERR("no To\n");
-                return -1;
-        }
-        tag=get_to(req)->tag_value;
-        if (tag.len>0) {
-		LM_WARN("SCRIPT ERROR - trying to initialize topology hiding for sequential request \n");
+	if (!req->to && parse_headers(req, HDR_TO_F,0) == -1) {
+		LM_ERR("To parsing failed\n");
 		return -1;
-        }
+	}
+
+	if (!req->to) {
+		LM_ERR("no To\n");
+		return -1;
+	}
+
+	/* one way hiding will fail topology hiding match when going out the untrusted side */
+	is_sequential = get_to(req)->tag_value.len > 0;
 
 	t = tm_api.t_gett();
 	if (t == T_UNDEFINED)
@@ -111,13 +112,19 @@ int topology_hiding(struct sip_msg *req,int extra_flags)
 			}
 		}
 
-		if (!dlg)
-			return topo_hiding_no_dlg(req,t,extra_flags);
-		else
-			return topo_hiding_with_dlg(req,t,dlg,extra_flags);
+		if (dlg) {
+			if (is_sequential) {
+				LM_WARN("SCRIPT ERROR - trying to initialize topology hiding for sequential request in dialog mode \n");
+				return -1;
+			}
+
+			return topo_hiding_with_dlg(req, t, dlg, extra_flags);
+		} else {
+			return topo_hiding_no_dlg(req, t, extra_flags);
+		}
 	}
 
-	return topo_hiding_no_dlg(req,t,extra_flags);
+	return topo_hiding_no_dlg(req, t, extra_flags);
 }
 
 int topo_parse_passed_ct_params(str *params)
@@ -133,7 +140,7 @@ int topo_parse_passed_hdr_ct_params(str *params)
 int topology_hiding_match(struct sip_msg *msg)
 {
 	struct sip_uri *r_uri;
-	int i;
+	int i = 0;
 
 	if (parse_sip_msg_uri(msg)<0) {
 		LM_ERR("Failed to parse request URI\n");
@@ -147,7 +154,7 @@ int topology_hiding_match(struct sip_msg *msg)
 	r_uri = &msg->parsed_uri;
 
 	if ((find_si_matching_subnet(&r_uri->host, 0) != 0 || 
-		check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1) 
+		check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1)
 		&& msg->route == NULL) {
 		/* Seems we are in the topo hiding case :
 		 * we are in the R-URI and there are no other route headers */
@@ -161,6 +168,7 @@ int topology_hiding_match(struct sip_msg *msg)
 		}
 	}
 
+	LM_DBG("Topology hiding did not match\n");
 	return -1;
 }
 
@@ -844,15 +852,76 @@ err_free_rport:
 
 #define RECORD_ROUTE "Record-Route: "
 #define RECORD_ROUTE_LEN (sizeof(RECORD_ROUTE)-1)
-static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param,int flags, int do_rr)
+static int _th_no_dlg_rebuild_routes(size_t route_sets_size, str *routes[static route_sets_size], struct lump* lmp)
+{
+	char *route_hdrs[route_sets_size];
+	int size, i = 0, rc = 0;
+	str *rr_set;
+
+	memset(route_hdrs, 0, sizeof(route_hdrs));
+
+	LM_DBG("Rebuilding %zu Record-Route sets\n", route_sets_size);
+	for (; i < route_sets_size; i++) {
+		rr_set = routes[i];
+
+		if (rr_set->len == 0 || rr_set->s == NULL)
+			continue;
+
+		size = rr_set->len + RECORD_ROUTE_LEN + CRLF_LEN;
+		route_hdrs[i] = pkg_malloc(size);
+		if (route_hdrs[i] == NULL) {
+			LM_ERR("no more pkg memory\n");
+			rc = -1;
+			goto cleanup;
+		}
+
+		memcpy(route_hdrs[i], RECORD_ROUTE, RECORD_ROUTE_LEN);
+		memcpy(route_hdrs[i] + RECORD_ROUTE_LEN, rr_set->s, rr_set->len);		
+		memcpy(route_hdrs[i] + RECORD_ROUTE_LEN + rr_set->len, CRLF, CRLF_LEN);
+
+		/* put after Via */
+		if ((lmp = insert_new_lump_after(lmp, route_hdrs[i], size, HDR_RECORDROUTE_T)) == 0) {
+			LM_ERR("failed inserting new route set\n");
+			rc = -1;
+			goto cleanup;
+		}
+
+		LM_DBG("Added record route [%.*s]\n", size, route_hdrs[i]);
+
+		pkg_free(rr_set->s);
+		rr_set->s = NULL;
+		rr_set->len = 0;
+	}
+
+cleanup:
+	for (int x = i; x < route_sets_size; x++) {
+		/* Assume the first lmp successfully added so we don't want to free the header */
+		if (route_hdrs[i])
+			pkg_free(route_hdrs[i]);
+		pkg_free(routes[i]->s);
+		routes[i]->len = 0;
+	}
+
+	return rc;
+}
+
+static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 {
 	struct lump* lmp;
-	str rr_set;
+	str rpl_rr_set = STR_NULL;
+	str req_rr_set = STR_NULL;
+	str *route_sets[2] = { NULL };
 	str *route_s = (str *)*param->param;
 	struct sip_msg *req = param->req;
 	struct sip_msg *rpl = param->rpl;
 	char *route;
 	int size;
+	size_t route_size = 0;
+	unsigned int flags = param->flags;
+	int do_rr = 0;
+	int one_way_hiding = th_no_dlg_one_way_hiding(rpl, t->uas.response.dst.send_sock);
+
+	LM_DBG("Response callback with flags %u", flags);
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(rpl, HDR_EOH_F, 0)< 0) {
@@ -860,122 +929,139 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 		return;
 	}
 
+	if (parse_to_header(req) < 0 || req->to == NULL || get_to(req) == NULL) {
+		LM_ERR("cannot parse TO header\n");
+		return;
+	}
+
+	/* do_rr determined by if the request has a tag, don't add them on sequential */
+	do_rr = get_to(req)->tag_value.len == 0 || get_to(req)->tag_value.s == NULL;
+
+	/* pass record route headers, get them from the reply if one_way_hiding */
+	if (one_way_hiding && do_rr && rpl->record_route) {
+		if (print_rr_body(rpl->record_route, &rpl_rr_set, 0, 1, NULL) != 0 ){
+			LM_ERR("failed to print route records \n");
+			return;
+		}
+
+		route_sets[route_size++] = &rpl_rr_set;
+	}
+
+	if (do_rr && req->record_route) {
+		if (print_rr_body(req->record_route, &req_rr_set, 0, 1, NULL) != 0) {
+			LM_ERR("failed to print route records \n");
+			return;
+		}
+
+		route_sets[route_size++] = &req_rr_set;
+	}
+
 	if (topo_delete_record_routes(rpl) < 0) {
 		LM_ERR("Failed to remove Record Route header \n");
 		return;
 	}
 
-	if(topo_delete_vias(rpl) < 0) {
+	if (topo_delete_vias(rpl) < 0) {
 		LM_ERR("Failed to remove via headers\n");
 		return;
 	}
 
-	if ( !(rpl->REPLY_STATUS>=300 && rpl->REPLY_STATUS<400) ) {
-		if (topo_no_dlg_encode_contact(rpl,flags,route_s) < 0) {
-			LM_ERR("Failed to encode contact header \n");
-			return;
+	if (!one_way_hiding) {
+		LM_DBG("No topology hiding on response for this socket\n");
+
+		if (!(rpl->REPLY_STATUS >= 300 && rpl->REPLY_STATUS < 400) ) {
+			if (topo_no_dlg_encode_contact(rpl, flags, route_s) < 0) {
+				LM_ERR("Failed to encode contact header \n");
+				return;
+			}
 		}
 	}
 
-	if (!(lmp = restore_vias_from_req(req,rpl))) {
+	if (!(lmp = restore_vias_from_req(req, rpl))) {
 		LM_ERR("Failed to restore VIA headers from request \n");
-		return ;
+		return;
 	}
 
-	/* pass record route headers */
-	if(do_rr && req->record_route){
-		if(print_rr_body(req->record_route, &rr_set, 0, 1, NULL) != 0 ){
-			LM_ERR("failed to print route records \n");
-			return;
-		}
-
-		size = rr_set.len + RECORD_ROUTE_LEN + CRLF_LEN;
-		route = pkg_malloc(size);
-		if (route == NULL) {
-			LM_ERR("no more pkg memory\n");
-			pkg_free(rr_set.s);
-			return; 
-		}
-
-		memcpy(route, RECORD_ROUTE, RECORD_ROUTE_LEN);
-		memcpy(route+RECORD_ROUTE_LEN, rr_set.s, rr_set.len);
-		memcpy(route+RECORD_ROUTE_LEN+rr_set.len, CRLF, CRLF_LEN);
-		/* put after Via */
-		if ((lmp = insert_new_lump_after(lmp, route, size, HDR_RECORDROUTE_T)) == 0) {
-			LM_ERR("failed inserting new route set\n");
-			pkg_free(route);
-			pkg_free(rr_set.s);
-			return;
-		}
-
-		LM_DBG("Added record route [%.*s]\n", size, route);
-		pkg_free(rr_set.s);
+	if (route_size > 0 && _th_no_dlg_rebuild_routes(route_size, route_sets, lmp) != 0) {
+		LM_ERR("failed to add route headers back in \n");
 	}
+
 	return;
 }
 
-static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
+static inline int _th_no_dlg_onrequest(struct sip_msg *req, union sockaddr_union *su, int proto, unsigned int flags)
 {
-	_th_no_dlg_onreply(t,type,param,0,1);
-}
+	struct socket_info *send_sock = NULL;
+	str *dest = NULL;
 
-static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params *param)
-{
-	_th_no_dlg_onreply(t,type,param,TOPOH_KEEP_USER,1);
-}
-
-static void th_no_dlg_onreply_within(struct cell* t, int type, struct tmcb_params *param)
-{
-	_th_no_dlg_onreply(t,type,param,0,0);
-}
-
-static void th_no_dlg_user_onreply_within(struct cell* t, int type, struct tmcb_params *param)
-{
-	_th_no_dlg_onreply(t,type,param,TOPOH_KEEP_USER,0);
-}
-
-static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags)
-{
-	transaction_cb* used_cb;
-
+	LM_DBG("Request callback with flags %u\n", flags);
+	
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
-	if (parse_headers(req, HDR_EOH_F, 0)< 0) {
-		LM_ERR("Failed to parse reply\n");
-		return -1;
+	if (parse_headers(req, HDR_EOH_F, 0) >= 0) {
+		send_sock = get_send_socket(req, su, proto);
+		if (th_no_dlg_one_way_hiding(req, send_sock) == 0) {
+			if (topo_delete_record_routes(req) < 0) {
+				LM_ERR("Failed to remove Record Route header \n");
+				return -1;
+			}
+
+			if(topo_delete_vias(req) < 0) {
+				LM_ERR("Failed to remove via headers\n");
+				return -1;
+			}
+
+			if (topo_no_dlg_encode_contact(req, flags, NULL) < 0) {
+				LM_ERR("Failed to encode contact header \n");
+				return -1;
+			}
+		}
+	} else {
+		LM_ERR("Failed to parse request\n");
 	}
 
-	if (topo_delete_record_routes(req) < 0) {
-		LM_ERR("Failed to remove Record Route header \n");
-		return -1;
-	}
+	return 1;
+}
 
-	if(topo_delete_vias(req) < 0) {
-		LM_ERR("Failed to remove via headers\n");
-		return -1;
-	}
+static void th_no_dlg_onrequest(struct cell *t, int type, struct tmcb_params *param)
+{
+	struct sip_msg *req = param->req;
+	struct ua_client *uac = t->uac;
+	unsigned int flags = param->flags;
+	
+	_th_no_dlg_onrequest(req, &uac->request.dst.to, uac->request.dst.proto, flags);
+}
 
-	if (topo_no_dlg_encode_contact(req,extra_flags,NULL) < 0) {
-		LM_ERR("Failed to encode contact header \n");
-		return -1;
-	}
-
-	if (extra_flags & TOPOH_KEEP_USER)
-		used_cb = th_no_dlg_user_onreply;
-	else
-		used_cb = th_no_dlg_onreply;
+static int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_flags) 
+{
+	union sockaddr_union su;
 
 	if (extra_flags & TOPOH_HIDE_CALLID)
 		LM_WARN("Cannot hide callid when dialog support is not engaged!\n");
 	if (extra_flags & TOPOH_DID_IN_USER)
 		LM_WARN("Cannot store DID in user when dialog support is not engaged!\n");
 
-	if (tm_api.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-	used_cb,NULL, NULL)<0 ) {
-		LM_ERR("failed to register TMCB\n");
+	if (req->REQ_METHOD != METHOD_ACK) {
+		tm_api.set_tmcb_flags(extra_flags);
+
+		if (tm_api.register_tmcb(req, 0, TMCB_REQUEST_FWDED, th_no_dlg_onrequest, NULL, NULL) < 0) {
+			LM_ERR("failed to register TMCB\n");
+			return -1;
+		}
+
+		if (tm_api.register_tmcb(req, 0, TMCB_RESPONSE_FWDED, th_no_dlg_onreply, NULL, NULL) < 0) {
+			LM_ERR("failed to register TMCB\n");
+			return -1;
+		}
+
+		return 1;
+	} else {
+		if (init_su(&su, &req->rcv.dst_ip, req->rcv.dst_port) == 0) {
+			return _th_no_dlg_onrequest(req, &su, req->rcv.proto, extra_flags);
+		}
+
+		LM_ERR("Failed to topology hide\n");
 		return -1;
 	}
-
-	return 1;
 }
 
 static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,struct dlg_cell* dlg,int extra_flags)
@@ -1746,7 +1832,7 @@ error:
 	return NULL;
 }
 
-static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes) 
+static int topo_no_dlg_encode_contact(struct sip_msg *msg, unsigned int flags, str *routes) 
 {
 	struct lump* lump;
 	char *prefix=NULL,*suffix=NULL,*ct_username=NULL;
@@ -1844,9 +1930,24 @@ static inline void topo_no_dlg_seq_free(void *p)
 		shm_free(p);
 }
 
-static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
+static inline int th_no_dlg_one_way_hiding(struct sip_msg *msg, struct socket_info *socket) {
+	int one_way_hiding = 0;
+
+	if (socket->tag.len > 0) {
+		one_way_hiding = socket->tag.len == th_internal_trusted_tag.len 
+						 && strncmp(socket->tag.s, th_internal_trusted_tag.s, th_internal_trusted_tag.len) == 0;
+
+		LM_DBG("Socket with tag %.*s has one way hiding: %s\n", 
+			socket->tag.len, socket->tag.s, one_way_hiding == 0 ? "false" : "true");
+	}
+
+	return one_way_hiding;
+}
+
+static int topo_no_dlg_seq_handling(struct sip_msg *msg, str *info)
 {
-	int max_size,dec_len,i,size,flags;
+	int max_size,dec_len,i,size;
+	unsigned int flags;
 	char *dec_buf,*p,*route=NULL,*hdrs,*remote_contact;
 	struct hdr_field *it;
 	str rr_buf,ct_buf,flags_buf,bind_buf;
@@ -1859,7 +1960,6 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	int port,proto;
 	struct socket_info *sock;
 	str *route_s = NULL, route_buf = {0, 0};
-	transaction_cb* used_cb;
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(msg, HDR_EOH_F, 0)< 0) {
@@ -1873,7 +1973,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		return -1;
 	}
 
-	/* delete record route */
+	/* delete record route, shouldn't have a record-route here anyway */
 	for (it=msg->record_route;it;it=it->sibling) {
 		if (del_lump(msg, it->name.s - buf, it->len, 0) == 0) {
 			LM_ERR("del_lump failed\n");
@@ -2107,7 +2207,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	}
 
 	if (flags_buf.len && flags_buf.s) {
-		if (str2int(&flags_buf, (unsigned int*) &flags) < 0) {
+		if (str2int(&flags_buf, &flags) < 0) {
 			LM_WARN("Failed to convert string to integer, default to no flags\n");
 			flags = 0;
 		}
@@ -2115,21 +2215,15 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		flags = 0;
 	}
 
-	if (flags & TOPOH_KEEP_USER)
-		used_cb = th_no_dlg_user_onreply_within;
-	else
-		used_cb = th_no_dlg_onreply_within;
-
+	tm_api.set_tmcb_flags(flags);
 	/* register tm callback for response in  */
-	if (tm_api.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
-	used_cb,route_s,topo_no_dlg_seq_free)<0 ) {
+	if (tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_FWDED, th_no_dlg_onreply, route_s, topo_no_dlg_seq_free) < 0) {
 		LM_ERR("failed to register TMCB\n");
 	}
 
 	if (bind_buf.len && bind_buf.s) {
 		LM_DBG("forcing send socket for req to [%.*s]\n",bind_buf.len,bind_buf.s);
-		if (parse_phostport( bind_buf.s, bind_buf.len, &host.s, &host.len,
-		&port, &proto)!=0) {
+		if (parse_phostport(bind_buf.s, bind_buf.len, &host.s, &host.len, &port, &proto) != 0) {
 			LM_ERR("bad socket <%.*s>\n", bind_buf.len, bind_buf.s);
 		} else {
 			sock = grep_sock_info( &host, (unsigned short)port, proto);
@@ -2144,7 +2238,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		free_rr(&head);
 	pkg_free(dec_buf);
 
-	if (topo_no_dlg_encode_contact(msg,flags,NULL) < 0) {
+	if (!th_no_dlg_one_way_hiding(msg, sock) && topo_no_dlg_encode_contact(msg, flags, NULL) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}

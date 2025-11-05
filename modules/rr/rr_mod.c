@@ -102,7 +102,7 @@ static const cmd_export_t cmds[] = {
 	{"record_route_preset", (cmd_function)w_record_route_preset, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT ,0, 0}, {0,0,0}},
-		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"add_rr_param", (cmd_function)w_add_rr_param, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},

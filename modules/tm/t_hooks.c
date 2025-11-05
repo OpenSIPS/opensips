@@ -88,6 +88,10 @@ void destroy_tmcb_lists(void)
 	}
 }
 
+static unsigned int tmcb_flags = 0;
+void set_tmcb_flags(unsigned int flags) {
+	tmcb_flags |= flags;
+}
 
 int insert_tmcb(struct tmcb_head_list *cb_list, int types,
 				transaction_cb f, void *param, release_tmcb_param release_func )
@@ -109,6 +113,7 @@ int insert_tmcb(struct tmcb_head_list *cb_list, int types,
 	cbp->param = param;
 	cbp->release = release_func;
 	cbp->types = types;
+	cbp->flags = tmcb_flags;
 	if (cbp->next)
 		cbp->id = cbp->next->id+1;
 	else
@@ -211,6 +216,7 @@ static void run_any_trans_callbacks(struct tmcb_head_list *list, unsigned int ty
 			LM_DBG("trans=%p, callback type %d, id %d entered\n",
 				trans, type, cbp->id );
 			params.param = &(cbp->param);
+			params.flags = cbp->flags;
 			cbp->callback( trans, type, &params );
 			if ((cbp->types)&(TMCB_REQUEST_IN|TMCB_LOCAL_TRANS_NEW)) {
 				if (req && req->dst_uri.len==-1) {
@@ -224,6 +230,7 @@ static void run_any_trans_callbacks(struct tmcb_head_list *list, unsigned int ty
 	/* env cleanup */
 	set_avp_list( backup );
 	tmcb_extra1 = tmcb_extra2 = 0;
+	tmcb_flags = 0;
 	set_t(trans_backup);
 }
 
