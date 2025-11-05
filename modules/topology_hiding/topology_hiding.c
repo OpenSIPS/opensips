@@ -43,6 +43,7 @@ str th_contact_encode_param = str_init("thinfo");
 str th_contact_encode_scheme = str_init("base64");
 str th_contact_caller_var = str_init("_th_contact_caller_username_var_");
 str th_contact_callee_var = str_init("_th_contact_callee_username_var_");
+str th_internal_trusted_tag = STR_NULL;
 
 int th_ct_enc_scheme;
 
@@ -77,6 +78,7 @@ static const param_export_t params[] = {
 	{ "th_contact_encode_scheme",    STR_PARAM, &th_contact_encode_scheme.s  },
 	{ "th_contact_caller_username_var", STR_PARAM, &th_contact_caller_var.s  },
 	{ "th_contact_callee_username_var", STR_PARAM, &th_contact_callee_var.s  },
+	{ "th_internal_trusted_tag",     STR_PARAM, &th_internal_trusted_tag.s   },
 	{0, 0, 0}
 };
 
@@ -160,7 +162,9 @@ static int mod_init(void)
 			"Use 'base64' or 'base32'\n");
 		goto error;
 	}
-
+	if (th_internal_trusted_tag.s) {
+		th_internal_trusted_tag.len = strlen(th_internal_trusted_tag.s);
+	}
 
 	/* loading dependencies */
 	if (load_tm_api(&tm_api)!=0) {
