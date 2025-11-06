@@ -368,7 +368,7 @@ static int rmq_reconnect(evi_reply_sock *sock)
 				conn->conn,
 				RMQ_DEFAULT_VHOST,
 				0,
-				RMQ_DEFAULT_MAX,
+				RMQ_DEFAULT_FRAMES,
 				conn->heartbeat,
 				AMQP_SASL_METHOD_PLAIN,
 				conn->uri.user ? conn->uri.user : RMQ_DEFAULT_UP,

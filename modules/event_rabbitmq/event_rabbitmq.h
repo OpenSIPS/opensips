@@ -48,7 +48,6 @@
 
 #define RMQ_DEFAULT_UP		"guest"
 #define RMQ_DEFAULT_UP_LEN	(sizeof(RMQ_DEFAULT_UP))
-#define RMQ_DEFAULT_MAX		131072
 #define RMQ_DEFAULT_VHOST	"/"
 #define RMQ_DEFAULT_PORT	5672
 #define RMQ_DEFAULT_TLS_PORT 5671
