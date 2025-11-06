@@ -322,7 +322,7 @@ int rmq_server_reconnect(rmq_connection_t *conn, int max_frames, str cid)
 			LM_ERR("cannot open AMQP socket\n");
 			return -1;
 		}
-		amqp_set_sockfd(srv->conn, socket);
+		amqp_set_sockfd(conn->conn, socket);
 #endif
 		conn->state = RMQS_INIT;
 		/* fall through */
