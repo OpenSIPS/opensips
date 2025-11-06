@@ -196,21 +196,12 @@ void rmq_destroy(evi_reply_sock *sock)
 	shm_free(sock);
 }
 
-static int rmq_reconnect(evi_reply_sock *sock)
+int rmq_reconnect(rmq_connection_t *conn, char *address, int port, int max_frames, str cid)
 {
-	rmq_params_t * rmqp = (rmq_params_t *)sock->params;
-	rmq_connection_t *conn;
 #if defined AMQP_VERSION_v04
 	amqp_socket_t *amqp_sock;
 #endif
 	int socket;
-
-	if (!rmqp) {
-		LM_ERR("not enough socket info\n");
-		return -1;
-	}
-
-	conn = &rmqp->conn;
 
 	switch (conn->state) {
 	case RMQS_OFF:
@@ -302,7 +293,7 @@ static int rmq_reconnect(evi_reply_sock *sock)
 					method_min = AMQP_TLSv1;
 				}
 			} else {
-				LM_INFO("Minimum TLS method unspecified, using TLSv1\n");
+				LM_DBG("Minimum TLS method unspecified, using TLSv1\n");
 				method_min = AMQP_TLSv1;
 			}
 
@@ -321,7 +312,7 @@ static int rmq_reconnect(evi_reply_sock *sock)
 				}
 			} else {
 				method_max = AMQP_TLSvLATEST;
-				LM_INFO("Maximum TLS method unspecified, using latest supported by"
+				LM_DBG("Maximum TLS method unspecified, using latest supported by"
 					" librabbitmq\n");
 			}
 
@@ -339,8 +330,8 @@ static int rmq_reconnect(evi_reply_sock *sock)
 			}
 		}
 
-		socket = amqp_socket_open_noblock(amqp_sock, sock->address.s,
-			sock->port, &conn_timeout_tv);
+		socket = amqp_socket_open_noblock(amqp_sock, address,
+			port, &conn_timeout_tv);
 		if (socket < 0) {
 			amqp_connection_close(conn->conn, AMQP_REPLY_SUCCESS);
 			LM_ERR("cannot open AMQP socket\n");
@@ -353,7 +344,7 @@ static int rmq_reconnect(evi_reply_sock *sock)
 #endif
 
 #else
-		socket = amqp_open_socket_noblock(sock->address.s, sock->port,
+		socket = amqp_open_socket_noblock(address, port,
 				&conn_timeout_tv);
 		if (socket < 0) {
 			LM_ERR("cannot open AMQP socket\n");
@@ -366,9 +357,9 @@ static int rmq_reconnect(evi_reply_sock *sock)
 	case RMQS_INIT:
 		if (rmq_error("Logging in", amqp_login(
 				conn->conn,
-				RMQ_DEFAULT_VHOST,
+				(conn->uri.vhost ? conn->uri.vhost: RMQ_DEFAULT_VHOST),
 				0,
-				RMQ_DEFAULT_FRAMES,
+				max_frames,
 				conn->heartbeat,
 				AMQP_SASL_METHOD_PLAIN,
 				conn->uri.user ? conn->uri.user : RMQ_DEFAULT_UP,
@@ -382,7 +373,7 @@ static int rmq_reconnect(evi_reply_sock *sock)
 		amqp_channel_open(conn->conn, RMQ_DEFAULT_CHANNEL);
 		if (rmq_error("Opening channel", amqp_get_rpc_reply(conn->conn)))
 			return -2;
-		LM_INFO("[] successfully connected!\n");
+		LM_DBG("[%.*s] successfully connected!\n", cid.len, cid.s);
 		conn->state = RMQS_ON;
 		/* fall through */
 	case RMQS_ON:
@@ -406,10 +397,11 @@ static int rmq_basic_publish(rmq_connection_t *conn, int max_frames,
 		props->_flags |= AMQP_BASIC_DELIVERY_MODE_FLAG;
 	}
 
+	sock = rmqs->sock;
+
 	do {
-		sock = rmqs->sock;
 		LM_INFO("rmq_reconnect()\n");
-		ret = rmq_reconnect(sock);
+		ret = rmq_reconnect(conn, sock->address.s, sock->port, max_frames, *cid);
 
 		if (ret == -1) {
 			if (amqp_destroy_connection(conn->conn) < 0)
