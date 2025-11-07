@@ -168,7 +168,7 @@ int rmq_error(char const *context, amqp_rpc_reply_t x)
 /*
  * function used to reconnect a RabbitMQ server
  */
-int rmq_server_reconnect(rmq_connection_t *conn, int max_frames, str cid)
+int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int max_frames, str cid)
 {
 #if defined AMQP_VERSION_v04
 	amqp_socket_t *amqp_sock;
@@ -302,8 +302,8 @@ int rmq_server_reconnect(rmq_connection_t *conn, int max_frames, str cid)
 			}
 		}
 
-		socket = amqp_socket_open_noblock(amqp_sock, conn->uri.host,
-			conn->uri.port, &conn_timeout_tv);
+		socket = amqp_socket_open_noblock(amqp_sock, address,
+			port, &conn_timeout_tv);
 		if (socket < 0) {
 			amqp_connection_close(conn->conn, AMQP_REPLY_SUCCESS);
 			LM_ERR("cannot open AMQP socket\n");
@@ -316,13 +316,13 @@ int rmq_server_reconnect(rmq_connection_t *conn, int max_frames, str cid)
 #endif
 
 #else
-		socket = amqp_open_socket_noblock(conn->uri.host, conn->uri.port,
+		socket = amqp_open_socket_noblock(address, port,
 				&conn_timeout_tv);
 		if (socket < 0) {
 			LM_ERR("cannot open AMQP socket\n");
 			return -1;
 		}
-		amqp_set_sockfd(srv->conn, socket);
+		amqp_set_sockfd(conn->conn, socket);
 #endif
 		conn->state = RMQS_INIT;
 		/* fall through */
@@ -657,7 +657,7 @@ void rmq_connect_servers(void)
 	list_for_each(it, &rmq_servers) {
 		srv = container_of(it, struct rmq_server, list);
 
-		ret = rmq_server_reconnect(&srv->conn, srv->max_frames, srv->cid);
+		ret = rmq_server_reconnect(&srv->conn, srv->conn.uri.host, srv->conn.uri.port, srv->max_frames, srv->cid);
 
 		if (ret == -1) {
 			if (amqp_destroy_connection(srv->conn.conn) < 0)
@@ -755,7 +755,7 @@ int rmq_basic_server_publish(rmq_connection_t *conn, int max_frames,
 	}
 								
 	do {
-		ret = rmq_server_reconnect(conn, max_frames, *cid);
+		ret = rmq_server_reconnect(conn, conn->uri.host, conn->uri.port, max_frames, *cid);
 
 		if (ret == -1) {
 			if (amqp_destroy_connection(conn->conn) < 0)

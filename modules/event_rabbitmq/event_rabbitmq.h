@@ -48,7 +48,6 @@
 
 #define RMQ_DEFAULT_UP		"guest"
 #define RMQ_DEFAULT_UP_LEN	(sizeof(RMQ_DEFAULT_UP))
-#define RMQ_DEFAULT_MAX		131072
 #define RMQ_DEFAULT_VHOST	"/"
 #define RMQ_DEFAULT_PORT	5672
 #define RMQ_DEFAULT_TLS_PORT 5671
@@ -80,7 +79,7 @@ extern struct timeval rpc_timeout_tv;
 
 int rmq_error(char const *context, amqp_rpc_reply_t x);
 void rmq_destroy_connection(rmq_connection_t *conn, int temporarely);
-int rmq_server_reconnect(rmq_connection_t *conn, int max_frames, str cid);
+int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int max_frames, str cid);
 int amqp_check_status(rmq_connection_t *conn, int r, int* retry, str cid);
 int rmq_basic_server_publish(rmq_connection_t *conn, int max_frames,
 							 str *cid, amqp_bytes_t akey, amqp_bytes_t abody,
