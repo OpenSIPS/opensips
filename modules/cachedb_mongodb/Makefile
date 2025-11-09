@@ -21,11 +21,11 @@ include ../../Makefile.openssl
 
 	DEFS += -I$(SYSBASE)/include/libmongoc-1.0 -I$(SYSBASE)/include/libbson-1.0
 	LIBS += -L$(LOCALBASE)/lib -lrt -lmongoc-1.0 -lbson-1.0
-	LIBS += -dl -Bsymbolic
+	LIBS += -ldl -Bsymbolic
 else
 	DEFS += $(shell $(MONGOC_BUILDER) --cflags)
 	LIBS += $(shell $(MONGOC_BUILDER) --libs)
-	LIBS += -dl -Bsymbolic
+	LIBS += -ldl -Bsymbolic
 endif
 
 include ../../Makefile.modules
