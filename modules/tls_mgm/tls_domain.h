@@ -96,18 +96,19 @@ struct dom_filt_array {
 
 #define ref_tls_dom(_d)  \
 	do {  \
-		if ((_d)->flags & DOM_FLAG_DB) {  \
-			lock_get((_d)->lock);  \
-			(_d)->refs++;  \
-			lock_release((_d)->lock);  \
-		}  \
+		lock_get((_d)->lock);  \
+		(_d)->refs++;  \
+		lock_release((_d)->lock);  \
 	} while (0)
 
 extern struct tls_domain **tls_server_domains;
 extern struct tls_domain **tls_client_domains;
 
-extern map_t server_dom_matching;
-extern map_t client_dom_matching;
+extern struct tls_domain **script_srv_domains_template;
+extern struct tls_domain **script_cli_domains_template;
+
+extern map_t *server_dom_matching;
+extern map_t *client_dom_matching;
 
 extern rw_lock_t *dom_lock;
 
@@ -130,14 +131,9 @@ struct tls_domain *tls_find_client_domain_name(str *name);
  * TLS domain structure
  */
 int tls_new_domain(str *name, int type, struct tls_domain **dom);
+struct tls_domain* tls_copy_domain(struct tls_domain* d);
 
 void tls_release_domain(struct tls_domain* dom);
-
-void tls_free_domain(struct tls_domain *dom);
-
-void tls_free_db_domains(struct tls_domain* dom);
-
-struct tls_domain *find_first_script_dom(struct tls_domain *dom);
 
 int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 							str* blob_vals);
@@ -149,7 +145,7 @@ int db_add_domain(char **str_vals, int *int_vals, str* blob_vals,
 int parse_match_domains(struct tls_domain *tls_dom, str *domains_s);
 int parse_match_addresses(struct tls_domain *tls_dom, str *addresses_s);
 
-int update_matching_map(struct tls_domain *tls_dom);
+int update_matching_map(struct tls_domain *tls_dom, map_t matching_map);
 int sort_map_dom_arrays(map_t matching_map);
 void map_free_node(void *val);
 

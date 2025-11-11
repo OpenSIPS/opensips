@@ -165,7 +165,7 @@ static const cmd_export_t cmds[] = {
  * Exported MI functions
  */
 static const mi_export_t mi_cmds[] = {
-	{ "tls_reload", "reloads stored data from the database", 0, 0, {
+	{ "tls_reload", "reloads TLS configuration from files and/or database", 0, 0, {
 		{tls_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -705,7 +705,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			tls_free_domain(tmp);
+			tls_release_domain(tmp);
 
 			if (!db)
 				return -1;
@@ -755,7 +755,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			tls_free_domain(tmp);
+			tls_release_domain(tmp);
 
 			if (!db)
 				return -1;
@@ -787,94 +787,221 @@ static inline char *get_ssl_method_name(enum tls_method method)
 	return ssl_versions_struct[method-1].name;
 }
 
-/* reloads data from the db */
-static int reload_data(void)
+static void free_domain_list(struct tls_domain *d)
 {
-	struct tls_domain *tls_client_domains_tmp = NULL;
-	struct tls_domain *tls_server_domains_tmp = NULL;
-	struct tls_domain *script_cli_doms, *script_srv_doms, *dom;
-
-	script_srv_doms = find_first_script_dom(*tls_server_domains);
-	script_cli_doms = find_first_script_dom(*tls_client_domains);
-
-	/* load new domains from db */
-	if (load_info(&tls_server_domains_tmp, &tls_client_domains_tmp,
-					script_srv_doms, script_cli_doms) < 0)
-		return -1;
-
-	/*
-	 * initialize new domains
-	 */
-	init_tls_domains(&tls_server_domains_tmp);
-	init_tls_domains(&tls_client_domains_tmp);
-
-	lock_start_write(dom_lock);
-
-	tls_free_db_domains(*tls_server_domains);
-
-	/* link the new DB domains with the existing script domains */
-	if (script_srv_doms) {
-		for (dom = tls_server_domains_tmp; dom; dom = dom->next)
-			if (!dom->next)
-				break;
-		if (dom)
-			dom->next = script_srv_doms;
+	struct tls_domain *d_tmp;
+	while(d) {
+		d_tmp = d;
+		d = d->next;
+		tls_release_domain(d_tmp);
 	}
-
-	if (tls_server_domains_tmp)
-		*tls_server_domains = tls_server_domains_tmp;
-	else
-		*tls_server_domains = script_srv_doms;
-
-	tls_free_db_domains(*tls_client_domains);
-
-	if (script_cli_doms) {
-		for (dom = tls_client_domains_tmp; dom; dom = dom->next)
-			if (!dom->next)
-				break;
-		if (dom)
-			dom->next = script_cli_doms;
-	}
-
-	if (tls_client_domains_tmp)
-		*tls_client_domains = tls_client_domains_tmp;
-	else
-		*tls_client_domains = script_cli_doms;
-
-	for (dom = *tls_server_domains; dom; dom = dom->next)
-		if (update_matching_map(dom) < 0) {
-			LM_ERR("Unable to update domain matching map\n");
-			return -1;
-		}
-	for (dom = *tls_client_domains; dom; dom = dom->next)
-		if (update_matching_map(dom) < 0) {
-			LM_ERR("Unable to update domain matching map\n");
-			return -1;
-		}
-
-	/* sort arrays of domain filters in order to be able to select the
-	 * most specific domain first in case of definitions with wildcard patterns */
-	if (*tls_server_domains)
-		sort_map_dom_arrays(server_dom_matching);
-	if (*tls_client_domains)
-		sort_map_dom_arrays(client_dom_matching);
-
-	lock_stop_write(dom_lock);
-
-	return 0;
 }
 
-/* reloads data from the db */
+
+static struct tls_domain* clone_domain_list(struct tls_domain *src_list)
+{
+	struct tls_domain *new_list = NULL, **p;
+	struct tls_domain *new_dom;
+
+	p = &new_list;
+	for (; src_list; src_list = src_list->next) {
+		new_dom = tls_copy_domain(src_list);
+		if (!new_dom) {
+			free_domain_list(new_list);
+			return NULL;
+		}
+		*p = new_dom;
+		p = &new_dom->next;
+	}
+	return new_list;
+}
+
+/* reloads data from config files and/or the db */
+static int reload_data(void)
+{
+	struct tls_domain *tls_client_domains_new = NULL;
+	struct tls_domain *tls_server_domains_new = NULL;
+	struct tls_domain *tls_client_domains_old = NULL;
+	struct tls_domain *tls_server_domains_old = NULL;
+
+	struct tls_domain *script_cli_doms_new = NULL;
+	struct tls_domain *script_srv_doms_new = NULL;
+	struct tls_domain *db_cli_doms_new = NULL;
+	struct tls_domain *db_srv_doms_new = NULL;
+	struct tls_domain *dom;
+	str s;
+
+	/* 1. clone and init script domains from templates */
+	if (script_srv_domains_template) {
+		script_srv_doms_new = clone_domain_list(*script_srv_domains_template);
+		if (!script_srv_doms_new && *script_srv_domains_template) {
+			LM_ERR("failed to clone script-defined server TLS domains\n");
+			goto error;
+		}
+	}
+	if (script_cli_domains_template) {
+		script_cli_doms_new = clone_domain_list(*script_cli_domains_template);
+		if (!script_cli_doms_new && *script_cli_domains_template) {
+			LM_ERR("failed to clone script-defined client TLS domains\n");
+			goto error;
+		}
+	}
+
+	if (init_tls_domains(&script_srv_doms_new) < 0) {
+		LM_ERR("failed to re-initialize script-defined server TLS domains\n");
+		goto error;
+	}
+	if (init_tls_domains(&script_cli_doms_new) < 0) {
+		LM_ERR("failed to re-initialize script-defined client TLS domains\n");
+		goto error;
+	}
+
+	/* 2. load and init DB domains */
+	if (tls_db_url.s) {
+		int ret = 0;
+		if (load_info(&db_srv_doms_new, &db_cli_doms_new, script_srv_doms_new, script_cli_doms_new) < 0) {
+			LM_ERR("failed to load TLS domains from database\n");
+			ret = -1;
+		}
+
+		if (ret == 0 && init_tls_domains(&db_srv_doms_new) < 0) {
+			LM_ERR("failed to initialize DB-defined server TLS domains\n");
+			ret = -1;
+		}
+		if (ret == 0 && init_tls_domains(&db_cli_doms_new) < 0) {
+			LM_ERR("failed to initialize DB-defined client TLS domains\n");
+			ret = -1;
+		}
+
+		if (db_hdl) {
+			dr_dbf.close(db_hdl);
+			db_hdl = NULL;
+		}
+
+		if (ret < 0)
+			goto error;
+	}
+
+	/* 3. link new domain lists */
+	tls_server_domains_new = db_srv_doms_new;
+	if (tls_server_domains_new) {
+		for (dom = tls_server_domains_new; dom && dom->next; dom = dom->next);
+		if (dom) dom->next = script_srv_doms_new;
+	} else {
+		tls_server_domains_new = script_srv_doms_new;
+	}
+	script_srv_doms_new = NULL; /* ownership transferred */
+	db_srv_doms_new = NULL;
+
+	tls_client_domains_new = db_cli_doms_new;
+	if (tls_client_domains_new) {
+		for (dom = tls_client_domains_new; dom && dom->next; dom = dom->next);
+		if (dom) dom->next = script_cli_doms_new;
+	} else {
+		tls_client_domains_new = script_cli_doms_new;
+	}
+	script_cli_doms_new = NULL; /* ownership transferred */
+	db_cli_doms_new = NULL;
+
+	/* 4. Create and populate new matching maps */
+	map_t server_dom_matching_new = map_create(AVLMAP_SHARED);
+	map_t client_dom_matching_new = map_create(AVLMAP_SHARED);
+	map_t server_dom_matching_old;
+	map_t client_dom_matching_old;
+
+	if (!server_dom_matching_new || !client_dom_matching_new) {
+		LM_CRIT("failed to create new matching maps\n");
+		if (server_dom_matching_new) map_destroy(server_dom_matching_new, map_free_node);
+		if (client_dom_matching_new) map_destroy(client_dom_matching_new, map_free_node);
+		if (tls_server_domains_new)
+			free_domain_list(tls_server_domains_new);
+		if (tls_client_domains_new)
+			free_domain_list(tls_client_domains_new);
+		return -1;
+	}
+
+	s.s = NULL;
+	for (dom = tls_server_domains_new; dom; dom = dom->next) {
+		if (!dom->match_domains && parse_match_domains(dom, &s) < 0) {
+			LM_ERR("Failed to parse domain matching filters for domain [%.*s]\n",
+				dom->name.len, dom->name.s);
+			goto map_error;
+		}
+		if (!dom->match_addresses && parse_match_addresses(dom, &s) < 0) {
+			LM_ERR("Failed to parse address matching filters for domain [%.*s]\n",
+				dom->name.len, dom->name.s);
+			goto map_error;
+		}
+		if (update_matching_map(dom, server_dom_matching_new) < 0) {
+			LM_ERR("Unable to update new server domain matching map\n");
+			goto map_error;
+		}
+	}
+	for (dom = tls_client_domains_new; dom; dom = dom->next) {
+		if (!dom->match_domains && parse_match_domains(dom, &s) < 0) {
+			LM_ERR("Failed to parse domain matching filters for domain [%.*s]\n",
+				dom->name.len, dom->name.s);
+			goto map_error;
+		}
+		if (!dom->match_addresses && parse_match_addresses(dom, &s) < 0) {
+			LM_ERR("Failed to parse address matching filters for domain [%.*s]\n",
+				dom->name.len, dom->name.s);
+			goto map_error;
+		}
+		if (update_matching_map(dom, client_dom_matching_new) < 0) {
+			LM_ERR("Unable to update new client domain matching map\n");
+			goto map_error;
+		}
+	}
+
+	if (tls_server_domains_new)
+		sort_map_dom_arrays(server_dom_matching_new);
+	if (tls_client_domains_new)
+		sort_map_dom_arrays(client_dom_matching_new);
+
+	/* 5. atomic swap */
+	lock_start_write(dom_lock);
+	tls_server_domains_old = *tls_server_domains;
+	tls_client_domains_old = *tls_client_domains;
+	server_dom_matching_old = *server_dom_matching;
+	client_dom_matching_old = *client_dom_matching;
+
+	*tls_server_domains = tls_server_domains_new;
+	*tls_client_domains = tls_client_domains_new;
+	*server_dom_matching = server_dom_matching_new;
+	*client_dom_matching = client_dom_matching_new;
+	lock_stop_write(dom_lock);
+
+	/* 6. cleanup old domains and maps */
+	if (server_dom_matching_old) map_destroy(server_dom_matching_old, map_free_node);
+	if (client_dom_matching_old) map_destroy(client_dom_matching_old, map_free_node);
+	if (tls_server_domains_old) free_domain_list(tls_server_domains_old);
+	if (tls_client_domains_old) free_domain_list(tls_client_domains_old);
+
+	return 0;
+
+map_error:
+	if (server_dom_matching_new) map_destroy(server_dom_matching_new, map_free_node);
+	if (client_dom_matching_new) map_destroy(client_dom_matching_new, map_free_node);
+	if (tls_server_domains_new) free_domain_list(tls_server_domains_new);
+	if (tls_client_domains_new) free_domain_list(tls_client_domains_new);
+	return -1;
+error:
+	if (script_srv_doms_new) free_domain_list(script_srv_doms_new);
+	if (script_cli_doms_new) free_domain_list(script_cli_doms_new);
+	if (db_srv_doms_new) free_domain_list(db_srv_doms_new);
+	if (db_cli_doms_new) free_domain_list(db_cli_doms_new);
+	return -1;
+}
+
+/* reloads data from config files and/or the db */
 static mi_response_t *tls_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	LM_INFO("reload data MI command received!\n");
 
-	if (!tls_db_url.s)
-		return init_mi_error(500, MI_SSTR("DB url not set"));
-
 	if (reload_data() < 0) {
-		LM_ERR("failed to load tls data\n");
+		LM_ERR("failed to reload tls data\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
 
@@ -954,22 +1081,38 @@ static int load_tls_library(void)
 static int mod_init(void) {
 	str s;
 	str tls_db_param = str_init(DB_TLS_DOMAIN_PARAM_EQ);
-	struct tls_domain *tls_client_domains_tmp = NULL;
-	struct tls_domain *tls_server_domains_tmp = NULL;
-	struct tls_domain *dom;
 
 	LM_INFO("initializing TLS management\n");
+
+	/*
+	 * The modparam functions have populated the template lists.
+	 * We now allocate the live lists.
+	 */
+	tls_server_domains = shm_malloc(sizeof(struct tls_domain*));
+	if (!tls_server_domains) { LM_ERR("No more shm mem\n"); return -1; }
+	*tls_server_domains = NULL;
+
+	tls_client_domains = shm_malloc(sizeof(struct tls_domain*));
+	if (!tls_client_domains) { LM_ERR("No more shm mem\n"); return -1; }
+	*tls_client_domains = NULL;
+
+	server_dom_matching = shm_malloc(sizeof(map_t));
+	if (!server_dom_matching) { LM_ERR("no more shm mem\n"); return -1; }
+	*server_dom_matching = NULL;
+	client_dom_matching = shm_malloc(sizeof(map_t));
+	if (!client_dom_matching) { LM_ERR("no more shm mem\n"); return -1; }
+	*client_dom_matching = NULL;
 
 	if (load_tls_library() < 0)
 		return -1;
 
-	if (tls_db_url.s) {
+	/* create & init lock */
+	if ((dom_lock = lock_init_rw()) == NULL) {
+		LM_CRIT("failed to init lock\n");
+		return -1;
+	}
 
-		/* create & init lock */
-		if ((dom_lock = lock_init_rw()) == NULL) {
-			LM_CRIT("failed to init lock\n");
-			return -1;
-		}
+	if (tls_db_url.s) {
 
 		init_db_url(tls_db_url, 0 /*cannot be null*/);
 
@@ -1013,41 +1156,6 @@ static int mod_init(void) {
 			LM_CRIT("cannot initialize database connection\n");
 			return -1;
 		}
-
-		if (dr_dbf.use_table(db_hdl, &tls_db_table) < 0) {
-			LM_ERR("cannot select table \"%.*s\"\n",
-				tls_db_table.len, tls_db_table.s);
-			return -1;
-		}
-	}
-
-	if (tls_server_domains == NULL) {
-		tls_server_domains = shm_malloc(sizeof *tls_server_domains);
-		if (!tls_server_domains) {
-			LM_ERR("No more shm mem\n");
-			return -1;
-		}
-		*tls_server_domains = NULL;
-	}
-
-	if (tls_client_domains == NULL) {
-		tls_client_domains = shm_malloc(sizeof *tls_client_domains);
-		if (!tls_client_domains) {
-			LM_ERR("No more shm mem\n");
-			return -1;
-		}
-		*tls_client_domains = NULL;
-	}
-
-	server_dom_matching = map_create(AVLMAP_SHARED);
-	if (!server_dom_matching) {
-		LM_ERR("No more shm memory!\n");
-		return -1;
-	}
-	client_dom_matching = map_create(AVLMAP_SHARED);
-	if (!client_dom_matching) {
-		LM_ERR("No more shm memory!\n");
-		return -1;
 	}
 
 	if (tls_domain_avp) {
@@ -1068,89 +1176,9 @@ static int mod_init(void) {
 		}
 	}
 
-	if (tls_db_url.s) {
-		if (load_info(&tls_server_domains_tmp, &tls_client_domains_tmp,
-						*tls_server_domains, *tls_client_domains))
-			return -1;
-
-		dr_dbf.close(db_hdl);
-		db_hdl = NULL;
-
-		/* link the DB domains with the existing script domains */
-
-		if (*tls_server_domains && tls_server_domains_tmp) {
-			for (dom = tls_server_domains_tmp; dom; dom = dom->next)
-				if (!dom->next)
-					break;
-			dom->next = *tls_server_domains;
-		}
-		if (tls_server_domains_tmp)
-			*tls_server_domains = tls_server_domains_tmp;
-
-		if (*tls_client_domains && tls_client_domains_tmp) {
-			for (dom = tls_client_domains_tmp; dom; dom = dom->next)
-				if (!dom->next)
-					break;
-			dom->next = *tls_client_domains;
-		}
-		if (tls_client_domains_tmp)
-			*tls_client_domains = tls_client_domains_tmp;
-	}
-
-	for (dom = *tls_server_domains; dom; dom = dom->next) {
-		/* for script defined domains, if match_address/domain parameters
-		 * are not defined, match any value */
-		s.s = NULL;
-		if (!dom->match_domains && parse_match_domains(dom, &s) < 0) {
-			LM_ERR("Failed to parse domain matching filters for domain [%.*s]\n",
-				dom->name.len, dom->name.s);
-			return -1;
-		}
-		if (!dom->match_addresses && parse_match_addresses(dom, &s) < 0) {
-			LM_ERR("Failed to parse address matching filters for domain [%.*s]\n",
-				dom->name.len, dom->name.s);
-			return -1;
-		}
-
-		if (update_matching_map(dom) < 0) {
-			LM_ERR("Unable to update domain matching map\n");
-			return -1;
-		}
-	}
-
-	for (dom = *tls_client_domains; dom; dom = dom->next) {
-		/* for script defined domains, if match_address/domain parameters
-		 * are not defined, match any value */
-		s.s = NULL;
-		if (!dom->match_domains && parse_match_domains(dom, &s) < 0) {
-			LM_ERR("Failed to parse domain matching filters for domain [%.*s]\n",
-				dom->name.len, dom->name.s);
-			return -1;
-		}
-		if (!dom->match_addresses && parse_match_addresses(dom, &s) < 0) {
-			LM_ERR("Failed to parse address matching filters for domain [%.*s]\n",
-				dom->name.len, dom->name.s);
-			return -1;
-		}
-
-		if (update_matching_map(dom) < 0) {
-			LM_ERR("Unable to update domain matching map\n");
-			return -1;
-		}
-	}
-
-	/* sort arrays of domain filters in order to be able to select the
-	 * most specific domain first in case of definitions with wildcard patterns */
-	if (*tls_server_domains)
-		sort_map_dom_arrays(server_dom_matching);
-	if (*tls_client_domains)
-		sort_map_dom_arrays(client_dom_matching);
-
-	/* initialize tls virtual domains */
-	if (init_tls_domains(tls_server_domains) < 0)
+	if (reload_data() < 0) {
 		return -1;
-	if (init_tls_domains(tls_client_domains) < 0)
-		return -1;
+	}
 
 	return 0;
 }
@@ -1180,20 +1208,46 @@ static void mod_destroy(void)
 	while (d) {
 		d_tmp = d;
 		d = d->next;
-		tls_free_domain(d_tmp);
+		tls_release_domain(d_tmp);
 	}
 	d = *tls_client_domains;
 	while (d) {
 		d_tmp = d;
 		d = d->next;
-		tls_free_domain(d_tmp);
+		tls_release_domain(d_tmp);
 	}
-
 	shm_free(tls_server_domains);
 	shm_free(tls_client_domains);
 
-	map_destroy(server_dom_matching, map_free_node);
-	map_destroy(client_dom_matching, map_free_node);
+	if (script_srv_domains_template) {
+		d = *script_srv_domains_template;
+		while (d) {
+			d_tmp = d;
+			d = d->next;
+			tls_release_domain(d_tmp);
+		}
+		shm_free(script_srv_domains_template);
+	}
+	if (script_cli_domains_template) {
+		d = *script_cli_domains_template;
+		while (d) {
+			d_tmp = d;
+			d = d->next;
+			tls_release_domain(d_tmp);
+		}
+		shm_free(script_cli_domains_template);
+	}
+
+	if (server_dom_matching) {
+		if (*server_dom_matching)
+			map_destroy(*server_dom_matching, map_free_node);
+		shm_free(server_dom_matching);
+	}
+	if (client_dom_matching) {
+		if (*client_dom_matching)
+			map_destroy(*client_dom_matching, map_free_node);
+		shm_free(client_dom_matching);
+	}
 }
 
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)

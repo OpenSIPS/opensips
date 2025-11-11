@@ -196,9 +196,10 @@ if (is_peer_verified()) {
 		<function moreinfo="none">tls_reload</function>
                 </title>
                 <para>
-                Reloads the TLS domains information from the database.
-                The previous DB defined domains are discarded but the
-                script defined domains are preserved.
+                Reloads all TLS domain information. Domains defined in the database are
+                re-queried, and script-defined domains are re-initialized (which
+                reloads their certificates and key files). The entire previous
+                domain configuration is discarded and replaced.
                 </para>
             </section>
         </section>
