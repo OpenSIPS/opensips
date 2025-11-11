@@ -69,7 +69,7 @@
 #include "api.h"
 
 #define DB_CAP DB_CAP_QUERY | DB_CAP_UPDATE
-#define len(s)	s == NULL?0:strlen(s)
+#define len(s)	((s) == NULL ? 0 : strlen(s))
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
 	do{\
