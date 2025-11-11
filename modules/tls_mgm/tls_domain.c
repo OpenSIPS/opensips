@@ -340,6 +340,11 @@ tls_find_domain_by_filters(struct ip_addr *ip, unsigned short port,
 		dom_array = (struct dom_filt_array *)*val;
 
 	for (i = 0; i < dom_array->size; i++) {
+		if (domain_filter->len >= sizeof(fnm_s)) {
+			LM_WARN("domain filter '%.*s' too long, skipping match\n",
+					domain_filter->len, domain_filter->s);
+			continue;
+		}
 		memcpy(fnm_s, domain_filter->s, domain_filter->len);
 		fnm_s[domain_filter->len] = 0;
 		if (!fnmatch(dom_array->arr[i].hostname->s.s, fnm_s, 0)) {
