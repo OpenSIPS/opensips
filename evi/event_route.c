@@ -208,6 +208,29 @@ void route_run(struct script_route route, struct sip_msg* msg,
 	route_params_pop_level();
 }
 
+
+static inline int scriptroute_raise_inline(struct sip_msg *req, str *ev_name,
+		evi_reply_sock *sock, evi_params_t *params)
+{
+	struct script_route_ref *rt = SR_SOCK_ROUTE(sock);
+
+	/* suppress the E_CORE_LOG event for new logs while handling
+	 * the event itself */
+	suppress_proc_log_event();
+
+	if (ref_script_route_check_and_update( SR_SOCK_ROUTE(sock) )) {}
+
+	route_run(sroutes->event[rt->idx], req, params, ev_name);
+
+	/* remove all added AVP - here we use all the time the default AVP list */
+	reset_avps( );
+
+	reset_proc_log_event();
+
+	return 0;
+}
+
+
 int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx)
 {
@@ -223,6 +246,12 @@ int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 		LM_ERR("invalid socket type\n");
 		return -1;
 	}
+
+	/* SYNC mode - avoid double async dispatching (no benefit) */
+	if (ipc_is_async_dispatch())
+		return scriptroute_raise_inline(msg, ev_name, sock, params);
+
+	/* ASYNC mode - dup the input data, dispatch the job */
 
 	if (route_build_buffer(ev_name, sock, params, &buf) < 0) {
 		LM_ERR("failed to serialize event route triggering\n");
