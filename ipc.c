@@ -295,6 +295,7 @@ again:
 	return 0;
 }
 
+int ipc_running_rpc_job;
 void ipc_handle_job(int fd)
 {
 	ipc_job job;
@@ -322,7 +323,9 @@ void ipc_handle_job(int fd)
 
 	/* custom handling for RPC type */
 	if (job.handler_type==ipc_rpc_type) {
+		ipc_running_rpc_job = 1;
 		((ipc_rpc_f*)job.payload1)( job.snd_proc, job.payload2);
+		ipc_running_rpc_job = 0;
 	} else {
 		/* generic registered type */
 		ipc_handlers[job.handler_type].func( job.snd_proc, job.payload1);

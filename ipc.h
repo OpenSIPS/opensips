@@ -128,6 +128,15 @@ void ipc_handle_job(int fd);
 void ipc_handle_all_pending_jobs(int fd);
 
 
+/*
+ * A way of checking whether a process is already running within a
+ * ipc_dispatch_rpc() context, in order to avoid double async dispatching,
+ * which is effectively a waste of resources.
+ */
+extern int ipc_running_rpc_job;
+static inline int ipc_is_async_dispatch(void) { return ipc_running_rpc_job; }
+
+
 /* internal functions */
 int init_ipc(void);
 
