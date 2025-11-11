@@ -161,6 +161,13 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	if(blob_vals[BLOB_VALS_DHPARAMS_COL].len && blob_vals[BLOB_VALS_DHPARAMS_COL].s)
 		len += blob_vals[BLOB_VALS_DHPARAMS_COL].len;
 
+	if (d->name.len >= sizeof(name_buf)) {
+		LM_ERR("domain name '%.*s' is too long (max %zu chars)\n",
+				d->name.len, d->name.s, sizeof(name_buf) - 1);
+		*dom = d->next;
+		tls_release_domain(d);
+		return -1;
+	}
 	memcpy(name_buf, d->name.s, d->name.len);
 	name_len = d->name.len;
 
