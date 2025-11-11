@@ -583,11 +583,11 @@ int tls_sni_cb(struct tls_domain *dom, struct tcp_connection *c,
 			rc = wolfssl_api.switch_ssl_ctx(new_dom, ssl_ctx);
 		} else {
 			LM_CRIT("No TLS library module loaded\n");
-			tls_release_domain(dom);
+			tls_release_domain(new_dom);
 			return -1;
 		}
 		if (rc < 0) {
-			tls_release_domain(dom);
+			tls_release_domain(new_dom);
 			return -1;
 		}
 
