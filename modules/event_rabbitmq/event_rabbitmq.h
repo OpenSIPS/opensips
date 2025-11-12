@@ -81,9 +81,6 @@ int rmq_error(char const *context, amqp_rpc_reply_t x);
 void rmq_destroy_connection(rmq_connection_t *conn, int temporarely);
 int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int max_frames, str cid);
 int amqp_check_status(rmq_connection_t *conn, int r, int* retry, str cid);
-int rmq_basic_server_publish(rmq_connection_t *conn, int max_frames,
-							 str *cid, amqp_bytes_t akey, amqp_bytes_t abody,
-							 amqp_basic_properties_t *props, int retries);
 
 #endif
 #endif
