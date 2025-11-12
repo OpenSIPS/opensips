@@ -196,50 +196,6 @@ void rmq_destroy(evi_reply_sock *sock)
 	shm_free(sock);
 }
 
-static int rmq_basic_publish(rmq_connection_t *conn, int max_frames,
-						str *cid, amqp_bytes_t akey, amqp_bytes_t abody,
-						amqp_basic_properties_t *props, int retries, rmq_send_t *rmqs)
-{
-	int ret;
-	evi_reply_sock *sock;
-
-	if (conn->flags & RMQF_NOPER) {
-		props->delivery_mode = 2;
-		props->_flags |= AMQP_BASIC_DELIVERY_MODE_FLAG;
-	}
-
-	sock = rmqs->sock;
-
-	do {
-		ret = rmq_server_reconnect(conn, sock->address.s, sock->port, max_frames, *cid);
-
-		if (ret == -1) {
-			if (amqp_destroy_connection(conn->conn) < 0)
-				LM_ERR("cannot destroy connection\n");
-			if (conn->tls_dom) {
-				tls_api.release_domain(conn->tls_dom);
-				conn->tls_dom = NULL;
-			}
-			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
-				conn->uri.host, conn->uri.port);
-			return ret;
-		}
-		if (ret == -2) {
-			rmq_destroy_connection(conn, 1);
-			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
-				conn->uri.host, conn->uri.port);
-				return ret;
-		}
-
-		ret = amqp_basic_publish(conn->conn, RMQ_DEFAULT_CHANNEL, conn->exchange, akey, \
-				(conn->flags & RMQF_MAND), (conn->flags & RMQF_IMM),
-				props, abody);
-		ret = amqp_check_status(conn, ret, &retries, *cid);
-	} while (ret > 0);
-
-	return ret;
-}
-
 /* sends the buffer */
 static int rmq_sendmsg(rmq_send_t *rmqs)
 {
@@ -266,14 +222,15 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 
 	rmqp->conn.uri.port = rmqs->sock->port;
 
-	ret = rmq_basic_publish(&rmqp->conn,
+	ret = rmq_basic_server_publish(&rmqp->conn,
 			RMQ_DEFAULT_FRAMES,
 			&rmqs->sock->address,
 			amqp_cstring_bytes(rmqp->routing_key.s),
 			amqp_cstring_bytes(rmqs->msg),
 			((rmqp->conn.flags & RMQF_NOPER)?&props:0),
 			re_publish,
-			rmqs);
+			rmqs->sock->address.s,
+			rmqs->sock->port);
 
 	return ret;
 }
