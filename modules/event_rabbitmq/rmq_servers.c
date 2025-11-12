@@ -745,17 +745,19 @@ no_close:
 }
 
 int rmq_basic_server_publish(rmq_connection_t *conn, int max_frames,
-							str *cid, amqp_bytes_t akey, amqp_bytes_t abody,
-							amqp_basic_properties_t *props, int retries) {
+						str *cid, amqp_bytes_t akey, amqp_bytes_t abody,
+						amqp_basic_properties_t *props, int retries,
+						char *address, int port)
+{
 	int ret;
 
 	if (conn->flags & RMQF_NOPER) {
 		props->delivery_mode = 2;
 		props->_flags |= AMQP_BASIC_DELIVERY_MODE_FLAG;
 	}
-								
+
 	do {
-		ret = rmq_server_reconnect(conn, conn->uri.host, conn->uri.port, max_frames, *cid);
+		ret = rmq_server_reconnect(conn, address, port, max_frames, *cid);
 
 		if (ret == -1) {
 			if (amqp_destroy_connection(conn->conn) < 0)
@@ -867,7 +869,9 @@ int rmq_send_rm(struct rmq_server *srv, str *rkey, str *body, str *ctype,
 			akey,
 			abody,
 			&props,
-			retries);
+			retries,
+			srv->conn.uri.host,
+			srv->conn.uri.port);
 
 	return ret;
 }
