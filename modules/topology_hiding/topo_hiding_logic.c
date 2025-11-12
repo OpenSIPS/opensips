@@ -896,10 +896,10 @@ static int _th_no_dlg_rebuild_routes(size_t route_sets_size, str *routes[static 
 cleanup:
 	for (int x = i; x < route_sets_size; x++) {
 		/* Assume the first lmp successfully added so we don't want to free the header */
-		if (route_hdrs[i])
-			pkg_free(route_hdrs[i]);
-		pkg_free(routes[i]->s);
-		routes[i]->len = 0;
+		if (route_hdrs[x])
+			pkg_free(route_hdrs[x]);
+		pkg_free(routes[x]->s);
+		routes[x]->len = 0;
 	}
 
 	return rc;
