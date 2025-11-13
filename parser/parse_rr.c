@@ -351,6 +351,110 @@ int shm_duplicate_rr(rr_t** _new, rr_t* _r, int first)
 }
 
 
+int print_rr_body_ignore(struct hdr_field *iroute, str *oroute, int order,
+		int no_change, str *rrs_to_ignore) 
+{
+		rr_t *p, *ignored = NULL;
+	int n = 0;
+	int i = 0;
+	int route_len;
+#define MAX_RR_HDRS	64
+	static str route[MAX_RR_HDRS];
+	char *cp, *start;
+	struct hdr_field tmp, *hdr;
+	str s_rr = STR_NULL;
+
+	if(iroute==NULL)
+		return 0;
+
+	route_len= 0;
+	memset(route, 0, MAX_RR_HDRS*sizeof(str));
+
+	while (iroute!=NULL)
+	{
+		if (no_change) {
+			memcpy( &tmp, iroute, sizeof(tmp));
+			tmp.parsed = NULL;
+			hdr=&tmp;
+		}else{
+			hdr=iroute;
+		}
+		if (parse_rr(hdr) < 0)
+		{
+			LM_ERR("failed to parse RR\n");
+			goto error;
+		}
+
+		p =(rr_t*)hdr->parsed;
+		while (p)
+		{
+			s_rr.s = p->nameaddr.name.s;
+			s_rr.len = p->len;
+			if (str_strstr(rrs_to_ignore, &s_rr) == NULL) {
+				route[n].s = s_rr.s;
+				route[n].len = s_rr.len;
+				LM_DBG("current rr is %.*s\n", route[n].len, route[n].s);
+
+				n++;
+				route_len += route[i].len;
+				if (n==MAX_RR_HDRS)
+				{
+					LM_ERR("too many RR\n");
+					goto error;
+				}
+				s_rr = STR_NULL;
+			}
+			p = p->next;
+		}
+		if (no_change)
+			free_rr( (rr_t**)&tmp.parsed );
+		iroute = iroute->sibling;
+	}
+
+	route_len += (n - 1); /* for commas */
+
+	oroute->s = (char*)pkg_malloc(route_len);
+
+	if(oroute->s==0)
+	{
+		LM_ERR("no more pkg mem\n");
+		goto error;
+	}
+	cp = start = oroute->s;
+	if(order==0)
+	{
+		i = 0;
+
+		while (i<n)
+		{
+			memcpy(cp, route[i].s, route[i].len);
+			cp += route[i].len;
+			if (++i<n)
+				*(cp++) = ',';
+		}
+	} else {
+
+		i = n - 1;
+
+		while (i>=0)
+		{
+			memcpy(cp, route[i].s, route[i].len);
+			cp += route[i].len;
+			if (i-->0)
+				*(cp++) = ',';
+		}
+	}
+	oroute->len=cp - start;
+
+	LM_DBG("out rr [%.*s]\n", oroute->len, oroute->s);
+	LM_DBG("we have %i records\n", n);
+
+	return 0;
+
+error:
+	return -1;
+}
+
 /**
  * get first RR header and print comma separated bodies in oroute
  * - order = 0 normal; order = 1 reverse

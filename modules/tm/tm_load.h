@@ -47,6 +47,8 @@
 
 struct tm_binds {
 	register_tmcb_f  register_tmcb;
+	set_tmcb_flags_f set_tmcb_flags;
+
 	trelay_f         t_relay;
 	tcheck_trans_f   t_check_trans;
 

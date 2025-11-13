@@ -682,6 +682,7 @@ static int fixup_inject_flags(void **param)
 int load_tm( struct tm_binds *tmb)
 {
 	tmb->register_tmcb = register_tmcb;
+	tmb->set_tmcb_flags = set_tmcb_flags;
 
 	/* relay function */
 	tmb->t_relay = w_t_relay;
