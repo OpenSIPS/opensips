@@ -3213,83 +3213,86 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					dlg->last_invite_cseq = dlg->cseq[CALLER_LEG];
 				}
 			}
-			switch(statuscode)
+			if(uac_auth_loaded && dlg->state == B2B_NEW)
 			{
-			case WWW_AUTH_CODE:
-				parse_www_authenticate_header(msg,
-				    DAUTH_AHFM_ANYSUP, &auth);
-				break;
-			case PROXY_AUTH_CODE:
-				parse_proxy_authenticate_header(msg,
-				    DAUTH_AHFM_ANYSUP, &auth);
-				break;
-			}
-			if(uac_auth_loaded && auth && dlg->state == B2B_NEW)
-			{
-				crd = uac_auth_api._lookup_realm( &auth->realm );
-				if(crd)
+				switch(statuscode)
 				{
-					if ((auth->flags & QOP_AUTH_INT) && get_body(msg, &msg_body) < 0) {
-						LM_ERR("Failed to get message body\n");
-						goto done;
-					}
-					memset(&auth_nc_cnonce, 0,
-							sizeof(struct authenticate_nc_cnonce));
-					if (uac_auth_api._do_uac_auth(&msg_body, &t->method,
-							&t->uac[0].uri, crd, auth, &auth_nc_cnonce,
-							&response) != 0)
+				case WWW_AUTH_CODE:
+					parse_www_authenticate_header(msg,
+					    DAUTH_AHFM_ANYSUP, &auth);
+					break;
+				case PROXY_AUTH_CODE:
+					parse_proxy_authenticate_header(msg,
+					    DAUTH_AHFM_ANYSUP, &auth);
+					break;
+				}
+				if(auth)
+				{
+					crd = uac_auth_api._lookup_realm( &auth->realm );
+					if(crd)
 					{
-						LM_ERR("failed in do_uac_auth()\n");
-						dlg->state = B2B_TERMINATED;
-						B2BE_LOCK_RELEASE(htable, hash_index);
-						goto error;
-					}
-					new_hdr = uac_auth_api._build_authorization_hdr(statuscode,
-							&t->uac[0].uri, crd, auth,
-							&auth_nc_cnonce, &response);
-					if (!new_hdr)
-					{
-						LM_ERR("failed to build auth hdr\n");
-						dlg->state = B2B_TERMINATED;
-						B2BE_LOCK_RELEASE(htable, hash_index);
-						goto error;
-					}
-					LM_DBG("auth is [%.*s]\n", new_hdr->len, new_hdr->s);
-					if (build_extra_headers_from_msg(t->uac[0].request.buffer,
+						if ((auth->flags & QOP_AUTH_INT) && get_body(msg, &msg_body) < 0) {
+							LM_ERR("Failed to get message body\n");
+							goto done;
+						}
+						memset(&auth_nc_cnonce, 0,
+								sizeof(struct authenticate_nc_cnonce));
+						if (uac_auth_api._do_uac_auth(&msg_body, &t->method,
+								&t->uac[0].uri, crd, auth, &auth_nc_cnonce,
+								&response) != 0)
+						{
+							LM_ERR("failed in do_uac_auth()\n");
+							dlg->state = B2B_TERMINATED;
+							B2BE_LOCK_RELEASE(htable, hash_index);
+							goto error;
+						}
+						new_hdr = uac_auth_api._build_authorization_hdr(statuscode,
+								&t->uac[0].uri, crd, auth,
+								&auth_nc_cnonce, &response);
+						if (!new_hdr)
+						{
+							LM_ERR("failed to build auth hdr\n");
+							dlg->state = B2B_TERMINATED;
+							B2BE_LOCK_RELEASE(htable, hash_index);
+							goto error;
+						}
+						LM_DBG("auth is [%.*s]\n", new_hdr->len, new_hdr->s);
+						if (build_extra_headers_from_msg(t->uac[0].request.buffer,
 							new_hdr, &extra_headers, &body) < 0 ) {
-						LM_ERR("failed to build extra msgs after auth\n");
-						dlg->state = B2B_TERMINATED;
+							LM_ERR("failed to build extra msgs after auth\n");
+							dlg->state = B2B_TERMINATED;
+							B2BE_LOCK_RELEASE(htable, hash_index);
+							goto error;
+						}
+						LM_DBG("extra is [%.*s]\n",
+							extra_headers.len, extra_headers.s);
+						pkg_free(new_hdr->s);
+						new_hdr->s = NULL; new_hdr->len = 0;
+
+						b2b_send_indlg_req(dlg, etype, b2b_key, &t->method,
+								&extra_headers, 0, &body, 0);
+						pkg_free(extra_headers.s);
+
+						dlg->state = B2B_NEW_AUTH;
 						B2BE_LOCK_RELEASE(htable, hash_index);
-						goto error;
+
+						/* run the b2b route */
+						if(ref_script_route_is_valid(reply_route_ref)) {
+							msg->flags = t->uac[0].br_flags;
+							swap_route_type(old_route_type, ONREPLY_ROUTE);
+							run_top_route(sroutes->request[reply_route_ref->idx], msg);
+							set_route_type(old_route_type);
+							b2b_apply_lumps(msg);
+						}
+						goto b2b_route;
 					}
-					LM_DBG("extra is [%.*s]\n",
-						extra_headers.len, extra_headers.s);
-					pkg_free(new_hdr->s);
-					new_hdr->s = NULL; new_hdr->len = 0;
-
-					b2b_send_indlg_req(dlg, etype, b2b_key, &t->method,
-							&extra_headers, 0, &body, 0);
-					pkg_free(extra_headers.s);
-
-					dlg->state = B2B_NEW_AUTH;
-					B2BE_LOCK_RELEASE(htable, hash_index);
-
-					/* run the b2b route */
-					if(ref_script_route_is_valid(reply_route_ref)) {
-						msg->flags = t->uac[0].br_flags;
-						swap_route_type(old_route_type, ONREPLY_ROUTE);
-						run_top_route(sroutes->request[reply_route_ref->idx], msg);
-						set_route_type(old_route_type);
-						b2b_apply_lumps(msg);
-					}
-					goto b2b_route;
+					else
+						dlg->state = B2B_TERMINATED;
 				}
 				else
+				{
 					dlg->state = B2B_TERMINATED;
-			}
-			else
-			{
-				dlg->state = B2B_TERMINATED;
+				}
 			}
 		}
 
