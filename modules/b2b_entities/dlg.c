@@ -3267,7 +3267,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					pkg_free(new_hdr->s);
 					new_hdr->s = NULL; new_hdr->len = 0;
 
-					b2b_send_indlg_req(dlg, B2B_CLIENT, b2b_key, &t->method,
+					b2b_send_indlg_req(dlg, etype, b2b_key, &t->method,
 							&extra_headers, 0, &body, 0);
 					pkg_free(extra_headers.s);
 
