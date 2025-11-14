@@ -3256,6 +3256,51 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			LM_DBG("Non final negative reply for reINVITE\n");
 			current_dlg = dlg;
 			dlg_state = dlg->state;
+			if(uac_auth_loaded)
+			{
+				switch(statuscode)
+				{
+				case WWW_AUTH_CODE:
+					parse_www_authenticate_header(msg,
+					    DAUTH_AHFM_ANYSUP, &auth);
+					break;
+				case PROXY_AUTH_CODE:
+					parse_proxy_authenticate_header(msg,
+					    DAUTH_AHFM_ANYSUP, &auth);
+					break;
+				}
+				ret = RETURN_CONTINUE;
+				if(auth)
+					ret = b2b_send_indlg_auth_req(statuscode, auth, msg, t, dlg, etype, b2b_key);
+				switch(ret)
+				{
+				case RETURN_GOTO_DONE:
+					goto done;
+					break;
+				case RETURN_GOTO_ERROR:
+					B2BE_LOCK_RELEASE(htable, hash_index);
+					goto error;
+					break;
+				case RETURN_CONTINUE:
+					break;
+				case RETURN_GOTO_B2B_ROUTE:
+					B2BE_LOCK_RELEASE(htable, hash_index);
+
+					/* run the b2b route */
+					if(ref_script_route_is_valid(reply_route_ref)) {
+						msg->flags = t->uac[0].br_flags;
+						swap_route_type(old_route_type, ONREPLY_ROUTE);
+						run_top_route(sroutes->request[reply_route_ref->idx], msg);
+						set_route_type(old_route_type);
+						b2b_apply_lumps(msg);
+					}
+					goto b2b_route;
+					break;
+				default:
+					LM_ERR("Unexpected return code [%d] from b2b_send_indlg_auth_req()\n", ret);
+					goto error;
+				}
+			}
 			B2BE_LOCK_RELEASE(htable, hash_index);
 			if(msg == FAKED_REPLY)
 				goto dummy_reply;
