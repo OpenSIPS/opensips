@@ -1249,10 +1249,10 @@ Chapter 3. Contributors
    6. Maksym Sobolyev (@sobomax) 5 3 26 26
    7. Liviu Chircu (@liviuchircu) 5 3 4 3
    8. truong.hua 4 2 8 7
-   9. Aron Podrigal (@ar45) 3 1 1 1
-   10. Shanee Vanstone 3 1 1 1
+   9. andingv 3 1 9 7
+   10. Aron Podrigal (@ar45) 3 1 1 1
 
-   All remaining contributors: Zero King (@l2dy).
+   All remaining contributors: Shanee Vanstone, Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1274,18 +1274,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Sep 2025
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Jan 2025
-   3.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
-   4.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
-   5.  Shanee Vanstone                     Apr 2023 - Apr 2023
-   6.  truong.hua                          Jan 2023 - Feb 2023
-   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   8.  Nick Altmann (@nikbyte)             Feb 2021 - Oct 2022
-   9.  Carsten Bock                        Mar 2022 - Apr 2022
-   10. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
+   1.  andingv                             Nov 2025 - Nov 2025
+   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Sep 2025
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Jan 2025
+   4.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
+   5.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
+   6.  Shanee Vanstone                     Apr 2023 - Apr 2023
+   7.  truong.hua                          Jan 2023 - Feb 2023
+   8.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   9.  Nick Altmann (@nikbyte)             Feb 2021 - Oct 2022
+   10. Carsten Bock                        Mar 2022 - Apr 2022
 
-   All remaining contributors: Zero King (@l2dy).
+   All remaining contributors: Aron Podrigal (@ar45), Zero King
+   (@l2dy).
 
    (1) including any documentation-related commits, excluding
    merge commits
