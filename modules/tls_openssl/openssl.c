@@ -135,12 +135,44 @@ static int mod_load(void)
 	 */
 
 	LM_INFO("openssl version: %s\n", SSLeay_version(SSLEAY_VERSION));
+
+#if OPENSSL_VERSION_NUMBER < 0x30000000L
+	/* OpenSSL 1.x - use custom shared memory allocator */
 	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
 		LM_ERR("unable to set the memory allocation functions\n");
 		LM_ERR("NOTE: please make sure you are loading tls_mgm module at the"
 			"very beginning of your script, before any other module!\n");
 		return -1;
 	}
+	LM_INFO("Using custom shared memory allocator for OpenSSL\n");
+#else
+	/*
+	 * OpenSSL 3.x - use package memory allocator with double-free protection
+	 *
+	 * CRITICAL FIX for fork() safety:
+	 * OpenSSL 3.x uses thread-local storage (TLS) extensively. When combined with
+	 * fork(), this causes double-free issues:
+	 * - Thread-local storage is duplicated across fork()
+	 * - Multiple cleanup paths try to free the same buffer
+	 * - This triggers pkg_malloc's double-free detection
+	 *
+	 * Solution: Use pkg_malloc wrappers with tracking headers that:
+	 * 1. Detect and prevent double-free (mark freed blocks)
+	 * 2. Validate pointers with magic numbers
+	 * 3. Keep all pkg_malloc benefits (tracking, stats, debugging)
+	 *
+	 * Benefits:
+	 * - OpenSSL memory tracked in pkg_stats
+	 * - Memory leaks detectable
+	 * - Resource limits enforced
+	 * - Minimal overhead (12 bytes per allocation)
+	 */
+	if (!CRYPTO_set_mem_functions(os_pkg_malloc, os_pkg_realloc, os_pkg_free)) {
+		LM_ERR("unable to set pkg_malloc allocator for OpenSSL 3.x\n");
+		return -1;
+	}
+	LM_INFO("OpenSSL 3.x using pkg_malloc with double-free protection\n");
+#endif
 
 	return 0;
 }
