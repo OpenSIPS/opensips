@@ -419,8 +419,7 @@ static int init_transfer(CURL *handle, char *url, unsigned long timeout_s)
 	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT,
 			timeout_s && timeout_s < curl_timeout ? timeout_s : curl_timeout);
 
-	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1L);
-	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 0L);
 	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 0L);
 
 	if (ssl_capath)
