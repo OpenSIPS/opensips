@@ -2376,7 +2376,7 @@ static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int _, str *r
 	if (len < 0)
 		goto error;
 	ret->s = buf;
-	ret->len = len/2;
+	ret->len = len;
 	return 0;
 error:
 	pkg_free(buf);
