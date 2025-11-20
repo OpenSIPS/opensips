@@ -503,11 +503,13 @@ static int add_date_hf(struct sip_msg *msg, time_t *date_ts)
 	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 	if (!anchor) {
 		LM_ERR("Failed to get anchor lump\n");
+		pkg_free(buf);
 		return -1;
 	}
 
 	if (!insert_new_lump_before(anchor, buf, DATE_HDR_L+len+CRLF_LEN, 0)) {
 		LM_ERR("Failed to insert lump\n");
+		pkg_free(buf);
 		return -1;
 	}
 
@@ -1299,7 +1301,7 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 			goto error;
 		}
 	} else if (out_p->type == AUTH_APPEND_TO_RPL) {
-		if (!add_lump_rpl(msg, hdr_buf->s, hdr_buf->len, LUMP_RPL_HDR)) {
+		if (!add_lump_rpl(msg, hdr_buf->s, hdr_buf->len, LUMP_RPL_HDR|LUMP_RPL_NODUP)) {
 			LM_ERR("unable to add reply lump\n");
 			rc = -1;
 			goto error;
