@@ -231,7 +231,7 @@ int dialog_fix_remote_target(str *body, str *fixed_body)
 	xmlNodePtr remote_node;
 	xmlNodePtr identity_node;
 	xmlNodePtr node;
-	xmlErrorPtr	xml_error;
+	const xmlError* xml_error;
 	unsigned char* attr;
 
 	if (!fixed_body)
