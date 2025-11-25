@@ -322,9 +322,11 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *instance)
 		LM_ERR("cannot register tm callbacks\n");
 		srec_hlog(ss, SREC_UNREF, "error starting recording");
 		SIPREC_UNREF_UNSAFE(ss);
-		goto session_cleanup;
+		srec_dlg.dlg_unref(dlg, 1);
 	}
-	ret = 1;
+	else {
+		ret = 1;
+	}
 	goto release;
 
 session_cleanup:
