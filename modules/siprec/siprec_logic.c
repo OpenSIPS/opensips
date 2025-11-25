@@ -158,7 +158,6 @@ static int srec_stop_recording(struct src_sess *ss)
 				req.b2b_key->len, req.b2b_key->s);
 	srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
 	raise_siprec_stop_event(ss);
-	src_clean_session(ss);
 	return 0;
 }
 
