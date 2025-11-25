@@ -202,7 +202,7 @@ ifeq (,$(FASTER))
 			if [ -d "$$r" ]; then \
 				echo  "" ; \
 				echo  "" ; \
-				$(MAKE) -j -C $$r ; \
+				$(MAKE) -C $$r ; \
 			fi ; \
 		fi ; \
 	done
@@ -222,7 +222,7 @@ gen_misclibs:
 	for r in $(all_misclibs); do \
 		echo  "" ; \
 		echo  "" ; \
-		$(MAKE) -j -C $$r ; \
+		$(MAKE) -C $$r ; \
 	done
 
 .PHONY: tool-docbook2pdf
