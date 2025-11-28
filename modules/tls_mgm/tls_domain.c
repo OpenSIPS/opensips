@@ -133,12 +133,14 @@ void tls_free_domain(struct tls_domain *dom)
 		while (m_it) {
 			m_tmp = m_it;
 			m_it = m_it->next;
+			shm_free(m_tmp->s.s);
 			shm_free(m_tmp);
 		}
 		m_it = dom->match_addresses;
 		while (m_it) {
 			m_tmp = m_it;
 			m_it = m_it->next;
+			shm_free(m_tmp->s.s);
 			shm_free(m_tmp);
 		}
 
