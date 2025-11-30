@@ -1084,11 +1084,11 @@ Chapter 3. Contributors
    Maksym Sobolyev (@sobomax), Vlad Paiu (@vladpaiu), Juha
    Heinanen (@juha-h), Edson Gellert Schubert, Alexandra Titoc,
    Stanislaw Pitucha, Damien Sandras (@dsandras), Kobi Eshun
-   (@ekobi), Carsten Bock, Norman Brandinger (@NormB), Dusan
-   Klinec (@ph4r05), Angel Marin, Klaus Darilion, Carlos Oliva,
-   Sergio Gutierrez, Kennard White, Elena-Ramona Modroiu, Jasper
-   Hafkenscheid, Vasil Kolev, Benny Prijono, James Criscuolo,
-   Peter Lemenkov (@lemenkov), Vallimamod Abdullah, UnixDev, Denis
+   (@ekobi), Carsten Bock, Peter Lemenkov (@lemenkov), Norman
+   Brandinger (@NormB), Dusan Klinec (@ph4r05), Angel Marin, Klaus
+   Darilion, Carlos Oliva, Sergio Gutierrez, Kennard White,
+   Elena-Ramona Modroiu, Jasper Hafkenscheid, Vasil Kolev, Benny
+   Prijono, James Criscuolo, Vallimamod Abdullah, UnixDev, Denis
    Bilenko, Julián Moreno Patiño, John Riordan, Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1112,18 +1112,18 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Sep 2025
-   2.  Norman Brandinger (@NormB)          May 2024 - Nov 2024
-   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   4.  Carsten Bock                        Mar 2024 - Mar 2024
-   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   7.  Jasper Hafkenscheid                 Jul 2022 - Jul 2022
-   8.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
-   9.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   10. Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
+   3.  Norman Brandinger (@NormB)          May 2024 - Nov 2024
+   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   5.  Carsten Bock                        Mar 2024 - Mar 2024
+   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   8.  Jasper Hafkenscheid                 Jul 2022 - Jul 2022
+   9.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
+   10. Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Dan Pascu
-   (@danpascu), Peter Lemenkov (@lemenkov), James Criscuolo,
+   All remaining contributors: Liviu Chircu (@liviuchircu), Ovidiu
+   Sas (@ovidiusas), Dan Pascu (@danpascu), James Criscuolo,
    Julián Moreno Patiño, Dusan Klinec (@ph4r05), Carlos Oliva,
    Damien Sandras (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra
    Corretgé (@saghul), Anca Vamanu, Vallimamod Abdullah, Kennard
