@@ -204,11 +204,11 @@ Chapter 3. Contributors
    7. Henning Westerholt (@henningw) 6 4 45 50
    8. Maksym Sobolyev (@sobomax) 4 2 4 4
    9. Dan Pascu (@danpascu) 4 2 3 3
-   10. Ovidiu Sas (@ovidiusas) 3 2 6 0
+   10. Peter Lemenkov (@lemenkov) 4 2 3 3
 
-   All remaining contributors: Kennard White, Vlad Paiu
-   (@vladpaiu), Walter Doekes (@wdoekes), Konstantin Bokarius,
-   Alexandra Titoc, Peter Lemenkov (@lemenkov), UnixDev, Zero King
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Kennard
+   White, Vlad Paiu (@vladpaiu), Walter Doekes (@wdoekes),
+   Konstantin Bokarius, Alexandra Titoc, UnixDev, Zero King
    (@l2dy), Edson Gellert Schubert, Denis Bilenko, Vlad Patrascu
    (@rvlad-patrascu).
 
@@ -232,14 +232,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2020
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Dan Pascu (@danpascu)               Oct 2007 - Nov 2018
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Dan Pascu (@danpascu)               Oct 2007 - Nov 2018
    9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    10. Saúl Ibarra Corretgé (@saghul)      May 2012 - Mar 2013
 

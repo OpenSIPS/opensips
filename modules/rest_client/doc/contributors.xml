@@ -84,24 +84,24 @@
 	</row>
 	<row>
 		<entry>9. </entry>
+		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">3</entry>
+		<entry align="center">9</entry>
+		<entry align="center">9</entry>
+	</row>
+	<row>
+		<entry>10. </entry>
 		<entry>Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>)</entry>
 		<entry align="center">5</entry>
 		<entry align="center">2</entry>
 		<entry align="center">91</entry>
 		<entry align="center">77</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>)</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">15</entry>
-		<entry align="center">7</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andrey Vorobiev (<ulink url="https://github.com/andrey-vorobiev">@andrey-vorobiev</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andrey Vorobiev (<ulink url="https://github.com/andrey-vorobiev">@andrey-vorobiev</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
