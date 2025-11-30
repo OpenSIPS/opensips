@@ -44,7 +44,6 @@
 #include "../../ut.h"
 
 #include "tls_params.h"
-#include "api.h"
 
 
 int tlsp_add_srv_domain(modparam_t type, void *val)
@@ -54,22 +53,22 @@ int tlsp_add_srv_domain(modparam_t type, void *val)
 	name.s = (char *)val;
 	name.len = strlen(name.s);
 
-	if (tls_server_domains == NULL) {
-		tls_server_domains = shm_malloc(sizeof *tls_server_domains);
-		if (!tls_server_domains) {
+	if (script_srv_domains_template == NULL) {
+		script_srv_domains_template = shm_malloc(sizeof *script_srv_domains_template);
+		if (!script_srv_domains_template) {
 			LM_ERR("No more shm mem\n");
 			return -1;
 		}
-		*tls_server_domains = NULL;
+		*script_srv_domains_template = NULL;
 	}
 
-	if (tls_find_domain_by_name(&name, tls_server_domains)) {
+	if (tls_find_domain_by_name(&name, script_srv_domains_template)) {
 		LM_ERR("Domain name: [%.*s] already defined\n", name.len, name.s);
 		return -1;
 	}
 
 	/* add domain */
-	if (tls_new_domain(&name, DOM_FLAG_SRV, tls_server_domains) < 0) {
+	if (tls_new_domain(&name, DOM_FLAG_SRV, script_srv_domains_template) < 0) {
 		LM_ERR("failed to add new server domain [%.*s]\n", name.len, name.s);
 		return -1;
 	}
@@ -85,22 +84,22 @@ int tlsp_add_cli_domain(modparam_t type, void *val)
 	name.s = (char *)val;
 	name.len = strlen(name.s);
 
-	if (tls_client_domains == NULL) {
-		tls_client_domains = shm_malloc(sizeof *tls_client_domains);
-		if (!tls_client_domains) {
+	if (script_cli_domains_template == NULL) {
+		script_cli_domains_template = shm_malloc(sizeof *script_cli_domains_template);
+		if (!script_cli_domains_template) {
 			LM_ERR("No more shm mem\n");
 			return -1;
 		}
-		*tls_client_domains = NULL;
+		*script_cli_domains_template = NULL;
 	}
 
-	if (tls_find_domain_by_name(&name, tls_client_domains)) {
+	if (tls_find_domain_by_name(&name, script_cli_domains_template)) {
 		LM_ERR("Domain name: [%.*s] already defined\n", name.len, name.s);
 		return -1;
 	}
 
 	/* add domain */
-	if (tls_new_domain(&name, DOM_FLAG_CLI, tls_client_domains) < 0) {
+	if (tls_new_domain(&name, DOM_FLAG_CLI, script_cli_domains_template) < 0) {
 		LM_ERR("failed to add new client domain [%.*s]\n", name.len, name.s);
 		return -1;
 	}
@@ -152,8 +151,8 @@ static int split_param_val(char *in, str *name, str *val)
 #define set_domain_attr( _name, _field, _val) \
 	do { \
 		struct tls_domain *_d; \
-		_d = tls_find_domain_by_name(&(_name), tls_server_domains); \
-		if (!_d && (_d = tls_find_domain_by_name(&(_name), tls_client_domains)) == NULL) { \
+		_d = tls_find_domain_by_name(&(_name), script_srv_domains_template); \
+		if (!_d && (_d = tls_find_domain_by_name(&(_name), script_cli_domains_template)) == NULL) { \
 			LM_ERR("TLS domain [%.*s] not defined in '%s'\n", \
 				(_name).len, (_name).s, (char*)in); \
 			return -1; \
@@ -171,8 +170,8 @@ int tlsp_set_match_addr(modparam_t type, void *in)
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	d = tls_find_domain_by_name(&name, tls_server_domains);
-	if (!d && (d = tls_find_domain_by_name(&name, tls_client_domains)) == NULL) {
+	d = tls_find_domain_by_name(&name, script_srv_domains_template);
+	if (!d && (d = tls_find_domain_by_name(&name, script_cli_domains_template)) == NULL) {
 		LM_ERR("TLS domain [%.*s] not defined\n", name.len, name.s);
 		return -1;
 	}
@@ -195,8 +194,8 @@ int tlsp_set_match_dom(modparam_t type, void *in)
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	d = tls_find_domain_by_name(&name, tls_server_domains);
-	if (!d && (d = tls_find_domain_by_name(&name, tls_client_domains)) == NULL) {
+	d = tls_find_domain_by_name(&name, script_srv_domains_template);
+	if (!d && (d = tls_find_domain_by_name(&name, script_cli_domains_template)) == NULL) {
 		LM_ERR("TLS domain [%.*s] not defined\n", name.len, name.s);
 		return -1;
 	}
