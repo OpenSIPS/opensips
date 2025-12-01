@@ -73,6 +73,39 @@
 #define IPSEC_ALGO_MAX_KEY_SIZE IPSEC_ALGO_DES3_KEY_SIZE
 
 int ipsec_disable_deprecated_algorithms = 0;
+/* NAT-T support flag - defined in proto_ipsec.c, declared in ipsec_algo.h */
+
+/*
+ * Validate IPSec mode from Security-Client header
+ * According to 3GPP TS 33.203 Annex H/M:
+ * - "trans": Transport mode (always accepted)
+ * - "UDP-enc-tun": UDP-encapsulated tunnel mode (only if NAT-T enabled)
+ */
+static int ipsec_validate_mode(str *mod_str)
+{
+	static str trans_str = str_init("trans");
+	static str udp_enc_tun_str = str_init("UDP-enc-tun");
+
+	if (!mod_str || !mod_str->len) {
+		/* No mode specified - default to transport, acceptable */
+		return 0;
+	}
+
+	if (str_casematch(mod_str, &trans_str)) {
+		return 0;  /* Transport mode always accepted */
+	}
+
+	if (str_casematch(mod_str, &udp_enc_tun_str)) {
+		if (ipsec_nat_traversal_enabled) {
+			return 0;  /* NAT-T mode accepted when enabled */
+		}
+		LM_DBG("NAT-T mode (UDP-enc-tun) not accepted - nat_traversal disabled\n");
+		return -1;
+	}
+
+	LM_DBG("unknown IPSec mode: %.*s\n", mod_str->len, mod_str->s);
+	return -1;
+}
 
 static struct ipsec_algorithm_desc ipsec_auth_algorithms[] = {
 	{
@@ -286,7 +319,12 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg, struct ipsec_al
 			for (sa = sas; sa; sa = sa->next) {
 				if (sa->invalid || sa->mechanism != SEC_AGREE_MECHANISM_IPSEC_3GPP)
 					continue;
-				/* TODO: should we check mode for now? */
+				/* Validate mode (trans or UDP-enc-tun per 3GPP TS 33.203) */
+				if (ipsec_validate_mode(&sa->ts3gpp.mod_str) < 0) {
+					LM_DBG("unsupported mode %.*s in Security-Client\n",
+							sa->ts3gpp.mod_str.len, sa->ts3gpp.mod_str.s);
+					continue;
+				}
 				if (!sa->ts3gpp.alg_str.len)
 					continue;
 				alg_desc = ipsec_parse_algorithm(&sa->ts3gpp.alg_str, IPSEC_ALGO_TYPE_AUTH);
@@ -334,7 +372,12 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg, struct ipsec_al
 				for (sa = sas; sa; sa = sa->next) {
 					if (sa->invalid || sa->mechanism != SEC_AGREE_MECHANISM_IPSEC_3GPP)
 						continue;
-					/* TODO: should we check mode for now? */
+					/* Validate mode (trans or UDP-enc-tun per 3GPP TS 33.203) */
+					if (ipsec_validate_mode(&sa->ts3gpp.mod_str) < 0) {
+						LM_DBG("unsupported mode %.*s in Security-Client\n",
+								sa->ts3gpp.mod_str.len, sa->ts3gpp.mod_str.s);
+						continue;
+					}
 					if (!sa->ts3gpp.alg_str.len)
 						continue;
 					auth = ipsec_parse_algorithm(&sa->ts3gpp.alg_str, IPSEC_ALGO_TYPE_AUTH);

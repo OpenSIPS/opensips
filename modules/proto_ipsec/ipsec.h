@@ -42,6 +42,23 @@ enum ipsec_state {
 	IPSEC_STATE_INVALID,
 };
 
+/*
+ * IPSec mode according to 3GPP TS 33.203 Annex H/M:
+ * - IPSEC_MODE_TRANSPORT: mod=trans (standard transport mode)
+ * - IPSEC_MODE_UDP_ENCAP_TUNNEL: mod=UDP-enc-tun (NAT-T mode with UDP encapsulation)
+ */
+enum ipsec_mode {
+	IPSEC_MODE_TRANSPORT = 0,
+	IPSEC_MODE_UDP_ENCAP_TUNNEL,
+};
+
+/* NAT-T encapsulation port (RFC 3948) */
+#define IPSEC_NAT_T_PORT 4500
+
+#define VALID_IPSEC_STATE(_s) \
+	((_s) == IPSEC_STATE_TMP || \
+	 (_s) == IPSEC_STATE_OK)
+
 #define ipsec_socket mnl_socket
 
 #include "../../str.h"
@@ -63,6 +80,7 @@ struct ipsec_ctx {
 	struct ipsec_algorithm_desc *alg, *ealg;
 	struct ipsec_endpoint me;
 	struct ipsec_endpoint ue;
+	enum ipsec_mode mode;  /* transport or UDP-enc-tun (NAT-T) */
 
 	/* dynamic values - should be locked */
 	gen_lock_t lock;
@@ -116,7 +134,7 @@ void ipsec_sa_rm_all(struct ipsec_socket *sock, struct ipsec_ctx *ctx);
 /* ctx */
 struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik,
-		unsigned int spi_pc, unsigned int spi_ps);
+		unsigned int spi_pc, unsigned int spi_ps, enum ipsec_mode mode);
 struct ipsec_ctx *ipsec_ctx_find(struct ipsec_user *user, unsigned short port);
 void ipsec_ctx_push(struct ipsec_ctx *ctx);
 struct ipsec_ctx *ipsec_ctx_get(void);
@@ -126,7 +144,9 @@ void ipsec_ctx_release_tmp_user(struct ipsec_user *user);
 void ipsec_ctx_release_user(struct ipsec_ctx *ctx);
 void ipsec_ctx_release(struct ipsec_ctx *ctx);
 int ipsec_ctx_release_unsafe(struct ipsec_ctx *ctx);
+void ipsec_ctx_add_tmp(struct ipsec_ctx *ctx);
 void ipsec_ctx_remove_tmp(struct ipsec_ctx *ctx);
+void ipsec_ctx_remove_free_tmp(struct ipsec_ctx *ctx, int _free);
 void ipsec_ctx_extend_tmp(struct ipsec_ctx *ctx);
 
 #endif /* _IPSEC_H_ */

@@ -58,6 +58,23 @@ static usrloc_api_t ul_ipsec;
 static int ipsec_ctx_tm_idx = -1;
 
 static int ipsec_port = IPSEC_DEFAULT_PORT;
+
+/*
+ * NAT Traversal (NAT-T) support according to:
+ * - 3GPP TS 33.203 Annex M: IPsec NAT traversal
+ * - 3GPP TS 24.229: IP multimedia call control protocol
+ *
+ * When enabled (nat_traversal=1), the module will:
+ * - Accept and use mod=UDP-enc-tun in Security-Client headers
+ * - Use UDP encapsulation for ESP packets (RFC 3948)
+ * - Use tunnel mode instead of transport mode
+ *
+ * Default: 0 (disabled) - only mod=trans is accepted
+ */
+static int ipsec_nat_traversal = 0;
+
+/* Exported for ipsec_algo.c to check NAT-T support in Security-Client parsing */
+int ipsec_nat_traversal_enabled = 0;
 static int mod_init(void);
 static void mod_destroy(void);
 static int proto_ipsec_init(struct proto_info *pi);
@@ -75,6 +92,44 @@ static int ipsec_aka_auth_match_f(const struct authenticate_body *auth,
     const struct match_auth_hf_desc *md);
 static struct match_auth_hf_desc ipsec_aka_auth_match =
 	MATCH_AUTH_HF(ipsec_aka_auth_match_f, NULL);
+
+/*
+ * Parse IPSec mode from Security-Client/Server "mod" parameter
+ * According to 3GPP TS 33.203 Annex H/M:
+ * - "trans": Transport mode (standard)
+ * - "UDP-enc-tun": UDP-encapsulated tunnel mode (NAT-T)
+ *
+ * Returns:
+ *   IPSEC_MODE_TRANSPORT for mod=trans
+ *   IPSEC_MODE_UDP_ENCAP_TUNNEL for mod=UDP-enc-tun (if nat_traversal enabled)
+ *   -1 on error (unsupported mode or NAT-T not enabled)
+ */
+static int ipsec_parse_mode(str *mod_str)
+{
+	static str trans_str = str_init("trans");
+	static str udp_enc_tun_str = str_init("UDP-enc-tun");
+
+	if (!mod_str || !mod_str->len) {
+		/* Default to transport mode if not specified */
+		return IPSEC_MODE_TRANSPORT;
+	}
+
+	if (str_casematch(mod_str, &trans_str)) {
+		return IPSEC_MODE_TRANSPORT;
+	}
+
+	if (str_casematch(mod_str, &udp_enc_tun_str)) {
+		if (!ipsec_nat_traversal) {
+			LM_WARN("NAT-T mode (UDP-enc-tun) requested but nat_traversal is disabled\n");
+			return -1;
+		}
+		LM_DBG("Using NAT-T mode (UDP-enc-tun) as per 3GPP TS 33.203 Annex M\n");
+		return IPSEC_MODE_UDP_ENCAP_TUNNEL;
+	}
+
+	LM_ERR("unsupported IPSec mode: %.*s\n", mod_str->len, mod_str->s);
+	return -1;
+}
 
 static int w_ipsec_create(struct sip_msg *msg, int *port_ps, int *port_pc,
 		struct ipsec_allowed_algo *algos);
@@ -104,6 +159,12 @@ static const param_export_t params[] = {
 	{ "default_server_port",			INT_PARAM, &ipsec_default_server_port },
 	{ "allowed_algorithms",				STR_PARAM, &ipsec_allowed_algorithms.s },
 	{ "disable_deprecated_algorithms",	INT_PARAM, &ipsec_disable_deprecated_algorithms },
+	/*
+	 * NAT Traversal (NAT-T) support - 3GPP TS 33.203 Annex M, TS 24.229
+	 * 0 = disabled (default): only mod=trans accepted
+	 * 1 = enabled: mod=UDP-enc-tun accepted, UDP encapsulation used
+	 */
+	{ "nat_traversal",					INT_PARAM, &ipsec_nat_traversal },
 	{0, 0, 0}
 };
 
@@ -232,6 +293,12 @@ static void ipsec_handle_register_req(struct cell* t, int type, struct tmcb_para
 static int mod_init(void)
 {
 	LM_INFO("initializing IPSec protocols\n");
+
+	/* Export NAT-T setting for ipsec_algo.c */
+	ipsec_nat_traversal_enabled = ipsec_nat_traversal;
+	if (ipsec_nat_traversal)
+		LM_INFO("NAT Traversal (NAT-T) support enabled per 3GPP TS 33.203 Annex M\n");
+
 	if (ipsec_tmp_timeout <= 0) {
 		LM_ERR("invalid temporary timeout value %d - positive value required\n",
 				ipsec_tmp_timeout);
@@ -537,7 +604,15 @@ static int ipsec_add_security_server(struct sip_msg *msg, struct ipsec_ctx *ctx)
 	struct lump* anchor;
 	char *h, *p;
 	str tmp;
-	str hdr1 = str_init("Supported: sec-agree\r\nSecurity-Server: ipsec-3gpp;q=0.1;prot=esp;mod=trans;spi-s=");
+	/*
+	 * Security-Server header according to RFC 3329 and 3GPP TS 33.203
+	 * mod parameter values:
+	 * - "trans": Transport mode (standard IPSec)
+	 * - "UDP-enc-tun": UDP-encapsulated tunnel mode (NAT-T per Annex M)
+	 */
+	str hdr1_trans = str_init("Supported: sec-agree\r\nSecurity-Server: ipsec-3gpp;q=0.1;prot=esp;mod=trans;spi-s=");
+	str hdr1_natt = str_init("Supported: sec-agree\r\nSecurity-Server: ipsec-3gpp;q=0.1;prot=esp;mod=UDP-enc-tun;spi-s=");
+	str *hdr1;
 	str hdr2 = str_init(";spi-c=");
 	str hdr3 = str_init(";port-s=");
 	str hdr4 = str_init(";port-c=");
@@ -546,10 +621,18 @@ static int ipsec_add_security_server(struct sip_msg *msg, struct ipsec_ctx *ctx)
 	str hdr7 = str_init("\r\n");
 	int alg_len, ealg_len;
 
+	/* Select header based on NAT-T mode */
+	if (ctx->mode == IPSEC_MODE_UDP_ENCAP_TUNNEL) {
+		hdr1 = &hdr1_natt;
+		LM_DBG("Adding Security-Server with NAT-T mode (UDP-enc-tun)\n");
+	} else {
+		hdr1 = &hdr1_trans;
+	}
+
 	alg_len = strlen(ctx->alg->name);
 	ealg_len = strlen(ctx->ealg->name);
 
-	h = pkg_malloc(hdr1.len + 5 /* max port */ + hdr2.len + 5 +
+	h = pkg_malloc(hdr1->len + 5 /* max port */ + hdr2.len + 5 +
 			hdr3.len + INT2STR_MAX_LEN /* spi */ + hdr4.len + INT2STR_MAX_LEN +
 			hdr5.len + alg_len + hdr6.len + strlen(ctx->ealg->name) + ealg_len);
 	if (!h) {
@@ -557,8 +640,8 @@ static int ipsec_add_security_server(struct sip_msg *msg, struct ipsec_ctx *ctx)
 		return -1;
 	}
 	p = h;
-	memcpy(p, hdr1.s, hdr1.len);
-	p += hdr1.len;
+	memcpy(p, hdr1->s, hdr1->len);
+	p += hdr1->len;
 	tmp.s = int2str(ctx->me.spi_s, &tmp.len);
 	memcpy(p, tmp.s, tmp.len);
 	p += tmp.len;
@@ -784,11 +867,22 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc,
 		goto release_user;
 	}
 
-	ret = -5;
-	ctx = ipsec_ctx_new(sa, &req->rcv.src_ip, ss, sc, &auth->ck, &auth->ik, 0, 0);
-	if (!ctx) {
-		LM_ERR("could not allocate new IPSec ctx\n");
-		goto release_user;
+	/* Parse IPSec mode from Security-Client (3GPP TS 33.203 Annex M) */
+	{
+		int mode = ipsec_parse_mode(&sa->ts3gpp.mod_str);
+		if (mode < 0) {
+			LM_ERR("unsupported or disabled IPSec mode in Security-Client\n");
+			ret = -2;
+			goto release_user;
+		}
+
+		ret = -5;
+		ctx = ipsec_ctx_new(sa, &req->rcv.src_ip, ss, sc, &auth->ck, &auth->ik, 0, 0,
+				(enum ipsec_mode)mode);
+		if (!ctx) {
+			LM_ERR("could not allocate new IPSec ctx\n");
+			goto release_user;
+		}
 	}
 	ipsec_ctx_push(ctx);
 
@@ -845,6 +939,7 @@ str pv_ipsec_ctx_type[] = {
 	str_init("port-s"),  /* 6 */
 	str_init("ik"),      /* 7 */
 	str_init("ck"),      /* 8 */
+	str_init("mode"),    /* 9 - NAT-T mode: "trans" or "UDP-enc-tun" */
 };
 
 static int pv_parse_ipsec_ctx_flag(str *name)
@@ -945,6 +1040,15 @@ static int pv_get_ipsec_ctx(struct sip_msg *msg, pv_param_t *param,
 		break;
 	case 8: /* ck */
 		res->rs = ctx->ck;
+		break;
+	case 9: /* mode */
+		if (ctx->mode == IPSEC_MODE_UDP_ENCAP_TUNNEL) {
+			res->rs.s = "UDP-enc-tun";
+			res->rs.len = 11;
+		} else {
+			res->rs.s = "trans";
+			res->rs.len = 5;
+		}
 		break;
 	default:
 		LM_BUG("invalid name %d\n", name);
@@ -1208,6 +1312,7 @@ static str ipsec_usrloc_spi_us = str_init("ipsec.spi_us");
 static str ipsec_usrloc_port_pc = str_init("ipsec.port_pc");
 static str ipsec_usrloc_port_uc = str_init("ipsec.port_uc");
 static str ipsec_usrloc_port_us = str_init("ipsec.port_us");
+static str ipsec_usrloc_mode = str_init("ipsec.mode");  /* NAT-T mode */
 
 #define UL_GET_S_RET(_c, _s, _d, _e) \
 	({ \
@@ -1279,11 +1384,15 @@ static void ipsec_usrloc_restore(ucontact_t *contact)
 {
 	str ck, ik;
 	int spi_pc, spi_ps, port_pc;
+	int stored_mode;
+	enum ipsec_mode mode;
 	sec_agree_body_t sa;
 	struct socket_info *sc, *ss;
 	struct ipsec_user *user;
 	struct ipsec_socket *sock;
 	struct ipsec_ctx *ctx;
+	int_str_t *mode_val;
+
 	LM_DBG("restoring IPSec context for %.*s (%.*s)\n",
 			contact->aor->len, contact->aor->s,
 			contact->c.len, contact->c.s);
@@ -1298,7 +1407,24 @@ static void ipsec_usrloc_restore(ucontact_t *contact)
 	ik = UL_GET_S(contact, ipsec_usrloc_ik, "IK");
 	sa.ts3gpp.alg_str = UL_GET_S(contact, ipsec_usrloc_alg, "ALG");
 	sa.ts3gpp.prot_str = str_init("esp");
-	sa.ts3gpp.mod_str = str_init("trans");
+
+	/* Restore NAT-T mode if stored, default to transport mode */
+	mode_val = ul_ipsec.get_ucontact_key(contact, &ipsec_usrloc_mode);
+	if (mode_val && !mode_val->is_str) {
+		stored_mode = mode_val->i;
+		if (stored_mode == IPSEC_MODE_UDP_ENCAP_TUNNEL && ipsec_nat_traversal) {
+			mode = IPSEC_MODE_UDP_ENCAP_TUNNEL;
+			sa.ts3gpp.mod_str = str_init("UDP-enc-tun");
+			LM_DBG("restoring NAT-T mode (UDP-enc-tun)\n");
+		} else {
+			mode = IPSEC_MODE_TRANSPORT;
+			sa.ts3gpp.mod_str = str_init("trans");
+		}
+	} else {
+		mode = IPSEC_MODE_TRANSPORT;
+		sa.ts3gpp.mod_str = str_init("trans");
+	}
+
 	sa.ts3gpp.ealg_str = UL_GET_S(contact, ipsec_usrloc_ealg, "EALG");
 	spi_pc = UL_GET_I(contact, ipsec_usrloc_spi_pc, "SPI-PC");
 	spi_ps = UL_GET_I(contact, ipsec_usrloc_spi_ps, "SPI-PS");
@@ -1322,7 +1448,7 @@ static void ipsec_usrloc_restore(ucontact_t *contact)
 		return;
 	}
 
-	ctx = ipsec_ctx_new(&sa, &user->ip, ss, sc, &ck, &ik, spi_pc, spi_ps);
+	ctx = ipsec_ctx_new(&sa, &user->ip, ss, sc, &ck, &ik, spi_pc, spi_ps, mode);
 	if (!ctx) {
 		LM_ERR("could not allocate new IPSec ctx\n");
 		goto release_user;
@@ -1390,6 +1516,8 @@ static void ipsec_usrloc_insert(ucontact_t *contact)
 	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_port_pc, INT_STR_I(ctx->me.port_c));
 	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_port_uc, INT_STR_I(ctx->ue.port_c));
 	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_port_us, INT_STR_I(ctx->ue.port_s));
+	/* Store NAT-T mode for restoration */
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_mode, INT_STR_I((int)ctx->mode));
 	
 	/* all good mark the SA as OK */
 	lock_get(&ctx->lock);

@@ -94,5 +94,6 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg, struct ipsec_al
 void ipsec_free_allowed_algorithms(struct ipsec_allowed_algo *algos);
 
 extern int ipsec_disable_deprecated_algorithms;
+extern int ipsec_nat_traversal_enabled;  /* NAT-T support enabled */
 
 #endif /* _IPSEC_ALGO_H_ */

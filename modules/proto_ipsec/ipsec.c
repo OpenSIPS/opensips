@@ -392,6 +392,21 @@ struct xfrm_algo_osips {
 static_assert(sizeof(struct xfrm_algo_osips) == sizeof(struct xfrm_algo)
 		+ IPSEC_ALGO_MAX_KEY_SIZE, "ERROR!  Unexpected 'xfrm_algo' size!");
 
+/*
+ * NAT-T (NAT Traversal) support according to:
+ * - 3GPP TS 33.203 Annex M: IPsec NAT traversal
+ * - 3GPP TS 24.229: IP multimedia call control protocol
+ * - RFC 3948: UDP Encapsulation of IPsec ESP Packets
+ *
+ * When NAT-T mode (mod=UDP-enc-tun) is used:
+ * - ESP packets are encapsulated in UDP (port 4500 typically)
+ * - Tunnel mode is used instead of transport mode
+ * - XFRMA_ENCAP attribute is added to the SA
+ */
+#ifndef UDP_ENCAP_ESPINUDP
+#define UDP_ENCAP_ESPINUDP 2  /* RFC 3948 */
+#endif
+
 int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 		enum ipsec_dir dir, int client)
 {
@@ -401,10 +416,12 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 	struct xfrm_userpolicy_info *policy_info;
 	struct xfrm_algo_osips ia, ie;
 	struct xfrm_user_tmpl tmpl;
+	struct xfrm_encap_tmpl encap;
 	unsigned short dst_port;
 	unsigned short src_port;
 	unsigned int spi;
 	struct ipsec_endpoint *src, *dst;
+	int xfrm_mode;
 
 	if (dir == IPSEC_POLICY_IN) {
 		src = &ctx->ue;
@@ -510,12 +527,40 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 	sa_info->reqid = htonl(spi);
 	sa_info->family = dst->ip.af;
 	sa_info->replay_window = 32;
-	sa_info->mode = XFRM_MODE_TRANSPORT;
+
+	/*
+	 * Set mode according to NAT-T configuration:
+	 * - Transport mode (mod=trans): Standard IPsec transport mode
+	 * - Tunnel mode (mod=UDP-enc-tun): NAT-T with UDP encapsulation
+	 *   as per 3GPP TS 33.203 Annex M
+	 */
+	if (ctx->mode == IPSEC_MODE_UDP_ENCAP_TUNNEL) {
+		xfrm_mode = XFRM_MODE_TUNNEL;
+		sa_info->flags |= XFRM_STATE_NOPMTUDISC;
+	} else {
+		xfrm_mode = XFRM_MODE_TRANSPORT;
+	}
+	sa_info->mode = xfrm_mode;
 
 	mnl_attr_put(nlh, XFRMA_ALG_AUTH,
 			sizeof(struct xfrm_algo) + ia.alg_key_len, &ia);
 	mnl_attr_put(nlh, XFRMA_ALG_CRYPT,
 			sizeof(struct xfrm_algo) + ie.alg_key_len, &ie);
+
+	/*
+	 * NAT-T UDP Encapsulation (3GPP TS 33.203 Annex M, RFC 3948)
+	 * When mod=UDP-enc-tun is negotiated, ESP packets are encapsulated
+	 * in UDP datagrams to traverse NAT devices.
+	 */
+	if (ctx->mode == IPSEC_MODE_UDP_ENCAP_TUNNEL) {
+		memset(&encap, 0, sizeof(encap));
+		encap.encap_type = UDP_ENCAP_ESPINUDP;
+		encap.encap_sport = htons(src_port);
+		encap.encap_dport = htons(dst_port);
+		/* OA (Original Address) - set to zero, kernel fills if needed */
+		mnl_attr_put(nlh, XFRMA_ENCAP, sizeof(encap), &encap);
+		LM_DBG("NAT-T encapsulation: sport=%hu dport=%hu\n", src_port, dst_port);
+	}
 
 	if (mnl_socket_sendto(sock, nlh, nlh->nlmsg_len) < 0) {
 		LM_ERR("communicating with kernel for new SA: %s\n", strerror(errno));
@@ -560,7 +605,7 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 	tmpl.family = dst->ip.af;
 	memcpy(&tmpl.saddr, &src->ip.u, src->ip.len);
 	tmpl.reqid = htonl(spi);
-	tmpl.mode = XFRM_MODE_TRANSPORT;
+	tmpl.mode = xfrm_mode;  /* Transport or Tunnel mode based on NAT-T */
 	tmpl.share = XFRM_SHARE_ANY;
 	tmpl.optional = 0;
 	tmpl.aalgos = 0xffffffff;
@@ -648,7 +693,7 @@ static void ipsec_ctx_free(struct ipsec_ctx *ctx)
 
 struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik,
-		unsigned int spi_pc, unsigned int spi_ps)
+		unsigned int spi_pc, unsigned int spi_ps, enum ipsec_mode mode)
 {
 	struct ipsec_spi *spi_s, *spi_c;
 	struct ipsec_ctx *ctx;
@@ -710,6 +755,7 @@ struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 	ctx->client = sc;
 	ctx->alg = alg;
 	ctx->ealg = ealg;
+	ctx->mode = mode;
 	/* own information - shortcut */
 	memcpy(&ctx->me.ip, &sc->address, sizeof(struct ip_addr));
 	ctx->me.spi_s = spi_s->spi;

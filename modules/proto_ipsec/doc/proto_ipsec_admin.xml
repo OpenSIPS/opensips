@@ -19,6 +19,14 @@
 		in TS 33.203 (3G Security: Access Security for IP-based Services).
 	</para>
 	<para>
+		The module also supports <emphasis role='bold'>IPSec NAT Traversal (NAT-T)</emphasis>
+		as specified in 3GPP TS 33.203 Annex M and TS 24.229. When NAT-T is enabled,
+		the module can accept and use the <emphasis>mod=UDP-enc-tun</emphasis> mode
+		in Security-Client headers, which encapsulates ESP packets in UDP datagrams
+		(as per RFC 3948) to traverse NAT devices. This feature is optional and can
+		be enabled via the <xref linkend="param_nat_traversal"/> parameter.
+	</para>
+	<para>
 		It allows creation of both UDP and TCP secure connections on the same
 		IP:port pair, defined as sockets. Essentially, when defining a socket
 		using the <emphasis>proto_ipsec</emphasis> protocol, two new
@@ -352,6 +360,58 @@ modparam("proto_ipsec", "disable_deprecated_algorithms", yes)
 		</example>
 	</section>
 
+	<section id="param_nat_traversal" xreflabel="nat_traversal">
+		<title><varname>nat_traversal</varname> (integer)</title>
+		<para>
+			Enables or disables IPSec NAT Traversal (NAT-T) support according to
+			3GPP TS 33.203 Annex M and TS 24.229.
+		</para>
+		<para>
+			When enabled (set to 1), the module will:
+			<itemizedlist>
+			<listitem>
+			<para>
+				Accept <emphasis>mod=UDP-enc-tun</emphasis> in Security-Client headers
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Use UDP encapsulation for ESP packets (RFC 3948) when NAT-T mode is negotiated
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Use tunnel mode instead of transport mode for IPSec SAs
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Include <emphasis>mod=UDP-enc-tun</emphasis> in Security-Server headers
+				when the UE requests NAT-T mode
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			When disabled (set to 0, default), only <emphasis>mod=trans</emphasis>
+			(standard transport mode) is accepted in Security-Client headers.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>nat_traversal</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Enable NAT Traversal support for UEs behind NAT
+modparam("proto_ipsec", "nat_traversal", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -454,8 +514,13 @@ onreply_route[ipsec] {
 					<listitem><para><emphasis>port-c</emphasis> - local port
 					chosen for communicating through the client channel.
 					</para></listitem>
-					<listitem><para><emphasis>port-c</emphasis> - local port
+					<listitem><para><emphasis>port-s</emphasis> - local port
 					chosen for communicating through the server channel.
+					</para></listitem>
+					<listitem><para><emphasis>mode</emphasis> - IPSec mode being used:
+					<emphasis>trans</emphasis> for transport mode or
+					<emphasis>UDP-enc-tun</emphasis> for NAT-T tunnel mode
+					(as per 3GPP TS 33.203 Annex M).
 					</para></listitem>
 				</itemizedlist>
 			</para>
@@ -463,7 +528,7 @@ onreply_route[ipsec] {
 		<title><function>$ipsec(field)</function> usage</title>
 		<programlisting format="linespecific">
 ...
-xlog("Using $ipsec(ip):$ipsec(port-c) and $ipsec(ip):$ipsec(port-s) socket\n");
+xlog("Using $ipsec(ip):$ipsec(port-c) and $ipsec(ip):$ipsec(port-s) socket, mode=$ipsec(mode)\n");
 ...
 </programlisting>
 		</example>
@@ -502,8 +567,13 @@ xlog("Using $ipsec(ip):$ipsec(port-c) and $ipsec(ip):$ipsec(port-s) socket\n");
 					<listitem><para><emphasis>port-c</emphasis> - remote port
 					chosen for communicating through the client channel.
 					</para></listitem>
-					<listitem><para><emphasis>port-c</emphasis> - remote port
+					<listitem><para><emphasis>port-s</emphasis> - remote port
 					chosen for communicating through the server channel.
+					</para></listitem>
+					<listitem><para><emphasis>mode</emphasis> - IPSec mode being used:
+					<emphasis>trans</emphasis> for transport mode or
+					<emphasis>UDP-enc-tun</emphasis> for NAT-T tunnel mode
+					(as per 3GPP TS 33.203 Annex M).
 					</para></listitem>
 				</itemizedlist>
 			</para>
@@ -511,7 +581,7 @@ xlog("Using $ipsec(ip):$ipsec(port-c) and $ipsec(ip):$ipsec(port-s) socket\n");
 		<title><function>$ipsec_ue(field)</function> usage</title>
 		<programlisting format="linespecific">
 ...
-xlog("Using $ipsec_ue(ip):$ipsec_ue(port-c) and $ipsec_ue(ip):$ipsec_ue(port-s) socket\n");
+xlog("UE $ipsec_ue(ip):$ipsec_ue(port-c) and $ipsec_ue(ip):$ipsec_ue(port-s), mode=$ipsec_ue(mode)\n");
 ...
 </programlisting>
 		</example>
