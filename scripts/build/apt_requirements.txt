@@ -1,7 +1,7 @@
 bison
 flex
 libconfuse-dev
-libcurl4-gnutls-dev
+libcurl4-openssl-dev
 libdb-dev
 libexpat1-dev
 libgeoip-dev
