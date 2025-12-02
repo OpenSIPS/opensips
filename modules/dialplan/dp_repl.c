@@ -440,21 +440,21 @@ int test_match(str string, pcre2_code * exp, int * out, int out_max)
 	}
 
 	ovector = pcre2_get_ovector_pointer(match_data);
+	if (2 * result_count >= out_max)
+		result_count = out_max / 2;
+
+	// ovector is freed by pcre2_match_data_free, copy offsets to out[]
+	for (i = 0; i < result_count * 2; i++)
+		out[i] = ovector[i];
+	pcre2_match_data_free(match_data);
+
 	for (i = 0; i < result_count; i++)
 	{
-		// avoid buffer overflow
-		if (i >= out_max)
-			break;
-
-		// ovector is freed by pcre2_match_data_free, copy offsets to out[]
-		out[i] = ovector[i];
-
 		substring_start = string.s + out[2 * i];
 		substring_length = out[2 * i + 1] - out[2 * i];
 		LM_DBG("test_match:[%d] %.*s\n",i, substring_length, substring_start);
 	}
 
-	pcre2_match_data_free(match_data);
 	return result_count;
 }
 
