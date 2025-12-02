@@ -2,7 +2,7 @@
 # Script for checking prerequisites for OpenSIPS-xmlrpc
 
 BASE="OpenSIPS-base"
-LIBPCRE="libpcre.so"
+LIBPCRE="libpcre2.so"
 TMPLIST="/tmp/.opensipspcre"
 
 pkginfo | grep -i $BASE > /dev/null

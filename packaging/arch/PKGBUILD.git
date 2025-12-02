@@ -128,7 +128,7 @@ package_opensips-git() {
 		'mongo-c-driver: C-Interface for Mongo-DB support'
 		'net-snmp: SNMP support'
 		'osptoolkit: OSP Toolkit support'
-		'pcre: Perl Regular-Expression support'
+		'pcre2: Perl Regular-Expression support'
 		'perl: Perl support'
 		'postgresql-libs: PostgreSQL-DB support'
 		'python2: Python v2 support'

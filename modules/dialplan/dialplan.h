@@ -31,7 +31,8 @@
 
 #include "../../db/db.h"
 #include "../../re.h"
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 #define REGEX_OP	1
 #define EQUAL_OP	0
@@ -48,7 +49,7 @@ typedef struct dpl_node{
 	int matchop;
 	int match_flags;
 	str match_exp, subst_exp, repl_exp; /*keeping the original strings*/
-	pcre * match_comp, * subst_comp; /*compiled patterns*/
+	pcre2_code * match_comp, * subst_comp; /*compiled patterns*/
 	struct subst_expr * repl_comp;
 	str attrs;
 	str timerec;
@@ -121,19 +122,11 @@ struct subst_expr* repl_exp_parse(str subst);
 void repl_expr_free(struct subst_expr *se);
 int translate(struct sip_msg *msg, str user_name, str* repl_user, dpl_id_p idp, str *);
 int rule_translate(struct sip_msg *msg, str , dpl_node_t * rule,  str *);
-int test_match(str string, pcre * exp, int * out, int out_max);
+int test_match(str string, pcre2_code * exp, int * out, int out_max);
 
 
-typedef void * (*func_malloc)(size_t );
-typedef void  (*func_free)(void * );
-
-void * wrap_shm_malloc(size_t size);
-void  wrap_shm_free(void *);
-
-
-pcre * wrap_pcre_compile(char *  pattern, int flags);
-void wrap_pcre_free( pcre*);
-
+pcre2_code * wrap_pcre_compile(char *  pattern, int flags);
+void wrap_pcre_free( pcre2_code*);
 
 extern rw_lock_t *ref_lock;
 extern str dp_df_part;
