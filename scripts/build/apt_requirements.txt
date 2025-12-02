@@ -20,9 +20,9 @@ libperl-dev
 libsnmp-dev
 libdb-dev
 libldap2-dev
-libcurl4-gnutls-dev
+libcurl4-openssl-dev
 libgeoip-dev
-libpcre3-dev
+libpcre2-dev
 libmemcached-dev
 libmicrohttpd-dev
 librabbitmq-dev
