@@ -46,18 +46,26 @@
 		<title>Exported Pseudo-Variables</title>
 
 	<section id="pv_uuid" xreflabel="$uuid">
-		<title><varname>$uuid</varname></title>
+		<title><varname>$uuid(version)</varname></title>
 		<para>
-			The <emphasis>$uuid</emphasis> variable returns a newly generated
-			version 4 UUID based on high-quality randomness from /dev/urandom,
-			if available. Otherwise, a version 1 UUID (based on
-			current time and the local ethernet MAC address) will be generated.
+			The <emphasis>$uuid</emphasis> variable returns a newly generated UUID.
+			By default (or if version is 0) it returns a version 4 UUID based on
+			high-quality randomness from /dev/urandom, if available. Otherwise,
+			a version 1 UUID (based on current time and the local ethernet MAC
+			address) will be generated.
+		</para>
+		<para>
+			An optional <emphasis>version</emphasis> parameter can be provided to
+			generate a specific UUID version. Supported versions are 0, 1, 4,
+			and 7. Versions 3 and 5 are not supported as they require additional
+			parameters.
 		</para>
 
 			<example>
 				<title>$uuid usage</title>
 				<programlisting format="linespecific">
 xlog("generated uuid: $uuid\n");
+xlog("generated uuid v7: $uuid(7)\n");
 				</programlisting>
 			</example>
 
