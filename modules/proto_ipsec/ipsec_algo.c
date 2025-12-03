@@ -193,7 +193,7 @@ struct ipsec_allowed_algo *ipsec_parse_allowed_algorithms(str *algs)
 			if (alg.len != 0) {
 				auth = ipsec_parse_algorithm(&alg, IPSEC_ALGO_TYPE_AUTH);
 				if (!auth) {
-					LM_ERR("could not parse pair authenticatin algorithm\n");
+					LM_ERR("could not parse pair authenticating algorithm\n");
 					goto end;
 				}
 			} else {
@@ -276,7 +276,7 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg, struct ipsec_al
 	/* TODO: order by priority */
 	if (!algos) {
 		LM_DBG("no allowed algorithms specified - using the first supported one!\n");
-		/* if we have no prefference, choose the first one supported */
+		/* if we have no preference, choose the first one supported */
 		for (h = msg->security_client; h; h = h->sibling) {
 			/* duplicate the header, to avoid writing the parsed structure into
 			 * the request, which is shared */
@@ -355,7 +355,7 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg, struct ipsec_al
 								sa->ts3gpp.ealg_str.len, sa->ts3gpp.ealg_str.s);
 						continue;
 					}
-					LM_DBG("   + hdr end=%s\n", enc->name);
+					LM_DBG("   + hdr enc=%s\n", enc->name);
 					if (algs->enc && algs->enc != enc)
 						continue;
 					goto found;

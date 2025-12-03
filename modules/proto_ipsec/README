@@ -265,7 +265,7 @@ ac=aes-gcm")
      * hmac-md5-96 and hmac-sha-1-96 authentication algorithms
      * des-ede3-cbc and aes-cbc encryption algorithms
 
-   Default value is false - all algorihms can be used.
+   Default value is false - all algorithms can be used.
 
    Example 1.8. Set disable_deprecated_algorithms parameter
 ...
