@@ -31,8 +31,25 @@
 
 #include "../../db/db.h"
 #include "../../re.h"
+
+#ifdef PCRE2_LIB
 #define PCRE2_CODE_UNIT_WIDTH 8
+#define PCRE2_ERR int
 #include <pcre2.h>
+#else
+/* backwards compatibility */
+#define pcre2_code pcre
+#define PCRE2_CASELESS PCRE_CASELESS
+#define PCRE2_SIZE int
+#define PCRE2_ERR const char *
+#define pcre2_pattern_info(subst_comp, flag, ret) \
+	pcre_fullinfo(subst_comp, NULL, PCRE_INFO_CAPTURECOUNT, ret);
+#define PCRE2_SPTR char *
+#define pcre2_compile(pattern, _, flags, error, erroffset, ctx) \
+	pcre_compile(pattern, flags, error, erroffset, NULL)
+#include <pcre.h>
+#endif
+
 
 #define REGEX_OP	1
 #define EQUAL_OP	0
