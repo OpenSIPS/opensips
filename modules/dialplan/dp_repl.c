@@ -401,16 +401,36 @@ int test_match(str string, pcre2_code * exp, int * out, int out_max)
 	int i, result_count;
 	char *substring_start;
 	int substring_length;
+#ifdef PCRE2_LIB
 	pcre2_match_data *match_data;
 	PCRE2_SIZE *ovector;
-	UNUSED(substring_start);
-	UNUSED(substring_length);
+#endif
 
 	if(!exp){
 		LM_ERR("invalid compiled expression\n");
 		return -1;
 	}
 
+#ifndef PCRE2_LIB
+	result_count = pcre_exec(
+							exp, /* the compiled pattern */
+							NULL, /* no extra data - we didn't study the pattern */
+							string.s, /* the subject string */
+							string.len, /* the length of the subject */
+							0, /* start at offset 0 in the subject */
+							0, /* default options */
+							out, /* output vector for substring information */
+							out_max); /* number of elements in the output vector */
+
+	if( result_count < 0 )
+		return result_count;
+
+	if( result_count == 0)
+	{
+		LM_ERR("Not enough space for mathing\n");
+		return result_count;
+	}
+#else
 	match_data = pcre2_match_data_create_from_pattern(exp, NULL);
 	if (!match_data) {
 		LM_ERR("failed to allocate match data\n");
@@ -447,6 +467,8 @@ int test_match(str string, pcre2_code * exp, int * out, int out_max)
 	for (i = 0; i < result_count * 2; i++)
 		out[i] = ovector[i];
 	pcre2_match_data_free(match_data);
+#endif
+
 
 	for (i = 0; i < result_count; i++)
 	{
