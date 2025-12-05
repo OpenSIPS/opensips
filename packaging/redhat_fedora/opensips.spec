@@ -153,20 +153,6 @@ and two timestamps describing a validation interval. Multiple
 JWT secrets can point to the same JWT profile.
 %endif
 
-%package  auth-web3-module
-Summary:  Web3-based authentication for OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  auth-web3-module
-OpenSIPS is a very fast and flexible SIP (RFC3261)
-server. Written entirely in C, OpenSIPS can handle thousands calls
-per second even on low-budget hardware.
-.
-This package provides Web3-based authentication for OpenSIPS, enabling SIP
-authentication through blockchain technology and ENS (Ethereum Name Service)
-resolution.
-
 %package  auth-modules
 Summary:  Authentication interfaces for OpenSIPS
 Group:    System Environment/Daemons
@@ -1330,10 +1316,6 @@ fi
 %doc docdir/README.auth_jwt
 %endif
 
-%files auth-web3-module
-%{_libdir}/opensips/modules/auth_web3.so
-%doc docdir/README.auth_web3
-
 %files auth-modules
 %{_libdir}/opensips/modules/auth.so
 %{_libdir}/opensips/modules/auth_aka.so
@@ -1686,9 +1668,6 @@ fi
 
 
 %changelog
-* Fri Dec 05 2025 Razvan Crainea <razvan@opensips.org> - 4.0.0-1
-- New module: auth_web3
-
 * Wed May 14 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - New module: config
 
