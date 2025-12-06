@@ -1302,6 +1302,7 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 	if (set_maxfwd)
 		ci.maxfwd = peer_ent->init_maxfwd;
 	ci.extra_headers = tuple->extra_headers;
+	ci.avps = clone_avp_list( *get_avp_list() );
 
 	entity = b2bl_new_client(&ci, tuple, &new_ent->scenario_id,
 		new_ent->adv_contact.s ? &new_ent->adv_contact : NULL, msg);
