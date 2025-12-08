@@ -41,6 +41,7 @@
 #include "reg_records.h"
 #include "reg_db_handler.h"
 #include "clustering.h"
+#include "reg_events.h"
 
 
 #define UAC_REGISTRAR_URI_PARAM              1
@@ -319,6 +320,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (init_registrant_events() < 0) {
+		LM_ERR("Failed to create the registrant events \n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -452,6 +458,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 					if(send_register(cb_param->hash_index, rec, NULL)==1) {
 						rec->last_register_sent = now;
 						rec->state = REGISTERING_STATE;
+						raise_registering_event(rec);	
 					} else {
 						rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 						rec->state = INTERNAL_ERROR_STATE;
@@ -571,6 +578,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				if(send_register(cb_param->hash_index, rec, NULL)==1) {
 					rec->last_register_sent = now;
 					rec->state = REGISTERING_STATE;
+					raise_registering_event(rec);	
 				} else {
 					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 					rec->state = INTERNAL_ERROR_STATE;
@@ -578,6 +586,8 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			} else {
 				/* succesfully REGISTERED */
 				rec->state = REGISTERED_STATE;
+				raise_registered_event(rec);
+
 				if (exp) rec->expires = exp;
 				if (rec->expires <= timer_interval) {
 					LM_ERR("Please decrease timer_interval=[%u]"
@@ -678,6 +688,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		case REGISTERING_STATE:
 			if(send_register(cb_param->hash_index, rec, new_hdr)==1) {
 				rec->state = AUTHENTICATING_STATE;
+				raise_authenticating_event(rec);	
 			} else {
 				rec->state = INTERNAL_ERROR_STATE;
 			}
@@ -706,9 +717,10 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		}
 		if (0 == parse_min_expires(msg)) {
 			rec->expires = (unsigned int)(long)msg->min_expires->parsed;
-			if(send_register(cb_param->hash_index, rec, NULL)==1)
+			if(send_register(cb_param->hash_index, rec, NULL)==1) {
 				rec->state = REGISTERING_STATE;
-			else
+				raise_registering_event(rec);	
+			} else
 				rec->state = INTERNAL_ERROR_STATE;
 		} else {
 			rec->state = REGISTRAR_ERROR_STATE;
@@ -977,6 +989,7 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 			if(send_register(i, rec, NULL)==1) {
 				rec->last_register_sent = now;
 				rec->state = REGISTERING_STATE;
+				raise_registering_event(rec);	
 			} else {
 				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 				rec->state = INTERNAL_ERROR_STATE;
@@ -999,6 +1012,7 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 			if(send_register(i, rec, NULL)==1) {
 				rec->last_register_sent = now;
 				rec->state = REGISTERING_STATE;
+				raise_registering_event(rec);	
 			} else {
 				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 				rec->state = INTERNAL_ERROR_STATE;
@@ -1450,6 +1464,7 @@ int run_mi_reg_enable(void *e_data, void *data, void *r_data)
 				if(send_register((unsigned long)coords->extra, rec, NULL)==1) {
 					rec->last_register_sent = now;
 					rec->state = REGISTERING_STATE;
+					raise_registering_event(rec);	
 				} else {
 					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 					rec->state = INTERNAL_ERROR_STATE;
