@@ -110,6 +110,186 @@
         </section>
     </chapter>
 
+    <chapter id="auth_web3-multinetwork">
+        <title>Multi-Network Configuration</title>
+        <para>
+            The auth_web3 module supports dual-network authentication, allowing ENS resolution
+            and authentication to operate on different blockchain networks. This enables production
+            deployments where ENS resolution happens on Ethereum mainnet while authentication
+            happens on Oasis Sapphire.
+        </para>
+        
+        <section id="auth_web3-network-modes">
+            <title>Network Operation Modes</title>
+            
+            <section id="auth_web3-single-network">
+                <title>Single Network Mode (Fallback)</title>
+                <para>
+                    When web3_ens_rpc_url is not configured, all blockchain operations use
+                    the same RPC endpoint specified in web3_authentication_rpc_url. This mode
+                    is suitable when both ENS and authentication contracts are deployed on
+                    the same network.
+                </para>
+                <programlisting format="linespecific">
+# Single network configuration
+modparam("auth_web3", "web3_authentication_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+modparam("auth_web3", "web3_authentication_contract_address", "0xYourContract")
+# ens_rpc_url not set - will use authentication_rpc_url for ENS
+                </programlisting>
+            </section>
+            
+            <section id="auth_web3-dual-network">
+                <title>Dual Network Mode</title>
+                <para>
+                    When web3_ens_rpc_url is configured, ENS resolution queries use the
+                    specified Ethereum RPC endpoint while authentication queries use the
+                    Oasis Sapphire RPC endpoint. This is the recommended production configuration.
+                </para>
+                <programlisting format="linespecific">
+# Dual network configuration
+# Authentication on Oasis Sapphire
+modparam("auth_web3", "web3_authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("auth_web3", "web3_authentication_contract_address", "0xYourOasisContract")
+
+# ENS resolution on Ethereum
+modparam("auth_web3", "web3_ens_rpc_url", "https://eth.drpc.org")
+modparam("auth_web3", "web3_ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+                </programlisting>
+            </section>
+        </section>
+        
+        <section id="auth_web3-common-configs">
+            <title>Common Network Configurations</title>
+            
+            <section id="auth_web3-production-config">
+                <title>Production Setup</title>
+                <para>
+                    Production deployments typically use Ethereum mainnet for ENS and
+                    Oasis Sapphire mainnet for authentication:
+                </para>
+                <programlisting format="linespecific">
+loadmodule "auth_web3.so"
+
+# Oasis Sapphire Mainnet
+modparam("auth_web3", "web3_authentication_rpc_url", "https://sapphire.oasis.io")
+modparam("auth_web3", "web3_authentication_contract_address", "0xYourProductionContract")
+
+# Ethereum Mainnet for ENS
+modparam("auth_web3", "web3_ens_rpc_url", "https://eth.drpc.org")
+modparam("auth_web3", "web3_ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+
+# Optional: Enable debug logging
+modparam("auth_web3", "web3_contract_debug_mode", 0)
+                </programlisting>
+            </section>
+            
+            <section id="auth_web3-testing-config">
+                <title>Testing Setup</title>
+                <para>
+                    For testing and development, use Sepolia testnet for ENS and
+                    Oasis Sapphire testnet for authentication:
+                </para>
+                <programlisting format="linespecific">
+loadmodule "auth_web3.so"
+
+# Oasis Sapphire Testnet
+modparam("auth_web3", "web3_authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
+modparam("auth_web3", "web3_authentication_contract_address", "0xYourTestContract")
+
+# Ethereum Sepolia for ENS
+modparam("auth_web3", "web3_ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+modparam("auth_web3", "web3_ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+
+# Enable debug logging for testing
+modparam("auth_web3", "web3_contract_debug_mode", 1)
+                </programlisting>
+            </section>
+        </section>
+        
+        <section id="auth_web3-ens-resolution">
+            <title>ENS Resolution Process</title>
+            <para>
+                The module implements standard ENS resolution with automatic Name Wrapper detection:
+            </para>
+            <orderedlist>
+                <listitem>
+                    <para><emphasis>Query ENS Registry</emphasis> - Call owner(bytes32) to get the domain owner</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Check Contract Identity</emphasis> - Call name() on owner contract to detect Name Wrapper</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Get Resolver</emphasis> - Call resolver(bytes32) on ENS Registry</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Resolve Address</emphasis> - Call addr(bytes32) on resolver contract</para>
+                </listitem>
+            </orderedlist>
+            <para>
+                This follows the standard ENS resolution pattern (EIP-137) and supports both
+                wrapped and unwrapped domains across all Ethereum networks.
+            </para>
+        </section>
+        
+        <section id="auth_web3-benefits">
+            <title>Benefits of Multi-Network Configuration</title>
+            <itemizedlist>
+                <listitem>
+                    <para><emphasis>Network Separation</emphasis> - Keep ENS queries on Ethereum while using Oasis for authentication</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Cost Optimization</emphasis> - Use cheaper testnets for ENS during development</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Performance</emphasis> - Separate network load between ENS and authentication calls</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Flexibility</emphasis> - Easy migration between networks without code changes</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Backward Compatibility</emphasis> - Existing single-network setups continue to work</para>
+                </listitem>
+            </itemizedlist>
+        </section>
+        
+        <section id="auth_web3-troubleshooting">
+            <title>Troubleshooting Multi-Network Setup</title>
+            <para><emphasis>Common Issues:</emphasis></para>
+            <itemizedlist>
+                <listitem>
+                    <para><emphasis>Network Connectivity</emphasis> - Ensure RPC endpoints are accessible from your server</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Network Mismatch</emphasis> - Verify contract addresses match the configured network</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Fallback Behavior</emphasis> - If ens_rpc_url is empty, ENS uses authentication_rpc_url</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Rate Limiting</emphasis> - Public RPC providers may have usage limits</para>
+                </listitem>
+            </itemizedlist>
+            <para><emphasis>Debug Information:</emphasis></para>
+            <para>
+                Enable debug mode to see which RPC is used for each call:
+            </para>
+            <programlisting format="linespecific">
+modparam("auth_web3", "web3_contract_debug_mode", 1)
+            </programlisting>
+            <para>
+                Look for log messages indicating network usage:
+            </para>
+            <itemizedlist>
+                <listitem>
+                    <para>ENS call using RPC: [url] (ENS-specific: yes/no)</para>
+                </listitem>
+                <listitem>
+                    <para>Oasis call using main RPC: [url]</para>
+                </listitem>
+            </itemizedlist>
+        </section>
+    </chapter>
+
     <chapter id="auth_web3-functions">
         <title>Functions</title>
         
