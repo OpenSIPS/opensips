@@ -445,7 +445,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			case AUTHENTICATING_UNREGISTER_STATE:
 				if (!(rec->flags&REG_ENABLED)) {
 					/* succesfully unREGISTERED */
-					rec->state = NOT_REGISTERED_STATE;
+					reg_change_state(rec,NOT_REGISTERED_STATE);
 					rec->registration_timeout = 0;
 				} else {
 					/* registrant got enabled while waiting for a reply to
@@ -457,11 +457,10 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 					new_call_id_ftag_4_record(rec, &str_now);
 					if(send_register(cb_param->hash_index, rec, NULL)==1) {
 						rec->last_register_sent = now;
-						rec->state = REGISTERING_STATE;
-						raise_registering_event(rec);	
+						reg_change_state(rec,REGISTERING_STATE);
 					} else {
 						rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-						rec->state = INTERNAL_ERROR_STATE;
+						reg_change_state(rec,INTERNAL_ERROR_STATE);
 					}
 				}
 
@@ -499,9 +498,9 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			if (bindings_counter>1) {
 				LM_DBG("got [%d] bindings\n", bindings_counter);
 				if(send_unregister(cb_param->hash_index, rec, NULL, 1)==1) {
-					rec->state = UNREGISTERING_STATE;
+					reg_change_state(rec,UNREGISTERING_STATE);
 				} else {
-					rec->state = INTERNAL_ERROR_STATE;
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 				break;
 			}
@@ -556,13 +555,13 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				/* registrant got disabled while waiting for a reply to
 				 * a previous register */
 				if(send_unregister(cb_param->hash_index, rec, NULL, 0)==1) {
-					rec->state = UNREGISTERING_STATE;
+					reg_change_state(rec,UNREGISTERING_STATE);
 				} else {
-					rec->state = INTERNAL_ERROR_STATE;
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 			} else {
 				/* succesfully unREGISTERED */
-				rec->state = NOT_REGISTERED_STATE;
+				reg_change_state(rec,NOT_REGISTERED_STATE);
 				rec->registration_timeout = 0;
 			}
 		} else {
@@ -577,16 +576,14 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				new_call_id_ftag_4_record(rec, &str_now);
 				if(send_register(cb_param->hash_index, rec, NULL)==1) {
 					rec->last_register_sent = now;
-					rec->state = REGISTERING_STATE;
-					raise_registering_event(rec);	
+					reg_change_state(rec,REGISTERING_STATE);
 				} else {
 					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-					rec->state = INTERNAL_ERROR_STATE;
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 			} else {
 				/* succesfully REGISTERED */
-				rec->state = REGISTERED_STATE;
-				raise_registered_event(rec);
+				reg_change_state(rec,REGISTERED_STATE);
 
 				if (exp) rec->expires = exp;
 				if (rec->expires <= timer_interval) {
@@ -612,7 +609,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		if (rec->auth_user.s==NULL || rec->auth_user.len==0 ||
 			rec->auth_password.s==NULL || rec->auth_password.len==0) {
 			LM_ERR("Credentials not provisioned\n");
-			rec->state = WRONG_CREDENTIALS_STATE;
+			reg_change_state(rec,WRONG_CREDENTIALS_STATE);
 			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
@@ -647,7 +644,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			/* We already sent an authenticated REGISTER and we are still challanged! */
 			LM_WARN("Wrong credentials for [%.*s]\n",
 				rec->td.rem_uri.len, rec->td.rem_uri.s);
-			rec->state = WRONG_CREDENTIALS_STATE;
+			reg_change_state(rec,WRONG_CREDENTIALS_STATE);
 			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
@@ -687,17 +684,16 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		switch(rec->state) {
 		case REGISTERING_STATE:
 			if(send_register(cb_param->hash_index, rec, new_hdr)==1) {
-				rec->state = AUTHENTICATING_STATE;
-				raise_authenticating_event(rec);	
+				reg_change_state(rec,AUTHENTICATING_STATE);
 			} else {
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 			break;
 		case UNREGISTERING_STATE:
 			if(send_unregister(cb_param->hash_index, rec, new_hdr, 0)==1) {
-				rec->state = AUTHENTICATING_UNREGISTER_STATE;
+				reg_change_state(rec,AUTHENTICATING_UNREGISTER_STATE);
 			} else {
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 			break;
 		default:
@@ -718,28 +714,28 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		if (0 == parse_min_expires(msg)) {
 			rec->expires = (unsigned int)(long)msg->min_expires->parsed;
 			if(send_register(cb_param->hash_index, rec, NULL)==1) {
-				rec->state = REGISTERING_STATE;
-				raise_registering_event(rec);	
-			} else
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,REGISTERING_STATE);
+			} else {
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
+			}
 		} else {
-			rec->state = REGISTRAR_ERROR_STATE;
+			reg_change_state(rec,REGISTRAR_ERROR_STATE);
 			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 		}
 		break;
 
-	case 408: /* Interval Too Brief */
-		rec->state = REGISTER_TIMEOUT_STATE;
+	case 408: /* No reply or Timeout */
+		reg_change_state(rec,REGISTER_TIMEOUT_STATE);
 		rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 		break;
 
 	default:
 		if(statuscode<400 && statuscode>=300) {
 			LM_ERR("Redirection not implemented yet\n");
-			rec->state = INTERNAL_ERROR_STATE;
+			reg_change_state(rec,INTERNAL_ERROR_STATE);
 		} else {
 			/* we got an error from the server */
-			rec->state = REGISTRAR_ERROR_STATE;
+			reg_change_state(rec,REGISTRAR_ERROR_STATE);
 			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 
 		}
@@ -748,12 +744,10 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	/* action successfully completed on current list element */
 	return 1; /* exit list traversal */
 done:
-	rec->state = INTERNAL_ERROR_STATE;
+	reg_change_state(rec,INTERNAL_ERROR_STATE);
 	rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 	return -1; /* exit list traversal */
 }
-
-
 
 void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 {
@@ -786,8 +780,8 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 
 	/* Initialize slinkedl run traversal data */
 	tm_cback_data.t = t;
-    tm_cback_data.ps = ps;
-    tm_cback_data.cb_param = cb_param;
+	tm_cback_data.ps = ps;
+	tm_cback_data.cb_param = cb_param;
 	tm_cback_data.now = now;
 
 	lock_get(&reg_htable[cb_param->hash_index].lock);
@@ -988,17 +982,16 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 			new_call_id_ftag_4_record(rec, s_now);
 			if(send_register(i, rec, NULL)==1) {
 				rec->last_register_sent = now;
-				rec->state = REGISTERING_STATE;
-				raise_registering_event(rec);	
+				reg_change_state(rec,REGISTERING_STATE);
 			} else {
 				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 		} else {
 			if(send_unregister(i, rec, NULL, 0)==1) {
-				rec->state = UNREGISTERING_STATE;
+				reg_change_state(rec,UNREGISTERING_STATE);
 			} else {
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 		}
 		break;
@@ -1011,11 +1004,10 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 		if (rec->flags&REG_ENABLED) {
 			if(send_register(i, rec, NULL)==1) {
 				rec->last_register_sent = now;
-				rec->state = REGISTERING_STATE;
-				raise_registering_event(rec);	
+				reg_change_state(rec,REGISTERING_STATE);
 			} else {
 				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 		}
 		break;
@@ -1078,7 +1070,7 @@ static int cluster_shtag_check(void *e_data, void *data, void *r_data)
 		0==memcmp(rec->cluster_shtag.s, shtag_data->tag->s, shtag_data->tag->len)) {
 		/* this record matches the shtag + cluster_id, so we need to de-active it */
 		LM_DBG("Moving record to NOT_REGISTERED_STATE\n");
-		rec->state = NOT_REGISTERED_STATE;
+		reg_change_state(rec,NOT_REGISTERED_STATE);
 	}
 
 
@@ -1463,11 +1455,10 @@ int run_mi_reg_enable(void *e_data, void *data, void *r_data)
 
 				if(send_register((unsigned long)coords->extra, rec, NULL)==1) {
 					rec->last_register_sent = now;
-					rec->state = REGISTERING_STATE;
-					raise_registering_event(rec);	
+					reg_change_state(rec,REGISTERING_STATE);
 				} else {
 					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-					rec->state = INTERNAL_ERROR_STATE;
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 			}
 
@@ -1490,10 +1481,11 @@ int run_mi_reg_disable(void *e_data, void *data, void *r_data)
 		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
 		if (rec->flags&REG_ENABLED) {
 			if (rec->state == REGISTERED_STATE) {
-				if(send_unregister((unsigned long)coords->extra, rec, NULL, 0)==1)
-					rec->state = UNREGISTERING_STATE;
-				else
-					rec->state = INTERNAL_ERROR_STATE;
+				if(send_unregister((unsigned long)coords->extra, rec, NULL, 0)==1) {
+					reg_change_state(rec,UNREGISTERING_STATE);
+				} else {
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
+				}
 			}
 
 			rec->flags &= ~REG_ENABLED;

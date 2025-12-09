@@ -28,5 +28,11 @@ int init_registrant_events(void);
 void raise_registering_event(reg_record_t *rec);
 void raise_authenticating_event(reg_record_t *rec);
 void raise_registered_event(reg_record_t *rec);
+void raise_register_timeout_event(reg_record_t *rec);
+void raise_internal_error_event(reg_record_t *rec);
+void raise_wrong_credentials_event(reg_record_t *rec);
+void raise_registrar_error_event(reg_record_t *rec);
+void raise_unregistering_event(reg_record_t *rec);
+void raise_authenticating_unregister_event(reg_record_t *rec);
 
 #endif
