@@ -138,7 +138,7 @@ static void pack_entity(b2bl_tuple_t* tuple, enum b2b_entity_type entity_type,
 		bin_push_str(storage, &entity->from_uri);
 		bin_push_str(storage, &entity->from_dname);
 		bin_push_str(storage, &entity->hdrs);
-		bin_push_str(storage, &entity->out_sdp);
+		bin_push_str(storage, &entity->in_sdp);
 
 		bin_push_str(storage, &entity->dlginfo->callid);
 		bin_push_str(storage, &entity->dlginfo->fromtag);
@@ -351,6 +351,9 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 		goto error;
 	}
 
+	if (shm_str_sync(&entity->in_sdp, &sdp) < 0)
+		goto error;
+
 	memset(&dlginfo, 0, sizeof dlginfo);
 	bin_pop_str(storage, &dlginfo.callid);
 	bin_pop_str(storage, &dlginfo.fromtag);
@@ -360,6 +363,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 		LM_ERR("Failed to add entity dialoginfo\n");
 		goto error;
 	}
+	bin_pop_str(storage, &sdp);
 
 	bin_pop_int(storage, &entity->stats.start_time);
 	bin_pop_int(storage, &entity->stats.setup_time);
