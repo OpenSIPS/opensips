@@ -718,6 +718,10 @@ int src_pause_recording(void)
 	/* mark the session as being paused */
 	sess->flags |= SIPREC_PAUSED;
 	ret = src_update_recording(NULL, sess);
+	if(ret < 0) {
+		LM_ERR("cannot pause recording! session_id[%s]\n", sess->uuid);
+		sess->flags &= ~SIPREC_PAUSED;
+	}
 
 end:
 	SIPREC_UNLOCK(sess);
@@ -742,6 +746,10 @@ int src_resume_recording(void)
 	}
 	sess->flags &= ~SIPREC_PAUSED;
 	ret = src_update_recording(NULL, sess);
+	if(ret < 0) {
+		LM_ERR("cannot resume recording! session_id[%s]\n", sess->uuid);
+		sess->flags |= SIPREC_PAUSED;
+	}
 
 end:
 	SIPREC_UNLOCK(sess);
