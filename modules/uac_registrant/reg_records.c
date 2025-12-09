@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "reg_events.h"
 #include "reg_records.h"
 
 extern unsigned int default_expires;
@@ -131,10 +132,11 @@ int match_reload_record(void *e_data, void *data, void *n_data)
 		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
 		if (!(new_rec->flags&REG_ENABLED) && rec->flags&REG_ENABLED &&
 			rec->state == REGISTERED_STATE) {
-			if(send_unregister((unsigned long)coords->extra, rec, NULL, 0)==1)
-				rec->state = UNREGISTERING_STATE;
-			else
-				rec->state = INTERNAL_ERROR_STATE;
+			if(send_unregister((unsigned long)coords->extra, rec, NULL, 0)==1) {
+				reg_change_state(rec,UNREGISTERING_STATE);
+			} else {
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
+			}
 		} else if (new_rec->flags&REG_ENABLED && rec->flags&REG_ENABLED &&
 				rec->state == REGISTERED_STATE) {
 			memcpy(new_rec->td.id.call_id.s, rec->td.id.call_id.s,
@@ -144,6 +146,8 @@ int match_reload_record(void *e_data, void *data, void *n_data)
 			new_rec->td.loc_seq.value = rec->td.loc_seq.value;
 			new_rec->last_register_sent = rec->last_register_sent;
 			new_rec->registration_timeout = rec->registration_timeout;
+			/* we are not migrating state here, just inheriting,
+			 * do not call reg_change_state */
 			new_rec->state = rec->state;
 		}
 
@@ -350,3 +354,42 @@ void destroy_reg_htable(void) {
 	}
 }
 
+void reg_change_state(reg_record_t *rec, int new_state)
+{
+	rec->state = new_state;
+	switch (new_state) {
+		case NOT_REGISTERED_STATE:
+			/* NO-OP, just initializing */
+			break;
+		case REGISTERING_STATE:
+			raise_registering_event(rec);	
+			break;
+		case AUTHENTICATING_STATE:
+			raise_authenticating_event(rec);	
+			break;
+		case REGISTERED_STATE:
+			raise_registered_event(rec);	
+			break;
+		case REGISTER_TIMEOUT_STATE:
+			raise_register_timeout_event(rec);	
+			break;
+		case INTERNAL_ERROR_STATE:
+			raise_internal_error_event(rec);	
+			break;
+		case WRONG_CREDENTIALS_STATE:
+			raise_wrong_credentials_event(rec);	
+			break;
+		case REGISTRAR_ERROR_STATE:
+			raise_registrar_error_event(rec);	
+			break;
+		case UNREGISTERING_STATE:
+			raise_unregistering_event(rec);	
+			break;
+		case AUTHENTICATING_UNREGISTER_STATE:
+			raise_authenticating_unregister_event(rec);	
+			break;
+		default:
+			LM_ERR("Unhandled new state %d \n",new_state);
+			break;
+	}
+}
