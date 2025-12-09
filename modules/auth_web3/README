@@ -266,7 +266,7 @@ if (is_method("REGISTER")) {
     }
 }
 
-3.2.  web3_proxy_authenticate(realm, method)
+2.2.  web3_proxy_authenticate(realm, method)
 
    Performs Web3-based authentication for Proxy-Authenticate
    challenges. Similar to web3_www_authenticate but for proxy
@@ -302,9 +302,9 @@ if (is_method("INVITE")) {
     }
 }
 
-Chapter 4. Parameters
+Chapter 3. Parameters
 
-4.1.  authentication_rpc_url (string)
+3.1.  authentication_rpc_url (string)
 
    RPC URL for the blockchain network (e.g., Oasis Sapphire
    testnet or mainnet). This parameter specifies the endpoint for
@@ -316,7 +316,7 @@ Chapter 4. Parameters
 modparam("auth_web3", "authentication_rpc_url", "https://testnet.sapphir
 e.oasis.dev")
 
-4.2.  authentication_contract_address (string)
+3.2.  authentication_contract_address (string)
 
    Address of the smart contract that handles authentication
    verification. This contract must implement the authenticateUser
@@ -328,7 +328,7 @@ e.oasis.dev")
 modparam("auth_web3", "authentication_contract_address", "0xE773BB796893
 79d32Ad1Db839868b6756B493aea")
 
-4.3.  ens_rpc_url (string)
+3.3.  ens_rpc_url (string)
 
    RPC URL for the Ethereum network used for ENS resolution. This
    should point to an Ethereum mainnet RPC endpoint for ENS name
@@ -340,7 +340,7 @@ modparam("auth_web3", "authentication_contract_address", "0xE773BB796893
 modparam("auth_web3", "ens_rpc_url", "https://eth-mainnet.g.alchemy.com/
 v2/YOUR_API_KEY")
 
-4.4.  ens_registry_address (string)
+3.4.  ens_registry_address (string)
 
    Address of the ENS registry contract on Ethereum mainnet. This
    is used for resolving ENS names to wallet addresses.
@@ -352,7 +352,7 @@ v2/YOUR_API_KEY")
 modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0
 dFb2997BA6C7d2e1e")
 
-4.5.  contract_debug_mode (integer)
+3.5.  contract_debug_mode (integer)
 
    Enable debug logging for blockchain contract interactions. When
    enabled, detailed logs are generated for debugging purposes.
@@ -362,7 +362,7 @@ dFb2997BA6C7d2e1e")
    Example:
 modparam("auth_web3", "contract_debug_mode", 1)
 
-4.6.  rpc_timeout (integer)
+3.6.  rpc_timeout (integer)
 
    Timeout in seconds for blockchain RPC calls. This parameter
    controls how long to wait for blockchain responses.
@@ -372,12 +372,12 @@ modparam("auth_web3", "contract_debug_mode", 1)
    Example:
 modparam("auth_web3", "rpc_timeout", 15)
 
-Chapter 5. C API
+Chapter 4. C API
 
    The module provides a C-level API for other OpenSIPS modules to
    use Web3 authentication.
 
-5.1.  bind_web3_auth(api)
+4.1.  bind_web3_auth(api)
 
    Binds the Web3 authentication API to a module interface
    structure. This allows other modules to use Web3 authentication
@@ -402,9 +402,9 @@ if (bind_web3_auth(&web3_api) < 0) {
 
 // Use web3_api.web3_digest_authenticate(...)
 
-Chapter 6. FAQ
+Chapter 5. FAQ
 
-   6.1.
+   5.1.
 
    What is Web3 authentication and how does it work?
 
@@ -415,7 +415,7 @@ Chapter 6. FAQ
    (Ethereum Name Service) names are resolved to wallet addresses
    for user identification.
 
-   6.2.
+   5.2.
 
    What blockchain networks are supported?
 
@@ -423,7 +423,7 @@ Chapter 6. FAQ
    mainnet. The module can be extended to support other
    EVM-compatible networks by modifying the RPC URL configuration.
 
-   6.3.
+   5.3.
 
    How do I set up ENS names for authentication?
 
@@ -433,7 +433,7 @@ Chapter 6. FAQ
    and verify that the wallet owner matches the authentication
    request.
 
-   6.4.
+   5.4.
 
    What smart contract functions are required?
 
@@ -443,7 +443,7 @@ Chapter 6. FAQ
    response) This function should return true if the digest
    authentication is valid.
 
-   6.5.
+   5.5.
 
    Is this module compatible with standard SIP clients?
 
