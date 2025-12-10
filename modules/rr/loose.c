@@ -62,6 +62,10 @@
 #define RR_DRIVEN 1       /* The next hop is determined from the route set */
 #define NOT_RR_DRIVEN -1  /* The next hop is not determined from the route set */
 
+#define MADDR_ERROR     -1
+#define MADDR_FOUND      0
+#define MADDR_NOT_FOUND  1
+
 #define ROUTE_PREFIX "Route: <"
 #define ROUTE_PREFIX_LEN (sizeof(ROUTE_PREFIX)-1)
 
@@ -348,7 +352,6 @@ static inline int save_ruri(struct sip_msg* _m)
 	return 0;
 }
 
-
 /*
  * input: uri - uri to be checked if has maddr
  * input: puri - parsed uri
@@ -361,25 +364,25 @@ static inline int get_maddr_uri(str *uri, struct sip_uri *puri)
 	struct sip_uri turi;
 
 	if(uri==NULL || uri->s==NULL)
-		return RR_ERROR;
+		return MADDR_ERROR;
 	if(puri==NULL)
 	{
 		if (parse_uri(uri->s, uri->len, &turi) < 0)
 		{
 			LM_ERR("failed to parse the URI\n");
-			return RR_ERROR;
+			return MADDR_ERROR;
 		}
 		puri = &turi;
 	}
 
 	if(puri->maddr.s==NULL)
-		return 0;
+		return MADDR_NOT_FOUND;
 
 	/* sip: + maddr + : + port */
 	if( (puri->maddr_val.len) > ( RH_MADDR_PARAM_MAX_LEN - 10 ) )
 	{
 		LM_ERR( "Too long maddr parameter\n");
-		return RR_ERROR;
+		return MADDR_ERROR;
 	}
 	memcpy( builturi, "sip:", 4 );
 	memcpy( builturi+4, puri->maddr_val.s, puri->maddr_val.len );
@@ -397,7 +400,7 @@ static inline int get_maddr_uri(str *uri, struct sip_uri *puri)
 	uri->s = builturi;
 
 	LM_DBG("uri is %s\n", builturi );
-	return 0;
+	return MADDR_FOUND;
 }
 
 
@@ -421,7 +424,7 @@ static inline int handle_sr(struct sip_msg* _m, struct hdr_field* _hdr, rr_t* _r
 	/* Put the first Route in Request-URI */
 
 	uri = _r->nameaddr.uri;
-	if(get_maddr_uri(&uri, 0)!=0) {
+	if (get_maddr_uri(&uri, 0) < 0) {
 		LM_ERR("failed to check maddr\n");
 		return RR_ERROR;
 	}
@@ -496,7 +499,7 @@ static inline int find_rem_target(struct sip_msg* _m, struct hdr_field** _h, rr_
  */
 static inline int after_strict(struct sip_msg* _m)
 {
-	int res, rem_len;
+	int res, rem_len, maddr_found;
 	struct hdr_field* hdr;
 	struct sip_uri puri;
 	rr_t* rt, *prev, *del_rt;
@@ -590,7 +593,7 @@ static inline int after_strict(struct sip_msg* _m)
 		 * always be a strict router because endpoints don't use ;lr parameter
 		 * In this case we will simply put the URI in R-URI and forward it,
 		 * which will work perfectly */
-		if(get_maddr_uri(&uri, &puri)!=0) {
+		if (get_maddr_uri(&uri, &puri) < 0) {
 			LM_ERR("failed to check maddr\n");
 			return RR_ERROR;
 		}
@@ -656,13 +659,17 @@ static inline int after_strict(struct sip_msg* _m)
 		}
 
 		uri = rt->nameaddr.uri;
-		if(get_maddr_uri(&uri, 0)!=0) {
+		maddr_found = get_maddr_uri(&uri, &puri);
+		if (maddr_found == MADDR_ERROR) {
 			LM_ERR("checking maddr failed\n");
 			return RR_ERROR;
 		}
-		if (set_ruri(_m, &uri) < 0) {
-			LM_ERR("failed to rewrite R-URI\n");
-			return RR_ERROR;
+
+		if (maddr_found == MADDR_FOUND) {
+			if (set_ruri(_m, &uri) < 0) {
+				LM_ERR("failed to rewrite R-URI\n");
+				return RR_ERROR;
+			}
 		}
 
 		/* mark remote contact route as deleted */
