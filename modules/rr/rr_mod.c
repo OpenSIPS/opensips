@@ -89,12 +89,12 @@ static int w_is_direction(struct sip_msg *,void *);
 static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param,
 	pv_value_t *res);
 
-
 /*! \brief
  * Exported functions
  */
 static const cmd_export_t cmds[] = {
-	{"loose_route", (cmd_function)loose_route, {{0,0,0}},
+	{"loose_route", (cmd_function)loose_route, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT,fixup_lr_flags,0}},
 		REQUEST_ROUTE},
 	{"record_route", (cmd_function)w_record_route, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT ,0, 0}, {0,0,0}},
