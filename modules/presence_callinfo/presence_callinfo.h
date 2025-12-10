@@ -31,10 +31,23 @@
 
 #include "../presence/bind_presence.h"
 
+#define SCA_PUB_A_CHAR   'A'  /* caller */
+#define SCA_PUB_B_CHAR   'B'  /* callee */
+#define SCA_PUB_A      (1<<0)  /* caller */
+#define SCA_PUB_B      (1<<1)  /* callee */
+
+#define should_publish_A(_flags,_mute_s) \
+    ( (_flags & SCA_PUB_A) && (_mute_s.len<=0 || _mute_s.s[0]!='Y') )
+#define should_publish_B(_flags,_mute_s) \
+    ( (_flags & SCA_PUB_B) && (_mute_s.len<=0 || _mute_s.s[1]!='Y') )
+
 /* presence API */
 extern presence_api_t pres;
 
 /* if dialog support is on or off */
 extern int no_dialog_support;
+
+extern int *sca_log_level;
+#define LM_SCA(fmt, args...) LM_GEN1(*sca_log_level, fmt, ##args )
 
 #endif

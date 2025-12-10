@@ -111,6 +111,9 @@ unsigned int get_appearance_index(struct sip_msg *msg)
 	struct to_param *top;
 	unsigned int idx;
 
+	if (!msg->call_info)
+		return 0;
+
 	top = get_call_info(msg)->call_info_body.param_lst;
 	for ( ; top ; top=top->next) {
 		if ( (top->name.len==CI_hdr_AI_param_len) &&
@@ -254,7 +257,7 @@ int lineseize_subs_handl(struct sip_msg* msg, struct subscription *subs, int *re
 	is_initial = (subs->to_tag.len==0)?1:0;
 
 	idx = get_appearance_index(msg);
-	if (idx==0) {
+	if (!idx) {
 		LM_ERR("failed to extract index from Call-Info hdr\n");
 		*reply_code = 400;
 		reply_reason->s = "Bad request";
@@ -346,6 +349,7 @@ int lineseize_subs_handl(struct sip_msg* msg, struct subscription *subs, int *re
 
 	/* do publish for callinfo */
 	do_callinfo_publish( sca );
+	//unlock_sca_line(sca);
 
 	return 0;
 }

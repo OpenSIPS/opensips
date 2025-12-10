@@ -35,11 +35,15 @@
 #define MAX_SCA_LOCKS 512
 #define MIN_SCA_LOCKS 1
 
+#define SCA_STATE_NONE        0
 #define SCA_STATE_IDLE        1
 #define SCA_STATE_SEIZED      2
 #define SCA_STATE_PROGRESSING 3
 #define SCA_STATE_ALERTING    4
 #define SCA_STATE_ACTIVE      5
+#define SCA_STATE_HELD        6
+#define SCA_STATE_LAST        SCA_STATE_HELD
+#define sca_bad_state(st) (st <= SCA_STATE_NONE || st > SCA_STATE_LAST)
 
 struct sca_idx {
 	unsigned int idx;
@@ -79,6 +83,22 @@ struct sca_hash {
 	gen_lock_set_t   *locks;
 };
 
+struct sca_party {
+	str uri;
+	str display;
+};
+
+struct sca_cb_params {
+	struct sca_party entity;
+	struct sca_party peer;
+	long long bitmask_early;
+	long long bitmask_failed;
+};
+
+#define sca_lock(_entry) \
+		lock_set_get( sca_table->locks, sca_table->entries[_entry].lock_idx)
+#define sca_unlock(_entry) \
+		lock_set_release( sca_table->locks, sca_table->entries[_entry].lock_idx)
 
 int init_sca_hash(int size);
 
@@ -86,12 +106,16 @@ struct sca_line* get_sca_line(str *line, int create);
 
 void unlock_sca_line(struct sca_line *scal);
 
+struct sca_idx *get_sca_index(struct sca_line *line, unsigned int idx);
 int set_sca_index_state(struct sca_line *line, unsigned int idx,
 		unsigned int state);
 
 char * sca_print_line_status(struct sca_line *line, int *l);
 
+void free_sca_line(struct sca_line *scal);
 void destroy_sca_hash();
+
+char *sca_line_state_to_str(int state);
 
 #endif
 

@@ -28,18 +28,27 @@
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
 #include "../../parser/parse_call_info.h"
-#include "../dialog/dlg_load.h"
 #include "sca_dialog.h"
 #include "add_events.h"
+#include "presence_callinfo.h"
 
 
-static struct dlg_binds dlgf;
-static str calling_line_Dvar = {"PCI_calling_line",16};
-static str called_line_Dvar =  {"PCI_called_line", 15};
+struct dlg_binds dlgf;
+struct tm_binds tmf;
+str calling_line_Dvar = str_init("PCI_calling_line");
+str called_line_Dvar =  str_init("PCI_called_line");
+str sca_engaged_Dvar = str_init("PCI_engaged");
+str sca_branch_Dvar = str_init("PCI_branch_idx");
 
+void try_callinfo_publish(str *line_uri, int line_idx, int new_state, int create);
 
-int init_dialog_support(void)
+int init_module_apis(void)
 {
+	if (load_tm_api(&tmf) != 0) {
+		LM_ERR("failed to find the tm API - is tm module loaded?\n");
+		return -1;
+	}
+
 	if (load_dlg_api(&dlgf)!=0) {
 		LM_ERR("failed to find dialog API - is dialog module loaded?\n");
 		return -1;
@@ -49,150 +58,287 @@ int init_dialog_support(void)
 }
 
 
-static void sca_dialog_callback(struct dlg_cell *dlg, int type,
+void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 												struct dlg_cb_params *_params)
 {
-	int_str calling_line;
-	int_str called_line;
-	struct sca_line *line=NULL;
-	int idx;
-	int state;
-	int val_type;
+	struct sca_cb_params *param;
+	struct sip_msg *msg = _params->msg;
+	int branch, idx = 0, val_type, new_state;
+	int_str isval;
+	str *entity, *peer;
 
-	calling_line.s = STR_NULL;
-	called_line.s = STR_NULL;
+	param = (struct sca_cb_params *)(*_params->param);
+	peer = &param->peer.uri;
+	entity = &param->entity.uri;
 
-	/* search the lines */
-	if ( dlgf.fetch_dlg_value(dlg, &calling_line_Dvar, &val_type,
-		&calling_line, 1)==0 || calling_line.s.s!=NULL) {
-		LM_DBG("calling line <%.*s> found \n",calling_line.s.len,calling_line.s.s);
-		/* search without auto create */
-		line = get_sca_line( &calling_line.s, 0);
-	} else if ( dlgf.fetch_dlg_value(dlg, &called_line_Dvar, &val_type,
-		&called_line, 1)==0 || called_line.s.s!=NULL) {
-		LM_DBG("called line <%.*s> found \n",called_line.s.len,called_line.s.s);
-		/* search without auto create */
-		line = get_sca_line( &called_line.s, 0);
+	if (type == DLGCB_CONFIRMED) {
+	    /* this is triggered in the context of a reply, so its branch
+	     * is available here */
+	    branch = isval.n = tmf.get_branch_index();
+	    if (dlgf.store_dlg_value(dlg, &sca_branch_Dvar, &isval,
+	        DLG_VAL_TYPE_INT) < 0) {
+	        LM_ERR("Failed to store wining branch in dialog\n");
+	    }
+
+	    LM_SCA("dlgcb %d, stored branch is %d\n", type, branch);
+	} else {
+	    if (dlgf.fetch_dlg_value(dlg, &sca_branch_Dvar, &val_type, &isval, 0) < 0
+				|| val_type != DLG_VAL_TYPE_INT) {
+	        LM_ERR("Failed to retrieve wining branch from dialog\n");
+			return;
+		}
+
+	    branch = isval.n;
+	    LM_SCA("dlgcb %d, retrieved branch is %d\n", type, branch);
 	}
 
-	if (line==NULL) {
-		LM_ERR("could not found the line in dialog callback :( \n");
-		return;
+	/* best-effort search for ";appearance-index" in Call-INFO hdr */
+	if (parse_call_info_header(msg) == 0) {
+		idx = get_appearance_index(msg);
+		if (idx == 0) {
+			LM_SCA("message has Call-Info but index not found, assuming 1\n");
+			idx = 1;
+		}
+	} else {
+		LM_SCA("message has no Call-Info hf, assuming appearance-index=1\n");
+		idx = 1;
 	}
-
-	/* careful now, the line is LOCKED !! */
 
 	/* get the index and the new state */
-	idx = (int)(long)(*(_params->param));
 	switch (type) {
 		case DLGCB_FAILED:
 		case DLGCB_TERMINATED:
 		case DLGCB_EXPIRED:
-			state = SCA_STATE_IDLE;
+			new_state = SCA_STATE_IDLE;
 			break;
+
 		case DLGCB_EARLY:
-			state = calling_line.s.len?SCA_STATE_PROGRESSING:SCA_STATE_ALERTING;
+			new_state = -1;
 			break;
+
 		case DLGCB_CONFIRMED:
-			state = SCA_STATE_ACTIVE;
+			new_state = SCA_STATE_ACTIVE;
 			break;
+
+		// TODO -- detect on-hold vs off-hold Re-INVITE
+		//case DLGCB_REQ_WITHIN:
+		//	new_state = SCA_STATE_HELD;
+		//	break;
+
 		default:
-			LM_CRIT("BUG: unsupported callback type %d \n",type);
-			unlock_sca_line(line);
+			LM_CRIT("BUG: unsupported callback type %d \n", type);
 			return;
 	}
 
-	/* everything ok, change the state of the line and notify */
-	set_sca_index_state( line, idx, state);
-
-	do_callinfo_publish( line );
-	/* now the line is unlocked */
-
-	return;
+	sca_sendpublish(dlg, branch, entity, peer, idx, new_state);
 }
 
 
-int sca_set_line(struct sip_msg *msg, str *line_s, int calling)
+void sca_sendpublish(struct dlg_cell *dlg, int branch, str *entity, str *peer,
+		int line_idx, int new_state)
 {
-	struct dlg_cell *dlg;
-	unsigned int idx;
-	struct sca_line *line;
+	int_str sca_engaged, mute_val;
+	int val_type;
+	str mute_var;
 	int_str isval;
+	str name_u, custom_peer;
 
-	/* extract the index from the call-info line */
-	if ( parse_call_info_header( msg )!=0 ) {
-		LM_ERR("missing or bogus Call-Info header in INVITE\n");
-		return -1;
-	}
-	idx = get_appearance_index(msg);
-	if (idx==0) {
-		LM_ERR("failed to extract line index from Call-Info hdr\n");
-		return -1;
+	/* engage flags - caller vs. callees */
+	if (dlgf.fetch_dlg_value(dlg, &sca_engaged_Dvar, &val_type,
+		&sca_engaged, 0) < 0 || val_type != DLG_VAL_TYPE_INT) {
+		LM_ERR("sca_engaged not found in dlg\n");
+		return;
 	}
 
-	LM_DBG("looking for line  <%.*s>, idx %d, calling %d \n",
-		line_s->len, line_s->s, idx, calling);
+	/* PUBLISH -- caller side */
+	if (sca_engaged.n & SCA_PUB_A)
+		try_callinfo_publish(entity, line_idx,
+			new_state == -1 ? SCA_STATE_PROGRESSING : new_state, 0);
+	else
+		LM_SCA("skipping call-info for caller (new_state %d)\n", new_state);
 
-	/* search for the line (with no creation) */
-	line = get_sca_line( line_s, 0);
-	if (line==NULL) {
-		LM_ERR("used line <%.*s> not found in hash. Using without seizing?\n",
-			line_s->len, line_s->s);
-		return -1;
+	/* PUBLISH -- callee(s) side */
+	if (!(sca_engaged.n & SCA_PUB_B)) {
+		LM_SCA("skipping call-info for callee (new_state %d)\n", new_state);
+		return;
 	}
-	/* NOTE: the line is now locked !!!!! */
 
-	/* check if the index is seized */
-	if (calling) {
-		if (line->seize_state!=idx) {
-			LM_ERR("line not seized or seized for other index "
-				"(idx=%d,seize=%d)\n",idx,line->seize_state);
-			goto error;
+	/* try to see if there are any muting settings per branch */
+	build_branch_mute_var_name( branch, &mute_var );
+	if (dlgf.fetch_dlg_value(dlg, &mute_var, &val_type, &mute_val, 1) == 0) {
+		if (mute_val.s.len != 2) {/* we expect a new letters string */
+			pkg_free(mute_val.s.s);
+			mute_val.s = STR_NULL;
+		} else {
+			LM_DBG("per-branch mute information was found as [%.*s]\n",
+				mute_val.s.len, mute_val.s.s);
 		}
 	}
 
-	/* create and bind to the dialog */
-	if (dlgf.create_dlg(msg,0)< 0) {
-		LM_ERR("failed to create dialog\n");
-		goto error;
+	if (!should_publish_B(sca_engaged.n, mute_val.s)) {
+		LM_SCA("skipping call-info for callee on branch %d (muted, new_state %d)\n",
+				branch, new_state);
+		return;
 	}
 
-	dlg = dlgf.get_dlg();
+	/* try to see if there is any custom callee per branch */
+	build_branch_callee_var_names( branch, &name_u);
+	if (dlgf.fetch_dlg_value(dlg, &name_u, &val_type, &isval, 1) == 0) {
+		custom_peer = isval.s;
+		isval.s = STR_NULL;
+		LM_SCA("per-branch callee/peer information was found: '%.*s' -> '%.*s'\n",
+				peer->len, peer->s, custom_peer.len, custom_peer.s);
+		peer = &custom_peer;
+	}
 
-	LM_DBG("INVITE dialog created: using line <%.*s>\n",
-		line_s->len, line_s->s);
+	try_callinfo_publish(peer, line_idx,
+		new_state == -1 ? SCA_STATE_ALERTING : new_state, 0);
 
-	/* store the line variable into dialog */
-	if (calling) {
-		isval.s = *line_s;
-		if(dlgf.store_dlg_value(dlg, &calling_line_Dvar, &isval,
-			DLG_VAL_TYPE_STR)< 0) {
-			LM_ERR("Failed to store calling line\n");
-			goto error;
+	/* change the state of the line and notify */
+	//set_sca_index_state( line, line_idx, state);
+
+	//do_callinfo_publish( line );
+	/* now the line is unlocked */
+}
+
+
+void try_callinfo_publish(str *line_uri, int line_idx, int new_state, int create)
+{
+	struct sca_idx *scai;
+	struct sca_line *line;
+	int old_state = -1;
+
+	LM_SCA("attempt to PUBLISH on line <%.*s>, idx %d, new state: %d\n",
+	        line_uri->len, line_uri->s, line_idx, new_state);
+
+	if (sca_bad_state(new_state)) {
+		LM_ERR("bad new state: %d, refusing to publish\n", new_state);
+		return;
+	}
+
+	line = get_sca_line(line_uri, create);
+	if (!line) {
+		LM_ERR("could not %s calling line '%.*s' in hash\n",
+		        create ? "create" : "find", line_uri->len, line_uri->s);
+		return;
+	}
+
+	/* line is LOCKED! */
+	if (new_state == SCA_STATE_ALERTING && line_idx == 0) {
+		LM_SCA("assuming appearance-index=1 on 'alerting' event\n");
+		line_idx = 1;
+	}
+
+	scai = get_sca_index(line, line_idx);
+	if (!scai) {
+		unlock_sca_line(line);
+		LM_ERR("failed to get/allocate line index\n");
+		return;
+	}
+	old_state = scai->state;
+
+	LM_SCA("line/idx found, old_state: %d\n", old_state);
+	if (old_state == new_state)
+		goto nop;
+
+	switch (scai->state) {
+	case SCA_STATE_NONE:
+	case SCA_STATE_IDLE:
+		break;
+
+	case SCA_STATE_SEIZED:
+		switch (new_state) {
+		case SCA_STATE_IDLE:
+		case SCA_STATE_PROGRESSING:
+		case SCA_STATE_ACTIVE:
+			break;
+		default:
+			goto bad_transition;
 		}
-	} else {
-		isval.s = *line_s;
-		if(dlgf.store_dlg_value(dlg, &called_line_Dvar, &isval,
-			DLG_VAL_TYPE_STR)< 0) {
-			LM_ERR("Failed to store called line\n");
-			goto error;
+
+	case SCA_STATE_PROGRESSING:
+	case SCA_STATE_ALERTING:
+		switch (new_state) {
+		case SCA_STATE_IDLE:
+		case SCA_STATE_ACTIVE:
+			break;
+		default:
+			goto bad_transition;
 		}
+
+	case SCA_STATE_ACTIVE:
+		switch (new_state) {
+		case SCA_STATE_IDLE:
+		case SCA_STATE_HELD:
+			break;
+		default:
+			goto bad_transition;
+		}
+
+	case SCA_STATE_HELD:
+		switch (new_state) {
+		case SCA_STATE_IDLE:
+		case SCA_STATE_ACTIVE:
+			break;
+		default:
+			goto bad_transition;
+		}
+
+	default:
+		unlock_sca_line(line);
+		LM_ERR("invalid index state: %d\n", old_state);
+		return;
 	}
 
-	/* register callbacks */
-	if (dlgf.register_dlgcb( dlg,
-	DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
-	DLGCB_EARLY , sca_dialog_callback, (void*)(long)idx, 0) != 0) {
-		LM_ERR("cannot register callbacks for dialog\n");
-		goto error;
-	}
+	LM_SCA("valid transition %d -> %d, publishing...\n", old_state, new_state);
 
-	/* STILL LOCKED HERE !! */
-	terminate_line_sieze(line);
-	/* lock released by above function */
+	scai->state = new_state;
+	do_callinfo_publish(line );
+	/* un-LOCKED */
 
-	return 1;
-error:
+bad_transition:
 	unlock_sca_line(line);
-	return -1;
+	LM_ERR("bad state transition: (%d -> %d), refusing to publish\n",
+	        old_state, new_state);
+nop:
+	unlock_sca_line(line);
+	LM_SCA("NOP transition %d -> %d, quick-exit\n", old_state, new_state);
+}
+
+
+void build_branch_mute_var_name( int branch, str *var_m)
+{
+	#define MUTE_PATTERN "__sca_br_MUTE_XXXX"
+	#define br_mute_var_end_offset 4
+	static char br_mute_var[] = MUTE_PATTERN;
+	char *p;
+	int s;
+
+	p = br_mute_var + sizeof(MUTE_PATTERN)-1 - br_mute_var_end_offset;
+	s = br_mute_var_end_offset;
+	int2reverse_hex( &p, &s, (unsigned int)branch );
+	var_m->s = br_mute_var;
+	var_m->len = sizeof(MUTE_PATTERN)-1 - s;
+
+	LM_SCA("callee-muted dlgv for branch #%d: '%.*s'\n",
+	        branch, var_m->len, var_m->s);
+}
+
+
+void build_branch_callee_var_names( int branch, str *var_u)
+{
+	#define URI_PATTERN "__sca_br_CALLEEU_XXXX"
+	#define br_callee_var_end_offset 4
+	static char br_calleeU_var[] = URI_PATTERN;
+	char *p;
+	int s;
+
+	p = br_calleeU_var + sizeof(URI_PATTERN)-1 - br_callee_var_end_offset;
+	s = br_callee_var_end_offset;
+	int2reverse_hex( &p, &s, (unsigned int)branch );
+	var_u->s = br_calleeU_var;
+	var_u->len = sizeof(URI_PATTERN)-1 - s;
+
+	LM_SCA("callee-uri dlgv for branch #%d: '%.*s'\n",
+			branch, var_u->len, var_u->s);
 }
