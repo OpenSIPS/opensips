@@ -172,7 +172,7 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 			rr_api.record_route(msg, NULL);
 
 		/* if not RR_DRIVEN */
-		if (rr_api.loose_route(msg) < 0) {
+		if (rr_api.loose_route(msg, (void *)0) < 0) {
 
 			/* attempt a full dialog search (not the usual quick did lookup) */
 			if (use_dialog && dlg_api.match_dialog(msg, SEQ_MATCH_DEFAULT) < 0)

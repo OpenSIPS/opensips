@@ -49,7 +49,7 @@ typedef  int (*is_direction_t)(struct sip_msg*, int);
 typedef  int (*get_route_param_t)(struct sip_msg*, str*, str*);
 typedef  str* (*get_remote_target_t)(struct sip_msg*);
 typedef  str* (*get_route_set_t)(struct sip_msg*,int *nr_routes);
-typedef  int (*loose_route_t)(struct sip_msg*);
+typedef  int (*loose_route_t)(struct sip_msg*, void*);
 typedef  int (*record_route_t)(struct sip_msg*, str*);
 
 struct rr_binds {
