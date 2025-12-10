@@ -27,7 +27,7 @@
 #include "../str.h"
 #include "item.h"
 
-#define MAX_MI_PARAMS  10
+#define MAX_MI_PARAMS  20
 #define MAX_MI_RECIPES 48
 
 /* async MI command */
