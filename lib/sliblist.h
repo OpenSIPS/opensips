@@ -158,6 +158,18 @@ int slinkedl_replace(slinkedl_list_t *list, slinkedl_match_f match,
 void *slinkedl_peek(slinkedl_list_t *list);
 
 /**
+ * Delete from the list the first element that matches is found 
+ *
+ * @psram lit The list to traverse.
+ * @param match_func The function used for matching the list element to delete
+ * @param data The data to be used by run_data function.
+ * @return The return code from last match_func call.
+ * @see slinkedl_match_f()
+ */
+int slinkedl_delete(slinkedl_list_t *list, slinkedl_match_f *match_func, void *data);
+
+
+/**
  * Destroy the list.
  * Any element in the list will be silently destroyed.
  * If you want to perform some actions on list elemnts before destroying it,
