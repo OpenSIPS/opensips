@@ -605,7 +605,7 @@ int web3_oasis_get_wallet_address(const char *username, char *wallet_address) {
 
   /* String length (username length in bytes) */
   username_len = strlen(username);
-  ret = snprintf(call_data + pos, sizeof(call_data) - pos, "%064lx",
+  ret = snprintf(call_data + pos, sizeof(call_data) - pos, "%064zx",
                   username_len);
   if (ret < 0 || ret >= (int)(sizeof(call_data) - pos)) {
     LM_ERR("Failed to encode username length");
@@ -883,35 +883,35 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   pos += ret;
 
   /* Offset words (32 bytes each, as 64 hex chars) */
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset1);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", offset1);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode offset1");
     goto cleanup;
   }
   pos += ret;
 
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset2);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", offset2);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode offset2");
     goto cleanup;
   }
   pos += ret;
 
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset3);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", offset3);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode offset3");
     goto cleanup;
   }
   pos += ret;
 
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset4);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", offset4);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode offset4");
     goto cleanup;
   }
   pos += ret;
 
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset5);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", offset5);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode offset5");
     goto cleanup;
@@ -927,7 +927,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   pos += ret;
 
   /* Offset for response bytes */
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", offset7);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", offset7);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode offset7");
     goto cleanup;
@@ -935,7 +935,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   pos += ret;
 
   /* String 1: username - length + padded data */
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len1);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", len1);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode username length");
     goto cleanup;
@@ -956,7 +956,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   }
 
   /* String 2: realm - length + padded data */
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len2);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", len2);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode realm length");
     goto cleanup;
@@ -977,7 +977,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   }
 
   /* String 3: method - length + padded data */
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len3);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", len3);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode method length");
     goto cleanup;
@@ -998,7 +998,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   }
 
   /* String 4: uri - length + padded data */
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len4);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", len4);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode uri length");
     goto cleanup;
@@ -1019,7 +1019,7 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   }
 
   /* String 5: nonce - length + padded data */
-  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064lx", len5);
+  ret = snprintf(call_data + pos, total_len * 2 + 1 - pos, "%064zx", len5);
   if (ret < 0 || ret >= (total_len * 2 + 1 - pos)) {
     LM_ERR("Failed to encode nonce length");
     goto cleanup;
