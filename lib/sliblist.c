@@ -215,3 +215,35 @@ void slinkedl_list_destroy(slinkedl_list_t *list)
 	return;
 }
 
+int slinkedl_delete(slinkedl_list_t *list, slinkedl_match_f *func, void *data)
+{
+	slinkedl_element_t *prev = NULL;
+	slinkedl_element_t *element;
+	int ret = 0;
+
+	if (!list || !func)
+		return 0;
+
+	element = list->head;
+	while (element) {
+		ret = (*func)(element->data, data, NULL);
+		if (ret) {
+			if (prev)
+				prev->next = element->next;
+			else
+				list->head = element->next;
+
+			/* fix tail if we removed the last element */
+			if (element == list->tail)
+				list->tail = prev;
+
+			list->dealloc(element);
+			return ret;
+		}
+
+		prev = element;
+		element = element->next;
+	}
+
+	return 0;   /* not found */
+}
