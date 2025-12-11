@@ -76,4 +76,33 @@
 	</section>
 	</section>
 
+	<section>
+		<title>&osips; Exported parameters</title>
+		<para>
+		All these parameters can be used from the opensips.cfg file,
+		to configure the behavior of &osips;-TLS.
+		</para>
+
+		<section id="param_try_use_ktls" xreflabel="try_use_ktls">
+			<title><varname>try_use_ktls</varname> (integer)</title>
+			<para>
+			Try to use KTLS for RX and TX ( dependent on Kernel support and loaded modules https://docs.kernel.org/networking/tls-offload.htm )
+			If kernel support is not found, or if the cypher attempted to be used is not supported ( only AES-GCM for now ), then SSL operations will continue to be done in user-space.
+			IF NIC supports SSL offloading, that can also be enabled without any changes needed to the module https://docs.nvidia.com/doca/sdk/ktls-offloads/index.html
+			</para>
+			<para>
+				Default value is <emphasis>0</emphasis>.
+			</para>
+			<example>
+				<title>Set <varname>try_use_ktls</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_wolfssl", "try_use_ktls", "0")
+...
+				</programlisting>
+			</example>
+		</section>
+	</section>
+
+
 </chapter>
