@@ -71,20 +71,20 @@ void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 	peer = &param->peer.uri;
 	entity = &param->entity.uri;
 
-	if (type == DLGCB_CONFIRMED) {
+	if (type <= DLGCB_CONFIRMED) {
 	    /* this is triggered in the context of a reply, so its branch
 	     * is available here */
 	    branch = isval.n = tmf.get_branch_index();
 	    if (dlgf.store_dlg_value(dlg, &sca_branch_Dvar, &isval,
 	        DLG_VAL_TYPE_INT) < 0) {
-	        LM_ERR("Failed to store wining branch in dialog\n");
+	        LM_ERR("Failed to store winning branch in dialog\n");
 	    }
 
 	    LM_SCA("dlgcb %d, stored branch is %d\n", type, branch);
 	} else {
 	    if (dlgf.fetch_dlg_value(dlg, &sca_branch_Dvar, &val_type, &isval, 0) < 0
 				|| val_type != DLG_VAL_TYPE_INT) {
-	        LM_ERR("Failed to retrieve wining branch from dialog\n");
+	        LM_ERR("Failed to retrieve winning branch from dialog\n");
 			return;
 		}
 
@@ -137,11 +137,16 @@ void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 void sca_sendpublish(struct dlg_cell *dlg, int branch, str *entity, str *peer,
 		int line_idx, int new_state)
 {
-	int_str sca_engaged, mute_val;
+	int_str sca_engaged, mute_val, isval;
 	int val_type;
-	str mute_var;
-	int_str isval;
-	str name_u, custom_peer;
+	str mute_var = STR_NULL, custom_peer = STR_NULL, name_u;
+
+	sca_engaged.n = 0;
+	mute_val.s = STR_NULL;
+	isval.s = STR_NULL;
+
+	LM_SCA("SCA publish attempt, branch %d, [%.*s] -> [%.*s], idx %d, new_state: %d\n",
+			branch, entity->len, entity->s, peer->len, peer->s, line_idx, new_state);
 
 	/* engage flags - caller vs. callees */
 	if (dlgf.fetch_dlg_value(dlg, &sca_engaged_Dvar, &val_type,
@@ -149,6 +154,10 @@ void sca_sendpublish(struct dlg_cell *dlg, int branch, str *entity, str *peer,
 		LM_ERR("sca_engaged not found in dlg\n");
 		return;
 	}
+
+	LM_SCA("SCA engage flags: %d (caller: %d/%d, callee: %d/%d)\n",
+			sca_engaged.n, sca_engaged.n & SCA_PUB_A, SCA_PUB_A,
+			sca_engaged.n & SCA_PUB_B, SCA_PUB_B);
 
 	/* PUBLISH -- caller side */
 	if (sca_engaged.n & SCA_PUB_A)
@@ -178,7 +187,7 @@ void sca_sendpublish(struct dlg_cell *dlg, int branch, str *entity, str *peer,
 	if (!should_publish_B(sca_engaged.n, mute_val.s)) {
 		LM_SCA("skipping call-info for callee on branch %d (muted, new_state %d)\n",
 				branch, new_state);
-		return;
+		goto out;
 	}
 
 	/* try to see if there is any custom callee per branch */
@@ -199,6 +208,9 @@ void sca_sendpublish(struct dlg_cell *dlg, int branch, str *entity, str *peer,
 
 	//do_callinfo_publish( line );
 	/* now the line is unlocked */
+out:
+	pkg_free(mute_val.s.s);
+	pkg_free(custom_peer.s);
 }
 
 
@@ -255,6 +267,7 @@ void try_callinfo_publish(str *line_uri, int line_idx, int new_state, int create
 		default:
 			goto bad_transition;
 		}
+		break;
 
 	case SCA_STATE_PROGRESSING:
 	case SCA_STATE_ALERTING:
@@ -265,6 +278,7 @@ void try_callinfo_publish(str *line_uri, int line_idx, int new_state, int create
 		default:
 			goto bad_transition;
 		}
+		break;
 
 	case SCA_STATE_ACTIVE:
 		switch (new_state) {
@@ -274,6 +288,7 @@ void try_callinfo_publish(str *line_uri, int line_idx, int new_state, int create
 		default:
 			goto bad_transition;
 		}
+		break;
 
 	case SCA_STATE_HELD:
 		switch (new_state) {
@@ -283,6 +298,7 @@ void try_callinfo_publish(str *line_uri, int line_idx, int new_state, int create
 		default:
 			goto bad_transition;
 		}
+		break;
 
 	default:
 		unlock_sca_line(line);
@@ -295,14 +311,17 @@ void try_callinfo_publish(str *line_uri, int line_idx, int new_state, int create
 	scai->state = new_state;
 	do_callinfo_publish(line );
 	/* un-LOCKED */
+	return;
+
+nop:
+	unlock_sca_line(line);
+	LM_SCA("NOP transition %d -> %d, quick-exit\n", old_state, new_state);
+	return;
 
 bad_transition:
 	unlock_sca_line(line);
 	LM_ERR("bad state transition: (%d -> %d), refusing to publish\n",
 	        old_state, new_state);
-nop:
-	unlock_sca_line(line);
-	LM_SCA("NOP transition %d -> %d, quick-exit\n", old_state, new_state);
 }
 
 

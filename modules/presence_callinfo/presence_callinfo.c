@@ -535,7 +535,7 @@ static int sca_validate_call_out(struct sip_msg *msg, str *line_s)
 
 int sca_engage(struct sip_msg *msg, str *parties)
 {
-	struct sca_cb_params *param_dlg, *param_tm;
+	struct sca_cb_params *param_dlg = NULL, *param_tm = NULL;
 	struct dlg_cell * dlg;
 	int rc, flags, val_type;
 	int_str sca_engaged;
@@ -556,6 +556,9 @@ int sca_engage(struct sip_msg *msg, str *parties)
 		return -1;
 	}
 
+	LM_SCA("sca_engage('%.*s') called, flags: %d\n",
+			parties->len, parties->s, flags);
+
 	if (sca_pack_cb_params( msg, &param_dlg, &param_tm) < 0) {
 		LM_ERR("Failed to allocate parameters\n");
 		return -1;
@@ -564,6 +567,7 @@ int sca_engage(struct sip_msg *msg, str *parties)
 	/* do some extra checks for outbound, ensure line is seized */
 	if (flags & SCA_PUB_A
 	        && (rc = sca_validate_call_out(msg, &param_dlg->entity.uri)) < 0) {
+		LM_SCA("call out attempt not validated, rc: %d\n", rc);
 		free_cb_param(param_tm); free_cb_param(param_dlg);
 		return rc;
 	}
@@ -591,7 +595,7 @@ int sca_engage(struct sip_msg *msg, str *parties)
 
 		/* callbacks were already registered previously */
 		free_cb_param(param_tm); free_cb_param(param_dlg);
-		return 0;
+		return 1;
 	}
 
 	/* register TM callback to get access to received replies */
@@ -611,7 +615,7 @@ int sca_engage(struct sip_msg *msg, str *parties)
 		return -1;
 	}
 
-	return 0;
+	return 1;
 
 err_cleanup:
 	free_cb_param(param_tm);
@@ -698,6 +702,42 @@ error:
 }
 
 
+int sca_mute_branch(struct sip_msg *msg, str *parties)
+{
+	struct dlg_cell * dlg;
+	int branch, flags;
+	str mute_var;
+	char buf[2];
+	str val = {buf,2};
+	int_str isval;
+
+	dlg = dlgf.get_dlg();
+	if (!dlg)
+		return -1;
+
+	branch = tmf.get_branch_index();
+
+	/* build var name */
+	build_branch_mute_var_name( branch, &mute_var );
+
+	/* parse the parties to be muted  */
+	flags = sca_parse_parties_flag(parties);
+	val.s[0] = (flags&SCA_PUB_A) ? 'Y':'N';
+	val.s[1] = (flags&SCA_PUB_B) ? 'Y':'N';
+
+	LM_DBG("storing muting setting [%.*s]->[%.*s]\n",
+		mute_var.len, mute_var.s, val.len, val.s);
+
+	isval.s = val;
+	if (dlgf.store_dlg_value(dlg, &mute_var, &isval, DLG_VAL_TYPE_STR) < 0) {
+		LM_ERR("Failed to store mute flags for branch %d\n",branch);
+		return -1;
+	}
+
+	return 1;
+}
+
+
 static int sca_mi_print_line(mi_item_t *line_obj, struct sca_line *ln)
 {
 	mi_item_t *idx_arr, *idx_obj;
@@ -706,6 +746,7 @@ static int sca_mi_print_line(mi_item_t *line_obj, struct sca_line *ln)
 	char *state;
 	time_t now;
 	int diff;
+	double expires_ts;
 
 	if (add_mi_string(line_obj, MI_SSTR("line"), ln->line.s, ln->line.len) < 0)
 		goto error;
@@ -715,12 +756,18 @@ static int sca_mi_print_line(mi_item_t *line_obj, struct sca_line *ln)
 
 	now = time(NULL);
 	ticks = get_ticks();
-	diff = (int)ln->seize_expires - (int)ticks;
+	if (!ln->seize_expires) {
+		diff = 0;
+		expires_ts = 0;
+	} else {
+		diff = (int)ln->seize_expires - (int)ticks;
+		expires_ts = now + ln->seize_expires - ticks;
+	}
 
 	if (add_mi_number(line_obj, MI_SSTR("seize_expires"), diff) < 0)
 		goto error;
 
-	if (add_mi_number(line_obj, MI_SSTR("seize_expires_ts"), now + ln->seize_expires - ticks) < 0)
+	if (add_mi_number(line_obj, MI_SSTR("seize_expires_ts"), expires_ts) < 0)
 		goto error;
 
 	idx_arr = add_mi_array(line_obj, MI_SSTR("indexes"));
@@ -899,7 +946,7 @@ mi_response_t *sca_mi_set_log_level(const mi_params_t *params,
 
 static void sca_tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 {
-	struct sip_msg* msg = _params->rpl;
+	struct sip_msg *req = _params->req; //, *rpl = _params->rpl;
 	struct sca_cb_params *param;
 	struct sca_party *entity;
 	struct dlg_cell *dlg;
@@ -917,7 +964,7 @@ static void sca_tm_sendpublish(struct cell *t, int type, struct tmcb_params *_pa
 	/* this is triggered only for TMCB_RESPONSE_IN */
 	branch = tmf.get_branch_index();
 
-	LM_DBG("TM event %d [%d/%d] received, entity [%.*s], peer [%.*s]\n", type,
+	LM_SCA("TM event %d [%d/%d] received, entity [%.*s], peer [%.*s]\n", type,
 	    _params->code, branch, entity->uri.len, entity->uri.s,
 	    peer->len, peer->s);
 
@@ -933,11 +980,8 @@ static void sca_tm_sendpublish(struct cell *t, int type, struct tmcb_params *_pa
 		custom = isval.s;
 		isval.s = STR_NULL;
 		peer = &custom;
-		LM_DBG("per-branch callee/peer information was found\n");
+		LM_SCA("peer line override with [%.*s]\n", peer->len, peer->s);
 	}
-
-	LM_DBG("using entity [%.*s] and peer [%.*s]\n",
-		entity->uri.len, entity->uri.s, peer->len, peer->s);
 
 	/* catch all early dialog replies and publish call-info accordingly */
 	if (_params->code >= 180 && _params->code < 200) {
@@ -955,8 +999,8 @@ static void sca_tm_sendpublish(struct cell *t, int type, struct tmcb_params *_pa
 
 		if (n) {
 			/* best-effort search for ";appearance-index" in Call-INFO hdr */
-			if (parse_call_info_header(msg) == 0)
-				idx = get_appearance_index(msg);
+			if (parse_call_info_header(req) == 0)
+				idx = get_appearance_index(req);
 
 			sca_sendpublish(dlg, branch, &entity->uri, peer, idx, -1);
 		}
@@ -970,41 +1014,3 @@ static void free_cb_param(void *param)
 {
 	shm_free(param);
 }
-
-
-int sca_mute_branch(struct sip_msg *msg, str *parties)
-{
-	struct dlg_cell * dlg;
-	int branch, flags;
-	str mute_var;
-	char buf[2];
-	str val = {buf,2};
-	int_str isval;
-
-	dlg = dlgf.get_dlg();
-	if (!dlg)
-		return -1;
-
-	branch = tmf.get_branch_index();
-
-	/* build var name */
-	build_branch_mute_var_name( branch, &mute_var );
-
-	/* parse the parties to be muted  */
-	flags = sca_parse_parties_flag(parties);
-	val.s[0] = (flags&SCA_PUB_A) ? 'Y':'N';
-	val.s[1] = (flags&SCA_PUB_B) ? 'Y':'N';
-
-	LM_DBG("storing muting setting [%.*s]->[%.*s]\n",
-		mute_var.len, mute_var.s, val.len, val.s);
-
-	isval.s = val;
-	if (dlgf.store_dlg_value(dlg, &mute_var, &isval, DLG_VAL_TYPE_STR) < 0) {
-		LM_ERR("Failed to store mute flags for branch %d\n",branch);
-		return -1;
-	}
-
-	return 1;
-}
-
-
