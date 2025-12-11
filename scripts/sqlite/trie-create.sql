@@ -3,7 +3,7 @@ CREATE TABLE trie_table (
     ruleid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     prefix CHAR(64) NOT NULL,
     attrs CHAR(255) DEFAULT NULL,
-    priority INTEGER DEFAULT 1 NOT NULL
+    enabled INTEGER DEFAULT 1 NOT NULL
 );
 
 INSERT INTO version (table_name, table_version) values ('trie_partitions','1');
