@@ -224,11 +224,7 @@ static inline int is_2rr(str* _params)
 /*
  * Check if URI is myself
  */
-#ifdef ENABLE_USER_CHECK
-static inline int is_myself(str *_user, struct sip_uri* _uri)
-#else
 static inline int is_myself(struct sip_uri* _uri)
-#endif
 {
 	int ret;
 	unsigned short port;
@@ -243,6 +239,7 @@ static inline int is_myself(struct sip_uri* _uri)
 	if (ret < 0) return 0;
 
 #ifdef ENABLE_USER_CHECK
+	str *_user = _uri->user;
 	if(i_user.len && i_user.len==_user->len
 			&& !strncmp(i_user.s, _user->s, _user->len))
 	{
@@ -515,13 +512,7 @@ static inline int after_strict(struct sip_msg* _m)
 		return RR_ERROR;
 	}
 
-	if ( enable_double_rr && is_2rr(&puri.params) &&
-#ifdef ENABLE_USER_CHECK
-	is_myself(&puri.user, &puri)
-#else
-	is_myself(&puri)
-#endif
-	) {
+	if (enable_double_rr && is_2rr(&puri.params) && is_myself(&puri)) {
 		/* double route may occure due different IP and port, so force as
 		 * send interface the one advertise in second Route */
 		set_sip_defaults( puri.port_no, puri.proto);
@@ -710,9 +701,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	rr_t* rt;
 	int res;
 	int status;
-#ifdef ENABLE_USER_CHECK
 	int ret;
-#endif
 	str uri;
 	struct socket_info *si;
 	int force_ss = 0;
@@ -727,13 +716,8 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	}
 
 	/* IF the URI was added by me, remove it */
-#ifdef ENABLE_USER_CHECK
-	ret=is_myself(&puri.user, &puri);
-	if (ret>0)
-#else
-	if (is_myself(&puri))
-#endif
-	{
+	ret = is_myself(&puri);
+	if (ret > 0) {
 		LM_DBG("Topmost route URI: '%.*s' is me\n",
 			uri.len, ZSW(uri.s));
 		/* set the hooks for the params -bogdan */
@@ -882,13 +866,13 @@ done:
 	return status;
 }
 
-
 /*
  * Do loose routing as defined in RFC3261
  */
-int loose_route(struct sip_msg* _m)
+int loose_route(struct sip_msg* _m, void *func_flags)
 {
-	int ret;
+	int preloaded;
+	int flags = (long) func_flags;
 
 	ctx_routing_set(0);
 
@@ -902,20 +886,14 @@ int loose_route(struct sip_msg* _m)
 		return -1;
 	}
 
-	ret = is_preloaded(_m);
-	if (ret < 0) {
+	preloaded = is_preloaded(_m);
+	if (preloaded < 0) {
 		return -1;
-	} else if (ret == 1) {
-		return after_loose(_m, 1);
 	} else {
-#ifdef ENABLE_USER_CHECK
-		if (is_myself(&_m->parsed_uri.user, &_m->parsed_uri) && !(_m->parsed_uri.gr.s && _m->parsed_uri.gr.len)) {
-#else
-		if (is_myself(&_m->parsed_uri) && !(_m->parsed_uri.gr.s && _m->parsed_uri.gr.len)) {
-#endif
+		if (!(flags & LR_ON_SELF) && is_myself(&_m->parsed_uri) && !(_m->parsed_uri.gr.s && _m->parsed_uri.gr.len)) {
 			return after_strict(_m);
 		} else {
-			return after_loose(_m, 0);
+			return after_loose(_m, preloaded);
 		}
 	}
 }
