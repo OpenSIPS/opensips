@@ -82,6 +82,7 @@ struct tls_domain {
 	void *ctx;  /* openssl's SSL_CTX or wolfSSL's WOLFSSL_CTX */
 	int ctx_no;  /* number of allocated contexts */
 	int verify_cert;
+	int verify_hostname;
 	int require_client_cert;
 	int crl_check_all;
 	str cert;
