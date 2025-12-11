@@ -47,7 +47,7 @@
 	</column>
 
 	<column id="enabled">
-		<name>priority</name>
+		<name>enabled</name>
 		<type>int</type>
 		<size>11</size>
 		<default>1</default>

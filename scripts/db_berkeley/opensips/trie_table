@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-ruleid(int) prefix(str) attrs(str) priority(int)
+ruleid(int) prefix(str) attrs(str) enabled(int)
 METADATA_KEY
 0 
 METADATA_READONLY
