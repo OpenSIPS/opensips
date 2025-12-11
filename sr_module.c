@@ -207,6 +207,7 @@ static inline int version_control(const struct module_exports* exp, char *path)
 {
 	const char *hint = "(try `make clean all modules' and reinstall everything)";
 	const char *scm_nm = "version control system";
+	int len;
 	if ( !exp->ver_info.version ) {
 		LM_CRIT("BUG - version not defined in module <%s>\n", path );
 		return 0;
@@ -243,11 +244,15 @@ static inline int version_control(const struct module_exports* exp, char *path)
 			core_scm_ver.type, exp->ver_info.scm.type, hint);
 		return 0;
 	}
-	if (modload_check_rev && strcmp(core_scm_ver.rev, exp->ver_info.scm.rev)) {
-		LM_CRIT("module %s revision mismatch for %s "
-			" \ncore: %s \nmodule: %s %s\n", scm_nm, exp->name,
-			core_scm_ver.rev, exp->ver_info.scm.rev, hint);
-		return 0;
+	if (modload_check_rev) {
+		len = (strlen(core_scm_ver.rev) < strlen(exp->ver_info.scm.rev))?
+			strlen(core_scm_ver.rev): strlen(exp->ver_info.scm.rev);
+		if (strncmp(core_scm_ver.rev, exp->ver_info.scm.rev, len) != 0) {
+			LM_CRIT("module %s revision mismatch for %s "
+					" \ncore: %s \nmodule: %s %s\n", scm_nm, exp->name,
+					core_scm_ver.rev, exp->ver_info.scm.rev, hint);
+			return 0;
+		}
 	}
 	return 1;
 }
