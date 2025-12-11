@@ -5,7 +5,7 @@
 		<column><field>ruleid</field><type>DB_INT</type></column>
 		<column><field>prefix</field><type>DB_STR</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
-		<column><field>priority</field><type>DB_INT</type></column>
+		<column><field>enabled</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of trie_partitions table-->
 	<db_table id="trie_partitions">

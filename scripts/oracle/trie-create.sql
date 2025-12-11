@@ -3,7 +3,7 @@ CREATE TABLE trie_table (
     ruleid NUMBER(10) PRIMARY KEY,
     prefix VARCHAR2(64),
     attrs VARCHAR2(255) DEFAULT NULL,
-    priority NUMBER(10) DEFAULT 1 NOT NULL
+    enabled NUMBER(10) DEFAULT 1 NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER trie_table_tr
