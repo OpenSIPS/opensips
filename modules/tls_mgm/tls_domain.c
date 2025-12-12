@@ -37,7 +37,6 @@
 #include "../../lib/csv.h"
 #include "tls_domain.h"
 #include "tls_params.h"
-#include "api.h"
 #include <stdlib.h>
 #include <fnmatch.h>
 
@@ -45,13 +44,13 @@
 struct tls_domain **tls_server_domains;
 struct tls_domain **tls_client_domains;
 
-map_t server_dom_matching;
-map_t client_dom_matching;
+struct tls_domain **script_srv_domains_template;
+struct tls_domain **script_cli_domains_template;
+
+map_t *server_dom_matching;
+map_t *client_dom_matching;
 
 rw_lock_t *dom_lock;
-
-extern struct openssl_binds openssl_api;
-extern struct wolfssl_binds wolfssl_api;
 
 void destroy_tls_dom(struct tls_domain *d);
 
@@ -67,112 +66,52 @@ struct tls_domain *tls_find_domain_by_name(str *name, struct tls_domain **dom_li
 	return NULL;
 }
 
-struct tls_domain *find_first_script_dom(struct tls_domain *dom)
-{
-	struct tls_domain *d;
-
-	for (d = dom; d && d->flags & DOM_FLAG_DB; d = d->next) ;
-
-	return d;
-}
-
 void map_free_node(void *val)
 {
 	if (val)
 		shm_free(val);
 }
 
-void map_remove_tls_dom(struct tls_domain *dom)
-{
-	map_t map = dom->flags & DOM_FLAG_SRV ? server_dom_matching : client_dom_matching;
-	map_iterator_t it, it_tmp;
-	struct dom_filt_array *doms_array;
-	void **val;
-	int i, j;
-
-	map_first(map, &it);
-	while (iterator_is_valid(&it)) {
-		it_tmp = it;
-		iterator_next(&it);
-
-		val = iterator_val(&it_tmp);
-		doms_array = (struct dom_filt_array *)*val;
-		for (i = 0; i < doms_array->size;)
-			if (doms_array->arr[i].dom_link == dom) {
-				for (j = i + 1; j < doms_array->size; j++)
-					doms_array->arr[j-1] = doms_array->arr[j];
-				doms_array->size--;
-			}
-			else {
-				i++;
-			}
-		if (doms_array->size == 0) {
-			map_free_node(doms_array);
-			iterator_delete(&it_tmp);
-		}
-	}
-}
-
-void tls_free_domain(struct tls_domain *dom)
+void tls_release_domain(struct tls_domain *dom)
 {
 	str_list *m_it, *m_tmp;
+	int free_it = 0;
 
-	dom->refs--;
-	if (dom->refs == 0) {
-		LM_DBG("Freeing domain: %.*s\n",
-			dom->name.len, dom->name.s);
-
-		destroy_tls_dom(dom);
-
-		lock_destroy(dom->lock);
-		lock_dealloc(dom->lock);
-
-		map_remove_tls_dom(dom);
-
-		m_it = dom->match_domains;
-		while (m_it) {
-			m_tmp = m_it;
-			m_it = m_it->next;
-			shm_free(m_tmp->s.s);
-			shm_free(m_tmp);
-		}
-		m_it = dom->match_addresses;
-		while (m_it) {
-			m_tmp = m_it;
-			m_it = m_it->next;
-			shm_free(m_tmp->s.s);
-			shm_free(m_tmp);
-		}
-
-		shm_free(dom);
-	}
-}
-
-/* frees the DB domains */
-void tls_free_db_domains(struct tls_domain *dom)
-{
-	struct tls_domain *tmp;
-
-	while (dom && dom->flags & DOM_FLAG_DB) {
-		tmp = dom;
-		dom = dom->next;
-		map_remove_tls_dom(tmp);
-		tls_free_domain(tmp);
-	}
-}
-
-void tls_release_domain(struct tls_domain* dom)
-{
-	if (!dom || !(dom->flags & DOM_FLAG_DB))
+	if (!dom)
 		return;
 
-	if (dom_lock)
-		lock_start_write(dom_lock);
+	lock_get(dom->lock);
+	if (--dom->refs == 0)
+		free_it = 1;
+	lock_release(dom->lock);
 
-	tls_free_domain(dom);
+	if (!free_it)
+		return;
 
-	if (dom_lock)
-		lock_stop_write(dom_lock);
+	LM_DBG("Freeing domain: %.*s\n",
+		dom->name.len, dom->name.s);
+
+	destroy_tls_dom(dom);
+
+	lock_destroy(dom->lock);
+	lock_dealloc(dom->lock);
+
+	m_it = dom->match_domains;
+	while (m_it) {
+		m_tmp = m_it;
+		m_it = m_it->next;
+		shm_free(m_tmp->s.s);
+		shm_free(m_tmp);
+	}
+	m_it = dom->match_addresses;
+	while (m_it) {
+		m_tmp = m_it;
+		m_it = m_it->next;
+		shm_free(m_tmp->s.s);
+		shm_free(m_tmp);
+	}
+
+	shm_free(dom);
 }
 
 int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
@@ -222,6 +161,13 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	if(blob_vals[BLOB_VALS_DHPARAMS_COL].len && blob_vals[BLOB_VALS_DHPARAMS_COL].s)
 		len += blob_vals[BLOB_VALS_DHPARAMS_COL].len;
 
+	if (d->name.len >= sizeof(name_buf)) {
+		LM_ERR("domain name '%.*s' is too long (max %zu chars)\n",
+				d->name.len, d->name.s, sizeof(name_buf) - 1);
+		*dom = d->next;
+		tls_release_domain(d);
+		return -1;
+	}
 	memcpy(name_buf, d->name.s, d->name.len);
 	name_len = d->name.len;
 
@@ -342,10 +288,10 @@ tls_find_server_domain(struct ip_addr *ip, unsigned short port)
 	addr_s.s = addr_buf;
 	addr_s.len = strlen(addr_buf);
 
-	val = map_find(server_dom_matching, addr_s);
+	val = map_find(*server_dom_matching, addr_s);
 	if (!val) {
 		/* try to find a domain which matches any address */
-		val = map_find(server_dom_matching, match_any_s);
+		val = map_find(*server_dom_matching, match_any_s);
 		if (!val) {
 			if (dom_lock)
 				lock_stop_read(dom_lock);
@@ -386,11 +332,11 @@ tls_find_domain_by_filters(struct ip_addr *ip, unsigned short port,
 	addr_s.len = strlen(addr_buf);
 
 	val = map_find(type == DOM_FLAG_SRV ?
-					server_dom_matching : client_dom_matching, addr_s);
+					*server_dom_matching : *client_dom_matching, addr_s);
 	if (!val) {
 		/* try to find domains which match any address */
 		val = map_find(type == DOM_FLAG_SRV ?
-						server_dom_matching : client_dom_matching, match_any_s);
+						*server_dom_matching : *client_dom_matching, match_any_s);
 		if (!val) {
 			if (dom_lock)
 				lock_stop_read(dom_lock);
@@ -401,6 +347,11 @@ tls_find_domain_by_filters(struct ip_addr *ip, unsigned short port,
 		dom_array = (struct dom_filt_array *)*val;
 
 	for (i = 0; i < dom_array->size; i++) {
+		if (domain_filter->len >= sizeof(fnm_s)) {
+			LM_WARN("domain filter '%.*s' too long, skipping match\n",
+					domain_filter->len, domain_filter->s);
+			continue;
+		}
 		memcpy(fnm_s, domain_filter->s, domain_filter->len);
 		fnm_s[domain_filter->len] = 0;
 		if (!fnmatch(dom_array->arr[i].hostname->s.s, fnm_s, 0)) {
@@ -554,6 +505,77 @@ int tls_new_domain(str *name, int type, struct tls_domain **dom)
 	*dom = d;
 
 	return 0;
+}
+
+
+/*
+ * Creates a deep-copy of a TLS domain. This is only appropriate for
+ * script-defined domains that are instantiated from a template, as it
+ * performs a mix of shallow and deep copying.
+ */
+struct tls_domain* tls_copy_domain(struct tls_domain* d)
+{
+	struct tls_domain *n;
+
+	if (!d) return NULL;
+
+	/* Allocate space for the struct and the domain name, like tls_new_domain */
+	n = shm_malloc(sizeof(struct tls_domain) + d->name.len);
+	if (!n) {
+		LM_ERR("No more shm mem\n");
+		return NULL;
+	}
+	memset(n, 0, sizeof(struct tls_domain));
+
+	/* copy config fields */
+	n->flags = d->flags;
+	n->verify_cert = d->verify_cert;
+	n->require_client_cert = d->require_client_cert;
+	n->crl_check_all = d->crl_check_all;
+	n->cert = d->cert;
+	n->pkey = d->pkey;
+	n->crl_directory = d->crl_directory;
+	n->ca = d->ca;
+	n->dh_param = d->dh_param;
+	n->tls_ec_curve = d->tls_ec_curve;
+	n->ca_directory = d->ca_directory;
+	n->ciphers_list = d->ciphers_list;
+	n->method_str = d->method_str;
+	n->method = d->method;
+	n->method_max = d->method_max;
+
+	/* Fix the name pointer and copy the content from the template */
+	n->name.s = (char*)(n + 1);
+	n->name.len = d->name.len;
+	memcpy(n->name.s, d->name.s, d->name.len);
+
+	/* Initialize runtime state that must not be shared from the template */
+	n->refs = 1;
+	n->lock = lock_alloc();
+	if (!n->lock || lock_init(n->lock) == NULL) {
+		LM_ERR("failed to init lock for domain clone\n");
+		if (n->lock) lock_dealloc(n->lock);
+		shm_free(n);
+		return NULL;
+	}
+
+	/*
+	 * The matching lists are dynamically built in shm and freed by
+	 * tls_free_domain, so they need a deep copy. Other config strings
+	 * are pointers into the static config buffer and are correctly
+	 * shallow-copied.
+	 */
+	if ((d->match_domains && !(n->match_domains = dup_shm_str_list(d->match_domains))) ||
+		(d->match_addresses && !(n->match_addresses = dup_shm_str_list(d->match_addresses)))
+	) {
+		goto error;
+	}
+
+	return n;
+
+error:
+	if (n) tls_release_domain(n);
+	return NULL;
 }
 
 static int add_match_filt_to_dom(str *filter_s, str_list **filter_list)
@@ -770,7 +792,7 @@ int db_add_domain(char **str_vals, int *int_vals, str* blob_vals,
 	return 0;
 }
 
-int update_matching_map(struct tls_domain *tls_dom)
+int update_matching_map(struct tls_domain *tls_dom, map_t matching_map)
 {
 	str_list *addrf_s, *domf_s;
 	struct dom_filt_array *doms_array;
@@ -778,8 +800,7 @@ int update_matching_map(struct tls_domain *tls_dom)
 	int pos;
 
 	for (addrf_s = tls_dom->match_addresses; addrf_s; addrf_s = addrf_s->next) {
-		val = map_get(tls_dom->flags & DOM_FLAG_SRV ?
-			server_dom_matching : client_dom_matching, addrf_s->s);
+		val = map_get(matching_map, addrf_s->s);
 		if (!val) {
 			LM_ERR("No more shm memory!\n");
 			return -1;
