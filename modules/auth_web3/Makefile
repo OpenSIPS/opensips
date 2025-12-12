@@ -9,6 +9,6 @@ EXTRA_SRCS=keccak256.c
 
 DEFS+=-DOPENSIPS_MOD_INTERFACE
 
-LIBS=-lcurl
+LIBS+=-lcurl
 
 include ../../Makefile.modules 
