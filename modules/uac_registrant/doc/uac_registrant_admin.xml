@@ -521,6 +521,26 @@ modparam("uac_registrant", "state_column", "status")
 		</example>
 	</section>
 
+	<section id="param_reregister_expiry_percentage" xreflabel="reregister_expiry_percentage">
+		<title><varname>reregister_expiry_percentage</varname> (integer)</title>
+		<para>
+		Percentage describing how much sooner a RE-REGISTER needs to be send based on the Expiry. a 100 value means the RE-REGISTER will be send right on the edge of expiry ( old behavior ), which might lead to registration loss. a 90 value means the RE-REGISTER will be sent sooner , at 90% of the Expiry, etc.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>100</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>reregister_expiry_percentage</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "reregister_expiry_percentage", 90)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -685,6 +705,271 @@ opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 
 		<programlisting  format="linespecific">
 opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
+	</section>
+
+	<section id="mi_reg_upsert" xreflabel="reg_upsert">
+	<title><function moreinfo="none">reg_upsert</function></title>
+	<para>Inserts or updates the in-memory contents of the AOR/Contact/Registrar. No Database queries are done when calling this MI command, all parameters are passed via MI </para>
+		<para>Name: <emphasis>reg_upsert</emphasis></para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - URI defining the address
+			</para></listitem>
+			<listitem><para>
+				<emphasis>contact</emphasis> - Contact URI
+			</para></listitem>
+			<listitem><para>
+				<emphasis>registrar</emphasis> - URI pointing to the remote registrar
+			</para></listitem>
+			<listitem><para>
+				<emphasis>proxy</emphasis> - URI of a registration proxy
+			</para></listitem>
+			<listitem><para>
+				<emphasis>third_party_registrant</emphasis> - 3rd party registrant
+			</para></listitem>
+			<listitem><para>
+				<emphasis>username</emphasis> - the username for auth purposes
+			</para></listitem>
+
+			<listitem><para>
+				<emphasis>password</emphasis> - the password for auth purposes
+			</para></listitem>
+			<listitem><para>
+				<emphasis>binding_params</emphasis> - params to be added to the registration
+			</para></listitem>
+			<listitem><para>
+				<emphasis>expiry</emphasis> - number of seconds that the registration will be valid
+			</para></listitem>
+			<listitem><para>
+				<emphasis>forced_socket</emphasis> - opensips socket to send out the register out through
+			</para></listitem>
+			<listitem><para>
+				<emphasis>cluster_shtag</emphasis> - the sharing tag for this registration
+			</para></listitem>
+			<listitem><para>
+				<emphasis>state</emphasis> - 0 for enabled, 1 for disabled
+			</para></listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi reg_upsert aor=sip:vlad@test.com contact=sip:test@localhost registrar=sip:127.0.0.1:5061 proxy="" third_party_registrant="" username="vlad" password="1234" binding_params="" expiry=60 forced_socket="" cluster_shtag="" state=0
+		</programlisting>
+	</section>
+
+	<section id="mi_reg_delete" xreflabel="reg_delete">
+	<title><function moreinfo="none">reg_delete</function></title>
+	<para>Deletes the in-memory contents of the AOR/Contact/Registrar. No Database queries are done when calling this MI command, all parameters are passed via MI </para>
+		<para>Name: <emphasis>reg_delete</emphasis></para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - URI defining the address
+			</para></listitem>
+			<listitem><para>
+				<emphasis>contact</emphasis> - Contact URI
+			</para></listitem>
+			<listitem><para>
+				<emphasis>registrar</emphasis> - URI pointing to the remote registrar
+			</para></listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi reg_delete aor=sip:vlad@test.com contact=sip:test@localhost registrar=sip:127.0.0.1:5061 
+		</programlisting>
+	</section>
+
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_E_REGISTRANT_REGISTERING" xreflabel="E_REGISTRANT_REGISTERING">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_REGISTERING</function>
+		</title>
+		<para>
+			This event is raised when the module sent the initial REGISTER and started the registration process.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_REGISTRANT_AUTHENTICATING" xreflabel="E_REGISTRANT_AUTHENTICATING">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_AUTHENTICATING</function>
+		</title>
+		<para>
+			This event is raised when the initial REGISTER has been challenged and a new REGISTER with credentials has been sent out.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_REGISTRANT_REGISTERED" xreflabel="E_REGISTRANT_REGISTERED">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_REGISTERED</function>
+		</title>
+		<para>
+			This event is raised when a REGISTER has been 200 OKd.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_REGISTRANT_REGISTER_TIMEOUT" xreflabel="E_REGISTRANT_REGISTER_TIMEOUT">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_REGISTER_TIMEOUT</function>
+		</title>
+		<para>
+			This event is raised when a REGISTER received no reply from the registrar.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_REGISTRANT_INTERNAL_ERROR" xreflabel="E_REGISTRANT_INTERNAL_ERROR">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_INTERNAL_ERROR</function>
+		</title>
+		<para>
+			This event is raised when a REGISTER procesing was stopped due to an internal OpenSIPS error.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_REGISTRANT_WRONG_CREDENTIALS" xreflabel="E_REGISTRANT_WRONG_CREDENTIALS">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_WRONG_CREDENTIALS</function>
+		</title>
+		<para>
+			This event is raised when a REGISTER with credentials was still rejected by the registrar
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_REGISTRANT_REGISTRAR_EROR" xreflabel="E_REGISTRANT_REGISTRAR_ERROR">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_REGISTRAR_ERROR</function>
+		</title>
+		<para>
+			This event is raised when a REGISTER is rejected by the registrar with a non-standard sip code.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_REGISTRANT_UNREGISTERING" xreflabel="E_REGISTRANT_UNREGISTERING">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_UNREGISTERING</function>
+		</title>
+		<para>
+			This event is raised when a de-REGISTER is sent by OpenSIPS.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_REGISTRANT_AUTHENTICATING_UNREGISTER" xreflabel="E_REGISTRANT_AUTHENTICATING_UNREGISTER">
+		<title>
+		<function moreinfo="none">E_REGISTRANT_AUTHENTICATING_UNREGISTER</function>
+		</title>
+		<para>
+			This event is raised when a de-REGISTER is challenged and auth is sent by OpenSIPS.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>aor</emphasis> - the AOR
+			</para></listitem>
+			<listitem><para>
+					<emphasis>contact</emphasis> - the Contact
+			</para></listitem>
+			<listitem><para>
+					<emphasis>registrar</emphasis> - the Registrar
+			</para></listitem>
+		</itemizedlist>
 	</section>
 
 	</section>

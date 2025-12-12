@@ -122,4 +122,6 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int mode,
 	record_coords_t *coords);
 void reg_print_record(reg_record_t *rec);
 
+void reg_change_state(reg_record_t *rec, int new_state);
+
 #endif
