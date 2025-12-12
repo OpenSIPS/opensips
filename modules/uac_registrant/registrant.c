@@ -120,6 +120,7 @@ uac_auth_api_t uac_auth_api;
 unsigned int default_expires = 3600;
 unsigned int timer_interval = 100;
 unsigned int failure_retry_interval = 0;
+unsigned int reregister_exp_percentage=100;
 
 reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
@@ -165,6 +166,7 @@ static const param_export_t params[]= {
 	{"forced_socket_column",	STR_PARAM,	&forced_socket_column.s},
 	{"cluster_shtag_column",	STR_PARAM,	&cluster_shtag_column.s},
 	{"state_column",	STR_PARAM,		&state_column.s},
+	{"reregister_expiry_percentage", INT_PARAM,	&reregister_exp_percentage},
 	{0,0,0}
 };
 
@@ -325,6 +327,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (reregister_exp_percentage <= 0 || reregister_exp_percentage > 100) {
+		LM_ERR("Earlier reregistration expiry percentage needs to be in the (0...100] range \n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -459,7 +466,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 						rec->last_register_sent = now;
 						reg_change_state(rec,REGISTERING_STATE);
 					} else {
-						rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+						rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 						reg_change_state(rec,INTERNAL_ERROR_STATE);
 					}
 				}
@@ -578,7 +585,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 					rec->last_register_sent = now;
 					reg_change_state(rec,REGISTERING_STATE);
 				} else {
-					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 			} else {
@@ -592,7 +599,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 						timer_interval, rec->expires,
 						rec->td.rem_uri.len, rec->td.rem_uri.s);
 				}
-				rec->registration_timeout = now + rec->expires - timer_interval;
+				rec->registration_timeout = now + (rec->expires*reregister_exp_percentage/100) - timer_interval;
 			}
 		}
 
@@ -610,7 +617,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			rec->auth_password.s==NULL || rec->auth_password.len==0) {
 			LM_ERR("Credentials not provisioned\n");
 			reg_change_state(rec,WRONG_CREDENTIALS_STATE);
-			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		}
@@ -645,7 +652,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			LM_WARN("Wrong credentials for [%.*s]\n",
 				rec->td.rem_uri.len, rec->td.rem_uri.s);
 			reg_change_state(rec,WRONG_CREDENTIALS_STATE);
-			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		default:
@@ -720,13 +727,13 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			}
 		} else {
 			reg_change_state(rec,REGISTRAR_ERROR_STATE);
-			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 		}
 		break;
 
 	case 408: /* No reply or Timeout */
 		reg_change_state(rec,REGISTER_TIMEOUT_STATE);
-		rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+		rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 		break;
 
 	default:
@@ -736,7 +743,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		} else {
 			/* we got an error from the server */
 			reg_change_state(rec,REGISTRAR_ERROR_STATE);
-			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 
 		}
 	}
@@ -745,7 +752,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	return 1; /* exit list traversal */
 done:
 	reg_change_state(rec,INTERNAL_ERROR_STATE);
-	rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+	rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 	return -1; /* exit list traversal */
 }
 
@@ -984,7 +991,7 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 				rec->last_register_sent = now;
 				reg_change_state(rec,REGISTERING_STATE);
 			} else {
-				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 		} else {
@@ -1006,7 +1013,7 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 				rec->last_register_sent = now;
 				reg_change_state(rec,REGISTERING_STATE);
 			} else {
-				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 		}
@@ -1457,7 +1464,7 @@ int run_mi_reg_enable(void *e_data, void *data, void *r_data)
 					rec->last_register_sent = now;
 					reg_change_state(rec,REGISTERING_STATE);
 				} else {
-					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 			}
