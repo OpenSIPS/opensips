@@ -69,6 +69,7 @@ static void sca_tm_sendpublish(struct cell *t, int type, struct tmcb_params *_pa
 static void free_cb_param(void *param);
 
 /* script functions */
+int sca_validate_invite_out(struct sip_msg *msg);
 int sca_engage(struct sip_msg *msg, str *parties);
 int sca_set_called_line(struct sip_msg *msg, str *line);
 int sca_mute_branch(struct sip_msg* msg, str *parties);
@@ -85,6 +86,9 @@ extern struct sca_hash *sca_table;
 
 /* module exported commands */
 static const cmd_export_t cmds[] ={
+	{"sca_validate_invite_out", (cmd_function)sca_validate_invite_out, {
+		{0,0,0}},
+		REQUEST_ROUTE},
 	{"sca_engage", (cmd_function)sca_engage, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -499,7 +503,7 @@ static int sca_validate_call_out(struct sip_msg *msg, str *line_s)
 		return -6;
 	}
 
-	LM_SCA("looking for line <%.*s>, idx %d\n", line_s->len, line_s->s, idx);
+	LM_SCA("validating INVITE from line <%.*s>, idx %d\n", line_s->len, line_s->s, idx);
 
 	/* search for the line (with no creation) */
 	line = get_sca_line(line_s, 0);
@@ -530,6 +534,59 @@ static int sca_validate_call_out(struct sip_msg *msg, str *line_s)
 	//terminate_line_sieze(line);
 
 	return 1;
+}
+
+
+int sca_validate_invite_out(struct sip_msg *msg)
+{
+	struct to_body *entity_p, entity = {0};
+	pv_value_t tok;
+	char *c_buf = NULL;
+	int len, rc = 1;
+
+	if (no_dialog_support) {
+		LM_ERR("dialog support is disabled, cannot use this function\n");
+		return -1;
+	}
+
+	if (msg->REQ_METHOD != METHOD_INVITE)
+		return 1;
+
+	/* do we have a spec override? */
+	if (caller_spec.type && pv_get_spec_value(msg, &caller_spec, &tok) >= 0
+			&& pvv_is_str(&tok)) {
+
+		trim(&tok.rs);
+		c_buf = pkg_malloc(tok.rs.len + CRLF_LEN + 1);
+		if (!c_buf) {
+			LM_ERR("no more pkg memeory\n");
+			return -1;
+		}
+
+		len = sprintf(c_buf, "%.*s%s", tok.rs.len, tok.rs.s, CRLF);
+		parse_to(c_buf, c_buf+len, &entity);
+
+		if (entity.error != PARSE_OK) {
+			LM_ERR("Failed to parse entity nameaddr [%.*s]\n", len, c_buf);
+			pkg_free(c_buf);
+			return -1;
+		}
+		entity_p = &entity;
+
+	} else {
+		entity_p = get_from(msg);
+	}
+
+	/* do some extra checks for outbound, ensure line is seized */
+	if ((rc = sca_validate_call_out(msg, &entity_p->uri)) < 0)
+		LM_SCA("call out attempt not validated, rc: %d\n", rc);
+
+	if (c_buf) {
+		pkg_free(c_buf);
+		free_to_params( &entity );
+	}
+
+	return rc;
 }
 
 
