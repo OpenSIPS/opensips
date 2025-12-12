@@ -997,7 +997,7 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 		break;
 	case REGISTERED_STATE:
 		/* check if we need to re-register */
-		if (now < rec->registration_timeout) {
+		if (now + timer_interval < rec->registration_timeout) {
 			break;
 		}
 	case NOT_REGISTERED_STATE:
