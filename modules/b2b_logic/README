@@ -673,6 +673,12 @@ b2b_client_new("client1", "sip:alice@opensips.org");
             reINVITE without body to the old entity. Use the
             current SDP received in this new answer from the old
             entity to trigger a renegotiation with the new entity.
+          + propagate-avps - When bridging a call, use this flag
+            to copy the AVPs from the initial tuple to the new
+            one. This may be helpful when doing in-dialog
+            authentication that requires the stored AVPs for
+            username and password, but can also be useful to store
+            other information across the bridge.
 
    This function can be used from the b2b_logic request routes.
 
@@ -1292,7 +1298,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 239 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 49 31 1414 336
+   2. Razvan Crainea (@razvancrainea) 51 33 1427 337
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 11 152 76
    4. Nick Altmann (@nikbyte) 14 10 346 36
    5. Carsten Bock 12 5 679 23
@@ -1302,8 +1308,9 @@ Chapter 3. Contributors
    9. Liviu Chircu (@liviuchircu) 5 3 4 3
    10. truong.hua 4 2 8 7
 
-   All remaining contributors: andingv, Aron Podrigal (@ar45),
-   Rick Barenthin, Shanee Vanstone, Zero King (@l2dy).
+   All remaining contributors: andingv, Ovidiu Sas (@ovidiusas),
+   Aron Podrigal (@ar45), Rick Barenthin, Shanee Vanstone, Zero
+   King (@l2dy), dirkbro.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1325,20 +1332,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  andingv                             Nov 2025 - Nov 2025
-   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Sep 2025
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2025
-   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   5.  Norman Brandinger (@NormB)          May 2024 - Jun 2024
-   6.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
-   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   8.  Rick Barenthin                      Nov 2023 - Nov 2023
-   9.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
-   10. Shanee Vanstone                     Apr 2023 - Apr 2023
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Dec 2025
+   2.  Ovidiu Sas (@ovidiusas)             Dec 2025 - Dec 2025
+   3.  dirkbro                             Dec 2025 - Dec 2025
+   4.  andingv                             Nov 2025 - Nov 2025
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2025
+   6.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   7.  Norman Brandinger (@NormB)          May 2024 - Jun 2024
+   8.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
+   9.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   10. Rick Barenthin                      Nov 2023 - Nov 2023
 
-   All remaining contributors: truong.hua, Nick Altmann
-   (@nikbyte), Carsten Bock, Aron Podrigal (@ar45), Zero King
-   (@l2dy).
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Shanee Vanstone, truong.hua, Nick Altmann (@nikbyte), Carsten
+   Bock, Aron Podrigal (@ar45), Zero King (@l2dy).
 
    (1) including any documentation-related commits, excluding
    merge commits

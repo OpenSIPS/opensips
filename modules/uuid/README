@@ -14,7 +14,7 @@ UUID Module
         1.3. Exported Parameters
         1.4. Exported Pseudo-Variables
 
-              1.4.1. $uuid
+              1.4.1. $uuid(version)
 
         1.5. Exported Functions
 
@@ -66,15 +66,22 @@ Chapter 1. Admin Guide
 
 1.4. Exported Pseudo-Variables
 
-1.4.1. $uuid
+1.4.1. $uuid(version)
 
-   The $uuid variable returns a newly generated version 4 UUID
-   based on high-quality randomness from /dev/urandom, if
-   available. Otherwise, a version 1 UUID (based on current time
-   and the local ethernet MAC address) will be generated.
+   The $uuid variable returns a newly generated UUID. By default
+   (or if version is 0) it returns a version 4 UUID based on
+   high-quality randomness from /dev/urandom, if available.
+   Otherwise, a version 1 UUID (based on current time and the
+   local ethernet MAC address) will be generated.
+
+   An optional version parameter can be provided to generate a
+   specific UUID version. Supported versions are 0, 1, 4, and 7.
+   Versions 3 and 5 are not supported as they require additional
+   parameters.
 
    Example 1.1. $uuid usage
 xlog("generated uuid: $uuid\n");
+xlog("generated uuid v7: $uuid(7)\n");
 
 1.5. Exported Functions
 
@@ -126,8 +133,9 @@ Chapter 2. Contributors
    2. John Burke (@john08burke)          5        3       63       15
    3. Maksym Sobolyev (@sobomax)         5        3       5        5
    4. Razvan Crainea (@razvancrainea)    4        2       2        1
-   5. Norman Brandinger (@NormB)         3        1       1        1
-   6. Aron Podrigal (@ar45)              2        1       38       0
+   5. Ryan Bullock                       3        1       57       9
+   6. Norman Brandinger (@NormB)         3        1       1        1
+   7. Aron Podrigal (@ar45)              2        1       38       0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -149,12 +157,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Aron Podrigal (@ar45)           Sep 2024 - Sep 2024
-   2. Maksym Sobolyev (@sobomax)      Feb 2023 - Nov 2023
-   3. Norman Brandinger (@NormB)      Aug 2021 - Aug 2021
-   4. Vlad Patrascu (@rvlad-patrascu) Jun 2019 - Feb 2021
-   5. John Burke (@john08burke)       Feb 2021 - Feb 2021
-   6. Razvan Crainea (@razvancrainea) Aug 2019 - Sep 2019
+   1. Ryan Bullock                    Dec 2025 - Dec 2025
+   2. Aron Podrigal (@ar45)           Sep 2024 - Sep 2024
+   3. Maksym Sobolyev (@sobomax)      Feb 2023 - Nov 2023
+   4. Norman Brandinger (@NormB)      Aug 2021 - Aug 2021
+   5. Vlad Patrascu (@rvlad-patrascu) Jun 2019 - Feb 2021
+   6. John Burke (@john08burke)       Feb 2021 - Feb 2021
+   7. Razvan Crainea (@razvancrainea) Aug 2019 - Sep 2019
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -163,8 +172,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Aron Podrigal (@ar45), Norman Brandinger
-   (@NormB), John Burke (@john08burke), Vlad Patrascu
+   Last edited by: Ryan Bullock, Aron Podrigal (@ar45), Norman
+   Brandinger (@NormB), John Burke (@john08burke), Vlad Patrascu
    (@rvlad-patrascu).
 
    Documentation Copyrights:
