@@ -231,7 +231,8 @@ cleanup:
 
 /* Convert bytes to hex string */
 static void bytes_to_hex(const unsigned char *bytes, size_t len, char *hex) {
-  for (size_t i = 0; i < len; i++) {
+  size_t i;
+  for (i = 0; i < len; i++) {
     sprintf(hex + 2 * i, "%02x", bytes[i]);
   }
   hex[2 * len] = '\0';
@@ -240,6 +241,10 @@ static void bytes_to_hex(const unsigned char *bytes, size_t len, char *hex) {
 /* ENS namehash implementation using proper keccak256 */
 static void ens_namehash(const char *name, char *hash_hex) {
   unsigned char hash[32] = {0}; /* Start with 32 zero bytes */
+  char *labels[64]; /* Max 64 labels should be enough */
+  int label_count = 0;
+  int i;
+  char *token;
 
   if (web3_contract_debug_mode) {
     LM_DBG("Computing namehash for: %s", name);
@@ -261,18 +266,16 @@ static void ens_namehash(const char *name, char *hash_hex) {
   }
   strcpy(name_copy, name);
 
-  char *labels[64]; /* Max 64 labels should be enough */
-  int label_count = 0;
-
   /* Split by dots */
-  char *token = strtok(name_copy, ".");
+  token = strtok(name_copy, ".");
   while (token != NULL && label_count < 64) {
+    int j;
     size_t token_len = strlen(token);
     labels[label_count] = pkg_malloc(token_len + 1);
     if (!labels[label_count]) {
       LM_ERR("Failed to allocate memory for label %d", label_count);
       /* Cleanup already allocated labels */
-      for (int j = 0; j < label_count; j++) {
+      for (j = 0; j < label_count; j++) {
         pkg_free(labels[j]);
       }
       pkg_free(name_copy);
@@ -286,7 +289,7 @@ static void ens_namehash(const char *name, char *hash_hex) {
   }
 
   /* Process labels from right to left (reverse order) */
-  for (int i = label_count - 1; i >= 0; i--) {
+  for (i = label_count - 1; i >= 0; i--) {
     SHA3_CTX ctx;
     unsigned char label_hash[32];
     unsigned char combined[64]; /* hash + label_hash */
@@ -314,7 +317,7 @@ static void ens_namehash(const char *name, char *hash_hex) {
   }
 
   /* Cleanup */
-  for (int i = 0; i < label_count; i++) {
+  for (i = 0; i < label_count; i++) {
     pkg_free(labels[i]);
   }
   pkg_free(name_copy);
@@ -1301,8 +1304,9 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
     }
     
     /* Parse algorithm - search backwards from the end since it's at the end */
+	int i;
     char *algorithm_start = NULL;
-    for (int i = auth_len - 9; i >= 0; i--) {
+    for (i = auth_len - 9; i >= 0; i--) {
       if (strncmp(auth_header + i, "algorithm=", 9) == 0) {
         algorithm_start = auth_header + i;
         break;
