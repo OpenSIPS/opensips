@@ -167,21 +167,22 @@ void keccak_init(SHA3_CTX *ctx) {
 /* Keccak theta() transformation */
 static void keccak_theta(uint64_t *A) {
   uint64_t C[5], D[5];
+  uint8_t i, j;
 
-  for (uint8_t i = 0; i < 5; i++) {
+  for (i = 0; i < 5; i++) {
     C[i] = A[i];
-    for (uint8_t j = 5; j < 25; j += 5) {
+    for (j = 5; j < 25; j += 5) {
       C[i] ^= A[i + j];
     }
   }
 
-  for (uint8_t i = 0; i < 5; i++) {
+  for (i = 0; i < 5; i++) {
     D[i] = ROTL64(C[(i + 1) % 5], 1) ^ C[(i + 4) % 5];
   }
 
-  for (uint8_t i = 0; i < 5; i++) {
-    // for (uint8_t j = 0; j < 25; j += 5) {
-    for (uint8_t j = 0; j < 25; j += 5) {
+  for (i = 0; i < 5; i++) {
+    // for (j = 0; j < 25; j += 5) {
+    for (j = 0; j < 25; j += 5) {
       A[i + j] ^= D[i];
     }
   }
@@ -190,8 +191,9 @@ static void keccak_theta(uint64_t *A) {
 /* Keccak pi() transformation */
 static void keccak_pi(uint64_t *A) {
   uint64_t A1 = A[1];
-  // for (uint8_t i = 1; i < sizeof(pi_transform); i++) {
-  for (uint8_t i = 1; i < 24; i++) {
+  uint8_t i;
+  // for (i = 1; i < sizeof(pi_transform); i++) {
+  for (i = 1; i < 24; i++) {
     // A[pgm_read_byte(&pi_transform[i - 1])] =
     // A[pgm_read_byte(&pi_transform[i])];
     A[getConstant(TYPE_PI_TRANSFORM, i - 1)] =
@@ -209,7 +211,8 @@ local variables. Maximum is 2048 bytes.
 */
 /* Keccak chi() transformation */
 static void keccak_chi(uint64_t *A) {
-  for (uint8_t i = 0; i < 25; i += 5) {
+  uint8_t i;
+  for (i = 0; i < 25; i += 5) {
     uint64_t A0 = A[0 + i], A1 = A[1 + i];
     A[0 + i] ^= ~A1 & A[2 + i];
     A[1 + i] ^= ~A[2 + i] & A[3 + i];
@@ -220,12 +223,13 @@ static void keccak_chi(uint64_t *A) {
 }
 
 static void sha3_permutation(uint64_t *state) {
-  // for (uint8_t round = 0; round < sizeof(round_constant_info); round++) {
-  for (uint8_t round = 0; round < 24; round++) {
+  uint8_t round, i;
+  // for (round = 0; round < sizeof(round_constant_info); round++) {
+  for (round = 0; round < 24; round++) {
     keccak_theta(state);
 
     /* apply Keccak rho() transformation */
-    for (uint8_t i = 1; i < 25; i++) {
+    for (i = 1; i < 25; i++) {
       // state[i] = ROTL64(state[i], pgm_read_byte(&rhoTransforms[i - 1]));
       state[i] = ROTL64(state[i], getConstant(TYPE_RHO_TRANSFORM, i - 1));
     }
@@ -246,7 +250,8 @@ static void sha3_permutation(uint64_t *state) {
  * @param block_size the size of the processed block in bytes
  */
 static void sha3_process_block(uint64_t hash[25], const uint64_t *block) {
-  for (uint8_t i = 0; i < 17; i++) {
+  uint8_t i;
+  for (i = 0; i < 17; i++) {
     hash[i] ^= le2me_64(block[i]);
   }
 
