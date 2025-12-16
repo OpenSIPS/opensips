@@ -105,7 +105,7 @@
 	#undef NO_LOG
 #endif
 
-#define MAX_LOG_CONS_NO 3
+#define MAX_LOG_CONS_NO 4
 
 #define STDERR_CONSUMER_NAME "stderror"
 #define SYSLOG_CONSUMER_NAME "syslog"
