@@ -322,6 +322,9 @@ char * sca_print_line_status(struct sca_line *line, int *l)
 			case SCA_STATE_ACTIVE:
 				memcpy( p, "active", 6); p += 6 ;
 				break;
+			case SCA_STATE_HELD:
+				memcpy( p, "held", 4); p += 4 ;
+				break;
 			default:
 				LM_ERR("unsupported state %d for index %d line %.*s\n",
 					scai->state, scai->idx, line->line.len, line->line.s);

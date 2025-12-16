@@ -28,6 +28,7 @@
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
 #include "../../parser/parse_call_info.h"
+#include "../sipmsgops/sdp_ops.h"
 #include "sca_dialog.h"
 #include "add_events.h"
 #include "presence_callinfo.h"
@@ -66,6 +67,11 @@ void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 	int branch, idx = 0, val_type, new_state;
 	int_str isval;
 	str *entity, *peer;
+
+	if (type == DLGCB_REQ_WITHIN && msg->REQ_METHOD == METHOD_ACK) {
+		LM_SCA("skip mid-dialog ACK\n");
+		return;
+	}
 
 	param = (struct sca_cb_params *)(*_params->param);
 	if (!param) {
@@ -128,10 +134,12 @@ void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 			new_state = SCA_STATE_ACTIVE;
 			break;
 
-		// TODO -- detect on-hold vs off-hold Re-INVITE
-		//case DLGCB_REQ_WITHIN:
-		//	new_state = SCA_STATE_HELD;
-		//	break;
+		case DLGCB_REQ_WITHIN:
+			if (!msg || msg == FAKED_REPLY)
+				return;
+
+			new_state = is_audio_on_hold(msg) ? SCA_STATE_HELD : SCA_STATE_ACTIVE;
+			break;
 
 		default:
 			LM_CRIT("BUG: unsupported callback type %d \n", type);

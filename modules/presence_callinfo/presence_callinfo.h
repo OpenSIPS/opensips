@@ -48,6 +48,6 @@ extern presence_api_t pres;
 extern int no_dialog_support;
 
 extern int *sca_log_level;
-#define LM_SCA(fmt, args...) LM_GEN1(*sca_log_level, fmt, ##args )
+#define LM_SCA(fmt, args...) LM_GEN(*sca_log_level, fmt, ##args )
 
 #endif
