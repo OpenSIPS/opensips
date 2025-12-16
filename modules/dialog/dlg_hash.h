@@ -337,15 +337,14 @@ void destroy_dlg(struct dlg_cell *dlg);
 		if ((_dlg)->ref<=0) { \
 			/* dlg good to be destried, but be sure it went first
 			 * via the delete timer */ \
-			if ((dlg_del_delay==0 && (_dlg)->del_delay==0) ||    \
-			insert_attempt_dlg_del_timer(&_dlg->del_tl,        \
-			(_dlg)->del_delay?(_dlg)->del_delay:dlg_del_delay)==-2) {\
+			if ((dlg_del_delay==0 && (_dlg)->del_delay==0)) { \
 				/* no delay on del or not in del timer anymore -> destroy */ \
-				LM_DBG("Destroying dialog %p\n",_dlg); \
+				LM_DBG("Destroying dialog %p due to unref\n",_dlg); \
 				unlink_unsafe_dlg( _d_entry, _dlg);\
 				destroy_dlg(_dlg);\
-			} /* else, either still in timer (-1), either
-			   * inserted now in del timer (0) -> nothing to do*/ \
+			} else \
+				insert_attempt_dlg_del_timer(&_dlg->del_tl,        \
+				(_dlg)->del_delay?(_dlg)->del_delay:dlg_del_delay); \
 		}\
 	}while(0)
 
