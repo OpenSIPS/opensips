@@ -113,6 +113,17 @@ int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
 		return -1;
 	}
 
+	/* Turn non-blocking mode on for rx*/
+	flags = fcntl(socks->rx_sock, F_GETFL);
+	if (flags == -1) {
+		LM_ERR("fcntl failed on RX socket: %s\n", strerror(errno));
+		goto err_both;
+	}
+	if (fcntl(socks->rx_sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+		LM_ERR("fcntl: set non-blocking failed for RX socket: %s\n",strerror(errno));
+		goto err_both;
+	}
+
 	switch(socket_domain) {
 		case AF_LOCAL:
 			LM_DBG("we have a unix socket: %s\n", addr->unix_addr.sun_path);
@@ -451,7 +462,6 @@ int mi_datagram_callback(int rx_sock, void *_tx_sock, int was_timeout)
 				(struct sockaddr*)&reply_addr, &reply_addr_len);
 
 	if (ret < 0) {
-		LM_ERR("recvfrom %d: (%d) %s\n", ret, errno, strerror(errno));
 		if ((errno == EINTR) ||
 			(errno == EAGAIN) ||
 			(errno == EWOULDBLOCK) ||
@@ -459,7 +469,7 @@ int mi_datagram_callback(int rx_sock, void *_tx_sock, int was_timeout)
 			LM_DBG("got %d (%s), going on\n", errno, strerror(errno));
 			return 0;
 		}
-		LM_DBG("error in recvfrom\n");
+		LM_ERR("recvfrom %d: (%d) %s\n", ret, errno, strerror(errno));
 		return -1;
 	}
 
