@@ -22,6 +22,6 @@ then
   esac
 elif [ "${BUILD_OS}" = "ubuntu:24.04" ]
 then
-	WOLFSSL_EXTRA_CFLAGS=-Wno-stringop-overflow
+	export WOLFSSL_EXTRA_CFLAGS=-Wno-stringop-overflow
 fi
 sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"
