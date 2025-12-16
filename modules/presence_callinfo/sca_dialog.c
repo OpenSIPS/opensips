@@ -68,6 +68,11 @@ void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 	str *entity, *peer;
 
 	param = (struct sca_cb_params *)(*_params->param);
+	if (!param) {
+		LM_ERR("NULL dialog param in dlgcb type %d\n", type);
+		return;
+	}
+
 	peer = &param->peer.uri;
 	entity = &param->entity.uri;
 
@@ -93,15 +98,18 @@ void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 	}
 
 	/* best-effort search for ";appearance-index" in Call-INFO hdr */
-	if (parse_call_info_header(msg) == 0) {
+	if (!msg || msg == FAKED_REPLY) {
+		LM_SCA("null/fake SIP message provided, assuming index 1 (%p)\n", msg);
+		idx = 1;
+	} else if (parse_call_info_header(msg) != 0) {
+		LM_SCA("message has no Call-Info hf, assuming index 1\n");
+		idx = 1;
+	} else {
 		idx = get_appearance_index(msg);
 		if (idx == 0) {
 			LM_SCA("message has Call-Info but index not found, assuming 1\n");
 			idx = 1;
 		}
-	} else {
-		LM_SCA("message has no Call-Info hf, assuming appearance-index=1\n");
-		idx = 1;
 	}
 
 	/* get the index and the new state */
