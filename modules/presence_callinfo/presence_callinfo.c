@@ -1003,7 +1003,7 @@ mi_response_t *sca_mi_set_log_level(const mi_params_t *params,
 
 static void sca_tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 {
-	struct sip_msg *req = _params->req; //, *rpl = _params->rpl;
+	struct sip_msg *rpl = _params->rpl; //, *req = _params->req;
 	struct sca_cb_params *param;
 	struct sca_party *entity;
 	struct dlg_cell *dlg;
@@ -1056,8 +1056,8 @@ static void sca_tm_sendpublish(struct cell *t, int type, struct tmcb_params *_pa
 
 		if (n) {
 			/* best-effort search for ";appearance-index" in Call-INFO hdr */
-			if (parse_call_info_header(req) == 0)
-				idx = get_appearance_index(req);
+			if (parse_call_info_header(rpl) == 0)
+				idx = get_appearance_index(rpl);
 
 			sca_sendpublish(dlg, branch, &entity->uri, peer, idx, -1);
 		}

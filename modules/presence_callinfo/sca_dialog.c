@@ -107,14 +107,23 @@ void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 	if (!msg || msg == FAKED_REPLY) {
 		LM_SCA("null/fake SIP message provided, assuming index 1 (%p)\n", msg);
 		idx = 1;
-	} else if (parse_call_info_header(msg) != 0) {
-		LM_SCA("message has no Call-Info hf, assuming index 1\n");
-		idx = 1;
 	} else {
-		idx = get_appearance_index(msg);
-		if (idx == 0) {
-			LM_SCA("message has Call-Info but index not found, assuming 1\n");
+		struct sip_msg pkg_msg;
+
+		memset(&pkg_msg, 0, sizeof pkg_msg);
+		parse_msg(msg->buf, msg->len, &pkg_msg);
+
+		if (parse_call_info_header(&pkg_msg) != 0) {
+			LM_SCA("message has no Call-Info hf, assuming index 1\n");
 			idx = 1;
+		} else {
+			idx = get_appearance_index(msg);
+			if (idx == 0) {
+				LM_SCA("message has Call-Info but index not found, assuming 1\n");
+				idx = 1;
+			}
+
+			free_call_info(pkg_msg.call_info->parsed);
 		}
 	}
 
