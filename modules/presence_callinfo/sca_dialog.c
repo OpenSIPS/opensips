@@ -62,11 +62,15 @@ int init_module_apis(void)
 void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 												struct dlg_cb_params *_params)
 {
+	extern struct sca_hash *sca_table;
 	struct sca_cb_params *param;
 	struct sip_msg *msg = _params->msg;
 	int branch, idx = 0, val_type, new_state;
 	int_str isval;
 	str *entity, *peer;
+
+	if (!sca_table)
+		return;
 
 	if (type == DLGCB_REQ_WITHIN && msg->REQ_METHOD == METHOD_ACK) {
 		LM_SCA("skip mid-dialog ACK\n");

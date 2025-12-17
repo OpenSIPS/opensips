@@ -126,6 +126,8 @@ static module_dependency_t *get_deps_dialog_support(const param_export_t *param)
 
 static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
 		{ MOD_TYPE_DEFAULT, "presence", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
@@ -1011,6 +1013,9 @@ static void sca_tm_sendpublish(struct cell *t, int type, struct tmcb_params *_pa
 	int n, branch;
 	int_str isval;
 	int val_type, idx = 0;
+
+	if (!sca_table)
+		return;
 
 	isval.s = STR_NULL;
 
