@@ -30,15 +30,286 @@
 static gen_hash_t *aka_users;
 OSIPS_LIST_HEAD(aka_av_managers);
 
+/* CacheDB AV TTL (set from pending_timeout) */
+static int aka_cdb_av_ttl = 30;
 
-int aka_init_mgm(int hash_size)
+/* CacheDB key prefix */
+#define AKA_CDB_KEY_PREFIX "aka_av:"
+#define AKA_CDB_KEY_PREFIX_LEN (sizeof(AKA_CDB_KEY_PREFIX) - 1)
+
+/* Serialization delimiter */
+#define AKA_CDB_DELIM '|'
+
+
+int aka_init_mgm(int hash_size, int pending_timeout)
 {
 	aka_users = hash_init(hash_size);
 	if (!aka_users) {
 		LM_ERR("cannot create AKA users hash\n");
 		return -1;
 	}
+	/* Add some margin to TTL for race conditions */
+	aka_cdb_av_ttl = pending_timeout + 5;
 	return 0;
+}
+
+/*
+ * Build CacheDB key: aka_av:<impu>:<impi>:<nonce>
+ * Returns allocated pkg memory that must be freed by caller
+ */
+static int aka_cdb_build_key(str *impu, str *impi, str *nonce, str *key)
+{
+	key->len = AKA_CDB_KEY_PREFIX_LEN + impu->len + 1 + impi->len + 1 + nonce->len;
+	key->s = pkg_malloc(key->len + 1);
+	if (!key->s) {
+		LM_ERR("oom for cachedb key\n");
+		return -1;
+	}
+	memcpy(key->s, AKA_CDB_KEY_PREFIX, AKA_CDB_KEY_PREFIX_LEN);
+	memcpy(key->s + AKA_CDB_KEY_PREFIX_LEN, impu->s, impu->len);
+	key->s[AKA_CDB_KEY_PREFIX_LEN + impu->len] = ':';
+	memcpy(key->s + AKA_CDB_KEY_PREFIX_LEN + impu->len + 1, impi->s, impi->len);
+	key->s[AKA_CDB_KEY_PREFIX_LEN + impu->len + 1 + impi->len] = ':';
+	memcpy(key->s + AKA_CDB_KEY_PREFIX_LEN + impu->len + 1 + impi->len + 1,
+		nonce->s, nonce->len);
+	key->s[key->len] = '\0';
+	return 0;
+}
+
+/*
+ * Serialize AV to string: state|algmask|alg|authenticate|authorize|ck|ik
+ * Returns allocated pkg memory that must be freed by caller
+ */
+static int aka_cdb_serialize_av(struct aka_av *av, str *value)
+{
+	char state_buf[16], algmask_buf[16], alg_buf[16];
+	int state_len, algmask_len, alg_len;
+
+	state_len = snprintf(state_buf, sizeof(state_buf), "%d", av->state);
+	algmask_len = snprintf(algmask_buf, sizeof(algmask_buf), "%d", av->algmask);
+	alg_len = snprintf(alg_buf, sizeof(alg_buf), "%d", av->alg);
+
+	value->len = state_len + 1 + algmask_len + 1 + alg_len + 1 +
+		av->authenticate.len + 1 + av->authorize.len + 1 +
+		av->ck.len + 1 + av->ik.len;
+	value->s = pkg_malloc(value->len + 1);
+	if (!value->s) {
+		LM_ERR("oom for cachedb value\n");
+		return -1;
+	}
+
+	snprintf(value->s, value->len + 1, "%s%c%s%c%s%c%.*s%c%.*s%c%.*s%c%.*s",
+		state_buf, AKA_CDB_DELIM,
+		algmask_buf, AKA_CDB_DELIM,
+		alg_buf, AKA_CDB_DELIM,
+		av->authenticate.len, av->authenticate.s, AKA_CDB_DELIM,
+		av->authorize.len, av->authorize.s, AKA_CDB_DELIM,
+		av->ck.len, av->ck.s, AKA_CDB_DELIM,
+		av->ik.len, av->ik.s);
+	return 0;
+}
+
+/*
+ * Parse a field from serialized string
+ * Updates pos to point after the delimiter
+ */
+static int aka_cdb_parse_field(char *start, char *end, str *field, char **next)
+{
+	char *delim = memchr(start, AKA_CDB_DELIM, end - start);
+	if (delim) {
+		field->s = start;
+		field->len = delim - start;
+		*next = delim + 1;
+	} else {
+		/* Last field */
+		field->s = start;
+		field->len = end - start;
+		*next = end;
+	}
+	return 0;
+}
+
+/*
+ * Deserialize AV from string: state|algmask|alg|authenticate|authorize|ck|ik
+ * Creates a new aka_av in shared memory
+ */
+static struct aka_av *aka_cdb_deserialize_av(str *value)
+{
+	struct aka_av *av;
+	str field;
+	char *pos, *end;
+	int state, algmask, alg;
+	str authenticate, authorize, ck, ik;
+	char *p;
+
+	pos = value->s;
+	end = value->s + value->len;
+
+	/* Parse state */
+	aka_cdb_parse_field(pos, end, &field, &pos);
+	if (str2sint(&field, &state) < 0) {
+		LM_ERR("invalid state in cached AV\n");
+		return NULL;
+	}
+
+	/* Parse algmask */
+	aka_cdb_parse_field(pos, end, &field, &pos);
+	if (str2sint(&field, &algmask) < 0) {
+		LM_ERR("invalid algmask in cached AV\n");
+		return NULL;
+	}
+
+	/* Parse alg */
+	aka_cdb_parse_field(pos, end, &field, &pos);
+	if (str2sint(&field, &alg) < 0) {
+		LM_ERR("invalid alg in cached AV\n");
+		return NULL;
+	}
+
+	/* Parse authenticate */
+	aka_cdb_parse_field(pos, end, &authenticate, &pos);
+
+	/* Parse authorize */
+	aka_cdb_parse_field(pos, end, &authorize, &pos);
+
+	/* Parse ck */
+	aka_cdb_parse_field(pos, end, &ck, &pos);
+
+	/* Parse ik */
+	aka_cdb_parse_field(pos, end, &ik, &pos);
+
+	/* Allocate AV structure */
+	av = shm_malloc(sizeof(*av) + authenticate.len + authorize.len + ck.len + ik.len);
+	if (!av) {
+		LM_ERR("oom for cached AV\n");
+		return NULL;
+	}
+	memset(av, 0, sizeof(*av));
+	av->state = state;
+	av->algmask = algmask;
+	av->alg = alg;
+
+	p = av->buf;
+	av->authenticate.s = p;
+	av->authenticate.len = authenticate.len;
+	memcpy(p, authenticate.s, authenticate.len);
+	p += authenticate.len;
+
+	av->authorize.s = p;
+	av->authorize.len = authorize.len;
+	memcpy(p, authorize.s, authorize.len);
+	p += authorize.len;
+
+	av->ck.s = p;
+	av->ck.len = ck.len;
+	memcpy(p, ck.s, ck.len);
+	p += ck.len;
+
+	av->ik.s = p;
+	av->ik.len = ik.len;
+	memcpy(p, ik.s, ik.len);
+
+	INIT_LIST_HEAD(&av->list);
+	av->ts = av->new_ts = get_ticks();
+
+	LM_DBG("deserialized AV state=%d algmask=%d alg=%d nonce=%.*s\n",
+		av->state, av->algmask, av->alg, av->authenticate.len, av->authenticate.s);
+	return av;
+}
+
+/*
+ * Store AV in CacheDB
+ */
+int aka_cdb_store_av(str *impu, str *impi, struct aka_av *av)
+{
+	str key, value;
+	int ret = -1;
+
+	if (!aka_cdb) {
+		return 0; /* CacheDB not configured, silently succeed */
+	}
+
+	if (aka_cdb_build_key(impu, impi, &av->authenticate, &key) < 0)
+		return -1;
+
+	if (aka_cdb_serialize_av(av, &value) < 0) {
+		pkg_free(key.s);
+		return -1;
+	}
+
+	LM_DBG("storing AV key=%.*s ttl=%d\n", key.len, key.s, aka_cdb_av_ttl);
+	if (aka_cdbf.set(aka_cdb, &key, &value, aka_cdb_av_ttl) < 0) {
+		LM_ERR("failed to store AV in cachedb\n");
+	} else {
+		ret = 0;
+	}
+
+	pkg_free(key.s);
+	pkg_free(value.s);
+	return ret;
+}
+
+/*
+ * Fetch AV from CacheDB
+ * Returns new AV allocated in shm memory, or NULL if not found
+ */
+struct aka_av *aka_cdb_fetch_av(str *impu, str *impi, str *nonce)
+{
+	str key, value;
+	struct aka_av *av = NULL;
+
+	if (!aka_cdb) {
+		return NULL; /* CacheDB not configured */
+	}
+
+	if (aka_cdb_build_key(impu, impi, nonce, &key) < 0)
+		return NULL;
+
+	value.s = NULL;
+	value.len = 0;
+
+	LM_DBG("fetching AV key=%.*s\n", key.len, key.s);
+	if (aka_cdbf.get(aka_cdb, &key, &value) <= 0 || value.s == NULL) {
+		LM_DBG("AV not found in cachedb for key=%.*s\n", key.len, key.s);
+		pkg_free(key.s);
+		return NULL;
+	}
+
+	av = aka_cdb_deserialize_av(&value);
+	if (av) {
+		LM_DBG("fetched AV from cachedb key=%.*s state=%d\n",
+			key.len, key.s, av->state);
+	}
+
+	pkg_free(key.s);
+	pkg_free(value.s);
+	return av;
+}
+
+/*
+ * Remove AV from CacheDB
+ */
+int aka_cdb_remove_av(str *impu, str *impi, str *nonce)
+{
+	str key;
+	int ret = -1;
+
+	if (!aka_cdb) {
+		return 0; /* CacheDB not configured, silently succeed */
+	}
+
+	if (aka_cdb_build_key(impu, impi, nonce, &key) < 0)
+		return -1;
+
+	LM_DBG("removing AV key=%.*s\n", key.len, key.s);
+	if (aka_cdbf.remove(aka_cdb, &key) < 0) {
+		LM_DBG("failed to remove AV from cachedb (may not exist)\n");
+	} else {
+		ret = 0;
+	}
+
+	pkg_free(key.s);
+	return ret;
 }
 
 
@@ -288,6 +559,34 @@ struct aka_av *aka_av_get_nonce(struct aka_user *user, int algmask, str *nonce)
 			av->state = AKA_AV_USED;
 	}
 	cond_unlock(&user->cond);
+
+	/* If not found locally, try CacheDB */
+	if (!av && aka_cdb) {
+		LM_DBG("AV not found locally, checking CacheDB for nonce=%.*s\n",
+			nonce->len, nonce->s);
+		av = aka_cdb_fetch_av(&user->impu, &user->impi->impi, nonce);
+		if (av) {
+			/* Check algorithm compatibility */
+			if (algmask >= 0 && av->algmask >= 0 && !(algmask & av->algmask)) {
+				LM_DBG("AV found in CacheDB but algorithm mismatch\n");
+				shm_free(av);
+				return NULL;
+			}
+			/* Check state - only USING or USED states are valid for authorization */
+			if (av->state != AKA_AV_USING && av->state != AKA_AV_USED) {
+				LM_DBG("AV found in CacheDB but invalid state %d\n", av->state);
+				shm_free(av);
+				return NULL;
+			}
+			/* Insert into local user's AV list */
+			cond_lock(&user->cond);
+			av->state = AKA_AV_USED;
+			aka_av_insert(user, av);
+			cond_unlock(&user->cond);
+			LM_DBG("AV fetched from CacheDB and inserted locally\n");
+		}
+	}
+
 	return av;
 }
 
@@ -369,6 +668,10 @@ int aka_av_get_new_wait(struct aka_user *user, int algmask,
 	}
 end:
 	cond_unlock(&user->cond);
+	/* Update CacheDB with USING state after releasing lock */
+	if (ret == 1 && *av) {
+		aka_cdb_store_av(&user->impu, &user->impi->impi, *av);
+	}
 	return ret;
 }
 
@@ -389,6 +692,10 @@ int aka_av_get_new(struct aka_user *user, int algmask, struct aka_av **av)
 		user->error_count--;
 	}
 	cond_unlock(&user->cond);
+	/* Update CacheDB with USING state after releasing lock */
+	if (ret == 1 && *av) {
+		aka_cdb_store_av(&user->impu, &user->impi->impi, *av);
+	}
 	return ret;
 }
 
@@ -448,8 +755,12 @@ end:
 	return av;
 }
 
-void aka_av_free(struct aka_av *av)
+void aka_av_free(struct aka_av *av, str *impu, str *impi)
 {
+	/* Remove from CacheDB if configured */
+	if (impu && impi) {
+		aka_cdb_remove_av(impu, impi, &av->authenticate);
+	}
 	list_del(&av->list);
 	shm_free(av);
 }
@@ -486,6 +797,11 @@ int aka_av_add(str *pub_id, str *priv_id, int algmask,
 	av->ts = av->new_ts = get_ticks();
 	ret = 1;
 	LM_DBG("adding av %p\n", av);
+
+	/* Store AV in CacheDB for cross-node synchronization */
+	if (aka_cdb_store_av(pub_id, priv_id, av) < 0) {
+		LM_WARN("failed to store AV in cachedb, cross-node auth may fail\n");
+	}
 end:
 	aka_user_release(user);
 	return ret;
@@ -570,6 +886,9 @@ void aka_av_set_new(struct aka_user *user, struct aka_av *av)
 	av->state = AKA_AV_NEW;
 	av->ts = av->new_ts; /* restore the new timestamp */
 	cond_unlock(&user->cond);
+
+	/* Update state in CacheDB */
+	aka_cdb_store_av(&user->impu, &user->impi->impi, av);
 }
 
 void aka_push_async(struct aka_user *user, struct list_head *subs)
@@ -605,7 +924,8 @@ static int aka_async_hash_iterator(void *param, str key, void *value)
 			aka_check_expire_async(ticks, it);
 		}
 		list_for_each_safe(it, safe, &user->avs) {
-			aka_check_expire_av(ticks, list_entry(it, struct aka_av, list));
+			aka_check_expire_av(ticks, list_entry(it, struct aka_av, list),
+				&user->impu, &user->impi->impi);
 		}
 		cond_unlock(&user->cond);
 		aka_user_try_free(user);

@@ -8,50 +8,52 @@ Auth_aka Module
         1.1. Overview
         1.2. Authentication Vectors
         1.3. Supported algorithms
-        1.4. Dependencies
+        1.4. Clustering / Multi-Node Support
+        1.5. Dependencies
 
-              1.4.1. OpenSIPS Modules
-              1.4.2. External Libraries or Applications
+              1.5.1. OpenSIPS Modules
+              1.5.2. External Libraries or Applications
 
-        1.5. Exported Parameters
+        1.6. Exported Parameters
 
-              1.5.1. default_av_mgm (string)
-              1.5.2. default_qop (string)
-              1.5.3. default_algorithm (string)
-              1.5.4. hash_size (integer)
-              1.5.5. sync_timeout (integer)
-              1.5.6. async_timeout (integer)
-              1.5.7. unused_timeout (integer)
-              1.5.8. unused_timeout (integer)
+              1.6.1. default_av_mgm (string)
+              1.6.2. default_qop (string)
+              1.6.3. default_algorithm (string)
+              1.6.4. hash_size (integer)
+              1.6.5. sync_timeout (integer)
+              1.6.6. async_timeout (integer)
+              1.6.7. unused_timeout (integer)
+              1.6.8. pending_timeout (integer)
+              1.6.9. cachedb_url (string)
 
-        1.6. Exported Functions
+        1.7. Exported Functions
 
-              1.6.1. aka_www_authorize([realm]])
-              1.6.2. aka_proxy_authorize([realm]])
-              1.6.3. aka_www_challenge([av_mgm[, realm[ ,qop[,
+              1.7.1. aka_www_authorize([realm]])
+              1.7.2. aka_proxy_authorize([realm]])
+              1.7.3. aka_www_challenge([av_mgm[, realm[ ,qop[,
                       alg]]]])
 
-              1.6.4. aka_proxy_challenge([realm]])
-              1.6.5. aka_av_add(public_identity, private_identity,
+              1.7.4. aka_proxy_challenge([realm]])
+              1.7.5. aka_av_add(public_identity, private_identity,
                       authenticate, authorize,
                       confidentiality_key, integrity_key[,
                       algorithms])
 
-              1.6.6. aka_av_drop(public_identity,
+              1.7.6. aka_av_drop(public_identity,
                       private_identity, authenticate)
 
-              1.6.7. aka_av_drop_all(public_identity,
+              1.7.7. aka_av_drop_all(public_identity,
                       private_identity[, count])
 
-              1.6.8. aka_av_fail(public_identity,
+              1.7.8. aka_av_fail(public_identity,
                       private_identity[, count])
 
-        1.7. Exported MI Functions
+        1.8. Exported MI Functions
 
-              1.7.1. aka_av_add
-              1.7.2. aka_av_drop
-              1.7.3. aka_av_drop_all
-              1.7.4. aka_av_fail
+              1.8.1. aka_av_add
+              1.8.2. aka_av_drop
+              1.8.3. aka_av_drop_all
+              1.8.4. aka_av_fail
 
    2. Contributors
 
@@ -79,18 +81,19 @@ Auth_aka Module
    1.6. async_timeout parameter usage
    1.7. unused_timeout parameter usage
    1.8. pending_timeout parameter usage
-   1.9. aka_www_authorize usage
-   1.10. aka_proxy_authorize usage
-   1.11. aka_www_challenge usage
-   1.12. aka_proxy_challenge usage
-   1.13. aka_av_add usage
-   1.14. aka_av_drop usage
-   1.15. aka_av_drop_all usage
-   1.16. aka_av_fail usage
-   1.17. aka_av_add usage
-   1.18. aka_av_drop usage
-   1.19. aka_av_drop_all usage
-   1.20. aka_av_drop usage
+   1.9. cachedb_url parameter usage
+   1.10. aka_www_authorize usage
+   1.11. aka_proxy_authorize usage
+   1.12. aka_www_challenge usage
+   1.13. aka_proxy_challenge usage
+   1.14. aka_av_add usage
+   1.15. aka_av_drop usage
+   1.16. aka_av_drop_all usage
+   1.17. aka_av_fail usage
+   1.18. aka_av_add usage
+   1.19. aka_av_drop usage
+   1.20. aka_av_drop_all usage
+   1.21. aka_av_drop usage
 
 Chapter 1. Admin Guide
 
@@ -148,23 +151,55 @@ Chapter 1. Admin Guide
    algorithms as well, but the response cannot be handled by this
    module, and an appropriate error will be returned.
 
-1.4. Dependencies
+1.4. Clustering / Multi-Node Support
 
-1.4.1. OpenSIPS Modules
+   In distributed deployments where multiple OpenSIPS nodes handle
+   SIP REGISTER requests, the AKA authentication flow requires that
+   the authentication vector (AV) issued in the 401 challenge is
+   available on the node that receives the subsequent authenticated
+   REGISTER.
+
+   To support this scenario, the module can optionally use the
+   OpenSIPS CacheDB infrastructure to synchronize authentication
+   vectors across nodes. When the cachedb_url parameter is set:
+
+     * AVs are stored in the external cache when created
+     * AVs are fetched from the cache when not found locally
+     * AV state changes are synchronized to the cache
+     * AVs are removed from the cache when they expire
+
+   Supported CacheDB backends include:
+     * Redis (cachedb_redis module)
+     * MongoDB (cachedb_mongodb module)
+     * Cassandra (cachedb_cassandra module)
+     * Any other CacheDB-compatible backend
+
+   Example configuration for a clustered setup:
+
+loadmodule "cachedb_redis.so"
+loadmodule "auth_aka.so"
+modparam("cachedb_redis", "cachedb_url", "redis://redis-cluster:6379/")
+modparam("auth_aka", "cachedb_url", "redis://redis-cluster:6379/")
+
+1.5. Dependencies
+
+1.5.1. OpenSIPS Modules
 
    The module depends on the following modules (in the other words
    the listed modules must be loaded before this module):
      * auth -- Authentication framework
      * AV manage module -- at least one module that fetches AVs
        and pushes them in the AV storage
+     * cachedb_* module (optional) -- required only if cachedb_url
+       is set for multi-node AV synchronization
 
-1.4.2. External Libraries or Applications
+1.5.2. External Libraries or Applications
 
    This module does not depend on any external library.
 
-1.5. Exported Parameters
+1.6. Exported Parameters
 
-1.5.1. default_av_mgm (string)
+1.6.1. default_av_mgm (string)
 
    The default AV Manager used in case the functions do not
    provide them explicitly.
@@ -174,7 +209,7 @@ Chapter 1. Admin Guide
 modparam("auth_aka", "default_av_mgm", "diameter") # fetch AVs through t
 he Cx interface
 
-1.5.2. default_qop (string)
+1.6.2. default_qop (string)
 
    The default qop parameter used during challenge, if the
    functions do not provide them explicitly.
@@ -185,7 +220,7 @@ he Cx interface
 
 modparam("auth_aka", "default_qop", "auth,auth-int")
 
-1.5.3. default_algorithm (string)
+1.6.3. default_algorithm (string)
 
    The default algorithm to be advertise during challenge, if the
    functions do not provide them explicitly. Note that at least
@@ -200,7 +235,7 @@ modparam("auth_aka", "default_qop", "auth,auth-int")
 
 modparam("auth_aka", "default_algorithm", "AKAv2-MD5")
 
-1.5.4. hash_size (integer)
+1.6.4. hash_size (integer)
 
    The size of the hash that stores the AVs for each user. Must be
    a power of 2 number.
@@ -211,7 +246,7 @@ modparam("auth_aka", "default_algorithm", "AKAv2-MD5")
 
 modparam("auth_aka", "hash_size", 1024)
 
-1.5.5. sync_timeout (integer)
+1.6.5. sync_timeout (integer)
 
    The amount of milliseconds a synchronous call should wait for
    getting an authentication vector.
@@ -225,7 +260,7 @@ modparam("auth_aka", "hash_size", 1024)
 
 modparam("auth_aka", "sync_timeout", 200)
 
-1.5.6. async_timeout (integer)
+1.6.6. async_timeout (integer)
 
    The amount of milliseconds an asynchronous call should wait for
    getting an authentication vector.
@@ -242,7 +277,7 @@ modparam("auth_aka", "sync_timeout", 200)
 
 modparam("auth_aka", "async_timeout", 2000)
 
-1.5.7. unused_timeout (integer)
+1.6.7. unused_timeout (integer)
 
    The amount of seconds an authentication vector that has not
    been used can stay in memory. Once this timeout is reached, the
@@ -256,7 +291,7 @@ modparam("auth_aka", "async_timeout", 2000)
 
 modparam("auth_aka", "unused_timeout", 120)
 
-1.5.8. unused_timeout (integer)
+1.6.8. pending_timeout (integer)
 
    The amount of seconds an authentication vector that is being
    used in the authentication process shall stay in memory. Once
@@ -271,9 +306,43 @@ modparam("auth_aka", "unused_timeout", 120)
 
 modparam("auth_aka", "pending_timeout", 10)
 
-1.6. Exported Functions
+1.6.9. cachedb_url (string)
 
-1.6.1. aka_www_authorize([realm]])
+   If set, this parameter enables the synchronization of
+   authentication vectors across multiple OpenSIPS nodes through
+   the CacheDB interface. This is essential for distributed/clustered
+   deployments where one node may issue the 401 challenge and another
+   node may receive the authenticated REGISTER request.
+
+   When enabled, authentication vectors are stored in the configured
+   CacheDB backend (e.g., Redis, MongoDB, Cassandra) with a TTL based
+   on the pending_timeout parameter plus a small margin.
+
+   The flow for multi-node authentication is:
+     1. Node A receives initial REGISTER without credentials
+     2. Node A fetches AV, stores it in CacheDB, sends 401
+     3. Node B receives REGISTER with credentials
+     4. Node B looks up AV locally, on miss fetches from CacheDB
+     5. Node B validates credentials using the cached AV
+
+   If not set (default), authentication vectors are only stored
+   locally and multi-node authentication will not work.
+
+   Example 1.9. cachedb_url parameter usage
+
+# Using Redis for AV synchronization
+loadmodule "cachedb_redis.so"
+modparam("cachedb_redis", "cachedb_url", "redis://localhost:6379/")
+modparam("auth_aka", "cachedb_url", "redis://localhost:6379/")
+
+# Using MongoDB for AV synchronization
+loadmodule "cachedb_mongodb.so"
+modparam("cachedb_mongodb", "cachedb_url", "mongodb://localhost:27017/opensips")
+modparam("auth_aka", "cachedb_url", "mongodb://localhost:27017/opensips")
+
+1.7. Exported Functions
+
+1.7.1. aka_www_authorize([realm]])
 
    The function verifies credentials according to RFC3310, by
    using an authentication vector priorly allocated by an
@@ -321,7 +390,7 @@ if (!aka_www_authorize("diameter", "siphub.com"))
 ...
 
 
-1.6.2. aka_proxy_authorize([realm]])
+1.7.2. aka_proxy_authorize([realm]])
 
    The function behaves the same as aka_www_authorize(), but it
    authenticates the user from a proxy perspective. It receives
@@ -338,7 +407,7 @@ if (!aka_proxy_authorize("siphub.com"))
 ...
 
 
-1.6.3. aka_www_challenge([av_mgm[, realm[ ,qop[, alg]]]])
+1.7.3. aka_www_challenge([av_mgm[, realm[ ,qop[, alg]]]])
 
    The function challenges a user agent. It fetches an
    authentication vector for each algorigthm used through the
@@ -408,7 +477,7 @@ if (!aka_www_authorize("siphub.com")) {
 }
 ...
 
-1.6.4. aka_proxy_challenge([realm]])
+1.7.4. aka_proxy_challenge([realm]])
 
    The function behaves the same as aka_www_challenge(), but it
    challenges the user from a proxy perspective. It receives the
@@ -429,7 +498,7 @@ if (!aka_proxy_authorize("siphub.com"))
 ...
 
 
-1.6.5. aka_av_add(public_identity, private_identity, authenticate,
+1.7.5. aka_av_add(public_identity, private_identity, authenticate,
 authorize, confidentiality_key, integrity_key[, algorithms])
 
    Adds an authentication vector for the user identitied by
@@ -467,7 +536,7 @@ uthorize */
                         "6151667b9ef815c1dcb87473685f062a"  /* ik */);
 ...
 
-1.6.6. aka_av_drop(public_identity, private_identity, authenticate)
+1.7.6. aka_av_drop(public_identity, private_identity, authenticate)
 
    Drops the authentication vector corresponding to the
    authenticate/nonce value for an user identitied by
@@ -490,7 +559,7 @@ aka_av_drop("sip:test@siphub.com", "test@siphub.com",
                         "KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sIJI4=");
 ...
 
-1.6.7. aka_av_drop_all(public_identity, private_identity[, count])
+1.7.7. aka_av_drop_all(public_identity, private_identity[, count])
 
    Drops all authentication vectors for an user identitied by
    public_identity and private_identity. This function is useful
@@ -512,7 +581,7 @@ aka_av_drop("sip:test@siphub.com", "test@siphub.com",
 aka_av_drop_all("sip:test@siphub.com", "test@siphub.com", $var(count));
 ...
 
-1.6.8. aka_av_fail(public_identity, private_identity[, count])
+1.7.8. aka_av_fail(public_identity, private_identity[, count])
 
    Marks the engine that an authentication vector query for a user
    has failed, unlocking the processing of the message.
@@ -537,9 +606,9 @@ aka_av_drop_all("sip:test@siphub.com", "test@siphub.com", $var(count));
 aka_av_fail("sip:test@siphub.com", "test@siphub.com", 3);
 ...
 
-1.7. Exported MI Functions
+1.8. Exported MI Functions
 
-1.7.1. aka_av_add
+1.8.1. aka_av_add
 
    Adds an Authentication Vector through the MI interface.
 
@@ -574,7 +643,7 @@ JI4=
                                 6151667b9ef815c1dcb87473685f062a
 ...
 
-1.7.2. aka_av_drop
+1.8.2. aka_av_drop
 
    Invalidates an Authentication Vector of an user identified by
    its authenticate value.
@@ -597,7 +666,7 @@ $ opensips-cli -x mi aka_av_drop \
 JI4=
 ...
 
-1.7.3. aka_av_drop_all
+1.8.3. aka_av_drop_all
 
    Invalidates all Authentication Vectors of an user through the
    MI interface.
@@ -616,7 +685,7 @@ $ opensips-cli -x mi aka_av_drop_all \
                                 test@siphub.com
 ...
 
-1.7.4. aka_av_fail
+1.8.4. aka_av_fail
 
    Indicates the fact that the fetching of an authentication
    vector has failed, unlocking the processing of the message.

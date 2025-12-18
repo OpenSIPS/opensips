@@ -46,8 +46,14 @@
 #include "../../parser/parse_to.h"
 #include "../../parser/parse_uri.h"
 
+#include "../../cachedb/cachedb.h"
 
 auth_api_t auth_api;
+
+/* CacheDB support for AV synchronization across nodes */
+static str aka_cachedb_url = {NULL, 0};
+cachedb_funcs aka_cdbf;
+cachedb_con *aka_cdb = NULL;
 
 static int aka_www_authorize(struct sip_msg *msg, str *realm);
 static int aka_proxy_authorize(struct sip_msg *msg, str *realm);
@@ -184,7 +190,8 @@ static const param_export_t params[] = {
 	{"default_algorithm", STR_PARAM, &aka_default_alg_s.s },
 	{"hash_size",         INT_PARAM, &aka_hash_size },
 	{"sync_timeout",      INT_PARAM, &aka_sync_timeout },
-	{"async_timeout",      INT_PARAM, &aka_async_timeout },
+	{"async_timeout",     INT_PARAM, &aka_async_timeout },
+	{"cachedb_url",       STR_PARAM, &aka_cachedb_url.s },
 	{0, 0, 0}
 };
 
@@ -214,9 +221,11 @@ static const mi_export_t mi_cmds[] = {
 static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
+		{ MOD_TYPE_CACHEDB, NULL, DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "cachedb_url", get_deps_cachedb_url },
 		{ NULL, NULL },
 	},
 };
@@ -276,7 +285,25 @@ static int mod_init(void)
 	}
 	aka_async_timeout /= 1000; /* XXX: add support for milliseconds */
 
-	if (aka_init_mgm(aka_hash_size) < 0) {
+	/* Initialize CacheDB if URL is provided */
+	if (aka_cachedb_url.s) {
+		aka_cachedb_url.len = strlen(aka_cachedb_url.s);
+		if (cachedb_bind_mod(&aka_cachedb_url, &aka_cdbf) < 0) {
+			LM_ERR("cannot bind functions for cachedb_url %.*s\n",
+				aka_cachedb_url.len, aka_cachedb_url.s);
+			return -1;
+		}
+		aka_cdb = aka_cdbf.init(&aka_cachedb_url);
+		if (!aka_cdb) {
+			LM_ERR("cannot connect to cachedb_url %.*s\n",
+				aka_cachedb_url.len, aka_cachedb_url.s);
+			return -1;
+		}
+		LM_INFO("CacheDB AV sync enabled with %.*s\n",
+			aka_cachedb_url.len, aka_cachedb_url.s);
+	}
+
+	if (aka_init_mgm(aka_hash_size, aka_pending_timeout) < 0) {
 		LM_ERR("cannot initialize aka management hash\n");
 		return -1;
 	}
@@ -876,6 +903,33 @@ static int aka_authorize(struct sip_msg *_msg, str *_realm,
 			private_id->len, private_id->s);
 	user = aka_user_find(public_id, private_id);
 	if (user == NULL) {
+		/* User not found locally - check CacheDB if configured */
+		if (aka_cdb && digest->nonce.len) {
+			LM_DBG("user not found locally, checking CacheDB for nonce %.*s\n",
+				digest->nonce.len, digest->nonce.s);
+			av = aka_cdb_fetch_av(public_id, private_id, &digest->nonce);
+			if (av) {
+				/* Check state - only USING or USED states are valid */
+				if (av->state != AKA_AV_USING && av->state != AKA_AV_USED) {
+					LM_DBG("AV found in CacheDB but invalid state %d\n", av->state);
+					shm_free(av);
+					return STALE_NONCE;
+				}
+				/* Create user locally and attach the AV */
+				user = aka_user_get(public_id, private_id);
+				if (user) {
+					cond_lock(&user->cond);
+					av->state = AKA_AV_USED;
+					list_add_tail(&av->list, &user->avs);
+					cond_unlock(&user->cond);
+					LM_DBG("created local user from CacheDB AV\n");
+					goto av_found;
+				} else {
+					shm_free(av);
+					av = NULL;
+				}
+			}
+		}
 		if (digest->nonce.len)
 			LM_ERR("could not get AKA user %.*s/%.*s with nonce %.*s\n",
 					public_id->len, public_id->s, private_id->len, private_id->s,
@@ -893,6 +947,7 @@ static int aka_authorize(struct sip_msg *_msg, str *_realm,
 		ret = STALE_NONCE;
 		goto release;
 	}
+av_found:
 
 	/* now that we are trusting the user, check whether it has an auts
 	 * parameter - if it does, we need to re-challenge him */
@@ -1164,7 +1219,7 @@ void aka_check_expire_async(unsigned int ticks, struct list_head *subs)
 	aka_signal_async_resume(param, aka_challenge_resume_tout);
 }
 
-void aka_check_expire_av(unsigned int ticks, struct aka_av *av)
+void aka_check_expire_av(unsigned int ticks, struct aka_av *av, str *impu, str *impi)
 {
 	int timeout;
 	switch (av->state) {
@@ -1186,7 +1241,7 @@ void aka_check_expire_av(unsigned int ticks, struct aka_av *av)
 		return;
 	LM_DBG("removing av %p in state %d after %ds now %ds\n",
 			av, av->state, timeout, ticks);
-	aka_av_free(av);
+	aka_av_free(av, impu, impi);
 }
 
 

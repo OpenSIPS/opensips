@@ -77,6 +77,64 @@
 	</para>
 	</section>
 
+	<section id="clustering" xreflabel="Clustering">
+	<title>Clustering / Multi-Node Support</title>
+	<para>
+		In distributed deployments where multiple OpenSIPS nodes handle
+		SIP REGISTER requests, the AKA authentication flow requires that
+		the authentication vector (AV) issued in the 401 challenge is
+		available on the node that receives the subsequent authenticated
+		REGISTER.
+	</para>
+	<para>
+		To support this scenario, the module can optionally use the
+		OpenSIPS CacheDB infrastructure to synchronize authentication
+		vectors across nodes. When the <xref linkend="param_cachedb_url"/>
+		parameter is set:
+		<itemizedlist>
+		<listitem>
+			<para>AVs are stored in the external cache when created</para>
+		</listitem>
+		<listitem>
+			<para>AVs are fetched from the cache when not found locally</para>
+		</listitem>
+		<listitem>
+			<para>AV state changes are synchronized to the cache</para>
+		</listitem>
+		<listitem>
+			<para>AVs are removed from the cache when they expire</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		Supported CacheDB backends include:
+		<itemizedlist>
+		<listitem>
+			<para>Redis (<emphasis>cachedb_redis</emphasis> module)</para>
+		</listitem>
+		<listitem>
+			<para>MongoDB (<emphasis>cachedb_mongodb</emphasis> module)</para>
+		</listitem>
+		<listitem>
+			<para>Cassandra (<emphasis>cachedb_cassandra</emphasis> module)</para>
+		</listitem>
+		<listitem>
+			<para>Any other CacheDB-compatible backend</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	<example>
+		<title>Clustered setup configuration</title>
+		<programlisting format="linespecific">
+
+loadmodule "cachedb_redis.so"
+loadmodule "auth_aka.so"
+modparam("cachedb_redis", "cachedb_url", "redis://redis-cluster:6379/")
+modparam("auth_aka", "cachedb_url", "redis://redis-cluster:6379/")
+		</programlisting>
+	</example>
+	</section>
+
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 		<section>
@@ -93,6 +151,13 @@
 						<emphasis>AV manage module</emphasis>
 						-- at least one module that fetches AVs and pushes
 						them in the AV storage
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>cachedb_* module</emphasis> (optional)
+						-- required only if <xref linkend="param_cachedb_url"/>
+						is set for multi-node AV synchronization
 					</para>
 				</listitem>
 			</itemizedlist>
@@ -246,7 +311,7 @@ modparam("auth_aka", "unused_timeout", 120)
 		</example>
 	</section>
 	<section id="param_pending_timeout" xreflabel="pending_timeout">
-		<title><varname>unused_timeout</varname> (integer)</title>
+		<title><varname>pending_timeout</varname> (integer)</title>
 		<para>
 			The amount of seconds an authentication vector that is being
 			used in the authentication process shall stay in memory.
@@ -264,6 +329,61 @@ modparam("auth_aka", "unused_timeout", 120)
 		<programlisting format="linespecific">
 
 modparam("auth_aka", "pending_timeout", 10)
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_cachedb_url" xreflabel="cachedb_url">
+		<title><varname>cachedb_url</varname> (string)</title>
+		<para>
+			If set, this parameter enables the synchronization of
+			authentication vectors across multiple OpenSIPS nodes through
+			the CacheDB interface. This is essential for distributed/clustered
+			deployments where one node may issue the 401 challenge and another
+			node may receive the subsequent authenticated REGISTER request.
+		</para>
+		<para>
+			When enabled, authentication vectors are stored in the configured
+			CacheDB backend (e.g., Redis, MongoDB, Cassandra) with a TTL based
+			on the <xref linkend="param_pending_timeout"/> parameter plus a
+			small margin.
+		</para>
+		<para>
+			The flow for multi-node authentication is:
+			<itemizedlist>
+			<listitem>
+				<para>Node A receives initial REGISTER without credentials</para>
+			</listitem>
+			<listitem>
+				<para>Node A fetches AV, stores it in CacheDB, sends 401</para>
+			</listitem>
+			<listitem>
+				<para>Node B receives REGISTER with credentials</para>
+			</listitem>
+			<listitem>
+				<para>Node B looks up AV locally, on miss fetches from CacheDB</para>
+			</listitem>
+			<listitem>
+				<para>Node B validates credentials using the cached AV</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			If not set (default), authentication vectors are only stored
+			locally and multi-node authentication will not work.
+		</para>
+		<example>
+		<title><varname>cachedb_url</varname> parameter usage</title>
+		<programlisting format="linespecific">
+
+# Using Redis for AV synchronization
+loadmodule "cachedb_redis.so"
+modparam("cachedb_redis", "cachedb_url", "redis://localhost:6379/")
+modparam("auth_aka", "cachedb_url", "redis://localhost:6379/")
+
+# Using MongoDB for AV synchronization
+loadmodule "cachedb_mongodb.so"
+modparam("cachedb_mongodb", "cachedb_url", "mongodb://localhost:27017/opensips")
+modparam("auth_aka", "cachedb_url", "mongodb://localhost:27017/opensips")
 		</programlisting>
 		</example>
 	</section>

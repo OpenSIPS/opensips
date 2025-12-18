@@ -28,7 +28,12 @@
 #include "../../lib/list.h"
 #include "../../parser/digest/digest_parser.h"
 #include "../../lib/digest_auth/digest_auth.h"
+#include "../../cachedb/cachedb.h"
 #include "aka_av_mgm.h"
+
+/* CacheDB support for AV synchronization across nodes */
+extern cachedb_funcs aka_cdbf;
+extern cachedb_con *aka_cdb;
 
 enum aka_user_state {
 	AKA_USER_STATE_INIT = 0,
@@ -82,7 +87,7 @@ struct aka_av_mgm {
 
 
 
-int aka_init_mgm(int hash_size);
+int aka_init_mgm(int hash_size, int pending_timeout);
 
 struct aka_av_mgm *aka_get_mgm(str *name);
 struct aka_av_mgm *aka_load_mgm(str *name);
@@ -111,9 +116,14 @@ void aka_pop_async(struct aka_user *user, struct  list_head *subs);
 void aka_pop_unsafe_async(struct aka_user *user, struct  list_head *subs);
 void aka_signal_async(struct aka_user *user, struct  list_head *subs);
 void aka_check_expire_async(unsigned int ticks, struct list_head *subs);
-void aka_check_expire_av(unsigned int ticks, struct aka_av *av);
-void aka_av_free(struct aka_av *av);
+void aka_check_expire_av(unsigned int ticks, struct aka_av *av, str *impu, str *impi);
+void aka_av_free(struct aka_av *av, str *impu, str *impi);
 
 void aka_async_expire(unsigned int ticks, void* param);
+
+/* CacheDB helper functions */
+int aka_cdb_store_av(str *impu, str *impi, struct aka_av *av);
+struct aka_av *aka_cdb_fetch_av(str *impu, str *impi, str *nonce);
+int aka_cdb_remove_av(str *impu, str *impi, str *nonce);
 
 #endif /* AUTH_AKA_H */
