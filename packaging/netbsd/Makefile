@@ -6,9 +6,9 @@
 COMMENT= "OpenSIPS"
 
 PORTNAME= opensips
-PORTVERSION= 3.5.8
+PORTVERSION= 3.5.9
 CATEGORIES= net
-MASTER_SITES= https://opensips.org/pub/opensips/3.5.8/
+MASTER_SITES= https://opensips.org/pub/opensips/3.5.9/
 
 MAINTAINER= bogdan@opensips.org
 
