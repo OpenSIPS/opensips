@@ -1,3 +1,321 @@
+=========================== Release 3.5.9 ==============================
+
+2025-12-18  Liviu Chircu  <liviu@opensips.org>
+        * [a50c689b6d] :
+
+        auth: Add helpful logs on pv_xxx_auth() mis-usage
+
+        Also, fix top-level rc from "-1" (invalid user? continue script?) into
+        "0" (auto-reply SIP 500 error! halt script!) on such scripting errors.
+
+        Fixes #3756
+
+        (cherry picked from commit dfd616bd16cef19b51f6282a7a62e57da2697258)
+
+
+2025-12-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [391e4472d1] :
+
+        [mi_datagram] turn the RX sockets to non-blocking
+
+        As we have multiple procs reading from the same datagram sockets, we may end up with a mixing between the procs woken up by OS and the procs doing the reading. So some procs (even if were woken up) may have nothing to read.
+        To be resilient, better do non-blocking reading and igonre the EAGAIN or EWOULDBLOCK.
+
+        (cherry picked from commit 12e705e296470872899e848f030058e8bc052d11)
+
+
+2025-12-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [8d801f54a5] :
+
+        [dialog] fixed potential double-free upon delayed delete
+
+        If the dialog struct is removed from the timer list (and under processing by the timer), do not attempt to free it here, rather leave it alone, it will be freed by the timer
+
+        (cherry picked from commit f5f11af9ac8bffd387120725cc9ea147ed08873c)
+
+
+2025-12-14  OpenSIPS  <github@opensips.org>
+        * [b8b0e8df5c] :
+
+        Rebuild documentation
+
+
+2025-12-11  Razvan Crainea  <razvan@opensips.org>
+        * [48a9d69d86] :
+
+        modules: minimum match for revision control
+
+        (cherry picked from commit 9f78fd0eb110d5821e9ba06016be34076945099d)
+
+
+2025-12-09  Jupiter Tang  <36952362@qq.com>
+        * [81b387adca] :
+
+        keep original flags if pause or resume recording failed (#3764)
+
+        (cherry picked from commit f7721b185accb6130eec7f294c926c3652d71e91)
+
+
+2025-12-07  OpenSIPS  <github@opensips.org>
+        * [b03c171109] :
+
+        Rebuild documentation
+
+
+2025-12-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [9f16f62cb1] :
+
+        [b2b_entities] avoid 487 Request Terminated over a previous final reply
+
+        If a final 200 OK reply was already sent, do not sent the 487 Request Terminated, but rather release the transaction (to stop retrasnmissions)
+
+        (cherry picked from commit 203d8c9582d4adc2a009ab0de23b04c0a9037f9f)
+
+
+2025-12-03  Razvan Crainea  <razvan@opensips.org>
+        * [7bfc1ae732] :
+
+        proto_ipsec: fix several typos
+
+        (cherry picked from commit b5d00aac204941298e66374a2def90e587fe0afc)
+
+
+2025-11-30  OpenSIPS  <github@opensips.org>
+        * [0cd6da7bf9] :
+
+        Rebuild documentation
+
+
+2025-11-28  Jupiter Tang  <36952362@qq.com>
+        * [e83c13dba8] :
+
+        fix memory leak in tls_mgm (#3765)
+
+        * fix SHM memory leak on the TLS domain match filter strings
+
+        (cherry picked from commit 9d4afd42ca819aca06abeefaea1042d4bec0a050)
+
+
+2025-11-25  Peter Lemenkov  <lemenkov@gmail.com>
+        * [663c9e230a] :
+
+        Remove unnecessary -j invocation (#3745)
+
+        During parallel builds (make -j), numerous warnings appear for each module:
+
+        ```
+        make[1]: warning: -j0 forced in submake: resetting jobserver mode.
+        ```
+
+        Root cause: Lines 205 and 225 in the main Makefile explicitly pass `-j`
+        (without a value) to submake invocations:
+
+        ```
+        $(MAKE) -j -C $$r ;
+        ```
+
+        When `-j` is specified without a number, it defaults to `-j0` (unlimited
+        parallel jobs). This breaks GNU Make's jobserver coordination between the
+        parent make process and submakes, resulting in the warning.
+
+        Why this flag is redundant:
+
+        When a user runs `make -jN` at the top level, GNU Make automatically
+        manages parallelism across all recursive $(MAKE) invocations through its
+        jobserver mechanism. Submakes inherit the parent's jobserver and
+        participate in the same job pool without needing explicit `-j` flags.
+
+        By adding `-j` in submakes, we:
+
+        - Break jobserver coordination (triggering warnings)
+        - Risk spawning unlimited jobs (potential system overload)
+        - Override the user's intended parallelism level
+
+        Performance impact: NONE
+
+        Removing these `-j` flags does NOT slow down builds. The parallelism
+        behavior remains unchanged:
+
+        - `make -j4` → builds 4 jobs in parallel (before AND after this fix)
+        - `make -j8` → builds 8 jobs in parallel (before AND after this fix)
+        - `make` → builds sequentially (before AND after this fix)
+
+        The only difference is that jobserver coordination now works correctly,
+        eliminating the warnings without affecting build performance.
+
+        Note: The FASTER variable and alternate build path remain unchanged to
+        preserve compatibility with existing build scripts used by distribution
+        packages (Debian, Arch).
+
+        Assisted-by: Claude (Anthropic) <https://claude.ai>
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 27e429319c8dc78a9d82df5026a6dad289b8f64f)
+
+
+2025-11-25  Ovidiu Sas  <osas@voipembedded.com>
+        * [48f924bb9e] :
+
+        b2b_entities: enable in-dialog authentication (#3762)
+
+        * b2b_entities: do not hardcode entity type when sending in dialog requests
+
+        * b2b_entities: attempt auth only if uac_auth module is loaded and dlg state is B2B_NEW
+
+        * b2b_entities: new function: b2b_send_indlg_auth_req()
+
+        * b2b_entities: enable reINVITE authentication
+
+        (cherry picked from commit dee0a54d61bd3b04d98cf3b03c4086fdc131f206)
+
+
+2025-11-25  Patrice Fournier  <patrice.fournier@t38fax.com>
+        * [e00250131f] :
+
+        Fix memory leaks in stir_shaken module
+
+        The stir_shaken module would leak memory any time a signature was added
+        to a reply instead of the request or returned in a variable. This commit
+        makes sure the Identity header lump does not get duplicated and freed
+        only once. Also fixed possible memory leaks in case of issues while
+        adding a date header to a request without one.
+
+        (cherry picked from commit 1b3c7253778930e9daac423a9970c33f10a48377)
+
+
+2025-11-24  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [33ccad31ec] :
+
+        Merge pull request #3747 from lemenkov/constify_libxml2_api
+
+        Fix const-correctness warnings with libxml2 error handling
+
+        (cherry picked from commit e3bec7e266154beb80fd565cf6649c5581fa91f5)
+
+
+2025-11-24  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [6a41322c3c] :
+
+        Merge pull request #3744 from lemenkov/libdl_link_typo
+
+        Fix libdl linking typo to eliminate build warnings
+
+        (cherry picked from commit 6d784ce4501179f9aa573209cc8065dce989a195)
+
+
+2025-11-23  OpenSIPS  <github@opensips.org>
+        * [5a20222cd7] :
+
+        Rebuild documentation
+
+
+2025-11-18  Razvan Crainea  <razvan@opensips.org>
+        * [75c08a9ffb] :
+
+        aaa_diameter: fix len for hexstring AVPs encoding
+
+        When provided from script, make sure we do not halve the length, as it
+        has already been done in the `hex2string` function
+
+        (cherry picked from commit 75860568435ea3a3221d61e3d5ef80ae8bcd30a7)
+
+
+2025-11-18  Vlad Paiu  <vladpaiu@opensips.org>
+        * [412ee0391c] :
+
+        Reduce verbosity of libcurl and send errors to stderr
+
+        (cherry picked from commit f1ca60be4d7c4d6a9423cea3e0de5de1e3d97fac)
+
+
+2025-11-16  OpenSIPS  <github@opensips.org>
+        * [d273b04f01] :
+
+        Rebuild documentation
+
+
+2025-11-14  andingv  <74421031+andingv@users.noreply.github.com>
+        * [d744e2319c] :
+
+        b2b_logic: fix column indexes for the update of b2b legs (#3758)
+
+        (cherry picked from commit 905c17a7320cfc1b2a962b88b1c2b7a5c62e90bb)
+
+
+2025-11-02  OpenSIPS  <github@opensips.org>
+        * [2c1ca24df1] :
+
+        Rebuild documentation
+
+
+2025-10-28  Razvan Crainea  <razvan@opensips.org>
+        * [84323f2282] :
+
+        rtp_relay: fix overwriting peer's leg
+
+        (cherry picked from commit 12939ed24408627137a77a6a8d31d0d8b0b68457)
+
+
+2025-10-27  Peter Lemenkov  <lemenkov@gmail.com>
+        * [5bfe217346] :
+
+        Fix curl type warnings: use long instead of int
+
+        Multiple warnings appear during compilation of modules using libcurl:
+
+        ```
+        gcc -fPIC -DPIC -O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -DMOD_NAME='rest_client' -DPKG_MALLOC  -DSHM_MMAP  -DUSE_MCAST  -DDISABLE_NAGLE  -DSTATISTICS  -DHAVE_RESOLV_RES  -DF_MALLOC  -DQ_MALLOC  -DHP_MALLOC  -DDBG_MALLOC  -DF_PARALLEL_MALLOC  -DHAVE_STDATOMIC -DHAVE_GENERICS  -DNAME='"opensips"' -DVERSION='"3.6.2"' -DARCH='"x86_64"' -DOS='"linux"' -DCOMPILER='"gcc 15"' -D__CPU_x86_64 -D__OS_linux -D__SMP_yes -DCFG_DIR='"/etc/opensips/"'  -DVERSIONTYPE='"git"' -DTHISREVISION='"994bcd690"' -DFAST_LOCK -DADAPTIVE_WAIT -DADAPTIVE_WAIT_LOOPS=1024 -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H -DHAVE_TIMEGM -DHAVE_EPOLL -DHAVE_SIGIO_RT -DHAVE_SELECT -c rest_methods.c -o rest_methods.o
+        rest_methods.c: In function ‘init_transfer’:
+        rest_methods.c:408:17: warning: call to ‘Wcurl_easy_setopt_err_long’ declared with attribute warning: curl_easy_setopt expects a long argument [-Wattribute-warning]
+          408 |                 w_curl_easy_setopt(handle, CURLOPT_HTTP_VERSION, curl_http_version);
+              |                 ^
+        rest_methods.c:422:9: warning: call to ‘Wcurl_easy_setopt_err_long’ declared with attribute warning: curl_easy_setopt expects a long argument [-Wattribute-warning]
+          422 |         w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
+              |         ^
+        rest_methods.c:424:9: warning: call to ‘Wcurl_easy_setopt_err_long’ declared with attribute warning: curl_easy_setopt expects a long argument [-Wattribute-warning]
+          424 |         w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 0);
+              |         ^
+        rest_methods.c: In function ‘set_upload_opts’:
+        rest_methods.c:480:9: warning: call to ‘Wcurl_easy_setopt_err_long’ declared with attribute warning: curl_easy_setopt expects a long argument [-Wattribute-warning]
+          480 |         w_curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, body->len);
+              |         ^
+        rest_methods.c: In function ‘rest_sync_transfer’:
+        rest_methods.c:714:17: warning: call to ‘Wcurl_easy_setopt_err_long’ declared with attribute warning: curl_easy_setopt expects a long argument [-Wattribute-warning]
+          714 |                 set_post_opts(sync_handle, ctype, body);
+              |                 ^
+        rest_methods.c: In function ‘start_async_http_req’:
+        rest_methods.c:847:17: warning: call to ‘Wcurl_easy_setopt_err_long’ declared with attribute warning: curl_easy_setopt expects a long argument [-Wattribute-warning]
+          847 |                 set_post_opts(handle, req_ctype, req_body);
+              |                 ^
+        rest_methods.c:918:25: warning: call to ‘Wcurl_easy_getinfo_err_long’ declared with attribute warning: curl_easy_getinfo expects a pointer to long [-Wattribute-warning]
+          918 |                         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+              |                         ^
+        ```
+
+        Let's ensure we pass a literals and variables with a proper type.
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 2a03d51f7452b78e603ffb42bb32c815e27c078a)
+
+
+2025-10-26  OpenSIPS  <github@opensips.org>
+        * [6471d6c780] :
+
+        Rebuild documentation
+
+
+2025-10-24  Razvan Crainea  <razvan@opensips.org>
+        * [43b3024579] :
+
+        b2b_entities: fix crash while debugging client's dlg
+
+        Client's dlg is released when a 200 OK is received - thus, when printing
+        something after the request is out, if a 200 OK is received, the log
+        might no longer be available - this patch fixes this concurrency issue.
+
+        (cherry picked from commit ab7295aa532fdaccdaf17e88708fa2157ac5f5ce)
+
+
 =========================== Release 3.5.8 ==============================
 
 2025-10-22  Liviu Chircu  <liviu@opensips.org>
