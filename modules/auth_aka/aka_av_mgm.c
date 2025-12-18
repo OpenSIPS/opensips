@@ -30,6 +30,9 @@
 static gen_hash_t *aka_users;
 OSIPS_LIST_HEAD(aka_av_managers);
 
+/* Forward declaration for static functions */
+static void aka_av_insert(struct aka_user *user, struct aka_av *av);
+
 /* CacheDB AV TTL (set from pending_timeout) */
 static int aka_cdb_av_ttl = 30;
 
