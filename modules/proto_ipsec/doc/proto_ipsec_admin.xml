@@ -281,7 +281,7 @@ modparam("proto_ipsec", "default_server_port", 6100)
 				Authentication algorithms:
 				<itemizedlist>
 					<listitem>hmac-md5-96</listitem> - deprecated by TS 33.203 V13
-					<listitem>hmac-sha-1-96</listitem> - not recomended by TS 33.203 V17
+					<listitem>hmac-sha-1-96</listitem> - not recommended by TS 33.203 V17
 					<listitem>aes-gmac</listitem>
 					<listitem>null</listitem> - must only be used with aes-gcm encryption
 				</itemizedlist>
@@ -292,7 +292,7 @@ modparam("proto_ipsec", "default_server_port", 6100)
 				Encryption algorithms:
 				<itemizedlist>
 					<listitem>des-ede3-cbc</listitem> - not recommended
-					<listitem>aes-cbc</listitem> - not recomended by TS 33.203 V17
+					<listitem>aes-cbc</listitem> - not recommended by TS 33.203 V17
 					<listitem>aes-gcm</listitem>
 					<listitem>null</listitem> - no encryption
 				</itemizedlist>
@@ -339,7 +339,7 @@ modparam("proto_ipsec", "allowed_algorithms", "hmac-sha-1-96=null,aes-gmac=aes-g
 		</para>
 		<para>
 		<emphasis>
-			Default value is false - all algorihms can be used.
+			Default value is false - all algorithms can be used.
 		</emphasis>
 		</para>
 		<example>

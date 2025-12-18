@@ -22,6 +22,7 @@
 #include "../../sr_module.h"
 #include "../../mod_fix.h"
 #include "../../dprint.h"
+#include "../../ut.h"
 
 #include <unistd.h>
 #include <uuid/uuid.h>
@@ -41,8 +42,6 @@ enum uuid_gen_vers {
 	UUID_VERS_7 = 7,
 };
 
-static uuid_t uuid;
-static char uuid_str[UUID_STR_BUFSIZE];
 
 static int fixup_check_var(void** param);
 static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str *namespace_param, str *name_param);
@@ -50,8 +49,18 @@ static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str 
 static int pv_get_uuid(struct sip_msg *msg, pv_param_t *param,
 						pv_value_t *res);
 
+static int pv_parse_uuid_param(pv_spec_p sp, const str *in)
+{
+	if (in->len == 0)
+		return 0;
+
+	sp->pvp.pvv = *in;
+
+	return 0;
+}
+
 static const pv_export_t mod_items[] = {
-	{str_const_init("uuid"), 1000, pv_get_uuid, 0, 0, 0, 0, 0},
+	{str_const_init("uuid"), 1000, pv_get_uuid, 0, pv_parse_uuid_param, 0, 0, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -118,7 +127,9 @@ static int gen_uuidv7(uuid_t value) {
 
 static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 {
+	static char uuid_str[UUID_STR_BUFSIZE];
 	int rc = RET_OK;
+	uuid_t uuid;
 	#if defined (UUID_TYPE_DCE_MD5) || defined (UUID_TYPE_DCE_SHA1)
 	uuid_t ns_uuid;
 	#endif
@@ -171,6 +182,9 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 		return RET_ERR;
 	}
 
+	if (rc == RET_ERR)
+		return rc;
+
 	LM_DBG("Generated UUID version: %d\n", uuid_type(uuid));
 
 	uuid_unparse(uuid, uuid_str);
@@ -184,7 +198,33 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 static int pv_get_uuid(struct sip_msg *msg, pv_param_t *param,
 						pv_value_t *res)
 {
-	gen_uuid(UUID_VERS_0, NULL, NULL, res);
+	int vers = UUID_VERS_0;
+
+	if (param->pvv.len > 0) {
+		if (str2sint(&param->pvv, &vers) != 0) {
+			LM_ERR("invalid uuid version: %.*s\n", param->pvv.len, param->pvv.s);
+			return -1;
+		}
+		switch (vers) {
+		case UUID_VERS_0:
+		case UUID_VERS_1:
+		case UUID_VERS_4:
+		case UUID_VERS_7:
+			break;
+		case UUID_VERS_3:
+		case UUID_VERS_5:
+			LM_ERR("uuid version %d needs extra parameters, not supported by $uuid\n", vers);
+			return -1;
+		default:
+			LM_ERR("unsupported uuid version %d\n", vers);
+			return -1;
+		}
+	}
+
+	if (gen_uuid(vers, NULL, NULL, res) < 0) {
+		LM_ERR("failed to generate uuid\n");
+		return -1;
+	}
 
 	return 0;
 }

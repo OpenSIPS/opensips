@@ -616,17 +616,18 @@ Chapter 3. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 71 46 910 983
    3. Ionut Ionita (@ionutrazvanionita) 40 20 1149 579
    4. Anca Vamanu 34 5 3263 19
-   5. Andrei Dragus 24 3 382 1029
-   6. Razvan Crainea (@razvancrainea) 23 19 98 162
+   5. Razvan Crainea (@razvancrainea) 27 21 198 192
+   6. Andrei Dragus 24 3 382 1029
    7. Ovidiu Sas (@ovidiusas) 16 13 144 37
    8. Vlad Patrascu (@rvlad-patrascu) 10 6 157 115
    9. Maksym Sobolyev (@sobomax) 6 4 10 10
-   10. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
+   10. Steve Ayre 6 3 115 85
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Zero King (@l2dy), Parantido Julius De Rica (@Parantido), Paul
-   Wise, Sergio Gutierrez, Vlad Paiu (@vladpaiu), Rudy Pedraza,
-   Juha Heinanen (@juha-h), Ken Rice, Peter Lemenkov (@lemenkov),
+   All remaining contributors: Eseanu Marius Cristian
+   (@eseanucristian), Henning Westerholt (@henningw), Zero King
+   (@l2dy), Parantido Julius De Rica (@Parantido), Paul Wise,
+   Sergio Gutierrez, Vlad Paiu (@vladpaiu), Rudy Pedraza, Juha
+   Heinanen (@juha-h), Ken Rice, Peter Lemenkov (@lemenkov),
    UnixDev, David Sanders.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -649,22 +650,23 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Liviu Chircu (@liviuchircu)         Jul 2012 - Feb 2025
-   3.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2024
-   4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Sep 2022
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Ovidiu Sas (@ovidiusas)             Sep 2008 - Nov 2015
-   10. Ionut Ionita (@ionutrazvanionita)   Jul 2014 - Nov 2015
+   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Dec 2025
+   2.  Steve Ayre                          Sep 2025 - Sep 2025
+   3.  Ken Rice                            Sep 2025 - Sep 2025
+   4.  Liviu Chircu (@liviuchircu)         Jul 2012 - Feb 2025
+   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Sep 2022
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Ovidiu Sas (@ovidiusas)             Sep 2008 - Nov 2015
 
-   All remaining contributors: David Sanders, Eseanu Marius
-   Cristian (@eseanucristian), Parantido Julius De Rica
-   (@Parantido), Vlad Paiu (@vladpaiu), Rudy Pedraza, Sergio
-   Gutierrez, Paul Wise, Anca Vamanu, Andrei Dragus, UnixDev, Juha
-   Heinanen (@juha-h), Henning Westerholt (@henningw).
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   David Sanders, Eseanu Marius Cristian (@eseanucristian),
+   Parantido Julius De Rica (@Parantido), Vlad Paiu (@vladpaiu),
+   Rudy Pedraza, Sergio Gutierrez, Paul Wise, Anca Vamanu, Andrei
+   Dragus, UnixDev, Juha Heinanen (@juha-h), Henning Westerholt
+   (@henningw).
 
    (1) including any documentation-related commits, excluding
    merge commits

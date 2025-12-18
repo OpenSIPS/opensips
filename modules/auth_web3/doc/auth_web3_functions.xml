@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"
+	[ <!ENTITY % local.common.attrib
+	 "xmlns:xi CDATA #FIXED 'http://www.w3.org/2001/XInclude'">
+	 <!-- Include general documentation entities -->
+	 <!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+	 %docentities;
+	]
+>
+
+<section id="auth_web3-functions" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Functions</title>
+
+    <section id="web3_www_authenticate">
+        <title>
+            <function>web3_www_authenticate(realm, method)</function>
+        </title>
+        <para>
+            Performs Web3-based authentication for WWW-Authenticate challenges.
+            Verifies SIP digest authentication through blockchain contracts and ENS resolution.
+        </para>
+        <para>
+            This function extracts digest parameters from the Authorization header,
+            resolves ENS names to wallet addresses, and verifies the digest response
+            on the blockchain.
+        </para>
+        <para><emphasis>Parameters:</emphasis></para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>realm</emphasis> (string, mandatory) - Authentication realm (usually the domain name)</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>method</emphasis> (string, optional) - SIP method (REGISTER, INVITE, etc.). If not provided, uses the actual SIP method from the request</para>
+            </listitem>
+        </itemizedlist>
+        <para><emphasis>Return value:</emphasis></para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>1</emphasis> - Authentication successful</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>-1</emphasis> - Authentication failed</para>
+            </listitem>
+        </itemizedlist>
+        <para><emphasis>Example:</emphasis></para>
+        <programlisting format="linespecific">
+# REGISTER authentication
+if (is_method("REGISTER")) {
+    if (!is_present_hf("Authorization")) {
+        www_challenge("example.com");
+        exit;
+    }
+    if (web3_www_authenticate("example.com", "REGISTER")) {
+        # Authentication successful
+        save("location");
+        exit;
+    } else {
+        send_reply(401, "Unauthorized");
+        exit;
+    }
+}
+        </programlisting>
+    </section>
+
+    <section id="web3_proxy_authenticate">
+        <title>
+            <function>web3_proxy_authenticate(realm, method)</function>
+        </title>
+        <para>
+            Performs Web3-based authentication for Proxy-Authenticate challenges.
+            Similar to web3_www_authenticate but for proxy authentication scenarios.
+        </para>
+        <para>
+            This function works identically to web3_www_authenticate but is designed
+            for proxy authentication flows where Proxy-Authorization headers are used.
+        </para>
+        <para><emphasis>Parameters:</emphasis></para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>realm</emphasis> (string, mandatory) - Authentication realm (usually the domain name)</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>method</emphasis> (string, optional) - SIP method (REGISTER, INVITE, etc.). If not provided, uses the actual SIP method from the request</para>
+            </listitem>
+        </itemizedlist>
+        <para><emphasis>Return value:</emphasis></para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>1</emphasis> - Authentication successful</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>-1</emphasis> - Authentication failed</para>
+            </listitem>
+        </itemizedlist>
+        <para><emphasis>Example:</emphasis></para>
+        <programlisting format="linespecific">
+# INVITE authentication with proxy auth
+if (is_method("INVITE")) {
+    if (!is_present_hf("Authorization")) {
+        www_challenge("example.com");
+        exit;
+    }
+    if (web3_proxy_authenticate("example.com", "INVITE")) {
+        # Authentication successful
+    } else {
+        send_reply(407, "Proxy Authentication Required");
+        exit;
+    }
+}
+        </programlisting>
+    </section>
+
+</section>

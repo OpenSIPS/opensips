@@ -74,11 +74,12 @@ enum b2b_tuple_state {
 #define B2BL_BR_FLAG_RETURN_AFTER_FAILURE          (1<<1)
 #define B2BL_BR_FLAG_HOLD                          (1<<2)
 #define B2BL_BR_FLAG_RENEW_SDP                     (1<<3)
-#define B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR  (1<<4)
-#define B2BL_BR_FLAG_PROV_MEDIA                    (1<<5)
-#define B2BL_BR_FLAG_NO_OLD_ENT                    (1<<6)
-#define B2BL_BR_FLAG_PENDING_SDP                   (1<<7)
-#define B2BL_BR_FLAG_BR_MSG_LATE_BYE               (1<<8)
+#define B2BL_BR_FLAG_PROPAGATE_AVPS                (1<<4)
+#define B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR  (1<<5)
+#define B2BL_BR_FLAG_PROV_MEDIA                    (1<<6)
+#define B2BL_BR_FLAG_NO_OLD_ENT                    (1<<7)
+#define B2BL_BR_FLAG_PENDING_SDP                   (1<<8)
+#define B2BL_BR_FLAG_BR_MSG_LATE_BYE               (1<<9)
 
 /* reply flags */
 #define B2BL_RPL_FLAG_PASS_CONTACT                 (1<<0)

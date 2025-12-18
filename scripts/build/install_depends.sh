@@ -9,7 +9,7 @@ PKGS=$(cat "$(dirname $0)/apt_requirements.txt")
 _PKGS=""
 for pkg in ${PKGS}
 do
-  if [ "${BUILD_OS}" != "ubuntu:20.04" -a "${BUILD_OS}" != "ubuntu:18.04" -a "${pkg}" = python-dev ]
+  if [ "${BUILD_OS}" != "ubuntu:18.04" -a "${pkg}" = python3-dev ]
   then
     pkg="python-dev-is-python3"
   fi

@@ -20,5 +20,8 @@ then
     echo 'LIBS+= -flto' >> Makefile.conf
     ;;
   esac
+elif [ "${BUILD_OS}" = "ubuntu:24.04" ]
+then
+	export WOLFSSL_EXTRA_CFLAGS=-Wno-stringop-overflow
 fi
 sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"

@@ -1233,16 +1233,23 @@ logic_notify:
 						LM_DBG("Sent reply [200] and unreffed the cell %p\n",
 							tm_tran);
 						tmb.unref_cell(tm_tran);
-
-						str text_term = str_init("Request Terminated");
-						if(tmb.t_reply_with_body(dlg->uas_tran, 487,
-						&text_term, 0, 0, &to_tag) < 0)
-						{
-							LM_ERR("failed to send reply with tm\n");
+						/* if we come across an already finally replied trans,
+						 * just release it; otherwise send 487 */
+						LM_DBG("ongoing is [%.*s] with %d reply\n",
+							dlg->uas_tran->method.len, dlg->uas_tran->method.s,
+							dlg->uas_tran->uas.status);
+						if ( dlg->uas_tran->uas.status>=200) {
+							tmb.t_release_trans(dlg->uas_tran);
+						} else {
+							str text_term = str_init("Request Terminated");
+							if(tmb.t_reply_with_body(dlg->uas_tran, 487,
+							&text_term, 0, 0, &to_tag) < 0)
+							{
+								LM_ERR("failed to send reply with tm\n");
+							}
+							LM_DBG("Sent reply [487] and unreffed the "
+								"cell %p\n", dlg->uas_tran);
 						}
-						LM_DBG("Sent reply [487] and unreffed the cell %p\n",
-							dlg->uas_tran);
-
 						tmb.unref_cell(dlg->uas_tran);
 						dlg->uas_tran = NULL;
 
@@ -2293,6 +2300,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et, str* b2b_key,
 	}
 	else
 	{
+		td->avps = clone_avp_list( *get_avp_list() );
 		td->T_flags = T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG;
 		result= tmb.t_request_within
 			(method,            /* method*/

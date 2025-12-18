@@ -975,6 +975,7 @@ static str bridge_flags[] =
 	str_init("rollback-failed"), /* B2BL_BR_FLAG_RETURN_AFTER_FAILURE */
 	str_init("hold"),            /* B2BL_BR_FLAG_HOLD */
 	str_init("no-late-sdp"),     /* B2BL_BR_FLAG_RENEW_SDP */
+	str_init("propagate-avps"),  /* B2BL_BR_FLAG_PROPAGATE_AVPS */
 	STR_NULL
 };
 static str bridge_kv_flags[] =

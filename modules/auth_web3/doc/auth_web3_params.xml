@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+	"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd"
+	[ <!ENTITY % local.common.attrib
+	 "xmlns:xi CDATA #FIXED 'http://www.w3.org/2001/XInclude'">
+	 <!-- Include general documentation entities -->
+	 <!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+	 %docentities;
+	]
+>
+
+<section id="auth_web3-parameters" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <title>Parameters</title>
+
+    <section id="web3_authentication_rpc_url">
+        <title>
+            <varname>web3_authentication_rpc_url</varname> (string)
+        </title>
+        <para>
+            RPC URL for the blockchain network (e.g., Oasis Sapphire testnet or mainnet).
+            This parameter specifies the endpoint for blockchain communication.
+        </para>
+        <para><emphasis>Default value:</emphasis> None (must be configured)</para>
+        <para><emphasis>Example:</emphasis></para>
+        <programlisting format="linespecific">
+modparam("auth_web3", "web3_authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
+        </programlisting>
+    </section>
+
+    <section id="web3_authentication_contract_address">
+        <title>
+            <varname>web3_authentication_contract_address</varname> (string)
+        </title>
+        <para>
+            Address of the smart contract that handles authentication verification.
+            This contract must implement the authenticateUser function for digest verification.
+        </para>
+        <para><emphasis>Default value:</emphasis> None (must be configured)</para>
+        <para><emphasis>Example:</emphasis></para>
+        <programlisting format="linespecific">
+modparam("auth_web3", "web3_authentication_contract_address", "0xE773BB79689379d32Ad1Db839868b6756B493aea")
+        </programlisting>
+    </section>
+
+    <section id="web3_contract_debug_mode">
+        <title>
+            <varname>web3_contract_debug_mode</varname> (integer)
+        </title>
+        <para>
+            Enable debug logging for blockchain contract interactions.
+            When enabled, detailed logs are generated for debugging purposes.
+        </para>
+        <para><emphasis>Default value:</emphasis> 0 (disabled)</para>
+        <para><emphasis>Example:</emphasis></para>
+        <programlisting format="linespecific">
+modparam("auth_web3", "web3_contract_debug_mode", 1)
+        </programlisting>
+    </section>
+
+    <section id="web3_rpc_timeout">
+        <title>
+            <varname>web3_rpc_timeout</varname> (integer)
+        </title>
+        <para>
+            Timeout in seconds for blockchain RPC calls.
+            This parameter controls how long to wait for blockchain responses.
+        </para>
+        <para><emphasis>Default value:</emphasis> 10 seconds</para>
+        <para><emphasis>Example:</emphasis></para>
+        <programlisting format="linespecific">
+modparam("auth_web3", "web3_rpc_timeout", 15)
+        </programlisting>
+    </section>
+
+    <section id="web3_ens_rpc_url">
+        <title>
+            <varname>web3_ens_rpc_url</varname> (string)
+        </title>
+        <para>
+            RPC URL for the Ethereum network used for ENS resolution. This parameter
+            enables dual-network mode, allowing ENS resolution on Ethereum mainnet
+            or testnets while authentication happens on Oasis Sapphire.
+        </para>
+        <para>
+            When this parameter is not set, ENS queries will use the same RPC URL
+            as authentication (web3_authentication_rpc_url), which is suitable when
+            both contracts are deployed on the same network.
+        </para>
+        <para><emphasis>Default value:</emphasis> None (optional, uses authentication_rpc_url if not set)</para>
+        <para><emphasis>Example:</emphasis></para>
+        <programlisting format="linespecific">
+# For Ethereum mainnet ENS resolution
+modparam("auth_web3", "web3_ens_rpc_url", "https://eth.drpc.org")
+
+# For Sepolia testnet ENS resolution
+modparam("auth_web3", "web3_ens_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
+        </programlisting>
+    </section>
+
+    <section id="web3_ens_registry_address">
+        <title>
+            <varname>web3_ens_registry_address</varname> (string)
+        </title>
+        <para>
+            Address of the ENS Registry contract on the Ethereum network.
+            This contract is used for resolving ENS names to wallet addresses.
+        </para>
+        <para>
+            The module uses the ENS Registry to query domain ownership, detect
+            Name Wrapper contracts, and resolve ENS names through the resolver
+            system following standard ENS resolution patterns.
+        </para>
+        <para><emphasis>Default value:</emphasis> 0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e (ENS Registry)</para>
+        <para><emphasis>Example:</emphasis></para>
+        <programlisting format="linespecific">
+modparam("auth_web3", "web3_ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
+        </programlisting>
+    </section>
+
+</section>

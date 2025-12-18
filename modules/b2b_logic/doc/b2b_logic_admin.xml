@@ -767,6 +767,13 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 					SDP received in this new answer from the old entity to trigger a
 					renegotiation with the new entity.
 					</para></listitem>
+					<listitem><para>
+					<emphasis>propagate-avps</emphasis> - When bridging a call, use this flag
+					to copy the AVPs from the initial tuple to the new one. This may be
+					helpful when doing in-dialog authentication that requires the stored
+					AVPs for username and password, but can also be useful to store other
+					information across the bridge.
+					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>

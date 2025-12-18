@@ -428,19 +428,19 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Iñaki Baz Castillo 15 3 1242 2
-   2. Razvan Crainea (@razvancrainea) 14 12 43 26
+   1. Razvan Crainea (@razvancrainea) 15 13 45 28
+   2. Iñaki Baz Castillo 15 3 1242 2
    3. Liviu Chircu (@liviuchircu) 12 10 25 42
    4. Vlad Patrascu (@rvlad-patrascu) 9 6 63 88
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 12 7
    6. MonkeyTester 6 3 188 14
    7. Norman Brandinger (@NormB) 5 3 4 4
-   8. Sergio Gutierrez 3 1 19 1
-   9. Ovidiu Sas (@ovidiusas) 3 1 13 11
-   10. Anca Vamanu 3 1 6 3
+   8. Steve Ayre 4 2 64 48
+   9. Sergio Gutierrez 3 1 19 1
+   10. Ovidiu Sas (@ovidiusas) 3 1 13 11
 
-   All remaining contributors: Maksym Sobolyev (@sobomax), Ken
-   Rice, Marius Zbihlei.
+   All remaining contributors: Anca Vamanu, Maksym Sobolyev
+   (@sobomax), Ken Rice, Marius Zbihlei.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -462,19 +462,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2023
-   3.  MonkeyTester                        Aug 2023 - Aug 2023
-   4.  Norman Brandinger (@NormB)          Apr 2023 - Apr 2023
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Apr 2019
-   8.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   9.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   10. Marius Zbihlei                      Sep 2010 - Sep 2010
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Dec 2025
+   2.  Steve Ayre                          Sep 2025 - Sep 2025
+   3.  Ken Rice                            Sep 2025 - Sep 2025
+   4.  MonkeyTester                        Aug 2023 - Aug 2023
+   5.  Norman Brandinger (@NormB)          Apr 2023 - Apr 2023
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Apr 2019
+   9.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   10. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
 
-   All remaining contributors: Iñaki Baz Castillo, Anca Vamanu,
-   Sergio Gutierrez.
+   All remaining contributors: Marius Zbihlei, Iñaki Baz Castillo,
+   Anca Vamanu, Sergio Gutierrez.
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -22,7 +22,7 @@ extraction:
         - libldap2-dev
         - libcurl4-gnutls-dev
         - libgeoip-dev
-        - libpcre3-dev
+        - libpcre2-dev
         - libmemcached-dev
         - libmicrohttpd-dev
         - librabbitmq-dev

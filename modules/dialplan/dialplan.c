@@ -86,6 +86,32 @@ static str database_url = {NULL, 0};
 
 void *dp_srg = NULL;
 
+#ifdef PCRE2_LIB
+pcre2_general_context *dp_gcontext = NULL;
+pcre2_compile_context *dp_ccontext = NULL;
+
+void * wrap_shm_malloc(PCRE2_SIZE size, void * memory_data)
+{
+	UNUSED(memory_data);
+	return shm_malloc(size);
+}
+
+void  wrap_shm_free(void * p, void * memory_data)
+{
+	UNUSED(memory_data);
+	shm_free(p);
+}
+#else
+void * wrap_shm_malloc(size_t size)
+{
+	return shm_malloc(size);
+}
+
+void  wrap_shm_free(void * p )
+{
+	shm_free(p);
+}
+#endif
 
 static const param_export_t mod_params[]={
 	{ "partition",		STR_PARAM|USE_FUNC_PARAM,
@@ -398,6 +424,21 @@ static int mod_init(void)
 		return -1;
 	}
 
+#ifdef PCRE2_LIB
+	dp_gcontext = pcre2_general_context_create(wrap_shm_malloc, wrap_shm_free, NULL);
+	if (!dp_gcontext) {
+		LM_ERR("Unable to create pcre general context\n");
+		return -1;
+	}
+
+	dp_ccontext = pcre2_compile_context_create(dp_gcontext);
+	if (!dp_ccontext) {
+		LM_ERR("Unable to create pcre compile context\n");
+		return -1;
+	}
+#endif
+
+
 	return 0;
 }
 
@@ -452,6 +493,19 @@ static void mod_destroy(void)
 	}
 
 	destroy_data();
+#ifdef PCRE2_LIB
+	if (dp_ccontext)
+	{
+		pcre2_compile_context_free(dp_ccontext);
+		dp_ccontext = NULL;
+	}
+
+	if (dp_gcontext)
+	{
+		pcre2_general_context_free(dp_gcontext);
+		dp_gcontext = NULL;
+	}
+#endif
 }
 
 
@@ -869,51 +923,43 @@ static mi_response_t *mi_translate3(const mi_params_t *params,
 }
 
 
-void * wrap_shm_malloc(size_t size)
+pcre2_code * wrap_pcre_compile(char *  pattern, int flags)
 {
-	return shm_malloc(size);
+	pcre2_code * ret ;
+	PCRE2_ERR error;
+	PCRE2_SIZE erroffset;
+	int pcre_flags = 0;
+
+#ifndef PCRE2_LIB
+	void *(*old_malloc)(size_t) = pcre_malloc;
+	void  (*old_free)(void *) = pcre_free;
+
+	pcre_malloc = wrap_shm_malloc;
+	pcre_free = wrap_shm_free;
+#endif
+
+	if (flags & DP_CASE_INSENSITIVE)
+		pcre_flags |= PCRE2_CASELESS;
+
+	ret = pcre2_compile(
+			(PCRE2_SPTR)pattern,		/* the pattern */
+			PCRE2_ZERO_TERMINATED,
+			pcre_flags,			/* default options */
+			&error,				/* for error message */
+			&erroffset,			/* for error offset */
+			dp_ccontext);                      /* compile context, to allocate memory in shm */
+
+#ifndef PCRE2_LIB
+	pcre_malloc = old_malloc;
+	pcre_free = old_free;
+#endif
+
+	return ret;
 }
 
-void  wrap_shm_free(void * p )
+void wrap_pcre_free( pcre2_code* re)
 {
-	shm_free(p);
-}
-
-
-pcre * wrap_pcre_compile(char *  pattern, int flags)
-{
-		pcre * ret ;
-		func_malloc old_malloc ;
-		func_free old_free;
-		const char * error;
-		int erroffset;
-		int pcre_flags = 0;
-
-
-		old_malloc = pcre_malloc;
-		old_free = pcre_free;
-
-		pcre_malloc = wrap_shm_malloc;
-		pcre_free = wrap_shm_free;
-
-		if (flags & DP_CASE_INSENSITIVE)
-			pcre_flags |= PCRE_CASELESS;
-
-		ret = pcre_compile(
-				pattern,			/* the pattern */
-				pcre_flags,			/* default options */
-				&error,				/* for error message */
-				&erroffset,			/* for error offset */
-				NULL);
-
-		pcre_malloc = old_malloc;
-		pcre_free = old_free;
-
-		return ret;
-}
-
-void wrap_pcre_free( pcre* re)
-{
+	// *not* pcre2_code_free
+	// shm_free is used because pcre2_general_context_create overrides malloc with wrap_shm_malloc
 	shm_free(re);
-
 }

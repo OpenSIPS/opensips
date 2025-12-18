@@ -457,10 +457,10 @@ Chapter 2. Contributors
    2. Vlad Patrascu (@rvlad-patrascu) 16 11 166 149
    3. Liviu Chircu (@liviuchircu) 9 7 35 53
    4. Maksym Sobolyev (@sobomax) 6 4 12 11
-   5. Seyed Mehran Siadati 5 2 124 15
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 2
-   7. Norman Brandinger (@NormB) 3 1 4 4
-   8. Jupiter Tang 3 1 2 1
+   5. Jupiter Tang 5 3 13 3
+   6. Seyed Mehran Siadati 5 2 124 15
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 2
+   8. Norman Brandinger (@NormB) 3 1 4 4
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -482,7 +482,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Jupiter Tang                        Oct 2025 - Oct 2025
+   1. Jupiter Tang                        Oct 2025 - Dec 2025
    2. Razvan Crainea (@razvancrainea)     Jun 2017 - Oct 2025
    3. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    4. Seyed Mehran Siadati                Nov 2023 - Nov 2023

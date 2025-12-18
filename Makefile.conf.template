@@ -1,6 +1,7 @@
 #aaa_diameter= Diameter implementation for the core AAA API | freeDiameter (libfdcore + libfdproto) v1.2.1 or higher
 #aaa_radius= Radius implementation for the core AAA API | Radius client development library, typically radiusclient-ng 0.5.0 or higher
 #auth_jwt= JWT auth support | JWT client development library, libjwt-dev
+#auth_web3= Web3 auth support |  CURL library - libcurl
 #cachedb_cassandra= Implementation of a cache system designed to work with Cassandra servers | thrift 0.6.1
 #cachedb_couchbase= Implementation of a cache system designed to work with CouchBase servers | libcouchbase >= 2.0
 #cachedb_dynamodb= Implementation of a cache system designed to work with Dynamodb servers | libaws-cpp-sdk-core and libaws-cpp-sdk-dynamodb
@@ -19,13 +20,13 @@
 #db_postgres= Provides Postgres connectivity for OpenSIPS | PostgreSQL library and development library - typically libpq5 and libpq-dev
 #db_sqlite= Provides SQLite connectivity for OpenSIPS | SQLite library and development library - typically libsqlite3 and libsqlite3-dev
 #db_unixodbc= Allows to use the unixodbc package with OpenSIPS | ODBC library and ODBC development library
-#dialplan= Implements generic string translations based on matching and replacement rules | PCRE development library, typically libpcre-dev
+#dialplan= Implements generic string translations based on matching and replacement rules | PCRE development library, typically libpcre2-dev
 #emergency= Provides emergency call treatment for OpenSIPS | CURL dev library - typically libcurl4-openssl-dev
 #event_rabbitmq= Provides the implementation of a RabbitMQ client for the Event Interface | RabbitMQ development library, librabbitmq-dev
 #event_sqs= Provides the implementation of a Amazon SQS client for the Event Interface | AWS SDK C++, aws-sdk-cpp
 #event_kafka= Provides the implementation of an Apache Kafka producer for the Event Interface | Kafka development library, librdkafka-dev
 #h350= Enables access to SIP account data stored in an LDAP [RFC4510] directory containing H.350 commObjects | OpenLDAP library & development files, typically libldap and libldap-dev
-#regex= Offers matching operations against regular expressions using the powerful PCRE library. | Development library for PCRE, typically libpcre-dev
+#regex= Offers matching operations against regular expressions using the powerful PCRE library. | Development library for PCRE, typically libpcre2-dev
 #identity= Adds support for SIP Identity (see RFC 4474). | SSL library, typically libssl
 #jabber= Integrates XODE XML parser for parsing Jabber messages | Expat library.
 #json= Introduces a new type of variable that provides both serialization and de-serialization from JSON format. | JSON library, libjson
@@ -74,7 +75,7 @@
 #uuid= UUID generator | uuid-dev
 
 # the below definition must be one single line (no wrapping) to make the "menuconfig" tool happy
-exclude_modules?= aaa_diameter aaa_radius auth_jwt b2b_logic_xml cachedb_cassandra cachedb_couchbase cachedb_dynamodb cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq event_kafka event_sqs h350 httpd http2d identity jabber json launch_darkly ldap lua mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_reginfo presence_xml presence_dfks proto_ipsec proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp python regex rabbitmq_consumer rest_client rls rtp.io siprec sngtc snmpstats stir_shaken tls_mgm tls_openssl tls_wolfssl uuid xcap xcap_client xml xmpp
+exclude_modules?= aaa_diameter aaa_radius auth_jwt auth_web3 b2b_logic_xml cachedb_cassandra cachedb_couchbase cachedb_dynamodb cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq event_kafka event_sqs h350 httpd http2d identity jabber json launch_darkly ldap lua mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_reginfo presence_xml presence_dfks proto_ipsec proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp python regex rabbitmq_consumer rest_client rls rtp.io siprec sngtc snmpstats stir_shaken tls_mgm tls_openssl tls_wolfssl uuid xcap xcap_client xml xmpp
 
 include_modules?=
 

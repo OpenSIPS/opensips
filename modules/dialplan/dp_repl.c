@@ -110,11 +110,11 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 {
 	int repl_nb, offset, match_nb;
 	struct replace_with token;
-	pcre * subst_comp;
+	pcre2_code * subst_comp;
 	struct subst_expr * repl_comp;
 	pv_value_t sv;
 	str* uri;
-	int capturecount;
+	uint32_t capturecount;
 	char *match_begin;
 	int match_len;
 
@@ -133,11 +133,10 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 
 	if(subst_comp){
 
-		pcre_fullinfo(
-		subst_comp,                   /* the compiled pattern */
-		NULL,                 /* no extra data - we didn't study the pattern */
-		PCRE_INFO_CAPTURECOUNT ,  /* number of named substrings */
-		&capturecount);          /* where to put the answer */
+		pcre2_pattern_info(
+			subst_comp,              /* the compiled pattern */
+			PCRE2_INFO_CAPTURECOUNT, /* number of named substrings */
+			&capturecount);          /* where to put the answer */
 
 
 		/*just in case something went wrong at load time*/
@@ -397,19 +396,22 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 }
 
 
-int test_match(str string, pcre * exp, int * out, int out_max)
+int test_match(str string, pcre2_code * exp, int * out, int out_max)
 {
 	int i, result_count;
 	char *substring_start;
 	int substring_length;
-	UNUSED(substring_start);
-	UNUSED(substring_length);
+#ifdef PCRE2_LIB
+	pcre2_match_data *match_data;
+	PCRE2_SIZE *ovector;
+#endif
 
 	if(!exp){
 		LM_ERR("invalid compiled expression\n");
 		return -1;
 	}
 
+#ifndef PCRE2_LIB
 	result_count = pcre_exec(
 							exp, /* the compiled pattern */
 							NULL, /* no extra data - we didn't study the pattern */
@@ -428,6 +430,44 @@ int test_match(str string, pcre * exp, int * out, int out_max)
 		LM_ERR("Not enough space for mathing\n");
 		return result_count;
 	}
+#else
+	match_data = pcre2_match_data_create_from_pattern(exp, NULL);
+	if (!match_data) {
+		LM_ERR("failed to allocate match data\n");
+		return -1;
+	}
+
+	result_count = pcre2_match(
+		exp, /* the compiled pattern */
+		(PCRE2_SPTR)string.s, /* the subject string */
+		(PCRE2_SIZE)string.len, /* the length of the subject */
+		0, /* start at offset 0 in the subject */
+		0, /* default options */
+		match_data, /* match data block */
+		NULL); /* match context */
+
+	if (result_count < 0)
+	{
+		pcre2_match_data_free(match_data);
+		return result_count;
+	}
+
+	if (result_count == 0)
+	{
+		LM_ERR("Not enough space for matching\n");
+		pcre2_match_data_free(match_data);
+		return result_count;
+	}
+
+	ovector = pcre2_get_ovector_pointer(match_data);
+	if (2 * result_count >= out_max)
+		result_count = out_max / 2;
+
+	// ovector is freed by pcre2_match_data_free, copy offsets to out[]
+	for (i = 0; i < result_count * 2; i++)
+		out[i] = ovector[i];
+	pcre2_match_data_free(match_data);
+#endif
 
 
 	for (i = 0; i < result_count; i++)
@@ -436,7 +476,6 @@ int test_match(str string, pcre * exp, int * out, int out_max)
 		substring_length = out[2 * i + 1] - out[2 * i];
 		LM_DBG("test_match:[%d] %.*s\n",i, substring_length, substring_start);
 	}
-
 
 	return result_count;
 }

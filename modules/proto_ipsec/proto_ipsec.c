@@ -505,7 +505,7 @@ static int ipsec_aka_auth_remove_param(struct sip_msg *msg, struct hdr_field *hd
 		}
 
 	if (!del_lump(msg, p - msg->buf, c - p, HDR_WWW_AUTHENTICATE_T)) {
-		LM_ERR("could not delelete parameter [%.*s]\n", (int)(c - p), p);
+		LM_ERR("could not delete parameter [%.*s]\n", (int)(c - p), p);
 		return -1;
 	}
 	return 0;
@@ -779,7 +779,7 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc,
 
 	sa = ipsec_get_security_client(req, algos);
 	if (!sa) {
-		LM_ERR("could not find a matching Secrity-Client header\n");
+		LM_ERR("could not find a matching Security-Client header\n");
 		ret = -2;
 		goto release_user;
 	}

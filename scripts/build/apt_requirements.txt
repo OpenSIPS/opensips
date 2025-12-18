@@ -1,7 +1,7 @@
 bison
 flex
 libconfuse-dev
-libcurl4-gnutls-dev
+libcurl4-openssl-dev
 libdb-dev
 libexpat1-dev
 libgeoip-dev
@@ -15,7 +15,7 @@ libmicrohttpd-dev
 libmnl-dev
 libmysqlclient-dev
 libncurses5-dev
-libpcre3-dev
+libpcre2-dev
 libperl-dev
 libpq-dev
 librabbitmq-dev
@@ -27,7 +27,7 @@ libxml2-dev
 make
 odbcinst
 patch
-python-dev
+python3-dev
 unixodbc
 unixodbc-dev
 uuid-dev

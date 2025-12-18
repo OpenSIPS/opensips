@@ -265,7 +265,7 @@ ac=aes-gcm")
      * hmac-md5-96 and hmac-sha-1-96 authentication algorithms
      * des-ede3-cbc and aes-cbc encryption algorithms
 
-   Default value is false - all algorihms can be used.
+   Default value is false - all algorithms can be used.
 
    Example 1.8. Set disable_deprecated_algorithms parameter
 ...
@@ -372,7 +372,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    64      19      4509     383
+   1. Razvan Crainea (@razvancrainea)    65      20      4519     393
    2. Liviu Chircu (@liviuchircu)        4        2       23       15
    3. Alexandra Titoc                    3        1       1        1
 
@@ -396,7 +396,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Apr 2024 - Jul 2025
+   1. Razvan Crainea (@razvancrainea) Apr 2024 - Dec 2025
    2. Alexandra Titoc                 Sep 2024 - Sep 2024
    3. Liviu Chircu (@liviuchircu)     May 2024 - May 2024
 

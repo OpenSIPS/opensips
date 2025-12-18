@@ -9,7 +9,7 @@ Build-Depends: bison,
                dpkg-dev (>= 1.16.1.1),
                flex,
                libconfuse-dev,
-               libcurl4-gnutls-dev,
+               libcurl4-openssl-dev,
                libdb-dev (>= 4.6.19),
                libfdcore6 (>= 1.2.1) | base-files,
                libfdproto6 (>= 1.2.1) | base-files,
@@ -29,7 +29,7 @@ Build-Depends: bison,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
                libncurses5-dev,
-               libpcre3-dev,
+               libpcre2-dev,
                libperl-dev,
                libpq-dev,
                librabbitmq-dev,
@@ -56,6 +56,7 @@ Multi-Arch: foreign
 Depends: adduser, python | python-is-python3, ${misc:Depends}, ${shlibs:Depends}
 Suggests: opensips-auth-jwt-module,
           opensips-auth-modules,
+          opensips-auth-web3-module,
           opensips-berkeley-module,
           opensips-carrierroute-module,
           opensips-cgrates-module,
@@ -144,6 +145,21 @@ Description: JSON Web Tokens authentication module for OpenSIPS
  has a corresponding profile, the KEY used for signing the JWT
  and two timestamps describing a validation interval. Multiple
  JWT secrets can point to the same JWT profile.
+
+Package: opensips-auth-web3-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: Authentication interfaces for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides Web3-based authentication for OpenSIPS, enabling SIP
+ authentication through blockchain technology and ENS (Ethereum Name Service)
+ resolution.
 
 Package: opensips-auth-modules
 Architecture: any
