@@ -393,7 +393,10 @@ static inline int auth_get_ha1(struct sip_msg *msg, dig_cred_t* digest,
 			return 1;
 		}
 	} else {
-		return 1;
+		if (!user_spec.type)
+			LM_ERR("before calling pv_xxx_authorize(), you MUST first define"
+			        " the 'username_spec' modparam\n");
+		return -1;
 	}
 	/* get password from PV */
 	memset(&sval, 0, sizeof(pv_value_t));
@@ -406,7 +409,10 @@ static inline int auth_get_ha1(struct sip_msg *msg, dig_cred_t* digest,
 			return -1;
 		}
 	} else {
-		return 1;
+		if (!passwd_spec.type)
+			LM_ERR("before calling pv_xxx_authorize(), you MUST first define"
+			        " the 'password_spec' modparam\n");
+		return -1;
 	}
 	const struct digest_auth_calc *digest_calc;
 	digest_calc = get_digest_calc(digest->alg.alg_parsed);
