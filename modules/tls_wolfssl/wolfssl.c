@@ -35,6 +35,7 @@
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
+#include "../../modparam.h"
 #include "../../locking.h"
 #include "../../pt.h"
 #include "../../net/tcp_conn_defs.h"
@@ -92,6 +93,7 @@ int _wolfssl_tls_var_check_cert(int ind, void *ssl, str *str_res, int *int_res);
 int _wolfssl_tls_var_validity(int ind, void *ssl, str *res);
 
 int ssl_versions[SSL_VERSIONS_SIZE];
+int wolfssl_try_use_ktls;
 
 static const cmd_export_t cmds[] = {
 	{"load_tls_wolfssl", (cmd_function)load_tls_wolfssl,
@@ -99,16 +101,21 @@ static const cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
+static param_export_t mod_params[] = {
+	{"try_use_ktls", INT_PARAM, &wolfssl_try_use_ktls},
+	{0, 0, 0}
+};
+
 struct module_exports exports = {
 	"tls_wolfssl",  /* module name*/
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,				 /* load function */
+	0,          /* load function */
 	0,          /* OpenSIPS module dependencies */
-	cmds,          /* exported functions */
+	cmds,       /* exported functions */
 	0,          /* exported async functions */
-	0,          /* module parameters */
+	mod_params, /* module parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
 	0,          /* exported pseudo-variables */
@@ -189,6 +196,9 @@ static int mod_init(void)
 	_wolfssl_init_ssl_methods();
 
 	_wolfssl_show_ciphers();
+
+	if (wolfssl_try_use_ktls)
+		LM_INFO("KTLS requested: will try to offload TLS TX to the kernel when possible\n");
 
 #ifdef __WOLFSSL_ON_EXIT
        on_exit(_wolfssl_on_exit, NULL);
