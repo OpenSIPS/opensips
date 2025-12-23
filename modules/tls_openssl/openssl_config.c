@@ -288,12 +288,16 @@ int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 	struct tls_domain *dom;
 	int rc;
 
-	if (!ssl || !arg) {
+	if (!ssl) {
 		LM_ERR("Bad parameters in servername callback\n");
 		return SSL_TLSEXT_ERR_NOACK;
 	}
 
-	dom = (struct tls_domain *)arg;
+	dom = (struct tls_domain *)SSL_get_ex_data(ssl, SSL_EX_DOM_IDX);
+	if (!dom) {
+		LM_ERR("Failed to get tls_domain pointer from SSL struct\n");
+		return SSL_TLSEXT_ERR_NOACK;
+	}
 
 	srvname = (char *)SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
 	if (srvname && strlen(srvname) == 0) {
@@ -827,7 +831,6 @@ int openssl_init_tls_dom(struct tls_domain *d, int init_flags)
 		/* install callback for SNI */
 		if (mod_sni_cb && d->flags & DOM_FLAG_SRV) {
 			SSL_CTX_set_tlsext_servername_callback(((void**)d->ctx)[i], ssl_servername_cb);
-			SSL_CTX_set_tlsext_servername_arg(((void**)d->ctx)[i], d);
 		}
 
 		/*
