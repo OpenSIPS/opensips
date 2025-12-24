@@ -75,10 +75,10 @@ struct carrier_entry {
 
 struct carrier_cell {
 	str carrierid;
-	unsigned int rateid;
-	str rate_table;
-	str rate_currency;
-	ptree_t *trie;
+	unsigned int *rateid;
+	str *rate_table;
+	str *rate_currency;
+	ptree_t **trie;
 	int reload_pending;
 	struct carrier_cell *next;
 	struct carrier_cell *prev;
