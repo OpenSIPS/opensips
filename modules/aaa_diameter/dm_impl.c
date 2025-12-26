@@ -20,6 +20,7 @@
 
 #include <freeDiameter/extension.h>
 #include <sys/eventfd.h>
+#include <inttypes.h>
 
 #include "../../ut.h"
 #include "../../lib/list.h"
@@ -481,7 +482,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 			break;
 
 		case AVP_TYPE_INTEGER64:
-			LM_DBG("%2d. got int64   AVP %s (%u), value: %ld\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->i64);
+			LM_DBG("%2d. got int64   AVP %s (%u), value: %" PRId64 "\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->i64);
 			num_val = (double)h->avp_value->i64;
 			break;
 
@@ -491,7 +492,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 			break;
 
 		case AVP_TYPE_UNSIGNED64:
-			LM_DBG("%2d. got uint64  AVP %s (%u), value: %lu\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->u64);
+			LM_DBG("%2d. got uint64  AVP %s (%u), value: %" PRIu64 "\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->u64);
 			num_val = (double)h->avp_value->u64;
 			break;
 
