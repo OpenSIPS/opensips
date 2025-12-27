@@ -1108,7 +1108,7 @@ static int rate_cacher_load_all_info(void)
 		  char *head;
 		  head = (char *)strdup(VAL_STRING(ROW_VALUES(row)+1));
 		  char *token = NULL;
-		  char *tmp = NULL;
+		  char *tmp = NULL; 
 
 		  for (token = strtok_r(head, ",", &tmp);
 		       token;
@@ -1124,6 +1124,9 @@ static int rate_cacher_load_all_info(void)
 			      VAL_STRING(ROW_VALUES(row)),j,atoi(token));
 		    }
 		    j++;
+		    if (j >= carr_max_rates) {
+		      break;
+		    }
 		  }
 		  free(head);
 		} else { 
