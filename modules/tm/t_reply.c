@@ -833,6 +833,11 @@ static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 			continue;
 		/* skip 'empty branches' */
 		if (!t->uac[b].request.buffer.s) continue;
+
+		/* skip branches with no replies yet, but which were marked to
+		 * be cancelled via t_cancel_branch */
+		if (t->uac[b].flags & T_UAC_TO_CANCEL_FLAG) continue;
+
 		/* there is still an unfinished UAC transaction; wait now! */
 		if ( t->uac[b].last_received<200 ) {
 			if (t->uac[b].br_flags & minor_branch_flag) {
