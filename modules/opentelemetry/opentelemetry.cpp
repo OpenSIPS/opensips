@@ -1,10 +1,27 @@
 /*
  * OpenTelemetry tracing for OpenSIPS routes
  *
- * This module wires the route_trace hooks and OpenSIPS log consumer into
- * the OpenTelemetry C++ SDK. It keeps a per-process span stack and attaches
- * worker logs as span events.
+ * Copyright (C) 2026 OpenSIPS Project
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * History:
+ * --------
+ * 2026-01-05 initial release (vlad)
  */
+
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -642,7 +659,7 @@ static int child_init(int rank)
 	}
 
 	if (!otel_log_consumer_registered) {
-		if (register_log_consumer((char *)"opentelemetry", otel_log_consumer,
+		if (register_log_consumer(OTEL_CONSUMER_NAME, otel_log_consumer,
 			otel_log_level, 0) != 0) {
 			LM_ERR("failed to register OpenTelemetry log consumer\n");
 			return -1;
