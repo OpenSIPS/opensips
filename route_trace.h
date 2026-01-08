@@ -24,8 +24,18 @@
 #define ROUTE_TRACE_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 struct sip_msg;
+
+typedef struct route_trace_ctx {
+	uint8_t trace_id[16];
+	uint8_t span_id[8];
+	uint8_t trace_flags;
+	uint64_t start_system_ns;
+	uint64_t start_steady_ns;
+	uint8_t has_start_time;
+} route_trace_ctx_t;
 
 typedef struct route_trace_handlers {
 	void (*on_msg_start)(struct sip_msg *msg, int route_type,
@@ -38,6 +48,8 @@ typedef struct route_trace_handlers {
 	void (*on_route_exit)(struct sip_msg *msg, int route_type,
 		const char *route_name, const char *file, int line,
 		int stack_size, int stack_start, int status);
+	int (*get_ctx)(route_trace_ctx_t *ctx);
+	int (*set_ctx)(const route_trace_ctx_t *ctx);
 } route_trace_handlers_t;
 
 extern route_trace_handlers_t *route_trace_handlers;
@@ -82,6 +94,20 @@ static inline void route_trace_route_exit(struct sip_msg *msg, int route_type,
 	if (route_trace_handlers && route_trace_handlers->on_route_exit)
 		route_trace_handlers->on_route_exit(msg, route_type, route_name,
 			file, line, stack_size, stack_start, status);
+}
+
+static inline int route_trace_get_ctx(route_trace_ctx_t *ctx)
+{
+	if (route_trace_handlers && route_trace_handlers->get_ctx)
+		return route_trace_handlers->get_ctx(ctx);
+	return 0;
+}
+
+static inline int route_trace_set_ctx(const route_trace_ctx_t *ctx)
+{
+	if (route_trace_handlers && route_trace_handlers->set_ctx)
+		return route_trace_handlers->set_ctx(ctx);
+	return 0;
 }
 
 #endif /* ROUTE_TRACE_H */

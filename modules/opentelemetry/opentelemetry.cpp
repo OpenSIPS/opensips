@@ -8,6 +8,8 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
+#include <chrono>
 #include <string>
 #include <memory>
 #include <new>
@@ -16,6 +18,7 @@
 #include "opentelemetry/trace/provider.h"
 #include "opentelemetry/trace/scope.h"
 #include "opentelemetry/trace/span.h"
+#include "opentelemetry/trace/span_context.h"
 #include "opentelemetry/trace/tracer.h"
 #include "opentelemetry/sdk/resource/resource.h"
 #include "opentelemetry/sdk/trace/batch_span_processor.h"
@@ -76,6 +79,9 @@ struct otel_span {
 static __thread struct otel_span *otel_span_top;
 static __thread int otel_log_in_cb;
 
+static __thread route_trace_ctx_t otel_parent_ctx;
+static __thread int otel_parent_ctx_set;
+
 #ifdef HAVE_OPENTELEMETRY_CPP
 static opentelemetry::nostd::shared_ptr<oteltrace::Tracer> otel_tracer;
 static opentelemetry::nostd::shared_ptr<oteltrace::TracerProvider> otel_provider;
@@ -84,6 +90,12 @@ static opentelemetry::nostd::shared_ptr<oteltrace::TracerProvider> otel_provider
 static int mod_init(void);
 static int child_init(int rank);
 static void destroy(void);
+
+static void otel_parent_ctx_clear(void)
+{
+	memset(&otel_parent_ctx, 0, sizeof(otel_parent_ctx));
+	otel_parent_ctx_set = 0;
+}
 
 static inline const char *route_type_name(int route_type)
 {
@@ -99,6 +111,34 @@ static inline const char *route_type_name(int route_type)
 	case EVENT_ROUTE: return "event";
 	default: return "unknown";
 	}
+}
+
+static int otel_get_ctx(route_trace_ctx_t *ctx)
+{
+	if (!ctx)
+		return 0;
+	memset(ctx, 0, sizeof(*ctx));
+#ifdef HAVE_OPENTELEMETRY_CPP
+	if (otel_span_top && otel_span_top->span) {
+		auto sc = otel_span_top->span->GetContext();
+		if (!sc.IsValid())
+			return 0;
+		memcpy(ctx->trace_id, sc.trace_id().Id().data(), sizeof(ctx->trace_id));
+		memcpy(ctx->span_id, sc.span_id().Id().data(), sizeof(ctx->span_id));
+		ctx->trace_flags = sc.trace_flags().flags();
+		return 1;
+	}
+#endif
+	return 0;
+}
+
+static int otel_set_ctx(const route_trace_ctx_t *ctx)
+{
+	if (!ctx)
+		return 0;
+	memcpy(&otel_parent_ctx, ctx, sizeof(otel_parent_ctx));
+	otel_parent_ctx_set = 1;
+	return 1;
 }
 
 static void otel_span_reset(void)
@@ -200,6 +240,8 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 	int depth, int is_root, const char *file, int line)
 {
 	struct otel_span *span;
+	int has_parent_ctx = 0;
+	int has_parent_link = 0;
 
 	if (!otel_enabled)
 		return NULL;
@@ -213,13 +255,32 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 	if (otel_tracer) {
 		oteltrace::StartSpanOptions opts;
 		opts.kind = oteltrace::SpanKind::kInternal;
-		if (otel_span_top && otel_span_top->span)
+		if (otel_span_top && otel_span_top->span) {
 			opts.parent = otel_span_top->span->GetContext();
+			has_parent_ctx = 1;
+			has_parent_link = 1;
+		} else if (otel_parent_ctx_set) {
+			has_parent_ctx = 1;
+			opentelemetry::trace::TraceId tid(opentelemetry::nostd::span<const uint8_t, 16>(otel_parent_ctx.trace_id, 16));
+			opentelemetry::trace::SpanId sid(opentelemetry::nostd::span<const uint8_t, 8>(otel_parent_ctx.span_id, 8));
+			opentelemetry::trace::TraceFlags tf(otel_parent_ctx.trace_flags);
+			opentelemetry::trace::SpanContext sc(tid, sid, tf, true);
+			if (sc.IsValid()) {
+				opts.parent = sc;
+				has_parent_link = 1;
+				if (otel_parent_ctx.has_start_time) {
+					opts.start_system_time = opentelemetry::common::SystemTimestamp(
+						std::chrono::nanoseconds(otel_parent_ctx.start_system_ns));
+					opts.start_steady_time = opentelemetry::common::SteadyTimestamp(
+						std::chrono::nanoseconds(otel_parent_ctx.start_steady_ns));
+				}
+			}
+			otel_parent_ctx_clear();
+		}
 
 		auto s = otel_tracer->StartSpan(name ? name : "<route>", opts);
 		s->SetAttribute("opensips.route.type", route_type_name(route_type));
-		s->SetAttribute("opensips.route.depth", depth);
-		s->SetAttribute("opensips.route.is_root", (int64_t)is_root);
+		s->SetAttribute("opensips.route.is_root", (int64_t)(has_parent_link ? 0 : is_root));
 		if (file) {
 			s->SetAttribute("code.filepath", file);
 			s->SetAttribute("code.lineno", line);
@@ -268,9 +329,12 @@ static void otel_on_msg_start(struct sip_msg *msg, int route_type,
 	if (!otel_enabled)
 		return;
 
+	if (otel_parent_ctx_set)
+		return;
+
 	otel_span_reset();
 
-	name = route_name ? route_name : "<root>";
+	name = "<root>";
 	otel_span_start(name, route_type, stack_size - stack_start, 1, NULL, 0);
 
 #ifdef HAVE_OPENTELEMETRY_CPP
@@ -321,11 +385,6 @@ static void otel_on_route_exit(struct sip_msg *msg, int route_type,
 {
 	if (!otel_enabled)
 		return;
-
-#ifdef HAVE_OPENTELEMETRY_CPP
-	if (otel_span_top && otel_span_top->span)
-		otel_span_top->span->SetAttribute("opensips.route.status", status);
-#endif
 
 	(void)msg;
 	(void)route_type;
@@ -385,9 +444,7 @@ static void otel_log_consumer(int level, int facility, const char *module,
 	if (otel_span_top->span) {
 		otel_span_top->span->AddEvent("log", {
 			{ "log.level", level_to_str(level) },
-			{ "log.message", buf },
-			{ "code.function", func ? func : "" },
-			{ "opensips.module", module ? module : "" }
+			{ "log.message", buf }
 		});
 	}
 #else
@@ -408,6 +465,8 @@ static route_trace_handlers_t otel_trace_handlers = {
 	.on_msg_end = otel_on_msg_end,
 	.on_route_enter = otel_on_route_enter,
 	.on_route_exit = otel_on_route_exit,
+	.get_ctx = otel_get_ctx,
+	.set_ctx = otel_set_ctx,
 };
 
 static const param_export_t params[] = {
@@ -482,6 +541,7 @@ static int child_init(int rank)
 
 	otel_span_reset();
 	otel_log_in_cb = 0;
+	otel_parent_ctx_clear();
 
 #ifdef HAVE_OPENTELEMETRY_CPP
 	if (otel_init_provider() != 0) {
