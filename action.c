@@ -216,6 +216,8 @@ int run_top_route(struct script_route sr, struct sip_msg* msg)
 	int bk_action_flags, route_stack_start_bkp = -1, route_stack_size_bkp;
 	int ret;
 	context_p ctx = NULL;
+	const char *trace_file = NULL;
+	int trace_line = 0;
 
 	bk_action_flags = action_flags;
 
@@ -253,10 +255,14 @@ int run_top_route(struct script_route sr, struct sip_msg* msg)
 		route_stack[route_stack_start] = sr.name;
 
 	if (route_trace_enabled()) {
+		if (sr.a && sr.a->file) {
+			trace_file = sr.a->file;
+			trace_line = sr.a->line;
+		}
 		route_trace_msg_start(msg, route_type, route_stack[route_stack_start],
 			route_stack_size, route_stack_start);
 		route_trace_route_enter(msg, route_type, route_stack[route_stack_start],
-			NULL, 0, route_stack_size, route_stack_start);
+			trace_file, trace_line, route_stack_size, route_stack_start);
 	}
 
 	run_actions(sr.a, msg);
