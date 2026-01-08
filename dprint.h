@@ -110,6 +110,7 @@
 #define STDERR_CONSUMER_NAME "stderror"
 #define SYSLOG_CONSUMER_NAME "syslog"
 #define EVENT_CONSUMER_NAME  "event"
+#define OTEL_CONSUMER_NAME   "opentelemetry"
 
 #define LOG_PLAIN_NAME    "plain_text"
 #define LOG_JSON_NAME     "json"
