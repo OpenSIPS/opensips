@@ -1,0 +1,203 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+	The <emphasis>opentelemetry</emphasis> module provides OpenTelemetry
+	tracing for &osips; route execution. It creates a root span per
+	processed SIP message and a child span for each route entry.
+	</para>
+	<para>
+	Spans include common SIP attributes (method, Call-ID, CSeq, status) and
+	message metadata. While a span is active, &osips; logs can be attached
+	as OpenTelemetry events for easier correlation.
+	</para>
+	<para>
+	Trace data is exported via the OTLP/HTTP exporter from the
+	OpenTelemetry C++ SDK.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>OpenTelemetry C++ SDK</emphasis> (opentelemetry-cpp),
+				with the OTLP/HTTP exporter enabled.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+
+	<section id="param_enable" xreflabel="enable">
+		<title><varname>enable</varname> (integer)</title>
+		<para>
+		Enables or disables OpenTelemetry tracing at startup. It can also be
+		changed at runtime using the <function moreinfo="none">otel_enable</function>
+		MI command.
+		</para>
+		<para>
+		If &osips; was built without the OpenTelemetry C++ SDK, enabling this
+		parameter will fail at startup.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>enable</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("opentelemetry", "enable", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_log_level" xreflabel="log_level">
+		<title><varname>log_level</varname> (integer)</title>
+		<para>
+		Log level threshold used by the OpenTelemetry log consumer when
+		attaching log events to the active span.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>L_DBG</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>log_level</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("opentelemetry", "log_level", 3)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_use_batch" xreflabel="use_batch">
+		<title><varname>use_batch</varname> (integer)</title>
+		<para>
+		Selects the OpenTelemetry span processor. When enabled, the module uses
+		the batch span processor; otherwise it uses the simple span processor.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1 (enabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_batch</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("opentelemetry", "use_batch", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_service_name" xreflabel="service_name">
+		<title><varname>service_name</varname> (string)</title>
+		<para>
+		Sets the OpenTelemetry <quote>service.name</quote> resource attribute.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>opensips</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>service_name</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("opentelemetry", "service_name", "edge-proxy")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_exporter_endpoint" xreflabel="exporter_endpoint">
+		<title><varname>exporter_endpoint</varname> (string)</title>
+		<para>
+		Overrides the OTLP/HTTP exporter endpoint. If empty, the OpenTelemetry
+		SDK default is used.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>exporter_endpoint</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("opentelemetry", "exporter_endpoint", "http://127.0.0.1:4318/v1/traces")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+		<section id="mi_otel_enable" xreflabel="otel_enable">
+		<title>
+		<function moreinfo="none">otel_enable</function>
+		</title>
+		<para>
+		Enables or disables OpenTelemetry tracing at runtime.
+		</para>
+		<para>
+		Name: <emphasis>otel_enable</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>enable</emphasis> - set to <quote>1</quote> to enable
+				tracing or <quote>0</quote> to disable it.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		## enable tracing
+		opensips-cli -x mi otel_enable enable=1
+		## disable tracing
+		opensips-cli -x mi otel_enable enable=0
+		</programlisting>
+		</section>
+	</section>
+
+</chapter>
