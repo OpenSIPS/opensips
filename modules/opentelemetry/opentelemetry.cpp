@@ -624,9 +624,9 @@ static int mod_init(void)
 		LM_INFO("opentelemetry module disabled\n");
 	}
 
-	if (otel_service_name.s && !otel_service_name.len)
+	if (otel_service_name.s)
 		otel_service_name.len = strlen(otel_service_name.s);
-	if (otel_exporter_endpoint.s && !otel_exporter_endpoint.len)
+	if (otel_exporter_endpoint.s)
 		otel_exporter_endpoint.len = strlen(otel_exporter_endpoint.s);
 
 #ifdef HAVE_OPENTELEMETRY_CPP
