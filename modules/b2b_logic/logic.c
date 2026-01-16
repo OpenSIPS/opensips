@@ -66,6 +66,7 @@ extern struct b2b_ctx_val *local_ctx_vals;
 
 extern int req_routeid;
 extern int reply_routeid;
+extern int use_lifetime_of_bridge;
 
 struct b2bl_route_ctx cur_route_ctx;
 
@@ -161,10 +162,14 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo, 
 		return -1;
 	}
 	/* a connected call */
-	if(max_duration)
-		tuple->lifetime = get_ticks() + max_duration;
-	else
-		tuple->lifetime = 0;
+	if (tuple->lifetime_bridge_flag && use_lifetime_of_bridge) {
+		tuple->lifetime = get_ticks() + tuple->lifetime_bridge_flag;
+	} else {
+		if(max_duration)
+			tuple->lifetime = get_ticks() + max_duration;
+		else
+			tuple->lifetime = 0;
+	}
 	entity = b2bl_search_entity(tuple, entity_key, src, &ent_head);
 	if(entity == NULL)
 	{
