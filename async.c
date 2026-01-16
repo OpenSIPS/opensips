@@ -369,6 +369,8 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 		}
 	}
 
+	async_status = ASYNC_DONE;
+
 	/* done, return to the script */
 	return 1;
 sync:
