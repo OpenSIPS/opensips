@@ -517,8 +517,8 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 		lock_get(&con->write_lock);
 
 	if (con->async->allocated == con->async->pending) {
-		LM_ERR("We have reached the limit of max async postponed chunks %d\n",
-				con->async->pending);
+		LM_ERR("We have reached the limit of max async postponed chunks %d "
+			"on conn %p / %u\n", con->async->pending, con, con->id);
 		if (lock)
 			lock_release(&con->write_lock);
 		shm_free(c);
