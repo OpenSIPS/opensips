@@ -629,6 +629,7 @@ static void mod_destroy(void)
 			} else {
 				b2b_entities_dump(1);
 				b2be_dbf.close(b2be_db);
+				b2be_db = NULL;
 			}
 		} else if (b2be_cdbf.init) {
 			b2be_cdb = b2be_cdbf.init(&b2be_cdb_url);
@@ -637,6 +638,7 @@ static void mod_destroy(void)
 			} else {
 				b2b_entities_dump(1);
 				b2be_cdbf.destroy(b2be_cdb);
+				b2be_cdb = NULL;
 			}
 		}
 	}
