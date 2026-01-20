@@ -90,9 +90,11 @@ static void tcpconn_release(struct tcp_connection* c, long state, int writer,
 void tcp_conn_release(struct tcp_connection* c, int pending_data)
 {
 	if (c->state==S_CONN_BAD) {
+		/* do more or less nothing, let the TCP READER owning the conn
+		 * to trash it based on the S_CONN_BAD marker */
 		c->lifetime=0;
-		/* CONN_ERROR will auto-dec refcnt => we must not call tcpconn_put !!*/
-		tcpconn_release(c, CONN_ERROR_GENW, 1, 0 /*not TCP, but GEN worker*/);
+		/* but be sure we unref the conn */
+		tcpconn_put(c);
 		return;
 	}
 	if (pending_data) {
@@ -134,6 +136,8 @@ static void tcp_receive_timeout(void)
 		if (con->state<0){   /* kill bad connections */
 			/* S_CONN_BAD or S_CONN_ERROR, remove it */
 			/* fd will be closed in tcpconn_release */
+			LM_ERR("TCP_DBG - conn %p / %u found as bad, relasing back "
+				"to main\n", con, con->id);
 
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
 			tcpconn_check_del(con);
@@ -141,8 +145,8 @@ static void tcp_receive_timeout(void)
 			con->proc_id = -1;
 			con->state=S_CONN_BAD;
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-			sh_log(con->hist, TCP_SEND2MAIN, "state: %d, att: %d",
-			       con->state, con->msg_attempts);
+			sh_log(con->hist, TCP_SEND2MAIN, "state: %d, att: %d, ref: %d",
+			       con->state, con->msg_attempts, con->refcnt);
 			tcpconn_release_error(con, 0, "Unknown reason");
 			continue;
 		}
