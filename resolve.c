@@ -80,14 +80,8 @@ static struct bl_head *failover_bl=0;
 #define DNS_REVOLVER_BL_NAME  "dns"
 #define DNS_BL_EXPIRE         4*60
 
-#define MAX_BUFF_SIZE	8192
-#define MAXALIASES	36
 #define MAXADDRS 	36
 #define DNS_MAX_NAME	256
-struct hostent global_he;
-static char hostbuf[MAX_BUFF_SIZE];
-static char *h_addr_ptrs[MAXADDRS];
-static char *host_aliases[MAXALIASES];
 
 stat_var *dns_total_queries;
 stat_var *dns_slow_queries;
@@ -126,288 +120,14 @@ typedef union {
 		(s) = ntohl (t_cp); \
 	} while (0)
 
-static inline unsigned int dns_get16(const u_char *src) {
-	unsigned int dst;
-
-	DNS_GET16(dst, src);
-	return dst;
-}
-
-static inline unsigned int dns_get32(const u_char *src) {
-	unsigned int dst;
-
-	DNS_GET32(dst, src);
-	return dst;
-}
-
-int get_dns_answer(union dns_query *answer,int anslen,char *qname,int qtype,int *min_ttl)
-{
-	register const HEADER *hp;
-	register int n;
-	register const unsigned char *cp;
-	const char* tname;
-	const unsigned char *eom,*erdata;
-	int type, class,ttl, buflen, ancount;
-	int haveanswer, had_error;
-	char *bp,**ap,**hap;
-	char tbuf[DNS_MAX_NAME];
-	int toobig=0;
-
-	tname = qname;
-	global_he.h_name = NULL;
-	eom = answer->buff + anslen;
-
-	hp = &answer->hdr;
-	ancount = ntohs(hp->ancount);
-	bp = hostbuf;
-	buflen = sizeof hostbuf;
-
-	cp = answer->buff;
-	BOUNDED_INCR(DNS_HDR_SIZE);
-
-	n = dn_expand(answer->buff, eom, cp, bp, buflen);
-	if (n < 0) {
-		LM_ERR("Error expanding name\n");
-		return -1;
-	}
-	BOUNDED_INCR(n+4);
-
-	if (qtype == T_A || qtype == T_AAAA) {
-		n = strlen(bp) + 1;
-		if (n >= DNS_MAX_NAME) {
-			LM_ERR("Name too large\n");
-			return -1;
-		}
-		global_he.h_name = bp;
-		bp += n;
-		buflen -= n;
-		/* The qname can be abbreviated, but h_name is now absolute. */
-		qname = global_he.h_name;
-	}
-
-	ap = host_aliases;
-	*ap = NULL;
-	global_he.h_aliases = host_aliases;
-	hap = h_addr_ptrs;
-	*hap = NULL;
-	global_he.h_addr_list = h_addr_ptrs;
-	haveanswer = 0;
-	had_error = 0;
-	while (ancount-- > 0 && cp < eom && !had_error) {
-		n = dn_expand(answer->buff, eom, cp, bp, buflen);
-		if (n < 0) {
-			had_error++;
-			continue;
-		}
-		cp += n;	/* name */
-		BOUNDS_CHECK(cp,3*2+4);
-		type = dns_get16(cp);
-		cp += 2;	/* type */
-		class = dns_get16(cp);
-		cp += 2;	/* class*/
-		ttl = dns_get32(cp);
-		if (ttl<*min_ttl)
-			*min_ttl=ttl;
-		cp +=4;
-		n = dns_get16(cp);
-		cp += 2;	/* len */
-		BOUNDS_CHECK(cp, n);
-		erdata = cp + n;
-
-		if (class != C_IN) {
-			LM_ERR("Got response class != C_IN");
-			had_error++;
-			continue;
-		}
-
-		if ((qtype == T_A || qtype == T_AAAA) && type == T_CNAME) {
-			if (ap >= &host_aliases[MAXALIASES-1])
-				continue;
-			n = dn_expand(answer->buff, eom, cp, tbuf, sizeof tbuf);
-			if (n < 0) {
-				LM_ERR("failed to expand alias\n");
-				had_error++;
-				continue;
-			}
-			cp += n;
-			if (cp != erdata)
-				return -1;
-			/* Store alias. */
-			*ap++ = bp;
-			n = strlen(bp) + 1;
-			if (n >= DNS_MAX_NAME) {
-				LM_ERR("alias too long\n");
-				had_error++;
-				continue;
-			}
-			bp += n;
-			buflen -= n;
-			/* Get canonical name. */
-			n = strlen(tbuf) + 1;
-			if (n > buflen || n >= DNS_MAX_NAME) {
-				had_error++;
-				continue;
-			}
-
-			strcpy(bp, tbuf);
-			global_he.h_name = bp;
-			bp += n;
-			buflen -= n;
-			continue;
-		}
-
-		if (qtype == T_PTR && type == T_CNAME) {
-			n = dn_expand(answer->buff, eom, cp, tbuf, sizeof tbuf);
-			if (n < 0) {
-				LM_ERR("failed to expand for t_ptr\n");
-				had_error++;
-				continue;
-			}
-
-			cp += n;
-			if (cp != erdata) {
-				LM_ERR("failure\n");
-				return -1;
-			}
-			/* Get canonical name. */
-			n = strlen(tbuf) + 1;
-			if (n > buflen || n >= DNS_MAX_NAME) {
-				LM_ERR("ptr name too long\n");
-				had_error++;
-				continue;
-			}
-			strcpy(bp, tbuf);
-			tname = bp;
-			bp += n;
-			buflen -= n;
-			continue;
-		}
-
-		if (type != qtype) {
-			LM_ERR("asked for %d, got %d\n",qtype,type);
-			cp+=n;
-			continue;
-		}
-
-		switch (type) {
-			case T_PTR:
-				if (strcasecmp(tname, bp) != 0) {
-					LM_ERR("asked for %s, got %s\n",tname,bp);
-					cp += n;
-					continue;	/* XXX - had_error++ ? */
-				}
-				n = dn_expand(answer->buff, eom, cp, bp, buflen);
-				if (n < 0) {
-					had_error++;
-					break;
-				}
-				cp += n;
-				if (cp != erdata) {
-					LM_ERR("errdata err\n");
-					return -1;
-				}
-				if (!haveanswer)
-					global_he.h_name = bp;
-				else if (ap < &host_aliases[MAXALIASES-1])
-					*ap++ = bp;
-				else
-					n = -1;
-				if (n != -1) {
-					n = strlen(bp) + 1;	/* for the \0 */
-					if (n >= MAXHOSTNAMELEN) {
-						had_error++;
-						break;
-					}
-					bp += n;
-					buflen -= n;
-				}
-				break;
-			case T_A:
-			case T_AAAA:
-				if (strcasecmp(global_he.h_name, bp) != 0) {
-					LM_ERR("asked for %s, got %s\n",global_he.h_name,bp);
-					cp += n;
-					continue; /* XXX - had_error++ ? */
-				}
-				if (n != global_he.h_length) {
-					cp += n;
-					continue;
-				}
-				if (!haveanswer) {
-					register int nn;
-
-					global_he.h_name = bp;
-					nn = strlen(bp) + 1;
-					bp += nn;
-					buflen -= nn;
-				}
-
-				buflen -= sizeof(align) - ((u_long)bp % sizeof(align));
-				bp += sizeof(align) - ((u_long)bp % sizeof(align));
-
-				if (bp + n >= &hostbuf[sizeof hostbuf]) {
-					LM_ERR("size (%d) too big\n", n);
-					had_error++;
-					continue;
-				}
-				if (hap >= &h_addr_ptrs[MAXADDRS-1]) {
-					if (!toobig++)
-						LM_ERR("Too many addresses (%d)\n",MAXADDRS);
-					cp += n;
-					continue;
-				}
-
-				memmove(*hap++ = bp, cp, n);
-				bp += n;
-				buflen -= n;
-				cp += n;
-				if (cp != erdata) {
-					LM_ERR("failure\n");
-					return -1;
-				}
-				break;
-			default:
-				LM_ERR("should never get here\n");
-				return -1;
-		}
-		if (!had_error)
-			haveanswer++;
-	}
-
-	if (haveanswer) {
-		*ap = NULL;
-		*hap = NULL;
-		if (!global_he.h_name) {
-			n = strlen(qname) + 1;
-			if (n > buflen || n >= DNS_MAX_NAME) {
-				LM_ERR("name too long\n");
-				return -1;
-			}
-				strcpy(bp, qname);
-				global_he.h_name = bp;
-				bp += n;
-				buflen -= n;
-		}
-	}
-
-	return 0;
-}
-
 struct hostent* own_gethostbyname2(char *name,int af)
 {
-	int size,type;
 	struct hostent *cached_he;
-	static union dns_query buff;
 	int min_ttl = INT_MAX;
 
 	switch (af) {
 		case AF_INET:
-			size=4;
-			type=T_A;
-			break;
 		case AF_INET6:
-			size=16;
-			type=T_AAAA;
 			break;
 		default:
 			LM_ERR("Only A and AAAA queries\n");
@@ -427,25 +147,17 @@ struct hostent* own_gethostbyname2(char *name,int af)
 	}
 
 query:
-	global_he.h_addrtype=af;
-	global_he.h_length=size;
-
-	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
-	if (size < 0) {
+	cached_he = gethostbyname2(name, af);
+	if (cached_he == NULL) {
 		LM_DBG("Domain name not found\n");
 		if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,NULL,0,1,0) < 0)
 			LM_ERR("Failed to store %s - %d in cache\n",name,af);
 		return NULL;
 	}
 
-	if (get_dns_answer(&buff,size,name,type,&min_ttl) < 0) {
-		LM_ERR("Failed to get dns answer\n");
-		return NULL;
-	}
-
-	if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,&global_he,-1,0,min_ttl) < 0)
+	if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,cached_he,-1,0,min_ttl) < 0)
 		LM_ERR("Failed to store %s - %d in cache\n",name,af);
-	return &global_he;
+	return cached_he;
 }
 
 inline struct hostent* resolvehost(char* name, int no_ip_test)
@@ -510,12 +222,7 @@ struct hostent * own_gethostbyaddr(void *addr, socklen_t len, int af)
 	const unsigned char *uaddr = (const u_char *)addr;
 	static const u_char mapped[] = { 0,0, 0,0, 0,0, 0,0, 0,0, 0xff,0xff };
 	static const u_char tunnelled[] = { 0,0, 0,0, 0,0, 0,0, 0,0, 0,0 };
-	int n;
-	int ret;
-	static union dns_query ptr_buff;
 	socklen_t size;
-	char qbuf[DNS_MAX_NAME+1];
-	char *qp=NULL;
 	int min_ttl=INT_MAX;
 	struct hostent *cached_he;
 
@@ -559,44 +266,17 @@ struct hostent * own_gethostbyaddr(void *addr, socklen_t len, int af)
 	}
 
 query:
-	switch (af) {
-		case AF_INET:
-			sprintf(qbuf, "%u.%u.%u.%u.in-addr.arpa",
-				(uaddr[3] & 0xff),
-				(uaddr[2] & 0xff),
-				(uaddr[1] & 0xff),
-				(uaddr[0] & 0xff));
-			break;
-		case AF_INET6:
-			qp = qbuf;
-			for (n = 15; n >= 0; n--) {
-				qp += sprintf(qp, "%x.%x.",
-				uaddr[n] & 0xf,
-				(uaddr[n] >> 4) & 0xf);
-			}
-			strcpy(qp, "ip6.arpa");
-			break;
-	}
-
-	global_he.h_addrtype=af;
-	global_he.h_length=len;
-
-	ret=res_search(qbuf,C_IN,T_PTR,ptr_buff.buff,sizeof(ptr_buff.buff));
-	if (ret < 0) {
+	cached_he = gethostbyaddr(addr, len, af);
+	if (cached_he == NULL) {
 		LM_DBG("ptr not found\n");
 		if (dnscache_put_func(addr,T_PTR,NULL,len,1,0) < 0)
 			LM_ERR("Failed to store PTR in cache\n");
 		return NULL;
 	}
 
-	if (get_dns_answer(&ptr_buff,ret,qbuf,T_PTR,&min_ttl) < 0) {
-		LM_ERR("Failed to get dns answer\n");
-		return NULL;
-	}
-
-	if (dnscache_put_func(addr,T_PTR,&global_he,len,0,min_ttl) < 0)
+	if (dnscache_put_func(addr,T_PTR,cached_he,len,0,min_ttl) < 0)
 		LM_ERR("Failed to store PTR in cache\n");
-	return &global_he;
+	return cached_he;
 }
 
 
