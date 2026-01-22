@@ -396,12 +396,21 @@ report:
 		return -1;
 	}
 
+	if (report_route_param)
+		route_params_push_level(
+			sroutes->request[report_route->idx].name,
+			report_route_param, NULL,
+			launch_route_param_get);
+
 	bak_avps = set_avp_list(&report_avps);
+
 	swap_route_type( bk_rt, REQUEST_ROUTE);
-
 	run_top_route( sroutes->request[report_route->idx], req);
-
 	set_route_type( bk_rt );
+
+	if (report_route_param)
+		route_params_pop_level();
+
 	destroy_avp_list(&report_avps);
 	set_avp_list(bak_avps);
 
