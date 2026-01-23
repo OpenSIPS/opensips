@@ -1579,6 +1579,7 @@ static int check_hostname(str *domain)
 #define MAX_REASON 256
 
 enum sip_validation_failures {
+	SV_NO_ERROR=0,
 	SV_NO_MSG=-1,
 	SV_HDR_PARSE_ERROR=-2,
 	SV_NO_CALLID=-3,
@@ -1608,18 +1609,81 @@ enum sip_validation_failures {
 	SV_BAD_USERNAME=-27,
 	SV_FROM_USERNAME_ERROR=-28,
 	SV_TO_USERNAME_ERROR=-29,
+	SV_BAD_STAR_CONTACT=-30,
 	SV_GENERIC_FAILURE=-255
 };
 
+#define METHOD_WITH_CONTACT_HDR (METHOD_INVITE | METHOD_REGISTER | METHOD_UPDATE | METHOD_SUBSCRIBE | METHOD_REFER)
+
+static enum sip_validation_failures validate_contact_header(struct sip_msg *msg, enum request_method method, char reason[static MAX_REASON])
+{
+	struct hdr_field *ptr = NULL;
+	contact_t * contacts = NULL;
+	exp_body_t *expires_body = NULL;
+	struct sip_uri test_contacts;
+
+	if (method & METHOD_WITH_CONTACT_HDR) {
+		if (!msg->contact) {
+			strcpy(reason, "SIP message doesn't have 'Contact' header");
+			return SV_NO_CONTACT;
+		}
+
+		/* iterate through Contact headers */
+		for(ptr = msg->contact; ptr; ptr = ptr->sibling) {
+			/* parse Contact header */
+			if (!ptr->parsed && (parse_contact(ptr) < 0
+						|| !ptr->parsed)) {
+				strcpy(reason, "failed to parse 'Contact' header");
+				return SV_CONTACT_PARSE_ERROR;
+			}
+			contacts = ((contact_body_t*)ptr->parsed)->contacts;
+
+			if (contacts != NULL) {
+				/* iterate through URIs and check validty */
+				for (; contacts; contacts = contacts->next) {
+					if(parse_uri(contacts->uri.s, contacts->uri.len,
+								&test_contacts) < 0
+							|| test_contacts.host.len < 0) {
+						strcpy(reason, "failed to parse 'Contact' header");
+						return SV_CONTACT_PARSE_ERROR;
+					}
+				}
+			} else {
+				/* This is a star Contact header, valid only for REGISTER requests */
+				if (method == METHOD_REGISTER) {
+					if (msg->first_line.type == SIP_REPLY) {
+						strcpy(reason, "'Contact' header for REGISTER reply contains '*' only valid for REGISTER request");
+						return SV_BAD_STAR_CONTACT;
+					}
+
+					if (!msg->expires || (parse_expires(msg->expires) < 0 || !msg->expires->parsed)) {
+						strcpy(reason, "failed to parse 'Expires' header");
+						return SV_BAD_STAR_CONTACT;
+					}
+
+					expires_body = (exp_body_t*) msg->expires->parsed;
+
+					if (!expires_body || expires_body->val != 0) {
+						strcpy(reason, "'Expires' header greater than 0 for REGISTER 'Contact' header with '*' value");
+						return SV_BAD_STAR_CONTACT;
+					}
+				} else {
+					strcpy(reason, "'Contact' header for SIP message contains '*' only valid for REGISTER request");
+					return SV_BAD_STAR_CONTACT;
+				}
+			}
+		}
+	}
+
+	return SV_NO_ERROR;
+}
+
 static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 {
-	unsigned int hdrs_len;
+	unsigned int hdrs_len, status_code;
 	unsigned long flags = (unsigned long)_flags;
 	int method;
 	str body;
-	struct hdr_field * ptr;
-	contact_t * contacts;
-	struct sip_uri test_contacts;
 	struct sip_uri *p_uri;
 	struct cseq_body * cbody;
 	pv_value_t pv_val;
@@ -1783,38 +1847,11 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 				CHECK_HEADER("", maxforwards);
 			}
 
-			if (msg->REQ_METHOD == METHOD_INVITE) {
-				ret = SV_NO_CONTACT;
-				CHECK_HEADER("INVITE", contact);
-				if(flags & SIP_PARSE_CONTACT) {
-					/* iterate through Contact headers */
-					for(ptr = msg->contact; ptr; ptr = ptr->sibling) {
-						/* parse Contact header */
-						if(!ptr->parsed && (parse_contact(ptr) < 0
-									|| !ptr->parsed)) {
-							strcpy(reason, "failed to parse 'Contact' header");
-							ret = SV_CONTACT_PARSE_ERROR;
-							goto failed;
-						}
-						contacts = ((contact_body_t*)ptr->parsed)->contacts;
-						/* empty contacts header - something must be wrong */
-						if(contacts == NULL) {
-							strcpy(reason, "empty body for 'Contact' header");
-							ret = SV_CONTACT_PARSE_ERROR;
-							goto failed;
-						}
-						/* iterate through URIs and check validty */
-						for(; contacts; contacts = contacts->next) {
-							if(parse_uri(contacts->uri.s, contacts->uri.len,
-										&test_contacts) < 0
-									|| test_contacts.host.len < 0) {
-								strcpy(reason, "failed to parse 'Contact' header");
-								ret = SV_CONTACT_PARSE_ERROR;
-								goto failed;
-							}
-						}
-					}
+			if (flags & SIP_PARSE_CONTACT) {
+				ret = validate_contact_header(msg, msg->REQ_METHOD, reason);
 
+				if (ret != SV_NO_ERROR) {
+					goto failed;
 				}
 			}
 
@@ -1837,8 +1874,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 				goto failed;
 			}
 			method = cbody->method_id;
+			status_code = msg->first_line.u.reply.statuscode;
 			if (method != METHOD_CANCEL) {
-				switch (msg->first_line.u.reply.statuscode) {
+				switch (status_code) {
 					case 405:
 						ret = SV_NOALLOW_405;
 						CHECK_HEADER("", allow);
@@ -1865,6 +1903,14 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 						ret = SV_NO_WWW_AUTH;
 						CHECK_HEADER("", www_authenticate);
 						break;
+				}
+			}
+
+			if (flags & SIP_PARSE_CONTACT && (status_code > 199 && status_code < 400)) {
+				ret = validate_contact_header(msg, method, reason);
+
+				if (ret != 0) {
+					goto failed;
 				}
 			}
 
