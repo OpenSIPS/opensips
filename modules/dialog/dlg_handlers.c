@@ -1479,6 +1479,7 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 	str contact, new_ct, old_ct;
 	int ret = 0;
 	contact_t *ct = NULL;
+	contact_body_t *parsed_body = NULL;
 
 	if (!msg->contact &&
 		(parse_headers(msg, HDR_CONTACT_F, 0) < 0 || !msg->contact)) {
@@ -1496,7 +1497,14 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		contact = ct->uri;
 		LM_DBG("Found unparsed contact [%.*s]\n", contact.len, contact.s);
 	} else {
-		contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
+		parsed_body = (contact_body_t *)msg->contact->parsed;
+
+		if (parsed_body->star == 1) {
+			LM_WARN("Invalid star Contact in dialog update!\n");
+			return 0;
+		}
+
+		contact = parsed_body->contacts->uri;
 	}
 
 	/* if the same contact, don't do anything */
