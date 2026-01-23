@@ -1589,13 +1589,11 @@ static enum sip_validation_failures validate_contact_header(struct sip_msg *msg,
 	contact_t * contacts = NULL;
 	exp_body_t *expires_body = NULL;
 	struct sip_uri test_contacts;
-	enum sip_validation_failures ret = SV_NO_ERROR;
 
 	if (method & METHOD_WITH_CONTACT_HDR) {
 		if (!msg->contact) {
 			strcpy(reason, "SIP message doesn't have 'Contact' header");
-			ret = SV_NO_CONTACT;
-			goto failed;
+			return SV_NO_CONTACT;
 		}
 
 		/* iterate through Contact headers */
@@ -1604,8 +1602,7 @@ static enum sip_validation_failures validate_contact_header(struct sip_msg *msg,
 			if (!ptr->parsed && (parse_contact(ptr) < 0
 						|| !ptr->parsed)) {
 				strcpy(reason, "failed to parse 'Contact' header");
-				ret = SV_CONTACT_PARSE_ERROR;
-				goto failed;
+				return SV_CONTACT_PARSE_ERROR;
 			}
 			contacts = ((contact_body_t*)ptr->parsed)->contacts;
 
@@ -1616,8 +1613,7 @@ static enum sip_validation_failures validate_contact_header(struct sip_msg *msg,
 								&test_contacts) < 0
 							|| test_contacts.host.len < 0) {
 						strcpy(reason, "failed to parse 'Contact' header");
-						ret = SV_CONTACT_PARSE_ERROR;
-						goto failed;
+						return SV_CONTACT_PARSE_ERROR;
 					}
 				}
 			} else {
@@ -1625,34 +1621,29 @@ static enum sip_validation_failures validate_contact_header(struct sip_msg *msg,
 				if (method == METHOD_REGISTER) {
 					if (msg->first_line.type == SIP_REPLY) {
 						strcpy(reason, "'Contact' header for REGISTER reply contains '*' only valid for REGISTER request");
-						ret = SV_BAD_STAR_CONTACT;
-						goto failed;
+						return SV_BAD_STAR_CONTACT;
 					}
 
 					if (!msg->expires || (parse_expires(msg->expires) < 0 || !msg->expires->parsed)) {
 						strcpy(reason, "failed to parse 'Expires' header");
-						ret = SV_BAD_STAR_CONTACT;
-						goto failed;
+						return SV_BAD_STAR_CONTACT;
 					}
 
 					expires_body = (exp_body_t*) msg->expires->parsed;
 
 					if (!expires_body || expires_body->val != 0) {
 						strcpy(reason, "'Expires' header greater than 0 for REGISTER 'Contact' header with '*' value");
-						ret = SV_BAD_STAR_CONTACT;
-						goto failed;
+						return SV_BAD_STAR_CONTACT;
 					}
 				} else {
 					strcpy(reason, "'Contact' header for SIP message contains '*' only valid for REGISTER request");
-					ret = SV_BAD_STAR_CONTACT;
-					goto failed;
+					return SV_BAD_STAR_CONTACT;
 				}
 			}
 		}
 	}
 
-failed:
-	return ret;
+	return SV_NO_ERROR;
 }
 
 static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
