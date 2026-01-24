@@ -648,7 +648,9 @@ add_body_part("Hello World!", "text/plain");
        domain contains valid characters.
      * 't' - checks the URI of the 'To' field and whether the
        domain contains valid characters.
-     * 'c' - checks the URI of the 'Contact' field.
+     * 'c' - checks the value of the 'Contact' field and whether
+       it is a Uri, Star - for REGISTER requests with Expires
+       header set to 0.
 
    The result_pvar parameter sets resulting pvar with text error
    reason in case of negative result ( easy for logging or
@@ -688,6 +690,7 @@ add_body_part("Hello World!", "text/plain");
      * -27 - Bad URI username
      * -28 - Bad From URI username
      * -29 - Bad To URI username
+     * -30 - Contact header contains * for non-Register request
      * -255 - undefined errors.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -708,6 +711,15 @@ if(!sipmsg_validate("sh", $var(err_reason)))
 {
         send_reply(400, "Bad Request/Body");
         exit;
+}
+...
+
+...
+# checks Contact header for a 200 Ok reply and logs when it's *
+if(!sipmsg_validate("c"))
+{
+        if ($rc == -30)
+                xlog("Invalid * Contact header found\n");
 }
 ...
 
@@ -1119,16 +1131,16 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 59 27 809 1510
    3. Razvan Crainea (@razvancrainea) 48 21 2968 105
    4. Vlad Paiu (@vladpaiu) 15 7 530 123
-   5. Mihai Tiganus (@tallicamike) 6 3 155 28
-   6. Maksym Sobolyev (@sobomax) 5 3 2 3
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 49 13
-   8. Ovidiu Sas (@ovidiusas) 4 2 22 1
-   9. Peter Lemenkov (@lemenkov) 4 2 2 2
-   10. Boris Ratner 4 1 129 46
+   5. David Trihy 7 3 132 74
+   6. Mihai Tiganus (@tallicamike) 6 3 155 28
+   7. Maksym Sobolyev (@sobomax) 5 3 2 3
+   8. Vlad Patrascu (@rvlad-patrascu) 4 2 49 13
+   9. Ovidiu Sas (@ovidiusas) 4 2 22 1
+   10. Peter Lemenkov (@lemenkov) 4 2 2 2
 
-   All remaining contributors: Julián Moreno Patiño, Fabian Gast
-   (@fgast), Alexey Vasilyev (@vasilevalex), Jarrod Baumann
-   (@jarrodb), Ezequiel Lovelle (@lovelle), Walter Doekes
+   All remaining contributors: Boris Ratner, Julián Moreno Patiño,
+   Fabian Gast (@fgast), Alexey Vasilyev (@vasilevalex), Jarrod
+   Baumann (@jarrodb), Ezequiel Lovelle (@lovelle), Walter Doekes
    (@wdoekes), Nick Altmann (@nikbyte), Ionut Ionita
    (@ionutrazvanionita), Dan Pascu (@danpascu).
 
@@ -1152,22 +1164,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Mar 2025
-   2.  Vlad Paiu (@vladpaiu)               Feb 2012 - Jun 2023
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2023
-   4.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
-   5.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
-   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
-   9.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
-   10. Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
+   1.  David Trihy                         Jan 2026 - Jan 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Mar 2025
+   3.  Vlad Paiu (@vladpaiu)               Feb 2012 - Jun 2023
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2023
+   5.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
+   6.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
+   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
+   10. Fabian Gast (@fgast)                Nov 2018 - Nov 2018
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Jarrod
-   Baumann (@jarrodb), Julián Moreno Patiño, Ionut Ionita
-   (@ionutrazvanionita), Ezequiel Lovelle (@lovelle), Mihai
-   Tiganus (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte),
-   Walter Doekes (@wdoekes).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Ovidiu
+   Sas (@ovidiusas), Jarrod Baumann (@jarrodb), Julián Moreno
+   Patiño, Ionut Ionita (@ionutrazvanionita), Ezequiel Lovelle
+   (@lovelle), Mihai Tiganus (@tallicamike), Boris Ratner, Nick
+   Altmann (@nikbyte), Walter Doekes (@wdoekes).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1176,12 +1188,13 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Paiu
-   (@vladpaiu), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Fabian Gast
-   (@fgast), Peter Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas),
-   Julián Moreno Patiño, Mihai Tiganus (@tallicamike), Boris
-   Ratner, Nick Altmann (@nikbyte).
+   Last edited by: David Trihy, Razvan Crainea (@razvancrainea),
+   Vlad Paiu (@vladpaiu), Liviu Chircu (@liviuchircu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Patrascu
+   (@rvlad-patrascu), Fabian Gast (@fgast), Peter Lemenkov
+   (@lemenkov), Ovidiu Sas (@ovidiusas), Julián Moreno Patiño,
+   Mihai Tiganus (@tallicamike), Boris Ratner, Nick Altmann
+   (@nikbyte).
 
    Documentation Copyrights:
 
