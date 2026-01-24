@@ -674,7 +674,9 @@ add_body_part("Hello World!", "text/plain");
        domain contains valid characters.
      * 't' - checks the URI of the 'To' field and whether the
        domain contains valid characters.
-     * 'c' - checks the URI of the 'Contact' field.
+     * 'c' - checks the value of the 'Contact' field and whether
+       it is a Uri, Star - for REGISTER requests with Expires
+       header set to 0.
 
    The result_pvar parameter sets resulting pvar with text error
    reason in case of negative result ( easy for logging or
@@ -714,6 +716,7 @@ add_body_part("Hello World!", "text/plain");
      * -27 - Bad URI username
      * -28 - Bad From URI username
      * -29 - Bad To URI username
+     * -30 - Contact header contains * for non-Register request
      * -255 - undefined errors.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -734,6 +737,15 @@ if(!sipmsg_validate("sh", $var(err_reason)))
 {
         send_reply(400, "Bad Request/Body");
         exit;
+}
+...
+
+...
+# checks Contact header for a 200 Ok reply and logs when it's *
+if(!sipmsg_validate("c"))
+{
+        if ($rc == -30)
+                xlog("Invalid * Contact header found\n");
 }
 ...
 
@@ -1164,7 +1176,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 74 43 2199 725
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 77 44 2294 762
    2. Liviu Chircu (@liviuchircu) 59 27 809 1510
    3. Razvan Crainea (@razvancrainea) 48 21 2956 120
    4. Vlad Paiu (@vladpaiu) 17 8 663 123
@@ -1201,8 +1213,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ubuntu                              Mar 2025 - Mar 2025
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jan 2025
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jan 2026
+   2.  Ubuntu                              Mar 2025 - Mar 2025
    3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2024
    4.  Vlad Paiu (@vladpaiu)               Feb 2012 - May 2024
    5.  Bence Szigeti                       May 2023 - May 2023
