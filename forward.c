@@ -154,11 +154,16 @@ const struct socket_info* get_send_socket(struct sip_msg *msg,
 			msg->force_send_socket=find_si(&(msg->force_send_socket->address),
 											msg->force_send_socket->port_no,
 											proto);
-		}
+		} else
+		if (msg->force_send_socket->address.af!=to->s.sa_family){
+			LM_DBG("force_send_socket of different AF (sock=%d, dst=%d)!\n",
+				msg->force_send_socket->address.af, to->s.sa_family);
+			msg->force_send_socket=NULL;
+		} else
 		if (msg->force_send_socket)
 			return msg->force_send_socket;
 		else
-			LM_WARN("protocol/port mismatch\n");
+			LM_WARN("protocol/port/af mismatch\n");
 	};
 
 	if (mhomed && proto==PROTO_UDP)
