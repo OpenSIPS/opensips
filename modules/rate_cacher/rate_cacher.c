@@ -61,11 +61,11 @@ static int script_get_client_price(struct sip_msg *msg, str *clientid, int *isws
 		pv_spec_t *min,pv_spec_t *inc);
 static int script_get_vendor_price(struct sip_msg *msg, str *vendorid,
 		str *dnis,pv_spec_t *prefix,pv_spec_t *destination, pv_spec_t *price,
-		pv_spec_t *min,pv_spec_t *inc);
+         	   pv_spec_t *min,pv_spec_t *inc, int *slot_id );
 static int script_cost_based_filtering(struct sip_msg *msg, str *clientid, int *isws,
-		str *carrierlist,str *dnis,int *profit_margin,pv_spec_t *out_result);
+	       str *carrierlist,str *dnis,int *profit_margin,pv_spec_t *out_result, int *slot_id);
 static int script_cost_based_ordering(struct sip_msg *msg, str *clientid, int *isws,
-		str *carrierlist,str *dnis,int *profit_margin,pv_spec_t *out_result);
+               str *carrierlist,str *dnis,int *profit_margin,pv_spec_t *out_result, int *slot_id);
 
 static void free_carrier_cell(struct carrier_cell *carr);
 static void free_trie(ptree_t* t);
@@ -73,7 +73,7 @@ static void free_trie(ptree_t* t);
 /* table names */
 static str carr_db_table = str_init("rc_vendors");
 static str carr_id_col = str_init("vendor_id");
-static str carr_rateid_col = str_init("vendor_rate");
+static str carr_rateid_col = str_init("vendor_rate2");
 
 static str acc_db_table = str_init("rc_clients");
 static str acc_id_col = str_init("client_id");
@@ -107,6 +107,7 @@ static db_func_t rates_dbf;
 static struct carrier_table *carr_table = NULL;
 static struct accounts_table *acc_table = NULL;
 
+static int carr_max_rates = 1;
 static int carr_hash_size = 256;
 static int acc_hash_size = 256;
 static int add_carrier(str *carrier,int safe);
@@ -128,6 +129,7 @@ static const param_export_t params[] = {
 	{ "vendors_db_url",		STR_PARAM,	&carriers_db_url.s},
 	{ "vendors_db_table",		STR_PARAM,	&carr_db_table.s},
 	{ "vendors_hash_size",		INT_PARAM,	&carr_hash_size},
+	{ "vendors_max_rates",          INT_PARAM,      &carr_max_rates},
 	{ "clients_db_url",		STR_PARAM,	&accounts_db_url.s},
 	{ "clients_db_table",		STR_PARAM,	&acc_db_table.s},
 	{ "clients_hash_size",		INT_PARAM,	&acc_hash_size},
@@ -146,15 +148,18 @@ static const mi_export_t mi_cmds [] = {
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "rc_getVendorPrice",             0, 0, 0, {
-		{mi_get_carrier_price, {"name", "number", 0}},
+	    {mi_get_carrier_price, {"name", "number", 0}},
+    	    {mi_get_carrier_price, {"name", "number", "slot", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "rc_reloadVendorRate",             0, 0, 0, {
-		{mi_reload_carrier_rate, {"name", "rateid", 0}},
+	    {mi_reload_carrier_rate, {"name", "rateid", 0}},
+	    {mi_reload_carrier_rate, {"name", "rateid", "slot", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "rc_deleteVendorRate",             0, 0, 0, {
-		{mi_delete_carrier_rate, {"name",  0}},
+	    {mi_delete_carrier_rate, {"name", 0}},
+	    {mi_delete_carrier_rate, {"name", "slot", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "rc_addClient",             0, 0, 0, {
@@ -198,7 +203,8 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_VAR, 0, 0},
 		{CMD_PARAM_VAR, 0, 0},
 		{CMD_PARAM_VAR, 0, 0},
-		{CMD_PARAM_VAR, 0, 0},  {0,0,0}},
+		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"cost_based_filtering",(cmd_function)script_cost_based_filtering, {
 		{CMD_PARAM_STR, 0, 0},
@@ -206,7 +212,8 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
-		{CMD_PARAM_VAR, 0, 0},  {0,0,0}},
+		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"cost_based_ordering",(cmd_function)script_cost_based_ordering, {
 		{CMD_PARAM_STR, 0, 0},
@@ -214,7 +221,8 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
-		{CMD_PARAM_VAR, 0, 0},  {0,0,0}},
+		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
@@ -553,13 +561,14 @@ static void free_trie(ptree_t* t)
 
 static void free_carrier_cell(struct carrier_cell *carr)
 {
-	if (carr->rate_table.s)
-		shm_free(carr->rate_table.s);
-	if (carr->rate_currency.s)
-		shm_free(carr->rate_currency.s);
-	free_trie(carr->trie);
-
-	shm_free(carr);
+  for (int i = 0; i < carr_max_rates; i++) { 
+	if (carr->rate_table[i].s)
+		shm_free(carr->rate_table[i].s);
+	if (carr->rate_currency[i].s)
+		shm_free(carr->rate_currency[i].s);
+	free_trie(carr->trie[i]);
+  }
+  shm_free(carr);
 }
 
 static void lock_bucket_read(rw_lock_t *lock)
@@ -582,7 +591,7 @@ static void unlock_bucket_write(rw_lock_t *lock)
 	lock_stop_write(lock);
 }
 
-static int reload_carrier_rate(str *carrierid, int rate_id)
+static int reload_carrier_rate(str *carrierid, int rate_id, int slot_id)
 {
 	struct carrier_entry *entry;
 	struct ratesheet_cell_entry* rs_entry;
@@ -597,7 +606,11 @@ static int reload_carrier_rate(str *carrierid, int rate_id)
 	ptree_t* new_trie;
 
 	if (rate_id == 0)
-		return -1;
+	  return -1;
+	if (slot_id > carr_max_rates) {
+	  LM_ERR("Specified slot ID (%i) > max number of slots (%i)\n",slot_id,carr_max_rates);
+	  return -1;
+	}
 
 	currency.s = NULL;
 	rate_table.s = NULL;
@@ -749,16 +762,16 @@ static int reload_carrier_rate(str *carrierid, int rate_id)
 
 	lock_bucket_write( entry->lock );
 
-	if (it->rate_table.s)
-		shm_free(it->rate_table.s);
-	if (it->rate_currency.s)
-		shm_free(it->rate_currency.s);
-	free_trie(it->trie);
+	if (it->rate_table[slot_id].s)
+		shm_free(it->rate_table[slot_id].s);
+	if (it->rate_currency[slot_id].s)
+                shm_free(it->rate_currency[slot_id].s);
+	free_trie(it->trie[slot_id]);
 
-	it->rateid = rate_id;
-	it->rate_table = rate_table;
-	it->rate_currency = currency;
-	it->trie = new_trie;
+	it->rateid[slot_id] = rate_id;
+	it->rate_table[slot_id] = rate_table;
+	it->rate_currency[slot_id] = currency;
+	it->trie[slot_id] = new_trie;
 	it->reload_pending = 0;
 	
 	unlock_bucket_write( entry->lock );
@@ -1088,14 +1101,43 @@ static int rate_cacher_load_all_info(void)
 
 		if (add_carrier(&carrierid,0) != 0)
 			continue;
+		/* Check to see if the rate ID is a CSV string */
+		if (strchr(VAL_STRING(ROW_VALUES(row)+1),',')) {
+		  LM_INFO("Carrier %s has a CSV rateid (%s).  Loading with multiple ratesheets.\n",VAL_STRING(ROW_VALUES(row)),VAL_STRING(ROW_VALUES(row)+1));
+		  int j = 0;
+		  char *head;
+		  head = (char *)strdup(VAL_STRING(ROW_VALUES(row)+1));
+		  char *token = NULL;
+		  char *tmp = NULL; 
 
-		if (reload_carrier_rate(&carrierid,VAL_NULL(ROW_VALUES(row)+1)?0:VAL_INT(ROW_VALUES(row)+1)) < 0) {
-			if (!VAL_NULL(ROW_VALUES(row)+1) && VAL_INT(ROW_VALUES(row)+1) != 0)
-				LM_ERR("Failed to load carrier %s with rateid %d\n",
-				VAL_STRING(ROW_VALUES(row)),VAL_NULL(ROW_VALUES(row)+1)?0:VAL_INT(ROW_VALUES(row)+1));
-		} else
-			LM_INFO("Loaded carrier %s with rateid %d\n",
-			VAL_STRING(ROW_VALUES(row)),VAL_INT(ROW_VALUES(row)+1));
+		  for (token = strtok_r(head, ",", &tmp);
+		       token;
+		       token = strtok_r(NULL, ",", &tmp)) {
+		    LM_DBG("Token is %s\n",token);
+		    LM_DBG("Loading carrier %s slot %i with rateid %i\n",VAL_STRING(ROW_VALUES(row)),j,atoi(token));
+
+		    if (reload_carrier_rate(&carrierid,atoi(token),j) < 0) {
+			LM_ERR("Failed to load carrier %s slot %i with rateid %d\n",
+			       VAL_STRING(ROW_VALUES(row)),j,atoi(token));
+		    } else {
+		      LM_INFO("Loaded carrier %s slot %i with rateid %d\n",
+			      VAL_STRING(ROW_VALUES(row)),j,atoi(token));
+		    }
+		    j++;
+		    if (j >= carr_max_rates) {
+		      break;
+		    }
+		  }
+		  free(head);
+		} else { 
+		  if (reload_carrier_rate(&carrierid,VAL_NULL(ROW_VALUES(row)+1)?0:VAL_INT(ROW_VALUES(row)+1),0) < 0) {
+		    if (!VAL_NULL(ROW_VALUES(row)+1) && VAL_INT(ROW_VALUES(row)+1) != 0)
+		      LM_ERR("Failed to load carrier %s with rateid %d\n",
+			     VAL_STRING(ROW_VALUES(row)),VAL_NULL(ROW_VALUES(row)+1)?0:VAL_INT(ROW_VALUES(row)+1));
+		  } else
+		    LM_INFO("Loaded carrier %s with rateid %d\n",
+			    VAL_STRING(ROW_VALUES(row)),VAL_INT(ROW_VALUES(row)+1));
+		}
 	}
 
 	carriers_dbf.free_result(carriers_db_hdl, res);
@@ -1148,11 +1190,11 @@ static mi_response_t * mi_get_carrier_price(const mi_params_t *params,struct mi_
 {
 	struct carrier_cell *it;
 	struct carrier_entry *entry;
-	int bucket;
+	int bucket,tmp,slot;
 	unsigned int matched_len;
 	str carrier;
 	str prefix;
-	struct ratesheet_cell_entry *ret;
+	struct ratesheet_cell_entry *ret = NULL;
 	mi_response_t *resp = NULL;
 	mi_item_t *resp_obj;
 
@@ -1163,6 +1205,17 @@ static mi_response_t * mi_get_carrier_price(const mi_params_t *params,struct mi_
 	if (get_mi_string_param(params, "number",
 		&prefix.s, &prefix.len) < 0)
 		return init_mi_param_error();
+
+        switch (try_get_mi_int_param(params, "slot", &tmp)) {
+                case -1:
+                        slot = 0;
+                        break;
+                case 0:
+                        slot = tmp;
+                        break;
+                default:
+		  return init_mi_param_error();
+        }
 
 	bucket = core_hash(&carrier, NULL, carr_table->size);
 	entry = &(carr_table->entries[bucket]);
@@ -1179,8 +1232,14 @@ static mi_response_t * mi_get_carrier_price(const mi_params_t *params,struct mi_
 		unlock_bucket_read( entry->lock );
 		return init_mi_error( 401, "No such carrier", sizeof("No such carrier")-1);
 	}
-
-	ret = get_rate_price_prefix(it->trie,&prefix,&matched_len);
+	if (slot != 0) { 
+	  ret = get_rate_price_prefix(it->trie[slot],&prefix,&matched_len);
+	}
+	if (ret == NULL) {
+	  ret = get_rate_price_prefix(it->trie[0],&prefix,&matched_len);
+	  slot = 0;
+	}
+	
 	if (ret == NULL) {
 		unlock_bucket_read( entry->lock );
 		return init_mi_error( 401, "No prefix match", sizeof("No prefix match")-1);
@@ -1213,7 +1272,7 @@ static mi_response_t * mi_get_carrier_price(const mi_params_t *params,struct mi_
 		goto error_internal_unlock;
 	}
 	if (add_mi_string(resp_obj, "currency", 8, 
-		it->rate_currency.s,it->rate_currency.len) < 0) {
+		it->rate_currency[slot].s,it->rate_currency[slot].len) < 0) {
 		LM_ERR("failed to mi item\n");
 		goto error_internal_unlock;
 	}
@@ -1229,7 +1288,7 @@ error_internal_unlock:
 
 static mi_response_t * mi_reload_carrier_rate(const mi_params_t *params,struct mi_handler *async_hdl)
 {
-	int rate_id;
+  int rate_id, slot, tmp ;
 	str carrier;
 
 	if (get_mi_string_param(params, "name",
@@ -1239,9 +1298,22 @@ static mi_response_t * mi_reload_carrier_rate(const mi_params_t *params,struct m
 	if (get_mi_int_param(params, "rateid", &rate_id) < 0)
 		return init_mi_param_error();
 
+	switch (try_get_mi_int_param(params, "slot", &tmp)) {
+                case -1:
+                        slot = 0;
+                        break;
+                case 0:
+                        slot = tmp;
+                        break;
+                default:
+		  return init_mi_param_error();
+        }
+
+	
+
 	LM_INFO("XXX - reloadCarrierRate %.*s %d\n",carrier.len,carrier.s,rate_id); 
 
-	if (reload_carrier_rate(&carrier,rate_id) < 0)
+	if (reload_carrier_rate(&carrier,rate_id, slot) < 0)
 		return init_mi_error( 500, "Failed to reload", sizeof("Failed to reload")-1);
 	else
     		return init_mi_result_ok();
@@ -1341,6 +1413,26 @@ static int add_carrier(str *carrier,int safe)
 	carr_cell->carrierid.s = (char *)(carr_cell+1);
 	carr_cell->carrierid.len = carrier->len;
 	memcpy(carr_cell->carrierid.s,carrier->s,carrier->len);
+	/* Malloc & zero out the arrays for each ratetable property inside the new cell */
+	carr_cell->rateid = (unsigned int *)shm_malloc(carr_max_rates * sizeof(unsigned int));
+	memset(carr_cell->rateid,0,sizeof(carr_max_rates * sizeof(unsigned int)));
+
+	carr_cell->rate_table = (str *)shm_malloc(carr_max_rates * sizeof(str));
+	memset(carr_cell->rate_table,0,sizeof(carr_max_rates * sizeof(str)));
+
+	carr_cell->rate_currency = (str *)shm_malloc(carr_max_rates * sizeof(str));
+	memset(carr_cell->rate_currency,0,sizeof(carr_max_rates * sizeof(str)));
+
+	
+	carr_cell->trie = shm_malloc(carr_max_rates * sizeof(ptree_t));
+	memset(carr_cell->trie,0,sizeof(carr_max_rates * sizeof(ptree_t)));
+
+	for (int i=0; i < carr_max_rates; i++) {
+	  ptree_t* new_trie;
+	  INIT_PTREE_NODE(NULL, new_trie);
+	  carr_cell->trie[i] = new_trie;
+	}
+	
 
 	/* link the new carrier */
 	if (entry->first==NULL) {
@@ -1380,12 +1472,26 @@ static mi_response_t * mi_delete_carrier_rate(const mi_params_t *params,struct m
 {
 	struct carrier_entry *entry;
 	struct carrier_cell *it;
-	int bucket;
+	int bucket, slot, tmp;
 	str carrier;
 
 	if (get_mi_string_param(params, "name",
 		&carrier.s, &carrier.len) < 0)
 		return init_mi_param_error();
+
+        switch (try_get_mi_int_param(params, "slot", &tmp)) {
+                case -1:
+                        slot = 0;
+                        break;
+                case 0:
+                        slot = tmp;
+                        break;
+                default:
+		  return init_mi_param_error();
+
+        }
+
+	
 
 	LM_INFO("XXX - deleteCarrierRate %.*s\n",carrier.len,carrier.s);
 
@@ -1410,13 +1516,13 @@ static mi_response_t * mi_delete_carrier_rate(const mi_params_t *params,struct m
 		return init_mi_error( 401, "Pending Reload", sizeof("Pending Reload")-1);
 	}
 
-	if (it->rate_table.s)
-		shm_free(it->rate_table.s);
-	if (it->rate_currency.s)
-		shm_free(it->rate_currency.s);
-	free_trie(it->trie);
-	it->trie = NULL;
-	it->rateid = 0;
+	if (it->rate_table[slot].s)
+		shm_free(it->rate_table[slot].s);
+	if (it->rate_currency[slot].s)
+		shm_free(it->rate_currency[slot].s);
+	free_trie(it->trie[slot]);
+	//it->trie[slot] = NULL;
+	it->rateid[slot] = 0;
 
 	unlock_bucket_write( entry->lock );
 	return init_mi_result_ok();
@@ -1838,17 +1944,19 @@ static int script_get_client_price(struct sip_msg *msg, str *clientid, int *isws
 
 static int script_get_vendor_price(struct sip_msg *msg, str *vendorid,
 		str *dnis,pv_spec_t *prefix,pv_spec_t *destination, pv_spec_t *price,
-		pv_spec_t *min,pv_spec_t *inc)
+		   pv_spec_t *min,pv_spec_t *inc, int *slot_id)
 {
 	struct carrier_cell *it;
 	struct carrier_entry *entry;
 	int bucket;
+	int slot;
 	unsigned int matched_len;
-	struct ratesheet_cell_entry *ret;
+	struct ratesheet_cell_entry *ret = NULL;
 	pv_value_t pv_val;
 
 	bucket = core_hash(vendorid, NULL, carr_table->size);
 	entry = &(carr_table->entries[bucket]);
+	slot = slot_id ? *slot_id : 0;
 
 	lock_bucket_read( entry->lock );
 	for (it=entry->first;it;it=it->next) {
@@ -1864,7 +1972,16 @@ static int script_get_vendor_price(struct sip_msg *msg, str *vendorid,
 		return -1;
 	}
 
-	ret = get_rate_price_prefix(it->trie,dnis,&matched_len);
+	if (slot != 0) { 
+	  // Try to get the price prefix with the specified ratesheet slot
+	  ret = get_rate_price_prefix(it->trie[slot],dnis,&matched_len);
+	}
+	// If we were asked for either slot 0 initially or the other slot query returned NULL
+	// try slot 0
+	if (ret == NULL ) {
+	  ret = get_rate_price_prefix(it->trie[0],dnis,&matched_len);
+	}
+
 	if (ret == NULL) {
 		unlock_bucket_read( entry->lock );
 		LM_ERR("No prefix match for %.*s on vendor %.*s \n",
@@ -1917,7 +2034,7 @@ static int script_get_vendor_price(struct sip_msg *msg, str *vendorid,
 	return 1;
 }
 
-static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist,int carr_no,str *dnis,double *client_price) 
+static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist,int carr_no,str *dnis,double *client_price, int *slot_id) 
 {
 	int bucket,i;
 	double *result;
@@ -1925,6 +2042,7 @@ static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist
 	struct account_cell *it;
 	struct ratesheet_cell_entry *ret;
 	unsigned int dst_matched_len;
+	int slot;
 	double vendor_price;
 	str carrier;
 	struct carrier_cell *carr_it;
@@ -1935,6 +2053,8 @@ static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist
 
 	bucket = core_hash(clientid, NULL, acc_table->size);
 	entry = &(acc_table->entries[bucket]);
+
+	slot = slot_id ? *slot_id : 0;
 
 	lock_bucket_read( entry->lock );
 	for (it=entry->first;it;it=it->next) {
@@ -1993,8 +2113,13 @@ static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist
 			result[i] = 0;
 			continue;
 		}
-
-		ret = get_rate_price_prefix(carr_it->trie,dnis,&dst_matched_len);
+		ret = NULL;
+		if (slot != 0) {
+		  ret = get_rate_price_prefix(carr_it->trie[slot],dnis,&dst_matched_len);
+		}
+		if (ret == NULL) {
+		  ret = get_rate_price_prefix(carr_it->trie[0],dnis,&dst_matched_len);
+		}
 		if (ret == NULL) {
 			/* no price found for carrier, do not use it */
 			unlock_bucket_read( carr_entry->lock );
@@ -2018,7 +2143,7 @@ typedef struct str_price_s {
 } name_price_t;
 	
 static int script_cost_based_ordering(struct sip_msg *msg, str *clientid, int *isws,
-		str *carrierlist,str *dnis,int *profit_margin,pv_spec_t *out_result)
+				      str *carrierlist,str *dnis,int *profit_margin,pv_spec_t *out_result, int *slot_id)
 {
 	int i,j,len,matched_margin=0;
 	double *results=NULL,client_price=-1;
@@ -2056,7 +2181,7 @@ static int script_cost_based_ordering(struct sip_msg *msg, str *clientid, int *i
 		}
 	}
 
-	results = bulk_cost_based_fetching(clientid,*isws,carrier_array,carrier_array_len,dnis,&client_price);
+	results = bulk_cost_based_fetching(clientid,*isws,carrier_array,carrier_array_len,dnis,&client_price, slot_id);
 	if (results == NULL) {
 		LM_ERR("Failed to do CBR\n");
 		goto err_free;
@@ -2165,7 +2290,7 @@ err_free:
 }
 
 static int script_cost_based_filtering(struct sip_msg *msg, str *clientid, int *isws,
-		str *carrierlist,str *dnis,int *profit_margin,pv_spec_t *out_result)
+				       str *carrierlist,str *dnis,int *profit_margin,pv_spec_t *out_result, int *slot_id)
 {
 	int i,len;
 	double *results=NULL,client_price=-1;
@@ -2197,7 +2322,7 @@ static int script_cost_based_filtering(struct sip_msg *msg, str *clientid, int *
 		carrier_array_len++;
 	}
 
-	results = bulk_cost_based_fetching(clientid,*isws,carrier_array,carrier_array_len,dnis,&client_price);
+	results = bulk_cost_based_fetching(clientid,*isws,carrier_array,carrier_array_len,dnis,&client_price, slot_id);
 	if (results == NULL) {
 		LM_ERR("Failed to do CBR\n");
 		goto err_free;
