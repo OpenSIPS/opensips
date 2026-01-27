@@ -40,11 +40,15 @@ extern int compat_mode_24;
 #define HEX_OID_SIZE 25
 char *hex_oid_id;
 
+#if !MONGOC_CHECK_VERSION(1, 29, 0)
+#define bson_as_legacy_extended_json bson_as_json
+#endif
+
 #define dbg_bson(_prepend_txt, __bson_ptr__) \
 	do { \
 		char *__bson_str__; \
 		if (is_printable(L_DBG)) { \
-			__bson_str__ = bson_as_json(__bson_ptr__, NULL); \
+			__bson_str__ = bson_as_legacy_extended_json(__bson_ptr__, NULL); \
 			LM_DBG("%s%s\n", _prepend_txt, __bson_str__); \
 			bson_free(__bson_str__); \
 		} \
@@ -1309,11 +1313,11 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	                                   namespace);
 
 	if (is_printable(L_DBG)) {
-		strf = bson_as_json(filter, NULL);
+		strf = bson_as_legacy_extended_json(filter, NULL);
 #if MONGOC_CHECK_VERSION(1, 5, 0)
-		stro = bson_as_json(opts, NULL);
+		stro = bson_as_legacy_extended_json(opts, NULL);
 #else
-		stro = bson_as_json(fields, NULL);
+		stro = bson_as_legacy_extended_json(fields, NULL);
 #endif
 		LM_DBG("query doc:\n%s\n%s\n", strf, stro);
 		bson_free(strf);
