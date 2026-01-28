@@ -660,6 +660,7 @@ static void run_create_cb_all(struct b2b_callback *cb, int etype)
 
 				if (bin_append_buffer(&storage, &dlg->storage) < 0) {
 					LM_ERR("Failed to build entity storage buffer\n");
+					bin_free_packet(&storage);
 					return;
 				}
 
@@ -741,6 +742,8 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int b2b_cb_flags = 0;
 	unsigned int ua_flags = 0;
 	int ua_ev_type = -1;
+
+	storage.buffer.s = NULL;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -1434,14 +1437,11 @@ run_cb:
 			replicate_entity_delete(dlg, etype, hash_index, &storage);
 	}
 
-	if (b2b_ev != -1 && storage.buffer.s)
-		bin_free_packet(&storage);
-
 	if ((ua_flags&UA_FL_IS_UA_ENTITY) && dlg_state == B2B_TERMINATED) {
 		if (ua_send_reply(etype, &b2b_key, METHOD_BYE, 200, &str_init("OK"),
 			NULL, NULL, NULL) < 0) {
 			LM_ERR("Failed to send 200 OK reply\n");
-			return SCB_DROP_MSG;
+			goto end;
 		}
 
 		if (ua_entity_delete(etype, &b2b_key, b2be_db_mode == WRITE_BACK, 1) < 0)
@@ -1450,6 +1450,9 @@ run_cb:
 
 done:
 	lock_release(&table[hash_index].lock);
+end:
+	if (b2b_ev != -1 && storage.buffer.s)
+		bin_free_packet(&storage);
 	return SCB_DROP_MSG;
 }
 
