@@ -38,6 +38,7 @@
 #include "../../parser/parse_expires.h"
 #include "../uac_auth/uac_auth.h"
 #include "../../lib/digest_auth/digest_auth.h"
+#include "../../status_report.h"
 #include "reg_records.h"
 #include "reg_db_handler.h"
 #include "clustering.h"
@@ -138,6 +139,8 @@ static str extra_hdrs={extra_hdrs_buf, 512};
 
 /* TM bind */
 struct tm_binds tmb;
+
+void *uac_reg_srg = NULL;
 
 
 typedef struct reg_tm_cb {
@@ -280,6 +283,13 @@ static int mod_init(void)
 
 	if(init_reg_htable()<0) {
 		LM_ERR("Failed to initialize registrant hash table\n");
+		return -1;
+	}
+
+	uac_reg_srg = sr_register_group(CHAR_INT("uac_registrant"),
+		0 /*not public*/);
+	if (uac_reg_srg==NULL) {
+		LM_ERR("failed to create uac_registrant group for status reports\n");
 		return -1;
 	}
 
