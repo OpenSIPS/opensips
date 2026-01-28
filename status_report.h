@@ -21,6 +21,7 @@
 #ifndef _STATUS_REPORT_H_
 #define _STATUS_REPORT_H_
 
+#include <limits.h>
 #include "mi/mi.h"
 
 #define CHAR_INT MI_SSTR
