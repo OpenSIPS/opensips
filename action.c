@@ -60,6 +60,7 @@
 #include "script_var.h"
 #include "xlog.h"
 #include "cfg_pp.h"
+#include "route_trace.h"
 
 #include <string.h>
 
@@ -215,6 +216,8 @@ int run_top_route(struct script_route sr, struct sip_msg* msg)
 	int bk_action_flags, route_stack_start_bkp = -1, route_stack_size_bkp;
 	int ret;
 	context_p ctx = NULL;
+	const char *trace_file = NULL;
+	int trace_line = 0;
 
 	bk_action_flags = action_flags;
 
@@ -251,8 +254,26 @@ int run_top_route(struct script_route sr, struct sip_msg* msg)
 	else
 		route_stack[route_stack_start] = sr.name;
 
+	if (route_trace_enabled()) {
+		if (sr.a && sr.a->file) {
+			trace_file = sr.a->file;
+			trace_line = sr.a->line;
+		}
+		route_trace_msg_start(msg, route_type, route_stack[route_stack_start],
+			route_stack_size, route_stack_start);
+		route_trace_route_enter(msg, route_type, route_stack[route_stack_start],
+			trace_file, trace_line, route_stack_size, route_stack_start);
+	}
+
 	run_actions(sr.a, msg);
 	ret = action_flags;
+
+	if (route_trace_enabled()) {
+		route_trace_route_exit(msg, route_type, route_stack[route_stack_start],
+			NULL, 0, route_stack_size, route_stack_start, ret);
+		route_trace_msg_end(msg, route_type, route_stack[route_stack_start],
+			route_stack_size, route_stack_start, ret);
+	}
 
 	if (route_stack_start_bkp != -1) {
 		route_stack_size = route_stack_size_bkp;
@@ -808,12 +829,28 @@ int do_action(struct action* a, struct sip_msg* msg)
 				}
 				route_params_push_level(sroutes->request[i].name,
 						route_p, (void *)(unsigned long)len, route_param_get);
+				if (route_trace_enabled())
+					route_trace_route_enter(msg, route_type,
+						sroutes->request[i].name, a->file, a->line,
+						route_stack_size, route_stack_start);
 				return_code=run_actions(sroutes->request[i].a, msg);
+				if (route_trace_enabled())
+					route_trace_route_exit(msg, route_type,
+						sroutes->request[i].name, a->file, a->line,
+						route_stack_size, route_stack_start, return_code);
 				route_params_release(route_p, len);
 				route_params_pop_level();
 			} else {
 				route_params_push_level(sroutes->request[i].name, NULL, 0, route_param_get);
+				if (route_trace_enabled())
+					route_trace_route_enter(msg, route_type,
+						sroutes->request[i].name, a->file, a->line,
+						route_stack_size, route_stack_start);
 				return_code=run_actions(sroutes->request[i].a, msg);
+				if (route_trace_enabled())
+					route_trace_route_exit(msg, route_type,
+						sroutes->request[i].name, a->file, a->line,
+						route_stack_size, route_stack_start, return_code);
 				route_params_pop_level();
 			}
 			ret=return_code;
