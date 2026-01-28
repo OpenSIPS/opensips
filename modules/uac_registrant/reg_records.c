@@ -27,16 +27,66 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../../mem/mem.h"
+#include "../../status_report.h"
 #include "reg_events.h"
 #include "reg_records.h"
 
 extern unsigned int default_expires;
 extern const str uac_reg_state[];
+extern void *uac_reg_srg;
 
 static char call_id_ftag_buf[MD5_LEN];
 
+#define UAC_REG_SR_AOR "aor="
+#define UAC_REG_SR_CONTACT ";contact="
+#define UAC_REG_SR_REGISTRAR ";registrar="
+#define UAC_REG_SR_AOR_LEN (sizeof(UAC_REG_SR_AOR) - 1)
+#define UAC_REG_SR_CONTACT_LEN (sizeof(UAC_REG_SR_CONTACT) - 1)
+#define UAC_REG_SR_REGISTRAR_LEN (sizeof(UAC_REG_SR_REGISTRAR) - 1)
+
 int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
 	unsigned int all_contacts);
+
+int reg_build_sr_identifier(const str *aor, const str *contact,
+	const str *registrar, str *ident)
+{
+	int len;
+	char *buf;
+	char *p;
+
+	if (!aor || !contact || !registrar || !aor->s || !contact->s ||
+		!registrar->s) {
+		LM_ERR("missing data for status report identifier\n");
+		return -1;
+	}
+
+	len = UAC_REG_SR_AOR_LEN + aor->len +
+		UAC_REG_SR_CONTACT_LEN + contact->len +
+		UAC_REG_SR_REGISTRAR_LEN + registrar->len;
+	buf = pkg_malloc(len);
+	if (!buf) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	p = buf;
+	memcpy(p, UAC_REG_SR_AOR, UAC_REG_SR_AOR_LEN);
+	p += UAC_REG_SR_AOR_LEN;
+	memcpy(p, aor->s, aor->len);
+	p += aor->len;
+	memcpy(p, UAC_REG_SR_CONTACT, UAC_REG_SR_CONTACT_LEN);
+	p += UAC_REG_SR_CONTACT_LEN;
+	memcpy(p, contact->s, contact->len);
+	p += contact->len;
+	memcpy(p, UAC_REG_SR_REGISTRAR, UAC_REG_SR_REGISTRAR_LEN);
+	p += UAC_REG_SR_REGISTRAR_LEN;
+	memcpy(p, registrar->s, registrar->len);
+
+	ident->s = buf;
+	ident->len = len;
+	return 0;
+}
 
 void reg_print_record(reg_record_t *rec) {
 	LM_DBG("checking uac=[%p] state=[%d][%.*s] expires=[%d]"
@@ -166,6 +216,7 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int mode,
 	char *p;
 	slinkedl_list_t *list;
 	slinkedl_element_t *new_elem = NULL;
+	int is_new = 1;
 
 	/* Reserve space for record */
 	size = sizeof(reg_record_t) + MD5_LEN +
@@ -304,12 +355,34 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int mode,
 	if (mode == REG_DB_LOAD_RECORD) {
 		coords->extra = (void*)(unsigned long)uac->hash_code;
 		if (slinkedl_replace(reg_htable[uac->hash_code].p_list,
-			match_reload_record, coords, new_elem) == 0)
+			match_reload_record, coords, new_elem) == 0) {
 			/* this is a new record altogether */
 			slinkedl_append_element(reg_htable[uac->hash_code].p_list, new_elem);
+		} else {
+			is_new = 0;
+		}
 	}
 
 	reg_print_record(record);
+
+	if (uac_reg_srg && is_new) {
+		str sr_ident = {NULL, 0};
+		if (reg_build_sr_identifier(&record->td.rem_uri, &record->contact_uri,
+			&record->td.rem_target, &sr_ident) == 0) {
+			if (sr_register_identifier(uac_reg_srg, STR2CI(sr_ident),
+					SR_STATUS_NOT_READY,
+					(char *)uac_reg_state[NOT_REGISTERED_STATE].s,
+					uac_reg_state[NOT_REGISTERED_STATE].len, 20) == 0) {
+				sr_add_report_fmt(uac_reg_srg, STR2CI(sr_ident), 0,
+					"created with state %.*s\n",
+					uac_reg_state[NOT_REGISTERED_STATE].len,
+					uac_reg_state[NOT_REGISTERED_STATE].s);
+			} else {
+				LM_ERR("failed to register status report identifier\n");
+			}
+			pkg_free(sr_ident.s);
+		}
+	}
 
 	return 0;
 }
@@ -354,8 +427,25 @@ void destroy_reg_htable(void) {
 	}
 }
 
+static int reg_state_to_sr_status(int state)
+{
+	switch (state) {
+	case REGISTERED_STATE:
+		return SR_STATUS_READY;
+	case REGISTERING_STATE:
+	case AUTHENTICATING_STATE:
+	case UNREGISTERING_STATE:
+	case AUTHENTICATING_UNREGISTER_STATE:
+		return SR_STATUS_LOADING_DATA;
+	default:
+		return SR_STATUS_NOT_READY;
+	}
+}
+
 void reg_change_state(reg_record_t *rec, int new_state)
 {
+	str sr_ident = {NULL, 0};
+
 	rec->state = new_state;
 	switch (new_state) {
 		case NOT_REGISTERED_STATE:
@@ -391,5 +481,17 @@ void reg_change_state(reg_record_t *rec, int new_state)
 		default:
 			LM_ERR("Unhandled new state %d \n",new_state);
 			break;
+	}
+
+	if (uac_reg_srg && reg_build_sr_identifier(&rec->td.rem_uri,
+		&rec->contact_uri, &rec->td.rem_target, &sr_ident) == 0) {
+		sr_set_status(uac_reg_srg, STR2CI(sr_ident),
+			reg_state_to_sr_status(new_state),
+			(char *)uac_reg_state[new_state].s,
+			uac_reg_state[new_state].len, 0);
+		sr_add_report_fmt(uac_reg_srg, STR2CI(sr_ident), 0,
+			"state changed to %.*s\n",
+			uac_reg_state[new_state].len, uac_reg_state[new_state].s);
+		pkg_free(sr_ident.s);
 	}
 }
