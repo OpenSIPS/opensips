@@ -297,8 +297,8 @@ static int mod_init(void)
 	forced_socket_column.len = strlen(forced_socket_column.s);
 	cluster_shtag_column.len = strlen(cluster_shtag_column.s);
 	state_column.len = strlen(state_column.s);
-	init_db_url(db_url , 0 /*cannot be null*/);
-	if (init_reg_db(&db_url) != 0) {
+	init_db_url(db_url , 1 /*can be null*/);
+	if (db_url.s && init_reg_db(&db_url) != 0) {
 		LM_ERR("failed to initialize the DB support\n");
 		return -1;
 	}
