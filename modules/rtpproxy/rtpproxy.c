@@ -228,6 +228,9 @@ static str param3_name = str_init("rtpproxy_3");
 str param3_bavp_name = str_init("$bavp(5589967)");
 pv_spec_t param3_spec;
 static str late_name = str_init("late_negotiation");
+static str rtpp_bind_local_avp_name = str_init("$avp(rtpp_bind_local)");
+static pv_spec_t rtpp_bind_local_spec;
+static int rtpp_bind_local_avp_ok = 0;
 
 /* parameters name for event signaling */
 static str event_name = str_init("E_RTPPROXY_STATUS");
@@ -525,6 +528,7 @@ static const param_export_t params[] = {
 	{"generated_sdp_port_min",INT_PARAM, &rtpproxy_port_min },
 	{"generated_sdp_port_max",INT_PARAM, &rtpproxy_port_max },
 	{"generated_sdp_media_ip",STR_PARAM, &rtpproxy_media_ip.s },
+	{"rtpp_bind_local_avp",   STR_PARAM, &rtpp_bind_local_avp_name.s },
 	{0, 0, 0}
 };
 
@@ -1303,6 +1307,18 @@ mod_init(void)
 			parse_bavp(&param2_bavp_name, &param2_spec) < 0 ||
 			parse_bavp(&param3_bavp_name, &param3_spec) < 0)
 		LM_DBG("cannot parse bavps\n");
+
+	if (rtpp_bind_local_avp_name.s && rtpp_bind_local_avp_name.s[0] != '\0') {
+		rtpp_bind_local_avp_name.len = strlen(rtpp_bind_local_avp_name.s);
+		if (pv_parse_spec(&rtpp_bind_local_avp_name, &rtpp_bind_local_spec) != NULL) {
+			rtpp_bind_local_avp_ok = 1;
+		} else {
+			LM_ERR("malformed rtpp_bind_local pvar definition\n");
+			return -1;
+		}
+	} else {
+		rtpp_bind_local_avp_ok = 0;
+	}
 
 	if(rtpp_notify_socket.s) {
 		if (strncmp("tcp:", rtpp_notify_socket.s, 4) == 0) {
@@ -3583,12 +3599,13 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 	char medianum_buf[20];
 	char buf[32], dbuf[128];
 	int medianum, media_multi;
-	str medianum_str, tmpstr1;
+	str medianum_str, tmpstr1, bind_local_val;
 	int c1p_altered;
 	int enable_dtmf_catch = 0;
 	int node_has_notification, node_has_dtmf_catch = 0;
 	int vcnt;
 	pv_value_t val;
+	pv_value_t bind_val;
 	char *adv_address = NULL;
 	struct dlg_cell * dlg;
 	str dtmf_tag = {0, 0}, timeout_tag = {0, 0};
@@ -3817,6 +3834,24 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 	medianum = 0;
 
 	opts.s.s[0] = (create == 0) ? 'L' : 'U';
+
+	bind_local_val.len = 0;
+	if (msg && rtpp_bind_local_avp_ok) {
+		if (pv_get_spec_value(msg, &rtpp_bind_local_spec, &bind_val) < 0) {
+			LM_ERR("cannot get rtpp_bind_local avp value\n");
+			goto exit;
+		} else if (!(bind_val.flags & PV_VAL_NULL)) {
+			if (bind_val.flags & PV_VAL_STR) {
+				bind_local_val = bind_val.rs;
+			} else if (bind_val.flags & PV_VAL_INT) {
+				bind_local_val.s = int2str(bind_val.ri, &bind_local_val.len);
+			} else {
+				LM_ERR("rtpp_bind_local avp has unsupported value type\n");
+				goto exit;
+			}
+		}
+	}
+
 	STR2IOVEC(args->callid, vup.vu[5]);
 	STR2IOVEC(args->from_tag, vup.vu[11]);
 	STR2IOVEC(args->to_tag, vup.vu[15]);
@@ -3990,6 +4025,13 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 			/* XXX must compare address families in all addresses */
 			if (pf == AF_INET6) {
 				if (append_opts(&m_opts, '6') == -1) {
+					LM_ERR("out of pkg memory\n");
+					goto error;
+				}
+			}
+			if (bind_local_val.len > 0) {
+				if (append_opts(&m_opts, 'l') == -1 ||
+						append_opts_str(&m_opts, &bind_local_val) == -1) {
 					LM_ERR("out of pkg memory\n");
 					goto error;
 				}
