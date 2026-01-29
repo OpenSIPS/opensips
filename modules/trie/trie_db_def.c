@@ -30,7 +30,7 @@
 #define ATTRS_TRIE_COL     "attrs"
 #define DISABLED_TRIE_COL  "enabled"
 
-str trie_table = str_init("trie");
+str trie_table = str_init("trie_table");
 str prefix_trie_col = str_init(PREFIX_TRIE_COL);
 str attrs_trie_col = str_init(ATTRS_TRIE_COL);
 str enabled_trie_col = str_init(DISABLED_TRIE_COL);
