@@ -280,11 +280,12 @@ Chapter 3. Contributors
    7. Saúl Ibarra Corretgé (@saghul) 6 3 55 89
    8. Vlad Patrascu (@rvlad-patrascu) 5 3 20 33
    9. Dan Pascu (@danpascu) 4 2 8 9
-   10. Romanov Vladimir 3 1 29 21
+   10. Peter Lemenkov (@lemenkov) 4 2 4 4
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad Paiu
-   (@vladpaiu), Maksym Sobolyev (@sobomax), Konstantin Bokarius,
-   Peter Lemenkov (@lemenkov), UnixDev, Edson Gellert Schubert.
+   All remaining contributors: Romanov Vladimir, Ovidiu Sas
+   (@ovidiusas), Vlad Paiu (@vladpaiu), Maksym Sobolyev
+   (@sobomax), Konstantin Bokarius, Ken Rice, UnixDev, Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -306,19 +307,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
-   8.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   9.  Saúl Ibarra Corretgé (@saghul)      Nov 2012 - Jan 2013
-   10. Anca Vamanu                         Aug 2007 - Feb 2010
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2025
+   2.  Ken Rice                            Sep 2025 - Sep 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Apr 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   8.  Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
+   9.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   10. Saúl Ibarra Corretgé (@saghul)      Nov 2012 - Jan 2013
 
-   All remaining contributors: Romanov Vladimir, UnixDev, Henning
-   Westerholt (@henningw), Dan Pascu (@danpascu),
+   All remaining contributors: Anca Vamanu, Romanov Vladimir,
+   UnixDev, Henning Westerholt (@henningw), Dan Pascu (@danpascu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert.
 

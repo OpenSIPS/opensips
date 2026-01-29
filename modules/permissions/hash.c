@@ -239,7 +239,7 @@ int match_address(p_address_node_t *address, struct ip_addr *ip, unsigned int po
 
     if ((address->v.proto == PROTO_NONE || address->v.proto == proto || proto == PROTO_NONE) &&
         (address->v.port == PORT_ANY || address->v.port == port || port == PORT_ANY) &&
-        (ip_addr_cmp(ip, &address->k.subnet.ip) || matchnet(ip, &address->k.subnet))) {
+        (ip_addr_cmp(ip, &address->k.subnet.ip) || matchnet(ip, &address->k.subnet)>0)) {
         if (!address->v.pattern || !pattern) {
             LM_DBG("no pattern to match\n");
             return 1;
@@ -348,7 +348,7 @@ int pm_hash_find_group(p_address_table_t *table, struct ip_addr *ip, unsigned in
         for (address = group->v.address.bucket[address_hash(&group->v.address, &str_ip)]; address;
              address = address->next) {
             if ((address->v.port == PORT_ANY || address->v.port == port || port == PORT_ANY) &&
-                (ip_addr_cmp(ip, &address->k.subnet.ip) || matchnet(ip, &address->k.subnet))) {
+                (ip_addr_cmp(ip, &address->k.subnet.ip) || matchnet(ip, &address->k.subnet)>0)) {
                 return group->k.group;
             }
         }

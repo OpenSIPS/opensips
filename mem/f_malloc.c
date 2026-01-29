@@ -42,6 +42,8 @@
 #define MIN_FRAG_SIZE	ROUNDTO
 #define FRAG_OVERHEAD	(sizeof(struct fm_frag))
 #define frag_is_free(_f) ((_f)->prev)
+#define frag_seems_valid(_f, _b) ((_b)->first_frag <= (_f)->pf \
+                               && (_f)->pf <= (_b)->last_frag)
 
 #define FRAG_PREV(f) ((f)->pf)
 #define FRAG_NEXT(f) \
@@ -234,8 +236,10 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 
 	fm->first_frag=(struct fm_frag *)(void *)(start+ROUNDUP(sizeof(struct fm_block)));
 	fm->last_frag=(struct fm_frag *)(void *)end - 1;
-	/* init initial fragment*/
+
+	/* init initial fragments */
 	fm->first_frag->size=size-init_overhead;
+	fm->first_frag->pf=NULL;
 	fm->last_frag->size=0;
 	fm->last_frag->pf=fm->first_frag;
 

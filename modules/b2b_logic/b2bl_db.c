@@ -256,11 +256,13 @@ void b2b_logic_dump(int no_lock)
 
 			if(tuple->bridge_entities[2])
 			{
-				qvals[15].val.int_val = tuple->bridge_entities[2]->type;
-				qvals[16].val.str_val = tuple->bridge_entities[2]->scenario_id;
-				qvals[17].val.str_val = tuple->bridge_entities[2]->to_uri;
-				qvals[18].val.str_val = tuple->bridge_entities[2]->from_uri;
-				qvals[19].val.str_val = tuple->bridge_entities[2]->key;
+				qvals[16].val.int_val = tuple->bridge_entities[2]->type;
+				qvals[17].val.str_val = tuple->bridge_entities[2]->scenario_id;
+				qvals[18].val.str_val = tuple->bridge_entities[2]->to_uri;
+				qvals[19].val.str_val = tuple->bridge_entities[2]->from_uri;
+				qvals[20].val.str_val = tuple->bridge_entities[2]->key;
+
+				n_insert_cols = 21;
 			}
 
 			/* insert into database */
@@ -862,8 +864,8 @@ void b2bl_db_update(b2bl_tuple_t* tuple)
 
 	qvals[0].val.str_val = *tuple->key;
 
-	qvals[3].val.int_val  = tuple->state;
-	qvals[4].val.int_val = tuple->lifetime -get_ticks() + (int)(unsigned long)time(NULL);
+	qvals[2].val.int_val = tuple->state;
+	qvals[3].val.int_val = tuple->lifetime - get_ticks() + (int)(unsigned long)time(NULL);
 	ci = 4;
 
 	for(i = 0; i< 3; i++)

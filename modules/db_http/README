@@ -469,17 +469,17 @@ Chapter 2. Contributors
    1. Andrei Dragus 23 2 2289 5
    2. Razvan Crainea (@razvancrainea) 17 15 74 26
    3. Liviu Chircu (@liviuchircu) 10 8 25 48
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 47 51
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 48 52
    5. Vlad Paiu (@vladpaiu) 6 4 65 7
    6. Vlad Patrascu (@rvlad-patrascu) 6 4 62 9
    7. Ryan Bullock (@rrb3942) 5 3 42 1
    8. Alexandra Titoc 5 3 25 17
-   9. Maksym Sobolyev (@sobomax) 4 2 5 5
-   10. Dusan Klinec (@ph4r05) 3 1 50 26
+   9. Peter Lemenkov (@lemenkov) 4 2 6 6
+   10. Maksym Sobolyev (@sobomax) 4 2 5 5
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Anca
-   Vamanu, Ezequiel Lovelle (@lovelle), Peter Lemenkov
-   (@lemenkov), Stephane Alnet.
+   All remaining contributors: Dusan Klinec (@ph4r05), Ovidiu Sas
+   (@ovidiusas), Anca Vamanu, Ezequiel Lovelle (@lovelle), Ken
+   Rice, Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -501,20 +501,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2024
-   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
-   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   6.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2009 - Apr 2019
-   8.  Ryan Bullock (@rrb3942)             Jan 2019 - Feb 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2009 - Nov 2025
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2025
+   3.  Ken Rice                            Sep 2025 - Sep 2025
+   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2024
+   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   7.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
+   9.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   10. Ryan Bullock (@rrb3942)             Jan 2019 - Feb 2019
 
-   All remaining contributors: Ezequiel Lovelle (@lovelle),
-   Stephane Alnet, Vlad Paiu (@vladpaiu), Anca Vamanu, Andrei
-   Dragus.
+   All remaining contributors: Dusan Klinec (@ph4r05), Ezequiel
+   Lovelle (@lovelle), Stephane Alnet, Vlad Paiu (@vladpaiu), Anca
+   Vamanu, Andrei Dragus.
 
    (1) including any documentation-related commits, excluding
    merge commits

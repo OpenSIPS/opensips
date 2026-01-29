@@ -11,7 +11,7 @@ SCRIPTS_DIR?=../../scripts/
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-HAS_MYSQLCFG=$(shell if which mysql_config >/dev/null 2>/dev/null;then echo YES; fi)
+HAS_MYSQLCFG := $(shell if which mysql_config >/dev/null 2>/dev/null;then echo YES; fi)
 endif
 
 ifeq ($(HAS_MYSQLCFG),YES)
@@ -19,7 +19,7 @@ ifeq ($(HAS_MYSQLCFG),YES)
 	# use autodetection
 	DEFS += $(shell mysql_config --include)
 	LIBS += $(shell mysql_config --libs)
-	LIBS += -dl -Bsymbolic
+	LIBS += -ldl -Bsymbolic
 
 else
 
@@ -35,7 +35,7 @@ else
 		-L$(LOCALBASE)/mysql/lib \
 		-L$(SYSBASE)/lib64/mysql \
 		-lm -lmysqlclient -lz
-	LIBS += -dl -Bsymbolic
+	LIBS += -ldl -Bsymbolic
 
 endif
 

@@ -78,6 +78,7 @@ struct src_part {
 #define SIPREC_PAUSED	(1<<2)
 #define SIPREC_ONGOING	(1<<3)
 #define SIPREC_LATE 	(1<<4)
+#define SIPREC_ANSWERED	(1<<5)
 
 #define SIPREC_SRS(_s) (list_entry((_s)->srs.next, struct srs_node, list)->uri)
 

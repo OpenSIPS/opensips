@@ -93,6 +93,28 @@ static inline char *IDX_STR(struct sdp_pv_idx *idx)
 }
 
 
+static inline int sdp_detect_line_sep(str *sdp, char *sep, int *sep_len)
+{
+	char *p, *lim = sdp->s + sdp->len;
+
+	/* detect separator using first line
+	 *   (avoid checking last line -- some UAs omit the LF) */
+	for (p = sdp->s; p < lim && *p != '\n' && *p != '\r'; p++) {};
+	if (p == lim)
+		return 0;
+
+	sep[0] = *p;
+	if (*p == '\r' && (p+1)<lim && *(p+1) == '\n') {
+		sep[1] = '\n';
+		*sep_len = 2;
+	} else {
+		*sep_len = 1;
+	}
+
+	return 1;
+}
+
+
 int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 			int op, pv_value_t *val)
 {
@@ -117,10 +139,14 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 	if (!val) {
 		LM_ERR("sdp-set: NULL\n");
 		ops->flags |= SDP_OPS_FL_NULL;
+		ops->flags &= ~SDP_OPS_FL_DIRTY;
 		if (msg->body) {
 			free_sip_body(msg->body);
 			msg->body = NULL;
 		}
+		free_sdp_ops_lines(ops);
+		pkg_free(ops->rebuilt_sdp.s);
+		ops->rebuilt_sdp.s = NULL;
 
 	} else {
 		LM_ERR("sdp-set: non-NULL!\n");
@@ -167,11 +193,9 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 			return -1;
 		}
 
-		/* detect separator */
-		ops->sep[0] = ops->sdp.s[ops->sdp.len-1];
-		if (ops->sep[0] != '\n' && ops->sep[0] != '\r') {
-			LM_ERR("unrecognized SDP separator (ending): '%c' (%d)\n",
-			        ops->sep[0], ops->sep[0]);
+		if (!sdp_detect_line_sep(&ops->sdp, ops->sep, &ops->sep_len)) {
+			LM_ERR("failed to detect SDP separator, first 50B: '%.*s'\n",
+			        ops->sdp.len >= 50 ? 50:ops->sdp.len, ops->sdp.s);
 			free_sip_body(msg->body);
 			msg->body = NULL;
 			pkg_free(ops->sdp.s);
@@ -182,13 +206,8 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 			return -1;
 		}
 
-		if (ops->sep[0] == '\n' && ops->sdp.s[ops->sdp.len-2] == '\r') {
-			ops->sep[0] = '\r';
-			ops->sep[1] = '\n';
-			ops->sep_len = 2;
-		} else {
-			ops->sep_len = 1;
-		}
+		if (ops->sdp.s[ops->sdp.len-1] > '\r')
+			ops->flags |= SDP_OPS_FL_NO_LLF;
 
 		free_sdp_ops_lines(ops);
 		if (ops->rebuilt_sdp.s) {
@@ -375,25 +394,16 @@ int pv_parse_sdp_line_index(pv_spec_p sp, const str *in)
 
 int sdp_ops_parse_lines(struct sdp_body_part_ops *ops, str *body)
 {
-	char *p, *lim = body->s + body->len, sep, *start;
+	char *p, *lim = body->s + body->len, _sep[2], sep, *start;
 	int sep_len = 1, i = 0;
 
-	if (!ops->sep_len) {
-		sep = *(lim-1);
-		if (sep != '\n' && sep != '\r') {
-			LM_ERR("unrecognized SDP separator (ending): '%c' (%d)\n", sep, sep);
-			return -1;
-		}
-
-		if (sep == '\n' && *(lim-2) == '\r') {
-			sep = '\r';
-			sep_len = 2;
-		}
-	} else {
-		sep = ops->sep[0];
-		sep_len = ops->sep_len;
+	if (!sdp_detect_line_sep(body, _sep, &sep_len)) {
+		LM_ERR("failed to detect SDP separator, first 50B: '%.*s'\n",
+		        body->len >= 50 ? 50:body->len, body->s);
+		return -1;
 	}
 
+	sep = _sep[0];
 	start = body->s;
 	for (p = start; p < lim; p++) {
 		if (*p != sep || (sep_len == 2 && p < (lim-1) && *(p+1) != '\n'))
@@ -407,10 +417,18 @@ int sdp_ops_parse_lines(struct sdp_body_part_ops *ops, str *body)
 		start = p + sep_len;
 	}
 
+	/* edge-case: the very last SDP line does not include a separator... */
+	if (start < lim) {
+		ops->lines[i].line.s = start;
+		ops->lines[i].line.len = p - start;
+		ops->lines[i++].newbuf = 0;
+		ops->flags |= SDP_OPS_FL_NO_LLF;
+	}
+
 	LM_DBG("parsed %d SDP lines in total\n", i);
 	ops->lines_sz = i;
 
-	memcpy(ops->sep, lim-sep_len, sep_len);
+	memcpy(ops->sep, _sep, sep_len);
 	ops->sep_len = sep_len;
 
 	return 0;
@@ -1552,7 +1570,8 @@ int sdp_get_custom_body(struct sip_msg *msg, str *body)
 			return -1;
 		}
 
-		LM_DBG("found previously re-built custom SDP => quick-return\n");
+		LM_DBG("found previously re-built custom SDP => quick-return (%d / %d)\n",
+		        !ops->rebuilt_sdp.s, !ops->sdp.s);
 		goto out;
 	}
 
@@ -1638,6 +1657,7 @@ void free_sdp_ops_lines(struct sdp_body_part_ops *ops)
 		}
 
 	ops->lines_sz = 0;
+	ops->flags &= ~SDP_OPS_FL_NO_LLF;
 	ops->flags &= ~SDP_OPS_FL_PARSED; /* TODO - optimize with lazy parsing */
 }
 

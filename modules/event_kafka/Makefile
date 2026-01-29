@@ -5,7 +5,7 @@ auto_gen=
 NAME=event_kafka.so
 
 ifeq ($(CROSS_COMPILE),)
-KAFKA_BUILDER = $(shell \
+KAFKA_BUILDER := $(shell \
 	if pkg-config --exists rdkafka; then \
 		echo 'pkg-config rdkafka'; \
 	fi)

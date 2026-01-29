@@ -3,7 +3,7 @@ CREATE TABLE trie_table (
     ruleid INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     prefix CHAR(64) NOT NULL,
     attrs CHAR(255) DEFAULT NULL,
-    priority INT(11) DEFAULT 1 NOT NULL
+    enabled INT(11) DEFAULT 1 NOT NULL
 ) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('trie_partitions','1');

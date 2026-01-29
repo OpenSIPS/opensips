@@ -11,12 +11,12 @@ endif
 
 ifeq ($(CROSS_COMPILE),)
 ifeq ($(USE_ONLY_CRYPTO),false)
-SSL_BUILDER=$(shell \
+SSL_BUILDER := $(shell \
 	if pkg-config --exists libssl libcrypto; then \
 		echo 'pkg-config libssl libcrypto'; \
 	fi)
 else
-SSL_BUILDER=$(shell \
+SSL_BUILDER := $(shell \
 	if pkg-config --exists libcrypto; then \
 		echo 'pkg-config libcrypto'; \
 	fi)

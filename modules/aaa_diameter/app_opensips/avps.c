@@ -561,7 +561,7 @@ int parse_attr_def(char *line, FILE *fp)
 	unsigned int vendor_id = -1;
 	size_t buflen = strlen(line);
 	int i, len = buflen, attr_len = strlen("ATTRIBUTE"), name_len, avp_code;
-	char *name, *nt_name, *newp, *p = line, *end = p + len;
+	char *name, *nt_name = NULL, *newp, *p = line, *end = p + len;
 	enum dict_avp_basetype avp_type;
 	enum dict_avp_enc_type enc_type = AVP_ENC_TYPE_NONE;
 
@@ -611,6 +611,9 @@ int parse_attr_def(char *line, FILE *fp)
 		        || (len >= strlen("hexstring") && !strncasecmp(p, STR_L("hexstring")))) {
 			avp_type = AVP_TYPE_OCTETSTRING;
 			enc_type = AVP_ENC_TYPE_HEX;
+		} else if (len >= strlen("time") && !strncasecmp(p, STR_L("time"))) {
+			avp_type = AVP_TYPE_OCTETSTRING;
+			enc_type = AVP_ENC_TYPE_TIME;
 		} else if ((len >= strlen("utf8string") && !strncasecmp(p, STR_L("utf8string")))
 		        || (len >= strlen("string") && !strncasecmp(p, STR_L("string"))))
 			avp_type = AVP_TYPE_OCTETSTRING;
@@ -679,7 +682,8 @@ create_avp:;
 	if (enc_type != AVP_ENC_TYPE_NONE &&
 			dm_enc_add((vendor_id != -1?vendor_id:0), avp_code, enc_type) != 0) {
 		LOG_ERROR("failed to add encoding type\n");
-		free(nt_name);
+		if (nt_name)
+			free(nt_name);
 		return -1;
 	}
 

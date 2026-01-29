@@ -431,8 +431,8 @@ static int dm_pack_avps(void *root, struct list_head *subavps)
 					savp_data.avp_name, savp_data.avp_code);
 		} else if (savp_data.avp_basetype == AVP_TYPE_OCTETSTRING) {
 			val.os = dm_avp->value.os;
-			LM_DBG("appending AVP: %s (%u): str(%.*s)\n",
-					savp_data.avp_name, savp_data.avp_code,
+			LM_DBG("appending AVP: %s (%u): %d str(%.*s)\n",
+					savp_data.avp_name, savp_data.avp_code,(int)val.os.len,
 			        (int)val.os.len, val.os.data);
 			FD_CHECK(fd_msg_avp_setvalue(subavp, &val));
 		} else {

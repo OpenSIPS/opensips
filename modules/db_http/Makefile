@@ -11,7 +11,7 @@ auto_gen=
 NAME=db_http.so
 
 ifeq ($(CROSS_COMPILE),)
-HAS_BUILDER = $(shell if which curl-config >/dev/null 2>/dev/null;then echo YES; fi)
+HAS_BUILDER := $(shell if which curl-config >/dev/null 2>/dev/null;then echo YES; fi)
 
 ifeq ($(HAS_BUILDER),YES)
 	# use autodetection
@@ -26,6 +26,6 @@ else
 	LIBS +=-L$(LOCALBASE)/lib -lcurl
 endif 
 
-LIBS += -dl -Bsymbolic
+LIBS += -ldl -Bsymbolic
 
 include ../../Makefile.modules

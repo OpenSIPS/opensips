@@ -433,7 +433,7 @@ int db_table_version(const db_func_t* dbf, db_con_t* connection, const str* tabl
 	if (RES_ROW_N(res) == 0) {
 		LM_DBG("no row for table %.*s found\n",
 			table->len, ZSW(table->s));
-		return 0;
+		return -2;
 	}
 
 	if (RES_ROW_N(res) != 1) {
@@ -475,6 +475,12 @@ int db_check_table_version(db_func_t* dbf, db_con_t* dbh, const str* table, cons
 
 	ver = db_table_version(dbf, dbh, table);
 	if (ver < 0) {
+		if (ver == -2) {
+			LM_ERR("'%.*s' record not found in '%s' table, expected ver %d\n",
+			    table->len, table->s, db_version_table, version);
+			return -2;
+		}
+
 		LM_ERR("querying version for table %.*s\n", table->len, table->s);
 		return -1;
 	} else if (ver != version) {
