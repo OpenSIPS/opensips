@@ -38,9 +38,11 @@
 #include "../../parser/parse_expires.h"
 #include "../uac_auth/uac_auth.h"
 #include "../../lib/digest_auth/digest_auth.h"
+#include "../../status_report.h"
 #include "reg_records.h"
 #include "reg_db_handler.h"
 #include "clustering.h"
+#include "reg_events.h"
 
 
 #define UAC_REGISTRAR_URI_PARAM              1
@@ -102,6 +104,11 @@ static mi_response_t *mi_reg_disable(const mi_params_t *params,
 static mi_response_t *mi_reg_force_register(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
+static mi_response_t *mi_reg_upsert(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_reg_delete(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
 int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
 int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
 	unsigned int all_contacts);
@@ -114,6 +121,7 @@ uac_auth_api_t uac_auth_api;
 unsigned int default_expires = 3600;
 unsigned int timer_interval = 100;
 unsigned int failure_retry_interval = 0;
+unsigned int reregister_exp_percentage=100;
 
 reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
@@ -131,6 +139,8 @@ static str extra_hdrs={extra_hdrs_buf, 512};
 
 /* TM bind */
 struct tm_binds tmb;
+
+void *uac_reg_srg = NULL;
 
 
 typedef struct reg_tm_cb {
@@ -159,6 +169,7 @@ static const param_export_t params[]= {
 	{"forced_socket_column",	STR_PARAM,	&forced_socket_column.s},
 	{"cluster_shtag_column",	STR_PARAM,	&cluster_shtag_column.s},
 	{"state_column",	STR_PARAM,		&state_column.s},
+	{"reregister_expiry_percentage", INT_PARAM,	&reregister_exp_percentage},
 	{0,0,0}
 };
 
@@ -185,6 +196,14 @@ static const mi_export_t mi_cmds[] = {
 	},
 	{ "reg_force_register", 0, 0, 0, {
 		{mi_reg_force_register, {"aor", "contact", "registrar", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"reg_upsert", 0, 0, 0, {
+		{mi_reg_upsert, {"aor", "contact", "registrar","proxy","third_party_registrant","username","password","binding_params","expiry","forced_socket","cluster_shtag","state", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "reg_delete", 0, 0, 0, {
+		{mi_reg_delete, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -267,6 +286,13 @@ static int mod_init(void)
 		return -1;
 	}
 
+	uac_reg_srg = sr_register_group(CHAR_INT("uac_registrant"),
+		0 /*not public*/);
+	if (uac_reg_srg==NULL) {
+		LM_ERR("failed to create uac_registrant group for status reports\n");
+		return -1;
+	}
+
 	reg_table_name.len = strlen(reg_table_name.s);
 	registrar_column.len = strlen(registrar_column.s);
 	proxy_column.len = strlen(proxy_column.s);
@@ -281,8 +307,8 @@ static int mod_init(void)
 	forced_socket_column.len = strlen(forced_socket_column.s);
 	cluster_shtag_column.len = strlen(cluster_shtag_column.s);
 	state_column.len = strlen(state_column.s);
-	init_db_url(db_url , 0 /*cannot be null*/);
-	if (init_reg_db(&db_url) != 0) {
+	init_db_url(db_url , 1 /*can be null*/);
+	if (db_url.s && init_reg_db(&db_url) != 0) {
 		LM_ERR("failed to initialize the DB support\n");
 		return -1;
 	}
@@ -303,6 +329,16 @@ static int mod_init(void)
 	} else {
 		LM_ERR("timer_interval=[%d] MUST be at least as big as reg_hsize=[%d]\n",
 			timer_interval, reg_hsize);
+		return -1;
+	}
+
+	if (init_registrant_events() < 0) {
+		LM_ERR("Failed to create the registrant events \n");
+		return -1;
+	}
+
+	if (reregister_exp_percentage <= 0 || reregister_exp_percentage > 100) {
+		LM_ERR("Earlier reregistration expiry percentage needs to be in the (0...100] range \n");
 		return -1;
 	}
 
@@ -426,7 +462,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			case AUTHENTICATING_UNREGISTER_STATE:
 				if (!(rec->flags&REG_ENABLED)) {
 					/* succesfully unREGISTERED */
-					rec->state = NOT_REGISTERED_STATE;
+					reg_change_state(rec,NOT_REGISTERED_STATE);
 					rec->registration_timeout = 0;
 				} else {
 					/* registrant got enabled while waiting for a reply to
@@ -438,10 +474,10 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 					new_call_id_ftag_4_record(rec, &str_now);
 					if(send_register(cb_param->hash_index, rec, NULL)==1) {
 						rec->last_register_sent = now;
-						rec->state = REGISTERING_STATE;
+						reg_change_state(rec,REGISTERING_STATE);
 					} else {
-						rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-						rec->state = INTERNAL_ERROR_STATE;
+						rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
+						reg_change_state(rec,INTERNAL_ERROR_STATE);
 					}
 				}
 
@@ -479,9 +515,9 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			if (bindings_counter>1) {
 				LM_DBG("got [%d] bindings\n", bindings_counter);
 				if(send_unregister(cb_param->hash_index, rec, NULL, 1)==1) {
-					rec->state = UNREGISTERING_STATE;
+					reg_change_state(rec,UNREGISTERING_STATE);
 				} else {
-					rec->state = INTERNAL_ERROR_STATE;
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 				break;
 			}
@@ -536,13 +572,13 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				/* registrant got disabled while waiting for a reply to
 				 * a previous register */
 				if(send_unregister(cb_param->hash_index, rec, NULL, 0)==1) {
-					rec->state = UNREGISTERING_STATE;
+					reg_change_state(rec,UNREGISTERING_STATE);
 				} else {
-					rec->state = INTERNAL_ERROR_STATE;
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 			} else {
 				/* succesfully unREGISTERED */
-				rec->state = NOT_REGISTERED_STATE;
+				reg_change_state(rec,NOT_REGISTERED_STATE);
 				rec->registration_timeout = 0;
 			}
 		} else {
@@ -557,14 +593,15 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				new_call_id_ftag_4_record(rec, &str_now);
 				if(send_register(cb_param->hash_index, rec, NULL)==1) {
 					rec->last_register_sent = now;
-					rec->state = REGISTERING_STATE;
+					reg_change_state(rec,REGISTERING_STATE);
 				} else {
-					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-					rec->state = INTERNAL_ERROR_STATE;
+					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 			} else {
 				/* succesfully REGISTERED */
-				rec->state = REGISTERED_STATE;
+				reg_change_state(rec,REGISTERED_STATE);
+
 				if (exp) rec->expires = exp;
 				if (rec->expires <= timer_interval) {
 					LM_ERR("Please decrease timer_interval=[%u]"
@@ -572,7 +609,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 						timer_interval, rec->expires,
 						rec->td.rem_uri.len, rec->td.rem_uri.s);
 				}
-				rec->registration_timeout = now + rec->expires - timer_interval;
+				rec->registration_timeout = now + (rec->expires*reregister_exp_percentage/100) - timer_interval;
 			}
 		}
 
@@ -589,8 +626,8 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		if (rec->auth_user.s==NULL || rec->auth_user.len==0 ||
 			rec->auth_password.s==NULL || rec->auth_password.len==0) {
 			LM_ERR("Credentials not provisioned\n");
-			rec->state = WRONG_CREDENTIALS_STATE;
-			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+			reg_change_state(rec,WRONG_CREDENTIALS_STATE);
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		}
@@ -624,8 +661,8 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			/* We already sent an authenticated REGISTER and we are still challanged! */
 			LM_WARN("Wrong credentials for [%.*s]\n",
 				rec->td.rem_uri.len, rec->td.rem_uri.s);
-			rec->state = WRONG_CREDENTIALS_STATE;
-			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+			reg_change_state(rec,WRONG_CREDENTIALS_STATE);
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		default:
@@ -664,16 +701,16 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		switch(rec->state) {
 		case REGISTERING_STATE:
 			if(send_register(cb_param->hash_index, rec, new_hdr)==1) {
-				rec->state = AUTHENTICATING_STATE;
+				reg_change_state(rec,AUTHENTICATING_STATE);
 			} else {
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 			break;
 		case UNREGISTERING_STATE:
 			if(send_unregister(cb_param->hash_index, rec, new_hdr, 0)==1) {
-				rec->state = AUTHENTICATING_UNREGISTER_STATE;
+				reg_change_state(rec,AUTHENTICATING_UNREGISTER_STATE);
 			} else {
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 			break;
 		default:
@@ -693,29 +730,30 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		}
 		if (0 == parse_min_expires(msg)) {
 			rec->expires = (unsigned int)(long)msg->min_expires->parsed;
-			if(send_register(cb_param->hash_index, rec, NULL)==1)
-				rec->state = REGISTERING_STATE;
-			else
-				rec->state = INTERNAL_ERROR_STATE;
+			if(send_register(cb_param->hash_index, rec, NULL)==1) {
+				reg_change_state(rec,REGISTERING_STATE);
+			} else {
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
+			}
 		} else {
-			rec->state = REGISTRAR_ERROR_STATE;
-			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+			reg_change_state(rec,REGISTRAR_ERROR_STATE);
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 		}
 		break;
 
-	case 408: /* Interval Too Brief */
-		rec->state = REGISTER_TIMEOUT_STATE;
-		rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+	case 408: /* No reply or Timeout */
+		reg_change_state(rec,REGISTER_TIMEOUT_STATE);
+		rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 		break;
 
 	default:
 		if(statuscode<400 && statuscode>=300) {
 			LM_ERR("Redirection not implemented yet\n");
-			rec->state = INTERNAL_ERROR_STATE;
+			reg_change_state(rec,INTERNAL_ERROR_STATE);
 		} else {
 			/* we got an error from the server */
-			rec->state = REGISTRAR_ERROR_STATE;
-			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+			reg_change_state(rec,REGISTRAR_ERROR_STATE);
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 
 		}
 	}
@@ -723,12 +761,10 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	/* action successfully completed on current list element */
 	return 1; /* exit list traversal */
 done:
-	rec->state = INTERNAL_ERROR_STATE;
-	rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
+	reg_change_state(rec,INTERNAL_ERROR_STATE);
+	rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
 	return -1; /* exit list traversal */
 }
-
-
 
 void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 {
@@ -761,8 +797,8 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 
 	/* Initialize slinkedl run traversal data */
 	tm_cback_data.t = t;
-    tm_cback_data.ps = ps;
-    tm_cback_data.cb_param = cb_param;
+	tm_cback_data.ps = ps;
+	tm_cback_data.cb_param = cb_param;
 	tm_cback_data.now = now;
 
 	lock_get(&reg_htable[cb_param->hash_index].lock);
@@ -963,32 +999,32 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 			new_call_id_ftag_4_record(rec, s_now);
 			if(send_register(i, rec, NULL)==1) {
 				rec->last_register_sent = now;
-				rec->state = REGISTERING_STATE;
+				reg_change_state(rec,REGISTERING_STATE);
 			} else {
-				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-				rec->state = INTERNAL_ERROR_STATE;
+				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 		} else {
 			if(send_unregister(i, rec, NULL, 0)==1) {
-				rec->state = UNREGISTERING_STATE;
+				reg_change_state(rec,UNREGISTERING_STATE);
 			} else {
-				rec->state = INTERNAL_ERROR_STATE;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 		}
 		break;
 	case REGISTERED_STATE:
 		/* check if we need to re-register */
-		if (now < rec->registration_timeout) {
+		if (now + timer_interval < rec->registration_timeout) {
 			break;
 		}
 	case NOT_REGISTERED_STATE:
 		if (rec->flags&REG_ENABLED) {
 			if(send_register(i, rec, NULL)==1) {
 				rec->last_register_sent = now;
-				rec->state = REGISTERING_STATE;
+				reg_change_state(rec,REGISTERING_STATE);
 			} else {
-				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-				rec->state = INTERNAL_ERROR_STATE;
+				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
+				reg_change_state(rec,INTERNAL_ERROR_STATE);
 			}
 		}
 		break;
@@ -1051,7 +1087,7 @@ static int cluster_shtag_check(void *e_data, void *data, void *r_data)
 		0==memcmp(rec->cluster_shtag.s, shtag_data->tag->s, shtag_data->tag->len)) {
 		/* this record matches the shtag + cluster_id, so we need to de-active it */
 		LM_DBG("Moving record to NOT_REGISTERED_STATE\n");
-		rec->state = NOT_REGISTERED_STATE;
+		reg_change_state(rec,NOT_REGISTERED_STATE);
 	}
 
 
@@ -1249,6 +1285,18 @@ int run_mi_reg_list_record(void *e_data, void *data, void *r_data)
 		return 0;  /* continue search */
 }
 
+int run_mi_reg_matching(void *e_data, void*data, void *unused)
+{
+	reg_record_t *rec = (reg_record_t*)e_data;
+	record_coords_t *coords = (record_coords_t *)data;
+
+	if (!str_strcmp(&coords->contact, &rec->contact_uri) &&
+	!str_strcmp(&coords->registrar, &rec->td.rem_target))
+		return 1;
+	else
+		return 0; /* continue search */
+}
+
 static mi_response_t *mi_get_coords(const mi_params_t *params, record_coords_t *coords)
 {
 	if (get_mi_string_param(params, "aor", &coords->aor.s, &coords->aor.len) < 0)
@@ -1347,7 +1395,7 @@ static mi_response_t *mi_reg_reload(const mi_params_t *params,
 			reg_htable[i].s_list = NULL;
 		}
 		reg_htable[i].s_list = slinkedl_init(&reg_alloc, &reg_free);
-		if (reg_htable[i].p_list == NULL) {
+		if (reg_htable[i].s_list == NULL) {
 			LM_ERR("oom while allocating list\n");
 			err = 1;
 		}
@@ -1424,10 +1472,10 @@ int run_mi_reg_enable(void *e_data, void *data, void *r_data)
 
 				if(send_register((unsigned long)coords->extra, rec, NULL)==1) {
 					rec->last_register_sent = now;
-					rec->state = REGISTERING_STATE;
+					reg_change_state(rec,REGISTERING_STATE);
 				} else {
-					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
-					rec->state = INTERNAL_ERROR_STATE;
+					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:(rec->expires*reregister_exp_percentage/100)) - timer_interval;
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
 				}
 			}
 
@@ -1450,10 +1498,11 @@ int run_mi_reg_disable(void *e_data, void *data, void *r_data)
 		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
 		if (rec->flags&REG_ENABLED) {
 			if (rec->state == REGISTERED_STATE) {
-				if(send_unregister((unsigned long)coords->extra, rec, NULL, 0)==1)
-					rec->state = UNREGISTERING_STATE;
-				else
-					rec->state = INTERNAL_ERROR_STATE;
+				if(send_unregister((unsigned long)coords->extra, rec, NULL, 0)==1) {
+					reg_change_state(rec,UNREGISTERING_STATE);
+				} else {
+					reg_change_state(rec,INTERNAL_ERROR_STATE);
+				}
 			}
 
 			rec->flags &= ~REG_ENABLED;
@@ -1564,3 +1613,294 @@ static mi_response_t *mi_reg_force_register(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
+static mi_response_t *mi_reg_upsert(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	uac_reg_map_t uac_param;
+	str aor;
+	str contact;
+	str registrar;
+	str proxy;
+	str third_party_registrant;
+	str username;
+	str password;
+	str binding_params;
+	int expiry;
+	str forced_socket;
+	str sharing_tag;
+	int state;
+	struct sip_uri uri;
+	param_hooks_t hooks;
+	param_t *c_params = NULL;
+	param_t *_param = NULL;
+	str _param_str = {NULL, 0};
+	int reg_id_found = 0;
+	int sip_instance_found = 0;
+	char *p;
+	str s;
+	str now = {NULL, 0};
+	int ret;
+	int len;
+	int mode = REG_DB_LOAD_RECORD;
+	record_coords_t coords;
+
+	if (get_mi_string_param(params, "aor", &aor.s, &aor.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "contact",
+		&contact.s, &contact.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "registrar",
+		&registrar.s, &registrar.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "proxy",
+		&proxy.s, &proxy.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "third_party_registrant",
+		&third_party_registrant.s, &third_party_registrant.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "username",
+		&username.s, &username.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "password",
+		&password.s, &password.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "binding_params",
+		&binding_params.s, &binding_params.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "expiry",&expiry) < 0) {
+		return init_mi_param_error();
+	}
+	if (get_mi_string_param(params, "forced_socket",
+		&forced_socket.s, &forced_socket.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "cluster_shtag",
+		&sharing_tag.s, &sharing_tag.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "state",&state) < 0)
+		return init_mi_param_error();
+
+	p = int2str((unsigned long)(time(0)), &len);
+	if (p && len>0) {
+		now.s = (char *)pkg_malloc(len);
+		if(now.s) {
+			memcpy(now.s, p, len); now.len = len;
+		} else {
+			return init_mi_error(503, MI_SSTR("Internal Error"));
+		}
+	}
+
+	memset(&uac_param, 0, sizeof(uac_reg_map_t));
+
+	uac_param.registrar_uri = registrar;
+	if (parse_uri(uac_param.registrar_uri.s,uac_param.registrar_uri.len, &uri)<0) {
+		LM_ERR("cannot parse registrar uri [%.*s]\n",
+		uac_param.registrar_uri.len,
+		uac_param.registrar_uri.s);
+
+		return init_mi_param_error();
+	}
+
+	if (uri.user.s && uri.user.len) {
+		LM_ERR("registrant uri must not have user [%.*s]\n",
+		uri.user.len, uri.user.s);
+
+		return init_mi_param_error();
+	}
+
+	uac_param.proxy_uri = proxy;
+	if (uac_param.proxy_uri.len) {
+		if (parse_uri(uac_param.proxy_uri.s,
+		uac_param.proxy_uri.len, &uri)<0) {
+			LM_ERR("cannot parse proxy uri [%.*s]\n",
+			uac_param.proxy_uri.len,
+			uac_param.proxy_uri.s);
+			return init_mi_param_error();
+		}
+		if (uri.user.s && uri.user.len) {
+			LM_ERR("proxy uri must not have user [%.*s]\n",
+			uri.user.len, uri.user.s);
+			return init_mi_param_error();
+		}
+	} else {
+		uac_param.proxy_uri.s = NULL;
+	}
+
+	uac_param.to_uri = aor;
+	if (!uac_param.to_uri.s) {
+		LM_ERR("empty AOR provided\n");
+		return init_mi_param_error();
+	}
+	if (parse_uri(uac_param.to_uri.s,uac_param.to_uri.len,&uri)<0) {
+		LM_ERR("cannot parse aor uri [%.*s]\n",
+		uac_param.to_uri.len, uac_param.to_uri.s);
+		return init_mi_param_error();
+	}
+	uac_param.hash_code = core_hash(&uac_param.to_uri, NULL, reg_hsize);
+
+	uac_param.from_uri = third_party_registrant;	
+	if (uac_param.from_uri.len) {
+		if (parse_uri(uac_param.from_uri.s,
+		uac_param.from_uri.len, &uri)<0) {
+			LM_ERR("cannot parse third party registrant"
+			" uri [%.*s]\n",
+			uac_param.from_uri.len,
+			uac_param.from_uri.s);
+			return init_mi_param_error();
+		}
+	} else {
+		uac_param.from_uri.s = NULL;
+	}
+
+	uac_param.contact_uri = contact;
+	if (!uac_param.contact_uri.s) {
+		LM_ERR("empty CONTACT provided\n");
+		return init_mi_param_error();
+	}
+	if (parse_uri(uac_param.contact_uri.s,
+	uac_param.contact_uri.len, &uri)<0) {
+		LM_ERR("cannot parse contact uri [%.*s]\n",
+		uac_param.contact_uri.len,
+		uac_param.contact_uri.s);
+		return init_mi_param_error();
+	}
+
+	uac_param.auth_user = username;
+	uac_param.auth_password = password;
+
+	uac_param.contact_params = binding_params;
+	if (uac_param.contact_params.len != 0) {
+		memset(&hooks, 0, sizeof(param_hooks_t));
+		_param_str = uac_param.contact_params;
+		if (parse_params(&_param_str, CLASS_CONTACT, &hooks, &c_params) <0) {
+			LM_ERR("Bogus params [%.*s]\n", _param_str.len, _param_str.s);
+			free_params(c_params);
+			return init_mi_param_error();
+		}
+		_param = c_params;
+		while (_param) {
+			LM_DBG("[%.*s][%.*s]\n", _param->name.len, _param->name.s, _param->body.len, _param->body.s);
+			if (reg_id_found == 0 && strncmp(_param->name.s, "reg-id", 6) == 0)
+				reg_id_found = 1;
+			if (sip_instance_found == 0 && strncmp(_param->name.s, "+sip.instance", 13) == 0)
+				sip_instance_found = 1;
+			_param = _param->next;
+		}
+		free_params(c_params);
+		if (reg_id_found && sip_instance_found) {
+			LM_DBG("special record\n");
+			uac_param.flags |= FORCE_SINGLE_REGISTRATION;
+		}
+	}
+
+	uac_param.expires = expiry;
+	if (uac_param.expires <= timer_interval) {
+		LM_ERR("Please decrease timer_interval=[%u]"
+		" - requested expires=[%u] to small for AOR=[%.*s]\n",
+		timer_interval, uac_param.expires,
+		uac_param.to_uri.len, uac_param.to_uri.s);
+		return init_mi_param_error();
+	}
+
+	/* Get the socket */
+	if (forced_socket.len && forced_socket.s) {
+		uac_param.send_sock = parse_sock_info(&forced_socket);
+		if (uac_param.send_sock==NULL) {
+			LM_ERR("invalid forced socket [%.*s]\n",
+			forced_socket.len, forced_socket.s);
+			return init_mi_param_error();
+		}
+	}
+
+	if (sharing_tag.s && sharing_tag.len) {
+		uac_param.cluster_shtag = sharing_tag;
+		p = memchr(uac_param.cluster_shtag.s, '/',
+		uac_param.cluster_shtag.len);
+		if (!p) {
+			LM_ERR("Bad naming for sharing tag <%.*s>, "
+			"<name/cluster_id> expected\n",
+			uac_param.cluster_shtag.len,
+			uac_param.cluster_shtag.s);
+			return init_mi_param_error();
+		}
+		s.s = p + 1;
+		s.len = uac_param.cluster_shtag.s + uac_param.cluster_shtag.len - s.s;
+		trim_spaces_lr( s );
+		uac_param.cluster_shtag.len = p - uac_param.cluster_shtag.s;
+		trim_spaces_lr( uac_param.cluster_shtag );
+		/* get the cluster ID */
+		if (str2int( &s, (unsigned int*)&uac_param.cluster_id)<0) {
+			LM_ERR("Invalid cluster id <%.*s> for sharing tag "
+			" <%.*s> \n",s.len, s.s,
+			uac_param.cluster_shtag.len,
+			uac_param.cluster_shtag.s);
+			return init_mi_param_error();
+		}
+	}
+
+	if (state == REG_DB_STATE_ENABLED)
+		uac_param.flags |= REG_ENABLED;
+
+	LM_DBG("registrar=[%.*s] AOR=[%.*s] auth_user=[%.*s] "
+	"password=[%.*s] expire=[%d] proxy=[%.*s] "
+	"contact=[%.*s] third_party=[%.*s] "
+	"cluster_shtag=[%.*s/%d] state=[%d]\n",
+	uac_param.registrar_uri.len, uac_param.registrar_uri.s,
+	uac_param.to_uri.len, uac_param.to_uri.s,
+	uac_param.auth_user.len, uac_param.auth_user.s,
+	uac_param.auth_password.len, uac_param.auth_password.s,
+	uac_param.expires,
+	uac_param.proxy_uri.len, uac_param.proxy_uri.s,
+	uac_param.contact_uri.len, uac_param.contact_uri.s,
+	uac_param.from_uri.len, uac_param.from_uri.s,
+	uac_param.cluster_shtag.len, uac_param.cluster_shtag.s,
+	uac_param.cluster_id,
+	state);
+
+	coords.aor = aor; 
+	coords.contact = contact;
+	coords.registrar = registrar;
+
+	lock_get(&reg_htable[uac_param.hash_code].lock);
+	ret = add_record(&uac_param, &now, mode, &coords);
+	lock_release(&reg_htable[uac_param.hash_code].lock);
+	if(ret<0) {
+		if (now.s) pkg_free(now.s);
+		return init_mi_error(503, MI_SSTR("Failed Upsert"));
+	}
+
+	if (now.s) pkg_free(now.s);
+	return init_mi_result_ok();
+}
+
+static mi_response_t *mi_reg_delete(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	record_coords_t coords;
+	int rc;
+	unsigned int hash_code;
+
+	if ((resp = mi_get_coords(params, &coords)))
+		return resp;
+
+	hash_code = core_hash(&coords.aor, NULL, reg_hsize);
+	coords.extra = (void*)(unsigned long)hash_code;
+
+	lock_get(&reg_htable[hash_code].lock);
+	rc = slinkedl_traverse(reg_htable[hash_code].p_list,
+		&run_mi_reg_disable, &coords, NULL);
+
+	if (rc > 0) {
+		/* we found it, let's also delete it now */
+		rc = slinkedl_delete(reg_htable[hash_code].p_list,
+			&run_mi_reg_matching, &coords);
+	}
+	lock_release(&reg_htable[hash_code].lock);
+
+	if (rc < 0)
+		return NULL;
+	else if (rc == 0)
+		return init_mi_error(404, MI_SSTR("No such registrant"));
+
+	return init_mi_result_ok();
+}
