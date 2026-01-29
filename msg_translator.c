@@ -2254,7 +2254,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	char *line_buf, *received_buf, *rport_buf, *new_buf, *buf, *id_buf;
 	unsigned int offset, s_offset, size, id_len;
 	struct lump *anchor, *via_insert_param, *contact_addr_insert_lump;
-	str branch, extra_params, contacy, body = STR_NULL;
+	str branch, extra_params, contact, body = STR_NULL;
 	struct hostport hp;
 	struct sip_uri contact_uri;
 
