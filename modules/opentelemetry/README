@@ -1,0 +1,207 @@
+opentelemetry Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. enable (integer)
+              1.3.2. log_level (integer)
+              1.3.3. use_batch (integer)
+              1.3.4. service_name (string)
+              1.3.5. exporter_endpoint (string)
+
+        1.4. Exported MI Functions
+
+              1.4.1. otel_enable
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set enable parameter
+   1.2. Set log_level parameter
+   1.3. Set use_batch parameter
+   1.4. Set service_name parameter
+   1.5. Set exporter_endpoint parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The opentelemetry module provides OpenTelemetry tracing for
+   OpenSIPS route execution. It creates a root span per processed
+   SIP message and a child span for each route entry.
+
+   Spans include common SIP attributes (method, Call-ID, CSeq,
+   status) and message metadata. While a span is active, OpenSIPS
+   logs can be attached as OpenTelemetry events for easier
+   correlation.
+
+   Trace data is exported via the OTLP/HTTP exporter from the
+   OpenTelemetry C++ SDK.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * None.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * OpenTelemetry C++ SDK (opentelemetry-cpp), with the
+       OTLP/HTTP exporter enabled.
+
+1.3. Exported Parameters
+
+1.3.1. enable (integer)
+
+   Enables or disables OpenTelemetry tracing at startup. It can
+   also be changed at runtime using the otel_enable MI command.
+
+   If OpenSIPS was built without the OpenTelemetry C++ SDK,
+   enabling this parameter will fail at startup.
+
+   Default value is "0 (disabled)".
+
+   Example 1.1. Set enable parameter
+...
+modparam("opentelemetry", "enable", 1)
+...
+
+1.3.2. log_level (integer)
+
+   Log level threshold used by the OpenTelemetry log consumer when
+   attaching log events to the active span.
+
+   Default value is "L_DBG".
+
+   Example 1.2. Set log_level parameter
+...
+modparam("opentelemetry", "log_level", 3)
+...
+
+1.3.3. use_batch (integer)
+
+   Selects the OpenTelemetry span processor. When enabled, the
+   module uses the batch span processor; otherwise it uses the
+   simple span processor.
+
+   Default value is "1 (enabled)".
+
+   Example 1.3. Set use_batch parameter
+...
+modparam("opentelemetry", "use_batch", 0)
+...
+
+1.3.4. service_name (string)
+
+   Sets the OpenTelemetry "service.name" resource attribute.
+
+   Default value is "opensips".
+
+   Example 1.4. Set service_name parameter
+...
+modparam("opentelemetry", "service_name", "edge-proxy")
+...
+
+1.3.5. exporter_endpoint (string)
+
+   Overrides the OTLP/HTTP exporter endpoint. If empty, the
+   OpenTelemetry SDK default is used.
+
+   Default value is "empty".
+
+   Example 1.5. Set exporter_endpoint parameter
+...
+modparam("opentelemetry", "exporter_endpoint", "http://127.0.0.1:4318/v1
+/traces")
+...
+
+1.4. Exported MI Functions
+
+1.4.1.  otel_enable
+
+   Enables or disables OpenTelemetry tracing at runtime.
+
+   Name: otel_enable
+
+   Parameters:
+     * enable - set to "1" to enable tracing or "0" to disable it.
+
+   MI FIFO Command Format:
+                ## enable tracing
+                opensips-cli -x mi otel_enable enable=1
+                ## disable tracing
+                opensips-cli -x mi otel_enable enable=0
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+              Name          DevScore Commits Lines ++ Lines --
+   1. Vlad Paiu (@vladpaiu)    15       6      812       71
+   2. Your Name                3        1      230       0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+              Name            Commit Activity
+   1. Vlad Paiu (@vladpaiu) Dec 2025 - Jan 2026
+   2. Your Name             Jan 2026 - Jan 2026
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Your Name.
+
+   Documentation Copyrights:
+
+   Copyright © 2026 OpenSIPS Project
