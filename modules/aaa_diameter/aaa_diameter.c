@@ -331,7 +331,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 	cJSON_Delete(avps);
 
 	if (_dm_send_message(NULL, dmsg, &rpl) != 0)
-		goto error;
+		goto ret;
 	rc = _dm_get_message_response(rpl, (rpl_avps_pv?&rpl_avps:NULL));
 
 	if (rpl_avps_pv) {
@@ -349,13 +349,14 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 	return 1;
 
 error:
+	cJSON_Delete(avps);
+ret:
 	if (rpl_avps_pv) {
 		pv_value_t val = {STR_NULL, 0, PV_VAL_NULL};
 		if (pv_set_value(msg, rpl_avps_pv, 0, &val) != 0)
 			LM_ERR("failed to set output rpl_avps pv to NULL\n");
 	}
 
-	cJSON_Delete(avps);
 	return -1;
 }
 
