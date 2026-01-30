@@ -29,6 +29,7 @@ Build-Depends: bison,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
                libncurses5-dev,
+               libopentelemetry-cpp-dev | base-files,
                libpcre2-dev,
                libperl-dev,
                libpq-dev,
@@ -79,6 +80,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-mongodb-module,
           opensips-msrp-modules,
           opensips-mysql-module,
+          opensips-opentelemetry-module,
           opensips-perl-modules,
           opensips-postgres-module,
           opensips-presence-modules,
@@ -517,6 +519,19 @@ Description: MySQL database schema for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the MySQL database schema files for OpenSIPS.
+
+Package: opensips-opentelemetry-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS observability using OpenTelemetry
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides OpenSISP observability using OpenTelemetry.
 
 Package: opensips-perl-modules
 Architecture: any
