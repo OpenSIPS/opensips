@@ -29,7 +29,7 @@ Build-Depends: bison,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
                libncurses5-dev,
-               libopentelemetry-cpp-dev | base-files,
+               opentelemetry-cpp-dev <opentelemetry>,
                libpcre2-dev,
                libperl-dev,
                libpq-dev,
@@ -523,6 +523,7 @@ Description: MySQL database schema for OpenSIPS
 Package: opensips-opentelemetry-module
 Architecture: any
 Multi-Arch: same
+Build-Profiles: <opentelemetry>
 Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}

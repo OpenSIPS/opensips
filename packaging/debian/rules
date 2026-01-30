@@ -102,6 +102,12 @@ ifeq ($(shell test $(MAJOR_RELEASE) -ge $(REL_STRETCH_OR_XENIAL); echo $$?),0)
 	ALL_MODPKG_LIST += MONGODB
 endif
 
+#
+# OPENTELEMETRY package
+#
+ifneq (,$(filter opentelemetry,$(DEB_BUILD_PROFILES)))
+	ALL_MODPKG_LIST += OPENTELEMETRY
+endif
 
 #
 # PROTO_SCTP package
