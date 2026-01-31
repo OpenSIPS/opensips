@@ -87,7 +87,7 @@ Chapter 1. Admin Guide
    If OpenSIPS was built without the OpenTelemetry C++ SDK,
    enabling this parameter will fail at startup.
 
-   Default value is "0 (disabled)".
+   Default value is “0 (disabled)”.
 
    Example 1.1. Set enable parameter
 ...
@@ -99,7 +99,7 @@ modparam("opentelemetry", "enable", 1)
    Log level threshold used by the OpenTelemetry log consumer when
    attaching log events to the active span.
 
-   Default value is "L_DBG".
+   Default value is “L_DBG”.
 
    Example 1.2. Set log_level parameter
 ...
@@ -112,7 +112,7 @@ modparam("opentelemetry", "log_level", 3)
    module uses the batch span processor; otherwise it uses the
    simple span processor.
 
-   Default value is "1 (enabled)".
+   Default value is “1 (enabled)”.
 
    Example 1.3. Set use_batch parameter
 ...
@@ -121,9 +121,9 @@ modparam("opentelemetry", "use_batch", 0)
 
 1.3.4. service_name (string)
 
-   Sets the OpenTelemetry "service.name" resource attribute.
+   Sets the OpenTelemetry “service.name” resource attribute.
 
-   Default value is "opensips".
+   Default value is “opensips”.
 
    Example 1.4. Set service_name parameter
 ...
@@ -135,7 +135,7 @@ modparam("opentelemetry", "service_name", "edge-proxy")
    Overrides the OTLP/HTTP exporter endpoint. If empty, the
    OpenTelemetry SDK default is used.
 
-   Default value is "empty".
+   Default value is “empty”.
 
    Example 1.5. Set exporter_endpoint parameter
 ...
@@ -152,7 +152,7 @@ modparam("opentelemetry", "exporter_endpoint", "http://127.0.0.1:4318/v1
    Name: otel_enable
 
    Parameters:
-     * enable - set to "1" to enable tracing or "0" to disable it.
+     * enable - set to “1” to enable tracing or “0” to disable it.
 
    MI FIFO Command Format:
                 ## enable tracing
@@ -204,4 +204,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2026 OpenSIPS Project
+   Copyright © 2026 OpenSIPS Project
