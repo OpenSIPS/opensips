@@ -1470,12 +1470,11 @@ update_usrloc:
 				LM_ERR("failed to parse contact <%.*s>\n",
 						ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
 			} else if ( is_tcp_based_proto(uri.proto) ) {
-				if (e_max) {
+				if (e_max)
 					LM_WARN("multiple TCP contacts on single REGISTER\n");
-					if (e_out>e_max) e_max = e_out;
-				} else {
-					e_max = e_out;
-				}
+
+				if (ctmap->expires > e_max)
+					e_max = ctmap->expires;
 			}
 		}
 	}
@@ -1504,7 +1503,7 @@ update_usrloc:
 	remove_expires_hf(rpl);
 
 	if ( tcp_check && e_max>0 ) {
-		e_max -= get_act_time();
+		LM_DBG("ensure TCP conn lifetime of at least %d sec\n", (e_max + 10));
 		trans_set_dst_attr( &req->rcv, DST_FCNTL_SET_LIFETIME,
 			(void*)(long)(e_max + 10) );
 	}
@@ -1729,12 +1728,11 @@ update_usrloc:
 				LM_ERR("failed to parse contact <%.*s>\n",
 				       ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
 			} else if ( is_tcp_based_proto(uri.proto) ) {
-				if (e_max) {
+				if (e_max)
 					LM_WARN("multiple TCP contacts on single REGISTER\n");
-					if (e_out>e_max) e_max = e_out;
-				} else {
-					e_max = e_out;
-				}
+
+				if (ctmap->expires > e_max)
+					e_max = ctmap->expires;
 			}
 		}
 	}
@@ -1758,7 +1756,7 @@ update_usrloc:
 	}
 
 	if ( tcp_check && e_max>0 ) {
-		e_max -= get_act_time();
+		LM_DBG("ensure TCP conn lifetime of at least %d sec\n", (e_max + 10));
 		trans_set_dst_attr( &req->rcv, DST_FCNTL_SET_LIFETIME,
 			(void*)(long)(e_max + 10) );
 	}
