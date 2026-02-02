@@ -3505,6 +3505,9 @@ dummy_reply:
 				}
 				if(dlg->callid.s==0 || dlg->callid.len==0)
 					dlg->callid = msg->callid->body;
+				/* seed the CALLER cseq with what was received in 200 OK */
+				dlg->cseq[CALLER_LEG] = leg->cseq;
+				dlg->last_invite_cseq =  leg->cseq;
 				if(b2b_send_req(dlg, etype, leg, &ack, 0, 0) < 0)
 				{
 					LM_ERR("Failed to send ACK request\n");
