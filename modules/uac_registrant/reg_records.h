@@ -122,4 +122,9 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int mode,
 	record_coords_t *coords);
 void reg_print_record(reg_record_t *rec);
 
+int reg_build_sr_identifier(const str *aor, const str *contact,
+	const str *registrar, str *ident);
+
+void reg_change_state(reg_record_t *rec, int new_state);
+
 #endif
