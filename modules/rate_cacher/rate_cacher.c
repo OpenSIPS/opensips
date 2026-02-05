@@ -561,7 +561,8 @@ static void free_trie(ptree_t* t)
 
 static void free_carrier_cell(struct carrier_cell *carr)
 {
-  for (int i = 0; i < carr_max_rates; i++) { 
+	int i;
+  for (i = 0; i < carr_max_rates; i++) { 
 	if (carr->rate_table[i].s)
 		shm_free(carr->rate_table[i].s);
 	if (carr->rate_currency[i].s)
@@ -1375,7 +1376,7 @@ static int add_client(str *accountid, int safe)
 
 static int add_carrier(str *carrier,int safe)
 {
-	int bucket;
+	int bucket, i;
 	struct carrier_entry *entry;
 	struct carrier_cell *carr_cell,*it=NULL;
 
@@ -1427,7 +1428,7 @@ static int add_carrier(str *carrier,int safe)
 	carr_cell->trie = shm_malloc(carr_max_rates * sizeof(ptree_t));
 	memset(carr_cell->trie,0,sizeof(carr_max_rates * sizeof(ptree_t)));
 
-	for (int i=0; i < carr_max_rates; i++) {
+	for (i=0; i < carr_max_rates; i++) {
 	  ptree_t* new_trie;
 	  INIT_PTREE_NODE(NULL, new_trie);
 	  carr_cell->trie[i] = new_trie;
