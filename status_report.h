@@ -22,6 +22,7 @@
 #define _STATUS_REPORT_H_
 
 #include <limits.h>
+#include "parser/msg_parser.h"
 #include "mi/mi.h"
 
 #define CHAR_INT MI_SSTR
