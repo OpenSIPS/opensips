@@ -809,6 +809,21 @@ struct src_ctx *src_get_ctx(struct dlg_cell *dlg)
 	return (struct src_ctx *)srec_dlg.dlg_ctx_get_ptr(dlg, srec_dlg_idx);
 }
 
+static void srec_dlg_destroy(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+{
+	struct src_ctx *ctx;
+
+	if (!_params) {
+		LM_ERR("no parameter specified to dlg callback!\n");
+		return;
+	}
+	ctx = *_params->param;
+	/* dialog is going to be removed, so we drop it from the structure */
+	LM_DBG("resetting ctx=%p dlg=%p\n", ctx, ctx->dlg);
+	ctx->dlg = NULL;
+}
+
+
 struct src_ctx *src_new_ctx(struct dlg_cell *dlg)
 {
 	rtp_ctx *rtp;
@@ -839,6 +854,13 @@ struct src_ctx *src_new_ctx(struct dlg_cell *dlg)
 	lock_init(&ctx->lock);
 	ctx->dlg = dlg;
 	ctx->rtp = rtp;
+
+	if (srec_dlg.register_dlgcb(ctx->dlg, DLGCB_DESTROY,
+			srec_dlg_destroy, ctx, NULL)){
+		LM_ERR("cannot register callback for dialog destruction\n");
+		shm_free(ctx);
+		return NULL;
+	}
 
 	srec_dlg.dlg_ctx_put_ptr(dlg, srec_dlg_idx, ctx);
 
