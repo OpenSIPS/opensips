@@ -973,5 +973,76 @@ opensips-cli -x mi reg_delete aor=sip:vlad@test.com contact=sip:test@localhost r
 	</section>
 
 	</section>
+
+
+<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Exported Status/Report Identifiers</title>
+	<para>
+	The module provides the "uac_registrant" Status/Report group, where each
+	UAC registrant is defined as a separate SR identifier.
+	</para>
+	<para>
+	The name of each individual identitfier is built as follows:
+	</para>
+	<programlisting  format="linespecific">
+   "aor=_AOR_;contact=_SIP_CONTACT_URI_;registrar=_SIP_REGISTAR_URI_"
+   Ex:
+   "aor=sip:vlad@test.com;contact=sip:test@mycontact.com;registrar=sip:127.0.0.1:5061"
+	</programlisting>
+	<para>
+	In terms of status, the following values will be reported:
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		STATUS_READY, if REGISTERED
+		</para></listitem>
+		<listitem><para>
+		STATUS_LOADING_DATA, if REGISTERING, UNREGISTERING, AUTHENTICATING
+		</para></listitem>
+		<listitem><para>
+		STATUS_NOT_READY, any other state of the registrant
+		</para></listitem>
+	</itemizedlist>
+	<para>
+	As reports, each identifier may provide information like:
+	</para>
+	<programlisting  format="linespecific">
+
+# opensips-cli -x mi  sr_list_reports uac_registrant
+[
+   {
+       "Name": "aor=sip:vlad@test.com;contact=sip:test@mycontact.com;registrar=sip:127.0.0.1:5061",
+       "Reports": [
+           {
+               "Timestamp": 1769604697,
+               "Date": "Wed Jan 28 14:51:37 2026",
+               "Log": "created with state NOT_REGISTERED_STATE\n"
+           },
+           {
+               "Timestamp": 1769604707,
+               "Date": "Wed Jan 28 14:51:47 2026",
+               "Log": "state changed to REGISTERING_STATE\n"
+           },
+           {
+               "Timestamp": 1769604712,
+               "Date": "Wed Jan 28 14:51:52 2026",
+               "Log": "state changed to REGISTER_TIMEOUT_STATE\n"
+           }
+       ]
+   }
+]
+	</programlisting>
+
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-6'>https://www.opensips.org/Documentation/Interface-StatusReport-3-6</ulink>.
+	</para>
+
+
+
+
+</section>
+
+
 </chapter>
 

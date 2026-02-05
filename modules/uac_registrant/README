@@ -31,6 +31,7 @@ UAC Registrant Module
               1.3.16. forced_socket_column (string)
               1.3.17. cluster_shtag_column (string)
               1.3.18. state_column (string)
+              1.3.19. reregister_expiry_percentage (integer)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -40,6 +41,22 @@ UAC Registrant Module
               1.5.3. reg_enable
               1.5.4. reg_disable
               1.5.5. reg_force_register
+              1.5.6. reg_upsert
+              1.5.7. reg_delete
+
+        1.6. Exported Events
+
+              1.6.1. E_REGISTRANT_REGISTERING
+              1.6.2. E_REGISTRANT_AUTHENTICATING
+              1.6.3. E_REGISTRANT_REGISTERED
+              1.6.4. E_REGISTRANT_REGISTER_TIMEOUT
+              1.6.5. E_REGISTRANT_INTERNAL_ERROR
+              1.6.6. E_REGISTRANT_WRONG_CREDENTIALS
+              1.6.7. E_REGISTRANT_REGISTRAR_ERROR
+              1.6.8. E_REGISTRANT_UNREGISTERING
+              1.6.9. E_REGISTRANT_AUTHENTICATING_UNREGISTER
+
+        1.7. Exported Status/Report Identifiers
 
    2. Contributors
 
@@ -77,6 +94,7 @@ UAC Registrant Module
    1.16. Set “forced_socket_column” parameter
    1.17. Set “cluster_shtag_column” parameter
    1.18. Set “state_column” parameter
+   1.19. Set “reregister_expiry_percentage” parameter
 
 Chapter 1. Admin Guide
 
@@ -398,6 +416,21 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
 modparam("uac_registrant", "state_column", "status")
 ...
 
+1.3.19. reregister_expiry_percentage (integer)
+
+   Percentage describing how much sooner a RE-REGISTER needs to be
+   send based on the Expiry. a 100 value means the RE-REGISTER
+   will be send right on the edge of expiry ( old behavior ),
+   which might lead to registration loss. a 90 value means the
+   RE-REGISTER will be sent sooner , at 90% of the Expiry, etc.
+
+   Default value is “100”.
+
+   Example 1.19. Set “reregister_expiry_percentage” parameter
+...
+modparam("uac_registrant", "reregister_expiry_percentage", 90)
+...
+
 1.4. Exported Functions
 
    None to be used in configuration file.
@@ -512,6 +545,194 @@ opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0
    MI FIFO Command Format:
 opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@
 127.0.0.1:5060 sip:opensips.org
+
+1.5.6. reg_upsert
+
+   Inserts or updates the in-memory contents of the
+   AOR/Contact/Registrar. No Database queries are done when
+   calling this MI command, all parameters are passed via MI
+
+   Name: reg_upsert
+
+   Parameters:
+     * aor - URI defining the address
+     * contact - Contact URI
+     * registrar - URI pointing to the remote registrar
+     * proxy - URI of a registration proxy
+     * third_party_registrant - 3rd party registrant
+     * username - the username for auth purposes
+     * password - the password for auth purposes
+     * binding_params - params to be added to the registration
+     * expiry - number of seconds that the registration will be
+       valid
+     * forced_socket - opensips socket to send out the register
+       out through
+     * cluster_shtag - the sharing tag for this registration
+     * state - 0 for enabled, 1 for disabled
+
+   MI FIFO Command Format:
+opensips-cli -x mi reg_upsert aor=sip:vlad@test.com contact=sip:test@loc
+alhost registrar=sip:127.0.0.1:5061 proxy="" third_party_registrant="" u
+sername="vlad" password="1234" binding_params="" expiry=60 forced_socket
+="" cluster_shtag="" state=0
+
+1.5.7. reg_delete
+
+   Deletes the in-memory contents of the AOR/Contact/Registrar. No
+   Database queries are done when calling this MI command, all
+   parameters are passed via MI
+
+   Name: reg_delete
+
+   Parameters:
+     * aor - URI defining the address
+     * contact - Contact URI
+     * registrar - URI pointing to the remote registrar
+
+   MI FIFO Command Format:
+opensips-cli -x mi reg_delete aor=sip:vlad@test.com contact=sip:test@loc
+alhost registrar=sip:127.0.0.1:5061
+
+1.6. Exported Events
+
+1.6.1.  E_REGISTRANT_REGISTERING
+
+   This event is raised when the module sent the initial REGISTER
+   and started the registration process.
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.6.2.  E_REGISTRANT_AUTHENTICATING
+
+   This event is raised when the initial REGISTER has been
+   challenged and a new REGISTER with credentials has been sent
+   out.
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.6.3.  E_REGISTRANT_REGISTERED
+
+   This event is raised when a REGISTER has been 200 OKd.
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.6.4.  E_REGISTRANT_REGISTER_TIMEOUT
+
+   This event is raised when a REGISTER received no reply from the
+   registrar.
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.6.5.  E_REGISTRANT_INTERNAL_ERROR
+
+   This event is raised when a REGISTER procesing was stopped due
+   to an internal OpenSIPS error.
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.6.6.  E_REGISTRANT_WRONG_CREDENTIALS
+
+   This event is raised when a REGISTER with credentials was still
+   rejected by the registrar
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.6.7.  E_REGISTRANT_REGISTRAR_ERROR
+
+   This event is raised when a REGISTER is rejected by the
+   registrar with a non-standard sip code.
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.6.8.  E_REGISTRANT_UNREGISTERING
+
+   This event is raised when a de-REGISTER is sent by OpenSIPS.
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.6.9.  E_REGISTRANT_AUTHENTICATING_UNREGISTER
+
+   This event is raised when a de-REGISTER is challenged and auth
+   is sent by OpenSIPS.
+
+   Parameters:
+     * aor - the AOR
+     * contact - the Contact
+     * registrar - the Registrar
+
+1.7. Exported Status/Report Identifiers
+
+   The module provides the "uac_registrant" Status/Report group,
+   where each UAC registrant is defined as a separate SR
+   identifier.
+
+   The name of each individual identitfier is built as follows:
+   "aor=_AOR_;contact=_SIP_CONTACT_URI_;registrar=_SIP_REGISTAR_URI_"
+   Ex:
+   "aor=sip:vlad@test.com;contact=sip:test@mycontact.com;registrar=sip:1
+27.0.0.1:5061"
+
+   In terms of status, the following values will be reported:
+     * STATUS_READY, if REGISTERED
+     * STATUS_LOADING_DATA, if REGISTERING, UNREGISTERING,
+       AUTHENTICATING
+     * STATUS_NOT_READY, any other state of the registrant
+
+   As reports, each identifier may provide information like:
+
+# opensips-cli -x mi  sr_list_reports uac_registrant
+[
+   {
+       "Name": "aor=sip:vlad@test.com;contact=sip:test@mycontact.com;reg
+istrar=sip:127.0.0.1:5061",
+       "Reports": [
+           {
+               "Timestamp": 1769604697,
+               "Date": "Wed Jan 28 14:51:37 2026",
+               "Log": "created with state NOT_REGISTERED_STATE\n"
+           },
+           {
+               "Timestamp": 1769604707,
+               "Date": "Wed Jan 28 14:51:47 2026",
+               "Log": "state changed to REGISTERING_STATE\n"
+           },
+           {
+               "Timestamp": 1769604712,
+               "Date": "Wed Jan 28 14:51:52 2026",
+               "Log": "state changed to REGISTER_TIMEOUT_STATE\n"
+           }
+       ]
+   }
+]
+
+   For how to access and use the Status/Report information, please
+   see
+   https://www.opensips.org/Documentation/Interface-StatusReport-3
+   -6.
 
 Chapter 2. Contributors
 
