@@ -1643,6 +1643,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 
 	if (lifetime)
 	{
+		tuple->lifetime_bridge_flag = lifetime;
 		tuple->lifetime = lifetime + get_ticks();
 		LM_DBG("Lifetime defined = [%d]\n", tuple->lifetime);
 	}

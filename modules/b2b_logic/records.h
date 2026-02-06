@@ -125,6 +125,7 @@ typedef struct b2bl_tuple
 	struct b2bl_tuple* next;
 	struct b2bl_tuple* prev;
 	unsigned int lifetime;
+	unsigned int lifetime_bridge_flag;
 	str local_contact;
 	int db_flag;
 	int repl_flag;  /* sent/received through entities replication */
