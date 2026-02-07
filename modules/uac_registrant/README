@@ -742,14 +742,14 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 143 41 5688 3268
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 13 451 49
-   3. Liviu Chircu (@liviuchircu) 17 14 57 68
-   4. Vlad Patrascu (@rvlad-patrascu) 16 7 732 118
-   5. Razvan Crainea (@razvancrainea) 11 9 26 36
-   6. Nick Altmann (@nikbyte) 5 3 43 4
-   7. Maksym Sobolyev (@sobomax) 5 3 20 16
-   8. James Stanley 4 2 21 14
-   9. Vlad Paiu (@vladpaiu) 4 2 6 3
+   2. Vlad Paiu (@vladpaiu) 25 10 1258 240
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 20 14 522 49
+   4. Liviu Chircu (@liviuchircu) 17 14 57 68
+   5. Vlad Patrascu (@rvlad-patrascu) 16 7 732 118
+   6. Razvan Crainea (@razvancrainea) 11 9 26 36
+   7. Nick Altmann (@nikbyte) 5 3 43 4
+   8. Maksym Sobolyev (@sobomax) 5 3 20 16
+   9. James Stanley 4 2 21 14
    10. sagarmalam 3 1 15 1
 
    All remaining contributors: Walter Doekes (@wdoekes), James
@@ -775,20 +775,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Nick Altmann (@nikbyte)             Nov 2015 - Mar 2025
-   2.  okhowang(王沛文)                       Jul 2024 - Jul 2024
-   3.  James Stanley                       Dec 2023 - Jun 2024
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - May 2024
-   5.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
-   6.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
-   7.  James Stanley                       Mar 2023 - Mar 2023
-   8.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
-   9.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
-   10. Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Feb 2026
+   2.  Vlad Paiu (@vladpaiu)               Jul 2011 - Jan 2026
+   3.  Nick Altmann (@nikbyte)             Nov 2015 - Mar 2025
+   4.  okhowang(王沛文)                       Jul 2024 - Jul 2024
+   5.  James Stanley                       Dec 2023 - Jun 2024
+   6.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
+   7.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
+   8.  James Stanley                       Mar 2023 - Mar 2023
+   9.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
+   10. Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
 
-   All remaining contributors: sagarmalam, Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Vlad Paiu
-   (@vladpaiu).
+   All remaining contributors: Walter Doekes (@wdoekes),
+   sagarmalam, Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -797,10 +797,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
+   (@ovidiusas), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
 
