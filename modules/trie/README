@@ -297,6 +297,7 @@ Chapter 2. Contributors
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu)              28       4      2652      4
    2. Razvan Crainea (@razvancrainea)    4        2       2        2
+   3. Ovidiu Sas (@ovidiusas)            3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -318,8 +319,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Vlad Paiu (@vladpaiu)           Dec 2024 - May 2025
-   2. Razvan Crainea (@razvancrainea) Jan 2025 - Jan 2025
+   1. Ovidiu Sas (@ovidiusas)         Jan 2026 - Jan 2026
+   2. Vlad Paiu (@vladpaiu)           Dec 2024 - May 2025
+   3. Razvan Crainea (@razvancrainea) Jan 2025 - Jan 2025
 
    (1) including any documentation-related commits, excluding
    merge commits
