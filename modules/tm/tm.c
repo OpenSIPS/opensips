@@ -904,7 +904,8 @@ static int mod_init(void)
 	unsigned int timer_sets,set;
 	unsigned int roundto_init;
 
-	LM_INFO("TM - initializing...\n");
+	LM_INFO("TM - initializing, T cell size is %d bytes...\n",
+		sizeof(struct cell));
 
 	/* checking if we have sufficient bitmap capacity for given
 	   maximum number of  branches */
@@ -1445,7 +1446,7 @@ route_err:
 
 static int t_cancel_trans(struct cell *t, str *extra_hdrs)
 {
-	branch_bm_t cancel_bitmap = 0;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 
 	if (t==NULL || t==T_UNDEFINED) {
 		/* no transaction */
@@ -1469,7 +1470,7 @@ static int t_cancel_trans(struct cell *t, str *extra_hdrs)
 extern int _tm_branch_index;
 static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 {
-	branch_bm_t cancel_bitmap = 0;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	struct cell *t;
 	unsigned int flags = (unsigned long)sflags;
 
@@ -1495,7 +1496,7 @@ static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 		if (msg->first_line.u.reply.statuscode>=200)
 			/* do not cancel the current branch as we got
 			 * a final response here */
-			cancel_bitmap &= ~(1<<_tm_branch_index);
+			BRANCH_BM_RST_IDX( cancel_bitmap, _tm_branch_index);
 	} else if (flags&TM_CANCEL_BRANCH_OTHERS) {
 		/* lock and get the branches to cancel */
 		if (!onreply_avp_mode) {
@@ -1506,11 +1507,11 @@ static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 			which_cancel( t, &cancel_bitmap );
 		}
 		/* ignore current branch */
-		cancel_bitmap &= ~(1<<_tm_branch_index);
+		BRANCH_BM_RST_IDX( cancel_bitmap, _tm_branch_index);
 	} else {
 		/* cancel only local branch (only if still ongoing) */
 		if (msg->first_line.u.reply.statuscode<200)
-			cancel_bitmap = 1<<_tm_branch_index;
+			BRANCH_BM_SET_IDX( cancel_bitmap, _tm_branch_index);
 	}
 
 	/* send cancels out */

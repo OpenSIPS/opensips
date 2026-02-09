@@ -248,7 +248,7 @@ static void delete_cell( struct cell *p_cell, int unlock )
  * a non-200OK reply, it cannot lead to a cancelling scenario */
 static void fake_reply(struct cell *t, int branch, int code )
 {
-	branch_bm_t cancel_bitmap = 0;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	enum rps reply_status;
 
 	_tm_branch_index = branch;
@@ -410,7 +410,7 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 
 	/* out-of-lock do the cancel I/O */
 	if (is_invite(t) && should_cancel_branch(t, r_buf->branch) ) {
-		cancel_bitmap =  1 << r_buf->branch ;
+		BRANCH_BM_SET_IDX( cancel_bitmap, r_buf->branch) ;
 		set_cancel_extra_hdrs( CANCEL_REASON_SIP_480,
 			sizeof(CANCEL_REASON_SIP_480)-1);
 		cancel_uacs(t, cancel_bitmap );

@@ -54,8 +54,7 @@ void which_cancel( struct cell *t, branch_bm_t *cancel_bm )
 
 	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++ ) {
 		if (should_cancel_branch(t, i))
-			*cancel_bm |= 1<<i ;
-
+			BRANCH_BM_SET_IDX( *cancel_bm, i);
 	}
 }
 
@@ -67,7 +66,7 @@ void cancel_uacs( struct cell *t, branch_bm_t cancel_bm )
 
 	/* cancel pending client transactions, if any */
 	for( i=0 ; i<t->nr_of_outgoings ; i++ )
-		if (cancel_bm & (1<<i)) {
+		if ( BRANCH_BM_TST_IDX( cancel_bm, i) ) {
 			/* any reply actually received on this branch */
 			if (t->uac[i].last_received!=0) {
 				/* send a cancel out */

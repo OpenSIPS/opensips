@@ -24,8 +24,8 @@
 #include "cgrates_acc.h"
 
 #define CGR_REF_DBG(_c, _s) LM_DBG("%s ref=%d ctx=%p\n", _s, _c->ref_no, _c)
-#define CGR_SESS_ON(_s) ((_s) && (_s)->branch_mask)
-#define CGR_SESS_ON_BRANCH(_s, _b) ((_s) && (_s)->branch_mask & (1 << (_b)))
+#define CGR_SESS_ON(_s) ((_s) && !BRANCH_BM_NONE_SET((_s)->branch_mask) )
+#define CGR_SESS_ON_BRANCH(_s, _b) ((_s) && BRANCH_BM_TST_IDX((_s)->branch_mask,(_b)))
 
 struct dlg_binds cgr_dlgb;
 struct tm_binds cgr_tmb;
@@ -882,7 +882,7 @@ int w_cgr_acc(struct sip_msg* msg, void *flag_c, str* acc_c, str *dst_c,
 	struct cgr_acc_ctx *ctx;
 	struct cgr_session *s;
 	struct dlg_cell *dlg;
-	branch_bm_t branch_mask = 0;
+	int branch_idx;
 
 	if (msg->REQ_METHOD != METHOD_INVITE) {
 		LM_DBG("accounting not called on INVITE\n");
@@ -890,11 +890,11 @@ int w_cgr_acc(struct sip_msg* msg, void *flag_c, str* acc_c, str *dst_c,
 	}
 	/* find out where we are to see if it makes sense to engage anything */
 	if (route_type == REQUEST_ROUTE || route_type == FAILURE_ROUTE) {
-		branch_mask = (unsigned)-1;
+		branch_idx = -1;
 		LM_DBG("engaging accounting for all branches!\n");
 	} else if (route_type == BRANCH_ROUTE || route_type == ONREPLY_ROUTE) {
-		branch_mask = 1 << cgr_tmb.get_branch_index();
-		LM_DBG("engaging accounting for branch %d!\n", cgr_tmb.get_branch_index());
+		branch_idx = cgr_tmb.get_branch_index();
+		LM_DBG("engaging accounting for branch %d!\n", branch_idx);
 	} else {
 		LM_ERR("cannot engage accounting in route type %d\n", route_type);
 		return -3;
@@ -947,15 +947,14 @@ int w_cgr_acc(struct sip_msg* msg, void *flag_c, str* acc_c, str *dst_c,
 		LM_DBG("session already engaged! nothing updated...\n");
 		si = s->acc_info;
 	}
-	if (si->branch_mask & branch_mask) {
-		LM_DBG("session already engaged on this branch\n");
-		/* nothing more to do - no ref, no nothing */
-		return 1;
-	}
-	si->branch_mask |= branch_mask;
-	LM_DBG("session info tag=%.*s acc=%.*s dst=%.*s mask=%X\n",
+
+	if (branch_idx==-1)
+		BRANCH_BM_SET_ALL( si->branch_mask );
+	else
+		BRANCH_BM_SET_IDX( si->branch_mask , branch_idx );
+	LM_DBG("session info tag=%.*s acc=%.*s dst=%.*s mask="BRANCH_BM_SPECS"\n",
 			s->tag.len, s->tag.s, si->acc.len, si->acc.s,
-			si->dst.len, si->dst.s, si->branch_mask);
+			si->dst.len, si->dst.s, BRANCH_BM_ARGS(si->branch_mask) );
 
 	if (!ctx->engaged) {
 		time(&ctx->start_time);
@@ -1032,7 +1031,7 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 			if (CGR_SESS_ON_BRANCH(si, branch)) {
 				if ((si->flags & CGRF_DO_MISSED) && (si->flags & CGRF_DO_CDR))
 					cgr_cdr(ps->req, ctx, s, &callid);
-				si->branch_mask = 0;
+				BRANCH_BM_RST_ALL( si->branch_mask );
 			}
 		}
 		goto unref;
