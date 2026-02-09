@@ -369,6 +369,8 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		 * ongoing media sessions */
 		if (ss->flags & SIPREC_ONGOING)
 			return 0;
+		if (!ss->ctx->dlg || ss->ctx->dlg->state >= DLG_STATE_DELETED)
+			return 0;
 		if (srs_skip_failover(msg->first_line.u.reply.status) ||
 				srs_do_failover(ss) < 0) {
 			LM_DBG("no more to failover!\n");
@@ -497,6 +499,9 @@ static int srs_send_invite(struct src_sess *sess)
 			"Require: siprec" CRLF
 			"Content-Type: multipart/mixed;boundary=" OSS_BOUNDARY CRLF
 		);
+
+	if (!sess->initial_sdp.s)
+		return 0;
 
 	memset(&ci, 0, sizeof ci);
 	ci.method.s = INVITE;
