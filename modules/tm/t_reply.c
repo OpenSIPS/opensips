@@ -348,7 +348,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 {
 	struct retr_buf *rb;
 	unsigned int buf_len;
-	branch_bm_t cancel_bitmap = 0;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	str cb_s;
 
 	if (!buf)
@@ -997,7 +997,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 				goto discard;
 			}
 			if (do_cancel) {
-				branch_bm_t cb = 0;
+				branch_bm_t cb = BRANCH_BM_ZERO;
 				which_cancel( Trans, &cb );
 				cleanup_uac_timers(Trans);
 				cancel_uacs( Trans, cb);
@@ -1273,8 +1273,9 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 	/* *** store and relay message as needed *** */
 	reply_status = t_should_relay_response(t, msg_status, branch,
 		&save_clone, &relay, cancel_bitmap, p_msg );
-	LM_DBG("T_state=%d, branch=%d, save=%d, relay=%d, cancel_BM=%X\n",
-		reply_status, branch, save_clone, relay, *cancel_bitmap );
+	LM_DBG("T_state=%d, branch=%d, save=%d, relay=%d, "
+		"cancel_BM="BRANCH_BM_SPECS"\n", reply_status, branch,
+		save_clone, relay, BRANCH_BM_ARGS(*cancel_bitmap));
 
 	/* store the message if needed */
 	if (save_clone) /* save for later use, typically branch picking */
@@ -1469,7 +1470,7 @@ enum rps local_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 	winning_code=0;
 	totag_retr=0;
 
-	*cancel_bitmap=0;
+	// *cancel_bitmap=0;  <- no need, it is received fully zero'ed
 
 	reply_status=t_should_relay_response( t, msg_status, branch,
 		&local_store, &local_winner, cancel_bitmap, p_msg );
@@ -1531,7 +1532,7 @@ void process_reply_and_timer(struct cell *t,int branch,int msg_status,
 	struct sip_msg *p_msg,int last_uac_status, struct ua_client *uac)
 {
 	int reply_status;
-	branch_bm_t cancel_bitmap=0;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	utime_t timer;
 
 	/* we fire a cancel on spot if (a) branch is marked "to be canceled" or (b)

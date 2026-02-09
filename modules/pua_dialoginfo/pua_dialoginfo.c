@@ -100,8 +100,8 @@ struct dlginfo_cb_params {
 	char flags;
 	struct dlginfo_part peer;
 	struct dlginfo_part entity;
-	long long bitmask_early;
-	long long bitmask_failed;
+	branch_bm_t bitmask_early;
+	branch_bm_t bitmask_failed;
 };
 
 static void free_cb_param(void *param);
@@ -283,10 +283,10 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 
 		/* ringing/early state - is it the first ringing on this branch ? */
 		lock_get(&t->reply_mutex);
-		if ( param->bitmask_early & (((long long)1)<<branch)) {
+		if ( BRANCH_BM_TST_IDX( param->bitmask_early, branch) ) {
 			n = 0;
 		} else {
-			param->bitmask_early |= (((long long)1)<<branch);
+			BRANCH_BM_SET_IDX( param->bitmask_early, branch );
 			n = 1;
 		}
 		lock_release(&t->reply_mutex);
@@ -309,10 +309,10 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 
 		/* ringing/early state - is it the first negative on this branch ? */
 		lock_get(&t->reply_mutex);
-		if ( param->bitmask_failed & (((long long)1)<<branch)) {
+		if ( BRANCH_BM_TST_IDX(param->bitmask_failed, branch) ) {
 			n = 0;
 		} else {
-			param->bitmask_failed |= (((long long)1)<<branch);
+			BRANCH_BM_SET_IDX( param->bitmask_failed, branch);
 			n = 1;
 		}
 		lock_release(&t->reply_mutex);

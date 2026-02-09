@@ -634,10 +634,8 @@ void cancel_invite(struct sip_msg *cancel_msg,
 					struct cell *t_cancel, struct cell *t_invite, int locked)
 {
 
-	branch_bm_t cancel_bitmap;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	str reason;
-
-	cancel_bitmap=0;
 
 	/* send back 200 OK as per RFC3261 */
 	reason.s = CANCELING;
@@ -706,7 +704,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	str backup_dst;
 	int branch_ret, lowest_ret;
 	str current_uri;
-	branch_bm_t  added_branches;
+	branch_bm_t  added_branches = BRANCH_BM_ZERO;
 	struct cell *t_invite;
 	int i, success_branch;
 	const struct socket_info *bk_sock;
@@ -763,8 +761,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 	/* if no more specific error code is known, use this */
 	lowest_ret=E_BUG;
-	/* branches added */
-	added_branches=0;
+
+	/* 0 branches added at this point */
+	success_branch=0;
+
 	/* branch to begin with */
 	if (reset_bcounter) {
 		t->first_branch=t->nr_of_outgoings;
@@ -782,9 +782,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst,
 		getb0flags(p_msg), &p_msg->path_vec, p_msg->ruri_q,
 		ruri_branch_attrs_head() , proxy);
-	if (branch_ret>=0)
-		added_branches |= 1<<branch_ret;
-	else
+	if (branch_ret>=0) {
+		BRANCH_BM_SET_IDX( added_branches, branch_ret);
+		success_branch++;
+	} else
 		lowest_ret=branch_ret;
 
 	/* ....and now add the remaining additional branches */
@@ -796,9 +797,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 		   note that picking lowest error is just as good as
 		   any other algorithm which picks any other negative
 		   branch result */
-		if (branch_ret>=0)
-			added_branches |= 1<<branch_ret;
-		else
+		if (branch_ret>=0) {
+			BRANCH_BM_SET_IDX( added_branches, branch_ret);
+			success_branch++;
+		} else
 			lowest_ret=branch_ret;
 	}
 	/* consume processed branches */
@@ -821,16 +823,16 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	t->uas.request->flags = p_msg->flags;
 
 	/* things went wrong ... no new branch has been fwd-ed at all */
-	if (added_branches==0) {
+	if (success_branch==0) {
 		LM_ERR("failure to add branches\n");
 		ser_error = lowest_ret;
 		return lowest_ret;
 	}
 
-	/* send them out now */
+	/* send them out now, based on the branch bitmask */
 	success_branch=0;
 	for (i=t->first_branch; i<t->nr_of_outgoings; i++) {
-		if (added_branches & (1<<i)) {
+		if ( BRANCH_BM_TST_IDX(added_branches, i) ) {
 
 			if (t->uac[i].br_flags & tcp_no_new_conn_bflag)
 				tcp_no_new_conn = 1;
@@ -1063,7 +1065,7 @@ int t_wait_no_more_branches( struct cell *t, int extra)
 int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 {
 	static struct sip_msg faked_req;
-	branch_bm_t cancel_bm = 0;
+	branch_bm_t cancel_bm = BRANCH_BM_ZERO;
 	str reason = str_init(CANCEL_REASON_200);
 	struct cell *bk_t = NULL;
 	int rc;
