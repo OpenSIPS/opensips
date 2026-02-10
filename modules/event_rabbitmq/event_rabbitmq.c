@@ -398,6 +398,8 @@ static evi_reply_sock* rmq_parse(str socket)
 				st = ST_HOST;
 				if (dupl_string(&tmp, begin, socket.s + i)) goto err;
 				param->conn.uri.user = tmp.s;
+				tmp.s = NULL;
+				tmp.len = 0;
 				begin = socket.s + i + 1;
 				param->conn.flags |= RMQ_PARAM_USER;
 				break;
@@ -427,6 +429,8 @@ static evi_reply_sock* rmq_parse(str socket)
 				if (dupl_string(&tmp, begin, socket.s + i) < 0)
 					goto err;
 				param->conn.uri.password = tmp.s;
+				tmp.s = NULL;
+				tmp.len = 0;
 				param->conn.flags |= RMQ_PARAM_PASS;
 				begin = socket.s + i + 1;
 				break;
@@ -504,6 +508,8 @@ static evi_reply_sock* rmq_parse(str socket)
 							goto err;
 						param->conn.exchange.bytes = tmp.s;
 						param->conn.exchange.len = tmp.len;
+						tmp.s = NULL;
+						tmp.len = 0;
 						param->conn.flags |= RMQ_PARAM_EKEY;
 					} else if (it->s.len > RMQ_TLS_DOM_LEN &&
 						!memcmp(it->s.s, RMQ_TLS_DOM_S, RMQ_TLS_DOM_LEN)) {
