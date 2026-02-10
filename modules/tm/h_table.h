@@ -283,7 +283,7 @@ typedef struct cell
 	 * messages have been successfully relayed or not.  Starts at 0. */
 	int nr_of_outgoings;
 
-	/* nr of replied branch; 0..MAX_BRANCHES=branch value,
+	/* nr of replied branch; 0..TM_BRANCH_MAX=branch value,
 	 * -1 no reply, -2 local reply */
 	int relaied_reply_branch;
 	/* UA Server */

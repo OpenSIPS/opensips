@@ -239,14 +239,6 @@ static inline void init_synonym_id( struct cell *t )
 	}
 }
 
-static inline void init_branches(struct cell *t, unsigned int set)
-{
-	unsigned int i;
-
-	for (i=0; i<MAX_BRANCHES; i++)
-		init_branch( &TM_BRANCH(t,i), i, set, t);
-}
-
 
 struct cell*  build_cell( struct sip_msg* p_msg, int full_uas)
 {
@@ -315,7 +307,6 @@ struct cell*  build_cell( struct sip_msg* p_msg, int full_uas)
 	}
 
 	/* UAC */
-	init_branches(new_cell, set);
 	new_cell->fr_timeout = fr_timeout;
 	new_cell->fr_inv_timeout = fr_inv_timeout;
 
