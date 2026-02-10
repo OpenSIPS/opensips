@@ -168,7 +168,7 @@ void t_on_reply( struct script_route_ref *ref  )
 	 * created; if not -> use the static variable */
 	holder = (!t || t==T_UNDEFINED ) ? &goto_on_reply :
 		( route_type==BRANCH_ROUTE ?
-			&t->uac[_tm_branch_index].on_reply : &t->on_reply );
+			&TM_BRANCH(t,_tm_branch_index).on_reply : &t->on_reply );
 
 	/* if something already set, free it first */
 	if (*holder)
@@ -322,13 +322,13 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch, str *ac
 		goto error;
 	}
 
-	if (trans->uac[branch].br_flags & tcp_no_new_conn_bflag)
+	if (TM_BRANCH(trans,branch).br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 
-	set_bavp_list(&trans->uac[branch].user_avps);
+	set_bavp_list(&TM_BRANCH(trans,branch).user_avps);
 	backup_list = set_avp_list( &trans->user_avps );
 
-	rc = SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf->s, ack_buf->len);
+	rc = SEND_PR_BUFFER(&TM_BRANCH(trans,branch).request, ack_buf->s, ack_buf->len);
 
 	set_avp_list(backup_list);
 	reset_bavp_list();
@@ -577,7 +577,7 @@ static inline void faked_env( struct cell *t,struct sip_msg *msg)
 		backup_list = set_avp_list( &t->user_avps );
 		/* set default send address to the saved value */
 		backup_si = bind_address;
-		bind_address = t->uac[0].request.dst.send_sock;
+		bind_address = TM_BRANCH(t,0).request.dst.send_sock;
 	} else {
 		/* restore original environment */
 		set_t(backup_t);
@@ -599,7 +599,7 @@ static inline int run_failure_handlers(struct cell *t)
 	int old_route_type;
 
 	shmem_msg = t->uas.request;
-	uac = &t->uac[picked_branch];
+	uac = & TM_BRANCH(t, picked_branch);
 
 	/* failure_route for a local UAC? */
 	if (!shmem_msg || REQ_LINE(shmem_msg).method_value==METHOD_CANCEL ) {
@@ -658,19 +658,19 @@ static inline int run_failure_handlers(struct cell *t)
 
 static inline int is_3263_failure(struct cell *t)
 {
+	struct ua_client* uac = & TM_BRANCH( t, picked_branch);
+
 	/* is is a DNS failover scenario? - according to RFC 3263
 	 * and RFC 3261, this means 503 reply with Retr-After hdr
 	 * or timeout with no reply */
 	LM_DBG("dns-failover test: branch=%d, last_recv=%d, flags=%X\n",
-		picked_branch, t->uac[picked_branch].last_received,
-		t->uac[picked_branch].flags);
+		picked_branch, uac->last_received, uac->flags);
 
-	switch (t->uac[picked_branch].last_received) {
+	switch (uac->last_received) {
 		case 408:
-			return ((t->uac[picked_branch].flags&T_UAC_HAS_RECV_REPLY)==0);
+			return ((uac->flags&T_UAC_HAS_RECV_REPLY)==0);
 		case 503:
-			if (t->uac[picked_branch].reply==NULL ||
-			t->uac[picked_branch].reply==FAKED_REPLY)
+			if (uac->reply==NULL || uac->reply==FAKED_REPLY)
 				return 0;
 			/* we do not care about the Retry-After header in 503
 			 * as following discussion on sip-implementers list :
@@ -688,11 +688,9 @@ static inline int do_dns_failover(struct cell *t)
 	static struct sip_msg faked_req;
 	struct sip_msg *shmem_msg;
 	struct sip_msg *req;
-	struct ua_client *uac;
 	dlg_t dialog;
 	int ret, sip_msg_len;
-
-	uac = &t->uac[picked_branch];
+	struct ua_client* uac = & TM_BRANCH( t, picked_branch);
 
 	/* check if the DNS resolver can get at least one new IP */
 	if ( get_next_su( uac->proxy, &uac->request.dst.to, 1)!=0 )
@@ -808,48 +806,50 @@ static inline int branch_prio( short ret_code, unsigned int is_cancelled)
  */
 static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 {
-	#define PHONY_NO_WAIT(_t,_b) \
-		(_t->uac[_b].br_flags && _t->uac[_b].br_flags<=_t->nr_of_outgoings)
+	#define PHONY_NO_WAIT(_t,_uac) \
+		((_uac)->br_flags && (_uac)->br_flags<=(_t)->nr_of_outgoings)
 	int lowest_b, lowest_s, b, prio;
 	unsigned int cancelled;
+	struct ua_client* uac;
 
 	lowest_b=-1; lowest_s=999;
 	cancelled = was_cancelled(t);
 	*do_cancel = 0;
 	for ( b=t->first_branch; b<t->nr_of_outgoings ; b++ ) {
-		if ( (t->uac[b].flags & T_UAC_IS_PHONY) && (
+		uac = & TM_BRANCH( t, b);
+		if ( (uac->flags & T_UAC_IS_PHONY) && (
 		/* skip PHONY branches if the transaction was canceled by UAC;
 		 * a phony branch is used just to force the transaction to wait for
 		 * more branches, but if canceled, it makes no sense to wait anymore;
 		 * Exception - do not ignore the branch if there is reply pushed
 		 * on that branch, like an internal timeout or so */
-		(t->flags & T_WAS_CANCELLED_FLAG && t->uac[b].last_received<299)
+		(t->flags & T_WAS_CANCELLED_FLAG && uac->last_received<299)
 		||
 		/* also skip a PHONY branch if it has a true setting about how
 		 * many branches are to be waited. The max branch idx to be waited
 		 * is stored in the 'br_flags' flags of the uac */
-		PHONY_NO_WAIT(t,b)
+		PHONY_NO_WAIT(t,uac)
 		))
 			continue;
 		/* skip 'empty branches' */
-		if (!t->uac[b].request.buffer.s) continue;
+		if (!uac->request.buffer.s) continue;
 		/* there is still an unfinished UAC transaction; wait now! */
-		if ( t->uac[b].last_received<200 ) {
-			if (t->uac[b].br_flags & minor_branch_flag) {
+		if ( uac->last_received<200 ) {
+			if (uac->br_flags & minor_branch_flag) {
 				*do_cancel = 1;
 				continue; /* if last branch, lowest_b remains -1 */
 			}
 			return -2;
 		}
 		/* compare against the priority of the current branch */
-		prio = branch_prio(t->uac[b].last_received,cancelled);
+		prio = branch_prio(uac->last_received,cancelled);
 		if ( (lowest_b==-1) || (prio<lowest_s) ) {
 			lowest_b = b;
 			lowest_s = prio;
 		}
 	} /* find lowest branch */
 	LM_DBG("picked branch %d, code %d (prio=%d)\n",
-		lowest_b,lowest_b==-1 ? -1 : t->uac[lowest_b].last_received,lowest_s);
+		lowest_b,lowest_b==-1 ? -1 : TM_BRANCH(t,lowest_b).last_received,lowest_s);
 
 	*res_code=lowest_s;
 	return lowest_b;
@@ -863,7 +863,7 @@ static inline int tran_is_completed( struct cell *t )
 	int i;
 
 	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++ )
-		if ( t->uac[i].last_received<200 )
+		if ( TM_BRANCH(t,i).last_received<200 )
 			return 0;
 
 	return 1;
@@ -904,7 +904,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 	&& Trans->uas.status>=200 && Trans->uas.status<300) {
 		*should_store=0;
 		picked_branch=-1;
-		Trans->uac[branch].last_received=new_code;
+		TM_BRANCH(Trans,branch).last_received=new_code;
 		if (new_code>=300) {
 			/* negative reply, we simply discard (no relay, no save) */
 			*should_relay = -1;
@@ -928,7 +928,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 		if (inv_through) {
 			LM_DBG("200 OK for INVITE after final sent\n");
 			*should_store=0;
-			Trans->uac[branch].last_received=new_code;
+			TM_BRANCH(Trans,branch).last_received=new_code;
 			*should_relay=branch;
 			return RPS_PUSHED_AFTER_COMPLETION;
 		}
@@ -944,22 +944,22 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 	}
 
 	/* if final response received at this branch, allow only INVITE 2xx */
-	if (Trans->uac[branch].last_received>=200
-			&& !(inv_through && Trans->uac[branch].last_received<300)) {
+	if (TM_BRANCH(Trans,branch).last_received>=200
+			&& !(inv_through && TM_BRANCH(Trans,branch).last_received<300)) {
 #ifdef EXTRA_DEBUG
 		/* don't report on retransmissions */
-		if (Trans->uac[branch].last_received==new_code) {
+		if (TM_BRANCH(Trans,branch).last_received==new_code) {
 			LM_DBG("final rely retransmission\n");
 		} else
 		/* if you FR-timed-out, faked a local 408 and 487 came, don't
 		 * report on it either */
-		if (Trans->uac[branch].last_received==408 && new_code==487) {
+		if (TM_BRANCH(Trans,branch).last_received==408 && new_code==487) {
 			LM_DBG("487 reply came for a timed-out branch\n");
 		} else {
 		/* this looks however how a very strange status rewrite attempt;
 		 * report on it */
 			LM_DBG("status rewrite by UAS: stored: %d, received: %d\n",
-				Trans->uac[branch].last_received, new_code );
+				TM_BRANCH(Trans,branch).last_received, new_code );
 		}
 #endif
 		goto discard;
@@ -969,11 +969,11 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 	/* negative replies subject to fork picking */
 	if (new_code >=300 ) {
 
-		Trans->uac[branch].last_received=new_code;
+		TM_BRANCH(Trans,branch).last_received=new_code;
 		/* also append the current reply to the transaction to
 		 * make it available in failure routes - a kind of "fake"
 		 * save of the final reply per branch */
-		Trans->uac[branch].reply = reply;
+		TM_BRANCH(Trans,branch).reply = reply;
 
 		if (new_code>=600 && !disable_6xx_block) {
 			/* this is a winner and close all branches */
@@ -988,12 +988,12 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 				*should_store=1;
 				*should_relay=-1;
 				picked_branch=-1;
-				Trans->uac[branch].reply = 0;
+				TM_BRANCH(Trans,branch).reply = 0;
 				return RPS_STORE;
 			}
 			if (picked_branch==-1) {
 				LM_CRIT("pick_branch failed (lowest==-1) for code %d\n",new_code);
-				Trans->uac[branch].reply = 0;
+				TM_BRANCH(Trans,branch).reply = 0;
 				goto discard;
 			}
 			if (do_cancel) {
@@ -1011,7 +1011,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 		reset_kr();
 
 		if ( !(Trans->flags&T_NO_DNS_FAILOVER_FLAG) &&
-		Trans->uac[picked_branch].proxy!=NULL ) {
+		TM_BRANCH(Trans,picked_branch).proxy!=NULL ) {
 			/* is is a DNS failover scenario, according to RFC 3263 ? */
 			if (is_3263_failure(Trans)) {
 				LM_DBG("trying DNS-based failover\n");
@@ -1032,7 +1032,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 		/* now reset it; after the failure logic, the reply may
 		 * not be stored any more and we don't want to keep into
 		 * transaction some broken reference */
-		Trans->uac[branch].reply = 0;
+		TM_BRANCH(Trans,branch).reply = 0;
 
 		/* look if the callback perhaps replied transaction; it also
 		   covers the case in which a transaction is replied localy
@@ -1070,7 +1070,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 	/* not >=300 ... it must be 2xx or provisional 1xx */
 	if (new_code>=100) {
 		/* 1xx and 2xx except 100 will be relayed */
-		Trans->uac[branch].last_received=new_code;
+		TM_BRANCH(Trans,branch).last_received=new_code;
 		*should_store=0;
 		*should_relay= new_code==100? -1 : branch;
 		if (new_code>=200 ) {
@@ -1205,8 +1205,8 @@ void cleanup_uac_timers( struct cell *t )
 
 	/* reset FR/retransmission timers */
 	for (i=t->first_branch; i<t->nr_of_outgoings; i++ )  {
-		reset_timer( &t->uac[i].request.retr_timer );
-		reset_timer( &t->uac[i].request.fr_timer );
+		reset_timer( &TM_BRANCH(t,i).request.retr_timer );
+		reset_timer( &TM_BRANCH(t,i).request.fr_timer );
 	}
 	LM_DBG("RETR/FR timers reset\n");
 }
@@ -1225,11 +1225,11 @@ static int store_reply( struct cell *trans, int branch, struct sip_msg *rpl)
 		   it in shared memory; -jiri
 		*/
 		if (rpl==FAKED_REPLY)
-			trans->uac[branch].reply=FAKED_REPLY;
+			TM_BRANCH(trans,branch).reply=FAKED_REPLY;
 		else
-			trans->uac[branch].reply = sip_msg_cloner( rpl, 0, 0 );
+			TM_BRANCH(trans,branch).reply = sip_msg_cloner( rpl, 0, 0 );
 
-		if (! trans->uac[branch].reply ) {
+		if (! TM_BRANCH(trans,branch).reply ) {
 			LM_ERR("failed to alloc' clone memory\n");
 			return 0;
 		}
@@ -1293,10 +1293,10 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 
 		/* try building the outbound reply from either the current
 		 * or a stored message */
-		relayed_msg = branch==relay ? p_msg :  t->uac[relay].reply;
+		relayed_msg = branch==relay ? p_msg : TM_BRANCH(t,relay).reply;
 		if (relayed_msg==FAKED_REPLY) {
 			relayed_code = branch==relay
-				? msg_status : t->uac[relay].last_received;
+				? msg_status : TM_BRANCH(t,relay).last_received;
 
 			text.s = error_text(relayed_code);
 			text.len = strlen(text.s); /* FIXME - bogdan*/
@@ -1433,9 +1433,9 @@ error03:
 	pkg_free( buf );
 error02:
 	if (save_clone) {
-		if (t->uac[branch].reply!=FAKED_REPLY)
-			free_cloned_msg( t->uac[branch].reply );
-		t->uac[branch].reply = NULL;
+		if (TM_BRANCH(t,branch).reply!=FAKED_REPLY)
+			free_cloned_msg( TM_BRANCH(t,branch).reply );
+		TM_BRANCH(t,branch).reply = NULL;
 	}
 error01:
 	text.s = "Reply processing error";
@@ -1482,10 +1482,10 @@ enum rps local_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 	}
 	if (local_winner>=0) {
 		winning_msg= branch==local_winner
-			? p_msg :  t->uac[local_winner].reply;
+			? p_msg :  TM_BRANCH(t,local_winner).reply;
 		if (winning_msg==FAKED_REPLY) {
 			winning_code = branch==local_winner
-				? msg_status : t->uac[local_winner].last_received;
+				? msg_status : TM_BRANCH(t,local_winner).last_received;
 		} else {
 			winning_code=winning_msg->REPLY_STATUS;
 		}
@@ -1538,13 +1538,13 @@ void process_reply_and_timer(struct cell *t,int branch,int msg_status,
 	/* we fire a cancel on spot if (a) branch is marked "to be canceled" or (b)
 	 * the whole transaction was canceled (received cancel) and no cancel sent
 	 * yet on this branch; and of course, only if a provisional reply :) */
-	if (t->uac[branch].flags&T_UAC_TO_CANCEL_FLAG ||
-	((t->flags&T_WAS_CANCELLED_FLAG) && !t->uac[branch].local_cancel.buffer.s)) {
+	if (TM_BRANCH(t,branch).flags&T_UAC_TO_CANCEL_FLAG ||
+	((t->flags&T_WAS_CANCELLED_FLAG) && !TM_BRANCH(t,branch).local_cancel.buffer.s)) {
 		if ( msg_status < 200 )
 			/* reply for an UAC with a pending cancel -> do cancel now */
 			cancel_branch(t, branch);
 		/* reset flag */
-		t->uac[branch].flags &= ~(T_UAC_TO_CANCEL_FLAG);
+		TM_BRANCH(t,branch).flags &= ~(T_UAC_TO_CANCEL_FLAG);
 	}
 
 	if (is_local(t)) {
@@ -1629,7 +1629,7 @@ int reply_received( struct sip_msg  *p_msg )
 
 	msg_status=p_msg->REPLY_STATUS;
 
-	uac=&t->uac[branch];
+	uac=&TM_BRANCH(t,branch);
 	LM_DBG("org. status uas=%d, uac[%d]=%d local=%d is_invite=%d)\n",
 		t->uas.status, branch, uac->last_received,
 		is_local(t), is_invite(t));
@@ -1682,7 +1682,7 @@ int reply_received( struct sip_msg  *p_msg )
 
 	if (ack_sent) {
 		if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-			set_extra_tmcb_params( &ack_buf, &t->uac[branch].request.dst);
+			set_extra_tmcb_params( &ack_buf, &uac->request.dst);
 			run_trans_callbacks( TMCB_MSG_SENT_OUT,
 				t, t->uas.request, 0, 0);
 		}
@@ -1690,7 +1690,7 @@ int reply_received( struct sip_msg  *p_msg )
 	}
 
 	/* processing of on_reply block */
-	has_reply_route = (t->on_reply) || (t->uac[branch].on_reply);
+	has_reply_route = (t->on_reply) || (uac->on_reply);
 	if (has_reply_route) {
 		if (onreply_avp_mode) {
 			/* lock the reply*/
@@ -1702,12 +1702,12 @@ int reply_received( struct sip_msg  *p_msg )
 		}
 		/* transfer transaction flag to branch context */
 		p_msg->flags = t->uas.request ? t->uas.request->flags : 0;
-		setb0flags( p_msg, t->uac[branch].br_flags);
+		setb0flags( p_msg, uac->br_flags);
 
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* run block - first per branch and then global one */
-		if ( ref_script_route_check_and_update(t->uac[branch].on_reply) &&
-		(run_top_route(sroutes->onreply[t->uac[branch].on_reply->idx],p_msg)
+		if ( ref_script_route_check_and_update(uac->on_reply) &&
+		(run_top_route(sroutes->onreply[uac->on_reply->idx],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
@@ -1733,7 +1733,7 @@ int reply_received( struct sip_msg  *p_msg )
 		}
 		set_route_type(old_route_type);
 		/* transfer current message context back to t */
-		t->uac[branch].br_flags = getb0flags(p_msg);
+		uac->br_flags = getb0flags(p_msg);
 		if (t->uas.request)
 			t->uas.request->flags = p_msg->flags;
 		if (onreply_avp_mode)

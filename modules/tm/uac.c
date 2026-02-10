@@ -176,6 +176,7 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 	char *buf1=NULL, *sipmsg_buf;
 	int buf_len1, sip_msg_len;
 	str h_to, h_from, h_cseq, h_callid;
+	struct ua_client* uac;
 
 	/* do not build buffer if callbacks are not needed and
 	 * there are no local routes */
@@ -207,8 +208,10 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 	}
 	set_route_type( backup_route_type );
 
+	uac = & TM_BRANCH( new_cell, 0);
+
 	/* transfer current message context back to t */
-	new_cell->uac[0].br_flags = getb0flags(req);
+	uac->br_flags = getb0flags(req);
 	/* restore the prevoius active transaction */
 	set_t( backup_cell );
 
@@ -224,7 +227,7 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 
 		/* stuff changed in the request, we may need to rebuild, so let's
 		 * evaluate the changes first, mainly if the destination changed */
-		request = &new_cell->uac[0].request;
+		request = &uac->request;
 		new_send_sock = NULL;
 		/* do we also need to change the destination? */
 		if (dst_changed) {
@@ -327,8 +330,8 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 		}
 
 		/* here we rely on how build_uac_req() builds the first line */
-		new_cell->uac[0].uri.s = buf1 + req->first_line.u.request.method.len+1;
-		new_cell->uac[0].uri.len = GET_RURI(req)->len;
+		uac->uri.s = buf1 + req->first_line.u.request.method.len+1;
+		uac->uri.len = GET_RURI(req)->len;
 
 		/* update also info about new destination and send sock */
 		if (new_send_sock) {
@@ -340,9 +343,9 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 			request->dst.to = new_to_su;
 			/* for DNS based failover, copy the DNS proxy into transaction */
 			if (!disable_dns_failover) {
-				new_cell->uac[0].proxy = shm_clone_proxy( new_proxy,
+				uac->proxy = shm_clone_proxy( new_proxy,
 					1/*do_free*/);
-				if (new_cell->uac[0].proxy==NULL)
+				if (uac->proxy==NULL)
 					LM_ERR("failed to store DNS info -> no DNS "
 						"based failover\n");
 			}
@@ -422,6 +425,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	unsigned int hi, method_id;
 	struct proxy_l *proxy;
 	struct tm_callback *it;
+	struct ua_client* uac;
 
 	ret=-1;
 
@@ -510,7 +514,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		new_cell->flags |= T_IS_INVITE_FLAG;
 	new_cell->flags |= T_IS_LOCAL_FLAG;
 
-	request = &new_cell->uac[0].request;
+	uac = & TM_BRANCH( new_cell, 0);
+
+	request = &uac->request;
 	if (dialog->forced_to_su.s.sa_family == AF_UNSPEC)
 		request->dst.to = to_su;
 	else
@@ -572,9 +578,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	 * NOTE: while running the local route, the DNS proxy may be set
 	 *   if a different one is needed (due destination change), so 
 	 *   we clone it here ONLY if not set */
-	if (!disable_dns_failover && new_cell->uac[0].proxy==NULL) {
-		new_cell->uac[0].proxy = shm_clone_proxy( proxy, 1/*do_free*/);
-		if (new_cell->uac[0].proxy==NULL)
+	if (!disable_dns_failover && uac->proxy==NULL) {
+		uac->proxy = shm_clone_proxy( proxy, 1/*do_free*/);
+		if (uac->proxy==NULL)
 			LM_ERR("failed to store DNS info -> no DNS based failover\n");
 	}
 
@@ -589,10 +595,10 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		REF_UNSAFE(new_cell);
 	}
 
-	if (new_cell->uac[0].br_flags & tcp_no_new_conn_bflag)
+	if (uac->br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 
-	set_bavp_list(&new_cell->uac[0].user_avps);
+	set_bavp_list(&uac->user_avps);
 	if (SEND_BUFFER(request) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n",
 			dialog->hooks.next_hop->len,

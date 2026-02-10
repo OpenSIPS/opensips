@@ -131,7 +131,7 @@ int t_resume_async_request(int fd, void*param, int was_timeout)
 	backup_list = set_avp_list( &t->user_avps );
 	/* set default send address to the saved value */
 	backup_si = bind_address;
-	bind_address = t->uac[0].request.dst.send_sock;
+	bind_address = TM_BRANCH( t, 0).request.dst.send_sock;
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 	/* call the resume function in order to read and handle data */
@@ -260,7 +260,7 @@ int t_resume_async_reply(int fd, void*param, int was_timeout)
 	set_t( t );
 
 	msg_status=ctx->reply->REPLY_STATUS;
-	reply_uac=&t->uac[branch];
+	reply_uac=&TM_BRANCH( t, branch);
 	LM_DBG("org. status uas=%d, uac[%d]=%d local=%d is_invite=%d)\n",
 		t->uas.status, branch, reply_uac->last_received,
 		is_local(t), is_invite(t));

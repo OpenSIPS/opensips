@@ -448,8 +448,8 @@ void cleanup_localcancel_timers( struct cell *t )
 {
 	int i;
 	for (i=0; i<t->nr_of_outgoings; i++ )  {
-		reset_timer(  &t->uac[i].local_cancel.retr_timer );
-		reset_timer(  &t->uac[i].local_cancel.fr_timer );
+		reset_timer(  &TM_BRANCH(t,i).local_cancel.retr_timer );
+		reset_timer(  &TM_BRANCH(t,i).local_cancel.fr_timer );
 	}
 }
 
@@ -1034,15 +1034,15 @@ static void unlink_timers( struct cell *t )
 	*/
 	if (is_in_timer_list2(&t->uas.response.fr_timer)) remove_fr=1;
 	else for (i=0; i<t->nr_of_outgoings; i++)
-		if (is_in_timer_list2(&t->uac[i].request.fr_timer)
-			|| is_in_timer_list2(&t->uac[i].local_cancel.fr_timer)) {
+		if (is_in_timer_list2(&TM_BRANCH(t,i).request.fr_timer)
+			|| is_in_timer_list2(&TM_BRANCH(t,i).local_cancel.fr_timer)) {
 				remove_fr=1;
 				break;
 		}
 	if (is_in_timer_list2(&t->uas.response.retr_timer)) remove_retr=1;
 	else for (i=0; i<t->nr_of_outgoings; i++)
-		if (is_in_timer_list2(&t->uac[i].request.retr_timer)
-			|| is_in_timer_list2(&t->uac[i].local_cancel.retr_timer)) {
+		if (is_in_timer_list2(&TM_BRANCH(t,i).request.retr_timer)
+			|| is_in_timer_list2(&TM_BRANCH(t,i).local_cancel.retr_timer)) {
 				remove_retr=1;
 				break;
 		}
@@ -1057,8 +1057,8 @@ static void unlink_timers( struct cell *t )
 		lock(timertable[set].timers[RT_T1_TO_1].mutex);
 		remove_timer_unsafe(&t->uas.response.retr_timer);
 		for (i=0; i<t->nr_of_outgoings; i++) {
-			remove_timer_unsafe(&t->uac[i].request.retr_timer);
-			remove_timer_unsafe(&t->uac[i].local_cancel.retr_timer);
+			remove_timer_unsafe(&TM_BRANCH(t,i).request.retr_timer);
+			remove_timer_unsafe(&TM_BRANCH(t,i).local_cancel.retr_timer);
 		}
 		unlock(timertable[set].timers[RT_T1_TO_1].mutex);
 	}
@@ -1069,8 +1069,8 @@ static void unlink_timers( struct cell *t )
 		lock(timertable[set].timers[FR_TIMER_LIST].mutex);
 		remove_timer_unsafe(&t->uas.response.fr_timer);
 		for (i=0; i<t->nr_of_outgoings; i++) {
-			remove_timer_unsafe(&t->uac[i].request.fr_timer);
-			remove_timer_unsafe(&t->uac[i].local_cancel.fr_timer);
+			remove_timer_unsafe(&TM_BRANCH(t,i).request.fr_timer);
+			remove_timer_unsafe(&TM_BRANCH(t,i).local_cancel.fr_timer);
 		}
 		unlock(timertable[set].timers[FR_TIMER_LIST].mutex);
 	}

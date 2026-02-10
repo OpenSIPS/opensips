@@ -55,15 +55,17 @@ char *build_cancel(struct cell *Trans,unsigned int branch,
 
 inline static short should_cancel_branch( struct cell *t, int b )
 {
+	struct ua_client* uac = & TM_BRANCH( t, b);
+
 	/* cancel only if provisional received and no one else
 	   attempted to cancel yet; also skip PHONY branches
 	   (they have no signaling, so no canceling */
-	if ( t->uac[b].local_cancel.buffer.s==NULL &&
-	(t->uac[b].flags & T_UAC_IS_PHONY)==0 ) {
-		if ( t->uac[b].last_received<200 ) {
+	if ( uac->local_cancel.buffer.s==NULL &&
+	(uac->flags & T_UAC_IS_PHONY)==0 ) {
+		if ( uac->last_received<200 ) {
 			/* we'll cancel -- label it so that no one else
 			(e.g. another 200 branch) will try to do the same */
-			t->uac[b].local_cancel.buffer.s=BUSY_BUFFER;
+			uac->local_cancel.buffer.s=BUSY_BUFFER;
 			return 1;
 		}
 	}
