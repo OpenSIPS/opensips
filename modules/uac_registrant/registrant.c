@@ -431,7 +431,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	if (ps->rpl==FAKED_REPLY)
 		memset(&rec->td.forced_to_su, 0, sizeof(union sockaddr_union));
 	else if (rec->td.forced_to_su.s.sa_family == AF_UNSPEC)
-		rec->td.forced_to_su = t->uac[0].request.dst.to;
+		rec->td.forced_to_su = TM_BRANCH(t,0).request.dst.to;
 
 	statuscode = ps->code;
 	switch(statuscode) {

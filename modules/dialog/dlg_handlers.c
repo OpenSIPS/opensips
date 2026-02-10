@@ -595,9 +595,9 @@ routing_info:
 		else
 			skip_rrs = dlg->from_rr_nb +
 					((t->relaied_reply_branch>=0)?
-					(t->uac[t->relaied_reply_branch].added_rr):0);
+					(TM_BRANCH(t,t->relaied_reply_branch).added_rr):0);
 
-		LM_DBG("Skipping %d ,%d, %d, %d \n",skip_rrs, dlg->from_rr_nb,t->relaied_reply_branch,t->uac[t->relaied_reply_branch].added_rr);
+		LM_DBG("Skipping %d ,%d, %d, %d \n",skip_rrs, dlg->from_rr_nb,t->relaied_reply_branch,TM_BRANCH(t,t->relaied_reply_branch).added_rr);
 		get_routing_info(rpl, 0, &skip_rrs, &contact, &rr_set);
 
 		dlg_update_sdp(dlg, rpl, leg, 0);
@@ -645,7 +645,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		   conflicts -bogdan */
 		if (rpl!=FAKED_REPLY) {
 			if (req->msg_flags & (FL_USE_UAC_FROM | FL_USE_UAC_TO ) ) {
-				req_out_buff = &t->uac[d_tmb.get_branch_index()].request.buffer;
+				req_out_buff =
+					& TM_BRANCH(t,d_tmb.get_branch_index()).request.buffer;
 				if (extract_ftc_hdrs(req_out_buff->s,req_out_buff->len,
 				(req->msg_flags & FL_USE_UAC_FROM )?&mangled_from:0,
 				(req->msg_flags & FL_USE_UAC_TO )?&mangled_to:0,0,0) != 0) {

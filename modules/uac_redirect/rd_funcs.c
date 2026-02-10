@@ -43,6 +43,7 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *shrpl, long max)
 int get_redirect( struct sip_msg *msg , int maxt, int maxb)
 {
 	struct cell *t;
+	struct ua_client *uac;
 	int max;
 	int cts_added;
 	int n;
@@ -63,8 +64,9 @@ int get_redirect( struct sip_msg *msg , int maxt, int maxb)
 	/* look if there are any 3xx branches starting from resume_branch */
 	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++) {
 		LM_DBG("checking branch=%d (added=%d)\n", i, cts_added);
+		uac = & TM_BRANCH( t, i);
 		/* is a redirected branch? */
-		if (t->uac[i].last_received<300 || t->uac[i].last_received>399)
+		if (uac->last_received<300 || uac->last_received>399)
 			continue;
 		LM_DBG("branch=%d is a redirect (added=%d)\n", i, cts_added);
 		/* ok - we have a new redirected branch -> how many contacts can
@@ -77,7 +79,7 @@ int get_redirect( struct sip_msg *msg , int maxt, int maxb)
 		if (max==0)
 			continue;
 		/* get the contact from it */
-		n = shmcontact2dset( msg, t->uac[i].reply, max);
+		n = shmcontact2dset( msg, uac->reply, max);
 		if ( n<0 ) {
 			LM_ERR("get contact from shm_reply branch %d failed\n",i);
 			/* do not go to error, try next branches */

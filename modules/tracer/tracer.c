@@ -1958,7 +1958,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 			s.s = msg->buf;
 			s.len = msg->len;
 			trace_msg_out( msg, &s, msg->rcv.bind_address, msg->rcv.proto,
-				&tmb.t_gett()->uac[0].request.dst.to, info, TRACE_C_CALLEE);
+				&TM_BRANCH(tmb.t_gett(),0).request.dst.to, info, TRACE_C_CALLEE);
 		} else
 		/* otherwise trace only if per-message or not in local route
 		 * (UAC trans do not have IN msg) */
