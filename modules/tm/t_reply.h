@@ -65,7 +65,7 @@ extern char *minor_branch_flag_str;
 int unmatched_totag(struct cell *t, struct sip_msg *ack);
 
 /* branch bitmap type */
-typedef  uint32_t branch_bm_t[8];  /* 256 bits */
+typedef  uint32_t branch_bm_t[TM_BRANCH_MAX_FACTOR];
 #define BRANCH_BM_ZERO {0}
 #define BRANCH_BM_ALL {~0}
 #define BRANCH_BM_SET_IDX( _bm, _idx) \
@@ -78,6 +78,8 @@ typedef  uint32_t branch_bm_t[8];  /* 256 bits */
 	memset( &(_bm), 0xFF, sizeof(branch_bm_t))
 #define BRANCH_BM_RST_ALL( _bm ) \
 	memset( &(_bm), 0x00, sizeof(branch_bm_t))
+/* the below are a bit hackish, as rely on the default value of 8 for
+ * TM_BRANCH_MAX_FACTOR */
 #define BRANCH_BM_NONE_SET( _bm) \
 	((_bm)[0] || (_bm)[1] || (_bm)[2] || (_bm)[3] || (_bm)[4] || (_bm)[5] ||\
 		(_bm)[6] || (_bm)[7] )

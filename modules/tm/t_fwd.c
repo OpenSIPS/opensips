@@ -103,6 +103,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 	int backup_route_type;
 	struct usr_avp **backup_list;
 	char *p;
+	struct ua_client* uac = & TM_BRANCH( t, branch);
 
 	/* ... we calculate branch ... */
 	if (!t_calc_branch(t, branch, request->add_to_branch_s,
@@ -118,40 +119,40 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 
 	/* copy path vector into branch */
 	if (request->path_vec.len) {
-		t->uac[branch].path_vec.s =
-			shm_realloc(t->uac[branch].path_vec.s, request->path_vec.len+1);
-		if (t->uac[branch].path_vec.s==NULL) {
+		uac->path_vec.s =
+			shm_realloc(uac->path_vec.s, request->path_vec.len+1);
+		if (uac->path_vec.s==NULL) {
 			LM_ERR("shm_realloc failed\n");
 			goto error;
 		}
-		t->uac[branch].path_vec.len = request->path_vec.len;
-		memcpy( t->uac[branch].path_vec.s, request->path_vec.s,
+		uac->path_vec.len = request->path_vec.len;
+		memcpy( uac->path_vec.s, request->path_vec.s,
 			request->path_vec.len+1);
 	}
 
 	/* do the same for the advertised port & address */
 	if (request->set_global_address.len) {
-		t->uac[branch].adv_address.s = shm_realloc(t->uac[branch].adv_address.s,
+		uac->adv_address.s = shm_realloc(uac->adv_address.s,
 			request->set_global_address.len+1);
-		if (t->uac[branch].adv_address.s==NULL) {
+		if (uac->adv_address.s==NULL) {
 			LM_ERR("shm_realloc failed for storing the advertised address "
 				"(len=%d)\n",request->set_global_address.len);
 			goto error;
 		}
-		t->uac[branch].adv_address.len = request->set_global_address.len;
-		memcpy( t->uac[branch].adv_address.s, request->set_global_address.s,
+		uac->adv_address.len = request->set_global_address.len;
+		memcpy( uac->adv_address.s, request->set_global_address.s,
 			request->set_global_address.len+1);
 	}
 	if (request->set_global_port.len) {
-		t->uac[branch].adv_port.s = shm_realloc(t->uac[branch].adv_port.s,
+		uac->adv_port.s = shm_realloc(uac->adv_port.s,
 			request->set_global_port.len+1);
-		if (t->uac[branch].adv_port.s==NULL) {
+		if (uac->adv_port.s==NULL) {
 			LM_ERR("shm_realloc failed for storing the advertised port "
 				"(len=%d)\n",request->set_global_port.len);
 			goto error;
 		}
-		t->uac[branch].adv_port.len = request->set_global_port.len;
-		memcpy( t->uac[branch].adv_port.s, request->set_global_port.s,
+		uac->adv_port.len = request->set_global_port.len;
+		memcpy( uac->adv_port.s, request->set_global_port.s,
 			request->set_global_port.len+1);
 	}
 
@@ -218,14 +219,14 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 
 	/* copy dst_uri into branch (after branch route possible updated it) */
 	if (request->dst_uri.len) {
-		t->uac[branch].duri.s =
-			shm_realloc(t->uac[branch].duri.s, request->dst_uri.len);
-		if (t->uac[branch].duri.s==NULL) {
+		uac->duri.s =
+			shm_realloc(uac->duri.s, request->dst_uri.len);
+		if (uac->duri.s==NULL) {
 			LM_ERR("shm_realloc failed\n");
 			goto error;
 		}
-		t->uac[branch].duri.len = request->dst_uri.len;
-		memcpy( t->uac[branch].duri.s,request->dst_uri.s,request->dst_uri.len);
+		uac->duri.len = request->dst_uri.len;
+		memcpy( uac->duri.s,request->dst_uri.s,request->dst_uri.len);
 	}
 
 	return 0;
@@ -313,7 +314,7 @@ int add_blind_uac(void)  /*struct cell *t*/
 	t->nr_of_outgoings++;
 	/* start FR timer -- protocol set by default to PROTO_NONE,
 	   which means retransmission timer will not be started */
-	start_retr(&t->uac[branch].request);
+	start_retr(&TM_BRANCH(t,branch).request);
 	/* we are on a timer -- don't need to put on wait on script
 	   clean-up */
 	set_kr(REQ_FWDED);
@@ -403,16 +404,34 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 	struct sip_msg_body *body_clone=NO_BODY_CLONE_MARKER;
 	int do_free_proxy;
 	int ret;
+	struct ua_client* uac;
 
 	branch=t->nr_of_outgoings;
-	if (branch==MAX_BRANCHES) {
-		LM_ERR("maximum number of branches exceeded\n");
+	if (branch==TM_BRANCH_MAX) {
+		LM_ERR("maximum number of branches -%d- exceeded\n",TM_BRANCH_MAX);
 		ret=E_CFG;
 		goto error;
 	}
 
+	/* do we have the branch chunk allocated? */
+	if (t->uac[branch/TM_BRANCH_CHUNK_SIZE]==NULL) {
+		t->uac[branch/TM_BRANCH_CHUNK_SIZE] =
+			shm_malloc( TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
+		if (t->uac[branch/TM_BRANCH_CHUNK_SIZE]==NULL) {
+			LM_ERR("failed to allocate a new chunk of branch, idx is %d\n",
+				branch);
+			ret=E_OUT_OF_MEM;
+			goto error;
+		}
+		memset( t->uac[branch/TM_BRANCH_CHUNK_SIZE], 0,
+			TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
+		/* the new chunk is in place, we are good to go */
+	}
+
+	uac = & TM_BRANCH( t, branch);
+
 	/* check existing buffer -- rewriting should never occur */
-	if (t->uac[branch].request.buffer.s) {
+	if (uac->request.buffer.s) {
 		LM_CRIT("buffer rewrite attempt\n");
 		ret=ser_error=E_BUG;
 		goto error;
@@ -433,7 +452,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 	 * received holder (so the upper level will havve nothing to care furhter)
 	 */
 	if (attrs) {
-		t->uac[branch].battrs = *attrs;
+		uac->battrs = *attrs;
 		*attrs = NULL;
 	}
 
@@ -460,31 +479,31 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 	msg_callback_process(request, REQ_PRE_FORWARD, (void *)proxy);
 
 	if ( !(t->flags&T_NO_DNS_FAILOVER_FLAG) ) {
-		t->uac[branch].proxy = shm_clone_proxy( proxy , do_free_proxy );
-		if (t->uac[branch].proxy==NULL) {
+		uac->proxy = shm_clone_proxy( proxy , do_free_proxy );
+		if (uac->proxy==NULL) {
 			ret = E_OUT_OF_MEM;
 			goto error02;
 		}
 	}
 
 	/* use the first address */
-	hostent2su( &t->uac[branch].request.dst.to,
+	hostent2su( &uac->request.dst.to,
 		&proxy->host, proxy->addr_idx, proxy->port ? proxy->port:SIP_PORT);
-	t->uac[branch].request.dst.proto = proxy->proto;
+	uac->request.dst.proto = proxy->proto;
 
 	/* do print of the uac request */
-	if ( update_uac_dst( request, &t->uac[branch] )!=0) {
+	if ( update_uac_dst( request, uac )!=0) {
 		ret = ser_error;
 		goto error02;
 	}
 
 	/* things went well, move ahead */
-	t->uac[branch].uri.s=t->uac[branch].request.buffer.s+
+	uac->uri.s=uac->request.buffer.s+
 		request->first_line.u.request.method.len+1;
-	t->uac[branch].uri.len=request->new_uri.len;
-	t->uac[branch].br_flags = request->ruri_bflags;
-	t->uac[branch].added_rr = count_local_rr( request );
-	t->uac[branch].q = q;
+	uac->uri.len=request->new_uri.len;
+	uac->br_flags = request->ruri_bflags;
+	uac->added_rr = count_local_rr( request );
+	uac->q = q;
 	t->nr_of_outgoings++;
 
 	/* done! */
@@ -501,9 +520,9 @@ error01:
 		/* destroy all the bavps added, the path vector and the destination,
 		 * since this branch will never be properly added to
 		 * the UAC list, otherwise we'll have memory leaks - razvanc */
-		clean_branch(t->uac[branch]);
-		memset(&t->uac[branch], 0, sizeof(t->uac[branch]));
-		init_branch(&t->uac[branch], branch, t->wait_tl.set, t);
+		clean_branch(*uac);
+		memset( uac, 0, sizeof(*uac));
+		init_branch( uac, branch, t->wait_tl.set, t);
 	}
 error:
 	return ret;
@@ -515,15 +534,32 @@ int add_phony_uac( struct cell *t, int br_flags)
 	str dummy_buffer = str_init("DUMMY");
 	unsigned short branch;
 	utime_t timer;
+	struct ua_client* uac;
 
 	branch=t->nr_of_outgoings;
-	if (branch==MAX_BRANCHES) {
-		LM_ERR("maximum number of branches exceeded\n");
+	if (branch==TM_BRANCH_MAX) {
+		LM_ERR("maximum number of branches -%d- exceeded\n",TM_BRANCH_MAX);
 		return E_CFG;
 	}
 
+	/* do we have the branch chunk allocated? */
+	if (t->uac[branch/TM_BRANCH_CHUNK_SIZE]==NULL) {
+		t->uac[branch/TM_BRANCH_CHUNK_SIZE] =
+			shm_malloc( TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
+		if (t->uac[branch/TM_BRANCH_CHUNK_SIZE]==NULL) {
+			LM_ERR("failed to allocate a new chunk of branch, idx is %d\n",
+				branch);
+			return E_OUT_OF_MEM;
+		}
+		memset( t->uac[branch/TM_BRANCH_CHUNK_SIZE], 0,
+			TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
+		/* the new chunk is in place, we are good to go */
+	}
+
+	uac = & TM_BRANCH( t, branch);
+
 	/* check existing buffer -- rewriting should never occur */
-	if (t->uac[branch].request.buffer.s) {
+	if (uac->request.buffer.s) {
 		LM_CRIT("buffer rewrite attempt\n");
 		ser_error=E_BUG;
 		return E_BUG;
@@ -531,23 +567,23 @@ int add_phony_uac( struct cell *t, int br_flags)
 
 	/* we attach a dummy buffer just to pass all the "tests" for a 
 	 * valid branch */
-	t->uac[branch].request.buffer.s = (char*)shm_malloc(dummy_buffer.len);
-	if (t->uac[branch].request.buffer.s==NULL) {
+	uac->request.buffer.s = (char*)shm_malloc(dummy_buffer.len);
+	if (uac->request.buffer.s==NULL) {
 		LM_ERR("failed to alloc dummy buffer for phony branch\n");
 		/* there is nothing to reset on the branch */
 		return E_OUT_OF_MEM;
 	}
-	memcpy( t->uac[branch].request.buffer.s, dummy_buffer.s, dummy_buffer.len);
-	t->uac[branch].request.buffer.len = dummy_buffer.len;
+	memcpy( uac->request.buffer.s, dummy_buffer.s, dummy_buffer.len);
+	uac->request.buffer.len = dummy_buffer.len;
 
-	t->uac[branch].request.my_T = t;
-	t->uac[branch].request.branch = branch;
-	t->uac[branch].flags = T_UAC_IS_PHONY;
-	t->uac[branch].br_flags = br_flags;
+	uac->request.my_T = t;
+	uac->request.branch = branch;
+	uac->flags = T_UAC_IS_PHONY;
+	uac->br_flags = br_flags;
 
 	/* in invalid proto will prevent adding this retransmission buffer
 	 * to the retransmission timer (there is nothing to retransmit here :P */
-	t->uac[branch].request.dst.proto = PROTO_NONE;
+	uac->request.dst.proto = PROTO_NONE;
 
 	t->nr_of_outgoings++;
 
@@ -556,9 +592,9 @@ int add_phony_uac( struct cell *t, int br_flags)
 	 * transaction has set as FR_INV_TIMEOUT */
 	if (is_timeout_set(t->fr_inv_timeout)) {
 		timer = t->fr_inv_timeout;
-		set_1timer(&t->uac[branch].request.fr_timer, FR_INV_TIMER_LIST,&timer);
+		set_1timer(&uac->request.fr_timer, FR_INV_TIMER_LIST,&timer);
 	} else {
-		set_1timer(&t->uac[branch].request.fr_timer, FR_INV_TIMER_LIST, NULL);
+		set_1timer(&uac->request.fr_timer, FR_INV_TIMER_LIST, NULL);
 	}
 
 	set_kr(REQ_FWDED);
@@ -672,17 +708,17 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	  * so we can force a 487 reply on the PHONY branch, in order
 	  * to terminate the whole transaction on the spot */
 	if ( (t_invite->nr_of_outgoings-t_invite->first_branch)==1 &&
-	(t_invite->uac[t_invite->first_branch].flags & T_UAC_IS_PHONY) ) {
+	(TM_BRANCH(t_invite,t_invite->first_branch).flags & T_UAC_IS_PHONY) ) {
 		relay_reply( t_invite, FAKED_REPLY, t_invite->first_branch,
 			487, &cancel_bitmap);
 	}
 #if 0
 	/* internally cancel branches with no received reply */
 	for (i=t_invite->first_branch; i<t_invite->nr_of_outgoings; i++) {
-		if (t_invite->uac[i].last_received==0){
+		if (TM_BRANCH(t_invite,i).last_received==0){
 			/* reset the "request" timers */
-			reset_timer(&t_invite->uac[i].request.retr_timer);
-			reset_timer(&t_invite->uac[i].request.fr_timer);
+			reset_timer(&TM_BRANCH(t_invite,i).request.retr_timer);
+			reset_timer(&TM_BRANCH(t_invite,i).request.fr_timer);
 			LOCK_REPLIES( t_invite );
 			relay_reply(t_invite,FAKED_REPLY,i,487,&dummy_bm);
 		}
@@ -710,6 +746,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	const struct socket_info *bk_sock;
 	unsigned int bk_bflags;
 	struct msg_branch *branch;
+	struct ua_client* uac;
 	int idx;
 	str bk_path;
 
@@ -772,7 +809,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 		 * keep it in the set of active branches; that means the 
 		 * transaction had a t_wait_for_new_branches() call prior to relay() */
 		if ( t->first_branch>0 &&
-		(t->uac[t->first_branch-1].flags & T_UAC_IS_PHONY) )
+		(TM_BRANCH(t,t->first_branch-1).flags & T_UAC_IS_PHONY) )
 			t->first_branch--;
 	}
 
@@ -834,33 +871,35 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	for (i=t->first_branch; i<t->nr_of_outgoings; i++) {
 		if ( BRANCH_BM_TST_IDX(added_branches, i) ) {
 
-			if (t->uac[i].br_flags & tcp_no_new_conn_bflag)
+			uac = & TM_BRANCH( t, i);
+
+			if (uac->br_flags & tcp_no_new_conn_bflag)
 				tcp_no_new_conn = 1;
 
 			/* successfully sent out -> run callbacks */
 			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT) ) {
 				_tm_branch_index = i;
-				set_extra_tmcb_params( &t->uac[i].request.buffer,
-					&t->uac[i].request.dst);
+				set_extra_tmcb_params( &uac->request.buffer,
+					&uac->request.dst);
 				run_trans_callbacks( TMCB_REQUEST_BUILT, t,
 					p_msg, 0, 0);
 				_tm_branch_index = 0;
 			}
 
 			do {
-				if (check_blacklists( t->uac[i].request.dst.proto,
-				&t->uac[i].request.dst.to,
-				t->uac[i].request.buffer.s,
-				t->uac[i].request.buffer.len)) {
+				if (check_blacklists( uac->request.dst.proto,
+				&uac->request.dst.to,
+				uac->request.buffer.s,
+				uac->request.buffer.len)) {
 					LM_DBG("blocked by blacklists\n");
 					ser_error=E_IP_BLOCKED;
 				} else {
-					set_bavp_list(&t->uac[i].user_avps);
-					set_extra_tmcb_params( &t->uac[i].request.buffer,
-							&t->uac[i].request.dst);
+					set_bavp_list(&uac->user_avps);
+					set_extra_tmcb_params( &uac->request.buffer,
+							&uac->request.dst);
 					run_trans_callbacks(TMCB_PRE_SEND_BUFFER, t, p_msg, 0, i);
 
-					if (SEND_BUFFER( &t->uac[i].request)==0) {
+					if (SEND_BUFFER( &uac->request)==0) {
 						reset_bavp_list();
 						ser_error = 0;
 						break;
@@ -871,34 +910,34 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 					ser_error=E_SEND;
 				}
 				/* get next dns entry */
-				if ( t->uac[i].proxy==0 ||
-				get_next_su( t->uac[i].proxy, &t->uac[i].request.dst.to,
+				if ( uac->proxy==0 ||
+				get_next_su( uac->proxy, &uac->request.dst.to,
 				(ser_error==E_IP_BLOCKED)?0:1)!=0 )
 					break;
-				t->uac[i].request.dst.proto = t->uac[i].proxy->proto;
+				uac->request.dst.proto = uac->proxy->proto;
 				/* update branch */
-				if ( update_uac_dst( p_msg, &t->uac[i] )!=0)
+				if ( update_uac_dst( p_msg, uac )!=0)
 					break;
 			}while(1);
 
 			tcp_no_new_conn = 0;
 
 			if (ser_error) {
-				shm_free(t->uac[i].request.buffer.s);
-				t->uac[i].request.buffer.s = NULL;
-				t->uac[i].request.buffer.len = 0;
+				shm_free(uac->request.buffer.s);
+				uac->request.buffer.s = NULL;
+				uac->request.buffer.len = 0;
 				continue;
 			}
 
 			success_branch++;
 
-			start_retr( &t->uac[i].request );
+			start_retr( &uac->request );
 			set_kr(REQ_FWDED);
 
 			/* successfully sent out -> run callbacks */
 			if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-				set_extra_tmcb_params( &t->uac[i].request.buffer,
-					&t->uac[i].request.dst);
+				set_extra_tmcb_params( &uac->request.buffer,
+					&uac->request.dst);
 				run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
 					p_msg, 0, 0);
 			}
@@ -1052,8 +1091,8 @@ int t_wait_no_more_branches( struct cell *t, int extra)
 	 * branch (the max number of allowed branches is set to the current
 	 * number of branches) */
 	for ( b=t->nr_of_outgoings-1; b>=t->first_branch ; b-- ) {
-		if (t->uac[b].flags & T_UAC_IS_PHONY) {
-			t->uac[b].br_flags=t->nr_of_outgoings+extra;
+		if (TM_BRANCH(t,b).flags & T_UAC_IS_PHONY) {
+			TM_BRANCH(t,b).br_flags=t->nr_of_outgoings+extra;
 			return 0;
 		}
 	}
