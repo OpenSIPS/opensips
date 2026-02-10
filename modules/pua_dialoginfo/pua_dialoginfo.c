@@ -266,7 +266,7 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 	/* depending on the reply code, see what to publish */
 	if (_params->code<180 && _params->code>=100) {
 
-		expire = t->uac[branch].request.fr_timer.time_out - get_ticks();
+		expire = TM_BRANCH(t,branch).request.fr_timer.time_out - get_ticks();
 		if (publish_on_trying) {
 			if (should_publish_A( param->flags, mute_val.s))
 				dialog_publish("trying", entity, peer,
@@ -292,7 +292,7 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 		lock_release(&t->reply_mutex);
 
 		if (n) {
-			expire = t->uac[branch].request.fr_timer.time_out - get_ticks();
+			expire = TM_BRANCH(t,branch).request.fr_timer.time_out-get_ticks();
 			if (should_publish_A( param->flags, mute_val.s))
 				dialog_publish(caller_confirmed?"confirmed":"early",
 					entity, peer,

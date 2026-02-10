@@ -477,8 +477,8 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 		/* set as new_uri the last branch */
 		new_uri_bk = req->new_uri;
 		dst_uri_bk = req->dst_uri;
-		req->new_uri = t->uac[t->nr_of_outgoings-1].uri;
-		req->dst_uri = t->uac[t->nr_of_outgoings-1].duri;
+		req->new_uri = TM_BRANCH(t,t->nr_of_outgoings-1).uri;
+		req->dst_uri = TM_BRANCH(t,t->nr_of_outgoings-1).duri;
 		req->parsed_uri_ok = 0;
 	}
 
@@ -701,8 +701,8 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	if (t->relaied_reply_branch>=0) {
 		new_uri_bk = req->new_uri;
 		dst_uri_bk = req->dst_uri;
-		req->new_uri = t->uac[t->relaied_reply_branch].uri;
-		req->dst_uri = t->uac[t->relaied_reply_branch].duri;
+		req->new_uri = TM_BRANCH(t,t->relaied_reply_branch).uri;
+		req->dst_uri = TM_BRANCH(t,t->relaied_reply_branch).duri;
 		req->parsed_uri_ok = 0;
 	} else {
 		new_uri_bk.len = dst_uri_bk.len = -1;

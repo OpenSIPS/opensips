@@ -292,8 +292,9 @@ void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 	mc_whitelist_p wh_list = NULL;
 	struct mc_compact_args* mc_compact_args = NULL;
 	struct mc_comp_args* args = NULL;
-	char* buf = t->uac[p->code].request.buffer.s;
-	int olen = t->uac[p->code].request.buffer.len;
+	struct ua_client *uac = & TM_BRANCH( t, p->code);
+	char* buf = uac->request.buffer.s;
+	int olen = uac->request.buffer.len;
 
 	switch (type) {
 		case COMPRESS_CB:
@@ -332,10 +333,10 @@ void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 	if (ret < 0)
 		return;
 
-	t->uac[p->code].request.buffer.s = buf;
-	t->uac[p->code].request.buffer.len = olen;
+	uac->request.buffer.s = buf;
+	uac->request.buffer.len = olen;
 	/* we also need to compute the uri so that it points within the new buffer */
-	t->uac[p->code].uri.s = buf + t->method.len + 1;
+	uac->uri.s = buf + t->method.len + 1;
 	/* uri.len should be the same, since it is not changed by compression */
 }
 
