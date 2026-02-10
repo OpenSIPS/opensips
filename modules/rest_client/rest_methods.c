@@ -973,7 +973,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			for (fd = 0; fd <= max_fd; fd++) {
 				if (FD_ISSET(fd, &rset)) {
 					LM_DBG("ongoing transfer on fd %d\n", fd);
-					if (connect > 0 && req_sz > 0 && is_new_transfer(fd)) {
+					if ((connect > 0 || req_sz > 0) && is_new_transfer(fd)) {
 						LM_DBG(">>> add fd %d to ongoing transfers\n", fd);
 						add_transfer(fd);
 						goto success;
