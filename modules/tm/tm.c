@@ -909,14 +909,6 @@ static int mod_init(void)
 		TM_BRANCH_MAX, TM_BRANCH_CHUNK_SIZE, TM_BRANCH_MAX_FACTOR,
 		sizeof(branch_bm_t));
 
-	/* checking if we have sufficient bitmap capacity for given
-	   maximum number of  branches */
-	if (MAX_BRANCHES+1>31) {
-		LM_CRIT("Too many max UACs for UAC branch_bm_t bitmap: %d\n",
-			MAX_BRANCHES );
-		return -1;
-	}
-
 	minor_branch_flag =
 		get_flag_id_by_name(FLAG_TYPE_BRANCH, minor_branch_flag_str, 0);
 

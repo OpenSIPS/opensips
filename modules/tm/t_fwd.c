@@ -287,6 +287,31 @@ static inline void post_print_uac_request(struct sip_msg *request,
 }
 
 
+static inline int check_and_alloc_branch(struct cell *t, unsigned short branch)
+{
+	int i, b_chunk;
+
+	/* do we have the branch chunk allocated? */
+	b_chunk = branch / TM_BRANCH_CHUNK_SIZE;
+	if (t->uac[b_chunk]==NULL) {
+		t->uac[b_chunk] =
+			shm_malloc( TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
+		if (t->uac[b_chunk]==NULL) {
+			LM_ERR("failed to allocate a new chunk of branch, idx is %d\n",
+				branch);
+			return E_OUT_OF_MEM;
+		}
+		memset( t->uac[b_chunk], 0,
+			TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
+		/* the new chunk is in place, we are good to go */
+		for ( i=branch; i<branch+TM_BRANCH_CHUNK_SIZE; i++)
+			init_branch( &TM_BRANCH(t,i), i, t->wait_tl.set, t);
+	}
+	return 0;
+}
+
+
+
 /* introduce a new uac, which is blind -- it only creates the
    data structures and starts FR timer, but that's it; it does
    not print messages and send anything anywhere; that is good
@@ -298,6 +323,7 @@ int add_blind_uac(void)  /*struct cell *t*/
 {
 	unsigned short branch;
 	struct cell *t;
+	int ret;
 
 	t=get_t();
 	if (t==T_UNDEFINED || !t ) {
@@ -306,12 +332,13 @@ int add_blind_uac(void)  /*struct cell *t*/
 	}
 
 	branch=t->nr_of_outgoings;
-	if (branch==MAX_BRANCHES) {
-		LM_ERR("maximum number of branches exceeded\n");
-		return -1;
-	}
+
+	/* do we have the branch chunk allocated? */
+	if ((ret=check_and_alloc_branch( t, branch))<0)
+		return ret;
 
 	t->nr_of_outgoings++;
+
 	/* start FR timer -- protocol set by default to PROTO_NONE,
 	   which means retransmission timer will not be started */
 	start_retr(&TM_BRANCH(t,branch).request);
@@ -414,19 +441,8 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 	}
 
 	/* do we have the branch chunk allocated? */
-	if (t->uac[branch/TM_BRANCH_CHUNK_SIZE]==NULL) {
-		t->uac[branch/TM_BRANCH_CHUNK_SIZE] =
-			shm_malloc( TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
-		if (t->uac[branch/TM_BRANCH_CHUNK_SIZE]==NULL) {
-			LM_ERR("failed to allocate a new chunk of branch, idx is %d\n",
-				branch);
-			ret=E_OUT_OF_MEM;
-			goto error;
-		}
-		memset( t->uac[branch/TM_BRANCH_CHUNK_SIZE], 0,
-			TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
-		/* the new chunk is in place, we are good to go */
-	}
+	if ((ret=check_and_alloc_branch( t, branch))<0)
+		goto error;
 
 	uac = & TM_BRANCH( t, branch);
 
@@ -534,6 +550,7 @@ int add_phony_uac( struct cell *t, int br_flags)
 	str dummy_buffer = str_init("DUMMY");
 	unsigned short branch;
 	utime_t timer;
+	int ret;
 	struct ua_client* uac;
 
 	branch=t->nr_of_outgoings;
@@ -543,18 +560,8 @@ int add_phony_uac( struct cell *t, int br_flags)
 	}
 
 	/* do we have the branch chunk allocated? */
-	if (t->uac[branch/TM_BRANCH_CHUNK_SIZE]==NULL) {
-		t->uac[branch/TM_BRANCH_CHUNK_SIZE] =
-			shm_malloc( TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
-		if (t->uac[branch/TM_BRANCH_CHUNK_SIZE]==NULL) {
-			LM_ERR("failed to allocate a new chunk of branch, idx is %d\n",
-				branch);
-			return E_OUT_OF_MEM;
-		}
-		memset( t->uac[branch/TM_BRANCH_CHUNK_SIZE], 0,
-			TM_BRANCH_CHUNK_SIZE * sizeof(struct ua_client) );
-		/* the new chunk is in place, we are good to go */
-	}
+	if ((ret=check_and_alloc_branch( t, branch))<0)
+		return ret;
 
 	uac = & TM_BRANCH( t, branch);
 

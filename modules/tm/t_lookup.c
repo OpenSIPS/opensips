@@ -773,7 +773,6 @@ int t_reply_matching( struct sip_msg *p_msg , int *p_branch )
 	if (reverse_hex2int(hashi, hashl, &hash_index)<0
 		||hash_index>=TM_TABLE_ENTRIES
 		|| reverse_hex2int(branchi, branchl, &branch_id)<0
-		||branch_id>=MAX_BRANCHES
 		|| (syn_branch ? reverse_hex2int(syni, synl, &entry_label)<0
 			: loopl!=MD5_LEN )
 	) {
