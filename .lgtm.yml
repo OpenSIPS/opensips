@@ -33,6 +33,7 @@ extraction:
     before_index:
       - export FASTER=1
       - export NICER=0
+      - export PCRE_LIB=pcre
     index:
       build_command: make exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb auth_jwt" all
 
