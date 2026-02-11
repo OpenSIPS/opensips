@@ -552,6 +552,27 @@ modparam("rtpproxy", "generated_sdp_media_ip", "10.0.0.1")
 		</example>
 	</section>
 
+	<section id="param_rtpp_bind_local_avp" xreflabel="rtpp_bind_local_avp">
+		<title><varname>rtpp_bind_local_avp</varname> (string)</title>
+		<para>
+			The pseudo-variable used to read the local bind value which is
+			appended as <emphasis>l&lt;value&gt;</emphasis> to the RTPProxy U/L
+			command when set.
+		</para>
+
+		<para>
+		<emphasis>Default value is <quote>$avp(rtpp_bind_local)</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtpp_bind_local_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "rtpp_bind_local_avp", "$socket_out(ip)")
+...
+		</programlisting>
+		</example>
+	</section>
+
 </section>
 
 
@@ -739,6 +760,14 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 					it is the function uses its content as the body to challenge,
 					and returns the resulted body in it. If not used, the message's
 					body is used, and the outgoing body is changed.
+				</para>
+				<para>
+					If the pseudo-variable set by <varname>rtpp_bind_local_avp</varname>
+					is set to a string, its value is appended as
+					<emphasis>l&lt;value&gt;</emphasis> to the RTPProxy U/L command
+					(for example, "[1:2:3]" for IPv6). This applies to both
+					<function>rtpproxy_offer()</function> and
+					<function>rtpproxy_answer()</function>.
 				</para>
 			<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1264,4 +1293,3 @@ $ opensips-cli -x mi rtpproxy_reload
 </section>
 
 </chapter>
-
