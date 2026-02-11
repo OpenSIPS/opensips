@@ -78,7 +78,7 @@ BuildRequires:  openldap-devel
 BuildRequires:  curl-devel
 # BuildRequires:  GeoIP-devel
 BuildRequires:  libmaxminddb-devel
-BuildRequires:  pcre2-devel
+BuildRequires:  pcre3-devel
 %if 0%{?_with_python3:1}
 BuildRequires:  python3-devel
 %else
@@ -914,14 +914,16 @@ This package provides the SIP to XMPP IM translator module for OpenSIPS.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all modules-readme %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}"
+%{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"}
+%{__make} all modules-readme %{?_smp_mflags} PCRE_LIB=pcre \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
 
 %install
-%{__make} install TLS=1 LIBDIR=%{_lib} \
+%{__make} install PCRE_LIB=pcre LIBDIR=%{_lib} \
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg_prefix=%{buildroot} \
