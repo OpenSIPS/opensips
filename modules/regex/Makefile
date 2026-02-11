@@ -8,12 +8,16 @@ NAME=regex.so
 # the autodetection
 # CROSS_COMPILE=true
 
+PCRE_LIB ?= pcre2-8
+PCRE_VERSION ?= $(word 1,$(subst -, , $(PCRE_LIB)))
+PCRE_CONFIG ?= $(PCRE_VERSION)-config
+
 ifeq ($(CROSS_COMPILE),)
 PCRE_BUILDER := $(shell \
-	if which pcre2-config >/dev/null 2>/dev/null; then \
-		echo 'pcre2-config'; \
-	elif pkg-config --exists libpcre2-8; then \
-		echo 'pkg-config libpcre2-8'; \
+	if which $(PCRE_CONFIG) >/dev/null 2>/dev/null; then \
+		echo '$(PCRE_CONFIG)'; \
+	elif pkg-config --exists lib$(PCRE_LIB); then \
+		echo 'pkg-config lib$(PCRE_LIB)'; \
 	fi)
 endif
 
@@ -21,10 +25,12 @@ ifeq ($(PCRE_BUILDER),)
 	DEFS += -I$(SYSBASE)/include \
 			-I$(LOCALBASE)/include
 	LIBS += -L$(SYSBASE)/lib \
-			-L$(LOCALBASE)/lib -lpcre2-8
+			-L$(LOCALBASE)/lib -l$(PCRE_LIB)
 else
 	DEFS += $(shell $(PCRE_BUILDER) --cflags)
-	LIBS += $(shell $(PCRE_BUILDER) --libs8)
+	LIBS += $(shell $(PCRE_BUILDER) --libs 2>/dev/null) \
+			$(shell $(PCRE_BUILDER) --libs$(word 2,$(subst -, ,$(PCRE_LIB))) 2>/dev/null)
 endif
+DEFS += -D$(shell echo $(PCRE_VERSION) | tr 'a-z' 'A-Z')_LIB
 
 include ../../Makefile.modules
