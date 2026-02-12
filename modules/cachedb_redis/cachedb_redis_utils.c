@@ -81,7 +81,35 @@ uint16_t crc16(const char *buf, int len)
 
 unsigned int redisHash(redis_con *con, str* key)
 {
-	return crc16(key->s,key->len) & con->slots_assigned;
+	int s, e;
+	char *k;
+	int klen;
+
+	if (!key || !key->s || key->len <= 0) {
+		LM_ERR("redisHash called with invalid key\n");
+		return 0;
+	}
+
+	k = key->s;
+	klen = key->len;
+
+	/* Hash tag extraction per Redis cluster spec:
+	 * If key contains {substring}, hash only the substring */
+	for (s = 0; s < klen; s++)
+		if (k[s] == '{') break;
+
+	if (s < klen) {
+		for (e = s + 1; e < klen; e++)
+			if (k[e] == '}') break;
+
+		if (e < klen && e != s + 1) {
+			LM_DBG("hash tag detected: hashing '%.*s' from key '%.*s'\n",
+				   e - s - 1, k + s + 1, klen, k);
+			return crc16(k + s + 1, e - s - 1) & 16383;
+		}
+	}
+
+	return crc16(k, klen) & 16383;
 }
 
 cluster_node *get_redis_connection(redis_con *con,str *key)
