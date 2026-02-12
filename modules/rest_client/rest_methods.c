@@ -879,6 +879,13 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 	multi_list = get_multi();
 	if (!multi_list) {
+		if (no_async_fallback) {
+			LM_ERR("failed to get a multi handle, max_async_transfers (%d) "
+			       "reached\n", max_async_transfers);
+			curl_easy_cleanup(handle);
+			ret = RCL_NO_MULTI_HANDLE;
+			goto cleanup;
+		}
 		LM_WARN("failed to get a multi handle, doing a blocking transfer\n");
 		rc = rest_easy_perform(handle, url, NULL);
 		clean_header_list;

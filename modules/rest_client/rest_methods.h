@@ -48,6 +48,7 @@ extern int ssl_verifyhost;
 extern int curl_http_version;
 extern int no_concurrent_connects;
 extern unsigned int curl_conn_lifetime;
+extern int no_async_fallback;
 
 /* handle for use with synchronous reqs */
 extern CURL *sync_handle;
@@ -69,6 +70,7 @@ enum rest_client_method {
 #define RCL_CONNECT_TIMEOUT     -2
 #define RCL_TRANSFER_TIMEOUT    -3
 #define RCL_ALREADY_CONNECTING  -4
+#define RCL_NO_MULTI_HANDLE     -5
 #define RCL_INTERNAL_ERR       -10
 
 typedef struct _rest_trace_param {
