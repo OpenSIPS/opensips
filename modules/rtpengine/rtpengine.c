@@ -2173,6 +2173,8 @@ static const char *transports[] = {
 		} \
 	} while (0)
 
+#include "rtpengine_bracket.h"
+
 static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 		enum rtpe_operation *op, const char *flags_str)
 {
@@ -2203,9 +2205,29 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 		else if (*e == '=') {
 			key.len = e - key.s;
 			val.s = e + 1;
-			e = strchr(val.s, ' ');
-			if (!e)
-				e = val.s + strlen(val.s);
+			if (*val.s == '[') {
+				/* bracket value: scan forward to the matching ']',
+				 * tracking nesting depth so inner brackets like
+				 * key=[a=[x y] b=[z]] are consumed as a single value */
+				int depth = 0;
+				for (e = val.s; *e; e++) {
+					if (*e == '[') depth++;
+					else if (*e == ']' && --depth == 0) { e++; break; }
+				}
+				if (depth != 0) {
+					/* set val.len before error so the error handler
+					 * can safely log the partial value with %.*s */
+					val.len = e - val.s;
+					err = "unmatched bracket in flag value";
+					goto error;
+				}
+			} else {
+				/* non-bracket value: terminate at next space */
+				e = strchr(val.s, ' ');
+				if (!e)
+					e = val.s + strlen(val.s);
+			}
+			/* e now points past the value; compute length */
 			val.len = e - val.s;
 		}
 
@@ -2480,6 +2502,18 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				goto error;
 			}
 			BCHECK(bencode_list_add(ng_flags->flags, bitem));
+		} else if (val.len >= 2 && val.s[0] == '[' && val.s[val.len - 1] == ']') {
+			/* bracket-delimited list or dictionary — strip the outer
+			 * '[' and ']' (val.s+1, val.len-2) and parse the inner
+			 * content into a bencode list or dict */
+			bitem = parse_bracket_value(val.s + 1, val.len - 2,
+					bencode_item_buffer(ng_flags->dict), 0);
+			if (!bitem) {
+				err = "failed to parse bracket value";
+				goto error;
+			}
+			BCHECK(bencode_dictionary_add_len(ng_flags->dict,
+					key.s, key.len, bitem));
 		} else {
 			bitem = bencode_str(bencode_item_buffer(ng_flags->dict), &val);
 			if (!bitem) {
