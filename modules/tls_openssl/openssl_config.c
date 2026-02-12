@@ -743,12 +743,14 @@ int openssl_init_tls_dom(struct tls_domain *d, int init_flags)
 	/*
 	 * load certificate
 	 */
-	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CERT_FILE_FL) {
-		if (load_certificate(ctx, d->cert.s) < 0)
-			return -1;
-	} else
-		if (load_certificate_db(ctx, &d->cert) < 0)
-			return -1;
+	if (d->cert.s) {
+		if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CERT_FILE_FL) {
+			if (load_certificate(ctx, d->cert.s) < 0)
+				return -1;
+		} else
+			if (load_certificate_db(ctx, &d->cert) < 0)
+				return -1;
+	}
 
 	/**
 	 * load crl from directory
