@@ -3983,6 +3983,14 @@ int b2b_apply_lumps(struct sip_msg* msg)
 	if (msg==NULL || msg == FAKED_REPLY || msg==&dummy_msg)
 		return 0;
 
+	/* TM faked requests have parsed headers in SHM (from the
+	 * transaction copy).  free_sip_msg() below would try to
+	 * pkg_free() those SHM pointers, causing a "dangling pkg
+	 * pointer" abort.  Skip lump application for these messages.
+	 * (see GH #3796) */
+	if (msg->msg_flags & FL_TM_FAKE_REQ)
+		return 0;
+
 	if(!msg->body_lumps && !msg->add_rm)
 		return 0;
 
