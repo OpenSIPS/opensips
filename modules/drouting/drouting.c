@@ -267,10 +267,10 @@ static int w_do_routing(struct sip_msg* msg, int *grp, long flags, str *wl,
 		pv_spec_t* rule_att, pv_spec_t* gw_att, pv_spec_t* carr_att,
 		struct head_db *part);
 static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
-		int flags, str* wl);
+		      int flags, str* wl);
 
 static int route2_carrier(struct sip_msg* msg, str* ids,
-		pv_spec_t* gw_att, pv_spec_t* carr_att, struct head_db *part);
+		  pv_spec_t* gw_att, pv_spec_t* carr_att, struct head_db *part, int *type_id);
 
 static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 		pv_spec_t* cr_attr, struct head_db *part);
@@ -392,6 +392,7 @@ static const cmd_export_t cmds[] = {
 		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
 		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_carr_attr, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
+		  {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {0 , 0, 0}
 		},
 		ALL_ROUTES
@@ -2583,7 +2584,7 @@ static int w_do_routing(struct sip_msg* msg, int *grp, long flags, str *wl,
 				pv_spec_t* rule_att, pv_spec_t* gw_att, pv_spec_t* carr_att,
 														struct head_db *part)
 {
-	rule_attrs_spec = rule_att;
+        rule_attrs_spec = rule_att;
 	gw_attrs_spec = gw_att;
 	carrier_attrs_spec = carr_att;
 
@@ -3216,8 +3217,7 @@ struct head_db * get_partition(const str *name)
 }
 
 
-static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
-													int flags, str* whitelist)
+static int do_routing(struct sip_msg* msg, struct head_db *part, int grp, int flags, str* whitelist)
 {
 	static unsigned short *dsts_idx = NULL;
 	static unsigned short dsts_idx_size = 0;
@@ -3738,7 +3738,7 @@ error1:
 
 
 static int route2_carrier(struct sip_msg* msg, str* ids,
-				pv_spec_t* gw_att, pv_spec_t* carr_att, struct head_db *part)
+			  pv_spec_t* gw_att, pv_spec_t* carr_att, struct head_db *part, int *type_id)
 {
 	static unsigned short *carrier_idx;
 	static unsigned short carrier_idx_size;
@@ -3750,10 +3750,12 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 	str ruri, id;
 	str next_carrier_attrs = {NULL, 0};
 	str next_gw_attrs = {NULL, 0};
-	int i, j, n;
+	int i, j, n, type;
 	struct head_db * current_partition = 0;
 	char *ruri_buf=NULL, *p;
 
+	type = type_id ? *type_id : -1;
+	
 	if(part==NULL) {
 		LM_ERR("Partition is mandatory for route_to_carrier.\n");
 		return -1;
@@ -3876,6 +3878,9 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 			/* is gateway disabled ? */
 			if (cdst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG ) {
 				/*ignore it*/
+			} else if (type != -1 && cdst->dst.gw->type != type) {
+			  /* Type is not -1 and gateway doesn't match requested type.  Ignore it */
+			  LM_DBG("GW <%.*s> doesn't match requested type of %i.  Skipping it.\n",cdst->dst.gw->id.len, cdst->dst.gw->id.s, type);
 			} else {
 				/* add gateway to usage list */
 				dst.is_carrier = 1;
