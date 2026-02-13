@@ -49,6 +49,8 @@ int             tls_default_method = TLS_USE_SSLv23;
 int             tls_verify_client_cert  = 1;
 int             tls_verify_server_cert  = 1;
 int             tls_require_client_cert = 1;
+/* disable hostname verification by default */
+int             tls_verify_hostname = 0;
 /* disable CRL validation for all the certificates from the chain */
 int crl_check_all = 0;
 /* default location of certificates */
@@ -70,6 +72,7 @@ str    match_address_col = str_init("match_ip_address");
 str    match_domain_col = str_init("match_sip_domain");
 str    method_col = str_init("method");
 str    verify_cert_col = str_init("verify_cert");
+str    verify_hostname_col = str_init("verify_hostname");
 str    require_cert_col = str_init("require_cert");
 str    certificate_col = str_init("certificate");
 str    pk_col = str_init("private_key");

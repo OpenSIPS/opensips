@@ -262,6 +262,25 @@ int tlsp_set_require(modparam_t type, void *in)
 	return 1;
 }
 
+int tlsp_set_verify_hostname(modparam_t type, void *in)
+{
+	str name;
+	str val;
+	unsigned int verify;
+
+	if (split_param_val((char*)in, &name, &val) < 0)
+		return -1;
+
+	if (str2int(&val, &verify)!=0) {
+		LM_ERR("option is not a number [%s]\n",val.s);
+		return -1;
+	}
+
+	set_domain_attr(name, verify_hostname, verify);
+
+	return 1;
+}
+
 int tlsp_set_crl_check(modparam_t type, void *in)
 {
 	str name;
