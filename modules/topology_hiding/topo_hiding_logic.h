@@ -57,5 +57,6 @@ int topo_callid_post_raw(str *data, struct sip_msg* req);
 int topology_hiding_match(struct sip_msg *req);
 void th_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params);
+char *th_get_encoded_callid(struct sip_msg *msg, str *tag, int *enc_len);
 
 #endif

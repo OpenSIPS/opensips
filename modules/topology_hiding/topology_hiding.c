@@ -35,6 +35,7 @@ struct dlg_binds dlg_api;
 
 int force_dialog = 0;
 str topo_hiding_ct_params = {0,0};
+int th_loop_protection = 0;
 str topo_hiding_ct_hdr_params = {0,0};
 str topo_hiding_prefix = str_init("DLGCH_");
 str topo_hiding_seed = str_init("OpenSIPS");
@@ -77,6 +78,7 @@ static const param_export_t params[] = {
 	{ "th_contact_encode_scheme",    STR_PARAM, &th_contact_encode_scheme.s  },
 	{ "th_contact_caller_username_var", STR_PARAM, &th_contact_caller_var.s  },
 	{ "th_contact_callee_username_var", STR_PARAM, &th_contact_callee_var.s  },
+	{ "th_callid_loop_protection",      INT_PARAM, &th_loop_protection       },
 	{0, 0, 0}
 };
 
@@ -336,11 +338,10 @@ int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val)
 }
 
 static char *callid_buf=NULL;
-static int callid_buf_len=0;
 static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
 	struct dlg_cell *dlg;
-	int req_len = 0,i;
+	str callid;
 
 	if(res==NULL)
 		return -1;
@@ -350,28 +351,17 @@ static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_valu
 		return pv_get_null( msg, param, res);
 	}
 
-
-	req_len = calc_word64_encode_len(dlg->callid.len) + topo_hiding_prefix.len;
-
-	if (req_len*2 > callid_buf_len) {
-		callid_buf = pkg_realloc(callid_buf,req_len*2);
-		if (callid_buf == NULL) {
-			LM_ERR("No more pkg\n");
-			return pv_get_null( msg, param, res);
-		}
-
-		callid_buf_len = req_len*2;
+	callid.s = th_get_encoded_callid(msg, &dlg->legs[DLG_CALLER_LEG].tag, &callid.len);
+	if (!callid.s) {
+		LM_ERR("could not encode callid\n");
+		return pv_get_null( msg, param, res);
 	}
+	if (callid_buf)
+		pkg_free(callid_buf);
+	callid_buf = callid.s;
 
-	memcpy(callid_buf+req_len,topo_hiding_prefix.s,topo_hiding_prefix.len);
-	for (i=0;i<dlg->callid.len;i++)
-		callid_buf[i] = dlg->callid.s[i] ^ topo_hiding_seed.s[i%topo_hiding_seed.len];
-
-	word64encode((unsigned char *)(callid_buf+topo_hiding_prefix.len+req_len),
-		     (unsigned char *)(callid_buf),dlg->callid.len);
-
-	res->rs.s = callid_buf+req_len;
-	res->rs.len = req_len;
+	res->rs.s = callid_buf;
+	res->rs.len = callid.len;
 	res->flags = PV_VAL_STR;
 
 	return 0;

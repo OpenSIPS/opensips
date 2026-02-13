@@ -255,6 +255,32 @@ modparam("topology_hiding", "th_contact_callee_username_var", "__topo_hiding_use
 </programlisting>
 		</example>
 	</section>
+	<section id="param_th_callid_loop_protection" xreflabel="th_callid_loop_protection">
+		<title><varname>th_callid_loop_protection</varname> (int)</title>
+		<para>
+			Include the <emphasis>from_tag</emphasis> when encoding the
+			topology-hiding Call-ID to ensure correct decoding in looping scenarios,
+			(when the same call with a previously encoded Call-ID is being looped back).
+		</para>
+		<para>
+			Note that enabling this parameter will increase the generated Call-ID value,
+			due to the additional from_tag information being embedded.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> / disabled.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_callid_loop_protection</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("topology_hiding", "th_callid_loop_protection", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
