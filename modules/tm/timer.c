@@ -248,7 +248,7 @@ static void delete_cell( struct cell *p_cell, int unlock )
  * a non-200OK reply, it cannot lead to a cancelling scenario */
 static void fake_reply(struct cell *t, int branch, int code )
 {
-	branch_bm_t cancel_bitmap = 0;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	enum rps reply_status;
 
 	_tm_branch_index = branch;
@@ -410,7 +410,7 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 
 	/* out-of-lock do the cancel I/O */
 	if (is_invite(t) && should_cancel_branch(t, r_buf->branch) ) {
-		cancel_bitmap =  1 << r_buf->branch ;
+		BRANCH_BM_SET_IDX( cancel_bitmap, r_buf->branch) ;
 		set_cancel_extra_hdrs( CANCEL_REASON_SIP_480,
 			sizeof(CANCEL_REASON_SIP_480)-1);
 		cancel_uacs(t, cancel_bitmap );
@@ -448,8 +448,8 @@ void cleanup_localcancel_timers( struct cell *t )
 {
 	int i;
 	for (i=0; i<t->nr_of_outgoings; i++ )  {
-		reset_timer(  &t->uac[i].local_cancel.retr_timer );
-		reset_timer(  &t->uac[i].local_cancel.fr_timer );
+		reset_timer(  &TM_BRANCH(t,i).local_cancel.retr_timer );
+		reset_timer(  &TM_BRANCH(t,i).local_cancel.fr_timer );
 	}
 }
 
@@ -1034,15 +1034,15 @@ static void unlink_timers( struct cell *t )
 	*/
 	if (is_in_timer_list2(&t->uas.response.fr_timer)) remove_fr=1;
 	else for (i=0; i<t->nr_of_outgoings; i++)
-		if (is_in_timer_list2(&t->uac[i].request.fr_timer)
-			|| is_in_timer_list2(&t->uac[i].local_cancel.fr_timer)) {
+		if (is_in_timer_list2(&TM_BRANCH(t,i).request.fr_timer)
+			|| is_in_timer_list2(&TM_BRANCH(t,i).local_cancel.fr_timer)) {
 				remove_fr=1;
 				break;
 		}
 	if (is_in_timer_list2(&t->uas.response.retr_timer)) remove_retr=1;
 	else for (i=0; i<t->nr_of_outgoings; i++)
-		if (is_in_timer_list2(&t->uac[i].request.retr_timer)
-			|| is_in_timer_list2(&t->uac[i].local_cancel.retr_timer)) {
+		if (is_in_timer_list2(&TM_BRANCH(t,i).request.retr_timer)
+			|| is_in_timer_list2(&TM_BRANCH(t,i).local_cancel.retr_timer)) {
 				remove_retr=1;
 				break;
 		}
@@ -1057,8 +1057,8 @@ static void unlink_timers( struct cell *t )
 		lock(timertable[set].timers[RT_T1_TO_1].mutex);
 		remove_timer_unsafe(&t->uas.response.retr_timer);
 		for (i=0; i<t->nr_of_outgoings; i++) {
-			remove_timer_unsafe(&t->uac[i].request.retr_timer);
-			remove_timer_unsafe(&t->uac[i].local_cancel.retr_timer);
+			remove_timer_unsafe(&TM_BRANCH(t,i).request.retr_timer);
+			remove_timer_unsafe(&TM_BRANCH(t,i).local_cancel.retr_timer);
 		}
 		unlock(timertable[set].timers[RT_T1_TO_1].mutex);
 	}
@@ -1069,8 +1069,8 @@ static void unlink_timers( struct cell *t )
 		lock(timertable[set].timers[FR_TIMER_LIST].mutex);
 		remove_timer_unsafe(&t->uas.response.fr_timer);
 		for (i=0; i<t->nr_of_outgoings; i++) {
-			remove_timer_unsafe(&t->uac[i].request.fr_timer);
-			remove_timer_unsafe(&t->uac[i].local_cancel.fr_timer);
+			remove_timer_unsafe(&TM_BRANCH(t,i).request.fr_timer);
+			remove_timer_unsafe(&TM_BRANCH(t,i).local_cancel.fr_timer);
 		}
 		unlock(timertable[set].timers[FR_TIMER_LIST].mutex);
 	}

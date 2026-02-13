@@ -54,8 +54,7 @@ void which_cancel( struct cell *t, branch_bm_t *cancel_bm )
 
 	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++ ) {
 		if (should_cancel_branch(t, i))
-			*cancel_bm |= 1<<i ;
-
+			BRANCH_BM_SET_IDX( *cancel_bm, i);
 	}
 }
 
@@ -67,9 +66,9 @@ void cancel_uacs( struct cell *t, branch_bm_t cancel_bm )
 
 	/* cancel pending client transactions, if any */
 	for( i=0 ; i<t->nr_of_outgoings ; i++ )
-		if (cancel_bm & (1<<i)) {
+		if ( BRANCH_BM_TST_IDX( cancel_bm, i) ) {
 			/* any reply actually received on this branch */
-			if (t->uac[i].last_received!=0) {
+			if (TM_BRANCH(t,i).last_received!=0) {
 				/* send a cancel out */
 				cancel_branch(t, i);
 			} else {
@@ -78,7 +77,7 @@ void cancel_uacs( struct cell *t, branch_bm_t cancel_bm )
 				 * one out IF we receive later a reply on this branch, so let's
 				 * flag it for catching (and cancelling) such delaied replies
 				 */
-				t->uac[i].flags |= T_UAC_TO_CANCEL_FLAG;
+				TM_BRANCH(t,i).flags |= T_UAC_TO_CANCEL_FLAG;
 			}
 		}
 }
@@ -91,8 +90,8 @@ void cancel_branch( struct cell *t, int branch )
 	struct retr_buf *crb, *irb;
 	struct usr_avp **backup_list;
 
-	crb=&t->uac[branch].local_cancel;
-	irb=&t->uac[branch].request;
+	crb=&TM_BRANCH(t,branch).local_cancel;
+	irb=&TM_BRANCH(t,branch).request;
 
 #	ifdef EXTRA_DEBUG
 	if (crb->buffer.s!=0 && crb->buffer.s!=BUSY_BUFFER) {
@@ -125,10 +124,10 @@ void cancel_branch( struct cell *t, int branch )
 	}
 
 	LM_DBG("sending cancel...\n");
-	if (t->uac[branch].br_flags & tcp_no_new_conn_bflag)
+	if (TM_BRANCH(t,branch).br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 	backup_list = set_avp_list( &t->user_avps );
-	set_bavp_list(&t->uac[branch].user_avps);
+	set_bavp_list(&TM_BRANCH(t,branch).user_avps);
 	if (SEND_BUFFER( crb )==0) {
 		if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
 			set_extra_tmcb_params( &crb->buffer, &crb->dst);

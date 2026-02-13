@@ -120,6 +120,7 @@ void free_cell( struct cell* dead_cell )
 	struct sip_msg *rpl;
 	struct totag_elem *tt, *foo;
 	struct proxy_l *p;
+	struct ua_client *uac;
 
 	if ( has_tran_tmcbs( dead_cell, TMCB_TRANS_DELETED) )
 		run_trans_callbacks( TMCB_TRANS_DELETED, dead_cell, 0, 0, 0);
@@ -142,17 +143,18 @@ void free_cell( struct cell* dead_cell )
 	/* UA Clients */
 	for ( i =0 ; i<dead_cell->nr_of_outgoings;  i++ )
 	{
+		uac = & TM_BRANCH( dead_cell, i);
 		/* retransmission buffer */
-		if ( (b=dead_cell->uac[i].request.buffer.s) )
+		if ( (b=uac->request.buffer.s) )
 			shm_free_bulk( b );
-		b=dead_cell->uac[i].local_cancel.buffer.s;
+		b=uac->local_cancel.buffer.s;
 		if (b!=0 && b!=BUSY_BUFFER)
 			shm_free_bulk( b );
-		rpl=dead_cell->uac[i].reply;
+		rpl=uac->reply;
 		if (rpl && rpl!=FAKED_REPLY && rpl->msg_flags&FL_SHM_CLONE) {
 			free_cloned_msg_unsafe( rpl );
 		}
-		if ( (p=dead_cell->uac[i].proxy)!=NULL ) {
+		if ( (p=uac->proxy)!=NULL ) {
 			if ( p->host.h_addr_list )
 				shm_free_bulk( p->host.h_addr_list );
 			if ( p->dn ) {
@@ -163,12 +165,15 @@ void free_cell( struct cell* dead_cell )
 			shm_free_bulk(p);
 		}
 
-		_clean_branch(dead_cell->uac[i],
-					shm_free_bulk, destroy_avp_list_bulk);
+		_clean_branch( *uac, shm_free_bulk, destroy_avp_list_bulk);
 
-		if (dead_cell->uac[i].on_reply)
-			shm_free_bulk(dead_cell->uac[i].on_reply);
+		if (uac->on_reply)
+			shm_free_bulk(uac->on_reply);
 	}
+
+	/* destroy the UAC arrays now */
+	for (i=0 ; i<TM_BRANCH_CHUNKS_NO && dead_cell->uac[i] ; i++ )
+		shm_free_bulk(dead_cell->uac[i]);
 
 	/* collected to tags */
 	tt=dead_cell->fwded_totags;
@@ -232,14 +237,6 @@ static inline void init_synonym_id( struct cell *t )
 			int2reverse_hex( &c, &size, myrand );
 		}
 	}
-}
-
-static inline void init_branches(struct cell *t, unsigned int set)
-{
-	unsigned int i;
-
-	for (i=0; i<MAX_BRANCHES; i++)
-		init_branch(&t->uac[i], i, set, t);
 }
 
 
@@ -310,7 +307,6 @@ struct cell*  build_cell( struct sip_msg* p_msg, int full_uas)
 	}
 
 	/* UAC */
-	init_branches(new_cell, set);
 	new_cell->fr_timeout = fr_timeout;
 	new_cell->fr_inv_timeout = fr_inv_timeout;
 

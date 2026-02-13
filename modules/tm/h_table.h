@@ -51,6 +51,22 @@ struct cell;
 struct timer;
 struct retr_buf;
 
+
+/* be sure the MAX devides to CHUNK_SIZE, otherwise the behavor may be
+ * bogus (meaning crashes) */
+/* IMPORTANT - TM_BRANCH_MAX must be a multiple of 32, to align perfectly
+ * with the size of the bitmask (which is array of uint32) 
+ * Even more, this multiple of 32 guarantees the devision with 4, the 
+ * TM_BRANCH_CHUNK_SIZE (so, if you plan to change the chunk size, pick
+ * something that devides 32, like 16) */
+#define TM_BRANCH_MAX_FACTOR 8
+#define TM_BRANCH_MAX        (32*TM_BRANCH_MAX_FACTOR)
+#define TM_BRANCH_CHUNK_SIZE 4
+#define TM_BRANCH_CHUNKS_NO  (TM_BRANCH_MAX/TM_BRANCH_CHUNK_SIZE)
+
+#define TM_BRANCH( _t, _idx) \
+	( (_t)->uac[(_idx)/TM_BRANCH_CHUNK_SIZE][(_idx)%TM_BRANCH_CHUNK_SIZE] )
+
 #include "../../lib/container.h"
 #include "../../mem/shm_mem.h"
 #include "lock.h"
@@ -216,7 +232,6 @@ struct totag_elem {
 #define T_UAC_IS_PHONY        (1<<2)
 
 
-
 /* transaction context */
 
 typedef struct cell
@@ -268,13 +283,15 @@ typedef struct cell
 	 * messages have been successfully relayed or not.  Starts at 0. */
 	int nr_of_outgoings;
 
-	/* nr of replied branch; 0..MAX_BRANCHES=branch value,
+	/* nr of replied branch; 0..TM_BRANCH_MAX=branch value,
 	 * -1 no reply, -2 local reply */
 	int relaied_reply_branch;
 	/* UA Server */
 	struct ua_server  uas;
 	/* UA Clients */
-	struct ua_client  uac[ MAX_BRANCHES ];
+	/* each UAC pointer is a pointer to a
+	 * TM_BRANCH_CHUNK_SIZE array of UACs */
+	struct ua_client*  uac[TM_BRANCH_CHUNKS_NO];
 
 	/* protection against concurrent reply processing */
 	ser_lock_t   reply_mutex;

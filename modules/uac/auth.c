@@ -283,8 +283,8 @@ int uac_auth( struct sip_msg *msg, unsigned algmask)
 		goto error;
 	}
 
-	rpl = t->uac[branch].reply;
-	code = t->uac[branch].last_received;
+	rpl = TM_BRANCH(t,branch).reply;
+	code = TM_BRANCH(t,branch).last_received;
 	LM_DBG("picked reply is %p, code %d\n",rpl,code);
 
 	if (rpl==0)
@@ -329,14 +329,14 @@ int uac_auth( struct sip_msg *msg, unsigned algmask)
 
 	/* do authentication */
 	if (uac_auth_api._do_uac_auth(&msg_body, &msg->first_line.u.request.method,
-	    &t->uac[branch].uri, crd, auth, &auth_nc_cnonce, &response) != 0) {
+	    &TM_BRANCH(t,branch).uri, crd, auth, &auth_nc_cnonce, &response) != 0){
 		LM_ERR("Failed in do_uac_auth()\n");
 		goto error;
 	}
 
 	/* build the authorization header */
-	new_hdr = uac_auth_api._build_authorization_hdr( code, &t->uac[branch].uri,
-		crd, auth, &auth_nc_cnonce, &response);
+	new_hdr = uac_auth_api._build_authorization_hdr( code,
+		&TM_BRANCH(t,branch).uri, crd, auth, &auth_nc_cnonce, &response);
 	if (new_hdr==0)
 	{
 		LM_ERR("failed to build authorization hdr\n");
@@ -344,8 +344,7 @@ int uac_auth( struct sip_msg *msg, unsigned algmask)
 	}
 
 	/* so far, so good -> add the header and set the proper RURI */
-	if (apply_urihdr_changes( msg, &t->uac[branch].uri, new_hdr)<0)
-	{
+	if (apply_urihdr_changes( msg, &TM_BRANCH(t,branch).uri, new_hdr)<0) {
 		LM_ERR("failed to apply changes\n");
 		pkg_free(new_hdr->s);
 		new_hdr->s = NULL; new_hdr->len = 0;

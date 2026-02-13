@@ -904,15 +904,10 @@ static int mod_init(void)
 	unsigned int timer_sets,set;
 	unsigned int roundto_init;
 
-	LM_INFO("TM - initializing...\n");
-
-	/* checking if we have sufficient bitmap capacity for given
-	   maximum number of  branches */
-	if (MAX_BRANCHES+1>31) {
-		LM_CRIT("Too many max UACs for UAC branch_bm_t bitmap: %d\n",
-			MAX_BRANCHES );
-		return -1;
-	}
+	LM_INFO("TM - initializing, max branches [%d], branches chunk [%d],"
+		"branch bitmask size [%d/%lu] ...\n",
+		TM_BRANCH_MAX, TM_BRANCH_CHUNK_SIZE, TM_BRANCH_MAX_FACTOR,
+		sizeof(branch_bm_t));
 
 	minor_branch_flag =
 		get_flag_id_by_name(FLAG_TYPE_BRANCH, minor_branch_flag_str, 0);
@@ -1109,7 +1104,7 @@ static int t_check_status(struct sip_msg* msg, regex_t *regexp)
 						" in MODE_ONFAILURE\n", branch);
 				return -1;
 			}
-			status = int2str( t->uac[branch].last_received , 0);
+			status = int2str( TM_BRANCH(t,branch).last_received , 0);
 			break;
 		default:
 			LM_ERR("unsupported route_type %d\n", route_type);
@@ -1203,7 +1198,7 @@ static int t_local_replied(struct sip_msg* msg, void *type)
 		/* check all */
 		case 0:
 			for( i=t->first_branch ; i<t->nr_of_outgoings ; i++ ) {
-				if (t->uac[i].flags&T_UAC_HAS_RECV_REPLY)
+				if (TM_BRANCH(t,i).flags&T_UAC_HAS_RECV_REPLY)
 					return -1;
 			}
 			return 1;
@@ -1216,7 +1211,7 @@ static int t_local_replied(struct sip_msg* msg, void *type)
 						" a final response in MODE_ONFAILURE\n", branch);
 					return -1;
 				}
-				if (t->uac[branch].flags&T_UAC_HAS_RECV_REPLY)
+				if (TM_BRANCH(t,branch).flags&T_UAC_HAS_RECV_REPLY)
 					return -1;
 				return 1;
 			}
@@ -1230,7 +1225,7 @@ static int t_local_replied(struct sip_msg* msg, void *type)
 						" a final response in MODE_ONFAILURE\n", branch);
 					return -1;
 				}
-				if (t->uac[branch].reply==FAKED_REPLY)
+				if (TM_BRANCH(t,branch).reply==FAKED_REPLY)
 					return 1;
 				return -1;
 			}
@@ -1445,7 +1440,7 @@ route_err:
 
 static int t_cancel_trans(struct cell *t, str *extra_hdrs)
 {
-	branch_bm_t cancel_bitmap = 0;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 
 	if (t==NULL || t==T_UNDEFINED) {
 		/* no transaction */
@@ -1469,7 +1464,7 @@ static int t_cancel_trans(struct cell *t, str *extra_hdrs)
 extern int _tm_branch_index;
 static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 {
-	branch_bm_t cancel_bitmap = 0;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	struct cell *t;
 	unsigned int flags = (unsigned long)sflags;
 
@@ -1495,7 +1490,7 @@ static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 		if (msg->first_line.u.reply.statuscode>=200)
 			/* do not cancel the current branch as we got
 			 * a final response here */
-			cancel_bitmap &= ~(1<<_tm_branch_index);
+			BRANCH_BM_RST_IDX( cancel_bitmap, _tm_branch_index);
 	} else if (flags&TM_CANCEL_BRANCH_OTHERS) {
 		/* lock and get the branches to cancel */
 		if (!onreply_avp_mode) {
@@ -1506,11 +1501,11 @@ static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 			which_cancel( t, &cancel_bitmap );
 		}
 		/* ignore current branch */
-		cancel_bitmap &= ~(1<<_tm_branch_index);
+		BRANCH_BM_RST_IDX( cancel_bitmap, _tm_branch_index);
 	} else {
 		/* cancel only local branch (only if still ongoing) */
 		if (msg->first_line.u.reply.statuscode<200)
-			cancel_bitmap = 1<<_tm_branch_index;
+			BRANCH_BM_SET_IDX( cancel_bitmap, _tm_branch_index);
 	}
 
 	/* send cancels out */
@@ -1830,7 +1825,7 @@ static int t_get_branch_idx_by_attr(struct sip_msg* msg,
 
 	for ( branch=offset?*offset:0 ; branch<t->nr_of_outgoings ; branch++) {
 		/* iterate the attrs for matching the name */
-		for ( avp=t->uac[branch].battrs ; avp ; avp=avp->next) {
+		for ( avp=TM_BRANCH(t,branch).battrs ; avp ; avp=avp->next) {
 			if (attr_id == avp->id) {
 				/* attr name matching */
 				if (val_s==NULL && val_i==NULL) {
@@ -1941,7 +1936,7 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 							" in MODE_ONFAILURE\n", branch);
 					code = 0;
 				} else {
-					code = t->uac[branch].last_received;
+					code = TM_BRANCH(t,branch).last_received;
 				}
 				break;
 			default:
@@ -1985,7 +1980,7 @@ static int pv_get_tm_branch_reply_code(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	/* it is not our job to find a proper branch, if not explicit asked for */
-	code = t->uac[branch].last_received;
+	code = TM_BRANCH(t,branch).last_received;
 
 	LM_DBG("reply code for branch %d is <%d>\n", branch, code);
 
@@ -2021,7 +2016,7 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	res->rs = t->uac[_tm_branch_index].uri;
+	res->rs = TM_BRANCH(t,_tm_branch_index).uri;
 
 	res->flags = PV_VAL_STR;
 
@@ -2045,7 +2040,7 @@ struct sip_msg* tm_pv_context_reply(struct sip_msg* msg)
 		return 0;
 	}
 
-	return trans->uac[branch].reply;
+	return TM_BRANCH(trans,branch).reply;
 }
 
 
@@ -2313,7 +2308,7 @@ static struct usr_avp** pv_get_bavp_list(void)
 	}
 
 	/* setting the avp head */
-	return &t->uac[_tm_branch_index].user_avps;
+	return &TM_BRANCH(t,_tm_branch_index).user_avps;
 }
 
 int pv_get_tm_fr_timeout(struct sip_msg *msg, pv_param_t *param,
@@ -2574,23 +2569,23 @@ static inline int _pv_get_tm_branch_field(struct sip_msg *msg,
 	/* we have a valid TM-branch index now */
 	switch (field) {
 		case BR_URI_ID: /* return URI */
-			res->rs = t->uac[idx].uri;
+			res->rs = TM_BRANCH(t,idx).uri;
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_Q_ID: /* return Q */
-			res->rs.s = q2str(t->uac[idx].q, (unsigned int*)&res->rs.len);
+			res->rs.s = q2str(TM_BRANCH(t,idx).q, (unsigned int*)&res->rs.len);
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_DURI_ID: /* return DURI */
-			if ( ZSTR(t->uac[idx].duri) )
+			if ( ZSTR(TM_BRANCH(t,idx).duri) )
 				return pv_get_null(NULL, NULL, res);
-			res->rs = t->uac[idx].duri;
+			res->rs = TM_BRANCH(t,idx).duri;
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_PATH_ID: /* return PATH */
-			if ( ZSTR(t->uac[idx].path_vec) )
+			if ( ZSTR(TM_BRANCH(t,idx).path_vec) )
 				return pv_get_null(NULL, NULL, res);
-			res->rs = t->uac[idx].path_vec;
+			res->rs = TM_BRANCH(t,idx).path_vec;
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_FLAGS_ID: /* return all FLAGS */
@@ -2598,20 +2593,20 @@ static inline int _pv_get_tm_branch_field(struct sip_msg *msg,
 				/* we have the name of a flag */
 			}
 			res->rs = bitmask_to_flag_list(FLAG_TYPE_BRANCH,
-				t->uac[idx].br_flags);
+				TM_BRANCH(t,idx).br_flags);
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_FLAG_ID: /* return value of one FLAG */
-			if ( t->uac[idx].br_flags & param->pvn.u.isname.name.n ) {
+			if ( TM_BRANCH(t,idx).br_flags & param->pvn.u.isname.name.n ) {
 				*res = pv_true;
 			} else {
 				*res = pv_false;
 			}
 			break;
 		case BR_SOCKET_ID: /* return SOCKET */
-			if ( t->uac[idx].request.dst.send_sock==NULL )
+			if ( TM_BRANCH(t,idx).request.dst.send_sock==NULL )
 				return pv_get_null(NULL, NULL, res);
-			res->rs = t->uac[idx].request.dst.send_sock->sock_str;
+			res->rs = TM_BRANCH(t,idx).request.dst.send_sock->sock_str;
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_ATTR_ID: /* get one attribute */
@@ -2621,7 +2616,7 @@ static inline int _pv_get_tm_branch_field(struct sip_msg *msg,
 				return -1;
 			}
 			/* get the attr now */
-			old_list = set_avp_list( &t->uac[idx].battrs );
+			old_list = set_avp_list( &TM_BRANCH(t,idx).battrs );
 			avp = search_first_avp( 0, attr_name, &attr_val, 0);
 			set_avp_list( old_list );
 			/* now return the value */
@@ -2637,15 +2632,15 @@ static inline int _pv_get_tm_branch_field(struct sip_msg *msg,
 			}
 			break;
 		case BR_LASTRECV_ID: /* return LAST RECEIVED */
-			if (t->uac[idx].last_received==0)
+			if (TM_BRANCH(t,idx).last_received==0)
 				return pv_get_null(msg, param, res);
-			res->rs.s = sint2str(t->uac[idx].last_received, &res->rs.len);
-			res->ri = t->uac[idx].last_received;
+			res->rs.s = sint2str(TM_BRANCH(t,idx).last_received, &res->rs.len);
+			res->ri = TM_BRANCH(t,idx).last_received;
 			res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 			break;
 		case BR_TYPE_ID: /* return TYPE */
 			res->flags = PV_VAL_STR;
-			if (t->uac[idx].flags | T_UAC_IS_PHONY) {
+			if (TM_BRANCH(t,idx).flags | T_UAC_IS_PHONY) {
 				res->rs.s = "phony";
 				res->rs.len = 5;
 			} else {
@@ -2794,7 +2789,7 @@ static inline int _pv_set_tm_branch_field(struct sip_msg* msg,
 			if (route_type==BRANCH_ROUTE && idx==t->nr_of_outgoings)
 				flags = &msg->ruri_bflags;
 			else
-				flags = (unsigned int*)&t->uac[idx].br_flags;
+				flags = (unsigned int*)&TM_BRANCH(t,idx).br_flags;
 			if (val->ri==0)
 				/* reset */
 				*flags &=  ~param->pvn.u.isname.name.n;
@@ -2819,7 +2814,7 @@ static inline int _pv_set_tm_branch_field(struct sip_msg* msg,
 				attr_flags |= AVP_VAL_STR;
 			}
 			/* set the attr now */
-			old_list = set_avp_list( &t->uac[idx].battrs );
+			old_list = set_avp_list( &TM_BRANCH(t,idx).battrs );
 			if ( (avp=search_first_avp( 0, attr_name, NULL, 0))!=NULL )
 				destroy_avp(avp);
 			if ( !(attr_flags&AVP_VAL_NULL) )

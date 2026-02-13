@@ -773,7 +773,6 @@ int t_reply_matching( struct sip_msg *p_msg , int *p_branch )
 	if (reverse_hex2int(hashi, hashl, &hash_index)<0
 		||hash_index>=TM_TABLE_ENTRIES
 		|| reverse_hex2int(branchi, branchl, &branch_id)<0
-		||branch_id>=MAX_BRANCHES
 		|| (syn_branch ? reverse_hex2int(syni, synl, &entry_label)<0
 			: loopl!=MD5_LEN )
 	) {
@@ -810,7 +809,7 @@ int t_reply_matching( struct sip_msg *p_msg , int *p_branch )
 		   as canceled transactions) */
 		if (!( /* it's a local cancel */
 			(cseq->method_id==METHOD_CANCEL && is_invite(p_cell)
-				&& p_cell->uac[branch_id].local_cancel.buffer.len )
+				&& TM_BRANCH(p_cell,branch_id).local_cancel.buffer.len )
 			/* method match */
 			|| ((cseq->method_id!=METHOD_OTHER && p_cell->uas.request)?
 				(cseq->method_id==REQ_LINE(p_cell->uas.request).method_value)

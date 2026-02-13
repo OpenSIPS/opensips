@@ -65,7 +65,28 @@ extern char *minor_branch_flag_str;
 int unmatched_totag(struct cell *t, struct sip_msg *ack);
 
 /* branch bitmap type */
-typedef unsigned int branch_bm_t;
+typedef  uint32_t branch_bm_t[TM_BRANCH_MAX_FACTOR];
+#define BRANCH_BM_ZERO {0}
+#define BRANCH_BM_ALL {~0}
+#define BRANCH_BM_SET_IDX( _bm, _idx) \
+	(_bm[(_idx)/sizeof(uint32_t)] |=  (1 << ((_idx)%sizeof(uint32_t))))
+#define BRANCH_BM_RST_IDX( _bm, _idx) \
+	(_bm[(_idx)/sizeof(uint32_t)] &= ~(1 << ((_idx)%sizeof(uint32_t))))
+#define BRANCH_BM_TST_IDX( _bm, _idx) \
+	(_bm[(_idx)/sizeof(uint32_t)] &   (1 << ((_idx)%sizeof(uint32_t))))
+#define BRANCH_BM_SET_ALL( _bm ) \
+	memset( &(_bm), 0xFF, sizeof(branch_bm_t))
+#define BRANCH_BM_RST_ALL( _bm ) \
+	memset( &(_bm), 0x00, sizeof(branch_bm_t))
+/* the below are a bit hackish, as rely on the default value of 8 for
+ * TM_BRANCH_MAX_FACTOR */
+#define BRANCH_BM_NONE_SET( _bm) \
+	((_bm)[0] || (_bm)[1] || (_bm)[2] || (_bm)[3] || (_bm)[4] || (_bm)[5] ||\
+		(_bm)[6] || (_bm)[7] )
+#define BRANCH_BM_SPECS \
+	"%X %X %X %X %X %X %X %X"
+#define BRANCH_BM_ARGS(_bm) \
+	(_bm)[7],(_bm)[6],(_bm)[5],(_bm)[4],(_bm)[3],(_bm)[2],(_bm)[1],(_bm)[0]
 
 /* reply export types */
 typedef int (*treply_f)(struct sip_msg * , unsigned int , const str * );

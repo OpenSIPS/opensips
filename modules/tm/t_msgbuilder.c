@@ -116,6 +116,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	str to;
 	str cseq_n;
 	str *cid = NULL;
+	struct ua_client* uac = & TM_BRANCH( Trans, branch);
 
 	req = Trans->uas.request;
 	cseq_n = Trans->cseq_n;
@@ -128,8 +129,8 @@ char *build_local(struct cell *Trans,unsigned int branch,
 		from.s = rpl->from->name.s;
 		from.len = rpl->from->len;
 		if (req && req->msg_flags&FL_USE_UAC_CSEQ) {
-			if ( extract_ftc_hdrs( Trans->uac[branch].request.buffer.s,
-				Trans->uac[branch].request.buffer.len,0 ,0 ,
+			if ( extract_ftc_hdrs( uac->request.buffer.s,
+				uac->request.buffer.len,0 ,0 ,
 				&cseq_n ,0)!=0 ) {
 				LM_ERR("build_local: failed to extract UAC hdrs\n");
 				goto error;
@@ -139,8 +140,8 @@ char *build_local(struct cell *Trans,unsigned int branch,
 		to = Trans->to;
 		from = Trans->from;
 		if (req && req->msg_flags&(FL_USE_UAC_FROM|FL_USE_UAC_TO|FL_USE_UAC_CSEQ)) {
-			if ( extract_ftc_hdrs( Trans->uac[branch].request.buffer.s,
-				Trans->uac[branch].request.buffer.len,
+			if ( extract_ftc_hdrs( uac->request.buffer.s,
+				uac->request.buffer.len,
 				(req->msg_flags&FL_USE_UAC_FROM)?&from:0 ,
 				(req->msg_flags&FL_USE_UAC_TO)?&to:0 ,
 				(req->msg_flags&FL_USE_UAC_CSEQ)?&cseq_n:0 ,0)!=0 ) {
@@ -155,9 +156,9 @@ char *build_local(struct cell *Trans,unsigned int branch,
 
 	/* method, separators, version  */
 	*len=SIP_VERSION_LEN + method->len + 2 /* spaces */ + CRLF_LEN;
-	*len+=Trans->uac[branch].uri.len;
+	*len+=uac->uri.len;
 
-	if (is_anycast(Trans->uac[branch].request.dst.send_sock))
+	if (is_anycast(uac->request.dst.send_sock))
 		cid = tm_via_cid();
 
 	/*via*/
@@ -165,12 +166,12 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	if (!t_calc_branch(Trans,  branch, branch_str.s, &branch_str.len ))
 		goto error;
 	set_hostport(&hp, (is_local(Trans))?0:req);
-	if (Trans->uac[branch].adv_address.len)
-		hp.host = &Trans->uac[branch].adv_address;
-	if (Trans->uac[branch].adv_port.len)
-		hp.port = &Trans->uac[branch].adv_port;
-	via=via_builder(&via_len, Trans->uac[branch].request.dst.send_sock,
-		&branch_str, cid, Trans->uac[branch].request.dst.proto, &hp );
+	if (uac->adv_address.len)
+		hp.host = &uac->adv_address;
+	if (uac->adv_port.len)
+		hp.port = &uac->adv_port;
+	via=via_builder(&via_len, uac->request.dst.send_sock,
+		&branch_str, cid, uac->request.dst.proto, &hp );
 	if (!via){
 		LM_ERR("no via header got from builder\n");
 		goto error;
@@ -184,8 +185,8 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	/* if there was a ROUTE received or added */
 	( req && (req->route || req->msg_flags&FL_HAS_ROUTE_LUMP))) )
 	{
-		buf_hdrs = extract_parsed_hdrs(Trans->uac[branch].request.buffer.s,
-			Trans->uac[branch].request.buffer.len );
+		buf_hdrs = extract_parsed_hdrs(uac->request.buffer.s,
+			uac->request.buffer.len );
 		if (buf_hdrs==NULL) {
 			LM_ERR("failed to reparse the request buffer\n");
 			goto error01;
@@ -213,7 +214,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 
 	append_string( p, method->s, method->len );
 	*(p++) = ' ';
-	append_string( p, Trans->uac[branch].uri.s, Trans->uac[branch].uri.len);
+	append_string( p, uac->uri.s, uac->uri.len);
 	append_string( p, " " SIP_VERSION CRLF, 1+SIP_VERSION_LEN+CRLF_LEN );
 
 	/* insert our via */
@@ -482,7 +483,7 @@ char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
 	} else {
 		/* build hop-by-hop ack for negative reply ->
 		 * ruri is the same as in INVITE; no route set */
-		ruri = Trans->uac[branch].uri;
+		ruri = TM_BRANCH(Trans,branch).uri;
 		cont = 0;
 		list = 0;
 	}
@@ -492,7 +493,7 @@ char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
 	*len += ruri.len;
 
 	/* use same socket as for INVITE -bogdan */
-	send_sock = Trans->uac[branch].request.dst.send_sock;
+	send_sock = TM_BRANCH(Trans,branch).request.dst.send_sock;
 
 	if (!t_calc_branch(Trans,  branch, branch_buf, &branch_len)) goto error;
 	branch_str.s = branch_buf;
@@ -650,8 +651,8 @@ static inline char* print_request_uri(char* w, str* method, dlg_t* dialog, struc
 	append_string(w, method->s, method->len);
 	*(w++) = ' ';
 
-	t->uac[branch].uri.s = w;
-	t->uac[branch].uri.len = dialog->hooks.request_uri->len;
+	TM_BRANCH(t,branch).uri.s = w;
+	TM_BRANCH(t,branch).uri.len = dialog->hooks.request_uri->len;
 
 	append_string(w, dialog->hooks.request_uri->s, dialog->hooks.request_uri->len);
 	append_string(w, " " SIP_VERSION CRLF, 1 + SIP_VERSION_LEN + CRLF_LEN);
