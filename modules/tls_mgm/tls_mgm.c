@@ -642,11 +642,21 @@ static int init_tls_dom(struct tls_domain *d)
 	}
 
 	if (!d->cert.s) {
-		init_flags |= TLS_DOM_CERT_FILE_FL;
-		LM_NOTICE("no certificate for tls domain '%.*s' defined, using default '%s'\n",
-				d->name.len, ZSW(d->name.s), tls_cert_file);
-		d->cert.s = tls_cert_file;
-		d->cert.len = len(tls_cert_file);
+		/* Client domains can operate without a certificate (RFC 8446 4.4.2.4,
+		 * RFC 5246 7.4.6) - an empty certificate message will be sent if the
+		 * server requests one. Server domains require a certificate. */
+		if (d->flags & DOM_FLAG_SRV) {
+			init_flags |= TLS_DOM_CERT_FILE_FL;
+			LM_NOTICE("no certificate for tls server domain '%.*s' defined, "
+					"using default '%s'\n",
+					d->name.len, ZSW(d->name.s), tls_cert_file);
+			d->cert.s = tls_cert_file;
+			d->cert.len = len(tls_cert_file);
+		} else {
+			LM_INFO("no certificate for tls client domain '%.*s', "
+					"will not send client certificate\n",
+					d->name.len, ZSW(d->name.s));
+		}
 	}
 
 	if (!d->ca.s) {
@@ -722,6 +732,15 @@ static int init_tls_domains(struct tls_domain **dom)
 	prev = NULL;
 	while (d) {
 		if (!d->pkey.s) {
+			/* Client domains without a certificate don't need a private key */
+			if (!d->cert.s && (d->flags & DOM_FLAG_CLI)) {
+				LM_DBG("no private key needed for tls client domain '%.*s' "
+						"(no certificate configured)\n",
+						d->name.len, ZSW(d->name.s));
+				prev = d;
+				d = d->next;
+				continue;
+			}
 			LM_NOTICE("no private key for tls domain '%.*s' defined, using default '%s'\n",
 					d->name.len, ZSW(d->name.s), tls_pkey_file);
 			d->pkey.s = tls_pkey_file;
