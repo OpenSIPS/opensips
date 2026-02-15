@@ -472,6 +472,61 @@ if (extract_pub_key_from_cert("$avp(my_certificate)",$avp(my_pub_key))) {
 		</example>
 	</section>
 
+	<section id="func_extract_pub_key_from_exp_mod" xreflabel="extract_pub_key_from_exp_mod()">
+		<title>
+			<function moreinfo="none">extract_pub_key_from_exp_mod(e,n,out_public_key)</function>
+		</title>
+		<para>
+			The function reads a base64url-encoded RSA exponent (<emphasis>e</emphasis>) and modulus (<emphasis>n</emphasis>), then builds a PEM public key and stores it into <emphasis>out_public_key</emphasis>.
+			Return codes are : 
+			<itemizedlist>
+				<listitem>
+				<para>
+					-1 : Failure in extracting the pub key
+				</para>
+				</listitem>
+				<listitem>
+				<para>
+					1 : out_public_key succesfully populated
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>e (string)</emphasis> - Base64url-encoded RSA exponent
+			</para>
+			<para>
+			The string may contain pseudo variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>n (string)</emphasis> - Base64url-encoded RSA modulus
+			</para>
+			<para>
+			The string may contain pseudo variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_public_key (pvar)</emphasis> - PVAR used to store the extracted public key
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">extract_pub_key_from_exp_mod</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (extract_pub_key_from_exp_mod("$avp(my_exp)", "$avp(my_mod)", $avp(my_pub_key))) {
+    xlog("Succesfully extracted public key - $avp(my_pub_key) \n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 </chapter>
-

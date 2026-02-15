@@ -123,6 +123,11 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_outvar, 0}, {0,0,0}},
 		REQUEST_ROUTE},
+	{"extract_pub_key_from_exp_mod", (cmd_function)extract_pub_key_from_exp_mod, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_VAR, fixup_check_outvar, 0}, {0,0,0}},
+		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
