@@ -514,6 +514,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		new_cell->flags |= T_IS_INVITE_FLAG;
 	new_cell->flags |= T_IS_LOCAL_FLAG;
 
+	if ((ret=check_and_alloc_branch( new_cell, 0))<0)
+		goto error2;
+
 	uac = & TM_BRANCH( new_cell, 0);
 
 	request = &uac->request;

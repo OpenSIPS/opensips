@@ -92,4 +92,6 @@ int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
  * */
 void setlocalTholder(struct cell** holder);
 
+int check_and_alloc_branch(struct cell *t, unsigned short branch);
+
 #endif
