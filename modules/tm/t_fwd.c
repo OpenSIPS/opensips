@@ -287,7 +287,7 @@ static inline void post_print_uac_request(struct sip_msg *request,
 }
 
 
-static inline int check_and_alloc_branch(struct cell *t, unsigned short branch)
+int check_and_alloc_branch(struct cell *t, unsigned short branch)
 {
 	int i, b_chunk;
 
