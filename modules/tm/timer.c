@@ -201,28 +201,28 @@ static void delete_cell( struct cell *p_cell, int unlock )
 		abort();
 	}
 	for (i=0; i<p_cell->nr_of_outgoings; i++) {
-		if (is_in_timer_list2(& p_cell->uac[i].request.retr_timer)) {
+		if (is_in_timer_list2(&TM_BRANCH(p_cell, i).request.retr_timer)) {
 			LM_ERR("transaction %p scheduled for deletion and still on RETR "
 				"(req %d), timeout %lld\n", p_cell, i,
-				p_cell->uac[i].request.retr_timer.time_out);
+				TM_BRANCH(p_cell, i).request.retr_timer.time_out);
 			abort();
 		}
-		if (is_in_timer_list2(& p_cell->uac[i].request.fr_timer)) {
+		if (is_in_timer_list2(&TM_BRANCH(p_cell, i).request.fr_timer)) {
 			LM_ERR("transaction %p scheduled for deletion and"
 				" still on FR (req %d), timeout %lld\n", p_cell, i,
-				p_cell->uac[i].request.fr_timer.time_out);
+				TM_BRANCH(p_cell, i).request.fr_timer.time_out);
 			abort();
 		}
-		if (is_in_timer_list2(& p_cell->uac[i].local_cancel.retr_timer)) {
+		if (is_in_timer_list2(&TM_BRANCH(p_cell, i).local_cancel.retr_timer)) {
 			LM_ERR("transaction %p scheduled for deletion and"
 				" still on RETR/cancel (req %d), timeout %lld\n", p_cell, i,
-				p_cell->uac[i].request.retr_timer.time_out);
+				TM_BRANCH(p_cell, i).request.retr_timer.time_out);
 			abort();
 		}
-		if (is_in_timer_list2(& p_cell->uac[i].local_cancel.fr_timer)) {
+		if (is_in_timer_list2(&TM_BRANCH(p_cell, i).local_cancel.fr_timer)) {
 			LM_ERR("transaction %p scheduled for deletion and"
 				" still on FR/cancel (req %d), timeout %lld\n", p_cell, i,
-				p_cell->uac[i].request.fr_timer.time_out);
+				TM_BRANCH(p_cell, i).request.fr_timer.time_out);
 			abort();
 		}
 	}

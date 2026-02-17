@@ -905,7 +905,7 @@ static int mod_init(void)
 	unsigned int roundto_init;
 
 	LM_INFO("TM - initializing, max branches [%d], branches chunk [%d],"
-		"branch bitmask size [%d/%lu] ...\n",
+		"branch bitmask size [%d/%zu] ...\n",
 		TM_BRANCH_MAX, TM_BRANCH_CHUNK_SIZE, TM_BRANCH_MAX_FACTOR,
 		sizeof(branch_bm_t));
 

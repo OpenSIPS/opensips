@@ -1214,7 +1214,7 @@ void cleanup_uac_timers( struct cell *t )
 static int store_reply( struct cell *trans, int branch, struct sip_msg *rpl)
 {
 #		ifdef EXTRA_DEBUG
-		if (trans->uac[branch].reply) {
+		if (TM_BRANCH(trans, branch).reply) {
 			LM_ERR("replacing stored reply; aborting\n");
 			abort();
 		}
