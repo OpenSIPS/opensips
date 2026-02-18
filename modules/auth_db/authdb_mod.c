@@ -80,7 +80,7 @@ struct sig_binds sigb;
 #define USER_COL "username"
 #define DOMAIN_COL "domain"
 #define PASS_COL "ha1"
-#define DEFAULT_CRED_LIST "rpid"
+#define DEFAULT_CRED_LIST ""
 #define HASH_COL_SHA256     "ha1_sha256"
 #define HASH_COL_SHA512t256 "ha1_sha512t256"
 
