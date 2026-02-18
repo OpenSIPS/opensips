@@ -1,3 +1,356 @@
+=========================== Release 3.6.4 ==============================
+
+2026-02-18  Liviu Chircu  <liviu@opensips.org>
+        * [9cb4214382] :
+
+        proto_wss: free ws_data on TLS domain lookup failure
+
+        (cherry picked from commit 2cde87bac5dadeb13ca7430d5a6d40c2457a734d)
+
+
+2026-02-18  Razvan Crainea  <razvan@opensips.org>
+        * [f3bb041ae1] :
+
+        auth_db: fix documentation regarding default credentials value
+
+        Reported by Evgeniy (@gostkov on GitHub) in #3813
+
+
+2026-02-18  Razvan Crainea  <razvan@opensips.org>
+        * [ca3dc83d52] :
+
+        tm: fix EXTRA_DEBUG logging for local cancel timer
+
+        (cherry picked from commit 71541c911d39f98978e4882e9d16065c1dd5f97c)
+
+
+2026-02-15  OpenSIPS  <github@opensips.org>
+        * [462fe92be5] :
+
+        Rebuild documentation
+
+
+2026-02-10  Liviu Chircu  <liviu@opensips.org>
+        * [0e56b0ca4f] :
+
+        rest_client: Fix async transfers with re-used TCP conns
+
+        Fix the edge-case with async cURL where it re-uses an existing TCP
+        connection.  Here, the @connect variable holds a 0 value, thus the
+        transfer runs in blocking mode unless we relax the condition.
+
+        Patch provided by Nuno Almeida from Five9.
+
+        (cherry picked from commit aad6b856835a53d660215834e3c16c4591cf2375)
+
+
+2026-02-10  Razvan Crainea  <razvan@opensips.org>
+        * [a5ac425516] :
+
+        event_rabbitmq: avoid using released memory
+
+        Reset the `tmp.s` pointer when assigning it to a structure, to avoid
+        freeing it when the `tmp` is reused.
+
+        Many thanks to Andrey F(@kertor) for reporting it and
+        Nick Altmann(@nikbyte) for fixing it.
+
+        Close #3808
+
+        (cherry picked from commit 5595a924bff552de914de11615121350acd5da4b)
+
+
+2026-02-09  Razvan Crainea  <razvan@opensips.org>
+        * [34b0766e9a] :
+
+        siprec: make sure there is a dlg/SDP to notify SRS with
+
+        (cherry picked from commit 8e948d26eb6a21fd4a67a6eb51065da1259f6989)
+
+
+2026-02-09  Razvan Crainea  <razvan@opensips.org>
+        * [bbad39d750] :
+
+        siprec: avoid accessing invalid dialog/rtp context
+
+        reset dialog when it has been terminated - this prevents being accessed
+        after the dialog was deleted.
+
+        (cherry picked from commit ee7435662c761e8512af84a46d6db4595a4d6519)
+
+
+2026-02-08  OpenSIPS  <github@opensips.org>
+        * [9a71a3dbfb] :
+
+        Rebuild documentation
+
+
+2026-02-02  Liviu Chircu  <liviu@opensips.org>
+        * [a6866fe56d] :
+
+        mid_registrar: Fix the `tcp_persistent_flag` feature
+
+        Make sure to NOT adjust the @e_max with -get_act_time(), similar to
+        registrar codebase, to avoid setting MAX_INT on the TCP conn lifetime...
+
+        (cherry picked from commit 7935e2e927b523a21bf23e58f5b652ae7db71b46)
+
+
+2026-02-02  pavelkohout396  <pav.kohout@gmail.com>
+        * [2ce53bf26e] :
+
+        Fix SQL injection in auth_jwt module via unescaped tag claim (#3807)
+
+        The jwt_db_authorize() function...
+        The jwt_db_authorize() function in the auth_jwt module decodes JWT tokens
+        without signature verification to extract the 'tag' claim, then interpolates
+        this claim directly into a raw SQL query without escaping. An attacker can
+        craft a malicious JWT with SQL injection payload in the tag claim (e.g.,
+        "' UNION SELECT 'admin','attacker_secret' --") to inject their own secret
+        into the query result. Since the injected secret is then used to verify the
+        JWT signature, the attacker can sign their token with this known secret and
+        achieve authentication bypass.
+
+        Reported-by: Pavel Kohout, Aisle Research, www.aisle.com
+        (cherry picked from commit 3822d33c1c6b25832fdd88da1d23eed74be55b05)
+
+
+2026-02-02  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [71a3239e61] :
+
+        [b2b_entities] fix cseq to be used upon 200OK/CANCEL race
+
+        When generating the ACK+BYE upon 200 OK (from callee) racing a CANCEL (from caller), take care and use the correct cdeq values from the 200 OK (the b2b entity is not properly updated anymore, as it is already terminated by the CANCEL)
+
+        (cherry picked from commit a4e700d598c70caacf27c342b3c664ccfcf5ba5b)
+
+
+2026-02-02  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [f954669468] :
+
+        Merge pull request #3806 from ovidiusas/master
+
+        trie: fix defaults for trie_table parameter
+        (cherry picked from commit 556d22b3da58c1230c2a22d9eabfa34cf3004366)
+
+
+2026-02-01  OpenSIPS  <github@opensips.org>
+        * [2dac9ed5ec] :
+
+        Rebuild documentation
+
+
+2026-01-30  Razvan Crainea  <razvan@opensips.org>
+        * [bf333d2ca5] :
+
+        aaa_diameter: proper handing of _dm_send_message error
+
+        Avoid double free of the JSON message
+
+        (cherry picked from commit 2ad991b638d6cab4d226139e3a2d0f5b0c30c7db)
+
+
+2026-01-29  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [0a4b8803ce] :
+
+        Merge pull request #3716 from jasonshugart/master
+
+        Ignore extra headers in MSRP
+
+        (cherry picked from commit 1669166458afe05e97ad36288023c38518ffbd64)
+
+
+2026-01-28  Razvan Crainea  <razvan@opensips.org>
+        * [2b07612d4b] :
+
+        b2b_entities: fix possible leak on error cases
+
+        On some error cases, the serialization buffer was not released, leading
+        to a leak in pkg memory.
+
+        (cherry picked from commit f92c5f2e279ad5b2823151cc45fd5d2cedadaa4f)
+
+
+2026-01-27  Peter Lemenkov  <lemenkov@gmail.com>
+        * [707405eb4e] :
+
+        Fix libbson deprecated API warning with version compatibility (#3792)
+
+        During compilation of cachedb_mongodb module, numerous deprecation
+        warnings appear on systems with mongo-c-driver >= 1.29.0:
+
+        ```
+        Compiling cachedb_mongodb_dbase.c
+        gcc -fPIC -DPIC -O2 -flto=auto -ffat-lto-objects -fexceptions -g -grecord-gcc-switches -pipe -Wall -Wno-complain-wrong-lang -Werror=format-security -Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection -mtls-dialect=gnu2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -DMOD_NAME='cachedb_mongodb' -DPKG_MALLOC  -DSHM_MMAP  -DUSE_MCAST  -DDISABLE_NAGLE  -DSTATISTICS  -DHAVE_RESOLV_RES  -DF_MALLOC  -DQ_MALLOC  -DHP_MALLOC  -DDBG_MALLOC  -DF_PARALLEL_MALLOC  -DHAVE_STDATOMIC -DHAVE_GENERICS  -DNAME='"opensips"' -DVERSION='"3.6.2"' -DARCH='"x86_64"' -DOS='"linux"' -DCOMPILER='"gcc 15"' -D__CPU_x86_64 -D__OS_linux -D__SMP_yes -DCFG_DIR='"/etc/opensips/"'  -DVERSIONTYPE='"git"' -DTHISREVISION='"994bcd690"' -DFAST_LOCK -DADAPTIVE_WAIT -DADAPTIVE_WAIT_LOOPS=1024 -DHAVE_GETHOSTBYNAME2 -DHAVE_UNION_SEMUN -DHAVE_MSG_NOSIGNAL -DHAVE_MSGHDR_MSG_CONTROL -DHAVE_ALLOCA_H -DHAVE_TIMEGM -DHAVE_EPOLL -DHAVE_SIGIO_RT -DHAVE_SELECT -I/usr/include/json-c -I/usr/include/json-c -DJSON_PKG_MAJOR=0 -DJSON_PKG_MINOR=18 -DJSON_PKG_MICRO=0 -DUTF8PROC_EXPORTS -I/usr/include/libmongoc-1.0 -I/usr/include/libbson-1.0 -c cachedb_mongodb_dbase.c -o cachedb_mongodb_dbase.o
+        cachedb_mongodb_dbase.c: In function ‘mongo_con_set’:
+        cachedb_mongodb_dbase.c:315:9: warning: ‘bson_as_json’ is deprecated: Use bson_as_legacy_extended_json instead [-Wdeprecated-declarations]
+          315 |         dbg_bson("query: ", query);
+              |         ^~~~~~~~
+        In file included from /usr/include/libmongoc-1.0/mongoc/mongoc.h:22,
+                         from /usr/include/libmongoc-1.0/mongoc.h:18,
+                         from cachedb_mongodb_dbase.h:30,
+                         from cachedb_mongodb_dbase.c:22:
+        /usr/include/libbson-1.0/bson/bson.h:535:1: note: declared here
+          535 | bson_as_json (const bson_t *bson, size_t *length) BSON_GNUC_DEPRECATED_FOR (bson_as_legacy_extended_json);
+              | ^~~~~~~~~~~~
+        ```
+
+        The MongoDB C driver (libbson) deprecated bson_as_json() in version
+        1.29.0 (October 2024) in favor of bson_as_legacy_extended_json() to
+        clarify which JSON format is being produced (legacy vs. canonical
+        extended JSON).
+
+        We added compatibility macro at the top of cachedb_mongodb_dbase.c - for
+        mongo-c-driver < 1.29.0, define bson_as_legacy_extended_json as an alias
+        to bson_as_json, allowing the code to use the new API name while
+        maintaining backward compatibility.
+
+        This change maintains compatibility with all mongo-c-driver versions.
+        The new function name is used on >= 1.29.0, while older versions
+        transparently use the original bson_as_json() through the macro alias.
+
+        No behavioral changes - the replacement is functionally identical and
+        produces the same JSON output format. The new name simply makes it
+        explicit that the legacy extended JSON format is being used.
+
+        Note: mongo-c-driver 1.29.0 was released in October 2024. Many LTS
+        distributions still ship earlier versions (e.g., RHEL 8/9, Ubuntu
+        20.04/22.04, Debian 11/12), making the compatibility macro necessary.
+
+        Assisted-by: Claude (Anthropic) <https://claude.ai>
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit dead516b7f4b0881f99afbee4b48969ceaab1d73)
+
+
+2026-01-27  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [ea6e69cf52] :
+
+        Merge pull request #3733 from hafkensite/feature/dns-cache-cname
+
+        resolve: fix CNAME chain resolution with caching #3709
+        (cherry picked from commit 401957bd8ddbf050d9c2f65c8a51021ea78391d7)
+
+
+2026-01-26  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f5de0a361a] :
+
+        Discard forced socket if AF incompatible
+
+        ... and force selection of a different outbound socket, based on protocol and AF
+        Based on a report from Ihor Olkhovskyi
+
+        (cherry picked from commit b8e28c5294a1b1627b8076d31d0a00e49c8587f4)
+
+
+2026-01-25  OpenSIPS  <github@opensips.org>
+        * [fb2557ddaa] :
+
+        Rebuild documentation
+
+
+2026-01-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [9d1832b40d] :
+
+        Merge pull request #3804 from purecloudlabs/sipmsg_validate_all_contacts
+
+        Sipmsg validate all contacts
+
+        (cherry picked from commit 18fdeaf32bb12e31ceb7876726865faaa8c91c7f)
+
+
+2026-01-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [e98e729e04] :
+
+        Merge pull request #3803 from purecloudlabs/dialog_contact_crash_fix
+
+        Dialog module crash when Contact header is *
+
+        (cherry picked from commit a3fcb81d6bbea42c88a2da51a4438a6f41e48a7f)
+
+
+2026-01-22  Liviu Chircu  <liviu@opensips.org>
+        * [067caa135c] :
+
+        launch(): Fix edge-case with report_route $param(1) not set
+
+        Some async functions (e.g. rest_post()) may report an ASYNC_SYNC status,
+        when the operation completed inline.  This case wasn't properly handled
+        in the launch() support, as the report_route $param(1) was always NULL.
+
+        Many thanks to Nuno Ferreira from Five9 for a full report and
+        troubleshooting on this one!
+
+
+2026-01-20  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [aa4ddd17be] :
+
+        [TCP] fixed bad handling upon "max async postponed chunks"
+
+        In such case, mark the conn as timed out, to force its sending back to TCP main for closing.
+        Also fix some bad ref counting when handling bad cons in ASYNC WRITE.
+        Add more hist logs to conn, to easy the debugging process.
+
+        (cherry picked from commit 4afd1c8af1ca24ba642f5ad7ecd3d5b14eb7dafe)
+
+
+2026-01-20  Liviu Chircu  <liviu@opensips.org>
+        * [e65c545804] :
+
+        b2b_entities: Zero DB handles after module destroy
+
+        Since B2B destroys before tm, this should help prevent some shutdown
+        crashes in B2B due to cascaded module cleanups (e.g. tm cleanups going
+        into dialog, siprec then back again into B2B).
+
+        (cherry picked from commit c482249acffc84d4e5d818fc3e24b8fb9f833962)
+
+
+2026-01-20  Liviu Chircu  <liviu@opensips.org>
+        * [a4cbe17b2a] :
+
+        Fix reply relaying after launch() from onreply_route
+
+        This commit prevents SIP replies from being absorbed (bug?!) by OpenSIPS
+        after a launch() operation from onreply_route, with no further replies
+        to upstream side on that T.  Follow-up on a711924f9, see tm/t_reply.c.
+
+        Such launch() calls are completely decoupled from the T, do not
+        interfere with the script logic and can safely be done in parallel.
+
+        (cherry picked from commit 11e37d129eaf0d0a064ef50075c9f1bf96b588f8)
+
+
+2026-01-11  OpenSIPS  <github@opensips.org>
+        * [e78b3e99af] :
+
+        Rebuild documentation
+
+
+2026-01-09  Razvan Crainea  <razvan@opensips.org>
+        * [76b7fa7a0e] :
+
+        b2b_logic: also replicate in_sdp for created entity
+
+        (cherry picked from commit b88203c1e8f13dc5eaf3ff38a7724d2d6ec6d85c)
+
+
+2025-12-21  OpenSIPS  <github@opensips.org>
+        * [288bdfa936] :
+
+        Rebuild documentation
+
+
+2025-12-19  Liviu Chircu  <liviu@opensips.org>
+        * [b1dd39c118] :
+
+        GitHub Workflows:  Run rtp.io build tests only on `master`
+
+        * fixes the build on 3.6 branch, due to old Clang (see commit e6caba06a)
+        * the rtp.io code is identical on 3.6 and master branches, no need to
+            run duplicate checks.  If it diverges, we can revert this commit.
+
+
 =========================== Release 3.6.3 ==============================
 
 2025-12-18  Liviu Chircu  <liviu@opensips.org>
