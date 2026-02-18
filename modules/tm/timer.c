@@ -216,13 +216,13 @@ static void delete_cell( struct cell *p_cell, int unlock )
 		if (is_in_timer_list2(& p_cell->uac[i].local_cancel.retr_timer)) {
 			LM_ERR("transaction %p scheduled for deletion and"
 				" still on RETR/cancel (req %d), timeout %lld\n", p_cell, i,
-				p_cell->uac[i].request.retr_timer.time_out);
+				p_cell->uac[i].local_cancel.retr_timer.time_out);
 			abort();
 		}
 		if (is_in_timer_list2(& p_cell->uac[i].local_cancel.fr_timer)) {
 			LM_ERR("transaction %p scheduled for deletion and"
 				" still on FR/cancel (req %d), timeout %lld\n", p_cell, i,
-				p_cell->uac[i].request.fr_timer.time_out);
+				p_cell->uac[i].local_cancel.fr_timer.time_out);
 			abort();
 		}
 	}
