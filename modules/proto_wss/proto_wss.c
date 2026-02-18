@@ -304,6 +304,8 @@ static int wss_conn_init(struct tcp_connection* c)
 	if (!dom) {
 		LM_ERR("no TLS %s domain found\n",
 				(c->flags&F_CONN_ACCEPTED?"server":"client"));
+		c->proto_data = NULL;
+		shm_free(d);
 		return -1;
 	}
 
