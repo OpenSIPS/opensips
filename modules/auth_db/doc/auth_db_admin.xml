@@ -194,6 +194,15 @@ modparam("auth_db", "use_domain", 1)
 		<para>
 		Default value of this parameter is <quote>rpid</quote>.
 		</para>
+		<para>
+			<emphasis>Note:</emphasis> the default schema no longer comes with the
+			<emphasis>rpid</emphasis> column, so if you are using the rpid value,
+			you should provision it in your table. Otherwise, simply set this
+			parameter to the empty string value.
+		</para>
+		<para>
+		Default value of this parameter is <quote>rpid</quote>.
+		</para>
 		<example>
 		<title><varname>load_credentials</varname> parameter usage</title>
 		<programlisting format="linespecific">
