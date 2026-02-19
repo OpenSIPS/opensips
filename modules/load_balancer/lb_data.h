@@ -33,10 +33,11 @@
 #include "../freeswitch/fs_api.h"
 #include "lb_parser.h"
 
-#define LB_FLAGS_RELATIVE (1<<0) /* do relative versus absolute estimation. default is absolute */
-#define LB_FLAGS_NEGATIVE (1<<1) /* do not skip negative loads. default to skip */
-#define LB_FLAGS_RANDOM   (1<<2) /* pick a random destination among all selected dsts with equal load */
-#define LB_FLAGS_DEFAULT  0
+#define LB_FLAGS_RELATIVE         (1<<0) /* do relative versus absolute estimation. default is absolute */
+#define LB_FLAGS_NEGATIVE         (1<<1) /* do not skip negative loads. default to skip */
+#define LB_FLAGS_RANDOM           (1<<2) /* pick a random destination among all selected dsts with equal load */
+#define LB_FLAGS_PERCENT_WITH_CPU (1<<3) /* score as percentage of max sessions used + CPU util factor */
+#define LB_FLAGS_DEFAULT          0
 
 #define LB_DST_PING_DSBL_FLAG   (1<<0)
 #define LB_DST_PING_PERM_FLAG   (1<<1)
@@ -61,6 +62,14 @@ struct lb_resource {
 struct lb_resource_map {
 	struct lb_resource *resource;
 	unsigned int max_load;
+
+	/* data received in last heartbeat */
+	unsigned int max_sessions;
+	unsigned int current_sessions;
+	float cpu_idle;
+
+	/* count of sessions allocated since last FS heartbeat */
+	unsigned int sessions_since_last_heartbeat;
 
 	int fs_enabled;
 };
