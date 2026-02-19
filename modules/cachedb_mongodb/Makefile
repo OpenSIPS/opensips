@@ -10,7 +10,9 @@ NAME=cachedb_mongodb.so
 include ../../lib/json/Makefile.json
 ifeq ($(CROSS_COMPILE),)
 MONGOC_BUILDER := $(shell \
-	if pkg-config --exists libmongoc-1.0; then \
+	if pkg-config --exists mongoc2; then \
+		echo 'pkg-config mongoc2'; \
+	elif pkg-config --exists libmongoc-1.0; then \
 		echo 'pkg-config libmongoc-1.0'; \
 	fi)
 endif
