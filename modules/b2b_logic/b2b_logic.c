@@ -199,6 +199,7 @@ struct b2b_ctx_val *local_ctx_vals;
 
 unsigned int ent_term_interval;
 struct b2b_term_timer *ent_term_timer;
+int use_lifetime_of_bridge = 0;
 
 static const cmd_export_t cmds[]=
 {
@@ -301,6 +302,7 @@ static const param_export_t params[]=
 	{"b2bl_th_init_timeout",INT_PARAM,            &b2bl_th_init_timeout      },
 	{"b2bl_early_update",INT_PARAM,				  &b2b_early_update          },
 	{"old_entity_term_delay",INT_PARAM,           &ent_term_interval         },
+	{"use_lifetime_of_bridge",INT_PARAM,          &use_lifetime_of_bridge    },
 	{0,                    0,                          0                     }
 };
 
