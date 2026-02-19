@@ -465,7 +465,7 @@ static int load_pcres(int action)
 		pcre_tmp = pcre2_compile((PCRE2_SPTR)patterns[i], PCRE2_ZERO_TERMINATED, pcre_options, &pcre_error, &pcre_erroffset, NULL);
 		if (pcre_tmp == NULL) {
                 	pcre2_get_error_message(pcre_error, pcre_error_str, sizeof(pcre_error_str));
-			LM_ERR("pcre_tmp compilation of '%s' failed at offset %zu: %s\n", patterns[i], (unsigned long)pcre_erroffset, pcre_error_str);
+			LM_ERR("pcre_tmp compilation of '%s' failed at offset %lu: %s\n", patterns[i], (unsigned long)pcre_erroffset, pcre_error_str);
 			goto err;
 		}
 		pcre_rc = pcre2_pattern_info(pcre_tmp, PCRE2_INFO_SIZE, &pcre_size);
@@ -603,7 +603,7 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 	pcre_re = pcre2_compile((PCRE2_SPTR)regex.s, PCRE2_ZERO_TERMINATED, pcre_options, &pcre_error, &pcre_erroffset, NULL);
 	if (pcre_re == NULL) {
                 pcre2_get_error_message(pcre_error, pcre_error_str, sizeof(pcre_error_str));
-		LM_ERR("pcre_re compilation of '%s' failed at offset %zu: %s\n", regex.s, (unsigned long)pcre_erroffset, pcre_error_str);
+		LM_ERR("pcre_re compilation of '%s' failed at offset %lu: %s\n", regex.s, (unsigned long)pcre_erroffset, pcre_error_str);
 		pkg_free(regex.s);
 		return -4;
 	}
