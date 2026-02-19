@@ -43,6 +43,8 @@ nathelper Module
               1.5.3. add_rcv_param([flag]),
               1.5.4. fix_nated_register()
               1.5.5. nat_uac_test(flags)
+              1.5.6. add_contact_alias([ip_addr, port, proto])
+              1.5.7. handle_ruri_alias()
 
         1.6. Exported MI Functions
 
@@ -91,7 +93,9 @@ nathelper Module
    1.22. add_rcv_paramer usage
    1.23. fix_nated_register usage
    1.24. nat_uac_test usage
-   1.25. nh_enable_ping usage
+   1.25. add_contact_alias usage
+   1.26. handle_ruri_alias usage
+   1.27. nh_enable_ping usage
 
 Chapter 1. Admin Guide
 
@@ -595,6 +599,46 @@ if (nat_uac_test("private-contact,private-sdp"))
         xlog("SIP message is NAT'ed (Call-ID: $ci)\n");
 ...
 
+1.5.6.  add_contact_alias([ip_addr, port, proto])
+
+   Adds a standards-compliant “;alias=” parameter to the Contact URI
+   containing the signalling source IP, port and transport protocol
+   when they differ from the advertised Contact address.
+
+   Meaning of the parameters is as follows:
+     * ip_addr (string, optional) - IP to encode inside the alias. If
+       omitted, the message source IP is used.
+     * port (string, optional) - port to encode inside the alias. If
+       omitted, the message source port is used.
+     * proto (string, optional) - transport protocol to encode inside
+       the alias (for example “udp”, “tcp”, “tls”, “sctp”, “ws” or
+       “wss”). If omitted, the transport used to receive the message is
+       used.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   BRANCH_ROUTE and FAILURE_ROUTE.
+
+   Example 1.25. add_contact_alias usage
+...
+        if (!add_contact_alias("$si", "$sp", "tcp")) {
+                xlog("[NAT] cannot create alias\n");
+        }
+...
+
+1.5.7.  handle_ruri_alias()
+
+   If the Request URI contains an “alias” parameter, the destination
+   URI is set based on its encoded IP, port and transport, and the
+   parameter is removed from the URI.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
+   LOCAL_ROUTE.
+
+   Example 1.26. handle_ruri_alias usage
+...
+        handle_ruri_alias();
+...
+
 1.6. Exported MI Functions
 
 1.6.1. nh_enable_ping
@@ -607,7 +651,7 @@ if (nat_uac_test("private-contact,private-sdp"))
        parameter value greater than 0 or disables natping if
        parameter value is 0.
 
-   Example 1.25. nh_enable_ping usage
+   Example 1.27. nh_enable_ping usage
 ...
 $ opensips-cli -x mi nh_enable_ping
 Status:: 1
