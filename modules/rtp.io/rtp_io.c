@@ -29,6 +29,8 @@
 #include "../../dprint.h"
 #include "../../timer.h"
 
+#include "../rtpproxy/rtpproxy.h"
+#include "../rtpproxy/notification_process.h"
 #include "rtp_io.h"
 #include "rtp_io_util.h"
 #include "rtp_io_params.h"
@@ -40,7 +42,7 @@ static void mod_destroy(void);
 
 static const dep_export_t deps = {
     { /* OpenSIPS module dependencies */
-        { MOD_TYPE_DEFAULT, "rtpproxy", DEP_SILENT|DEP_REVERSE },
+        { MOD_TYPE_DEFAULT, "rtpproxy", (DEP_SILENT|DEP_REVERSE) & (~DEP_REVERSE_CINIT) },
         { MOD_TYPE_NULL, NULL, 0 },
     },
 	{ /* modparam dependencies */
@@ -49,12 +51,14 @@ static const dep_export_t deps = {
 };
 
 static int rtp_io_getchildsock(int);
+static int rtp_io_getrnsock(struct rtpp_notify_cfg *);
 
 /*
  * Exported functions
  */
 static const cmd_export_t cmds[] = {
     {"rtp_io_getchildsock", (cmd_function)rtp_io_getchildsock, {0}, 0},
+    {"rtp_io_getrnsock", (cmd_function)rtp_io_getrnsock, {0}, 0},
     {0}
 };
 
@@ -162,17 +166,29 @@ static int mod_init(void)
         ENV_ADD(argv_stat[i], e1);
     }
 
+    struct rtpp_n_sock *n_sock = &rpi_descp->n_sock;
+    int *fdp = n_sock->_fds;
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdp) < 0)
+        goto e1;
+    snprintf(n_sock->_name, sizeof(n_sock->_name), "fd:%d", n_sock->fds.rtpp);
+    n_sock->name.s = n_sock->_name;
+    n_sock->name.len = strlen(n_sock->_name);
+    ENV_ADD("-n", e2);
+    ENV_ADD("%s", e2, n_sock->name.s);
     for (int i = 0; i < nsocks; i++) {
         int *fdp = &rpi_descp->socks->holder[i * 2];
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdp) < 0)
-            goto e1;
-        ENV_ADD("-s", e1);
-        ENV_ADD("fd:%d", e1, fdp[0]);
+            goto e2;
+        ENV_ADD("-s", e2);
+        ENV_ADD("fd:%d", e2, fdp[0]);
     }
 
     rpi_descp->socks->n = nsocks;
 
     return 0;
+e2:
+    close(n_sock->_fds[0]);
+    close(n_sock->_fds[1]);
 e1:
     free(rpi_descp->socks);
 e0:
@@ -198,6 +214,7 @@ void mod_destroy(void)
     }
     rtp_io_close_serv_socks();
     rtp_io_close_cnlt_socks();
+    rtp_io_close_cnlt_nsock();
     free(rpi_descp->socks);
 }
 
@@ -206,8 +223,22 @@ void mod_destroy(void)
 static int
 child_init(int rank)
 {
+    rtpproxy_is_nproc_t is_nproc_f;
+
+    is_nproc_f = (rtpproxy_is_nproc_t)find_export("rtpproxy_is_nproc", 0);
+    if (is_nproc_f == NULL) {
+        LM_ERR("rtpproxy_is_nproc() not found in the rtpproxy module\n");
+        return -1;
+    }
+    int is_nproc = is_nproc_f(NPROC_CHECK);
+    LM_INFO("rtp.io: child_init(%d), notifier: %d\n", rank, is_nproc);
     if (rank > rpi_descp->socks->n) {
         LM_ERR("BUG: rank is higher than the number of sockets!\n");
+        return -1;
+    }
+
+    if (!is_nproc && rtp_io_close_cnlt_nsock() != 0) {
+        LM_ERR("rtp_io_close_cnlt_nsock() failed\n");
         return -1;
     }
 
@@ -240,3 +271,12 @@ static int rtp_io_getchildsock(int rank)
     int *fdp = &rpi_descp->socks->holder[(rank - 1) * 2];
     return (fdp[1]);
 }
+
+static int rtp_io_getrnsock(struct rtpp_notify_cfg *rn_cfg)
+{
+
+    rn_cfg->name = rpi_descp->n_sock.name;
+    rn_cfg->sock.rn_umode = CM_RTPIO;
+    rn_cfg->sock.fd = rpi_descp->n_sock.fds.osips;
+    return (0);
+};
