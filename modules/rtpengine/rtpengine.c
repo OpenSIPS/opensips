@@ -2638,6 +2638,8 @@ end:
 	return ret;
 }
 
+static void pkg_free_wrapper(void *p) { pkg_free(p); }
+
 static int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg *msg, enum rtpe_operation op,
          struct ng_flags_parse *ng_flags, str *flags_str, str *body_in, bencode_item_t *extra_dict, char **err)
 {
@@ -2811,8 +2813,12 @@ static int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg 
 		goto error;
 	}
 
+	/* flags_nt.s must remain valid until the bencode buffer is serialized
+	 * and sent, because parse_flags() stores pointers into it (via bencode_str
+	 * and bencode_dictionary_add_len) for key=value flags like media-address.
+	 * Register it for cleanup when the bencode buffer is freed. */
 	if (flags_nt.s)
-		pkg_free(flags_nt.s);
+		bencode_buffer_destroy_add(bencbuf, pkg_free_wrapper, flags_nt.s);
 
 	return 1;
 
