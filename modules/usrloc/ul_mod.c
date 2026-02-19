@@ -83,6 +83,7 @@
 #define SIP_INSTANCE_COL   "sip_instance"
 #define KV_STORE_COL   "kv_store"
 #define ATTR_COL       "attr"
+#define PARAMS_COL       "params"
 
 static int mod_init(void);        /*!< Module initialization */
 static void destroy(void);        /*!< Module destroy */
@@ -133,6 +134,7 @@ str kv_store_col    = str_init(KV_STORE_COL);		/*!< Name of column containing ge
 str attr_col        = str_init(ATTR_COL);		/*!< Name of column containing additional info */
 str sip_instance_col = str_init(SIP_INSTANCE_COL);
 str contactid_col   = str_init(CONTACTID_COL);
+str params_col      = str_init(PARAMS_COL);
 
 str db_url          = STR_NULL;					/*!< Database URL */
 str cdb_url         = STR_NULL;					/*!< Cache Database URL */
@@ -254,15 +256,18 @@ static const param_export_t params[] = {
 	{"methods_column",     STR_PARAM, &methods_col.s     },
 	{"sip_instance_column",STR_PARAM, &sip_instance_col.s},
 	{"kv_store_column",    STR_PARAM, &kv_store_col.s    },
+	{"params_column",      STR_PARAM, &params_col.s      },	
 	{"mi_dump_kv_store",   INT_PARAM, &mi_dump_kv_store  },
 	{"latency_event_min_us",   INT_PARAM, &latency_event_min_us  },
 	{"latency_event_min_us_delta",   INT_PARAM, &latency_event_min_us_delta  },
 	{"attr_column",        STR_PARAM, &attr_col.s        },
+	{"params_column",      STR_PARAM, &params_col.s      },	
 	{"matching_mode",      INT_PARAM, &matching_mode     },
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
 	{"contact_refresh_timer",  INT_PARAM, &ct_refresh_timer },
+
 
 	/* data replication through clusterer using TCP binary packets */
 	{ "location_cluster",	INT_PARAM, &location_cluster   },

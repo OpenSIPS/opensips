@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1013');
+INSERT INTO version (table_name, table_version) values ('location','1014');
 CREATE TABLE location (
     contact_id BIGINT(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',
@@ -18,7 +18,8 @@ CREATE TABLE location (
     methods NUMBER(10) DEFAULT NULL,
     sip_instance VARCHAR2(255) DEFAULT NULL,
     kv_store CLOB(512) DEFAULT NULL,
-    attr VARCHAR2(255) DEFAULT NULL
+    attr VARCHAR2(255) DEFAULT NULL,
+    params CLOB(512) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER location_tr
