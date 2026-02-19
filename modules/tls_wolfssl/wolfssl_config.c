@@ -532,12 +532,15 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 		goto end;
 	}
 
-	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CERT_FILE_FL) {
-		if (load_certificate(d->ctx, d->cert.s) < 0)
-			goto end;
-	} else {
-		if (load_certificate_db(d->ctx, &d->cert) < 0)
-			goto end;
+	/* load certificate (optional for client domains per RFC 8446 4.4.2.4) */
+	if (d->cert.s) {
+		if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CERT_FILE_FL) {
+			if (load_certificate(d->ctx, d->cert.s) < 0)
+				goto end;
+		} else {
+			if (load_certificate_db(d->ctx, &d->cert) < 0)
+				goto end;
+		}
 	}
 
 	if (d->crl_directory && load_crl(d->ctx, d->crl_directory,
