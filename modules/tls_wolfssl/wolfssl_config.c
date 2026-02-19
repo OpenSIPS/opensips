@@ -155,12 +155,16 @@ static int ssl_servername_cb(WOLFSSL *ssl, int *ret, void *exArg)
 	struct tls_domain *dom;
 	int rc;
 
-	if (!ssl || !exArg) {
+	if (!ssl) {
 		LM_ERR("Bad parameters in servername callback\n");
 		return alert_warning;
 	}
 
-	dom = (struct tls_domain *)exArg;
+	dom = (struct tls_domain *)wolfSSL_get_ex_data(ssl, SSL_EX_DOM_IDX);
+	if (!dom) {
+		LM_ERR("Failed to get tls_domain pointer from SSL struct\n");
+		return alert_warning;
+	}
 
 	srvname = (char *)wolfSSL_get_servername(ssl, WOLFSSL_SNI_HOST_NAME);
 	if (srvname && strlen(srvname) == 0) {
@@ -481,7 +485,6 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 
 	if (mod_sni_cb && d->flags & DOM_FLAG_SRV) {
 		wolfSSL_CTX_set_servername_callback(d->ctx, ssl_servername_cb);
-		wolfSSL_CTX_set_servername_arg(d->ctx, d);
 	}
 
 	if (d->flags & DOM_FLAG_SRV) {
