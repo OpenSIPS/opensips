@@ -148,6 +148,15 @@ Chapter 1. Admin Guide
      * expire : expire period for the values stored in the cache
        for the on demand caching type in seconds
        If not present, default value is “1 hour”
+     * full_caching_lock_scope : whether to lock reading from the cache 
+       when loading the table into the cache on a row or table basis 
+       with it set to “table” large tables writing into the cache can 
+       block reads when reading an sql_cached_value from that table 
+       stalling the SIP processing  but ensures full table consistency, 
+       “row” allows reads during writing on rows not currently being written to.
+          + row
+          + table
+       If not present, default value is “row”
 
    The parameters must be given in the exact order specified
    above.
@@ -164,7 +173,8 @@ cachedb_url=mongodb:mycluster://127.0.0.1:27017/db.col
 table=table_name
 key=column_name_0
 columns=column_name_1 column_name_2 column_name_3
-on_demand=0")
+on_demand=0
+full_caching_lock_scope=row")
 
 
 1.3.2. spec_delimiter (string)
