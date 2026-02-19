@@ -480,6 +480,44 @@ rtpengine_offer();
 			possible tokens are described below.</para>
 			<para> When passing an option that &osips; is not aware of, it will be
 			blindly sent to the rtpengine daemon to be processed.</para>
+			<para>Values can also use <emphasis>bracket syntax</emphasis> to
+			pass structured data (lists and dictionaries) to the &rtp;
+			daemon. This enables features of the rtpengine ng protocol that
+			require nested parameters, such as
+			<emphasis>sdp-media-remove</emphasis>,
+			<emphasis>codec</emphasis>, and
+			<emphasis>sdp-attr</emphasis>.</para>
+			<para>A value enclosed in square brackets
+			(<quote>[...]</quote>) is parsed as a
+			<emphasis>list</emphasis> of space-separated items. If any
+			item at the top level inside the brackets contains an equals
+			sign (<quote>=</quote>), the entire value is parsed as a
+			<emphasis>dictionary</emphasis> of key=value pairs instead.
+			Brackets can be nested to build the multi-level structures
+			that certain rtpengine parameters expect.</para>
+			<para>The bracket syntax is parsed module-side and converted
+			to native bencode list and dictionary structures before being
+			sent to the &rtp; daemon. This works with all rtpengine daemon
+			versions and does not require any special daemon
+			configuration.</para>
+			<para>The legacy prefix-style codec flags
+			(<emphasis>transcode-CODEC</emphasis>,
+			<emphasis>codec-strip-CODEC</emphasis>,
+			<emphasis>codec-mask-CODEC</emphasis>) continue to work as
+			before and are sent as flag strings. Do not mix prefix-style
+			and bracket-style codec flags in the same call, as they are
+			processed independently and may produce unexpected
+			results.</para>
+			<para>Values inside brackets that need to contain literal
+			spaces or equals signs can use escape sequences:
+			<quote>..</quote> (double dot) is unescaped to a space
+			character, and <quote>--</quote> (double dash) is unescaped
+			to an equals sign. Single dots and single dashes are passed
+			through unchanged. This convention matches the rtpengine
+			daemon&apos;s own escape handling.</para>
+			<para>Nesting is limited to 8 levels of depth and individual
+			bracket values are limited to 4096 bytes. These limits are
+			sufficient for all documented rtpengine use cases.</para>
 			<itemizedlist>
 				<listitem><para>
 				<emphasis>via-branch=...</emphasis> - Include the <quote>branch</quote>
@@ -827,7 +865,7 @@ rtpengine_offer($var(rtpengine_flags));
 </programlisting>
                 </example>
 		<example>
-		<title><function>rtpengine_offer</function> usage for transcoding</title>
+		<title><function>rtpengine_offer</function> usage for transcoding (prefix style)</title>
 		<programlisting format="linespecific">
 ...
 # Goal: make A-side talk PCMA and B-side talk opus
@@ -835,6 +873,28 @@ rtpengine_offer($var(rtpengine_flags));
 # * do not use opus for A-side: codec-strip-opus
 # * offer opus to B-side: transcode-opus
 rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
+...
+</programlisting>
+                </example>
+		<example>
+		<title><function>rtpengine_offer</function> usage with bracket syntax</title>
+		<programlisting format="linespecific">
+...
+# Remove video and message media streams from the SDP
+# (sdp-media-remove expects a list of media types)
+rtpengine_offer("sdp-media-remove=[video message image]");
+
+# Codec manipulation using bracket syntax
+# (codec expects a dictionary with sub-keys: transcode, strip, accept, etc.)
+rtpengine_offer("codec=[transcode=[PCMA PCMU] accept=[AMR-WB AMR] strip=[EVS]]");
+
+# Bracket syntax can be mixed with regular flags in the same call
+rtpengine_offer("trust-address replace-origin ICE=remove codec=[transcode=[PCMA]]");
+
+# SDP attribute manipulation with escape sequences
+# '..' becomes a space, '--' becomes an equals sign
+# This adds the SDP attribute "fmtp:96 useinbandfec=1" to audio streams
+rtpengine_offer("sdp-attr=[audio=[add=[fmtp:96..useinbandfec--1]]]");
 ...
 </programlisting>
                 </example>
