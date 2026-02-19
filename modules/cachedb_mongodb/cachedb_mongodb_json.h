@@ -23,7 +23,7 @@
 
 #include "cachedb_mongodb_dbase.h"
 
-#include <bson.h>
+#include <bson/bson.h>
 #include <stdint.h>
 
 int json_to_bson(char *json,bson_t *bb);
