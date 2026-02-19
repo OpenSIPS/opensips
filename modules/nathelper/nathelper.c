@@ -217,6 +217,14 @@ static unsigned int raw_ip = 0;
 static unsigned short raw_port = 0;
 int skip_oldip=0;
 
+/*
+ * Controls fix_nated_contact() when the Contact has already been rewritten
+ * by a prior function (e.g. topology_hiding()):
+ *   0 (default) = keep the existing Contact rewrite as-is
+ *   1           = override it with fix_nated_contact()'s NAT replacement
+ */
+static int nated_contact_override = 0;
+
 /*0-> disabled, 1 ->enabled*/
 unsigned int *natping_state=0;
 
@@ -261,6 +269,7 @@ static const param_export_t params[] = {
 	{"max_pings_lost",		     INT_PARAM, &max_pings_lost        },
 	{"cluster_id",               INT_PARAM, &nh_cluster_id         },
 	{"cluster_sharing_tag",      STR_PARAM, &nh_cluster_shtag      },
+	{"nated_contact_override",  INT_PARAM, &nated_contact_override},
 	{0, 0, 0}
 };
 
@@ -626,6 +635,49 @@ isnulladdr(str *sx, int pf)
 }
 
 /*
+ * Check if a prior lump already covers this Contact URI (GH #2172).
+ * Returns 1 if fix_nated_contact should skip this contact, 0 to proceed.
+ */
+static int contact_already_rewritten(struct sip_msg *msg, contact_t *c)
+{
+	struct lump *crt;
+	unsigned int uri_off = c->uri.s - msg->buf;
+	unsigned int uri_end = uri_off + c->uri.len;
+
+	for (crt = msg->add_rm; crt; crt = crt->next) {
+		if (crt->type != HDR_CONTACT_T || crt->op != LUMP_DEL)
+			continue;
+		/* lumps are sorted by offset -- no further match possible */
+		if (crt->u.offset > uri_off)
+			break;
+		if (crt->u.offset + crt->len < uri_end)
+			continue;
+
+		/* prior lump fully covers this Contact URI */
+		if (nated_contact_override == 0) {
+			LM_DBG("Contact already rewritten at off=%u len=%u, "
+				"keeping existing (nated_contact_override=0)\n",
+				crt->u.offset, crt->len);
+			return 1;
+		}
+
+		/* override: neutralize the prior lump (same technique as
+		 * delete_existing_contact in topo_hiding_logic.c) */
+		LM_DBG("Contact already rewritten at off=%u len=%u, "
+			"overriding (nated_contact_override=1)\n",
+			crt->u.offset, crt->len);
+		crt->op = LUMP_NOP;
+		if (crt->after)
+			insert_cond_lump_after(crt, COND_FALSE, 0);
+		if (crt->before)
+			insert_cond_lump_before(crt, COND_FALSE, 0);
+		return 0;
+	}
+
+	return 0;
+}
+
+/*
  * Replaces ip:port pair in the Contact: field with the source address
  * of the packet.
  */
@@ -652,6 +704,11 @@ fix_nated_contact_f(struct sip_msg* msg, str *params)
 			LM_ERR("SCRIPT BUG - second attempt to change URI Contact \n");
 			return -1;
 		}
+
+		/* GH #2172: skip if Contact already rewritten by e.g.
+		 * topology_hiding(); override instead if configured */
+		if (contact_already_rewritten(msg, c))
+			continue;
 
 		hostport = uri.host;
 		if (uri.port.len > 0)
