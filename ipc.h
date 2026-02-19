@@ -28,12 +28,12 @@ extern int ipc_shared_fd_read;
 #define IPC_TYPE_NONE (-1)
 #define ipc_bad_handler_type(htype) ((htype) < 0)
 
-#define IPC_FD_READ(_proc_no)   pt[_proc_no].ipc_pipe[0]
-#define IPC_FD_WRITE(_proc_no)  pt[_proc_no].ipc_pipe[1]
+#define IPC_FD_READ(_proc_no)   pt[_proc_no].ipc_pipe
+#define IPC_FD_WRITE(_proc_no)  pt[_proc_no].ipc_pipe
 #define IPC_FD_READ_SELF        IPC_FD_READ(process_no)
 #define IPC_FD_READ_SHARED      ipc_shared_fd_read
-#define IPC_FD_SYNC_READ(_proc_no)   pt[_proc_no].ipc_sync_pipe[0]
-#define IPC_FD_SYNC_WRITE(_proc_no)  pt[_proc_no].ipc_sync_pipe[1]
+#define IPC_FD_SYNC_READ(_proc_no)   pt[_proc_no].ipc_sync_pipe
+#define IPC_FD_SYNC_WRITE(_proc_no)  pt[_proc_no].ipc_sync_pipe
 #define IPC_FD_SYNC_READ_SELF        IPC_FD_SYNC_READ(process_no)
 
 /* prototype of IPC handler - function called by the IPC engine
