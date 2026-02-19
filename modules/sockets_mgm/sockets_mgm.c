@@ -60,6 +60,7 @@ static db_func_t sock_mgm_db_func;
 static unsigned long *sock_mgm_version;
 static unsigned int sock_mgm_max_sockets = SOCKETS_MGM_DEFAULT_MAX_SOCKS;
 static gen_lock_t *sock_mgm_lock;
+static gen_lock_t *sock_mgm_reload_lock;
 static int *sock_mgm_proc_no;
 static int sock_mgm_unix[2];
 extern int is_tcp_main;
@@ -217,6 +218,11 @@ static int mod_init(void)
 	sock_mgm_lock = lock_alloc();
 	if (!sock_mgm_version || !lock_init(sock_mgm_lock)) {
 		LM_ERR("initializing sock_mgm_version lock\n");
+		return -1;
+	}
+	sock_mgm_reload_lock = lock_alloc();
+	if (!sock_mgm_reload_lock || !lock_init(sock_mgm_reload_lock)) {
+		LM_ERR("initializing sock_mgm_reload lock\n");
 		return -1;
 	}
 
@@ -1145,6 +1151,21 @@ static void rpc_socket_reload_proc(int sender_id, void *_ver)
 	int sockets_update_count = 0, fd;
 
 	LM_NOTICE("Reloading process for version %lu\n", version);
+
+	/* Serialize the entire send-IPC-to-mgm and receive-fd sequence across
+	 * all non-dynamic (worker) processes. Without this, multiple workers
+	 * calling receive_fd() concurrently on the shared sock_mgm_unix
+	 * socketpair can steal each other's fd responses, causing the same
+	 * socket to be added to a worker's listener list twice and corrupting
+	 * it into a circular linked list (infinite loop in sock_listadd).
+	 *
+	 * Dynamic (mgm) processes don't use receive_fd - they create sockets
+	 * directly - so they must NOT acquire this lock, otherwise they would
+	 * deadlock with the worker that holds the lock while blocked on
+	 * receive_fd waiting for the mgm to process rpc_sockets_send. */
+	if (!sock_mgm_dynamic_proc)
+		lock_get(sock_mgm_reload_lock);
+
 	lock_get(sock_mgm_lock);
 	if (*sock_mgm_version > version) {
 		LM_WARN("new version %lu available (current=%lu)\n", *sock_mgm_version, version);
@@ -1171,6 +1192,9 @@ release:
 			sock_mgm_update_fd(sock, fd);
 		}
 	}
+
+	if (!sock_mgm_dynamic_proc)
+		lock_release(sock_mgm_reload_lock);
 }
 
 static int sockets_pool_init(void)
