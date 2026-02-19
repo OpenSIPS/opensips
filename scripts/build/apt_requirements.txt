@@ -27,7 +27,7 @@ libxml2-dev
 make
 odbcinst
 patch
-python3-dev
+python-dev-is-python3
 unixodbc
 unixodbc-dev
 uuid-dev
