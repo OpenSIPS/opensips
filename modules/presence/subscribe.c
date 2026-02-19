@@ -1357,7 +1357,7 @@ static inline int is_shtag_active( str *my_tag, str **active_tags)
 void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	int htable_size, int no_lock, handle_expired_func_t handle_expired_func)
 {
-	static db_ps_t my_ps_delete = NULL;
+	static db_ps_t my_ps_delete = NULL, my_ps_delete_null = NULL;
 	static db_ps_t my_ps_update = NULL, my_ps_insert = NULL;
 	db_key_t query_cols[22], update_cols[8];
 	db_val_t query_vals[22], update_vals[8];
@@ -1671,32 +1671,32 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 		}
 	}
 
-	/* now that all records were updated, delete whatever 
+	/* now that all records were updated, delete whatever
 	   was still left as expired */
-	update_cols[0]= &str_expires_col;
+	update_cols[0] = &str_expires_col;
 	update_vals[0].type = DB_INT;
 	update_vals[0].nul = 0;
 	update_vals[0].val.int_val = (int)(unsigned long)time(NULL);
 	update_ops[0] = OP_LT;
+
+	update_cols[1] = &str_sharing_tag_col;
+	update_vals[1].nul = 1;
+	update_ops[1] = OP_IS_NULL;
 
 	if (dbf->use_table(db, &active_watchers_table) < 0) {
 		LM_ERR("deleting expired information from database\n");
 		return;
 	}
 
-	if (sh_tags==NULL) {
+	/* no clustering, simply delete all expired subs with NULL sh tags */
+	LM_DBG("delete all expired subscriptions\n");
 
-		/* no clustering, simply delete all expired subs */
-		LM_DBG("delete all expired subscriptions\n");
+	CON_SET_CURR_PS(db, &my_ps_delete_null);
+	if (dbf->delete(db, update_cols, update_ops, update_vals, 2) < 0)
+		LM_ERR("deleting expired information from database\n");
 
-		CON_SET_CURR_PS(db, &my_ps_delete);
-		if (dbf->delete(db, update_cols, update_ops, update_vals, 1) < 0)
-			LM_ERR("deleting expired information from database\n");
-
-	} else {
-
+	if (sh_tags != NULL) {
 		/* clustering, delete only expired subs with active sh tags */
-		update_cols[1]= &str_sharing_tag_col;
 		update_vals[1].type = DB_STR;
 		update_vals[1].nul = 0;
 		update_ops[1] = OP_EQ;
@@ -1705,8 +1705,8 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 		while(sh_tags[i]) {
 			LM_DBG("delete expired subscriptions for tag <%.*s>\n",
 				sh_tags[i]->len, sh_tags[i]->s);
-
 			update_vals[1].val.str_val = *sh_tags[i];
+
 			CON_SET_CURR_PS(db, &my_ps_delete);
 			if (dbf->delete(db, update_cols, update_ops, update_vals, 2) < 0)
 				LM_ERR("deleting expired information from database\n");
