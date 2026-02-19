@@ -40,8 +40,36 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef PCRE2_LIB
 #define PCRE2_CODE_UNIT_WIDTH 8
+#define PCRE2_ERR int
 #include <pcre2.h>
+#else
+#define pcre2_code pcre
+#define PCRE2_SIZE int
+#define PCRE2_ERR const char *
+#define PCRE2_CASELESS PCRE_CASELESS
+#define PCRE2_MULTILINE PCRE_MULTILINE
+#define PCRE2_DOTALL PCRE_DOTALL
+#define PCRE2_EXTENDED PCRE_EXTENDED
+#define PCRE2_ERROR_NOMATCH PCRE_ERROR_NOMATCH
+#define PCRE2_UCHAR unsigned char
+#define PCRE2_SPTR char *
+#define pcre2_pattern_info(subst_comp, flag, ret) \
+	pcre_fullinfo(subst_comp, NULL, PCRE_INFO_CAPTURECOUNT, ret);
+#define pcre2_compile(pattern, _, flags, error, erroffset, ctx) \
+	pcre_compile(pattern, flags, error, erroffset, NULL)
+#define pcre2_code_free pcre_free
+#define pcre2_get_error_message(error, error_str, error_str_len) \
+	do { \
+		int _len = strlen(error); \
+		if (_len > error_str_len - 1) \
+			_len = error_str_len - 1; \
+		memcpy(error_str, error, _len); \
+		error_str[_len] = '\0'; \
+	} while (0)
+#include <pcre.h>
+#endif
 #include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../pt.h"
@@ -284,7 +312,7 @@ static int load_pcres(int action)
 	pcre2_code *pcre_tmp = NULL;
 	size_t pcre_size;
 	int pcre_rc;
-	int pcre_error;
+	PCRE2_ERR pcre_error;
 	PCRE2_UCHAR pcre_error_str[ERROR_BUF_SIZE];
 	PCRE2_SIZE pcre_erroffset;
 	int num_pcres_tmp = 0;
@@ -437,7 +465,11 @@ static int load_pcres(int action)
 		pcre_tmp = pcre2_compile((PCRE2_SPTR)patterns[i], PCRE2_ZERO_TERMINATED, pcre_options, &pcre_error, &pcre_erroffset, NULL);
 		if (pcre_tmp == NULL) {
                 	pcre2_get_error_message(pcre_error, pcre_error_str, sizeof(pcre_error_str));
+<<<<<<< Updated upstream
 			LM_ERR("pcre_tmp compilation of '%s' failed at offset %zu: %s\n", patterns[i], pcre_erroffset, pcre_error_str);
+=======
+			LM_ERR("pcre_tmp compilation of '%s' failed at offset %ld: %s\n", patterns[i], (long)pcre_erroffset, pcre_error_str);
+>>>>>>> Stashed changes
 			goto err;
 		}
 		pcre_rc = pcre2_pattern_info(pcre_tmp, PCRE2_INFO_SIZE, &pcre_size);
@@ -561,10 +593,12 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 {
 	pcre2_code *pcre_re = NULL;
 	int pcre_rc;
-	int pcre_error;
+	PCRE2_ERR pcre_error;
 	PCRE2_UCHAR pcre_error_str[ERROR_BUF_SIZE];
 	PCRE2_SIZE pcre_erroffset;
+#ifdef PCRE2_LIB
 	pcre2_match_data *match_data;
+#endif
 	str regex;
 
 	if (pkg_nt_str_dup(&regex, _regex_s) < 0)
@@ -573,11 +607,26 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 	pcre_re = pcre2_compile((PCRE2_SPTR)regex.s, PCRE2_ZERO_TERMINATED, pcre_options, &pcre_error, &pcre_erroffset, NULL);
 	if (pcre_re == NULL) {
                 pcre2_get_error_message(pcre_error, pcre_error_str, sizeof(pcre_error_str));
+<<<<<<< Updated upstream
 		LM_ERR("pcre_re compilation of '%s' failed at offset %zu: %s\n", regex.s, pcre_erroffset, pcre_error_str);
+=======
+		LM_ERR("pcre_re compilation of '%s' failed at offset %ld: %s\n", regex.s, (long)pcre_erroffset, pcre_error_str);
+>>>>>>> Stashed changes
 		pkg_free(regex.s);
 		return -4;
 	}
 
+#ifndef PCRE2_LIB
+	pcre_rc = pcre_exec(
+			pcre_re, /* the compiled pattern */
+			NULL, /* no extra data - we didn't study the pattern */
+			string->s, /* the subject string */
+			string->len, /* the length of the subject */
+			0, /* start at offset 0 in the subject */
+			0, /* default options */
+			NULL, /* output vector for substring information */
+			0); /* number of elements in the output vector */
+#else
 	match_data = pcre2_match_data_create(0, NULL); // no captures needed
 
 	pcre_rc = pcre2_match(
@@ -590,6 +639,7 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 		NULL);                      /* match context */
 
 	pcre2_match_data_free(match_data);
+#endif
 
 	/* Matching failed: handle error cases */
 	if (pcre_rc < 0) {
@@ -618,7 +668,9 @@ static int w_pcre_match_group(struct sip_msg* _msg, str* string, int* _num_pcre)
 {
 	int num_pcre;
 	int pcre_rc;
+#ifdef PCRE2_LIB
 	pcre2_match_data *match_data;
+#endif
 
 	/* Check if group matching feature is enabled */
 	if (file == NULL) {
@@ -638,6 +690,17 @@ static int w_pcre_match_group(struct sip_msg* _msg, str* string, int* _num_pcre)
 
 	lock_get(reload_lock);
 
+#ifndef PCRE2_LIB
+	pcre_rc = pcre_exec(
+			(*pcres_addr)[num_pcre], /* the compiled pattern */
+			NULL, /* no extra data - we didn't study the pattern */
+			string->s, /* the subject string */
+			string->len, /* the length of the subject */
+			0, /* start at offset 0 in the subject */
+			0, /* default options */
+			NULL, /* output vector for substring information */
+			0); /* number of elements in the output vector */
+#else
 	match_data = pcre2_match_data_create(0, NULL); // no captures needed
 
 	pcre_rc = pcre2_match(
@@ -650,6 +713,7 @@ static int w_pcre_match_group(struct sip_msg* _msg, str* string, int* _num_pcre)
 		0);                         /* match context */
 
 	pcre2_match_data_free(match_data);
+#endif
 
 	lock_release(reload_lock);
 
