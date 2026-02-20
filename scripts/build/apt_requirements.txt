@@ -30,6 +30,6 @@ liblua5.1-0-dev
 libncurses5-dev
 libjson-c-dev
 uuid-dev
-python-dev
+python3-dev
 libmaxminddb-dev
 patch
