@@ -139,9 +139,6 @@
 #define ROTATE32(_k) ((((_k) & 0xFF) << 24) | ((_k) >> 8))
 #define MASK8(_k) ((unsigned char)((_k) & 0xFF))
 
-#ifndef _ws_common_current_req
-#error "_ws_common_current_req not defined!"
-#endif
 #ifndef _ws_common_writev
 #error "_ws_common_writev not defined!"
 #endif
@@ -403,7 +400,6 @@ update_parsed:
 static int ws_process(struct tcp_connection *con)
 {
 	struct ws_req *req;
-	struct ws_req *newreq;
 	long size = 0;
 	enum ws_close_code ret_code = WS_ERR_NONE;
 	unsigned char bk;
@@ -411,13 +407,18 @@ static int ws_process(struct tcp_connection *con)
 	int msg_len;
 	struct receive_info local_rcv;
 
-	if (con->con_req) {
-		req=(struct ws_req *)con->con_req;
+	if (con->proto_req) {
+		req = (struct ws_req *)con->proto_req;
 		LM_DBG("Using the per connection buff \n");
 	} else {
-		LM_DBG("Using the global ( per process ) buff \n");
-		init_ws_req(&_ws_common_current_req, 0);
-		req=&_ws_common_current_req;
+		LM_DBG("Allocating per connection WS buffer\n");
+		req = shm_malloc(sizeof(*req));
+		if (req == NULL) {
+			LM_ERR("No more mem for dynamic con request buffer\n");
+			goto error;
+		}
+		init_ws_req(req, 0);
+		con->proto_req = (void *)req;
 	}
 
 again:
@@ -517,11 +518,6 @@ again:
 				 * the connection */
 				LM_DBG("We're releasing the connection in state %d \n",
 					con->state);
-				if (req != &_ws_common_current_req) {
-					/* we have the buffer in the connection tied buff -
-					 *	detach it , release the conn and free it afterwards */
-					con->con_req = NULL;
-				}
 				/* TODO - we could indicate to the TCP net layer to release
 				 * the connection -> other worker may read the next available
 				 * message on the pipe */
@@ -552,12 +548,6 @@ again:
 		/* if we still have some unparsed bytes, try to  parse them too*/
 		if (size)
 			goto again;
-		/* cleanup the existing request */
-		if (req != &_ws_common_current_req) {
-			/* make sure we cleanup the request in the connection */
-			con->con_req = NULL;
-			shm_free(req);
-		}
 
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
@@ -567,53 +557,6 @@ again:
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;
-		}
-
-		if (req == &_ws_common_current_req) {
-			/* let's duplicate this - most likely another conn will come in */
-
-			LM_DBG("We didn't manage to read a full request\n");
-			newreq = shm_malloc(sizeof(struct ws_req));
-			if (newreq == NULL) {
-				LM_ERR("No more mem for dynamic con request buffer\n");
-				goto error;
-			}
-
-			if (req->tcp.pos != req->tcp.buf) {
-				/* we have read some bytes */
-				memcpy(newreq->tcp.buf,req->tcp.buf,req->tcp.pos-req->tcp.buf);
-				newreq->tcp.pos = newreq->tcp.buf + (req->tcp.pos-req->tcp.buf);
-			} else {
-				newreq->tcp.pos = newreq->tcp.buf;
-			}
-
-			if (req->tcp.start != req->tcp.buf)
-				newreq->tcp.start = newreq->tcp.buf +(req->tcp.start-req->tcp.buf);
-			else
-				newreq->tcp.start = newreq->tcp.buf;
-
-			if (req->tcp.parsed != req->tcp.buf)
-				newreq->tcp.parsed =newreq->tcp.buf+(req->tcp.parsed-req->tcp.buf);
-			else
-				newreq->tcp.parsed = newreq->tcp.buf;
-
-			if (req->tcp.body != 0) {
-				newreq->tcp.body = newreq->tcp.buf + (req->tcp.body-req->tcp.buf);
-			} else
-				newreq->tcp.body = 0;
-
-			newreq->tcp.complete=req->tcp.complete;
-			newreq->tcp.has_content_len=req->tcp.has_content_len;
-			newreq->tcp.content_len=req->tcp.content_len;
-			newreq->tcp.bytes_to_go=req->tcp.bytes_to_go;
-			newreq->tcp.error = req->tcp.error;
-			newreq->tcp.state = req->tcp.state;
-
-			newreq->op = req->op;
-			newreq->mask = req->mask;
-			newreq->is_masked = req->is_masked;
-
-			con->con_req = (struct tcp_req *)newreq;
 		}
 	}
 

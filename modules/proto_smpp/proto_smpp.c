@@ -239,7 +239,6 @@ static int smpp_send(const struct socket_info* send_sock,
 	return 0;
 }
 
-static struct tcp_req smpp_current_req;
 static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 {
 	long size;
@@ -263,11 +262,6 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 			 * the connection */
 			LM_DBG("Nothing more to read on TCP conn %p, currently in state %d \n",
 				con,con->state);
-			if (req != &smpp_current_req) {
-				/* we have the buffer in the connection tied buff -
-				 *	detach it , release the conn and free it afterwards */
-				con->con_req = NULL;
-			}
 		} else {
 			LM_DBG("We still have things on the pipe - "
 				"keeping connection \n");
@@ -276,13 +270,6 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 
 		/* give the message to the registered functions */
 		handle_smpp_msg(req->buf, (smpp_session_t *)con->proto_data, &local_rcv);
-
-		if (!size && req != &smpp_current_req) {
-			/* if we no longer need this tcp_req
-			 * we can free it now */
-			shm_free(req);
-			con->con_req = NULL;
-		}
 
 		con->msg_attempts = 0;
 
@@ -303,34 +290,6 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			return -1;
-		}
-
-		if (req == &smpp_current_req) {
-			/* let's duplicate this - most likely another conn will come in */
-
-			LM_DBG("We didn't manage to read a full request\n");
-			con->con_req = shm_malloc(sizeof(struct tcp_req));
-			if (con->con_req == NULL) {
-				LM_ERR("No more mem for dynamic con request buffer\n");
-				return -1;
-			}
-
-			if (req->pos != req->buf) {
-				/* we have read some bytes */
-				memcpy(con->con_req->buf,req->buf,req->pos-req->buf);
-				con->con_req->pos = con->con_req->buf + (req->pos-req->buf);
-			} else {
-				con->con_req->pos = con->con_req->buf;
-			}
-
-			if (req->parsed != req->buf)
-				con->con_req->parsed =con->con_req->buf+(req->parsed-req->buf);
-			else
-				con->con_req->parsed = con->con_req->buf;
-
-			con->con_req->complete=req->complete;
-			con->con_req->content_len=req->content_len;
-			con->con_req->error = req->error;
 		}
 	}
 
@@ -370,14 +329,10 @@ static int smpp_read_req(struct tcp_connection* con, int* bytes_read)
 	bytes = -1;
 	total_bytes = 0;
 
-	if (con->con_req) {
-		req = con->con_req;
-		LM_DBG("Using the per connection buff \n");
-	} else {
-		LM_DBG("Using the global ( per process ) buff \n");
-		init_tcp_req(&smpp_current_req, 0);
-		req = &smpp_current_req;
-	}
+	req = &con->tcp_req;
+	if (con->msg_attempts == 0)
+		init_tcp_req(req, 0);
+	LM_DBG("Using the connection buff\n");
 
 	again:
 	if(req->error == TCP_REQ_OK){

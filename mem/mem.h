@@ -216,4 +216,25 @@ int init_pkg_mallocs();
 int init_shm_mallocs();
 int init_dbg_shm_mallocs();
 
+/* Thread-safe wrappers for process-private memory operations. */
+#ifdef DBG_MALLOC
+void *thread_malloc_dbg(size_t size, const char *file,
+	const char *function, unsigned int line);
+void *thread_realloc_dbg(void *ptr, size_t size, const char *file,
+	const char *function, unsigned int line);
+void thread_free_dbg(void *ptr, const char *file,
+	const char *function, unsigned int line);
+
+#define thread_malloc(_size) \
+	thread_malloc_dbg((_size), __FILE__, __FUNCTION__, __LINE__)
+#define thread_realloc(_ptr, _size) \
+	thread_realloc_dbg((_ptr), (_size), __FILE__, __FUNCTION__, __LINE__)
+#define thread_free(_ptr) \
+	thread_free_dbg((_ptr), __FILE__, __FUNCTION__, __LINE__)
+#else
+void *thread_malloc(size_t size);
+void *thread_realloc(void *ptr, size_t size);
+void thread_free(void *ptr);
+#endif
+
 #endif

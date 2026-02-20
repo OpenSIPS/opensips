@@ -1146,17 +1146,19 @@ static int mod_init(void) {
 	if (*tls_client_domains)
 		sort_map_dom_arrays(client_dom_matching);
 
-	/* initialize tls virtual domains */
-	if (init_tls_domains(tls_server_domains) < 0)
-		return -1;
-	if (init_tls_domains(tls_client_domains) < 0)
-		return -1;
-
 	return 0;
 }
 
 static int child_init(int rank)
 {
+	if (rank == PROC_TCP_MAIN) {
+		/* initialize tls virtual domains */
+		if (init_tls_domains(tls_server_domains) < 0)
+			return -1;
+		if (init_tls_domains(tls_client_domains) < 0)
+			return -1;
+	}
+
 	if (!tls_db_url.s || !(rank >= 1 || rank == PROC_MODULE))
 		return 0;
 

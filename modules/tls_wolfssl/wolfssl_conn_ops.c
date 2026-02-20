@@ -298,8 +298,8 @@ void _wolfssl_tls_conn_clean(struct tcp_connection* c,
 	if (c->extra_data) {
 		d = wolfSSL_get_ex_data(_WOLFSSL_READ_SSL(c->extra_data), SSL_EX_DOM_IDX);
 
-		if (c->s != -1 && process_no != 0) {
-			_wolfssl_tls_update_fd(c,c->s);
+		if (c->fd != -1 && process_no != 0) {
+			_wolfssl_tls_update_fd(c,c->fd);
 			_wolfssl_tls_conn_shutdown(c);
 		}
 

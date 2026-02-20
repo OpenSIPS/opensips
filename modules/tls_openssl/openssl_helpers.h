@@ -41,9 +41,10 @@
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
+#include <pthread.h>
+#include <stdlib.h>
 
 #include "../tls_mgm/tls_helper.h"
-#include "../../locking.h"
 
 #if OPENSSL_VERSION_NUMBER < 0x00908000L
         #error "using an unsupported version of OpenSSL (< 0.9.8)"
@@ -75,21 +76,16 @@ SSL_METHOD     *ssl_methods[TLS_USE_TLSv1_2 + 1];
 
 
 
-/*
- * Wrappers around OpenSIPS shared memory functions
- * (which can be macros)
- */
+/* Wrappers around process-private OpenSIPS pkg memory operations. */
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 static void* os_malloc(size_t size, const char *file, int line)
 #else
 static void* os_malloc(size_t size)
 #endif
 {
-#if (defined DBG_MALLOC  && OPENSSL_VERSION_NUMBER >= 0x10100000L)
-	return _shm_malloc(size, file, __FUNCTION__, line);
-#else
-	return shm_malloc(size);
-#endif
+	(void)file;
+	(void)line;
+	return thread_malloc(size);
 }
 
 
@@ -99,11 +95,9 @@ static void* os_realloc(void *ptr, size_t size, const char *file, int line)
 static void* os_realloc(void *ptr, size_t size)
 #endif
 {
-#if (defined DBG_MALLOC  && OPENSSL_VERSION_NUMBER >= 0x10100000L)
-	return _shm_realloc(ptr, size, file, __FUNCTION__, line);
-#else
-	return shm_realloc(ptr, size);
-#endif
+	(void)file;
+	(void)line;
+	return thread_realloc(ptr, size);
 }
 
 
@@ -113,13 +107,9 @@ static void os_free(void *ptr, const char *file, int line)
 static void os_free(void *ptr)
 #endif
 {
-	/* TODO: also handle free file and line */
-	if (ptr)
-#if (defined DBG_MALLOC  && OPENSSL_VERSION_NUMBER >= 0x10100000L)
-		_shm_free(ptr, file, __FUNCTION__, line);
-#else
-		shm_free(ptr);
-#endif
+	(void)file;
+	(void)line;
+	thread_free(ptr);
 }
 
 
@@ -147,10 +137,31 @@ void tls_get_thread_id(CRYPTO_THREADID *tid)
 }
 #endif /* OPENSSL_VERSION_NUMBER */
 
+static int tls_mutex_init(pthread_mutex_t *mtx, int recursive)
+{
+	pthread_mutexattr_t attr;
+	int rc;
+
+	if (pthread_mutexattr_init(&attr) != 0)
+		return -1;
+
+	if (recursive) {
+#ifdef PTHREAD_MUTEX_RECURSIVE
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+#elif defined(PTHREAD_MUTEX_RECURSIVE_NP)
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
+#endif
+	}
+
+	rc = pthread_mutex_init(mtx, &attr);
+	pthread_mutexattr_destroy(&attr);
+	return (rc == 0) ? 0 : -1;
+}
+
 /* these locks can not be used in 1.1.0, because the interface has changed */
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 struct CRYPTO_dynlock_value {
-	gen_lock_t lock;
+	pthread_mutex_t lock;
 };
 
 static struct CRYPTO_dynlock_value* tls_dyn_lock_create(const char* file,
@@ -158,14 +169,14 @@ static struct CRYPTO_dynlock_value* tls_dyn_lock_create(const char* file,
 {
 	struct CRYPTO_dynlock_value* new_lock;
 
-	new_lock=shm_malloc(sizeof(struct CRYPTO_dynlock_value));
+	new_lock = malloc(sizeof(*new_lock));
 	if (new_lock==0){
 		LM_ERR("Failed to allocated new dynamic lock\n");
 		return 0;
 	}
-	if (lock_init(&new_lock->lock)==0) {
+	if (tls_mutex_init(&new_lock->lock, 0) < 0) {
 		LM_ERR("Failed to init new dynamic lock\n");
-		shm_free(new_lock);
+		free(new_lock);
 		return 0;
 	}
 
@@ -177,9 +188,9 @@ static void tls_dyn_lock_ops(int mode, struct CRYPTO_dynlock_value* dyn_lock,
 												const char* file, int line)
 {
 	if (mode & CRYPTO_LOCK) {
-		lock_get(&dyn_lock->lock);
+		pthread_mutex_lock(&dyn_lock->lock);
 	} else {
-		lock_release(&dyn_lock->lock);
+		pthread_mutex_unlock(&dyn_lock->lock);
 	}
 }
 
@@ -187,24 +198,24 @@ static void tls_dyn_lock_ops(int mode, struct CRYPTO_dynlock_value* dyn_lock,
 static void tls_dyn_lock_destroy(struct CRYPTO_dynlock_value *dyn_lock,
 													const char* file, int line)
 {
-	lock_destroy(&dyn_lock->lock);
-	shm_free(dyn_lock);
+	pthread_mutex_destroy(&dyn_lock->lock);
+	free(dyn_lock);
 }
 
 static int tls_static_locks_no=0;
-static gen_lock_set_t* tls_static_locks=NULL;
+static pthread_mutex_t *tls_static_locks = NULL;
 
 static void tls_static_locks_ops(int mode, int n, const char* file, int line)
 {
-	if (n<0 || n>tls_static_locks_no) {
+	if (n<0 || n>=tls_static_locks_no) {
 		LM_ERR("BUG - SSL Lib attempting to acquire bogus lock\n");
 		abort();
 	}
 
 	if (mode & CRYPTO_LOCK) {
-		lock_set_get(tls_static_locks,n);
+		pthread_mutex_lock(&tls_static_locks[n]);
 	} else {
-		lock_set_release(tls_static_locks,n);
+		pthread_mutex_unlock(&tls_static_locks[n]);
 	}
 }
 
@@ -212,21 +223,29 @@ static void tls_static_locks_ops(int mode, int n, const char* file, int line)
 
 static int tls_init_multithread(void)
 {
+	int i;
+
 	/* init static locks support */
 	tls_static_locks_no = CRYPTO_num_locks();
 
 	if (tls_static_locks_no>0) {
-		/* init a lock set & pass locking function to SSL */
-		tls_static_locks = lock_set_alloc(tls_static_locks_no);
-		if (tls_static_locks == NULL) {
+		tls_static_locks = malloc(sizeof(*tls_static_locks) * tls_static_locks_no);
+		if (!tls_static_locks) {
 			LM_ERR("Failed to alloc static locks\n");
 			return -1;
 		}
-		if (lock_set_init(tls_static_locks)==0) {
+
+		for (i = 0; i < tls_static_locks_no; i++) {
+			if (tls_mutex_init(&tls_static_locks[i], 0) < 0) {
+				while (--i >= 0)
+					pthread_mutex_destroy(&tls_static_locks[i]);
+				free(tls_static_locks);
+				tls_static_locks = NULL;
 				LM_ERR("Failed to init static locks\n");
-				lock_set_dealloc(tls_static_locks);
 				return -1;
+			}
 		}
+
 		CRYPTO_set_locking_callback(tls_static_locks_ops);
 	}
 
@@ -247,31 +266,34 @@ static int tls_init_multithread(void)
 
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+static pthread_mutex_t ssl_lock;
+static pthread_once_t ssl_lock_once = PTHREAD_ONCE_INIT;
+static int ssl_lock_ready = 0;
+static const RAND_METHOD *os_ssl_method;
+
+static void ssl_lock_init_once(void)
+{
+	if (tls_mutex_init(&ssl_lock, 1) == 0)
+		ssl_lock_ready = 1;
+	else
+		LM_ERR("failed to initialize SSL recursive mutex\n");
+}
+
 #define SSL_LOCK_REENTRANT(_cmd) \
 	do { \
-		int __ssl_lock_unlock; \
-		if (ssl_lock_pid != process_no) { \
-			lock_get(ssl_lock); \
-			ssl_lock_pid = process_no; \
-			__ssl_lock_unlock = 1; \
-		} else { \
-			__ssl_lock_unlock = 0; \
-		} \
+		if (!ssl_lock_ready) \
+			pthread_once(&ssl_lock_once, ssl_lock_init_once); \
+		if (ssl_lock_ready) \
+			pthread_mutex_lock(&ssl_lock); \
 		_cmd; \
-		if (__ssl_lock_unlock) { \
-			ssl_lock_pid = -1; \
-			lock_release(ssl_lock); \
-		} \
+		if (ssl_lock_ready) \
+			pthread_mutex_unlock(&ssl_lock); \
 	} while (0)
-
-static gen_lock_t *ssl_lock;
-static int ssl_lock_pid = -1;
-static const RAND_METHOD *os_ssl_method;
 
 static int os_ssl_seed(const void *buf, int num)
 {
 	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->seed)
+	if (!os_ssl_method || !os_ssl_method->seed)
 		return 0;
 	SSL_LOCK_REENTRANT(ret = os_ssl_method->seed(buf, num));
 	return ret;
@@ -280,7 +302,7 @@ static int os_ssl_seed(const void *buf, int num)
 static int os_ssl_bytes(unsigned char *buf, int num)
 {
 	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->bytes)
+	if (!os_ssl_method || !os_ssl_method->bytes)
 		return 0;
 	SSL_LOCK_REENTRANT(ret = os_ssl_method->bytes(buf, num));
 	return ret;
@@ -288,7 +310,7 @@ static int os_ssl_bytes(unsigned char *buf, int num)
 
 static void os_ssl_cleanup(void)
 {
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->cleanup)
+	if (!os_ssl_method || !os_ssl_method->cleanup)
 		return;
 	SSL_LOCK_REENTRANT(os_ssl_method->cleanup());
 }
@@ -296,7 +318,7 @@ static void os_ssl_cleanup(void)
 static int os_ssl_add(const void *buf, int num, double entropy)
 {
 	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->add)
+	if (!os_ssl_method || !os_ssl_method->add)
 		return 0;
 	SSL_LOCK_REENTRANT(ret = os_ssl_method->add(buf, num, entropy));
 	return ret;
@@ -305,7 +327,7 @@ static int os_ssl_add(const void *buf, int num, double entropy)
 static int os_ssl_pseudorand(unsigned char *buf, int num)
 {
 	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->pseudorand)
+	if (!os_ssl_method || !os_ssl_method->pseudorand)
 		return 0;
 	SSL_LOCK_REENTRANT(ret = os_ssl_method->pseudorand(buf, num));
 	return ret;
@@ -314,7 +336,7 @@ static int os_ssl_pseudorand(unsigned char *buf, int num)
 static int os_ssl_status(void)
 {
 	int ret;
-	if (!os_ssl_method || !ssl_lock || !os_ssl_method->status)
+	if (!os_ssl_method || !os_ssl_method->status)
 		return 0;
 	SSL_LOCK_REENTRANT(ret = os_ssl_method->status());
 	return ret;
