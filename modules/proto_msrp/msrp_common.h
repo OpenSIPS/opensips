@@ -62,7 +62,6 @@ extern int msrp_max_msg_chunks;
 extern int *msrp_trace_is_on;
 extern struct script_route_ref*  msrp_trace_filter_route;
 extern trace_dest msrp_t_dst;
-extern struct msrp_req msrp_current_req;
 
 extern struct tls_mgm_binds tls_mgm_api;
 

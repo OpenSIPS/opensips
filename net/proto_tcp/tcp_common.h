@@ -406,11 +406,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 				 * the connection */
 				LM_DBG("Nothing more to read on TCP conn %p, currently in state %d \n",
 					con,con->state);
-				if (req != &_tcp_common_current_req) {
-					/* we have the buffer in the connection tied buff -
-					 *	detach it , release the conn and free it afterwards */
-					con->con_req = NULL;
-				}
 
 				/* If parallel handling, make a copy (null terminted) of the
 				 * current reading buffer (so we can continue its handling)
@@ -429,9 +424,10 @@ static inline int tcp_handle_req(struct tcp_req *req,
 					"keeping connection \n");
 			}
 
-			if (receive_msg(msg_buf, msg_len,
-				&local_rcv, NULL, 0) <0)
-					LM_ERR("receive_msg failed \n");
+			if (tcp_dispatch_received_msg(msg_buf, msg_len, &local_rcv) < 0) {
+				LM_ERR("failed to deliver TCP message\n");
+				goto error;
+			}
 
 			if (msg_buf_cpy)
 				pkg_free(msg_buf_cpy);
@@ -453,13 +449,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			return 1;
 		}
 
-		if (req != &_tcp_common_current_req) {
-			/* if we no longer need this tcp_req
-			 * we can free it now */
-			shm_free(req);
-			if (con)
-				con->con_req = NULL;
-		}
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
 		if (con->msg_attempts==0)
@@ -473,48 +462,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 				   "closing connection \n",con->msg_attempts);
 			goto error;
 		}
-
-		if (req == &_tcp_common_current_req) {
-			/* let's duplicate this - most likely another conn will come in */
-
-			LM_DBG("We didn't manage to read a full request on con %p\n",con);
-			con->con_req = shm_malloc(sizeof(struct tcp_req));
-			if (con->con_req == NULL) {
-				LM_ERR("No more mem for dynamic con request buffer\n");
-				goto error;
-			}
-
-			if (req->pos != req->buf) {
-				/* we have read some bytes */
-				memcpy(con->con_req->buf,req->buf,req->pos-req->buf);
-				con->con_req->pos = con->con_req->buf + (req->pos-req->buf);
-			} else {
-				con->con_req->pos = con->con_req->buf;
-			}
-
-			if (req->start != req->buf)
-				con->con_req->start = con->con_req->buf +(req->start-req->buf);
-			else
-				con->con_req->start = con->con_req->buf;
-
-			if (req->parsed != req->buf)
-				con->con_req->parsed =con->con_req->buf+(req->parsed-req->buf);
-			else
-				con->con_req->parsed = con->con_req->buf;
-
-			if (req->body != 0) {
-				con->con_req->body = con->con_req->buf + (req->body-req->buf);
-			} else
-				con->con_req->body = 0;
-
-			con->con_req->complete=req->complete;
-			con->con_req->has_content_len=req->has_content_len;
-			con->con_req->content_len=req->content_len;
-			con->con_req->bytes_to_go=req->bytes_to_go;
-			con->con_req->error = req->error;
-			con->con_req->state = req->state;
-			/* req will be reset on the next usage */
-		}
 	}
 
 	/* everything ok; if connection was returned already, use special rc 2 */
@@ -527,4 +474,3 @@ error:
 #define TRANS_TRACE_PROTO_ID "net"
 
 #endif
-

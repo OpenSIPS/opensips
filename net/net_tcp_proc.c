@@ -24,12 +24,16 @@
  */
 
 
+#include <stdint.h>
+
 #include "../pt_load.h"
 #include "../ipc.h"
 #include "../timer.h"
 #include "../reactor.h"
 #include "../async.h"
 #include "../cfg_reload.h"
+#include "../mem/shm_mem.h"
+#include "../receive.h"
 
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
@@ -42,8 +46,6 @@ static int _my_fd_to_tcp_main = -1;
 
 /*!< list of tcp connections handled by this process */
 static struct tcp_connection* tcp_conn_lst=0;
-
-static int _tcp_done_reading_marker = 0;
 
 static int tcpmain_sock=-1;
 extern int unix_tcp_sock;
@@ -107,20 +109,16 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 
 int tcp_done_reading(struct tcp_connection* con)
 {
-	if (_tcp_done_reading_marker==0) {
-		reactor_del_all( con->fd, -1, IO_FD_CLOSING );
-		tcpconn_check_del(con);
-		tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-		if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-		sh_log(con->hist, TCP_SEND2MAIN,
-			"parallel read OK - releasing, ref: %d", con->refcnt);
-		tcpconn_release(con, CONN_RELEASE, 0, 1 /*as TCP proc*/);
-
-		_tcp_done_reading_marker = 1;
-	}
-
+	/* Single-process TCP IO is now always enabled. */
+	(void)con;
 	return 0;
 }
+
+struct tcp_ipc_payload {
+	struct receive_info rcv;
+	int msg_len;
+	char msg_buf[0];
+};
 
 
 /*! \brief  releases expired connections and cleans up bad ones (state<0) */
@@ -223,6 +221,45 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			ipc_handle_job(fm->fd);
 			break;
 		case F_TCPMAIN:
+		{
+			struct tcp_ipc_payload *payload;
+			uintptr_t payload_ptr;
+again_payload:
+			ret = n = recv_all(fm->fd, &payload_ptr, sizeof(payload_ptr),
+				MSG_DONTWAIT);
+			if (n < 0) {
+				if (errno == EWOULDBLOCK || errno == EAGAIN) {
+					ret = 0;
+					break;
+				} else if (errno == EINTR) {
+					goto again_payload;
+				}
+				LM_CRIT("read from tcp main dispatch socket failed: %s\n",
+					strerror(errno));
+				goto error;
+			}
+			if (n == 0) {
+				LM_WARN("EOF received from tcp main dispatch socket\n");
+				goto error;
+			}
+			if (n < (int)sizeof(payload_ptr)) {
+				LM_CRIT("short read on tcp main dispatch socket: %d bytes\n", n);
+				goto error;
+			}
+
+			payload = (struct tcp_ipc_payload *)(uintptr_t)payload_ptr;
+			if (!payload) {
+				LM_BUG("null payload pointer from tcp main\n");
+				break;
+			}
+
+			bind_address = payload->rcv.bind_address;
+			if (receive_msg(payload->msg_buf, payload->msg_len, &payload->rcv,
+					NULL, 0) < 0)
+				LM_ERR("receive_msg() failed for dispatched TCP message\n");
+			shm_free(payload);
+			break;
+		}
 again:
 			ret=n=receive_fd(fm->fd, response, sizeof(response), &s, 0);
 			if (n<0){
@@ -335,7 +372,6 @@ again:
 		case F_TCPCONN:
 			if (event_type & IO_WATCH_READ) {
 				con=(struct tcp_connection*)fm->data;
-				_tcp_done_reading_marker = 0;
 				resp = protos[con->type].net.stream.read( con, &ret );
 				if (resp<0) {
 					ret=-1; /* some error occurred */
@@ -365,9 +401,6 @@ again:
 						resp, con->msg_attempts);
 					tcpconn_release(con, CONN_EOF, 0, 1 /*as TCP proc*/);
 				} else {
-					if (con->profile.parallel_read)
-						/* return the connection if not already */
-						tcp_done_reading( con );
 					break;
 				}
 			}
@@ -492,4 +525,3 @@ void tcp_terminate_worker(void)
 	/* the exit will be triggered by the reactor, when empty */
 	LM_INFO("reactor not empty, waiting for pending async/conns\n");
 }
-

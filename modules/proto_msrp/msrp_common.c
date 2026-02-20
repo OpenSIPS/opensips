@@ -40,8 +40,6 @@ int *msrp_trace_is_on;
 struct script_route_ref *msrp_trace_filter_route = NULL;
 trace_dest msrp_t_dst;
 
-struct msrp_req msrp_current_req;
-
 int msrp_send_timeout = 100;
 int msrp_tls_handshake_timeout = 100;
 int msrp_max_msg_chunks = 4;
@@ -275,13 +273,12 @@ static int msrp_handle_req(struct msrp_req *req,
 		struct tcp_connection *con, int _max_msg_chunks)
 {
 	struct receive_info local_rcv;
-	struct msrp_req *con_req;
 	char *msg_buf;
 	int msg_len;
 	long size;
 	char c;
 
-	if (req->complete){
+	if (req->complete) {
 #ifdef EXTRA_DEBUG
 		LM_DBG("end of header part\n");
 		LM_DBG("- received from: port %d\n", con->rcv.src_port);
@@ -304,35 +301,27 @@ static int msrp_handle_req(struct msrp_req *req,
 		/* prepare for next request */
 		size=req->tcp.pos-req->tcp.parsed;
 
-		//if (req->state!=H_SKIP_EMPTY) {
-			msg_buf = req->tcp.start;
-			msg_len = req->tcp.parsed-req->tcp.start;
-			local_rcv = con->rcv;
+		msg_buf = req->tcp.start;
+		msg_len = req->tcp.parsed-req->tcp.start;
+		local_rcv = con->rcv;
 
-			if (!size) {
-				/* did not read any more things -  we can release
-				 * the connection */
-				LM_DBG("Nothing more to read on TCP conn %p, currently "
-					"in state %d \n", con,con->state);
-				if (req != &msrp_current_req) {
-					/* we have the buffer in the connection tied buff -
-					 *	detach it , release the conn and free it afterwards */
-					con->con_req = NULL;
-				}
+		if (!size) {
+			/* did not read any more things -  we can release
+			 * the connection */
+			LM_DBG("Nothing more to read on TCP conn %p, currently "
+				"in state %d \n", con,con->state);
 
-				/* TODO - we could indicate to the TCP net layer to release
-				 * the connection -> other worker may read the next available
-				 * message on the pipe */
-			} else {
-				LM_DBG("We still have things on the pipe - "
-					"keeping connection \n");
-			}
+			/* TODO - we could indicate to the TCP net layer to release
+			 * the connection -> other worker may read the next available
+			 * message on the pipe */
+		} else {
+			LM_DBG("We still have things on the pipe - "
+				"keeping connection \n");
+		}
 
-			if (handle_msrp_msg( msg_buf, msg_len, &req->fl, &req->body, 
-			&local_rcv) <0)
-				LM_ERR("receive_msg failed \n");
-
-		//}
+		if (handle_msrp_msg(msg_buf, msg_len, &req->fl, &req->body,
+				&local_rcv) < 0)
+			LM_ERR("receive_msg failed \n");
 
 		con->msg_attempts = 0;
 
@@ -352,15 +341,10 @@ static int msrp_handle_req(struct msrp_req *req,
 			return 1;
 		}
 
-		if (req != &msrp_current_req) {
-			/* if we no longer need this tcp_req
-			 * we can free it now */
-			shm_free(req);
-			con->con_req = NULL;
-		}
+		init_msrp_req(req, 0);
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
-		if (con->msg_attempts==0)
+		if (con->msg_attempts == 0)
 			/* if first iteration, set a short timeout for reading
 			 * a whole SIP message */
 			con->timeout = get_ticks() + tcp_max_msg_time;
@@ -370,41 +354,6 @@ static int msrp_handle_req(struct msrp_req *req,
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;
-		}
-
-		if (req == &msrp_current_req) {
-			/* let's duplicate this - most likely another conn will come in */
-
-			LM_DBG("We didn't manage to read a full request\n");
-			con_req = shm_malloc(sizeof(struct msrp_req));
-			if (con_req == NULL) {
-				LM_ERR("No more mem for dynamic con request buffer\n");
-				goto error;
-			}
-			con->con_req = (void*)con_req;
-
-			if (req->tcp.pos != req->tcp.buf) {
-				/* we have read some bytes */
-				memcpy( con_req->tcp.buf, req->tcp.buf, req->tcp.pos-req->tcp.buf);
-				con_req->tcp.pos = con_req->tcp.buf + (req->tcp.pos-req->tcp.buf);
-			} else {
-				con_req->tcp.pos = con_req->tcp.buf;
-			}
-
-			if (req->tcp.start != req->tcp.buf)
-				con_req->tcp.start = con_req->tcp.buf +(req->tcp.start-req->tcp.buf);
-			else
-				con_req->tcp.start = con_req->tcp.buf;
-
-			if (req->tcp.parsed != req->tcp.buf)
-				con_req->tcp.parsed = con_req->tcp.buf+(req->tcp.parsed-req->tcp.buf);
-			else
-				con_req->tcp.parsed = con_req->tcp.buf;
-
-			con_req->complete=req->complete;
-			con_req->tcp.error = req->tcp.error;
-			con_req->state = req->state;
-			/* req will be reset on the next usage */
 		}
 	}
 
@@ -433,13 +382,18 @@ int msrp_read_req(struct tcp_connection* con, int* bytes_read)
 	bytes=-1;
 	total_bytes=0;
 
-	if (con->con_req) {
-		req = (struct msrp_req*)con->con_req;
+	if (con->proto_req) {
+		req = (struct msrp_req *)con->proto_req;
 		LM_DBG("Using the per connection buff \n");
 	} else {
-		LM_DBG("Using the global ( per process ) buff \n");
-		init_msrp_req(&msrp_current_req, 0);
-		req = &msrp_current_req;
+		LM_DBG("Allocating per connection MSRP buffer\n");
+		req = shm_malloc(sizeof(*req));
+		if (req == NULL) {
+			LM_ERR("No more mem for dynamic con request buffer\n");
+			return -1;
+		}
+		init_msrp_req(req, 0);
+		con->proto_req = (void *)req;
 	}
 
 

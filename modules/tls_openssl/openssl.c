@@ -33,7 +33,6 @@
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
-#include "../../locking.h"
 #include "../../pt.h"
 #include "../../net/tcp_conn_defs.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
@@ -93,10 +92,6 @@ int openssl_tls_var_validity(int ind, void *ssl, str *res);
 void tls_ctx_set_cert_store(void *ctx, void *src_ctx);
 int tls_ctx_set_cert_chain(void *ctx, void *src_ctx);
 int tls_ctx_set_pkey_file(void *ctx, char *pkey_file);
-
-#ifndef NO_SSL_GLOBAL_LOCK
-gen_lock_t *tls_global_lock;
-#endif
 
 static const cmd_export_t cmds[] = {
 	{"load_tls_openssl", (cmd_function)load_tls_openssl,
@@ -248,20 +243,7 @@ static int mod_init(void)
 			, NULL);
 #endif
 
-#ifndef NO_SSL_GLOBAL_LOCK
-	tls_global_lock = lock_alloc();
-	if (!tls_global_lock || !lock_init(tls_global_lock)) {
-		LM_ERR("could not initialize global openssl lock!\n");
-		return -1;
-	}
-#endif
-
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-	ssl_lock = lock_alloc();
-	if (!ssl_lock || !lock_init(ssl_lock)) {
-		LM_ERR("could not initialize ssl lock!\n");
-		return -1;
-	}
 	os_ssl_method = RAND_get_rand_method();
 	if (!os_ssl_method) {
 		LM_ERR("could not get the default ssl rand method!\n");
@@ -312,11 +294,6 @@ static void mod_destroy(void)
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
 	return;
-
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_destroy(tls_global_lock);
-	lock_dealloc(tls_global_lock);
-	#endif
 }
 
 static int openssl_is_peer_verified(void *ssl)

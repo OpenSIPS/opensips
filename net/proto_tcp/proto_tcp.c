@@ -60,14 +60,7 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 inline static int _tcp_write_on_socket(struct tcp_connection *c, int fd,
 		char *buf, int len);
 
-/* buffer to be used for reading all TCP SIP messages
-   detached from the actual con - in order to improve
-   paralelism ( process the SIP message while the con
-   can be sent back to main to do more stuff */
-static struct tcp_req tcp_current_req;
-
 #define _tcp_common_write _tcp_write_on_socket
-#define _tcp_common_current_req tcp_current_req
 #include "tcp_common.h"
 
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
@@ -710,14 +703,10 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 	bytes=-1;
 	total_bytes=0;
 
-	if (con->con_req) {
-		req=con->con_req;
-		LM_DBG("Using the per connection buff for conn %p\n",con);
-	} else {
-		LM_DBG("Using the global ( per process ) buff for conn %p\n",con);
-		init_tcp_req(&tcp_current_req, 0);
-		req=&tcp_current_req;
-	}
+	req = &con->tcp_req;
+	if (con->msg_attempts == 0)
+		init_tcp_req(req, 0);
+	LM_DBG("Using the connection buff for conn %p\n", con);
 
 	switch (check_tcp_proxy_protocol(con)) {
 	case 0:
@@ -786,7 +775,7 @@ again:
 			goto error;
 	}
 
-	LM_DBG("tcp_read_req end for conn %p, req is %p\n",con,con->con_req);
+	LM_DBG("tcp_read_req end for conn %p, req is %p\n",con,req);
 done:
 	if (bytes_read) *bytes_read=total_bytes;
 

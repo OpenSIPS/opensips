@@ -39,6 +39,7 @@
 #include "../locking.h"
 #include "../ip_addr.h"
 #include "tcp_conn_profile.h"
+#include "proto_tcp/tcp_common_defs.h"
 
 /* keepalive */
 #ifndef NO_TCP_KEEPALIVE
@@ -149,8 +150,7 @@ struct tcp_conn_profile {
 
 /*! \brief TCP connection structure */
 struct tcp_connection{
-	int s;					/*!< socket, used by "tcp main" */
-	int fd;					/*!< used only by "children", don't modify it! private data! */
+	int fd;					/*!< connection socket descriptor */
 	int proc_id;				/*!< used only by "children", contains the pt table ID of the TCP worker currently holding the connection, or -1 if in TCP main */
 	gen_lock_t write_lock;
 	unsigned int id;				/*!< id (unique!) used to retrieve a specific connection when reply-ing*/
@@ -173,7 +173,8 @@ struct tcp_connection{
 	struct tcp_connection* c_prev;		/*!< Child prev (use locally */
 	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];	/*!< Aliases for this connection */
 	int aliases;				/*!< Number of aliases, at least 1 */
-	struct tcp_req *con_req;	/*!< Per connection req buffer */
+	struct tcp_req tcp_req;		/*!< Per-connection TCP request buffer */
+	void *proto_req;			/*!< Optional protocol-specific request state */
 	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
 	/*!< connection related flags */
 	unsigned short flags;

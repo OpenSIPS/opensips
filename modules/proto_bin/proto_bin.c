@@ -53,14 +53,12 @@ static int bin_read_req(struct tcp_connection* con, int* bytes_read);
 
 static int bin_port = 5555;
 static int bin_send_timeout = 100;
-static struct tcp_req bin_current_req;
 static int bin_max_msg_chunks = 32;
 static int bin_async = 1;
 static int bin_async_max_postponed_chunks = 1024;
 static int bin_async_local_connect_timeout = 100;
 static int bin_async_local_write_timeout = 10;
 
-#define _bin_common_current_req  bin_current_req
 #include "bin_common.h"
 
 static const cmd_export_t cmds[] = {
@@ -298,14 +296,10 @@ static int bin_read_req(struct tcp_connection* con, int* bytes_read){
 	bytes = -1;
 	total_bytes = 0;
 
-	if (con->con_req) {
-		req = con->con_req;
-		LM_DBG("Using the per connection buff \n");
-	} else {
-		LM_DBG("Using the global ( per process ) buff \n");
-		init_tcp_req(&bin_current_req, 0);
-		req = &bin_current_req;
-	}
+	req = &con->tcp_req;
+	if (con->msg_attempts == 0)
+		init_tcp_req(req, 0);
+	LM_DBG("Using the connection buff\n");
 
 	again:
 	if(req->error == TCP_REQ_OK){

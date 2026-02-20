@@ -36,7 +36,6 @@
 void tls_dump_cert_info(char* s, X509* cert);
 void tls_print_errstack(void);
 
-extern gen_lock_t *tls_global_lock;
 
 tls_sni_cb_f mod_sni_cb;
 
@@ -327,7 +326,7 @@ int openssl_reg_sni_cb(tls_sni_cb_f cb)
 
 int openssl_switch_ssl_ctx(struct tls_domain *dom, void *ssl_ctx)
 {
-	SSL_set_SSL_CTX((SSL *)ssl_ctx, ((void**)dom->ctx)[process_no]);
+	SSL_set_SSL_CTX((SSL *)ssl_ctx, (SSL_CTX *)dom->ctx);
 
 	if (!SSL_set_ex_data((SSL *)ssl_ctx, SSL_EX_DOM_IDX, dom)) {
 		LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
@@ -357,19 +356,10 @@ set_dh_params(SSL_CTX * ctx, char *filename)
 		return -1;
 	}
 
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_get(tls_global_lock);
-	#endif
 	if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		LM_ERR("unable to set dh params\n");
 		return -1;
 	}
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_release(tls_global_lock);
-	#endif
 
 	DH_free(dh);
 	LM_DBG("DH params from '%s' successfully set\n", filename);
@@ -394,19 +384,10 @@ static int set_dh_params_db(SSL_CTX * ctx, str *blob)
 		return -1;
 	}
 
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_get(tls_global_lock);
-	#endif
 	if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		LM_ERR("unable to set dh params\n");
 		return -1;
 	}
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_release(tls_global_lock);
-	#endif
 
 	DH_free(dh);
 	LM_DBG("DH params from successfully set\n");
@@ -428,19 +409,10 @@ static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
 			LM_ERR("unable to create EC curve\n");
 			return -1;
 		}
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_get(tls_global_lock);
-		#endif
 		if (1 != SSL_CTX_set_tmp_ecdh (ctx, ecdh)) {
-			#ifndef NO_SSL_GLOBAL_LOCK
-			lock_release(tls_global_lock);
-			#endif
 			LM_ERR("unable to set tmp_ecdh\n");
 			return -1;
 		}
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		EC_KEY_free (ecdh);
 	}
 	else {
@@ -460,21 +432,12 @@ static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
  */
 static int load_certificate(SSL_CTX * ctx, char *filename)
 {
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_get(tls_global_lock);
-	#endif
 	if (!SSL_CTX_use_certificate_chain_file(ctx, filename)) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		tls_print_errstack();
 		LM_ERR("unable to load certificate file '%s'\n",
 				filename);
 		return -1;
 	}
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_release(tls_global_lock);
-	#endif
 
 	LM_DBG("'%s' successfully loaded\n", filename);
 	return 0;
@@ -498,42 +461,24 @@ static int load_certificate_db(SSL_CTX * ctx, str *blob)
 		return -1;
 	}
 
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_get(tls_global_lock);
-	#endif
 	if (! SSL_CTX_use_certificate(ctx, cert)) {
 		tls_print_errstack();
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		LM_ERR("Unable to use certificate\n");
 		X509_free(cert);
 		BIO_free(cbio);
 		return -1;
 	}
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_release(tls_global_lock);
-	#endif
 	tls_dump_cert_info("Certificate loaded: ", cert);
 	X509_free(cert);
 
 	while ((cert = PEM_read_bio_X509(cbio, NULL, 0, NULL)) != NULL) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_get(tls_global_lock);
-		#endif
 		if (!SSL_CTX_add_extra_chain_cert(ctx, cert)){
 			tls_print_errstack();
-			#ifndef NO_SSL_GLOBAL_LOCK
-			lock_release(tls_global_lock);
-			#endif
 			tls_dump_cert_info("Unable to add chain cert: ", cert);
 			X509_free(cert);
 			BIO_free(cbio);
 			return -1;
 		}
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		/* The x509 certificate provided to SSL_CTX_add_extra_chain_cert()
 		*	will be freed by the library when the SSL_CTX is destroyed.
 		*	An application should not free the x509 object.a*/
@@ -573,7 +518,7 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 			continue;
 
 		/*Create filename*/
-		char* filename = (char*) pkg_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
+			char* filename = (char*) thread_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
 		if (!filename) {
 			LM_ERR("Unable to allocate crl filename\n");
 			closedir(d);
@@ -586,7 +531,7 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 
 		/*Get CRL content*/
 		FILE *fp = fopen(filename,"r");
-		pkg_free(filename);
+			thread_free(filename);
 		if(!fp)
 			continue;
 
@@ -641,20 +586,11 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
  */
 static int load_ca(SSL_CTX * ctx, char *filename)
 {
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_get(tls_global_lock);
-	#endif
 	if (!SSL_CTX_load_verify_locations(ctx, filename, 0)) {
 		tls_print_errstack();
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		LM_ERR("unable to load ca '%s'\n", filename);
 		return -1;
 	}
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_release(tls_global_lock);
-	#endif
 
 	LM_DBG("CA '%s' successfully loaded\n", filename);
 	return 0;
@@ -701,19 +637,10 @@ static int load_ca_db(SSL_CTX * ctx, str *blob)
  */
 static int load_ca_dir(SSL_CTX * ctx, char *directory)
 {
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_get(tls_global_lock);
-	#endif
 	if (!SSL_CTX_load_verify_locations(ctx, 0 , directory)) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		LM_ERR("unable to load ca directory '%s'\n", directory);
 		return -1;
 	}
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_release(tls_global_lock);
-	#endif
 
 	LM_DBG("CA '%s' successfully loaded from directory\n", directory);
 	return 0;
@@ -722,7 +649,7 @@ static int load_ca_dir(SSL_CTX * ctx, char *directory)
 int openssl_init_tls_dom(struct tls_domain *d, int init_flags)
 {
 	int verify_mode = 0;
-	unsigned i, tcp_procs;
+	SSL_CTX *ctx;
 
 #if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 	if (!d->tls_ec_curve)
@@ -742,125 +669,107 @@ int openssl_init_tls_dom(struct tls_domain *d, int init_flags)
 
 	get_ssl_ctx_verify_mode(d, &verify_mode);
 
-	tcp_procs = count_child_processes();
-
-	d->ctx = shm_malloc(tcp_procs * sizeof(SSL_CTX *));
-	if (!d->ctx) {
-		LM_ERR("cannot allocate ssl ctx per process!\n");
+	/*
+	 * create context
+	 */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	ctx = SSL_CTX_new(TLS_method());
+#else
+	ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
+#endif
+	if (ctx == NULL) {
+		LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
+			d->name.len, ZSW(d->name.s));
 		return -1;
 	}
-	memset(d->ctx, 0, tcp_procs * sizeof(SSL_CTX *));
+	d->ctx = ctx;
 
-	d->ctx_no = tcp_procs;
-
-	for (i = 0; i < tcp_procs; i++) {
-		/*
-		 * create context
-		 */
-#ifndef NO_SSL_GLOBAL_LOCK
-		lock_get(tls_global_lock);
-#endif
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-		((void**)d->ctx)[i] = SSL_CTX_new(TLS_method());
-#else
-		((void**)d->ctx)[i] = SSL_CTX_new(ssl_methods[d->method - 1]);
-#endif
-#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-#endif
-		if (((void**)d->ctx)[i] == NULL) {
-			LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
-				d->name.len, ZSW(d->name.s));
+	if (d->method != TLS_USE_SSLv23) {
+		if (!SSL_CTX_set_min_proto_version(ctx,
+				ssl_versions[d->method - 1]) ||
+			!SSL_CTX_set_max_proto_version(ctx,
+				ssl_versions[d->method_max - 1])) {
+			LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
+					d->name.len, ZSW(d->name.s));
 			return -1;
 		}
-
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-		if (d->method != TLS_USE_SSLv23) {
-			if (!SSL_CTX_set_min_proto_version(((void**)d->ctx)[i],
-					ssl_versions[d->method - 1]) ||
-				!SSL_CTX_set_max_proto_version(((void**)d->ctx)[i],
-					ssl_versions[d->method_max - 1])) {
-				LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
-						d->name.len, ZSW(d->name.s));
-				return -1;
-			}
-		}
+	}
 #endif
 
 #if (OPENSSL_VERSION_NUMBER > 0x10001000L)
-		if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_DH_FILE_FL) {
-			if (d->dh_param.s && set_dh_params(((void**)d->ctx)[i], d->dh_param.s) < 0)
-				return -1;
-		} else {
-			set_dh_params_db(((void**)d->ctx)[i], &d->dh_param);
-		}
-		if (d->tls_ec_curve && set_ec_params(((void**)d->ctx)[i], d->tls_ec_curve) < 0)
+	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_DH_FILE_FL) {
+		if (d->dh_param.s && set_dh_params(ctx, d->dh_param.s) < 0)
 			return -1;
+	} else {
+		set_dh_params_db(ctx, &d->dh_param);
+	}
+	if (d->tls_ec_curve && set_ec_params(ctx, d->tls_ec_curve) < 0)
+		return -1;
 #endif
 
-		if (d->ciphers_list != 0 && SSL_CTX_set_cipher_list(((void**)d->ctx)[i],
-			d->ciphers_list) == 0 ) {
-			LM_ERR("failure to set SSL context "
-					"cipher list '%s'\n", d->ciphers_list);
+	if (d->ciphers_list != 0 && SSL_CTX_set_cipher_list(ctx,
+		d->ciphers_list) == 0 ) {
+		LM_ERR("failure to set SSL context "
+				"cipher list '%s'\n", d->ciphers_list);
+		return -1;
+	}
+
+	/* Set a bunch of options:
+	 *     do not accept SSLv2 / SSLv3
+	 *     no session resumption
+	 *     choose cipher according to server's preference's*/
+
+	SSL_CTX_set_options(ctx,
+			SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
+			SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
+			SSL_OP_CIPHER_SERVER_PREFERENCE);
+
+
+	SSL_CTX_set_verify(ctx, verify_mode, verify_callback);
+	SSL_CTX_set_verify_depth(ctx, VERIFY_DEPTH_S);
+
+	//SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_SERVER );
+	SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF );
+	SSL_CTX_set_session_id_context(ctx, (unsigned char*)OS_SSL_SESS_ID,
+			OS_SSL_SESS_ID_LEN );
+
+	/* install callback for SNI */
+	if (mod_sni_cb && d->flags & DOM_FLAG_SRV) {
+		SSL_CTX_set_tlsext_servername_callback(ctx, ssl_servername_cb);
+		SSL_CTX_set_tlsext_servername_arg(ctx, d);
+	}
+
+	/*
+	 * load certificate
+	 */
+	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CERT_FILE_FL) {
+		if (load_certificate(ctx, d->cert.s) < 0)
 			return -1;
-		}
-
-		/* Set a bunch of options:
-		 *     do not accept SSLv2 / SSLv3
-		 *     no session resumption
-		 *     choose cipher according to server's preference's*/
-
-		SSL_CTX_set_options(((void**)d->ctx)[i],
-				SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
-				SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
-				SSL_OP_CIPHER_SERVER_PREFERENCE);
-
-
-		SSL_CTX_set_verify(((void**)d->ctx)[i], verify_mode, verify_callback);
-		SSL_CTX_set_verify_depth(((void**)d->ctx)[i], VERIFY_DEPTH_S);
-
-		//SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_SERVER );
-		SSL_CTX_set_session_cache_mode(((void**)d->ctx)[i], SSL_SESS_CACHE_OFF );
-		SSL_CTX_set_session_id_context(((void**)d->ctx)[i], (unsigned char*)OS_SSL_SESS_ID,
-				OS_SSL_SESS_ID_LEN );
-
-		/* install callback for SNI */
-		if (mod_sni_cb && d->flags & DOM_FLAG_SRV) {
-			SSL_CTX_set_tlsext_servername_callback(((void**)d->ctx)[i], ssl_servername_cb);
-			SSL_CTX_set_tlsext_servername_arg(((void**)d->ctx)[i], d);
-		}
-
-		/*
-		 * load certificate
-		 */
-		if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CERT_FILE_FL) {
-			if (load_certificate(((void**)d->ctx)[i], d->cert.s) < 0)
-				return -1;
-		} else
-			if (load_certificate_db(((void**)d->ctx)[i], &d->cert) < 0)
-				return -1;
-
-		/**
-		 * load crl from directory
-		 */
-		if (d->crl_directory && load_crl(((void**)d->ctx)[i], d->crl_directory,
-			d->crl_check_all) < 0)
+	} else
+		if (load_certificate_db(ctx, &d->cert) < 0)
 			return -1;
 
-		/*
-		 * load ca
-		 */
-		if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CA_FILE_FL) {
-			if (d->ca.s && load_ca(((void**)d->ctx)[i], d->ca.s) < 0)
-				return -1;
-		} else {
-			if (load_ca_db(((void**)d->ctx)[i], &d->ca) < 0)
-				return -1;
-		}
+	/**
+	 * load crl from directory
+	 */
+	if (d->crl_directory && load_crl(ctx, d->crl_directory,
+		d->crl_check_all) < 0)
+		return -1;
 
-		if (d->ca_directory && load_ca_dir(((void**)d->ctx)[i], d->ca_directory) < 0)
+	/*
+	 * load ca
+	 */
+	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CA_FILE_FL) {
+		if (d->ca.s && load_ca(ctx, d->ca.s) < 0)
+			return -1;
+	} else {
+		if (load_ca_db(ctx, &d->ca) < 0)
 			return -1;
 	}
+
+	if (d->ca_directory && load_ca_dir(ctx, d->ca_directory) < 0)
+		return -1;
 
 	return 0;
 }
@@ -898,9 +807,6 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 	SSL_CTX_set_default_passwd_cb(ctx, passwd_cb);
 	SSL_CTX_set_default_passwd_cb_userdata(ctx, filename);
 
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_get(tls_global_lock);
-	#endif
 	for(idx = 0, ret_pwd = 0; idx < NUM_RETRIES; idx++ ) {
 		ret_pwd = SSL_CTX_use_PrivateKey_file(ctx, filename, SSL_FILETYPE_PEM);
 		if ( ret_pwd ) {
@@ -915,25 +821,16 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 
 	if( ! ret_pwd ) {
 		tls_print_errstack();
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		LM_ERR("unable to load private key file '%s'\n",
 				filename);
 		return -1;
 	}
 
 	if (!SSL_CTX_check_private_key(ctx)) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		LM_ERR("key '%s' does not match the public key of the certificate\n",
 				filename);
 		return -1;
 	}
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_release(tls_global_lock);
-	#endif
 
 	LM_DBG("key '%s' successfully loaded\n", filename);
 	return 0;
@@ -953,9 +850,6 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 		return -1;
 	}
 
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_get(tls_global_lock);
-	#endif
 	for(idx = 0; idx < NUM_RETRIES; idx++ ) {
 		key = PEM_read_bio_PrivateKey(kbio,NULL, passwd_cb, "database");
 		if ( key ) {
@@ -970,24 +864,15 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 	BIO_free(kbio);
 	if(!key) {
 		tls_print_errstack();
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		LM_ERR("unable to load private key from buffer\n");
 		return -1;
 	}
 
 	if (!SSL_CTX_use_PrivateKey(ctx, key)) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_release(tls_global_lock);
-		#endif
 		EVP_PKEY_free(key);
 		LM_ERR("key does not match the public key of the certificate\n");
 		return -1;
 	}
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_release(tls_global_lock);
-	#endif
 
 	EVP_PKEY_free(key);
 	LM_DBG("key successfully loaded\n");
@@ -996,29 +881,16 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 
 int openssl_load_priv_key(struct tls_domain *tls_dom, int from_file)
 {
-	int rc = 0;
-	int i;
+	if (!(tls_dom->flags & DOM_FLAG_DB) || from_file)
+		return load_private_key((SSL_CTX *)tls_dom->ctx, tls_dom->pkey.s);
 
-	for (i = 0; i < tls_dom->ctx_no; i++) {
-		if (!(tls_dom->flags & DOM_FLAG_DB) || from_file)
-			rc = load_private_key(((void**)tls_dom->ctx)[i], tls_dom->pkey.s);
-		else
-			rc = load_private_key_db(((void**)tls_dom->ctx)[i], &tls_dom->pkey);
-		if (rc < 0)
-			break;
-	}
-
-	return rc;
+	return load_private_key_db((SSL_CTX *)tls_dom->ctx, &tls_dom->pkey);
 }
 
 void openssl_destroy_tls_dom(struct tls_domain *tls_dom)
 {
-	int i;
-
 	if (tls_dom->ctx) {
-		for (i = 0; i < tls_dom->ctx_no; i++)
-			if (((void**)tls_dom->ctx)[i])
-				SSL_CTX_free(((void**)tls_dom->ctx)[i]);
-		shm_free(tls_dom->ctx);
+		SSL_CTX_free((SSL_CTX *)tls_dom->ctx);
+		tls_dom->ctx = NULL;
 	}
 }

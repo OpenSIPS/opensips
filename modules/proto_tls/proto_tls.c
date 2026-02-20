@@ -301,15 +301,8 @@ release:
 	return n;
 }
 
-/* buffer to be used for reading all TCP SIP messages
-   detached from the actual con - in order to improve
-   paralelism ( process the SIP message while the con
-   can be sent back to main to do more stuff */
-static struct tcp_req tls_current_req;
-
 /* re-use similar and existing functions from the TCP-plain protocol */
 #define _tcp_common_write        w_tls_blocking_write
-#define _tcp_common_current_req  tls_current_req
 #include "../../net/proto_tcp/tcp_common.h"
 
 #define TLS_TRACE_PROTO "proto_hep"
@@ -787,14 +780,10 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	bytes=-1;
 	total_bytes=0;
 
-	if (con->con_req) {
-		req=con->con_req;
-		LM_DBG("Using the per connection buff \n");
-	} else {
-		LM_DBG("Using the global ( per process ) buff \n");
-		init_tcp_req(&tls_current_req, 0);
-		req=&tls_current_req;
-	}
+	req = &con->tcp_req;
+	if (con->msg_attempts == 0)
+		init_tcp_req(req, 0);
+	LM_DBG("Using the connection buff\n");
 
 	switch (check_tcp_proxy_protocol(con)) {
 	case 0:

@@ -71,9 +71,6 @@ static int bins_async_handshake_connect_timeout = 10;
 static str trace_destination_name = {NULL, 0};
 static int trace_is_on_tmp;
 
-static struct tcp_req bins_current_req;
-
-#define _bin_common_current_req  bins_current_req
 #include "../proto_bin/bin_common.h"
 
 struct tls_mgm_binds tls_mgm_api;
@@ -571,14 +568,10 @@ static int bins_read_req(struct tcp_connection* con, int* bytes_read)
 	bytes = -1;
 	total_bytes = 0;
 
-	if (con->con_req) {
-		req = con->con_req;
-		LM_DBG("Using the per connection buff \n");
-	} else {
-		LM_DBG("Using the global ( per process ) buff \n");
-		init_tcp_req(&bins_current_req, 0);
-		req = &bins_current_req;
-	}
+	req = &con->tcp_req;
+	if (con->msg_attempts == 0)
+		init_tcp_req(req, 0);
+	LM_DBG("Using the connection buff\n");
 
 	ret=tls_mgm_api.tls_fix_read_conn(con, con->fd, bins_handshake_tout, t_dst, 1);
 	if (ret < 0) {

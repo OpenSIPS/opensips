@@ -37,6 +37,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
+#include <stdint.h>
 
 #include "../mem/mem.h"
 #include "../mem/shm_mem.h"
@@ -51,6 +53,7 @@
 #include "../reactor.h"
 #include "../timer.h"
 #include "../ipc.h"
+#include "../receive.h"
 
 #include "tcp_passfd.h"
 #include "net_tcp_proc.h"
@@ -154,6 +157,7 @@ int tcp_no_new_conn_rplflag = 0;
 /*!< should a new TCP conn be open if needed? - variable used to used for
  * signalizing between SIP layer (branch flag) and TCP layer (tcp_send func)*/
 int tcp_no_new_conn = 0;
+int tcp_threads = 0;
 
 /* if the TCP net layer is on or off (if no TCP based protos are loaded) */
 static int tcp_disabled = 1;
@@ -279,44 +283,122 @@ error:
 	return -1;
 }
 
-static int send2worker(struct tcp_connection* tcpconn,int rw)
+struct tcp_ipc_payload {
+	struct receive_info rcv;
+	int msg_len;
+	char msg_buf[0];
+};
+
+static inline int tcp_pick_dispatch_worker(void)
 {
 	int i;
-	int min_load;
-	int idx;
-	long response[2];
-	unsigned int load;
 
-	min_load=100; /* it is a percentage */
-	idx=0;
-	for (i=0; i<tcp_workers_max_no; i++){
-		if (tcp_workers[i].state==STATE_ACTIVE) {
-			load = pt_get_1m_proc_load( tcp_workers[i].pt_idx );
-#ifdef EXTRA_DEBUG
-			LM_DBG("checking TCP worker %d (proc %d), with load %u,"
-				"min_load so far %u\n", i, tcp_workers[i].pt_idx, load,
-				min_load);
-#endif
-			if (min_load>load) {
-				min_load = load;
-				idx = i;
-			}
-		}
+	for (i = 0; i < tcp_workers_max_no; i++) {
+		if (tcp_workers[i].state != STATE_ACTIVE)
+			continue;
+		if (tcp_workers[i].pt_idx <= 0)
+			continue;
+		if ((pt[tcp_workers[i].pt_idx].flags & OSS_PROC_IS_RUNNING) == 0)
+			continue;
+		return i;
 	}
 
-	tcp_workers[idx].n_reqs++;
-	LM_DBG("to tcp worker %d (%d/%d) load %u, %p/%d rw %d\n", idx,
-		tcp_workers[idx].pid, tcp_workers[idx].pt_idx, min_load,
-		tcpconn, tcpconn->s, rw);
-	response[0]=(long)tcpconn;
-	response[1]=rw;
-	if (send_fd(tcp_workers[idx].unix_sock, response, sizeof(response),
-			tcpconn->s)<=0){
-		LM_ERR("send_fd failed\n");
+	return -1;
+}
+
+int tcp_dispatch_received_msg(char *msg, int len, struct receive_info *rcv)
+{
+	struct tcp_ipc_payload *payload;
+	unsigned int alloc_len;
+	int worker_idx;
+	uintptr_t payload_ptr;
+
+	if (ipc_is_async_dispatch()) {
+		LM_ERR("cannot dispatch TCP message while already handling IPC async job\n");
 		return -1;
 	}
 
+	worker_idx = tcp_pick_dispatch_worker();
+	if (worker_idx < 0) {
+		LM_ERR("no TCP worker available to receive dispatched TCP message\n");
+		return -1;
+	}
+
+	if (len < 0) {
+		LM_BUG("negative TCP message length: %d\n", len);
+		return -1;
+	}
+
+	alloc_len = sizeof(*payload) + len + 1;
+	payload = shm_malloc(alloc_len);
+	if (!payload) {
+		LM_ERR("oom while allocating TCP IPC payload (%u bytes)\n", alloc_len);
+		return -1;
+	}
+
+	memcpy(&payload->rcv, rcv, sizeof(payload->rcv));
+	payload->msg_len = len;
+	memcpy(payload->msg_buf, msg, len);
+	payload->msg_buf[len] = '\0';
+
+	payload_ptr = (uintptr_t)payload;
+	if (send_all(tcp_workers[worker_idx].unix_sock,
+			&payload_ptr, sizeof(payload_ptr)) != (int)sizeof(payload_ptr)) {
+		LM_ERR("failed to dispatch TCP message to worker %d (pid %d)\n",
+			worker_idx, tcp_workers[worker_idx].pid);
+		shm_free(payload);
+		return -1;
+	}
+	tcp_workers[worker_idx].n_reqs++;
+
 	return 0;
+}
+
+enum tcp_job_op {
+	TCP_READ_JOB = 1,
+	TCP_WRITE_JOB = 2,
+};
+
+struct tcp_job {
+	struct tcp_connection *conn;
+	int op;
+	long resp;
+	int ret;
+	struct tcp_job *next;
+};
+
+static struct tcp_pool {
+	pthread_t *threads;
+	int threads_no;
+	int stop;
+
+	pthread_mutex_t task_lock;
+	pthread_cond_t task_cond;
+	struct tcp_job *task_head;
+	struct tcp_job *task_tail;
+
+	pthread_mutex_t done_lock;
+	struct tcp_job *done_head;
+	struct tcp_job *done_tail;
+
+	int notify_pipe[2];
+} tcp_pool = {
+	.threads = NULL,
+	.threads_no = 0,
+	.stop = 0,
+	.task_lock = PTHREAD_MUTEX_INITIALIZER,
+	.task_cond = PTHREAD_COND_INITIALIZER,
+	.task_head = NULL,
+	.task_tail = NULL,
+	.done_lock = PTHREAD_MUTEX_INITIALIZER,
+	.done_head = NULL,
+	.done_tail = NULL,
+	.notify_pipe = {-1, -1},
+};
+
+static inline int tcp_threads_active(void)
+{
+	return tcp_pool.threads_no > 0;
 }
 
 
@@ -782,8 +864,9 @@ static void __tcpconn_rm(struct tcp_connection* c, int no_event)
 		c->async = NULL;
 	}
 
-	if (c->con_req)
-		shm_free(c->con_req);
+	if (c->proto_req)
+		shm_free(c->proto_req);
+	c->proto_req = NULL;
 
 	if (protos[c->type].net.stream.conn.clean)
 		protos[c->type].net.stream.conn.clean(c);
@@ -798,32 +881,6 @@ static void __tcpconn_rm(struct tcp_connection* c, int no_event)
 
 	/* shm_free(c); -- freed by _tcpconn_rm() */
 }
-
-
-
-#if 0
-static void tcpconn_rm(struct tcp_connection* c)
-{
-	int r;
-
-	TCPCONN_LOCK(c->id);
-	tcpconn_listrm(TCP_PART(c->id).tcpconn_id_hash[c->id_hash], c,
-		id_next, id_prev);
-	/* remove all the aliases */
-	for (r=0; r<c->aliases; r++)
-		tcpconn_listrm(TCP_PART(c->id).tcpconn_aliases_hash
-			[c->con_aliases[r].hash],
-			&c->con_aliases[r], next, prev);
-	TCPCONN_UNLOCK(c->id);
-	lock_destroy(&c->write_lock);
-
-	if (protos[c->type].net.stream.conn.clean)
-		protos[c->type].net.stream.conn.clean(c);
-
-	shm_free(c);
-}
-#endif
-
 
 /*! \brief add port as an alias for the "id" connection
  * \return 0 on success,-1 on failure */
@@ -923,8 +980,7 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 		return 0;
 	}
 	memset(c, 0, sizeof(struct tcp_connection)); /* zero init */
-	c->s=sock;
-	c->fd=-1; /* not initialized */
+	c->fd=sock;
 	if (lock_init(&c->write_lock)==0){
 		LM_ERR("init lock failed\n");
 		goto error0;
@@ -977,6 +1033,12 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 			LM_ERR("could not allocate async data for con!\n");
 			goto error;
 		}
+	}
+	if (protos[si->proto].net.stream.conn.init &&
+		protos[si->proto].net.stream.conn.init(c) < 0) {
+		LM_ERR("failed to do proto %d specific init for conn %p\n",
+				c->type, c);
+		goto error;
 	}
 	if(in_main_proc)
 		tcp_connections_no++;
@@ -1039,7 +1101,7 @@ int tcp_conn_send(struct tcp_connection *c)
 	/* inform TCP main about this new connection */
 	if (c->state==S_CONN_CONNECTING) {
 		/* store the local fd now, before TCP main overwrites it */
-		fd = c->s;
+		fd = c->fd;
 		response[0]=(long)c;
 		response[1]=ASYNC_CONNECT;
 		n=send_fd(unix_tcp_sock, response, sizeof(response), fd);
@@ -1048,10 +1110,11 @@ int tcp_conn_send(struct tcp_connection *c)
 			goto error;
 		}
 		close(fd);
+		c->fd = -1;
 	} else {
 		response[0]=(long)c;
 		response[1]=CONN_NEW;
-		n=send_fd(unix_tcp_sock, response, sizeof(response), c->s);
+		n=send_fd(unix_tcp_sock, response, sizeof(response), c->fd);
 		if (n<=0){
 			LM_ERR("failed send_fd: %s (%d)\n", strerror(errno), errno);
 			goto error;
@@ -1078,7 +1141,7 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 	if (tcpconn->refcnt==0){
 		LM_DBG("destroying connection %p, flags %04x\n",
 				tcpconn, tcpconn->flags);
-		fd=tcpconn->s;
+		fd=tcpconn->fd;
 		/* no reporting here - the tcpconn_destroy() function is called
 		 * from the TCP_MAIN reactor when handling connectioned received
 		 * from a worker; and we generate the CLOSE reports from WORKERs */
@@ -1108,6 +1171,364 @@ void tcp_conn_destroy(struct tcp_connection* tcpconn)
 	return tcpconn_destroy(tcpconn);
 }
 
+static inline int tcp_set_nonblock(int fd)
+{
+	int flags;
+
+	flags = fcntl(fd, F_GETFL);
+	if (flags == -1) {
+		LM_ERR("fcntl(F_GETFL) failed for %d: %s\n", fd, strerror(errno));
+		return -1;
+	}
+
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		LM_ERR("fcntl(F_SETFL) failed for %d: %s\n", fd, strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
+
+static void tcp_push_done_job(struct tcp_job *job)
+{
+	pthread_mutex_lock(&tcp_pool.done_lock);
+	if (tcp_pool.done_tail)
+		tcp_pool.done_tail->next = job;
+	else
+		tcp_pool.done_head = job;
+	tcp_pool.done_tail = job;
+	pthread_mutex_unlock(&tcp_pool.done_lock);
+}
+
+static struct tcp_job *tcp_pop_done_job(void)
+{
+	struct tcp_job *job;
+
+	pthread_mutex_lock(&tcp_pool.done_lock);
+	job = tcp_pool.done_head;
+	if (job) {
+		tcp_pool.done_head = job->next;
+		if (tcp_pool.done_head == NULL)
+			tcp_pool.done_tail = NULL;
+	}
+	pthread_mutex_unlock(&tcp_pool.done_lock);
+
+	return job;
+}
+
+static void *tcp_thread_routine(void *arg)
+{
+	struct tcp_job *job;
+	struct tcp_connection *conn;
+	char wake = 'x';
+	int rc;
+
+	(void)arg;
+
+	/* Reactor operations stay in TCP main; IO threads only run read/write
+	 * callbacks and notify completion back to the main thread. */
+	while (1) {
+		pthread_mutex_lock(&tcp_pool.task_lock);
+		while (!tcp_pool.stop && tcp_pool.task_head == NULL)
+			pthread_cond_wait(&tcp_pool.task_cond, &tcp_pool.task_lock);
+
+		if (tcp_pool.stop && tcp_pool.task_head == NULL) {
+			pthread_mutex_unlock(&tcp_pool.task_lock);
+			break;
+		}
+
+		job = tcp_pool.task_head;
+		tcp_pool.task_head = job->next;
+		if (tcp_pool.task_head == NULL)
+			tcp_pool.task_tail = NULL;
+		pthread_mutex_unlock(&tcp_pool.task_lock);
+
+		conn = job->conn;
+		if (job->op == TCP_READ_JOB) {
+			if (protos[conn->type].net.stream.read) {
+				job->resp = protos[conn->type].net.stream.read(conn, &job->ret);
+			} else {
+				LM_ERR("missing stream.read callback for proto %d\n", conn->type);
+				job->ret = -1;
+				job->resp = -1;
+			}
+		} else {
+			if (protos[conn->type].net.stream.write) {
+				lock_get(&conn->write_lock);
+				job->resp = protos[conn->type].net.stream.write(conn, conn->fd);
+				lock_release(&conn->write_lock);
+				job->ret = (job->resp < 0) ? -1 : 0;
+			} else {
+				LM_ERR("missing stream.write callback for proto %d\n", conn->type);
+				job->ret = -1;
+				job->resp = -1;
+			}
+		}
+
+		job->next = NULL;
+		tcp_push_done_job(job);
+
+		rc = write(tcp_pool.notify_pipe[1], &wake, 1);
+		if (rc < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+			LM_ERR("failed to notify TCP IO completion: %s\n", strerror(errno));
+	}
+
+	return NULL;
+}
+
+static int tcp_pool_init(void)
+{
+	int i;
+	int started = 0;
+	int threads_no;
+	long cpu_no;
+
+	if (tcp_threads > 0)
+		threads_no = tcp_threads;
+	else {
+		cpu_no = sysconf(_SC_NPROCESSORS_ONLN);
+		if (cpu_no > 0)
+			threads_no = (int)cpu_no;
+		else if (tcp_workers_no > 0)
+			threads_no = tcp_workers_no;
+		else
+			threads_no = 1;
+	}
+
+	if (pipe(tcp_pool.notify_pipe) < 0) {
+		LM_ERR("failed to create TCP IO notification pipe: %s\n", strerror(errno));
+		goto error;
+	}
+
+	if (tcp_set_nonblock(tcp_pool.notify_pipe[0]) < 0 ||
+	    tcp_set_nonblock(tcp_pool.notify_pipe[1]) < 0)
+		goto error;
+
+	if (reactor_add_reader(tcp_pool.notify_pipe[0],
+		F_TCP_NOTIFY, RCT_PRIO_PROC, NULL) < 0) {
+		LM_ERR("failed to add TCP IO notify pipe to reactor\n");
+		goto error;
+	}
+
+	tcp_pool.threads = pkg_malloc(sizeof(*tcp_pool.threads) * threads_no);
+	if (!tcp_pool.threads) {
+		LM_ERR("oom while allocating TCP IO threads array\n");
+		goto error;
+	}
+
+	tcp_pool.stop = 0;
+	tcp_pool.threads_no = threads_no;
+
+	for (i = 0; i < threads_no; i++) {
+		if (pthread_create(&tcp_pool.threads[i], NULL,
+				tcp_thread_routine, NULL) != 0) {
+			LM_ERR("failed to start TCP IO thread %d/%d\n", i + 1, threads_no);
+			goto error;
+		}
+		started++;
+	}
+
+	LM_NOTICE("TCP single IO mode started with %d threads\n", threads_no);
+	return 0;
+
+error:
+	pthread_mutex_lock(&tcp_pool.task_lock);
+	tcp_pool.stop = 1;
+	pthread_cond_broadcast(&tcp_pool.task_cond);
+	pthread_mutex_unlock(&tcp_pool.task_lock);
+
+	if (tcp_pool.threads) {
+		for (i = 0; i < started; i++)
+			pthread_join(tcp_pool.threads[i], NULL);
+		pkg_free(tcp_pool.threads);
+		tcp_pool.threads = NULL;
+	}
+	tcp_pool.threads_no = 0;
+
+	if (tcp_pool.notify_pipe[0] >= 0) {
+		reactor_del_reader(tcp_pool.notify_pipe[0], -1, 0);
+		close(tcp_pool.notify_pipe[0]);
+		tcp_pool.notify_pipe[0] = -1;
+	}
+	if (tcp_pool.notify_pipe[1] >= 0) {
+		close(tcp_pool.notify_pipe[1]);
+		tcp_pool.notify_pipe[1] = -1;
+	}
+
+	return -1;
+}
+
+static void tcp_pool_destroy(void)
+{
+	int i;
+	struct tcp_job *job;
+	struct tcp_job *next;
+
+	if (!tcp_threads_active() && tcp_pool.notify_pipe[0] < 0)
+		return;
+
+	pthread_mutex_lock(&tcp_pool.task_lock);
+	tcp_pool.stop = 1;
+	pthread_cond_broadcast(&tcp_pool.task_cond);
+	pthread_mutex_unlock(&tcp_pool.task_lock);
+
+	for (i = 0; i < tcp_pool.threads_no; i++)
+		pthread_join(tcp_pool.threads[i], NULL);
+
+	if (tcp_pool.threads) {
+		pkg_free(tcp_pool.threads);
+		tcp_pool.threads = NULL;
+	}
+	tcp_pool.threads_no = 0;
+
+	if (tcp_pool.notify_pipe[0] >= 0) {
+		reactor_del_reader(tcp_pool.notify_pipe[0], -1, 0);
+		close(tcp_pool.notify_pipe[0]);
+		tcp_pool.notify_pipe[0] = -1;
+	}
+	if (tcp_pool.notify_pipe[1] >= 0) {
+		close(tcp_pool.notify_pipe[1]);
+		tcp_pool.notify_pipe[1] = -1;
+	}
+
+	pthread_mutex_lock(&tcp_pool.task_lock);
+	for (job = tcp_pool.task_head; job; job = next) {
+		next = job->next;
+		tcpconn_put(job->conn);
+		pkg_free(job);
+	}
+	tcp_pool.task_head = tcp_pool.task_tail = NULL;
+	pthread_mutex_unlock(&tcp_pool.task_lock);
+
+	pthread_mutex_lock(&tcp_pool.done_lock);
+	for (job = tcp_pool.done_head; job; job = next) {
+		next = job->next;
+		tcpconn_put(job->conn);
+		pkg_free(job);
+	}
+	tcp_pool.done_head = tcp_pool.done_tail = NULL;
+	pthread_mutex_unlock(&tcp_pool.done_lock);
+}
+
+static int tcp_queue_job(struct tcp_connection *tcpconn, int op)
+{
+	struct tcp_job *job;
+
+	if (!tcp_threads_active())
+		return -1;
+
+	job = pkg_malloc(sizeof(*job));
+	if (!job) {
+		LM_ERR("oom while queuing TCP IO job\n");
+		return -1;
+	}
+
+	job->conn = tcpconn;
+	job->op = op;
+	job->resp = 0;
+	job->ret = 0;
+	job->next = NULL;
+
+	pthread_mutex_lock(&tcp_pool.task_lock);
+	if (tcp_pool.task_tail)
+		tcp_pool.task_tail->next = job;
+	else
+		tcp_pool.task_head = job;
+	tcp_pool.task_tail = job;
+	pthread_cond_signal(&tcp_pool.task_cond);
+	pthread_mutex_unlock(&tcp_pool.task_lock);
+
+	return 0;
+}
+
+static inline void tcp_fail_conn(struct tcp_connection *tcpconn,
+		const char *reason, int report)
+{
+	if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
+	    tcpconn->fd != -1) {
+		reactor_del_all(tcpconn->fd, -1, IO_FD_CLOSING);
+		tcpconn->flags |= F_CONN_REMOVED;
+	}
+
+	if (report)
+		tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE, (void *)reason);
+
+	tcpconn_destroy(tcpconn);
+}
+
+static inline void tcp_complete_read(struct tcp_job *job)
+{
+	struct tcp_connection *tcpconn;
+
+	tcpconn = job->conn;
+
+	if (job->resp < 0 || tcpconn->state == S_CONN_BAD) {
+		tcp_fail_conn(tcpconn, "Read error", 1);
+		return;
+	}
+
+	if (tcpconn->state == S_CONN_EOF) {
+		tcp_fail_conn(tcpconn, "EOF received", 1);
+		return;
+	}
+
+	if (tcpconn->flags & F_CONN_REMOVED_READ) {
+		if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn) < 0) {
+			LM_ERR("failed to re-add TCP conn %p for read events\n", tcpconn);
+			tcp_fail_conn(tcpconn, "Failed to re-arm read", 0);
+			return;
+		}
+		tcpconn->flags &= ~F_CONN_REMOVED_READ;
+	}
+
+	tcpconn_put(tcpconn);
+}
+
+static inline void tcp_complete_write(struct tcp_job *job)
+{
+	struct tcp_connection *tcpconn;
+
+	tcpconn = job->conn;
+
+	if (job->resp < 0 || tcpconn->state == S_CONN_BAD) {
+		tcp_fail_conn(tcpconn, "Write error", 1);
+		return;
+	}
+
+	if (job->resp == 1 && (tcpconn->flags & F_CONN_REMOVED_WRITE)) {
+		if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn) < 0) {
+			LM_ERR("failed to re-add TCP conn %p for write events\n", tcpconn);
+			tcp_fail_conn(tcpconn, "Failed to re-arm write", 0);
+			return;
+		}
+		tcpconn->flags &= ~F_CONN_REMOVED_WRITE;
+	}
+
+	tcpconn_put(tcpconn);
+}
+
+static inline int handle_tcp_notify(int fd)
+{
+	char buf[64];
+	int n;
+	struct tcp_job *job;
+
+	while ((n = read(fd, buf, sizeof(buf))) > 0)
+		;
+	if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+		LM_ERR("failed to read TCP IO notify fd: %s\n", strerror(errno));
+
+	while ((job = tcp_pop_done_job()) != NULL) {
+		if (job->op == TCP_READ_JOB)
+			tcp_complete_read(job);
+		else
+			tcp_complete_write(job);
+		pkg_free(job);
+	}
+
+	return 0;
+}
+
 
 /************************ TCP MAIN process functions ************************/
 
@@ -1129,53 +1550,55 @@ static inline int handle_new_connect(const struct socket_info* si)
 	unsigned int id;
 
 	/* coverity[overrun-buffer-arg: FALSE] - union has 28 bytes, CID #200070 */
-	new_sock=accept(si->socket, &(su.s), &su_len);
-	if (new_sock==-1){
-		if ((errno==EAGAIN)||(errno==EWOULDBLOCK))
+	new_sock = accept(si->socket, &(su.s), &su_len);
+	if (new_sock == -1) {
+		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
 			return 0;
 		LM_ERR("failed to accept connection(%d): %s\n", errno, strerror(errno));
 		return -1;
 	}
-	if (tcp_connections_no>=tcp_max_connections){
+	if (tcp_connections_no >= tcp_max_connections) {
 		LM_ERR("maximum number of connections exceeded: %d/%d\n",
-					tcp_connections_no, tcp_max_connections);
+			tcp_connections_no, tcp_max_connections);
 		close(new_sock);
 		return 1; /* success, because the accept was successful */
 	}
 
 	tcp_con_get_profile(&su, &si->su, si->proto, &prof);
-	if (tcp_init_sock_opt(new_sock, &prof, si->flags, si->tos)<0){
+	if (tcp_init_sock_opt(new_sock, &prof, si->flags, si->tos) < 0) {
 		LM_ERR("tcp_init_sock_opt failed\n");
 		close(new_sock);
 		return 1; /* success, because the accept was successful */
 	}
 
 	/* add socket to list */
-	tcpconn=tcpconn_new(new_sock, &su, si, &prof, S_CONN_OK, F_CONN_ACCEPTED, 1);
-	if (tcpconn){
-		tcpconn->refcnt++; /* safe, not yet available to the
-							  outside world */
+	tcpconn = tcpconn_new(new_sock, &su, si, &prof, S_CONN_OK,
+		F_CONN_ACCEPTED, 1);
+	if (tcpconn) {
+		/* Safe: the connection is not yet visible outside TCP main. */
+		tcpconn->refcnt++;
 		sh_log(tcpconn->hist, TCP_REF, "accept, (%d)", tcpconn->refcnt);
 		tcpconn_add(tcpconn);
 		LM_DBG("new connection: %p %d flags: %04x\n",
-				tcpconn, tcpconn->s, tcpconn->flags);
-		/* pass it to a workerr */
-		sh_log(tcpconn->hist, TCP_SEND2CHILD, "accept");
-		if(send2worker(tcpconn,IO_WATCH_READ)<0){
-			LM_ERR("no TCP workers available\n");
+			tcpconn, tcpconn->fd, tcpconn->flags);
+		if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
+				tcpconn) < 0) {
+			LM_ERR("failed to add accepted TCP conn to reactor\n");
 			id = tcpconn->id;
-			sh_log(tcpconn->hist, TCP_UNREF, "accept, (%d)", tcpconn->refcnt);
 			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
-			if (tcpconn->refcnt==0){
-				/* no close to report here as the connection was not yet
-				 * reported as OPEN by the proto layer...this sucks a bit */
-				_tcpconn_rm(tcpconn,1);
-				close(new_sock/*same as tcpconn->s*/);
-			}else tcpconn->lifetime=0; /* force expire */
+			if (tcpconn->refcnt == 0) {
+				_tcpconn_rm(tcpconn, 1);
+				close(new_sock);
+			} else {
+				tcpconn->lifetime = 0;
+			}
 			TCPCONN_UNLOCK(id);
+		} else {
+			tcpconn->flags &= ~F_CONN_REMOVED_READ;
+			tcpconn_put(tcpconn);
 		}
-	}else{ /*tcpconn==0 */
+	} else {
 		LM_ERR("tcpconn_new failed, closing socket\n");
 		close(new_sock);
 	}
@@ -1189,58 +1612,45 @@ static inline int handle_new_connect(const struct socket_info* si)
  * \param    tcpconn - pointer to the tcp_connection for which we have an io ev.
  * \param    fd_i    - index in the fd_array table (needed for delete)
  * \return   handle_* return convention, but on success it always returns 0
- *           (because it's one-shot, after a successful execution the fd is
- *            removed from tcp_main's watch fd list and passed to a worker =>
- *            tcp_main is not interested in further io events that might be
- *            queued for this fd)
  */
 inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
-																int event_type)
+		int event_type)
 {
-	int fd;
 	int err;
-	unsigned int id;
 	unsigned int err_len;
 
 	if (event_type == IO_WATCH_READ) {
-		/* pass it to worker, so remove it from the io watch list */
-		LM_DBG("data available on %p %d\n", tcpconn, tcpconn->s);
-		if (reactor_del_reader(tcpconn->s, fd_i, 0)==-1)
+		LM_DBG("data available on %p %d\n", tcpconn, tcpconn->fd);
+		if (reactor_del_reader(tcpconn->fd, fd_i, 0) == -1)
 			return -1;
-		tcpconn->flags|=F_CONN_REMOVED_READ;
+		tcpconn->flags |= F_CONN_REMOVED_READ;
 		tcpconn_ref(tcpconn); /* refcnt ++ */
-		sh_log(tcpconn->hist, TCP_REF, "tcpconn read, (%d)", tcpconn->refcnt);
-		sh_log(tcpconn->hist, TCP_SEND2CHILD, "read");
-		if (send2worker(tcpconn,IO_WATCH_READ)<0){
-			LM_ERR("no TCP workers available\n");
-			id = tcpconn->id;
-			TCPCONN_LOCK(id);
-			tcpconn->refcnt--;
-			sh_log(tcpconn->hist, TCP_UNREF, "tcpconn read, (%d)", tcpconn->refcnt);
-			if (tcpconn->refcnt==0){
-				fd=tcpconn->s;
-				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
-					"No worker for read");
-				_tcpconn_rm(tcpconn,0);
-				close(fd);
-			}else tcpconn->lifetime=0; /* force expire*/
-			TCPCONN_UNLOCK(id);
+		sh_log(tcpconn->hist, TCP_REF, "tcp-main read queued, (%d)",
+			tcpconn->refcnt);
+		if (tcp_queue_job(tcpconn, TCP_READ_JOB) < 0) {
+			LM_ERR("failed queuing TCP read job\n");
+			if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
+					tcpconn) < 0) {
+				tcp_fail_conn(tcpconn, "Failed queueing read", 0);
+				return 0;
+			}
+			tcpconn->flags &= ~F_CONN_REMOVED_READ;
+			tcpconn_put(tcpconn);
 		}
-		return 0; /* we are not interested in possibly queued io events,
-					 the fd was either passed to a worker, or closed */
+		return 0;
 	} else {
-		LM_DBG("connection %p fd %d is now writable\n", tcpconn, tcpconn->s);
+		LM_DBG("connection %p fd %d is now writable\n", tcpconn, tcpconn->fd);
 		/* we received a write event */
-		if (tcpconn->state==S_CONN_CONNECTING) {
+		if (tcpconn->state == S_CONN_CONNECTING) {
 			/* we're coming from an async connect & write
 			 * let's see if we connected successfully */
-			err_len=sizeof(err);
-			if (getsockopt(tcpconn->s, SOL_SOCKET, SO_ERROR, &err, &err_len) < 0 || \
+			err_len = sizeof(err);
+			if (getsockopt(tcpconn->fd, SOL_SOCKET, SO_ERROR, &err, &err_len) < 0 ||
 					err != 0) {
 				LM_DBG("Failed connection attempt\n");
 				tcpconn_ref(tcpconn);
 				sh_log(tcpconn->hist, TCP_REF, "tcpconn connect, (%d)", tcpconn->refcnt);
-				reactor_del_all(tcpconn->s, fd_i, IO_FD_CLOSING);
+				reactor_del_all(tcpconn->fd, fd_i, IO_FD_CLOSING);
 				tcpconn->flags|=F_CONN_REMOVED;
 				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
 					"Async connect failed");
@@ -1257,39 +1667,30 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			/* now that we completed the async connection, we also need to
 			 * listen for READ events, otherwise these will get lost */
 			if (tcpconn->flags & F_CONN_REMOVED_READ) {
-				reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-				tcpconn->flags&=~F_CONN_REMOVED_READ;
-			}
+					reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
+						tcpconn);
+					tcpconn->flags &= ~F_CONN_REMOVED_READ;
+				}
 
 			goto async_write;
 		} else {
-			/* we're coming from an async write -
-			 * just pass to worker and have it write
-			 * our TCP chunks */
 async_write:
 			/* no more write events for now */
-			if (reactor_del_writer( tcpconn->s, fd_i, 0)==-1)
-				return -1;
-			tcpconn->flags|=F_CONN_REMOVED_WRITE;
+				if (reactor_del_writer(tcpconn->fd, fd_i, 0) == -1)
+					return -1;
+			tcpconn->flags |= F_CONN_REMOVED_WRITE;
 			tcpconn_ref(tcpconn); /* refcnt ++ */
 			sh_log(tcpconn->hist, TCP_REF, "tcpconn write, (%d)",
 				tcpconn->refcnt);
-			sh_log(tcpconn->hist, TCP_SEND2CHILD, "write");
-			if (send2worker(tcpconn,IO_WATCH_WRITE)<0){
-				LM_ERR("no TCP worker available\n");
-				id = tcpconn->id;
-				TCPCONN_LOCK(id);
-				tcpconn->refcnt--;
-				sh_log(tcpconn->hist, TCP_UNREF, "tcpconn write, (%d)",
-					tcpconn->refcnt);
-				if (tcpconn->refcnt==0){
-					fd=tcpconn->s;
-					tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
-						"No worker for write");
-					_tcpconn_rm(tcpconn,0);
-					close(fd);
-				}else tcpconn->lifetime=0; /* force expire*/
-				TCPCONN_UNLOCK(id);
+			if (tcp_queue_job(tcpconn, TCP_WRITE_JOB) < 0) {
+				LM_ERR("failed queuing TCP write job\n");
+				if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
+						tcpconn) < 0) {
+					tcp_fail_conn(tcpconn, "Failed queueing write", 0);
+					return 0;
+				}
+				tcpconn->flags &= ~F_CONN_REMOVED_WRITE;
+				tcpconn_put(tcpconn);
 			}
 			return 0;
 		}
@@ -1376,7 +1777,7 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker release, (%d)", tcpconn->refcnt);
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
-			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+			reactor_add_reader( tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_READ;
 			break;
 		case CONN_RELEASE_WRITE:
@@ -1397,7 +1798,7 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker async write, (%d)", tcpconn->refcnt);
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
-			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+			reactor_add_writer( tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
 		case CONN_ERROR_TCPW:
@@ -1408,8 +1809,8 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 		case CONN_EOF:
 			/* WARNING: this will auto-dec. refcnt! */
 			if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
-				(tcpconn->s!=-1)){
-				reactor_del_all( tcpconn->s, -1, IO_FD_CLOSING);
+				(tcpconn->fd!=-1)){
+				reactor_del_all( tcpconn->fd, -1, IO_FD_CLOSING);
 				tcpconn->flags|=F_CONN_REMOVED;
 			}
 			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker destroy, (%d)", tcpconn->refcnt);
@@ -1506,8 +1907,8 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			/* remove from reactor only if the fd exists, and it wasn't
 			 * removed before */
 			if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
-					(tcpconn->s!=-1)){
-				reactor_del_all( tcpconn->s, -1, IO_FD_CLOSING);
+					(tcpconn->fd!=-1)){
+				reactor_del_all( tcpconn->fd, -1, IO_FD_CLOSING);
 				tcpconn->flags|=F_CONN_REMOVED;
 			}
 			sh_log(tcpconn->hist, TCP_UNREF, "worker error, (%d)", tcpconn->refcnt);
@@ -1518,7 +1919,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			/* WARNING: take care of setting refcnt properly to
 			 * avoid race condition */
 			if (send_fd(p->unix_sock, &tcpconn, sizeof(tcpconn),
-							tcpconn->s)<=0){
+							tcpconn->fd)<=0){
 				LM_ERR("send_fd failed\n");
 			}
 			break;
@@ -1530,11 +1931,11 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				LM_CRIT(" cmd CONN_NEW: no fd received\n");
 				break;
 			}
-			tcpconn->s=fd;
+			tcpconn->fd=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
 			tcp_connections_no++;
-			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+			reactor_add_reader( tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_READ;
 			break;
 		case ASYNC_CONNECT:
@@ -1544,7 +1945,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				LM_CRIT(" cmd CONN_NEW: no fd received\n");
 				break;
 			}
-			tcpconn->s=fd;
+			tcpconn->fd=fd;
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
 			tcp_connections_no++;
@@ -1553,7 +1954,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			/* only maintain the socket in the IO_WATCH_WRITE watcher
 			 * while we have stuff to write - otherwise we're going to get
 			 * useless events */
-			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+			reactor_add_writer( tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
 		case ASYNC_WRITE_GENW:
@@ -1566,7 +1967,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			}
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
-			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+			reactor_add_writer( tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
 		default:
@@ -1611,6 +2012,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			break;
 		case F_TCP_WORKER:
 			ret = handle_worker((struct process_table*)fm->data, idx);
+			break;
+		case F_TCP_NOTIFY:
+			ret = handle_tcp_notify(fm->fd);
 			break;
 		case F_IPC:
 			ipc_handle_job(fm->fd);
@@ -1672,7 +2076,7 @@ static inline void __tcpconn_lifetime(int shutdown)
 					if (!shutdown)
 						LM_DBG("timeout for hash=%d - %p"
 								" (%d > %d)\n", h, c, ticks, c->lifetime);
-					fd=c->s;
+					fd=c->fd;
 					/* report the closing of the connection . Note that
 					 * there are connectioned that use an foced expire to 0
 					 * as a way to be deleted - we are not interested in */
@@ -1689,7 +2093,7 @@ static inline void __tcpconn_lifetime(int shutdown)
 							c->flags|=F_CONN_REMOVED;
 						}
 						close(fd);
-						c->s = -1;
+						c->fd = -1;
 					}
 					_tcpconn_rm(c, shutdown?1:0);
 					tcp_connections_no--;
@@ -1705,9 +2109,18 @@ static inline void __tcpconn_lifetime(int shutdown)
 static void tcp_main_server(void)
 {
 	static unsigned int last_sec = 0;
-	int flags;
 	struct socket_info_full* sif;
+	struct sr_module *m;
 	int n;
+
+	/* instruct tls_mgm to initialize all TLS domains */
+	for (m=modules; m; m = m->next) {
+		if (strcmp(m->exports->name, "tls_mgm") == 0)
+			if (init_child(PROC_TCP_MAIN) < 0) {
+				LM_ERR("error in init_child for PROC_TCP_MAIN\n");
+				goto error;
+			}
+	}
 
 	/* we run in a separate, dedicated process, with its own reactor
 	 * (reactors are per process) */
@@ -1717,19 +2130,19 @@ static void tcp_main_server(void)
 	/* now start watching all the fds */
 
 	/* add all the sockets we listens on for connections */
-	for( n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
-		if ( is_tcp_based_proto(n) )
-			for( sif=protos[n].listeners ; sif ; sif=sif->next ) {
+	for (n = PROTO_FIRST; n < PROTO_LAST; n++)
+		if (is_tcp_based_proto(n))
+			for (sif = protos[n].listeners; sif; sif = sif->next) {
 				struct socket_info* si = &sif->socket_info;
-				if (protos[n].tran.bind_listener && protos[n].tran.bind_listener(si)<0) {
+				if (protos[n].tran.bind_listener &&
+						protos[n].tran.bind_listener(si) < 0) {
 					LM_ERR("failed to bind listener [%.*s], proto %s\n",
-							si->name.len, si->name.s,
-							protos[n].name );
+						si->name.len, si->name.s, protos[n].name);
 					goto error;
 				}
-				if ( (si->socket!=-1) &&
-				reactor_add_reader( si->socket, F_TCP_LISTENER,
-				RCT_PRIO_NET, si)<0 ) {
+				if (si->socket != -1 &&
+						reactor_add_reader(si->socket, F_TCP_LISTENER,
+							RCT_PRIO_NET, si) < 0) {
 					LM_ERR("failed to add listen socket to reactor\n");
 					goto error;
 				}
@@ -1743,44 +2156,22 @@ static void tcp_main_server(void)
 	for (n=1; n<counted_max_processes; n++) {
 		/* skip myslef (as process) and -1 socks (disabled)
 		   (we can't have 0, we never close it!) */
-		if (n!=process_no && pt[n].tcp_socks_holder[0]>0)
-			if (reactor_add_reader( pt[n].tcp_socks_holder[0], F_TCP_WORKER,
-			RCT_PRIO_PROC, &pt[n])<0){
+		if (n != process_no && pt[n].tcp_socks_holder[0] > 0)
+			if (reactor_add_reader(pt[n].tcp_socks_holder[0], F_TCP_WORKER,
+					RCT_PRIO_PROC, &pt[n]) < 0) {
 				LM_ERR("failed to add process %d (%s) unix socket "
 					"to the fd list\n", n, pt[n].desc);
 				goto error;
 			}
 	}
-	/* add all the unix sokets used for communication with the tcp workers */
-	for (n=0; n<tcp_workers_max_no; n++) {
-		/*we can't have 0, we never close it!*/
-		if (tcp_workers[n].unix_sock>0) {
-			/* make socket non-blocking */
-			flags=fcntl(tcp_workers[n].unix_sock, F_GETFL);
-			if (flags==-1){
-				LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
-				goto error;
-			}
-			if (fcntl(tcp_workers[n].unix_sock,F_SETFL,flags|O_NONBLOCK)==-1){
-				LM_ERR("set non-blocking failed: (%d) %s\n",
-					errno, strerror(errno));
-				goto error;
-			}
-			/* add socket for listening */
-			if (reactor_add_reader( tcp_workers[n].unix_sock,
-			F_TCP_TCPWORKER, RCT_PRIO_PROC, &tcp_workers[n])<0) {
-				LM_ERR("failed to add tcp worker %d unix socket to "
-						"the fd list\n", n);
-				goto error;
-			}
-		}
-	}
-
 	/* init: start watching for the IPC jobs */
 	if (reactor_add_reader(IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
 		LM_CRIT("failed to add IPC pipe to reactor\n");
 		goto error;
 	}
+
+	if (tcp_pool_init() < 0)
+		goto error;
 
 	is_tcp_main = 1;
 
@@ -1789,6 +2180,7 @@ static void tcp_main_server(void)
 			tcpconn_lifetime(last_sec) );
 
 error:
+	tcp_pool_destroy();
 	destroy_worker_reactor();
 	LM_CRIT("exiting...");
 	exit(-1);
@@ -1830,7 +2222,8 @@ int tcp_init(void)
 			LM_WARN("TCP scaling profile <%s> not defined "
 				"-> ignoring it...\n", tcp_auto_scaling_profile);
 		} else {
-			auto_scaling_enabled = 1;
+			LM_WARN("ignoring TCP auto-scaling profile in single IO mode\n");
+			s_profile = NULL;
 		}
 	}
 
@@ -1973,7 +2366,7 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int worker )
 }
 
 
-int _get_own_tcp_worker_id(void)
+static int _get_own_tcp_worker_id(void)
 {
 	pid_t pid;
 	int i;
@@ -1999,87 +2392,6 @@ void tcp_reset_worker_slot(void)
 }
 
 
-static int fork_dynamic_tcp_process(void *foo)
-{
-	int p_id;
-	int r;
-	const struct internal_fork_params ifp_sr_tcp = {
-		.proc_desc = "SIP receiver TCP",
-		.flags = OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT,
-		.type = TYPE_TCP,
-	};
-
-	/* search for free slot in the TCP workers table */
-	for( r=0 ; r<tcp_workers_max_no ; r++ )
-		if (tcp_workers[r].state==STATE_INACTIVE)
-			break;
-
-	if (r==tcp_workers_max_no) {
-		LM_BUG("trying to fork one more TCP worker but no free slots in "
-			"the TCP table (size=%d)\n",tcp_workers_max_no);
-		return -1;
-	}
-
-	if((p_id=internal_fork(&ifp_sr_tcp))<0){
-		LM_ERR("cannot fork dynamic TCP worker process\n");
-		return(-1);
-	}else if (p_id==0){
-		/* new TCP process */
-		set_proc_attrs("TCP receiver");
-		tcp_workers[r].pid = getpid();
-
-		if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock)<0||
-		init_child(20000) < 0) {
-			goto error;
-		}
-
-		report_conditional_status( 1, 0);/*report success*/
-		/* the child proc is done read&write) dealing with the status pipe */
-		clean_read_pipeend();
-
-		tcp_worker_proc_loop();
-		destroy_worker_reactor();
-
-error:
-		report_failure_status();
-		LM_ERR("Initializing new process failed, exiting with error \n");
-		pt[process_no].flags |= OSS_PROC_SELFEXIT;
-		exit( -1);
-	} else {
-		/*parent/main*/
-		tcp_workers[r].state=STATE_ACTIVE;
-		tcp_workers[r].n_reqs=0;
-		tcp_workers[r].pt_idx=p_id;
-		return p_id;
-	}
-
-	return 0;
-}
-
-
-static void tcp_process_graceful_terminate(int sender, void *param)
-{
-	int i;
-
-	/* we accept this only from the main proccess */
-	if (sender!=0) {
-		LM_BUG("graceful terminate received from a non-main process!!\n");
-		return;
-	}
-	LM_NOTICE("process %d received RPC to terminate from Main\n",process_no);
-
-	/* going into "draining" state will avoid:
-	 *  - getting jobs from TCP MAIN (active state required for that)
-	 *  - having othe worker slot re-used (inactive state required for that) */
-	if ((i=_get_own_tcp_worker_id())>=0)
-		tcp_workers[i].state=STATE_DRAINING;
-
-	tcp_terminate_worker();
-
-	return;
-}
-
-
 /* counts the number of TCP processes to start with; this number may
  * change during runtime due auto-scaling */
 int tcp_count_processes(unsigned int *extra)
@@ -2089,22 +2401,14 @@ int tcp_count_processes(unsigned int *extra)
 	if (tcp_disabled)
 		return 0;
 
-
-	if (s_profile && extra) {
-		/* how many can be forked over the number of procs to start with ?*/
-		if (s_profile->max_procs > tcp_workers_no)
-			*extra = s_profile->max_procs - tcp_workers_no;
-	}
-
-	return 1/* tcp main */ + tcp_workers_no /*workers to start with*/;
+	return 1 /* tcp main / IO process */ + tcp_workers_no /* dispatch workers */;
 }
 
 
 int tcp_start_processes(int *chd_rank, int *startup_done)
 {
 	int r, n, p_id;
-	int reader_fd[2]; /* for comm. with the tcp workers read  */
-	struct socket_info_full *sif;
+	int reader_fd[2];
 	const struct internal_fork_params ifp_sr_tcp = {
 		.proc_desc = "SIP receiver TCP",
 		.flags = OSS_PROC_NEEDS_SCRIPT,
@@ -2114,76 +2418,68 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	if (tcp_disabled)
 		return 0;
 
-	/* estimate max fd. no:
-	 * 1 tcp send unix socket/all_proc,
-	 *  + 1 udp sock/udp proc + 1 tcp_worker sock/tcp worker*
-	 *  + no_listen_tcp */
-	for( r=0,n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
-		if ( is_tcp_based_proto(n) )
-			for(sif=protos[n].listeners; sif ; sif=sif->next,r++ );
-
-	/* create the socket pairs for ALL potential processes */
-	for(r=0; r<tcp_workers_max_no; r++){
-		/* create sock to communicate from TCP main to worker */
-		if (socketpair(AF_UNIX, SOCK_STREAM, 0, reader_fd)<0){
-			LM_ERR("socketpair failed: %s\n", strerror(errno));
+	/* create dedicated socket pairs from TCP main to TCP worker procs */
+	for (r = 0; r < tcp_workers_max_no; r++) {
+		if (socketpair(AF_UNIX, SOCK_STREAM, 0, reader_fd) < 0) {
+			LM_ERR("socketpair failed for TCP worker %d: %s\n",
+				r, strerror(errno));
 			goto error;
 		}
-		tcp_workers[r].unix_sock = reader_fd[0]; /* worker's end */
-		tcp_workers[r].main_unix_sock = reader_fd[1]; /* main's end */
+		tcp_workers[r].unix_sock = reader_fd[0];
+		tcp_workers[r].main_unix_sock = reader_fd[1];
 	}
 
-	if ( auto_scaling_enabled && s_profile &&
-	create_process_group( TYPE_TCP, NULL, s_profile,
-	fork_dynamic_tcp_process, tcp_process_graceful_terminate)!=0)
-		LM_ERR("failed to create group of TCP processes for, "
-			"auto forking will not be possible\n");
-
-	/* start the TCP workers */
-	for(r=0; r<tcp_workers_no; r++){
+	for (r = 0; r < tcp_workers_no; r++) {
 		(*chd_rank)++;
-		p_id=internal_fork(&ifp_sr_tcp);
-		if (p_id<0){
-			LM_ERR("fork failed\n");
+		p_id = internal_fork(&ifp_sr_tcp);
+		if (p_id < 0) {
+			LM_ERR("cannot fork TCP worker process %d\n", r);
 			goto error;
-		}else if (p_id>0){
+		} else if (p_id > 0) {
 			/* parent */
-			tcp_workers[r].state=STATE_ACTIVE;
-			tcp_workers[r].n_reqs=0;
-			tcp_workers[r].pt_idx=p_id;
-		}else{
-			/* child */
-			set_proc_attrs("TCP receiver");
-			tcp_workers[r].pid = getpid();
-			if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock)<0||
-					init_child(*chd_rank) < 0) {
-				LM_ERR("init_children failed\n");
+			tcp_workers[r].state = STATE_ACTIVE;
+			tcp_workers[r].n_reqs = 0;
+			tcp_workers[r].pt_idx = p_id;
+			continue;
+		}
+
+		/* child */
+		for (n = 0; n < tcp_workers_max_no; n++) {
+			if (tcp_workers[n].unix_sock >= 0)
+				close(tcp_workers[n].unix_sock);
+			if (n != r && tcp_workers[n].main_unix_sock >= 0)
+				close(tcp_workers[n].main_unix_sock);
+		}
+
+		set_proc_attrs("TCP receiver");
+		tcp_workers[r].pid = getpid();
+
+		if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock) < 0 ||
+				init_child(*chd_rank) < 0) {
+			LM_ERR("init_child failed for TCP worker %d\n", r);
+			report_failure_status();
+			if (startup_done)
+				*startup_done = -1;
+			exit(-1);
+		}
+
+		/* first TCP worker runs startup_route if not already run */
+		if (startup_done && *startup_done == 0 && r == 0) {
+			LM_DBG("running startup route for first TCP worker\n");
+			if (run_startup_route() < 0) {
+				LM_ERR("startup route processing failed in TCP worker\n");
 				report_failure_status();
-				if (startup_done)
-					*startup_done = -1;
+				*startup_done = -1;
 				exit(-1);
 			}
-
-			/* was startup route executed so far ? */
-			if (startup_done!=NULL && *startup_done==0 && r==0) {
-				LM_DBG("running startup for first TCP\n");
-				if(run_startup_route()< 0) {
-					LM_ERR("Startup route processing failed\n");
-					report_failure_status();
-					*startup_done = -1;
-					exit(-1);
-				}
-				*startup_done = 1;
-			}
-
-			report_conditional_status( (!no_daemon_mode), 0);
-
-			tcp_worker_proc_loop();
+			*startup_done = 1;
 		}
+
+		report_conditional_status((!no_daemon_mode), 0);
+		tcp_worker_proc_loop();
 	}
 
-	/* wait for the startup route to be executed */
-	if (startup_done)
+	if (startup_done && tcp_workers_no > 0)
 		while (!(*startup_done)) {
 			usleep(5);
 			handle_sigs();

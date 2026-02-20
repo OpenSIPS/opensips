@@ -65,6 +65,7 @@ enum fd_types { F_NONE=0,
 		F_TCPMAIN, F_TCPCONN,
 		/* fd types for TCP management process (TCP main process) */
 		F_TCP_LISTENER, F_TCP_TCPWORKER, F_TCP_WORKER,
+		F_TCP_NOTIFY,
 		/* generic fd type specific to the custome processes (like MI) */
 		F_GEN_PROC,
 		};
@@ -114,4 +115,3 @@ int init_reactor_size(void);
 	io_check_app_flag( &_worker_io , _app_flag)
 
 #endif
-

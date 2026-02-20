@@ -50,10 +50,6 @@
 /* parameters*/
 int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 
-static struct tcp_req tcp_current_req;
-
-static struct ws_req ws_current_req;
-
 static int ws_require_origin = 1;
 
 /* in milliseconds */
@@ -66,8 +62,6 @@ int ws_hs_read_tout = 100;
 static str ws_resource = str_init("/");
 
 #define _ws_common_module "ws"
-#define _ws_common_tcp_current_req tcp_current_req
-#define _ws_common_current_req ws_current_req
 #define _ws_common_max_msg_chunks ws_max_msg_chunks
 #define _ws_common_read ws_raw_read
 #define _ws_common_writev ws_raw_writev

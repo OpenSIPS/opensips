@@ -103,7 +103,6 @@ str homer5_delim = {":", 0};
 compression_api_t compression_api;
 load_compression_f load_compression;
 
-static struct tcp_req hep_current_req;
 /* we consider that different messages may contain different versions of hep
  * so we need to know what is the current version of hep */
 static int hep_current_proto;
@@ -705,11 +704,6 @@ static inline int hep_handle_req(struct tcp_req* req,
 			 * the connection */
 			LM_DBG("Nothing more to read on TCP conn %p, currently in state %d \n",
 				con, con->state);
-			if (req != &hep_current_req) {
-				/* we have the buffer in the connection tied buff -
-				 *	detach it , release the conn and free it afterwards */
-				con->con_req = NULL;
-			}
 			/* TODO - we could indicate to the TCP net layer to release
 			 * the connection -> other worker may read the next available
 			 * message on the pipe */
@@ -773,13 +767,6 @@ static inline int hep_handle_req(struct tcp_req* req,
 			free_hep_context(hep_ctx);
 		}
 
-		if (!size && req != &hep_current_req) {
-			/* if we no longer need this tcp_req
-			 * we can free it now */
-			shm_free(req);
-			con->con_req = NULL;
-		}
-
 		con->msg_attempts = 0;
 
 		if (size) {
@@ -800,36 +787,6 @@ static inline int hep_handle_req(struct tcp_req* req,
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				"closing connection \n",con->msg_attempts);
 			goto error;
-		}
-
-		if (req == &hep_current_req) {
-			/* let's duplicate this - most likely another conn will come in */
-
-			LM_DBG("We didn't manage to read a full request\n");
-			con->con_req = shm_malloc(sizeof(struct tcp_req));
-			if (con->con_req == NULL) {
-				LM_ERR("No more mem for dynamic con request buffer\n");
-				goto error;
-			}
-
-			if (req->pos != req->buf) {
-				/* we have read some bytes */
-				memcpy(con->con_req->buf, req->buf, req->pos-req->buf);
-				con->con_req->pos = con->con_req->buf + (req->pos-req->buf);
-			} else {
-				con->con_req->pos = con->con_req->buf;
-			}
-
-			if (req->parsed != req->buf) {
-				con->con_req->parsed =con->con_req->buf+(req->parsed-req->buf);
-			} else {
-				con->con_req->parsed = con->con_req->buf;
-			}
-
-			con->con_req->complete=req->complete;
-			con->con_req->content_len=req->content_len;
-			con->con_req->error = req->error;
-			/* req will be reset on the next usage */
 		}
 	}
 	/* everything ok */
@@ -899,14 +856,10 @@ static int hep_tcp_or_tls_read_req(struct tcp_connection* con, int* bytes_read,
 	bytes = -1;
 	total_bytes = 0;
 
-	if (con->con_req) {
-		req = con->con_req;
-		LM_DBG("Using the per connection buff \n");
-	} else {
-		LM_DBG("Using the global ( per process ) buff \n");
-		init_tcp_req(&hep_current_req, 0);
-		req = &hep_current_req;
-	}
+	req = &con->tcp_req;
+	if (con->msg_attempts == 0)
+		init_tcp_req(req, 0);
+	LM_DBG("Using the connection buff\n");
 	
 	if (is_tls) {
 		ret = tls_mgm_api.tls_fix_read_conn(con, con->fd, hep_tls_handshake_timeout, NULL, 1);

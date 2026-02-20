@@ -55,10 +55,6 @@ struct tls_mgm_binds tls_mgm_api;
 /* parameters*/
 int wss_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 
-static struct tcp_req tcp_current_req;
-
-static struct ws_req wss_current_req;
-
 static int wss_hs_read_tout = 100;
 static int wss_hs_tls_tout = 100;
 static int wss_send_tout = 100;
@@ -74,8 +70,6 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 		const struct iovec *iov, int iovcnt, int tout);
 
 #define _ws_common_module "wss"
-#define _ws_common_tcp_current_req tcp_current_req
-#define _ws_common_current_req wss_current_req
 #define _ws_common_max_msg_chunks wss_max_msg_chunks
 #define _ws_common_read(c, r) tls_mgm_api.tls_read((c), (r))
 #define _ws_common_writev wss_raw_writev
