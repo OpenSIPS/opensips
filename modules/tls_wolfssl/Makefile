@@ -21,7 +21,9 @@ lib/wolfssl/Makefile: lib/wolfssl/configure
 		--enable-writedup --enable-tlsv10 --disable-shared --enable-static \
 		--disable-jni --disable-crl-monitor \
 		--prefix=$(MOD_DIR)/lib \
-		--exec-prefix=$(MOD_DIR)/lib C_EXTRA_FLAGS="-fPIC" CFLAGS="-DWOLFSSL_STATIC_RSA"; \
+		--exec-prefix=$(MOD_DIR)/lib \
+		C_EXTRA_FLAGS="-fPIC" \
+		CFLAGS="-DWOLFSSL_STATIC_RSA $(WOLFSSL_EXTRA_CFLAGS)"; \
 
 PATCHED_FILES = lib/wolfssl/src/internal.c lib/wolfssl/src/ssl.c
 
