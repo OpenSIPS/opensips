@@ -190,7 +190,7 @@ modparam("auth_db", "use_domain", 1)
        (column_name)
      * avp_specification = '$avp(' + NAME + ')'
 
-   Default value of this parameter is “rpid”.
+   Default value of this parameter is empty / “""” list.
 
    Example 1.4. load_credentials parameter usage
 # load rpid column into $avp(13) and email_address column
@@ -472,8 +472,8 @@ Chapter 2. Contributors
    2. Jan Janak (@janakj) 50 29 1610 424
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
    4. Liviu Chircu (@liviuchircu) 23 18 161 137
-   5. Henning Westerholt (@henningw) 11 9 83 49
-   6. Razvan Crainea (@razvancrainea) 10 8 30 48
+   5. Razvan Crainea (@razvancrainea) 12 10 32 50
+   6. Henning Westerholt (@henningw) 11 9 83 49
    7. Maksym Sobolyev (@sobomax) 10 5 307 116
    8. Vlad Patrascu (@rvlad-patrascu) 8 4 69 163
    9. Sergio Gutierrez 7 5 13 13
@@ -506,8 +506,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2024
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    3.  Maksym Sobolyev (@sobomax)          Oct 2004 - Feb 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jul 2021
    5.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
@@ -531,9 +531,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Maksym Sobolyev
-   (@sobomax), Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
-   (@lemenkov), Razvan Crainea (@razvancrainea), Kennard White,
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Maksym Sobolyev (@sobomax), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Peter Lemenkov (@lemenkov), Kennard White,
    Sergio Gutierrez, Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Anatoly Pidruchny, Jan Janak (@janakj).
