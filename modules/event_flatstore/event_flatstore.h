@@ -49,6 +49,7 @@ struct flat_file {
 	unsigned int counter_open;
 	unsigned int rotate_version;
 	unsigned int flat_socket_ref;
+	int header_written;
 	struct flat_file *next;
 	struct flat_file *prev;
 };

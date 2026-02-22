@@ -83,6 +83,7 @@ static unsigned long file_rotate_size;
 static str file_suffix;
 static pv_elem_p file_suffix_format;
 static str escape_delimiter = {0, 0};
+static str file_header;
 
 static void raise_rotation_event(struct flat_file *file, const char *reason);
 static void update_counters_and_rotate(struct flat_file *file,
@@ -116,6 +117,7 @@ static const param_export_t mod_params[] = {
 	{"rotate_size",   INT_PARAM|STR_PARAM|USE_FUNC_PARAM, (void*)rotate_size_param},
 	{"suffix", STR_PARAM, &file_suffix.s},
 	{"escape_delimiter", STR_PARAM, &escape_delimiter.s},
+	{"header", STR_PARAM, &file_header.s},
 	{0,0,0}
 };
 
@@ -282,6 +284,9 @@ static int mod_init(void) {
 		delimiter.len = strlen(delimiter.s);
 		LM_DBG("The delimiter for separating columns in files was set at %.*s\n", delimiter.len, delimiter.s);
 	}
+
+	if (file_header.s)
+		file_header.len = strlen(file_header.s);
 
 	if (escape_delimiter.s) {
 		escape_delimiter.len = strlen(escape_delimiter.s);
@@ -467,6 +472,7 @@ mi_response_t *mi_rotate(const mi_params_t *params,
 	found_fd->rotate_version++;
 	found_fd->record_count  = 0;
 	found_fd->bytes_written = 0;
+	found_fd->header_written = 0;
 	ensure_file_path(found_fd, 1);
 
 	lock_release(global_lock);
@@ -503,6 +509,7 @@ static int insert_in_list(struct flat_file *entry) {
 		*list_files = entry;
 		entry->prev = NULL;
 		entry->next = NULL;
+		entry->header_written = 0;
 		return 0;
 	}
 
@@ -512,6 +519,7 @@ static int insert_in_list(struct flat_file *entry) {
 		entry->file_index_process = head->file_index_process + 1;
 		entry->prev = NULL;
 		entry->next = head;
+		entry->header_written = 0;
 		head->prev = entry;
 		*list_files = entry;
 		return 0;
@@ -524,6 +532,7 @@ static int insert_in_list(struct flat_file *entry) {
 			entry->file_index_process = expected;
 			entry->prev = aux->prev;
 			entry->next = aux;
+			entry->header_written = 0;
 			aux->prev =entry;
 			entry->prev->next = entry;
 			return 0;
@@ -537,6 +546,7 @@ static int insert_in_list(struct flat_file *entry) {
 		entry->file_index_process = expected;
 		entry->prev = parent;
 		entry->next = NULL;
+		entry->header_written = 0;
 		parent->next = entry;
 		return 0;
 	}
@@ -776,6 +786,17 @@ static void rotating(struct flat_file *file){
 		rotate_version[index] = file->rotate_version;
 		file->counter_open++;
 		LM_DBG("File %s is opened %d time\n", file->pathname, file->counter_open);
+
+		/* write header */
+		if (file_header.s && !file->header_written) {
+			if (write(opened_fds[index], file_header.s,
+				file_header.len) == file_header.len &&
+				write(opened_fds[index], "\n", 1) == 1) {
+				file->header_written = 1;
+			} else {
+				LM_ERR("failed to write header to %s\n", file->pathname);
+			}
+		}
 
 		lock_release(global_lock);
 		return;
@@ -1032,6 +1053,7 @@ static void event_flatstore_timer(unsigned int ticks, void *param)
 		file->rotate_version++;
 		file->record_count  = 0;
 		file->bytes_written = 0;
+		file->header_written = 0;
 		ensure_file_path(file, 1);
 		raise_rotation_event(file, ROTATE_REASON_PERIOD);
 		LM_DBG("File %s is being rotated at %u - new file is %s\n",
@@ -1179,18 +1201,17 @@ static void update_counters_and_rotate(struct flat_file *file, ssize_t bytes_inc
 	file->record_count++;
 	file->bytes_written += (unsigned long)bytes_inc;
 
-	if (file_rotate_count &&
-		file->record_count >= file_rotate_count)
+	if (file_rotate_count && file->record_count >= file_rotate_count)
 		hit_cnt = 1;
 
-	if (!hit_cnt && file_rotate_size &&
-		file->bytes_written >= file_rotate_size)
+	if (!hit_cnt && file_rotate_size && file->bytes_written >= file_rotate_size)
 		hit_sz = 1;
 
 	if (hit_cnt || hit_sz) {
 		file->rotate_version++;
 		file->record_count  = 0;
 		file->bytes_written = 0;
+		file->header_written = 0;
 		ensure_file_path(file, 1);
 	}
 	lock_release(global_lock);
