@@ -471,6 +471,8 @@ extern int cfg_parse_only_routes;
 %token ACCEPT_SUBDOMAIN
 %token FRAG
 %token REUSE_PORT
+%token ALLOW_PROXY_PROTOCOL
+%token SEND_PROXY_PROTOCOL
 %token PROXY_PROTOCOL
 %token SCRIPTVARERR
 %token SCALE_UP_TO
@@ -744,6 +746,12 @@ socket_def_param: ANYCAST { IFOR();
 					}
 				| ACCEPT_SUBDOMAIN { IFOR();
 					p_tmp.flags |= SI_ACCEPT_SUBDOMAIN_ALIAS;
+					}
+				| ALLOW_PROXY_PROTOCOL { IFOR();
+					p_tmp.flags |= SI_PROXY_IN;
+					}
+				| SEND_PROXY_PROTOCOL { IFOR();
+					p_tmp.flags |= SI_PROXY_OUT;
 					}
 				| PROXY_PROTOCOL { IFOR();
 					p_tmp.flags |= SI_PROXY;

@@ -65,7 +65,7 @@ static int proto_ipsec_init_listener(struct socket_info *si);
 static int proto_ipsec_bind_listener(struct socket_info *si);
 static int proto_ipsec_send(const struct socket_info* source,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 static int ipsec_pre_script_handler( struct sip_msg *msg, void *param);
 static void ipsec_usrloc_handler(void *binding, ul_cb_type type, ul_cb_extra *_);
 
@@ -397,7 +397,7 @@ static int proto_ipsec_bind_listener(struct socket_info *si)
 
 static int proto_ipsec_send(const struct socket_info* source,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id)
+		unsigned int id, struct sip_msg *msg)
 {
 	struct ip_addr ip;
 	unsigned short port;
@@ -454,7 +454,7 @@ static int proto_ipsec_send(const struct socket_info* source,
 			(fl.type == SIP_REQUEST?"request":"reply"), proto2a(source->proto),
 			source->address_str.len, source->address_str.s, source->port_no,
 			ip_addr2a(&ip), port);
-	ret = protos[source->proto].tran.send(source, buf, len, to, id);
+	ret = protos[source->proto].tran.send(source, buf, len, to, id, msg);
 	if (ret >= 0)
 		return ret;
 	/* TODO: handle protocol fallback! - need to update via? */
@@ -472,7 +472,7 @@ static int proto_ipsec_send(const struct socket_info* source,
 			(fl.type == SIP_REQUEST?"request":"reply"), proto2a(source->proto),
 			source->address_str.len, source->address_str.s, source->port_no,
 			ip_addr2a(&ip), port);
-	return protos[source->proto].tran.send(source, buf, len, to, id);
+	return protos[source->proto].tran.send(source, buf, len, to, id, msg);
 }
 
 static int ipsec_aka_auth_match_f(const struct authenticate_body *auth,

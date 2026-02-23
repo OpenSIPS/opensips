@@ -21,14 +21,18 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "proxy_protocol.h"
 #include "../socket_info.h"
 #include "tcp_conn_defs.h"
+#include "tcp_common.h"
 #include "../ut.h"
-#include "../socket_info.h"
+#include "../tsend.h"
 
 #define PROXY_PROTOCOL_V1_HDR "PROXY "
 #define PROXY_PROTOCOL_V1_HDR_LEN (sizeof(PROXY_PROTOCOL_V1_HDR) - 1)
+#define PROXY_PROTOCOL_V1_UNKN "PROXY UNKNOWN\r\n"
+#define PROXY_PROTOCOL_V1_UNKN_LEN (sizeof(PROXY_PROTOCOL_V1_UNKN) - 1)
 #define PROXY_PROTOCOL_TCP4 "TCP4 "
 #define PROXY_PROTOCOL_TCP4_LEN (sizeof(PROXY_PROTOCOL_TCP4) - 1)
 #define PROXY_PROTOCOL_TCP6 "TCP6 "
@@ -48,8 +52,7 @@
 #define PROXY_PROTOCOL_TCP6_MAX 104
 #define PROXY_PROTOCOL_TCP6_PAYLOAD_MAX \
 	(PROXY_PROTOCOL_TCP6_MAX - PROXY_PROTOCOL_V1_HDR_LEN - PROXY_PROTOCOL_TCP6_LEN)
-#define PROXY_PROTOCOL_UNKN_MAX 107
-#define PROXY_PROTOCOL_BUF_MAX PROXY_PROTOCOL_UNKN_MAX
+#define PROXY_PROTOCOL_UNKN_MAX PROXY_PROTOCOL_BUF_MAX
 #define PROXY_PROTOCOL_UNKN_PAYLOAD_MAX \
 	(PROXY_PROTOCOL_UNKN_MAX - PROXY_PROTOCOL_V1_HDR_LEN - PROXY_PROTOCOL_UNKN_LEN)
 
@@ -80,6 +83,129 @@ int is_net_proxy_protocol(char *buf, int size)
 		return 0;
 	/* TODO: support v2 as well? */
 	return 1;
+}
+
+static int build_proxy_protocol_v1_hdr(const struct ip_addr *src_ip,
+		unsigned short src_port, const struct ip_addr *dst_ip,
+		unsigned short dst_port, char *buf, int size)
+{
+	const char *src_s, *dst_s, *proto;
+	int len;
+
+	if (!src_ip || !dst_ip || !buf || size <= 0)
+		return -1;
+
+	if (src_ip->af != dst_ip->af ||
+			(src_ip->af != AF_INET && src_ip->af != AF_INET6)) {
+		if (size < PROXY_PROTOCOL_V1_UNKN_LEN + 1)
+			return -1;
+		memcpy(buf, PROXY_PROTOCOL_V1_UNKN, PROXY_PROTOCOL_V1_UNKN_LEN + 1);
+		return PROXY_PROTOCOL_V1_UNKN_LEN;
+	}
+
+	src_s = ip_addr2a((struct ip_addr *)src_ip);
+	dst_s = ip_addr2a((struct ip_addr *)dst_ip);
+	proto = (src_ip->af == AF_INET) ? "TCP4" : "TCP6";
+	len = snprintf(buf, size, "PROXY %s %s %s %hu %hu\r\n",
+			proto, src_s, dst_s, src_port, dst_port);
+	if (len <= 0 || len >= size)
+		return -1;
+
+	return len;
+}
+
+int build_outbound_proxy_protocol_v1_hdr(const struct receive_info *ri,
+		const struct ip_addr *fallback_src_ip,
+		unsigned short fallback_src_port,
+		const struct ip_addr *fallback_dst_ip,
+		unsigned short fallback_dst_port,
+		char *buf, int size)
+{
+	const struct ip_addr *src_ip = fallback_src_ip;
+	const struct ip_addr *dst_ip = fallback_dst_ip;
+	unsigned short src_port = fallback_src_port;
+	unsigned short dst_port = fallback_dst_port;
+
+	if (ri) {
+		if (ri->real_ep.flags == PP_OK) {
+			src_ip = &ri->real_ep.src_ip;
+			src_port = ri->real_ep.src_port;
+			dst_ip = &ri->real_ep.dst_ip;
+			dst_port = ri->real_ep.dst_port;
+		} else {
+			src_ip = &ri->src_ip;
+			src_port = ri->src_port;
+			dst_ip = &ri->dst_ip;
+			dst_port = ri->dst_port;
+		}
+	}
+
+	return build_proxy_protocol_v1_hdr(src_ip, src_port, dst_ip, dst_port,
+			buf, size);
+}
+
+static inline int should_send_stream_proxy_protocol(const struct tcp_connection *c)
+{
+	return c && c->rcv.bind_address &&
+		(c->flags & F_CONN_ACCEPTED) == 0 &&
+		(c->rcv.bind_address->flags & SI_PROXY_OUT) &&
+		(c->flags & F_CONN_PROXY_OUT_SENT) == 0;
+}
+
+int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
+		int write_timeout, int lock, const struct receive_info *ri,
+		const char *proto_name)
+{
+	char pp_hdr[PROXY_PROTOCOL_BUF_MAX];
+	int pp_len, rc, dbg_len;
+	const char *action;
+
+	if (!should_send_stream_proxy_protocol(c))
+		return 0;
+
+	pp_len = build_outbound_proxy_protocol_v1_hdr(ri,
+			&c->rcv.dst_ip, c->rcv.dst_port,
+			&c->rcv.src_ip, c->rcv.src_port,
+			pp_hdr, sizeof(pp_hdr));
+	if (pp_len < 0) {
+		LM_ERR("failed to build outbound PROXY header\n");
+		return -1;
+	}
+
+	dbg_len = pp_len;
+	if (dbg_len >= 2 && pp_hdr[dbg_len - 2] == '\r' &&
+			pp_hdr[dbg_len - 1] == '\n')
+		dbg_len -= 2;
+
+	action = (fd < 0) ? "queueing" : "sending";
+	LM_DBG("%s outbound PROXY header on %s conn %u: %.*s\n",
+			action, proto_name ? proto_name : "stream", c->id,
+			dbg_len, pp_hdr);
+
+	if (fd < 0) {
+		rc = tcp_async_add_chunk(c, pp_hdr, pp_len, lock);
+	} else {
+		if (lock)
+			lock_get(&c->write_lock);
+		rc = tsend_stream(fd, pp_hdr, pp_len, write_timeout);
+		if (lock)
+			lock_release(&c->write_lock);
+		if (rc != pp_len) {
+			LM_ERR("failed to send outbound PROXY header on %s\n",
+					proto_name ? proto_name : "stream");
+			return -1;
+		}
+		rc = 0;
+	}
+
+	if (rc < 0) {
+		LM_ERR("failed to send outbound PROXY header on %s\n",
+				proto_name ? proto_name : "stream");
+		return -1;
+	}
+
+	c->flags |= F_CONN_PROXY_OUT_SENT;
+	return 0;
 }
 
 char *parse_net_proxy_protocol(char *buf, int size, struct proxy_protocol *proxy)
@@ -303,7 +429,8 @@ int check_tcp_proxy_protocol(struct tcp_connection *c)
 	if (c->flags & F_CONN_DATA_READY)
 		return 1;
 
-	if (!c->rcv.bind_address || (c->rcv.bind_address->flags & SI_PROXY) == 0) {
+	if (!c->rcv.bind_address ||
+			(c->rcv.bind_address->flags & SI_PROXY_IN) == 0) {
 		c->flags |= F_CONN_DATA_READY;
 		return 1;
 	}
@@ -358,7 +485,7 @@ int check_udp_proxy_protocol(char **buf, int *size, struct receive_info *ri)
 
 	ri->real_ep.flags = PP_INIT;
 
-	if (!ri->bind_address || (ri->bind_address->flags & SI_PROXY) == 0)
+	if (!ri->bind_address || (ri->bind_address->flags & SI_PROXY_IN) == 0)
 		return 1;
 
 	msg = *buf;

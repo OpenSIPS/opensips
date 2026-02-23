@@ -48,7 +48,7 @@ static int proto_bin_init(struct proto_info *pi);
 static int proto_bin_init_listener(struct socket_info *si);
 static int proto_bin_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 static int bin_read_req(struct tcp_connection* con, int* bytes_read);
 
 static int bin_port = 5555;
@@ -144,7 +144,7 @@ static int proto_bin_init_listener(struct socket_info *si)
 
 static int proto_bin_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id)
+		unsigned int id, struct sip_msg *msg)
 {
 	struct tcp_connection *c;
 	struct ip_addr ip;

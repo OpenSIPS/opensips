@@ -41,6 +41,8 @@
 #include "../../tsend.h"
 #include "../../trace_api.h"
 #include "../../net/net_tcp_dbg.h"
+#include "../../net/proxy_protocol.h"
+#include "../../parser/msg_parser.h"
 
 #include "tcp_common_defs.h"
 #include "proto_tcp_handler.h"
@@ -54,7 +56,7 @@ static int proto_tcp_init(struct proto_info *pi);
 static int proto_tcp_init_listener(struct socket_info *si);
 static int proto_tcp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 inline static int _tcp_write_on_socket(struct tcp_connection *c, int fd,
 		char *buf, int len);
 
@@ -123,7 +125,6 @@ static int tcp_crlf_drop = 0;
  * be done in parallel (after one SIP msg is read, while processing it, 
  * another READ op may be performed) */
 static int tcp_parallel_handling = 0;
-
 
 static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tcp_init, {{0, 0, 0}}, 0},
@@ -363,7 +364,8 @@ inline static int _tcp_write_on_socket(struct tcp_connection *c, int fd,
 /*! \brief Finds a tcpconn & sends on it */
 static int proto_tcp_send(const struct socket_info* send_sock,
 									char* buf, unsigned int len,
-									const union sockaddr_union* to, unsigned int id)
+									const union sockaddr_union* to, unsigned int id,
+									struct sip_msg *msg)
 {
 	struct tcp_connection *c;
 	struct tcp_conn_profile prof;
@@ -422,6 +424,14 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
 			if (n==0) {
+				if (send_stream_proxy_protocol_v1(c, -1,
+						tcp_send_timeout, 1,
+						msg ? &msg->rcv : NULL, "TCP") < 0) {
+					LM_ERR("Failed to add the outbound PROXY header chunk\n");
+					len = -1; /* report an error - let the caller decide what to do */
+					goto async_connect_done;
+				}
+
 				/* attach the write buffer to it */
 				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
 					LM_ERR("Failed to add the initial write chunk\n");
@@ -449,6 +459,7 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when
 				 * connect will be completed */
+async_connect_done:
 				LM_DBG("Successfully started async connection \n");
 				sh_log(c->hist, TCP_RELEASED, "send 1, (%d)", c->refcnt);
 				tcp_conn_release(c, 0);
@@ -521,6 +532,16 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 			 * case we ever manage to get through */
 			LM_DBG("We have acquired a TCP connection which is still "
 				"pending to connect - delaying write \n");
+
+			if (send_stream_proxy_protocol_v1(c, -1,
+					tcp_send_timeout, 1,
+					msg ? &msg->rcv : NULL, "TCP") < 0) {
+				LM_ERR("Failed to add the outbound PROXY header chunk\n");
+				sh_log(c->hist, TCP_RELEASED, "send 2, (%d)", c->refcnt);
+				tcp_conn_release(c, 0);
+				return -1;
+			}
+
 			n = tcp_async_add_chunk(c,buf,len,1);
 			if (n < 0) {
 				LM_ERR("Failed to add another write chunk to %p\n",c);
@@ -541,7 +562,7 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
-			/* the FD transfer failed (we have an established conn, 
+			/* the FD transfer failed (we have an established conn,
 			 * but returned fd is -1) -> leave the conn alone, return error
 			 * for the write op, nothing to do about it */
 			sh_log(c->hist, TCP_RELEASED, "send 4, (%d)", c->refcnt);
@@ -553,6 +574,18 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
+
+	if (send_stream_proxy_protocol_v1(c, fd, tcp_send_timeout, 1,
+			msg ? &msg->rcv : NULL, "TCP") < 0) {
+		LM_ERR("failed to send outbound PROXY header\n");
+		c->state=S_CONN_BAD;
+		if (c->proc_id != process_no)
+			close(fd);
+
+		sh_log(c->hist, TCP_RELEASED, "send 5, (%d)", c->refcnt);
+		tcp_conn_release(c, 0);
+		return -1;
+	}
 
 	start_expire_timer(snd,prof.send_threshold);
 

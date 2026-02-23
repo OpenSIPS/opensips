@@ -61,7 +61,7 @@ static int smpp_init(struct proto_info *pi);
 static int smpp_init_listener(struct socket_info *si);
 static int smpp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 static int smpp_read_req(struct tcp_connection* conn, int* bytes_read);
 static int smpp_write_async_req(struct tcp_connection* con,int fd);
 static int smpp_conn_init(struct tcp_connection* c);
@@ -232,7 +232,7 @@ static int smpp_init_listener(struct socket_info *si)
 
 static int smpp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id)
+		unsigned int id, struct sip_msg *msg)
 {
 	LM_INFO("smpp_send called\n");
 

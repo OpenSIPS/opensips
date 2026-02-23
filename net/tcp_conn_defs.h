@@ -85,6 +85,7 @@
 #define F_CONN_REMOVED			(F_CONN_REMOVED_READ|F_CONN_REMOVED_WRITE)
 #define F_CONN_INIT				(1<<5) /*!< the connection was initialized */
 #define F_CONN_DATA_READY		(1<<6) /*!< the connection is ready to process data */
+#define F_CONN_PROXY_OUT_SENT	(1<<7) /*!< outbound PROXY header already sent */
 
 enum tcp_conn_states { S_CONN_ERROR=-2, S_CONN_BAD=-1, S_CONN_OK=0,
 		S_CONN_CONNECTING, S_CONN_EOF };
@@ -205,4 +206,3 @@ int tcpconn_add_alias(struct sip_msg *msg, unsigned int id, int port, int proto)
 	tcp_conn_set_lifetime(_c, (_c)->profile.con_lifetime)
 
 #endif
-

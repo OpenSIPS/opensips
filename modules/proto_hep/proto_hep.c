@@ -63,16 +63,16 @@ static int hep_tcp_or_tls_read_req(struct tcp_connection* con, int* bytes_read,
 static int hep_udp_read_req(const struct socket_info* si, int* bytes_read);
 static int hep_udp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id, unsigned int is_tls);
+		unsigned int id, unsigned int is_tls, struct sip_msg *msg);
 static int hep_tcp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 static int hep_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 static void update_recv_info(struct receive_info* ri, struct hep_desc* h);
 void free_hep_context(void* ptr);
 static int proto_hep_tls_conn_init(struct tcp_connection* c);
@@ -376,9 +376,10 @@ static int proto_hep_bind_udp_listener(struct socket_info* si)
 
 static int hep_udp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id)
+		unsigned int id, struct sip_msg *msg)
 {
 	int n, tolen;
+
 	tolen = sockaddru_len(*to);
 
 again:
@@ -398,21 +399,21 @@ again:
 
 static int hep_tcp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id)
+		unsigned int id, struct sip_msg *msg)
 {
-	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 0);
+	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 0, msg);
 }
 
 static int hep_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id)
+		unsigned int id, struct sip_msg *msg)
 {
-	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 1);
+	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 1, msg);
 }
 
 static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id, unsigned int is_tls)
+		unsigned int id, unsigned int is_tls, struct sip_msg *msg)
 {
 	struct tcp_connection* c;
 	int port = 0;

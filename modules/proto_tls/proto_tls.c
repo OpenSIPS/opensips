@@ -39,6 +39,7 @@
 #include <netinet/in_systm.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
+#include <errno.h>
 #include <unistd.h>
 #include <dirent.h>
 
@@ -54,6 +55,7 @@
 #include "../../tsend.h"
 #include "../../timer.h"
 #include "../../receive.h"
+#include "../../net/proxy_protocol.h"
 #include "../../pt.h"
 #include "../../parser/msg_parser.h"
 #include "../../pvar.h"
@@ -124,7 +126,7 @@ static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
 static mi_response_t *tls_trace_mi(const mi_params_t *params,
@@ -134,6 +136,123 @@ static mi_response_t *tls_trace_mi_1(const mi_params_t *params,
 
 
 trace_dest t_dst;
+
+struct tls_proto_data {
+	struct tls_data trace;
+	str *pp_hdr;
+};
+
+static inline int should_send_tls_async_proxy_protocol(
+		const struct tcp_connection *c)
+{
+	return c && c->rcv.bind_address &&
+		(c->flags & F_CONN_ACCEPTED) == 0 &&
+		(c->rcv.bind_address->flags & SI_PROXY_OUT) &&
+		(c->flags & F_CONN_PROXY_OUT_SENT) == 0;
+}
+
+static int tls_async_queue_proxy_header(struct tcp_connection *c,
+		const struct sip_msg *msg)
+{
+	struct tls_proto_data *data;
+	int dbg_len;
+	int pp_len;
+
+	if (!should_send_tls_async_proxy_protocol(c))
+		return 0;
+
+	if (!c->proto_data) {
+		LM_ERR("missing TLS conn data while preparing outbound PROXY header\n");
+		return -1;
+	}
+	data = c->proto_data;
+	if (!data->pp_hdr) {
+		LM_ERR("missing TLS PROXY header buffer on conn %u\n", c->id);
+		return -1;
+	}
+	if (data->pp_hdr->len > 0)
+		return 0;
+
+	pp_len = build_outbound_proxy_protocol_v1_hdr(msg ? &msg->rcv : NULL,
+			&c->rcv.dst_ip, c->rcv.dst_port,
+			&c->rcv.src_ip, c->rcv.src_port,
+			data->pp_hdr->s, PROXY_PROTOCOL_BUF_MAX);
+	if (pp_len < 0) {
+		LM_ERR("failed to build outbound PROXY header\n");
+		return -1;
+	}
+	data->pp_hdr->len = pp_len;
+
+	dbg_len = data->pp_hdr->len;
+	if (dbg_len >= 2 && data->pp_hdr->s[dbg_len - 2] == '\r' &&
+			data->pp_hdr->s[dbg_len - 1] == '\n')
+		dbg_len -= 2;
+	LM_DBG("queued outbound PROXY header on TLS conn %u: %.*s\n",
+			c->id, dbg_len, data->pp_hdr->s);
+
+	return 0;
+}
+
+static int tls_async_send_proxy_header(struct tcp_connection *c, int fd)
+{
+	struct tls_proto_data *data;
+	int rc, dbg_len;
+
+	if (!should_send_tls_async_proxy_protocol(c))
+		return 0;
+
+	if (!c->proto_data) {
+		LM_ERR("missing TLS conn data while sending outbound PROXY header\n");
+		return -1;
+	}
+	data = c->proto_data;
+	if (!data->pp_hdr) {
+		LM_ERR("missing TLS PROXY header buffer on conn %u\n", c->id);
+		return -1;
+	}
+
+	if (data->pp_hdr->len <= 0) {
+		/* fallback for cases where no per-message context was available */
+		return send_stream_proxy_protocol_v1(c, fd, tls_send_tout, 0,
+				NULL, "TLS");
+	}
+
+	dbg_len = data->pp_hdr->len;
+	if (dbg_len >= 2 && data->pp_hdr->s[dbg_len - 2] == '\r' &&
+			data->pp_hdr->s[dbg_len - 1] == '\n')
+		dbg_len -= 2;
+	LM_DBG("sending queued outbound PROXY header on TLS conn %u: %.*s\n",
+			c->id, dbg_len, data->pp_hdr->s);
+
+again:
+	rc = send(fd, data->pp_hdr->s, data->pp_hdr->len,
+#ifdef HAVE_MSG_NOSIGNAL
+			MSG_NOSIGNAL
+#else
+			0
+#endif
+			);
+	if (rc < 0) {
+		if (errno == EINTR)
+			goto again;
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			return 1;
+		}
+		LM_ERR("failed to send outbound PROXY header on TLS conn %u: %d\n",
+				c->id, errno);
+		return -1;
+	}
+
+	if (rc < data->pp_hdr->len) {
+		data->pp_hdr->len -= rc;
+		memmove(data->pp_hdr->s, data->pp_hdr->s + rc, data->pp_hdr->len);
+		return 1;
+	}
+
+	c->flags |= F_CONN_PROXY_OUT_SENT;
+	data->pp_hdr->len = 0;
+	return 0;
+}
 
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
@@ -391,32 +510,35 @@ error:
 
 static int proto_tls_conn_init(struct tcp_connection* c)
 {
-	struct tls_data* data;
+	struct tls_proto_data *data;
 	struct tls_domain *dom;
 
-	if ( t_dst && tprot.create_trace_message ) {
-		/* this message shall be used in first send function */
-		data = shm_malloc( sizeof(struct tls_data) );
-		if ( !data ) {
-			LM_ERR("no more pkg mem!\n");
-			goto out;
-		}
-		memset( data, 0, sizeof(struct tls_data) );
-
-		if ( t_dst && tprot.create_trace_message) {
-			data->tprot = &tprot;
-			data->dest  = t_dst;
-			data->net_trace_proto_id = net_trace_proto_id;
-			data->trace_is_on = trace_is_on;
-			data->trace_route_ref = trace_filter_route_ref;
-		}
-
-		c->proto_data = data;
-	} else {
-		c->proto_data = 0;
+	/* reserve per-connection space for both TLS tracing and optional
+	 * async outbound PROXY header bytes */
+	data = shm_malloc(sizeof(*data));
+	if (!data) {
+		LM_ERR("no more pkg mem!\n");
+		return -1;
 	}
+	memset(data, 0, sizeof(*data));
+	data->pp_hdr = shm_malloc(sizeof(*data->pp_hdr) + PROXY_PROTOCOL_BUF_MAX);
+	if (!data->pp_hdr) {
+		LM_ERR("no more pkg mem for TLS PROXY buffer\n");
+		shm_free(data);
+		return -1;
+	}
+	data->pp_hdr->s = (char *)(data->pp_hdr + 1);
+	data->pp_hdr->len = 0;
 
-out:
+	if (t_dst && tprot.create_trace_message) {
+		data->trace.tprot = &tprot;
+		data->trace.dest  = t_dst;
+		data->trace.net_trace_proto_id = net_trace_proto_id;
+		data->trace.trace_is_on = trace_is_on;
+		data->trace.trace_route_ref = trace_filter_route_ref;
+	}
+	c->proto_data = data;
+
 	if ( c->flags&F_CONN_ACCEPTED ) {
 		LM_DBG("looking up TLS server "
 			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
@@ -437,9 +559,13 @@ out:
 static void proto_tls_conn_clean(struct tcp_connection* c)
 {
 	struct tls_domain *dom;
+	struct tls_proto_data *data;
 
 	if (c->proto_data) {
-		shm_free(c->proto_data);
+		data = c->proto_data;
+		if (data->pp_hdr)
+			shm_free(data->pp_hdr);
+		shm_free(data);
 		c->proto_data = NULL;
 	}
 
@@ -476,7 +602,7 @@ static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 
 static int proto_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id)
+		unsigned int id, struct sip_msg *msg)
 {
 	struct tcp_connection *c;
 	struct tls_domain *dom;
@@ -534,6 +660,11 @@ static int proto_tls_send(const struct socket_info* send_sock,
 
 			rlen = len;
 			if (n==0) {
+				if (tls_async_queue_proxy_header(c, msg) < 0) {
+					rlen = -1;
+					goto con_release;
+				}
+
 				/* attach the write buffer to it */
 				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
 					LM_ERR("Failed to add the initial write chunk\n");
@@ -543,8 +674,16 @@ static int proto_tls_send(const struct socket_info* send_sock,
 				LM_DBG("Successfully started async connection \n");
 				goto con_release;
 			}
+
 			LM_DBG("First TCP connect attempt succeeded in less than %dms, "
 				"proceed to TLS connect \n",tls_async_local_connect_timeout);
+			if (send_stream_proxy_protocol_v1(c, fd, tls_send_tout, 1,
+					msg ? &msg->rcv : NULL,
+					"TLS") < 0) {
+				LM_ERR("failed to send outbound PROXY header\n");
+				rlen = -1;
+				goto con_release;
+			}
 			/* succesful TCP conection done - starting async SSL connect */
 			lock_get(&c->write_lock);
 			/* we connect under lock to make sure no one else is reading our
@@ -553,6 +692,7 @@ static int proto_tls_send(const struct socket_info* send_sock,
 			n = tls_mgm_api.tls_async_connect(c, fd,
 				tls_async_handshake_connect_timeout, t_dst);
 			lock_release(&c->write_lock);
+
 			if (n<0) {
 				LM_ERR("failed async TLS connect\n");
 				rlen = -1;
@@ -594,6 +734,13 @@ static int proto_tls_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
+
+	if (send_stream_proxy_protocol_v1(c, fd, tls_send_tout, 1,
+			msg ? &msg->rcv : NULL, "TLS") < 0) {
+		LM_ERR("failed to send outbound PROXY header\n");
+		rlen = -1;
+		goto con_release;
+	}
 
 	rlen = tls_write_on_socket(c, fd, buf, len);
 	tcp_conn_reset_lifetime(c);
@@ -764,6 +911,13 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 	int n;
 	int err;
 	struct tcp_async_chunk *chunk;
+
+	err = tls_async_send_proxy_header(con, fd);
+	if (err < 0) {
+		return -1;
+	}
+	if (err > 0)
+		return 1;
 
 	err = tls_mgm_api.tls_fix_read_conn(con, fd, tls_handshake_tout, t_dst, 0);
 	if (err < 0) {

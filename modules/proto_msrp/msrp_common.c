@@ -558,7 +558,8 @@ error:
 /*! \brief Finds a tcpconn & sends on it */
 int proto_msrp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len,
-		const union sockaddr_union* to, unsigned int id)
+		const union sockaddr_union* to, unsigned int id,
+		struct sip_msg *msg)
 {
 	struct tcp_connection *c;
 	struct tcp_conn_profile prof;

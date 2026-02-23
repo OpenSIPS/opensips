@@ -24,11 +24,21 @@
 
 struct tcp_connection;
 struct receive_info;
+struct ip_addr;
 
-#include "../ip_addr.h"
-#include "proto_tcp/tcp_common_defs.h"
+/* Maximum length of a v1 PROXY header ("PROXY UNKNOWN\\r\\n" bound from spec). */
+#define PROXY_PROTOCOL_BUF_MAX 107
 
 int check_tcp_proxy_protocol(struct tcp_connection *c);
 int check_udp_proxy_protocol(char **buf, int *size, struct receive_info *ri);
+int build_outbound_proxy_protocol_v1_hdr(const struct receive_info *ri,
+		const struct ip_addr *fallback_src_ip,
+		unsigned short fallback_src_port,
+		const struct ip_addr *fallback_dst_ip,
+		unsigned short fallback_dst_port,
+		char *buf, int size);
+int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
+		int write_timeout, int lock,
+		const struct receive_info *ri, const char *proto_name);
 
 #endif /* NET_PROXY_PROTOCOL_H */

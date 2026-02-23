@@ -30,10 +30,13 @@
 
 #define PROTO_PREFIX "proto_"
 
+struct sip_msg;
+
 typedef int (*proto_init_f)(struct socket_info *si);
 typedef int (*proto_bind_f)(struct socket_info *si);
 typedef int (*proto_send_f)(const struct socket_info *si, char* buf,unsigned int len,
-		const union sockaddr_union* to, int unsigned id);
+		const union sockaddr_union* to, int unsigned id,
+		struct sip_msg *msg);
 typedef int (*proto_dst_attr_f)(struct receive_info *rcv,
 		int attr, void *value);
 

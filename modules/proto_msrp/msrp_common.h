@@ -35,6 +35,8 @@
 #include "../tls_mgm/api.h"
 #include "msrp_parser.h"
 
+struct sip_msg;
+
 enum msrp_req_states { MSRP_START, MSRP_FIRSTLINE_IDENT,
 		MSRP_FIRSTLINE_METHOD,
 		MSRP_HEADERS, MSRP_BODY, MSRP_EOM
@@ -86,9 +88,9 @@ void msrp_brief_parse_msg(struct msrp_req *r);
 
 int proto_msrp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len,
-		const union sockaddr_union* to, unsigned int id);
+		const union sockaddr_union* to, unsigned int id,
+		struct sip_msg *msg);
 
 int msrp_read_req(struct tcp_connection* con, int* bytes_read);
 
 #endif
-

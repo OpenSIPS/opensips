@@ -34,10 +34,13 @@
 
 #include "../../ip_addr.h"
 
+struct sip_msg;
+
 int proto_sctp_init_listener(struct socket_info* si);
 
 int proto_sctp_send(const struct socket_info *source, char *buf, unsigned len,
-		const union sockaddr_union* to, unsigned int id);
+		const union sockaddr_union* to, unsigned int id,
+		struct sip_msg *msg);
 
 int proto_sctp_read(const struct socket_info *si, int* bytes_read);
 

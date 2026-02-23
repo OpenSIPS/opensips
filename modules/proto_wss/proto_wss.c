@@ -109,7 +109,7 @@ static int proto_wss_init(struct proto_info *pi);
 static int proto_wss_init_listener(struct socket_info *si);
 static int proto_wss_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id);
+		unsigned int id, struct sip_msg *msg);
 static int wss_read_req(struct tcp_connection* con, int* bytes_read);
 static int wss_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
@@ -393,7 +393,7 @@ static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 /*! \brief Finds a tcpconn & sends on it */
 static int proto_wss_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
-		unsigned int id)
+		unsigned int id, struct sip_msg *msg)
 {
 	struct tcp_connection *c;
 	struct tcp_conn_profile prof;
