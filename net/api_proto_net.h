@@ -31,6 +31,7 @@
 /* api_proto_net flags */
 #define PROTO_NET_USE_TCP	(1<<0) /* set by proto's that are based on TCP */
 #define PROTO_NET_USE_UDP	(1<<1) /* set by proto's that are based on UDP */
+#define PROTO_NET_SUPPORTS_PROXY	(1<<2) /* listener may use proxy_protocol */
 
 
 typedef int  (*proto_net_dgram_read_f)(const struct socket_info *si, int *len);

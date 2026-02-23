@@ -207,7 +207,7 @@ static int proto_tcp_init(struct proto_info *pi)
 	pi->tran.send			= proto_tcp_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
-	pi->net.flags			= PROTO_NET_USE_TCP;
+	pi->net.flags			= PROTO_NET_USE_TCP | PROTO_NET_SUPPORTS_PROXY;
 	pi->net.stream.read		= tcp_read_req;
 	pi->net.stream.write		= tcp_async_write;
 	pi->net.report			= tcp_report;

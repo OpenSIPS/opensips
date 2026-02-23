@@ -58,6 +58,28 @@ static struct socket_id *cmd_listeners;
 
 #define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
 
+static int check_proxy_listener_support(enum sip_protos proto, int net_flags)
+{
+	struct socket_info_full *sif;
+	struct socket_info *si;
+
+	if (net_flags & PROTO_NET_SUPPORTS_PROXY)
+		return 0;
+
+	for (sif = protos[proto].listeners; sif; sif = sif->next) {
+		si = &sif->socket_info;
+		if (!(si->flags & SI_PROXY))
+			continue;
+
+		LM_ERR("listener [%.*s:%hu] uses 'proxy_protocol', but protocol %s "
+				"does not support it\n", si->name.len, si->name.s,
+				si->port_no, get_proto_name(proto));
+		return -1;
+	}
+
+	return 0;
+}
+
 int trans_load(void)
 {
 	int id;
@@ -99,18 +121,21 @@ int trans_load(void)
 				LM_ERR("Protocol ID mismatch %d != %d\n", id, pi.id);
 				return -1;
 			}
-			found_proto = 1;
 			/* check if there is any listener for this protocol */
 			if (!proto_has_listeners(pi.id)) {
 				LM_DBG("No listener defined for proto %s\n", pi.name);
 				continue;
 			}
 
+			if (check_proxy_listener_support(pi.id, pi.net.flags) < 0)
+				return -1;
+
 			/* check if already added */
 			if (protos[id].id != PROTO_NONE) {
 				LM_ERR("Protocol already loaded %s\n", pi.name);
 				return -1;
 			}
+			found_proto = 1;
 			/* all good now */
 			found_all++;
 			/* copy necessary info */
@@ -142,6 +167,14 @@ int add_listening_socket(struct socket_id *sock)
 	/* validate the protocol */
 	if (proto < PROTO_FIRST || proto >= PROTO_LAST) {
 		LM_BUG("invalid protocol number %d\n", proto);
+		return -1;
+	}
+
+	if ((sock->flags & SI_PROXY) && protos[proto].id != PROTO_NONE &&
+			(protos[proto].net.flags & PROTO_NET_SUPPORTS_PROXY) == 0) {
+		LM_ERR("listener [%s:%d] uses 'proxy_protocol', but protocol %s "
+				"does not support it\n", sock->name, sock->port,
+				get_proto_name(proto));
 		return -1;
 	}
 

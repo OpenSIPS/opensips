@@ -109,7 +109,7 @@ static int proto_udp_init(struct proto_info *pi)
 	pi->tran.bind_listener	= proto_udp_bind_listener;
 	pi->tran.send			= proto_udp_send;
 
-	pi->net.flags			= PROTO_NET_USE_UDP;
+	pi->net.flags			= PROTO_NET_USE_UDP | PROTO_NET_SUPPORTS_PROXY;
 	pi->net.dgram.read		= udp_read_req;
 
 	return 0;
@@ -258,6 +258,5 @@ int register_udprecv_cb(udp_rcv_cb_f* func, void* param, char a, char b)
 
 	return 0;
 }
-
 
 
