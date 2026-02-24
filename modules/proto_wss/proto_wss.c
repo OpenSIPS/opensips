@@ -36,6 +36,7 @@
 #include "../../net/tcp_common.h"
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
+#include "../../net/proxy_protocol.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../receive.h"
@@ -79,6 +80,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #define _ws_common_read(c, r) tls_mgm_api.tls_read((c), (r))
 #define _ws_common_writev wss_raw_writev
 #define _ws_common_read_tout wss_hs_read_tout
+#define _ws_common_proxy_send_tout wss_send_tout
 #define _ws_common_require_origin wss_require_origin
 /*
  * the timeout is only used by the _ws_common_writev function
@@ -202,7 +204,7 @@ static int proto_wss_init(struct proto_info *pi)
 	pi->tran.send			= proto_wss_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
-	pi->net.flags			= PROTO_NET_USE_TCP;
+	pi->net.flags			= PROTO_NET_USE_TCP | PROTO_NET_SUPPORTS_PROXY;
 	pi->net.stream.read		= wss_read_req;
 
 	pi->net.stream.conn.init	= wss_conn_init;
@@ -442,7 +444,7 @@ static int proto_wss_send(const struct socket_info* send_sock,
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=ws_connect(send_sock, to, &prof, &fd))==0) {
+		if ((c=ws_connect(send_sock, to, &prof, &fd, msg))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
@@ -521,6 +523,15 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 {
 	int size;
 	struct ws_data* d;
+
+	switch (check_tcp_proxy_protocol(con)) {
+	case 0:
+		goto done;
+	case -1:
+		goto error;
+	case 1:
+		break;
+	}
 
 	/* we need to fix the SSL connection before doing anything */
 	if (tls_mgm_api.tls_fix_read_conn(con, con->fd, 0, t_dst, 1) < 0) {

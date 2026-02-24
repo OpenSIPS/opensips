@@ -684,7 +684,8 @@ error:
 
 
 static struct tcp_connection* ws_connect(const struct socket_info* send_sock,
-		const union sockaddr_union* to, struct tcp_conn_profile *prof, int *fd)
+		const union sockaddr_union* to, struct tcp_conn_profile *prof,
+		int *fd, struct sip_msg *msg)
 {
 	struct tcp_connection *c;
 
@@ -699,6 +700,12 @@ static struct tcp_connection* ws_connect(const struct socket_info* send_sock,
 		goto error;
 	}
 	WS_TYPE(c) = WS_CLIENT;
+
+	if (send_stream_proxy_protocol_v1(c, c->fd, _ws_common_proxy_send_tout, 0,
+			msg ? &msg->rcv : NULL, _ws_common_module) < 0) {
+		LM_ERR("failed to send outbound PROXY header\n");
+		goto error;
+	}
 
 	if (ws_client_handshake(c) < 0) {
 		LM_ERR("cannot complete WebSocket handshake\n");

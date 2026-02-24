@@ -37,6 +37,7 @@
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp_report.h"
 #include "../../net/tcp_common.h"
+#include "../../net/proxy_protocol.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../receive.h"
@@ -72,6 +73,7 @@ static str ws_resource = str_init("/");
 #define _ws_common_writev ws_raw_writev
 #define _ws_common_read_tout ws_hs_read_tout
 #define _ws_common_write_tout ws_send_timeout
+#define _ws_common_proxy_send_tout ws_send_timeout
 #define _ws_common_resource ws_resource
 #define _ws_common_require_origin ws_require_origin
 #include "ws_handshake_common.h"
@@ -186,7 +188,7 @@ static int proto_ws_init(struct proto_info *pi)
 	pi->tran.send			= proto_ws_send;
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
-	pi->net.flags			= PROTO_NET_USE_TCP;
+	pi->net.flags			= PROTO_NET_USE_TCP | PROTO_NET_SUPPORTS_PROXY;
 	pi->net.stream.read		= ws_read_req;
 
 	pi->net.stream.conn.init	= ws_conn_init;
@@ -374,7 +376,7 @@ static int proto_ws_send(const struct socket_info* send_sock,
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=ws_connect(send_sock, to, &prof, &fd))==0) {
+		if ((c=ws_connect(send_sock, to, &prof, &fd, msg))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
@@ -452,6 +454,15 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read)
 {
 	int size;
 	struct ws_data* d;
+
+	switch (check_tcp_proxy_protocol(con)) {
+	case 0:
+		goto done;
+	case -1:
+		goto error;
+	case 1:
+		break;
+	}
 
 	if (WS_STATE(con) != WS_CON_HANDSHAKE_DONE) {
 		size = ws_server_handshake(con);
