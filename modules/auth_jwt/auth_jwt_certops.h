@@ -28,3 +28,5 @@
 #endif /* JWTCERTOPS_H */
 
 int extract_pub_key_from_cert(struct sip_msg* _msg, str* cert,pv_spec_t* pub_key);
+int extract_pub_key_from_exp_mod(struct sip_msg* _msg, str* e,
+		str* n, pv_spec_t* pub_key);
