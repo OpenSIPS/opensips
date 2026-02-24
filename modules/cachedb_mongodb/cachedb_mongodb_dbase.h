@@ -27,8 +27,8 @@
 
 #define MONGO_HAVE_STDINT 1
 
-#include <mongoc.h>
-#include <bson.h>
+#include <mongoc/mongoc.h>
+#include <bson/bson.h>
 
 #include <stdint.h>
 
