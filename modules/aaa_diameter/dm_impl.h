@@ -22,6 +22,7 @@
 #define AAA_DIAMETER_IMPL
 
 #include "../../aaa/aaa.h"
+#include "../../mem/shm_mem.h"
 #include "diameter_api.h"
 
 #define __FD_CHECK(__call__, __retok__, __retval__) \
@@ -122,6 +123,7 @@ struct dm_avp {
 #define DM_TYPE_CB    (1<<2)
 
 struct dm_cond {
+	volatile int ref;
 	int type;
 	union {
 		struct {
@@ -140,6 +142,23 @@ struct dm_cond {
 
 	diameter_reply rpl;
 };
+
+static inline void dm_cond_ref(struct dm_cond *cond)
+{
+	if (!cond || cond->type == DM_TYPE_COND)
+		return;
+
+	__atomic_add_fetch(&cond->ref, 1, __ATOMIC_SEQ_CST);
+}
+
+static inline void dm_cond_unref(struct dm_cond *cond)
+{
+	if (!cond || cond->type == DM_TYPE_COND)
+		return;
+
+	if (__atomic_sub_fetch(&cond->ref, 1, __ATOMIC_SEQ_CST) == 0)
+		shm_free(cond);
+}
 int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond);
 
 extern struct list_head dm_unreplied_req;
@@ -169,7 +188,8 @@ int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
 int dm_build_avps(struct list_head *subavps, cJSON *array);
 int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **__);
 int _dm_send_message(aaa_conn *_, aaa_message *req, struct dm_cond **reply_cond);
-int _dm_send_message_async(aaa_conn *_, aaa_message *req, int *fd);
+int _dm_send_message_async(aaa_conn *_, aaa_message *req, int *fd, struct dm_cond **cond);
+int dm_drop_pending_reply_cond(struct dm_cond *reply_cond);
 int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps);
 void _dm_release_message_response(struct dm_cond *cond, char *rpl_avps);
 int dm_destroy_message(aaa_conn *con, aaa_message *msg);
