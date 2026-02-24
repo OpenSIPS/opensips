@@ -2474,6 +2474,9 @@ static int pv_parse_socket_name(pv_spec_p sp, const str *in)
 #define PROXY_PROTOCOL_DST_PORT_S       "dst_port"
 #define PROXY_PROTOCOL_DST_PORT_LEN     (sizeof(PROXY_PROTOCOL_DST_PORT_S)-1)
 #define PROXY_PROTOCOL_DST_PORT_ID      3
+#define PROXY_PROTOCOL_AF_S             "af"
+#define PROXY_PROTOCOL_AF_LEN           (sizeof(PROXY_PROTOCOL_AF_S)-1)
+#define PROXY_PROTOCOL_AF_ID            4
 
 static int pv_parse_proxy_protocol(pv_spec_p sp, const str *in)
 {
@@ -2498,6 +2501,10 @@ static int pv_parse_proxy_protocol(pv_spec_p sp, const str *in)
 	if (in->len==PROXY_PROTOCOL_DST_PORT_LEN &&
 	strncasecmp(in->s, PROXY_PROTOCOL_DST_PORT_S, PROXY_PROTOCOL_DST_PORT_LEN)==0 ) {
 		sp->pvp.pvn.u.isname.name.n = PROXY_PROTOCOL_DST_PORT_ID;
+	} else
+	if (in->len==PROXY_PROTOCOL_AF_LEN &&
+	strncasecmp(in->s, PROXY_PROTOCOL_AF_S, PROXY_PROTOCOL_AF_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = PROXY_PROTOCOL_AF_ID;
 	} else {
 		LM_ERR("unsupported $proxy_protocol field <%.*s>\n",in->len,in->s);
 		return -1;
@@ -2664,6 +2671,18 @@ static int pv_get_proxy_protocol(struct sip_msg *msg, pv_param_t *param,
 			res->ri = msg->rcv.real_ep.dst_port;
 			res->rs.s = int2str((uint64_t)msg->rcv.real_ep.dst_port, &res->rs.len);
 			res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+			break;
+		case PROXY_PROTOCOL_AF_ID:
+			if (msg->rcv.real_ep.src_ip.af == AF_INET) {
+				res->rs.s = "INET";
+				res->rs.len = 4;
+			} else if (msg->rcv.real_ep.src_ip.af == AF_INET6) {
+				res->rs.s = "INET6";
+				res->rs.len = 5;
+			} else {
+				return pv_get_null(msg, NULL, res);
+			}
+			res->flags = PV_VAL_STR;
 			break;
 		default:
 			LM_CRIT("BUG - unsupported proxy_protocol ID %d\n",
