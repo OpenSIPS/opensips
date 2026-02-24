@@ -353,7 +353,7 @@ loadmodule "modules/tm/tm.so"
 loadmodule "modules/acc/acc.so"
 loadmodule "modules/uac_redirect/uac_redirect.so"
 
-modparam("usrloc", "db_mode",   0)
+modparam("usrloc", "working_mode_preset", "single-instance-no-db")
 
 route{
 	if (is_myself("$rd")) {

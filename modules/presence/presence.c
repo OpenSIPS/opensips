@@ -193,11 +193,6 @@ static const param_export_t params[]={
 };
 
 static const mi_export_t mi_cmds[] = {
-	// refreshWatchers is a deprecated alias for refresh_watchers. To be removed later.
-	{ "refreshWatchers", 0,0,0, {
-		{mi_refresh_watchers, {"presentity_uri", "event", "refresh_type", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
 	{ "refresh_watchers", 0,0,0, {
 		{mi_refresh_watchers, {"presentity_uri", "event", "refresh_type", 0}},
 		{EMPTY_MI_RECIPE}}

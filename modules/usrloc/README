@@ -692,7 +692,7 @@ serlocation")
 
    Example 1.25. Set db_mode parameter
 ...
-modparam("usrloc", "db_mode", 2)
+modparam("usrloc", "working_mode_preset", "single-instance-sql-write-back")
 ...
 
 1.5.26. working_mode_preset (string)

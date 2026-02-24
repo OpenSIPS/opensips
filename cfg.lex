@@ -209,7 +209,6 @@ ABORT_ON_ASSERT	abort_on_assert
 LOGLEVEL	log_level
 LOGPREFIX	log_prefix
 LOGSTDOUT	log_stdout
-LOGSTDERROR	log_stderror
 STDERROR_ENABLED	stderror_enabled
 SYSLOG_ENABLED	    syslog_enabled
 LOG_EVENT_ENABLED	log_event_enabled
@@ -220,11 +219,8 @@ STDERROR_FORMAT stderror_log_format
 SYSLOG_FORMAT   syslog_log_format
 LOG_JSON_BUF_SIZE	"log_json_buf_size"
 LOG_MSG_BUF_SIZE    "log_msg_buf_size"
-LOGFACILITY	log_facility
 SYSLOG_FACILITY	syslog_facility
-LOGNAME		log_name
 SYSLOG_NAME	syslog_name
-LISTEN		listen
 SOCKET		socket
 MEMGROUP	mem-group
 ALIAS		alias
@@ -435,7 +431,6 @@ SPACE		[ ]
 <INITIAL>{LOGLEVEL} { count(); yylval.strval=yytext; return LOGLEVEL; }
 <INITIAL>{LOGPREFIX} { count(); yylval.strval=yytext; return LOGPREFIX; }
 <INITIAL>{LOGSTDOUT}	{ yylval.strval=yytext; return LOGSTDOUT; }
-<INITIAL>{LOGSTDERROR} { yylval.strval=yytext; return LOGSTDERROR; }
 <INITIAL>{STDERROR_ENABLED}	{ yylval.strval=yytext; return STDERROR_ENABLED; }
 <INITIAL>{SYSLOG_ENABLED}	{ yylval.strval=yytext; return SYSLOG_ENABLED; }
 <INITIAL>{LOG_EVENT_ENABLED}	{ yylval.strval=yytext; return LOG_EVENT_ENABLED; }
@@ -448,11 +443,8 @@ SPACE		[ ]
 									return LOG_JSON_BUF_SIZE; }
 <INITIAL>{LOG_MSG_BUF_SIZE}    {	count(); yylval.strval=yytext;
 									return LOG_MSG_BUF_SIZE; }
-<INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
 <INITIAL>{SYSLOG_FACILITY}	{ yylval.strval=yytext; return SYSLOG_FACILITY; }
-<INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
 <INITIAL>{SYSLOG_NAME}	{ yylval.strval=yytext; return SYSLOG_NAME; }
-<INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
 <INITIAL>{SOCKET}	{ count(); yylval.strval=yytext; return SOCKET; }
 <INITIAL>{MEMGROUP}	{ count(); yylval.strval=yytext; return MEMGROUP; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }

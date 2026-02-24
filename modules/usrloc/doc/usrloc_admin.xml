@@ -756,46 +756,6 @@ modparam("usrloc", "cachedb_url", "&examplecdb;")
 		</example>
 	</section>
 
-	<section id="param_db_mode" xreflabel="db_mode">
-		<title><varname>db_mode</varname> (integer, deprecated)</title>
-		<para>
-		This parameter has been kept for backwards compatibility.  It acts as a
-		<xref linkend="param_working_mode_preset"/> (which it also conflicts with),
-		overriding any <xref linkend="param_cluster_mode"/>,
-		<xref linkend="param_restart_persistency"/> and
-		<xref linkend="param_sql_write_mode"/> settings.  Possible values are:
-		</para>
-		<para>
-		<itemizedlist>
-		<listitem>
-			<para>0, corresponding to "single-instance-no-db" (see below)</para>
-		</listitem>
-		<listitem>
-			<para>1, corresponding to "single-instance-sql-write-through"</para>
-		</listitem>
-		<listitem>
-			<para>2, corresponding to "single-instance-sql-write-back"</para>
-		</listitem>
-		<listitem>
-			<para>3, corresponding to "sql-only"</para>
-		</listitem>
-		</itemizedlist>
-		</para>
-		<para>
-		<emphasis>
-			Default value is "not set".
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>db_mode</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("usrloc", "db_mode", 2)
-...
-</programlisting>
-		</example>
-	</section>
-
 	<section id="param_working_mode_preset" xreflabel="working_mode_preset">
 		<title><varname>working_mode_preset</varname> (string)</title>
 		<para>

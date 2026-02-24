@@ -353,7 +353,7 @@ proceed, you need to make sure MySQL is installed on your box.
     - loadmodule "/usr/lib/opensips/modules/db_mysql.so"
     - loadmodule "/usr/lib/opensips/modules/auth.so"
     - loadmodule "/usr/lib/opensips/modules/auth_db.so"
-    - modparam("usrloc", "db_mode", 2)
+    - modparam("usrloc", "working_mode_preset", "single-instance-sql-write-back")
     - modparam("auth", "calculate_ha1", yes)
     - modparam("auth_db", "password_column", "password")
     - if (!www_authorize("sip.org", "subscriber")) {

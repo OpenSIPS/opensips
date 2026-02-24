@@ -310,7 +310,6 @@ extern int cfg_parse_only_routes;
 %token LOGLEVEL
 %token LOGPREFIX
 %token LOGSTDOUT
-%token LOGSTDERROR
 %token STDERROR_ENABLED
 %token SYSLOG_ENABLED
 %token LOG_EVENT_ENABLED
@@ -321,12 +320,9 @@ extern int cfg_parse_only_routes;
 %token SYSLOG_FORMAT
 %token LOG_JSON_BUF_SIZE
 %token LOG_MSG_BUF_SIZE
-%token LOGFACILITY
 %token SYSLOG_FACILITY
-%token LOGNAME
 %token SYSLOG_NAME
 %token AVP_ALIASES
-%token LISTEN
 %token SOCKET
 %token MEMGROUP
 %token ALIAS
@@ -972,28 +968,6 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			/* may be useful when integrating 3rd party libraries */
 			{ IFOR(); log_stdout=$3; }
 		| LOGSTDOUT EQUAL error { yyerror("boolean value expected"); }
-		| LOGSTDERROR EQUAL NUMBER {
-			IFOR();
-			warn("'log_stderror' is deprecated, use 'stderror_enabled' and/or"
-				"'syslog_enabled' instead");
-			if (!config_check && !debug_mode) {
-				if ($3) {
-					stderr_enabled=1;
-					syslog_enabled=0;
-				} else {
-					stderr_enabled=0;
-					syslog_enabled=1;
-				}
-
-				s_tmp.s=STDERR_CONSUMER_NAME;
-				s_tmp.len=strlen(STDERR_CONSUMER_NAME);
-				set_log_consumer_mute_state(&s_tmp, !$3);
-				s_tmp.s=SYSLOG_CONSUMER_NAME;
-				s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
-				set_log_consumer_mute_state(&s_tmp, $3);
-			}
-			}
-		| LOGSTDERROR EQUAL error { yyerror("boolean value expected"); }
 		| STDERROR_ENABLED EQUAL NUMBER {
 			/* in config-check or debug mode we force logging
 			 * to standard error */
@@ -1113,14 +1087,6 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			}
 			}
 		| LOG_MSG_BUF_SIZE EQUAL error { yyerror("number expected"); }
-		| LOGFACILITY EQUAL ID { IFOR();
-			warn("'log_facility' is deprecated, use 'syslog_facility' instead");
-			if ( (i_tmp=str2facility($3))==-1)
-				yyerror("bad facility (see syslog(3) man page)");
-			if (!config_check)
-				log_facility=i_tmp;
-			}
-		| LOGFACILITY EQUAL error { yyerror("ID expected"); }
 		| SYSLOG_FACILITY EQUAL ID { IFOR();
 			if ( (i_tmp=str2facility($3))==-1)
 				yyerror("bad facility (see syslog(3) man page)");
@@ -1128,10 +1094,6 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 				log_facility=i_tmp;
 			}
 		| SYSLOG_FACILITY EQUAL error { yyerror("ID expected"); }
-		| LOGNAME EQUAL STRING { IFOR();
-			warn("'log_name' is deprecated, use 'syslog_name' instead");
-			log_name=$3; }
-		| LOGNAME EQUAL error { yyerror("string value expected"); }
 		| SYSLOG_NAME EQUAL STRING { IFOR(); log_name=$3; }
 		| SYSLOG_NAME EQUAL error { yyerror("string value expected"); }
 		| DNS EQUAL NUMBER   { IFOR(); received_dns|= ($3)?DO_DNS:0; }
@@ -1454,19 +1416,6 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 							}
 						}
 		| SOCKET EQUAL  error { yyerror("ip address or hostname "
-						"expected (use quotes if the hostname includes"
-						" config keywords)"); }
-		| LISTEN EQUAL socket_def { IFOR();
-							warn("'listen' is deprecated, use 'socket' instead");
-							for (lst_tmp = $3; lst_tmp; lst_tmp = lst_tmp->next) {
-								if (add_listening_socket(lst_tmp)!=0){
-									LM_CRIT("cfg. parser: failed"
-											" to add listen address\n");
-									break;
-								}
-							}
-						}
-		| LISTEN EQUAL  error { yyerror("ip address or hostname "
 						"expected (use quotes if the hostname includes"
 						" config keywords)"); }
 		| MEMGROUP EQUAL STRING COLON multi_string { IFOR();

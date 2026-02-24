@@ -248,7 +248,7 @@ modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 
 # -- usrloc params --
 
-modparam("usrloc", "db_mode",   0)
+modparam("usrloc", "working_mode_preset", "single-instance-no-db")
 
 # -------------------------  request routing logic -------------------
 

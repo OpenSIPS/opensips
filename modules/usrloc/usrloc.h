@@ -45,16 +45,6 @@ typedef enum ul_cluster_mode {
 	CM_SQL_ONLY,
 } ul_cluster_mode_t;
 
-/* XXX: deprecated! */
-enum usrloc_modes {
-	NOT_SET       = -1,
-
-	NO_DB         = 0,
-	WRITE_THROUGH = 1,
-	WRITE_BACK    = 2,
-	DB_ONLY       = 3,
-};
-
 typedef struct usrloc_api {
 	int use_domain;
 

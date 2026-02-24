@@ -458,7 +458,7 @@ modparam("uac_registrant", "expiry_column", "registration_timeout")
 		socket for sending the REGISTER (not mandatory).
 		If a forced socket is provided, the socket MUST be
 		explicitely set as a global listening socket in the config
-		(see <quote>listen</quote> core parameter).
+		(see <quote>socket</quote> core parameter).
 		</para>
 		<para>
 		<emphasis>
@@ -1045,4 +1045,3 @@ opensips-cli -x mi reg_delete aor=sip:vlad@test.com contact=sip:test@localhost r
 
 
 </chapter>
-

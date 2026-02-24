@@ -595,11 +595,6 @@ int parse_avp_spec(const str *name, int *avp_name)
 
 	extra = last_avp_index_shm ? 1 : 0;
 
-	if (name->len > 2 && name->s[1] == AVP_NAME_DELIM &&
-			(name->s[0] == 'i' || name->s[0] == 's'))
-		LM_WARN("Deprecated AVP name format \"%.*s\" - use \"%.*s\" instead\n",
-				name->len, name->s, name->len - 2, name->s + 2);
-
 	id = lookup_avp_alias_str(name, extra);
 	if (id < 0) {
 		id = extra ? new_avp_extra_alias(name) : new_avp_alias(name);

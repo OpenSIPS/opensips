@@ -141,7 +141,7 @@ loadmodule "/usr/local/lib/opensips/modules/db_unixodbc.so"
 ....
 loadmodule "/usr/local/lib/opensips/modules/auth.so"
 loadmodule "/usr/local/lib/opensips/modules/auth_db.so"
-modparam("usrloc", "db_mode", 2)
+modparam("usrloc", "working_mode_preset", "single-instance-sql-write-back")
 modparam("auth_db", "calculate_ha1", yes)
 modparam("auth_db", "password_column", "password")
 ....
