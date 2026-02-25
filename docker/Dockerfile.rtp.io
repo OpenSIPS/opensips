@@ -55,5 +55,6 @@ ENV MM_ROOT=../..
 ENV RTPP_BRANCH=DOCKER
 ENV RTPPC_TYPE=rtp.io
 ENV RTPPROXY_DIST=../../dist/rtpproxy
+ENV MM_INIT_DELAY=2
 WORKDIR dist/voiptests
 ENTRYPOINT [ "sh", "-x", "./test_run.sh" ]
