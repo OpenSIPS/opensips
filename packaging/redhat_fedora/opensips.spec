@@ -1041,6 +1041,8 @@ mv %{buildroot}/%{_sysconfdir}/opensips/tls/README \
   %{buildroot}/%{_docdir}/opensips/README.tls
 rm -f %{buildroot}%{_docdir}/opensips/INSTALL
 mv %{buildroot}/%{_docdir}/opensips docdir
+ln -sf mi_xmlrpc.so \
+  %{buildroot}/%{_libdir}/opensips/modules/mi_xmlrpc_ng.so
 
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # install systemd files
@@ -1703,8 +1705,9 @@ fi
 %doc docdir/README.xml
 
 %files xmlrpc-module
+%{_libdir}/opensips/modules/mi_xmlrpc.so
 %{_libdir}/opensips/modules/mi_xmlrpc_ng.so
-%doc docdir/README.mi_xmlrpc_ng
+%doc docdir/README.mi_xmlrpc
 
 %files xmpp-module
 %{_libdir}/opensips/modules/xmpp.so
@@ -2120,4 +2123,3 @@ fi
 
 * Tue Jul 24 2007 Peter Lemenkov <lemenkov@gmail.com> 1.2.1-1
 - Initial spec.
-

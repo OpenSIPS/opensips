@@ -279,7 +279,7 @@ XML_PKGNAME = opensips-xml-module
 XML_MODULES = xml
 XML_MOD_PATH=$(addprefix modules/, $(XML_MODULES))
 XMLRPC_PKGNAME = opensips-xmlrpc-module
-XMLRPC_MODULES = mi_xmlrpc_ng
+XMLRPC_MODULES = mi_xmlrpc
 XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
 XMPP_PKGNAME = opensips-xmpp-module
 XMPP_MODULES = xmpp
@@ -433,6 +433,11 @@ override_dh_auto_install:
 	    fi \
 	done
 
+	# Backward compatibility for renamed XMLRPC module.
+	mkdir -p $(CURDIR)/debian/$(XMLRPC_PKGNAME)/$(BIN_PREFIX)/lib/$(DEB_HOST_MULTIARCH)/opensips/modules
+	ln -sf mi_xmlrpc.so \
+		$(CURDIR)/debian/$(XMLRPC_PKGNAME)/$(BIN_PREFIX)/lib/$(DEB_HOST_MULTIARCH)/opensips/modules/mi_xmlrpc_ng.so
+
 ifneq ($(filter BERKELEY,$(BUILD_MODPKG_LIST)),)
 	# move binaries of opensips-berkeley-module to opensips-iberkeley-bin
 	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
@@ -469,4 +474,3 @@ get-orig-source:
 # generic rule
 %:
 	dh $@ --with systemd
-

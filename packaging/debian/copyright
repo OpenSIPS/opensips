@@ -687,11 +687,11 @@ Files: modules/mi_http/http_fnc.c
 Copyright: 2010-2014, VoIP Embedded, Inc
 License: GPL-2+
 
-Files: modules/mi_xmlrpc_ng/*
+Files: modules/mi_xmlrpc/*
 Copyright: 2011-2013, VoIP Embedded Inc
 License: GPL-2+
 
-Files: modules/mi_xmlrpc_ng/http_fnc.c
+Files: modules/mi_xmlrpc/http_fnc.c
 Copyright: 2010-2014, VoIP Embedded, Inc
 License: GPL-2+
 

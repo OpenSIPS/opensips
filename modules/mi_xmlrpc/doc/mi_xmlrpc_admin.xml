@@ -65,7 +65,7 @@
 		<title>Set <varname>http_root</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("mi_xmlrpc_ng", "http_root", "opensips_mi_xmlrpc")
+modparam("mi_xmlrpc", "http_root", "opensips_mi_xmlrpc")
 ...
 </programlisting>
 		</example>
@@ -93,7 +93,7 @@ modparam("mi_xmlrpc_ng", "http_root", "opensips_mi_xmlrpc")
 ...
 modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
-modparam("mi_xmlrpc_ng", "trace_destination", "hep_dest")
+modparam("mi_xmlrpc", "trace_destination", "hep_dest")
 ...
 </programlisting>
 		</example>
@@ -133,11 +133,11 @@ modparam("mi_xmlrpc_ng", "trace_destination", "hep_dest")
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced
-modparam("mi_xmlrpc_ng", "trace_bwlist", "b: ps, which")
+modparam("mi_xmlrpc", "trace_bwlist", "b: ps, which")
 ...
 ## allow only sip_trace mi command
 ## all the other commands will not be traced
-modparam("mi_xmlrpc_ng", "trace_bwlist", "w: sip_trace")
+modparam("mi_xmlrpc", "trace_bwlist", "w: sip_trace")
 ...
 </programlisting>
 		</example>
@@ -162,7 +162,7 @@ modparam("mi_xmlrpc_ng", "trace_bwlist", "w: sip_trace")
 		isn't enough pkg memory configured).
 		</para>
 		<para>
-		Future realeases of the httpd and mi_xmlrpc_ng modules
+		Future realeases of the httpd and mi_xmlrpc modules
 		will address this issue.
 		</para>
 	</section>

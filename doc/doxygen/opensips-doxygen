@@ -574,7 +574,7 @@ INPUT                  = ./ \
                          modules/mi_fifo \
                          modules/mi_html \
                          modules/mi_http \
-                         modules/mi_xmlrpc_ng \
+                         modules/mi_xmlrpc \
                          modules/mi_datagram \
                          modules/mmgeoip \
                          modules/msilo \

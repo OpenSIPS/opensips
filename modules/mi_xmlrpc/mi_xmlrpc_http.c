@@ -92,7 +92,7 @@ static const dep_export_t deps = {
 
 /* module exports */
 struct module_exports exports = {
-	"mi_xmlrpc_ng",                     /* module name */
+	"mi_xmlrpc",                     /* module name */
 	MOD_TYPE_DEFAULT,                   /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,                    /* dlopen flags */
