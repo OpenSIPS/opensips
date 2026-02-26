@@ -52,6 +52,7 @@ extern int max_contacts;
 extern int max_username_len;
 extern int max_domain_len;
 extern int max_aor_len;
+extern int allow_dup_cseq;
 extern int max_contact_len;
 
 #define reg_modparams \
@@ -60,6 +61,7 @@ extern int max_contact_len;
 	{"max_domain_len",        INT_PARAM, &max_domain_len}, \
 	{"max_aor_len",           INT_PARAM, &max_aor_len}, \
 	{"max_contact_len",       INT_PARAM, &max_contact_len}, \
+	{"allow_dup_cseq",        INT_PARAM, &allow_dup_cseq}, \
 	{"expires_max_deviation", INT_PARAM, &expires_max_deviation}
 
 /* common registrar init code */
@@ -90,5 +92,7 @@ static inline time_t randomize_expires(unsigned int expires_ts)
 
 	return ret;
 }
+
+#define REG_CSEQ_ADJUST(_cs) ((_cs) + allow_dup_cseq)
 
 #endif /* __LIB_REG_COMMON_H__ */
