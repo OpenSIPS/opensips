@@ -2496,7 +2496,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 	    memcpy(ehdr.s, dlg->prack_headers.s, dlg->prack_headers.len);
 	    ehdr.len = ehdr.len + dlg->prack_headers.len;
 
-	    LM_ERR("METHOD_PRACK ehdr %d[%.*s]\n", ehdr.len ,ehdr.len, ehdr.s);
+	    LM_DBG("PRACK ehdr %d[%.*s]\n", ehdr.len ,ehdr.len, ehdr.s);
 	}
 
 	if(dlg->state < B2B_CONFIRMED)
