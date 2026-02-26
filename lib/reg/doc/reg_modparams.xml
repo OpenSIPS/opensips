@@ -1,5 +1,30 @@
 <!-- Common registrar modparams-->
 
+	<section id="param_allow_dup_cseq" xreflabel="allow_dup_cseq">
+		<title><varname>allow_dup_cseq</varname> (boolean)</title>
+		<para>
+		Some SIP stacks will re-REGISTER using the same Call-ID and CSeq values.
+		While rejecting such requests is consistent with RFC 3261 § 10.3.7, enabling
+		this parameter instructs the &reg_module; to accept them instead,
+		improving interoperability.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>true</emphasis> (duplicate CSeq is accepted).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>allow_dup_cseq</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# strict RFC 3261 compliance: reject REGISTER requests with duplicate CSeq
+modparam("&reg_module;", "allow_dup_cseq", false)
+...
+		</programlisting>
+		</example>
+	</section>
+
+
 	<section id="param_expires_max_deviation" xreflabel="expires_max_deviation">
 		<title><varname>expires_max_deviation</varname> (integer)</title>
 		<para>

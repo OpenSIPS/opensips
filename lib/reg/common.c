@@ -28,6 +28,7 @@ int max_username_len = USERNAME_MAX_SIZE;
 int max_domain_len   = DOMAIN_MAX_SIZE;
 int max_aor_len      = MAX_AOR_LEN;
 int max_contact_len  = CONTACT_MAX_SIZE;
+int allow_dup_cseq   = 1;
 
 int reg_init_globals(void)
 {
@@ -38,6 +39,7 @@ int reg_init_globals(void)
 
 	realm_prefix.len = strlen(realm_prefix.s);
 	rcv_param.len = strlen(rcv_param.s);
+	allow_dup_cseq = !!allow_dup_cseq;
 
 	if (expires_max_deviation < 0) {
 		expires_max_deviation = -expires_max_deviation;

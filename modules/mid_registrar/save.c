@@ -328,7 +328,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 			goto out_err;
 		}
 
-		ul.get_ucontact(r, &c->uri, &req->callid->body, cseq + 1, 
+		ul.get_ucontact(r, &c->uri, &req->callid->body, REG_CSEQ_ADJUST(cseq),
 			&mri->cmatch, &uc);
 		if (!uc)
 			ctid = ul.next_contact_id(r);
@@ -1372,7 +1372,7 @@ update_usrloc:
 		ci->contact_id = ctmap->ctid;
 
 		if ((!r->contacts || ul.get_ucontact(r, &ctmap->req_ct_uri,
-		     ci->callid, ci->cseq+1, &mri->cmatch, &c) != 0) &&
+		     ci->callid, REG_CSEQ_ADJUST(ci->cseq), &mri->cmatch, &c) != 0) &&
 			ctmap->expires > 0) {
 			/* contact not found and not present on main reg either */
 			if (!_c)
@@ -1640,7 +1640,7 @@ update_usrloc:
 		ci->expires_out = e_out;
 
 		if ((!r->contacts ||
-			ul.get_ucontact(r, &ctmap->req_ct_uri, ci->callid, ci->cseq+1,
+			ul.get_ucontact(r, &ctmap->req_ct_uri, ci->callid, REG_CSEQ_ADJUST(ci->cseq),
 			&mri->cmatch, &c) != 0) && ctmap->expires > 0) {
 			/* contact not found and not present on main reg either */
 			if (!_c)
@@ -2216,7 +2216,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 			return 1;
 		}
 
-		ret = ul.get_ucontact(urec, &ct->uri, ci->callid, ci->cseq,
+		ret = ul.get_ucontact(urec, &ct->uri, ci->callid, REG_CSEQ_ADJUST(ci->cseq),
 			&_sctx->cmatch, &c);
 		if (ret == -1) {
 			LM_ERR("invalid cseq for aor <%.*s>\n",urec->aor.len,urec->aor.s);
@@ -2402,7 +2402,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			e = e_out;
 		}
 
-		ret = ul.get_ucontact(urec, &ct->uri, ci->callid, ci->cseq,
+
+		ret = ul.get_ucontact(urec, &ct->uri, ci->callid, REG_CSEQ_ADJUST(ci->cseq),
 			&_sctx->cmatch, &c);
 		if (ret == -1) {
 			LM_ERR("invalid cseq for aor <%.*s>\n",urec->aor.len,urec->aor.s);
