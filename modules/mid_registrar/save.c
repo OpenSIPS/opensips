@@ -1032,12 +1032,16 @@ int append_contacts(ucontact_t *contacts, struct sip_msg *msg)
 	return 0;
 }
 
-int trim_contacts(urecord_t *r, int trims, const struct ct_match *match)
+static int trim_contacts(urecord_t *r, int trims, const struct ct_match *match,
+					ucontact_t *excl_ct)
 {
-	ucontact_t *uc;
+	ucontact_t *uc, *uc_next;
 
-	for (uc = r->contacts; uc && trims > 0; uc = uc->next) {
-		if (!VALID_CONTACT(uc, get_act_time()))
+	for (uc = r->contacts; uc && trims > 0; uc = uc_next) {
+		uc_next = uc->next;
+
+		if ((excl_ct && uc == excl_ct)
+		    || !VALID_CONTACT(uc, get_act_time()))
 			continue;
 
 		LM_DBG("overflow on inserting new contact -> removing <%.*s>\n",
@@ -1382,7 +1386,7 @@ update_usrloc:
 					goto error;
 				}
 
-				if (trim_contacts(r, vct - mri->max_contacts + 1, &mri->cmatch))
+				if (trim_contacts(r, vct - mri->max_contacts + 1, &mri->cmatch, NULL))
 					goto error;
 			}
 
@@ -1440,7 +1444,7 @@ update_usrloc:
 					goto error;
 				}
 
-				if (trim_contacts(r, vct - mri->max_contacts, &mri->cmatch))
+				if (trim_contacts(r, vct - mri->max_contacts, &mri->cmatch, c))
 					goto error;
 			}
 
@@ -1650,7 +1654,7 @@ update_usrloc:
 					goto out_clear_err;
 				}
 
-				if (trim_contacts(r, vct - mri->max_contacts + 1, &mri->cmatch))
+				if (trim_contacts(r, vct - mri->max_contacts + 1, &mri->cmatch, NULL))
 					goto out_clear_err;
 			}
 
@@ -1699,7 +1703,7 @@ update_usrloc:
 					goto out_clear_err;
 				}
 
-				if (trim_contacts(r, vct - mri->max_contacts, &mri->cmatch))
+				if (trim_contacts(r, vct - mri->max_contacts, &mri->cmatch, c))
 					goto out_clear_err;
 			}
 
@@ -2435,7 +2439,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 					return -1;
 				}
 
-				if (trim_contacts(urec, vct - _sctx->max_contacts, &_sctx->cmatch))
+				if (trim_contacts(urec, vct - _sctx->max_contacts, &_sctx->cmatch, c))
 					return -1;
 			}
 
@@ -2475,7 +2479,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 					return -1;
 				}
 
-				if (trim_contacts(urec, vct - _sctx->max_contacts + 1, &_sctx->cmatch))
+				if (trim_contacts(urec, vct - _sctx->max_contacts + 1, &_sctx->cmatch, NULL))
 					return -1;
 			}
 
