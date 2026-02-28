@@ -345,6 +345,7 @@ ANYCAST	("anycast"|"ANYCAST")
 ACCEPT_SUBDOMAIN ("accept_subdomain"|"ACCEPT_SUBDOMAIN")
 FRAG	("frag"|"FRAG")
 REUSE_PORT	("reuse_port"|"REUSE_PORT")
+BOND	("bond"|"BOND")
 
 
 COM_LINE	#
@@ -621,6 +622,7 @@ SPACE		[ ]
 <INITIAL>{ACCEPT_SUBDOMAIN}	{ count(); return ACCEPT_SUBDOMAIN; }
 <INITIAL>{REUSE_PORT}	{ count(); return REUSE_PORT; }
 <INITIAL>{FRAG}		{ count(); return FRAG; }
+<INITIAL>{BOND}		{ count(); return BOND; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
 <INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }
 <INITIAL>{SCALE_DOWN_TO}	{ count(); return SCALE_DOWN_TO; }

@@ -112,11 +112,17 @@ struct dest_info {
 	const struct socket_info* send_sock;
 };
 
+struct socket_bond_elem {
+	char *name;
+	struct socket_bond_elem *next;
+};
+
 
 struct socket_id {
 	char* name;
 	char* adv_name;
 	char* tag;
+	struct socket_bond_elem *bond_list;
 	char* auto_scaling_profile;
 	int adv_port;
 	int proto;
