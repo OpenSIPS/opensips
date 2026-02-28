@@ -1465,9 +1465,9 @@ Chapter 3. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 171 116 2426 2055
    3. Jan Janak (@janakj) 122 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
-   5. Vlad Paiu (@vladpaiu) 21 12 729 96
-   6. Vlad Patrascu (@rvlad-patrascu) 21 9 243 497
-   7. Razvan Crainea (@razvancrainea) 20 15 267 75
+   5. Razvan Crainea (@razvancrainea) 21 16 268 76
+   6. Vlad Paiu (@vladpaiu) 21 12 729 96
+   7. Vlad Patrascu (@rvlad-patrascu) 21 9 243 497
    8. Ionut Ionita (@ionutrazvanionita) 16 4 763 248
    9. Jiri Kuthan (@jiriatipteldotorg) 15 9 538 45
    10. Andreas Granig 13 7 527 36
@@ -1504,13 +1504,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Andrej Solovjov                     Jul 2025 - Jul 2025
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - May 2025
-   3.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2025
-   4.  Dudu Ben Moshe                      Feb 2024 - Feb 2024
-   5.  Maksym Sobolyev (@sobomax)          Jul 2004 - Nov 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
-   7.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2023
+   1.  Razvan Crainea (@razvancrainea)     Apr 2011 - Feb 2026
+   2.  Andrej Solovjov                     Jul 2025 - Jul 2025
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - May 2025
+   4.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2025
+   5.  Dudu Ben Moshe                      Feb 2024 - Feb 2024
+   6.  Maksym Sobolyev (@sobomax)          Jul 2004 - Nov 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
    8.  Vlad Paiu (@vladpaiu)               Sep 2011 - Nov 2022
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    10. @jalung                             Aug 2017 - Aug 2017

@@ -1931,8 +1931,9 @@ Chapter 4. Contributors
    Bokarius, Aron Podrigal (@ar45), Anonymous, Dusan Klinec
    (@ph4r05), Mark Dalby, Walter Doekes (@wdoekes), Alexey
    Vasilyev (@vasilevalex), Fabian Gast (@fgast), Nick Altmann
-   (@nikbyte), Zero King (@l2dy), Edson Gellert Schubert,
-   MayamaTakeshi, Ingo Wolfsberger, Daniel Hsueh.
+   (@nikbyte), Norman Brandinger (@NormB), Zero King (@l2dy),
+   Edson Gellert Schubert, MayamaTakeshi, Ingo Wolfsberger, Daniel
+   Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1956,28 +1957,28 @@ Chapter 4. Contributors
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Feb 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Feb 2026
-   3.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jan 2026
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2025
-   5.  Carsten Bock                        Mar 2024 - Mar 2024
-   6.  Maksym Sobolyev (@sobomax)          Mar 2004 - Nov 2023
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
-   8.  MayamaTakeshi                       Oct 2022 - Oct 2022
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
-   10. Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   3.  Norman Brandinger (@NormB)          Feb 2026 - Feb 2026
+   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jan 2026
+   5.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2025
+   6.  Carsten Bock                        Mar 2024 - Mar 2024
+   7.  Maksym Sobolyev (@sobomax)          Mar 2004 - Nov 2023
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   9.  MayamaTakeshi                       Oct 2022 - Oct 2022
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
 
-   All remaining contributors: Dan Pascu (@danpascu), Fabian Gast
-   (@fgast), Aron Podrigal (@ar45), Alexey Vasilyev
-   (@vasilevalex), Ionut Ionita (@ionutrazvanionita), Julián
-   Moreno Patiño, Nick Altmann (@nikbyte), Ovidiu Sas
-   (@ovidiusas), Dusan Klinec (@ph4r05), Ezequiel Lovelle
-   (@lovelle), Walter Doekes (@wdoekes), Christophe Sollet
-   (@csollet), Saúl Ibarra Corretgé (@saghul), Anonymous, Mark
-   Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Henning
-   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jesus Rodrigues, Marcus Hunger, Juha Heinanen (@juha-h),
-   Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas Granig,
-   Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
+   All remaining contributors: Zero King (@l2dy), Dan Pascu
+   (@danpascu), Fabian Gast (@fgast), Aron Podrigal (@ar45),
+   Alexey Vasilyev (@vasilevalex), Ionut Ionita
+   (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
+   (@nikbyte), Ovidiu Sas (@ovidiusas), Dusan Klinec (@ph4r05),
+   Ezequiel Lovelle (@lovelle), Walter Doekes (@wdoekes),
+   Christophe Sollet (@csollet), Saúl Ibarra Corretgé (@saghul),
+   Anonymous, Mark Dalby, Anca Vamanu, Andrei Dragus, John
+   Riordan, Henning Westerholt (@henningw), Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
+   (@juha-h), Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas
+   Granig, Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
    Pelinescu-Onciul, Jan Janak (@janakj), Jiri Kuthan
    (@jiriatipteldotorg), Raphael Coeffic, Nils Ohlmeier.
 

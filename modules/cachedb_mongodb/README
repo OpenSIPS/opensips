@@ -274,8 +274,8 @@ Chapter 2. Contributors
    9. Dan Pascu (@danpascu) 4 2 4 4
    10. Alessio Garzi (@Ozzyboshi) 4 2 2 2
 
-   All remaining contributors: @jalung, tcresson, Maksym Sobolyev
-   (@sobomax), Julián Moreno Patiño, Ken Rice.
+   All remaining contributors: @jalung, Remi Collet, tcresson,
+   Maksym Sobolyev (@sobomax), Julián Moreno Patiño, Ken Rice.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -296,20 +296,21 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                      Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jan 2026
-   2.  Ken Rice                            Sep 2025 - Sep 2025
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2024
-   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2024
-   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   6.  Vlad Paiu (@vladpaiu)               Jan 2013 - Aug 2024
-   7.  tcresson                            Oct 2023 - Oct 2023
-   8.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   10. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
+                    Name                 Commit Activity
+   1.  Remi Collet                     Feb 2026 - Feb 2026
+   2.  Peter Lemenkov (@lemenkov)      Jun 2018 - Jan 2026
+   3.  Ken Rice                        Sep 2025 - Sep 2025
+   4.  Liviu Chircu (@liviuchircu)     Mar 2014 - Sep 2024
+   5.  Razvan Crainea (@razvancrainea) Aug 2015 - Sep 2024
+   6.  Alexandra Titoc                 Sep 2024 - Sep 2024
+   7.  Vlad Paiu (@vladpaiu)           Jan 2013 - Aug 2024
+   8.  tcresson                        Oct 2023 - Oct 2023
+   9.  Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
+   10. Vlad Patrascu (@rvlad-patrascu) May 2017 - May 2021
 
-   All remaining contributors: Alessio Garzi (@Ozzyboshi), Dan
-   Pascu (@danpascu), @jalung, Julián Moreno Patiño, Ovidiu Sas
+   All remaining contributors: Bogdan-Andrei Iancu
+   (@bogdan-iancu), Alessio Garzi (@Ozzyboshi), Dan Pascu
+   (@danpascu), @jalung, Julián Moreno Patiño, Ovidiu Sas
    (@ovidiusas).
 
    (1) including any documentation-related commits, excluding

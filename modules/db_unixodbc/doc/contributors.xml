@@ -61,10 +61,10 @@
 	<row>
 		<entry>6. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">11</entry>
-		<entry align="center">9</entry>
-		<entry align="center">64</entry>
-		<entry align="center">26</entry>
+		<entry align="center">12</entry>
+		<entry align="center">10</entry>
+		<entry align="center">65</entry>
+		<entry align="center">27</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Oct 2011 - Jul 2025</entry>
+		<entry align="center">Oct 2011 - Feb 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Elena-Ramona Modroiu, Marco Lorrai.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Elena-Ramona Modroiu, Marco Lorrai.</para>
 </section>
 
 </chapter>

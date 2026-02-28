@@ -23,6 +23,7 @@ topology_hiding Module
               1.3.8. th_contact_encode_scheme (string)
               1.3.9. th_contact_caller_username_var (string)
               1.3.10. th_contact_callee_username_var (string)
+              1.3.11. th_callid_loop_protection (int)
 
         1.4. Exported Functions
 
@@ -61,11 +62,12 @@ topology_hiding Module
    1.8. Set th_contact_encode_scheme parameter
    1.9. Set th_contact_caller_username_var parameter
    1.10. Set th_contact_callee_username_var parameter
-   1.11. topology_hiding usage
-   1.12. Calling topology_hiding_match() function for topology
+   1.11. Set th_callid_loop_protection parameter
+   1.12. topology_hiding usage
+   1.13. Calling topology_hiding_match() function for topology
           hiding sequential requests
 
-   1.13. topology_hiding_match_dialog() usage
+   1.14. topology_hiding_match_dialog() usage
 
 Chapter 1. Admin Guide
 
@@ -238,6 +240,23 @@ modparam("topology_hiding", "th_contact_callee_username_var", "__topo_hi
 ding_username_var__")
 ...
 
+1.3.11. th_callid_loop_protection (int)
+
+   Include the from_tag when encoding the topology-hiding Call-ID
+   to ensure correct decoding in looping scenarios, (when the same
+   call with a previously encoded Call-ID is being looped back).
+
+   Note that enabling this parameter will increase the generated
+   Call-ID value, due to the additional from_tag information being
+   embedded.
+
+   Default value is “0” / disabled.
+
+   Example 1.11. Set th_callid_loop_protection parameter
+...
+modparam("topology_hiding", "th_callid_loop_protection", 1)
+...
+
 1.4. Exported Functions
 
 1.4.1.  topology_hiding()
@@ -303,7 +322,7 @@ ding_username_var__")
    is advertised on both legs. If the separator is being used, you
    can control the username put in contact per leg.
 
-   Example 1.11. topology_hiding usage
+   Example 1.12. topology_hiding usage
 ...
 if(!has_totag() && is_method("INVITE")) {
         topology_hiding();
@@ -336,7 +355,7 @@ if(!has_totag() && is_method("INVITE")) {
 }
 ...
 
-   Example 1.12. Calling topology_hiding_match() function for
+   Example 1.13. Calling topology_hiding_match() function for
    topology hiding sequential requests
 ...
 if (has_totag())
@@ -365,7 +384,7 @@ ogy hiding dialog\n");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.13. topology_hiding_match_dialog() usage
+   Example 1.14. topology_hiding_match_dialog() usage
 ...
     if (has_totag()) {
         if (!topology_hiding_match() ) {
@@ -395,7 +414,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 39 27 728 290
+   1. Razvan Crainea (@razvancrainea) 42 28 852 329
    2. Vlad Paiu (@vladpaiu) 32 8 2700 25
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 21 146 88
    4. Liviu Chircu (@liviuchircu) 17 15 81 56
@@ -425,8 +444,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Mar 2025
-   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2025
+   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Feb 2026
+   2. Liviu Chircu (@liviuchircu)         Mar 2015 - Mar 2025
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Dec 2023
    4. James Stanley                       Dec 2023 - Dec 2023
    5. Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
