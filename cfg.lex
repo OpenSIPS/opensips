@@ -344,6 +344,7 @@ REUSE_PORT	("reuse_port"|"REUSE_PORT")
 ALLOW_PROXY_PROTOCOL	("allow"|"ALLOW")[-_]("proxy"|"PROXY")([-_]("protocol"|"PROTOCOL"))?
 SEND_PROXY_PROTOCOL	("send"|"SEND")[-_]("proxy"|"PROXY")([-_]("protocol"|"PROTOCOL"))?
 PROXY_PROTOCOL	("proxy"|"PROXY")([-_]("protocol"|"PROTOCOL"))?
+BOND	("bond"|"BOND")
 
 
 COM_LINE	#
@@ -619,6 +620,7 @@ SPACE		[ ]
 <INITIAL>{SEND_PROXY_PROTOCOL}	{ count(); return SEND_PROXY_PROTOCOL; }
 <INITIAL>{PROXY_PROTOCOL}		{ count(); return PROXY_PROTOCOL; }
 <INITIAL>{FRAG}		{ count(); return FRAG; }
+<INITIAL>{BOND}		{ count(); return BOND; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
 <INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }
 <INITIAL>{SCALE_DOWN_TO}	{ count(); return SCALE_DOWN_TO; }

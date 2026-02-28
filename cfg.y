@@ -158,8 +158,10 @@ static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* mk_listen_id_range(char*, enum sip_protos, struct port_range *);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
+static struct socket_id* mk_bond_id(char*, struct socket_bond_elem *);
 static struct multi_str *new_string(char *s);
 static struct port_range* mk_port_range(int, int);
+static struct socket_bond_elem *new_socket_bond_elem(char *name);
 static int parse_ipnet(char *in, int len, struct net **ipnet);
 static struct script_return_param *mk_script_return(enum script_return_type type)
 {
@@ -257,6 +259,7 @@ extern int cfg_parse_only_routes;
 	struct net* ipnet;
 	struct ip_addr* ipaddr;
 	struct socket_id* sockid;
+	struct socket_bond_elem* bondlst;
 	struct listen_param* listen_param;
 	struct _pv_spec *specval;
 	struct multi_str* multistr;
@@ -477,6 +480,7 @@ extern int cfg_parse_only_routes;
 %token CYCLES
 %token CYCLES_WITHIN
 %token PERCENTAGE
+%token BOND
 
 
 /*non-terminals */
@@ -496,6 +500,7 @@ extern int cfg_parse_only_routes;
 %type <sockid> any_alias
 %type <sockid> listen_id_def
 %type <sockid> phostport phostportrange
+%type <bondlst> socket_bond_elems
 %type <intval> proto port any_proto
 %type <strval> host_sep
 %type <intval> equalop compop matchop strop intop
@@ -773,11 +778,31 @@ socket_def_params:	socket_def_param
 				 |	socket_def_param socket_def_params
 				 ;
 
+socket_bond_elems:	STRING { IFOR();
+				$$ = new_socket_bond_elem($1);
+				if (!$$) {
+					yyerror("failed to alloc BOND element\n");YYABORT;
+				}
+			}
+		|	STRING COMMA socket_bond_elems { IFOR();
+				$$ = new_socket_bond_elem($1);
+				if (!$$) {
+					yyerror("failed to alloc BOND element\n");YYABORT;
+				}
+				$$->next = $3;
+			}
+		;
+
 socket_def:	phostportrange	{ $$=$1; }
 			| phostportrange { IFOR();
 					memset(&p_tmp, 0, sizeof(p_tmp));
 				} socket_def_params	{ IFOR();
 					$$=$1; fill_socket_id(&p_tmp, $$);
+				}
+			| BOND COLON ID LBRACE socket_bond_elems RBRACE { IFOR();
+					$$ = mk_bond_id($3, $5);
+					if (!$$)
+						YYABORT;
 				}
 			;
 
@@ -2704,6 +2729,21 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 	return l;
 }
 
+static struct socket_id* mk_bond_id(char *bond_name,
+		struct socket_bond_elem *bond_list)
+{
+	struct socket_id *sid;
+	int bond_len;
+
+	sid = mk_listen_id( bond_name, PROTO_NONE, 0);
+	if (!sid) {
+		LM_CRIT("cfg. parser: out of memory.\n");
+		return NULL;
+	}
+	sid->bond_list = bond_list;
+	return sid;
+}
+
 static struct socket_id* mk_listen_id_range(char* host, enum sip_protos proto, struct port_range *pr)
 {
 	int port;
@@ -2721,6 +2761,20 @@ static struct socket_id* mk_listen_id_range(char* host, enum sip_protos proto, s
 		pr = pr->next;
 	}
 	return first_sid;
+}
+
+static struct socket_bond_elem *new_socket_bond_elem(char *name)
+{
+	struct socket_bond_elem *elem = pkg_malloc(sizeof *elem);
+
+	if (!elem) {
+		LM_CRIT("cfg. parser: out of memory.\n");
+		pkg_free(name);
+		return NULL;
+	}
+	elem->name = name;
+	elem->next = NULL;
+	return elem;
 }
 
 static void fill_socket_id(struct listen_param *param, struct socket_id *s)
