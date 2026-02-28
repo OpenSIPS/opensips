@@ -219,19 +219,19 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ovidiu Sas (@ovidiusas) 29 15 1375 101
-   2. Vlad Patrascu (@rvlad-patrascu) 27 3 614 1041
-   3. Ionut Ionita (@ionutrazvanionita) 15 9 383 68
-   4. Razvan Crainea (@razvancrainea) 14 12 49 33
-   5. Liviu Chircu (@liviuchircu) 14 12 46 55
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 12 9 126 55
-   7. Ionel Cerghit (@ionel-cerghit) 11 3 515 166
-   8. Maksym Sobolyev (@sobomax) 4 2 2 3
-   9. Vlad Paiu (@vladpaiu) 3 2 0 6
-   10. Ken Rice 3 1 1 1
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 134 42 10036 376
+   2. Lavinia Andrei Spirea 22 2 2206 7
+   3. Daniel-Constantin Mierla (@miconda) 10 8 44 20
+   4. Juha Heinanen (@juha-h) 6 4 56 8
+   5. Liviu Chircu (@liviuchircu) 5 3 30 11
+   6. Razvan Crainea (@razvancrainea) 5 3 26 3
+   7. Ancuta Onofrei 4 1 64 97
+   8. Elena-Ramona Modroiu 3 1 7 7
+   9. Konstantin Bokarius 3 1 2 5
+   10. Henning Westerholt (@henningw) 3 1 1 1
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Zero
-   King (@l2dy).
+   All remaining contributors: Edson Gellert Schubert, Dan Pascu
+   (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -253,19 +253,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Liviu Chircu (@liviuchircu)         Jul 2014 - Mar 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5.  Razvan Crainea (@razvancrainea)     Nov 2014 - Sep 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
-   10. Vlad Paiu (@vladpaiu)               Mar 2014 - Jan 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Oct 2014
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2014
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2013
+   4.  Dan Pascu (@danpascu)               Aug 2008 - Aug 2008
+   5.  Daniel-Constantin Mierla (@miconda) Feb 2007 - Mar 2008
+   6.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   7.  Edson Gellert Schubert              Feb 2008 - Feb 2008
+   8.  Juha Heinanen (@juha-h)             Dec 2006 - Oct 2007
+   9.  Ancuta Onofrei                      Sep 2007 - Sep 2007
+   10. Henning Westerholt (@henningw)      Aug 2007 - Aug 2007
 
-   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
-   Ovidiu Sas (@ovidiusas).
+   All remaining contributors: Elena-Ramona Modroiu, Lavinia
+   Andrei Spirea.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -274,10 +274,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Ionel Cerghit (@ionel-cerghit), Ovidiu Sas (@ovidiusas).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Lavinia Andrei Spirea.
 
    Documentation Copyrights:
 

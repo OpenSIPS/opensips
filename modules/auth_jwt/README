@@ -39,6 +39,10 @@ AUTH_JWT Module
                       extract_pub_key_from_cert(certificate,out_publ
                       ic_key)
 
+              1.4.4.
+                      extract_pub_key_from_exp_mod(e,n,out_public_ke
+                      y)
+
    2. Contributors
 
         2.1. By Commit Statistics
@@ -72,6 +76,7 @@ AUTH_JWT Module
    1.13. jwt_db_authorize usage
    1.14. jwt_script_authorize usage
    1.15. extract_pub_key_from_cert usage
+   1.16. extract_pub_key_from_exp_mod usage
 
 Chapter 1. Admin Guide
 
@@ -355,6 +360,32 @@ if (extract_pub_key_from_cert("$avp(my_certificate)",$avp(my_pub_key)))
 }
 ...
 
+1.4.4.  extract_pub_key_from_exp_mod(e,n,out_public_key)
+
+   The function reads a base64url-encoded RSA exponent (e) and
+   modulus (n), then builds a PEM public key and stores it into
+   out_public_key. Return codes are :
+     * -1 : Failure in extracting the pub key
+     * 1 : out_public_key succesfully populated
+
+   Meaning of the parameters is as follows:
+     * e (string) - Base64url-encoded RSA exponent
+       The string may contain pseudo variables.
+     * n (string) - Base64url-encoded RSA modulus
+       The string may contain pseudo variables.
+     * out_public_key (pvar) - PVAR used to store the extracted
+       public key
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.16. extract_pub_key_from_exp_mod usage
+...
+if (extract_pub_key_from_exp_mod("$avp(my_exp)", "$avp(my_mod)", $avp(my
+_pub_key))) {
+    xlog("Succesfully extracted public key - $avp(my_pub_key) \n");
+}
+...
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -365,10 +396,11 @@ Chapter 2. Contributors
    1. Vlad Paiu (@vladpaiu) 20 6 1521 16
    2. Liviu Chircu (@liviuchircu) 5 3 4 6
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 6 7
-   4. pavelkohout396 3 1 24 2
-   5. Alexandra Titoc 3 1 5 4
-   6. Maksym Sobolyev (@sobomax) 3 1 3 3
-   7. Peter Lemenkov (@lemenkov) 3 1 2 1
+   4. vladpaiu 4 1 231 1
+   5. pavelkohout396 3 1 24 2
+   6. Alexandra Titoc 3 1 5 4
+   7. Maksym Sobolyev (@sobomax) 3 1 3 3
+   8. Peter Lemenkov (@lemenkov) 3 1 2 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -390,13 +422,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. pavelkohout396                      Feb 2026 - Feb 2026
-   2. Peter Lemenkov (@lemenkov)          Jul 2025 - Jul 2025
-   3. Liviu Chircu (@liviuchircu)         May 2023 - Sep 2024
-   4. Alexandra Titoc                     Sep 2024 - Sep 2024
-   5. Vlad Paiu (@vladpaiu)               Mar 2020 - Jul 2023
-   6. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2020 - Dec 2021
+   1. vladpaiu                            Feb 2026 - Feb 2026
+   2. pavelkohout396                      Feb 2026 - Feb 2026
+   3. Peter Lemenkov (@lemenkov)          Jul 2025 - Jul 2025
+   4. Liviu Chircu (@liviuchircu)         May 2023 - Sep 2024
+   5. Alexandra Titoc                     Sep 2024 - Sep 2024
+   6. Vlad Paiu (@vladpaiu)               Mar 2020 - Jul 2023
+   7. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   8. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2020 - Dec 2021
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -405,5 +438,5 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Paiu
-   (@vladpaiu).
+   Last edited by: vladpaiu, Liviu Chircu (@liviuchircu), Vlad
+   Paiu (@vladpaiu).

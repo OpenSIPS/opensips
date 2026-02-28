@@ -126,7 +126,8 @@ loadmodule "/usr/local/lib/opensips/modules/db_unixodbc.so"
 ....
 loadmodule "/usr/local/lib/opensips/modules/auth.so"
 loadmodule "/usr/local/lib/opensips/modules/auth_db.so"
-modparam("usrloc", "working_mode_preset", "single-instance-sql-write-back")
+modparam("usrloc", "working_mode_preset", "single-instance-sql-write-bac
+k")
 modparam("auth_db", "calculate_ha1", yes)
 modparam("auth_db", "password_column", "password")
 ....
@@ -164,7 +165,7 @@ Chapter 3. Contributors
    3. Marco Lorrai 24 1 2660 0
    4. Daniel-Constantin Mierla (@miconda) 20 15 221 140
    5. Liviu Chircu (@liviuchircu) 19 11 136 315
-   6. Razvan Crainea (@razvancrainea) 11 9 64 26
+   6. Razvan Crainea (@razvancrainea) 12 10 65 27
    7. Peter Lemenkov (@lemenkov) 4 2 8 7
    8. Maksym Sobolyev (@sobomax) 4 2 4 4
    9. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
@@ -195,7 +196,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2025
+   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2026
    2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2025
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
@@ -218,11 +219,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Elena-Ramona
-   Modroiu, Marco Lorrai.
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Elena-Ramona Modroiu, Marco Lorrai.
 
    Documentation Copyrights:
 

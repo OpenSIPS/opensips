@@ -746,7 +746,7 @@ Chapter 2. Contributors
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 21 15 523 50
    4. Liviu Chircu (@liviuchircu) 17 14 57 68
    5. Vlad Patrascu (@rvlad-patrascu) 16 7 732 118
-   6. Razvan Crainea (@razvancrainea) 11 9 26 36
+   6. Razvan Crainea (@razvancrainea) 12 10 27 38
    7. Nick Altmann (@nikbyte) 5 3 43 4
    8. Maksym Sobolyev (@sobomax) 5 3 20 16
    9. James Stanley 4 2 21 14
@@ -775,15 +775,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Feb 2026
-   2.  Vlad Paiu (@vladpaiu)               Jul 2011 - Jan 2026
-   3.  Nick Altmann (@nikbyte)             Nov 2015 - Mar 2025
-   4.  okhowang(王沛文)                       Jul 2024 - Jul 2024
-   5.  James Stanley                       Dec 2023 - Jun 2024
-   6.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
-   7.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
-   8.  James Stanley                       Mar 2023 - Mar 2023
-   9.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Feb 2026
+   3.  Vlad Paiu (@vladpaiu)               Jul 2011 - Jan 2026
+   4.  Nick Altmann (@nikbyte)             Nov 2015 - Mar 2025
+   5.  okhowang(王沛文)                       Jul 2024 - Jul 2024
+   6.  James Stanley                       Dec 2023 - Jun 2024
+   7.  Ovidiu Sas (@ovidiusas)             Feb 2011 - Dec 2023
+   8.  Maksym Sobolyev (@sobomax)          Mar 2021 - Nov 2023
+   9.  James Stanley                       Mar 2023 - Mar 2023
    10. Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
 
    All remaining contributors: Walter Doekes (@wdoekes),
@@ -797,9 +797,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
-   (@vladpaiu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
-   (@ovidiusas), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Vlad Patrascu
+   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Peter Lemenkov
    (@lemenkov), Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
