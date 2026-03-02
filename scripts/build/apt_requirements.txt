@@ -23,6 +23,7 @@ libradcli-dev
 libsctp-dev
 libsnmp-dev
 libsqlite3-dev
+libwolfssl-dev
 libxml2-dev
 make
 odbcinst

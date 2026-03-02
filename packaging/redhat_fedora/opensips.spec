@@ -70,6 +70,7 @@ BuildRequires:  gcc
 Requires: m4
 BuildRequires:  unixODBC-devel
 BuildRequires:  openssl-devel
+BuildRequires:  wolfssl-devel
 BuildRequires:  expat-devel
 BuildRequires:  xmlrpc-c-devel
 BuildRequires:  libconfuse-devel
@@ -855,8 +856,8 @@ This package provides the SQLite database schema files for OpenSIPS.
 Summary:  STIR/SHAKEN support for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-Requires: openssl
-BuildRequires: openssl-devel
+Requires: wolfssl
+BuildRequires: wolfssl-devel
 
 %description  stir-shaken-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
