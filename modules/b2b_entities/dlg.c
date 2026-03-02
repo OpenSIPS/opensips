@@ -2530,6 +2530,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 			dlg->last_method == METHOD_INVITE)
 	{
 		/* send it ACK so that you can send the new request */
+		dlg->last_method = METHOD_ACK;
 		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0,
 			req_data->body, req_data->no_cb);
 		dlg->state= B2B_ESTABLISHED;
@@ -2569,7 +2570,9 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 		}
 		else
 		{
+			dlg->last_method = METHOD_ACK;
 			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, 0, req_data->no_cb);
+			dlg->last_method = METHOD_BYE;
 			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, 0, req_data->body,
 				req_data->no_cb);
 			method_value = METHOD_BYE;
