@@ -32,7 +32,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>openssl (libssl)</emphasis>.
+				<emphasis>wolfssl (libwolfssl)</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>

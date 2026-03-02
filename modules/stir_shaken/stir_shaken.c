@@ -37,13 +37,26 @@
 #define _GNU_SOURCE
 #include <time.h>
 
+#ifdef STIR_SHAKEN_OPENSSL
 #include <openssl/x509.h>
+#else
+#include <wolfssl/options.h>
+#include <wolfssl/openssl/x509.h>
+#endif
+
 
 #undef _GNU_SOURCE
 
+#ifdef STIR_SHAKEN_OPENSSL
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
+#else
+#include <wolfssl/openssl/x509v3.h>
+#include <wolfssl/openssl/pem.h>
+#include <wolfssl/openssl/err.h>
+#endif
+
 #include <stdlib.h>
 
 #include "../../dprint.h"
@@ -141,7 +154,7 @@ static int e164_max_length = 15;
 
 static int require_date_hdr = 1;
 
-static int tn_authlist_nid;
+static ASN1_OBJECT *tn_authlist_obj;
 
 static int parsed_ctx_idx =-1;
 
@@ -254,6 +267,15 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
 	return ok;
 }
 
+static int ss_store_set_default_paths(X509_STORE *x509_store)
+{
+#ifdef WOLFSSL_VERSION
+	return wolfSSL_X509_STORE_set_default_paths(x509_store);
+#else
+	return X509_STORE_set_default_paths(x509_store);
+#endif
+}
+
 // called during mod_init
 static int init_cert_validation(void)
 {
@@ -269,7 +291,7 @@ static int init_cert_validation(void)
 			LM_ERR("Failed to load trusted CAs\n");
 			return -1;
 		}
-		if (X509_STORE_set_default_paths(store) != 1) {
+		if (ss_store_set_default_paths(store) != 1) {
 			LM_ERR("Failed to load the system-wide CA certificates\n");
 			return -1;
 		}
@@ -321,7 +343,7 @@ static int init_cert_ca_reload(void)
 			LM_ERR("Failed to load trusted CAs\n");
 			return -4;
 		}
-		if (X509_STORE_set_default_paths(store) != 1) {
+		if (ss_store_set_default_paths(store) != 1) {
 			LM_ERR("Failed to load the system-wide CA certificates\n");
 			return -5;
 		}
@@ -381,10 +403,9 @@ static void parsed_ctx_free(void *param)
 
 static int mod_init(void)
 {
-	tn_authlist_nid = OBJ_create(TN_AUTH_LIST_OID,
-		TN_AUTH_LIST_SN, TN_AUTH_LIST_LN);
-	if (tn_authlist_nid == NID_undef) {
-		LM_ERR("Failed to create new openssl object\n");
+	tn_authlist_obj = OBJ_txt2obj(TN_AUTH_LIST_OID, 1);
+	if (!tn_authlist_obj) {
+		LM_ERR("Failed to create TNAuthList object identifier\n");
 		return -1;
 	}
 
@@ -397,6 +418,9 @@ static int mod_init(void)
 }
 
 static void mod_destroy(void) {
+	if (tn_authlist_obj)
+		ASN1_OBJECT_free(tn_authlist_obj);
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	OBJ_cleanup();
 #endif
@@ -574,8 +598,8 @@ static int add_disengagement_token(struct sip_msg *msg, str *token)
 
 static int check_cert_validity(time_t *timestamp, X509 *cert)
 {
-	ASN1_STRING *notBeforeSt;
-	ASN1_STRING *notAfterSt;
+	const ASN1_TIME *notBeforeSt;
+	const ASN1_TIME *notAfterSt;
 
 	notBeforeSt = X509_get_notBefore(cert);
 	notAfterSt = X509_get_notAfter(cert);
@@ -589,6 +613,24 @@ static int check_cert_validity(time_t *timestamp, X509 *cert)
 		return 1;
 
 	return 0;
+}
+
+static int ss_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
+{
+	int bnlen, padlen;
+
+	bnlen = BN_num_bytes(a);
+
+	if (tolen < bnlen)
+		return -1;
+
+	padlen = tolen - bnlen;
+	memset(to, 0, padlen);
+
+	if (BN_bn2bin(a, to + padlen) == 0)
+		return -1;
+
+	return tolen;
 }
 
 static char *build_pport_hdr_json(str *cr_url)
@@ -865,26 +907,7 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 	return 0;
 }
 
-/* compatibility function for openssl versions lower than 1.1.0 */
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
-{
-	int bnlen, padlen;
-
-	bnlen = BN_num_bytes(a);
-
-	if (tolen < bnlen)
-		return -1;
-
-	padlen = tolen - bnlen;
-	memset(to, 0, padlen);
-
-	if (BN_bn2bin(a, to + padlen) == 0)
-		return -1;
-
-	return tolen;
-}
-
 void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps)
 {
 	*pr = sig->r;
@@ -958,12 +981,12 @@ static str *build_identity_hf(EVP_PKEY *pkey,
 	der_sig_buf.s = NULL;
 
 	ECDSA_SIG_get0(sig, &r, &s);
-	len = BN_bn2binpad(r, raw_sig_buf, R_S_INT_LEN);
+	len = ss_bn2binpad(r, raw_sig_buf, R_S_INT_LEN);
 	if (len < 0 || len != R_S_INT_LEN) {
 		LM_ERR("Failed to convert R integer into binay represantation\n");
 		goto error;
 	}
-	len = BN_bn2binpad(s, raw_sig_buf + R_S_INT_LEN,
+	len = ss_bn2binpad(s, raw_sig_buf + R_S_INT_LEN,
 		R_S_INT_LEN);
 	if (len < 0 || len != R_S_INT_LEN) {
 		LM_ERR("Failed to convert S integer into binay represantation\n");
@@ -1692,10 +1715,42 @@ static int check_passport_claims(struct parsed_identity *parsed)
 static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 {
 	X509_STORE_CTX *verify_ctx;
+	X509_EXTENSION *ext;
+	ASN1_OBJECT *ext_obj;
+	char ext_oid[128];
+	int ext_count, i, has_tn_authlist = 0;
 	int rc;
 
 	/* check the TN Authorization list extension */
-	if (X509_get_ext_by_NID(cert, tn_authlist_nid, -1) == -1) {
+	if (tn_authlist_obj &&
+		X509_get_ext_by_OBJ(cert, tn_authlist_obj, -1) != -1) {
+		has_tn_authlist = 1;
+	} else {
+		/*
+		 * WolfSSL may fail object-based lookup for this custom OID.
+		 * Fallback to direct OID-string matching over all extensions.
+		 */
+		ext_count = X509_get_ext_count(cert);
+		for (i = 0; i < ext_count; i++) {
+			ext = X509_get_ext(cert, i);
+			if (!ext)
+				continue;
+
+			ext_obj = X509_EXTENSION_get_object(ext);
+			if (!ext_obj)
+				continue;
+
+			if (OBJ_obj2txt(ext_oid, sizeof(ext_oid), ext_obj, 1) <= 0)
+				continue;
+
+			if (strcmp(ext_oid, TN_AUTH_LIST_OID) == 0) {
+				has_tn_authlist = 1;
+				break;
+			}
+		}
+	}
+
+	if (!has_tn_authlist) {
 		LM_INFO("The certificate is missing the TnAuthList extension\n");
 		return -8;
 	}
