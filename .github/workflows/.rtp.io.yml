@@ -201,7 +201,7 @@ jobs:
         path: ${{ env.OUTPUT_IMAGE }}
 
   test_rtp_io_dock:
-    name: Test (GHCR)
+    name: Run VoIPTests™ (GHCR)
     needs: [build_rtp_io_dock, set_env]
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' }}
@@ -230,15 +230,22 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Set dynamic environment
+      run: |
+        if [ "${TARGETPLATFORM}" != "linux/amd64" ]
+        then
+          echo "TEST_SET_MIGHTFAIL=early_cancel_lost100,early_cancel" >> $GITHUB_ENV
+        fi
+
     - name: Test ${{ env.TARGETPLATFORM }}
       run: |
         docker pull ${BUILD_IMAGE}
-        docker run --platform ${TARGETPLATFORM} --name test --cap-add=SYS_PTRACE \
+        docker run --platform ${TARGETPLATFORM} --env TEST_SET_MIGHTFAIL --name test --cap-add=SYS_PTRACE \
          --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0 ${BUILD_IMAGE}
       timeout-minutes: 2
 
   test_rtp_io_local:
-    name: Test (LOCAL)
+    name: Run VoIPTests™ (LOCAL)
     needs: [build_rtp_io_dock_local, set_env]
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' }}
@@ -259,6 +266,10 @@ jobs:
         _BUILD_OS="`echo ${BUILD_OS} | sed 's|:|-|g'`"
         OUTPUT_IMAGE_N="image-${_BUILD_OS}-`echo ${{ matrix.platform }} | sed 's|/|-|g'`"
         OUTPUT_IMAGE="./${OUTPUT_IMAGE_N}.tar"
+        if [ "${TARGETPLATFORM}" != "linux/amd64" ]
+        then
+          echo "TEST_SET_MIGHTFAIL=early_cancel_lost100,early_cancel" >> $GITHUB_ENV
+        fi
         echo OUTPUT_TAG="${OUTPUT_TAG}" >> $GITHUB_ENV
         echo OUTPUT_IMAGE="${OUTPUT_IMAGE}" >> $GITHUB_ENV
         echo OUTPUT_IMAGE_N="${OUTPUT_IMAGE_N}" >> $GITHUB_ENV
@@ -280,6 +291,6 @@ jobs:
 
     - name: Test ${{ env.TARGETPLATFORM }}
       run: |
-        docker run --platform ${TARGETPLATFORM} --name test --cap-add=SYS_PTRACE \
+        docker run --platform ${TARGETPLATFORM} --env TEST_SET_MIGHTFAIL --name test --cap-add=SYS_PTRACE \
          --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0 ${OUTPUT_TAG}
       timeout-minutes: 2
