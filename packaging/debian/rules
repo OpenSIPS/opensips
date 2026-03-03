@@ -117,13 +117,6 @@ ifeq ($(DEB_HOST_ARCH_OS),linux)
 	ALL_MODPKG_LIST += PROTO_SCTP
 endif
 
-#
-# STIR_SHAKEN package
-#
-ifneq (,$(filter nowolfssl,$(DEB_BUILD_PROFILES)))
-	ALL_MODPKG_LIST += OPENTELEMETRY
-endif
-
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 	override BUILD_MODPKG_LIST :=
