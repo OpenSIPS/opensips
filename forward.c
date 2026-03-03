@@ -143,12 +143,39 @@ error:
  * \note if msg!=null and msg->force_send_socket, the force_send_socket will be used
  */
 const struct socket_info* get_send_socket(struct sip_msg *msg,
-										const union sockaddr_union* to, int proto)
+									const union sockaddr_union* to, int proto)
 {
-	const struct socket_info* send_sock;
+	const struct socket_info* send_sock, *bond_sock;
+	struct socket_info_ref *bond_ref;
 
 	/* check if send interface is not forced */
 	if (msg && msg->force_send_socket){
+		if (msg->force_send_socket->flags & SI_IS_BOND) {
+
+			bond_sock = msg->force_send_socket;
+			msg->force_send_socket = NULL;
+			for (bond_ref = bond_sock->bond_sis;
+					bond_ref; bond_ref = bond_ref->next) {
+
+				if (!bond_ref->si ||
+				(bond_ref->si->proto != proto) ||
+				(bond_ref->si->address.af != to->s.sa_family))
+					continue;
+
+				msg->force_send_socket = bond_ref->si;
+				LM_DBG("bond socket [%.*s] translated into [%.*s] for "
+					"destination  proto=%d and AF=%d\n",
+					bond_sock->name.len, bond_sock->name.s,
+					bond_ref->si->name.len, bond_ref->si->name.s,
+					proto, to->s.sa_family);
+				break;
+			}
+
+			if (!msg->force_send_socket)
+				LM_DBG("no bond member matching proto=%d and AF=%d\n",
+					proto, to->s.sa_family);
+		} else
+		/* no bond forced socket, do extra checks */
 		if (msg->force_send_socket->proto!=proto){
 			LM_DBG("force_send_socket of different proto (%d)!\n", proto);
 			msg->force_send_socket=find_si(&(msg->force_send_socket->address),
