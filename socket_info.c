@@ -74,6 +74,8 @@
 
 /* list manip. functions (internal use only) */
 
+/* list with BOND sockets only - this is pretty static right now */
+static struct socket_info_full *bond_sockets;
 
 /* append */
 #define sock_listadd(head, el) \
@@ -209,6 +211,7 @@ error:
 void free_sock_info(struct socket_info_full* sif)
 {
 	if(sif){
+		struct socket_info_ref *bond_si, *next_bond_si;
 		struct socket_info *si = &sif->socket_info;
 		if(si->name.s) pkg_free(si->name.s);
 		if(si->tag.s) pkg_free(si->tag.s);
@@ -219,7 +222,99 @@ void free_sock_info(struct socket_info_full* sif)
 		if(si->adv_port_str.s) pkg_free(si->adv_port_str.s);
 		if(si->adv_sock_str.s) pkg_free(si->adv_sock_str.s);
 		if(si->tag_sock_str.s) pkg_free(si->tag_sock_str.s);
+		for (bond_si = si->bond_sis; bond_si; bond_si = next_bond_si) {
+			next_bond_si = bond_si->next;
+			pkg_free(bond_si);
+		}
 	}
+}
+
+
+static void free_socket_id_list(struct socket_id *list)
+{
+	struct socket_id *sid, *next_sid;
+	struct socket_bond_elem *be, *next_be;
+
+	for (sid = list; sid; sid = next_sid) {
+		next_sid = sid->next;
+		for (be = sid->bond_list; be; be = next_be) {
+			next_be = be->next;
+			if (be->name)
+				pkg_free(be->name);
+			pkg_free(be);
+		}
+		pkg_free(sid);
+	}
+}
+
+
+int fix_bond_socket_list(struct socket_id *list)
+{
+	struct socket_id *sid;
+	struct socket_id *next_sid;
+	struct socket_bond_elem *be;
+	struct socket_info_full *sif;
+	struct socket_info_ref *ref;
+	const struct socket_info *bond_si;
+	str bond_spec;
+
+	for (sid = list; sid; sid = next_sid) {
+
+		next_sid = sid->next;
+
+		sif = new_sock_info(sid);
+		if (!sif) {
+			LM_ERR("failed to build socket info for bond <%s>\n", sid->name);
+			goto error;
+		}
+		sif->socket_info.flags |= SI_IS_BOND;
+
+		for (be = sid->bond_list; be; be = be->next) {
+			bond_spec.s = be->name;
+			bond_spec.len = strlen(be->name);
+			bond_si = parse_sock_info(&bond_spec);
+			if (!bond_si) {
+				LM_WARN("failed to resolve bond member <%s> for bond <%s>\n",
+					be->name, sid->name);
+				continue;
+			}
+
+			ref = pkg_malloc(sizeof(*ref));
+			if (!ref) {
+				LM_ERR("pkg memory allocation failed while building "
+					"bond <%s>\n", sid->name);
+				goto error;
+			}
+			ref->si = bond_si;
+
+			ref->next = sif->socket_info.bond_sis;
+			sif->socket_info.bond_sis = ref;
+		}
+
+		if (!sif->socket_info.bond_sis) {
+			LM_ERR("bond socket <%s> has no valid members\n", sid->name);
+			goto error;
+		}
+
+		/* double linked list */
+		sif->next = bond_sockets;
+		if (bond_sockets)
+			bond_sockets->prev = sif;
+		bond_sockets = sif;
+
+		/* free current element */
+		sid->next = NULL;
+		free_socket_id_list(sid);
+	}
+
+	return 0;
+error:
+	if (sif) {
+		free_sock_info(sif);
+		pkg_free(sif);
+	}
+	free_socket_id_list(sid);
+	return -1;
 }
 
 
