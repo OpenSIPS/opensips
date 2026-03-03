@@ -27,6 +27,9 @@
 struct _WOLFSSL {
 	WOLFSSL *read_ssl;
 	WOLFSSL *write_ssl;
+	unsigned char ktls_tx;
+	unsigned char ktls_rx;
+	unsigned char ktls_ulp;
 };
 
 #define _WOLFSSL_READ_SSL(_ssl) \
@@ -39,3 +42,4 @@ struct _WOLFSSL {
 #define SSL_VERSIONS_SIZE 4
 
 extern int ssl_versions[SSL_VERSIONS_SIZE];
+extern int wolfssl_try_use_ktls;
