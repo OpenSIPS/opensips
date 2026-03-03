@@ -2772,7 +2772,6 @@ static struct socket_id* mk_bond_id(char *bond_name,
 		struct socket_bond_elem *bond_list)
 {
 	struct socket_id *sid;
-	int bond_len;
 
 	sid = mk_listen_id( bond_name, PROTO_NONE, 0);
 	if (!sid) {

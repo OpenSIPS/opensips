@@ -42,6 +42,11 @@ struct last_real_ports {
 	unsigned short remote;
 };
 
+struct socket_info_ref {
+	const struct socket_info *si;
+	struct socket_info_ref *next;
+};
+
 struct socket_info {
 	int socket;
 	str name; /*!< name - eg.: foo.bar or 10.0.0.1 */
@@ -64,6 +69,7 @@ struct socket_info {
 	unsigned short tos;
 	struct scaling_profile *s_profile;
 	void *extra_data;
+	struct socket_info_ref *bond_sis;
 	enum sip_protos internal_proto;
 
 	/* these are IP-level local/remote ports used during the last write op via
@@ -632,6 +638,7 @@ int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
 
 struct socket_id *socket_info2id(struct socket_info *si);
 struct socket_info_full* new_sock_info( struct socket_id *sid);
+int fix_bond_socket_list(struct socket_id *list);
 void push_sock2list(struct socket_info_full *si);
 void pop_sock2list(struct socket_info_full *si);
 void free_sock_info(struct socket_info_full* si);
