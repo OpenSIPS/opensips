@@ -7,6 +7,12 @@ auto_gen=
 NAME=stir_shaken.so
 
 ifneq ($(STIR_SHAKEN_OPENSSL),)
+ifeq ($(findstring STIR_SHAKEN_OPENSSL, $(DEFS)),)
+DEFS += -DSTIR_SHAKEN_OPENSSL
+endif
+endif
+
+ifneq ($(findstring STIR_SHAKEN_OPENSSL, $(DEFS)),)
 USE_ONLY_CRYPTO=true
 include ../../Makefile.openssl
 else
