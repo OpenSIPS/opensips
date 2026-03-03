@@ -1164,6 +1164,13 @@ static int janus_ws_read_http(janus_connection *c, struct tcp_req *r)
 					case '8':
 					case '9':
 						r->content_len=r->content_len*10+(*p-'0');
+						if (r->content_len>=TCP_BUF_SIZE) {
+							LM_ERR("Content-Length value %d bigger than the "
+								"reading buffer\n", r->content_len);
+							r->error = TCP_REQ_BAD_LEN;
+							r->state = H_SKIP;
+							r->content_len = 0;
+						}
 						break;
 					case '\r':
 					case ' ':
