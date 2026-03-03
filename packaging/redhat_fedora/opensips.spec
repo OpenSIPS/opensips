@@ -70,7 +70,6 @@ BuildRequires:  gcc
 Requires: m4
 BuildRequires:  unixODBC-devel
 BuildRequires:  openssl-devel
-BuildRequires:  wolfssl-devel
 BuildRequires:  expat-devel
 BuildRequires:  xmlrpc-c-devel
 BuildRequires:  libconfuse-devel
@@ -856,8 +855,13 @@ This package provides the SQLite database schema files for OpenSIPS.
 Summary:  STIR/SHAKEN support for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+%if 0%{?_with_wolfssl:1}
 Requires: wolfssl
 BuildRequires: wolfssl-devel
+%else
+Requires: openssl
+BuildRequires: openssl-devel
+%endif
 
 %description  stir-shaken-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -1008,14 +1012,14 @@ This package provides the SIP to XMPP IM translator module for OpenSIPS.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all modules-readme %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{!?_with_wolfssl:STIR_SHAKEN_OPENSSL=true} %{__make} all modules-readme %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
 
 %install
-%{__make} install TLS=1 LIBDIR=%{_lib} \
+%{__make} install TLS=1 LIBDIR=%{_lib} %{!?_with_wolfssl:STIR_SHAKEN_OPENSSL=true} \
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg_prefix=%{buildroot} \
