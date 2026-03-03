@@ -41,6 +41,7 @@
 #include <openssl/x509.h>
 #else
 #include <wolfssl/options.h>
+#include <wolfssl/ssl.h>
 #include <wolfssl/openssl/x509.h>
 #endif
 
@@ -51,10 +52,14 @@
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <openssl/ecdsa.h>
 #else
 #include <wolfssl/openssl/x509v3.h>
 #include <wolfssl/openssl/pem.h>
 #include <wolfssl/openssl/err.h>
+#include <wolfssl/openssl/ssl.h>
+#include <wolfssl/openssl/ecdsa.h>
 #endif
 
 #include <stdlib.h>
@@ -276,6 +281,18 @@ static int ss_store_set_default_paths(X509_STORE *x509_store)
 #endif
 }
 
+static void ss_store_set_verify_cb(X509_STORE *x509_store,
+	int (*verify_cb)(int, X509_STORE_CTX *))
+{
+#ifdef WOLFSSL_VERSION
+	/* Older wolfSSL builds may not provide store-level callback setter. */
+	(void)x509_store;
+	(void)verify_cb;
+#else
+	X509_STORE_set_verify_cb_func(x509_store, verify_cb);
+#endif
+}
+
 // called during mod_init
 static int init_cert_validation(void)
 {
@@ -284,7 +301,7 @@ static int init_cert_validation(void)
 		LM_ERR("Failed to create X509_STORE_CTX object\n");
 		return -1;
 	}
-	X509_STORE_set_verify_cb_func(store, verify_callback);
+	ss_store_set_verify_cb(store, verify_callback);
 
 	if (ca_list || ca_dir) {
 		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
@@ -323,7 +340,7 @@ static int init_cert_ca_reload(void)
 		LM_ERR("Failed to create X509_STORE_CTX object\n");
 		return -1;
 	}
-	X509_STORE_set_verify_cb_func(store, verify_callback);
+	ss_store_set_verify_cb(store, verify_callback);
 
 	/* check if ca_list param is set */
 	if (!ca_list) {
@@ -360,7 +377,7 @@ static int init_cert_crl_reload(void)
 		LM_ERR("Failed to create X509_STORE_CTX object\n");
 		return -1;
 	}
-	X509_STORE_set_verify_cb_func(store, verify_callback);
+	ss_store_set_verify_cb(store, verify_callback);
 
 	/* check if crl_list param is set */
 	if (!crl_list) {
@@ -907,13 +924,16 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 	return 0;
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps)
+static void ss_ecdsa_sig_get0(const ECDSA_SIG *sig, const BIGNUM **pr,
+	const BIGNUM **ps)
 {
+#if !defined(WOLFSSL_VERSION) && OPENSSL_VERSION_NUMBER >= 0x10100000L
+	ECDSA_SIG_get0(sig, pr, ps);
+#else
 	*pr = sig->r;
 	*ps = sig->s;
-}
 #endif
+}
 
 static str *build_identity_hf(EVP_PKEY *pkey,
 	time_t date_ts, str *attest, str *cr_url, str *orig_tn,
@@ -980,7 +1000,7 @@ static str *build_identity_hf(EVP_PKEY *pkey,
 	pkg_free(der_sig_buf.s);
 	der_sig_buf.s = NULL;
 
-	ECDSA_SIG_get0(sig, &r, &s);
+	ss_ecdsa_sig_get0(sig, &r, &s);
 	len = ss_bn2binpad(r, raw_sig_buf, R_S_INT_LEN);
 	if (len < 0 || len != R_S_INT_LEN) {
 		LM_ERR("Failed to convert R integer into binay represantation\n");
@@ -1052,6 +1072,15 @@ error:
 	return NULL;
 }
 
+static X509_INFO *ss_sk_X509_INFO_shift(STACK_OF(X509_INFO) *sk)
+{
+#ifdef WOLFSSL_VERSION
+	return sk_X509_INFO_pop(sk);
+#else
+	return sk_X509_INFO_shift(sk);
+#endif
+}
+
 static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 {
 	BIO *cbio;
@@ -1099,7 +1128,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 		}
 
 		while (sk_X509_INFO_num(sk)) {
-			xi = sk_X509_INFO_shift(sk);
+			xi = ss_sk_X509_INFO_shift(sk);
 			if (xi->x509 != NULL) {
 				sk_X509_push(stack, xi->x509);
 				xi->x509 = NULL;
@@ -1719,11 +1748,13 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 	ASN1_OBJECT *ext_obj;
 	char ext_oid[128];
 	int ext_count, i, has_tn_authlist = 0;
+	int tn_authlist_nid;
 	int rc;
 
 	/* check the TN Authorization list extension */
-	if (tn_authlist_obj &&
-		X509_get_ext_by_OBJ(cert, tn_authlist_obj, -1) != -1) {
+	tn_authlist_nid = tn_authlist_obj ? OBJ_obj2nid(tn_authlist_obj) : NID_undef;
+	if (tn_authlist_nid != NID_undef &&
+		X509_get_ext_by_NID(cert, tn_authlist_nid, -1) != -1) {
 		has_tn_authlist = 1;
 	} else {
 		/*
@@ -1766,6 +1797,7 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 		LM_ERR("Error initializing verification context\n");
 		return -1;
 	}
+	X509_STORE_CTX_set_verify_cb(verify_ctx, verify_callback);
 
 	rc = X509_verify_cert(verify_ctx);
 
@@ -1838,7 +1870,7 @@ static int verify_signature(X509 *cert,
 
 	sig = ECDSA_SIG_new();
 
-	#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	#if defined(WOLFSSL_VERSION) || OPENSSL_VERSION_NUMBER < 0x10100000L
 	/* R and S components are already initialised by ECDSA_SIG_new() so
 	 * they should be passed to BN_bin2bn() */
 	r_int = sig->r;
@@ -1858,7 +1890,7 @@ static int verify_signature(X509 *cert,
 		goto error;
 	}
 
-	#if OPENSSL_VERSION_NUMBER > 0x10100000L
+	#if !defined(WOLFSSL_VERSION) && OPENSSL_VERSION_NUMBER >= 0x10100000L
 	/* set the R and S components as they were not initialised by ECDSA_SIG_new() */
 	ECDSA_SIG_set0(sig, r_int, s_int);
 	#endif
