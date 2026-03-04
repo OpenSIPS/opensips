@@ -218,7 +218,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 
 	/* must support 2-char arrays for ws
 	 * must support 3-char arrays for udp, tcp, tls, wss
-	 * must support 4-char arrays for sctp
+	 * must support 4-char arrays for sctp and bond
 	 * must support 5-char arrays for ipsec
 	 * must support 7-char arrays for hep_tcp and hep_udp */
 	*proto=PROTO_NONE;
@@ -288,6 +288,11 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				if ((s[3]=='p' || s[3]=='P') && (s[4]=='s' || s[4]=='S')) {
 					*proto=PROTO_MSRPS; return 0;
 				}
+			}
+			break;
+		case PROTO2UINT('b', 'o', 'n'):
+			if(len==4 && (s[3]=='d' || s[3]=='D')) {
+				*proto=PROTO_BOND; return 0;
 			}
 			break;
 		default:

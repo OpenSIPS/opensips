@@ -267,7 +267,6 @@ int fix_bond_socket_list(struct socket_id *list)
 			LM_ERR("failed to build socket info for bond <%s>\n", sid->name);
 			goto error;
 		}
-		sif->socket_info.flags |= SI_IS_BOND;
 
 		for (be = sid->bond_list; be; be = be->next) {
 			bond_spec.s = be->name;
@@ -339,6 +338,18 @@ const struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 
 	h_len=host->len;
 	hname=host->s;
+
+	if (proto == PROTO_BOND) {
+		if (!check_tags)
+			goto not_found;
+		for (sif = bond_sockets; sif; sif = sif->next) {
+			si = &sif->socket_info;
+			if (h_len == si->name.len &&
+			strncasecmp(hname, si->name.s, si->name.len) == 0)
+				goto found;
+		}
+		goto not_found;
+	}
 
 	if ((h_len>2)&&((*hname)=='[')&&(hname[h_len-1]==']')){
 		/* ipv6 reference, skip [] */

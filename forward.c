@@ -150,7 +150,7 @@ const struct socket_info* get_send_socket(struct sip_msg *msg,
 
 	/* check if send interface is not forced */
 	if (msg && msg->force_send_socket){
-		if (msg->force_send_socket->flags & SI_IS_BOND) {
+		if (msg->force_send_socket->proto == PROTO_BOND) {
 
 			bond_sock = msg->force_send_socket;
 			msg->force_send_socket = NULL;
