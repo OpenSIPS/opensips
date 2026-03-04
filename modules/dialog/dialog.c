@@ -1700,11 +1700,52 @@ int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	int dir;
+	struct dlg_cell *dlg;
+	str ftag;
+	int i;
 
 	if(res==NULL)
 		return -1;
 
 	dir = get_dlg_direction();
+
+	/* If direction unknown and we have a reply, determine from From-tag */
+	if (dir == DLG_DIR_NONE && msg != NULL &&
+	    msg->first_line.type == SIP_REPLY) {
+		dlg = get_current_dialog();
+		if (dlg != NULL && dlg->legs != NULL &&
+		    dlg->legs_no[DLG_LEGS_USED] > 0) {
+			if (parse_from_header(msg) >= 0 && get_from(msg)) {
+				ftag = get_from(msg)->tag_value;
+
+				if (ftag.s == NULL || ftag.len <= 0)
+					goto done;
+
+				if (dlg->legs[DLG_CALLER_LEG].tag.s != NULL &&
+				    dlg->legs[DLG_CALLER_LEG].tag.len == ftag.len &&
+				    strncmp(dlg->legs[DLG_CALLER_LEG].tag.s,
+				            ftag.s, ftag.len) == 0) {
+					/* From-tag is caller's → reply heading to caller */
+					dir = DLG_DIR_UPSTREAM;
+				} else {
+					for (i = DLG_FIRST_CALLEE_LEG;
+					     i < dlg->legs_no[DLG_LEGS_USED]; i++) {
+						if (dlg->legs[i].tag.s != NULL &&
+						    dlg->legs[i].tag.len == ftag.len &&
+						    strncmp(dlg->legs[i].tag.s,
+						            ftag.s, ftag.len) == 0) {
+							/* From-tag is callee's → reply heading to callee */
+							dir = DLG_DIR_DOWNSTREAM;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+done:
+
 	switch (dir) {
 		case DLG_DIR_NONE:
 			return pv_get_null( msg, param, res);
