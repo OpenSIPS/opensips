@@ -48,7 +48,6 @@ struct proto_info protos[PROTO_LAST - PROTO_NONE + 1] = {
 	{ .name = "ws",   .default_rfc_port = 80 },   /* PROTO_WS */
 	{ .name = "wss",  .default_rfc_port = 443 },  /* PROTO_WSS */
 	{ .name = "ipsec",.default_rfc_port = 5062 }, /* PROTO_IPSEC */
-
 	{ .name = "bin",  .default_port = 5555 },     /* PROTO_BIN */
 	{ .name = "bins", .default_port = 5556 },     /* PROTO_BINS */
 	/* populate here for other protos - not necessary right now */
@@ -181,7 +180,7 @@ int fix_cmd_listening_sockets(void)
 		next = si->next;
 
 		/* preserve bond sockets for later processing */
-		if (si->proto == PROTO_NONE && si->bond_list) {
+		if (si->proto == PROTO_BOND) {
 			si->next = bond_si;
 			bond_si = si;
 			continue;
