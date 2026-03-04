@@ -39,7 +39,7 @@ janus:1
 jwt_profiles:1
 jwt_secrets:1
 load_balancer:3
-location:1013
+location:1014
 missed_calls:5
 presentity:5
 pua:9

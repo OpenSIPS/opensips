@@ -640,6 +640,26 @@ modparam("usrloc", "attr_column", "attributes")
 		</example>
 	</section>
 
+	<section id="param_attr_column" xreflabel="params_column">
+		<title><varname>params_column</varname> (string)</title>
+		<para>
+		Name of column containing the parameters of the contact header.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>params</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>params_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "params_column", "parameters")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_use_domain" xreflabel="use_domain">
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
