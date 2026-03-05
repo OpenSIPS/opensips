@@ -262,6 +262,11 @@ int fix_bond_socket_list(struct socket_id *list)
 
 		next_sid = sid->next;
 
+		if (sid->proto!=PROTO_BOND) {
+			LM_BUG("non-bond socket found in the list\n");
+			goto error;
+		}
+
 		sif = new_sock_info(sid);
 		if (!sif) {
 			LM_ERR("failed to build socket info for bond <%s>\n", sid->name);
@@ -288,6 +293,10 @@ int fix_bond_socket_list(struct socket_id *list)
 
 			ref->next = sif->socket_info.bond_sis;
 			sif->socket_info.bond_sis = ref;
+
+			LM_DBG("bond socket [%.*s] including real socket [%.*s]\n",
+				sif->socket_info.name.len, sif->socket_info.name.s,
+				bond_si->sock_str.len, bond_si->sock_str.s);
 		}
 
 		if (!sif->socket_info.bond_sis) {
