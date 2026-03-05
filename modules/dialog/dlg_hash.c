@@ -1330,6 +1330,23 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 	}
 	*new_state = dlg->state;
 
+	/* Remove dialog timer under lock to prevent race with concurrent
+	 * unref (GH-3835): if we transitioned to DELETED, remove the timer
+	 * atomically with the state change so no other worker can see
+	 * state=DELETED and race to unref before timer cleanup */
+	if (*old_state != DLG_STATE_DELETED && *new_state == DLG_STATE_DELETED) {
+		int ret = remove_dlg_timer(&dlg->tl);
+		if (ret == 0)
+			(*unref)++;
+		else if (ret < 0)
+			LM_CRIT("unable to unlink the timer on dlg %p [%u:%u] "
+				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
+				dlg, dlg->h_entry, dlg->h_id,
+				dlg->callid.len, dlg->callid.s,
+				dlg_leg_print_info(dlg, DLG_CALLER_LEG, tag),
+				dlg_leg_print_info(dlg, callee_idx(dlg), tag));
+	}
+
 	dlg_unlock( d_table, d_entry);
 
 	if (*old_state != *new_state)

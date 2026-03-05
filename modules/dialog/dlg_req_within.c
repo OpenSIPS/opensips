@@ -212,7 +212,7 @@ error:
 static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 																int is_active)
 {
-	int event, old_state, new_state, unref, ret;
+	int event, old_state, new_state, unref;
 	struct sip_msg *fake_msg=NULL;
 	context_p old_ctx;
 	context_p *new_ctx;
@@ -232,27 +232,6 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 		/*destroy linkers */
 		destroy_linkers(dlg);
 		remove_dlg_prof_table(dlg,is_active);
-
-		/* remove from timer */
-		ret = remove_dlg_timer(&dlg->tl);
-		if (ret < 0) {
-			LM_CRIT("unable to unlink the timer on dlg %p [%u:%u] "
-				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-				dlg, dlg->h_entry, dlg->h_id,
-				dlg->callid.len, dlg->callid.s,
-				dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
-				dlg_leg_print_info( dlg, callee_idx(dlg), tag));
-		} else if (ret > 0) {
-			LM_DBG("dlg already expired (not in timer list) %p [%u:%u] "
-				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-				dlg, dlg->h_entry, dlg->h_id,
-				dlg->callid.len, dlg->callid.s,
-				dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
-				dlg_leg_print_info( dlg, callee_idx(dlg), tag));
-		} else {
-			/* successfully removed from timer list */
-			unref++;
-		}
 
 		if (req==NULL) {
 			/* set new msg & processing context */

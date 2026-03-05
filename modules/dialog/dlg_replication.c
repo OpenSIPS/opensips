@@ -599,7 +599,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 	str call_id, from_tag, to_tag;
 	unsigned int dir, _ = -1;
 	struct dlg_cell *dlg;
-	int old_state, new_state, unref, ret;
+	int old_state, new_state, unref;
 	unsigned int h_id;
 	int h_entry;
 	short pkg_ver = get_bin_pkg_version(packet);
@@ -637,30 +637,6 @@ int dlg_replicated_delete(bin_packet_t *packet)
 		LM_ERR("duplicate dialog delete request (callid: |%.*s|"
 			"ftag: |%.*s|\n", call_id.len, call_id.s, from_tag.len, from_tag.s);
 		return -1;
-	}
-
-	ret = remove_dlg_timer(&dlg->tl);
-	if (ret < 0) {
-		LM_CRIT("unable to unlink the timer on dlg %p [%u:%u] "
-			"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-			dlg, dlg->h_entry, dlg->h_id,
-			dlg->callid.len, dlg->callid.s,
-			dlg->legs[DLG_CALLER_LEG].tag.len,
-			dlg->legs[DLG_CALLER_LEG].tag.s,
-			dlg->legs[callee_idx(dlg)].tag.len,
-			ZSW(dlg->legs[callee_idx(dlg)].tag.s));
-	} else if (ret > 0) {
-		LM_DBG("dlg expired (not in timer list) on dlg %p [%u:%u] "
-			"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-			dlg, dlg->h_entry, dlg->h_id,
-			dlg->callid.len, dlg->callid.s,
-			dlg->legs[DLG_CALLER_LEG].tag.len,
-			dlg->legs[DLG_CALLER_LEG].tag.s,
-			dlg->legs[callee_idx(dlg)].tag.len,
-			ZSW(dlg->legs[callee_idx(dlg)].tag.s));
-	} else {
-		/* dialog successfully removed from timer -> unref */
-		unref++;
 	}
 
 	unref_dlg(dlg, 1 + unref);
@@ -1200,7 +1176,7 @@ error:
 struct dlg_cell *drop_dlg(struct dlg_cell *dlg, int i)
 {
 	struct dlg_cell *next_dlg;
-	int ret, unref, old_state, new_state;
+	int unref, old_state, new_state;
 
 	/* make sure dialog is not freed while we don't hold the lock */
 	ref_dlg_unsafe(dlg, 1);
@@ -1225,19 +1201,6 @@ struct dlg_cell *drop_dlg(struct dlg_cell *dlg, int i)
 	remove_dlg_prof_table(dlg, 1);
 
 	dlg_lock(d_table, &d_table->entries[i]);
-
-	/* remove from timer, even though it may be done already */
-	ret = remove_dlg_timer(&dlg->tl);
-	if (ret < 0) {
-		LM_ERR("unable to unlink the timer on dlg %p [%u:%u] "
-			"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-			dlg, dlg->h_entry, dlg->h_id,
-			dlg->callid.len, dlg->callid.s,
-			dlg_leg_print_info(dlg, DLG_CALLER_LEG, tag),
-			dlg_leg_print_info(dlg, callee_idx(dlg), tag));
-	} else if (ret == 0)
-		/* successfully removed from timer list */
-		unref++;
 
 	if (dlg_db_mode != DB_MODE_NONE) {
 		if (dlg_db_mode == DB_MODE_DELAYED &&
