@@ -766,6 +766,13 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 	SIPREC_UNLOCK(ss->ctx);
 }
 
+static void src_unref_session(struct src_sess *ss)
+{
+	srec_dlg.dlg_unref(ss->dlg, 1); /* release the dialog */
+	srec_hlog(ss, SREC_UNREF, "start recording unref");
+	SIPREC_UNREF(ss);
+}
+
 void srec_logic_destroy(struct src_sess *sess, int keep_sdp)
 {
 	if (!sess->b2b_key.s)
@@ -774,6 +781,10 @@ void srec_logic_destroy(struct src_sess *sess, int keep_sdp)
 	if (!keep_sdp && sess->initial_sdp.s) {
 		shm_free(sess->initial_sdp.s);
 		sess->initial_sdp.s = NULL;
+	}
+
+	if (!keep_sdp) {
+		src_unref_session(sess);
 	}
 
 	srec_b2b.entity_delete(B2B_CLIENT, &sess->b2b_key, sess->dlginfo, 1, 1);
