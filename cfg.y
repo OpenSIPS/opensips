@@ -800,9 +800,10 @@ socket_def:	phostportrange	{ $$=$1; }
 					$$=$1; fill_socket_id(&p_tmp, $$);
 				}
 			| BOND COLON ID LBRACE socket_bond_elems RBRACE { IFOR();
-					$$ = mk_bond_id($3, $5);
-					if (!$$)
-						YYABORT;
+				if (!mk_bond_id($3, $5)) {
+					yyerror("failed to add new BOND socket\n");YYABORT;
+				}
+				$$ = NULL; /*trick to avoid being added as regular interface*/
 				}
 			;
 
@@ -2734,12 +2735,13 @@ static struct socket_id* mk_bond_id(char *bond_name,
 {
 	struct socket_id *sid;
 
-	sid = mk_listen_id( bond_name, PROTO_NONE, 0);
+	sid = mk_listen_id( bond_name, PROTO_BOND, 0);
 	if (!sid) {
 		LM_CRIT("cfg. parser: out of memory.\n");
 		return NULL;
 	}
 	sid->bond_list = bond_list;
+	add_bond_socket_id(sid);
 	return sid;
 }
 

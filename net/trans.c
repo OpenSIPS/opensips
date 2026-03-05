@@ -54,6 +54,7 @@ struct proto_info protos[PROTO_LAST - PROTO_NONE + 1] = {
 };
 
 static struct socket_id *cmd_listeners;
+static struct socket_id *bond_socket_ids=NULL;
 
 #define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
 
@@ -204,31 +205,26 @@ int add_cmd_listening_socket(char *name, int port, int proto)
 }
 
 
+/* add a bond socket_id for a later init */
+void add_bond_socket_id(struct socket_id *sid)
+{
+	sid->next = bond_socket_ids;
+	bond_socket_ids = sid;
+}
+
+
 int fix_cmd_listening_sockets(void)
 {
-	struct socket_id *si, *next;
-	struct socket_id *bond_si = NULL;
-
-	for (si = cmd_listeners; si; si = next) {
-		next = si->next;
-
-		/* preserve bond sockets for later processing */
-		if (si->proto == PROTO_BOND) {
-			si->next = bond_si;
-			bond_si = si;
-			continue;
-		}
-
-		/* real socket/listener */
+	struct socket_id *si, *prev;
+	for (si = cmd_listeners; si;) {
 		if (si->proto == PROTO_NONE)
 			si->proto = PROTO_UDP;
 		if (add_listening_socket(si) < 0)
 			LM_ERR("Cannot add socket <%s>, skipping...\n", si->name);
-		pkg_free(si);
+		prev = si;
+		si = si->next;
+		pkg_free(prev);
 	}
-
-	/* we may have here only BOND sockets */
-	cmd_listeners = bond_si;
 	return 0;
 }
 
@@ -263,9 +259,9 @@ int fix_all_socket_lists(void)
 	}
 
 	/* init the BOND sockets now that we have all the real sockets */
-	if (cmd_listeners && fix_bond_socket_list(cmd_listeners) != 0)
+	if (fix_bond_socket_list(bond_socket_ids) != 0)
 			goto error;
-	cmd_listeners = NULL;
+	bond_socket_ids = NULL;
 
 	if (!found && !testing_framework) {
 		LM_ERR("no listening sockets\n");

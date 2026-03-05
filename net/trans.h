@@ -103,6 +103,11 @@ int add_listening_socket(struct socket_id *sock);
 int add_cmd_listening_socket(char *name, int port, int proto);
 
 /*
+ * adds a temporary bond socket for later init
+ */
+void add_bond_socket_id(struct socket_id *sid);
+
+/*
  * fixes temporary listening sockets
  */
 int fix_cmd_listening_sockets(void);

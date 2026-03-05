@@ -157,6 +157,11 @@ const struct socket_info* get_send_socket(struct sip_msg *msg,
 			for (bond_ref = bond_sock->bond_sis;
 					bond_ref; bond_ref = bond_ref->next) {
 
+				LM_DBG("checking socket [%.*s]:%d AF %d for "
+					"destination  proto=%d and AF=%d\n",
+					bond_ref->si->sock_str.len, bond_ref->si->sock_str.s,
+					bond_ref->si->proto, bond_ref->si->address.af,
+					proto, to->s.sa_family);
 				if (!bond_ref->si ||
 				(bond_ref->si->proto != proto) ||
 				(bond_ref->si->address.af != to->s.sa_family))
@@ -166,7 +171,7 @@ const struct socket_info* get_send_socket(struct sip_msg *msg,
 				LM_DBG("bond socket [%.*s] translated into [%.*s] for "
 					"destination  proto=%d and AF=%d\n",
 					bond_sock->name.len, bond_sock->name.s,
-					bond_ref->si->name.len, bond_ref->si->name.s,
+					bond_ref->si->sock_str.len, bond_ref->si->sock_str.s,
 					proto, to->s.sa_family);
 				break;
 			}

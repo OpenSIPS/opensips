@@ -87,6 +87,7 @@ inline static struct proxy_l *uri2proxy( str *uri, int forced_proto )
 		return 0;
 	}
 	proto=parsed_uri.proto;
+	if (forced_proto==PROTO_BOND) forced_proto = PROTO_NONE;
 
 	proto = get_proto(forced_proto, proto);
 
