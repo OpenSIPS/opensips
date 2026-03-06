@@ -1889,7 +1889,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	int event;
 	unsigned int update_val;
 	unsigned int dir,dst_leg,src_leg;
-	int ret = 0,ok = 1;
+	int ok = 1;
 	struct dlg_entry *d_entry;
 	str *msg_cseq;
 	char *final_cseq;
@@ -2129,31 +2129,6 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			dlg_unlock (d_table,d_entry);
 
 after_unlock5:
-
-		/* remove from timer */
-		ret = remove_dlg_timer(&dlg->tl);
-		if (ret < 0) {
-			LM_CRIT("unable to unlink the timer on dlg %p [%u:%u] "
-				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-				dlg, dlg->h_entry, dlg->h_id,
-				dlg->callid.len, dlg->callid.s,
-				dlg->legs[DLG_CALLER_LEG].tag.len,
-				dlg->legs[DLG_CALLER_LEG].tag.s,
-				dlg->legs[callee_idx(dlg)].tag.len,
-				ZSW(dlg->legs[callee_idx(dlg)].tag.s));
-		} else if (ret > 0) {
-			LM_DBG("dlg expired (not in timer list) on dlg %p [%u:%u] "
-				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-				dlg, dlg->h_entry, dlg->h_id,
-				dlg->callid.len, dlg->callid.s,
-				dlg->legs[DLG_CALLER_LEG].tag.len,
-				dlg->legs[DLG_CALLER_LEG].tag.s,
-				dlg->legs[callee_idx(dlg)].tag.len,
-				ZSW(dlg->legs[callee_idx(dlg)].tag.s));
-		} else {
-			/* dialog successfully removed from timer -> unref */
-			unref++;
-		}
 
 		/* dialog terminated (BYE) */
 		run_dlg_callbacks(DLGCB_TERMINATED, dlg, req, dir, dst_leg, NULL, 0, is_active);
@@ -2452,14 +2427,34 @@ void dlg_ontimeout(struct dlg_tl *tl)
 	context_p old_ctx;
 	context_p *new_ctx;
 	struct dlg_cell *dlg;
+	struct dlg_entry *d_entry;
 	int new_state;
 	int old_state;
 	int unref;
 	int do_expire_actions = 1;
+	int dlg_state;
 
 	dlg = get_dlg_tl_payload(tl);
+	/* d_table is global, initialized in mod_init(); guaranteed valid if
+	 * the timer callback fires.  dlg->h_entry is set during dialog
+	 * creation (init_new_dialog) and never changes; get_dlg_tl_payload
+	 * is a container_of macro that derives the dlg pointer from the
+	 * timer link — cannot return NULL since the timer fired on this
+	 * link.  Same pattern as next_state_dlg (line ~1193) which does
+	 * the identical d_entry lookup without null/bounds checks. */
+	d_entry = &(d_table->entries[dlg->h_entry]);
 
-	LM_DBG("byeontimeout ? flags = %d , state = %d\n",dlg->flags,dlg->state);
+	/* Read the dialog state under lock to ensure visibility of
+	 * concurrent state changes (GH-3835).  On architectures with
+	 * relaxed memory ordering (e.g. ARM64), an unlocked read of
+	 * dlg->state can return a stale value, causing the timer to
+	 * proceed as if the dialog is still CONFIRMED when a BYE
+	 * worker has already transitioned it to DELETED. */
+	dlg_lock(d_table, d_entry);
+	dlg_state = dlg->state;
+	dlg_unlock(d_table, d_entry);
+
+	LM_DBG("byeontimeout ? flags = %d , state = %d\n",dlg->flags,dlg_state);
 
 	if (dialog_repl_cluster) {
 		/* if dialog replication is used, send BYEs only if the current node
@@ -2471,7 +2466,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 		 * the dialog. We this self prolonging only once! */
 		if (!do_expire_actions
 		&& ref_script_route_check_and_update(dlg->rt_on_timeout)
-		&& dlg->state<DLG_STATE_DELETED
+		&& dlg_state<DLG_STATE_DELETED
 		&& !(dlg->flags&DLG_FLAG_SELF_EXTENDED_TIMEOUT)) {
 			LM_DBG("self prolonging with 10 mins to see what the active"
 				"decides after the on-timeout route\n");
@@ -2494,7 +2489,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 
 	if (do_expire_actions
 	&& ref_script_route_check_and_update(dlg->rt_on_timeout)
-	&& dlg->state<DLG_STATE_DELETED) {
+	&& dlg_state<DLG_STATE_DELETED) {
 		struct dlg_tl bk_tl = *tl;
 		/* allow the dialog to be re-inserted in the timer list */
 		tl->next = tl->prev = NULL;
@@ -2521,7 +2516,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 	}
 
 	if ((dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
-	(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
+	(dlg_state==DLG_STATE_CONFIRMED_NA || dlg_state==DLG_STATE_CONFIRMED)) {
 
 		if (do_expire_actions) {
 			if (dlg->flags & DLG_FLAG_RACE_CONDITION_OCCURRED)
