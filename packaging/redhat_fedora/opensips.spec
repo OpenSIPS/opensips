@@ -41,6 +41,10 @@
 %global _with_opentelemetry 1
 %endif
 
+%if 0%{?rhel} >= 10 || 0%{?fedora} > 41
+%global _with_wolfssl_stir_shaken 1
+%endif
+
 %global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_dynamodb:cachedb_dynamodb} %{!?_with_event_sqs:event_sqs} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} %{!?_with_opentelemetry:opentelemetry} launch_darkly http2d rtp.io
 
 Summary:  Very fast and configurable SIP server
@@ -855,7 +859,7 @@ This package provides the SQLite database schema files for OpenSIPS.
 Summary:  STIR/SHAKEN support for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-%if 0%{?_with_wolfssl:1}
+%if 0%{?_with_wolfssl_stir_shaken}
 Requires: wolfssl
 BuildRequires: wolfssl-devel
 %else
@@ -1012,14 +1016,14 @@ This package provides the SIP to XMPP IM translator module for OpenSIPS.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{!?_with_wolfssl:STIR_SHAKEN_OPENSSL=true} %{__make} all modules-readme %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{!?_with_wolfssl_stir_shaken:STIR_SHAKEN_OPENSSL=true} %{__make} all modules-readme %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
 
 %install
-%{__make} install TLS=1 LIBDIR=%{_lib} %{!?_with_wolfssl:STIR_SHAKEN_OPENSSL=true} \
+%{__make} install TLS=1 LIBDIR=%{_lib} %{!?_with_wolfssl_stir_shaken:STIR_SHAKEN_OPENSSL=true} \
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg_prefix=%{buildroot} \
