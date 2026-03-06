@@ -220,13 +220,24 @@ static int rtpproxy_io_callback(int fd, void *fs, int was_timeout)
 
 	if (len < 0) {
 		LM_ERR("reading from socket failed: %s\n",strerror(errno));
+		reactor_proc_del_fd(fd, -1, IO_FD_CLOSING);
+		if (notify) {
+			list_del(&notify->list);
+			if (notify->remaining)
+				pkg_free(notify->remaining);
+			pkg_free(notify);
+		}
+		shutdown(fd, SHUT_RDWR);
+		close(fd);
 		return -1;
 	}
 	if (len == 0) {
 		LM_DBG("closing rtpproxy notify socket\n");
-		reactor_del_reader(fd, -1, IO_FD_CLOSING);
+		reactor_proc_del_fd(fd, -1, IO_FD_CLOSING);
 		if (notify) {
 			list_del(&notify->list);
+			if (notify->remaining)
+				pkg_free(notify->remaining);			
 			pkg_free(notify);
 		}
 		shutdown(fd, SHUT_RDWR);
@@ -251,8 +262,19 @@ static int rtpproxy_io_callback(int fd, void *fs, int was_timeout)
 		p = sp + 1;
 		left -= (sp - start) + 1;
 
-		if (notification_handler(&command) < 0)
+		if (notification_handler(&command) < 0) {
+			LM_ERR("notification_handler failed\n");
+			reactor_proc_del_fd(fd, -1, IO_FD_CLOSING);
+			if (notify) {
+				list_del(&notify->list);
+				if (notify->remaining)
+					pkg_free(notify->remaining);
+				pkg_free(notify);
+			}
+			shutdown(fd, SHUT_RDWR);
+			close(fd);
 			return -1;
+		}
 
 		LM_DBG("Left to process: %d\n[%.*s]\n", left, left, p);
 
@@ -266,6 +288,18 @@ static int rtpproxy_io_callback(int fd, void *fs, int was_timeout)
 		} else {
 			LM_WARN("dropping remaining data [%.*s]\n", (int)(end - start), start);
 		}
+	} else {
+		/* No remaining data - all notifications processed, close connection */
+		LM_DBG("All notifications processed, closing connection\n");
+		reactor_proc_del_fd(fd, -1, IO_FD_CLOSING);
+		if (notify) {
+			list_del(&notify->list);
+			if (notify->remaining)
+				pkg_free(notify->remaining);
+			pkg_free(notify);
+		}
+		shutdown(fd, SHUT_RDWR);
+		close(fd);
 	}
 	return 0;
 }
