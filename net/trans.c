@@ -146,7 +146,7 @@ int add_listening_socket(struct socket_id *sock)
 	}
 
 	/* convert to socket_info */
-	if (new_sock2list(sock, &protos[proto].listeners) < 0) {
+	if (new_sock2list(sock, NULL, &protos[proto].listeners) < 0) {
 		LM_ERR("cannot add socket to the list\n");
 		return -1;
 	}
