@@ -115,7 +115,7 @@ static struct socket_info_full *bond_sockets;
 
 
 /* another helper function, it just creates a socket_info struct */
-struct socket_info_full* new_sock_info( struct socket_id *sid)
+struct socket_info_full* new_sock_info(struct socket_id *sid, str *orig_name)
 {
 	struct socket_info_full *sif;
 	struct socket_info *si;
@@ -132,6 +132,17 @@ struct socket_info_full* new_sock_info( struct socket_id *sid)
 		si->name.s=(char*)pkg_malloc(si->name.len+1); /* include \0 */
 		if (si->name.s==0) goto error;
 		memcpy(si->name.s, sid->name, si->name.len+1);
+	}
+
+	if (orig_name && orig_name->s && orig_name->len) {
+		si->orig_name.s = pkg_malloc(orig_name->len + 1);
+		if (si->orig_name.s == 0) {
+			LM_ERR("pkg memory allocation failure\n");
+			goto error;
+		}
+		memcpy(si->orig_name.s, orig_name->s, orig_name->len);
+		si->orig_name.s[orig_name->len] = '\0';
+		si->orig_name.len = orig_name->len;
 	}
 
 	/* set port & proto */
@@ -201,7 +212,10 @@ struct socket_info_full* new_sock_info( struct socket_id *sid)
 	return sif;
 error:
 	LM_ERR("pkg memory allocation error\n");
-	if (sif) pkg_free(sif);
+	if (sif) {
+		free_sock_info(sif);
+		pkg_free(sif);
+	}
 	return 0;
 }
 
@@ -214,6 +228,7 @@ void free_sock_info(struct socket_info_full* sif)
 		struct socket_info_ref *bond_si, *next_bond_si;
 		struct socket_info *si = &sif->socket_info;
 		if(si->name.s) pkg_free(si->name.s);
+		if(si->orig_name.s) pkg_free(si->orig_name.s);
 		if(si->tag.s) pkg_free(si->tag.s);
 		if(si->sock_str.s) pkg_free(si->sock_str.s);
 		if(si->address_str.s) pkg_free(si->address_str.s);
@@ -254,9 +269,11 @@ int fix_bond_socket_list(struct socket_id *list)
 	struct socket_id *next_sid;
 	struct socket_bond_elem *be;
 	struct socket_info_full *sif;
+	struct socket_info_full *orig_sif;
 	struct socket_info_ref *ref;
 	const struct socket_info *bond_si;
-	str bond_spec;
+	str bond_spec, host;
+	int port, proto, found_any;
 
 	for (sid = list; sid; sid = next_sid) {
 
@@ -267,7 +284,7 @@ int fix_bond_socket_list(struct socket_id *list)
 			goto error;
 		}
 
-		sif = new_sock_info(sid);
+		sif = new_sock_info(sid, NULL);
 		if (!sif) {
 			LM_ERR("failed to build socket info for bond <%s>\n", sid->name);
 			goto error;
@@ -276,27 +293,60 @@ int fix_bond_socket_list(struct socket_id *list)
 		for (be = sid->bond_list; be; be = be->next) {
 			bond_spec.s = be->name;
 			bond_spec.len = strlen(be->name);
-			bond_si = parse_sock_info(&bond_spec);
-			if (!bond_si) {
-				LM_WARN("failed to resolve bond member <%s> for bond <%s>\n",
+			found_any = 0;
+			if (parse_phostport(bond_spec.s, bond_spec.len, &host.s, &host.len,
+					&port, &proto) != 0) {
+				LM_WARN("failed to parse bond member <%s> for bond <%s>\n",
 					be->name, sid->name);
 				continue;
 			}
 
-			ref = pkg_malloc(sizeof(*ref));
-			if (!ref) {
-				LM_ERR("pkg memory allocation failed while building "
-					"bond <%s>\n", sid->name);
-				goto error;
+			bond_si = grep_internal_sock_info(&host, (unsigned short)port,
+				(unsigned short)proto);
+			if (bond_si) {
+				found_any = 1;
+				ref = pkg_malloc(sizeof(*ref));
+				if (!ref) {
+					LM_ERR("pkg memory allocation failed while building "
+						"bond <%s>\n", sid->name);
+					goto error;
+				}
+				ref->si = bond_si;
+				ref->next = sif->socket_info.bond_sis;
+				sif->socket_info.bond_sis = ref;
+
+				LM_DBG("bond socket [%.*s] including real socket [%.*s]\n",
+					sif->socket_info.name.len, sif->socket_info.name.s,
+					bond_si->sock_str.len, bond_si->sock_str.s);
+				continue;
 			}
-			ref->si = bond_si;
 
-			ref->next = sif->socket_info.bond_sis;
-			sif->socket_info.bond_sis = ref;
+			orig_sif = NULL;
+			while ((orig_sif = grep_sock_by_orig_name((unsigned short)proto,
+					&host, (unsigned short)port, orig_sif))) {
+				bond_si = &orig_sif->socket_info;
 
-			LM_DBG("bond socket [%.*s] including real socket [%.*s]\n",
-				sif->socket_info.name.len, sif->socket_info.name.s,
-				bond_si->sock_str.len, bond_si->sock_str.s);
+				ref = pkg_malloc(sizeof(*ref));
+				if (!ref) {
+					LM_ERR("pkg memory allocation failed while building "
+						"bond <%s>\n", sid->name);
+					goto error;
+				}
+				ref->si = bond_si;
+				ref->next = sif->socket_info.bond_sis;
+				sif->socket_info.bond_sis = ref;
+				found_any = 1;
+
+				LM_DBG("bond socket [%.*s] including real socket [%.*s] by "
+					"orig_name\n",
+					sif->socket_info.name.len, sif->socket_info.name.s,
+					bond_si->sock_str.len, bond_si->sock_str.s);
+			}
+
+			if (!found_any) {
+				LM_WARN("failed to resolve bond member <%s> for bond <%s>\n",
+					be->name, sid->name);
+			}
 		}
 
 		if (!sif->socket_info.bond_sis) {
@@ -518,18 +568,64 @@ const struct socket_info* parse_sock_info(str *addr)
 		(unsigned short) proto);
 }
 
+struct socket_info_full* grep_sock_by_orig_name(unsigned short proto, str *host,
+		unsigned short port, struct socket_info_full *resume)
+{
+	struct socket_info_full *sif, **list;
+	str *name;
+
+	if (!host || !host->s)
+		return NULL;
+
+	if (proto == PROTO_NONE)
+		proto = PROTO_UDP;
+	if (proto >= PROTO_LAST || protos[proto].id == PROTO_NONE)
+		return NULL;
+
+	if (resume)
+		sif = resume->next;
+	else {
+		list = get_sock_info_list(proto);
+		if (!list || !*list)
+			return NULL;
+		sif = *list;
+	}
+
+	for (; sif; sif = sif->next) {
+		name = &sif->socket_info.orig_name;
+		if (!name->s)
+			continue;
+		if (name->len != host->len ||
+				memcmp(name->s, host->s, name->len) != 0)
+			continue;
+
+		if (port && (sif->socket_info.port_no != 0 ||
+				protos[proto].default_port != port) &&
+				(sif->socket_info.port_no == 0 ||
+				sif->socket_info.port_no != port) &&
+				sif->socket_info.adv_port != port)
+			continue;
+
+		return sif;
+	}
+
+	return NULL;
+}
+
 
 /* adds a new sock_info structure to the corresponding list
  * return  0 on success, -1 on error */
-int new_sock2list(struct socket_id *sid, struct socket_info_full** list)
+int new_sock2list(struct socket_id *sid, str *orig_name,
+		struct socket_info_full** list)
 {
 	struct socket_info_full* si;
 
-	si=new_sock_info(sid);
+	si = new_sock_info(sid, orig_name);
 	if (si==0){
 		LM_ERR("new_sock_info failed\n");
 		goto error;
 	}
+
 	sock_listadd(list, si);
 	return 0;
 error:
@@ -599,6 +695,7 @@ static int expand_interface(const struct socket_info *si, struct socket_info_ful
 	int ret = -1;
 	struct ip_addr addr;
 	struct socket_id sid;
+	str orig_name = si->name;
 
 	sid.port = si->port_no;
 	sid.proto = si->proto;
@@ -640,7 +737,7 @@ static int expand_interface(const struct socket_info *si, struct socket_info_ful
 			sid.flags = si->flags;
 			if (it->ifa_flags & IFF_LOOPBACK)
 				sid.flags |= SI_IS_LO;
-			if (new_sock2list(&sid, list) != 0) {
+			if (new_sock2list(&sid, &orig_name, list) != 0) {
 				LM_ERR("clone_sock2list failed\n");
 				goto end;
 			}
@@ -738,7 +835,7 @@ end:
 			if (ifrcopy.ifr_flags & IFF_LOOPBACK)
 				sid.flags|=SI_IS_LO;
 			/* add it to one of the lists */
-			if (new_sock2list(&sid, list) != 0) {
+			if (new_sock2list(&sid, &orig_name, list) != 0) {
 				LM_ERR("clone_sock2list failed\n");
 				goto error;
 			}
