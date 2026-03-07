@@ -112,6 +112,10 @@ int janus_raise_event(janus_connection *conn, cJSON *request)
 	}
 
 	full_json = cJSON_Print(request);
+	if (!full_json) {
+		LM_ERR("cJSON_Print failed\n");
+		goto err_free_params;
+	}
 	cJSON_Minify(full_json);
 	full_json_s.s = full_json;
 	full_json_s.len = strlen(full_json);
@@ -191,10 +195,15 @@ int handle_janus_json_request(janus_connection *conn, cJSON *request)
 	}
 
 	full_json = cJSON_Print(request);
+	if (!full_json) {
+		LM_ERR("cJSON_Print failed\n");
+		return 1;
+	}
 	cJSON_Minify(full_json);
 
 	reply->text.s = shm_strdup(full_json);
 	if (reply->text.s == NULL) {
+		pkg_free(full_json);
 		/* we're out of mem, let the requestor timeout, don't disconnect janus */
 		return 1;
 	}
