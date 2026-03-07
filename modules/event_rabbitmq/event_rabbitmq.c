@@ -336,12 +336,15 @@ static inline int dupl_string(str* dst, const char* begin, const char* end)
 		return -1;
 	}
 
-	if (un_escape(&tmp, dst) < 0)
+	if (un_escape(&tmp, dst) < 0) {
+		shm_free(dst->s);
+		dst->s = NULL;
+		dst->len = 0;
 		return -1;
+	}
 
 	/* NULL-terminate the string */
 	dst->s[dst->len] = 0;
-	dst->len++;
 
 	return 0;
 }
@@ -516,7 +519,6 @@ static evi_reply_sock* rmq_parse(str socket)
 						if (dupl_string(&param->conn.tls_dom_name,
 							it->s.s+RMQ_TLS_DOM_LEN, it->s.s + it->s.len) < 0)
 							goto err;
-						param->conn.tls_dom_name.len--;
 						param->conn.flags |= RMQ_PARAM_TLS;
 					} else if (it->s.len == RMQ_PERSISTENT_LEN &&
 						!memcmp(it->s.s, RMQ_PERSISTENT_S, RMQ_PERSISTENT_LEN)) {
@@ -558,11 +560,11 @@ success:
 		sock->flags |= EVI_PORT;
 	}
 	if (!(param->conn.flags & RMQ_PARAM_USER) || !param->conn.uri.user) {
-		param->conn.uri.user = shm_malloc(rmq_static_holder.len);
+		param->conn.uri.user = shm_malloc(rmq_static_holder.len + 1);
 		if (!param->conn.uri.user) {
 			goto err;
 		}
-		memcpy(param->conn.uri.user, rmq_static_holder.s, rmq_static_holder.len);
+		memcpy(param->conn.uri.user, rmq_static_holder.s, rmq_static_holder.len + 1);
 		param->conn.uri.password = param->conn.uri.user;
 		param->conn.flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
 	}
@@ -660,21 +662,21 @@ static str rmq_print(evi_reply_sock *sock)
 
 	param = sock->params;
 	if (param->conn.flags & RMQ_PARAM_USER) {
-		DO_PRINT(param->conn.uri.user, strlen(param->conn.uri.user) - 1 /* skip 0 */);
+		DO_PRINT(param->conn.uri.user, strlen(param->conn.uri.user));
 		DO_PRINT("@", 1);
 	}
 	if (sock->flags & EVI_ADDRESS)
-		DO_PRINT(sock->address.s, sock->address.len - 1);
+		DO_PRINT(sock->address.s, sock->address.len);
 
 	DO_PRINT("/", 1); /* needs to be changed if it can print a key without RMQ_PARAM_RKEY */
-	
+
 	if (param->conn.flags & RMQ_PARAM_EKEY) {
-		DO_PRINT(param->conn.exchange.bytes, param->conn.exchange.len - 1);
+		DO_PRINT(param->conn.exchange.bytes, param->conn.exchange.len);
 		DO_PRINT("?", 1);
 	}
 
 	if (param->conn.flags & RMQF_MAND) {
-		DO_PRINT(param->routing_key.s, param->routing_key.len - 1);
+		DO_PRINT(param->routing_key.s, param->routing_key.len);
 	}
 end:
 	return rmq_print_s;
