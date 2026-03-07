@@ -273,6 +273,41 @@ static mi_response_t *mi_which(const mi_params_t *params, struct mi_handler *asy
 	return resp;
 }
 
+static mi_response_t *mi_which_with_mod_name(const mi_params_t *params, struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_arr;
+	struct mi_cmd  *cmds;
+	int size;
+	int i;
+	char buf[256]; 
+
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
+		return 0;
+
+	get_mi_cmds( &cmds, &size);
+	for ( i=0 ; i<size ; i++ ) {
+		int n = snprintf(buf, sizeof(buf), "%.*s:%.*s",
+                     (int)cmds[i].module.len, cmds[i].module.s,
+                     (int)cmds[i].name.len, cmds[i].name.s);
+
+		if (n < 0 || n >= (int)sizeof(buf)) {
+			LM_ERR("module:name string too long\n");
+			continue;
+		}
+
+		if (add_mi_string(resp_arr, 0, 0,
+			buf, n) < 0) {
+			LM_ERR("failed to add mi item\n");
+			free_mi_response(resp);
+			return 0;
+		}
+	}
+
+	return resp;
+}
+
 
 static mi_response_t *mi_ps(const mi_params_t *params,
 						struct mi_handler *async_hdl)
@@ -876,6 +911,7 @@ static const mi_export_t mi_core_cmds[] = {
 	{ "which", "lists all available MI commands", 0, 0, {
 		{mi_which, {0}},
 		{mi_which_cmd, {"command", 0}},
+		{mi_which_with_mod_name, {"with_mod_name", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
