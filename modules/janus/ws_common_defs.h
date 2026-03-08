@@ -31,6 +31,11 @@
 #include "janus_common.h"
 #include "../../lib/cJSON.h"
 
+/* Maximum reassembled message size. Janus responses are typically
+ * a few KB; 256KB provides ample headroom while bounding memory
+ * usage per connection during reassembly. */
+#define WS_MAX_FRAG_SIZE (256 * 1024)
+
 /* wrapper around tcp request to add ws info */
 /* keep this in sync with the janus_req, this gets cast to that */
 struct janus_ws_req {
@@ -48,6 +53,13 @@ struct janus_ws_req {
 	unsigned int op;
 	unsigned int mask;
 	unsigned int is_masked;
+
+	/* Fragment reassembly state -- allocated in JANUS Manager process,
+	 * persists across init_janus_ws_req() frame resets */
+	char *frag_buf;         /* accumulated fragment data (pkg_malloc) */
+	unsigned int frag_len;  /* current accumulated length */
+	unsigned int frag_size; /* allocated size of frag_buf */
+	unsigned int frag_op;   /* original opcode of first fragment */
 };
 
 

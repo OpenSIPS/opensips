@@ -304,12 +304,6 @@ static enum ws_close_code inline janus_ws_parse(struct janus_ws_req *req)
 			goto update_parsed;
 		}
 
-		if (!WS_IS_FIN(req)) {
-			LM_ERR("We do not support fragmemntation yet. Dropping...\n");
-			req->tcp.error = TCP_READ_ERROR;
-			return WS_ERR_POLICY;
-		}
-
 		/* check if it is an operation that we support */
 		req->op = WS_OPCODE(req);
 		switch (req->op) {
@@ -318,7 +312,15 @@ static enum ws_close_code inline janus_ws_parse(struct janus_ws_req *req)
 		case WS_OP_CLOSE:
 		case WS_OP_PING:
 		case WS_OP_PONG:
-			/* continue to read whole packet */
+			/* control frames must not be fragmented (RFC 6455 5.5) */
+			if (!WS_IS_FIN(req) &&
+				(req->op == WS_OP_CLOSE || req->op == WS_OP_PING ||
+				 req->op == WS_OP_PONG)) {
+				LM_ERR("Fragmented control frame (opcode %d)\n", req->op);
+				return WS_ERR_PROTO;
+			}
+			break;
+		case WS_OP_CONT:  /* continuation frame for fragmented messages */
 			break;
 		default:
 			LM_ERR("Unsupported WebSocket opcode: %d\n", req->op);
@@ -402,14 +404,184 @@ update_parsed:
 		(_req)->is_masked = 0; \
 		(_req)->complete=0; \
 		(_req)->body=NULL; \
+		/* NOTE: frag_* fields intentionally NOT reset here.
+		 * Fragment state must persist across frame boundaries --
+		 * this macro is called between each frame in a sequence. */ \
 	} while(0)
+
+static inline void janus_ws_frag_cleanup(struct janus_ws_req *req)
+{
+	if (req->frag_buf) {
+		pkg_free(req->frag_buf);
+		req->frag_buf = NULL;
+		req->frag_len = 0;
+		req->frag_size = 0;
+	}
+}
+
+/*
+ * Handle WebSocket fragment reassembly per RFC 6455 Section 5.4.
+ *
+ * Called after janus_ws_parse() for each complete frame. Accumulates
+ * fragments into req->frag_buf and delivers the reassembled message
+ * when the final frame (FIN=1) arrives.
+ *
+ * Control frames (PING/PONG/CLOSE) pass through mid-fragment per Section 5.4:
+ *   "Control frames MAY be injected in the middle of a fragmented message."
+ *
+ * Returns:
+ *   0 -- complete message ready in req->buf / req->buf_len
+ *   1 -- fragment accumulated, parser reset for next frame, read more
+ *  -1 -- error (fragment state cleaned up)
+ */
+static int janus_ws_handle_frag(struct janus_ws_req *req)
+{
+	int is_fin = WS_IS_FIN(req);
+	unsigned int payload_len = req->tcp.content_len;
+	long size;
+
+	switch (req->op) {
+	case WS_OP_TEXT:
+	case WS_OP_BIN:
+		if (is_fin && !req->frag_buf) {
+			/* Unfragmented message -- normal path */
+			return 0;
+		}
+
+		if (!is_fin) {
+			/* First fragment of a new fragmented message */
+			if (req->frag_buf) {
+				LM_WARN("new fragmented message while previous incomplete, "
+						"dropping old fragments\n");
+				pkg_free(req->frag_buf);
+			}
+			if (payload_len > WS_MAX_FRAG_SIZE) {
+				LM_ERR("first fragment too large: %u\n", payload_len);
+				req->frag_buf = NULL;
+				req->frag_len = 0;
+				return -1;
+			}
+			if (!req->tcp.body) {
+				LM_ERR("first fragment has NULL body\n");
+				req->frag_buf = NULL;
+				req->frag_len = 0;
+				return -1;
+			}
+			/* Allocate with 2x headroom to reduce reallocs */
+			{
+				unsigned int alloc_size = (payload_len + 1) * 2;
+				if (alloc_size > WS_MAX_FRAG_SIZE + 1)
+					alloc_size = WS_MAX_FRAG_SIZE + 1;
+				req->frag_buf = pkg_malloc(alloc_size);
+				if (!req->frag_buf) {
+					LM_ERR("oom for fragment buffer (%u bytes)\n", alloc_size);
+					req->frag_len = 0;
+					return -1;
+				}
+				memcpy(req->frag_buf, req->tcp.body, payload_len);
+				req->frag_len = payload_len;
+				req->frag_size = alloc_size;
+				req->frag_op = req->op;
+			}
+
+			LM_DBG("started fragment accumulation: %u bytes, opcode %d\n",
+					payload_len, req->op);
+			goto accum_reset;
+		}
+
+		/* FIN=1 but frag_buf exists -- new unfragmented msg replaces stale frags */
+		LM_WARN("unfragmented text/bin frame with pending fragments, "
+				"dropping fragments\n");
+		janus_ws_frag_cleanup(req);
+		return 0;
+
+	case WS_OP_CONT:
+		if (!req->frag_buf) {
+			LM_ERR("continuation frame received without initial fragment\n");
+			return -1;
+		}
+
+		/* Check reassembled size limit */
+		if (req->frag_len + payload_len > WS_MAX_FRAG_SIZE) {
+			LM_ERR("reassembled message too large: %u + %u > %u\n",
+					req->frag_len, payload_len, WS_MAX_FRAG_SIZE);
+			janus_ws_frag_cleanup(req);
+			return -1;
+		}
+
+		if (!req->tcp.body && payload_len > 0) {
+			LM_ERR("continuation frame has NULL body with len %u\n",
+					payload_len);
+			janus_ws_frag_cleanup(req);
+			return -1;
+		}
+
+		/* Grow frag_buf if needed -- doubling strategy to reduce realloc frequency */
+		if (req->frag_len + payload_len + 1 > req->frag_size) {
+			/* Doubling strategy to reduce realloc frequency */
+			unsigned int needed = req->frag_len + payload_len + 1;
+			unsigned int new_size = req->frag_size * 2;
+			if (new_size < needed)
+				new_size = needed;
+			if (new_size > WS_MAX_FRAG_SIZE + 1)
+				new_size = WS_MAX_FRAG_SIZE + 1;
+			char *new_buf = pkg_realloc(req->frag_buf, new_size);
+			if (!new_buf) {
+				LM_ERR("oom growing fragment buffer to %u\n", new_size);
+				janus_ws_frag_cleanup(req);
+				return -1;
+			}
+			req->frag_buf = new_buf;
+			req->frag_size = new_size;
+		}
+
+		if (payload_len > 0)
+			memcpy(req->frag_buf + req->frag_len, req->tcp.body, payload_len);
+		req->frag_len += payload_len;
+
+		if (!is_fin) {
+			LM_DBG("accumulated continuation fragment: +%u bytes (total %u)\n",
+					payload_len, req->frag_len);
+			goto accum_reset;
+		}
+
+		/* Final fragment -- deliver reassembled message */
+		req->frag_buf[req->frag_len] = '\0';
+		req->buf = req->frag_buf;
+		req->buf_len = req->frag_len;
+		req->op = req->frag_op;
+
+		LM_DBG("fragment reassembly complete: %u bytes, original opcode %d\n",
+				req->frag_len, req->frag_op);
+		return 0;
+
+	default:
+		/* Control frames (CLOSE/PING/PONG) pass through unchanged
+		 * even mid-fragment (RFC 6455 Section 5.4) */
+		return 0;
+	}
+
+accum_reset:
+	/* Reset parser state for the next frame, preserving frag_* fields */
+	size = req->tcp.pos - req->tcp.parsed;
+	if (size < 0) {
+		LM_BUG("negative leftover size %ld in frag accumulation\n", size);
+		janus_ws_frag_cleanup(req);
+		return -1;
+	}
+	if (size)
+		memmove(req->tcp.buf, req->tcp.parsed, size);
+
+	init_janus_ws_req(req, size);
+	return 1;
+}
 
 static int janus_connection_read_data(janus_connection *sock, struct janus_ws_req *req, int _max_msg_chunks)
 {
 	int ret=-1;
 	long size=0;
 	enum ws_close_code ret_code = WS_ERR_NONE;
-	unsigned char bk;
+	unsigned char bk = 0;
 
 	if (req->tcp.complete) {
 		/* sanity mask checks */
@@ -420,6 +592,20 @@ static int janus_connection_read_data(janus_connection *sock, struct janus_ws_re
 					WS_TYPE(sock) == WS_CLIENT ? "client" : "server");
 			ret_code = WS_ERR_BADDATA;
 			goto error;
+		}
+
+		/* Handle fragment accumulation before processing */
+		{
+			int frag_ret = janus_ws_handle_frag(req);
+			if (frag_ret == 1) {
+				/* Fragment accumulated, parser reset, read more */
+				sock->msg_attempts = 0;
+				return 1;
+			} else if (frag_ret < 0) {
+				ret_code = WS_ERR_POLICY;
+				goto error;
+			}
+			/* frag_ret == 0: complete message ready */
 		}
 
 		switch (req->op) {
@@ -452,7 +638,7 @@ static int janus_connection_read_data(janus_connection *sock, struct janus_ws_re
 			/* release the connextion */
 			sock->state = S_CONN_EOF;
 
-			/* we are trying to populate the handler ID, close if not expected */
+			janus_ws_frag_cleanup(req);
 			return -1;
 
 		case WS_OP_PING:
@@ -466,19 +652,24 @@ static int janus_connection_read_data(janus_connection *sock, struct janus_ws_re
 
 		case WS_OP_TEXT:
 		case WS_OP_BIN:
-			LM_DBG("read complete [%.*s] \n",(int)(req->tcp.parsed-req->tcp.body),req->tcp.body); 
+			if (req->frag_buf) {
+				/* Reassembled fragmented message -- buf/buf_len set by frag handler */
+				LM_DBG("read reassembled [%.*s]\n", req->buf_len, req->buf);
+			} else {
+				/* Normal unfragmented message */
+				LM_DBG("read complete [%.*s] \n",
+						(int)(req->tcp.parsed-req->tcp.body), req->tcp.body);
 
-			bk = *req->tcp.parsed;
-			*req->tcp.parsed = 0;
+				bk = *req->tcp.parsed;
+				*req->tcp.parsed = 0;
 
-			req->buf = req->tcp.body;
-			req->buf_len = req->tcp.parsed-req->tcp.body;
-			
+				req->buf = req->tcp.body;
+				req->buf_len = req->tcp.parsed-req->tcp.body;
+			}
+
 			janus_brief_parse_msg((struct janus_req *)req);
 
 			if (req->complete) {
-				*req->tcp.parsed=0;
-
 				/* prepare for next request */
 				size=req->tcp.pos-req->tcp.parsed;
 
@@ -489,15 +680,27 @@ static int janus_connection_read_data(janus_connection *sock, struct janus_ws_re
 				if (handle_janus_json_request(sock, req->body) <0) {
 					LM_ERR("Failed to process janus request \n");
 					cJSON_Delete(req->body);
+					janus_ws_frag_cleanup(req);
 					return -1;
 				}
 
 				cJSON_Delete(req->body);
 
-				*req->tcp.parsed = bk;
+				if (req->frag_buf) {
+					janus_ws_frag_cleanup(req);
+				} else {
+					*req->tcp.parsed = bk;
+				}
 
 				/* we have received our data */
 				ret = 0;
+			} else if (req->frag_buf) {
+				/* Parse failed on reassembled message -- all data was present,
+				 * so retrying won't help. Clean up and report error. */
+				LM_ERR("failed to parse reassembled fragmented message\n");
+				janus_ws_frag_cleanup(req);
+				ret_code = WS_ERR_BADDATA;
+				goto error;
 			} else {
 				/* we need to read some more */
 				ret = 1;
@@ -529,6 +732,7 @@ static int janus_connection_read_data(janus_connection *sock, struct janus_ws_re
 	/* connection will be released */
 	return size;
 error:
+	janus_ws_frag_cleanup(req);
 	WS_CODE(sock) = ret_code;
 	if (WS_CODE(sock) != WS_ERR_NONE) {
 		janus_ws_send_close(sock);
@@ -552,6 +756,18 @@ static int janus_connection_handler_id(janus_connection *sock, struct janus_ws_r
 					WS_TYPE(sock) == WS_CLIENT ? "client" : "server");
 			ret_code = WS_ERR_BADDATA;
 			goto error;
+		}
+
+		/* Handle fragment accumulation before processing */
+		{
+			int frag_ret = janus_ws_handle_frag(req);
+			if (frag_ret == 1) {
+				sock->msg_attempts = 0;
+				return 1;
+			} else if (frag_ret < 0) {
+				ret_code = WS_ERR_POLICY;
+				goto error;
+			}
 		}
 
 		size=req->tcp.pos-req->tcp.parsed;
@@ -586,6 +802,7 @@ static int janus_connection_handler_id(janus_connection *sock, struct janus_ws_r
 			sock->state = S_CONN_EOF;
 
 			/* we are trying to populate the handler ID, close if not expected */
+			janus_ws_frag_cleanup(req);
 			return -1;
 
 		case WS_OP_PING:
@@ -599,10 +816,16 @@ static int janus_connection_handler_id(janus_connection *sock, struct janus_ws_r
 
 		case WS_OP_TEXT:
 		case WS_OP_BIN:
-			LM_DBG("read complete [%.*s] \n",(int)(req->tcp.parsed-req->tcp.body),req->tcp.body); 
+			if (req->frag_buf) {
+				/* Reassembled fragmented message */
+				LM_DBG("read reassembled [%.*s]\n", req->buf_len, req->buf);
+			} else {
+				LM_DBG("read complete [%.*s] \n",
+						(int)(req->tcp.parsed-req->tcp.body), req->tcp.body);
 
-			req->buf = req->tcp.body;
-			req->buf_len = req->tcp.parsed-req->tcp.body;
+				req->buf = req->tcp.body;
+				req->buf_len = req->tcp.parsed-req->tcp.body;
+			}
 
 			janus_brief_parse_msg((struct janus_req *)req);
 
@@ -619,12 +842,20 @@ static int janus_connection_handler_id(janus_connection *sock, struct janus_ws_r
 				if (populate_janus_handler_id(sock, req->body) <0) {
 					LM_ERR("Failed to populate handler id \n");
 					cJSON_Delete(req->body);
+					janus_ws_frag_cleanup(req);
 					return -1;
 				}
 
 				cJSON_Delete(req->body);
+				janus_ws_frag_cleanup(req);
 				/* we have populated the janus handler id */
 				ret = 0;
+			} else if (req->frag_buf) {
+				/* Parse failed on reassembled message -- all data was present */
+				LM_ERR("failed to parse reassembled fragmented message\n");
+				janus_ws_frag_cleanup(req);
+				ret_code = WS_ERR_BADDATA;
+				goto error;
 			} else {
 				ret = 1;
 			}
@@ -655,6 +886,7 @@ static int janus_connection_handler_id(janus_connection *sock, struct janus_ws_r
 	/* connection will be released */
 	return size;
 error:
+	janus_ws_frag_cleanup(req);
 	WS_CODE(sock) = ret_code;
 	if (WS_CODE(sock) != WS_ERR_NONE) {
 		janus_ws_send_close(sock);
