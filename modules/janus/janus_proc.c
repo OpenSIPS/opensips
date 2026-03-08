@@ -282,13 +282,22 @@ uint64_t janus_ipc_send_request(janus_connection *sock, cJSON *janus_cmd)
 	lock_stop_write(sock->lists_lk);
 
 	full_cmd.s = cJSON_Print(janus_cmd);
+	if (!full_cmd.s) {
+		shm_free(cmd);
+		LM_ERR("cJSON_Print failed (pkg OOM)\n");
+		return 0;
+	}
 	full_cmd.len = strlen(full_cmd.s);
 
 	if (shm_nt_str_dup(&cmd->janus_cmd, &full_cmd) != 0) {
+		pkg_free(full_cmd.s);
 		shm_free(cmd);
 		LM_ERR("oom\n");
 		return 0;
 	}
+
+	/* cJSON_Print() allocates from pkg via module hooks; free after shm copy */
+	pkg_free(full_cmd.s);
 
 	janus_transaction_id = cmd->janus_transaction_id;
 

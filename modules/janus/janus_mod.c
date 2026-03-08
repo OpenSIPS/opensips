@@ -208,12 +208,14 @@ static int w_janus_send_request(struct sip_msg *msg, str *janus_id,str *request,
 
 	if ((conn = get_janus_connection_by_id(janus_id)) == NULL) {
 		LM_ERR("Unknown JANUS ID %.*s\n",janus_id->len,janus_id->s);
+		cJSON_Delete(j_request);
 		return -1;
 	}
 
 	LM_DBG("Found our conn, prep to send out %.*s !! \n",request->len,request->s);
 
 	reply_id = janus_ipc_send_request(conn,j_request);
+	cJSON_Delete(j_request);  /* tree was serialized to shm; free pkg copy */
 	if (reply_id == 0) {
 		LM_ERR("Failed to queue request %.*s towards %.*s\n",
 		request->len,request->s,
