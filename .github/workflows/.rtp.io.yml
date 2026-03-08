@@ -48,7 +48,8 @@ jobs:
         BUILD_MATRIX="`echo ${PLATFORMS} | tr ',' '\n'  | jq -R . | jq -s . | tr '\n' ' '`"
         GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
         GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
-        BUILD_IMAGE="${{ inputs.ghcr-repo }}:rtp.io-${{ inputs.rtpp-tag }}-${GIT_BRANCH}"
+        BI_BRANCH="`echo ${GIT_BRANCH} | sed 's~/~_~g'`"
+        BUILD_IMAGE="${{ inputs.ghcr-repo }}:rtp.io-${{ inputs.rtpp-tag }}-${BI_BRANCH}"
         echo "Platforms: ${PLATFORMS}"
         for _p in `echo ${PLATFORMS} | tr ',' '\n'`; \
         do \
