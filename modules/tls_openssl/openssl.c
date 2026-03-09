@@ -29,6 +29,7 @@
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <pthread.h>
 
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
@@ -159,6 +160,30 @@ static int mod_load(void)
 static void openssl_on_exit(int status, void *param)
 {
 	_exit(status);
+}
+#endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+/*
+ * Clean up OpenSSL per-thread state (ERR_STATE, DRBG, etc.) in the parent
+ * process before fork().  CRYPTO_set_mem_functions() routes all OpenSSL
+ * allocations to shared memory, but per-thread structures use thread-local
+ * storage pointers that are inherited across fork().  Without this cleanup,
+ * child processes inherit a stale pointer to the parent's per-thread state
+ * in shared memory; if the parent frees or re-creates that state, the
+ * child's next OpenSSL call triggers a double-free (detected by
+ * QM_MALLOC_DBG as SIGABRT).
+ *
+ * After OPENSSL_thread_stop(), the thread-local pointer is NULL.  Both
+ * parent and child lazily allocate fresh per-thread state on the next
+ * OpenSSL call.
+ *
+ * This complements the on_exit(_exit) workaround above, which prevents the
+ * same class of double-free at process *exit* time.
+ */
+static void openssl_pre_fork(void)
+{
+	OPENSSL_thread_stop();
 }
 #endif
 
@@ -295,6 +320,13 @@ static int mod_init(void)
 
 #ifdef __OPENSSL_ON_EXIT
 	on_exit(openssl_on_exit, NULL);
+#endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	if (pthread_atfork(openssl_pre_fork, NULL, NULL) != 0) {
+		LM_ERR("failed to register atfork handler for OpenSSL cleanup\n");
+		return -1;
+	}
 #endif
 
 	return 0;
