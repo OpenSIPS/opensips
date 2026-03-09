@@ -268,7 +268,7 @@ int fix_bond_socket_list(struct socket_id *list)
 	struct socket_id *sid;
 	struct socket_id *next_sid;
 	struct socket_bond_elem *be;
-	struct socket_info_full *sif;
+	struct socket_info_full *sif = NULL;
 	struct socket_info_full *orig_sif;
 	struct socket_info_ref *ref;
 	const struct socket_info *bond_si;
