@@ -122,11 +122,11 @@ static const cmd_export_t cmds[]=
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "msrp_gw_end_session", 0, 0, 0, {
+	{ "end_session", 0, 0, 0, {
 		{msrpgw_mi_end, {"key", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "msrp_gw_list_sessions", 0, 0, 0, {
+	{ "list_sessions", 0, 0, 0, {
 		{msrpgw_mi_list, {0}},
 		{EMPTY_MI_RECIPE}}
 	},

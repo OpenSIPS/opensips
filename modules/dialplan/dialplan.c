@@ -132,17 +132,17 @@ static const param_export_t mod_params[]={
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "dp_reload", 0, 0, NULL, {
+	{ "reload", 0, 0, NULL, {
 		{mi_reload_rules, {0}},
 		{mi_reload_rules_1, {"partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dp_translate", 0, 0, 0, {
+	{ "translate", 0, 0, 0, {
 		{mi_translate2, {"dpid", "input", 0}},
 		{mi_translate3, {"dpid", "input", "partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dp_show_partition", 0, 0, NULL, {
+	{ "show_partition", 0, 0, NULL, {
 		{mi_show_partition, {0}},
 		{mi_show_partition_1, {"partition", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -531,7 +531,7 @@ static int fix_partition(void** param)
 {
 	str *s=(str*)*param;
 
-	/* handle the special case when the fix is triggered for 
+	/* handle the special case when the fix is triggered for
 	   missing parameter */
 	if (s==NULL)
 		s = &dp_df_part;
@@ -878,7 +878,7 @@ static mi_response_t *mi_translate(const mi_params_t *params,
 
 	if (add_mi_string(resp_obj, MI_SSTR("Output"), output.s, output.len) < 0)
 		goto error;
-	
+
 	if (add_mi_string(resp_obj, MI_SSTR("ATTRIBUTES"), attrs.s, attrs.len) < 0)
 		goto error;
 

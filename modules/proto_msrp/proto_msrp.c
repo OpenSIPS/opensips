@@ -88,7 +88,7 @@ static const param_export_t params[] = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "msrp_trace", 0, 0, 0, {
+	{ "trace", 0, 0, 0, {
 		{w_msrp_trace_mi, {0}},
 		{w_msrp_trace_mi_1, {"trace_mode", 0}},
 		{EMPTY_MI_RECIPE}

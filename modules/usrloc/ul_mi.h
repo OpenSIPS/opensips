@@ -32,14 +32,14 @@
 #include "../../rw_locking.h"
 #include "../../mi/mi.h"
 
-#define MI_USRLOC_RM           "ul_rm"
-#define MI_USRLOC_RM_CONTACT   "ul_rm_contact"
-#define MI_USRLOC_DUMP         "ul_dump"
-#define MI_USRLOC_FLUSH        "ul_flush"
-#define MI_USRLOC_ADD          "ul_add"
-#define MI_USRLOC_SHOW_CONTACT "ul_show_contact"
-#define MI_USRLOC_SYNC         "ul_sync"
-#define MI_USRLOC_CL_SYNC      "ul_cluster_sync"
+#define MI_USRLOC_RM           "rm"
+#define MI_USRLOC_RM_CONTACT   "rm_contact"
+#define MI_USRLOC_DUMP         "dump"
+#define MI_USRLOC_FLUSH        "flush"
+#define MI_USRLOC_ADD          "add"
+#define MI_USRLOC_SHOW_CONTACT "show_contact"
+#define MI_USRLOC_SYNC         "sync"
+#define MI_USRLOC_CL_SYNC      "cluster_sync"
 
 extern rw_lock_t *sync_lock;
 

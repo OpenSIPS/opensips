@@ -189,21 +189,21 @@ static const param_export_t params[] = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "aka_av_add", 0, 0, 0, {
+	{ "av_add", 0, 0, 0, {
 		{mi_aka_av_add, {"public_identity", "private_identity", "authenticate",
 							"authorize", "confidentiality-key", "integrity-key", 0}},
 		{mi_aka_av_add, {"public_identity", "private_identity", "authenticate",
 							"authorize", "confidentiality-key", "integrity-key",
 							"algorithms", 0}},
 		{EMPTY_MI_RECIPE}}},
-	{ "aka_av_drop", 0, 0, 0, {
+	{ "av_drop", 0, 0, 0, {
 		{mi_aka_av_drop, {"public_identity", "private_identity",
 							 "authenticate", 0}},
 		{EMPTY_MI_RECIPE}}},
-	{ "aka_av_drop_all", 0, 0, 0, {
+	{ "av_drop_all", 0, 0, 0, {
 		{mi_aka_av_drop_all, {"public_identity", "private_identity", 0}},
 		{EMPTY_MI_RECIPE}}},
-	{ "aka_av_fail", 0, 0, 0, {
+	{ "av_fail", 0, 0, 0, {
 		{mi_aka_av_fail, {"public_identity", "private_identity", 0}},
 		{mi_aka_av_fail, {"public_identity", "private_identity",
 							 "count", 0}},
@@ -257,7 +257,7 @@ static int mod_init(void)
 	bind_auth_t bind_auth;
 
 	LM_INFO("initializing...\n");
-	
+
 	if (aka_sync_timeout < 0) {
 		LM_ERR("invalid sync_timeout value %d\n", aka_sync_timeout);
 		return -1;
@@ -360,7 +360,7 @@ static int fixup_aka_alg(void** param)
 		for (alg = ALG_AKAv2_FIRST; alg <= ALG_AKAv2_LAST; alg++)
 			aka_algs_mask |= (1<<alg);
 		// Allow MD5
-		aka_algs_mask |= ALG_MD5;			
+		aka_algs_mask |= ALG_MD5;
 	}
 
 	if (*param == NULL) {
@@ -519,7 +519,7 @@ static int aka_challenge_pre(struct sip_msg *_msg, str *realm, int _code,
 				return -1;
 			}
 			nonce = &cred->nonce;
-		}		
+		}
 
 		if (mark_authorized_cred(_msg, *h) < 0) {
 			LM_ERR("could not mark credentials\n");
@@ -570,7 +570,7 @@ static int aka_count_avs(int algmask)
 		if (algmask & ALG2ALGFLG(alg))
 			n++;
 	if (algmask & ALG_MD5)
-		n++;			
+		n++;
 	return n;
 }
 
@@ -614,7 +614,7 @@ static char *build_aka_auth_hf(struct aka_av *av, str *_realm,
 			av->ik.len +
 			qop_param.len +
 			CRLF_LEN + 1;
-	}	
+	}
 
 	p = hf = pkg_malloc(*_len + 1);
 	if (!hf) {

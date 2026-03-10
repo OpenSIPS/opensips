@@ -122,7 +122,7 @@ static int tcp_crlf_pingpong = 1;
 static int tcp_crlf_drop = 0;
 
 /* if the handling/processing (NOT READING) of the SIP messages should
- * be done in parallel (after one SIP msg is read, while processing it, 
+ * be done in parallel (after one SIP msg is read, while processing it,
  * another READ op may be performed) */
 static int tcp_parallel_handling = 0;
 
@@ -154,7 +154,7 @@ static const param_export_t params[] = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "tcp_trace", 0, 0, 0, {
+	{ "trace", 0, 0, 0, {
 		{w_tcp_trace_mi, {0}},
 		{w_tcp_trace_mi_1, {"trace_mode", 0}},
 		{EMPTY_MI_RECIPE}

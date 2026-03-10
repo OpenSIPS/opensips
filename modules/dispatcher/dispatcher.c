@@ -354,25 +354,25 @@ static module_dependency_t *get_deps_fetch_fs_load(const param_export_t *param)
 }
 
 static const mi_export_t mi_cmds[] = {
-	{ "ds_set_state", 0, 0, 0, {
+	{ "set_state", 0, 0, 0, {
 		{ds_mi_set, {"state", "group", "address", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "ds_list", 0, 0, 0, {
+	{ "list", 0, 0, 0, {
 		{w_ds_mi_list, {0}},
 		{w_ds_mi_list, {"partition", 0}},
 		{w_ds_mi_list_1, {"full", 0}},
 		{w_ds_mi_list_1, {"full", "partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "ds_reload", 0, 0, mi_child_init, {
+	{ "reload", 0, 0, mi_child_init, {
 		{ds_mi_reload, {0}},
 		{ds_mi_reload, {"inherit_state", 0}},
 		{ds_mi_reload_1, {"partition", 0}},
 		{ds_mi_reload_1, {"partition", "inherit_state", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "ds_push_script_attrs", 0, 0, 0, {
+	{ "push_script_attrs", 0, 0, 0, {
 		{ds_mi_push_script_attrs, {"attrs", "ip", "port", "set", 0}},
 		{ds_mi_push_script_attrs_1, {"attrs", "ip", "port", "set", "partition", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -1494,7 +1494,7 @@ mi_response_t *ds_mi_reload_1(const mi_params_t *params,
 		return init_mi_error(500, MI_SSTR(MI_UNK_PARTITION));
 	if (ds_reload_db(partition, 0, is_inherit_state) < 0)
 		return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
-	
+
 	if (ds_cluster_id && ds_cluster_sync() < 0)
 		return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD_SYNC));
 
@@ -1651,7 +1651,7 @@ mi_response_t *ds_mi_push_script_attrs_1(const mi_params_t *params,
 
 	if (get_mi_string_param(params, "partition", &p_name.s, &p_name.len) < 0)
 		return init_mi_param_error();
-	
+
 	if (p_name.s == NULL) {
 		partition = default_partition;
 	} else {

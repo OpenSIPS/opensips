@@ -143,7 +143,7 @@ static const dep_export_t deps = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "ws_trace", 0, 0, 0, {
+	{ "trace", 0, 0, 0, {
 		{ws_trace_mi, {0}},
 		{ws_trace_mi_1, {"trace_mode", 0}},
 		{EMPTY_MI_RECIPE}
@@ -234,7 +234,7 @@ static int mod_init(void)
 	*trace_is_on = trace_is_on_tmp;
 	if ( trace_filter_route ) {
 		trace_filter_route_ref =
-			ref_script_route_by_name( trace_filter_route, 
+			ref_script_route_by_name( trace_filter_route,
 				sroutes->request, RT_NO, REQUEST_ROUTE, 0);
 	}
 

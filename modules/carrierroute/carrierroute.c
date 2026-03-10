@@ -214,31 +214,31 @@ static const param_export_t params[]= {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "cr_reload_routes", 0, 0, 0, {
+	{ "reload_routes", 0, 0, 0, {
 		{reload_fifo, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "cr_dump_routes", 0, 0, 0, {
+	{ "dump_routes", 0, 0, 0, {
 		{dump_fifo, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "cr_replace_host", 0, 0, 0, {
+	{ "replace_host", 0, 0, 0, {
 		{replace_host, {"options", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "cr_deactivate_host", 0, 0, 0, {
+	{ "deactivate_host", 0, 0, 0, {
 		{deactivate_host, {"options", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "cr_activate_host", 0, 0, 0, {
+	{ "activate_host", 0, 0, 0, {
 		{activate_host, {"options", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "cr_add_host", 0, 0, 0, {
+	{ "add_host", 0, 0, 0, {
 		{add_host, {"options", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "cr_delete_host", 0, 0, 0, {
+	{ "delete_host", 0, 0, 0, {
 		{delete_host, {"options", 0}},
 		{EMPTY_MI_RECIPE}}
 	},

@@ -220,11 +220,11 @@ static const cmd_export_t cmds[] = {
  * Exported MI functions
  */
 static const mi_export_t mi_cmds[] = {
-	{ "stir_shaken_ca_reload", "Stir shaken ca reloader", 0, 0, {
+	{ "ca_reload", "Stir shaken ca reloader", 0, 0, {
 		{mi_stir_shaken_ca_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "stir_shaken_crl_reload", "Stir shaken crl reloader", 0, 0, {
+	{ "crl_reload", "Stir shaken crl reloader", 0, 0, {
 		{mi_stir_shaken_crl_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -563,7 +563,7 @@ static int add_disengagement_token(struct sip_msg *msg, str *token)
 
 	#define DISENGAGEMENT_HDR_S		"P-Identity-Bypass: "
 	#define DISENGAGEMENT_HDR_L		sizeof(DISENGAGEMENT_HDR_S)
-	
+
 	char *buf;
 	unsigned int len;
 	struct lump* anchor;

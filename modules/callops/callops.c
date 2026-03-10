@@ -207,7 +207,7 @@ static const param_export_t params[] = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "call_transfer", 0, 0, 0, {
+	{ "transfer", 0, 0, 0, {
 		{mi_call_blind_transfer, {"callid", "leg", "destination", 0}},
 		{mi_call_attended_transfer,
 			{"callid", "leg", "transfer_callid", "transfer_leg", 0}},
@@ -219,13 +219,13 @@ static const mi_export_t mi_cmds[] = {
 				"transfer_totag", "transfer_destination", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "call_hold", 0, 0, 0, {
+	{ "hold", 0, 0, 0, {
 		{mi_call_hold, {"callid", 0}},
 		{mi_call_hold, {"callid", "leg", 0}},
 		{mi_call_hold, {"callid", "leg", "headers", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "call_unhold", 0, 0, 0, {
+	{ "unhold", 0, 0, 0, {
 		{mi_call_unhold, {"callid", 0}},
 		{mi_call_unhold, {"callid", "leg", 0}},
 		{mi_call_unhold, {"callid", "leg", "headers", 0}},
@@ -1054,7 +1054,7 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 	}
 
 	isval.s = legA;
-	call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &isval, 
+	call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &isval,
 		DLG_VAL_TYPE_STR);
 	/* register callbacks for handling notifies - does not matter if this
 	 * fails, its not like we won't transfer if we don't get the notifications

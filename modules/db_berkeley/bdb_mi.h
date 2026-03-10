@@ -26,7 +26,7 @@
 
 #include "../../mi/mi.h"
 
-#define MI_BDB_RELOAD "bdb_reload"
+#define MI_BDB_RELOAD "reload"
 
 mi_response_t *mi_bdb_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);

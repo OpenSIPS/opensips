@@ -69,7 +69,7 @@ static const cmd_export_t cmds[] = {
  * Exported MI functions
  */
 static const mi_export_t mi_cmds[] = {
-	{ "tcp_reload", "re-cache all TCP profiles from the database", 0, 0, {
+	{ "reload", "re-cache all TCP profiles from the database", 0, 0, {
 		{tcp_mi_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},

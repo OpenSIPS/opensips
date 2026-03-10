@@ -540,14 +540,14 @@ static const param_export_t params[] = {
 "value is 0. With no parameter, returns current probing status"
 
 static const mi_export_t mi_cmds[] = {
-	{ "dr_reload", HLP1, 0, 0, {
+	{ "reload", HLP1, 0, 0, {
 		{dr_reload_cmd, {0}},
 		{dr_reload_cmd, {"inherit_state", 0}},
 		{dr_reload_cmd_1, {"partition_name", 0}},
 		{dr_reload_cmd_1, {"partition_name", "inherit_state", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dr_gw_status", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
+	{ "gw_status", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_dr_gw_status_1, {0}},
 		{mi_dr_gw_status_2, {"partition_name", 0}},
 		{mi_dr_gw_status_3, {"gw_id", 0}},
@@ -556,7 +556,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_dr_gw_status_6, {"partition_name", "gw_id", "status", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dr_carrier_status", HLP3, MI_NAMED_PARAMS_ONLY, 0, {
+	{ "carrier_status", HLP3, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_dr_cr_status_1, {0}},
 		{mi_dr_cr_status_2, {"partition_name", 0}},
 		{mi_dr_cr_status_3, {"carrier_id", 0}},
@@ -565,19 +565,19 @@ static const mi_export_t mi_cmds[] = {
 		{mi_dr_cr_status_6, {"partition_name", "carrier_id", "status", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dr_number_routing", HLP4, MI_NAMED_PARAMS_ONLY, 0, {
+	{ "number_routing", HLP4, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_dr_number_routing_1, {"number", 0}},
 		{mi_dr_number_routing_2, {"group_id", "number", 0}},
 		{mi_dr_number_routing_3, {"partition_name", "number", 0}},
 		{mi_dr_number_routing_4, {"partition_name", "group_id", "number", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dr_reload_status", HLP5, 0, 0, {
+	{ "reload_status", HLP5, 0, 0, {
 		{mi_dr_reload_status, {0}},
 		{mi_dr_reload_status_1, {"partition_name", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dr_enable_probing", HLP6, 0, 0, {
+	{ "enable_probing", HLP6, 0, 0, {
 		{mi_dr_enable_probing, {0}},
 		{mi_dr_enable_probing_1, {"status", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -786,7 +786,7 @@ static int dr_disable(struct sip_msg *req, struct head_db * current_partition)
 		LM_DBG("partition : %.*s\n", current_partition->partition.len,
 				current_partition->partition.s);
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
-		dr_gw_status_changed( current_partition, gw, 
+		dr_gw_status_changed( current_partition, gw,
 			MI_SSTR("script dr_disable"));
 	}
 
@@ -1217,13 +1217,13 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	if (initial)
 		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_LOADING_DATA,
 			CHAR_INT("startup data loading"), 0);
-	else 
+	else
 		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_RELOADING_DATA,
 			CHAR_INT("data re-loading"), 0);
 
 	if (!uses_rule_table_query(hd, &rule_table_query)) {
 
-		if (generate_data_md5) { 
+		if (generate_data_md5) {
 			MD5Init(&Md5Ctx);
 			ctxp = &Md5Ctx;
 		}
@@ -1281,7 +1281,7 @@ static inline int dr_reload_data_head(struct head_db *hd,
 
 		dr_dbf->free_result(db_hdl, res);
 
-		if (generate_data_md5) { 
+		if (generate_data_md5) {
 			MD5Init(&Md5Ctx);
 			ctxp = &Md5Ctx;
 		}
@@ -2311,7 +2311,7 @@ static int dr_exit(void)
 	while( it!=NULL ) {
 		to_clean = it;
 		it = it->next;
-		if (dr_persistent_state && !to_clean->cache && 
+		if (dr_persistent_state && !to_clean->cache &&
 		db_connect_head(to_clean)==0 ) {
 			dr_state_flusher(to_clean);
 
@@ -3656,7 +3656,7 @@ no_gws:
 	if ( flags & DR_PARAM_RULE_FALLBACK ) {
 		if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
 			/* first time - we need to save some date, to be able to
-			 * do the rule fallback later in "next_gw" , but do it only if 
+			 * do the rule fallback later in "next_gw" , but do it only if
 			 * there is room for fallback (more rules are available) */
 			if (rule_idx>0) {
 				LM_DBG("saving rule_idx %d, prefix '%.*s'\n",rule_idx,

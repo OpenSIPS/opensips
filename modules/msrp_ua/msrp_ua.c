@@ -138,7 +138,7 @@ static const param_export_t params[] = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "msrp_ua_send_message", 0, 0, 0, {
+	{ "send_message", 0, 0, 0, {
 		{msrpua_mi_send_msg, {"session_id", 0}},
 		{msrpua_mi_send_msg, {"session_id", "failure_report", 0}},
 		{msrpua_mi_send_msg, {"session_id", "success_report", 0}},
@@ -150,15 +150,15 @@ static const mi_export_t mi_cmds[] = {
 			"failure_report", "success_report", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "msrp_ua_end_session", 0, 0, 0, {
+	{ "end_session", 0, 0, 0, {
 		{msrpua_mi_end, {"session_id", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "msrp_ua_list_sessions", 0, 0, 0, {
+	{ "list_sessions", 0, 0, 0, {
 		{msrpua_mi_list, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "msrp_ua_start_session", 0, 0, 0, {
+	{ "start_session", 0, 0, 0, {
 		{msrpua_mi_start_session, {"content_types", "from_uri", "to_uri", "ruri", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -334,7 +334,7 @@ static int mod_init(void)
 
 	if (adv_contact.s)
 		adv_contact.len = strlen(adv_contact.s);
-	
+
 	my_msrp_uri_str.len = strlen(my_msrp_uri_str.s);
 
 	end = my_msrp_uri_str.s + my_msrp_uri_str.len;
@@ -658,7 +658,7 @@ static int match_mime_with_list(str *mime, str *list)
 					return 1;
 
 				type.s = p+1;
-				st = MLIST_TYPE_ST;				
+				st = MLIST_TYPE_ST;
 			}
 		}
 
@@ -670,7 +670,7 @@ static int match_mime_with_list(str *mime, str *list)
 
 	subtype.len = p - subtype.s;
 	if (match_mimes(&src_type, &src_subtype, &type, &subtype))
-		return 1;	
+		return 1;
 
 	return 0;
 
@@ -752,7 +752,7 @@ static str *msrpua_build_sdp(struct msrpua_session *sess, str *accept_types)
 		(msrp_sock->address.af==AF_INET ? SDP_IP4_STR_LEN:SDP_IP6_STR_LEN) +
 		my_msrp_uri.host.len + CRLF_LEN;
 	buf.len += SDP_C_STR_LEN +
-		(msrp_sock->address.af==AF_INET ? SDP_IP4_STR_LEN:SDP_IP6_STR_LEN) + 
+		(msrp_sock->address.af==AF_INET ? SDP_IP4_STR_LEN:SDP_IP6_STR_LEN) +
 		my_msrp_uri.host.len + CRLF_LEN;
 	buf.len += SDP_M_STR_LEN + my_msrp_uri.port.len +
 		(my_msrp_uri.secured ? SDP_M_TLS_STR_LEN:SDP_M_TCP_STR_LEN);
@@ -920,7 +920,7 @@ static int msrpua_update_session(struct msrpua_session *sess,
 		goto err_reply;
 	}
 
-	/* match at least one content type from our accept_types 
+	/* match at least one content type from our accept_types
 	 * with the peer's accept_types */
 	if (!check_offer_types(&sess->accept_types, &peer_accept_types)) {
 		LM_ERR("Cannot understand any content type received in the offer\n");
@@ -1769,7 +1769,7 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types,
 		goto err_reply;
 	}
 
-	/* match at least one content type from our accept_types 
+	/* match at least one content type from our accept_types
 	 * with the peer's accept_types */
 	if (check_offer_types(accept_types, &peer_accept_types) < 0) {
 		LM_ERR("Cannot understand any content type received in the offer\n");

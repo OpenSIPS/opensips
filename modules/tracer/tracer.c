@@ -262,14 +262,14 @@ static const mi_export_t mi_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "trace_start", 0, 0, 0, {
+	{ "start", 0, 0, 0, {
 		{sip_trace_mi_dyn,{"id", "uri", 0}},
 		{sip_trace_mi_dyn,{"id", "uri", "filter", 0}},
 		{sip_trace_mi_dyn,{"id", "uri", "filter", "scope", "type", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "trace_stop", 0, 0, 0, {
+	{ "stop", 0, 0, 0, {
 		{sip_trace_mi_stop,{"id", 0}},
 		{EMPTY_MI_RECIPE}
 		}
@@ -1151,7 +1151,7 @@ static void trace_info_unref(trace_info_p _ti, unsigned int _cnt)
 	if (should_free) {
 		lock_dealloc(_ti->ref_lock);
 		shm_free(_ti);
-	}	
+	}
 }
 
 
@@ -1487,8 +1487,8 @@ static struct b2b_tracer* b2b_set_tracer_cb(void)
 
 static int trace_b2b(struct sip_msg *msg, trace_info_p info)
 {
-	/* mark the initial request with the tracing flag, so the 
-	 * B2B logic, via the "creating new session" callback, will 
+	/* mark the initial request with the tracing flag, so the
+	 * B2B logic, via the "creating new session" callback, will
 	 * install the tracing callback into the B2B logic
 	 */
 	msg->msg_flags |= FL_USE_SIPTRACE_B2B;
@@ -1892,7 +1892,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 					return -1;
 				}
 				memset(info, 0, sizeof(trace_info_t));
-				info->ref_lock = lock_alloc(); 
+				info->ref_lock = lock_alloc();
 				if (!info->ref_lock) {
 					LM_ERR("could not allocate lock!\n");
 					shm_free(instance);

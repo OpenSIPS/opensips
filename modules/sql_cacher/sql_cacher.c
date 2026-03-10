@@ -109,7 +109,7 @@ static const pv_export_t mod_items[] = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "sql_cacher_reload", "reload the SQL database into the cache", 0, 0, {
+	{ "reload", "reload the SQL database into the cache", 0, 0, {
 		{mi_reload_1, {"id", 0}},
 		{mi_reload_2, {"id", "key", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -417,7 +417,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 				LM_ERR("expected value of: %.*s\n", ONDEMAND_STR_LEN, ONDEMAND_STR);
 				goto parse_err;
 			}
-			str_val.s = p2 + 1; 
+			str_val.s = p2 + 1;
 			if(str2int(&str_val, &new_entry->on_demand)) {
 				LM_ERR("expected integer value for: %.*s instead of: %.*s\n",
 						ONDEMAND_STR_LEN, ONDEMAND_STR, str_val.len, str_val.s);
@@ -444,7 +444,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 				LM_ERR("expected value of: %.*s\n", EXPIRE_STR_LEN, EXPIRE_STR);
 				goto parse_err;
 			}
-			str_val.s = p2 + 1; 
+			str_val.s = p2 + 1;
 			if(str2int(&str_val, &new_entry->expire)) {
 				LM_ERR("expected integer value for: %.*s instead of: %.*s\n",
 						EXPIRE_STR_LEN, EXPIRE_STR, str_val.len, str_val.s);
@@ -953,7 +953,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	if (inc_rld_vers==0)
 		sr_set_status( sql_srg,  STR2CI(c_entry->id),
 			SR_STATUS_LOADING_DATA, CHAR_INT("startup data loading"), 0);
-	else 
+	else
 		sr_set_status( sql_srg,  STR2CI(c_entry->id),
 			SR_STATUS_RELOADING_DATA, CHAR_INT("data re-loading"), 0);
 

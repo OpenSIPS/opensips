@@ -607,7 +607,7 @@ static const param_export_t params[] = {
  * MI commands
  */
 static const mi_export_t mi_cmds[] = {
-	{ "sip_capture", 0, 0, 0, {
+	{ "capture", 0, 0, 0, {
 		{sip_capture_mi, {0}},
 		{sip_capture_mi_1, {"capture_mode", 0}},
 		{EMPTY_MI_RECIPE}

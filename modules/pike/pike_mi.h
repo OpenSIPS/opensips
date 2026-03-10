@@ -30,8 +30,8 @@
 
 #include "../../mi/mi.h"
 
-#define MI_PIKE_LIST      "pike_list"
-#define MI_PIKE_RM        "pike_rm"
+#define MI_PIKE_LIST      "list"
+#define MI_PIKE_RM        "rm"
 
 mi_response_t *mi_pike_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);

@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -174,39 +174,39 @@ static const param_export_t mod_params[]={
 };
 
 static const mi_export_t mi_cmds[] = {
-	{"cc_reload", 0, 0, mi_child_init, {
+	{"reload", 0, 0, mi_child_init, {
 		{mi_cc_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"cc_agent_login", 0, 0, 0, {
+	{"agent_login", 0, 0, 0, {
 		{mi_agent_login, {"agent_id", "state", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"cc_list_queue", 0, 0, 0, {
+	{"list_queue", 0, 0, 0, {
 		{mi_cc_list_queue, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"cc_list_flows", 0, 0, 0, {
+	{"list_flows", 0, 0, 0, {
 		{mi_cc_list_flows, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"cc_list_agents", 0, 0, 0, {
+	{"list_agents", 0, 0, 0, {
 		{mi_cc_list_agents, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"cc_list_calls", 0, 0, 0, {
+	{"list_calls", 0, 0, 0, {
 		{mi_cc_list_calls, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"cc_reset_stats", 0, 0, 0, {
+	{"reset_stats", 0, 0, 0, {
 		{mi_reset_stats, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"cc_dispatch_call_to_agent", 0, 0, 0, {
+	{"dispatch_call_to_agent", 0, 0, 0, {
 		{mi_dispatch_call_to_agent, {"call_id", "agent_id", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"cc_internal_call_dispatching", 0, 0, 0, {
+	{"internal_call_dispatching", 0, 0, 0, {
 		{mi_internal_call_dispatching, {0}},
 		{mi_internal_call_dispatching, {"dispatching", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -514,7 +514,7 @@ static void mod_destroy(void)
 static inline void update_awt( unsigned int duration )
 {
 	data->avt_waittime_no ++;
-	data->avt_waittime = 
+	data->avt_waittime =
 		( ((float)duration + (data->avt_waittime * (float)(data->avt_waittime_no-1))) ) /
 		(float)data->avt_waittime_no;
 }
@@ -541,7 +541,7 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 		LM_CRIT("BUG - terminate state \n");
 		return;
 	}
-	
+
 	LM_DBG("terminating call %p (stat=%p)\n",call,stat);
 
 	lock_get( data->lock );
@@ -564,7 +564,7 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 			}
 			call->flow->processed_calls ++;
 			call->flow->avg_call_duration =
-				( ((float)stat->call_time + 
+				( ((float)stat->call_time +
 				((float)call->flow->avg_call_duration *
 				(call->flow->processed_calls-1)) ) ) /
 				call->flow->processed_calls ;
@@ -632,7 +632,7 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 	update_stat( call->agent->st_aban_incalls, 1);
 	call->no_rejections++;
 
-	/* put call back into queue */ 
+	/* put call back into queue */
 	call->state = CC_CALL_QUEUED;
 	call->setup_time = -1;
 
@@ -704,7 +704,7 @@ int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
 	LM_DBG(" call (%p) has BYE for event %d, \n", call, event);
 
 	lock_set_get( data->call_locks, call->lock_idx );
-	
+
 	if (event == B2B_DESTROY_CB) {
 		LM_DBG("A delete in b2blogic, call->state=%d, %p\n", call->state, call);
 		cnt = --call->ref_cnt;
@@ -718,7 +718,7 @@ int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
 		lock_set_release( data->call_locks, call->lock_idx );
 		return 2;
 	}
-	
+
 	if (event == B2B_BYE_CB && params->entity == 0) {
 		/* BYE from agent */
 		if (call->state==CC_CALL_PRE_TOAGENT) {
@@ -771,9 +771,9 @@ int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
 		return -1;
 	}
 	cc_call_state = CC_CALL_NONE;
-	/* if the agent was connected to the costumer */	
+	/* if the agent was connected to the costumer */
 	lock_set_release( data->call_locks, call->lock_idx );
-	
+
 	return 0;
 }
 
@@ -844,7 +844,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 			}
 		}
 	}
-	
+
 	if (event==B2B_BYE_CB && params->entity==0) {
 		LM_DBG("BYE from the customer\n");
 		if(call->state==CC_CALL_PRE_TOAGENT) {
@@ -1032,7 +1032,7 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 			LM_ERR("failed to init new b2bua call (empty ID received)\n");
 			return -2;
 		}
-		
+
 		call->b2bua_id.s = (char*)shm_malloc(id->len);
 		if (call->b2bua_id.s==NULL) {
 			LM_ERR("failed to allocate b2bua ID\n");
@@ -1074,7 +1074,7 @@ static inline str* build_displayname(str *prefix, struct to_body *fh)
 
 	n = prefix->len;
 	if (n>=l) n = l;
-	
+
 	memcpy( p, prefix->s , n);
 	p += n;
 	l -= n;
@@ -1217,9 +1217,9 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
 	/* one more call to process */
 	flow->ongoing_calls++;
 
-	/* there is no need to lock the call here as it is not 
+	/* there is no need to lock the call here as it is not
 	 * yet sharead at all - just we have a ref to it */
-	
+
 	/* get the first state */
 	if (cc_call_state_machine( data, call, &leg )!=0) {
 		LM_ERR("failed to get first call destination \n");
@@ -1247,7 +1247,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
 	/* send call to selected destination */
 	if (set_call_leg( msg, call, &leg)< 0 ) {
 		LM_ERR("failed to set new destination for call\n");
-		if (dec) { 
+		if (dec) {
 			LM_DBG("** onhold-- Error [%p]\n", call);
 			update_stat( stg_onhold_calls, -1);
 			update_stat( flow->st_onhold_calls, -1);
@@ -1455,7 +1455,7 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 			out.len = OUT_BUF_LEN(dest.len);
 			out.s = out_buf;
 			memcpy( out.s, dest.s, out.len);
-			
+
 			call->prev_state = call->state;
 			if(!call->flow->recordings[AUDIO_FLOW_ID].len) {
 				call->state = CC_CALL_TOAGENT;
@@ -1550,7 +1550,7 @@ static void cc_timer_calls(unsigned int ticks, void* param)
 				}
 				continue;
 			}
-			
+
 			lock_get( data->lock );
 
 			/* make a copy for destination to dissuading */
@@ -1596,7 +1596,7 @@ static void cc_timer_cleanup(unsigned int ticks, void* param)
 	lock_get( data->lock );
 
 	clean_cc_unref_data(data);
-	
+
 	/* done with data */
 	lock_release( data->lock );
 }

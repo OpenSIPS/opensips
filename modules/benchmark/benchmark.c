@@ -139,23 +139,23 @@ mi_response_t *mi_bm_poll_results(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 static const mi_export_t mi_cmds[] = {
-	{ "bm_enable_global", 0,0,0, {
+	{ "enable_global", 0,0,0, {
 		{mi_bm_enable_global, {"enable", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "bm_enable_timer", 0,0,0, {
+	{ "enable_timer", 0,0,0, {
 		{mi_bm_enable_timer, {"timer", "enable", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "bm_granularity", 0,0,0, {
+	{ "granularity", 0,0,0, {
 		{mi_bm_granularity, {"granularity", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "bm_loglevel", 0,0,0, {
+	{ "loglevel", 0,0,0, {
 		{mi_bm_loglevel, {"log_level", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "bm_poll_results", 0,0,0, {
+	{ "poll_results", 0,0,0, {
 		{mi_bm_poll_results, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -574,7 +574,7 @@ mi_response_t *mi_bm_enable_timer(const mi_params_t *params,
 	pkg_free(p1);
 
 	if (get_mi_int_param(params, "enable", &v2) < 0)
-		init_mi_param_error();	
+		init_mi_param_error();
 
 	if ((v2 < 0) || (v2 > 1))
 		return init_mi_error(400, MI_SSTR("Bad parameter value"));
@@ -606,7 +606,7 @@ mi_response_t *mi_bm_loglevel(const mi_params_t *params,
 	int v1;
 
 	if (get_mi_int_param(params, "log_level", &v1) < 0)
-		init_mi_param_error();	
+		init_mi_param_error();
 
 	if ((v1 < -3) || (v1 > 4)) /* Maximum log levels */
 		return init_mi_error(400, MI_SSTR("Bad value for parameter"));
@@ -701,7 +701,7 @@ static inline int fixup_bm_timer(void** param)
 
 	if (pkg_nt_str_dup(&tname, (str*)*param) < 0)
 		return E_UNSPEC;
-	
+
 	if((_bm_register_timer(tname.s, 1, &tid))!=0)
 	{
 		LM_ERR("cannot register timer [%s]\n", (char*)(*param));

@@ -35,6 +35,8 @@
 /* command only supports named parameters and will return
  * an error if positional parameters are received */
 #define MI_NAMED_PARAMS_ONLY (1<<1)
+/* internal-only flag: command local name is ambiguous across modules */
+#define MI_LOCAL_NAME_AMBIGUOUS (1U<<31)
 
 #define MI_ASYNC_RPL    ((mi_response_t*)-1)
 #define MI_NO_RPL 		1
@@ -53,6 +55,8 @@
 #define JSONRPC_INVAL_PARAMS_MSG   "Invalid params"
 #define JSONRPC_SERVER_ERR_CODE	   -32000
 #define JSONRPC_SERVER_ERR_MSG     "Server error"
+#define JSONRPC_AMBIG_METHOD_CODE  -32001
+#define JSONRPC_AMBIG_METHOD_MSG   "Method ambiguous"
 
 #define ERR_DET_POS_PARAMS_S "Command only supports named parameters"
 #define ERR_DET_AMBIG_CALL_S "Ambiguous call, use named parameters instead"
@@ -84,6 +88,7 @@ typedef struct mi_recipe_ {
 
 struct mi_cmd {
 	int id;
+	int local_id;
 	str_const module;
 	str name;
 	str help;

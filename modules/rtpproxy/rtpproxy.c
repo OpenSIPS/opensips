@@ -194,13 +194,13 @@
 
 #define DEFAULT_RTPP_SET_ID		0
 
-#define MI_ENABLE_RTP_PROXY			"rtpproxy_enable"
+#define MI_ENABLE_RTP_PROXY			"enable"
 #define MI_MIN_RECHECK_TICKS		0
 #define MI_MAX_RECHECK_TICKS		(unsigned int)-1
 
 
-#define MI_SHOW_RTP_PROXIES			"rtpproxy_show"
-#define MI_RELOAD_RTP_PROXIES       "rtpproxy_reload"
+#define MI_SHOW_RTP_PROXIES			"show"
+#define MI_RELOAD_RTP_PROXIES       "reload"
 
 #define MI_RTP_PROXY_NOT_FOUND		"RTP proxy not found"
 #define MI_RTP_PROXY_NOT_FOUND_LEN	(sizeof(MI_RTP_PROXY_NOT_FOUND)-1)

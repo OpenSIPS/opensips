@@ -114,11 +114,11 @@ static const param_export_t params[]={
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "show_fraud_stats", "print current stats for a particular user", 0, 0, {
+	{ "show_stats", "print current stats for a particular user", 0, 0, {
 		{mi_show_stats, {"user", "prefix", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "fraud_reload", "reload fraud profiles from db", 0, 0, {
+	{ "reload", "reload fraud profiles from db", 0, 0, {
 		{mi_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
