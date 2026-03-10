@@ -213,20 +213,48 @@ static mi_response_t *mi_which_cmd(const mi_params_t *params,
 {
 	mi_item_t *resp_arr, *cmd_arr;
 	mi_response_t *resp;
+	struct mi_cmd *cmds;
 	struct mi_cmd *cmd;
 	str cmd_str;
+	int found;
+	int size;
 	int i, j;
+
+	if (get_mi_string_param(params, "command", &cmd_str.s, &cmd_str.len) < 0)
+		return init_mi_param_error();
 
 	resp = init_mi_result_array(&resp_arr);
 	if (!resp)
 		return 0;
 
-	if (get_mi_string_param(params, "command", &cmd_str.s, &cmd_str.len) < 0)
-		return init_mi_param_error();
+	if (cmd_str.len > 0 && cmd_str.s[cmd_str.len - 1] == ':') {
+		found = 0;
+		get_mi_cmds(&cmds, &size);
+		for (i = 0; i < size; i++) {
+			if (cmds[i].name.len < cmd_str.len ||
+					memcmp(cmds[i].name.s, cmd_str.s, cmd_str.len) != 0)
+				continue;
+			found = 1;
+			if (add_mi_string(resp_arr, 0, 0,
+					cmds[i].name.s, cmds[i].name.len) < 0) {
+				LM_ERR("failed to add mi item\n");
+				free_mi_response(resp);
+				return 0;
+			}
+		}
+
+		if (found)
+			return resp;
+
+		free_mi_response(resp);
+		return init_mi_error(404, MI_SSTR("unknown MI command"));
+	}
 
 	cmd = lookup_mi_cmd(cmd_str.s, cmd_str.len);
-	if (!cmd)
+	if (!cmd) {
+		free_mi_response(resp);
 		return init_mi_error(404, MI_SSTR("unknown MI command"));
+	}
 	for (i = 0; i < MAX_MI_RECIPES && cmd->recipes[i].cmd; i++) {
 		cmd_arr = add_mi_array(resp_arr, NULL, 0);
 		if (! cmd_arr) {
