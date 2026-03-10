@@ -81,10 +81,13 @@ modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
 	</section>	
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI functions</title>
-		<section id="mi_pua_publish" xreflabel="pua_publish">
+		<section id="mi_publish" xreflabel="pua_mi:publish">
 				<title>
-				<function moreinfo="none">pua_publish</function>
+				<function moreinfo="none">pua_mi:publish</function>
 				</title>
+			<para>
+				Replaces obsolete MI command: <emphasis>pua_publish</emphasis>.
+			</para>
 			<para>
 				Command parameters:
 			</para>
@@ -143,11 +146,11 @@ modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
 			</listitem>
 			</itemizedlist>
 		<example>
-		<title><function>pua_publish</function> FIFO example</title>
+		<title><function>pua_mi:publish</function> FIFO example</title>
 	<programlisting format="linespecific">
 ...
 <![CDATA[
-opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence application/pidf+xml <?xml version='1.0'?><presence xmlns='urn:ietf:params:xml:ns:pidf' xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model' xmlns:rpid='urn:ietf:params:xml:ns:pidf:rpid' xmlns:c='urn:ietf:params:xml:ns:pidf:cipid' entity='system@opensips.org'><tuple id='0x81475a0'><status><basic>open</basic></status></tuple><dm:person id='pdd748945'><rpid:activities><rpid:away/>away</rpid:activities><dm:note>CPU:16 MEM:476</dm:note></dm:person></presence>
+opensips-cli -x mi pua_mi:publish sip:system@opensips.org 3600 presence application/pidf+xml <?xml version='1.0'?><presence xmlns='urn:ietf:params:xml:ns:pidf' xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model' xmlns:rpid='urn:ietf:params:xml:ns:pidf:rpid' xmlns:c='urn:ietf:params:xml:ns:pidf:cipid' entity='system@opensips.org'><tuple id='0x81475a0'><status><basic>open</basic></status></tuple><dm:person id='pdd748945'><rpid:activities><rpid:away/>away</rpid:activities><dm:note>CPU:16 MEM:476</dm:note></dm:person></presence>
 ]]>
 </programlisting>
 		</example>
@@ -202,4 +205,3 @@ opensips-cli -x mi pua_mi:subscribe sip:system@opensips.org sip:400@opensips.org
 	</section>
 </section>
 </chapter>
-
