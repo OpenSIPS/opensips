@@ -113,27 +113,27 @@ static const param_export_t params[]={
 static const mi_export_t mi_cmds[] = {
 	{ "reload", 0, 0, 0, {
 		{mi_config_reload, {NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"config_reload", 0}
 	},
 	{ "list", 0, 0, 0, {
 		{mi_config_list, {NULL}},
 		{mi_config_list, {"description", NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"config_list", 0}
 	},
 	{ "push", 0, 0, 0, {
 		{mi_config_push, {"name", NULL}},
 		{mi_config_push, {"name", "value", NULL}},
 		{mi_config_push, {"name", "value", "description", NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"config_push", 0}
 	},
 	{ "push_bulk", 0, 0, 0, {
 		{mi_config_push_bulk, {"configs", NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"config_push_bulk", 0}
 	},
 	{ "flush", 0, 0, 0, {
 		{mi_config_flush, {NULL}},
 		{mi_config_flush, {"name", NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"config_flush", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

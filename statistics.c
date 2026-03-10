@@ -64,30 +64,25 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_reset_all_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-
 static const mi_export_t mi_stat_cmds[] = {
 	{ "get",
 		"prints the statistics (all, group or one) realtime values.", 0, 0, {
 		{mi_get_stats, {"statistics", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"get_statistics", 0}
 	},
 	{ "list",
 		"lists all the registered statistics and their types", 0, 0, {
 		{w_mi_list_stats, {0}},
 		{w_mi_list_stats_1, {"statistics", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"list_statistics", 0}
 	},
 	{ "reset", "resets the value of a statistic variable", 0, 0, {
 		{mi_reset_stats, {"statistics", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"reset_statistics", 0}
 	},
 	{ "reset_all", "resets the value of all resetable variables", 0, 0, {
 		{mi_reset_all_stats, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"reset_all_statistics", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

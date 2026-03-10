@@ -163,9 +163,9 @@ static const param_export_t params[]=
 
 /** MI commands */
 static const mi_export_t mi_cmds[] = {
-	{ "list", 0,0,0,{
+	{ "list", 0,0,0, {
 		{mi_sca_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"sca_list", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

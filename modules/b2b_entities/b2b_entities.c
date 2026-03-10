@@ -157,9 +157,9 @@ static const param_export_t params[]={
 #define UA_REPLY_MI_PARAMS "key", "method", "code", "reason"
 
 static const mi_export_t mi_cmds[] = {
-	{ "list", 0,0,0,{
+	{ "list", 0,0,0, {
 		{mi_b2be_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"b2be_list", 0}
 	},
 	{ "ua_session_client_start", 0, 0, 0, {
 		{b2b_ua_session_client_start, {UA_START_MI_PARAMS, 0}},
@@ -237,7 +237,7 @@ static const mi_export_t mi_cmds[] = {
 			"extra_headers", "flags", "socket", 0}},
 		{b2b_ua_session_client_start, {UA_START_MI_PARAMS, "proxy", "body",
 			"content_type", "extra_headers", "flags", "socket", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "ua_session_update", 0, 0, 0, {
 		{b2b_ua_mi_update, {UA_UPDATE_MI_PARAMS, 0}},
@@ -247,7 +247,7 @@ static const mi_export_t mi_cmds[] = {
 		{b2b_ua_mi_update, {UA_UPDATE_MI_PARAMS, "body", "extra_headers", 0}},
 		{b2b_ua_mi_update, {UA_UPDATE_MI_PARAMS, "body", "content_type",
 			"extra_headers", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "ua_session_reply", 0, 0, 0, {
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, 0}},
@@ -257,17 +257,17 @@ static const mi_export_t mi_cmds[] = {
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "body", "extra_headers", 0}},
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "body", "content_type",
 			"extra_headers", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "ua_session_terminate", 0, 0, 0, {
 		{b2b_ua_mi_terminate, {"key", 0}},
 		{b2b_ua_mi_terminate, {"key", "extra_headers", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "ua_session_list", 0,0,0,{
 		{b2b_ua_session_list, {0}},
 		{b2b_ua_session_list, {"key", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{EMPTY_MI_EXPORT}
 };

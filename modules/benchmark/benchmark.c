@@ -141,23 +141,23 @@ mi_response_t *mi_bm_poll_results(const mi_params_t *params,
 static const mi_export_t mi_cmds[] = {
 	{ "enable_global", 0,0,0, {
 		{mi_bm_enable_global, {"enable", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"bm_enable_global", 0}
 	},
 	{ "enable_timer", 0,0,0, {
 		{mi_bm_enable_timer, {"timer", "enable", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"bm_enable_timer", 0}
 	},
 	{ "granularity", 0,0,0, {
 		{mi_bm_granularity, {"granularity", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"bm_granularity", 0}
 	},
 	{ "loglevel", 0,0,0, {
 		{mi_bm_loglevel, {"log_level", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"bm_loglevel", 0}
 	},
 	{ "poll_results", 0,0,0, {
 		{mi_bm_poll_results, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"bm_poll_results", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

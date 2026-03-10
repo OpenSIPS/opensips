@@ -162,9 +162,7 @@ static const mi_export_t mi_cmds[] = {
 	{ "trace", 0, 0, 0, {
 		{wss_trace_mi, {0}},
 		{wss_trace_mi_1, {"trace_mode", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"wss_trace", 0}},
 	{EMPTY_MI_EXPORT}
 };
 

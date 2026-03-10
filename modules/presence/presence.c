@@ -195,25 +195,24 @@ static const param_export_t params[]={
 static const mi_export_t mi_cmds[] = {
 	{ "refresh_watchers", 0,0,0, {
 		{mi_refresh_watchers, {"presentity_uri", "event", "refresh_type", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "cleanup", 0,0,0, {
 		{mi_cleanup, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "expose", 0,0,0, {
 		{mi_pres_expose_1, {"event", 0}},
 		{mi_pres_expose_2, {"event", "filter", 0}},
-		{EMPTY_MI_RECIPE}} 
-	},
+		{EMPTY_MI_RECIPE}} , {"pres_expose", 0}},
 	{ "phtable_list", 0,0,0, {
 		{mi_list_phtable, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"pres_phtable_list", 0}
 	},
 	{ "subs_phtable_list", 0,0,0, {
 		{mi_list_shtable_1, {0}},
 		{mi_list_shtable_2, {"from", "to", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{EMPTY_MI_EXPORT}
 };

@@ -103,7 +103,7 @@ static const param_export_t params[] = {
 static const mi_export_t mi_cmds[] = {
 	{ "reload", 0, 0, 0, {
 		{mi_reload_blacklist, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"reload_blacklist", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

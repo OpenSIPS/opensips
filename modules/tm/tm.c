@@ -480,9 +480,8 @@ static const pv_export_t mod_items[] = {
 		NULL, pv_parse_branch_index, NULL, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
-
-
 static const mi_export_t mi_cmds [] = {
+
 	{ MI_TM_UAC, 0, MI_ASYNC_RPL_FLAG|MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_tm_uac_dlg_1, {"method", "ruri", "headers", 0}},
 		{mi_tm_uac_dlg_2, {"method", "ruri", "headers", "next_hop", 0}},
@@ -493,15 +492,15 @@ static const mi_export_t mi_cmds [] = {
 		{mi_tm_uac_dlg_7, {"method", "ruri", "headers", "socket", "body", 0}},
 		{mi_tm_uac_dlg_8, {"method", "ruri", "headers", "next_hop", "socket",
 						   "body", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"t_uac_dlg", 0}
 	},
 	{ MI_TM_CANCEL, 0, 0, 0, {
 		{mi_tm_cancel, {"callid", "cseq", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"t_uac_cancel", 0}
 	},
 	{ MI_TM_HASH, 0, 0, 0, {
 		{mi_tm_hash, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"t_hash", 0}
 	},
 	{ MI_TM_REPLY, 0, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_tm_reply_1, {"code", "reason", "trans_id", "to_tag", 0}},
@@ -511,7 +510,7 @@ static const mi_export_t mi_cmds [] = {
 						   "body", 0}},
 		{mi_tm_reply_4, {"code", "reason", "trans_id", "to_tag",
 						   "new_headers", "body", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"t_reply", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };
@@ -2839,4 +2838,3 @@ static int pv_set_tm_branch_attr(struct sip_msg* msg, pv_param_t *param,
 {
 	return _pv_set_tm_branch_field( msg, param, op, val, BR_ATTR_ID);
 }
-

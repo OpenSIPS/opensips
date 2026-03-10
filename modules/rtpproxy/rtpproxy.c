@@ -532,15 +532,15 @@ static const mi_export_t mi_cmds[] = {
 	{ MI_ENABLE_RTP_PROXY, 0, 0, 0, {
 		{mi_enable_rtp_proxy_1, {"url", "enable", 0}},
 		{mi_enable_rtp_proxy_2, {"url", "enable", "setid", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ MI_SHOW_RTP_PROXIES, 0, 0, 0, {
 		{mi_show_rtpproxies, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ MI_RELOAD_RTP_PROXIES, 0, 0, mi_child_init, {
 		{mi_reload_rtpproxies, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{EMPTY_MI_EXPORT}
 };

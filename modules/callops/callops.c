@@ -217,19 +217,19 @@ static const mi_export_t mi_cmds[] = {
 		{mi_call_attended_transfer,
 			{"callid", "leg", "transfer_callid", "transfer_fromtag",
 				"transfer_totag", "transfer_destination", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"call_transfer", 0}
 	},
 	{ "hold", 0, 0, 0, {
 		{mi_call_hold, {"callid", 0}},
 		{mi_call_hold, {"callid", "leg", 0}},
 		{mi_call_hold, {"callid", "leg", "headers", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"call_hold", 0}
 	},
 	{ "unhold", 0, 0, 0, {
 		{mi_call_unhold, {"callid", 0}},
 		{mi_call_unhold, {"callid", "leg", 0}},
 		{mi_call_unhold, {"callid", "leg", "headers", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"call_unhold", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

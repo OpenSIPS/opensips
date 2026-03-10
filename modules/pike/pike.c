@@ -96,12 +96,10 @@ static const param_export_t params[]={
 static const mi_export_t mi_cmds [] = {
 	{MI_PIKE_LIST, "lists the nodes in the pike tree", 0, 0, {
 		{mi_pike_list, {0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{MI_PIKE_RM, "remove a node from the tree", 0, 0, {
 		{mi_pike_rm, {"ip", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{EMPTY_MI_EXPORT}
 };
 

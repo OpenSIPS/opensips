@@ -182,17 +182,17 @@ static const param_export_t params[] = {
  * Exported MI functions
  */
 static const mi_export_t mi_cmds[] = {
-	{ "reload", "Causes regex module to re-read the content of the text file and re-compile the regular expressions", 0, 0, 		{
-{mi_pcres_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+	{ "reload", "Causes regex module to re-read the content of the text file and re-compile the regular expressions", 0, 0, {
+		{mi_pcres_reload, {0}},
+		{EMPTY_MI_RECIPE}}, {"regex_reload", 0}
 	},
 	{ "match", "Matches the given string parameter against the regular expression pcre_regex", 0, 0, {
 		{mi_pcres_match, {"string", "pcre_regex", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"regex_match", 0}
 	},
 	{ "match_group", "It uses the groups readed from the text file to match the given string parameter against the compiled regular expression in group number group", 0, 0, {
 		{mi_pcres_match_group, {"string", "group", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"regex_match_group", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

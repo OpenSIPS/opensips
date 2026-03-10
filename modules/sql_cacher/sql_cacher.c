@@ -112,7 +112,7 @@ static const mi_export_t mi_cmds[] = {
 	{ "reload", "reload the SQL database into the cache", 0, 0, {
 		{mi_reload_1, {"id", 0}},
 		{mi_reload_2, {"id", "key", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"sql_cacher_reload", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

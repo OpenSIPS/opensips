@@ -135,7 +135,6 @@ static const cmd_export_t cmds[] = {
 static const param_export_t params[] = {
 	{0, 0, 0}
 };
-
 static const mi_export_t mi_cmds[] = {
 	{ "fork_from_call_to_uri", 0, 0, 0, {
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", 0}},
@@ -145,21 +144,21 @@ static const mi_export_t mi_cmds[] = {
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", "instance", 0}},
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "headers", "instance", 0}},
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", "headers", "instance", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"media_fork_from_call_to_uri", 0}
 	},
 	{ "from_call_to_uri", 0, 0, 0, {
 		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", 0}},
 		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
 		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "nohold", 0}},
 		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "headers", "nohold", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"media_exchange_from_call_to_uri", 0}
 	},
 	{ "from_call_to_uri_body", 0, 0, 0, {
 		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "body", 0}},
 		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", 0}},
 		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "body", "nohold", 0}},
 		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", "nohold", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"media_exchange_from_call_to_uri_body", 0}
 	},
 	{ "terminate", 0, 0, 0, {
 		{mi_media_terminate, {"callid", 0}},
@@ -169,7 +168,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_media_terminate, {"callid", "leg", "instance", 0}},
 		{mi_media_terminate, {"callid", "nohold", "instance", 0}},
 		{mi_media_terminate, {"callid", "leg", "nohold", "instance", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"media_terminate", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

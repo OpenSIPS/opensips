@@ -100,20 +100,16 @@ static const param_export_t params[]={
 static const mi_export_t mi_cmds[] = {
 	{ FIFO_SET_GFLAG, 0, 0, 0, {
 		{mi_set_gflag, {"bitmask", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{ FIFO_RESET_GFLAG, 0, 0, 0, {
 		{mi_reset_gflag, {"bitmask", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{ FIFO_IS_GFLAG, 0, 0, 0, {
 		{mi_is_gflag, {"bitmask", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{ FIFO_GET_GFLAGS, 0, 0, 0, {
 		{mi_get_gflags, {0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{EMPTY_MI_EXPORT}
 };
 

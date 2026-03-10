@@ -100,8 +100,7 @@ static const param_export_t params[] =
 static const mi_export_t mi_cmds[] = {
 	{ "fd_log_level", 0, 0, 0, {
 		{NULL, {"log_level", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{EMPTY_MI_EXPORT}
 };
 

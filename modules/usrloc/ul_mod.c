@@ -276,42 +276,41 @@ static const stat_export_t mod_stats[] = {
 	{"registered_users" ,  STAT_IS_FUNC, (stat_var**)get_number_of_users  },
 	{0,0,0}
 };
-
 static const mi_export_t mi_cmds[] = {
 	{ MI_USRLOC_RM, 0, 0, mi_child_init, {
 		{mi_usrloc_rm_aor, {"table_name", "aor", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"ul_rm", 0}
 	},
 	{ MI_USRLOC_RM_CONTACT, 0, 0, mi_child_init, {
 		{mi_usrloc_rm_contact, {"table_name", "aor", "contact", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"ul_rm_contact", 0}
 	},
 	{ MI_USRLOC_DUMP, 0, 0, 0, {
 		{w_mi_usrloc_dump, {0}},
 		{w_mi_usrloc_dump_1, {"brief", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"ul_dump", 0}
 	},
 	{ MI_USRLOC_FLUSH, 0, 0, mi_child_init, {
 		{mi_usrloc_flush, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"ul_flush", 0}
 	},
 	{ MI_USRLOC_ADD, 0, 0, mi_child_init, {
 		{mi_usrloc_add, {"table_name", "aor", "contact", "expires", "q",
 						 "flags", "cflags", "methods", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"ul_add", 0}
 	},
 	{ MI_USRLOC_SHOW_CONTACT, 0, 0, mi_child_init, {
 		{mi_usrloc_show_contact, {"table_name", "aor", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"ul_show_contact", 0}
 	},
 	{ MI_USRLOC_SYNC, 0, 0, mi_child_init, {
 		{mi_usrloc_sync_1, {"table_name", 0}},
 		{mi_usrloc_sync_2, {"table_name", "aor", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"ul_sync", 0}
 	},
 	{ MI_USRLOC_CL_SYNC, 0, 0, mi_child_init, {
 		{mi_usrloc_cl_sync, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"ul_cluster_sync", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

@@ -103,8 +103,7 @@ static const param_export_t params[] = {
 static const mi_export_t mi_cmds[] = {
 	{ MI_FLAT_ROTATE, MI_FLAT_HELP, 0, 0, {
 		{mi_flat_rotate_cmd, {0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{EMPTY_MI_EXPORT}
 };
 

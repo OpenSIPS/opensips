@@ -322,22 +322,22 @@ static const mi_export_t mi_cmds[] = {
 	{"trigger_scenario", 0, 0, 0, {
 		{mi_trigger_scenario, {"scenario_id", "entity1", "entity2", 0}},
 		{mi_trigger_scenario, {"scenario_id", "entity1", "entity2", "context", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"b2b_trigger_scenario", 0}
 	},
 	{"bridge", 0, 0, 0, {
 		{mi_b2b_bridge_2,   {"dialog_id", "new_uri", 0}},
 		{mi_b2b_bridge_f,   {"dialog_id", "new_uri", "flag", 0}},
 		{mi_b2b_bridge_pmu, {"dialog_id", "new_uri", "prov_media_uri", 0}},
 		{mi_b2b_bridge_4,   {"dialog_id", "new_uri", "flag", "prov_media_uri", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"b2b_bridge", 0}
 	},
 	{"list", 0, 0, 0, {
 		{mi_b2b_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"b2b_list", 0}
 	},
 	{"terminate_call", 0, 0, 0, {
 		{mi_b2b_terminate_call,   {"key", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"b2b_terminate_call", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

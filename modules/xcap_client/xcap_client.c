@@ -99,8 +99,7 @@ static const cmd_export_t cmds[]=
 static const mi_export_t mi_cmds[] = {
 	{ "refreshXcapDoc", 0, 0, 0, {
 		{refreshXcapDoc, {"doc_uri", "port", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{EMPTY_MI_EXPORT}
 };
 

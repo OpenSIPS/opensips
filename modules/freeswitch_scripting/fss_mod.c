@@ -82,21 +82,21 @@ static const param_export_t mod_params[] = {
 
 
 static const mi_export_t mi_cmds[] = {
-	{ "subscribe", 0,0,0,{
+	{ "subscribe", 0,0,0, {
 		{mi_fs_subscribe, {"freeswitch_url", "events", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"fs_subscribe", 0}
 	},
-	{ "unsubscribe", 0,0,0,{
+	{ "unsubscribe", 0,0,0, {
 		{mi_fs_unsubscribe, {"freeswitch_url", "events", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"fs_unsubscribe", 0}
 	},
-	{ "list", 0,0,0,{
+	{ "list", 0,0,0, {
 		{mi_fs_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"fs_list", 0}
 	},
-	{ "reload", 0,0,fss_db_connect,{
+	{ "reload", 0,0,fss_db_connect, {
 		{mi_fs_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"fs_reload", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

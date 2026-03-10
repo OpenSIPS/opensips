@@ -105,16 +105,16 @@ static const stat_export_t mod_stats[] = {
 static const mi_export_t mi_cmds[] = {
 	{"get_sizes", MQH1, 0, 0, {
 		{mi_get_sizes, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"mq_get_sizes", 0}
 	},
 	{"get_size",  MQH2, 0, 0, {
 		{mi_get_size,  {"name", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"mq_get_size", 0}
 	},
 	{"fetch",     MQH3, 0, 0, {
 		{mi_fetch,     {"name", 0}},
 		{mi_fetch_bulk,{"name", "limit", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"mq_fetch", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

@@ -538,14 +538,13 @@ static const param_export_t params[] = {
 #define HLP6 "Params: [ enable ] ; Enables probing of gateways if parameter "\
 	"value greater than 0. Disables probing of gateways if parameter"\
 "value is 0. With no parameter, returns current probing status"
-
 static const mi_export_t mi_cmds[] = {
 	{ "reload", HLP1, 0, 0, {
 		{dr_reload_cmd, {0}},
 		{dr_reload_cmd, {"inherit_state", 0}},
 		{dr_reload_cmd_1, {"partition_name", 0}},
 		{dr_reload_cmd_1, {"partition_name", "inherit_state", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dr_reload", 0}
 	},
 	{ "gw_status", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_dr_gw_status_1, {0}},
@@ -554,7 +553,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_dr_gw_status_4, {"gw_id", "status", 0}},
 		{mi_dr_gw_status_5, {"partition_name", "gw_id", 0}},
 		{mi_dr_gw_status_6, {"partition_name", "gw_id", "status", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dr_gw_status", 0}
 	},
 	{ "carrier_status", HLP3, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_dr_cr_status_1, {0}},
@@ -563,24 +562,24 @@ static const mi_export_t mi_cmds[] = {
 		{mi_dr_cr_status_4, {"carrier_id", "status", 0}},
 		{mi_dr_cr_status_5, {"partition_name", "carrier_id", 0}},
 		{mi_dr_cr_status_6, {"partition_name", "carrier_id", "status", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dr_carrier_status", 0}
 	},
 	{ "number_routing", HLP4, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_dr_number_routing_1, {"number", 0}},
 		{mi_dr_number_routing_2, {"group_id", "number", 0}},
 		{mi_dr_number_routing_3, {"partition_name", "number", 0}},
 		{mi_dr_number_routing_4, {"partition_name", "group_id", "number", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dr_number_routing", 0}
 	},
 	{ "reload_status", HLP5, 0, 0, {
 		{mi_dr_reload_status, {0}},
 		{mi_dr_reload_status_1, {"partition_name", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dr_reload_status", 0}
 	},
 	{ "enable_probing", HLP6, 0, 0, {
 		{mi_dr_enable_probing, {0}},
 		{mi_dr_enable_probing_1, {"status", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dr_enable_probing", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

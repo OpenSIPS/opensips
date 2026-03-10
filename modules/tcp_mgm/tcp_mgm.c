@@ -71,7 +71,7 @@ static const cmd_export_t cmds[] = {
 static const mi_export_t mi_cmds[] = {
 	{ "reload", "re-cache all TCP profiles from the database", 0, 0, {
 		{tcp_mi_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"tcp_reload", 0}
 	},
 	//{ "tcp_list_profiles", "list all cached TCP profiles", 0, 0, {
 	//	{tcp_list_profiles, {0}},

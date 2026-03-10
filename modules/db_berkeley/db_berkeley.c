@@ -88,8 +88,7 @@ static const param_export_t params[] = {
 static const mi_export_t mi_cmds[] = {
 	{ MI_BDB_RELOAD, 0, 0, 0, {
 		{mi_bdb_reload, {"table_path", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{EMPTY_MI_EXPORT}
 };
 

@@ -179,32 +179,32 @@ static const mi_export_t mi_cmds[] = {
 	{ "list", 0, 0, 0, {
 		{mi_reg_list, {0}},
 		{mi_reg_list_record, {"aor", "contact", "registrar", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"reg_list", 0}
 	},
 	{ "reload", 0, 0, 0, {
 		{mi_reg_reload, {0}},
 		{mi_reg_reload_record, {"aor", "contact", "registrar", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"reg_reload", 0}
 	},
 	{ "enable", 0, 0, 0, {
 		{mi_reg_enable, {"aor", "contact", "registrar", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"reg_enable", 0}
 	},
 	{ "disable", 0, 0, 0, {
 		{mi_reg_disable, {"aor", "contact", "registrar", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"reg_disable", 0}
 	},
 	{ "force_register", 0, 0, 0, {
 		{mi_reg_force_register, {"aor", "contact", "registrar", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"reg_force_register", 0}
 	},
 	{"upsert", 0, 0, 0, {
 		{mi_reg_upsert, {"aor", "contact", "registrar","proxy","third_party_registrant","username","password","binding_params","expiry","forced_socket","cluster_shtag","state", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"reg_upsert", 0}
 	},
 	{ "delete", 0, 0, 0, {
 		{mi_reg_delete, {"aor", "contact", "registrar", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"reg_delete", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

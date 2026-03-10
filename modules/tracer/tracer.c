@@ -259,21 +259,15 @@ static const mi_export_t mi_cmds[] = {
 		{sip_trace_mi_tid,  {"id", 0}},
 		{sip_trace_mi_mode, {"mode", 0}},
 		{sip_trace_mi_2,{"id", "mode", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{ "start", 0, 0, 0, {
 		{sip_trace_mi_dyn,{"id", "uri", 0}},
 		{sip_trace_mi_dyn,{"id", "uri", "filter", 0}},
 		{sip_trace_mi_dyn,{"id", "uri", "filter", "scope", "type", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"trace_start", 0}},
 	{ "stop", 0, 0, 0, {
 		{sip_trace_mi_stop,{"id", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"trace_stop", 0}},
 	{EMPTY_MI_EXPORT}
 };
 

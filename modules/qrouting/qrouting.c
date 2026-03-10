@@ -169,23 +169,23 @@ static const mi_export_t mi_cmds[] = {
 		{mi_qr_status_2, {QR_PARAM_PART, QR_PARAM_RULE_ID, NULL}},
 		{mi_qr_status_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
 		                  QR_PARAM_DST_NAME, NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"qr_status", 0}
 	},
 	{ "reload", NULL, 0, NULL, {
 		{mi_qr_reload_0, {NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"qr_reload", 0}
 	},
 	{ "disable_dst", HLP2, MI_NAMED_PARAMS_ONLY, NULL, {
 		{mi_qr_disable_dst_2, {QR_PARAM_RULE_ID, QR_PARAM_DST_NAME, NULL}},
 		{mi_qr_disable_dst_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
 		                       QR_PARAM_DST_NAME, NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"qr_disable_dst", 0}
 	},
 	{ "enable_dst", HLP3, MI_NAMED_PARAMS_ONLY, NULL, {
 		{mi_qr_disable_dst_2, {QR_PARAM_RULE_ID, QR_PARAM_DST_NAME, NULL}},
 		{mi_qr_disable_dst_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
 		                       QR_PARAM_DST_NAME, NULL}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"qr_enable_dst", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

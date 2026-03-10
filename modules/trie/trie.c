@@ -174,26 +174,17 @@ static mi_export_t mi_cmds[] = {
 	{ "reload", HLP1, 0, 0, {
 		{trie_reload_cmd, {0}},
 		{trie_reload_cmd_1, {"partition_name", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
-	{ "search", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
-		{mi_trie_number_routing_1, {"number", 0}},
+		{EMPTY_MI_RECIPE}}, {"trie_reload", 0}},
+	{ "search", HLP2, MI_NAMED_PARAMS_ONLY, 0, {		{mi_trie_number_routing_1, {"number", 0}},
 		{mi_trie_number_routing_2, {"partition_name", "number", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
-	{ "reload_status", HLP3, 0, 0, {
-		{mi_trie_reload_status, {0}},
+		{EMPTY_MI_RECIPE}}, {"trie_search", 0}},
+	{ "reload_status", HLP3, 0, 0, {		{mi_trie_reload_status, {0}},
 		{mi_trie_reload_status_1, {"partition_name", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
-	{ "number_delete", HLP4, 0,0, {
-		{mi_trie_remove_code_2, {"partition_name","number",0}},
-		{EMPTY_MI_RECIPE}}
-	},
-	{ "number_upsert", HLP5, 0,0, {
-		{mi_trie_upsert_code_3, {"partition_name","number","attrs",0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {"trie_reload_status", 0}},
+	{ "number_delete", HLP4, 0,0, {		{mi_trie_remove_code_2, {"partition_name","number",0}},
+		{EMPTY_MI_RECIPE}}, {"trie_number_delete", 0}},
+	{ "number_upsert", HLP5, 0,0, {		{mi_trie_upsert_code_3, {"partition_name","number","attrs",0}},
+		{EMPTY_MI_RECIPE}}, {"trie_number_upsert", 0}},
 	{EMPTY_MI_EXPORT}
 };
 
