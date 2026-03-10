@@ -96,12 +96,12 @@
 
 #define DEFAULT_RTPE_SET_ID		0
 
-#define MI_ENABLE_RTP_ENGINE			"rtpengine_enable"
+#define MI_ENABLE_RTP_ENGINE			"enable"
 #define MI_MIN_RECHECK_TICKS		0
 #define MI_MAX_RECHECK_TICKS		(unsigned int)-1
 
-#define MI_SHOW_RTP_ENGINES			"rtpengine_show"
-#define MI_RELOAD_RTP_ENGINES		"rtpengine_reload"
+#define MI_SHOW_RTP_ENGINES			"show"
+#define MI_RELOAD_RTP_ENGINES		"reload"
 
 #define MI_RTP_ENGINE_NOT_FOUND		"RTP engine not found"
 #define MI_RTP_ENGINE_NOT_FOUND_LEN	(sizeof(MI_RTP_ENGINE_NOT_FOUND)-1)
@@ -3473,7 +3473,7 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 				cp++;
 			}
 		} else {
-			LM_ERR("read reply from a RTP Ending FD %d. Cookie does NOT match (%.*s <> %.*s)\n", 
+			LM_ERR("read reply from a RTP Ending FD %d. Cookie does NOT match (%.*s <> %.*s)\n",
 			fd, cookielen - 1, param->cookie, cookielen - 1, buf);
 			goto error;
 		}

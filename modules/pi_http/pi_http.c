@@ -77,7 +77,7 @@ static const param_export_t params[] = {
 
 /** MI commands */
 static const mi_export_t mi_cmds[] = {
-	{ "pi_reload_tbls_and_cmds", 0, 0, 0, {
+	{ "reload_tbls_and_cmds", 0, 0, 0, {
 		{mi_framework_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},

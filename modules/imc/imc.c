@@ -125,11 +125,11 @@ static const stat_export_t imc_stats[] = {
 #endif
 
 static const mi_export_t mi_cmds[] = {
-	{ "imc_list_rooms", 0, 0, 0, {
+	{ "list_rooms", 0, 0, 0, {
 		{imc_mi_list_rooms, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "imc_list_members", 0, 0, 0, {
+	{ "list_members", 0, 0, 0, {
 		{imc_mi_list_members, {"room", 0}},
 		{EMPTY_MI_RECIPE}}
 	},

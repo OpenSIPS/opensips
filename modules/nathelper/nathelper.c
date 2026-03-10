@@ -95,7 +95,7 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 #define	NAT_UAC_TEST_C_RPORT	0x40
 #define	NAT_UAC_TEST_RFC_6333	0x80
 
-#define MI_SET_NATPING_STATE		"nh_enable_ping"
+#define MI_SET_NATPING_STATE		"enable_ping"
 #define MI_DEFAULT_NATPING_STATE	1
 
 #define MI_PING_DISABLED			"NATping disabled from script"

@@ -369,34 +369,34 @@ static const stat_export_t mod_stats[] = {
 
 
 static const mi_export_t mi_cmds[] = {
-	{ "dlg_list", 0, MI_NAMED_PARAMS_ONLY, 0, {
+	{ "list", 0, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_print_dlgs, {0}},
 		{mi_print_dlgs_1, {"callid", 0}},
 		{mi_print_dlgs_2, {"callid", "from_tag", 0}},
 		{mi_print_dlgs_cnt, {"index", "counter", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_list_ctx", 0, MI_NAMED_PARAMS_ONLY, 0, {
+	{ "list_ctx", 0, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_print_dlgs_ctx, {0}},
 		{mi_print_dlgs_1_ctx, {"callid", 0}},
 		{mi_print_dlgs_2_ctx, {"callid", "from_tag", 0}},
 		{mi_print_dlgs_cnt_ctx, {"index", "counter", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_end_dlg", 0, 0, 0, {
+	{ "end_dlg", 0, 0, 0, {
 		{mi_terminate_dlg_1, {"dialog_id", 0}},
 		{mi_terminate_dlg_2, {"dialog_id", "extra_hdrs", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_db_sync", 0, 0, 0, {
+	{ "db_sync", 0, 0, 0, {
 		{mi_sync_db_dlg, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_restore_db", 0, 0, 0, {
+	{ "restore_db", 0, 0, 0, {
 		{mi_restore_dlg_db, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_cluster_sync", 0, 0, 0, {
+	{ "cluster_sync", 0, 0, 0, {
 		{mi_sync_cl_dlg, {0}},
 		{mi_sync_cl_dlg, {"sharing_tag", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -424,12 +424,11 @@ static const mi_export_t mi_cmds[] = {
 		{mi_profile_terminate_2, {"profile", "value", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_push_var", 0, 0, 0, {
+	{ "push_var", 0, 0, 0, {
 		{mi_push_dlg_var, {"dlg_val_name", "dlg_val_value", "DID", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_send_sequential",
-		"send sequential request within dialog",
+	{ "send_sequential",		"send sequential request within dialog",
 		MI_ASYNC_RPL_FLAG|MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_send_sequential_dlg, {"callid", 0}},
 		{mi_send_sequential_dlg, {"callid", "mode", 0}},
@@ -442,13 +441,13 @@ static const mi_export_t mi_cmds[] = {
 		{mi_send_sequential_dlg, {"callid", "method", "body", "mode", "headers", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_set_profile", 0, 0, 0, {
+	{ "set_profile", 0, 0, 0, {
 		{mi_set_dlg_profile, {"dlg_id", "profile", 0}},
 		{mi_set_dlg_profile, {"dlg_id", "profile","value", 0}},
 		{mi_set_dlg_profile, {"dlg_id", "profile","value", "clear_values", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_unset_profile", 0, 0, 0, {
+	{ "unset_profile", 0, 0, 0, {
 		{mi_unset_dlg_profile, {"dlg_id", "profile", 0}},
 		{mi_unset_dlg_profile, {"dlg_id", "profile","value", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -951,7 +950,7 @@ static int mod_init(void)
 	}
 
 	destroy_cachedb(0);
-	
+
 	return 0;
 }
 
@@ -1174,7 +1173,7 @@ static int w_set_dlg_profile(struct sip_msg *msg, str *prof_name, str *value, in
 	if (profile->has_value) {
 		if (!value) {
 			LM_WARN("missing value\n");
-			return -1;	
+			return -1;
 		}
 
 		if (clear_values && *clear_values) {
@@ -1912,7 +1911,7 @@ int pv_set_dlg_deldelay(struct sip_msg *msg, pv_param_t *param,
 			return NULL; 			\
 		}					\
 	} while(0)					\
-		
+
 static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 {
 	static char dlg_info[DLG_CTX_JSON_BUFF_SIZE];
@@ -1926,7 +1925,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 
 	/* I know, this sucks.
 
-	Until we find a better way to push MI 
+	Until we find a better way to push MI
 	output straight to the script level,
 	this will have to do :( */
 
@@ -1947,10 +1946,10 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		dlg->to_uri.len,dlg->to_uri.s);
 
 	if (i<0) {
-		LM_ERR("Failed to print dlg json \n");		
+		LM_ERR("Failed to print dlg json \n");
 		return NULL;
 	}
-	
+
 	DEC_AND_CHECK_LEN(len, i + 1);
 	p+=i;
 
@@ -1963,9 +1962,9 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		dlg->legs[DLG_CALLER_LEG].route_set.len,dlg->legs[DLG_CALLER_LEG].route_set.s,
 		dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.len,dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.s,
 		dlg->legs[DLG_CALLER_LEG].out_sdp.len,dlg->legs[DLG_CALLER_LEG].out_sdp.s);
-		
+
 		if (i<0) {
-			LM_ERR("Failed to print dlg json \n");		
+			LM_ERR("Failed to print dlg json \n");
 			return NULL;
 		}
 
@@ -1982,7 +1981,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 			*p++=',';
 			DEC_AND_CHECK_LEN(len,1);
 		}
-			
+
 		i=snprintf(p,len,"{\"tag\":\"%.*s\",\"contact\":\"%.*s\",\"cseq\":\"%.*s\",\"route_set\":\"%.*s\",\"bind_addr\":\"%.*s\",\"sdp\":\"%.*s\"}",
 		dlg->legs[j].tag.len,dlg->legs[j].tag.s,
 		dlg->legs[j].contact.len,dlg->legs[j].contact.s,
@@ -1996,7 +1995,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 			LM_ERR("Failed to print dlg json \n");
 			return NULL;
 		}
-		
+
 		p+=i;
 		DEC_AND_CHECK_LEN(len,i);
 	}
@@ -2019,7 +2018,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 						continue;
 
 			if (k!=0) {
-				*p++ = ','; 
+				*p++ = ',';
 				DEC_AND_CHECK_LEN(len,1);
 			}
 			k++;
@@ -2093,7 +2092,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 			dl->it_marker=1;
 
 			if (dl!=dlg->profile_links) {
-				*p++ = ','; 
+				*p++ = ',';
 				DEC_AND_CHECK_LEN(len,1);
 			}
 
@@ -2105,7 +2104,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 			p+=dl->profile->name.len;
 
 			*p++='\"';
-			*p++=':';	
+			*p++=':';
 
 			*p++='[';
 
@@ -2144,7 +2143,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 	*p++='}';
 
 	*out_len = (int)(p-dlg_info);
-	return dlg_info;	
+	return dlg_info;
 }
 
 int pv_get_dlg_json(struct sip_msg *msg, pv_param_t *param,
@@ -2159,7 +2158,7 @@ int pv_get_dlg_json(struct sip_msg *msg, pv_param_t *param,
 
 	if ( (dlg=get_current_dialog())==NULL )
 		return pv_get_null( msg, param, res);
-	
+
 	dlg_lock_dlg(dlg);
 
 	if ((out = dlg_get_json_out(dlg,0,&len)) == NULL) {
@@ -2250,7 +2249,7 @@ static int w_get_dlg_jsons_by_val(struct sip_msg *msg, str *attr, pv_spec_t *att
 						dlg_unlock( d_table, d_entry);
 						return -1;
 					} else
-						n++; 
+						n++;
 				}
 			}
 		}
@@ -2294,7 +2293,7 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, str *attr, str *attr_
 		LM_ERR("NO such profile <%.*s> \n",attr->len,attr->s);
 		return -1;
 	}
-	
+
 
 	/* go through all hash entries (entire table) */
 
@@ -2317,7 +2316,7 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, str *attr, str *attr_
 			while(cur_link) {
 				if (cur_link->profile == profile &&
 				( !attr_val || !profile->has_value ||
-				( attr_val->len == cur_link->value.len && 
+				( attr_val->len == cur_link->value.len &&
 				!strncmp(attr_val->s,cur_link->value.s, attr_val->len)))) {
 					found = 1;
 					break;
@@ -2340,7 +2339,7 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, str *attr, str *attr_
 						dlg_unlock( d_table, d_entry);
 						return -1;
 					} else
-						n++; 
+						n++;
 				}
 			}
 		}

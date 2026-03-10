@@ -60,8 +60,8 @@ str presence_server= {0, 0};
  * Exported MI functions
  */
 static const mi_export_t mi_cmds[] = {
-	{ "pua_publish", 0,MI_ASYNC_RPL_FLAG,0,{
-		{mi_pua_publish_1, {"presentity_uri", "expires", "event_package", 0}},	
+	{ "publish", 0,MI_ASYNC_RPL_FLAG,0,{
+		{mi_pua_publish_1, {"presentity_uri", "expires", "event_package", 0}},
 		{mi_pua_publish_2, {"presentity_uri", "expires", "event_package",
 							"etag", 0}},
 		{mi_pua_publish_3, {"presentity_uri", "expires", "event_package",
@@ -78,7 +78,7 @@ static const mi_export_t mi_cmds[] = {
 							"etag", "extra_headers", "content_type", "body", 0}},
 		{EMPTY_MI_RECIPE}},
 	},
-	{ "pua_subscribe", 0,0,0,{
+	{ "subscribe", 0,0,0,{
 		{mi_pua_subscribe, {"presentity_uri", "watcher_uri", "event_package",
 							"expires", 0}},
 		{EMPTY_MI_RECIPE}}

@@ -182,15 +182,15 @@ static const param_export_t params[] = {
  * Exported MI functions
  */
 static const mi_export_t mi_cmds[] = {
-	{ "regex_reload", "Causes regex module to re-read the content of the text file and re-compile the regular expressions", 0, 0, 
-		{{mi_pcres_reload, {0}},
+	{ "reload", "Causes regex module to re-read the content of the text file and re-compile the regular expressions", 0, 0, 		{
+{mi_pcres_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "regex_match", "Matches the given string parameter against the regular expression pcre_regex", 0, 0, {
+	{ "match", "Matches the given string parameter against the regular expression pcre_regex", 0, 0, {
 		{mi_pcres_match, {"string", "pcre_regex", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "regex_match_group", "It uses the groups readed from the text file to match the given string parameter against the compiled regular expression in group number group", 0, 0, {
+	{ "match_group", "It uses the groups readed from the text file to match the given string parameter against the compiled regular expression in group number group", 0, 0, {
 		{mi_pcres_match_group, {"string", "group", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -771,7 +771,7 @@ mi_response_t *mi_pcres_match(const mi_params_t *params, struct mi_handler *asyn
 	/* handle call back function result */
 	rc = w_pcre_match(NULL, &string, &pcre_regex);
 	LM_DBG("w_pcre_match: string<%s>, pcre_regex=<%s>, result:<%i>\n", string.s, pcre_regex.s, rc);
-	
+
 	switch(rc) {
 		case -4:
 			/* Compilation error */
@@ -809,7 +809,7 @@ mi_response_t *mi_pcres_match_group(const mi_params_t *params, struct mi_handler
 		return init_mi_param_error();
 	}
 
-	/* 
+	/*
 	 *	type casting MI Param -> int(group) function.
 	 *	L.616 already test if group is an integer, if not, default 0 is set.
 	 */

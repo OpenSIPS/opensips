@@ -157,7 +157,7 @@ static const param_export_t params[]={
 #define UA_REPLY_MI_PARAMS "key", "method", "code", "reason"
 
 static const mi_export_t mi_cmds[] = {
-	{ "b2be_list", 0,0,0,{
+	{ "list", 0,0,0,{
 		{mi_b2be_list, {0}},
 		{EMPTY_MI_RECIPE}}
 	},

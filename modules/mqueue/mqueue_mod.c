@@ -103,15 +103,15 @@ static const stat_export_t mod_stats[] = {
 #define MQH3 "Params: mqueue [limit]; Fetch one (or a max limit of) key-value pair from a memory queue."
 
 static const mi_export_t mi_cmds[] = {
-	{"mq_get_sizes", MQH1, 0, 0, {
+	{"get_sizes", MQH1, 0, 0, {
 		{mi_get_sizes, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"mq_get_size",  MQH2, 0, 0, {
+	{"get_size",  MQH2, 0, 0, {
 		{mi_get_size,  {"name", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"mq_fetch",     MQH3, 0, 0, {
+	{"fetch",     MQH3, 0, 0, {
 		{mi_fetch,     {"name", 0}},
 		{mi_fetch_bulk,{"name", "limit", 0}},
 		{EMPTY_MI_RECIPE}}

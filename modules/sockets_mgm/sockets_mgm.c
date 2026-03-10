@@ -125,11 +125,11 @@ static const param_export_t params[]={
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "sockets_reload", 0, 0, 0, {
+	{ "reload", 0, 0, 0, {
 		{mi_sockets_reload, {NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "sockets_list", 0, 0, 0, {
+	{ "list", 0, 0, 0, {
 		{mi_sockets_list, {NULL}},
 		{EMPTY_MI_RECIPE}}
 	},

@@ -102,7 +102,7 @@ static int trie_exit(void);
 static int fix_flags(void** param);
 static int fix_partition(void** param);
 
-static int trie_match(struct sip_msg* msg,str *number, long flags, 
+static int trie_match(struct sip_msg* msg,str *number, long flags,
 		pv_spec_t* rule_att, pv_spec_t* match_prefix, struct head_db *part);
 
 mi_response_t *trie_reload_cmd(const mi_params_t *params,
@@ -168,30 +168,30 @@ static param_export_t params[] = {
 " for a partition given as parameter. If use_partitions is 0, you should"\
 " not specify a partition."
 #define HLP4 "Params: partitionid code_array ; Used to delete codes from the in-memory trie "
-#define HLP5 "Params: partitionid code_array attrs_array ; Used to upsert codes in the in-memory trie" 
+#define HLP5 "Params: partitionid code_array attrs_array ; Used to upsert codes in the in-memory trie"
 
 static mi_export_t mi_cmds[] = {
-	{ "trie_reload", HLP1, 0, 0, {
+	{ "reload", HLP1, 0, 0, {
 		{trie_reload_cmd, {0}},
 		{trie_reload_cmd_1, {"partition_name", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "trie_search", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
+	{ "search", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_trie_number_routing_1, {"number", 0}},
 		{mi_trie_number_routing_2, {"partition_name", "number", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "trie_reload_status", HLP3, 0, 0, {
+	{ "reload_status", HLP3, 0, 0, {
 		{mi_trie_reload_status, {0}},
 		{mi_trie_reload_status_1, {"partition_name", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "trie_number_delete", HLP4, 0,0, {
-		{mi_trie_remove_code_2, {"partition_name","number",0}}, 
+	{ "number_delete", HLP4, 0,0, {
+		{mi_trie_remove_code_2, {"partition_name","number",0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "trie_number_upsert", HLP5, 0,0, {
-		{mi_trie_upsert_code_3, {"partition_name","number","attrs",0}}, 
+	{ "number_upsert", HLP5, 0,0, {
+		{mi_trie_upsert_code_3, {"partition_name","number","attrs",0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}

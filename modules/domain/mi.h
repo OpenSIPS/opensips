@@ -26,8 +26,8 @@
 
 #include "../../mi/mi.h"
 
-#define MI_DOMAIN_RELOAD "domain_reload"
-#define MI_DOMAIN_DUMP   "domain_dump"
+#define MI_DOMAIN_RELOAD "reload"
+#define MI_DOMAIN_DUMP   "dump"
 
 
 mi_response_t *mi_domain_reload(const mi_params_t *params,

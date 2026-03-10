@@ -100,7 +100,7 @@ int  b2bl_script_bridge_msg(struct sip_msg* msg, str *key, int *entity_no,
 	str *adv_contact, void *flags);
 int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 	str *ent1, pv_spec_t *ent1_hnames, pv_spec_t *ent1_hvals,
-	str *ent2, pv_spec_t *ent2_hnames, pv_spec_t *ent2_hvals);	
+	str *ent2, pv_spec_t *ent2_hnames, pv_spec_t *ent2_hvals);
 
 str* b2bl_init_extern(struct b2b_params *init_params,
 	b2bl_init_params_t *scen_params, str *e1_id, str *e2_id,
@@ -238,7 +238,7 @@ static const cmd_export_t cmds[]=
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{0,0,0}		
+		{0,0,0}
 		},
 		REQUEST_ROUTE},
 	{"b2b_bridge", (cmd_function)b2b_script_bridge, {
@@ -319,23 +319,23 @@ static const pv_export_t mod_items[] = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{"b2b_trigger_scenario", 0, 0, 0, {
+	{"trigger_scenario", 0, 0, 0, {
 		{mi_trigger_scenario, {"scenario_id", "entity1", "entity2", 0}},
 		{mi_trigger_scenario, {"scenario_id", "entity1", "entity2", "context", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"b2b_bridge", 0, 0, 0, {
+	{"bridge", 0, 0, 0, {
 		{mi_b2b_bridge_2,   {"dialog_id", "new_uri", 0}},
 		{mi_b2b_bridge_f,   {"dialog_id", "new_uri", "flag", 0}},
 		{mi_b2b_bridge_pmu, {"dialog_id", "new_uri", "prov_media_uri", 0}},
 		{mi_b2b_bridge_4,   {"dialog_id", "new_uri", "flag", "prov_media_uri", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"b2b_list", 0, 0, 0, {
+	{"list", 0, 0, 0, {
 		{mi_b2b_list, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"b2b_terminate_call", 0, 0, 0, {
+	{"terminate_call", 0, 0, 0, {
 		{mi_b2b_terminate_call,   {"key", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -1034,7 +1034,7 @@ static int fixup_bridge_request_flags(void** param)
 		return -1;
 	}
 
-	/* ugly hack to move the flag on its right position (as the 
+	/* ugly hack to move the flag on its right position (as the
 	   fixup_named_flags() will set it with index 0 (as in the def array))
 	   WARNING: this works only because we have a single flag!!!! */
 	if (param)
@@ -1702,7 +1702,7 @@ int pv_parse_entity_name(pv_spec_p sp, const str *in)
 	else if (!str_strcmp(in, const_str("fromtag")))
 		sp->pvp.pvn.u.isname.name.n = PV_ENTITIY_FROMTAG;
 	else if (!str_strcmp(in, const_str("totag")))
-		sp->pvp.pvn.u.isname.name.n = PV_ENTITIY_TOTAG;		
+		sp->pvp.pvn.u.isname.name.n = PV_ENTITIY_TOTAG;
 	else {
 		LM_ERR("Bad subname for $b2b_logic.entity\n");
 		return -1;

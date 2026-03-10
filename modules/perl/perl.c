@@ -114,7 +114,7 @@ static const param_export_t params[] = {
  */
 static const mi_export_t mi_cmds[] = {
 	/* FIXME This does not yet work...
-	{ "perl_reload", 0,0,0, {
+	{ "reload", 0,0,0, {
 		{perl_mi_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},

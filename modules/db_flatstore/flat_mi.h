@@ -26,7 +26,7 @@
 #include "../../mi/mi.h"
 #include "../../rw_locking.h"
 
-#define MI_FLAT_ROTATE "flat_rotate"
+#define MI_FLAT_ROTATE "rotate"
 
 extern rw_lock_t *rotate_lock;
 

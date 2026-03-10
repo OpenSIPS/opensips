@@ -201,12 +201,12 @@ static const mi_export_t mi_cmds[] = {
 		{mi_cleanup, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "pres_expose", 0,0,0, {
+	{ "expose", 0,0,0, {
 		{mi_pres_expose_1, {"event", 0}},
 		{mi_pres_expose_2, {"event", "filter", 0}},
 		{EMPTY_MI_RECIPE}} 
 	},
-	{ "pres_phtable_list", 0,0,0, {
+	{ "phtable_list", 0,0,0, {
 		{mi_list_phtable, {0}},
 		{EMPTY_MI_RECIPE}}
 	},

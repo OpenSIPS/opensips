@@ -176,33 +176,33 @@ static const param_export_t params[]= {
 
 /** MI commands */
 static const mi_export_t mi_cmds[] = {
-	{ "reg_list", 0, 0, 0, {
+	{ "list", 0, 0, 0, {
 		{mi_reg_list, {0}},
 		{mi_reg_list_record, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "reg_reload", 0, 0, 0, {
+	{ "reload", 0, 0, 0, {
 		{mi_reg_reload, {0}},
 		{mi_reg_reload_record, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "reg_enable", 0, 0, 0, {
+	{ "enable", 0, 0, 0, {
 		{mi_reg_enable, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "reg_disable", 0, 0, 0, {
+	{ "disable", 0, 0, 0, {
 		{mi_reg_disable, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "reg_force_register", 0, 0, 0, {
+	{ "force_register", 0, 0, 0, {
 		{mi_reg_force_register, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{"reg_upsert", 0, 0, 0, {
+	{"upsert", 0, 0, 0, {
 		{mi_reg_upsert, {"aor", "contact", "registrar","proxy","third_party_registrant","username","password","binding_params","expiry","forced_socket","cluster_shtag","state", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "reg_delete", 0, 0, 0, {
+	{ "delete", 0, 0, 0, {
 		{mi_reg_delete, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -1737,7 +1737,7 @@ static mi_response_t *mi_reg_upsert(const mi_params_t *params,
 	}
 	uac_param.hash_code = core_hash(&uac_param.to_uri, NULL, reg_hsize);
 
-	uac_param.from_uri = third_party_registrant;	
+	uac_param.from_uri = third_party_registrant;
 	if (uac_param.from_uri.len) {
 		if (parse_uri(uac_param.from_uri.s,
 		uac_param.from_uri.len, &uri)<0) {
@@ -1856,7 +1856,7 @@ static mi_response_t *mi_reg_upsert(const mi_params_t *params,
 	uac_param.cluster_id,
 	state);
 
-	coords.aor = aor; 
+	coords.aor = aor;
 	coords.contact = contact;
 	coords.registrar = registrar;
 

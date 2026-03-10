@@ -163,7 +163,7 @@ static const param_export_t params[] = {
 #define HLP2 "Params: [partition] rule_id dst_name; Remove a gateway/carrier from routing"
 #define HLP3 "Params: [partition] rule_id dst_name; Re-introduce a gateway/carrier into routing"
 static const mi_export_t mi_cmds[] = {
-	{ "qr_status", HLP1, 0, NULL, {
+	{ "status", HLP1, 0, NULL, {
 		{mi_qr_status_0, {NULL}},
 		{mi_qr_status_1, {QR_PARAM_PART, NULL}},
 		{mi_qr_status_2, {QR_PARAM_PART, QR_PARAM_RULE_ID, NULL}},
@@ -171,17 +171,17 @@ static const mi_export_t mi_cmds[] = {
 		                  QR_PARAM_DST_NAME, NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "qr_reload", NULL, 0, NULL, {
+	{ "reload", NULL, 0, NULL, {
 		{mi_qr_reload_0, {NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "qr_disable_dst", HLP2, MI_NAMED_PARAMS_ONLY, NULL, {
+	{ "disable_dst", HLP2, MI_NAMED_PARAMS_ONLY, NULL, {
 		{mi_qr_disable_dst_2, {QR_PARAM_RULE_ID, QR_PARAM_DST_NAME, NULL}},
 		{mi_qr_disable_dst_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
 		                       QR_PARAM_DST_NAME, NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "qr_enable_dst", HLP3, MI_NAMED_PARAMS_ONLY, NULL, {
+	{ "enable_dst", HLP3, MI_NAMED_PARAMS_ONLY, NULL, {
 		{mi_qr_disable_dst_2, {QR_PARAM_RULE_ID, QR_PARAM_DST_NAME, NULL}},
 		{mi_qr_disable_dst_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
 		                       QR_PARAM_DST_NAME, NULL}},

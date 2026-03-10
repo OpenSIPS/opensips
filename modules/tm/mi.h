@@ -30,10 +30,10 @@
 
 #include "../../mi/mi.h"
 
-#define MI_TM_UAC      "t_uac_dlg"
-#define MI_TM_CANCEL   "t_uac_cancel"
-#define MI_TM_HASH     "t_hash"
-#define MI_TM_REPLY    "t_reply"
+#define MI_TM_UAC      "uac_dlg"
+#define MI_TM_CANCEL   "uac_cancel"
+#define MI_TM_HASH     "hash"
+#define MI_TM_REPLY    "reply"
 
 mi_response_t *mi_tm_uac_dlg_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);

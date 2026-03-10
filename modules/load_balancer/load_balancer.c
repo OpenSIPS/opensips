@@ -179,19 +179,19 @@ static const param_export_t mod_params[]={
 
 
 static const mi_export_t mi_cmds[] = {
-	{ "lb_reload", 0, 0, mi_child_init, {
+	{ "reload", 0, 0, mi_child_init, {
 		{mi_lb_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "lb_resize", 0, 0, 0, {
+	{ "resize", 0, 0, 0, {
 		{mi_lb_resize, {"destination_id", "res_name", "new_capacity", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "lb_list", 0, 0, 0, {
+	{ "list", 0, 0, 0, {
 		{mi_lb_list, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "lb_status", 0, 0, 0, {
+	{ "status", 0, 0, 0, {
 		{mi_lb_status, {"destination_id", 0}},
 		{mi_lb_status_1, {"destination_id", "new_status", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -299,7 +299,7 @@ static void lb_inherit_state(struct lb_data *old_data,struct lb_data *new_data)
 			strncasecmp(new_dst->uri.s, old_dst->uri.s, old_dst->uri.len)==0) {
 				LM_DBG("DST %d/<%.*s> found in old set, copying state\n",
 					new_dst->group, new_dst->uri.len,new_dst->uri.s);
-				/* first reset the existing flags (only the flags related 
+				/* first reset the existing flags (only the flags related
 				 * to state!!!) */
 				new_dst->flags &=
 					~(LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG);

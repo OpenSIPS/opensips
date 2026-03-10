@@ -165,11 +165,11 @@ static const cmd_export_t cmds[] = {
  * Exported MI functions
  */
 static const mi_export_t mi_cmds[] = {
-	{ "tls_reload", "reloads stored data from the database", 0, 0, {
+	{ "reload", "reloads stored data from the database", 0, 0, {
 		{tls_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "tls_list", "lists all domains", 0, 0, {
+	{ "list", "lists all domains", 0, 0, {
 		{tls_list, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -902,7 +902,7 @@ static int load_tls_library(void)
 				return -1;
 			}
 
-			tls_library = TLS_LIB_WOLFSSL;	
+			tls_library = TLS_LIB_WOLFSSL;
 		}
 
 		if (tls_library == TLS_LIB_NONE) {

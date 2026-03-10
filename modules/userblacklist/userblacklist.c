@@ -101,7 +101,7 @@ static const param_export_t params[] = {
 
 /* Exported MI functions */
 static const mi_export_t mi_cmds[] = {
-	{ "reload_blacklist", 0, 0, 0, {
+	{ "reload", 0, 0, 0, {
 		{mi_reload_blacklist, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
@@ -281,7 +281,7 @@ static int add_source(str *table)
 
 
 static int check_blacklist_fixup(void **arg)
-{	
+{
 	struct dt_node_t *node;
 
 	/* try to add the table */

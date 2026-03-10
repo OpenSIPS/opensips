@@ -918,78 +918,8 @@ static const mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
-
-#if defined(Q_MALLOC) && defined(DBG_MALLOC)
-	{ "shm_check", "complete scan of the shared memory pool "
-		"(if any error is found, OpenSIPS will abort!)", 0, 0, {
-		{mi_shm_check, {0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-#endif
-	{ "cache_store", "stores in a cache system a string value", 0, 0, {
-		{w_cachestore, {"system", "attr", "value", 0}},
-		{w_cachestore_1, {"system", "attr", "value", "expire", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "cache_fetch", "queries for a cache stored value", 0, 0, {
-		{mi_cachefetch, {"system", "attr", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "cache_remove", "removes a record from the cache system", 0, 0, {
-		{mi_cacheremove, {"system", "attr", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "event_subscribe", "subscribes an event to the Event Interface", 0, 0, {
-		{w_mi_event_subscribe, {"event", "socket", 0}},
-		{w_mi_event_subscribe_1, {"event", "socket", "expire", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "events_list", "lists all the events advertised through the "
-		"Event Interface", 0, 0, {
-		{mi_events_list, {0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "subscribers_list", "lists all the Event Interface subscribers; "
-		"Params: [ event [ subscriber ]]", 0, 0, {
-		{w_mi_subscribers_list, {0}},
-		{w_mi_subscribers_list_1, {"event", 0}},
-		{w_mi_subscribers_list_2, {"event", "socket", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "raise_event", "raises an event through the Event Interface; "
-		"Params: event [ params ]", 0, 0, {
-		{w_mi_raise_event, {"event", 0}},
-		{w_mi_raise_event, {"event", "params", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
 	{ "list_tcp_conns", "list all ongoing TCP based connections", 0, 0, {
 		{mi_tcp_list_conns, {0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "mem_pkg_dump", "forces a status dump of the pkg memory (per process)", 0, 0, {
-		{w_mem_pkg_dump_1, {"pid", 0}},
-		{w_mem_pkg_dump_2, {"pid", "log_level", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "mem_shm_dump", "forces a status dump of the shm memory", 0, 0, {
-		{w_mem_shm_dump, {0}},
-		{w_mem_shm_dump_1, {"log_level", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
-	{ "mem_rpm_dump", "forces a status dump of the restart persistent memory", 0, 0, {
-		{w_mem_rpm_dump, {0}},
-		{w_mem_rpm_dump_1, {"log_level", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
@@ -998,21 +928,81 @@ static const mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "sr_get_status", "gets the status (only) of a 'status-report' "
+	{ "help", "prints information about MI commands usage", 0, 0, {
+		{w_mi_help, {0}},
+		{w_mi_help_1, {"mi_cmd", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
+static const mi_export_t mi_mem_cmds[] = {
+#if defined(Q_MALLOC) && defined(DBG_MALLOC)
+	{ "shm_check", "complete scan of the shared memory pool "
+		"(if any error is found, OpenSIPS will abort!)", 0, 0, {
+		{mi_shm_check, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+#endif
+	{ "pkg_dump", "forces a status dump of the pkg memory (per process)", 0, 0, {
+		{w_mem_pkg_dump_1, {"pid", 0}},
+		{w_mem_pkg_dump_2, {"pid", "log_level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "shm_dump", "forces a status dump of the shm memory", 0, 0, {
+		{w_mem_shm_dump, {0}},
+		{w_mem_shm_dump_1, {"log_level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "rpm_dump", "forces a status dump of the restart persistent memory", 0, 0, {
+		{w_mem_rpm_dump, {0}},
+		{w_mem_rpm_dump_1, {"log_level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
+static const mi_export_t mi_cache_cmds[] = {
+	{ "store", "stores in a cache system a string value", 0, 0, {
+		{w_cachestore, {"system", "attr", "value", 0}},
+		{w_cachestore_1, {"system", "attr", "value", "expire", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "fetch", "queries for a cache stored value", 0, 0, {
+		{mi_cachefetch, {"system", "attr", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "remove", "removes a record from the cache system", 0, 0, {
+		{mi_cacheremove, {"system", "attr", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
+static const mi_export_t mi_status_report_cmds[] = {
+	{ "get", "gets the status (only) of a 'status-report' "
 	"group/identifier", 0, 0, {
 		{mi_sr_get_status, {"group",0}},
 		{mi_sr_get_status, {"group","identifier",0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "sr_list_status", "list the status of all the identifiers in OpenSIPS"
+	{ "status", "list the status of all the identifiers in OpenSIPS"
 	" or from a certain 'status-report' group", 0, 0, {
 		{mi_sr_list_status, {0}},
 		{mi_sr_list_status, {"group",0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "sr_list_reports", "list the reports produced by some 'status-report' "
+	{ "reports", "list the reports produced by some 'status-report' "
 	"identifiers / groups" , 0, 0, {
 		{mi_sr_list_reports, {0}},
 		{mi_sr_list_reports, {"group",0}},
@@ -1020,17 +1010,41 @@ static const mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "sr_list_identifiers", "list the identifiers from a group or all",
+	{ "identifiers", "list the identifiers from a group or all",
 	0, 0, {
 		{mi_sr_list_identifiers, {0}},
 		{mi_sr_list_identifiers, {"group",0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
+	{EMPTY_MI_EXPORT}
+};
 
-	{ "help", "prints information about MI commands usage", 0, 0, {
-		{w_mi_help, {0}},
-		{w_mi_help_1, {"mi_cmd", 0}},
+static const mi_export_t mi_evi_cmds[] = {
+	{ "subscribe", "subscribes an event to the Event Interface", 0, 0, {
+		{w_mi_event_subscribe, {"event", "socket", 0}},
+		{w_mi_event_subscribe_1, {"event", "socket", "expire", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "list", "lists all the events advertised through the "
+		"Event Interface", 0, 0, {
+		{mi_events_list, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "subscribers", "lists all the Event Interface subscribers; "
+		"Params: [ event [ subscriber ]]", 0, 0, {
+		{w_mi_subscribers_list, {0}},
+		{w_mi_subscribers_list_1, {"event", 0}},
+		{w_mi_subscribers_list_2, {"event", "socket", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "raise", "raises an event through the Event Interface; "
+		"Params: event [ params ]", 0, 0, {
+		{w_mi_raise_event, {"event", 0}},
+		{w_mi_raise_event, {"event", "params", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
@@ -1043,6 +1057,22 @@ int init_mi_core(void)
 {
 	if (register_mi_mod( "core", mi_core_cmds)<0) {
 		LM_ERR("unable to register core MI cmds\n");
+		return -1;
+	}
+	if (register_mi_mod( "mem", mi_mem_cmds)<0) {
+		LM_ERR("unable to register mem MI cmds\n");
+		return -1;
+	}
+	if (register_mi_mod( "cache", mi_cache_cmds)<0) {
+		LM_ERR("unable to register cache MI cmds\n");
+		return -1;
+	}
+	if (register_mi_mod( "status_report", mi_status_report_cmds)<0) {
+		LM_ERR("unable to register status_report MI cmds\n");
+		return -1;
+	}
+	if (register_mi_mod( "evi", mi_evi_cmds)<0) {
+		LM_ERR("unable to register evi MI cmds\n");
 		return -1;
 	}
 

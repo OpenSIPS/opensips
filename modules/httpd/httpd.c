@@ -99,7 +99,7 @@ static const cmd_export_t cmds[] = {
 
 /** MI commands */
 static const mi_export_t mi_cmds[] = {
-	{ "httpd_list_root_path", 0, 0, 0, {
+	{ "list_root_path", 0, 0, 0, {
 		{mi_list_root_path, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
