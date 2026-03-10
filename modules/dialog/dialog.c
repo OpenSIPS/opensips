@@ -159,7 +159,6 @@ static int dlg_on_answer(struct sip_msg* msg, void *route_id);
 static int dlg_on_hangup(struct sip_msg* msg, void *route_id);
 static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 		str *body, str *ct, str *headers);
-static int dlg_prepare_prack_headers(struct sip_msg *msg, str *headers, str *out);
 static int dlg_inc_cseq(struct sip_msg *msg, str *tag, int *_count);
 
 
@@ -2587,7 +2586,7 @@ static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 		LM_WARN("body without content type! This request might be rejected by uac!\n");
 
 	if (is_prack) {
-		rc = dlg_prepare_prack_headers(msg, headers, &req_headers);
+		rc = dlg_prepare_prack_headers(msg, headers, &req_headers, 1);
 		if (rc < 0)
 			return rc;
 	}
@@ -2599,76 +2598,6 @@ static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 		pkg_free(req_headers.s);
 
 	return rc == 0 ? 1 : -1;
-
-}
-
-static int dlg_prepare_prack_headers(struct sip_msg *msg, str *headers, str *out)
-{
-	str rseq_val;
-	struct hdr_field *rseq_hdr;
-	int len;
-
-	/* PRACK generation from script is only meaningful while handling provisional replies. */
-	if (route_type != ONREPLY_ROUTE || msg->first_line.type != SIP_REPLY ||
-	msg->first_line.u.reply.statuscode < 101 || msg->first_line.u.reply.statuscode >= 200) {
-
-		if (route_type == ONREPLY_ROUTE && msg->first_line.type == SIP_REPLY &&
-				msg->first_line.u.reply.statuscode == 100) {
-			LM_ERR("scripting error: PRACK cannot be generated for 100 Trying, needs to be 101-199\n");
-			return -1;
-		}
-
-		LM_ERR("PRACK can only be generated from onreply_route for 101-199 provisional replies\n");
-		return -1;
-	}
-
-	if ((!msg->cseq && parse_headers(msg, HDR_CSEQ_F, 0) < 0) || !msg->cseq || !get_cseq(msg)) {
-		LM_ERR("missing or invalid CSeq in provisional reply\n");
-		return -1;
-	}
-	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_ERR("failed to parse SIP reply headers\n");
-		return -1;
-	}
-
-	rseq_hdr = get_header_by_static_name(msg, "RSeq");
-	if (!rseq_hdr) {
-		LM_DBG("missing RSeq header in provisional reply\n");
-		return -2;
-	}
-	rseq_val = rseq_hdr->body;
-	trim(&rseq_val);
-	if (!rseq_val.len) {
-		LM_DBG("empty RSeq header in provisional reply\n");
-		return -2;
-	}
-
-	out->len = (headers ? headers->len : 0) + 8 /* "RAck: " */ + rseq_val.len + 1 +
-			get_cseq(msg)->number.len + 8 /* " INVITE\r\n" */;
-	out->s = pkg_malloc(out->len + 1);
-	if (!out->s) {
-		LM_ERR("oom while building RAck header\n");
-		return -1;
-	}
-
-	len = 0;
-	if (headers && headers->len) {
-		memcpy(out->s, headers->s, headers->len);
-		len = headers->len;
-	}
-
-	len += snprintf(out->s + len, out->len - len + 1, "RAck: %.*s %.*s INVITE\r\n",
-			rseq_val.len, rseq_val.s,
-			get_cseq(msg)->number.len, get_cseq(msg)->number.s);
-	if (len != out->len) {
-		LM_ERR("failed to format RAck header\n");
-		pkg_free(out->s);
-		out->s = NULL;
-		out->len = 0;
-		return -1;
-	}
-
-	return 0;
 }
 
 static int dlg_inc_cseq(struct sip_msg *msg, str *tag, int *_count)

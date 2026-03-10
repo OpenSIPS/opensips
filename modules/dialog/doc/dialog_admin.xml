@@ -1465,6 +1465,10 @@ modparam("dialog", "cluster_auto_sync", 0)
 				E - Upon detecting a SIP Race condition (see RFC 5407),
 				end the call after race_condition_timeout seconds
 				</para></listitem>
+				<listitem><para>
+				L - Automatically generate PRACK requests for reliable
+				101-199 provisional INVITE replies carrying an RSeq header
+				</para></listitem>
 				</itemizedlist>
 				Multiple string flags can be used at the same time,
 				ie. passing "BPp" flags will enable all 3 flags.
@@ -1496,6 +1500,9 @@ create_dialog("Pp");
 
 #bye on timeout
 create_dialog("B");
+
+#auto-PRACK reliable provisional replies
+create_dialog("L");
 ...
 </programlisting>
 		</example>

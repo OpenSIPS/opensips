@@ -138,6 +138,8 @@ int terminate_dlg(const str *callid, unsigned int h_entry, unsigned int h_id,
 int send_indialog_request(struct dlg_cell *dlg, str *method,
 		int leg, str *body, str *ct, str *hdrs, indialog_reply_f func,
 		void *param, indialog_release_f release);
+int dlg_prepare_prack_headers(struct sip_msg *msg, str *headers, str *out,
+		int enforce_onreply_route);
 
 void unreference_dialog(void *dialog);
 
