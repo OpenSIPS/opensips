@@ -181,20 +181,20 @@ static const param_export_t mod_params[]={
 static const mi_export_t mi_cmds[] = {
 	{ "reload", 0, 0, mi_child_init, {
 		{mi_lb_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"lb_reload", 0}
 	},
 	{ "resize", 0, 0, 0, {
 		{mi_lb_resize, {"destination_id", "res_name", "new_capacity", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"lb_resize", 0}
 	},
 	{ "list", 0, 0, 0, {
 		{mi_lb_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"lb_list", 0}
 	},
 	{ "status", 0, 0, 0, {
 		{mi_lb_status, {"destination_id", 0}},
 		{mi_lb_status_1, {"destination_id", "new_status", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"lb_status", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

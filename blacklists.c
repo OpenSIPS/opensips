@@ -66,36 +66,26 @@ static const mi_export_t mi_bl_cmds[] = {
 	{ "list", "lists all the defined (static or learned) blacklists", 0, 0, {
 		{mi_print_blacklists, {0}},
 		{mi_print_blacklists, {"name", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"list_blacklists", 0}},
 	{ "check_all", "returns all the blacklists where proto:IP:port pattern pair matches", 0, 0, {
 		{mi_check_all_blacklists, {"ip", 0}},
 		{mi_check_all_blacklists, {"proto", "ip", 0}},
 		{mi_check_all_blacklists, {"proto", "ip", "port", 0}},
 		{mi_check_all_blacklists, {"proto", "ip", "port", "pattern", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"check_blacklists", 0}},
 	{ "check", "checks whether an proto:IP:port pattern matches a blacklist", 0, 0, {
 		{mi_check_blacklist, {"name", "ip", 0}},
 		{mi_check_blacklist, {"name", "proto", "ip", 0}},
 		{mi_check_blacklist, {"name", "proto", "ip", "port", 0}},
 		{mi_check_blacklist, {"name", "proto", "ip", "port", "pattern", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"check_blacklist", 0}},
 	{ "add_rule", "adds a new rule to a blacklist", 0, 0, {
 		{mi_add_blacklist_rule, {"name", "rule", 0}},
 		{mi_add_blacklist_rule, {"name", "rule", "expire", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"add_blacklist_rule", 0}},
 	{ "del_rule", "removes a rule from a blacklist", 0, 0, {
 		{mi_del_blacklist_rule, {"name", "rule", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"del_blacklist_rule", 0}},
 	{EMPTY_MI_EXPORT}
 };
 

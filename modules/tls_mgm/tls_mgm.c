@@ -167,11 +167,11 @@ static const cmd_export_t cmds[] = {
 static const mi_export_t mi_cmds[] = {
 	{ "reload", "reloads stored data from the database", 0, 0, {
 		{tls_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"tls_reload", 0}
 	},
 	{ "list", "lists all domains", 0, 0, {
 		{tls_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"tls_list", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

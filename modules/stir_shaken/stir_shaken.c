@@ -222,11 +222,11 @@ static const cmd_export_t cmds[] = {
 static const mi_export_t mi_cmds[] = {
 	{ "ca_reload", "Stir shaken ca reloader", 0, 0, {
 		{mi_stir_shaken_ca_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"stir_shaken_ca_reload", 0}
 	},
 	{ "crl_reload", "Stir shaken crl reloader", 0, 0, {
 		{mi_stir_shaken_crl_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"stir_shaken_crl_reload", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

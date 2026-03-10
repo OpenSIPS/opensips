@@ -159,15 +159,15 @@ static const param_export_t params[] = {
 static const mi_export_t mi_cmds[] = {
 	{ "load", 0, 0, 0, {
 		{mi_cpl_load, {"username", "cpl_filename", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"LOAD_CPL", 0}
 	},
 	{ "remove", 0, 0, 0, {
 		{mi_cpl_remove, {"username", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"REMOVE_CPL", 0}
 	},
 	{ "get", 0, 0, 0, {
 		{mi_cpl_get, {"username", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"GET_CPL", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

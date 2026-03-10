@@ -374,59 +374,59 @@ static const mi_export_t mi_cmds[] = {
 		{mi_print_dlgs_1, {"callid", 0}},
 		{mi_print_dlgs_2, {"callid", "from_tag", 0}},
 		{mi_print_dlgs_cnt, {"index", "counter", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_list", 0}
 	},
 	{ "list_ctx", 0, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_print_dlgs_ctx, {0}},
 		{mi_print_dlgs_1_ctx, {"callid", 0}},
 		{mi_print_dlgs_2_ctx, {"callid", "from_tag", 0}},
 		{mi_print_dlgs_cnt_ctx, {"index", "counter", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_list_ctx", 0}
 	},
 	{ "end_dlg", 0, 0, 0, {
 		{mi_terminate_dlg_1, {"dialog_id", 0}},
 		{mi_terminate_dlg_2, {"dialog_id", "extra_hdrs", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_end_dlg", 0}
 	},
 	{ "db_sync", 0, 0, 0, {
 		{mi_sync_db_dlg, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_db_sync", 0}
 	},
 	{ "restore_db", 0, 0, 0, {
 		{mi_restore_dlg_db, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_restore_db", 0}
 	},
 	{ "cluster_sync", 0, 0, 0, {
 		{mi_sync_cl_dlg, {0}},
 		{mi_sync_cl_dlg, {"sharing_tag", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_cluster_sync", 0}
 	},
 	{ "profile_get_size", 0, 0, 0, {
 		{mi_get_profile_1, {"profile", 0}},
 		{mi_get_profile_2, {"profile", "value", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "profile_list_dlgs", 0, 0, 0, {
 		{mi_profile_list_1, {"profile", 0}},
 		{mi_profile_list_2, {"profile", "value", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "profile_get_values", 0, 0, 0, {
 		{mi_get_profile_values, {"profile", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "list_all_profiles", 0, 0, 0, {
 		{mi_list_all_profiles, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "profile_end_dlgs", 0, 0, 0, {
 		{mi_profile_terminate_1, {"profile", 0}},
 		{mi_profile_terminate_2, {"profile", "value", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "push_var", 0, 0, 0, {
 		{mi_push_dlg_var, {"dlg_val_name", "dlg_val_value", "DID", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_push_var", 0}
 	},
 	{ "send_sequential",		"send sequential request within dialog",
 		MI_ASYNC_RPL_FLAG|MI_NAMED_PARAMS_ONLY, 0, {
@@ -439,18 +439,18 @@ static const mi_export_t mi_cmds[] = {
 		{mi_send_sequential_dlg, {"callid", "method", "body", 0}},
 		{mi_send_sequential_dlg, {"callid", "method", "body", "mode", 0}},
 		{mi_send_sequential_dlg, {"callid", "method", "body", "mode", "headers", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_send_sequential", 0}
 	},
 	{ "set_profile", 0, 0, 0, {
 		{mi_set_dlg_profile, {"dlg_id", "profile", 0}},
 		{mi_set_dlg_profile, {"dlg_id", "profile","value", 0}},
 		{mi_set_dlg_profile, {"dlg_id", "profile","value", "clear_values", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_set_profile", 0}
 	},
 	{ "unset_profile", 0, 0, 0, {
 		{mi_unset_dlg_profile, {"dlg_id", "profile", 0}},
 		{mi_unset_dlg_profile, {"dlg_id", "profile","value", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dlg_unset_profile", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

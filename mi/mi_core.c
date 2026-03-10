@@ -854,199 +854,166 @@ static const mi_export_t mi_core_cmds[] = {
 	{ "uptime", "prints various time information about OpenSIPS - "
 		"when it started to run, for how long it runs", 0, init_mi_uptime, {
 		{mi_uptime, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "version", "prints the version string of a runningOpenSIPS", 0, 0, {
 		{mi_version, {0}},
 		{mi_version_1, {"revision", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "pwd", "prints the working directory of OpenSIPS", 0, 0, {
 		{mi_pwd, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "arg", "returns the full list of arguments used at startup", 0, 0, {
 		{mi_arg, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "which", "lists all available MI commands", 0, 0, {
 		{mi_which, {0}},
 		{mi_which_cmd, {"command", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "ps", "lists all processes used by OpenSIPS", 0, 0, {
 		{mi_ps, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "kill", "terminates OpenSIPS", 0, 0, {
 		{mi_kill, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "log_level", "gets/sets the per process or global log level in OpenSIPS",
 		0, 0, {
 		{w_log_level, 	{0}},
 		{w_log_level_1, {"level", 0}},
 		{w_log_level_2, {"level", "pid", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "xlog_level", "gets/sets the per process or global xlog level in OpenSIPS",
 		0, 0, {
 		{w_xlog_level, 	{0}},
 		{w_xlog_level_1, {"level", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "log_level_filter", "gets/sets the per consumer log level filter",
 		0, 0, {
 		{w_log_level_filter_1, {"consumer", 0}},
 		{w_log_level_filter_2, {"consumer", "level_filter", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "log_mute_state", "mute/unmute a log consumer",
 		0, 0, {
 		{w_log_mute_state_1, {"consumer", 0}},
 		{w_log_mute_state_2, {"consumer", "mute_state", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "list_tcp_conns", "list all ongoing TCP based connections", 0, 0, {
 		{mi_tcp_list_conns, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "reload_routes", "triggers the script (routes only) reload", 0, 0, {
 		{w_reload_routes, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "help", "prints information about MI commands usage", 0, 0, {
 		{w_mi_help, {0}},
 		{w_mi_help_1, {"mi_cmd", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{EMPTY_MI_EXPORT}
 };
-
 static const mi_export_t mi_mem_cmds[] = {
 #if defined(Q_MALLOC) && defined(DBG_MALLOC)
 	{ "shm_check", "complete scan of the shared memory pool "
 		"(if any error is found, OpenSIPS will abort!)", 0, 0, {
 		{mi_shm_check, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"mem_shm_check", 0}
 	},
 #endif
 	{ "pkg_dump", "forces a status dump of the pkg memory (per process)", 0, 0, {
 		{w_mem_pkg_dump_1, {"pid", 0}},
 		{w_mem_pkg_dump_2, {"pid", "log_level", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"mem_pkg_dump", 0}
 	},
 	{ "shm_dump", "forces a status dump of the shm memory", 0, 0, {
 		{w_mem_shm_dump, {0}},
 		{w_mem_shm_dump_1, {"log_level", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"mem_shm_dump", 0}
 	},
 	{ "rpm_dump", "forces a status dump of the restart persistent memory", 0, 0, {
 		{w_mem_rpm_dump, {0}},
 		{w_mem_rpm_dump_1, {"log_level", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"mem_rpm_dump", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };
-
 static const mi_export_t mi_cache_cmds[] = {
 	{ "store", "stores in a cache system a string value", 0, 0, {
 		{w_cachestore, {"system", "attr", "value", 0}},
 		{w_cachestore_1, {"system", "attr", "value", "expire", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"cache_store", 0}
 	},
 	{ "fetch", "queries for a cache stored value", 0, 0, {
 		{mi_cachefetch, {"system", "attr", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"cache_fetch", 0}
 	},
 	{ "remove", "removes a record from the cache system", 0, 0, {
 		{mi_cacheremove, {"system", "attr", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"cache_remove", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };
-
 static const mi_export_t mi_status_report_cmds[] = {
 	{ "get", "gets the status (only) of a 'status-report' "
 	"group/identifier", 0, 0, {
 		{mi_sr_get_status, {"group",0}},
 		{mi_sr_get_status, {"group","identifier",0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"sr_get_status", 0}
 	},
 	{ "status", "list the status of all the identifiers in OpenSIPS"
 	" or from a certain 'status-report' group", 0, 0, {
 		{mi_sr_list_status, {0}},
 		{mi_sr_list_status, {"group",0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"sr_list_status", 0}
 	},
 	{ "reports", "list the reports produced by some 'status-report' "
 	"identifiers / groups" , 0, 0, {
 		{mi_sr_list_reports, {0}},
 		{mi_sr_list_reports, {"group",0}},
 		{mi_sr_list_reports, {"group","identifier",0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"sr_list_reports", 0}
 	},
 	{ "identifiers", "list the identifiers from a group or all",
 	0, 0, {
 		{mi_sr_list_identifiers, {0}},
 		{mi_sr_list_identifiers, {"group",0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"sr_list_identifiers", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };
-
 static const mi_export_t mi_evi_cmds[] = {
 	{ "subscribe", "subscribes an event to the Event Interface", 0, 0, {
 		{w_mi_event_subscribe, {"event", "socket", 0}},
 		{w_mi_event_subscribe_1, {"event", "socket", "expire", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"event_subscribe", 0}
 	},
 	{ "list", "lists all the events advertised through the "
 		"Event Interface", 0, 0, {
 		{mi_events_list, {0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"events_list", 0}
 	},
 	{ "subscribers", "lists all the Event Interface subscribers; "
 		"Params: [ event [ subscriber ]]", 0, 0, {
 		{w_mi_subscribers_list, {0}},
 		{w_mi_subscribers_list_1, {"event", 0}},
 		{w_mi_subscribers_list_2, {"event", "socket", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"subscribers_list", 0}
 	},
 	{ "raise", "raises an event through the Event Interface; "
 		"Params: event [ params ]", 0, 0, {
 		{w_mi_raise_event, {"event", 0}},
 		{w_mi_raise_event, {"event", "params", 0}},
-		{EMPTY_MI_RECIPE}
-		}
+		{EMPTY_MI_RECIPE}}, {"raise_event", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

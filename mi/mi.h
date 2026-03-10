@@ -29,6 +29,7 @@
 
 #define MAX_MI_PARAMS  20
 #define MAX_MI_RECIPES 48
+#define MAX_MI_ALIASES 4
 
 /* async MI command */
 #define MI_ASYNC_RPL_FLAG    (1<<0)
@@ -105,10 +106,14 @@ typedef struct mi_export_ {
 	unsigned int flags;
 	mi_child_init_f *init_f;
 	mi_recipe_t recipes[MAX_MI_RECIPES];
+	const char *aliases[MAX_MI_ALIASES];
 } mi_export_t;
 
 /* mi_export_t array terminator */
-#define EMPTY_MI_EXPORT 0, 0, 0, 0, {{EMPTY_MI_RECIPE}}
+#define EMPTY_MI_EXPORT 0, 0, 0, 0, {{EMPTY_MI_RECIPE}}, {0}
+
+#define MI_EXPORT_RECIPES(_mi) ((_mi).recipes)
+#define MI_EXPORT_ALIASES(_mi) ((_mi).aliases)
 
 typedef struct mi_request_ {
 	mi_item_t *req_obj;
@@ -123,6 +128,10 @@ int register_mi_cmd(char *name, char *help, unsigned int flags,
 		mi_child_init_f in, const mi_recipe_t *recipes, const char* mod_name);
 
 int register_mi_mod(const char *mod_name, const mi_export_t *mis);
+int register_mi_cmd_alias(const char *mod_name, const char *cmd_name,
+		const char *alias);
+int register_mi_cmd_aliases(const char *mod_name, const char *cmd_name,
+		const char *const *aliases);
 
 int init_mi_child();
 

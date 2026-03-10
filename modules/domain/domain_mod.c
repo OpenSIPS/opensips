@@ -136,12 +136,10 @@ static const param_export_t params[] = {
 static const mi_export_t mi_cmds[] = {
 	{ MI_DOMAIN_RELOAD, 0, 0, mi_child_init, {
 		{mi_domain_reload, {0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{ MI_DOMAIN_DUMP, 0, 0, 0, {
 		{mi_domain_dump, {0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}, {0}},
 	{EMPTY_MI_EXPORT}
 };
 

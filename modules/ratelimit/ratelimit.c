@@ -187,23 +187,23 @@ static const mi_export_t mi_cmds [] = {
 		{mi_stats_1, {"pipe", 0}},
 		{mi_stats_2, {"filter", 0}},
 		{mi_stats_3, {"filter_out", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rl_list", 0}
 	},
 	{"reset_pipe", RLH2, 0, 0, {
 		{mi_reset_pipe, {"pipe", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rl_reset_pipe", 0}
 	},
 	{"set_pid", RLH3, 0, 0, {
 		{mi_set_pid, {"ki", "kp", "kd", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rl_set_pid", 0}
 	},
 	{"get_pid", RLH4, 0, 0, {
 		{mi_get_pid, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rl_get_pid", 0}
 	},
 	{"dump_pipe", RLH6, 0, 0, {
 		{mi_dump_pipe, {"pipe", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rl_dump_pipe", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

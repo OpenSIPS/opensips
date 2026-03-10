@@ -141,46 +141,46 @@ static const param_export_t params[] = {
 static const mi_export_t mi_cmds [] = {
 	{ "addVendor",             0, 0, 0, {
 		{mi_add_carrier, {"name",  0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_addVendor", 0}
 	},
 	{ "deleteVendor",             0, 0, 0, {
 		{mi_delete_carrier, {"name",  0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_deleteVendor", 0}
 	},
 	{ "getVendorPrice",             0, 0, 0, {
-	    {mi_get_carrier_price, {"name", "number", 0}},
+		{mi_get_carrier_price, {"name", "number", 0}},
     	    {mi_get_carrier_price, {"name", "number", "slot", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_getVendorPrice", 0}
 	},
 	{ "reloadVendorRate",             0, 0, 0, {
-	    {mi_reload_carrier_rate, {"name", "rateid", 0}},
+		{mi_reload_carrier_rate, {"name", "rateid", 0}},
 	    {mi_reload_carrier_rate, {"name", "rateid", "slot", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_reloadVendorRate", 0}
 	},
 	{ "deleteVendorRate",             0, 0, 0, {
-	    {mi_delete_carrier_rate, {"name", 0}},
+		{mi_delete_carrier_rate, {"name", 0}},
 	    {mi_delete_carrier_rate, {"name", "slot", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_deleteVendorRate", 0}
 	},
 	{ "addClient",             0, 0, 0, {
 		{mi_add_client, {"name",  0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_addClient", 0}
 	},
 	{ "deleteClient",             0, 0, 0, {
 		{mi_delete_client, {"name",  0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_deleteClient", 0}
 	},
 	{ "getClientPrice",             0, 0, 0, {
 		{mi_get_client_price, {"name", "wholesale", "number", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_getClientPrice", 0}
 	},
 	{ "reloadClientRate",             0, 0, 0, {
 		{mi_reload_client, {"name", "wholesale", "rateid", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_reloadClientRate", 0}
 	},
 	{ "deleteClientRate",             0, 0, 0, {
 		{mi_delete_client_rate, {"name", "wholesale", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rc_deleteClientRate", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

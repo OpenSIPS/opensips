@@ -176,40 +176,40 @@ static const param_export_t mod_params[]={
 static const mi_export_t mi_cmds[] = {
 	{"reload", 0, 0, mi_child_init, {
 		{mi_cc_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_reload", 0}
 	},
 	{"agent_login", 0, 0, 0, {
 		{mi_agent_login, {"agent_id", "state", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_agent_login", 0}
 	},
 	{"list_queue", 0, 0, 0, {
 		{mi_cc_list_queue, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_list_queue", 0}
 	},
 	{"list_flows", 0, 0, 0, {
 		{mi_cc_list_flows, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_list_flows", 0}
 	},
 	{"list_agents", 0, 0, 0, {
 		{mi_cc_list_agents, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_list_agents", 0}
 	},
 	{"list_calls", 0, 0, 0, {
 		{mi_cc_list_calls, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_list_calls", 0}
 	},
 	{"reset_stats", 0, 0, 0, {
 		{mi_reset_stats, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_reset_stats", 0}
 	},
 	{"dispatch_call_to_agent", 0, 0, 0, {
 		{mi_dispatch_call_to_agent, {"call_id", "agent_id", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_dispatch_call_to_agent", 0}
 	},
 	{"internal_call_dispatching", 0, 0, 0, {
 		{mi_internal_call_dispatching, {0}},
 		{mi_internal_call_dispatching, {"dispatching", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cc_internal_call_dispatching", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

@@ -99,9 +99,9 @@ static event_id_t flatstore_evi_id;
 static const char flat_empty_str[] = "";
 
 static const mi_export_t mi_cmds[] = {
-	{ "rotate", "rotates the files the module dumps events into", 0,0,{
+	{ "rotate", "rotates the files the module dumps events into", 0,0, {
 		{mi_rotate, {"path_to_file", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"evi_flat_rotate", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

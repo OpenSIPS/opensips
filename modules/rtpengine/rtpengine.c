@@ -760,20 +760,20 @@ static const mi_export_t mi_cmds[] = {
 	{ MI_ENABLE_RTP_ENGINE, 0, 0, 0, {
 		{mi_enable_rtpengine, {"url", "enable", 0}},
 		{mi_enable_rtpengine, {"url", "enable", "setid", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ MI_SHOW_RTP_ENGINES, 0, 0, 0, {
 		{mi_show_rtpengines, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ MI_RELOAD_RTP_ENGINES, 0, 0, 0, {
 		{mi_reload_rtpengines, {0}},
 		{mi_reload_rtpengines, {"type", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "teardown", 0, 0, 0, {
 		{mi_teardown_call, {"callid", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{EMPTY_MI_EXPORT}
 };

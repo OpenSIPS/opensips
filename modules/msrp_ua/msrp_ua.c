@@ -148,19 +148,19 @@ static const mi_export_t mi_cmds[] = {
 		{msrpua_mi_send_msg, {"session_id", "mime", "body", "success_report", 0}},
 		{msrpua_mi_send_msg, {"session_id", "mime", "body",
 			"failure_report", "success_report", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"msrp_ua_send_message", 0}
 	},
 	{ "end_session", 0, 0, 0, {
 		{msrpua_mi_end, {"session_id", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"msrp_ua_end_session", 0}
 	},
 	{ "list_sessions", 0, 0, 0, {
 		{msrpua_mi_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"msrp_ua_list_sessions", 0}
 	},
 	{ "start_session", 0, 0, 0, {
 		{msrpua_mi_start_session, {"content_types", "from_uri", "to_uri", "ruri", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"msrp_ua_start_session", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

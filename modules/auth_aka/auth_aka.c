@@ -195,19 +195,23 @@ static const mi_export_t mi_cmds[] = {
 		{mi_aka_av_add, {"public_identity", "private_identity", "authenticate",
 							"authorize", "confidentiality-key", "integrity-key",
 							"algorithms", 0}},
-		{EMPTY_MI_RECIPE}}},
+		{EMPTY_MI_RECIPE}}, {"aka_av_add", 0}
+	},
 	{ "av_drop", 0, 0, 0, {
 		{mi_aka_av_drop, {"public_identity", "private_identity",
 							 "authenticate", 0}},
-		{EMPTY_MI_RECIPE}}},
+		{EMPTY_MI_RECIPE}}, {"aka_av_drop", 0}
+	},
 	{ "av_drop_all", 0, 0, 0, {
 		{mi_aka_av_drop_all, {"public_identity", "private_identity", 0}},
-		{EMPTY_MI_RECIPE}}},
+		{EMPTY_MI_RECIPE}}, {"aka_av_drop_all", 0}
+	},
 	{ "av_fail", 0, 0, 0, {
 		{mi_aka_av_fail, {"public_identity", "private_identity", 0}},
 		{mi_aka_av_fail, {"public_identity", "private_identity",
 							 "count", 0}},
-		{EMPTY_MI_RECIPE}}},
+		{EMPTY_MI_RECIPE}}, {"aka_av_fail", 0}
+	},
 	{EMPTY_MI_EXPORT}
 };
 

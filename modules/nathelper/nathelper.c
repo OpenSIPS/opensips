@@ -268,7 +268,7 @@ static const mi_export_t mi_cmds[] = {
 	{MI_SET_NATPING_STATE, 0, 0, 0, {
 		{mi_enable_natping, {0}},
 		{mi_enable_natping_1, {"status", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{EMPTY_MI_EXPORT}
 };

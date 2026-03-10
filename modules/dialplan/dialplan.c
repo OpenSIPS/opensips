@@ -135,17 +135,17 @@ static const mi_export_t mi_cmds[] = {
 	{ "reload", 0, 0, NULL, {
 		{mi_reload_rules, {0}},
 		{mi_reload_rules_1, {"partition", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dp_reload", 0}
 	},
 	{ "translate", 0, 0, 0, {
 		{mi_translate2, {"dpid", "input", 0}},
 		{mi_translate3, {"dpid", "input", "partition", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dp_translate", 0}
 	},
 	{ "show_partition", 0, 0, NULL, {
 		{mi_show_partition, {0}},
 		{mi_show_partition_1, {"partition", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"dp_show_partition", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

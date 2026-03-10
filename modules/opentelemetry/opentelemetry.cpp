@@ -578,10 +578,10 @@ static const param_export_t params[] = {
 };
 
 static const mi_export_t mi_cmds[] = {
-	{ "enable", 0, 0, 0, {		{ otel_mi_enable, { "enable", 0 } },
+	{ "enable", 0, 0, 0, {
+		{ otel_mi_enable, { "enable", 0 } },
 		{ EMPTY_MI_RECIPE }
-		}
-	},
+		}, {"otel_enable", 0}},
 	{ EMPTY_MI_EXPORT }
 };
 

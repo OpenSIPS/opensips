@@ -80,7 +80,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_rtp_relay_list, {"engine", "set", 0}},
 		{mi_rtp_relay_list, {"engine", "node", 0}},
 		{mi_rtp_relay_list, {"engine", "set", "node", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rtp_relay_list", 0}
 	},
 	{ "update",		"updates an ongoing RTP relay session",
 			MI_ASYNC_RPL_FLAG, 0, {
@@ -94,7 +94,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_rtp_relay_update, {"engine", "set", "node", "new_set", 0}},
 		{mi_rtp_relay_update, {"engine", "set", "node", "new_node", 0}},
 		{mi_rtp_relay_update, {"engine", "set", "node", "new_set", "new_node", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rtp_relay_update", 0}
 	},
 	{ "update_callid",		"updates an ongoing RTP relay session identified by its Call-ID",
 			MI_ASYNC_RPL_FLAG, 0, {
@@ -106,7 +106,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_rtp_relay_update_callid, {"callid", "engine", "set", "flags", 0}},
 		{mi_rtp_relay_update_callid, {"callid", "engine", "set", "node", 0}},
 		{mi_rtp_relay_update_callid, {"callid", "engine", "set", "node", "flags", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"rtp_relay_update_callid", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

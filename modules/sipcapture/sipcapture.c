@@ -610,9 +610,7 @@ static const mi_export_t mi_cmds[] = {
 	{ "capture", 0, 0, 0, {
 		{sip_capture_mi, {0}},
 		{sip_capture_mi_1, {"capture_mode", 0}},
-		{EMPTY_MI_RECIPE}
-		}
-	},
+		{EMPTY_MI_RECIPE}}, {"sip_capture", 0}},
 	{EMPTY_MI_EXPORT}
 };
 

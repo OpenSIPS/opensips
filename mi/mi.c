@@ -59,8 +59,16 @@ struct mi_mod_group {
 	int end;
 };
 
+struct mi_cmd_alias {
+	int id;
+	str name;
+	int cmd_idx;
+};
+
 static struct mi_mod_group *mi_mod_groups = 0;
 static int mi_mod_groups_no = 0;
+static struct mi_cmd_alias *mi_cmd_aliases = 0;
+static int mi_cmd_aliases_no = 0;
 
 void _init_mi_sys_mem_hooks(void)
 {
@@ -122,12 +130,79 @@ static void mark_ambiguous_mi_cmd_name(struct mi_cmd *new_cmd)
 
 }
 
-static inline struct mi_cmd* lookup_mi_cmd_local(const char *name, int len)
+static int add_mi_cmd_alias(const char *name, int len, int cmd_idx)
+{
+	struct mi_cmd_alias *aliases;
+	int id;
+	int i;
+
+	if (!name || len <= 0)
+		return 0;
+
+	id = get_mi_id(name, len);
+	for (i = 0; i < mi_cmd_aliases_no; i++) {
+		if (mi_cmd_aliases[i].id != id ||
+				mi_cmd_aliases[i].name.len != len ||
+				memcmp(mi_cmd_aliases[i].name.s, name, len) != 0)
+			continue;
+		if (mi_cmd_aliases[i].cmd_idx == cmd_idx)
+			return 0;
+	}
+
+	aliases = (struct mi_cmd_alias *)pkg_realloc(mi_cmd_aliases,
+			(mi_cmd_aliases_no + 1) * sizeof(struct mi_cmd_alias));
+	if (!aliases) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+
+	mi_cmd_aliases = aliases;
+	mi_cmd_aliases[mi_cmd_aliases_no].id = id;
+	mi_cmd_aliases[mi_cmd_aliases_no].name.s = (char *)name;
+	mi_cmd_aliases[mi_cmd_aliases_no].name.len = len;
+	mi_cmd_aliases[mi_cmd_aliases_no].cmd_idx = cmd_idx;
+	mi_cmd_aliases_no++;
+
+	return 0;
+}
+
+static inline struct mi_cmd* lookup_mi_cmd_alias(const char *name, int len)
+{
+	struct mi_cmd *match = NULL;
+	struct mi_cmd *cmd;
+	int id;
+	int i;
+
+	id = get_mi_id(name, len);
+	for (i = 0; i < mi_cmd_aliases_no; i++) {
+		if (mi_cmd_aliases[i].id != id ||
+				mi_cmd_aliases[i].name.len != len ||
+				memcmp(mi_cmd_aliases[i].name.s, name, len) != 0)
+			continue;
+
+		cmd = &mi_cmds[mi_cmd_aliases[i].cmd_idx];
+		if (!match) {
+			match = cmd;
+			continue;
+		}
+
+		if (match != cmd)
+			return NULL;
+	}
+
+	return match;
+}
+
+static inline struct mi_cmd* lookup_mi_cmd_local(const char *name, int len,
+		int *ambiguous)
 {
 	struct mi_cmd *cmd;
 	struct mi_cmd *match = NULL;
 	int local_id;
 	int i;
+
+	if (ambiguous)
+		*ambiguous = 0;
 
 	local_id = get_mi_id(name, len);
 
@@ -138,8 +213,11 @@ static inline struct mi_cmd* lookup_mi_cmd_local(const char *name, int len)
 				memcmp(cmd->name.s + cmd->module.len + 1, name, len) != 0)
 			continue;
 
-		if ((cmd->flags & MI_LOCAL_NAME_AMBIGUOUS) || match)
+		if ((cmd->flags & MI_LOCAL_NAME_AMBIGUOUS) || match) {
+			if (ambiguous)
+				*ambiguous = 1;
 			return NULL;
+		}
 
 		match = cmd;
 	}
@@ -159,42 +237,74 @@ static mi_response_t *build_ambiguous_mi_cmd_resp(const char *name, int len)
 {
 	struct mi_cmd *cmd;
 	mi_response_t *resp;
+	int *matches;
 	char *details;
 	int details_len;
 	int local_len;
 	int needed;
+	int is_local;
 	int i;
 	int n;
 	int p;
+	int j;
 
 	if (!name || len <= 0)
 		return NULL;
 
-	if (memchr(name, MI_MODULE_SEP, len))
+	if (mi_cmds_no <= 1)
 		return NULL;
 
-	n = 0;
-	details_len = 0;
-	for (i = 0; i < mi_cmds_no; i++) {
-		cmd = &mi_cmds[i];
-		local_len = cmd->name.len - cmd->module.len - 1;
-		if (local_len != len ||
-				memcmp(cmd->name.s + cmd->module.len + 1, name, len) != 0)
-			continue;
-
-		details_len += cmd->name.len;
-		if (n > 0)
-			details_len += 2;
-		n++;
+	matches = pkg_malloc(mi_cmds_no * sizeof(int));
+	if (!matches) {
+		LM_ERR("no more pkg memory\n");
+		return build_err_resp(JSONRPC_AMBIG_METHOD_CODE,
+				MI_SSTR(JSONRPC_AMBIG_METHOD_MSG),
+				MI_SSTR("ambiguous MI command"));
 	}
 
-	if (n < 2)
+	is_local = (memchr(name, MI_MODULE_SEP, len) == NULL);
+	n = 0;
+	if (is_local) {
+		for (i = 0; i < mi_cmds_no; i++) {
+			cmd = &mi_cmds[i];
+			local_len = cmd->name.len - cmd->module.len - 1;
+			if (local_len != len ||
+					memcmp(cmd->name.s + cmd->module.len + 1, name, len) != 0)
+				continue;
+
+			matches[n++] = i;
+		}
+	}
+
+	for (i = 0; i < mi_cmd_aliases_no; i++) {
+		if (mi_cmd_aliases[i].name.len != len ||
+				memcmp(mi_cmd_aliases[i].name.s, name, len) != 0)
+			continue;
+
+		for (j = 0; j < n; j++)
+			if (matches[j] == mi_cmd_aliases[i].cmd_idx)
+				break;
+		if (j == n)
+			matches[n++] = mi_cmd_aliases[i].cmd_idx;
+	}
+
+	if (n < 2) {
+		pkg_free(matches);
 		return NULL;
+	}
+
+	details_len = 0;
+	for (i = 0; i < n; i++) {
+		details_len += mi_cmds[matches[i]].name.len;
+		if (i > 0)
+			details_len += 2;
+	}
 
 	needed = sizeof("supported names: ") - 1 + details_len;
 	details = pkg_malloc(needed + 1);
 	if (!details) {
 		LM_ERR("no more pkg memory\n");
+		pkg_free(matches);
 		return build_err_resp(JSONRPC_AMBIG_METHOD_CODE,
 				MI_SSTR(JSONRPC_AMBIG_METHOD_MSG),
 				MI_SSTR("ambiguous MI command"));
@@ -202,28 +312,21 @@ static mi_response_t *build_ambiguous_mi_cmd_resp(const char *name, int len)
 
 	memcpy(details, "supported names: ", sizeof("supported names: ") - 1);
 	p = sizeof("supported names: ") - 1;
-	n = 0;
-
-	for (i = 0; i < mi_cmds_no; i++) {
-		cmd = &mi_cmds[i];
-		local_len = cmd->name.len - cmd->module.len - 1;
-		if (local_len != len ||
-				memcmp(cmd->name.s + cmd->module.len + 1, name, len) != 0)
-			continue;
-
-		if (n > 0) {
+	for (i = 0; i < n; i++) {
+		if (i > 0) {
 			details[p++] = ',';
 			details[p++] = ' ';
 		}
 
+		cmd = &mi_cmds[matches[i]];
 		memcpy(details + p, cmd->name.s, cmd->name.len);
 		p += cmd->name.len;
-		n++;
 	}
 
 	details[p] = '\0';
 	resp = build_err_resp(JSONRPC_AMBIG_METHOD_CODE,
 			MI_SSTR(JSONRPC_AMBIG_METHOD_MSG), details, p);
+	pkg_free(matches);
 	pkg_free(details);
 	return resp;
 }
@@ -291,11 +394,14 @@ static char *build_mi_cmd_name(const char *mod_name, const char *cmd_name)
 int register_mi_mod(const char *mod_name, const mi_export_t *mis)
 {
 	const char *module_name;
+	const char *const *aliases;
 	char *cmd_name;
+	int cmd_idx;
 	int mod_len;
 	int start;
 	int ret;
 	int i;
+	int j;
 
 	if (mis==0)
 		return 0;
@@ -319,16 +425,80 @@ int register_mi_mod(const char *mod_name, const mi_export_t *mis)
 		}
 
 		ret = register_mi_cmd(cmd_name, mis[i].help, mis[i].flags,
-				mis[i].init_f, mis[i].recipes, module_name);
+				mis[i].init_f, MI_EXPORT_RECIPES(mis[i]), module_name);
 		if (ret!=0) {
 			LM_ERR("failed to register cmd <%s> for module %s\n",
 					mis[i].name, module_name);
 			pkg_free(cmd_name);
+			continue;
 		}
+
+		cmd_idx = mi_cmds_no - 1;
+		if (add_mi_cmd_alias(mis[i].name, strlen(mis[i].name), cmd_idx) < 0)
+			return -1;
+
+		aliases = MI_EXPORT_ALIASES(mis[i]);
+		for (j = 0; aliases && aliases[j]; j++)
+			if (add_mi_cmd_alias(aliases[j], strlen(aliases[j]), cmd_idx) < 0)
+				return -1;
 	}
 
 	if (add_mi_mod_group(module_name, mod_len, start, mi_cmds_no) < 0)
 		return -1;
+
+	return 0;
+}
+
+int register_mi_cmd_alias(const char *mod_name, const char *cmd_name,
+		const char *alias)
+{
+	const char *module_name;
+	struct mi_cmd *cmd;
+	char *full_name;
+	int cmd_idx;
+	int id;
+	int len;
+	int ret;
+
+	if (!cmd_name || !alias) {
+		LM_ERR("invalid params cmd_name=%s alias=%s\n", cmd_name, alias);
+		return -1;
+	}
+
+	module_name = get_mi_mod_name(mod_name);
+	full_name = build_mi_cmd_name(module_name, cmd_name);
+	if (!full_name) {
+		LM_ERR("oom while building canonical MI cmd for alias registration\n");
+		return -1;
+	}
+
+	len = strlen(full_name);
+	id = get_mi_id(full_name, len);
+	cmd = lookup_mi_cmd_id(id, full_name, len);
+	if (!cmd) {
+		LM_ERR("cannot register alias <%s>: unknown canonical cmd <%s>\n",
+				alias, full_name);
+		pkg_free(full_name);
+		return -1;
+	}
+
+	cmd_idx = cmd - mi_cmds;
+	ret = add_mi_cmd_alias(alias, strlen(alias), cmd_idx);
+	pkg_free(full_name);
+	return ret;
+}
+
+int register_mi_cmd_aliases(const char *mod_name, const char *cmd_name,
+		const char *const *aliases)
+{
+	int i;
+
+	if (!aliases)
+		return 0;
+
+	for (i = 0; aliases[i]; i++)
+		if (register_mi_cmd_alias(mod_name, cmd_name, aliases[i]) < 0)
+			return -1;
 
 	return 0;
 }
@@ -427,6 +597,7 @@ struct mi_cmd* lookup_mi_cmd( char *name, int len)
 {
 	char *cmd_name;
 	struct mi_cmd *cmd;
+	int amb;
 	int mod_len;
 	int mod_id;
 	int id;
@@ -434,8 +605,12 @@ struct mi_cmd* lookup_mi_cmd( char *name, int len)
 	int j;
 
 	cmd_name = memchr(name, MI_MODULE_SEP, len);
-	if (!cmd_name)
-		return lookup_mi_cmd_local(name, len);
+	if (!cmd_name) {
+		cmd = lookup_mi_cmd_local(name, len, &amb);
+		if (cmd || amb)
+			return cmd;
+		return lookup_mi_cmd_alias(name, len);
+	}
 	if (cmd_name == name || cmd_name == name + len - 1)
 		return NULL;
 
@@ -457,7 +632,7 @@ struct mi_cmd* lookup_mi_cmd( char *name, int len)
 		}
 	}
 
-	return NULL;
+	return lookup_mi_cmd_alias(name, len);
 }
 
 

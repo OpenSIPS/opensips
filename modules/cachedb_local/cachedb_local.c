@@ -107,12 +107,12 @@ static const mi_export_t mi_cmds[] = {
 	{ "remove_chunk", 0, 0, 0, {
 		{mi_cache_remove_chunk_1, {"glob", 0}},
 		{mi_cache_remove_chunk_2, {"glob", "collection", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cache_remove_chunk", 0}
 	},
 	{ "fetch_chunk", 0, 0, 0, {
 		{mi_cache_fetch_chunk_1, {"glob", 0}},
 		{mi_cache_fetch_chunk_2, {"glob", "collection", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cache_fetch_chunk", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };

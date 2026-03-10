@@ -174,52 +174,52 @@ static const param_export_t params[] = {
  * Exported MI functions
  */
 static const mi_export_t mi_cmds[] = {
-	{ "reload", "reloads stored data from the database", 0,0,{
+	{ "reload", "reloads stored data from the database", 0,0, {
 		{clusterer_reload, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_reload", 0}
 	},
-	{ "set_status", "sets the status for a specified connection", 0,0,{
+	{ "set_status", "sets the status for a specified connection", 0,0, {
 		{clusterer_set_status, {"cluster_id", "status", 0}},
 		{clusterer_set_status, {"cluster_id", "node_id", "status", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_set_status", 0}
 	},
-	{ "list", "lists the available connections for the specified server", 0,0,{
+	{ "list", "lists the available connections for the specified server", 0,0, {
 		{clusterer_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_list", 0}
 	},
-	{ "list_topology", "lists the topology as known by the current node", 0,0,{
+	{ "list_topology", "lists the topology as known by the current node", 0,0, {
 		{clusterer_list_topology, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_list_topology", 0}
 	},
-	{ "send_mi", "sends an MI command to be run on a specific node in a cluster", 0,0,{
+	{ "send_mi", "sends an MI command to be run on a specific node in a cluster", 0,0, {
 		{cluster_send_mi, {"cluster_id", "destination", "cmd_name", 0}},
 		{cluster_send_mi, {"cluster_id", "destination", "cmd_name", "cmd_params", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cluster_send_mi", 0}
 	},
-	{ "broadcast_mi", "dispatches an MI command to be run on all nodes in a cluster", 0,0,{
+	{ "broadcast_mi", "dispatches an MI command to be run on all nodes in a cluster", 0,0, {
 		{cluster_bcast_mi, {"cluster_id", "cmd_name", 0}},
 		{cluster_bcast_mi, {"cluster_id", "cmd_name", "cmd_params", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"cluster_broadcast_mi", 0}
 	},
-	{ "list_cap", "lists registered capabilities and their states", 0,0,{
+	{ "list_cap", "lists registered capabilities and their states", 0,0, {
 		{clusterer_list_cap, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_list_cap", 0}
 	},
-	{ "set_cap_status", "sets the status for a capability", 0,0,{
+	{ "set_cap_status", "sets the status for a capability", 0,0, {
 		{clusterer_set_cap_status, {"cluster_id", "capability", "status", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_set_cap_status", 0}
 	},
-	{ "list_shtags", "lists the sharing tags and their states", 0,0,{
+	{ "list_shtags", "lists the sharing tags and their states", 0,0, {
 		{shtag_mi_list, {0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_list_shtags", 0}
 	},
-	{ "shtag_set_active", "switch the status of the give sharing tag to active", 0,0,{
+	{ "shtag_set_active", "switch the status of the give sharing tag to active", 0,0, {
 		{shtag_mi_set_active, {"tag", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_shtag_set_active", 0}
 	},
-	{ "remove_node", "removes a node from the cluster", 0,0,{
+	{ "remove_node", "removes a node from the cluster", 0,0, {
 		{cluster_remove_node, {"cluster_id", "node_id", 0}},
-		{EMPTY_MI_RECIPE}}
+		{EMPTY_MI_RECIPE}}, {"clusterer_remove_node", 0}
 	},
 	{EMPTY_MI_EXPORT}
 };
