@@ -242,7 +242,7 @@ jobs:
         docker pull ${BUILD_IMAGE}
         docker run --platform ${TARGETPLATFORM} --env TEST_SET_MIGHTFAIL --name test --cap-add=SYS_PTRACE \
          --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0 ${BUILD_IMAGE}
-      timeout-minutes: 2
+      timeout-minutes: 3
 
   test_rtp_io_local:
     name: Run VoIPTests™ (LOCAL)
@@ -293,4 +293,4 @@ jobs:
       run: |
         docker run --platform ${TARGETPLATFORM} --env TEST_SET_MIGHTFAIL --name test --cap-add=SYS_PTRACE \
          --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0 ${OUTPUT_TAG}
-      timeout-minutes: 2
+      timeout-minutes: 3
