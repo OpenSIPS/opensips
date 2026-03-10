@@ -182,19 +182,27 @@ if (is_peer_verified()) {
 
         <section id="exported_mi_functions" xreflabel="Exported MI Functions">
             <title>Exported MI Functions</title>
-            <section id="mi_tls_list" xreflabel="tls_list">
+            <section id="mi_list" xreflabel="tls_mgm:list">
                 <title>
-		<function moreinfo="none">tls_list</function>
+		<function moreinfo="none">tls_mgm:list</function>
                 </title>
+		<para>
+		Replaces obsolete MI command: <emphasis>tls_list</emphasis>.
+		</para>
+
                 <para>
                 List all domains information.
                 </para>
             </section>
 
-            <section id="mi_tls_reload" xreflabel="tls_reload">
+            <section id="mi_reload" xreflabel="tls_mgm:reload">
                 <title>
-		<function moreinfo="none">tls_reload</function>
+		<function moreinfo="none">tls_mgm:reload</function>
                 </title>
+		<para>
+		Replaces obsolete MI command: <emphasis>tls_reload</emphasis>.
+		</para>
+
                 <para>
                 Reloads the TLS domains information from the database.
                 The previous DB defined domains are discarded but the

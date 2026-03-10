@@ -239,16 +239,20 @@ if (is_method("MESSAGE")) {
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-	<section id="mi_msrp_gw_list_sessions"
-			xreflabel="msrp_gw_list_sessions">
+	<section id="mi_list_sessions"
+			xreflabel="msrp_gateway:list_sessions">
 		<title>
-		<function moreinfo="none">msrp_gw_list_sessions</function>
+		<function moreinfo="none">msrp_gateway:list_sessions</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>msrp_gw_list_sessions</emphasis>.
+		</para>
+
 		<para>
 		Lists information about ongoing sessions.
 		</para>
 		<para>
-		Name: <emphasis>msrp_gw_list_sessions</emphasis>
+		Name: <emphasis>msrp_gateway:list_sessions</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -260,20 +264,24 @@ if (is_method("MESSAGE")) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi msrp_gw_list_sessions
+opensips-cli -x mi msrp_gateway:list_sessions
 		</programlisting>
 		</section>
 
-	<section id="mi_msrp_gw_end_session"
-			xreflabel="msrp_gw_end_session">
+	<section id="mi_end_session"
+			xreflabel="msrp_gateway:end_session">
 		<title>
-		<function moreinfo="none">msrp_gw_end_session</function>
+		<function moreinfo="none">msrp_gateway:end_session</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>msrp_gw_end_session</emphasis>.
+		</para>
+
 		<para>
 		Terminate an ongoing session.
 		</para>
 		<para>
-		Name: <emphasis>msrp_gw_end_session</emphasis>
+		Name: <emphasis>msrp_gateway:end_session</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -285,7 +293,7 @@ opensips-cli -x mi msrp_gw_list_sessions
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi msrp_gw_end_session alice@opensips.org-bob@opensips.org
+opensips-cli -x mi msrp_gateway:end_session alice@opensips.org-bob@opensips.org
 		</programlisting>
 		</section>
 

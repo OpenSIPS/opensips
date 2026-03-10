@@ -693,8 +693,12 @@ aka_av_fail("sip:test@siphub.com", "test@siphub.com", 3);
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-		<section id="mi_aka_av_add" xreflabel="aka_av_add">
-			<title><function moreinfo="none">aka_av_add</function></title>
+		<section id="mi_av_add" xreflabel="auth_aka:av_add">
+			<title><function moreinfo="none">auth_aka:av_add</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>aka_av_add</emphasis>.
+		</para>
+
 			<para>
 				Adds an Authentication Vector through the MI interface.
 			</para>
@@ -732,11 +736,11 @@ aka_av_fail("sip:test@siphub.com", "test@siphub.com", 3);
 			</itemizedlist>
 			<example>
 			<title>
-				<function moreinfo="none">aka_av_add</function> usage</title>
+				<function moreinfo="none">auth_aka:av_add</function> usage</title>
 			<programlisting format="linespecific">
 ...
 ## adds an AKA AV
-$ opensips-cli -x mi aka_av_add \
+$ opensips-cli -x mi auth_aka:av_add \
 				sip:test@siphub.com
 				test@siphub.com
 				KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sIJI4=
@@ -747,8 +751,12 @@ $ opensips-cli -x mi aka_av_add \
 			</programlisting>
 			</example>
 		</section>
-		<section id="mi_aka_av_drop" xreflabel="aka_av_drop">
-			<title><function moreinfo="none">aka_av_drop</function></title>
+		<section id="mi_av_drop" xreflabel="auth_aka:av_drop">
+			<title><function moreinfo="none">auth_aka:av_drop</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>aka_av_drop</emphasis>.
+		</para>
+
 			<para>
 				Invalidates an Authentication Vector of an user identified
 				by its authenticate value.
@@ -770,11 +778,11 @@ $ opensips-cli -x mi aka_av_add \
 			</itemizedlist>
 			<example>
 			<title>
-				<function moreinfo="none">aka_av_drop</function> usage</title>
+				<function moreinfo="none">auth_aka:av_drop</function> usage</title>
 			<programlisting format="linespecific">
 ...
 ## adds an AKA AV
-$ opensips-cli -x mi aka_av_drop \
+$ opensips-cli -x mi auth_aka:av_drop \
 				sip:test@siphub.com
 				test@siphub.com
 				KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sIJI4=
@@ -782,8 +790,12 @@ $ opensips-cli -x mi aka_av_drop \
 			</programlisting>
 			</example>
 		</section>
-		<section id="mi_aka_av_drop_all" xreflabel="aka_av_drop_all">
-			<title><function moreinfo="none">aka_av_drop_all</function></title>
+		<section id="mi_av_drop_all" xreflabel="auth_aka:av_drop_all">
+			<title><function moreinfo="none">auth_aka:av_drop_all</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>aka_av_drop_all</emphasis>.
+		</para>
+
 			<para>
                 Invalidates all Authentication Vectors of an user through the
                 MI interface.
@@ -801,19 +813,23 @@ $ opensips-cli -x mi aka_av_drop \
 			</itemizedlist>
 			<example>
 			<title>
-				<function moreinfo="none">aka_av_drop_all</function> usage</title>
+				<function moreinfo="none">auth_aka:av_drop_all</function> usage</title>
 			<programlisting format="linespecific">
 ...
 ## adds an AKA AV
-$ opensips-cli -x mi aka_av_drop_all \
+$ opensips-cli -x mi auth_aka:av_drop_all \
 				sip:test@siphub.com
 				test@siphub.com
 ...
 			</programlisting>
 			</example>
 		</section>
-		<section id="mi_aka_av_fail" xreflabel="aka_av_fail">
-			<title><function moreinfo="none">aka_av_fail</function></title>
+		<section id="mi_av_fail" xreflabel="auth_aka:av_fail">
+			<title><function moreinfo="none">auth_aka:av_fail</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>aka_av_fail</emphasis>.
+		</para>
+
 			<para>
 				Indicates the fact that the fetching of an authentication
 				vector has failed, unlocking the processing of the message.

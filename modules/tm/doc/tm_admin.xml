@@ -2306,10 +2306,14 @@ route{
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-	<section id="mi_t_uac_dlg" xreflabel="t_uac_dlg">
+	<section id="mi_uac_dlg" xreflabel="tm:uac_dlg">
 		<title>
-		<function moreinfo="none">t_uac_dlg</function>
+		<function moreinfo="none">tm:uac_dlg</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>t_uac_dlg</emphasis>.
+		</para>
+
 		<para>
 		Generates and sends a local SIP request.
 		</para>
@@ -2344,14 +2348,18 @@ route{
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi t_uac_dlg method=INVITE ruri="sip:alice@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip:alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
+		opensips-cli -x mi tm:uac_dlg method=INVITE ruri="sip:alice@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip:alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
 		</programlisting>
 	</section>
 
-	<section id="mi_t_uac_cancel" xreflabel="t_uac_cancel">
+	<section id="mi_uac_cancel" xreflabel="tm:uac_cancel">
 		<title>
-		<function moreinfo="none">t_uac_cancel</function>
+		<function moreinfo="none">tm:uac_cancel</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>t_uac_cancel</emphasis>.
+		</para>
+
 		<para>
 		Generates and sends a CANCEL for an existing SIP request.
 		</para>
@@ -2370,14 +2378,18 @@ route{
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi t_uac_cancel "1-23454@127.0.0.1" "1 INVITE"
+		opensips-cli -x mi tm:uac_cancel "1-23454@127.0.0.1" "1 INVITE"
 		</programlisting>
 	</section>
 
-	<section id="mi_t_hash" xreflabel="t_hash">
+	<section id="mi_hash" xreflabel="tm:hash">
 		<title>
-		<function moreinfo="none">t_hash</function>
+		<function moreinfo="none">tm:hash</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>t_hash</emphasis>.
+		</para>
+
 		<para>
 		Gets information about the load of TM internal hash table.
 		</para>
@@ -2391,14 +2403,18 @@ route{
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi t_hash
+		opensips-cli -x mi tm:hash
 		</programlisting>
 	</section>
 
-	<section id="mi_t_reply" xreflabel="t_reply">
+	<section id="mi_reply" xreflabel="tm:reply">
 		<title>
-		<function moreinfo="none">t_reply</function>
+		<function moreinfo="none">tm:reply</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>t_reply</emphasis>.
+		</para>
+
 		<para>
 		Generates and sends a reply for an existing inbound SIP transaction.
 		</para>
@@ -2431,7 +2447,7 @@ route{
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi t_reply 403 Forbidden 46961:1279687637 abcde .
+		opensips-cli -x mi tm:reply 403 Forbidden 46961:1279687637 abcde .
 		</programlisting>
 	</section>
 

@@ -320,20 +320,24 @@ modparam("pi_http", "pi_http_method", 1)
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_pi_reload_tbls_and_cmds" xreflabel="pi_reload_tbls_and_cmds">
-		<title><function moreinfo="none">pi_reload_tbls_and_cmds</function></title>
+	<section id="mi_reload_tbls_and_cmds" xreflabel="pi_http:reload_tbls_and_cmds">
+		<title><function moreinfo="none">pi_http:reload_tbls_and_cmds</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>pi_reload_tbls_and_cmds</emphasis>.
+		</para>
+
 		<para>
 		Reloads the layout of the provisioning interface from the framework file.
 		</para>
 		<para>
-		Name: <emphasis>pi_reload_tbls_and_cmds</emphasis>
+		Name: <emphasis>pi_http:reload_tbls_and_cmds</emphasis>
 		</para>
 		<para>Parameters: none</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi pi_reload_tbls_and_cmds
+opensips-cli -x mi pi_http:reload_tbls_and_cmds
 		</programlisting>
 	</section>
 	</section>

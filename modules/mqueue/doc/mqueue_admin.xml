@@ -257,8 +257,12 @@ xlog("L_INFO", "Size of queue is: $var(q_size)\n");
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_mq_get_size" xreflabel="mq_get_size">
-		<title>mq_get_size</title>
+	<section id="mi_get_size" xreflabel="mqueue:get_size">
+		<title>mqueue:get_size</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>mq_get_size</emphasis>.
+		</para>
+
 		<para>Get the size of a memory queue.</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -267,16 +271,20 @@ xlog("L_INFO", "Size of queue is: $var(q_size)\n");
 			</listitem>
 		</itemizedlist>
 		<example>
-		<title><function>mq_get_size</function> usage</title>
+		<title><function>mqueue:get_size</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mq_get_size xyz
+opensips-cli -x mqueue:get_size xyz
 ...
 </programlisting>
 		</example>
 	</section>
-	<section id="mi_mq_fetch" xreflabel="mq_fetch">
-		<title>mq_fetch</title>
+	<section id="mi_fetch" xreflabel="mqueue:fetch">
+		<title>mqueue:fetch</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>mq_fetch</emphasis>.
+		</para>
+
 		<para>Fetch one (or up to limit) key-value pair from a memory queue.</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -289,24 +297,28 @@ opensips-cli -x mq_get_size xyz
 			</listitem>
 		</itemizedlist>
 		<example>
-		<title><function>mq_fetch</function> usage</title>
+		<title><function>mqueue:fetch</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mq_fetch xyz
+opensips-cli -x mqueue:fetch xyz
 ...
 </programlisting>
 		</example>
 	</section>
 
-	<section id="mi_mq_get_sizes" xreflabel="mq_get_sizes">
-		<title>mq_get_sizes</title>
+	<section id="mi_get_sizes" xreflabel="mqueue:get_sizes">
+		<title>mqueue:get_sizes</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>mq_get_sizes</emphasis>.
+		</para>
+
 		<para>Get the size for all memory queues.</para>
 		<para>Parameters: none</para>
 		<example>
-		<title><function>mq_get_sizes</function> usage</title>
+		<title><function>mqueue:get_sizes</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mq_get_sizes
+opensips-cli -x mqueue:get_sizes
 ...
 </programlisting>
 		</example>

@@ -786,15 +786,19 @@ modparam("ratelimit", "slot_period", 100)
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_rl_list" xreflabel="rl_list">
+	<section id="mi_list" xreflabel="ratelimit:list">
 		<title>
-		<function moreinfo="none">rl_list</function>
+		<function moreinfo="none">ratelimit:list</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rl_list</emphasis>.
+		</para>
+
 		<para>
 		Lists the parameters and variabiles in the ratelimit module.
 		</para>
 		<para>
-		Name: <emphasis>rl_list</emphasis>
+		Name: <emphasis>ratelimit:list</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -825,20 +829,24 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi rl_list pipe=gw_10.0.0.1
-		opensips-cli -x mi rl_list filter=gw_*
+		opensips-cli -x mi ratelimit:list pipe=gw_10.0.0.1
+		opensips-cli -x mi ratelimit:list filter=gw_*
 		</programlisting>
 	</section>
-	<section id="mi_rl_dump_pipe" xreflabel="rl_dump_pipe">
+	<section id="mi_dump_pipe" xreflabel="ratelimit:dump_pipe">
 		<title>
-		<function moreinfo="none">rl_dump_pipe</function>
+		<function moreinfo="none">ratelimit:dump_pipe</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rl_dump_pipe</emphasis>.
+		</para>
+
 		<para>
 		Exposes all the details about the current runtime data (specific to the
 		pipe's algorithm) of a pipe. Currently make sense for SBT.
 		</para>
 		<para>
-		Name: <emphasis>rl_dump_pipe</emphasis>
+		Name: <emphasis>ratelimit:dump_pipe</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -850,18 +858,22 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi rl_dump_pipe gw_10.0.0.1
+		opensips-cli -x mi ratelimit:dump_pipe gw_10.0.0.1
 		</programlisting>
 	</section>
-	<section id="mi_rl_reset_pipe" xreflabel="rl_reset_pipe">
+	<section id="mi_reset_pipe" xreflabel="ratelimit:reset_pipe">
 		<title>
-		<function moreinfo="none">rl_reset_pipe</function>
+		<function moreinfo="none">ratelimit:reset_pipe</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rl_reset_pipe</emphasis>.
+		</para>
+
 		<para>
 		Resets the counter of a specified pipe.
 		</para>
 		<para>
-		Name: <emphasis>rl_reset_pipe</emphasis>
+		Name: <emphasis>ratelimit:reset_pipe</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -874,18 +886,22 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi rl_reset_pipe gw_10.0.0.1
+		opensips-cli -x mi ratelimit:reset_pipe gw_10.0.0.1
 		</programlisting>
 	</section>
-	<section id="mi_rl_set_pid" xreflabel="rl_set_pid">
+	<section id="mi_set_pid" xreflabel="ratelimit:set_pid">
 		<title>
-		<function moreinfo="none">rl_set_pid</function>
+		<function moreinfo="none">ratelimit:set_pid</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rl_set_pid</emphasis>.
+		</para>
+
 		<para>
 		Sets the PID Controller parameters for the Feedback Algorithm.
 		</para>
 		<para>
-		Name: <emphasis>rl_set_pid</emphasis>
+		Name: <emphasis>ratelimit:set_pid</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -903,25 +919,29 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi rl_set_pid 0.5 0.5 0.5
+		opensips-cli -x mi ratelimit:set_pid 0.5 0.5 0.5
 		</programlisting>
 	</section>
-	<section id="mi_rl_get_pid" xreflabel="rl_get_pid">
+	<section id="mi_get_pid" xreflabel="ratelimit:get_pid">
 		<title>
-		<function moreinfo="none">rl_get_pid</function>
+		<function moreinfo="none">ratelimit:get_pid</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rl_get_pid</emphasis>.
+		</para>
+
 		<para>
 		Gets the list of in use PID Controller parameters.
 		</para>
 		<para>
-		Name: <emphasis>rl_get_pid</emphasis>
+		Name: <emphasis>ratelimit:get_pid</emphasis>
 		</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi rl_get_pid
+		opensips-cli -x mi ratelimit:get_pid
 		</programlisting>
 	</section>
 	<section id="mi_rl_bin_status" xreflabel="rl_bin_status">

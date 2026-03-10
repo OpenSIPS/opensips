@@ -418,16 +418,20 @@ if($rm=="NOTIFY")
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_rls_update_subscriptions" xreflabel="rls_update_subscriptions">
+	<section id="mi_update_subscriptions" xreflabel="rls:update_subscriptions">
 		<title>
-		<function moreinfo="none">rls_update_subscriptions</function>
+		<function moreinfo="none">rls:update_subscriptions</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rls_update_subscriptions</emphasis>.
+		</para>
+
 		<para>
 		Triggers updating backend subscriptions after a resources-list or rls-services document
 		has been updated.
 		</para>
 		<para>
-		Name: <emphasis>rls_update_subscriptions</emphasis>
+		Name: <emphasis>rls:update_subscriptions</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -441,7 +445,7 @@ if($rm=="NOTIFY")
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-opensips-cli -x mi rls_update_subscriptions sip:alice@atlanta.com
+opensips-cli -x mi rls:update_subscriptions sip:alice@atlanta.com
 	</programlisting>
 	</section>
 

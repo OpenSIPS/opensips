@@ -612,10 +612,14 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_show_fraud_stats" xreflabel="show_fraud_stats">
+	<section id="mi_show_stats" xreflabel="fraud_detection:show_stats">
 		<title>
-		<function moreinfo="none">show_fraud_stats</function>
+		<function moreinfo="none">fraud_detection:show_stats</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>show_fraud_stats</emphasis>.
+		</para>
+
 		<para>
 		Show the current statistics for all dials of a
 		<emphasis>user</emphasis> to a <emphasis>prefix</emphasis>.
@@ -628,7 +632,7 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 		interval!
 		</para>
 		<para>
-		Name: <emphasis>show_fraud_stats</emphasis>
+		Name: <emphasis>fraud_detection:show_stats</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -637,15 +641,19 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 			<listitem><para>prefix</para></listitem>
 		</itemizedlist>
 	</section>
-	<section id="mi_fraud_reload" xreflabel="fraud_reload">
+	<section id="mi_reload" xreflabel="fraud_detection:reload">
 		<title>
-		<function moreinfo="none">fraud_reload</function>
+		<function moreinfo="none">fraud_detection:reload</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>fraud_reload</emphasis>.
+		</para>
+
 		<para>
 		Reload the all the fraud rules.
 		</para>
 		<para>
-		Name: <emphasis>fraud_reload</emphasis>
+		Name: <emphasis>fraud_detection:reload</emphasis>
 		</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 	</section>

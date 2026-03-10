@@ -917,15 +917,19 @@ opensips-cli -x mi cleanup
 	  </programlisting>
 	</section>
 
-	<section id="mi_pres_phtable_list" xreflabel="pres_phtable_list">
+	<section id="mi_phtable_list" xreflabel="presence:phtable_list">
 	  <title>
-		<function moreinfo="none">pres_phtable_list</function>
+		<function moreinfo="none">presence:phtable_list</function>
 	  </title>
+		<para>
+		Replaces obsolete MI command: <emphasis>pres_phtable_list</emphasis>.
+		</para>
+
 	  <para>
 		Lists all the presentity records.
 	  </para>
 	  <para>
-		Name: <emphasis>pres_phtable_list</emphasis>
+		Name: <emphasis>presence:phtable_list</emphasis>
 	  </para>
 	  <para>Parameters: <emphasis>none</emphasis></para>
 
@@ -933,7 +937,7 @@ opensips-cli -x mi cleanup
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensips-cli -x mi pres_phtable_list
+opensips-cli -x mi presence:phtable_list
 	  </programlisting>
 	</section>
 
@@ -964,10 +968,14 @@ opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 	  </programlisting>
 	</section>
 
-	<section id="mi_pres_expose" xreflabel="pres_expose">
+	<section id="mi_expose" xreflabel="presence:expose">
 	  <title>
-		<function moreinfo="none">pres_expose</function>
+		<function moreinfo="none">presence:expose</function>
 	  </title>
+		<para>
+		Replaces obsolete MI command: <emphasis>pres_expose</emphasis>.
+		</para>
+
 	  <para>
 		  Exposes in the script, by rasing an
 		  <emphasis>E_PRESENCE_EXPOSED</emphasis> event, all the
@@ -975,7 +983,7 @@ opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 		  filter.
 	  </para>
 	  <para>
-		Name: <emphasis>pres_expose</emphasis>
+		Name: <emphasis>presence:expose</emphasis>
 	  </para>
 	  <para>Parameters:</para>
 	  <itemizedlist>
@@ -996,7 +1004,7 @@ opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
+opensips-cli -x mi presence:expose presence ^sip:10\.0\.5\.[0-9]*
 	  </programlisting>
 	</section>
 </section>
@@ -1046,7 +1054,7 @@ opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
 		</title>
 		<para>
 			This event is raised for each presentity exposeed
-			by the <emphasis>pres_expose</emphasis>.
+			by the <emphasis>presence:expose</emphasis>.
 		</para>
 		<para>Parameters:</para>
 		<para>Same parameters as the
@@ -1067,4 +1075,3 @@ opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
 </section>
 
 </chapter>
-

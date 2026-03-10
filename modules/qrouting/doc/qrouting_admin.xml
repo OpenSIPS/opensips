@@ -512,7 +512,7 @@ qr_set_xstat($var(rule_id), $var(gw_name), "mos", $var(mos_score));
 		<para>
 		Within a given routing rule, temporarily remove the given gateway or
 		carrier from routing, until they are re-enabled via
-		<xref linkend="func_qr_enable_dst"/> or <xref linkend="mi_qr_enable_dst"/>.
+		<xref linkend="func_qr_enable_dst"/> or <xref linkend="mi_enable_dst"/>.
 		The removal effect will be lost on an OpenSIPS restart.
 		</para>
 		<para>Parameters:</para>
@@ -587,8 +587,12 @@ qr_enable_dst($param(rule_id), $param(dst_name), $param(partition));
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-	<section id="mi_qr_reload" xreflabel="qr_reload">
-		<title><function moreinfo="none">qr_reload</function></title>
+	<section id="mi_reload" xreflabel="qrouting:reload">
+		<title><function moreinfo="none">qrouting:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>qr_reload</emphasis>.
+		</para>
+
 
 		<para>
 		Reload all quality-based routing rules from the SQL database.
@@ -599,12 +603,16 @@ qr_enable_dst($param(rule_id), $param(dst_name), $param(partition));
 
 		<programlisting  format="linespecific">
 
-opensips-cli -x mi qr_reload
+opensips-cli -x mi qrouting:reload
 		</programlisting>
 	</section>
 
-	<section id="mi_qr_status" xreflabel="qr_status">
-		<title><function moreinfo="none">qr_status</function></title>
+	<section id="mi_status" xreflabel="qrouting:status">
+		<title><function moreinfo="none">qrouting:status</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>qr_status</emphasis>.
+		</para>
+
 
 		<para>
 		Inspect the signaling quality statistics of the current
@@ -632,15 +640,19 @@ opensips-cli -x mi qr_reload
 
 		<programlisting  format="linespecific">
 
-opensips-cli -x mi qr_status
-opensips-cli -x mi qr_status pstn
-opensips-cli -x mi qr_status pstn 11 MY-GW-3
-opensips-cli -x mi qr_status pstn 17 MY-CARR-7
+opensips-cli -x mi qrouting:status
+opensips-cli -x mi qrouting:status pstn
+opensips-cli -x mi qrouting:status pstn 11 MY-GW-3
+opensips-cli -x mi qrouting:status pstn 17 MY-CARR-7
 		</programlisting>
 	</section>
 
-	<section id="mi_qr_disable_dst" xreflabel="qr_disable_dst">
-		<title><function moreinfo="none">qr_disable_dst</function></title>
+	<section id="mi_disable_dst" xreflabel="qrouting:disable_dst">
+		<title><function moreinfo="none">qrouting:disable_dst</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>qr_disable_dst</emphasis>.
+		</para>
+
 
 		<para>
 		Within a given routing rule, temporarily remove the given gateway or
@@ -665,13 +677,17 @@ opensips-cli -x mi qr_status pstn 17 MY-CARR-7
 
 		<programlisting  format="linespecific">
 
-opensips-cli -x mi qr_disable_dst 14 MY-CARR-7
-opensips-cli -x mi qr_disable_dst pstn 81 MY-GW-3
+opensips-cli -x mi qrouting:disable_dst 14 MY-CARR-7
+opensips-cli -x mi qrouting:disable_dst pstn 81 MY-GW-3
 		</programlisting>
 	</section>
 
-	<section id="mi_qr_enable_dst" xreflabel="qr_enable_dst">
-		<title><function moreinfo="none">qr_enable_dst</function></title>
+	<section id="mi_enable_dst" xreflabel="qrouting:enable_dst">
+		<title><function moreinfo="none">qrouting:enable_dst</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>qr_enable_dst</emphasis>.
+		</para>
+
 
 		<para>
 		Within a given routing rule, re-introduce the given gateway or
@@ -695,8 +711,8 @@ opensips-cli -x mi qr_disable_dst pstn 81 MY-GW-3
 
 		<programlisting  format="linespecific">
 
-opensips-cli -x mi qr_enable_dst 14 MY-CARR-7
-opensips-cli -x mi qr_enable_dst pstn 81 MY-GW-3
+opensips-cli -x mi qrouting:enable_dst 14 MY-CARR-7
+opensips-cli -x mi qrouting:enable_dst pstn 81 MY-GW-3
 		</programlisting>
 	</section>
 

@@ -382,7 +382,7 @@ modparam("proto_tls", "trace_destination", "hep_dest")
 		<para>
 			This controls whether tracing for tls is on or not. You still need to define
 			<xref linkend="param_tls_trace_destination"/>in order to work, but this value will be
-			controlled using mi function <xref linkend="mi_tls_trace"/>.
+			controlled using mi function <xref linkend="mi_trace"/>.
 		</para>
 		<emphasis>
 			Default value is 0(tracing inactive).
@@ -424,7 +424,7 @@ modparam("proto_tls", "trace_on", 1)
 
 		<para>
 			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="param_trace_on"/> is
-			set to 0 or tracing is deactived via the mi command <xref linkend="mi_tls_trace"/>
+			set to 0 or tracing is deactived via the mi command <xref linkend="mi_trace"/>
 			this route won't be called.
 		</para>
 		<emphasis>
@@ -596,16 +596,20 @@ modparam("proto_tls", "tls_async_handshake_timeout", 100)
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_tls_trace" xreflabel="tls_trace">
+		<section id="mi_trace" xreflabel="tls:trace">
 			<title>
-			<function moreinfo="none">tls_trace</function>
+			<function moreinfo="none">tls:trace</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>tls_trace</emphasis>.
+		</para>
+
 
 			<para>
 			</para>
 
 			<para>
-			Name: <emphasis>tls_trace</emphasis>
+			Name: <emphasis>tls:trace</emphasis>
 			</para>
 
 			<para>Parameters: </para>
@@ -627,7 +631,7 @@ modparam("proto_tls", "tls_async_handshake_timeout", 100)
 			MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-			opensips-cli -x mi tls_trace on
+			opensips-cli -x mi tls:trace on
 			</programlisting>
 		</section>
 	</section>

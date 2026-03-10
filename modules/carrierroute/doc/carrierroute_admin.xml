@@ -340,7 +340,8 @@ modparam("carrierroute", "strip_column", "strip")
 	    <title><varname>comment_column</varname> (string)</title>
 	    <para>
 		    Name of the column containing an optional comment (useful in large routing tables)
-		    The comment is also displayed by the fifo cmd "cr_dump_routes".
+		    The comment is also displayed by the MI command
+		    <quote>carrierroute:dump_routes</quote>.
 	    </para>
 	    <para>
 		    <emphasis>
@@ -1114,8 +1115,12 @@ cr_tree_rewrite_uri(tree, domain)
 		The options have to be quoted as one string to be passed to MI interface.
 		Each option except host and new host can be wildcarded by * (but only * and not things
 		like "-d prox*").</para>
-	<section id="mi_cr_reload_routes" xreflabel="cr_reload_routes">
-	    <title><function moreinfo="none">cr_reload_routes</function></title>
+	<section id="mi_reload_routes" xreflabel="carrierroute:reload_routes">
+	    <title><function moreinfo="none">carrierroute:reload_routes</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cr_reload_routes</emphasis>.
+		</para>
+
 	    <para>
 		This command reloads the routing data from the data source.
 		</para>
@@ -1127,14 +1132,22 @@ cr_tree_rewrite_uri(tree, domain)
 		internally from the server. Modifying of already existing domains is no problem.
 	    </para>
 	</section>
-	<section>
-	    <title><function moreinfo="none">cr_dump_routes</function></title>
+	<section id="mi_dump_routes" xreflabel="carrierroute:dump_routes">
+	    <title><function moreinfo="none">carrierroute:dump_routes</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cr_dump_routes</emphasis>.
+		</para>
+
 	    <para>
 		This command prints the route rules on the command line.
 	    </para>
 	</section>
-	<section>
-	    <title><function moreinfo="none">cr_replace_host</function></title>
+	<section id="mi_replace_host" xreflabel="carrierroute:replace_host">
+	    <title><function moreinfo="none">carrierroute:replace_host</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cr_replace_host</emphasis>.
+		</para>
+
 	    <para>
 		This command can replace the rewrite_host of a route rule, it is only
 		usable in file mode. Following options are possible:
@@ -1155,16 +1168,20 @@ cr_tree_rewrite_uri(tree, domain)
 	    </itemizedlist>
 	    <para>Use the "null" prefix to specify an empty prefix.</para>
 	    <example>
-		<title><function>cr_replace_host</function> usage</title>
+		<title><function>carrierroute:replace_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mi cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
+opensips-cli -x mi carrierroute:replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 ...
 		</programlisting>
 	    </example>
 	</section>
-	<section id="mi_cr_deactivate_host" xreflabel="cr_deactivate_host">
-	    <title><function moreinfo="none">cr_deactivate_host</function></title>
+	<section id="mi_deactivate_host" xreflabel="carrierroute:deactivate_host">
+	    <title><function moreinfo="none">carrierroute:deactivate_host</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cr_deactivate_host</emphasis>.
+		</para>
+
 	    <para>
 		    This command deactivates the specified host, i.e. it sets its status to 0.
 		    It is only usable in file mode. Following options are possible:
@@ -1188,16 +1205,20 @@ opensips-cli -x mi cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 		The backup route is deactivated if the host is activated again.</para>
 		<para>Use the "null" prefix to specify an empty prefix.</para>
 	    <example>
-		<title><function>cr_deactivate_host</function> usage</title>
+		<title><function>carrierroute:deactivate_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mi cr_deactivate_host "-d proxy -p 49 -h proxy1"
+opensips-cli -x mi carrierroute:deactivate_host "-d proxy -p 49 -h proxy1"
 ...
 		</programlisting>
 	    </example>
 	</section>
-	<section>
-	    <title><function moreinfo="none">cr_activate_host</function></title>
+	<section id="mi_activate_host" xreflabel="carrierroute:activate_host">
+	    <title><function moreinfo="none">carrierroute:activate_host</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cr_activate_host</emphasis>.
+		</para>
+
 	    <para>
 		    This command activates the specified host, i.e. it sets its status to 1.
 		    It is only usable in file mode. Following options are possible:
@@ -1215,17 +1236,21 @@ opensips-cli -x mi cr_deactivate_host "-d proxy -p 49 -h proxy1"
 	    </itemizedlist>
 	    <para>Use the "null" prefix to specify an empty prefix.</para>
 	    <example>
-		<title><function>cr_activate_host</function> usage</title>
+		<title><function>carrierroute:activate_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mi cr_activate_host "-d proxy -p 49 -h proxy1"
+opensips-cli -x mi carrierroute:activate_host "-d proxy -p 49 -h proxy1"
 ...
 		</programlisting>
 	    </example>
 	</section>
 
-	<section id="mi_cr_add_host" xreflabel="cr_add_host">
-	    <title><function moreinfo="none">cr_add_host</function></title>
+	<section id="mi_add_host" xreflabel="carrierroute:add_host">
+	    <title><function moreinfo="none">carrierroute:add_host</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cr_add_host</emphasis>.
+		</para>
+
 	    <para>
 		    This command adds a route rule, it is only usable in file mode. Following options
 		    are possible:
@@ -1258,17 +1283,21 @@ opensips-cli -x mi cr_activate_host "-d proxy -p 49 -h proxy1"
 	    </itemizedlist>
 		<para>Use the "null" prefix to specify an empty prefix.</para>
 	    <example>
-		<title><function>cr_add_host</function> usage</title>
+		<title><function>carrierroute:add_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mi cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensips-cli -x mi carrierroute:add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
 		</programlisting>
 	    </example>
 	</section>
 
-	<section id="mi_cr_delete_host" xreflabel="cr_delete_host">
-	    <title><function moreinfo="none">cr_delete_host</function></title>
+	<section id="mi_delete_host" xreflabel="carrierroute:delete_host">
+	    <title><function moreinfo="none">carrierroute:delete_host</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cr_delete_host</emphasis>.
+		</para>
+
 	    <para>
 		    This command delete the specified hosts or rules, i.e. remove 
 		    them from the route tree. It is only usable in file mode.
@@ -1302,10 +1331,10 @@ opensips-cli -x mi cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 	    </itemizedlist>
 	    <para>Use the "null" prefix to specify an empty prefix.</para>
 	    <example>
-		<title><function>cr_delete_host</function> usage</title>
+		<title><function>carrierroute:delete_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mi cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensips-cli -x mi carrierroute:delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
 		</programlisting>
 	    </example>
@@ -1613,4 +1642,3 @@ ALTER TABLE subscriber ADD cr_preferred_carrier int(10) default NULL;
 		</section>
     </section>
 </chapter>
-

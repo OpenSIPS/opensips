@@ -192,10 +192,14 @@ if (!check_blacklist("global_blacklist")))
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section id="mi_reload_blacklist" xreflabel="reload_blacklist">
+		<section id="mi_reload" xreflabel="userblacklist:reload">
 	    <title>
-		<function moreinfo="none">reload_blacklist</function>
+		<function moreinfo="none">userblacklist:reload</function>
 	    </title>
+		<para>
+		Replaces obsolete MI command: <emphasis>reload_blacklist</emphasis>.
+		</para>
+
 	    <para>
 		Reload the internal global blacklist cache. This is necessary after
 		the database tables for the global blacklist have been changed.
@@ -204,7 +208,7 @@ if (!check_blacklist("global_blacklist")))
 		<title><function>reload_blacklists</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensips-cli -x mi reload_blacklist
+opensips-cli -x mi userblacklist:reload
 ...
 		</programlisting>
 	    </example>

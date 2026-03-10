@@ -214,15 +214,19 @@ if(is_method("MESSAGE)
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_imc_list_rooms" xreflabel="imc_list_rooms">
+	<section id="mi_list_rooms" xreflabel="imc:list_rooms">
 		<title>
-		<function moreinfo="none">imc_list_rooms</function>
+		<function moreinfo="none">imc:list_rooms</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>imc_list_rooms</emphasis>.
+		</para>
+
 		<para>
 		Lists of the IM Conferencing rooms.
 		</para>
 		<para>
-		Name: <emphasis>imc_list_rooms</emphasis>
+		Name: <emphasis>imc:list_rooms</emphasis>
 		</para>
 		<para>Parameters: none</para>
 
@@ -230,19 +234,23 @@ if(is_method("MESSAGE)
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensips-cli -x mi imc_list_rooms
+		opensips-cli -x mi imc:list_rooms
 		</programlisting>
 	</section>
 
-    <section id="mi_imc_list_members" xreflabel="imc_list_members">
+    <section id="mi_list_members" xreflabel="imc:list_members">
 		<title>
-		<function moreinfo="none">imc_list_members</function>
+		<function moreinfo="none">imc:list_members</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>imc_list_members</emphasis>.
+		</para>
+
 		<para>
 		Listing of the members in IM Conferencing rooms.
 		</para>
 		<para>
-		Name: <emphasis>imc_list_members</emphasis>
+		Name: <emphasis>imc:list_members</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -253,7 +261,7 @@ if(is_method("MESSAGE)
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensips-cli -x mi imc_list_members sip:chat-000@opensips.org
+		opensips-cli -x mi imc:list_members sip:chat-000@opensips.org
 		</programlisting>
 	</section>
 	</section>

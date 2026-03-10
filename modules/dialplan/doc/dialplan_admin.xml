@@ -714,13 +714,17 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_dp_reload" xreflabel="dp_reload">
-			<title><function moreinfo="none">dp_reload</function></title>
+		<section id="mi_reload" xreflabel="dialplan:reload">
+			<title><function moreinfo="none">dialplan:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dp_reload</emphasis>.
+		</para>
+
 			<para>
 			It will update the translation rules, loading the database info.
 			</para>
 		<para>
-		Name: <emphasis>dp_reload</emphasis>
+		Name: <emphasis>dialplan:reload</emphasis>
 		</para>
 		<para>Parameters: <emphasis>1</emphasis></para>
 			<itemizedlist>
@@ -734,18 +738,22 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
 		MI DATAGRAM Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dp_reload
+		opensips-cli -x mi dialplan:reload
 		</programlisting>
 		</section>
 
-	<section id="mi_dp_translate" xreflabel="dp_translate">
-			<title><function moreinfo="none">dp_translate</function></title>
+	<section id="mi_translate" xreflabel="dialplan:translate">
+			<title><function moreinfo="none">dialplan:translate</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dp_translate</emphasis>.
+		</para>
+
 			<para>
 			It will apply a translation rule identified by a dialplan
 				id on an input string.
 			</para>
 		<para>
-		Name: <emphasis>dp_translate</emphasis>
+		Name: <emphasis>dialplan:translate</emphasis>
 		</para>
 		<para>Parameters: <emphasis>3</emphasis></para>
 			<itemizedlist>
@@ -765,17 +773,21 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
 		MI DATAGRAM Command Format:
 		</para>
 		<programlisting  format="linespecific">
-        opensips-cli -x mi dp_translate 10 +40123456789
+        opensips-cli -x mi dialplan:translate 10 +40123456789
 		</programlisting>
 		</section>
 
-	<section id="mi_dp_show_partiton" xreflabel="dp_show_partiton">
-		<title><function moreinfo="none">dp_show_partiton</function></title>
+	<section id="mi_show_partition" xreflabel="dialplan:show_partition">
+		<title><function moreinfo="none">dialplan:show_partition</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dp_show_partition</emphasis>.
+		</para>
+
 		<para>
 			Display partition(s) details.
 		</para>
 		<para>
-		Name: <emphasis>dp_show_partiton</emphasis>
+		Name: <emphasis>dialplan:show_partition</emphasis>
 		</para>
 		<para>Parameters: <emphasis>2</emphasis></para>
 			<itemizedlist>
@@ -789,7 +801,7 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
 		MI DATAGRAM Command Format:
 		</para>
 		<programlisting  format="linespecific">
-        opensips-cli -x mi dp_translate default
+        opensips-cli -x mi dialplan:show_partition default
 		</programlisting>
 		</section>
 	</section>

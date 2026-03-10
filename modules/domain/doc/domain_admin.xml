@@ -17,9 +17,9 @@
 		value of module parameter <parameter moreinfo="none">db_mode</parameter>.
 		In caching mode domain module reads the contents of domain table into 
 		cache memory when the module is loaded.  After that domain table is 
-		re-read only when module is given domain_reload fifo command.  Any
+		re-read only when module is given domain:reload MI command.  Any
 		changes in domain table must thus be followed by 
-		<quote>domain_reload</quote> command in order to reflect them in 
+		<quote>domain:reload</quote> command in order to reflect them in
 		module behavior. In non-caching mode domain module always queries domain
 		table in the database.
 	</para>
@@ -270,39 +270,47 @@ if (is_domain_local($avp(some_avp), $avp(attrs))) {
 	</section>
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_domain_reload" xreflabel="domain_reload">
-		<title><function moreinfo="none">domain_reload</function></title>
+	<section id="mi_reload" xreflabel="domain:reload">
+		<title><function moreinfo="none">domain:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>domain_reload</emphasis>.
+		</para>
+
 		<para>
 		Causes domain module to re-read the contents of domain table
 		into cache memory.
 		</para>
 		<para>
-		Name: <emphasis>domain_reload</emphasis>
+		Name: <emphasis>domain:reload</emphasis>
 		</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
  		<para>
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensips-cli -x mi domain_reload
+		opensips-cli -x mi domain:reload
 		</programlisting>
 		
 	</section>
-	<section id="mi_domain_dump" xreflabel="domain_dump">
-		<title><function moreinfo="none">domain_dump</function></title>
+	<section id="mi_dump" xreflabel="domain:dump">
+		<title><function moreinfo="none">domain:dump</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>domain_dump</emphasis>.
+		</para>
+
 		<para>
 		Causes domain module to dump hash indexes and domain names in
 		its cache memory.
 		</para>
 		<para>
-		Name: <emphasis>domain_dump</emphasis>
+		Name: <emphasis>domain:dump</emphasis>
 		</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
  		<para>
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensips-cli -x mi domain_dump
+		opensips-cli -x mi domain:dump
 		</programlisting>
 	</section>
 	</section>
@@ -316,4 +324,3 @@ if (is_domain_local($avp(some_avp), $avp(attrs))) {
 	</para>
 	</section>
 </chapter>
-

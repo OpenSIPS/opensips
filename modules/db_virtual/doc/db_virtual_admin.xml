@@ -215,7 +215,7 @@ modparam("db_virtual", "db_probe_time", 20)
 		other processes will try to reconnect to it. There are cases where although
 		the probe could connect some might fail. This parameter represents the number
 		of consecutive failed retries that a process will do before it gives up.
-		This value is reset and suppressed by a MI function(db_set).
+		This value is reset and suppressed by a MI function (db_virtual:set).
 			</para>
 			<para>
 				<emphasis>
@@ -238,16 +238,20 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section id="mi_db_get" xreflabel="db_get">
+		<section id="mi_get" xreflabel="db_virtual:get">
 			<title>
-				<function moreinfo="none">db_get</function>
+				<function moreinfo="none">db_virtual:get</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>db_get</emphasis>.
+		</para>
+
 			<para>
 		Return information about global state of the real dbs.
 			</para>
 			<para>
 		Name:
-				<emphasis>db_get</emphasis>
+				<emphasis>db_virtual:get</emphasis>
 			</para>
 			<para>Parameters:</para>
 			<itemizedlist>
@@ -261,21 +265,25 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 		MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-				opensips-cli -x mi db_get
+				opensips-cli -x mi db_virtual:get
 			</programlisting>
 		</section>
 
 
 
-		<section id="mi_db_set" xreflabel="db_set">
+		<section id="mi_set" xreflabel="db_virtual:set">
 			<title>
-				<function moreinfo="none">db_set</function>
+				<function moreinfo="none">db_virtual:set</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>db_set</emphasis>.
+		</para>
+
 			<para>Sets the permissions for real dbs access per set per db.</para>
 			<para>Sets the reconnect reset flag.</para>
 			<para>
 		Name:
-				<emphasis>db_set</emphasis>
+				<emphasis>db_virtual:set</emphasis>
 			</para>
 			<para>Parameters:</para>
 			<itemizedlist>
@@ -285,7 +293,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 				<listitem>ignore_retries[boolean](optional)</listitem>
 			</itemizedlist>
 
-			<para>db_set 3 2 0 1 means: </para>
+			<para>db_virtual:set 3 2 0 1 means: </para>
 			<itemizedlist>
 				<listitem> 3 - the fourth set (must exist)</listitem>
 				<listitem> 2 - the third URL in the fourth set(must exist)</listitem>
@@ -297,10 +305,9 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 		MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-				opensips-cli -x mi db_set 3 2 0 1
+				opensips-cli -x mi db_virtual:set 3 2 0 1
 			</programlisting>
 		</section>
 	</section>
 
 </chapter>
-

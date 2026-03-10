@@ -26,14 +26,14 @@
 		</listitem>
 		<listitem>
 			<para><emphasis>MI Commands</emphasis> – Using
-			<xref linkend="mi_config_push"/> or
-			<xref linkend="mi_config_push_bulk"/> updates one or more variables
+			<xref linkend="mi_push"/> or
+			<xref linkend="mi_push_bulk"/> updates one or more variables
 			in the runtime cache. These updates are also not saved to the database.
 			</para>
 		</listitem>
 		<listitem>
 			<para><emphasis>Database</emphasis> – Manually modifying values in the
-				database, then triggering the <xref linkend="mi_config_reload"/>
+				database, then triggering the <xref linkend="mi_reload"/>
 				command, will refresh the in-memory cache with updated values from
 				the database.
 			</para>
@@ -50,7 +50,7 @@
 			changes made through the script or MI commands
 			that are not explicitly flushed to the database
 			using the
-			<xref linkend="mi_config_flush"/>
+			<xref linkend="mi_flush"/>
 			command will be lost after a restart.
 		</para>
 		<para>
@@ -62,7 +62,7 @@
 		</para>
 		<para>
 			If needed, you can still manually re-initialize the cache from the
-			database by running the <xref linkend="mi_config_reload"/> MI command.
+			database by running the <xref linkend="mi_reload"/> MI command.
 		</para>
 	</section>
 	</section>
@@ -105,7 +105,7 @@
 		<para>
 			Database URL used to load the initial configuration values,
 			and flush them at runtime using the
-			<xref linkend="mi_config_flush"/> MI command.
+			<xref linkend="mi_flush"/> MI command.
 		</para>
 		<para>
 		<emphasis>
@@ -279,21 +279,29 @@ modparam("config", "hash_size", 32)
 	<section id="mi_commands" xreflabel="MI Commands">
 	<title>MI Commands</title>
 
-	<section id="mi_config_reload" xreflabel="config_reload">
-		<title><command>config_reload</command></title>
+	<section id="mi_reload" xreflabel="config:reload">
+		<title><command>config:reload</command></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>config_reload</emphasis>.
+		</para>
+
 		<para>Reloads all configuration variables from the database.</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
 		## reload configuration cache from the database
-		opensips-mi config_reload
-		opensips-cli -x mi config_reload
+		opensips-mi config:reload
+		opensips-cli -x mi config:reload
 		</programlisting>
 	</section>
 
-	<section id="mi_config_list" xreflabel="config_list">
-		<title><command>config_list</command></title>
+	<section id="mi_list" xreflabel="config:list">
+		<title><command>config:list</command></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>config_list</emphasis>.
+		</para>
+
 		<para>Lists all config variables currently loaded in cache,
 		printing temporary values as well.
 		If the optional <emphasis>description</emphasis> parameter
@@ -306,13 +314,17 @@ modparam("config", "hash_size", 32)
 		</para>
 		<programlisting  format="linespecific">
 		## list all configuration cache
-		opensips-mi config_list
-		opensips-cli -x mi config_list 1
+		opensips-mi config:list
+		opensips-cli -x mi config:list 1
 		</programlisting>
 	</section>
 
-	<section id="mi_config_push" xreflabel="config_push">
-		<title><command>config_push</command></title>
+	<section id="mi_push" xreflabel="config:push">
+		<title><command>config:push</command></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>config_push</emphasis>.
+		</para>
+
 		<para>
 			Temporarily pushes a single configuration variable.
 		</para>
@@ -340,13 +352,17 @@ modparam("config", "hash_size", 32)
 		</para>
 		<programlisting  format="linespecific">
 		## push temporarily debug_mode configuration value
-		opensips-mi config_push debug_mode 1 "Enable Debug mode"
-		opensips-cli -x mi config_list 1
+		opensips-mi config:push debug_mode 1 "Enable Debug mode"
+		opensips-cli -x mi config:list 1
 		</programlisting>
 	</section>
 
-	<section id="mi_config_push_bulk" xreflabel="config_push_bulk">
-		<title><command>config_push_bulk</command></title>
+	<section id="mi_push_bulk" xreflabel="config:push_bulk">
+		<title><command>config:push_bulk</command></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>config_push_bulk</emphasis>.
+		</para>
+
 		<para>
 			Pushes multiple temporarily configuration variables in memory.
 		</para>
@@ -384,15 +400,19 @@ modparam("config", "hash_size", 32)
 		</para>
 		<programlisting  format="linespecific">
 		## push bulk temporarily values to the config cache
-		opensips-mi config_push_bulk -j '[[{"name":"debug_mode","value":"1"},{"name":"debug_level","value":"5"}]]'
+		opensips-mi config:push_bulk -j '[[{"name":"debug_mode","value":"1"},{"name":"debug_level","value":"5"}]]'
 		</programlisting>
 		<para>
 		The command returns the number of values successfully pushed.
 		</para>
 	</section>
 
-	<section id="mi_config_flush" xreflabel="config_flush">
-		<title><command>config_flush</command></title>
+	<section id="mi_flush" xreflabel="config:flush">
+		<title><command>config:flush</command></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>config_flush</emphasis>.
+		</para>
+
 		<para>
 			Flushes the variables from the memory to the database.
 		</para>
@@ -412,8 +432,8 @@ modparam("config", "hash_size", 32)
 		</para>
 		<programlisting  format="linespecific">
 		## Flush config variables to the database
-		opensips-mi config_flush
-		opensips-cli -x mi config_flush debug_mode
+		opensips-mi config:flush
+		opensips-cli -x mi config:flush debug_mode
 		</programlisting>
 		<para>
 		The command returns the number of values successfully flushed.

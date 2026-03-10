@@ -128,17 +128,21 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 	
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_bdb_reload" xreflabel="bdb_reload">
-		<title><function moreinfo="none">bdb_reload</function></title>
+	<section id="mi_reload" xreflabel="db_berkeley:reload">
+		<title><function moreinfo="none">db_berkeley:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>bdb_reload</emphasis>.
+		</para>
+
 		<para>
 		Causes db_berkeley module to re-read the contents of specified table (or dbenv).
 		The db_berkeley DB actually loads each table on demand, as opposed to loading all
-		at mod_init time. The bdb_reload operation is implemented as a close followed by a reopen.
-		Note- bdb_reload will fail if a table has not been accessed before (because the close 
+		at mod_init time. The db_berkeley:reload operation is implemented as a close followed by a reopen.
+		Note- db_berkeley:reload will fail if a table has not been accessed before (because the close 
 		will fail).
 		</para>
 		<para>
-		Name: <emphasis>bdb_reload</emphasis>
+		Name: <emphasis>db_berkeley:reload</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -153,7 +157,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi bdb_reload subscriber
+		opensips-cli -x mi db_berkeley:reload subscriber
 		</programlisting>
 	</section>
 	</section>

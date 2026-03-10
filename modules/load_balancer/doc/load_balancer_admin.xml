@@ -71,7 +71,7 @@
 		be automatically re-enabled when the probing will succeed.
 	</listitem>
 	<listitem>
-		<emphasis>MI command</emphasis> - by calling the lb_status MI
+		<emphasis>MI command</emphasis> - by calling the load_balancer:status MI
 		command for disabling (on demand) the destination. If so, the probing
 		and re-enabling of this destination will be completly disabled until
 		you re-enable it again via MI command - this is designed to allow 
@@ -911,8 +911,12 @@ if (lb_is_destination($si,$sp) ) {
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_lb_reload" xreflabel="lb_reload">
-		<title><function moreinfo="none">lb_reload</function></title>
+		<section id="mi_reload" xreflabel="load_balancer:reload">
+		<title><function moreinfo="none">load_balancer:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>lb_reload</emphasis>.
+		</para>
+
 		<para>
 		Trigers the reload of the load balancing data from the DB.
 		</para>
@@ -920,12 +924,16 @@ if (lb_is_destination($si,$sp) ) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi lb_reload
+		opensips-cli -x mi load_balancer:reload
 		</programlisting>
 		</section>
 
-		<section id="mi_lb_resize" xreflabel="lb_resize">
-		<title><function moreinfo="none">lb_resize</function></title>
+		<section id="mi_resize" xreflabel="load_balancer:resize">
+		<title><function moreinfo="none">load_balancer:resize</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>lb_resize</emphasis>.
+		</para>
+
 		<para>
 		Changes the capacity for a resource of a destination.
 		</para>
@@ -945,20 +953,24 @@ if (lb_is_destination($si,$sp) ) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi lb_resize 11 voicemail 56
+		opensips-cli -x mi load_balancer:resize 11 voicemail 56
 		</programlisting>
 		</section>
 
-		<section id="mi_lb_list" xreflabel="lb_list">
-		<title><function moreinfo="none">lb_list</function></title>
+		<section id="mi_list" xreflabel="load_balancer:list">
+		<title><function moreinfo="none">load_balancer:list</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>lb_list</emphasis>.
+		</para>
+
 		<para>
 		Lists all the destinations and the maximum and current load for each 
 		resource of the destination.
 		</para>
 		<example>
-		<title><function>lb_list</function> usage</title>
+		<title><function>load_balancer:list</function> usage</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi lb_list
+$ opensips-cli -x mi load_balancer:list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
         Resource:: transc max=5 load=1
@@ -971,8 +983,12 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
 		</example>
 		</section>
 
-		<section id="mi_lb_status" xreflabel="lb_status">
-		<title><function moreinfo="none">lb_status</function></title>
+		<section id="mi_status" xreflabel="load_balancer:status">
+		<title><function moreinfo="none">load_balancer:status</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>lb_status</emphasis>.
+		</para>
+
 		<para>
 		Gets or sets the status (enabled or disabled) of a destination.
 		</para>
@@ -989,12 +1005,12 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
 			</para></listitem>
 		</itemizedlist>
 		<example>
-		<title><function>lb_status</function> usage</title>
+		<title><function>load_balancer:status</function> usage</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi lb_status 2
+$ opensips-cli -x mi load_balancer:status 2
 enable:: no
-$ opensips-cli -x mi lb_status 2 1
-$ opensips-cli -x mi lb_status 2
+$ opensips-cli -x mi load_balancer:status 2 1
+$ opensips-cli -x mi load_balancer:status 2
 enable:: yes
 </programlisting>
 		</example>
@@ -1031,4 +1047,3 @@ enable:: yes
 
 
 </chapter>
-

@@ -836,8 +836,12 @@ if (is_method("INVITE") &amp;&amp; !has_totag()) {
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-		<section id="mi_rtp_relay_list" xreflabel="rtp_relay_list">
-			<title><function moreinfo="none">rtp_relay_list</function></title>
+		<section id="mi_list" xreflabel="rtp_relay:list">
+			<title><function moreinfo="none">rtp_relay:list</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtp_relay_list</emphasis>.
+		</para>
+
 			<para>
 			Lists all the RTP Relay sessions engaged.
 			</para>
@@ -861,20 +865,24 @@ if (is_method("INVITE") &amp;&amp; !has_totag()) {
 			</itemizedlist>
 			<example>
 			<title>
-				<function moreinfo="none">rtp_relay_list</function> usage</title>
+				<function moreinfo="none">rtp_relay:list</function> usage</title>
 			<programlisting format="linespecific">
 ...
 ## list all sessions
-$ opensips-cli -x mi rtp_relay_list
+$ opensips-cli -x mi rtp_relay:list
 
 ## list all sessions going through a specific RTP node
-$ opensips-cli -x mi rtp_relay_list rtpproxy udp:127.0.0.1:2222
+$ opensips-cli -x mi rtp_relay:list rtpproxy udp:127.0.0.1:2222
 ...
 			</programlisting>
 			</example>
 		</section>
-		<section id="mi_rtp_relay_update" xreflabel="rtp_relay_update">
-			<title><function moreinfo="none">rtp_relay_update</function></title>
+		<section id="mi_update" xreflabel="rtp_relay:update">
+			<title><function moreinfo="none">rtp_relay:update</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtp_relay_update</emphasis>.
+		</para>
+
 			<para>
 			Updates/Re-engages the RTP relays in all ongoing RTP relay sessions.
 			</para>
@@ -933,23 +941,27 @@ $ opensips-cli -x mi rtp_relay_list rtpproxy udp:127.0.0.1:2222
 			</itemizedlist>
 			<example>
 			<title>
-				<function moreinfo="none">rtp_relay_update</function> usage</title>
+				<function moreinfo="none">rtp_relay:update</function> usage</title>
 			<programlisting format="linespecific">
 ...
 ## update all sessions that are using rtpproxy
-$ opensips-cli -x mi rtp_relay_update rtpproxy
+$ opensips-cli -x mi rtp_relay:update rtpproxy
 ...
 			</programlisting>
 			</example>
 		</section>
-		<section id="mi_rtp_relay_update_callid" xreflabel="rtp_relay_update_callid">
-			<title><function moreinfo="none">rtp_relay_update_callid</function></title>
+		<section id="mi_update_callid" xreflabel="rtp_relay:update_callid">
+			<title><function moreinfo="none">rtp_relay:update_callid</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtp_relay_update_callid</emphasis>.
+		</para>
+
 			<para>
 			Updates/Re-engages the RTP relays in all ongoing RTP relay sessions.
 			</para>
 			<para>
 				The function basically works in the same manner as
-				<xref linkend="mi_rtp_relay_update"/>, but is to be
+				<xref linkend="mi_update"/>, but is to be
 				used to update a specific callid. In addition, one can
 				also update the <emphasis>engine</emphasis> and
 				<emphasis>flags</emphasis> used for the particular
@@ -988,14 +1000,14 @@ $ opensips-cli -x mi rtp_relay_update rtpproxy
 			</itemizedlist>
 			<example>
 			<title>
-				<function moreinfo="none">rtp_relay_update_callid</function> usage</title>
+				<function moreinfo="none">rtp_relay:update_callid</function> usage</title>
 			<programlisting format="linespecific">
 ...
 ## update a call with a working RTPproxy node
-$ opensips-cli -x mi rtp_relay_update_callid 1-3758963@127.0.0.1 rtpproxy
+$ opensips-cli -x mi rtp_relay:update_callid 1-3758963@127.0.0.1 rtpproxy
 
 ## update a call to use RTPEngine with a SRTP SDP for caller
-$ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1 \
+$ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1 \
 	flags='{ "caller":{"type":"SRTP", "flags":"replace-origin"},
 		"callee":{"type":"RTP", "flags"="replace-origin"}}'
 ...

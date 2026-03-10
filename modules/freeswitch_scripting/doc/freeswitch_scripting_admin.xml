@@ -320,12 +320,17 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 
 	<section id="sec-mi-commands">
 	<title>Exported MI Commands</title>
-	<section id="mi-fs-subscribe" xreflabel="fs_subscribe">
-		<title>fs_subscribe</title>
+	<section id="mi_subscribe" xreflabel="freeswitch_scripting:subscribe">
+		<title>freeswitch_scripting:subscribe</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>fs_subscribe</emphasis>.
+		</para>
+
 		<para>
 		Ensures that the given FreeSWITCH ESL socket is subscribed to the given
 		list of events. In case an event cannot be subscribed to, the freeswitch
-		driver will periodically retry to subscribe to it until an fs_unsubscribe
+		driver will periodically retry to subscribe to it until an
+		freeswitch_scripting:unsubscribe
 		MI command for the respective event is issued.
 		</para>
 		<para>Parameters:</para>
@@ -344,8 +349,12 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section id="mi-fs-unsubscribe" xreflabel="fs_unsubscribe">
-		<title>fs_unsubscribe</title>
+	<section id="mi_unsubscribe" xreflabel="freeswitch_scripting:unsubscribe">
+		<title>freeswitch_scripting:unsubscribe</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>fs_unsubscribe</emphasis>.
+		</para>
+
 		<para>
 		Ensures that the given FreeSWITCH ESL socket is unsubscribed from the given
 		list of events.
@@ -366,15 +375,23 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section id="mi-fs-list" xreflabel="fs_list">
-		<title>fs_list</title>
+	<section id="mi_list" xreflabel="freeswitch_scripting:list">
+		<title>freeswitch_scripting:list</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>fs_list</emphasis>.
+		</para>
+
 		<para>
 		Displays the current set of FreeSWITCH ESL sockets and the list of events
 		that the module is subscribed to for each socket.
 		</para>
 	</section>
-	<section id="mi-fs-reload" xreflabel="fs_reload">
-		<title>fs_reload</title>
+	<section id="mi_reload" xreflabel="freeswitch_scripting:reload">
+		<title>freeswitch_scripting:reload</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>fs_reload</emphasis>.
+		</para>
+
 		<para>
 		Replaces the current set* of FreeSWITCH ESL sockets along with their respective
 		events with the current data (ESL sockets and their events) found in the
@@ -383,7 +400,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 		<para>
 			* this includes any sockets/events provisioned through
 			<xref linkend="param_fs_subscribe"/>, MI
-			<xref linkend="mi-fs-subscribe"/> commands or previous DB data set.
+			<xref linkend="mi_subscribe"/> commands or previous DB data set.
 		</para>
 	</section>
 

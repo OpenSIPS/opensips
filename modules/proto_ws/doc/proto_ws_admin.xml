@@ -204,7 +204,7 @@ modparam("proto_ws", "trace_destination", "hep_dest")
 		<para>
 			This controls whether tracing for ws is on or not. You still need to define
 			<xref linkend="param_trace_destination"/>in order to work, but this value will be
-			controlled using mi function <xref linkend="mi_ws_trace"/>.
+			controlled using mi function <xref linkend="mi_trace"/>.
 		</para>
 		<emphasis>
 			Default value is 0(tracing inactive).
@@ -247,7 +247,7 @@ modparam("proto_ws", "trace_on", 1)
 
 		<para>
 			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="param_trace_on"/> is
-			set to 0 or tracing is deactived via the mi command <xref linkend="mi_ws_trace"/>
+			set to 0 or tracing is deactived via the mi command <xref linkend="mi_trace"/>
 			this route won't be called.
 		</para>
 		<emphasis>
@@ -300,16 +300,20 @@ modparam("proto_ws", "require_origin", no)
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_ws_trace" xreflabel="ws_trace">
+		<section id="mi_trace" xreflabel="ws:trace">
 			<title>
-			<function moreinfo="none">ws_trace</function>
+			<function moreinfo="none">ws:trace</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ws_trace</emphasis>.
+		</para>
+
 
 			<para>
 			</para>
 
 			<para>
-			Name: <emphasis>ws_trace</emphasis>
+			Name: <emphasis>ws:trace</emphasis>
 			</para>
 
 			<para>Parameters: </para>
@@ -331,7 +335,7 @@ modparam("proto_ws", "require_origin", no)
 			MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-			opensips-cli -x mi ws_trace on
+			opensips-cli -x mi ws:trace on
 			</programlisting>
 		</section>
 	</section>

@@ -153,10 +153,14 @@ opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence application
 		</example>
 		</section>
 
-	<section id="mi_pua_subscribe" xreflabel="pua_subscribe">
+	<section id="mi_subscribe" xreflabel="pua_mi:subscribe">
 		<title>
-			<function moreinfo="none">pua_subscribe</function>
+			<function moreinfo="none">pua_mi:subscribe</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>pua_subscribe</emphasis>.
+		</para>
+
 		<para>
 			Command parameters:
 		</para>	
@@ -187,11 +191,11 @@ opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence application
 			</listitem>	
 			</itemizedlist>
 		<example>
-		<title><function>pua_subscribe</function> FIFO example</title>
+		<title><function>pua_mi:subscribe</function> FIFO example</title>
 	<programlisting format="linespecific">
 ...
 <![CDATA[
-opensips-cli -x mi pua_subscribe sip:system@opensips.org sip:400@opensips.org presence 3600
+opensips-cli -x mi pua_mi:subscribe sip:system@opensips.org sip:400@opensips.org presence 3600
 ]]>
 </programlisting>
 		</example>
