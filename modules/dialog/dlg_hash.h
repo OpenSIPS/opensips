@@ -69,6 +69,7 @@
 #define DLG_FLAG_RACE_CONDITION_OCCURRED	(1<<17)
 #define DLG_FLAG_SELF_EXTENDED_TIMEOUT		(1<<18)
 #define DLG_FLAG_SYNCED                     (1<<19)
+#define DLG_FLAG_AUTOPRACK			(1<<20)
 
 #define dlg_has_options_pinging(dlg) \
 	(dlg->flags & DLG_FLAG_PING_CALLER || \
@@ -383,6 +384,10 @@ void destroy_dlg(struct dlg_cell *dlg);
 				case 'E': \
 					___flags |= DLG_FLAG_END_ON_RACE_CONDITION; \
 					LM_DBG("ending call on 200OK race conditions \n"); \
+					break; \
+				case 'L': \
+					___flags |= DLG_FLAG_AUTOPRACK; \
+					LM_DBG("auto-PRACK for reliable provisional replies activated\n"); \
 					break; \
 				default: \
 					LM_DBG("unknown create_dialog flag : [%c] ." \

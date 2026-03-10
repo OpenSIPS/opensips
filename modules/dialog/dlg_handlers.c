@@ -20,6 +20,7 @@
  */
 
 
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
@@ -73,6 +74,113 @@ static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 static inline void dlg_merge_tmp_sdp(struct dlg_cell *dlg, unsigned int leg);
 static void dlg_update_req_info(str *buffer, struct dlg_cell *dlg, int leg,
 		struct sip_msg *req, struct cell *t);
+
+int dlg_prepare_prack_headers(struct sip_msg *msg, str *headers, str *out,
+		int enforce_onreply_route)
+{
+	struct cseq_body *cseq;
+	str rseq_val;
+	struct hdr_field *rseq_hdr;
+	int len;
+
+	if (enforce_onreply_route &&
+		(route_type != ONREPLY_ROUTE || msg->first_line.type != SIP_REPLY ||
+		msg->first_line.u.reply.statuscode < 101 ||
+		msg->first_line.u.reply.statuscode >= 200)) {
+		if (route_type == ONREPLY_ROUTE && msg->first_line.type == SIP_REPLY &&
+				msg->first_line.u.reply.statuscode == 100) {
+			LM_ERR("scripting error: PRACK cannot be generated for 100 Trying, needs to be 101-199\n");
+			return -1;
+		}
+
+		LM_ERR("PRACK can only be generated from onreply_route for 101-199 provisional replies\n");
+		return -1;
+	}
+
+	if ((!msg->cseq && parse_headers(msg, HDR_CSEQ_F, 0) < 0) || !msg->cseq ||
+			!(cseq = get_cseq(msg))) {
+		LM_ERR("missing or invalid CSeq in provisional reply\n");
+		return -1;
+	}
+	if (cseq->method_id != METHOD_INVITE) {
+		LM_ERR("PRACK can only be generated for provisional INVITE replies\n");
+		return -1;
+	}
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("failed to parse SIP reply headers\n");
+		return -1;
+	}
+
+	rseq_hdr = get_header_by_static_name(msg, "RSeq");
+	if (!rseq_hdr) {
+		LM_DBG("missing RSeq header in provisional reply\n");
+		return -2;
+	}
+	rseq_val = rseq_hdr->body;
+	trim(&rseq_val);
+	if (!rseq_val.len) {
+		LM_DBG("empty RSeq header in provisional reply\n");
+		return -2;
+	}
+
+	out->len = (headers ? headers->len : 0) + 8 + rseq_val.len + 1 +
+		cseq->number.len + 8;
+	out->s = pkg_malloc(out->len + 1);
+	if (!out->s) {
+		LM_ERR("oom while building RAck header\n");
+		return -1;
+	}
+
+	len = 0;
+	if (headers && headers->len) {
+		memcpy(out->s, headers->s, headers->len);
+		len = headers->len;
+	}
+
+	len += snprintf(out->s + len, out->len - len + 1, "RAck: %.*s %.*s INVITE\r\n",
+			rseq_val.len, rseq_val.s, cseq->number.len, cseq->number.s);
+	if (len != out->len) {
+		LM_ERR("failed to format RAck header\n");
+		pkg_free(out->s);
+		out->s = NULL;
+		out->len = 0;
+		return -1;
+	}
+
+	return 0;
+}
+
+static void dlg_auto_prack(struct dlg_cell *dlg, struct sip_msg *rpl)
+{
+	static str prack = str_init("PRACK");
+	str extra_hdrs = {0, 0};
+	int rc;
+
+	if (!(dlg->flags & DLG_FLAG_AUTOPRACK))
+		return;
+	if (!rpl || rpl == FAKED_REPLY)
+		return;
+	if (rpl->first_line.type != SIP_REPLY ||
+			rpl->first_line.u.reply.statuscode < 101 ||
+			rpl->first_line.u.reply.statuscode >= 200)
+		return;
+
+	rc = dlg_prepare_prack_headers(rpl, NULL, &extra_hdrs, 0);
+	if (rc == -2)
+		return;
+	if (rc < 0) {
+		LM_ERR("failed to prepare automatic PRACK for dialog %p [%u:%u]\n",
+			dlg, dlg->h_entry, dlg->h_id);
+		return;
+	}
+
+	rc = send_indialog_request(dlg, &prack, callee_idx(dlg), NULL, NULL,
+			&extra_hdrs, NULL, NULL, NULL);
+	pkg_free(extra_hdrs.s);
+	if (rc < 0)
+		LM_ERR("failed to send automatic PRACK for dialog %p [%u:%u]\n",
+			dlg, dlg->h_entry, dlg->h_id);
+}
 
 
 static void dlg_update_ack_sdp(struct sip_msg* req, str *buffer, int rpl_code,
@@ -731,6 +839,9 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 	next_state_dlg(dlg, event, DLG_DIR_UPSTREAM, &old_state, &new_state,
 	               &unref, DLG_CALLER_LEG, 1);
+
+	if (event == DLG_EVENT_RPL1xx)
+		dlg_auto_prack(dlg, rpl);
 
 	if (new_state==DLG_STATE_EARLY && old_state!=DLG_STATE_EARLY) {
 		run_dlg_callbacks(DLGCB_EARLY, dlg, rpl, DLG_DIR_UPSTREAM,
@@ -1663,7 +1774,8 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 		/* a dialog is already created - just update flags, if provisioned */
 		if (flags) {
 			dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE |
-			DLG_FLAG_BYEONTIMEOUT | DLG_FLAG_REINVITE_PING_CALLER | DLG_FLAG_REINVITE_PING_CALLEE);
+			DLG_FLAG_BYEONTIMEOUT | DLG_FLAG_REINVITE_PING_CALLER |
+			DLG_FLAG_REINVITE_PING_CALLEE | DLG_FLAG_AUTOPRACK);
 			dlg->flags |= flags;
 			dlg_setup_reinvite_callbacks(t, req, dlg);
 		}
