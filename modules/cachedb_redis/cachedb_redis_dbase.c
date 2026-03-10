@@ -48,7 +48,7 @@ struct tls_mgm_binds tls_api;
 redisContext *redis_get_ctx(char *ip, int port)
 {
 	struct timeval tv;
-	static char warned = 0;
+	static int warned = 0;
 	redisContext *ctx;
 
 	if (!port)
@@ -66,6 +66,12 @@ redisContext *redis_get_ctx(char *ip, int port)
 	if (ctx && ctx->err != REDIS_OK) {
 		LM_ERR("failed to open redis connection %s:%hu - %s\n",ip,
 				(unsigned short)port,ctx->errstr);
+		return NULL;
+	}
+
+	if (!ctx) {
+		LM_ERR("failed to connect to redis %s:%hu - out of memory\n",
+				ip, (unsigned short)port);
 		return NULL;
 	}
 
