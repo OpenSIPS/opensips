@@ -585,22 +585,26 @@ ua_session_terminate($var(b2b_key));
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_b2be_list" xreflabel="b2be_list">
+	<section id="mi_list" xreflabel="b2b_entities:list">
 		<title>
-		<function moreinfo="none">b2be_list</function>
+		<function moreinfo="none">b2b_entities:list</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>b2be_list</emphasis>.
+		</para>
+
 		<para>
 			This command can be used to list the internals of the b2b entities.
 		</para>
 		<para>
-		Name: <emphasis>b2be_list</emphasis>
+		Name: <emphasis>b2b_entities:list</emphasis>
 		</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<itemizedlist>
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 	<programlisting  format="linespecific">
-	opensips-cli -x mi b2be_list
+	opensips-cli -x mi b2b_entities:list
 	</programlisting>
 	</section>
 

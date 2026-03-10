@@ -106,7 +106,7 @@ modparam("benchmark", "enable", 1)
 			A sensible granularity seems to be 100.
 		</para>
 		<para>
-			If granularity is set to 0, then nothing will be logged automatically. Instead bm_poll_results MI command can be used to retrieve the results and clean the local values.
+			If granularity is set to 0, then nothing will be logged automatically. Instead benchmark:poll_results MI command can be used to retrieve the results and clean the local values.
 		</para>
 		<para>
 		<emphasis>
@@ -274,8 +274,12 @@ bm_log_timer("test");
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section id="mi_bm_enable_global" xreflabel="bm_enable_global">
-			<title><function moreinfo="none">bm_enable_global</function></title>
+		<section id="mi_enable_global" xreflabel="benchmark:enable_global">
+			<title><function moreinfo="none">benchmark:enable_global</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>bm_enable_global</emphasis>.
+		</para>
+
 			<para>
 				Enables/disables the module.
 			</para>
@@ -290,11 +294,15 @@ bm_log_timer("test");
 			MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-			opensips-cli -x mi bm_enable_global 1
+			opensips-cli -x mi benchmark:enable_global 1
 			</programlisting>
 		</section>
-		<section id="mi_bm_enable_timer" xreflabel="bm_enable_timer">
-			<title><function moreinfo="none">bm_enable_timer</function></title>
+		<section id="mi_enable_timer" xreflabel="benchmark:enable_timer">
+			<title><function moreinfo="none">benchmark:enable_timer</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>bm_enable_timer</emphasis>.
+		</para>
+
 			<para>
 				Enable or disable a single timer.
 			</para>
@@ -314,20 +322,24 @@ bm_log_timer("test");
 				<title>Enabling a timer</title>
 				<programlisting format="linespecific">
 ...
-opensips-cli -x mi bm_enable_timer test 1
+opensips-cli -x mi benchmark:enable_timer test 1
 ...
 </programlisting>
 			</example>
 		</section>
-		<section id="mi_bm_granularity" xreflabel="bm_granularity">
-			<title><function moreinfo="none">bm_granularity</function></title>
+		<section id="mi_granularity" xreflabel="benchmark:granularity">
+			<title><function moreinfo="none">benchmark:granularity</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>bm_granularity</emphasis>.
+		</para>
+
 			<para>
 				Modifies the benchmarking granularity.
 			</para>
 			<para>Parameters:</para>
 			<itemizedlist>
 				<listitem><para>
-					<emphasis>granularity</emphasis> - See
+					<emphasis>benchmark:granularity</emphasis> - See
 					discription of "granularity" parameter.
 				</para></listitem>
 			</itemizedlist>
@@ -335,11 +347,15 @@ opensips-cli -x mi bm_enable_timer test 1
 			MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-			opensips-cli -x mi bm_granularity 300
+			opensips-cli -x mi benchmark:granularity 300
 			</programlisting>
 		</section>
-		<section id="mi_bm_loglevel" xreflabel="bm_loglevel">
-			<title><function moreinfo="none">bm_loglevel</function></title>
+		<section id="mi_loglevel" xreflabel="benchmark:loglevel">
+			<title><function moreinfo="none">benchmark:loglevel</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>bm_loglevel</emphasis>.
+		</para>
+
 			<para>
 				Modifies the module log level.
 			</para>
@@ -354,22 +370,26 @@ opensips-cli -x mi bm_enable_timer test 1
 			MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-			opensips-cli -x mi bm_loglevel 4
+			opensips-cli -x mi benchmark:loglevel 4
 			</programlisting>
 		</section>
-		<section id="mi_bm_poll_results" xreflabel="bm_poll_results">
-			<title><function moreinfo="none">bm_poll_results</function></title>
+		<section id="mi_poll_results" xreflabel="benchmark:poll_results">
+			<title><function moreinfo="none">benchmark:poll_results</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>bm_poll_results</emphasis>.
+		</para>
+
 			<para>
 				Returns the current and global results for each timer. This command is only available if the "granularity" variable is set to 0. It can be used to get results in stable time intervals instead of every N messages. Each timer will have 2 nodes - the local and the global values. Format of the values is the same as the one normally used in logfile. This way of getting the results allows to interface with external graphing applications like Munin.
 			</para>
 			<para>
-				If there were no new calls to <emphasis>bm_log_timer</emphasis> since last check, then all current values of a timer will be equal 0. Each call to <emphasis>bm_poll_results</emphasis> will reset current values (but not global ones).
+				If there were no new calls to <emphasis>bm_log_timer</emphasis> since last check, then all current values of a timer will be equal 0. Each call to <emphasis>benchmark:poll_results</emphasis> will reset current values (but not global ones).
 			</para>
 			<example>
 				<title>Getting the results via FIFO interface</title>
 				<programlisting format="linespecific">
 ...
-opensips-cli -x mi bm_poll_results
+opensips-cli -x mi benchmark:poll_results
 register_timer
 	3/40/12/14/13.333333
 	9/204/12/97/22.666667
@@ -399,4 +419,3 @@ bm_log_timer("usrloc-lookup");
 		</example>
 	</section>
 </chapter>
-

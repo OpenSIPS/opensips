@@ -630,10 +630,14 @@ if ( is_method("INVITE") &amp;&amp; !has_totag()) {
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
 
-		<section id="mi_stir_shaken_ca_reload" xreflabel="stir_shaken_ca_reload">
+		<section id="mi_ca_reload" xreflabel="stir_shaken:ca_reload">
 			<title>
-				<function moreinfo="none">stir_shaken_ca_reload</function>
+				<function moreinfo="none">stir_shaken:ca_reload</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>stir_shaken_ca_reload</emphasis>.
+		</para>
+
 
 			<para>
 				Reload the file containing trusted CA certificates for the verifier
@@ -641,7 +645,7 @@ if ( is_method("INVITE") &amp;&amp; !has_totag()) {
 			</para>
 
 			<para>
-				Name: <emphasis>stir_shaken_ca_reload</emphasis>
+				Name: <emphasis>stir_shaken:ca_reload</emphasis>
 			</para>
 
 			<para>Parameters: <emphasis>none</emphasis></para>
@@ -652,17 +656,21 @@ if ( is_method("INVITE") &amp;&amp; !has_totag()) {
 
 <programlisting  format="linespecific">
 ...
-opensips-cli -x mi stir_shaken_ca_reload
+opensips-cli -x mi stir_shaken:ca_reload
 "OK"
 ...
 </programlisting>
 
 		</section>
 
-		<section id="mi_stir_shaken_crl_reload" xreflabel="stir_shaken_crl_reload">
+		<section id="mi_crl_reload" xreflabel="stir_shaken:crl_reload">
 			<title>
-				<function moreinfo="none">stir_shaken_crl_reload</function>
+				<function moreinfo="none">stir_shaken:crl_reload</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>stir_shaken_crl_reload</emphasis>.
+		</para>
+
 
 			<para>
 				Reload the file containing certificate revocation lists (CRLs) for the verifier
@@ -670,7 +678,7 @@ opensips-cli -x mi stir_shaken_ca_reload
 			</para>
 
 			<para>
-				Name: <emphasis>stir_shaken_crl_reload</emphasis>
+				Name: <emphasis>stir_shaken:crl_reload</emphasis>
 			</para>
 
 			<para>Parameters: <emphasis>none</emphasis></para>
@@ -681,7 +689,7 @@ opensips-cli -x mi stir_shaken_ca_reload
 
 <programlisting  format="linespecific">
 ...
-opensips-cli -x mi stir_shaken_crl_reload
+opensips-cli -x mi stir_shaken:crl_reload
 "OK"
 ...
 </programlisting>

@@ -62,7 +62,7 @@
 		<title><varname>enable</varname> (integer)</title>
 		<para>
 		Enables or disables OpenTelemetry tracing at startup. It can also be
-		changed at runtime using the <function moreinfo="none">otel_enable</function>
+		changed at runtime using the <function moreinfo="none">opentelemetry:enable</function>
 		MI command.
 		</para>
 		<para>
@@ -171,20 +171,24 @@ modparam("opentelemetry", "exporter_endpoint", "http://127.0.0.1:4318/v1/traces"
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_otel_enable" xreflabel="otel_enable">
+		<section id="mi_enable" xreflabel="opentelemetry:enable">
 		<title>
-		<function moreinfo="none">otel_enable</function>
+		<function moreinfo="none">opentelemetry:enable</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>otel_enable</emphasis>.
+		</para>
+
 		<para>
 		Enables or disables OpenTelemetry tracing at runtime.
 		</para>
 		<para>
-		Name: <emphasis>otel_enable</emphasis>
+		Name: <emphasis>opentelemetry:enable</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>enable</emphasis> - set to <quote>1</quote> to enable
+				<emphasis>opentelemetry:enable</emphasis> - set to <quote>1</quote> to enable
 				tracing or <quote>0</quote> to disable it.
 			</para></listitem>
 		</itemizedlist>
@@ -193,9 +197,9 @@ modparam("opentelemetry", "exporter_endpoint", "http://127.0.0.1:4318/v1/traces"
 		</para>
 		<programlisting  format="linespecific">
 		## enable tracing
-		opensips-cli -x mi otel_enable enable=1
+		opensips-cli -x mi opentelemetry:enable enable=1
 		## disable tracing
-		opensips-cli -x mi otel_enable enable=0
+		opensips-cli -x mi opentelemetry:enable enable=0
 		</programlisting>
 		</section>
 	</section>

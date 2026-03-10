@@ -578,11 +578,15 @@ if (has_totag() &amp;&amp; loose_route()) {
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_media_fork_from_call_to_uri"
-			xreflabel="media_fork_from_call_to_uri">
+		<section id="mi_fork_from_call_to_uri"
+			xreflabel="media_exchange:fork_from_call_to_uri">
 		<title>
-		<function moreinfo="none">media_fork_from_call_to_uri</function>
+		<function moreinfo="none">media_exchange:fork_from_call_to_uri</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>media_fork_from_call_to_uri</emphasis>.
+		</para>
+
 		<para>
 		MI command that has the same behavior as
 		<xref linkend="func_media_fork_to_uri"/>, only that the triggering
@@ -590,7 +594,7 @@ if (has_totag() &amp;&amp; loose_route()) {
 		listening a call.
 		</para>
 		<para>
-		Name: <emphasis>media_fork_from_call_to_uri</emphasis>
+		Name: <emphasis>media_exchange:fork_from_call_to_uri</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -630,16 +634,20 @@ if (has_totag() &amp;&amp; loose_route()) {
 		</para>
 		<programlisting  format="linespecific">
 # start streaming a callid to record media server
-opensips-cli -x mi media_fork_from_call_to_uri \
+opensips-cli -x mi media_exchange:fork_from_call_to_uri \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
 	uri=sip:record@127.0.0.1:5080
 		</programlisting>
 		</section>
-		<section id="mi_media_exchange_from_call_to_uri"
-			xreflabel="media_exchange_from_call_to_uri">
+		<section id="mi_from_call_to_uri"
+			xreflabel="media_exchange:from_call_to_uri">
 		<title>
-		<function moreinfo="none">media_exchange_from_call_to_uri</function>
+		<function moreinfo="none">media_exchange:from_call_to_uri</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>media_exchange_from_call_to_uri</emphasis>.
+		</para>
+
 		<para>
 		MI command that has the same behavior as
 		<xref linkend="func_media_exchange_from_uri"/>, only that the triggering
@@ -647,7 +655,7 @@ opensips-cli -x mi media_fork_from_call_to_uri \
 		announcements during a call.
 		</para>
 		<para>
-		Name: <emphasis>media_exchange_from_call_to_uri</emphasis>
+		Name: <emphasis>media_exchange:from_call_to_uri</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -680,36 +688,44 @@ opensips-cli -x mi media_fork_from_call_to_uri \
 		</para>
 		<programlisting  format="linespecific">
 # start playing back an annoucement to caller
-opensips-cli -x mi media_exchange_from_call_to_uri \
+opensips-cli -x mi media_exchange:from_call_to_uri \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
 	uri=sip:announcement@127.0.0.1:5080 \
 	leg=caller
 		</programlisting>
 		</section>
-		<section id="mi_media_exchange_from_call_to_uri_body"
-			xreflabel="media_exchange_from_call_to_uri_body">
+		<section id="mi_from_call_to_uri_body"
+			xreflabel="media_exchange:from_call_to_uri_body">
 		<title>
-		<function moreinfo="none">media_exchange_from_call_to_uri_body</function>
+		<function moreinfo="none">media_exchange:from_call_to_uri_body</function>
 		</title>
 		<para>
+		Replaces obsolete MI command: <emphasis>media_exchange_from_call_to_uri_body</emphasis>.
+		</para>
+
+		<para>
 		MI command that does the same thing as the
-		<xref linkend="mi_media_exchange_from_call_to_uri"/> MI function, but
+		<xref linkend="mi_from_call_to_uri"/> MI function, but
 		also allows you to specify a custom body in the outgoing request.
 		The body has to be specified in the mandatory <emphasis>body</emphasis>
 		parameter, all the other parameters being the same as the ones of
-		<xref linkend="mi_media_exchange_from_call_to_uri"/>.
+		<xref linkend="mi_from_call_to_uri"/>.
 		</para>
 		</section>
-		<section id="mi_media_terminate"
-			xreflabel="media_terminate">
+		<section id="mi_terminate"
+			xreflabel="media_exchange:terminate">
 		<title>
-		<function moreinfo="none">media_terminate</function>
+		<function moreinfo="none">media_exchange:terminate</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>media_terminate</emphasis>.
+		</para>
+
 		<para>
 		MI command to terminate an ongoing media exchange.
 		</para>
 		<para>
-		Name: <emphasis>media_terminate</emphasis>
+		Name: <emphasis>media_exchange:terminate</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -745,7 +761,7 @@ opensips-cli -x mi media_exchange_from_call_to_uri \
 		</para>
 		<programlisting  format="linespecific">
 # terminate a caller announcement
-opensips-cli -x mi media_terminate \
+opensips-cli -x mi media_exchange:terminate \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
 	leg=caller
 		</programlisting>

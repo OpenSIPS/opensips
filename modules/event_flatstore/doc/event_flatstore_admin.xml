@@ -274,22 +274,26 @@ modparam("event_flatstore", "suffix", "$time(%Y)")
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_evi_flat_rotate" xreflabel="evi_flat_rotate">
+	<section id="mi_rotate" xreflabel="event_flatstore:rotate">
 		<title>
-		<function>evi_flat_rotate</function>
+		<function>event_flatstore:rotate</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>evi_flat_rotate</emphasis>.
+		</para>
+
 		<para>
 		It makes the processes reopen the file specified as a parameter to the command in order to be compatible with a logrotate command. If the function is not called after the mv command is executed, the module will continue to write in the renamed file.
 		</para>
 		<para>
-		Name: <emphasis>evi_flat_rotate</emphasis>
+		Name: <emphasis>event_flatstore:rotate</emphasis>
 		</para>
 		<para>Parameters: <emphasis>path_to_file</emphasis></para>
  		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi evi_flat_rotate _path_to_log_file_
+opensips-cli -x mi event_flatstore:rotate _path_to_log_file_
 		</programlisting>
 	</section>
 	</section>
@@ -304,7 +308,7 @@ opensips-cli -x mi evi_flat_rotate _path_to_log_file_
 
 	<para>
 		The event is raised every time <emphasis>event_flatstore</emphasis>
-		opens a new log file (manual <command>evi_flat_rotate</command>,
+		opens a new log file (manual <command>event_flatstore:rotate</command>,
 		auto-rotate by <varname>rotate_period</varname>, or
 		thresholds <varname>rotate_count</varname>/<varname>rotate_size</varname>).
 		External apps can subscribe to monitor log-rotation activity.

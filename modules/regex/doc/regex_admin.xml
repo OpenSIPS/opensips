@@ -337,10 +337,14 @@ if (pcre_match_group($rU, 2)) {
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
 
-		<section id="mi_regex_reload" xreflabel="regex_reload">
+		<section id="mi_reload" xreflabel="regex:reload">
 			<title>
-				<function moreinfo="none">regex_reload</function>
+				<function moreinfo="none">regex:reload</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>regex_reload</emphasis>.
+		</para>
+
 
 			<para>
 				Causes regex module to re-read the content of the text file
@@ -349,7 +353,7 @@ if (pcre_match_group($rU, 2)) {
 			</para>
 
 			<para>
-				Name: <emphasis>regex_reload</emphasis>
+				Name: <emphasis>regex:reload</emphasis>
 			</para>
 
 			<para>Parameters: <emphasis>none</emphasis></para>
@@ -360,15 +364,19 @@ if (pcre_match_group($rU, 2)) {
 
 <programlisting  format="linespecific">
 ...
-opensips-cli -x mi regex_reload
+opensips-cli -x mi regex:reload
 ...
 </programlisting>
 		</section>
 
-		<section id="mi_regex_match" xreflabel="regex_match">
+		<section id="mi_match" xreflabel="regex:match">
 			<title>
-				<function moreinfo="none">regex_match</function>
+				<function moreinfo="none">regex:match</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>regex_match</emphasis>.
+		</para>
+
 
 			<para>
 				Matches the given string parameter against the regular expression pcre_regex.
@@ -376,7 +384,7 @@ opensips-cli -x mi regex_reload
 			</para>
 
 			<para>
-				Name: <emphasis>regex_match</emphasis>
+				Name: <emphasis>regex:match</emphasis>
 			</para>
 
 			<para>Parameters:</para>
@@ -392,18 +400,22 @@ opensips-cli -x mi regex_reload
 
 <programlisting  format="linespecific">
 ...
-opensips-cli -x mi regex_match string="1234" pcre_regex="^1234$"
+opensips-cli -x mi regex:match string="1234" pcre_regex="^1234$"
 "Match"
-opensips-cli -x mi regex_match string="1234" pcre_regex="^1235$"
+opensips-cli -x mi regex:match string="1234" pcre_regex="^1235$"
 "Not Match"
 ...
 </programlisting>
 		</section>
 
-		<section id="mi_regex_match_group" xreflabel="regex_match_group">
+		<section id="mi_match_group" xreflabel="regex:match_group">
 			<title>
-				<function moreinfo="none">regex_match_group</function>
+				<function moreinfo="none">regex:match_group</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>regex_match_group</emphasis>.
+		</para>
+
 
 			<para>
 				It uses the groups readed from the text file to match the given string parameter against the compiled
@@ -411,7 +423,7 @@ opensips-cli -x mi regex_match string="1234" pcre_regex="^1235$"
 			</para>
 
 			<para>
-				Name: <emphasis>regex_match_group</emphasis>
+				Name: <emphasis>regex:match_group</emphasis>
 			</para>
 
 			<para>Parameters:</para>
@@ -427,9 +439,9 @@ opensips-cli -x mi regex_match string="1234" pcre_regex="^1235$"
 
 <programlisting  format="linespecific">
 ...
-opensips-cli -x mi regex_match_group string="1234" group="0"
+opensips-cli -x mi regex:match_group string="1234" group="0"
 "Match"
-opensips-cli -x mi regex_match_group string="1234" group="1"
+opensips-cli -x mi regex:match_group string="1234" group="1"
 "Not Match"
 ...
 </programlisting>

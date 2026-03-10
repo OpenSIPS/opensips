@@ -1642,16 +1642,20 @@ if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition')) {
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_ds_set_state" xreflabel="ds_set_state">
+	<section id="mi_set_state" xreflabel="dispatcher:set_state">
 		<title>
-		<function moreinfo="none">ds_set_state</function>
+		<function moreinfo="none">dispatcher:set_state</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ds_set_state</emphasis>.
+		</para>
+
 		<para>
 		Sets the status for a destination address (can be use to mark the destination
 		as active or inactive).
 		</para>
 		<para>
-		Name: <emphasis>ds_set_state</emphasis>
+		Name: <emphasis>dispatcher:set_state</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1673,18 +1677,22 @@ if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition')) {
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
+opensips-cli -x mi dispatcher:set_state a 2 sip:10.0.0.202
 </programlisting>
 	</section>
-	<section id="mi_ds_list" xreflabel="ds_list">
+	<section id="mi_list" xreflabel="dispatcher:list">
 		<title>
-		<function moreinfo="none">ds_list</function>
+		<function moreinfo="none">dispatcher:list</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ds_list</emphasis>.
+		</para>
+
 		<para>
 		It lists the groups and included destinations of all the partitions.
 		</para>
 		<para>
-		Name: <emphasis>ds_list</emphasis>
+		Name: <emphasis>dispatcher:list</emphasis>
 		</para>
 		<para>Parameters:</para>
 		 <itemizedlist>
@@ -1701,19 +1709,23 @@ opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi ds_list
+opensips-cli -x mi dispatcher:list
 </programlisting>
 	</section>
-	<section id="mi_ds_reload" xreflabel="ds_reload">
+	<section id="mi_reload" xreflabel="dispatcher:reload">
 		<title>
-		<function moreinfo="none">ds_reload</function>
+		<function moreinfo="none">dispatcher:reload</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ds_reload</emphasis>.
+		</para>
+
 		<para>
 		It reloads the groups and included destinations for a
 		specified partition or all partitions.
 		</para>
 		<para>
-		Name: <emphasis>ds_reload</emphasis>
+		Name: <emphasis>dispatcher:reload</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1734,20 +1746,24 @@ opensips-cli -x mi ds_list
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi ds_reload
-opensips-cli -x mi ds_reload inherit_state=n
+opensips-cli -x mi dispatcher:reload
+opensips-cli -x mi dispatcher:reload inherit_state=n
 </programlisting>
 	</section>
 
-	<section id="mi_ds_push_script_attrs" xreflabel="ds_push_script_attrs">
+	<section id="mi_push_script_attrs" xreflabel="dispatcher:push_script_attrs">
 		<title>
-		<function moreinfo="none">ds_push_script_attrs</function>
+		<function moreinfo="none">dispatcher:push_script_attrs</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ds_push_script_attrs</emphasis>.
+		</para>
+
 		<para>
 		Pushes script attrs for the dispatcher entry defined by IP, Port, setid, and optionally partition. 
 		</para>
 		<para>
-		Name: <emphasis>ds_push_script_attrs</emphasis>
+		Name: <emphasis>dispatcher:push_script_attrs</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1765,7 +1781,7 @@ opensips-cli -x mi ds_reload inherit_state=n
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-#opensips-cli -x mi ds_push_script_attrs '{"ping":"30000","load":"50"}' '192.168.0.107' 5091 1 main
+#opensips-cli -x mi dispatcher:push_script_attrs '{"ping":"30000","load":"50"}' '192.168.0.107' 5091 1 main
 </programlisting>
 	</section>
 

@@ -69,7 +69,7 @@ modparam("trie", "trie_table", "my_prefix_table")
 	<section id="param_no_concurrent_reload" xreflabel="no_concurrent_reload">
 		<title><varname>no_concurrent_reload</varname> (int)</title>
 		<para>
-			If enabled, the module will not allow do run multiple trie_reload
+			If enabled, the module will not allow do run multiple trie:reload
 			MI commands in parallel (with overlapping)  Any new reload will
 			be rejected (and discarded) while an existing reload is in
 			progress.
@@ -262,10 +262,14 @@ if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="trie_reload" xreflabel="trie_reload">
+	<section id="mi_reload" xreflabel="trie:reload">
 		<title>
-		<function moreinfo="none">trie_reload</function>
+		<function moreinfo="none">trie:reload</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>trie_reload</emphasis>.
+		</para>
+
 		<para>
 		Command to reload trie rules from database.
 		</para>
@@ -293,12 +297,15 @@ if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi trie_reload part_1
+		opensips-cli -x mi trie:reload part_1
 		</programlisting>
 	</section>
 
-	<section>
-		<title><varname>trie_reload_status</varname></title>
+	<section id="mi_reload_status" xreflabel="trie:reload_status">
+		<title><varname>trie:reload_status</varname></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>trie_reload_status</emphasis>.
+		</para>
 		<para>
 			Gets the time of the last reload for any partition.
 		</para>
@@ -325,16 +332,19 @@ if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
 			</listitem>
 		</itemizedlist>
 		<example>
-		<title><function>trie_reload_status</function> usage when <varname>use_partitions</varname> is 0</title>
+		<title><function>trie:reload_status</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi trie_reload_status
+$ opensips-cli -x mi trie:reload_status
 Date:: Tue Aug 12 12:26:00 2014
 </programlisting>
 		</example>
 	</section>
 
-	<section>
-		<title><varname>trie_search</varname></title>
+	<section id="mi_search" xreflabel="trie:search">
+		<title><varname>trie:search</varname></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>trie_search</emphasis>.
+		</para>
 		<para>
 			Tries to match a number in the existing tries loaded from the database.
 		</para>
@@ -368,14 +378,17 @@ Date:: Tue Aug 12 12:26:00 2014
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi trie_search partition_name=part1 number=012340987
+		opensips-cli -x mi trie:search partition_name=part1 number=012340987
 		</programlisting>
 	</section>
 
-	<section>
+	<section id="mi_number_delete" xreflabel="trie:number_delete">
 		<title>
-		<function moreinfo="none">trie_number_delete</function>
+		<function moreinfo="none">trie:number_delete</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>trie_number_delete</emphasis>.
+		</para>
 		<para>
 		Deletes individual entries in the trie, without reloading all of the data
 		</para>
@@ -400,14 +413,17 @@ Date:: Tue Aug 12 12:26:00 2014
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi trie_number_delete partition_name=part1 number=["012340987","4858345"]
+		opensips-cli -x mi trie:number_delete partition_name=part1 number=["012340987","4858345"]
 		</programlisting>
 	</section>
 
-	<section>
+	<section id="mi_number_upsert" xreflabel="trie:number_upsert">
 		<title>
-		<function moreinfo="none">trie_number_upsert</function>
+		<function moreinfo="none">trie:number_upsert</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>trie_number_upsert</emphasis>.
+		</para>
 		<para>
 		Upserts ( insert if not found, update is found ) an array of numbers in the trie, without reloading all of the data
 		</para>
@@ -435,7 +451,7 @@ Date:: Tue Aug 12 12:26:00 2014
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi trie_number_upsert partition_name=part1 number=["012340987"] attrs=["my_attrs"]
+		opensips-cli -x mi trie:number_upsert partition_name=part1 number=["012340987"] attrs=["my_attrs"]
 		</programlisting>
 	</section>
 

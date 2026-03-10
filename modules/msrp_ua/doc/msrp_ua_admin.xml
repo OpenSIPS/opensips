@@ -26,7 +26,7 @@
 	<title>Usage from Script and External API</title>
 	<para>
 	In order to start a SIP call carying MSRP from OpenSIPS you can use the
-	<xref linkend="mi_msrp_ua_start_session"/> MI function. Alternatively, to
+	<xref linkend="mi_start_session"/> MI function. Alternatively, to
 	answer a SIP session with MSRP you can use the
 	<xref linkend="func_msrp_ua_answer"/> script function.
 	</para>
@@ -45,7 +45,7 @@
     </para>
     <para>
     You can send MSRP messages to the peer with the
-    <xref linkend="mi_msrp_ua_send_message"/> MI function.
+    <xref linkend="mi_send_message"/> MI function.
     </para>
 	</section>
 
@@ -171,7 +171,7 @@ modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
 		</para>
 		<para>
 		This parameter is mandatory when using the
-		<xref linkend="mi_msrp_ua_start_session"/> MI function.
+		<xref linkend="mi_start_session"/> MI function.
 		</para>
 		<example>
 		<title><varname>advertised_contact</varname> parameter usage</title>
@@ -252,16 +252,20 @@ if (!has_totag() &amp;&amp; is_method("INVITE")) {
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_msrp_ua_send_message"
-			xreflabel="msrp_ua_send_message">
+		<section id="mi_send_message"
+			xreflabel="msrp_ua:send_message">
 		<title>
-		<function moreinfo="none">msrp_ua_send_message</function>
+		<function moreinfo="none">msrp_ua:send_message</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>msrp_ua_send_message</emphasis>.
+		</para>
+
 		<para>
 		Sends a new MSRP message to the peer.
 		</para>
 		<para>
-		Name: <emphasis>msrp_ua_send_message</emphasis>
+		Name: <emphasis>msrp_ua:send_message</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -299,17 +303,21 @@ if (!has_totag() &amp;&amp; is_method("INVITE")) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi msrp_ua_send_message \
+opensips-cli -x mi msrp_ua:send_message \
 	session_id=5addd9e7b74fa44fbace68a4fc562293 \
 	mime=text/plain body=Hello success_report=yes
 		</programlisting>
 		</section>
 
-		<section id="mi_msrp_ua_start_session"
-			xreflabel="msrp_ua_start_session">
+		<section id="mi_start_session"
+			xreflabel="msrp_ua:start_session">
 		<title>
-		<function moreinfo="none">msrp_ua_start_session</function>
+		<function moreinfo="none">msrp_ua:start_session</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>msrp_ua_start_session</emphasis>.
+		</para>
+
 		<para>
 		Starts a MSRP session.
 		</para>
@@ -318,7 +326,7 @@ opensips-cli -x mi msrp_ua_send_message \
 		function is used.
 		</para>
 		<para>
-		Name: <emphasis>msrp_ua_start_session</emphasis>
+		Name: <emphasis>msrp_ua:start_session</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -344,22 +352,26 @@ opensips-cli -x mi msrp_ua_send_message \
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi msrp_ua_start_session \
+opensips-cli -x mi msrp_ua:start_session \
 	text/plain sip:oss@opensips.org \
 	sip:alice@opensips.org sip:alice@opensips.org
 		</programlisting>
 		</section>
 
-	<section id="mi_msrp_ua_list_sessions"
-			xreflabel="msrp_ua_list_sessions">
+	<section id="mi_list_sessions"
+			xreflabel="msrp_ua:list_sessions">
 		<title>
-		<function moreinfo="none">msrp_ua_list_sessions</function>
+		<function moreinfo="none">msrp_ua:list_sessions</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>msrp_ua_list_sessions</emphasis>.
+		</para>
+
 		<para>
 		Lists information about ongoing MSRP sessions.
 		</para>
 		<para>
-		Name: <emphasis>msrp_ua_list_sessions</emphasis>
+		Name: <emphasis>msrp_ua:list_sessions</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -371,20 +383,24 @@ opensips-cli -x mi msrp_ua_start_session \
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi msrp_ua_list_sessions
+opensips-cli -x mi msrp_ua:list_sessions
 		</programlisting>
 		</section>
 
-	<section id="mi_msrp_ua_end_session"
-			xreflabel="msrp_ua_end_session">
+	<section id="mi_end_session"
+			xreflabel="msrp_ua:end_session">
 		<title>
-		<function moreinfo="none">msrp_ua_end_session</function>
+		<function moreinfo="none">msrp_ua:end_session</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>msrp_ua_end_session</emphasis>.
+		</para>
+
 		<para>
 		Terminate an ongoing MSRP session.
 		</para>
 		<para>
-		Name: <emphasis>msrp_ua_end_session</emphasis>
+		Name: <emphasis>msrp_ua:end_session</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -397,7 +413,7 @@ opensips-cli -x mi msrp_ua_list_sessions
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi msrp_ua_end_session \
+opensips-cli -x mi msrp_ua:end_session \
 	5addd9e7b74fa44fbace68a4fc562293
 		</programlisting>
 		</section>
@@ -446,7 +462,7 @@ opensips-cli -x mi msrp_ua_end_session \
 		<para>
 			This event is triggered when an ongoing MSRP session is terminted (session
 			expires or BYE is received; terminating a session via the
-			<emphasis>msrp_ua_end_session</emphasis> MI function is not included).
+			<emphasis>msrp_ua:end_session</emphasis> MI function is not included).
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -521,4 +537,3 @@ opensips-cli -x mi msrp_ua_end_session \
 	</section>
 
 </chapter>
-

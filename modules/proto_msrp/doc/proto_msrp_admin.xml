@@ -279,19 +279,21 @@ route[msrp_filter] {
 	</section>
 
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-
-		<section id="msrp-trace">
+		<section id="mi_trace" xreflabel="msrp:trace">
 			<title>
-			<function moreinfo="none">msrp_trace</function>
+			<function moreinfo="none">msrp:trace</function>
 			</title>
+			<para>
+			Replaces obsolete MI command: <emphasis>msrp_trace</emphasis>.
+			</para>
 
 			<para>
 			</para>
 
 			<para>
-			Name: <emphasis>msrp_trace</emphasis>
+			Name: <emphasis>msrp:trace</emphasis>
 			</para>
 
 			<para>Parameters: </para>
@@ -313,7 +315,7 @@ route[msrp_filter] {
 			MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-			:msrp_trace:_reply_fifo_file_
+			:msrp:trace:_reply_fifo_file_
 			trace_mode
 			_empty_line_
 			</programlisting>

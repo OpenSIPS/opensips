@@ -985,40 +985,48 @@ if (cluster_check_addr(1, $si)) {
 
         <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_clusterer_reload" xreflabel="clusterer_reload">
+	<section id="mi_reload" xreflabel="clusterer:reload">
 		<title>
-		<function moreinfo="none">clusterer_reload</function>
+		<function moreinfo="none">clusterer:reload</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_reload</emphasis>.
+		</para>
+
 		<para>
         Reloads data from the clusterer database. The currently established topology will be lost and the node will rediscover the new topology.
 		</para>
 		<para>
-		Name: <emphasis>clusterer_reload</emphasis>
+		Name: <emphasis>clusterer:reload</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
  		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi clusterer_reload
+		opensips-cli -x mi clusterer:reload
 		</programlisting>
 	</section>
 
-        <section id="mi_clusterer_list" xreflabel="clusterer_list">
+        <section id="mi_list" xreflabel="clusterer:list">
 		<title>
-		<function moreinfo="none">clusterer_list</function>
+		<function moreinfo="none">clusterer:list</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_list</emphasis>.
+		</para>
+
 		<para>
 			Lists information(node id, URL, link state with that node etc.) about the other nodes in each cluster.
 		</para>
 		<para>
-		Name: <emphasis>clusterer_list</emphasis>
+		Name: <emphasis>clusterer:list</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
 		<example>
-		<title><function>clusterer_list</function> usage</title>
+		<title><function>clusterer:list</function> usage</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi clusterer_list
+$ opensips-cli -x mi clusterer:list
 {
     "Clusters": [
         {
@@ -1040,10 +1048,14 @@ $ opensips-cli -x mi clusterer_list
 		</example>
 	</section>
 
-	<section id="mi_clusterer_list_topology" xreflabel="clusterer_list_topology">
+	<section id="mi_list_topology" xreflabel="clusterer:list_topology">
 		<title>
-		<function moreinfo="none">clusterer_list_topology</function>
+		<function moreinfo="none">clusterer:list_topology</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_list_topology</emphasis>.
+		</para>
+
 		<para>
 			Lists each cluster's topology from the local node's perspective as an adjacency list. A node appears as a neighbour if the link with that node is up.
 		</para>
@@ -1051,13 +1063,13 @@ $ opensips-cli -x mi clusterer_list
 			Note that if a node id appears in multiple clusters, it refers to the same instance that belongs to different clusters, for which it has a different topology.
 		</para>
 		<para>
-		Name: <emphasis>clusterer_list_topology</emphasis>
+		Name: <emphasis>clusterer:list_topology</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
 		<example>
-		<title><function>clusterer_list_topology</function> usage</title>
+		<title><function>clusterer:list_topology</function> usage</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi clusterer_list_topology
+$ opensips-cli -x mi clusterer:list_topology
 {
     "Clusters": [
         {
@@ -1083,15 +1095,19 @@ $ opensips-cli -x mi clusterer_list_topology
 		</example>
 	</section>
 
-        <section id="mi_clusterer_set_status" xreflabel="clusterer_set_status">
+        <section id="mi_set_status" xreflabel="clusterer:set_status">
 		<title>
-		<function moreinfo="none">clusterer_set_status</function>
+		<function moreinfo="none">clusterer:set_status</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_set_status</emphasis>.
+		</para>
+
 		<para>
             Sets the status(Enabled/Disabled) of a node. If the local instance is disabled, the node will not send any messages and ignore received ones thus appearing as a failed node in the topology (from the other node's perspective). If a different node is disabled, the specified node will simply be ignored by the local instance in terms of sending/receiving any messages, as if no longer part of the topology.
         </para>
 		<para>
-		Name: <emphasis>clusterer_set_status</emphasis>
+		Name: <emphasis>clusterer:set_status</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1111,29 +1127,33 @@ $ opensips-cli -x mi clusterer_list_topology
 		</para>
 		<programlisting  format="linespecific">
 		#disable the local instance
-		opensips-cli -x mi clusterer_set_status 1 0
+		opensips-cli -x mi clusterer:set_status 1 0
 		#disable node ID 3
-		opensips-cli -x mi clusterer_set_status 1 3 0
+		opensips-cli -x mi clusterer:set_status 1 3 0
 		</programlisting>
 	</section>
 
-		<section id="mi_clusterer_remove_node" xreflabel="clusterer_remove_node">
+		<section id="mi_remove_node" xreflabel="clusterer:remove_node">
 		<title>
-		<function moreinfo="none">clusterer_remove_node</function>
+		<function moreinfo="none">clusterer:remove_node</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_remove_node</emphasis>.
+		</para>
+
 		<para>
 			Removes a node from the cluster's topology. It is enough to run the function
 			on a single node in order to remove the target node from all the other
 			nodes in the cluster. If the node to be removed is running when triggering
 			this function, it will be automatically disabled (equivalent to running
-			<xref linkend="mi_clusterer_set_status"/> on that specific node).
+			<xref linkend="mi_set_status"/> on that specific node).
         </para>
         <para>
 			This function can only be used when <xref linkend="param_db_mode"/> is set to
 			<emphasis>0</emphasis> (disabled).
         </para>
 		<para>
-		Name: <emphasis>clusterer_remove_node</emphasis>
+		Name: <emphasis>clusterer:remove_node</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1148,19 +1168,23 @@ $ opensips-cli -x mi clusterer_list_topology
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi clusterer_remove_node 1 3
+		opensips-cli -x mi clusterer:remove_node 1 3
 		</programlisting>
 	</section>
 
-		<section id="mi_cluster_send_mi" xreflabel="cluster_send_mi">
+		<section id="mi_send_mi" xreflabel="clusterer:send_mi">
 		<title>
-		<function moreinfo="none">cluster_send_mi</function>
+		<function moreinfo="none">clusterer:send_mi</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cluster_send_mi</emphasis>.
+		</para>
+
 		<para>
         Dispatches a given MI command to be run on a specific node in the cluster.
         </para>
 		<para>
-		Name: <emphasis>cluster_send_mi</emphasis>
+		Name: <emphasis>clusterer:send_mi</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1186,19 +1210,23 @@ $ opensips-cli -x mi clusterer_list_topology
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cluster_send_mi 1 3 lb_reload
+opensips-cli -x mi clusterer:send_mi 1 3 lb_reload
 		</programlisting>
 		</section>
 
-		<section id="mi_cluster_broadcast_mi" xreflabel="cluster_broadcast_mi">
+		<section id="mi_broadcast_mi" xreflabel="clusterer:broadcast_mi">
 		<title>
-		<function moreinfo="none">cluster_broadcast_mi</function>
+		<function moreinfo="none">clusterer:broadcast_mi</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cluster_broadcast_mi</emphasis>.
+		</para>
+
 		<para>
         Dispatches a given MI command to be run on all the nodes in a cluster. The command is also executed locally.
         </para>
 		<para>
-		Name: <emphasis>cluster_broadcast_mi</emphasis>
+		Name: <emphasis>clusterer:broadcast_mi</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1221,25 +1249,29 @@ opensips-cli -x mi cluster_send_mi 1 3 lb_reload
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
+opensips-cli -x mi clusterer:broadcast_mi 1 dr_reload partition_5
 		</programlisting>
 		</section>
 
-		<section id="mi_clusterer_list_cap" xreflabel="clusterer_list_cap">
+		<section id="mi_list_cap" xreflabel="clusterer:list_cap">
 		<title>
-		<function moreinfo="none">clusterer_list_cap</function>
+		<function moreinfo="none">clusterer:list_cap</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_list_cap</emphasis>.
+		</para>
+
 		<para>
 			Lists the registered capabilities and their states.
 		</para>
 		<para>
-		Name: <emphasis>clusterer_list_cap</emphasis>
+		Name: <emphasis>clusterer:list_cap</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
 		<example>
-		<title><function>clusterer_list_cap</function> usage</title>
+		<title><function>clusterer:list_cap</function> usage</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi clusterer_list_cap
+$ opensips-cli -x mi clusterer:list_cap
 {
     "Clusters": [
         {
@@ -1263,15 +1295,19 @@ $ opensips-cli -x mi clusterer_list_cap
 		</example>
 		</section>
 
-		<section id="mi_clusterer_set_cap_status" xreflabel="clusterer_set_cap_status">
+		<section id="mi_set_cap_status" xreflabel="clusterer:set_cap_status">
 		<title>
-		<function moreinfo="none">clusterer_set_cap_status</function>
+		<function moreinfo="none">clusterer:set_cap_status</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_set_cap_status</emphasis>.
+		</para>
+
 		<para>
             Sets the status(Enabled/Disabled) of a capability. If a capability is disabled, the node will not send any replication/sync messages belonging to that capability. Likewise, received messages will be dropped. Also, the cabability will transition to a "not synced" state and the node will no longer be able to be a donor for syncing.
         </para>
 		<para>
-		Name: <emphasis>clusterer_set_cap_status</emphasis>
+		Name: <emphasis>clusterer:set_cap_status</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1280,7 +1316,7 @@ $ opensips-cli -x mi clusterer_list_cap
 			</para></listitem>
 			<listitem><para>
 			<emphasis>capability</emphasis> - name of the capability, as listed by
-			<xref linkend="mi_clusterer_list_cap"/>
+			<xref linkend="mi_list_cap"/>
 			</para></listitem>
             <listitem><para>
 			<emphasis>status</emphasis> - indicates the new status(0 - Disabled, 1 - Enabled).
@@ -1291,14 +1327,18 @@ $ opensips-cli -x mi clusterer_list_cap
 		</para>
 		<programlisting  format="linespecific">
 		#disable dialog replication in cluster 1
-		opensips-cli -x mi clusterer_set_cap_status 1 dialog-dlg-repl 0
+		opensips-cli -x mi clusterer:set_cap_status 1 dialog-dlg-repl 0
 		#enable dialog profile replication in cluster 2
-		opensips-cli -x mi clusterer_set_cap_status 2 dialog-prof-repl 1
+		opensips-cli -x mi clusterer:set_cap_status 2 dialog-prof-repl 1
 		</programlisting>
 	</section>
 
-		<section id='mi_clusterer_shtag_set_active' xreflabel="clusterer_shtag_set_active">
-		<title><function moreinfo="none">clusterer_shtag_set_active</function></title>
+		<section id="mi_shtag_set_active" xreflabel="clusterer:shtag_set_active">
+		<title><function moreinfo="none">clusterer:shtag_set_active</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_shtag_set_active</emphasis>.
+		</para>
+
 		<para>
 		Set the given sharing tag to the <emphasis>active</emphasis> state.
 		The information about this change is also broadcasted in the cluster 
@@ -1306,7 +1346,7 @@ $ opensips-cli -x mi clusterer_list_cap
 		step down to backup.
 		</para>
 		<para>
-		Name: <emphasis>clusterer_shtag_set_active</emphasis>
+		Name: <emphasis>clusterer:shtag_set_active</emphasis>
 		</para>
 		<para>Parameters: <emphasis>tag</emphasis> - the name of
 		the tag to be set active and the cluster it belogs to, in the
@@ -1316,17 +1356,21 @@ $ opensips-cli -x mi clusterer_list_cap
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi clusterer_shtag_set_active vip1/3
+		opensips-cli -x mi clusterer:shtag_set_active vip1/3
 		</programlisting>
 		</section>
 
-		<section id="mi_clusterer_list_shtags" xreflabel="clusterer_list_shtags">
-		<title><function moreinfo="none">clusterer_list_shtags</function></title>
+		<section id="mi_list_shtags" xreflabel="clusterer:list_shtags">
+		<title><function moreinfo="none">clusterer:list_shtags</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>clusterer_list_shtags</emphasis>.
+		</para>
+
 		<para>
 		Lists all known sharing tags and their states.
 		</para>
 		<para>
-		Name: <emphasis>clusterer_list_shtags</emphasis>
+		Name: <emphasis>clusterer:list_shtags</emphasis>
 		</para>
 		<para>Parameters: <emphasis>Command takes no parameters</emphasis>
 		</para>
@@ -1334,7 +1378,7 @@ $ opensips-cli -x mi clusterer_list_cap
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi clusterer_list_shtags
+		opensips-cli -x mi clusterer:list_shtags
 		</programlisting>
 	</section>
 

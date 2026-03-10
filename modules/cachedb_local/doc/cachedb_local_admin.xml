@@ -317,10 +317,14 @@ modparam("cachedb_local", "enable_restart_persistency", yes)
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_cache_remove_chunk" xreflabel="cache_remove_chunk">
+		<section id="mi_remove_chunk" xreflabel="cachedb_local:remove_chunk">
 		<title>
-			<function moreinfo="none">cache_remove_chunk</function>
+			<function moreinfo="none">cachedb_local:remove_chunk</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cache_remove_chunk</emphasis>.
+		</para>
+
 		<para>
 		Removes all local cache entries that match the provided glob param.
 		</para>
@@ -339,14 +343,18 @@ modparam("cachedb_local", "enable_restart_persistency", yes)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cache_remove_chunk "keyprefix*" collection
+opensips-cli -x mi cachedb_local:remove_chunk "keyprefix*" collection
 		</programlisting>
 		</section>
 
-		<section id="mi_cache_fetch_chunk" xreflabel="cache_fetch_chunk">
+		<section id="mi_fetch_chunk" xreflabel="cachedb_local:fetch_chunk">
 		<title>
-			<function moreinfo="none">cache_fetch_chunk</function>
+			<function moreinfo="none">cachedb_local:fetch_chunk</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cache_fetch_chunk</emphasis>.
+		</para>
+
 		<para>
 		Fetches all local cache entries that match the provided glob param.
 		</para>
@@ -365,7 +373,7 @@ opensips-cli -x mi cache_remove_chunk "keyprefix*" collection
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cache_fetch_chunk "keyprefix*" collection
+opensips-cli -x mi cachedb_local:fetch_chunk "keyprefix*" collection
 {
     "keys": [
         {

@@ -113,10 +113,14 @@ modparam("presence_dfks", "set_route", "dfks_set")
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section id="mi_dfks_set_feature" xreflabel="dfks_set_feature">
+		<section id="mi_set_feature" xreflabel="presence_dfks:set_feature">
 		<title>
-		<function moreinfo="none">dfks_set_feature</function>
+		<function moreinfo="none">presence_dfks:set_feature</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dfks_set_feature</emphasis>.
+		</para>
+
 		<para>
 		Triggers the sending of NOTIFY messages containing a feature status update
 		to all watchers.
@@ -128,7 +132,7 @@ modparam("presence_dfks", "set_route", "dfks_set")
 			<emphasis>$dfks(param)</emphasis> variable.
 		</para>
 		<para>
-		Name: <emphasis>dfks_set_feature</emphasis>
+		Name: <emphasis>presence_dfks:set_feature</emphasis>
 		</para>
 		<para>Parameters:
 		<itemizedlist>
@@ -193,7 +197,7 @@ modparam("presence_dfks", "set_route", "dfks_set")
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi dfks_set_feature sip:alice@10.0.0.11 CallForwardingNoAnswer 1 1 \
+opensips-cli -x mi presence_dfks:set_feature sip:alice@10.0.0.11 CallForwardingNoAnswer 1 1 \
 ringCount/4 forwardTo/sip:bob@10.0.0.11
 </programlisting>
 		</section>

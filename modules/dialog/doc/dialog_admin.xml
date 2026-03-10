@@ -2747,10 +2747,14 @@ route {
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_dlg_list" xreflabel="dlg_list">
+		<section id="mi_list" xreflabel="dialog:list">
 		<title>
-		<function moreinfo="none">dlg_list</function>
+		<function moreinfo="none">dialog:list</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dlg_list</emphasis>.
+		</para>
+
 		<para>
 		Lists the description of the dialogs (calls). If no parameter is given,
 		all dialogs will be listed. If a dialog identifier is passed
@@ -2760,7 +2764,7 @@ route {
 		get only section of dialogs.
 		</para>
 		<para>
-		Name: <emphasis>dlg_list</emphasis>
+		Name: <emphasis>dialog:list</emphasis>
 		</para>
 		<para>Parameters (with dialog idetification):</para>
 		<itemizedlist>
@@ -2791,19 +2795,23 @@ route {
 		</para>
 		<programlisting  format="linespecific">
 		## list all ongoing dialogs
-		opensips-cli -x mi dlg_list
+		opensips-cli -x mi dialog:list
 		## list the dialog by callid and From TAG
-		opensips-cli -x mi dlg_list callid=abcdrssfrs122444@192.168.1.1 from_tag=AAdfeEFF33
+		opensips-cli -x mi dialog:list callid=abcdrssfrs122444@192.168.1.1 from_tag=AAdfeEFF33
 		## list 10 dialogs, starting from the position 40
 		## (in the list of all ongoing dialogs)
-		opensips-cli -x mi dlg_list index=40 counter=10
+		opensips-cli -x mi dialog:list index=40 counter=10
 		</programlisting>
 		</section>
 
-		<section id="mi_dlg_list_ctx" xreflabel="dlg_list_ctx">
-		<title><function moreinfo="none">dlg_list_ctx</function></title>
+		<section id="mi_list_ctx" xreflabel="dialog:list_ctx">
+		<title><function moreinfo="none">dialog:list_ctx</function></title>
 		<para>
-		The same as the <quote>dlg_list</quote> but including in the
+		Replaces obsolete MI command: <emphasis>dlg_list_ctx</emphasis>.
+		</para>
+
+		<para>
+		The same as the <quote>dialog:list</quote> but including in the
 		dialog description
 		the associated context from modules sitting on top of
 		the dialog module.
@@ -2812,20 +2820,24 @@ route {
 		(e.g. \x00)
 		</para>
 		<para>
-		Name: <emphasis>dlg_list_ctx</emphasis>
+		Name: <emphasis>dialog:list_ctx</emphasis>
 		</para>
-		<para>Parameters: <emphasis>see <quote>dlg_list</quote></emphasis>
+		<para>Parameters: <emphasis>see <quote>dialog:list</quote></emphasis>
 		</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dlg_list_ctx
+		opensips-cli -x mi dialog:list_ctx
 		</programlisting>
 		</section>
 
-		<section id='mi_dlg_end_dlg' xreflabel="dlg_end_dlg">
-			<title><function moreinfo="none">dlg_end_dlg</function></title>
+		<section id="mi_end_dlg" xreflabel="dialog:end_dlg">
+			<title><function moreinfo="none">dialog:end_dlg</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dlg_end_dlg</emphasis>.
+		</para>
+
 			<para>
 				Terminates an ongoing dialog.
 				If dialog is established, BYEs are sent in both directions.
@@ -2835,14 +2847,14 @@ route {
 				the caller's side.
 			</para>
 		<para>
-		Name: <emphasis>dlg_end_dlg</emphasis>
+		Name: <emphasis>dialog:end_dlg</emphasis>
 		</para>
 		<para>Parameters are:</para>
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>dialog_id</emphasis> - this is an identifier
 				of the dialog - it can be either (1) the unique ID 
-				of the dialog (as provided by dlg_list), either (2) the 
+				of the dialog (as provided by dialog:list), either (2) the 
 				SIP Call-ID of the dialog.
 			</para></listitem>
 			<listitem><para>
@@ -2852,16 +2864,16 @@ route {
 			</para></listitem>
 		</itemizedlist>
 		<para>
-		The "dialog_id" value can be get via the "dlg_list" MI command.
+		The "dialog_id" value can be get via the "dialog:list" MI command.
 		</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
 		# terminate the dialog via the internal Dialog-ID
-		opensips-cli -x mi dlg_end_dlg 6ae.4b38d013
+		opensips-cli -x mi dialog:end_dlg 6ae.4b38d013
 		# terminate the dialog via its SIP Call-ID
-		opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
+		opensips-cli -x mi dialog:end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
 		</programlisting>
 		</section>
 
@@ -2960,7 +2972,7 @@ route {
 		<title><function moreinfo="none">profile_end_dlgs</function></title>
 		<para>
 		Terminate all ongoing dialogs from a specified profile, on a single dialog it
-		performs the same operations as the command <emphasis role='bold'><xref linkend="mi_dlg_end_dlg"/></emphasis>
+		performs the same operations as the command <emphasis role='bold'><xref linkend="mi_end_dlg"/></emphasis>
 		</para>
 		<para>
 		Name: <emphasis>profile_end_dlgs</emphasis>
@@ -2982,8 +2994,12 @@ route {
 		opensips-cli -x mi profile_end_dlgs inboundCalls
 		</programlisting>
 		</section>
-		<section id="mi_dlg_db_sync" xreflabel="dlg_db_sync">
-		<title><function moreinfo="none">dlg_db_sync</function></title>
+		<section id="mi_db_sync" xreflabel="dialog:db_sync">
+		<title><function moreinfo="none">dialog:db_sync</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dlg_db_sync</emphasis>.
+		</para>
+
 		<para>
 		Will load all the information about the dialogs from the database
 		in the OpenSIPS internal memory. If a dialog is already found in memory
@@ -2991,19 +3007,23 @@ route {
 		DB. Otherwise, the newer in-memory version will not be changed.
 		</para>
 		<para>
-		Name: <emphasis>dlg_db_sync</emphasis>
+		Name: <emphasis>dialog:db_sync</emphasis>
 		</para>
 		<para>It takes no parameters</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dlg_db_sync
+		opensips-cli -x mi dialog:db_sync
 		</programlisting>
 		</section>
 
-		<section id="mi_dlg_cluster_sync" xreflabel="dlg_cluster_sync">
-		<title><function moreinfo="none">dlg_cluster_sync</function></title>
+		<section id="mi_cluster_sync" xreflabel="dialog:cluster_sync">
+		<title><function moreinfo="none">dialog:cluster_sync</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dlg_cluster_sync</emphasis>.
+		</para>
+
 		<para>
 		This command will only take effect if dialog replication is enabled.
 		</para>
@@ -3015,7 +3035,7 @@ route {
 		marked with that sharing tag.
 		</para>
 		<para>
-		Name: <emphasis>dlg_cluster_sync</emphasis>
+		Name: <emphasis>dialog:cluster_sync</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -3028,25 +3048,29 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dlg_cluster_sync vip1
+		opensips-cli -x mi dialog:cluster_sync vip1
 		</programlisting>
 		</section>
 
-		<section id="mi_dlg_restore_db" xreflabel="dlg_restore_db">
-		<title><function moreinfo="none">dlg_restore_db</function></title>
+		<section id="mi_restore_db" xreflabel="dialog:restore_db">
+		<title><function moreinfo="none">dialog:restore_db</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dlg_restore_db</emphasis>.
+		</para>
+
 		<para>
 		Restores the dialog table after a potential desynchronization event.
 		The table is truncated, then populated with CONFIRMED dialogs from memory.
 		</para>
 		<para>
-		Name: <emphasis>dlg_restore_db</emphasis>
+		Name: <emphasis>dialog:restore_db</emphasis>
 		</para>
 		<para>It takes no parameters</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dlg_restore_db
+		opensips-cli -x mi dialog:restore_db
 		</programlisting>
 		</section>
 
@@ -3069,13 +3093,17 @@ route {
 		</programlisting>
 		</section>
 
-		<section id="dlg_push_var" xreflabel="dlg_push_var">
-		<title><function moreinfo="none">dlg_push_var</function></title>
+		<section id="mi_push_var" xreflabel="dialog:push_var">
+		<title><function moreinfo="none">dialog:push_var</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dlg_push_var</emphasis>.
+		</para>
+
 		<para>
 		Push or update a dialog value for the given list of dialog IDs / Call-IDs.
 		</para>
 		<para>
-		Name: <emphasis>dlg_push_var</emphasis>
+		Name: <emphasis>dialog:push_var</emphasis>
 		</para>
 		<para>Parameters: <emphasis>It takes 3 or more parameters</emphasis>
 		</para>
@@ -3094,17 +3122,21 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dlg_push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
+		opensips-cli -x mi dialog:push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
 		</programlisting>
 		</section>
 
-		<section id="mi_dlg_send_sequential" xreflabel="dlg_send_sequential">
-		<title><function moreinfo="none">dlg_send_sequential</function></title>
+		<section id="mi_send_sequential" xreflabel="dialog:send_sequential">
+		<title><function moreinfo="none">dialog:send_sequential</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dlg_send_sequential</emphasis>.
+		</para>
+
 		<para>
 		Sends a sequential request within an ongoing dialog.
 		</para>
 		<para>
-		Name: <emphasis>dlg_send_sequential</emphasis>
+		Name: <emphasis>dialog:send_sequential</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -3194,7 +3226,7 @@ route {
 		MI Command Format:
 		</para>
 		<programlisting  format="linespecific">
-			opensips-cli -x mi dlg_send_sequential \
+			opensips-cli -x mi dialog:send_sequential \
 				callid=5291231-testing@127.0.0.1
 		</programlisting>
 
@@ -3202,7 +3234,7 @@ route {
 		MI Command used to trigger media re-negotiation:
 		</para>
 		<programlisting  format="linespecific">
-			opensips-cli -x mi dlg_send_sequential \
+			opensips-cli -x mi dialog:send_sequential \
 				callid=5291231-testing@127.0.0.1 \
 				mode=challenge \
 				body=inbound
@@ -3212,7 +3244,7 @@ route {
 		MI Command used to UPDATE the callee's remote Contact after a server failover:
 		</para>
 		<programlisting  format="linespecific">
-			opensips-cli -x mi dlg_send_sequential \
+			opensips-cli -x mi dialog:send_sequential \
 				callid=5291231-testing@127.0.0.1 \
 				mode=challenge-callee \
 				body=outbound \
@@ -3223,7 +3255,7 @@ route {
 		MI Command used to send REFER to the callee, and add Refer-To header:
 		</para>
 		<programlisting  format="linespecific">
-			opensips-cli -x mi dlg_send_sequential \
+			opensips-cli -x mi dialog:send_sequential \
 				callid=usR8FlGOSMfCTAIHebHCOQ.. \
 				method=REFER \
 				body=none \
@@ -3233,13 +3265,16 @@ route {
 
 		</section>
 
-		<section id="set_dlg_profile_mi" xreflabel="set_dlg_profile_mi">
-		<title><function moreinfo="none">set_dlg_profile</function></title>
+		<section id="mi_set_profile" xreflabel="dialog:set_profile">
+		<title><function moreinfo="none">dialog:set_profile</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>set_dlg_profile</emphasis>.
+		</para>
 		<para>
 		Set the dialog identified by dialog ID / Call-ID into the given profile ( with optional value and clearing of the old profile values )
 		</para>
 		<para>
-		Name: <emphasis>set_dlg_profile</emphasis>
+		Name: <emphasis>dialog:set_profile</emphasis>
 		</para>
 		<para>Parameters: <emphasis>It takes 2-4 parameters</emphasis>
 		</para>
@@ -3261,17 +3296,20 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi set_dlg_profile DID my_profile my_value 1
+		opensips-cli -x mi dialog:set_profile dlg_id=DID profile=my_profile value=my_value clear_values=1
 		</programlisting>
 		</section>
 
-		<section id="unset_dlg_profile_mi" xreflabel="unset_dlg_profile_mi">
-		<title><function moreinfo="none">unset_dlg_profile</function></title>
+		<section id="mi_unset_profile" xreflabel="dialog:unset_profile">
+		<title><function moreinfo="none">dialog:unset_profile</function></title>
 		<para>
-		Unsets the dialog identified by dialog ID / Call-ID from the given profile ( with optional value and clearing of the old profile values )
+		Replaces obsolete MI command: <emphasis>unset_dlg_profile</emphasis>.
 		</para>
 		<para>
-		Name: <emphasis>set_dlg_profile</emphasis>
+		Unsets the dialog identified by dialog ID / Call-ID from the given profile (with optional value).
+		</para>
+		<para>
+		Name: <emphasis>dialog:unset_profile</emphasis>
 		</para>
 		<para>Parameters: <emphasis>It takes 2-3 parameters</emphasis>
 		</para>
@@ -3290,7 +3328,7 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi unset_dlg_profile DID my_profile my_value
+		opensips-cli -x mi dialog:unset_profile dlg_id=DID profile=my_profile value=my_value
 		</programlisting>
 		</section>
 	</section>
@@ -3387,7 +3425,7 @@ route {
 			<para>
 			Returns the id of the dialog corresponding to
 			the processed sequential request. The output format is a string
-			identical to the one returned by the dlg_list MI function. This PV will be
+			identical to the one returned by the dialog:list MI function. This PV will be
 			available only for sequential requests, after doing loose_route().
 			</para>
 			<para>
@@ -3478,7 +3516,7 @@ route {
 		<section id="pv_DLG_json" xreflabel="$DLG_json">
 			<title><varname>$DLG_json</varname></title>
 			<para>
-			The variable is read-only and exposes a JSON variable containing all the information that the dlg_list MI function contains
+			The variable is read-only and exposes a JSON variable containing all the information that the dialog:list MI function contains
 			</para>
 			<para>
 				NULL will be returned if there is no dialog for the request, otherwise the JSON will be returned.
@@ -3488,7 +3526,7 @@ route {
 		<section id="pv_DLG_ctx_json" xreflabel="$DLG_ctx_json">
 			<title><varname>$DLG_ctx_json</varname></title>
 			<para>
-			The variable is read-only and exposes a JSON variable containing all the information that the dlg_list_ctx MI function contains ( on top of $DLG_json, this will expose the full list of dialog vars and profile links for the current dialog )
+			The variable is read-only and exposes a JSON variable containing all the information that the dialog:list_ctx MI function contains ( on top of $DLG_json, this will expose the full list of dialog vars and profile links for the current dialog )
 			</para>
 			<para>
 				NULL will be returned if there is no dialog for the request, otherwise the JSON will be returned.
@@ -3556,4 +3594,3 @@ route {
 
 
 </chapter>
-

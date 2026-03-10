@@ -516,16 +516,20 @@ modparam("b2b_sca",
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-	<section id="mi_sca_list" xreflabel="sca_list">
-		<title><function moreinfo="none">sca_list</function></title>
+	<section id="mi_list" xreflabel="b2b_sca:list">
+		<title><function moreinfo="none">b2b_sca:list</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>sca_list</emphasis>.
+		</para>
+
 	<para>
 	It lists the appearances belonging to a shared line/call.
 	</para>
-	<para>Name: <emphasis>sca_list</emphasis></para>
+	<para>Name: <emphasis>b2b_sca:list</emphasis></para>
 	<para>Parameters: <emphasis>none</emphasis></para>
 	<para>MI FIFO Command Format:</para>
 <programlisting  format="linespecific">
-	opensips-cli -x mi sca_list
+	opensips-cli -x mi b2b_sca:list
 </programlisting>
 	</section>
 	</section>

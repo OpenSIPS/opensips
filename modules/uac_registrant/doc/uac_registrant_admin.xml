@@ -30,7 +30,7 @@
 	    </para>
 	    <para>
 	    Each registrant has it's own state.
-	    Registrant's status can be inspected via "reg_list" MI comand.
+	    Registrant's status can be inspected via "uac_registrant:list" MI command.
 	    </para>
 	    <para>
 		UAC registrant states:
@@ -550,10 +550,14 @@ modparam("uac_registrant", "reregister_expiry_percentage", 90)
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_reg_list" xreflabel="reg_list">
-	<title><function moreinfo="none">reg_list</function></title>
+	<section id="mi_list" xreflabel="uac_registrant:list">
+	<title><function moreinfo="none">uac_registrant:list</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>reg_list</emphasis>.
+		</para>
+
 		<para>Lists the registrant records and their status.</para>
-		<para>Name: <emphasis>reg_list</emphasis></para>
+		<para>Name: <emphasis>uac_registrant:list</emphasis></para>
 		<para>Parameters: </para>
 		<itemizedlist>
 			<listitem><para>
@@ -578,15 +582,19 @@ modparam("uac_registrant", "reregister_expiry_percentage", 90)
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi reg_list
+opensips-cli -x mi uac_registrant:list
 ...
-opensips-cli -x mi reg_list sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
+opensips-cli -x mi uac_registrant:list sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
 	</section>
-	<section id="mi_reg_reload" xreflabel="reg_reload">
-	<title><function moreinfo="none">reg_reload</function></title>
+	<section id="mi_reload" xreflabel="uac_registrant:reload">
+	<title><function moreinfo="none">uac_registrant:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>reg_reload</emphasis>.
+		</para>
+
 		<para>Reloads the registrant records from the database.</para>
-		<para>Name: <emphasis>reg_reload</emphasis></para>
+		<para>Name: <emphasis>uac_registrant:reload</emphasis></para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<itemizedlist>
 			<listitem><para>
@@ -611,18 +619,22 @@ opensips-cli -x mi reg_list sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi reg_reload
+opensips-cli -x mi uac_registrant:reload
 ...
 opensips-cli -x mi reg_leload sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
 	</section>
 
-	<section id="mi_reg_enable" xreflabel="reg_enable">
-	<title><function moreinfo="none">reg_enable</function></title>
+	<section id="mi_enable" xreflabel="uac_registrant:enable">
+	<title><function moreinfo="none">uac_registrant:enable</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>reg_enable</emphasis>.
+		</para>
+
 		<para>Enables a specific registrant. OpenSIPS will immediately send
 		a REGISTER if the registrant was previously disabled and will update
 		the state in the database.</para>
-		<para>Name: <emphasis>reg_enable</emphasis></para>
+		<para>Name: <emphasis>uac_registrant:enable</emphasis></para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<itemizedlist>
 			<listitem><para>
@@ -637,16 +649,20 @@ opensips-cli -x mi reg_leload sip:alice@opensips.org  sip:alice@127.0.0.1:5060 s
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
+opensips-cli -x mi uac_registrant:enable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
 	</section>
 
-	<section id="mi_reg_disable" xreflabel="reg_disable">
-	<title><function moreinfo="none">reg_disable</function></title>
+	<section id="mi_disable" xreflabel="uac_registrant:disable">
+	<title><function moreinfo="none">uac_registrant:disable</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>reg_disable</emphasis>.
+		</para>
+
 		<para>Disables a specific registrant. OpenSIPS will immediately send
 		an unREGISTER if the registrant was previously enabled and will update
 		the state in the database.</para>
-		<para>Name: <emphasis>reg_disable</emphasis></para>
+		<para>Name: <emphasis>uac_registrant:disable</emphasis></para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<itemizedlist>
 			<listitem><para>
@@ -670,16 +686,20 @@ opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 s
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
+opensips-cli -x mi uac_registrant:disable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
 	</section>
 
-	<section id="mi_reg_force_register" xreflabel="reg_force_register">
-	<title><function moreinfo="none">reg_force_register</function></title>
+	<section id="mi_force_register" xreflabel="uac_registrant:force_register">
+	<title><function moreinfo="none">uac_registrant:force_register</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>reg_force_register</emphasis>.
+		</para>
+
 		<para>Forces the re-registration (or registation) of a specific 
 		registrant (depending on its state). Note that the registrant must be
 		enabled.</para>
-		<para>Name: <emphasis>reg_force_register</emphasis></para>
+		<para>Name: <emphasis>uac_registrant:force_register</emphasis></para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
@@ -703,14 +723,18 @@ opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
+opensips-cli -x mi uac_registrant:force_register sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
 	</section>
 
-	<section id="mi_reg_upsert" xreflabel="reg_upsert">
-	<title><function moreinfo="none">reg_upsert</function></title>
+	<section id="mi_upsert" xreflabel="uac_registrant:upsert">
+	<title><function moreinfo="none">uac_registrant:upsert</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>reg_upsert</emphasis>.
+		</para>
+
 	<para>Inserts or updates the in-memory contents of the AOR/Contact/Registrar. No Database queries are done when calling this MI command, all parameters are passed via MI </para>
-		<para>Name: <emphasis>reg_upsert</emphasis></para>
+		<para>Name: <emphasis>uac_registrant:upsert</emphasis></para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
@@ -753,14 +777,18 @@ opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@127.0.0.
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi reg_upsert aor=sip:vlad@test.com contact=sip:test@localhost registrar=sip:127.0.0.1:5061 proxy="" third_party_registrant="" username="vlad" password="1234" binding_params="" expiry=60 forced_socket="" cluster_shtag="" state=0
+opensips-cli -x mi uac_registrant:upsert aor=sip:vlad@test.com contact=sip:test@localhost registrar=sip:127.0.0.1:5061 proxy="" third_party_registrant="" username="vlad" password="1234" binding_params="" expiry=60 forced_socket="" cluster_shtag="" state=0
 		</programlisting>
 	</section>
 
-	<section id="mi_reg_delete" xreflabel="reg_delete">
-	<title><function moreinfo="none">reg_delete</function></title>
+	<section id="mi_delete" xreflabel="uac_registrant:delete">
+	<title><function moreinfo="none">uac_registrant:delete</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>reg_delete</emphasis>.
+		</para>
+
 	<para>Deletes the in-memory contents of the AOR/Contact/Registrar. No Database queries are done when calling this MI command, all parameters are passed via MI </para>
-		<para>Name: <emphasis>reg_delete</emphasis></para>
+		<para>Name: <emphasis>uac_registrant:delete</emphasis></para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
@@ -775,7 +803,7 @@ opensips-cli -x mi reg_upsert aor=sip:vlad@test.com contact=sip:test@localhost r
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi reg_delete aor=sip:vlad@test.com contact=sip:test@localhost registrar=sip:127.0.0.1:5061 
+opensips-cli -x mi uac_registrant:delete aor=sip:vlad@test.com contact=sip:test@localhost registrar=sip:127.0.0.1:5061 
 		</programlisting>
 	</section>
 

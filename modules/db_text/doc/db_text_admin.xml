@@ -280,24 +280,32 @@ modparam("db_text", "buffer_size", 8192)
 	</section>
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_dbt_dump" xreflabel="dbt_dump">
-		<title><varname>dbt_dump</varname></title>
+	<section id="mi_dump" xreflabel="db_text:dump">
+		<title><varname>db_text:dump</varname></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dbt_dump</emphasis>.
+		</para>
+
 		<para>
 			Write back to hard drive modified tables.
 		</para>
 		<para>
-		Name: <emphasis>dbt_dump</emphasis>.
+		Name: <emphasis>db_text:dump</emphasis>.
 		</para>
 		<para>Parameters: none</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi dbt_dump
+opensips-cli -x mi db_text:dump
 		</programlisting>
 	</section>
-	<section id="mi_dbt_reload" xreflabel="dbt_reload">
-		<title><varname>dbt_reload</varname></title>
+	<section id="mi_reload" xreflabel="db_text:reload">
+		<title><varname>db_text:reload</varname></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>dbt_reload</emphasis>.
+		</para>
+
 		<para>
 			Causes db_text module to reload cached tables from disk.
 			Depending on parameters it could be a whole cache or a specified
@@ -306,7 +314,7 @@ opensips-cli -x mi dbt_dump
 			preserved and error reported.
 		</para>
 		<para>
-		Name: <emphasis>dbt_reload</emphasis>.
+		Name: <emphasis>db_text:reload</emphasis>.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -322,13 +330,13 @@ opensips-cli -x mi dbt_dump
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi dbt_reload
+opensips-cli -x mi db_text:reload
 		</programlisting>
 		<programlisting  format="linespecific">
-opensips-cli -x mi dbt_reload /path/to/dbtext/database
+opensips-cli -x mi db_text:reload /path/to/dbtext/database
 		</programlisting>
 		<programlisting  format="linespecific">
-opensips-cli -x mi dbt_reload /path/to/dbtext/database table_name
+opensips-cli -x mi db_text:reload /path/to/dbtext/database table_name
 		</programlisting>
 	</section>
 	</section>

@@ -574,16 +574,20 @@ if ($rm=="REGISTER") {
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section id="mi_LOAD_CPL" xreflabel="LOAD_CPL">
+		<section id="mi_load" xreflabel="cpl_c:load">
 			<title>
-				<function moreinfo="none">LOAD_CPL</function>
+				<function moreinfo="none">cpl_c:load</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>LOAD_CPL</emphasis>.
+		</para>
+
 			<para>
 			For the given user, loads the XML cpl file, compiles it into 
 			binary format and stores both format into database.
 			</para>
 			<para>
-			Name: <emphasis>LOAD_CPL</emphasis>
+			Name: <emphasis>cpl_c:load</emphasis>
 			</para>
 			<para>Parameters:</para>
 			<itemizedlist>
@@ -594,21 +598,25 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 opensips-cli -x mi LOAD_CPL sip:bob@domain.com cpl_script.xml
+                 opensips-cli -x mi cpl_c:load sip:bob@domain.com cpl_script.xml
 </programlisting>
 		</section>
 
-		<section id="mi_REMOVE_CPL" xreflabel="REMOVE_CPL">
+		<section id="mi_remove" xreflabel="cpl_c:remove">
 			<title>
-				<function moreinfo="none">REMOVE_CPL</function>
+				<function moreinfo="none">cpl_c:remove</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>REMOVE_CPL</emphasis>.
+		</para>
+
 			<para>
 			For the given user, removes the entire database record 
 			(XML cpl and binary cpl); user with empty cpl scripts are not 
 			accepted.
 			</para>
 			<para>
-			Name: <emphasis>REMOVE_CPL</emphasis>
+			Name: <emphasis>cpl_c:remove</emphasis>
 			</para>
 			<para>Parameters:</para>
 			<itemizedlist>
@@ -618,19 +626,23 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 opensips-cli -x mi REMOVE_CPL sip:bob@domain.com
+                 opensips-cli -x mi cpl_c:remove sip:bob@domain.com
 </programlisting>
 		</section>
 
-		<section id="mi_GET_CPL" xreflabel="GET_CPL">
+		<section id="mi_get" xreflabel="cpl_c:get">
 			<title>
-				<function moreinfo="none">GET_CPL</function>
+				<function moreinfo="none">cpl_c:get</function>
 			</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>GET_CPL</emphasis>.
+		</para>
+
 			<para>
 			For the given user, returns the CPL script in XML format.
 			</para>
 			<para>
-			Name: <emphasis>GET_CPL</emphasis>
+			Name: <emphasis>cpl_c:get</emphasis>
 			</para>
 			<para>Parameters:</para>
 			<itemizedlist>
@@ -640,7 +652,7 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 opensips-cli -x mi GET_CPL sip:bob@domain.com
+                 opensips-cli -x mi cpl_c:get sip:bob@domain.com
 </programlisting>
 		</section>
 	</section>

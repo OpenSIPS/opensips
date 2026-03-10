@@ -65,8 +65,8 @@ modparam("acc", "db_url", "flatstore:/var/log/acc")
 	<section id="rotating">
 		<title>Rotating Log Files</title>
 		<para>
-		There is a new &osips; MI (management interface) command called 
-		flat_rotate.
+		There is a new &osips; MI (management interface) command called
+		db_flatstore:rotate.
 		When &osips; receives the command then it will close and reopen all
 		files used by flatstore module. The rotation itself has to be
 		done by another application (such as logrotate). Follow these
@@ -258,24 +258,27 @@ modparam("db_flatstore", "single_file", 1)
 	
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_flat_rotate" xreflabel="flat_rotate">
+	<section id="mi_rotate" xreflabel="db_flatstore:rotate">
 		<title>
-		<function moreinfo="none">flat_rotate</function>
+		<function moreinfo="none">db_flatstore:rotate</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>flat_rotate</emphasis>.
+		</para>
+
 		<para>
 		It changes the name of the files where it is written.
 		</para>
 		<para>
-		Name: <emphasis>flat_rotate</emphasis>
+		Name: <emphasis>db_flatstore:rotate</emphasis>
 		</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
  		<para>
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensips-cli -x mi flat_rotate
+		opensips-cli -x mi db_flatstore:rotate
 		</programlisting>
 	</section>	
     </section>
 </chapter>
-

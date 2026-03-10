@@ -1609,8 +1609,12 @@ if (is_method("BYE")) {
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-		<section id="mi_rtpengine_enable" xreflabel="rtpengine_enable">
-			<title><function moreinfo="none">rtpengine_enable</function></title>
+		<section id="mi_enable" xreflabel="rtpengine:enable">
+			<title><function moreinfo="none">rtpengine:enable</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtpengine_enable</emphasis>.
+		</para>
+
 			<para>
 			Enables/disables a &rtp; proxy.
 			</para>
@@ -1621,7 +1625,7 @@ if (is_method("BYE")) {
 					defined in the config file).
 				</para></listitem>
 				<listitem><para>
-					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the &rtp; proxy, 2 - put the &rtp; node in probing mode.
+					<emphasis>rtpengine:enable</emphasis> - 1 - enable, 0 - disable the &rtp; proxy, 2 - put the &rtp; node in probing mode.
 				</para></listitem>
         <listitem><para>
 					<emphasis>setid</emphasis> (optional) the set ID of the nodes to be updated. If provided, only nodes in the provided set will be updated.
@@ -1633,20 +1637,24 @@ if (is_method("BYE")) {
 			</para>
 			<example>
 			<title>
-			<function moreinfo="none">rtpengine_enable</function> usage</title>
+			<function moreinfo="none">rtpengine:enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
 ## disable all rtpengines by URL
-$ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
+$ opensips-cli -x mi rtpengine:enable udp:192.168.2.133:8081 0
 ## enable rtpengine by URL and set ID (3)
-$ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=1 setid=3
+$ opensips-cli -x mi rtpengine:enable url=udp:192.168.2.133:8081 enable=1 setid=3
 ...
 			</programlisting>
 			</example>
 		</section>
 
-		<section id="mi_rtpengine_show" xreflabel="rtpengine_show">
-			<title><function moreinfo="none">rtpengine_show</function></title>
+		<section id="mi_show" xreflabel="rtpengine:show">
+			<title><function moreinfo="none">rtpengine:show</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtpengine_show</emphasis>.
+		</para>
+
 			<para>
 			Displays all the &rtp; proxies and their information: set and
 			status (disabled or not, weight and recheck_ticks).
@@ -1656,17 +1664,21 @@ $ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=1 setid=
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">rtpengine_show</function> usage</title>
+				<function moreinfo="none">rtpengine:show</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi rtpengine_show
+$ opensips-cli -x mi rtpengine:show
 ...
 			</programlisting>
 			</example>
 		</section>
 
-		<section id="mi_rtpengine_reload" xreflabel="rtpengine_reload">
-			<title><function moreinfo="none">rtpengine_reload</function></title>
+		<section id="mi_reload" xreflabel="rtpengine:reload">
+			<title><function moreinfo="none">rtpengine:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtpengine_reload</emphasis>.
+		</para>
+
 			<para>
 			Reloads all rtpengine sets from the database. Used only when the
 			<quote><xref linkend="param_db_url"/></quote> parameter is set.
@@ -1685,11 +1697,11 @@ $ opensips-cli -x mi rtpengine_show
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">rtpengine_reload</function> usage</title>
+				<function moreinfo="none">rtpengine:reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi rtpengine_reload
-$ opensips-cli -x mi rtpengine_reload type=soft
+$ opensips-cli -x mi rtpengine:reload
+$ opensips-cli -x mi rtpengine:reload type=soft
 ...
 			</programlisting>
 			</example>

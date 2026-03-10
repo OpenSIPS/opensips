@@ -37,13 +37,14 @@
 	</para>
 
 	<para>
-	The capturing can be turned on/off using fifo commad.
+	The capturing can be turned on/off using MI command
+	<quote>sipcapture:capture</quote>.
 	</para>
 	<para>
-	opensips-cli -x mi sip_capture on
+	opensips-cli -x mi sipcapture:capture on
 	</para>
 	<para>
-	opensips-cli -x mi sip_capture off
+	opensips-cli -x mi sipcapture:capture off
 	</para>
 	</section>
 	<section id="dependencies" xreflabel="Dependencies">
@@ -1031,15 +1032,18 @@ route[capture_resume] {
 
     <section>
 	<title>MI Commands</title>
-	<section>
+	<section id="mi_capture" xreflabel="sipcapture:capture">
 		<title>
-		<function moreinfo="none">sip_capture</function>
+		<function moreinfo="none">sipcapture:capture</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>sip_capture</emphasis>.
+		</para>
 		<para>
 
 		</para>
 		<para>
-		Name: <emphasis>sip_capture</emphasis>
+		Name: <emphasis>sipcapture:capture</emphasis>
 		</para>
 		<para>Parameters: </para>
 		<itemizedlist>
@@ -1060,7 +1064,7 @@ route[capture_resume] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi sip_capture off
+		opensips-cli -x mi sipcapture:capture off
 		</programlisting>
 	</section>
 	</section>
@@ -1092,4 +1096,3 @@ route[capture_resume] {
         </para>
         </section>
 </chapter>
-

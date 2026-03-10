@@ -1623,10 +1623,14 @@ ul_del_key("location", "$tU@$td", "service_route");
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-	<section id="mi_ul_rm" xreflabel="ul_rm">
+	<section id="mi_rm" xreflabel="usrloc:rm">
 		<title>
-		<function moreinfo="none">ul_rm</function>
+		<function moreinfo="none">usrloc:rm</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ul_rm</emphasis>.
+		</para>
+
 		<para>
 		Deletes an entire AOR record (including its contacts).
 		</para>
@@ -1644,10 +1648,14 @@ ul_del_key("location", "$tU@$td", "service_route");
 		</itemizedlist>
 	</section>
 
-	<section id="mi_ul_rm_contact" xreflabel="ul_rm_contact">
+	<section id="mi_rm_contact" xreflabel="usrloc:rm_contact">
 		<title>
-		<function moreinfo="none">ul_rm_contact</function>
+		<function moreinfo="none">usrloc:rm_contact</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ul_rm_contact</emphasis>.
+		</para>
+
 		<para>
 		Deletes a contact from an AOR record.
 		</para>
@@ -1668,10 +1676,14 @@ ul_del_key("location", "$tU@$td", "service_route");
 		</itemizedlist>
 	</section>
 
-	<section id="mi_ul_dump" xreflabel="ul_dump">
+	<section id="mi_dump" xreflabel="usrloc:dump">
 		<title>
-		<function moreinfo="none">ul_dump</function>
+		<function moreinfo="none">usrloc:dump</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ul_dump</emphasis>.
+		</para>
+
 		<para>
 		Dumps the entire content of the USRLOC in memory cache
 		</para>
@@ -1685,10 +1697,14 @@ ul_del_key("location", "$tU@$td", "service_route");
 		</itemizedlist>
 	</section>
 
-	<section id="mi_ul_flush" xreflabel="ul_flush">
+	<section id="mi_flush" xreflabel="usrloc:flush">
 		<title>
-		<function moreinfo="none">ul_flush</function>
+		<function moreinfo="none">usrloc:flush</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ul_flush</emphasis>.
+		</para>
+
 		<para>
 		Force a flush of all pending usrloc cache changes to the database.
 		Normally, this routine runs every
@@ -1696,10 +1712,14 @@ ul_del_key("location", "$tU@$td", "service_route");
 		</para>
 	</section>
 
-	<section id="mi_ul_add" xreflabel="ul_add">
+	<section id="mi_add" xreflabel="usrloc:add">
 		<title>
-		<function moreinfo="none">ul_add</function>
+		<function moreinfo="none">usrloc:add</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ul_add</emphasis>.
+		</para>
+
 		<para>
 		Adds a new contact for an user AOR.
 		</para>
@@ -1740,10 +1760,14 @@ ul_del_key("location", "$tU@$td", "service_route");
 		</itemizedlist>
 	</section>
 
-	<section id="mi_ul_show_contact" xreflabel="ul_show_contact">
+	<section id="mi_show_contact" xreflabel="usrloc:show_contact">
 		<title>
-		<function moreinfo="none">ul_show_contact</function>
+		<function moreinfo="none">usrloc:show_contact</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ul_show_contact</emphasis>.
+		</para>
+
 		<para>
 		Dumps the contacts of an user AOR.
 		</para>
@@ -1761,10 +1785,14 @@ ul_del_key("location", "$tU@$td", "service_route");
 		</itemizedlist>
 	</section>
 
-	<section id="mi_ul_sync" xreflabel="ul_sync">
+	<section id="mi_sync" xreflabel="usrloc:sync">
 		<title>
-		<function moreinfo="none">ul_sync</function>
+		<function moreinfo="none">usrloc:sync</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ul_sync</emphasis>.
+		</para>
+
 		<para>
 		Empty the location table, then synchronize it with all contacts from
 		memory.  Note that this can not be used when no database is specified
@@ -1772,7 +1800,7 @@ ul_del_key("location", "$tU@$td", "service_route");
 		</para>
 		<para>
 		Important: make sure that all your contacts are in memory
-		(<emphasis>ul_dump</emphasis> MI function) before executing this
+		(<emphasis>usrloc:dump</emphasis> MI function) before executing this
 		command.
 		</para>
 		<para>Parameters: </para>
@@ -1790,10 +1818,14 @@ ul_del_key("location", "$tU@$td", "service_route");
 		</itemizedlist>
 	</section>
 
-	<section id="mi_ul_cluster_sync" xreflabel="ul_cluster_sync">
+	<section id="mi_cluster_sync" xreflabel="usrloc:cluster_sync">
 		<title>
-		<function moreinfo="none">ul_cluster_sync</function>
+		<function moreinfo="none">usrloc:cluster_sync</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>ul_cluster_sync</emphasis>.
+		</para>
+
 		<para>
 		This command will only take effect if the target OpenSIPS instance is
 		paired with a hot backup instance, while running under a

@@ -452,15 +452,19 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="rc_addVendor" xreflabel="rc_addVendor">
+		<section id="mi_addVendor" xreflabel="rate_cacher:addVendor">
 		<title>
-		<function moreinfo="none">rc_addVendor</function>
+		<function moreinfo="none">rate_cacher:addVendor</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_addVendor</emphasis>.
+		</para>
+
 		<para>
 		Adds a new Vendor, without assigning any ratesheet to it.
 		</para>
 		<para>
-		Name: <emphasis>rc_addVendor</emphasis>
+		Name: <emphasis>rate_cacher:addVendor</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -473,19 +477,23 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Add a new Vendor
-# opensips-cli -x mi rc_addVendor myNewVendor
+# opensips-cli -x mi rate_cacher:addVendor myNewVendor
 		</programlisting>
 		</section>
 
-		<section id="rc_deleteVendor" xreflabel="rc_deleteVendor">
+		<section id="mi_deleteVendor" xreflabel="rate_cacher:deleteVendor">
 		<title>
-		<function moreinfo="none">rc_deleteVendor</function>
+		<function moreinfo="none">rate_cacher:deleteVendor</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_deleteVendor</emphasis>.
+		</para>
+
 		<para>
 		Removes a vendor from memory, along with the ratesheet asigned with it ( if any )
 		</para>
 		<para>
-		Name: <emphasis>rc_deleteVendor</emphasis>
+		Name: <emphasis>rate_cacher:deleteVendor</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -498,19 +506,23 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Delete a Vendor
-# opensipss-cli -x mi rc_deleteVendor myNewVendor
+# opensipss-cli -x mi rate_cacher:deleteVendor myNewVendor
 		</programlisting>
 		</section>
 
-		<section id="rc_reloadVendorRate" xreflabel="rc_reloadVendorRate">
+		<section id="mi_reloadVendorRate" xreflabel="rate_cacher:reloadVendorRate">
 		<title>
-		<function moreinfo="none">rc_reloadVendorRate</function>
+		<function moreinfo="none">rate_cacher:reloadVendorRate</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_reloadVendorRate</emphasis>.
+		</para>
+
 		<para>
 		Reloads the provided ratesheet and assigns it to the Vendor
 		</para>
 		<para>
-		Name: <emphasis>rc_reloadVendorRate</emphasis>
+		Name: <emphasis>rate_cacher:reloadVendorRate</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -526,19 +538,23 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_reloadVendorRate myVendor 3
+# opensips-cli -x mi rate_cacher:reloadVendorRate myVendor 3
 		</programlisting>
 		</section>
 
-		<section id="rc_deleteVendorRate" xreflabel="rc_deleteVendorRate">
+		<section id="mi_deleteVendorRate" xreflabel="rate_cacher:deleteVendorRate">
 		<title>
-		<function moreinfo="none">rc_deleteVendorRate</function>
+		<function moreinfo="none">rate_cacher:deleteVendorRate</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_deleteVendorRate</emphasis>.
+		</para>
+
 		<para>
 		Deletes the assigned ratesheet from the Vendor
 		</para>
 		<para>
-		Name: <emphasis>rc_deleteVendorRate</emphasis>
+		Name: <emphasis>rate_cacher:deleteVendorRate</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -551,19 +567,23 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_deleteVendorRate myVendor
+# opensips-cli -x mi rate_cacher:deleteVendorRate myVendor
 		</programlisting>
 		</section>
 
-		<section id="rc_getVendorPrice" xreflabel="rc_getVendorPrice">
+		<section id="mi_getVendorPrice" xreflabel="rate_cacher:getVendorPrice">
 		<title>
-		<function moreinfo="none">rc_getVendorPrice</function>
+		<function moreinfo="none">rate_cacher:getVendorPrice</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_getVendorPrice</emphasis>.
+		</para>
+
 		<para>
 		Fetches all the ratesheet information ( destination name, price, minimum, increment ) for the provided Vendor and dialled number
 		</para>
 		<para>
-		Name: <emphasis>rc_getVendorPrice</emphasis>
+		Name: <emphasis>rate_cacher:getVendorPrice</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -579,7 +599,7 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Query for the price of myVendor for the 4072731825 number
-#/usr/local/bin/opensips-cli -x mi rc_getVendorPrice myVendor 4072731825
+#/usr/local/bin/opensips-cli -x mi rate_cacher:getVendorPrice myVendor 4072731825
 {
     "prefix": "40727",
     "destination": "ROMANIA MOBILE VODAFONE",
@@ -591,15 +611,19 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</programlisting>
 		</section>
 
-		<section id="rc_addClient" xreflabel="rc_addClient">
+		<section id="mi_addClient" xreflabel="rate_cacher:addClient">
 		<title>
-		<function moreinfo="none">rc_addClient</function>
+		<function moreinfo="none">rate_cacher:addClient</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_addClient</emphasis>.
+		</para>
+
 		<para>
 		Adds a new Client, without assigning any ratesheet to it.
 		</para>
 		<para>
-		Name: <emphasis>rc_addClient</emphasis>
+		Name: <emphasis>rate_cacher:addClient</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -612,19 +636,23 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Add a new Client
-# opensips-cli -x mi fifo rc_addClient myNewClient
+# opensips-cli -x mi fifo rate_cacher:addClient myNewClient
 		</programlisting>
 		</section>
 
-		<section id="rc_deleteClient" xreflabel="rc_deleteClient">
+		<section id="mi_deleteClient" xreflabel="rate_cacher:deleteClient">
 		<title>
-		<function moreinfo="none">rc_deleteClient</function>
+		<function moreinfo="none">rate_cacher:deleteClient</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_deleteClient</emphasis>.
+		</para>
+
 		<para>
 		Removes a Client from memory, along with the ratesheet asigned with it ( if any )
 		</para>
 		<para>
-		Name: <emphasis>rc_deleteClient</emphasis>
+		Name: <emphasis>rate_cacher:deleteClient</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -637,19 +665,23 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Delete a Client
-# opensips-cli -x mi rc_deleteClient myClient
+# opensips-cli -x mi rate_cacher:deleteClient myClient
 		</programlisting>
 		</section>
 
-		<section id="rc_reloadClientRate" xreflabel="rc_reloadClientRate">
+		<section id="mi_reloadClientRate" xreflabel="rate_cacher:reloadClientRate">
 		<title>
-		<function moreinfo="none">rc_reloadClientRate</function>
+		<function moreinfo="none">rate_cacher:reloadClientRate</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_reloadClientRate</emphasis>.
+		</para>
+
 		<para>
 		Reloads the provided ratesheet and assigns it to the Client
 		</para>
 		<para>
-		Name: <emphasis>rc_reloadClientRate</emphasis>
+		Name: <emphasis>rate_cacher:reloadClientRate</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -668,19 +700,23 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Reloads the Client's wholesale Ratesheet, assigning it rate id 3
-# opensips-cli -x mi rc_reloadClientRate myClient 1 3
+# opensips-cli -x mi rate_cacher:reloadClientRate myClient 1 3
 		</programlisting>
 		</section>
 
-		<section id="rc_deleteClientRate" xreflabel="rc_deleteClientRate">
+		<section id="mi_deleteClientRate" xreflabel="rate_cacher:deleteClientRate">
 		<title>
-		<function moreinfo="none">rc_deleteClientRate</function>
+		<function moreinfo="none">rate_cacher:deleteClientRate</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_deleteClientRate</emphasis>.
+		</para>
+
 		<para>
 		Deletes the assigned ratesheet from the Client
 		</para>
 		<para>
-		Name: <emphasis>rc_deleteClientRate</emphasis>
+		Name: <emphasis>rate_cacher:deleteClientRate</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -695,20 +731,24 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_deleteVendorRate myVendor
+## Deletes a Client Ratesheet
+# opensips-cli -x mi rate_cacher:deleteClientRate myClient 1
 		</programlisting>
 		</section>
 
-		<section id="rc_getClientPrice" xreflabel="rc_getClientPrice">
+		<section id="mi_getClientPrice" xreflabel="rate_cacher:getClientPrice">
 		<title>
-		<function moreinfo="none">rc_getClientPrice</function>
+		<function moreinfo="none">rate_cacher:getClientPrice</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rc_getClientPrice</emphasis>.
+		</para>
+
 		<para>
 		Fetches all the ratesheet information ( destination name, price, minimum, increment ) for the provided Client, on the specified quality ( wholesale vs retail ) and dialled number
 		</para>
 		<para>
-		Name: <emphasis>rc_getClientPrice</emphasis>
+		Name: <emphasis>rate_cacher:getClientPrice</emphasis>
 		</para>
 		<para>Parameters :</para>
 		<itemizedlist>
@@ -727,7 +767,7 @@ if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$av
 		</para>
 		<programlisting  format="linespecific">
 ## Query for the price of myClient, on the retail quality, for the 4072731825 number
-#/usr/local/bin/opensips-cli -x mi rc_getClientPrice myClient 0 4072731825
+#/usr/local/bin/opensips-cli -x mi rate_cacher:getClientPrice myClient 0 4072731825
 {
     "prefix": "40727",
     "destination": "ROMANIA MOBILE VODAFONE",

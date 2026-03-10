@@ -89,10 +89,14 @@ modparam("tcp_mgm", "connect_timeout_col", "connect_to")
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_tcp_reload" xreflabel="tcp_reload">
+		<section id="mi_reload" xreflabel="tcp_mgm:reload">
 		<title>
-		<function moreinfo="none">tcp_reload</function>
+		<function moreinfo="none">tcp_mgm:reload</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>tcp_reload</emphasis>.
+		</para>
+
 		<para>
 		Reload all TCP paths from the <emphasis>tcp_mgm</emphasis> table
 		without disrupting ongoing traffic.  Note that the reloaded rules will
@@ -103,7 +107,7 @@ modparam("tcp_mgm", "connect_timeout_col", "connect_to")
 		<programlisting  format="linespecific">
 
 # reload all TCP paths
-$ opensips-cli -x mi tcp_reload
+$ opensips-cli -x mi tcp_mgm:reload
 $ "OK"
 		</programlisting>
 		</section>

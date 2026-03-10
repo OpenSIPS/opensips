@@ -1116,8 +1116,12 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-		<section id="mi_rtpproxy_enable" xreflabel="rtpproxy_enable">
-			<title><function moreinfo="none">rtpproxy_enable</function></title>
+		<section id="mi_enable" xreflabel="rtpproxy:enable">
+			<title><function moreinfo="none">rtpproxy:enable</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtpproxy_enable</emphasis>.
+		</para>
+
 			<para>
 			Enables/Disables a rtp proxy.
 			</para>
@@ -1128,7 +1132,7 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 					the config file).
 				</para></listitem>
 				<listitem><para>
-					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the RTPproxy node, 2 - put the RTPproxy node in probing mode.
+					<emphasis>rtpproxy:enable</emphasis> - 1 - enable, 0 - disable the RTPproxy node, 2 - put the RTPproxy node in probing mode.
 				</para></listitem>
 				<listitem><para>
 					<emphasis>setid</emphasis> (optional) - the rtpproxy set ID (used
@@ -1143,20 +1147,24 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">rtpproxy_enable</function> usage</title>
+				<function moreinfo="none">rtpproxy:enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
 ## disable a RTPProxy by URL only
-$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
+$ opensips-cli -x mi rtpproxy:enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
-$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0 3
+$ opensips-cli -x mi rtpproxy:enable udp:192.168.2.133:8081 0 3
 ...
 			</programlisting>
 			</example>
 		</section>
 				
-			<section id="mi_rtpproxy_show" xreflabel="rtpproxy_show">
-			<title><function moreinfo="none">rtpproxy_show</function></title>
+			<section id="mi_show" xreflabel="rtpproxy:show">
+			<title><function moreinfo="none">rtpproxy:show</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtpproxy_show</emphasis>.
+		</para>
+
 			<para>
 			Displays all the rtp proxies and their information: set and 
 			status (disabled or not, weight and recheck_ticks).
@@ -1166,17 +1174,21 @@ $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0 3
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">rtpproxy_show</function> usage</title>
+				<function moreinfo="none">rtpproxy:show</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi rtpproxy_show
+$ opensips-cli -x mi rtpproxy:show
 ...
 			</programlisting>
 			</example>
 		</section>
 
-		<section id="mi_rtpproxy_reload" xreflabel="rtpproxy_reload">
-			<title><function moreinfo="none">rtpproxy_reload</function></title>
+		<section id="mi_reload" xreflabel="rtpproxy:reload">
+			<title><function moreinfo="none">rtpproxy:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>rtpproxy_reload</emphasis>.
+		</para>
+
 			<para>
 			Reload rtp proxies sets from database. The function will delete all
 			previous records and populate the list with the entries from the
@@ -1188,10 +1200,10 @@ $ opensips-cli -x mi rtpproxy_show
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">rtpproxy_reload</function> usage</title>
+				<function moreinfo="none">rtpproxy:reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi rtpproxy_reload
+$ opensips-cli -x mi rtpproxy:reload
 ...
 			</programlisting>
 			</example>

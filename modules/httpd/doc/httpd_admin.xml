@@ -278,22 +278,26 @@ modparam("httpd", "tls_ciphers", "SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2")
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-		<section id="mi_httpd_list_root_path" xreflabel="httpd_list_root_path">
-		<title><function moreinfo="none">httpd_list_root_path</function></title>
+		<section id="mi_list_root_path" xreflabel="httpd:list_root_path">
+		<title><function moreinfo="none">httpd:list_root_path</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>httpd_list_root_path</emphasis>.
+		</para>
+
 		<para>
 		Lists all the registered http root paths into the httpd module.
 		When a request comes in, if the root parth is in the list,
 		the request will be sent to the module that register it.
 		</para>
 		<para>
-		Name: <emphasis>httpd_list_root_path</emphasis>
+		Name: <emphasis>httpd:list_root_path</emphasis>
 		</para>
 		<para>Parameters: none</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi httpd_list_root_path
+opensips-cli -x mi httpd:list_root_path
 		</programlisting>
 	</section>
 	</section>

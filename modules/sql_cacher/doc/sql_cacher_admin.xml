@@ -353,8 +353,12 @@ while ($var(i) &lt; $var(n)) {
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_sql_cacher_reload" xreflabel="sql_cacher_reload">
-		<title><function moreinfo="none">sql_cacher_reload</function></title>
+	<section id="mi_reload" xreflabel="sql_cacher:reload">
+		<title><function moreinfo="none">sql_cacher:reload</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>sql_cacher_reload</emphasis>.
+		</para>
+
 		<para>
 			Reloads the entire SQL table in cache or the single key (if key provided) in
 			<emphasis>full caching</emphasis> mode.
@@ -372,12 +376,12 @@ while ($var(i) &lt; $var(n)) {
 			</para></listitem>
 		</itemizedlist>
 		<example>
-			<title><function moreinfo="none">sql_cacher_reload</function> usage</title>
+			<title><function moreinfo="none">sql_cacher:reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi sql_cacher_reload subs_caching
+$ opensips-cli -x mi sql_cacher:reload subs_caching
 ...
-$ opensips-cli -x mi sql_cacher_reload subs_caching alice@domain.com
+$ opensips-cli -x mi sql_cacher:reload subs_caching alice@domain.com
 ...
 </programlisting>
 			</example>	

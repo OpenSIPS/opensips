@@ -14,10 +14,10 @@
 	<para>
 		The module caches the entire table sockets and only adjusts the
 		dynamic socket list after a reload using the
-		<xref linkend="mi_sockets_reload"/> MI command.
+		<xref linkend="mi_reload"/> MI command.
 	</para>
 	<para>
-		The <xref linkend="mi_sockets_list"/> MI command.
+		The <xref linkend="mi_list"/> MI command.
 		can be used to show all the dynamic sockets OpenSIPS is listening on.
 	</para>
 	</section>
@@ -324,10 +324,14 @@ modparam("sockets_mgm", "max_sockets", 2000)
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-		<section id="mi_sockets_reload" xreflabel="sockets_reload">
+		<section id="mi_reload" xreflabel="sockets_mgm:reload">
 		<title>
-		<function moreinfo="none">sockets_reload</function>
+		<function moreinfo="none">sockets_mgm:reload</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>sockets_reload</emphasis>.
+		</para>
+
 		<para>
 			MI command used to reload the sockets from the database.
 		</para>
@@ -336,14 +340,18 @@ modparam("sockets_mgm", "max_sockets", 2000)
 		</para>
 		<programlisting  format="linespecific">
 		## reload sockets from the database
-		opensips-mi sockets_reload
-		opensips-cli -x mi sockets_reload
+		opensips-mi sockets_mgm:reload
+		opensips-cli -x mi sockets_mgm:reload
 		</programlisting>
 	</section>
-	<section id="mi_sockets_list" xreflabel="sockets_list">
+	<section id="mi_list" xreflabel="sockets_mgm:list">
 		<title>
-		<function moreinfo="none">sockets_list</function>
+		<function moreinfo="none">sockets_mgm:list</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>sockets_list</emphasis>.
+		</para>
+
 		<para>
 			MI command to list all the currently used dynamic sockets.
 		</para>
@@ -352,8 +360,8 @@ modparam("sockets_mgm", "max_sockets", 2000)
 		</para>
 		<programlisting  format="linespecific">
 		## reload sockets from the database
-		opensips-mi sockets_list
-		opensips-cli -x mi sockets_list
+		opensips-mi sockets_mgm:list
+		opensips-cli -x mi sockets_mgm:list
 		</programlisting>
 		</section>
 	</section>

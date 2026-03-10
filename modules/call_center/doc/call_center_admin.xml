@@ -26,7 +26,7 @@
 	The module provides an internal buit-in dispatching logic (for sending the
 	calls/chats to the agents), but also offers the possibility to use an
 	external logic to do the dispatching
-	(see <xref linkend="mi_cc_dispatch_call_to_agent"/> MI command).
+	(see <xref linkend="mi_dispatch_call_to_agent"/> MI command).
 	</para>
 	</section>
 
@@ -43,7 +43,7 @@
 		<emphasis>cc_agents</emphasis> tables, see
 		<ulink url='https://opensips.org/Documentation/Install-DBSchema--3-3#AEN2656'>DB schema</ulink>.
 		Data is loaded at startup and cached into memory ; runtime reload is 
-		possible via the MI commands (see the <emphasis>cc_reload</emphasis> 
+		possible via the MI commands (see the <emphasis>call_center:reload</emphasis> 
 		command in <xref linkend="exported_mi_functions"/>).
 		</para>
 		<para>
@@ -147,7 +147,7 @@
 		Additionally, the agent has a initial <emphasis>logstate</emphasis> - 
 		if he is logged in or not (being logged in is a must in order to
 		receive calls). The log state may be changed at runtime via a 
-		dedicated MI command <emphasis>cc_agent_login</emphasis>, see 
+		dedicated MI command <emphasis>call_center:agent_login</emphasis>, see 
 		<xref linkend="exported_mi_functions"/>.
 		</para>
 		<para>
@@ -389,11 +389,11 @@ modparam("call_center", "chat_dispatch_policy", "balancing")
 		should be used or not. If enabled, the module will automatically
 		dispatch (by itself) the queued/incoming calls to the available agents.
 		If disabled, the module will not do such dispaching by itself and it
-		is expected to use the  <xref linkend="mi_cc_dispatch_call_to_agent"/>
+		is expected to use the  <xref linkend="mi_dispatch_call_to_agent"/>
 		MI command to dispatch the queued calls to agents. This allows the
 		implementation of an external, custom dispatching logic. The value of
 		this setting may be changed during runtime via the 
-		<xref linkend="mi_cc_internal_call_dispatching"/> MI command.
+		<xref linkend="mi_internal_call_dispatching"/> MI command.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>1</quote> (enabled).
@@ -1232,10 +1232,14 @@ cc_agent_login("agentX",0);
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-	<section id="mi_cc_reload" xreflabel="cc_reload">
+	<section id="mi_reload" xreflabel="call_center:reload">
 		<title>
-		<function moreinfo="none">cc_reload</function>
+		<function moreinfo="none">call_center:reload</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_reload</emphasis>.
+		</para>
+
 		<para>
 		Command to reload flows and agents definition from database.
 		</para>
@@ -1246,14 +1250,18 @@ cc_agent_login("agentX",0);
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_reload
+opensips-cli -x mi call_center:reload
 </programlisting>
 	</section>
 
-	<section id="mi_cc_agent_login" xreflabel="cc_agent_login">
+	<section id="mi_agent_login" xreflabel="call_center:agent_login">
 		<title>
-		<function moreinfo="none">cc_agent_login</function>
+		<function moreinfo="none">call_center:agent_login</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_agent_login</emphasis>.
+		</para>
+
 		<para>
 		Command to login an agent into the Call Center engine.
 		</para>
@@ -1270,14 +1278,18 @@ opensips-cli -x mi cc_reload
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_agent_login agentX 0
+opensips-cli -x mi call_center:agent_login agentX 0
 </programlisting>
 	</section>
 
-	<section id="mi_cc_list_queue" xreflabel="cc_list_queue">
+	<section id="mi_list_queue" xreflabel="call_center:list_queue">
 		<title>
-		<function moreinfo="none">cc_list_queue</function>
+		<function moreinfo="none">call_center:list_queue</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_list_queue</emphasis>.
+		</para>
+
 		<para>
 		Command to list all the calls in queuing - for each call, the 
 		following attributes will be printed: the call id, the calling
@@ -1292,14 +1304,18 @@ opensips-cli -x mi cc_agent_login agentX 0
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_list_queue
+opensips-cli -x mi call_center:list_queue
 </programlisting>
 	</section>
 
-	<section id="mi_cc_list_flows" xreflabel="cc_list_flows">
+	<section id="mi_list_flows" xreflabel="call_center:list_flows">
 		<title>
-		<function moreinfo="none">cc_list_flows</function>
+		<function moreinfo="none">call_center:list_flows</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_list_flows</emphasis>.
+		</para>
+
 		<para>
 		Command to list all the flows - for each flow, the 
 		following attributes will be printed: the flow ID, the avg. call 
@@ -1313,14 +1329,18 @@ opensips-cli -x mi cc_list_queue
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_list_flows
+opensips-cli -x mi call_center:list_flows
 </programlisting>
 	</section>
 
-	<section id="mi_cc_list_agents" xreflabel="cc_list_agents">
+	<section id="mi_list_agents" xreflabel="call_center:list_agents">
 		<title>
-		<function moreinfo="none">cc_list_agents</function>
+		<function moreinfo="none">call_center:list_agents</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_list_agents</emphasis>.
+		</para>
+
 		<para>
 		Command to list all the agents - for each agent, the 
 		following attributes will be printed: agent ID, agent login state,
@@ -1333,14 +1353,18 @@ opensips-cli -x mi cc_list_flows
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_list_agents
+opensips-cli -x mi call_center:list_agents
 </programlisting>
 	</section>
 
-	<section id="mi_cc_list_calls" xreflabel="cc_list_calls">
+	<section id="mi_list_calls" xreflabel="call_center:list_calls">
 		<title>
-		<function moreinfo="none">cc_list_calls</function>
+		<function moreinfo="none">call_center:list_calls</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_list_calls</emphasis>.
+		</para>
+
 		<para>
 		Command to list all the ongoing calls - for each call, the 
 		following attributes will be printed: call ID, call state 
@@ -1354,14 +1378,18 @@ opensips-cli -x mi cc_list_agents
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_list_agents
+opensips-cli -x mi call_center:list_agents
 </programlisting>
 	</section>
 
-	<section id="mi_cc_dispatch_call_to_agent" xreflabel="cc_dispatch_call_to_agent">
+	<section id="mi_dispatch_call_to_agent" xreflabel="call_center:dispatch_call_to_agent">
 		<title>
-		<function moreinfo="none">cc_dispatch_call_to_agent</function>
+		<function moreinfo="none">call_center:dispatch_call_to_agent</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_dispatch_call_to_agent</emphasis>.
+		</para>
+
 		<para>
 		This function sends a given call (from the queue) to a given agent. For
 		the operation to succeed, several conditions must be met:
@@ -1389,31 +1417,35 @@ opensips-cli -x mi cc_list_agents
 		<itemizedlist>
 			<listitem><para>
 			<emphasis>call_id</emphasis> - the ID of the call, as provided by
-			the queue listing MI command <xref linkend="mi_cc_list_queue"/>
+			the queue listing MI command <xref linkend="mi_list_queue"/>
 			</para></listitem>
 			<listitem><para>
 			<emphasis>agent_id</emphasis> - the ID of the call, as provided by
-			the agents listing MI command <xref linkend="mi_cc_list_agents"/>
+			the agents listing MI command <xref linkend="mi_list_agents"/>
 			</para></listitem>
 		</itemizedlist>
 		<para>
 		IMPORTANT: in order to be used, you need to be sure that the internal
 		call dispatching is DISABLED via the
 		<xref linkend="param_internal_call_dispatching"/> module parameter
-		or the <xref linkend="mi_cc_internal_call_dispatching"/> MI command.
+		or the <xref linkend="mi_internal_call_dispatching"/> MI command.
 		</para>
 		<para>
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
+opensips-cli -x mi call_center:dispatch_call_to_agent B2B452.dee2.33 agentX
 </programlisting>
 	</section>
 
-	<section id="mi_cc_internal_call_dispatching" xreflabel="cc_internal_call_dispatching">
+	<section id="mi_internal_call_dispatching" xreflabel="call_center:internal_call_dispatching">
 		<title>
-		<function moreinfo="none">cc_internal_call_dispatching</function>
+		<function moreinfo="none">call_center:internal_call_dispatching</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_internal_call_dispatching</emphasis>.
+		</para>
+
 		<para>
 		Command to inspect and/or change the 
 		<xref linkend="param_internal_call_dispatching"/> setting
@@ -1427,15 +1459,19 @@ opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_internal_call_dispatching 0
+opensips-cli -x mi call_center:internal_call_dispatching 0
 </programlisting>
 	</section>
 
 
-	<section id="mi_cc_reset_stats" xreflabel="cc_reset_stats">
+	<section id="mi_reset_stats" xreflabel="call_center:reset_stats">
 		<title>
-		<function moreinfo="none">cc_reset_stats</function>
+		<function moreinfo="none">call_center:reset_stats</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>cc_reset_stats</emphasis>.
+		</para>
+
 		<para>
 		Command to reset all counter-like statistics.
 		</para>
@@ -1446,7 +1482,7 @@ opensips-cli -x mi cc_internal_call_dispatching 0
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensips-cli -x mi cc_reset_stats
+opensips-cli -x mi call_center:reset_stats
 </programlisting>
 	</section>
 
@@ -1540,4 +1576,3 @@ opensips-cli -x mi cc_reset_stats
 
 
 </chapter>
-

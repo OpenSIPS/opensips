@@ -1155,10 +1155,14 @@ if(is_method("REFER") &amp;&amp; !has_totag()) {
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_b2b_trigger_scenario" xreflabel="b2b_trigger_scenario">
+	<section id="mi_trigger_scenario" xreflabel="b2b_logic:trigger_scenario">
 		<title>
-		<function moreinfo="none">b2b_trigger_scenario</function>
+		<function moreinfo="none">b2b_logic:trigger_scenario</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>b2b_trigger_scenario</emphasis>.
+		</para>
+
 		<para>
 		This command initializes a new B2B session where OpenSIPS will start
 		a call from the middle. The initial entities to be connected are
@@ -1166,7 +1170,7 @@ if(is_method("REFER") &amp;&amp; !has_totag()) {
 		can be implemented in the b2b_logic dedicated routes.
 		</para>
 		<para>
-		Name: <emphasis>b2b_trigger_scenario</emphasis>
+		Name: <emphasis>b2b_logic:trigger_scenario</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1204,14 +1208,18 @@ if(is_method("REFER") &amp;&amp; !has_totag()) {
 		MI FIFO Command Format:
 		</para>
 	<programlisting  format="linespecific">
-	opensips-cli -x mi b2b_trigger_scenario marketing client1,sip:bob@opensips.org client2,sip:322@opensips.org:5070 agent_uri=sip:alice@opensips.org
+	opensips-cli -x mi b2b_logic:trigger_scenario marketing client1,sip:bob@opensips.org client2,sip:322@opensips.org:5070 agent_uri=sip:alice@opensips.org
 		</programlisting>
 	</section>
 
-	<section id="mi_b2b_bridge" xreflabel="b2b_bridge">
+	<section id="mi_bridge" xreflabel="b2b_logic:bridge">
 		<title>
-		<function moreinfo="none">b2b_bridge</function>
+		<function moreinfo="none">b2b_logic:bridge</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>b2b_bridge</emphasis>.
+		</para>
+
 		<para>
 			This command can be used by an external application to tell B2BUA to bridge a
 			call party from an on going dialog to another destination. By default the caller
@@ -1219,7 +1227,7 @@ if(is_method("REFER") &amp;&amp; !has_totag()) {
 			the callee if you send 1 as the third parameter.
 		</para>
 		<para>
-		Name: <emphasis>b2b_bridge</emphasis>
+		Name: <emphasis>b2b_logic:bridge</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1246,42 +1254,50 @@ if(is_method("REFER") &amp;&amp; !has_totag()) {
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 	<programlisting  format="linespecific">
-	opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
+	opensips-cli -x mi b2b_logic:bridge 1020.30 sip:alice@opensips.org
 	</programlisting>
 		<para>opensips-cli Command Format:</para>
 	<programlisting  format="linespecific">
-	opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
+	opensips-cli -x mi b2b_logic:bridge 1020.30 sip:alice@opensips.org
 	</programlisting>
 	</section>
 
-	<section id="mi_b2b_list" xreflabel="b2b_list">
+	<section id="mi_list" xreflabel="b2b_logic:list">
 		<title>
-		<function moreinfo="none">b2b_list</function>
+		<function moreinfo="none">b2b_logic:list</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>b2b_list</emphasis>.
+		</para>
+
 		<para>
 			This command can be used to list the internals of b2b_logic entities.
 		</para>
 		<para>
-		Name: <emphasis>b2b_list</emphasis>
+		Name: <emphasis>b2b_logic:list</emphasis>
 		</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<itemizedlist>
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 	<programlisting  format="linespecific">
-	opensips-cli -x mi b2b_list
+	opensips-cli -x mi b2b_logic:list
 	</programlisting>
 	</section>
 
-	<section id="mi_b2b_terminate_call" xreflabel="b2b_terminate_call">
+	<section id="mi_terminate_call" xreflabel="b2b_logic:terminate_call">
 		<title>
-		<function moreinfo="none">b2b_terminate_call</function>
+		<function moreinfo="none">b2b_logic:terminate_call</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>b2b_terminate_call</emphasis>.
+		</para>
+
 		<para>
 			Terminates an ongoing B2B session.
 		</para>
 		<para>
-		Name: <emphasis>b2b_terminate_call</emphasis>
+		Name: <emphasis>b2b_logic:terminate_call</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -1294,7 +1310,7 @@ if(is_method("REFER") &amp;&amp; !has_totag()) {
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 	<programlisting  format="linespecific">
-	opensips-cli -x mi b2b_terminate_call 159.0
+	opensips-cli -x mi b2b_logic:terminate_call 159.0
 	</programlisting>
 	</section>
 

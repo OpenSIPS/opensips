@@ -273,33 +273,41 @@ if (!pike_check_req()) { exit; };
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_pike_list" xreflabel="pike_list">
+	<section id="mi_list" xreflabel="pike:list">
 		<title>
-		<function moreinfo="none">pike_list</function>
+		<function moreinfo="none">pike:list</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>pike_list</emphasis>.
+		</para>
+
 		<para>
 		Lists the nodes in the pike tree.
 		</para>
 		<para>
-		Name: <emphasis>pike_list</emphasis>
+		Name: <emphasis>pike:list</emphasis>
 		</para>
 		<para>Parameters: <emphasis>none</emphasis></para>
  		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi pike_list
+		opensips-cli -x mi pike:list
 		</programlisting>
 	</section>
-	<section id="mi_pike_rm" xreflabel="pike_rm">
+	<section id="mi_rm" xreflabel="pike:rm">
 		<title>
-		<function moreinfo="none">pike_rm</function>
+		<function moreinfo="none">pike:rm</function>
 		</title>
+		<para>
+		Replaces obsolete MI command: <emphasis>pike_rm</emphasis>.
+		</para>
+
 		<para>
                 Remove a node from the pike tree by IP address.
 		</para>
 		<para>
-		Name: <emphasis>pike_rm</emphasis>
+		Name: <emphasis>pike:rm</emphasis>
 		</para>
 		<para>Parameters: </para>
                 <itemizedlist>
@@ -311,7 +319,7 @@ if (!pike_check_req()) { exit; };
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi pike_rm 10.0.0.106
+		opensips-cli -x mi pike:rm 10.0.0.106
 		</programlisting>
 	</section>
 	</section>
