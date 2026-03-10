@@ -48,13 +48,13 @@ struct proto_info protos[PROTO_LAST - PROTO_NONE + 1] = {
 	{ .name = "ws",   .default_rfc_port = 80 },   /* PROTO_WS */
 	{ .name = "wss",  .default_rfc_port = 443 },  /* PROTO_WSS */
 	{ .name = "ipsec",.default_rfc_port = 5062 }, /* PROTO_IPSEC */
-
 	{ .name = "bin",  .default_port = 5555 },     /* PROTO_BIN */
 	{ .name = "bins", .default_port = 5556 },     /* PROTO_BINS */
 	/* populate here for other protos - not necessary right now */
 };
 
 static struct socket_id *cmd_listeners;
+static struct socket_id *bond_socket_ids=NULL;
 
 #define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
 
@@ -179,7 +179,7 @@ int add_listening_socket(struct socket_id *sock)
 	}
 
 	/* convert to socket_info */
-	if (new_sock2list(sock, &protos[proto].listeners) < 0) {
+	if (new_sock2list(sock, NULL, &protos[proto].listeners) < 0) {
 		LM_ERR("cannot add socket to the list\n");
 		return -1;
 	}
@@ -202,6 +202,14 @@ int add_cmd_listening_socket(char *name, int port, int proto)
 	cmd_listeners = tmp;
 
 	return 0;
+}
+
+
+/* add a bond socket_id for a later init */
+void add_bond_socket_id(struct socket_id *sid)
+{
+	sid->next = bond_socket_ids;
+	bond_socket_ids = sid;
 }
 
 
@@ -249,6 +257,11 @@ int fix_all_socket_lists(void)
 			goto error;
 		}
 	}
+
+	/* init the BOND sockets now that we have all the real sockets */
+	if (fix_bond_socket_list(bond_socket_ids) != 0)
+			goto error;
+	bond_socket_ids = NULL;
 
 	if (!found && !testing_framework) {
 		LM_ERR("no listening sockets\n");

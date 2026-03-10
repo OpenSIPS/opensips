@@ -312,7 +312,7 @@ static int proto_ipsec_add_listeners(void)
 		si = socket_info2id(&it->socket_info);
 		si->proto = PROTO_UDP;
 		si->flags |= SI_INTERNAL;
-		udp = new_sock_info(si);
+		udp = new_sock_info(si, NULL);
 		if (!udp) {
 			LM_ERR("could not add UDP listening sucket for %s:%d\n",
 					si->name, si->port);
@@ -322,7 +322,7 @@ static int proto_ipsec_add_listeners(void)
 		si->proto = PROTO_TCP;
 		si->workers = 0;
 		si->flags |= SI_REUSEPORT;
-		tcp = new_sock_info(si);
+		tcp = new_sock_info(si, NULL);
 		if (!tcp) {
 			LM_ERR("could not add TCP listening sucket for %s:%d\n",
 					si->name, si->port);

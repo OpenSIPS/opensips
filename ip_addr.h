@@ -57,9 +57,11 @@
 
 
 enum sip_protos { PROTO_NONE = 0, PROTO_FIRST = 1, PROTO_UDP = 1, \
-	PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_WS, PROTO_WSS, PROTO_IPSEC, PROTO_SIP_LAST = PROTO_IPSEC,
-	PROTO_BIN, PROTO_BINS, PROTO_HEP_UDP, PROTO_HEP_TCP, PROTO_HEP_TLS, PROTO_SMPP, PROTO_MSRP,
-	PROTO_MSRPS, PROTO_OTHER };
+	PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_WS, PROTO_WSS, PROTO_IPSEC,
+	PROTO_SIP_LAST = PROTO_IPSEC,
+	PROTO_BIN, PROTO_BINS, PROTO_HEP_UDP, PROTO_HEP_TCP, PROTO_HEP_TLS,
+	PROTO_SMPP, PROTO_MSRP,
+	PROTO_MSRPS, PROTO_BOND, PROTO_OTHER};
 #define PROTO_LAST PROTO_OTHER
 
 struct ip_addr{
@@ -136,11 +138,17 @@ struct dest_info {
 	const struct socket_info* send_sock;
 };
 
+struct socket_bond_elem {
+	char *name;
+	struct socket_bond_elem *next;
+};
+
 
 struct socket_id {
 	char* name;
 	char* adv_name;
 	char* tag;
+	struct socket_bond_elem *bond_list;
 	char* auto_scaling_profile;
 	int adv_port;
 	int proto;
