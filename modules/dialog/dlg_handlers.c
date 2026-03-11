@@ -123,8 +123,8 @@ int dlg_prepare_prack_headers(struct sip_msg *msg, str *headers, str *out,
 		return -2;
 	}
 
-	out->len = (headers ? headers->len : 0) + 8 + rseq_val.len + 1 +
-		cseq->number.len + 8;
+	out->len = (headers ? headers->len : 0) + strlen("RAck: ") + rseq_val.len + 1 +
+		cseq->number.len + 1 + strlen("INVITE\r\n");
 	out->s = pkg_malloc(out->len + 1);
 	if (!out->s) {
 		LM_ERR("oom while building RAck header\n");
@@ -152,7 +152,6 @@ int dlg_prepare_prack_headers(struct sip_msg *msg, str *headers, str *out,
 
 static void dlg_auto_prack(struct dlg_cell *dlg, struct sip_msg *rpl)
 {
-	static str prack = str_init("PRACK");
 	str extra_hdrs = {0, 0};
 	int rc;
 
@@ -174,7 +173,7 @@ static void dlg_auto_prack(struct dlg_cell *dlg, struct sip_msg *rpl)
 		return;
 	}
 
-	rc = send_indialog_request(dlg, &prack, callee_idx(dlg), NULL, NULL,
+	rc = send_prack_indialog_request(dlg, rpl, callee_idx(dlg), NULL, NULL,
 			&extra_hdrs, NULL, NULL, NULL);
 	pkg_free(extra_hdrs.s);
 	if (rc < 0)
@@ -2407,10 +2406,15 @@ after_unlock5:
 				LM_DBG("dlg_leg_get_cseq(dlg, [%d], req)\n", src_leg);
 				update_val = dlg_leg_get_cseq(dlg, src_leg, req);
 				if (update_val == 0) {
-					if (dlg->legs[dst_leg].last_gen_cseq) {
+					if (str2int(&dlg->legs[src_leg].inv_cseq, &update_val) == 0) {
+						LM_DBG("using INVITE cseq [%d] for ACK on leg [%d]\n",
+							update_val, src_leg);
+					} else if (dlg->legs[dst_leg].last_gen_cseq) {
 						LM_DBG("dlg->legs[%d].last_gen_cseq=[%d]\n",
 							dst_leg, dlg->legs[dst_leg].last_gen_cseq);
 						update_val = dlg->legs[dst_leg].last_gen_cseq;
+					} else {
+						update_val = 0;
 					}
 				}
 				else {

@@ -28,7 +28,10 @@
 #include "../../dprint.h"
 #include "../../config.h"
 #include "../../socket_info.h"
+#include "../../parser/parse_to.h"
 #include "../../parser/parse_methods.h"
+#include "../../parser/parse_rr.h"
+#include "../../parser/contact/parse_contact.h"
 #include "../tm/dlg.h"
 #include "../tm/tm_load.h"
 #include "../../ipc.h"
@@ -204,6 +207,109 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,
 	return td;
 
 error:
+	free_tm_dlg(td);
+	return NULL;
+}
+
+static dlg_t *build_prack_dialog_info(struct dlg_cell *cell, struct sip_msg *rpl,
+		int dst_leg, int src_leg, char *reply_marker)
+{
+	dlg_t *td = NULL;
+	str contact = STR_NULL, rr_set = STR_NULL;
+	unsigned int loc_seq = 0;
+	unsigned int skip_rrs = 0;
+	contact_t *ct = NULL;
+	contact_body_t *parsed_body = NULL;
+
+	if ((!rpl->cseq && parse_headers(rpl, HDR_CSEQ_F, 0) < 0) || !rpl->cseq ||
+			!rpl->cseq->parsed) {
+		LM_ERR("bad provisional reply or missing CSeq hdr\n");
+		return NULL;
+	}
+	if ((!rpl->to && parse_headers(rpl, HDR_TO_F, 0) < 0) || !rpl->to) {
+		LM_ERR("bad provisional reply or missing TO hdr\n");
+		return NULL;
+	}
+	if (str2int(&get_cseq(rpl)->number, &loc_seq) != 0) {
+		LM_ERR("invalid reply cseq\n");
+		return NULL;
+	}
+
+	td = pkg_malloc(sizeof(*td));
+	if (!td) {
+		LM_ERR("out of pkg memory\n");
+		return NULL;
+	}
+	memset(td, 0, sizeof(*td));
+
+	cell->legs[dst_leg].last_gen_cseq = loc_seq + 1;
+	if (reply_marker)
+		*reply_marker = DLG_PING_PENDING;
+
+	td->loc_seq.value = loc_seq;
+	td->loc_seq.is_set = 1;
+
+	if (!rpl->contact &&
+			(parse_headers(rpl, HDR_CONTACT_F, 0) < 0 || !rpl->contact)) {
+		LM_ERR("no contact available in provisional reply\n");
+		goto error;
+	}
+	if (!rpl->contact->parsed) {
+		contact = rpl->contact->body;
+		trim_leading(&contact);
+		if (parse_contacts(&contact, &ct) < 0 || !ct) {
+			LM_ERR("bad Contact hdr in provisional reply\n");
+			goto error;
+		}
+		contact = ct->uri;
+	} else {
+		parsed_body = (contact_body_t *)rpl->contact->parsed;
+		if (parsed_body->star == 1 || !parsed_body->contacts) {
+			LM_ERR("invalid Contact hdr in provisional reply\n");
+			goto error;
+		}
+		contact = parsed_body->contacts->uri;
+	}
+
+	if (parse_headers(rpl, HDR_EOH_F, 0) < 0) {
+		LM_ERR("failed to parse record route headers in provisional reply\n");
+		goto error;
+	}
+	if (rpl->record_route &&
+			print_rr_body(rpl->record_route, &rr_set, 1, 0, &skip_rrs) != 0) {
+		LM_ERR("failed to print route records from provisional reply\n");
+		goto error;
+	}
+	if (rr_set.s && rr_set.len &&
+			parse_rr_body(rr_set.s, rr_set.len, &td->route_set) != 0) {
+		LM_ERR("failed to parse route set from provisional reply\n");
+		goto error;
+	}
+
+	td->rem_target = contact;
+	td->rem_uri = (dst_leg == DLG_CALLER_LEG) ? *dlg_leg_from_uri(cell, dst_leg) :
+			*dlg_leg_to_uri(cell, dst_leg);
+	td->loc_uri = (dst_leg == DLG_CALLER_LEG) ? *dlg_leg_to_uri(cell, dst_leg) :
+			*dlg_leg_from_uri(cell, dst_leg);
+	td->id.call_id = cell->callid;
+	td->id.rem_tag = get_to(rpl)->tag_value;
+	td->id.loc_tag = cell->legs[src_leg].tag;
+	td->state = DLG_CONFIRMED;
+	td->send_sock = rpl->rcv.bind_address ? rpl->rcv.bind_address :
+			cell->legs[dst_leg].bind_addr;
+	td->dialog_ctx = cell;
+
+	if (ct)
+		free_contacts(&ct);
+	if (rr_set.s)
+		pkg_free(rr_set.s);
+	return td;
+
+error:
+	if (ct)
+		free_contacts(&ct);
+	if (rr_set.s)
+		pkg_free(rr_set.s);
 	free_tm_dlg(td);
 	return NULL;
 }
@@ -1012,6 +1118,7 @@ mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
 struct dlg_indialog_req_param {
 	int leg;
 	int is_invite;
+	int is_prack;
 	struct dlg_cell *dlg;
 	indialog_reply_f func;
 	void *param;
@@ -1089,6 +1196,85 @@ int send_indialog_request(struct dlg_cell *dlg, str *method, int dstleg, str *bo
 		return -2;
 	}
 	pkg_free(extra_headers.s);
+	return 0;
+}
+
+int send_prack_indialog_request(struct dlg_cell *dlg, struct sip_msg *rpl,
+		int dstleg, str *body, str *ct, str *hdrs, indialog_reply_f func,
+		void *param, indialog_release_f release)
+{
+	str method = str_init("PRACK");
+	str extra_headers = STR_NULL;
+	struct dlg_indialog_req_param *p = NULL;
+	context_p old_ctx;
+	context_p *new_ctx;
+	dlg_t *dialog_info = NULL;
+	int result;
+
+	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, dstleg), dstleg, ct, hdrs,
+			&extra_headers)) {
+		LM_ERR("could not build extra headers!\n");
+		return -1;
+	}
+
+	dialog_info = build_prack_dialog_info(dlg, rpl, dstleg, other_leg(dlg, dstleg),
+			dlg_has_reinvite_pinging(dlg) ?
+			&dlg->legs[dstleg].reinvite_confirmed :
+			&dlg->legs[dstleg].reply_received);
+	if (!dialog_info) {
+		pkg_free(extra_headers.s);
+		LM_ERR("failed to create PRACK dlg_t\n");
+		return -2;
+	}
+
+	p = shm_malloc(sizeof *p);
+	if (!p) {
+		LM_ERR("oom for allocating params!\n");
+		pkg_free(extra_headers.s);
+		free_tm_dlg(dialog_info);
+		return -1;
+	}
+	memset(p, 0, sizeof *p);
+	p->is_prack = 1;
+	p->dlg = dlg;
+	p->func = func;
+	p->param = param;
+	p->release = release;
+	p->leg = dstleg;
+
+	if (push_new_processing_context(dlg, &old_ctx, &new_ctx, NULL) != 0) {
+		pkg_free(extra_headers.s);
+		free_tm_dlg(dialog_info);
+		shm_free(p);
+		return -1;
+	}
+
+	ctx_lastdstleg_set(dstleg);
+	dialog_info->T_flags = T_NO_AUTOACK_FLAG;
+
+	ref_dlg(dlg, 1);
+	result = d_tmb.t_request_within(&method, &extra_headers, body, dialog_info,
+			dlg_indialog_reply, p, dlg_indialog_reply_release);
+
+	if (current_processing_ctx == NULL)
+		*new_ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, *new_ctx);
+	set_global_context(old_ctx);
+
+	pkg_free(extra_headers.s);
+	free_tm_dlg(dialog_info);
+
+	if (dialog_repl_cluster)
+		replicate_dialog_cseq_updated(dlg, dstleg);
+
+	if (result < 0) {
+		LM_ERR("failed to send the PRACK request\n");
+		unref_dlg(dlg, 1);
+		shm_free(p);
+		return -1;
+	}
+
 	return 0;
 }
 
