@@ -16,6 +16,7 @@ then
   ${SUDO} apt-get install -y docker.io
 fi
 docker run --rm --privileged tonistiigi/binfmt:latest -install all
+docker run --privileged --rm tonistiigi/binfmt --version
 docker run --cidfile /tmp/docker_opensips.cid -d --restart=always \
  --platform linux/${DOCKR_PLATFORM} -v sources:`pwd` "${BUILD_OS}" \
  tail -f /dev/null
