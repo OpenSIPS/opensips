@@ -99,15 +99,24 @@ int dlg_prepare_prack_headers(struct sip_msg *msg, str *headers, str *out,
 
 	if ((!msg->cseq && parse_headers(msg, HDR_CSEQ_F, 0) < 0) || !msg->cseq ||
 			!(cseq = get_cseq(msg))) {
-		LM_ERR("missing or invalid CSeq in provisional reply\n");
+		if (enforce_onreply_route)
+			LM_ERR("missing or invalid CSeq in provisional reply\n");
+		else
+			LM_DBG("manual PRACK: no usable CSeq for RAck auto-generation\n");
 		return -1;
 	}
 	if (cseq->method_id != METHOD_INVITE) {
-		LM_ERR("PRACK can only be generated for provisional INVITE replies\n");
+		if (enforce_onreply_route)
+			LM_ERR("PRACK can only be generated for provisional INVITE replies\n");
+		else
+			LM_DBG("manual PRACK: reply CSeq method is not INVITE, skipping RAck auto-generation\n");
 		return -1;
 	}
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_ERR("failed to parse SIP reply headers\n");
+		if (enforce_onreply_route)
+			LM_ERR("failed to parse SIP reply headers\n");
+		else
+			LM_DBG("manual PRACK: failed to parse reply headers for RAck auto-generation\n");
 		return -1;
 	}
 

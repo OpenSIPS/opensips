@@ -2586,12 +2586,12 @@ static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 		LM_WARN("body without content type! This request might be rejected by uac!\n");
 
 	if (is_prack) {
-		rc = dlg_prepare_prack_headers(msg, headers, &req_headers, 1);
+		rc = dlg_prepare_prack_headers(msg, headers, &req_headers, 0);
 		if (rc < 0)
 			return rc;
 	}
 
-	if (is_prack)
+	if (is_prack && msg && msg->first_line.type == SIP_REPLY)
 		rc = send_prack_indialog_request(dlg, msg,
 				(leg == DLG_CALLER_LEG ? leg : callee_idx(dlg)), body, ct,
 				(req_headers.s ? &req_headers : headers), NULL, NULL, NULL);
