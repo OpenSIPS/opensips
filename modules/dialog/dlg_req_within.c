@@ -230,10 +230,6 @@ static dlg_t *build_prack_dialog_info(struct dlg_cell *cell, struct sip_msg *rpl
 		LM_ERR("bad provisional reply or missing TO hdr\n");
 		return NULL;
 	}
-	if (str2int(&get_cseq(rpl)->number, &loc_seq) != 0) {
-		LM_ERR("invalid reply cseq\n");
-		return NULL;
-	}
 
 	td = pkg_malloc(sizeof(*td));
 	if (!td) {
@@ -242,7 +238,20 @@ static dlg_t *build_prack_dialog_info(struct dlg_cell *cell, struct sip_msg *rpl
 	}
 	memset(td, 0, sizeof(*td));
 
-	cell->legs[dst_leg].last_gen_cseq = loc_seq + 1;
+	loc_seq = cell->legs[dst_leg].last_gen_cseq;
+	if (loc_seq == 0) {
+		if (str2int(&get_cseq(rpl)->number, &loc_seq) != 0) {
+			LM_ERR("invalid reply cseq\n");
+			goto error;
+		}
+		cell->legs[dst_leg].last_gen_cseq = loc_seq + 1;
+		LM_DBG("initializing PRACK cseq to [%d] from reply cseq\n",
+			cell->legs[dst_leg].last_gen_cseq);
+	} else {
+		cell->legs[dst_leg].last_gen_cseq++;
+		LM_DBG("incrementing PRACK cseq to [%d]\n",
+			cell->legs[dst_leg].last_gen_cseq);
+	}
 	if (reply_marker)
 		*reply_marker = DLG_PING_PENDING;
 
