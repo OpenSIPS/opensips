@@ -58,14 +58,19 @@
 #endif
 #include <netinet/udp.h>
 #include <arpa/inet.h>
+#include <string.h>
 
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 #include "../../forward.h"
 #include "../../timer.h"
 #include "../../msg_translator.h"
+#include "../../parser/msg_parser.h"
 #include "../../socket_info.h"
+#include "../../ip_addr.h"
+#include "../../str.h"
 #include "../../mod_fix.h"
+#include "../../resolve.h"
 #include "../../sr_module.h"
 #include "../../lib/csv.h"
 #include "../../parser/parse_uri.h"
@@ -113,6 +118,9 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 
 static int fixup_flags_uac_test(void** param);
 static int fixup_flags_sdp(void** param);
+static int add_contact_alias_0_f(struct sip_msg *, char *, char *);
+static int add_contact_alias_3_f(struct sip_msg *, str *, str *, str *);
+static int handle_ruri_alias_f(struct sip_msg *, char *, char *);
 
 static int nat_uac_test_f(struct sip_msg* msg, void *tests);
 static int fix_nated_contact_f(struct sip_msg* msg, str *params);
@@ -120,6 +128,10 @@ static int fix_nated_sdp_f(struct sip_msg* msg, void *flags, str *ip,
 						str *new_sdp_lines);
 static int fix_nated_register_f(struct sip_msg *, char *, char *);
 static int add_rcv_param_f(struct sip_msg* msg, int *flag);
+static int fixup_add_contact_alias(void **param, int param_no);
+static int fixup_add_contact_alias_ip(void **param);
+static int fixup_add_contact_alias_port(void **param);
+static int fixup_add_contact_alias_proto(void **param);
 static int get_oldip_fields_value(modparam_t type, void* val);
 
 static void nh_timer(unsigned int, void *);
@@ -224,6 +236,18 @@ static const cmd_export_t cmds[] = {
 	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"add_contact_alias",  (cmd_function)add_contact_alias_0_f, {
+		{0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"add_contact_alias",  (cmd_function)add_contact_alias_3_f, {
+		{CMD_PARAM_STR,fixup_add_contact_alias_ip,0},
+		{CMD_PARAM_STR,fixup_add_contact_alias_port,0},
+		{CMD_PARAM_STR,fixup_add_contact_alias_proto,0},
+		{0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"handle_ruri_alias",  (cmd_function)handle_ruri_alias_f, {
+		{0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f, {
 		{CMD_PARAM_STR,fixup_flags_sdp,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
@@ -849,7 +873,31 @@ contact_rport(struct sip_msg* msg)
 	}
 
 	return 0;
+}
 
+static int fixup_add_contact_alias(void **param, int param_no)
+{
+	if (param_no < 1 || param_no > 3) {
+		LM_ERR("invalid parameter number <%d>\n", param_no);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int fixup_add_contact_alias_ip(void **param)
+{
+	return fixup_add_contact_alias(param, 1);
+}
+
+static int fixup_add_contact_alias_port(void **param)
+{
+	return fixup_add_contact_alias(param, 2);
+}
+
+static int fixup_add_contact_alias_proto(void **param)
+{
+	return fixup_add_contact_alias(param, 3);
 }
 
 static str nat_uac_test_flag_names[] =
@@ -1590,8 +1638,424 @@ add_rcv_param_f(struct sip_msg* msg, int *flag)
 	return 1;
 }
 
+#define SALIAS        ";alias="
+#define SALIAS_LEN (sizeof(SALIAS) - 1)
+#define ALIAS         "alias="
+#define ALIAS_LEN  (sizeof(ALIAS) - 1)
 
+static inline void append_str_buf(char **dst, const char *src, int len)
+{
+	memcpy(*dst, src, len);
+	*dst += len;
+}
 
+static inline void append_chr_buf(char **dst, char chr)
+{
+	**dst = chr;
+	(*dst)++;
+}
+
+static int proto_type_from_str(str *proto)
+{
+	int parsed_proto = PROTO_OTHER;
+
+	if (!proto || !proto->s)
+		return PROTO_OTHER;
+
+	if (parse_proto((unsigned char *)proto->s, proto->len, &parsed_proto) < 0)
+		return PROTO_OTHER;
+
+	return parsed_proto;
+}
+
+static int proto_type_to_str(int proto, str *out)
+{
+	char *p;
+
+	p = proto2a(proto);
+	if (p == NULL)
+		return -1;
+
+	out->s = p;
+	out->len = strlen(p);
+
+	return 0;
+}
+
+/*
+ * Adds ;alias=ip~port~proto param to contact uri containing received ip,
+ * port, and transport proto if contact uri ip and port do not match
+ * received ip and port.
+ */
+static int
+add_contact_alias_0_f(struct sip_msg* msg, char* str1, char* str2)
+{
+	int len, param_len, ip_len;
+	contact_t *c;
+	struct lump *anchor;
+	struct sip_uri uri;
+	struct hdr_field *hdr = NULL;
+	struct ip_addr *ip;
+	const char *ip_buf;
+	char *bracket, *lt, *param, *at, *port, *start;
+
+	/* Do nothing if Contact header does not exist */
+	if (!msg->contact) {
+		if (parse_headers(msg, HDR_CONTACT_F, 0) == -1)  {
+			LM_ERR("while parsing headers\n");
+			return -1;
+		}
+		if (!msg->contact) {
+			LM_DBG("no contact header\n");
+			return -1;
+		}
+	}
+	if (get_contact_uri(msg, &uri, &c, &hdr) == -1) {
+		LM_ERR("failed to get contact uri\n");
+		return -1;
+	}
+
+	/* Compare source ip and port against contact uri */
+	if (((ip = str2ip(&(uri.host))) == NULL) &&
+			((ip = str2ip6(&(uri.host))) == NULL)) {
+		LM_DBG("contact uri host is not an ip address\n");
+	} else {
+		if (ip_addr_cmp(ip, &(msg->rcv.src_ip)) &&
+				((msg->rcv.src_port == uri.port_no) ||
+				 ((uri.port.len == 0) && (msg->rcv.src_port == 5060)))) {
+			LM_DBG("no need to add alias param\n");
+			return -1;
+		}
+	}
+
+	/* Check if function has been called already */
+	if ((c->uri.s < msg->buf) || (c->uri.s > (msg->buf + msg->len))) {
+		LM_ERR("you can't call add_contact_alias twice, check your config!\n");
+		return -1;
+	}
+
+	/* Check if Contact URI needs to be enclosed in <>s */
+	lt = param = NULL;
+	bracket = memchr(hdr->body.s, '<', hdr->body.len);
+	if (bracket == NULL) {
+		/* add opening < */
+		lt = (char*)pkg_malloc(1);
+		if (!lt) {
+			LM_ERR("no pkg memory left for lt sign\n");
+			goto err;
+		}
+		*lt = '<';
+		anchor = anchor_lump(msg, hdr->body.s - msg->buf, 0);
+		if (anchor == NULL) {
+			LM_ERR("anchor_lump for beginning of contact body failed\n");
+			goto err;
+		}
+		if (insert_new_lump_before(anchor, lt, 1, 0) == 0) {
+			LM_ERR("insert_new_lump_before for \"<\" failed\n");
+			goto err;
+		}
+	}
+
+	/* Create  ;alias param */
+	param_len = SALIAS_LEN + ((msg->rcv.src_ip.af == AF_INET6) ? 2 : 0)
+			+ IP_ADDR_MAX_STR_SIZE + 1 /* ~ */ + 5 /* port */
+			+ 1 /* ~ */ + 1 /* proto */ + 1 /* > */;
+	param = (char*)pkg_malloc(param_len);
+	if (!param) {
+		LM_ERR("no pkg memory left for alias param\n");
+		goto err;
+	}
+	at = param;
+	/* ip address */
+	append_str_buf(&at, SALIAS, SALIAS_LEN);
+	if (msg->rcv.src_ip.af == AF_INET6)
+		append_chr_buf(&at, '[');
+	ip_buf = ip_addr2a(&(msg->rcv.src_ip));
+	if (ip_buf == NULL) {
+		LM_ERR("failed to copy source ip\n");
+		goto err;
+	}
+	ip_len = strlen(ip_buf);
+	append_str_buf(&at, ip_buf, ip_len);
+	if (msg->rcv.src_ip.af == AF_INET6)
+		append_chr_buf(&at, ']');
+	/* port */
+	append_chr_buf(&at, '~');
+	port = int2str(msg->rcv.src_port, &len);
+	append_str_buf(&at, port, len);
+	/* proto */
+	append_chr_buf(&at, '~');
+	if ((msg->rcv.proto < PROTO_UDP) || (msg->rcv.proto > PROTO_WSS)) {
+		LM_ERR("invalid transport protocol\n");
+		goto err;
+	}
+	append_chr_buf(&at, msg->rcv.proto + '0');
+	/* closing > */
+	if (bracket == NULL) {
+		append_chr_buf(&at, '>');
+	}
+	param_len = at - param;
+
+	/* Add  ;alias param */
+	LM_DBG("adding param <%.*s>\n", param_len, param);
+	if (uri.port.len > 0) {
+		start = uri.port.s + uri.port.len;
+	} else {
+		start = uri.host.s + uri.host.len;
+	}
+	anchor = anchor_lump(msg, start - msg->buf, 0);
+	if (anchor == NULL) {
+		LM_ERR("anchor_lump for ;alias param failed\n");
+		goto err;
+	}
+	if (insert_new_lump_after(anchor, param, param_len, 0) == 0) {
+		LM_ERR("insert_new_lump_after for ;alias param failed\n");
+		goto err;
+	}
+	return 1;
+
+err:
+	if (lt) pkg_free(lt);
+	if (param) pkg_free(param);
+	return -1;
+}
+
+/*
+ * Adds ;alias=ip~port~proto param to contact uri containing ip, port,
+ * and encoded proto given as parameters.
+ */
+static int
+add_contact_alias_3_f(struct sip_msg* msg, str* ip, str* port, str* proto)
+{
+	int param_len, parsed_proto;
+	unsigned int tmp;
+	contact_t *c;
+	struct lump *anchor;
+	struct sip_uri uri;
+	struct hdr_field *hdr = NULL;
+	char *bracket, *lt, *param, *at, *start;
+
+	/* Do nothing if Contact header does not exist */
+	if (!msg->contact) {
+		if (parse_headers(msg, HDR_CONTACT_F, 0) == -1)  {
+			LM_ERR("while parsing headers\n");
+			return -1;
+		}
+		if (!msg->contact) {
+			LM_DBG("no contact header\n");
+			return -1;
+		}
+	}
+	if (get_contact_uri(msg, &uri, &c, &hdr) == -1) {
+		LM_ERR("failed to get contact uri\n");
+		return -1;
+	}
+
+	/* Get and check param values */
+	if (!ip || (ip->len == 0) ||
+			((str2ip(ip) == NULL) && (str2ip6(ip) == NULL))) {
+		LM_ERR("ip param value is not valid IP address\n");
+		return -1;
+	}
+	if (!port || (str2int(port, &tmp) == -1) || (tmp == 0) || (tmp > 65535)) {
+		LM_ERR("port param value is not valid port\n");
+		return -1;
+	}
+	parsed_proto = proto_type_from_str(proto);
+	if (parsed_proto == PROTO_OTHER) {
+		LM_ERR("proto param value is not a known protocol\n");
+		return -1;
+	}
+
+	/* Check if function has been called already */
+	if ((c->uri.s < msg->buf) || (c->uri.s > (msg->buf + msg->len))) {
+		LM_ERR("you can't call alias_contact twice, check your config!\n");
+		return -1;
+	}
+
+	/* Check if Contact URI needs to be enclosed in <>s */
+	lt = param = NULL;
+	bracket = memchr(hdr->body.s, '<', hdr->body.len);
+	if (bracket == NULL) {
+		/* add opening < */
+		lt = (char*)pkg_malloc(1);
+		if (!lt) {
+			LM_ERR("no pkg memory left for lt sign\n");
+			goto err;
+		}
+		*lt = '<';
+		anchor = anchor_lump(msg, hdr->body.s - msg->buf, 0);
+		if (anchor == NULL) {
+			LM_ERR("anchor_lump for beginning of contact body failed\n");
+			goto err;
+		}
+		if (insert_new_lump_before(anchor, lt, 1, 0) == 0) {
+			LM_ERR("insert_new_lump_before for \"<\" failed\n");
+			goto err;
+		}
+	}
+
+	/* Create  ;alias param */
+	param_len = SALIAS_LEN + ip->len + 1 /* ~ */ + port->len + 1 /* ~ */
+			+ 1 /* proto */;
+	if (bracket == NULL)
+		param_len += 1; /* closing > */
+	param = (char*)pkg_malloc(param_len);
+	if (!param) {
+		LM_ERR("no pkg memory left for alias param\n");
+		goto err;
+	}
+	at = param;
+	/* ip address */
+	append_str_buf(&at, SALIAS, SALIAS_LEN);
+	append_str_buf(&at, ip->s, ip->len);
+	/* port */
+	append_chr_buf(&at, '~');
+	append_str_buf(&at, port->s, port->len);
+	/* proto */
+	append_chr_buf(&at, '~');
+	append_chr_buf(&at, parsed_proto + '0');
+	/* closing > */
+	if (bracket == NULL) {
+		append_chr_buf(&at, '>');
+	}
+	param_len = at - param;
+
+	/* Add  ;alias param */
+	LM_DBG("adding param <%.*s>\n", param_len, param);
+	if (uri.port.len > 0) {
+		start = uri.port.s + uri.port.len;
+	} else {
+		start = uri.host.s + uri.host.len;
+	}
+	anchor = anchor_lump(msg, start - msg->buf, 0);
+	if (anchor == NULL) {
+		LM_ERR("anchor_lump for ;alias param failed\n");
+		goto err;
+	}
+	if (insert_new_lump_after(anchor, param, param_len, 0) == 0) {
+		LM_ERR("insert_new_lump_after for ;alias param failed\n");
+		goto err;
+	}
+	return 1;
+
+err:
+	if (lt) pkg_free(lt);
+	if (param) pkg_free(param);
+	return -1;
+}
+
+/*
+ * Checks if r-uri has alias param and if so, removes it and sets $du
+ * based on its value.
+ */
+static int
+handle_ruri_alias_f(struct sip_msg* msg, char* str1, char* str2)
+{
+	str uri, proto;
+	char buf[MAX_URI_SIZE], *val, *sep, *at, *next, *cur_uri, *rest,
+			*port, *trans;
+	unsigned int len, rest_len, val_len, alias_len, proto_type, cur_uri_len,
+			ip_port_len;
+
+	if (parse_sip_msg_uri(msg) < 0) {
+		LM_ERR("while parsing Request-URI\n");
+		return -1;
+	}
+	rest = msg->parsed_uri.params.s;
+	rest_len = msg->parsed_uri.params.len;
+	if (rest_len == 0) {
+		LM_DBG("no params\n");
+		return -1;
+	}
+	while (rest_len >= ALIAS_LEN) {
+		if (strncmp(rest, ALIAS, ALIAS_LEN) == 0) break;
+		sep = memchr(rest, 59 /* ; */, rest_len);
+		if (sep == NULL) {
+			LM_DBG("no alias param\n");
+			return -1;
+		} else {
+			rest_len = rest_len - (sep - rest + 1);
+			rest = sep + 1;
+		}
+	}
+
+	if (rest_len < ALIAS_LEN) {
+		LM_DBG("no alias param\n");
+		return -1;
+	}
+
+	/* set dst uri based on alias param value */
+	val = rest + ALIAS_LEN;
+	val_len = rest_len - ALIAS_LEN;
+	port = memchr(val, 126 /* ~ */, val_len);
+	if (port == NULL) {
+		LM_ERR("no '~' in alias param value\n");
+		return -1;
+	}
+	*(port++) = ':';
+	trans = memchr(port, 126 /* ~ */, val_len - (port - val));
+	if (trans == NULL) {
+		LM_ERR("no second '~' in alias param value\n");
+		return -1;
+	}
+	at = &(buf[0]);
+	append_str_buf(&at, "sip:", 4);
+	ip_port_len = trans - val;
+	alias_len = SALIAS_LEN + ip_port_len + 2 /* ~n */;
+	memcpy(at, val, ip_port_len);
+	at = at + ip_port_len;
+	trans = trans + 1;
+	if ((ip_port_len + 2 > val_len) || (*trans == ';') || (*trans == '?')) {
+		LM_ERR("no proto in alias param\n");
+		return -1;
+	}
+	proto_type = *trans - 48 /* char 0 */;
+	if (proto_type != PROTO_UDP) {
+		if (proto_type_to_str(proto_type, &proto) < 0 || proto.len == 0) {
+			LM_ERR("unknown proto in alias param\n");
+			return -1;
+		}
+		append_str_buf(&at, ";transport=", 11);
+		memcpy(at, proto.s, proto.len);
+		at = at + proto.len;
+	}
+	next = trans + 1;
+	if ((ip_port_len + 2 < val_len) && (*next != ';') && (*next != '?')) {
+		LM_ERR("invalid alias param value\n");
+		return -1;
+	}
+	uri.s = &(buf[0]);
+	uri.len = at - &(buf[0]);
+	LM_DBG("setting dst_uri to <%.*s>\n", uri.len, uri.s);
+	if (set_dst_uri(msg, &uri) == -1) {
+		LM_ERR("failed to set dst uri\n");
+		return -1;
+	}
+
+	/* remove alias param */
+	if (msg->new_uri.s) {
+		cur_uri = msg->new_uri.s;
+		cur_uri_len = msg->new_uri.len;
+	} else {
+		cur_uri = msg->first_line.u.request.uri.s;
+		cur_uri_len = msg->first_line.u.request.uri.len;
+	}
+	at = &(buf[0]);
+	len = rest - 1 /* ; */ - cur_uri;
+	memcpy(at, cur_uri, len);
+	at = at + len;
+	len = cur_uri_len - alias_len - len;
+	memcpy(at, rest + alias_len - 1, len);
+	uri.s = &(buf[0]);
+	uri.len = cur_uri_len - alias_len;
+	LM_DBG("rewriting r-uri to <%.*s>\n", uri.len, uri.s);
+	if (set_ruri(msg, &uri) < 0) {
+		LM_ERR("failed to set r-uri\n");
+		return -1;
+	}
+	return 1;
+}
 
 
 /*
