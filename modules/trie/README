@@ -31,11 +31,11 @@ Trie Module
 
         1.5. Exported MI Functions
 
-              1.5.1. trie_reload
-              1.5.2. trie_reload_status
-              1.5.3. trie_search
-              1.5.4. trie_number_delete
-              1.5.5. trie_number_upsert
+              1.5.1. trie:reload
+              1.5.2. trie:reload_status
+              1.5.3. trie:search
+              1.5.4. trie:number_delete
+              1.5.5. trie:number_upsert
 
         1.6. Installation
 
@@ -64,7 +64,7 @@ Trie Module
    1.5. Set db_partitions_table parameter
    1.6. Set extra_prefix_chars parameter
    1.7. trie_search usage
-   1.8. trie_reload_status usage when use_partitions is 0
+   1.8. trie:reload_status usage when use_partitions is 0
 
 Chapter 1. Admin Guide
 
@@ -102,7 +102,7 @@ modparam("trie", "trie_table", "my_prefix_table")
 1.3.2. no_concurrent_reload (int)
 
    If enabled, the module will not allow do run multiple
-   trie_reload MI commands in parallel (with overlapping) Any new
+   trie:reload MI commands in parallel (with overlapping) Any new
    reload will be rejected (and discarded) while an existing
    reload is in progress.
 
@@ -209,7 +209,9 @@ if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
 
 1.5. Exported MI Functions
 
-1.5.1.  trie_reload
+1.5.1.  trie:reload
+
+   Replaces obsolete MI command: trie_reload.
 
    Command to reload trie rules from database.
      * if use_partition is set to 0 - all routing rules will be
@@ -220,9 +222,11 @@ if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
             partition given as parameter will be reloaded.
 
    MI FIFO Command Format:
-                opensips-cli -x mi trie_reload part_1
+                opensips-cli -x mi trie:reload part_1
 
-1.5.2. trie_reload_status
+1.5.2. trie:reload_status
+
+   Replaces obsolete MI command: trie_reload_status.
 
    Gets the time of the last reload for any partition.
      * if use_partition is set to 0 - the function doesn't receive
@@ -234,11 +238,13 @@ if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
             every partition. Otherwise, the function will list the
             time of the last reload for the given partition.
 
-   Example 1.8. trie_reload_status usage when use_partitions is 0
-$ opensips-cli -x mi trie_reload_status
+   Example 1.8. trie:reload_status usage when use_partitions is 0
+$ opensips-cli -x mi trie:reload_status
 Date:: Tue Aug 12 12:26:00 2014
 
-1.5.3. trie_search
+1.5.3. trie:search
+
+   Replaces obsolete MI command: trie_search.
 
    Tries to match a number in the existing tries loaded from the
    database.
@@ -251,10 +257,12 @@ Date:: Tue Aug 12 12:26:00 2014
           + number - the number to test against
 
    MI FIFO Command Format:
-                opensips-cli -x mi trie_search partition_name=part1 numb
+                opensips-cli -x mi trie:search partition_name=part1 numb
 er=012340987
 
-1.5.4.  trie_number_delete
+1.5.4.  trie:number_delete
+
+   Replaces obsolete MI command: trie_number_delete.
 
    Deletes individual entries in the trie, without reloading all
    of the data
@@ -264,10 +272,12 @@ er=012340987
           + number - the array of numbers to delete
 
    MI FIFO Command Format:
-                opensips-cli -x mi trie_number_delete partition_name=par
+                opensips-cli -x mi trie:number_delete partition_name=par
 t1 number=["012340987","4858345"]
 
-1.5.5.  trie_number_upsert
+1.5.5.  trie:number_upsert
+
+   Replaces obsolete MI command: trie_number_upsert.
 
    Upserts ( insert if not found, update is found ) an array of
    numbers in the trie, without reloading all of the data
@@ -278,7 +288,7 @@ t1 number=["012340987","4858345"]
           + attrs - the array of new attributes for the numbers
 
    MI FIFO Command Format:
-                opensips-cli -x mi trie_number_upsert partition_name=par
+                opensips-cli -x mi trie:number_upsert partition_name=par
 t1 number=["012340987"] attrs=["my_attrs"]
 
 1.6. Installation
@@ -296,7 +306,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu)              28       4      2652      4
-   2. Razvan Crainea (@razvancrainea)    4        2       2        2
+   2. Razvan Crainea (@razvancrainea)    7        5       49       42
    3. Ovidiu Sas (@ovidiusas)            3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -319,9 +329,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Ovidiu Sas (@ovidiusas)         Jan 2026 - Jan 2026
-   2. Vlad Paiu (@vladpaiu)           Dec 2024 - May 2025
-   3. Razvan Crainea (@razvancrainea) Jan 2025 - Jan 2025
+   1. Razvan Crainea (@razvancrainea) Jan 2025 - Mar 2026
+   2. Ovidiu Sas (@ovidiusas)         Jan 2026 - Jan 2026
+   3. Vlad Paiu (@vladpaiu)           Dec 2024 - May 2025
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -330,7 +340,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu).
 
    Documentation Copyrights:
 

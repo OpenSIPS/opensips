@@ -29,10 +29,10 @@ freeswitch_scripting Module
 
         1.5. Exported MI Commands
 
-              1.5.1. fs_subscribe
-              1.5.2. fs_unsubscribe
-              1.5.3. fs_list
-              1.5.4. fs_reload
+              1.5.1. freeswitch_scripting:subscribe
+              1.5.2. freeswitch_scripting:unsubscribe
+              1.5.3. freeswitch_scripting:list
+              1.5.4. freeswitch_scripting:reload
 
         1.6. Exported Events
 
@@ -255,13 +255,15 @@ ponse));
 
 1.5. Exported MI Commands
 
-1.5.1. fs_subscribe
+1.5.1. freeswitch_scripting:subscribe
+
+   Replaces obsolete MI command: fs_subscribe.
 
    Ensures that the given FreeSWITCH ESL socket is subscribed to
    the given list of events. In case an event cannot be subscribed
    to, the freeswitch driver will periodically retry to subscribe
-   to it until an fs_unsubscribe MI command for the respective
-   event is issued.
+   to it until an freeswitch_scripting:unsubscribe MI command for
+   the respective event is issued.
 
    Parameters:
      * freeswitch_url - the ESL interface to connect to. The
@@ -272,7 +274,9 @@ ponse));
      * event - the name of the event to subscribe to
      * ... - (other events)
 
-1.5.2. fs_unsubscribe
+1.5.2. freeswitch_scripting:unsubscribe
+
+   Replaces obsolete MI command: fs_unsubscribe.
 
    Ensures that the given FreeSWITCH ESL socket is unsubscribed
    from the given list of events.
@@ -286,19 +290,24 @@ ponse));
      * event - the name of the event to unsubscribe from
      * ... - (other events)
 
-1.5.3. fs_list
+1.5.3. freeswitch_scripting:list
+
+   Replaces obsolete MI command: fs_list.
 
    Displays the current set of FreeSWITCH ESL sockets and the list
    of events that the module is subscribed to for each socket.
 
-1.5.4. fs_reload
+1.5.4. freeswitch_scripting:reload
+
+   Replaces obsolete MI command: fs_reload.
 
    Replaces the current set* of FreeSWITCH ESL sockets along with
    their respective events with the current data (ESL sockets and
    their events) found in the "freeswitch" table.
 
    * this includes any sockets/events provisioned through
-   fs_subscribe, MI fs_subscribe commands or previous DB data set.
+   fs_subscribe, MI freeswitch_scripting:subscribe commands or
+   previous DB data set.
 
 1.6. Exported Events
 
@@ -323,8 +332,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 49 27 1935 277
-   2. Vlad Patrascu (@rvlad-patrascu) 8 3 137 124
-   3. Razvan Crainea (@razvancrainea) 5 3 3 1
+   2. Razvan Crainea (@razvancrainea) 8 6 42 23
+   3. Vlad Patrascu (@rvlad-patrascu) 8 3 137 124
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 4 2
    5. Maksym Sobolyev (@sobomax) 3 1 4 4
    6. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -349,10 +358,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Dec 2017 - Feb 2024
-   2. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Mar 2020
-   4. Razvan Crainea (@razvancrainea)     May 2019 - Sep 2019
+   1. Razvan Crainea (@razvancrainea)     May 2019 - Mar 2026
+   2. Liviu Chircu (@liviuchircu)         Dec 2017 - Feb 2024
+   3. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Mar 2020
    5. Vlad Patrascu (@rvlad-patrascu)     Jan 2019 - Apr 2019
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
@@ -363,8 +372,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov).
 
    Documentation Copyrights:
 

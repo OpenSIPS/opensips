@@ -19,7 +19,7 @@ TCP Management Module (tcp_mgm)
 
         1.4. Exported MI Functions
 
-              1.4.1. tcp_reload
+              1.4.1. tcp_mgm:reload
 
    2. Contributors
 
@@ -96,7 +96,9 @@ modparam("tcp_mgm", "connect_timeout_col", "connect_to")
 
 1.4. Exported MI Functions
 
-1.4.1.  tcp_reload
+1.4.1.  tcp_mgm:reload
+
+   Replaces obsolete MI command: tcp_reload.
 
    Reload all TCP paths from the tcp_mgm table without disrupting
    ongoing traffic. Note that the reloaded rules will NOT
@@ -106,7 +108,7 @@ modparam("tcp_mgm", "connect_timeout_col", "connect_to")
    Example:
 
 # reload all TCP paths
-$ opensips-cli -x mi tcp_reload
+$ opensips-cli -x mi tcp_mgm:reload
 $ "OK"
 
 Chapter 2. Contributors
@@ -115,9 +117,10 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                 Name             DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu)    21       8      1281      62
-   2. Maksym Sobolyev (@sobomax)     5        3       9        10
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu)        21       8      1281      62
+   2. Maksym Sobolyev (@sobomax)         5        3       9        10
+   3. Razvan Crainea (@razvancrainea)    5        3       9        5
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -138,9 +141,10 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                 Name               Commit Activity
-   1. Maksym Sobolyev (@sobomax)  Feb 2023 - Nov 2023
-   2. Liviu Chircu (@liviuchircu) Apr 2022 - Jul 2022
+                   Name                 Commit Activity
+   1. Razvan Crainea (@razvancrainea) Mar 2026 - Mar 2026
+   2. Maksym Sobolyev (@sobomax)      Feb 2023 - Nov 2023
+   3. Liviu Chircu (@liviuchircu)     Apr 2022 - Jul 2022
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -149,7 +153,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 

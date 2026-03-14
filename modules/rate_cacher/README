@@ -46,16 +46,16 @@ RATE_CACHER Module
 
         1.5. Exported MI Functions
 
-              1.5.1. rc_addVendor
-              1.5.2. rc_deleteVendor
-              1.5.3. rc_reloadVendorRate
-              1.5.4. rc_deleteVendorRate
-              1.5.5. rc_getVendorPrice
-              1.5.6. rc_addClient
-              1.5.7. rc_deleteClient
-              1.5.8. rc_reloadClientRate
-              1.5.9. rc_deleteClientRate
-              1.5.10. rc_getClientPrice
+              1.5.1. rate_cacher:addVendor
+              1.5.2. rate_cacher:deleteVendor
+              1.5.3. rate_cacher:reloadVendorRate
+              1.5.4. rate_cacher:deleteVendorRate
+              1.5.5. rate_cacher:getVendorPrice
+              1.5.6. rate_cacher:addClient
+              1.5.7. rate_cacher:deleteClient
+              1.5.8. rate_cacher:reloadClientRate
+              1.5.9. rate_cacher:deleteClientRate
+              1.5.10. rate_cacher:getClientPrice
 
    2. Contributors
 
@@ -444,38 +444,44 @@ y use $avp(out_vendor_result) , in the provided order\n");
 
 1.5. Exported MI Functions
 
-1.5.1.  rc_addVendor
+1.5.1.  rate_cacher:addVendor
+
+   Replaces obsolete MI command: rc_addVendor.
 
    Adds a new Vendor, without assigning any ratesheet to it.
 
-   Name: rc_addVendor
+   Name: rate_cacher:addVendor
 
    Parameters :
      * vendorName - name of the Vendor to be added
 
    MI FIFO Command Format:
 ## Add a new Vendor
-# opensips-cli -x mi rc_addVendor myNewVendor
+# opensips-cli -x mi rate_cacher:addVendor myNewVendor
 
-1.5.2.  rc_deleteVendor
+1.5.2.  rate_cacher:deleteVendor
+
+   Replaces obsolete MI command: rc_deleteVendor.
 
    Removes a vendor from memory, along with the ratesheet asigned
    with it ( if any )
 
-   Name: rc_deleteVendor
+   Name: rate_cacher:deleteVendor
 
    Parameters :
      * vendorName - name of the Vendor to be deleted
 
    MI FIFO Command Format:
 ## Delete a Vendor
-# opensipss-cli -x mi rc_deleteVendor myNewVendor
+# opensipss-cli -x mi rate_cacher:deleteVendor myNewVendor
 
-1.5.3.  rc_reloadVendorRate
+1.5.3.  rate_cacher:reloadVendorRate
+
+   Replaces obsolete MI command: rc_reloadVendorRate.
 
    Reloads the provided ratesheet and assigns it to the Vendor
 
-   Name: rc_reloadVendorRate
+   Name: rate_cacher:reloadVendorRate
 
    Parameters :
      * vendorName - name of the Vendor
@@ -484,28 +490,32 @@ y use $avp(out_vendor_result) , in the provided order\n");
 
    MI FIFO Command Format:
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_reloadVendorRate myVendor 3
+# opensips-cli -x mi rate_cacher:reloadVendorRate myVendor 3
 
-1.5.4.  rc_deleteVendorRate
+1.5.4.  rate_cacher:deleteVendorRate
+
+   Replaces obsolete MI command: rc_deleteVendorRate.
 
    Deletes the assigned ratesheet from the Vendor
 
-   Name: rc_deleteVendorRate
+   Name: rate_cacher:deleteVendorRate
 
    Parameters :
      * vendorName - name of the Vendor
 
    MI FIFO Command Format:
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_deleteVendorRate myVendor
+# opensips-cli -x mi rate_cacher:deleteVendorRate myVendor
 
-1.5.5.  rc_getVendorPrice
+1.5.5.  rate_cacher:getVendorPrice
+
+   Replaces obsolete MI command: rc_getVendorPrice.
 
    Fetches all the ratesheet information ( destination name,
    price, minimum, increment ) for the provided Vendor and dialled
    number
 
-   Name: rc_getVendorPrice
+   Name: rate_cacher:getVendorPrice
 
    Parameters :
      * vendorName - name of the Vendor
@@ -514,7 +524,8 @@ y use $avp(out_vendor_result) , in the provided order\n");
 
    MI FIFO Command Format:
 ## Query for the price of myVendor for the 4072731825 number
-#/usr/local/bin/opensips-cli -x mi rc_getVendorPrice myVendor 4072731825
+#/usr/local/bin/opensips-cli -x mi rate_cacher:getVendorPrice myVendor 4
+072731825
 {
     "prefix": "40727",
     "destination": "ROMANIA MOBILE VODAFONE",
@@ -524,38 +535,44 @@ y use $avp(out_vendor_result) , in the provided order\n");
     "currency": "USD"
 }
 
-1.5.6.  rc_addClient
+1.5.6.  rate_cacher:addClient
+
+   Replaces obsolete MI command: rc_addClient.
 
    Adds a new Client, without assigning any ratesheet to it.
 
-   Name: rc_addClient
+   Name: rate_cacher:addClient
 
    Parameters :
      * clientName - name of the Client to be added
 
    MI FIFO Command Format:
 ## Add a new Client
-# opensips-cli -x mi fifo rc_addClient myNewClient
+# opensips-cli -x mi fifo rate_cacher:addClient myNewClient
 
-1.5.7.  rc_deleteClient
+1.5.7.  rate_cacher:deleteClient
+
+   Replaces obsolete MI command: rc_deleteClient.
 
    Removes a Client from memory, along with the ratesheet asigned
    with it ( if any )
 
-   Name: rc_deleteClient
+   Name: rate_cacher:deleteClient
 
    Parameters :
      * clientName - name of the Client to be deleted
 
    MI FIFO Command Format:
 ## Delete a Client
-# opensips-cli -x mi rc_deleteClient myClient
+# opensips-cli -x mi rate_cacher:deleteClient myClient
 
-1.5.8.  rc_reloadClientRate
+1.5.8.  rate_cacher:reloadClientRate
+
+   Replaces obsolete MI command: rc_reloadClientRate.
 
    Reloads the provided ratesheet and assigns it to the Client
 
-   Name: rc_reloadClientRate
+   Name: rate_cacher:reloadClientRate
 
    Parameters :
      * clientName - name of the Cient
@@ -566,29 +583,33 @@ y use $avp(out_vendor_result) , in the provided order\n");
 
    MI FIFO Command Format:
 ## Reloads the Client's wholesale Ratesheet, assigning it rate id 3
-# opensips-cli -x mi rc_reloadClientRate myClient 1 3
+# opensips-cli -x mi rate_cacher:reloadClientRate myClient 1 3
 
-1.5.9.  rc_deleteClientRate
+1.5.9.  rate_cacher:deleteClientRate
+
+   Replaces obsolete MI command: rc_deleteClientRate.
 
    Deletes the assigned ratesheet from the Client
 
-   Name: rc_deleteClientRate
+   Name: rate_cacher:deleteClientRate
 
    Parameters :
      * ClientName - name of the Client
      * isWholesale - delete the wholesale or retail ratesheet
 
    MI FIFO Command Format:
-## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_deleteVendorRate myVendor
+## Deletes a Client Ratesheet
+# opensips-cli -x mi rate_cacher:deleteClientRate myClient 1
 
-1.5.10.  rc_getClientPrice
+1.5.10.  rate_cacher:getClientPrice
+
+   Replaces obsolete MI command: rc_getClientPrice.
 
    Fetches all the ratesheet information ( destination name,
    price, minimum, increment ) for the provided Client, on the
    specified quality ( wholesale vs retail ) and dialled number
 
-   Name: rc_getClientPrice
+   Name: rate_cacher:getClientPrice
 
    Parameters :
      * ClientName - name of the Client
@@ -599,8 +620,8 @@ y use $avp(out_vendor_result) , in the provided order\n");
    MI FIFO Command Format:
 ## Query for the price of myClient, on the retail quality, for the 40727
 31825 number
-#/usr/local/bin/opensips-cli -x mi rc_getClientPrice myClient 0 40727318
-25
+#/usr/local/bin/opensips-cli -x mi rate_cacher:getClientPrice myClient 0
+ 4072731825
 {
     "prefix": "40727",
     "destination": "ROMANIA MOBILE VODAFONE",
@@ -619,9 +640,9 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu)              31       3      3167      1
-   2. Maksym Sobolyev (@sobomax)         5        3       18       19
-   3. James Sharp                        5        2      177       52
-   4. Razvan Crainea (@razvancrainea)    4        2       10       7
+   2. Razvan Crainea (@razvancrainea)    8        5      111       68
+   3. Maksym Sobolyev (@sobomax)         5        3       18       19
+   4. James Sharp                        5        2      177       52
    5. Callum                             4        2       3        3
    6. Artiom Druz                        2        1       1        0
 
@@ -645,7 +666,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Jul 2020 - Feb 2026
+   1. Razvan Crainea (@razvancrainea) Jul 2020 - Mar 2026
    2. James Sharp                     Dec 2025 - Dec 2025
    3. Maksym Sobolyev (@sobomax)      Jan 2021 - Feb 2023
    4. Callum                          Nov 2022 - Nov 2022
@@ -659,4 +680,5 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Callum, Vlad Paiu (@vladpaiu).
+   Last edited by: Razvan Crainea (@razvancrainea), Callum, Vlad
+   Paiu (@vladpaiu).

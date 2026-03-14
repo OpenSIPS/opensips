@@ -25,9 +25,9 @@ mqueue Module
 
         1.5. Exported MI Functions
 
-              1.5.1. mq_get_size
-              1.5.2. mq_fetch
-              1.5.3. mq_get_sizes
+              1.5.1. mqueue:get_size
+              1.5.2. mqueue:fetch
+              1.5.3. mqueue:get_sizes
 
         1.6. Exported Pseudo-Variables
 
@@ -59,9 +59,9 @@ mqueue Module
    1.4. mq_fetch usage
    1.5. mq_pv_free usage
    1.6. mq_size usage
-   1.7. mq_get_size usage
-   1.8. mq_fetch usage
-   1.9. mq_get_sizes usage
+   1.7. mqueue:get_size usage
+   1.8. mqueue:fetch usage
+   1.9. mqueue:get_sizes usage
 
 Chapter 1. Admin Guide
 
@@ -206,19 +206,23 @@ xlog("L_INFO", "Size of queue is: $var(q_size)\n");
 
 1.5. Exported MI Functions
 
-1.5.1. mq_get_size
+1.5.1. mqueue:get_size
+
+   Replaces obsolete MI command: mq_get_size.
 
    Get the size of a memory queue.
 
    Parameters:
      * name - the name of memory queue
 
-   Example 1.7. mq_get_size usage
+   Example 1.7. mqueue:get_size usage
 ...
-opensips-cli -x mq_get_size xyz
+opensips-cli -x mqueue:get_size xyz
 ...
 
-1.5.2. mq_fetch
+1.5.2. mqueue:fetch
+
+   Replaces obsolete MI command: mq_fetch.
 
    Fetch one (or up to limit) key-value pair from a memory queue.
 
@@ -227,20 +231,22 @@ opensips-cli -x mq_get_size xyz
      * limit (optional) - if used, an array with up to limit
        records are being returned.
 
-   Example 1.8. mq_fetch usage
+   Example 1.8. mqueue:fetch usage
 ...
-opensips-cli -x mq_fetch xyz
+opensips-cli -x mqueue:fetch xyz
 ...
 
-1.5.3. mq_get_sizes
+1.5.3. mqueue:get_sizes
+
+   Replaces obsolete MI command: mq_get_sizes.
 
    Get the size for all memory queues.
 
    Parameters: none
 
-   Example 1.9. mq_get_sizes usage
+   Example 1.9. mqueue:get_sizes usage
 ...
-opensips-cli -x mq_get_sizes
+opensips-cli -x mqueue:get_sizes
 ...
 
 1.6. Exported Pseudo-Variables
@@ -268,7 +274,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas)            19       2      1843      34
-   2. Razvan Crainea (@razvancrainea)    3        1       75       16
+   2. Razvan Crainea (@razvancrainea)    6        4      105       34
    3. Alexandra Titoc                    3        1       13       9
 
    (1) DevScore = author_commits + author_lines_added /
@@ -291,7 +297,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Feb 2025 - Feb 2025
+   1. Razvan Crainea (@razvancrainea) Feb 2025 - Mar 2026
    2. Alexandra Titoc                 Sep 2024 - Sep 2024
    3. Ovidiu Sas (@ovidiusas)         Feb 2024 - Feb 2024
 

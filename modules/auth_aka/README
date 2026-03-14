@@ -48,10 +48,10 @@ Auth_aka Module
 
         1.7. Exported MI Functions
 
-              1.7.1. aka_av_add
-              1.7.2. aka_av_drop
-              1.7.3. aka_av_drop_all
-              1.7.4. aka_av_fail
+              1.7.1. auth_aka:av_add
+              1.7.2. auth_aka:av_drop
+              1.7.3. auth_aka:av_drop_all
+              1.7.4. auth_aka:av_fail
 
    2. Contributors
 
@@ -87,9 +87,9 @@ Auth_aka Module
    1.14. aka_av_drop usage
    1.15. aka_av_drop_all usage
    1.16. aka_av_fail usage
-   1.17. aka_av_add usage
-   1.18. aka_av_drop usage
-   1.19. aka_av_drop_all usage
+   1.17. auth_aka:av_add usage
+   1.18. auth_aka:av_drop usage
+   1.19. auth_aka:av_drop_all usage
    1.20. aka_av_drop usage
 
 Chapter 1. Admin Guide
@@ -539,7 +539,9 @@ aka_av_fail("sip:test@siphub.com", "test@siphub.com", 3);
 
 1.7. Exported MI Functions
 
-1.7.1. aka_av_add
+1.7.1. auth_aka:av_add
+
+   Replaces obsolete MI command: aka_av_add.
 
    Adds an Authentication Vector through the MI interface.
 
@@ -561,10 +563,10 @@ aka_av_fail("sip:test@siphub.com", "test@siphub.com", 3);
        should be used for. If missing, the AV can be used for any
        AKA algorithm.
 
-   Example 1.17.  aka_av_add usage
+   Example 1.17.  auth_aka:av_add usage
 ...
 ## adds an AKA AV
-$ opensips-cli -x mi aka_av_add \
+$ opensips-cli -x mi auth_aka:av_add \
                                 sip:test@siphub.com
                                 test@siphub.com
                                 KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sI
@@ -574,7 +576,9 @@ JI4=
                                 6151667b9ef815c1dcb87473685f062a
 ...
 
-1.7.2. aka_av_drop
+1.7.2. auth_aka:av_drop
+
+   Replaces obsolete MI command: aka_av_drop.
 
    Invalidates an Authentication Vector of an user identified by
    its authenticate value.
@@ -587,17 +591,19 @@ JI4=
      * authenticate (string) - the authenticate/nonce to indentify
        the authentication vector.
 
-   Example 1.18.  aka_av_drop usage
+   Example 1.18.  auth_aka:av_drop usage
 ...
 ## adds an AKA AV
-$ opensips-cli -x mi aka_av_drop \
+$ opensips-cli -x mi auth_aka:av_drop \
                                 sip:test@siphub.com
                                 test@siphub.com
                                 KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sI
 JI4=
 ...
 
-1.7.3. aka_av_drop_all
+1.7.3. auth_aka:av_drop_all
+
+   Replaces obsolete MI command: aka_av_drop_all.
 
    Invalidates all Authentication Vectors of an user through the
    MI interface.
@@ -608,15 +614,17 @@ JI4=
      * private_identity (string) - the private identity (IMPI) of
        the user to drop authentication vectors for.
 
-   Example 1.19.  aka_av_drop_all usage
+   Example 1.19.  auth_aka:av_drop_all usage
 ...
 ## adds an AKA AV
-$ opensips-cli -x mi aka_av_drop_all \
+$ opensips-cli -x mi auth_aka:av_drop_all \
                                 sip:test@siphub.com
                                 test@siphub.com
 ...
 
-1.7.4. aka_av_fail
+1.7.4. auth_aka:av_fail
+
+   Replaces obsolete MI command: aka_av_fail.
 
    Indicates the fact that the fetching of an authentication
    vector has failed, unlocking the processing of the message.
@@ -651,7 +659,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    54      20      3378     295
+   1. Razvan Crainea (@razvancrainea)    58      23      3420     317
    2. Alexandra Titoc                    4        2       2        2
    3. LarryLaffer-dev                    3        1       26       1
    4. Liviu Chircu (@liviuchircu)        3        1       1        1
@@ -676,7 +684,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Feb 2024 - Jul 2025
+   1. Razvan Crainea (@razvancrainea) Feb 2024 - Mar 2026
    2. LarryLaffer-dev                 Mar 2025 - Mar 2025
    3. Liviu Chircu (@liviuchircu)     Sep 2024 - Sep 2024
    4. Alexandra Titoc                 Sep 2024 - Sep 2024

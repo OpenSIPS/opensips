@@ -41,8 +41,8 @@ STIR/SHAKEN Module
 
         1.6. Exported MI Functions
 
-              1.6.1. stir_shaken_ca_reload
-              1.6.2. stir_shaken_crl_reload
+              1.6.1. stir_shaken:ca_reload
+              1.6.2. stir_shaken:crl_reload
 
    2. Contributors
 
@@ -450,35 +450,39 @@ ity(attest)\n");
 
 1.6. Exported MI Functions
 
-1.6.1.  stir_shaken_ca_reload
+1.6.1.  stir_shaken:ca_reload
+
+   Replaces obsolete MI command: stir_shaken_ca_reload.
 
    Reload the file containing trusted CA certificates for the
    verifier and the directory containing trusted CA certificates
    for the verifier.
 
-   Name: stir_shaken_ca_reload
+   Name: stir_shaken:ca_reload
 
    Parameters: none
 
    MI FIFO Command Format:
 ...
-opensips-cli -x mi stir_shaken_ca_reload
+opensips-cli -x mi stir_shaken:ca_reload
 "OK"
 ...
 
-1.6.2.  stir_shaken_crl_reload
+1.6.2.  stir_shaken:crl_reload
+
+   Replaces obsolete MI command: stir_shaken_crl_reload.
 
    Reload the file containing certificate revocation lists (CRLs)
    for the verifier and the directory containing certificate
    revocation lists for the verifier.
 
-   Name: stir_shaken_crl_reload
+   Name: stir_shaken:crl_reload
 
    Parameters: none
 
    MI FIFO Command Format:
 ...
-opensips-cli -x mi stir_shaken_crl_reload
+opensips-cli -x mi stir_shaken:crl_reload
 "OK"
 ...
 
@@ -492,8 +496,8 @@ Chapter 2. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 59 26 3129 324
    2. Liviu Chircu (@liviuchircu) 28 21 412 169
    3. MonkeyTester 14 9 388 14
-   4. Maksym Sobolyev (@sobomax) 7 5 23 35
-   5. Razvan Crainea (@razvancrainea) 6 4 49 25
+   4. Razvan Crainea (@razvancrainea) 9 7 69 37
+   5. Maksym Sobolyev (@sobomax) 7 5 23 35
    6. Bogdan-Andrei Iancu (@bogdan-iancu) 6 3 47 64
    7. kworm83 4 2 7 2
    8. tcresson 3 1 4 18
@@ -523,9 +527,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2019 - Mar 2026
-   2.  Patrice Fournier                    Nov 2025 - Nov 2025
-   3.  Razvan Crainea (@razvancrainea)     Jan 2021 - May 2025
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2026
+   2.  Liviu Chircu (@liviuchircu)         Nov 2019 - Mar 2026
+   3.  Patrice Fournier                    Nov 2025 - Nov 2025
    4.  MonkeyTester                        Aug 2023 - Aug 2024
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Jul 2024
    6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jun 2024
@@ -544,9 +548,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), MonkeyTester, Vlad Patrascu
-   (@rvlad-patrascu).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   MonkeyTester, Vlad Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:
 

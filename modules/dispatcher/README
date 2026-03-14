@@ -76,10 +76,10 @@ dispatcher Module
 
         1.5. Exported MI Functions
 
-              1.5.1. ds_set_state
-              1.5.2. ds_list
-              1.5.3. ds_reload
-              1.5.4. ds_push_script_attrs
+              1.5.1. dispatcher:set_state
+              1.5.2. dispatcher:list
+              1.5.3. dispatcher:reload
+              1.5.4. dispatcher:push_script_attrs
 
         1.6. Exported Events
 
@@ -1190,12 +1190,14 @@ if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition
 
 1.5. Exported MI Functions
 
-1.5.1.  ds_set_state
+1.5.1.  dispatcher:set_state
+
+   Replaces obsolete MI command: ds_set_state.
 
    Sets the status for a destination address (can be use to mark
    the destination as active or inactive).
 
-   Name: ds_set_state
+   Name: dispatcher:set_state
 
    Parameters:
      * state : state of the destination address
@@ -1208,14 +1210,16 @@ if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition
      * address: address of the destination in the group
 
    MI FIFO Command Format:
-opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
+opensips-cli -x mi dispatcher:set_state a 2 sip:10.0.0.202
 
-1.5.2.  ds_list
+1.5.2.  dispatcher:list
+
+   Replaces obsolete MI command: ds_list.
 
    It lists the groups and included destinations of all the
    partitions.
 
-   Name: ds_list
+   Name: dispatcher:list
 
    Parameters:
      * full (optional) - adds the weight, priority and description
@@ -1224,14 +1228,16 @@ opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
        the provided partition.
 
    MI FIFO Command Format:
-opensips-cli -x mi ds_list
+opensips-cli -x mi dispatcher:list
 
-1.5.3.  ds_reload
+1.5.3.  dispatcher:reload
+
+   Replaces obsolete MI command: ds_reload.
 
    It reloads the groups and included destinations for a specified
    partition or all partitions.
 
-   Name: ds_reload
+   Name: dispatcher:reload
 
    Parameters:
      * partition (optional) - name of the partition to be
@@ -1242,15 +1248,17 @@ opensips-cli -x mi ds_list
           + “y”: inherit state
 
    MI FIFO Command Format:
-opensips-cli -x mi ds_reload
-opensips-cli -x mi ds_reload inherit_state=n
+opensips-cli -x mi dispatcher:reload
+opensips-cli -x mi dispatcher:reload inherit_state=n
 
-1.5.4.  ds_push_script_attrs
+1.5.4.  dispatcher:push_script_attrs
+
+   Replaces obsolete MI command: ds_push_script_attrs.
 
    Pushes script attrs for the dispatcher entry defined by IP,
    Port, setid, and optionally partition.
 
-   Name: ds_push_script_attrs
+   Name: dispatcher:push_script_attrs
 
    Parameters:
      * attrs : new attributes to be pushed
@@ -1261,8 +1269,8 @@ opensips-cli -x mi ds_reload inherit_state=n
        script attributes
 
    MI FIFO Command Format:
-#opensips-cli -x mi ds_push_script_attrs '{"ping":"30000","load":"50"}'
-'192.168.0.107' 5091 1 main
+#opensips-cli -x mi dispatcher:push_script_attrs '{"ping":"30000","load"
+:"50"}' '192.168.0.107' 5091 1 main
 
 1.6. Exported Events
 
@@ -1518,8 +1526,8 @@ Chapter 3. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 172 109 3360 2030
    2. Liviu Chircu (@liviuchircu) 111 72 1711 1441
    3. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
-   4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
-   5. Razvan Crainea (@razvancrainea) 46 37 602 175
+   4. Razvan Crainea (@razvancrainea) 50 40 643 200
+   5. Andrei Datcu (@andrei-datcu) 48 15 2153 846
    6. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
    7. Ovidiu Sas (@ovidiusas) 31 17 705 434
    8. Vlad Patrascu (@rvlad-patrascu) 19 11 378 236
@@ -1558,14 +1566,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jun 2025
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2025
-   3.  Babak Yakhchali                     Feb 2025 - Feb 2025
-   4.  Norman Brandinger (@NormB)          Nov 2024 - Nov 2024
-   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   6.  Vlad Paiu (@vladpaiu)               Mar 2012 - Dec 2023
-   7.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
-   8.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2023
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Mar 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jun 2025
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2025
+   4.  Babak Yakhchali                     Feb 2025 - Feb 2025
+   5.  Norman Brandinger (@NormB)          Nov 2024 - Nov 2024
+   6.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   7.  Vlad Paiu (@vladpaiu)               Mar 2012 - Dec 2023
+   8.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    9.  wangdd                              Apr 2023 - May 2023
    10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
 
@@ -1589,17 +1597,17 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Paiu
-   (@vladpaiu), Razvan Crainea (@razvancrainea), wangdd, Vlad
-   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), John Burke (@john08burke), Roman Sevko, Peter
-   Lemenkov (@lemenkov), Nick Altmann (@nikbyte), Ionel Cerghit
-   (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ovidiu Sas
-   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
-   (@andrei-datcu), Walter Doekes (@wdoekes), Stanislaw Pitucha,
-   Anca Vamanu, Klaus Darilion, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Carsten Bock, Edson Gellert
-   Schubert, Elena-Ramona Modroiu.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Paiu (@vladpaiu), wangdd, Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), John
+   Burke (@john08burke), Roman Sevko, Peter Lemenkov (@lemenkov),
+   Nick Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
+   Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Walter
+   Doekes (@wdoekes), Stanislaw Pitucha, Anca Vamanu, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Carsten Bock, Edson Gellert Schubert, Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

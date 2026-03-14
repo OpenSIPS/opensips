@@ -26,8 +26,8 @@ pike Module
 
         1.6. Exported MI Functions
 
-              1.6.1. pike_list
-              1.6.2. pike_rm
+              1.6.1. pike:list
+              1.6.2. pike:rm
 
         1.7. Exported Events
 
@@ -231,28 +231,32 @@ if (!pike_check_req()) { exit; };
 
 1.6. Exported MI Functions
 
-1.6.1.  pike_list
+1.6.1.  pike:list
+
+   Replaces obsolete MI command: pike_list.
 
    Lists the nodes in the pike tree.
 
-   Name: pike_list
+   Name: pike:list
 
    Parameters: none
 
    MI FIFO Command Format:
-                opensips-cli -x mi pike_list
+                opensips-cli -x mi pike:list
 
-1.6.2.  pike_rm
+1.6.2.  pike:rm
+
+   Replaces obsolete MI command: pike_rm.
 
    Remove a node from the pike tree by IP address.
 
-   Name: pike_rm
+   Name: pike:rm
 
    Parameters:
      * IP - IP address currently blocked.
 
    MI FIFO Command Format:
-                opensips-cli -x mi pike_rm 10.0.0.106
+                opensips-cli -x mi pike:rm 10.0.0.106
 
 1.7. Exported Events
 
@@ -335,8 +339,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 140 59 4217 2675
-   2. Andrei Pelinescu-Onciul 16 8 120 336
-   3. Razvan Crainea (@razvancrainea) 15 13 100 19
+   2. Razvan Crainea (@razvancrainea) 19 16 120 33
+   3. Andrei Pelinescu-Onciul 16 8 120 336
    4. Liviu Chircu (@liviuchircu) 13 10 29 69
    5. Daniel-Constantin Mierla (@miconda) 11 9 24 20
    6. Jan Janak (@janakj) 9 4 386 34
@@ -370,7 +374,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     May 2011 - Mar 2025
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Mar 2026
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - May 2023
    4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
@@ -393,13 +397,13 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Julián
-   Moreno Patiño, Jarrod Baumann (@jarrodb), Norman Brandinger
-   (@NormB), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Elena-Ramona
-   Modroiu, Jan Janak (@janakj).
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Julián Moreno
+   Patiño, Jarrod Baumann (@jarrodb), Norman Brandinger (@NormB),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jesus Rodrigues, Elena-Ramona Modroiu, Jan
+   Janak (@janakj).
 
    Documentation Copyrights:
 

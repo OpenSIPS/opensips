@@ -58,17 +58,17 @@ CLUSTERER Module
 
         1.7. Exported MI Functions
 
-              1.7.1. clusterer_reload
-              1.7.2. clusterer_list
-              1.7.3. clusterer_list_topology
-              1.7.4. clusterer_set_status
-              1.7.5. clusterer_remove_node
-              1.7.6. cluster_send_mi
-              1.7.7. cluster_broadcast_mi
-              1.7.8. clusterer_list_cap
-              1.7.9. clusterer_set_cap_status
-              1.7.10. clusterer_shtag_set_active
-              1.7.11. clusterer_list_shtags
+              1.7.1. clusterer:reload
+              1.7.2. clusterer:list
+              1.7.3. clusterer:list_topology
+              1.7.4. clusterer:set_status
+              1.7.5. clusterer:remove_node
+              1.7.6. clusterer:send_mi
+              1.7.7. clusterer:broadcast_mi
+              1.7.8. clusterer:list_cap
+              1.7.9. clusterer:set_cap_status
+              1.7.10. clusterer:shtag_set_active
+              1.7.11. clusterer:list_shtags
 
         1.8. Exported Script Variables
 
@@ -159,9 +159,9 @@ CLUSTERER Module
    1.29. cluster_send_rpl() usage
    1.30. cluster_broadcast_req() usage
    1.31. cluster_check_addr() usage
-   1.32. clusterer_list usage
-   1.33. clusterer_list_topology usage
-   1.34. clusterer_list_cap usage
+   1.32. clusterer:list usage
+   1.33. clusterer:list_topology usage
+   1.34. clusterer:list_cap usage
    1.35. Example database content - clusterer table
    1.36. Node A configuration
    1.37. Node B configuration
@@ -852,30 +852,34 @@ if (cluster_check_addr(1, $si)) {
 
 1.7. Exported MI Functions
 
-1.7.1.  clusterer_reload
+1.7.1.  clusterer:reload
+
+   Replaces obsolete MI command: clusterer_reload.
 
    Reloads data from the clusterer database. The currently
    established topology will be lost and the node will rediscover
    the new topology.
 
-   Name: clusterer_reload
+   Name: clusterer:reload
 
    Parameters:none
 
    MI FIFO Command Format:
-                opensips-cli -x mi clusterer_reload
+                opensips-cli -x mi clusterer:reload
 
-1.7.2.  clusterer_list
+1.7.2.  clusterer:list
+
+   Replaces obsolete MI command: clusterer_list.
 
    Lists information(node id, URL, link state with that node etc.)
    about the other nodes in each cluster.
 
-   Name: clusterer_list
+   Name: clusterer:list
 
    Parameters:none
 
-   Example 1.32. clusterer_list usage
-$ opensips-cli -x mi clusterer_list
+   Example 1.32. clusterer:list usage
+$ opensips-cli -x mi clusterer:list
 {
     "Clusters": [
         {
@@ -894,7 +898,9 @@ $ opensips-cli -x mi clusterer_list
     ]
 }
 
-1.7.3.  clusterer_list_topology
+1.7.3.  clusterer:list_topology
+
+   Replaces obsolete MI command: clusterer_list_topology.
 
    Lists each cluster's topology from the local node's perspective
    as an adjacency list. A node appears as a neighbour if the link
@@ -904,12 +910,12 @@ $ opensips-cli -x mi clusterer_list
    to the same instance that belongs to different clusters, for
    which it has a different topology.
 
-   Name: clusterer_list_topology
+   Name: clusterer:list_topology
 
    Parameters:none
 
-   Example 1.33. clusterer_list_topology usage
-$ opensips-cli -x mi clusterer_list_topology
+   Example 1.33. clusterer:list_topology usage
+$ opensips-cli -x mi clusterer:list_topology
 {
     "Clusters": [
         {
@@ -932,7 +938,9 @@ $ opensips-cli -x mi clusterer_list_topology
     ]
 }
 
-1.7.4.  clusterer_set_status
+1.7.4.  clusterer:set_status
+
+   Replaces obsolete MI command: clusterer_set_status.
 
    Sets the status(Enabled/Disabled) of a node. If the local
    instance is disabled, the node will not send any messages and
@@ -942,7 +950,7 @@ $ opensips-cli -x mi clusterer_list_topology
    the local instance in terms of sending/receiving any messages,
    as if no longer part of the topology.
 
-   Name: clusterer_set_status
+   Name: clusterer:set_status
 
    Parameters:
      * cluster_id - indicates the id of the cluster.
@@ -953,37 +961,41 @@ $ opensips-cli -x mi clusterer_list_topology
 
    MI FIFO Command Format:
                 #disable the local instance
-                opensips-cli -x mi clusterer_set_status 1 0
+                opensips-cli -x mi clusterer:set_status 1 0
                 #disable node ID 3
-                opensips-cli -x mi clusterer_set_status 1 3 0
+                opensips-cli -x mi clusterer:set_status 1 3 0
 
-1.7.5.  clusterer_remove_node
+1.7.5.  clusterer:remove_node
+
+   Replaces obsolete MI command: clusterer_remove_node.
 
    Removes a node from the cluster's topology. It is enough to run
    the function on a single node in order to remove the target
    node from all the other nodes in the cluster. If the node to be
    removed is running when triggering this function, it will be
    automatically disabled (equivalent to running
-   clusterer_set_status on that specific node).
+   clusterer:set_status on that specific node).
 
    This function can only be used when db_mode is set to 0
    (disabled).
 
-   Name: clusterer_remove_node
+   Name: clusterer:remove_node
 
    Parameters:
      * cluster_id - cluster ID
      * node_id - ID of the node to be removed.
 
    MI FIFO Command Format:
-                opensips-cli -x mi clusterer_remove_node 1 3
+                opensips-cli -x mi clusterer:remove_node 1 3
 
-1.7.6.  cluster_send_mi
+1.7.6.  clusterer:send_mi
+
+   Replaces obsolete MI command: cluster_send_mi.
 
    Dispatches a given MI command to be run on a specific node in
    the cluster.
 
-   Name: cluster_send_mi
+   Name: clusterer:send_mi
 
    Parameters:
      * cluster_id - id of the cluster.
@@ -996,14 +1008,16 @@ $ opensips-cli -x mi clusterer_list_topology
    as parameter values are not currently supported.
 
    MI FIFO Command Format:
-opensips-cli -x mi cluster_send_mi 1 3 lb_reload
+opensips-cli -x mi clusterer:send_mi 1 3 lb_reload
 
-1.7.7.  cluster_broadcast_mi
+1.7.7.  clusterer:broadcast_mi
+
+   Replaces obsolete MI command: cluster_broadcast_mi.
 
    Dispatches a given MI command to be run on all the nodes in a
    cluster. The command is also executed locally.
 
-   Name: cluster_broadcast_mi
+   Name: clusterer:broadcast_mi
 
    Parameters:
      * cluster_id - id of the cluster.
@@ -1015,18 +1029,20 @@ opensips-cli -x mi cluster_send_mi 1 3 lb_reload
    as parameter values are not currently supported.
 
    MI FIFO Command Format:
-opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
+opensips-cli -x mi clusterer:broadcast_mi 1 dr_reload partition_5
 
-1.7.8.  clusterer_list_cap
+1.7.8.  clusterer:list_cap
+
+   Replaces obsolete MI command: clusterer_list_cap.
 
    Lists the registered capabilities and their states.
 
-   Name: clusterer_list_cap
+   Name: clusterer:list_cap
 
    Parameters:none
 
-   Example 1.34. clusterer_list_cap usage
-$ opensips-cli -x mi clusterer_list_cap
+   Example 1.34. clusterer:list_cap usage
+$ opensips-cli -x mi clusterer:list_cap
 {
     "Clusters": [
         {
@@ -1047,7 +1063,9 @@ $ opensips-cli -x mi clusterer_list_cap
     ]
 }
 
-1.7.9.  clusterer_set_cap_status
+1.7.9.  clusterer:set_cap_status
+
+   Replaces obsolete MI command: clusterer_set_cap_status.
 
    Sets the status(Enabled/Disabled) of a capability. If a
    capability is disabled, the node will not send any
@@ -1056,48 +1074,52 @@ $ opensips-cli -x mi clusterer_list_cap
    cabability will transition to a "not synced" state and the node
    will no longer be able to be a donor for syncing.
 
-   Name: clusterer_set_cap_status
+   Name: clusterer:set_cap_status
 
    Parameters:
      * cluster_id - the id of the cluster
      * capability - name of the capability, as listed by
-       clusterer_list_cap
+       clusterer:list_cap
      * status - indicates the new status(0 - Disabled, 1 -
        Enabled).
 
    MI FIFO Command Format:
                 #disable dialog replication in cluster 1
-                opensips-cli -x mi clusterer_set_cap_status 1 dialog-dlg
+                opensips-cli -x mi clusterer:set_cap_status 1 dialog-dlg
 -repl 0
                 #enable dialog profile replication in cluster 2
-                opensips-cli -x mi clusterer_set_cap_status 2 dialog-pro
+                opensips-cli -x mi clusterer:set_cap_status 2 dialog-pro
 f-repl 1
 
-1.7.10. clusterer_shtag_set_active
+1.7.10. clusterer:shtag_set_active
+
+   Replaces obsolete MI command: clusterer_shtag_set_active.
 
    Set the given sharing tag to the active state. The information
    about this change is also broadcasted in the cluster in order
    to force any other node that may be active on this tag to step
    down to backup.
 
-   Name: clusterer_shtag_set_active
+   Name: clusterer:shtag_set_active
 
    Parameters: tag - the name of the tag to be set active and the
    cluster it belogs to, in the format 'tag/cluster_id'.
 
    MI FIFO Command Format:
-                opensips-cli -x mi clusterer_shtag_set_active vip1/3
+                opensips-cli -x mi clusterer:shtag_set_active vip1/3
 
-1.7.11. clusterer_list_shtags
+1.7.11. clusterer:list_shtags
+
+   Replaces obsolete MI command: clusterer_list_shtags.
 
    Lists all known sharing tags and their states.
 
-   Name: clusterer_list_shtags
+   Name: clusterer:list_shtags
 
    Parameters: Command takes no parameters
 
    MI FIFO Command Format:
-                opensips-cli -x mi clusterer_list_shtags
+                opensips-cli -x mi clusterer:list_shtags
 
 1.8. Exported Script Variables
 
@@ -1551,8 +1573,8 @@ Chapter 3. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 366 135 13387 7101
    2. Liviu Chircu (@liviuchircu) 82 58 1445 647
    3. Eseanu Marius Cristian (@eseanucristian) 46 10 3142 534
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 31 16 1342 128
-   5. Razvan Crainea (@razvancrainea) 27 21 327 148
+   4. Razvan Crainea (@razvancrainea) 32 24 455 232
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 31 16 1342 128
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Maksym Sobolyev (@sobomax) 8 6 12 13
    8. Alexandra Titoc 6 4 18 4
@@ -1582,10 +1604,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2025
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
-   3.  Norm Brandinger                     Jun 2025 - Jun 2025
-   4.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
+   1.  Razvan Crainea (@razvancrainea)     Nov 2015 - Mar 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2025
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
+   4.  Norm Brandinger                     Jun 2025 - Jun 2025
    5.  Alexandra Titoc                     Sep 2024 - Sep 2024
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
    7.  Shanee Vanstone                     Mar 2024 - Mar 2024
@@ -1604,11 +1626,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Norm Brandinger,
-   Shanee Vanstone, Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Jasper Hafkenscheid, Fabian Gast
-   (@fgast), Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Norm Brandinger, Shanee Vanstone, Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Jasper
+   Hafkenscheid, Fabian Gast (@fgast), Peter Lemenkov (@lemenkov),
+   Eseanu Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:
 

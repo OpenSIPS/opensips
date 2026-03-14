@@ -75,14 +75,14 @@ usrloc Module
 
         1.7. Exported MI Functions
 
-              1.7.1. ul_rm
-              1.7.2. ul_rm_contact
-              1.7.3. ul_dump
-              1.7.4. ul_flush
-              1.7.5. ul_add
-              1.7.6. ul_show_contact
-              1.7.7. ul_sync
-              1.7.8. ul_cluster_sync
+              1.7.1. usrloc:rm
+              1.7.2. usrloc:rm_contact
+              1.7.3. usrloc:dump
+              1.7.4. usrloc:flush
+              1.7.5. usrloc:add
+              1.7.6. usrloc:show_contact
+              1.7.7. usrloc:sync
+              1.7.8. usrloc:cluster_sync
 
         1.8. Exported Statistics
 
@@ -1177,7 +1177,9 @@ ul_del_key("location", "$tU@$td", "service_route");
 
 1.7. Exported MI Functions
 
-1.7.1.  ul_rm
+1.7.1.  usrloc:rm
+
+   Replaces obsolete MI command: ul_rm.
 
    Deletes an entire AOR record (including its contacts).
 
@@ -1187,7 +1189,9 @@ ul_del_key("location", "$tU@$td", "service_route");
      * aor - user AOR in username[@domain] format (domain must be
        supplied only if use_domain option is on).
 
-1.7.2.  ul_rm_contact
+1.7.2.  usrloc:rm_contact
+
+   Replaces obsolete MI command: ul_rm_contact.
 
    Deletes a contact from an AOR record.
 
@@ -1198,7 +1202,9 @@ ul_del_key("location", "$tU@$td", "service_route");
        supplied only if use_domain option is on).
      * contact - exact contact to be removed
 
-1.7.3.  ul_dump
+1.7.3.  usrloc:dump
+
+   Replaces obsolete MI command: ul_dump.
 
    Dumps the entire content of the USRLOC in memory cache
 
@@ -1207,13 +1213,17 @@ ul_del_key("location", "$tU@$td", "service_route");
        “brief”, a brief dump will be done (only AOR and contacts,
        with no other details)
 
-1.7.4.  ul_flush
+1.7.4.  usrloc:flush
+
+   Replaces obsolete MI command: ul_flush.
 
    Force a flush of all pending usrloc cache changes to the
    database. Normally, this routine runs every timer_interval
    seconds.
 
-1.7.5.  ul_add
+1.7.5.  usrloc:add
+
+   Replaces obsolete MI command: ul_add.
 
    Adds a new contact for an user AOR.
 
@@ -1232,7 +1242,9 @@ ul_del_key("location", "$tU@$td", "service_route");
        32767. For a breakdown of each method's value, see the
        "request_method" internal enum.
 
-1.7.6.  ul_show_contact
+1.7.6.  usrloc:show_contact
+
+   Replaces obsolete MI command: ul_show_contact.
 
    Dumps the contacts of an user AOR.
 
@@ -1241,14 +1253,16 @@ ul_del_key("location", "$tU@$td", "service_route");
      * aor - user AOR in username[@domain] format (domain must be
        supplied only if use_domain option is on).
 
-1.7.7.  ul_sync
+1.7.7.  usrloc:sync
+
+   Replaces obsolete MI command: ul_sync.
 
    Empty the location table, then synchronize it with all contacts
    from memory. Note that this can not be used when no database is
    specified or with the DB-Only scheme.
 
    Important: make sure that all your contacts are in memory
-   (ul_dump MI function) before executing this command.
+   (usrloc:dump MI function) before executing this command.
 
    Parameters:
      * table name - table where the AOR resides (Ex: location).
@@ -1256,7 +1270,9 @@ ul_del_key("location", "$tU@$td", "service_route");
        whole table. Format: "username[@domain]" (domain is
        required only if use_domain option is on).
 
-1.7.8.  ul_cluster_sync
+1.7.8.  usrloc:cluster_sync
+
+   Replaces obsolete MI command: ul_cluster_sync.
 
    This command will only take effect if the target OpenSIPS
    instance is paired with a hot backup instance, while running
@@ -1683,8 +1699,8 @@ Chapter 3. Contributors
    4. Vlad Patrascu (@rvlad-patrascu) 43 25 794 661
    5. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    6. Daniel-Constantin Mierla (@miconda) 40 29 544 308
-   7. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
-   8. Razvan Crainea (@razvancrainea) 34 25 429 266
+   7. Razvan Crainea (@razvancrainea) 38 28 494 300
+   8. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
    9. Henning Westerholt (@henningw) 21 11 462 356
    10. Maksym Sobolyev (@sobomax) 19 13 347 162
 
@@ -1723,8 +1739,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2026
-   2.  Razvan Crainea (@razvancrainea)     Jul 2011 - Feb 2026
+   1.  Razvan Crainea (@razvancrainea)     Jul 2011 - Mar 2026
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2026
    3.  Norman Brandinger (@NormB)          Aug 2006 - May 2025
    4.  Gang Zhuo                           Nov 2024 - Nov 2024
    5.  Alexandra Titoc                     Sep 2024 - Sep 2024

@@ -26,8 +26,8 @@ imc Module
 
         1.5. Exported MI Functions
 
-              1.5.1. imc_list_rooms
-              1.5.2. imc_list_members
+              1.5.1. imc:list_rooms
+              1.5.2. imc:list_members
 
         1.6. Exported Statistics
 
@@ -192,28 +192,32 @@ if(is_method("MESSAGE)
 
 1.5. Exported MI Functions
 
-1.5.1.  imc_list_rooms
+1.5.1.  imc:list_rooms
+
+   Replaces obsolete MI command: imc_list_rooms.
 
    Lists of the IM Conferencing rooms.
 
-   Name: imc_list_rooms
+   Name: imc:list_rooms
 
    Parameters: none
 
    MI FIFO Command Format:
-                opensips-cli -x mi imc_list_rooms
+                opensips-cli -x mi imc:list_rooms
 
-1.5.2.  imc_list_members
+1.5.2.  imc:list_members
+
+   Replaces obsolete MI command: imc_list_members.
 
    Listing of the members in IM Conferencing rooms.
 
-   Name: imc_list_members
+   Name: imc:list_members
 
    Parameters:
      * room : the room for which you want to list the members
 
    MI FIFO Command Format:
-                opensips-cli -x mi imc_list_members sip:chat-000@opensip
+                opensips-cli -x mi imc:list_members sip:chat-000@opensip
 s.org
 
 1.6. Exported Statistics
@@ -321,7 +325,7 @@ Chapter 2. Contributors
    1. Daniel-Constantin Mierla (@miconda) 43 12 1604 1007
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 42 29 308 548
    3. Anca Vamanu 32 5 3014 16
-   4. Razvan Crainea (@razvancrainea) 19 17 36 42
+   4. Razvan Crainea (@razvancrainea) 22 20 56 54
    5. Liviu Chircu (@liviuchircu) 15 12 39 66
    6. Henning Westerholt (@henningw) 10 7 76 105
    7. Vlad Patrascu (@rvlad-patrascu) 9 6 75 80
@@ -353,7 +357,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2026
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
    2.  Alexandra Titoc                     Sep 2024 - Sep 2024
    3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021

@@ -36,13 +36,13 @@ UAC Registrant Module
         1.4. Exported Functions
         1.5. Exported MI Functions
 
-              1.5.1. reg_list
-              1.5.2. reg_reload
-              1.5.3. reg_enable
-              1.5.4. reg_disable
-              1.5.5. reg_force_register
-              1.5.6. reg_upsert
-              1.5.7. reg_delete
+              1.5.1. uac_registrant:list
+              1.5.2. uac_registrant:reload
+              1.5.3. uac_registrant:enable
+              1.5.4. uac_registrant:disable
+              1.5.5. uac_registrant:force_register
+              1.5.6. uac_registrant:upsert
+              1.5.7. uac_registrant:delete
 
         1.6. Exported Events
 
@@ -121,7 +121,7 @@ Chapter 1. Admin Guide
    and buckets will be checked one by one every 2s (8/4=2).
 
    Each registrant has it's own state. Registrant's status can be
-   inspected via "reg_list" MI comand.
+   inspected via "uac_registrant:list" MI command.
 
    UAC registrant states:
      * 0 - NOT_REGISTERED_STATE - the initial state (no REGISTER
@@ -437,11 +437,13 @@ modparam("uac_registrant", "reregister_expiry_percentage", 90)
 
 1.5. Exported MI Functions
 
-1.5.1. reg_list
+1.5.1. uac_registrant:list
+
+   Replaces obsolete MI command: reg_list.
 
    Lists the registrant records and their status.
 
-   Name: reg_list
+   Name: uac_registrant:list
 
    Parameters:
      * aor (optional) - URI defining the address of record. If
@@ -455,16 +457,18 @@ modparam("uac_registrant", "reregister_expiry_percentage", 90)
        required and only a specific record will be listed.
 
    MI FIFO Command Format:
-opensips-cli -x mi reg_list
+opensips-cli -x mi uac_registrant:list
 ...
-opensips-cli -x mi reg_list sip:alice@opensips.org  sip:alice@127.0.0.1:
-5060 sip:opensips.org
+opensips-cli -x mi uac_registrant:list sip:alice@opensips.org  sip:alice
+@127.0.0.1:5060 sip:opensips.org
 
-1.5.2. reg_reload
+1.5.2. uac_registrant:reload
+
+   Replaces obsolete MI command: reg_reload.
 
    Reloads the registrant records from the database.
 
-   Name: reg_reload
+   Name: uac_registrant:reload
 
    Parameters: none
      * aor (optional) - URI defining the address of record. If
@@ -478,18 +482,20 @@ opensips-cli -x mi reg_list sip:alice@opensips.org  sip:alice@127.0.0.1:
        required and only a specific record will be reloaded.
 
    MI FIFO Command Format:
-opensips-cli -x mi reg_reload
+opensips-cli -x mi uac_registrant:reload
 ...
 opensips-cli -x mi reg_leload sip:alice@opensips.org  sip:alice@127.0.0.
 1:5060 sip:opensips.org
 
-1.5.3. reg_enable
+1.5.3. uac_registrant:enable
+
+   Replaces obsolete MI command: reg_enable.
 
    Enables a specific registrant. OpenSIPS will immediately send a
    REGISTER if the registrant was previously disabled and will
    update the state in the database.
 
-   Name: reg_enable
+   Name: uac_registrant:enable
 
    Parameters: none
      * aor - URI defining the address of record.
@@ -497,16 +503,18 @@ opensips-cli -x mi reg_leload sip:alice@opensips.org  sip:alice@127.0.0.
      * registrar - URI pointing to the remote registrar.
 
    MI FIFO Command Format:
-opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.
-1:5060 sip:opensips.org
+opensips-cli -x mi uac_registrant:enable sip:alice@opensips.org  sip:ali
+ce@127.0.0.1:5060 sip:opensips.org
 
-1.5.4. reg_disable
+1.5.4. uac_registrant:disable
+
+   Replaces obsolete MI command: reg_disable.
 
    Disables a specific registrant. OpenSIPS will immediately send
    an unREGISTER if the registrant was previously enabled and will
    update the state in the database.
 
-   Name: reg_disable
+   Name: uac_registrant:disable
 
    Parameters: none
      * aor - URI defining the address of record. If provided,
@@ -520,16 +528,18 @@ opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.
        only a specific record will be disabled.
 
    MI FIFO Command Format:
-opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0
-.1:5060 sip:opensips.org
+opensips-cli -x mi uac_registrant:disable sip:alice@opensips.org  sip:al
+ice@127.0.0.1:5060 sip:opensips.org
 
-1.5.5. reg_force_register
+1.5.5. uac_registrant:force_register
+
+   Replaces obsolete MI command: reg_force_register.
 
    Forces the re-registration (or registation) of a specific
    registrant (depending on its state). Note that the registrant
    must be enabled.
 
-   Name: reg_force_register
+   Name: uac_registrant:force_register
 
    Parameters:
      * aor - URI defining the address of record. If provided,
@@ -543,16 +553,18 @@ opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0
        only a specific record will be forced to re-register.
 
    MI FIFO Command Format:
-opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@
-127.0.0.1:5060 sip:opensips.org
+opensips-cli -x mi uac_registrant:force_register sip:alice@opensips.org
+ sip:alice@127.0.0.1:5060 sip:opensips.org
 
-1.5.6. reg_upsert
+1.5.6. uac_registrant:upsert
+
+   Replaces obsolete MI command: reg_upsert.
 
    Inserts or updates the in-memory contents of the
    AOR/Contact/Registrar. No Database queries are done when
    calling this MI command, all parameters are passed via MI
 
-   Name: reg_upsert
+   Name: uac_registrant:upsert
 
    Parameters:
      * aor - URI defining the address
@@ -571,18 +583,20 @@ opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@
      * state - 0 for enabled, 1 for disabled
 
    MI FIFO Command Format:
-opensips-cli -x mi reg_upsert aor=sip:vlad@test.com contact=sip:test@loc
-alhost registrar=sip:127.0.0.1:5061 proxy="" third_party_registrant="" u
-sername="vlad" password="1234" binding_params="" expiry=60 forced_socket
-="" cluster_shtag="" state=0
+opensips-cli -x mi uac_registrant:upsert aor=sip:vlad@test.com contact=s
+ip:test@localhost registrar=sip:127.0.0.1:5061 proxy="" third_party_regi
+strant="" username="vlad" password="1234" binding_params="" expiry=60 fo
+rced_socket="" cluster_shtag="" state=0
 
-1.5.7. reg_delete
+1.5.7. uac_registrant:delete
+
+   Replaces obsolete MI command: reg_delete.
 
    Deletes the in-memory contents of the AOR/Contact/Registrar. No
    Database queries are done when calling this MI command, all
    parameters are passed via MI
 
-   Name: reg_delete
+   Name: uac_registrant:delete
 
    Parameters:
      * aor - URI defining the address
@@ -590,8 +604,8 @@ sername="vlad" password="1234" binding_params="" expiry=60 forced_socket
      * registrar - URI pointing to the remote registrar
 
    MI FIFO Command Format:
-opensips-cli -x mi reg_delete aor=sip:vlad@test.com contact=sip:test@loc
-alhost registrar=sip:127.0.0.1:5061
+opensips-cli -x mi uac_registrant:delete aor=sip:vlad@test.com contact=s
+ip:test@localhost registrar=sip:127.0.0.1:5061
 
 1.6. Exported Events
 
@@ -745,8 +759,8 @@ Chapter 2. Contributors
    2. Vlad Paiu (@vladpaiu) 25 10 1258 240
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 21 15 523 50
    4. Liviu Chircu (@liviuchircu) 17 14 57 68
-   5. Vlad Patrascu (@rvlad-patrascu) 16 7 732 118
-   6. Razvan Crainea (@razvancrainea) 12 10 27 38
+   5. Razvan Crainea (@razvancrainea) 16 13 99 82
+   6. Vlad Patrascu (@rvlad-patrascu) 16 7 732 118
    7. Nick Altmann (@nikbyte) 5 3 43 4
    8. Maksym Sobolyev (@sobomax) 5 3 20 16
    9. James Stanley 4 2 21 14
@@ -775,7 +789,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2026
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Feb 2026
    3.  Vlad Paiu (@vladpaiu)               Jul 2011 - Jan 2026
    4.  Nick Altmann (@nikbyte)             Nov 2015 - Mar 2025

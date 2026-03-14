@@ -58,7 +58,7 @@ SipCapture Module
 
         1.7. MI Commands
 
-              1.7.1. sip_capture
+              1.7.1. sipcapture:capture
 
         1.8. Database setup
         1.9. Limitation
@@ -123,11 +123,12 @@ Chapter 1. Admin Guide
        added. See hep_set() for more details. If you want more
        information about hep protocol check this link.
 
-   The capturing can be turned on/off using fifo commad.
+   The capturing can be turned on/off using MI command
+   “sipcapture:capture”.
 
-   opensips-cli -x mi sip_capture on
+   opensips-cli -x mi sipcapture:capture on
 
-   opensips-cli -x mi sip_capture off
+   opensips-cli -x mi sipcapture:capture off
 
 1.2. Dependencies
 
@@ -705,9 +706,11 @@ route[capture_resume] {
 
 1.7. MI Commands
 
-1.7.1.  sip_capture
+1.7.1.  sipcapture:capture
 
-   Name: sip_capture
+   Replaces obsolete MI command: sip_capture.
+
+   Name: sipcapture:capture
 
    Parameters:
      * capture_mode (optional) - turns on/off SIP message
@@ -719,7 +722,7 @@ route[capture_resume] {
        “off” ) without changing anything.
 
    MI FIFO Command Format:
-                opensips-cli -x mi sip_capture off
+                opensips-cli -x mi sipcapture:capture off
 
 1.8. Database setup
 
@@ -753,7 +756,7 @@ Chapter 2. Contributors
    1. Ionut Ionita (@ionutrazvanionita) 203 45 5927 6525
    2. Liviu Chircu (@liviuchircu) 45 24 477 933
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 202 180
-   4. Razvan Crainea (@razvancrainea) 24 21 86 64
+   4. Razvan Crainea (@razvancrainea) 27 24 99 76
    5. Alexandr Dubovikov (@adubovikov) 22 2 2360 0
    6. Vlad Patrascu (@rvlad-patrascu) 9 7 73 54
    7. Maksym Sobolyev (@sobomax) 8 6 19 16
@@ -785,12 +788,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   3.  Bence Szigeti                       Jul 2023 - Aug 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - May 2023
-   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2021
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4.  Bence Szigeti                       Jul 2023 - Aug 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - May 2023
    7.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
    8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -807,9 +810,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Zero King (@l2dy), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Ionut Ionita
+   Last edited by: Razvan Crainea (@razvancrainea), Zero King
+   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
    (@adubovikov).
 

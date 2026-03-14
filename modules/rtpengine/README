@@ -88,9 +88,9 @@ rtpengine Module
 
         1.8. Exported MI Functions
 
-              1.8.1. rtpengine_enable
-              1.8.2. rtpengine_show
-              1.8.3. rtpengine_reload
+              1.8.1. rtpengine:enable
+              1.8.2. rtpengine:show
+              1.8.3. rtpengine:reload
               1.8.4. teardown
 
         1.9. Exported Events
@@ -162,9 +162,9 @@ rtpengine Module
    1.41. $rtpstat Usage
    1.42. $rtpstat(STAT)
    1.43. $rtpquery Usage
-   1.44. rtpengine_enable usage
-   1.45. rtpengine_show usage
-   1.46. rtpengine_reload usage
+   1.44. rtpengine:enable usage
+   1.45. rtpengine:show usage
+   1.46. rtpengine:reload usage
    1.47. teardown usage
 
 Chapter 1. Admin Guide
@@ -1268,15 +1268,17 @@ pstat(MOS-min-at)[$ft])\r\n");
 
 1.8. Exported MI Functions
 
-1.8.1. rtpengine_enable
+1.8.1. rtpengine:enable
+
+   Replaces obsolete MI command: rtpengine_enable.
 
    Enables/disables a RTP proxy.
 
    Parameters:
      * url - the RTP proxy url (exactly as defined in the config
        file).
-     * enable - 1 - enable, 0 - disable the RTP proxy, 2 - put the
-       RTP node in probing mode.
+     * rtpengine:enable - 1 - enable, 0 - disable the RTP proxy, 2
+       - put the RTP node in probing mode.
      * setid (optional) the set ID of the nodes to be updated. If
        provided, only nodes in the provided set will be updated.
 
@@ -1284,28 +1286,32 @@ pstat(MOS-min-at)[$ft])\r\n");
    different set), all of its instances will be enabled/disabled
    IF no set ID is provided.
 
-   Example 1.44.  rtpengine_enable usage
+   Example 1.44.  rtpengine:enable usage
 ...
 ## disable all rtpengines by URL
-$ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
+$ opensips-cli -x mi rtpengine:enable udp:192.168.2.133:8081 0
 ## enable rtpengine by URL and set ID (3)
-$ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=
+$ opensips-cli -x mi rtpengine:enable url=udp:192.168.2.133:8081 enable=
 1 setid=3
 ...
 
-1.8.2. rtpengine_show
+1.8.2. rtpengine:show
+
+   Replaces obsolete MI command: rtpengine_show.
 
    Displays all the RTP proxies and their information: set and
    status (disabled or not, weight and recheck_ticks).
 
    No parameter.
 
-   Example 1.45.  rtpengine_show usage
+   Example 1.45.  rtpengine:show usage
 ...
-$ opensips-cli -x mi rtpengine_show
+$ opensips-cli -x mi rtpengine:show
 ...
 
-1.8.3. rtpengine_reload
+1.8.3. rtpengine:reload
+
+   Replaces obsolete MI command: rtpengine_reload.
 
    Reloads all rtpengine sets from the database. Used only when
    the “db_url” parameter is set.
@@ -1319,10 +1325,10 @@ $ opensips-cli -x mi rtpengine_show
 
    No parameter.
 
-   Example 1.46.  rtpengine_reload usage
+   Example 1.46.  rtpengine:reload usage
 ...
-$ opensips-cli -x mi rtpengine_reload
-$ opensips-cli -x mi rtpengine_reload type=soft
+$ opensips-cli -x mi rtpengine:reload
+$ opensips-cli -x mi rtpengine:reload type=soft
 ...
 
 1.8.4. teardown
@@ -1448,7 +1454,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 248 140 6467 3160
+   1. Razvan Crainea (@razvancrainea) 251 143 6501 3182
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173
@@ -1485,7 +1491,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Razvan Crainea (@razvancrainea) Jun 2014 - Aug 2025
+   1.  Razvan Crainea (@razvancrainea) Jun 2014 - Mar 2026
    2.  Steven Ayre                     Jul 2025 - Jul 2025
    3.  Norm Brandinger                 May 2025 - May 2025
    4.  Norman Brandinger (@NormB)      Jun 2024 - Feb 2025

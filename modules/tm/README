@@ -102,10 +102,10 @@ tm Module
 
         1.6. Exported MI Functions
 
-              1.6.1. t_uac_dlg
-              1.6.2. t_uac_cancel
-              1.6.3. t_hash
-              1.6.4. t_reply
+              1.6.1. tm:uac_dlg
+              1.6.2. tm:uac_cancel
+              1.6.3. tm:hash
+              1.6.4. tm:reply
 
         1.7. Exported Statistics
 
@@ -1719,7 +1719,9 @@ _in(ip):$socket_in(port)\r\n");
 
 1.6. Exported MI Functions
 
-1.6.1.  t_uac_dlg
+1.6.1.  tm:uac_dlg
+
+   Replaces obsolete MI command: t_uac_dlg.
 
    Generates and sends a local SIP request.
 
@@ -1736,11 +1738,13 @@ _in(ip):$socket_in(port)\r\n");
        “Content-Type” and “Content-length” headers)
 
    MI FIFO Command Format:
-                opensips-cli -x mi t_uac_dlg method=INVITE ruri="sip:ali
-ce@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip:
-alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
+                opensips-cli -x mi tm:uac_dlg method=INVITE ruri="sip:al
+ice@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip
+:alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
 
-1.6.2.  t_uac_cancel
+1.6.2.  tm:uac_cancel
+
+   Replaces obsolete MI command: t_uac_cancel.
 
    Generates and sends a CANCEL for an existing SIP request.
 
@@ -1749,10 +1753,12 @@ alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
      * cseq - cseq of the INVITE request to be cancelled.
 
    MI FIFO Command Format:
-                opensips-cli -x mi t_uac_cancel "1-23454@127.0.0.1" "1 I
-NVITE"
+                opensips-cli -x mi tm:uac_cancel "1-23454@127.0.0.1" "1
+INVITE"
 
-1.6.3.  t_hash
+1.6.3.  tm:hash
+
+   Replaces obsolete MI command: t_hash.
 
    Gets information about the load of TM internal hash table.
 
@@ -1760,9 +1766,11 @@ NVITE"
      * none
 
    MI FIFO Command Format:
-                opensips-cli -x mi t_hash
+                opensips-cli -x mi tm:hash
 
-1.6.4.  t_reply
+1.6.4.  tm:reply
+
+   Replaces obsolete MI command: t_reply.
 
    Generates and sends a reply for an existing inbound SIP
    transaction.
@@ -1779,8 +1787,8 @@ NVITE"
        “Content-Type” and “Content-length” headers)
 
    MI FIFO Command Format:
-                opensips-cli -x mi t_reply 403 Forbidden 46961:127968763
-7 abcde .
+                opensips-cli -x mi tm:reply 403 Forbidden 46961:12796876
+37 abcde .
 
 1.7. Exported Statistics
 
@@ -1908,10 +1916,10 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1130 649 23371 17197
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1131 650 23372 17197
    2. Jiri Kuthan (@jiriatipteldotorg) 541 198 18723 11167
    3. Jan Janak (@janakj) 162 76 6462 1840
-   4. Razvan Crainea (@razvancrainea) 149 116 2099 890
+   4. Razvan Crainea (@razvancrainea) 153 119 2136 913
    5. Andrei Pelinescu-Onciul 146 105 2447 1210
    6. Liviu Chircu (@liviuchircu) 119 91 1319 946
    7. Vlad Paiu (@vladpaiu) 48 35 714 345
@@ -1955,8 +1963,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Feb 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Feb 2026
+   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Mar 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Mar 2026
    3.  Norman Brandinger (@NormB)          Feb 2026 - Feb 2026
    4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jan 2026
    5.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2025
@@ -1989,16 +1997,16 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Carsten Bock, Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Fabian Gast
-   (@fgast), Alexey Vasilyev (@vasilevalex), Peter Lemenkov
-   (@lemenkov), Nick Altmann (@nikbyte), Ovidiu Sas (@ovidiusas),
-   Vlad Paiu (@vladpaiu), Anca Vamanu, Henning Westerholt
-   (@henningw), Klaus Darilion, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Dan
-   Pascu (@danpascu), Juha Heinanen (@juha-h), Elena-Ramona
-   Modroiu, Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Carsten
+   Bock, Vlad Patrascu (@rvlad-patrascu), Fabian Gast (@fgast),
+   Alexey Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov),
+   Nick Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
+   (@vladpaiu), Anca Vamanu, Henning Westerholt (@henningw), Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Juha
+   Heinanen (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj),
+   Jiri Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 

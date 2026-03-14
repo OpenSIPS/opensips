@@ -128,21 +128,21 @@ dialog Module
 
         1.9. Exported MI Functions
 
-              1.9.1. dlg_list
-              1.9.2. dlg_list_ctx
-              1.9.3. dlg_end_dlg
+              1.9.1. dialog:list
+              1.9.2. dialog:list_ctx
+              1.9.3. dialog:end_dlg
               1.9.4. profile_get_size
               1.9.5. profile_list_dlgs
               1.9.6. profile_get_values
               1.9.7. profile_end_dlgs
-              1.9.8. dlg_db_sync
-              1.9.9. dlg_cluster_sync
-              1.9.10. dlg_restore_db
+              1.9.8. dialog:db_sync
+              1.9.9. dialog:cluster_sync
+              1.9.10. dialog:restore_db
               1.9.11. list_all_profiles
-              1.9.12. dlg_push_var
-              1.9.13. dlg_send_sequential
-              1.9.14. set_dlg_profile
-              1.9.15. unset_dlg_profile
+              1.9.12. dialog:push_var
+              1.9.13. dialog:send_sequential
+              1.9.14. dialog:set_profile
+              1.9.15. dialog:unset_profile
 
         1.10. Exported Pseudo-Variables
 
@@ -2020,7 +2020,9 @@ each in-dialog request
 
 1.9. Exported MI Functions
 
-1.9.1.  dlg_list
+1.9.1.  dialog:list
+
+   Replaces obsolete MI command: dlg_list.
 
    Lists the description of the dialogs (calls). If no parameter
    is given, all dialogs will be listed. If a dialog identifier is
@@ -2029,7 +2031,7 @@ each in-dialog request
    list only a number of "counter" dialogs starting with index (as
    offset) - this is used to get only section of dialogs.
 
-   Name: dlg_list
+   Name: dialog:list
 
    Parameters (with dialog idetification):
      * callid (optional) - callid if a single dialog to be listed.
@@ -2044,30 +2046,34 @@ each in-dialog request
 
    MI FIFO Command Format:
                 ## list all ongoing dialogs
-                opensips-cli -x mi dlg_list
+                opensips-cli -x mi dialog:list
                 ## list the dialog by callid and From TAG
-                opensips-cli -x mi dlg_list callid=abcdrssfrs122444@192.
-168.1.1 from_tag=AAdfeEFF33
+                opensips-cli -x mi dialog:list callid=abcdrssfrs122444@1
+92.168.1.1 from_tag=AAdfeEFF33
                 ## list 10 dialogs, starting from the position 40
                 ## (in the list of all ongoing dialogs)
-                opensips-cli -x mi dlg_list index=40 counter=10
+                opensips-cli -x mi dialog:list index=40 counter=10
 
-1.9.2. dlg_list_ctx
+1.9.2. dialog:list_ctx
 
-   The same as the “dlg_list” but including in the dialog
+   Replaces obsolete MI command: dlg_list_ctx.
+
+   The same as the “dialog:list” but including in the dialog
    description the associated context from modules sitting on top
    of the dialog module. This function also prints the dialog's
    values. In case of binary values, the non-printable chars are
    represented in hex (e.g. \x00)
 
-   Name: dlg_list_ctx
+   Name: dialog:list_ctx
 
-   Parameters: see “dlg_list”
+   Parameters: see “dialog:list”
 
    MI FIFO Command Format:
-                opensips-cli -x mi dlg_list_ctx
+                opensips-cli -x mi dialog:list_ctx
 
-1.9.3. dlg_end_dlg
+1.9.3. dialog:end_dlg
+
+   Replaces obsolete MI command: dlg_end_dlg.
 
    Terminates an ongoing dialog. If dialog is established, BYEs
    are sent in both directions. If dialog is in unconfirmed or
@@ -2075,23 +2081,24 @@ each in-dialog request
    will trigger a 487 from the callee, which, when relayed, will
    also end the dialog on the caller's side.
 
-   Name: dlg_end_dlg
+   Name: dialog:end_dlg
 
    Parameters are:
      * dialog_id - this is an identifier of the dialog - it can be
        either (1) the unique ID of the dialog (as provided by
-       dlg_list), either (2) the SIP Call-ID of the dialog.
+       dialog:list), either (2) the SIP Call-ID of the dialog.
      * extra_hdrs - (optional) string containg the extra headers
        (full format) to be added to the BYE requests.
 
-   The "dialog_id" value can be get via the "dlg_list" MI command.
+   The "dialog_id" value can be get via the "dialog:list" MI
+   command.
 
    MI FIFO Command Format:
                 # terminate the dialog via the internal Dialog-ID
-                opensips-cli -x mi dlg_end_dlg 6ae.4b38d013
+                opensips-cli -x mi dialog:end_dlg 6ae.4b38d013
                 # terminate the dialog via its SIP Call-ID
-                opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZ
-GIwZjAzNGM1ZDY
+                opensips-cli -x mi dialog:end_dlg Y2IwYjQ2YmE2ZDg5MWVkND
+NkZGIwZjAzNGM1ZDY
 
 1.9.4. profile_get_size
 
@@ -2152,7 +2159,7 @@ GIwZjAzNGM1ZDY
 
    Terminate all ongoing dialogs from a specified profile, on a
    single dialog it performs the same operations as the command
-   dlg_end_dlg
+   dialog:end_dlg
 
    Name: profile_end_dlgs
 
@@ -2165,7 +2172,9 @@ GIwZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensips-cli -x mi profile_end_dlgs inboundCalls
 
-1.9.8. dlg_db_sync
+1.9.8. dialog:db_sync
+
+   Replaces obsolete MI command: dlg_db_sync.
 
    Will load all the information about the dialogs from the
    database in the OpenSIPS internal memory. If a dialog is
@@ -2173,14 +2182,16 @@ GIwZjAzNGM1ZDY
    will be updated with the values from DB. Otherwise, the newer
    in-memory version will not be changed.
 
-   Name: dlg_db_sync
+   Name: dialog:db_sync
 
    It takes no parameters
 
    MI FIFO Command Format:
-                opensips-cli -x mi dlg_db_sync
+                opensips-cli -x mi dialog:db_sync
 
-1.9.9. dlg_cluster_sync
+1.9.9. dialog:cluster_sync
+
+   Replaces obsolete MI command: dlg_cluster_sync.
 
    This command will only take effect if dialog replication is
    enabled.
@@ -2192,27 +2203,29 @@ GIwZjAzNGM1ZDY
    specified in order to sync only dialogs marked with that
    sharing tag.
 
-   Name: dlg_cluster_sync
+   Name: dialog:cluster_sync
 
    Parameters:
      * sharing_tag - name of the sharing tag that dialogs have to
        be marked with in order to be synced
 
    MI FIFO Command Format:
-                opensips-cli -x mi dlg_cluster_sync vip1
+                opensips-cli -x mi dialog:cluster_sync vip1
 
-1.9.10. dlg_restore_db
+1.9.10. dialog:restore_db
+
+   Replaces obsolete MI command: dlg_restore_db.
 
    Restores the dialog table after a potential desynchronization
    event. The table is truncated, then populated with CONFIRMED
    dialogs from memory.
 
-   Name: dlg_restore_db
+   Name: dialog:restore_db
 
    It takes no parameters
 
    MI FIFO Command Format:
-                opensips-cli -x mi dlg_restore_db
+                opensips-cli -x mi dialog:restore_db
 
 1.9.11. list_all_profiles
 
@@ -2226,12 +2239,14 @@ GIwZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensips-cli -x mi list_all_profiles
 
-1.9.12. dlg_push_var
+1.9.12. dialog:push_var
+
+   Replaces obsolete MI command: dlg_push_var.
 
    Push or update a dialog value for the given list of dialog IDs
    / Call-IDs.
 
-   Name: dlg_push_var
+   Name: dialog:push_var
 
    Parameters: It takes 3 or more parameters
      * dlg_val_name - name of the dialog value that needs to be
@@ -2241,14 +2256,16 @@ GIwZjAzNGM1ZDY
        actual Call-ID.
 
    MI FIFO Command Format:
-                opensips-cli -x mi dlg_push_var var_name var_value DID1
-[ DID2 DID3 ...  DIDN ]
+                opensips-cli -x mi dialog:push_var var_name var_value DI
+D1 [ DID2 DID3 ...  DIDN ]
 
-1.9.13. dlg_send_sequential
+1.9.13. dialog:send_sequential
+
+   Replaces obsolete MI command: dlg_send_sequential.
 
    Sends a sequential request within an ongoing dialog.
 
-   Name: dlg_send_sequential
+   Name: dialog:send_sequential
 
    Parameters:
      * callid - the callid of the dialog you need to trigger the
@@ -2305,18 +2322,18 @@ GIwZjAzNGM1ZDY
    or normal mode.
 
    MI Command Format:
-                        opensips-cli -x mi dlg_send_sequential \
+                        opensips-cli -x mi dialog:send_sequential \
                                 callid=5291231-testing@127.0.0.1
 
    MI Command used to trigger media re-negotiation:
-                        opensips-cli -x mi dlg_send_sequential \
+                        opensips-cli -x mi dialog:send_sequential \
                                 callid=5291231-testing@127.0.0.1 \
                                 mode=challenge \
                                 body=inbound
 
    MI Command used to UPDATE the callee's remote Contact after a
    server failover:
-                        opensips-cli -x mi dlg_send_sequential \
+                        opensips-cli -x mi dialog:send_sequential \
                                 callid=5291231-testing@127.0.0.1 \
                                 mode=challenge-callee \
                                 body=outbound \
@@ -2324,7 +2341,7 @@ GIwZjAzNGM1ZDY
 
    MI Command used to send REFER to the callee, and add Refer-To
    header:
-                        opensips-cli -x mi dlg_send_sequential \
+                        opensips-cli -x mi dialog:send_sequential \
                                 callid=usR8FlGOSMfCTAIHebHCOQ.. \
                                 method=REFER \
                                 body=none \
@@ -2332,13 +2349,15 @@ GIwZjAzNGM1ZDY
                                 headers='Refer-To: sip:user@domain:50060
 '
 
-1.9.14. set_dlg_profile
+1.9.14. dialog:set_profile
+
+   Replaces obsolete MI command: set_dlg_profile.
 
    Set the dialog identified by dialog ID / Call-ID into the given
    profile ( with optional value and clearing of the old profile
    values )
 
-   Name: set_dlg_profile
+   Name: dialog:set_profile
 
    Parameters: It takes 2-4 parameters
      * dlg_id - dialog ID or Call-ID for the respective dialog
@@ -2348,16 +2367,17 @@ GIwZjAzNGM1ZDY
        profile before setting the new one
 
    MI FIFO Command Format:
-                opensips-cli -x mi set_dlg_profile DID my_profile my_val
-ue 1
+                opensips-cli -x mi dialog:set_profile dlg_id=DID profile
+=my_profile value=my_value clear_values=1
 
-1.9.15. unset_dlg_profile
+1.9.15. dialog:unset_profile
+
+   Replaces obsolete MI command: unset_dlg_profile.
 
    Unsets the dialog identified by dialog ID / Call-ID from the
-   given profile ( with optional value and clearing of the old
-   profile values )
+   given profile (with optional value).
 
-   Name: set_dlg_profile
+   Name: dialog:unset_profile
 
    Parameters: It takes 2-3 parameters
      * dlg_id - dialog ID or Call-ID for the respective dialog
@@ -2367,8 +2387,8 @@ ue 1
        clear all values of the given profile.
 
    MI FIFO Command Format:
-                opensips-cli -x mi unset_dlg_profile DID my_profile my_v
-alue
+                opensips-cli -x mi dialog:unset_profile dlg_id=DID profi
+le=my_profile value=my_value
 
 1.10. Exported Pseudo-Variables
 
@@ -2427,8 +2447,8 @@ alue
 
    Returns the id of the dialog corresponding to the processed
    sequential request. The output format is a string identical to
-   the one returned by the dlg_list MI function. This PV will be
-   available only for sequential requests, after doing
+   the one returned by the dialog:list MI function. This PV will
+   be available only for sequential requests, after doing
    loose_route().
 
    NULL will be returned if there is no dialog for the request.
@@ -2479,7 +2499,7 @@ alue
 1.10.10. $DLG_json
 
    The variable is read-only and exposes a JSON variable
-   containing all the information that the dlg_list MI function
+   containing all the information that the dialog:list MI function
    contains
 
    NULL will be returned if there is no dialog for the request,
@@ -2488,7 +2508,7 @@ alue
 1.10.11. $DLG_ctx_json
 
    The variable is read-only and exposes a JSON variable
-   containing all the information that the dlg_list_ctx MI
+   containing all the information that the dialog:list_ctx MI
    function contains ( on top of $DLG_json, this will expose the
    full list of dialog vars and profile links for the current
    dialog )
@@ -2650,7 +2670,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 463 291 13385 3561
-   2. Razvan Crainea (@razvancrainea) 301 224 5515 1811
+   2. Razvan Crainea (@razvancrainea) 307 227 5633 1893
    3. Vlad Paiu (@vladpaiu) 262 149 7467 3027
    4. Vlad Patrascu (@rvlad-patrascu) 200 104 4330 3514
    5. Liviu Chircu (@liviuchircu) 183 133 3128 1374
@@ -2695,8 +2715,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Feb 2026
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2025
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Feb 2026
    3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
    4.  Alexandra Titoc                     Sep 2024 - Sep 2024
    5.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024

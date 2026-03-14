@@ -66,13 +66,13 @@ carrierroute
 
         1.5. Exported MI Functions
 
-              1.5.1. cr_reload_routes
-              1.5.2. cr_dump_routes
-              1.5.3. cr_replace_host
-              1.5.4. cr_deactivate_host
-              1.5.5. cr_activate_host
-              1.5.6. cr_add_host
-              1.5.7. cr_delete_host
+              1.5.1. carrierroute:reload_routes
+              1.5.2. carrierroute:dump_routes
+              1.5.3. carrierroute:replace_host
+              1.5.4. carrierroute:deactivate_host
+              1.5.5. carrierroute:activate_host
+              1.5.6. carrierroute:add_host
+              1.5.7. carrierroute:delete_host
 
         1.6. Examples
         1.7. Installation and Running
@@ -134,11 +134,11 @@ carrierroute
    1.35. Set failure_mask_column parameter
    1.36. Set failure_next_domain_column parameter
    1.37. Set failure_comment_column parameter
-   1.38. cr_replace_host usage
-   1.39. cr_deactivate_host usage
-   1.40. cr_activate_host usage
-   1.41. cr_add_host usage
-   1.42. cr_delete_host usage
+   1.38. carrierroute:replace_host usage
+   1.39. carrierroute:deactivate_host usage
+   1.40. carrierroute:activate_host usage
+   1.41. carrierroute:add_host usage
+   1.42. carrierroute:delete_host usage
    1.43. Configuration example - Routing to default tree
    1.44. Configuration example - Routing to user tree
    1.45. Configuration example - module configuration
@@ -379,8 +379,8 @@ modparam("carrierroute", "strip_column", "strip")
 1.3.12. comment_column (string)
 
    Name of the column containing an optional comment (useful in
-   large routing tables) The comment is also displayed by the fifo
-   cmd "cr_dump_routes".
+   large routing tables) The comment is also displayed by the MI
+   command “carrierroute:dump_routes”.
 
    Default value is “description”.
 
@@ -832,7 +832,9 @@ reply_code, dst_avp)
    can be wildcarded by * (but only * and not things like "-d
    prox*").
 
-1.5.1. cr_reload_routes
+1.5.1. carrierroute:reload_routes
+
+   Replaces obsolete MI command: cr_reload_routes.
 
    This command reloads the routing data from the data source.
 
@@ -844,11 +846,15 @@ reply_code, dst_avp)
    internally from the server. Modifying of already existing
    domains is no problem.
 
-1.5.2. cr_dump_routes
+1.5.2. carrierroute:dump_routes
+
+   Replaces obsolete MI command: cr_dump_routes.
 
    This command prints the route rules on the command line.
 
-1.5.3. cr_replace_host
+1.5.3. carrierroute:replace_host
+
+   Replaces obsolete MI command: cr_replace_host.
 
    This command can replace the rewrite_host of a route rule, it
    is only usable in file mode. Following options are possible:
@@ -859,12 +865,15 @@ reply_code, dst_avp)
 
    Use the "null" prefix to specify an empty prefix.
 
-   Example 1.38. cr_replace_host usage
+   Example 1.38. carrierroute:replace_host usage
 ...
-opensips-cli -x mi cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
+opensips-cli -x mi carrierroute:replace_host "-d proxy -p 49 -h proxy1 -
+t proxy2"
 ...
 
-1.5.4. cr_deactivate_host
+1.5.4. carrierroute:deactivate_host
+
+   Replaces obsolete MI command: cr_deactivate_host.
 
    This command deactivates the specified host, i.e. it sets its
    status to 0. It is only usable in file mode. Following options
@@ -881,12 +890,15 @@ opensips-cli -x mi cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 
    Use the "null" prefix to specify an empty prefix.
 
-   Example 1.39. cr_deactivate_host usage
+   Example 1.39. carrierroute:deactivate_host usage
 ...
-opensips-cli -x mi cr_deactivate_host "-d proxy -p 49 -h proxy1"
+opensips-cli -x mi carrierroute:deactivate_host "-d proxy -p 49 -h proxy
+1"
 ...
 
-1.5.5. cr_activate_host
+1.5.5. carrierroute:activate_host
+
+   Replaces obsolete MI command: cr_activate_host.
 
    This command activates the specified host, i.e. it sets its
    status to 1. It is only usable in file mode. Following options
@@ -897,12 +909,14 @@ opensips-cli -x mi cr_deactivate_host "-d proxy -p 49 -h proxy1"
 
    Use the "null" prefix to specify an empty prefix.
 
-   Example 1.40. cr_activate_host usage
+   Example 1.40. carrierroute:activate_host usage
 ...
-opensips-cli -x mi cr_activate_host "-d proxy -p 49 -h proxy1"
+opensips-cli -x mi carrierroute:activate_host "-d proxy -p 49 -h proxy1"
 ...
 
-1.5.6. cr_add_host
+1.5.6. carrierroute:add_host
+
+   Replaces obsolete MI command: cr_add_host.
 
    This command adds a route rule, it is only usable in file mode.
    Following options are possible:
@@ -917,12 +931,15 @@ opensips-cli -x mi cr_activate_host "-d proxy -p 49 -h proxy1"
 
    Use the "null" prefix to specify an empty prefix.
 
-   Example 1.41. cr_add_host usage
+   Example 1.41. carrierroute:add_host usage
 ...
-opensips-cli -x mi cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensips-cli -x mi carrierroute:add_host "-d proxy -p 49 -h proxy1 -w 0.
+25"
 ...
 
-1.5.7. cr_delete_host
+1.5.7. carrierroute:delete_host
+
+   Replaces obsolete MI command: cr_delete_host.
 
    This command delete the specified hosts or rules, i.e. remove
    them from the route tree. It is only usable in file mode.
@@ -938,9 +955,10 @@ opensips-cli -x mi cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 
    Use the "null" prefix to specify an empty prefix.
 
-   Example 1.42. cr_delete_host usage
+   Example 1.42. carrierroute:delete_host usage
 ...
-opensips-cli -x mi cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensips-cli -x mi carrierroute:delete_host "-d proxy -p 49 -h proxy1 -w
+ 0.25"
 ...
 
 1.6. Examples
@@ -1224,7 +1242,7 @@ Chapter 2. Contributors
    2. Jonas Appel 54 1 6240 0
    3. Hardy Kahl 49 3 2713 1360
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 131 154
-   5. Razvan Crainea (@razvancrainea) 23 20 109 108
+   5. Razvan Crainea (@razvancrainea) 28 23 177 148
    6. Vlad Patrascu (@rvlad-patrascu) 22 5 384 764
    7. Liviu Chircu (@liviuchircu) 19 13 134 210
    8. Daniel-Constantin Mierla (@miconda) 9 7 34 30
@@ -1257,12 +1275,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   5.  ihsinme                             Feb 2022 - Feb 2022
-   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2026
+   2.  Ken Rice                            Sep 2025 - Sep 2025
+   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   5.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   6.  ihsinme                             Feb 2022 - Feb 2022
    7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    9.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019
@@ -1281,8 +1299,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Julián Moreno
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Julián Moreno
    Patiño, Bogdan-Andrei Iancu (@bogdan-iancu), Henning Westerholt
    (@henningw), Iouri Kharon, Hardy Kahl, Daniel-Constantin Mierla
    (@miconda), Edson Gellert Schubert, Carsten Bock, Jonas Appel.

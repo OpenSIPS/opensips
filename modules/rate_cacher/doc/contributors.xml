@@ -28,6 +28,14 @@
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">8</entry>
+		<entry align="center">5</entry>
+		<entry align="center">111</entry>
+		<entry align="center">68</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">5</entry>
 		<entry align="center">3</entry>
@@ -35,20 +43,12 @@
 		<entry align="center">19</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>James Sharp</entry>
 		<entry align="center">5</entry>
 		<entry align="center">2</entry>
 		<entry align="center">177</entry>
 		<entry align="center">52</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">10</entry>
-		<entry align="center">7</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -97,7 +97,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jul 2020 - Feb 2026</entry>
+		<entry align="center">Jul 2020 - Mar 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -138,7 +138,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Callum, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Callum, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
 </section>
 
 </chapter>

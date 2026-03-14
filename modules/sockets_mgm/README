@@ -31,8 +31,8 @@ Dynamic Sockets Management Module
 
         1.6. Exported MI Functions
 
-              1.6.1. sockets_reload
-              1.6.2. sockets_list
+              1.6.1. sockets_mgm:reload
+              1.6.2. sockets_mgm:list
 
    2. Contributors
 
@@ -72,10 +72,10 @@ Chapter 1. Admin Guide
    runtime.
 
    The module caches the entire table sockets and only adjusts the
-   dynamic socket list after a reload using the sockets_reload MI
-   command.
+   dynamic socket list after a reload using the sockets_mgm:reload
+   MI command.
 
-   The sockets_list MI command. can be used to show all the
+   The sockets_mgm:list MI command. can be used to show all the
    dynamic sockets OpenSIPS is listening on.
 
 1.2. Sockets
@@ -257,23 +257,27 @@ modparam("sockets_mgm", "max_sockets", 2000)
 
 1.6. Exported MI Functions
 
-1.6.1.  sockets_reload
+1.6.1.  sockets_mgm:reload
+
+   Replaces obsolete MI command: sockets_reload.
 
    MI command used to reload the sockets from the database.
 
    MI FIFO Command Format:
                 ## reload sockets from the database
-                opensips-mi sockets_reload
-                opensips-cli -x mi sockets_reload
+                opensips-mi sockets_mgm:reload
+                opensips-cli -x mi sockets_mgm:reload
 
-1.6.2.  sockets_list
+1.6.2.  sockets_mgm:list
+
+   Replaces obsolete MI command: sockets_list.
 
    MI command to list all the currently used dynamic sockets.
 
    MI FIFO Command Format:
                 ## reload sockets from the database
-                opensips-mi sockets_list
-                opensips-cli -x mi sockets_list
+                opensips-mi sockets_mgm:list
+                opensips-cli -x mi sockets_mgm:list
 
 Chapter 2. Contributors
 
@@ -282,7 +286,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    33       4      2207     572
+   1. Razvan Crainea (@razvancrainea)    36       7      2229     586
    2. Norm Brandinger                    4        2       5        5
 
    (1) DevScore = author_commits + author_lines_added /
@@ -305,8 +309,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Norm Brandinger                 Jun 2025 - Jun 2025
-   2. Razvan Crainea (@razvancrainea) Mar 2025 - May 2025
+   1. Razvan Crainea (@razvancrainea) Mar 2025 - Mar 2026
+   2. Norm Brandinger                 Jun 2025 - Jun 2025
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -315,8 +319,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Norm Brandinger, Razvan Crainea
-   (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Norm
+   Brandinger.
 
    Documentation Copyrights:
 

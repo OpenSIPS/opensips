@@ -52,11 +52,11 @@ ratelimit Module
 
         1.9. Exported MI Functions
 
-              1.9.1. rl_list
-              1.9.2. rl_dump_pipe
-              1.9.3. rl_reset_pipe
-              1.9.4. rl_set_pid
-              1.9.5. rl_get_pid
+              1.9.1. ratelimit:list
+              1.9.2. ratelimit:dump_pipe
+              1.9.3. ratelimit:reset_pipe
+              1.9.4. ratelimit:set_pid
+              1.9.5. ratelimit:get_pid
               1.9.6. rl_bin_status
 
         1.10. Exported Pseudo-Variables
@@ -635,11 +635,13 @@ m
 
 1.9. Exported MI Functions
 
-1.9.1.  rl_list
+1.9.1.  ratelimit:list
+
+   Replaces obsolete MI command: rl_list.
 
    Lists the parameters and variabiles in the ratelimit module.
 
-   Name: rl_list
+   Name: ratelimit:list
 
    Parameters:
      * pipe (optional) - indicates the name of the single pipe to
@@ -658,41 +660,47 @@ m
    pipes are listed.
 
    MI FIFO Command Format:
-                opensips-cli -x mi rl_list pipe=gw_10.0.0.1
-                opensips-cli -x mi rl_list filter=gw_*
+                opensips-cli -x mi ratelimit:list pipe=gw_10.0.0.1
+                opensips-cli -x mi ratelimit:list filter=gw_*
 
-1.9.2.  rl_dump_pipe
+1.9.2.  ratelimit:dump_pipe
+
+   Replaces obsolete MI command: rl_dump_pipe.
 
    Exposes all the details about the current runtime data
    (specific to the pipe's algorithm) of a pipe. Currently make
    sense for SBT.
 
-   Name: rl_dump_pipe
+   Name: ratelimit:dump_pipe
 
    Parameters:
      * pipe - indicates the name of the pipe.
 
    MI FIFO Command Format:
-                opensips-cli -x mi rl_dump_pipe gw_10.0.0.1
+                opensips-cli -x mi ratelimit:dump_pipe gw_10.0.0.1
 
-1.9.3.  rl_reset_pipe
+1.9.3.  ratelimit:reset_pipe
+
+   Replaces obsolete MI command: rl_reset_pipe.
 
    Resets the counter of a specified pipe.
 
-   Name: rl_reset_pipe
+   Name: ratelimit:reset_pipe
 
    Parameters:
      * pipe - indicates the name of the pipe whose counter should
        be reset.
 
    MI FIFO Command Format:
-                opensips-cli -x mi rl_reset_pipe gw_10.0.0.1
+                opensips-cli -x mi ratelimit:reset_pipe gw_10.0.0.1
 
-1.9.4.  rl_set_pid
+1.9.4.  ratelimit:set_pid
+
+   Replaces obsolete MI command: rl_set_pid.
 
    Sets the PID Controller parameters for the Feedback Algorithm.
 
-   Name: rl_set_pid
+   Name: ratelimit:set_pid
 
    Parameters:
      * ki - the integral parameter.
@@ -700,18 +708,20 @@ m
      * kd - the derivative parameter.
 
    MI FIFO Command Format:
-                opensips-cli -x mi rl_set_pid 0.5 0.5 0.5
+                opensips-cli -x mi ratelimit:set_pid 0.5 0.5 0.5
 
-1.9.5.  rl_get_pid
+1.9.5.  ratelimit:get_pid
+
+   Replaces obsolete MI command: rl_get_pid.
 
    Gets the list of in use PID Controller parameters.
 
-   Name: rl_get_pid
+   Name: ratelimit:get_pid
 
    Parameters: none
 
    MI FIFO Command Format:
-                opensips-cli -x mi rl_get_pid
+                opensips-cli -x mi ratelimit:get_pid
 
 1.9.6.  rl_bin_status
 
@@ -740,7 +750,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 136 63 3289 2700
+   1. Razvan Crainea (@razvancrainea) 141 66 3340 2731
    2. Ovidiu Sas (@ovidiusas) 39 17 2481 44
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 35 29 299 137
    4. Liviu Chircu (@liviuchircu) 32 23 500 223
@@ -777,8 +787,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2025
-   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2025
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2025
    3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Jul 2023
    5.  Robert Moss                         Feb 2021 - Feb 2021
@@ -802,8 +812,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Eseanu Marius Cristian
    (@eseanucristian), Walter Doekes (@wdoekes), Arnaud Boussus,

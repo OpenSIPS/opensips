@@ -49,9 +49,9 @@ Presence Module
 
               1.6.1. refresh_watchers
               1.6.2. cleanup
-              1.6.3. pres_phtable_list
+              1.6.3. presence:phtable_list
               1.6.4. subs_phtable_list
-              1.6.5. pres_expose
+              1.6.5. presence:expose
 
         1.7. Exported Events
 
@@ -693,16 +693,18 @@ opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
    MI FIFO Command Format:
 opensips-cli -x mi cleanup
 
-1.6.3.  pres_phtable_list
+1.6.3.  presence:phtable_list
+
+   Replaces obsolete MI command: pres_phtable_list.
 
    Lists all the presentity records.
 
-   Name: pres_phtable_list
+   Name: presence:phtable_list
 
    Parameters: none
 
    MI FIFO Command Format:
-opensips-cli -x mi pres_phtable_list
+opensips-cli -x mi presence:phtable_list
 
 1.6.4.  subs_phtable_list
 
@@ -719,13 +721,15 @@ opensips-cli -x mi pres_phtable_list
 opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@exam
 ple.com
 
-1.6.5.  pres_expose
+1.6.5.  presence:expose
+
+   Replaces obsolete MI command: pres_expose.
 
    Exposes in the script, by rasing an E_PRESENCE_EXPOSED event,
    all the presentities of a specific event that match a specified
    filter.
 
-   Name: pres_expose
+   Name: presence:expose
 
    Parameters:
      * event - the desired presence event.
@@ -735,7 +739,7 @@ ple.com
        all presentities for that event are exposed.
 
    MI FIFO Command Format:
-opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
+opensips-cli -x mi presence:expose presence ^sip:10\.0\.5\.[0-9]*
 
 1.7. Exported Events
 
@@ -756,7 +760,7 @@ opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
 1.7.2.  E_PRESENCE_EXPOSED
 
    This event is raised for each presentity exposeed by the
-   pres_expose.
+   presence:expose.
 
    Parameters:
 
@@ -1071,7 +1075,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 659 247 24146 12623
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 154 95 3228 1843
-   3. Razvan Crainea (@razvancrainea) 36 29 423 168
+   3. Razvan Crainea (@razvancrainea) 40 32 457 192
    4. Liviu Chircu (@liviuchircu) 35 25 287 397
    5. Vlad Patrascu (@rvlad-patrascu) 33 19 631 481
    6. Ovidiu Sas (@ovidiusas) 29 20 618 170
@@ -1111,7 +1115,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2026
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Sep 2025
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
    4.  Norman Brandinger (@NormB)          May 2024 - Nov 2024
@@ -1141,15 +1145,15 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Jasper Hafkenscheid, Ovidiu Sas
-   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Walter Doekes
-   (@wdoekes), Dan Pascu (@danpascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl Ibarra
-   Corretgé (@saghul), Anca Vamanu, Kennard White, Angel Marin,
-   Kobi Eshun (@ekobi), Klaus Darilion, Henning Westerholt
-   (@henningw), Daniel-Constantin Mierla (@miconda), Edson Gellert
-   Schubert, Juha Heinanen (@juha-h), Elena-Ramona Modroiu.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Jasper
+   Hafkenscheid, Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Walter Doekes (@wdoekes), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Saúl Ibarra Corretgé
+   (@saghul), Anca Vamanu, Kennard White, Angel Marin, Kobi Eshun
+   (@ekobi), Klaus Darilion, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
+   Juha Heinanen (@juha-h), Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

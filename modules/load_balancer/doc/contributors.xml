@@ -44,19 +44,19 @@
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">30</entry>
+		<entry align="center">24</entry>
+		<entry align="center">307</entry>
+		<entry align="center">174</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Sergey Khripchenko (<ulink url="https://github.com/shripchenko">@shripchenko</ulink>)</entry>
 		<entry align="center">28</entry>
 		<entry align="center">10</entry>
 		<entry align="center">1058</entry>
 		<entry align="center">516</entry>
-	</row>
-	<row>
-		<entry>5. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">27</entry>
-		<entry align="center">21</entry>
-		<entry align="center">266</entry>
-		<entry align="center">148</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Oct 2010 - Oct 2024</entry>
+		<entry align="center">Oct 2010 - Mar 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), agree, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergey Khripchenko (<ulink url="https://github.com/shripchenko">@shripchenko</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), agree, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergey Khripchenko (<ulink url="https://github.com/shripchenko">@shripchenko</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
 </section>
 
 </chapter>

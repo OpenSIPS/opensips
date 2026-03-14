@@ -94,12 +94,12 @@ Dynamic Routing Module
 
         1.5. Exported MI Functions
 
-              1.5.1. dr_reload
-              1.5.2. dr_gw_status
-              1.5.3. dr_carrier_status
-              1.5.4. dr_reload_status
-              1.5.5. dr_number_routing
-              1.5.6. dr_enable_probing
+              1.5.1. drouting:reload
+              1.5.2. drouting:gw_status
+              1.5.3. drouting:carrier_status
+              1.5.4. drouting:reload_status
+              1.5.5. drouting:number_routing
+              1.5.6. drouting:enable_probing
 
         1.6. Exported Events
 
@@ -179,13 +179,13 @@ Dynamic Routing Module
    1.46. dr_is_gw usage
    1.47. dr_disable() usage
    1.48. dr_match usage
-   1.49. dr_gw_status usage when use_partitions is set to 0
-   1.50. dr_gw_status usage when use_partitionsis set to 1
-   1.51. dr_carrier_status usage when use_partitions is 0
-   1.52. dr_carrier_status usage when use_partitions is 1
-   1.53. dr_reload_status usage when use_partitions is 0
-   1.54. dr_reload_status usage when use_partitions is 1
-   1.55. dr_enable_probing usage
+   1.49. drouting:gw_status usage when use_partitions is set to 0
+   1.50. drouting:gw_status usage when use_partitionsis set to 1
+   1.51. drouting:carrier_status usage when use_partitions is 0
+   1.52. drouting:carrier_status usage when use_partitions is 1
+   1.53. drouting:reload_status usage when use_partitions is 0
+   1.54. drouting:reload_status usage when use_partitions is 1
+   1.55. drouting:enable_probing usage
 
 Chapter 1. Admin Guide
 
@@ -437,12 +437,12 @@ Chapter 1. Admin Guide
        probing mode for the destination is (1) or (2), the
        destination will be automatically re-enabled when the
        probing will succeed.
-     * MI command - by calling the dr_gw_status MI command for
-       disabling (on demand) the destination. If so, the probing
-       and re-enabling of this destination will be completly
-       disabled until you re-enable it again via MI command - this
-       is designed to allow controlled and complete disabling of
-       some destination during maintenance.
+     * MI command - by calling the drouting:gw_status MI command
+       for disabling (on demand) the destination. If so, the
+       probing and re-enabling of this destination will be
+       completly disabled until you re-enable it again via MI
+       command - this is designed to allow controlled and complete
+       disabling of some destination during maintenance.
 
 1.2. Dependencies
 
@@ -682,10 +682,10 @@ modparam("drouting", "persistent_state", 0)
 
 1.3.17. no_concurrent_reload (int)
 
-   If enabled, the module will not allow do run multiple dr_reload
-   MI commands in parallel (with overlapping) Any new reload will
-   be rejected (and discarded) while an existing reload is in
-   progress.
+   If enabled, the module will not allow do run multiple
+   drouting:reload MI commands in parallel (with overlapping) Any
+   new reload will be rejected (and discarded) while an existing
+   reload is in progress.
 
    If you have a large routing set (millions of rules/prefixes),
    you should consider disabling concurrent reload as they will
@@ -1608,7 +1608,9 @@ if ( dr_match( 1, , $var(did) ) )
 
 1.5. Exported MI Functions
 
-1.5.1.  dr_reload
+1.5.1.  drouting:reload
+
+   Replaces obsolete MI command: dr_reload.
 
    Command to reload routing rules from database.
      * if use_partition is set to 0 - all routing rules will be
@@ -1627,9 +1629,11 @@ if ( dr_match( 1, , $var(did) ) )
                o “y”: inherit state
 
    MI FIFO Command Format:
-                opensips-cli -x mi dr_reload part_1
+                opensips-cli -x mi drouting:reload part_1
 
-1.5.2. dr_gw_status
+1.5.2. drouting:gw_status
+
+   Replaces obsolete MI command: dr_gw_status.
 
    Gets the status (enabled or disabled) of one or multiple
    gateways. The function can also be used to set the status of a
@@ -1654,27 +1658,33 @@ if ( dr_match( 1, , $var(did) ) )
             GW (0 - disable, 1 - enable). Only makes sense if
             gw_id is provided.
 
-   Example 1.49. dr_gw_status usage when use_partitions is set to
-   0
-$ opensips-cli -x mi dr_gw_status gw_id=2
+   Example 1.49. drouting:gw_status usage when use_partitions is
+   set to 0
+$ opensips-cli -x mi drouting:gw_status gw_id=2
 State:: Active
-$ opensips-cli -x mi dr_gw_status gw_id=2 status=0
-$ opensips-cli -x mi dr_gw_status gw_id=2
+$ opensips-cli -x mi drouting:gw_status gw_id=2 status=0
+$ opensips-cli -x mi drouting:gw_status gw_id=2
 Enabled:: Disabled MI
-$ opensips-cli -x mi dr_gw_status gw_id=3
+$ opensips-cli -x mi drouting:gw_status gw_id=3
 Enabled:: Inactive
 
-   Example 1.50. dr_gw_status usage when use_partitionsis set to 1
-$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
+   Example 1.50. drouting:gw_status usage when use_partitionsis
+   set to 1
+$ opensips-cli -x mi drouting:gw_status partition_name=part_1 gw_id=my_g
+w
 State:: Active
-$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw stat
-us=0
-$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
+$ opensips-cli -x mi drouting:gw_status partition_name=part_1 gw_id=my_g
+w status=0
+$ opensips-cli -x mi drouting:gw_status partition_name=part_1 gw_id=my_g
+w
 enabled:: disabled mi
-$ opensips-cli -x mi dr_gw_status partition_name=partition8 status=3
+$ opensips-cli -x mi drouting:gw_status partition_name=partition8 status
+=3
 enabled:: inactive
 
-1.5.3. dr_carrier_status
+1.5.3. drouting:carrier_status
+
+   Replaces obsolete MI command: dr_carrier_status.
 
    Gets the status (enabled or disabled) of one or multiple
    carriers. The function can also be used to set the status of a
@@ -1699,24 +1709,28 @@ enabled:: inactive
             carrier (0 - disable, 1 - enable). Only makes sense if
             carrier_id is provided.
 
-   Example 1.51. dr_carrier_status usage when use_partitions is 0
-$ opensips-cli -x mi dr_carrier_status carrier_id=CR1
+   Example 1.51. drouting:carrier_status usage when use_partitions
+   is 0
+$ opensips-cli -x mi drouting:carrier_status carrier_id=CR1
 Enabled:: no
-$ opensips-cli -x mi dr_carrier_status carrier_id=CR1 status=1
-$ opensips-cli -x mi dr_carrier_status carrier_id=CR1
+$ opensips-cli -x mi drouting:carrier_status carrier_id=CR1 status=1
+$ opensips-cli -x mi drouting:carrier_status carrier_id=CR1
 Enabled:: yes
 
-   Example 1.52. dr_carrier_status usage when use_partitions is 1
-$ opensips-cli -x mi dr_carrier_status partition_name=my_partition carri
-er_id=CR1
+   Example 1.52. drouting:carrier_status usage when use_partitions
+   is 1
+$ opensips-cli -x mi drouting:carrier_status partition_name=my_partition
+ carrier_id=CR1
 Enabled:: no
-$ opensips-cli -x mi dr_carrier_status partition_name=partition_1 carrie
-r_id=CR1 status=1
-$ opensips-cli -x mi dr_carrier_status partition_name=partition_3 carrie
-r_id=CR1
+$ opensips-cli -x mi drouting:carrier_status partition_name=partition_1
+carrier_id=CR1 status=1
+$ opensips-cli -x mi drouting:carrier_status partition_name=partition_3
+carrier_id=CR1
 Enabled:: yes
 
-1.5.4. dr_reload_status
+1.5.4. drouting:reload_status
+
+   Replaces obsolete MI command: dr_reload_status.
 
    Gets the time of the last reload for any partition.
      * if use_partition is set to 0 - the function doesn't receive
@@ -1728,18 +1742,22 @@ Enabled:: yes
             every partition. Otherwise, the function will list the
             time of the last reload for the given partition.
 
-   Example 1.53. dr_reload_status usage when use_partitions is 0
-$ opensips-cli -x mi dr_reload_status
+   Example 1.53. drouting:reload_status usage when use_partitions
+   is 0
+$ opensips-cli -x mi drouting:reload_status
 Date:: Tue Aug 12 12:26:00 2014
 
-   Example 1.54. dr_reload_status usage when use_partitions is 1
-$ opensips-cli -x mi dr_reload_status
+   Example 1.54. drouting:reload_status usage when use_partitions
+   is 1
+$ opensips-cli -x mi drouting:reload_status
 Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 Partition:: part_2 Date=Tue Aug 12 12:24:13 2014
-$ opensips-cli -x mi dr_reload_status part_test
+$ opensips-cli -x mi drouting:reload_status part_test
 Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 
-1.5.5. dr_number_routing
+1.5.5. drouting:number_routing
+
+   Replaces obsolete MI command: dr_number_routing.
 
    Gets the matched prefix along with the list of the gateways /
    carriers to which a number would be routed when using the
@@ -1757,10 +1775,12 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
           + number - the number to test against
 
    MI FIFO Command Format:
-                opensips-cli -x mi dr_number_routing partition_name=part
-1 group_id=3 number=012340987
+                opensips-cli -x mi drouting:number_routing partition_nam
+e=part1 group_id=3 number=012340987
 
-1.5.6.  dr_enable_probing
+1.5.6.  drouting:enable_probing
+
+   Replaces obsolete MI command: dr_enable_probing.
 
    Enables/disables gateway probing or returns the current gateway
    probing status.
@@ -1768,11 +1788,11 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
    Parameters:
      * status (optional) - 1 - enable, 0 - disable gateway probing
 
-   Example 1.55. dr_enable_probing usage
-$ opensips-cli -x mi dr_enable_probing
+   Example 1.55. drouting:enable_probing usage
+$ opensips-cli -x mi drouting:enable_probing
 Status:: 1
-$ opensips-cli -x mi dr_enable_probing 0
-$ opensips-cli -x mi dr_enable_probing
+$ opensips-cli -x mi drouting:enable_probing 0
+$ opensips-cli -x mi drouting:enable_probing
 Status:: 0
 
 1.6. Exported Events
@@ -1902,7 +1922,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 416 202 13810 5824
    2. Liviu Chircu (@liviuchircu) 163 97 2515 2613
-   3. Razvan Crainea (@razvancrainea) 100 53 1171 2226
+   3. Razvan Crainea (@razvancrainea) 105 56 1245 2282
    4. Mihai Tiganus (@tallicamike) 73 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 43 20 1100 735
    6. Vlad Paiu (@vladpaiu) 28 22 421 65
@@ -1939,10 +1959,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2024
-   2.  Vlad Paiu (@vladpaiu)               Aug 2011 - Feb 2024
-   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
-   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2023
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Mar 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2024
+   3.  Vlad Paiu (@vladpaiu)               Aug 2011 - Feb 2024
+   4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
    5.  wangdd                              May 2023 - May 2023
    6.  MayamaTakeshi                       Apr 2023 - Apr 2023
    7.  nexbridge                           Feb 2023 - Mar 2023
@@ -1966,14 +1986,13 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Paiu
-   (@vladpaiu), Razvan Crainea (@razvancrainea), wangdd, Vlad
-   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Nick Altmann (@nikbyte), Alexey Vasilyev
-   (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut Ionita
-   (@ionutrazvanionita), Mihai Tiganus (@tallicamike), Andrei
-   Datcu (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
-   Sergio Gutierrez.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Paiu (@vladpaiu), wangdd, Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Nick
+   Altmann (@nikbyte), Alexey Vasilyev (@vasilevalex), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Mihai
+   Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
+   Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.
 
    Documentation Copyrights:
 

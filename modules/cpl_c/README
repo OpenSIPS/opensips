@@ -37,9 +37,9 @@ cpl_c Module
 
         1.5. Exported MI Functions
 
-              1.5.1. LOAD_CPL
-              1.5.2. REMOVE_CPL
-              1.5.3. GET_CPL
+              1.5.1. cpl_c:load
+              1.5.2. cpl_c:remove
+              1.5.3. cpl_c:get
 
         1.6. Installation and Running
 
@@ -433,45 +433,51 @@ if ($rm=="REGISTER") {
 
 1.5. Exported MI Functions
 
-1.5.1.  LOAD_CPL
+1.5.1.  cpl_c:load
+
+   Replaces obsolete MI command: LOAD_CPL.
 
    For the given user, loads the XML cpl file, compiles it into
    binary format and stores both format into database.
 
-   Name: LOAD_CPL
+   Name: cpl_c:load
 
    Parameters:
      * username : name of the user
      * cpl_filename: file name
 
    MI FIFO Command format:
-                 opensips-cli -x mi LOAD_CPL sip:bob@domain.com cpl_scri
-pt.xml
+                 opensips-cli -x mi cpl_c:load sip:bob@domain.com cpl_sc
+ript.xml
 
-1.5.2.  REMOVE_CPL
+1.5.2.  cpl_c:remove
+
+   Replaces obsolete MI command: REMOVE_CPL.
 
    For the given user, removes the entire database record (XML cpl
    and binary cpl); user with empty cpl scripts are not accepted.
 
-   Name: REMOVE_CPL
+   Name: cpl_c:remove
 
    Parameters:
      * username : name of the user
 
    MI FIFO Command format:
-                 opensips-cli -x mi REMOVE_CPL sip:bob@domain.com
+                 opensips-cli -x mi cpl_c:remove sip:bob@domain.com
 
-1.5.3.  GET_CPL
+1.5.3.  cpl_c:get
+
+   Replaces obsolete MI command: GET_CPL.
 
    For the given user, returns the CPL script in XML format.
 
-   Name: GET_CPL
+   Name: cpl_c:get
 
    Parameters:
      * username : name of the user
 
    MI FIFO Command format:
-                 opensips-cli -x mi GET_CPL sip:bob@domain.com
+                 opensips-cli -x mi cpl_c:get sip:bob@domain.com
 
 1.6. Installation and Running
 
@@ -497,7 +503,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 412 172 15560 6552
-   2. Razvan Crainea (@razvancrainea) 25 18 267 224
+   2. Razvan Crainea (@razvancrainea) 28 21 297 242
    3. Daniel-Constantin Mierla (@miconda) 18 15 80 73
    4. Liviu Chircu (@liviuchircu) 18 15 72 119
    5. Jan Janak (@janakj) 18 10 463 219
@@ -535,8 +541,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2025
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Mar 2026
+   2.  Ken Rice                            Sep 2025 - Sep 2025
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - May 2025
    4.  Maksym Sobolyev (@sobomax)          Feb 2017 - Apr 2025
    5.  Alexandra Titoc                     Sep 2024 - Sep 2024
@@ -561,8 +567,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
    (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt

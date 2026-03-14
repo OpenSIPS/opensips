@@ -24,8 +24,8 @@ db_text Module
         1.4. Exported Functions
         1.5. Exported MI Functions
 
-              1.5.1. dbt_dump
-              1.5.2. dbt_reload
+              1.5.1. db_text:dump
+              1.5.2. db_text:reload
 
         1.6. Installation and Running
 
@@ -204,18 +204,22 @@ modparam("db_text", "buffer_size", 8192)
 
 1.5. Exported MI Functions
 
-1.5.1. dbt_dump
+1.5.1. db_text:dump
+
+   Replaces obsolete MI command: dbt_dump.
 
    Write back to hard drive modified tables.
 
-   Name: dbt_dump.
+   Name: db_text:dump.
 
    Parameters: none
 
    MI FIFO Command Format:
-opensips-cli -x mi dbt_dump
+opensips-cli -x mi db_text:dump
 
-1.5.2. dbt_reload
+1.5.2. db_text:reload
+
+   Replaces obsolete MI command: dbt_reload.
 
    Causes db_text module to reload cached tables from disk.
    Depending on parameters it could be a whole cache or a
@@ -223,7 +227,7 @@ opensips-cli -x mi dbt_dump
    reloaded from disk - the old version preserved and error
    reported.
 
-   Name: dbt_reload.
+   Name: db_text:reload.
 
    Parameters:
      * db_name (optional) - database name to reload.
@@ -231,11 +235,11 @@ opensips-cli -x mi dbt_dump
        db_name parameter) - specific table to reload.
 
    MI FIFO Command Format:
-opensips-cli -x mi dbt_reload
+opensips-cli -x mi db_text:reload
 
-opensips-cli -x mi dbt_reload /path/to/dbtext/database
+opensips-cli -x mi db_text:reload /path/to/dbtext/database
 
-opensips-cli -x mi dbt_reload /path/to/dbtext/database table_name
+opensips-cli -x mi db_text:reload /path/to/dbtext/database table_name
 
 1.6. Installation and Running
 
@@ -446,8 +450,8 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 135 59 6126 1441
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 41 32 310 309
-   3. Henning Westerholt (@henningw) 25 15 252 410
-   4. Razvan Crainea (@razvancrainea) 24 20 124 98
+   3. Razvan Crainea (@razvancrainea) 27 23 146 112
+   4. Henning Westerholt (@henningw) 25 15 252 410
    5. Liviu Chircu (@liviuchircu) 21 18 71 110
    6. Jan Janak (@janakj) 11 7 124 106
    7. Ovidiu Sas (@ovidiusas) 8 6 105 20
@@ -481,7 +485,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2026
+   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Mar 2026
    2.  Alexandra Titoc                     Sep 2024 - Sep 2024
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    4.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Mar 2024
