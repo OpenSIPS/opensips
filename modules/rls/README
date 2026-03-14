@@ -32,7 +32,7 @@ Resource List Server
 
         1.5. Exported MI Functions
 
-              1.5.1. rls_update_subscriptions
+              1.5.1. rls:update_subscriptions
 
         1.6. Installation
 
@@ -323,19 +323,21 @@ if($rm=="NOTIFY")
 
 1.5. Exported MI Functions
 
-1.5.1.  rls_update_subscriptions
+1.5.1.  rls:update_subscriptions
+
+   Replaces obsolete MI command: rls_update_subscriptions.
 
    Triggers updating backend subscriptions after a resources-list
    or rls-services document has been updated.
 
-   Name: rls_update_subscriptions
+   Name: rls:update_subscriptions
 
    Parameters:
      * presentity_uri : the uri of the user who made the change
        and whose subscriptions should be updated
 
    MI FIFO Command Format:
-opensips-cli -x mi rls_update_subscriptions sip:alice@atlanta.com
+opensips-cli -x mi rls:update_subscriptions sip:alice@atlanta.com
 
 1.6. Installation
 
@@ -361,8 +363,8 @@ Chapter 3. Contributors
    1. Anca Vamanu 101 41 5335 863
    2. Saúl Ibarra Corretgé (@saghul) 40 18 1150 710
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 21 110 137
-   4. Dan Pascu (@danpascu) 15 10 127 138
-   5. Razvan Crainea (@razvancrainea) 14 12 20 38
+   4. Razvan Crainea (@razvancrainea) 17 15 30 44
+   5. Dan Pascu (@danpascu) 15 10 127 138
    6. Liviu Chircu (@liviuchircu) 14 11 58 79
    7. Daniel-Constantin Mierla (@miconda) 9 7 18 15
    8. Vlad Patrascu (@rvlad-patrascu) 7 5 28 35
@@ -395,10 +397,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Mar 2026
+   2.  Ken Rice                            Sep 2025 - Sep 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Mar 2020
    6.  Dan Pascu (@danpascu)               Aug 2008 - Jul 2019
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -419,8 +421,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Dan Pascu (@danpascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
    Iancu (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Walter
    Doekes (@wdoekes), Anca Vamanu, Henning Westerholt (@henningw),

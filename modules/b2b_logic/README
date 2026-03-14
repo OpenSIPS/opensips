@@ -69,10 +69,10 @@ B2B_LOGIC
 
         1.6. Exported MI Functions
 
-              1.6.1. b2b_trigger_scenario
-              1.6.2. b2b_bridge
-              1.6.3. b2b_list
-              1.6.4. b2b_terminate_call
+              1.6.1. b2b_logic:trigger_scenario
+              1.6.2. b2b_logic:bridge
+              1.6.3. b2b_logic:list
+              1.6.4. b2b_logic:terminate_call
 
         1.7. Exported Pseudo-Variables
 
@@ -923,7 +923,9 @@ vp(header), $avp(header_content), "callee,sip:user@10.0.0.1,sip:10.0.0.1
 
 1.6. Exported MI Functions
 
-1.6.1.  b2b_trigger_scenario
+1.6.1.  b2b_logic:trigger_scenario
+
+   Replaces obsolete MI command: b2b_trigger_scenario.
 
    This command initializes a new B2B session where OpenSIPS will
    start a call from the middle. The initial entities to be
@@ -931,7 +933,7 @@ vp(header), $avp(header_content), "callee,sip:user@10.0.0.1,sip:10.0.0.1
    further scenario logic can be implemented in the b2b_logic
    dedicated routes.
 
-   Name: b2b_trigger_scenario
+   Name: b2b_logic:trigger_scenario
 
    Parameters:
      * senario_id : ID for the scenario of this B2B session.
@@ -948,11 +950,13 @@ vp(header), $avp(header_content), "callee,sip:user@10.0.0.1,sip:10.0.0.1
        the format: key=value
 
    MI FIFO Command Format:
-        opensips-cli -x mi b2b_trigger_scenario marketing client1,sip:bo
-b@opensips.org client2,sip:322@opensips.org:5070 agent_uri=sip:alice@ope
-nsips.org
+        opensips-cli -x mi b2b_logic:trigger_scenario marketing client1,
+sip:bob@opensips.org client2,sip:322@opensips.org:5070 agent_uri=sip:ali
+ce@opensips.org
 
-1.6.2.  b2b_bridge
+1.6.2.  b2b_logic:bridge
+
+   Replaces obsolete MI command: b2b_bridge.
 
    This command can be used by an external application to tell
    B2BUA to bridge a call party from an on going dialog to another
@@ -960,7 +964,7 @@ nsips.org
    and BYE is set to the callee. You can instead bridge the callee
    if you send 1 as the third parameter.
 
-   Name: b2b_bridge
+   Name: b2b_logic:bridge
 
    Parameters:
      * dialog_id : the b2b_logic key, or the
@@ -979,35 +983,41 @@ nsips.org
        bridging scenario
 
    MI FIFO Command Format:
-        opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
+        opensips-cli -x mi b2b_logic:bridge 1020.30 sip:alice@opensips.o
+rg
 
    opensips-cli Command Format:
-        opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
+        opensips-cli -x mi b2b_logic:bridge 1020.30 sip:alice@opensips.o
+rg
 
-1.6.3.  b2b_list
+1.6.3.  b2b_logic:list
+
+   Replaces obsolete MI command: b2b_list.
 
    This command can be used to list the internals of b2b_logic
    entities.
 
-   Name: b2b_list
+   Name: b2b_logic:list
 
    Parameters: none
 
    MI FIFO Command Format:
-        opensips-cli -x mi b2b_list
+        opensips-cli -x mi b2b_logic:list
 
-1.6.4.  b2b_terminate_call
+1.6.4.  b2b_logic:terminate_call
+
+   Replaces obsolete MI command: b2b_terminate_call.
 
    Terminates an ongoing B2B session.
 
-   Name: b2b_terminate_call
+   Name: b2b_logic:terminate_call
 
    Parameters:
      * key : the b2b_logic key or the callid;from-tag;to-tag of
        one of call legs of the ongoing session.
 
    MI FIFO Command Format:
-        opensips-cli -x mi b2b_terminate_call 159.0
+        opensips-cli -x mi b2b_logic:terminate_call 159.0
 
 1.7. Exported Pseudo-Variables
 
@@ -1298,7 +1308,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 239 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 51 33 1427 337
+   2. Razvan Crainea (@razvancrainea) 55 36 1468 362
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 11 152 76
    4. Nick Altmann (@nikbyte) 14 10 346 36
    5. Carsten Bock 12 5 679 23
@@ -1332,7 +1342,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Dec 2025
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2026
    2.  Ovidiu Sas (@ovidiusas)             Dec 2025 - Dec 2025
    3.  dirkbro                             Dec 2025 - Dec 2025
    4.  andingv                             Nov 2025 - Nov 2025

@@ -65,15 +65,15 @@ Call-Center Module
 
         1.7. Exported MI Functions
 
-              1.7.1. cc_reload
-              1.7.2. cc_agent_login
-              1.7.3. cc_list_queue
-              1.7.4. cc_list_flows
-              1.7.5. cc_list_agents
-              1.7.6. cc_list_calls
-              1.7.7. cc_dispatch_call_to_agent
-              1.7.8. cc_internal_call_dispatching
-              1.7.9. cc_reset_stats
+              1.7.1. call_center:reload
+              1.7.2. call_center:agent_login
+              1.7.3. call_center:list_queue
+              1.7.4. call_center:list_flows
+              1.7.5. call_center:list_agents
+              1.7.6. call_center:list_calls
+              1.7.7. call_center:dispatch_call_to_agent
+              1.7.8. call_center:internal_call_dispatching
+              1.7.9. call_center:reset_stats
 
         1.8. Exported Events
 
@@ -162,7 +162,7 @@ Chapter 1. Admin Guide
    The module provides an internal buit-in dispatching logic (for
    sending the calls/chats to the agents), but also offers the
    possibility to use an external logic to do the dispatching (see
-   cc_dispatch_call_to_agent MI command).
+   call_center:dispatch_call_to_agent MI command).
 
 1.2. How it works
 
@@ -175,7 +175,7 @@ Chapter 1. Admin Guide
    provisioning purposes - the cc_flows and cc_agents tables, see
    DB schema. Data is loaded at startup and cached into memory ;
    runtime reload is possible via the MI commands (see the
-   cc_reload command in Exported MI Functions).
+   call_center:reload command in Exported MI Functions).
 
    Additionally there is a table cc_cdrs for writing the CDRs -
    this operation is done in realtime, after the call in
@@ -259,7 +259,7 @@ Chapter 1. Admin Guide
    Additionally, the agent has a initial logstate - if he is
    logged in or not (being logged in is a must in order to receive
    calls). The log state may be changed at runtime via a dedicated
-   MI command cc_agent_login, see Exported MI Functions.
+   MI command call_center:agent_login, see Exported MI Functions.
 
    There is an optional per-agent wrapup_time defined, saying the
    time interval for an agent before getting a new call from the
@@ -403,11 +403,11 @@ modparam("call_center", "chat_dispatch_policy", "balancing")
    automatically dispatch (by itself) the queued/incoming calls to
    the available agents. If disabled, the module will not do such
    dispaching by itself and it is expected to use the
-   cc_dispatch_call_to_agent MI command to dispatch the queued
-   calls to agents. This allows the implementation of an external,
-   custom dispatching logic. The value of this setting may be
-   changed during runtime via the cc_internal_call_dispatching MI
-   command.
+   call_center:dispatch_call_to_agent MI command to dispatch the
+   queued calls to agents. This allows the implementation of an
+   external, custom dispatching logic. The value of this setting
+   may be changed during runtime via the
+   call_center:internal_call_dispatching MI command.
 
    Default value is “1” (enabled).
 
@@ -916,16 +916,20 @@ cc_agent_login("agentX",0);
 
 1.7. Exported MI Functions
 
-1.7.1.  cc_reload
+1.7.1.  call_center:reload
+
+   Replaces obsolete MI command: cc_reload.
 
    Command to reload flows and agents definition from database.
 
    It takes no parameter.
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_reload
+opensips-cli -x mi call_center:reload
 
-1.7.2.  cc_agent_login
+1.7.2.  call_center:agent_login
+
+   Replaces obsolete MI command: cc_agent_login.
 
    Command to login an agent into the Call Center engine.
 
@@ -934,9 +938,11 @@ opensips-cli -x mi cc_reload
      * state - the new login state (0 - log off, 1 - log in)
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_agent_login agentX 0
+opensips-cli -x mi call_center:agent_login agentX 0
 
-1.7.3.  cc_list_queue
+1.7.3.  call_center:list_queue
+
+   Replaces obsolete MI command: cc_list_queue.
 
    Command to list all the calls in queuing - for each call, the
    following attributes will be printed: the call id, the calling
@@ -947,9 +953,11 @@ opensips-cli -x mi cc_agent_login agentX 0
    It takes no parameter.
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_list_queue
+opensips-cli -x mi call_center:list_queue
 
-1.7.4.  cc_list_flows
+1.7.4.  call_center:list_flows
+
+   Replaces obsolete MI command: cc_list_flows.
 
    Command to list all the flows - for each flow, the following
    attributes will be printed: the flow ID, the avg. call
@@ -959,9 +967,11 @@ opensips-cli -x mi cc_list_queue
    It takes no parameter.
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_list_flows
+opensips-cli -x mi call_center:list_flows
 
-1.7.5.  cc_list_agents
+1.7.5.  call_center:list_agents
+
+   Replaces obsolete MI command: cc_list_agents.
 
    Command to list all the agents - for each agent, the following
    attributes will be printed: agent ID, agent login state, agent
@@ -970,9 +980,11 @@ opensips-cli -x mi cc_list_flows
    It takes no parameter.
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_list_agents
+opensips-cli -x mi call_center:list_agents
 
-1.7.6.  cc_list_calls
+1.7.6.  call_center:list_calls
+
+   Replaces obsolete MI command: cc_list_calls.
 
    Command to list all the ongoing calls - for each call, the
    following attributes will be printed: call ID, call state
@@ -982,9 +994,11 @@ opensips-cli -x mi cc_list_agents
    It takes no parameter.
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_list_agents
+opensips-cli -x mi call_center:list_agents
 
-1.7.7.  cc_dispatch_call_to_agent
+1.7.7.  call_center:dispatch_call_to_agent
+
+   Replaces obsolete MI command: cc_dispatch_call_to_agent.
 
    This function sends a given call (from the queue) to a given
    agent. For the operation to succeed, several conditions must be
@@ -999,19 +1013,22 @@ opensips-cli -x mi cc_list_agents
 
    It takes two parameters.
      * call_id - the ID of the call, as provided by the queue
-       listing MI command cc_list_queue
+       listing MI command call_center:list_queue
      * agent_id - the ID of the call, as provided by the agents
-       listing MI command cc_list_agents
+       listing MI command call_center:list_agents
 
    IMPORTANT: in order to be used, you need to be sure that the
    internal call dispatching is DISABLED via the
    chat_internal_call_dispatching module parameter or the
-   cc_internal_call_dispatching MI command.
+   call_center:internal_call_dispatching MI command.
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
+opensips-cli -x mi call_center:dispatch_call_to_agent B2B452.dee2.33 age
+ntX
 
-1.7.8.  cc_internal_call_dispatching
+1.7.8.  call_center:internal_call_dispatching
+
+   Replaces obsolete MI command: cc_internal_call_dispatching.
 
    Command to inspect and/or change the
    chat_internal_call_dispatching setting
@@ -1021,16 +1038,18 @@ opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
    internal dispatching, a non zero means to enable it.
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_internal_call_dispatching 0
+opensips-cli -x mi call_center:internal_call_dispatching 0
 
-1.7.9.  cc_reset_stats
+1.7.9.  call_center:reset_stats
+
+   Replaces obsolete MI command: cc_reset_stats.
 
    Command to reset all counter-like statistics.
 
    It takes no parameter.
 
    MI FIFO Command usage:
-opensips-cli -x mi cc_reset_stats
+opensips-cli -x mi call_center:reset_stats
 
 1.8. Exported Events
 
@@ -1120,7 +1139,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 110 44 6780 511
-   2. Razvan Crainea (@razvancrainea) 45 34 849 159
+   2. Razvan Crainea (@razvancrainea) 49 37 938 213
    3. Vlad Patrascu (@rvlad-patrascu) 18 9 287 314
    4. Liviu Chircu (@liviuchircu) 15 12 73 90
    5. Maksym Sobolyev (@sobomax) 6 4 8 13
@@ -1152,10 +1171,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jun 2014 - Aug 2025
-   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
-   4.  Razvan Crainea (@razvancrainea)     Mar 2014 - Oct 2023
+   1.  Razvan Crainea (@razvancrainea)     Mar 2014 - Mar 2026
+   2.  Liviu Chircu (@liviuchircu)         Jun 2014 - Aug 2025
+   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - May 2023
    6.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021

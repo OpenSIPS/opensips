@@ -27,8 +27,8 @@ cachedb_local Module
 
         1.6. Exported MI Functions
 
-              1.6.1. cache_remove_chunk
-              1.6.2. cache_fetch_chunk
+              1.6.1. cachedb_local:remove_chunk
+              1.6.2. cachedb_local:fetch_chunk
 
    2. Frequently Asked Questions
    3. Contributors
@@ -283,7 +283,9 @@ modparam("cachedb_local", "enable_restart_persistency", yes)
 
 1.6. Exported MI Functions
 
-1.6.1.  cache_remove_chunk
+1.6.1.  cachedb_local:remove_chunk
+
+   Replaces obsolete MI command: cache_remove_chunk.
 
    Removes all local cache entries that match the provided glob
    param.
@@ -295,9 +297,11 @@ modparam("cachedb_local", "enable_restart_persistency", yes)
        will be used;
 
    MI FIFO Command Format:
-opensips-cli -x mi cache_remove_chunk "keyprefix*" collection
+opensips-cli -x mi cachedb_local:remove_chunk "keyprefix*" collection
 
-1.6.2.  cache_fetch_chunk
+1.6.2.  cachedb_local:fetch_chunk
+
+   Replaces obsolete MI command: cache_fetch_chunk.
 
    Fetches all local cache entries that match the provided glob
    param.
@@ -309,7 +313,7 @@ opensips-cli -x mi cache_remove_chunk "keyprefix*" collection
        will be used;
 
    MI FIFO Command Format:
-opensips-cli -x mi cache_fetch_chunk "keyprefix*" collection
+opensips-cli -x mi cachedb_local:fetch_chunk "keyprefix*" collection
 {
     "keys": [
         {
@@ -348,10 +352,10 @@ Chapter 3. Contributors
    3. Liviu Chircu (@liviuchircu) 24 18 165 191
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 46 50
    5. Anca Vamanu 13 5 739 54
-   6. Andrei Dragus 9 4 182 181
-   7. Fabian Gast (@fgast) 9 3 517 48
-   8. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
-   9. Razvan Crainea (@razvancrainea) 7 5 8 6
+   6. Razvan Crainea (@razvancrainea) 10 8 26 16
+   7. Andrei Dragus 9 4 182 181
+   8. Fabian Gast (@fgast) 9 3 517 48
+   9. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
    10. Maksym Sobolyev (@sobomax) 5 3 9 10
 
    All remaining contributors: Peter Lemenkov (@lemenkov), Dusan
@@ -378,13 +382,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Oct 2011 - Feb 2024
-   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Oct 2022
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   7.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2026
+   2.  Vlad Paiu (@vladpaiu)               Oct 2011 - Feb 2024
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   4.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Oct 2022
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    8.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
    9.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
    10. Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
@@ -399,11 +403,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Paiu
-   (@vladpaiu), Vlad Patrascu (@rvlad-patrascu), Zero King
-   (@l2dy), Bogdan-Andrei Iancu (@bogdan-iancu), Fabian Gast
-   (@fgast), Peter Lemenkov (@lemenkov), Ionut Ionita
-   (@ionutrazvanionita), Andrei Dragus, Anca Vamanu.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Paiu (@vladpaiu), Vlad Patrascu
+   (@rvlad-patrascu), Zero King (@l2dy), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
+   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Andrei Dragus,
+   Anca Vamanu.
 
    Documentation Copyrights:
 

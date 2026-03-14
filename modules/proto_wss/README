@@ -28,7 +28,7 @@ proto_wss Module
 
         1.4. Exported MI Functions
 
-              1.4.1. wss_trace
+              1.4.1. wss:trace
 
    2. Frequently Asked Questions
    3. Contributors
@@ -236,7 +236,7 @@ modparam("proto_wss", "trace_destination", "hep_dest")
 
    This controls whether tracing for wss is on or not. You still
    need to define trace_destinationin order to work, but this
-   value will be controlled using mi function wss_trace.
+   value will be controlled using mi function wss:trace.
    Default value is 0(tracing inactive).
 
    Example 1.8. Set trace_on parameter
@@ -267,7 +267,7 @@ modparam("proto_wss", "trace_on", 1)
    $socket_in(port) (port) can be used.
 
    WARNING: IF trace_on is set to 0 or tracing is deactived via
-   the mi command wss_trace this route won't be called.
+   the mi command wss:trace this route won't be called.
    Default value is none(no route is set).
 
    Example 1.9. Set trace_filter_route parameter
@@ -339,9 +339,11 @@ modparam("proto_wss", "require_origin", no)
 
 1.4. Exported MI Functions
 
-1.4.1.  wss_trace
+1.4.1.  wss:trace
 
-   Name: wss_trace
+   Replaces obsolete MI command: wss_trace.
+
+   Name: wss:trace
 
    Parameters:
      * trace_mode(optional): set wss tracing on and off. This
@@ -352,7 +354,7 @@ modparam("proto_wss", "require_origin", no)
           + off
 
    MI FIFO Command Format:
-                        opensips-cli -x mi wss_trace on
+                        opensips-cli -x mi wss:trace on
 
 Chapter 2. Frequently Asked Questions
 
@@ -369,7 +371,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 36 26 801 130
+   1. Razvan Crainea (@razvancrainea) 39 29 813 140
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 19 15 243 27
    3. Vlad Patrascu (@rvlad-patrascu) 17 13 131 113
    4. Ionut Ionita (@ionutrazvanionita) 15 10 362 19
@@ -399,7 +401,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jan 2016 - Feb 2026
+   1. Razvan Crainea (@razvancrainea)     Jan 2016 - Mar 2026
    2. Liviu Chircu (@liviuchircu)         Mar 2016 - Feb 2026
    3. Maksym Sobolyev (@sobomax)          Feb 2017 - Nov 2023
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - May 2023
@@ -416,8 +418,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
    Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
    (@ionutrazvanionita).
 

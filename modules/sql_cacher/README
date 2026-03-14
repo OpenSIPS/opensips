@@ -25,7 +25,7 @@ SQL Cacher Module
 
         1.5. Exported MI Functions
 
-              1.5.1. sql_cacher_reload
+              1.5.1. sql_cacher:reload
 
         1.6. Exported Pseudo-Variables
 
@@ -63,7 +63,7 @@ SQL Cacher Module
    1.7. reload_interval parameter usage
    1.8. bigint_to_str parameter usage
    1.9. sql_cache_dump usage
-   1.10. sql_cacher_reload usage
+   1.10. sql_cacher:reload usage
    1.11. sql_cached_value(id{sep}col{sep}key) pseudo-variable
           usage
 
@@ -299,7 +299,9 @@ while ($var(i) < $var(n)) {
 
 1.5. Exported MI Functions
 
-1.5.1. sql_cacher_reload
+1.5.1. sql_cacher:reload
+
+   Replaces obsolete MI command: sql_cacher_reload.
 
    Reloads the entire SQL table in cache or the single key (if key
    provided) in full caching mode.
@@ -311,11 +313,11 @@ while ($var(i) < $var(n)) {
      * id - the caching entry's id
      * key (optional) - the specific key to be reloaded.
 
-   Example 1.10. sql_cacher_reload usage
+   Example 1.10. sql_cacher:reload usage
 ...
-$ opensips-cli -x mi sql_cacher_reload subs_caching
+$ opensips-cli -x mi sql_cacher:reload subs_caching
 ...
-$ opensips-cli -x mi sql_cacher_reload subs_caching alice@domain.com
+$ opensips-cli -x mi sql_cacher:reload subs_caching alice@domain.com
 ...
 
 1.6. Exported Pseudo-Variables
@@ -422,7 +424,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 94 44 3640 1114
    2. Liviu Chircu (@liviuchircu) 30 22 498 150
-   3. Razvan Crainea (@razvancrainea) 16 14 33 15
+   3. Razvan Crainea (@razvancrainea) 19 17 44 22
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 13 10 128 31
    5. Ovidiu Sas (@ovidiusas) 7 5 83 7
    6. Maksym Sobolyev (@sobomax) 7 5 8 9
@@ -454,8 +456,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2016 - May 2025
-   2.  Razvan Crainea (@razvancrainea)     Feb 2016 - Jul 2024
+   1.  Razvan Crainea (@razvancrainea)     Feb 2016 - Mar 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - May 2025
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - Apr 2024
    4.  Ovidiu Sas (@ovidiusas)             Mar 2017 - Apr 2024
    5.  Bence Szigeti                       Jan 2024 - Jan 2024
@@ -475,10 +477,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
+   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov).
 
    Documentation Copyrights:
 

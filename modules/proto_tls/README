@@ -33,7 +33,7 @@ proto_tls module
 
         1.6. Exported MI Functions
 
-              1.6.1. tls_trace
+              1.6.1. tls:trace
 
    2. Frequently Asked Questions
    3. Contributors
@@ -333,7 +333,7 @@ modparam("proto_tls", "trace_destination", "hep_dest")
 
    This controls whether tracing for tls is on or not. You still
    need to define trace_destinationin order to work, but this
-   value will be controlled using mi function tls_trace.
+   value will be controlled using mi function tls:trace.
    Default value is 0(tracing inactive).
 
    Example 1.8. Set trace_on parameter
@@ -364,7 +364,7 @@ modparam("proto_tls", "trace_on", 1)
    $socket_in(port) (port) can be used.
 
    WARNING: IF trace_on is set to 0 or tracing is deactived via
-   the mi command tls_trace this route won't be called.
+   the mi command tls:trace this route won't be called.
    Default value is none(no route is set).
 
    Example 1.9. Set trace_filter_route parameter
@@ -482,9 +482,11 @@ modparam("proto_tls", "tls_async_handshake_timeout", 100)
 
 1.6. Exported MI Functions
 
-1.6.1.  tls_trace
+1.6.1.  tls:trace
 
-   Name: tls_trace
+   Replaces obsolete MI command: tls_trace.
+
+   Name: tls:trace
 
    Parameters:
      * trace_mode(optional): set tls tracing on and off. This
@@ -495,7 +497,7 @@ modparam("proto_tls", "tls_async_handshake_timeout", 100)
           + off
 
    MI FIFO Command Format:
-                        opensips-cli -x mi tls_trace on
+                        opensips-cli -x mi tls:trace on
 
 Chapter 2. Frequently Asked Questions
 
@@ -581,8 +583,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 61 33 1558 826
-   2. Razvan Crainea (@razvancrainea) 60 37 1106 728
+   1. Razvan Crainea (@razvancrainea) 63 40 1118 738
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 61 33 1558 826
    3. Eseanu Marius Cristian (@eseanucristian) 42 5 55 2133
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
    5. Vlad Patrascu (@rvlad-patrascu) 20 14 186 213
@@ -616,7 +618,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2015 - Feb 2026
+   1.  Razvan Crainea (@razvancrainea)     Feb 2015 - Mar 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Jun 2025
    3.  jupiter                             Jun 2025 - Jun 2025
    4.  James Stanley                       Dec 2023 - Apr 2025
@@ -639,9 +641,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Zero King (@l2dy), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Zero
+   King (@l2dy), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Ionut Ionita (@ionutrazvanionita), Eseanu Marius
    Cristian (@eseanucristian), Vlad Paiu (@vladpaiu).
 

@@ -28,8 +28,8 @@ Tracer Module
         1.5. Exported MI Functions
 
               1.5.1. trace
-              1.5.2. trace_start
-              1.5.3. trace_stop
+              1.5.2. tracer:start
+              1.5.3. tracer:stop
 
         1.6. Database setup
         1.7. Known issues
@@ -409,7 +409,9 @@ opensips-cli -x mi trace mode=off
 # Turn on tracing for destination id tid2:
 opensips-cli -x mi trace id=tid2 mode=on
 
-1.5.2.  trace_start
+1.5.2.  tracer:start
+
+   Replaces obsolete MI command: trace_start.
 
    Creates a dynamic tracing destination based using custom
    filters. This function can be used to debug calls for certain
@@ -417,7 +419,7 @@ opensips-cli -x mi trace id=tid2 mode=on
 
    Dynamic destinations are not restart persistent!
 
-   Name: trace_start
+   Name: tracer:start
 
    Parameters:
      * id - the name of the tracing instance.
@@ -448,27 +450,29 @@ opensips-cli -x mi trace id=tid2 mode=on
 
    MI FIFO Command to start tracing calls from IP 127.0.0.1 to HEP
    destination 10.0.0.1:9060:
-                opensips-cli -x mi trace_start id=ip_filter uri=hep:10.0
-.0.1:9060 filter=ip=127.0.0.1
+                opensips-cli -x mi tracer:start id=ip_filter uri=hep:10.
+0.0.1:9060 filter=ip=127.0.0.1
 
    MI FIFO Command to start tracing calls from user Alice to user
    Bob:
-                opensips-cli -x mi trace_start id=alice_bob uri=hep:10.0
-.0.1:9060 filter=caller=Alice filter=caller=Bob
+                opensips-cli -x mi tracer:start id=alice_bob uri=hep:10.
+0.0.1:9060 filter=caller=Alice filter=caller=Bob
 
-1.5.3.  trace_stop
+1.5.3.  tracer:stop
+
+   Replaces obsolete MI command: trace_stop.
 
    Stops OpenSIPS from sending traffic to a dynamic trace id
    created using the trace_start command.
 
-   Name: trace_stop
+   Name: tracer:stop
 
    Parameters:
      * id - the name of the tracing instance to be stopped.
 
    MI FIFO Command to stop tracing calls from user Alice to user
    Bob:
-                opensips-cli -x mi trace_stop alice_bob
+                opensips-cli -x mi tracer:stop alice_bob
 
 1.6. Database setup
 
@@ -498,7 +502,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 116 89 1320 877
    2. Ionut Ionita (@ionutrazvanionita) 107 52 2676 1887
-   3. Razvan Crainea (@razvancrainea) 78 55 1694 466
+   3. Razvan Crainea (@razvancrainea) 82 58 1716 486
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
    5. Liviu Chircu (@liviuchircu) 26 23 87 80
    6. Vlad Paiu (@vladpaiu) 24 10 402 568
@@ -535,8 +539,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Feb 2026
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2025
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Feb 2026
    3.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
    4.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Apr 2024
    5.  Vlad Paiu (@vladpaiu)               Jun 2011 - Dec 2023
@@ -561,10 +565,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Nick Altmann (@nikbyte), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Nick Altmann
+   (@nikbyte), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu Chircu
+   (@liviuchircu), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Alexandr
    Dubovikov (@adubovikov), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt

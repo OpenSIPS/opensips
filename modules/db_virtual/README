@@ -26,8 +26,8 @@ db_virtual Module
 
         1.4. Exported MI Functions
 
-              1.4.1. db_get
-              1.4.2. db_set
+              1.4.1. db_virtual:get
+              1.4.2. db_virtual:set
 
    2. Contributors
 
@@ -189,7 +189,7 @@ modparam("db_virtual", "db_probe_time", 20)
    cases where although the probe could connect some might fail.
    This parameter represents the number of consecutive failed
    retries that a process will do before it gives up. This value
-   is reset and suppressed by a MI function(db_set).
+   is reset and suppressed by a MI function (db_virtual:set).
 
    Default value is 10 (10 consecutive times).
 
@@ -201,25 +201,29 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 
 1.4. Exported MI Functions
 
-1.4.1.  db_get
+1.4.1.  db_virtual:get
+
+   Replaces obsolete MI command: db_get.
 
    Return information about global state of the real dbs.
 
-   Name: db_get
+   Name: db_virtual:get
 
    Parameters:
      * None.
 
    MI FIFO Command Format:
-                                opensips-cli -x mi db_get
+                                opensips-cli -x mi db_virtual:get
 
-1.4.2.  db_set
+1.4.2.  db_virtual:set
+
+   Replaces obsolete MI command: db_set.
 
    Sets the permissions for real dbs access per set per db.
 
    Sets the reconnect reset flag.
 
-   Name: db_set
+   Name: db_virtual:set
 
    Parameters:
      * set_index [int]
@@ -227,14 +231,15 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
      * may_use_db_flag [boolean]
      * ignore_retries[boolean](optional)
 
-   db_set 3 2 0 1 means:
+   db_virtual:set 3 2 0 1 means:
      * 3 - the fourth set (must exist)
      * 2 - the third URL in the fourth set(must exist)
      * 0 - processes are not allowed to use that URL
      * 1 - reset and suppress db_max_consec_retrys
 
    MI FIFO Command Format:
-                                opensips-cli -x mi db_set 3 2 0 1
+                                opensips-cli -x mi db_virtual:set 3 2 0
+1
 
 Chapter 2. Contributors
 
@@ -245,8 +250,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Pistolea 31 7 2244 297
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 22 18 104 128
-   3. Liviu Chircu (@liviuchircu) 16 12 105 140
-   4. Razvan Crainea (@razvancrainea) 14 12 21 19
+   3. Razvan Crainea (@razvancrainea) 17 15 43 34
+   4. Liviu Chircu (@liviuchircu) 16 12 105 140
    5. Vlad Patrascu (@rvlad-patrascu) 9 5 85 145
    6. Ionut Ionita (@ionutrazvanionita) 6 3 232 9
    7. Maksym Sobolyev (@sobomax) 4 2 4 5
@@ -277,9 +282,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - May 2022
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jan 2021
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - May 2022
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018

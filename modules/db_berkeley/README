@@ -20,7 +20,7 @@ Berkeley DB Module
         1.4. Exported Functions
         1.5. Exported MI Functions
 
-              1.5.1. bdb_reload
+              1.5.1. db_berkeley:reload
 
         1.6. Installation and Running
         1.7. Database Schema and Metadata
@@ -134,16 +134,18 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 
 1.5. Exported MI Functions
 
-1.5.1. bdb_reload
+1.5.1. db_berkeley:reload
+
+   Replaces obsolete MI command: bdb_reload.
 
    Causes db_berkeley module to re-read the contents of specified
    table (or dbenv). The db_berkeley DB actually loads each table
    on demand, as opposed to loading all at mod_init time. The
-   bdb_reload operation is implemented as a close followed by a
-   reopen. Note- bdb_reload will fail if a table has not been
-   accessed before (because the close will fail).
+   db_berkeley:reload operation is implemented as a close followed
+   by a reopen. Note- db_berkeley:reload will fail if a table has
+   not been accessed before (because the close will fail).
 
-   Name: bdb_reload
+   Name: db_berkeley:reload
 
    Parameters:
      * table_path - to reload a particular table provide the
@@ -152,7 +154,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
        opensipsc-cli config variable.
 
    MI FIFO Command Format:
-                opensips-cli -x mi bdb_reload subscriber
+                opensips-cli -x mi db_berkeley:reload subscriber
 
 1.6. Installation and Running
 
@@ -453,7 +455,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. William Quan 41 1 4682 0
-   2. Razvan Crainea (@razvancrainea) 30 25 157 156
+   2. Razvan Crainea (@razvancrainea) 33 28 169 165
    3. Henning Westerholt (@henningw) 26 10 381 688
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 24 19 149 170
    5. Anonymous 16 4 681 341
@@ -488,7 +490,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jul 2024
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019

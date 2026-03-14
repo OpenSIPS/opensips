@@ -37,10 +37,10 @@ qrouting (Quality-based Routing) Module
 
         1.6. Exported MI Functions
 
-              1.6.1. qr_reload
-              1.6.2. qr_status
-              1.6.3. qr_disable_dst
-              1.6.4. qr_enable_dst
+              1.6.1. qrouting:reload
+              1.6.2. qrouting:status
+              1.6.3. qrouting:disable_dst
+              1.6.4. qrouting:enable_dst
 
         1.7. Exported Events
 
@@ -377,8 +377,8 @@ qr_set_xstat($var(rule_id), $var(gw_name), "mos", $var(mos_score));
 
    Within a given routing rule, temporarily remove the given
    gateway or carrier from routing, until they are re-enabled via
-   qr_enable_dst() or qr_enable_dst. The removal effect will be
-   lost on an OpenSIPS restart.
+   qr_enable_dst() or qrouting:enable_dst. The removal effect will
+   be lost on an OpenSIPS restart.
 
    Parameters:
      * rule_id (integer) - database id of the drouting rule
@@ -417,15 +417,19 @@ qr_enable_dst($param(rule_id), $param(dst_name), $param(partition));
 
 1.6. Exported MI Functions
 
-1.6.1. qr_reload
+1.6.1. qrouting:reload
+
+   Replaces obsolete MI command: qr_reload.
 
    Reload all quality-based routing rules from the SQL database.
 
    MI FIFO Command Format:
 
-opensips-cli -x mi qr_reload
+opensips-cli -x mi qrouting:reload
 
-1.6.2. qr_status
+1.6.2. qrouting:status
+
+   Replaces obsolete MI command: qr_status.
 
    Inspect the signaling quality statistics of the current
    history_span for all drouting gateways in all partitions, with
@@ -441,12 +445,14 @@ opensips-cli -x mi qr_reload
 
    MI FIFO Command Format:
 
-opensips-cli -x mi qr_status
-opensips-cli -x mi qr_status pstn
-opensips-cli -x mi qr_status pstn 11 MY-GW-3
-opensips-cli -x mi qr_status pstn 17 MY-CARR-7
+opensips-cli -x mi qrouting:status
+opensips-cli -x mi qrouting:status pstn
+opensips-cli -x mi qrouting:status pstn 11 MY-GW-3
+opensips-cli -x mi qrouting:status pstn 17 MY-CARR-7
 
-1.6.3. qr_disable_dst
+1.6.3. qrouting:disable_dst
+
+   Replaces obsolete MI command: qr_disable_dst.
 
    Within a given routing rule, temporarily remove the given
    gateway or carrier from routing, until they are re-enabled
@@ -460,10 +466,12 @@ opensips-cli -x mi qr_status pstn 17 MY-CARR-7
 
    MI FIFO Command Format:
 
-opensips-cli -x mi qr_disable_dst 14 MY-CARR-7
-opensips-cli -x mi qr_disable_dst pstn 81 MY-GW-3
+opensips-cli -x mi qrouting:disable_dst 14 MY-CARR-7
+opensips-cli -x mi qrouting:disable_dst pstn 81 MY-GW-3
 
-1.6.4. qr_enable_dst
+1.6.4. qrouting:enable_dst
+
+   Replaces obsolete MI command: qr_enable_dst.
 
    Within a given routing rule, re-introduce the given gateway or
    carrier into the routing process.
@@ -475,8 +483,8 @@ opensips-cli -x mi qr_disable_dst pstn 81 MY-GW-3
 
    MI FIFO Command Format:
 
-opensips-cli -x mi qr_enable_dst 14 MY-CARR-7
-opensips-cli -x mi qr_enable_dst pstn 81 MY-GW-3
+opensips-cli -x mi qrouting:enable_dst 14 MY-CARR-7
+opensips-cli -x mi qrouting:enable_dst pstn 81 MY-GW-3
 
 1.7. Exported Events
 
@@ -500,10 +508,10 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 152 65 4818 2748
    2. Mihai Tiganus (@tallicamike) 49 15 2955 509
-   3. Maksym Sobolyev (@sobomax) 6 4 6 7
-   4. Zero King (@l2dy) 3 1 1 1
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 0 3
-   6. Razvan Crainea (@razvancrainea) 2 1 0 2
+   3. Razvan Crainea (@razvancrainea) 6 4 42 28
+   4. Maksym Sobolyev (@sobomax) 6 4 6 7
+   5. Zero King (@l2dy) 3 1 1 1
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 0 3
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -525,11 +533,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
-   2. Liviu Chircu (@liviuchircu)         Jan 2020 - Apr 2021
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2020 - Mar 2020
-   4. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5. Razvan Crainea (@razvancrainea)     Feb 2020 - Feb 2020
+   1. Razvan Crainea (@razvancrainea)     Feb 2020 - Mar 2026
+   2. Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
+   3. Liviu Chircu (@liviuchircu)         Jan 2020 - Apr 2021
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2020 - Mar 2020
+   5. Zero King (@l2dy)                   Mar 2020 - Mar 2020
    6. Mihai Tiganus (@tallicamike)        Aug 2014 - Nov 2014
 
    (1) including any documentation-related commits, excluding
@@ -539,7 +547,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 

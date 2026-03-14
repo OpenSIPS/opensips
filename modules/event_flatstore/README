@@ -27,7 +27,7 @@ event_flatstore Module
         1.6. Exported Functions
         1.7. Exported MI Functions
 
-              1.7.1. evi_flat_rotate
+              1.7.1. event_flatstore:rotate
 
         1.8. Exported Events
 
@@ -236,7 +236,9 @@ modparam("event_flatstore", "suffix", "$time(%Y)")
 
 1.7. Exported MI Functions
 
-1.7.1.  evi_flat_rotate
+1.7.1.  event_flatstore:rotate
+
+   Replaces obsolete MI command: evi_flat_rotate.
 
    It makes the processes reopen the file specified as a parameter
    to the command in order to be compatible with a logrotate
@@ -244,21 +246,21 @@ modparam("event_flatstore", "suffix", "$time(%Y)")
    executed, the module will continue to write in the renamed
    file.
 
-   Name: evi_flat_rotate
+   Name: event_flatstore:rotate
 
    Parameters: path_to_file
 
    MI FIFO Command Format:
-opensips-cli -x mi evi_flat_rotate _path_to_log_file_
+opensips-cli -x mi event_flatstore:rotate _path_to_log_file_
 
 1.8. Exported Events
 
 1.8.1.  E_FLATSTORE_ROTATION
 
    The event is raised every time event_flatstore opens a new log
-   file (manual evi_flat_rotate, auto-rotate by rotate_period, or
-   thresholds rotate_count/rotate_size). External apps can
-   subscribe to monitor log-rotation activity.
+   file (manual event_flatstore:rotate, auto-rotate by
+   rotate_period, or thresholds rotate_count/rotate_size).
+   External apps can subscribe to monitor log-rotation activity.
 
    Parameters:
      * timestamp – Unix epoch (seconds) when the rotation was
@@ -277,8 +279,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 27 16 482 303
    2. Ionel Cerghit (@ionel-cerghit) 23 13 770 135
-   3. Liviu Chircu (@liviuchircu) 12 9 31 62
-   4. Razvan Crainea (@razvancrainea) 9 7 36 5
+   3. Razvan Crainea (@razvancrainea) 12 10 48 13
+   4. Liviu Chircu (@liviuchircu) 12 9 31 62
    5. Nick Altmann (@nikbyte) 8 1 612 8
    6. Eseanu Marius Cristian (@eseanucristian) 7 3 254 9
    7. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 7 4
@@ -305,11 +307,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Nick Altmann (@nikbyte)                  May 2025 - May 2025
-   2. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2023
-   3. Liviu Chircu (@liviuchircu)              Jan 2016 - Dec 2021
-   4. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - Jul 2020
-   5. Razvan Crainea (@razvancrainea)          Aug 2015 - Sep 2019
+   1. Razvan Crainea (@razvancrainea)          Aug 2015 - Mar 2026
+   2. Nick Altmann (@nikbyte)                  May 2025 - May 2025
+   3. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2023
+   4. Liviu Chircu (@liviuchircu)              Jan 2016 - Dec 2021
+   5. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - Jul 2020
    6. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2018 - Apr 2019
    7. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    8. Ionel Cerghit (@ionel-cerghit)           Jun 2015 - Jul 2015
@@ -322,8 +324,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Nick Altmann (@nikbyte), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Nick Altmann
+   (@nikbyte), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionel Cerghit
    (@ionel-cerghit).
 

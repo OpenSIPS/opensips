@@ -19,7 +19,7 @@ presence_dfks Module
         1.4. Exported Functions
         1.5. Exported MI Functions
 
-              1.5.1. dfks_set_feature
+              1.5.1. presence_dfks:set_feature
 
         1.6. Exported Pseudo-Variables
 
@@ -119,7 +119,9 @@ modparam("presence_dfks", "set_route", "dfks_set")
 
 1.5. Exported MI Functions
 
-1.5.1.  dfks_set_feature
+1.5.1.  presence_dfks:set_feature
+
+   Replaces obsolete MI command: dfks_set_feature.
 
    Triggers the sending of NOTIFY messages containing a feature
    status update to all watchers.
@@ -128,7 +130,7 @@ modparam("presence_dfks", "set_route", "dfks_set")
    One can determine if the route is triggered by an MI function
    by checking the existence of the $dfks(param) variable.
 
-   Name: dfks_set_feature
+   Name: presence_dfks:set_feature
 
    Parameters:
      * presentity: the URI of the user whose feature status should
@@ -150,8 +152,8 @@ modparam("presence_dfks", "set_route", "dfks_set")
           + ringCount - for CallForwardingNoAnswer
 
    MI FIFO Command Format:
-opensips-cli -x mi dfks_set_feature sip:alice@10.0.0.11 CallForwardingNo
-Answer 1 1 \
+opensips-cli -x mi presence_dfks:set_feature sip:alice@10.0.0.11 CallFor
+wardingNoAnswer 1 1 \
 ringCount/4 forwardTo/sip:bob@10.0.0.11
 
 1.6. Exported Pseudo-Variables
@@ -217,9 +219,9 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 23 7 1641 92
    2. Maksym Sobolyev (@sobomax) 8 6 16 21
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 31 26
-   4. Liviu Chircu (@liviuchircu) 4 2 2 2
-   5. Razvan Crainea (@razvancrainea) 3 1 67 21
+   3. Razvan Crainea (@razvancrainea) 6 4 77 27
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 31 26
+   5. Liviu Chircu (@liviuchircu) 4 2 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -241,11 +243,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2020 - Jan 2024
-   2. Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   3. Liviu Chircu (@liviuchircu)         Nov 2020 - Jan 2021
-   4. Vlad Patrascu (@rvlad-patrascu)     Dec 2019 - Sep 2020
-   5. Razvan Crainea (@razvancrainea)     Feb 2020 - Feb 2020
+   1. Razvan Crainea (@razvancrainea)     Feb 2020 - Mar 2026
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2020 - Jan 2024
+   3. Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4. Liviu Chircu (@liviuchircu)         Nov 2020 - Jan 2021
+   5. Vlad Patrascu (@rvlad-patrascu)     Dec 2019 - Sep 2020
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -254,8 +256,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Razvan Crainea (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:
 

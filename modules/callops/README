@@ -26,9 +26,9 @@ Calling Operations Module
 
         1.5. Exported MI Functions
 
-              1.5.1. call_transfer
-              1.5.2. call_hold
-              1.5.3. call_unhold
+              1.5.1. callops:transfer
+              1.5.2. callops:hold
+              1.5.3. callops:unhold
 
         1.6. Exported Events
 
@@ -281,7 +281,9 @@ if (has_totag() && && loose_route()) {
 
 1.5. Exported MI Functions
 
-1.5.1.  call_transfer
+1.5.1.  callops:transfer
+
+   Replaces obsolete MI command: call_transfer.
 
    MI command to transfer an ongoing call to a new destination.
 
@@ -290,7 +292,7 @@ if (has_totag() && && loose_route()) {
    transfer_callid is used, then an attended transfer is
    performed, other wise a blind transfer is issued.
 
-   Name: call_transfer
+   Name: callops:transfer
 
    Parameters
      * callid (string) - the callid of the dialog that is being
@@ -320,26 +322,28 @@ if (has_totag() && && loose_route()) {
 
    MI FIFO Command Format:
 # blind transfer to sip:agent@127.0.0.1
-opensips-cli -x mi call_transfer \
+opensips-cli -x mi callops:transfer \
         callid=4b664b48-5639-40bf-bff8-3a866c145c3b \
         leg=caller \
         destination=sip:agent@217.0.0.1
 
 # attended transfer between two calls
-opensips-cli -x mi call_transfer \
+opensips-cli -x mi callops:transfer \
         callid=e8d024db-78e5-4d18-9794-5b8ba837bed4
         leg=caller \
         transfer_callid=559abf97-9834-4380-bba1-a036eb245450 \
         transfer_leg=calee
 
-1.5.2.  call_hold
+1.5.2.  callops:hold
+
+   Replaces obsolete MI command: call_hold.
 
    MI command to put an ongoing call on hold.
 
    Command returns OK if any of the legs of the call have been put
    on hold. If the call is already on hold, an error is returned.
 
-   Name: call_hold
+   Name: callops:hold
 
    Parameters
      * callid (string) - the callid of the dialog that is being
@@ -358,18 +362,20 @@ opensips-cli -x mi call_transfer \
 
    MI FIFO Command Format:
 # put a call on hold
-opensips-cli -x mi call_hold \
+opensips-cli -x mi callops:hold \
         callid=921b00e4-fec0-4a36-9397-a40ab74e1893
 
-1.5.3.  call_unhold
+1.5.3.  callops:unhold
+
+   Replaces obsolete MI command: call_unhold.
 
    MI command to resume a call from an onhold state put by the
-   call_hold call.
+   callops:hold call.
 
    Command returns OK if any of the legs are resumed, or an error
    if no leg had been previously put on hold.
 
-   Name: call_unhold
+   Name: callops:unhold
 
    Parameters
      * callid (string) - the callid of the dialog that is being
@@ -387,7 +393,7 @@ opensips-cli -x mi call_hold \
        be passed at caller.
 
    MI FIFO Command Format:
-opensips-cli -x mi call_unhold \
+opensips-cli -x mi callops:unhold \
         callid=921b00e4-fec0-4a36-9397-a40ab74e1893
 
 1.6. Exported Events
@@ -460,7 +466,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 52 25 2536 269
+   1. Razvan Crainea (@razvancrainea) 55 28 2571 292
    2. Vlad Patrascu (@rvlad-patrascu) 5 1 123 66
    3. Maksym Sobolyev (@sobomax) 4 2 4 5
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
@@ -486,7 +492,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     May 2020 - Oct 2025
+   1. Razvan Crainea (@razvancrainea)     May 2020 - Mar 2026
    2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2023 - Apr 2023
    3. Vlad Patrascu (@rvlad-patrascu)     Mar 2023 - Mar 2023
    4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023

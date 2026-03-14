@@ -26,7 +26,7 @@ httpd Module
 
         1.5. Exported MI Functions
 
-              1.5.1. httpd_list_root_path
+              1.5.1. httpd:list_root_path
 
         1.6. Exported Functions
         1.7. Known issues
@@ -241,18 +241,20 @@ LS1.2")
 
 1.5. Exported MI Functions
 
-1.5.1. httpd_list_root_path
+1.5.1. httpd:list_root_path
+
+   Replaces obsolete MI command: httpd_list_root_path.
 
    Lists all the registered http root paths into the httpd module.
    When a request comes in, if the root parth is in the list, the
    request will be sent to the module that register it.
 
-   Name: httpd_list_root_path
+   Name: httpd:list_root_path
 
    Parameters: none
 
    MI FIFO Command Format:
-opensips-cli -x mi httpd_list_root_path
+opensips-cli -x mi httpd:list_root_path
 
 1.6. Exported Functions
 
@@ -305,7 +307,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 48 30 1667 147
-   2. Razvan Crainea (@razvancrainea) 24 21 118 68
+   2. Razvan Crainea (@razvancrainea) 28 24 128 74
    3. Liviu Chircu (@liviuchircu) 23 19 172 82
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 103 54
    5. Vlad Patrascu (@rvlad-patrascu) 10 7 52 89
@@ -338,12 +340,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Vlad Paiu (@vladpaiu)               Dec 2024 - Dec 2024
-   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  Razvan Crainea (@razvancrainea)     Mar 2015 - Oct 2021
+   1.  Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2026
+   2.  Ken Rice                            Sep 2025 - Sep 2025
+   3.  Vlad Paiu (@vladpaiu)               Dec 2024 - Dec 2024
+   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Aug 2021
    8.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
    9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -360,9 +362,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
-   Gast (@fgast), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
    (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
    (@ovidiusas).
 

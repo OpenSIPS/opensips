@@ -27,7 +27,7 @@ pi_http Module
 
         1.8. Exported MI Functions
 
-              1.8.1. pi_reload_tbls_and_cmds
+              1.8.1. pi_http:reload_tbls_and_cmds
 
    2. Contributors
 
@@ -251,17 +251,19 @@ modparam("pi_http", "pi_http_method", 1)
 
 1.8. Exported MI Functions
 
-1.8.1. pi_reload_tbls_and_cmds
+1.8.1. pi_http:reload_tbls_and_cmds
+
+   Replaces obsolete MI command: pi_reload_tbls_and_cmds.
 
    Reloads the layout of the provisioning interface from the
    framework file.
 
-   Name: pi_reload_tbls_and_cmds
+   Name: pi_http:reload_tbls_and_cmds
 
    Parameters: none
 
    MI FIFO Command Format:
-opensips-cli -x mi pi_reload_tbls_and_cmds
+opensips-cli -x mi pi_http:reload_tbls_and_cmds
 
 Chapter 2. Contributors
 
@@ -271,8 +273,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 72 31 4389 206
-   2. Liviu Chircu (@liviuchircu) 15 13 40 57
-   3. Razvan Crainea (@razvancrainea) 13 11 30 31
+   2. Razvan Crainea (@razvancrainea) 16 14 40 37
+   3. Liviu Chircu (@liviuchircu) 15 13 40 57
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 5 5
    5. Vlad Patrascu (@rvlad-patrascu) 6 4 21 19
    6. Maksym Sobolyev (@sobomax) 5 3 8 5
@@ -303,12 +305,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2024
-   3.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Mar 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2026
+   2.  Ken Rice                            Sep 2025 - Sep 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2024
+   4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Mar 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9.  Ionut Ionita (@ionutrazvanionita)   Nov 2015 - Jan 2017
@@ -323,8 +325,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
    (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
    (@bogdan-iancu).
 

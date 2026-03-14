@@ -43,8 +43,8 @@ Fraud Detection Module
 
         1.5. Exported MI Functions
 
-              1.5.1. show_fraud_stats
-              1.5.2. fraud_reload
+              1.5.1. fraud_detection:show_stats
+              1.5.2. fraud_detection:reload
 
         1.6. Exported Events
 
@@ -431,7 +431,9 @@ hresh")
 
 1.5. Exported MI Functions
 
-1.5.1.  show_fraud_stats
+1.5.1.  fraud_detection:show_stats
+
+   Replaces obsolete MI command: show_fraud_stats.
 
    Show the current statistics for all dials of a user to a
    prefix.
@@ -441,17 +443,19 @@ hresh")
    if check_fraud() has not been called at least once for the
    (user, prefix) pair within a newly matching time interval!
 
-   Name: show_fraud_stats
+   Name: fraud_detection:show_stats
 
    Parameters:
      * user
      * prefix
 
-1.5.2.  fraud_reload
+1.5.2.  fraud_detection:reload
+
+   Replaces obsolete MI command: fraud_reload.
 
    Reload the all the fraud rules.
 
-   Name: fraud_reload
+   Name: fraud_detection:reload
 
    Parameters: none
 
@@ -496,7 +500,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 51 42 383 284
    2. Andrei Datcu (@andrei-datcu) 38 11 2665 235
-   3. Razvan Crainea (@razvancrainea) 8 6 14 11
+   3. Razvan Crainea (@razvancrainea) 11 9 32 21
    4. Vlad Patrascu (@rvlad-patrascu) 8 5 73 114
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 20 31
    6. Maksym Sobolyev (@sobomax) 5 3 7 8
@@ -525,11 +529,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   2.  Ahron Greenberg                     Sep 2024 - Sep 2024
-   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   4.  Liviu Chircu (@liviuchircu)         Mar 2015 - Aug 2022
-   5.  Razvan Crainea (@razvancrainea)     Feb 2015 - Oct 2021
+   1.  Razvan Crainea (@razvancrainea)     Feb 2015 - Mar 2026
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Ahron Greenberg                     Sep 2024 - Sep 2024
+   4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   5.  Liviu Chircu (@liviuchircu)         Mar 2015 - Aug 2022
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -543,10 +547,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Ahron Greenberg, Liviu Chircu (@liviuchircu),
-   Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Andrei Datcu
-   (@andrei-datcu).
+   Last edited by: Razvan Crainea (@razvancrainea), Ahron
+   Greenberg, Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Andrei Datcu (@andrei-datcu).
 
    Documentation Copyrights:
 

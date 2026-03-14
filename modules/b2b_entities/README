@@ -44,7 +44,7 @@ B2B_ENTITIES
 
         1.5. Exported MI Functions
 
-              1.5.1. b2be_list
+              1.5.1. b2b_entities:list
               1.5.2. ua_session_client_start
               1.5.3. ua_session_update
               1.5.4. ua_session_reply
@@ -467,17 +467,19 @@ ua_session_terminate($var(b2b_key));
 
 1.5. Exported MI Functions
 
-1.5.1.  b2be_list
+1.5.1.  b2b_entities:list
+
+   Replaces obsolete MI command: b2be_list.
 
    This command can be used to list the internals of the b2b
    entities.
 
-   Name: b2be_list
+   Name: b2b_entities:list
 
    Parameters: none
 
    MI FIFO Command Format:
-        opensips-cli -x mi b2be_list
+        opensips-cli -x mi b2b_entities:list
 
 1.5.2.  ua_session_client_start
 
@@ -814,7 +816,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 183 94 6839 1860
    2. Vlad Patrascu (@rvlad-patrascu) 127 62 5443 1147
-   3. Razvan Crainea (@razvancrainea) 93 76 841 539
+   3. Razvan Crainea (@razvancrainea) 97 79 857 551
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 62 53 525 209
    5. Ovidiu Sas (@ovidiusas) 58 43 988 348
    6. Liviu Chircu (@liviuchircu) 22 18 99 128

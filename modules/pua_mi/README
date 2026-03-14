@@ -18,8 +18,8 @@ PUA MI
         1.4. Exported Functions
         1.5. Exported MI functions
 
-              1.5.1. pua_publish
-              1.5.2. pua_subscribe
+              1.5.1. pua_mi:publish
+              1.5.2. pua_mi:subscribe
 
    2. Contributors
 
@@ -40,8 +40,8 @@ PUA MI
    List of Examples
 
    1.1. Set presence_server parameter
-   1.2. pua_publish FIFO example
-   1.3. pua_subscribe FIFO example
+   1.2. pua_mi:publish FIFO example
+   1.3. pua_mi:subscribe FIFO example
 
 Chapter 1. Admin Guide
 
@@ -90,7 +90,9 @@ modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
 
 1.5. Exported MI functions
 
-1.5.1.  pua_publish
+1.5.1.  pua_mi:publish
+
+   Replaces obsolete MI command: pua_publish.
 
    Command parameters:
      * presentity_uri - e.g. sip:system@opensips.org
@@ -109,20 +111,22 @@ modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
        If this parameter is provided, the content_type parameter
        is also required.
 
-   Example 1.2. pua_publish FIFO example
+   Example 1.2. pua_mi:publish FIFO example
 ...
 
-opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence app
-lication/pidf+xml <?xml version='1.0'?><presence xmlns='urn:ietf:params:
-xml:ns:pidf' xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model' xmlns:rpi
-d='urn:ietf:params:xml:ns:pidf:rpid' xmlns:c='urn:ietf:params:xml:ns:pid
-f:cipid' entity='system@opensips.org'><tuple id='0x81475a0'><status><bas
-ic>open</basic></status></tuple><dm:person id='pdd748945'><rpid:activiti
-es><rpid:away/>away</rpid:activities><dm:note>CPU:16 MEM:476</dm:note></
-dm:person></presence>
+opensips-cli -x mi pua_mi:publish sip:system@opensips.org 3600 presence
+application/pidf+xml <?xml version='1.0'?><presence xmlns='urn:ietf:para
+ms:xml:ns:pidf' xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model' xmlns:
+rpid='urn:ietf:params:xml:ns:pidf:rpid' xmlns:c='urn:ietf:params:xml:ns:
+pidf:cipid' entity='system@opensips.org'><tuple id='0x81475a0'><status><
+basic>open</basic></status></tuple><dm:person id='pdd748945'><rpid:activ
+ities><rpid:away/>away</rpid:activities><dm:note>CPU:16 MEM:476</dm:note
+></dm:person></presence>
 
 
-1.5.2.  pua_subscribe
+1.5.2.  pua_mi:subscribe
+
+   Replaces obsolete MI command: pua_subscribe.
 
    Command parameters:
      * presentity_uri - e.g. sip:presentity@opensips.org
@@ -131,11 +135,11 @@ dm:person></presence>
      * expires - Relative time in seconds for the desired validity
        of the subscription.
 
-   Example 1.3. pua_subscribe FIFO example
+   Example 1.3. pua_mi:subscribe FIFO example
 ...
 
-opensips-cli -x mi pua_subscribe sip:system@opensips.org sip:400@opensip
-s.org presence 3600
+opensips-cli -x mi pua_mi:subscribe sip:system@opensips.org sip:400@open
+sips.org presence 3600
 
 
 Chapter 2. Contributors
@@ -147,8 +151,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 31 15 1246 267
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 42 53
-   3. Liviu Chircu (@liviuchircu) 11 9 26 43
-   4. Razvan Crainea (@razvancrainea) 11 9 16 17
+   3. Razvan Crainea (@razvancrainea) 15 13 37 33
+   4. Liviu Chircu (@liviuchircu) 11 9 26 43
    5. Juha Heinanen (@juha-h) 11 7 160 73
    6. Vlad Patrascu (@rvlad-patrascu) 11 4 293 226
    7. Daniel-Constantin Mierla (@miconda) 9 7 32 29
@@ -179,11 +183,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
+   2.  Ken Rice                            Sep 2025 - Sep 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Apr 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
@@ -201,8 +205,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Anca
    Vamanu, Juha Heinanen (@juha-h), Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert.

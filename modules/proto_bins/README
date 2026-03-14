@@ -26,7 +26,7 @@ proto_bins Module
 
         1.4. Exported MI Functions
 
-              1.4.1. bins_trace
+              1.4.1. bins:trace
 
    2. Contributors
 
@@ -238,7 +238,7 @@ modparam("proto_bins", "trace_destination", "hep_dest")
 
    This controls whether tracing for tls is on or not. You still
    need to define trace_destinationin order to work, but this
-   value will be controlled using mi function bins_trace.
+   value will be controlled using mi function bins:trace.
    Default value is 0(tracing inactive).
 
    Example 1.10. Set trace_on parameter
@@ -248,9 +248,11 @@ modparam("proto_bins", "trace_on", 1)
 
 1.4. Exported MI Functions
 
-1.4.1.  bins_trace
+1.4.1.  bins:trace
 
-   Name: bins_trace
+   Replaces obsolete MI command: tls_trace.
+
+   Name: bins:trace
 
    Parameters:
      * trace_mode(optional): set bins tracing on and off. This
@@ -261,7 +263,7 @@ modparam("proto_bins", "trace_on", 1)
           + off
 
    MI FIFO Command Format:
-                        opensips-cli -x mi bins_trace on
+                        opensips-cli -x mi bins:trace on
 
 Chapter 2. Contributors
 
@@ -271,10 +273,10 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 15 4 1118 24
-   2. Maksym Sobolyev (@sobomax) 5 3 19 20
-   3. Liviu Chircu (@liviuchircu) 5 3 13 7
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 5 3
-   5. Razvan Crainea (@razvancrainea) 4 2 3 2
+   2. Razvan Crainea (@razvancrainea) 7 5 14 11
+   3. Maksym Sobolyev (@sobomax) 5 3 19 20
+   4. Liviu Chircu (@liviuchircu) 5 3 13 7
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 5 3
    6. Nick Altmann (@nikbyte) 3 1 2 2
 
    (1) DevScore = author_commits + author_lines_added /
@@ -297,7 +299,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jul 2025 - Feb 2026
+   1. Razvan Crainea (@razvancrainea)     Jul 2025 - Mar 2026
    2. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2023
    4. Liviu Chircu (@liviuchircu)         Apr 2022 - Apr 2022
@@ -311,7 +313,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu).
 
    Documentation Copyrights:
 

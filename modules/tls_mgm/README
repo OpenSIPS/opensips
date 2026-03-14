@@ -21,8 +21,8 @@ TLS_MGM module
 
         1.8. Exported MI Functions
 
-              1.8.1. tls_list
-              1.8.2. tls_reload
+              1.8.1. tls_mgm:list
+              1.8.2. tls_mgm:reload
 
         1.9. OpenSIPS Exported parameters
 
@@ -326,11 +326,15 @@ if (is_peer_verified()) {
 
 1.8. Exported MI Functions
 
-1.8.1.  tls_list
+1.8.1.  tls_mgm:list
+
+   Replaces obsolete MI command: tls_list.
 
    List all domains information.
 
-1.8.2.  tls_reload
+1.8.2.  tls_mgm:reload
+
+   Replaces obsolete MI command: tls_reload.
 
    Reloads the TLS domains information from the database. The
    previous DB defined domains are discarded but the script
@@ -1525,7 +1529,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 180 58 4821 4882
-   2. Razvan Crainea (@razvancrainea) 81 57 1415 724
+   2. Razvan Crainea (@razvancrainea) 86 60 1431 732
    3. Eseanu Marius Cristian (@eseanucristian) 53 11 4268 321
    4. Liviu Chircu (@liviuchircu) 26 20 175 236
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 24 13 291 460
@@ -1560,12 +1564,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Jupiter Tang                        Nov 2025 - Nov 2025
-   2.  jupiter                             Apr 2025 - Apr 2025
-   3.  Maksym Sobolyev (@sobomax)          Mar 2016 - Nov 2023
-   4.  Liviu Chircu (@liviuchircu)         Oct 2015 - May 2023
-   5.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2023
-   6.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2022
+   1.  Razvan Crainea (@razvancrainea)     Sep 2015 - Mar 2026
+   2.  Jupiter Tang                        Nov 2025 - Nov 2025
+   3.  jupiter                             Apr 2025 - Apr 2025
+   4.  Maksym Sobolyev (@sobomax)          Mar 2016 - Nov 2023
+   5.  Liviu Chircu (@liviuchircu)         Oct 2015 - May 2023
+   6.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2023
    7.  Nick Altmann (@nikbyte)             May 2021 - May 2021
    8.  Aleksei Vasilev                     Apr 2021 - Apr 2021
    9.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
@@ -1584,8 +1588,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
    Iancu (@bogdan-iancu), Dan Pascu (@danpascu), Callum Guy
    (@spacetourist), Peter Lemenkov (@lemenkov), Eseanu Marius
    Cristian (@eseanucristian).

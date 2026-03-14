@@ -28,11 +28,11 @@ Benchmark Module
 
         1.6. Exported MI Functions
 
-              1.6.1. bm_enable_global
-              1.6.2. bm_enable_timer
-              1.6.3. bm_granularity
-              1.6.4. bm_loglevel
-              1.6.5. bm_poll_results
+              1.6.1. benchmark:enable_global
+              1.6.2. benchmark:enable_timer
+              1.6.3. benchmark:granularity
+              1.6.4. benchmark:loglevel
+              1.6.5. benchmark:poll_results
 
         1.7. Example of usage
 
@@ -136,8 +136,8 @@ modparam("benchmark", "enable", 1)
    through this variable. A sensible granularity seems to be 100.
 
    If granularity is set to 0, then nothing will be logged
-   automatically. Instead bm_poll_results MI command can be used
-   to retrieve the results and clean the local values.
+   automatically. Instead benchmark:poll_results MI command can be
+   used to retrieve the results and clean the local values.
 
    Default value is “100”.
 
@@ -224,7 +224,9 @@ bm_log_timer("test");
 
 1.6. Exported MI Functions
 
-1.6.1. bm_enable_global
+1.6.1. benchmark:enable_global
+
+   Replaces obsolete MI command: bm_enable_global.
 
    Enables/disables the module.
 
@@ -233,9 +235,11 @@ bm_log_timer("test");
        "enable" parameter.
 
    MI FIFO Command Format:
-                        opensips-cli -x mi bm_enable_global 1
+                        opensips-cli -x mi benchmark:enable_global 1
 
-1.6.2. bm_enable_timer
+1.6.2. benchmark:enable_timer
+
+   Replaces obsolete MI command: bm_enable_timer.
 
    Enable or disable a single timer.
 
@@ -247,20 +251,25 @@ bm_log_timer("test");
 
    Example 1.6. Enabling a timer
 ...
-opensips-cli -x mi bm_enable_timer test 1
+opensips-cli -x mi benchmark:enable_timer test 1
 ...
 
-1.6.3. bm_granularity
+1.6.3. benchmark:granularity
+
+   Replaces obsolete MI command: bm_granularity.
 
    Modifies the benchmarking granularity.
 
    Parameters:
-     * granularity - See discription of "granularity" parameter.
+     * benchmark:granularity - See discription of "granularity"
+       parameter.
 
    MI FIFO Command Format:
-                        opensips-cli -x mi bm_granularity 300
+                        opensips-cli -x mi benchmark:granularity 300
 
-1.6.4. bm_loglevel
+1.6.4. benchmark:loglevel
+
+   Replaces obsolete MI command: bm_loglevel.
 
    Modifies the module log level.
 
@@ -268,9 +277,11 @@ opensips-cli -x mi bm_enable_timer test 1
      * log_level - See discription of "loglevel" parameter.
 
    MI FIFO Command Format:
-                        opensips-cli -x mi bm_loglevel 4
+                        opensips-cli -x mi benchmark:loglevel 4
 
-1.6.5. bm_poll_results
+1.6.5. benchmark:poll_results
+
+   Replaces obsolete MI command: bm_poll_results.
 
    Returns the current and global results for each timer. This
    command is only available if the "granularity" variable is set
@@ -283,12 +294,12 @@ opensips-cli -x mi bm_enable_timer test 1
 
    If there were no new calls to bm_log_timer since last check,
    then all current values of a timer will be equal 0. Each call
-   to bm_poll_results will reset current values (but not global
-   ones).
+   to benchmark:poll_results will reset current values (but not
+   global ones).
 
    Example 1.7. Getting the results via FIFO interface
 ...
-opensips-cli -x mi bm_poll_results
+opensips-cli -x mi benchmark:poll_results
 register_timer
         3/40/12/14/13.333333
         9/204/12/97/22.666667
@@ -369,8 +380,8 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 23 10 1391 50
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 21 19 88 53
-   3. Liviu Chircu (@liviuchircu) 14 11 28 61
-   4. Razvan Crainea (@razvancrainea) 11 9 23 21
+   3. Razvan Crainea (@razvancrainea) 14 12 71 50
+   4. Liviu Chircu (@liviuchircu) 14 11 28 61
    5. Vlad Patrascu (@rvlad-patrascu) 9 4 185 143
    6. Stanislaw Pitucha 7 3 170 65
    7. Henning Westerholt (@henningw) 6 4 11 10
@@ -401,9 +412,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018

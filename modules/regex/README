@@ -28,9 +28,9 @@ Regex Module
 
         1.5. Exported MI Functions
 
-              1.5.1. regex_reload
-              1.5.2. regex_match
-              1.5.3. regex_match_group
+              1.5.1. regex:reload
+              1.5.2. regex:match
+              1.5.3. regex:match_group
 
         1.6. Installation and Running
 
@@ -266,28 +266,32 @@ if (pcre_match_group($rU, 2)) {
 
 1.5. Exported MI Functions
 
-1.5.1.  regex_reload
+1.5.1.  regex:reload
+
+   Replaces obsolete MI command: regex_reload.
 
    Causes regex module to re-read the content of the text file and
    re-compile the regular expressions. The number of groups in the
    file can be modified safely.
 
-   Name: regex_reload
+   Name: regex:reload
 
    Parameters: none
 
    MI FIFO Command Format:
 ...
-opensips-cli -x mi regex_reload
+opensips-cli -x mi regex:reload
 ...
 
-1.5.2.  regex_match
+1.5.2.  regex:match
+
+   Replaces obsolete MI command: regex_match.
 
    Matches the given string parameter against the regular
    expression pcre_regex. Returns "Match" if it matches, "Not
    Match" otherwise.
 
-   Name: regex_match
+   Name: regex:match
 
    Parameters:
      * string
@@ -295,20 +299,22 @@ opensips-cli -x mi regex_reload
 
    MI FIFO Command Format:
 ...
-opensips-cli -x mi regex_match string="1234" pcre_regex="^1234$"
+opensips-cli -x mi regex:match string="1234" pcre_regex="^1234$"
 "Match"
-opensips-cli -x mi regex_match string="1234" pcre_regex="^1235$"
+opensips-cli -x mi regex:match string="1234" pcre_regex="^1235$"
 "Not Match"
 ...
 
-1.5.3.  regex_match_group
+1.5.3.  regex:match_group
+
+   Replaces obsolete MI command: regex_match_group.
 
    It uses the groups readed from the text file to match the given
    string parameter against the compiled regular expression in
    group number group. Returns "Match" if it matches, "Not Match"
    otherwise.
 
-   Name: regex_match_group
+   Name: regex:match_group
 
    Parameters:
      * string
@@ -316,9 +322,9 @@ opensips-cli -x mi regex_match string="1234" pcre_regex="^1235$"
 
    MI FIFO Command Format:
 ...
-opensips-cli -x mi regex_match_group string="1234" group="0"
+opensips-cli -x mi regex:match_group string="1234" group="0"
 "Match"
-opensips-cli -x mi regex_match_group string="1234" group="1"
+opensips-cli -x mi regex:match_group string="1234" group="1"
 "Not Match"
 ...
 
@@ -428,7 +434,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 20 17 127 48
+   1. Razvan Crainea (@razvancrainea) 24 20 161 70
    2. Iñaki Baz Castillo 15 3 1242 2
    3. Liviu Chircu (@liviuchircu) 12 10 25 42
    4. Vlad Patrascu (@rvlad-patrascu) 9 6 63 88
@@ -462,7 +468,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2026
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
    2.  Steve Ayre                          Sep 2025 - Sep 2025
    3.  Ken Rice                            Sep 2025 - Sep 2025
    4.  MonkeyTester                        Aug 2023 - Aug 2023
@@ -483,8 +489,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: MonkeyTester, Vlad Patrascu (@rvlad-patrascu),
-   Razvan Crainea (@razvancrainea), Liviu Chircu (@liviuchircu),
+   Last edited by: Razvan Crainea (@razvancrainea), MonkeyTester,
+   Vlad Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu),
    Bogdan-Andrei Iancu (@bogdan-iancu), Iñaki Baz Castillo.
 
    Documentation Copyrights:
