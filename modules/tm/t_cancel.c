@@ -56,6 +56,10 @@ void which_cancel( struct cell *t, branch_bm_t *cancel_bm )
 		if (should_cancel_branch(t, i))
 			BRANCH_BM_SET_IDX( *cancel_bm, i);
 	}
+
+	LM_DBG("branches to cancel ["BRANCH_BM_SPECS"], range %d:%d\n",
+		BRANCH_BM_ARGS(*cancel_bm),t->first_branch,t->nr_of_outgoings-1);
+
 }
 
 
@@ -123,7 +127,7 @@ void cancel_branch( struct cell *t, int branch )
 		_tm_branch_index = 0;
 	}
 
-	LM_DBG("sending cancel...\n");
+	LM_DBG("sending cancel on branch %d...\n",branch);
 	if (TM_BRANCH(t,branch).br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 	backup_list = set_avp_list( &t->user_avps );
