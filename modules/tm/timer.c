@@ -350,7 +350,7 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 	context_p old_ctx;
 	struct retr_buf* r_buf;
 	struct cell *t;
-	branch_bm_t cancel_bitmap;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 
 	if (fr_tl==0){
 		/* or BUG?, ignoring it for now */
