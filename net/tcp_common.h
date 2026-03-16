@@ -58,7 +58,11 @@ int tcp_write_on_socket(struct tcp_connection* con, int fd,
 
 /* adds an async chunk to the connection pending list */
 int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
-		int len, int lock);
+			int len, int lock);
+
+/* appends a list of buffers to the async write queue */
+int tcp_async_add_chunks(struct tcp_connection *con, const struct iovec *iov,
+			int iovcnt, int lock);
 
 /* returns the first chunk to be written */
 struct tcp_async_chunk *tcp_async_get_chunk(struct tcp_connection *con);

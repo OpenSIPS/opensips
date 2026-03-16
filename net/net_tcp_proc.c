@@ -99,6 +99,9 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 		tcpconn_put(c);
 		return;
 	}
+	if (!pending_data && c->state == S_CONN_OK && c->async &&
+			c->async->pending && (c->flags & F_CONN_REMOVED_WRITE))
+		pending_data = 1;
 	if (pending_data) {
 		tcpconn_release(c, ASYNC_WRITE_GENW, 1, 0 /*not TCP, but GEN worker*/);
 		return;

@@ -401,6 +401,13 @@ static inline int tcp_threads_active(void)
 	return tcp_pool.threads_no > 0;
 }
 
+int tcp_write_in_main(void)
+{
+	/* This is a process-independent policy: TCP writes are handled by the
+	 * dedicated TCP main process, regardless of the caller process. */
+	return !tcp_disabled;
+}
+
 
 
 /********************** TCP conn management functions ************************/

@@ -426,10 +426,10 @@ static inline int hostent2su( union sockaddr_union* su,
 /*! \brief fast ip_addr -> string converter;
  * it uses an internal buffer
  */
-extern char _ip_addr_A_buffs[IP_ADDR2STR_BUF_NO][IP_ADDR_MAX_STR_SIZE];
+extern __thread char _ip_addr_A_buffs[IP_ADDR2STR_BUF_NO][IP_ADDR_MAX_STR_SIZE];
 static inline char* ip_addr2a(struct ip_addr* ip)
 {
-	static unsigned int it = 0;
+	static __thread unsigned int it = 0;
 	int offset;
 	register unsigned char a,b,c;
 	register unsigned char d;

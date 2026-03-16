@@ -817,6 +817,7 @@ static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
 static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
 {
 	int ret, fd;
+	int offload_write;
 	struct tcp_connection *conn;
 	int retry = 1;
 	/* first try to acquire the connection */
@@ -840,7 +841,9 @@ retry:
 		goto retry;
 	}
 	/* update connection in case it has changed */
-	ret = tsend_stream(fd, buffer->s, buffer->len, smpp_send_timeout);
+	offload_write = tcp_write_in_main();
+	ret = tcp_write_on_socket(conn, offload_write ? -1 : fd,
+			buffer->s, buffer->len, smpp_send_timeout, 0);
 	tcp_conn_reset_lifetime(conn);
 	if (ret < 0) {
 		LM_ERR("failed to send data!\n");
@@ -848,7 +851,7 @@ retry:
 	}
 	if (conn->proc_id != process_no)
 		close(fd);
-	tcp_conn_release(conn, 0);
+	tcp_conn_release(conn, (ret < buffer->len) ? 1 : 0);
 	return ret;
 }
 
@@ -856,6 +859,7 @@ retry:
 static int send_bind(smpp_session_t *session)
 {
 	int fd, n = -1;
+	int offload_write;
 	struct tcp_connection *conn;
 	smpp_bind_transceiver_req_t *req = NULL;
 
@@ -878,8 +882,18 @@ static int send_bind(smpp_session_t *session)
 
 	session->conn_id = conn->id;
 	conn->proto_data = session;
-	n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
+	offload_write = tcp_write_in_main();
+	n = tcp_write_on_socket(conn, offload_write ? -1 : fd,
+			req->payload.s, req->payload.len, smpp_send_timeout, 0);
 	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
+	if (n < 0) {
+		conn->state = S_CONN_BAD;
+	} else {
+		tcp_conn_reset_lifetime(conn);
+	}
+	if (conn->proc_id != process_no)
+		close(fd);
+	tcp_conn_release(conn, (n < req->payload.len) ? 1 : 0);
 free_req:
 	free_smpp_msg(req);
 	return n;

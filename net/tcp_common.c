@@ -24,8 +24,35 @@
 #include "tcp_common.h"
 #include "tcp_conn_profile.h"
 #include "proxy_protocol.h"
+#include "trans.h"
 #include "../tsend.h"
 #include "proto_tcp/tcp_common_defs.h"
+
+#define TCP_DEFAULT_ASYNC_CHUNKS 32
+
+static int tcp_async_init_data(struct tcp_connection *con)
+{
+	int chunks;
+
+	if (con->async)
+		return 0;
+
+	chunks = protos[con->type].net.stream.async_chunks;
+	if (chunks <= 0)
+		chunks = TCP_DEFAULT_ASYNC_CHUNKS;
+
+	con->async = shm_malloc(sizeof(struct tcp_async_data) +
+			chunks * sizeof(struct tcp_async_chunk *));
+	if (!con->async) {
+		LM_ERR("No more SHM for async queue on conn %p / %u\n", con, con->id);
+		return -1;
+	}
+
+	con->async->allocated = chunks;
+	con->async->oldest = 0;
+	con->async->pending = 0;
+	return 0;
+}
 
 /*! \brief blocking connect on a non-blocking fd; it will timeout after
  * tcp_connect_timeout
@@ -476,7 +503,11 @@ int tcp_write_on_socket(struct tcp_connection* c, int fd,
 	int n;
 
 	lock_get(&c->write_lock);
-	if (c->async) {
+	if (fd < 0) {
+		n = tcp_async_add_chunk(c, buf, len, 0);
+		if (n == 0)
+			n = len;
+	} else if (c->async) {
 		/*
 		 * if there is any data pending to write, we have to wait for those chunks
 		 * to be sent, otherwise we will completely break the messages' order
@@ -504,8 +535,19 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 {
 	struct tcp_async_chunk *c;
 
+	if (lock)
+		lock_get(&con->write_lock);
+
+	if (tcp_async_init_data(con) < 0) {
+		if (lock)
+			lock_release(&con->write_lock);
+		return -1;
+	}
+
 	c = shm_malloc(sizeof(struct tcp_async_chunk) + len);
 	if (!c) {
+		if (lock)
+			lock_release(&con->write_lock);
 		LM_ERR("No more SHM\n");
 		return -1;
 	}
@@ -514,9 +556,6 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 	c->ticks = get_ticks();
 	c->buf = (char *)(c+1);
 	memcpy(c->buf,buf,len);
-
-	if (lock)
-		lock_get(&con->write_lock);
 
 	if (con->async->allocated == con->async->pending) {
 		LM_ERR("We have reached the limit of max async postponed chunks %d "
@@ -535,6 +574,34 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 		lock_release(&con->write_lock);
 
 	return 0;
+}
+
+int tcp_async_add_chunks(struct tcp_connection *con, const struct iovec *iov,
+		int iovcnt, int lock)
+{
+	int i;
+	int rc = 0;
+
+	if (lock)
+		lock_get(&con->write_lock);
+
+	if (tcp_async_init_data(con) < 0) {
+		rc = -1;
+		goto out;
+	}
+
+	for (i = 0; i < iovcnt; i++) {
+		if (iov[i].iov_len == 0)
+			continue;
+		rc = tcp_async_add_chunk(con, iov[i].iov_base, iov[i].iov_len, 0);
+		if (rc < 0)
+			break;
+	}
+
+out:
+	if (lock)
+		lock_release(&con->write_lock);
+	return rc;
 }
 
 

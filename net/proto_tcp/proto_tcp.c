@@ -364,6 +364,7 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 	struct timeval get,snd;
 	union sockaddr_union src_su, dst_su;
 	int port = 0, fd, n, matched;
+	int offload_write;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
@@ -553,6 +554,8 @@ async_connect_done:
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
+			if (tcp_write_in_main() && c->state == S_CONN_OK)
+				goto send_it;
 			/* the FD transfer failed (we have an established conn,
 			 * but returned fd is -1) -> leave the conn alone, return error
 			 * for the write op, nothing to do about it */
@@ -565,8 +568,10 @@ async_connect_done:
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
+	offload_write = tcp_write_in_main();
 
-	if (send_stream_proxy_protocol_v1(c, fd, tcp_send_timeout, 1,
+	if (send_stream_proxy_protocol_v1(c, offload_write ? -1 : fd,
+			tcp_send_timeout, 1,
 			msg ? &msg->rcv : NULL, "TCP") < 0) {
 		LM_ERR("failed to send outbound PROXY header\n");
 		c->state=S_CONN_BAD;
@@ -580,7 +585,7 @@ send_it:
 
 	start_expire_timer(snd,prof.send_threshold);
 
-	n = tcp_write_on_socket(c, fd, buf, len,
+	n = tcp_write_on_socket(c, offload_write ? -1 : fd, buf, len,
 			tcp_send_timeout, tcp_async_local_write_timeout);
 
 	get_time_difference(snd,prof.send_threshold,tcp_timeout_send);

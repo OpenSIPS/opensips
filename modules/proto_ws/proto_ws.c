@@ -182,6 +182,7 @@ static int proto_ws_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP | PROTO_NET_SUPPORTS_PROXY;
 	pi->net.stream.read		= ws_read_req;
+	pi->net.stream.write		= tcp_async_write;
 
 	pi->net.stream.conn.init	= ws_conn_init;
 	pi->net.stream.conn.clean	= ws_conn_clean;
@@ -332,6 +333,7 @@ static int proto_ws_send(const struct socket_info* send_sock,
 	struct ip_addr ip;
 	struct ws_data* d;
 	int port = 0, fd, n, matched;
+	int offload_write;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
@@ -393,6 +395,8 @@ static int proto_ws_send(const struct socket_info* send_sock,
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
 	if (fd==-1) {
+		if (tcp_write_in_main() && c->state == S_CONN_OK)
+			goto send_it;
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
@@ -401,8 +405,9 @@ static int proto_ws_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
+	offload_write = tcp_write_in_main();
 
-	n = ws_req_write(c, fd, buf, len);
+	n = ws_req_write(c, offload_write ? -1 : fd, buf, len);
 	stop_expire_timer(get, prof.send_threshold, "WS ops",buf,(int)len,1);
 	tcp_conn_reset_lifetime(c);
 
