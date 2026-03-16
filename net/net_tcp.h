@@ -98,6 +98,9 @@ struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
 /* sends a connected connection to the master */
 int tcp_conn_send(struct tcp_connection *con);
 
+/* true when TCP main owns the write path and IO threads handle flushing */
+int tcp_write_in_main(void);
+
 /* release a connection acquired via tcp_conn_get() or tcp_conn_create() */
 void tcp_conn_release(struct tcp_connection* c, int pending_data);
 

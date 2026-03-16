@@ -303,7 +303,11 @@ static int bins_write_on_socket(struct tcp_connection* c, int fd,
 	int n;
 
 	lock_get(&c->write_lock);
-	if (c->async) {
+	if (fd < 0) {
+		n = tcp_async_add_chunk(c, buf, len, 0);
+		if (n == 0)
+			n = len;
+	} else if (c->async) {
 		/*
 		 * if there is any data pending to write, we have to wait for those chunks
 		 * to be sent, otherwise we will completely break the messages' order
@@ -341,6 +345,7 @@ static int proto_bins_send(const struct socket_info* send_sock,
 	int port;
 	int fd, n;
 	int send2main = 0;
+	int offload_write;
 
 	port=0;
 
@@ -472,6 +477,8 @@ static int proto_bins_send(const struct socket_info* send_sock,
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
+			if (tcp_write_in_main() && c->state == S_CONN_OK)
+				goto send;
 			/* return error, nothing to do about it */
 			LM_ERR("Bad connection state\n");
 			tcp_conn_release(c, 0);
@@ -481,8 +488,17 @@ static int proto_bins_send(const struct socket_info* send_sock,
 
 send:
 	LM_DBG("sending via fd %d...\n",fd);
+	offload_write = tcp_write_in_main();
 
-	n = bins_write_on_socket(c, fd, buf, len);
+	if (send2main && offload_write) {
+		if (tcp_conn_send(c) < 0) {
+			LM_ERR("cannot send socket to main\n");
+			goto err_release;
+		}
+		send2main = 0;
+	}
+
+	n = bins_write_on_socket(c, offload_write ? -1 : fd, buf, len);
 
 	tcp_conn_reset_lifetime(c);
 

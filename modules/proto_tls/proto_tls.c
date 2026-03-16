@@ -272,7 +272,11 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 	int n;
 
 	lock_get(&c->write_lock);
-	if (c->async) {
+	if (fd < 0) {
+		n = tcp_async_add_chunk(c, buf, len, 0);
+		if (n == 0)
+			n = len;
+	} else if (c->async) {
 		/*
 		 * if there is any data pending to write, we have to wait for those chunks
 		 * to be sent, otherwise we will completely break the messages' order
@@ -666,49 +670,15 @@ static int proto_tls_send(const struct socket_info* send_sock,
 				goto con_release;
 			}
 
-			LM_DBG("First TCP connect attempt succeeded in less than %dms, "
-				"proceed to TLS connect \n",tls_async_local_connect_timeout);
-			if (send_stream_proxy_protocol_v1(c, fd, tls_send_tout, 1,
-					msg ? &msg->rcv : NULL,
-					"TLS") < 0) {
-				LM_ERR("failed to send outbound PROXY header\n");
-				rlen = -1;
-				goto con_release;
-			}
-			/* succesful TCP conection done - starting async SSL connect */
-			lock_get(&c->write_lock);
-			/* we connect under lock to make sure no one else is reading our
-			 * connect status */
-			tls_mgm_api.tls_update_fd(c, fd);
-			n = tls_mgm_api.tls_async_connect(c, fd,
-				tls_async_handshake_connect_timeout, t_dst);
-			lock_release(&c->write_lock);
-
-			if (n<0) {
-				LM_ERR("failed async TLS connect\n");
-				rlen = -1;
-				goto con_release;
-			}
-			if (n==0) {
-				/* attach the write buffer to it */
-				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
-					LM_ERR("Failed to add the initial write chunk\n");
-					rlen = -1; /* report an error - let the caller decide what to do */
+				LM_DBG("First TCP connect attempt succeeded in less than %dms, "
+					"proceed to queueing \n",tls_async_local_connect_timeout);
+			} else {
+				/* it is safe to send the fd to the main, because it doesn't
+				 * matter which process completes the handshake */
+				if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
+					LM_ERR("connect failed\n");
+					return -1;
 				}
-
-				LM_DBG("Successfully started async SSL connection \n");
-				goto con_release;
-			}
-
-			LM_DBG("First TLS handshake attempt succeeded in less than %dms, "
-				"proceed to writing \n",tls_async_handshake_connect_timeout);
-		} else {
-			/* it is safe to send the fd to the main, because it doesn't
-			 * matter which process completes the handshake */
-			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
-				LM_ERR("connect failed\n");
-				return -1;
-			}
 		}
 
 		goto send_it;
@@ -717,6 +687,8 @@ static int proto_tls_send(const struct socket_info* send_sock,
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
 	if (fd==-1) {
+		if (c->state == S_CONN_OK || c->state == S_CONN_CONNECTING)
+			goto send_it;
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
@@ -725,15 +697,13 @@ static int proto_tls_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
-
-	if (send_stream_proxy_protocol_v1(c, fd, tls_send_tout, 1,
-			msg ? &msg->rcv : NULL, "TLS") < 0) {
+	if (tls_async_queue_proxy_header(c, msg) < 0) {
 		LM_ERR("failed to send outbound PROXY header\n");
 		rlen = -1;
 		goto con_release;
 	}
 
-	rlen = tls_write_on_socket(c, fd, buf, len);
+	rlen = tls_write_on_socket(c, -1, buf, len);
 	tcp_conn_reset_lifetime(c);
 
 	LM_DBG("after write: c=%p n=%d fd=%d\n",c, rlen, fd);

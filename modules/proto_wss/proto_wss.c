@@ -68,6 +68,7 @@ static str wss_resource = str_init("/");
 
 static int wss_raw_writev(struct tcp_connection *c, int fd,
 		const struct iovec *iov, int iovcnt, int tout);
+static int wss_async_write(struct tcp_connection* con, int fd);
 
 #define _ws_common_module "wss"
 #define _ws_common_max_msg_chunks wss_max_msg_chunks
@@ -198,6 +199,7 @@ static int proto_wss_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP | PROTO_NET_SUPPORTS_PROXY;
 	pi->net.stream.read		= wss_read_req;
+	pi->net.stream.write		= wss_async_write;
 
 	pi->net.stream.conn.init	= wss_conn_init;
 	pi->net.stream.conn.clean	= ws_conn_clean;
@@ -396,6 +398,7 @@ static int proto_wss_send(const struct socket_info* send_sock,
 	struct ip_addr ip;
 	int port = 0, fd, n, matched;
 	struct ws_data* d;
+	int offload_write;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
@@ -447,6 +450,8 @@ static int proto_wss_send(const struct socket_info* send_sock,
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
 	if (fd==-1) {
+		if (tcp_write_in_main() && c->state == S_CONN_OK)
+			goto send_it;
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
@@ -455,8 +460,9 @@ static int proto_wss_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
+	offload_write = tcp_write_in_main();
 
-	n = ws_req_write(c, fd, buf, len);
+	n = ws_req_write(c, offload_write ? -1 : fd, buf, len);
 	stop_expire_timer(get, prof.send_threshold, "WSS ops",buf,(int)len,1);
 	tcp_conn_reset_lifetime(c);
 
@@ -592,6 +598,13 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 	static char *buf = NULL;
 #endif
 
+	if (fd < 0) {
+		for (i = 0; i < iovcnt; i++)
+			ret += iov[i].iov_len;
+		n = tcp_async_add_chunks(c, iov, iovcnt, 1);
+		return (n == 0) ? ret : n;
+	}
+
 #ifndef TLS_DONT_WRITE_FRAGMENTS
 	lock_get(&c->write_lock);
 	for (i = 0; i < iovcnt; i++) {
@@ -625,6 +638,41 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 end:
 	lock_release(&c->write_lock);
 	return ret;
+}
+
+static int wss_async_write(struct tcp_connection* con, int fd)
+{
+	int n;
+	struct tcp_async_chunk *chunk;
+
+	n = tls_mgm_api.tls_fix_read_conn(con, fd, wss_hs_tls_tout, t_dst, 0);
+	if (n < 0) {
+		LM_ERR("failed to do pre-tls handshake!\n");
+		return -1;
+	} else if (n == 0) {
+		LM_DBG("SSL accept/connect still pending!\n");
+		return 1;
+	}
+
+	tls_mgm_api.tls_update_fd(con, fd);
+
+	while ((chunk = tcp_async_get_chunk(con)) != NULL) {
+		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
+				chunk->len, chunk, con, chunk->ticks, get_ticks());
+
+		n = tls_mgm_api.tls_write(con, fd, chunk->buf, chunk->len, NULL);
+		if (n == 0) {
+			LM_DBG("Can't finish to write chunk %p on conn %p\n",
+					chunk, con);
+			return 1;
+		} else if (n < 0) {
+			return -1;
+		}
+
+		tcp_async_update_write(con, n);
+	}
+
+	return 0;
 }
 
 static mi_response_t *wss_trace_mi(const mi_params_t *params,

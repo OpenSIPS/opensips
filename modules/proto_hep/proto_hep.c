@@ -418,6 +418,7 @@ static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 	int port = 0;
 	struct ip_addr ip;
 	int fd, n;
+	int offload_write;
 
 	if (to) {
 		su2ip_addr(&ip, to);
@@ -545,6 +546,8 @@ static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
+			if (tcp_write_in_main() && c->state == S_CONN_OK)
+				goto send_it;
 			/* return error, nothing to do about it */
 			tcp_conn_release(c, 0);
 			return -1;
@@ -553,11 +556,12 @@ static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
+	offload_write = tcp_write_in_main();
 
 	if (is_tls) {
-		n = hep_tls_write_on_socket(c, fd, buf, len);
+		n = hep_tls_write_on_socket(c, offload_write ? -1 : fd, buf, len);
 	} else {
-		n = tcp_write_on_socket(c, fd, buf, len,
+		n = tcp_write_on_socket(c, offload_write ? -1 : fd, buf, len,
 			hep_send_timeout, hep_async_local_write_timeout);
 	}
 
@@ -1207,7 +1211,11 @@ static int hep_tls_write_on_socket(struct tcp_connection* c, int fd, char* buf, 
 {
 	int n;
 	lock_get(&c->write_lock);
-	if (c->async) {
+	if (fd < 0) {
+		n = tcp_async_add_chunk(c, buf, len, 0);
+		if (n == 0)
+			n = len;
+	} else if (c->async) {
 		if (!c->async->pending) {
 			if (tls_mgm_api.tls_update_fd(c, fd) < 0) {
 				n = -1;

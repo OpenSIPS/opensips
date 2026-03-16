@@ -34,5 +34,6 @@ void msrps_report(int type, unsigned long long conn_id, int conn_flags,
 
 int msrps_write_on_socket(struct tcp_connection *c, int fd,
 		char *buf, int len, int handshake_timeout, int send_timeout);
+int msrps_async_write(struct tcp_connection *c, int fd);
 
 #endif

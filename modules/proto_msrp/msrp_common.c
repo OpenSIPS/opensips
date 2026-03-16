@@ -522,6 +522,7 @@ int proto_msrp_send(const struct socket_info* send_sock,
 	union sockaddr_union src_su, dst_su;
 	int port = 0, fd, n, matched;
 	struct tls_domain *dom;
+	int offload_write;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
@@ -603,6 +604,8 @@ int proto_msrp_send(const struct socket_info* send_sock,
 	/* now we have a connection, let's see what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
 	if (fd==-1) {
+		if (tcp_write_in_main() && c->state == S_CONN_OK)
+			goto send_it;
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
@@ -612,14 +615,15 @@ int proto_msrp_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
+	offload_write = tcp_write_in_main();
 
 	start_expire_timer(snd,prof.send_threshold);
 
 	if (send_sock->proto==PROTO_MSRP)
-		n = tcp_write_on_socket(c, fd, buf, len,
+		n = tcp_write_on_socket(c, offload_write ? -1 : fd, buf, len,
 			msrp_send_timeout, 0);
 	else
-		n = msrps_write_on_socket(c, fd, buf, len,
+		n = msrps_write_on_socket(c, offload_write ? -1 : fd, buf, len,
 			msrp_tls_handshake_timeout, msrp_send_timeout);
 
 	get_time_difference(snd,prof.send_threshold,tcp_timeout_send);

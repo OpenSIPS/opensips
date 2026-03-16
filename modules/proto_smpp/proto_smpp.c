@@ -30,6 +30,7 @@
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
+#include "../../net/tcp_common.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
@@ -391,8 +392,7 @@ error:
 
 static int smpp_write_async_req(struct tcp_connection* con,int fd)
 {
-	LM_INFO("smpp_write_async_req called\n");
-	return 0;
+	return tcp_async_write(con, fd);
 }
 
 static int send_smpp_msg(struct sip_msg* msg, str *name, str *from,

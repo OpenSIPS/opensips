@@ -21,6 +21,7 @@
 
 #include "../../trace_api.h"
 #include "../../net/net_tcp.h"
+#include "../../net/tcp_common.h"
 #include "../../net/net_tcp_report.h"
 #include "../../net/trans_trace.h"
 #include "msrp_common.h"
@@ -95,11 +96,51 @@ int msrps_write_on_socket(struct tcp_connection *c, int fd,
 	int n;
 
 	lock_get(&c->write_lock);
-	n = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
-			handshake_timeout, send_timeout, msrp_t_dst);
+	if (fd < 0) {
+		n = tcp_async_add_chunk(c, buf, len, 0);
+		if (n == 0)
+			n = len;
+	} else {
+		n = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
+				handshake_timeout, send_timeout, msrp_t_dst);
+	}
 	lock_release(&c->write_lock);
 
 	return n;
 }
 
+int msrps_async_write(struct tcp_connection *c, int fd)
+{
+	int n;
+	struct tcp_async_chunk *chunk;
 
+	n = tls_mgm_api.tls_fix_read_conn(c, fd, msrp_tls_handshake_timeout,
+			msrp_t_dst, 0);
+	if (n < 0) {
+		LM_ERR("failed to do pre-tls handshake!\n");
+		return -1;
+	} else if (n == 0) {
+		LM_DBG("SSL accept/connect still pending!\n");
+		return 1;
+	}
+
+	tls_mgm_api.tls_update_fd(c, fd);
+
+	while ((chunk = tcp_async_get_chunk(c)) != NULL) {
+		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
+				chunk->len, chunk, c, chunk->ticks, get_ticks());
+
+		n = tls_mgm_api.tls_write(c, fd, chunk->buf, chunk->len, NULL);
+		if (n == 0) {
+			LM_DBG("Can't finish to write chunk %p on conn %p\n",
+					chunk, c);
+			return 1;
+		} else if (n < 0) {
+			return -1;
+		}
+
+		tcp_async_update_write(c, n);
+	}
+
+	return 0;
+}
