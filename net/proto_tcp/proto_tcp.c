@@ -364,7 +364,6 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 	struct timeval get,snd;
 	union sockaddr_union src_su, dst_su;
 	int port = 0, fd, n, matched;
-	int offload_write;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
@@ -570,9 +569,7 @@ async_connect_done:
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
-	offload_write = tcp_write_in_main();
-
-	if (send_stream_proxy_protocol_v1(c, offload_write ? -1 : fd,
+	if (send_stream_proxy_protocol_v1(c, -1,
 			tcp_send_timeout, 1,
 			msg ? &msg->rcv : NULL, "TCP") < 0) {
 		LM_ERR("failed to send outbound PROXY header\n");
@@ -587,7 +584,7 @@ send_it:
 
 	start_expire_timer(snd,prof.send_threshold);
 
-	n = tcp_write_on_socket(c, offload_write ? -1 : fd, buf, len,
+	n = tcp_write_on_socket(c, -1, buf, len,
 			tcp_send_timeout, tcp_async_local_write_timeout);
 
 	get_time_difference(snd,prof.send_threshold,tcp_timeout_send);

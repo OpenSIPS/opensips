@@ -148,7 +148,6 @@ static int proto_bin_send(const struct socket_info* send_sock,
 	struct ip_addr ip;
 	int port;
 	int fd, n;
-	int offload_write;
 
 	port=0;
 
@@ -261,9 +260,7 @@ static int proto_bin_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
-	offload_write = tcp_write_in_main();
-
-	n = tcp_write_on_socket(c, offload_write ? -1 : fd, buf, len,
+	n = tcp_write_on_socket(c, -1, buf, len,
 			bin_send_timeout, bin_async_local_write_timeout);
 
 	tcp_conn_reset_lifetime(c);
