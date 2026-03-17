@@ -713,15 +713,14 @@ send_it:
 	if (rlen<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
-		if (c->proc_id != process_no)
+		if (fd != -1)
 			close(fd);
 		tcp_conn_release(c, 0);
 		return -1;
 	}
 
-	/* only close the FD if not already in the context of our process
-	either we just connected, or main sent us the FD */
-	if (c->proc_id != process_no)
+	/* send paths only keep temporary FDs from fresh local connects */
+	if (fd != -1)
 		close(fd);
 
 	/* mark the ID of the used connection (tracing purposes) */
@@ -733,8 +732,7 @@ send_it:
 	return rlen;
 con_release:
 	sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);
-	/* close the fd if this process is not meant to own it */
-	if (c->proc_id != process_no)
+	if (fd != -1)
 		close(fd);
 	tcp_conn_release(c, (rlen < 0)?0:1);
 	return rlen;

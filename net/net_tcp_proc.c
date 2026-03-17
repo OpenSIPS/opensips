@@ -70,10 +70,6 @@ static void tcpconn_release(struct tcp_connection* c, long state, int writer,
 			c, state, c->fd, c->id);
 	LM_DBG(" extra_data %p\n", c->extra_data);
 
-	/* release req & signal the parent */
-	if (!writer)
-		c->proc_id = -1;
-
 	/* errno==EINTR, EWOULDBLOCK a.s.o todo */
 	response[0]=(long)c;
 	response[1]=state;
@@ -143,7 +139,6 @@ static void tcp_receive_timeout(void)
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
 			tcpconn_check_del(con);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-			con->proc_id = -1;
 			con->state=S_CONN_BAD;
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 			sh_log(con->hist, TCP_SEND2MAIN, "state: %d, att: %d, ref: %d",
@@ -164,7 +159,6 @@ static void tcp_receive_timeout(void)
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 
 			/* connection is going to main */
-			con->proc_id = -1;
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 
 			sh_log(con->hist, TCP_SEND2MAIN, "timeout: %d, att: %d",
@@ -334,9 +328,6 @@ again:
 				sh_log(con->hist, TCP_ADD_READER, "add reader fd %d, ref: %d",
 				       s, con->refcnt);
 
-				/* mark that the connection is currently in our process
-				future writes to this con won't have to acquire FD */
-				con->proc_id = process_no;
 				/* save FD which is valid in context of this TCP worker */
 				con->fd=s;
 			} else if (rw & IO_WATCH_WRITE) {
@@ -382,7 +373,6 @@ again:
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_check_del(con);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 					sh_log(con->hist, TCP_SEND2MAIN,
 						"handle read, err, resp: %d, att: %d",
@@ -392,11 +382,10 @@ again:
 					/* the connection is already released */
 					break;
 				} else if (con->state==S_CONN_EOF) {
-					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
-					tcpconn_check_del(con);
-					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-					con->proc_id = -1;
-					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+						reactor_del_all( con->fd, idx, IO_FD_CLOSING );
+						tcpconn_check_del(con);
+						tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+						if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 					tcp_trigger_report( con, TCP_REPORT_CLOSE,
 						"EOF received");
 					sh_log(con->hist, TCP_SEND2MAIN,

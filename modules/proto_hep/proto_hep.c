@@ -575,16 +575,15 @@ send_it:
 	if (n < 0){
 		LM_ERR("failed to send\n");
 		c->state = S_CONN_BAD;
-		if (c->proc_id != process_no) {
-			close(fd);
-		}
+			if (fd != -1) {
+				close(fd);
+			}
 		tcp_conn_release(c, 0);
 		return -1;
 	}
 
-	/* only close the FD if not already in the context of our process
-	either we just connected, or main sent us the FD */
-	if (c->proc_id != process_no) {
+	/* send paths only keep temporary FDs from fresh local connects */
+	if (fd != -1) {
 		close(fd);
 	}
 

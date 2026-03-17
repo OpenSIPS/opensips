@@ -850,7 +850,7 @@ retry:
 		LM_ERR("failed to send data!\n");
 		conn->state=S_CONN_BAD;
 	}
-	if (conn->proc_id != process_no)
+	if (fd != -1)
 		close(fd);
 	tcp_conn_release(conn, (ret < buffer->len) ? 1 : 0);
 	return ret;
@@ -892,7 +892,7 @@ static int send_bind(smpp_session_t *session)
 	} else {
 		tcp_conn_reset_lifetime(conn);
 	}
-	if (conn->proc_id != process_no)
+	if (fd != -1)
 		close(fd);
 	tcp_conn_release(conn, (n < req->payload.len) ? 1 : 0);
 free_req:

@@ -69,11 +69,6 @@ enum conn_cmds { CONN_DESTROY=-4, CONN_ERROR_TCPW=-3,CONN_ERROR_GENW=-2,
 #ifdef TCP_DEBUG_CONN
 #define tcpconn_check_add(c) \
 	do { \
-		if ((c)->proc_id > 0) { \
-			LM_CRIT("add: conn=%p already in process %d\n", \
-					(c), (c)->proc_id); \
-			abort(); \
-		} \
 		if ((c)->c_next || ((c)->c_prev)) { \
 			LM_CRIT("add: conn=%p already linked somewhere else " \
 					"prev=%p next=%p\n", (c), (c)->c_prev, (c)->c_next); \
@@ -81,18 +76,7 @@ enum conn_cmds { CONN_DESTROY=-4, CONN_ERROR_TCPW=-3,CONN_ERROR_GENW=-2,
 		} \
 	} while(0)
 
-#define tcpconn_check_del(c) \
-	do { \
-		if ((c)->proc_id != process_no) { \
-			if ((c)->proc_id != -1) { \
-				LM_CRIT("del: conn=%p already in process %d\n", \
-						(c), (c)->proc_id); \
-				abort(); \
-			} else { \
-				LM_WARN("del: conn=%p removed before proc was assigned\n", (c)); \
-			} \
-		} \
-	} while(0)
+#define tcpconn_check_del(c)
 #else
 #define tcpconn_check_add(c)
 #define tcpconn_check_del(c)
