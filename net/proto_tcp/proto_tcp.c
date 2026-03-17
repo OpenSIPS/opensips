@@ -577,8 +577,8 @@ send_it:
 			msg ? &msg->rcv : NULL, "TCP") < 0) {
 		LM_ERR("failed to send outbound PROXY header\n");
 		c->state=S_CONN_BAD;
-		if (c->proc_id != process_no)
-			close(fd);
+			if (fd != -1)
+				close(fd);
 
 		sh_log(c->hist, TCP_RELEASED, "send 5, (%d)", c->refcnt);
 		tcp_conn_release(c, 0);
@@ -600,7 +600,7 @@ send_it:
 	if (n<0){
 		LM_ERR("failed to send on conn %p / %u\n", c, c->id);
 		c->state=S_CONN_BAD;
-		if (c->proc_id != process_no)
+		if (fd != -1)
 			close(fd);
 
 		sh_log(c->hist, TCP_RELEASED, "send 5, (%d)", c->refcnt);
@@ -608,9 +608,8 @@ send_it:
 		return -1;
 	}
 
-	/* only close the FD if not already in the context of our process
-	either we just connected, or main sent us the FD */
-	if (c->proc_id != process_no)
+	/* send paths only keep temporary FDs from fresh local connects */
+	if (fd != -1)
 		close(fd);
 
 	/* mark the ID of the used connection (tracing purposes) */
