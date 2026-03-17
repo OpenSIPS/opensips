@@ -155,9 +155,11 @@ static int proto_bin_send(const struct socket_info* send_sock,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		n = tcp_conn_get(id, &ip, port, PROTO_BIN, NULL, &c, &fd, send_sock);
+		fd = -1;
+		n = tcp_conn_get(id, &ip, port, PROTO_BIN, NULL, &c, send_sock);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
+		fd = -1;
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, NULL);
 	}else{
 		LM_CRIT("tcp_send called with null id & to\n");
 		return -1;

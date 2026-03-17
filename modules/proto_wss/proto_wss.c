@@ -410,11 +410,13 @@ static int proto_wss_send(const struct socket_info* send_sock,
 		port=su_getport(to);
 		dom = (cert_check_on_conn_reusage==0)?
 			NULL : tls_mgm_api.find_client_domain( &ip, port);
-		n = tcp_conn_get(id, &ip, port, PROTO_WSS, dom, &c, &fd, send_sock);
+		fd = -1;
+		n = tcp_conn_get(id, &ip, port, PROTO_WSS, dom, &c, send_sock);
 		if (dom)
 			tls_mgm_api.release_domain(dom);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
+		fd = -1;
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, NULL);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
 		get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
