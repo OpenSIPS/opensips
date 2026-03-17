@@ -573,20 +573,15 @@ int tcp_get_rcv( unsigned int id, struct receive_info *ri)
 }
 
 
-/*! \brief _tcpconn_find with locks and acquire fd */
+/*! \brief _tcpconn_find with locks and acquire a shared connection reference */
 int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 		enum sip_protos proto, void *proto_extra_id,
-		struct tcp_connection** conn, int* conn_fd,
-		const struct socket_info* send_sock)
+		struct tcp_connection** conn, const struct socket_info* send_sock)
 {
 	struct tcp_connection* c;
-	struct tcp_connection* tmp;
 	struct tcp_conn_alias* a;
 	unsigned hash;
-	long response[2];
 	unsigned int part;
-	int n;
-	int fd;
 
 	if (id) {
 		part = id;
@@ -634,7 +629,6 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 
 	/* not found */
 	*conn = NULL;
-	if (conn_fd) *conn_fd = -1;
 	return 0;
 
 found:
@@ -644,67 +638,8 @@ found:
 
 	LM_DBG("con found in state %d\n",c->state);
 
-	if (c->state!=S_CONN_OK || conn_fd==NULL) {
-		/* no need to acquired, just return the conn with an invalid fd */
-		*conn = c;
-		if (conn_fd) *conn_fd = -1;
-		return 1;
-	}
-
-	if (c->proc_id == process_no) {
-		LM_DBG("tcp connection found (%p) already in this process ( %d ) ,"
-			" fd = %d\n", c, c->proc_id, c->fd);
-		/* we already have the connection in this worker's reactor, */
-		/* no need to acquire FD */
-		*conn = c;
-		*conn_fd = c->fd;
-		return 1;
-	}
-
-	/* acquire the fd for this connection too */
-	LM_DBG("tcp connection found (%p), acquiring fd\n", c);
-	/* get the fd */
-	response[0]=(long)c;
-	response[1]=CONN_GET_FD;
-	n=send_all(unix_tcp_sock, response, sizeof(response));
-	if (n<=0){
-		LM_ERR("failed to get fd(write):%s (%d)\n",
-				strerror(errno), errno);
-		n=-1;
-		goto error;
-	}
-	LM_DBG("c= %p, n=%d, Usock=%d\n", c, n, unix_tcp_sock);
-	tmp = c;
-	n=receive_fd(unix_tcp_sock, &c, sizeof(c), &fd, MSG_WAITALL);
-	if (n<=0){
-		LM_ERR("failed to get fd(receive_fd):"
-			" %s (%d)\n", strerror(errno), errno);
-		n=-1;
-		goto error;
-	}
-	if (c!=tmp){
-		LM_CRIT("got different connection:"
-			"  %p (id= %u, refcnt=%d state=%d != "
-			"  %p (id= %u, refcnt=%d state=%d (n=%d)\n",
-			  c,   c->id,   c->refcnt,   c->state,
-			  tmp, tmp->id, tmp->refcnt, tmp->state, n
-		   );
-		n=-1; /* fail */
-		close(fd);
-		goto error;
-	}
-	LM_DBG("after receive_fd: c= %p n=%d fd=%d\n",c, n, fd);
-
 	*conn = c;
-	*conn_fd = fd;
-
 	return 1;
-error:
-	tcpconn_put(c);
-	sh_log(c->hist, TCP_UNREF, "tcp_conn_get, (%d)", c->refcnt);
-	*conn = NULL;
-	*conn_fd = -1;
-	return -1;
 }
 
 
@@ -1448,6 +1383,17 @@ static int tcp_queue_job(struct tcp_connection *tcpconn, int op)
 	return 0;
 }
 
+static inline int tcp_queue_write_job(struct tcp_connection *tcpconn)
+{
+	tcpconn->flags |= F_CONN_WRITE_QUEUED;
+	if (tcp_queue_job(tcpconn, TCP_WRITE_JOB) < 0) {
+		tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
+		return -1;
+	}
+
+	return 0;
+}
+
 static inline void tcp_fail_conn(struct tcp_connection *tcpconn,
 		const char *reason, int report)
 {
@@ -1494,6 +1440,7 @@ static inline void tcp_complete_read(struct tcp_job *job)
 static inline void tcp_complete_write(struct tcp_job *job)
 {
 	struct tcp_connection *tcpconn;
+	int pending_chunks;
 
 	tcpconn = job->conn;
 
@@ -1502,15 +1449,37 @@ static inline void tcp_complete_write(struct tcp_job *job)
 		return;
 	}
 
+	lock_get(&tcpconn->write_lock);
+	pending_chunks = (tcpconn->async && tcpconn->async->pending);
+	lock_release(&tcpconn->write_lock);
+
 	if (job->resp == 1 && (tcpconn->flags & F_CONN_REMOVED_WRITE)) {
+		tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
 		if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn) < 0) {
 			LM_ERR("failed to re-add TCP conn %p for write events\n", tcpconn);
 			tcp_fail_conn(tcpconn, "Failed to re-arm write", 0);
 			return;
 		}
 		tcpconn->flags &= ~F_CONN_REMOVED_WRITE;
+		tcpconn_put(tcpconn);
+		return;
 	}
 
+	if (pending_chunks) {
+		if (tcp_queue_job(tcpconn, TCP_WRITE_JOB) < 0) {
+			LM_ERR("failed queuing follow-up TCP write job\n");
+			tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
+			if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn) < 0) {
+				tcp_fail_conn(tcpconn, "Failed queueing follow-up write", 0);
+				return;
+			}
+			tcpconn->flags &= ~F_CONN_REMOVED_WRITE;
+			tcpconn_put(tcpconn);
+		}
+		return;
+	}
+
+	tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
 	tcpconn_put(tcpconn);
 }
 
@@ -1689,7 +1658,7 @@ async_write:
 			tcpconn_ref(tcpconn); /* refcnt ++ */
 			sh_log(tcpconn->hist, TCP_REF, "tcpconn write, (%d)",
 				tcpconn->refcnt);
-			if (tcp_queue_job(tcpconn, TCP_WRITE_JOB) < 0) {
+			if (tcp_queue_write_job(tcpconn) < 0) {
 				LM_ERR("failed queuing TCP write job\n");
 				if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
 						tcpconn) < 0) {
@@ -1921,15 +1890,6 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			sh_log(tcpconn->hist, TCP_UNREF, "worker error, (%d)", tcpconn->refcnt);
 			tcpconn_destroy(tcpconn); /* will close also the fd */
 			break;
-		case CONN_GET_FD:
-			/* send the requested FD  */
-			/* WARNING: take care of setting refcnt properly to
-			 * avoid race condition */
-			if (send_fd(p->unix_sock, &tcpconn, sizeof(tcpconn),
-							tcpconn->fd)<=0){
-				LM_ERR("send_fd failed\n");
-			}
-			break;
 		case CONN_NEW:
 			/* update the fd in the requested tcpconn*/
 			/* WARNING: take care of setting refcnt properly to
@@ -1972,10 +1932,21 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				tcpconn_put(tcpconn);
 				break;
 			}
-			tcpconn_put(tcpconn);
-			/* must be after the de-ref*/
-			reactor_add_writer( tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
+			if ((tcpconn->flags & F_CONN_WRITE_QUEUED) ||
+					!(tcpconn->flags & F_CONN_REMOVED_WRITE)) {
+				tcpconn_put(tcpconn);
+				break;
+			}
+			if (tcp_queue_write_job(tcpconn) < 0) {
+				LM_ERR("failed queuing worker-triggered TCP write job\n");
+				if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
+						tcpconn) < 0) {
+					tcp_fail_conn(tcpconn, "Failed queueing worker write", 0);
+					return 0;
+				}
+				tcpconn->flags&=~F_CONN_REMOVED_WRITE;
+				tcpconn_put(tcpconn);
+			}
 			break;
 		default:
 			LM_CRIT("unknown cmd %d from worker %d (pid %d)\n", cmd,

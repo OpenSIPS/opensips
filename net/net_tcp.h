@@ -84,11 +84,10 @@ int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags 
 
 /********************** TCP conn management functions ************************/
 
-/* returns the connection identified by either the id or the destination to */
+/* returns the shared connection identified by either the id or destination */
 int tcp_conn_get(int unsigned id, struct ip_addr* ip, int port,
 		enum sip_protos proto, void *proto_extra_id,
-		struct tcp_connection** conn, int* conn_fd,
-		const struct socket_info* send_sock);
+		struct tcp_connection** conn, const struct socket_info* send_sock);
 
 /* creates a new tcp conn around a newly connected socket */
 struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
