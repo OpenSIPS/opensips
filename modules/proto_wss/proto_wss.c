@@ -398,7 +398,6 @@ static int proto_wss_send(const struct socket_info* send_sock,
 	struct ip_addr ip;
 	int port = 0, fd, n, matched;
 	struct ws_data* d;
-	int offload_write;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
@@ -462,9 +461,7 @@ static int proto_wss_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
-	offload_write = tcp_write_in_main();
-
-	n = ws_req_write(c, offload_write ? -1 : fd, buf, len);
+	n = ws_req_write(c, -1, buf, len);
 	stop_expire_timer(get, prof.send_threshold, "WSS ops",buf,(int)len,1);
 	tcp_conn_reset_lifetime(c);
 

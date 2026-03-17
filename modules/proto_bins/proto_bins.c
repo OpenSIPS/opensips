@@ -345,7 +345,6 @@ static int proto_bins_send(const struct socket_info* send_sock,
 	int port;
 	int fd, n;
 	int send2main = 0;
-	int offload_write;
 
 	port=0;
 
@@ -490,9 +489,7 @@ static int proto_bins_send(const struct socket_info* send_sock,
 
 send:
 	LM_DBG("sending via fd %d...\n",fd);
-	offload_write = tcp_write_in_main();
-
-	if (send2main && offload_write) {
+	if (send2main) {
 		if (tcp_conn_send(c) < 0) {
 			LM_ERR("cannot send socket to main\n");
 			goto err_release;
@@ -500,7 +497,7 @@ send:
 		send2main = 0;
 	}
 
-	n = bins_write_on_socket(c, offload_write ? -1 : fd, buf, len);
+	n = bins_write_on_socket(c, -1, buf, len);
 
 	tcp_conn_reset_lifetime(c);
 
