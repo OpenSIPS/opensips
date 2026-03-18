@@ -263,8 +263,6 @@ send_it:
 	n = tcp_write_on_socket(c, -1, buf, len,
 			bin_send_timeout, bin_async_local_write_timeout);
 
-	tcp_conn_reset_lifetime(c);
-
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){

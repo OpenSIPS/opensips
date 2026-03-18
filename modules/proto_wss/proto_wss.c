@@ -463,7 +463,6 @@ send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 	n = ws_req_write(c, -1, buf, len);
 	stop_expire_timer(get, prof.send_threshold, "WSS ops",buf,(int)len,1);
-	tcp_conn_reset_lifetime(c);
 
 	/* only here we will have all tracing data TLS + WS */
 	d = c->proto_data;
@@ -635,6 +634,8 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 
 end:
 	lock_release(&c->write_lock);
+	if (ret > 0)
+		tcp_conn_reset_lifetime(c);
 	return ret;
 }
 
@@ -668,6 +669,7 @@ static int wss_async_write(struct tcp_connection* con, int fd)
 		}
 
 		tcp_async_update_write(con, n);
+		tcp_conn_reset_lifetime(con);
 	}
 
 	return 0;

@@ -105,6 +105,8 @@ int msrps_write_on_socket(struct tcp_connection *c, int fd,
 				handshake_timeout, send_timeout, msrp_t_dst);
 	}
 	lock_release(&c->write_lock);
+	if (fd >= 0 && n > 0)
+		tcp_conn_reset_lifetime(c);
 
 	return n;
 }
@@ -140,6 +142,7 @@ int msrps_async_write(struct tcp_connection *c, int fd)
 		}
 
 		tcp_async_update_write(c, n);
+		tcp_conn_reset_lifetime(c);
 	}
 
 	return 0;

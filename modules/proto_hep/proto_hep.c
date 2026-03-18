@@ -565,8 +565,6 @@ send_it:
 			hep_send_timeout, hep_async_local_write_timeout);
 	}
 
-	tcp_conn_reset_lifetime(c);
-
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n", c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n < 0){
@@ -834,6 +832,7 @@ static int hep_tls_async_write(struct tcp_connection* con, int fd)
 		}
 
 		tcp_async_update_write(con, n);
+		tcp_conn_reset_lifetime(con);
 	}
 	return 0;
 }
@@ -1236,5 +1235,7 @@ static int hep_tls_write_on_socket(struct tcp_connection* c, int fd, char* buf, 
 }
 release:
 	lock_release(&c->write_lock);
+	if (fd >= 0 && n > 0)
+		tcp_conn_reset_lifetime(c);
 	return n;
 }

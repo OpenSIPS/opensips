@@ -332,6 +332,8 @@ static int bins_write_on_socket(struct tcp_connection* c, int fd,
 	}
 release:
 	lock_release(&c->write_lock);
+	if (fd >= 0 && n > 0)
+		tcp_conn_reset_lifetime(c);
 
 	return n;
 }
@@ -499,8 +501,6 @@ send:
 
 	n = bins_write_on_socket(c, -1, buf, len);
 
-	tcp_conn_reset_lifetime(c);
-
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	if (n<0){
 		LM_ERR("failed to send\n");
@@ -567,6 +567,7 @@ static int bins_async_write(struct tcp_connection* con, int fd)
 		}
 
 		tcp_async_update_write(con, n);
+		tcp_conn_reset_lifetime(con);
 	}
 	return 0;
 }

@@ -195,6 +195,7 @@ int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 					proto_name ? proto_name : "stream");
 			return -1;
 		}
+		tcp_conn_reset_lifetime(c);
 		rc = 0;
 	}
 
