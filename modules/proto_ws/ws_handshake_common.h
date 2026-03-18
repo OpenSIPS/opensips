@@ -215,7 +215,9 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 		LM_BUG("there should not be any con req!\n");
 		goto error;
 	}
-	req = &con->tcp_req;
+	req = tcp_conn_get_req(con);
+	if (!req)
+		goto error;
 	init_tcp_req(req, 0);
 
 	to = _ws_common_read_tout*1000;
@@ -414,9 +416,14 @@ static int ws_server_handshake(struct tcp_connection *con)
 		}
 		WS_TYPE(con) = WS_SERVER;
 		WS_STATE(con) = WS_CON_HANDSHAKE;
-		init_tcp_req(&con->tcp_req, 0);
+		req = tcp_conn_get_req(con);
+		if (!req)
+			return -1;
+		init_tcp_req(req, 0);
 	}
-	req = &con->tcp_req;
+	req = tcp_conn_get_req(con);
+	if (!req)
+		return -1;
 	LM_DBG("Using the per connection buff \n");
 
 	if (req->error == TCP_REQ_OK) {

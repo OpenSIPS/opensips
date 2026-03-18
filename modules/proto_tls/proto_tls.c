@@ -750,7 +750,9 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	bytes=-1;
 	total_bytes=0;
 
-	req = &con->tcp_req;
+	req = tcp_conn_get_req(con);
+	if (!req)
+		return -1;
 	if (con->msg_attempts == 0)
 		init_tcp_req(req, 0);
 	LM_DBG("Using the connection buff\n");
