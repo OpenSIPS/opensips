@@ -786,6 +786,34 @@ end:
 		shm_free(c);\
 	} while (0)
 
+struct tcp_req *tcp_conn_get_req(struct tcp_connection *c)
+{
+	if (!c)
+		return NULL;
+
+	if (c->con_req)
+		return c->con_req;
+
+	c->con_req = thread_malloc(sizeof(*c->con_req));
+	if (!c->con_req) {
+		LM_ERR("failed to allocate TCP request buffer for connection %u\n",
+			c->id);
+		return NULL;
+	}
+	memset(c->con_req, 0, sizeof(*c->con_req));
+
+	return c->con_req;
+}
+
+void tcp_conn_destroy_req(struct tcp_connection *c)
+{
+	if (!c || !c->con_req)
+		return;
+
+	thread_free(c->con_req);
+	c->con_req = NULL;
+}
+
 /*! \brief unsafe tcpconn_rm version (nolocks) */
 static void __tcpconn_rm(struct tcp_connection* c, int no_event)
 {
@@ -809,6 +837,7 @@ static void __tcpconn_rm(struct tcp_connection* c, int no_event)
 	if (c->proto_req)
 		shm_free(c->proto_req);
 	c->proto_req = NULL;
+	tcp_conn_destroy_req(c);
 
 	if (protos[c->type].net.stream.conn.clean)
 		protos[c->type].net.stream.conn.clean(c);
@@ -1051,6 +1080,7 @@ int tcp_conn_send(struct tcp_connection *c)
 			LM_ERR("Failed to send the socket to main for async connection\n");
 			goto error;
 		}
+		tcp_conn_destroy_req(c);
 		close(fd);
 		c->fd = -1;
 	} else {
@@ -1061,6 +1091,7 @@ int tcp_conn_send(struct tcp_connection *c)
 			LM_ERR("failed send_fd: %s (%d)\n", strerror(errno), errno);
 			goto error;
 		}
+		tcp_conn_destroy_req(c);
 	}
 
 	return 0;

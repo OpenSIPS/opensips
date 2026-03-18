@@ -173,7 +173,7 @@ struct tcp_connection{
 	struct tcp_connection* c_prev;		/*!< Child prev (use locally */
 	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];	/*!< Aliases for this connection */
 	int aliases;				/*!< Number of aliases, at least 1 */
-	struct tcp_req tcp_req;		/*!< Per-connection TCP request buffer */
+	struct tcp_req *con_req;	/*!< Per-connection TCP request buffer in local thread memory */
 	void *proto_req;			/*!< Optional protocol-specific request state */
 	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
 	/*!< connection related flags */

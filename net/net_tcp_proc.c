@@ -36,6 +36,7 @@
 #include "../receive.h"
 
 #include "tcp_conn.h"
+#include "net_tcp.h"
 #include "tcp_passfd.h"
 #include "net_tcp_report.h"
 #include "trans.h"
@@ -54,6 +55,7 @@ extern struct struct_hist_list *con_hist;
 
 #define tcpconn_release_error(_conn, _writer, _reason) \
 	do { \
+		tcp_conn_destroy_req(_conn); \
 		tcp_trigger_report( _conn, TCP_REPORT_CLOSE, _reason);\
 		tcpconn_release( _conn, CONN_ERROR_TCPW, _writer, 1/*as TCP worker*/);\
 	}while(0)
@@ -160,6 +162,7 @@ static void tcp_receive_timeout(void)
 
 			/* connection is going to main */
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+			tcp_conn_destroy_req(con);
 
 			sh_log(con->hist, TCP_SEND2MAIN, "timeout: %d, att: %d",
 			       con->timeout, con->msg_attempts);
@@ -386,6 +389,7 @@ again:
 						tcpconn_check_del(con);
 						tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 						if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+					tcp_conn_destroy_req(con);
 					tcp_trigger_report( con, TCP_REPORT_CLOSE,
 						"EOF received");
 					sh_log(con->hist, TCP_SEND2MAIN,
