@@ -242,6 +242,7 @@ again:
 				c->id, errno);
 		return -1;
 	}
+	tcp_conn_reset_lifetime(c);
 
 	if (rc < data->pp_hdr->len) {
 		data->pp_hdr->len -= rc;
@@ -263,6 +264,8 @@ static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *bu
 	ret = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
 			tls_handshake_tout, tls_send_tout, t_dst);
 	lock_release(&c->write_lock);
+	if (ret > 0)
+		tcp_conn_reset_lifetime(c);
 	return ret;
 }
 
@@ -301,6 +304,8 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 	}
 release:
 	lock_release(&c->write_lock);
+	if (fd >= 0 && n > 0)
+		tcp_conn_reset_lifetime(c);
 
 	return n;
 }
@@ -706,7 +711,6 @@ send_it:
 	}
 
 	rlen = tls_write_on_socket(c, -1, buf, len);
-	tcp_conn_reset_lifetime(c);
 
 	LM_DBG("after write: c=%p n=%d fd=%d\n",c, rlen, fd);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);
@@ -904,6 +908,7 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 		}
 
 		tcp_async_update_write(con, n);
+		tcp_conn_reset_lifetime(con);
 	}
 	return 0;
 }

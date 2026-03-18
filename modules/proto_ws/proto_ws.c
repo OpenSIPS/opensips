@@ -408,7 +408,6 @@ send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 	n = ws_req_write(c, -1, buf, len);
 	stop_expire_timer(get, prof.send_threshold, "WS ops",buf,(int)len,1);
-	tcp_conn_reset_lifetime(c);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
 	if (n<0){

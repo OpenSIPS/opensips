@@ -428,6 +428,7 @@ int tcp_async_write(struct tcp_connection* con,int fd)
 			}
 		}
 		tcp_async_update_write(con, n);
+		tcp_conn_reset_lifetime(con);
 	}
 	return 0;
 }
@@ -520,6 +521,8 @@ int tcp_write_on_socket(struct tcp_connection* c, int fd,
 		n = tsend_stream(fd, buf, len, write_timeout);
 	}
 	lock_release(&c->write_lock);
+	if (fd >= 0 && n > 0)
+		tcp_conn_reset_lifetime(c);
 
 	return n;
 }

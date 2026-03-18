@@ -590,8 +590,6 @@ send_it:
 	get_time_difference(snd,prof.send_threshold,tcp_timeout_send);
 	stop_expire_timer(get,prof.send_threshold,"tcp ops",buf,(int)len,1);
 
-	tcp_conn_reset_lifetime(c);
-
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){

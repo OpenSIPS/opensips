@@ -843,7 +843,6 @@ retry:
 	/* update connection in case it has changed */
 	ret = tcp_write_on_socket(conn, -1,
 			buffer->s, buffer->len, smpp_send_timeout, 0);
-	tcp_conn_reset_lifetime(conn);
 	if (ret < 0) {
 		LM_ERR("failed to send data!\n");
 		conn->state=S_CONN_BAD;
@@ -885,8 +884,6 @@ static int send_bind(smpp_session_t *session)
 	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
 	if (n < 0) {
 		conn->state = S_CONN_BAD;
-	} else {
-		tcp_conn_reset_lifetime(conn);
 	}
 	if (fd != -1)
 		close(fd);
