@@ -132,7 +132,6 @@ struct tcp_async_data {
 struct tcp_conn_profile {
 	unsigned int connect_timeout;
 	unsigned int con_lifetime;
-
 	unsigned int msg_read_timeout;
 	unsigned int send_threshold;
 	unsigned char no_new_conn:1;
@@ -160,8 +159,7 @@ struct tcp_connection{
 	enum sip_protos type;			/*!< PROTO_TCP or a protocol over it, e.g. TLS */
 	enum tcp_conn_states state;		/*!< connection state */
 	void* extra_data;			/*!< extra data associated to the connection, 0 for tcp*/
-	/*!< connection timeout, to be used by worker only; after this
-	 * it will be released (with success or not) */
+	/*!< deadline for the current in-progress read, if any */
 	unsigned int timeout;
 	/*!< the lifetime of the connection - watched by TCP main process
 	 * in order to close un-used connections */
@@ -205,5 +203,8 @@ int tcpconn_add_alias(struct sip_msg *msg, unsigned int id, int port, int proto)
 
 #define tcp_conn_reset_lifetime(_c) \
 	tcp_conn_set_lifetime(_c, (_c)->profile.con_lifetime)
+
+#define tcp_conn_set_msg_read_timeout(_c) \
+	((_c)->timeout = get_ticks() + (_c)->profile.msg_read_timeout)
 
 #endif

@@ -327,7 +327,7 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 #endif
 	}
 
-	/* update the timeout - we successfully read the request */
+	/* refresh connection lifetime after successful read progress */
 	tcp_conn_reset_lifetime(con);
 	con->timeout=con->lifetime;
 
@@ -467,7 +467,7 @@ static int ws_server_handshake(struct tcp_connection *con)
 #endif
 		}
 
-		/* update the timeout - we successfully read the request */
+		/* refresh connection lifetime after successful read progress */
 		tcp_conn_reset_lifetime(con);
 		con->timeout=con->lifetime;
 

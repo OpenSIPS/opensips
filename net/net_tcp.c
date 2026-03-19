@@ -132,8 +132,8 @@ int tcp_workers_no = UDP_WORKERS_NO;
 int tcp_workers_max_no;
 /* the name of the auto-scaling profile (optional) */
 char* tcp_auto_scaling_profile = NULL;
-/* Max number of seconds that we except a full SIP message
- * to arrive in - anything above will lead to the connection to closed */
+/* Max number of seconds that we expect a full SIP message
+ * to arrive in. Anything above will close the connection. */
 int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;
 /* If the data reading may be performed across different workers (still
  * serial) or by a single worker (the TCP conns sticks to one worker) */
@@ -986,6 +986,7 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 	c->rcv.proto = si->proto;
 	/* start with the default conn lifetime */
 	c->lifetime = get_ticks() + prof->con_lifetime;
+	c->timeout = c->lifetime;
 	c->profile = *prof;
 	c->flags|=F_CONN_REMOVED|flags;
 #ifdef DBG_TCPCON
@@ -1125,6 +1126,7 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 	}else{
 		/* force timeout */
 		tcpconn->lifetime=0;
+		tcpconn->timeout=0;
 		tcpconn->state=S_CONN_BAD;
 		sh_log(tcpconn->hist, TCP_DEL_DELAY, "tcpconn_destroy delayed, (%d)",
 			tcpconn->refcnt);
@@ -1218,7 +1220,10 @@ static void *tcp_thread_routine(void *arg)
 
 		conn = job->conn;
 		if (job->op == TCP_READ_JOB) {
-			if (protos[conn->type].net.stream.read) {
+			if (conn->msg_attempts && get_ticks() > conn->timeout) {
+				job->ret = -1;
+				job->resp = -2;
+			} else if (protos[conn->type].net.stream.read) {
 				job->resp = protos[conn->type].net.stream.read(conn, &job->ret);
 			} else {
 				LM_ERR("missing stream.read callback for proto %d\n", conn->type);
@@ -1446,6 +1451,11 @@ static inline void tcp_complete_read(struct tcp_job *job)
 
 	tcpconn = job->conn;
 
+	if (job->resp == -2) {
+		tcp_fail_conn(tcpconn, "Timeout waiting for a complete message", 1);
+		return;
+	}
+
 	if (job->resp < 0 || tcpconn->state == S_CONN_BAD) {
 		tcp_fail_conn(tcpconn, "Read error", 1);
 		return;
@@ -1599,6 +1609,7 @@ static inline int handle_new_connect(const struct socket_info* si)
 				close(new_sock);
 			} else {
 				tcpconn->lifetime = 0;
+				tcpconn->timeout = 0;
 			}
 			TCPCONN_UNLOCK(id);
 		} else {
@@ -1960,6 +1971,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				tcpconn->refcnt);
 			if (tcpconn->state==S_CONN_BAD){
 				tcpconn->lifetime=0;
+				tcpconn->timeout=0;
 				tcpconn_put(tcpconn);
 				break;
 			}
@@ -2069,6 +2081,7 @@ static inline void __tcpconn_lifetime(int shutdown)
 	unsigned int ticks,part;
 	unsigned h;
 	int fd;
+	void *reason;
 
 	if (have_ticks())
 		ticks=get_ticks();
@@ -2081,7 +2094,9 @@ static inline void __tcpconn_lifetime(int shutdown)
 			c=TCP_PART(part).tcpconn_id_hash[h];
 			while(c){
 				next=c->id_next;
-				if (shutdown ||((c->refcnt==0) && (ticks>c->lifetime))) {
+				if (shutdown || ((c->refcnt == 0) &&
+				((ticks > c->lifetime) ||
+				(c->msg_attempts && ticks > c->timeout)))) {
 					if (!shutdown)
 						LM_DBG("timeout for hash=%d - %p"
 								" (%d > %d)\n", h, c, ticks, c->lifetime);
@@ -2091,9 +2106,12 @@ static inline void __tcpconn_lifetime(int shutdown)
 					 * as a way to be deleted - we are not interested in */
 					/* Also, do not trigger reporting when shutdown
 					 * is done */
-					if (c->lifetime>0 && !shutdown)
-						tcp_trigger_report(c, TCP_REPORT_CLOSE,
-							"Timeout on no traffic");
+					if (c->lifetime>0 && !shutdown) {
+						reason = (c->msg_attempts && ticks > c->timeout) ?
+							"Timeout waiting for a complete message" :
+							"Timeout on no traffic";
+						tcp_trigger_report(c, TCP_REPORT_CLOSE, reason);
+					}
 					if ((!shutdown)&&(fd>0)&&(c->refcnt==0)) {
 						/* if any of read or write are set, we need to remove
 						 * the fd from the reactor */

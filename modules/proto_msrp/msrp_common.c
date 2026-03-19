@@ -285,7 +285,7 @@ static int msrp_handle_req(struct msrp_req *req,
 		print_ip("- received from: ip ", &con->rcv.src_ip, "\n");
 #endif
 
-		/* update the timeout - we successfully read the request */
+		/* refresh connection lifetime after successful read progress */
 		tcp_conn_reset_lifetime(con);
 		con->timeout=con->lifetime;
 
@@ -345,9 +345,7 @@ static int msrp_handle_req(struct msrp_req *req,
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
 		if (con->msg_attempts == 0)
-			/* if first iteration, set a short timeout for reading
-			 * a whole SIP message */
-			con->timeout = get_ticks() + tcp_max_msg_time;
+			tcp_conn_set_msg_read_timeout(con);
 
 		con->msg_attempts ++;
 		if (con->msg_attempts == _max_msg_chunks) {

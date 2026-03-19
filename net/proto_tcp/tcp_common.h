@@ -369,7 +369,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			goto error;
 		}
 
-		/* update the timeout - we successfully read the request */
+		/* refresh connection lifetime after successful read progress */
 		tcp_conn_reset_lifetime(con);
 		con->timeout=con->lifetime;
 
@@ -451,10 +451,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
-		if (con->msg_attempts==0)
-			/* if first iteration, set a short timeout for reading
-			 * a whole SIP message */
-			con->timeout = get_ticks() + con->profile.msg_read_timeout;
+		if (con->msg_attempts == 0)
+			tcp_conn_set_msg_read_timeout(con);
 
 		con->msg_attempts ++;
 		if (con->msg_attempts == _max_msg_chunks) {
