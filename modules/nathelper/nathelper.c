@@ -95,6 +95,8 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 #define	NAT_UAC_TEST_C_RPORT	0x40
 #define	NAT_UAC_TEST_RFC_6333	0x80
 
+#define FIX_NATED_CONTACT_PRESERVE_URI	0x01
+
 #define MI_SET_NATPING_STATE		"enable_ping"
 #define MI_DEFAULT_NATPING_STATE	1
 
@@ -113,9 +115,11 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 
 static int fixup_flags_uac_test(void** param);
 static int fixup_flags_sdp(void** param);
+static int fixup_flags_fix_nated_contact(void** param);
 
 static int nat_uac_test_f(struct sip_msg* msg, void *tests);
-static int fix_nated_contact_f(struct sip_msg* msg, str *params);
+static int fix_nated_contact_f(struct sip_msg* msg, str *params, void *flags);
+static int restore_nated_ruri_f(struct sip_msg *msg);
 static int fix_nated_sdp_f(struct sip_msg* msg, void *flags, str *ip,
 						str *new_sdp_lines);
 static int fix_nated_register_f(struct sip_msg *, char *, char *);
@@ -222,8 +226,12 @@ unsigned int *natping_state=0;
 
 static const cmd_export_t cmds[] = {
 	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_flags_fix_nated_contact,0},
+		{0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"restore_nated_ruri",  (cmd_function)restore_nated_ruri_f, {{0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f, {
 		{CMD_PARAM_STR,fixup_flags_sdp,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
@@ -630,7 +638,7 @@ isnulladdr(str *sx, int pf)
  * of the packet.
  */
 static int
-fix_nated_contact_f(struct sip_msg* msg, str *params)
+fix_nated_contact_f(struct sip_msg* msg, str *params, void *_flags)
 {
 	int len, len1;
 	char *cp, *buf, temp, *p;
@@ -640,6 +648,10 @@ fix_nated_contact_f(struct sip_msg* msg, str *params)
 	struct sip_uri uri;
 	str hostport, left, left2;
 	int is_enclosed;
+	unsigned int flags = (unsigned int)(unsigned long)_flags;
+	int preserve_uri = !!(flags & FIX_NATED_CONTACT_PRESERVE_URI);
+	str org_param = STR_NULL;
+	int org_val_len;
 
 	if (params && params->len==0)
 		params = 0;
@@ -681,44 +693,67 @@ fix_nated_contact_f(struct sip_msg* msg, str *params)
 		if (anchor == 0)
 			return -1;
 
+		org_param = STR_NULL;
+		if (preserve_uri) {
+			org_val_len = calc_base64_encode_len(hostport.len);
+			org_param.len = 5 + org_val_len; /* ;org= + b64 */
+			org_param.s = pkg_malloc(org_param.len);
+			if (org_param.s == NULL) {
+				LM_ERR("out of pkg memory\n");
+				return -1;
+			}
+			memcpy(org_param.s, ";org=", 5);
+			base64encode((unsigned char *)(org_param.s + 5),
+				(unsigned char *)hostport.s, hostport.len);
+		}
+
 		cp = ip_addr2a(&msg->rcv.src_ip);
 		len = (hostport.s-c->uri.s) + strlen(cp) + 6 /* :port */
 			+ 2 /* just in case if IPv6 */
 			+ (params?params->len+(is_enclosed?0:2):0)
+			+ org_param.len
 			+ 1 + left.len + left2.len;
 		buf = pkg_malloc(len);
 		if (buf == NULL) {
 			LM_ERR("out of pkg memory\n");
+			if (org_param.s)
+				pkg_free(org_param.s);
 			return -1;
 		}
 		temp = hostport.s[0]; hostport.s[0] = '\0';
 		if (params==NULL) {
 			if (msg->rcv.src_ip.af==AF_INET6)
-				len1 = snprintf(buf, len, "%s[%s]:%d%.*s%.*s", c->uri.s, cp,
-					msg->rcv.src_port,left.len,left.s,left2.len,left2.s);
-			else
-				len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s", c->uri.s, cp,
-					msg->rcv.src_port,left.len,left.s,left2.len,left2.s);
-		} else if (!is_enclosed) {
-			if (msg->rcv.src_ip.af==AF_INET6)
-				len1 = snprintf(buf, len, "<%s[%s]:%d%.*s>", c->uri.s, cp,
-					msg->rcv.src_port,params->len,params->s);
-			else
-				len1 = snprintf(buf, len, "<%s%s:%d%.*s>", c->uri.s, cp,
-					msg->rcv.src_port,params->len,params->s);
-		} else {
-			if (msg->rcv.src_ip.af==AF_INET6)
 				len1 = snprintf(buf, len, "%s[%s]:%d%.*s%.*s%.*s", c->uri.s, cp,
-					msg->rcv.src_port,params->len,params->s,
+					msg->rcv.src_port,org_param.len,org_param.s,
 					left.len,left.s,left2.len,left2.s);
 			else
 				len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s%.*s", c->uri.s, cp,
-					msg->rcv.src_port,params->len,params->s,
+					msg->rcv.src_port,org_param.len,org_param.s,
 					left.len,left.s,left2.len,left2.s);
+		} else if (!is_enclosed) {
+			if (msg->rcv.src_ip.af==AF_INET6)
+				len1 = snprintf(buf, len, "<%s[%s]:%d%.*s%.*s>", c->uri.s, cp,
+					msg->rcv.src_port,params->len,params->s,
+					org_param.len,org_param.s);
+			else
+				len1 = snprintf(buf, len, "<%s%s:%d%.*s%.*s>", c->uri.s, cp,
+					msg->rcv.src_port,params->len,params->s,
+					org_param.len,org_param.s);
+		} else {
+			if (msg->rcv.src_ip.af==AF_INET6)
+				len1 = snprintf(buf, len, "%s[%s]:%d%.*s%.*s%.*s%.*s", c->uri.s, cp,
+					msg->rcv.src_port,params->len,params->s,
+					org_param.len,org_param.s,left.len,left.s,left2.len,left2.s);
+			else
+				len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s%.*s%.*s", c->uri.s, cp,
+					msg->rcv.src_port,params->len,params->s,
+					org_param.len,org_param.s,left.len,left.s,left2.len,left2.s);
 		}
 		if (len1 < len)
 			len = len1;
 		hostport.s[0] = temp;
+		if (org_param.s)
+			pkg_free(org_param.s);
 		//LM_DBG("lump--- |%.*s|\n",len,buf);
 		if (insert_new_lump_after(anchor, buf, len, HDR_CONTACT_T) == 0) {
 			pkg_free(buf);
@@ -741,6 +776,109 @@ fix_nated_contact_f(struct sip_msg* msg, str *params)
 	}
 
 	return 1;
+}
+
+static int restore_nated_ruri_f(struct sip_msg *msg)
+{
+	static const str org_uri_param = str_init("org");
+	struct sip_uri *parsed_uri;
+	str org_val, hostport;
+	str old_uri, new_uri, param_tok;
+	int begin_len, end_len, dec_buf_len;
+	int org_idx;
+
+	if (parse_sip_msg_uri(msg) < 0) {
+		LM_ERR("failed to parse R-URI\n");
+		return -1;
+	}
+
+	parsed_uri = &msg->parsed_uri;
+	if (get_uri_param_val(parsed_uri, &org_uri_param, &org_val) < 0 ||
+		org_val.len <= 0)
+		return -1;
+
+	dec_buf_len = calc_max_base64_decode_len(org_val.len);
+	if (dec_buf_len <= 0) {
+		LM_ERR("invalid 'org' URI parameter\n");
+		return -1;
+	}
+	hostport.s = pkg_malloc(dec_buf_len + 1);
+	if (hostport.s == NULL) {
+		LM_ERR("out of pkg memory\n");
+		return -1;
+	}
+
+	hostport.len = base64decode((unsigned char *)hostport.s,
+		(unsigned char *)org_val.s, org_val.len);
+	if (hostport.len <= 0) {
+		LM_ERR("invalid base64 in 'org' URI parameter\n");
+		pkg_free(hostport.s);
+		return -1;
+	}
+
+	org_idx = get_uri_param_idx(&org_uri_param, parsed_uri);
+	if (org_idx < 0) {
+		pkg_free(hostport.s);
+		return -1;
+	}
+
+	param_tok.s = parsed_uri->u_name[org_idx].s - 1; /* include leading ';' */
+	if (parsed_uri->u_val[org_idx].s)
+		param_tok.len = parsed_uri->u_val[org_idx].s +
+			parsed_uri->u_val[org_idx].len - parsed_uri->u_name[org_idx].s + 1;
+	else
+		param_tok.len = parsed_uri->u_name[org_idx].len + 1;
+
+	old_uri = *GET_RURI(msg);
+	new_uri.len = old_uri.len - param_tok.len;
+	new_uri.s = pkg_malloc(new_uri.len);
+	if (!new_uri.s) {
+		LM_ERR("out of pkg memory\n");
+		pkg_free(hostport.s);
+		return -1;
+	}
+
+	begin_len = param_tok.s - old_uri.s;
+	memcpy(new_uri.s, old_uri.s, begin_len);
+	end_len = old_uri.len - ((param_tok.s + param_tok.len) - old_uri.s);
+	if (end_len)
+		memcpy(new_uri.s + begin_len, param_tok.s + param_tok.len, end_len);
+
+	if (set_ruri(msg, &new_uri) < 0) {
+		pkg_free(new_uri.s);
+		pkg_free(hostport.s);
+		LM_ERR("failed to remove 'org' from R-URI\n");
+		return -1;
+	}
+
+	pkg_free(new_uri.s);
+
+	old_uri = *GET_RURI(msg);
+	if (set_dst_uri(msg, &old_uri) < 0) {
+		pkg_free(hostport.s);
+		LM_ERR("failed to set destination URI\n");
+		return -1;
+	}
+
+	if (rewrite_ruri(msg, &hostport, 0, RW_RURI_HOSTPORT) < 0) {
+		pkg_free(hostport.s);
+		LM_ERR("failed to rewrite R-URI host:port\n");
+		return -1;
+	}
+
+	pkg_free(hostport.s);
+	return 1;
+}
+
+static str fix_nated_contact_flag_names[] =
+{
+	str_init("preserve-uri"), /* FIX_NATED_CONTACT_PRESERVE_URI */
+	STR_NULL
+};
+
+static int fixup_flags_fix_nated_contact(void** param)
+{
+	return fixup_named_flags(param, fix_nated_contact_flag_names, NULL, NULL);
 }
 
 
