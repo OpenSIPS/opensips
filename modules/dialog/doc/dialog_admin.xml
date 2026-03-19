@@ -1439,45 +1439,56 @@ modparam("dialog", "cluster_auto_sync", 0)
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>flags (string, optional)</emphasis>
-				Possible values here are :
+				Possible values here are:
 				<itemizedlist>
 				<listitem><para>
-				B - Upon reaching dialog lifetime, BYEs will be triggered
-				both ways
+				<quote>bye-on-timeout</quote> - upon reaching dialog lifetime,
+				BYEs will be triggered both ways
 				</para></listitem>
 				<listitem><para>
-				P - Ping caller side with OPTIONS messages, once every
-				options_ping_interval seconds
+				<quote>options-ping-caller</quote> - ping caller side with
+				OPTIONS messages, once every
+				<varname>options_ping_interval</varname> seconds
 				</para></listitem>
 				<listitem><para>
-				p - Ping callee side with OPTIONS messages, once every
-				options_ping_interval seconds
+				<quote>options-ping-callee</quote> - ping callee side with
+				OPTIONS messages, once every
+				<varname>options_ping_interval</varname> seconds
 				</para></listitem>
 				<listitem><para>
-				R - Ping caller side with RE-INVITE messages, once every
-				reinvite_ping_interval seconds
+				<quote>reinvite-ping-caller</quote> - ping caller side with
+				RE-INVITE messages, once every
+				<varname>reinvite_ping_interval</varname> seconds
 				</para></listitem>
 				<listitem><para>
-				r - Ping callee side with RE-INVITE messages, once every
-				reinvite_ping_interval seconds
+				<quote>reinvite-ping-callee</quote> - ping callee side with
+				RE-INVITE messages, once every
+				<varname>reinvite_ping_interval</varname> seconds
 				</para></listitem>
 				<listitem><para>
-				E - Upon detecting a SIP Race condition (see RFC 5407),
-				end the call after race_condition_timeout seconds
+				<quote>end-on-race-condition</quote> - upon detecting a SIP
+				Race condition (see RFC 5407), end the call after
+				<varname>race_condition_timeout</varname> seconds
 				</para></listitem>
 				<listitem><para>
-				L - Automatically generate PRACK requests for reliable
-				101-199 provisional INVITE replies carrying an RSeq header
+				<quote>auto-prack</quote> - automatically generate PRACK
+				requests for reliable 101-199 provisional INVITE replies
+				carrying an RSeq header
 				</para></listitem>
 				</itemizedlist>
-				Multiple string flags can be used at the same time,
-				ie. passing "BPp" flags will enable all 3 flags.
+				Multiple string flags can be used at the same time as a CSV,
+				i.e. passing
+				<quote>bye-on-timeout,options-ping-caller,options-ping-callee</quote>
+				will enable all 3 flags.
 			</para></listitem>
 		</itemizedlist>
 		<para>
 		NOTE: both RE-INVITE and OPTIONS pinging cannot be enabled at the same time
-		for a single dialog leg. If both flags ("<emphasis>PR</emphasis>" or
-		"<emphasis>pr</emphasis>") are provided only RE-INVITE pinging will be used.
+		for a single dialog leg. If both flags for the same leg are provided
+		(for example
+		<quote>options-ping-caller,reinvite-ping-caller</quote> or
+		<quote>options-ping-callee,reinvite-ping-callee</quote>),
+		only RE-INVITE pinging will be used.
 		</para>
 		<para>
 		The function returns true if the dialog was successfully created or
@@ -1493,16 +1504,16 @@ modparam("dialog", "cluster_auto_sync", 0)
 create_dialog();
 ...
 #ping caller
-create_dialog("P");
+create_dialog("options-ping-caller");
 ...
 #ping caller and callee
-create_dialog("Pp");
+create_dialog("options-ping-caller,options-ping-callee");
 
 #bye on timeout
-create_dialog("B");
+create_dialog("bye-on-timeout");
 
 #auto-PRACK reliable provisional replies
-create_dialog("L");
+create_dialog("auto-prack");
 ...
 </programlisting>
 		</example>
