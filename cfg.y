@@ -1375,7 +1375,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| TCP_MAX_MSG_TIME EQUAL NUMBER { IFOR();
 				tcp_max_msg_time=$3;
 		}
-		| TCP_MAX_MSG_TIME EQUAL error { yyerror("boolean value expected"); }
+		| TCP_MAX_MSG_TIME EQUAL error { yyerror("number expected"); }
 		| TCP_PARALLEL_READ_ON_WORKERS EQUAL NUMBER { IFOR();
 				tcp_parallel_read_on_workers=!!$3;
 		}

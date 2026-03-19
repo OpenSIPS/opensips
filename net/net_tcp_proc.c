@@ -38,30 +38,14 @@
 #include "tcp_conn.h"
 #include "net_tcp.h"
 #include "tcp_passfd.h"
-#include "net_tcp_report.h"
 #include "trans.h"
 #include "net_tcp_dbg.h"
 
 /*!< the FD currently used by the process to communicate with TCP MAIN*/
 static int _my_fd_to_tcp_main = -1;
 
-/*!< list of tcp connections handled by this process */
-static struct tcp_connection* tcp_conn_lst=0;
-
 static int tcpmain_sock=-1;
 extern int unix_tcp_sock;
-
-extern struct struct_hist_list *con_hist;
-
-#define tcpconn_release_error(_conn, _writer, _reason) \
-	do { \
-		tcp_conn_destroy_req(_conn); \
-		tcp_trigger_report( _conn, TCP_REPORT_CLOSE, _reason);\
-		tcpconn_release( _conn, CONN_ERROR_TCPW, _writer, 1/*as TCP worker*/);\
-	}while(0)
-
-
-
 
 static void tcpconn_release(struct tcp_connection* c, long state, int writer,
 															int as_tcp_worker)
@@ -93,6 +77,7 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 		/* do more or less nothing, let the TCP READER owning the conn
 		 * to trash it based on the S_CONN_BAD marker */
 		c->lifetime=0;
+		c->timeout=0;
 		/* but be sure we unref the conn */
 		tcpconn_put(c);
 		return;
@@ -122,57 +107,10 @@ struct tcp_ipc_payload {
 };
 
 
-/*! \brief  releases expired connections and cleans up bad ones (state<0) */
+/*! \brief no-op: TCP workers no longer own connection fds */
 static void tcp_receive_timeout(void)
 {
-	struct tcp_connection* con;
-	struct tcp_connection* next;
-	unsigned int ticks;
-
-	ticks=get_ticks();
-	for (con=tcp_conn_lst; con; con=next) {
-		next=con->c_next; /* safe for removing */
-		if (con->state<0){   /* kill bad connections */
-			/* S_CONN_BAD or S_CONN_ERROR, remove it */
-			/* fd will be closed in tcpconn_release */
-			LM_ERR("TCP_DBG - conn %p / %u found as bad, relasing back "
-				"to main\n", con, con->id);
-
-			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
-			tcpconn_check_del(con);
-			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-			con->state=S_CONN_BAD;
-			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-			sh_log(con->hist, TCP_SEND2MAIN, "state: %d, att: %d, ref: %d",
-			       con->state, con->msg_attempts, con->refcnt);
-			tcpconn_release_error(con, 0, "Unknown reason");
-			continue;
-		}
-		/* pass back to Main connections that are inactive (expired) or
-		 * if we are in termination mode (this worker is doing graceful 
-		 * shutdown) and there is no pending data on the conn. */
-		if (con->timeout<=ticks ||
-		(_termination_in_progress && !con->msg_attempts) ){
-			LM_DBG("%p expired - (%d, %d) lt=%d\n",
-					con, con->timeout, ticks,con->lifetime);
-			/* fd will be closed in tcpconn_release */
-			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
-			tcpconn_check_del(con);
-			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-
-			/* connection is going to main */
-			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-			tcp_conn_destroy_req(con);
-
-			sh_log(con->hist, TCP_SEND2MAIN, "timeout: %d, att: %d",
-			       con->timeout, con->msg_attempts);
-			if (con->msg_attempts)
-				tcpconn_release_error(con, 0, "Read timeout with"
-					"incomplete SIP message");
-			else
-				tcpconn_release(con, CONN_RELEASE, 0,  1 /*as TCP proc*/);
-		}
-	}
+	/* TCP worker reads are dispatched by TCP main via shared payloads only. */
 }
 
 
@@ -194,11 +132,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {
 	int ret=0;
 	int n;
-	struct tcp_connection* con;
-	int s,rw;
-	long resp;
-	long response[2];
 
+	(void)idx;
 	pt_become_active();
 
 	pre_run_handle_script_reload(fm->app_flags);
@@ -260,147 +195,6 @@ again_payload:
 			shm_free(payload);
 			break;
 		}
-again:
-			ret=n=receive_fd(fm->fd, response, sizeof(response), &s, 0);
-			if (n<0){
-				if (errno == EWOULDBLOCK || errno == EAGAIN){
-					ret=0;
-					break;
-				}else if (errno == EINTR) goto again;
-				else{
-					LM_CRIT("read_fd: %s \n", strerror(errno));
-						abort(); /* big error*/
-				}
-			}
-			if (n==0){
-				LM_WARN("0 bytes read\n");
-				break;
-			}
-			con = (struct tcp_connection *)response[0];
-			rw = (int)response[1];
-
-			if (con==0){
-					LM_CRIT("null pointer\n");
-					break;
-			}
-			if (s==-1) {
-				LM_BUG("read_fd:no fd read for conn %p, rw %d\n", con, rw);
-				/* FIXME? */
-				goto error;
-			}
-
-			if (!(con->flags & F_CONN_INIT)) {
-				if (protos[con->type].net.stream.conn.init &&
-						protos[con->type].net.stream.conn.init(con) < 0) {
-					LM_ERR("failed to do proto %d specific init for conn %p\n",
-							con->type, con);
-					goto con_error;
-				}
-				con->flags |= F_CONN_INIT;
-			}
-
-			LM_DBG("We have received conn %p with rw %d on fd %d\n",con,rw,s);
-			if (rw & IO_WATCH_READ) {
-				if (tcpconn_list_find(con, tcp_conn_lst)) {
-					LM_CRIT("duplicate connection received: %p, id %d, fd %d, "
-					        "refcnt %d state %d (n=%d)\n", con, con->id,
-					        con->fd, con->refcnt, con->state, n);
-					tcpconn_release_error(con, 0, "Internal duplicate");
-					break; /* try to recover */
-				}
-
-				/* 0 attempts so far for this SIP MSG */
-				con->msg_attempts = 0;
-
-				/* must be before reactor_add, as the add might catch some
-				 * already existing events => might call handle_io and
-				 * handle_io might decide to del. the new connection =>
-				 * must be in the list */
-				tcpconn_check_add(con);
-				tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
-				/* pending event on a connection -> prevent premature expiry */
-				tcp_conn_reset_lifetime(con);
-				con->timeout = con->lifetime;
-				if (reactor_add_reader( s, F_TCPCONN, RCT_PRIO_NET, con )<0) {
-					LM_CRIT("failed to add new socket to the fd list\n");
-					tcpconn_check_del(con);
-					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-					goto con_error;
-				}
-
-				sh_log(con->hist, TCP_ADD_READER, "add reader fd %d, ref: %d",
-				       s, con->refcnt);
-
-				/* save FD which is valid in context of this TCP worker */
-				con->fd=s;
-			} else if (rw & IO_WATCH_WRITE) {
-				LM_DBG("Received con for async write %p ref = %d\n",
-					con, con->refcnt);
-				lock_get(&con->write_lock);
-				resp = protos[con->type].net.stream.write( con, s );
-				lock_release(&con->write_lock);
-				if (resp<0) {
-					ret=-1; /* some error occurred */
-					con->state=S_CONN_BAD;
-					sh_log(con->hist, TCP_SEND2MAIN,
-						"handle write, err, state: %d, att: %d",
-						con->state, con->msg_attempts);
-					tcpconn_release_error(con, 1,"Write error");
-					close(s); /* we always close the socket received for writing */
-					break;
-				} else if (resp==1) {
-					sh_log(con->hist, TCP_SEND2MAIN,
-						"handle write, async, state: %d, att: %d",
-						con->state, con->msg_attempts);
-					tcpconn_release(con, ASYNC_WRITE_TCPW, 1,
-						1 /*as TCP proc*/);
-				} else {
-					sh_log(con->hist, TCP_SEND2MAIN,
-						"handle write, ok, state: %d, att: %d",
-						con->state, con->msg_attempts);
-					tcpconn_release(con, CONN_RELEASE_WRITE, 1,
-						1/*as TCP proc*/);
-				}
-				ret = 0;
-				/* we always close the socket received for writing */
-				close(s);
-			}
-			break;
-		case F_TCPCONN:
-			if (event_type & IO_WATCH_READ) {
-				con=(struct tcp_connection*)fm->data;
-				resp = protos[con->type].net.stream.read( con, &ret );
-				if (resp<0) {
-					ret=-1; /* some error occurred */
-					con->state=S_CONN_BAD;
-					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
-					tcpconn_check_del(con);
-					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-					sh_log(con->hist, TCP_SEND2MAIN,
-						"handle read, err, resp: %d, att: %d",
-						resp, con->msg_attempts);
-					tcpconn_release_error(con, 0, "Read error");
-				} else if (resp == 1) {
-					/* the connection is already released */
-					break;
-				} else if (con->state==S_CONN_EOF) {
-						reactor_del_all( con->fd, idx, IO_FD_CLOSING );
-						tcpconn_check_del(con);
-						tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-						if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-					tcp_conn_destroy_req(con);
-					tcp_trigger_report( con, TCP_REPORT_CLOSE,
-						"EOF received");
-					sh_log(con->hist, TCP_SEND2MAIN,
-						"handle read, EOF, resp: %d, att: %d",
-						resp, con->msg_attempts);
-					tcpconn_release(con, CONN_EOF, 0, 1 /*as TCP proc*/);
-				} else {
-					break;
-				}
-			}
-			break;
 		case F_NONE:
 			LM_CRIT("empty fd map %p: "
 						"{%d, %d, %p}\n", fm,
@@ -412,7 +206,7 @@ again:
 	}
 
 	if (_termination_in_progress==1) {
-		/* force (again) passing back all the active conns */
+		/* legacy timeout hook, now a no-op for TCP workers */
 		tcp_receive_timeout();
 		/* check if anything is still left */
 		if (reactor_is_empty()) {
@@ -427,16 +221,10 @@ again:
 
 	pt_become_idle();
 	return ret;
-con_error:
-	con->state=S_CONN_BAD;
-	tcpconn_release_error(con, 0, "Internal error");
-	pt_become_idle();
-	return ret;
 error:
 	pt_become_idle();
 	return -1;
 }
-
 
 
 int tcp_worker_proc_reactor_init( int unix_sock)
@@ -481,7 +269,8 @@ error:
 void tcp_worker_proc_loop(void)
 {
 	/* main loop */
-	reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error, tcp_receive_timeout());
+	reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error,
+			tcp_receive_timeout());
 	LM_CRIT("exiting...");
 	exit(-1);
 error:
@@ -510,7 +299,7 @@ void tcp_terminate_worker(void)
 	/* let's drain the private IPC */
 	ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
 
-	/* force passing back all the active conns */
+	/* legacy timeout hook, now a no-op for TCP workers */
 	tcp_receive_timeout();
 
 	/* what is left now is the reactor are async fd's, so we need to 

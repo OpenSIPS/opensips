@@ -456,7 +456,7 @@ again:
 			goto error;
 		}
 
-		/* update the timeout - we successfully read the request */
+		/* refresh connection lifetime after successful read progress */
 		tcp_conn_set_lifetime(con, _ws_common_write_tout);
 		con->timeout=con->lifetime;
 

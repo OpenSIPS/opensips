@@ -246,7 +246,7 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 	struct receive_info local_rcv;
 
 	if (req->complete){
-		/* update the timeout - we successfully read the request */
+		/* refresh connection lifetime after successful read progress */
 		tcp_conn_reset_lifetime(con);
 		con->timeout = con->lifetime;
 
