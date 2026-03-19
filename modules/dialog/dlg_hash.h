@@ -349,54 +349,6 @@ void destroy_dlg(struct dlg_cell *dlg);
 		}\
 	}while(0)
 
-/*
- * @input - str
- * @return - integer flag bitmask
- */
-#define parse_create_dlg_flags(input) \
-	({ \
-		char *___p; \
-		int ___flags = 0; \
-		for (___p=(input)->s; ___p < (input)->s + (input)->len; ___p++) \
-		{ \
-			switch (*___p) \
-			{ \
-				case 'P': \
-					___flags |= DLG_FLAG_PING_CALLER; \
-					LM_DBG("will ping caller\n"); \
-					break; \
-				case 'p': \
-					___flags |= DLG_FLAG_PING_CALLEE; \
-					LM_DBG("will ping callee\n"); \
-					break; \
-				case 'B': \
-					___flags |= DLG_FLAG_BYEONTIMEOUT; \
-					LM_DBG("bye on timeout activated\n"); \
-					break; \
-				case 'R': \
-					___flags |= DLG_FLAG_REINVITE_PING_CALLER; \
-					LM_DBG("re-invite ping caller activated\n"); \
-					break; \
-				case 'r': \
-					___flags |= DLG_FLAG_REINVITE_PING_CALLEE; \
-					LM_DBG("re-invite ping callee activated\n"); \
-					break; \
-				case 'E': \
-					___flags |= DLG_FLAG_END_ON_RACE_CONDITION; \
-					LM_DBG("ending call on 200OK race conditions \n"); \
-					break; \
-				case 'L': \
-					___flags |= DLG_FLAG_AUTOPRACK; \
-					LM_DBG("auto-PRACK for reliable provisional replies activated\n"); \
-					break; \
-				default: \
-					LM_DBG("unknown create_dialog flag : [%c] ." \
-						   "Skipping\n", *___p); \
-			} \
-		} \
-		___flags; \
-	})
-
 int dialog_cleanup( struct sip_msg *msg, void *param );
 
 int init_dlg_table(unsigned int size);
