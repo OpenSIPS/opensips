@@ -285,6 +285,7 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 		/* send cancel or bye to the peers */
 		b2b_end_dialog(tuple->bridge_entities[1], tuple, hash_index);
 		b2b_end_dialog(tuple->bridge_entities[2], tuple, hash_index);
+		b2b_end_dialog(tuple->bridge_initiator, tuple, hash_index);
 		b2b_mark_todel(tuple);
 	}
 	else
@@ -401,17 +402,13 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 		entity && tuple->bridge_initiator == entity)
 	{
 		entity_no = 3; // Bridge initiator
+	} else if (!entity) {
+		LM_ERR("No match found\n");
+		return -1;
 	} else {
 		entity_no = bridge_get_entityno(tuple, entity);
-		if(entity_no < 0)
-		{
-			if (!entity) {
-				LM_ERR("No match found\n");
-				return -1;
-			}
-			/* we've got a known entity, but no longer part of the
-			 * bridge - we gracefully reply and drop */
-		}
+		/* we've got a known entity, but no longer part of the
+		 * bridge - we gracefully reply and drop */
 	}
 
 	memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
