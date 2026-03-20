@@ -45,7 +45,6 @@
 
 extern str dlg_extra_hdrs;
 
-#define DLG_AUTO_PRACK_FR_TIMEOUT 2
 #define DLG_TM_TID_LEN ((sizeof(int) * 2) + 1 + (sizeof(int) * 2))
 
 struct dlg_auto_prack_ctx {
@@ -65,6 +64,12 @@ static void dlg_auto_prack_reply_failure(struct dlg_auto_prack_ctx *ctx)
 	str reason = str_init("Bad Gateway");
 	struct cell *invite_t;
 	int rc;
+
+	if (!auto_prack_hangup_on_failure) {
+		LM_DBG("auto PRACK failure observed for correlated INVITE transaction <%.*s>, but auto_prack_hangup_on_failure is disabled\n",
+			ctx->invite_tid.len, ctx->invite_tid.s);
+		return;
+	}
 
 	rc = d_tmb.t_lookup_ident(&invite_t, ctx->invite_hash_index,
 			ctx->invite_label);
@@ -157,7 +162,7 @@ static void dlg_auto_prack_t_created(struct cell *t, void *param)
 	str prack_tid = STR_NULL;
 	struct dlg_auto_prack_ctx *ctx = param;
 
-	t->fr_timeout = DLG_AUTO_PRACK_FR_TIMEOUT;
+	t->fr_timeout = auto_prack_fr_timeout;
 
 	if (dlg_format_trans_id(t->hash_index, t->label, &prack_tid, prack_tid_buf,
 			sizeof(prack_tid_buf)) < 0) {

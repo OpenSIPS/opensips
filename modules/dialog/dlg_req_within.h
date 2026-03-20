@@ -43,6 +43,8 @@
 #define DLG_PING_FAIL     2
 
 extern struct tm_binds d_tmb;
+extern int auto_prack_hangup_on_failure;
+extern int auto_prack_fr_timeout;
 
 typedef void (dlg_request_callback)(struct cell *t,int type,
 					struct tmcb_params* ps);
