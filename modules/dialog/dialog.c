@@ -78,6 +78,8 @@ int dlg_del_delay = 0;               /* in seconds, default off */
 str dlg_extra_hdrs = {NULL,0};
 int race_condition_timeout = 5; /* seconds until call termination is triggered,
 					after 200OK -> CANCEL race detection */
+int auto_prack_hangup_on_failure = 0;
+int auto_prack_fr_timeout = 3;
 
 /* statistic variables */
 int dlg_enable_stats = 1;
@@ -305,6 +307,8 @@ static const param_export_t mod_params[]={
 	{ "delete_delay",          INT_PARAM, &dlg_del_delay            },
 	{ "dlg_extra_hdrs",        STR_PARAM, &dlg_extra_hdrs.s         },
 	{ "dlg_match_mode",        INT_PARAM, &seq_match_mode           },
+	{ "auto_prack_hangup_on_failure", INT_PARAM, &auto_prack_hangup_on_failure },
+	{ "auto_prack_fr_timeout", INT_PARAM, &auto_prack_fr_timeout },
 	{ "db_url",                STR_PARAM, &db_url.s                 },
 	{ "db_mode",               INT_PARAM, &dlg_db_mode              },
 	{ "table_name",            STR_PARAM, &dialog_table_name        },
