@@ -42,7 +42,7 @@
 	"Reason: SIP ;cause=200 ;text=\"Call completed elsewhere\"" CRLF
 
 
-void which_cancel( struct cell *t, branch_bm_t *cancel_bm );
+void which_cancel( struct cell *t, branch_bm_t cancel_bm );
 void cancel_uacs( struct cell *t, branch_bm_t cancel_bm );
 void cancel_branch( struct cell *t, int branch );
 

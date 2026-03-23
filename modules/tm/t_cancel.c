@@ -48,17 +48,17 @@ extern int _tm_branch_index;
 */
 
 
-void which_cancel( struct cell *t, branch_bm_t *cancel_bm )
+void which_cancel( struct cell *t, branch_bm_t cancel_bm )
 {
 	int i;
 
 	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++ ) {
 		if (should_cancel_branch(t, i))
-			BRANCH_BM_SET_IDX( *cancel_bm, i);
+			BRANCH_BM_SET_IDX( cancel_bm, i);
 	}
 
 	LM_DBG("branches to cancel ["BRANCH_BM_SPECS"], range %d:%d\n",
-		BRANCH_BM_ARGS(*cancel_bm),t->first_branch,t->nr_of_outgoings-1);
+		BRANCH_BM_ARGS(cancel_bm),t->first_branch,t->nr_of_outgoings-1);
 
 }
 

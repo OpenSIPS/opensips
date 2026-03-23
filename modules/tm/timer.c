@@ -254,13 +254,13 @@ static void fake_reply(struct cell *t, int branch, int code )
 	_tm_branch_index = branch;
 	if ( is_local(t) ) {
 		reply_status=local_reply( t, FAKED_REPLY, branch,
-					  code, &cancel_bitmap );
+					  code, cancel_bitmap );
 		if (reply_status==RPS_COMPLETED) {
 			put_on_wait(t);
 		}
 	} else {
 		reply_status=relay_reply( t, FAKED_REPLY, branch, code,
-			&cancel_bitmap );
+			cancel_bitmap );
 	}
 	_tm_branch_index = 0;
 	/* again, a final negative reply on a branch will never lead to a
