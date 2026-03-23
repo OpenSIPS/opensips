@@ -1448,7 +1448,7 @@ static int t_cancel_trans(struct cell *t, str *extra_hdrs)
 	}
 
 	LOCK_REPLIES(t);
-	which_cancel( t, &cancel_bitmap );
+	which_cancel( t, cancel_bitmap );
 	UNLOCK_REPLIES(t);
 
 	/* send cancels out */
@@ -1481,10 +1481,10 @@ static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 		/* lock and get the branches to cancel */
 		if (!onreply_avp_mode) {
 			LOCK_REPLIES(t);
-			which_cancel( t, &cancel_bitmap );
+			which_cancel( t, cancel_bitmap );
 			UNLOCK_REPLIES(t);
 		} else {
-			which_cancel( t, &cancel_bitmap );
+			which_cancel( t, cancel_bitmap );
 		}
 		if (msg->first_line.u.reply.statuscode>=200)
 			/* do not cancel the current branch as we got
@@ -1494,10 +1494,10 @@ static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 		/* lock and get the branches to cancel */
 		if (!onreply_avp_mode) {
 			LOCK_REPLIES(t);
-			which_cancel( t, &cancel_bitmap );
+			which_cancel( t, cancel_bitmap );
 			UNLOCK_REPLIES(t);
 		} else {
-			which_cancel( t, &cancel_bitmap );
+			which_cancel( t, cancel_bitmap );
 		}
 		/* ignore current branch */
 		BRANCH_BM_RST_IDX( cancel_bitmap, _tm_branch_index);

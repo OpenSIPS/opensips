@@ -357,7 +357,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 		/* determine if there are some branches to be canceled */
 		if ( is_invite(trans) ) {
 			if (lock) LOCK_REPLIES( trans );
-			which_cancel(trans, &cancel_bitmap );
+			which_cancel(trans, cancel_bitmap );
 			if (lock) UNLOCK_REPLIES( trans );
 		}
 		/* and clean-up, including cancellations, if needed */
@@ -371,7 +371,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 		goto error2;
 	}
 	if ( is_invite(trans) && code>=200 )
-		which_cancel(trans, &cancel_bitmap );
+		which_cancel(trans, cancel_bitmap );
 
 
 	rb = & trans->uas.response;
@@ -883,7 +883,7 @@ static inline int tran_is_completed( struct cell *t )
  */
 static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 	int branch , int *should_store, int *should_relay,
-	branch_bm_t *cancel_bitmap, struct sip_msg *reply )
+	branch_bm_t cancel_bitmap, struct sip_msg *reply )
 {
 	int branch_cnt;
 	int picked_code;
@@ -998,7 +998,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 			}
 			if (do_cancel) {
 				branch_bm_t cb = BRANCH_BM_ZERO;
-				which_cancel( Trans, &cb );
+				which_cancel( Trans, cb );
 				cleanup_uac_timers(Trans);
 				cancel_uacs( Trans, cb);
 			}
@@ -1242,7 +1242,7 @@ static int store_reply( struct cell *trans, int branch, struct sip_msg *rpl)
    REPLY_LOCK and it returns unlocked!
 */
 enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
-	unsigned int msg_status, branch_bm_t *cancel_bitmap )
+	unsigned int msg_status, branch_bm_t cancel_bitmap )
 {
 	int relay;
 	int save_clone;
@@ -1275,7 +1275,7 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 		&save_clone, &relay, cancel_bitmap, p_msg );
 	LM_DBG("T_state=%d, branch=%d, save=%d, relay=%d, "
 		"cancel_BM="BRANCH_BM_SPECS"\n", reply_status, branch,
-		save_clone, relay, BRANCH_BM_ARGS(*cancel_bitmap));
+		save_clone, relay, BRANCH_BM_ARGS(cancel_bitmap));
 
 	/* store the message if needed */
 	if (save_clone) /* save for later use, typically branch picking */
@@ -1442,7 +1442,7 @@ error01:
 	text.len = sizeof("Reply processing error")-1;
 	t_reply_unsafe( t, t->uas.request, 500, &text );
 	UNLOCK_REPLIES(t);
-	if (is_invite(t)) cancel_uacs( t, *cancel_bitmap );
+	if (is_invite(t)) cancel_uacs( t, cancel_bitmap );
 	/* a serious error occurred -- attempt to send an error reply;
 	   it will take care of clean-ups  */
 
@@ -1455,7 +1455,7 @@ error01:
    it is entered locked with REPLY_LOCK and it returns unlocked!
 */
 enum rps local_reply( struct cell *t, struct sip_msg *p_msg, int branch,
-	unsigned int msg_status, branch_bm_t *cancel_bitmap)
+	unsigned int msg_status, branch_bm_t cancel_bitmap)
 {
 	/* how to deal with replies for local transaction */
 	int local_store, local_winner;
@@ -1523,7 +1523,7 @@ error:
 	UNLOCK_REPLIES(t);
 	cleanup_uac_timers(t);
 	if ( get_cseq(p_msg)->method_id==METHOD_INVITE )
-		cancel_uacs( t, *cancel_bitmap );
+		cancel_uacs( t, cancel_bitmap );
 	put_on_wait(t);
 	return RPS_ERROR;
 }
@@ -1548,7 +1548,7 @@ void process_reply_and_timer(struct cell *t,int branch,int msg_status,
 	}
 
 	if (is_local(t)) {
-		reply_status = local_reply(t,p_msg, branch,msg_status,&cancel_bitmap);
+		reply_status = local_reply(t,p_msg, branch,msg_status, cancel_bitmap);
 		if (reply_status == RPS_COMPLETED) {
 			cleanup_uac_timers(t);
 			if (is_invite(t)) cancel_uacs(t, cancel_bitmap);
@@ -1557,7 +1557,7 @@ void process_reply_and_timer(struct cell *t,int branch,int msg_status,
 			put_on_wait(t);
 		}
 	} else {
-		reply_status = relay_reply(t,p_msg,branch,msg_status,&cancel_bitmap);
+		reply_status = relay_reply(t,p_msg,branch,msg_status, cancel_bitmap);
 		/* clean-up the transaction when transaction completed */
 		if (reply_status == RPS_COMPLETED) {
 			/* no more UAC FR/RETR (if I received a 2xx, there may

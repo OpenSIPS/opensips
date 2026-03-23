@@ -694,7 +694,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	/* we need to check which branches should be canceled under lock to avoid
 	 * concurrency with replies that are coming in the same time */
 	/* generate local cancels for all branches */
-	which_cancel(t_invite, &cancel_bitmap );
+	which_cancel(t_invite, cancel_bitmap );
 	UNLOCK_REPLIES(t_invite);
 
 	set_cancel_extra_hdrs( reason.s, reason.len);
@@ -717,7 +717,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	if ( (t_invite->nr_of_outgoings-t_invite->first_branch)==1 &&
 	(TM_BRANCH(t_invite,t_invite->first_branch).flags & T_UAC_IS_PHONY) ) {
 		relay_reply( t_invite, FAKED_REPLY, t_invite->first_branch,
-			487, &cancel_bitmap);
+			487, cancel_bitmap);
 	}
 #if 0
 	/* internally cancel branches with no received reply */
@@ -1164,7 +1164,7 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 
 	/* do we have to cancel the existing branches before injecting new ones? */
 	if (flags&TM_INJECT_FLAG_CANCEL) {
-		which_cancel( t, &cancel_bm );
+		which_cancel( t, cancel_bm );
 	}
 
 	if (flags&TM_INJECT_FLAG_LAST)
