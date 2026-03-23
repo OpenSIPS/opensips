@@ -39,7 +39,6 @@
 #include "../../script_var.h"
 #include "../../mem/mem.h"
 #include "../../mi/mi.h"
-#include "../../lib/csv.h"
 #include "../rr/api.h"
 #include "../../bin_interface.h"
 #include "../clusterer/api.h"
@@ -605,60 +604,14 @@ static int free_fixup_route(void** param)
 	return 0;
 }
 
-/*
- * Keep this array in sync with create_dlg_flags[] below: if you add, remove
- * or reorder a create_dialog() flag here, make the identical change there.
- */
-static str create_dlg_flag_names[] = {
-	str_init("bye-on-timeout"),       /* DLG_FLAG_BYEONTIMEOUT */
-	str_init("options-ping-caller"),  /* DLG_FLAG_PING_CALLER */
-	str_init("options-ping-callee"),  /* DLG_FLAG_PING_CALLEE */
-	str_init("reinvite-ping-caller"), /* DLG_FLAG_REINVITE_PING_CALLER */
-	str_init("reinvite-ping-callee"), /* DLG_FLAG_REINVITE_PING_CALLEE */
-	str_init("end-on-race-condition"), /* DLG_FLAG_END_ON_RACE_CONDITION */
-	str_init("auto-prack"),           /* DLG_FLAG_AUTOPRACK */
-	STR_NULL
-};
-
 static int fixup_create_dlg_flags(void **param)
 {
-	static const unsigned int create_dlg_flags[] = {
-		DLG_FLAG_BYEONTIMEOUT,
-		DLG_FLAG_PING_CALLER,
-		DLG_FLAG_PING_CALLEE,
-		DLG_FLAG_REINVITE_PING_CALLER,
-		DLG_FLAG_REINVITE_PING_CALLEE,
-		DLG_FLAG_END_ON_RACE_CONDITION,
-		DLG_FLAG_AUTOPRACK
-	};
 	str *flags_str = (str *)*param;
-	csv_record *list, *rec;
-	unsigned int flags = 0;
-	int i;
+	int flags;
 
-	list = parse_csv_record(flags_str);
-	if (!list) {
-		LM_ERR("Failed to parse list of create_dialog flags\n");
+	flags = parse_create_dlg_flags(flags_str);
+	if (flags < 0)
 		return -1;
-	}
-
-	for (rec = list; rec; rec = rec->next) {
-		for (i = 0; create_dlg_flag_names[i].s; i++) {
-			if (str_strcasecmp(&rec->s, &create_dlg_flag_names[i]) == 0) {
-				flags |= create_dlg_flags[i];
-				break;
-			}
-		}
-
-		if (!create_dlg_flag_names[i].s) {
-			LM_ERR("Unknown create_dialog flag: %.*s\n",
-				rec->s.len, rec->s.s);
-			free_csv_record(list);
-			return -1;
-		}
-	}
-
-	free_csv_record(list);
 	*param = (void *)(unsigned long)flags;
 	return 0;
 }

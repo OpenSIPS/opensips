@@ -22,8 +22,10 @@
 #ifndef _DIALOG_DLG_LOAD_H_
 #define _DIALOG_DLG_LOAD_H_
 
+#include "../../lib/csv.h"
 #include "dlg_cb.h"
 #include "dlg_ctx.h"
+#include "dlg_hash.h"
 #include "dlg_handlers.h"
 #include "dlg_profile.h"
 #include "dlg_vals.h"
@@ -85,6 +87,62 @@ struct dlg_binds {
 
 typedef int(*load_dlg_f)( struct dlg_binds *dlgb );
 int load_dlg( struct dlg_binds *dlgb);
+
+
+static inline int parse_create_dlg_flags(str *flags_str)
+{
+	/* Keep this array in sync with create_dlg_flags[] below: if you add,
+	 * remove or reorder a create_dialog() flag here, make the identical
+	 * change there as well.
+	 */
+	static const str create_dlg_flag_names[] = {
+		str_init("bye-on-timeout"),
+		str_init("options-ping-caller"),
+		str_init("options-ping-callee"),
+		str_init("reinvite-ping-caller"),
+		str_init("reinvite-ping-callee"),
+		str_init("end-on-race-condition"),
+		str_init("auto-prack"),
+		STR_NULL
+	};
+	static const unsigned int create_dlg_flags[] = {
+		DLG_FLAG_BYEONTIMEOUT,
+		DLG_FLAG_PING_CALLER,
+		DLG_FLAG_PING_CALLEE,
+		DLG_FLAG_REINVITE_PING_CALLER,
+		DLG_FLAG_REINVITE_PING_CALLEE,
+		DLG_FLAG_END_ON_RACE_CONDITION,
+		DLG_FLAG_AUTOPRACK
+	};
+	csv_record *list, *rec;
+	unsigned int flags = 0;
+	int i;
+
+	list = parse_csv_record(flags_str);
+	if (!list) {
+		LM_ERR("failed to parse list of create_dialog flags\n");
+		return -1;
+	}
+
+	for (rec = list; rec; rec = rec->next) {
+		for (i = 0; create_dlg_flag_names[i].s; i++) {
+			if (str_strcasecmp(&rec->s, &create_dlg_flag_names[i]) == 0) {
+				flags |= create_dlg_flags[i];
+				break;
+			}
+		}
+
+		if (!create_dlg_flag_names[i].s) {
+			LM_ERR("unknown create_dialog flag: %.*s\n",
+				rec->s.len, rec->s.s);
+			free_csv_record(list);
+			return -1;
+		}
+	}
+
+	free_csv_record(list);
+	return (int)flags;
+}
 
 
 static inline int load_dlg_api( struct dlg_binds *dlgb )

@@ -106,7 +106,7 @@ modparam("script_helper", "use_dialog", 1)
 
    Example 1.2. Setting create_dialog_flags
 ...
-modparam("script_helper", "create_dialog_flags", "PpB")
+modparam("script_helper", "create_dialog_flags", "options-ping-caller,options-ping-callee,bye-on-timeout")
 ...
 
 1.4.3. sequential_route (string)
