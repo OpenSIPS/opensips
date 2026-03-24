@@ -2877,8 +2877,11 @@ route {
 		</programlisting>
 		</section>
 
-		<section id="mi_profile_get_size" xreflabel="profile_get_size">
-		<title><function moreinfo="none">profile_get_size</function></title>
+		<section id="mi_profile_get_size" xreflabel="dialog:profile_get_size">
+		<title><function moreinfo="none">dialog:profile_get_size</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>profile_get_size</emphasis>.
+		</para>
 		<para>
 		Returns the number of dialogs belonging to a profile. If the profile
 		supports values, the check can be reinforced to take into account a
@@ -2888,7 +2891,7 @@ route {
 		supports values, this will be silently discarded.
 		</para>
 		<para>
-		Name: <emphasis>profile_get_size</emphasis>
+		Name: <emphasis>dialog:profile_get_size</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -2905,12 +2908,15 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_get_size inboundCalls
+		opensips-cli -x mi dialog:profile_get_size inboundCalls
 		</programlisting>
 		</section>
 
-		<section id="mi_profile_list_dlgs" xreflabel="profile_list_dlgs">
-		<title><function moreinfo="none">profile_list_dlgs</function></title>
+		<section id="mi_profile_list_dlgs" xreflabel="dialog:profile_list_dlgs">
+		<title><function moreinfo="none">dialog:profile_list_dlgs</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>profile_list_dlgs</emphasis>.
+		</para>
 		<para>
 		Lists all the dialogs belonging to a profile. If the profile
 		supports values, the check can be reinforced to take into account a
@@ -2922,7 +2928,7 @@ route {
 		display the local dialogs.
 		</para>
 		<para>
-		Name: <emphasis>profile_list_dlgs</emphasis>
+		Name: <emphasis>dialog:profile_list_dlgs</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -2939,12 +2945,15 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_list_dlgs inboundCalls
+		opensips-cli -x mi dialog:profile_list_dlgs inboundCalls
 		</programlisting>
 		</section>
 
-		<section id="mi_profile_get_values" xreflabel="profile_get_values">
-		<title><function moreinfo="none">profile_get_values</function></title>
+		<section id="mi_profile_get_values" xreflabel="dialog:profile_get_values">
+		<title><function moreinfo="none">dialog:profile_get_values</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>profile_get_values</emphasis>.
+		</para>
 		<para>
 		Lists all the values belonging to a profile along with their
 		count. If the profile does not support values a total count
@@ -2952,7 +2961,7 @@ route {
 		profiles over the CacheDB interface.
 		</para>
 		<para>
-		Name: <emphasis>profile_get_values</emphasis>
+		Name: <emphasis>dialog:profile_get_values</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -2965,17 +2974,20 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_get_values inboundCalls
+		opensips-cli -x mi dialog:profile_get_values inboundCalls
 		</programlisting>
 		</section>
-		<section id="mi_profile_end_dlgs" xreflabel="profile_end_dlgs">
-		<title><function moreinfo="none">profile_end_dlgs</function></title>
+		<section id="mi_profile_end_dlgs" xreflabel="dialog:profile_end_dlgs">
+		<title><function moreinfo="none">dialog:profile_end_dlgs</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>profile_end_dlgs</emphasis>.
+		</para>
 		<para>
 		Terminate all ongoing dialogs from a specified profile, on a single dialog it
 		performs the same operations as the command <emphasis role='bold'><xref linkend="mi_end_dlg"/></emphasis>
 		</para>
 		<para>
-		Name: <emphasis>profile_end_dlgs</emphasis>
+		Name: <emphasis>dialog:profile_end_dlgs</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -2991,7 +3003,7 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_end_dlgs inboundCalls
+		opensips-cli -x mi dialog:profile_end_dlgs inboundCalls
 		</programlisting>
 		</section>
 		<section id="mi_db_sync" xreflabel="dialog:db_sync">
@@ -3074,14 +3086,17 @@ route {
 		</programlisting>
 		</section>
 
-		<section id="mi_list_all_profiles" xreflabel="list_all_profiles">
-		<title><function moreinfo="none">list_all_profiles</function></title>
+		<section id="mi_list_all_profiles" xreflabel="dialog:list_all_profiles">
+		<title><function moreinfo="none">dialog:list_all_profiles</function></title>
+		<para>
+		Replaces obsolete MI command: <emphasis>list_all_profiles</emphasis>.
+		</para>
 		<para>
 		Lists all the dialog profiles, along with 1 or 0 if
 		the given profile has/does not have an associated value.
 		</para>
 		<para>
-		Name: <emphasis>list_all_profiles</emphasis>
+		Name: <emphasis>dialog:list_all_profiles</emphasis>
 		</para>
 		<para>Parameters: <emphasis>It takes no parameters</emphasis>
 		</para>
@@ -3089,7 +3104,7 @@ route {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi list_all_profiles
+		opensips-cli -x mi dialog:list_all_profiles
 		</programlisting>
 		</section>
 
