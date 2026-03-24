@@ -603,7 +603,8 @@ int proto_msrp_send(const struct socket_info* send_sock,
 	/* now we have a connection, let's see what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
 	if (fd==-1) {
-		if (tcp_write_in_main() && c->state == S_CONN_OK)
+		if (tcp_write_in_main() &&
+				(c->state == S_CONN_OK || c->state == S_CONN_CONNECTING))
 			goto send_it;
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */

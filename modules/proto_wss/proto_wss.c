@@ -109,6 +109,7 @@ static int proto_wss_send(const struct socket_info* send_sock,
 		unsigned int id, struct sip_msg *msg);
 static int wss_read_req(struct tcp_connection* con, int* bytes_read);
 static int wss_conn_init(struct tcp_connection* c);
+static int wss_conn_connect(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
 static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
@@ -202,6 +203,7 @@ static int proto_wss_init(struct proto_info *pi)
 	pi->net.stream.write		= wss_async_write;
 
 	pi->net.stream.conn.init	= wss_conn_init;
+	pi->net.stream.conn.connect	= wss_conn_connect;
 	pi->net.stream.conn.clean	= ws_conn_clean;
 	if (cert_check_on_conn_reusage)
 		pi->net.stream.conn.match	= tls_conn_extra_match;
@@ -265,30 +267,29 @@ static int wss_conn_init(struct tcp_connection* c)
 	struct tls_domain *dom;
 	int ret;
 
-	/* allocate the tcp_data and the array of chunks as a single mem chunk */
-	d = (struct ws_data *)shm_malloc(sizeof(*d));
-	if (d==NULL) {
-		LM_ERR("failed to create ws states in shm mem\n");
-		return -1;
+	d = c->proto_data;
+	if (!d) {
+		/* allocate the tcp_data and the array of chunks as a single mem chunk */
+		d = (struct ws_data *)shm_malloc(sizeof(*d));
+		if (d==NULL) {
+			LM_ERR("failed to create ws states in shm mem\n");
+			return -1;
+		}
+
+		memset( d, 0, sizeof( struct ws_data ) );
+		d->state = WS_CON_INIT;
+		d->type = WS_NONE;
+		d->code = WS_ERR_NONE;
+		c->proto_data = (void*)d;
 	}
 
-	memset( d, 0, sizeof( struct ws_data ) );
-
-	if ( t_dst && tprot.create_trace_message ) {
+	if ( t_dst && tprot.create_trace_message && d->tprot == NULL ) {
 		d->tprot = &tprot;
 		d->dest = t_dst;
 		d->net_trace_proto_id = net_trace_proto_id;
 		d->trace_is_on = trace_is_on;
 		d->trace_route_ref = trace_filter_route_ref;
 	}
-
-
-
-	d->state = WS_CON_INIT;
-	d->type = WS_NONE;
-	d->code = WS_ERR_NONE;
-
-	c->proto_data = (void*)d;
 
 	if ( c->flags&F_CONN_ACCEPTED ) {
 		LM_DBG("looking up TLS server "
@@ -313,6 +314,25 @@ static int wss_conn_init(struct tcp_connection* c)
 	}
 
 	return ret;
+}
+
+static int wss_conn_connect(struct tcp_connection* c)
+{
+	if (!c->proto_data || WS_TYPE(c) != WS_CLIENT)
+		return 0;
+
+	if (send_stream_proxy_protocol_v1(c, c->fd, _ws_common_proxy_send_tout, 0,
+			NULL, _ws_common_module) < 0) {
+		LM_ERR("failed to send outbound PROXY header\n");
+		return -1;
+	}
+
+	if (ws_client_handshake(c) < 0) {
+		LM_ERR("cannot complete WebSocket handshake\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 static void ws_conn_clean(struct tcp_connection* c)
