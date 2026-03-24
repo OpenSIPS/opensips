@@ -697,10 +697,12 @@ static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * 
 
 	if (!hash_find_key(pending_replies, tid)) {
 		LM_ERR("Transaction_Id %.*s already processed!\n", tid.len, tid.s);
+		hash_unlock(pending_replies, hentry);
 		goto out;
 	}
 
 	rpl_cond->rpl.json = avps;
+	avps = NULL;
 
 	hash_remove_key(pending_replies, tid);
 	hash_unlock(pending_replies, hentry);
@@ -722,6 +724,8 @@ static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * 
 	dm_cond_unref(rpl_cond);
 
 out:
+	if (avps)
+		cJSON_Delete(avps);
 	cJSON_InitHooks(NULL);
 
 	FD_CHECK(fd_msg_free(msg));
