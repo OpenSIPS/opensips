@@ -88,6 +88,7 @@
 #define F_CONN_DATA_READY		(1<<6) /*!< the connection is ready to process data */
 #define F_CONN_PROXY_OUT_SENT	(1<<7) /*!< outbound PROXY header already sent */
 #define F_CONN_WRITE_QUEUED		(1<<8) /*!< a TCP main write job is queued/running */
+#define F_CONN_HASHED			(1<<9) /*!< the connection is linked in the shared hashes */
 
 enum tcp_conn_states { S_CONN_ERROR=-2, S_CONN_BAD=-1, S_CONN_OK=0,
 		S_CONN_CONNECTING, S_CONN_EOF };
@@ -173,6 +174,7 @@ struct tcp_connection{
 	int aliases;				/*!< Number of aliases, at least 1 */
 	struct tcp_req *con_req;	/*!< Per-connection TCP request buffer in local thread memory */
 	void *proto_req;			/*!< Optional protocol-specific request state */
+	void *proto_extra_id;		/*!< Optional shared protocol-specific match id */
 	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
 	/*!< connection related flags */
 	unsigned short flags;

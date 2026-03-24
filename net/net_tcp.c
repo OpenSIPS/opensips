@@ -59,6 +59,7 @@
 #include "net_tcp_proc.h"
 #include "net_tcp_report.h"
 #include "net_tcp.h"
+#include "tcp_common.h"
 #include "tcp_conn.h"
 #include "tcp_conn_profile.h"
 #include "trans.h"
@@ -67,6 +68,8 @@
 struct struct_hist_list *con_hist;
 
 enum tcp_worker_state { STATE_INACTIVE=0, STATE_ACTIVE, STATE_DRAINING};
+
+static int tcpconn_prepare_write(struct tcp_connection *tcpconn);
 
 /* definition of a TCP worker - the array of these TCP workers is
  * mainly intended to be used by the TCP main, to keep track of the
@@ -613,16 +616,18 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 #endif
 				c = a->parent;
 				if (c->state != S_CONN_BAD &&
-				    c->flags&F_CONN_INIT &&
+				    ((c->flags & F_CONN_INIT) ||
+				     (c->state == S_CONN_CONNECTING && c->fd == -1)) &&
 				    (send_sock==NULL || send_sock == a->parent->rcv.bind_address) &&
 				    port == a->port &&
 				    proto == c->type &&
 				    ip_addr_cmp(ip, &c->rcv.src_ip) &&
-				    (proto_extra_id==NULL ||
-				    protos[proto].net.stream.conn.match==NULL ||
-				    protos[proto].net.stream.conn.match( c, proto_extra_id)) )
-					goto found;
-			}
+				    (proto_extra_id == NULL ||
+				     ((c->flags & F_CONN_INIT) &&
+				      (protos[proto].net.stream.conn.match == NULL ||
+				       protos[proto].net.stream.conn.match(c, proto_extra_id)))) )
+						goto found;
+				}
 			TCPCONN_UNLOCK(part);
 		}
 	}
@@ -691,6 +696,7 @@ static struct tcp_connection* tcpconn_add(struct tcp_connection *c)
 		tcpconn_listadd(TCP_PART(c->id).tcpconn_aliases_hash[hash],
 			&c->con_aliases[0], next, prev);
 		c->aliases++;
+		c->flags |= F_CONN_HASHED;
 		TCPCONN_UNLOCK(c->id);
 		LM_DBG("hashes: %d, %d\n", hash, c->id_hash);
 		return c;
@@ -819,12 +825,15 @@ static void __tcpconn_rm(struct tcp_connection* c, int no_event)
 {
 	int r;
 
-	tcpconn_listrm(TCP_PART(c->id).tcpconn_id_hash[c->id_hash], c,
-		id_next, id_prev);
-	/* remove all the aliases */
-	for (r=0; r<c->aliases; r++)
-		tcpconn_listrm(TCP_PART(c->id).tcpconn_aliases_hash[c->con_aliases[r].hash],
-			&c->con_aliases[r], next, prev);
+	if (c->flags & F_CONN_HASHED) {
+		tcpconn_listrm(TCP_PART(c->id).tcpconn_id_hash[c->id_hash], c,
+			id_next, id_prev);
+		/* remove all the aliases */
+		for (r=0; r<c->aliases; r++)
+			tcpconn_listrm(TCP_PART(c->id).tcpconn_aliases_hash[
+				c->con_aliases[r].hash], &c->con_aliases[r], next, prev);
+		c->flags &= ~F_CONN_HASHED;
+	}
 	lock_destroy(&c->write_lock);
 
 	if (c->async) {
@@ -923,9 +932,16 @@ error_sec:
 
 void tcpconn_put(struct tcp_connection* c)
 {
+	int destroy = 0;
+
 	TCPCONN_LOCK(c->id);
 	c->refcnt--;
+	if (c->refcnt == 0 && (c->flags & F_CONN_HASHED) == 0)
+		destroy = 1;
 	TCPCONN_UNLOCK(c->id);
+
+	if (destroy)
+		_tcpconn_rm(c, 1);
 }
 
 
@@ -964,13 +980,17 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 	c->rcv.src_port=su_getport(su);
 	c->rcv.bind_address = si;
 	c->rcv.dst_ip = si->address;
-	su_size = sockaddru_len(*su);
-	if (getsockname(sock, (struct sockaddr *)&local_su, &su_size)<0) {
-		LM_ERR("failed to get info on received interface/IP %d/%s\n",
-			errno, strerror(errno));
-		goto error;
+	if (sock >= 0) {
+		su_size = sockaddru_len(*su);
+		if (getsockname(sock, (struct sockaddr *)&local_su, &su_size)<0) {
+			LM_ERR("failed to get info on received interface/IP %d/%s\n",
+				errno, strerror(errno));
+			goto error;
+		}
+		c->rcv.dst_port = su_getport(&local_su);
+	} else {
+		c->rcv.dst_port = (si->flags & SI_REUSEPORT) ? su_getport(&si->su) : 0;
 	}
-	c->rcv.dst_port = su_getport(&local_su);
 	print_ip("tcpconn_new: new tcp connection to: ", &c->rcv.src_ip, "\n");
 	LM_DBG("on port %d, proto %d\n", c->rcv.src_port, si->proto);
 	c->id=(*connection_id)++;
@@ -1006,11 +1026,13 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 			goto error;
 		}
 	}
-	if (protos[si->proto].net.stream.conn.init &&
-		protos[si->proto].net.stream.conn.init(c) < 0) {
-		LM_ERR("failed to do proto %d specific init for conn %p\n",
-				c->type, c);
-		goto error;
+	if (sock >= 0 && protos[si->proto].net.stream.conn.init) {
+		if (protos[si->proto].net.stream.conn.init(c) < 0) {
+			LM_ERR("failed to do proto %d specific init for conn %p\n",
+					c->type, c);
+			goto error;
+		}
+		c->flags |= F_CONN_INIT;
 	}
 	if(in_main_proc)
 		tcp_connections_no++;
@@ -1046,19 +1068,10 @@ struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
 		return NULL;
 	}
 
-	if (protos[c->type].net.stream.conn.init &&
-			protos[c->type].net.stream.conn.init(c) < 0) {
-		LM_ERR("failed to do proto %d specific init for conn %p\n",
-				c->type, c);
-		tcp_conn_destroy(c);
-		return NULL;
-	}
-	c->flags |= F_CONN_INIT;
-
 	c->refcnt++; /* safe to do it w/o locking, it's not yet
 					available to the rest of the world */
 	sh_log(c->hist, TCP_REF, "connect, (%d)", c->refcnt);
-	if (!send2main)
+	if (!send2main || sock < 0)
 		return c;
 
 	return (tcp_conn_send(c) == 0 ? c : NULL);
@@ -1109,6 +1122,7 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 {
 	int fd;
 	int unsigned id = tcpconn->id;
+	int hashed;
 
 	TCPCONN_LOCK(id); /*avoid races w/ tcp_send*/
 	tcpconn->refcnt--;
@@ -1116,13 +1130,15 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 		LM_DBG("destroying connection %p, flags %04x\n",
 				tcpconn, tcpconn->flags);
 		fd=tcpconn->fd;
+		hashed = (tcpconn->flags & F_CONN_HASHED);
 		/* no reporting here - the tcpconn_destroy() function is called
 		 * from the TCP_MAIN reactor when handling connectioned received
 		 * from a worker; and we generate the CLOSE reports from WORKERs */
-		_tcpconn_rm(tcpconn,0);
+		_tcpconn_rm(tcpconn, hashed ? 0 : 1);
 		if (fd >= 0)
 			close(fd);
-		tcp_connections_no--;
+		if (hashed)
+			tcp_connections_no--;
 	}else{
 		/* force timeout */
 		tcpconn->lifetime=0;
@@ -1232,6 +1248,11 @@ static void *tcp_thread_routine(void *arg)
 			}
 		} else {
 			if (protos[conn->type].net.stream.write) {
+				if (tcpconn_prepare_write(conn) < 0) {
+					job->ret = -1;
+					job->resp = -1;
+					goto done_job;
+				}
 				lock_get(&conn->write_lock);
 				job->resp = protos[conn->type].net.stream.write(conn, conn->fd);
 				lock_release(&conn->write_lock);
@@ -1243,6 +1264,7 @@ static void *tcp_thread_routine(void *arg)
 			}
 		}
 
+done_job:
 		job->next = NULL;
 		tcp_push_done_job(job);
 
@@ -1493,6 +1515,16 @@ static inline void tcp_complete_write(struct tcp_job *job)
 	lock_get(&tcpconn->write_lock);
 	pending_chunks = (tcpconn->async && tcpconn->async->pending);
 	lock_release(&tcpconn->write_lock);
+
+	if ((tcpconn->flags & F_CONN_REMOVED_READ) && tcpconn->fd != -1) {
+		if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
+				tcpconn) < 0) {
+			LM_ERR("failed to add TCP conn %p for read events\n", tcpconn);
+			tcp_fail_conn(tcpconn, "Failed to arm read", 0);
+			return;
+		}
+		tcpconn->flags &= ~F_CONN_REMOVED_READ;
+	}
 
 	if (job->resp == 1 && (tcpconn->flags & F_CONN_REMOVED_WRITE)) {
 		tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
@@ -1975,6 +2007,10 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				tcpconn_put(tcpconn);
 				break;
 			}
+			if ((tcpconn->flags & F_CONN_HASHED) == 0) {
+				tcpconn_add(tcpconn);
+				tcp_connections_no++;
+			}
 			if ((tcpconn->flags & F_CONN_WRITE_QUEUED) ||
 					!(tcpconn->flags & F_CONN_REMOVED_WRITE)) {
 				tcpconn_put(tcpconn);
@@ -1982,6 +2018,10 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			}
 			if (tcp_queue_write_job(tcpconn) < 0) {
 				LM_ERR("failed queuing worker-triggered TCP write job\n");
+				if (tcpconn->fd < 0) {
+					tcp_fail_conn(tcpconn, "Failed queueing initial write", 0);
+					return 0;
+				}
 				if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
 						tcpconn) < 0) {
 					tcp_fail_conn(tcpconn, "Failed queueing worker write", 0);
@@ -2515,6 +2555,72 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	return 0;
 error:
 	return -1;
+}
+
+static int tcpconn_update_local_port(struct tcp_connection *tcpconn)
+{
+	union sockaddr_union local_su;
+	socklen_t su_size;
+
+	su_size = sockaddru_len(tcpconn->rcv.src_su);
+	if (getsockname(tcpconn->fd, (struct sockaddr *)&local_su, &su_size) < 0) {
+		LM_ERR("failed to get local socket info on conn %u: %s\n",
+			tcpconn->id, strerror(errno));
+		return -1;
+	}
+
+	tcpconn->rcv.dst_port = su_getport(&local_su);
+	return 0;
+}
+
+static int tcpconn_prepare_write(struct tcp_connection *tcpconn)
+{
+	int fd;
+	int connected = 0;
+
+	if ((tcpconn->flags & F_CONN_INIT) == 0 &&
+			protos[tcpconn->type].net.stream.conn.init) {
+		if (protos[tcpconn->type].net.stream.conn.init(tcpconn) < 0) {
+			LM_ERR("failed to init proto %d conn %p in TCP main\n",
+				tcpconn->type, tcpconn);
+			return -1;
+		}
+		tcpconn->flags |= F_CONN_INIT;
+	}
+
+	if (tcpconn->fd < 0) {
+		if (!tcpconn->rcv.bind_address) {
+			LM_ERR("missing bind_address for outbound conn %u\n", tcpconn->id);
+			return -1;
+		}
+
+		fd = tcp_sync_connect_fd(&tcpconn->rcv.bind_address->su,
+				&tcpconn->rcv.src_su, tcpconn->type, &tcpconn->profile,
+				tcpconn->rcv.bind_address->flags,
+				tcpconn->rcv.bind_address->tos);
+		if (fd < 0)
+			return -1;
+
+		tcpconn->fd = fd;
+		if (tcpconn_update_local_port(tcpconn) < 0) {
+			close(fd);
+			tcpconn->fd = -1;
+			return -1;
+		}
+
+		tcpconn->state = S_CONN_OK;
+		connected = 1;
+	}
+
+	if (connected && protos[tcpconn->type].net.stream.conn.connect) {
+		if (protos[tcpconn->type].net.stream.conn.connect(tcpconn) < 0) {
+			LM_ERR("failed to finish proto %d connect on conn %u\n",
+				tcpconn->type, tcpconn->id);
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 

@@ -578,51 +578,36 @@ static void ws_close(struct tcp_connection *c)
 	ws_send_close(c);
 }
 
+static inline int ws_prepare_client_conn(struct tcp_connection *c)
+{
+	struct ws_data *d;
+
+	if (c->proto_data) {
+		WS_TYPE(c) = WS_CLIENT;
+		return 0;
+	}
+
+	d = shm_malloc(sizeof(*d));
+	if (!d) {
+		LM_ERR("failed to create ws states in shm mem\n");
+		return -1;
+	}
+
+	memset(d, 0, sizeof(*d));
+	d->state = WS_CON_INIT;
+	d->type = WS_CLIENT;
+	d->code = WS_ERR_NONE;
+	c->proto_data = d;
+
+	return 0;
+}
+
 static struct tcp_connection* ws_sync_connect(const struct socket_info* send_sock,
 		const union sockaddr_union* server, struct tcp_conn_profile *prof)
 {
-	int s;
-	union sockaddr_union my_name;
-	socklen_t my_name_len;
-	struct tcp_connection* con;
+	int fd = -1;
 
-	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
-	if (s==-1){
-		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
-		goto error;
-	}
-
-	if (tcp_init_sock_opt(s, prof, send_sock->flags, send_sock->tos)<0){
-		LM_ERR("tcp_init_sock_opt failed\n");
-		goto error;
-	}
-
-	my_name_len = sockaddru_len(send_sock->su);
-	memcpy( &my_name, &send_sock->su, my_name_len);
-	su_setport( &my_name, 0);
-	if (bind(s, &my_name.s, my_name_len )!=0) {
-		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
-		goto error;
-	}
-
-	if (tcp_connect_blocking_timeout(s, &server->s, sockaddru_len(*server),
-	                      prof->connect_timeout)<0){
-		LM_ERR("tcp_blocking_connect failed\n");
-		goto error;
-	}
-	con=tcp_conn_create(s, server, send_sock, prof, S_CONN_OK, 0);
-	if (con==NULL){
-		LM_ERR("tcp_conn_create failed, closing the socket\n");
-		goto error;
-	}
-	/* it is safe to move this here and clear it after we complete the
-	 * handshake, just before sending the fd to main */
-	con->fd = s;
-	return con;
-error:
-	/* close the opened socket */
-	if (s!=-1) close(s);
-	return 0;
+	return tcp_sync_connect(send_sock, server, prof, &fd, 1);
 }
 
 
@@ -632,38 +617,18 @@ static struct tcp_connection* ws_connect(const struct socket_info* send_sock,
 {
 	struct tcp_connection *c;
 
+	(void)msg;
+
 	if ((c=ws_sync_connect(send_sock, to, prof))==0) {
 		LM_ERR("connect failed\n");
 		return NULL;
 	}
-	/* the state of the connection should be NONE, otherwise something is
-	 * wrong */
-	if (WS_TYPE(c) != WS_NONE) {
-		LM_BUG("invalid type for connection %d\n", WS_TYPE(c));
-		goto error;
-	}
-	WS_TYPE(c) = WS_CLIENT;
-
-	if (send_stream_proxy_protocol_v1(c, c->fd, _ws_common_proxy_send_tout, 0,
-			msg ? &msg->rcv : NULL, _ws_common_module) < 0) {
-		LM_ERR("failed to send outbound PROXY header\n");
+	if (ws_prepare_client_conn(c) < 0) {
+		LM_ERR("cannot prepare WebSocket client connection\n");
 		goto error;
 	}
 
-	if (ws_client_handshake(c) < 0) {
-		LM_ERR("cannot complete WebSocket handshake\n");
-		goto error;
-	}
-
-	*fd = c->fd;
-	/* clear the fd, just in case */
-	c->fd = -1;
-	/* handshake done - send the socket to main */
-	if (tcp_conn_send(c) < 0) {
-		LM_ERR("cannot send socket to main\n");
-		goto error;
-	}
-
+	*fd = -1;
 	return c;
 error:
 	tcp_conn_destroy(c);

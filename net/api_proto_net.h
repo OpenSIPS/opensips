@@ -58,6 +58,7 @@ typedef int  (*proto_net_stream_write_f)(struct tcp_connection *c, int fd);
  */
 typedef int  (*proto_net_stream_read_f)(struct tcp_connection *c, int *len);
 typedef int  (*proto_net_stream_conn_init_f)(struct tcp_connection *c);
+typedef int  (*proto_net_stream_conn_connect_f)(struct tcp_connection *c);
 typedef void (*proto_net_stream_conn_clean_f)(struct tcp_connection *c);
 typedef int  (*proto_net_stream_extra_match_f)(struct tcp_connection *c, void *id);
 
@@ -76,6 +77,7 @@ struct api_proto_net {
 			proto_net_stream_write_f	write;
 			struct {
 				proto_net_stream_conn_init_f   init;
+				proto_net_stream_conn_connect_f connect;
 				proto_net_stream_conn_clean_f  clean;
 				proto_net_stream_extra_match_f match;
 			} conn;

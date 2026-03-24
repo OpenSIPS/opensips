@@ -161,10 +161,8 @@ static int tls_async_queue_proxy_header(struct tcp_connection *c,
 	if (!should_send_tls_async_proxy_protocol(c))
 		return 0;
 
-	if (!c->proto_data) {
-		LM_ERR("missing TLS conn data while preparing outbound PROXY header\n");
-		return -1;
-	}
+	if ((c->flags & F_CONN_INIT) == 0 || !c->proto_data)
+		return 0;
 	data = c->proto_data;
 	if (!data->pp_hdr) {
 		LM_ERR("missing TLS PROXY header buffer on conn %u\n", c->id);
@@ -659,7 +657,6 @@ static int proto_tls_send(const struct socket_info* send_sock,
 			LM_DBG("Successfully connected from interface %s:%d to %s:%d!\n",
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
-
 			rlen = len;
 			if (n==0) {
 				if (tls_async_queue_proxy_header(c, msg) < 0) {
@@ -677,15 +674,15 @@ static int proto_tls_send(const struct socket_info* send_sock,
 				goto con_release;
 			}
 
-				LM_DBG("First TCP connect attempt succeeded in less than %dms, "
-					"proceed to queueing \n",tls_async_local_connect_timeout);
-			} else {
-				/* it is safe to send the fd to the main, because it doesn't
-				 * matter which process completes the handshake */
-				if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
-					LM_ERR("connect failed\n");
-					return -1;
-				}
+			LM_DBG("First TCP connect attempt succeeded in less than %dms, "
+				"proceed to queueing \n",tls_async_local_connect_timeout);
+		} else {
+			/* it is safe to send the fd to the main, because it doesn't
+			 * matter which process completes the handshake */
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
+				LM_ERR("connect failed\n");
+				return -1;
+			}
 		}
 
 		goto send_it;

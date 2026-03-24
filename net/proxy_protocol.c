@@ -163,6 +163,9 @@ int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 	if (!should_send_stream_proxy_protocol(c))
 		return 0;
 
+	if (fd < 0 && ((c->flags & F_CONN_INIT) == 0 || c->fd < 0))
+		return 0;
+
 	pp_len = build_outbound_proxy_protocol_v1_hdr(ri,
 			&c->rcv.dst_ip, c->rcv.dst_port,
 			&c->rcv.src_ip, c->rcv.src_port,

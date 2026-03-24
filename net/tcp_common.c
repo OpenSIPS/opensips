@@ -222,6 +222,14 @@ struct tcp_connection* tcp_sync_connect(const struct socket_info* send_sock,
 	struct tcp_connection* con;
 	int s;
 
+	if (send2main) {
+		*fd = -1;
+		con = tcp_conn_create(-1, server, send_sock, prof, S_CONN_CONNECTING, 1);
+		if (!con)
+			LM_ERR("tcp_conn_create failed\n");
+		return con;
+	}
+
 	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof, send_sock->flags, send_sock->tos);
 	if (s < 0)
 		return NULL;
@@ -258,6 +266,19 @@ int tcp_async_connect(const struct socket_info* send_sock,
 	char *ip;
 	unsigned short port;
 	struct timeval begin;
+
+	if (send2main) {
+		(void)timeout;
+		*ret_fd = -1;
+		con = tcp_conn_create(-1, server, send_sock, prof,
+				S_CONN_CONNECTING, 1);
+		if (con == NULL) {
+			LM_ERR("tcp_conn_create failed\n");
+			return -1;
+		}
+		*c = con;
+		return 0;
+	}
 
 	/* create the socket */
 	fd=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
@@ -400,6 +421,13 @@ int tcp_async_write(struct tcp_connection* con,int fd)
 {
 	int n;
 	struct tcp_async_chunk *chunk;
+
+	n = send_stream_proxy_protocol_v1(con, fd, 0,
+			0, NULL, "TCP");
+	if (n < 0)
+		return -1;
+	if (n > 0)
+		return 1;
 
 	while ((chunk = tcp_async_get_chunk(con)) != NULL) {
 		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",

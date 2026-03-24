@@ -346,7 +346,6 @@ static int proto_bins_send(const struct socket_info* send_sock,
 	struct ip_addr ip;
 	int port;
 	int fd, n;
-	int send2main = 0;
 
 	port=0;
 
@@ -442,12 +441,10 @@ static int proto_bins_send(const struct socket_info* send_sock,
 			LM_DBG("First TLS handshake attempt succeeded in less than %dms, "
 				"proceed to writing \n",bins_async_handshake_connect_timeout);
 		} else {
-			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 0))==0) {
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
 				LM_ERR("connect failed\n");
 				return -1;
 			}
-
-			send2main = 1;
 		}
 
 		goto send;
@@ -491,24 +488,11 @@ static int proto_bins_send(const struct socket_info* send_sock,
 
 send:
 	LM_DBG("sending via fd %d...\n",fd);
-	if (send2main) {
-		if (tcp_conn_send(c) < 0) {
-			LM_ERR("cannot send socket to main\n");
-			goto err_release;
-		}
-		send2main = 0;
-	}
-
 	n = bins_write_on_socket(c, -1, buf, len);
 
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	if (n<0){
 		LM_ERR("failed to send\n");
-		goto err_release;
-	}
-
-	if (send2main && tcp_conn_send(c) < 0) {
-		LM_ERR("cannot send socket to main\n");
 		goto err_release;
 	}
 
@@ -524,15 +508,10 @@ send:
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;
 err_release:
-	if (send2main) {
+	c->state=S_CONN_BAD;
+	if (fd != -1)
 		close(fd);
-		tcp_conn_destroy(c);
-	} else {
-		c->state=S_CONN_BAD;
-		if (fd != -1)
-			close(fd);
-		tcp_conn_release(c, 0);
-	}
+	tcp_conn_release(c, 0);
 	return -1;
 }
 

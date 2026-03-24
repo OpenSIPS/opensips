@@ -95,6 +95,7 @@ static int proto_ws_send(const struct socket_info* send_sock,
 		unsigned int id, struct sip_msg *msg);
 static int ws_read_req(struct tcp_connection* con, int* bytes_read);
 static int ws_conn_init(struct tcp_connection* c);
+static int ws_conn_connect(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
 static void ws_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
@@ -185,6 +186,7 @@ static int proto_ws_init(struct proto_info *pi)
 	pi->net.stream.write		= tcp_async_write;
 
 	pi->net.stream.conn.init	= ws_conn_init;
+	pi->net.stream.conn.connect	= ws_conn_connect;
 	pi->net.stream.conn.clean	= ws_conn_clean;
 	pi->net.report			= ws_report;
 
@@ -239,27 +241,47 @@ static int ws_conn_init(struct tcp_connection* c)
 {
 	struct ws_data *d;
 
-	/* allocate the tcp_data and the array of chunks as a single mem chunk */
-	d = (struct ws_data *)shm_malloc(sizeof(*d));
-	if (d==NULL) {
-		LM_ERR("failed to create ws states in shm mem\n");
-		return -1;
+	d = c->proto_data;
+	if (!d) {
+		/* allocate the tcp_data and the array of chunks as a single mem chunk */
+		d = (struct ws_data *)shm_malloc(sizeof(*d));
+		if (d==NULL) {
+			LM_ERR("failed to create ws states in shm mem\n");
+			return -1;
+		}
+		memset( d, 0, sizeof( struct ws_data ) );
+		d->state = WS_CON_INIT;
+		d->type = WS_NONE;
+		d->code = WS_ERR_NONE;
+		c->proto_data = (void*)d;
 	}
-	memset( d, 0, sizeof( struct ws_data ) );
 
-	if ( t_dst && tprot.create_trace_message ) {
+	if ( t_dst && tprot.create_trace_message && d->tprot == NULL ) {
 		d->tprot = &tprot;
 		d->dest = t_dst;
 		d->net_trace_proto_id = net_trace_proto_id;
 		d->trace_is_on = trace_is_on;
 		d->trace_route_ref = trace_filter_route_ref;
 	}
+	return 0;
+}
 
-	d->state = WS_CON_INIT;
-	d->type = WS_NONE;
-	d->code = WS_ERR_NONE;
+static int ws_conn_connect(struct tcp_connection* c)
+{
+	if (!c->proto_data || WS_TYPE(c) != WS_CLIENT)
+		return 0;
 
-	c->proto_data = (void*)d;
+	if (send_stream_proxy_protocol_v1(c, c->fd, _ws_common_proxy_send_tout, 0,
+			NULL, _ws_common_module) < 0) {
+		LM_ERR("failed to send outbound PROXY header\n");
+		return -1;
+	}
+
+	if (ws_client_handshake(c) < 0) {
+		LM_ERR("cannot complete WebSocket handshake\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -396,7 +418,8 @@ static int proto_ws_send(const struct socket_info* send_sock,
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
 	if (fd==-1) {
-		if (tcp_write_in_main() && c->state == S_CONN_OK)
+		if (tcp_write_in_main() &&
+				(c->state == S_CONN_OK || c->state == S_CONN_CONNECTING))
 			goto send_it;
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
