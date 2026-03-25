@@ -56,7 +56,6 @@ static int bin_send_timeout = 100;
 static int bin_max_msg_chunks = 32;
 static int bin_async = 1;
 static int bin_async_max_postponed_chunks = 1024;
-static int bin_async_local_connect_timeout = 100;
 static int bin_async_local_write_timeout = 10;
 
 #include "bin_common.h"
@@ -73,8 +72,6 @@ static const param_export_t params[] = {
 	{ "bin_async",                       INT_PARAM, &bin_async              },
 	{ "bin_async_max_postponed_chunks",  INT_PARAM,
 											&bin_async_max_postponed_chunks },
-	{ "bin_async_local_connect_timeout", INT_PARAM,
-											&bin_async_local_connect_timeout},
 	{ "bin_async_local_write_timeout",   INT_PARAM,
 											&bin_async_local_write_timeout  },
 	{0, 0, 0}
@@ -185,34 +182,28 @@ static int proto_bin_send(const struct socket_info* send_sock,
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n",bin_async);
 		/* create tcp connection */
 		if (bin_async) {
-			n = tcp_async_connect(send_sock, to, &prof,
-					bin_async_local_connect_timeout, &c, &fd, 1);
+			n = tcp_async_connect(send_sock, to, &prof, &c, &fd);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
 				return -1;
 			}
-			/* connect succeeded, we have a connection */
-			if (n==0) {
-				/* attach the write buffer to it */
-				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
-					LM_ERR("Failed to add the initial write chunk\n");
-					len = -1; /* report an error - let the caller decide what to do */
-				}
-
-				/* mark the ID of the used connection (tracing purposes) */
-				last_outgoing_tcp_id = c->id;
-				send_sock->last_real_ports->local = c->rcv.dst_port;
-				send_sock->last_real_ports->remote = c->rcv.src_port;
-
-				/* connect is still in progress, break the sending
-				 * flow now (the actual write will be done when 
-				 * connect will be completed */
-				LM_DBG("Successfully started async connection \n");
-				tcp_conn_release(c, 0);
-				return len;
+			/* attach the write buffer to it */
+			if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+				LM_ERR("Failed to add the initial write chunk\n");
+				len = -1; /* report an error - let the caller decide what to do */
 			}
-			/* our first connect attempt succeeded - go ahead as normal */
-		} else if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
+
+			/* mark the ID of the used connection (tracing purposes) */
+			last_outgoing_tcp_id = c->id;
+			send_sock->last_real_ports->local = c->rcv.dst_port;
+			send_sock->last_real_ports->remote = c->rcv.src_port;
+
+			/* connect is still in progress, break the sending
+			 * flow now (the actual write will be done when
+			 * connect will be completed */
+			tcp_conn_release(c, 0);
+			return len;
+		} else if ((c=tcp_sync_connect(send_sock, to, &prof, &fd))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
@@ -222,61 +213,49 @@ static int proto_bin_send(const struct socket_info* send_sock,
 
 	/* now we have a connection, let's see what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
-	if (fd==-1) {
-		/* connection is not writable because of its state - can we append
-		 * data to it for later writting (async writting)? */
-		if (c->state==S_CONN_CONNECTING) {
-			/* the connection is currently in the process of getting
-			 * connected - let's append our send chunk as well - just in
-			 * case we ever manage to get through */
-			LM_DBG("We have acquired a TCP connection which is still "
-				"pending to connect - delaying write \n");
-			n = tcp_async_add_chunk(c,buf,len,1);
-			if (n < 0) {
-				LM_ERR("Failed to add another write chunk to %p\n",c);
-				/* we failed due to internal errors - put the
-				 * connection back */
-				tcp_conn_release(c, 0);
-				return -1;
-			}
-
-			/* mark the ID of the used connection (tracing purposes) */
-			last_outgoing_tcp_id = c->id;
-			send_sock->last_real_ports->local = c->rcv.dst_port;
-			send_sock->last_real_ports->remote = c->rcv.src_port;
-
-			/* we successfully added our write chunk - success */
-			tcp_conn_release(c, 0);
-			return len;
-		} else {
-			if (tcp_write_in_main() && c->state == S_CONN_OK)
-				goto send_it;
-			/* return error, nothing to do about it */
+	if (c->state==S_CONN_CONNECTING) {
+		/* the connection is currently in the process of getting
+		 * connected - let's append our send chunk as well - just in
+		 * case we ever manage to get through */
+		LM_DBG("We have acquired a TCP connection which is still "
+			"pending to connect - delaying write \n");
+		n = tcp_async_add_chunk(c,buf,len,1);
+		if (n < 0) {
+			LM_ERR("Failed to add another write chunk to %p\n",c);
+			/* we failed due to internal errors - put the
+			 * connection back */
 			tcp_conn_release(c, 0);
 			return -1;
 		}
-	}
 
+		/* mark the ID of the used connection (tracing purposes) */
+		last_outgoing_tcp_id = c->id;
+		send_sock->last_real_ports->local = c->rcv.dst_port;
+		send_sock->last_real_ports->remote = c->rcv.src_port;
 
-send_it:
-	LM_DBG("sending via fd %d...\n",fd);
-	n = tcp_write_on_socket(c, -1, buf, len,
-			bin_send_timeout, bin_async_local_write_timeout);
-
-	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
-	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
-	if (n<0){
-		LM_ERR("failed to send\n");
-		c->state=S_CONN_BAD;
-		if (fd != -1)
-			close(fd);
+		/* we successfully added our write chunk - success */
+		tcp_conn_release(c, 0);
+		return len;
+	} else if (c->state != S_CONN_OK) {
+		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
 		return -1;
 	}
 
-	/* send paths only keep temporary FDs from fresh local connects */
-	if (fd != -1)
-		close(fd);
+
+send_it:
+	LM_DBG("sending on conn %p...\n", c);
+	n = tcp_write_on_socket(c, -1, buf, len,
+			bin_send_timeout, bin_async_local_write_timeout);
+
+	LM_DBG("after write: c=%p n/len=%d/%d\n", c, n, len);
+	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
+	if (n<0){
+		LM_ERR("failed to send\n");
+		c->state=S_CONN_BAD;
+		tcp_conn_release(c, 0);
+		return -1;
+	}
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;

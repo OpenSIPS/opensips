@@ -35,16 +35,16 @@ int tcp_sync_connect_fd(const union sockaddr_union* src, const union sockaddr_un
 
 struct tcp_connection* tcp_sync_connect(const struct socket_info* send_sock,
                const union sockaddr_union* server, struct tcp_conn_profile *prof,
-               int *fd, int send2main);
+               int *fd);
 
-/* Attempts do a connect to the given destination. It returns:
- *   1 - connect was done local (completed)
- *   0 - connect launched as async (in progress)
+/* Creates a shared connection shell and lets TCP main do the real connect.
+ * Returns:
+ *   0 - connection shell created
  *  -1 - error
  */
 int tcp_async_connect(const struct socket_info* send_sock,
            const union sockaddr_union* server, struct tcp_conn_profile *prof,
-           int timeout, struct tcp_connection** c, int *ret_fd, int send2main);
+           struct tcp_connection** c, int *ret_fd);
 
 /* Responsible for writing the TCP send chunks - called under con write lock
  *	* if returns = 1 : the connection will be released for more writting

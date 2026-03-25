@@ -220,29 +220,6 @@ modparam("proto_tcp", "tcp_async_max_postponed_chunks", 16)
 		</example>
 	</section>
 	<section>
-		<title><varname>tcp_async_local_connect_timeout</varname> (integer)</title>
-		<para>
-			If <emphasis>tcp_async</emphasis> is enabled, this specifies the
-			number of milliseconds that a connect will be tried in blocking
-			mode (optimization). If the connect operation lasts more than
-			this, the connect will go to async mode and will be passed to TCP
-			MAIN for polling.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 100 ms.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>tcp_async_local_connect_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("proto_tcp", "tcp_async_local_connect_timeout", 200)
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>tcp_async_local_write_timeout</varname> (integer)</title>
 		<para>
 			If <emphasis>tcp_async</emphasis> is enabled, this specifies the

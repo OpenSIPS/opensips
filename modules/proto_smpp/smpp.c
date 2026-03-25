@@ -788,12 +788,13 @@ int send_outbind(smpp_session_t *session)
 	return -1;
 }
 
-static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
+static struct tcp_connection *smpp_connect(smpp_session_t *session)
 {
 	union sockaddr_union to;
 	union sockaddr_union server;
 	const struct socket_info *send_socket;
 	struct tcp_conn_profile prof;
+	int fd = -1;
 
 	if (init_su(&to, &session->ip, session->port)) {
 		LM_ERR("error creating su from ipaddr and port\n");
@@ -811,19 +812,18 @@ static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
 
 	tcp_con_get_profile(&server, &send_socket->su, PROTO_SMPP, &prof);
 
-	return tcp_sync_connect(send_socket, &server, &prof, fd, 1);
+	return tcp_sync_connect(send_socket, &server, &prof, &fd);
 }
 
 static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
 {
-	int ret, fd;
+	int ret;
 	struct tcp_connection *conn;
 	int retry = 1;
 	/* first try to acquire the connection */
 
 	/* TBD - handle conn not found here = reconnect ? */
 retry:
-	fd = -1;
 	ret = tcp_conn_get(smsc->conn_id, &smsc->ip, smsc->port, PROTO_SMPP,
 		NULL, &conn, NULL);
 	if (ret <= 0) {
@@ -847,8 +847,6 @@ retry:
 		LM_ERR("failed to send data!\n");
 		conn->state=S_CONN_BAD;
 	}
-	if (fd != -1)
-		close(fd);
 	tcp_conn_release(conn, (ret < buffer->len) ? 1 : 0);
 	return ret;
 }
@@ -856,7 +854,7 @@ retry:
 
 static int send_bind(smpp_session_t *session)
 {
-	int fd, n = -1;
+	int n = -1;
 	struct tcp_connection *conn;
 	smpp_bind_transceiver_req_t *req = NULL;
 
@@ -871,7 +869,7 @@ static int send_bind(smpp_session_t *session)
 		LM_ERR("error creating request\n");
 		return -1;
 	}
-	conn = smpp_connect(session, &fd);
+	conn = smpp_connect(session);
 	if (!conn) {
 		LM_ERR("cannot create a TCP connection!\n");
 		goto free_req;
@@ -885,8 +883,6 @@ static int send_bind(smpp_session_t *session)
 	if (n < 0) {
 		conn->state = S_CONN_BAD;
 	}
-	if (fd != -1)
-		close(fd);
 	tcp_conn_release(conn, (n < req->payload.len) ? 1 : 0);
 free_req:
 	free_smpp_msg(req);

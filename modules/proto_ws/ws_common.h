@@ -27,6 +27,7 @@
 #define _WS_COMMON_H_
 
 #include "../../mem/shm_mem.h"
+#include "../../mem/mem.h"
 #include "../../globals.h"
 #include "../../receive.h"
 #include "../../dprint.h"
@@ -412,7 +413,7 @@ static int ws_process(struct tcp_connection *con)
 		LM_DBG("Using the per connection buff \n");
 	} else {
 		LM_DBG("Allocating per connection WS buffer\n");
-		req = shm_malloc(sizeof(*req));
+		req = thread_malloc(sizeof(*req));
 		if (req == NULL) {
 			LM_ERR("No more mem for dynamic con request buffer\n");
 			goto error;
@@ -580,24 +581,9 @@ static void ws_close(struct tcp_connection *c)
 
 static inline int ws_prepare_client_conn(struct tcp_connection *c)
 {
-	struct ws_data *d;
-
 	if (c->proto_data) {
 		WS_TYPE(c) = WS_CLIENT;
-		return 0;
 	}
-
-	d = shm_malloc(sizeof(*d));
-	if (!d) {
-		LM_ERR("failed to create ws states in shm mem\n");
-		return -1;
-	}
-
-	memset(d, 0, sizeof(*d));
-	d->state = WS_CON_INIT;
-	d->type = WS_CLIENT;
-	d->code = WS_ERR_NONE;
-	c->proto_data = d;
 
 	return 0;
 }
@@ -607,13 +593,13 @@ static struct tcp_connection* ws_sync_connect(const struct socket_info* send_soc
 {
 	int fd = -1;
 
-	return tcp_sync_connect(send_sock, server, prof, &fd, 1);
+	return tcp_sync_connect(send_sock, server, prof, &fd);
 }
 
 
 static struct tcp_connection* ws_connect(const struct socket_info* send_sock,
 		const union sockaddr_union* to, struct tcp_conn_profile *prof,
-		int *fd, struct sip_msg *msg)
+		struct sip_msg *msg)
 {
 	struct tcp_connection *c;
 
@@ -628,7 +614,6 @@ static struct tcp_connection* ws_connect(const struct socket_info* send_sock,
 		goto error;
 	}
 
-	*fd = -1;
 	return c;
 error:
 	tcp_conn_destroy(c);

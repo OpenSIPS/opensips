@@ -93,12 +93,9 @@ int tcp_conn_get(int unsigned id, struct ip_addr* ip, int port,
 		struct tcp_connection** conn, const struct socket_info* send_sock);
 
 /* creates a new tcp conn around a newly connected socket */
-struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
+struct tcp_connection* tcp_conn_create(const union sockaddr_union* su,
 		const struct socket_info* si, struct tcp_conn_profile *prof,
-		int state, int send2main);
-
-/* sends a connected connection to the master */
-int tcp_conn_send(struct tcp_connection *con);
+		int state);
 
 /* true when TCP main owns the write path and IO threads handle flushing */
 int tcp_write_in_main(void);

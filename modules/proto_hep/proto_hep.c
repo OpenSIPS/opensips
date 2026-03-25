@@ -84,10 +84,8 @@ static int hep_async = 1;
 static int hep_send_timeout = 100;
 static int hep_async_max_postponed_chunks = 32;
 static int hep_max_msg_chunks = 32;
-static int hep_async_local_connect_timeout = 100;
 static int hep_async_local_write_timeout = 10;
 static int hep_tls_handshake_timeout = 100;
-static int hep_tls_async_handshake_connect_timeout = 10;
 
 int hep_ctx_idx = 0;
 int hep_capture_id = 1;
@@ -135,7 +133,6 @@ static const param_export_t params[] = {
 	{ "hep_async_max_postponed_chunks",  INT_PARAM, &hep_async_max_postponed_chunks },
 	/* what protocol shall be used: 1, 2 or 3 */
 	{ "hep_capture_id",                  INT_PARAM, &hep_capture_id                 },
-	{ "hep_async_local_connect_timeout", INT_PARAM, &hep_async_local_connect_timeout},
 	{ "hep_async_local_write_timeout",   INT_PARAM, &hep_async_local_write_timeout  },
 	{ "compressed_payload",              INT_PARAM, &payload_compression            },
 	{ "hep_id",                          STR_PARAM|USE_FUNC_PARAM, parse_hep_id     },
@@ -454,65 +451,27 @@ static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n", hep_async);
 		/* create tcp connection */
 		if (hep_async) {
-			n = tcp_async_connect(send_sock, to, &prof,
-					hep_async_local_connect_timeout, &c, &fd, 1);
+			n = tcp_async_connect(send_sock, to, &prof, &c, &fd);
 			if (n < 0) {
 				LM_ERR("async TCP connect failed\n");
 				return -1;
 			}
-			/* connect succeeded, we have a connection */
-			if (n == 0) {
-				/* attach the write buffer to it */
-				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
-					LM_ERR("Failed to add the initial write chunk\n");
-					len = -1; /* report an error - let the caller decide what to do */
-				}
-
-				/* mark the ID of the used connection (tracing purposes) */
-				last_outgoing_tcp_id = c->id;
-				send_sock->last_real_ports->local = c->rcv.dst_port;
-				send_sock->last_real_ports->remote = c->rcv.src_port;
-				/* connect is still in progress, break the sending
-				 * flow now (the actual write will be done when
-				 * connect will be completed */
-				LM_DBG("Successfully started async connection \n");
-				tcp_conn_release(c, 0);
-				return len;
+			/* attach the write buffer to it */
+			if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+				LM_ERR("Failed to add the initial write chunk\n");
+				len = -1; /* report an error - let the caller decide what to do */
 			}
-			if (is_tls) {
-				LM_DBG("first TCP connect attempt succeeded in less than %dms, "
-					"proceed to TLS connect \n", hep_async_local_connect_timeout);
-				/* succesful TCP conection done - starting async SSL connect */
 
-				lock_get(&c->write_lock);
-				/* we connect under lock to make sure no one else is reading our
-				 * connect status */
-				tls_mgm_api.tls_update_fd(c, fd);
-				n = tls_mgm_api.tls_async_connect(c, fd,
-					hep_tls_async_handshake_connect_timeout, NULL);
-				lock_release(&c->write_lock);
-				if (n < 0) {
-					LM_ERR("failed async TLS connect\n");
-					tcp_conn_release(c, 0);
-					return -1;
-				}
-				if (n == 0) {
-					/* attach the write buffer to it */
-					if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
-						LM_ERR("failed to add the initial write chunk\n");
-						tcp_conn_release(c, 0);
-						return -1;
-					}
-
-					LM_DBG("successfully started async TLS connection\n");
-					tcp_conn_release(c, 1);
-					return len;
-				}
-
-				LM_DBG("first TLS handshake attempt succeeded in less than %dms, "
-					"proceed to writing \n", hep_tls_async_handshake_connect_timeout);
-			}
-		} else if ((c = tcp_sync_connect(send_sock, to, &prof, &fd, 1)) == 0) {
+			/* mark the ID of the used connection (tracing purposes) */
+			last_outgoing_tcp_id = c->id;
+			send_sock->last_real_ports->local = c->rcv.dst_port;
+			send_sock->last_real_ports->remote = c->rcv.src_port;
+			/* connect is still in progress, break the sending
+			 * flow now (the actual write will be done when
+			 * connect will be completed */
+			tcp_conn_release(c, 0);
+			return len;
+		} else if ((c = tcp_sync_connect(send_sock, to, &prof, &fd)) == 0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
@@ -521,43 +480,37 @@ static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 
 	/* now we have a connection, let's see what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
-	if (fd == -1) {
-		/* connection is not writable because of its state - can we append
-		 * data to it for later writting (async writting)? */
-		if (c->state == S_CONN_CONNECTING) {
-			/* the connection is currently in the process of getting
-			 * connected - let's append our send chunk as well - just in
-			 * case we ever manage to get through */
-			LM_DBG("We have acquired a TCP connection which is still "
-				"pending to connect - delaying write \n");
-			n = tcp_async_add_chunk(c,buf,len,1);
-			if (n < 0) {
-				LM_ERR("Failed to add another write chunk to %p\n",c);
-				/* we failed due to internal errors - put the
-				 * connection back */
-				tcp_conn_release(c, 0);
-				return -1;
-			}
-
-			/* mark the ID of the used connection (tracing purposes) */
-			last_outgoing_tcp_id = c->id;
-			send_sock->last_real_ports->local = c->rcv.dst_port;
-			send_sock->last_real_ports->remote = c->rcv.src_port;
-
-			/* we successfully added our write chunk - success */
-			tcp_conn_release(c, 0);
-			return len;
-		} else {
-			if (tcp_write_in_main() && c->state == S_CONN_OK)
-				goto send_it;
-			/* return error, nothing to do about it */
+	if (c->state == S_CONN_CONNECTING) {
+		/* the connection is currently in the process of getting
+		 * connected - let's append our send chunk as well - just in
+		 * case we ever manage to get through */
+		LM_DBG("We have acquired a TCP connection which is still "
+			"pending to connect - delaying write \n");
+		n = tcp_async_add_chunk(c,buf,len,1);
+		if (n < 0) {
+			LM_ERR("Failed to add another write chunk to %p\n",c);
+			/* we failed due to internal errors - put the
+			 * connection back */
 			tcp_conn_release(c, 0);
 			return -1;
 		}
+
+		/* mark the ID of the used connection (tracing purposes) */
+		last_outgoing_tcp_id = c->id;
+		send_sock->last_real_ports->local = c->rcv.dst_port;
+		send_sock->last_real_ports->remote = c->rcv.src_port;
+
+		/* we successfully added our write chunk - success */
+		tcp_conn_release(c, 0);
+		return len;
+	} else if (c->state != S_CONN_OK) {
+		/* return error, nothing to do about it */
+		tcp_conn_release(c, 0);
+		return -1;
 	}
 
 send_it:
-	LM_DBG("sending via fd %d...\n",fd);
+	LM_DBG("sending on conn %p...\n", c);
 	if (is_tls) {
 		n = hep_tls_write_on_socket(c, -1, buf, len);
 	} else {
@@ -565,21 +518,13 @@ send_it:
 			hep_send_timeout, hep_async_local_write_timeout);
 	}
 
-	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n", c, n, len, fd);
+	LM_DBG("after write: c=%p n/len=%d/%d\n", c, n, len);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n < 0){
 		LM_ERR("failed to send\n");
 		c->state = S_CONN_BAD;
-			if (fd != -1) {
-				close(fd);
-			}
 		tcp_conn_release(c, 0);
 		return -1;
-	}
-
-	/* send paths only keep temporary FDs from fresh local connects */
-	if (fd != -1) {
-		close(fd);
 	}
 
 	/* mark the ID of the used connection (tracing purposes) */

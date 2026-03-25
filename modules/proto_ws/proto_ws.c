@@ -30,6 +30,7 @@
 #include <sys/uio.h>
 #include <poll.h>
 
+#include "../../mem/mem.h"
 #include "../../pt.h"
 #include "../../sr_module.h"
 #include "../../net/net_tcp.h"
@@ -244,14 +245,14 @@ static int ws_conn_init(struct tcp_connection* c)
 	d = c->proto_data;
 	if (!d) {
 		/* allocate the tcp_data and the array of chunks as a single mem chunk */
-		d = (struct ws_data *)shm_malloc(sizeof(*d));
+		d = (struct ws_data *)thread_malloc(sizeof(*d));
 		if (d==NULL) {
-			LM_ERR("failed to create ws states in shm mem\n");
+			LM_ERR("failed to create ws states in private mem\n");
 			return -1;
 		}
 		memset( d, 0, sizeof( struct ws_data ) );
 		d->state = WS_CON_INIT;
-		d->type = WS_NONE;
+		d->type = (c->flags & F_CONN_ACCEPTED) ? WS_NONE : WS_CLIENT;
 		d->code = WS_ERR_NONE;
 		c->proto_data = (void*)d;
 	}
@@ -304,7 +305,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 		}
 	}
 
-	shm_free(d);
+	thread_free(d);
 	c->proto_data = NULL;
 }
 
@@ -354,7 +355,7 @@ static int proto_ws_send(const struct socket_info* send_sock,
 	struct timeval get;
 	struct ip_addr ip;
 	struct ws_data* d;
-	int port = 0, fd, n, matched;
+	int port = 0, n, matched;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
@@ -364,10 +365,8 @@ static int proto_ws_send(const struct socket_info* send_sock,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		fd = -1;
 		n = tcp_conn_get(id, &ip, port, PROTO_WS, NULL, &c, send_sock);
 	}else if (id){
-		fd = -1;
 		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, NULL);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
@@ -393,7 +392,7 @@ static int proto_ws_send(const struct socket_info* send_sock,
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=ws_connect(send_sock, to, &prof, &fd, msg))==0) {
+		if ((c=ws_connect(send_sock, to, &prof, msg))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
@@ -417,10 +416,7 @@ static int proto_ws_send(const struct socket_info* send_sock,
 
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
-	if (fd==-1) {
-		if (tcp_write_in_main() &&
-				(c->state == S_CONN_OK || c->state == S_CONN_CONNECTING))
-			goto send_it;
+	if (c->state != S_CONN_OK && c->state != S_CONN_CONNECTING) {
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
@@ -428,23 +424,17 @@ static int proto_ws_send(const struct socket_info* send_sock,
 	}
 
 send_it:
-	LM_DBG("sending via fd %d...\n",fd);
+	LM_DBG("sending on conn %p...\n", c);
 	n = ws_req_write(c, -1, buf, len);
 	stop_expire_timer(get, prof.send_threshold, "WS ops",buf,(int)len,1);
 
-	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("after write: c=%p n=%d\n", c, n);
 	if (n<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
-		if (fd != -1)
-			close(fd);
 		tcp_conn_release(c, 0);
 		return -1;
 	}
-
-	/* send paths only keep temporary FDs from fresh local connects */
-	if (fd != -1)
-		close(fd);
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;

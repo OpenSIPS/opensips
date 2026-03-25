@@ -95,10 +95,6 @@ static int tcp_send_timeout = 100;
 static int tcp_async = 1;
 
 /* Number of milliseconds that a worker will block waiting for a local
- * connect - if connect op exceeds this, it will get passed to TCP main*/
-static int tcp_async_local_connect_timeout = 100;
-
-/* Number of milliseconds that a worker will block waiting for a local
  * write - if write op exceeds this, it will get passed to TCP main*/
 static int tcp_async_local_write_timeout = 10;
 
@@ -134,8 +130,6 @@ static const param_export_t params[] = {
 	{ "tcp_async",                       INT_PARAM, &tcp_async              },
 	{ "tcp_async_max_postponed_chunks",  INT_PARAM,
 											&tcp_async_max_postponed_chunks },
-	{ "tcp_async_local_connect_timeout", INT_PARAM,
-											&tcp_async_local_connect_timeout},
 	{ "tcp_async_local_write_timeout",   INT_PARAM,
 											&tcp_async_local_write_timeout  },
 	{ "tcp_parallel_handling",           INT_PARAM,
@@ -404,78 +398,53 @@ static int proto_tcp_send(const struct socket_info* send_sock,
 			tcp_async);
 		/* create tcp connection */
 		if (tcp_async) {
-			n = tcp_async_connect(send_sock, to, &prof,
-					tcp_async_local_connect_timeout, &c, &fd, 1);
+			n = tcp_async_connect(send_sock, to, &prof, &c, &fd);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
 				get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 				return -1;
 			}
-			/* connect succeeded, we have a connection */
-			LM_DBG( "Successfully connected from interface %s:%d to %s:%d!\n",
-				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
-				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
-
-			if (n==0) {
-				if (send_stream_proxy_protocol_v1(c, -1,
-						tcp_send_timeout, 1,
-						msg ? &msg->rcv : NULL, "TCP") < 0) {
-					LM_ERR("Failed to add the outbound PROXY header chunk\n");
-					len = -1; /* report an error - let the caller decide what to do */
-					goto async_connect_done;
-				}
-
-				/* attach the write buffer to it */
-				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
-					LM_ERR("Failed to add the initial write chunk\n");
-					len = -1; /* report an error - let the caller decide what to do */
-				}
-
-				/* trace the message */
-				if ( TRACE_ON( c->flags ) &&
-						check_trace_route( trace_filter_route_ref, c) ) {
-					if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
-						LM_ERR("can't create su structures for tracing!\n");
-					} else {
-						trace_message_atonce( PROTO_TCP, c->cid,
-							&src_su, &dst_su,
-							TRANS_TRACE_CONNECT_START, TRANS_TRACE_SUCCESS,
-							&AS_CONNECT_INIT, t_dst );
-					}
-				}
-
-				/* mark the ID of the used connection (tracing purposes) */
-				last_outgoing_tcp_id = c->id;
-				send_sock->last_real_ports->local = c->rcv.dst_port;
-				send_sock->last_real_ports->remote = c->rcv.src_port;
-
-				/* connect is still in progress, break the sending
-				 * flow now (the actual write will be done when
-				 * connect will be completed */
-async_connect_done:
-				LM_DBG("Successfully started async connection \n");
-				sh_log(c->hist, TCP_RELEASED, "send 1, (%d)", c->refcnt);
-				tcp_conn_release(c, 0);
-				return len;
+			if (send_stream_proxy_protocol_v1(c, -1,
+					tcp_send_timeout, 1,
+					msg ? &msg->rcv : NULL, "TCP") < 0) {
+				LM_ERR("Failed to add the outbound PROXY header chunk\n");
+				len = -1; /* report an error - let the caller decide what to do */
+				goto async_connect_done;
 			}
 
-			LM_DBG("First connect attempt succeeded in less than %d ms, "
-				"proceed to writing \n",tcp_async_local_connect_timeout);
-			/* our first connect attempt succeeded - go ahead as normal */
-			/* trace the attempt */
-			if (  TRACE_ON( c->flags ) &&
+			/* attach the write buffer to it */
+			if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+				LM_ERR("Failed to add the initial write chunk\n");
+				len = -1; /* report an error - let the caller decide what to do */
+			}
+
+			/* trace the message */
+			if ( TRACE_ON( c->flags ) &&
 					check_trace_route( trace_filter_route_ref, c) ) {
-				c->proto_flags |= F_TCP_CONN_TRACED;
 				if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
 					LM_ERR("can't create su structures for tracing!\n");
 				} else {
-					trace_message_atonce( PROTO_TCP, c->cid, &src_su, &dst_su,
-						TRANS_TRACE_CONNECTED, TRANS_TRACE_SUCCESS,
-						&ASYNC_CONNECT_OK, t_dst );
+					trace_message_atonce( PROTO_TCP, c->cid,
+						&src_su, &dst_su,
+						TRANS_TRACE_CONNECT_START, TRANS_TRACE_SUCCESS,
+						&AS_CONNECT_INIT, t_dst );
 				}
 			}
+
+			/* mark the ID of the used connection (tracing purposes) */
+			last_outgoing_tcp_id = c->id;
+			send_sock->last_real_ports->local = c->rcv.dst_port;
+			send_sock->last_real_ports->remote = c->rcv.src_port;
+
+			/* connect is still in progress, break the sending
+			 * flow now (the actual write will be done when
+			 * connect will be completed */
+async_connect_done:
+			sh_log(c->hist, TCP_RELEASED, "send 1, (%d)", c->refcnt);
+			tcp_conn_release(c, 0);
+			return len;
 		} else {
-			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd))==0) {
 				LM_ERR("connect failed\n");
 				get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 				return -1;
@@ -493,9 +462,6 @@ async_connect_done:
 				}
 			}
 
-			LM_DBG( "Successfully connected from interface %s:%d to %s:%d!\n",
-				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
-				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 		}
 
 		goto send_it;
@@ -516,67 +482,56 @@ async_connect_done:
 
 	/* now we have a connection, let's see what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
-	if (fd==-1) {
-		/* connection is not writable because of its state - can we append
-		 * data to it for later writting (async writting)? */
-		if (c->state==S_CONN_CONNECTING) {
-			/* the connection is currently in the process of getting
-			 * connected - let's append our send chunk as well - just in
-			 * case we ever manage to get through */
-			LM_DBG("We have acquired a TCP connection which is still "
-				"pending to connect - delaying write \n");
+	if (c->state==S_CONN_CONNECTING) {
+		/* the connection is currently in the process of getting
+		 * connected - let's append our send chunk as well - just in
+		 * case we ever manage to get through */
+		LM_DBG("We have acquired a TCP connection which is still "
+			"pending to connect - delaying write \n");
 
-			if (send_stream_proxy_protocol_v1(c, -1,
-					tcp_send_timeout, 1,
-					msg ? &msg->rcv : NULL, "TCP") < 0) {
-				LM_ERR("Failed to add the outbound PROXY header chunk\n");
-				sh_log(c->hist, TCP_RELEASED, "send 2, (%d)", c->refcnt);
-				tcp_conn_release(c, 0);
-				return -1;
-			}
-
-			n = tcp_async_add_chunk(c,buf,len,1);
-			if (n < 0) {
-				LM_ERR("Failed to add another write chunk to %p\n",c);
-				/* we failed due to internal errors - put the
-				 * connection back */
-				sh_log(c->hist, TCP_RELEASED, "send 2, (%d)", c->refcnt);
-				tcp_conn_release(c, 0);
-				return -1;
-			}
-
-			/* mark the ID of the used connection (tracing purposes) */
-			last_outgoing_tcp_id = c->id;
-			send_sock->last_real_ports->local = c->rcv.dst_port;
-			send_sock->last_real_ports->remote = c->rcv.src_port;
-
-			/* we successfully added our write chunk - success */
-			sh_log(c->hist, TCP_RELEASED, "send 3, (%d)", c->refcnt);
-			tcp_conn_release(c, 0);
-			return len;
-		} else {
-			if (tcp_write_in_main() && c->state == S_CONN_OK)
-				goto send_it;
-			/* the FD transfer failed (we have an established conn,
-			 * but returned fd is -1) -> leave the conn alone, return error
-			 * for the write op, nothing to do about it */
+		if (send_stream_proxy_protocol_v1(c, -1,
+				tcp_send_timeout, 1,
+				msg ? &msg->rcv : NULL, "TCP") < 0) {
+			LM_ERR("Failed to add the outbound PROXY header chunk\n");
 			sh_log(c->hist, TCP_RELEASED, "send 4, (%d)", c->refcnt);
 			tcp_conn_release(c, 0);
 			return -1;
 		}
+
+		n = tcp_async_add_chunk(c,buf,len,1);
+		if (n < 0) {
+			LM_ERR("Failed to add another write chunk to %p\n",c);
+			/* we failed due to internal errors - put the
+			 * connection back */
+			sh_log(c->hist, TCP_RELEASED, "send 2, (%d)", c->refcnt);
+			tcp_conn_release(c, 0);
+			return -1;
+		}
+
+		/* mark the ID of the used connection (tracing purposes) */
+		last_outgoing_tcp_id = c->id;
+		send_sock->last_real_ports->local = c->rcv.dst_port;
+		send_sock->last_real_ports->remote = c->rcv.src_port;
+
+		/* we successfully added our write chunk - success */
+		sh_log(c->hist, TCP_RELEASED, "send 3, (%d)", c->refcnt);
+		tcp_conn_release(c, 0);
+		return len;
+	} else if (c->state != S_CONN_OK) {
+		/* the connection is not writable because of its state */
+		sh_log(c->hist, TCP_RELEASED, "send 4, (%d)", c->refcnt);
+		tcp_conn_release(c, 0);
+		return -1;
 	}
 
 
 send_it:
-	LM_DBG("sending via fd %d...\n",fd);
+	LM_DBG("sending on conn %p...\n", c);
 	if (send_stream_proxy_protocol_v1(c, -1,
 			tcp_send_timeout, 1,
 			msg ? &msg->rcv : NULL, "TCP") < 0) {
 		LM_ERR("failed to send outbound PROXY header\n");
 		c->state=S_CONN_BAD;
-			if (fd != -1)
-				close(fd);
-
 		sh_log(c->hist, TCP_RELEASED, "send 5, (%d)", c->refcnt);
 		tcp_conn_release(c, 0);
 		return -1;
@@ -590,22 +545,15 @@ send_it:
 	get_time_difference(snd,prof.send_threshold,tcp_timeout_send);
 	stop_expire_timer(get,prof.send_threshold,"tcp ops",buf,(int)len,1);
 
-	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
+	LM_DBG("after write: c=%p n/len=%d/%d\n", c, n, len);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){
 		LM_ERR("failed to send on conn %p / %u\n", c, c->id);
 		c->state=S_CONN_BAD;
-		if (fd != -1)
-			close(fd);
-
 		sh_log(c->hist, TCP_RELEASED, "send 5, (%d)", c->refcnt);
 		tcp_conn_release(c, 0);
 		return -1;
 	}
-
-	/* send paths only keep temporary FDs from fresh local connects */
-	if (fd != -1)
-		close(fd);
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
