@@ -38,6 +38,9 @@
 #define RR_FLOW_DOWNSTREAM  (1<<0)
 #define RR_FLOW_UPSTREAM    (1<<1)
 
+#define LR_NO_FLAGS 0
+#define LR_ON_SELF  1	
+
 extern int ctx_rrparam_idx;
 extern int ctx_routing_idx;
 
@@ -45,7 +48,7 @@ extern int ctx_routing_idx;
 /*! \brief
  * Do loose routing as per RFC3261
  */
-int loose_route(struct sip_msg* _m);
+int loose_route(struct sip_msg* _m, void* func_flags);
 
 
 /*! \brief
@@ -157,6 +160,29 @@ static inline int is_strict(str* _params)
 
 	if ((state == 2) || (state == 3)) return 0;
 	else return 1;
+}
+
+static inline int fixup_lr_flags(void** param)
+{
+	int index, ret = LR_NO_FLAGS;
+	str *flags = (str *)*param;
+
+	for (index=0; index < flags->len; index++) {
+		switch (flags->s[index]) {
+			case ' ':
+				break;
+			case 'l':
+			case 'L':
+				ret |= LR_ON_SELF;
+				break;
+			default:
+				LM_ERR("Invalid flag\n");
+				return -1;
+		}
+	}
+
+	*param = (void *)(long)ret;
+	return 0;
 }
 
 

@@ -964,7 +964,8 @@ add_body_part("Hello World!", "text/plain");
 				<listitem><para><emphasis>'t'</emphasis> - checks the URI of the 'To' field
 						and whether the domain contains valid characters.
 				</para></listitem>
-				<listitem><para><emphasis>'c'</emphasis> - checks the URI of the 'Contact' field.
+				<listitem><para><emphasis>'c'</emphasis> - checks the value of the 'Contact' field
+						and whether it is a Uri, Star - for REGISTER requests with Expires header set to 0.
 				</para></listitem>
 			</itemizedlist>
 		</para>
@@ -1035,6 +1036,8 @@ add_body_part("Hello World!", "text/plain");
 				</para></listitem>
 				<listitem><para><emphasis>-29</emphasis> - Bad To URI username
 				</para></listitem>
+				<listitem><para><emphasis>-30</emphasis> - Contact header contains * for non-Register request
+				</para></listitem>
 				<listitem><para><emphasis>-255</emphasis> - undefined errors.
 				</para></listitem>
 			</itemizedlist>
@@ -1060,6 +1063,15 @@ if(!sipmsg_validate("sh", $var(err_reason)))
 {
 	send_reply(400, "Bad Request/Body");
 	exit;
+}
+...
+
+...
+# checks Contact header for a 200 Ok reply and logs when it's *
+if(!sipmsg_validate("c"))
+{
+	if ($rc == -30)
+		xlog("Invalid * Contact header found\n");
 }
 ...
 </programlisting>

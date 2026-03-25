@@ -39,6 +39,8 @@
 #define MIN_FRAG_SIZE	ROUNDTO
 #define F_PARALLEL_FRAG_OVERHEAD	(sizeof(struct parallel_frag))
 #define frag_is_free(_f) ((_f)->prev)
+#define frag_seems_valid(_f, _b) (!(_f)->prev || \
+		((_b)->first_frag <= *(_f)->prev && *(_f)->prev <= (_b)->last_frag))
 
 #define F_PARALLEL_FRAG_NEXT(f) \
 	((struct parallel_frag *)((char *)(f) + sizeof(struct parallel_frag) + (f)->size))

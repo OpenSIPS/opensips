@@ -102,9 +102,6 @@ static struct dlg_cell *lookup_dlg_unsafe(unsigned int h_entry, unsigned int h_i
 
 	for( dlg=d_entry->first ; dlg ; dlg=dlg->next ) {
 		if (dlg->h_id == h_id) {
-			if (dlg->state==DLG_STATE_DELETED)
-				goto not_found;
-
 			LM_DBG("dialog id=%u found on entry %u\n", h_id, h_entry);
 			return dlg;
 		}
@@ -696,39 +693,41 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 
 	LM_DBG("Updating cseq for dialog with callid: %.*s\n", call_id.len, call_id.s);
 
-	if (pkg_ver == DLG_BIN_V4) {
+	if (pkg_ver == DLG_BIN_V4)
 		DLG_BIN_POP(int, packet, h_id, malformed);
+	DLG_BIN_POP(int, packet, cseq, malformed);
 
-		h_entry = dlg_hash(&call_id);
-		d_entry = &(d_table->entries[h_entry]);
+	h_entry = dlg_hash(&call_id);
+	d_entry = &(d_table->entries[h_entry]);
+	dlg_lock(d_table, d_entry);
 
-		dlg_lock(d_table, d_entry);
-
+	if (pkg_ver == DLG_BIN_V4)
 		dlg = lookup_dlg_unsafe(h_entry, h_id);
-
-		if (dlg && !match_dialog(dlg, &call_id, &from_tag, &to_tag, &dir, &dst_leg)) {
-			LM_ERR("Failed to match dialog\n");
-			dlg_unlock(d_table, d_entry);
-			return -1;
-		}
-
-		dlg_unlock(d_table, d_entry);
-	} else {
-		dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
-	}
+	else
+		get_dlg_unsafe(d_entry, &call_id, &from_tag, &to_tag, &dlg);
 
 	if (!dlg) {
 		/* may be already deleted due to timeout */
 		LM_DBG("dialog not found (callid: |%.*s| ftag: |%.*s|\n",
 			call_id.len, call_id.s, from_tag.len, from_tag.s);
-		return 0;
+		goto unlock;
 	}
 
-	DLG_BIN_POP(int, packet, cseq, malformed);
+	if (dlg->state == DLG_STATE_DELETED) {
+		LM_DBG("dialog already deleted (callid: |%.*s| ftag: |%.*s|\n",
+				call_id.len, call_id.s, from_tag.len, from_tag.s);
+		goto unlock;
+	}
+
+	if (!match_dialog(dlg, &call_id, &from_tag, &to_tag, &dir, &dst_leg)) {
+		LM_ERR("Failed to match dialog leg (callid: |%.*s| ftag: |%.*s|\n",
+				call_id.len, call_id.s, from_tag.len, from_tag.s);
+		goto unlock;
+	}
 	dlg->legs[dst_leg].last_gen_cseq = cseq;
 
-	if (pkg_ver != DLG_BIN_V4)
-		unref_dlg(dlg, 1);
+unlock:
+	dlg_unlock(d_table, d_entry);
 
 	return 0;
 malformed:
@@ -760,7 +759,7 @@ int dlg_replicated_value(bin_packet_t *packet)
 			break;
 	}
 
-	LM_DBG("Updating cseq for dialog with callid: %.*s\n", call_id.len, call_id.s);
+	LM_DBG("Updating value for dialog with callid: %.*s\n", call_id.len, call_id.s);
 	h_entry = dlg_hash(&call_id);
 	d_entry = &(d_table->entries[h_entry]);
 
@@ -768,10 +767,17 @@ int dlg_replicated_value(bin_packet_t *packet)
 
 	dlg = lookup_dlg_unsafe(h_entry, h_id);
 	if (!dlg) {
-		LM_DBG("unable to find dialog %.*s [%u:%d]\n",
+		LM_DBG("dialog not found (callid: |%.*s| [%u:%d]\n",
 				call_id.len, call_id.s, h_id, h_entry);
 		dlg_unlock(d_table, d_entry);
 		return -1;
+	}
+
+	if (dlg->state == DLG_STATE_DELETED) {
+		LM_DBG("dialog already deleted (callid: |%.*s| [%u:%d]\n",
+				call_id.len, call_id.s, h_id, h_entry);
+		dlg_unlock(d_table, d_entry);
+		return 0;
 	}
 	lock_start_write(dlg->vals_lock);
 	ret = store_dlg_value_unsafe(dlg, &name, &val, type);

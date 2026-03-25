@@ -7,7 +7,7 @@
 				<col><field>ruleid</field><link_cmd>update</link_cmd></col>
 				<col><field>prefix</field></col>
 				<col><field>attrs</field></col>
-				<col><field>priority</field></col>
+				<col><field>enabled</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -16,7 +16,7 @@
 			<query_cols>
 				<col><field>prefix</field></col>
 				<col><field>attrs</field></col>
-				<col><field>priority</field></col>
+				<col><field>enabled</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -28,7 +28,7 @@
 			<query_cols>
 				<col><field>prefix</field></col>
 				<col><field>attrs</field></col>
-				<col><field>priority</field></col>
+				<col><field>enabled</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

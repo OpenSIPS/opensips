@@ -578,7 +578,7 @@ send_it:
 	if (c->do_not_reuse) {
 		c->lifetime = get_ticks() - 1;
 	} else {
-		tcp_conn_set_lifetime(c, tcp_con_lifetime);
+		tcp_conn_reset_lifetime(c);
 	}
 
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n", c, n, len, fd);

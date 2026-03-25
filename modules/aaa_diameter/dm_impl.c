@@ -368,6 +368,8 @@ static int dict_avp_enc_ip(cJSON *, struct dict_avp_data *, int, str *);
 static cJSON *dict_avp_dec_ip(struct avp_hdr *, struct dict_avp_data *);
 static int dict_avp_enc_hex(cJSON *, struct dict_avp_data *, int, str *);
 static cJSON *dict_avp_dec_hex(struct avp_hdr *, struct dict_avp_data *);
+static int dict_avp_enc_time(cJSON *, struct dict_avp_data *, int, str *);
+static cJSON *dict_avp_dec_time(struct avp_hdr *, struct dict_avp_data *);
 
 struct dict_avp_enc_f {
 	int (*enc_func)(cJSON *, struct dict_avp_data *, int, str *);
@@ -380,6 +382,10 @@ struct dict_avp_enc_f {
 	{ /* AVP_ENC_TYPE_HEX */
 		dict_avp_enc_hex,
 		dict_avp_dec_hex,
+	},
+	{ /* AVP_ENC_TYPE_TIME */
+		dict_avp_enc_time,
+		dict_avp_dec_time,
 	},
 };
 
@@ -2298,6 +2304,10 @@ static struct dict_avp_enc_f *dm_enc_get(int code, int vendor)
 	struct dict_avp_enc_a *a;
 	struct dict_avp_enc_v *v;
 
+	/* hardcode some values which are misrepresented */
+	if (code == 55 && vendor == 0) /* Event-Timestamp is declared as OCTETSTRING, not TIME */
+		return &dict_avp_enc[AVP_ENC_TYPE_TIME];
+
 	v = bsearch(&vendor, dict_avp_enc_vendors, dict_avp_enc_vendors_no, sizeof
 			*v, dict_avp_enc_v_cmp);
 	if (!v || !v->avps_no || !v->avps)
@@ -2366,7 +2376,7 @@ static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int _, str *r
 	if (len < 0)
 		goto error;
 	ret->s = buf;
-	ret->len = len/2;
+	ret->len = len;
 	return 0;
 error:
 	pkg_free(buf);
@@ -2392,5 +2402,47 @@ static cJSON *dict_avp_dec_hex(struct avp_hdr * h, struct dict_avp_data *avp)
 	len = string2hex((const char *)h->avp_value->os.data, h->avp_value->os.len, buf);
 	obj = cJSON_CreateStr(buf, len);
 	pkg_free(buf);
+	return obj;
+}
+
+#define AAA_DIAM_TIME_OFFSET 2208988800U
+
+static int dict_avp_enc_time(cJSON *obj, struct dict_avp_data *avp, int _, str *ret)
+{
+	unsigned char *buf;
+	uint32_t dt;
+
+	if ((obj->type & cJSON_Number) == 0)
+		return 1; /* encode it as it is */
+
+	buf = pkg_malloc(sizeof(uint32_t));
+	if (!buf) {
+		LM_ERR("oom for hex encoding\n");
+		return -1;
+	}
+	dt = obj->valueint + AAA_DIAM_TIME_OFFSET; /* value is stored as timestamp */
+	buf[0] = (dt >> 24) & 0xFF;
+	buf[1] = (dt >> 16) & 0xFF;
+	buf[2] = (dt >> 8) & 0xFF;
+	buf[3] = dt & 0xFF;
+	ret->s = (char *)buf;
+	ret->len = sizeof(uint32_t);
+	return 0;
+}
+
+static cJSON *dict_avp_dec_time(struct avp_hdr * h, struct dict_avp_data *avp)
+{
+	cJSON *obj;
+	uint32_t dt;
+	unsigned char *bytes;
+
+	if (avp->avp_basetype != AVP_TYPE_OCTETSTRING) {
+		LM_ERR("invalid base type for TIME: %d\n", avp->avp_basetype);
+		return NULL;
+	}
+	bytes = h->avp_value->os.data;
+	dt = ((uint32_t)bytes[0] << 24) | ((uint32_t)bytes[1] << 16) |
+		 ((uint32_t)bytes[2] << 8)  | ((uint32_t)bytes[3]);
+	obj = cJSON_CreateNumber(dt - AAA_DIAM_TIME_OFFSET);
 	return obj;
 }

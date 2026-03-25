@@ -5,7 +5,7 @@ auto_gen=
 NAME=cpl_c.so
 
 ifeq ($(CROSS_COMPILE),)
-XML2CFG=$(shell which xml2-config)
+XML2CFG := $(shell which xml2-config)
 endif
 
 ifneq ($(XML2CFG),)

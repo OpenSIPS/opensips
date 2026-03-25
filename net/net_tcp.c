@@ -165,6 +165,9 @@ int is_tcp_main = 0;
  * current process - attention, this is a really ugly HACK here */
 unsigned int last_outgoing_tcp_id = 0;
 
+/* Incremental count of which index to check first when picking a worker to send a TCP connection to */
+static int send2worker_start_index = 0;
+
 static struct scaling_profile *s_profile = NULL;
 
 /****************************** helper functions *****************************/
@@ -279,39 +282,48 @@ error:
 	return -1;
 }
 
-static int send2worker(struct tcp_connection* tcpconn,int rw)
+static int send2worker(struct tcp_connection* tcpconn, int rw)
 {
-	int i;
-	int min_load;
-	int idx;
+	int i, worker_idx;
+	int min_load = 100;
+	int idx = -1;
 	long response[2];
 	unsigned int load;
 
-	min_load=100; /* it is a percentage */
-	idx=0;
-	for (i=0; i<tcp_workers_max_no; i++){
-		if (tcp_workers[i].state==STATE_ACTIVE) {
-			load = pt_get_1m_proc_load( tcp_workers[i].pt_idx );
+	for (i = 0; i < tcp_workers_max_no; i++) {
+		worker_idx = (send2worker_start_index + i) % tcp_workers_max_no;
+		if (tcp_workers[worker_idx].state == STATE_ACTIVE) {
+			load = pt_get_1m_proc_load( tcp_workers[worker_idx].pt_idx);
 #ifdef EXTRA_DEBUG
 			LM_DBG("checking TCP worker %d (proc %d), with load %u,"
-				"min_load so far %u\n", i, tcp_workers[i].pt_idx, load,
+				"min_load so far %u\n", worker_idx, tcp_workers[worker_idx].pt_idx, load,
 				min_load);
 #endif
-			if (min_load>load) {
+			if (min_load > load) {
 				min_load = load;
-				idx = i;
+				idx = worker_idx;
 			}
 		}
+	}
+
+	/* If no idx is selected due to no active workers but this function is called something is up */
+	if (idx == -1) {
+		LM_BUG("No active TCP workers\n");
+		return -1;
+	}
+
+	if (++send2worker_start_index == tcp_workers_max_no) {
+		send2worker_start_index = 0;
 	}
 
 	tcp_workers[idx].n_reqs++;
 	LM_DBG("to tcp worker %d (%d/%d) load %u, %p/%d rw %d\n", idx,
 		tcp_workers[idx].pid, tcp_workers[idx].pt_idx, min_load,
 		tcpconn, tcpconn->s, rw);
-	response[0]=(long)tcpconn;
-	response[1]=rw;
-	if (send_fd(tcp_workers[idx].unix_sock, response, sizeof(response),
-			tcpconn->s)<=0){
+
+	response[0] = (long) tcpconn;
+	response[1] = rw;
+	if (send_fd(tcp_workers[idx].unix_sock, response, sizeof(response), tcpconn->s) <= 0){
 		LM_ERR("send_fd failed\n");
 		return -1;
 	}

@@ -356,8 +356,8 @@ Chapter 2. Contributors
    10. Ezequiel Lovelle 3 1 11 4
 
    All remaining contributors: John Burke (@john08burke),
-   tcresson, Eddie Fiorentine, Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov), zhengsh, Jarrod Baumann (@jarrodb),
+   tcresson, Eddie Fiorentine, Julián Moreno Patiño, Ken Rice,
+   Peter Lemenkov (@lemenkov), zhengsh, Jarrod Baumann (@jarrodb),
    Kristian Høgh.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -380,21 +380,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Razvan Crainea (@razvancrainea) Feb 2012 - May 2025
-   2.  Norm Brandinger                 May 2025 - May 2025
-   3.  Eddie Fiorentine                Mar 2025 - Mar 2025
-   4.  Liviu Chircu (@liviuchircu)     Mar 2014 - Jan 2025
-   5.  Vlad Paiu (@vladpaiu)           Oct 2011 - Nov 2024
-   6.  tcresson                        Oct 2023 - Oct 2023
-   7.  zhengsh                         Aug 2023 - Aug 2023
-   8.  Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
-   9.  John Burke (@john08burke)       Apr 2022 - Apr 2022
-   10. Vlad Patrascu (@rvlad-patrascu) May 2017 - Jan 2022
+   1.  Ken Rice                        Sep 2025 - Sep 2025
+   2.  Razvan Crainea (@razvancrainea) Feb 2012 - May 2025
+   3.  Norm Brandinger                 May 2025 - May 2025
+   4.  Eddie Fiorentine                Mar 2025 - Mar 2025
+   5.  Liviu Chircu (@liviuchircu)     Mar 2014 - Jan 2025
+   6.  Vlad Paiu (@vladpaiu)           Oct 2011 - Nov 2024
+   7.  tcresson                        Oct 2023 - Oct 2023
+   8.  zhengsh                         Aug 2023 - Aug 2023
+   9.  Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
+   10. John Burke (@john08burke)       Apr 2022 - Apr 2022
 
-   All remaining contributors: Bogdan-Andrei Iancu
-   (@bogdan-iancu), Dan Pascu (@danpascu), Peter Lemenkov
-   (@lemenkov), Kristian Høgh, Julián Moreno Patiño, Jarrod
-   Baumann (@jarrodb), jalung, Ezequiel Lovelle.
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Dan Pascu (@danpascu),
+   Peter Lemenkov (@lemenkov), Kristian Høgh, Julián Moreno
+   Patiño, Jarrod Baumann (@jarrodb), jalung, Ezequiel Lovelle.
 
    (1) including any documentation-related commits, excluding
    merge commits

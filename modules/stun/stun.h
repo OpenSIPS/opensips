@@ -200,6 +200,8 @@ struct stun_socket {
     /* no sets containing this socket */
     int no_sets;
 
+    int is_in_reactor;
+
     struct stun_socket *next;
 };
 

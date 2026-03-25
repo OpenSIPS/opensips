@@ -116,7 +116,7 @@ int ipsec_init_spi(void)
 		return -1;
 	}
 	INIT_LIST_HEAD(ipsec_spi_free);
-	/* spi is in [ipsec_min_spi, ipsec_max_spi] intervall */;
+	/* spi is in [ipsec_min_spi, ipsec_max_spi] interval */;
 	ipsec_spi_no = ipsec_max_spi - ipsec_min_spi + 1;
 	ipsec_spi_map = shm_malloc(ipsec_spi_no * sizeof (*ipsec_spi_map));
 	if (!ipsec_spi_map) {
@@ -228,7 +228,7 @@ static void ipsec_spi_release(struct ipsec_spi *spi)
  */
 
 /*
- * Init - intiializing IPSec structures
+ * Init - initializing IPSec structures
  */
 
 int ipsec_init(void)

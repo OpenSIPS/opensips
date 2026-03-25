@@ -1708,8 +1708,10 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		LM_ERR("could not copy b2b server key\n");
 		/* key is not yet stored, so cannot be deleted */
 		b2b_api.entity_delete(B2B_SERVER, b2b_key, ctx->dlginfo, 1, 1);
+		pkg_free(b2b_key);
 		return -1;
 	}
+	pkg_free(b2b_key);
 	/* we need to wait for all pending clients */
 	ctx->pending_no = ctx->clients_no;
 

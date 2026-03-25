@@ -397,8 +397,7 @@ static evi_reply_sock* rmq_parse(str socket)
 			case '@':
 				st = ST_HOST;
 				if (dupl_string(&tmp, begin, socket.s + i)) goto err;
-				memcpy(param->conn.uri.user, tmp.s, tmp.len);
-				param->conn.uri.user[tmp.len] = '\0';
+				param->conn.uri.user = tmp.s;
 				begin = socket.s + i + 1;
 				param->conn.flags |= RMQ_PARAM_USER;
 				break;
@@ -422,12 +421,12 @@ static evi_reply_sock* rmq_parse(str socket)
 			switch(socket.s[i]) {
 			case '@':
 				st = ST_HOST;
-				memcpy(param->conn.uri.user, prev_token.s, prev_token.len);
+				param->conn.uri.user = prev_token.s;
 				param->conn.flags |= RMQ_PARAM_USER;
 				prev_token.s = 0;
 				if (dupl_string(&tmp, begin, socket.s + i) < 0)
 					goto err;
-				memcpy(param->conn.uri.password, tmp.s, tmp.len);
+				param->conn.uri.password = tmp.s;
 				param->conn.flags |= RMQ_PARAM_PASS;
 				begin = socket.s + i + 1;
 				break;
@@ -503,7 +502,7 @@ static evi_reply_sock* rmq_parse(str socket)
 						if (dupl_string(&tmp, it->s.s+RMQ_EXCHANGE_LEN,
 							it->s.s + it->s.len) < 0)
 							goto err;
-						memcpy((char *)param->conn.exchange.bytes, tmp.s, tmp.len);
+						param->conn.exchange.bytes = tmp.s;
 						param->conn.exchange.len = tmp.len;
 						param->conn.flags |= RMQ_PARAM_EKEY;
 					} else if (it->s.len > RMQ_TLS_DOM_LEN &&
@@ -567,6 +566,7 @@ success:
 		goto err;
 	}
 
+	param->conn.state = RMQS_PREINIT;
 	param->conn.heartbeat = heartbeat;
 	sock->params = param;
 	sock->flags |= EVI_PARAMS | RMQ_FLAG | EVI_ASYNC_STATUS;

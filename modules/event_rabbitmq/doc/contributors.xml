@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">113</entry>
-		<entry align="center">74</entry>
-		<entry align="center">3590</entry>
-		<entry align="center">440</entry>
+		<entry align="center">114</entry>
+		<entry align="center">75</entry>
+		<entry align="center">3591</entry>
+		<entry align="center">442</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -52,6 +52,14 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
+		<entry align="center">15</entry>
+		<entry align="center">7</entry>
+		<entry align="center">336</entry>
+		<entry align="center">290</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">10</entry>
 		<entry align="center">8</entry>
@@ -59,20 +67,12 @@
 		<entry align="center">21</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">6</entry>
 		<entry align="center">4</entry>
 		<entry align="center">10</entry>
 		<entry align="center">10</entry>
-	</row>
-	<row>
-		<entry>7. </entry>
-		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
-		<entry align="center">5</entry>
-		<entry align="center">3</entry>
-		<entry align="center">35</entry>
-		<entry align="center">7</entry>
 	</row>
 	<row>
 		<entry>8. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Julián Moreno Patiño, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Julián Moreno Patiño, Ken Rice, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Alexandra Titoc</entry>
-		<entry align="center">Sep 2024 - Sep 2024</entry>
+		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
+		<entry align="center">Jun 2015 - Nov 2025</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jan 2017 - Sep 2024</entry>
+		<entry align="center">Jan 2017 - Oct 2025</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Ken Rice</entry>
+		<entry align="center">Sep 2025 - Sep 2025</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Alexandra Titoc</entry>
+		<entry align="center">Sep 2024 - Sep 2024</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Jun 2023</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>6. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Apr 2018 - May 2023</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>7. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jul 2017 - Feb 2023</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>8. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Aug 2020</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>9. </entry>
 		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
 		<entry align="center">Apr 2019 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>10. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Apr 2019 - Apr 2019</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>)</entry>
-		<entry align="center">Apr 2015 - Mar 2016</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Julián Moreno Patiño</entry>
-		<entry align="center">Feb 2016 - Feb 2016</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), franklyfox.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Julián Moreno Patiño, Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), franklyfox.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

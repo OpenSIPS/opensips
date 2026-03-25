@@ -9,7 +9,7 @@ NAME=dialplan.so
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-PCRE_BUILDER = $(shell \
+PCRE_BUILDER := $(shell \
 	if which pcre-config >/dev/null 2>/dev/null; then \
 		echo 'pcre-config'; \
 	elif pkg-config --exists libcre; then \

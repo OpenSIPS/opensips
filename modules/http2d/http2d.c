@@ -135,7 +135,7 @@ static int h2_send_response(struct sip_msg *msg, int *code,
 		str *headers_json, str *body)
 {
 #define H_STATUS ":status"
-	cJSON *hdrs, *it;
+	cJSON *hdrs = NULL, *it;
 	struct h2_response *r;
 	int nh = 1;
 
@@ -173,7 +173,6 @@ static int h2_send_response(struct sip_msg *msg, int *code,
 			LM_ERR("first %d characters: %.*s ...\n",
 				headers_json->len > 20 ? 20 : headers_json->len,
 				headers_json->len > 20 ? 20 : headers_json->len, headers_json->s);
-			cJSON_Delete(hdrs);
 			goto error;
 		}
 
@@ -263,7 +262,7 @@ static int h2_send_response(struct sip_msg *msg, int *code,
 	r->hdrs[nh].flags = NGHTTP2_NV_FLAG_NONE;
 	nh++;
 
-	if (headers_json) {
+	if (headers_json && hdrs) {
 		for (it = hdrs->child; it; it = it->next, nh++, r->hdrs_len++) {
 			r->hdrs[nh].name = (uint8_t *)shm_strdup(it->child->string);
 			r->hdrs[nh].value = (uint8_t *)shm_strdup(it->child->valuestring);

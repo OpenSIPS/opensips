@@ -274,6 +274,11 @@ struct ip_node* mark_node(unsigned char *ip,int ip_len,
 	node = 0;
 	byte_pos = 0;
 
+	if (ip_len == 0) {
+		LM_DBG("zero-length IP provided!\n");
+		return NULL;
+	}
+
 	LM_DBG("search on branch %d (top=%p)\n", ip[0],kid);
 	/* search into the ip tree the longest prefix matching the given IP */
 	while (kid && byte_pos<ip_len) {

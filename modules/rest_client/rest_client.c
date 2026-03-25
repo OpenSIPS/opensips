@@ -69,6 +69,7 @@ int ssl_verifyhost = 1;
 int curl_http_version = CURL_HTTP_VERSION_NONE;
 
 int enable_expect_100;
+int no_async_fallback;
 
 struct tls_mgm_binds tls_api;
 
@@ -206,6 +207,7 @@ static const param_export_t params[] = {
 	{ "enable_expect_100",	INT_PARAM, &enable_expect_100	},
 	{ "no_concurrent_connects",	INT_PARAM, &no_concurrent_connects	},
 	{ "curl_conn_lifetime",	INT_PARAM, &curl_conn_lifetime	},
+	{ "no_async_fallback",	INT_PARAM, &no_async_fallback	},
 	{ 0, 0, 0 }
 };
 
