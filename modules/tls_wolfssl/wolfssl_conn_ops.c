@@ -39,6 +39,7 @@
 #include <linux/tls.h>
 #endif
 
+#include "../../mem/mem.h"
 #include "../../net/tcp_conn_defs.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../tls_mgm/tls_helper.h"
@@ -337,9 +338,9 @@ int _wolfssl_tls_conn_init(struct tcp_connection* c,
 	*/
 	LM_DBG("Creating a whole new ssl connection\n");
 
-	c->extra_data = shm_malloc(sizeof(struct _WOLFSSL));
+	c->extra_data = thread_malloc(sizeof(struct _WOLFSSL));
 	if (!c->extra_data) {
-		LM_ERR("no more shm memory\n");
+		LM_ERR("no more private memory\n");
 		return -1;
 	}
 	memset(c->extra_data, 0, sizeof(struct _WOLFSSL));
@@ -592,7 +593,7 @@ void _wolfssl_tls_conn_clean(struct tcp_connection* c,
 		if (_WOLFSSL_WRITE_SSL(c->extra_data))
 			wolfSSL_free(_WOLFSSL_WRITE_SSL(c->extra_data));
 
-		shm_free(c->extra_data);
+		thread_free(c->extra_data);
 		c->extra_data = 0;
 	}
 

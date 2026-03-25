@@ -44,6 +44,7 @@
 #include <dirent.h>
 
 #include "../../dprint.h"
+#include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
 #include "../../net/api_proto.h"
@@ -94,10 +95,6 @@ static int tls_port_no = SIPS_PORT;
 
 /* 1 if tls connect & write should be async */
 static int tls_async = 1;
-
-/* Number of milliseconds that a worker will block waiting for a local
- * connect - if connect op exceeds this, it will get passed to tls main*/
-static int tls_async_local_connect_timeout = 100;
 
 /* Number of milliseconds that a worker will block waiting for a SSL
  * connect handshake to complete */
@@ -346,8 +343,6 @@ static const param_export_t params[] = {
 	{ "tls_async",                       INT_PARAM, &tls_async               },
 	{ "tls_async_max_postponed_chunks",  INT_PARAM,
 											&tls_async_max_postponed_chunks  },
-	{ "tls_async_local_connect_timeout", INT_PARAM,
-											&tls_async_local_connect_timeout },
 	{ "tls_async_handshake_timeout",	 INT_PARAM,
 											&tls_async_handshake_connect_timeout },
 	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
@@ -513,16 +508,16 @@ static int proto_tls_conn_init(struct tcp_connection* c)
 
 	/* reserve per-connection space for both TLS tracing and optional
 	 * async outbound PROXY header bytes */
-	data = shm_malloc(sizeof(*data));
+	data = thread_malloc(sizeof(*data));
 	if (!data) {
 		LM_ERR("no more pkg mem!\n");
 		return -1;
 	}
 	memset(data, 0, sizeof(*data));
-	data->pp_hdr = shm_malloc(sizeof(*data->pp_hdr) + PROXY_PROTOCOL_BUF_MAX);
+	data->pp_hdr = thread_malloc(sizeof(*data->pp_hdr) + PROXY_PROTOCOL_BUF_MAX);
 	if (!data->pp_hdr) {
 		LM_ERR("no more pkg mem for TLS PROXY buffer\n");
-		shm_free(data);
+		thread_free(data);
 		return -1;
 	}
 	data->pp_hdr->s = (char *)(data->pp_hdr + 1);
@@ -562,8 +557,8 @@ static void proto_tls_conn_clean(struct tcp_connection* c)
 	if (c->proto_data) {
 		data = c->proto_data;
 		if (data->pp_hdr)
-			shm_free(data->pp_hdr);
-		shm_free(data);
+			thread_free(data->pp_hdr);
+		thread_free(data);
 		c->proto_data = NULL;
 	}
 
@@ -647,39 +642,28 @@ static int proto_tls_send(const struct socket_info* send_sock,
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n",
 			tls_async);
 		if (tls_async) {
-			n = tcp_async_connect(send_sock, to, &prof,
-					tls_async_local_connect_timeout, &c, &fd, 1);
+			n = tcp_async_connect(send_sock, to, &prof, &c, &fd);
 			if (n<0) {
 				LM_ERR("async TCP connect failed\n");
 				return -1;
 			}
-			/* connect succeeded, we have a connection */
-			LM_DBG("Successfully connected from interface %s:%d to %s:%d!\n",
-				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
-				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 			rlen = len;
-			if (n==0) {
-				if (tls_async_queue_proxy_header(c, msg) < 0) {
-					rlen = -1;
-					goto con_release;
-				}
-
-				/* attach the write buffer to it */
-				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
-					LM_ERR("Failed to add the initial write chunk\n");
-					rlen = -1; /* report an error - let the caller decide what to do */
-				}
-
-				LM_DBG("Successfully started async connection \n");
+			if (tls_async_queue_proxy_header(c, msg) < 0) {
+				rlen = -1;
 				goto con_release;
 			}
 
-			LM_DBG("First TCP connect attempt succeeded in less than %dms, "
-				"proceed to queueing \n",tls_async_local_connect_timeout);
+			/* attach the write buffer to it */
+			if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+				LM_ERR("Failed to add the initial write chunk\n");
+				rlen = -1; /* report an error - let the caller decide what to do */
+			}
+
+			goto con_release;
 		} else {
 			/* it is safe to send the fd to the main, because it doesn't
 			 * matter which process completes the handshake */
-			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd))==0) {
 				LM_ERR("connect failed\n");
 				return -1;
 			}
@@ -690,9 +674,7 @@ static int proto_tls_send(const struct socket_info* send_sock,
 
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
-	if (fd==-1) {
-		if (c->state == S_CONN_OK || c->state == S_CONN_CONNECTING)
-			goto send_it;
+	if (c->state != S_CONN_OK && c->state != S_CONN_CONNECTING) {
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
@@ -700,7 +682,7 @@ static int proto_tls_send(const struct socket_info* send_sock,
 	}
 
 send_it:
-	LM_DBG("sending via fd %d...\n",fd);
+	LM_DBG("sending on conn %p...\n", c);
 	if (tls_async_queue_proxy_header(c, msg) < 0) {
 		LM_ERR("failed to send outbound PROXY header\n");
 		rlen = -1;
@@ -709,20 +691,14 @@ send_it:
 
 	rlen = tls_write_on_socket(c, -1, buf, len);
 
-	LM_DBG("after write: c=%p n=%d fd=%d\n",c, rlen, fd);
+	LM_DBG("after write: c=%p n=%d\n", c, rlen);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);
 	if (rlen<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
-		if (fd != -1)
-			close(fd);
 		tcp_conn_release(c, 0);
 		return -1;
 	}
-
-	/* send paths only keep temporary FDs from fresh local connects */
-	if (fd != -1)
-		close(fd);
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
@@ -733,8 +709,6 @@ send_it:
 	return rlen;
 con_release:
 	sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);
-	if (fd != -1)
-		close(fd);
 	tcp_conn_release(c, (rlen < 0)?0:1);
 	return rlen;
 }

@@ -159,7 +159,7 @@ struct tcp_connection{
 	volatile int refcnt;
 	enum sip_protos type;			/*!< PROTO_TCP or a protocol over it, e.g. TLS */
 	enum tcp_conn_states state;		/*!< connection state */
-	void* extra_data;			/*!< extra data associated to the connection, 0 for tcp*/
+	void* extra_data;			/*!< TCP-main-private extra data associated to the connection, 0 for tcp*/
 	/*!< deadline for the current in-progress read, if any */
 	unsigned int timeout;
 	/*!< the lifetime of the connection - watched by TCP main process
@@ -172,8 +172,8 @@ struct tcp_connection{
 	struct tcp_connection* c_prev;		/*!< Child prev (use locally */
 	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];	/*!< Aliases for this connection */
 	int aliases;				/*!< Number of aliases, at least 1 */
-	struct tcp_req *con_req;	/*!< Per-connection TCP request buffer in local thread memory */
-	void *proto_req;			/*!< Optional protocol-specific request state */
+	struct tcp_req *con_req;	/*!< Per-connection TCP request buffer in TCP-main-private memory */
+	void *proto_req;			/*!< Optional protocol-specific request state in TCP-main-private memory */
 	void *proto_extra_id;		/*!< Optional shared protocol-specific match id */
 	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
 	/*!< connection related flags */
@@ -183,7 +183,7 @@ struct tcp_connection{
 	unsigned short proto_flags;
 	struct struct_hist *hist;
 	struct tcp_async_data *async;
-	/* protocol specific data attached to this connection */
+	/* protocol specific data attached to this connection, in TCP-main-private memory */
 	void *proto_data;
 };
 

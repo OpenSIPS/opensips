@@ -119,7 +119,8 @@ static int tcp_proto_no=-1;
 int unix_tcp_sock = -1;
 
 /*!< current number of open connections */
-static int tcp_connections_no = 0;
+static unsigned int *tcp_connections_no = 0;
+static gen_lock_t *tcp_connections_lock = 0;
 
 /*!< by default don't accept aliases */
 int tcp_accept_aliases=0;
@@ -843,8 +844,12 @@ static void __tcpconn_rm(struct tcp_connection* c, int no_event)
 		c->async = NULL;
 	}
 
+	lock_get(tcp_connections_lock);
+	(*tcp_connections_no)--;
+	lock_release(tcp_connections_lock);
+
 	if (c->proto_req)
-		shm_free(c->proto_req);
+		thread_free(c->proto_req);
 	c->proto_req = NULL;
 	tcp_conn_destroy_req(c);
 
@@ -955,16 +960,28 @@ static inline void tcpconn_ref(struct tcp_connection* c)
 
 static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* su,
                     const struct socket_info* si, const struct tcp_conn_profile *prof,
-                    int state, int flags, int in_main_proc)
+                    int state, int flags)
 {
 	struct tcp_connection *c;
 	union sockaddr_union local_su;
 	unsigned int su_size;
+	int counted = 0;
+
+	lock_get(tcp_connections_lock);
+	if (*tcp_connections_no >= (unsigned int)tcp_max_connections) {
+		lock_release(tcp_connections_lock);
+		LM_ERR("maximum number of connections exceeded: %u/%d\n",
+			*tcp_connections_no, tcp_max_connections);
+		return 0;
+	}
+	(*tcp_connections_no)++;
+	lock_release(tcp_connections_lock);
+	counted = 1;
 
 	c=(struct tcp_connection*)shm_malloc(sizeof(struct tcp_connection));
 	if (c==0){
 		LM_ERR("shared memory allocation failure\n");
-		return 0;
+		goto error_count;
 	}
 	memset(c, 0, sizeof(struct tcp_connection)); /* zero init */
 	c->fd=sock;
@@ -1034,27 +1051,31 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 		}
 		c->flags |= F_CONN_INIT;
 	}
-	if(in_main_proc)
-		tcp_connections_no++;
 	return c;
 
 error:
 	lock_destroy(&c->write_lock);
 error0:
 	shm_free(c);
+error_count:
+	if (counted) {
+		lock_get(tcp_connections_lock);
+		(*tcp_connections_no)--;
+		lock_release(tcp_connections_lock);
+	}
 	return 0;
 }
 
 
 /* creates a new tcp connection structure
- * if send2main is 1, the function informs the TCP Main about the new conn
+ * for an outgoing connection request; local private state is initialized later
  * a +1 ref is set for the new conn !
  * IMPORTANT - the function assumes you want to create a new TCP conn as
  * a result of a connect operation - the conn will be set as connect !!
  * Accepted connection are triggered internally only */
-struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
+struct tcp_connection* tcp_conn_create(const union sockaddr_union* su,
 		const struct socket_info* si, struct tcp_conn_profile *prof,
-		int state, int send2main)
+		int state)
 {
 	struct tcp_connection *c;
 
@@ -1062,7 +1083,7 @@ struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
 		tcp_con_get_profile(su, &si->su, si->proto, prof);
 
 	/* create the connection structure */
-	c = tcpconn_new(sock, su, si, prof, state, 0, !send2main);
+	c = tcpconn_new(-1, su, si, prof, state, 0);
 	if (c==NULL) {
 		LM_ERR("tcpconn_new failed\n");
 		return NULL;
@@ -1071,50 +1092,7 @@ struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
 	c->refcnt++; /* safe to do it w/o locking, it's not yet
 					available to the rest of the world */
 	sh_log(c->hist, TCP_REF, "connect, (%d)", c->refcnt);
-	if (!send2main || sock < 0)
-		return c;
-
-	return (tcp_conn_send(c) == 0 ? c : NULL);
-}
-
-/* sends a new connection from a worker to main */
-int tcp_conn_send(struct tcp_connection *c)
-{
-	long response[2];
-	int n, fd;
-
-	/* inform TCP main about this new connection */
-	if (c->state==S_CONN_CONNECTING) {
-		/* store the local fd now, before TCP main overwrites it */
-		fd = c->fd;
-		response[0]=(long)c;
-		response[1]=ASYNC_CONNECT;
-		n=send_fd(unix_tcp_sock, response, sizeof(response), fd);
-		if (n<=0) {
-			LM_ERR("Failed to send the socket to main for async connection\n");
-			goto error;
-		}
-		tcp_conn_destroy_req(c);
-		close(fd);
-		c->fd = -1;
-	} else {
-		response[0]=(long)c;
-		response[1]=CONN_NEW;
-		n=send_fd(unix_tcp_sock, response, sizeof(response), c->fd);
-		if (n<=0){
-			LM_ERR("failed send_fd: %s (%d)\n", strerror(errno), errno);
-			goto error;
-		}
-		tcp_conn_destroy_req(c);
-	}
-
-	return 0;
-error:
-	/* no reporting as closed, as PROTO layer did not reporte it as
-	 * OPEN yet */
-	_tcpconn_rm(c,1);
-	tcp_connections_no--;
-	return -1;
+	return c;
 }
 
 
@@ -1130,15 +1108,13 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 		LM_DBG("destroying connection %p, flags %04x\n",
 				tcpconn, tcpconn->flags);
 		fd=tcpconn->fd;
-		hashed = (tcpconn->flags & F_CONN_HASHED);
 		/* no reporting here - the tcpconn_destroy() function is called
 		 * from the TCP_MAIN reactor when handling connectioned received
 		 * from a worker; and we generate the CLOSE reports from WORKERs */
+		hashed = (tcpconn->flags & F_CONN_HASHED);
 		_tcpconn_rm(tcpconn, hashed ? 0 : 1);
 		if (fd >= 0)
 			close(fd);
-		if (hashed)
-			tcp_connections_no--;
 	}else{
 		/* force timeout */
 		tcpconn->lifetime=0;
@@ -1606,12 +1582,6 @@ static inline int handle_new_connect(const struct socket_info* si)
 		LM_ERR("failed to accept connection(%d): %s\n", errno, strerror(errno));
 		return -1;
 	}
-	if (tcp_connections_no >= tcp_max_connections) {
-		LM_ERR("maximum number of connections exceeded: %d/%d\n",
-			tcp_connections_no, tcp_max_connections);
-		close(new_sock);
-		return 1; /* success, because the accept was successful */
-	}
 
 	tcp_con_get_profile(&su, &si->su, si->proto, &prof);
 	if (tcp_init_sock_opt(new_sock, &prof, si->flags, si->tos) < 0) {
@@ -1622,7 +1592,7 @@ static inline int handle_new_connect(const struct socket_info* si)
 
 	/* add socket to list */
 	tcpconn = tcpconn_new(new_sock, &su, si, &prof, S_CONN_OK,
-		F_CONN_ACCEPTED, 1);
+		F_CONN_ACCEPTED);
 	if (tcpconn) {
 		/* Safe: the connection is not yet visible outside TCP main. */
 		tcpconn->refcnt++;
@@ -1897,7 +1867,6 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 	int cmd;
 	int bytes;
 	int ret;
-	int fd;
 
 	ret=-1;
 	if (p->unix_sock<=0){
@@ -1907,10 +1876,9 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 		goto error;
 	}
 
-	/* get all bytes and the fd (if transmitted)
+	/* get all bytes
 	 * (this is a SOCK_STREAM so read is not atomic) */
-	bytes=receive_fd(p->unix_sock, response, sizeof(response), &fd,
-						MSG_DONTWAIT);
+	bytes=recv_all(p->unix_sock, response, sizeof(response), MSG_DONTWAIT);
 	if (bytes<(int)sizeof(response)){
 		/* too few bytes read */
 		if (bytes==0){
@@ -1937,14 +1905,14 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			/* should never happen */
 			LM_CRIT("too few bytes received (%d)\n", bytes );
 			ret=0; /* something was read so there is no error; otoh if
-					  receive_fd returned less then requested => the receive
+					  recv_all returned less then requested => the receive
 					  buffer is empty => no more io queued on this fd */
 			goto end;
 		}
 	}
 	ret=1; /* something was received, there might be more queued */
-	LM_DBG("read response= %lx, %ld, fd %d from %d (%d)\n",
-					response[0], response[1], fd, (int)(p-&pt[0]), p->pid);
+	LM_DBG("read response= %lx, %ld from %d (%d)\n",
+					response[0], response[1], (int)(p-&pt[0]), p->pid);
 	cmd=response[1];
 	tcpconn=(struct tcp_connection*)response[0];
 	if (tcpconn==0){
@@ -1964,40 +1932,6 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			sh_log(tcpconn->hist, TCP_UNREF, "worker error, (%d)", tcpconn->refcnt);
 			tcpconn_destroy(tcpconn); /* will close also the fd */
 			break;
-		case CONN_NEW:
-			/* update the fd in the requested tcpconn*/
-			/* WARNING: take care of setting refcnt properly to
-			 * avoid race condition */
-			if (fd==-1){
-				LM_CRIT(" cmd CONN_NEW: no fd received\n");
-				break;
-			}
-			tcpconn->fd=fd;
-			/* add tcpconn to the list*/
-			tcpconn_add(tcpconn);
-			tcp_connections_no++;
-			reactor_add_reader( tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED_READ;
-			break;
-		case ASYNC_CONNECT:
-			/* connection is not yet linked to hash = not yet
-			 * available to the outside world */
-			if (fd==-1){
-				LM_CRIT(" cmd CONN_NEW: no fd received\n");
-				break;
-			}
-			tcpconn->fd=fd;
-			/* add tcpconn to the list*/
-			tcpconn_add(tcpconn);
-			tcp_connections_no++;
-			/* FIXME - now we have lifetime==default_lifetime - should we
-			 * set a shorter one when waiting for a connect ??? */
-			/* only maintain the socket in the IO_WATCH_WRITE watcher
-			 * while we have stuff to write - otherwise we're going to get
-			 * useless events */
-			reactor_add_writer( tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
-			break;
 		case ASYNC_WRITE_GENW:
 			sh_log(tcpconn->hist,TCP_UNREF,"ASYNC_WRITE_GENW, (%d)",
 				tcpconn->refcnt);
@@ -2009,7 +1943,6 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			}
 			if ((tcpconn->flags & F_CONN_HASHED) == 0) {
 				tcpconn_add(tcpconn);
-				tcp_connections_no++;
 			}
 			if ((tcpconn->flags & F_CONN_WRITE_QUEUED) ||
 					!(tcpconn->flags & F_CONN_REMOVED_WRITE)) {
@@ -2161,12 +2094,11 @@ static inline void __tcpconn_lifetime(int shutdown)
 						}
 						close(fd);
 						c->fd = -1;
+						}
+						_tcpconn_rm(c, shutdown?1:0);
 					}
-					_tcpconn_rm(c, shutdown?1:0);
-					tcp_connections_no--;
+					c=next;
 				}
-				c=next;
-			}
 		}
 		if (!shutdown) TCPCONN_UNLOCK(part);
 	}
@@ -2314,6 +2246,23 @@ int tcp_init(void)
 	// The  rand()  function returns a pseudo-random integer in the range 0 to
 	// RAND_MAX inclusive (i.e., the mathematical range [0, RAND_MAX]).
 	*connection_id=(unsigned int)rand();
+	tcp_connections_no = (unsigned int *)shm_malloc(sizeof(*tcp_connections_no));
+	if (tcp_connections_no == 0) {
+		LM_CRIT("could not alloc tcp connection counter in shm memory\n");
+		goto error;
+	}
+	*tcp_connections_no = 0;
+	tcp_connections_lock = lock_alloc();
+	if (tcp_connections_lock == 0) {
+		LM_CRIT("could not alloc tcp connection counter lock\n");
+		goto error;
+	}
+	if (lock_init(tcp_connections_lock) == 0) {
+		LM_CRIT("could not init tcp connection counter lock\n");
+		lock_dealloc((void *)tcp_connections_lock);
+		tcp_connections_lock = 0;
+		goto error;
+	}
 	memset( &tcp_parts, 0, TCP_PARTITION_SIZE*sizeof(struct tcp_partition));
 	/* init partitions */
 	for( i=0 ; i<TCP_PARTITION_SIZE ; i++ ) {
@@ -2369,6 +2318,17 @@ void tcp_destroy(void)
 	if (connection_id){
 		shm_free(connection_id);
 		connection_id=0;
+	}
+
+	if (tcp_connections_no) {
+		shm_free(tcp_connections_no);
+		tcp_connections_no = 0;
+	}
+
+	if (tcp_connections_lock) {
+		lock_destroy(tcp_connections_lock);
+		lock_dealloc((void *)tcp_connections_lock);
+		tcp_connections_lock = 0;
 	}
 
 	for ( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {

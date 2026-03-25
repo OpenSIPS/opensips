@@ -49,6 +49,7 @@
 
 extern struct openssl_binds openssl_api;
 extern struct wolfssl_binds wolfssl_api;
+extern int is_tcp_main;
 
 static void *get_ssl(struct sip_msg *msg, struct tcp_connection **c)
 {
@@ -67,6 +68,11 @@ static void *get_ssl(struct sip_msg *msg, struct tcp_connection **c)
 
 	if (!*c) {
 		LM_INFO("TLS connection not found\n");
+		goto err;
+	}
+
+	if (!is_tcp_main) {
+		LM_ERR("TLS runtime state is private to TCP main\n");
 		goto err;
 	}
 

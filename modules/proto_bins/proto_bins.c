@@ -21,6 +21,7 @@
  */
 
 #include "../../timer.h"
+#include "../../mem/mem.h"
 #include "../../sr_module.h"
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
@@ -65,9 +66,7 @@ static int bins_send_tout = 100;
 static int bins_max_msg_chunks = 32;
 static int bins_async = 1;
 static int bins_async_max_postponed_chunks = 32;
-static int bins_async_local_connect_timeout = 100;
 static int bins_handshake_tout = 100;
-static int bins_async_handshake_connect_timeout = 10;
 static str trace_destination_name = {NULL, 0};
 static int trace_is_on_tmp;
 
@@ -103,10 +102,6 @@ static const param_export_t params[] = {
 	{ "bins_async",                      INT_PARAM, &bins_async             },
 	{ "bins_async_max_postponed_chunks", INT_PARAM,
 											&bins_async_max_postponed_chunks},
-	{ "bins_async_local_connect_timeout",INT_PARAM,
-										   &bins_async_local_connect_timeout},
-	{ "bins_async_handshake_timeout",	 INT_PARAM,
-									&bins_async_handshake_connect_timeout },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
 	{0, 0, 0}
@@ -228,7 +223,7 @@ static int proto_bins_conn_init(struct tcp_connection* c)
 
 	if (t_dst && tprot.create_trace_message) {
 		/* this message shall be used in first send function */
-		data = shm_malloc( sizeof(struct tls_data) );
+		data = thread_malloc( sizeof(struct tls_data) );
 		if (!data) {
 			LM_ERR("no more pkg mem!\n");
 			goto out;
@@ -266,6 +261,11 @@ out:
 static void proto_bins_conn_clean(struct tcp_connection* c)
 {
 	struct tls_domain *dom;
+
+	if (c->proto_data) {
+		thread_free(c->proto_data);
+		c->proto_data = NULL;
+	}
 
 	tls_mgm_api.tls_conn_clean(c, &dom);
 
@@ -384,86 +384,14 @@ static int proto_bins_send(const struct socket_info* send_sock,
 			bins_async);
 		/* create tcp connection */
 		if (bins_async) {
-			n = tcp_async_connect(send_sock, to, &prof,
-					bins_async_local_connect_timeout, &c, &fd, 1);
+			n = tcp_async_connect(send_sock, to, &prof, &c, &fd);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
 				return -1;
 			}
-			/* connect succeeded, we have a connection */
-			if (n==0) {
-				/* attach the write buffer to it */
-				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
-					LM_ERR("Failed to add the initial write chunk\n");
-					tcp_conn_release(c, 0);
-					return -1;
-				}
-
-				/* mark the ID of the used connection (tracing purposes) */
-				last_outgoing_tcp_id = c->id;
-				send_sock->last_real_ports->local = c->rcv.dst_port;
-				send_sock->last_real_ports->remote = c->rcv.src_port;
-
-				LM_DBG("Successfully started async connection\n");
-				tcp_conn_release(c, 0);
-				return len;
-			}
-
-			LM_DBG("First TCP connect attempt succeeded in less than %dms, "
-				"proceed to TLS connect \n",bins_async_local_connect_timeout);
-			/* succesful TCP conection done - starting async SSL connect */
-
-			lock_get(&c->write_lock);
-			/* we connect under lock to make sure no one else is reading our
-			 * connect status */
-			tls_mgm_api.tls_update_fd(c, fd);
-			n = tls_mgm_api.tls_async_connect(c, fd,
-				bins_async_handshake_connect_timeout, t_dst);
-			lock_release(&c->write_lock);
-			if (n<0) {
-				LM_ERR("failed async TLS connect\n");
-				tcp_conn_release(c, 0);
-				return -1;
-			}
-			if (n==0) {
-				/* attach the write buffer to it */
-				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
-					LM_ERR("Failed to add the initial write chunk\n");
-					tcp_conn_release(c, 0);
-					return -1;
-				}
-
-				LM_DBG("Successfully started async TLS connection\n");
-				tcp_conn_release(c, 1);
-				return len;
-			}
-
-			LM_DBG("First TLS handshake attempt succeeded in less than %dms, "
-				"proceed to writing \n",bins_async_handshake_connect_timeout);
-		} else {
-			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
-				LM_ERR("connect failed\n");
-				return -1;
-			}
-		}
-
-		goto send;
-	}
-
-	if (fd==-1) {
-		/* connection is not writable because of its state - can we append
-		 * data to it for later writting (async writting)? */
-		if (c->state==S_CONN_CONNECTING) {
-			/* the connection is currently in the process of getting
-			 * connected - let's append our send chunk as well - just in
-			 * case we ever manage to get through */
-			LM_DBG("We have acquired a TCP connection which is still "
-				"pending to connect - delaying write \n");
-			n = tcp_async_add_chunk(c,buf,len,1);
-			if (n < 0) {
-				LM_ERR("Failed to add another write chunk to %p\n",c);
-				/* we failed due to internal errors - put the
-				 * connection back */
+			/* attach the write buffer to it */
+			if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
+				LM_ERR("Failed to add the initial write chunk\n");
 				tcp_conn_release(c, 0);
 				return -1;
 			}
@@ -473,32 +401,57 @@ static int proto_bins_send(const struct socket_info* send_sock,
 			send_sock->last_real_ports->local = c->rcv.dst_port;
 			send_sock->last_real_ports->remote = c->rcv.src_port;
 
-			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
-			if (tcp_write_in_main() && c->state == S_CONN_OK)
-				goto send;
-			/* return error, nothing to do about it */
-			LM_ERR("Bad connection state\n");
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd))==0) {
+				LM_ERR("connect failed\n");
+				return -1;
+			}
+		}
+
+		goto send;
+	}
+
+	if (c->state==S_CONN_CONNECTING) {
+		/* the connection is currently in the process of getting
+		 * connected - let's append our send chunk as well - just in
+		 * case we ever manage to get through */
+		LM_DBG("We have acquired a TCP connection which is still "
+			"pending to connect - delaying write \n");
+		n = tcp_async_add_chunk(c,buf,len,1);
+		if (n < 0) {
+			LM_ERR("Failed to add another write chunk to %p\n",c);
+			/* we failed due to internal errors - put the
+			 * connection back */
 			tcp_conn_release(c, 0);
 			return -1;
 		}
+
+		/* mark the ID of the used connection (tracing purposes) */
+		last_outgoing_tcp_id = c->id;
+		send_sock->last_real_ports->local = c->rcv.dst_port;
+		send_sock->last_real_ports->remote = c->rcv.src_port;
+
+		/* we successfully added our write chunk - success */
+		tcp_conn_release(c, 0);
+		return len;
+	} else if (c->state != S_CONN_OK) {
+		/* return error, nothing to do about it */
+		LM_ERR("Bad connection state\n");
+		tcp_conn_release(c, 0);
+		return -1;
 	}
 
 send:
-	LM_DBG("sending via fd %d...\n",fd);
+	LM_DBG("sending on conn %p...\n", c);
 	n = bins_write_on_socket(c, -1, buf, len);
 
-	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
+	LM_DBG("after write: c=%p n/len=%d/%d\n", c, n, len);
 	if (n<0){
 		LM_ERR("failed to send\n");
 		goto err_release;
 	}
-
-	/* send paths only keep temporary FDs from fresh local connects */
-	if (fd != -1)
-		close(fd);
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
@@ -509,8 +462,6 @@ send:
 	return n;
 err_release:
 	c->state=S_CONN_BAD;
-	if (fd != -1)
-		close(fd);
 	tcp_conn_release(c, 0);
 	return -1;
 }

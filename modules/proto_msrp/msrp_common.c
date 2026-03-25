@@ -26,6 +26,7 @@
 
 #include <ctype.h>
 
+#include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../net/trans_trace.h"
@@ -385,7 +386,7 @@ int msrp_read_req(struct tcp_connection* con, int* bytes_read)
 		LM_DBG("Using the per connection buff \n");
 	} else {
 		LM_DBG("Allocating per connection MSRP buffer\n");
-		req = shm_malloc(sizeof(*req));
+		req = thread_malloc(sizeof(*req));
 		if (req == NULL) {
 			LM_ERR("No more mem for dynamic con request buffer\n");
 			return -1;
@@ -518,7 +519,7 @@ int proto_msrp_send(const struct socket_info* send_sock,
 	struct ip_addr ip;
 	struct timeval get,snd;
 	union sockaddr_union src_su, dst_su;
-	int port = 0, fd, n, matched;
+	int port = 0, n, matched;
 	struct tls_domain *dom;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
@@ -531,12 +532,10 @@ int proto_msrp_send(const struct socket_info* send_sock,
 		port=su_getport(to);
 		dom = (msrp_check_cert_on_reusage==0 || send_sock->proto==PROTO_MSRP)?
 			NULL : tls_mgm_api.find_client_domain( &ip, port);
-		fd = -1;
 		n = tcp_conn_get(id, &ip, port, PROTO_MSRP, NULL, &c, send_sock);
 		if (dom)
 			tls_mgm_api.release_domain(dom);
 	}else if (id){
-		fd = -1;
 		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, NULL);
 	}else{
 		LM_CRIT("tcp_send called with null id & to\n");
@@ -562,10 +561,14 @@ int proto_msrp_send(const struct socket_info* send_sock,
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
-			LM_ERR("connect failed\n");
-			get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
-			return -1;
+		{
+			int fd;
+
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd))==0) {
+				LM_ERR("connect failed\n");
+				get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
+				return -1;
+			}
 		}
 
 		if ( TRACE_ON( c->flags ) &&
@@ -579,10 +582,6 @@ int proto_msrp_send(const struct socket_info* send_sock,
 					&CONNECT_OK, msrp_t_dst );
 			}
 		}
-
-		LM_DBG( "Successfully connected from interface %s:%d to %s:%d!\n",
-			ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
-			ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
 		goto send_it;
 	}
@@ -602,10 +601,7 @@ int proto_msrp_send(const struct socket_info* send_sock,
 
 	/* now we have a connection, let's see what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
-	if (fd==-1) {
-		if (tcp_write_in_main() &&
-				(c->state == S_CONN_OK || c->state == S_CONN_CONNECTING))
-			goto send_it;
+	if (c->state != S_CONN_OK && c->state != S_CONN_CONNECTING) {
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
@@ -614,7 +610,7 @@ int proto_msrp_send(const struct socket_info* send_sock,
 
 
 send_it:
-	LM_DBG("sending via fd %d...\n",fd);
+	LM_DBG("sending on conn %p...\n", c);
 	start_expire_timer(snd,prof.send_threshold);
 
 	if (send_sock->proto==PROTO_MSRP)
@@ -627,20 +623,14 @@ send_it:
 	get_time_difference(snd,prof.send_threshold,tcp_timeout_send);
 	stop_expire_timer(get,prof.send_threshold,"MSRP ops",buf,(int)len,1);
 
-	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
+	LM_DBG("after write: c=%p n/len=%d/%d\n", c, n, len);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
-		if (fd != -1)
-			close(fd);
 		tcp_conn_release(c, 0);
 		return -1;
 	}
-
-	/* send paths only keep temporary FDs from fresh local connects */
-	if (fd != -1)
-		close(fd);
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;

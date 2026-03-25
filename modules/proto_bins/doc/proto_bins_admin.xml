@@ -205,52 +205,6 @@ modparam("proto_bins", "bins_async_max_postponed_chunks", 16)
 </programlisting>
 		</example>
 	</section>
-	<section id="param_bins_async_local_connect_timeout" xreflabel="bins_async_local_connect_timeout">
-		<title><varname>bins_async_local_connect_timeout</varname> (integer)</title>
-		<para>
-			If bin_async is enabled, this specifies the number of
-			milliseconds that a connect will be tried in blocking mode
-			(optimization). If the connect operation lasts more than this,
-			the connect will go to async mode and will be passed to TCP
-			MAIN for polling.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 100 ms.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>bins_async_local_connect_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("proto_bins", "bins_async_local_connect_timeout", 200)
-...
-</programlisting>
-		</example>
-	</section>
-		<section id="param_bins_async_handshake_timeout" xreflabel="bins_async_handshake_timeout">
-			<title><varname>bins_async_handshake_timeout</varname> (integer)</title>
-			<para>
-				If <emphasis>tls_async</emphasis> is enabled, this specifies the
-				number of milliseconds that a TLS handshake should be tried in blocking
-				mode (optimization). If the handshake operation lasts more than this,
-				the write will go to async mode and will be passed to tls MAIN for
-				polling.
-			</para>
-			<para>
-			<emphasis>
-				Default value is 10 ms.
-			</emphasis>
-			</para>
-			<example>
-			<title>Set <varname>bins_async_handshake_timeout</varname> parameter</title>
-			<programlisting format="linespecific">
-	...
-	modparam("proto_tls", "bins_async_handshake_timeout", 100)
-	...
-	</programlisting>
-			</example>
-		</section>
 	<section id="param_trace_destination" xreflabel="trace_destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>

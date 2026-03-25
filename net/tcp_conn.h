@@ -57,14 +57,13 @@
 #define TCP_CHILD_SELECT_TIMEOUT 2
 
 
-/* fd communication commands - internal usage ONLY */
+/* worker/main communication commands - internal usage ONLY */
 enum conn_cmds { CONN_DESTROY=-4, CONN_ERROR_TCPW=-3,CONN_ERROR_GENW=-2,
-		CONN_EOF=-1, CONN_RELEASE, CONN_NEW, ASYNC_CONNECT,
+		CONN_EOF=-1, CONN_RELEASE,
 		ASYNC_WRITE_TCPW, ASYNC_WRITE_GENW, CONN_RELEASE_WRITE };
 /* CONN_RELEASE[_WRITE], EOF, ERROR_TCPW, ASYNC_WRITE_TCPW, DESTROY can be
  *    used by TCP "reader" workers/processes
- * NEW, CONNECT, ERROR_GENW, ASYNC_WRITE_GENW only by generic
- *    writer workers/processes */
+ * ERROR_GENW, ASYNC_WRITE_GENW only by generic writer workers/processes */
 
 #ifdef TCP_DEBUG_CONN
 #define tcpconn_check_add(c) \
