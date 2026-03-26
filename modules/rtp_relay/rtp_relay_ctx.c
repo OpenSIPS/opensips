@@ -1596,6 +1596,8 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 	}
 
 	body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+	if (!body && msg->REQ_METHOD != METHOD_INVITE && msg->REQ_METHOD != METHOD_ACK)
+		return;
 	RTP_RELAY_CTX_LOCK(ctx);
 	sess = ctx->established;
 	ret = (sess && rtp_sess_pending(sess));
