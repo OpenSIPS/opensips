@@ -37,6 +37,8 @@
 typedef int  (*proto_net_dgram_read_f)(const struct socket_info *si, int *len);
 
 typedef int  (*proto_net_stream_write_f)(struct tcp_connection *c, int fd);
+typedef int  (*proto_net_stream_handle_f)(char *msg, int len,
+		struct receive_info *rcv, void *data, int data_len);
 
 /**
  * Read a complete SIP message from the network, including its body/payload and
@@ -74,6 +76,7 @@ struct api_proto_net {
 		struct {
 			unsigned			async_chunks;
 			proto_net_stream_read_f		read;
+			proto_net_stream_handle_f	handle;
 			proto_net_stream_write_f	write;
 			struct {
 				proto_net_stream_conn_init_f   init;

@@ -103,7 +103,9 @@ int tcp_done_reading(struct tcp_connection* con)
 
 struct tcp_ipc_payload {
 	struct receive_info rcv;
+	struct tcp_connection *conn;
 	int msg_len;
+	int data_len;
 	char msg_buf[0];
 };
 
@@ -190,9 +192,22 @@ again_payload:
 			}
 
 			bind_address = payload->rcv.bind_address;
-			if (receive_msg(payload->msg_buf, payload->msg_len, &payload->rcv,
-					NULL, 0) < 0)
+			if (payload->rcv.proto > PROTO_NONE &&
+					payload->rcv.proto < PROTO_LAST &&
+					is_tcp_based_proto(payload->rcv.proto) &&
+					protos[payload->rcv.proto].net.stream.handle) {
+				if (protos[payload->rcv.proto].net.stream.handle(
+						payload->msg_buf, payload->msg_len, &payload->rcv,
+						payload->data_len ?
+						payload->msg_buf + payload->msg_len + 1 : NULL,
+						payload->data_len) < 0)
+					LM_ERR("TCP dispatch handler failed\n");
+			} else if (receive_msg(payload->msg_buf, payload->msg_len,
+					&payload->rcv, NULL, 0) < 0) {
 				LM_ERR("receive_msg() failed for dispatched TCP message\n");
+			}
+			if (payload->conn)
+				tcpconn_put(payload->conn);
 			shm_free(payload);
 			break;
 		}
