@@ -162,17 +162,24 @@ static inline void profiling_raise_event(int data_type, char *verb,
 		return;
 	}
 
-	if (file &&
-		(evi_param_set_str(ev->file_p, &file_s) < 0 ||
-		evi_param_set_int(ev->line_p, &line) < 0 )) {
-		LM_ERR("cannot populate profiling event params 2\n");
-		return;
+	if (file) {
+		if (evi_param_set_str(ev->file_p, &file_s) < 0 ||
+			evi_param_set_int(ev->line_p, &line) < 0 ) {
+			LM_ERR("cannot populate profiling event params 2\n");
+			return;
+		}
+	} else {
+		evi_param_reset(ev->file_p);
+		evi_param_reset(ev->line_p);
 	}
 
-	if (status>=0 &&
-		(evi_param_set_int(ev->status_p, &status) < 0)) {
-		LM_ERR("cannot populate profiling event params 3\n");
-		return;
+	if (status>=0) {
+		if (evi_param_set_int(ev->status_p, &status) < 0) {
+			LM_ERR("cannot populate profiling event params 3\n");
+			return;
+		}
+	} else {
+		evi_param_reset(ev->status_p);
 	}
 
 	if (evi_raise_event(ev->id, ev->params) < 0)
