@@ -100,15 +100,11 @@ int ws_raw_writev(struct tcp_connection *c, int fd,
 
 	start_expire_timer(snd,c->profile.send_threshold);
 	*/
-	lock_get(&c->write_lock);
-
 	/* optimize write for a single chunk */
 	if (iovcnt == 1)
 		n=tsend_stream(fd, iov[0].iov_base, iov[0].iov_len, tout);
 	else
 		n=tsend_stream_ev(fd, iov, iovcnt, tout);
-
-	lock_release(&c->write_lock);
 	if (n > 0)
 		tcp_conn_reset_lifetime(c);
 	/*

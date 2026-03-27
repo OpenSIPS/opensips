@@ -95,6 +95,7 @@ static int proto_ws_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id, struct sip_msg *msg);
 static int ws_read_req(struct tcp_connection* con, int* bytes_read);
+static int ws_async_write(struct tcp_connection* con, int fd);
 static int ws_conn_init(struct tcp_connection* c);
 static int ws_conn_connect(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
@@ -184,7 +185,7 @@ static int proto_ws_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP | PROTO_NET_SUPPORTS_PROXY;
 	pi->net.stream.read		= ws_read_req;
-	pi->net.stream.write		= tcp_async_write;
+	pi->net.stream.write		= ws_async_write;
 
 	pi->net.stream.conn.init	= ws_conn_init;
 	pi->net.stream.conn.connect	= ws_conn_connect;
@@ -354,7 +355,6 @@ static int proto_ws_send(const struct socket_info* send_sock,
 	struct tcp_conn_profile prof;
 	struct timeval get;
 	struct ip_addr ip;
-	struct ws_data* d;
 	int port = 0, n, matched;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
@@ -396,20 +396,6 @@ static int proto_ws_send(const struct socket_info* send_sock,
 			LM_ERR("connect failed\n");
 			return -1;
 		}
-
-		d = c->proto_data;
-
-		if ( d && d->dest && d->tprot ) {
-			if ( d->message ) {
-				send_trace_message( d->message, t_dst);
-				d->message = NULL;
-			}
-
-			/* don't allow future traces for this cnection */
-			d->tprot = 0;
-			d->dest  = 0;
-		}
-
 		goto send_it;
 	}
 	get_time_difference(get, prof.send_threshold, tcp_timeout_con_get);
@@ -425,7 +411,9 @@ static int proto_ws_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending on conn %p...\n", c);
-	n = ws_req_write(c, -1, buf, len);
+	n = tcp_async_add_chunk(c, buf, len, 1);
+	if (n == 0)
+		n = len;
 	stop_expire_timer(get, prof.send_threshold, "WS ops",buf,(int)len,1);
 
 	LM_DBG("after write: c=%p n=%d\n", c, n);
@@ -443,6 +431,26 @@ send_it:
 
 	tcp_conn_release(c, 0);
 	return n;
+}
+
+static int ws_async_write(struct tcp_connection* con, int fd)
+{
+	int n;
+	struct tcp_async_chunk *chunk;
+
+	while ((chunk = tcp_async_get_chunk(con)) != NULL) {
+		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
+				chunk->len, chunk, con, chunk->ticks, get_ticks());
+
+		n = ws_req_write(con, fd, chunk->buf, chunk->len);
+		if (n < 0)
+			return -1;
+
+		tcp_async_update_write(con, chunk->len);
+		tcp_conn_reset_lifetime(con);
+	}
+
+	return 0;
 }
 
 
