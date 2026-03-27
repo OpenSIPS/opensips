@@ -418,7 +418,6 @@ static int proto_wss_send(const struct socket_info* send_sock,
 	struct timeval get;
 	struct ip_addr ip;
 	int port = 0, n, matched;
-	struct ws_data* d;
 
 	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
@@ -469,7 +468,7 @@ static int proto_wss_send(const struct socket_info* send_sock,
 
 	/* now we have a connection, let's what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
-	if (c->state != S_CONN_OK) {
+	if (c->state != S_CONN_OK && c->state != S_CONN_CONNECTING) {
 		/* connection is not writable because of its state */
 		/* return error, nothing to do about it */
 		tcp_conn_release(c, 0);
@@ -478,23 +477,10 @@ static int proto_wss_send(const struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending on conn %p...\n", c);
-	n = ws_req_write(c, -1, buf, len);
+	n = tcp_async_add_chunk(c, buf, len, 1);
+	if (n == 0)
+		n = len;
 	stop_expire_timer(get, prof.send_threshold, "WSS ops",buf,(int)len,1);
-
-	/* only here we will have all tracing data TLS + WS */
-	d = c->proto_data;
-
-	if ( (c->flags&F_CONN_ACCEPTED)==0 && d && d->dest && d->tprot ) {
-		if ( d->message ) {
-			send_trace_message( d->message, t_dst);
-			d->message = NULL;
-		}
-
-		/* don't allow future traces for this cnection */
-		d->tprot = 0;
-		d->dest  = 0;
-	}
-
 
 	LM_DBG("after write: c=%p n=%d\n", c, n);
 	if (n<0){
@@ -614,7 +600,6 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 	}
 
 #ifndef TLS_DONT_WRITE_FRAGMENTS
-	lock_get(&c->write_lock);
 	for (i = 0; i < iovcnt; i++) {
 		n = tls_mgm_api.tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len,
 				wss_hs_tls_tout, wss_send_tout, t_dst);
@@ -638,13 +623,11 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 		memcpy(buf + n, iov[i].iov_base, iov[i].iov_len);
 		n += iov[i].iov_len;
 	}
-	lock_get(&c->write_lock);
 	n = tls_mgm_api.tls_blocking_write(c, fd, buf, n,
 				wss_hs_tls_tout, wss_send_tout, t_dst);
 #endif /* TLS_DONT_WRITE_FRAGMENTS */
 
 end:
-	lock_release(&c->write_lock);
 	if (ret > 0)
 		tcp_conn_reset_lifetime(c);
 	return ret;
@@ -670,16 +653,12 @@ static int wss_async_write(struct tcp_connection* con, int fd)
 		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
 				chunk->len, chunk, con, chunk->ticks, get_ticks());
 
-		n = tls_mgm_api.tls_write(con, fd, chunk->buf, chunk->len, NULL);
-		if (n == 0) {
-			LM_DBG("Can't finish to write chunk %p on conn %p\n",
-					chunk, con);
-			return 1;
-		} else if (n < 0) {
+		n = ws_req_write(con, fd, chunk->buf, chunk->len);
+		if (n < 0) {
 			return -1;
 		}
 
-		tcp_async_update_write(con, n);
+		tcp_async_update_write(con, chunk->len);
 		tcp_conn_reset_lifetime(con);
 	}
 

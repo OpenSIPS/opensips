@@ -206,10 +206,15 @@ static inline int ws_send(struct tcp_connection *con, int fd, int op,
 	 * we need this buffer to mask the message sent to the client
 	 * since we cannot modify the buffer - it might be readonly
 	 */
-	static char *body_buf = 0;
-	static unsigned char hdr_buf[WS_MAX_HDR_LEN];
-	static struct iovec v[2] = { {hdr_buf, 0}, {0, 0}};
+	static __thread char *body_buf = 0;
+	static __thread unsigned char hdr_buf[WS_MAX_HDR_LEN];
+	static __thread struct iovec v[2];
 	unsigned int mask = rand();
+
+	v[0].iov_base = hdr_buf;
+	v[0].iov_len = 0;
+	v[1].iov_base = 0;
+	v[1].iov_len = 0;
 
 	/* FIN + OPCODE */
 	hdr_buf[0] = WS_BIT_FIN | (op & WS_MASK_OPCODE);
@@ -240,7 +245,8 @@ static inline int ws_send(struct tcp_connection *con, int fd, int op,
 		/* also indicate that the message is masked */
 		hdr_buf[1] |= WS_BIT_MASK;
 
-		body_buf = body_buf ? pkg_realloc(body_buf, len) : pkg_malloc(len);
+		body_buf = body_buf ? thread_realloc(body_buf, len) :
+			thread_malloc(len);
 		if (!body_buf) {
 			LM_ERR("oom for body buffer\n");
 			return -1;
@@ -260,8 +266,14 @@ static inline int ws_send(struct tcp_connection *con, int fd, int op,
 
 static inline int ws_send_pong(struct tcp_connection *con, struct ws_req *req)
 {
-	return ws_send(con, con->fd, WS_OP_PONG,
+	int ret;
+
+	lock_get(&con->write_lock);
+	ret = ws_send(con, con->fd, WS_OP_PONG,
 			req->tcp.body, req->tcp.content_len);
+	lock_release(&con->write_lock);
+
+	return ret;
 }
 
 static inline int ws_send_close(struct tcp_connection *con)
@@ -269,6 +281,7 @@ static inline int ws_send_close(struct tcp_connection *con)
 	uint16_t code;
 	int len;
 	char *buf;
+	int ret;
 
 	if (WS_CODE(con)) {
 		code = htons(WS_CODE(con));
@@ -278,7 +291,11 @@ static inline int ws_send_close(struct tcp_connection *con)
 	}
 
 	buf = (char *)&code;
-	return ws_send(con, con->fd, WS_OP_CLOSE, buf, len);
+	lock_get(&con->write_lock);
+	ret = ws_send(con, con->fd, WS_OP_CLOSE, buf, len);
+	lock_release(&con->write_lock);
+
+	return ret;
 }
 
 /* Public functions down here */
@@ -527,8 +544,9 @@ again:
 					"keeping connection \n");
 			}
 
-			if (receive_msg(msg_buf, msg_len, &local_rcv, NULL, 0) <0)
-					LM_ERR("receive_msg failed \n");
+			if (tcp_dispatch_msg(msg_buf, msg_len,
+					&local_rcv, NULL, 0) < 0)
+				LM_ERR("failed to deliver WS message\n");
 
 			*req->tcp.parsed = bk;
 

@@ -1371,7 +1371,7 @@ static void tcp_pool_destroy(void)
 	for (job = tcp_pool.task_head; job; job = next) {
 		next = job->next;
 		tcpconn_put(job->conn);
-		pkg_free(job);
+		thread_free(job);
 	}
 	tcp_pool.task_head = tcp_pool.task_tail = NULL;
 	pthread_mutex_unlock(&tcp_pool.task_lock);
@@ -1380,7 +1380,7 @@ static void tcp_pool_destroy(void)
 	for (job = tcp_pool.done_head; job; job = next) {
 		next = job->next;
 		tcpconn_put(job->conn);
-		pkg_free(job);
+		thread_free(job);
 	}
 	tcp_pool.done_head = tcp_pool.done_tail = NULL;
 	pthread_mutex_unlock(&tcp_pool.done_lock);
@@ -1393,7 +1393,7 @@ static int tcp_queue_job(struct tcp_connection *tcpconn, int op)
 	if (!tcp_threads_active())
 		return -1;
 
-	job = pkg_malloc(sizeof(*job));
+	job = thread_malloc(sizeof(*job));
 	if (!job) {
 		LM_ERR("oom while queuing TCP IO job\n");
 		return -1;
@@ -1419,6 +1419,12 @@ static int tcp_queue_job(struct tcp_connection *tcpconn, int op)
 
 static inline int tcp_queue_write_job(struct tcp_connection *tcpconn)
 {
+	if (!(tcpconn->flags & F_CONN_REMOVED_READ) && tcpconn->fd != -1) {
+		if (reactor_del_reader(tcpconn->fd, -1, 0) == -1)
+			return -1;
+		tcpconn->flags |= F_CONN_REMOVED_READ;
+	}
+
 	tcpconn->flags |= F_CONN_WRITE_QUEUED;
 	if (tcp_queue_job(tcpconn, TCP_WRITE_JOB) < 0) {
 		tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
@@ -1548,7 +1554,7 @@ static inline int handle_tcp_notify(int fd)
 			tcp_complete_read(job);
 		else
 			tcp_complete_write(job);
-		pkg_free(job);
+		thread_free(job);
 	}
 
 	return 0;

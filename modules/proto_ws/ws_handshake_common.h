@@ -26,6 +26,8 @@
 #ifndef _WS_HANDSHAKE_H_
 #define _WS_HANDSHAKE_H_
 
+#include <pthread.h>
+
 #include "../../ip_addr.h"
 
 #define HTTP_SEP			"\r\n"
@@ -118,6 +120,8 @@ static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status st
 
 #define WS_TRACE_MAX 1024
 static char ws_trace_buf[WS_TRACE_MAX];
+
+static pthread_mutex_t ws_http_parse_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* safety checks */
 #ifndef _ws_common_module
@@ -791,10 +795,13 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 	memset(&tmp_msg, 0, sizeof(struct sip_msg));
 	tmp_msg.len = len;
 	tmp_msg.buf = tmp_msg.unparsed = msg;
+	pthread_mutex_lock(&ws_http_parse_lock);
 	if (parse_headers_aux(&tmp_msg, HDR_EOH_F, 0,0) < 0) {
+		pthread_mutex_unlock(&ws_http_parse_lock);
 		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
 		goto ws_error;
 	}
+	pthread_mutex_unlock(&ws_http_parse_lock);
 	/* verify headers according to RFC6455 */
 	for (hf = tmp_msg.headers; hf; hf = hf->next) {
 		if (hf->type != HDR_OTHER_T)
@@ -1069,10 +1076,13 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 	memset(&tmp_msg, 0, sizeof(struct sip_msg));
 	tmp_msg.len = len;
 	tmp_msg.buf = tmp_msg.unparsed = msg;
+	pthread_mutex_lock(&ws_http_parse_lock);
 	if (parse_headers_aux(&tmp_msg, HDR_EOH_F, 0, 0) < 0) {
+		pthread_mutex_unlock(&ws_http_parse_lock);
 		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
 		goto ws_error;
 	}
+	pthread_mutex_unlock(&ws_http_parse_lock);
 	/* verify headers according to RFC6455 */
 	for (hf = tmp_msg.headers; hf; hf = hf->next) {
 		if (hf->type != HDR_OTHER_T)
