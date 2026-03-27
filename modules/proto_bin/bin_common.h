@@ -49,10 +49,22 @@ static inline void bin_parse_headers(struct tcp_req *req){
 	}
 }
 
+static inline int bin_receive_msg(char *buf, int len, struct receive_info *rcv,
+		void *data, int data_len)
+{
+	(void)len;
+	(void)data;
+	(void)data_len;
+
+	call_callbacks(buf, rcv);
+	return 0;
+}
+
 static inline int bin_handle_req(struct tcp_req *req,
-							struct tcp_connection *con, int _max_msg_chunks)
+								struct tcp_connection *con, int _max_msg_chunks)
 {
 	long size;
+	struct receive_info local_rcv;
 
 	if (req->complete){
 		/* refresh connection lifetime after successful read progress */
@@ -77,11 +89,16 @@ static inline int bin_handle_req(struct tcp_req *req,
 				"keeping connection \n");
 		}
 
-		/* give the message to the registered functions */
-		call_callbacks(req->buf, &con->rcv);
+		local_rcv = con->rcv;
+		if (tcp_dispatch_msg(req->buf,
+				req->parsed - req->buf, &local_rcv,
+				NULL, 0) < 0) {
+			LM_ERR("failed to deliver BIN message\n");
+			goto error;
+		}
 
 
-		con->msg_attempts = 0;
+			con->msg_attempts = 0;
 
 		if (size) {
 			memmove(req->buf, req->parsed, size);
