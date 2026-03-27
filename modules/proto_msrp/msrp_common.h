@@ -84,6 +84,8 @@ extern struct tls_mgm_binds tls_mgm_api;
 
 
 void msrp_brief_parse_msg(struct msrp_req *r);
+int msrp_dispatch_msg(char *buf, int len, struct receive_info *rcv,
+		void *data, int data_len);
 
 int proto_msrp_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len,

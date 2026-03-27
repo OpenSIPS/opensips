@@ -55,6 +55,59 @@ extern int msrp_check_cert_on_reusage;
 
 #define MSRP_DEBUG
 
+struct msrp_dispatch_data {
+	enum msrp_msg_type type;
+	int ident_off;
+	int ident_len;
+	int method_off;
+	int method_len;
+	int eol_off;
+	int body_off;
+	int body_len;
+};
+
+int msrp_dispatch_msg(char *buf, int len, struct receive_info *rcv,
+		void *data, int data_len)
+{
+	struct msrp_dispatch_data *dispatch_data;
+	struct msrp_firstline fl;
+	str body;
+
+	if (!data || data_len != (int)sizeof(*dispatch_data)) {
+		LM_ERR("missing MSRP dispatch metadata\n");
+		return -1;
+	}
+
+	dispatch_data = data;
+	if (dispatch_data->ident_off < 0 || dispatch_data->method_off < 0 ||
+			dispatch_data->eol_off < 0 ||
+			dispatch_data->ident_off + dispatch_data->ident_len > len ||
+			dispatch_data->method_off + dispatch_data->method_len > len ||
+			dispatch_data->eol_off >= len ||
+			(dispatch_data->body_off >= 0 &&
+			dispatch_data->body_off + dispatch_data->body_len > len)) {
+		LM_ERR("invalid MSRP dispatch metadata\n");
+		return -1;
+	}
+
+	memset(&fl, 0, sizeof(fl));
+	fl.type = dispatch_data->type;
+	fl.ident.s = buf + dispatch_data->ident_off;
+	fl.ident.len = dispatch_data->ident_len;
+	fl.u.request.method.s = buf + dispatch_data->method_off;
+	fl.u.request.method.len = dispatch_data->method_len;
+	fl.eol = buf + dispatch_data->eol_off;
+
+	body.s = NULL;
+	body.len = 0;
+	if (dispatch_data->body_off >= 0) {
+		body.s = buf + dispatch_data->body_off;
+		body.len = dispatch_data->body_len;
+	}
+
+	return handle_msrp_msg(buf, len, &fl, &body, rcv);
+}
+
 
 
 void msrp_brief_parse_msg(struct msrp_req *r)
@@ -274,6 +327,7 @@ static int msrp_handle_req(struct msrp_req *req,
 		struct tcp_connection *con, int _max_msg_chunks)
 {
 	struct receive_info local_rcv;
+	struct msrp_dispatch_data dispatch_data;
 	char *msg_buf;
 	int msg_len;
 	long size;
@@ -315,16 +369,33 @@ static int msrp_handle_req(struct msrp_req *req,
 			/* TODO - we could indicate to the TCP net layer to release
 			 * the connection -> other worker may read the next available
 			 * message on the pipe */
-		} else {
-			LM_DBG("We still have things on the pipe - "
-				"keeping connection \n");
-		}
+			} else {
+				LM_DBG("We still have things on the pipe - "
+					"keeping connection \n");
+			}
 
-		if (handle_msrp_msg(msg_buf, msg_len, &req->fl, &req->body,
-				&local_rcv) < 0)
-			LM_ERR("receive_msg failed \n");
+			dispatch_data.type = req->fl.type;
+			dispatch_data.ident_off = req->fl.ident.s - msg_buf;
+			dispatch_data.ident_len = req->fl.ident.len;
+			dispatch_data.method_off = req->fl.u.request.method.s - msg_buf;
+			dispatch_data.method_len = req->fl.u.request.method.len;
+			dispatch_data.eol_off = req->fl.eol - msg_buf;
+			if (req->body.s) {
+				dispatch_data.body_off = req->body.s - msg_buf;
+				dispatch_data.body_len = req->body.len;
+			} else {
+				dispatch_data.body_off = -1;
+				dispatch_data.body_len = 0;
+			}
 
-		con->msg_attempts = 0;
+			if (tcp_dispatch_msg(msg_buf, msg_len,
+					&local_rcv, &dispatch_data,
+					sizeof(dispatch_data)) < 0) {
+				LM_ERR("failed to deliver MSRP message\n");
+				goto error;
+			}
+
+			con->msg_attempts = 0;
 
 		if (size) {
 			/* restoring the char only makes sense if there is something else to
