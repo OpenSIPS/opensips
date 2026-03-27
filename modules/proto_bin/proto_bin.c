@@ -113,6 +113,7 @@ static int proto_bin_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.stream.read		= bin_read_req;
+	pi->net.stream.handle		= bin_receive_msg;
 	pi->net.stream.write		= tcp_async_write;
 
 	if (bin_async != 0)

@@ -154,6 +154,7 @@ static int proto_bins_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.stream.read		= bins_read_req;
+	pi->net.stream.handle		= bin_receive_msg;
 	pi->net.stream.write		= bins_async_write;
 	pi->net.stream.conn.init	= proto_bins_conn_init;
 	pi->net.stream.conn.clean	= proto_bins_conn_clean;
