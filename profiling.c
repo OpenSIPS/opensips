@@ -27,14 +27,15 @@
 #include "parser/msg_parser.h"
 #include "pt.h"
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 
 profiling_handlers_t *profiling_handlers;
 
 typedef struct profiling_event_handle {
 	event_id_t id;
 	evi_params_p params;
-	evi_param_p timestamp_p;
+	evi_param_p sec_p;
+	evi_param_p usec_p;
 	evi_param_p session_p;
 	evi_param_p verb_p;
 	evi_param_p name_p;
@@ -47,7 +48,8 @@ typedef struct profiling_event_handle {
 
 static str ev_name_script = str_init("E_PROFILING_SCRIPT");
 static str ev_name_proc = str_init("E_PROFILING_PROC");
-static str ev_param_timestamp = str_init("timestamp");
+static str ev_param_sec = str_init("sec");
+static str ev_param_usec = str_init("usec");
 static str ev_param_session = str_init("session");
 static str ev_param_verb = str_init("verb");
 static str ev_param_name = str_init("name");
@@ -86,7 +88,8 @@ static int init_profiling_event(profiling_event_handle_t *ev, str *ev_name)
 	}
 	ev->params->flags &= ~EVI_FREE_LIST;
 
-	ev->timestamp_p = evi_param_create(ev->params, &ev_param_timestamp);
+	ev->sec_p = evi_param_create(ev->params, &ev_param_sec);
+	ev->usec_p = evi_param_create(ev->params, &ev_param_usec);
 	ev->session_p = evi_param_create(ev->params, &ev_param_session);
 	ev->verb_p = evi_param_create(ev->params, &ev_param_verb);
 	ev->name_p = evi_param_create(ev->params, &ev_param_name);
@@ -95,9 +98,9 @@ static int init_profiling_event(profiling_event_handle_t *ev, str *ev_name)
 	ev->file_p = evi_param_create(ev->params, &ev_param_file);
 	ev->line_p = evi_param_create(ev->params, &ev_param_line);
 	ev->status_p = evi_param_create(ev->params, &ev_param_status);
-	if (!ev->timestamp_p || !ev->session_p || !ev->verb_p || !ev->name_p ||
-		!ev->type_p || !ev->depth_p ||
-		!ev->file_p || !ev->line_p || !ev->status_p) {
+	if (!ev->sec_p || !ev->usec_p || !ev->session_p || !ev->verb_p ||
+		!ev->name_p || !ev->type_p || !ev->depth_p || !ev->file_p ||
+		!ev->line_p || !ev->status_p) {
 		LM_ERR("cannot create params for '%.*s'\n", ev_name->len, ev_name->s);
 		return -1;
 	}
@@ -107,11 +110,13 @@ static int init_profiling_event(profiling_event_handle_t *ev, str *ev_name)
 
 static inline void profiling_raise_event(int data_type, char *verb,
 	const char *name, int type, int depth, const char *file, int line,
-	int status, void *payload)
+	int *status, void *payload)
 {
 	int idx;
 	profiling_event_handle_t *ev;
-	int timestamp;
+	struct timeval tv;
+	int sec;
+	int usec;
 	int session = 0;
 	struct sip_msg *msg;
 	str verb_s, name_s, file_s;
@@ -129,12 +134,19 @@ static inline void profiling_raise_event(int data_type, char *verb,
 
 	if (!name)
 		name = "<root>";
+
 	if (!verb)
 		verb = "";
-
 	verb_s.s = verb;
 	verb_s.len = strlen(verb);
-	timestamp = (int)time(NULL);
+
+	if (gettimeofday(&tv, NULL) < 0) {
+		LM_ERR("failed to get current time\n");
+		return;
+	}
+	sec = (int)tv.tv_sec;
+	usec = (int)tv.tv_usec;
+
 	switch (data_type) {
 	case PROFILING_DATA_TYPE_SCRIPT:
 		msg = (struct sip_msg *)payload;
@@ -145,14 +157,17 @@ static inline void profiling_raise_event(int data_type, char *verb,
 		session = my_pid();
 		break;
 	}
+
 	name_s.s = (char *)name;
 	name_s.len = strlen(name);
+
 	if (file) {
 		file_s.s = (char *)file;
 		file_s.len = strlen(file);
 	}
 
-	if (evi_param_set_int(ev->timestamp_p, &timestamp) < 0 ||
+	if (evi_param_set_int(ev->sec_p, &sec) < 0 ||
+		evi_param_set_int(ev->usec_p, &usec) < 0 ||
 		evi_param_set_int(ev->session_p, &session) < 0 ||
 		evi_param_set_str(ev->verb_p, &verb_s) < 0 ||
 		evi_param_set_str(ev->name_p, &name_s) < 0 ||
@@ -173,8 +188,8 @@ static inline void profiling_raise_event(int data_type, char *verb,
 		evi_param_reset(ev->line_p);
 	}
 
-	if (status>=0) {
-		if (evi_param_set_int(ev->status_p, &status) < 0) {
+	if (status) {
+		if (evi_param_set_int(ev->status_p, status) < 0) {
 			LM_ERR("cannot populate profiling event params 3\n");
 			return;
 		}
@@ -190,21 +205,21 @@ static void profiling_event_on_start(int data_type, const char *name,
 	int subtype, int depth, void *payload)
 {
 	profiling_raise_event(data_type, "start", name, subtype, depth, NULL, 0,
-		-1, payload);
+		NULL, payload);
 }
 
 static void profiling_event_on_end(int data_type, const char *name,
 	int subtype, int depth, int status, void *payload)
 {
 	profiling_raise_event(data_type, "end", name, subtype, depth, NULL, 0,
-		status, payload);
+		&status, payload);
 }
 
 static void profiling_event_on_enter(int data_type, const char *name,
 	int subtype, int depth, const char *file, int line, void *payload)
 {
 	profiling_raise_event(data_type, "enter", name, subtype, depth, file,
-		line, -1, payload);
+		line, NULL, payload);
 }
 
 static void profiling_event_on_exit(int data_type, const char *name,
@@ -212,7 +227,7 @@ static void profiling_event_on_exit(int data_type, const char *name,
 	void *payload)
 {
 	profiling_raise_event(data_type, "exit", name, subtype, depth, file, line,
-		status, payload);
+		&status, payload);
 }
 
 static profiling_handlers_t profiling_event_handler = {
