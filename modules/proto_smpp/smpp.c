@@ -815,38 +815,71 @@ static struct tcp_connection *smpp_connect(smpp_session_t *session)
 	return tcp_sync_connect(send_socket, &server, &prof, &fd);
 }
 
-static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
+static int smpp_send_buf(struct tcp_connection *conn, str *buffer)
 {
 	int ret;
-	struct tcp_connection *conn;
-	int retry = 1;
-	/* first try to acquire the connection */
 
-	/* TBD - handle conn not found here = reconnect ? */
-retry:
-	ret = tcp_conn_get(smsc->conn_id, &smsc->ip, smsc->port, PROTO_SMPP,
-		NULL, &conn, NULL);
-	if (ret <= 0) {
-		if (retry == 0) {
-			LM_ERR("cannot fetch connection for %.*s (%d)\n",
-					smsc->name.len, smsc->name.s, ret);
-			return -1;
-		}
-		if (bind_session(smsc) < 0) {
-			LM_ERR("could not re-bind connectionfor %.*s\n",
-					smsc->name.len, smsc->name.s);
-			return -1;
-		}
-		retry = 0;
-		goto retry;
-	}
-	/* update connection in case it has changed */
 	ret = tcp_write_on_socket(conn, -1,
 			buffer->s, buffer->len, smpp_send_timeout, 0);
 	if (ret < 0) {
 		LM_ERR("failed to send data!\n");
-		conn->state=S_CONN_BAD;
+		conn->state = S_CONN_BAD;
 	}
+
+	return ret;
+}
+
+static int send_bind_on_conn(smpp_session_t *session, struct tcp_connection *conn)
+{
+	int n = -1;
+	smpp_bind_transceiver_req_t *req = NULL;
+
+	if (!session || !conn) {
+		LM_ERR("NULL param\n");
+		return -1;
+	}
+
+	LM_INFO("binding session with system_id \"%s\"\n",
+		session->bind.transceiver.system_id);
+
+	if (build_bind_transceiver_request(&req, session)) {
+		LM_ERR("error creating request\n");
+		return -1;
+	}
+
+	n = smpp_send_buf(conn, &req->payload);
+	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
+
+	free_smpp_msg(req);
+	return n;
+}
+
+static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
+{
+	int ret;
+	struct tcp_connection *conn;
+
+	ret = tcp_conn_get(smsc->conn_id, &smsc->ip, smsc->port, PROTO_SMPP,
+		NULL, &conn, NULL);
+	if (ret <= 0) {
+		conn = smpp_connect(smsc);
+		if (!conn) {
+			LM_ERR("cannot fetch connection for %.*s (%d)\n",
+					smsc->name.len, smsc->name.s, ret);
+			return -1;
+		}
+
+		smsc->conn_id = conn->id;
+		conn->proto_data = smsc;
+
+		ret = send_bind_on_conn(smsc, conn);
+		if (ret < 0)
+			goto release;
+	}
+
+	ret = smpp_send_buf(conn, buffer);
+
+	release:
 	tcp_conn_release(conn, (ret < buffer->len) ? 1 : 0);
 	return ret;
 }
@@ -856,36 +889,22 @@ static int send_bind(smpp_session_t *session)
 {
 	int n = -1;
 	struct tcp_connection *conn;
-	smpp_bind_transceiver_req_t *req = NULL;
 
 	if (!session) {
 		LM_ERR("NULL param\n");
 		return -1;
 	}
 
-	LM_INFO("binding session with system_id \"%s\"\n", session->bind.transceiver.system_id);
-
-	if (build_bind_transceiver_request(&req, session)) {
-		LM_ERR("error creating request\n");
-		return -1;
-	}
 	conn = smpp_connect(session);
 	if (!conn) {
 		LM_ERR("cannot create a TCP connection!\n");
-		goto free_req;
+		return -1;
 	}
 
 	session->conn_id = conn->id;
 	conn->proto_data = session;
-	n = tcp_write_on_socket(conn, -1,
-			req->payload.s, req->payload.len, smpp_send_timeout, 0);
-	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
-	if (n < 0) {
-		conn->state = S_CONN_BAD;
-	}
-	tcp_conn_release(conn, (n < req->payload.len) ? 1 : 0);
-free_req:
-	free_smpp_msg(req);
+	n = send_bind_on_conn(session, conn);
+	tcp_conn_release(conn, (n < 0) ? 1 : 0);
 	return n;
 }
 
