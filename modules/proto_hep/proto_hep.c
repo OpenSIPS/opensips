@@ -73,6 +73,8 @@ static int hep_tcp_send(const struct socket_info* send_sock,
 static int hep_tls_send(const struct socket_info* send_sock,
 		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id, struct sip_msg *msg);
+static int hep_receive_msg(char *buf, int len, struct receive_info *ri,
+		void *data, int data_len);
 static void update_recv_info(struct receive_info* ri, struct hep_desc* h);
 void free_hep_context(void* ptr);
 static int proto_hep_tls_conn_init(struct tcp_connection* c);
@@ -315,6 +317,7 @@ static int proto_hep_init_tcp(struct proto_info* pi)
 	pi->net.flags          = PROTO_NET_USE_TCP;
 
 	pi->net.stream.read    = hep_tcp_read_req;
+	pi->net.stream.handle = hep_receive_msg;
 	pi->net.stream.write   = tcp_async_write;
 
 	pi->tran.send          = hep_tcp_send;
@@ -340,6 +343,7 @@ static int proto_hep_init_tls(struct proto_info* pi)
 	pi->net.flags           = PROTO_NET_USE_TCP;
 
 	pi->net.stream.read     = hep_tls_read_req;
+	pi->net.stream.handle = hep_receive_msg;
 	pi->net.stream.write    = hep_tls_async_write;
 
 	pi->tran.send           = hep_tls_send;
@@ -617,6 +621,92 @@ again:
 	return bytes_read;
 }
 
+static int hep_receive_msg(char *buf, int len, struct receive_info *ri,
+		void *data, int data_len)
+{
+	struct hep_context *hep_ctx = NULL;
+	struct receive_info local_rcv;
+	context_p ctx = NULL;
+	str msg;
+	int ret = 0;
+	(void)data;
+	(void)data_len;
+
+	if ((hep_ctx = shm_malloc(sizeof(struct hep_context))) == NULL) {
+		LM_ERR("no more shared memory!\n");
+		return -1;
+	}
+
+	memset(hep_ctx, 0, sizeof(struct hep_context));
+	memcpy(&hep_ctx->ri, ri, sizeof(struct receive_info));
+	local_rcv = *ri;
+
+	if (len < 4) {
+		LM_ERR("invalid message! too short!\n");
+		goto error_free_hep;
+	}
+
+	if (!memcmp(buf, HEP_HEADER_ID, HEP_HEADER_ID_LEN)) {
+		if (unpack_hepv3(buf, len, &hep_ctx->h)) {
+			LM_ERR("hepv3 unpacking failed\n");
+			goto error_free_hep;
+		}
+	} else {
+		if (unpack_hepv12(buf, len, &hep_ctx->h)) {
+			LM_ERR("hepv12 unpacking failed\n");
+			goto error_free_hep;
+		}
+	}
+
+	if ((ctx = context_alloc(CONTEXT_GLOBAL)) == NULL) {
+		LM_ERR("failed to allocate new context! skipping...\n");
+		goto error_free_hep;
+	}
+
+	memset(ctx, 0, context_size(CONTEXT_GLOBAL));
+	context_put_ptr(CONTEXT_GLOBAL, ctx, hep_ctx_idx, hep_ctx);
+
+	update_recv_info(&local_rcv, &hep_ctx->h);
+
+	set_global_context(ctx);
+	ret = run_hep_cbs();
+	set_global_context(NULL);
+	if (ret < 0) {
+		LM_ERR("failed to run hep callbacks\n");
+		goto error_free_ctx;
+	}
+
+	if (hep_ctx->h.version == 3) {
+		msg.len =
+			hep_ctx->h.u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
+		msg.s = hep_ctx->h.u.hepv3.payload_chunk.data;
+	} else {
+		msg.len = len - hep_ctx->h.u.hepv12.hdr.hp_l;
+		msg.s = buf + hep_ctx->h.u.hepv12.hdr.hp_l;
+
+		if (hep_ctx->h.u.hepv12.hdr.hp_v == 2) {
+			msg.s += sizeof(struct hep_timehdr);
+			msg.len -= sizeof(struct hep_timehdr);
+		}
+	}
+
+	if (ret != HEP_SCRIPT_SKIP) {
+		if (receive_msg(msg.s, msg.len, &local_rcv, ctx, 0) < 0)
+			LM_ERR("receive_msg failed \n");
+	} else {
+		context_free(ctx);
+	}
+
+	free_hep_context(hep_ctx);
+	return 0;
+
+error_free_ctx:
+	context_free(ctx);
+error_free_hep:
+	free_hep_context(hep_ctx);
+	return -1;
+}
+
 static inline int hep_handle_req(struct tcp_req* req,
 							struct tcp_connection* con, int _max_msg_chunks)
 {
@@ -624,11 +714,6 @@ static inline int hep_handle_req(struct tcp_req* req,
 	char* msg_buf;
 	int msg_len;
 	long size;
-
-	int ret = 0;
-
-	struct hep_context* hep_ctx = NULL;
-	context_p ctx = NULL;
 
 	if (req->complete){
 		/* refresh connection lifetime after successful read progress */
@@ -653,67 +738,18 @@ static inline int hep_handle_req(struct tcp_req* req,
 			/* TODO - we could indicate to the TCP net layer to release
 			 * the connection -> other worker may read the next available
 			 * message on the pipe */
-		} else {
-			LM_DBG("We still have things on the pipe - "
-				"keeping connection \n");
-		}
-
-		if (msg_buf[0] == 'H' && msg_buf[1] == 'E' && msg_buf[2] == 'P') {
-			if ((hep_ctx = shm_malloc(sizeof(struct hep_context))) == NULL) {
-				LM_ERR("no more shared memory!\n");
-				return -1;
-			}
-			memset(hep_ctx, 0, sizeof(struct hep_context));
-			memcpy(&hep_ctx->ri, &local_rcv, sizeof(struct receive_info));
-
-			/* HEP related */
-			if (unpack_hepv3(msg_buf, msg_len, &hep_ctx->h)) {
-				LM_ERR("failed to unpack hepV3\n");
-				goto error_free_hep;
-			}
-			update_recv_info(&local_rcv, &hep_ctx->h);
-
-			/* set context for receive_msg */
-			if ((ctx=context_alloc(CONTEXT_GLOBAL)) == NULL) {
-				LM_ERR("failed to allocate new context! skipping...\n");
-				goto error_free_hep;
+			} else {
+				LM_DBG("We still have things on the pipe - "
+					"keeping connection \n");
 			}
 
-			memset(ctx, 0, context_size(CONTEXT_GLOBAL));
-
-			context_put_ptr(CONTEXT_GLOBAL, ctx, hep_ctx_idx, hep_ctx);
-			/* run hep callbacks; set the current processing context
-			 * to hep context; this way callbacks will have all the data
-			 * needed */
-			set_global_context(ctx);
-			ret=run_hep_cbs();
-			if (ret < 0) {
-				LM_ERR("failed to run hep callbacks\n");
-				goto error_free_hep;
+			if (tcp_dispatch_msg(msg_buf, msg_len,
+					&local_rcv, NULL, 0) < 0) {
+				LM_ERR("failed to deliver HEP message\n");
+				goto error;
 			}
-			set_global_context(NULL);
 
-			msg_len = hep_ctx->h.u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
-			/* remove the hep header; leave only the payload */
-			msg_buf = hep_ctx->h.u.hepv3.payload_chunk.data;
-		}
-
-		/* skip receive msg if we were told so from at least one callback */
-		if (ret != HEP_SCRIPT_SKIP) {
-			if (receive_msg(msg_buf, msg_len, &local_rcv, ctx, 0) < 0) {
-				LM_ERR("receive_msg failed \n");
-			}
-		} else {
-			if (ctx) {
-				context_free(ctx);
-			}
-		}
-
-		if (hep_ctx) {
-			free_hep_context(hep_ctx);
-		}
-
-		con->msg_attempts = 0;
+			con->msg_attempts = 0;
 
 		if (size) {
 			memmove(req->buf, req->parsed, size);
@@ -734,9 +770,6 @@ static inline int hep_handle_req(struct tcp_req* req,
 	}
 	/* everything ok */
 	return 0;
-
-error_free_hep:
-	shm_free(hep_ctx);
 
 error:
 	/* report error */
