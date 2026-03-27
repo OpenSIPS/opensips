@@ -65,6 +65,8 @@ static int smpp_send(const struct socket_info* send_sock,
 		unsigned int id, struct sip_msg *msg);
 static int smpp_read_req(struct tcp_connection* conn, int* bytes_read);
 static int smpp_write_async_req(struct tcp_connection* con,int fd);
+static int smpp_dispatch_msg(char *buf, int len, struct receive_info *rcv,
+		void *data, int data_len);
 static int smpp_conn_init(struct tcp_connection* c);
 static void smpp_conn_clean(struct tcp_connection* c);
 static int send_smpp_msg(struct sip_msg* msg, str *name, str *from,
@@ -147,6 +149,7 @@ static int smpp_init(struct proto_info *pi)
 
 	pi->net.flags		= PROTO_NET_USE_TCP;
 	pi->net.stream.read	= smpp_read_req;
+	pi->net.stream.handle = smpp_dispatch_msg;
 	pi->net.stream.write	= smpp_write_async_req;
 
 	pi->net.stream.conn.init  = smpp_conn_init;
@@ -240,6 +243,28 @@ static int smpp_send(const struct socket_info* send_sock,
 	return 0;
 }
 
+static int smpp_dispatch_msg(char *buf, int len, struct receive_info *rcv,
+		void *data, int data_len)
+{
+	smpp_session_t *session;
+
+	(void)len;
+
+	if (!data || data_len != (int)sizeof(session)) {
+		LM_ERR("missing SMPP session for dispatched message\n");
+		return -1;
+	}
+
+	memcpy(&session, data, sizeof(session));
+	if (!session) {
+		LM_ERR("missing SMPP session for dispatched message\n");
+		return -1;
+	}
+
+	handle_smpp_msg(buf, session, rcv);
+	return 0;
+}
+
 static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 {
 	long size;
@@ -269,8 +294,12 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 		}
 		local_rcv = con->rcv;
 
-		/* give the message to the registered functions */
-		handle_smpp_msg(req->buf, (smpp_session_t *)con->proto_data, &local_rcv);
+			if (tcp_dispatch_msg(req->buf,
+					req->parsed - req->start, &local_rcv,
+					&con->proto_data, sizeof(con->proto_data)) < 0) {
+				LM_ERR("failed to deliver SMPP message\n");
+				return -1;
+			}
 
 		con->msg_attempts = 0;
 
