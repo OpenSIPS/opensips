@@ -424,7 +424,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 					"keeping connection \n");
 			}
 
-			if (tcp_dispatch_received_msg(msg_buf, msg_len, &local_rcv) < 0) {
+			if (tcp_dispatch_msg(msg_buf, msg_len,
+					&local_rcv, NULL, 0) < 0) {
 				LM_ERR("failed to deliver TCP message\n");
 				goto error;
 			}

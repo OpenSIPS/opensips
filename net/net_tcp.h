@@ -118,7 +118,8 @@ int tcp_get_rcv(unsigned int id, struct receive_info *ri);
 int tcp_done_reading(struct tcp_connection* c);
 
 /* either process locally or dispatch to an OpenSIPS worker via IPC */
-int tcp_dispatch_received_msg(char *msg, int len, struct receive_info *rcv);
+int tcp_dispatch_msg(char *msg, int len,
+		struct receive_info *rcv, const void *data, int data_len);
 
 extern unsigned int last_outgoing_tcp_id;
 

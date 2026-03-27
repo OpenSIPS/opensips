@@ -289,30 +289,39 @@ error:
 
 struct tcp_ipc_payload {
 	struct receive_info rcv;
+	struct tcp_connection *conn;
 	int msg_len;
+	int data_len;
 	char msg_buf[0];
 };
 
 static inline int tcp_pick_dispatch_worker(void)
 {
-	int i;
+	static int next_worker;
+	int i, idx;
 
 	for (i = 0; i < tcp_workers_max_no; i++) {
-		if (tcp_workers[i].state != STATE_ACTIVE)
+		idx = (next_worker + i) % tcp_workers_max_no;
+		if (tcp_workers[idx].state != STATE_ACTIVE)
 			continue;
-		if (tcp_workers[i].pt_idx <= 0)
+		if (tcp_workers[idx].pt_idx <= 0)
 			continue;
-		if ((pt[tcp_workers[i].pt_idx].flags & OSS_PROC_IS_RUNNING) == 0)
+		if ((pt[tcp_workers[idx].pt_idx].flags & OSS_PROC_IS_RUNNING) == 0)
 			continue;
-		return i;
+		next_worker = idx + 1;
+		if (next_worker >= tcp_workers_max_no)
+			next_worker = 0;
+		return idx;
 	}
 
 	return -1;
 }
 
-int tcp_dispatch_received_msg(char *msg, int len, struct receive_info *rcv)
+int tcp_dispatch_msg(char *msg, int len,
+		struct receive_info *rcv, const void *data, int data_len)
 {
 	struct tcp_ipc_payload *payload;
+	struct tcp_connection *conn = NULL;
 	unsigned int alloc_len;
 	int worker_idx;
 	uintptr_t payload_ptr;
@@ -332,8 +341,16 @@ int tcp_dispatch_received_msg(char *msg, int len, struct receive_info *rcv)
 		LM_BUG("negative TCP message length: %d\n", len);
 		return -1;
 	}
+	if (data_len < 0) {
+		LM_BUG("negative TCP dispatch data length: %d\n", data_len);
+		return -1;
+	}
+	if (data_len && !data) {
+		LM_BUG("missing TCP dispatch data buffer for %d bytes\n", data_len);
+		return -1;
+	}
 
-	alloc_len = sizeof(*payload) + len + 1;
+	alloc_len = sizeof(*payload) + len + 1 + data_len;
 	payload = shm_malloc(alloc_len);
 	if (!payload) {
 		LM_ERR("oom while allocating TCP IPC payload (%u bytes)\n", alloc_len);
@@ -341,15 +358,27 @@ int tcp_dispatch_received_msg(char *msg, int len, struct receive_info *rcv)
 	}
 
 	memcpy(&payload->rcv, rcv, sizeof(payload->rcv));
+	payload->conn = NULL;
 	payload->msg_len = len;
+	payload->data_len = data_len;
 	memcpy(payload->msg_buf, msg, len);
 	payload->msg_buf[len] = '\0';
+	if (data_len)
+		memcpy(payload->msg_buf + len + 1, data, data_len);
+
+	if (rcv->proto_reserved1 &&
+			tcp_conn_get(rcv->proto_reserved1, NULL, 0, PROTO_NONE,
+				NULL, &conn, NULL) > 0) {
+		payload->conn = conn;
+	}
 
 	payload_ptr = (uintptr_t)payload;
 	if (send_all(tcp_workers[worker_idx].unix_sock,
 			&payload_ptr, sizeof(payload_ptr)) != (int)sizeof(payload_ptr)) {
 		LM_ERR("failed to dispatch TCP message to worker %d (pid %d)\n",
 			worker_idx, tcp_workers[worker_idx].pid);
+		if (payload->conn)
+			tcpconn_put(payload->conn);
 		shm_free(payload);
 		return -1;
 	}
