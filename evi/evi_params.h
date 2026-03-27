@@ -74,6 +74,7 @@ evi_param_p evi_param_create(evi_params_p list, const str *name);
 
 /* sets the value of a parameter */
 int evi_param_set(evi_param_p element, const void *param, int flags);
+void evi_param_reset(evi_param_p element);
 
 /* sets an integer value to a parameter */
 #define evi_param_set_int(p_el, p_int) \
