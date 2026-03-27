@@ -28,7 +28,7 @@
 #include "../../action.h"
 #include "../../context.h"
 #include "../../reactor_defs.h"
-#include "../../route_trace.h"
+#include "../../profiling.h"
 #include <time.h>
 #include "h_table.h"
 #include "t_lookup.h"
@@ -39,7 +39,7 @@
 typedef struct _async_tm_ctx {
 	/* generic async context - MUST BE FIRST */
 	async_ctx  async;
-	route_trace_ctx_t parent_ctx;
+	profiling_ctx_t parent_ctx;
 	int parent_ctx_set;
 	/* the script route to be used to continue after the resume function;
 	 * this is a reference in shm mem, that needs separated free */
@@ -193,7 +193,7 @@ route:
 	} else {
 		swap_route_type(route, ctx->route_type);
 		if (ctx->parent_ctx_set)
-			route_trace_set_ctx(&ctx->parent_ctx);
+			profiling_set_ctx(&ctx->parent_ctx);
 		run_resume_route( ctx->resume_route, &faked_req, 1);
 		set_route_type(route);
 	}
@@ -342,7 +342,7 @@ route:
 	} else {
 		swap_route_type(route, ctx->route_type);
 		if (ctx->parent_ctx_set)
-			route_trace_set_ctx(&ctx->parent_ctx);
+			profiling_set_ctx(&ctx->parent_ctx);
 		/* do not run any post script callback, we are a reply */
 		run_resume_route( ctx->resume_route, ctx->reply, 0);
 		set_route_type(route);
@@ -463,7 +463,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 
 	memset(ctx,0,sizeof(async_tm_ctx));
 	ctx->async.timeout_s = timeout;
-	ctx->parent_ctx_set = route_trace_get_ctx(&ctx->parent_ctx);
+	ctx->parent_ctx_set = profiling_get_ctx(&ctx->parent_ctx);
 	if (ctx->parent_ctx_set) {
 		struct timespec ts;
 		int have_sys = 0;

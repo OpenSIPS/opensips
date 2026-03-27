@@ -62,10 +62,11 @@ extern "C" {
 #include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
-#include "../../route_trace.h"
+#include "../../profiling.h"
 #include "../../log_interface.h"
 #include "../../str.h"
 #include "../../pt.h"
+#include "../../route.h"
 #include "../../version.h"
 #include "../../ip_addr.h"
 #include "../../mi/mi.h"
@@ -99,7 +100,7 @@ struct otel_span {
 static __thread struct otel_span *otel_span_top;
 static __thread int otel_log_in_cb;
 
-static __thread route_trace_ctx_t otel_parent_ctx;
+static __thread profiling_ctx_t otel_parent_ctx;
 static __thread int otel_parent_ctx_set;
 static int otel_trace_registered;
 static int otel_log_consumer_registered;
@@ -117,7 +118,7 @@ static mi_response_t *otel_mi_enable(const mi_params_t *params,
 static void otel_log_consumer(int level, int facility, const char *module,
 	const char *func, char *format, va_list ap);
 static int otel_ensure_provider(void);
-extern route_trace_handlers_t otel_trace_handlers;
+extern profiling_handlers_t otel_trace_handlers;
 #ifdef HAVE_OPENTELEMETRY_CPP
 static int otel_init_provider(void);
 #endif
@@ -178,23 +179,7 @@ static int otel_runtime_set_enable(int enable)
 	return 0;
 }
 
-static inline const char *route_type_name(int route_type)
-{
-	switch (route_type) {
-	case REQUEST_ROUTE: return "request";
-	case FAILURE_ROUTE: return "failure";
-	case ONREPLY_ROUTE: return "onreply";
-	case BRANCH_ROUTE: return "branch";
-	case ERROR_ROUTE: return "error";
-	case LOCAL_ROUTE: return "local";
-	case STARTUP_ROUTE: return "startup";
-	case TIMER_ROUTE: return "timer";
-	case EVENT_ROUTE: return "event";
-	default: return "unknown";
-	}
-}
-
-static int otel_get_ctx(route_trace_ctx_t *ctx)
+static int otel_get_ctx(profiling_ctx_t *ctx)
 {
 	if (!ctx)
 		return 0;
@@ -213,7 +198,7 @@ static int otel_get_ctx(route_trace_ctx_t *ctx)
 	return 0;
 }
 
-static int otel_set_ctx(const route_trace_ctx_t *ctx)
+static int otel_set_ctx(const profiling_ctx_t *ctx)
 {
 	if (!ctx)
 		return 0;
@@ -405,10 +390,10 @@ static void otel_span_end(struct otel_span *span)
 	pkg_free(span);
 }
 
-static void otel_on_msg_start(struct sip_msg *msg, int route_type,
-	const char *route_name, int stack_size, int stack_start)
+static void otel_on_start(int data_type, const char *name, int subtype,
+	int depth, void *payload)
 {
-	const char *name;
+	struct sip_msg *msg = (struct sip_msg *)payload;
 
 	if (!otel_is_enabled())
 		return;
@@ -421,8 +406,7 @@ static void otel_on_msg_start(struct sip_msg *msg, int route_type,
 
 	otel_span_reset();
 
-	name = "<root>";
-	otel_span_start(name, route_type, stack_size - stack_start, 1, NULL, 0);
+	otel_span_start(name, subtype, depth, 1, NULL, 0);
 
 #ifdef HAVE_OPENTELEMETRY_CPP
 	if (otel_span_top && otel_span_top->span) {
@@ -433,10 +417,11 @@ static void otel_on_msg_start(struct sip_msg *msg, int route_type,
 #endif
 
 	(void)msg;
+	(void)data_type;
 }
 
-static void otel_on_msg_end(struct sip_msg *msg, int route_type,
-	const char *route_name, int stack_size, int stack_start, int status)
+static void otel_on_end(int data_type, const char *name, int subtype,
+	int depth, int status, void *payload)
 {
 	if (!otel_is_enabled())
 		return;
@@ -444,37 +429,33 @@ static void otel_on_msg_end(struct sip_msg *msg, int route_type,
 	if (otel_ensure_provider() != 0)
 		return;
 
-	(void)msg;
-	(void)route_type;
-	(void)route_name;
-	(void)stack_size;
-	(void)stack_start;
+	(void)payload;
+	(void)data_type;
+	(void)name;
+	(void)subtype;
+	(void)depth;
 	(void)status;
 
 	otel_span_reset();
 }
 
-static void otel_on_route_enter(struct sip_msg *msg, int route_type,
-	const char *route_name, const char *file, int line,
-	int stack_size, int stack_start)
+static void otel_on_enter(int data_type, const char *name, int subtype,
+	int depth, const char *file, int line, void *payload)
 {
-	const char *name;
-
 	if (!otel_is_enabled())
 		return;
 
 	if (otel_ensure_provider() != 0)
 		return;
 
-	name = route_name ? route_name : "<route>";
-	otel_span_start(name, route_type, stack_size - stack_start, 0, file, line);
+	otel_span_start(name ? name : "<route>", subtype, depth, 0, file, line);
 
-	(void)msg;
+	(void)payload;
+	(void)data_type;
 }
 
-static void otel_on_route_exit(struct sip_msg *msg, int route_type,
-	const char *route_name, const char *file, int line,
-	int stack_size, int stack_start, int status)
+static void otel_on_exit(int data_type, const char *name, int subtype,
+	int depth, const char *file, int line, int status, void *payload)
 {
 	if (!otel_is_enabled())
 		return;
@@ -482,13 +463,14 @@ static void otel_on_route_exit(struct sip_msg *msg, int route_type,
 	if (otel_ensure_provider() != 0)
 		return;
 
-	(void)msg;
-	(void)route_type;
-	(void)route_name;
+	(void)payload;
+	(void)data_type;
+	(void)name;
+	(void)subtype;
+	(void)depth;
 	(void)file;
 	(void)line;
-	(void)stack_size;
-	(void)stack_start;
+	(void)status;
 
 	otel_span_end(otel_span_top);
 }
@@ -559,11 +541,14 @@ static void otel_log_consumer(int level, int facility, const char *module,
 	otel_log_in_cb = 0;
 }
 
-route_trace_handlers_t otel_trace_handlers = {
-	.on_msg_start = otel_on_msg_start,
-	.on_msg_end = otel_on_msg_end,
-	.on_route_enter = otel_on_route_enter,
-	.on_route_exit = otel_on_route_exit,
+profiling_handlers_t otel_trace_handlers = {
+	.name = "opentelemetry",
+	.accepted_data_types = PROFILING_DATA_TYPE_SCRIPT,
+	.next = NULL,
+	.on_start = otel_on_start,
+	.on_end = otel_on_end,
+	.on_enter = otel_on_enter,
+	.on_exit = otel_on_exit,
 	.get_ctx = otel_get_ctx,
 	.set_ctx = otel_set_ctx,
 };
@@ -650,8 +635,8 @@ static int child_init(int rank)
 
 #ifdef HAVE_OPENTELEMETRY_CPP
 	if (!otel_trace_registered) {
-		if (register_route_tracer(&otel_trace_handlers) != 0) {
-			LM_ERR("failed to register route tracer hooks\n");
+		if (register_profiling_handler(&otel_trace_handlers) != 0) {
+			LM_ERR("failed to register profiling hooks\n");
 			return -1;
 		}
 		otel_trace_registered = 1;
@@ -707,7 +692,7 @@ static mi_response_t *otel_mi_enable(const mi_params_t *params,
 static void destroy(void)
 {
 	if (otel_is_enabled())
-		unregister_route_tracer(&otel_trace_handlers);
+		unregister_profiling_handler(&otel_trace_handlers);
 
 	otel_span_reset();
 }

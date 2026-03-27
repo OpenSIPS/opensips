@@ -1955,6 +1955,22 @@ void print_rl(struct os_script_routes *srs)
 	dump_script_routes(srs->event,    EVENT_RT_NO,   "event");
 }
 
+const char *route_type_name(int route_type)
+{
+	switch (route_type) {
+	case REQUEST_ROUTE: return "request";
+	case FAILURE_ROUTE: return "failure";
+	case ONREPLY_ROUTE: return "onreply";
+	case BRANCH_ROUTE: return "branch";
+	case ERROR_ROUTE: return "error";
+	case LOCAL_ROUTE: return "local";
+	case STARTUP_ROUTE: return "startup";
+	case TIMER_ROUTE: return "timer";
+	case EVENT_ROUTE: return "event";
+	default: return "unknown";
+	}
+}
+
 
 void get_top_route_type(str *type, int *has_name)
 {
