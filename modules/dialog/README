@@ -131,14 +131,14 @@ dialog Module
               1.9.1. dialog:list
               1.9.2. dialog:list_ctx
               1.9.3. dialog:end_dlg
-              1.9.4. profile_get_size
-              1.9.5. profile_list_dlgs
-              1.9.6. profile_get_values
-              1.9.7. profile_end_dlgs
+              1.9.4. dialog:profile_get_size
+              1.9.5. dialog:profile_list_dlgs
+              1.9.6. dialog:profile_get_values
+              1.9.7. dialog:profile_end_dlgs
               1.9.8. dialog:db_sync
               1.9.9. dialog:cluster_sync
               1.9.10. dialog:restore_db
-              1.9.11. list_all_profiles
+              1.9.11. dialog:list_all_profiles
               1.9.12. dialog:push_var
               1.9.13. dialog:send_sequential
               1.9.14. dialog:set_profile
@@ -1160,29 +1160,36 @@ modparam("dialog", "cluster_auto_sync", 0)
    special behavior to be done for the current dialog.
 
    Parameters:
-     * flags (string, optional) Possible values here are :
-          + B - Upon reaching dialog lifetime, BYEs will be
-            triggered both ways
-          + P - Ping caller side with OPTIONS messages, once every
-            options_ping_interval seconds
-          + p - Ping callee side with OPTIONS messages, once every
-            options_ping_interval seconds
-          + R - Ping caller side with RE-INVITE messages, once
-            every reinvite_ping_interval seconds
-          + r - Ping callee side with RE-INVITE messages, once
-            every reinvite_ping_interval seconds
-          + E - Upon detecting a SIP Race condition (see RFC
-            5407), end the call after race_condition_timeout
+     * flags (string, optional) Possible values here are:
+          + “bye-on-timeout” - upon reaching dialog lifetime, BYEs
+            will be triggered both ways
+          + “options-ping-caller” - ping caller side with OPTIONS
+            messages, once every options_ping_interval seconds
+          + “options-ping-callee” - ping callee side with OPTIONS
+            messages, once every options_ping_interval seconds
+          + “reinvite-ping-caller” - ping caller side with
+            RE-INVITE messages, once every reinvite_ping_interval
             seconds
-          + L - Automatically generate PRACK requests for
-            reliable 101-199 provisional INVITE replies
+          + “reinvite-ping-callee” - ping callee side with
+            RE-INVITE messages, once every reinvite_ping_interval
+            seconds
+          + “end-on-race-condition” - upon detecting a SIP Race
+            condition (see RFC 5407), end the call after
+            race_condition_timeout seconds
+          + “auto-prack” - automatically generate PRACK requests
+            for reliable 101-199 provisional INVITE replies
             carrying an RSeq header
-       Multiple string flags can be used at the same time, ie.
-       passing "BPp" flags will enable all 3 flags.
+       Multiple string flags can be used at the same time as a
+       CSV, i.e. passing
+       “bye-on-timeout,options-ping-caller,options-ping-callee”
+       will enable all 3 flags.
 
    NOTE: both RE-INVITE and OPTIONS pinging cannot be enabled at
-   the same time for a single dialog leg. If both flags ("PR" or
-   "pr") are provided only RE-INVITE pinging will be used.
+   the same time for a single dialog leg. If both flags for the
+   same leg are provided (for example
+   “options-ping-caller,reinvite-ping-caller” or
+   “options-ping-callee,reinvite-ping-callee”), only RE-INVITE
+   pinging will be used.
 
    The function returns true if the dialog was successfully
    created or if the dialog was previously created.
@@ -1194,16 +1201,16 @@ modparam("dialog", "cluster_auto_sync", 0)
 create_dialog();
 ...
 #ping caller
-create_dialog("P");
+create_dialog("options-ping-caller");
 ...
 #ping caller and callee
-create_dialog("Pp");
+create_dialog("options-ping-caller,options-ping-callee");
 
 #bye on timeout
-create_dialog("B");
+create_dialog("bye-on-timeout");
 
 #auto-PRACK reliable provisional replies
-create_dialog("L");
+create_dialog("auto-prack");
 ...
 
 1.7.2.  match_dialog([dlg_match_mode])
@@ -2106,7 +2113,9 @@ each in-dialog request
                 opensips-cli -x mi dialog:end_dlg Y2IwYjQ2YmE2ZDg5MWVkND
 NkZGIwZjAzNGM1ZDY
 
-1.9.4. profile_get_size
+1.9.4. dialog:profile_get_size
+
+   Replaces obsolete MI command: profile_get_size.
 
    Returns the number of dialogs belonging to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -2116,16 +2125,18 @@ NkZGIwZjAzNGM1ZDY
    Note that the profile does not supports values, this will be
    silently discarded.
 
-   Name: profile_get_size
+   Name: dialog:profile_get_size
 
    Parameters:
      * profile - name of the profile to get the value for.
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_get_size inboundCalls
+                opensips-cli -x mi dialog:profile_get_size inboundCalls
 
-1.9.5. profile_list_dlgs
+1.9.5. dialog:profile_list_dlgs
+
+   Replaces obsolete MI command: profile_list_dlgs.
 
    Lists all the dialogs belonging to a profile. If the profile
    supports values, the check can be reinforced to take into
@@ -2137,37 +2148,42 @@ NkZGIwZjAzNGM1ZDY
    using the CacheDB interface, this command will only display the
    local dialogs.
 
-   Name: profile_list_dlgs
+   Name: dialog:profile_list_dlgs
 
    Parameters:
      * profile - name of the profile to list the dialog for.
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_list_dlgs inboundCalls
+                opensips-cli -x mi dialog:profile_list_dlgs inboundCalls
 
-1.9.6. profile_get_values
+1.9.6. dialog:profile_get_values
+
+   Replaces obsolete MI command: profile_get_values.
 
    Lists all the values belonging to a profile along with their
    count. If the profile does not support values a total count
    will be returned. Note that this function does not work for
    shared profiles over the CacheDB interface.
 
-   Name: profile_get_values
+   Name: dialog:profile_get_values
 
    Parameters:
      * profile - name of the profile to list the dialog for.
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_get_values inboundCalls
+                opensips-cli -x mi dialog:profile_get_values inboundCall
+s
 
-1.9.7. profile_end_dlgs
+1.9.7. dialog:profile_end_dlgs
+
+   Replaces obsolete MI command: profile_end_dlgs.
 
    Terminate all ongoing dialogs from a specified profile, on a
    single dialog it performs the same operations as the command
    dialog:end_dlg
 
-   Name: profile_end_dlgs
+   Name: dialog:profile_end_dlgs
 
    Parameters:
      * profile - name of the profile that will have its dialogs
@@ -2176,7 +2192,7 @@ NkZGIwZjAzNGM1ZDY
        only the dialogs with the specified value
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_end_dlgs inboundCalls
+                opensips-cli -x mi dialog:profile_end_dlgs inboundCalls
 
 1.9.8. dialog:db_sync
 
@@ -2233,17 +2249,19 @@ NkZGIwZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensips-cli -x mi dialog:restore_db
 
-1.9.11. list_all_profiles
+1.9.11. dialog:list_all_profiles
+
+   Replaces obsolete MI command: list_all_profiles.
 
    Lists all the dialog profiles, along with 1 or 0 if the given
    profile has/does not have an associated value.
 
-   Name: list_all_profiles
+   Name: dialog:list_all_profiles
 
    Parameters: It takes no parameters
 
    MI FIFO Command Format:
-                opensips-cli -x mi list_all_profiles
+                opensips-cli -x mi dialog:list_all_profiles
 
 1.9.12. dialog:push_var
 
@@ -2676,10 +2694,10 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 463 291 13385 3561
-   2. Razvan Crainea (@razvancrainea) 307 227 5633 1893
+   2. Razvan Crainea (@razvancrainea) 308 228 5668 1913
    3. Vlad Paiu (@vladpaiu) 262 149 7467 3027
-   4. Vlad Patrascu (@rvlad-patrascu) 200 104 4330 3514
-   5. Liviu Chircu (@liviuchircu) 183 133 3128 1374
+   4. Liviu Chircu (@liviuchircu) 203 142 3945 1590
+   5. Vlad Patrascu (@rvlad-patrascu) 200 104 4330 3514
    6. Ovidiu Sas (@ovidiusas) 35 26 601 161
    7. Dan Pascu (@danpascu) 30 25 233 179
    8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
@@ -2722,18 +2740,18 @@ Chapter 4. Contributors
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Feb 2026
-   3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
-   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   5.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
-   6.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
-   7.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
-   8.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
-   9.  Ryan Bullock                        May 2023 - May 2023
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2026
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Feb 2026
+   4.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
+   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   6.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
+   7.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
+   8.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
+   9.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
+   10. Ryan Bullock                        May 2023 - May 2023
 
-   All remaining contributors: Nick Altmann (@nikbyte), Walter
-   Doekes (@wdoekes), Liviu Chircu (@liviuchircu), sergei lavrov,
+   All remaining contributors: Peter Lemenkov (@lemenkov), Nick
+   Altmann (@nikbyte), Walter Doekes (@wdoekes), sergei lavrov,
    Zero King (@l2dy), Dan Pascu (@danpascu), Ionel Cerghit
    (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut Ionita
    (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
@@ -2754,8 +2772,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Paiu
-   (@vladpaiu), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Paiu (@vladpaiu), Bogdan-Andrei Iancu
    (@bogdan-iancu), Stefan-Cristian Mititelu, Ryan Bullock, Vlad
    Patrascu (@rvlad-patrascu), Zero King (@l2dy), Dan Pascu
    (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno Patiño,
