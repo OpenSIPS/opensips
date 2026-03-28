@@ -106,7 +106,8 @@ modparam("script_helper", "use_dialog", 1)
 
    Example 1.2. Setting create_dialog_flags
 ...
-modparam("script_helper", "create_dialog_flags", "options-ping-caller,options-ping-callee,bye-on-timeout")
+modparam("script_helper", "create_dialog_flags", "options-ping-caller,op
+tions-ping-callee,bye-on-timeout")
 ...
 
 1.4.3. sequential_route (string)
@@ -139,7 +140,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 19 13 499 46
+   1. Liviu Chircu (@liviuchircu) 20 14 500 48
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 13 10
    3. Razvan Crainea (@razvancrainea) 7 5 10 8
    4. Vlad Patrascu (@rvlad-patrascu) 6 4 9 13
@@ -166,7 +167,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2026
    2. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2023
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - May 2023
    4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
@@ -180,8 +181,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu).
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov).
 
    Documentation Copyrights:
 

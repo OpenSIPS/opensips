@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">19</entry>
-		<entry align="center">13</entry>
-		<entry align="center">499</entry>
-		<entry align="center">46</entry>
+		<entry align="center">20</entry>
+		<entry align="center">14</entry>
+		<entry align="center">500</entry>
+		<entry align="center">48</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -97,7 +97,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - May 2024</entry>
+		<entry align="center">Mar 2014 - Mar 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -138,7 +138,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>).</para>
 </section>
 
 </chapter>
