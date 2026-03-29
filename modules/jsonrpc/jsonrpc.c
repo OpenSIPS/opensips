@@ -342,6 +342,11 @@ static int jsonrpc_handle_cmd(union sockaddr_union *dst, char *cmd, int *id,
 	if (aux && aux->type!=cJSON_NULL) {
 		/* return the entire error */
 		vret->rs.s = cJSON_Print(aux);
+		if (!vret->rs.s) {
+			LM_ERR("cJSON_Print failed\n");
+			ret = -2;
+			goto end;
+		}
 		vret->rs.len = strlen(vret->rs.s);
 		vret->flags = PV_VAL_STR;
 		LM_DBG("Error got from JSON-RPC: %s!\n", buffer);
@@ -361,12 +366,19 @@ static int jsonrpc_handle_cmd(union sockaddr_union *dst, char *cmd, int *id,
 		pv_get_sintval(NULL, NULL, vret, aux->valueint);
 	else {
 		vret->rs.s = cJSON_Print(aux);
+		if (!vret->rs.s) {
+			LM_ERR("cJSON_Print failed\n");
+			ret = -2;
+			goto end;
+		}
 		vret->rs.len = strlen(vret->rs.s);
 		vret->flags = PV_VAL_STR;
 	}
 
 	ret = 1;
 end:
+	if (obj)
+		cJSON_Delete(obj);
 	shutdown(fd, SHUT_RDWR);
 	close(fd);
 	return ret;
