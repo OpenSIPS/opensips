@@ -141,12 +141,12 @@ int cassandra_reopen(cassandra_con *cass_con)
 int cassandra_new_connection(cassandra_con *con, char *host, int port, char *username, char *password)
 {
 	con->cluster = cass_cluster_new();
-	if (username && password) {
-	  cass_cluster_set_credentials(con->cluster, username, password);
-	}
 	if (!con->cluster) {
 		LM_ERR("Failed to create Cassandra Cluster object\n");
 		return -1;
+	}
+	if (username && password) {
+	  cass_cluster_set_credentials(con->cluster, username, password);
 	}
 
 #if CASS_VERSION_MAJOR >= 2 && CASS_VERSION_MINOR >= 15
