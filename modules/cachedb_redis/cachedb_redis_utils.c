@@ -376,18 +376,19 @@ error:
 }
 
 /*
- When Redis is operating as a cluster, it is possible (very likely)
- that a MOVED redirection will be returned by the Redis nodes that
- received the request. The general format of the reply from Redis is:
- MOVED slot [IP|FQDN]:port
+ When Redis is operating as a cluster, MOVED or ASK redirections may
+ be returned by the Redis nodes that received the request.  The
+ general format of both redirect replies is:
+ MOVED|ASK slot [IP|FQDN]:port
 
- This routine will parse the Redis MOVED reply into its components.
+ This routine parses a redirect reply into its components given
+ the expected prefix (e.g. "MOVED " or "ASK ").
  Note that the redisReply struct MUST be released outside of this routine
  to avoid a memory leak. The out->endpoint pointer must not be used after
  the redisReply has been released.
 
  The parsed data is stored into the following redis_moved struct:
- 
+
  typedef struct {
 	int slot;
 	const_str endpoint;
@@ -395,35 +396,35 @@ error:
  } redis_moved;
 
 */
-int parse_moved_reply(redisReply *reply, redis_moved *out) {
-	int i;
+int parse_redirect_reply(redisReply *reply, redis_moved *out,
+		const char *prefix, size_t prefix_len) {
+	size_t i;
 	int slot = 0;
 	const char *p;
 	const char *end;
 	const char *host_start;
 	const char *colon = NULL;
 	const char *port_start;
-	int port = REDIS_DF_PORT; // Default to Redis standard port
+	int port = REDIS_DF_PORT;
 
-	if (!reply || !reply->str || reply->len < MOVED_PREFIX_LEN || !out)
+	if (!reply || !reply->str || (size_t)reply->len < prefix_len || !out)
 		return ERR_INVALID_REPLY;
 
 	p = reply->str;
 	end = reply->str + reply->len;
 
-	for (i = 0; i < MOVED_PREFIX_LEN; ++i) {
-		if (p[i] != MOVED_PREFIX[i]) {
-		return ERR_INVALID_REPLY;
-		}
+	for (i = 0; i < prefix_len; ++i) {
+		if (p[i] != prefix[i])
+			return ERR_INVALID_REPLY;
 	}
-	p += MOVED_PREFIX_LEN;
+	p += prefix_len;
 
 	// Parse slot number
 	while (p < end && *p >= '0' && *p <= '9') {
 		slot = slot * 10 + (*p - '0');
 		p++;
 	}
-	if (slot == 0 && (p == reply->str + MOVED_PREFIX_LEN || *(p - 1) < '0' || *(p - 1) > '9'))
+	if (slot == 0 && (p == reply->str + prefix_len || *(p - 1) < '0' || *(p - 1) > '9'))
 		return ERR_INVALID_SLOT;
 
 	// Skip spaces

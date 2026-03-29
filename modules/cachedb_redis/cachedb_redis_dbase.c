@@ -564,48 +564,83 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 					reply,reply?(unsigned)reply->len:7,reply?reply->str:"FAILURE",
 					node->context->errstr);
 
-				if (match_prefix(reply->str, reply->len, MOVED_PREFIX, MOVED_PREFIX_LEN)) {
-    					// It's a MOVED response
+				if (match_prefix(reply->str, reply->len, MOVED_PREFIX, MOVED_PREFIX_LEN) ||
+						match_prefix(reply->str, reply->len, ASK_PREFIX, ASK_PREFIX_LEN)) {
+					int is_ask = match_prefix(reply->str, reply->len,
+						ASK_PREFIX, ASK_PREFIX_LEN);
 					redis_moved *moved_info = pkg_malloc(sizeof(redis_moved));
-						if (!moved_info) {
-						LM_ERR("cachedb_redis: Unable to allocate redis_moved struct, no more pkg memory\n");
-							freeReplyObject(reply);
-							reply = NULL;
-							goto try_next_con;
-					} else {
-							if (parse_moved_reply(reply, moved_info) < 0) {
-							LM_ERR("cachedb_redis: Unable to parse MOVED reply\n");
-							pkg_free(moved_info);
-							moved_info = NULL;
-								freeReplyObject(reply);
-							goto try_next_con;
-						}
-
-						LM_DBG("cachedb_redis: MOVED slot: [%d] endpoint: [%.*s] port: [%d]\n", moved_info->slot, moved_info->endpoint.len, moved_info->endpoint.s, moved_info->port);
-						node = get_redis_connection_by_endpoint(con, moved_info);
-
-						pkg_free(moved_info);
-						moved_info = NULL;
+					if (!moved_info) {
+						LM_ERR("Unable to allocate redis_moved struct,"
+							" no more pkg memory\n");
 						freeReplyObject(reply);
 						reply = NULL;
+						goto try_next_con;
+					}
 
-						if (node == NULL) {
-							LM_ERR("Unable to locate connection by endpoint\n");
-							last_err = -10;
+					if ((is_ask ?
+							parse_ask_reply(reply, moved_info) :
+							parse_moved_reply(reply, moved_info)) < 0) {
+						LM_ERR("Unable to parse %s reply\n",
+							is_ask ? "ASK" : "MOVED");
+						pkg_free(moved_info);
+						freeReplyObject(reply);
+						goto try_next_con;
+					}
+
+					LM_DBG("%s slot: [%d] endpoint: [%.*s]"
+						" port: [%d]\n",
+						is_ask ? "ASK" : "MOVED",
+						moved_info->slot,
+						moved_info->endpoint.len,
+						moved_info->endpoint.s,
+						moved_info->port);
+					node = get_redis_connection_by_endpoint(
+						con, moved_info);
+
+					pkg_free(moved_info);
+					freeReplyObject(reply);
+					reply = NULL;
+
+					if (node == NULL) {
+						LM_ERR("Unable to locate connection"
+							" by endpoint\n");
+						last_err = -10;
+						goto try_next_con;
+					}
+
+					if (node->context == NULL) {
+						if (redis_reconnect_node(con,node) < 0) {
+							LM_ERR("Unable to reconnect to"
+								" node %s:%d\n",
+								node->ip, node->port);
+							last_err = -1;
 							goto try_next_con;
 						}
-
-						if (node->context == NULL) {
-							if (redis_reconnect_node(con,node) < 0) {
-							  LM_ERR("Unable to reconnect to node %p endpoint: %s:%d\n", node, node->ip, node->port);
-								last_err = -1;
-								goto try_next_con;
-							}
-						}
-
-						i = QUERY_ATTEMPTS; // New node that is the target being MOVED to, should have the attempts reset
-						continue;
 					}
+
+					if (is_ask) {
+						/* ASK requires sending ASKING before
+						 * retrying the command on the new node */
+						redisReply *asking_reply;
+						asking_reply = redisCommand(
+							node->context, "ASKING");
+						if (!asking_reply ||
+								asking_reply->type ==
+								REDIS_REPLY_ERROR) {
+							LM_ERR("ASKING command failed"
+								" on %s:%d\n",
+								node->ip, node->port);
+							if (asking_reply)
+								freeReplyObject(
+									asking_reply);
+							last_err = -1;
+							goto try_next_con;
+						}
+						freeReplyObject(asking_reply);
+					}
+
+					i = QUERY_ATTEMPTS;
+					continue;
 				}
 
 				freeReplyObject(reply);
