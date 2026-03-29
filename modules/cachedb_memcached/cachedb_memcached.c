@@ -400,6 +400,11 @@ memcached_con* memcached_new_connection(struct cachedb_id *id)
 	con->ref = 1;
 
 	con->memc = memcached_create(NULL);
+	if (!con->memc) {
+		LM_ERR("failed to create memcached handle\n");
+		pkg_free(con);
+		return 0;
+	}
 
 	memset(host_buff,0,MAX_HOSTPORT_SIZE);
 
