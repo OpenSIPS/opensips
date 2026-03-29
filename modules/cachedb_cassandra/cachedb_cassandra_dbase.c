@@ -145,6 +145,9 @@ int cassandra_new_connection(cassandra_con *con, char *host, int port)
 		LM_ERR("Failed to create Cassandra Cluster object\n");
 		return -1;
 	}
+	if (username && password) {
+	  cass_cluster_set_credentials(con->cluster, username, password);
+	}
 
 #if CASS_VERSION_MAJOR >= 2 && CASS_VERSION_MINOR >= 15
 	/* since version 2.15, DSE support is available in the standard driver
