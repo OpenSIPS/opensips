@@ -96,7 +96,8 @@
 		requests.
 		</para>
 		<para>
-		<emphasis>The default value is "*" </emphasis> (bind to all IPv6 and IPv4 interfaces).
+		<emphasis>The default value is "127.0.0.1" </emphasis> (binds to loopback only).
+		Use "*" to bind to all IPv6 and IPv4 interfaces.
 		</para>
 		<example>
 		<title>Set <varname>ip</varname> parameter</title>
@@ -270,6 +271,71 @@ modparam("httpd", "tls_key_file", "/etc/opensips/tls/server.key")
 		<programlisting format="linespecific">
 ...
 modparam("httpd", "tls_ciphers", "SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_auth_realm" xreflabel="auth_realm">
+		<title><varname>auth_realm</varname> (string)</title>
+		<para>
+		The realm string to be used for HTTP Basic Authentication
+		challenges.  Only takes effect when both
+		<varname>auth_username</varname> and
+		<varname>auth_password</varname> are set.
+		</para>
+		<para>
+		<emphasis> The default value is "OpenSIPS MI".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>auth_realm</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "auth_realm", "OpenSIPS Management")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_auth_username" xreflabel="auth_username">
+		<title><varname>auth_username</varname> (string)</title>
+		<para>
+		The username for HTTP Basic Authentication.  When set together
+		with <varname>auth_password</varname>, all HTTP requests must
+		present valid credentials.  Requests without credentials or
+		with incorrect credentials receive a 401 Unauthorized response.
+		</para>
+		<para>
+		<emphasis> The default value is "" (authentication disabled).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>auth_username</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "auth_username", "admin")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_auth_password" xreflabel="auth_password">
+		<title><varname>auth_password</varname> (string)</title>
+		<para>
+		The password for HTTP Basic Authentication.  Must be set
+		together with <varname>auth_username</varname>.
+		</para>
+		<warning><para>
+		When using HTTP Basic Authentication, it is strongly
+		recommended to also enable TLS via
+		<varname>tls_cert_file</varname> and
+		<varname>tls_key_file</varname> to prevent credentials
+		from being transmitted in plaintext.
+		</para></warning>
+		<para>
+		<emphasis> The default value is "" (authentication disabled).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>auth_password</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "auth_password", "secretpass")
 ...
 </programlisting>
 		</example>

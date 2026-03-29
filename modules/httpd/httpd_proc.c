@@ -59,6 +59,9 @@ extern int post_buf_size;
 extern str tls_cert_file;
 extern str tls_key_file;
 extern str tls_ciphers;
+extern str auth_realm;
+extern str auth_username;
+extern str auth_password;
 extern struct httpd_cb *httpd_cb_list;
 static union sockaddr_union httpd_server_info;
 
@@ -71,6 +74,8 @@ static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
 static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 "Unsupported HTTP request!</body></html>");
+static const str MI_HTTP_UNAUTH = str_init("<html><body>"
+"Unauthorized</body></html>");
 
 static char * load_file(char * );
 
@@ -464,6 +469,47 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 
 	pr = *con_cls;
 	if(pr == NULL){
+		/* first call for this request -- check auth before allocating */
+		if (auth_username.s) {
+			char *user = NULL;
+			char *pass = NULL;
+
+			user = MHD_basic_auth_get_username_password(connection,
+				&pass);
+			if (!user || !pass ||
+					strlen(user) != auth_username.len ||
+					strlen(pass) != auth_password.len ||
+					memcmp(user, auth_username.s,
+						auth_username.len) != 0 ||
+					memcmp(pass, auth_password.s,
+						auth_password.len) != 0) {
+				LM_WARN("rejected unauthenticated HTTP request "
+					"for %s\n", url);
+				response = MHD_create_response_from_buffer(
+					MI_HTTP_UNAUTH.len,
+					(void *)MI_HTTP_UNAUTH.s,
+					MHD_RESPMEM_PERSISTENT);
+				ret = MHD_queue_basic_auth_fail_response(
+					connection, auth_realm.s, response);
+				MHD_destroy_response(response);
+#if MHD_VERSION >= 0x00093800
+				if (user) MHD_free(user);
+				if (pass) MHD_free(pass);
+#else
+				if (user) free(user);
+				if (pass) free(pass);
+#endif
+				return ret;
+			}
+#if MHD_VERSION >= 0x00093800
+			MHD_free(user);
+			MHD_free(pass);
+#else
+			free(user);
+			free(pass);
+#endif
+		}
+
 		pr = pkg_malloc(sizeof(struct post_request));
 		if(pr==NULL) {
 			LM_ERR("oom while allocating post_request structure\n");
