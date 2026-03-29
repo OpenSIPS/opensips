@@ -31,6 +31,9 @@
 #define MOVED_PREFIX "MOVED "
 #define MOVED_PREFIX_LEN (sizeof(MOVED_PREFIX) - 1)
 
+#define ASK_PREFIX "ASK "
+#define ASK_PREFIX_LEN (sizeof(ASK_PREFIX) - 1)
+
 #define ERR_INVALID_REPLY -1
 #define ERR_INVALID_SLOT -2
 #define ERR_INVALID_PORT -3
@@ -41,7 +44,16 @@ int build_cluster_nodes(redis_con *con,char *info,int size);
 cluster_node *get_redis_connection(redis_con *con,str *key);
 cluster_node *get_redis_connection_by_endpoint(redis_con *con, redis_moved *redis_info);
 void destroy_cluster_nodes(redis_con *con);
-int parse_moved_reply(redisReply *reply, redis_moved *out);
+int parse_redirect_reply(redisReply *reply, redis_moved *out,
+		const char *prefix, size_t prefix_len);
+
+static inline int parse_moved_reply(redisReply *reply, redis_moved *out) {
+	return parse_redirect_reply(reply, out, MOVED_PREFIX, MOVED_PREFIX_LEN);
+}
+
+static inline int parse_ask_reply(redisReply *reply, redis_moved *out) {
+	return parse_redirect_reply(reply, out, ASK_PREFIX, ASK_PREFIX_LEN);
+}
 
 static inline int match_prefix(const char *buf, size_t len, const char *prefix, size_t prefix_len) {
 	size_t i;
