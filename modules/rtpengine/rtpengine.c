@@ -4768,6 +4768,10 @@ static void rtpengine_raise_event(int sender, void *p)
 				break;
 			default:
 				jstring.s = cJSON_PrintUnformatted(param);
+				if (!jstring.s) {
+					LM_ERR("cJSON_PrintUnformatted failed\n");
+					break;
+				}
 				jstring.len = strlen(jstring.s);
 				err = evi_param_add_str(eparams, &name, &jstring);
 				cJSON_PurgeString(jstring.s);
