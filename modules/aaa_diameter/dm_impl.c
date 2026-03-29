@@ -576,7 +576,12 @@ static int dm_receive_req(struct msg **_req, struct avp * avp, struct session * 
 		}
 	}
 
-	init_str(&avp_arr, cJSON_PrintUnformatted(avps));
+	avp_arr.s = cJSON_PrintUnformatted(avps);
+	if (!avp_arr.s) {
+		LM_ERR("cJSON_PrintUnformatted failed\n");
+		goto error;
+	}
+	avp_arr.len = strlen(avp_arr.s);
 
 	/* keep the request for a while in order to be able to generate the answer */
 	if (!dm_server_autoreply_error)
