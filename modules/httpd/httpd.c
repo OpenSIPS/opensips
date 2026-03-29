@@ -57,7 +57,7 @@ static mi_response_t *mi_list_root_path(const mi_params_t *params,
 						struct mi_handler *async_hdl);
 
 int port = 8888;
-str ip = {NULL, 0};
+str ip = {"127.0.0.1", 9};
 str buffer = {NULL, 0};
 unsigned int hd_conn_timeout_s = 30;
 str tls_cert_file = {NULL, 0};
@@ -65,6 +65,9 @@ str tls_key_file = {NULL, 0};
 str tls_ciphers = {"SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2", 45};
 int post_buf_size = DEFAULT_POST_BUF_SIZE;
 int receive_buf_size = DEFAULT_POST_BUF_SIZE;
+str auth_realm = {"OpenSIPS MI", 11};
+str auth_username = {NULL, 0};
+str auth_password = {NULL, 0};
 struct httpd_cb *httpd_cb_list = NULL;
 
 char *httpd_receive_buff = NULL;
@@ -88,6 +91,9 @@ static const param_export_t params[] = {
 	{"tls_cert_file", STR_PARAM, &tls_cert_file.s},
 	{"tls_key_file", STR_PARAM,  &tls_key_file.s},
 	{"tls_ciphers", STR_PARAM, &tls_ciphers.s},
+	{"auth_realm", STR_PARAM, &auth_realm.s},
+	{"auth_username", STR_PARAM, &auth_username.s},
+	{"auth_password", STR_PARAM, &auth_password.s},
 	{NULL, 0, NULL}
 };
 
@@ -178,6 +184,23 @@ static int mod_init(void)
 			LM_ERR("invalid IP [%.*s]\n", ip.len, ip.s);
 			return -1;
 		}
+	}
+
+	if (auth_realm.s)
+		auth_realm.len = strlen(auth_realm.s);
+	if (auth_username.s)
+		auth_username.len = strlen(auth_username.s);
+	if (auth_password.s)
+		auth_password.len = strlen(auth_password.s);
+
+	if ((auth_username.s && !auth_password.s) ||
+			(!auth_username.s && auth_password.s)) {
+		LM_ERR("both auth_username and auth_password must be set\n");
+		return -1;
+	}
+	if (auth_username.s && auth_username.len == 0) {
+		LM_ERR("auth_username cannot be empty\n");
+		return -1;
 	}
 
 	if (post_buf_size < MIN_POST_BUF_SIZE) {
