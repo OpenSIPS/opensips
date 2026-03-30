@@ -188,6 +188,8 @@ void destroy_cluster_nodes(redis_con *con)
 		if (use_tls && node->tls_dom)
 			tls_api.release_domain(node->tls_dom);
 		pkg_free(node->ip);
+		if (node->unix_socket_path)
+			pkg_free(node->unix_socket_path);
 		pkg_free(node);
 		node = next;
 	}
@@ -316,7 +318,7 @@ int parse_cluster_shards(redis_con *con, redisReply *reply)
 			}
 		}
 
-		if (!master_ip || master_port < 1 || master_port > 65535)
+		if (!master_ip || master_port <= 0 || master_port > 65535)
 			continue;
 
 		node = find_or_create_node(con, master_ip, strlen(master_ip),
@@ -359,7 +361,6 @@ int parse_cluster_slots(redis_con *con, redisReply *reply)
 
 		if (!entry->element[0] || !entry->element[1] || !entry->element[2])
 			continue;
-
 		start = entry->element[0]->integer;
 		end = entry->element[1]->integer;
 		master = entry->element[2];
@@ -367,18 +368,15 @@ int parse_cluster_slots(redis_con *con, redisReply *reply)
 		if (!master || master->type != REDIS_REPLY_ARRAY || master->elements < 2)
 			continue;
 
-		if (!master->element[0] || !master->element[1])
-			continue;
-
 		ip = master->element[0]->str;
 		port = master->element[1]->integer;
-
-		if (port < 1 || port > 65535)
-			continue;
 
 		/* empty IP means "use the queried node's address" */
 		if (!ip || strlen(ip) == 0)
 			ip = con->host;
+
+		if (port < 1 || port > 65535)
+			continue;
 
 		node = find_or_create_node(con, ip, strlen(ip), (unsigned short)port);
 		if (!node)
@@ -503,6 +501,8 @@ int refresh_cluster_topology(redis_con *con)
 			if (use_tls && node->tls_dom)
 				tls_api.release_domain(node->tls_dom);
 			pkg_free(node->ip);
+			if (node->unix_socket_path)
+				pkg_free(node->unix_socket_path);
 			pkg_free(node);
 		} else {
 			prev = node;
@@ -565,7 +565,6 @@ static int parse_redirect_reply(redisReply *reply, redis_moved *out,
 	while (p < end && *p >= '0' && *p <= '9') {
 		slot = slot * 10 + (*p - '0');
 		p++;
-		if (slot > 16383) return ERR_INVALID_SLOT;
 	}
 	if (slot == 0 && (p == reply->str + prefix_len || *(p - 1) < '0' || *(p - 1) > '9'))
 		return ERR_INVALID_SLOT;
@@ -599,8 +598,9 @@ static int parse_redirect_reply(redisReply *reply, redis_moved *out,
 			port = 0;
 			while (p < end && *p >= '0' && *p <= '9') {
 				port = port * 10 + (*p - '0');
+				if (port > 65535)
+					return ERR_INVALID_PORT;
 				p++;
-				if (port > 65535) return ERR_INVALID_PORT;
 			}
 			if (port < 0 || port > 65535 || port_start == p)
 				return ERR_INVALID_PORT;

@@ -46,6 +46,8 @@ static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
+int lazy_connect = 0;
+
 str cache_mod_name = str_init("redis");
 struct cachedb_url *redis_script_urls = NULL;
 
@@ -58,6 +60,7 @@ static const param_export_t params[]={
 	{ "connect_timeout",             INT_PARAM,                &redis_connnection_tout},
 	{ "query_timeout",               INT_PARAM,                &redis_query_tout      },
 	{ "shutdown_on_error",           INT_PARAM,                &shutdown_on_error     },
+	{ "lazy_connect",                INT_PARAM,                &lazy_connect          },
 	{ "cachedb_url",                 STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
 	{ "use_tls",                     INT_PARAM,                &use_tls},
 	{ "ftsearch_index_name",         STR_PARAM,                &fts_index_name.s},

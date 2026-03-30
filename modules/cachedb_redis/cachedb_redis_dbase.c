@@ -110,6 +110,48 @@ redisContext *redis_get_ctx(char *ip, int port)
 	return ctx;
 }
 
+redisContext *redis_get_ctx_unix(const char *socket_path)
+{
+	struct timeval tv;
+	static char warned = 0;
+	redisContext *ctx;
+
+	if (!socket_path || !*socket_path) {
+		LM_ERR("empty Unix socket path\n");
+		return NULL;
+	}
+
+	if (!redis_connnection_tout) {
+		if (!warned++)
+			LM_WARN("Connecting to redis without timeout might block your server\n");
+		ctx = redisConnectUnix(socket_path);
+	} else {
+		tv.tv_sec = redis_connnection_tout / 1000;
+		tv.tv_usec = (redis_connnection_tout * 1000) % 1000000;
+		ctx = redisConnectUnixWithTimeout(socket_path, tv);
+	}
+	if (ctx && ctx->err != REDIS_OK) {
+		LM_ERR("failed to open redis Unix socket connection %s - %s\n",
+				socket_path, ctx->errstr);
+		redisFree(ctx);
+		return NULL;
+	}
+
+	if (redis_query_tout) {
+		tv.tv_sec = redis_query_tout / 1000;
+		tv.tv_usec = (redis_query_tout * 1000) % 1000000;
+		if (redisSetTimeout(ctx, tv) != REDIS_OK) {
+			LM_ERR("Cannot set query timeout to %dms\n", redis_query_tout);
+			redisFree(ctx);
+			return NULL;
+		}
+	}
+
+	/* no TCP keepalive for Unix sockets — not applicable to local IPC */
+
+	return ctx;
+}
+
 #ifdef HAVE_REDIS_SSL
 static void tls_print_errstack(void)
 {
@@ -177,12 +219,16 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 {
 	redisReply *rpl;
 
-	node->context = redis_get_ctx(node->ip,node->port);
+	if (node->unix_socket_path) {
+		node->context = redis_get_ctx_unix(node->unix_socket_path);
+	} else {
+		node->context = redis_get_ctx(node->ip,node->port);
+	}
 	if (!node->context)
 		return -1;
 
 #ifdef HAVE_REDIS_SSL
-	if (use_tls && con->id->extra_options &&
+	if (use_tls && !node->unix_socket_path && con->id->extra_options &&
 		redis_init_ssl(con->id->extra_options, node->context,
 			&node->tls_dom) < 0) {
 		redisFree(node->context);
@@ -254,6 +300,94 @@ int redis_connect(redis_con *con)
 	redisContext *ctx;
 	redisReply *rpl;
 	struct tls_domain *tls_dom = NULL;
+
+	/* Unix socket: skip cluster probe, force single instance */
+	if (con->flags & REDIS_UNIX_SOCKET) {
+		str src, dst;
+
+		ctx = redis_get_ctx_unix(con->unix_socket_path);
+		if (!ctx)
+			return -1;
+
+		/* auth using password, if any */
+		if (con->id->username && *con->id->username && con->id->password) {
+			rpl = redisCommand(ctx,"AUTH %s %s",
+				con->id->username, con->id->password);
+		} else if (con->id->password) {
+			rpl = redisCommand(ctx,"AUTH %s",con->id->password);
+		} else {
+			rpl = NULL;
+		}
+		if (rpl != NULL) {
+			if (rpl->type == REDIS_REPLY_ERROR) {
+				LM_ERR("failed to auth to redis via Unix socket - %.*s\n",
+					(unsigned)rpl->len, rpl->str);
+				freeReplyObject(rpl);
+				redisFree(ctx);
+				return -1;
+			}
+			LM_DBG("AUTH [password] -  %.*s\n",(unsigned)rpl->len,rpl->str);
+			freeReplyObject(rpl);
+		}
+
+		rpl = redisCommand(ctx, "JSON.DEBUG help");
+		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
+			LM_INFO("no JSON support detected on Redis (Unix socket %s)\n",
+			        con->unix_socket_path);
+		} else {
+			LM_INFO("detected JSON support in Redis (Unix socket %s)\n",
+			        con->unix_socket_path);
+			con->flags |= REDIS_JSON_SUPPORT;
+		}
+		freeReplyObject(rpl);
+
+		redisFree(ctx);
+
+		/* force single instance — no clustering over Unix sockets */
+		con->flags |= REDIS_SINGLE_INSTANCE;
+		con->nodes = pkg_malloc(sizeof(cluster_node));
+		if (con->nodes == NULL) {
+			LM_ERR("no more pkg\n");
+			return -1;
+		}
+		memset(con->nodes, 0, sizeof(cluster_node));
+
+		src.s = con->unix_socket_path;
+		src.len = strlen(con->unix_socket_path);
+		if (pkg_nt_str_dup(&dst, &src) != 0) {
+			LM_ERR("no more pkg\n");
+			pkg_free(con->nodes);
+			con->nodes = NULL;
+			return -1;
+		}
+		con->nodes->unix_socket_path = dst.s;
+
+		/* set ip to "unix" for display purposes */
+		src.s = "unix";
+		src.len = 4;
+		if (pkg_nt_str_dup(&dst, &src) != 0) {
+			LM_ERR("no more pkg\n");
+			pkg_free(con->nodes->unix_socket_path);
+			pkg_free(con->nodes);
+			con->nodes = NULL;
+			return -1;
+		}
+		con->nodes->ip = dst.s;
+		con->nodes->port = 0;
+
+		LM_DBG("single instance mode via Unix socket %s\n",
+		        con->unix_socket_path);
+
+		con->flags |= REDIS_INIT_NODES;
+
+		/* SELECT database is handled inside redis_connect_node() */
+		if (redis_connect_node(con, con->nodes) < 0) {
+			LM_ERR("failed to connect to Unix socket instance\n");
+			return -1;
+		}
+
+		return 0;
+	}
 
 	/* connect to redis DB */
 	ctx = redis_get_ctx(con->host,con->port);
@@ -362,6 +496,8 @@ void redis_free_conns(redis_con *con)
 		aux = con;
 		con = con->next_con;
 		pkg_free(aux->host);
+		if (aux->unix_socket_path)
+			pkg_free(aux->unix_socket_path);
 		pkg_free(aux);
 	}
 }
@@ -413,15 +549,124 @@ int redis_get_hostport(const str *hostport, char **host, unsigned short *port)
 	return 0;
 }
 
+/* parse "socket=/path/to/redis.sock" from extra_options string.
+ * Handles both standalone ("socket=/path") and combined with other
+ * options separated by '&' ("socket=/path&tls_domain=dom").
+ * Returns a pkg-allocated copy of the socket path, or NULL. */
+static char *redis_parse_unix_socket(const char *extra_options)
+{
+	const char *p, *val, *end;
+	char *path;
+	int len;
+
+	if (!extra_options)
+		return NULL;
+
+	p = extra_options;
+	while (*p) {
+		if (strncmp(p, CACHEDB_UNIX_SOCKET_PARAM,
+				CACHEDB_UNIX_SOCKET_PARAM_LEN) == 0) {
+			val = p + CACHEDB_UNIX_SOCKET_PARAM_LEN;
+			end = strchr(val, '&');
+			len = end ? (end - val) : strlen(val);
+			if (len <= 0) {
+				LM_ERR("empty Unix socket path in URL\n");
+				return NULL;
+			}
+			path = pkg_malloc(len + 1);
+			if (!path) {
+				LM_ERR("no more pkg\n");
+				return NULL;
+			}
+			memcpy(path, val, len);
+			path[len] = '\0';
+			return path;
+		}
+		/* skip to next parameter */
+		p = strchr(p, '&');
+		if (!p)
+			break;
+		p++;
+	}
+
+	return NULL;
+}
+
 redis_con* redis_new_connection(struct cachedb_id* id)
 {
 	redis_con *con, *cons = NULL;
 	csv_record *r, *it;
 	unsigned int multi_hosts;
+	char *unix_sock = NULL;
 
 	if (id == NULL) {
 		LM_ERR("null cachedb_id\n");
 		return NULL;
+	}
+
+	/* check for Unix socket option in URL */
+	if (id->extra_options)
+		unix_sock = redis_parse_unix_socket(id->extra_options);
+
+	if (unix_sock) {
+		/* validate constraints */
+		if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
+			LM_ERR("Unix socket cannot be combined with multiple hosts "
+				"(failover not supported for Unix sockets)\n");
+			pkg_free(unix_sock);
+			return NULL;
+		}
+
+		if (use_tls)
+			LM_WARN("TLS is not applicable to Unix socket connections, "
+				"ignoring use_tls for socket %s\n", unix_sock);
+
+		con = pkg_malloc(sizeof(redis_con));
+		if (con == NULL) {
+			LM_ERR("no more pkg\n");
+			pkg_free(unix_sock);
+			return NULL;
+		}
+		memset(con, 0, sizeof(redis_con));
+
+		con->id = id;
+		con->ref = 1;
+		con->unix_socket_path = unix_sock;
+		con->flags |= REDIS_UNIX_SOCKET;
+
+		/* set host from URL for display purposes */
+		{
+			str src, dst;
+			src.s = id->host ? id->host : "localhost";
+			src.len = strlen(src.s);
+			if (pkg_nt_str_dup(&dst, &src) != 0) {
+				LM_ERR("no more pkg\n");
+				pkg_free(unix_sock);
+				pkg_free(con);
+				return NULL;
+			}
+			con->host = dst.s;
+		}
+		con->port = 0;
+
+		if (lazy_connect) {
+			LM_DBG("lazy_connect enabled, deferring Redis connection "
+				"for Unix socket %s\n", unix_sock);
+		} else if (redis_connect(con) < 0) {
+			LM_ERR("failed to connect to Redis via Unix socket %s\n",
+				unix_sock);
+			if (shutdown_on_error) {
+				pkg_free(con->host);
+				pkg_free(con->unix_socket_path);
+				pkg_free(con);
+				return NULL;
+			}
+		}
+
+		/* single-element circular list */
+		con->next_con = con;
+		con->current = con;
+		return con;
 	}
 
 	if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS)
@@ -471,7 +716,7 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 		con->flags |= multi_hosts; /* if the case */
 
 		/* if doing failover Redises, only connect the 1st one for now! */
-		if (!cons && redis_connect(con) < 0) {
+		if (!cons && !lazy_connect && redis_connect(con) < 0) {
 			LM_ERR("failed to connect to DB\n");
 			if (shutdown_on_error) {
 				pkg_free(con->host);
@@ -479,6 +724,10 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 				goto out_err;
 			}
 		}
+
+		if (!cons && lazy_connect)
+			LM_DBG("lazy_connect enabled, deferring Redis connection "
+				"for %s:%d\n", con->host, con->port);
 
 		_add_last(con, cons, next_con);
 	}
@@ -516,6 +765,8 @@ void redis_free_connection(cachedb_pool_con *cpc)
 		con = con->next_con;
 		destroy_cluster_nodes(aux);
 		pkg_free(aux->host);
+		if (aux->unix_socket_path)
+			pkg_free(aux->unix_socket_path);
 		pkg_free(aux);
 	}
 }
@@ -599,56 +850,54 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 					node->context->errstr);
 
 				if (match_prefix(reply->str, reply->len, MOVED_PREFIX, MOVED_PREFIX_LEN)) {
-    					// It's a MOVED response
-					redis_moved moved_info_s;
-					redis_moved *moved_info = &moved_info_s;
-						if (parse_moved_reply(reply, moved_info) < 0) {
-							LM_ERR("cachedb_redis: Unable to parse MOVED reply\n");
-								freeReplyObject(reply);
-							goto try_next_con;
-						}
+					// It's a MOVED response
+					redis_moved moved_info;
 
-						LM_DBG("cachedb_redis: MOVED slot: [%d] endpoint: [%.*s] port: [%d]\n", moved_info->slot, moved_info->endpoint.len, moved_info->endpoint.s, moved_info->port);
-						node->moved++;
-						update_stat(redis_stat_moved, 1);
-						node = get_redis_connection_by_endpoint(con, moved_info);
-
-						if (node == NULL) {
-							LM_DBG("cachedb_redis: MOVED endpoint unknown, creating new node %.*s:%d\n",
-								moved_info->endpoint.len, moved_info->endpoint.s, moved_info->port);
-							node = find_or_create_node(con,
-								moved_info->endpoint.s, moved_info->endpoint.len,
-								(unsigned short)moved_info->port);
-						}
-
+					if (parse_moved_reply(reply, &moved_info) < 0) {
+						LM_ERR("cachedb_redis: Unable to parse MOVED reply\n");
 						freeReplyObject(reply);
-						reply = NULL;
+						goto try_next_con;
+					}
 
-						if (node == NULL) {
-							LM_ERR("Unable to locate or create connection by endpoint\n");
-							last_err = -10;
-							goto try_next_con;
-						}
+					LM_DBG("cachedb_redis: MOVED slot: [%d] endpoint: [%.*s] port: [%d]\n", moved_info.slot, moved_info.endpoint.len, moved_info.endpoint.s, moved_info.port);
+					node->moved++;
+					update_stat(redis_stat_moved, 1);
+					node = get_redis_connection_by_endpoint(con, &moved_info);
 
-						if (node->context == NULL) {
-							if (redis_reconnect_node(con,node) < 0) {
-							  LM_ERR("Unable to reconnect to node %p endpoint: %s:%d\n", node, node->ip, node->port);
-								last_err = -1;
-								goto try_next_con;
-							}
-						}
+					if (node == NULL) {
+						LM_DBG("cachedb_redis: MOVED endpoint unknown, creating new node %.*s:%d\n",
+							moved_info.endpoint.len, moved_info.endpoint.s, moved_info.port);
+						node = find_or_create_node(con,
+							moved_info.endpoint.s, moved_info.endpoint.len,
+							(unsigned short)moved_info.port);
+					}
 
-						/* Refresh topology so future queries go direct */
-						refresh_cluster_topology(con);
-						if (--max_redirects <= 0) {
-							LM_ERR("max redirects exceeded\n");
-							freeReplyObject(reply);
-							reply = NULL;
+					freeReplyObject(reply);
+					reply = NULL;
+
+					if (node == NULL) {
+						LM_ERR("Unable to locate or create connection by endpoint\n");
+						last_err = -10;
+						goto try_next_con;
+					}
+
+					if (node->context == NULL) {
+						if (redis_reconnect_node(con,node) < 0) {
+							LM_ERR("Unable to reconnect to node %p endpoint: %s:%d\n", node, node->ip, node->port);
 							last_err = -1;
 							goto try_next_con;
 						}
-						i = QUERY_ATTEMPTS; // New node that is the target being MOVED to, should have the attempts reset
-						continue;
+					}
+
+					/* Refresh topology so future queries go direct */
+					refresh_cluster_topology(con);
+					if (--max_redirects <= 0) {
+						LM_ERR("too many MOVED redirects, giving up\n");
+						last_err = -10;
+						goto try_next_con;
+					}
+					i = QUERY_ATTEMPTS;
+					continue;
 				}
 
 				node->errors++;
@@ -990,7 +1239,6 @@ static unsigned int redis_calc_escaped_len_json(str *s)
 	return esc_len;
 }
 
-
 void redis_unescape_string(char *inout)
 {
 	char *p = inout, *i, *end;
@@ -1089,7 +1337,6 @@ char *redis_mk_fts_filter(const cdb_filter_t *f)
 	LM_DBG("FT.SEARCH escaped filter: '%s'\n", ret);
 	return ret;
 }
-
 
 int redis_query(cachedb_con *_con, const cdb_filter_t *filter, cdb_res_t *res)
 {
@@ -1380,7 +1627,6 @@ error:
 	return NULL;
 }
 
-
 int redis_update_subkeys(cachedb_con *_con, const cdb_filter_t *row_filter,
 							const cdb_dict_t *pairs)
 {
@@ -1651,7 +1897,6 @@ error2:
 	return -1;
 }
 
-
 int redis_update(cachedb_con *_con, const cdb_filter_t *row_filter,
                      const cdb_dict_t *pairs)
 {
@@ -1859,7 +2104,6 @@ int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
 							}
 						}
 
-
 						if (reply->element[i]->type == REDIS_REPLY_INTEGER) {
 							(*ret)[current_size][0].val.n = reply->element[i]->integer;
 							(*ret)[current_size][0].type = CDB_INT32;
@@ -2011,7 +2255,6 @@ int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int e
 		LM_ERR("null parameter\n");
 		return -1;
 	}
-
 
 	if (redis_raw_query_send(connection,&reply,rpl,expected_kv_no,reply_no,attr) < 0) {
 		LM_ERR("Failed to send query to server \n");

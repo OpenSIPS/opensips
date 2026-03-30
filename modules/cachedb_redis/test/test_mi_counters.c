@@ -60,6 +60,7 @@ typedef struct cluster_nodes {
     unsigned short port;
     unsigned short start_slot;
     unsigned short end_slot;
+    char *unix_socket_path;
     redisContext *context;
     struct tls_domain *tls_dom;
     uint8_t seen;
@@ -67,6 +68,8 @@ typedef struct cluster_nodes {
     unsigned long queries;
     unsigned long errors;
     unsigned long moved;
+    unsigned long ask;
+    time_t last_activity;
     struct cluster_nodes *next;
 } cluster_node;
 
@@ -76,6 +79,7 @@ enum redis_flag {
     REDIS_INIT_NODES       = 1 << 2,
     REDIS_JSON_SUPPORT     = 1 << 3,
     REDIS_MULTIPLE_HOSTS   = 1 << 4,
+    REDIS_UNIX_SOCKET      = 1 << 5,
 };
 
 enum cluster_cmd {
@@ -90,6 +94,7 @@ typedef struct _redis_con {
     struct cachedb_pool_con_t *next;
     char *host;
     unsigned short port;
+    char *unix_socket_path;
     enum redis_flag flags;
     cluster_node *nodes;
     char *json_keyspace;

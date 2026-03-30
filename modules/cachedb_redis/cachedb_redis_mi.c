@@ -64,12 +64,15 @@ static int mi_add_redis_con(mi_item_t *arr, redis_con *con)
 	if (!con_obj)
 		return -1;
 
+	if (!con->id->group_name || !con->id->initial_url)
+		return -1;
+
 	if (add_mi_string(con_obj, MI_SSTR("group"),
-			con->id->group_name ? con->id->group_name : "", con->id->group_name ? strlen(con->id->group_name) : 0) < 0)
+			con->id->group_name, strlen(con->id->group_name)) < 0)
 		return -1;
 
 	if (add_mi_string(con_obj, MI_SSTR("url"),
-			con->id->initial_url ? con->id->initial_url : "", con->id->initial_url ? strlen(con->id->initial_url) : 0) < 0)
+			con->id->initial_url, strlen(con->id->initial_url)) < 0)
 		return -1;
 
 	is_cluster = (con->flags & REDIS_CLUSTER_INSTANCE) ? 1 : 0;
@@ -81,6 +84,22 @@ static int mi_add_redis_con(mi_item_t *arr, redis_con *con)
 	} else {
 		if (add_mi_string(con_obj, MI_SSTR("mode"),
 				MI_SSTR("single")) < 0)
+			return -1;
+	}
+
+	if (con->flags & REDIS_UNIX_SOCKET) {
+		if (add_mi_string(con_obj, MI_SSTR("transport"),
+				MI_SSTR("unix")) < 0)
+			return -1;
+		if (con->unix_socket_path) {
+			if (add_mi_string(con_obj, MI_SSTR("socket_path"),
+					con->unix_socket_path,
+					strlen(con->unix_socket_path)) < 0)
+				return -1;
+		}
+	} else {
+		if (add_mi_string(con_obj, MI_SSTR("transport"),
+				MI_SSTR("tcp")) < 0)
 			return -1;
 	}
 
@@ -113,12 +132,19 @@ static int mi_add_redis_con(mi_item_t *arr, redis_con *con)
 		if (!node_obj)
 			return -1;
 
-		if (add_mi_string(node_obj, MI_SSTR("ip"),
-				node->ip, strlen(node->ip)) < 0)
-			return -1;
+		if (node->unix_socket_path) {
+			if (add_mi_string(node_obj, MI_SSTR("socket_path"),
+					node->unix_socket_path,
+					strlen(node->unix_socket_path)) < 0)
+				return -1;
+		} else {
+			if (add_mi_string(node_obj, MI_SSTR("ip"),
+					node->ip, strlen(node->ip)) < 0)
+				return -1;
 
-		if (add_mi_number(node_obj, MI_SSTR("port"), node->port) < 0)
-			return -1;
+			if (add_mi_number(node_obj, MI_SSTR("port"), node->port) < 0)
+				return -1;
+		}
 
 		if (node->context) {
 			if (add_mi_string(node_obj, MI_SSTR("status"),
@@ -186,7 +212,8 @@ static mi_response_t *mi_cluster_info_impl(const char *group, int group_len)
 	for (i = 0; i < size; i++) {
 		con = (redis_con *)cons[i];
 
-		if (group && ((!con->id->group_name || strlen(con->id->group_name) != group_len) ||
+		if (group && (!con->id->group_name ||
+				strlen(con->id->group_name) != group_len ||
 				memcmp(con->id->group_name, group, group_len) != 0))
 			continue;
 
@@ -243,7 +270,8 @@ static mi_response_t *mi_cluster_refresh_impl(const char *group, int group_len)
 	for (i = 0; i < size; i++) {
 		con = (redis_con *)cons[i];
 
-		if (group && ((!con->id->group_name || strlen(con->id->group_name) != group_len) ||
+		if (group && (!con->id->group_name ||
+				strlen(con->id->group_name) != group_len ||
 				memcmp(con->id->group_name, group, group_len) != 0))
 			continue;
 
@@ -254,8 +282,9 @@ static mi_response_t *mi_cluster_refresh_impl(const char *group, int group_len)
 			return 0;
 		}
 
-		if (add_mi_string(con_obj, MI_SSTR("group"),
-				con->id->group_name ? con->id->group_name : "", con->id->group_name ? strlen(con->id->group_name) : 0) < 0) {
+		if (!con->id->group_name ||
+				add_mi_string(con_obj, MI_SSTR("group"),
+				con->id->group_name, strlen(con->id->group_name)) < 0) {
 			pkg_free(cons);
 			free_mi_response(resp);
 			return 0;
@@ -339,7 +368,8 @@ static mi_response_t *mi_ping_nodes_impl(const char *group, int group_len)
 	for (i = 0; i < size; i++) {
 		con = (redis_con *)cons[i];
 
-		if (group && ((!con->id->group_name || strlen(con->id->group_name) != group_len) ||
+		if (group && (!con->id->group_name ||
+				strlen(con->id->group_name) != group_len ||
 				memcmp(con->id->group_name, group, group_len) != 0))
 			continue;
 
@@ -350,8 +380,9 @@ static mi_response_t *mi_ping_nodes_impl(const char *group, int group_len)
 			return 0;
 		}
 
-		if (add_mi_string(con_obj, MI_SSTR("group"),
-				con->id->group_name ? con->id->group_name : "", con->id->group_name ? strlen(con->id->group_name) : 0) < 0) {
+		if (!con->id->group_name ||
+				add_mi_string(con_obj, MI_SSTR("group"),
+				con->id->group_name, strlen(con->id->group_name)) < 0) {
 			pkg_free(cons);
 			free_mi_response(resp);
 			return 0;
@@ -372,17 +403,27 @@ static mi_response_t *mi_ping_nodes_impl(const char *group, int group_len)
 				return 0;
 			}
 
-			if (add_mi_string(node_obj, MI_SSTR("ip"),
-					node->ip, strlen(node->ip)) < 0) {
-				pkg_free(cons);
-				free_mi_response(resp);
-				return 0;
-			}
+			if (node->unix_socket_path) {
+				if (add_mi_string(node_obj, MI_SSTR("socket_path"),
+						node->unix_socket_path,
+						strlen(node->unix_socket_path)) < 0) {
+					pkg_free(cons);
+					free_mi_response(resp);
+					return 0;
+				}
+			} else {
+				if (add_mi_string(node_obj, MI_SSTR("ip"),
+						node->ip, strlen(node->ip)) < 0) {
+					pkg_free(cons);
+					free_mi_response(resp);
+					return 0;
+				}
 
-			if (add_mi_number(node_obj, MI_SSTR("port"), node->port) < 0) {
-				pkg_free(cons);
-				free_mi_response(resp);
-				return 0;
+				if (add_mi_number(node_obj, MI_SSTR("port"), node->port) < 0) {
+					pkg_free(cons);
+					free_mi_response(resp);
+					return 0;
+				}
 			}
 
 			if (!node->context) {
