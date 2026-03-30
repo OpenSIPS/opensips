@@ -229,6 +229,32 @@ static struct dlg_auto_prack_ctx *dlg_build_auto_prack_ctx(struct sip_msg *rpl)
 	return ctx;
 }
 
+/* Resolve the PRACK leg by matching the reply To-tag,
+ * use the current primary callee as a default. */
+static int dlg_get_prack_leg(struct dlg_cell *dlg, struct sip_msg *rpl, int dst_leg)
+{
+	str *tag;
+	int i;
+
+	if (!rpl)
+		return dst_leg;
+	if ((!rpl->to && parse_headers(rpl, HDR_TO_F, 0) < 0) || !rpl->to)
+		return dst_leg;
+
+	tag = &get_to(rpl)->tag_value;
+	if (!tag->len)
+		return dst_leg;
+
+	for (i = DLG_FIRST_CALLEE_LEG; i < dlg->legs_no[DLG_LEGS_USED]; i++) {
+		if (dlg->legs[i].tag.len != tag->len)
+			continue;
+		if (strncmp(dlg->legs[i].tag.s, tag->s, tag->len) == 0)
+			return i;
+	}
+
+	return dst_leg;
+}
+
 int free_tm_dlg(dlg_t *td)
 {
 	if(td)
@@ -1405,6 +1431,8 @@ int send_prack_indialog_request(struct dlg_cell *dlg, struct sip_msg *rpl,
 	context_p *new_ctx;
 	dlg_t *dialog_info = NULL;
 	int result;
+
+	dstleg = dlg_get_prack_leg(dlg, rpl, dstleg);
 
 	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, dstleg), dstleg, ct, hdrs,
 			&extra_headers)) {

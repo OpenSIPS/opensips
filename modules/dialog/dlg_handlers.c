@@ -700,8 +700,15 @@ routing_info:
 			if (str2int( &(get_cseq(rpl)->number), &cseq_no) < 0) {
 				LM_ERR("Failed to convert cseq to integer \n");
 			} else {
-				LM_DBG("last_gen_cseq = cseq_no [%d] for method id [%d]\n", cseq_no, get_cseq(rpl)->method_id);
-				dlg->legs[dlg->legs_no[DLG_LEG_200OK]].last_gen_cseq = cseq_no;
+				if (dlg->legs[dlg->legs_no[DLG_LEG_200OK]].last_gen_cseq < cseq_no) {
+					LM_DBG("updating last_gen_cseq to reply cseq [%d] for method id [%d]\n",
+						cseq_no, get_cseq(rpl)->method_id);
+					dlg->legs[dlg->legs_no[DLG_LEG_200OK]].last_gen_cseq = cseq_no;
+				} else {
+					LM_DBG("keeping higher last_gen_cseq [%d] over reply cseq [%d] for method id [%d]\n",
+						dlg->legs[dlg->legs_no[DLG_LEG_200OK]].last_gen_cseq,
+						cseq_no, get_cseq(rpl)->method_id);
+				}
 			}
 		}
 
@@ -724,6 +731,21 @@ routing_info:
 
 out:
 	dlg_unlock_dlg(dlg);
+}
+
+/* Manual PRACK may be generated from onreply_route before the dialog reply
+ * callback has materialized the current early-dialog leg. Push the reply into
+ * dialog state first, then return the matched/newly-created callee leg. */
+int dlg_ensure_reply_leg(struct dlg_cell *dlg, struct sip_msg *rpl)
+{
+	long leg_idx = -1;
+	str empty = {0, 0};
+
+	if (!dlg || !rpl || rpl == FAKED_REPLY)
+		return -1;
+
+	push_reply_in_dialog(NULL, rpl, NULL, dlg, &empty, &empty, &leg_idx);
+	return (int)leg_idx;
 }
 
 static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
@@ -2415,13 +2437,13 @@ after_unlock5:
 				LM_DBG("dlg_leg_get_cseq(dlg, [%d], req)\n", src_leg);
 				update_val = dlg_leg_get_cseq(dlg, src_leg, req);
 				if (update_val == 0) {
-					if (str2int(&dlg->legs[src_leg].inv_cseq, &update_val) == 0) {
+					if (dlg->legs[dst_leg].last_gen_cseq) {
+						LM_DBG("using last generated cseq [%d] for ACK on leg [%d]\n",
+							dlg->legs[dst_leg].last_gen_cseq, dst_leg);
+						update_val = dlg->legs[dst_leg].last_gen_cseq;
+					} else if (str2int(&dlg->legs[src_leg].inv_cseq, &update_val) == 0) {
 						LM_DBG("using INVITE cseq [%d] for ACK on leg [%d]\n",
 							update_val, src_leg);
-					} else if (dlg->legs[dst_leg].last_gen_cseq) {
-						LM_DBG("dlg->legs[%d].last_gen_cseq=[%d]\n",
-							dst_leg, dlg->legs[dst_leg].last_gen_cseq);
-						update_val = dlg->legs[dst_leg].last_gen_cseq;
 					} else {
 						update_val = 0;
 					}

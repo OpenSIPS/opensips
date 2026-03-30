@@ -143,6 +143,7 @@ int send_prack_indialog_request(struct dlg_cell *dlg, struct sip_msg *rpl,
 		void *param, indialog_release_f release);
 int dlg_prepare_prack_headers(struct sip_msg *msg, str *headers, str *out,
 		int enforce_onreply_route);
+int dlg_ensure_reply_leg(struct dlg_cell *dlg, struct sip_msg *rpl);
 
 void unreference_dialog(void *dialog);
 
