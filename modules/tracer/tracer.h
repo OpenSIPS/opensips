@@ -121,6 +121,7 @@ typedef struct tlist_dyn_elem {
 typedef struct trace_instance {
 	str trace_attrs;
 	str forced_correlation_id;
+	str advertised_ip;
 	int control_flags;
 	int trace_types;
 	int trace_flags;
