@@ -246,7 +246,7 @@ route{
 
 	ifelse(USE_DIALOG,`yes',`
 	# create dialog with timeout
-	if ( !create_dialog("B") ) {
+	if ( !create_dialog("bye-on-timeout") ) {
 		send_reply(500,"Internal Server Error");
 		exit;
 	}
