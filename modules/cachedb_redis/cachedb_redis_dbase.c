@@ -565,29 +565,24 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 					node->context->errstr);
 
 				if (match_prefix(reply->str, reply->len, MOVED_PREFIX, MOVED_PREFIX_LEN)) {
-    					// It's a MOVED response
-					redis_moved *moved_info = pkg_malloc(sizeof(redis_moved));
-						if (!moved_info) {
-						LM_ERR("cachedb_redis: Unable to allocate redis_moved struct, no more pkg memory\n");
-							freeReplyObject(reply);
-							reply = NULL;
-							goto try_next_con;
-					} else {
-							if (parse_moved_reply(reply, moved_info) < 0) {
-							LM_ERR("cachedb_redis: Unable to parse MOVED reply\n");
-							pkg_free(moved_info);
-							moved_info = NULL;
-								freeReplyObject(reply);
-							goto try_next_con;
-						}
+					/* MOVED response */
+					redis_moved moved_info_s;
+					redis_moved *moved_info = &moved_info_s;
 
-						LM_DBG("cachedb_redis: MOVED slot: [%d] endpoint: [%.*s] port: [%d]\n", moved_info->slot, moved_info->endpoint.len, moved_info->endpoint.s, moved_info->port);
-						node = get_redis_connection_by_endpoint(con, moved_info);
-
-						pkg_free(moved_info);
-						moved_info = NULL;
+					if (parse_moved_reply(reply, moved_info) < 0) {
+						LM_ERR("failed to parse MOVED reply\n");
 						freeReplyObject(reply);
 						reply = NULL;
+						goto try_next_con;
+					}
+
+					LM_DBG("MOVED slot=%d endpoint=%.*s:%d\n",
+						moved_info->slot, moved_info->endpoint.len,
+						moved_info->endpoint.s, moved_info->port);
+					node = get_redis_connection_by_endpoint(con, moved_info);
+
+					freeReplyObject(reply);
+					reply = NULL;
 
 						if (node == NULL) {
 							LM_ERR("Unable to locate connection by endpoint\n");
@@ -603,9 +598,8 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 							}
 						}
 
-						i = QUERY_ATTEMPTS; // New node that is the target being MOVED to, should have the attempts reset
+						i = QUERY_ATTEMPTS;
 						continue;
-					}
 				}
 
 				freeReplyObject(reply);
