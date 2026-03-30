@@ -39,12 +39,14 @@
 #include "../../cachedb/cachedb.h"
 
 #include "cachedb_redis_dbase.h"
+#include "cachedb_redis_mi.h"
+#include "../../statistics.h"
 
 static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
-static str cache_mod_name = str_init("redis");
+str cache_mod_name = str_init("redis");
 struct cachedb_url *redis_script_urls = NULL;
 
 int set_connection(unsigned int type, void *val)
@@ -62,6 +64,7 @@ static const param_export_t params[]={
 	{ "ftsearch_json_prefix",        STR_PARAM,                &fts_json_prefix.s},
 	{ "ftsearch_max_results",        INT_PARAM,                &fts_max_results},
 	{ "ftsearch_json_mset_expire",   INT_PARAM,                &fts_json_mset_expire},
+	{ "redis_keepalive",             INT_PARAM,                &redis_keepalive},
 	{0,0,0}
 };
 
@@ -92,6 +95,33 @@ static const dep_export_t deps = {
 	},
 };
 
+static const stat_export_t mod_stats[] = {
+	{"redis_queries",            0, &redis_stat_queries          },
+	{"redis_queries_failed",     0, &redis_stat_queries_failed   },
+	{"redis_moved",              0, &redis_stat_moved            },
+	{"redis_topology_refreshes", 0, &redis_stat_topology_refreshes},
+	{0, 0, 0}
+};
+
+static const mi_export_t mi_cmds[] = {
+	{ MI_REDIS_CLUSTER_INFO, 0, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_redis_cluster_info, {0}},
+		{mi_redis_cluster_info_1, {"group", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{ MI_REDIS_CLUSTER_REFRESH, 0, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_redis_cluster_refresh, {0}},
+		{mi_redis_cluster_refresh_1, {"group", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{ MI_REDIS_PING_NODES, 0, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_redis_ping_nodes, {0}},
+		{mi_redis_ping_nodes_1, {"group", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
 /** module exports */
 struct module_exports exports= {
 	"cachedb_redis",					/* module name */
@@ -103,8 +133,8 @@ struct module_exports exports= {
 	0,						/* exported functions */
 	0,						/* exported async functions */
 	params,						/* exported parameters */
-	0,							/* exported statistics */
-	0,							/* exported MI functions */
+	mod_stats,					/* exported statistics */
+	mi_cmds,					/* exported MI functions */
 	0,							/* exported pseudo-variables */
 	0,							/* exported transformations */
 	0,							/* extra processes */

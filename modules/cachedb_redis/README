@@ -8,26 +8,47 @@ cachedb_redis Module
         1.1. Overview
         1.2. Advantages
         1.3. Redis Stack Support
-        1.4. Limitations
-        1.5. Dependencies
+        1.4. Redis Cluster Support (Topology)
 
-              1.5.1. OpenSIPS Modules
-              1.5.2. External Libraries or Applications
+              1.4.1. Topology Discovery
+              1.4.2. Automatic Topology Refresh
+              1.4.3. MOVED Redirection
+              1.4.4. Hash Tags
 
-        1.6. Exported Parameters
+        1.5. Limitations
+        1.6. Dependencies
 
-              1.6.1. cachedb_url (string)
-              1.6.2. connect_timeout (integer)
-              1.6.3. query_timeout (integer)
-              1.6.4. shutdown_on_error (integer)
-              1.6.5. use_tls (integer)
-              1.6.6. ftsearch_index_name (string)
-              1.6.7. ftsearch_json_prefix (string)
-              1.6.8. ftsearch_max_results (integer)
-              1.6.9. ftsearch_json_mset_expire (integer)
+              1.6.1. OpenSIPS Modules
+              1.6.2. External Libraries or Applications
 
-        1.7. Exported Functions
-        1.8. Raw Query Syntax
+        1.7. Exported Parameters
+
+              1.7.1. cachedb_url (string)
+              1.7.2. connect_timeout (integer)
+              1.7.3. query_timeout (integer)
+              1.7.4. shutdown_on_error (integer)
+              1.7.5. use_tls (integer)
+              1.7.6. ftsearch_index_name (string)
+              1.7.7. ftsearch_json_prefix (string)
+              1.7.8. ftsearch_max_results (integer)
+              1.7.9. ftsearch_json_mset_expire (integer)
+              1.7.10. redis_keepalive (integer)
+
+        1.8. Exported Functions
+        1.9. Exported MI Functions
+
+              1.9.1. redis_cluster_info
+              1.9.2. redis_cluster_refresh
+              1.9.3. redis_ping_nodes
+
+        1.10. Exported Statistics
+
+              1.10.1. redis_queries
+              1.10.2. redis_queries_failed
+              1.10.3. redis_moved
+              1.10.4. redis_topology_refreshes
+
+        1.11. Raw Query Syntax
 
    2. Contributors
 
@@ -59,7 +80,8 @@ cachedb_redis Module
    1.8. Set the ftsearch_json_prefix parameter
    1.9. Set the ftsearch_max_results parameter
    1.10. Set the ftsearch_json_mset_expire parameter
-   1.11. Redis Raw Query Examples
+   1.11. Set the redis_keepalive parameter
+   1.12. Redis Raw Query Examples
 
 Chapter 1. Admin Guide
 
@@ -100,20 +122,82 @@ Chapter 1. Admin Guide
    OpenSIPS will auto-detect availability of the RedisJSON support
    when necessary and log the appropriate messages.
 
-1.4. Limitations
+1.4. Redis Cluster Support (Topology)
+
+   When connecting to a Redis Cluster, the module automatically
+   detects cluster mode and manages the full slot-to-node topology
+   at runtime. No extra configuration is needed beyond the standard
+   cachedb_url parameter.
+
+1.4.1. Topology Discovery
+
+   At startup, the module probes the Redis server using the
+   CLUSTER SHARDS command (available in Redis 7.0+). If the server
+   does not support this command, it falls back to CLUSTER SLOTS
+   (available in Redis 3.0+). If neither command succeeds, the
+   connection is treated as a single-instance (non-cluster)
+   connection.
+
+   The discovered topology is stored internally in an O(1) slot
+   lookup table (16384 slots), mapping each slot directly to its
+   owning master node.
+
+1.4.2. Automatic Topology Refresh
+
+   The module automatically refreshes the cluster topology at
+   runtime when any of the following events occur:
+     * A MOVED redirection is received from a cluster node
+       (indicating a permanent slot migration).
+     * A connection failure (NULL reply) occurs and the node cannot
+       be reconnected.
+     * A query targets a slot with no known owner, suggesting the
+       topology is stale.
+     * An operator triggers a manual refresh via the
+       redis_cluster_refresh MI command.
+
+   Automatic refreshes are rate-limited to at most once per second
+   to avoid excessive load on the cluster. The MI-triggered refresh
+   bypasses this rate limit.
+
+1.4.3. MOVED Redirection
+
+   The module transparently handles Redis Cluster MOVED
+   redirections:
+     * MOVED -- indicates a permanent slot migration. The module
+       updates its slot map, redirects the query to the new node,
+       and triggers a topology refresh so all future queries go
+       directly to the correct node.
+
+   If a redirection points to a node that is not yet known, the
+   module dynamically creates a new node entry, establishes a
+   connection, and retries the query.
+
+1.4.4. Hash Tags
+
+   The module supports Redis Cluster hash tags, which allow related
+   keys to be co-located on the same cluster node. If a key
+   contains a {...} substring, only the content between the first
+   { and the next } is used for hash slot calculation. For example,
+   the keys {user1000}.profile and {user1000}.settings will always
+   land on the same node, enabling multi-key operations.
+
+   If the braces are empty ({}) or there is no closing brace, the
+   entire key is hashed as usual.
+
+1.5. Limitations
 
      * keys (in key:value pairs) may not contain spaces or control
        characters
 
-1.5. Dependencies
+1.6. Dependencies
 
-1.5.1. OpenSIPS Modules
+1.6.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * If a use_tls is defined, the tls_mgm module will need to be
        loaded as well.
 
-1.5.2. External Libraries or Applications
+1.6.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
@@ -127,9 +211,9 @@ Chapter 1. Admin Guide
        If TLS connections are enabled via the use_tls modparam,
        hiredis needs to be compiled with TLS support.
 
-1.6. Exported Parameters
+1.7. Exported Parameters
 
-1.6.1. cachedb_url (string)
+1.7.1. cachedb_url (string)
 
    The URLs of the server groups that OpenSIPS will connect to in
    order to use, from script, the cache_store(), cache_fetch(),
@@ -157,7 +241,26 @@ cache_fetch("redis:cluster1", "key", $avp(10));
 cache_remove("redis:cluster1", "key");
 ...
 
-1.6.2. connect_timeout (integer)
+1.7.1.1. Authentication
+
+   The module supports three authentication modes based on the URL
+   format:
+
+   URL Format                                   AUTH Command            Use Case
+   redis:group://:password@host:port/           AUTH password           Classic Redis (< 6.0) with requirepass
+   redis:group://username:password@host:port/   AUTH username password  Redis 6+ ACL with per-user credentials
+   redis:group://host:port/                     (none)                  Non-authenticated Redis
+
+   Important: For classic password-only authentication, the URL must
+   include a colon before the password (":password@host"). Writing
+   "password@host" without the colon will place the credential in the
+   username field of the URL parser, and authentication will be
+   skipped.
+
+   When connecting to a Redis Cluster with authentication, all
+   discovered cluster nodes use the same credentials from the URL.
+
+1.7.2. connect_timeout (integer)
 
    This parameter specifies how many milliseconds OpenSIPS should
    wait for connecting to a Redis node.
@@ -170,20 +273,20 @@ cache_remove("redis:cluster1", "key");
 modparam("cachedb_redis", "connect_timeout",1000)
 ...
 
-1.6.3. query_timeout (integer)
+1.7.3. query_timeout (integer)
 
    This parameter specifies how many milliseconds OpenSIPS should
    wait for a query response from a Redis node.
 
    Default value is “5000 ms”.
 
-   Example 1.4. Set connect_timeout parameter
+   Example 1.4. Set query_timeout parameter
 ...
 # wait 1 seconds for Redis queries
 modparam("cachedb_redis", "query_timeout",1000)
 ...
 
-1.6.4. shutdown_on_error (integer)
+1.7.4. shutdown_on_error (integer)
 
    By setting this parameter to 1, OpenSIPS will abort startup if
    the initial connection to Redis is not possible. Runtime
@@ -198,7 +301,7 @@ modparam("cachedb_redis", "query_timeout",1000)
 modparam("cachedb_redis", "shutdown_on_error", 1)
 ...
 
-1.6.5. use_tls (integer)
+1.7.5. use_tls (integer)
 
    Setting this parameter will allow you to use TLS for Redis
    connections. In order to enable TLS for a specific connection,
@@ -232,7 +335,7 @@ modparam("cachedb_redis", "cachedb_url","redis://localhost:6379/?tls_dom
 ain=redis")
 ...
 
-1.6.6. ftsearch_index_name (string)
+1.7.6. ftsearch_index_name (string)
 
    Only relevant with RedisJSON and RediSearch server-side
    support.
@@ -247,8 +350,7 @@ ain=redis")
 
 modparam("cachedb_redis", "ftsearch_index_name", "ix::usrloc")
 
-
-1.6.7. ftsearch_json_prefix (string)
+1.7.7. ftsearch_json_prefix (string)
 
    Only relevant with RedisJSON and RediSearch server-side
    support.
@@ -262,8 +364,7 @@ modparam("cachedb_redis", "ftsearch_index_name", "ix::usrloc")
 
 modparam("cachedb_redis", "ftsearch_json_prefix", "userlocation:")
 
-
-1.6.8. ftsearch_max_results (integer)
+1.7.8. ftsearch_max_results (integer)
 
    Only relevant with RedisJSON and RediSearch server-side
    support.
@@ -277,8 +378,7 @@ modparam("cachedb_redis", "ftsearch_json_prefix", "userlocation:")
 
 modparam("cachedb_redis", "ftsearch_max_results", 100)
 
-
-1.6.9. ftsearch_json_mset_expire (integer)
+1.7.9. ftsearch_json_mset_expire (integer)
 
    Only relevant with RedisJSON and RediSearch server-side
    support.
@@ -293,13 +393,161 @@ modparam("cachedb_redis", "ftsearch_max_results", 100)
 
 modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 
+1.7.10. redis_keepalive (integer)
 
-1.7. Exported Functions
+   TCP keepalive interval in seconds for Redis connections. When set
+   to a positive value, the kernel sends TCP probes on idle
+   connections to detect dead peers (e.g. due to NAT/firewall idle
+   timeout or network partition). This allows the next query to fail
+   immediately instead of waiting for the full query timeout,
+   enabling faster recovery via the existing retry loop.
+
+   Set to 0 to disable TCP keepalive. Recommended to keep enabled
+   for production deployments to prevent silent connection death.
+
+   Default value is "10" (seconds).
+
+   Example 1.11. Set the redis_keepalive parameter
+...
+# set TCP keepalive interval to 15 seconds
+modparam("cachedb_redis", "redis_keepalive", 15)
+
+# disable TCP keepalive
+modparam("cachedb_redis", "redis_keepalive", 0)
+...
+
+1.8. Exported Functions
 
    The module does not export functions to be used in
    configuration script.
 
-1.8. Raw Query Syntax
+1.9. Exported MI Functions
+
+1.9.1. redis_cluster_info
+
+   Displays detailed information about all Redis connections
+   managed by the module, including cluster topology, per-node
+   connection status, slot assignments, and per-node query
+   counters.
+
+   Parameters:
+     * group (optional) - if specified, only connections belonging
+       to this group will be listed (e.g. "local" from a
+       "redis:local://..." URL). If omitted, all Redis connections
+       are listed.
+
+   The response is a JSON array of connection objects. Each
+   connection object includes:
+     * group - the connection group name
+     * url - the original cachedb_url
+     * mode - "cluster" or "single"
+     * cluster_command (cluster mode only) - "SHARDS" or "SLOTS",
+       depending on which Redis command is used for topology
+       discovery
+     * topology_refreshes - number of topology refreshes performed
+       on this connection
+     * last_topology_refresh - UNIX timestamp of the last topology
+       refresh
+     * nodes - array of cluster node objects, each containing: ip,
+       port, status ("connected"/"disconnected"), slots_assigned
+       (cluster mode only), queries, errors, moved,
+       last_activity (seconds since last successful query, -1 if
+       never queried)
+     * total_slots_mapped (cluster mode only) - total number of
+       slots with an assigned node (should be 16384 for a healthy
+       cluster)
+
+   MI FIFO Command Format:
+
+## list all Redis connections
+opensips-cli -x mi redis_cluster_info
+
+## list only the "local" group
+opensips-cli -x mi redis_cluster_info group=local
+
+1.9.2. redis_cluster_refresh
+
+   Forces an immediate topology refresh on Redis Cluster
+   connections. This bypasses the normal once-per-second rate
+   limit and queries the cluster for its current slot-to-node
+   mapping. Useful after manual cluster rebalancing or node
+   additions/removals.
+
+   For non-cluster (single instance) connections, the command
+   returns a "skipped (not cluster mode)" status.
+
+   Parameters:
+     * group (optional) - if specified, only the connection
+       belonging to this group will be refreshed. If omitted, all
+       cluster connections are refreshed.
+
+   The response is a JSON array of objects, one per connection,
+   each containing group and status ("ok", "error", or
+   "skipped (not cluster mode)").
+
+   MI FIFO Command Format:
+
+## refresh all cluster connections
+opensips-cli -x mi redis_cluster_refresh
+
+## refresh only the "local" group
+opensips-cli -x mi redis_cluster_refresh group=local
+
+1.9.3. redis_ping_nodes
+
+   Sends a PING command to each Redis node and reports per-node
+   reachability status with round-trip latency. Useful for on-demand
+   health checks without waiting for the next query.
+
+   Parameters:
+     * group (optional) - if specified, only nodes belonging to
+       this group will be pinged. If omitted, all Redis connections
+       are pinged.
+
+   The response is a JSON array of connection objects. Each
+   connection object includes:
+     * group - the connection group name
+     * nodes - array of node objects, each containing: ip, port,
+       status ("reachable", "unreachable", or "disconnected"),
+       latency_us (round-trip time in microseconds, -1 if not
+       reachable)
+
+   MI FIFO Command Format:
+
+## ping all Redis nodes
+opensips-cli -x mi redis_ping_nodes
+
+## ping only the "local" group
+opensips-cli -x mi redis_ping_nodes group=local
+
+1.10. Exported Statistics
+
+1.10.1. redis_queries
+
+   Total number of successful Redis queries executed across all
+   connections and processes.
+
+1.10.2. redis_queries_failed
+
+   Total number of failed Redis queries (NULL replies from hiredis
+   or Redis error responses other than MOVED).
+
+1.10.3. redis_moved
+
+   Total number of MOVED redirections received from Redis Cluster
+   nodes. A MOVED response indicates a permanent slot migration -
+   the module updates its slot map and retries the query on the
+   correct node.
+
+1.10.4. redis_topology_refreshes
+
+   Total number of cluster topology refreshes performed (via
+   CLUSTER SHARDS or CLUSTER SLOTS). This counter increments both
+   for automatic refreshes (triggered by MOVED responses or
+   unreachable nodes) and manual refreshes (triggered via the
+   redis_cluster_refresh MI command).
+
+1.11. Raw Query Syntax
 
    The cachedb_redis module allows to run RAW queries, thus taking
    full advantage of the capabilities of the back-end. The query
@@ -307,7 +555,7 @@ modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 
    Here are a couple examples of running some Redis queries :
 
-   Example 1.11. Redis Raw Query Examples
+   Example 1.12. Redis Raw Query Examples
 ...
         $var(my_hash) = "my_hash_name";
         $var(my_key) = "my_key_name";

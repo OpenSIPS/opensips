@@ -32,6 +32,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <hiredis/hiredis.h>
 #define is_valid(p,end) ((p) && (p)<(end))
 
@@ -79,30 +80,71 @@ uint16_t crc16(const char *buf, int len)
     return crc;
 }
 
-unsigned int redisHash(redis_con *con, str* key)
+#define REDIS_CLUSTER_HASH_SLOTS 16384
+
+/*
+ * Extract the hash tag from a key per the Redis Cluster specification:
+ *   - Find the first '{'. If found, find the first '}' after it.
+ *   - If the substring between them is non-empty, hash only that substring.
+ *   - Otherwise, hash the entire key.
+ */
+static void extract_hash_tag(const char *key, int key_len,
+                             const char **tag, int *tag_len)
 {
-	return crc16(key->s,key->len) & con->slots_assigned;
+	int i, open = -1;
+
+	if (!key || key_len <= 0) {
+		*tag = key;
+		*tag_len = key_len > 0 ? key_len : 0;
+		return;
+	}
+
+	for (i = 0; i < key_len; i++) {
+		if (key[i] == '{') {
+			open = i;
+			break;
+		}
+	}
+
+	if (open >= 0) {
+		for (i = open + 1; i < key_len; i++) {
+			if (key[i] == '}') {
+				if (i - open - 1 > 0) {
+					*tag = key + open + 1;
+					*tag_len = i - open - 1;
+					return;
+				}
+				break;
+			}
+		}
+	}
+
+	*tag = key;
+	*tag_len = key_len;
+}
+
+unsigned int redisHash(str *key)
+{
+	const char *tag;
+	int tag_len;
+
+	extract_hash_tag(key->s, key->len, &tag, &tag_len);
+	return crc16(tag, tag_len) % REDIS_CLUSTER_HASH_SLOTS;
 }
 
 cluster_node *get_redis_connection(redis_con *con,str *key)
 {
 	unsigned short hash_slot;
-	cluster_node *it;
 
 	if (con->flags & REDIS_SINGLE_INSTANCE) {
 		LM_DBG("Single redis connection, returning %p\n",con->nodes);
 		return con->nodes;
-	} else {
-		hash_slot = redisHash(con, key);
-		for (it=con->nodes;it;it=it->next) {
-
-			if (it->start_slot <= hash_slot && it->end_slot >= hash_slot) {
-				LM_DBG("Redis cluster connection, matched con %p for slot %u \n",it,hash_slot);
-				return it;
-			}
-		}
-		return NULL;
 	}
+
+	hash_slot = redisHash(key);
+	LM_DBG("Redis cluster connection, slot %u -> %p\n",
+		hash_slot, con->slot_table[hash_slot]);
+	return con->slot_table[hash_slot];
 }
 
 cluster_node *get_redis_connection_by_endpoint(redis_con *con, redis_moved *redis_info)
@@ -112,254 +154,382 @@ cluster_node *get_redis_connection_by_endpoint(redis_con *con, redis_moved *redi
 	if (con->flags & REDIS_SINGLE_INSTANCE) {
 		LM_DBG("Single redis connection, returning %p\n",con->nodes);
 		return con->nodes;
-	} else {
-		for (it=con->nodes;it;it=it->next) {
-			if (match_prefix(redis_info->endpoint.s, redis_info->endpoint.len, it->ip, strlen(it->ip))) {
-				if (it->port == redis_info->port) {
-					// Removed slot comparison as it may be a little too aggressive of a match
-					// Code is still here in the event that it needs to be added back in
-					//if (it->start_slot <= redis_info->slot && it->end_slot >= redis_info->slot) {
-						LM_DBG("Redis cluster connection, matched con %p for endpoint: %.*s:%d slot: [%u] %u [%u] \n", it, redis_info->endpoint.len, redis_info->endpoint.s, redis_info->port, it->start_slot, redis_info->slot, it->end_slot);
-						return it;
-					//}
-				}
-			}
-		}
-		LM_ERR("Redis cluster connection, No match found for endpoint: %.*s:%d slot %u\n", redis_info->endpoint.len, redis_info->endpoint.s, redis_info->port, redis_info->slot);
-		return NULL;
 	}
+
+	for (it=con->nodes;it;it=it->next) {
+		str host_str = {it->ip, strlen(it->ip)};
+		str ep_str = {(char *)redis_info->endpoint.s, redis_info->endpoint.len};
+		if (str_match(&host_str, &ep_str) && it->port == redis_info->port) {
+			LM_DBG("Redis cluster connection, matched con %p for "
+				"endpoint: %.*s:%d\n", it,
+				redis_info->endpoint.len, redis_info->endpoint.s,
+				redis_info->port);
+			return it;
+		}
+	}
+
+	LM_ERR("Redis cluster connection, No match found for endpoint: "
+		"%.*s:%d slot %u\n", redis_info->endpoint.len,
+		redis_info->endpoint.s, redis_info->port, redis_info->slot);
+	return NULL;
 }
 
 void destroy_cluster_nodes(redis_con *con)
 {
-	cluster_node *new,*foo;
+	cluster_node *node, *next;
 
 	LM_DBG("destroying cluster %p\n",con);
 
-	new = con->nodes;
-	while (new) {
-		foo = new->next;
-		redisFree(new->context);
-		new->context = NULL;
-		if (use_tls && new->tls_dom)
-			tls_api.release_domain(new->tls_dom);
-		pkg_free(new);
-		new = foo;
+	node = con->nodes;
+	while (node) {
+		next = node->next;
+		redisFree(node->context);
+		node->context = NULL;
+		if (use_tls && node->tls_dom)
+			tls_api.release_domain(node->tls_dom);
+		pkg_free(node->ip);
+		pkg_free(node);
+		node = next;
 	}
+	con->nodes = NULL;
+	memset(con->slot_table, 0, sizeof(con->slot_table));
 }
 
-struct datavalues {
-	int count;
-	char **redisdata;
-};
-
-int chkmalloc1 (char *handle) {
-	if ( handle == NULL || handle == 0) {
-		LM_ERR("Error1 while parsing cluster redisdata \n");
-		return -1;
-	}
-		return 1;
-}
-int chkmalloc2 (struct datavalues *handle) {
-	if ( handle == NULL || handle == 0) {
-		LM_ERR("Error2 while parsing cluster redisdata \n");
-		return -1;
-	}
-		return 1;
-}
-
-int chkmalloc3 (struct datavalues **handle) {
-	if ( handle == NULL || handle == 0) {
-		LM_ERR("Error3 while parsing cluster redisdata \n");
-		return -1;
-	}
-		return 1;
-}
-
-int chkmalloc4 (char **handle) {
-	if ( handle == NULL || handle == 0) {
-		LM_ERR("Error4 while parsing cluster redisdata \n");
-		return -1;
-	}
-		return 1;
-}
-
-int explode(char *line, const char *delimeters, struct datavalues **newret) {
-
-	int counter		= 0;
-	char *result 	= NULL;
-	char *data 		= NULL;
-
-	data = pkg_malloc((strlen(line) * sizeof(char)) +1);
-	if (!chkmalloc1(data)) return 0;
-	strcpy(data,line);
-
-	result = strtok(data, delimeters);
-	while (result != NULL ) {
-		newret[0]->redisdata[counter] = pkg_malloc((strlen(result) * sizeof(char) ) +1 );
-		if (chkmalloc1(newret[0]->redisdata[counter])) {
-			strcpy(newret[0]->redisdata[counter],result);
-			counter++;
-			result = strtok(NULL, delimeters);
-		} else { return 0; }
-	}
-	newret[0]->count = counter-1;
-
-	pkg_free(data);
-
-	return 1;
-
-}
-
-int build_cluster_nodes(redis_con *con,char *info,int size)
+cluster_node *find_or_create_node(redis_con *con, const char *ip,
+	int ip_len, unsigned short port)
 {
+	cluster_node *node;
+	str src, dst;
 
-	cluster_node *new;
-	const char *delimeters = "\n";
-	int i		= 0, 	j	= 0;
-	int masters = 1, count	= 0;
-	char *ip, *block = NULL;
-	unsigned short port,start_slot,end_slot;
-	int len;
-	struct datavalues **newret1, **newret2, **newret3;
+	/* walk existing node list, compare using str_match */
+	for (node = con->nodes; node; node = node->next) {
+		if (node->port == port) {
+			str host_str = {node->ip, strlen(node->ip)};
+			str ip_str = {(char *)ip, ip_len};
+			if (str_match(&host_str, &ip_str)) {
+				node->seen = 1;
+				return node;
+			}
+		}
+	}
 
-	// Define **pointers for new structures 
-	newret1 = pkg_malloc(sizeof(struct datavalues *));
-	if (!chkmalloc3(newret1)) goto error;
-	newret2 = pkg_malloc(sizeof(struct datavalues *));
-	if (!chkmalloc3(newret2)) goto error;
-	newret3 = pkg_malloc(sizeof(struct datavalues *));
-	if (!chkmalloc3(newret3)) goto error;
+	/* not found — allocate new node */
+	node = pkg_malloc(sizeof(cluster_node));
+	if (!node) {
+		LM_ERR("pkg_malloc failed for cluster_node\n");
+		return NULL;
+	}
+	memset(node, 0, sizeof(cluster_node));
 
-	// Allocate space for the structures
-	newret1[0] = pkg_malloc(sizeof(struct datavalues));
-	if (!chkmalloc2(newret1[0])) goto error;
-	newret2[0] = pkg_malloc(sizeof(struct datavalues));
-	if (!chkmalloc2(newret2[0])) goto error;
-	newret3[0] = pkg_malloc(sizeof(struct datavalues));
-	if (!chkmalloc2(newret3[0])) goto error;
+	/* duplicate IP using OpenSIPS safe string copy */
+	src.s = (char *)ip;
+	src.len = ip_len;
+	if (pkg_nt_str_dup(&dst, &src) != 0) {
+		LM_ERR("pkg_nt_str_dup failed for node IP\n");
+		pkg_free(node);
+		return NULL;
+	}
+	node->ip = dst.s;
+	node->port = port;
+	node->seen = 1;
 
-	// Allocate space for data item "redisdata" within the structures
-	newret1[0]->redisdata = pkg_malloc((strlen(info) * sizeof(char)) +1);
-	if (!chkmalloc4(newret1[0]->redisdata)) goto error;
-	newret2[0]->redisdata = pkg_malloc((strlen(info) * sizeof(char)) +1);
-	if (!chkmalloc4(newret2[0]->redisdata)) goto error;
-	newret3[0]->redisdata = pkg_malloc((strlen(info) * sizeof(char)) +1);
-	if (!chkmalloc4(newret3[0]->redisdata)) goto error;
+	/* connect to the new node */
+	if (redis_connect_node(con, node) < 0) {
+		LM_ERR("failed to connect to new node %.*s:%d\n", ip_len, ip, port);
+		/* keep the node in the list even if connect fails —
+		 * it will be retried on next use via redis_reconnect_node() */
+	}
 
-	// Initialise the counter
-	newret1[0]->count = 0;
-	newret2[0]->count = 0;
-	newret3[0]->count = 0;
+	/* insert at head of node list */
+	node->next = con->nodes;
+	con->nodes = node;
 
+	LM_DBG("created new cluster node %s:%d (%p)\n", node->ip, node->port, node);
+	return node;
+}
 
-	// Redis really only requires two connections ("myself,master" && one other master) || (at least two masters)
-	// but this will supply info for upto 1000 masters due to current Opensips design (hopefully representing the total hash slots)
-	// will always connect to myself,master
-	strstr(info,"myself,master")?(count = 999):(count = 1000);
+int parse_cluster_shards(redis_con *con, redisReply *reply)
+{
+	size_t i, j, k, n, s;
+	redisReply *shard, *key, *val, *slots_array, *nodes_array;
+	redisReply *node_map, *nk, *nv;
+	const char *master_ip, *role;
+	long long master_port;
+	long long start, end;
+	cluster_node *node;
 
-	// Cluster data into Array
-	if (explode(info,delimeters,newret1)) {
-		for (i=0;i<=newret1[0]->count;i++) {
-			LM_DBG("Nodes : %s\n",newret1[0]->redisdata[i]);
+	if (!reply || reply->type != REDIS_REPLY_ARRAY)
+		return -1;
 
-			if ((strstr(newret1[0]->redisdata[i],"master") && (masters <= count)) || strstr(newret1[0]->redisdata[i],"myself,master")) {
+	for (i = 0; i < reply->elements; i++) {
+		shard = reply->element[i];
+		if (!shard || shard->type != REDIS_REPLY_ARRAY)
+			continue;
 
-				start_slot = end_slot = port = 0;
-				ip = NULL;
-				masters++;
+		slots_array = NULL;
+		nodes_array = NULL;
 
-				// Break up the row 
-				if (explode(newret1[0]->redisdata[i]," ",newret2)) {
-					for (j=0 ; j <= newret2[0]->count ; j++ ) {
+		/* walk key-value pairs to find "slots" and "nodes" */
+		for (j = 0; j + 1 < shard->elements; j += 2) {
+			key = shard->element[j];
+			val = shard->element[j + 1];
+			if (!key || !key->str || !val)
+				continue;
+			if (strcmp(key->str, "slots") == 0)
+				slots_array = val;
+			else if (strcmp(key->str, "nodes") == 0)
+				nodes_array = val;
+		}
 
-						if (strstr(newret1[0]->redisdata[i],"myself") && strstr(newret2[0]->redisdata[j],"myself")) {
-							//myself no ip
-							if (ip == NULL) {
-								ip = con->id->host;
-								port = con->id->port;
-								LM_DBG("Myself and no IP, set ip to main host %s\n",con->id->host);
-								if (i==0) masters--;
-							} else
-								LM_DBG("Master already discovered to not be myself, not going to main host \n");
+		if (!slots_array || !nodes_array)
+			continue;
 
-						} else {
-							//Get the ip and port of other master
-							if (strstr(newret2[0]->redisdata[j],":") && (strlen(newret2[0]->redisdata[j]) > 5)) {
+		/* find master node in nodes array */
+		master_ip = NULL;
+		master_port = 0;
+		for (n = 0; n < nodes_array->elements; n++) {
+			node_map = nodes_array->element[n];
+			if (!node_map || node_map->type != REDIS_REPLY_ARRAY)
+				continue;
 
-								if (explode(newret2[0]->redisdata[j],":",newret3)) {
-									ip = (char *)newret3[0]->redisdata[0];
-									port = atoi(newret3[0]->redisdata[1]);
-								} else { block = ":parsing ip/port"; goto error;}
-							}
-						}
-						//Get slots
-						if (strstr(newret2[0]->redisdata[j],"-") && (strlen(newret2[0]->redisdata[j]) > 2)) {
-							if (explode(newret2[0]->redisdata[j],"-",newret3)) {
-								start_slot = atoi(newret3[0]->redisdata[0]);
-								end_slot   = atoi(newret3[0]->redisdata[1]);
-							} else {block = ":parsing slots"; goto error;}
+			const char *ip = NULL;
+			long long port = 0;
+			role = NULL;
 
-						}
-					}
+			for (k = 0; k + 1 < node_map->elements; k += 2) {
+				nk = node_map->element[k];
+				nv = node_map->element[k + 1];
+				if (!nk || !nk->str || !nv)
+					continue;
+				if (strcmp(nk->str, "ip") == 0 && nv->str)
+					ip = nv->str;
+				else if (strcmp(nk->str, "port") == 0)
+					port = nv->integer;
+				else if (strcmp(nk->str, "role") == 0 && nv->str)
+					role = nv->str;
+			}
 
-				} else { block = "row to array"; goto error;}
-
-				if ( ip == NULL || !(port > 0) || (start_slot > end_slot) || !(end_slot > 0) ) {block = ":processing row"; goto error;}
-
-				len = strlen(ip);
-				new = pkg_malloc(sizeof(cluster_node) + len + 1);
-				if (!new) {
-					LM_ERR("no more pkg\n");
-					goto error;
-				}
-
-				memset(new,0,sizeof(cluster_node) + len + 1);
-
-				new->ip = (char *)(new + 1);
-				strcpy(new->ip,ip);
-				new->port = port;
-				new->start_slot = start_slot;
-				new->end_slot = end_slot;
-
-				LM_DBG("Saving connection %p for ip %s port %hu start %hu end %hu\n",new,ip,port,start_slot,end_slot);
-
-				if (con->nodes == NULL)
-					con->nodes = new;
-				else {
-					new->next = con->nodes;
-					con->nodes = new;
-				}
+			if (role && strcmp(role, "master") == 0) {
+				master_ip = ip;
+				master_port = port;
+				break;
 			}
 		}
 
-	} else { block = ":initial"; goto error;}
+		if (!master_ip || master_port < 1 || master_port > 65535)
+			continue;
 
-	pkg_free(newret1);
-	pkg_free(newret2);
-	pkg_free(newret3);
+		node = find_or_create_node(con, master_ip, strlen(master_ip),
+			(unsigned short)master_port);
+		if (!node)
+			continue;
+
+		/* assign slot ranges — pairs of [start, end] integers */
+		for (s = 0; s + 1 < slots_array->elements; s += 2) {
+			if (!slots_array->element[s] || !slots_array->element[s + 1])
+				continue;
+			start = slots_array->element[s]->integer;
+			end = slots_array->element[s + 1]->integer;
+			for (long long slot = start; slot <= end; slot++) {
+				if (slot >= 0 && slot < 16384)
+					con->slot_table[slot] = node;
+			}
+		}
+	}
 
 	return 0;
+}
 
-error:
-	LM_ERR("Error while parsing cluster nodes in %s\n",block);
-	destroy_cluster_nodes(con);
+int parse_cluster_slots(redis_con *con, redisReply *reply)
+{
+	size_t i;
+	redisReply *entry, *master;
+	long long start, end;
+	const char *ip;
+	long long port;
+	cluster_node *node;
+
+	if (!reply || reply->type != REDIS_REPLY_ARRAY)
+		return -1;
+
+	for (i = 0; i < reply->elements; i++) {
+		entry = reply->element[i];
+		if (!entry || entry->type != REDIS_REPLY_ARRAY || entry->elements < 3)
+			continue;
+
+		if (!entry->element[0] || !entry->element[1] || !entry->element[2])
+			continue;
+
+		start = entry->element[0]->integer;
+		end = entry->element[1]->integer;
+		master = entry->element[2];
+
+		if (!master || master->type != REDIS_REPLY_ARRAY || master->elements < 2)
+			continue;
+
+		if (!master->element[0] || !master->element[1])
+			continue;
+
+		ip = master->element[0]->str;
+		port = master->element[1]->integer;
+
+		if (port < 1 || port > 65535)
+			continue;
+
+		/* empty IP means "use the queried node's address" */
+		if (!ip || strlen(ip) == 0)
+			ip = con->host;
+
+		node = find_or_create_node(con, ip, strlen(ip), (unsigned short)port);
+		if (!node)
+			continue;
+
+		for (long long slot = start; slot <= end; slot++) {
+			if (slot >= 0 && slot < 16384)
+				con->slot_table[slot] = node;
+		}
+	}
+
+	return 0;
+}
+
+int probe_cluster_command(redis_con *con, redisContext *ctx)
+{
+	redisReply *reply;
+
+	/* try CLUSTER SHARDS first (Redis 7.0+) */
+	reply = redisCommand(ctx, "CLUSTER SHARDS");
+	if (reply && reply->type == REDIS_REPLY_ARRAY) {
+		con->cluster_cmd = CLUSTER_CMD_SHARDS;
+		LM_DBG("using CLUSTER SHARDS for topology\n");
+		if (parse_cluster_shards(con, reply) < 0) {
+			freeReplyObject(reply);
+			return -1;
+		}
+		freeReplyObject(reply);
+		return 0;
+	}
+	if (reply)
+		freeReplyObject(reply);
+
+	/* fall back to CLUSTER SLOTS (Redis 3.0+) */
+	reply = redisCommand(ctx, "CLUSTER SLOTS");
+	if (reply && reply->type == REDIS_REPLY_ARRAY) {
+		con->cluster_cmd = CLUSTER_CMD_SLOTS;
+		LM_DBG("using CLUSTER SLOTS for topology\n");
+		if (parse_cluster_slots(con, reply) < 0) {
+			freeReplyObject(reply);
+			return -1;
+		}
+		freeReplyObject(reply);
+		return 0;
+	}
+	if (reply)
+		freeReplyObject(reply);
+
+	con->cluster_cmd = CLUSTER_CMD_NONE;
 	return -1;
+}
+
+int refresh_cluster_topology(redis_con *con)
+{
+	cluster_node *node, *prev, *next;
+	redisReply *reply = NULL;
+	time_t now;
+	int s;
+
+	if (!(con->flags & REDIS_CLUSTER_INSTANCE))
+		return 0;
+
+	/* rate-limit: at most once per second */
+	now = time(NULL);
+	if ((now - con->last_topology_refresh) < 1)
+		return 0;
+
+	/* query a reachable node using the cached command */
+	for (node = con->nodes; node; node = node->next) {
+		if (!node->context)
+			continue;
+		if (con->cluster_cmd == CLUSTER_CMD_SHARDS)
+			reply = redisCommand(node->context, "CLUSTER SHARDS");
+		else
+			reply = redisCommand(node->context, "CLUSTER SLOTS");
+		if (reply && reply->type == REDIS_REPLY_ARRAY)
+			break;
+		if (reply) {
+			freeReplyObject(reply);
+			reply = NULL;
+		}
+	}
+
+	if (!reply) {
+		LM_ERR("all nodes unreachable, cannot refresh topology\n");
+		return -1;
+	}
+
+	/* mark all existing nodes as unseen */
+	for (node = con->nodes; node; node = node->next)
+		node->seen = 0;
+
+	/* clear slot table */
+	memset(con->slot_table, 0, sizeof(con->slot_table));
+
+	/* parse — each parser calls find_or_create_node and fills slot_table */
+	if (con->cluster_cmd == CLUSTER_CMD_SHARDS)
+		parse_cluster_shards(con, reply);
+	else
+		parse_cluster_slots(con, reply);
+
+	freeReplyObject(reply);
+
+	/* remove nodes no longer in the cluster */
+	prev = NULL;
+	node = con->nodes;
+	while (node) {
+		next = node->next;
+		if (!node->seen) {
+			/* unlink from list */
+			if (prev)
+				prev->next = next;
+			else
+				con->nodes = next;
+			/* defensive: clear any stale slot_table pointers */
+			for (s = 0; s < 16384; s++) {
+				if (con->slot_table[s] == node)
+					con->slot_table[s] = NULL;
+			}
+			LM_DBG("removing stale node %s:%d\n", node->ip, node->port);
+			redisFree(node->context);
+			if (use_tls && node->tls_dom)
+				tls_api.release_domain(node->tls_dom);
+			pkg_free(node->ip);
+			pkg_free(node);
+		} else {
+			prev = node;
+		}
+		node = next;
+	}
+
+	con->last_topology_refresh = now;
+	con->topology_refresh_count++;
+	update_stat(redis_stat_topology_refreshes, 1);
+	LM_DBG("topology refresh #%u complete\n", con->topology_refresh_count);
+	return 0;
 }
 
 /*
  When Redis is operating as a cluster, it is possible (very likely)
  that a MOVED redirection will be returned by the Redis nodes that
  received the request. The general format of the reply from Redis is:
- MOVED slot [IP|FQDN]:port
+ PREFIX slot [IP|FQDN]:port
 
- This routine will parse the Redis MOVED reply into its components.
+ This routine will parse the Redis redirect reply into its components.
  Note that the redisReply struct MUST be released outside of this routine
  to avoid a memory leak. The out->endpoint pointer must not be used after
  the redisReply has been released.
 
  The parsed data is stored into the following redis_moved struct:
- 
+
  typedef struct {
 	int slot;
 	const_str endpoint;
@@ -367,7 +537,8 @@ error:
  } redis_moved;
 
 */
-int parse_moved_reply(redisReply *reply, redis_moved *out) {
+static int parse_redirect_reply(redisReply *reply, redis_moved *out,
+	const char *prefix, size_t prefix_len) {
 	int i;
 	int slot = 0;
 	const char *p;
@@ -377,18 +548,18 @@ int parse_moved_reply(redisReply *reply, redis_moved *out) {
 	const char *port_start;
 	int port = REDIS_DF_PORT; // Default to Redis standard port
 
-	if (!reply || !reply->str || reply->len < MOVED_PREFIX_LEN || !out)
+	if (!reply || !reply->str || reply->len < prefix_len || !out)
 		return ERR_INVALID_REPLY;
 
 	p = reply->str;
 	end = reply->str + reply->len;
 
-	for (i = 0; i < MOVED_PREFIX_LEN; ++i) {
-		if (p[i] != MOVED_PREFIX[i]) {
+	for (i = 0; i < prefix_len; ++i) {
+		if (p[i] != prefix[i]) {
 		return ERR_INVALID_REPLY;
 		}
 	}
-	p += MOVED_PREFIX_LEN;
+	p += prefix_len;
 
 	// Parse slot number
 	while (p < end && *p >= '0' && *p <= '9') {
@@ -396,7 +567,9 @@ int parse_moved_reply(redisReply *reply, redis_moved *out) {
 		p++;
 		if (slot > 16383) return ERR_INVALID_SLOT;
 	}
-	if (slot == 0 && (p == reply->str + MOVED_PREFIX_LEN || *(p - 1) < '0' || *(p - 1) > '9'))
+	if (slot == 0 && (p == reply->str + prefix_len || *(p - 1) < '0' || *(p - 1) > '9'))
+		return ERR_INVALID_SLOT;
+	if (slot > 16383)
 		return ERR_INVALID_SLOT;
 
 	// Skip spaces
@@ -443,3 +616,8 @@ int parse_moved_reply(redisReply *reply, redis_moved *out) {
 
 	return 0;
 }
+
+int parse_moved_reply(redisReply *reply, redis_moved *out) {
+	return parse_redirect_reply(reply, out, MOVED_PREFIX, MOVED_PREFIX_LEN);
+}
+

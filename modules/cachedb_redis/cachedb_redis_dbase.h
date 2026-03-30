@@ -28,6 +28,7 @@
 
 #include <hiredis/hiredis.h>
 #include "../../cachedb/cachedb.h"
+#include "../../statistics.h"
 #include "../tls_mgm/api.h"
 
 #ifdef HAVE_REDIS_SSL
@@ -44,6 +45,14 @@ typedef struct cluster_nodes {
 
 	redisContext *context;          /* actual connection to this node */
 	struct tls_domain *tls_dom;
+	uint8_t seen;                   /* reconciliation flag for topology refresh */
+
+	/* per-node, per-process counters (pkg memory) */
+	unsigned long queries;
+	unsigned long errors;
+	unsigned long moved;
+
+	time_t last_activity;           /* timestamp of last successful query */
 
 	struct cluster_nodes *next;
 } cluster_node;
@@ -84,7 +93,14 @@ extern str fts_index_name;
 extern str fts_json_prefix;
 extern int fts_json_mset_expire;
 
+extern int redis_keepalive;
+
 extern struct tls_mgm_binds tls_api;
+
+extern stat_var *redis_stat_queries;
+extern stat_var *redis_stat_queries_failed;
+extern stat_var *redis_stat_moved;
+extern stat_var *redis_stat_topology_refreshes;
 
 enum redis_flag {
 	REDIS_SINGLE_INSTANCE  = 1 << 0,
@@ -94,6 +110,12 @@ enum redis_flag {
 
 	/* failover set (combination of single and/or cluster instances) */
 	REDIS_MULTIPLE_HOSTS   = 1 << 4,
+};
+
+enum cluster_cmd {
+	CLUSTER_CMD_NONE,
+	CLUSTER_CMD_SHARDS,
+	CLUSTER_CMD_SLOTS
 };
 
 typedef struct _redis_con {
@@ -107,15 +129,21 @@ typedef struct _redis_con {
 	unsigned short port;   // host/port of this connection are extracted here
 
 	enum redis_flag flags;
-	unsigned short slots_assigned; /* total slots for cluster */
 	cluster_node *nodes; /* one or more Redis nodes */
 	char *json_keyspace; /* currently, only one JSON keyspace per connection */
+	cluster_node *slot_table[16384]; /* O(1) slot-to-node lookup */
+	enum cluster_cmd cluster_cmd;    /* probed once at startup */
+	time_t last_topology_refresh;
+	unsigned int topology_refresh_count;
 
 	/* circular list of Redis instances to be attempted in failover fashion */
 	struct _redis_con *next_con;
 	/* only populated for 1st item in the list: the "last-known-to-work" con */
 	struct _redis_con *current;
 } redis_con;
+
+int redis_connect_node(redis_con *con, cluster_node *node);
+int redis_reconnect_node(redis_con *con, cluster_node *node);
 
 cachedb_con* redis_init(str *url);
 void redis_destroy(cachedb_con *con);
