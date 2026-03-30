@@ -2608,11 +2608,16 @@ static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 			return rc;
 	}
 
-	if (is_prack && msg && msg->first_line.type == SIP_REPLY)
+	if (is_prack && msg && msg->first_line.type == SIP_REPLY) {
+		if (leg != DLG_CALLER_LEG) {
+			rc = dlg_ensure_reply_leg(dlg, msg);
+			if (rc > 0)
+				leg = rc;
+		}
 		rc = send_prack_indialog_request(dlg, msg,
-				(leg == DLG_CALLER_LEG ? leg : callee_idx(dlg)), body, ct,
+				leg, body, ct,
 				(req_headers.s ? &req_headers : headers), NULL, NULL, NULL);
-	else
+	} else
 		rc = send_indialog_request(dlg, method,
 				(leg == DLG_CALLER_LEG ? leg : callee_idx(dlg)),
 				body, ct, (req_headers.s ? &req_headers : headers),
