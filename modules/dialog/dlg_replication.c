@@ -300,24 +300,24 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	/* link the dialog into the hash */
 	_link_dlg_unsafe(d_entry, dlg);
 
-	DLG_BIN_POP(str, packet, vars, pre_linking_error);
-	DLG_BIN_POP(str, packet, profiles, pre_linking_error);
-	DLG_BIN_POP(int, packet, dlg->user_flags, pre_linking_error);
-	DLG_BIN_POP(int, packet, dlg->mod_flags, pre_linking_error);
+	DLG_BIN_POP(str, packet, vars, post_linking_error);
+	DLG_BIN_POP(str, packet, profiles, post_linking_error);
+	DLG_BIN_POP(int, packet, dlg->user_flags, post_linking_error);
+	DLG_BIN_POP(int, packet, dlg->mod_flags, post_linking_error);
 
-	DLG_BIN_POP(int, packet, dlg->flags, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->flags, post_linking_error);
 	/* also save the dialog into the DB on this instance */
 	dlg->flags |= DLG_FLAG_NEW;
 
-	DLG_BIN_POP(int, packet, dlg->tl.timeout, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->tl.timeout, post_linking_error);
 	DLG_BIN_POP(int, packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq,
-		pre_linking_error);
+		post_linking_error);
 	DLG_BIN_POP(int, packet, dlg->legs[callee_idx(dlg)].last_gen_cseq,
-		pre_linking_error);
+		post_linking_error);
 
-	DLG_BIN_POP_ROUTE( packet, dlg, on_answer, pre_linking_error);
-	DLG_BIN_POP_ROUTE( packet, dlg, on_timeout, pre_linking_error);
-	DLG_BIN_POP_ROUTE( packet, dlg, on_hangup, pre_linking_error);
+	DLG_BIN_POP_ROUTE( packet, dlg, on_answer, post_linking_error);
+	DLG_BIN_POP_ROUTE( packet, dlg, on_timeout, post_linking_error);
+	DLG_BIN_POP_ROUTE( packet, dlg, on_hangup, post_linking_error);
 
 	if (dlg->tl.timeout <= (unsigned int)(unsigned long) time(0))
 		dlg->tl.timeout = 0;
@@ -410,6 +410,15 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 
 	unref_dlg(dlg, 1);
 	return 0;
+
+
+post_linking_error:
+	/* dialog was linked but not yet timer-inserted or ref-bumped */
+	unlink_unsafe_dlg(d_entry, dlg);
+	dlg_unlock(d_table, d_entry);
+	if (dlg)
+		destroy_dlg(dlg);
+	return -1;
 
 pre_linking_error:
 	dlg_unlock(d_table, d_entry);
