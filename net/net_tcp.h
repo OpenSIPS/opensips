@@ -34,6 +34,8 @@
 
 extern int tcp_workers_max_no;
 
+typedef int (*tcp_thread_job_f)(void *data);
+
 /**************************** Control functions ******************************/
 
 /* initializes the TCP structures */
@@ -114,6 +116,11 @@ int tcp_get_correlation_id( unsigned int id, unsigned long long *cid);
 
 /* returns the receive_info of a TCP connection */
 int tcp_get_rcv(unsigned int id, struct receive_info *ri);
+
+/* returns the process-table slot of TCP main */
+int tcp_get_main_proc_no(void);
+
+int tcp_run_task(tcp_thread_job_f run, void *data);
 
 int tcp_done_reading(struct tcp_connection* c);
 

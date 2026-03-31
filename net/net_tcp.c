@@ -108,6 +108,7 @@ struct tcp_worker *tcp_workers=0;
 /* unique for each connection, used for
  * quickly finding the corresponding connection for a reply */
 static unsigned int* connection_id=0;
+static int *tcp_main_proc_no = 0;
 
 /* array of TCP partitions */
 static struct tcp_partition tcp_parts[TCP_PARTITION_SIZE];
@@ -390,11 +391,14 @@ int tcp_dispatch_msg(char *msg, int len,
 enum tcp_job_op {
 	TCP_READ_JOB = 1,
 	TCP_WRITE_JOB = 2,
+	TCP_RUN_JOB = 3,
 };
 
 struct tcp_job {
 	struct tcp_connection *conn;
 	int op;
+	tcp_thread_job_f run;
+	void *data;
 	long resp;
 	int ret;
 	struct tcp_job *next;
@@ -603,6 +607,11 @@ int tcp_get_rcv( unsigned int id, struct receive_info *ri)
 	}
 	TCPCONN_UNLOCK(id);
 	return -1;
+}
+
+int tcp_get_main_proc_no(void)
+{
+	return tcp_main_proc_no ? *tcp_main_proc_no : -1;
 }
 
 
@@ -1251,7 +1260,7 @@ static void *tcp_thread_routine(void *arg)
 				job->ret = -1;
 				job->resp = -1;
 			}
-		} else {
+		} else if (job->op == TCP_WRITE_JOB) {
 			if (protos[conn->type].net.stream.write) {
 				if (tcpconn_prepare_write(conn) < 0) {
 					job->ret = -1;
@@ -1267,6 +1276,14 @@ static void *tcp_thread_routine(void *arg)
 				job->ret = -1;
 				job->resp = -1;
 			}
+		} else if (job->op == TCP_RUN_JOB) {
+			job->ret = job->run ? job->run(job->data) : -1;
+			thread_free(job);
+			continue;
+		} else {
+			LM_ERR("unknown TCP job op %d\n", job->op);
+			job->ret = -1;
+			job->resp = -1;
 		}
 
 done_job:
@@ -1399,7 +1416,8 @@ static void tcp_pool_destroy(void)
 	pthread_mutex_lock(&tcp_pool.task_lock);
 	for (job = tcp_pool.task_head; job; job = next) {
 		next = job->next;
-		tcpconn_put(job->conn);
+		if (job->conn)
+			tcpconn_put(job->conn);
 		thread_free(job);
 	}
 	tcp_pool.task_head = tcp_pool.task_tail = NULL;
@@ -1408,7 +1426,8 @@ static void tcp_pool_destroy(void)
 	pthread_mutex_lock(&tcp_pool.done_lock);
 	for (job = tcp_pool.done_head; job; job = next) {
 		next = job->next;
-		tcpconn_put(job->conn);
+		if (job->conn)
+			tcpconn_put(job->conn);
 		thread_free(job);
 	}
 	tcp_pool.done_head = tcp_pool.done_tail = NULL;
@@ -1430,8 +1449,48 @@ static int tcp_queue_job(struct tcp_connection *tcpconn, int op)
 
 	job->conn = tcpconn;
 	job->op = op;
+	job->run = NULL;
+	job->data = NULL;
 	job->resp = 0;
 	job->ret = 0;
+	job->next = NULL;
+
+	pthread_mutex_lock(&tcp_pool.task_lock);
+	if (tcp_pool.task_tail)
+		tcp_pool.task_tail->next = job;
+	else
+		tcp_pool.task_head = job;
+	tcp_pool.task_tail = job;
+	pthread_cond_signal(&tcp_pool.task_cond);
+	pthread_mutex_unlock(&tcp_pool.task_lock);
+
+	return 0;
+}
+
+int tcp_run_task(tcp_thread_job_f run, void *data)
+{
+	struct tcp_job *job;
+
+	if (!run)
+		return -1;
+
+	if (!tcp_threads_active()) {
+		run(data);
+		return 0;
+	}
+
+	job = thread_malloc(sizeof(*job));
+	if (!job) {
+		LM_ERR("oom while queuing TCP run job\n");
+		return -1;
+	}
+
+	job->conn = NULL;
+	job->op = TCP_RUN_JOB;
+	job->run = run;
+	job->data = data;
+	job->resp = 0;
+	job->ret = -1;
 	job->next = NULL;
 
 	pthread_mutex_lock(&tcp_pool.task_lock);
@@ -2287,6 +2346,12 @@ int tcp_init(void)
 		goto error;
 	}
 	*tcp_connections_no = 0;
+	tcp_main_proc_no = (int *)shm_malloc(sizeof(*tcp_main_proc_no));
+	if (tcp_main_proc_no == 0) {
+		LM_CRIT("could not alloc tcp main proc slot in shm memory\n");
+		goto error;
+	}
+	*tcp_main_proc_no = -1;
 	tcp_connections_lock = lock_alloc();
 	if (tcp_connections_lock == 0) {
 		LM_CRIT("could not alloc tcp connection counter lock\n");
@@ -2358,6 +2423,11 @@ void tcp_destroy(void)
 	if (tcp_connections_no) {
 		shm_free(tcp_connections_no);
 		tcp_connections_no = 0;
+	}
+
+	if (tcp_main_proc_no) {
+		shm_free(tcp_main_proc_no);
+		tcp_main_proc_no = 0;
 	}
 
 	if (tcp_connections_lock) {
@@ -2648,6 +2718,7 @@ int tcp_start_listener(void)
 		tcp_main_server();
 		exit(-1);
 	}
+	*tcp_main_proc_no = p_id;
 
 	return 0;
 error:
