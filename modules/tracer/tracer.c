@@ -137,7 +137,7 @@ static int fixup_sflags(void **param);
 static int fixup_cflags(void **param);
 static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 		void *scope_p, str *trace_types_s, str *trace_attrs,
-		str* c_flags, str *corr_id);
+		str* c_flags, str *corr_id, str *local_ip_s);
 static int sip_trace(struct sip_msg*, trace_info_p, int);
 static int sip_trace_instance(struct sip_msg*, trace_instance_p, int, int);
 
@@ -219,6 +219,7 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_cflags, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -1259,11 +1260,12 @@ static inline int trace_write_syslog(st_syslog_struct_t *s,
 	|| ((_instance)->control_flags&_leg_flag)!=0 )
 
 static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
-				trace_instance_p info, int conn_id)
+				trace_instance_p info, int conn_id, int local_col_base)
 {
 	unsigned int hash;
 
 	tlist_elem_p it;
+	db_val_t advertised_ip[3];
 
 	if (!info || !info->trace_list) {
 		LM_ERR("invalid trace info!\n");
@@ -1273,6 +1275,19 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 	/* makes sense only if trace protocol loaded */
 	if ( tprot.send_message && !is_id_traced(sip_trace_id, info)) {
 		return 1;
+	}
+
+	if (local_col_base >= 0) {
+		advertised_ip[0] = vals[local_col_base    ];
+		advertised_ip[1] = vals[local_col_base + 1];
+		advertised_ip[2] = vals[local_col_base + 2];
+		if (info->advertised_ip.s)
+			vals[local_col_base + 1].val.str_val = info->advertised_ip;
+		else if (trace_local_ip.s) {
+			vals[local_col_base    ].val.str_val = trace_local_proto;
+			vals[local_col_base + 1].val.str_val = trace_local_ip;
+			vals[local_col_base + 2].val.int_val = (int)trace_local_port;
+		}
 	}
 
 	hash = info->trace_list->hash;
@@ -1331,8 +1346,19 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 			break;
 		default:
 			LM_ERR("invalid type!\n");
+			if (local_col_base >= 0) {
+				vals[local_col_base    ] = advertised_ip[0];
+				vals[local_col_base + 1] = advertised_ip[1];
+				vals[local_col_base + 2] = advertised_ip[2];
+			}
 			return -1;
 		}
+	}
+
+	if (local_col_base >= 0) {
+		vals[local_col_base    ] = advertised_ip[0];
+		vals[local_col_base + 1] = advertised_ip[1];
+		vals[local_col_base + 2] = advertised_ip[2];
 	}
 
 	return 0;
@@ -1793,7 +1819,7 @@ static int fixup_cflags(void **param)
 
 static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 					int trace_types, int trace_flags, str *trace_attrs,
-					int control_flags, str *corr_id)
+					int control_flags, str *corr_id, str *local_ip_p)
 {
 	int extra_len=0;
 	trace_info_p info=NULL;
@@ -1808,6 +1834,9 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	if (corr_id != NULL)
 		extra_len += corr_id->len;
 
+	if (local_ip_p != NULL)
+		extra_len += local_ip_p->len;
+
 	if (trace_flags == TRACE_MESSAGE) {
 		/* we don't need to allocate this structure since it will only be
 		 * used in this function's context */
@@ -1816,6 +1845,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		memset(instance, 0, sizeof(trace_instance_t));
 		if (trace_attrs) instance->trace_attrs = *trace_attrs;
 		if (corr_id) instance->forced_correlation_id = *corr_id;
+		if (local_ip_p) instance->advertised_ip = *local_ip_p;
 
 	} else if (!current_processing_ctx) {
 		LM_BUG("sip_trace() failed due to NULL context");
@@ -1847,6 +1877,13 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 				memcpy(instance->forced_correlation_id.s, corr_id->s,
 					corr_id->len);
 			}
+			if (local_ip_p) {
+				instance->advertised_ip.s = ((char*)(instance+1)) +
+					instance->trace_attrs.len +
+					instance->forced_correlation_id.len;
+				instance->advertised_ip.len = local_ip_p->len;
+				memcpy(instance->advertised_ip.s, local_ip_p->s, local_ip_p->len);
+			}
 		}
 	} else if (trace_flags == TRACE_TRANSACTION && tmb.t_gett==NULL) {
 		/* we need this structure in pkg for stateless replies
@@ -1860,6 +1897,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		memset(instance, 0, sizeof(trace_instance_t));
 		if (trace_attrs) instance->trace_attrs = *trace_attrs;
 		if (corr_id) instance->forced_correlation_id = *corr_id;
+		if (local_ip_p) instance->advertised_ip = *local_ip_p;
 	} else {
 		LM_ERR("Unknown trace flags %x\n", trace_flags);
 		return -2;
@@ -1985,7 +2023,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 /* tracer wrapper that verifies if the trace is on */
 static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 					void *scope_p, str *trace_types_s, str *trace_attrs,
-					str *c_flags, str *corr_id)
+					str *c_flags, str *corr_id, str *local_ip_s)
 {
 
 	int trace_flags;
@@ -2046,7 +2084,8 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 		trace_types = sip_trace_id;
 	}
 	return sip_trace_handle(msg, list, trace_types, trace_flags,
-		trace_attrs, control_flags, corr_id);
+		trace_attrs, control_flags, corr_id,
+		(local_ip_s && local_ip_s->s && local_ip_s->len) ? local_ip_s : NULL);
 }
 
 #define set_sock_columns( _col_proto, _col_ip, _col_port, _buff, _ip, _port, _proto) \
@@ -2150,7 +2189,7 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info, int leg_flag)
 
 	for (instance = info->instances; instance; instance = instance->next) {
 		if ( trace_check_legs( instance, leg_flag)) {
-			if (save_siptrace(msg, db_keys,db_vals, instance,info->conn_id)<0){
+			if (save_siptrace(msg, db_keys,db_vals, instance,info->conn_id, -1)<0){
 				LM_ERR("failed to save tracer\n");
 				goto error;
 			}
@@ -2235,7 +2274,7 @@ static int sip_trace_instance(struct sip_msg* msg,
 	db_vals[12].val.str_val.s = get_from(msg)->tag_value.s;
 	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
 
-	if (save_siptrace(msg, db_keys,db_vals, instance, conn_id) < 0) {
+	if (save_siptrace(msg, db_keys,db_vals, instance, conn_id, -1) < 0) {
 		LM_ERR("failed to save tracer\n");
 		goto error;
 	}
@@ -2351,12 +2390,8 @@ static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
 	db_vals[2].val.str_val.s = req->first_line.u.request.method.s;
 	db_vals[2].val.str_val.len = req->first_line.u.request.method.len;
 
-	if(trace_local_ip.s && trace_local_ip.len > 0){
-		set_columns_to_trace_local_ip( db_vals[4], db_vals[5], db_vals[6]);
-	} else {
-		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-			TRACE_GET_DST_IP(req), TRACE_GET_DST_PORT(req), req->rcv.proto);
-	}
+	set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+		TRACE_GET_DST_IP(req), TRACE_GET_DST_PORT(req), req->rcv.proto);
 
 	char * str_code = int2str(rpl_code, &len);
 	memcpy(statusbuf, str_code, len + 1 /* NULL terminated */);
@@ -2380,7 +2415,7 @@ static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
 	db_vals[12].val.str_val.len = get_from(req)->tag_value.len;
 
 	for (instance = info->instances; instance; instance = instance->next) {
-		if (save_siptrace(req,db_keys,db_vals, instance, info->conn_id) < 0) {
+		if (save_siptrace(req,db_keys,db_vals, instance, info->conn_id, 4) < 0) {
 			LM_ERR("failed to save siptrace\n");
 			goto error;
 		}
@@ -2495,18 +2530,13 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 	memset(&to_ip, 0, sizeof(struct ip_addr));
 
-	if (trace_local_ip.s && trace_local_ip.len > 0){
-		set_columns_to_trace_local_ip( db_vals[4], db_vals[5], db_vals[6]);
-	}
-	else {
-		if(send_sock==0 || send_sock->sock_str.s==0)
-		{
-			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-					TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
-		} else {
-			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-					send_sock->adv_sock_str.len?(struct ip_addr *)&send_sock->adv_address:(struct ip_addr *)&send_sock->address, send_sock->last_real_ports->local?send_sock->last_real_ports->local:send_sock->port_no, send_sock->proto);
-		}
+	if(send_sock==0 || send_sock->sock_str.s==0)
+	{
+		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+				TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
+	} else {
+		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+				send_sock->adv_sock_str.len?(struct ip_addr *)&send_sock->adv_address:(struct ip_addr *)&send_sock->address, send_sock->last_real_ports->local?send_sock->last_real_ports->local:send_sock->port_no, send_sock->proto);
 	}
 
 	if(to==0)
@@ -2529,7 +2559,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 	for (instance = info->instances; instance; instance = instance->next) {
 		if ( trace_check_legs( instance, leg_flag)) {
-			if (save_siptrace(msg, db_keys,db_vals, instance,info->conn_id)<0){
+			if (save_siptrace(msg, db_keys,db_vals, instance,info->conn_id, 4)<0){
 				LM_ERR("failed to save siptrace\n");
 				goto error;
 			}
@@ -2623,13 +2653,8 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps,
 	set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
 		&msg->rcv.src_ip,  msg->rcv.src_port, msg->rcv.proto);
 
-	if(trace_local_ip.s && trace_local_ip.len > 0){
-		set_columns_to_trace_local_ip(db_vals[7], db_vals[8], db_vals[9]);
-	}
-	else {
-		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
-			TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
-	}
+	set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
+		TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
 
 	db_vals[10].val.time_val = time(NULL);
 
@@ -2640,7 +2665,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps,
 
 	for (instance = info.instances; instance; instance = instance->next) {
 		if ( trace_check_legs( instance, leg_flag)) {
-			if (save_siptrace(msg, db_keys,db_vals, instance, info.conn_id)<0){
+			if (save_siptrace(msg, db_keys,db_vals, instance, info.conn_id, 7)<0){
 				LM_ERR("failed to save siptrace\n");
 				goto error;
 			}
@@ -2779,18 +2804,13 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 		}
 	}
 
-	if (trace_local_ip.s && trace_local_ip.len > 0){
-		set_columns_to_trace_local_ip( db_vals[4], db_vals[5], db_vals[6]);
-	}
-	else {
-		if(dst==NULL || dst->send_sock==0 || dst->send_sock->sock_str.s==0)
-		{
-			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-				TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
-		} else {
-			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-					dst->send_sock->adv_sock_str.len?(struct ip_addr *)&dst->send_sock->adv_address:(struct ip_addr *)&dst->send_sock->address, dst->send_sock->last_real_ports->local?dst->send_sock->last_real_ports->local:dst->send_sock->port_no, dst->send_sock->proto);
-		}
+	if(dst==NULL || dst->send_sock==0 || dst->send_sock->sock_str.s==0)
+	{
+		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+			TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
+	} else {
+		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+				dst->send_sock->adv_sock_str.len?(struct ip_addr *)&dst->send_sock->adv_address:(struct ip_addr *)&dst->send_sock->address, dst->send_sock->last_real_ports->local?dst->send_sock->last_real_ports->local:dst->send_sock->port_no, dst->send_sock->proto);
 	}
 
 	if(dst==0)
@@ -2814,7 +2834,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 
 	for (instance = info.instances; instance; instance = instance->next) {
 		if ( trace_check_legs( instance, leg_flag)) {
-			if (save_siptrace(msg, db_keys,db_vals, instance, info.conn_id)<0){
+			if (save_siptrace(msg, db_keys,db_vals, instance, info.conn_id, 4)<0){
 				LM_ERR("failed to save siptrace\n");
 				goto error;
 			}
@@ -3946,7 +3966,8 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param)
 					break;
 			}
 		}
-		if (sip_trace_handle(msg, it, el->type, el->scope, NULL, 0, NULL) == 1)
+		if (sip_trace_handle(msg, it, el->type, el->scope, NULL, 0, NULL,
+				NULL) == 1)
 			trace_id_ref(el);
 skip:
 		continue;
