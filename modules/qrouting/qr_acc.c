@@ -275,6 +275,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 
 			if (clock_gettime(CLOCK_REALTIME, &dialog_prop->time_200OK) < 0) {
 				LM_ERR("failed to get system time\n");
+				shm_free(dialog_prop);
 				return;
 			}
 
@@ -282,6 +283,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 
 			if ((cur_dlg = dlgcb.get_dlg()) == NULL) {
 				LM_ERR("failed to create dialog\n");
+				shm_free(dialog_prop);
 				return;
 			}
 
@@ -289,6 +291,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 			if (dlgcb.register_dlgcb(cur_dlg, DLGCB_TERMINATED, qr_call_ended,
 						(void *)dialog_prop, osips_shm_free) != 0) {
 				LM_ERR("failed to register callback for call termination\n");
+				shm_free(dialog_prop);
 				return;
 			}
 
@@ -408,12 +411,12 @@ void update_gw_stats(qr_gw_t *gw)
 
 
 /* update the statistics for a group of gateways */
-void update_grp_stats(qr_grp_t grp)
+void update_grp_stats(qr_grp_t *grp)
 {
 	int i;
 
-	for (i = 0; i < grp.n; i++)
-		update_gw_stats(grp.gw[i]);
+	for (i = 0; i < grp->n; i++)
+		update_gw_stats(grp->gw[i]);
 
-	grp.state |= QR_STATUS_DIRTY;
+	grp->state |= QR_STATUS_DIRTY;
 }

@@ -48,7 +48,7 @@ typedef struct qr_dialog_prop {
 } qr_dialog_prop_t;
 
 void update_gw_stats(qr_gw_t *);
-void update_grp_stats(qr_grp_t );
+void update_grp_stats(qr_grp_t *);
 void qr_acc(void *param);
 void qr_check_reply_tmcb(struct cell*, int ,struct tmcb_params*);
 void show_stats(qr_gw_t *gw);

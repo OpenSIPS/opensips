@@ -213,6 +213,8 @@ static inline double qr_score_grp(qr_grp_t *grp, const qr_rule_t *rule,
 			mean += gw->score;
 			valid_gws++;
 			lock_stop_read(gw->ref_lock);
+		} else {
+			lock_stop_read(gw->ref_lock);
 		}
 	}
 
@@ -404,9 +406,9 @@ error:
 }
 
 static inline void qr_weight_based_sort(unsigned short *dsts,
-                                        const double *scores, int n)
+                                        double *scores, int n)
 {
-	double running_sum[n], sum, rnd, aux;
+	double running_sum[n], sum, rnd, aux, score_aux;
 	int i, first = 0;
 
 	while (first < n - 1) {
@@ -434,6 +436,11 @@ static inline void qr_weight_based_sort(unsigned short *dsts,
 		aux = dsts[first];
 		dsts[first] = dsts[i];
 		dsts[i] = aux;
+
+		score_aux = scores[first];
+		scores[first] = scores[i];
+		scores[i] = score_aux;
+
 		first++;
 	}
 }

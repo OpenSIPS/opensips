@@ -182,8 +182,8 @@ static const mi_export_t mi_cmds[] = {
 		{EMPTY_MI_RECIPE}}, {"qr_disable_dst", 0}
 	},
 	{ "enable_dst", HLP3, MI_NAMED_PARAMS_ONLY, NULL, {
-		{mi_qr_disable_dst_2, {QR_PARAM_RULE_ID, QR_PARAM_DST_NAME, NULL}},
-		{mi_qr_disable_dst_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
+		{mi_qr_enable_dst_2, {QR_PARAM_RULE_ID, QR_PARAM_DST_NAME, NULL}},
+		{mi_qr_enable_dst_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
 		                       QR_PARAM_DST_NAME, NULL}},
 		{EMPTY_MI_RECIPE}}, {"qr_enable_dst", 0}
 	},
@@ -329,7 +329,7 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 					if (it->dest[i].type == QR_DST_GW)
 						update_gw_stats(it->dest[i].gw);
 					else
-						update_grp_stats(it->dest[i].grp);
+						update_grp_stats(&it->dest[i].grp);
 				}
 			}
 		}
@@ -527,6 +527,11 @@ static int qr_init_globals(void)
 	}
 	*qr_profiles_n = 0;
 
+	if (sampling_interval <= 0) {
+		LM_ERR("sampling_interval must be a positive integer\n");
+		return -1;
+	}
+
 	qr_interval_list_sz = history_span * 60 / sampling_interval;
 
 	return 0;
@@ -556,6 +561,7 @@ static int qr_check_db(void)
 	if (!DB_CAPABILITY(qr_dbf, DB_CAP_QUERY)) {
 		LM_ERR("database module does not provide"
 				" query functions required by qrouting\n");
+		qr_dbf.close(qr_db_hdl);
 		return -1;
 	}
 
@@ -563,6 +569,7 @@ static int qr_check_db(void)
 	                           QR_TABLE_VER) != 0) {
 		LM_ERR("bad version for <%.*s> table (need %d)\n",
 		       qr_profiles_table.len, qr_profiles_table.s, QR_TABLE_VER);
+		qr_dbf.close(qr_db_hdl);
 		return -1;
 	}
 
@@ -579,6 +586,10 @@ static int w_qr_set_dst_state(int rule_id, str *dst_name, str *part, int state)
 
 	if (!part) {
 		lock_start_read(qr_main_list_rwl);
+		if (!*qr_main_list) {
+			lock_stop_read(qr_main_list_rwl);
+			return -1;
+		}
 		rc = qr_set_dst_state((*qr_main_list)->qr_rules_start[0], rule_id,
 		                      dst_name, state, NULL);
 		lock_stop_read(qr_main_list_rwl);

@@ -271,12 +271,15 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 			RES_ROW_N(res), qr_profiles_table.len,qr_profiles_table.s);
 
 	do {
-		profs = shm_realloc(profs, (total_rows + RES_ROW_N(res)) *
-		                            sizeof *profs);
-		if (!profs) {
+		qr_profile_t *tmp = shm_realloc(profs,
+		                        (total_rows + RES_ROW_N(res)) * sizeof *profs);
+		if (!tmp) {
 			LM_ERR("oom\n");
-			return -1;
+			qr_dbf->free_result(qr_db_hdl, res);
+			/* profs (old pointer) is still valid, error label will free it */
+			goto error;
 		}
+		profs = tmp;
 		memset(&profs[total_rows], 0, RES_ROW_N(res) * sizeof *profs);
 
 		for (i = 0; i < RES_ROW_N(res); i++) {

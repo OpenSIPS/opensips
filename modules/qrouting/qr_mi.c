@@ -185,6 +185,11 @@ mi_response_t *mi_qr_status_0(const mi_params_t *_, struct mi_handler *__)
 
 	lock_start_read(qr_main_list_rwl);
 
+	if (!*qr_main_list) {
+		lock_stop_read(qr_main_list_rwl);
+		goto error;
+	}
+
 	for (i = 0; i < (*qr_main_list)->n_parts; i++) {/* for every partition */
 		part = add_mi_object(part_arr, NULL, 0);
 		if (!part) {
@@ -216,6 +221,12 @@ mi_response_t *mi_qr_status_1(const mi_params_t *params, struct mi_handler *_)
 		return NULL;
 
 	lock_start_read(qr_main_list_rwl);
+
+	if (!*qr_main_list) {
+		lock_stop_read(qr_main_list_rwl);
+		free_mi_response(resp);
+		return init_mi_error(500, MI_SSTR("QRouting data not loaded"));
+	}
 
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
@@ -264,6 +275,12 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 		return NULL;
 
 	lock_start_read(qr_main_list_rwl);
+
+	if (!*qr_main_list) {
+		lock_stop_read(qr_main_list_rwl);
+		free_mi_response(resp);
+		return init_mi_error(500, MI_SSTR("QRouting data not loaded"));
+	}
 
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
@@ -335,6 +352,12 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 		return NULL;
 
 	lock_start_read(qr_main_list_rwl);
+
+	if (!*qr_main_list) {
+		lock_stop_read(qr_main_list_rwl);
+		free_mi_response(resp);
+		return init_mi_error(500, MI_SSTR("QRouting data not loaded"));
+	}
 
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
@@ -421,22 +444,21 @@ int qr_set_dst_state(qr_rule_t *rules, int rule_id, str *dst_name,
 		return -1;
 	}
 
-	lock_start_write(dst->gw->ref_lock);
-
-	if (dst->type == QR_DST_GW)
-		if (active) {
+	if (dst->type == QR_DST_GW) {
+		lock_start_write(dst->gw->ref_lock);
+		if (active)
 			dst->gw->state &= ~QR_STATUS_DSBL;
-		} else {
+		else
 			dst->gw->state |= QR_STATUS_DSBL;
-		}
-	else
-		if (active) {
+		lock_stop_write(dst->gw->ref_lock);
+	} else {
+		lock_start_write(dst->grp.ref_lock);
+		if (active)
 			dst->grp.state &= ~QR_STATUS_DSBL;
-		} else {
+		else
 			dst->grp.state |= QR_STATUS_DSBL;
-		}
-
-	lock_stop_write(dst->gw->ref_lock);
+		lock_stop_write(dst->grp.ref_lock);
+	}
 
 	return 0;
 }
@@ -455,6 +477,10 @@ static mi_response_t *mi_qr_set_dst_state_2(const mi_params_t *params, int activ
 		return init_mi_param_error();
 
 	lock_start_read(qr_main_list_rwl);
+	if (!*qr_main_list) {
+		lock_stop_read(qr_main_list_rwl);
+		return init_mi_error(500, MI_SSTR("QRouting data not loaded"));
+	}
 	rc = qr_set_dst_state((*qr_main_list)->qr_rules_start[0], rule_id, &dst_name,
 	                      active, &err_resp);
 	lock_stop_read(qr_main_list_rwl);
