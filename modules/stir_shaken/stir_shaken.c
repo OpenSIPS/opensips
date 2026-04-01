@@ -1083,7 +1083,7 @@ static X509_INFO *ss_sk_X509_INFO_shift(STACK_OF(X509_INFO) *sk)
 
 static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 {
-	BIO *cbio;
+	BIO *cbio, *chainbio;
 	STACK_OF(X509) *stack;
 	STACK_OF(X509_INFO) *sk;
 	X509_INFO *xi;
@@ -1115,12 +1115,23 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 			SS_UNLOCK;
 			return -1;
 		}
+		chainbio = BIO_new_mem_buf((void*)cert_buf->s,cert_buf->len);
+		if (!chainbio) {
+			LM_ERR("error reading certificate stack\n");
+			X509_free(*cert);
+			*cert = NULL;
+			BIO_free(cbio);
+			sk_X509_free(stack);
+			SS_UNLOCK;
+			return -1;
+		}
 
-		sk = PEM_X509_INFO_read_bio(cbio, NULL, NULL, NULL);
+		sk = PEM_X509_INFO_read_bio(chainbio, NULL, NULL, NULL);
 		if (!sk) {
 			LM_ERR("error reading certificate stack\n");
 			X509_free(*cert);
 			*cert = NULL;
+			BIO_free(chainbio);
 			BIO_free(cbio);
 			sk_X509_free(stack);
 			SS_UNLOCK;
@@ -1141,6 +1152,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 		else
 			*certchain = stack;
 
+		BIO_free(chainbio);
 		BIO_free(cbio);
 		sk_X509_INFO_free(sk);
 	} else {
