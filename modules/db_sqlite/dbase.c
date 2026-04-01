@@ -192,7 +192,11 @@ int db_sqlite_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	} else {
 		/* need to fetch now the total number of rows in query
 		 * because later won't have the query string */
-		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
+		ret = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
+		if (ret >= 0) {
+			CON_PS_ROWS(_h) = ret;
+			ret = 0;
+		}
 	}
 	if( ret < 0 && _r ){
 		db_sqlite_free_result_internal(_h,*_r);
@@ -384,7 +388,11 @@ int db_sqlite_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 	} else {
 		/* need to fetch now the total number of rows in query
 		 * because later won't have the query string */
-		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
+		ret = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
+		if (ret >= 0) {
+			CON_PS_ROWS(_h) = ret;
+			ret = 0;
+		}
 	}
 	if( ret < 0 && _r ){
 		db_sqlite_free_result_internal(_h,*_r);
