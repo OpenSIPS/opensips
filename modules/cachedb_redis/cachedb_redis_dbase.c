@@ -98,7 +98,11 @@ redisContext *redis_get_ctx(char *ip, int port)
 	}
 
 	if (redis_keepalive > 0) {
+#if defined(HIREDIS_MAJOR) && HIREDIS_MAJOR >= 1
 		if (redisEnableKeepAliveWithInterval(ctx, redis_keepalive) != REDIS_OK)
+#else
+		if (redisEnableKeepAlive(ctx) != REDIS_OK)
+#endif
 			LM_WARN("failed to enable TCP keepalive on redis connection "
 				"%s:%hu\n", ip, (unsigned short)port);
 	}
