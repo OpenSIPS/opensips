@@ -202,7 +202,11 @@ again:
 	} else {
 		/* need to fetch now the total number of rows in query
 		 * because later won't have the query string */
-		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
+		ret = db_sqlite_get_query_rows(_h, &count_str, _v, _n);
+		if (ret >= 0) {
+			CON_PS_ROWS(_h) = ret;
+			ret = 0;
+		}
 	}
 	if( ret < 0 ){
 		db_sqlite_free_result_internal(_h,*_r);
@@ -397,7 +401,11 @@ again:
 	} else {
 		/* need to fetch now the total number of rows in query
 		 * because later won't have the query string */
-		ret = CON_PS_ROWS(_h) = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
+		ret = db_sqlite_get_query_rows(_h, &count_str, NULL, 0);
+		if (ret >= 0) {
+			CON_PS_ROWS(_h) = ret;
+			ret = 0;
+		}
 	}
 	if( ret < 0 ){
 		db_sqlite_free_result_internal(_h,*_r);
