@@ -80,7 +80,12 @@ redisContext *redis_get_ctx(char *ip, int port)
 		tv.tv_usec = (redis_connnection_tout * 1000) % 1000000;
 		ctx = redisConnectWithTimeout(ip,port,tv);
 	}
-	if (ctx && ctx->err != REDIS_OK) {
+	if (!ctx) {
+		LM_ERR("failed to connect to redis %s:%hu - out of memory\n",
+				ip, (unsigned short)port);
+		return NULL;
+	}
+	if (ctx->err != REDIS_OK) {
 		LM_ERR("failed to open redis connection %s:%hu - %s\n",ip,
 				(unsigned short)port,ctx->errstr);
 		redisFree(ctx);
@@ -130,7 +135,12 @@ redisContext *redis_get_ctx_unix(const char *socket_path)
 		tv.tv_usec = (redis_connnection_tout * 1000) % 1000000;
 		ctx = redisConnectUnixWithTimeout(socket_path, tv);
 	}
-	if (ctx && ctx->err != REDIS_OK) {
+	if (!ctx) {
+		LM_ERR("failed to connect to redis unix:%s - out of memory\n",
+				socket_path);
+		return NULL;
+	}
+	if (ctx->err != REDIS_OK) {
 		LM_ERR("failed to open redis Unix socket connection %s - %s\n",
 				socket_path, ctx->errstr);
 		redisFree(ctx);
