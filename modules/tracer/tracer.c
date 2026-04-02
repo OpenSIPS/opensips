@@ -2189,7 +2189,7 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info, int leg_flag)
 
 	for (instance = info->instances; instance; instance = instance->next) {
 		if ( trace_check_legs( instance, leg_flag)) {
-			if (save_siptrace(msg, db_keys,db_vals, instance,info->conn_id, -1)<0){
+			if (save_siptrace(msg, db_keys,db_vals, instance,info->conn_id, 7)<0){
 				LM_ERR("failed to save tracer\n");
 				goto error;
 			}
@@ -2274,7 +2274,7 @@ static int sip_trace_instance(struct sip_msg* msg,
 	db_vals[12].val.str_val.s = get_from(msg)->tag_value.s;
 	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
 
-	if (save_siptrace(msg, db_keys,db_vals, instance, conn_id, -1) < 0) {
+	if (save_siptrace(msg, db_keys,db_vals, instance, conn_id, 7) < 0) {
 		LM_ERR("failed to save tracer\n");
 		goto error;
 	}
