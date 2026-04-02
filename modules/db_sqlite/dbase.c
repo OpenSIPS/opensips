@@ -193,6 +193,7 @@ again:
 	if (db_sqlite_bind_values(CON_SQLITE_PS(_h), _v, _n) != SQLITE_OK) {
 		LM_ERR("failed to bind values\n");
 		sqlite3_finalize(CON_SQLITE_PS(_h));
+		CON_SQLITE_PS(_h) = NULL;
 		return -1;
 	}
 #endif
@@ -209,7 +210,12 @@ again:
 		}
 	}
 	if( ret < 0 ){
-		db_sqlite_free_result_internal(_h,*_r);
+		if (_r) {
+			db_sqlite_free_result_internal(_h,*_r);
+		} else if (CON_SQLITE_PS(_h)) {
+			sqlite3_finalize(CON_SQLITE_PS(_h));
+			CON_SQLITE_PS(_h) = NULL;
+		}
 	}
 
 	return ret;
@@ -408,7 +414,12 @@ again:
 		}
 	}
 	if( ret < 0 ){
-		db_sqlite_free_result_internal(_h,*_r);
+		if (_r) {
+			db_sqlite_free_result_internal(_h,*_r);
+		} else if (CON_SQLITE_PS(_h)) {
+			sqlite3_finalize(CON_SQLITE_PS(_h));
+			CON_SQLITE_PS(_h) = NULL;
+		}
 	}
 
 	return ret;
