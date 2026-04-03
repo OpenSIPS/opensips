@@ -264,6 +264,25 @@ modparam("event_flatstore", "suffix", "$time(%Y)")
 </programlisting>
 		</example>
 	</section>
+	<section id="param_header" xreflabel="header">
+	<title><varname>header</varname> (string)</title>
+	<para>
+		If set, the string is written as the very first line of
+		every new log file created by the module.
+		Useful for column names.
+	</para>
+	<para>
+	<emphasis>Default value is <quote>""</quote> (disabled)</emphasis>.
+	</para>
+	<example>
+	<title>Set <varname>header</varname> parameter</title>
+	<programlisting  format="linespecific">
+...
+modparam("event_flatstore", "header", "event,time,param1,param2")
+...
+	</programlisting>
+	</example>
+	</section>
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
