@@ -177,8 +177,8 @@ Chapter 2. Contributors
                   Name                DevScore Commits Lines ++ Lines --
 1.  Ionut Ionita (@ionutrazvanionita)    82      28      3744     1276
 2.  Razvan Crainea (@razvancrainea)      19      17      115       42
-3.  Alexey Vasilyev (@vasilevalex)       13       9      165       96
-4.  Liviu Chircu (@liviuchircu)          12      10       32       60
+3.  Liviu Chircu (@liviuchircu)          15      12       55       64
+4.  Alexey Vasilyev (@vasilevalex)       13       9      165       96
 5.  Jarrod Baumann (@jarrodb)            5        3       7        4
 6.  Vlad Patrascu (@rvlad-patrascu)      4        2       3        2
 7.  Alexandra Titoc                      4        2       2        3
@@ -209,9 +209,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2025
-   2.  Alexey Vasilyev (@vasilevalex)      Dec 2024 - Dec 2024
-   3.  Liviu Chircu (@liviuchircu)         May 2016 - Sep 2024
+   1.  Liviu Chircu (@liviuchircu)         May 2016 - Apr 2026
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2025
+   3.  Alexey Vasilyev (@vasilevalex)      Dec 2024 - Dec 2024
    4.  Alexandra Titoc                     Sep 2024 - Sep 2024
    5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    6.  Eric Green                          Aug 2020 - Aug 2020
