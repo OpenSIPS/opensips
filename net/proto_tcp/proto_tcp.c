@@ -83,8 +83,6 @@ static char* trace_filter_route;
 static struct script_route_ref* trace_filter_route_ref = NULL;
 /**/
 
-extern int unix_tcp_sock;
-
 /* default port for TCP protocol */
 static int tcp_port = SIP_PORT;
 
@@ -714,12 +712,10 @@ again:
 		goto error;
 	}
 
-	int parallel_handling = tcp_is_default_profile(con->profile) ?
-			tcp_parallel_handling : (con->profile.parallel_read == 2);
 	int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
 			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : tcp_max_msg_chunks;
 
-	switch ((rc = tcp_handle_req(req,con,max_chunks,parallel_handling))){
+	switch ((rc = tcp_handle_req(req, con, max_chunks))){
 		case 1:
 			goto again;
 		case -1:
@@ -730,8 +726,7 @@ again:
 done:
 	if (bytes_read) *bytes_read=total_bytes;
 
-	return rc == 2   ?  1  /* connection is already released! */
-	       /* 0,1? */:  0; /* connection will be released */
+	return 0;
 error:
 	/* connection will be released as ERROR */
 	return -1;

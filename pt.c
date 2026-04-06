@@ -118,7 +118,6 @@ int init_multi_proc_support(void)
 
 	for( i=0 ; i<counted_max_processes ; i++ ) {
 		/* reset fds to prevent bogus ops */
-		pt[i].unix_sock = -1;
 		pt[i].pid = -1;
 		pt[i].ipc_pipe[0] = pt[i].ipc_pipe[1] = -1;
 		pt[i].ipc_sync_pipe[0] = pt[i].ipc_sync_pipe[1] = -1;
@@ -134,12 +133,6 @@ int init_multi_proc_support(void)
 	/* create the IPC pipes for all possible procs */
 	if (create_ipc_pipes( counted_max_processes )<0) {
 		LM_ERR("failed to create IPC pipes, aborting\n");
-		return -1;
-	}
-
-	/* create the IPC pipes for all possible procs */
-	if (tcp_create_comm_proc_socks( counted_max_processes )<0) {
-		LM_ERR("failed to create TCP layer communication, aborting\n");
 		return -1;
 	}
 
@@ -238,7 +231,6 @@ void reset_process_slot( int p_id )
 
 	pt[p_id].ipc_pipe[0] = pt[p_id].ipc_pipe[1] = -1;
 	pt[p_id].ipc_sync_pipe[0] = pt[p_id].ipc_sync_pipe[1] = -1;
-	pt[p_id].unix_sock = -1;
 
 	pt[p_id].log_level = pt[p_id].default_log_level = 0; /*not really needed*/
 
@@ -270,8 +262,6 @@ static __attribute__((__noreturn__)) void child_startup_failed(void)
 static int internal_fork_child_setup(const struct internal_fork_params *ifpp)
 {
 	init_log_level();
-
-	tcp_connect_proc_to_tcp_main(process_no, 1);
 
 	/* free the script if not needed */
 	if (!(ifpp->flags & OSS_PROC_NEEDS_SCRIPT) && sroutes) {
@@ -307,13 +297,6 @@ int internal_fork(const struct internal_fork_params *ifpp)
 	seed = rand();
 
 	LM_DBG("forking new process \"%s\" on slot %d\n", ifpp->proc_desc, new_idx);
-
-	/* set TCP communication */
-	if (tcp_activate_comm_proc_socks(new_idx)<0){
-		LM_ERR("failed to connect future proc %d to TCP main\n",
-			process_no);
-		return -1;
-	}
 
 	/* set the IPC pipes */
 	if ( (ifpp->flags & OSS_PROC_NO_IPC) ) {
@@ -406,7 +389,6 @@ int internal_fork(const struct internal_fork_params *ifpp)
 			goto child_is_down;
 		}
 		pt[new_idx].flags |= OSS_PROC_IS_RUNNING;
-		tcp_connect_proc_to_tcp_main( new_idx, 0);
 		return new_idx;
 child_is_down:
 		LM_CRIT("failed to initialize child process %d\n", new_idx);

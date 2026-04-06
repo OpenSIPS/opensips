@@ -45,26 +45,6 @@
 static int _my_fd_to_tcp_main = -1;
 
 static int tcpmain_sock=-1;
-extern int unix_tcp_sock;
-
-static void tcpconn_release(struct tcp_connection* c, long state, int writer,
-															int as_tcp_worker)
-{
-	long response[2];
-
-	LM_DBG(" releasing con %p, state %ld, fd=%d, id=%d\n",
-			c, state, c->fd, c->id);
-	LM_DBG(" extra_data %p\n", c->extra_data);
-
-	/* errno==EINTR, EWOULDBLOCK a.s.o todo */
-	response[0]=(long)c;
-	response[1]=state;
-
-	if (send_all( as_tcp_worker?tcpmain_sock:unix_tcp_sock, response,
-	sizeof(response))<=0)
-		LM_ERR("send_all failed state=%ld con=%p\n", state, c);
-}
-
 
 /* wrapper around internal tcpconn_release() - to be called by functions which
  * used tcp_conn_get(), in order to release the connection;
@@ -87,19 +67,16 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 			 c->fd == -1))
 		pending_data = 1;
 	if (pending_data) {
-		tcpconn_release(c, ASYNC_WRITE_GENW, 1, 0 /*not TCP, but GEN worker*/);
+		if (tcp_async_write_job(c) < 0) {
+			LM_ERR("failed to queue direct TCP write job for conn %p / %u\n",
+				c, c->id);
+			tcpconn_put(c);
+		}
 		return;
 	}
 	tcpconn_put(c);
 }
 
-
-int tcp_done_reading(struct tcp_connection* con)
-{
-	/* Single-process TCP IO is now always enabled. */
-	(void)con;
-	return 0;
-}
 
 struct tcp_ipc_payload {
 	struct receive_info rcv;
@@ -108,13 +85,6 @@ struct tcp_ipc_payload {
 	int data_len;
 	char msg_buf[0];
 };
-
-
-/*! \brief no-op: TCP workers no longer own connection fds */
-static void tcp_receive_timeout(void)
-{
-	/* TCP worker reads are dispatched by TCP main via shared payloads only. */
-}
 
 
 /*! \brief
@@ -222,8 +192,6 @@ again_payload:
 	}
 
 	if (_termination_in_progress==1) {
-		/* legacy timeout hook, now a no-op for TCP workers */
-		tcp_receive_timeout();
 		/* check if anything is still left */
 		if (reactor_is_empty()) {
 			LM_WARN("reactor got empty while termination in progress\n");
@@ -285,8 +253,7 @@ error:
 void tcp_worker_proc_loop(void)
 {
 	/* main loop */
-	reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error,
-			tcp_receive_timeout());
+	reactor_main_loop(TCP_CHILD_SELECT_TIMEOUT, error,);
 	LM_CRIT("exiting...");
 	exit(-1);
 error:
@@ -314,9 +281,6 @@ void tcp_terminate_worker(void)
 
 	/* let's drain the private IPC */
 	ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
-
-	/* legacy timeout hook, now a no-op for TCP workers */
-	tcp_receive_timeout();
 
 	/* what is left now is the reactor are async fd's, so we need to 
 	 * wait to complete all of them */

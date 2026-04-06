@@ -64,7 +64,7 @@ enum fd_types { F_NONE=0,
 		/* fd types specific to TCP oriented processes (SIP workers) */
 		F_TCPMAIN, F_TCPCONN,
 		/* fd types for TCP management process (TCP main process) */
-		F_TCP_LISTENER, F_TCP_TCPWORKER, F_TCP_WORKER,
+		F_TCP_LISTENER,
 		F_TCP_NOTIFY,
 		/* generic fd type specific to the custome processes (like MI) */
 		F_GEN_PROC,

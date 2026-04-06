@@ -48,17 +48,6 @@ void tcp_destroy(void);
 int tcp_has_async_write(void);
 
 
-/* creates the communication channel between the OpenSIPS processes
-   and the TCP MAIN process - TO BE called before forking */
-int tcp_create_comm_proc_socks( int proc_no);
-
-/* activates the communication channel between the OpenSIPS process
-   and the TCP MAIN process - TO BE called before forking */
-int tcp_activate_comm_proc_socks( int proc_no );
-
-/* same as above, but to be called after forking, both in child and parent */
-void tcp_connect_proc_to_tcp_main( int proc_no, int chid );
-
 /* tells how many processes the TCP layer will create */
 int tcp_count_processes(unsigned int *extra);
 
@@ -121,8 +110,7 @@ int tcp_get_rcv(unsigned int id, struct receive_info *ri);
 int tcp_get_main_proc_no(void);
 
 int tcp_run_task(tcp_thread_job_f run, void *data);
-
-int tcp_done_reading(struct tcp_connection* c);
+int tcp_async_write_job(struct tcp_connection *tcpconn);
 
 /* either process locally or dispatch to an OpenSIPS worker via IPC */
 int tcp_dispatch_msg(char *msg, int len,

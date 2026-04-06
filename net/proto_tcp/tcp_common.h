@@ -342,14 +342,13 @@ skip:
 
 
 static inline int tcp_handle_req(struct tcp_req *req,
-		struct tcp_connection *con, int _max_msg_chunks,
-		int _parallel_handling)
+		struct tcp_connection *con, int _max_msg_chunks)
 {
 	struct receive_info local_rcv;
 	char *msg_buf;
 	int msg_len;
 	long size;
-	char c, *msg_buf_cpy = NULL;
+	char c;
 
 	if (req->complete){
 #ifdef EXTRA_DEBUG
@@ -402,23 +401,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			local_rcv = con->rcv;
 
 			if (!size) {
-				/* did not read any more things -  we can release
-				 * the connection */
 				LM_DBG("Nothing more to read on TCP conn %p, currently in state %d \n",
 					con,con->state);
-
-				/* If parallel handling, make a copy (null terminted) of the
-				 * current reading buffer (so we can continue its handling)
-				 * and release the TCP conn on READ */
-				if ( (_parallel_handling!=0) &&
-				(msg_buf_cpy=(char*)pkg_malloc( msg_len+1 )) !=NULL ) {
-					memcpy( msg_buf_cpy, msg_buf, msg_len);
-					msg_buf_cpy[msg_len] = 0;
-					msg_buf = msg_buf_cpy;
-					tcp_done_reading( con );
-					con = NULL; /* having reached this, we MUST return 2 */
-				}
-
 			} else {
 				LM_DBG("We still have things on the pipe - "
 					"keeping connection \n");
@@ -429,9 +413,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 				LM_ERR("failed to deliver TCP message\n");
 				goto error;
 			}
-
-			if (msg_buf_cpy)
-				pkg_free(msg_buf_cpy);
 		}
 
 		if (size) {
@@ -463,8 +444,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		}
 	}
 
-	/* everything ok; if connection was returned already, use special rc 2 */
-	return con ? 0 : 2;
+	return 0;
 error:
 	/* report error */
 	return -1;
