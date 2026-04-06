@@ -168,8 +168,7 @@ struct tcp_connection{
 	unsigned id_hash;			/*!< hash index in the id_hash */
 	struct tcp_connection* id_next;		/*!< next in id hash table */
 	struct tcp_connection* id_prev;		/*!< prev in id hash table */
-	struct tcp_connection* c_next;		/*!< Child next (use locally) */
-	struct tcp_connection* c_prev;		/*!< Child prev (use locally */
+	struct tcp_connection* wq_next;		/*!< next pending write conn in shared queue */
 	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];	/*!< Aliases for this connection */
 	int aliases;				/*!< Number of aliases, at least 1 */
 	struct tcp_req *con_req;	/*!< Per-connection TCP request buffer in TCP-main-private memory */

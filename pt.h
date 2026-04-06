@@ -65,12 +65,6 @@ struct process_table {
 	/* same as above, but holder for non-existing processes */
 	int ipc_sync_pipe_holder[2];
 
-	/* holder for the unixsocks used by TCP layer for inter-proc communication;
-	 * used when the corresponding process does not exist */
-	int tcp_socks_holder[2];
-	/* unix socket on which TCP MAIN listens */
-	int unix_sock;
-
 	/* logging level of this process */
 	int log_level;
 	/* used when resetting the log level */
