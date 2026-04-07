@@ -1661,7 +1661,7 @@ static int add_isup_part_cmd(struct sip_msg *msg, str *msg_type, str *hdrs)
 			else if (msg->REPLY_STATUS == 200) {
 				if (get_cseq(msg)->method_id == METHOD_INVITE)
 					/* 200 OK INVITE -> ANM */
-					isup_msg_idx = get_msg_idx_by_type(ISUP_REL);
+					isup_msg_idx = get_msg_idx_by_type(ISUP_ANM);
 				else if (get_cseq(msg)->method_id == METHOD_BYE)
 					/* 200 OK INVITE -> RLC */
 					isup_msg_idx = get_msg_idx_by_type(ISUP_RLC);
