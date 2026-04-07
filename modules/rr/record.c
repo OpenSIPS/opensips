@@ -245,6 +245,7 @@ int record_route(struct sip_msg* _m, str *params)
 	str user = STR_NULL;
 	struct to_body* from;
 	str* tag;
+	char *anchor_pos;
 
 	from = 0; /* Makes gcc happy */
 	lp = lp2 = NULL;
@@ -267,8 +268,11 @@ int record_route(struct sip_msg* _m, str *params)
 		tag = 0;
 	}
 
-	l = anchor_lump(_m, _m->headers->name.s - _m->buf, HDR_RECORDROUTE_T);
-	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, HDR_RECORDROUTE_T);
+	/* Get the anchor position relative to other Record-Routes if existing */
+	anchor_pos = _m->record_route != NULL ? _m->record_route->name.s : _m->headers->name.s;
+
+	l = anchor_lump(_m, anchor_pos - _m->buf, HDR_RECORDROUTE_T);
+	l2 = anchor_lump(_m, anchor_pos - _m->buf, HDR_RECORDROUTE_T);
 	if (!l || !l2) {
 		LM_ERR("failed to create an anchor\n");
 		return -3;
@@ -299,8 +303,8 @@ int record_route(struct sip_msg* _m, str *params)
 	}
 
 	if (enable_double_rr) {
-		l = anchor_lump(_m, _m->headers->name.s - _m->buf,HDR_RECORDROUTE_T);
-		l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, HDR_RECORDROUTE_T);
+		l = anchor_lump(_m, anchor_pos - _m->buf,HDR_RECORDROUTE_T);
+		l2 = anchor_lump(_m, anchor_pos - _m->buf, HDR_RECORDROUTE_T);
 		if (!l || !l2) {
 			LM_ERR("failed to create an anchor\n");
 			return -5;
@@ -331,7 +335,7 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 	struct to_body* from;
 	struct lump* l, *lp, *ap;
 	struct lump* l2;
-	char *hdr, *suffix, *p, *term;
+	char *hdr, *suffix, *p, *term, *anchor_pos;
 	int hdr_len, suffix_len;
 
 	from = 0;
@@ -402,8 +406,11 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 
 	memcpy(term, RR_TERM, RR_TERM_LEN);
 
-	l = anchor_lump(_m, _m->headers->name.s - _m->buf, HDR_RECORDROUTE_T);
-	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, HDR_RECORDROUTE_T);
+	/* Get the anchor position relative to other Record-Routes if existing */
+	anchor_pos = _m->record_route != NULL ? _m->record_route->name.s : _m->headers->name.s;
+
+	l = anchor_lump(_m, anchor_pos - _m->buf, HDR_RECORDROUTE_T);
+	l2 = anchor_lump(_m, anchor_pos - _m->buf, HDR_RECORDROUTE_T);
 	if (!l || !l2) {
 		LM_ERR("failed to create lump anchor\n");
 		goto error;

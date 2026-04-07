@@ -137,7 +137,7 @@ static module_dependency_t *get_deps_restore_mode(const param_export_t *param)
 	if (!mode || strlen(mode) == 0)
 		return NULL;
 
-	if (strcmp(mode, "none") != 0)
+	if (strcmp(mode, "none") != 0 && !force_dialog)
 		return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
 
 	return NULL;
@@ -201,16 +201,9 @@ inline static int parse_store_bavp(str *s, pv_spec_t *bavp)
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
-	int rr_api_loaded=0;
-	int dlg_api_loaded=0;
-
-	if ( is_script_func_used("uac_auth", -1) ) {
-		/* load the UAC_AUTH API as uac_auth() is invoked from script */
-		if(load_uac_auth_api(&uac_auth_api)<0){
-			LM_ERR("can't load UAC_AUTH API, needed for uac_auth()\n");
-			goto error;
-		}
-	}
+	int rr_api_loaded = 0;
+	int dlg_api_loaded = 0;
+	int should_register_rr_cbs = 0;
 
 	/* load the TM API - FIXME it should be loaded only
 	 * if NO_RESTORE and AUTH */
@@ -233,6 +226,30 @@ static int mod_init(void)
 		}
 	}
 
+	/* trying to load dialog module, if load fails and force_dialog is false then fail mod_init */
+	memset(&dlg_api, 0, sizeof(struct dlg_binds));
+	if (load_dlg_api(&dlg_api) != 0) {
+		if (force_dialog) {
+			LM_ERR("cannot force dialog. dialog module not loaded\n");
+			goto error;
+		}
+		LM_DBG("failed to find dialog API - is dialog module loaded?\n");
+	} else {
+		dlg_api_loaded = 1;
+	}
+
+	if (load_rr_api(&uac_rrb)!=0) {
+		if (!force_dialog) {
+			LM_ERR("can't load RR API\n");
+			goto error;
+		}
+		LM_DBG("failed to find rr API - is rr module loaded?\n");
+	} else {
+		rr_api_loaded = 1;
+	}
+
+	should_register_rr_cbs = rr_api_loaded && (!dlg_api_loaded || !force_dialog);
+
 	if ( is_script_func_used("uac_replace_from", -1) ||
 	is_script_func_used("uac_replace_to", -1) ) {
 
@@ -253,32 +270,8 @@ static int mod_init(void)
 		uac_passwd.len = strlen(uac_passwd.s);
 
 		if (restore_mode!=UAC_NO_RESTORE) {
-			/* load the RR API */
-			if (load_rr_api(&uac_rrb)!=0) {
-				LM_ERR("can't load RR API\n");
-				goto error;
-			}
-			rr_api_loaded=1;
-
 			if (restore_mode==UAC_AUTO_RESTORE) {
-				/* we need the append_fromtag on in RR */
-				if (!force_dialog && !uac_rrb.append_fromtag) {
-					LM_ERR("'append_fromtag' RR param is not enabled!"
-						" - required by AUTO restore mode\n");
-					goto error;
-				}
-
-				/* trying to load dialog module */
-				memset(&dlg_api, 0, sizeof(struct dlg_binds));
-				if (load_dlg_api(&dlg_api)!=0) {
-					if (force_dialog) {
-						LM_ERR("cannot force dialog. dialog module not loaded\n");
-						goto error;
-					}
-					LM_DBG("failed to find dialog API - is dialog module loaded?\n");
-				} else {
-					dlg_api_loaded=1;
-
+				if (dlg_api_loaded) {
 					if ( (parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
 					parse_store_bavp(&store_from_bavp, &from_bavp_spec))) {
 						LM_ERR("cannot set correct store parameters\n");
@@ -292,10 +285,19 @@ static int mod_init(void)
 					}
 				}
 
-				/* get all requests doing loose route */
-				if (uac_rrb.register_rrcb( rr_checker, 0, 2)!=0) {
-					LM_ERR("failed to install RR callback\n");
-					goto error;
+				/* get all requests doing loose route if force_dialog is false */
+				if (should_register_rr_cbs) {
+					/* we need the append_fromtag on in RR */
+					if (!uac_rrb.append_fromtag) {
+						LM_ERR("'append_fromtag' RR param is not enabled!"
+							" - required by AUTO restore mode\n");
+						goto error;
+					}
+
+					if (uac_rrb.register_rrcb(rr_checker, 0, 2) != 0) {
+						LM_ERR("failed to install RR callback\n");
+						goto error;
+					}
 				}
 			}
 		}
@@ -306,27 +308,23 @@ static int mod_init(void)
 	}
 
 	if (is_script_func_used("uac_auth", -1)) {
-		if (!rr_api_loaded) {
-			if (load_rr_api(&uac_rrb)!=0) {
-				LM_ERR("can't load RR API\n");
+		/* load the UAC_AUTH API as uac_auth() is invoked from script */
+		if (load_uac_auth_api(&uac_auth_api) < 0){
+			LM_ERR("can't load UAC_AUTH API, needed for uac_auth()\n");
+			goto error;
+		}
+
+		if (should_register_rr_cbs) {
+			if (!uac_rrb.append_fromtag) {
+				LM_ERR("'append_fromtag' RR param is not enabled!"
+				" - required by uac_auth() when dialog module not loaded\n");
 				goto error;
 			}
-		}
-		if (!dlg_api_loaded) {
-			if (load_dlg_api(&dlg_api)!=0) {
-				LM_ERR("Can't load dlg API \n");
-			}	
-		}
 
-		if (!uac_rrb.append_fromtag) {
-			LM_ERR("'append_fromtag' RR param is not enabled!"
-			" - required by uac_auth() restore mode\n");
-			goto error;
-		}
-
-		if (uac_rrb.register_rrcb( rr_uac_auth_checker, 0, 2)!=0) {
-			LM_ERR("failed to install RR callback\n");
-			goto error;
+			if (uac_rrb.register_rrcb(rr_uac_auth_checker, 0, 2) != 0) {
+				LM_ERR("failed to install RR callback\n");
+				goto error;
+			}
 		}
 	}
 

@@ -37,6 +37,7 @@
 #include "rr_cb.h"
 
 extern int append_fromtag;
+extern int enable_double_rr;
 
 int load_rr( struct rr_binds *rrb )
 {

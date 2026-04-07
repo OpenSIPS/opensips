@@ -1207,6 +1207,17 @@ void unref_acc_ctx(void *ctx)
 	acc_unref((acc_ctx_t *)ctx);
 }
 
+static int is_downstream_request(struct sip_msg *msg) {
+	int dlg_dir;
+	if (dlg_api.get_direction != NULL) {
+		/* If no dialog created will return DLG_DIR_NONE, assume downstream */
+		dlg_dir = dlg_api.get_direction();
+		return dlg_dir == DLG_DIR_DOWNSTREAM || dlg_dir == DLG_DIR_NONE;
+	} else {
+		return rrb.is_direction(msg, RR_FLOW_DOWNSTREAM) == 0;
+	}
+}
+
 int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 			unsigned long long *flags, str *table_name)
 {
@@ -1344,7 +1355,7 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 		}
 
 		/* if required, determine request direction */
-		if( detect_direction && !rrb.is_direction(msg,RR_FLOW_UPSTREAM) ) {
+		if (detect_direction && !is_downstream_request(msg)) {
 			LM_DBG("detected an UPSTREAM req -> flaging it\n");
 			msg->msg_flags |= FL_REQ_UPSTREAM;
 		}

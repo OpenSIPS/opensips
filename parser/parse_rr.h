@@ -94,8 +94,10 @@ int shm_duplicate_rr(rr_t** _new, rr_t* _r, int _first);
 int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 		int no_change, unsigned int * nb_recs);
 
-int print_rr_body_ignore(struct hdr_field *iroute, str *oroute, int order,
-		int no_change, str *rrs_to_ignore);
+/*
+ * print body for all RR headers in an array of strings, return array size
+ */
+int list_rr_body(struct hdr_field *iroute, str **oroute);
 
 /*
  * Function returns the first uri

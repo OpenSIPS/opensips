@@ -266,6 +266,7 @@ static int mod_preinit(void)
 {
 	if (load_dlg_api(&dlg_api) != 0) {
 		LM_DBG("failed to load dialog API - is the dialog module loaded?\n");
+		memset(&dlg_api, 0, sizeof(struct dlg_binds));
 		return 0;
 	}
 
@@ -348,8 +349,8 @@ static int mod_init( void )
 		return -1;
 	}
 
-	/* if detect_direction is enabled, load rr also */
-	if (detect_direction) {
+	/* if detect_direction is enabled, load rr also if dialog module not loaded */
+	if (detect_direction && dlg_api.get_direction == NULL) {
 		if (load_rr_api(&rrb)!=0) {
 			LM_ERR("can't load RR API\n");
 			return -1;
