@@ -21,6 +21,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#ifdef BACKTRACE_DBG
+#include <stdlib.h>
+#include <string.h>
+#include <execinfo.h>
+#endif
+
 #include "struct_hist.h"
 
 #include "../../mem/shm_mem.h"
@@ -78,6 +84,9 @@ static inline const char *verb2str(enum struct_hist_verb verb)
 
 static void sh_unref_unsafe(struct struct_hist *sh, osips_free_f free_f);
 static void sh_free(struct struct_hist *sh, osips_free_f free_f);
+#ifdef BACKTRACE_DBG
+static void sh_log_backtrace(const struct struct_hist_action *act);
+#endif
 
 struct struct_hist_list *_shl_init(char *obj_name, int window_size,
 			int auto_logging, int init_actions_sz, osips_malloc_f malloc_f)
@@ -213,12 +222,38 @@ static void _sh_flush(struct struct_hist *sh, int do_logging)
 			        sh->actions[i].t,
 			        sh->actions[i].pid,
 			        sh->actions[i].log);
+#ifdef BACKTRACE_DBG
+			        sh_log_backtrace(&sh->actions[i]);
+#endif
 		}
 	}
 
 	sh->flush_offset += sh->len;
 	sh->len = 0;
 }
+
+#ifdef BACKTRACE_DBG
+static void sh_log_backtrace(const struct struct_hist_action *act)
+{
+	char **symbols;
+	int i;
+
+	if (act->bt_size <= 0)
+		return;
+
+	symbols = backtrace_symbols(act->bt, act->bt_size);
+	if (!symbols) {
+		for (i = 0; i < act->bt_size; i++)
+			LM_INFO("      bt[%d]: %p\n", i, act->bt[i]);
+		return;
+	}
+
+	for (i = 0; i < act->bt_size; i++)
+		LM_INFO("      bt[%d]: %s\n", i, symbols[i]);
+
+	free(symbols);
+}
+#endif
 
 void sh_flush(struct struct_hist *sh)
 {
@@ -254,6 +289,9 @@ int _sh_log(osips_realloc_f realloc_f, struct struct_hist *sh,
 {
 	va_list ap;
 	int n;
+#ifdef BACKTRACE_DBG
+	int bt_size;
+#endif
 	struct struct_hist_action *new, *act;
 
 	if (!sh)
@@ -289,6 +327,16 @@ int _sh_log(osips_realloc_f realloc_f, struct struct_hist *sh,
 	act->verb = verb;
 	act->t = get_uticks();
 	act->pid = my_pid();
+
+#ifdef BACKTRACE_DBG
+	bt_size = backtrace(act->bt, SH_BACKTRACE_SIZE);
+	if (bt_size > 1) {
+		memmove(act->bt, act->bt + 1, (bt_size - 1) * sizeof(*act->bt));
+		act->bt_size = bt_size - 1;
+	} else {
+		act->bt_size = 0;
+	}
+#endif
 
 	n = vsnprintf(act->log, MAX_SHLOG_SIZE, fmt, ap);
 	lock_release(&sh->wlock);
