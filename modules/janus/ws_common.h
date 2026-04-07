@@ -579,6 +579,7 @@ accum_reset:
 static int janus_connection_read_data(janus_connection *sock, struct janus_ws_req *req, int _max_msg_chunks)
 {
 	int ret=-1;
+	int frag_ret;
 	long size=0;
 	enum ws_close_code ret_code = WS_ERR_NONE;
 	unsigned char bk = 0;
@@ -595,18 +596,15 @@ static int janus_connection_read_data(janus_connection *sock, struct janus_ws_re
 		}
 
 		/* Handle fragment accumulation before processing */
-		{
-			int frag_ret = janus_ws_handle_frag(req);
-			if (frag_ret == 1) {
-				/* Fragment accumulated, parser reset, read more */
-				sock->msg_attempts = 0;
-				return 1;
-			} else if (frag_ret < 0) {
-				ret_code = WS_ERR_POLICY;
-				goto error;
-			}
-			/* frag_ret == 0: complete message ready */
+		frag_ret = janus_ws_handle_frag(req);
+		if (frag_ret == 1) {
+			/* Fragment accumulated, parser reset, read more */
+			return 1;
+		} else if (frag_ret < 0) {
+			ret_code = WS_ERR_POLICY;
+			goto error;
 		}
+		/* frag_ret == 0: complete message ready */
 
 		switch (req->op) {
 		case WS_OP_CLOSE:
@@ -744,6 +742,7 @@ error:
 static int janus_connection_handler_id(janus_connection *sock, struct janus_ws_req *req, int _max_msg_chunks)
 {
 	int ret=-1;
+	int frag_ret;
 	long size=0;
 	enum ws_close_code ret_code = WS_ERR_NONE;
 
@@ -759,15 +758,12 @@ static int janus_connection_handler_id(janus_connection *sock, struct janus_ws_r
 		}
 
 		/* Handle fragment accumulation before processing */
-		{
-			int frag_ret = janus_ws_handle_frag(req);
-			if (frag_ret == 1) {
-				sock->msg_attempts = 0;
-				return 1;
-			} else if (frag_ret < 0) {
-				ret_code = WS_ERR_POLICY;
-				goto error;
-			}
+		frag_ret = janus_ws_handle_frag(req);
+		if (frag_ret == 1) {
+			return 1;
+		} else if (frag_ret < 0) {
+			ret_code = WS_ERR_POLICY;
+			goto error;
 		}
 
 		size=req->tcp.pos-req->tcp.parsed;
