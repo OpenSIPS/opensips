@@ -24,6 +24,10 @@
 #include "../../timer.h"
 #include "../../mem/mem_funcs.h"
 
+#ifdef BACKTRACE_DBG
+#define SH_BACKTRACE_SIZE 16
+#endif
+
 /**
  * Generic struct debugging support.  Some major use cases:
  *   - troubleshooting bugs related to reference counted structures, including:
@@ -81,6 +85,10 @@ struct struct_hist_action {
 	enum struct_hist_verb verb;
 	utime_t t;
 	int pid;
+#ifdef BACKTRACE_DBG
+	int bt_size;
+	void *bt[SH_BACKTRACE_SIZE];
+#endif
 	char log[MAX_SHLOG_SIZE];
 };
 
