@@ -61,6 +61,12 @@ static str ev_param_status = str_init("status");
 
 static profiling_event_handle_t profiling_events[2];
 
+uint16_t proc_depth = 0;
+profiling_proc_pending_t
+	profiling_proc_pending_stack[PROFILING_PROC_STACK_MAX];
+uint16_t profiling_proc_pending_no = 0;
+
+
 static int profiling_data_type_to_idx(int data_type)
 {
 	switch (data_type) {
@@ -165,6 +171,9 @@ static inline void profiling_raise_event(int data_type, char *verb,
 		file_s.s = (char *)file;
 		file_s.len = strlen(file);
 	}
+	LM_DBG("raising profiling even < %s | %s >\n", verb, name);
+
+	set_proc_log_level(L_ERR);
 
 	if (evi_param_set_int(ev->sec_p, &sec) < 0 ||
 		evi_param_set_int(ev->usec_p, &usec) < 0 ||
@@ -174,14 +183,14 @@ static inline void profiling_raise_event(int data_type, char *verb,
 		evi_param_set_int(ev->type_p, &type) < 0 ||
 		evi_param_set_int(ev->depth_p, &depth) < 0 ) {
 		LM_ERR("cannot populate profiling event params 1\n");
-		return;
+		goto error;
 	}
 
 	if (file) {
 		if (evi_param_set_str(ev->file_p, &file_s) < 0 ||
 			evi_param_set_int(ev->line_p, &line) < 0 ) {
 			LM_ERR("cannot populate profiling event params 2\n");
-			return;
+			goto error;
 		}
 	} else {
 		evi_param_reset(ev->file_p);
@@ -191,7 +200,7 @@ static inline void profiling_raise_event(int data_type, char *verb,
 	if (status) {
 		if (evi_param_set_int(ev->status_p, status) < 0) {
 			LM_ERR("cannot populate profiling event params 3\n");
-			return;
+			goto error;
 		}
 	} else {
 		evi_param_reset(ev->status_p);
@@ -199,6 +208,10 @@ static inline void profiling_raise_event(int data_type, char *verb,
 
 	if (evi_raise_event(ev->id, ev->params) < 0)
 		LM_ERR("cannot raise profiling event\n");
+
+error:
+	reset_proc_log_level();
+	return;
 }
 
 static void profiling_event_on_start(int data_type, const char *name,

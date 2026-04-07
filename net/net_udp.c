@@ -33,6 +33,7 @@
 #include "../timer.h"
 #include "../pt_load.h"
 #include "../cfg_reload.h"
+#include "../profiling.h"
 #include "net_udp.h"
 
 
@@ -308,26 +309,42 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 
 	pre_run_handle_script_reload(fm->app_flags);
 
+	profiling_proc_start(1);
+
 	switch(fm->type){
 		case F_UDP_READ:
+			profiling_proc_enter(
+				protos[((struct socket_info*)fm->data)->proto].name, 1 );
 			n = protos[((struct socket_info*)fm->data)->proto].net.
 				dgram.read( fm->data /*si*/, &read);
+			profiling_proc_exit(
+				protos[((struct socket_info*)fm->data)->proto].name, n );
 			break;
 		case F_TIMER_JOB:
+			profiling_proc_enter( "timer_job", 1 );
 			handle_timer_job();
+			profiling_proc_exit( "timer_job", n);
 			break;
 		case F_SCRIPT_ASYNC:
-			async_script_resume_f( fm->fd, fm->data,
+			profiling_proc_enter( "async_script", 0 );
+			n = async_script_resume_f( fm->fd, fm->data,
 				(event_type==IO_WATCH_TIMEOUT)?1:0 );
+			profiling_proc_exit( "async_script", n);
 			break;
 		case F_FD_ASYNC:
-			async_fd_resume( fm->fd, fm->data);
+			profiling_proc_enter( "async_fd", 0 );
+			n = async_fd_resume( fm->fd, fm->data);
+			profiling_proc_exit( "async_fd", n);
 			break;
 		case F_LAUNCH_ASYNC:
-			async_launch_resume( fm->fd, fm->data);
+			profiling_proc_enter( "async_launch", 0 );
+			n = async_launch_resume( fm->fd, fm->data);
+			profiling_proc_exit( "async_launch", n);
 			break;
 		case F_IPC:
+			profiling_proc_enter( "ipc_job", 1 );
 			ipc_handle_job(fm->fd);
+			profiling_proc_exit( "ipc_job", n);
 			break;
 		default:
 			LM_CRIT("unknown fd type %d in UDP worker\n", fm->type);
@@ -341,6 +358,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		if (reactor_is_empty())
 			dynamic_process_final_exit();
 	}
+
+	profiling_proc_end( n );
 
 	post_run_handle_script_reload();
 

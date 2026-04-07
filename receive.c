@@ -60,6 +60,7 @@
 #include "core_stats.h"
 #include "ut.h"
 #include "context.h"
+#include "profiling.h"
 
 
 #ifdef DEBUG_DMALLOC
@@ -112,9 +113,11 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 
 	struct sip_msg* msg;
 	struct timeval start;
-	int rc, old_route_type;
+	int rc, ret, old_route_type;
 	char *tmp;
 	str in_buff;
+
+	profiling_proc_enter( "receive_msg", 0 );
 
 	in_buff.len = len;
 	in_buff.s = buf;
@@ -224,12 +227,15 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		}
 
 		/* exec the routing script */
-		if (rc & SCB_RUN_TOP_ROUTE)
+		if (rc & SCB_RUN_TOP_ROUTE) {
 			/* run the main request route and skip post_script callbacks
 			 * if the TOBE_CONTINUE flag is returned */
-			if ( run_top_route(sroutes->request[DEFAULT_RT], msg) &
-			ACT_FL_TBCONT )
+			profiling_proc_enter( "request_script", 0 );
+			ret = run_top_route(sroutes->request[DEFAULT_RT], msg);
+			profiling_proc_exit( "request_script", ret );
+			if ( ret & ACT_FL_TBCONT )
 				goto end;
+		}
 
 		/* execute post request-script callbacks */
 		if (rc & SCB_RUN_POST_CBS)
@@ -280,7 +286,9 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		} else {
 			set_route_type(old_route_type);
 			/* send the msg */
-			forward_reply(msg);
+			profiling_proc_enter( "reply_forward", 0 );
+			ret = forward_reply(msg);
+			profiling_proc_exit( "reply_forward", ret );
 			/* TODO - TX reply stat */
 		}
 
@@ -303,6 +311,7 @@ end:
 	pkg_free(msg);
 	if (in_buff.s != buf)
 		pkg_free(in_buff.s);
+	profiling_proc_exit( "receive_msg", 0 );
 	return 0;
 parse_error_reset:
 	reset_longest_action_list(execmsgthreshold);
@@ -313,6 +322,7 @@ parse_error:
 error:
 	if (in_buff.s != buf)
 		pkg_free(in_buff.s);
+	profiling_proc_exit( "receive_msg", -1 );
 	return -1;
 }
 

@@ -459,6 +459,106 @@ static mi_response_t *w_log_level_2(const mi_params_t *params,
 	return mi_log_level(params, pid);
 }
 
+static int mi_add_profiling_proc_item(mi_item_t *procs_arr, int i)
+{
+	mi_item_t *proc_item;
+
+	proc_item = add_mi_object(procs_arr, NULL, 0);
+	if (!proc_item)
+		return -1;
+
+	if (add_mi_number(proc_item, MI_SSTR("ID"), i) < 0)
+		return -1;
+
+	if (add_mi_number(proc_item, MI_SSTR("PID"), pt[i].pid) < 0)
+		return -1;
+
+	if (add_mi_number(proc_item, MI_SSTR("Profiling"),
+		pt[i].profiling_proc) < 0)
+		return -1;
+
+	if (add_mi_string(proc_item, MI_SSTR("Type"),
+		pt[i].desc, strlen(pt[i].desc)) < 0)
+		return -1;
+
+	return 0;
+}
+
+static mi_response_t *w_profiling_proc(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int id;
+	int pid;
+	int state;
+	int have_id;
+	int have_pid;
+	int have_state;
+	int target_idx = -1;
+	int i;
+	int set_status;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *procs_arr;
+
+	have_id = (try_get_mi_int_param(params, "id", &id) == 0);
+	have_pid = (try_get_mi_int_param(params, "pid", &pid) == 0);
+	have_state = (try_get_mi_int_param(params, "state", &state) == 0);
+
+	if (have_id && have_pid)
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Only one of 'id' or 'pid' is allowed"));
+
+	if (have_id) {
+		if (id < 0 || id >= counted_max_processes)
+			return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+				MI_SSTR("Bad process ID"));
+		target_idx = id;
+	} else if (have_pid) {
+		target_idx = get_process_ID_by_PID(pid);
+		if (target_idx < 0)
+			return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), MI_SSTR("Bad PID"));
+	}
+
+	if (have_state) {
+		set_status = state ? 1 : 0;
+		if (target_idx >= 0) {
+			pt[target_idx].profiling_proc = set_status;
+		} else {
+			for (i = 0; i < counted_max_processes; i++)
+				pt[i].profiling_proc = set_status;
+		}
+		return init_mi_result_ok();
+	}
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	procs_arr = add_mi_array(resp_obj, MI_SSTR("Processes"));
+	if (!procs_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
+
+	if (target_idx >= 0) {
+		if (mi_add_profiling_proc_item(procs_arr, target_idx) < 0) {
+			free_mi_response(resp);
+			return 0;
+		}
+	} else {
+		for (i = 0; i < counted_max_processes; i++)
+			if (mi_add_profiling_proc_item(procs_arr, i) < 0) {
+				free_mi_response(resp);
+				return 0;
+			}
+	}
+
+	return resp;
+}
+
 static mi_response_t *w_xlog_level(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
@@ -921,6 +1021,15 @@ static const mi_export_t mi_core_cmds[] = {
 		0, 0, {
 		{w_xlog_level, 	{0}},
 		{w_xlog_level_1, {"level", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{ "profiling_proc", "get/set profiling by process id, pid or all", 0, 0, {
+		{w_profiling_proc, {0}},
+		{w_profiling_proc, {"id", 0}},
+		{w_profiling_proc, {"pid", 0}},
+		{w_profiling_proc, {"state", 0}},
+		{w_profiling_proc, {"id", "state", 0}},
+		{w_profiling_proc, {"pid", "state", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "log_level_filter", "gets/sets the per consumer log level filter",

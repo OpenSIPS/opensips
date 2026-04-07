@@ -24,6 +24,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "pt.h"
 
 struct sip_msg;
 
@@ -142,5 +143,175 @@ static inline int profiling_set_ctx(const profiling_ctx_t *ctx)
 
 	return ret;
 }
+
+
+
+/**************** structs and functions for process profiling **************/
+
+static inline char * ss_merge256( char *s1, char *s2)
+{
+	static char b[256], *c;
+	c = stpncpy( b, s1, 256);
+	return strncpy( c, s2, 256-(c-b));
+}
+
+/* Keep enough room for deeply nested proc enter() flows. */
+#define PROFILING_PROC_STACK_MAX 16
+typedef struct profiling_proc_pending {
+	const char *name;
+	const char *file;
+	int line;
+	uint16_t depth;
+	uint8_t is_start;
+} profiling_proc_pending_t;
+
+/* stack for pending start+enter, waiting to be flushed */
+extern profiling_proc_pending_t
+	profiling_proc_pending_stack[PROFILING_PROC_STACK_MAX];
+extern uint16_t profiling_proc_pending_no;
+
+/* depth, as number of "enter"s done by process profiling */
+extern uint16_t proc_depth;
+
+
+static inline void profiling_proc_flush_pending(void)
+{
+	uint16_t i;
+	profiling_handlers_t *handlers;
+	profiling_proc_pending_t *rec;
+
+	if (!profiling_proc_pending_no)
+		return;
+
+	for (i = 0; i < profiling_proc_pending_no; i++) {
+		rec = &profiling_proc_pending_stack[i];
+
+		for (handlers = profiling_handlers; handlers;
+			handlers = handlers->next) {
+			if (!(handlers->accepted_data_types &
+				PROFILING_DATA_TYPE_PROC))
+				continue;
+
+			if (rec->is_start) {
+				if (handlers->on_start)
+					handlers->on_start(PROFILING_DATA_TYPE_PROC,
+						rec->name, pt[process_no].type, i, NULL);
+			} else {
+				if (handlers->on_enter)
+					handlers->on_enter(PROFILING_DATA_TYPE_PROC,
+						rec->name, pt[process_no].type,
+						i, rec->file, rec->line, NULL);
+			}
+		}
+	}
+
+	profiling_proc_pending_no = 0;
+}
+
+
+static inline void profiling_proc_start(int with_next)
+{
+	profiling_handlers_t *handlers;
+
+	if (!pt[process_no].profiling_proc)
+		return;
+
+	proc_depth = 0;
+	if (with_next) {
+		profiling_proc_pending_stack[proc_depth].name =
+			pt[process_no].desc;
+		profiling_proc_pending_stack[proc_depth].file = NULL;
+		profiling_proc_pending_stack[proc_depth].line = 0;
+		profiling_proc_pending_stack[proc_depth].is_start = 1;
+		profiling_proc_pending_no = 1;
+		return;
+	}
+
+	for (handlers = profiling_handlers; handlers; handlers = handlers->next)
+		if ((handlers->accepted_data_types & PROFILING_DATA_TYPE_PROC) &&
+			handlers->on_start)
+			handlers->on_start(PROFILING_DATA_TYPE_PROC, pt[process_no].desc,
+				pt[process_no].type, proc_depth, NULL);
+}
+
+
+static inline void profiling_proc_end( int status)
+{
+	profiling_handlers_t *handlers;
+
+	if (!pt[process_no].profiling_proc)
+		return;
+
+	if(proc_depth+1==profiling_proc_pending_no) {
+		profiling_proc_pending_no--;
+		return;
+	}
+
+	for (handlers = profiling_handlers; handlers; handlers = handlers->next)
+		if ((handlers->accepted_data_types & PROFILING_DATA_TYPE_PROC) &&
+			handlers->on_end)
+			handlers->on_end(PROFILING_DATA_TYPE_PROC, pt[process_no].desc,
+				pt[process_no].type, proc_depth, status, NULL);
+}
+
+
+#define profiling_proc_enter( _name, _with_next ) \
+	_profiling_proc_enter( _name, __func__, __LINE__, _with_next)
+static inline void _profiling_proc_enter( const char *name,
+	const char *file, int line, int with_next)
+{
+	profiling_handlers_t *handlers;
+
+	if (!pt[process_no].profiling_proc)
+		return;
+
+	proc_depth++;
+
+	if (with_next && proc_depth==profiling_proc_pending_no) {
+		if (proc_depth < PROFILING_PROC_STACK_MAX) {
+			profiling_proc_pending_stack[proc_depth].name = name;
+			profiling_proc_pending_stack[proc_depth].file = file;
+			profiling_proc_pending_stack[proc_depth].line = line;
+			profiling_proc_pending_stack[proc_depth].is_start = 0;
+			profiling_proc_pending_no = proc_depth + 1;
+		}
+		return;
+	}
+
+	profiling_proc_flush_pending();
+
+	for (handlers = profiling_handlers; handlers; handlers = handlers->next)
+		if ((handlers->accepted_data_types & PROFILING_DATA_TYPE_PROC) &&
+			handlers->on_enter)
+			handlers->on_enter(PROFILING_DATA_TYPE_PROC, name,
+				pt[process_no].type, proc_depth, file, line, NULL);
+}
+
+
+#define profiling_proc_exit( _name, _status ) \
+	_profiling_proc_exit( _name, __func__, __LINE__, _status)
+static inline void _profiling_proc_exit( const char *name,
+	const char *file, int line, int status)
+{
+	profiling_handlers_t *handlers;
+
+	if (!pt[process_no].profiling_proc)
+		return;
+
+	proc_depth--;
+
+	if(proc_depth+2==profiling_proc_pending_no) {
+		profiling_proc_pending_no--;
+		return;
+	}
+
+	for (handlers = profiling_handlers; handlers; handlers = handlers->next)
+		if ((handlers->accepted_data_types & PROFILING_DATA_TYPE_PROC) &&
+			handlers->on_exit)
+			handlers->on_exit(PROFILING_DATA_TYPE_PROC, name,
+				pt[process_no].type, proc_depth, file, line, status, NULL);
+}
+
+
 
 #endif /* PROFILING_H */
