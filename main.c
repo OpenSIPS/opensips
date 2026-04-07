@@ -149,8 +149,6 @@
 #include "test/unit_tests.h"
 #include "lib/dbg/profiling.h"
 
-#include "ssl_tweaks.h"
-
 #include "main_script.h"
 
 /* global vars */
