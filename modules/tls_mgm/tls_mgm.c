@@ -1342,24 +1342,34 @@ error:
 
 int tls_conn_init(struct tcp_connection *c, struct tls_domain *tls_dom)
 {
+	int ret;
+
+	c->proto_extra_id = tls_dom;
+
 	if (tls_library == TLS_LIB_OPENSSL)
-		return openssl_api.tls_conn_init(c, tls_dom);
+		ret = openssl_api.tls_conn_init(c, tls_dom);
 	else if (tls_library == TLS_LIB_WOLFSSL)
-		return wolfssl_api.tls_conn_init(c, tls_dom);
+		ret = wolfssl_api.tls_conn_init(c, tls_dom);
 	else {
 		LM_CRIT("No TLS library module loaded\n");
-		return -1;
+		ret = -1;
 	}
+	if (ret < 0)
+		c->proto_extra_id = NULL;
+
+	return ret;
 }
 
 void tls_conn_clean(struct tcp_connection* c, struct tls_domain **tls_dom)
 {
 	if (tls_library == TLS_LIB_OPENSSL)
-		return openssl_api.tls_conn_clean(c, tls_dom);
+		openssl_api.tls_conn_clean(c, tls_dom);
 	else if (tls_library == TLS_LIB_WOLFSSL)
-		return wolfssl_api.tls_conn_clean(c, tls_dom);
+		wolfssl_api.tls_conn_clean(c, tls_dom);
 	else
 		LM_CRIT("No TLS library module loaded\n");
+
+	c->proto_extra_id = NULL;
 }
 
 int tls_update_fd(struct tcp_connection* c, int fd)
@@ -1443,6 +1453,12 @@ int tls_read(struct tcp_connection * c,struct tcp_req *r)
 
 int tls_conn_extra_match(struct tcp_connection *c, void *id)
 {
+	if (c->flags & F_CONN_ACCEPTED)
+		return 1;
+
+	if (c->proto_extra_id)
+		return c->proto_extra_id == id;
+
 	if (tls_library == TLS_LIB_OPENSSL)
 		return openssl_api.tls_conn_extra_match(c, id);
 	else if (tls_library == TLS_LIB_WOLFSSL)

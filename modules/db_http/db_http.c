@@ -31,7 +31,6 @@
 #include "../../sr_module.h"
 #include "../../db/db.h"
 #include "http_dbase.h"
-#include "../../ssl_init_tweaks.h"
 #include "../../pt.h"
 
 
@@ -159,4 +158,3 @@ int db_http_bind_api( const str* mod, db_func_t *dbb)
 
 	return 0;
 }
-
