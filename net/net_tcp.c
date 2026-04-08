@@ -292,23 +292,6 @@ struct tcp_ipc_payload {
 	char msg_buf[0];
 };
 
-static inline int tcp_has_dispatch_worker(void)
-{
-	int i;
-
-	for (i = 0; i < tcp_workers_max_no; i++) {
-		if (tcp_workers[i].state != STATE_ACTIVE)
-			continue;
-		if (tcp_workers[i].pt_idx <= 0)
-			continue;
-		if ((pt[tcp_workers[i].pt_idx].flags & OSS_PROC_IS_RUNNING) == 0)
-			continue;
-		return 1;
-	}
-
-	return 0;
-}
-
 int tcp_dispatch_msg(char *msg, int len,
 		struct receive_info *rcv, const void *data, int data_len)
 {
@@ -317,16 +300,6 @@ int tcp_dispatch_msg(char *msg, int len,
 	unsigned int alloc_len;
 	int n;
 	uintptr_t payload_ptr;
-
-	if (ipc_is_async_dispatch()) {
-		LM_ERR("cannot dispatch TCP message while already handling IPC async job\n");
-		return -1;
-	}
-
-	if (!tcp_has_dispatch_worker()) {
-		LM_ERR("no TCP worker available to receive dispatched TCP message\n");
-		return -1;
-	}
 
 	if (len < 0) {
 		LM_BUG("negative TCP message length: %d\n", len);
