@@ -151,9 +151,21 @@ static inline int profiling_set_ctx(const profiling_ctx_t *ctx)
 static inline char * ss_merge256( char *s1, char *s2)
 {
 	static char b[256], *c;
-	c = stpncpy( b, s1, 256);
-	return strncpy( c, s2, 256-(c-b));
+	c = stpncpy( b, s1, 255);
+	strncpy( c, s2, 255-(c-b));
+	b[255] = 0;
+	return b;
 }
+static inline char * sss_merge256( char *s1, char *s2, char *s3)
+{
+	static char b[256], *c;
+	c = stpncpy( b, s1, 255);
+	c = stpncpy( c, s2, 255-(c-b));
+	strncpy( c, s3, 255-(c-b));
+	b[255] = 0;
+	return b;
+}
+
 
 /* Keep enough room for deeply nested proc enter() flows. */
 #define PROFILING_PROC_STACK_MAX 16
