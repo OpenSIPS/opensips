@@ -1598,6 +1598,10 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	int ret = 0;
 
 	pt_become_active();
+	/* for now we do not do any profiling here as all ops here are
+	   only internals related to TCP passing beetween processing, no real
+	   processing
+	 */
 	switch(fm->type){
 		case F_TCP_LISTENER:
 			ret = handle_new_connect((const struct socket_info*)fm->data);

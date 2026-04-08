@@ -314,11 +314,13 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	switch(fm->type){
 		case F_UDP_READ:
 			profiling_proc_enter(
-				protos[((struct socket_info*)fm->data)->proto].name, 1 );
+				ss_merge256(
+					protos[((struct socket_info*)fm->data)->proto].name,
+					" proto reading"),
+				1 );
 			n = protos[((struct socket_info*)fm->data)->proto].net.
 				dgram.read( fm->data /*si*/, &read);
-			profiling_proc_exit(
-				protos[((struct socket_info*)fm->data)->proto].name, n );
+			profiling_proc_exit( "reading done", n );
 			break;
 		case F_TIMER_JOB:
 			profiling_proc_enter( "timer_job", 1 );

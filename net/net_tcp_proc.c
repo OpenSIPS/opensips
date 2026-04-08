@@ -30,6 +30,7 @@
 #include "../reactor.h"
 #include "../async.h"
 #include "../cfg_reload.h"
+#include "../profiling.h"
 
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
@@ -195,7 +196,7 @@ static void tcp_receive_timeout(void)
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {
 	int ret=0;
-	int n;
+	int n = 0;
 	struct tcp_connection* con;
 	int s,rw;
 	long resp;
@@ -205,24 +206,38 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 
 	pre_run_handle_script_reload(fm->app_flags);
 
+	profiling_proc_start(1);
+
 	switch(fm->type){
 		case F_TIMER_JOB:
+			profiling_proc_enter( "timer_job", 1 );
 			handle_timer_job();
+			profiling_proc_exit( "timer_job", n);
 			break;
 		case F_SCRIPT_ASYNC:
-			async_script_resume_f( fm->fd, fm->data,
+			profiling_proc_enter( "async_script", 0 );
+			n = async_script_resume_f( fm->fd, fm->data,
 				(event_type==IO_WATCH_TIMEOUT)?1:0 );
+			profiling_proc_exit( "async_script", n);
 			break;
 		case F_FD_ASYNC:
-			async_fd_resume( fm->fd, fm->data);
+			profiling_proc_enter( "async_fd", 0 );
+			n = async_fd_resume( fm->fd, fm->data);
+			profiling_proc_exit( "async_fd", n);
 			break;
 		case F_LAUNCH_ASYNC:
-			async_launch_resume( fm->fd, fm->data);
+			profiling_proc_enter( "async_launch", 0 );
+			n = async_launch_resume( fm->fd, fm->data);
+			profiling_proc_exit( "async_launch", n);
 			break;
 		case F_IPC:
+			profiling_proc_enter( "ipc_job", 1 );
 			ipc_handle_job(fm->fd);
+			profiling_proc_exit( "ipc_job", n );
 			break;
 		case F_TCPMAIN:
+			/* we do not profile here, it is only inter-proc communication
+			 * related to passing TCP conns, no useful processing */
 again:
 			ret=n=receive_fd(fm->fd, response, sizeof(response), &s, 0);
 			if (n<0){
@@ -336,6 +351,9 @@ again:
 			if (event_type & IO_WATCH_READ) {
 				con=(struct tcp_connection*)fm->data;
 				_tcp_done_reading_marker = 0;
+				profiling_proc_enter(
+					ss_merge256( protos[con->type].name, " proto reading"),
+					1 );
 				resp = protos[con->type].net.stream.read( con, &ret );
 				if (resp<0) {
 					ret=-1; /* some error occurred */
@@ -370,6 +388,7 @@ again:
 						tcp_done_reading( con );
 					break;
 				}
+				profiling_proc_exit( "reading done", resp );
 			}
 			break;
 		case F_NONE:
@@ -394,6 +413,8 @@ again:
 		}
 	}
 
+	profiling_proc_end( 0 );
+
 	post_run_handle_script_reload();
 
 	pt_become_idle();
@@ -401,9 +422,11 @@ again:
 con_error:
 	con->state=S_CONN_BAD;
 	tcpconn_release_error(con, 0, "Internal error");
+	profiling_proc_end( -1 );
 	pt_become_idle();
 	return ret;
 error:
+	profiling_proc_end( -1 );
 	pt_become_idle();
 	return -1;
 }
