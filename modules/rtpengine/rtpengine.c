@@ -3746,7 +3746,7 @@ static int rtpe_function_call_async(struct sip_msg *msg, async_ctx *ctx, str *fl
 	LM_DBG("async proxy reply: %d\n", ret);
 
 	if (read_fd == ASYNC_NO_IO) {
-		ctx->resume_f = NULL;
+		ASYNC_CLEAR_RESUME_F(ctx);
 		ctx->resume_param = NULL;
 		bencode_buffer_free(bencbuf);
 		pkg_free(bencbuf);
@@ -3773,7 +3773,7 @@ static int rtpe_function_call_async(struct sip_msg *msg, async_ctx *ctx, str *fl
 	param->bpvar = bpvar;
 	param->spvar = spvar;
 
-	ctx->resume_f = resume_async_send_rtpe_command;
+	ASYNC_SET_RESUME_F(ctx, resume_async_send_rtpe_command);
 	ctx->timeout_f = timeout_async_send_rtpe_command;
 	ctx->resume_param = param;
 

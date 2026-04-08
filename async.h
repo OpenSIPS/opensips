@@ -54,6 +54,8 @@ enum async_ret_code {
 typedef struct _async_ctx {
 	/* the resume function to be called when data to read is available */
 	void *resume_f;
+	/* textual name of the resume function, if statically known */
+	char *resume_f_name;
 	/* parameter registered to the resume function */
 	void *resume_param;
 	/* the function to be called upon a timeout event while waiting to read */
@@ -65,6 +67,18 @@ typedef struct _async_ctx {
 	 *  Default: 0 (no timeout) */
 	unsigned int timeout_s;
 } async_ctx;
+
+#define ASYNC_SET_RESUME_F(_ctx, _resume_f) \
+	do { \
+		(_ctx)->resume_f = (_resume_f); \
+		(_ctx)->resume_f_name = #_resume_f; \
+	} while (0)
+
+#define ASYNC_CLEAR_RESUME_F(_ctx) \
+	do { \
+		(_ctx)->resume_f = NULL; \
+		(_ctx)->resume_f_name = NULL; \
+	} while (0)
 
 
 extern int async_status;
@@ -156,4 +170,3 @@ int async_launch_resume(int fd, void *param);
 
 
 #endif
-

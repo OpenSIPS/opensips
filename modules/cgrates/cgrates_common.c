@@ -694,7 +694,7 @@ int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
 				CGRC_UNSET_LISTEN(c);
 			}
 			async_status = c->fd;
-			ctx->resume_f = cgrates_async_resume_repl;
+			ASYNC_SET_RESUME_F(ctx, cgrates_async_resume_repl);
 			ctx->resume_param = cp;
 		}
 		return ret;

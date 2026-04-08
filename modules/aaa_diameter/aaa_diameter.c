@@ -595,7 +595,7 @@ static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 		goto error;
 	cJSON_Delete(avps);
 
-	ctx->resume_f = dm_send_request_async_reply;
+	ASYNC_SET_RESUME_F(ctx, dm_send_request_async_reply);
 	ctx->resume_param = amsg;
 	ctx->timeout_s = dm_answer_timeout / 1000;
 	ctx->timeout_f = dm_send_request_async_tout;

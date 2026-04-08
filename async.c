@@ -82,7 +82,7 @@ int register_async_fd(int fd, async_resume_fd *f, void *resume_param)
 
 	memset(ctx,0,sizeof(async_ctx));
 
-	ctx->resume_f = f;
+	ASYNC_SET_RESUME_F(ctx, f);
 	ctx->resume_param = resume_param;
 
 	/* place the FD + resume function (as param) into reactor */

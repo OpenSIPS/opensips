@@ -1110,7 +1110,7 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 
 	async_status = ASYNC_NO_FD;
 
-	ctx->resume_f = aka_challenge_async_resume;
+	ASYNC_SET_RESUME_F(ctx, aka_challenge_async_resume);
 	ctx->resume_param = param;
 	ctx->timeout_f = aka_challenge_async_resume_tout;
 	ctx->timeout_s = aka_async_timeout;

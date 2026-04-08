@@ -2871,7 +2871,7 @@ db_async_store(db_val_t* vals, db_key_t* keys, int num_keys,
 	if (!DB_CAPABILITY(db_funcs, DB_CAP_ASYNC_RAW_QUERY)) {
 		LM_WARN("This database module does not have async queries!"
 				"Using sync insert!\n");
-		actx->resume_f     = NULL;
+		ASYNC_CLEAR_RESUME_F(actx);
 		actx->resume_param = NULL;
 		async_status  = ASYNC_NO_IO;
 		return db_sync_store(vals, keys, num_keys);
@@ -2879,7 +2879,7 @@ db_async_store(db_val_t* vals, db_key_t* keys, int num_keys,
 
 	if (HAVE_MULTIPLE_ASYNC_INSERT && t_el == NULL) {
 		LM_ERR("can't do multiple insert!\n");
-		actx->resume_f     = NULL;
+		ASYNC_CLEAR_RESUME_F(actx);
 		actx->resume_param = NULL;
 		return -1;
 	}
@@ -2916,11 +2916,11 @@ db_async_store(db_val_t* vals, db_key_t* keys, int num_keys,
 			RELEASE_QUERY_LOCK(crt_as_query);
 
 		if (read_fd < 0) {
-			actx->resume_f     = NULL;
+			ASYNC_CLEAR_RESUME_F(actx);
 			actx->resume_param = NULL;
 			return -1;
 		}
-		actx->resume_f     = resume_async_dbquery;
+		ASYNC_SET_RESUME_F(actx, resume_async_dbquery);
 		actx->resume_param = as_param;
 		async_status = read_fd;
 
