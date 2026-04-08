@@ -131,7 +131,8 @@ int t_resume_async_request(int fd, void*param, int was_timeout)
 	backup_list = set_avp_list( &t->user_avps );
 	/* set default send address to the saved value */
 	backup_si = bind_address;
-	bind_address = TM_BRANCH( t, 0).request.dst.send_sock;
+	bind_address =
+		t->nr_of_outgoings ? TM_BRANCH( t, 0).request.dst.send_sock : NULL;
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 	/* call the resume function in order to read and handle data */
@@ -400,6 +401,7 @@ restore:
 int t_resume_async(int fd, void *param, int was_timeout)
 {
 	async_tm_ctx *ctx = (async_tm_ctx *)param;
+	int rc;
 
 	if (current_processing_ctx) {
 		LM_CRIT("BUG - a context is already set (%p), overwriting it...\n",
@@ -407,12 +409,21 @@ int t_resume_async(int fd, void *param, int was_timeout)
 		set_global_context(NULL);
 	}
 
+	profiling_proc_enter(
+		sss_merge256( ctx->async.resume_f_name, " -> ",
+			ctx->resume_route->name.s),
+		0 );
+
 	/* for now we only support async in REQUEST and ONREPLY routes,
 	 * dispatch to the correct resume function */
 	if (ctx->reply) {
-		return t_resume_async_reply(fd,param,was_timeout); 
+		rc = t_resume_async_reply(fd,param,was_timeout); 
 	} else
-		return t_resume_async_request(fd,param,was_timeout); 
+		rc = t_resume_async_request(fd,param,was_timeout); 
+
+	profiling_proc_exit( "async-cfg resume handler", rc );
+
+	return rc;
 }
 
 
