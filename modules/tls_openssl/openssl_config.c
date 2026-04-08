@@ -518,7 +518,7 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 			continue;
 
 		/*Create filename*/
-			char* filename = (char*) thread_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
+		char* filename = (char*) thread_malloc(sizeof(char)*(strlen(crl_directory)+strlen(dir->d_name)+2));
 		if (!filename) {
 			LM_ERR("Unable to allocate crl filename\n");
 			closedir(d);
