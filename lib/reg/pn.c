@@ -625,7 +625,7 @@ int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz)
 		return -1;
 	}
 
-	if (tmb.t_wait_for_new_branches(req) != 1)
+	if (tmb.t_wait_for_new_branches(req, (unsigned int)sz) != 1)
 		LM_ERR("failed to enable waiting for new branches\n");
 
 	for (end = cts + sz; cts < end; cts++) {

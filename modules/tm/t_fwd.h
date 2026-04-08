@@ -58,8 +58,7 @@ struct script_route_ref *get_on_branch();
 typedef int (*tgetbranch_f)(void);
 int get_branch_index(void);
 
-extern int w_t_wait_for_new_branches(struct sip_msg* msg);
-
+extern int w_t_wait_for_new_branches(struct sip_msg* msg, unsigned int br_to_wait);
 extern int w_t_inject_branches(struct sip_msg* msg, void *source,
                                void *extra_flags);
 int t_inject_ul_event_branch(void);
