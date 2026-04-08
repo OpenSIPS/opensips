@@ -25,7 +25,7 @@
 
 
 #include <stdint.h>
-
+#include <sys/socket.h>
 #include "../pt_load.h"
 #include "../ipc.h"
 #include "../timer.h"
@@ -37,7 +37,6 @@
 
 #include "tcp_conn.h"
 #include "net_tcp.h"
-#include "tcp_passfd.h"
 #include "trans.h"
 #include "net_tcp_dbg.h"
 
@@ -133,7 +132,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			struct tcp_ipc_payload *payload;
 			uintptr_t payload_ptr;
 again_payload:
-			ret = n = recv_all(fm->fd, &payload_ptr, sizeof(payload_ptr),
+			ret = n = recv(fm->fd, &payload_ptr, sizeof(payload_ptr),
 				MSG_DONTWAIT);
 			if (n < 0) {
 				if (errno == EWOULDBLOCK || errno == EAGAIN) {
@@ -150,7 +149,7 @@ again_payload:
 				LM_WARN("EOF received from tcp main dispatch socket\n");
 				goto error;
 			}
-			if (n < (int)sizeof(payload_ptr)) {
+			if (n != (int)sizeof(payload_ptr)) {
 				LM_CRIT("short read on tcp main dispatch socket: %d bytes\n", n);
 				goto error;
 			}
