@@ -1602,9 +1602,9 @@ int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_flags)
 }
 
 
-int w_t_wait_for_new_branches(struct sip_msg* msg)
+int w_t_wait_for_new_branches(struct sip_msg* msg, unsigned int br_to_wait)
 {
-	return t_wait_for_new_branches(msg, 0);
+	return t_wait_for_new_branches(msg, &br_to_wait);
 }
 
 
