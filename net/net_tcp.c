@@ -2382,6 +2382,11 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		tcp_worker_proc_loop();
 	}
 
+	if (tcp_dispatch_sock[0] >= 0) {
+		close(tcp_dispatch_sock[0]);
+		tcp_dispatch_sock[0] = -1;
+	}
+
 	if (startup_done && tcp_workers_no > 0)
 		while (!(*startup_done)) {
 			usleep(5);
