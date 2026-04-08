@@ -985,7 +985,7 @@ int _wolfssl_tls_read(struct tcp_connection * c,struct tcp_req *r)
 int _wolfssl_tls_conn_extra_match(struct tcp_connection *c, void *id)
 {
 	if ( (c->flags&F_CONN_ACCEPTED) ||
-	(wolfSSL_get_ex_data(c->extra_data, SSL_EX_DOM_IDX) == id) )
+	(wolfSSL_get_ex_data(_WOLFSSL_READ_SSL(c->extra_data), SSL_EX_DOM_IDX) == id) )
 		return 1; /*true*/
 
 	return 0; /*false*/
