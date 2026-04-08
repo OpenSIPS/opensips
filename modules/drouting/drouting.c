@@ -2997,9 +2997,9 @@ static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx)
 				// return -1;
 			}
 		} else {
-			/* randomly select index */
-			//	i = (unsigned int)((size-first)*((double)rand()/((double)RAND_MAX)));
-			i = first;
+			/* all remaining gateways have weight 0, treat them as equal
+			   and randomly select one with uniform distribution */
+			i = first + (unsigned int)((size - first) * ((double)rand() / ((double)RAND_MAX + 1.0)));
 		}
 		LM_DBG("selecting element %d with weight %d\n",
 				idx[i], pgwl[ idx[i] ].weight);
