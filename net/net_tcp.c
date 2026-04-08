@@ -86,11 +86,8 @@ static int tcpconn_prepare_write(struct tcp_connection *tcpconn);
  */
 struct tcp_worker {
 	pid_t pid;
-	int unix_sock;		/*!< Main-Worker comm, worker end */
-	int main_unix_sock;	/*!< Main-Worker comm, TCP Main end */
 	int pt_idx;			/*!< Index in the main Process Table */
 	enum tcp_worker_state state;
-	int n_reqs;		/*!< number of requests serviced so far */
 };
 
 /* definition of a TCP partition */
@@ -105,6 +102,7 @@ struct tcp_partition {
 
 /* array of TCP workers - to be used only by TCP MAIN */
 struct tcp_worker *tcp_workers=0;
+static int tcp_dispatch_sock[2] = { -1, -1 };
 
 /* unique for each connection, used for
  * quickly finding the corresponding connection for a reply */
@@ -294,26 +292,21 @@ struct tcp_ipc_payload {
 	char msg_buf[0];
 };
 
-static inline int tcp_pick_dispatch_worker(void)
+static inline int tcp_has_dispatch_worker(void)
 {
-	static int next_worker;
-	int i, idx;
+	int i;
 
 	for (i = 0; i < tcp_workers_max_no; i++) {
-		idx = (next_worker + i) % tcp_workers_max_no;
-		if (tcp_workers[idx].state != STATE_ACTIVE)
+		if (tcp_workers[i].state != STATE_ACTIVE)
 			continue;
-		if (tcp_workers[idx].pt_idx <= 0)
+		if (tcp_workers[i].pt_idx <= 0)
 			continue;
-		if ((pt[tcp_workers[idx].pt_idx].flags & OSS_PROC_IS_RUNNING) == 0)
+		if ((pt[tcp_workers[i].pt_idx].flags & OSS_PROC_IS_RUNNING) == 0)
 			continue;
-		next_worker = idx + 1;
-		if (next_worker >= tcp_workers_max_no)
-			next_worker = 0;
-		return idx;
+		return 1;
 	}
 
-	return -1;
+	return 0;
 }
 
 int tcp_dispatch_msg(char *msg, int len,
@@ -322,7 +315,7 @@ int tcp_dispatch_msg(char *msg, int len,
 	struct tcp_ipc_payload *payload;
 	struct tcp_connection *conn = NULL;
 	unsigned int alloc_len;
-	int worker_idx;
+	int n;
 	uintptr_t payload_ptr;
 
 	if (ipc_is_async_dispatch()) {
@@ -330,8 +323,7 @@ int tcp_dispatch_msg(char *msg, int len,
 		return -1;
 	}
 
-	worker_idx = tcp_pick_dispatch_worker();
-	if (worker_idx < 0) {
+	if (!tcp_has_dispatch_worker()) {
 		LM_ERR("no TCP worker available to receive dispatched TCP message\n");
 		return -1;
 	}
@@ -372,16 +364,15 @@ int tcp_dispatch_msg(char *msg, int len,
 	}
 
 	payload_ptr = (uintptr_t)payload;
-	if (send_all(tcp_workers[worker_idx].unix_sock,
-			&payload_ptr, sizeof(payload_ptr)) != (int)sizeof(payload_ptr)) {
-		LM_ERR("failed to dispatch TCP message to worker %d (pid %d)\n",
-			worker_idx, tcp_workers[worker_idx].pid);
+	n = send(tcp_dispatch_sock[1], &payload_ptr, sizeof(payload_ptr), 0);
+	if (n != (int)sizeof(payload_ptr)) {
+		LM_ERR("failed to dispatch TCP message to worker socket: %s\n",
+			(n < 0) ? strerror(errno) : "short write");
 		if (payload->conn)
 			tcpconn_put(payload->conn);
 		shm_free(payload);
 		return -1;
 	}
-	tcp_workers[worker_idx].n_reqs++;
 
 	return 0;
 }
@@ -2226,6 +2217,15 @@ void tcp_destroy(void)
 		tcp_main_proc_no = 0;
 	}
 
+	if (tcp_dispatch_sock[0] >= 0) {
+		close(tcp_dispatch_sock[0]);
+		tcp_dispatch_sock[0] = -1;
+	}
+	if (tcp_dispatch_sock[1] >= 0) {
+		close(tcp_dispatch_sock[1]);
+		tcp_dispatch_sock[1] = -1;
+	}
+
 	if (tcp_write_queue) {
 		cond_destroy(&tcp_write_queue->cond);
 		shm_free(tcp_write_queue);
@@ -2297,8 +2297,7 @@ int tcp_count_processes(unsigned int *extra)
 
 int tcp_start_processes(int *chd_rank, int *startup_done)
 {
-	int r, n, p_id;
-	int reader_fd[2];
+	int r, p_id, flags;
 	const struct internal_fork_params ifp_sr_tcp = {
 		.proc_desc = "SIP receiver TCP",
 		.flags = OSS_PROC_NEEDS_SCRIPT,
@@ -2308,15 +2307,33 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	if (tcp_disabled)
 		return 0;
 
-	/* create dedicated socket pairs from TCP main to TCP worker procs */
-	for (r = 0; r < tcp_workers_max_no; r++) {
-		if (socketpair(AF_UNIX, SOCK_STREAM, 0, reader_fd) < 0) {
-			LM_ERR("socketpair failed for TCP worker %d: %s\n",
-				r, strerror(errno));
-			goto error;
-		}
-		tcp_workers[r].unix_sock = reader_fd[0];
-		tcp_workers[r].main_unix_sock = reader_fd[1];
+	/* create the shared dispatch socket from TCP main to TCP workers */
+	if (socketpair(AF_UNIX, SOCK_DGRAM, 0, tcp_dispatch_sock) < 0) {
+		LM_ERR("socketpair failed for TCP worker dispatch: %s\n",
+			strerror(errno));
+		goto error;
+	}
+	flags = fcntl(tcp_dispatch_sock[0], F_GETFL);
+	if (flags == -1) {
+		LM_ERR("fcntl failed for TCP worker dispatch socket: %s\n",
+			strerror(errno));
+		goto error;
+	}
+	if (fcntl(tcp_dispatch_sock[0], F_SETFL, flags | O_NONBLOCK) == -1) {
+		LM_ERR("failed to set non-blocking on TCP worker dispatch socket: %s\n",
+			strerror(errno));
+		goto error;
+	}
+	flags = fcntl(tcp_dispatch_sock[1], F_GETFL);
+	if (flags == -1) {
+		LM_ERR("fcntl failed for TCP worker dispatch socket: %s\n",
+			strerror(errno));
+		goto error;
+	}
+	if (fcntl(tcp_dispatch_sock[1], F_SETFL, flags | O_NONBLOCK) == -1) {
+		LM_ERR("failed to set non-blocking on TCP worker dispatch socket: %s\n",
+			strerror(errno));
+		goto error;
 	}
 
 	for (r = 0; r < tcp_workers_no; r++) {
@@ -2328,23 +2345,19 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		} else if (p_id > 0) {
 			/* parent */
 			tcp_workers[r].state = STATE_ACTIVE;
-			tcp_workers[r].n_reqs = 0;
 			tcp_workers[r].pt_idx = p_id;
 			continue;
 		}
 
 		/* child */
-		for (n = 0; n < tcp_workers_max_no; n++) {
-			if (tcp_workers[n].unix_sock >= 0)
-				close(tcp_workers[n].unix_sock);
-			if (n != r && tcp_workers[n].main_unix_sock >= 0)
-				close(tcp_workers[n].main_unix_sock);
-		}
+		if (tcp_dispatch_sock[1] >= 0)
+			close(tcp_dispatch_sock[1]);
+		tcp_dispatch_sock[1] = -1;
 
 		set_proc_attrs("TCP receiver");
 		tcp_workers[r].pid = getpid();
 
-		if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock) < 0 ||
+		if (tcp_worker_proc_reactor_init(tcp_dispatch_sock[0]) < 0 ||
 				init_child(*chd_rank) < 0) {
 			LM_ERR("init_child failed for TCP worker %d\n", r);
 			report_failure_status();
@@ -2377,6 +2390,14 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 
 	return 0;
 error:
+	if (tcp_dispatch_sock[0] >= 0) {
+		close(tcp_dispatch_sock[0]);
+		tcp_dispatch_sock[0] = -1;
+	}
+	if (tcp_dispatch_sock[1] >= 0) {
+		close(tcp_dispatch_sock[1]);
+		tcp_dispatch_sock[1] = -1;
+	}
 	return -1;
 }
 
