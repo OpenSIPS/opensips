@@ -31,7 +31,6 @@
 #include <memory>
 #include <new>
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 #include "opentelemetry/trace/provider.h"
 #include "opentelemetry/trace/scope.h"
 #include "opentelemetry/trace/span.h"
@@ -47,7 +46,6 @@ namespace oteltrace = opentelemetry::trace;
 namespace otelsdktrace = opentelemetry::sdk::trace;
 namespace otelsdkresource = opentelemetry::sdk::resource;
 namespace otelotlp = opentelemetry::exporter::otlp;
-#endif
 
 #ifdef __cplusplus
 /* Relax C-only headers for C++ compilation. */
@@ -84,10 +82,8 @@ static str otel_service_name = str_init("opensips");
 static str otel_exporter_endpoint = STR_NULL;
 
 struct otel_span {
-#ifdef HAVE_OPENTELEMETRY_CPP
 	opentelemetry::nostd::shared_ptr<oteltrace::Span> span;
 	std::unique_ptr<oteltrace::Scope> scope;
-#endif
 	const char *name;
 	int route_type;
 	int depth;
@@ -105,10 +101,8 @@ static __thread int otel_parent_ctx_set;
 static int otel_trace_registered;
 static int otel_log_consumer_registered;
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 static opentelemetry::nostd::shared_ptr<oteltrace::Tracer> otel_tracer;
 static opentelemetry::nostd::shared_ptr<oteltrace::TracerProvider> otel_provider;
-#endif
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -119,9 +113,7 @@ static void otel_log_consumer(int level, int facility, const char *module,
 	const char *func, char *format, va_list ap);
 static int otel_ensure_provider(void);
 extern profiling_handlers_t otel_trace_handlers;
-#ifdef HAVE_OPENTELEMETRY_CPP
 static int otel_init_provider(void);
-#endif
 static void otel_span_reset(void);
 
 static inline int otel_is_enabled(void)
@@ -137,14 +129,12 @@ static void otel_parent_ctx_clear(void)
 
 static int otel_ensure_provider(void)
 {
-#ifdef HAVE_OPENTELEMETRY_CPP
 	if (otel_is_enabled() && !otel_tracer) {
 		if (otel_init_provider() != 0) {
 			LM_ERR("failed to initialize tracer provider\n");
 			return -1;
 		}
 	}
-#endif
 	return 0;
 }
 
@@ -184,7 +174,6 @@ static int otel_get_ctx(profiling_ctx_t *ctx)
 	if (!ctx)
 		return 0;
 	memset(ctx, 0, sizeof(*ctx));
-#ifdef HAVE_OPENTELEMETRY_CPP
 	if (otel_span_top && otel_span_top->span) {
 		auto sc = otel_span_top->span->GetContext();
 		if (!sc.IsValid())
@@ -194,7 +183,6 @@ static int otel_get_ctx(profiling_ctx_t *ctx)
 		ctx->trace_flags = sc.trace_flags().flags();
 		return 1;
 	}
-#endif
 	return 0;
 }
 
@@ -214,11 +202,9 @@ static void otel_span_reset(void)
 	span = otel_span_top;
 	while (span) {
 		next = span->parent;
-#ifdef HAVE_OPENTELEMETRY_CPP
 		if (span->span)
 			span->span->End();
 		span->scope.reset();
-#endif
 		span->~otel_span();
 		pkg_free(span);
 		span = next;
@@ -227,7 +213,6 @@ static void otel_span_reset(void)
 	otel_span_top = NULL;
 }
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 static int otel_init_provider(void)
 {
 	std::string service_name(otel_service_name.s ? otel_service_name.s : "opensips",
@@ -300,7 +285,6 @@ static void otel_set_msg_attributes(struct sip_msg *msg, oteltrace::Span *span)
 	span->SetAttribute("net.peer.ip", ip_addr2a(&msg->rcv.src_ip));
 	span->SetAttribute("net.peer.port", (int64_t)msg->rcv.src_port);
 }
-#endif
 
 static struct otel_span *otel_span_start(const char *name, int route_type,
 	int depth, int is_root, const char *file, int line)
@@ -320,7 +304,6 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 		return NULL;
 	new (span) otel_span();
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 	if (otel_tracer) {
 		oteltrace::StartSpanOptions opts;
 		opts.kind = oteltrace::SpanKind::kInternal;
@@ -358,7 +341,6 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 		span->scope = std::unique_ptr<oteltrace::Scope>(new oteltrace::Scope(s));
 		span->span = s;
 	}
-#endif
 
 	span->name = name;
 	span->route_type = route_type;
@@ -378,12 +360,10 @@ static void otel_span_end(struct otel_span *span)
 	if (!span)
 		return;
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 	if (span->span)
 		span->span->End();
 	span->scope.reset();
 	span->span = nullptr;
-#endif
 
 	otel_span_top = span->parent;
 	span->~otel_span();
@@ -408,13 +388,11 @@ static void otel_on_start(int data_type, const char *name, int subtype,
 
 	otel_span_start(name, subtype, depth, 1, NULL, 0);
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 	if (otel_span_top && otel_span_top->span) {
 		otel_set_msg_attributes(msg, otel_span_top->span.get());
 		otel_span_top->span->SetAttribute("sip.raw",
 			opentelemetry::nostd::string_view(msg->buf, msg->len));
 	}
-#endif
 
 	(void)msg;
 	(void)data_type;
@@ -521,22 +499,16 @@ static void otel_log_consumer(int level, int facility, const char *module,
 
 	buf[len] = '\0';
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 	if (otel_span_top->span) {
 		otel_span_top->span->AddEvent("log", {
 			{ "log.level", level_to_str(level) },
 			{ "log.message", buf }
 		});
 	}
-#else
-	(void)level;
+
 	(void)facility;
 	(void)module;
 	(void)func;
-	(void)format;
-#endif
-
-	(void)facility;
 
 	otel_log_in_cb = 0;
 }
@@ -613,14 +585,7 @@ static int mod_init(void)
 	if (otel_exporter_endpoint.s)
 		otel_exporter_endpoint.len = strlen(otel_exporter_endpoint.s);
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 	/* no provider init here; each process initializes on demand */
-#else
-	if (otel_is_enabled()) {
-		LM_ERR("OpenTelemetry C++ SDK not available - build with HAVE_OPENTELEMETRY_CPP\n");
-		return -1;
-	}
-#endif
 
 	return 0;
 }
@@ -633,7 +598,6 @@ static int child_init(int rank)
 	otel_log_in_cb = 0;
 	otel_parent_ctx_clear();
 
-#ifdef HAVE_OPENTELEMETRY_CPP
 	if (!otel_trace_registered) {
 		if (register_profiling_handler(&otel_trace_handlers) != 0) {
 			LM_ERR("failed to register profiling hooks\n");
@@ -653,7 +617,6 @@ static int child_init(int rank)
 
 	if (otel_ensure_provider() != 0)
 		return -1;
-#endif
 
 	return 0;
 }
