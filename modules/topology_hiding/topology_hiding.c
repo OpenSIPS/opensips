@@ -49,6 +49,7 @@ str th_contact_encode_scheme_legacy = str_init("base64");
 str th_internal_trusted_tag = STR_EMPTY;
 str th_external_socket_tag = STR_EMPTY;
 int auto_route_on_trusted_socket = 1;
+int compact_encoding = 0;
 
 int th_ct_enc_scheme;
 int th_ct_enc_scheme_legacy;
@@ -109,6 +110,7 @@ static const param_export_t params[] = {
 	{ "th_internal_trusted_tag",         STR_PARAM, &th_internal_trusted_tag.s         },
 	{ "th_external_socket_tag",          STR_PARAM, &th_external_socket_tag.s          },
 	{ "th_auto_route_on_trusted_socket", INT_PARAM, &auto_route_on_trusted_socket      },
+	{ "th_compact_encoding",             INT_PARAM, &compact_encoding                  },
 	{0, 0, 0}
 };
 
@@ -370,15 +372,13 @@ int w_topology_hiding(struct sip_msg *req, str *flags_s, struct th_params *param
 					flags |= TOPOH_KEEP_ADV_B;
 					LM_DBG("Will store advertised contact for calllee\n");
 					break;
-				case 'b':
-					flags |= TOPOH_USE_BINARY_ENCODING;
-					LM_DBG("Will encode thinfo using compact binary encoding\n");
-					break;
 				default:
 					LM_DBG("unknown topology_hiding flag : [%c] . Skipping\n",*p);
 			}
 		}
 
+	if (compact_encoding)
+		flags |= TOPOH_USE_BINARY_ENCODING;
 	return topology_hiding(req,flags,params);
 }
 
