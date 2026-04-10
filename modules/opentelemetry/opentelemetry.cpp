@@ -67,6 +67,8 @@ extern "C" {
 #include "../../route.h"
 #include "../../version.h"
 #include "../../ip_addr.h"
+#include "../../parser/parse_cseq.h"
+#include "../../parser/parse_uri.h"
 #include "../../mi/mi.h"
 }
 
@@ -84,7 +86,6 @@ static str otel_exporter_endpoint = STR_NULL;
 struct otel_span {
 	opentelemetry::nostd::shared_ptr<oteltrace::Span> span;
 	std::unique_ptr<oteltrace::Scope> scope;
-	const char *name;
 	int route_type;
 	int depth;
 	int is_root;
@@ -115,6 +116,7 @@ static int otel_ensure_provider(void);
 extern profiling_handlers_t otel_trace_handlers;
 static int otel_init_provider(void);
 static void otel_span_reset(void);
+static void otel_apply_route_status(struct otel_span *span, int status);
 
 static inline int otel_is_enabled(void)
 {
@@ -125,6 +127,162 @@ static void otel_parent_ctx_clear(void)
 {
 	memset(&otel_parent_ctx, 0, sizeof(otel_parent_ctx));
 	otel_parent_ctx_set = 0;
+}
+
+static int otel_get_cseq_method(struct sip_msg *msg, str *method)
+{
+	struct cseq_body *cseq;
+
+	if (!method)
+		return 0;
+
+	method->s = NULL;
+	method->len = 0;
+
+	if (!msg)
+		return 0;
+
+	if (!msg->cseq && parse_headers(msg, HDR_CSEQ_F, 0) == -1)
+		return 0;
+	if (!msg->cseq || !msg->cseq->parsed)
+		return 0;
+
+	cseq = get_cseq(msg);
+	if (!cseq || !cseq->method.s || !cseq->method.len)
+		return 0;
+
+	*method = cseq->method;
+	return 1;
+}
+
+static int otel_get_msg_method(struct sip_msg *msg, str *method)
+{
+	if (!method)
+		return 0;
+
+	method->s = NULL;
+	method->len = 0;
+
+	if (!msg)
+		return 0;
+
+	if (msg->first_line.type == SIP_REQUEST &&
+		msg->first_line.u.request.method.s &&
+		msg->first_line.u.request.method.len) {
+		*method = msg->first_line.u.request.method;
+		return 1;
+	}
+
+	return otel_get_cseq_method(msg, method);
+}
+
+static oteltrace::SpanKind otel_root_span_kind(int route_type)
+{
+	if (route_type == LOCAL_ROUTE)
+		return oteltrace::SpanKind::kClient;
+	return oteltrace::SpanKind::kServer;
+}
+
+static std::string otel_build_message_span_name(struct sip_msg *msg, int route_type)
+{
+	str method = STR_NULL;
+	std::string name;
+	const char *target = route_type_name(route_type);
+
+	if (otel_get_msg_method(msg, &method) && method.s && method.len)
+		name.assign(method.s, method.len);
+	else
+		name.assign("SIP");
+
+	name.push_back(' ');
+	name.append(target ? target : "unknown");
+
+	return name;
+}
+
+static void otel_set_request_target_attributes(struct sip_msg *msg,
+	oteltrace::Span *span)
+{
+	struct sip_uri *uri;
+	str *ruri;
+	char scheme[32];
+	char *scheme_end;
+
+	if (!msg || !span || msg->first_line.type != SIP_REQUEST)
+		return;
+
+	ruri = GET_RURI(msg);
+	if (ruri && ruri->s && ruri->len) {
+		span->SetAttribute("sip.request.uri",
+			opentelemetry::nostd::string_view(ruri->s, ruri->len));
+		span->SetAttribute("url.full",
+			opentelemetry::nostd::string_view(ruri->s, ruri->len));
+	}
+
+	if (parse_sip_msg_uri(msg) < 0)
+		return;
+
+	uri = &msg->parsed_uri;
+	scheme_end = uri_type2str(uri->type, scheme);
+	if (scheme_end) {
+		*scheme_end = '\0';
+		span->SetAttribute("url.scheme", scheme);
+	}
+
+	if (uri->host.s && uri->host.len) {
+		span->SetAttribute("server.address",
+			opentelemetry::nostd::string_view(uri->host.s, uri->host.len));
+		span->SetAttribute("server.port", (int64_t)get_uri_port(uri, NULL));
+	}
+}
+
+static void otel_set_network_attributes(struct sip_msg *msg,
+	oteltrace::Span *span)
+{
+	const char *transport;
+
+	if (!msg || !span)
+		return;
+
+	span->SetAttribute("network.protocol.name", "sip");
+	span->SetAttribute("network.protocol.version", "2.0");
+
+	transport = get_proto_name((unsigned short)msg->rcv.proto);
+	if (transport)
+		span->SetAttribute("network.transport", transport);
+
+	span->SetAttribute("network.peer.address", ip_addr2a(get_rcv_src_ip(&msg->rcv)));
+	span->SetAttribute("network.peer.port", (int64_t)get_rcv_src_port(&msg->rcv));
+	span->SetAttribute("network.local.address", ip_addr2a(get_rcv_dst_ip(&msg->rcv)));
+	span->SetAttribute("network.local.port", (int64_t)get_rcv_dst_port(&msg->rcv));
+}
+
+static void otel_set_user_agent_attribute(struct sip_msg *msg,
+	oteltrace::Span *span)
+{
+	if (!msg || !span || msg->first_line.type != SIP_REQUEST)
+		return;
+
+	if (!msg->user_agent && parse_headers(msg, HDR_USERAGENT_F, 0) == -1)
+		return;
+	if (!msg->user_agent || !msg->user_agent->body.s || !msg->user_agent->body.len)
+		return;
+
+	span->SetAttribute("user_agent.original",
+		opentelemetry::nostd::string_view(msg->user_agent->body.s,
+			msg->user_agent->body.len));
+}
+
+static void otel_set_span_error(struct otel_span *span, const char *error_type,
+	const char *description)
+{
+	if (!span || !span->span)
+		return;
+
+	if (error_type && *error_type)
+		span->span->SetAttribute("error.type", error_type);
+	span->span->SetStatus(oteltrace::StatusCode::kError,
+		description ? description : "");
 }
 
 static int otel_ensure_provider(void)
@@ -248,26 +406,33 @@ static int otel_init_provider(void)
 	return 0;
 }
 
-static void otel_set_msg_attributes(struct sip_msg *msg, oteltrace::Span *span)
+static void otel_set_msg_attributes(struct sip_msg *msg, oteltrace::Span *span,
+	int route_type)
 {
+	str method = STR_NULL;
+
 	if (!span || !msg)
 		return;
 
-	if (msg->first_line.type == SIP_REQUEST) {
-		str *m = &msg->first_line.u.request.method;
-		span->SetAttribute("sip.method", opentelemetry::nostd::string_view(m->s, m->len));
-		span->SetAttribute("opensips.top_route", route_type_name(REQUEST_ROUTE));
-		if (msg->first_line.u.request.uri.s && msg->first_line.u.request.uri.len)
-			span->SetAttribute("sip.ruri",
-				opentelemetry::nostd::string_view(msg->first_line.u.request.uri.s,
-					msg->first_line.u.request.uri.len));
-	} else if (msg->first_line.type == SIP_REPLY) {
-		span->SetAttribute("sip.status_code", (int64_t)msg->first_line.u.reply.statuscode);
+	if ((!msg->callid || !msg->cseq) &&
+		parse_headers(msg, HDR_CALLID_F | HDR_CSEQ_F, 0) == -1)
+		LM_DBG("failed to parse Call-ID/CSeq headers for OpenTelemetry span enrichment\n");
+
+	span->SetAttribute("sip.message.type",
+		msg->first_line.type == SIP_REQUEST ? "request" : "response");
+
+	if (otel_get_msg_method(msg, &method) && method.s && method.len)
+		span->SetAttribute("sip.request.method",
+			opentelemetry::nostd::string_view(method.s, method.len));
+
+	if (msg->first_line.type == SIP_REPLY) {
+		span->SetAttribute("sip.response.status_code",
+			(int64_t)msg->first_line.u.reply.statuscode);
 		if (msg->first_line.u.reply.reason.s && msg->first_line.u.reply.reason.len)
-			span->SetAttribute("sip.reason",
-				opentelemetry::nostd::string_view(msg->first_line.u.reply.reason.s,
+			span->SetAttribute("sip.response.reason",
+				opentelemetry::nostd::string_view(
+					msg->first_line.u.reply.reason.s,
 					msg->first_line.u.reply.reason.len));
-		span->SetAttribute("opensips.top_route", route_type_name(ONREPLY_ROUTE));
 	}
 
 	if (msg->callid && msg->callid->body.s && msg->callid->body.len)
@@ -278,16 +443,14 @@ static void otel_set_msg_attributes(struct sip_msg *msg, oteltrace::Span *span)
 		span->SetAttribute("sip.cseq",
 			opentelemetry::nostd::string_view(msg->cseq->body.s, msg->cseq->body.len));
 
-	if (msg->via1 && msg->via1->host.s && msg->via1->host.len)
-		span->SetAttribute("net.host.ip",
-			opentelemetry::nostd::string_view(msg->via1->host.s, msg->via1->host.len));
-
-	span->SetAttribute("net.peer.ip", ip_addr2a(&msg->rcv.src_ip));
-	span->SetAttribute("net.peer.port", (int64_t)msg->rcv.src_port);
+	otel_set_network_attributes(msg, span);
+	otel_set_request_target_attributes(msg, span);
+	otel_set_user_agent_attribute(msg, span);
 }
 
-static struct otel_span *otel_span_start(const char *name, int route_type,
-	int depth, int is_root, const char *file, int line)
+static struct otel_span *otel_span_start_named(const std::string &span_name,
+	const char *route_name, int route_type, int depth, int is_root,
+	const char *file, int line)
 {
 	struct otel_span *span;
 	int has_parent_ctx = 0;
@@ -306,7 +469,8 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 
 	if (otel_tracer) {
 		oteltrace::StartSpanOptions opts;
-		opts.kind = oteltrace::SpanKind::kInternal;
+		opts.kind = is_root ? otel_root_span_kind(route_type) :
+			oteltrace::SpanKind::kInternal;
 		if (otel_span_top && otel_span_top->span) {
 			opts.parent = otel_span_top->span->GetContext();
 			has_parent_ctx = 1;
@@ -330,9 +494,11 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 			otel_parent_ctx_clear();
 		}
 
-		auto s = otel_tracer->StartSpan(name ? name : "<route>", opts);
+		auto s = otel_tracer->StartSpan(span_name, opts);
 		s->SetAttribute("opensips.route.type", route_type_name(route_type));
 		s->SetAttribute("opensips.route.is_root", (int64_t)(has_parent_link ? 0 : is_root));
+		if (route_name)
+			s->SetAttribute("opensips.route.name", route_name);
 		if (file) {
 			s->SetAttribute("code.filepath", file);
 			s->SetAttribute("code.lineno", line);
@@ -342,7 +508,6 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 		span->span = s;
 	}
 
-	span->name = name;
 	span->route_type = route_type;
 	span->depth = depth;
 	span->is_root = is_root;
@@ -353,6 +518,32 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 	otel_span_top = span;
 
 	return span;
+}
+
+static struct otel_span *otel_span_start(const char *name, int route_type,
+	int depth, int is_root, const char *file, int line)
+{
+	return otel_span_start_named(std::string(name ? name : "<route>"), name,
+		route_type, depth, is_root, file, line);
+}
+
+static struct otel_span *otel_message_span_start(struct sip_msg *msg,
+	int route_type, int depth)
+{
+	return otel_span_start_named(otel_build_message_span_name(msg, route_type),
+		NULL, route_type, depth, 1, NULL, 0);
+}
+
+static void otel_apply_route_status(struct otel_span *span, int status)
+{
+	char error_type[32];
+
+	if (!span || !span->span || status >= 0)
+		return;
+
+	snprintf(error_type, sizeof(error_type), "%d", status);
+	otel_set_span_error(span, error_type,
+		"OpenSIPS route returned an error");
 }
 
 static void otel_span_end(struct otel_span *span)
@@ -386,16 +577,17 @@ static void otel_on_start(int data_type, const char *name, int subtype,
 
 	otel_span_reset();
 
-	otel_span_start(name, subtype, depth, 1, NULL, 0);
+	otel_message_span_start(msg, subtype, depth);
 
 	if (otel_span_top && otel_span_top->span) {
-		otel_set_msg_attributes(msg, otel_span_top->span.get());
+		otel_set_msg_attributes(msg, otel_span_top->span.get(), subtype);
 		otel_span_top->span->SetAttribute("sip.raw",
 			opentelemetry::nostd::string_view(msg->buf, msg->len));
 	}
 
 	(void)msg;
 	(void)data_type;
+	(void)name;
 }
 
 static void otel_on_end(int data_type, const char *name, int subtype,
@@ -448,8 +640,8 @@ static void otel_on_exit(int data_type, const char *name, int subtype,
 	(void)depth;
 	(void)file;
 	(void)line;
-	(void)status;
 
+	otel_apply_route_status(otel_span_top, status);
 	otel_span_end(otel_span_top);
 }
 

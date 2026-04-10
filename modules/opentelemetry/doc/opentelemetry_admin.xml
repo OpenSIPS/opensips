@@ -11,16 +11,28 @@
 	tracing for &osips; route execution. It creates a root span per
 	processed SIP message and a child span for each route entry.
 	</para>
-	<para>
-	Spans include common SIP attributes (method, Call-ID, CSeq, status) and
-	message metadata. While a span is active, &osips; logs can be attached
-	as OpenTelemetry events for easier correlation.
-	</para>
-	<para>
-	Trace data is exported via the OTLP/HTTP exporter from the
-	OpenTelemetry C++ SDK.
-	</para>
-	</section>
+		<para>
+		The root SIP message span follows a local semantic convention inspired
+		by the OpenTelemetry HTTP span conventions: it uses a method-plus-target
+		span name, server/client/internal span kinds based on the &osips; route
+		type, and generic network, client, server and URL attributes wherever
+		they fit the SIP model.
+		</para>
+		<para>
+		Spans include common SIP attributes (request method, Call-ID, CSeq,
+		response status) and connection metadata. While a span is active,
+		&osips; logs can be attached as OpenTelemetry events for easier
+		correlation.
+		</para>
+		<para>
+		Trace data is exported via the OTLP/HTTP exporter from the
+		OpenTelemetry C++ SDK.
+		</para>
+		<para>
+		The local SIP span convention emitted by this module is documented in
+		<filename>modules/opentelemetry/semantic-convention/sip-spans.md</filename>.
+		</para>
+		</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
@@ -65,10 +77,10 @@
 		changed at runtime using the <function moreinfo="none">opentelemetry:enable</function>
 		MI command.
 		</para>
-		<para>
-		If &osips; was built without the OpenTelemetry C++ SDK, enabling this
-		parameter will fail at startup.
-		</para>
+			<para>
+			The module is built only when the OpenTelemetry C++ SDK is available
+			at build time.
+			</para>
 		<para>
 		<emphasis>
 			Default value is <quote>0 (disabled)</quote>.
