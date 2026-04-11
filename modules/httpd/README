@@ -23,6 +23,9 @@ httpd Module
               1.4.7. tls_cert_file (string)
               1.4.8. tls_key_file (string)
               1.4.9. tls_ciphers (string)
+              1.4.10. auth_realm (string)
+              1.4.11. auth_username (string)
+              1.4.12. auth_password (string)
 
         1.5. Exported MI Functions
 
@@ -66,6 +69,9 @@ httpd Module
    1.7. Set tls_cert_file parameter
    1.8. Set tls_key_file parameter
    1.9. Set tls_key_file parameter
+   1.10. Set auth_realm parameter
+   1.11. Set auth_username parameter
+   1.12. Set auth_password parameter
 
 Chapter 1. Admin Guide
 
@@ -115,8 +121,8 @@ Chapter 1. Admin Guide
    The IP address used by the HTTP server to listen for incoming
    requests.
 
-   The default value is "*" (bind to all IPv6 and IPv4
-   interfaces).
+   The default value is "127.0.0.1" (binds to loopback only). Use
+   "*" to bind to all IPv6 and IPv4 interfaces.
 
    Example 1.1. Set ip parameter
 ...
@@ -239,6 +245,52 @@ modparam("httpd", "tls_ciphers", "SECURE256:+SECURE192:-VERS-ALL:+VERS-T
 LS1.2")
 ...
 
+1.4.10. auth_realm (string)
+
+   The realm string to be used for HTTP Basic Authentication
+   challenges. Only takes effect when both auth_username and
+   auth_password are set.
+
+   The default value is "OpenSIPS MI".
+
+   Example 1.10. Set auth_realm parameter
+...
+modparam("httpd", "auth_realm", "OpenSIPS Management")
+...
+
+1.4.11. auth_username (string)
+
+   The username for HTTP Basic Authentication. When set together
+   with auth_password, all HTTP requests must present valid
+   credentials. Requests without credentials or with incorrect
+   credentials receive a 401 Unauthorized response.
+
+   The default value is "" (authentication disabled).
+
+   Example 1.11. Set auth_username parameter
+...
+modparam("httpd", "auth_username", "admin")
+...
+
+1.4.12. auth_password (string)
+
+   The password for HTTP Basic Authentication. Must be set
+   together with auth_username.
+
+Warning
+
+   When using HTTP Basic Authentication, it is strongly
+   recommended to also enable TLS via tls_cert_file and
+   tls_key_file to prevent credentials from being transmitted in
+   plaintext.
+
+   The default value is "" (authentication disabled).
+
+   Example 1.12. Set auth_password parameter
+...
+modparam("httpd", "auth_password", "secretpass")
+...
+
 1.5. Exported MI Functions
 
 1.5.1. httpd:list_root_path
@@ -317,8 +369,9 @@ Chapter 3. Contributors
    9. Alexandra Titoc 4 2 2 1
    10. Fabian Gast (@fgast) 4 1 150 3
 
-   All remaining contributors: Stephane Alnet, Stas Kobzar, Dusan
-   Klinec (@ph4r05), Ken Rice, Peter Lemenkov (@lemenkov).
+   All remaining contributors: rdondeti, Stephane Alnet, Stas
+   Kobzar, Dusan Klinec (@ph4r05), Ken Rice, Peter Lemenkov
+   (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -340,20 +393,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2026
-   2.  Ken Rice                            Sep 2025 - Sep 2025
-   3.  Vlad Paiu (@vladpaiu)               Dec 2024 - Dec 2024
-   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Aug 2021
-   8.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
-   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   10. Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
+   1.  rdondeti                            Mar 2026 - Mar 2026
+   2.  Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2026
+   3.  Ken Rice                            Sep 2025 - Sep 2025
+   4.  Vlad Paiu (@vladpaiu)               Dec 2024 - Dec 2024
+   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   7.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Aug 2021
+   9.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
+   10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Ionut
-   Ionita (@ionutrazvanionita), Dusan Klinec (@ph4r05), Stas
-   Kobzar, Stephane Alnet.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Dusan
+   Klinec (@ph4r05), Stas Kobzar, Stephane Alnet.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -362,9 +415,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Paiu
-   (@vladpaiu), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
+   Last edited by: rdondeti, Razvan Crainea (@razvancrainea), Vlad
+   Paiu (@vladpaiu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
    (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
    (@ovidiusas).
 

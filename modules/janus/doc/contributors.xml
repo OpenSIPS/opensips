@@ -36,6 +36,22 @@
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>rdondeti</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">20</entry>
+		<entry align="center">4</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">4</entry>
+		<entry align="center">12</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -43,7 +59,7 @@
 		<entry align="center">1</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>6. </entry>
 		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
 		<entry align="center">2</entry>
 		<entry align="center">1</entry>
@@ -51,7 +67,7 @@
 		<entry align="center">0</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>7. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">2</entry>
 		<entry align="center">1</entry>
@@ -88,26 +104,36 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
-		<entry align="center">Mar 2026 - Mar 2026</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Apr 2026 - Apr 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry>rdondeti</entry>
 		<entry align="center">Mar 2026 - Mar 2026</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">Mar 2026 - Mar 2026</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Mar 2026 - Mar 2026</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Dec 2024 - May 2025</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>6. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Mar 2025 - Mar 2025</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>7. </entry>
 		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
 		<entry align="center">Feb 2025 - Feb 2025</entry>
 	</row>
