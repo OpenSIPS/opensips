@@ -19,10 +19,8 @@ proto_bins Module
               1.3.4. bins_max_msg_chunks (integer)
               1.3.5. bins_async (integer)
               1.3.6. bins_async_max_postponed_chunks (integer)
-              1.3.7. bins_async_local_connect_timeout (integer)
-              1.3.8. bins_async_handshake_timeout (integer)
-              1.3.9. trace_destination (string)
-              1.3.10. trace_on (int)
+              1.3.7. trace_destination (string)
+              1.3.8. trace_on (int)
 
         1.4. Exported MI Functions
 
@@ -52,10 +50,8 @@ proto_bins Module
    1.4. Set bins_max_msg_chunks parameter
    1.5. Set bins_async parameter
    1.6. Set bins_async_max_postponed_chunks parameter
-   1.7. Set bins_async_local_connect_timeout parameter
-   1.8. Set bins_async_handshake_timeout parameter
-   1.9. Set trace_destination parameter
-   1.10. Set trace_on parameter
+   1.7. Set trace_destination parameter
+   1.8. Set trace_on parameter
 
 Chapter 1. Admin Guide
 
@@ -181,37 +177,7 @@ modparam("proto_bins", "bins_async", 0)
 modparam("proto_bins", "bins_async_max_postponed_chunks", 16)
 ...
 
-1.3.7. bins_async_local_connect_timeout (integer)
-
-   If bin_async is enabled, this specifies the number of
-   milliseconds that a connect will be tried in blocking mode
-   (optimization). If the connect operation lasts more than this,
-   the connect will go to async mode and will be passed to TCP
-   MAIN for polling.
-
-   Default value is 100 ms.
-
-   Example 1.7. Set bins_async_local_connect_timeout parameter
-...
-modparam("proto_bins", "bins_async_local_connect_timeout", 200)
-...
-
-1.3.8. bins_async_handshake_timeout (integer)
-
-   If tls_async is enabled, this specifies the number of
-   milliseconds that a TLS handshake should be tried in blocking
-   mode (optimization). If the handshake operation lasts more than
-   this, the write will go to async mode and will be passed to tls
-   MAIN for polling.
-
-   Default value is 10 ms.
-
-   Example 1.8. Set bins_async_handshake_timeout parameter
-        ...
-        modparam("proto_tls", "bins_async_handshake_timeout", 100)
-        ...
-
-1.3.9. trace_destination (string)
+1.3.7. trace_destination (string)
 
    Trace destination as defined in the tracing module. Currently
    the only tracing module is proto_hep. Network events such as
@@ -226,7 +192,7 @@ modparam("proto_bins", "bins_async_local_connect_timeout", 200)
 
    Default value is none(not defined).
 
-   Example 1.9. Set trace_destination parameter
+   Example 1.7. Set trace_destination parameter
 ...
 modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
 n=3")
@@ -234,14 +200,14 @@ n=3")
 modparam("proto_bins", "trace_destination", "hep_dest")
 ...
 
-1.3.10. trace_on (int)
+1.3.8. trace_on (int)
 
    This controls whether tracing for tls is on or not. You still
    need to define trace_destinationin order to work, but this
    value will be controlled using mi function bins:trace.
    Default value is 0(tracing inactive).
 
-   Example 1.10. Set trace_on parameter
+   Example 1.8. Set trace_on parameter
 ...
 modparam("proto_bins", "trace_on", 1)
 ...
@@ -272,8 +238,8 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 15 4 1118 24
-   2. Razvan Crainea (@razvancrainea) 7 5 14 11
+   1. Razvan Crainea (@razvancrainea) 19 15 65 167
+   2. Vlad Patrascu (@rvlad-patrascu) 15 4 1118 24
    3. Maksym Sobolyev (@sobomax) 5 3 19 20
    4. Liviu Chircu (@liviuchircu) 5 3 13 7
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 5 3
