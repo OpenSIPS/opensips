@@ -113,6 +113,7 @@ extern str th_internal_trusted_tag;
 extern str th_external_socket_tag;
 extern str th_is_self_socket_tag;
 extern int auto_route_on_trusted_socket;
+extern int th_compact_encoding;
 
 extern struct th_ct_params *th_param_list;
 extern struct th_ct_params *th_hdr_param_list;
@@ -1092,7 +1093,7 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str *ro
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (flags & TOPOH_USE_BINARY_ENCODING) {
+	if (th_compact_encoding) {
 		if (!(suffix = build_encoded_thinfo_suffix(msg, routes, rrs_to_ignore, &suffix_len, flags, 0))) {
 			LM_ERR("Failed to build suffix \n");
 			goto error;

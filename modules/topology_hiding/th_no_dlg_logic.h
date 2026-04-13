@@ -28,9 +28,6 @@
 
 enum encode_scheme {ENC_BASE64, ENC_BASE32};
 
-// Need to think about the flags so they don't clash with dlg flags
-#define TOPOH_USE_BINARY_ENCODING (1 << 7)
-
 extern str decoded_uris[12];
 extern int decoded_uris_count;
 extern int ctx_decoded_routes_valid_idx;
