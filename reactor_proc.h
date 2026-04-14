@@ -42,6 +42,11 @@ int reactor_proc_init(char *name);
 
 int reactor_proc_add_fd(int fd, reactor_proc_cb_f func, void *param);
 
+/* Remove fd from reactor and free the callback (reactor_proc_cb) allocated by
+ * reactor_proc_add_fd. Use this instead of reactor_del_reader() for FDs
+ * that were added with reactor_proc_add_fd() to avoid a PKG memory leak. */
+int reactor_proc_del_fd(int fd, int idx, int io_flags);
+
 int reactor_proc_loop(void);
 
 #endif
