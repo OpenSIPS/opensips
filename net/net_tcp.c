@@ -106,9 +106,6 @@ static unsigned int* connection_id=0;
 /* array of TCP partitions */
 static struct tcp_partition tcp_parts[TCP_PARTITION_SIZE];
 
-/*!< tcp protocol number as returned by getprotobyname */
-static int tcp_proto_no=-1;
-
 /* communication socket from generic proc to TCP main */
 int unix_tcp_sock = -1;
 
@@ -241,8 +238,7 @@ int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags 
 
 #ifdef DISABLE_NAGLE
 	flags=1;
-	if ( (tcp_proto_no!=-1) && (setsockopt(s, tcp_proto_no , TCP_NODELAY,
-					&flags, sizeof(flags))<0) ){
+	if (setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &flags, sizeof(flags)) < 0){
 		LM_WARN("could not disable Nagle: %s\n", strerror(errno));
 	}
 #endif
@@ -327,10 +323,12 @@ static int send2worker(struct tcp_connection* tcpconn,int rw)
 int tcp_init_listener(struct socket_info *si)
 {
 	union sockaddr_union* addr = &si->su;
+
 	if (init_su(addr, &si->address, si->port_no)<0){
 		LM_ERR("could no init sockaddr_union\n");
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -341,17 +339,6 @@ int tcp_bind_listener(struct socket_info *si)
 	int optval;
 #ifdef DISABLE_NAGLE
 	int flag;
-	struct protoent* pe;
-
-	if (tcp_proto_no==-1){ /* if not already set */
-		pe=getprotobyname("tcp");
-		if (pe==0){
-			LM_ERR("could not get TCP protocol number\n");
-			tcp_proto_no=-1;
-		}else{
-			tcp_proto_no=pe->p_proto;
-		}
-	}
 #endif
 
 	addr = &si->su;
@@ -362,9 +349,7 @@ int tcp_bind_listener(struct socket_info *si)
 	}
 #ifdef DISABLE_NAGLE
 	flag=1;
-	if ( (tcp_proto_no!=-1) &&
-		 (setsockopt(si->socket, tcp_proto_no , TCP_NODELAY,
-					 &flag, sizeof(flag))<0) ){
+	if (setsockopt(si->socket, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0){
 		LM_ERR("could not disable Nagle: %s\n",strerror(errno));
 	}
 #endif
