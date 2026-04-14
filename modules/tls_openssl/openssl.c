@@ -28,7 +28,6 @@
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
-#include <openssl/rand.h>
 
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
@@ -37,7 +36,6 @@
 #include "../../net/tcp_conn_defs.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
 
-#include "openssl_helpers.h"
 #include "openssl_api.h"
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L && defined __OS_linux)
@@ -47,6 +45,14 @@
 #define __OPENSSL_ON_EXIT
 #endif
 #endif
+#endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+int ssl_versions[TLS_USE_TLSv1_3 + 1];
+#elif OPENSSL_VERSION_NUMBER >= 0x10100000L
+int ssl_versions[TLS_USE_TLSv1_2 + 1];
+#else
+SSL_METHOD *ssl_methods[TLS_USE_TLSv1_2 + 1];
 #endif
 
 static int load_tls_openssl(struct openssl_binds *binds);
@@ -124,18 +130,7 @@ struct module_exports exports = {
 
 static int mod_load(void)
 {
-	/*
-	 * this has to be called before any function calling CRYPTO_malloc,
-	 * CRYPTO_malloc will set allow_customize in openssl to 0
-	 */
-
 	LM_INFO("openssl version: %s\n", SSLeay_version(SSLEAY_VERSION));
-	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
-		LM_ERR("unable to set the memory allocation functions\n");
-		LM_ERR("NOTE: please make sure you are loading tls_mgm module at the"
-			"very beginning of your script, before any other module!\n");
-		return -1;
-	}
 
 	return 0;
 }
@@ -208,10 +203,6 @@ init_ssl_methods(void)
 
 static int mod_init(void)
 {
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-	int n;
-#endif
-
 	LM_INFO("initializing openssl module\n");
 
 #if !defined(OPENSSL_NO_COMP)
@@ -226,13 +217,6 @@ static int mod_init(void)
 	}
 #endif
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-	if (tls_init_multithread() < 0) {
-		LM_ERR("failed to init multi-threading support\n");
-		return -1;
-	}
-#endif
-
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	SSL_library_init();
 	SSL_load_error_strings();
 #else
@@ -241,15 +225,6 @@ static int mod_init(void)
 			|OPENSSL_INIT_NO_ATEXIT
 #endif
 			, NULL);
-#endif
-
-#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
-	os_ssl_method = RAND_get_rand_method();
-	if (!os_ssl_method) {
-		LM_ERR("could not get the default ssl rand method!\n");
-		return -1;
-	}
-	RAND_set_rand_method(&opensips_ssl_method);
 #endif
 
 	init_ssl_methods();
