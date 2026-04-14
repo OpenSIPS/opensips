@@ -110,16 +110,6 @@
 			Called once for each tls socket created, from main.c
 			</para>
 		</section>
-		<section>
-			<title>os_malloc, os_realloc, os_free</title>
-			<para>
-			Wrapper functions around the shm_* functions. OpenSSL uses
-			non-shared memory to create its objects, thus it would not
-			work in &osips;. By creating these wrappers and configuring
-			OpenSSL to use them instead of its default memory functions,
-			we have all OpenSSL objects in shared memory, ready to use.
-			</para>
-		</section>
 	</section>
 
 	<section>
