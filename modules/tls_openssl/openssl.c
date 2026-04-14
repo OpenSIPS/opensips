@@ -203,6 +203,9 @@ init_ssl_methods(void)
 
 static int mod_init(void)
 {
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
+	int n;
+#endif
 	LM_INFO("initializing openssl module\n");
 
 #if !defined(OPENSSL_NO_COMP)
