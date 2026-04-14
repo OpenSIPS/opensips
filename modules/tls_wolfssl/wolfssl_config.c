@@ -433,11 +433,21 @@ static int load_ca_db(WOLFSSL_CTX * ctx, str *blob)
 static int load_ca_dir(WOLFSSL_CTX * ctx, char *directory)
 {
 	int rc;
+	word32 flags = WOLFSSL_LOAD_FLAG_IGNORE_ERR;
+
+	/*
+	 * wolfSSL only exposes the extra directory-load flags when it is built
+	 * with the matching feature toggles, so include them conditionally.
+	 */
+#ifdef WOLFSSL_LOAD_FLAG_IGNORE_BAD_PATH_ERR
+	flags |= WOLFSSL_LOAD_FLAG_IGNORE_BAD_PATH_ERR;
+#endif
+#ifdef WOLFSSL_LOAD_FLAG_IGNORE_ZEROFILE
+	flags |= WOLFSSL_LOAD_FLAG_IGNORE_ZEROFILE;
+#endif
 
 	if ((rc = wolfSSL_CTX_load_verify_locations_ex(ctx, 0, directory,
-		WOLFSSL_LOAD_FLAG_IGNORE_ERR|WOLFSSL_LOAD_FLAG_IGNORE_BAD_PATH_ERR|
-		WOLFSSL_LOAD_FLAG_IGNORE_ZEROFILE)) !=
-		SSL_SUCCESS) {
+		flags)) != SSL_SUCCESS) {
 		LM_ERR("unable to load ca directory '%s' (ret=%d)\n", directory, rc);
 		return -1;
 	}
