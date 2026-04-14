@@ -21,6 +21,7 @@
 #include "cfg_reload.h"
 #include "reactor.h"
 #include "reactor_proc.h"
+#include "mem/mem.h"
 
 
 int reactor_proc_init(char *name)
@@ -59,12 +60,24 @@ int reactor_proc_add_fd(int fd, reactor_proc_cb_f func, void *param)
 
 	if (reactor_add_reader( fd, F_GEN_PROC, RCT_PRIO_PROC, cb)<0){
 		LM_CRIT("failed to add fd to reactor <%s>\n", reactor_name());
+		pkg_free(cb);
 		return -1;
 	}
 
 	return 0;
 }
 
+int reactor_proc_del_fd(int fd, int idx, int io_flags)
+{
+	struct fd_map *e;
+
+	e = get_fd_map(&_worker_io, fd);
+	if (e && e->type == F_GEN_PROC && e->data) {
+		pkg_free(e->data);
+		e->data = NULL;
+	}
+	return reactor_del_reader(fd, idx, io_flags);
+}
 
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {
