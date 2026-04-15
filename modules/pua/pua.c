@@ -802,7 +802,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 
 		cb_param = PRES_HASH_ID(p);
 
-		result= tmb.t_request(&met,    /* Type of the message*/
+		result= run_tm_api(&tmb, t_request, &met,    /* Type of the message*/
 				p->pres_uri,           /* Request-URI */
 				p->pres_uri,           /* To */
 				p->pres_uri,           /* From */
@@ -841,8 +841,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 			goto error;
 
 		}
-		result= tmb.t_request_within
-				(&met,
+		result= run_tm_api(&tmb, t_request_within, &met,
 				str_hdr,
 				0,
 				td,

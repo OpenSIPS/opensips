@@ -387,8 +387,7 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 
 	ref_dlg(cell, 1);
 
-	result = d_tmb.t_request_within
-		(&met,         /* method*/
+	result = run_tm_api(&d_tmb, t_request_within, &met,         /* method*/
 		extra_hdrs,    /* extra headers*/
 		NULL,          /* body*/
 		dialog_info,   /* dialog structure*/
@@ -477,7 +476,7 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes)
 			return -1;
 		}
 
-		if (d_tmb.t_cancel_trans(t,NULL) < 0) {
+		if (run_tm_api(&d_tmb, t_cancel_trans, t,NULL) < 0) {
 			LM_ERR("Failed to send cancels\n");
 			d_tmb.unref_cell(t);
 			return -1;
@@ -626,8 +625,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 
 	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
-	result = d_tmb.t_request_within
-		(method,         /* method*/
+	result = run_tm_api(&d_tmb, t_request_within, method,         /* method*/
 		hdrs,		    /* extra headers*/
 		body,          /* body*/
 		dialog_info,   /* dialog structure*/

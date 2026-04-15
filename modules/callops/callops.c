@@ -823,7 +823,7 @@ static int call_handle_notify(struct dlg_cell *dlg, struct sip_msg *msg)
 reply:
 	status.s = error_text(status_code);
 	status.len = strlen(status.s);
-	if (call_tm_api.t_reply(msg, status_code, &status) < 0)
+	if (run_tm_api(&call_tm_api, t_reply, msg, status_code, &status) < 0)
 		return -1;
 	return 0;
 }

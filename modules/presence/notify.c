@@ -2134,8 +2134,8 @@ jump_over_body:
 	/* don't open new TCP connections if connection is down */
 	tcp_no_new_conn = 1;
 
-	result = tmb.t_request_within
-		(&met,                          /* method*/
+	result = run_tm_api(&tmb, t_request_within,
+		&met,                           /* method*/
 		&str_hdr,                       /* extra headers*/
 		aux_body?aux_body:notify_body,  /* body*/
 		td,                             /* dialog structure*/
@@ -2448,4 +2448,3 @@ error:
 		xmlFreeDoc(doc);
 	return NULL;
 }
-

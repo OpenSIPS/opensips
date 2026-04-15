@@ -872,8 +872,8 @@ int send_subscribe(subs_info_t* subs)
 		hentity->hash_index = hash_index;
 		hentity->flag= flag;
 
-		result= tmb.t_request
-			(&met,                       /* Type of the message */
+		result= run_tm_api(&tmb, t_request,
+			&met,                        /* Type of the message */
 			pres.pres_uri,               /* Request-URI*/
 			&pres.to_uri,                /* To */
 			pres.watcher_uri,            /* From */
@@ -977,8 +977,8 @@ int send_subscribe(subs_info_t* subs)
 
 	//	hentity->flag= flag;
 		LM_DBG("event parameter: %d\n", hentity->event);
-		result= tmb.t_request_within
-			(&met,
+		result= run_tm_api(&tmb, t_request_within,
+			&met,
 			str_hdr,
 			0,
 			td,

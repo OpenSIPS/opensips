@@ -234,8 +234,8 @@ str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		b2b_arm_uac_tracing( &td, dlg->tracer);
 
 	/* send request */
-	result= tmb.t_request_within
-		(&ci->method,          /* method*/
+	result= run_tm_api(&tmb, t_request_within,
+		&ci->method,           /* method*/
 		&ehdr,                 /* extra headers*/
 		ci->body,              /* body*/
 		&td,                   /* dialog structure*/
@@ -358,4 +358,3 @@ error:
 
 	return 0;
 }
-

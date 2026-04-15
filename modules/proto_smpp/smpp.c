@@ -1561,7 +1561,7 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 		body_str.s = sms_body;
 	}
 
-	tmb.t_request(&msg_type, /* Type of the message */
+	run_tm_api(&tmb, t_request, &msg_type, /* Type of the message */
 		      &dst,          /* Request-URI */
 		      &dst,          /* To */
 		      &src,          /* From */

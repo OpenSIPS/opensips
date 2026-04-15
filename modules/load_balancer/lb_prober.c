@@ -122,7 +122,7 @@ void lb_do_probing(struct lb_data *data)
 
 		pack_last = pack->next;
 
-		if (lb_tmb.t_request( &lb_probe_method, &pack->uri, &pack->uri,
+		if (run_tm_api(&lb_tmb, t_request,  &lb_probe_method, &pack->uri, &pack->uri,
 		&lb_probe_from, NULL, NULL, NULL, lb_probing_callback,
 		(void*)(long)pack, osips_shm_free) < 0) {
 			LM_ERR("probing failed\n");

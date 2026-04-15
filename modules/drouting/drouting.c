@@ -969,7 +969,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 			}
 			dlg->state = DLG_CONFIRMED;
 
-			if (dr_tmb.t_request_within(&dr_probe_method, NULL, NULL, dlg,
+			if (run_tm_api(&dr_tmb, t_request_within, &dr_probe_method, NULL, NULL, dlg,
 			dr_probing_callback, (void*)pack, osips_shm_free)<0) {
 				LM_ERR("unable to execute dialog, disabling destination...\n");
 				lock_start_read( it->ref_lock );

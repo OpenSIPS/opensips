@@ -925,7 +925,7 @@ search_dialog:
 		/* start tracing for the CANCEL transaction */
 		b2b_run_tracer( dlg, msg, tmb.t_gett());
 
-		if(tmb.t_reply(msg, 200, &reply_text) < 0)
+		if(run_tm_api(&tmb, t_reply, msg, 200, &reply_text) < 0)
 		{
 			LM_ERR("failed to send reply for CANCEL\n");
 			B2BE_LOCK_RELEASE(server_htable, hash_index);
@@ -1019,10 +1019,10 @@ search_dialog:
 			if(method_value == METHOD_BYE)
 			{
 				str ok = str_init("OK");
-				tmb.t_reply(msg, 200, &ok);
+				run_tm_api(&tmb, t_reply, msg, 200, &ok);
 			} else {
 				str ko = str_init("Call/Transaction Does Not Exist");
-				tmb.t_reply(msg, 481, &ko);
+				run_tm_api(&tmb, t_reply, msg, 481, &ko);
 			}
 			tm_tran = tmb.t_gett();
 			if (tm_tran && tm_tran!=T_UNDEFINED)
@@ -1060,7 +1060,7 @@ search_dialog:
 			tm_tran = tmb.t_gett();
 			if (dlg)
 				b2b_run_tracer(dlg, msg, tm_tran);
-			tmb.t_reply(msg, 200, &reason);
+			run_tm_api(&tmb, t_reply, msg, 200, &reason);
 			if(tm_tran && tm_tran!=T_UNDEFINED)
 				tmb.unref_cell(tm_tran);
 
@@ -1183,7 +1183,7 @@ logic_notify:
 					LM_DBG("Received a request while having an ongoing "
 						"outbound/UAC one\n");
 					str text = str_init("Request Pending");
-					if(tmb.t_reply_with_body( tm_tran, 491,
+					if(run_tm_api(&tmb, t_reply_with_body,  tm_tran, 491,
 					&text, 0, 0, &to_tag) < 0)
 					{
 						LM_ERR("failed to send reply with tm\n");
@@ -1214,7 +1214,7 @@ logic_notify:
 						memcpy( ra.s+ra.len, CRLF, CRLF_LEN);
 						ra.len += CRLF_LEN;
 						/* send reply */
-						if(tmb.t_reply_with_body( tm_tran, 500,
+						if(run_tm_api(&tmb, t_reply_with_body,  tm_tran, 500,
 						&text, 0, &ra, &to_tag) < 0)
 						{
 							LM_ERR("failed to send reply with tm\n");
@@ -1228,7 +1228,7 @@ logic_notify:
 						LM_DBG("Received BYE while having an ongoing "
 							"inbound/UAS transaction\n");
 						str text_ok = str_init("OK");
-						if(tmb.t_reply_with_body( tm_tran, 200,
+						if(run_tm_api(&tmb, t_reply_with_body,  tm_tran, 200,
 						&text_ok, 0, 0, &to_tag) < 0)
 						{
 							LM_ERR("failed to send reply with tm\n");
@@ -1245,7 +1245,7 @@ logic_notify:
 							tmb.t_release_trans(dlg->uas_tran);
 						} else {
 							str text_term = str_init("Request Terminated");
-							if(tmb.t_reply_with_body(dlg->uas_tran, 487,
+							if(run_tm_api(&tmb, t_reply_with_body, dlg->uas_tran, 487,
 							&text_term, 0, 0, &to_tag) < 0)
 							{
 								LM_ERR("failed to send reply with tm\n");
@@ -1961,7 +1961,7 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	ehdr.s = buffer;
 
 	/* send reply */
-	if(tmb.t_reply_with_body(tm_tran, code, rpl_data->text, rpl_data->body, &ehdr, to_tag) < 0)
+	if(run_tm_api(&tmb, t_reply_with_body, tm_tran, code, rpl_data->text, rpl_data->body, &ehdr, to_tag) < 0)
 	{
 		LM_ERR("failed to send reply with tm\n");
 		goto error;
@@ -2049,7 +2049,7 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 		if (pto == NULL || pto->error != PARSE_OK) {
 			LM_ERR("'To' header COULD NOT be parsed\n");
 		} else {
-			if (tmb.t_reply_with_body(dlg->uas_tran, 408, &reply_text, 0, 0,
+			if (run_tm_api(&tmb, t_reply_with_body, dlg->uas_tran, 408, &reply_text, 0, 0,
 				&pto->tag_value) < 0)
 				LM_ERR("Failed to send 408 reply\n");
 		}
@@ -2062,7 +2062,7 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 		if (pto == NULL || pto->error != PARSE_OK) {
 			LM_ERR("'To' header COULD NOT be parsed\n");
 		} else {
-			if (tmb.t_reply_with_body(dlg->update_tran, 408, &reply_text, 0, 0,
+			if (run_tm_api(&tmb, t_reply_with_body, dlg->update_tran, 408, &reply_text, 0, 0,
 				&pto->tag_value) < 0)
 				LM_ERR("Failed to send 408 reply\n");
 		}
@@ -2292,8 +2292,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et, str* b2b_key,
 
 	if (no_cb)
 	{
-		result= tmb.t_request_within
-			(method,            /* method*/
+		result= run_tm_api(&tmb, t_request_within, method,            /* method*/
 			ehdr,               /* extra headers*/
 			body,               /* body*/
 			td,                 /* dialog structure*/
@@ -2305,8 +2304,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et, str* b2b_key,
 	{
 		td->avps = clone_avp_list( *get_avp_list() );
 		td->T_flags = T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG;
-		result= tmb.t_request_within
-			(method,            /* method*/
+		result= run_tm_api(&tmb, t_request_within, method,            /* method*/
 			ehdr,               /* extra headers*/
 			body,               /* body*/
 			td,                 /* dialog structure*/
@@ -2547,7 +2545,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 					goto error;
 				}
 				// FIXME - tracing: how do we get to the cancel transaction?
-				ret = tmb.t_cancel_trans( inv_t, &ehdr);
+				ret = run_tm_api(&tmb, t_cancel_trans,  inv_t, &ehdr);
 				tmb.unref_cell(inv_t);
 				if (dlg->state > B2B_CONFIRMED)
 					method_value = METHOD_INVITE;
@@ -2848,8 +2846,7 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 		b2b_arm_uac_tracing( td, dlg->tracer);
 
 	/* send request */
-	result= tmb.t_request_within
-		(method,            /* method*/
+	result= run_tm_api(&tmb, t_request_within, method,            /* method*/
 		extra_headers,      /* extra headers*/
 		body,               /* body*/
 		td,                 /* dialog structure*/

@@ -1128,7 +1128,7 @@ static int media_send_ok(struct cell *t, struct dlg_cell *dlg,
 	str *hdrs;
 	str ok = str_init("OK");
 	hdrs = media_get_dlg_headers(dlg, leg, 1);
-	ret = media_tm.t_reply_with_body(t, 200, &ok,
+	ret = run_tm_api(&media_tm, t_reply_with_body, t, 200, &ok,
 			body, hdrs, &dlg->legs[other_leg(dlg, leg)].tag);
 	pkg_free(hdrs->s);
 	return ret;
@@ -1140,7 +1140,7 @@ static int media_send_fail(struct cell *t, struct dlg_cell *dlg, int leg)
 	str *hdrs;
 	str reason = str_init("Not Acceptable Here");
 	hdrs = media_get_dlg_headers(dlg, leg, 0);
-	ret = media_tm.t_reply_with_body(t, 488, &reason,
+	ret = run_tm_api(&media_tm, t_reply_with_body, t, 488, &reason,
 			NULL, hdrs, &dlg->legs[other_leg(dlg, leg)].tag);
 	pkg_free(hdrs->s);
 	return ret;

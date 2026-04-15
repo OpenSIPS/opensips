@@ -532,7 +532,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 
 	LM_DBG("cback param = %ld\n", pres_id);
 
-	if (tmb.t_request(&met,						/* Type of the message */
+	if (run_tm_api(&tmb, t_request, &met,						/* Type of the message */
 			publ->pres_uri,							/* Request-URI */
 			publ->pres_uri,							/* To */
 			publ->pres_uri,							/* From */

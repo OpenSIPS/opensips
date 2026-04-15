@@ -186,7 +186,7 @@ int sig_send_reply_mod(struct sip_msg* msg, int code,
 			}
 			goto sl_reply;
 		}
-		if( tmb.t_reply(msg, code, reason)< 0)
+		if( run_tm_api(&tmb, t_reply, msg, code, reason)< 0)
 		{
 			LM_ERR("failed to send reply with tm module\n");
 			return -1;
