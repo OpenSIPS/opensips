@@ -80,6 +80,7 @@
 #include "../../usr_avp.h"
 #include "../../receive.h"
 #include "../../msg_callbacks.h"
+#include "../../profiling.h"
 
 #include "h_table.h"
 #include "t_hooks.h"
@@ -1617,6 +1618,8 @@ int reply_received( struct sip_msg  *p_msg )
 
 	set_t(T_UNDEFINED);
 
+	profiling_proc_enter( "TM_reply_received", 0 );
+
 	/* make sure we know the associated transaction ... */
 	switch (t_check(p_msg, &branch )) {
 		case -1: goto not_found;
@@ -1774,9 +1777,11 @@ done:
 	 */
 done_no_unref:
 	_tm_branch_index = 0;
+	profiling_proc_exit( "TM_reply_received", 0 );
 	return 0;
 not_found:
 	set_t(T_UNDEFINED);
+	profiling_proc_exit( "TM_reply_received", -1 );
 	return 1;
 }
 

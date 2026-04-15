@@ -34,6 +34,7 @@
 #define _TM_BIND_H
 
 #include "../../sr_module.h"
+#include "../../profiling.h"
 #include "t_hooks.h"
 #include "uac.h"
 #include "t_fwd.h"
@@ -144,6 +145,15 @@ static inline int load_tm_api( struct tm_binds *tmb )
 
 	return 0;
 }
+
+#define run_tm_api(_tmb, _api_func, _args...) \
+	({ \
+		typeof((_tmb)->_api_func(_args)) _tm_api_rc; \
+		profiling_proc_enter(#_api_func, 0); \
+		_tm_api_rc = (_tmb)->_api_func(_args); \
+		profiling_proc_exit(#_api_func, (int)(intptr_t)_tm_api_rc); \
+		_tm_api_rc; \
+	})
 
 
 #endif
