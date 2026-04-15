@@ -45,6 +45,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
 #include "../../msg_translator.h"
+#include "../../profiling.h"
 #include "../b2b_entities/b2be_load.h"
 #include "../presence/hash.h"
 #include "../presence/utils_func.h"
@@ -2190,6 +2191,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl
 	str rt;
 	struct b2bl_entity_id* r_peer = NULL;
 	int i;
+	char *c1, *c2;
 
 	if(b2bl_key == NULL)
 	{
@@ -2202,16 +2204,20 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl
 		return -1;
 	}
 
+	c1 = (src==B2B_CLIENT)?"B2BL client":"B2BL server";
+	c2 = (type==B2B_REPLY)?"reply":"request";
+	profiling_proc_enter( sss_merge256(c1," received a ",c2), 0 );
+
 	if(b2bl_parse_key(b2bl_key, &hash_index, &local_index)< 0)
 	{
 		LM_ERR("Failed to parse b2b logic key [%.*s]\n", b2bl_key->len, b2bl_key->s);
-		return -1;
+		goto error;
 	}
 
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
 	{
 		LM_ERR("failed to parse message\n");
-		return -1;
+		goto error;
 	}
 
 	/* extract body if it has one */
@@ -2221,7 +2227,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl
 		if ( get_body(msg, &body)!=0 )
 		{
 			LM_ERR("cannot extract body\n");
-			return -1;
+			goto error;
 		}
 	}
 
@@ -2419,7 +2425,11 @@ done:
 		pkg_free(new_body.s);
 	if(extra_headers.s)
 		pkg_free(extra_headers.s);
+	profiling_proc_exit( "B2BL_notify_received", ret);
 	return ret;
+error:
+	profiling_proc_exit( "B2BL_notify_received", -1);
+	return -1;
 }
 
 int b2b_server_notify(struct sip_msg* msg, str* key, int type,
