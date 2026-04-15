@@ -254,7 +254,7 @@ static inline void profiling_proc_end( int status)
 	if (!pt[process_no].profiling_proc)
 		return;
 
-	if(proc_depth+1==profiling_proc_pending_no) {
+	if (profiling_proc_pending_no) {
 		profiling_proc_pending_no--;
 		return;
 	}
@@ -279,13 +279,17 @@ static inline void _profiling_proc_enter( const char *name,
 
 	proc_depth++;
 
-	if (with_next && proc_depth==profiling_proc_pending_no) {
+	if (with_next) {
 		if (proc_depth < PROFILING_PROC_STACK_MAX) {
-			profiling_proc_pending_stack[proc_depth].name = name;
-			profiling_proc_pending_stack[proc_depth].file = file;
-			profiling_proc_pending_stack[proc_depth].line = line;
-			profiling_proc_pending_stack[proc_depth].is_start = 0;
-			profiling_proc_pending_no = proc_depth + 1;
+			profiling_proc_pending_stack[profiling_proc_pending_no].name =
+				name;
+			profiling_proc_pending_stack[profiling_proc_pending_no].file =
+				file;
+			profiling_proc_pending_stack[profiling_proc_pending_no].line =
+				line;
+			profiling_proc_pending_stack[profiling_proc_pending_no].is_start =
+				0;
+			profiling_proc_pending_no++;
 		}
 		return;
 	}
@@ -312,7 +316,7 @@ static inline void _profiling_proc_exit( const char *name,
 
 	proc_depth--;
 
-	if(proc_depth+2==profiling_proc_pending_no) {
+	if (profiling_proc_pending_no) {
 		profiling_proc_pending_no--;
 		return;
 	}
