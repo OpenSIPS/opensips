@@ -220,7 +220,9 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		 * (like presence of at least one via), so you can count
 		 * on via1 being parsed in a pre-script callback --andrei
 		 */
+		profiling_proc_enter( "request_pre_script", 1 );
 		rc = exec_pre_req_cb(msg);
+		profiling_proc_exit( "request_pre_script", rc );
 		if (rc == SCB_DROP_MSG) {
 			update_stat( drp_reqs, 1);
 			goto end; /* drop the message */
