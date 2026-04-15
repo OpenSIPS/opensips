@@ -329,7 +329,7 @@ int media_session_reinvite(struct media_session_leg *msl, int leg, str *body)
 			}
 		}
 	}
-	ret = media_dlg.send_indialog_request(msl->ms->dlg, &inv, leg, body, &content_type_sdp, NULL,
+	ret = run_dlg_api(&media_dlg, send_indialog_request, msl->ms->dlg, &inv, leg, body, &content_type_sdp, NULL,
 			(p?media_session_reinvite_reply:NULL),p, NULL);
 	if (p && ret < 0) {
 		MSL_UNREF(msl);

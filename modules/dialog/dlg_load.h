@@ -27,6 +27,7 @@
 #include "dlg_handlers.h"
 #include "dlg_profile.h"
 #include "dlg_vals.h"
+#include "../../profiling.h"
 #include "../../sr_module.h"
 
 typedef struct dlg_cell *(*get_dlg_f) (void);
@@ -101,6 +102,15 @@ static inline int load_dlg_api( struct dlg_binds *dlgb )
 
 	return 0;
 }
+
+#define run_dlg_api(_dlg_api, _api_func, _args...) \
+	({ \
+		typeof((_dlg_api)->_api_func(_args)) _dlg_api_rc; \
+		profiling_proc_enter(#_api_func, 0); \
+		_dlg_api_rc = (_dlg_api)->_api_func(_args); \
+		profiling_proc_exit(#_api_func, (int)(intptr_t)_dlg_api_rc); \
+		_dlg_api_rc; \
+	})
 
 
 #endif

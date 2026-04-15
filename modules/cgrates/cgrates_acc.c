@@ -1072,7 +1072,7 @@ error:
 	/* TODO: should we close all the started sessions now? */
 	terminate_str.s = "CGRateS Accounting Denied";
 	terminate_str.len = strlen(terminate_str.s);
-	if (cgr_dlgb.terminate_dlg(NULL, dlg->h_entry, dlg->h_id, &terminate_str) >= 0)
+	if (run_dlg_api(&cgr_dlgb, terminate_dlg, NULL, dlg->h_entry, dlg->h_id, &terminate_str) >= 0)
 		return;
 	LM_ERR("cannot terminate the dialog!\n");
 unref:
@@ -1425,7 +1425,7 @@ int cgr_acc_terminate(json_object *param, json_object **ret)
 		terminate_str.s = terminate_str_pre.s;
 		terminate_str.len = terminate_str_pre.len - 2 /* skip the ': ' */;
 	}
-	if (cgr_dlgb.terminate_dlg(NULL, h_entry, h_id, &terminate_str) < 0) {
+	if (run_dlg_api(&cgr_dlgb, terminate_dlg, NULL, h_entry, h_id, &terminate_str) < 0) {
 		if (terminate_str.s != terminate_str_pre.s)
 			pkg_free(terminate_str.s);
 		err = "cannot terminate dialog";
