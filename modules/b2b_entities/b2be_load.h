@@ -37,6 +37,7 @@
 #define _B2BE_LOAD_H_
 
 #include "../../bin_interface.h"
+#include "../../profiling.h"
 #include "../../parser/parse_from.h"
 
 #define B2BCB_TRIGGER_EVENT    (1<<0)
@@ -199,6 +200,15 @@ static inline int load_b2b_api( struct b2b_api *b2b_api)
 	/* let the auto-loading function load all B2B entities stuff */
 	return load_b2b( b2b_api );
 }
+
+#define run_b2be_api(_b2b_api, _api_func, _args...) \
+	({ \
+		typeof((_b2b_api)->_api_func(_args)) _b2be_api_rc; \
+		profiling_proc_enter(#_api_func, 0); \
+		_b2be_api_rc = (_b2b_api)->_api_func(_args); \
+		profiling_proc_exit(#_api_func, (int)(intptr_t)_b2be_api_rc); \
+		_b2be_api_rc; \
+	})
 
 static inline b2b_dlginfo_t *b2b_new_dlginfo(str *callid, str *fromtag, str *totag)
 {

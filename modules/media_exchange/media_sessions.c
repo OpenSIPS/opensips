@@ -357,7 +357,7 @@ int media_session_req(struct media_session_leg *msl, const char *method, str *bo
 	else
 		req.no_cb = 1; /* no body - do not call callback */
 
-	if (media_b2b.send_request(&req) < 0) {
+	if (run_b2be_api(&media_b2b, send_request, &req) < 0) {
 		LM_ERR("Cannot send %s to b2b entity key %.*s\n", method,
 				req.b2b_key->len, req.b2b_key->s);
 		return -1;
@@ -381,7 +381,7 @@ int media_session_rpl(struct media_session_leg *msl,
 	if (body)
 		reply_data.extra_headers = &content_type_sdp_hdr;
 
-	return media_b2b.send_reply(&reply_data);
+	return run_b2be_api(&media_b2b, send_reply, &reply_data);
 }
 
 static int media_session_leg_end(struct media_session_leg *msl, int nohold, int proxied)

@@ -759,7 +759,7 @@ static void term_entity(b2bl_entity_id_t *entity, int hash_index, str *key)
 			rpl_data.text = &requestTimeout;
 		}
 
-		if(b2b_api.send_reply(&rpl_data) < 0)
+		if(run_b2be_api(&b2b_api, send_reply, &rpl_data) < 0)
 			LM_ERR("Sending reply failed - %d, [%.*s]\n",
 				rpl_data.code, entity->key.len,
 				entity->key.s);
@@ -774,7 +774,7 @@ static void term_entity(b2bl_entity_id_t *entity, int hash_index, str *key)
 			memset(&req_data, 0, sizeof(b2b_req_data_t));
 			PREP_REQ_DATA(entity);
 			req_data.method =&bye;
-			b2b_api.send_request(&req_data);
+			run_b2be_api(&b2b_api, send_request, &req_data);
 			if (key)
 				pop_pushed_global_context();
 		}

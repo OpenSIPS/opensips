@@ -454,7 +454,7 @@ void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple,
 			memset(&req_data, 0, sizeof(b2b_req_data_t));
 			PREP_REQ_DATA(bentity);
 			req_data.method =method;
-			b2b_api.send_request(&req_data);
+			run_b2be_api(&b2b_api, send_request, &req_data);
 
 			bentity->disconnected = 1;
 		}
@@ -537,7 +537,7 @@ b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
 		}
 	}
 
-	client_id = b2b_api.client_new(ci, b2b_client_notify, b2b_add_dlginfo,
+	client_id = run_b2be_api(&b2b_api, client_new, ci, b2b_client_notify, b2b_add_dlginfo,
 			&b2bl_mod_name, tuple->key, get_tracer(tuple), NULL, NULL);
 
 	if(client_id == NULL)
@@ -751,7 +751,7 @@ int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 		}
 	}
 
-	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+	client_id = run_b2be_api(&b2b_api, client_new, &ci, b2b_client_notify, b2b_add_dlginfo,
 			&b2bl_mod_name, tuple->key, get_tracer(tuple), NULL, NULL);
 
 	if(client_id == NULL)
@@ -804,7 +804,7 @@ do{								\
 	rpl_data.extra_headers =	\
 		cur_route_ctx.extra_headers->s?cur_route_ctx.extra_headers:NULL;\
 	rpl_data.dlginfo =peer->dlginfo;			\
-	if(b2b_api.send_reply(&rpl_data) < 0)			\
+	if(run_b2be_api(&b2b_api, send_reply, &rpl_data) < 0)			\
 	{							\
 		LM_ERR("Sending reply failed - %d, [%.*s]\n",	\
 			statuscode, peer->key.len, peer->key.s);\
@@ -821,13 +821,13 @@ static int ack_and_term_entity(b2bl_tuple_t *tuple, b2bl_entity_id_t *entity,
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		PREP_REQ_DATA(entity);
 		req_data.method = &str_init("ACK");
-		b2b_api.send_request(&req_data);
+		run_b2be_api(&b2b_api, send_request, &req_data);
 	}
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(entity);
 	req_data.method = &str_init("BYE");
-	b2b_api.send_request(&req_data);
+	run_b2be_api(&b2b_api, send_request, &req_data);
 
 	entity->disconnected = 1;
 
@@ -955,7 +955,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 				req_data.method = &method_ack;
 				req_data.body = &tuple->bridge_entities[1]->in_sdp;
 				req_data.dlginfo = tuple->bridge_entities[0]->dlginfo;
-				b2b_api.send_request(&req_data);
+				run_b2be_api(&b2b_api, send_request, &req_data);
 
 				if (b2bl_push_bridge_retry(tuple) == 0) {
 					tuple->bridge_flags |= B2BL_BR_FLAG_PENDING_SDP;
@@ -1076,7 +1076,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 						PREP_REQ_DATA(e);
 						req_data.method =&method_cancel;
 						req_data.extra_headers = &cancel_reason_hdr;
-						if(b2b_api.send_request(&req_data) < 0)
+						if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 						{
 							LM_ERR("Sending request"
 								" failed [%.*s]\n",
@@ -1104,7 +1104,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 					rpl_data.text = &requestTerminated;
 					rpl_data.body = NULL;
 
-					if(b2b_api.send_reply(&rpl_data) < 0) {
+					if(run_b2be_api(&b2b_api, send_reply, &rpl_data) < 0) {
 						LM_ERR("Sending reply failed - %d, [%.*s]\n",
 							rpl_data.code, peer->key.len, peer->key.s);
 						goto done;
@@ -1442,7 +1442,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			rpl_data.method =METHOD_BYE;
 			rpl_data.code =200;
 			rpl_data.text =&ok;
-			b2b_api.send_reply(&rpl_data);
+			run_b2be_api(&b2b_api, send_reply, &rpl_data);
 			b2bl_delete(tuple, cur_route_ctx.hash_index, 1, 1);
 			tuple = 0;
 			goto done;
@@ -1465,7 +1465,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		/* Decrement Max-Forwards value */
 		if ((maxfwd = b2b_msg_get_maxfwd(msg)) > (int)0)
 			req_data.maxfwd = maxfwd;
-		if(b2b_api.send_request(&req_data) < 0)
+		if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 		{
 			LM_ERR("Sending request failed [%.*s]\n", peer->key.len, peer->key.s);
 		}
@@ -1576,7 +1576,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				rpl_data.method =METHOD_BYE;
 				rpl_data.code =200;
 				rpl_data.text =&ok;
-				b2b_api.send_reply(&rpl_data);
+				run_b2be_api(&b2b_api, send_reply, &rpl_data);
 				if(entity->peer)
 				{
 					memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
@@ -1584,7 +1584,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 					rpl_data.method =METHOD_BYE;
 					rpl_data.code =200;
 					rpl_data.text =&ok;
-					b2b_api.send_reply(&rpl_data);
+					run_b2be_api(&b2b_api, send_reply, &rpl_data);
 				}
 				break;
 			default:
@@ -1593,7 +1593,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				rpl_data.method =method_value;
 				rpl_data.code =400;
 				rpl_data.text =&notAcceptable;
-				b2b_api.send_reply(&rpl_data);
+				run_b2be_api(&b2b_api, send_reply, &rpl_data);
 		}
 		b2bl_delete(tuple, hash_index, 1, 1);
 		tuple = 0;
@@ -1624,7 +1624,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			rpl_data.method =METHOD_BYE;
 			rpl_data.code =200;
 			rpl_data.text =&ok;
-			b2b_api.send_reply(&rpl_data);
+			run_b2be_api(&b2b_api, send_reply, &rpl_data);
 			goto done;
 		}
 
@@ -1693,7 +1693,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				rpl_data.method =METHOD_BYE;
 				rpl_data.code =200;
 				rpl_data.text =&ok;
-				b2b_api.send_reply(&rpl_data);
+				run_b2be_api(&b2b_api, send_reply, &rpl_data);
 				b2bl_delete_entity(entity, tuple, hash_index, 1);
 				entity = NULL;
 				goto done;
@@ -1773,7 +1773,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				rpl_data.method =METHOD_INVITE;
 				rpl_data.code =400;
 				rpl_data.text =&notAcceptable;
-				b2b_api.send_reply(&rpl_data);
+				run_b2be_api(&b2b_api, send_reply, &rpl_data);
 				goto done;
 				break;
 			case B2B_SEND_MSG_CB_RET:
@@ -1992,7 +1992,7 @@ int b2b_send_reply(struct sip_msg *msg, int *code, str *reason, str *headers, st
 	rpl_data.extra_headers = headers;
 	rpl_data.body = body;
 
-	b2b_api.send_reply(&rpl_data);
+	run_b2be_api(&b2b_api, send_reply, &rpl_data);
 	LM_DBG("Send reply with code [%d] and text [%.*s]\n", *code,
 		reason->len, reason->s);
 
@@ -2093,7 +2093,7 @@ int b2b_end_dlg_leg(struct sip_msg *msg)
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(entity);
 	req_data.method =&method_bye;
-	b2b_api.send_request(&req_data);
+	run_b2be_api(&b2b_api, send_request, &req_data);
 	if(entity->peer)
 		entity->peer->peer = NULL;
 	entity->peer = NULL;
@@ -2609,7 +2609,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
 		ci.maxfwd = maxfwd;
 
-	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+	client_id = run_b2be_api(&b2b_api, client_new, &ci, b2b_client_notify, b2b_add_dlginfo,
 			&b2bl_mod_name, b2bl_key, get_tracer(tuple), NULL, NULL);
 
 	if(client_id == NULL)
@@ -2653,7 +2653,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		ci.req_uri = branch->uri;
 		ci.avps = clone_avp_list( *get_avp_list() );
 
-		client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+		client_id = run_b2be_api(&b2b_api, client_new, &ci, b2b_client_notify, b2b_add_dlginfo,
 				&b2bl_mod_name, b2bl_key, get_tracer(tuple), NULL, NULL);
 
 		if(client_id == NULL)
@@ -3055,7 +3055,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 
-	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+	client_id = run_b2be_api(&b2b_api, client_new, &ci, b2b_client_notify, b2b_add_dlginfo,
 			&b2bl_mod_name, b2bl_key, get_tracer(tuple), NULL, NULL);
 
 	pkg_free(to_uri.s);

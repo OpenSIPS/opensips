@@ -412,7 +412,7 @@ static void b2b_sdp_client_end(struct b2b_sdp_client *client, str *key, int send
 	req_data.b2b_key = key;
 	req_data.dlginfo = client->dlginfo;
 	req_data.method = &method;
-	b2b_api.send_request(&req_data);
+	run_b2be_api(&b2b_api, send_request, &req_data);
 	LM_INFO("[%.*s][%.*s] client request %.*s sent\n",
 			client->ctx->callid.len, client->ctx->callid.s,
 			key->len, key->s, method.len, method.s);
@@ -918,7 +918,7 @@ end:
 			LM_INFO("[%.*s][%.*s] server request INVITE sent\n",
 					client->ctx->callid.len, client->ctx->callid.s,
 					client->ctx->b2b_key.len, client->ctx->b2b_key.s);
-			if (b2b_api.send_request(&req_data) < 0) {
+			if (run_b2be_api(&b2b_api, send_request, &req_data) < 0) {
 				LM_ERR("cannot send upstream INVITE\n");
 				code = 500;
 				ret = -1;
@@ -983,7 +983,7 @@ static void b2b_sdp_server_send_bye(struct b2b_sdp_ctx *ctx)
 	req_data.b2b_key = &ctx->b2b_key;
 	req_data.method = &method;
 	req_data.dlginfo = ctx->dlginfo;
-	if (b2b_api.send_request(&req_data) < 0)
+	if (run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 		LM_ERR("[%.*s] cannot send upstream BYE\n", ctx->callid.len, ctx->callid.s);
 	else
 		LM_INFO("[%.*s][%.*s] server request BYE sent\n",
@@ -1039,7 +1039,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 				req_data.method = &method;
 				req_data.body = body;
 				req_data.dlginfo = ctx->dlginfo;
-				if (b2b_api.send_request(&req_data) < 0)
+				if (run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 					LM_ERR("[%.*s] cannot send upstream INVITE\n",
 							ctx->callid.len, ctx->callid.s);
 				else
@@ -1073,7 +1073,7 @@ static int b2b_sdp_reply(str *b2b_key, b2b_dlginfo_t *dlginfo,
 		reply_data.extra_headers = &content_type_sdp_hdr;
 	LM_INFO("[%.*s] %s reply %d sent\n", b2b_key->len, b2b_key->s, etype, code);
 
-	return b2b_api.send_reply(&reply_data);
+	return run_b2be_api(&b2b_api, send_reply, &reply_data);
 }
 
 static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body)
@@ -1214,7 +1214,7 @@ static int b2b_sdp_ack(int type, str *key, b2b_dlginfo_t *dlginfo)
 
 	LM_INFO("[%.*s] %s request ACK sent\n", key->len, key->s, etype);
 
-	return b2b_api.send_request(&req);
+	return run_b2be_api(&b2b_api, send_request, &req);
 }
 
 static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_client *client)
@@ -1563,7 +1563,7 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 		req_data.body = &client->body;
 		LM_INFO("[%.*s][%.*s] client request INVITE sent\n", ctx->callid.len, ctx->callid.s,
 				client->b2b_key.len, client->b2b_key.s);
-		if (b2b_api.send_request(&req_data) < 0)
+		if (run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 			LM_ERR("[%.*s] could not send re-INVITE to client!\n", ctx->callid.len, ctx->callid.s);
 	}
 	lock_release(&ctx->lock);
@@ -1738,7 +1738,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		ci.avps = clone_avp_list( *get_avp_list() );
 
 		client->flags |= B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING;
-		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, b2b_sdp_client_dlginfo,
+		b2b_key = run_b2be_api(&b2b_api, client_new, &ci, b2b_sdp_client_notify, b2b_sdp_client_dlginfo,
 				&b2b_sdp_demux_client_cap, &ctx->callid, NULL,
 				client, b2b_sdp_client_free);
 		if (!b2b_key) {

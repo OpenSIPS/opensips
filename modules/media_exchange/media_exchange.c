@@ -338,7 +338,7 @@ static int handle_media_fork_to_uri(struct media_session_leg *msl, const struct 
 		goto destroy;
 	}
 
-	b2b_key = media_b2b.client_new(ci, b2b_media_notify, b2b_media_confirm,
+	b2b_key = run_b2be_api(&media_b2b, client_new, ci, b2b_media_notify, b2b_media_confirm,
 			&b2b_media_exchange_cap, &msl->ms->dlg->callid, NULL, msl, NULL);
 	pkg_free(body.s);
 	if (!b2b_key) {
@@ -629,7 +629,7 @@ static int handle_media_exchange_from_uri(const struct socket_info *si, struct d
 			msl->params = p;
 	}
 
-	b2b_key = media_b2b.client_new(ci, b2b_media_notify, b2b_media_confirm,
+	b2b_key = run_b2be_api(&media_b2b, client_new, ci, b2b_media_notify, b2b_media_confirm,
 			&b2b_media_exchange_cap, &dlg->callid, NULL, msl, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b client!\n");
