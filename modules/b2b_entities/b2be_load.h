@@ -100,6 +100,7 @@ typedef struct b2b_req_data
 	unsigned int maxfwd;
 	unsigned int no_cb;
 	str *contact_hdr_params;
+	int leg_idx;
 }b2b_req_data_t;
 
 typedef struct b2b_rpl_data
@@ -114,6 +115,7 @@ typedef struct b2b_rpl_data
 	str* contact_hdr_params;
 	str* contact;
 	b2b_dlginfo_t* dlginfo;
+	int leg_idx;
 }b2b_rpl_data_t;
 
 
@@ -169,6 +171,8 @@ typedef str *(*b2b_get_b2bl_key_t)(str* callid, str* from_tag, str* to_tag,
 typedef int (*b2b_apply_lumps_t)(struct sip_msg* msg);
 
 typedef void* (*b2b_get_context_t)(void);
+typedef int (*b2b_get_reply_leg_t)(enum b2b_entity_type et, str *b2b_key,
+		str *to_tag);
 
 typedef struct b2b_api
 {
@@ -185,6 +189,7 @@ typedef struct b2b_api
 	b2b_get_b2bl_key_t        get_b2bl_key;
 	b2b_apply_lumps_t         apply_lumps;
 	b2b_get_context_t		  get_context;
+	b2b_get_reply_leg_t       get_reply_leg;
 }b2b_api_t;
 
 typedef int(*load_b2b_f) (b2b_api_t* api);

@@ -512,7 +512,7 @@ int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact
 }
 
 b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
-	str *ssid, str *adv_ct, struct sip_msg *msg)
+	str *ssid, str *adv_ct, unsigned int entity_flags, struct sip_msg *msg)
 {
 	str* client_id;
 	b2bl_entity_id_t* entity;
@@ -554,6 +554,7 @@ b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
 		pkg_free(client_id);
 		return NULL;
 	}
+	entity->entity_flags = entity_flags;
 	pkg_free(client_id);
 
 	return entity;
@@ -770,6 +771,7 @@ int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 		pkg_free(client_id);
 		goto error;
 	}
+	client_entity->entity_flags = new_entity->entity_flags;
 	pkg_free(client_id);
 
 	if (0 != b2bl_add_client(tuple, client_entity))
@@ -791,6 +793,72 @@ error:
 	return -1;
 }
 
+static inline int get_upstream_leg_idx(struct sip_msg *msg, b2bl_tuple_t *tuple,
+	b2bl_entity_id_t *entity)
+{
+	struct to_body *to;
+	int leg_idx;
+
+	if (!(entity->entity_flags & B2BL_FLAG_PASS_LEGS_UPSTREAM) &&
+		!(tuple->init_flags & B2BL_FLAG_PASS_LEGS_UPSTREAM))
+		return -1;
+
+	if (!b2b_api.get_reply_leg)
+		return -1;
+
+	if (parse_to_header(msg) < 0) {
+		LM_ERR("cannot parse To header\n");
+		return -1;
+	}
+
+	to = get_to(msg);
+	if (!to || !to->tag_value.s || !to->tag_value.len)
+		return -1;
+
+	leg_idx = b2b_api.get_reply_leg(entity->type, &entity->key, &to->tag_value);
+	if (leg_idx >= 0)
+		leg_idx++;
+
+	return leg_idx;
+}
+
+static inline int get_passed_upstream_leg_idx(struct sip_msg *msg,
+	b2bl_tuple_t *tuple, b2bl_entity_id_t *entity)
+{
+	struct to_body *to;
+	str leg_idx_s;
+	char *p;
+	int n = 0;
+	unsigned int leg_idx;
+
+	if (!(entity->entity_flags & B2BL_FLAG_PASS_LEGS_UPSTREAM) &&
+		!(tuple->init_flags & B2BL_FLAG_PASS_LEGS_UPSTREAM))
+		return -1;
+
+	if (parse_to_header(msg) < 0) {
+		LM_ERR("cannot parse To header\n");
+		return -1;
+	}
+
+	to = get_to(msg);
+	if (!to || !to->tag_value.s || !to->tag_value.len)
+		return -1;
+
+	for (p = to->tag_value.s; p < to->tag_value.s + to->tag_value.len; p++) {
+		if (*p != '.')
+			continue;
+		if (++n != 5)
+			continue;
+		leg_idx_s.s = p + 1;
+		leg_idx_s.len = to->tag_value.s + to->tag_value.len - leg_idx_s.s;
+		if (str2int(&leg_idx_s, &leg_idx) < 0)
+			return -1;
+		return leg_idx;
+	}
+
+	return -1;
+}
+
 #define SEND_REPLY_TO_PEER_OR_GOTO_DONE				\
 do{								\
 	memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));		\
@@ -804,6 +872,7 @@ do{								\
 	rpl_data.extra_headers =	\
 		cur_route_ctx.extra_headers->s?cur_route_ctx.extra_headers:NULL;\
 	rpl_data.dlginfo =peer->dlginfo;			\
+	rpl_data.leg_idx = get_upstream_leg_idx(msg, tuple, entity);	\
 	if(b2b_api.send_reply(&rpl_data) < 0)			\
 	{							\
 		LM_ERR("Sending reply failed - %d, [%.*s]\n",	\
@@ -1603,6 +1672,10 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			cur_route_ctx.extra_headers->len?cur_route_ctx.extra_headers:NULL;
 		req_data.body =cur_route_ctx.body->len?cur_route_ctx.body:NULL;
 		req_data.contact_hdr_params = ct_hdrs;
+		if (peer->type == B2B_CLIENT &&
+				method.len == PRACK_LEN &&
+				!strncasecmp(method.s, PRACK, PRACK_LEN))
+			req_data.leg_idx = get_passed_upstream_leg_idx(msg, tuple, peer);
 		/* Decrement Max-Forwards value */
 		if ((maxfwd = b2b_msg_get_maxfwd(msg)) > (int)0)
 			req_data.maxfwd = maxfwd;
@@ -2372,7 +2445,15 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl
 	if(type == B2B_REPLY)
 	{
 		cust_headers = NULL;
-		if (b2bl_htable[hash_index].flags & B2BL_FLAG_TRANSPARENT_AUTH)
+		B2BL_LOCK_GET(hash_index);
+		tuple = b2bl_search_tuple_safe(hash_index, local_index);
+		if (tuple == NULL)
+		{
+			LM_ERR("B2B logic record not found\n");
+			B2BL_LOCK_RELEASE(hash_index);
+			goto done;
+		}
+		if (tuple->init_flags & B2BL_FLAG_TRANSPARENT_AUTH)
 		{
 			if (msg->first_line.u.reply.statuscode == 401 && msg->www_authenticate)
 			{
@@ -2387,6 +2468,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl
 				cust_headers = &auth_header;
 			}
 		}
+		B2BL_LOCK_RELEASE(hash_index);
 
 		/* build extra headers */
 		if(b2b_extra_headers(msg, NULL, cust_headers, &extra_headers)< 0)
@@ -2650,7 +2732,6 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 
 	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
-	b2bl_htable[hash_index].flags = params->flags;
 	tuple = b2bl_insert_new(msg, hash_index, params,
 				custom_hdrs, -1, &b2bl_key, INSERTDB_FLAG, TUPLE_NO_REPL);
 	if(tuple== NULL)
@@ -3230,6 +3311,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 		pkg_free(client_id);
 		goto error;
 	}
+	client_entity->entity_flags = new_entity->entity_flags;
 	pkg_free(client_id);
 
 	if (0 != b2bl_add_client(tuple, client_entity))
@@ -3253,8 +3335,6 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 		b2bl_db_insert(tuple);
 
 	local_ctx_tuple = NULL;
-
-	b2bl_htable[hash_index].flags = init_params->flags;
 
 	B2BL_LOCK_RELEASE(hash_index);
 
@@ -3777,7 +3857,7 @@ end:
 
 int b2bl_entity_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
 	int etype, pv_spec_t *hnames, pv_spec_t *hvals, str *from_dname,
-	str *adv_contact)
+	str *adv_contact, void *flags)
 {
 	unsigned short type;
 	struct b2bl_new_entity *entity, *e1, *e2;
@@ -3885,6 +3965,7 @@ int b2bl_entity_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
 	}
 
 	entity->type = etype;
+	entity->entity_flags = (unsigned int)(unsigned long)flags;
 
 	if (!e1) {
 		context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx,
@@ -3912,14 +3993,15 @@ int b2bl_server_new(struct sip_msg *msg, str *id, str *adv_contact,
 	}
 
 	return b2bl_entity_new(msg, id, NULL, NULL, B2B_SERVER, hnames, hvals, NULL,
-		adv_contact);
+		adv_contact, NULL);
 }
 
 int b2bl_client_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
-	 str *from_dname, str *adv_contact, pv_spec_t *hnames, pv_spec_t *hvals)
+	 str *from_dname, str *adv_contact, pv_spec_t *hnames, pv_spec_t *hvals,
+	 void *flags)
 {
 	return b2bl_entity_new(msg, id, dest_uri, proxy, B2B_CLIENT,
-		hnames, hvals, from_dname, adv_contact);
+		hnames, hvals, from_dname, adv_contact, flags);
 }
 
 int b2bl_terminate_call(str* key)

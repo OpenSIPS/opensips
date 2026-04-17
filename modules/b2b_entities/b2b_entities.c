@@ -774,8 +774,8 @@ str *b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key)
 		tuple_key->len = dlg->logic_key.len;
 		if (entity_key) {
 			if (table == server_htable) {
-				entity_key->s = to_tag->s;
-				entity_key->len = to_tag->len;
+				*entity_key = *to_tag;
+				b2b_get_server_entity_key(entity_key);
 			} else {
 				entity_key->s = callid->s;
 				entity_key->len = callid->len;
@@ -836,6 +836,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->get_b2bl_key       = b2b_get_b2bl_key;
 	api->apply_lumps        = b2b_apply_lumps;
 	api->get_context		= b2b_get_context;
+	api->get_reply_leg      = b2b_get_reply_leg;
 
 	return 0;
 }
@@ -1057,4 +1058,3 @@ error:
 	free_mi_response(resp);
 	return NULL;
 }
-

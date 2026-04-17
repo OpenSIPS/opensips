@@ -45,7 +45,7 @@ void b2b_mark_todel( b2bl_tuple_t* tuple);
 void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple,
 	unsigned int hash_index);
 b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
-	str *ssid, str *adv_ct, struct sip_msg *msg);
+	str *ssid, str *adv_ct, unsigned int entity_flags, struct sip_msg *msg);
 str *b2b_scenario_hdrs(struct b2bl_new_entity *entity);
 int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index,
 	unsigned int local_index, b2bl_entity_id_t **entity, int etype, str *ekey);
@@ -1266,6 +1266,7 @@ int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
 			LM_ERR("Failed to create new b2b entity\n");
 			goto error;
 		}
+		entity->entity_flags = e1->entity_flags;
 		LM_DBG("Created new client entity [%.*s]\n",
 			e1->dest_uri.len, e1->dest_uri.s);
 
@@ -1337,7 +1338,8 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 		ci.avps = clone_avp_list( *get_avp_list() );
 
 	entity = b2bl_new_client(&ci, tuple, &new_ent->scenario_id,
-		new_ent->adv_contact.s ? &new_ent->adv_contact : NULL, msg);
+		new_ent->adv_contact.s ? &new_ent->adv_contact : NULL,
+		new_ent->entity_flags, msg);
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to generate new client\n");
@@ -1570,6 +1572,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 				LM_ERR("Failed to create new b2b entity\n");
 				goto error;
 			}
+			entity->entity_flags = new_br_ent[i]->entity_flags;
 		} else
 			entity = old_entity;
 
@@ -2323,7 +2326,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
 	b2b_api.apply_lumps(msg);
 
 	if (b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||
-	b2b_msg_get_to(msg, &to_uri, b2bl_htable[hash_index].flags)< 0)
+	b2b_msg_get_to(msg, &to_uri, tuple->init_flags)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
 		goto error;
