@@ -13,3 +13,13 @@ CREATE TABLE clusterer (
     CONSTRAINT clusterer_idx UNIQUE (cluster_id, node_id)
 ) ENGINE=InnoDB;
 
+INSERT INTO version (table_name, table_version) values ('clusterer_bridge','1');
+CREATE TABLE clusterer_bridge (
+    id INT(10) AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    cluster_a INT(10) NOT NULL,
+    cluster_b INT(10) NOT NULL,
+    send_shtag CHAR(32) NOT NULL,
+    dst_node_csv TEXT,
+    CONSTRAINT clusterer_bridge_idx UNIQUE (cluster_a, cluster_b)
+) ENGINE=InnoDB;
+

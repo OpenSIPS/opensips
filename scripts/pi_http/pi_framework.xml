@@ -377,6 +377,16 @@
 		<column><field>flags</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of clusterer_bridge table-->
+	<db_table id="clusterer_bridge">
+		<table_name>clusterer_bridge</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>cluster_a</field><type>DB_INT</type></column>
+		<column><field>cluster_b</field><type>DB_INT</type></column>
+		<column><field>send_shtag</field><type>DB_STR</type></column>
+		<column><field>dst_node_csv</field><type>DB_BLOB</type></column>
+	</db_table>
 	<!-- Declaration of config table-->
 	<db_table id="config">
 		<table_name>config</table_name>
@@ -889,6 +899,29 @@
 		<column><field>cluster_shtag</field><type>DB_STR</type></column>
 		<column><field>state</field><type>DB_INT</type></column>
 	</db_table>
+	<!-- Declaration of aliases table-->
+	<db_table id="aliases">
+		<table_name>aliases</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>username</field><type>DB_STR</type></column>
+		<column><field>domain</field><type>DB_STR</type></column>
+		<column><field>contact</field><type>DB_STR</type></column>
+		<column><field>received</field><type>DB_STR</type></column>
+		<column><field>path</field><type>DB_STR</type></column>
+		<column><field>expires</field><type>DB_INT</type></column>
+		<column><field>q</field><type>DB_DOUBLE</type></column>
+		<column><field>callid</field><type>DB_STR</type></column>
+		<column><field>cseq</field><type>DB_INT</type></column>
+		<column><field>last_modified</field><type>DB_DATETIME</type></column>
+		<column><field>flags</field><type>DB_INT</type></column>
+		<column><field>cflags</field><type>DB_STR</type></column>
+		<column><field>user_agent</field><type>DB_STR</type></column>
+		<column><field>socket</field><type>DB_STR</type></column>
+		<column><field>methods</field><type>DB_INT</type></column>
+		<column><field>sip_instance</field><type>DB_STR</type></column>
+		<column><field>attr</field><type>DB_STR</type></column>
+	</db_table>
 	<!-- Declaration of rls_presentity table-->
 	<db_table id="rls_presentity">
 		<table_name>rls_presentity</table_name>
@@ -944,6 +977,26 @@
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>rtpproxy_sock</field><type>DB_BLOB</type></column>
 		<column><field>set_id</field><type>DB_INT</type></column>
+	</db_table>
+	<!-- Declaration of sip_trace table-->
+	<db_table id="sip_trace">
+		<table_name>sip_trace</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>time_stamp</field><type>DB_DATETIME</type></column>
+		<column><field>callid</field><type>DB_STR</type></column>
+		<column><field>trace_attrs</field><type>DB_STR</type></column>
+		<column><field>msg</field><type>DB_BLOB</type></column>
+		<column><field>method</field><type>DB_STR</type></column>
+		<column><field>status</field><type>DB_STR</type></column>
+		<column><field>from_proto</field><type>DB_STR</type></column>
+		<column><field>from_ip</field><type>DB_STR</type></column>
+		<column><field>from_port</field><type>DB_INT</type></column>
+		<column><field>to_proto</field><type>DB_STR</type></column>
+		<column><field>to_ip</field><type>DB_STR</type></column>
+		<column><field>to_port</field><type>DB_INT</type></column>
+		<column><field>fromtag</field><type>DB_STR</type></column>
+		<column><field>direction</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of smpp table-->
 	<db_table id="smpp">
@@ -1025,7 +1078,6 @@
 		<column><field>send_threshold</field><type>DB_INT</type></column>
 		<column><field>no_new_conn</field><type>DB_INT</type></column>
 		<column><field>alias_mode</field><type>DB_INT</type></column>
-		<column><field>parallel_read</field><type>DB_INT</type></column>
 		<column><field>keepalive</field><type>DB_INT</type></column>
 		<column><field>keepcount</field><type>DB_INT</type></column>
 		<column><field>keepidle</field><type>DB_INT</type></column>
@@ -1080,7 +1132,7 @@
 		<column><field>ruleid</field><type>DB_INT</type></column>
 		<column><field>prefix</field><type>DB_STR</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
-		<column><field>priority</field><type>DB_INT</type></column>
+		<column><field>enabled</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of trie_partitions table-->
 	<db_table id="trie_partitions">
@@ -1090,6 +1142,16 @@
 		<column><field>partition_name</field><type>DB_STR</type></column>
 		<column><field>db_url</field><type>DB_STR</type></column>
 		<column><field>trie_table</field><type>DB_STR</type></column>
+	</db_table>
+	<!-- Declaration of uri table-->
+	<db_table id="uri">
+		<table_name>uri</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>username</field><type>DB_STR</type></column>
+		<column><field>domain</field><type>DB_STR</type></column>
+		<column><field>uri_user</field><type>DB_STR</type></column>
+		<column><field>last_modified</field><type>DB_DATETIME</type></column>
 	</db_table>
 	<!-- Declaration of userblacklist table-->
 	<db_table id="userblacklist">
@@ -2492,6 +2554,50 @@
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
 			<db_table_id>clusterer</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	<!-- clusterer_bridge provisionning -->
+	<mod><mod_name>clusterer_bridge</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>clusterer_bridge</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>cluster_a</field></col>
+				<col><field>cluster_b</field></col>
+				<col><field>send_shtag</field></col>
+				<col><field>dst_node_csv</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>clusterer_bridge</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>cluster_a</field></col>
+				<col><field>cluster_b</field></col>
+				<col><field>send_shtag</field></col>
+				<col><field>dst_node_csv</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>clusterer_bridge</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>cluster_a</field></col>
+				<col><field>cluster_b</field></col>
+				<col><field>send_shtag</field></col>
+				<col><field>dst_node_csv</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>clusterer_bridge</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>
@@ -4539,6 +4645,89 @@
 			</clause_cols>
 		</cmd>
 	</mod>
+	<!-- aliases provisionning -->
+	<mod><mod_name>aliases</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>aliases</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>contact</field></col>
+				<col><field>received</field></col>
+				<col><field>path</field></col>
+				<col><field>expires</field></col>
+				<col><field>q</field></col>
+				<col><field>callid</field></col>
+				<col><field>cseq</field></col>
+				<col><field>last_modified</field></col>
+				<col><field>flags</field></col>
+				<col><field>cflags</field></col>
+				<col><field>user_agent</field></col>
+				<col><field>socket</field></col>
+				<col><field>methods</field></col>
+				<col><field>sip_instance</field></col>
+				<col><field>attr</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>aliases</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>contact</field></col>
+				<col><field>received</field></col>
+				<col><field>path</field></col>
+				<col><field>expires</field></col>
+				<col><field>q</field></col>
+				<col><field>callid</field></col>
+				<col><field>cseq</field></col>
+				<col><field>last_modified</field></col>
+				<col><field>flags</field></col>
+				<col><field>cflags</field></col>
+				<col><field>user_agent</field></col>
+				<col><field>socket</field></col>
+				<col><field>methods</field></col>
+				<col><field>sip_instance</field></col>
+				<col><field>attr</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>aliases</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>contact</field></col>
+				<col><field>received</field></col>
+				<col><field>path</field></col>
+				<col><field>expires</field></col>
+				<col><field>q</field></col>
+				<col><field>callid</field></col>
+				<col><field>cseq</field></col>
+				<col><field>last_modified</field></col>
+				<col><field>flags</field></col>
+				<col><field>cflags</field></col>
+				<col><field>user_agent</field></col>
+				<col><field>socket</field></col>
+				<col><field>methods</field></col>
+				<col><field>sip_instance</field></col>
+				<col><field>attr</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>aliases</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
 	<!-- rls_presentity provisionning -->
 	<mod><mod_name>rls_presentity</mod_name>
 		<cmd><cmd_name>show</cmd_name>
@@ -4757,6 +4946,80 @@
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
 			<db_table_id>rtpproxy_sockets</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	<!-- sip_trace provisionning -->
+	<mod><mod_name>sip_trace</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>sip_trace</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>time_stamp</field></col>
+				<col><field>callid</field></col>
+				<col><field>trace_attrs</field></col>
+				<col><field>msg</field></col>
+				<col><field>method</field></col>
+				<col><field>status</field></col>
+				<col><field>from_proto</field></col>
+				<col><field>from_ip</field></col>
+				<col><field>from_port</field></col>
+				<col><field>to_proto</field></col>
+				<col><field>to_ip</field></col>
+				<col><field>to_port</field></col>
+				<col><field>fromtag</field></col>
+				<col><field>direction</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>sip_trace</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>time_stamp</field></col>
+				<col><field>callid</field></col>
+				<col><field>trace_attrs</field></col>
+				<col><field>msg</field></col>
+				<col><field>method</field></col>
+				<col><field>status</field></col>
+				<col><field>from_proto</field></col>
+				<col><field>from_ip</field></col>
+				<col><field>from_port</field></col>
+				<col><field>to_proto</field></col>
+				<col><field>to_ip</field></col>
+				<col><field>to_port</field></col>
+				<col><field>fromtag</field></col>
+				<col><field>direction</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>sip_trace</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>time_stamp</field></col>
+				<col><field>callid</field></col>
+				<col><field>trace_attrs</field></col>
+				<col><field>msg</field></col>
+				<col><field>method</field></col>
+				<col><field>status</field></col>
+				<col><field>from_proto</field></col>
+				<col><field>from_ip</field></col>
+				<col><field>from_port</field></col>
+				<col><field>to_proto</field></col>
+				<col><field>to_ip</field></col>
+				<col><field>to_port</field></col>
+				<col><field>fromtag</field></col>
+				<col><field>direction</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>sip_trace</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>
@@ -5023,7 +5286,6 @@
 				<col><field>send_threshold</field></col>
 				<col><field>no_new_conn</field></col>
 				<col><field>alias_mode</field></col>
-				<col><field>parallel_read</field></col>
 				<col><field>keepalive</field></col>
 				<col><field>keepcount</field></col>
 				<col><field>keepidle</field></col>
@@ -5047,7 +5309,6 @@
 				<col><field>send_threshold</field></col>
 				<col><field>no_new_conn</field></col>
 				<col><field>alias_mode</field></col>
-				<col><field>parallel_read</field></col>
 				<col><field>keepalive</field></col>
 				<col><field>keepcount</field></col>
 				<col><field>keepidle</field></col>
@@ -5074,7 +5335,6 @@
 				<col><field>send_threshold</field></col>
 				<col><field>no_new_conn</field></col>
 				<col><field>alias_mode</field></col>
-				<col><field>parallel_read</field></col>
 				<col><field>keepalive</field></col>
 				<col><field>keepcount</field></col>
 				<col><field>keepidle</field></col>
@@ -5252,7 +5512,7 @@
 				<col><field>ruleid</field><link_cmd>update</link_cmd></col>
 				<col><field>prefix</field></col>
 				<col><field>attrs</field></col>
-				<col><field>priority</field></col>
+				<col><field>enabled</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -5261,7 +5521,7 @@
 			<query_cols>
 				<col><field>prefix</field></col>
 				<col><field>attrs</field></col>
-				<col><field>priority</field></col>
+				<col><field>enabled</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -5273,7 +5533,7 @@
 			<query_cols>
 				<col><field>prefix</field></col>
 				<col><field>attrs</field></col>
-				<col><field>priority</field></col>
+				<col><field>enabled</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -5319,6 +5579,50 @@
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
 			<db_table_id>trie_partitions</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	<!-- uri provisionning -->
+	<mod><mod_name>uri</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>uri</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>uri_user</field></col>
+				<col><field>last_modified</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>uri</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>uri_user</field></col>
+				<col><field>last_modified</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>uri</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>username</field></col>
+				<col><field>domain</field></col>
+				<col><field>uri_user</field></col>
+				<col><field>last_modified</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>uri</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>

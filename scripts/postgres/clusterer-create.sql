@@ -14,3 +14,14 @@ CREATE TABLE clusterer (
 );
 
 ALTER SEQUENCE clusterer_id_seq MAXVALUE 2147483647 CYCLE;
+INSERT INTO version (table_name, table_version) values ('clusterer_bridge','1');
+CREATE TABLE clusterer_bridge (
+    id SERIAL PRIMARY KEY NOT NULL,
+    cluster_a INTEGER NOT NULL,
+    cluster_b INTEGER NOT NULL,
+    send_shtag VARCHAR(32) NOT NULL,
+    dst_node_csv TEXT,
+    CONSTRAINT clusterer_bridge_clusterer_bridge_idx UNIQUE (cluster_a, cluster_b)
+);
+
+ALTER SEQUENCE clusterer_bridge_id_seq MAXVALUE 2147483647 CYCLE;

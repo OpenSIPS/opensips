@@ -13,3 +13,13 @@
 		<column><field>flags</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of clusterer_bridge table-->
+	<db_table id="clusterer_bridge">
+		<table_name>clusterer_bridge</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>cluster_a</field><type>DB_INT</type></column>
+		<column><field>cluster_b</field><type>DB_INT</type></column>
+		<column><field>send_shtag</field><type>DB_STR</type></column>
+		<column><field>dst_node_csv</field><type>DB_BLOB</type></column>
+	</db_table>

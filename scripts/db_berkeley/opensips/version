@@ -40,6 +40,8 @@ closeddial|
 closeddial|1
 clusterer|
 clusterer|4
+clusterer_bridge|
+clusterer_bridge|1
 config|
 config|1
 cpl|
@@ -139,7 +141,7 @@ speed_dial|3
 subscriber|
 subscriber|8
 tcp_mgm|
-tcp_mgm|1
+tcp_mgm|2
 tls_mgm|
 tls_mgm|3
 trie_partitions|

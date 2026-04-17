@@ -13,3 +13,13 @@ CREATE TABLE clusterer (
     CONSTRAINT clusterer_clusterer_idx  UNIQUE (cluster_id, node_id)
 );
 
+INSERT INTO version (table_name, table_version) values ('clusterer_bridge','1');
+CREATE TABLE clusterer_bridge (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    cluster_a INTEGER NOT NULL,
+    cluster_b INTEGER NOT NULL,
+    send_shtag CHAR(32) NOT NULL,
+    dst_node_csv TEXT,
+    CONSTRAINT ORA_clusterer_bridge_idx  UNIQUE (cluster_a, cluster_b)
+);
+

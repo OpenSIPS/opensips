@@ -15,6 +15,7 @@ cc_cdrs:2
 cc_flows:2
 closeddial:1
 clusterer:4
+clusterer_bridge:1
 config:1
 cpl:2
 dbaliases:2
@@ -63,7 +64,7 @@ smpp:1
 sockets:1
 speed_dial:3
 subscriber:8
-tcp_mgm:1
+tcp_mgm:2
 tls_mgm:3
 trie_partitions:1
 trie_table:1
