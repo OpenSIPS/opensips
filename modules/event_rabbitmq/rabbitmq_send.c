@@ -145,6 +145,7 @@ void rmq_free_param(rmq_params_t *rmqp)
 			rmqp->conn.uri.user != rmq_static_holder.s)
 		shm_free(rmqp->conn.uri.user);
 	if ((rmqp->conn.flags & RMQ_PARAM_PASS) && rmqp->conn.uri.password &&
+			rmqp->conn.uri.password != rmqp->conn.uri.user &&
 			rmqp->conn.uri.password != rmq_static_holder.s)
 		shm_free(rmqp->conn.uri.password);
 	if ((rmqp->conn.flags & RMQF_MAND) && rmqp->routing_key.s)
