@@ -164,6 +164,15 @@ static inline int wrapper_single_mysql_stmt_execute(const db_con_t *conn,
 		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
 		 */
 		case 4031:
+		/* The server-side prepared-statement cache no longer knows
+		 * about our stmt handle - e.g. after a managed-DB transparent
+		 * failover or a zero-downtime minor version upgrade (AWS Aurora),
+		 * where the backing instance is replaced while the client TCP
+		 * connection is preserved. libmysqlclient auto-reprepare (which
+		 * handles the related ER_NEED_REPREPARE case) does not kick in
+		 * here because the server has no record of the handle at all.
+		 * Fall back to the existing reconnect + re-prepare path. */
+		case ER_UNKNOWN_STMT_HANDLER:
 			return -1; /* reconnection error -> <0 */
 		default:
 			LM_CRIT("driver error (%i): %s\n", error, mysql_stmt_error(stmt));
