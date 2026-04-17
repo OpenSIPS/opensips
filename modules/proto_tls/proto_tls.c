@@ -96,10 +96,6 @@ static int tls_port_no = SIPS_PORT;
 /* 1 if tls connect & write should be async */
 static int tls_async = 1;
 
-/* Number of milliseconds that a worker will block waiting for a SSL
- * connect handshake to complete */
-static int tls_async_handshake_connect_timeout = 10;
-
 /* maximum number of write chunks that will be queued per tls connection -
   if we exceed this number, we just drop the connection */
 static int tls_async_max_postponed_chunks = 32;
@@ -343,8 +339,6 @@ static const param_export_t params[] = {
 	{ "tls_async",                       INT_PARAM, &tls_async               },
 	{ "tls_async_max_postponed_chunks",  INT_PARAM,
 											&tls_async_max_postponed_chunks  },
-	{ "tls_async_handshake_timeout",	 INT_PARAM,
-											&tls_async_handshake_connect_timeout },
 	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
 	{ "trace_filter_route",			STR_PARAM, &trace_filter_route        },
 	{ "cert_check_on_conn_reusage",	INT_PARAM, &cert_check_on_conn_reusage},
