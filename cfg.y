@@ -384,7 +384,6 @@ extern int cfg_parse_only_routes;
 %token TCP_KEEPIDLE
 %token TCP_KEEPINTERVAL
 %token TCP_MAX_MSG_TIME
-%token TCP_PARALLEL_READ_ON_WORKERS
 %token TCP_THREADS
 %token ADVERTISED_ADDRESS
 %token ADVERTISED_PORT
@@ -1376,12 +1375,6 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 				tcp_max_msg_time=$3;
 		}
 		| TCP_MAX_MSG_TIME EQUAL error { yyerror("number expected"); }
-		| TCP_PARALLEL_READ_ON_WORKERS EQUAL NUMBER { IFOR();
-				tcp_parallel_read_on_workers=!!$3;
-		}
-		| TCP_PARALLEL_READ_ON_WORKERS EQUAL error {
-			yyerror("boolean value expected");
-		}
 		| TCP_THREADS EQUAL NUMBER { IFOR();
 				if ($3 <= 0)
 					yyerror("invalid 'tcp_threads' value");

@@ -85,12 +85,11 @@ int tcp_mgm_get_profile(const union sockaddr_union *remote,
 
 	/* was a matching TCP path found? */
 	if (path < lim) {
-		LM_DBG("matched a TCP path, id: %d (%d/%d/%d/%d/%d/%d/%d/%d)\n",
+		LM_DBG("matched a TCP path, id: %d (%d/%d/%d/%d/%d/%d/%d)\n",
 		       out_profile->id, out_profile->connect_timeout,
 		       out_profile->con_lifetime, out_profile->msg_read_timeout,
 		       out_profile->send_threshold, out_profile->no_new_conn,
-		       out_profile->alias_mode, out_profile->parallel_read,
-		       out_profile->keepalive);
+		       out_profile->alias_mode, out_profile->keepalive);
 		return 1;
 	}
 
@@ -240,13 +239,6 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 		return -1;
 	}
 
-	path->prof.parallel_read = int_vals[TCPCOL_PARALLEL_READ];
-	if (path->prof.parallel_read > 2) {
-		LM_ERR("invalid parallel_read mode: %d, id: %d\n",
-		       path->prof.parallel_read, int_vals[TCPCOL_ID]);
-		return -1;
-	}
-
 	path->prof.id = int_vals[TCPCOL_ID];
 	path->prof.connect_timeout = int_vals[TCPCOL_CONNECT_TIMEOUT];
 	path->prof.con_lifetime = int_vals[TCPCOL_CON_LIFETIME];
@@ -274,9 +266,8 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 	        path->local_any ? "NULL" : ip_addr2a(&path->local_addr.mask));
 	LM_INFO("  %d %d %d\n", path->prof.connect_timeout,
 	          path->prof.con_lifetime, path->prof.msg_read_timeout);
-	LM_INFO("  %d %d %d %d\n", path->prof.send_threshold,
-	          path->prof.no_new_conn, path->prof.alias_mode,
-	          path->prof.parallel_read);
+	LM_INFO("  %d %d %d\n", path->prof.send_threshold,
+	          path->prof.no_new_conn, path->prof.alias_mode);
 	LM_INFO("  %d %d %d %d\n", path->prof.keepalive,
 	          path->prof.keepcount, path->prof.keepidle, path->prof.keepinterval);
 #endif

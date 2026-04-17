@@ -52,12 +52,11 @@ static const param_export_t params[] = {
 	{"msg_read_timeout_col",STR_PARAM, &tcp_mgm_cols[11].name.s},
 	{"send_threshold_col",  STR_PARAM, &tcp_mgm_cols[12].name.s},
 	{"no_new_conn_col",     STR_PARAM, &tcp_mgm_cols[13].name.s},
-	{"parallel_read_col",   STR_PARAM, &tcp_mgm_cols[14].name.s},
-	{"alias_mode_col",      STR_PARAM, &tcp_mgm_cols[15].name.s},
-	{"keepalive_col",       STR_PARAM, &tcp_mgm_cols[16].name.s},
-	{"keepcount_col",       STR_PARAM, &tcp_mgm_cols[17].name.s},
-	{"keepidle_col",        STR_PARAM, &tcp_mgm_cols[18].name.s},
-	{"keepinterval_col",    STR_PARAM, &tcp_mgm_cols[19].name.s},
+	{"alias_mode_col",      STR_PARAM, &tcp_mgm_cols[13].name.s},
+	{"keepalive_col",       STR_PARAM, &tcp_mgm_cols[14].name.s},
+	{"keepcount_col",       STR_PARAM, &tcp_mgm_cols[15].name.s},
+	{"keepidle_col",        STR_PARAM, &tcp_mgm_cols[16].name.s},
+	{"keepinterval_col",    STR_PARAM, &tcp_mgm_cols[17].name.s},
 	{0, 0, 0}
 };
 
