@@ -177,6 +177,7 @@
 #include "../../msg_callbacks.h"
 #include "../../evi/evi_modules.h"
 #include "../../lib/dassert.h"
+#include "../../ut.h"
 
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
@@ -228,9 +229,6 @@ static str param3_name = str_init("rtpproxy_3");
 str param3_bavp_name = str_init("$bavp(5589967)");
 pv_spec_t param3_spec;
 static str late_name = str_init("late_negotiation");
-static str rtpp_bind_local_avp_name = str_init("$avp(rtpp_bind_local)");
-static pv_spec_t rtpp_bind_local_spec;
-static int rtpp_bind_local_avp_ok = 0;
 
 /* parameters name for event signaling */
 static str event_name = str_init("E_RTPPROXY_STATUS");
@@ -264,13 +262,16 @@ static int unforce_rtp_proxy_f(struct sip_msg* msg, nh_set_param_t *pset,
 static int engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5);
 static int force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, nh_set_param_t *setid,
-					pv_spec_t *var, pv_spec_t *ipvar, str *body, int offer);
+					pv_spec_t *var, pv_spec_t *ipvar, str *body, int offer,
+					str *bind_local);
 static int rtpproxy_recording(struct sip_msg* msg, nh_set_param_t *setid,
 	pv_spec_t *var, str *flags, str *destination, int *stream_no);
 static int rtpproxy_answer6_f(struct sip_msg *msg, str *param1, str *param2,
-				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5, pv_spec_t *param6);
+				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5,
+				pv_spec_t *param6, pv_spec_t *param7);
 static int rtpproxy_offer6_f(struct sip_msg *msg, str *param1, str *param2,
-				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5, pv_spec_t *param7);
+				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5,
+				pv_spec_t *param6, pv_spec_t *param7);
 static inline int rtpproxy_stats_f(struct sip_msg *msg,
 	pv_spec_t *pup, pv_spec_t *pdown, pv_spec_t *psent, pv_spec_t *pfail,
 	nh_set_param_t *pset, pv_spec_t *pvar);
@@ -462,12 +463,14 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"rtpproxy_answer", (cmd_function)rtpproxy_answer6_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
@@ -524,11 +527,10 @@ static const param_export_t params[] = {
 	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s         },
 	{"set_id_col",            STR_PARAM, &set_id_col.s            },
 	{"rtpp_notify_socket",    STR_PARAM|USE_FUNC_PARAM,
-                             (void*)rtpproxy_set_notify            },
+                              (void*)rtpproxy_set_notify            },
 	{"generated_sdp_port_min",INT_PARAM, &rtpproxy_port_min },
 	{"generated_sdp_port_max",INT_PARAM, &rtpproxy_port_max },
 	{"generated_sdp_media_ip",STR_PARAM, &rtpproxy_media_ip.s },
-	{"rtpp_bind_local_avp",   STR_PARAM, &rtpp_bind_local_avp_name.s },
 	{0, 0, 0}
 };
 
@@ -1307,18 +1309,6 @@ mod_init(void)
 			parse_bavp(&param2_bavp_name, &param2_spec) < 0 ||
 			parse_bavp(&param3_bavp_name, &param3_spec) < 0)
 		LM_DBG("cannot parse bavps\n");
-
-	if (rtpp_bind_local_avp_name.s && rtpp_bind_local_avp_name.s[0] != '\0') {
-		rtpp_bind_local_avp_name.len = strlen(rtpp_bind_local_avp_name.s);
-		if (pv_parse_spec(&rtpp_bind_local_avp_name, &rtpp_bind_local_spec) != NULL) {
-			rtpp_bind_local_avp_ok = 1;
-		} else {
-			LM_ERR("malformed rtpp_bind_local pvar definition\n");
-			return -1;
-		}
-	} else {
-		rtpp_bind_local_avp_ok = 0;
-	}
 
 	if(rtpp_notify_socket.s) {
 		if (strncmp("tcp:", rtpp_notify_socket.s, 4) == 0) {
@@ -2692,6 +2682,38 @@ static inline void rtpp_get_nt_str_param(str *param, str *val, int n)
 	val->s[val->len] = 0;
 }
 
+static int rtpp_get_pv_str_dup(struct sip_msg *msg, pv_spec_t *spec, str *val,
+		const char *what)
+{
+	pv_value_t pval;
+	str tmp = STR_NULL;
+
+	if (pv_get_spec_value(msg, spec, &pval) < 0) {
+		LM_ERR("could not retrieve %s value\n", what);
+		return -1;
+	}
+
+	if (pval.flags & PV_VAL_NULL)
+		return 0;
+
+	if (pval.flags & PV_VAL_STR) {
+		tmp = pval.rs;
+	} else if (pval.flags & PV_VAL_INT) {
+		tmp.s = int2str(pval.ri, &tmp.len);
+	} else {
+		LM_ERR("%s has unsupported value type\n", what);
+		return -1;
+	}
+
+	if (tmp.len == 0)
+		return 0;
+
+	if (pkg_str_dup(val, &tmp) < 0)
+		return -1;
+
+	return 0;
+}
+
 static str *rtpproxy_offer_answer_buf(struct sip_msg *msg, pv_spec_t *body_pv)
 {
 	pv_value_t val;
@@ -2727,46 +2749,53 @@ static int rtpproxy_offer_answer_buf_ret(struct sip_msg *msg,
 static int
 rtpproxy_offer_answer6_f(struct sip_msg *msg, str *param1, str *param2,
 				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5,
-				pv_spec_t *param6, int offer)
+				pv_spec_t *param6, pv_spec_t *param7, int offer)
 {
-	int ret;
+	int ret = -1;
 	str *body;
-	str param1_val={0,0},param2_val={0,0};
+	str param1_val={0,0}, param2_val={0,0}, bind_local_val = STR_NULL;
 
 	if (param1)
 		rtpp_get_nt_str_param(param1, &param1_val, 0);
 	if (param2)
 		rtpp_get_nt_str_param(param2, &param2_val, 1);
+	if (param7 && rtpp_get_pv_str_dup(msg, param7, &bind_local_val,
+				"bind_local") < 0)
+		return -1;
 	if (param6) {
 		body = rtpproxy_offer_answer_buf(msg, param6);
 		if (!body)
-			return -1;
+			goto error;
 	} else {
 		body = NULL;
 	}
 
-	ret = force_rtp_proxy(msg, param1_val.s,param2_val.s, param3, param4, param5, body, offer);
+	ret = force_rtp_proxy(msg, param1_val.s, param2_val.s, param3, param4,
+			param5, body, offer, param7 ? &bind_local_val : NULL);
 	if (ret > 0 && param6)
 		ret = rtpproxy_offer_answer_buf_ret(msg, param6, body);
+error:
+	if (bind_local_val.s)
+		pkg_free(bind_local_val.s);
 	return ret;
 }
 
 static int
 rtpproxy_offer6_f(struct sip_msg *msg, str *param1, str *param2,
 				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5,
-				pv_spec_t *param6)
+				pv_spec_t *param6, pv_spec_t *param7)
 {
 	return rtpproxy_offer_answer6_f(msg, param1, param2, param3, param4,
-			param5, param6, 1);
+			param5, param6, param7, 1);
 }
 
 static int
 rtpproxy_answer6_f(struct sip_msg *msg, str *param1, str *param2,
 				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5,
-				pv_spec_t *param6)
+				pv_spec_t *param6, pv_spec_t *param7)
 {
 	return rtpproxy_offer_answer6_f(msg, param1, param2, param3, param4,
-			param5, param6, 0);
+			param5, param6, param7, 0);
 }
 
 static void engage_callback(struct dlg_cell *dlg, int type,
@@ -3092,7 +3121,8 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 	param.v.int_set = setid;
 	param.t = NH_VAL_SET_UNDEF;
 
-	force_rtp_proxy(msg, param1_val.s, param2_val.s, &param, NULL, NULL, NULL, offer);
+	force_rtp_proxy(msg, param1_val.s, param2_val.s, &param, NULL,
+			NULL, NULL, offer, NULL);
 
 	if (alloc) {
 		if (param1_val.s)
@@ -3173,7 +3203,8 @@ engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 	/* is this a late negotiation scenario? */
 	if (has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP)) {
 		LM_DBG("message has sdp body -> forcing rtp proxy\n");
-		if(force_rtp_proxy(msg,param1_val.s,param2_val.s,param3,param4, param5, NULL, 1) < 0) {
+		if(force_rtp_proxy(msg, param1_val.s, param2_val.s, param3, param4,
+					param5, NULL, 1, NULL) < 0) {
 			LM_ERR("error forcing rtp proxy\n");
 			return -1;
 		}
@@ -3354,7 +3385,7 @@ free_opts(struct options *op1, struct options *op2, struct options *op3, struct 
 
 static int
 force_rtpproxy_body_part(struct sip_msg *msg, struct rtpp_args *args,
-		pv_spec_t *var, pv_spec_t *ipvar, str *body)
+		pv_spec_t *var, pv_spec_t *ipvar, str *body, str *bind_local)
 {
 	int ret = 0;
 	struct rtpp_args *ap;
@@ -3434,7 +3465,7 @@ force_rtpproxy_body_part(struct sip_msg *msg, struct rtpp_args *args,
 	LM_DBG("Forcing body:\n[%.*s]\n",
 			body?body->len:args->body.len,
 			body?body->s:args->body.s);
-	ret = force_rtp_proxy_body(msg, args, var, ipvar, body);
+	ret = force_rtp_proxy_body(msg, args, var, ipvar, body, bind_local);
 
 	if (rtpproxy_autobridge) {
 		if (nh_lock)
@@ -3452,7 +3483,8 @@ error_with_lock:
 
 static int
 force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, nh_set_param_t *setid,
-											pv_spec_t *var, pv_spec_t *ipvar, str *body, int offer)
+											pv_spec_t *var, pv_spec_t *ipvar, str *body, int offer,
+											str *bind_local)
 {
 	int ret = 0;
 	struct body_part *p;
@@ -3502,14 +3534,16 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, nh_set_param_t *set
 			}
 			args.body = p->body;
 
-			ret = force_rtpproxy_body_part(msg, &args, var, ipvar, NULL);
+			ret = force_rtpproxy_body_part(msg, &args, var, ipvar, NULL,
+					bind_local);
 			if (ret < 0)
 				return ret;
 		}
 		ret = 1;
 	} else {
 		args.body = *body;
-		ret = force_rtpproxy_body_part(msg, &args, var, ipvar, body);
+		ret = force_rtpproxy_body_part(msg, &args, var, ipvar, body,
+				bind_local);
 	}
 
 	return ret;
@@ -3555,7 +3589,7 @@ static char _rtp_proxy_buf[IP_ADDR_MAX_STR_SIZE + 1/* : */ + 5/* port */];
 	} while (0)
 
 static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
-		pv_spec_t *var, pv_spec_t *ipvar, str *body)
+		pv_spec_t *var, pv_spec_t *ipvar, str *body, str *bind_local)
 {
 	str body1, oldport, oldip, newport, newip ,nextport;
 	str tmp, payload_types;
@@ -3599,13 +3633,12 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 	char medianum_buf[20];
 	char buf[32], dbuf[128];
 	int medianum, media_multi;
-	str medianum_str, tmpstr1, bind_local_val;
+	str medianum_str, tmpstr1;
 	int c1p_altered;
 	int enable_dtmf_catch = 0;
 	int node_has_notification, node_has_dtmf_catch = 0;
 	int vcnt;
 	pv_value_t val;
-	pv_value_t bind_val;
 	char *adv_address = NULL;
 	struct dlg_cell * dlg;
 	str dtmf_tag = {0, 0}, timeout_tag = {0, 0};
@@ -3835,23 +3868,6 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 
 	opts.s.s[0] = (create == 0) ? 'L' : 'U';
 
-	bind_local_val.len = 0;
-	if (msg && rtpp_bind_local_avp_ok) {
-		if (pv_get_spec_value(msg, &rtpp_bind_local_spec, &bind_val) < 0) {
-			LM_ERR("cannot get rtpp_bind_local avp value\n");
-			goto exit;
-		} else if (!(bind_val.flags & PV_VAL_NULL)) {
-			if (bind_val.flags & PV_VAL_STR) {
-				bind_local_val = bind_val.rs;
-			} else if (bind_val.flags & PV_VAL_INT) {
-				bind_local_val.s = int2str(bind_val.ri, &bind_local_val.len);
-			} else {
-				LM_ERR("rtpp_bind_local avp has unsupported value type\n");
-				goto exit;
-			}
-		}
-	}
-
 	STR2IOVEC(args->callid, vup.vu[5]);
 	STR2IOVEC(args->from_tag, vup.vu[11]);
 	STR2IOVEC(args->to_tag, vup.vu[15]);
@@ -4029,9 +4045,9 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 					goto error;
 				}
 			}
-			if (bind_local_val.len > 0) {
+			if (bind_local && bind_local->len > 0) {
 				if (append_opts(&m_opts, 'l') == -1 ||
-						append_opts_str(&m_opts, &bind_local_val) == -1) {
+						append_opts_str(&m_opts, bind_local) == -1) {
 					LM_ERR("out of pkg memory\n");
 					goto error;
 				}
@@ -4461,7 +4477,7 @@ exit:
 #undef RTPPROXY_APPEND_CONST
 
 int force_rtp_proxy_body(struct sip_msg* msg, struct rtpp_args *args,
-		pv_spec_p var, pv_spec_p ipvar, str *body)
+		pv_spec_p var, pv_spec_p ipvar, str *body, str *bind_local)
 {
 	if (!args->callid.len && (get_callid(msg, &args->callid) == -1 || args->callid.len == 0)) {
 		LM_ERR("can't get Call-Id field\n");
@@ -4482,7 +4498,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct rtpp_args *args,
 			return -1;
 		}
 
-	return rtpproxy_offer_answer(msg, args, var, ipvar, body);
+	return rtpproxy_offer_answer(msg, args, var, ipvar, body, bind_local);
 }
 
 static char *rtpproxy_stats_pop_int(struct sip_msg *msg, char *p,
@@ -5267,7 +5283,7 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess,
 	val.flags = PV_VAL_STR;
 	pv_set_value(msg, &media_pvar, (int)EQ_T, &val);
 
-	ret = rtpproxy_offer_answer(msg, &args, &media_pvar, NULL, body);
+	ret = rtpproxy_offer_answer(msg, &args, &media_pvar, NULL, body, NULL);
 	if (nh_lock && unlock)
 		lock_stop_read(nh_lock);
 	if (ret < 0) {
@@ -5321,7 +5337,7 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess,
 		}
 	}
 
-	ret = rtpproxy_offer_answer(sess->msg, &args, NULL, NULL, body);
+	ret = rtpproxy_offer_answer(sess->msg, &args, NULL, NULL, body, NULL);
 exit:
 	if (nh_lock)
 		lock_stop_read(nh_lock);
