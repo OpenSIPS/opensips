@@ -30,6 +30,7 @@ rtpproxy Module
               1.5.13. generated_sdp_port_min (integer)
               1.5.14. generated_sdp_port_max (integer)
               1.5.15. generated_sdp_media_ip (string)
+              1.5.16. rtpp_bind_local_avp (string)
 
         1.6. Exported Functions
 
@@ -470,6 +471,15 @@ modparam("rtpproxy", "generated_sdp_port_max", 30000)
 modparam("rtpproxy", "generated_sdp_media_ip", "10.0.0.1")
 ...
 
+1.5.16. rtpp_bind_local_avp (string)
+
+   The pseudo-variable used to read the local bind value which is
+   appended as l<value> to the RTPProxy U/L command when set. For
+   example, use "$socket_out(ip)" to bind based on the outbound
+   socket.
+
+   Default value is “$avp(rtpp_bind_local)”.
+
 1.6. Exported Functions
 
 1.6.1.  rtpproxy_engage([[flags][, [ip_address][, [set_id][,
@@ -603,6 +613,11 @@ if (is_method("INVITE") && has_totag()) {
    is the function uses its content as the body to challenge, and
    returns the resulted body in it. If not used, the message's
    body is used, and the outgoing body is changed.
+
+   If the pseudo-variable set by rtpp_bind_local_avp is set to a string, its
+   value is appended as l<value> to the RTPProxy U/L command (for
+   example, "[1:2:3]" for IPv6). This applies to both
+   rtpproxy_offer() and rtpproxy_answer().
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
