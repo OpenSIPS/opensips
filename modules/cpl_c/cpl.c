@@ -86,7 +86,7 @@ struct cpl_enviroment    cpl_env = {
 		{0,0},   /* original TZ \0 terminated "TZ=value" format */
 		0,   /* udomain */
 		0,   /* no branches on lookup */
-		0    /* use_domain */
+		1    /* use_domain */
 };
 
 struct cpl_functions  cpl_fct;

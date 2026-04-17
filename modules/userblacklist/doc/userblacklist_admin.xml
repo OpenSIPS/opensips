@@ -100,20 +100,21 @@ modparam("userblacklist", "db_table", "userblacklist")
     </section>
 	
     <section id="param_use_domain" xreflabel="use_domain">
-	    <title><varname>use_domain</varname> (integer)</title>
+	    <title><varname>use_domain</varname> (boolean)</title>
 	    <para>
-			If set to non-zero value, the domain column in the userblacklist is used.
+			If enabled, the "domain" column will also be
+			matched in the table lookup, for a stricter match.
 	    </para>
 	    <para>
 		    <emphasis>
-			    Default value is <quote>0</quote>.
+			    Default value is <emphasis>true</emphasis> (enabled).
 		    </emphasis>
 	    </para>
 	    <example>
 		    <title>Set <varname>use_domain</varname> parameter</title>
 		    <programlisting format="linespecific">
 ...
-modparam("userblacklist", "use_domain", 0)
+modparam("userblacklist", "use_domain", true)
 ...
 		    </programlisting>
 	    </example>

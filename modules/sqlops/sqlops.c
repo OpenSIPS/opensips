@@ -54,7 +54,7 @@ char *printbuf = NULL;
 
 /* modules param variables */
 static str db_table        = str_init("usr_preferences");  /* table */
-static int use_domain      = 0;  /* if domain should be use for avp matching */
+static int use_domain      = 1;  /* if domain should be use for avp matching */
 static str uuid_col        = str_init("uuid");
 static str attribute_col   = str_init("attribute");
 static str value_col       = str_init("value");

@@ -101,7 +101,7 @@ int case_sensitive  = 1; /*!< If set to 0, username in aor will be case insensit
 str gruu_secret = {0,0};
 int disable_gruu = 1;
 str realm_prefix = str_init("");
-int reg_use_domain = 0;
+int reg_use_domain = 1;
 
 static int mod_init(void);
 static int cfg_validate(void);

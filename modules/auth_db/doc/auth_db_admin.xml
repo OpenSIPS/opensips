@@ -145,25 +145,20 @@ modparam("auth_db", "calculate_ha1", 1)
 	</section>
 
 	<section id="param_use_domain" xreflabel="use_domain">
-		<title><varname>use_domain</varname> (integer)</title>
+		<title><varname>use_domain</varname> (boolean)</title>
 		<para>
 		If true (not 0), domain will be also used when looking up in the
 		subscriber table. If you have a multi-domain setup, it is strongly
-		recommended to turn on this parameter to avoid username overlapping
-		between domains.
+		recommended to keep this parameter enabled, to avoid username
+		overlapping between domains.
 		</para>
 		<para>
-		IMPORTANT: before turning on this parameter, be sure that the
-		<varname>domain</varname> column in <varname>subscriber</varname>
-		table is properly populated.
-		</para>
-		<para>
-		Default value is <quote>0 (false)</quote>.
+		Default value is <emphasis>true</emphasis> (enabled).
 		</para>
 		<example>
 		<title><varname>use_domain</varname> parameter usage</title>
 		<programlisting format="linespecific">
-modparam("auth_db", "use_domain", 1)
+modparam("auth_db", "use_domain", true)
 		</programlisting>
 		</example>
 	</section>

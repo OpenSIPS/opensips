@@ -607,21 +607,21 @@ modparam("carrierroute", "default_tree", "default")
     </section>
 
     <section id="param_use_domain" xreflabel="use_domain">
-	    <title><varname>use_domain</varname> (int)</title>
+	    <title><varname>use_domain</varname> (boolean)</title>
 	    <para>
 		    When using tree lookup per user, this parameter specifies whether
 		    to use the domain part for user matching or not.
 	    </para>
 	    <para>
 		    <emphasis>
-			    Default value is <quote>0</quote>.
+			    Default value is <emphasis>true</emphasis>.
 		    </emphasis>
 	    </para>
 	    <example>
 		    <title>Set <varname>use_domain</varname> parameter</title>
 		    <programlisting format="linespecific">
 ...
-modparam("carrierroute", "use_domain", 0)
+modparam("carrierroute", "use_domain", true)
 ...
 		    </programlisting>
 	    </example>

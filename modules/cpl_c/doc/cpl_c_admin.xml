@@ -376,7 +376,7 @@ modparam("cpl_c","lookup_append_branches",1)
 			</example>
 		</section>
 		<section id="param_use_domain" xreflabel="use_domain">
-			<title><varname>use_domain</varname> (integer)</title>
+			<title><varname>use_domain</varname> (boolean)</title>
 			<para>
 				Indicates if the domain part of the URI should be used in 
 				user identification (otherwise only username part will be
@@ -384,14 +384,14 @@ modparam("cpl_c","lookup_append_branches",1)
 			</para>
 			<para>
 				<emphasis>
-					Default value is <quote>0 (disabled)</quote>.
+					Default value is <emphasis>true</emphasis> (enabled).
 				</emphasis>
 			</para>
 			<example>
 				<title>Set <varname>use_domain</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("cpl_c","use_domain",1)
+modparam("cpl_c", "use_domain", true)
 ...
 </programlisting>
 			</example>

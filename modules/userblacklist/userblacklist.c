@@ -59,7 +59,7 @@ struct check_blacklist_fs_t {
 
 static str db_url       = {NULL, 0};
 static str db_table     = str_init("userblacklist");
-static int use_domain   = 0;
+static int use_domain   = 1;
 
 /* ---- fixup functions: */
 static int check_blacklist_fixup(void** param);

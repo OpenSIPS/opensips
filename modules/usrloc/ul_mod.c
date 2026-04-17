@@ -152,7 +152,7 @@ char *sql_wmode_str;
 enum ul_pinging_mode pinging_mode = PMD_COOPERATION;
 char *pinging_mode_str;
 
-int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
+int use_domain      = 1;   /*!< Whether usrloc should use domain part of aor */
 int desc_time_order = 0;   /*!< By default do not enable timestamp ordering */
 
 int ul_hash_size = 9;

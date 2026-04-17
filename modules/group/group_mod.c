@@ -94,7 +94,7 @@ str table         = str_init(TABLE);
 str user_column   = str_init(USER_COL);
 str domain_column = str_init(DOMAIN_COL);
 str group_column  = str_init(GROUP_COL);
-int use_domain    = 0;
+int use_domain    = 1;
 
 /* tabel and columns used for re-based groups */
 str re_table;

@@ -47,7 +47,7 @@ int publish_reginfo = 0;
 
 udomain_t* ul_domain = 0;
 
-int reginfo_use_domain = 0;
+int reginfo_use_domain = 1;
 
 /** Fixup functions */
 static int domain_fixup(void **param);

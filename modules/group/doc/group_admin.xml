@@ -184,15 +184,15 @@ modparam("group", "group_column", "grp")
 	</section>
 
 	<section id="param_use_domain" xreflabel="use_domain">
-		<title><varname>use_domain</varname> (integer)</title>
+		<title><varname>use_domain</varname> (boolean)</title>
 		<para>
-		If enabled (set to non zero value) then domain will be used also used
-		for strict group matching; otherwise only the username part will be
-		used.
+		If enabled, the domain part of the URI will also be used in the lookup,
+		for a stricter group matching.  Otherwise, only the username part
+		will be used.
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0 (no).
+			Default value is <emphasis>true</emphasis> (enabled).
 		</emphasis>
 		</para>
 		<example>

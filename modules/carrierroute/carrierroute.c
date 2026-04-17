@@ -123,7 +123,7 @@ str default_tree = str_init("default");
 const str SP_EMPTY_PREFIX = str_init("null");
 
 int mode = 0;
-int use_domain = 0;
+int use_domain = 1;
 
 int fallback_default = 1;
 

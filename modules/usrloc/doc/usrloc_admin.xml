@@ -641,22 +641,22 @@ modparam("usrloc", "attr_column", "attributes")
 	</section>
 
 	<section id="param_use_domain" xreflabel="use_domain">
-		<title><varname>use_domain</varname> (integer)</title>
+		<title><varname>use_domain</varname> (boolean)</title>
 		<para>
-		If the domain part of the user should be also saved and used for
-		identifing the user (along with the username part). Useful in
-		multi domain scenarios. Non 0 value means true.
+		Denotes whether the <emphasis>domain</emphasis> part of the user should
+		also be saved and used for identifying the user, along with the
+		<emphasis>username</emphasis> part.  Useful in multi-domain scenarios.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>0 (false)</quote>.
+			Default value is <emphasis>true</emphasis> (enabled).
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>use_domain</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "use_domain", 1)
+modparam("usrloc", "use_domain", true)
 ...
 </programlisting>
 		</example>

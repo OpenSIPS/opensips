@@ -120,7 +120,7 @@ int attr_avp_name;
 
 usrloc_api_t ul;
 
-int reg_use_domain = 0;
+int reg_use_domain = 1;
 /*!< Realm prefix to be removed */
 str realm_prefix = str_init("");
 

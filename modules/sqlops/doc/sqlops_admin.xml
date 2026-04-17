@@ -142,13 +142,13 @@ modparam("sqlops","db_scheme",
 		</section>
 
 		<section id="param_use_domain" xreflabel="use_domain">
-			<title><varname>use_domain</varname> (integer)</title>
+			<title><varname>use_domain</varname> (boolean)</title>
 			<para>
 				If the domain part of the a SIP URI should be used for
 				identifying an AVP in DB operations.
 			</para>
 			<para>
-				<emphasis>Default value is 0 (no).
+				<emphasis>Default value is <emphasis>true</emphasis> (enabled).
 				</emphasis>
 			</para>
 			<example>
@@ -156,7 +156,7 @@ modparam("sqlops","db_scheme",
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("sqlops","use_domain",1)
+modparam("sqlops", "use_domain", true)
 ...
 				</programlisting>
 			</example>
