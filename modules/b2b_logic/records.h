@@ -128,6 +128,7 @@ typedef struct b2bl_tuple
 	str local_contact;
 	int db_flag;
 	int repl_flag;  /* sent/received through entities replication */
+	unsigned int refer_id;
 	struct b2b_ctx_val *vals;
 	struct b2b_tracer tracer;
 	struct b2bl_cback cb;

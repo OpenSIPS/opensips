@@ -940,11 +940,14 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 #define BUF_LEN  128
 
 int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
-	struct sip_msg* msg)
+	struct sip_msg* msg, unsigned int refer_id)
 {
 	b2b_req_data_t req_data;
-	static char def_hdrs[] = "Event: refer\r\nContent-Type: message/sipfrag\r\nSubscription-State: ";
+	static char def_hdrs_prefix[] = "Event: refer";
+	static char def_hdrs_id[] = ";id=";
+	static char def_hdrs_suffix[] = "\r\nContent-Type: message/sipfrag\r\nSubscription-State: ";
 	static char buf[BUF_LEN];
+	static char def_hdrs[BUF_LEN];
 	static str trying_s = str_init("SIP/2.0 100 Trying");
 	str body;
 	static str hdrs = {buf, 0};
@@ -953,6 +956,12 @@ int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
 		LM_ERR("send_bridge_notify works only with replies!\n");
 		return -1;
 	}
+
+	if (refer_id)
+		snprintf(def_hdrs, BUF_LEN, "%s%s%d%s", def_hdrs_prefix, def_hdrs_id, refer_id,
+				def_hdrs_suffix);
+	else
+		snprintf(def_hdrs, BUF_LEN, "%s%s", def_hdrs_prefix, def_hdrs_suffix);
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(entity);
@@ -1055,6 +1064,21 @@ static struct b2bl_new_entity *get_ent_to_bridge(b2bl_tuple_t *tuple,
 	return new_br_ent;
 }
 
+static unsigned int b2b_logic_get_refer_id(struct sip_msg *msg)
+{
+	unsigned int cseq;
+	if (!msg || msg == FAKED_REPLY)
+		return 0;
+	if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
+		!msg->cseq->parsed){
+		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
+		return 0;
+	}
+	if (str2int(&get_cseq(msg)->number, &cseq) < 0)
+		return 0;
+	return cseq;
+}
+
 int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 	str *provmedia_uri, struct b2b_bridge_params *params)
 {
@@ -1128,9 +1152,10 @@ int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 			br_ent2_str->s);
 		goto done;
 	}
+	tuple->refer_id = b2b_logic_get_refer_id(msg);
 
 	if (params->flags & B2BL_BR_FLAG_NOTIFY && entity)
-		send_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
+		send_bridge_notify(entity, cur_route_ctx.hash_index, NULL, tuple->refer_id);
 
 	if (b2bl_bridge(msg, tuple, cur_route_ctx.hash_index,
 		old_entity, new_br_ent, provmedia_uri, params->lifetime) < 0) {

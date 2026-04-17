@@ -25,7 +25,7 @@ int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str);
 
 int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
-	struct sip_msg* msg);
+	struct sip_msg* msg, unsigned int refer_id);
 int process_bridge_negreply(b2bl_tuple_t* tuple,
 	unsigned int hash_index, b2bl_entity_id_t* entity, struct sip_msg* msg);
 int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
