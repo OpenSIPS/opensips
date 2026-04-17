@@ -130,9 +130,11 @@ struct script_route_ref *global_reply_rt_ref = NULL;
 unsigned int b2b_clean_period = 100;
 unsigned int b2b_update_period = 100;
 str custom_headers = {0, 0};
+static str custom_ct_hdrs_params = {0, 0};
 str custom_headers_lst[HDR_LST_LEN];
 int custom_headers_lst_len =0;
 str custom_headers_regexp = {0, 0};
+csv_record *custom_ct_hdrs_params_list;
 regex_t* custom_headers_re;
 /* The list of the headers that are passed on the other side by default */
 static str default_headers[HDR_DEFAULT_LEN]=
@@ -285,6 +287,7 @@ static const param_export_t params[]=
 	{"script_reply_route",    STR_PARAM,          &script_reply_route        },
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
 	{"custom_headers_regexp", STR_PARAM,          &custom_headers_regexp.s   },
+	{"custom_contact_header_params", STR_PARAM,   &custom_ct_hdrs_params.s   },
 	{"contact_user",    INT_PARAM,                &contact_user              },
 	{"db_url",          STR_PARAM,                &db_url.s                  },
 	{"cachedb_url",     STR_PARAM, 				  &cdb_url.s         		 },
@@ -571,6 +574,16 @@ static int mod_init(void)
 	/* parse extra headers */
 	if(custom_headers.s)
 		custom_headers.len = strlen(custom_headers.s);
+
+	if(custom_ct_hdrs_params.s) {
+		custom_ct_hdrs_params.len = strlen(custom_ct_hdrs_params.s);
+		custom_ct_hdrs_params_list = __parse_csv_record(&custom_ct_hdrs_params, 0, ';');
+		if (!custom_ct_hdrs_params_list) {
+			LM_ERR("cannot parse contact headers parameters param [%s]\n",
+					custom_ct_hdrs_params.s);
+			return -1;
+		}
+	}
 
 	memset(custom_headers_lst, 0, HDR_LST_LEN*sizeof(str));
 	custom_headers_lst[i].s = custom_headers.s;

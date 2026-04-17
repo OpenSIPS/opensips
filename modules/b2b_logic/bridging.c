@@ -506,6 +506,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	b2bl_entity_id_t* bentity0, *bentity1;
 	int entity_no;
 	b2b_req_data_t req_data;
+	str *ct_hdrs = NULL;
 
 	bentity0 = tuple->bridge_entities[0];
 	bentity1 = tuple->bridge_entities[1];
@@ -525,6 +526,9 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	}
 	LM_DBG("entity_no = %d, entity=%p, be[0]= %p\n",
 		entity_no, entity, tuple->bridge_entities[0]);
+
+	if ((ct_hdrs = b2b_extract_msg_contact_hdrs(msg)) != NULL)
+		b2b_store_msg_contact_hdrs(tuple, &entity->key, ct_hdrs);
 
 	switch (tuple->state) {
 	case B2B_BRIDGING_HOLD_STATE:
@@ -654,6 +658,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.method =&method_ack;
 			req_data.extra_headers =extra_headers;
 			req_data.body = body;
+			req_data.contact_hdr_params = ct_hdrs;
 			req_data.dlginfo =bentity1->dlginfo;
 			if(b2b_api.send_request(&req_data) < 0)
 			{
@@ -732,6 +737,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.client_headers=&bentity1->hdrs;;
 			req_data.extra_headers =extra_headers;
 			req_data.body = body;
+			req_data.contact_hdr_params = ct_hdrs;
 			req_data.dlginfo =bentity1->dlginfo;
 			if(b2b_api.send_request(&req_data) < 0)
 			{
@@ -753,6 +759,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.client_headers=&bentity1->hdrs;;
 			req_data.extra_headers =extra_headers;
 			req_data.body =body;
+			req_data.contact_hdr_params = ct_hdrs;
 			req_data.dlginfo =bentity1->dlginfo;
 			if(b2b_api.send_request(&req_data) < 0)
 			{
@@ -795,6 +802,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.method =&method_invite;
 			req_data.extra_headers = NULL;
 			req_data.client_headers = &bentity0->hdrs;
+			req_data.contact_hdr_params = ct_hdrs;
 			req_data.body = body;
 			b2b_api.send_request(&req_data);
 			bentity0->state = B2BL_ENT_NEW;
@@ -905,6 +913,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.client_headers=&bentity0->hdrs;
 		req_data.extra_headers =extra_headers;
 		req_data.body =body;
+		req_data.contact_hdr_params = ct_hdrs;
 		req_data.dlginfo =bentity0->dlginfo;
 		if(b2b_api.send_request(&req_data) < 0)
 		{
@@ -1382,6 +1391,7 @@ static int bridging_start_old_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_ent
 	req_data.extra_headers = NULL;
 	req_data.client_headers = &old_entity->hdrs;
 	req_data.body = body;
+	req_data.contact_hdr_params = b2b_get_msg_contact_hdrs(tuple, &old_entity->key);
 	b2b_api.send_request(&req_data);
 	old_entity->state = B2BL_ENT_NEW;
 	if (body) {
@@ -2163,7 +2173,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
 	str to_uri={NULL,0}, from_uri, from_dname;
 	b2b_req_data_t req_data;
 	int ret;
-	str local_contact;
+	str local_contact, *ct_hdrs;
 	int maxfwd;
 
 	if(!msg || !key)
@@ -2242,6 +2252,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
 	}
 	bridging_entity = tuple->bridge_entities[entity_no];
 	old_entity = tuple->bridge_entities[(entity_no?0:1)];
+	ct_hdrs = b2b_get_msg_contact_hdrs(tuple, &old_entity->key);
 
 	if(!old_entity || old_entity->next || old_entity->prev)
 	{

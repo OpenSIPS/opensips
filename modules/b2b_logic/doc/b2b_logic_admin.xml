@@ -241,6 +241,30 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 	</programlisting>
 		</example>
 	</section>
+	<section id="param_custom_contact_header_param" xreflabel="custom_contact_header_params">
+		<title><varname>custom_contact_header_params</varname> (str)</title>
+		<para>
+			A list of Contact header parameters, delimited by ';', that should
+			be passed from the dialog of one side to the other side.
+		</para>
+		<para>
+			Throughout a dialog, the value of each parameter is being
+			attached to the entity - this means that when an entity is being bridged,
+			the corresponding entity's headers params are being sent towards the new
+			entity.
+		</para>
+		<para>
+		<emphasis>Default value is <quote></quote> (no parameter).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>custom_contact_header_params</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "custom_contact_header_params", "audio;video")
+...
+	</programlisting>
+		</example>
+	</section>
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (str)</title>
 		<para>

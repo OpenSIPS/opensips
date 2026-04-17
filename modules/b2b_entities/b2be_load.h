@@ -73,6 +73,7 @@ typedef struct client_info
 	str* body;
 	str* from_tag;
 	str local_contact;
+	str *contact_hdr_params;
 	unsigned int cseq;
 	unsigned int maxfwd;
 	const struct socket_info* send_sock;
@@ -98,6 +99,7 @@ typedef struct b2b_req_data
 	b2b_dlginfo_t* dlginfo;
 	unsigned int maxfwd;
 	unsigned int no_cb;
+	str *contact_hdr_params;
 }b2b_req_data_t;
 
 typedef struct b2b_rpl_data
@@ -109,6 +111,7 @@ typedef struct b2b_rpl_data
 	str* text;
 	str* body;
 	str* extra_headers;
+	str* contact_hdr_params;
 	str* contact;
 	b2b_dlginfo_t* dlginfo;
 }b2b_rpl_data_t;

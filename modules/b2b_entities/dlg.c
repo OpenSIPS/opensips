@@ -1941,7 +1941,8 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		bin_free_packet(&storage);
 
 	if((extra_headers?extra_headers->len:0) + 14 + local_contact.len
-			+ 20 + CRLF_LEN > BUF_LEN)
+			+ 20 + CRLF_LEN > BUF_LEN +
+			(rpl_data->contact_hdr_params?rpl_data->contact_hdr_params->len:0))
 	{
 		LM_ERR("Buffer overflow!\n");
 		goto error;
@@ -1953,7 +1954,9 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		memcpy(p, extra_headers->s, extra_headers->len);
 		p += extra_headers->len;
 	}
-	len = sprintf(p,"Contact: <%.*s>", local_contact.len, local_contact.s);
+	len = sprintf(p,"Contact: <%.*s>%.*s", local_contact.len, local_contact.s,
+			(rpl_data->contact_hdr_params?rpl_data->contact_hdr_params->len: 0),
+			(rpl_data->contact_hdr_params?rpl_data->contact_hdr_params->s: ""));
 	p += len;
 	memcpy(p, CRLF, CRLF_LEN);
 	p += CRLF_LEN;
@@ -2482,7 +2485,8 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 
 	if(b2breq_complete_ehdr(req_data->extra_headers, req_data->client_headers,
 			&ehdr, req_data->body,
-			((et==B2B_SERVER)?&dlg->contact[CALLEE_LEG]:&dlg->contact[CALLER_LEG]))< 0)
+			((et==B2B_SERVER)?&dlg->contact[CALLEE_LEG]:&dlg->contact[CALLER_LEG]),
+			req_data->contact_hdr_params)< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
 		goto error;
@@ -3912,11 +3916,12 @@ static inline int is_CT_present(struct hdr_field* headers)
 }
 
 int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
-		str* ehdr_out, str* body, str* local_contact)
+		str* ehdr_out, str* body, str* local_contact, str *ct_hdr_params)
 {
 	str ehdr= {NULL,0};
 	static char buf[BUF_LEN];
 	static struct sip_msg foo_msg;
+	str str_empty = str_init("");
 
 	if(((extra_headers?extra_headers->len:0) + 14 + local_contact->len +
 		(client_headers?client_headers->len:0))> BUF_LEN)
@@ -3931,13 +3936,17 @@ int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
 		memcpy(ehdr.s, extra_headers->s, extra_headers->len);
 		ehdr.len = extra_headers->len;
 	}
+	if (!ct_hdr_params)
+		ct_hdr_params = &str_empty;
 	if (local_contact->s[0] == '<') {
 		/* already enclosed */
-		ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: %.*s\r\n",
-			local_contact->len, local_contact->s);
+		ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: %.*s%.*s\r\n",
+			local_contact->len, local_contact->s,
+			ct_hdr_params->len, ct_hdr_params->s);
 	} else {
-		ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
-			local_contact->len, local_contact->s);
+		ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>%.*s\r\n",
+			local_contact->len, local_contact->s,
+			ct_hdr_params->len, ct_hdr_params->s);
 	}
 	if (client_headers && client_headers->len && client_headers->s)
 	{

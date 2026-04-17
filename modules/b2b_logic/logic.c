@@ -852,6 +852,136 @@ static inline str *get_contact_uri(struct sip_msg* _m)
 	return &c->uri;
 }
 
+str *b2b_extract_msg_contact_hdrs(struct sip_msg *msg)
+{
+	static str ct_ret;
+	static char buf[MAX_URI_SIZE];
+	char *p = buf;
+	contact_t* c;
+	param_t* param;
+	csv_record *r;
+
+	if (!custom_ct_hdrs_params_list)
+		return NULL; /* nothing to pass */
+	if (!msg->contact)
+		return NULL;
+
+	if (parse_contact(msg->contact) < 0)
+		return NULL;
+
+	c = ((contact_body_t*)msg->contact->parsed)->contacts;
+	while (c) {
+		for (param = c->params; param; param = param->next) {
+			for (r = custom_ct_hdrs_params_list; r; r = r->next) {
+				if (str_casematch(&r->s, &param->name))
+					break;
+			}
+			if (!r) {
+				LM_DBG("skipping contact header %d %.*s\n", param->name.len, param->name.len, param->name.s);
+				continue;
+			}
+			LM_DBG("passing contact header %d %.*s\n", param->name.len, param->name.len, param->name.s);
+			if ((p - buf + 1 + param->len) > MAX_URI_SIZE) {
+				LM_WARN("cannot fit parameter %d [%.*s]\n", param->len, param->len, param->name.s);
+				goto end;
+			}
+			*p++ = ';';
+			memcpy(p, param->name.s, param->len);
+			p += param->len;
+		}
+		c = c->next;
+	}
+end:
+	ct_ret.s = buf;
+	ct_ret.len = p - buf;
+	return &ct_ret;
+}
+
+#define B2B_CTX_KEY_CT_HDRS_PREFIX "b2b_contact_hdrs_"
+#define B2B_CTX_KEY_CT_HDRS_PREFIX_LEN (sizeof(B2B_CTX_KEY_CT_HDRS_PREFIX) - 1)
+
+static str *b2b_get_msg_contact_hdrs_key(str *key)
+{
+	static char buf[B2B_CTX_KEY_CT_HDRS_PREFIX_LEN + B2B_MAX_KEY_SIZE];
+	static str ret;
+	if (!ret.s) {
+		ret.s = buf;
+		memcpy(buf, B2B_CTX_KEY_CT_HDRS_PREFIX, B2B_CTX_KEY_CT_HDRS_PREFIX_LEN);
+	}
+	memcpy(buf + B2B_CTX_KEY_CT_HDRS_PREFIX_LEN, key->s, key->len);
+	ret.len = B2B_CTX_KEY_CT_HDRS_PREFIX_LEN + key->len;
+
+	return &ret;
+}
+
+int b2b_store_msg_contact_hdrs(b2bl_tuple_t *tuple, str *key, str *ct_hdrs)
+{
+	struct b2b_ctx_val **ctx_vals = NULL;
+	int locked, ret = -1;
+	str *ct_key;
+
+	if (get_ctx_vals(&ctx_vals, &tuple, &locked) < 0) {
+		LM_ERR("Failed to get context values list\n");
+		return -1;
+	}
+	ct_key = b2b_get_msg_contact_hdrs_key(key);
+	if (tuple && !locked)
+		B2BL_LOCK_GET_AUX(tuple->hash_index);
+
+	if (store_ctx_value(ctx_vals, ct_key, ct_hdrs) < 0) {
+		LM_ERR("Failed store contact headers params [%.*s] for [%.*s]\n",
+				ct_hdrs->len, ct_hdrs->s, key->len, key->s);
+		goto error;
+	}
+
+	ret = 0;
+error:
+	if (tuple && !locked)
+		B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
+
+	return ret;
+}
+
+str *b2b_get_msg_contact_hdrs(b2bl_tuple_t *tuple, str *key)
+{
+	struct b2b_ctx_val **ctx_vals = NULL;
+	static char buf[MAX_URI_SIZE];
+	str tmp, *ct_key, *ret = NULL;
+	static str rets;
+	int locked;
+
+	if (get_ctx_vals(&ctx_vals, &tuple, &locked) < 0) {
+		LM_ERR("Failed to get context values list\n");
+		return NULL;
+	}
+	ct_key = b2b_get_msg_contact_hdrs_key(key);
+	if (tuple && !locked)
+		B2BL_LOCK_GET_AUX(tuple->hash_index);
+
+	memset(&tmp, 0, sizeof tmp);
+	if (fetch_ctx_value(*ctx_vals, ct_key, &tmp) < 0) {
+		LM_DBG("Failed to get contact headers params for [%.*s]\n",
+				key->len, key->s);
+		goto error;
+	}
+	if (tmp.len > MAX_URI_SIZE) {
+		LM_DBG("contact headers params too long (%d)[%.*s] for [%.*s]\n",
+				tmp.len, tmp.len, tmp.s, key->len, key->s);
+		goto error;
+	}
+
+	memcpy(buf, tmp.s, tmp.len);
+	rets.s = buf;
+	rets.len = tmp.len;
+	ret = &rets;
+error:
+	pkg_free(tmp.s);
+	if (tuple && !locked)
+		B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
+
+	return ret;
+}
+
 int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	b2bl_entity_id_t *entity, b2bl_entity_id_t **entity_head, unsigned int flags)
 {
@@ -869,6 +999,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	int do_unlock = 0;
 	static str method_ack = {ACK, ACK_LEN};
 	str *ct = NULL;
+	str *ct_hdrs = NULL;
 
 	if (!tuple) {
 		B2BL_LOCK_GET(cur_route_ctx.hash_index);
@@ -1028,7 +1159,12 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		goto done;
 		break;
 
+	case METHOD_UPDATE:
 	case METHOD_INVITE:
+		if (msg && (ct_hdrs = b2b_extract_msg_contact_hdrs(msg)) != NULL) {
+			LM_DBG("passing contact parameters %.*s for %.*s\n",
+					ct_hdrs->len, ct_hdrs->s, entity->key.len, entity->key.s);
+		}
 		if(entity->state!=B2BL_ENT_CONFIRMED)
 		{
 			if(statuscode >= 300)
@@ -1060,6 +1196,8 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			else
 			if(statuscode >= 200)
 			{
+				if (ct_hdrs)
+					b2b_store_msg_contact_hdrs(tuple, &entity->key, ct_hdrs);
 				b2bl_print_tuple(tuple, L_DBG);
 				if (entity->prev || entity->next)
 				{
@@ -1395,6 +1533,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	b2b_rpl_data_t rpl_data;
 	int do_unlock = 0;
 	int maxfwd;
+	str *ct_hdrs;
 
 	if (!tuple) {
 		B2BL_LOCK_GET(cur_route_ctx.hash_index);
@@ -1427,6 +1566,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 
 	method = msg->first_line.u.request.method;
 	request_id = b2b_get_request_id(&method);
+	ct_hdrs = b2b_get_msg_contact_hdrs(tuple, &entity->key);
 
 	switch (request_id)
 	{
@@ -1462,6 +1602,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		req_data.extra_headers =
 			cur_route_ctx.extra_headers->len?cur_route_ctx.extra_headers:NULL;
 		req_data.body =cur_route_ctx.body->len?cur_route_ctx.body:NULL;
+		req_data.contact_hdr_params = ct_hdrs;
 		/* Decrement Max-Forwards value */
 		if ((maxfwd = b2b_msg_get_maxfwd(msg)) > (int)0)
 			req_data.maxfwd = maxfwd;
@@ -2483,6 +2624,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	struct sip_uri ct_uri;
 	struct msg_branch *branch;
 	int maxfwd;
+	str *ct_hdrs;
 
 	if (!str_match((_str("INVITE")), &msg->first_line.u.request.method)) {
 		LM_ERR("Scenario must be initialized on INVITE but got method: %.*s\n",
@@ -2608,6 +2750,12 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	/* Decrement Max-Forwards value */
 	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
 		ci.maxfwd = maxfwd;
+
+	if ((ct_hdrs = b2b_extract_msg_contact_hdrs(msg)) != NULL) {
+		ci.contact_hdr_params = ct_hdrs;
+		b2b_store_msg_contact_hdrs(tuple, server_id, ct_hdrs);
+	}
+
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
 			&b2bl_mod_name, b2bl_key, get_tracer(tuple), NULL, NULL);
@@ -2894,7 +3042,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	unsigned int hash_index;
 	str to_uri={NULL, 0}, from_uri, from_dname;
 	int eno = 0;
-	str *hdrs;
+	str *hdrs, *ct_hdrs;
 	struct b2bl_new_entity *new_entity;
 	struct b2bl_new_entity *e1, *e2;
 	int maxfwd;
@@ -3053,6 +3201,11 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 ) {
 		LM_ERR("cannot parse cseq number\n");
 		goto error;
+	}
+
+	if ((ct_hdrs = b2b_extract_msg_contact_hdrs(msg)) != NULL) {
+		ci.contact_hdr_params = ct_hdrs;
+		b2b_store_msg_contact_hdrs(tuple, server_id, ct_hdrs);
 	}
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
