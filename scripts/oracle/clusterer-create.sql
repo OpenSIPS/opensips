@@ -21,3 +21,21 @@ END clusterer_tr;
 /
 BEGIN map2users('clusterer'); END;
 /
+INSERT INTO version (table_name, table_version) values ('clusterer_bridge','1');
+CREATE TABLE clusterer_bridge (
+    id NUMBER(10) PRIMARY KEY,
+    cluster_a NUMBER(10),
+    cluster_b NUMBER(10),
+    send_shtag VARCHAR2(32),
+    dst_node_csv CLOB,
+    CONSTRAINT ORA_clusterer_bridge_idx  UNIQUE (cluster_a, cluster_b)
+);
+
+CREATE OR REPLACE TRIGGER clusterer_bridge_tr
+before insert on clusterer_bridge FOR EACH ROW
+BEGIN
+  auto_id(:NEW.id);
+END clusterer_bridge_tr;
+/
+BEGIN map2users('clusterer_bridge'); END;
+/

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('tcp_mgm','1');
+INSERT INTO version (table_name, table_version) values ('tcp_mgm','2');
 CREATE TABLE tcp_mgm (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     proto CHAR(8) DEFAULT 'any' NOT NULL,
