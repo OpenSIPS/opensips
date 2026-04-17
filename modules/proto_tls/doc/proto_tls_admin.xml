@@ -543,30 +543,6 @@ modparam("proto_tls", "tls_async_max_postponed_chunks", 16)
 </programlisting>
 		</example>
 	</section>
-	<section>
-		<title><varname>tls_async_handshake_timeout</varname> (integer)</title>
-		<para>
-			If <emphasis>tls_async</emphasis> is enabled, this specifies the
-			number of milliseconds that a TLS handshake should be tried in blocking
-			mode (optimization). If the handshake operation lasts more than this,
-			the write will go to async mode and will be passed to tls MAIN for
-			polling.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 10 ms.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>tls_async_handshake_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("proto_tls", "tls_async_handshake_timeout", 100)
-...
-</programlisting>
-		</example>
-	</section>
-
 	</section>
 
 
