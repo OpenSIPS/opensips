@@ -56,6 +56,7 @@ typedef struct b2bl_entity_id
 	int state;
 	int init_maxfwd;
 	unsigned int flags;
+	unsigned int entity_flags;
 	unsigned int last_rcv_code;
 	unsigned short no;
 	unsigned short sdp_type;
@@ -73,6 +74,7 @@ struct b2bl_new_entity {
 	str proxy;
 	str from_dname;
 	str adv_contact;
+	unsigned int entity_flags;
 	int avp_hdrs;
 	int avp_hdr_vals;
 };
@@ -120,6 +122,7 @@ typedef struct b2bl_tuple
 	b2bl_entity_id_t* bridge_entities[MAX_BRIDGE_ENT];
 	b2bl_entity_id_t* bridge_initiator;
 	int bridge_flags;
+	unsigned int init_flags;
 	int to_del;
 	str* extra_headers;
 	struct b2bl_tuple* next;
@@ -139,7 +142,6 @@ typedef struct b2bl_entry
 	b2bl_tuple_t* first;
 	gen_lock_t lock;
 	int locked_by;
-	int flags;
 }b2bl_entry_t;
 
 typedef b2bl_entry_t* b2bl_table_t;

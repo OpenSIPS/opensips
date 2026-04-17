@@ -589,6 +589,10 @@ modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2 seconds
 					<listitem><para>
 					<emphasis>preserve-to</emphasis> - Preserve To: header.
 					</para></listitem>
+					<listitem><para>
+					<emphasis>pass-legs-upstream</emphasis> - Reuse the downstream
+					reply leg index when forwarding pre-establishment replies upstream.
+					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
 			<listitem><para>
@@ -683,7 +687,7 @@ if(is_method("INVITE") &amp;&amp; !has_totag()) {
 	<section id="func_b2b_client_new" xreflabel="b2b_client_new()">
 		<title>
 		<function moreinfo="none">b2b_client_new(id, dest_uri, [proxy], [from_dname],
-			[adv_contact], [extra_hdrs], [extra_hdr_bodies])</function>
+			[adv_contact], [extra_hdrs], [extra_hdr_bodies], [flags])</function>
 		</title>
 		<para>
 			This function creates a new client entity (dialog where OpenSIPS acts as a UAC)
@@ -722,6 +726,16 @@ if(is_method("INVITE") &amp;&amp; !has_totag()) {
 				list of extra header bodies (corresponding to the headers given in the
 				<emphasis>extra_hdrs</emphasis> parameter) to be added for any request
 				sent to this entity.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>flags (string, optional)</emphasis> - CSV list of per-entity
+				flags. Supported values are:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>pass-legs-upstream</emphasis> - Pass the downstream leg
+					index upstream for this client entity only.
+					</para></listitem>
+				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -1540,4 +1554,3 @@ route[b2b_logic_request] {
 </section>
 
 </chapter>
-

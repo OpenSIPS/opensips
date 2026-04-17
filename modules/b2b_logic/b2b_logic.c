@@ -60,6 +60,7 @@ static int child_init(int rank);
 static int fixup_init_flags(void** param);
 static int fixup_reply_flags(void** param);
 static int fixup_free_init_flags(void** param);
+static int fixup_client_flags(void **param);
 static int fixup_bridge_flags(void** param);
 static int fixup_bridge_request_flags(void** param);
 static int fixup_init_id(void** param);
@@ -85,12 +86,46 @@ void b2bl_term_entities_timer(unsigned int ticks, void* param);
 static void b2bl_db_timer_update(unsigned int ticks, void* param);
 static int init_entities_term_timer(void);
 
+static inline void b2bl_get_entity_key(str *key)
+{
+	char *p;
+	int n = 0;
+
+	if (!key || !key->s)
+		return;
+
+	p = key->s;
+	do {
+		p = q_memchr(p, '.', key->s + key->len - p);
+		if (!p)
+			return;
+		if (++n == 5) {
+			key->len = p - key->s;
+			return;
+		}
+		p++;
+	} while (p < key->s + key->len);
+}
+
+static inline int b2bl_entity_key_cmp(enum b2b_entity_type type, str *l, str *r)
+{
+	str kl = *l, kr = *r;
+
+	if (type == B2B_SERVER) {
+		b2bl_get_entity_key(&kl);
+		b2bl_get_entity_key(&kr);
+	}
+
+	return str_strcmp(&kl, &kr);
+}
+
 int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
 	void *req_routeid, void *reply_routeid);
 int b2bl_server_new(struct sip_msg *msg, str *id, str *adv_contact,
 	pv_spec_t *hnames, pv_spec_t *hvals);
 int b2bl_client_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
-	 str *from_dname, str *adv_contact, pv_spec_t *hnames, pv_spec_t *hvals);
+	 str *from_dname, str *adv_contact, pv_spec_t *hnames, pv_spec_t *hvals,
+	 void *flags);
 int b2b_handle_reply(struct sip_msg* msg, unsigned int flags);
 int b2b_pass_request(struct sip_msg *msg);
 int b2b_delete_entity(struct sip_msg *msg);
@@ -224,7 +259,9 @@ static const cmd_export_t cmds[]=
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0},
-		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0}, {0,0,0}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_client_flags, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"b2b_handle_reply",(cmd_function)b2b_handle_reply, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_reply_flags, NULL}, {0,0,0}},
@@ -916,6 +953,7 @@ static str init_request_flags[] =
 {
 	str_init("transparent-auth"), /* B2BL_FLAG_TRANSPARENT_AUTH */
 	str_init("preserve-to"),      /* B2BL_FLAG_TRANSPARENT_TO */
+	str_init("pass-legs-upstream"), /* B2BL_FLAG_PASS_LEGS_UPSTREAM */
 	STR_NULL
 };
 static str init_request_kv_flags[] =
@@ -968,6 +1006,27 @@ static str reply_flags[] =
 	str_init("pass-3xx-contact"),	/* B2BL_RPL_FLAG_PASS_CONTACT */
 	STR_NULL
 };
+
+static int fixup_client_flags(void **param)
+{
+	unsigned int flags;
+
+	if (!*param)
+		return 0;
+
+	if (fixup_named_flags(param, init_request_flags, NULL, NULL) < 0) {
+		LM_ERR("Failed to parse client flags\n");
+		return -1;
+	}
+
+	flags = (unsigned int)(unsigned long)*param;
+	if (flags & ~B2BL_FLAG_PASS_LEGS_UPSTREAM) {
+		LM_ERR("Unsupported client flags: 0x%x\n", flags);
+		return -1;
+	}
+
+	return 0;
+}
 
 static int fixup_reply_flags(void** param)
 {
@@ -1793,12 +1852,14 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
 			/* identify the current entity by entity key */
 			entity = curr_entities[0];
-			if (entity && str_strcmp(&entity->key, &cur_route_ctx.entity_key))
+			if (entity && b2bl_entity_key_cmp(entity->type,
+				&entity->key, &cur_route_ctx.entity_key))
 				entity = NULL;
 
 			if (!entity) {
 				entity = curr_entities[1];
-				if (entity && str_strcmp(&entity->key, &cur_route_ctx.entity_key))
+				if (entity && b2bl_entity_key_cmp(entity->type,
+					&entity->key, &cur_route_ctx.entity_key))
 					entity = NULL;
 			}
 		} else {
@@ -2244,12 +2305,14 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 	if (entity < 0) {
 		if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
 			if (tuple->bridge_entities[0]) {
-				if (!str_strcmp(&cur_route_ctx.entity_key,
+				if (!b2bl_entity_key_cmp(tuple->bridge_entities[0]->type,
+						&cur_route_ctx.entity_key,
 						&tuple->bridge_entities[0]->key))
 					bentity = tuple->bridge_entities[(entity == -2?1:0)];
 			}
 			if (!bentity && tuple->bridge_entities[1]) {
-				if (!str_strcmp(&cur_route_ctx.entity_key,
+				if (!b2bl_entity_key_cmp(tuple->bridge_entities[1]->type,
+						&cur_route_ctx.entity_key,
 						&tuple->bridge_entities[1]->key))
 					bentity = tuple->bridge_entities[(entity == -2?0:1)];
 			}

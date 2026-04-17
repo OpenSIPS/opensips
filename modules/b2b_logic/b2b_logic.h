@@ -69,6 +69,7 @@ enum b2b_tuple_state {
 /* B2BL_FLAGS constants */
 #define		B2BL_FLAG_TRANSPARENT_AUTH	0x01
 #define		B2BL_FLAG_TRANSPARENT_TO	0x02
+#define		B2BL_FLAG_PASS_LEGS_UPSTREAM	0x04
 
 /* tuple bridge flags */
 #define B2BL_BR_FLAG_NOTIFY                        (1<<0)

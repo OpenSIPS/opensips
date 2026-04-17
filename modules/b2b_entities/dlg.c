@@ -61,6 +61,128 @@ struct b2b_callback *b2b_trig_cbs, *b2b_recv_cbs;
 
 static str storage_cap = str_init("b2b-storage-bin");
 
+dlg_leg_t* b2b_add_leg(b2b_dlg_t* dlg, struct sip_msg* msg, str* to_tag);
+
+static int b2b_get_leg_index(b2b_dlg_t *dlg, const str *to_tag)
+{
+	dlg_leg_t *leg;
+
+	if (!dlg || !to_tag || !to_tag->s)
+		return -1;
+
+	for (leg = dlg->legs; leg; leg = leg->next)
+		if (leg->tag.len == to_tag->len &&
+			strncmp(leg->tag.s, to_tag->s, to_tag->len) == 0)
+			return leg->id;
+
+	return -1;
+}
+
+void b2b_get_server_entity_key(str *entity_key)
+{
+	char *p;
+	int n = 0;
+
+	if (!entity_key || !entity_key->s)
+		return;
+
+	p = entity_key->s;
+	do {
+		p = q_memchr(p, '.', entity_key->s + entity_key->len - p);
+		if (!p)
+			return;
+		if (++n == 5) {
+			entity_key->len = p - entity_key->s;
+			return;
+		}
+		p++;
+	} while (p < entity_key->s + entity_key->len);
+}
+
+static int b2b_get_server_leg_idx(const str *to_tag)
+{
+	str leg_idx_s;
+	char *p;
+	int n = 0;
+	unsigned int leg_idx;
+
+	if (!to_tag || !to_tag->s)
+		return -1;
+
+	for (p = to_tag->s; p < to_tag->s + to_tag->len; p++) {
+		if (*p != '.')
+			continue;
+		if (++n != 5)
+			continue;
+		leg_idx_s.s = p + 1;
+		leg_idx_s.len = to_tag->s + to_tag->len - leg_idx_s.s;
+		if (str2int(&leg_idx_s, &leg_idx) < 0)
+			return -1;
+		return leg_idx;
+	}
+
+	return -1;
+}
+
+static int b2b_store_callee_tag(b2b_dlg_t *dlg, const str *to_tag)
+{
+	str new_tag = {0, 0};
+
+	if (!dlg || !to_tag || !to_tag->s || !to_tag->len)
+		return 0;
+
+	if (dlg->tag[CALLEE_LEG].s && dlg->tag[CALLEE_LEG].len == to_tag->len &&
+		memcmp(dlg->tag[CALLEE_LEG].s, to_tag->s, to_tag->len) == 0)
+		return 0;
+
+	if (shm_str_dup(&new_tag, to_tag) < 0) {
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
+
+	if (dlg->tag[CALLEE_LEG].s)
+		shm_free(dlg->tag[CALLEE_LEG].s);
+	dlg->tag[CALLEE_LEG] = new_tag;
+
+	return 0;
+}
+
+int b2b_get_reply_leg(enum b2b_entity_type et, str *b2b_key, str *to_tag)
+{
+	b2b_table table;
+	b2b_dlg_t *dlg;
+	str match_to_tag;
+	unsigned int hash_index, local_index;
+	int leg_id = -1;
+
+	if (!b2b_key || !b2b_key->s || !to_tag || !to_tag->s)
+		return -1;
+
+	if (b2b_parse_key(b2b_key, &hash_index, &local_index) < 0) {
+		LM_ERR("Failed to parse b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
+		return -1;
+	}
+
+	table = (et == B2B_SERVER) ? server_htable : client_htable;
+	if (table == server_htable) {
+		match_to_tag = *to_tag;
+		b2b_get_server_entity_key(&match_to_tag);
+		to_tag = &match_to_tag;
+	}
+
+	B2BE_LOCK_GET(table, hash_index);
+	for (dlg = table[hash_index].first; dlg; dlg = dlg->next) {
+		if (dlg->id != local_index)
+			continue;
+
+		leg_id = b2b_get_leg_index(dlg, to_tag);
+		if (leg_id >= 0)
+			break;
+	}
+	B2BE_LOCK_RELEASE(table, hash_index);
+
+	return leg_id;
+}
 
 
 /* This is the "transaction created" callback for the UAC transactions,
@@ -403,7 +525,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	}
 
 	size = sizeof(b2b_dlg_t) + dlg->callid.len+ dlg->from_uri.len+ dlg->to_uri.len+dlg->proxy.len+
-		dlg->tag[0].len + dlg->tag[1].len+ dlg->route_set[0].len+ dlg->route_set[1].len+
+		dlg->tag[0].len + dlg->tag[1].len +
+		dlg->route_set[0].len+ dlg->route_set[1].len+
 		dlg->contact[0].len+ dlg->contact[1].len+ dlg->ruri.len+
 		dlg->from_dname.len + dlg->to_dname.len + dlg->mod_name.len;
 
@@ -470,6 +593,10 @@ void b2b_delete_legs(dlg_leg_t** legs)
 	while(leg)
 	{
 		aux_leg = leg->next;
+		if (leg->prack_tran)
+			tmb.unref_cell(leg->prack_tran);
+		if (leg->prack_headers.s)
+			shm_free(leg->prack_headers.s);
 		shm_free(leg);
 		leg = aux_leg;
 	}
@@ -742,6 +869,8 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int b2b_cb_flags = 0;
 	unsigned int ua_flags = 0;
 	int ua_ev_type = -1;
+	dlg_leg_t *leg = NULL;
+	int leg_idx = -1;
 
 	storage.buffer.s = NULL;
 
@@ -1032,6 +1161,11 @@ search_dialog:
 		}
 	}
 
+	if (table == server_htable) {
+		b2b_key = to_tag;
+		b2b_get_server_entity_key(&b2b_key);
+	}
+
 	ctx = b2b_get_context();
 	if (!ctx) {
 		LM_ERR("Failed to get b2b context\n");
@@ -1110,12 +1244,7 @@ logic_notify:
 			callid = msg->callid->body;
 			from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
 			to_tag = get_to(msg)->tag_value;
-			if (table == server_htable)
-			{
-				if (method_value != METHOD_CANCEL)
-					b2b_key = to_tag;
-			}
-			else
+			if (table != server_htable)
 			{
 				b2b_key = msg->callid->body;
 			}
@@ -1133,6 +1262,11 @@ logic_notify:
 			LM_DBG("Record not found anymore\n");
 			B2BE_LOCK_RELEASE(table, hash_index);
 			return SCB_DROP_MSG;
+		}
+
+		if (table == server_htable) {
+			b2b_key = to_tag;
+			b2b_get_server_entity_key(&b2b_key);
 		}
 	}
 
@@ -1155,13 +1289,31 @@ logic_notify:
 			tm_tran = tmb.t_gett();
 			if (tm_tran != T_UNDEFINED)
 				b2b_run_tracer(dlg, msg, tm_tran);
-
-
 			if (method_value == METHOD_PRACK)
 			{
 				/* Because PRACK transactions are separate from whatever UAS is dealing with now (PRACKs can come before
 				   INVITE is answered and will have new CSeq), we need to make sure we store it for when we get response for it. */
-				dlg->prack_tran = tm_tran;
+				leg_idx = b2b_get_server_leg_idx(&to_tag);
+				if (leg_idx > 0) {
+					for (leg = dlg->legs; leg; leg = leg->next)
+						if (leg->id == leg_idx - 1)
+							break;
+				} else {
+					leg = dlg->legs;
+				}
+				if (!leg) {
+					leg = b2b_add_leg(dlg, msg, &to_tag);
+					if (!leg) {
+						LM_ERR("No leg found for PRACK [%.*s]\n", to_tag.len, to_tag.s);
+						B2BE_LOCK_RELEASE(table, hash_index);
+						return SCB_DROP_MSG;
+					}
+					if (leg_idx > 0)
+						leg->id = leg_idx - 1;
+				}
+				if (leg->prack_tran)
+					tmb.unref_cell(leg->prack_tran);
+				leg->prack_tran = tm_tran;
 				dlg->cseq[CALLEE_LEG]++;
 			}
 			else if(method_value == METHOD_UPDATE)
@@ -1503,8 +1655,6 @@ void destroy_b2b_htables(void)
 					shm_free(dlg->storage.s);
 				if(dlg->ack_sdp.s)
 					shm_free(dlg->ack_sdp.s);
-				if(dlg->prack_headers.s)
-					shm_free(dlg->prack_headers.s);
 				if (dlg->logic_key.s)
 					shm_free(dlg->logic_key.s);
 				if (dlg->free_param)
@@ -1528,8 +1678,6 @@ void destroy_b2b_htables(void)
 				b2b_delete_legs(&dlg->legs);
 				if(dlg->ack_sdp.s)
 					shm_free(dlg->ack_sdp.s);
-				if(dlg->prack_headers.s)
-					shm_free(dlg->prack_headers.s);
 				if (dlg->logic_key.s)
 					shm_free(dlg->logic_key.s);
 				if (dlg->free_param)
@@ -1721,6 +1869,7 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	int len;
 	char* p;
 	str ehdr;
+	str indexed_to_tag = {0, 0};
 	b2b_table table;
 	str totag, fromtag;
 	struct to_body *pto;
@@ -1729,6 +1878,8 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	int prev_state;
 	bin_packet_t storage;
 	int b2b_ev = -1;
+	char indexed_to_tag_buf[B2B_MAX_KEY_SIZE + 1 + INT2STR_MAX_LEN];
+	dlg_leg_t *leg = NULL;
 
 	if(et == B2B_SERVER)
 	{
@@ -1791,8 +1942,15 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	else
 		local_contact = dlg->contact[CALLEE_LEG];
 
-	if(sip_method == METHOD_PRACK) {
-		tm_tran = dlg->prack_tran;
+	if (sip_method == METHOD_PRACK) {
+		if (rpl_data->leg_idx > 0) {
+			for (leg = dlg->legs; leg; leg = leg->next)
+				if (leg->id == rpl_data->leg_idx - 1)
+					break;
+		} else {
+			leg = dlg->legs;
+		}
+		tm_tran = leg ? leg->prack_tran : NULL;
 	} else if (sip_method == METHOD_UPDATE)
 		tm_tran = dlg->update_tran;
 	else
@@ -1858,7 +2016,7 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 			if(sip_method == METHOD_UPDATE)
 				dlg->update_tran = NULL;
 			else if (sip_method == METHOD_PRACK)
-				dlg->prack_tran = NULL;
+				leg->prack_tran = NULL;
 			else
 				dlg->uas_tran = NULL;
 		}
@@ -1890,7 +2048,21 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	/* only for the server replies to the initial INVITE */
 	if(!pto || !pto->tag_value.s || !pto->tag_value.len)
 	{
-		to_tag = b2b_key;
+		if (rpl_data->leg_idx > 0 && dlg->state < B2B_ESTABLISHED) {
+			len = snprintf(indexed_to_tag_buf, sizeof(indexed_to_tag_buf),
+				"%.*s.%d", b2b_key->len, b2b_key->s,
+				rpl_data->leg_idx);
+			if (len <= 0 || len >= (int)sizeof(indexed_to_tag_buf)) {
+				LM_ERR("Failed to build indexed to-tag for [%.*s]\n",
+					b2b_key->len, b2b_key->s);
+				goto error;
+			}
+			indexed_to_tag.s = indexed_to_tag_buf;
+			indexed_to_tag.len = len;
+			to_tag = &indexed_to_tag;
+		} else {
+			to_tag = b2b_key;
+		}
 	}
 	else
 		to_tag = &pto->tag_value;
@@ -1969,6 +2141,8 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		LM_ERR("failed to send reply with tm\n");
 		goto error;
 	}
+	if (et == B2B_SERVER && b2b_store_callee_tag(dlg, to_tag) < 0)
+		LM_ERR("Failed to store callee tag\n");
 	if(code >= 200)
 	{
 		if (sip_method != METHOD_INVITE) {
@@ -2036,9 +2210,6 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 	if (b2be_db_mode == WRITE_BACK && dlg->storage.s)
 		shm_free(dlg->storage.s);
 
-	if(dlg->prack_tran)
-		tmb.unref_cell(dlg->prack_tran);
-
 	if(dlg->uac_tran)
 		tmb.unref_cell(dlg->uac_tran);
 
@@ -2073,9 +2244,6 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 
 	if(dlg->ack_sdp.s)
 		shm_free(dlg->ack_sdp.s);
-
-	if(dlg->prack_headers.s)
-		shm_free(dlg->prack_headers.s);
 
 	if (dlg->free_param)
 		dlg->free_param(dlg->param);
@@ -2214,12 +2382,12 @@ void free_tm_dlg(dlg_t* td)
 }
 
 int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et, str* b2b_key,
-	str* method, str* ehdr, unsigned int maxfwd, str* body, unsigned int no_cb)
+	str* method, str* ehdr, unsigned int maxfwd, str* body, unsigned int no_cb,
+	dlg_leg_t* leg)
 {
 	str* b2b_key_shm = NULL;
 	dlg_t* td = NULL;
 	transaction_cb* tm_cback;
-	build_dlg_f build_dlg;
 	int method_value = dlg->last_method;
 	int result;
 
@@ -2234,17 +2402,20 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et, str* b2b_key,
 
 	if(et == B2B_SERVER)
 	{
-		build_dlg = b2b_server_build_dlg;
 		tm_cback = b2b_server_tm_cback;
 	}
 	else
 	{
-		build_dlg = b2b_client_dlg;
+		if (!leg)
+			leg = dlg->legs;
 		tm_cback = b2b_client_tm_cback;
 	}
 
 	/* build structure with dialog information */
-	td = build_dlg(dlg, maxfwd);
+	if(et == B2B_SERVER)
+		td = b2b_server_build_dlg(dlg, maxfwd);
+	else
+		td = b2b_client_build_dlg(dlg, leg, maxfwd);
 	if(td == NULL)
 	{
 		LM_ERR("Failed to build tm dialog structure, was asked to send [%.*s]"
@@ -2395,7 +2566,7 @@ int b2b_send_indlg_auth_req(int statuscode, struct authenticate_body *auth,
 		new_hdr->s = NULL; new_hdr->len = 0;
 
 		b2b_send_indlg_req(dlg, etype, b2b_key, &t->method,
-				&extra_headers, 0, &body, 0);
+				&extra_headers, 0, &body, 0, NULL);
 		pkg_free(extra_headers.s);
 
 		return RETURN_GOTO_B2B_ROUTE;
@@ -2421,6 +2592,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 	int ret;
 	bin_packet_t storage;
 	int b2b_ev = -1;
+	dlg_leg_t* leg = NULL;
 
 	if(et == B2B_SERVER)
 	{
@@ -2464,6 +2636,18 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 	}
 
 	parse_method(method->s, method->s+method->len, &method_value);
+	if (req_data->leg_idx > 0) {
+		for (leg = dlg->legs; leg; leg = leg->next)
+			if (leg->id == req_data->leg_idx - 1)
+				break;
+		if (!leg) {
+			LM_ERR("No leg found for index [%d] in dlg[%p]->[%.*s]\n",
+				req_data->leg_idx, dlg, b2b_key->len, b2b_key->s);
+			goto error;
+		}
+	} else if (et == B2B_CLIENT) {
+		leg = dlg->legs;
+	}
 
 	if(dlg->state == B2B_TERMINATED)
 	{
@@ -2492,15 +2676,15 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 		goto error;
 	}
 
-
-	if (method_value == METHOD_PRACK && dlg->prack_headers.s)
-	{
-
-	    memmove(ehdr.s + dlg->prack_headers.len, ehdr.s, ehdr.len);
-	    memcpy(ehdr.s, dlg->prack_headers.s, dlg->prack_headers.len);
-	    ehdr.len = ehdr.len + dlg->prack_headers.len;
-
-	    LM_DBG("PRACK ehdr %d[%.*s]\n", ehdr.len ,ehdr.len, ehdr.s);
+	if (method_value == METHOD_PRACK && leg && leg->prack_headers.s) {
+		if (ehdr.len + leg->prack_headers.len > BUF_LEN) {
+			LM_ERR("Buffer too small, can not add PRACK headers\n");
+			goto error;
+		}
+		memmove(ehdr.s + leg->prack_headers.len, ehdr.s, ehdr.len);
+		memcpy(ehdr.s, leg->prack_headers.s, leg->prack_headers.len);
+		ehdr.len += leg->prack_headers.len;
+		LM_DBG("PRACK ehdr %d[%.*s]\n", ehdr.len, ehdr.len, ehdr.s);
 	}
 
 	if(dlg->state < B2B_CONFIRMED)
@@ -2526,7 +2710,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 		/* send it ACK so that you can send the new request */
 		dlg->last_method = METHOD_ACK;
 		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0,
-			req_data->body, req_data->no_cb);
+			req_data->body, req_data->no_cb, leg);
 		dlg->state= B2B_ESTABLISHED;
 	}
 
@@ -2565,17 +2749,18 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 		else
 		{
 			dlg->last_method = METHOD_ACK;
-			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, 0, req_data->no_cb);
+			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, 0,
+				req_data->no_cb, leg);
 			dlg->last_method = METHOD_BYE;
 			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, 0, req_data->body,
-				req_data->no_cb);
+				req_data->no_cb, leg);
 			method_value = METHOD_BYE;
 		}
 	}
 	else
 	{
 		ret = b2b_send_indlg_req(dlg, et, b2b_key, method, &ehdr,
-			req_data->maxfwd, req_data->body, req_data->no_cb);
+			req_data->maxfwd, req_data->body, req_data->no_cb, leg);
 	}
 
 	if(ret < 0)
@@ -3634,13 +3819,13 @@ dummy_reply:
 					if (passthru_prack)
 					{
 						/* Store the RAck header for when a response PRACK comes */
-						if (dlg->prack_headers.s) {
-							shm_free(dlg->prack_headers.s);
+						if (leg->prack_headers.s) {
+							shm_free(leg->prack_headers.s);
 						}
-						dlg->prack_headers.s = shm_malloc(extra_headers.len);
-						memcpy(dlg->prack_headers.s, extra_headers.s, extra_headers.len);
-						dlg->prack_headers.len = extra_headers.len;
-						LM_ERR("dlg->prack_headers %d[%.*s]\n", dlg->prack_headers.len ,dlg->prack_headers.len, dlg->prack_headers.s);
+						leg->prack_headers.s = shm_malloc(extra_headers.len);
+						memcpy(leg->prack_headers.s, extra_headers.s, extra_headers.len);
+						leg->prack_headers.len = extra_headers.len;
+						LM_DBG("leg->prack_headers %d[%.*s]\n", leg->prack_headers.len ,leg->prack_headers.len, leg->prack_headers.s);
 					}
 					else
 					{

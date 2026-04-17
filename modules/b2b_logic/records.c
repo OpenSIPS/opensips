@@ -59,6 +59,38 @@ struct _b2bl_new_tuple_cb {
 	struct _b2bl_new_tuple_cb *next;
 } *b2bl_new_tuple_list;
 
+static inline void b2bl_get_entity_key(str *key)
+{
+	char *p;
+	int n = 0;
+
+	if (!key || !key->s)
+		return;
+
+	p = key->s;
+	do {
+		p = q_memchr(p, '.', key->s + key->len - p);
+		if (!p)
+			return;
+		if (++n == 5) {
+			key->len = p - key->s;
+			return;
+		}
+		p++;
+	} while (p < key->s + key->len);
+}
+
+static inline int b2bl_entity_key_match(str *entity_key, str *key, int src)
+{
+	str match_key = *key;
+
+	if (src == B2B_SERVER)
+		b2bl_get_entity_key(&match_key);
+
+	return entity_key->len == match_key.len &&
+		strncmp(entity_key->s, match_key.s, match_key.len) == 0;
+}
+
 int b2bl_register_new_tuple_cb(b2bl_cback_f f, void *param)
 {
 	struct _b2bl_new_tuple_cb *newcb = pkg_malloc(sizeof *newcb);
@@ -245,6 +277,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 	}
 
 	tuple->state = B2B_INIT_BRIDGING_STATE;
+	tuple->init_flags = init_params->flags;
 
 	if (repl_flag != TUPLE_REPL_RECV) {
 		B2BL_LOCK_GET(hash_index);
@@ -381,8 +414,7 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src,
 			while (e)
 			{
 				LM_DBG("Key [%.*s]\n",e->key.len,e->key.s);
-				if (e->key.len == key->len &&
-					strncmp(e->key.s, key->s, key->len) == 0)
+				if (b2bl_entity_key_match(&e->key, key, src))
 					return e;
 				e = e->next;
 			}
@@ -395,8 +427,7 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src,
 			while (e)
 			{
 				LM_DBG("Key [%.*s]\n",e->key.len,e->key.s);
-				if (e->key.len == key->len &&
-					strncmp(e->key.s, key->s, key->len) == 0)
+				if (b2bl_entity_key_match(&e->key, key, src))
 					return e;
 				e = e->next;
 			}
