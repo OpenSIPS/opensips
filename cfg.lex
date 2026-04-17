@@ -272,7 +272,6 @@ TCP_KEEPCOUNT           "tcp_keepcount"
 TCP_KEEPIDLE            "tcp_keepidle"
 TCP_KEEPINTERVAL        "tcp_keepinterval"
 TCP_MAX_MSG_TIME		"tcp_max_msg_time"
-TCP_PARALLEL_READ_ON_WORKERS "tcp_parallel_read_on_workers"
 TCP_THREADS             "tcp_threads"
 ADVERTISED_ADDRESS	"advertised_address"
 ADVERTISED_PORT		"advertised_port"
@@ -509,7 +508,6 @@ SPACE		[ ]
 <INITIAL>{TCP_KEEPIDLE}        { count(); yylval.strval=yytext; return TCP_KEEPIDLE; }
 <INITIAL>{TCP_KEEPINTERVAL}    { count(); yylval.strval=yytext; return TCP_KEEPINTERVAL; }
 <INITIAL>{TCP_MAX_MSG_TIME}    { count(); yylval.strval=yytext; return TCP_MAX_MSG_TIME; }
-<INITIAL>{TCP_PARALLEL_READ_ON_WORKERS}  { count(); yylval.strval=yytext; return TCP_PARALLEL_READ_ON_WORKERS; }
 <INITIAL>{TCP_THREADS}  { count(); yylval.strval=yytext; return TCP_THREADS; }
 <INITIAL>{SERVER_SIGNATURE}	{ count(); yylval.strval=yytext; return SERVER_SIGNATURE; }
 <INITIAL>{SERVER_HEADER}	{ count(); yylval.strval=yytext; return SERVER_HEADER; }

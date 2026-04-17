@@ -2,6 +2,7 @@ table_name(string) table_version(int)
 acc:7
 active_watchers:12
 address:5
+aliases:1013
 b2b_entities:2
 b2b_logic:5
 b2b_sca:1
@@ -13,6 +14,7 @@ cc_calls:3
 cc_cdrs:2
 cc_flows:2
 closeddial:1
+clusterer:4
 config:1
 cpl:2
 dbaliases:2

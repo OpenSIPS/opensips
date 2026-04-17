@@ -108,11 +108,6 @@ static int tcp_crlf_pingpong = 1;
 /* 0: do not drop single CRLF messages */
 static int tcp_crlf_drop = 0;
 
-/* if the handling/processing (NOT READING) of the SIP messages should
- * be done in parallel (after one SIP msg is read, while processing it,
- * another READ op may be performed) */
-static int tcp_parallel_handling = 0;
-
 static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tcp_init, {{0, 0, 0}}, 0},
 	{0,0,{{0,0,0}},0}
@@ -130,8 +125,6 @@ static const param_export_t params[] = {
 											&tcp_async_max_postponed_chunks },
 	{ "tcp_async_local_write_timeout",   INT_PARAM,
 											&tcp_async_local_write_timeout  },
-	{ "tcp_parallel_handling",           INT_PARAM,
-											&tcp_parallel_handling  },
 	{ "trace_destination",               STR_PARAM, &trace_destination_name.s},
 	{ "trace_on",						 INT_PARAM, &trace_is_on_tmp        },
 	{ "trace_filter_route",				 STR_PARAM, &trace_filter_route     },
