@@ -1062,7 +1062,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			tuple->bridge_initiator != 0)
 		{
 			if (tuple->bridge_flags & B2BL_BR_FLAG_NOTIFY)
-				send_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg);
+				send_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg, tuple->refer_id);
 			if(statuscode == 200 || !(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE))
 			{
 				if (!(tuple->bridge_flags & B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR)) {
@@ -3714,7 +3714,7 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 						LM_DBG("Found entity\n");
 						tuple->bridge_flags = B2BL_BR_FLAG_NOTIFY | B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR;
 						tuple->bridge_initiator = cur_tuple->bridge_entities[remote_tuple_party];
-						send_bridge_notify(cur_tuple->bridge_entities[remote_tuple_party], remote_tuple_hash_index, NULL);
+						send_bridge_notify(cur_tuple->bridge_entities[remote_tuple_party], remote_tuple_hash_index, NULL, tuple->refer_id);
 					}
 				}
 				B2BL_LOCK_RELEASE(remote_tuple_hash_index);
@@ -3733,7 +3733,7 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 					LM_DBG("Found entity\n");
 					tuple->bridge_flags = B2BL_BR_FLAG_NOTIFY | B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR;
 					tuple->bridge_initiator = entity;
-					send_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
+					send_bridge_notify(entity, cur_route_ctx.hash_index, NULL, tuple->refer_id);
 				}
 			}
 			B2BL_LOCK_RELEASE(cur_route_ctx.hash_index);
