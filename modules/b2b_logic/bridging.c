@@ -1334,6 +1334,7 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 	if (set_maxfwd)
 		ci.maxfwd = peer_ent->init_maxfwd;
 	ci.extra_headers = tuple->extra_headers;
+	ci.contact_hdr_params = b2b_get_msg_contact_hdrs(tuple, &peer_ent->key);
 	if (tuple->bridge_flags & B2BL_BR_FLAG_PROPAGATE_AVPS)
 		ci.avps = clone_avp_list( *get_avp_list() );
 
@@ -2392,6 +2393,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(bridging_entity);
+	req_data.contact_hdr_params = ct_hdrs;
 	if (bridging_entity->state != B2BL_ENT_CONFIRMED) {
 		req_data.method =&method_update;
 	}
