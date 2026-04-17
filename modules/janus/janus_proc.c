@@ -205,6 +205,13 @@ void janus_reconnects(void)
 
 		close(sock->fd);
 		sock->fd = -1;
+		/* Clean up any pending fragment state from previous connection */
+		if (sock->con_req.frag_buf) {
+			pkg_free(sock->con_req.frag_buf);
+			sock->con_req.frag_buf = NULL;
+			sock->con_req.frag_len = 0;
+			sock->con_req.frag_size = 0;
+		}
 		sock->state = S_CONN_OK;
 
 		if (janus_reconnect(sock) < 0) {
