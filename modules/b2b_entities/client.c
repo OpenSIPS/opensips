@@ -170,7 +170,7 @@ str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 
 	if(b2breq_complete_ehdr(ci->extra_headers, ci->client_headers,
-			&ehdr, ci->body, &ci->local_contact)< 0)
+			&ehdr, ci->body, &ci->local_contact, ci->contact_hdr_params)< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
 		goto error;

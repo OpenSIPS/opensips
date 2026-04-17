@@ -240,6 +240,14 @@ void b2bl_db_delete(b2bl_tuple_t* tuple);
 
 int store_ctx_value(struct b2b_ctx_val **vals, str *name, str *new_val);
 
+int fetch_ctx_value(struct b2b_ctx_val *vals, const str *name, str *out_val);
+
+int get_ctx_vals(struct b2b_ctx_val ***vals, b2bl_tuple_t **tuple, int *locked);
+
+str *b2b_extract_msg_contact_hdrs(struct sip_msg *msg);
+str *b2b_get_msg_contact_hdrs(b2bl_tuple_t *tuple, str *key);
+int b2b_store_msg_contact_hdrs(b2bl_tuple_t *tuple, str *key, str *ct_hdrs);
+
 int b2bl_register_set_tracer_cb( b2bl_set_tracer_f f, unsigned int msg_flag_filter );
 
 int b2bl_register_new_tuple_cb(b2bl_cback_f f, void *param);

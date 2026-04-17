@@ -32,6 +32,7 @@
 #include "../../cachedb/cachedb.h"
 #include "../../timer.h"
 #include "../b2b_entities/b2be_load.h"
+#include "../../lib/csv.h"
 
 enum b2b_tuple_state {
 	/* initial bridge state */
@@ -131,6 +132,7 @@ enum pv_entity_field {
 };
 
 extern str custom_headers_lst[HDR_LST_LEN];
+extern csv_record *custom_ct_hdrs_params_list;
 extern regex_t* custom_headers_re;
 extern int custom_headers_lst_len;
 extern int contact_user;
