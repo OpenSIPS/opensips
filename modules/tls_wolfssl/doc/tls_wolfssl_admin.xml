@@ -97,7 +97,7 @@
 				<title>Set <varname>try_use_ktls</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_wolfssl", "try_use_ktls", "0")
+modparam("tls_wolfssl", "try_use_ktls", 1)
 ...
 				</programlisting>
 			</example>

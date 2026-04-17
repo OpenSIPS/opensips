@@ -200,7 +200,7 @@ static int _wolfssl_enable_ktls_tx(struct tcp_connection *c, WOLFSSL *ssl)
 	if (!wolfssl_try_use_ktls || !w || w->ktls_tx)
 		return 0;
 
-	fd = (c->fd >= 0) ? c->fd : c->s;
+	fd = c->fd;
 	if (fd < 0) {
 		LM_WARN("cannot enable KTLS, invalid socket\n");
 		return -1;
@@ -463,7 +463,7 @@ static int _wolfssl_enable_ktls_rx(struct tcp_connection *c, WOLFSSL *ssl)
 	if (!wolfssl_try_use_ktls || !w || w->ktls_rx)
 		return 0;
 
-	fd = (c->fd >= 0) ? c->fd : c->s;
+	fd = c->fd;
 	if (fd < 0) {
 		LM_WARN("cannot enable RX KTLS, invalid socket\n");
 		return -1;
@@ -1224,7 +1224,7 @@ static int _wolfssl_read(struct tcp_connection *c, void *buf, size_t len)
 	struct _WOLFSSL *w = (struct _WOLFSSL *)c->extra_data;
 
 	if (w && w->ktls_rx) {
-		int fd = (c->fd >= 0) ? c->fd : c->s;
+		int fd = c->fd;
 
 		if (fd < 0) {
 			LM_ERR("KTLS RX enabled but invalid socket\n");
