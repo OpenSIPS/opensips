@@ -39,7 +39,7 @@ usrloc Module
               1.5.17. sip_instance_column (string)
               1.5.18. kv_store_column (string)
               1.5.19. attr_column (string)
-              1.5.20. use_domain (integer)
+              1.5.20. use_domain (boolean)
               1.5.21. desc_time_order (integer)
               1.5.22. timer_interval (integer)
               1.5.23. db_url (string)
@@ -601,17 +601,17 @@ modparam("usrloc", "kv_store_column", "json_data")
 modparam("usrloc", "attr_column", "attributes")
 ...
 
-1.5.20. use_domain (integer)
+1.5.20. use_domain (boolean)
 
-   If the domain part of the user should be also saved and used
-   for identifing the user (along with the username part). Useful
-   in multi domain scenarios. Non 0 value means true.
+   Denotes whether the domain part of the user should also be
+   saved and used for identifying the user, along with the
+   username part. Useful in multi-domain scenarios.
 
-   Default value is “0 (false)”.
+   Default value is true (enabled).
 
    Example 1.20. Set use_domain parameter
 ...
-modparam("usrloc", "use_domain", 1)
+modparam("usrloc", "use_domain", true)
 ...
 
 1.5.21. desc_time_order (integer)
@@ -1694,7 +1694,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 416 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 359 216 9397 3830
+   2. Liviu Chircu (@liviuchircu) 361 217 9404 3837
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 246 150 4232 3624
    4. Vlad Patrascu (@rvlad-patrascu) 43 25 794 661
    5. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
@@ -1739,8 +1739,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2011 - Mar 2026
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2026
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2026
+   2.  Razvan Crainea (@razvancrainea)     Jul 2011 - Mar 2026
    3.  Norman Brandinger (@NormB)          Aug 2006 - May 2025
    4.  Gang Zhuo                           Nov 2024 - Nov 2024
    5.  Alexandra Titoc                     Sep 2024 - Sep 2024
@@ -1773,8 +1773,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Norman
-   Brandinger (@NormB), Liviu Chircu (@liviuchircu), Carsten Bock,
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Norman Brandinger (@NormB), Carsten Bock,
    Zero King (@l2dy), Alexey Vasilyev (@vasilevalex), Vlad
    Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
    Bogdan-Andrei Iancu (@bogdan-iancu), Ionut Ionita

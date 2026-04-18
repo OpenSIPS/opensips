@@ -265,11 +265,11 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 45 7 4390 5
-   2. Razvan Crainea (@razvancrainea) 4 2 1 3
-   3. rdondeti 3 1 20 4
-   4. Liviu Chircu (@liviuchircu) 3 1 4 12
-   5. Nick Altmann (@nikbyte) 3 1 1 1
-   6. Norman Brandinger (@NormB) 2 1 20 0
+   2. Norman Brandinger (@NormB) 6 2 280 13
+   3. Razvan Crainea (@razvancrainea) 4 2 1 3
+   4. rdondeti 3 1 20 4
+   5. Liviu Chircu (@liviuchircu) 3 1 4 12
+   6. Nick Altmann (@nikbyte) 3 1 1 1
    7. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 7 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -292,9 +292,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Apr 2026 - Apr 2026
-   2. rdondeti                            Mar 2026 - Mar 2026
-   3. Norman Brandinger (@NormB)          Mar 2026 - Mar 2026
+   1. Norman Brandinger (@NormB)          Mar 2026 - Apr 2026
+   2. Liviu Chircu (@liviuchircu)         Apr 2026 - Apr 2026
+   3. rdondeti                            Mar 2026 - Mar 2026
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2026 - Mar 2026
    5. Vlad Paiu (@vladpaiu)               Dec 2024 - May 2025
    6. Razvan Crainea (@razvancrainea)     Mar 2025 - Mar 2025

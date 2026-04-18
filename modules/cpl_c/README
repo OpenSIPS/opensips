@@ -27,7 +27,7 @@ cpl_c Module
               1.3.12. realm_prefix (string)
               1.3.13. lookup_domain (string)
               1.3.14. lookup_append_branches (int)
-              1.3.15. use_domain (integer)
+              1.3.15. use_domain (boolean)
 
         1.4. Exported Functions
 
@@ -302,16 +302,16 @@ modparam("cpl_c","lookup_domain","location")
 modparam("cpl_c","lookup_append_branches",1)
 ...
 
-1.3.15. use_domain (integer)
+1.3.15. use_domain (boolean)
 
    Indicates if the domain part of the URI should be used in user
    identification (otherwise only username part will be used).
 
-   Default value is “0 (disabled)”.
+   Default value is true (enabled).
 
    Example 1.15. Set use_domain parameter
 ...
-modparam("cpl_c","use_domain",1)
+modparam("cpl_c", "use_domain", true)
 ...
 
 1.4. Exported Functions
@@ -504,8 +504,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 412 172 15560 6552
    2. Razvan Crainea (@razvancrainea) 28 21 297 242
-   3. Daniel-Constantin Mierla (@miconda) 18 15 80 73
-   4. Liviu Chircu (@liviuchircu) 18 15 72 119
+   3. Liviu Chircu (@liviuchircu) 20 16 76 123
+   4. Daniel-Constantin Mierla (@miconda) 18 15 80 73
    5. Jan Janak (@janakj) 18 10 463 219
    6. Henning Westerholt (@henningw) 16 12 108 132
    7. Vlad Patrascu (@rvlad-patrascu) 11 8 117 111
@@ -541,12 +541,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Mar 2026
-   2.  Ken Rice                            Sep 2025 - Sep 2025
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - May 2025
-   4.  Maksym Sobolyev (@sobomax)          Feb 2017 - Apr 2025
-   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
+   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Mar 2026
+   3.  Ken Rice                            Sep 2025 - Sep 2025
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - May 2025
+   5.  Maksym Sobolyev (@sobomax)          Feb 2017 - Apr 2025
+   6.  Alexandra Titoc                     Sep 2024 - Sep 2024
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
@@ -567,10 +567,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Nick Altmann (@nikbyte), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Jesus Rodrigues, Elena-Ramona Modroiu, Jan Janak
    (@janakj).

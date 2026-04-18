@@ -37,7 +37,7 @@ carrierroute
               1.3.22. config_source (string)
               1.3.23. config_file (string)
               1.3.24. default_tree (string)
-              1.3.25. use_domain (int)
+              1.3.25. use_domain (boolean)
               1.3.26. fallback_default (int)
               1.3.27. db_failure_table (string)
               1.3.28. failure_id_column (string)
@@ -533,16 +533,16 @@ modparam("carrierroute", "config_file", "/etc/opensips/carrierroute.conf
 modparam("carrierroute", "default_tree", "default")
 ...
 
-1.3.25. use_domain (int)
+1.3.25. use_domain (boolean)
 
    When using tree lookup per user, this parameter specifies
    whether to use the domain part for user matching or not.
 
-   Default value is “0”.
+   Default value is true.
 
    Example 1.25. Set use_domain parameter
 ...
-modparam("carrierroute", "use_domain", 0)
+modparam("carrierroute", "use_domain", true)
 ...
 
 1.3.26. fallback_default (int)
@@ -1244,7 +1244,7 @@ Chapter 2. Contributors
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 131 154
    5. Razvan Crainea (@razvancrainea) 28 23 177 148
    6. Vlad Patrascu (@rvlad-patrascu) 22 5 384 764
-   7. Liviu Chircu (@liviuchircu) 19 13 134 210
+   7. Liviu Chircu (@liviuchircu) 20 14 138 214
    8. Daniel-Constantin Mierla (@miconda) 9 7 34 30
    9. Alexandra Titoc 5 3 13 2
    10. Maksym Sobolyev (@sobomax) 4 2 5 5
@@ -1275,10 +1275,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2026
-   2.  Ken Rice                            Sep 2025 - Sep 2025
-   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2026
+   3.  Ken Rice                            Sep 2025 - Sep 2025
+   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
    5.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
    6.  ihsinme                             Feb 2022 - Feb 2022
    7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
@@ -1299,8 +1299,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Julián Moreno
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Julián Moreno
    Patiño, Bogdan-Andrei Iancu (@bogdan-iancu), Henning Westerholt
    (@henningw), Iouri Kharon, Hardy Kahl, Daniel-Constantin Mierla
    (@miconda), Edson Gellert Schubert, Carsten Bock, Jonas Appel.

@@ -20,20 +20,21 @@ B2B_LOGIC
               1.4.4. cleanup_period (int)
               1.4.5. custom_headers_regexp (str)
               1.4.6. custom_headers (str)
-              1.4.7. db_url (str)
-              1.4.8. cachedb_url (str)
-              1.4.9. cachedb_key_prefix (string)
-              1.4.10. update_period (int)
-              1.4.11. max_duration (int)
-              1.4.12. contact_user (int)
-              1.4.13. b2bl_from_spec_param (string)
-              1.4.14. server_address (str)
-              1.4.15. init_callid_hdr (str)
-              1.4.16. db_mode (int)
-              1.4.17. db_table (str)
-              1.4.18. b2bl_th_init_timeout (int)
-              1.4.19. b2bl_early_update (int)
-              1.4.20. old_entity_term_delay (int)
+              1.4.7. custom_contact_header_params (str)
+              1.4.8. db_url (str)
+              1.4.9. cachedb_url (str)
+              1.4.10. cachedb_key_prefix (string)
+              1.4.11. update_period (int)
+              1.4.12. max_duration (int)
+              1.4.13. contact_user (int)
+              1.4.14. b2bl_from_spec_param (string)
+              1.4.15. server_address (str)
+              1.4.16. init_callid_hdr (str)
+              1.4.17. db_mode (int)
+              1.4.18. db_table (str)
+              1.4.19. b2bl_th_init_timeout (int)
+              1.4.20. b2bl_early_update (int)
+              1.4.21. old_entity_term_delay (int)
 
         1.5. Exported Functions
 
@@ -45,7 +46,7 @@ B2B_LOGIC
 
               1.5.3. b2b_client_new(id, dest_uri, [proxy],
                       [from_dname], [adv_contact], [extra_hdrs],
-                      [extra_hdr_bodies])
+                      [extra_hdr_bodies], [flags])
 
               1.5.4. b2b_bridge(entity1, entity2, [provmedia_uri],
                       [flags])
@@ -117,38 +118,39 @@ B2B_LOGIC
    1.4. Set cleanup_period parameter
    1.5. Set parameter
    1.6. Set parameter
-   1.7. Set db_url parameter
-   1.8. Set cachedb_url parameter
-   1.9. Set cachedb_key_prefix parameter
-   1.10. Set update_period parameter
-   1.11. Set max_duration parameter
-   1.12. Set contact_user parameter
-   1.13. Set b2bl_from_spec_param parameter
-   1.14. Set server_address parameter
-   1.15. Set server_address parameter using Pseudo-Variables
-   1.16. Set init_callid_hdr parameter
-   1.17. Set db_mode parameter
-   1.18. Set db_table parameter
-   1.19. Set b2bl_th_init_timeout parameter
-   1.20. Set b2bl_early_update parameter
-   1.21. Set old_entity_term_delay parameter
-   1.22. b2b_init_request usage
-   1.23. b2b_server_new usage
-   1.24. b2b_client_new usage
-   1.25. b2b_bridge usage
+   1.7. Set custom_contact_header_params parameter
+   1.8. Set db_url parameter
+   1.9. Set cachedb_url parameter
+   1.10. Set cachedb_key_prefix parameter
+   1.11. Set update_period parameter
+   1.12. Set max_duration parameter
+   1.13. Set contact_user parameter
+   1.14. Set b2bl_from_spec_param parameter
+   1.15. Set server_address parameter
+   1.16. Set server_address parameter using Pseudo-Variables
+   1.17. Set init_callid_hdr parameter
+   1.18. Set db_mode parameter
+   1.19. Set db_table parameter
+   1.20. Set b2bl_th_init_timeout parameter
+   1.21. Set b2bl_early_update parameter
+   1.22. Set old_entity_term_delay parameter
+   1.23. b2b_init_request usage
+   1.24. b2b_server_new usage
+   1.25. b2b_client_new usage
    1.26. b2b_bridge usage
-   1.27. b2b_pass_request usage
-   1.28. b2b_handle_reply usage
-   1.29. b2b_send_reply usage
-   1.30. b2b_delete_entity usage
-   1.31. b2b_end_dlg_leg usage
-   1.32. b2b_bridge_request usage
-   1.33. b2b_trigger_scenario usage
-   1.34. $b2b_logic.key usage
-   1.35. $b2b_logic.entity usage
-   1.36. $b2b_logic.ctx usage
-   1.37. $b2b_logic.scenario usage
-   1.38. $b2b_logic.peer usage
+   1.27. b2b_bridge usage
+   1.28. b2b_pass_request usage
+   1.29. b2b_handle_reply usage
+   1.30. b2b_send_reply usage
+   1.31. b2b_delete_entity usage
+   1.32. b2b_end_dlg_leg usage
+   1.33. b2b_bridge_request usage
+   1.34. b2b_trigger_scenario usage
+   1.35. $b2b_logic.key usage
+   1.36. $b2b_logic.entity usage
+   1.37. $b2b_logic.ctx usage
+   1.38. $b2b_logic.scenario usage
+   1.39. $b2b_logic.peer usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -320,49 +322,66 @@ modparam("b2b_logic", "custom_headers_regexp", "/^x-/i")
 modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 ...
 
-1.4.7. db_url (str)
+1.4.7. custom_contact_header_params (str)
+
+   A list of Contact header parameters, delimited by ';', that
+   should be passed from the dialog of one side to the other side.
+
+   Throughout a dialog, the value of each parameter is being
+   attached to the entity - this means that when an entity is
+   being bridged, the corresponding entity's headers params are
+   being sent towards the new entity.
+
+   Default value is “” (no parameter).
+
+   Example 1.7. Set custom_contact_header_params parameter
+...
+modparam("b2b_logic", "custom_contact_header_params", "audio;video")
+...
+
+1.4.8. db_url (str)
 
    Database URL.
 
-   Example 1.7. Set db_url parameter
+   Example 1.8. Set db_url parameter
 ...
 modparam("b2b_logic", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/o
 pensips")
 ...
 
-1.4.8. cachedb_url (str)
+1.4.9. cachedb_url (str)
 
    URL of a NoSQL database to be used. Only Redis is supported at
    the moment.
 
-   Example 1.8. Set cachedb_url parameter
+   Example 1.9. Set cachedb_url parameter
 ...
 modparam("b2b_logic", "cachedb_url", "redis://localhost:6379/")
 ...
 
-1.4.9. cachedb_key_prefix (string)
+1.4.10. cachedb_key_prefix (string)
 
    Prefix to use for every key set in the NoSQL database.
 
    Default value is “b2bl$”.
 
-   Example 1.9. Set cachedb_key_prefix parameter
+   Example 1.10. Set cachedb_key_prefix parameter
 ...
 modparam("b2b_logic", "cachedb_key_prefix", "b2b")
 ...
 
-1.4.10. update_period (int)
+1.4.11. update_period (int)
 
    The time interval at which to update the info in database.
 
    Default value is “100”.
 
-   Example 1.10. Set update_period parameter
+   Example 1.11. Set update_period parameter
 ...
 modparam("b2b_logic", "update_period", 60)
 ...
 
-1.4.11. max_duration (int)
+1.4.12. max_duration (int)
 
    The maximum duration of a call.
 
@@ -370,30 +389,30 @@ modparam("b2b_logic", "update_period", 60)
 
    If you set it to 0, there will be no limitation.
 
-   Example 1.11. Set max_duration parameter
+   Example 1.12. Set max_duration parameter
 ...
 modparam("b2b_logic", "max_duration", 7200)
 ...
 
-1.4.12. contact_user (int)
+1.4.13. contact_user (int)
 
    If set to 1, adds user from From: header to generated Contact:
 
    Default value is “0”.
 
-   Example 1.12. Set contact_user parameter
+   Example 1.13. Set contact_user parameter
 ...
 modparam("b2b_logic", "contact_user", 1)
 ...
 
-1.4.13. b2bl_from_spec_param (string)
+1.4.14. b2bl_from_spec_param (string)
 
    The name of the pseudo variable for storing the new “From”
    header. The PV must be set before calling “b2b_init_request”.
 
    Default value is “NULL” (disabled).
 
-   Example 1.13. Set b2bl_from_spec_param parameter
+   Example 1.14. Set b2bl_from_spec_param parameter
 ...
 modparam("b2b_logic", "b2bl_from_spec_param", "$var(b2bl_from)")
 ...
@@ -406,7 +425,7 @@ route{
         ...
 }
 
-1.4.14. server_address (str)
+1.4.15. server_address (str)
 
    The IP address of the machine that will be used as Contact in
    the generated messages. This is compulsory only when OpenSIPS
@@ -416,31 +435,31 @@ route{
    socket will be used to send all the requests, replies for that
    session. This parameter support Pseudo-Variables.
 
-   Example 1.14. Set server_address parameter
+   Example 1.15. Set server_address parameter
 ...
 modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 ...
 
-   Example 1.15. Set server_address parameter using
+   Example 1.16. Set server_address parameter using
    Pseudo-Variables
 ...
 modparam("b2b_logic", "server_address", "sip:$socket_in(advertised_ip):$
 socket_in(advertised_port)")
 ...
 
-1.4.15. init_callid_hdr (str)
+1.4.16. init_callid_hdr (str)
 
    The module offers the possibility to insert the original callid
    in a header in the generated Invites. If you want this, set
    this parameter to the name of the header in which to insert the
    original callid.
 
-   Example 1.16. Set init_callid_hdr parameter
+   Example 1.17. Set init_callid_hdr parameter
 ...
 modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 ...
 
-1.4.16. db_mode (int)
+1.4.17. db_mode (int)
 
    The B2B modules have support for the 3 type of database storage
 
@@ -452,34 +471,34 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 
    Default value is “2” (WRITE BACK).
 
-   Example 1.17. Set db_mode parameter
+   Example 1.18. Set db_mode parameter
 ...
 modparam("b2b_logic", "db_mode", 1)
 ...
 
-1.4.17. db_table (str)
+1.4.18. db_table (str)
 
    Name of the database table to be used
 
    Default value is “b2b_logic”
 
-   Example 1.18. Set db_table parameter
+   Example 1.19. Set db_table parameter
 ...
 modparam("b2b_logic", "db_table", "some_table_name")
 ...
 
-1.4.18. b2bl_th_init_timeout (int)
+1.4.19. b2bl_th_init_timeout (int)
 
    Call setup timeout for topology hiding scenario.
 
    Default value is “60”
 
-   Example 1.19. Set b2bl_th_init_timeout parameter
+   Example 1.20. Set b2bl_th_init_timeout parameter
 ...
 modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 ...
 
-1.4.19. b2bl_early_update (int)
+1.4.20. b2bl_early_update (int)
 
    Allow bridging of calls in early stage by issuing a "UPDATE"
    request
@@ -490,12 +509,12 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 
    Default value is “0” Do not bridge dialogs in early stage
 
-   Example 1.20. Set b2bl_early_update parameter
+   Example 1.21. Set b2bl_early_update parameter
 ...
 modparam("b2b_logic", "b2bl_early_update", 1)
 ...
 
-1.4.20. old_entity_term_delay (int)
+1.4.21. old_entity_term_delay (int)
 
    When the b2b_bridge_request is being used with the late_bye
    flag, this parameter can delay the moment when the BYE is being
@@ -505,7 +524,7 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 
    Default value is “0” - send BYE on the spot
 
-   Example 1.21. Set old_entity_term_delay parameter
+   Example 1.22. Set old_entity_term_delay parameter
 ...
 modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2
  seconds
@@ -537,6 +556,9 @@ modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2
             mode b2b passes your 401 or 407 authentication request
             to destination server.
           + preserve-to - Preserve To: header.
+          + pass-legs-upstream - Reuse the downstream reply leg
+            index when forwarding pre-establishment replies
+            upstream.
      * req_route (string, optional) - name of the script route to
        be called when requests belonging to this B2B session are
        received. This parameter will override the global
@@ -558,7 +580,7 @@ Note
    correctly routed, but the SIP pacakge may be invalid (as
    Contact, Via, etc).
 
-   Example 1.22. b2b_init_request usage
+   Example 1.23. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user()) {
    ...
@@ -595,7 +617,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.23. b2b_server_new usage
+   Example 1.24. b2b_server_new usage
 ...
 if(is_method("INVITE") && !has_totag()) {
    b2b_server_new("server1", $avp(b2b_hdrs), $avp(b2b_hdr_bodies));
@@ -604,7 +626,7 @@ if(is_method("INVITE") && !has_totag()) {
 ...
 
 1.5.3.  b2b_client_new(id, dest_uri, [proxy], [from_dname],
-[adv_contact], [extra_hdrs], [extra_hdr_bodies])
+[adv_contact], [extra_hdrs], [extra_hdr_bodies], [flags])
 
    This function creates a new client entity (dialog where
    OpenSIPS acts as a UAC) to be used for initializing a new B2B
@@ -628,11 +650,15 @@ if(is_method("INVITE") && !has_totag()) {
        list of extra header bodies (corresponding to the headers
        given in the extra_hdrs parameter) to be added for any
        request sent to this entity.
+     * flags (string, optional) - CSV list of per-entity flags.
+       Supported values are:
+          + pass-legs-upstream - Pass the downstream leg index
+            upstream for this client entity only.
 
    This function can be used from REQUEST_ROUTE and the b2b_logic
    request routes.
 
-   Example 1.24. b2b_client_new usage
+   Example 1.25. b2b_client_new usage
 ...
 b2b_client_new("client1", "sip:alice@opensips.org");
 ...
@@ -682,7 +708,7 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.25. b2b_bridge usage
+   Example 1.26. b2b_bridge usage
 ...
 route[b2b_logic_request] {
    ...
@@ -703,7 +729,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic reply route.
 
-   Example 1.26. b2b_bridge usage
+   Example 1.27. b2b_bridge usage
 ...
 route[b2b_logic_reply] {
    ...
@@ -728,7 +754,7 @@ route[b2b_logic_reply] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.27. b2b_pass_request usage
+   Example 1.28. b2b_pass_request usage
 ...
 route[b2b_logic_request] {
    if ($rm != "BYE") {
@@ -757,7 +783,7 @@ route[b2b_logic_request] {
             is received, pass the contact to the other peer just
             as it is, without modifying it.
 
-   Example 1.28. b2b_handle_reply usage
+   Example 1.29. b2b_handle_reply usage
 ...
 route[b2b_logic_reply] {
     xlog("B2B REPLY: [$rs $rm] from entity: $b2b_logic.entity(id)\n");
@@ -778,7 +804,7 @@ route[b2b_logic_reply] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.29. b2b_send_reply usage
+   Example 1.30. b2b_send_reply usage
 ...
 route[b2b_logic_request] {
    if ($rm == "REFER") {
@@ -794,7 +820,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.30. b2b_delete_entity usage
+   Example 1.31. b2b_delete_entity usage
 ...
 route[b2b_logic_request] {
    if ($rm == "BYE") {
@@ -814,7 +840,7 @@ route[b2b_logic_request] {
    This function can be used from the b2b_logic request or reply
    routes.
 
-   Example 1.31. b2b_end_dlg_leg usage
+   Example 1.32. b2b_end_dlg_leg usage
 ...
 route[b2b_logic_request] {
    if ($rm == "REFER") {
@@ -844,7 +870,7 @@ route[b2b_logic_request] {
             on the stop, leave it pending until the new enity
             fully establishes.
 
-   Example 1.32. b2b_bridge_request usage
+   Example 1.33. b2b_bridge_request usage
 ...
 if ($rU == "pickup") {
     # get the b2b logic key of the parked call for this user
@@ -909,7 +935,7 @@ if ($rU == "pickup") {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.33. b2b_trigger_scenario usage
+   Example 1.34. b2b_trigger_scenario usage
 ...
 if(is_method("REFER") && !has_totag()) {
    $avp(header) = "Replaces";
@@ -1030,7 +1056,7 @@ rg
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.34. $b2b_logic.key usage
+   Example 1.35. $b2b_logic.key usage
 ...
 local_route {
    ...
@@ -1074,7 +1100,7 @@ local_route {
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.35. $b2b_logic.entity usage
+   Example 1.36. $b2b_logic.entity usage
 ...
 modparam("b2b_entities", "script_request_route", "b2b_request")
 ...
@@ -1103,7 +1129,7 @@ route[b2b_request] {
    Setting the variable to NULL will delete the value at the given
    key.
 
-   Example 1.36. $b2b_logic.ctx usage
+   Example 1.37. $b2b_logic.ctx usage
 ...
 modparam("b2b_entities", "script_reply_route", "b2b_reply")
 ...
@@ -1131,7 +1157,7 @@ route[b2b_reply] {
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.37. $b2b_logic.scenario usage
+   Example 1.38. $b2b_logic.scenario usage
 ...
 route[b2b_logic_request] {
    if ($b2b_logic.scenario == "prepaid") {
@@ -1148,7 +1174,7 @@ route[b2b_logic_request] {
    with the associated b2b_key, provided in the
    callid;from-tag;to-tag format.
 
-   Example 1.38. $b2b_logic.peer usage
+   Example 1.39. $b2b_logic.peer usage
 ...
         $var(b2b_key) = $ci + ';' + $ft + ';' + $tt;
         xlog("$var(b2b_key) is talking to $b2b_logic.peer($var(b2b_key))
@@ -1308,7 +1334,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 239 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 57 37 1472 369
+   2. Razvan Crainea (@razvancrainea) 65 41 1940 403
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 11 152 76
    4. Nick Altmann (@nikbyte) 14 10 346 36
    5. Carsten Bock 12 5 679 23
@@ -1342,7 +1368,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2026
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Apr 2026
    2.  Ovidiu Sas (@ovidiusas)             Dec 2025 - Dec 2025
    3.  dirkbro                             Dec 2025 - Dec 2025
    4.  andingv                             Nov 2025 - Nov 2025

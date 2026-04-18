@@ -28,7 +28,6 @@ proto_tls module
               1.5.11. tls_send_timeout (integer)
               1.5.12. tls_async (integer)
               1.5.13. tls_async_max_postponed_chunks (integer)
-              1.5.14. tls_async_handshake_timeout (integer)
 
         1.6. Exported MI Functions
 
@@ -66,7 +65,6 @@ proto_tls module
    1.11. Set tls_send_timeout variable
    1.12. Set tls_async variable
    1.13. Set tls_async_max_postponed_chunks parameter
-   1.14. Set tls_async_handshake_timeout parameter
 
 Chapter 1. Admin Guide
 
@@ -448,21 +446,6 @@ modparam("proto_tls", "tls_async", 1) # enable async TLS
 modparam("proto_tls", "tls_async_max_postponed_chunks", 16)
 ...
 
-1.5.14. tls_async_handshake_timeout (integer)
-
-   If tls_async is enabled, this specifies the number of
-   milliseconds that a TLS handshake should be tried in blocking
-   mode (optimization). If the handshake operation lasts more than
-   this, the write will go to async mode and will be passed to tls
-   MAIN for polling.
-
-   Default value is 10 ms.
-
-   Example 1.14. Set tls_async_handshake_timeout parameter
-...
-modparam("proto_tls", "tls_async_handshake_timeout", 100)
-...
-
 1.6. Exported MI Functions
 
 1.6.1.  tls:trace
@@ -566,7 +549,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 74 49 1164 871
+   1. Razvan Crainea (@razvancrainea) 75 50 1164 901
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 61 33 1558 826
    3. Eseanu Marius Cristian (@eseanucristian) 42 5 55 2133
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576

@@ -19,7 +19,7 @@ Auth_db Module
 
               1.3.1. db_url (string)
               1.3.2. calculate_ha1 (integer)
-              1.3.3. use_domain (integer)
+              1.3.3. use_domain (boolean)
               1.3.4. load_credentials (string)
               1.3.5. skip_version_check (int)
               1.3.6. user_column (string)
@@ -161,20 +161,17 @@ e")
    Example 1.2. calculate_ha1 parameter usage
 modparam("auth_db", "calculate_ha1", 1)
 
-1.3.3. use_domain (integer)
+1.3.3. use_domain (boolean)
 
    If true (not 0), domain will be also used when looking up in
    the subscriber table. If you have a multi-domain setup, it is
-   strongly recommended to turn on this parameter to avoid
+   strongly recommended to keep this parameter enabled, to avoid
    username overlapping between domains.
 
-   IMPORTANT: before turning on this parameter, be sure that the
-   domain column in subscriber table is properly populated.
-
-   Default value is “0 (false)”.
+   Default value is true (enabled).
 
    Example 1.3. use_domain parameter usage
-modparam("auth_db", "use_domain", 1)
+modparam("auth_db", "use_domain", true)
 
 1.3.4. load_credentials (string)
 
@@ -471,7 +468,7 @@ Chapter 2. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 51 37 783 380
    2. Jan Janak (@janakj) 50 29 1610 424
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
-   4. Liviu Chircu (@liviuchircu) 23 18 161 137
+   4. Liviu Chircu (@liviuchircu) 24 19 167 148
    5. Razvan Crainea (@razvancrainea) 12 10 32 50
    6. Henning Westerholt (@henningw) 11 9 83 49
    7. Maksym Sobolyev (@sobomax) 10 5 307 116
@@ -506,8 +503,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2026
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2026
    3.  Maksym Sobolyev (@sobomax)          Oct 2004 - Feb 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jul 2021
    5.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
@@ -531,10 +528,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Maksym Sobolyev (@sobomax), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Peter Lemenkov (@lemenkov), Kennard White,
-   Sergio Gutierrez, Daniel-Constantin Mierla (@miconda),
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Maksym Sobolyev (@sobomax), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Kennard
+   White, Sergio Gutierrez, Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Anatoly Pidruchny, Jan Janak (@janakj).
 

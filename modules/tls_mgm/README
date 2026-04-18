@@ -111,7 +111,6 @@ TLS_MGM module
               2.3.3. init_tls
               2.3.4. destroy_tls
               2.3.5. tls_init
-              2.3.6. os_malloc, os_realloc, os_free
 
         2.4. TLS_DOMAIN
 
@@ -1428,14 +1427,6 @@ Chapter 2. Developer Guide
 
    Called once for each tls socket created, from main.c
 
-2.3.6. os_malloc, os_realloc, os_free
-
-   Wrapper functions around the shm_* functions. OpenSSL uses
-   non-shared memory to create its objects, thus it would not work
-   in OpenSIPS. By creating these wrappers and configuring OpenSSL
-   to use them instead of its default memory functions, we have
-   all OpenSSL objects in shared memory, ready to use.
-
 2.4. TLS_DOMAIN
 
 2.4.1. tls_domains
@@ -1529,7 +1520,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 180 58 4821 4882
-   2. Razvan Crainea (@razvancrainea) 98 65 1783 1034
+   2. Razvan Crainea (@razvancrainea) 99 66 1783 1044
    3. Eseanu Marius Cristian (@eseanucristian) 53 11 4268 321
    4. Liviu Chircu (@liviuchircu) 26 20 175 236
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 24 13 291 460

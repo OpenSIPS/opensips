@@ -135,37 +135,38 @@ rtpengine Module
    1.16. rtpengine_offer usage
    1.17. rtpengine_offer usage with body replace
    1.18. rtpengine_offer usage with call recording
-   1.19. rtpengine_offer usage for transcoding
-   1.20. Set extra_failover_error parameter
-   1.21. rtpengine_answer usage
-   1.22. rtpengine_delete usage
-   1.23. rtpengine_manage usage
-   1.24. rtpengine_start_recording usage
-   1.25. rtpengine_stop_recording usage
-   1.26. rtpengine_pause_recording usage
-   1.27. Ringback tone using rtpengine_play_media
-   1.28. Manage music on hold using rtpengine_play_media
-   1.29. Ringback tone stop using rtpengine_stop_media
-   1.30. Example use of the last-frame-pos parameter
+   1.19. rtpengine_offer usage for transcoding (prefix style)
+   1.20. rtpengine_offer usage with bracket syntax
+   1.21. Set extra_failover_error parameter
+   1.22. rtpengine_answer usage
+   1.23. rtpengine_delete usage
+   1.24. rtpengine_manage usage
+   1.25. rtpengine_start_recording usage
+   1.26. rtpengine_stop_recording usage
+   1.27. rtpengine_pause_recording usage
+   1.28. Ringback tone using rtpengine_play_media
+   1.29. Manage music on hold using rtpengine_play_media
+   1.30. Ringback tone stop using rtpengine_stop_media
+   1.31. Example use of the last-frame-pos parameter
           rtpengine_stop_media
 
-   1.31. Example of rtpengine_block_media usage
-   1.32. Example of rtpengine_unblock_media usage
-   1.33. Example of rtpengine_block_dtmf usage
-   1.34. Example of rtpengine_unblock_dtmf usage
-   1.35. Example of rtpengine_start_forwarding usage
-   1.36. Example of rtpengine_stop_forwarding usage
-   1.37. Example of rtpengine_play_dtmf usage
-   1.38. Example of async rtpengine_offer() usage
-   1.39. Example of async rtpengine_answer() usage
-   1.40. Example of async rtpengine_delete() usage
-   1.41. $rtpstat Usage
-   1.42. $rtpstat(STAT)
-   1.43. $rtpquery Usage
-   1.44. rtpengine:enable usage
-   1.45. rtpengine:show usage
-   1.46. rtpengine:reload usage
-   1.47. teardown usage
+   1.32. Example of rtpengine_block_media usage
+   1.33. Example of rtpengine_unblock_media usage
+   1.34. Example of rtpengine_block_dtmf usage
+   1.35. Example of rtpengine_unblock_dtmf usage
+   1.36. Example of rtpengine_start_forwarding usage
+   1.37. Example of rtpengine_stop_forwarding usage
+   1.38. Example of rtpengine_play_dtmf usage
+   1.39. Example of async rtpengine_offer() usage
+   1.40. Example of async rtpengine_answer() usage
+   1.41. Example of async rtpengine_delete() usage
+   1.42. $rtpstat Usage
+   1.43. $rtpstat(STAT)
+   1.44. $rtpquery Usage
+   1.45. rtpengine:enable usage
+   1.46. rtpengine:show usage
+   1.47. rtpengine:reload usage
+   1.48. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -485,6 +486,37 @@ rtpengine_offer();
        When passing an option that OpenSIPS is not aware of, it
        will be blindly sent to the rtpengine daemon to be
        processed.
+       Values can also use bracket syntax to pass structured data
+       (lists and dictionaries) to the RTP daemon. This enables
+       features of the rtpengine ng protocol that require nested
+       parameters, such as sdp-media-remove, codec, and sdp-attr.
+       A value enclosed in square brackets (“[...]”) is parsed as
+       a list of space-separated items. If any item at the top
+       level inside the brackets contains an equals sign (“=”),
+       the entire value is parsed as a dictionary of key=value
+       pairs instead. Brackets can be nested to build the
+       multi-level structures that certain rtpengine parameters
+       expect.
+       The bracket syntax is parsed module-side and converted to
+       native bencode list and dictionary structures before being
+       sent to the RTP daemon. This works with all rtpengine
+       daemon versions and does not require any special daemon
+       configuration.
+       The legacy prefix-style codec flags (transcode-CODEC,
+       codec-strip-CODEC, codec-mask-CODEC) continue to work as
+       before and are sent as flag strings. Do not mix
+       prefix-style and bracket-style codec flags in the same
+       call, as they are processed independently and may produce
+       unexpected results.
+       Values inside brackets that need to contain literal spaces
+       or equals signs can use escape sequences: “..” (double dot)
+       is unescaped to a space character, and “--” (double dash)
+       is unescaped to an equals sign. Single dots and single
+       dashes are passed through unchanged. This convention
+       matches the rtpengine daemon's own escape handling.
+       Nesting is limited to 8 levels of depth and individual
+       bracket values are limited to 4096 bytes. These limits are
+       sufficient for all documented rtpengine use cases.
           + via-branch=... - Include the “branch” value of one of
             the “Via” headers in the request to the RTP proxy.
             Possible values are: “1” - use the first “Via” header;
@@ -768,7 +800,8 @@ cording_keys){s.encode.hexa});
 rtpengine_offer($var(rtpengine_flags));
 ...
 
-   Example 1.19. rtpengine_offer usage for transcoding
+   Example 1.19. rtpengine_offer usage for transcoding (prefix
+   style)
 ...
 # Goal: make A-side talk PCMA and B-side talk opus
 # * do not present PCMA to B-side: codec-mask-PCMA, but use it on A-side
@@ -776,6 +809,28 @@ rtpengine_offer($var(rtpengine_flags));
 # * offer opus to B-side: transcode-opus
 rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 ");
+...
+
+   Example 1.20. rtpengine_offer usage with bracket syntax
+...
+# Remove video and message media streams from the SDP
+# (sdp-media-remove expects a list of media types)
+rtpengine_offer("sdp-media-remove=[video message image]");
+
+# Codec manipulation using bracket syntax
+# (codec expects a dictionary with sub-keys: transcode, strip, accept, e
+tc.)
+rtpengine_offer("codec=[transcode=[PCMA PCMU] accept=[AMR-WB AMR] strip=
+[EVS]]");
+
+# Bracket syntax can be mixed with regular flags in the same call
+rtpengine_offer("trust-address replace-origin ICE=remove codec=[transcod
+e=[PCMA]]");
+
+# SDP attribute manipulation with escape sequences
+# '..' becomes a space, '--' becomes an equals sign
+# This adds the SDP attribute "fmtp:96 useinbandfec=1" to audio streams
+rtpengine_offer("sdp-attr=[audio=[add=[fmtp:96..useinbandfec--1]]]");
 ...
 
 1.5.2.1. extra_failover_error (string)
@@ -793,7 +848,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 
    Default value is empty, no extra errors are being used.
 
-   Example 1.20. Set extra_failover_error parameter
+   Example 1.21. Set extra_failover_error parameter
 ...
 modparam("rtpengine", "extra_failover_error", "Parallel session limit re
 ached")
@@ -811,7 +866,7 @@ ached")
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.21. rtpengine_answer usage
+   Example 1.22. rtpengine_answer usage
 
    See rtpengine_offer() function example above for examples.
 
@@ -825,7 +880,7 @@ ached")
 
    This function can be used from ALL_ROUTES.
 
-   Example 1.22. rtpengine_delete usage
+   Example 1.23. rtpengine_delete usage
 ...
 rtpengine_delete();
 ...
@@ -853,7 +908,7 @@ rtpengine_delete();
 
    This function can be used from ALL_ROUTES.
 
-   Example 1.23. rtpengine_manage usage
+   Example 1.24. rtpengine_manage usage
 ...
 rtpengine_manage();
 ...
@@ -873,7 +928,7 @@ rtpengine_manage();
 
    This function can be used from any route.
 
-   Example 1.24. rtpengine_start_recording usage
+   Example 1.25. rtpengine_start_recording usage
 ...
 rtpengine_start_recording();
 ...
@@ -893,7 +948,7 @@ rtpengine_start_recording();
 
    This function can be used from any route.
 
-   Example 1.25. rtpengine_stop_recording usage
+   Example 1.26. rtpengine_stop_recording usage
 ...
 rtpengine_stop_recording();
 ...
@@ -917,7 +972,7 @@ rtpengine_stop_recording();
 
    This function can be used from any route.
 
-   Example 1.26. rtpengine_pause_recording usage
+   Example 1.27. rtpengine_pause_recording usage
 ...
 rtpengine_stop_recording();
 ...
@@ -950,13 +1005,13 @@ sockvar]]])
 
    This function can be used from any route.
 
-   Example 1.27. Ringback tone using rtpengine_play_media
+   Example 1.28. Ringback tone using rtpengine_play_media
 ...
 if (is_method("INVITE") && !has_totag())
         rtpengine_play_media("file=/path/to/ringback_tone_file.wav");
 ...
 
-   Example 1.28. Manage music on hold using rtpengine_play_media
+   Example 1.29. Manage music on hold using rtpengine_play_media
 ...
 if (is_method("INVITE") && has_totag()) {
         if (is_audio_on_hold()) {
@@ -988,13 +1043,13 @@ e.wav");
 
    This function can be used from any route.
 
-   Example 1.29. Ringback tone stop using rtpengine_stop_media
+   Example 1.30. Ringback tone stop using rtpengine_stop_media
 ...
 if (is_method("INVITE") && $rs == 200)
         rtpengine_stop_media();
 ...
 
-   Example 1.30. Example use of the last-frame-pos parameter
+   Example 1.31. Example use of the last-frame-pos parameter
    rtpengine_stop_media
 ...
 if (is_method("INVITE") && has_totag()) {
@@ -1019,7 +1074,7 @@ os));
 
    This function can be used from any route.
 
-   Example 1.31. Example of rtpengine_block_media usage
+   Example 1.32. Example of rtpengine_block_media usage
 ...
 rtpengine_block_media();
 ...
@@ -1032,7 +1087,7 @@ rtpengine_block_media();
 
    This function can be used from any route.
 
-   Example 1.32. Example of rtpengine_unblock_media usage
+   Example 1.33. Example of rtpengine_unblock_media usage
 ...
 rtpengine_unblock_media();
 ...
@@ -1045,7 +1100,7 @@ rtpengine_unblock_media();
 
    This function can be used from any route.
 
-   Example 1.33. Example of rtpengine_block_dtmf usage
+   Example 1.34. Example of rtpengine_block_dtmf usage
 ...
 rtpengine_block_dtmf();
 ...
@@ -1058,7 +1113,7 @@ rtpengine_block_dtmf();
 
    This function can be used from any route.
 
-   Example 1.34. Example of rtpengine_unblock_dtmf usage
+   Example 1.35. Example of rtpengine_unblock_dtmf usage
 ...
 rtpengine_unblock_dtmf();
 ...
@@ -1073,7 +1128,7 @@ rtpengine_unblock_dtmf();
 
    This function can be used from any route.
 
-   Example 1.35. Example of rtpengine_start_forwarding usage
+   Example 1.36. Example of rtpengine_start_forwarding usage
 ...
 rtpengine_start_forwarding();
 ...
@@ -1085,7 +1140,7 @@ rtpengine_start_forwarding();
 
    This function can be used from any route.
 
-   Example 1.36. Example of rtpengine_stop_forwarding usage
+   Example 1.37. Example of rtpengine_stop_forwarding usage
 ...
 rtpengine_stop_forwarding();
 ...
@@ -1106,7 +1161,7 @@ rtpengine_stop_forwarding();
 
    This function can be used from any route.
 
-   Example 1.37. Example of rtpengine_play_dtmf usage
+   Example 1.38. Example of rtpengine_play_dtmf usage
 ...
 rtpengine_play_dtmf("0"); # send the 0 code upstream
 ...
@@ -1118,7 +1173,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
    The asynchronous flavor of the rtpengine_offer() function. It
    receives the same parameters, with the same meanings.
 
-   Example 1.38. Example of async rtpengine_offer() usage
+   Example 1.39. Example of async rtpengine_offer() usage
 ...
 if (is_method("ACK") && has_totag() && has_body_part("application/sdp"))
  {
@@ -1135,7 +1190,7 @@ route[resume_invite] {
    The asynchronous flavor of the rtpengine_answer() function. It
    receives the same parameters, with the same meanings.
 
-   Example 1.39. Example of async rtpengine_answer() usage
+   Example 1.40. Example of async rtpengine_answer() usage
 ...
 if (is_method("ACK") && has_body_part("application/sdp")) {
         # late negotiation
@@ -1152,7 +1207,7 @@ route[resume_ack] {
    The asynchronous flavor of the rtpengine_delete() function. It
    receives the same parameters, with the same meanings.
 
-   Example 1.40. Example of async rtpengine_delete() usage
+   Example 1.41. Example of async rtpengine_delete() usage
 ...
 if (is_method("BYE")) {
         launch(rtpengine_delete());
@@ -1167,7 +1222,7 @@ if (is_method("BYE")) {
    statistics from the RTP proxy are provided as a string and it
    does contain several packet counters.
 
-   Example 1.41. $rtpstat Usage
+   Example 1.42. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
@@ -1240,7 +1295,7 @@ if (is_method("BYE")) {
    short, or if the phones do not properly report RTP statistics
    over RTCP). In these cases the variable returns the NULL value.
 
-   Example 1.42. $rtpstat(STAT)
+   Example 1.43. $rtpstat(STAT)
 ...
     xlog("Average MOS of the entire call is $rtpstat(MOS-average)\r\n");
     xlog("Average MOS of caller is $(rtpstat(MOS-average)[$ft])\r\n");
@@ -1260,7 +1315,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    any information from the query, such as RTP statistics, or MOS
    values.
 
-   Example 1.43. $rtpquery Usage
+   Example 1.44. $rtpquery Usage
 ...
         $json(reply) := $rtpquery;
         xlog("Total RTP Stats: $json(reply/totals)\n");
@@ -1286,7 +1341,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    different set), all of its instances will be enabled/disabled
    IF no set ID is provided.
 
-   Example 1.44.  rtpengine:enable usage
+   Example 1.45.  rtpengine:enable usage
 ...
 ## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine:enable udp:192.168.2.133:8081 0
@@ -1304,7 +1359,7 @@ $ opensips-cli -x mi rtpengine:enable url=udp:192.168.2.133:8081 enable=
 
    No parameter.
 
-   Example 1.45.  rtpengine:show usage
+   Example 1.46.  rtpengine:show usage
 ...
 $ opensips-cli -x mi rtpengine:show
 ...
@@ -1325,7 +1380,7 @@ $ opensips-cli -x mi rtpengine:show
 
    No parameter.
 
-   Example 1.46.  rtpengine:reload usage
+   Example 1.47.  rtpengine:reload usage
 ...
 $ opensips-cli -x mi rtpengine:reload
 $ opensips-cli -x mi rtpengine:reload type=soft
@@ -1344,7 +1399,7 @@ $ opensips-cli -x mi rtpengine:reload type=soft
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.47.  teardown usage
+   Example 1.48.  teardown usage
 ...
 $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZD
 Q
@@ -1459,8 +1514,8 @@ Chapter 3. Contributors
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173
    5. Richard Fuchs 20 2 640 723
-   6. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
-   7. Norman Brandinger (@NormB) 12 10 72 18
+   6. Norman Brandinger (@NormB) 19 12 703 20
+   7. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
    8. Peter Lemenkov (@lemenkov) 11 8 29 64
    9. Vlad Paiu (@vladpaiu) 8 1 566 94
    10. Eric Tamme (@etamme) 7 5 42 19
@@ -1491,11 +1546,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  rdondeti                        Mar 2026 - Mar 2026
-   2.  Razvan Crainea (@razvancrainea) Jun 2014 - Mar 2026
-   3.  Steven Ayre                     Jul 2025 - Jul 2025
-   4.  Norm Brandinger                 May 2025 - May 2025
-   5.  Norman Brandinger (@NormB)      Jun 2024 - Feb 2025
+   1.  Norman Brandinger (@NormB)      Jun 2024 - Apr 2026
+   2.  rdondeti                        Mar 2026 - Mar 2026
+   3.  Razvan Crainea (@razvancrainea) Jun 2014 - Mar 2026
+   4.  Steven Ayre                     Jul 2025 - Jul 2025
+   5.  Norm Brandinger                 May 2025 - May 2025
    6.  Peter Lemenkov (@lemenkov)      Jun 2018 - Feb 2025
    7.  Vlad Paiu (@vladpaiu)           Jan 2025 - Jan 2025
    8.  hatee                           Dec 2024 - Dec 2024
@@ -1516,8 +1571,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Norm
-   Brandinger, Eddie Fiorentine, Norman Brandinger (@NormB), Liviu
+   Last edited by: Norman Brandinger (@NormB), Razvan Crainea
+   (@razvancrainea), Norm Brandinger, Eddie Fiorentine, Liviu
    Chircu (@liviuchircu), John Burke (@john08burke), Nick Altmann
    (@nikbyte), Flavio E. Goncalves, Peter Lemenkov (@lemenkov),
    Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu

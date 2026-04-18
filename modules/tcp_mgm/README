@@ -119,8 +119,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu)        21       8      1281      62
-   2. Maksym Sobolyev (@sobomax)         5        3       9        10
-   3. Razvan Crainea (@razvancrainea)    5        3       9        5
+   2. Razvan Crainea (@razvancrainea)    6        4       24       32
+   3. Maksym Sobolyev (@sobomax)         5        3       9        10
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -142,7 +142,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Mar 2026 - Mar 2026
+   1. Razvan Crainea (@razvancrainea) Mar 2026 - Apr 2026
    2. Maksym Sobolyev (@sobomax)      Feb 2023 - Nov 2023
    3. Liviu Chircu (@liviuchircu)     Apr 2022 - Jul 2022
 
