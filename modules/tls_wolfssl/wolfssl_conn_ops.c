@@ -47,6 +47,11 @@
 
 int _wolfssl_has_session_ticket(WOLFSSL *ssl);
 
+/*
+ * Older distro kernel headers (for example buster/bionic) may not expose the
+ * AES-GCM-256 KTLS definitions. Keep the build working on those systems and
+ * fall back to the supported subset at runtime.
+ */
 void tls_dump_cert_info(char* s, WOLFSSL_X509* cert)
 {
 	char* subj;
@@ -189,9 +194,11 @@ static int _wolfssl_enable_ktls_tx(struct tcp_connection *c, WOLFSSL *ssl)
 	struct _WOLFSSL *w = (struct _WOLFSSL *)c->extra_data;
 	struct tls_crypto_info *crypto_info;
 	struct tls12_crypto_info_aes_gcm_128 crypto_128;
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	struct tls12_crypto_info_aes_gcm_256 crypto_256;
+#endif
 	const unsigned char *key, *iv;
-	unsigned long seq;
+	word64 seq;
 	unsigned int rand_hi, rand_lo;
 	int key_size, crypto_size;
 	int tls_version;
@@ -213,38 +220,58 @@ static int _wolfssl_enable_ktls_tx(struct tcp_connection *c, WOLFSSL *ssl)
 	}
 
 	key_size = wolfSSL_GetKeySize(ssl);
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	if ((key_size != TLS_CIPHER_AES_GCM_128_KEY_SIZE) &&
 	    (key_size != TLS_CIPHER_AES_GCM_256_KEY_SIZE)) {
 		LM_DBG("KTLS requires 128/256 bit AES-GCM keys, got %d\n", key_size);
 		return -1;
 	}
+#else
+	if (key_size != TLS_CIPHER_AES_GCM_128_KEY_SIZE) {
+		LM_DBG("KTLS requires 128 bit AES-GCM keys on this kernel, got %d\n",
+			key_size);
+		return -1;
+	}
+#endif
 
 	if (_wolfssl_enable_ktls_ulp(c, fd) < 0)
 		return -1;
 
 	memset(&crypto_128, 0, sizeof(crypto_128));
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	memset(&crypto_256, 0, sizeof(crypto_256));
+#endif
 	if (key_size == TLS_CIPHER_AES_GCM_128_KEY_SIZE) {
 		crypto_info = &crypto_128.info;
 		crypto_size = sizeof(crypto_128);
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	} else {
 		crypto_info = &crypto_256.info;
 		crypto_size = sizeof(crypto_256);
 	}
+#else
+	} else {
+		LM_DBG("KTLS on this kernel only supports 128-bit AES-GCM, got %d\n",
+			key_size);
+		return -1;
+	}
+#endif
 
 	tls_version = wolfSSL_version(ssl);
 	if (tls_version == TLS1_2_VERSION)
 		crypto_info->version = TLS_1_2_VERSION;
 	else if (tls_version == TLS1_3_VERSION)
-		crypto_info->version = TLS_1_3_VERSION;
+		crypto_info->version = TLS1_3_VERSION;
 	else {
 		LM_DBG("KTLS supported only for TLS 1.2/1.3 (got %x)\n", tls_version);
 		return -1;
 	}
 
-	crypto_info->cipher_type = (key_size == TLS_CIPHER_AES_GCM_128_KEY_SIZE)
-		? TLS_CIPHER_AES_GCM_128
-		: TLS_CIPHER_AES_GCM_256;
+	crypto_info->cipher_type = TLS_CIPHER_AES_GCM_128;
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
+	if (key_size == TLS_CIPHER_AES_GCM_256_KEY_SIZE)
+		crypto_info->cipher_type = TLS_CIPHER_AES_GCM_256;
+#endif
 
 	key = (wolfSSL_GetSide(ssl) == WOLFSSL_CLIENT_END)
 		? wolfSSL_GetClientWriteKey(ssl)
@@ -274,6 +301,7 @@ static int _wolfssl_enable_ktls_tx(struct tcp_connection *c, WOLFSSL *ssl)
 			memcpy(crypto_128.iv, (iv + 4), 8);
 		}
 		memcpy(crypto_128.rec_seq, &seq, sizeof(seq));
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	} else {
 		memcpy(crypto_256.key, key, key_size);
 		memcpy(crypto_256.salt, iv, 4);
@@ -288,6 +316,7 @@ static int _wolfssl_enable_ktls_tx(struct tcp_connection *c, WOLFSSL *ssl)
 		}
 		memcpy(crypto_256.rec_seq, &seq, sizeof(seq));
 	}
+#endif
 
 	if (setsockopt(fd, SOL_TLS, TLS_TX, crypto_info, crypto_size) < 0) {
 		LM_WARN("failed to enable KTLS TX on fd %d: %s\n",
@@ -452,9 +481,11 @@ static int _wolfssl_enable_ktls_rx(struct tcp_connection *c, WOLFSSL *ssl)
 	struct _WOLFSSL *w = (struct _WOLFSSL *)c->extra_data;
 	struct tls_crypto_info *crypto_info;
 	struct tls12_crypto_info_aes_gcm_128 crypto_128;
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	struct tls12_crypto_info_aes_gcm_256 crypto_256;
+#endif
 	const unsigned char *key, *iv;
-	unsigned long seq;
+	word64 seq;
 	unsigned int rand_hi, rand_lo;
 	int key_size, crypto_size;
 	int tls_version;
@@ -476,38 +507,58 @@ static int _wolfssl_enable_ktls_rx(struct tcp_connection *c, WOLFSSL *ssl)
 	}
 
 	key_size = wolfSSL_GetKeySize(ssl);
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	if ((key_size != TLS_CIPHER_AES_GCM_128_KEY_SIZE) &&
 	    (key_size != TLS_CIPHER_AES_GCM_256_KEY_SIZE)) {
 		LM_DBG("KTLS RX requires 128/256 bit AES-GCM keys, got %d\n", key_size);
 		return -1;
 	}
+#else
+	if (key_size != TLS_CIPHER_AES_GCM_128_KEY_SIZE) {
+		LM_DBG("KTLS RX requires 128 bit AES-GCM keys on this kernel, got %d\n",
+			key_size);
+		return -1;
+	}
+#endif
 
 	if (_wolfssl_enable_ktls_ulp(c, fd) < 0)
 		return -1;
 
 	memset(&crypto_128, 0, sizeof(crypto_128));
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	memset(&crypto_256, 0, sizeof(crypto_256));
+#endif
 	if (key_size == TLS_CIPHER_AES_GCM_128_KEY_SIZE) {
 		crypto_info = &crypto_128.info;
 		crypto_size = sizeof(crypto_128);
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	} else {
 		crypto_info = &crypto_256.info;
 		crypto_size = sizeof(crypto_256);
 	}
+#else
+	} else {
+		LM_DBG("KTLS RX on this kernel only supports 128-bit AES-GCM, got %d\n",
+			key_size);
+		return -1;
+	}
+#endif
 
 	tls_version = wolfSSL_version(ssl);
 	if (tls_version == TLS1_2_VERSION)
 		crypto_info->version = TLS_1_2_VERSION;
 	else if (tls_version == TLS1_3_VERSION)
-		crypto_info->version = TLS_1_3_VERSION;
+		crypto_info->version = TLS1_3_VERSION;
 	else {
 		LM_DBG("KTLS RX supported only for TLS 1.2/1.3 (got %x)\n", tls_version);
 		return -1;
 	}
 
-	crypto_info->cipher_type = (key_size == TLS_CIPHER_AES_GCM_128_KEY_SIZE)
-		? TLS_CIPHER_AES_GCM_128
-		: TLS_CIPHER_AES_GCM_256;
+	crypto_info->cipher_type = TLS_CIPHER_AES_GCM_128;
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
+	if (key_size == TLS_CIPHER_AES_GCM_256_KEY_SIZE)
+		crypto_info->cipher_type = TLS_CIPHER_AES_GCM_256;
+#endif
 
 	key = (wolfSSL_GetSide(ssl) == WOLFSSL_CLIENT_END)
 		? wolfSSL_GetServerWriteKey(ssl)
@@ -537,6 +588,7 @@ static int _wolfssl_enable_ktls_rx(struct tcp_connection *c, WOLFSSL *ssl)
 			memcpy(crypto_128.iv, (iv + 4), 8);
 		}
 		memcpy(crypto_128.rec_seq, &seq, sizeof(seq));
+#if defined(TLS_CIPHER_AES_GCM_256_KEY_SIZE)
 	} else {
 		memcpy(crypto_256.key, key, key_size);
 		memcpy(crypto_256.salt, iv, 4);
@@ -551,6 +603,7 @@ static int _wolfssl_enable_ktls_rx(struct tcp_connection *c, WOLFSSL *ssl)
 		}
 		memcpy(crypto_256.rec_seq, &seq, sizeof(seq));
 	}
+#endif
 
 	if (setsockopt(fd, SOL_TLS, TLS_RX, crypto_info, crypto_size) < 0) {
 		LM_WARN("failed to enable KTLS RX on fd %d: %s\n",
