@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1013');
+INSERT INTO version (table_name, table_version) values ('location','1014');
 CREATE TABLE location (
     contact_id BIGSERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
@@ -18,7 +18,8 @@ CREATE TABLE location (
     methods INTEGER DEFAULT NULL,
     sip_instance VARCHAR(255) DEFAULT NULL,
     kv_store TEXT DEFAULT NULL,
-    attr VARCHAR(255) DEFAULT NULL
+    attr VARCHAR(255) DEFAULT NULL,
+    params TEXT DEFAULT NULL
 );
 
 ALTER SEQUENCE location_contact_id_seq MAXVALUE 2147483647 CYCLE;
