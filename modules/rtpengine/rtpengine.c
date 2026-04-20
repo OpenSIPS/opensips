@@ -76,6 +76,7 @@
 #include "../../mod_fix.h"
 #include "../../dset.h"
 #include "../../route.h"
+#include "../../profiling.h"
 #include "../../lib/cJSON.h"
 #include "../dialog/dlg_load.h"
 #include "../rtp_relay/rtp_relay.h"
@@ -4798,35 +4799,46 @@ static int rtpengine_io_callback(int fd, void *fs, int was_timeout)
 	char *p;
 	char buffer[RTPENGINE_DGRAM_BUF];
 
+	profiling_proc_start(1);
+
 	do
 		ret = read(fd, buffer, RTPENGINE_DGRAM_BUF);
 	while (ret == -1 && errno == EINTR);
 	if (ret < 0) {
 		LM_ERR("problem reading on socket %s:%u (%s:%d)\n",
 				rtpengine_notify_sock.s, rtpengine_notify_port, strerror(errno), errno);
-		return -1;
+		goto err;
 	}
 
 	if (!evi_probe_event(rtpengine_notify_event)) {
 		LM_DBG("nothing to do - nobody is listening!\n");
-		return 0;
+		goto done;
 	}
 
 	p = shm_malloc(ret + 1);
 	if (!p) {
 		/* coverity[string_null] - false positive CID #211356 */
 		LM_ERR("could not allocate %d for buffer %.*s\n", ret, ret, buffer);
-		return -1;
+		goto err;
 	}
 	memcpy(p, buffer, ret);
 	p[ret] = '\0';
+
+	profiling_proc_enter( ss_merge256("RTPE_CB ",p), 0);
 
 	LM_INFO("dispatching buffer: %s\n", p);
 	if (ipc_dispatch_rpc(rtpengine_raise_event, p) < 0) {
 		LM_ERR("could not dispatch notification job!\n");
 		shm_free(p);
 	}
+
+	profiling_proc_exit( "RTPE_CB", 0);
+	profiling_proc_end( 0 );
+done:
 	return 0;
+err:
+	profiling_proc_end( -1 );
+	return -1;
 }
 
 static void rtpengine_notify_process(int rank)
