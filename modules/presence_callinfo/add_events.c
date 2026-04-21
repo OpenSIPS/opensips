@@ -111,6 +111,9 @@ unsigned int get_appearance_index(struct sip_msg *msg)
 	struct to_param *top;
 	unsigned int idx;
 
+	if (!msg->call_info)
+		return 0;
+
 	top = get_call_info(msg)->call_info_body.param_lst;
 	for ( ; top ; top=top->next) {
 		if ( (top->name.len==CI_hdr_AI_param_len) &&
@@ -254,7 +257,7 @@ int lineseize_subs_handl(struct sip_msg* msg, struct subscription *subs, int *re
 	is_initial = (subs->to_tag.len==0)?1:0;
 
 	idx = get_appearance_index(msg);
-	if (idx==0) {
+	if (!idx) {
 		LM_ERR("failed to extract index from Call-Info hdr\n");
 		*reply_code = 400;
 		reply_reason->s = "Bad request";
@@ -314,14 +317,18 @@ int lineseize_subs_handl(struct sip_msg* msg, struct subscription *subs, int *re
 		/* new SUBSCRIBE */
 		if (sca->seize_state!=0) {
 			/* already in seizing from a different subscrine */
-			if (sca->seize_expires < get_ticks()) {
+			if (get_ticks() < sca->seize_expires) {
 				/* old seizing still valid -> reject it */
+				LM_SCA("old seizing still valid - reject new seize attempt\n");
+
 				*reply_code = 480;
 				reply_reason->s = "Temporarily Unavailable";
 				reply_reason->len = sizeof("Temporarily Unavailable")-1;
 				unlock_sca_line(sca);
 				return -1;
 			}
+
+			LM_SCA("old seizing found, but it expired -- overwrite it\n");
 		}
 		/* FIXME - check the seized idx is not already in a call */
 		/* do the seizing */
@@ -346,6 +353,7 @@ int lineseize_subs_handl(struct sip_msg* msg, struct subscription *subs, int *re
 
 	/* do publish for callinfo */
 	do_callinfo_publish( sca );
+	//unlock_sca_line(sca);
 
 	return 0;
 }

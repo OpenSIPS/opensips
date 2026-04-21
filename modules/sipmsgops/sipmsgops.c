@@ -48,6 +48,7 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/sdp/sdp.h"
+#include "../../parser/sdp/sdp_helpr_funcs.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/digest/digest.h"
 #include "../../msg_translator.h"
@@ -57,6 +58,7 @@
 
 #include "codecs.h"
 #include "list_hdr.h"
+#include "sdp_ops.h"
 #include "uri.h"
 
 #include <stdio.h>
@@ -78,9 +80,6 @@
 #define TIME_FORMAT "Date: %a, %d %b %Y %H:%M:%S GMT"
 #define MAX_TIME 64
 
-#define AUDIO_STR "audio"
-#define AUDIO_STR_LEN 5
-
 static int remove_hf(struct sip_msg* msg, int_str_t* hf);
 static int remove_hf_re(struct sip_msg* msg, regex_t* re);
 static int remove_hf_glob(struct sip_msg* msg, str* pattern);
@@ -100,7 +99,7 @@ static int remove_body_part_f(struct sip_msg *msg, void *type, void *revert);
 static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
                            str *extra_hdrs);
 static int get_updated_body_part_f(struct sip_msg *msg, int *type,pv_spec_t* out);
-static int is_audio_on_hold_f(struct sip_msg *msg);
+static int w_is_audio_on_hold(struct sip_msg *msg);
 static int w_sip_validate(struct sip_msg *msg, void *flags, pv_spec_t* err_txt);
 static int w_sip_to_json(struct sip_msg *msg, pv_spec_t* out_json);
 
@@ -240,7 +239,7 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_REGEX, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
-	{"is_audio_on_hold",    (cmd_function)is_audio_on_hold_f, {{0, 0, 0}},
+	{"is_audio_on_hold",    (cmd_function)w_is_audio_on_hold, {{0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"sipmsg_validate",     (cmd_function)w_sip_validate, {
@@ -1113,35 +1112,6 @@ static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* re
 }
 
 
-static int is_audio_on_hold_f(struct sip_msg *msg)
-{
-	int sdp_session_num = 0, sdp_stream_num;
-	sdp_session_cell_t* sdp_session;
-	sdp_stream_cell_t* sdp_stream;
-	sdp_info_t* sdp;
-
-	if ( (sdp=parse_sdp(msg))!=NULL ) {
-		for(;;) {
-			sdp_session = get_sdp_session(sdp, sdp_session_num);
-			if(!sdp_session) break;
-			sdp_stream_num = 0;
-			for(;;) {
-				sdp_stream = get_sdp_stream(sdp, sdp_session_num,
-					sdp_stream_num);
-				if(!sdp_stream) break;
-				if(sdp_stream->media.len==AUDIO_STR_LEN &&
-						strncmp(sdp_stream->media.s,AUDIO_STR,AUDIO_STR_LEN)==0 &&
-						sdp_stream->is_on_hold)
-					return sdp_stream->is_on_hold;
-				sdp_stream_num++;
-			}
-			sdp_session_num++;
-		}
-	}
-	return -1;
-}
-
-
 #define SIP_PARSE_SDP	0x1
 #define SIP_PARSE_HDR	0x2
 #define SIP_PARSE_NOMF	0x4
@@ -1676,6 +1646,11 @@ static enum sip_validation_failures validate_contact_header(struct sip_msg *msg,
 	}
 
 	return SV_NO_ERROR;
+}
+
+static int w_is_audio_on_hold(struct sip_msg *msg)
+{
+	return is_audio_on_hold(msg) ? 1 : -1;
 }
 
 static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
