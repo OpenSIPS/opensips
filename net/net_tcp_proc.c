@@ -104,6 +104,7 @@ struct tcp_ipc_payload {
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {
 	int ret=0;
+	int n=0;
 
 	(void)idx;
 	pt_become_active();
@@ -172,21 +173,28 @@ again_payload:
 				break;
 			}
 
+			profiling_proc_enter( LEVEL_SIP,
+				ss_merge256( protos[payload->rcv.proto].name,
+				" proto handling"), 0);
+
 			bind_address = payload->rcv.bind_address;
 			if (payload->rcv.proto > PROTO_NONE &&
 					payload->rcv.proto < PROTO_LAST &&
 					is_tcp_based_proto(payload->rcv.proto) &&
 					protos[payload->rcv.proto].net.stream.handle) {
-				if (protos[payload->rcv.proto].net.stream.handle(
+				if ( (n=protos[payload->rcv.proto].net.stream.handle(
 						payload->msg_buf, payload->msg_len, &payload->rcv,
 						payload->data_len ?
 						payload->msg_buf + payload->msg_len + 1 : NULL,
-						payload->data_len) < 0)
+						payload->data_len)) < 0)
 					LM_ERR("TCP dispatch handler failed\n");
-			} else if (receive_msg(payload->msg_buf, payload->msg_len,
-					&payload->rcv, NULL, 0) < 0) {
+			} else if ( (n=receive_msg(payload->msg_buf, payload->msg_len,
+					&payload->rcv, NULL, 0)) < 0) {
 				LM_ERR("receive_msg() failed for dispatched TCP message\n");
 			}
+
+			profiling_proc_exit( LEVEL_SIP, "handling done", n);
+
 			if (payload->conn)
 				tcpconn_put(payload->conn);
 			shm_free(payload);
