@@ -1182,12 +1182,16 @@ static void mod_destroy(void)
 	while (d) {
 		d_tmp = d;
 		d = d->next;
+		/* we cannot free .ctx in attendant */
+		d_tmp->ctx = NULL;
 		tls_free_domain(d_tmp);
 	}
 	d = *tls_client_domains;
 	while (d) {
 		d_tmp = d;
 		d = d->next;
+		/* we cannot free .ctx in attendant */
+		d_tmp->ctx = NULL;
 		tls_free_domain(d_tmp);
 	}
 
