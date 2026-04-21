@@ -161,10 +161,19 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo, 
 		return -1;
 	}
 	/* a connected call */
-	if(max_duration)
-		tuple->lifetime = get_ticks() + max_duration;
-	else
-		tuple->lifetime = 0;
+	if (tuple->bridge_flags & B2BL_BR_FLAG_EXPLICIT_LIFETIME) {
+		/* A per-bridge lifetime was set via the max_duration flag on
+		 * b2b_bridge(); preserve it instead of overwriting with the
+		 * global max_duration modparam */
+		LM_DBG("Preserving per-bridge lifetime [%u] for tuple [%.*s]\n",
+			tuple->lifetime, tuple->key ? tuple->key->len : 0,
+			tuple->key ? tuple->key->s : "");
+	} else {
+		if(max_duration)
+			tuple->lifetime = get_ticks() + max_duration;
+		else
+			tuple->lifetime = 0;
+	}
 	entity = b2bl_search_entity(tuple, entity_key, src, &ent_head);
 	if(entity == NULL)
 	{

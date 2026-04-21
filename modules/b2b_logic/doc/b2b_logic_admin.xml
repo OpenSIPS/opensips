@@ -333,7 +333,10 @@ modparam("b2b_logic", "update_period", 60)
 	<section id="param_max_duration" xreflabel="max_duration">
 		<title><varname>max_duration</varname> (int)</title>
 		<para>
-			The maximum duration of a call.
+			The maximum duration of a call. This value is applied as the default
+			lifetime for all B2B sessions. It can be overridden on a per-bridge
+			basis by using the <emphasis>max_duration</emphasis> flag of the
+			<xref linkend="func_b2b_bridge"/> function.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>12 * 3600 (12 hours)</quote>.</emphasis>
@@ -782,7 +785,9 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 					<listitem><para>
 					<emphasis>max_duration=[nn]</emphasis> - Maximum duration of the B2B
 					session. If the lifetime expires, the B2BUA will send BYE messages to both
-					ends and delete the record. Example: "max_duration=300".
+					ends and delete the record. This per-bridge value takes precedence over the
+					global <xref linkend="param_max_duration"/> module parameter.
+					Example: "max_duration=300".
 					</para></listitem>
 					<listitem><para>
 					<emphasis>notify</emphasis> - Enable rfc3515 NOTIFY to inform the agent

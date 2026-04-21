@@ -83,6 +83,12 @@ enum b2b_tuple_state {
 #define B2BL_BR_FLAG_PENDING_SDP                   (1<<8)
 #define B2BL_BR_FLAG_BR_MSG_LATE_BYE               (1<<9)
 
+/* Internal flag: set when a per-bridge lifetime was explicitly provided
+ * via the max_duration flag on b2b_bridge(). Prevents b2b_add_dlginfo()
+ * from overwriting the per-bridge lifetime with the global max_duration
+ * modparam value when the bridged call is confirmed (200 OK). */
+#define B2BL_BR_FLAG_EXPLICIT_LIFETIME             (1<<10)
+
 /* reply flags */
 #define B2BL_RPL_FLAG_PASS_CONTACT                 (1<<0)
 

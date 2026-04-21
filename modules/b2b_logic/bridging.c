@@ -1679,8 +1679,11 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 
 	if (lifetime)
 	{
-		tuple->lifetime = lifetime + get_ticks();
-		LM_DBG("Lifetime defined = [%d]\n", tuple->lifetime);
+		unsigned int ticks = get_ticks();
+		tuple->lifetime = lifetime + ticks;
+		tuple->bridge_flags |= B2BL_BR_FLAG_EXPLICIT_LIFETIME;
+		LM_DBG("Per-bridge lifetime set = [%u] (duration=%d, ticks=%u)\n",
+			tuple->lifetime, lifetime, ticks);
 	}
 	else
 		tuple->lifetime = -1;
@@ -2025,6 +2028,9 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	}
 	e1->sdp_type = B2BL_SDP_LATE;
 	e1->state = 0;
+	/* Clear any per-bridge lifetime from a previous b2b_bridge() call;
+	 * this bridge path always uses the global max_duration */
+	tuple->bridge_flags &= ~B2BL_BR_FLAG_EXPLICIT_LIFETIME;
 	tuple->state = B2B_BRIDGING_STATE;
 	if(max_duration)
 		tuple->lifetime = get_ticks() + max_duration;
@@ -2413,6 +2419,9 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
 	}
 	bridging_entity->sdp_type = B2BL_SDP_NORMAL;
 	bridging_entity->state = 0;
+	/* Clear any per-bridge lifetime from a previous b2b_bridge() call;
+	 * this bridge path always uses the global max_duration */
+	tuple->bridge_flags &= ~B2BL_BR_FLAG_EXPLICIT_LIFETIME;
 	if(max_duration)
 		tuple->lifetime = get_ticks() + max_duration;
 	else
