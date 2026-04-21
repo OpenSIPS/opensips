@@ -1618,7 +1618,7 @@ int reply_received( struct sip_msg  *p_msg )
 
 	set_t(T_UNDEFINED);
 
-	profiling_proc_enter( "TM_reply_received", 0 );
+	profiling_proc_enter( LEVEL_SIP, "TM_reply_received", 0 );
 
 	/* make sure we know the associated transaction ... */
 	switch (t_check(p_msg, &branch )) {
@@ -1777,11 +1777,11 @@ done:
 	 */
 done_no_unref:
 	_tm_branch_index = 0;
-	profiling_proc_exit( "TM_reply_received", 0 );
+	profiling_proc_exit( LEVEL_SIP, "TM_reply_received", 0 );
 	return 0;
 not_found:
 	set_t(T_UNDEFINED);
-	profiling_proc_exit( "TM_reply_received", -1 );
+	profiling_proc_exit( LEVEL_SIP, "TM_reply_received", -1 );
 	return 1;
 }
 

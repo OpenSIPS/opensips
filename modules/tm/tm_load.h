@@ -149,9 +149,9 @@ static inline int load_tm_api( struct tm_binds *tmb )
 #define run_tm_api(_tmb, _api_func, _args...) \
 	({ \
 		typeof((_tmb)->_api_func(_args)) _tm_api_rc; \
-		profiling_proc_enter(#_api_func, 0); \
+		profiling_proc_enter( LEVEL_SIP, #_api_func, 0); \
 		_tm_api_rc = (_tmb)->_api_func(_args); \
-		profiling_proc_exit(#_api_func, (int)(intptr_t)_tm_api_rc); \
+		profiling_proc_exit( LEVEL_SIP, #_api_func, (int)(intptr_t)_tm_api_rc); \
 		_tm_api_rc; \
 	})
 

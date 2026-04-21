@@ -475,7 +475,7 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 		pr = NULL;
 	}
 
-	profiling_proc_start(1);
+	profiling_proc_start( LEVEL_EXTRAPROCS, 1);
 
 	/* we're safe here since this returns a struct sockaddr* and
 	 * sockaddr_union contains sockaddr* inside */
@@ -532,14 +532,14 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 							saved_body.len = httpd_receive_buff_pos;
 							saved_body.s = httpd_receive_buff;
 						}
-						profiling_proc_enter(
+						profiling_proc_enter( LEVEL_EXTRAPROCS,
 							ss_merge256("HTTPD_CB ",(char*)normalised_url), 0);
 						ret_code = cb->callback(cls, (void*)connection,
 								normalised_url,
 								method, version,
 								saved_body.s, saved_body.len,
 								con_cls, &buffer, &page, cl_socket);
-						profiling_proc_exit("HTTPD_CB", ret_code);
+						profiling_proc_exit( LEVEL_EXTRAPROCS, "HTTPD_CB", ret_code);
 					} else {
 						page = MI_HTTP_U_URL;
 						ret_code = MHD_HTTP_BAD_REQUEST;
@@ -621,14 +621,14 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 			if (cb) {
 				normalised_url = &url[cb->http_root->len+1];
 				LM_DBG("normalised_url=[%s]\n", normalised_url);
-				profiling_proc_enter(
+				profiling_proc_enter( LEVEL_EXTRAPROCS,
 					ss_merge256("HTTPD_CB ",(char*)normalised_url), 0 );
 				ret_code = cb->callback(cls, (void*)connection,
 						normalised_url,
 						method, version,
 						upload_data, *upload_data_size, con_cls,
 						&buffer, &page, cl_socket);
-				profiling_proc_exit("HTTPD_CB", ret_code);
+				profiling_proc_exit( LEVEL_EXTRAPROCS, "HTTPD_CB", ret_code);
 			} else {
 				page = MI_HTTP_U_URL;
 				ret_code = MHD_HTTP_BAD_REQUEST;
@@ -646,14 +646,14 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 		if (cb) {
 			normalised_url = &url[cb->http_root->len+1];
 			LM_DBG("normalised_url=[%s]\n", normalised_url);
-			profiling_proc_enter(
+			profiling_proc_enter( LEVEL_EXTRAPROCS,
 				ss_merge256("HTTPD_CB ",(char*)normalised_url), 0 );
 			ret_code = cb->callback(cls, (void*)connection,
 					normalised_url,
 					method, version,
 					upload_data, *upload_data_size, con_cls,
 					&buffer, &page, cl_socket);
-			profiling_proc_exit("HTTPD_CB", ret_code);
+			profiling_proc_exit( LEVEL_EXTRAPROCS, "HTTPD_CB", ret_code);
 		} else {
 			page = MI_HTTP_U_URL;
 			ret_code = MHD_HTTP_BAD_REQUEST;
@@ -718,15 +718,15 @@ send_response:
 	ret = MHD_queue_response (connection, ret_code, response);
 	MHD_destroy_response (response);
 
-	profiling_proc_end( ret );
+	profiling_proc_end( LEVEL_EXTRAPROCS, ret );
 	return ret;
 
 mhd_yes:
-	profiling_proc_end( MHD_YES );
+	profiling_proc_end( LEVEL_EXTRAPROCS, MHD_YES );
 	return MHD_YES;
 
 mhd_no:
-	profiling_proc_end( MHD_NO );
+	profiling_proc_end( LEVEL_EXTRAPROCS, MHD_NO );
 	return MHD_NO;
 }
 #endif

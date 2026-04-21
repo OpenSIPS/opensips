@@ -104,7 +104,7 @@ int async_fd_resume(int fd, void *param)
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 
-	profiling_proc_enter( ctx->resume_f_name, 0);
+	profiling_proc_enter( LEVEL_SIP, ctx->resume_f_name, 0);
 
 	/* call the resume function in order to read and handle data */
 	ret = ((async_resume_fd*)ctx->resume_f)( fd, ctx->resume_param );
@@ -151,7 +151,7 @@ done:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
 		close(fd);
 
-	profiling_proc_exit( "async-fd resume handler", async_status );
+	profiling_proc_exit( LEVEL_SIP, "async-fd resume handler", async_status );
 
 	return 0;
 }
@@ -191,7 +191,7 @@ int async_launch_resume(int fd, void *param)
 		return -1;
 	}
 
-	profiling_proc_enter( ctx->async.resume_f_name, 0);
+	profiling_proc_enter( LEVEL_SIP, ctx->async.resume_f_name, 0);
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 
@@ -279,7 +279,7 @@ restore:
 	/* clean whatever extra structures were added by script functions */
 	release_dummy_sip_msg(req);
 
-	profiling_proc_exit( "async-fd resume handler", async_status );
+	profiling_proc_exit( LEVEL_SIP, "async-fd resume handler", async_status );
 
 	return 0;
 }

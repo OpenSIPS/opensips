@@ -473,8 +473,8 @@ static int mi_add_profiling_proc_item(mi_item_t *procs_arr, int i)
 	if (add_mi_number(proc_item, MI_SSTR("PID"), pt[i].pid) < 0)
 		return -1;
 
-	if (add_mi_number(proc_item, MI_SSTR("Profiling"),
-		pt[i].profiling_proc) < 0)
+	if (add_mi_number(proc_item, MI_SSTR("Profiling level"),
+		pt[i].profiling_proc_level) < 0)
 		return -1;
 
 	if (add_mi_string(proc_item, MI_SSTR("Type"),
@@ -489,20 +489,19 @@ static mi_response_t *w_profiling_proc(const mi_params_t *params,
 {
 	int id;
 	int pid;
-	int state;
+	int level;
 	int have_id;
 	int have_pid;
-	int have_state;
+	int have_level;
 	int target_idx = -1;
 	int i;
-	int set_status;
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
 	mi_item_t *procs_arr;
 
 	have_id = (try_get_mi_int_param(params, "id", &id) == 0);
 	have_pid = (try_get_mi_int_param(params, "pid", &pid) == 0);
-	have_state = (try_get_mi_int_param(params, "state", &state) == 0);
+	have_level = (try_get_mi_int_param(params, "level", &level) == 0);
 
 	if (have_id && have_pid)
 		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
@@ -522,13 +521,17 @@ static mi_response_t *w_profiling_proc(const mi_params_t *params,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), MI_SSTR("Bad PID"));
 	}
 
-	if (have_state) {
-		set_status = state ? 1 : 0;
+	if (have_level) {
+		if (level < LEVEL_OFF)
+			level = LEVEL_OFF;
+		else if (level > LEVEL_FULL)
+			level = LEVEL_FULL;
+
 		if (target_idx >= 0) {
-			pt[target_idx].profiling_proc = set_status;
+			pt[target_idx].profiling_proc_level = level;
 		} else {
 			for (i = 0; i < counted_max_processes; i++)
-				pt[i].profiling_proc = set_status;
+				pt[i].profiling_proc_level = level;
 		}
 		return init_mi_result_ok();
 	}
@@ -1027,9 +1030,9 @@ static const mi_export_t mi_core_cmds[] = {
 		{w_profiling_proc, {0}},
 		{w_profiling_proc, {"id", 0}},
 		{w_profiling_proc, {"pid", 0}},
-		{w_profiling_proc, {"state", 0}},
-		{w_profiling_proc, {"id", "state", 0}},
-		{w_profiling_proc, {"pid", "state", 0}},
+		{w_profiling_proc, {"level", 0}},
+		{w_profiling_proc, {"id", "level", 0}},
+		{w_profiling_proc, {"pid", "level", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "log_level_filter", "gets/sets the per consumer log level filter",

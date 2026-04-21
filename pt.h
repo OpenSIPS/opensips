@@ -36,6 +36,14 @@
 enum process_type { TYPE_NONE=0, TYPE_UDP, TYPE_TCP,
 	TYPE_TIMER, TYPE_MODULE};
 
+enum profiling_proc_level {
+	LEVEL_OFF = 0,
+	LEVEL_SIP,
+	LEVEL_EXTRAPROCS,
+	LEVEL_TIMER,
+	LEVEL_FULL = LEVEL_TIMER,
+};
+
 #include "pt_scaling.h"
 
 struct process_table {
@@ -78,8 +86,8 @@ struct process_table {
 	/* used for suppressing the E_CORE_LOG event for new logs while handling
 	 * the event itself */
 	int suppress_log_event;
-	/* enable/disable process-level profiling hooks for this process */
-	int profiling_proc;
+	/* process-level profiling verbosity for this process */
+	enum profiling_proc_level profiling_proc_level;
 
 	/* statistics of this process - they do not change during runtime,
 	 * even when the proc is terminated or respawn - we just hide/unhide */

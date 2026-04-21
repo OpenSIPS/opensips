@@ -665,8 +665,8 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 	int rc, ret = -1;
 	str buf;
 
-	profiling_proc_start(0);
-	profiling_proc_enter( "MI_FIFO reading", 0 );
+	profiling_proc_start( LEVEL_EXTRAPROCS, 0);
+	profiling_proc_enter( LEVEL_EXTRAPROCS, "MI_FIFO reading", 0 );
 
 	/* commands must look this way ':[filename]:' */
 	if (mi_read_fifo(mi_buf + remain_len,
@@ -770,9 +770,10 @@ retry:
 	}
 
 	mi_trace_fifo_request(req_method, request.params);
-	profiling_proc_enter( ss_merge256("MI_FIFO ",req_method), 0 );
+	profiling_proc_enter( LEVEL_EXTRAPROCS,
+		ss_merge256("MI_FIFO ",req_method), 0 );
 	response = handle_mi_request(&request, cmd, hdl);
-	profiling_proc_exit( ss_merge256("MI_FIFO ",req_method),
+	profiling_proc_exit( LEVEL_EXTRAPROCS, ss_merge256("MI_FIFO ",req_method),
 		(response==NULL)?-1:((response==MI_ASYNC_RPL)?1:0) );
 	LM_DBG("got mi response = [%p]\n", response);
 
@@ -807,17 +808,17 @@ free_request:
 end:
 	if (parse_len)
 		goto retry;
-	profiling_proc_exit( "MI_FIFO", 0 );
-	profiling_proc_end(0);
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_FIFO", 0 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0);
 	return 0;
 skip_unparsed:
 	remain_len = 0;
-	profiling_proc_exit( "MI_FIFO", 0 );
-	profiling_proc_end(0);
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_FIFO", 0 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0);
 	return 0;
 done:
-	profiling_proc_exit( "MI_FIFO", ret );
-	profiling_proc_end(ret);
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_FIFO", ret );
+	profiling_proc_end( LEVEL_EXTRAPROCS, ret);
 	return ret;
 }
 
@@ -848,4 +849,3 @@ void mi_fifo_server(FILE *fifo_stream)
 
 	return;
 }
-

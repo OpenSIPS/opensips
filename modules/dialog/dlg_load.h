@@ -106,9 +106,9 @@ static inline int load_dlg_api( struct dlg_binds *dlgb )
 #define run_dlg_api(_dlg_api, _api_func, _args...) \
 	({ \
 		typeof((_dlg_api)->_api_func(_args)) _dlg_api_rc; \
-		profiling_proc_enter(#_api_func, 0); \
+		profiling_proc_enter( LEVEL_SIP, #_api_func, 0); \
 		_dlg_api_rc = (_dlg_api)->_api_func(_args); \
-		profiling_proc_exit(#_api_func, (int)(intptr_t)_dlg_api_rc); \
+		profiling_proc_exit( LEVEL_SIP, #_api_func, (int)(intptr_t)_dlg_api_rc); \
 		_dlg_api_rc; \
 	})
 

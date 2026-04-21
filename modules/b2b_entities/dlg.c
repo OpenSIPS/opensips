@@ -746,7 +746,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 
 	storage.buffer.s = NULL;
 
-	profiling_proc_enter( "B2BE_request_prescript", 0 );
+	profiling_proc_enter( LEVEL_SIP, "B2BE_request_prescript", 0 );
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -1457,10 +1457,10 @@ end:
 	if (b2b_ev != -1 && storage.buffer.s)
 		bin_free_packet(&storage);
 scb_drop_msg:
-	profiling_proc_exit( "B2BE_request_prescript", 1 );
+	profiling_proc_exit( LEVEL_SIP, "B2BE_request_prescript", 1 );
 	return SCB_DROP_MSG;
 scb_run_all:
-	profiling_proc_exit( "B2BE_request_prescript", -1 );
+	profiling_proc_exit( LEVEL_SIP, "B2BE_request_prescript", -1 );
 	return SCB_RUN_ALL;
 }
 
@@ -3015,7 +3015,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	if(statuscode == 100)
 		return;
 
-	profiling_proc_enter( "B2BE_reply_received", 0 );
+	profiling_proc_enter( LEVEL_SIP, "B2BE_reply_received", 0 );
 
 	msg = ps->rpl;
 	b2b_key = (str*)*ps->param;
@@ -3905,7 +3905,7 @@ error1:
 		free_lump_list(msg->body_lumps);
 	}
 done:
-	profiling_proc_exit( "B2BE_reply_received", 0 );
+	profiling_proc_exit( LEVEL_SIP, "B2BE_reply_received", 0 );
 	return;
 }
 

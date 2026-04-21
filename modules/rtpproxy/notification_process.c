@@ -204,7 +204,7 @@ static int rtpproxy_io_callback(int fd, void *fs, int was_timeout)
 	str command;
 	char *p, *start, *sp, *end;
 
-	profiling_proc_start(1);
+	profiling_proc_start( LEVEL_EXTRAPROCS, 1);
 
 	if (notify && notify->remaining) {
 		memcpy(buffer, notify->remaining, notify->remaining_len);
@@ -242,7 +242,7 @@ static int rtpproxy_io_callback(int fd, void *fs, int was_timeout)
 	end = buffer + left;
 	buffer[len] = 0; // make it null terminated
 
-	profiling_proc_enter( ss_merge256("RTPP_CB ",buffer), 0 );
+	profiling_proc_enter( LEVEL_EXTRAPROCS, ss_merge256("RTPP_CB ",buffer), 0 );
 
 	do {
 		start = p;
@@ -273,15 +273,15 @@ static int rtpproxy_io_callback(int fd, void *fs, int was_timeout)
 		}
 	}
 
-	profiling_proc_exit( "RTPP_CB", 0 );
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "RTPP_CB", 0 );
 
 done:
-	profiling_proc_end( 0 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0 );
 	return 0;
 err1:
-	profiling_proc_exit( "RTPP_CB", -1 );
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "RTPP_CB", -1 );
 err:
-	profiling_proc_end( -1 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, -1 );
 	return -1;
 }
 
@@ -292,7 +292,7 @@ static int rtpproxy_io_new_callback(int fd, void *fs, int was_timeout)
 	struct rtpp_node *node;
 	struct rtpp_notify *notify;
 
-	profiling_proc_start(1);
+	profiling_proc_start( LEVEL_EXTRAPROCS, 1);
 
 	size = sizeof(rtpp_info);
 	memset(&rtpp_info, 0, size);
@@ -302,7 +302,7 @@ static int rtpproxy_io_new_callback(int fd, void *fs, int was_timeout)
 		goto err;
 	}
 
-	profiling_proc_enter( "RTPP new CB", 0 );
+	profiling_proc_enter( LEVEL_EXTRAPROCS, "RTPP new CB", 0 );
 
 	if (rtpp_notify_socket_un) {
 		LM_DBG("trusting unix socket connection\n");
@@ -334,13 +334,13 @@ static int rtpproxy_io_new_callback(int fd, void *fs, int was_timeout)
 	list_add(&notify->list, &rtpp_notify_fds);
 
 done:
-	profiling_proc_exit( "RTPP new CB", 0 );
-	profiling_proc_end( 0 );
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "RTPP new CB", 0 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0 );
 	return 0;
 err1:
-	profiling_proc_exit( "RTPP new CB", -1 );
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "RTPP new CB", -1 );
 err:
-	profiling_proc_end( -1 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, -1 );
 	return -1;
 }
 

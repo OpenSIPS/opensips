@@ -2206,7 +2206,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl
 
 	c1 = (src==B2B_CLIENT)?"B2BL client":"B2BL server";
 	c2 = (type==B2B_REPLY)?"reply":"request";
-	profiling_proc_enter( sss_merge256(c1," received a ",c2), 0 );
+	profiling_proc_enter( LEVEL_SIP, sss_merge256(c1," received a ",c2), 0 );
 
 	if(b2bl_parse_key(b2bl_key, &hash_index, &local_index)< 0)
 	{
@@ -2425,10 +2425,10 @@ done:
 		pkg_free(new_body.s);
 	if(extra_headers.s)
 		pkg_free(extra_headers.s);
-	profiling_proc_exit( "B2BL_notify_received", ret);
+	profiling_proc_exit( LEVEL_SIP, "B2BL_notify_received", ret);
 	return ret;
 error:
-	profiling_proc_exit( "B2BL_notify_received", -1);
+	profiling_proc_exit( LEVEL_SIP, "B2BL_notify_received", -1);
 	return -1;
 }
 

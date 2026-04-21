@@ -204,9 +204,9 @@ static inline int load_b2b_api( struct b2b_api *b2b_api)
 #define run_b2be_api(_b2b_api, _api_func, _args...) \
 	({ \
 		typeof((_b2b_api)->_api_func(_args)) _b2be_api_rc; \
-		profiling_proc_enter(#_api_func, 0); \
+		profiling_proc_enter( LEVEL_SIP, #_api_func, 0); \
 		_b2be_api_rc = (_b2b_api)->_api_func(_args); \
-		profiling_proc_exit(#_api_func, (int)(intptr_t)_b2be_api_rc); \
+		profiling_proc_exit( LEVEL_SIP, #_api_func, (int)(intptr_t)_b2be_api_rc); \
 		_b2be_api_rc; \
 	})
 

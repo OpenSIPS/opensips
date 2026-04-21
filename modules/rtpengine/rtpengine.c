@@ -4799,7 +4799,7 @@ static int rtpengine_io_callback(int fd, void *fs, int was_timeout)
 	char *p;
 	char buffer[RTPENGINE_DGRAM_BUF];
 
-	profiling_proc_start(1);
+	profiling_proc_start( LEVEL_EXTRAPROCS, 1);
 
 	do
 		ret = read(fd, buffer, RTPENGINE_DGRAM_BUF);
@@ -4824,7 +4824,7 @@ static int rtpengine_io_callback(int fd, void *fs, int was_timeout)
 	memcpy(p, buffer, ret);
 	p[ret] = '\0';
 
-	profiling_proc_enter( ss_merge256("RTPE_CB ",p), 0);
+	profiling_proc_enter( LEVEL_EXTRAPROCS, ss_merge256("RTPE_CB ",p), 0);
 
 	LM_INFO("dispatching buffer: %s\n", p);
 	if (ipc_dispatch_rpc(rtpengine_raise_event, p) < 0) {
@@ -4832,12 +4832,12 @@ static int rtpengine_io_callback(int fd, void *fs, int was_timeout)
 		shm_free(p);
 	}
 
-	profiling_proc_exit( "RTPE_CB", 0);
-	profiling_proc_end( 0 );
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "RTPE_CB", 0);
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0 );
 done:
 	return 0;
 err:
-	profiling_proc_end( -1 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, -1 );
 	return -1;
 }
 

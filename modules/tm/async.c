@@ -409,7 +409,7 @@ int t_resume_async(int fd, void *param, int was_timeout)
 		set_global_context(NULL);
 	}
 
-	profiling_proc_enter(
+	profiling_proc_enter( LEVEL_SIP,
 		sss_merge256( ctx->async.resume_f_name, " -> ",
 			ctx->resume_route->name.s),
 		0 );
@@ -421,7 +421,7 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	} else
 		rc = t_resume_async_request(fd,param,was_timeout); 
 
-	profiling_proc_exit( "async-cfg resume handler", rc );
+	profiling_proc_exit( LEVEL_SIP, "async-cfg resume handler", rc );
 
 	return rc;
 }

@@ -186,6 +186,9 @@ extern uint16_t profiling_proc_pending_no;
 extern uint16_t proc_depth;
 
 
+#define profiling_proc_level_enabled(_level) \
+	( (_level!=LEVEL_OFF) && (_level<=pt[process_no].profiling_proc_level) )
+
 static inline void profiling_proc_flush_pending(void)
 {
 	uint16_t i;
@@ -221,11 +224,12 @@ static inline void profiling_proc_flush_pending(void)
 }
 
 
-static inline void profiling_proc_start(int with_next)
+static inline void profiling_proc_start(enum profiling_proc_level level,
+	int with_next)
 {
 	profiling_handlers_t *handlers;
 
-	if (!pt[process_no].profiling_proc)
+	if (!profiling_proc_level_enabled(level))
 		return;
 
 	proc_depth = 0;
@@ -247,11 +251,12 @@ static inline void profiling_proc_start(int with_next)
 }
 
 
-static inline void profiling_proc_end( int status)
+static inline void profiling_proc_end(enum profiling_proc_level level,
+	int status)
 {
 	profiling_handlers_t *handlers;
 
-	if (!pt[process_no].profiling_proc)
+	if (!profiling_proc_level_enabled(level))
 		return;
 
 	if (profiling_proc_pending_no) {
@@ -267,14 +272,14 @@ static inline void profiling_proc_end( int status)
 }
 
 
-#define profiling_proc_enter( _name, _with_next ) \
-	_profiling_proc_enter( _name, __func__, __LINE__, _with_next)
-static inline void _profiling_proc_enter( const char *name,
-	const char *file, int line, int with_next)
+#define profiling_proc_enter( _level, _name, _with_next ) \
+	_profiling_proc_enter( _level, _name, __func__, __LINE__, _with_next)
+static inline void _profiling_proc_enter(enum profiling_proc_level level,
+	const char *name, const char *file, int line, int with_next)
 {
 	profiling_handlers_t *handlers;
 
-	if (!pt[process_no].profiling_proc)
+	if (!profiling_proc_level_enabled(level))
 		return;
 
 	proc_depth++;
@@ -304,14 +309,14 @@ static inline void _profiling_proc_enter( const char *name,
 }
 
 
-#define profiling_proc_exit( _name, _status ) \
-	_profiling_proc_exit( _name, __func__, __LINE__, _status)
-static inline void _profiling_proc_exit( const char *name,
-	const char *file, int line, int status)
+#define profiling_proc_exit( _level, _name, _status ) \
+	_profiling_proc_exit( _level, _name, __func__, __LINE__, _status)
+static inline void _profiling_proc_exit(enum profiling_proc_level level,
+	const char *name, const char *file, int line, int status)
 {
 	profiling_handlers_t *handlers;
 
-	if (!pt[process_no].profiling_proc)
+	if (!profiling_proc_level_enabled(level))
 		return;
 
 	proc_depth--;
