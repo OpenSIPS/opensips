@@ -2188,7 +2188,8 @@ void tcp_destroy(void)
 	}
 
 	if (tcp_write_queue) {
-		cond_destroy(&tcp_write_queue->cond);
+		/* Skip cond teardown during attendant shutdown. */
+		/* cond_destroy(&tcp_write_queue->cond); */
 		shm_free(tcp_write_queue);
 		tcp_write_queue = 0;
 	}
