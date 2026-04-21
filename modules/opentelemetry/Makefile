@@ -17,7 +17,6 @@ ifeq ($(strip $(OTEL_CPP_CFLAGS)$(OTEL_CPP_LIBS)),)
 $(error OpenTelemetry C++ SDK not found via pkg-config (opentelemetry_*). Please install the system libraries.)
 endif
 
-DEFS+=-DHAVE_OPENTELEMETRY_CPP
 CXXFLAGS+=-std=c++17 -fpermissive $(OTEL_CPP_CFLAGS)
 LIBS+=$(OTEL_CPP_LIBS)
 

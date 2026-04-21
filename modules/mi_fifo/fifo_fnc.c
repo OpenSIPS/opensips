@@ -37,6 +37,7 @@
 
 #include "../../dprint.h"
 #include "../../ut.h"
+#include "../../profiling.h"
 #include "../../mi/mi.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
@@ -661,8 +662,11 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 	FILE *reply_stream;
 	struct mi_handler *hdl = NULL;
 	mi_response_t *response = NULL;
-	int rc;
+	int rc, ret = -1;
 	str buf;
+
+	profiling_proc_start( LEVEL_EXTRAPROCS, 0);
+	profiling_proc_enter( LEVEL_EXTRAPROCS, "MI_FIFO reading", 0 );
 
 	/* commands must look this way ':[filename]:' */
 	if (mi_read_fifo(mi_buf + remain_len,
@@ -689,7 +693,7 @@ retry:
 	}
 	if (parse_len<3) {
 		LM_DBG("command must have at least 3 chars (has %d)\n", parse_len);
-		return -1;
+		goto done;
 	}
 	if (*p!=MI_CMD_SEPARATOR) {
 		LM_ERR("command must begin with '%c': %.*s\n",
@@ -702,11 +706,12 @@ retry:
 	file_sep=memchr(p, MI_CMD_SEPARATOR , parse_len);
 	if (file_sep==NULL) {
 		LM_DBG("file separator missing: %.*s\n", read_len, mi_buf);
-		return 0;
+		ret = 0;
+		goto done;
 	}
 	if (file_sep - file + 1 >= parse_len) {
 		LM_DBG("no command specified yet: %.*s\n", read_len, mi_buf);
-		return -1;
+		goto done;
 	}
 	p = file_sep + 1;
 	parse_len -= file_sep - file + 1;
@@ -727,7 +732,7 @@ retry:
 	memset(&request, 0, sizeof request);
 	if (parse_mi_request(p, &parse_end, &request) < 0) {
 		LM_ERR("cannot parse command: %.*s\n", parse_len, p);
-		return -1;
+		goto done;
 	}
 
 	if (parse_end)
@@ -765,7 +770,11 @@ retry:
 	}
 
 	mi_trace_fifo_request(req_method, request.params);
+	profiling_proc_enter( LEVEL_EXTRAPROCS,
+		ss_merge256("MI_FIFO ",req_method), 0 );
 	response = handle_mi_request(&request, cmd, hdl);
+	profiling_proc_exit( LEVEL_EXTRAPROCS, ss_merge256("MI_FIFO ",req_method),
+		(response==NULL)?-1:((response==MI_ASYNC_RPL)?1:0) );
 	LM_DBG("got mi response = [%p]\n", response);
 
 	if (response == NULL) {
@@ -799,10 +808,18 @@ free_request:
 end:
 	if (parse_len)
 		goto retry;
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_FIFO", 0 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0);
 	return 0;
 skip_unparsed:
 	remain_len = 0;
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_FIFO", 0 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0);
 	return 0;
+done:
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_FIFO", ret );
+	profiling_proc_end( LEVEL_EXTRAPROCS, ret);
+	return ret;
 }
 
 
@@ -832,4 +849,3 @@ void mi_fifo_server(FILE *fifo_stream)
 
 	return;
 }
-

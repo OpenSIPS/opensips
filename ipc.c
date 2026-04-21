@@ -26,6 +26,7 @@
 
 #include "ipc.h"
 #include "dprint.h"
+#include "profiling.h"
 #include "mem/mem.h"
 
 #include <fcntl.h>
@@ -321,6 +322,7 @@ void ipc_handle_job(int fd)
 
 	reset_proc_log_event();
 
+	profiling_proc_enter( LEVEL_SIP, ipc_handlers[job.handler_type].name, 0 );
 	/* custom handling for RPC type */
 	if (job.handler_type==ipc_rpc_type) {
 		ipc_running_rpc_job = 1;
@@ -330,6 +332,7 @@ void ipc_handle_job(int fd)
 		/* generic registered type */
 		ipc_handlers[job.handler_type].func( job.snd_proc, job.payload1);
 	}
+	profiling_proc_exit( LEVEL_SIP, ipc_handlers[job.handler_type].name, 0 );
 
 	return;
 }

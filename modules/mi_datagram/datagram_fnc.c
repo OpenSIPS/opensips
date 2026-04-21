@@ -41,6 +41,7 @@
 #include "../../resolve.h"
 #include "../../mi/mi_trace.h"
 #include "../../reactor_proc.h"
+#include "../../profiling.h"
 #include "mi_datagram.h"
 #include "datagram_fnc.h"
 
@@ -498,6 +499,9 @@ int mi_datagram_callback(int rx_sock, void *_tx_sock, int was_timeout)
 		return -1;
 	}
 
+	profiling_proc_start( LEVEL_EXTRAPROCS, 0);
+	profiling_proc_enter( LEVEL_EXTRAPROCS, "MI_DATAGRAM handling", 0 );
+
 	req_method = mi_get_req_method(&request);
 	if (req_method)
 		cmd = lookup_mi_cmd(req_method, strlen(req_method));
@@ -522,7 +526,11 @@ int mi_datagram_callback(int rx_sock, void *_tx_sock, int was_timeout)
 		async_hdl = 0;
 	}
 
+	profiling_proc_enter( LEVEL_EXTRAPROCS,
+		ss_merge256("MI_DATAGRAM ",req_method), 0 );
 	response = handle_mi_request(&request, cmd, async_hdl);
+	profiling_proc_exit( LEVEL_EXTRAPROCS, ss_merge256("MI_DATAGRAM ",req_method),
+		(response==NULL)?-1:((response==MI_ASYNC_RPL)?1:0) );
 
 	if (response == NULL) {
 		LM_ERR("failed to build response!\n");
@@ -582,10 +590,15 @@ free_resp:
 				free_async_handler(async_hdl);
 		if (response)
 			free_mi_response(response);
-	} else
+	} else {
+		profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_DATAGRAM", 0 );
+		profiling_proc_end( LEVEL_EXTRAPROCS, 0);
 		return 0;
+	}
 free_req:
 	free_mi_request_parsed(&request);
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_DATAGRAM", 0 );
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0);
 	return 0;
 }
 
@@ -609,4 +622,3 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 
 	return;
 }
-

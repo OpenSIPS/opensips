@@ -155,6 +155,7 @@ extern int route_type;
  * @has_name: whether the top route has a name or not
  */
 void get_top_route_type(str *type, int *has_name);
+const char *route_type_name(int route_type);
 
 void get_route_type(int idx, str *type);
 void get_route_name(int idx, str *name);

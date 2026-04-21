@@ -297,7 +297,7 @@ int xmpp_send_sip_msg(char *from, char *to, char *msg)
 	msgstr.s = msg;
 	msgstr.len = strlen(msg);
 
-	return tmb.t_request(
+	return run_tm_api(&tmb, t_request,
 			&msg_type,                      /* Type of the message */
 			0,                              /* Request-URI */
 			&tostr,                         /* To */
@@ -479,4 +479,3 @@ int xmpp_send_xnotify(str *from, str *to, str *msg, str *id)
 		return -1;
 	return xmpp_send_pipe_cmd(XMPP_PIPE_SEND_PNOTIFY, from, to, msg, id);
 }
-

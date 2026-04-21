@@ -340,7 +340,7 @@ int ospProcessSubscribe(
                 /* Generate extra headers */
                 if (ospExtraHeaders(msg, expire, &contact, &headers) == 0) {
                     /* Send NOTIFY */
-                    if (osp_tmb.t_request_within(&notify, &headers, cnamrecord, dialog, ospNotifyCallback, NULL, NULL) < 0) {
+                    if (run_tm_api(&osp_tmb, t_request_within, &notify, &headers, cnamrecord, dialog, ospNotifyCallback, NULL, NULL) < 0) {
                         LM_ERR("failed to send notify\n");
                     } else {
                        result = MODULE_RETURNCODE_TRUE;

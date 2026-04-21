@@ -2381,7 +2381,7 @@ static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg,
 	static str inv = str_init("INVITE");
 	static str content_type_sdp = str_init("application/sdp");
 
-	int ret = rtp_relay_dlg.send_indialog_request(tmp->dlg,
+	int ret = run_dlg_api(&rtp_relay_dlg, send_indialog_request, tmp->dlg,
 			&inv, leg, body, &content_type_sdp, NULL,
 			rtp_relay_reinvite_reply, tmp, NULL);
 	if (body && release_body)

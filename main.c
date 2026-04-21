@@ -133,6 +133,7 @@
 #include "statistics.h"
 #include "status_report.h"
 #include "core_stats.h"
+#include "profiling.h"
 #include "pvar.h"
 #include "signals.h"
 #include "shutdown.h"
@@ -217,6 +218,7 @@ static const struct main_script main_script[] = {
 	FN_HNDLR(init_serialization, !=, 0, "serialization"),
 	FN_HNDLR(init_mi_core, <, 0, "MI core"),
 	FN_HNDLR(evi_register_core, !=, 0, "register core events"),
+	FN_HNDLR(init_profiling, !=, 0, "profiling support"),
 	FN_HNDLR(init_black_lists, !=, 0, "black list engine"),
 	FN_HNDLR(resolv_blacklist_init, !=, 0, "resolver's blacklist"),
 	FN_HNDLR(init_dset, !=, 0, "SIP forking logic"),

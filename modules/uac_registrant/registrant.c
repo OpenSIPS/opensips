@@ -876,7 +876,7 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 		memset( current_processing_ctx, 0, context_size(CONTEXT_GLOBAL) );
 
 		/* send the request within the new context */
-		result=tmb.t_request_within(
+		result=run_tm_api(&tmb, t_request_within,
 			&register_method,	/* method */
 			&extra_hdrs,		/* extra headers*/
 			NULL,			/* body */
@@ -946,7 +946,7 @@ int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
 	LM_DBG("extra_hdrs=[%p][%d]->[%.*s]\n",
 		extra_hdrs.s, extra_hdrs.len, extra_hdrs.len, extra_hdrs.s);
 
-	result=tmb.t_request_within(
+	result=run_tm_api(&tmb, t_request_within,
 		&register_method,	/* method */
 		&extra_hdrs,		/* extra headers*/
 		NULL,			/* body */

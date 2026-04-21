@@ -98,7 +98,7 @@ static int send_unregister(str *from, str *to, str *ruri, str *callid,
 		return -1;
 	}
 
-	ret = tmb.t_request_within(
+	ret = run_tm_api(&tmb, t_request_within,
 		&register_method,	/* method */
 		&extra_hdrs,		/* extra headers*/
 		NULL,			/* body */

@@ -43,6 +43,7 @@
 #include "../presence/hash.h"
 #include "../../action.h"
 #include "../../trim.h"
+#include "../../profiling.h"
 #include "dlg.h"
 #include "b2b_entities.h"
 #include "b2be_db.h"
@@ -874,11 +875,13 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 
 	storage.buffer.s = NULL;
 
+	profiling_proc_enter( LEVEL_SIP, "B2BE_request_prescript", 0 );
+
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
 	{
 		LM_ERR("failed to parse message\n");
-		return SCB_RUN_ALL;
+		goto scb_run_all;
 	}
 	LM_DBG("start - method = %.*s\n", msg->first_line.u.request.method.len,
 		 msg->first_line.u.request.method.s);
@@ -890,18 +893,18 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		/* we accept Route hdrs only if preloaded route with out IPs */
 		if (parse_rr(route_hdr) < 0) {
 			LM_ERR("failed to parse Route HF\n");
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 		rt = (rr_t*)route_hdr->parsed;
 		/* check if first route is local*/
 		if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ) {
 			LM_ERR("Route uri is not valid <%.*s>\n",
 				rt->nameaddr.uri.len,rt->nameaddr.uri.s);
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 		if (check_self_strict( &puri.host, puri.port_no, puri.proto)!= 1 ) {
 			LM_DBG("First Route uri is not mine\n");
-			return SCB_RUN_ALL;  /* not for b2b */
+			goto scb_run_all;  /* not for b2b */
 
 		}
 		/* check if second route is local*/
@@ -911,7 +914,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 				route_hdr = msg->route->sibling;
 				if (parse_rr(route_hdr) < 0) {
 					LM_ERR("failed to parse second Route HF\n");
-					return SCB_RUN_ALL;
+					goto scb_run_all;
 				}
 				rt = (rr_t*)route_hdr->parsed;
 			}
@@ -920,16 +923,16 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 			if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ){
 				LM_ERR("Second route uri is not valid <%.*s>\n",
 					rt->nameaddr.uri.len,rt->nameaddr.uri.s);
-				return SCB_RUN_ALL;
+				goto scb_run_all;
 			}
 			if (check_self_strict( &puri.host, puri.port_no, puri.proto)!= 1 ){
 				LM_DBG("Second Route uri is not mine\n");
-				return SCB_RUN_ALL;  /* not for b2b */
+				goto scb_run_all;  /* not for b2b */
 			}
 			/* check the presence of the third route */
 			if (rt->next || route_hdr->sibling) {
 				LM_DBG("More than 2 route hdr -> not for me\n");
-				return SCB_RUN_ALL;  /* not for b2b */
+				goto scb_run_all;  /* not for b2b */
 			}
 		}
 		/* "route" hdr checking is ok, continue */
@@ -944,7 +947,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	if(parse_sip_msg_uri(msg)< 0)
 	{
 		LM_ERR("Failed to parse uri\n");
-		return SCB_RUN_ALL;
+		goto scb_run_all;
 	}
 	host = msg->parsed_uri.host;
 	port = msg->parsed_uri.port_no;
@@ -956,7 +959,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		if (check_self_strict( &host, port, msg->parsed_uri.proto)!= 1 )
 		{
 			LM_DBG("RURI does not point to me\n");
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 	}
 
@@ -964,20 +967,20 @@ search_dialog:
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
 		LM_ERR("no callid header found\n");
-		return SCB_RUN_ALL;
+		goto scb_run_all;
 	}
 	/* examine the from header */
 	if (!msg->from || !msg->from->body.s)
 	{
 		LM_ERR("cannot find 'from' header!\n");
-		return SCB_RUN_ALL;
+		goto scb_run_all;
 	}
 	if (msg->from->parsed == NULL)
 	{
 		if ( parse_from_header( msg )<0 )
 		{
 			LM_ERR("cannot parse From header\n");
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 	}
 
@@ -985,7 +988,7 @@ search_dialog:
 	from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
 	if (from_tag.len==0 || from_tag.s==NULL) {
 		LM_ERR("From header has no TAG parameter\n");
-		return SCB_RUN_ALL;
+		goto scb_run_all;
 	}
 
 	/* if a CANCEL request - search iteratively in the server_htable*/
@@ -999,13 +1002,13 @@ search_dialog:
 		if(b2b_parse_key(&callid, &hash_index, &local_index, NULL) >= 0)
 		{
 			LM_DBG("received a CANCEL message that I sent\n");
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 		*/
 
 		if ( (T_invite=tmb.t_lookup_original_t(msg))==NULL ) {
 			LM_DBG("No INVITE transaction found for cancel\n");
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 
 		hash_index = core_hash(&callid, &from_tag, server_hsize);
@@ -1020,7 +1023,7 @@ search_dialog:
 		{
 			B2BE_LOCK_RELEASE(server_htable, hash_index);
 			LM_DBG("No dialog found for cancel\n");
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 		tmb.unref_cell( T_invite );
 
@@ -1028,12 +1031,12 @@ search_dialog:
 		if (!ctx) {
 			LM_ERR("Failed to get b2b context\n");
 			B2BE_LOCK_RELEASE(server_htable, hash_index);
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 		if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 			LM_ERR("Failed to copy b2b_logic key to b2b context\n");
 			B2BE_LOCK_RELEASE(server_htable, hash_index);
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 
 		table = server_htable;
@@ -1048,17 +1051,17 @@ search_dialog:
 			else
 				LM_DBG("Error when creating tm transaction\n");
 			B2BE_LOCK_RELEASE(server_htable, hash_index);
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 
 		/* start tracing for the CANCEL transaction */
 		b2b_run_tracer( dlg, msg, tmb.t_gett());
 
-		if(tmb.t_reply(msg, 200, &reply_text) < 0)
+		if(run_tm_api(&tmb, t_reply, msg, 200, &reply_text) < 0)
 		{
 			LM_ERR("failed to send reply for CANCEL\n");
 			B2BE_LOCK_RELEASE(server_htable, hash_index);
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 		tmb.unref_cell(tmb.t_gett());
 
@@ -1073,13 +1076,13 @@ search_dialog:
 	((struct to_body *)msg->to->parsed)->error != PARSE_OK )
 	{
 		LM_DBG("'To' header COULD NOT parsed\n");
-		return SCB_DROP_MSG;
+		goto scb_drop_msg;
 	}
 	to_tag = get_to(msg)->tag_value;
 	if(to_tag.s == NULL || to_tag.len == 0)
 	{
 		LM_DBG("Not an inside dialog request- not interested.\n");
-		return SCB_RUN_ALL;
+		goto scb_run_all;
 	}
 
 	b2b_key = to_tag;
@@ -1109,7 +1112,7 @@ search_dialog:
 			if(method_value != METHOD_UPDATE && method_value != METHOD_PRACK)
 			{
 				LM_DBG("Not a b2b request\n");
-				return SCB_RUN_ALL;
+				goto scb_run_all;
 			}
 			else
 			{
@@ -1122,7 +1125,7 @@ search_dialog:
 				{
 					B2BE_LOCK_RELEASE(server_htable, hash_index);
 					LM_DBG("No dialog found for UPDATE/PRACK\n");
-					return SCB_RUN_ALL;
+					goto scb_run_all;
 				}
 			}
 		}
@@ -1148,16 +1151,16 @@ search_dialog:
 			if(method_value == METHOD_BYE)
 			{
 				str ok = str_init("OK");
-				tmb.t_reply(msg, 200, &ok);
+				run_tm_api(&tmb, t_reply, msg, 200, &ok);
 			} else {
 				str ko = str_init("Call/Transaction Does Not Exist");
-				tmb.t_reply(msg, 481, &ko);
+				run_tm_api(&tmb, t_reply, msg, 481, &ko);
 			}
 			tm_tran = tmb.t_gett();
 			if (tm_tran && tm_tran!=T_UNDEFINED)
 				tmb.unref_cell(tm_tran);
 			B2BE_LOCK_RELEASE(table, hash_index);
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 	}
 
@@ -1170,12 +1173,12 @@ search_dialog:
 	if (!ctx) {
 		LM_ERR("Failed to get b2b context\n");
 		B2BE_LOCK_RELEASE(server_htable, hash_index);
-		return SCB_DROP_MSG;
+		goto scb_drop_msg;
 	}
 	if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
 		B2BE_LOCK_RELEASE(server_htable, hash_index);
-		return SCB_DROP_MSG;
+		goto scb_drop_msg;
 	}
 
 	if (method_value == METHOD_PRACK)
@@ -1194,7 +1197,7 @@ search_dialog:
 			tm_tran = tmb.t_gett();
 			if (dlg)
 				b2b_run_tracer(dlg, msg, tm_tran);
-			tmb.t_reply(msg, 200, &reason);
+			run_tm_api(&tmb, t_reply, msg, 200, &reason);
 			if(tm_tran && tm_tran!=T_UNDEFINED)
 				tmb.unref_cell(tm_tran);
 
@@ -1202,7 +1205,7 @@ search_dialog:
 		        if(ref_script_route_is_valid(req_route_ref))
 			        run_top_route(sroutes->request[req_route_ref->idx], msg);
 
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 	}
 
@@ -1212,7 +1215,7 @@ search_dialog:
 		{
 			LM_DBG("I can not accept requests if the state is not confimed\n");
 			B2BE_LOCK_RELEASE(table, hash_index);
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 	}
 
@@ -1224,7 +1227,7 @@ search_dialog:
 	{
 		LM_DBG("It is a ACK retransmission, drop\n");
 		B2BE_LOCK_RELEASE(table, hash_index);
-		return SCB_DROP_MSG;
+		goto scb_drop_msg;
 	}
 
 logic_notify:
@@ -1239,7 +1242,7 @@ logic_notify:
 			if (parse_from_header(msg) < 0)
 			{
 				LM_ERR("cannot parse From header\n");
-				return SCB_DROP_MSG;
+				goto scb_drop_msg;
 			}
 			callid = msg->callid->body;
 			from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
@@ -1261,7 +1264,7 @@ logic_notify:
 		{
 			LM_DBG("Record not found anymore\n");
 			B2BE_LOCK_RELEASE(table, hash_index);
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 
 		if (table == server_htable) {
@@ -1284,7 +1287,7 @@ logic_notify:
 				else
 					LM_DBG("Error when creating tm transaction\n");
 				B2BE_LOCK_RELEASE(table, hash_index);
-				return SCB_DROP_MSG;
+				goto scb_drop_msg;
 			}
 			tm_tran = tmb.t_gett();
 			if (tm_tran != T_UNDEFINED)
@@ -1335,7 +1338,7 @@ logic_notify:
 					LM_DBG("Received a request while having an ongoing "
 						"outbound/UAC one\n");
 					str text = str_init("Request Pending");
-					if(tmb.t_reply_with_body( tm_tran, 491,
+					if(run_tm_api(&tmb, t_reply_with_body,  tm_tran, 491,
 					&text, 0, 0, &to_tag) < 0)
 					{
 						LM_ERR("failed to send reply with tm\n");
@@ -1345,7 +1348,7 @@ logic_notify:
 
 					tmb.unref_cell(tm_tran); /* for t_newtran() */
 					B2BE_LOCK_RELEASE(table, hash_index);
-					return SCB_DROP_MSG;
+					goto scb_drop_msg;
 				} else
 				if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
 				{
@@ -1366,7 +1369,7 @@ logic_notify:
 						memcpy( ra.s+ra.len, CRLF, CRLF_LEN);
 						ra.len += CRLF_LEN;
 						/* send reply */
-						if(tmb.t_reply_with_body( tm_tran, 500,
+						if(run_tm_api(&tmb, t_reply_with_body,  tm_tran, 500,
 						&text, 0, &ra, &to_tag) < 0)
 						{
 							LM_ERR("failed to send reply with tm\n");
@@ -1375,12 +1378,12 @@ logic_notify:
 							tm_tran);
 						tmb.unref_cell(tm_tran); /* for t_newtran() */
 						B2BE_LOCK_RELEASE(table, hash_index);
-						return SCB_DROP_MSG;
+						goto scb_drop_msg;
 					} else {
 						LM_DBG("Received BYE while having an ongoing "
 							"inbound/UAS transaction\n");
 						str text_ok = str_init("OK");
-						if(tmb.t_reply_with_body( tm_tran, 200,
+						if(run_tm_api(&tmb, t_reply_with_body,  tm_tran, 200,
 						&text_ok, 0, 0, &to_tag) < 0)
 						{
 							LM_ERR("failed to send reply with tm\n");
@@ -1397,7 +1400,7 @@ logic_notify:
 							tmb.t_release_trans(dlg->uas_tran);
 						} else {
 							str text_term = str_init("Request Terminated");
-							if(tmb.t_reply_with_body(dlg->uas_tran, 487,
+							if(run_tm_api(&tmb, t_reply_with_body, dlg->uas_tran, 487,
 							&text_term, 0, 0, &to_tag) < 0)
 							{
 								LM_ERR("failed to send reply with tm\n");
@@ -1484,7 +1487,7 @@ run_cb:
 		{
 			LM_ERR("No more private memory\n");
 			B2BE_LOCK_RELEASE(table, hash_index);
-			return SCB_RUN_ALL;
+			goto scb_run_all;
 		}
 		memcpy(logic_key.s, dlg->logic_key.s, dlg->logic_key.len);
 		logic_key.len = dlg->logic_key.len;
@@ -1524,7 +1527,7 @@ run_cb:
 		if (ua_ev_type != -1 && raise_ua_sess_event(&b2b_key, etype, ua_ev_type,
 			ua_flags, msg, NULL) < 0) {
 			LM_ERR("Failed to raise E_UA_SESSION event\n");
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 	} else {
 		if (!b2b_cback)
@@ -1552,7 +1555,7 @@ run_cb:
 		{
 			LM_DBG("Record not found anymore\n");
 			B2BE_LOCK_RELEASE(table, hash_index);
-			return SCB_DROP_MSG;
+			goto scb_drop_msg;
 		}
 	}
 
@@ -1605,7 +1608,12 @@ done:
 end:
 	if (b2b_ev != -1 && storage.buffer.s)
 		bin_free_packet(&storage);
+scb_drop_msg:
+	profiling_proc_exit( LEVEL_SIP, "B2BE_request_prescript", 1 );
 	return SCB_DROP_MSG;
+scb_run_all:
+	profiling_proc_exit( LEVEL_SIP, "B2BE_request_prescript", -1 );
+	return SCB_RUN_ALL;
 }
 
 int init_b2b_htables(void)
@@ -2136,7 +2144,7 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	ehdr.s = buffer;
 
 	/* send reply */
-	if(tmb.t_reply_with_body(tm_tran, code, rpl_data->text, rpl_data->body, &ehdr, to_tag) < 0)
+	if(run_tm_api(&tmb, t_reply_with_body, tm_tran, code, rpl_data->text, rpl_data->body, &ehdr, to_tag) < 0)
 	{
 		LM_ERR("failed to send reply with tm\n");
 		goto error;
@@ -2223,7 +2231,7 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 		if (pto == NULL || pto->error != PARSE_OK) {
 			LM_ERR("'To' header COULD NOT be parsed\n");
 		} else {
-			if (tmb.t_reply_with_body(dlg->uas_tran, 408, &reply_text, 0, 0,
+			if (run_tm_api(&tmb, t_reply_with_body, dlg->uas_tran, 408, &reply_text, 0, 0,
 				&pto->tag_value) < 0)
 				LM_ERR("Failed to send 408 reply\n");
 		}
@@ -2236,7 +2244,7 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 		if (pto == NULL || pto->error != PARSE_OK) {
 			LM_ERR("'To' header COULD NOT be parsed\n");
 		} else {
-			if (tmb.t_reply_with_body(dlg->update_tran, 408, &reply_text, 0, 0,
+			if (run_tm_api(&tmb, t_reply_with_body, dlg->update_tran, 408, &reply_text, 0, 0,
 				&pto->tag_value) < 0)
 				LM_ERR("Failed to send 408 reply\n");
 		}
@@ -2466,8 +2474,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et, str* b2b_key,
 
 	if (no_cb)
 	{
-		result= tmb.t_request_within
-			(method,            /* method*/
+		result= run_tm_api(&tmb, t_request_within, method,            /* method*/
 			ehdr,               /* extra headers*/
 			body,               /* body*/
 			td,                 /* dialog structure*/
@@ -2479,8 +2486,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et, str* b2b_key,
 	{
 		td->avps = clone_avp_list( *get_avp_list() );
 		td->T_flags = T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG;
-		result= tmb.t_request_within
-			(method,            /* method*/
+		result= run_tm_api(&tmb, t_request_within, method,            /* method*/
 			ehdr,               /* extra headers*/
 			body,               /* body*/
 			td,                 /* dialog structure*/
@@ -2735,7 +2741,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 					goto error;
 				}
 				// FIXME - tracing: how do we get to the cancel transaction?
-				ret = tmb.t_cancel_trans( inv_t, &ehdr);
+				ret = run_tm_api(&tmb, t_cancel_trans,  inv_t, &ehdr);
 				tmb.unref_cell(inv_t);
 				if (dlg->state > B2B_CONFIRMED)
 					method_value = METHOD_INVITE;
@@ -3037,8 +3043,7 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 		b2b_arm_uac_tracing( td, dlg->tracer);
 
 	/* send request */
-	result= tmb.t_request_within
-		(method,            /* method*/
+	result= run_tm_api(&tmb, t_request_within, method,            /* method*/
 		extra_headers,      /* extra headers*/
 		body,               /* body*/
 		td,                 /* dialog structure*/
@@ -3199,19 +3204,21 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	if(statuscode == 100)
 		return;
 
+	profiling_proc_enter( LEVEL_SIP, "B2BE_reply_received", 0 );
+
 	msg = ps->rpl;
 	b2b_key = (str*)*ps->param;
 
 	if(b2b_parse_key(b2b_key, &hash_index, &local_index)< 0)
 	{
 		LM_ERR("Failed to parse b2b logic key [%.*s]\n",b2b_key->len,b2b_key->s);
-		return;
+		goto done;
 	}
 
 	if(parse_method(t->method.s, t->method.s + t->method.len, &method_id) == 0)
 	{
 		LM_ERR("Failed to parse method [%.*s\n]\n", t->method.len, t->method.s);
-		return;
+		goto done;
 	}
 
 	if(msg && msg!= FAKED_REPLY)
@@ -3220,45 +3227,45 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		if(parse_headers(msg, HDR_EOH_F, 0) < 0)
 		{
 			LM_ERR("Failed to parse headers\n");
-			return;
+			goto done;
 		}
 
 		if( msg->cseq==NULL || msg->cseq->body.s==NULL)
 		{
 			LM_ERR("failed to parse cseq header\n");
-			return;
+			goto done;
 		}
 
 		if( msg->callid==NULL || msg->callid->body.s==NULL)
 		{
 			LM_ERR("no callid header found\n");
-			return;
+			goto done;
 		}
 		/* examine the from header */
 		if (!msg->from || !msg->from->body.s)
 		{
 			LM_ERR("cannot find 'from' header!\n");
-			return;
+			goto done;
 		}
 		if (msg->from->parsed == NULL)
 		{
 			if ( parse_from_header( msg )<0 )
 			{
 				LM_ERR("cannot parse From header\n");
-				return;
+				goto done;
 			}
 		}
 
 		if (msg->to == NULL)
 		{
 			LM_ERR("cannot find 'to' header!\n");
-			return;
+			goto done;
 		}
 		pto = get_to(msg);
 		if (pto == NULL || pto->error != PARSE_OK)
 		{
 			LM_ERR("'To' header COULD NOT parsed\n");
-			return;
+			goto done;
 		}
 
 		to_tag = pto->tag_value;
@@ -3347,19 +3354,19 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				callid.len, callid.s);
 		}
 		B2BE_LOCK_RELEASE(htable, hash_index);
-		return;
+		goto done;
 	}
 
 	ctx = b2b_get_context();
 	if (!ctx) {
 		LM_ERR("Failed to get b2b context\n");
 		B2BE_LOCK_RELEASE(server_htable, hash_index);
-		return;
+		goto done;
 	}
 	if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
 		B2BE_LOCK_RELEASE(server_htable, hash_index);
-		return;
+		goto done;
 	}
 
 	previous_dlg = dlg;
@@ -3394,7 +3401,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				{
 					LM_ERR("Failed to add dialog leg\n");
 					B2BE_LOCK_RELEASE(htable, hash_index);
-					return;
+					goto done;
 				}
 				if(dlg->callid.s==0 || dlg->callid.len==0)
 					dlg->callid = msg->callid->body;
@@ -3408,7 +3415,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			}
 
 			B2BE_LOCK_RELEASE(htable, hash_index);
-			return;
+			goto done;
 		}
 	}
 
@@ -3423,7 +3430,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		{
 			LM_ERR("No more private memory\n");
 			B2BE_LOCK_RELEASE(htable, hash_index);
-			return;
+			goto done;
 		}
 		memcpy(logic_key.s, dlg->logic_key.s, dlg->logic_key.len);
 		logic_key.len = dlg->logic_key.len;
@@ -3478,7 +3485,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				switch(ret)
 				{
 				case RETURN_GOTO_DONE:
-					goto done;
+					goto b2b_tm_done1;
 					break;
 				case RETURN_GOTO_ERROR:
 					B2BE_LOCK_RELEASE(htable, hash_index);
@@ -3543,7 +3550,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				switch(ret)
 				{
 				case RETURN_GOTO_DONE:
-					goto done;
+					goto b2b_tm_done1;
 					break;
 				case RETURN_GOTO_ERROR:
 					B2BE_LOCK_RELEASE(htable, hash_index);
@@ -3671,7 +3678,7 @@ dummy_reply:
 		}
 		if(method_id != METHOD_INVITE)
 		{
-			goto done;
+			goto b2b_tm_done1;
 		}
 
 		if(dlg->uac_tran && statuscode>= 200)
@@ -3711,7 +3718,7 @@ dummy_reply:
 				pkg_free(leg);
 			}
 			b2b_cb_flags |= B2B_NOTIFY_FL_TERMINATED;
-			goto done;
+			goto b2b_tm_done1;
 		}
 
 		if(dlg->legs == NULL && (dlg->state == B2B_NEW ||
@@ -3838,7 +3845,7 @@ dummy_reply:
 						}
 				       }
 				}
-				goto done;
+				goto b2b_tm_done1;
 			}
 			else /* a final success response */
 			{
@@ -3869,7 +3876,7 @@ dummy_reply:
 					}
 
 					B2BE_LOCK_RELEASE(htable, hash_index);
-					return;
+					goto done;
 				}
 				else
 				{
@@ -3929,7 +3936,7 @@ dummy_reply:
 			goto error;
 		}
 	}
-done:
+b2b_tm_done1:
 	if(dlg)
 	{
 		current_dlg = dlg;
@@ -3990,7 +3997,7 @@ b2b_route:
 				if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT,
 					b2b_ev, &storage, serialize_backend) != 0) {
 					lock_release(&htable[hash_index].lock);
-					return;
+					goto done;
 				}
 			} else {
 				b2b_ev = -1;
@@ -4001,7 +4008,7 @@ b2b_route:
 				if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT,
 					b2b_ev, &storage, serialize_backend) != 0) {
 					lock_release(&htable[hash_index].lock);
-					return;
+					goto done;
 				}
 
 				if (b2be_db_mode == WRITE_THROUGH)
@@ -4026,7 +4033,7 @@ b2b_route:
 		if(!aux_dlg)
 		{
 			B2BE_LOCK_RELEASE(htable, hash_index);
-			return;
+			goto done;
 		}
 
 		if (b2be_db_update(dlg, etype) < 0)
@@ -4064,7 +4071,7 @@ b2b_route:
 			if (ua_send_request(etype, b2b_key, &str_init("ACK"),
 				NULL, NULL, NULL, 0) < 0) {
 				LM_ERR("Failed to send ACK request\n");
-				return;
+				goto done;
 			}
 		}
 
@@ -4075,7 +4082,8 @@ b2b_route:
 		}
 	}
 
-	return;
+	goto done;
+
 error:
 	B2BE_LOCK_RELEASE(htable, hash_index);
 error1:
@@ -4085,6 +4093,9 @@ error1:
 		free_lump_list(msg->add_rm);
 		free_lump_list(msg->body_lumps);
 	}
+done:
+	profiling_proc_exit( LEVEL_SIP, "B2BE_reply_received", 0 );
+	return;
 }
 
 

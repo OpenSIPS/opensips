@@ -484,7 +484,7 @@ int imc_handle_invite(struct sip_msg* msg, imc_cmd_t *cmd,
 	cback_param->member_domain = member->domain;
 	cback_param->inv_uri = member->uri;
 	/*?!?! possible race with 'remove user' */
-	result= tmb.t_request(&imc_msg_type,				/* Request Method */
+	result= run_tm_api(&tmb, t_request, &imc_msg_type,				/* Request Method */
 				&member->uri,							/* Request-URI */
 				&member->uri,							/* To */
 				&room->uri,								/* From */
@@ -972,7 +972,7 @@ int imc_handle_help(struct sip_msg* msg, imc_cmd_t *cmd, str *src, str *dst)
 	body.len = IMC_HELP_MSG_LEN;
 
 	LM_DBG("to: [%.*s] from: [%.*s]\n", src->len, src->s, dst->len, dst->s);
-	tmb.t_request(&imc_msg_type,						/* Request method */
+	run_tm_api(&tmb, t_request, &imc_msg_type,						/* Request method */
 				NULL,									/* Request-URI */
 				src,									/* To */
 				dst,									/* From */
@@ -1005,7 +1005,7 @@ int imc_handle_unknown(struct sip_msg* msg, imc_cmd_t *cmd, str *src, str *dst)
 	}
 
 	LM_DBG("to: [%.*s] from: [%.*s]\n", src->len, src->s, dst->len, dst->s);
-	tmb.t_request(&imc_msg_type,						/* Request method */
+	run_tm_api(&tmb, t_request, &imc_msg_type,						/* Request method */
 				NULL,									/* Request-URI */
 				src,									/* To */
 				dst,									/* From */
@@ -1112,7 +1112,7 @@ int imc_send_message(str *src, str *dst, str *headers, str *body)
 	if(src==NULL || dst==NULL || body==NULL)
 		return -1;
 	/* to-do: callbac to remove user fi delivery fails */
-	tmb.t_request(&imc_msg_type,						/* Request method */
+	run_tm_api(&tmb, t_request, &imc_msg_type,						/* Request method */
 			NULL,										/* Request-URI */
 			dst,										/* To */
 			src,										/* From */
@@ -1206,7 +1206,7 @@ send_message:
 
 	LM_DBG("to: %.*s\nfrom: %.*s\nbody: %.*s\n", to_uri_s.len, to_uri_s.s,
 			from_uri_s.len, from_uri_s.s, body_final.len, body_final.s);
-	tmb.t_request(&imc_msg_type,							/* Request method*/
+	run_tm_api(&tmb, t_request, &imc_msg_type,							/* Request method*/
 					NULL,									/* Request-URI */
 					&to_uri_s,								/* To */
 					&from_uri_s,							/* From */

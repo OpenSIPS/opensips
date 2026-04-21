@@ -1469,7 +1469,7 @@ int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeade
 			if(add_hdr_rpl(call_cell, msg)==-1)
 				goto error;
 
-			if(!eme_tm.t_reply(msg,300,&msg300)){
+			if(!run_tm_api(&eme_tm, t_reply, msg,300,&msg300)){
 				LM_DBG("t_reply (300)\n");
 				goto error;
 			}

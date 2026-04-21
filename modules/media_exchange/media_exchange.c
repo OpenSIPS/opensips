@@ -338,7 +338,7 @@ static int handle_media_fork_to_uri(struct media_session_leg *msl, const struct 
 		goto destroy;
 	}
 
-	b2b_key = media_b2b.client_new(ci, b2b_media_notify, b2b_media_confirm,
+	b2b_key = run_b2be_api(&media_b2b, client_new, ci, b2b_media_notify, b2b_media_confirm,
 			&b2b_media_exchange_cap, &msl->ms->dlg->callid, NULL, msl, NULL);
 	pkg_free(body.s);
 	if (!b2b_key) {
@@ -629,7 +629,7 @@ static int handle_media_exchange_from_uri(const struct socket_info *si, struct d
 			msl->params = p;
 	}
 
-	b2b_key = media_b2b.client_new(ci, b2b_media_notify, b2b_media_confirm,
+	b2b_key = run_b2be_api(&media_b2b, client_new, ci, b2b_media_notify, b2b_media_confirm,
 			&b2b_media_exchange_cap, &dlg->callid, NULL, msl, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b client!\n");
@@ -871,7 +871,7 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 
 	/* all good - send the invite to the client */
 	MSL_REF(msl);
-	if (media_dlg.send_indialog_request(dlg, &inv, MEDIA_SESSION_DLG_LEG(msl), &body,
+	if (run_dlg_api(&media_dlg, send_indialog_request, dlg, &inv, MEDIA_SESSION_DLG_LEG(msl), &body,
 			&msg->content_type->body, NULL, media_session_exchange_server_reply, mslp,
 			media_session_exchange_server_release) < 0) {
 		LM_ERR("could not send indialog request for callid %.*s\n", callid->len, callid->s);
@@ -1128,7 +1128,7 @@ static int media_send_ok(struct cell *t, struct dlg_cell *dlg,
 	str *hdrs;
 	str ok = str_init("OK");
 	hdrs = media_get_dlg_headers(dlg, leg, 1);
-	ret = media_tm.t_reply_with_body(t, 200, &ok,
+	ret = run_tm_api(&media_tm, t_reply_with_body, t, 200, &ok,
 			body, hdrs, &dlg->legs[other_leg(dlg, leg)].tag);
 	pkg_free(hdrs->s);
 	return ret;
@@ -1140,7 +1140,7 @@ static int media_send_fail(struct cell *t, struct dlg_cell *dlg, int leg)
 	str *hdrs;
 	str reason = str_init("Not Acceptable Here");
 	hdrs = media_get_dlg_headers(dlg, leg, 0);
-	ret = media_tm.t_reply_with_body(t, 488, &reason,
+	ret = run_tm_api(&media_tm, t_reply_with_body, t, 488, &reason,
 			NULL, hdrs, &dlg->legs[other_leg(dlg, leg)].tag);
 	pkg_free(hdrs->s);
 	return ret;
@@ -1292,7 +1292,7 @@ static void handle_media_session_negative(struct media_session_leg *msl)
 		body = NULL;
 	else
 		body = &sbody;
-	if (media_dlg.send_indialog_request(msl->ms->dlg,
+	if (run_dlg_api(&media_dlg, send_indialog_request, msl->ms->dlg,
 			&inv, dlg_leg, body, &content_type_sdp, NULL,
 			media_session_exchange_negative_reply, msl, NULL) < 0) {
 		LM_ERR("could not forward INVITE!\n");

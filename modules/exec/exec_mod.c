@@ -319,19 +319,19 @@ inline static int w_async_exec(struct sip_msg* msg, async_ctx *ctx,
 		 * processes (set before forking) */
 		param->buf = NULL;
 		ctx->resume_param = (void*)param;
-		ctx->resume_f = resume_async_exec;
+		ASYNC_SET_RESUME_F(ctx, resume_async_exec);
 		async_status = fd;
 	} else if (ret==2) {
 		/* no IO done, but success */
 		shm_free(param);
 		ctx->resume_param = NULL;
-		ctx->resume_f = NULL;
+		ASYNC_CLEAR_RESUME_F(ctx);
 		async_status = ASYNC_NO_IO;
 	} else {
 		/* error */
 		shm_free(param);
 		ctx->resume_param = NULL;
-		ctx->resume_f = NULL;
+		ASYNC_CLEAR_RESUME_F(ctx);
 		async_status = ASYNC_NO_IO;
 	}
 

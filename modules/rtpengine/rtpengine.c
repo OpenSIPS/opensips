@@ -76,6 +76,7 @@
 #include "../../mod_fix.h"
 #include "../../dset.h"
 #include "../../route.h"
+#include "../../profiling.h"
 #include "../../lib/cJSON.h"
 #include "../dialog/dlg_load.h"
 #include "../rtp_relay/rtp_relay.h"
@@ -1517,7 +1518,7 @@ static mi_response_t *mi_teardown_call(const mi_params_t *params,
 	/* try to "resolve" the callid first through rtp_relay */
 	if (!rtp_relay.get_dlg_ids || rtp_relay.get_dlg_ids(&callid, &h_entry, &h_id) == 0)
 		pcallid = &callid; /* search for callid, if dialog was not found */
-	if (dlgb.terminate_dlg(pcallid, h_entry, h_id, _str("MI Termination")) < 0)
+	if (run_dlg_api(&dlgb, terminate_dlg, pcallid, h_entry, h_id, _str("MI Termination")) < 0)
 		return init_mi_error(500, MI_SSTR("Failed to terminate dialog"));
 
 	return init_mi_result_ok();
@@ -3786,7 +3787,7 @@ static int rtpe_function_call_async(struct sip_msg *msg, async_ctx *ctx, str *fl
 	LM_DBG("async proxy reply: %d\n", ret);
 
 	if (read_fd == ASYNC_NO_IO) {
-		ctx->resume_f = NULL;
+		ASYNC_CLEAR_RESUME_F(ctx);
 		ctx->resume_param = NULL;
 		bencode_buffer_free(bencbuf);
 		pkg_free(bencbuf);
@@ -3813,7 +3814,7 @@ static int rtpe_function_call_async(struct sip_msg *msg, async_ctx *ctx, str *fl
 	param->bpvar = bpvar;
 	param->spvar = spvar;
 
-	ctx->resume_f = resume_async_send_rtpe_command;
+	ASYNC_SET_RESUME_F(ctx, resume_async_send_rtpe_command);
 	ctx->timeout_f = timeout_async_send_rtpe_command;
 	ctx->resume_param = param;
 
@@ -4842,35 +4843,46 @@ static int rtpengine_io_callback(int fd, void *fs, int was_timeout)
 	char *p;
 	char buffer[RTPENGINE_DGRAM_BUF];
 
+	profiling_proc_start( LEVEL_EXTRAPROCS, 1);
+
 	do
 		ret = read(fd, buffer, RTPENGINE_DGRAM_BUF);
 	while (ret == -1 && errno == EINTR);
 	if (ret < 0) {
 		LM_ERR("problem reading on socket %s:%u (%s:%d)\n",
 				rtpengine_notify_sock.s, rtpengine_notify_port, strerror(errno), errno);
-		return -1;
+		goto err;
 	}
 
 	if (!evi_probe_event(rtpengine_notify_event)) {
 		LM_DBG("nothing to do - nobody is listening!\n");
-		return 0;
+		goto done;
 	}
 
 	p = shm_malloc(ret + 1);
 	if (!p) {
 		/* coverity[string_null] - false positive CID #211356 */
 		LM_ERR("could not allocate %d for buffer %.*s\n", ret, ret, buffer);
-		return -1;
+		goto err;
 	}
 	memcpy(p, buffer, ret);
 	p[ret] = '\0';
+
+	profiling_proc_enter( LEVEL_EXTRAPROCS, ss_merge256("RTPE_CB ",p), 0);
 
 	LM_INFO("dispatching buffer: %s\n", p);
 	if (ipc_dispatch_rpc(rtpengine_raise_event, p) < 0) {
 		LM_ERR("could not dispatch notification job!\n");
 		shm_free(p);
 	}
+
+	profiling_proc_exit( LEVEL_EXTRAPROCS, "RTPE_CB", 0);
+	profiling_proc_end( LEVEL_EXTRAPROCS, 0 );
+done:
 	return 0;
+err:
+	profiling_proc_end( LEVEL_EXTRAPROCS, -1 );
+	return -1;
 }
 
 static void rtpengine_notify_process(int rank)

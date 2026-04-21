@@ -153,7 +153,7 @@ static int srec_stop_recording(struct src_sess *ss)
 	req.dlginfo = ss->dlginfo;
 	req.no_cb = 1; /* do not call callback */
 
-	if (srec_b2b.send_request(&req) < 0)
+	if (run_b2be_api(&srec_b2b, send_request, &req) < 0)
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 	srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
@@ -263,7 +263,7 @@ int srec_reply(struct src_sess *ss, int method, int code, str *body)
 	if (body)
 		reply_data.extra_headers = &content_type_sdp_hdr;
 
-	return srec_b2b.send_reply(&reply_data);
+	return run_b2be_api(&srec_b2b, send_reply, &reply_data);
 }
 
 static int srec_get_body(struct src_sess *sess, str *body)
@@ -393,7 +393,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 	req.dlginfo = ss->dlginfo;
 	req.no_cb = 1; /* do not call callback */
 
-	if (srec_b2b.send_request(&req) < 0) {
+	if (run_b2be_api(&srec_b2b, send_request, &req) < 0) {
 		LM_ERR("Cannot ack recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 		goto no_recording;
@@ -426,7 +426,7 @@ no_recording:
 		req.dlginfo = ss->dlginfo;
 		req.no_cb = 1; /* do not call callback */
 
-		if (srec_b2b.send_request(&req) < 0)
+		if (run_b2be_api(&srec_b2b, send_request, &req) < 0)
 			LM_ERR("Cannot send bye for recording session with key %.*s\n",
 					req.b2b_key->len, req.b2b_key->s);
 	}
@@ -553,7 +553,7 @@ static int srs_send_invite(struct src_sess *sess)
 		ci.local_contact = ct;
 	}
 
-	client = srec_b2b.client_new(&ci, srec_b2b_notify, srec_b2b_confirm,
+	client = run_b2be_api(&srec_b2b, client_new, &ci, srec_b2b_notify, srec_b2b_confirm,
 			&mod_name, &sess->ctx->dlg->callid, NULL, sess, NULL);
 	pkg_free(body.s);
 	if (contact.s)
@@ -695,7 +695,7 @@ static void srs_send_update_invite(struct src_sess *sess, str *body)
 	req.dlginfo = sess->dlginfo;
 	req.body = body;
 
-	if (srec_b2b.send_request(&req) < 0)
+	if (run_b2be_api(&srec_b2b, send_request, &req) < 0)
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 }
@@ -886,7 +886,7 @@ int src_send_indialog(struct sip_msg *msg, str *hdrs, str *body, str *instance)
 	req.dlginfo = sess->dlginfo;
 	req.body = body;
 
-	if (srec_b2b.send_request(&req) < 0) {
+	if (run_b2be_api(&srec_b2b, send_request, &req) < 0) {
 		LM_ERR("Cannot send indialog in recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 		return -1;

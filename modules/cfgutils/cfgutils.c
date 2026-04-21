@@ -557,7 +557,7 @@ static int async_sleep(struct sip_msg* msg, async_ctx *ctx, int *seconds)
 	/* start the async wait */
 	ctx->resume_param = (void*)(unsigned long)
 		(((unsigned long)-1) & (get_uticks()+1000000*(*(unsigned int*)seconds)));
-	ctx->resume_f = resume_async_sleep;
+	ASYNC_SET_RESUME_F(ctx, resume_async_sleep);
 	async_status = fd;
 
 	return 1;
@@ -592,7 +592,7 @@ static int async_usleep(struct sip_msg* msg, async_ctx *ctx, int *useconds)
 	/* start the async wait */
 	ctx->resume_param = (void*)(unsigned long)
 		(((unsigned long)-1) & (get_uticks()+*(unsigned int *)useconds));
-	ctx->resume_f = resume_async_sleep;
+	ASYNC_SET_RESUME_F(ctx, resume_async_sleep);
 	async_status = fd;
 
 	return 1;

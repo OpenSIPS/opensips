@@ -2828,7 +2828,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 			dlg->avps = pack->avps;
 			pack->avps = NULL;
 
-			if (tmb.t_request_within((partition->ping_method.len?
+			if (run_tm_api(&tmb, t_request_within, (partition->ping_method.len?
 							&partition->ping_method:
 							&ds_ping_method),
 					NULL,

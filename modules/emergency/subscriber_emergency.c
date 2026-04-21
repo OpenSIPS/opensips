@@ -646,8 +646,7 @@ int send_subscriber(struct sip_msg* msg, char* callidHeader, int expires){
 	LM_DBG("****** PARAMS FROM TAG: %.*s\n", params_cb->from_tag.len, params_cb->from_tag.s);
 
 	/* send SUBSCRIBER */
-	sending= eme_tm.t_request
-		(&met,                       /* Type of the message */
+	sending= run_tm_api(&eme_tm, t_request, &met,                       /* Type of the message */
 		 notifier_pt,                 /* Request-URI*/
 		 contact_pt,                  /* To */
 		 subscriber_pt,               /* From */
@@ -724,8 +723,7 @@ int send_subscriber_within(struct sip_msg* msg, struct sm_subscriber* subs, int 
 
 	pt_hdr = add_hdr_subscriber(expires, subs->event);
 
-	sending= eme_tm.t_request_within
-		(&met,
+	sending= run_tm_api(&eme_tm, t_request_within, &met,
 		 pt_hdr,
 		 0,
 		 dialog,
@@ -840,7 +838,7 @@ int treat_notify(struct sip_msg *msg) {
 
 	if(!check_event_header(msg)){
 		LM_ERR("event header type not allow\n");
-		if(!eme_tm.t_reply(msg,489,&msg489)){
+		if(!run_tm_api(&eme_tm, t_reply, msg,489,&msg489)){
 			LM_ERR("t_reply (489)\n");
 		}
 		return 0;
@@ -862,7 +860,7 @@ int treat_notify(struct sip_msg *msg) {
 	/* look for cell in list linked subs_pt with same dialog Id*/
 	cell_subs = get_subs_cell(msg, callid_event);
 	if(cell_subs == NULL){
-		if(!eme_tm.t_reply(msg,481,&msg481)){
+		if(!run_tm_api(&eme_tm, t_reply, msg,481,&msg481)){
 			LM_ERR("t_reply (481)\n");
 		}
 		return 0;
@@ -874,7 +872,7 @@ int treat_notify(struct sip_msg *msg) {
 	/* get in Subscription_state header: state and expire */
 	if(!get_subscription_state_header(msg, &subs_state, &subs_expires)){
 		LM_ERR("invalid body of Subscription_state header\n");
-		if(!eme_tm.t_reply(msg,400,&msg400)){
+		if(!run_tm_api(&eme_tm, t_reply, msg,400,&msg400)){
 			LM_ERR("t_reply (400)\n");
 		}
 		return 0;
@@ -917,7 +915,7 @@ int treat_notify(struct sip_msg *msg) {
 				delete_shtable(subs_htable, hash_code, cell_subs);
 
 				/* Reply OK to Notify*/
-				if(!eme_tm.t_reply(msg,200,&msg200)){
+				if(!run_tm_api(&eme_tm, t_reply, msg,200,&msg200)){
 					LM_ERR("t_reply (200)\n");
 					return 0;
 				}
@@ -925,7 +923,7 @@ int treat_notify(struct sip_msg *msg) {
 
 			}else{
 				LM_ERR("INCOMPATIBLE RECEIVED STATUS\n");
-				if(!eme_tm.t_reply(msg,400,&msg400)){
+				if(!run_tm_api(&eme_tm, t_reply, msg,400,&msg400)){
 					LM_ERR("t_reply (400)\n");
 				}
 				return 0;
@@ -939,7 +937,7 @@ int treat_notify(struct sip_msg *msg) {
 	notify_body = parse_notify(msg->eoh);
 	if( notify_body == NULL){
 		LM_ERR("invalid body in Notify request\n");
-		if(!eme_tm.t_reply(msg,400,&msg400)){
+		if(!run_tm_api(&eme_tm, t_reply, msg,400,&msg400)){
 			LM_ERR("t_reply (400)\n");
 		}
 		resp = 0;
@@ -963,7 +961,7 @@ int treat_notify(struct sip_msg *msg) {
 	LM_DBG(" --- VERSION %d", version);
 
 	/* Reply OK to Notify*/
-	if(!eme_tm.t_reply(msg,200,&msg200)){
+	if(!run_tm_api(&eme_tm, t_reply, msg,200,&msg200)){
 		LM_DBG("t_reply (200)\n");
 		free_parsed_notify(notify_body);
 		resp = 0;

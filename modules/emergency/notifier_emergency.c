@@ -124,7 +124,7 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
 	// search call hash with hash_code, callidHeader and from/to_tag params
 	if (search_ehtable(call_htable, subs_callid, subs_fromtag, hash_code, 0) == NULL) {
 		LM_ERR(" ---CALLID NOT FOUND IN SHTABLE\n");
-		if(!eme_tm.t_reply(msg,489,&msg489)){
+		if(!run_tm_api(&eme_tm, t_reply, msg,489,&msg489)){
 			LM_DBG("t_reply (489)\n");
 		}
 		pkg_free(callid_event.s);
@@ -233,7 +233,7 @@ int treat_subscribe(struct sip_msg *msg) {
 
 	if(!check_event_header(msg)){
 		LM_ERR("event header type not allow\n");
-		if(!eme_tm.t_reply(msg,489,&msg489)){
+		if(!run_tm_api(&eme_tm, t_reply, msg,489,&msg489)){
 			LM_ERR("t_reply (489)\n");
 		}
 		return 0;
@@ -250,7 +250,7 @@ int treat_subscribe(struct sip_msg *msg) {
 		pkg_free(subs_expires);
 		if ((expires != 0) & (expires < TIMER_MIN_SUBS)){
 			/* Reply NOK to Notify*/
-			if(!eme_tm.t_reply(msg,423,&msg423)){
+			if(!run_tm_api(&eme_tm, t_reply, msg,423,&msg423)){
 				LM_DBG("t_reply (423)\n");
 			}
 			return 0;
@@ -271,7 +271,7 @@ int treat_subscribe(struct sip_msg *msg) {
 
 		if (pt_notify == NULL){
 			LM_ERR("**** notify cell not found\n");
-			if(!eme_tm.t_reply(msg,481,&msg481)){
+			if(!run_tm_api(&eme_tm, t_reply, msg,481,&msg481)){
 				LM_ERR("t_reply (481)\n");
 			}
 			return 0;
@@ -283,7 +283,7 @@ int treat_subscribe(struct sip_msg *msg) {
 		pkg_free(subs_fromtag);
 
 		/* Reply OK to Notify*/
-		if(!eme_tm.t_reply(msg,200,&msg200)){
+		if(!run_tm_api(&eme_tm, t_reply, msg,200,&msg200)){
 			LM_DBG("t_reply (200)\n");
 			return 0;
 		}
@@ -292,13 +292,13 @@ int treat_subscribe(struct sip_msg *msg) {
 		notify_cell =  build_notify_cell(msg, expires);
 		if (notify_cell == NULL){
 			LM_ERR("**** error in build notify cell\n");
-			if(!eme_tm.t_reply(msg,489,&msg489)){
+			if(!run_tm_api(&eme_tm, t_reply, msg,489,&msg489)){
 				LM_ERR("t_reply (489)\n");
 			}
 			return 0;
 		}
 		/* Reply OK to Notify*/
-		if(!eme_tm.t_reply(msg,200,&msg200)){
+		if(!run_tm_api(&eme_tm, t_reply, msg,200,&msg200)){
 			LM_DBG("t_reply (200)\n");
 			pkg_free(notify_cell);
 			return 0;
@@ -374,8 +374,7 @@ int send_notifier_within(struct sip_msg* msg, struct sm_subscriber* notify){
 
 	pt_hdr = add_hdr_notifier(notify);
 
-	sending= eme_tm.t_request_within
-		(&met,
+	sending= run_tm_api(&eme_tm, t_request_within, &met,
 		 pt_hdr,
 		 pt_body,
 		 dialog,

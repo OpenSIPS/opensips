@@ -740,7 +740,7 @@ static int mi_script_async_func(struct sip_msg *msg, async_ctx *ctx,
 	memset(job, 0, sizeof *job);
 
 	async_status = fd;
-	ctx->resume_f = mi_script_async_resume;
+	ASYNC_SET_RESUME_F(ctx, mi_script_async_resume);
 	ctx->resume_param = job;
 
 	job->ret = r;

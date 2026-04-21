@@ -498,7 +498,7 @@ static inline int msrpua_b2b_reply(int et, str *b2b_key, int method,
 	if (body)
 		rpl_data.extra_headers = &ct_type_sdp_str;
 
-	return b2b_api.send_reply(&rpl_data);
+	return run_b2be_api(&b2b_api, send_reply, &rpl_data);
 }
 
 static inline int msrpua_b2b_request(int et, str *b2b_key, str *method)
@@ -510,7 +510,7 @@ static inline int msrpua_b2b_request(int et, str *b2b_key, str *method)
 	req_data.b2b_key = b2b_key;
 	req_data.method = method;
 
-	return b2b_api.send_request(&req_data);
+	return run_b2be_api(&b2b_api, send_request, &req_data);
 }
 
 #define MESSAGE_STR "message"
@@ -1887,7 +1887,7 @@ static int msrpua_start_uac(struct uac_init_params *params)
 		goto error;
 	}
 
-	b2b_key = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+	b2b_key = run_b2be_api(&b2b_api, client_new, &ci, b2b_client_notify, b2b_add_dlginfo,
 		&msrpua_mod_name, &_, NULL, sess, NULL);
 	if (!b2b_key) {
 		LM_ERR("failed to create new b2b client instance\n");

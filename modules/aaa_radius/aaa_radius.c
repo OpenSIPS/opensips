@@ -555,7 +555,7 @@ int send_auth_func_async(struct sip_msg* msg, async_ctx *actx,
 		rctx->ctx	 = ctx;
 
 		actx->resume_param = rctx;
-		actx->resume_f = resume_send_auth;
+		ASYNC_SET_RESUME_F(actx, resume_send_auth);
 		async_status  = ctx->sockfd;
 
 		return 1;
@@ -705,7 +705,7 @@ int send_acct_func_async(struct sip_msg* msg, async_ctx *actx, str *s)
 		rctx->ctx	 = ctx;
 
 		actx->resume_param = rctx;
-		actx->resume_f = resume_send_acct;
+		ASYNC_SET_RESUME_F(actx, resume_send_acct);
 		async_status  = ctx->sockfd;
 
 		return 1;

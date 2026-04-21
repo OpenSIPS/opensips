@@ -169,6 +169,10 @@ static int payload_add_params(cJSON *ret_obj, evi_params_t *params,
 
 	cJSON_AddItemToObject(ret_obj, "params", param_obj);
 	for (param = params->first; param; param = param->next) {
+		/* is is a null/reseted/no-val parameter ? */
+		if (!(param->flags & (EVI_INT_VAL | EVI_STR_VAL)))
+			continue;
+
 		if (param->flags & EVI_INT_VAL) {
 			tmp = cJSON_CreateNumber(param->val.n);
 			if (!tmp) {

@@ -741,7 +741,7 @@ static int m_store(struct sip_msg* msg, str* owner)
 		}
 	}
 
-	tmb.t_request(&msg_type,  /* Type of the message */
+	run_tm_api(&tmb, t_request, &msg_type,  /* Type of the message */
 			(ctaddr.s)?&ctaddr:&pfrom->uri,    /* Request-URI */
 			&pfrom->uri,      /* To */
 			&notify_from,     /* From */
@@ -946,7 +946,7 @@ static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg)
 		else
 			LM_DBG("sending composed body\n");
 
-		tmb.t_request(&msg_type,  /* Type of the message */
+		run_tm_api(&tmb, t_request, &msg_type,  /* Type of the message */
 				&str_vals[1],     /* Request-URI (To) */
 				&str_vals[1],     /* To */
 				&str_vals[0],     /* From */
@@ -1215,7 +1215,7 @@ void m_send_ontimer(unsigned int ticks, void *param)
 
 		msg_list_set_flag(ml, mid, MS_MSG_TSND);
 
-		tmb.t_request(&msg_type,  /* Type of the message */
+		run_tm_api(&tmb, t_request, &msg_type,  /* Type of the message */
 					&puri,            /* Request-URI */
 					&puri,            /* To */
 					&ms_reminder,     /* From */

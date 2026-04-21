@@ -201,7 +201,7 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		rpl_data.method =METHOD_BYE;
 		rpl_data.code =200;
 		rpl_data.text =&ok;
-		b2b_api.send_reply(&rpl_data);
+		run_b2be_api(&b2b_api, send_reply, &rpl_data);
 	}
 	else
 	{
@@ -209,7 +209,7 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		PREP_REQ_DATA(old_entity);
 		req_data.method =&meth_bye;
-		b2b_api.send_request(&req_data);
+		run_b2be_api(&b2b_api, send_request, &req_data);
 	}
 
 	if (0 == b2bl_drop_entity(old_entity, tuple))
@@ -245,7 +245,7 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		PREP_REQ_DATA(bridging_entity);
 		req_data.method =&meth_inv;
-		b2b_api.send_request(&req_data);
+		run_b2be_api(&b2b_api, send_request, &req_data);
 	} else {
 		if (bridging_start_new_ent(tuple, bridging_entity, entity, NULL, NULL, 0) < 0) {
 			LM_ERR("Failed to start bridging with new entity\n");
@@ -418,7 +418,7 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 	rpl_data.method =METHOD_BYE;
 	rpl_data.code =200;
 	rpl_data.text =&ok;
-	b2b_api.send_reply(&rpl_data);
+	run_b2be_api(&b2b_api, send_reply, &rpl_data);
 
 	return (entity_no < 0 ? 0:
 			process_bridge_dialog_end(tuple, hash_index, entity_no, entity));
@@ -546,7 +546,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.b2b_key =&bentity0->key;
 		req_data.method =&method_ack;
 		req_data.dlginfo =bentity0->dlginfo;
-		if(b2b_api.send_request(&req_data) < 0)
+		if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 		{
 			LM_ERR("Failed to send ACK in bridging state [%d]\n", tuple->state);
 			return -1;
@@ -614,7 +614,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.b2b_key =&bentity1->key;
 		req_data.method =&method_ack;
 		req_data.dlginfo =bentity1->dlginfo;
-		if(b2b_api.send_request(&req_data) < 0)
+		if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 		{
 			LM_ERR("Failed to send second ACK in bridging scenario\n");
 			return -1;
@@ -660,7 +660,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.body = body;
 			req_data.contact_hdr_params = ct_hdrs;
 			req_data.dlginfo =bentity1->dlginfo;
-			if(b2b_api.send_request(&req_data) < 0)
+			if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 			{
 				LM_ERR("Failed to send first ACK in bridging scenario\n");
 				return -1;
@@ -672,7 +672,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.b2b_key =&bentity0->key;
 			req_data.method =&method_ack;
 			req_data.dlginfo =bentity0->dlginfo;
-			if(b2b_api.send_request(&req_data) < 0)
+			if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 			{
 				LM_ERR("Failed to send second ACK in bridging scenario\n");
 				return -1;
@@ -739,7 +739,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.body = body;
 			req_data.contact_hdr_params = ct_hdrs;
 			req_data.dlginfo =bentity1->dlginfo;
-			if(b2b_api.send_request(&req_data) < 0)
+			if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 			{
 				LM_ERR("Failed to send reINVITE in bridging state [%d]\n",
 					tuple->state);
@@ -761,7 +761,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.body =body;
 			req_data.contact_hdr_params = ct_hdrs;
 			req_data.dlginfo =bentity1->dlginfo;
-			if(b2b_api.send_request(&req_data) < 0)
+			if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 			{
 				LM_ERR("Failed to send second INVITE in bridging scenario\n");
 				return -1;
@@ -804,7 +804,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.client_headers = &bentity0->hdrs;
 			req_data.contact_hdr_params = ct_hdrs;
 			req_data.body = body;
-			b2b_api.send_request(&req_data);
+			run_b2be_api(&b2b_api, send_request, &req_data);
 			bentity0->state = B2BL_ENT_NEW;
 			bentity0->sdp_type = B2BL_SDP_NORMAL;
 
@@ -840,7 +840,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.extra_headers =extra_headers;
 		req_data.body = (bentity0->sdp_type == B2BL_SDP_LATE) ? body : 0;
 		req_data.dlginfo =bentity0->dlginfo;
-		if(b2b_api.send_request(&req_data) < 0)
+		if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 		{
 			LM_ERR("Failed to send first ACK in bridging scenario\n");
 			return -1;
@@ -852,7 +852,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.b2b_key =&bentity1->key;
 		req_data.method =&method_ack;
 		req_data.dlginfo =bentity1->dlginfo;
-		if(b2b_api.send_request(&req_data) < 0)
+		if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 		{
 			LM_ERR("Failed to send second ACK in bridging scenario\n");
 			return -1;
@@ -915,7 +915,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.body =body;
 		req_data.contact_hdr_params = ct_hdrs;
 		req_data.dlginfo =bentity0->dlginfo;
-		if(b2b_api.send_request(&req_data) < 0)
+		if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 		{
 			LM_ERR("Failed to send second Invite in bridging scenario\n");
 			return -1;
@@ -986,7 +986,7 @@ int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
 	}
 	req_data.extra_headers = &hdrs;
 	req_data.body = &body;
-	if (b2b_api.send_request(&req_data) < 0) {
+	if (run_b2be_api(&b2b_api, send_request, &req_data) < 0) {
 		LM_ERR("Failed to send NOTIFY\n");
 		return -1;
 	}
@@ -1420,7 +1420,7 @@ static int bridging_start_old_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_ent
 	req_data.client_headers = &old_entity->hdrs;
 	req_data.body = body;
 	req_data.contact_hdr_params = b2b_get_msg_contact_hdrs(tuple, &old_entity->key);
-	b2b_api.send_request(&req_data);
+	run_b2be_api(&b2b_api, send_request, &req_data);
 	old_entity->state = B2BL_ENT_NEW;
 	if (body) {
 		if (!body->s) {
@@ -1789,7 +1789,7 @@ int b2bl_api_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 			rpl_data.method =METHOD_BYE;
 			rpl_data.code =200;
 			rpl_data.text =&ok;
-			b2b_api.send_reply(&rpl_data);
+			run_b2be_api(&b2b_api, send_reply, &rpl_data);
 			b2bl_delete_entity(old_entity, tuple, hash_index, 1);
 		}
 		else
@@ -1898,7 +1898,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 			rpl_data.method =METHOD_BYE;
 			rpl_data.code =200;
 			rpl_data.text =&ok;
-			b2b_api.send_reply(&rpl_data);
+			run_b2be_api(&b2b_api, send_reply, &rpl_data);
 		}
 		else
 		{
@@ -1989,7 +1989,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 			rpl_data.method =METHOD_BYE;
 			rpl_data.code =200;
 			rpl_data.text =&ok;
-			b2b_api.send_reply(&rpl_data);
+			run_b2be_api(&b2b_api, send_reply, &rpl_data);
 		}
 		b2b_end_dialog(e, tuple, hash_index);
 		e->peer = NULL;
@@ -2021,7 +2021,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	req_data.method =&method_invite;
 	req_data.extra_headers = NULL;
 	req_data.client_headers = &e1->hdrs;
-	if(b2b_api.send_request(&req_data) < 0)
+	if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
@@ -2068,7 +2068,7 @@ int bridge_msg_term_entity(b2bl_entity_id_t *old_entity,
 		rpl_data.method =METHOD_BYE;
 		rpl_data.code =200;
 		rpl_data.text =&ok;
-		b2b_api.send_reply(&rpl_data);
+		run_b2be_api(&b2b_api, send_reply, &rpl_data);
 	}
 	else
 	{
@@ -2080,7 +2080,7 @@ int bridge_msg_term_entity(b2bl_entity_id_t *old_entity,
 			req_data.no_cb = 1;
 			if (hash_index)
 				b2bl_htable[*hash_index].locked_by = process_no;
-			b2b_api.send_request(&req_data);
+			run_b2be_api(&b2b_api, send_request, &req_data);
 			if (hash_index)
 				b2bl_htable[*hash_index].locked_by = -1;
 		}
@@ -2091,7 +2091,7 @@ int bridge_msg_term_entity(b2bl_entity_id_t *old_entity,
 			rpl_data.method = METHOD_INVITE;
 			rpl_data.code =480;
 			rpl_data.text =&notTemporarilyUnavailable;
-			b2b_api.send_reply(&rpl_data);
+			run_b2be_api(&b2b_api, send_reply, &rpl_data);
 		}
 		old_entity->disconnected = 1;
 	}
@@ -2412,7 +2412,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
 	/* Decrement Max-Forwards value */
 	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
 		req_data.maxfwd = maxfwd;
-	if(b2b_api.send_request(&req_data) < 0)
+	if(run_b2be_api(&b2b_api, send_request, &req_data) < 0)
 	{
 		LM_ERR("Failed to send Update/reInvite\n");
 		goto error;

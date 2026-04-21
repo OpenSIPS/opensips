@@ -708,8 +708,8 @@ int rls_send_notify(subs_t* subs, str* body, str* start_cid,
 	/* don't open new TCP connections if connection is down */
 	tcp_no_new_conn = 1;
 
-	rt = tmb.t_request_within
-		(&met,
+	rt = run_tm_api(&tmb, t_request_within,
+		&met,
 		&str_hdr,
 		body,
 		td,
@@ -1166,4 +1166,3 @@ error:
 		xmlFreeDoc(*xmldoc);
 	return -1;
 }
-

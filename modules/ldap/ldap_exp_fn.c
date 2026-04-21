@@ -153,7 +153,7 @@ int ldap_search_impl_async(
 	}
 
 	ctx->resume_param = as_params;
-	ctx->resume_f = resume_ldap_search;/* resume function */
+	ASYNC_SET_RESUME_F(ctx, resume_ldap_search);/* resume function */
 	async_status = sockfd;
 
 	return 1;

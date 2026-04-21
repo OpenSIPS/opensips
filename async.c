@@ -30,6 +30,7 @@
 #include "route.h"
 #include "action.h"
 #include "sr_module.h"
+#include "profiling.h"
 
 int async_status = ASYNC_NO_IO;
 
@@ -82,7 +83,7 @@ int register_async_fd(int fd, async_resume_fd *f, void *resume_param)
 
 	memset(ctx,0,sizeof(async_ctx));
 
-	ctx->resume_f = f;
+	ASYNC_SET_RESUME_F(ctx, f);
 	ctx->resume_param = resume_param;
 
 	/* place the FD + resume function (as param) into reactor */
@@ -103,21 +104,23 @@ int async_fd_resume(int fd, void *param)
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 
+	profiling_proc_enter( LEVEL_SIP, ctx->resume_f_name, 0);
+
 	/* call the resume function in order to read and handle data */
 	ret = ((async_resume_fd*)ctx->resume_f)( fd, ctx->resume_param );
 	if (async_status==ASYNC_CONTINUE) {
 		/* leave the fd into the reactor*/
-		return 0;
+		goto done;
 	} else if (async_status==ASYNC_CHANGE_FD) {
 		if (ret<0) {
 			LM_ERR("ASYNC_CHANGE_FD: given file descriptor shall be "
 				"positive!\n");
-			return 0;
+			goto done;
 		} else if (ret>0 && ret==fd) {
 			/*trying to add the same fd; shall continue*/
 			LM_CRIT("You are trying to replace the old fd with the same fd!"
 					"Will act as in ASYNC_CONTINUE!\n");
-			return 0;
+			goto done;
 		}
 
 		/* remove the old fd from the reactor */
@@ -137,7 +140,7 @@ int async_fd_resume(int fd, void *param)
 		} else {
 
 			/* successfully changed fd */
-			return 0;
+			goto done;
 		}
 	}
 
@@ -147,6 +150,8 @@ int async_fd_resume(int fd, void *param)
 done:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
 		close(fd);
+
+	profiling_proc_exit( LEVEL_SIP, "async-fd resume handler", async_status );
 
 	return 0;
 }
@@ -185,6 +190,8 @@ int async_launch_resume(int fd, void *param)
 		LM_ERR("No more memory\n");
 		return -1;
 	}
+
+	profiling_proc_enter( LEVEL_SIP, ctx->async.resume_f_name, 0);
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 
@@ -271,6 +278,8 @@ run_route:
 restore:
 	/* clean whatever extra structures were added by script functions */
 	release_dummy_sip_msg(req);
+
+	profiling_proc_exit( LEVEL_SIP, "async-fd resume handler", async_status );
 
 	return 0;
 }

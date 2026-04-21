@@ -623,7 +623,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	/* error occurred; no transfer done */
 	if (read_fd == ASYNC_NO_IO) {
 		ctx->resume_param = NULL;
-		ctx->resume_f = NULL;
+		ASYNC_CLEAR_RESUME_F(ctx);
 		if (code_pv) {
 			val.flags = PV_VAL_INT|PV_TYPE_INT;
 			val.ri = 0;
@@ -682,7 +682,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	if (lrc == RCL_OK_LOCKED)
 		rcl_release_url(host, rc == RCL_OK);
 
-	ctx->resume_f = resume_async_http_req;
+	ASYNC_SET_RESUME_F(ctx, resume_async_http_req);
 	ctx->timeout_f = time_out_async_http_req;
 	ctx->timeout_s = param->timeout_s;
 

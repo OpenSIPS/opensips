@@ -233,6 +233,7 @@ void reset_process_slot( int p_id )
 	pt[p_id].ipc_sync_pipe[0] = pt[p_id].ipc_sync_pipe[1] = -1;
 
 	pt[p_id].log_level = pt[p_id].default_log_level = 0; /*not really needed*/
+	pt[p_id].profiling_proc_level = LEVEL_OFF;
 
 	/* purge all load-related data */
 	memset( &pt[p_id].load, 0, sizeof(struct proc_load_info));

@@ -437,7 +437,7 @@ int msrp_req_cb(struct msrp_msg *req, void *hdl_param)
 	p += req->content_type->body.len;
 	memcpy(p, CRLF, CRLF_LEN);
 
-	tmb.t_request(&str_init("MESSAGE"), &sess->sipua_ruri, &sess->sipua_to,
+	run_tm_api(&tmb, t_request, &str_init("MESSAGE"), &sess->sipua_ruri, &sess->sipua_to,
 		&sess->sipua_from, &hdrs, &req->body, NULL, NULL, NULL, NULL);
 
 	pkg_free(hdrs.s);

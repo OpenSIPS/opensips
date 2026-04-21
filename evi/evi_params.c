@@ -87,6 +87,16 @@ int evi_param_set(evi_param_p el, const void *param, int flags)
 	return 0;
 }
 
+void evi_param_reset(evi_param_p el)
+{
+	if (!el)
+		return;
+
+	el->flags = 0;
+	el->val.s.s = NULL;
+	el->val.s.len = 0;
+}
+
 
 
 /* adds a new parameter to the list */
