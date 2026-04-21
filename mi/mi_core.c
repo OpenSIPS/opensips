@@ -1051,6 +1051,10 @@ static const mi_export_t mi_core_cmds[] = {
 		{mi_tcp_list_conns, {0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
+	{ "tcp_close_conn", "close a given TCP connection", 0, 0, {
+		{mi_tcp_close_conn, {"ipport", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
 	{ "reload_routes", "triggers the script (routes only) reload", 0, 0, {
 		{w_reload_routes, {0}},
 		{EMPTY_MI_RECIPE}}, {0}

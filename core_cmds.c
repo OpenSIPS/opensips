@@ -40,6 +40,7 @@
 #include "status_report.h"
 #include "cachedb/cachedb.h"
 #include "msg_translator.h"
+#include "net/net_tcp.h"
 #include "mod_fix.h"
 /* needed by tcpconn_add_alias() */
 #include "net/tcp_conn_defs.h"
@@ -104,6 +105,7 @@ static int w_isdsturiset(struct sip_msg *msg);
 static int w_force_rport(struct sip_msg *msg);
 static int w_add_local_rport(struct sip_msg *msg);
 static int w_force_tcp_alias(struct sip_msg *msg, int *port);
+static int w_tcp_close_conn(struct sip_msg *msg, str *ipport);
 static int w_set_adv_address(struct sip_msg *msg, str *adv_addr);
 static int w_set_adv_port(struct sip_msg *msg, str *adv_port);
 static int w_f_send_sock(struct sip_msg *msg, struct socket_info *si);
@@ -251,6 +253,9 @@ const cmd_export_t core_cmds[]={
 		ALL_ROUTES},
 	{"force_tcp_alias", (cmd_function)w_force_tcp_alias, {
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		ALL_ROUTES},
+	{"tcp_close_conn", (cmd_function)w_tcp_close_conn, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"set_advertised_address", (cmd_function)w_set_adv_address, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
@@ -1114,6 +1119,19 @@ static int w_force_tcp_alias(struct sip_msg *msg, int *port)
 	}
 
 	return 1;	
+}
+
+static int w_tcp_close_conn(struct sip_msg *_, str *ipport)
+{
+	int rc;
+
+	rc = tcp_close_connection(ipport);
+	if (rc < 0)
+		return E_UNSPEC;
+	if (rc == 0)
+		return -1;
+
+	return 1;
 }
 
 static int w_set_adv_address(struct sip_msg *msg, str *adv_addr)

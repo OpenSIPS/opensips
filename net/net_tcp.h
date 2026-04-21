@@ -63,6 +63,13 @@ void tcp_reset_worker_slot(void);
 mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 							struct mi_handler *async_hdl);
 
+/* MI function to close a given TCP connections */
+mi_response_t *mi_tcp_close_conn(const mi_params_t *params,
+						struct mi_handler *async_hdl);
+
+/* close a TCP-based connection identified by remote ip:port */
+int tcp_close_connection(str *ipport);
+
 
 /************************* TCP net helper functions **************************/
 

@@ -112,9 +112,6 @@ static int *tcp_main_proc_no = 0;
 /* array of TCP partitions */
 static struct tcp_partition tcp_parts[TCP_PARTITION_SIZE];
 
-/* communication socket from generic proc to TCP main */
-int unix_tcp_sock = -1;
-
 /*!< current number of open connections */
 static unsigned int *tcp_connections_no = 0;
 static gen_lock_t *tcp_connections_lock = 0;
@@ -520,7 +517,9 @@ static struct tcp_connection* _tcpconn_find(unsigned int id)
 			LM_DBG("c=%p, c->id=%u, port=%d\n",c, c->id, c->rcv.src_port);
 			print_ip("ip=", &c->rcv.src_ip, "\n");
 #endif
-			if ((id==c->id)&&(c->state!=S_CONN_BAD)) return c;
+			if ((id==c->id) && c->state!=S_CONN_BAD &&
+					!(c->flags & F_CONN_FORCE_CLOSED))
+				return c;
 		}
 	}
 	return 0;
@@ -604,6 +603,7 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 #endif
 				c = a->parent;
 				if (c->state != S_CONN_BAD &&
+				    !(c->flags & F_CONN_FORCE_CLOSED) &&
 				    ((c->flags & F_CONN_INIT) ||
 				     (c->state == S_CONN_CONNECTING && c->fd == -1)) &&
 				    (send_sock==NULL || send_sock == a->parent->rcv.bind_address) &&
@@ -2470,6 +2470,121 @@ int tcp_has_async_write(void)
 	return reactor_has_async();
 }
 
+static int tcp_close_conn_run(void *data)
+{
+	struct tcp_connection *conn = data;
+
+	if (!conn)
+		return -1;
+
+	tcp_conn_destroy(conn);
+	return 0;
+}
+
+static void tcp_close_conn_rpc(int _, void *param)
+{
+	tcp_close_conn_run(param);
+}
+
+int tcp_close_connection(str *ipport)
+{
+	struct tcp_connection *conn = NULL;
+	struct ip_addr *ip;
+	str host;
+	unsigned int id;
+	int port, proto, rc, tcp_main_proc;
+	int start_proto, end_proto;
+	unsigned int p;
+	char *sep;
+
+	if (tcp_disabled)
+		return 0;
+
+	sep = q_memchr(ipport->s, ':', ipport->len);
+	if (!sep) {
+		if (str2int(ipport, &id) < 0) {
+			LM_ERR("failed to parse tcp connection [%.*s]\n",
+				ipport->len, ipport->s);
+			return -1;
+		}
+
+		switch (tcp_conn_get(id, NULL, 0, PROTO_NONE, NULL, &conn, NULL)) {
+		case 1:
+			goto found;
+		case -1:
+			return -1;
+		default:
+			return 0;
+		}
+	}
+
+	if (parse_phostport(ipport->s, ipport->len, &host.s, &host.len,
+	&port, &proto) != 0 || port <= 0) {
+		LM_ERR("failed to parse tcp connection [%.*s]\n",
+			ipport->len, ipport->s);
+		return -1;
+	}
+
+	ip = str2ip(&host);
+	if (!ip)
+		ip = str2ip6(&host);
+	if (!ip) {
+		LM_ERR("invalid IP in tcp connection [%.*s]\n",
+			ipport->len, ipport->s);
+		return -1;
+	}
+
+	if (proto != PROTO_NONE) {
+		if (!is_tcp_based_proto(proto)) {
+			LM_ERR("protocol %d is not TCP based for [%.*s]\n",
+				proto, ipport->len, ipport->s);
+			return -1;
+		}
+		start_proto = proto;
+		end_proto = proto + 1;
+	} else {
+		start_proto = 0;
+		end_proto = PROTO_LAST;
+	}
+
+	for (p = start_proto; p < (unsigned int)end_proto; p++) {
+		if (!is_tcp_based_proto(p))
+			continue;
+
+		switch (tcp_conn_get(0, ip, port, p, NULL, &conn, NULL)) {
+		case 1:
+			goto found;
+		case -1:
+			return -1;
+		}
+	}
+
+	return 0;
+
+found:
+	TCPCONN_LOCK(conn->id);
+	conn->flags |= F_CONN_FORCE_CLOSED;
+	TCPCONN_UNLOCK(conn->id);
+
+	tcp_main_proc = tcp_get_main_proc_no();
+	if (tcp_main_proc < 0)
+		rc = -1;
+	else if (process_no == tcp_main_proc)
+		rc = tcp_close_conn_run(conn);
+	else
+		rc = ipc_send_rpc(tcp_main_proc, tcp_close_conn_rpc, conn);
+
+	if (rc < 0) {
+		TCPCONN_LOCK(conn->id);
+		conn->flags &= ~F_CONN_FORCE_CLOSED;
+		TCPCONN_UNLOCK(conn->id);
+		tcp_conn_release(conn, 0);
+		return -1;
+	}
+
+	return 1;
+}
+
 
 /***************************** MI functions **********************************/
 
@@ -2567,4 +2682,23 @@ error:
 	LM_ERR("failed to add MI item\n");
 	free_mi_response(resp);
 	return 0;
+}
+
+
+mi_response_t *mi_tcp_close_conn(const mi_params_t *params,
+						struct mi_handler *_)
+{
+	str ipport;
+	int rc;
+
+	if (get_mi_string_param(params, "ipport", &ipport.s, &ipport.len) < 0)
+		return init_mi_param_error();
+
+	rc = tcp_close_connection(&ipport);
+	if (rc < 0)
+		return init_mi_error(400, MI_SSTR("Bad tcp connection"));
+	if (rc == 0)
+		return init_mi_result_null();
+
+	return init_mi_result_ok();
 }
