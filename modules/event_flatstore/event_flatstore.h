@@ -39,6 +39,14 @@
 #define ROTATE_REASON_PERIOD "period"
 #define ROTATE_REASON_MI     "mi"
 
+struct rotation_ticket {
+	unsigned int ver;
+	unsigned int open_left;
+	const char  *reason;
+	char        *old_name;
+	struct rotation_ticket *next;
+};
+
 struct flat_file {
 	str path; // original path from module config (may include $var(...) placeholders)
 	char *pathname; // resolved absolute path after variable expansion
@@ -47,8 +55,10 @@ struct flat_file {
 	unsigned long bytes_written;
 	unsigned int file_index_process;
 	unsigned int counter_open;
-	unsigned int rotate_version;
+	unsigned int current_version;
+	struct rotation_ticket *pending;
 	unsigned int flat_socket_ref;
+	int header_written;
 	struct flat_file *next;
 	struct flat_file *prev;
 };
