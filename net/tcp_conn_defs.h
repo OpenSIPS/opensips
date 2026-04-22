@@ -111,6 +111,15 @@ enum tcp_conn_alias_mode {
 	TCP_ALIAS_ALWAYS,
 };
 
+/*! \brief Cached TLS metadata stored in shared memory */
+struct tcp_tls_info {
+	char *version;				/*!< negotiated TLS version */
+	char *cipher_name;			/*!< negotiated cipher name */
+	char *cipher_desc;			/*!< negotiated cipher description */
+	unsigned int bits;				/*!< negotiated cipher bits */
+	unsigned char peer_verified;		/*!< normalized peer verification result */
+};
+
 
 struct tcp_async_chunk {
 	char *buf; /* buffer that needs to be sent out */
@@ -174,6 +183,7 @@ struct tcp_connection{
 	struct tcp_req *con_req;	/*!< Per-connection TCP request buffer in TCP-main-private memory */
 	void *proto_req;			/*!< Optional protocol-specific request state in TCP-main-private memory */
 	void *proto_extra_id;		/*!< Optional shared protocol-specific match id */
+	void *shared_data;		/*!< Optional shared attachment exported by the active protocol */
 	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
 	/*!< connection related flags */
 	unsigned short flags;
