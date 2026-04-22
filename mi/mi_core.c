@@ -1047,15 +1047,6 @@ static const mi_export_t mi_core_cmds[] = {
 		{w_log_mute_state_2, {"consumer", "mute_state", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
-	{ "list_tcp_conns", "list all ongoing TCP based connections, optionally filtered by proto", 0, 0, {
-		{mi_tcp_list_conns, {0}},
-		{mi_tcp_list_conns, {"proto", 0}},
-		{EMPTY_MI_RECIPE}}, {0}
-	},
-	{ "tcp_close_conn", "close a given TCP connection", 0, 0, {
-		{mi_tcp_close_conn, {"ipport", 0}},
-		{EMPTY_MI_RECIPE}}, {0}
-	},
 	{ "reload_routes", "triggers the script (routes only) reload", 0, 0, {
 		{w_reload_routes, {0}},
 		{EMPTY_MI_RECIPE}}, {0}
@@ -1063,6 +1054,19 @@ static const mi_export_t mi_core_cmds[] = {
 	{ "help", "prints information about MI commands usage", 0, 0, {
 		{w_mi_help, {0}},
 		{w_mi_help_1, {"mi_cmd", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
+static const mi_export_t mi_tcp_cmds[] = {
+	{ "list", "list all ongoing TCP based connections, optionally filtered by proto", 0, 0, {
+		{mi_tcp_list_conns, {0}},
+		{mi_tcp_list_conns, {"proto", 0}},
+		{EMPTY_MI_RECIPE}}, {"list_tcp_conns", 0}
+	},
+	{ "close", "close a given TCP connection", 0, 0, {
+		{mi_tcp_close_conn, {"ipport", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{EMPTY_MI_EXPORT}
@@ -1169,6 +1173,10 @@ int init_mi_core(void)
 {
 	if (register_mi_mod( "core", mi_core_cmds)<0) {
 		LM_ERR("unable to register core MI cmds\n");
+		return -1;
+	}
+	if (register_mi_mod( "tcp", mi_tcp_cmds)<0) {
+		LM_ERR("unable to register tcp MI cmds\n");
 		return -1;
 	}
 	if (register_mi_mod( "mem", mi_mem_cmds)<0) {
