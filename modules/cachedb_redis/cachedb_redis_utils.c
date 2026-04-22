@@ -423,6 +423,7 @@ int parse_redirect_reply(redisReply *reply, redis_moved *out,
 	while (p < end && *p >= '0' && *p <= '9') {
 		slot = slot * 10 + (*p - '0');
 		p++;
+		if (slot > 16383) return ERR_INVALID_SLOT;
 	}
 	if (slot == 0 && (p == reply->str + prefix_len || *(p - 1) < '0' || *(p - 1) > '9'))
 		return ERR_INVALID_SLOT;
@@ -455,11 +456,12 @@ int parse_redirect_reply(redisReply *reply, redis_moved *out,
 			while (p < end && *p >= '0' && *p <= '9') {
 				port = port * 10 + (*p - '0');
 				p++;
+				if (port > 65535) return ERR_INVALID_PORT;
 			}
 			if (port < 0 || port > 65535 || port_start == p)
 				return ERR_INVALID_PORT;
 		}
-	} else if (out->endpoint.s < end) {
+	} else if (p < end) {
 		out->endpoint.s = host_start;
 		out->endpoint.len = end - host_start;
 	}

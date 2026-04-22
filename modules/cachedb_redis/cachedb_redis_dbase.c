@@ -568,21 +568,15 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 						match_prefix(reply->str, reply->len, ASK_PREFIX, ASK_PREFIX_LEN)) {
 					int is_ask = match_prefix(reply->str, reply->len,
 						ASK_PREFIX, ASK_PREFIX_LEN);
-					redis_moved *moved_info = pkg_malloc(sizeof(redis_moved));
-					if (!moved_info) {
-						LM_ERR("Unable to allocate redis_moved struct,"
-							" no more pkg memory\n");
-						freeReplyObject(reply);
-						reply = NULL;
-						goto try_next_con;
-					}
+					redis_moved moved_info_s;
+					redis_moved *moved_info = &moved_info_s;
+
 
 					if ((is_ask ?
 							parse_ask_reply(reply, moved_info) :
 							parse_moved_reply(reply, moved_info)) < 0) {
 						LM_ERR("Unable to parse %s reply\n",
 							is_ask ? "ASK" : "MOVED");
-						pkg_free(moved_info);
 						freeReplyObject(reply);
 						goto try_next_con;
 					}
@@ -597,7 +591,6 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 					node = get_redis_connection_by_endpoint(
 						con, moved_info);
 
-					pkg_free(moved_info);
 					freeReplyObject(reply);
 					reply = NULL;
 
