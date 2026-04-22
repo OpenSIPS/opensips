@@ -1417,6 +1417,38 @@ modparam("dialog", "cluster_auto_sync", 0)
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_auto_prack_hangup_on_failure" xreflabel="auto_prack_hangup_on_failure">
+		<title><varname>auto_prack_hangup_on_failure</varname> (int)</title>
+		<para>
+		Controls how dialogs created with the <quote>auto-prack</quote> flag react
+		when the automatically generated PRACK transaction fails. A value of
+		<emphasis>1</emphasis> causes OpenSIPS to generate a native
+		<emphasis>502 Bad Gateway</emphasis> reply on the correlated INVITE
+		transaction, while a value of <emphasis>0</emphasis> leaves the INVITE
+		transaction untouched.
+		</para>
+		<para>
+		A failure means that the local PRACK transaction either completed with a
+		final negative reply or hit TM failure handling.
+		</para>
+		<para><emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis></para>
+	</section>
+
+	<section id="param_auto_prack_fr_timeout" xreflabel="auto_prack_fr_timeout">
+		<title><varname>auto_prack_fr_timeout</varname> (int)</title>
+		<para>
+		Specifies the TM FR timeout, in seconds, for PRACK transactions generated
+		automatically for dialogs created with the <quote>auto-prack</quote> flag.
+		This value is applied to the local PRACK transaction immediately after it
+		is created.
+		</para>
+		<para><emphasis>
+			Default value is <quote>3</quote>.
+		</emphasis></para>
+	</section>
 	</section>
 
 
