@@ -2599,12 +2599,36 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
 	unsigned int i,j,part;
-	char proto[PROTO_NAME_MAX_SIZE];
+	char proto_buf[PROTO_NAME_MAX_SIZE];
+	char *proto_s;
+	int proto_len;
+	int proto_filter = PROTO_NONE;
+	int filter_by_proto = 0;
+	str proto_name;
 	struct tm ltime;
 	char *p;
 
 	if (tcp_disabled)
 		return init_mi_result_null();
+
+	switch (try_get_mi_string_param(params, "proto", &proto_s, &proto_len)) {
+	case 0:
+		proto_name.s = proto_s;
+		proto_name.len = proto_len;
+
+		if (proto_len == 3 && str_strcasecmp(&proto_name, _str("any")) == 0)
+			;
+		else if (parse_proto((unsigned char *)proto_s, proto_len,
+				(int *)&proto_filter) < 0)
+			return init_mi_error(400, MI_SSTR("Bad protocol"));
+		else
+			filter_by_proto = 1;
+		break;
+	case -1:
+		break;
+	default:
+		return init_mi_param_error();
+	}
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
@@ -2620,6 +2644,9 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 		TCPCONN_LOCK(part);
 		for( i=0; i<TCP_ID_HASH_SIZE ; i++ ) {
 			for(conn=TCP_PART(part).tcpconn_id_hash[i];conn;conn=conn->id_next){
+				if (filter_by_proto && conn->type != proto_filter)
+					continue;
+
 				/* add one object fo each conn */
 				conn_item = add_mi_object(conns_arr, 0, 0);
 				if (!conn_item)
@@ -2630,9 +2657,9 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 					goto error;
 
 				/* add type/proto */
-				p = proto2str(conn->type, proto);
-				if (add_mi_string(conn_item, MI_SSTR("Type"), proto,
-					(int)(long)(p-proto)) > 0)
+				p = proto2str(conn->type, proto_buf);
+				if (add_mi_string(conn_item, MI_SSTR("Type"), proto_buf,
+					(int)(long)(p-proto_buf)) > 0)
 					goto error;
 
 				/* add state */

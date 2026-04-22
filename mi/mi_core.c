@@ -1047,8 +1047,9 @@ static const mi_export_t mi_core_cmds[] = {
 		{w_log_mute_state_2, {"consumer", "mute_state", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
-	{ "list_tcp_conns", "list all ongoing TCP based connections", 0, 0, {
+	{ "list_tcp_conns", "list all ongoing TCP based connections, optionally filtered by proto", 0, 0, {
 		{mi_tcp_list_conns, {0}},
+		{mi_tcp_list_conns, {"proto", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "tcp_close_conn", "close a given TCP connection", 0, 0, {
