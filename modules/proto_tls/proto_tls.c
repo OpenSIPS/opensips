@@ -63,6 +63,7 @@
 
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../tls_mgm/api.h"
+#include "../tls_mgm/tls_shared_data.h"
 #include "../tls_mgm/tls_trace_common.h"
 
 #include "../../net/trans_trace.h"
@@ -454,6 +455,7 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->net.stream.write		= tls_async_write;
 	pi->net.stream.conn.init	= proto_tls_conn_init;
 	pi->net.stream.conn.clean	= proto_tls_conn_clean;
+	pi->net.stream.conn.dump	= tls_shared_info_dump;
 	if (cert_check_on_conn_reusage)
 		pi->net.stream.conn.match	= tls_conn_extra_match;
 	else

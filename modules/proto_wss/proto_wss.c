@@ -50,6 +50,7 @@
 #include "proto_wss.h"
 #include "../proto_ws/ws_common_defs.h"
 #include "../tls_mgm/api.h"
+#include "../tls_mgm/tls_shared_data.h"
 
 struct tls_mgm_binds tls_mgm_api;
 
@@ -206,6 +207,7 @@ static int proto_wss_init(struct proto_info *pi)
 	pi->net.stream.conn.init	= wss_conn_init;
 	pi->net.stream.conn.connect	= wss_conn_connect;
 	pi->net.stream.conn.clean	= ws_conn_clean;
+	pi->net.stream.conn.dump	= tls_shared_info_dump;
 	if (cert_check_on_conn_reusage)
 		pi->net.stream.conn.match	= tls_conn_extra_match;
 	else

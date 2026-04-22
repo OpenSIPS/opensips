@@ -31,7 +31,9 @@ ssl = (SSL *) c->extra_data;
 			<quote>struct tcp_tls_info *</quote> and includes the TLS version,
 			cipher name, cipher description, cipher bits, and peer verification
 			result so other code can read it without touching the live
-			<quote>SSL *</quote> handle.
+			<quote>SSL *</quote> handle. The same cached attachment is also used
+			by the protocol connection dump hook, allowing <quote>list_tcp_conns</quote>
+			to print TLS metadata directly from shared memory.
 			</para>
 		</section>
 		<section>

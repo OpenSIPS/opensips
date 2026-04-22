@@ -2659,7 +2659,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 				/* add type/proto */
 				p = proto2str(conn->type, proto_buf);
 				if (add_mi_string(conn_item, MI_SSTR("Type"), proto_buf,
-					(int)(long)(p-proto_buf)) > 0)
+					(int)(long)(p-proto_buf)) < 0)
 					goto error;
 
 				/* add state */
@@ -2674,6 +2674,11 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 				/* add Local IP:Port */
 				if (add_mi_string_fmt(conn_item, MI_SSTR("Local"), "%s:%d",
 					ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port) < 0)
+					goto error;
+
+				if (protos[conn->type].net.stream.conn.dump &&
+						protos[conn->type].net.stream.conn.dump(conn,
+							conn_item) < 0)
 					goto error;
 
 				/* add lifetime */

@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "../../dprint.h"
+#include "../../mi/item.h"
 #include "../../mem/shm_mem.h"
 #include "../../net/tcp_conn_defs.h"
 
@@ -104,6 +105,44 @@ static inline int tls_shared_info_store(struct tcp_connection *c,
 error:
 	tls_shared_info_free(c);
 	return -1;
+}
+
+static inline int tls_shared_info_dump(struct tcp_connection *c, void *dump_item)
+{
+	mi_item_t *conn_item = dump_item;
+	struct tcp_tls_info *info;
+
+	if (!conn_item || !c)
+		return 0;
+
+	info = c->shared_data;
+	if (!info)
+		return 0;
+
+	if (info->version &&
+			add_mi_string(conn_item, MI_SSTR("TLS Version"), info->version,
+				strlen(info->version)) < 0)
+		return -1;
+
+	if (info->cipher_name &&
+			add_mi_string(conn_item, MI_SSTR("TLS Cipher"), info->cipher_name,
+				strlen(info->cipher_name)) < 0)
+		return -1;
+
+	if (info->cipher_desc &&
+			add_mi_string(conn_item, MI_SSTR("TLS Cipher description"),
+				info->cipher_desc, strlen(info->cipher_desc)) < 0)
+		return -1;
+
+	if (add_mi_number(conn_item, MI_SSTR("TLS Cipher bits"),
+			info->bits) < 0)
+		return -1;
+
+	if (add_mi_number(conn_item, MI_SSTR("TLS Peer verified"),
+			info->peer_verified) < 0)
+		return -1;
+
+	return 0;
 }
 
 #endif /* TLS_SHARED_DATA_H */
