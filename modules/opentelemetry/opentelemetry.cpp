@@ -77,6 +77,7 @@ extern "C" {
 #endif
 
 static int otel_enabled_cfg = 0;
+static int enable_proc = 0;
 static int *otel_enabled = NULL;
 static int otel_log_level = L_DBG;
 static int otel_use_batch = 1;
@@ -99,7 +100,6 @@ static __thread int otel_log_in_cb;
 
 static __thread profiling_ctx_t otel_parent_ctx;
 static __thread int otel_parent_ctx_set;
-static int otel_trace_registered;
 static int otel_log_consumer_registered;
 
 static opentelemetry::nostd::shared_ptr<oteltrace::Tracer> otel_tracer;
@@ -719,6 +719,7 @@ profiling_handlers_t otel_trace_handlers = {
 
 static const param_export_t params[] = {
 	{ "enable", INT_PARAM, &otel_enabled_cfg },
+	{ "proc_profiling", INT_PARAM, &enable_proc},
 	{ "log_level", INT_PARAM, &otel_log_level },
 	{ "use_batch", INT_PARAM, &otel_use_batch },
 	{ "service_name", STR_PARAM, &otel_service_name.s },
@@ -768,6 +769,14 @@ static int mod_init(void)
 		*otel_enabled = otel_enabled_cfg;
 	}
 
+	if (enable_proc)
+		otel_trace_handlers.accepted_data_types |= PROFILING_DATA_TYPE_PROC;
+
+	if (register_profiling_handler(&otel_trace_handlers) != 0) {
+		LM_ERR("failed to register profiling hooks\n");
+		return -1;
+	}
+
 	if (!otel_is_enabled()) {
 		LM_INFO("opentelemetry module disabled\n");
 	}
@@ -789,14 +798,6 @@ static int child_init(int rank)
 	otel_span_reset();
 	otel_log_in_cb = 0;
 	otel_parent_ctx_clear();
-
-	if (!otel_trace_registered) {
-		if (register_profiling_handler(&otel_trace_handlers) != 0) {
-			LM_ERR("failed to register profiling hooks\n");
-			return -1;
-		}
-		otel_trace_registered = 1;
-	}
 
 	if (!otel_log_consumer_registered) {
 		if (register_log_consumer(OTEL_CONSUMER_NAME, otel_log_consumer,
