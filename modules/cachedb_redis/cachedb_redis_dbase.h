@@ -42,6 +42,7 @@ typedef struct cluster_nodes {
 	unsigned short port;            /* port of this cluster node */
 	unsigned short start_slot;      /* first slot for this server */
 	unsigned short end_slot;        /* last slot for this server */
+	char *unix_socket_path;         /* Unix socket path (NULL = use TCP) */
 
 	redisContext *context;          /* actual connection to this node */
 	struct tls_domain *tls_dom;
@@ -72,8 +73,10 @@ typedef struct {
 	int port;
 } redis_moved;
 
-
 #define CACHEDB_REDIS_DEFAULT_TIMEOUT 5000
+
+#define CACHEDB_UNIX_SOCKET_PARAM "socket="
+#define CACHEDB_UNIX_SOCKET_PARAM_LEN (sizeof(CACHEDB_UNIX_SOCKET_PARAM)-1)
 
 #define MAP_GET_SCAN_COUNT 1000
 
@@ -87,6 +90,7 @@ typedef struct {
 extern int redis_query_tout;
 extern int redis_connnection_tout;
 extern int shutdown_on_error;
+extern int lazy_connect;
 extern int use_tls;
 extern int fts_max_results;
 extern str fts_index_name;
@@ -110,6 +114,9 @@ enum redis_flag {
 
 	/* failover set (combination of single and/or cluster instances) */
 	REDIS_MULTIPLE_HOSTS   = 1 << 4,
+
+	/* connection is via Unix domain socket (local IPC) */
+	REDIS_UNIX_SOCKET      = 1 << 5,
 };
 
 enum cluster_cmd {
@@ -127,6 +134,7 @@ typedef struct _redis_con {
 
 	char *host;            // Note: the .id may contain multi-hosts, so the
 	unsigned short port;   // host/port of this connection are extracted here
+	char *unix_socket_path; // Unix socket path (NULL = use TCP)
 
 	enum redis_flag flags;
 	cluster_node *nodes; /* one or more Redis nodes */
@@ -142,6 +150,7 @@ typedef struct _redis_con {
 	struct _redis_con *current;
 } redis_con;
 
+redisContext *redis_get_ctx_unix(const char *socket_path);
 int redis_connect_node(redis_con *con, cluster_node *node);
 int redis_reconnect_node(redis_con *con, cluster_node *node);
 

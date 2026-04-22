@@ -26,7 +26,6 @@ MI_URL="${MI_URL:-http://127.0.0.1:8888/mi}"
 CLUSTER_JQ='[.result[] | select(.group=="cluster")][0]'
 PING_CLUSTER_JQ='[.result[] | select(.group=="cluster")][0]'
 
-
 PASS=0
 FAIL=0
 TOTAL=0
@@ -107,6 +106,16 @@ GROUP=$(echo "$RESULT" | jq -r "${CLUSTER_JQ}.group" 2>/dev/null || echo "")
 assert_ok "connection has group field" "$GROUP"
 
 MODE=$(echo "$RESULT" | jq -r "${CLUSTER_JQ}.mode" 2>/dev/null || echo "")
+
+TRANSPORT=$(echo "$RESULT" | jq -r "${CLUSTER_JQ}.transport" 2>/dev/null || echo "")
+TOTAL=$((TOTAL + 1))
+if [ "$TRANSPORT" = "tcp" ] || [ "$TRANSPORT" = "unix" ]; then
+    PASS=$((PASS + 1))
+    echo "  PASS: transport is tcp or unix (transport=$TRANSPORT)"
+else
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: transport should be tcp or unix (transport=$TRANSPORT)"
+fi
 TOTAL=$((TOTAL + 1))
 if [ "$MODE" = "cluster" ] || [ "$MODE" = "single" ]; then
     PASS=$((PASS + 1))
@@ -146,7 +155,6 @@ assert_ok "node has errors counter" "$NODE_ERRORS"
 
 NODE_MOVED=$(echo "$RESULT" | jq -r "${CLUSTER_JQ}.nodes[0].moved" 2>/dev/null || echo "null")
 assert_ok "node has moved counter" "$NODE_MOVED"
-
 
 NODE_LAST_ACTIVITY=$(echo "$RESULT" | jq -r "${CLUSTER_JQ}.nodes[0].last_activity" 2>/dev/null || echo "null")
 assert_ok "node has last_activity field" "$NODE_LAST_ACTIVITY"
@@ -263,7 +271,6 @@ if [ -n "$STATS" ]; then
 
     MOVED_STAT=$(echo "$STATS" | jq -r '.result["cachedb_redis:redis_moved"]' 2>/dev/null || echo "null")
     assert_ok "redis_moved stat exists" "$MOVED_STAT"
-
 
     TOPO_STAT=$(echo "$STATS" | jq -r '.result["cachedb_redis:redis_topology_refreshes"]' 2>/dev/null || echo "null")
     assert_ge "redis_topology_refreshes stat is positive" 1 "$TOPO_STAT"
