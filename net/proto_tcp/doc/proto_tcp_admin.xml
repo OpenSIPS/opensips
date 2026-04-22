@@ -27,6 +27,53 @@ socket=tcp:127.0.0.1:5080	# change with the listening IP and port
 	</para>
 	</para>
 
+	<section id="related_core_tcp_apis" xreflabel="Related Core TCP APIs">
+	<title>Related Core TCP APIs</title>
+
+	<section id="func_tcp_close_conn" xreflabel="tcp_close_conn()">
+		<title><function moreinfo="none">tcp_close_conn(ipport)</function></title>
+		<para>
+			Force-close an existing TCP-based connection. The
+			<emphasis>ipport</emphasis> argument may be either a TCP connection ID,
+			as reported by the <emphasis>tcp:list</emphasis> MI command, or a remote
+			endpoint in the form <emphasis>ip:port</emphasis> or
+			<emphasis>proto:ip:port</emphasis>. If the protocol is omitted,
+			OpenSIPS will search all TCP-based transports.
+		</para>
+		<para>
+			The function returns true if a matching connection was scheduled for
+			closing, false if no connection matched and an error on invalid input
+			or internal failure.
+		</para>
+		<example>
+		<title>Force-close a TCP connection from script</title>
+		<programlisting format="linespecific">
+...
+if (!tcp_close_conn("tcp:10.0.0.10:5060")) {
+	xlog("No matching TCP connection was found\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="mi_close" xreflabel="tcp:close">
+		<title><function moreinfo="none">tcp:close</function></title>
+		<para>
+			Core MI command equivalent of <xref linkend="func_tcp_close_conn"/>. It
+			accepts a single <emphasis>ipport</emphasis> parameter using the same
+			formats described above.
+		</para>
+		<example>
+		<title>Force-close a TCP connection via MI</title>
+		<programlisting format="linespecific">
+$ opensips-cli -x mi tcp:close ipport=tcp:10.0.0.10:5060
+OK
+</programlisting>
+		</example>
+	</section>
+	</section>
+
 	<section>
 	<title>Dependencies</title>
 	<section>
