@@ -49,7 +49,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.6.0
+Version:  4.0.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1724,6 +1724,9 @@ fi
 
 
 %changelog
+* Wed Apr 22 2026 Liviu Chircu <liviu@opensips.org> - 4.0.0-1
+- Specification updated for opensips 4.0
+
 * Fri Dec 05 2025 Razvan Crainea <razvan@opensips.org> - 4.0.0-1
 - New module: auth_web3
 
