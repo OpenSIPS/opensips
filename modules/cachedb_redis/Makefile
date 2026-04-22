@@ -26,4 +26,9 @@ DEFS+=-I$(LOCALBASE)/include
 LIBS += -L$(LOCALBASE)/lib -lhiredis
 endif
 
+# Standalone test binaries have their own main() and Makefile;
+# exclude them from the UNIT_TESTS auto-discovery to avoid
+# multiple-definition linker errors when built into the module .so
+exclude_files=test/test_hash.c test/test_mi_counters.c test/hash_under_test.c
+
 include ../../Makefile.modules

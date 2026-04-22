@@ -85,6 +85,107 @@
 	</para>
 	</section>
 
+	<section id="cluster_support" xreflabel="Redis Cluster Support (Topology)">
+	<title>Redis Cluster Support (Topology)</title>
+	<para>
+		When connecting to a Redis Cluster, the module automatically detects
+		cluster mode and manages the full slot-to-node topology at runtime.
+		No extra configuration is needed beyond the standard
+		<xref linkend="param_cachedb_url"/> parameter.
+	</para>
+
+	<section>
+		<title>Topology Discovery</title>
+		<para>
+		At startup, the module probes the Redis server using the
+		<emphasis>CLUSTER SHARDS</emphasis> command (available in Redis 7.0+).
+		If the server does not support this command, it falls back to
+		<emphasis>CLUSTER SLOTS</emphasis> (available in Redis 3.0+).
+		If neither command succeeds, the connection is treated as a
+		single-instance (non-cluster) connection.
+		</para>
+		<para>
+		The discovered topology is stored internally in an O(1) slot lookup
+		table (16384 slots), mapping each slot directly to its owning master
+		node.
+		</para>
+	</section>
+
+	<section>
+		<title>Automatic Topology Refresh</title>
+		<para>
+		The module automatically refreshes the cluster topology at runtime
+		when any of the following events occur:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				A <emphasis>MOVED</emphasis> redirection is received from a
+				cluster node (indicating a permanent slot migration).
+			</para></listitem>
+			<listitem><para>
+				A <emphasis>connection failure</emphasis> (NULL reply) occurs
+				and the node cannot be reconnected.
+			</para></listitem>
+			<listitem><para>
+				A <emphasis>query targets a slot with no known owner</emphasis>,
+				suggesting the topology is stale.
+			</para></listitem>
+			<listitem><para>
+				An operator triggers a manual refresh via the
+				<xref linkend="mi_redis_cluster_refresh"/> MI command.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		Automatic refreshes are rate-limited to at most once per second to
+		avoid excessive load on the cluster.  The MI-triggered refresh
+		bypasses this rate limit.
+		</para>
+	</section>
+
+	<section>
+		<title>MOVED Redirection</title>
+		<para>
+		The module transparently handles Redis Cluster MOVED
+		redirections:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>MOVED</emphasis> — indicates a permanent slot
+				migration. The module updates its slot map, redirects the
+				query to the new node, and triggers a topology refresh so
+				all future queries go directly to the correct node.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		If a redirection points to a node that is not yet known, the module
+		dynamically creates a new node entry, establishes a connection, and
+		retries the query.
+		</para>
+	</section>
+
+	<section>
+		<title>Hash Tags</title>
+		<para>
+		The module supports Redis Cluster
+		<emphasis>hash tags</emphasis>, which allow related keys to be
+		co-located on the same cluster node.  If a key contains a
+		<emphasis>{...}</emphasis> substring, only the content between the
+		first <emphasis>{</emphasis> and the next <emphasis>}</emphasis> is
+		used for hash slot calculation.  For example, the keys
+		<emphasis>{user1000}.profile</emphasis> and
+		<emphasis>{user1000}.settings</emphasis> will always land on the
+		same node, enabling multi-key operations.
+		</para>
+		<para>
+		If the braces are empty (<emphasis>{}</emphasis>) or there is no
+		closing brace, the entire key is hashed as usual.
+		</para>
+	</section>
+
+	<para>
+	</para>
+	</section>
+
 	<section>
 	<title>Limitations</title>
 
@@ -112,7 +213,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>If a <xref linkend="param_use_tls"/> is defined, the <emphasis role='bold'>tls_mgm</emphasis> module will need to be loaded as well</emphasis>.
+				<emphasis>If a <xref linkend="param_use_tls"/> is defined, the <emphasis role="bold">tls_mgm</emphasis> and <emphasis role="bold">tls_openssl</emphasis> modules will need to be loaded as well</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -185,6 +286,109 @@ cache_remove("redis:cluster1", "key");
 ...
 		</programlisting>
 			</example>
+
+		<section id="cachedb_url_auth" xreflabel="Authentication">
+		<title>Authentication</title>
+		<para>
+			The module supports three authentication modes based on the URL format:
+		</para>
+		<table frame='all'><title>URL Authentication Formats</title>
+		<tgroup cols='3' align='left' colsep='1' rowsep='1'>
+		<thead>
+		<row>
+			<entry>URL Format</entry>
+			<entry>AUTH Command</entry>
+			<entry>Use Case</entry>
+		</row>
+		</thead>
+		<tbody>
+		<row>
+			<entry><literal>redis:group://:password@host:port/</literal></entry>
+			<entry><literal>AUTH password</literal></entry>
+			<entry>Classic Redis (&lt; 6.0) with <literal>requirepass</literal></entry>
+		</row>
+		<row>
+			<entry><literal>redis:group://username:password@host:port/</literal></entry>
+			<entry><literal>AUTH username password</literal></entry>
+			<entry>Redis 6+ ACL with per-user credentials</entry>
+		</row>
+		<row>
+			<entry><literal>redis:group://host:port/</literal></entry>
+			<entry>(none)</entry>
+			<entry>Non-authenticated Redis</entry>
+		</row>
+		</tbody>
+		</tgroup>
+		</table>
+		<para>
+			<emphasis role='bold'>Important</emphasis>: For classic password-only
+			authentication, the URL must include a colon before the password
+			(<literal>:password@host</literal>). Writing
+			<literal>password@host</literal> without the colon will place the
+			credential in the username field of the URL parser, and authentication
+			will be skipped.
+		</para>
+		<para>
+			When connecting to a Redis Cluster with authentication, all discovered
+			cluster nodes use the same credentials from the URL.
+		</para>
+		</section>
+
+		<section id="cachedb_url_unix_socket" xreflabel="Unix Socket">
+		<title>Unix Socket</title>
+		<para>
+			Starting with this version, the module supports connecting to a
+			local Redis instance via a Unix domain socket instead of TCP.
+			This can provide lower latency and avoid network overhead for
+			co-located Redis instances.
+		</para>
+		<para>
+			To use a Unix socket, add a <literal>socket=</literal> parameter
+			to the URL query string:
+		</para>
+		<programlisting format="linespecific">
+# basic Unix socket (no auth)
+modparam("cachedb_redis", "cachedb_url",
+    "redis:local://localhost/?socket=/var/run/redis/redis.sock")
+
+# Unix socket with password auth
+modparam("cachedb_redis", "cachedb_url",
+    "redis:local://:password@localhost/?socket=/var/run/redis/redis.sock")
+
+# Unix socket with ACL auth (Redis 6+) and database selection
+modparam("cachedb_redis", "cachedb_url",
+    "redis:local://user:pass@localhost/2?socket=/var/run/redis/redis.sock")
+		</programlisting>
+		<para>
+			<emphasis role='bold'>Constraints:</emphasis>
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				Unix socket connections are always treated as
+				<emphasis>single-instance</emphasis> mode (no Redis Cluster
+				support over Unix sockets).
+			</para></listitem>
+			<listitem><para>
+				Unix socket cannot be combined with multiple hosts (failover).
+				Specifying both will cause a startup error.
+			</para></listitem>
+			<listitem><para>
+				TLS is not applicable to Unix socket connections and will be
+				ignored with a warning if <literal>use_tls</literal> is enabled.
+			</para></listitem>
+			<listitem><para>
+				TCP keepalive is not applicable to Unix sockets and is
+				automatically skipped.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+			The <xref linkend="mi_redis_cluster_info"/> MI command will display
+			Unix socket connections with <literal>transport=unix</literal> and
+			the socket path. The <xref linkend="mi_redis_ping_nodes"/> command
+			works normally with Unix socket connections.
+		</para>
+		</section>
+
 		</section>
 
 		<section id="param_connect_timeout" xreflabel="connect_timeout">
@@ -203,7 +407,7 @@ cache_remove("redis:cluster1", "key");
 		<title>Set <varname>connect_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# wait 1 seconds for Redis to connect
+# wait 1 second for Redis to connect
 modparam("cachedb_redis", "connect_timeout",1000)
 ...
 		</programlisting>
@@ -224,10 +428,10 @@ modparam("cachedb_redis", "connect_timeout",1000)
 		</para>
 
 		<example>
-		<title>Set <varname>connect_timeout</varname> parameter</title>
+		<title>Set <varname>query_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# wait 1 seconds for Redis queries
+# wait 1 second for Redis queries
 modparam("cachedb_redis", "query_timeout",1000)
 ...
 		</programlisting>
@@ -259,6 +463,40 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 
 		</section>
 
+		<section id="param_lazy_connect" xreflabel="lazy_connect">
+		<title><varname>lazy_connect</varname> (integer)</title>
+		<para>
+			By setting this parameter to 1, &osips; will defer establishing
+		Redis connections until the first cache operation is actually
+		performed by each worker process. This prevents idle worker
+		processes (those that never use Redis) from holding open sockets,
+		which avoids sockets getting stuck in CLOSE_WAIT state when Redis
+		is restarted.
+		</para>
+		<para>
+			When this parameter is enabled, the
+		<xref linkend="param_shutdown_on_error"/> parameter has no effect,
+		since no connection is attempted at startup time.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled — connect at
+		startup, preserving existing behavior).
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set the <varname>lazy_connect</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# defer Redis connections until first use
+modparam("cachedb_redis", "lazy_connect", 1)
+...
+		</programlisting>
+		</example>
+
+		</section>
+
 		<section id="param_use_tls" xreflabel="use_tls">
 		<title><varname>use_tls</varname> (integer)</title>
 		<para>
@@ -271,7 +509,7 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 		<para>
 		When using this parameter, you must also ensure that
 		<emphasis>tls_mgm</emphasis> is loaded and properly configured. Refer to
-		the the module for additional info regarding TLS client domains.
+		the tls_mgm module for additional info regarding TLS client domains.
 		</para>
 		<para>
 		Note that TLS is supported by Redis starting with version 6.0. Also, it is
@@ -293,7 +531,7 @@ modparam("tls_mgm", "private_key", "[redis]/etc/pki/tls/private/redis.key")
 modparam("tls_mgm", "ca_list",     "[redis]/etc/pki/tls/certs/ca.pem")
 ...
 modparam("cachedb_redis", "use_tls", 1)
-modparam("cachedb_redis", "cachedb_url","redis://localhost:6379/?tls_domain=redis")
+modparam("cachedb_redis", "cachedb_url","redis:tls_group://localhost:6379/?tls_domain=redis")
 ...
 </programlisting>
 		</example>
@@ -368,6 +606,40 @@ modparam("cachedb_redis", "ftsearch_max_results", 100)
 		</example>
 	</section>
 
+		<section id="param_redis_keepalive" xreflabel="redis_keepalive">
+		<title><varname>redis_keepalive</varname> (integer)</title>
+		<para>
+			TCP keepalive interval in seconds for Redis connections. When set
+			to a positive value, the kernel sends TCP probes on idle connections
+			to detect dead peers (e.g. due to NAT/firewall idle timeout or
+			network partition). This allows the next query to fail immediately
+			instead of waiting for the full query timeout, enabling faster
+			recovery via the existing retry loop.
+		</para>
+		<para>
+			Set to 0 to disable TCP keepalive. Recommended to keep enabled
+			for production deployments to prevent silent connection death.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>10</quote> (seconds).
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>redis_keepalive</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# set TCP keepalive interval to 15 seconds
+modparam("cachedb_redis", "redis_keepalive", 15)
+
+# disable TCP keepalive
+modparam("cachedb_redis", "redis_keepalive", 0)
+...
+		</programlisting>
+		</example>
+		</section>
+
 		<section id="param_ftsearch_json_mset_expire" xreflabel="ftsearch_json_mset_expire">
 		<title><varname>ftsearch_json_mset_expire</varname> (integer)</title>
 		<para>
@@ -401,6 +673,220 @@ modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 		in configuration script.</para>
 	</section>
 
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+		<title>Exported MI Functions</title>
+
+		<section id="mi_redis_cluster_info" xreflabel="redis_cluster_info">
+			<title>
+			<function moreinfo="none">redis_cluster_info</function>
+			</title>
+			<para>
+			Displays detailed information about all Redis connections managed
+			by the module, including cluster topology, per-node connection status,
+			slot assignments, and per-node query counters.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>group</emphasis> (optional) - if specified, only
+					connections belonging to this group will be listed (e.g.
+					<emphasis>"local"</emphasis> from a
+					<emphasis>"redis:local://..."</emphasis> URL). If omitted,
+					all Redis connections are listed.
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			The response is a JSON array of connection objects. Each connection
+			object includes:
+			</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>group</emphasis> - the connection group name
+				</para></listitem>
+				<listitem><para>
+					<emphasis>url</emphasis> - the original cachedb_url
+				</para></listitem>
+				<listitem><para>
+					<emphasis>mode</emphasis> - <emphasis>"cluster"</emphasis>
+					or <emphasis>"single"</emphasis>
+				</para></listitem>
+				<listitem><para>
+					<emphasis>cluster_command</emphasis> (cluster mode only) -
+					<emphasis>"SHARDS"</emphasis> or
+					<emphasis>"SLOTS"</emphasis>, depending on which Redis
+					command is used for topology discovery
+				</para></listitem>
+				<listitem><para>
+					<emphasis>topology_refreshes</emphasis> - number of topology
+					refreshes performed on this connection
+				</para></listitem>
+				<listitem><para>
+					<emphasis>last_topology_refresh</emphasis> - UNIX timestamp
+					of the last topology refresh
+				</para></listitem>
+				<listitem><para>
+					<emphasis>nodes</emphasis> - array of cluster node objects,
+					each containing:
+					<emphasis>ip</emphasis>, <emphasis>port</emphasis>,
+					<emphasis>status</emphasis>
+					(<emphasis>"connected"</emphasis>/<emphasis>"disconnected"</emphasis>),
+					<emphasis>slots_assigned</emphasis> (cluster mode only),
+					<emphasis>queries</emphasis>, <emphasis>errors</emphasis>,
+					<emphasis>moved</emphasis>,
+					<emphasis>last_activity</emphasis> (seconds since last
+					successful query, -1 if never queried)
+				</para></listitem>
+				<listitem><para>
+					<emphasis>total_slots_mapped</emphasis> (cluster mode only) -
+					total number of slots with an assigned node (should be 16384
+					for a healthy cluster)
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			MI FIFO Command Format:
+			</para>
+			<programlisting format="linespecific">
+## list all Redis connections
+opensips-cli -x mi redis_cluster_info
+
+## list only the "local" group
+opensips-cli -x mi redis_cluster_info group=local
+			</programlisting>
+		</section>
+
+		<section id="mi_redis_cluster_refresh" xreflabel="redis_cluster_refresh">
+			<title>
+			<function moreinfo="none">redis_cluster_refresh</function>
+			</title>
+			<para>
+			Forces an immediate topology refresh on Redis Cluster connections.
+			This bypasses the normal once-per-second rate limit and queries the
+			cluster for its current slot-to-node mapping. Useful after manual
+			cluster rebalancing or node additions/removals.
+			</para>
+			<para>
+			For non-cluster (single instance) connections, the command returns
+			a <emphasis>"skipped (not cluster mode)"</emphasis> status.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>group</emphasis> (optional) - if specified, only
+					the connection belonging to this group will be refreshed.
+					If omitted, all cluster connections are refreshed.
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			The response is a JSON array of objects, one per connection, each
+			containing <emphasis>group</emphasis> and <emphasis>status</emphasis>
+			(<emphasis>"ok"</emphasis>, <emphasis>"error"</emphasis>, or
+			<emphasis>"skipped (not cluster mode)"</emphasis>).
+			</para>
+			<para>
+			MI FIFO Command Format:
+			</para>
+			<programlisting format="linespecific">
+## refresh all cluster connections
+opensips-cli -x mi redis_cluster_refresh
+
+## refresh only the "local" group
+opensips-cli -x mi redis_cluster_refresh group=local
+			</programlisting>
+		</section>
+
+		<section id="mi_redis_ping_nodes" xreflabel="redis_ping_nodes">
+			<title>
+			<function moreinfo="none">redis_ping_nodes</function>
+			</title>
+			<para>
+			Sends a PING command to each Redis node and reports per-node
+			reachability status with round-trip latency. Useful for on-demand
+			health checks without waiting for the next query.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>group</emphasis> (optional) - if specified, only
+					nodes belonging to this group will be pinged. If omitted,
+					all Redis connections are pinged.
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			The response is a JSON array of connection objects. Each connection
+			object includes:
+			</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>group</emphasis> - the connection group name
+				</para></listitem>
+				<listitem><para>
+					<emphasis>nodes</emphasis> - array of node objects, each
+					containing:
+					<emphasis>ip</emphasis>, <emphasis>port</emphasis>,
+					<emphasis>status</emphasis>
+					(<emphasis>"reachable"</emphasis>,
+					<emphasis>"unreachable"</emphasis>, or
+					<emphasis>"disconnected"</emphasis>),
+					<emphasis>latency_us</emphasis> (round-trip time in
+					microseconds, -1 if not reachable)
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			MI FIFO Command Format:
+			</para>
+			<programlisting format="linespecific">
+## ping all Redis nodes
+opensips-cli -x mi redis_ping_nodes
+
+## ping only the "local" group
+opensips-cli -x mi redis_ping_nodes group=local
+			</programlisting>
+		</section>
+
+	</section>
+
+	<section id="exported_statistics" xreflabel="Exported Statistics">
+		<title>Exported Statistics</title>
+
+		<section id="stat_redis_queries" xreflabel="redis_queries">
+			<title><varname>redis_queries</varname></title>
+			<para>
+			Total number of successful Redis queries executed across all
+			connections and processes.
+			</para>
+		</section>
+
+		<section id="stat_redis_queries_failed" xreflabel="redis_queries_failed">
+			<title><varname>redis_queries_failed</varname></title>
+			<para>
+			Total number of failed Redis queries (NULL replies from hiredis
+			or Redis error responses other than MOVED).
+			</para>
+		</section>
+
+		<section id="stat_redis_moved" xreflabel="redis_moved">
+			<title><varname>redis_moved</varname></title>
+			<para>
+			Total number of MOVED redirections received from Redis Cluster
+			nodes. A MOVED response indicates a permanent slot migration -
+			the module updates its slot map and retries the query on the
+			correct node.
+			</para>
+		</section>
+
+		<section id="stat_redis_topology_refreshes" xreflabel="redis_topology_refreshes">
+			<title><varname>redis_topology_refreshes</varname></title>
+			<para>
+			Total number of cluster topology refreshes performed (via
+			CLUSTER SHARDS or CLUSTER SLOTS). This counter increments both
+			for automatic refreshes (triggered by MOVED responses or
+			unreachable nodes) and manual refreshes (triggered via the
+			<xref linkend="mi_redis_cluster_refresh"/> MI command).
+			</para>
+		</section>
+
+	</section>
+
 	<section>
 	<title>Raw Query Syntax</title>
 		<para>
@@ -432,8 +918,8 @@ modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 	cache_raw_query("redis","HGETALL $var(my_hash)","$avp(result)");
 
 	$var(it) = 0;
-	while ($(avp(result_final)[$var(it)]) != NULL) {
-		xlog("Multiple key reply: - we have fetched $(avp(result_final)[$var(it)]) \n");
+	while ($(avp(result)[$var(it)]) != NULL) {
+		xlog("Multiple key reply: - we have fetched $(avp(result)[$var(it)]) \n");
 		$var(it) = $var(it) + 1;
 	}
 ...

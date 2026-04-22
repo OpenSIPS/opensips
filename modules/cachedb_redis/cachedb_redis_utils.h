@@ -40,7 +40,6 @@
 
 #include "cachedb_redis_dbase.h"
 
-int build_cluster_nodes(redis_con *con,char *info,int size);
 cluster_node *get_redis_connection(redis_con *con,str *key);
 cluster_node *get_redis_connection_by_endpoint(redis_con *con, redis_moved *redis_info);
 void destroy_cluster_nodes(redis_con *con);
@@ -54,6 +53,13 @@ static inline int parse_moved_reply(redisReply *reply, redis_moved *out) {
 static inline int parse_ask_reply(redisReply *reply, redis_moved *out) {
 	return parse_redirect_reply(reply, out, ASK_PREFIX, ASK_PREFIX_LEN);
 }
+
+int probe_cluster_command(redis_con *con, redisContext *ctx);
+int parse_cluster_shards(redis_con *con, redisReply *reply);
+int parse_cluster_slots(redis_con *con, redisReply *reply);
+cluster_node *find_or_create_node(redis_con *con, const char *ip,
+    int ip_len, unsigned short port);
+int refresh_cluster_topology(redis_con *con);
 
 static inline int match_prefix(const char *buf, size_t len, const char *prefix, size_t prefix_len) {
 	size_t i;

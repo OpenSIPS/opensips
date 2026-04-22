@@ -47,7 +47,14 @@ str fts_index_name = str_init("idx:usrloc");
 str fts_json_prefix = str_init("usrloc:");
 int fts_json_mset_expire = 3600;
 
+int redis_keepalive = 10;  /* TCP keepalive interval in seconds, 0=disabled */
+
 struct tls_mgm_binds tls_api;
+
+stat_var *redis_stat_queries = 0;
+stat_var *redis_stat_queries_failed = 0;
+stat_var *redis_stat_moved = 0;
+stat_var *redis_stat_topology_refreshes = 0;
 
 static inline int is_redis_escaped_char(char c);
 static cdb_row_t *redis_mk_cdb_row(redisReply *rpl);
@@ -58,7 +65,7 @@ static unsigned int redis_calc_escaped_len_json(str *s);
 redisContext *redis_get_ctx(char *ip, int port)
 {
 	struct timeval tv;
-	static int warned = 0;
+	static char warned = 0;
 	redisContext *ctx;
 
 	if (!port)
@@ -76,12 +83,7 @@ redisContext *redis_get_ctx(char *ip, int port)
 	if (ctx && ctx->err != REDIS_OK) {
 		LM_ERR("failed to open redis connection %s:%hu - %s\n",ip,
 				(unsigned short)port,ctx->errstr);
-		return NULL;
-	}
-
-	if (!ctx) {
-		LM_ERR("failed to connect to redis %s:%hu - out of memory\n",
-				ip, (unsigned short)port);
+		redisFree(ctx);
 		return NULL;
 	}
 
@@ -90,9 +92,21 @@ redisContext *redis_get_ctx(char *ip, int port)
 		tv.tv_usec = (redis_query_tout * 1000) % 1000000;
 		if (redisSetTimeout(ctx, tv) != REDIS_OK) {
 			LM_ERR("Cannot set query timeout to %dms\n", redis_query_tout);
+			redisFree(ctx);
 			return NULL;
 		}
 	}
+
+	if (redis_keepalive > 0) {
+#if defined(HIREDIS_MAJOR) && HIREDIS_MAJOR >= 1
+		if (redisEnableKeepAliveWithInterval(ctx, redis_keepalive) != REDIS_OK)
+#else
+		if (redisEnableKeepAlive(ctx) != REDIS_OK)
+#endif
+			LM_WARN("failed to enable TCP keepalive on redis connection "
+				"%s:%hu\n", ip, (unsigned short)port);
+	}
+
 	return ctx;
 }
 
@@ -177,9 +191,17 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 	}
 #endif
 
-	if (con->id->password) {
+	if (con->id->username && *con->id->username && con->id->password) {
+		/* Redis 6+ ACL: AUTH username password */
+		rpl = redisCommand(node->context,"AUTH %s %s",
+			con->id->username, con->id->password);
+	} else if (con->id->password) {
 		rpl = redisCommand(node->context,"AUTH %s",con->id->password);
-		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
+	} else {
+		rpl = NULL;
+	}
+	if (rpl != NULL) {
+		if (rpl->type == REDIS_REPLY_ERROR) {
 			LM_ERR("failed to auth to redis - %.*s\n",
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
@@ -231,8 +253,6 @@ int redis_connect(redis_con *con)
 {
 	redisContext *ctx;
 	redisReply *rpl;
-	cluster_node *it;
-	int len;
 	struct tls_domain *tls_dom = NULL;
 
 	/* connect to redis DB */
@@ -249,9 +269,17 @@ int redis_connect(redis_con *con)
 #endif
 
 	/* auth using password, if any */
-	if (con->id->password) {
+	if (con->id->username && *con->id->username && con->id->password) {
+		/* Redis 6+ ACL: AUTH username password */
+		rpl = redisCommand(ctx,"AUTH %s %s",
+			con->id->username, con->id->password);
+	} else if (con->id->password) {
 		rpl = redisCommand(ctx,"AUTH %s",con->id->password);
-		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
+	} else {
+		rpl = NULL;
+	}
+	if (rpl != NULL) {
+		if (rpl->type == REDIS_REPLY_ERROR) {
 			LM_ERR("failed to auth to redis - %.*s\n",
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			if (rpl!=NULL)
@@ -273,43 +301,34 @@ int redis_connect(redis_con *con)
 	}
 	freeReplyObject(rpl);
 
-	rpl = redisCommand(ctx,"CLUSTER NODES");
-	if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
-		/* single instace mode */
+	/* try CLUSTER SHARDS/SLOTS to detect cluster mode */
+	if (probe_cluster_command(con, ctx) == 0) {
+		/* cluster mode — nodes and slot_table already populated */
+		con->flags |= REDIS_CLUSTER_INSTANCE;
+		LM_DBG("cluster instance mode on %p\n", con);
+	} else {
+		/* single instance mode */
+		str src, dst;
 		con->flags |= REDIS_SINGLE_INSTANCE;
-		len = strlen(con->host);
-		con->nodes = pkg_malloc(sizeof(cluster_node) + len + 1);
+		con->nodes = pkg_malloc(sizeof(cluster_node));
 		if (con->nodes == NULL) {
 			LM_ERR("no more pkg\n");
-			if (rpl!=NULL)
-				freeReplyObject(rpl);
 			goto error;
 		}
-
-		memset(con->nodes,0,sizeof(cluster_node) + len + 1);
-		con->nodes->ip = (char *)(con->nodes + 1);
-
-		strcpy(con->nodes->ip,con->host);
+		memset(con->nodes, 0, sizeof(cluster_node));
+		src.s = con->host;
+		src.len = strlen(con->host);
+		if (pkg_nt_str_dup(&dst, &src) != 0) {
+			LM_ERR("no more pkg\n");
+			pkg_free(con->nodes);
+			con->nodes = NULL;
+			goto error;
+		}
+		con->nodes->ip = dst.s;
 		con->nodes->port = con->port;
-		con->nodes->start_slot = 0;
-		con->nodes->end_slot = 4096;
-		con->nodes->context = NULL;
-		con->nodes->next = NULL;
 		LM_DBG("single instance mode\n");
-	} else {
-		/* cluster instance mode */
-		con->flags |= REDIS_CLUSTER_INSTANCE;
-		con->slots_assigned = 0;
-		LM_DBG("cluster instance mode on %p\n",con);
-		if (build_cluster_nodes(con,rpl->str,rpl->len) < 0) {
-			LM_ERR("failed to parse Redis cluster info\n");
-			freeReplyObject(rpl);
-			goto error;
-		}
 	}
 
-	if (rpl!=NULL)
-		freeReplyObject(rpl);
 	redisFree(ctx);
 
 	if (use_tls && tls_dom)
@@ -317,13 +336,10 @@ int redis_connect(redis_con *con)
 
 	con->flags |= REDIS_INIT_NODES;
 
-	for (it=con->nodes;it;it=it->next) {
-
-		if (it->end_slot > con->slots_assigned )
-			con->slots_assigned = it->end_slot;
-
-		if (redis_connect_node(con,it) < 0) {
-			LM_ERR("failed to init connection \n");
+	/* cluster nodes already connected by find_or_create_node() */
+	if (con->flags & REDIS_SINGLE_INSTANCE) {
+		if (redis_connect_node(con, con->nodes) < 0) {
+			LM_ERR("failed to connect to single instance\n");
 			return -1;
 		}
 	}
@@ -377,12 +393,14 @@ int redis_get_hostport(const str *hostport, char **host, unsigned short *port)
 		in.len = hostport->s + hostport->len - (p + 1);
 		if (in.len <= 0) {
 			LM_ERR("bad/missing Redis port in URL\n");
+			pkg_free(*host);
 			return -1;
 		}
 
 		unsigned int out_port;
 		if (str2int(&in, &out_port) != 0) {
 			LM_ERR("failed to parse Redis port in URL\n");
+			pkg_free(*host);
 			return -1;
 		}
 
@@ -441,6 +459,7 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 
 			if (redis_get_hostport(&it->s, &con->host, port) != 0) {
 				LM_ERR("no more pkg\n");
+				pkg_free(con);
 				goto out_err;
 			}
 
@@ -454,8 +473,11 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 		/* if doing failover Redises, only connect the 1st one for now! */
 		if (!cons && redis_connect(con) < 0) {
 			LM_ERR("failed to connect to DB\n");
-			if (shutdown_on_error)
+			if (shutdown_on_error) {
+				pkg_free(con->host);
+				pkg_free(con);
 				goto out_err;
+			}
 		}
 
 		_add_last(con, cons, next_con);
@@ -518,6 +540,7 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 	cluster_node *node;
 	redisReply *reply = NULL;
 	int i, last_err = 0;
+	int max_redirects = 5;
 	va_list aq;
 
 	first = ((redis_con *)connection->data)->current;
@@ -532,9 +555,17 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 
 		node = get_redis_connection(con,key);
 		if (node == NULL) {
-			LM_ERR("Bad cluster configuration\n");
-			last_err = -10;
-			goto try_next_con;
+			/* slot has no owner — topology may be stale (e.g. a node
+			 * was removed during a previous refresh and has since
+			 * rejoined the cluster).  Refresh and retry the lookup. */
+			LM_INFO("slot has no owner, refreshing topology\n");
+			refresh_cluster_topology(con);
+			node = get_redis_connection(con,key);
+			if (node == NULL) {
+				LM_ERR("slot still has no owner after topology refresh\n");
+				last_err = -1;
+				goto try_next_con;
+			}
 		}
 
 		if (node->context == NULL) {
@@ -555,7 +586,10 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 
 			if (reply == NULL) {
 				LM_INFO("Redis query failed: reply: NULL node->context->err: %d, node->context->errstr: %s\n", node->context->err, node->context->errstr);
+				node->errors++;
+				update_stat(redis_stat_queries_failed, 1);
 				if (node->context->err == REDIS_OK || redis_reconnect_node(con,node) < 0) {
+					refresh_cluster_topology(con);
 					i = 0;
 					break;
 				}
@@ -581,22 +615,28 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 						goto try_next_con;
 					}
 
-					LM_DBG("%s slot: [%d] endpoint: [%.*s]"
-						" port: [%d]\n",
-						is_ask ? "ASK" : "MOVED",
-						moved_info->slot,
-						moved_info->endpoint.len,
-						moved_info->endpoint.s,
-						moved_info->port);
+					LM_DBG("%s slot: [%d] endpoint: [%.*s] port: [%d]\n", is_ask ? "ASK" : "MOVED",
+							moved_info->slot, moved_info->endpoint.len,
+							moved_info->endpoint.s, moved_info->port);
+
+					node->moved++;
+					update_stat(redis_stat_moved, 1);
 					node = get_redis_connection_by_endpoint(
 						con, moved_info);
+
+					if (node == NULL) {
+						LM_DBG("cachedb_redis: MOVED endpoint unknown, creating new node %.*s:%d\n",
+							moved_info->endpoint.len, moved_info->endpoint.s, moved_info->port);
+						node = find_or_create_node(con,
+							moved_info->endpoint.s, moved_info->endpoint.len,
+							(unsigned short)moved_info->port);
+					}
 
 					freeReplyObject(reply);
 					reply = NULL;
 
 					if (node == NULL) {
-						LM_ERR("Unable to locate connection"
-							" by endpoint\n");
+						LM_ERR("Unable to locate or create connection by endpoint\n");
 						last_err = -10;
 						goto try_next_con;
 					}
@@ -610,6 +650,7 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 							goto try_next_con;
 						}
 					}
+
 
 					if (is_ask) {
 						/* ASK requires sending ASKING before
@@ -632,14 +673,26 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 						freeReplyObject(asking_reply);
 					}
 
+					/* Refresh topology so future queries go direct */
+					refresh_cluster_topology(con);
+					if (--max_redirects <= 0) {
+						LM_ERR("max redirects exceeded\n");
+						freeReplyObject(reply);
+						reply = NULL;
+						last_err = -1;
+						goto try_next_con;
+					}
 					i = QUERY_ATTEMPTS;
 					continue;
 				}
 
+				node->errors++;
+				update_stat(redis_stat_queries_failed, 1);
 				freeReplyObject(reply);
 				reply = NULL;
 
 				if (node->context->err == REDIS_OK || redis_reconnect_node(con,node) < 0) {
+					refresh_cluster_topology(con);
 					i = 0;
 					break;
 				}
@@ -658,6 +711,9 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 			LM_INFO("successfully ran query after %d failed attempt(s)\n",
 			        QUERY_ATTEMPTS - i);
 
+		node->queries++;
+		update_stat(redis_stat_queries, 1);
+		node->last_activity = time(NULL);
 		last_err = 0;
 		break;
 
@@ -706,7 +762,8 @@ int redis_get(cachedb_con *connection,str *attr,str *val)
 	rc = redis_run_command(connection, &reply, attr, "GET %b",
 		attr->s, (size_t)attr->len);
 	if (rc != 0)
-		goto out_err;
+		goto out_err;  /* rc is normalized to -1 below; callers
+		                 * (e.g. mi_cachefetch) only check for -1 */
 
 	if (reply->type == REDIS_REPLY_NIL) {
 		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
@@ -738,9 +795,17 @@ int redis_get(cachedb_con *connection,str *attr,str *val)
 	return 0;
 
 out_err:
+	val->s = NULL;
+	val->len = 0;
 	if (reply)
 		freeReplyObject(reply);
-	return rc;
+	/* Always return -1 (not the internal rc) — the cachedb API contract
+	 * expects only 0 (success), -1 (error), or -2 (not found).  Internal
+	 * error codes like -10 from _redis_run_command must not propagate to
+	 * callers such as mi_cachefetch, which only check "ret == -1" and
+	 * would otherwise fall through to use an uninitialized value struct,
+	 * causing a SIGSEGV in cJSON_strndup. */
+	return -1;
 }
 
 int redis_set(cachedb_con *connection,str *attr,str *val,int expires)
@@ -779,7 +844,7 @@ int redis_set(cachedb_con *connection,str *attr,str *val,int expires)
 
 out_err:
 	freeReplyObject(reply);
-	return rc;
+	return -1;
 }
 
 /* returns 0 in case of successful remove
@@ -811,7 +876,7 @@ int redis_remove(cachedb_con *connection,str *attr)
 
 out_err:
 	freeReplyObject(reply);
-	return rc;
+	return -1;
 }
 
 /**
@@ -879,7 +944,7 @@ int redis_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val
 
 out_err:
 	freeReplyObject(reply);
-	return rc;
+	return -1;
 }
 
 int redis_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
@@ -917,7 +982,7 @@ int redis_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val
 
 out_err:
 	freeReplyObject(reply);
-	return rc;
+	return -1;
 }
 
 static unsigned int redis_escape_string_json(char *dst, const str *src)
@@ -1741,6 +1806,7 @@ int redis_get_counter(cachedb_con *connection,str *attr,int *val)
 	if (reply->type == REDIS_REPLY_NIL || reply->str == NULL
 			|| reply->len == 0) {
 		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
+		freeReplyObject(reply);
 		return -2;
 	}
 
@@ -1763,7 +1829,7 @@ int redis_get_counter(cachedb_con *connection,str *attr,int *val)
 
 out_err:
 	freeReplyObject(reply);
-	return rc;
+	return -1;
 }
 
 int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
@@ -1991,6 +2057,7 @@ int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int e
 		case REDIS_REPLY_ERROR:
 			LM_ERR("Error encountered when running Redis raw query [%.*s]\n",
 			attr->len,attr->s);
+			freeReplyObject(reply);
 			return -1;
 		case REDIS_REPLY_NIL:
 			LM_DBG("Redis raw query [%.*s] failed - no such key\n",attr->len,attr->s);
