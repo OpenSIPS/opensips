@@ -588,6 +588,80 @@ modparam("nathelper", "cluster_sharing_tag", "vip")
 		</example>
 	</section>
 
+	<section id="param_nated_contact_override" xreflabel="nated_contact_override">
+		<title><varname>nated_contact_override</varname> (integer)</title>
+		<para>
+		Controls the behavior of
+		<xref linkend="func_fix_nated_contact"/> when the Contact header
+		has already been rewritten by a prior function in the same route,
+		such as <function>topology_hiding()</function>.
+		</para>
+		<para>
+		When both <function>topology_hiding()</function> and
+		<function>fix_nated_contact()</function> are used in the same
+		routing script, both attempt to rewrite the Contact header. If
+		<function>topology_hiding()</function> runs first, the Contact
+		is already scheduled for replacement by the time
+		<function>fix_nated_contact()</function> executes. Without this
+		parameter, calling them in this order can produce a malformed
+		Contact header containing two concatenated SIP URIs (see
+		<ulink url="https://github.com/OpenSIPS/opensips/issues/2172">
+		GH #2172</ulink>).
+		</para>
+		<para>
+		This parameter lets you choose which rewrite wins:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>0</emphasis> (default) - keep the existing
+			Contact rewrite as-is. For example, if
+			<function>topology_hiding()</function> already rewrote
+			the Contact, its topology-hidden Contact will be
+			preserved and <function>fix_nated_contact()</function>
+			will be silently skipped for that Contact.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>1</emphasis> - override the existing rewrite
+			with the NAT-fixed Contact from
+			<function>fix_nated_contact()</function>. The Contact
+			will contain the source IP and port of the request
+			instead of the topology-hidden address.
+			</para></listitem>
+		</itemizedlist>
+		<note><para>
+		This parameter only takes effect when a Contact conflict is
+		detected (i.e., another function has already scheduled the
+		Contact for rewriting). When
+		<function>fix_nated_contact()</function> is called on its own
+		or before other Contact-rewriting functions, this parameter
+		has no effect and <function>fix_nated_contact()</function>
+		behaves normally.
+		</para></note>
+		<para>
+		If the message contains multiple Contact URIs, the check is
+		done per-Contact: only Contacts that conflict with a prior
+		rewrite are affected by this setting. Other Contacts are
+		processed by <function>fix_nated_contact()</function> normally.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (keep existing rewrite).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>nated_contact_override</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Keep topology_hiding()'s Contact (default behavior)
+modparam("nathelper", "nated_contact_override", 0)
+...
+# Override with fix_nated_contact()'s NAT-fixed Contact
+modparam("nathelper", "nated_contact_override", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 </section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
