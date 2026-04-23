@@ -1364,9 +1364,10 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	db_op_t update_ops[2];
 	subs_t* del_s;
 	int pres_uri_col, to_user_col, to_domain_col, from_user_col, from_domain_col,
-		callid_col, totag_col, fromtag_col, event_col,status_col, event_id_col,
+		callid_col, totag_col, fromtag_col, event_col, status_col, event_id_col,
 		local_cseq_col, remote_cseq_col, expires_col, record_route_col,
-		contact_col, local_contact_col, version_col,socket_info_col,reason_col;
+		contact_col, local_contact_col, version_col, socket_info_col,
+		sharing_tag_col, reason_col;
 	int u_expires_col, u_local_cseq_col, u_remote_cseq_col, u_version_col,
 		u_reason_col, u_status_col, u_contact_col;
 	int i;
@@ -1472,14 +1473,19 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 		query_vals[local_contact_col].nul = 0;
 		n_query_cols++;
 
+		query_cols[version_col= n_query_cols]=&str_version_col;
+		query_vals[version_col].type = DB_INT;
+		query_vals[version_col].nul = 0;
+		n_query_cols++;
+
 		query_cols[socket_info_col= n_query_cols] =&str_socket_info_col;
 		query_vals[socket_info_col].type = DB_STR;
 		query_vals[socket_info_col].nul = 0;
 		n_query_cols++;
 
-		query_cols[version_col= n_query_cols]=&str_version_col;
-		query_vals[version_col].type = DB_INT;
-		query_vals[version_col].nul = 0;
+		query_cols[sharing_tag_col= n_query_cols] =&str_sharing_tag_col;
+		query_vals[sharing_tag_col].type = DB_STR;
+		query_vals[sharing_tag_col].nul = 0;
 		n_query_cols++;
 
 		/* cols and values used for update */
@@ -1633,10 +1639,16 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 							query_vals[socket_info_col].val.str_val.s = 0;
 							query_vals[socket_info_col].val.str_val.len = 0;
 						}
+						if (s->sh_tag.len == 0) {
+							query_vals[sharing_tag_col].nul = 1;
+						} else {
+							query_vals[sharing_tag_col].nul = 0;
+							query_vals[sharing_tag_col].val.str_val = s->sh_tag;
+						}
 
 						CON_SET_CURR_PS(db, &my_ps_insert);
 						if (dbf->insert( db, query_cols, query_vals,
-						n_query_cols) < 0)
+								n_query_cols) < 0)
 						{
 							LM_ERR("unsuccessful sql insert\n");
 						}
