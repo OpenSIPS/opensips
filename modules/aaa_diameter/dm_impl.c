@@ -2058,13 +2058,14 @@ static int _dm_get_message_reply(struct dm_cond *cond, diameter_reply *rpl)
 
 int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps)
 {
-	cJSON *obj;
-	diameter_reply rpl;
-	int rc = _dm_get_message_reply(cond, &rpl);
+	int rc;
+
+	LM_DBG("reply received, Result-Code: %d (%s)\n", cond->rpl.rc,
+			cond->rpl.is_error ? "FAILURE" : "SUCCESS");
+	rc = (cond->rpl.is_error ? -1 : 0);
 
 	if (rpl_avps) {
-		obj = dm_api_get_reply(&rpl);
-		*rpl_avps = cJSON_PrintUnformatted(obj);
+		*rpl_avps = cJSON_PrintUnformatted(cond->rpl.json);
 		LM_DBG("AVPs: %s\n", *rpl_avps);
 	}
 	return rc;
