@@ -10,7 +10,11 @@ auto_gen=
 NAME=python.so
 
 ifeq (,$(PYTHON))
-PYTHON=python
+PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
+endif
+
+ifeq (,$(PYTHON))
+$(error Python interpreter not found; install python3 or set PYTHON=/path/to/python)
 endif
 
 PYTHON_VERSION=${shell ${PYTHON} -c "import sysconfig;print(sysconfig.get_config_var('VERSION'))"}
