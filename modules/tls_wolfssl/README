@@ -101,6 +101,7 @@ Chapter 3. Contributors
    7. Bence Szigeti 3 1 1 1
    8. Alexey Vasilyev (@vasilevalex) 2 1 11 0
    9. vladpaiu 2 1 8 0
+   10. Ross Henderson 2 1 3 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -121,16 +122,17 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Aug 2023 - Feb 2026
-   2. vladpaiu                            Jun 2025 - Jun 2025
-   3. James Stanley                       Feb 2024 - Feb 2024
-   4. Liviu Chircu (@liviuchircu)         Oct 2023 - Oct 2023
-   5. Bence Szigeti                       Oct 2023 - Oct 2023
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) May 2023 - May 2023
-   7. Vlad Patrascu (@rvlad-patrascu)     May 2021 - Mar 2023
-   8. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   9. Alexey Vasilyev (@vasilevalex)      Jan 2022 - Jan 2022
+                      Name                   Commit Activity
+   1.  Razvan Crainea (@razvancrainea)     Aug 2023 - Feb 2026
+   2.  Ross Henderson                      Feb 2026 - Feb 2026
+   3.  vladpaiu                            Jun 2025 - Jun 2025
+   4.  James Stanley                       Feb 2024 - Feb 2024
+   5.  Liviu Chircu (@liviuchircu)         Oct 2023 - Oct 2023
+   6.  Bence Szigeti                       Oct 2023 - Oct 2023
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2023 - May 2023
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2021 - Mar 2023
+   9.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   10. Alexey Vasilyev (@vasilevalex)      Jan 2022 - Jan 2022
 
    (1) including any documentation-related commits, excluding
    merge commits
