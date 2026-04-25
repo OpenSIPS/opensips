@@ -383,7 +383,10 @@ modparam("b2b_logic", "update_period", 60)
 
 1.4.12. max_duration (int)
 
-   The maximum duration of a call.
+   The maximum duration of a call. This value is applied as the
+   default lifetime for all B2B sessions. It can be overridden on
+   a per-bridge basis by using the max_duration flag of the
+   b2b_bridge() function.
 
    Default value is “12 * 3600 (12 hours)”.
 
@@ -683,8 +686,10 @@ b2b_client_new("client1", "sip:alice@opensips.org");
      * flags (string, optional) - CSV list of the following flags:
           + max_duration=[nn] - Maximum duration of the B2B
             session. If the lifetime expires, the B2BUA will send
-            BYE messages to both ends and delete the record.
-            Example: "max_duration=300".
+            BYE messages to both ends and delete the record. This
+            per-bridge value takes precedence over the global
+            max_duration module parameter. Example:
+            "max_duration=300".
           + notify - Enable rfc3515 NOTIFY to inform the agent
             sending the REFER of the status of the reference.
           + rollback-failed - Rollback call to state before
@@ -1334,8 +1339,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 239 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 65 41 1940 403
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 11 152 76
+   2. Razvan Crainea (@razvancrainea) 66 42 1973 407
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 19 14 216 130
    4. Nick Altmann (@nikbyte) 14 10 346 36
    5. Carsten Bock 12 5 679 23
    6. Alexandra Titoc 11 9 14 14
@@ -1369,10 +1374,10 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Apr 2026
-   2.  Ovidiu Sas (@ovidiusas)             Dec 2025 - Dec 2025
-   3.  dirkbro                             Dec 2025 - Dec 2025
-   4.  andingv                             Nov 2025 - Nov 2025
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2025
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2026
+   3.  Ovidiu Sas (@ovidiusas)             Dec 2025 - Dec 2025
+   4.  dirkbro                             Dec 2025 - Dec 2025
+   5.  andingv                             Nov 2025 - Nov 2025
    6.  Alexandra Titoc                     Sep 2024 - Sep 2024
    7.  Norman Brandinger (@NormB)          May 2024 - Jun 2024
    8.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024

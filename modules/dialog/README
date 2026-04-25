@@ -69,6 +69,8 @@ dialog Module
               1.6.51. replicate_profiles_timer (string)
               1.6.52. replicate_profiles_expire (string)
               1.6.53. cluster_auto_sync (string)
+              1.6.54. auto_prack_hangup_on_failure (int)
+              1.6.55. auto_prack_fr_timeout (int)
 
         1.7. Exported Functions
 
@@ -1149,6 +1151,29 @@ modparam("dialog", "replicate_profiles_expire", 10)
 ...
 modparam("dialog", "cluster_auto_sync", 0)
 ...
+
+1.6.54. auto_prack_hangup_on_failure (int)
+
+   Controls how dialogs created with the “auto-prack” flag react
+   when the automatically generated PRACK transaction fails. A
+   value of 1 causes OpenSIPS to generate a native 502 Bad Gateway
+   reply on the correlated INVITE transaction, while a value of 0
+   leaves the INVITE transaction untouched.
+
+   A failure means that the local PRACK transaction either
+   completed with a final negative reply or hit TM failure
+   handling.
+
+   Default value is “0” (disabled).
+
+1.6.55. auto_prack_fr_timeout (int)
+
+   Specifies the TM FR timeout, in seconds, for PRACK transactions
+   generated automatically for dialogs created with the
+   “auto-prack” flag. This value is applied to the local PRACK
+   transaction immediately after it is created.
+
+   Default value is “3”.
 
 1.7. Exported Functions
 
@@ -2693,10 +2718,10 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 463 291 13385 3561
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 467 294 13400 3568
    2. Razvan Crainea (@razvancrainea) 308 228 5668 1913
-   3. Vlad Paiu (@vladpaiu) 262 149 7467 3027
-   4. Liviu Chircu (@liviuchircu) 204 143 4010 1599
+   3. Vlad Paiu (@vladpaiu) 263 149 7467 3027
+   4. Liviu Chircu (@liviuchircu) 205 144 4042 1599
    5. Vlad Patrascu (@rvlad-patrascu) 200 104 4330 3514
    6. Ovidiu Sas (@ovidiusas) 35 26 601 161
    7. Dan Pascu (@danpascu) 30 25 233 179
@@ -2705,19 +2730,19 @@ Chapter 4. Contributors
    10. Henning Westerholt (@henningw) 16 10 172 187
 
    All remaining contributors: Anca Vamanu, Walter Doekes
-   (@wdoekes), Ionut Ionita (@ionutrazvanionita), Maksym Sobolyev
-   (@sobomax), Ionel Cerghit (@ionel-cerghit), Andrei Dragus,
+   (@wdoekes), Ionut Ionita (@ionutrazvanionita), Andrei Dragus,
+   Maksym Sobolyev (@sobomax), Ionel Cerghit (@ionel-cerghit),
    Alexandra Titoc, John Riordan, Hugues Mitonneau, Carsten Bock,
-   Peter Lemenkov (@lemenkov), Jerome Martin, Klaus Darilion,
-   Jarrod Baumann (@jarrodb), Nick Altmann (@nikbyte), Zero King
-   (@l2dy), Michel Bensoussan, Richard Revels, Tavis Paquette,
-   Elena-Ramona Modroiu, Ryan Bullock, Andrei Datcu
-   (@andrei-datcu), Jeffrey Magder, Stefan-Cristian Mititelu, Ron
-   Winacott, Andy Pyles, Julián Moreno Patiño, Konstantin
-   Bokarius, sergei lavrov, Alex Massover, Damien Sandras
-   (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05), Norman
-   Brandinger (@NormB), UnixDev, Eliot Gable, Ryan Bullock
-   (@rrb3942), Edson Gellert Schubert.
+   Norman Brandinger (@NormB), Peter Lemenkov (@lemenkov), Jerome
+   Martin, Klaus Darilion, Jarrod Baumann (@jarrodb), Nick Altmann
+   (@nikbyte), Zero King (@l2dy), Michel Bensoussan, Richard
+   Revels, Elena-Ramona Modroiu, Tavis Paquette, Ryan Bullock,
+   Andrei Datcu (@andrei-datcu), Jeffrey Magder, Stefan-Cristian
+   Mititelu, Ron Winacott, Andy Pyles, Julián Moreno Patiño,
+   Konstantin Bokarius, sergei lavrov, Alex Massover, Damien
+   Sandras (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05),
+   UnixDev, Eliot Gable, Ryan Bullock (@rrb3942), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -2739,31 +2764,31 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2026
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2026
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Feb 2026
-   4.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
-   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   6.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
-   7.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
-   8.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
-   9.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
-   10. Ryan Bullock                        May 2023 - May 2023
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2026
+   3.  Norman Brandinger (@NormB)          Oct 2013 - Apr 2026
+   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2026
+   5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
+   6.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   7.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
+   8.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
+   9.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
+   10. Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Nick
-   Altmann (@nikbyte), Walter Doekes (@wdoekes), sergei lavrov,
-   Zero King (@l2dy), Dan Pascu (@danpascu), Ionel Cerghit
-   (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut Ionita
-   (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
+   All remaining contributors: Ryan Bullock, Peter Lemenkov
+   (@lemenkov), Nick Altmann (@nikbyte), Walter Doekes (@wdoekes),
+   sergei lavrov, Zero King (@l2dy), Dan Pascu (@danpascu), Ionel
+   Cerghit (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut
+   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
    (@ph4r05), Eseanu Marius Cristian (@eseanucristian), Andrei
-   Datcu (@andrei-datcu), Norman Brandinger (@NormB), Damien
-   Sandras (@dsandras), Ryan Bullock (@rrb3942), Anca Vamanu, Alex
-   Massover, Andrei Dragus, John Riordan, Hugues Mitonneau,
-   Richard Revels, UnixDev, Alex Hermann, Henning Westerholt
-   (@henningw), Carsten Bock, Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jerome Martin, Tavis Paquette, Michel Bensoussan, Eliot Gable,
-   Andy Pyles, Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
+   Datcu (@andrei-datcu), Damien Sandras (@dsandras), Ryan Bullock
+   (@rrb3942), Anca Vamanu, Alex Massover, Andrei Dragus, John
+   Riordan, Hugues Mitonneau, Richard Revels, UnixDev, Alex
+   Hermann, Henning Westerholt (@henningw), Carsten Bock, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jerome Martin, Tavis
+   Paquette, Michel Bensoussan, Eliot Gable, Andy Pyles,
+   Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -2772,8 +2797,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Vlad Paiu (@vladpaiu), Bogdan-Andrei Iancu
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Paiu (@vladpaiu), Bogdan-Andrei Iancu
    (@bogdan-iancu), Stefan-Cristian Mititelu, Ryan Bullock, Vlad
    Patrascu (@rvlad-patrascu), Zero King (@l2dy), Dan Pascu
    (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno Patiño,

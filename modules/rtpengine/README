@@ -1510,7 +1510,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 251 143 6501 3182
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 36 21 446 606
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173
    5. Richard Fuchs 20 2 640 723
@@ -1545,24 +1545,24 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                    Name                 Commit Activity
-   1.  Norman Brandinger (@NormB)      Jun 2024 - Apr 2026
-   2.  rdondeti                        Mar 2026 - Mar 2026
-   3.  Razvan Crainea (@razvancrainea) Jun 2014 - Mar 2026
-   4.  Steven Ayre                     Jul 2025 - Jul 2025
-   5.  Norm Brandinger                 May 2025 - May 2025
-   6.  Peter Lemenkov (@lemenkov)      Jun 2018 - Feb 2025
-   7.  Vlad Paiu (@vladpaiu)           Jan 2025 - Jan 2025
-   8.  hatee                           Dec 2024 - Dec 2024
-   9.  Eddie Fiorentine                Nov 2024 - Nov 2024
-   10. Maksym Sobolyev (@sobomax)      Jan 2021 - Nov 2023
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2026
+   2.  Norman Brandinger (@NormB)          Jun 2024 - Apr 2026
+   3.  rdondeti                            Mar 2026 - Mar 2026
+   4.  Razvan Crainea (@razvancrainea)     Jun 2014 - Mar 2026
+   5.  Steven Ayre                         Jul 2025 - Jul 2025
+   6.  Norm Brandinger                     May 2025 - May 2025
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2025
+   8.  Vlad Paiu (@vladpaiu)               Jan 2025 - Jan 2025
+   9.  hatee                               Dec 2024 - Dec 2024
+   10. Eddie Fiorentine                    Nov 2024 - Nov 2024
 
-   All remaining contributors: Liviu Chircu (@liviuchircu), John
-   Burke (@john08burke), Bogdan-Andrei Iancu (@bogdan-iancu), Nick
-   Altmann (@nikbyte), Flavio E. Goncalves, Zero King (@l2dy),
-   Ovidiu Sas (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Dan
-   Pascu (@danpascu), Oliver Severin Mulelid-Tynes (@olivermt),
-   Rob Gagnon (@rgagnon24), Eric Tamme (@etamme), Richard Fuchs.
+   All remaining contributors: Maksym Sobolyev (@sobomax), Liviu
+   Chircu (@liviuchircu), John Burke (@john08burke), Nick Altmann
+   (@nikbyte), Flavio E. Goncalves, Zero King (@l2dy), Ovidiu Sas
+   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Dan Pascu
+   (@danpascu), Oliver Severin Mulelid-Tynes (@olivermt), Rob
+   Gagnon (@rgagnon24), Eric Tamme (@etamme), Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits

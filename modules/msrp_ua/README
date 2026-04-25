@@ -530,10 +530,10 @@ Chapter 3. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 55 16 4038 293
    2. Razvan Crainea (@razvancrainea) 6 4 59 34
    3. Maksym Sobolyev (@sobomax) 5 3 6 6
-   4. Liviu Chircu (@liviuchircu) 3 1 8 8
-   5. Norman Brandinger (@NormB) 3 1 2 2
-   6. Alexandra Titoc 3 1 1 1
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 1 1
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 4 4
+   5. Liviu Chircu (@liviuchircu) 3 1 8 8
+   6. Norman Brandinger (@NormB) 3 1 2 2
+   7. Alexandra Titoc 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -555,13 +555,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Aug 2022 - Mar 2026
-   2. Alexandra Titoc                     Sep 2024 - Sep 2024
-   3. Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
-   4. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
-   5. Vlad Patrascu (@rvlad-patrascu)     May 2022 - Jan 2023
-   6. Liviu Chircu (@liviuchircu)         Jul 2022 - Jul 2022
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) May 2022 - May 2022
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) May 2022 - Apr 2026
+   2. Razvan Crainea (@razvancrainea)     Aug 2022 - Mar 2026
+   3. Alexandra Titoc                     Sep 2024 - Sep 2024
+   4. Norman Brandinger (@NormB)          Jun 2024 - Jun 2024
+   5. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   6. Vlad Patrascu (@rvlad-patrascu)     May 2022 - Jan 2023
+   7. Liviu Chircu (@liviuchircu)         Jul 2022 - Jul 2022
 
    (1) including any documentation-related commits, excluding
    merge commits
