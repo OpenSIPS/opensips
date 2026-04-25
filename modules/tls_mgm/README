@@ -1535,9 +1535,9 @@ Chapter 3. Contributors
    9. Maksym Sobolyev (@sobomax) 5 3 9 23
    10. Alexey Vasilyev (@vasilevalex) 4 2 33 19
 
-   All remaining contributors: Callum Guy (@spacetourist), Aleksei
-   Vasilev, jupiter, Fabian Gast (@fgast), Nick Altmann
-   (@nikbyte), Ovidiu Sas (@ovidiusas), Peter Lemenkov
+   All remaining contributors: Callum Guy (@spacetourist), Ross
+   Henderson, Aleksei Vasilev, jupiter, Fabian Gast (@fgast), Nick
+   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Peter Lemenkov
    (@lemenkov), Jupiter Tang.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1560,22 +1560,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Jupiter Tang                        Nov 2025 - Nov 2025
-   2.  jupiter                             Apr 2025 - Apr 2025
-   3.  Liviu Chircu (@liviuchircu)         Oct 2015 - May 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2023
-   5.  Maksym Sobolyev (@sobomax)          Mar 2016 - Feb 2023
-   6.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2022
-   7.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   8.  Aleksei Vasilev                     Apr 2021 - Apr 2021
-   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
-   10. Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
+   1.  Ross Henderson                      Feb 2026 - Feb 2026
+   2.  Jupiter Tang                        Nov 2025 - Nov 2025
+   3.  jupiter                             Apr 2025 - Apr 2025
+   4.  Liviu Chircu (@liviuchircu)         Oct 2015 - May 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2023
+   6.  Maksym Sobolyev (@sobomax)          Mar 2016 - Feb 2023
+   7.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2022
+   8.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   9.  Aleksei Vasilev                     Apr 2021 - Apr 2021
+   10. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
 
-   All remaining contributors: Fabian Gast (@fgast), Alexey
-   Vasilyev (@vasilevalex), Callum Guy (@spacetourist), Peter
-   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
-   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Eseanu
-   Marius Cristian (@eseanucristian).
+   All remaining contributors: Dan Pascu (@danpascu), Fabian Gast
+   (@fgast), Alexey Vasilyev (@vasilevalex), Callum Guy
+   (@spacetourist), Peter Lemenkov (@lemenkov), Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   (@ionel-cerghit), Eseanu Marius Cristian (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits

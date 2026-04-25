@@ -63,8 +63,10 @@ Chapter 2. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 24 5 2195 39
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 9 4
    3. James Stanley 3 1 7 7
-   4. Maksym Sobolyev (@sobomax) 3 1 1 1
-   5. Your Name 2 1 0 1
+   4. Ross Henderson 3 1 3 1
+   5. Maksym Sobolyev (@sobomax) 3 1 1 1
+   6. Norman Brandinger (@NormB) 2 1 32 0
+   7. Your Name 2 1 0 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -86,11 +88,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Your Name                           Jul 2024 - Jul 2024
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) May 2023 - Feb 2024
-   3. James Stanley                       Apr 2023 - Apr 2023
-   4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   5. Vlad Patrascu (@rvlad-patrascu)     May 2021 - Oct 2021
+   1. Norman Brandinger (@NormB)          Mar 2026 - Mar 2026
+   2. Ross Henderson                      Feb 2026 - Feb 2026
+   3. Your Name                           Jul 2024 - Jul 2024
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) May 2023 - Feb 2024
+   5. James Stanley                       Apr 2023 - Apr 2023
+   6. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7. Vlad Patrascu (@rvlad-patrascu)     May 2021 - Oct 2021
 
    (1) including any documentation-related commits, excluding
    merge commits
