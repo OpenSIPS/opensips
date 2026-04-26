@@ -1961,7 +1961,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>id_type (integer,optional)</emphasis> - if
+			<para><emphasis>active_only (integer,optional)</emphasis> - if
 			set to something different than <emphasis>0</emphasis>,
 			it only considers active dialogs - dialogs that are not
 			deleted.
