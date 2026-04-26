@@ -1177,7 +1177,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 77 44 2294 762
-   2. Liviu Chircu (@liviuchircu) 59 27 809 1510
+   2. Liviu Chircu (@liviuchircu) 62 28 876 1544
    3. Razvan Crainea (@razvancrainea) 48 21 2956 120
    4. Vlad Paiu (@vladpaiu) 17 8 663 123
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
@@ -1214,12 +1214,12 @@ Chapter 2. Contributors
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jan 2026
-   2.  Ubuntu                              Mar 2025 - Mar 2025
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2024
-   4.  Vlad Paiu (@vladpaiu)               Feb 2012 - May 2024
-   5.  Bence Szigeti                       May 2023 - May 2023
-   6.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
-   7.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Dec 2025
+   3.  Ubuntu                              Mar 2025 - Mar 2025
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2024
+   5.  Vlad Paiu (@vladpaiu)               Feb 2012 - May 2024
+   6.  Bence Szigeti                       May 2023 - May 2023
+   7.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
    8.  Dan Pascu (@danpascu)               May 2019 - May 2019
    9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    10. Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019

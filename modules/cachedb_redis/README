@@ -27,12 +27,13 @@ cachedb_redis Module
               1.7.2. connect_timeout (integer)
               1.7.3. query_timeout (integer)
               1.7.4. shutdown_on_error (integer)
-              1.7.5. use_tls (integer)
-              1.7.6. ftsearch_index_name (string)
-              1.7.7. ftsearch_json_prefix (string)
-              1.7.8. ftsearch_max_results (integer)
-              1.7.9. ftsearch_json_mset_expire (integer)
+              1.7.5. lazy_connect (integer)
+              1.7.6. use_tls (integer)
+              1.7.7. ftsearch_index_name (string)
+              1.7.8. ftsearch_json_prefix (string)
+              1.7.9. ftsearch_max_results (integer)
               1.7.10. redis_keepalive (integer)
+              1.7.11. ftsearch_json_mset_expire (integer)
 
         1.8. Exported Functions
         1.9. Exported MI Functions
@@ -63,6 +64,7 @@ cachedb_redis Module
 
    List of Tables
 
+   1.1. URL Authentication Formats
    2.1. Top contributors by DevScore^(1), authored commits^(2) and
           lines added/removed^(3)
 
@@ -73,15 +75,16 @@ cachedb_redis Module
    1.1. Set cachedb_url parameter
    1.2. Use Redis servers
    1.3. Set connect_timeout parameter
-   1.4. Set connect_timeout parameter
+   1.4. Set query_timeout parameter
    1.5. Set the shutdown_on_error parameter
-   1.6. Set the use_tls parameter
-   1.7. Set the ftsearch_index_name parameter
-   1.8. Set the ftsearch_json_prefix parameter
-   1.9. Set the ftsearch_max_results parameter
-   1.10. Set the ftsearch_json_mset_expire parameter
-   1.11. Set the redis_keepalive parameter
-   1.12. Redis Raw Query Examples
+   1.6. Set the lazy_connect parameter
+   1.7. Set the use_tls parameter
+   1.8. Set the ftsearch_index_name parameter
+   1.9. Set the ftsearch_json_prefix parameter
+   1.10. Set the ftsearch_max_results parameter
+   1.11. Set redis_keepalive parameter
+   1.12. Set the ftsearch_json_mset_expire parameter
+   1.13. Redis Raw Query Examples
 
 Chapter 1. Admin Guide
 
@@ -126,8 +129,8 @@ Chapter 1. Admin Guide
 
    When connecting to a Redis Cluster, the module automatically
    detects cluster mode and manages the full slot-to-node topology
-   at runtime. No extra configuration is needed beyond the standard
-   cachedb_url parameter.
+   at runtime. No extra configuration is needed beyond the
+   standard cachedb_url parameter.
 
 1.4.1. Topology Discovery
 
@@ -148,22 +151,22 @@ Chapter 1. Admin Guide
    runtime when any of the following events occur:
      * A MOVED redirection is received from a cluster node
        (indicating a permanent slot migration).
-     * A connection failure (NULL reply) occurs and the node cannot
-       be reconnected.
+     * A connection failure (NULL reply) occurs and the node
+       cannot be reconnected.
      * A query targets a slot with no known owner, suggesting the
        topology is stale.
      * An operator triggers a manual refresh via the
        redis_cluster_refresh MI command.
 
    Automatic refreshes are rate-limited to at most once per second
-   to avoid excessive load on the cluster. The MI-triggered refresh
-   bypasses this rate limit.
+   to avoid excessive load on the cluster. The MI-triggered
+   refresh bypasses this rate limit.
 
 1.4.3. MOVED Redirection
 
    The module transparently handles Redis Cluster MOVED
    redirections:
-     * MOVED -- indicates a permanent slot migration. The module
+     * MOVED — indicates a permanent slot migration. The module
        updates its slot map, redirects the query to the new node,
        and triggers a topology refresh so all future queries go
        directly to the correct node.
@@ -174,12 +177,13 @@ Chapter 1. Admin Guide
 
 1.4.4. Hash Tags
 
-   The module supports Redis Cluster hash tags, which allow related
-   keys to be co-located on the same cluster node. If a key
-   contains a {...} substring, only the content between the first
-   { and the next } is used for hash slot calculation. For example,
-   the keys {user1000}.profile and {user1000}.settings will always
-   land on the same node, enabling multi-key operations.
+   The module supports Redis Cluster hash tags, which allow
+   related keys to be co-located on the same cluster node. If a
+   key contains a {...} substring, only the content between the
+   first { and the next } is used for hash slot calculation. For
+   example, the keys {user1000}.profile and {user1000}.settings
+   will always land on the same node, enabling multi-key
+   operations.
 
    If the braces are empty ({}) or there is no closing brace, the
    entire key is hashed as usual.
@@ -194,8 +198,8 @@ Chapter 1. Admin Guide
 1.6.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * If a use_tls is defined, the tls_mgm module will need to be
-       loaded as well.
+     * If a use_tls is defined, the tls_mgm and tls_openssl
+       modules will need to be loaded as well.
 
 1.6.2. External Libraries or Applications
 
@@ -246,19 +250,61 @@ cache_remove("redis:cluster1", "key");
    The module supports three authentication modes based on the URL
    format:
 
-   URL Format                                   AUTH Command            Use Case
-   redis:group://:password@host:port/           AUTH password           Classic Redis (< 6.0) with requirepass
-   redis:group://username:password@host:port/   AUTH username password  Redis 6+ ACL with per-user credentials
-   redis:group://host:port/                     (none)                  Non-authenticated Redis
+   Table 1.1. URL Authentication Formats
+   URL Format AUTH Command Use Case
+   redis:group://:password@host:port/ AUTH password Classic Redis
+   (< 6.0) with requirepass
+   redis:group://username:password@host:port/ AUTH username
+   password Redis 6+ ACL with per-user credentials
+   redis:group://host:port/ (none) Non-authenticated Redis
 
-   Important: For classic password-only authentication, the URL must
-   include a colon before the password (":password@host"). Writing
-   "password@host" without the colon will place the credential in the
-   username field of the URL parser, and authentication will be
-   skipped.
+   Important: For classic password-only authentication, the URL
+   must include a colon before the password (:password@host).
+   Writing password@host without the colon will place the
+   credential in the username field of the URL parser, and
+   authentication will be skipped.
 
    When connecting to a Redis Cluster with authentication, all
    discovered cluster nodes use the same credentials from the URL.
+
+1.7.1.2. Unix Socket
+
+   Starting with this version, the module supports connecting to a
+   local Redis instance via a Unix domain socket instead of TCP.
+   This can provide lower latency and avoid network overhead for
+   co-located Redis instances.
+
+   To use a Unix socket, add a socket= parameter to the URL query
+   string:
+# basic Unix socket (no auth)
+modparam("cachedb_redis", "cachedb_url",
+    "redis:local://localhost/?socket=/var/run/redis/redis.sock")
+
+# Unix socket with password auth
+modparam("cachedb_redis", "cachedb_url",
+    "redis:local://:password@localhost/?socket=/var/run/redis/redis.sock
+")
+
+# Unix socket with ACL auth (Redis 6+) and database selection
+modparam("cachedb_redis", "cachedb_url",
+    "redis:local://user:pass@localhost/2?socket=/var/run/redis/redis.soc
+k")
+
+   Constraints:
+     * Unix socket connections are always treated as
+       single-instance mode (no Redis Cluster support over Unix
+       sockets).
+     * Unix socket cannot be combined with multiple hosts
+       (failover). Specifying both will cause a startup error.
+     * TLS is not applicable to Unix socket connections and will
+       be ignored with a warning if use_tls is enabled.
+     * TCP keepalive is not applicable to Unix sockets and is
+       automatically skipped.
+
+   The redis_cluster_info MI command will display Unix socket
+   connections with transport=unix and the socket path. The
+   redis_ping_nodes command works normally with Unix socket
+   connections.
 
 1.7.2. connect_timeout (integer)
 
@@ -269,7 +315,7 @@ cache_remove("redis:cluster1", "key");
 
    Example 1.3. Set connect_timeout parameter
 ...
-# wait 1 seconds for Redis to connect
+# wait 1 second for Redis to connect
 modparam("cachedb_redis", "connect_timeout",1000)
 ...
 
@@ -282,7 +328,7 @@ modparam("cachedb_redis", "connect_timeout",1000)
 
    Example 1.4. Set query_timeout parameter
 ...
-# wait 1 seconds for Redis queries
+# wait 1 second for Redis queries
 modparam("cachedb_redis", "query_timeout",1000)
 ...
 
@@ -301,7 +347,29 @@ modparam("cachedb_redis", "query_timeout",1000)
 modparam("cachedb_redis", "shutdown_on_error", 1)
 ...
 
-1.7.5. use_tls (integer)
+1.7.5. lazy_connect (integer)
+
+   By setting this parameter to 1, OpenSIPS will defer
+   establishing Redis connections until the first cache operation
+   is actually performed by each worker process. This prevents
+   idle worker processes (those that never use Redis) from holding
+   open sockets, which avoids sockets getting stuck in CLOSE_WAIT
+   state when Redis is restarted.
+
+   When this parameter is enabled, the shutdown_on_error parameter
+   has no effect, since no connection is attempted at startup
+   time.
+
+   Default value is “0” (disabled — connect at startup, preserving
+   existing behavior).
+
+   Example 1.6. Set the lazy_connect parameter
+...
+# defer Redis connections until first use
+modparam("cachedb_redis", "lazy_connect", 1)
+...
+
+1.7.6. use_tls (integer)
 
    Setting this parameter will allow you to use TLS for Redis
    connections. In order to enable TLS for a specific connection,
@@ -311,7 +379,7 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
    after the '?' character.
 
    When using this parameter, you must also ensure that tls_mgm is
-   loaded and properly configured. Refer to the the module for
+   loaded and properly configured. Refer to the tls_mgm module for
    additional info regarding TLS client domains.
 
    Note that TLS is supported by Redis starting with version 6.0.
@@ -321,7 +389,7 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 
    Default value is 0 (not enabled)
 
-   Example 1.6. Set the use_tls parameter
+   Example 1.7. Set the use_tls parameter
 ...
 modparam("tls_mgm", "client_domain", "redis")
 modparam("tls_mgm", "certificate", "[redis]/etc/pki/tls/certs/redis.pem"
@@ -331,11 +399,11 @@ y")
 modparam("tls_mgm", "ca_list",     "[redis]/etc/pki/tls/certs/ca.pem")
 ...
 modparam("cachedb_redis", "use_tls", 1)
-modparam("cachedb_redis", "cachedb_url","redis://localhost:6379/?tls_dom
-ain=redis")
+modparam("cachedb_redis", "cachedb_url","redis:tls_group://localhost:637
+9/?tls_domain=redis")
 ...
 
-1.7.6. ftsearch_index_name (string)
+1.7.7. ftsearch_index_name (string)
 
    Only relevant with RedisJSON and RediSearch server-side
    support.
@@ -346,11 +414,12 @@ ain=redis")
 
    Default value is "idx:usrloc".
 
-   Example 1.7. Set the ftsearch_index_name parameter
+   Example 1.8. Set the ftsearch_index_name parameter
 
 modparam("cachedb_redis", "ftsearch_index_name", "ix::usrloc")
 
-1.7.7. ftsearch_json_prefix (string)
+
+1.7.8. ftsearch_json_prefix (string)
 
    Only relevant with RedisJSON and RediSearch server-side
    support.
@@ -360,11 +429,12 @@ modparam("cachedb_redis", "ftsearch_index_name", "ix::usrloc")
 
    Default value is "usrloc:".
 
-   Example 1.8. Set the ftsearch_json_prefix parameter
+   Example 1.9. Set the ftsearch_json_prefix parameter
 
 modparam("cachedb_redis", "ftsearch_json_prefix", "userlocation:")
 
-1.7.8. ftsearch_max_results (integer)
+
+1.7.9. ftsearch_max_results (integer)
 
    Only relevant with RedisJSON and RediSearch server-side
    support.
@@ -374,11 +444,35 @@ modparam("cachedb_redis", "ftsearch_json_prefix", "userlocation:")
 
    Default value is 10000 max results.
 
-   Example 1.9. Set the ftsearch_max_results parameter
+   Example 1.10. Set the ftsearch_max_results parameter
 
 modparam("cachedb_redis", "ftsearch_max_results", 100)
 
-1.7.9. ftsearch_json_mset_expire (integer)
+
+1.7.10. redis_keepalive (integer)
+
+   TCP keepalive interval in seconds for Redis connections. When
+   set to a positive value, the kernel sends TCP probes on idle
+   connections to detect dead peers (e.g. due to NAT/firewall idle
+   timeout or network partition). This allows the next query to
+   fail immediately instead of waiting for the full query timeout,
+   enabling faster recovery via the existing retry loop.
+
+   Set to 0 to disable TCP keepalive. Recommended to keep enabled
+   for production deployments to prevent silent connection death.
+
+   Default value is “10” (seconds).
+
+   Example 1.11. Set redis_keepalive parameter
+...
+# set TCP keepalive interval to 15 seconds
+modparam("cachedb_redis", "redis_keepalive", 15)
+
+# disable TCP keepalive
+modparam("cachedb_redis", "redis_keepalive", 0)
+...
+
+1.7.11. ftsearch_json_mset_expire (integer)
 
    Only relevant with RedisJSON and RediSearch server-side
    support.
@@ -389,32 +483,10 @@ modparam("cachedb_redis", "ftsearch_max_results", 100)
 
    Default value is 3600 seconds.
 
-   Example 1.10. Set the ftsearch_json_mset_expire parameter
+   Example 1.12. Set the ftsearch_json_mset_expire parameter
 
 modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 
-1.7.10. redis_keepalive (integer)
-
-   TCP keepalive interval in seconds for Redis connections. When set
-   to a positive value, the kernel sends TCP probes on idle
-   connections to detect dead peers (e.g. due to NAT/firewall idle
-   timeout or network partition). This allows the next query to fail
-   immediately instead of waiting for the full query timeout,
-   enabling faster recovery via the existing retry loop.
-
-   Set to 0 to disable TCP keepalive. Recommended to keep enabled
-   for production deployments to prevent silent connection death.
-
-   Default value is "10" (seconds).
-
-   Example 1.11. Set the redis_keepalive parameter
-...
-# set TCP keepalive interval to 15 seconds
-modparam("cachedb_redis", "redis_keepalive", 15)
-
-# disable TCP keepalive
-modparam("cachedb_redis", "redis_keepalive", 0)
-...
 
 1.8. Exported Functions
 
@@ -423,7 +495,7 @@ modparam("cachedb_redis", "redis_keepalive", 0)
 
 1.9. Exported MI Functions
 
-1.9.1. redis_cluster_info
+1.9.1.  redis_cluster_info
 
    Displays detailed information about all Redis connections
    managed by the module, including cluster topology, per-node
@@ -450,22 +522,20 @@ modparam("cachedb_redis", "redis_keepalive", 0)
        refresh
      * nodes - array of cluster node objects, each containing: ip,
        port, status ("connected"/"disconnected"), slots_assigned
-       (cluster mode only), queries, errors, moved,
-       last_activity (seconds since last successful query, -1 if
-       never queried)
+       (cluster mode only), queries, errors, moved, last_activity
+       (seconds since last successful query, -1 if never queried)
      * total_slots_mapped (cluster mode only) - total number of
        slots with an assigned node (should be 16384 for a healthy
        cluster)
 
    MI FIFO Command Format:
-
 ## list all Redis connections
 opensips-cli -x mi redis_cluster_info
 
 ## list only the "local" group
 opensips-cli -x mi redis_cluster_info group=local
 
-1.9.2. redis_cluster_refresh
+1.9.2.  redis_cluster_refresh
 
    Forces an immediate topology refresh on Redis Cluster
    connections. This bypasses the normal once-per-second rate
@@ -482,27 +552,26 @@ opensips-cli -x mi redis_cluster_info group=local
        cluster connections are refreshed.
 
    The response is a JSON array of objects, one per connection,
-   each containing group and status ("ok", "error", or
-   "skipped (not cluster mode)").
+   each containing group and status ("ok", "error", or "skipped
+   (not cluster mode)").
 
    MI FIFO Command Format:
-
 ## refresh all cluster connections
 opensips-cli -x mi redis_cluster_refresh
 
 ## refresh only the "local" group
 opensips-cli -x mi redis_cluster_refresh group=local
 
-1.9.3. redis_ping_nodes
+1.9.3.  redis_ping_nodes
 
    Sends a PING command to each Redis node and reports per-node
-   reachability status with round-trip latency. Useful for on-demand
-   health checks without waiting for the next query.
+   reachability status with round-trip latency. Useful for
+   on-demand health checks without waiting for the next query.
 
    Parameters:
      * group (optional) - if specified, only nodes belonging to
-       this group will be pinged. If omitted, all Redis connections
-       are pinged.
+       this group will be pinged. If omitted, all Redis
+       connections are pinged.
 
    The response is a JSON array of connection objects. Each
    connection object includes:
@@ -513,7 +582,6 @@ opensips-cli -x mi redis_cluster_refresh group=local
        reachable)
 
    MI FIFO Command Format:
-
 ## ping all Redis nodes
 opensips-cli -x mi redis_ping_nodes
 
@@ -555,7 +623,7 @@ opensips-cli -x mi redis_ping_nodes group=local
 
    Here are a couple examples of running some Redis queries :
 
-   Example 1.12. Redis Raw Query Examples
+   Example 1.13. Redis Raw Query Examples
 ...
         $var(my_hash) = "my_hash_name";
         $var(my_key) = "my_key_name";
@@ -578,9 +646,9 @@ y_value2)");
         cache_raw_query("redis","HGETALL $var(my_hash)","$avp(result)");
 
         $var(it) = 0;
-        while ($(avp(result_final)[$var(it)]) != NULL) {
+        while ($(avp(result)[$var(it)]) != NULL) {
                 xlog("Multiple key reply: - we have fetched $(avp(result
-_final)[$var(it)]) \n");
+)[$var(it)]) \n");
                 $var(it) = $var(it) + 1;
         }
 ...
@@ -592,21 +660,21 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 43 23 1720 288
-   2. Vlad Paiu (@vladpaiu) 33 19 1446 50
-   3. Razvan Crainea (@razvancrainea) 17 14 150 48
-   4. Vlad Patrascu (@rvlad-patrascu) 13 6 595 38
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 7 5
-   6. Maksym Sobolyev (@sobomax) 6 4 7 7
-   7. jalung 5 1 144 61
-   8. Norm Brandinger 4 1 207 5
-   9. Dan Pascu (@danpascu) 3 1 15 15
-   10. Ezequiel Lovelle 3 1 11 4
+   1. Debian 61 3 6168 356
+   2. Liviu Chircu (@liviuchircu) 43 23 1720 288
+   3. Vlad Paiu (@vladpaiu) 33 19 1446 50
+   4. Razvan Crainea (@razvancrainea) 17 14 150 48
+   5. Vlad Patrascu (@rvlad-patrascu) 12 6 595 38
+   6. Norman Brandinger (@NormB) 7 5 58 4
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 7 5
+   8. Maksym Sobolyev (@sobomax) 6 4 7 7
+   9. jalung 5 1 144 61
+   10. Norm Brandinger 4 1 207 5
 
-   All remaining contributors: Norman Brandinger (@NormB), John
-   Burke (@john08burke), tcresson, Eddie Fiorentine, Julián Moreno
-   Patiño, Ken Rice, Peter Lemenkov (@lemenkov), zhengsh, Jarrod
-   Baumann (@jarrodb), Kristian Høgh.
+   All remaining contributors: rdondeti, Dan Pascu (@danpascu),
+   Ezequiel Lovelle, John Burke (@john08burke), tcresson, Eddie
+   Fiorentine, Julián Moreno Patiño, Ken Rice, Peter Lemenkov
+   (@lemenkov), zhengsh, Jarrod Baumann (@jarrodb), Kristian Høgh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -628,22 +696,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Norman Brandinger (@NormB)      Mar 2026 - Mar 2026
-   2.  Ken Rice                        Sep 2025 - Sep 2025
-   3.  Razvan Crainea (@razvancrainea) Feb 2012 - May 2025
-   4.  Norm Brandinger                 May 2025 - May 2025
-   5.  Eddie Fiorentine                Mar 2025 - Mar 2025
-   6.  Liviu Chircu (@liviuchircu)     Mar 2014 - Jan 2025
-   7.  Vlad Paiu (@vladpaiu)           Oct 2011 - Nov 2024
-   8.  tcresson                        Oct 2023 - Oct 2023
-   9.  zhengsh                         Aug 2023 - Aug 2023
-   10. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
+   1.  Debian                          Mar 2026 - Mar 2026
+   2.  rdondeti                        Mar 2026 - Mar 2026
+   3.  Norman Brandinger (@NormB)      Mar 2026 - Feb 2026
+   4.  Ken Rice                        Sep 2025 - Sep 2025
+   5.  Razvan Crainea (@razvancrainea) Feb 2012 - May 2025
+   6.  Norm Brandinger                 May 2025 - May 2025
+   7.  Eddie Fiorentine                Mar 2025 - Mar 2025
+   8.  Liviu Chircu (@liviuchircu)     Mar 2014 - Jan 2025
+   9.  Vlad Paiu (@vladpaiu)           Oct 2011 - Nov 2024
+   10. tcresson                        Oct 2023 - Oct 2023
 
-   All remaining contributors: John Burke (@john08burke), Vlad
-   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Dan Pascu (@danpascu), Peter Lemenkov
-   (@lemenkov), Kristian Høgh, Julián Moreno Patiño, Jarrod
-   Baumann (@jarrodb), jalung, Ezequiel Lovelle.
+   All remaining contributors: zhengsh, Maksym Sobolyev
+   (@sobomax), John Burke (@john08burke), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Dan
+   Pascu (@danpascu), Peter Lemenkov (@lemenkov), Kristian Høgh,
+   Julián Moreno Patiño, Jarrod Baumann (@jarrodb), jalung,
+   Ezequiel Lovelle.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -652,9 +721,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián Moreno
-   Patiño, Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu).
+   Last edited by: Debian, Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián
+   Moreno Patiño, Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu).
 
 Chapter 4. Frequently Asked Questions
 
