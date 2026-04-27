@@ -42,6 +42,7 @@
 
 #include "cachedb_local.h"
 #include "cachedb_local_replication.h"
+#include "cachedb_local_evi.h"
 #include "hash.h"
 
 #include "../../mem/rpm_mem.h"
@@ -743,6 +744,11 @@ static int mod_init(void)
 		}
 	}
 
+	if (lcache_event_init() < 0) {
+		LM_ERR("failed to init cachedb_local events\n");
+		return -1;
+	}
+
 	/* register timer to delete the expired entries */
 	register_timer("localcache-expire",localcache_clean, 0,
 		cache_clean_period, TIMER_FLAG_DELAY_ON_DELAY);
@@ -815,12 +821,20 @@ static void destroy(void)
 	}
 }
 
+/* temporary list node for collecting expired entries outside the lock */
+struct expired_ev {
+	str key;
+	str value;
+	struct expired_ev *next;
+};
+
 void localcache_clean(unsigned int ticks,void *param)
 {
 	int i;
 	lcache_entry_t* me1, *me2;
 	lcache_col_t* it;
 	lcache_t* cache_htable;
+	struct expired_ev *ev_list, *ev, *ev_next;
 
 	for ( it=lcache_collection; it; it=it->next ) {
 		LM_DBG("start\n");
@@ -828,6 +842,8 @@ void localcache_clean(unsigned int ticks,void *param)
 
 		for(i = 0; i< it->col_htable->size; i++)
 		{
+			ev_list = NULL;
+
 			lock_get(&cache_htable[i].lock);
 			me1 = cache_htable[i].entries;
 			me2 = NULL;
@@ -838,6 +854,25 @@ void localcache_clean(unsigned int ticks,void *param)
 				{
 					LM_DBG("deleted entry attr= [%.*s]\n",
 							me1->attr.len, me1->attr.s);
+
+					/* save key/value for event after lock release */
+					if (ei_lcache_expired_id != EVI_ERROR) {
+						ev = pkg_malloc(sizeof(*ev) +
+							me1->attr.len + me1->value.len);
+						if (ev) {
+							ev->key.s = (char *)(ev + 1);
+							ev->key.len = me1->attr.len;
+							memcpy(ev->key.s, me1->attr.s,
+								me1->attr.len);
+							ev->value.s = ev->key.s +
+								me1->attr.len;
+							ev->value.len = me1->value.len;
+							memcpy(ev->value.s, me1->value.s,
+								me1->value.len);
+							ev->next = ev_list;
+							ev_list = ev;
+						}
+					}
 
 					if(me2)
 					{
@@ -863,6 +898,15 @@ void localcache_clean(unsigned int ticks,void *param)
 			}
 
 			lock_release(&cache_htable[i].lock);
+
+			/* raise events outside the lock to avoid deadlocks
+			 * if the event_route handler accesses the cache */
+			for (ev = ev_list; ev; ev = ev_next) {
+				ev_next = ev->next;
+				lcache_raise_expired_event(&ev->key,
+					&ev->value, &it->col_name);
+				pkg_free(ev);
+			}
 		}
 	}
 }
