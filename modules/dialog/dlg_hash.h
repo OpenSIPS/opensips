@@ -302,11 +302,11 @@ void destroy_dlg(struct dlg_cell *dlg);
 
 #ifdef DBG_DIALOG
 #define DBG_REF(dlg, cnt) \
-	sh_log((dlg)->hist, DLG_REF, "h=%d, ref %d with +%d", \
-	       (dlg)->h_entry, (dlg)->ref, (cnt));
+	sh_log((dlg)->hist, DLG_REF, "h=%d, state=%d, flags=0x%x, ref %d with +%d", \
+	       (dlg)->h_entry, (dlg)->state, (dlg)->flags, (dlg)->ref, (cnt));
 #define DBG_UNREF(dlg, cnt) \
-	sh_log((dlg)->hist, DLG_UNREF, "h=%d, unref %d with -%d", \
-	       (dlg)->h_entry, (dlg)->ref, (cnt));
+	sh_log((dlg)->hist, DLG_UNREF, "h=%d, state=%d, flags=0x%x, unref %d with -%d", \
+	       (dlg)->h_entry, (dlg)->state, (dlg)->flags, (dlg)->ref, (cnt));
 #define DBG_FLUSH(dlg) sh_flush((dlg)->hist)
 #else
 #define DBG_REF(dlg, cnt)
