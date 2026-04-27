@@ -1268,8 +1268,10 @@ logic_notify:
 		}
 
 		if (table == server_htable) {
-			b2b_key = to_tag;
-			b2b_get_server_entity_key(&b2b_key);
+			if (method_value != METHOD_CANCEL) {
+				b2b_key = to_tag;
+				b2b_get_server_entity_key(&b2b_key);
+			}
 		}
 	}
 
