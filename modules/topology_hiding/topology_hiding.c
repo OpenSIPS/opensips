@@ -29,6 +29,7 @@
 
 
 #include "topo_hiding_logic.h"
+#include "th_common_logic.h"
 
 struct tm_binds tm_api;
 struct dlg_binds dlg_api;
