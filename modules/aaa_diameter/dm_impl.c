@@ -524,6 +524,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 add:
 		cJSON_AddItemToObject(item, dm_avp.avp_name, val);
 		cJSON_AddItemToArray(avps, item);
+		item = NULL;
 
 skip:
 		FD_CHECK_GT(fd_msg_browse(it, MSG_BRW_NEXT, &it, NULL));
