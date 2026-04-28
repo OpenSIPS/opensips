@@ -26,6 +26,10 @@
 #include "dlg_hash.h"
 #include "dlg_req_within.h"
 #include "dlg_replication.h"
+#include "dlg_handlers.h"
+#include "dlg_profile.h"
+#include "dlg_cb.h"
+#include "dlg_db_handler.h"
 
 struct dlg_timer *d_timer = 0;
 dlg_timer_handler timer_hdl = 0;
@@ -888,6 +892,57 @@ void unref_dlg_cb(void *dlg)
 	unref_dlg_destroy_safe((struct dlg_cell*)dlg,1);
 }
 
+/* Atomically terminate a dialog from a ping/timer context (GH-3835).
+ * Claims the CONFIRMED->DELETED transition via next_state_dlg so that
+ * a concurrent BYE cannot race.  Returns 1 if the dialog was terminated,
+ * 0 if another code path already owns it. */
+static int dlg_ping_terminate(struct dlg_cell *dlg)
+{
+	int old_state, new_state, unref;
+	struct sip_msg *fake_msg = NULL;
+	context_p old_ctx;
+	context_p *new_ctx;
+
+	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM,
+		&old_state, &new_state, &unref,
+		dlg->legs_no[DLG_LEG_200OK], 1);
+
+	if (new_state != DLG_STATE_DELETED || old_state == DLG_STATE_DELETED) {
+		/* Lost the race -- a BYE handler already owns this dialog */
+		unref_dlg(dlg, 1);
+		return 0;
+	}
+
+	/* Won the transition -- run cleanup before sending BYEs */
+	if (ref_script_route_check_and_update(dlg->rt_on_hangup))
+		run_dlg_script_route(dlg, dlg->rt_on_hangup->idx);
+
+	destroy_linkers(dlg);
+	remove_dlg_prof_table(dlg, 1);
+
+	if (push_new_processing_context(dlg, &old_ctx, &new_ctx, &fake_msg) == 0) {
+		run_dlg_callbacks(DLGCB_TERMINATED, dlg, fake_msg,
+			DLG_DIR_NONE, -1, NULL, 0, 1);
+		if (current_processing_ctx == NULL)
+			*new_ctx = NULL;
+		else
+			context_destroy(CONTEXT_GLOBAL, *new_ctx);
+		set_global_context(old_ctx);
+		release_dummy_sip_msg(fake_msg);
+	}
+
+	if (should_remove_dlg_db())
+		remove_dialog_from_db(dlg);
+
+	dlg_end_dlg(dlg, NULL, 1);
+
+	/* ping list ref (1) + hash ref from next_state_dlg (unref) */
+	unref_dlg(dlg, unref + 1);
+
+	if_update_stat(dlg_enable_stats, active_dlgs, -1);
+	return 1;
+}
+
 void dlg_options_routine(unsigned int ticks , void * attr)
 {
 	struct dlg_ping_list *expired,*to_be_deleted,*it,*curr,*next;
@@ -915,12 +970,9 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 					dlg->legs[callee_idx(dlg)].reply_received);
 			init_dlg_term_reason(dlg, MI_SSTR("Ping Timeout"));
 		}
-		/* FIXME - maybe better not to send BYE both ways as we know for
-		 * sure one end in down . */
-		dlg_end_dlg(dlg,0,1);
-
-		/* no longer reffed in list */
-		unref_dlg(dlg,1);
+		/* Atomically claim CONFIRMED->DELETED before sending BYEs
+		 * to prevent race with concurrent BYE (GH-3835) */
+		dlg_ping_terminate(dlg);
 	}
 
 	it = to_be_deleted;
@@ -1022,12 +1074,9 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 					dlg->legs[callee_idx(dlg)].reinvite_confirmed);
 			init_dlg_term_reason(dlg, MI_SSTR("ReINVITE Ping Timeout"));
 		}
-		/* FIXME - maybe better not to send BYE both ways as we know for
-		 * sure one end in down . */
-		dlg_end_dlg(dlg,0,1);
-
-		/* no longer reffed in list */
-		unref_dlg(dlg,1);
+		/* Atomically claim CONFIRMED->DELETED before sending BYEs
+		 * to prevent race with concurrent BYE (GH-3835) */
+		dlg_ping_terminate(dlg);
 	}
 
 	it = to_be_deleted;

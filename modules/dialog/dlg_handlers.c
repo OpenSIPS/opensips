@@ -2670,22 +2670,71 @@ void dlg_ontimeout(struct dlg_tl *tl)
 	if ((dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
 	(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
 
-		if (do_expire_actions) {
-			if (dlg->flags & DLG_FLAG_RACE_CONDITION_OCCURRED)
-				init_dlg_term_reason(dlg,"SIP Race Condition",
-					sizeof("SIP Race Condition")-1);
-			else
-				init_dlg_term_reason(dlg,"Lifetime Timeout",
-					sizeof("Lifetime Timeout")-1);
-		}
-		/* we just send the BYEs in both directions */
-		dlg_end_dlg(dlg, NULL, do_expire_actions);
-		/* dialog is no longer refed by timer; from now on it is refed
-		   by the send_bye functions */
-		unref_dlg(dlg, 1);
-		/* is not 100% sure, but do it */
-		if_update_stat(dlg_enable_stats, expired_dlgs, 1);
+		/* Atomically claim the CONFIRMED -> DELETED transition (GH-3835).
+		 * Without this, a BYE arriving between the state check above and
+		 * dlg_end_dlg() below creates a TM transaction ref that outlives
+		 * the dialog, causing use-after-free ("bogus ref -1").
+		 * next_state_dlg holds the hash lock during the transition, so
+		 * only one code path (timer or BYE handler) can win. */
+		next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM,
+			&old_state, &new_state, &unref,
+			dlg->legs_no[DLG_LEG_200OK], do_expire_actions);
 
+		if (new_state == DLG_STATE_DELETED &&
+		old_state != DLG_STATE_DELETED) {
+			/* We won the transition -- handle cleanup and send BYEs.
+			 * dual_bye_event() will see DELETED->DELETED for both BYE
+			 * responses, so cleanup must happen here. */
+
+			if (do_expire_actions) {
+				if (dlg->flags & DLG_FLAG_RACE_CONDITION_OCCURRED)
+					init_dlg_term_reason(dlg,"SIP Race Condition",
+						sizeof("SIP Race Condition")-1);
+				else
+					init_dlg_term_reason(dlg,"Lifetime Timeout",
+						sizeof("Lifetime Timeout")-1);
+			}
+
+			if (ref_script_route_check_and_update(dlg->rt_on_hangup))
+				run_dlg_script_route(dlg, dlg->rt_on_hangup->idx);
+
+			destroy_linkers(dlg);
+			remove_dlg_prof_table(dlg, do_expire_actions);
+
+			/* fire DLGCB_TERMINATED -- same callback dual_bye_event
+			 * would normally fire on the first BYE response */
+			if (push_new_processing_context(dlg, &old_ctx,
+			&new_ctx, &fake_msg) == 0) {
+				if (do_expire_actions)
+					run_dlg_callbacks(DLGCB_TERMINATED, dlg,
+						fake_msg, DLG_DIR_NONE, -1,
+						NULL, 0, do_expire_actions);
+				if (current_processing_ctx == NULL)
+					*new_ctx = NULL;
+				else
+					context_destroy(CONTEXT_GLOBAL, *new_ctx);
+				set_global_context(old_ctx);
+				release_dummy_sip_msg(fake_msg);
+			}
+
+			if (should_remove_dlg_db())
+				remove_dialog_from_db(dlg);
+
+			/* send BYEs in both directions */
+			dlg_end_dlg(dlg, NULL, do_expire_actions);
+
+			/* release timer ref (1) + hash ref from
+			 * next_state_dlg (unref) */
+			unref_dlg(dlg, unref + 1);
+
+			if_update_stat(dlg_enable_stats, expired_dlgs, 1);
+			if_update_stat(dlg_enable_stats, active_dlgs, -1);
+			return;
+		}
+
+		/* Lost the race -- a BYE handler already transitioned this
+		 * dialog to DELETED and owns cleanup. Release timer ref. */
+		unref_dlg(dlg, 1);
 		return;
 	}
 
