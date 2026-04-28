@@ -337,8 +337,8 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 		pv_value_t val = {(str){rpl_avps, strlen(rpl_avps)}, 0, PV_VAL_STR};
 		if (pv_set_value(msg, rpl_avps_pv, 0, &val) != 0)
 			LM_ERR("failed to set output rpl_avps pv to: %s\n", rpl_avps);
-		_dm_release_message_response(rpl, rpl_avps);
 	}
+	_dm_release_message_response(rpl, rpl_avps);
 
 	if (rc != 0) {
 		LM_ERR("Diameter request failed (rc: %d)\n", rc);
@@ -521,8 +521,7 @@ static int dm_send_request_async_reply(int fd,
 error:
 	if (amsg->ret && pv_set_value(msg, amsg->ret, 0, &val) != 0)
 		LM_ERR("failed to set output rpl_avps pv to NULL\n");
-	if (rpl_avps)
-		_dm_release_message_response(amsg->cond, rpl_avps);
+	_dm_release_message_response(amsg->cond, rpl_avps);
 	dm_free_sync_msg(amsg);
 	return ret;
 }
