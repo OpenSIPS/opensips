@@ -50,8 +50,16 @@ namespace otelotlp = opentelemetry::exporter::otlp;
 #ifdef __cplusplus
 /* Relax C-only headers for C++ compilation. */
 #define class class_keyword
-#undef HAVE_STDATOMIC
 #undef HAVE_GENERICS
+/* atomic.h defines atomic_t using the C11 keyword `_Atomic(T)` when
+ * HAVE_STDATOMIC is set. `_Atomic` is C-only and not valid in C++, so
+ * we shim it to std::atomic<T> for this C++ translation unit. With
+ * the shim, atomic.h's typedef resolves as
+ *     typedef std::atomic<unsigned long> atomic_t;
+ * on every architecture. HAVE_STDATOMIC itself is set by Makefile.defs
+ * or compiler auto-detection, so no change to its value is needed here. */
+#include <atomic>
+#define _Atomic(T) std::atomic<T>
 #endif
 
 extern "C" {
