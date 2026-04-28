@@ -37,10 +37,13 @@
 #include <linux/tls.h>
 #endif
 
+#include "../../ut.h"
 #include "../../mem/mem.h"
+#include "../../mem/shm_mem.h"
 #include "../../net/tcp_conn_defs.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../tls_mgm/tls_helper.h"
+#include "../tls_mgm/tls_shared_data.h"
 
 #include "wolfssl_trace.h"
 #include "wolfssl.h"
@@ -165,6 +168,57 @@ static void tls_dump_verification_failure(long verification_result)
 		LM_WARN("application verification failure\n");
 		break;
 	}
+}
+
+static void wolfssl_cache_tls_info(struct tcp_connection *c, WOLFSSL *ssl)
+{
+	WOLFSSL_CIPHER *cipher;
+	WOLFSSL_X509 *cert = NULL;
+	char desc_buf[128];
+	const char *version;
+	const char *cipher_name = 0;
+	const char *cipher_desc = 0;
+	unsigned int bits = 0;
+	long verify_res;
+	int verify_mode;
+	int peer_ok = 0;
+
+	version = wolfSSL_get_version(ssl);
+
+	cipher = wolfSSL_get_current_cipher(ssl);
+	if (cipher) {
+		cipher_name = wolfSSL_CIPHER_get_name(cipher);
+
+		desc_buf[0] = '\0';
+		wolfSSL_CIPHER_description(cipher, desc_buf, sizeof(desc_buf));
+		cipher_desc = desc_buf;
+		bits = wolfSSL_CIPHER_get_bits(cipher, 0);
+	}
+
+	verify_res = wolfSSL_get_verify_result(ssl);
+	if (verify_res == X509_V_OK) {
+		cert = wolfSSL_get_peer_certificate(ssl);
+		if (cert != NULL) {
+			peer_ok = 1;
+		} else if (_wolfssl_has_session_ticket(ssl)) {
+			verify_mode = wolfSSL_get_verify_mode(ssl);
+
+			if (wolfSSL_GetSide(ssl) == WOLFSSL_SERVER_END) {
+				if ((verify_mode & SSL_VERIFY_PEER) &&
+					(verify_mode & SSL_VERIFY_FAIL_IF_NO_PEER_CERT))
+					peer_ok = 1;
+			} else {
+				if (verify_mode & SSL_VERIFY_PEER)
+					peer_ok = 1;
+			}
+		}
+	}
+
+	if (cert)
+		wolfSSL_X509_free(cert);
+
+	tls_shared_info_store(c, version, cipher_name, cipher_desc, bits,
+			peer_ok ? 1 : 0);
 }
 
 static int _wolfssl_enable_ktls_ulp(struct tcp_connection *c, int fd)
@@ -647,6 +701,9 @@ void _wolfssl_tls_conn_clean(struct tcp_connection* c,
 		thread_free(c->extra_data);
 		c->extra_data = 0;
 	}
+	if (c->shared_data) {
+		tls_shared_info_free(c);
+	}
 
 	*tls_dom = d;
 }
@@ -725,6 +782,7 @@ int _wolfssl_tls_async_connect(struct tcp_connection *con, int fd,
 			_wolfssl_trace_tls(con, ssl, TRANS_TRACE_CONNECTED,
 					TRANS_TRACE_SUCCESS, &ASYNC_CONNECT_OK);
 			tls_send_trace_data(con, t_dst);
+			wolfssl_cache_tls_info(con, ssl);
 
 			con->proto_flags &= ~F_TLS_DO_CONNECT;
 
@@ -932,6 +990,7 @@ static int _wolfssl_tls_accept(struct tcp_connection *c, short *poll_events)
 
 		_wolfssl_trace_tls(c, ssl, TRANS_TRACE_ACCEPTED, TRANS_TRACE_SUCCESS,
 			&ACCEPT_OK);
+		wolfssl_cache_tls_info(c, ssl);
 
 		/* TLS accept done, reset the flag */
 		c->proto_flags &= ~F_TLS_DO_ACCEPT;
@@ -1043,6 +1102,7 @@ static int _wolfssl_tls_connect(struct tcp_connection *c, short *poll_events,
 		_wolfssl_trace_tls(c, ssl, TRANS_TRACE_CONNECTED,
 				TRANS_TRACE_SUCCESS, &CONNECT_OK);
 		tls_send_trace_data(c, t_dst);
+		wolfssl_cache_tls_info(c, ssl);
 
 		c->proto_flags &= ~F_TLS_DO_CONNECT;
 

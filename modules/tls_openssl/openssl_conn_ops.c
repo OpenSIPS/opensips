@@ -31,9 +31,12 @@
 #include <unistd.h>
 #include <netinet/tcp.h>
 
+#include "../../ut.h"
+#include "../../mem/shm_mem.h"
 #include "../../net/tcp_conn_defs.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../tls_mgm/tls_helper.h"
+#include "../tls_mgm/tls_shared_data.h"
 
 #include "openssl_trace.h"
 
@@ -74,6 +77,39 @@ static int tls_get_errstack( char* result, int size )
 	}
 
 	return len;
+}
+
+static void openssl_cache_tls_info(struct tcp_connection *c, SSL *ssl)
+{
+	const SSL_CIPHER *cipher;
+	X509 *cert;
+	char desc_buf[128];
+	const char *version;
+	const char *cipher_name = 0;
+	const char *cipher_desc = 0;
+	unsigned int bits = 0;
+	unsigned char peer_verified = 0;
+
+	version = SSL_get_version(ssl);
+
+	cipher = SSL_get_current_cipher(ssl);
+	if (cipher) {
+		cipher_name = SSL_CIPHER_get_name(cipher);
+
+		desc_buf[0] = '\0';
+		SSL_CIPHER_description(cipher, desc_buf, sizeof(desc_buf));
+		cipher_desc = desc_buf;
+		bits = SSL_CIPHER_get_bits(cipher, 0);
+	}
+
+	cert = SSL_get_peer_certificate(ssl);
+	if (cert != NULL) {
+		peer_verified = (SSL_get_verify_result(ssl) == X509_V_OK);
+		X509_free(cert);
+	}
+
+	tls_shared_info_store(c, version, cipher_name, cipher_desc, bits,
+			peer_verified);
 }
 
 static void tls_dump_verification_failure(long verification_result)
@@ -329,6 +365,9 @@ void openssl_tls_conn_clean(struct tcp_connection *c, struct tls_domain **tls_do
 		SSL_free((SSL *) c->extra_data);
 		c->extra_data = 0;
 	}
+	if (c->shared_data) {
+		tls_shared_info_free(c);
+	}
 
 	*tls_dom = d;
 }
@@ -361,6 +400,7 @@ static int openssl_tls_connect(struct tcp_connection *c, short *poll_events,
 				TRANS_TRACE_SUCCESS, &CONNECT_OK);
 
 		tls_send_trace_data(c, t_dst);
+		openssl_cache_tls_info(c, ssl);
 
 		c->proto_flags &= ~F_TLS_DO_CONNECT;
 		LM_DBG("new TLS connection to %s:%d using %s %s %d\n",
@@ -488,6 +528,7 @@ static int openssl_tls_accept(struct tcp_connection *c, short *poll_events)
 		LM_INFO("New TLS connection from %s:%d accepted\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 		trace_tls( c, ssl, TRANS_TRACE_ACCEPTED, TRANS_TRACE_SUCCESS, &ACCEPT_OK);
+		openssl_cache_tls_info(c, ssl);
 
 		/* TLS accept done, reset the flag */
 		c->proto_flags &= ~F_TLS_DO_ACCEPT;
@@ -629,6 +670,7 @@ int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 					TRANS_TRACE_SUCCESS, &ASYNC_CONNECT_OK);
 
 			tls_send_trace_data(con, t_dst);
+			openssl_cache_tls_info(con, ssl);
 			con->proto_flags &= ~F_TLS_DO_CONNECT;
 			return 1;
 		} else if (n == 0) {

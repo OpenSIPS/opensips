@@ -246,7 +246,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 44 29 651 534
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 45 30 654 537
    2. Liviu Chircu (@liviuchircu) 40 23 344 827
    3. Jiri Kuthan (@jiriatipteldotorg) 28 11 1579 152
    4. Daniel-Constantin Mierla (@miconda) 26 19 440 131
@@ -258,11 +258,11 @@ Chapter 2. Contributors
    10. Henning Westerholt (@henningw) 4 2 8 8
 
    All remaining contributors: Walter Doekes (@wdoekes), Maksym
-   Sobolyev (@sobomax), Zero King (@l2dy), Dror Wald, Anca Vamanu,
-   Dan Pascu (@danpascu), Elena-Ramona Modroiu, Konstantin
-   Bokarius, Vlad Paiu (@vladpaiu), Andreas Granig, Julián Moreno
-   Patiño, Octavian Cerna, Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert.
+   Sobolyev (@sobomax), Zero King (@l2dy), Anca Vamanu, Dan Pascu
+   (@danpascu), Elena-Ramona Modroiu, Konstantin Bokarius, Vlad
+   Paiu (@vladpaiu), Andreas Granig, Julián Moreno Patiño,
+   Octavian Cerna, Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert, Dror Wald.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -284,10 +284,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2025
-   2.  Liviu Chircu (@liviuchircu)         Feb 2014 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Apr 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Apr 2026
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2025
+   3.  Liviu Chircu (@liviuchircu)         Feb 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018

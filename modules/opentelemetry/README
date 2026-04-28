@@ -14,10 +14,11 @@ opentelemetry Module
         1.3. Exported Parameters
 
               1.3.1. enable (integer)
-              1.3.2. log_level (integer)
-              1.3.3. use_batch (integer)
-              1.3.4. service_name (string)
-              1.3.5. exporter_endpoint (string)
+              1.3.2. proc_profiling (integer)
+              1.3.3. log_level (integer)
+              1.3.4. use_batch (integer)
+              1.3.5. service_name (string)
+              1.3.6. exporter_endpoint (string)
 
         1.4. Exported MI Functions
 
@@ -42,10 +43,11 @@ opentelemetry Module
    List of Examples
 
    1.1. Set enable parameter
-   1.2. Set log_level parameter
-   1.3. Set use_batch parameter
-   1.4. Set service_name parameter
-   1.5. Set exporter_endpoint parameter
+   1.2. Set proc_profiling parameter
+   1.3. Set log_level parameter
+   1.4. Set use_batch parameter
+   1.5. Set service_name parameter
+   1.6. Set exporter_endpoint parameter
 
 Chapter 1. Admin Guide
 
@@ -55,13 +57,23 @@ Chapter 1. Admin Guide
    OpenSIPS route execution. It creates a root span per processed
    SIP message and a child span for each route entry.
 
-   Spans include common SIP attributes (method, Call-ID, CSeq,
-   status) and message metadata. While a span is active, OpenSIPS
-   logs can be attached as OpenTelemetry events for easier
-   correlation.
+   The root SIP message span follows a local semantic convention
+   inspired by the OpenTelemetry HTTP span conventions: it uses a
+   method-plus-target span name, server/client/internal span kinds
+   based on the OpenSIPS route type, and generic network, client,
+   server and URL attributes wherever they fit the SIP model.
+
+   Spans include common SIP attributes (request method, Call-ID,
+   CSeq, response status) and connection metadata. While a span is
+   active, OpenSIPS logs can be attached as OpenTelemetry events
+   for easier correlation.
 
    Trace data is exported via the OTLP/HTTP exporter from the
    OpenTelemetry C++ SDK.
+
+   The local SIP span convention emitted by this module is
+   documented in
+   modules/opentelemetry/semantic-convention/sip-spans.md.
 
 1.2. Dependencies
 
@@ -85,8 +97,8 @@ Chapter 1. Admin Guide
    also be changed at runtime using the opentelemetry:enable MI
    command.
 
-   If OpenSIPS was built without the OpenTelemetry C++ SDK,
-   enabling this parameter will fail at startup.
+   The module is built only when the OpenTelemetry C++ SDK is
+   available at build time.
 
    Default value is “0 (disabled)”.
 
@@ -95,19 +107,31 @@ Chapter 1. Admin Guide
 modparam("opentelemetry", "enable", 1)
 ...
 
-1.3.2. log_level (integer)
+1.3.2. proc_profiling (integer)
+
+   If enabled, the module will also profile/trace the OpenSIPS
+   processes, not only the script.
+
+   Default value is “0 (disabled)”.
+
+   Example 1.2. Set proc_profiling parameter
+...
+modparam("opentelemetry", "proc_profiling", 1)
+...
+
+1.3.3. log_level (integer)
 
    Log level threshold used by the OpenTelemetry log consumer when
    attaching log events to the active span.
 
    Default value is “L_DBG”.
 
-   Example 1.2. Set log_level parameter
+   Example 1.3. Set log_level parameter
 ...
 modparam("opentelemetry", "log_level", 3)
 ...
 
-1.3.3. use_batch (integer)
+1.3.4. use_batch (integer)
 
    Selects the OpenTelemetry span processor. When enabled, the
    module uses the batch span processor; otherwise it uses the
@@ -115,30 +139,30 @@ modparam("opentelemetry", "log_level", 3)
 
    Default value is “1 (enabled)”.
 
-   Example 1.3. Set use_batch parameter
+   Example 1.4. Set use_batch parameter
 ...
 modparam("opentelemetry", "use_batch", 0)
 ...
 
-1.3.4. service_name (string)
+1.3.5. service_name (string)
 
    Sets the OpenTelemetry “service.name” resource attribute.
 
    Default value is “opensips”.
 
-   Example 1.4. Set service_name parameter
+   Example 1.5. Set service_name parameter
 ...
 modparam("opentelemetry", "service_name", "edge-proxy")
 ...
 
-1.3.5. exporter_endpoint (string)
+1.3.6. exporter_endpoint (string)
 
    Overrides the OTLP/HTTP exporter endpoint. If empty, the
    OpenTelemetry SDK default is used.
 
    Default value is “empty”.
 
-   Example 1.5. Set exporter_endpoint parameter
+   Example 1.6. Set exporter_endpoint parameter
 ...
 modparam("opentelemetry", "exporter_endpoint", "http://127.0.0.1:4318/v1
 /traces")
@@ -170,10 +194,11 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                   Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Paiu (@vladpaiu)              15       6      812       71
-   2. Razvan Crainea (@razvancrainea)    5        3       15       12
-   3. Your Name                          3        1      230       0
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Paiu (@vladpaiu) 21 8 1144 144
+   2. Razvan Crainea (@razvancrainea) 5 3 15 12
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 5 2 73 66
+   4. Your Name 3 1 230 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -194,10 +219,11 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                   Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Mar 2026 - Mar 2026
-   2. Vlad Paiu (@vladpaiu)           Dec 2025 - Jan 2026
-   3. Your Name                       Jan 2026 - Jan 2026
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2026 - Apr 2026
+   2. Vlad Paiu (@vladpaiu)               Dec 2025 - Apr 2026
+   3. Razvan Crainea (@razvancrainea)     Mar 2026 - Mar 2026
+   4. Your Name                           Jan 2026 - Jan 2026
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -206,7 +232,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Your Name.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu), Razvan Crainea (@razvancrainea), Your Name.
 
    Documentation Copyrights:
 

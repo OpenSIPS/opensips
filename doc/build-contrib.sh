@@ -21,10 +21,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
 
 ### global OpenSIPS commit stats, self-generated on each "rebuild-proj-stats"
-__PROJ_COMMITS=22438
-__PROJ_LINES_ADD=2669737
-__PROJ_LINES_DEL=1359428
-__LAST_REBUILD_SHA=eb9a3007c236220b53d880dd4cc768cbe7e80110
+__PROJ_COMMITS=23226
+__PROJ_LINES_ADD=2765168
+__PROJ_LINES_DEL=1401082
+__LAST_REBUILD_SHA=a97d8b35d1e71223be6077ce14e3024696b8feb3
 
 TMP_FILE=/var/tmp/.opensips-build-contrib.tmp
 

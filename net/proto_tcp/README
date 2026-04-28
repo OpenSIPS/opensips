@@ -14,44 +14,51 @@ Razvan Crainea
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. Related Core TCP APIs
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.2.1. tcp_close_conn(ipport)
+              1.2.2. tcp:close
 
-        1.3. Exported Parameters
+        1.3. Dependencies
 
-              1.3.1. tcp_port (integer)
-              1.3.2. tcp_send_timeout (integer)
-              1.3.3. tcp_max_msg_chunks (integer)
-              1.3.4. tcp_crlf_pingpong (integer)
-              1.3.5. tcp_crlf_drop (integer)
-              1.3.6. tcp_async (integer)
-              1.3.7. tcp_async_max_postponed_chunks (integer)
-              1.3.8. tcp_async_local_write_timeout (integer)
-              1.3.9. trace_destination (string)
-              1.3.10. trace_on (int)
-              1.3.11. trace_filter_route (string)
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
 
-        1.4. Exported MI Functions
+        1.4. Exported Parameters
 
-              1.4.1. tcp_trace
+              1.4.1. tcp_port (integer)
+              1.4.2. tcp_send_timeout (integer)
+              1.4.3. tcp_max_msg_chunks (integer)
+              1.4.4. tcp_crlf_pingpong (integer)
+              1.4.5. tcp_crlf_drop (integer)
+              1.4.6. tcp_async (integer)
+              1.4.7. tcp_async_max_postponed_chunks (integer)
+              1.4.8. tcp_async_local_write_timeout (integer)
+              1.4.9. trace_destination (string)
+              1.4.10. trace_on (int)
+              1.4.11. trace_filter_route (string)
+
+        1.5. Exported MI Functions
+
+              1.5.1. tcp_trace
 
    2. Frequently Asked Questions
 
    List of Examples
 
-   1.1. Set tcp_port parameter
-   1.2. Set tcp_send_timeout parameter
-   1.3. Set tcp_max_msg_chunks parameter
-   1.4. Set tcp_crlf_pingpong parameter
-   1.5. Set tcp_crlf_drop parameter
-   1.6. Set tcp_async parameter
-   1.7. Set tcp_async_max_postponed_chunks parameter
-   1.8. Set tcp_async_local_write_timeout parameter
-   1.9. Set trace_destination parameter
-   1.10. Set trace_on parameter
-   1.11. Set trace_filter_route parameter
+   1.1. Force-close a TCP connection from script
+   1.2. Force-close a TCP connection via MI
+   1.3. Set tcp_port parameter
+   1.4. Set tcp_send_timeout parameter
+   1.5. Set tcp_max_msg_chunks parameter
+   1.6. Set tcp_crlf_pingpong parameter
+   1.7. Set tcp_crlf_drop parameter
+   1.8. Set tcp_async parameter
+   1.9. Set tcp_async_max_postponed_chunks parameter
+   1.10. Set tcp_async_local_write_timeout parameter
+   1.11. Set trace_destination parameter
+   1.12. Set trace_on parameter
+   1.13. Set trace_filter_route parameter
 
 Chapter 1. Admin Guide
 
@@ -71,22 +78,52 @@ socket=tcp:127.0.0.1            # change the listening IP
 socket=tcp:127.0.0.1:5080       # change with the listening IP and port
 ...
 
-1.2. Dependencies
+1.2. Related Core TCP APIs
 
-1.2.1. OpenSIPS Modules
+1.2.1. tcp_close_conn(ipport)
+
+   Force-close an existing TCP-based connection. The ipport
+   argument may be either a TCP connection ID, as reported by the
+   tcp:list MI command, or a remote endpoint in the form ip:port
+   or proto:ip:port. If the protocol is omitted, OpenSIPS will
+   search all TCP-based transports.
+
+   The function returns true if a matching connection was
+   scheduled for closing, false if no connection matched and an
+   error on invalid input or internal failure.
+
+   Example 1.1. Force-close a TCP connection from script
+...
+if (!tcp_close_conn("tcp:10.0.0.10:5060")) {
+        xlog("No matching TCP connection was found\n");
+}
+...
+
+1.2.2. tcp:close
+
+   Core MI command equivalent of tcp_close_conn(). It accepts a
+   single ipport parameter using the same formats described above.
+
+   Example 1.2. Force-close a TCP connection via MI
+$ opensips-cli -x mi tcp:close ipport=tcp:10.0.0.10:5060
+OK
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * None.
 
-1.2.2. External Libraries or Applications
+1.3.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.3. Exported Parameters
+1.4. Exported Parameters
 
-1.3.1. tcp_port (integer)
+1.4.1. tcp_port (integer)
 
    The default port to be used for all TCP related operation. Be
    careful as the default port impacts both the SIP listening part
@@ -98,12 +135,12 @@ socket=tcp:127.0.0.1:5080       # change with the listening IP and port
 
    Default value is 5060.
 
-   Example 1.1. Set tcp_port parameter
+   Example 1.3. Set tcp_port parameter
 ...
 modparam("proto_tcp", "tcp_port", 5065)
 ...
 
-1.3.2. tcp_send_timeout (integer)
+1.4.2. tcp_send_timeout (integer)
 
    Time in milliseconds after a TCP connection will be closed if
    it is not available for blocking writing in this interval (and
@@ -111,12 +148,12 @@ modparam("proto_tcp", "tcp_port", 5065)
 
    Default value is 100 ms.
 
-   Example 1.2. Set tcp_send_timeout parameter
+   Example 1.4. Set tcp_send_timeout parameter
 ...
 modparam("proto_tcp", "tcp_send_timeout", 200)
 ...
 
-1.3.3. tcp_max_msg_chunks (integer)
+1.4.3. tcp_max_msg_chunks (integer)
 
    The maximum number of chunks that a SIP message is expected to
    arrive via TCP. If a packet is received more fragmented than
@@ -127,24 +164,24 @@ modparam("proto_tcp", "tcp_send_timeout", 200)
 
    Default value is 4.
 
-   Example 1.3. Set tcp_max_msg_chunks parameter
+   Example 1.5. Set tcp_max_msg_chunks parameter
 ...
 modparam("proto_tcp", "tcp_max_msg_chunks", 8)
 ...
 
-1.3.4. tcp_crlf_pingpong (integer)
+1.4.4. tcp_crlf_pingpong (integer)
 
    Send CRLF pong (\r\n) to incoming CRLFCRLF ping messages over
    TCP. By default it is enabled (1).
 
    Default value is 1 (enabled).
 
-   Example 1.4. Set tcp_crlf_pingpong parameter
+   Example 1.6. Set tcp_crlf_pingpong parameter
 ...
 modparam("proto_tcp", "tcp_crlf_pingpong", 0)
 ...
 
-1.3.5. tcp_crlf_drop (integer)
+1.4.5. tcp_crlf_drop (integer)
 
    Drop CRLF (\r\n) ping messages. When this parameter is enabled,
    the TCP layer drops packets that contains a single CRLF
@@ -153,12 +190,12 @@ modparam("proto_tcp", "tcp_crlf_pingpong", 0)
 
    Default value is 0 (disabled).
 
-   Example 1.5. Set tcp_crlf_drop parameter
+   Example 1.7. Set tcp_crlf_drop parameter
 ...
 modparam("proto_tcp", "tcp_crlf_drop", 1)
 ...
 
-1.3.6. tcp_async (integer)
+1.4.6. tcp_async (integer)
 
    If the TCP connect and write operations should be done in an
    asynchronous mode (non-blocking connect and write). If
@@ -167,12 +204,12 @@ modparam("proto_tcp", "tcp_crlf_drop", 1)
 
    Default value is 1 (enabled).
 
-   Example 1.6. Set tcp_async parameter
+   Example 1.8. Set tcp_async parameter
 ...
 modparam("proto_tcp", "tcp_async", 0)
 ...
 
-1.3.7. tcp_async_max_postponed_chunks (integer)
+1.4.7. tcp_async_max_postponed_chunks (integer)
 
    If tcp_async is enabled, this specifies the maximum number of
    SIP messages that can be stashed for later/async writing. If
@@ -181,12 +218,12 @@ modparam("proto_tcp", "tcp_async", 0)
 
    Default value is 32.
 
-   Example 1.7. Set tcp_async_max_postponed_chunks parameter
+   Example 1.9. Set tcp_async_max_postponed_chunks parameter
 ...
 modparam("proto_tcp", "tcp_async_max_postponed_chunks", 16)
 ...
 
-1.3.8. tcp_async_local_write_timeout (integer)
+1.4.8. tcp_async_local_write_timeout (integer)
 
    If tcp_async is enabled, this specifies the number of
    milliseconds that a write op will be tried in blocking mode
@@ -196,12 +233,12 @@ modparam("proto_tcp", "tcp_async_max_postponed_chunks", 16)
 
    Default value is 10 ms.
 
-   Example 1.8. Set tcp_async_local_write_timeout parameter
+   Example 1.10. Set tcp_async_local_write_timeout parameter
 ...
 modparam("proto_tcp", "tcp_async_local_write_timeout", 100)
 ...
 
-1.3.9. trace_destination (string)
+1.4.9. trace_destination (string)
 
    Trace destination as defined in the tracing module. Currently
    the only tracing module is proto_hep. Network events such as
@@ -213,7 +250,7 @@ modparam("proto_tcp", "tcp_async_local_write_timeout", 100)
 
    Default value is none(not defined).
 
-   Example 1.9. Set trace_destination parameter
+   Example 1.11. Set trace_destination parameter
 ...
 modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
 n=3")
@@ -221,20 +258,20 @@ n=3")
 modparam("proto_tcp", "trace_destination", "hep_dest")
 ...
 
-1.3.10. trace_on (int)
+1.4.10. trace_on (int)
 
    This controls whether tracing for tcp is on or not. You still
-   need to define Section 1.3.9, “trace_destination (string)”in
+   need to define Section 1.4.9, “trace_destination (string)”in
    order to work, but this value will be controlled using mi
-   function Section 1.4.1, “ tcp_trace ”.
+   function Section 1.5.1, “ tcp_trace ”.
    Default value is 0(tracing inactive).
 
-   Example 1.10. Set trace_on parameter
+   Example 1.12. Set trace_on parameter
 ...
 modparam("proto_tcp", "trace_on", 1)
 ...
 
-1.3.11. trace_filter_route (string)
+1.4.11. trace_filter_route (string)
 
    Define the name of a route in which you can filter which
    connections will be trace and which connections won't be. In
@@ -243,7 +280,7 @@ modparam("proto_tcp", "trace_on", 1)
    disable tracing for a specific connection the last call in this
    route must be drop, any other exit mode resulting in tracing
    the current connection ( of course you still have to define a
-   Section 1.3.9, “trace_destination (string)” and trace must be
+   Section 1.4.9, “trace_destination (string)” and trace must be
    on at the time this connection is opened.
 
    IMPORTANT Filtering on ip addresses and ports can be made using
@@ -256,12 +293,12 @@ modparam("proto_tcp", "trace_on", 1)
    initiated a connection) $socket_in(ip) (ip) and
    $socket_in(port) (port) can be used.
 
-   WARNING: IF Section 1.3.10, “trace_on (int)” is set to 0 or
-   tracing is deactived via the mi command Section 1.4.1, “
+   WARNING: IF Section 1.4.10, “trace_on (int)” is set to 0 or
+   tracing is deactived via the mi command Section 1.5.1, “
    tcp_trace ” this route won't be called.
    Default value is none(no route is set).
 
-   Example 1.11. Set trace_filter_route parameter
+   Example 1.13. Set trace_filter_route parameter
 ...
 modparam("proto_tcp", "trace_filter_route", "tcp_filter")
 ...
@@ -282,9 +319,9 @@ route[tcp_filter] {
 }
 ...
 
-1.4. Exported MI Functions
+1.5. Exported MI Functions
 
-1.4.1.  tcp_trace
+1.5.1.  tcp_trace
 
    Name: tcp_trace
 

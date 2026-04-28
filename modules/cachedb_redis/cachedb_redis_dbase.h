@@ -28,6 +28,7 @@
 
 #include <hiredis/hiredis.h>
 #include "../../cachedb/cachedb.h"
+#include "../../statistics.h"
 #include "../tls_mgm/api.h"
 
 #ifdef HAVE_REDIS_SSL
@@ -41,9 +42,18 @@ typedef struct cluster_nodes {
 	unsigned short port;            /* port of this cluster node */
 	unsigned short start_slot;      /* first slot for this server */
 	unsigned short end_slot;        /* last slot for this server */
+	char *unix_socket_path;         /* Unix socket path (NULL = use TCP) */
 
 	redisContext *context;          /* actual connection to this node */
 	struct tls_domain *tls_dom;
+	uint8_t seen;                   /* reconciliation flag for topology refresh */
+
+	/* per-node, per-process counters (pkg memory) */
+	unsigned long queries;
+	unsigned long errors;
+	unsigned long moved;
+
+	time_t last_activity;           /* timestamp of last successful query */
 
 	struct cluster_nodes *next;
 } cluster_node;
@@ -63,8 +73,10 @@ typedef struct {
 	int port;
 } redis_moved;
 
-
 #define CACHEDB_REDIS_DEFAULT_TIMEOUT 5000
+
+#define CACHEDB_UNIX_SOCKET_PARAM "socket="
+#define CACHEDB_UNIX_SOCKET_PARAM_LEN (sizeof(CACHEDB_UNIX_SOCKET_PARAM)-1)
 
 #define MAP_GET_SCAN_COUNT 1000
 
@@ -78,13 +90,21 @@ typedef struct {
 extern int redis_query_tout;
 extern int redis_connnection_tout;
 extern int shutdown_on_error;
+extern int lazy_connect;
 extern int use_tls;
 extern int fts_max_results;
 extern str fts_index_name;
 extern str fts_json_prefix;
 extern int fts_json_mset_expire;
 
+extern int redis_keepalive;
+
 extern struct tls_mgm_binds tls_api;
+
+extern stat_var *redis_stat_queries;
+extern stat_var *redis_stat_queries_failed;
+extern stat_var *redis_stat_moved;
+extern stat_var *redis_stat_topology_refreshes;
 
 enum redis_flag {
 	REDIS_SINGLE_INSTANCE  = 1 << 0,
@@ -94,6 +114,15 @@ enum redis_flag {
 
 	/* failover set (combination of single and/or cluster instances) */
 	REDIS_MULTIPLE_HOSTS   = 1 << 4,
+
+	/* connection is via Unix domain socket (local IPC) */
+	REDIS_UNIX_SOCKET      = 1 << 5,
+};
+
+enum cluster_cmd {
+	CLUSTER_CMD_NONE,
+	CLUSTER_CMD_SHARDS,
+	CLUSTER_CMD_SLOTS
 };
 
 typedef struct _redis_con {
@@ -105,17 +134,25 @@ typedef struct _redis_con {
 
 	char *host;            // Note: the .id may contain multi-hosts, so the
 	unsigned short port;   // host/port of this connection are extracted here
+	char *unix_socket_path; // Unix socket path (NULL = use TCP)
 
 	enum redis_flag flags;
-	unsigned short slots_assigned; /* total slots for cluster */
 	cluster_node *nodes; /* one or more Redis nodes */
 	char *json_keyspace; /* currently, only one JSON keyspace per connection */
+	cluster_node *slot_table[16384]; /* O(1) slot-to-node lookup */
+	enum cluster_cmd cluster_cmd;    /* probed once at startup */
+	time_t last_topology_refresh;
+	unsigned int topology_refresh_count;
 
 	/* circular list of Redis instances to be attempted in failover fashion */
 	struct _redis_con *next_con;
 	/* only populated for 1st item in the list: the "last-known-to-work" con */
 	struct _redis_con *current;
 } redis_con;
+
+redisContext *redis_get_ctx_unix(const char *socket_path);
+int redis_connect_node(redis_con *con, cluster_node *node);
+int redis_reconnect_node(redis_con *con, cluster_node *node);
 
 cachedb_con* redis_init(str *url);
 void redis_destroy(cachedb_con *con);

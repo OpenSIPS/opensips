@@ -171,7 +171,8 @@ static inline void profiling_raise_event(int data_type, char *verb,
 		file_s.s = (char *)file;
 		file_s.len = strlen(file);
 	}
-	LM_DBG("raising profiling even < %s | %s >\n", verb, name);
+	// This is for debugging only
+	//LM_DBG("raising profiling even < %s | %s >\n", verb, name);
 
 	set_proc_log_level(L_ERR);
 

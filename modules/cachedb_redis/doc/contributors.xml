@@ -20,6 +20,14 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Debian</entry>
+		<entry align="center">61</entry>
+		<entry align="center">3</entry>
+		<entry align="center">6168</entry>
+		<entry align="center">356</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">43</entry>
 		<entry align="center">23</entry>
@@ -27,7 +35,7 @@
 		<entry align="center">288</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">33</entry>
 		<entry align="center">19</entry>
@@ -35,7 +43,7 @@
 		<entry align="center">50</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">17</entry>
 		<entry align="center">14</entry>
@@ -43,15 +51,23 @@
 		<entry align="center">48</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">13</entry>
+		<entry align="center">12</entry>
 		<entry align="center">6</entry>
 		<entry align="center">595</entry>
 		<entry align="center">38</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">7</entry>
+		<entry align="center">5</entry>
+		<entry align="center">58</entry>
+		<entry align="center">4</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">7</entry>
 		<entry align="center">5</entry>
@@ -59,7 +75,7 @@
 		<entry align="center">5</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>8. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">6</entry>
 		<entry align="center">4</entry>
@@ -67,7 +83,7 @@
 		<entry align="center">7</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>9. </entry>
 		<entry>jalung</entry>
 		<entry align="center">5</entry>
 		<entry align="center">1</entry>
@@ -75,33 +91,17 @@
 		<entry align="center">61</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>10. </entry>
 		<entry>Norm Brandinger</entry>
 		<entry align="center">4</entry>
 		<entry align="center">1</entry>
 		<entry align="center">207</entry>
 		<entry align="center">5</entry>
 	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">15</entry>
-		<entry align="center">15</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Ezequiel Lovelle</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">11</entry>
-		<entry align="center">4</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), tcresson, Eddie Fiorentine, Julián Moreno Patiño, Ken Rice, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), zhengsh, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Kristian Høgh.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: rdondeti, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle, John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), tcresson, Eddie Fiorentine, Julián Moreno Patiño, Ken Rice, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), zhengsh, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Kristian Høgh.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry>Debian</entry>
 		<entry align="center">Mar 2026 - Mar 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>rdondeti</entry>
+		<entry align="center">Mar 2026 - Mar 2026</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">Mar 2026 - Feb 2026</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Ken Rice</entry>
 		<entry align="center">Sep 2025 - Sep 2025</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Feb 2012 - May 2025</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>6. </entry>
 		<entry>Norm Brandinger</entry>
 		<entry align="center">May 2025 - May 2025</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>7. </entry>
 		<entry>Eddie Fiorentine</entry>
 		<entry align="center">Mar 2025 - Mar 2025</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>8. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Jan 2025</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>9. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Oct 2011 - Nov 2024</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>10. </entry>
 		<entry>tcresson</entry>
 		<entry align="center">Oct 2023 - Oct 2023</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>zhengsh</entry>
-		<entry align="center">Aug 2023 - Aug 2023</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Feb 2023 - Feb 2023</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Kristian Høgh, Julián Moreno Patiño, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), jalung, Ezequiel Lovelle.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: zhengsh, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Kristian Høgh, Julián Moreno Patiño, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), jalung, Ezequiel Lovelle.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Julián Moreno Patiño, Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Debian, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Julián Moreno Patiño, Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
 </section>
 
 </chapter>

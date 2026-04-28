@@ -96,6 +96,27 @@ modparam("opentelemetry", "enable", 1)
 		</example>
 	</section>
 
+	<section id="param_proc_profiling" xreflabel="proc_profiling">
+		<title><varname>proc_profiling</varname> (integer)</title>
+		<para>
+		If enabled, the module will also profile/trace the &osips; processes,
+		not only the script.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>proc_profiling</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("opentelemetry", "proc_profiling", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_log_level" xreflabel="log_level">
 		<title><varname>log_level</varname> (integer)</title>
 		<para>
