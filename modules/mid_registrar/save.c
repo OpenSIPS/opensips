@@ -236,6 +236,14 @@ struct mr_ct_data {
 	int last_cseq;
 };
 
+struct mr_aor_data {
+	struct mid_reg_info *mri;
+	const str *ct_uri;
+	int expires_out;
+	int last_reg_ts;
+	int last_cseq;
+};
+
 static int mid_reg_store_ct_data(ucontact_t *c, void *info)
 {
 	struct mr_ct_data *data = (struct mr_ct_data *)info;
@@ -245,6 +253,19 @@ static int mid_reg_store_ct_data(ucontact_t *c, void *info)
 		data->expires_out, data->last_reg_ts, data->last_cseq);
 	if (rc != 0)
 		LM_ERR("failed to attach ucontact data - oom?\n");
+
+	return rc;
+}
+
+static int mid_reg_store_aor_data(urecord_t *r, void *info)
+{
+	struct mr_aor_data *data = (struct mr_aor_data *)info;
+	int rc;
+
+	rc = store_urecord_data(r, data->mri, data->ct_uri, data->expires_out,
+		data->last_reg_ts, data->last_cseq);
+	if (rc != 0)
+		LM_ERR("failed to attach urecord data - oom?\n");
 
 	return rc;
 }
@@ -288,7 +309,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 
 	ul.lock_udomain(mri->dom, &mri->aor);
 	ul.get_urecord(mri->dom, &mri->aor, &r);
-	if (!r && ul.insert_urecord(mri->dom, &mri->aor, &r, 0) < 0) {
+	if (!r && ul.insert_urecord(mri->dom, &mri->aor, &r, 0, NULL, NULL) < 0) {
 		rerrno = R_UL_NEW_R;
 		LM_ERR("failed to insert new record structure\n");
 		goto out_err;
@@ -1574,7 +1595,16 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 		if (!_c)
 			goto out;
 
-		if (ul.insert_urecord(mri->dom, _a, &r, 0) < 0) {
+		/* populate kv_storage before cluster replication so peers receive
+		 * a populated AoR INSERT packet (otherwise unregister_record() on
+		 * peers fails to find the 'from' key when the AoR later expires) */
+		struct mr_aor_data aor_data = {
+				mri, &_c->uri, e_out,
+				(int)(unsigned long)get_act_time(), cseq
+			};
+
+		if (ul.insert_urecord(mri->dom, _a, &r, 0,
+		                      mid_reg_store_aor_data, &aor_data) < 0) {
 			rerrno = R_UL_NEW_R;
 			LM_ERR("failed to insert new record structure\n");
 			goto out_err;

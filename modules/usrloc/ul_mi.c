@@ -520,7 +520,7 @@ mi_response_t *mi_usrloc_add(const mi_params_t *params,
 
 	n = get_urecord( dom, &aor, &r);
 	if ( n==1) {
-		if (insert_urecord( dom, &aor, &r, 0) < 0)
+		if (insert_urecord( dom, &aor, &r, 0, NULL, NULL) < 0)
 			goto lock_error;
 
 		c = 0;

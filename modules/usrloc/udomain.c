@@ -1356,7 +1356,9 @@ out_err:
  * Create and insert a new record
  */
 int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
-                   char skip_replication)
+                   char skip_replication,
+                   ur_insert_pre_repl_cb_f pre_replicate_cb,
+                   void *pre_replicate_info)
 {
 	if (have_mem_storage()) {
 		if (mem_insert_urecord(_d, _aor, _r) < 0) {
@@ -1372,6 +1374,10 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 				LM_ERR("failed to publish cachedb location for AoR %.*s\n",
 				       _aor->len, _aor->s);
 			}
+
+			if (pre_replicate_cb
+			        && pre_replicate_cb(*_r, pre_replicate_info) != 0)
+				LM_ERR("urecord pre-replication callback returned non-zero\n");
 
 			if (location_cluster)
 				replicate_urecord_insert(*_r);
