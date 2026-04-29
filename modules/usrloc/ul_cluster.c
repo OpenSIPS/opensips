@@ -449,7 +449,7 @@ static int receive_urecord_insert(bin_packet_t *packet)
 	if (get_urecord(domain, &aor, &r) == 0)
 		goto out;
 
-	if (insert_urecord(domain, &aor, &r, 1) != 0) {
+	if (insert_urecord(domain, &aor, &r, 1, NULL, NULL) != 0) {
 		unlock_udomain(domain, &aor);
 		goto out_err;
 	}
@@ -608,7 +608,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 		LM_INFO("failed to fetch local urecord - creating new one "
 			"(ci: '%.*s') \n", callid.len, callid.s);
 
-		if (insert_urecord(domain, &aor, &record, 1) != 0) {
+		if (insert_urecord(domain, &aor, &record, 1, NULL, NULL) != 0) {
 			LM_ERR("failed to insert new record\n");
 			unlock_udomain(domain, &aor);
 			goto error;
@@ -772,7 +772,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 		LM_INFO("failed to fetch local urecord - create new record and contact"
 			" (ci: '%.*s')\n", callid.len, callid.s);
 
-		if (insert_urecord(domain, &aor, &record, 1) != 0) {
+		if (insert_urecord(domain, &aor, &record, 1, NULL, NULL) != 0) {
 			LM_ERR("failed to insert urecord\n");
 			unlock_udomain(domain, &aor);
 			goto error;

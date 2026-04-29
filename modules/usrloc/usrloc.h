@@ -128,11 +128,17 @@ typedef struct usrloc_api {
 	 * @r: will hold the newly created object
 	 * @skip_replication: set to true in order to avoid replicating an AoR
 	 *                    insertion event to neighboring cluster nodes
+	 * @pre_replicate_cb: optional callback fired after the urecord lives in
+	 *                    memory but before it is replicated; use it to attach
+	 *                    record-level kv_storage that must reach peers
+	 * @pre_replicate_info: opaque context handed to @pre_replicate_cb
 	 *
 	 * Return: 0 (success), negative otherwise
 	 */
 	int (*insert_urecord) (udomain_t *d, str *aor, struct urecord **r,
-	                       char skip_replication);
+	                       char skip_replication,
+	                       ur_insert_pre_repl_cb_f pre_replicate_cb,
+	                       void *pre_replicate_info);
 
 	/**
 	 * Fetch a key from record-level storage.

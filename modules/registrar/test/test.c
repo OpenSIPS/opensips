@@ -77,7 +77,7 @@ static void test_lookup(void)
 	ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_NO_RESULTS, "lookup-1");
 
 	ul.lock_udomain(d, &aor);
-	ok(ul.insert_urecord(d, &aor, &r, 0) == 0, "create AoR");
+	ok(ul.insert_urecord(d, &aor, &r, 0, NULL, NULL) == 0, "create AoR");
 
 	fill_ucontact_info(&ci);
 	ci.methods = METHOD_UNDEF;
@@ -124,11 +124,11 @@ static void test_lookup(void)
 		struct msg_branch branch;
 
 		ul.lock_udomain(d, &aor2);
-		ok(ul.insert_urecord(d, &aor2, &r, 0) == 0, "create AoR 2");
+		ok(ul.insert_urecord(d, &aor2, &r, 0, NULL, NULL) == 0, "create AoR 2");
 		ul.unlock_udomain(d, &aor2);
 
 		ul.lock_udomain(d, &aor3);
-		ok(ul.insert_urecord(d, &aor3, &r, 0) == 0, "create AoR 3");
+		ok(ul.insert_urecord(d, &aor3, &r, 0, NULL, NULL) == 0, "create AoR 3");
 		fill_ucontact_info(&ci);
 		ci.methods = METHOD_UNDEF;
 		ok(ul.insert_ucontact(r, &ct2, &ci, NULL, 1, &c) == 0, "insert Contact for AoR 3");
