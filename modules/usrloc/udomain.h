@@ -151,11 +151,18 @@ void unlock_ulslot(udomain_t* _d, int slot);
 /* ===== module interface ======= */
 
 
+/* Optional callback invoked by @insert_urecord between memory insertion and
+ * cluster replication, allowing the caller to populate record-level data
+ * (e.g. mid_registrar's kv_storage keys) so it ships in the INSERT packet. */
+typedef int (*ur_insert_pre_repl_cb_f)(struct urecord *r, void *info);
+
 /*! \brief
  * Create and insert a new record
  */
 int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
-                   char skip_replication);
+                   char skip_replication,
+                   ur_insert_pre_repl_cb_f pre_replicate_cb,
+                   void *pre_replicate_info);
 
 /*! \brief
  * Obtain a urecord pointer if the urecord exists in domain
