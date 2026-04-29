@@ -446,6 +446,32 @@ modparam("dialog", "options_ping_interval", 20)
 ```
 
 
+#### options_ping_max_retries (integer)
+
+
+The number of additional in-dialog OPTIONS pings to send when the
+previous OPTIONS transaction times out, before declaring the dialog leg
+unreachable. Retries are sent immediately after each transaction timeout,
+without waiting for the next `options_ping_interval` tick. The retry counter
+is maintained independently for each dialog leg and is reset by any final
+response other than 408 or 481. A 481 response is considered definitive and
+is not retried.
+
+The maximum time needed to detect an unreachable peer is approximately
+`(options_ping_max_retries + 1) * fr_timeout`, where `fr_timeout` is configured
+by the "tm" module.
+
+
+*Default value is "0" (no additional retries).*
+
+
+```opensips title="Set options_ping_max_retries parameter"
+...
+modparam("dialog", "options_ping_max_retries", 2)
+...
+```
+
+
 #### reinvite_ping_interval (integer)
 
 
