@@ -521,6 +521,10 @@ modparam("dialog", "db_update_period", 120)
 		OPTIONS pings for one or both of the involved parties.
 		</para>
 		<para>
+		See also <xref linkend="param_options_ping_max_retries"/> for tuning
+		the behavior on lost OPTIONS replies (e.g. over UDP).
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>30</quote>.
 		</emphasis>
@@ -530,6 +534,52 @@ modparam("dialog", "db_update_period", 120)
 		<programlisting format="linespecific">
 ...
 modparam("dialog", "options_ping_interval", 20)
+...
+</programlisting>
+		</example>
+	</section>
+
+<section id="param_options_ping_max_retries" xreflabel="options_ping_max_retries">
+		<title><varname>options_ping_max_retries</varname> (integer)</title>
+		<para>
+		The number of additional in-dialog OPTIONS pings to send when the
+		previous OPTIONS transaction times out, before declaring the leg dead
+		and terminating the dialog. The default value of <quote>0</quote>
+		preserves the historical behavior: a single failed OPTIONS ping
+		(no final reply within the <varname>tm</varname> module's
+		<varname>fr_timeout</varname>) immediately terminates the dialog.
+		</para>
+		<para>
+		Each retry is sent <emphasis>immediately</emphasis> after the previous
+		attempt times out (from inside the reply callback) -- it does
+		<emphasis>not</emphasis> wait for the next
+		<varname>options_ping_interval</varname> tick. Therefore the
+		worst-case time to detect an unreachable peer is approximately
+		<emphasis>(options_ping_max_retries + 1) * fr_timeout</emphasis>,
+		independent of <varname>options_ping_interval</varname>.
+		</para>
+		<para>
+		The retry counter is per-leg (caller and callee can fail
+		independently) and is reset whenever a successful reply
+		(any non-481 final response other than 408) is received.
+		A 481 reply is treated as a definitive failure and is
+		<emphasis>not</emphasis> retried.
+		</para>
+		<para>
+		This is primarily useful for UDP deployments where an OPTIONS
+		request or its 200 OK can be lost end-to-end and a single missed
+		ping should not tear down an otherwise healthy call.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (no retries).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>options_ping_max_retries</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "options_ping_max_retries", 2)
 ...
 </programlisting>
 		</example>

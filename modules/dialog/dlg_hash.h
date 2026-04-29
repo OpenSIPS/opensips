@@ -112,6 +112,7 @@ struct dlg_leg {
 	struct dlg_leg_cseq_map *cseq_maps; /* used when translating ACKs */
 	char reply_received;
 	char reinvite_confirmed;
+	unsigned char ping_retries;	/* failed OPTIONS pings since last success */
 	const struct socket_info *bind_addr;
 };
 
