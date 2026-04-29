@@ -82,7 +82,7 @@ int process_contact(udomain_t *domain, urecord_t **ul_record, str aor,
 			case EVENT_REFRESHED:
 				/* In case, no record exists and new one should be created,
 				 * create a new entry for this user in the usrloc-DB */
-				if(ul.insert_urecord(domain, &aor, ul_record, 0) < 0) {
+				if(ul.insert_urecord(domain, &aor, ul_record, 0, NULL, NULL) < 0) {
 					LM_ERR("failed to insert new user-record\n");
 					ret = RESULT_ERROR;
 					goto done;
