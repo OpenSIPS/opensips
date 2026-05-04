@@ -1937,6 +1937,8 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			val->flags = PV_VAL_STR;
 			break;
 		case TR_IP_RESOLVE:
+		case TR_IP_RESOLVE_V4:
+		case TR_IP_RESOLVE_V6:
 			val->flags = PV_VAL_STR;
 			if (val->rs.len + 1 > TR_BUFFER_SIZE) {
 				LM_ERR("failed to resolve host, length too large (%d)\n",
@@ -1946,7 +1948,12 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			memcpy(_tr_buffer, val->rs.s, val->rs.len);
 			_tr_buffer[val->rs.len] = '\0';
 
-			server = resolvehost(_tr_buffer, 0);
+			if (subtype == TR_IP_RESOLVE_V4)
+				server = resolvehost_af(_tr_buffer, 0, AF_INET);
+			else if (subtype == TR_IP_RESOLVE_V6)
+				server = resolvehost_af(_tr_buffer, 0, AF_INET6);
+			else
+				server = resolvehost(_tr_buffer, 0);
 			if (!server || !server->h_addr)
 			{
 				val->flags = PV_VAL_NULL;
@@ -3809,6 +3816,12 @@ int tr_parse_ip(str *in, trans_t *t)
 		return 0;
 	} else if (name.len == 7 && strncasecmp(name.s,"resolve",7) == 0) {
 		t->subtype = TR_IP_RESOLVE;
+		return 0;
+	} else if (name.len == 8 && strncasecmp(name.s,"resolve4",8) == 0) {
+		t->subtype = TR_IP_RESOLVE_V4;
+		return 0;
+	} else if (name.len == 8 && strncasecmp(name.s,"resolve6",8) == 0) {
+		t->subtype = TR_IP_RESOLVE_V6;
 		return 0;
 	} else if (name.len == 7 && strncasecmp(name.s,"matches",5) == 0) {
 		t->subtype = TR_IP_MATCHES;
