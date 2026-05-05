@@ -103,7 +103,8 @@ redisContext *redis_get_ctx(char *ip, int port)
 	}
 
 	if (redis_keepalive > 0) {
-#if defined(HIREDIS_MAJOR) && HIREDIS_MAJOR >= 1
+#if defined(HIREDIS_MAJOR) && (HIREDIS_MAJOR > 1 || \
+	(HIREDIS_MAJOR == 1 && defined(HIREDIS_MINOR) && HIREDIS_MINOR >= 2))
 		if (redisEnableKeepAliveWithInterval(ctx, redis_keepalive) != REDIS_OK)
 #else
 		if (redisEnableKeepAlive(ctx) != REDIS_OK)
