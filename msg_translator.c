@@ -2906,6 +2906,7 @@ char *construct_uri(str *protocol,str *username,str *domain,str *port,
 		str *params,int *len)
 {
 	int pos = 0;
+	int total_len;
 
 	if (!len)
 	{
@@ -2922,6 +2923,21 @@ char *construct_uri(str *protocol,str *username,str *domain,str *port,
 	if (!domain->s || domain->len == 0)
 	{
 		LM_ERR("no domain specified\n");
+		return 0;
+	}
+
+	total_len = protocol->len + 1 /* ':' */ + domain->len;
+	if (username && username->s && username->len != 0)
+		total_len += username->len + 1; /* '@' */
+	if (port && port->s && port->len != 0)
+		total_len += port->len + 1; /* ':' */
+	if (params && params->s && params->len != 0)
+		total_len += params->len + 1; /* ';' */
+	total_len += 1; /* null terminator */
+
+	if (total_len > MAX_URI_LEN) {
+		LM_ERR("constructed URI too long (%d > %d)\n",
+			total_len, MAX_URI_LEN);
 		return 0;
 	}
 
