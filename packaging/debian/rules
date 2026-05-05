@@ -335,6 +335,7 @@ endif
 
 # Enable verbose compile logs
 VARS += NICER=0
+VARS += PYTHON=python
 
 #
 # check pcre2 vs pcre3 profile
