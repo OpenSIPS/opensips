@@ -369,8 +369,8 @@ static int _wolfssl_enable_ktls_tx(struct tcp_connection *c, WOLFSSL *ssl)
 			memcpy(crypto_256.iv, (iv + 4), 8);
 		}
 		memcpy(crypto_256.rec_seq, &seq, sizeof(seq));
-	}
 #endif
+	}
 
 	if (setsockopt(fd, SOL_TLS, TLS_TX, crypto_info, crypto_size) < 0) {
 		LM_WARN("failed to enable KTLS TX on fd %d: %s\n",
@@ -656,8 +656,8 @@ static int _wolfssl_enable_ktls_rx(struct tcp_connection *c, WOLFSSL *ssl)
 			memcpy(crypto_256.iv, (iv + 4), 8);
 		}
 		memcpy(crypto_256.rec_seq, &seq, sizeof(seq));
-	}
 #endif
+	}
 
 	if (setsockopt(fd, SOL_TLS, TLS_RX, crypto_info, crypto_size) < 0) {
 		LM_WARN("failed to enable KTLS RX on fd %d: %s\n",
