@@ -518,6 +518,8 @@ int redis_get_hostport(const str *hostport, char **host, unsigned short *port)
 	str in, out;
 
 	char *p = q_memchr(hostport->s, ':', hostport->len);
+	unsigned int out_port;
+
 	if (!p) {
 		if (pkg_nt_str_dup(&out, hostport) != 0) {
 			LM_ERR("oom\n");
@@ -543,7 +545,6 @@ int redis_get_hostport(const str *hostport, char **host, unsigned short *port)
 			return -1;
 		}
 
-		unsigned int out_port;
 		if (str2int(&in, &out_port) != 0) {
 			LM_ERR("failed to parse Redis port in URL\n");
 			pkg_free(*host);
@@ -2218,6 +2219,9 @@ int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
 	size_t argvlen[MAP_SET_MAX_FIELDS+1];
 	str key, st;
 	char *p, *lim, *arg = NULL;
+#ifdef EXTRA_DEBUG
+	int i;
+#endif
 
 	st = *attr;
 	trim(&st);
@@ -2279,7 +2283,6 @@ int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
 	key.len = argvlen[1];
 
 #ifdef EXTRA_DEBUG
-	int i;
 	LM_DBG("raw query key: %.*s\n", key.len, key.s);
 	for (i = 0; i < argc; i++)
 		LM_DBG("raw query arg %d: '%.*s' (%d)\n", i, (int)argvlen[i], argv[i],

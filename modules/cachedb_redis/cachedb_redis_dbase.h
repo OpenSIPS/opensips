@@ -58,15 +58,16 @@ typedef struct cluster_nodes {
 	struct cluster_nodes *next;
 } cluster_node;
 
-// Helper typedef to store the endpoint from a redisReply.
+/* Helper typedef to store the endpoint from a redisReply. */
 typedef struct {
 	const char *s;
 	int len;
 } const_str;
 
-// When a MOVED is returned from Redis, it is parsed
-// and its componenets are stored using the following
-// typedef.
+/*
+ * When a MOVED is returned from Redis, it is parsed and its components are
+ * stored using the following typedef.
+ */
 typedef struct {
 	int slot;
 	const_str endpoint;
@@ -132,9 +133,11 @@ typedef struct _redis_con {
 	struct cachedb_pool_con_t *next;
 	/* --------------------------------- */
 
-	char *host;            // Note: the .id may contain multi-hosts, so the
-	unsigned short port;   // host/port of this connection are extracted here
-	char *unix_socket_path; // Unix socket path (NULL = use TCP)
+	/* the .id may contain multi-hosts, so the host/port are extracted here */
+	char *host;
+	unsigned short port;
+	/*  Unix socket path (NULL = use TCP) */
+	char *unix_socket_path;
 
 	enum redis_flag flags;
 	cluster_node *nodes; /* one or more Redis nodes */
@@ -173,4 +176,3 @@ int redis_map_set(cachedb_con *con, const str *key, const str *subkey,
 int redis_map_remove(cachedb_con *con, const str *key, const str *subkey);
 
 #endif /* CACHEDBREDIS_DBASE_H */
-
