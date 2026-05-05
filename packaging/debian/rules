@@ -348,6 +348,7 @@ endif
 
 # Enable verbose compile logs
 VARS += NICER=0
+VARS += PYTHON=python
 
 ifneq (,$(filter nowolfssl,$(DEB_BUILD_PROFILES)))
 	VARS += STIR_SHAKEN_OPENSSL=true
