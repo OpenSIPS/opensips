@@ -179,7 +179,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 				/* sip.instance */
 				len += SIP_INSTANCE_SIZE
 					+ 1 /* quote */
-					+ (c->instance.len - 2)
+					+ c->instance.len
 					+ 1 /* quote */
 					;
 			}
@@ -370,8 +370,8 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 				memcpy(p,SIP_INSTANCE,SIP_INSTANCE_SIZE);
 				p += SIP_INSTANCE_SIZE;
 				*p++ = '\"';
-				memcpy(p,c->instance.s+1,c->instance.len-2);
-				p += c->instance.len-2;
+				memcpy(p,c->instance.s,c->instance.len);
+				p += c->instance.len;
 				*p++ = '\"';
 			}
 		}
