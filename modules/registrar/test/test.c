@@ -32,6 +32,36 @@
 #include "../lookup.h"
 
 
+static int (*saved_t_wait_for_new_branches)(struct sip_msg *msg,
+	unsigned int num_br);
+static unsigned int pn_wait_branches;
+static int pn_wait_calls;
+
+
+static int test_t_wait_for_new_branches(struct sip_msg *msg,
+	unsigned int num_br)
+{
+	pn_wait_calls++;
+	pn_wait_branches = num_br;
+	return 1;
+}
+
+
+static void start_pn_wait_capture(void)
+{
+	saved_t_wait_for_new_branches = tmb.t_wait_for_new_branches;
+	tmb.t_wait_for_new_branches = test_t_wait_for_new_branches;
+	pn_wait_calls = 0;
+	pn_wait_branches = 0;
+}
+
+
+static void stop_pn_wait_capture(void)
+{
+	tmb.t_wait_for_new_branches = saved_t_wait_for_new_branches;
+}
+
+
 static void fill_ucontact_info(ucontact_info_t *ci)
 {
 	static char cid_buf[9];
@@ -59,6 +89,7 @@ static void test_lookup(void)
 	ucontact_info_t ci;
 	str aor = str_init("alice");
 	str aor_ruri = str_init("sip:alice@localhost");
+	str extra_branch_uri = str_init("sip:parallel@127.0.0.3");
 	str ct1 = str_init("sip:cell@127.0.0.1:44444;"
 			"pn-provider=apns;"
 			"pn-prid=ZTY4ZDJlMzODE1NmUgKi0K;"
@@ -107,21 +138,48 @@ static void test_lookup(void)
 	ok(ul.insert_ucontact(r, &ct1, &ci, NULL, 1, &c) == 0, "insert ct1 (PN)");
 
 	set_ruri(&msg, &aor_ruri);
+	start_pn_wait_capture();
 	ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_PN_SENT, "lookup-6");
+	ok(pn_wait_calls == 1 && pn_wait_branches == 1,
+		"lookup-6: waits for PN branch");
+	stop_pn_wait_capture();
 
 	fill_ucontact_info(&ci);
 	ok(ul.insert_ucontact(r, &ct2, &ci, NULL, 1, &c) == 0, "insert ct2 (normal)");
 
 	set_ruri(&msg, &aor_ruri);
+	start_pn_wait_capture();
 	ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_OK, "lookup-7");
+	ok(pn_wait_calls == 1 && pn_wait_branches == 2,
+		"lookup-7: waits for PN and regular branch");
+	stop_pn_wait_capture();
 
 	/* the PN contact should just trigger a PN without becoming a branch */
 	ok(str_match(&msg.new_uri, &ct2), "lookup-7: R-URI is ct2");
+
+	{
+		struct msg_branch branch;
+
+		memset(&branch, 0, sizeof branch);
+		branch.uri = extra_branch_uri;
+		branch.q = Q_UNSPECIFIED;
+		ok(append_msg_branch(&branch) == 1, "append extra branch");
+
+		set_ruri(&msg, &aor_ruri);
+		start_pn_wait_capture();
+		ok(reg_lookup(&msg, d, NULL, NULL) == LOOKUP_OK, "lookup-7b");
+		ok(pn_wait_calls == 1 && pn_wait_branches == 3,
+			"lookup-7b: waits for existing, regular and PN branches");
+		stop_pn_wait_capture();
+		clear_dset();
+	}
 
 	/* test the "r" flag (branch lookup) */
 	{
 		str aor2 = str_init("bob"), aor3 = str_init("carol");
 		struct msg_branch branch;
+
+		clear_dset();
 
 		ul.lock_udomain(d, &aor2);
 		ok(ul.insert_urecord(d, &aor2, &r, 0) == 0, "create AoR 2");
