@@ -54,7 +54,7 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d,
 	static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
 	static str branch_uris[MAX_BRANCHES-1];
 	int idx = 0, nbranches = 0;
-	urecord_t* r;
+	urecord_t* r = NULL;
 	str aor;
 	ucontact_t *ct, **ptr, **pn_cts, **cts;
 	int max_latency = 0, ruri_is_pushed = 0;
@@ -194,6 +194,7 @@ fetch_urecord:
 		/* relsease old aor lock */
 		ul.release_urecord(r, 0);
 		ul.unlock_udomain(d, &aor);
+		r = NULL;
 
 	next_aor:
 		aor_uri = &branch_uris[idx];
