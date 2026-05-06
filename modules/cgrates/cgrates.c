@@ -138,6 +138,7 @@ static const dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ NULL, NULL },
 	},
 };
 
