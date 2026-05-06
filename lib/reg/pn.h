@@ -182,12 +182,15 @@ int pn_append_rpl_fcaps(struct sip_msg *msg);
  * @req: the current SIP request
  * @cts: array of PN-enabled contacts
  * @sz: array size
+ * @wait_branches: maximum number of outgoing branches to wait for, including
+ *                 already selected destinations and PN-injected branches
  *
  * Return:
  *	 success: 1 if at least one PN was sent, 2 otherwise
  *	 failure: 0 on retransmission, -1 on internal error
  */
-int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz);
+int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz,
+	unsigned int wait_branches);
 
 
 /**
