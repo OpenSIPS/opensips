@@ -62,6 +62,8 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d,
 	int max_latency = 0, ruri_is_pushed = 0;
 	unsigned int flags = 0;
 	int rc, ret = LOOKUP_NO_RESULTS, have_pn_cts = 0, single_branch = 0;
+	int pn_cts_sz;
+	unsigned int dst_branches = 0;
 	str sip_instance = STR_NULL, call_id = STR_NULL;
 	regex_t *ua_re = NULL;
 
@@ -77,6 +79,13 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d,
 			ua_re = &lookup_flags->ua_re;
 		max_latency = lookup_flags->max_latency;
 	}
+
+	if (!(flags & REG_BRANCH_AOR_LOOKUP_FLAG))
+		dst_branches += get_nr_branches();
+
+	if ((flags & REG_LOOKUP_NO_RURI_FLAG) &&
+	        req->first_line.type == SIP_REQUEST)
+		dst_branches++;
 
 	single_branch = flags & REG_LOOKUP_NOBRANCH_FLAG;
 
@@ -150,6 +159,8 @@ fetch_urecord:
 			goto done;
 		} else if (rc == 2) {
 			*pn_cts++ = *ptr;
+		} else if (rc == 0) {
+			dst_branches++;
 		}
 
 		if (rc == 0 && single_branch)
@@ -160,13 +171,18 @@ fetch_urecord:
 	        && (flags & REG_LOOKUP_GLOBAL_FLAG)) {
 		for (ct = r->remote_aors; ct; ct = ct->next) {
 			rc = push_branch(req, ct, &ruri_is_pushed);
-			if (rc == 0 && single_branch)
-				goto done;
+			if (rc == 0) {
+				dst_branches++;
+				if (single_branch)
+					goto done;
+			}
 		}
 	}
 
 	if (pn_cts > cts) {
-		rc = pn_awake_pn_contacts(req, cts, single_branch ? 1 : pn_cts - cts);
+		pn_cts_sz = single_branch ? 1 : pn_cts - cts;
+		rc = pn_awake_pn_contacts(req, cts, pn_cts_sz,
+			dst_branches + pn_cts_sz);
 		if (rc <= 0) {
 			ret = (rc == 0 ? LOOKUP_STOP_SCRIPT : LOOKUP_ERROR);
 			goto done;
