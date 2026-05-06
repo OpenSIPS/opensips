@@ -53,6 +53,7 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d,
 	struct sip_uri puri;
 	unsigned int flags = 0;
 	int ret = LOOKUP_ERROR, pos, ruri_is_pushed = 0;
+	unsigned int dst_branches = 0;
 	uint64_t contact_id;
 	str aor;
 	ucontact_t *ct;
@@ -64,7 +65,13 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d,
 	if (lookup_flags)
 		flags = lookup_flags->flags;
 
-	ruri_is_pushed = flags & REG_LOOKUP_NO_RURI_FLAG;
+	dst_branches = get_dset_size();
+
+	if (flags & REG_LOOKUP_NO_RURI_FLAG) {
+		ruri_is_pushed = 1;
+		if (req->first_line.type == SIP_REQUEST)
+			dst_branches++;
+	}
 
 	if (!uri)
 		uri = GET_RURI(req);
@@ -127,7 +134,7 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d,
 		break;
 
 	case 2:
-		switch (pn_awake_pn_contacts(req, &ct, 1)) {
+		switch (pn_awake_pn_contacts(req, &ct, 1, dst_branches + 1)) {
 		case 1:
 			ret = LOOKUP_PN_SENT;
 			break;
