@@ -1,3 +1,554 @@
+=========================== Release 3.4.18 ==============================
+
+2026-05-06  Liviu Chircu  <liviu@opensips.org>
+        * [8aa0ba413] :
+
+        registrar: Improve error handling
+
+        (cherry picked from commit 1875c584795952cbf9b2c4bf35777683e6ac0091)
+
+
+2026-05-06  Liviu Chircu  <liviu@opensips.org>
+        * [c82dcbe27] :
+
+        PN Support: Complete commit e7cf1d595
+
+        The fix in e7cf1d595 was not complete, as we must add both PN, non-PN
+        branches as well as any pre-existing append_branches() into the
+        t_wait_for_new_branches() wait count, otherwise the UAC-side transaction
+        could end prematurely, before the PN-branch gets a chance to deliver and
+        connect the call.
+
+        (cherry picked from commit 6b058932285bfe95ab440ea61b8a34e2d8d6d722)
+
+
+2026-05-06  Razvan Crainea  <razvan@opensips.org>
+        * [ce9dbe41b] :
+
+        debian: enforce explicit python path
+
+        (cherry picked from commit ca8940e0777eb26ee04e97a969d0ae3d22ee2900)
+
+
+2026-04-25  OpenSIPS  <github@opensips.org>
+        * [d988b1113] :
+
+        Rebuild documentation
+
+
+2026-04-24  Liviu Chircu  <liviu@opensips.org>
+        * [e502f581c] :
+
+        python: Improve compatibility with Debian 13
+
+        The "python" binary is no longer provided by default -> adjust Makefile.
+
+        (cherry picked from commit 70003cf10784a28f4fb18b6d446b30c6a07a8027)
+
+
+2026-04-24  Norm Brandinger  <n.brandinger@gmail.com>
+        * [b1e34a27b] :
+
+        tls_openssl: fix per-thread state double-free across fork()
+
+        Register a pthread_atfork prepare handler that calls OPENSSL_thread_stop()
+        before each fork().  CRYPTO_set_mem_functions() routes all OpenSSL allocations
+        to shared memory, but per-thread structures (ERR_STATE, DRBG) use thread-local
+        storage pointers inherited across fork().  Without cleanup, child processes
+        inherit a stale pointer to the parent per-thread state; if the parent frees or
+        re-creates that state, the child next OpenSSL call triggers a double-free
+        (detected by QM_MALLOC_DBG as SIGABRT).
+
+        After OPENSSL_thread_stop() the thread-local pointer is NULL.  Both parent and
+        child lazily allocate fresh per-thread state on the next OpenSSL call.
+
+        This complements the existing on_exit(_exit) handler which covers the same
+        class of double-free at process exit time.
+
+        (cherry picked from commit c8d148c1ea0b018964dc24cfce01ac0cf3e8940e)
+        (cherry picked from commit 66cca03849dc30193cf7b1dfe026ce6f4210609a)
+
+
+2026-04-21  Ross Henderson  <rossmck@mac.com>
+        * [0b482b86b] :
+
+        #3798 Don't require certificate for TLS clients
+
+        (cherry picked from commit bf9f69f97a7629a078a01d9d14a26f100077daf8)
+
+
+2026-04-18  OpenSIPS  <github@opensips.org>
+        * [8b31d74bb] :
+
+        Rebuild documentation
+
+
+2026-04-17  Ravitez Dondeti  <dondetir@users.noreply.github.com>
+        * [954ca72bb] :
+
+        db_mysql: recover from ER_UNKNOWN_STMT_HANDLER (1243) (#3865)
+
+        The prepared-statement execute wrapper treats MySQL error 1243
+        (ER_UNKNOWN_STMT_HANDLER) as a hard failure and skips the existing
+        reconnect + re-prepare path. This surfaces in production when the
+        backing database is replaced underneath a live client connection -
+        for example during an AWS Aurora zero-downtime minor-version upgrade,
+        which preserves the TCP connection but drops the server-side
+        prepared-statement cache. The next stmt_execute returns 1243, OpenSIPS
+        logs CRITICAL and the query fails instead of transparently recovering.
+
+        Add the case to wrapper_single_mysql_stmt_execute so it funnels into
+        the same switch_state_to_disconnected -> connect_with_retry ->
+        re_init_statement recovery path that already handles CR_SERVER_GONE_ERROR
+        and friends.
+
+        ER_NEED_REPREPARE (1615) is intentionally not added: libmysqlclient
+        auto-reprepare already handles that case. 1243 bypasses auto-reprepare
+        because the server has no record of the handle at all.
+
+        The companion prepare wrapper is not modified: it starts from a fresh
+        mysql_stmt_init() handle that carries no server-side ID, so the server
+        cannot return 1243 in response to a prepare request.
+
+        Reported-by: Sasmita Panda <spanda@3clogic.com>
+        (cherry picked from commit 9453ee09412c3a49a664bccad21757311d419688)
+
+
+2026-04-14  Danielzt  <danielzt@users.noreply.github.com>
+        * [6e1ed478e] :
+
+        core: fix fd memory leak in reactor_proc_add_fd, causing too many open files (#3830)
+
+        rtpproxy: Fix in timeout scenarios, leading crash due to memory leak and too many open files
+        (cherry picked from commit 0296e26ffe2939b7c009de701b3b420d44d75e6f)
+
+
+2026-04-11  OpenSIPS  <github@opensips.org>
+        * [33c48a8aa] :
+
+        Rebuild documentation
+
+
+2026-04-08  Liviu Chircu  <liviu@opensips.org>
+        * [958cfe172] :
+
+        PN Support: Improve default handling for failed calls
+
+        Avoid relying on the "fr_inv_timeout" by default in order to complete
+        the transaction when the call is rejected (wait_for_new_branches...), as
+        the default (120s) is quite high, and can lead to stalling INVITEs.
+
+        (cherry picked from commit 45dcfd73a47244663aff0e4e5079cd0431ba2447)
+
+
+2026-04-07  rdondeti  <ravitez.dondeti@gmail.com>
+        * [1ec9abcaa] :
+
+        rtpengine: fix NULL deref from unchecked cJSON_PrintUnformatted()
+
+        In rtpengine_raise_event(), cJSON_PrintUnformatted() can return NULL on
+        allocation failure.  The return value is passed directly to strlen() and
+        then to cJSON_PurgeString(), both of which will crash on a NULL pointer.
+
+        Add a NULL check before using the return value, and skip the parameter
+        on failure.
+
+        Found during a systematic audit of cJSON return value handling across
+        modules, following the janus leak fixes in commit f9fb3ea3e.
+
+        (cherry picked from commit cf5fb629cc08fc4c20b105df0a6131f5574e7f66)
+
+
+2026-04-07  rdondeti  <ravitez.dondeti@gmail.com>
+        * [6f712264d] :
+
+        jsonrpc: fix NULL deref and object leak in jsonrpc_handle_cmd()
+
+        cJSON_Print() can return NULL on allocation failure.  The existing code
+        passes the return value directly to strlen() without a NULL check,
+        causing a crash on two separate code paths (error and result handling).
+
+        Add NULL checks after both cJSON_Print() calls.
+
+        Additionally, the cJSON tree allocated by cJSON_Parse() at the start of
+        the function is never freed.  Add cJSON_Delete(obj) to the cleanup path.
+
+        Found during a systematic audit of cJSON return value handling across
+        modules, following the janus leak fixes in commit f9fb3ea3e.
+
+        (cherry picked from commit 6fc6acac8e8a669655d92346a8ad61af16671274)
+
+
+2026-04-07  rdondeti  <ravitez.dondeti@gmail.com>
+        * [d133b7aed] :
+
+        cachedb_cassandra: fix NULL deref when cass_cluster_new() returns NULL
+
+        cass_cluster_new() can return NULL on allocation failure.  The existing code
+        has a NULL check, but it comes after cass_cluster_set_credentials() already
+        uses the pointer (when credentials are configured), so a NULL return causes
+        a crash before the check is reached.
+
+        Move the NULL check to immediately after cass_cluster_new(), before any use
+        of the returned pointer.
+
+        Found during a systematic audit of cachedb backends following the
+        cachedb_redis NULL-deref fix in commit 8fb569cb3.
+
+        (cherry picked from commit 8f959e73c79bf42d06ce2ee7406a80ab9edb8ca1)
+
+
+2026-04-07  rdondeti  <ravitez.dondeti@gmail.com>
+        * [891ebc9a5] :
+
+        cachedb_memcached: fix NULL deref when memcached_create() returns NULL
+
+        memcached_create(NULL) can return NULL on allocation failure.  The existing
+        code never checks the return value, so a NULL memc pointer falls through to
+        memcached_server_push(NULL, ...) which dereferences the NULL pointer.
+
+        Add an explicit NULL check after memcached_create(), following the existing
+        error-handling pattern in the function (pkg_free + return 0).
+
+        Found during a systematic audit of cachedb backends following the
+        cachedb_redis NULL-deref fix in commit 8fb569cb3.
+
+        (cherry picked from commit 9fea57eeaf5c687f49a952692b2b7530ec66a7ee)
+
+
+2026-04-07  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [bfff51448] :
+
+        [sip_i] fix wrong ISUP msg type on 200 OK INVITE
+
+        Credits go to @aldotms70
+        Closes #3857
+
+        (cherry picked from commit bc5a87a28a9b269cc6596dc0e42ddb45344b57ec)
+
+
+2026-04-04  OpenSIPS  <github@opensips.org>
+        * [e758805af] :
+
+        Rebuild documentation
+
+
+2026-04-02  Liviu Chircu  <liviu@opensips.org>
+        * [cab2968d7] :
+
+        db_sqlite: Improve error handling
+
+        * avoid dangling PS pointers
+        * avoid leaking the PS object on NULL "result"
+
+        (cherry picked from commit bdd97c5047b8a9a45ae520e293ecc94f0194d904)
+
+
+2026-04-01  Liviu Chircu  <liviu@opensips.org>
+        * [a13d98a48] :
+
+        db_sqlite: Fix interaction with sql_cacher
+
+        The .query API endpoint in db/db.h is meant to return 0 on success, yet
+        the current implementation in db_sqlite was returning "number of rows"
+        on success, leading to:
+
+        ERROR:sql_cacher:load_entire_table: Failure to issue query to SQL DB...
+        ERROR:sql_cacher:cache_init_load: Failed to cache the entire table...
+        (cherry picked from commit 5abc95adbb087303620677f4802970686f6c3227)
+
+
+2026-03-28  OpenSIPS  <github@opensips.org>
+        * [412fc4e31] :
+
+        Rebuild documentation
+
+
+2026-03-26  Razvan Crainea  <razvan@opensips.org>
+        * [4e18e7920] :
+
+        rtp_relay: do not run indialog for non-SDP requests
+
+        (cherry picked from commit d816345da35b2432f41fcd20578c0a14bcc2a3f9)
+
+
+2026-03-23  Razvan Crainea  <razvan@opensips.org>
+        * [5993a1f9b] :
+
+        b2b_logic: turn of bridge initiator in case transfer fails
+
+        (cherry picked from commit 381e725f6708de09cf7c386c625e57355047f76c)
+
+
+2026-03-14  OpenSIPS  <github@opensips.org>
+        * [203094a57] :
+
+        Rebuild documentation
+
+
+2026-03-10  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [5d8038795] :
+
+        Merge pull request #3842 from NormB/fix/cachedb-redis-null-deref
+
+        cachedb_redis: fix NULL deref when redisConnect returns NULL
+
+        (cherry picked from commit f0f53a61504538909070335cd0b37b987f773d0a)
+
+
+2026-03-07  OpenSIPS  <github@opensips.org>
+        * [bddde61bf] :
+
+        Rebuild documentation
+
+
+2026-03-06  Liviu Chircu  <liviu@opensips.org>
+        * [9d14556ec] :
+
+        registrars: Allow accepting Re-REGISTERs with equal CSeq
+
+        New module setting for both registrar and mid-registrar which controls
+        the policy on handling same Call-ID REGISTERs, with the same CSeq.
+
+            modparam: allow_dup_cseq
+            default:  false (100% backwards-compatible)
+
+        Ultimately, this boils down to a trade-off between interoperability and
+        RFC strictness.  More info in the modparam documentation.
+
+        (cherry picked from commit dda9010efb6149c44a98cb2029215d0e28ee3f89)
+        (cherry picked from commit f47c2f47bb2393c33f5979a86747db82cf2e7b2b)
+
+
+2026-03-06  Liviu Chircu  <liviu@opensips.org>
+        * [bbc7b7486] :
+
+        mid_registrar: Fix mem management bugs around "max contacts"
+
+        * avoid UAF of the @uc pointer during iteration
+        * fix logic so that the current @c cannot be freed by trim_contacts()
+            itself, yet again leading to UAF type of bugs
+
+        usrloc: Fix rare memleak edge-case
+        (cherry picked from commit 2642e14fb17fcc1ed24eab51bd0568bb743f51e2)
+        (cherry picked from commit 960ab38e850e915796bf3248ca00f72ab4e23f56)
+
+
+2026-03-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [314581187] :
+
+        [tcp] fixed potential buffer overflow due to insane large Content-Len values
+
+        Check and limit the Content-Lenght to the size of the reading buffer, makes no sense to accept anything higher.
+
+        (cherry picked from commit 09e787799c6f808df948bcd159060ca89e7fa91e)
+
+
+2026-03-02  Razvan Crainea  <razvan@opensips.org>
+        * [92fdbed2a] :
+
+        b2b_entities: make sure last_method is updated before req
+
+        (cherry picked from commit b1482d83697d0be1c0ffe850b358755e28674fc2)
+
+
+2026-02-28  OpenSIPS  <github@opensips.org>
+        * [9b80889a6] :
+
+        Rebuild documentation
+
+
+2026-02-26  Razvan Crainea  <razvan@opensips.org>
+        * [0218c54f9] :
+
+        b2b_entities: convert ERR in DBG
+
+        (cherry picked from commit 5964710b0a6aba5c22d366ea1b60ace1df42ab25)
+
+
+2026-02-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c546b2536] :
+
+        Merge pull request #3821 from NormB/fix/tm-async-rd-reversion
+
+        tm: fix $rd reversion after chained async() resume
+
+        Cherry pick of 2a1c511265d82648c984807c02c4b50ed073ca42
+
+        (cherry picked from commit 43d965ab448199499ecc22a0f7f8761f44a20cdf)
+
+
+2026-02-21  OpenSIPS  <github@opensips.org>
+        * [2397a1a40] :
+
+        Rebuild documentation
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [7b3052b03] :
+
+        build: fix bad merge for OS check
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [fe2921323] :
+
+        build: fix python3-dev apt requirements
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [1f62bb716] :
+
+        tls_wolfssl: pass wolfssl flags from outside
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [617a05d19] :
+
+        packaging/redhat: fix bug introduced in 1ea06905
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [ae16f6819] :
+
+        regex: fix broken merge
+
+        (cherry picked from commit b0c1bcafa284977e53fc6b2ac6c659365f88404c)
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [ca951da32] :
+
+        build: python-dev-is-python3 should be available in 20.04
+
+        (cherry picked from commit 2a8a298f7bf85a8a63f60f367186ed48540bfa41)
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [374327fb0] :
+
+        regex: make module work with both pcre2 and pcre3, not just compile
+
+        (cherry picked from commit bbc1a75d5ba25c0f26afcd208b0f5c7e1fffd3b7)
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [e15cde507] :
+
+        packaging: fix redhat pcre-devel name
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [2c0457bc4] :
+
+        packaging: skip wolfssl errors
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [b39bf1192] :
+
+        packaging: fix .swp matching
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [62e2975c9] :
+
+        debian: fully replace libcurl4 gnutls with openssl
+
+        (cherry picked from commit c51e2dd0284055926559d79807aed0e7eb9624f4)
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [1c34e2369] :
+
+        debian: replace libcurl4 gnutls with openssl
+
+        The reason is that librkafka depends on libcurl4-openssl-dev, which
+        conflicts with libcurl4-gnutls-dev
+
+        (cherry picked from commit 7d9aadc01efd9d9b4e52f571cd6b884ad1359658)
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [6ec1b98bc] :
+
+        packaging: force libpcre3 for stable version
+
+        except for Debian 13, which is new package and cannot run with libpcre3
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [a777c61c8] :
+
+        regex: allow pcre3 library
+
+
+2026-02-20  Steve Ayre  <steven.ayre@dubber.net>
+        * [96ac94c82] :
+
+        update regex module for pcre2
+
+        (cherry picked from commit 3cc28d166b5a3d7db2cd2d944406480e5a1474f5)
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [22ddc7e6a] :
+
+        dialplan: make module work with both pcre2 and pcre3 libs
+
+        (cherry picked from commit 67483a5a27ce656eaf9409f7710cf67798e70aac)
+
+
+2026-02-20  Razvan Crainea  <razvan@opensips.org>
+        * [82ef55ccd] :
+
+        dialplan: fix copying subst's out vector
+
+        (cherry picked from commit 30825e4e0809a1a61f06cec964589c825645b62b)
+
+
+2026-02-20  Ken Rice  <krice@sipnavigator.com>
+        * [ed13171e7] :
+
+        Makefile tweaks to avoid $(shell ...) expansions from failing
+
+        Fixes #3717
+
+        (cherry picked from commit a3ae498d8726894753483738e801dfc0e63e3ba9)
+
+
+2026-02-20  Steve Ayre  <steven.ayre@dubber.net>
+        * [c108bdc3b] :
+
+        create pcre2 compile context once instead of for each compile
+
+        (cherry picked from commit 6082b43fa8b44cbfea7de8afb38998354b54d1fb)
+
+
+2026-02-20  Steve Ayre  <steven.ayre@dubber.net>
+        * [0135ffb87] :
+
+        update dialplan module for pcre2
+
+        (cherry picked from commit c58e3af0cc7b44ceb304ac1b6d2c8b45feca4b5b)
+
+
+2026-02-20  Steve Ayre  <steven.ayre@dubber.net>
+        * [39eb7b260] :
+
+        require libpcre2
+
+        (cherry picked from commit 1cb16e082e9ba1cd63f04996eecd75632682df7c)
+
+
+2026-02-19  Razvan Crainea  <razvan@opensips.org>
+        * [2b0e36104] :
+
+        readme: drop lgtm badges, as the service no longer exists
+
+        (cherry picked from commit 4e3a0b7c3c025f6b2121f216e790ab8d03dc240d)
+
+
 =========================== Release 3.4.17 ==============================
 
 2026-02-18  Liviu Chircu  <liviu@opensips.org>
