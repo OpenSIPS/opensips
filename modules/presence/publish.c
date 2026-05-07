@@ -544,10 +544,13 @@ int handle_publish(struct sip_msg* msg, str* sender_uri)
 				goto error;
 			}
 
-			if(sphere_enable && event->evp->parsed == EVENT_PRESENCE &&
-				get_content_type(msg)== SUBTYPE_PIDFXML)
-			{
-				sphere= extract_sphere(body);
+			if(sphere_enable && event->evp->parsed == EVENT_PRESENCE) {
+				if (parse_content_type_hdr(msg)< 0) {
+					LM_ERR("cannot parse content type\n");
+					goto error;
+				}
+				if(get_content_type(msg)== SUBTYPE_PIDFXML)
+					sphere= extract_sphere(body);
 			}
 		}
 	}
