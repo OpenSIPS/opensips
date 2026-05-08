@@ -2834,13 +2834,12 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	str error;
 	struct rtpe_node *node, *failed_node;
 	char *cp, *err = NULL;
-	pv_value_t val;
+	pv_value_t val, socket_val;
 	struct rtpe_ignore_node *ignore_list = NULL;
-	int ret;
+	int ret, forced_socket;
 	memset(&ng_flags, 0, sizeof(ng_flags));
 	error.len = 0;
 	error.s = "";
-	pv_value_t socket_val;
 
 	/*** get & init basic stuff needed ***/
 	if (rtpe_function_call_prepare(bencbuf, msg, op, &ng_flags, flags_str, body_in, extra_dict,&err) < 0)
@@ -2853,10 +2852,10 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	}
 
 	/*** If the spvar "sock_var" has been specified, parse it into a (socket_val) STR variable ***/
-	if (spvar) {
-		memset(&socket_val, 0, sizeof(pv_value_t));
+	memset(&socket_val, 0, sizeof(pv_value_t));
+	if (spvar)
 		pv_get_spec_value(msg, spvar, &socket_val);
-	}
+	forced_socket = socket_val.rs.len > 0;
 
 	failed_node = NULL;
 
@@ -2873,16 +2872,23 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		if (spvar && (socket_val.rs.len > 0)) {
 			LM_DBG("Sending command [%d] to RTPEngine socket: [%.*s] set id: [%d]\n", op, (int)(socket_val.rs.len), (char *)(socket_val.rs.s), set->id_set);
 			node = lookup_rtpe_node(set, &socket_val.rs);
-			if (node == NULL) {
-				RTPE_STOP_READ();
-				goto error;
+			socket_val.rs.s = NULL;
+			socket_val.rs.len = 0;
+			if (node && ((node->rn_disabled = rtpe_test(node, node->rn_disabled, 0)) ||
+					rtpe_is_ignore_node(ignore_list, node))) {
+				LM_DBG("RTPEngine socket [%.*s] is not available\n",
+						node->rn_url.len, node->rn_url.s);
+				node = NULL;
 			}
 
+			if (node == NULL && op == OP_OFFER)
+				node = select_rtpe_node(ng_flags.call_id, set, ignore_list);
+		} else if (forced_socket && op != OP_OFFER) {
+			node = NULL;
 		} else if (snode && snode->s) {
 			if ((node = get_rtpe_node(snode, set)) == NULL && op == OP_OFFER)
 				node = select_rtpe_node(ng_flags.call_id, set, ignore_list);
 			snode = NULL;
-
 		} else {
 			node = select_rtpe_node(ng_flags.call_id, set, ignore_list);
 		}
@@ -5030,6 +5036,7 @@ static int rtpengine_api_offer(struct rtp_relay_session *sess,
 			fill_rtpengine_node(server, &val.rs);
 		else
 			LM_ERR("could not retrieve the value of the used rtpengine!\n");
+		pv_set_value(NULL, &media_pvar, EQ_T, NULL);
 	}
 	return ret;
 }
