@@ -68,12 +68,12 @@ jobs:
           apt-get install -y git lsb-release gnupg2 wget
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
       - name: Cache the compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         if: endsWith(matrix.compiler, '-qemu-cross')
         with:
           path: ccache
@@ -113,7 +113,7 @@ jobs:
         run: script -e unit_tests.log -c 'sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"'
 
       - name: Collect test logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit_tests-logs_${{ matrix.os }}_${{ matrix.compiler }}
           path: |

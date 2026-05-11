@@ -38,13 +38,13 @@ jobs:
           apt-get install -y git lsb-release gnupg2 wget
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
       # Cache the compiler cache
       - name: Cache the compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         if: endsWith(matrix.compiler, '-qemu-cross')
         with:
           path: ccache

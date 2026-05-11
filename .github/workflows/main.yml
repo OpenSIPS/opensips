@@ -66,7 +66,7 @@ jobs:
           apt-get install -y git lsb-release gnupg2 wget
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
