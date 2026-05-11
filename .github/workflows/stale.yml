@@ -13,7 +13,7 @@ jobs:
       pull-requests: write
 
     steps:
-    - uses: actions/stale@v4
+    - uses: actions/stale@v10
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         stale-issue-message: 'Any updates here? No progress has been made in the last 15 days, marking as stale. Will close this issue if no further updates are made in the next 30 days.'

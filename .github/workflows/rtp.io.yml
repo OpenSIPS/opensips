@@ -42,18 +42,18 @@ jobs:
         apt-get update
         apt-get install -y git lsb-release gnupg2 wget
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: recursive
 
     - name: Checkout VoIPTests repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'sippy/voiptests'
         path: dist/voiptests
 
     - name: Checkout RTPProxy repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'sippy/rtpproxy'
         path: dist/rtpproxy
@@ -83,7 +83,7 @@ jobs:
         ONE_MODULE=rtp.io LDFLAGS=-flto CFLAGS=-flto sh -x scripts/build/do_build.sh
 
     - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
