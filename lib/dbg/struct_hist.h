@@ -49,7 +49,7 @@
  *    remain available inside the global history list for a while
  */
 
-#define MAX_SHLOG_SIZE 80 /* longer log lines will get truncated */
+#define MAX_SHLOG_SIZE 128 /* longer log lines will get truncated */
 
 /**
  * To be freely extended by any piece of OpenSIPS code which makes use of
