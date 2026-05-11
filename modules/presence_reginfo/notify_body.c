@@ -69,7 +69,6 @@ str *reginfo_agg_nbody(str *pres_user, str *pres_domain, str **body_array,
 	}
 
 	xmlCleanupParser();
-	xmlMemoryDump();
 
 	return n_body;
 }
@@ -206,7 +205,6 @@ str *aggregate_xmls(str *pres_user, str *pres_domain, str **body_array, int n)
 		pkg_free(xml_array);
 
 	xmlCleanupParser();
-	xmlMemoryDump();
 
 	return body;
 

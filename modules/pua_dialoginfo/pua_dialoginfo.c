@@ -653,7 +653,6 @@ int dialoginfo_process_body(struct publ_info* publ, str** fin_body,
 	if (*fin_body == NULL)
 		LM_DBG("NULL fin_body\n");
 
-	xmlMemoryDump();
 	xmlCleanupParser();
 	return 1;
 
@@ -662,7 +661,6 @@ int dialoginfo_process_body(struct publ_info* publ, str** fin_body,
 		xmlFreeDoc(doc);
 	if (body)
 		pkg_free(body);
-	xmlMemoryDump();
 	xmlCleanupParser();
 	return -1;
 }
@@ -1199,5 +1197,4 @@ int set_mute_branch(struct sip_msg* msg, str* parties)
 
 	return 1;
 }
-
 

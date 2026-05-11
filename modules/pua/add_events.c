@@ -159,7 +159,6 @@ int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 	doc= NULL;
 
 	*fin_body= body;
-	xmlMemoryDump();
 	xmlCleanupParser();
 	return 1;
 
@@ -170,5 +169,4 @@ error:
 		pkg_free(body);
 	return -1;
 }
-
 
