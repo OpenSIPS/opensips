@@ -1448,12 +1448,13 @@ static int dlg_th_decode_callid(struct sip_msg *msg)
 
 char *th_get_encoded_callid(struct sip_msg *msg, str *tag, int *enc_len)
 {
-	int i,j,len;
+	int i,j,len,append_tag;
 	char *new_callid;
 	unsigned char *old_callid;
 
 	len = msg->callid->body.len;
-	if (th_loop_protection && tag)
+	append_tag = th_loop_protection && tag;
+	if (append_tag)
 		len += tag->len + 1;
 
 	old_callid = pkg_malloc(len);
@@ -1465,7 +1466,7 @@ char *th_get_encoded_callid(struct sip_msg *msg, str *tag, int *enc_len)
 	memcpy(old_callid, msg->callid->body.s, msg->callid->body.len);
 	for (j=0;j<msg->callid->body.len;j++)
 		old_callid[j] = msg->callid->body.s[j] ^ topo_hiding_seed.s[j%topo_hiding_seed.len];
-	if (tag) {
+	if (append_tag) {
 		old_callid[msg->callid->body.len] =
 			TH_FROM_TAG_SEP ^ topo_hiding_seed.s[j++%topo_hiding_seed.len];
 		for (i = 0; i < tag->len; i++, j++)
