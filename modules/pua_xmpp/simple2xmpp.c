@@ -491,7 +491,6 @@ done:
 
 	xmlBufferFree(buffer);
 	xmlCleanupParser();
-	xmlMemoryDump();
 
 	if(sip_doc)
 		xmlFreeDoc(sip_doc);
@@ -509,7 +508,6 @@ error:
 	if(buffer)
 		xmlBufferFree(buffer);
 	xmlCleanupParser();
-	xmlMemoryDump();
 
 	return -1;
 
@@ -637,7 +635,6 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 
 	xmlFreeDoc(notify_doc);
 	xmlCleanupParser();
-	xmlMemoryDump();
 	return 0;
 
 error:
@@ -651,7 +648,6 @@ error:
 	if(buffer)
 		xmlBufferFree(buffer);
 	xmlCleanupParser();
-	xmlMemoryDump();
 
 	return -1;
 }
@@ -873,4 +869,3 @@ error:
 	return -1;
 
 }
-
