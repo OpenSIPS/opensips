@@ -72,13 +72,11 @@ int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
 	}
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
-	xmlMemoryDump();
 	return 1;
 
 error:
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
-	xmlMemoryDump();
 	return -1;
 
 }
@@ -124,14 +122,12 @@ str* bla_set_version(subs_t* subs, str* body)
 
 	xmlFreeDoc(doc);
 
-	xmlMemoryDump();
 	xmlCleanupParser();
 	return new_body;
 
 error:
 	if(doc)
 		xmlFreeDoc(doc);
-	xmlMemoryDump();
 	xmlCleanupParser();
 	return 0;
 }
@@ -209,5 +205,4 @@ int xml_add_events(void)
 
 	return 0;
 }
-
 

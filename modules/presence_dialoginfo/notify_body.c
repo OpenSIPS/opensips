@@ -99,7 +99,6 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 	}
 
 	xmlCleanupParser();
-	xmlMemoryDump();
 
 	if (n_body== NULL)
 		n_body = _build_empty_dialoginfo(pres_uri_char, NULL);
@@ -274,7 +273,6 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 		pkg_free(xml_array);
 
 	xmlCleanupParser();
-    xmlMemoryDump();
 
 	return body;
 
@@ -471,7 +469,6 @@ static str* _build_empty_dialoginfo(const char* pres_uri_char, str* extra_hdrs)
 
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
-	xmlMemoryDump();
 
 	return nbody;
 error:
