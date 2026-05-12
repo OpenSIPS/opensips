@@ -19,6 +19,8 @@
  *
  */
 
+#include <inttypes.h>
+
 #include "cachedb_dynamodb_dbase.h"
 
 
@@ -304,7 +306,7 @@ int dynamodb_map_set(cachedb_con *connection, const str *key, const str *keyset,
 				LM_ERR("No more pkg mem\n");
 				return -1;
 			}
-			sprintf(attribute_value_int, "%ld", pair->val.val.i64);
+			sprintf(attribute_value_int, "%" PRId64, pair->val.val.i64);
 			init_str(&attribute_value, attribute_value_int);
 			break;
 

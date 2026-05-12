@@ -672,7 +672,7 @@ static int janus_connection_read_data(janus_connection *sock, struct janus_ws_re
 				size=req->tcp.pos-req->tcp.parsed;
 
 				if (size) {
-					LM_DBG("We still have %lu bytes, keeping connection \n", size);
+					LM_DBG("We still have %ld bytes, keeping connection \n", size);
 				}
 
 				if (handle_janus_json_request(sock, req->body) <0) {
@@ -832,7 +832,7 @@ static int janus_connection_handler_id(janus_connection *sock, struct janus_ws_r
 				size=req->tcp.pos-req->tcp.parsed;
 
 				if (size) {
-					LM_DBG("We still have %lu bytes, keeping connection \n", size);
+					LM_DBG("We still have %ld bytes, keeping connection \n", size);
 				}
 
 				if (populate_janus_handler_id(sock, req->body) <0) {

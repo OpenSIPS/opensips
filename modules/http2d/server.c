@@ -584,7 +584,7 @@ static int on_request_recv(nghttp2_session *session,
 	rc = pthread_cond_timedwait(&ng_h2_response->cond,
 			&ng_h2_response->mutex, &wait_until);
 	diff_ns = get_clock_diff(&begin);
-	LM_DBG("waited %lld ns in total\n", diff_ns);
+	LM_DBG("waited %llu ns in total\n", diff_ns);
 	if (rc != 0) {
 		pthread_mutex_unlock(&ng_h2_response->mutex);
 
@@ -1049,4 +1049,3 @@ void http2_server(int rank)
 	run(int2str(h2_port, NULL), h2_tls_key.s, h2_tls_cert.s);
 	LM_ERR("HTTP2 server exiting!\n");
 }
-

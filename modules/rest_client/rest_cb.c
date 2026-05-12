@@ -43,7 +43,7 @@ size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 	str *buff = (str *)body;
 
 #ifdef EXTRA_DEBUG
-	LM_DBG("got body piece! bs: %lu, blocks: %lu\n", size, nmemb);
+	LM_DBG("got body piece! bs: %zu, blocks: %zu\n", size, nmemb);
 #endif
 
 	if (len == 0)
@@ -108,4 +108,3 @@ size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata)
 
 	return len;
 }
-
