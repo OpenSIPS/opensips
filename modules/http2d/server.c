@@ -635,7 +635,7 @@ static int on_frame_recv_callback(nghttp2_session *session,
 	switch (frame->hd.type) {
 	case NGHTTP2_DATA:
 	case NGHTTP2_HEADERS:
-		LM_DBG("h2 header [%d], %p %ld\n", frame->hd.type, frame->headers.nva, frame->headers.nvlen);
+		LM_DBG("h2 header [%d], %p %zu\n", frame->hd.type, frame->headers.nva, frame->headers.nvlen);
 		/* Check that the client request has finished */
 		if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
 			stream_data =
