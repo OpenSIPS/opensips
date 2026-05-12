@@ -3884,6 +3884,7 @@ dummy_reply:
 				{
 					b2b_dlginfo_t dlginfo;
 					b2b_add_dlginfo_t add_infof= dlg->add_dlginfo;
+					int confirmed_leg_id = b2b_get_leg_index(dlg, &to_tag);
 
 					/* delete all and add the confirmed leg */
 					b2b_delete_legs(&dlg->legs);
@@ -3893,6 +3894,8 @@ dummy_reply:
 						LM_ERR("Failed to add dialog leg\n");
 						goto error;
 					}
+					if (confirmed_leg_id >= 0)
+						leg->id = confirmed_leg_id;
 					dlg->tag[CALLEE_LEG] = leg->tag;
 					dlginfo.fromtag = to_tag;
 					dlginfo.callid = dlg->callid;
