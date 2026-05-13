@@ -2123,6 +2123,10 @@ static int w_sip_to_json(struct sip_msg *msg, pv_spec_t* out_json)
 	}
 
 	for (it=msg->headers;it;it=it->next) {
+		if (it->name.len >= sizeof(hdr_name_buf)) {
+			LM_WARN("header name too long (%d), skipping\n", it->name.len);
+			continue;
+		}
 		memcpy(hdr_name_buf,it->name.s,it->name.len);
 		hdr_name_buf[it->name.len] = 0;
 
