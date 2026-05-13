@@ -421,6 +421,7 @@ int handle_publish(struct sip_msg* msg, str* sender_uri)
 	int reply_code;
 	str reply_str;
 	int sent_reply= 0;
+	int content_type;
 	char* sphere= NULL;
 
 	reply_code= 400;
@@ -545,11 +546,16 @@ int handle_publish(struct sip_msg* msg, str* sender_uri)
 			}
 
 			if(sphere_enable && event->evp->parsed == EVENT_PRESENCE) {
-				if (parse_content_type_hdr(msg)< 0) {
+				content_type = parse_content_type_hdr(msg);
+				if (content_type < 0) {
 					LM_ERR("cannot parse content type\n");
 					goto error;
 				}
-				if(get_content_type(msg)== SUBTYPE_PIDFXML)
+				if (content_type == 0) {
+					LM_ERR("Content-Type header not found\n");
+					goto error;
+				}
+				if(content_type == (TYPE_APPLICATION << 16 | SUBTYPE_PIDFXML))
 					sphere= extract_sphere(body);
 			}
 		}
