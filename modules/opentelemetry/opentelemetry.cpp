@@ -26,6 +26,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <chrono>
 #include <string>
 #include <memory>
@@ -63,7 +64,6 @@ extern "C" {
 #include "../../profiling.h"
 #include "../../log_interface.h"
 #include "../../str.h"
-#include "../../pt.h"
 #include "../../route.h"
 #include "../../version.h"
 #include "../../ip_addr.h"
@@ -378,7 +378,7 @@ static int otel_init_provider(void)
 
 	otelsdkresource::ResourceAttributes attrs = {
 		{ "service.name", service_name },
-		{ "process.pid", (int64_t)my_pid() }
+		{ "process.pid", (int64_t)getpid() }
 	};
 
 	auto resource = otelsdkresource::Resource::Create(attrs);
