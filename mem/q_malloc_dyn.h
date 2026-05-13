@@ -405,7 +405,7 @@ void qm_status(struct qm_block *qm)
 #endif
 {
 	struct qm_frag *f;
-	int i,j;
+	int i;
 	int h;
 	int unused;
 
@@ -459,10 +459,10 @@ void qm_status(struct qm_block *qm)
 #endif
 
 	LM_GEN1(memdump, " dumping free list stats :\n");
-	for(h=0,i=0;h<QM_HASH_SIZE;h++){
+	for(h=0;h<QM_HASH_SIZE;h++){
 		unused=0;
-		for (f=qm->free_hash[h].head.u.nxt_free,j=0;
-				f!=&(qm->free_hash[h].head); f=f->u.nxt_free, i++, j++){
+		for (f=qm->free_hash[h].head.u.nxt_free,i=0;
+				f!=&(qm->free_hash[h].head); f=f->u.nxt_free, i++){
 				if (!FRAG_WAS_USED(f)){
 					unused++;
 #ifdef DBG_MALLOC
@@ -474,15 +474,15 @@ void qm_status(struct qm_block *qm)
 				}
 		}
 
-		if (j) LM_GEN1(memdump, "hash= %3d. fragments no.: %5d, unused: %5d\n"
+		if (i) LM_GEN1(memdump, "hash= %3d. fragments no.: %5d, unused: %5d\n"
 					"\t\t bucket size: %9lu - %9ld (first %9lu)\n",
-					h, j, unused, UN_HASH(h),
+					h, i, unused, UN_HASH(h),
 					((h<=Q_MALLOC_OPTIMIZE/QM_ROUNDTO)?1:2)*UN_HASH(h),
 					qm->free_hash[h].head.u.nxt_free->size
 				);
-		if (j!=qm->free_hash[h].no){
+		if (i!=qm->free_hash[h].no){
 			LM_CRIT("different free frag. count: %d!=%lu"
-				" for hash %3d\n", j, qm->free_hash[h].no, h);
+				" for hash %3d\n", i, qm->free_hash[h].no, h);
 		}
 
 	}
