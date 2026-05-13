@@ -114,6 +114,11 @@ int xj_jcon_connect(xj_jcon jbc)
     	LM_DBG("failed to get info about Jabber server address\n");
 		goto error;
     }
+	if(he->h_addrtype != AF_INET || he->h_length != sizeof(address.sin_addr))
+	{
+		LM_DBG("invalid Jabber server address family or length\n");
+		goto error;
+	}
 
 	memset(&address, 0, sizeof(address));
     // fill the fields of the address
@@ -816,4 +821,3 @@ int  xj_jcon_del_jconf(xj_jcon jbc, str *sid, char dl, int flag)
 }
 
 /**********    *********/
-
