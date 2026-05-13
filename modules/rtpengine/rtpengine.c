@@ -1836,6 +1836,12 @@ static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 	}
 	pkg_free(hostname);
 
+	if (res->ai_addrlen > sizeof(pnode->ai_addr)) {
+		LM_ERR("RTP proxy address is too large\n");
+		freeaddrinfo(res);
+		return 0;
+	}
+
 	rtpe_socks[pnode->idx] = socket((pnode->rn_umode == 6)
 			? AF_INET6 : AF_INET, SOCK_DGRAM, 0);
 	if ( rtpe_socks[pnode->idx] == -1) {
@@ -1853,7 +1859,7 @@ static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 	}
 
 	pnode->ai_addrlen = res->ai_addrlen;
-	memcpy(&(pnode->ai_addr), res->ai_addr, res->ai_addrlen);
+	memcpy(&pnode->ai_addr.s, res->ai_addr, res->ai_addrlen);
 
 	freeaddrinfo(res);
 	return 1;
@@ -3707,7 +3713,7 @@ static int start_async_send_rtpe_command(struct rtpe_node *node, bencode_item_t 
 			LM_ERR("can't create socket %d \n",errno);
 			goto badproxy;
 		}
-		if (connect(fd, &(node->ai_addr), node->ai_addrlen) < 0) {
+		if (connect(fd, &node->ai_addr.s, node->ai_addrlen) < 0) {
 			LM_ERR("can't connect to RTP proxy %s (%d:%s)\n",node->rn_url.s,errno,strerror(errno));
 			close(fd);
 			goto badproxy;
