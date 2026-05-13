@@ -130,6 +130,10 @@ static char *find_line_delimiter(char* p, char* plimit, str delimiter)
 			cp1 = l_memmem(cp, delimiterhead, plimit-cp, 2);
 			if (cp1 == NULL)
 				return NULL;
+			/* ensure enough room for the delimiter match */
+			if (plimit - cp1 < 2 + delimiter.len) {
+				return NULL;
+			}
 			/* We matched '--',
 			 * now let's match the boundary delimiter */
 			if (strncmp(cp1+2, delimiter.s, delimiter.len) == 0)
@@ -141,8 +145,6 @@ static char *find_line_delimiter(char* p, char* plimit, str delimiter)
 		}
 		if (cp1[-1] == '\n' || cp1[-1] == '\r')
 			return cp1;
-		if (plimit - cp1 < 2 + delimiter.len)
-			return NULL;
 		cp = cp1 + 2 + delimiter.len;
 	}
 }
