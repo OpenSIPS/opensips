@@ -2336,7 +2336,6 @@ str* create_winfo_xml(watcher_t* watchers, char* version,
 	xmlDocPtr doc = NULL;
     xmlNodePtr root_node = NULL, node = NULL;
 	xmlNodePtr w_list_node = NULL;
-	char content[200];
 	str *body= NULL;
 	char* buffer= NULL;
 	watcher_t* w;
@@ -2397,15 +2396,13 @@ str* create_winfo_xml(watcher_t* watchers, char* version,
 	w= watchers->next;
 	while(w)
 	{
-		strncpy( content,w->uri.s, w->uri.len);
-		content[ w->uri.len ]='\0';
-		node = xmlNewChild(w_list_node, NULL, BAD_CAST "watcher",
-				BAD_CAST content) ;
+		node = xmlNewChild(w_list_node, NULL, BAD_CAST "watcher", NULL) ;
 		if( node ==NULL)
 		{
 			LM_ERR("while adding child\n");
 			goto error;
 		}
+		xmlNodeSetContentLen(node, BAD_CAST w->uri.s, w->uri.len);
 		if(xmlNewProp(node, BAD_CAST "id", BAD_CAST w->id.s)== NULL)
 		{
 			LM_ERR("while adding new attribute\n");
