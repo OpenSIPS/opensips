@@ -842,7 +842,7 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 	mi_response_t *resp;
 	mi_item_t *resp_arr;
 	subs_t *s;
-	unsigned int i,j;
+	unsigned int i;
 	char from_w[256], to_w[256];
 	str match_from = {0,0}, match_to = {0,0};
 	int rc;
@@ -863,7 +863,7 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 		to_w[to->len] = 0;
 	}
 
-	for (i = 0, j = 0; i < shtable_size; i++) {
+	for (i = 0; i < shtable_size; i++) {
 
 		lock_get(&subs_htable[i].lock);
 		for (s = subs_htable[i].entries->next; s; s = s->next) {
@@ -878,7 +878,6 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 
 			if (mi_print_shtable_record(resp_arr, s) < 0)
 				goto error;
-			j++;
 		}
 		lock_release(&subs_htable[i].lock);
 	}
