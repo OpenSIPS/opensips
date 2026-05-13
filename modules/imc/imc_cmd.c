@@ -1037,10 +1037,14 @@ int imc_handle_unknown(struct sip_msg* msg, imc_cmd_t *cmd, str *src, str *dst)
 	body.len = snprintf(body.s, IMC_BUF_SIZE,
 		"invalid command '%.*s' - send ''%.*shelp' for details",
 		cmd->name.len, cmd->name.s, imc_cmd_start_str.len, imc_cmd_start_str.s);
-
-	if(body.len<=0)
+	if(body.len <= 0)
 	{
 		LM_ERR("unable to print message\n");
+		return -1;
+	}
+	if(body.len >= IMC_BUF_SIZE)
+	{
+		LM_ERR("buffer size overflow\n");
 		return -1;
 	}
 
