@@ -27,6 +27,7 @@
 #define _RTPENGINE_H
 
 #include "bencode.h"
+#include "../../ip_addr.h"
 #include "../../str.h"
 
 /* flags for set, node, and socket management */
@@ -46,7 +47,7 @@ struct rtpe_node {
 	unsigned int		rn_last_ticks;
 	int					rn_flags;
 	socklen_t       ai_addrlen;
-	struct sockaddr ai_addr;
+	union sockaddr_union ai_addr;
 
 	struct rtpe_node	*rn_next;
 };
