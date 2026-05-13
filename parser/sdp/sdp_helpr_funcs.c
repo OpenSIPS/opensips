@@ -328,30 +328,37 @@ int extract_bwidth(str *body, str *bwtype, str *bwwitdth)
 {
 	char *cp, *cp1;
 	int len;
+	str bline;
 
 	cp1 = NULL;
 	for (cp = body->s; (len = body->s + body->len - cp) > 0;) {
 		cp1 = (char*)l_memmem(cp, "b=", len, 2);
-		if (cp1 == NULL || cp1[-1] == '\n' || cp1[-1] == '\r')
+		if (cp1 == NULL || cp1 == body->s ||
+				cp1[-1] == '\n' || cp1[-1] == '\r')
 			break;
 		cp = cp1 + 2;
 	}
 	if (cp1 == NULL)
 		return -1;
 
-	bwtype->s = cp1 + 2;
-	bwtype->len = eat_line(bwtype->s, body->s + body->len - bwtype->s) - bwtype->s;
-	trim_len(bwtype->len, bwtype->s, *bwtype);
+	bline.s = cp1 + 2;
+	bline.len = eat_line(bline.s, body->s + body->len - bline.s) - bline.s;
+	trim_len(bline.len, bline.s, bline);
 
-	cp = bwtype->s;
-	len = bwtype->len;
+	cp = bline.s;
+	len = bline.len;
 	cp1 = (char*)l_memmem(cp, ":", len, 1);
+	if (cp1 == NULL) {
+		LM_ERR("invalid encoding in `b=%.*s'\n", bline.len, bline.s);
+		return -1;
+	}
 	len -= cp1 - cp;
 	if (len <= 0) {
-		LM_ERR("invalid encoding in `b=%.*s'\n", bwtype->len, bwtype->s);
+		LM_ERR("invalid encoding in `b=%.*s'\n", bline.len, bline.s);
 		return -1;
 	}
 	bwtype->len = cp1 - cp;
+	bwtype->s = cp;
 
 	/* skip ':' */
 	bwwitdth->s = cp1 + 1;
@@ -653,4 +660,3 @@ error:
 	hdr->len=tmp-hdr->name.s;
 	return tmp;
 }
-
