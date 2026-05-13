@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/types.h>
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
@@ -771,8 +772,10 @@ int imc_handle_list(struct sip_msg* msg, imc_cmd_t *cmd,
 	imc_member_p member = 0;
 	imc_member_p imp = 0;
 	str room_name;
-	str body;
+	str body = {0, 0};
 	char *p;
+	int marker_len;
+	int entry_len;
 
 	/* the user wants to leave the room */
 	room_name = cmd->param[0].s?cmd->param[0]:dst->user;
@@ -793,7 +796,43 @@ int imc_handle_list(struct sip_msg* msg, imc_cmd_t *cmd,
 				src->user.len, src->user.s,	room_name.len, room_name.s);
 		goto error;
 	}
-	p = imc_body_buf;
+
+	body.len = sizeof("Members:\n") - 1;
+	imp = room->members;
+	while(imp)
+	{
+		if((imp->flags&IMC_MEMBER_INVITED)||(imp->flags&IMC_MEMBER_DELETED)
+				|| (imp->flags&IMC_MEMBER_SKIP))
+		{
+			imp = imp->next;
+			continue;
+		}
+
+		marker_len = ((imp->flags & IMC_MEMBER_OWNER) ||
+				(imp->flags & IMC_MEMBER_ADMIN)) ? 1 : 0;
+		if(imp->uri.len > INT_MAX - marker_len - 1)
+		{
+			LM_ERR("member uri too large [%d]\n", imp->uri.len);
+			goto error;
+		}
+		entry_len = marker_len + imp->uri.len + 1;
+		if(entry_len > INT_MAX - 1 - body.len)
+		{
+			LM_ERR("member list too large\n");
+			goto error;
+		}
+		body.len += entry_len;
+		imp = imp->next;
+	}
+
+	body.s = pkg_malloc(body.len + 1);
+	if(body.s == NULL)
+	{
+		LM_ERR("no more pkg memory\n");
+		goto error;
+	}
+
+	p = body.s;
 	memcpy(p, "Members:\n", 9);
 	p+=9;
 	imp = room->members;
@@ -810,24 +849,25 @@ int imc_handle_list(struct sip_msg* msg, imc_cmd_t *cmd,
 			*p++ = '*';
 		else if(imp->flags & IMC_MEMBER_ADMIN)
 			*p++ = '~';
-		strncpy(p, imp->uri.s, imp->uri.len);
+		memcpy(p, imp->uri.s, imp->uri.len);
 		p += imp->uri.len;
 		*p++ = '\n';
 		imp = imp->next;
 	}
 
-	imc_release_room(room);
-
 	/* write over last '\n' */
 	*(--p) = 0;
-	body.s   = imc_body_buf;
 	body.len = p-body.s;
 	LM_DBG("members = [%.*s]\n", body.len, body.s);
 	imc_send_message(&room->uri, &member->uri, &imc_hdr_ctype, &body);
 
+	pkg_free(body.s);
+	imc_release_room(room);
 
 	return 0;
 error:
+	if(body.s)
+		pkg_free(body.s);
 	if(room!=NULL)
 		imc_release_room(room);
 	return -1;
@@ -1236,4 +1276,3 @@ error:
 		shm_free(*ps->param);
 	return;
 }
-
