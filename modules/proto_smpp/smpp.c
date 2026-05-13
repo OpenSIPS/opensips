@@ -977,6 +977,12 @@ static void parse_submit_or_deliver_body(smpp_submit_sm_t *body, smpp_header_t *
 	body->data_coding = *p++;
 	body->sm_default_msg_id = *p++;
 	body->sm_length = *p++;
+	if (body->sm_length > MAX_SMS_CHARACTERS) {
+		LM_ERR("invalid short_message length %u (max %u)\n",
+			body->sm_length, MAX_SMS_CHARACTERS);
+		body->sm_length = 0;
+		return;
+	}
 	copy_fixed_str(body->short_message, p, body->sm_length);
 }
 
@@ -1548,6 +1554,14 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 		init_str(&hdr, "Content-Type:text/plain; charset=UTF-16\r\n");
 	else
 		init_str(&hdr, "Content-Type:text/plain\r\n");
+
+	if (body->sm_length > MAX_SMS_CHARACTERS) {
+		LM_ERR("invalid short_message length %u (max %u)\n",
+			body->sm_length, MAX_SMS_CHARACTERS);
+		pkg_free(src.s);
+		pkg_free(dst.s);
+		return -1;
+	}
 
 	if (body->data_coding == SMPP_CODING_UCS2) {
 		memset(sms_body,0,2*MAX_SMS_CHARACTERS);
