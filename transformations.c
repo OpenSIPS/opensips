@@ -957,7 +957,8 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				val->flags |= PV_VAL_STR;
 				break;
 			}
-			if(val->rs.len>TR_BUFFER_SIZE-1) {
+			if(val->rs.len>TR_BUFFER_SIZE-1 ||
+				calc_base64_encode_len(val->rs.len)>TR_BUFFER_SIZE) {
 				LM_ERR("b64encode value larger than buffer\n");
 				goto error;
 			}
