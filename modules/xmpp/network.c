@@ -37,6 +37,30 @@
 #include "../../sr_module.h"
 #include "../../resolve.h"
 
+static int net_resolve_ipv4(char *server, struct in_addr *addr)
+{
+	struct hostent *host;
+
+	if (inet_aton(server, addr))
+		return 0;
+
+	LM_DBG("resolving %s...\n", server);
+
+	host = resolvehost(server,0);
+	if (!host) {
+		LM_ERR("resolving %s failed (%s).\n", server, hstrerror(h_errno));
+		return -1;
+	}
+	if (host->h_addrtype != AF_INET || host->h_length != sizeof(*addr) ||
+			host->h_addr_list[0] == NULL) {
+		LM_ERR("invalid address family or length for %s\n", server);
+		return -1;
+	}
+
+	memcpy(addr, host->h_addr_list[0], sizeof(*addr));
+	return 0;
+}
+
 int net_listen(char *server, int port)
 {
 	int fd;
@@ -47,18 +71,8 @@ int net_listen(char *server, int port)
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(port);
 
-	if (!inet_aton(server, &sin.sin_addr)) {
-		struct hostent *host;
-
-		LM_DBG("resolving %s...\n", server);
-
-		if (!(host = resolvehost(server,0))) {
-			LM_ERR("resolving %s failed (%s).\n", server,
-					hstrerror(h_errno));
-			return -1;
-		}
-		memcpy(&sin.sin_addr, host->h_addr_list[0], host->h_length);
-	}
+	if (net_resolve_ipv4(server, &sin.sin_addr) < 0)
+		return -1;
 
 	if ((fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		LM_ERR("socket() failed: %s\n", strerror(errno));
@@ -95,18 +109,8 @@ int net_connect(char *server, int port)
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(port);
 
-	if (!inet_aton(server, &sin.sin_addr)) {
-		struct hostent *host;
-
-		LM_DBG("resolving %s...\n", server);
-
-		if (!(host = resolvehost(server,0))) {
-			LM_ERR("resolving %s failed (%s).\n", server,
-					hstrerror(h_errno));
-			return -1;
-		}
-		memcpy(&sin.sin_addr, host->h_addr_list[0], host->h_length);
-	}
+	if (net_resolve_ipv4(server, &sin.sin_addr) < 0)
+		return -1;
 
 	if ((fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		LM_ERR("socket() failed: %s\n", strerror(errno));
