@@ -428,6 +428,7 @@ static int receive_urecord_insert(bin_packet_t *packet)
 {
 	str d, aor, kv_str;
 	urecord_t *r;
+	map_t kv_storage;
 	udomain_t *domain;
 	int sl;
 	short pkg_ver = get_bin_pkg_version(packet);
@@ -463,7 +464,11 @@ static int receive_urecord_insert(bin_packet_t *packet)
 
 	if (pkg_ver >= UL_BIN_V5) {
 		bin_pop_str(packet, &kv_str);
-		r->kv_storage = store_deserialize(&kv_str);
+		kv_storage = store_deserialize(&kv_str);
+		if (kv_storage) {
+			store_destroy(r->kv_storage);
+			r->kv_storage = kv_storage;
+		}
 	}
 
 out:
