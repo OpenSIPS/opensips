@@ -517,7 +517,7 @@ Chapter 3. Contributors
    3. Liviu Chircu (@liviuchircu) 22 12 256 395
    4. Ovidiu Sas (@ovidiusas) 17 13 230 109
    5. Daniel-Constantin Mierla (@miconda) 12 8 144 97
-   6. Razvan Crainea (@razvancrainea) 10 7 76 83
+   6. Razvan Crainea (@razvancrainea) 11 8 76 96
    7. Edson Gellert Schubert 10 1 0 501
    8. Saúl Ibarra Corretgé (@saghul) 9 5 243 31
    9. Henning Westerholt (@henningw) 7 4 86 76
@@ -552,13 +552,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Apr 2026
-   2.  Ken Rice                            Sep 2025 - Sep 2025
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   4.  Carsten Bock                        Mar 2024 - Mar 2024
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
-   7.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2021
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Apr 2026
+   3.  Ken Rice                            Sep 2025 - Sep 2025
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   5.  Carsten Bock                        Mar 2024 - Mar 2024
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
    8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    10. Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2016
