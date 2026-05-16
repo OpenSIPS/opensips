@@ -1699,13 +1699,13 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 416 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 359 216 9397 3830
+   2. Liviu Chircu (@liviuchircu) 361 217 9403 3831
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 246 150 4232 3624
    4. Vlad Patrascu (@rvlad-patrascu) 43 25 794 661
    5. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    6. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    7. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
-   8. Razvan Crainea (@razvancrainea) 31 24 427 159
+   8. Razvan Crainea (@razvancrainea) 32 25 429 160
    9. Henning Westerholt (@henningw) 21 11 462 356
    10. Maksym Sobolyev (@sobomax) 19 13 347 162
 
@@ -1744,15 +1744,15 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2026
-   2.  Norman Brandinger (@NormB)          Aug 2006 - May 2025
-   3.  Gang Zhuo                           Nov 2024 - Nov 2024
-   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   5.  Carsten Bock                        Mar 2024 - Mar 2024
-   6.  Maksym Sobolyev (@sobomax)          Apr 2003 - Dec 2023
-   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   8.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
-   9.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jan 2023
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2026
+   2.  Razvan Crainea (@razvancrainea)     Jul 2011 - May 2026
+   3.  Norman Brandinger (@NormB)          Aug 2006 - May 2025
+   4.  Gang Zhuo                           Nov 2024 - Nov 2024
+   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   6.  Carsten Bock                        Mar 2024 - Mar 2024
+   7.  Maksym Sobolyev (@sobomax)          Apr 2003 - Dec 2023
+   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   9.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
    10. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Feb 2022
 
    All remaining contributors: Walter Doekes (@wdoekes), Zero King
