@@ -51,6 +51,8 @@
 #include "ua_api.h"
 
 #define BUF_LEN              65535
+#define RACK_HDR_PREFIX      "RAck: "
+#define RACK_HDR_PREFIX_LEN  (sizeof(RACK_HDR_PREFIX) - 1)
 
 str ack = str_init(ACK);
 str bye = str_init(BYE);
@@ -3809,8 +3811,9 @@ dummy_reply:
 				{
 					str method={"PRACK", 5};
 					str extra_headers;
-					char buf[128];
 					str rseq, cseq;
+					char *p;
+					int rack_overhead;
 					hdr = get_header_by_static_name( msg, "RSeq");
 					if(!hdr)
 					{
@@ -3821,17 +3824,43 @@ dummy_reply:
 					cseq = msg->cseq->body;
 					trim_trailing(&rseq);
 					trim_trailing(&cseq);
-					sprintf(buf, "RAck: %.*s %.*s\r\n",
-							rseq.len, rseq.s, cseq.len, cseq.s);
-					extra_headers.s = buf;
-					extra_headers.len = strlen(buf);
+					rack_overhead = RACK_HDR_PREFIX_LEN + 1 /* space */ + CRLF_LEN;
+					if (rseq.len < 0 || cseq.len < 0 ||
+							rseq.len > BUF_LEN - rack_overhead ||
+							cseq.len > BUF_LEN - rack_overhead - rseq.len) {
+						LM_ERR("RAck header too large\n");
+						goto error;
+					}
+					extra_headers.len = rack_overhead + rseq.len + cseq.len;
+					extra_headers.s = pkg_malloc(extra_headers.len);
+					if (!extra_headers.s) {
+						LM_ERR("no more private memory\n");
+						goto error;
+					}
+
+					p = extra_headers.s;
+					memcpy(p, RACK_HDR_PREFIX, RACK_HDR_PREFIX_LEN);
+					p += RACK_HDR_PREFIX_LEN;
+					memcpy(p, rseq.s, rseq.len);
+					p += rseq.len;
+					*p++ = ' ';
+					memcpy(p, cseq.s, cseq.len);
+					p += cseq.len;
+					memcpy(p, CRLF, CRLF_LEN);
 					if (passthru_prack)
 					{
 						/* Store the RAck header for when a response PRACK comes */
 						if (leg->prack_headers.s) {
 							shm_free(leg->prack_headers.s);
+							leg->prack_headers.s = NULL;
+							leg->prack_headers.len = 0;
 						}
 						leg->prack_headers.s = shm_malloc(extra_headers.len);
+						if (!leg->prack_headers.s) {
+							LM_ERR("no more shared memory\n");
+							pkg_free(extra_headers.s);
+							goto error;
+						}
 						memcpy(leg->prack_headers.s, extra_headers.s, extra_headers.len);
 						leg->prack_headers.len = extra_headers.len;
 						LM_DBG("leg->prack_headers %d[%.*s]\n", leg->prack_headers.len ,leg->prack_headers.len, leg->prack_headers.s);
@@ -3846,6 +3875,7 @@ dummy_reply:
 							LM_ERR("Failed to send PRACK\n");
 						}
 				       }
+					pkg_free(extra_headers.s);
 				}
 				goto b2b_tm_done1;
 			}
