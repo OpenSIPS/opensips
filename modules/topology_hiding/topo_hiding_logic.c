@@ -386,6 +386,16 @@ static char * topo_ct_param_copy(char *buf, str *name, str *val, int should_quot
 	return buf;
 }
 
+static inline int topo_ct_short_len(int len, short *out, const char *field)
+{
+	if (len < 0 || len > SHRT_MAX) {
+		LM_ERR("%s too long for encoded contact (%d)\n", field, len);
+		return -1;
+	}
+	*out = (short)len;
+	return 0;
+}
+
 static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg,
 		int leg, str *ct_user)
 {
@@ -1750,15 +1760,16 @@ error:
 /* Via headers will be restored using the TM module, no need to save anything for them */
 static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len, int flags)
 {
-	short rr_len,ct_len,addr_len,flags_len,enc_len;
+	short rr_len,ct_len,addr_len,flags_len;
 	char *suffix_plain,*suffix_enc,*p,*s;
 	str rr_set = {NULL, 0};
 	str contact;
 	str flags_str;
-	int i,total_len;
+	int i,total_len,enc_len;
 	struct sip_uri ctu;
 	struct th_ct_params* el;
 	param_t *it;
+	int free_rr_set = 0;
 	int is_req = (msg->first_line.type==SIP_REQUEST)?1:0;
 	int local_len = sizeof(short) /* RR length */ +
 			sizeof(short) /* Contact length */ +
@@ -1774,13 +1785,16 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 
 	if (routes && routes->len) {
 		rr_set = *routes;
-		rr_len = (short)routes->len;
+		if (topo_ct_short_len(routes->len, &rr_len, "route set") < 0)
+			return NULL;
 	} else if(msg->record_route){
 		if(print_rr_body(msg->record_route, &rr_set, !is_req, 0, NULL) != 0){
 			LM_ERR("failed to print route records \n");
 			return NULL;
 		}
-		rr_len = (short)rr_set.len;
+		free_rr_set = 1;
+		if (topo_ct_short_len(rr_set.len, &rr_len, "route set") < 0)
+			goto error;
 	} else {
 		rr_len = 0;
 	}
@@ -1792,13 +1806,17 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 		goto error;
 	} else {
 		contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
-		ct_len = (short)contact.len;
+		if (topo_ct_short_len(contact.len, &ct_len, "contact") < 0)
+			goto error;
 	}
 
 	flags_str.s = int2str(flags, &flags_str.len);
-	flags_len = (short)flags_str.len;
+	if (topo_ct_short_len(flags_str.len, &flags_len, "flags") < 0)
+		goto error;
 	
-	addr_len = (short)msg->rcv.bind_address->sock_str.len;
+	if (topo_ct_short_len(msg->rcv.bind_address->sock_str.len,
+			&addr_len, "bind address") < 0)
+		goto error;
 	local_len += rr_len + ct_len + flags_len + addr_len; 
 	enc_len = th_ct_enc_scheme == ENC_BASE64 ?
 		calc_word64_encode_len(local_len) : calc_word32_encode_len(local_len);
@@ -1915,13 +1933,13 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 		}
 	}
 
-	if (rr_set.s && !routes)
+	if (rr_set.s && free_rr_set)
 		pkg_free(rr_set.s);
 	pkg_free(suffix_plain);
 	*suffix_len = total_len;
 	return suffix_enc;
 error:
-	if (rr_set.s)
+	if (rr_set.s && free_rr_set)
 		pkg_free(rr_set.s);
 	return NULL;
 }
