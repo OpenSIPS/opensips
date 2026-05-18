@@ -2560,6 +2560,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl
 				{
 					LM_ERR("not enough space in the buffer: "
 						"U_REPLACES_BUF_LEN < %d\n", i);
+					goto done;
 				}
 				memcpy(u_replaces.s,
 					r_peer->dlginfo->callid.s, r_peer->dlginfo->callid.len);
