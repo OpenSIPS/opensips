@@ -516,6 +516,12 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 		}
 	}
 
+	if (!h3.payload_chunk.data ||
+			h3.payload_chunk.chunk.length < sizeof(hep_chunk_t)) {
+		LM_ERR("HEPv3 packet missing payload chunk\n");
+		goto error;
+	}
+
 safe_exit:
 	h->u.hepv3 = h3;
 

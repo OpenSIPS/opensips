@@ -980,7 +980,7 @@ static int hep_udp_read_req(const struct socket_info* si, int* bytes_read)
 
 	if (len < 4) {
 		LM_ERR("invalid message! too short!\n");
-		return -1;
+		goto error_free_hep;
 	}
 
 	if (!memcmp(buf, HEP_HEADER_ID, HEP_HEADER_ID_LEN)) {
@@ -988,14 +988,14 @@ static int hep_udp_read_req(const struct socket_info* si, int* bytes_read)
 		/* coverity[tainted_data] */
 		if (unpack_hepv3(buf, len, &hep_ctx->h)) {
 			LM_ERR("hepv3 unpacking failed\n");
-			return -1;
+			goto error_free_hep;
 		}
 	} else {
 		/* HEPv2 */
 		/* coverity[tainted_data] */
 		if (unpack_hepv12(buf, len, &hep_ctx->h)) {
 			LM_ERR("hepv12 unpacking failed\n");
-			return -1;
+			goto error_free_hep;
 		}
 	}
 
@@ -1019,7 +1019,7 @@ static int hep_udp_read_req(const struct socket_info* si, int* bytes_read)
 	set_global_context(NULL);
 	if (ret < 0) {
 		LM_ERR("failed to run hep callbacks\n");
-		return -1;
+		goto error_free_ctx;
 	}
 
 	if (hep_ctx->h.version == 3) {
@@ -1051,8 +1051,10 @@ static int hep_udp_read_req(const struct socket_info* si, int* bytes_read)
 
 	return 0;
 
+error_free_ctx:
+	context_free(ctx);
 error_free_hep:
-	shm_free(hep_ctx);
+	free_hep_context(hep_ctx);
 	return -1;
 
 }
