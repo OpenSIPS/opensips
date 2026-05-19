@@ -183,6 +183,8 @@ static FILE *get_acc_log(void)
 	return acc_log[acc_log_idx];
 }
 
+#define MAX_ACC_COLS  100
+
 #define IOV_ADD_NUMBER(number) \
 	{\
 		buf[nums] = malloc(20 + 1); \
@@ -206,18 +208,17 @@ static FILE *get_acc_log(void)
 
 #define IOV_CLEANUP() \
 	{\
-		for (nums -= 1; nums > 0; nums--) \
-			free(buf[nums]); \
+		while (nums > 0) \
+			free(buf[--nums]); \
 	}
 
 /* Callback for incoming Base Accounting application messages */
 static int acc_request( struct msg ** msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
 {
-	#define MAX_ACC_COLS  100
 	struct iovec iov[MAX_ACC_COLS * 2];
 	char *buf[MAX_ACC_COLS];
 	struct msg_hdr *hdr = NULL;
-	int rc, n = 0, nums = 0;
+	int rc, n = 0, nums = 0, drop_record = 0;
 
 	fd_log_debug("[ACC] request received");
 	TRACE_ENTRY("%p %p %p %p", msg, avp, sess, act);
@@ -295,6 +296,12 @@ static int acc_request( struct msg ** msg, struct avp * avp, struct session * se
 				time_t ts;
 				unsigned char *bytes;
 
+				if (n + 2 > MAX_ACC_COLS * 2 || nums >= MAX_ACC_COLS) {
+					fd_log_error("[ACC] too many AVPs, dropping accounting record");
+					drop_record = 1;
+					break;
+				}
+
 				bytes = h->avp_value->os.data;
 
 				ts = ((time_t)bytes[0] << 24) | ((time_t)bytes[1] << 16) |
@@ -307,10 +314,22 @@ static int acc_request( struct msg ** msg, struct avp * avp, struct session * se
 			}
 
 			if (h->avp_value->os.len) {
+				if (n + 2 > MAX_ACC_COLS * 2) {
+					fd_log_error("[ACC] too many AVPs, dropping accounting record");
+					drop_record = 1;
+					break;
+				}
+
 				IOV_ADD_STRING(h->avp_value->os.data, h->avp_value->os.len);
 				fd_log_debug("[ACC] adding AVP %d (string, '%.*s')",
 						h->avp_code, h->avp_value->os.len, h->avp_value->os.data);
 			} else {
+				if (n + 2 > MAX_ACC_COLS * 2 || nums >= MAX_ACC_COLS) {
+					fd_log_error("[ACC] too many AVPs, dropping accounting record");
+					drop_record = 1;
+					break;
+				}
+
 				IOV_ADD_NUMBER(h->avp_value->u32);
 				fd_log_debug("[ACC] adding AVP %d (integer, %d)",
 						h->avp_code, h->avp_value->u32);
@@ -320,7 +339,7 @@ next:
 			CHECK_FCT( fd_msg_browse(nextavp, MSG_BRW_NEXT, (void *)&nextavp, NULL) );
 		}
 
-		if (acc_log_cdrs && n) {
+		if (!drop_record && acc_log_cdrs && n) {
 			FILE *f = get_acc_log();
 
 			iov[n - 1].iov_base = "\n";
@@ -333,9 +352,8 @@ next:
 			} else {
 				fflush(f);
 			}
-
-			IOV_CLEANUP();
 		}
+		IOV_CLEANUP();
 
 		fd_log_debug("----------------------------------------------------------------------");
 
