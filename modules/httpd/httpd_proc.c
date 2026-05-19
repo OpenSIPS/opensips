@@ -296,13 +296,18 @@ static MHD_RET post_iterator (void *cls,
 	LM_DBG("[%.*s]->[%.*s]\n", key_len, key, (int)size, value);
 
 	kv = (str_str_t*)slinkedl_append(pr->p_list,
-						sizeof(str_str_t) + key_len + size);
+						sizeof(str_str_t) + key_len + size + 1);
+	if (!kv) {
+		LM_ERR("oom\n");
+		pr->status = -1; return MHD_NO;
+	}
 	p = (char*)(kv + 1);
 	kv->key.len = key_len; kv->key.s = p;
 	memcpy(p, key, key_len);
 	p += key_len;
 	kv->val.len = size; kv->val.s = p;
 	memcpy(p, value, size);
+	p[size] = '\0';
 	LM_DBG("inserting element pr=[%p] pp=[%p] p_list=[%p]\n",
 				pr, pr->pp, pr->p_list);
 
@@ -619,7 +624,11 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 					/* Save the entire body as the '1' key */
 					kv = (str_str_t*)slinkedl_append(pr->p_list,
 							sizeof(str_str_t) + 1 +
-							*upload_data_size);
+							*upload_data_size + 1);
+					if (!kv) {
+						LM_ERR("oom\n");
+						goto mhd_no;
+					}
 					p = (char*)(kv + 1);
 					kv->key.len = 1; kv->key.s = p;
 					memcpy(p, "1", 1);
@@ -627,6 +636,7 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 					kv->val.len = *upload_data_size;
 					kv->val.s = p;
 					memcpy(p, upload_data, *upload_data_size);
+					p[*upload_data_size] = '\0';
 					break;
 				default:
 					LM_ERR("Unhandled data for ContentType [%d]\n",
