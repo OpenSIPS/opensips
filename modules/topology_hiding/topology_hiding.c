@@ -30,6 +30,9 @@
 #include "topo_hiding_logic.h"
 #include "th_no_dlg_logic.h"
 
+#include "../../trim.h"
+#include "../../ut.h"
+
 struct tm_binds tm_api;
 struct dlg_binds dlg_api;
 
@@ -39,21 +42,17 @@ int th_loop_protection = 0;
 str topo_hiding_ct_hdr_params = {0,0};
 str topo_hiding_prefix = str_init("DLGCH_");
 str topo_hiding_seed = str_init("OpenSIPS");
-str topo_hiding_ct_encode_pw = str_init("ToPoCtPaSS");
-str th_contact_encode_param = str_init("thinfo");
+
 str th_contact_encode_scheme = str_init("base64");
 str th_contact_caller_var = str_init("_th_contact_caller_username_var_");
 str th_contact_callee_var = str_init("_th_contact_callee_username_var_");
-str topo_hiding_ct_encode_pw_legacy = str_init("ToPoCtPaSS");
-str th_contact_encode_param_legacy = str_init("thinfol");
-str th_contact_encode_scheme_legacy = str_init("base64");
+
 str th_internal_trusted_tag = STR_EMPTY;
 str th_external_socket_tag = STR_EMPTY;
+str th_use_param = DEFAULT_PARAM;
 int auto_route_on_trusted_socket = 1;
-int th_compact_encoding = 0;
 
 int th_ct_enc_scheme;
-int th_ct_enc_scheme_legacy;
 
 /* Global buffer for decoded routes */
 str decoded_uris[12];
@@ -95,24 +94,20 @@ static const cmd_export_t cmds[]={
 
 /* Exported parameters */
 static const param_export_t params[] = {
-	{ "force_dialog",                    INT_PARAM, &force_dialog                      },
-	{ "th_passed_contact_uri_params",    STR_PARAM, &topo_hiding_ct_params.s           },
-	{ "th_passed_contact_params",        STR_PARAM, &topo_hiding_ct_hdr_params.s       },
-	{ "th_callid_passwd",                STR_PARAM, &topo_hiding_seed.s                },
-	{ "th_callid_prefix",                STR_PARAM, &topo_hiding_prefix.s              },
-	{ "th_contact_encode_passwd",        STR_PARAM, &topo_hiding_ct_encode_pw.s        },
-	{ "th_contact_encode_param",         STR_PARAM, &th_contact_encode_param.s         },
-	{ "th_contact_encode_scheme",        STR_PARAM, &th_contact_encode_scheme.s        },
-	{ "th_contact_caller_username_var",  STR_PARAM, &th_contact_caller_var.s           },
-	{ "th_contact_callee_username_var",  STR_PARAM, &th_contact_callee_var.s           },
-	{ "th_contact_encode_passwd_legacy", STR_PARAM, &topo_hiding_ct_encode_pw_legacy.s },
-	{ "th_contact_encode_param_legacy",  STR_PARAM, &th_contact_encode_param_legacy.s  },
-	{ "th_contact_encode_scheme_legacy", STR_PARAM, &th_contact_encode_scheme_legacy.s },
-	{ "th_internal_trusted_tag",         STR_PARAM, &th_internal_trusted_tag.s         },
-	{ "th_external_socket_tag",          STR_PARAM, &th_external_socket_tag.s          },
-	{ "th_auto_route_on_trusted_socket", INT_PARAM, &auto_route_on_trusted_socket      },
-	{ "th_compact_encoding",             INT_PARAM, &th_compact_encoding               },
-	{ "th_callid_loop_protection",       INT_PARAM, &th_loop_protection                },
+	{ "force_dialog",                     INT_PARAM,                &force_dialog                 },
+	{ "th_passed_contact_uri_params",     STR_PARAM,                &topo_hiding_ct_params.s      },
+	{ "th_passed_contact_params",         STR_PARAM,                &topo_hiding_ct_hdr_params.s  },
+	{ "th_callid_passwd",                 STR_PARAM,                &topo_hiding_seed.s           },
+	{ "th_callid_prefix",                 STR_PARAM,                &topo_hiding_prefix.s         },
+	{ "th_contact_encode_scheme",         STR_PARAM,                &th_contact_encode_scheme.s   },
+	{ "th_contact_caller_username_var",   STR_PARAM,                &th_contact_caller_var.s      },
+	{ "th_contact_callee_username_var",   STR_PARAM,                &th_contact_callee_var.s      },
+	{ "th_callid_loop_protection",        INT_PARAM,                &th_loop_protection           },
+	{ "th_internal_trusted_tag",          STR_PARAM,                &th_internal_trusted_tag.s    },
+	{ "th_external_socket_tag",           STR_PARAM,                &th_external_socket_tag.s     },
+	{ "th_auto_route_on_trusted_socket",  INT_PARAM,                &auto_route_on_trusted_socket },
+	{ "th_use_param",                     STR_PARAM,                &th_use_param.s               },
+	{ "th_contact_encode_param_password", STR_PARAM|USE_FUNC_PARAM, th_add_encode_param_password  },
 	{0, 0, 0}
 };
 
@@ -183,10 +178,6 @@ static int mod_init(void)
 	/* param handling */
 	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
 	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
-	th_contact_encode_param.len = strlen(th_contact_encode_param.s);
-	topo_hiding_ct_encode_pw.len = strlen(topo_hiding_ct_encode_pw.s);
-	th_contact_encode_param_legacy.len = strlen(th_contact_encode_param_legacy.s);
-	topo_hiding_ct_encode_pw_legacy.len = strlen(topo_hiding_ct_encode_pw_legacy.s);
 	if (topo_hiding_ct_params.s) {
 		topo_hiding_ct_params.len = strlen(topo_hiding_ct_params.s);
 		topo_parse_passed_ct_params(&topo_hiding_ct_params);
@@ -204,17 +195,6 @@ static int mod_init(void)
 		th_ct_enc_scheme = ENC_BASE32;
 	else {
 		LM_ERR("Unsupported value for 'th_contact_encode_scheme' modparam!"
-			"Use 'base64' or 'base32'\n");
-		goto error;
-	}
-	
-	th_contact_encode_scheme_legacy.len = strlen(th_contact_encode_scheme_legacy.s);
-	if (!str_strcmp(&th_contact_encode_scheme_legacy, const_str("base64")))
-		th_ct_enc_scheme_legacy = ENC_BASE64;
-	else if (!str_strcmp(&th_contact_encode_scheme_legacy, const_str("base32")))
-		th_ct_enc_scheme_legacy = ENC_BASE32;
-	else {
-		LM_ERR("Unsupported value for 'th_contact_encode_scheme_legacy' modparam!"
 			"Use 'base64' or 'base32'\n");
 		goto error;
 	}
@@ -258,6 +238,10 @@ static int mod_init(void)
 					"hiding signalling for ongoing calls will be lost after "
 					"restart\n");
 
+	if (th_set_use_param(&th_use_param) < 0) {
+		LM_ERR("Param '%.*s' not in options\n", th_use_param.len, th_use_param.s);
+		return -1;
+	}
 
 	return 0;
 error:
@@ -266,7 +250,7 @@ error:
 
 static void mod_destroy(void)
 {
-	return;
+	th_free_param_passwords();
 }
 
 static int fixup_mmode(void **param)

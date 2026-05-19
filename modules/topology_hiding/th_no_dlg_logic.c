@@ -105,19 +105,25 @@ static char decoded_uri_str[MAX_ENCODED_URI_SIZE * 3];
 static char dec_buf_legacy[4096];
 
 extern int th_ct_enc_scheme;
-extern str topo_hiding_ct_encode_pw;
-extern str th_contact_encode_param;
-extern int th_ct_enc_scheme_legacy;
-extern str topo_hiding_ct_encode_pw_legacy;
-extern str th_contact_encode_param_legacy;
 extern str th_internal_trusted_tag;
 extern str th_external_socket_tag;
 extern str th_is_self_socket_tag;
 extern int auto_route_on_trusted_socket;
-extern int th_compact_encoding;
 
 extern struct th_ct_params *th_param_list;
 extern struct th_ct_params *th_hdr_param_list;
+
+static int param_password_count = 0;
+static char *buffers[TH_INFO_PASSWORD_ROTATION_SIZE] = { 0 };
+static thinfo_options_t param_passwords[TH_INFO_PASSWORD_ROTATION_SIZE] = {
+	{
+		.param_name = DEFAULT_PARAM,
+		.param_password = DEFAULT_PW,
+		.compact_encoding = 1
+	}
+};
+
+static thinfo_options_t *encoding_options = NULL;
 
 typedef struct {
 	unsigned int delete_count;
@@ -149,20 +155,23 @@ typedef struct {
             (db).state |= HAS_SOCK; \
     } while(0)
 
-typedef decoded_info_buffer_t (*decode_info_fn)(str *);
-static decoded_info_buffer_t decode_info_buffer(str *);
-static decoded_info_buffer_t decode_info_buffer_legacy(str *);
+typedef decoded_info_buffer_t (*decode_info_fn)(str *, const thinfo_options_t *);
+static decoded_info_buffer_t decode_info_buffer(str *, const thinfo_options_t *);
+static decoded_info_buffer_t decode_info_buffer_legacy(str *, const thinfo_options_t *);
 
 static int th_no_dlg_encode_contact(struct sip_msg *, uint16_t, str, str *);
 
 static inline int th_no_dlg_onrequest(struct sip_msg *, uint16_t, str *);
 static void th_no_dlg_onreply(struct cell *, int, struct tmcb_params *);
-static int th_no_dlg_seq_handling(struct sip_msg *, str *, decode_info_fn);
+static int th_no_dlg_seq_handling(struct sip_msg *, str *, decode_info_fn, const thinfo_options_t *);
 static inline int th_no_dlg_one_way_hiding(const struct socket_info *);
 static struct lump* th_no_dlg_add_auto_record_route(struct sip_msg *, uint16_t, struct lump *);
 static route_count_t th_no_dlg_match_record_route_or_route_uris(struct sip_msg *, struct sip_msg *, hdr_types_t, int);
 
 static char* build_encoded_thinfo_suffix(struct sip_msg *, str, int *, uint16_t, int);
+static char* build_encoded_contact_suffix_legacy(struct sip_msg *, str, int *, int);
+
+static thinfo_options_t *th_get_options(const str *);
 
 int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_flags, struct th_params *params) {
 	struct th_no_dlg_param *p = NULL;
@@ -189,12 +198,17 @@ int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_f
 	memset(p, 0, sizeof *p);
 	
 	if (!(extra_flags & TOPOH_KEEP_USER)) {
-		p->username.s = (char *)(p + 1);
-		p->username.len =  params->ct_callee_user.len;
-		memcpy(p->username.s,  params->ct_callee_user.s,
-				params->ct_callee_user.len);
-
-		username = &params->ct_caller_user;
+		if (params && params->ct_callee_user.len) {
+			p = shm_malloc(sizeof *p + params->ct_callee_user.len);
+			if (p) {
+				memset(p, 0, sizeof *p);
+				p->username.s = (char *)(p + 1);
+				p->username.len =  params->ct_callee_user.len;
+				memcpy(p->username.s,  params->ct_callee_user.s,
+						params->ct_callee_user.len);
+				username = &params->ct_callee_user;
+			}
+		}
 	}
 
 	p->flags = extra_flags;
@@ -215,7 +229,7 @@ error:
 	return -1;
 }
 
-static int th_no_dlg_auto_route_seq_handling(struct sip_msg *msg, rr_t auto_route[static 1], str thinfo[static 1], int self_route) {
+static int th_no_dlg_auto_route_seq_handling(struct sip_msg *msg, rr_t auto_route[static 1], str thinfo[static 1], int self_route, const thinfo_options_t *options) {
 	struct th_no_dlg_param *p = NULL;
 	rr_t *after_auto = NULL;
 	const struct socket_info *sock = NULL;
@@ -247,7 +261,7 @@ static int th_no_dlg_auto_route_seq_handling(struct sip_msg *msg, rr_t auto_rout
 	LM_DBG("Size of base64 decoded length %d and size of param len %d\n", dec_len, thinfo->len);
 
 	for (i = 0; i < dec_len; i++)
-		decoded_uri_buf.buf[i] ^= topo_hiding_ct_encode_pw.s[i % topo_hiding_ct_encode_pw.len];
+		decoded_uri_buf.buf[i] ^= options->param_password.s[i % options->param_password.len];
 
 	if (thinfo_get_uri_count(&decoded_uri_buf) != 0) {
 		LM_ERR("Encoded URI count is invalid, can only be 0 in auto Route\n");
@@ -354,6 +368,7 @@ int topo_hiding_match_no_dlg(struct sip_msg *msg) {
 	str *thinfo = NULL;
 	rr_t *auto_route = NULL;
 	int i, self_route, tag_match;
+	thinfo_options_t *thinfo_decode = NULL;
 
 	if (parse_sip_msg_uri(msg) < 0) {
 		LM_ERR("Failed to parse request URI\n");
@@ -370,16 +385,17 @@ int topo_hiding_match_no_dlg(struct sip_msg *msg) {
 		/* topology_hiding_match with thinfo and request domain is us
 		 * needs to have a thinfo to continue otherwise we cannot match */
 		for (i = 0; i < request_uri->u_params_no; i++) {
-			if (request_uri->u_name[i].len == th_contact_encode_param.len &&
-				memcmp(th_contact_encode_param.s, request_uri->u_name[i].s, th_contact_encode_param.len) == 0) {
-				LM_DBG("We found param in R-URI with value of %.*s\n",
-					request_uri->u_val[i].len, request_uri->u_val[i].s);
-				return th_no_dlg_seq_handling(msg, &request_uri->u_val[i], decode_info_buffer);
-			} else if (request_uri->u_name[i].len == th_contact_encode_param_legacy.len &&
-				memcmp(th_contact_encode_param_legacy.s, request_uri->u_name[i].s, th_contact_encode_param_legacy.len) == 0) {
-				LM_DBG("We found legacy param in R-URI with value of %.*s\n",
-					request_uri->u_val[i].len, request_uri->u_val[i].s);
-				return th_no_dlg_seq_handling(msg, &request_uri->u_val[i], decode_info_buffer_legacy);
+			thinfo_decode = th_get_options(&request_uri->u_name[i]);
+			if (thinfo_decode != NULL) {
+				if (thinfo_decode->compact_encoding) {
+					LM_DBG("We found param in R-URI with value of %.*s\n",
+						request_uri->u_val[i].len, request_uri->u_val[i].s);
+					return th_no_dlg_seq_handling(msg, &request_uri->u_val[i], decode_info_buffer, thinfo_decode);
+				} else {
+					LM_DBG("We found legacy param in R-URI with value of %.*s\n",
+						request_uri->u_val[i].len, request_uri->u_val[i].s);
+					return th_no_dlg_seq_handling(msg, &request_uri->u_val[i], decode_info_buffer_legacy, thinfo_decode);
+				}
 			}
 		}
 	} else if (msg->route != NULL && auto_route_on_trusted_socket) {
@@ -409,22 +425,23 @@ int topo_hiding_match_no_dlg(struct sip_msg *msg) {
 			}
 
 			for (i = 0; i < route_uri.u_params_no; i++) {
-				if (route_uri.u_name[i].len == th_contact_encode_param.len &&
-					memcmp(th_contact_encode_param.s, route_uri.u_name[i].s, th_contact_encode_param.len) == 0) {
+				// encoding the socket uses the compact encoding regardless of the option
+				// reuse the same param name and password but with compact encoding
+				thinfo_decode = th_get_options(&route_uri.u_name[i]);
+				if (thinfo_decode != NULL) {
 					LM_DBG("We found param in Route header with value of %.*s\n",
 						route_uri.u_val[i].len, route_uri.u_val[i].s);
-
 					thinfo = &route_uri.u_val[i];
 					break;
 				}
 			}
 
 			if (thinfo == NULL) {
-				LM_ERR("No param with %.*s found in auto Route\n", th_contact_encode_param.len, th_contact_encode_param.s);
+				LM_ERR("No known th_contact_encode_param_password param in auto Route\n");
 				return TOPOH_MATCH_FAILURE;
 			}
-			
-			return th_no_dlg_auto_route_seq_handling(msg, auto_route, thinfo, self_route);
+
+			return th_no_dlg_auto_route_seq_handling(msg, auto_route, thinfo, self_route, thinfo_decode);
 		}
 	}
 
@@ -718,11 +735,11 @@ static char* build_encoded_contact_suffix_legacy(struct sip_msg* msg, str rr_set
 	local_len += rr_len + ct_len + flags_len + addr_len; 
 	enc_len = th_ct_enc_scheme == ENC_BASE64 ?
 		calc_word64_encode_len(local_len) : calc_word32_encode_len(local_len);
-	total_len = enc_len +  
-		1 /* ; */ + 
-		th_contact_encode_param_legacy.len + 
-		1 /* = */  + 
-		params_len + /* URI and header params */ 
+	total_len = enc_len +
+		1 /* ; */ +
+		encoding_options->param_name.len +
+		1 /* = */  +
+		params_len + /* URI and header params */
 		1 /* > */;	 
 
 	if (th_param_list) {
@@ -814,12 +831,12 @@ static char* build_encoded_contact_suffix_legacy(struct sip_msg* msg, str rr_set
 	memcpy(p,msg->rcv.bind_address->sock_str.s,msg->rcv.bind_address->sock_str.len);
 	p+= msg->rcv.bind_address->sock_str.len;
 	for (i=0;i<(int)(p-suffix_plain);i++)
-		suffix_plain[i] ^= topo_hiding_ct_encode_pw_legacy.s[i%topo_hiding_ct_encode_pw_legacy.len];
+		suffix_plain[i] ^= encoding_options->param_password.s[i % encoding_options->param_password.len];
 
 	s = suffix_enc;
 	*s++ = ';';
-	memcpy(s,th_contact_encode_param_legacy.s,th_contact_encode_param_legacy.len);
-	s+= th_contact_encode_param_legacy.len;
+	memcpy(s, encoding_options->param_name.s, encoding_options->param_name.len);
+	s += encoding_options->param_name.len;
 	*s++ = '=';
 	if (th_ct_enc_scheme == ENC_BASE64)
 		word64encode((unsigned char*)s,(unsigned char *)suffix_plain,p-suffix_plain);
@@ -1012,9 +1029,9 @@ socket_only:
     thinfo_buffer_finalize(&encoded_uri_buf, flags);
 
 	for (i = 0; i < encoded_uri_buf.len; i++)
-    	encoded_uri_buf.buf[i] ^= topo_hiding_ct_encode_pw.s[i % topo_hiding_ct_encode_pw.len];
+    	encoded_uri_buf.buf[i] ^= encoding_options->param_password.s[i % encoding_options->param_password.len];
 
-    suffix_enc = pkg_malloc(1 + th_contact_encode_param.len + 1 + enc_len + params_len + 1);
+    suffix_enc = pkg_malloc(1 + encoding_options->param_name.len + 1 + enc_len + params_len + 1);
     if (!suffix_enc) {
         LM_ERR("no more pkg\n");
         goto error;
@@ -1022,8 +1039,8 @@ socket_only:
 
     s = suffix_enc;
     *s++ = ';';
-    memcpy(s, th_contact_encode_param.s, th_contact_encode_param.len);
-    s += th_contact_encode_param.len;
+    memcpy(s, encoding_options->param_name.s, encoding_options->param_name.len);
+    s += encoding_options->param_name.len;
     *s++ = '=';
 
     if (th_ct_enc_scheme == ENC_BASE64)
@@ -1082,7 +1099,7 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	str contact;
 
 	if (!msg->contact) {
-		if(parse_headers(msg, HDR_CONTACT_F, 0)< 0) {
+		if(parse_headers(msg, HDR_CONTACT_F, 0) < 0) {
 			LM_ERR("Failed to parse headers\n");
 			return -1;
 		}
@@ -1141,7 +1158,7 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (th_compact_encoding) {
+	if (encoding_options->compact_encoding) {
 		if (!(suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0))) {
 			LM_ERR("Failed to build suffix \n");
 			goto error;
@@ -1303,7 +1320,7 @@ static inline int topo_no_dlg_rewrite_contact_as_next_route(struct sip_msg *msg,
 	return 1;
 }
 
-static decoded_info_buffer_t decode_info_buffer(str *info) {
+static decoded_info_buffer_t decode_info_buffer(str *info, const thinfo_options_t *options) {
 	int max_size, dec_len, decoded_uri_buf_len, i;
 	uint8_t uri_count;
 	int proto = 0;
@@ -1332,7 +1349,7 @@ static decoded_info_buffer_t decode_info_buffer(str *info) {
 	}
 
 	for (i = 0; i < dec_len; i++)
-        decoded_uri_buf.buf[i] ^= topo_hiding_ct_encode_pw.s[i % topo_hiding_ct_encode_pw.len];
+		decoded_uri_buf.buf[i] ^= options->param_password.s[i % options->param_password.len];
 
     decoded_uri_buf.len = dec_len;
     decoded_uri_buf.pos = 0;
@@ -1398,7 +1415,7 @@ error:
 	return (decoded_info_buffer_t) { .state = INVALID_BUF };
 }
 
-static decoded_info_buffer_t decode_info_buffer_legacy(str *info) {
+static decoded_info_buffer_t decode_info_buffer_legacy(str *info, const thinfo_options_t *options) {
     str flags_buf = STR_NULL, bind_buf = STR_NULL, host = STR_NULL;
     int max_size, port = 0, proto = 0;
     char *p;
@@ -1423,7 +1440,7 @@ static decoded_info_buffer_t decode_info_buffer_legacy(str *info) {
             (unsigned char *)info->s, info->len);
 
     for (i = 0; i < dec_len; i++)
-        dec_buf_legacy[i] ^= topo_hiding_ct_encode_pw_legacy.s[i % topo_hiding_ct_encode_pw_legacy.len];
+        dec_buf_legacy[i] ^= options->param_password.s[i % options->param_password.len];
 
     #define __extract_len_and_buf(_p, _len, _s) \
         do { \
@@ -1481,7 +1498,7 @@ error:
 static char user_buf[UINT16_MAX];
 static str ct_user_buf = { .s = user_buf, .len = 0 };
 
-static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn decode_fn) {
+static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn decode_fn, const thinfo_options_t *options) {
 	char *msg_buf = NULL, *route_free_str = NULL;
 	str route_s = STR_NULL;
 	struct th_no_dlg_param *param = NULL;
@@ -1529,7 +1546,7 @@ static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn
 	}
 
 	
-	decoded_buffer = decode_fn(info);
+	decoded_buffer = decode_fn(info, options);
 	if (!(decoded_buffer.state & HAS_CONTACT) || (decoded_buffer.state & INVALID_BUF)) {
 		LM_ERR("Failed to decode buffer\n");
 		return -1;
@@ -1973,4 +1990,109 @@ static route_count_t th_no_dlg_match_record_route_or_route_uris(struct sip_msg *
 		.delete_count = delete_count,
 		.skip_encode_count = req_auto_routed ? skip_encode_count + 1 : skip_encode_count
 	};
+}
+
+void th_free_param_passwords(void) {
+	int i;
+
+	for (i = 0; i < param_password_count; i++) {
+		if (buffers[i] != NULL)
+			pkg_free(buffers[i]);
+	}
+	param_password_count = 0;
+}
+
+int th_add_encode_param_password(modparam_t type, void *val) {
+	char *colon = NULL, *param_val = NULL;
+	char encoding_type = 0;
+	thinfo_options_t slot = { .compact_encoding = 1 };
+
+	if ((PARAM_TYPE_MASK(type) & STR_PARAM) == 0) {
+		LM_ERR("string value required\n");
+		return -1;
+	}
+
+	if (!val) {
+		LM_ERR("empty value\n");
+		return -1;
+	}
+
+	param_val = (char*) val;
+
+	if (*param_val == '\0') {
+		LM_ERR("parameter is empty string\n");
+		return -1;
+	}
+
+	buffers[param_password_count] = pkg_malloc(strlen(param_val));
+
+	if (buffers[param_password_count] == NULL) {
+		LM_ERR("Failed to allocate string buffer\n");
+		return -1;
+	}
+
+	memcpy(buffers[param_password_count], param_val, strlen(param_val));
+	param_val = buffers[param_password_count];
+
+	if (param_password_count >= 2) {
+		LM_ERR("at most 2 entries allowed\n");
+		return -1;
+	}
+
+	colon = strchr(param_val, ':');
+	if (!colon) {
+		slot.param_name.len = strlen(param_val);
+		slot.param_name.s = param_val;
+
+		slot.param_password = DEFAULT_PW;
+
+		goto add_password;
+	}
+
+	slot.param_name.s = param_val;
+	slot.param_name.len = colon - param_val;
+	slot.param_password.s = colon + 1;
+
+	colon = strchr(slot.param_password.s, ':');
+
+	if (!colon) {
+		slot.param_password.len = strlen(slot.param_password.s);
+		goto add_password;
+	} else {
+		slot.param_password.len = colon - slot.param_password.s;
+
+		encoding_type = *(colon + 1);
+
+		if (encoding_type ==  'C' || encoding_type == 'c') {
+			slot.compact_encoding = 1;
+		} else if (encoding_type ==  'L' || encoding_type == 'l') {
+			slot.compact_encoding = 0;
+		} else {
+			LM_ERR("Encoding type not set correctly, must be one of C|c|L|l\n");
+			return -1;
+		}
+	}
+
+add_password:
+	memcpy(&param_passwords[param_password_count], &slot, sizeof(slot));
+	param_password_count++;
+	return 1;
+}
+
+static thinfo_options_t *th_get_options(const str *pn) {
+	if (!pn || !pn->s)
+		return NULL;
+
+	for (int i = 0; i < TH_INFO_PASSWORD_ROTATION_SIZE; i++) {
+		if (pn->len == param_passwords[i].param_name.len &&
+			memcmp(pn->s, param_passwords[i].param_name.s, pn->len) == 0)
+			return &param_passwords[i];
+	}
+
+	return NULL;
+}
+
+int th_set_use_param(str *use_param) {
+	encoding_options = th_get_options(use_param);
+	return encoding_options != NULL;
 }

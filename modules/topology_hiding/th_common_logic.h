@@ -80,7 +80,7 @@ static inline char *topo_ct_param_copy(char *buf, str *name, str *val, int shoul
 	return buf;
 }
 
-static void shm_free_wrap(void *param) {
+static inline void shm_free_wrap(void *param) {
 	if (param)
 		shm_free(param);
 }

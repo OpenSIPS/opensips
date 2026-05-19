@@ -23,11 +23,23 @@
 
 #include "th_common_logic.h"
 
-#include "../../str.h"
 #include "../tm/t_hooks.h"
+#include "../../str.h"
 #include "../../context.h"
+#include "../../sr_module.h"
 
 enum encode_scheme {ENC_BASE64, ENC_BASE32};
+
+#define TH_INFO_PASSWORD_ROTATION_SIZE 2
+
+#define DEFAULT_PARAM str_init("thinfo")
+#define DEFAULT_PW str_init("ToPoCtPaSS")
+
+typedef struct {
+	str param_name;
+	str param_password;
+	int compact_encoding;
+} thinfo_options_t;
 
 extern str decoded_uris[12];
 extern int decoded_uris_count;
@@ -41,5 +53,9 @@ extern int ctx_decoded_routes_valid_idx;
 
 int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_flags, struct th_params *params);
 int topo_hiding_match_no_dlg(struct sip_msg *msg);
+
+void th_free_param_passwords(void);
+int th_add_encode_param_password(modparam_t type, void *val);
+int th_set_use_param(str *);
 
 #endif
