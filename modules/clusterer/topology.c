@@ -1010,6 +1010,12 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 
 	bin_pop_int(packet, &no_nodes);
 
+	if (no_nodes < 0 || no_nodes > MAX_NO_NODES) {
+		LM_WARN("Invalid number of nodes [%d] in topology update from node [%d]\n",
+			no_nodes, source->node_id);
+		return;
+	}
+
 	for (i = 0; i < no_nodes; i++) {
 		bin_pop_int(packet, &top_node_id[i]);		/* node id */
 
@@ -1024,6 +1030,12 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 		bin_pop_int(packet, &top_node_info[i][1]);  /* ls_seq_no */
 		bin_pop_int(packet, &top_node_info[i][2]);  /* ls_timestamp */
 		bin_pop_int(packet, &top_node_info[i][3]);  /* no_neigh */
+
+		if (top_node_info[i][3] < 0 || top_node_info[i][3] > MAX_NO_NODES) {
+			LM_WARN("Invalid number of neighbours [%d] for node [%d] in topology update from node [%d]\n",
+				top_node_info[i][3], top_node_id[i], source->node_id);
+			return;
+		}
 
 		for (j = 0; j < top_node_info[i][3]; j++)
 			bin_pop_int(packet, &top_node_info[i][j+4]);  /* neighbor id */
@@ -1077,6 +1089,7 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 
 		lock_release(top_node->lock);
 
+		no_present_nodes = 0;
 		for (j = 0; j < top_node_info[i][3]; j++) {
 			top_neigh = get_node_by_id(source->cluster, top_node_info[i][j+4]);
 			if (!top_neigh && top_node_info[i][j+4] != current_id) {
@@ -1368,6 +1381,12 @@ void handle_pong(bin_packet_t *received, node_info_t *src_node,
 	int node_list[MAX_NO_NODES], i, nr_nodes;
 
 	bin_pop_int(received, &nr_nodes);
+	if (nr_nodes < 0 || nr_nodes > MAX_NO_NODES) {
+		LM_WARN("Invalid number of nodes [%d] in pong from node [%d]\n",
+			nr_nodes, src_node->node_id);
+		return;
+	}
+
 	for (i=0; i<nr_nodes; i++)
 		bin_pop_int(received, &node_list[i]);
 
