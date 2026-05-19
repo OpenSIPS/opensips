@@ -727,7 +727,7 @@ static int cdb_build_ucontact_key(str* _ct, ucontact_info_t* _ci)
 			}
 
 			params[np] = puri.u_val[i];
-			len += pnp->s.len;
+			len += params[np].len;
 		}
 
 		len += np - 1; /* add separators */
