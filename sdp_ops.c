@@ -409,6 +409,12 @@ int sdp_ops_parse_lines(struct sdp_body_part_ops *ops, str *body)
 		if (*p != sep || (sep_len == 2 && p < (lim-1) && *(p+1) != '\n'))
 			continue;
 
+		if (i >= SDP_MAX_LINES) {
+			LM_ERR("SDP body exceeds maximum line count (%d)\n",
+					SDP_MAX_LINES);
+			return -1;
+		}
+
 		/* lines are stored *without* the ending separator */
 		ops->lines[i].line.s = start;
 		ops->lines[i].line.len = p - start;
@@ -419,6 +425,12 @@ int sdp_ops_parse_lines(struct sdp_body_part_ops *ops, str *body)
 
 	/* edge-case: the very last SDP line does not include a separator... */
 	if (start < lim) {
+		if (i >= SDP_MAX_LINES) {
+			LM_ERR("SDP body exceeds maximum line count (%d)\n",
+					SDP_MAX_LINES);
+			return -1;
+		}
+
 		ops->lines[i].line.s = start;
 		ops->lines[i].line.len = p - start;
 		ops->lines[i++].newbuf = 0;
