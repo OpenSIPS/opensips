@@ -336,6 +336,11 @@ static inline void smpp_parse_headers(struct tcp_req *req)
 	}
 
 	req->content_len = ntohl(*px);
+	if (req->content_len < HEADER_SZ) {
+		LM_ERR("invalid SMPP packet length %u\n", req->content_len);
+		req->error = TCP_REQ_BAD_LEN;
+		return;
+	}
 	if (req->pos - req->buf == req->content_len) {
 		LM_DBG("received a complete message\n");
 		req->complete = 1;

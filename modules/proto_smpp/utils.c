@@ -38,9 +38,13 @@ int copy_var_str(char *to, char *from, int maxlen)
 {
 	int iret = 1;
 
-	while (*from && maxlen--) {
+	if (maxlen <= 0)
+		return 0;
+
+	while (maxlen > 1 && *from) {
 		*to++ = *from++;
 		iret++;
+		maxlen--;
 	}
 	*to++ = '\0';
 
@@ -63,4 +67,3 @@ int copy_u32(char *to, uint32_t from)
 
 	return 4;
 }
-
