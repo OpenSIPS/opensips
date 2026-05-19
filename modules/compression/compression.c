@@ -1823,7 +1823,7 @@ static int mc_decompress(struct sip_msg* msg)
 
 	switch (hdrs_algo) {
 		case 0: /* deflate */
-			temp = (unsigned long)BUFLEN;
+			temp = (unsigned long)sizeof(hdr_buf);
 
 			rc = uncompress((unsigned char*)hdr_buf,
 					&temp,
