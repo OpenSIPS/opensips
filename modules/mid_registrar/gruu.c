@@ -36,22 +36,33 @@
 #include "gruu.h"
 
 
-#define MAX_TGRUU_SIZE 255
 #define GR_MAGIC 73
 str default_gruu_secret=str_init("0p3nS1pS");
+
+static inline int calc_temp_gruu_raw_len(str* aor,str* instance,str *callid,
+		int time_len)
+{
+	if (instance->len < 2) {
+		LM_WARN("invalid +sip.instance value for GRUU contact\n");
+		return -1;
+	}
+
+	return time_len + aor->len + instance->len - 2 + callid->len + 3; /* <instance> and blank spaces */
+}
 
 int calc_temp_gruu_len(str* aor,str* instance,str *callid)
 {
 	int time_len,temp_gr_len;
 
 	int2str((unsigned long)get_act_time(),&time_len);
-	temp_gr_len = time_len + aor->len + instance->len - 2 + callid->len + 3; /* <instance> and blank spaces */
+	temp_gr_len = calc_temp_gruu_raw_len(aor, instance, callid, time_len);
+	if (temp_gr_len < 0)
+		return -1;
 	temp_gr_len = (temp_gr_len/3 + (temp_gr_len%3?1:0))*4; /* base64 encoding */
 	return temp_gr_len;
 }
 
-#define MAX_TEMP_GRUU_SIZE	255
-static char temp_gruu_buf[MAX_TEMP_GRUU_SIZE];
+static str temp_gruu_buf;
 char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 {
 	int time_len,i;
@@ -59,8 +70,14 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 	char *time_str = int2str((unsigned long)get_act_time(),&time_len);
 	str *magic;
 
-	*len = time_len + aor->len + instance->len + callid->len + 3 - 2; /* +3 blank spaces, -2 discarded chars of instance in memcpy below */
-	p = temp_gruu_buf;
+	*len = calc_temp_gruu_raw_len(aor, instance, callid, time_len);
+	if (*len < 0)
+		return NULL;
+
+	if (pkg_str_extend(&temp_gruu_buf, *len) < 0)
+		return NULL;
+
+	p = temp_gruu_buf.s;
 
 	memcpy(p,time_str,time_len);
 	p+=time_len;
@@ -76,14 +93,13 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 
 	memcpy(p,callid->s,callid->len);
 
-	LM_DBG("build temp gruu [%.*s]\n",*len,temp_gruu_buf);
+	LM_DBG("build temp gruu [%.*s]\n",*len,temp_gruu_buf.s);
 	if (gruu_secret.s != NULL)
 		magic = &gruu_secret;
 	else
 		magic = &default_gruu_secret;
 
 	for (i=0;i<*len;i++)
-		temp_gruu_buf[i] ^= magic->s[i%magic->len];
-	return temp_gruu_buf;
+		temp_gruu_buf.s[i] ^= magic->s[i%magic->len];
+	return temp_gruu_buf.s;
 }
-

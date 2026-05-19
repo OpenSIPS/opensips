@@ -97,12 +97,25 @@ static struct {
 } contact = {0, 0, 0};
 
 
+static inline int calc_temp_gruu_raw_len(str* aor,str* instance,str *callid,
+		int time_len)
+{
+	if (instance->len < 2) {
+		LM_WARN("invalid +sip.instance value for GRUU contact\n");
+		return -1;
+	}
+
+	return time_len + aor->len + instance->len - 2 + callid->len + 3; /* <instance> and blank spaces */
+}
+
 static inline int calc_temp_gruu_len(str* aor,str* instance,str *callid)
 {
 	int time_len,temp_gr_len;
 
 	int2str((unsigned long)get_act_time(),&time_len);
-	temp_gr_len = time_len + aor->len + instance->len - 2 + callid->len + 3; /* <instance> and blank spaces */
+	temp_gr_len = calc_temp_gruu_raw_len(aor, instance, callid, time_len);
+	if (temp_gr_len < 0)
+		return -1;
 	temp_gr_len = (temp_gr_len/3 + (temp_gr_len%3?1:0))*4; /* base64 encoding */
 	return temp_gr_len;
 }
@@ -116,6 +129,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 {
 	unsigned int len;
 	int qlen;
+	int gruu_len;
 	const struct socket_info *sock;
 
 	len = 0;
@@ -135,7 +149,9 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 					+ 1 /* dquote */
 					;
 			}
-			if (build_gruu && c->instance.s) {
+			if (build_gruu && c->instance.s &&
+				(gruu_len = calc_temp_gruu_len(c->aor, &c->instance,
+					&c->callid)) >= 0) {
 				sock = (c->sock)?(c->sock):(_m->rcv.bind_address);
 				/* pub gruu */
 				len += PUB_GRUU_SIZE
@@ -152,7 +168,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 					+ 1 /* quote */
 					+ SIP_PROTO_SIZE
 					+ TEMP_GRUU_HEADER_SIZE
-					+ calc_temp_gruu_len(c->aor,&c->instance,&c->callid)
+					+ gruu_len
 					+ 1 /* @ */
 					+ sock->name.len
 					+ 1 /* : */
@@ -175,10 +191,9 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 	return len;
 }
 
-#define MAX_TEMP_GRUU_SIZE	255
-static char temp_gruu_buf[MAX_TEMP_GRUU_SIZE];
+static str temp_gruu_buf;
 
-/* Returns memory from a statically allocated buffer */
+/* Returns memory from a module-local reusable buffer */
 char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 {
 	int time_len,i;
@@ -186,8 +201,14 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 	char *time_str = int2str((unsigned long)get_act_time(),&time_len);
 	str *magic;
 
-	*len = time_len + aor->len + instance->len + callid->len + 3 - 2; /* +3 blank spaces, -2 discarded chars of instance in memcpy below */
-	p = temp_gruu_buf;
+	*len = calc_temp_gruu_raw_len(aor, instance, callid, time_len);
+	if (*len < 0)
+		return NULL;
+
+	if (pkg_str_extend(&temp_gruu_buf, *len) < 0)
+		return NULL;
+
+	p = temp_gruu_buf.s;
 
 	memcpy(p,time_str,time_len);
 	p+=time_len;
@@ -203,15 +224,15 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 
 	memcpy(p,callid->s,callid->len);
 
-	LM_DBG("build temp gruu [%.*s]\n",*len,temp_gruu_buf);
+	LM_DBG("build temp gruu [%.*s]\n",*len,temp_gruu_buf.s);
 	if (gruu_secret.s != NULL)
 		magic = &gruu_secret;
 	else
 		magic = &default_gruu_secret;
 
 	for (i=0;i<*len;i++)
-		temp_gruu_buf[i] ^= magic->s[i%magic->len];
-	return temp_gruu_buf;
+		temp_gruu_buf.s[i] ^= magic->s[i%magic->len];
+	return temp_gruu_buf.s;
 }
 
 /*! \brief
@@ -221,7 +242,7 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 int build_contact(ucontact_t* c,struct sip_msg *_m)
 {
 	char *p, *cp, *tmpgr;
-	int fl, len,grlen;
+	int fl, len, grlen, gruu_len;
 	int build_gruu = 0;
 	const struct socket_info *sock;
 
@@ -290,8 +311,17 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 				*p++ = '\"';
 			}
 
-			if (build_gruu && c->instance.s) {
+			if (build_gruu && c->instance.s &&
+				(gruu_len = calc_temp_gruu_len(c->aor, &c->instance,
+					&c->callid)) >= 0) {
 				sock = (c->sock)?(c->sock):(_m->rcv.bind_address);
+				tmpgr = build_temp_gruu(c->aor, &c->instance, &c->callid,
+					&grlen);
+				if (!tmpgr) {
+					contact.data_len = 0;
+					return -1;
+				}
+
 				/* build pub GRUU */
 				memcpy(p,PUB_GRUU,PUB_GRUU_SIZE);
 				p += PUB_GRUU_SIZE;
@@ -323,10 +353,9 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 				memcpy(p,TEMP_GRUU_HEADER,TEMP_GRUU_HEADER_SIZE);
 				p += TEMP_GRUU_HEADER_SIZE;
 
-				tmpgr = build_temp_gruu(c->aor,&c->instance,&c->callid,&grlen);
 				base64encode((unsigned char *)p,
 						(unsigned char *)tmpgr,grlen);
-				p += calc_temp_gruu_len(c->aor,&c->instance,&c->callid);
+				p += gruu_len;
 				*p++ = '@';
 				memcpy(p,sock->name.s,sock->name.len);
 				p += sock->name.len;

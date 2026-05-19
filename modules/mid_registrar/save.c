@@ -740,6 +740,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 {
 	unsigned int len;
 	int qlen;
+	int gruu_len;
 	const struct socket_info *sock;
 
 	len = 0;
@@ -759,7 +760,9 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 					+ 1 /* dquote */
 					;
 			}
-			if (build_gruu && c->instance.s) {
+			if (build_gruu && c->instance.s &&
+				(gruu_len = calc_temp_gruu_len(c->aor, &c->instance,
+					&c->callid)) >= 0) {
 				sock = (c->sock)?(c->sock):(_m->rcv.bind_address);
 				/* pub gruu */
 				len += PUB_GRUU_SIZE
@@ -776,7 +779,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 					+ 1 /* quote */
 					+ SIP_PROTO_SIZE
 					+ TEMP_GRUU_HEADER_SIZE
-					+ calc_temp_gruu_len(c->aor,&c->instance,&c->callid)
+					+ gruu_len
 					+ 1 /* @ */
 					+ sock->name.len
 					+ 1 /* : */
@@ -803,7 +806,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 int build_contact(ucontact_t* c,struct sip_msg *_m)
 {
 	char *p, *cp, *tmpgr;
-	int fl, len,grlen;
+	int fl, len, grlen, gruu_len;
 	int build_gruu = 0;
 	const struct socket_info *sock;
 
@@ -874,8 +877,17 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 				*p++ = '\"';
 			}
 
-			if (build_gruu && c->instance.s) {
+			if (build_gruu && c->instance.s &&
+				(gruu_len = calc_temp_gruu_len(c->aor, &c->instance,
+					&c->callid)) >= 0) {
 				sock = (c->sock)?(c->sock):(_m->rcv.bind_address);
+				tmpgr = build_temp_gruu(c->aor, &c->instance, &c->callid,
+					&grlen);
+				if (!tmpgr) {
+					contact.data_len = 0;
+					return -1;
+				}
+
 				/* build pub GRUU */
 				memcpy(p,PUB_GRUU,PUB_GRUU_SIZE);
 				p += PUB_GRUU_SIZE;
@@ -907,10 +919,9 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 				memcpy(p,TEMP_GRUU_HEADER,TEMP_GRUU_HEADER_SIZE);
 				p += TEMP_GRUU_HEADER_SIZE;
 
-				tmpgr = build_temp_gruu(c->aor,&c->instance,&c->callid,&grlen);
 				base64encode((unsigned char *)p,
 						(unsigned char *)tmpgr,grlen);
-				p += calc_temp_gruu_len(c->aor,&c->instance,&c->callid);
+				p += gruu_len;
 				*p++ = '@';
 				memcpy(p,sock->name.s,sock->name.len);
 				p += sock->name.len;
