@@ -2510,7 +2510,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 	struct sip_uri uri;
 	char c;
 
-	for(i=0;i<=table->cols_size;i++){
+	for(i=0;i<table->cols_size;i++){
 		if(table->cols[i].type==val_type &&
 			table->cols[i].field.len==key->len &&
 			strncmp(table->cols[i].field.s,key->s,key->len)==0){
@@ -3230,4 +3230,3 @@ done:
 	if(q_vals) pkg_free(q_vals);
 	return 0;
 }
-
