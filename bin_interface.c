@@ -453,6 +453,16 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	str capability;
 
 	memcpy(&pkg_len, buffer + BIN_PACKET_MARKER_SIZE, sizeof(unsigned int));
+	if (pkg_len < HEADER_SIZE + LEN_FIELD_SIZE + CMD_FIELD_SIZE) {
+		LM_ERR("invalid BIN packet size %u\n", pkg_len);
+		return;
+	}
+	if (pkg_len > BIN_MAX_BUF_LEN) {
+		LM_ERR("BIN packet size %u exceeds max size %zu\n",
+				pkg_len, BIN_MAX_BUF_LEN);
+		return;
+	}
+
 	//add extra size so a realloc wont trigger after small altering of the packet 
 	packet.buffer.s = pkg_malloc(pkg_len + 50);
 	if (!packet.buffer.s) {
@@ -466,6 +476,13 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	memcpy(packet.buffer.s, buffer, pkg_len);
 
 	bin_get_capability(&packet, &capability);
+	if ((unsigned int)capability.len >
+			pkg_len - HEADER_SIZE - LEN_FIELD_SIZE - CMD_FIELD_SIZE) {
+		LM_ERR("invalid BIN packet capability length %d for packet size %u\n",
+				capability.len, pkg_len);
+		bin_free_packet(&packet);
+		return;
+	}
 
 	packet.front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
 	memcpy(&packet.type, capability.s + capability.len, sizeof(int));
