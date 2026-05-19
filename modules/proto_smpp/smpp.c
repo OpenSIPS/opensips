@@ -372,30 +372,40 @@ static int convert_utf16_to_ucs2(str *input, char *output)
 	return input->len / 2;
 }
 
-static int convert_utf8_to_gsm7(str *input, char *output)
+static int convert_utf8_to_gsm7(str *input, char *output, int output_len)
 {
+#define CHECK_OUT(_n) \
+	do { \
+		if (end - o < (_n)) \
+			return -1; \
+	} while (0)
+#define PUSH_OUT(_v) \
+	do { \
+		CHECK_OUT(1); \
+		*o++ = (_v); \
+	} while (0)
 #define CASE_OUT_REPR(_c, _v) \
-	case (_c): *o++ = (_v); break;
+	case (_c): PUSH_OUT(_v); break;
 #define CASE_OUT_REPR_EN(_c, _v) \
-	case (_c): *o++ = 0x1B; *o++ = (_v); break;
+	case (_c): CHECK_OUT(2); *o++ = 0x1B; *o++ = (_v); break;
 
 	int i;
-	unsigned char c, c1, c2, *o;
+	unsigned char c, c1, c2, *o, *end;
 	unsigned int t;
 	o = (unsigned char *)output;
-	/* GSM7 is definitely smaller than UTF8 */
+	end = o + output_len;
 	for (i = 0; i < input->len; i++) {
 		c = input->s[i];
 		if ((c & 0xF8) == 0xF0) {
 			/* four bytes - no representation in GSM */
-			*o++ = '?';
+			PUSH_OUT('?');
 			i += 3; /* skip a total of 4 bytes */
 			continue;
 		}
 		if ((c & 0xF0) == 0xE0) {
 			/* three bytes */
 			if (i + 2 >= input->len) {
-				*o++ = '?';
+				PUSH_OUT('?');
 				i += 2; /* terminate */
 				continue;
 			}
@@ -404,17 +414,18 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 			t = ((c & 0x0F) << 12) | ((c1 & 0x3F) << 6) | (c2 & 0x3F);
 			/* we only support the euro sign */
 			if (t == 0x20AC) {
+				CHECK_OUT(2);
 				*o++ = 0x1B;
 				*o++ = 0x65;
 			} else {
-				*o++ = '?';
+				PUSH_OUT('?');
 			}
 			continue;
 		}
 		if ((c & 0xE0) == 0xC0) {
 			/* two bytes */
 			if (i + 1 >= input->len) {
-				*o++ = '?';
+				PUSH_OUT('?');
 				i++; /* terminate */
 				continue;
 			}
@@ -426,7 +437,7 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 		if ((t >= 0x20 /* ' ' */ && t <= 0x5A /* 'Z' */ &&
 				t != 0x24 && t != 0x40) ||
 			(t >= 0x61 /* 'z' */ && t <= 0x7A /* 'z' */)) {
-			*o++ = t;
+			PUSH_OUT(t);
 		} else {
 			/* handle exceptions */
 			switch (t) {
@@ -490,7 +501,7 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 				CASE_OUT_REPR(0x39E, 0x1A);
 				default:
 					/* unknown representation */
-					*o++ = '?';
+					PUSH_OUT('?');
 					break;
 			}
 		}
@@ -498,6 +509,22 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 	return (char *)o - output;
 #undef CASE_OUT_REPR
 #undef CASE_OUT_REPR_EN
+#undef PUSH_OUT
+#undef CHECK_OUT
+}
+
+static int smpp_set_addr(char *addr, int addr_size, str *value, const char *name)
+{
+	if (value->len >= addr_size) {
+		LM_ERR("%s too long: %d (max %d)\n",
+				name, value->len, addr_size - 1);
+		return -1;
+	}
+
+	memcpy(addr, value->s, value->len);
+	addr[value->len] = '\0';
+
+	return 0;
 }
 
 static int convert_gsm7_to_utf8(unsigned char *input, int input_len, char *output)
@@ -598,6 +625,7 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
 	int chunk_id, int total_chunks,uint8_t chunk_group_id)
 {
 	char *start;
+	int sm_len;
 
 	if (!preq || !src || !dst || !message) {
 		LM_ERR("NULL params\n");
@@ -636,10 +664,14 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
 	memset(body, 0, sizeof(*body));
 	body->source_addr_ton = session->source_addr_ton;
 	body->source_addr_npi = session->source_addr_npi;
-	strncpy(body->source_addr, src->s, src->len);
+	if (smpp_set_addr(body->source_addr, MAX_ADDRESS_LEN, src,
+			"source address") < 0)
+		goto payload_err;
 	body->dest_addr_ton = session->dest_addr_ton;
 	body->dest_addr_npi = session->dest_addr_npi;
-	strncpy(body->destination_addr, dst->s, dst->len);
+	if (smpp_set_addr(body->destination_addr, MAX_ADDRESS_LEN, dst,
+			"destination address") < 0)
+		goto payload_err;
 
 	if (total_chunks > 1) {
 		body->esm_class = 0x40;
@@ -665,12 +697,18 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
 
 	if (message_type == SMPP_CODING_DEFAULT) {
 		body->data_coding = SMPP_CODING_DEFAULT;
-		body->sm_length += convert_utf8_to_gsm7(message, start);
+		sm_len = convert_utf8_to_gsm7(message, start,
+				sizeof(body->short_message) - body->sm_length);
 	} else {
 		/* UTF-16 */
 		body->data_coding = SMPP_CODING_UCS2;
-		body->sm_length += convert_utf16_to_ucs2(message, start);
+		sm_len = convert_utf16_to_ucs2(message, start);
 	}
+	if (sm_len < 0) {
+		LM_ERR("message too long after encoding\n");
+		goto payload_err;
+	}
+	body->sm_length += sm_len;
 
 	if (delivery_confirmation && *delivery_confirmation > 0)
 		body->registered_delivery = 1;
@@ -692,6 +730,8 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
 	return 0;
 
 payload_err:
+	if (req->payload.s)
+		pkg_free(req->payload.s);
 	pkg_free(body);
 body_err:
 	pkg_free(header);
@@ -952,95 +992,229 @@ static int smpp_parse_header(smpp_header_t *header, char *buffer)
 	return 0;
 }
 
-static void parse_submit_or_deliver_body(smpp_submit_sm_t *body, smpp_header_t *header, char *buffer)
+static int smpp_body_end(smpp_header_t *header, char *buffer, char **end)
 {
-	if (!body || !header || !buffer) {
-		LM_ERR("NULL params\n");
-		return;
+	if (header->command_length < HEADER_SZ) {
+		LM_ERR("invalid SMPP command length %u\n", header->command_length);
+		return -1;
 	}
 
-	char *p = buffer;
-	p += copy_var_str(body->service_type, p, MAX_SERVICE_TYPE_LEN);
-	body->source_addr_ton = *p++;
-	body->source_addr_npi = *p++;
-	p += copy_var_str(body->source_addr, p, MAX_ADDRESS_LEN);
-	body->dest_addr_ton = *p++;
-	body->dest_addr_npi = *p++;
-	p += copy_var_str(body->destination_addr, p, MAX_ADDRESS_LEN);
-	body->esm_class = *p++;
-	body->protocol_id = *p++;
-	body->protocol_flag = *p++;
-	p += copy_var_str(body->schedule_delivery_time, p, MAX_SCHEDULE_DELIVERY_LEN);
-	p += copy_var_str(body->validity_period, p, MAX_VALIDITY_PERIOD);
-	body->registered_delivery = *p++;
-	body->replace_if_present_flag = *p++;
-	body->data_coding = *p++;
-	body->sm_default_msg_id = *p++;
-	body->sm_length = *p++;
+	*end = buffer + header->command_length - HEADER_SZ;
+	return 0;
+}
+
+static int smpp_read_u8(char **p, char *end, uint8_t *out, const char *name)
+{
+	if (*p + 1 > end) {
+		LM_ERR("truncated SMPP field %s\n", name);
+		return -1;
+	}
+
+	*out = *(*p)++;
+	return 0;
+}
+
+static int smpp_read_fixed(char **p, char *end, char *out, int len,
+		const char *name)
+{
+	if (*p + len > end) {
+		LM_ERR("truncated SMPP field %s\n", name);
+		return -1;
+	}
+
+	memcpy(out, *p, len);
+	*p += len;
+	return 0;
+}
+
+static int smpp_read_c_octet(char **p, char *end, char *out, int out_size,
+		const char *name)
+{
+	char *nul;
+	int len;
+
+	if (*p >= end) {
+		LM_ERR("missing SMPP field %s\n", name);
+		return -1;
+	}
+
+	nul = memchr(*p, '\0', end - *p);
+	if (!nul) {
+		LM_ERR("unterminated SMPP field %s\n", name);
+		return -1;
+	}
+
+	len = nul - *p;
+	if (len >= out_size) {
+		LM_ERR("SMPP field %s too long: %d (max %d)\n",
+				name, len, out_size - 1);
+		return -1;
+	}
+
+	memcpy(out, *p, len);
+	out[len] = '\0';
+	*p = nul + 1;
+	return 0;
+}
+
+static int parse_submit_or_deliver_body(smpp_submit_sm_t *body,
+		smpp_header_t *header, char *buffer)
+{
+	char *p, *end;
+
+	if (!body || !header || !buffer) {
+		LM_ERR("NULL params\n");
+		return -1;
+	}
+
+	if (smpp_body_end(header, buffer, &end) < 0)
+		return -1;
+
+	p = buffer;
+	if (smpp_read_c_octet(&p, end, body->service_type,
+			MAX_SERVICE_TYPE_LEN, "service_type") < 0 ||
+			smpp_read_u8(&p, end, &body->source_addr_ton,
+			"source_addr_ton") < 0 ||
+			smpp_read_u8(&p, end, &body->source_addr_npi,
+			"source_addr_npi") < 0 ||
+			smpp_read_c_octet(&p, end, body->source_addr,
+			MAX_ADDRESS_LEN, "source_addr") < 0 ||
+			smpp_read_u8(&p, end, &body->dest_addr_ton,
+			"dest_addr_ton") < 0 ||
+			smpp_read_u8(&p, end, &body->dest_addr_npi,
+			"dest_addr_npi") < 0 ||
+			smpp_read_c_octet(&p, end, body->destination_addr,
+			MAX_ADDRESS_LEN, "destination_addr") < 0 ||
+			smpp_read_u8(&p, end, &body->esm_class,
+			"esm_class") < 0 ||
+			smpp_read_u8(&p, end, &body->protocol_id,
+			"protocol_id") < 0 ||
+			smpp_read_u8(&p, end, &body->protocol_flag,
+			"protocol_flag") < 0 ||
+			smpp_read_c_octet(&p, end, body->schedule_delivery_time,
+			MAX_SCHEDULE_DELIVERY_LEN, "schedule_delivery_time") < 0 ||
+			smpp_read_c_octet(&p, end, body->validity_period,
+			MAX_VALIDITY_PERIOD, "validity_period") < 0 ||
+			smpp_read_u8(&p, end, &body->registered_delivery,
+			"registered_delivery") < 0 ||
+			smpp_read_u8(&p, end, &body->replace_if_present_flag,
+			"replace_if_present_flag") < 0 ||
+			smpp_read_u8(&p, end, &body->data_coding,
+			"data_coding") < 0 ||
+			smpp_read_u8(&p, end, &body->sm_default_msg_id,
+			"sm_default_msg_id") < 0 ||
+			smpp_read_u8(&p, end, &body->sm_length,
+			"sm_length") < 0)
+		return -1;
+
 	if (body->sm_length > MAX_SMS_CHARACTERS) {
 		LM_ERR("invalid short_message length %u (max %u)\n",
 			body->sm_length, MAX_SMS_CHARACTERS);
 		body->sm_length = 0;
-		return;
+		return -1;
 	}
-	copy_fixed_str(body->short_message, p, body->sm_length);
+	if (smpp_read_fixed(&p, end, body->short_message,
+			body->sm_length, "short_message") < 0) {
+		body->sm_length = 0;
+		return -1;
+	}
+
+	return 0;
 }
 
-void parse_bind_receiver_body(smpp_bind_receiver_t *body, smpp_header_t *header, char *buffer)
+int parse_bind_receiver_body(smpp_bind_receiver_t *body,
+		smpp_header_t *header, char *buffer)
 {
+	char *p, *end;
+
 	if (!body || !header || !buffer) {
 		LM_ERR("NULL params\n");
-		return;
+		return -1;
 	}
 
-	char *p = buffer;
-	p += copy_var_str(body->system_id, p, MAX_SYSTEM_ID_LEN);
-	p += copy_var_str(body->password, p, MAX_PASSWORD_LEN);
-	p += copy_var_str(body->system_type, p, MAX_SYSTEM_TYPE_LEN);
-	body->interface_version = *p++;
-	body->addr_ton = *p++;
-	body->addr_npi = *p++;
-	p += copy_var_str(body->address_range, p, MAX_ADDRESS_RANGE_LEN);
+	if (smpp_body_end(header, buffer, &end) < 0)
+		return -1;
+
+	p = buffer;
+	if (smpp_read_c_octet(&p, end, body->system_id,
+			MAX_SYSTEM_ID_LEN, "system_id") < 0 ||
+			smpp_read_c_octet(&p, end, body->password,
+			MAX_PASSWORD_LEN, "password") < 0 ||
+			smpp_read_c_octet(&p, end, body->system_type,
+			MAX_SYSTEM_TYPE_LEN, "system_type") < 0 ||
+			smpp_read_u8(&p, end, &body->interface_version,
+			"interface_version") < 0 ||
+			smpp_read_u8(&p, end, &body->addr_ton, "addr_ton") < 0 ||
+			smpp_read_u8(&p, end, &body->addr_npi, "addr_npi") < 0 ||
+			smpp_read_c_octet(&p, end, body->address_range,
+			MAX_ADDRESS_RANGE_LEN, "address_range") < 0)
+		return -1;
+
+	return 0;
 }
 
-void parse_bind_receiver_resp_body(smpp_bind_receiver_resp_t *body, smpp_header_t *header, char *buffer)
+int parse_bind_receiver_resp_body(smpp_bind_receiver_resp_t *body,
+		smpp_header_t *header, char *buffer)
 {
+	char *p, *end;
+
 	if (!body || !header || !buffer) {
 		LM_ERR("NULL params\n");
-		return;
+		return -1;
 	}
 
-	copy_var_str(body->system_id, buffer, MAX_SYSTEM_ID_LEN);
+	if (smpp_body_end(header, buffer, &end) < 0)
+		return -1;
+
+	p = buffer;
+	return smpp_read_c_octet(&p, end, body->system_id,
+			MAX_SYSTEM_ID_LEN, "system_id");
 }
 
-void parse_bind_transmitter_body(smpp_bind_transmitter_t *body, smpp_header_t *header, char *buffer)
+int parse_bind_transmitter_body(smpp_bind_transmitter_t *body,
+		smpp_header_t *header, char *buffer)
 {
-	parse_bind_receiver_body((smpp_bind_receiver_t*)body, header, buffer);
+	return parse_bind_receiver_body((smpp_bind_receiver_t*)body,
+			header, buffer);
 }
 
-void parse_bind_transmitter_resp_body(smpp_bind_transmitter_resp_t *body, smpp_header_t *header, char *buffer)
+int parse_bind_transmitter_resp_body(smpp_bind_transmitter_resp_t *body,
+		smpp_header_t *header, char *buffer)
 {
-	parse_bind_receiver_resp_body((smpp_bind_receiver_resp_t*)body, header, buffer);
+	return parse_bind_receiver_resp_body((smpp_bind_receiver_resp_t*)body,
+			header, buffer);
 }
 
-void parse_bind_transceiver_body(smpp_bind_transceiver_t *body, smpp_header_t *header, char *buffer)
+int parse_bind_transceiver_body(smpp_bind_transceiver_t *body,
+		smpp_header_t *header, char *buffer)
 {
-	parse_bind_receiver_body((smpp_bind_receiver_t*)body, header, buffer);
+	return parse_bind_receiver_body((smpp_bind_receiver_t*)body,
+			header, buffer);
 }
 
-void parse_bind_transceiver_resp_body(smpp_bind_transceiver_resp_t *body, smpp_header_t *header, char *buffer)
+int parse_bind_transceiver_resp_body(smpp_bind_transceiver_resp_t *body,
+		smpp_header_t *header, char *buffer)
 {
-	parse_bind_receiver_resp_body((smpp_bind_receiver_resp_t*)body, header, buffer);
+	return parse_bind_receiver_resp_body((smpp_bind_receiver_resp_t*)body,
+			header, buffer);
 }
 
-void parse_submit_or_deliver_resp_body(smpp_submit_sm_resp_t *body, smpp_header_t *header, char *buffer)
+int parse_submit_or_deliver_resp_body(smpp_submit_sm_resp_t *body,
+		smpp_header_t *header, char *buffer)
 {
+	char *p, *end;
+
 	if (!body || !header || !buffer) {
 		LM_ERR("NULL params\n");
-		return;
+		return -1;
 	}
 
-	copy_var_str(body->message_id, buffer, MAX_MESSAGE_ID);
+	if (smpp_body_end(header, buffer, &end) < 0)
+		return -1;
+
+	p = buffer;
+	return smpp_read_c_octet(&p, end, body->message_id,
+			MAX_MESSAGE_ID, "message_id");
 }
 
 void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, smpp_session_t *session)
@@ -1118,7 +1292,8 @@ void handle_bind_receiver_cmd(smpp_header_t *header, char *buffer, smpp_session_
 
 	smpp_bind_receiver_t body;
 	memset(&body, 0, sizeof(body));
-	parse_bind_receiver_body(&body, header, buffer);
+	if (parse_bind_receiver_body(&body, header, buffer) < 0)
+		return;
 	uint32_t command_status = check_bind_session(&body, session);
 	send_bind_resp(header, &body, command_status, session);
 }
@@ -1142,7 +1317,8 @@ void handle_bind_transmitter_cmd(smpp_header_t *header, char *buffer, smpp_sessi
 
 	smpp_bind_transmitter_t body;
 	memset(&body, 0, sizeof(body));
-	parse_bind_transmitter_body(&body, header, buffer);
+	if (parse_bind_transmitter_body(&body, header, buffer) < 0)
+		return;
 	uint32_t command_status = check_bind_session(&body, session);
 	send_bind_resp(header, &body, command_status, session);
 }
@@ -1166,7 +1342,8 @@ void handle_submit_or_deliver_cmd(smpp_header_t *header, char *buffer,
 
 	smpp_submit_sm_t body;
 	memset(&body, 0, sizeof(body));
-	parse_submit_or_deliver_body(&body, header, buffer);
+	if (parse_submit_or_deliver_body(&body, header, buffer) < 0)
+		return;
 	LM_DBG("Received SMPP message\n"
 			"FROM:\t%02x %02x %s\n"
 			"TO:\t%02x %02x %s\nLEN:\t%d\n%.*s\n",
@@ -1192,7 +1369,8 @@ void handle_submit_or_deliver_resp_cmd(smpp_header_t *header, char *buffer,
 
 	smpp_submit_sm_resp_t body;
 	memset(&body, 0, sizeof(body));
-	parse_submit_or_deliver_resp_body(&body, header, buffer);
+	if (parse_submit_or_deliver_resp_body(&body, header, buffer) < 0)
+		return;
 	LM_INFO("Successfully sent message \"%s\"\n", body.message_id);
 }
 
@@ -1264,7 +1442,8 @@ static void handle_bind_transceiver_cmd(smpp_header_t *header, char *buffer,
 	}
 	smpp_bind_transceiver_t body;
 	memset(&body, 0, sizeof(body));
-	parse_bind_transceiver_body(&body, header, buffer);
+	if (parse_bind_transceiver_body(&body, header, buffer) < 0)
+		return;
 	uint32_t command_status = check_bind_session(&body, session);
 	send_bind_resp(header, &body, command_status, session);
 }
@@ -1283,7 +1462,8 @@ static void handle_bind_transceiver_resp_cmd(smpp_header_t *header,
 	}
 	smpp_bind_transceiver_resp_t body;
 	memset(&body, 0, sizeof(body));
-	parse_bind_transceiver_resp_body(&body, header, buffer);
+	if (parse_bind_transceiver_resp_body(&body, header, buffer) < 0)
+		return;
 	LM_INFO("Successfully bound transceiver \"%s\"\n", body.system_id);
 }
 
