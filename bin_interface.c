@@ -444,7 +444,7 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 		return;
 	}
 	if (pkg_len > BIN_MAX_BUF_LEN) {
-		LM_ERR("BIN packet size %u exceeds max size %zu\n",
+		LM_ERR("BIN packet size %u exceeds max size %u\n",
 				pkg_len, BIN_MAX_BUF_LEN);
 		return;
 	}
