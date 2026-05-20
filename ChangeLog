@@ -1,3 +1,582 @@
+=========================== Release 4.0.0-rc1 ==============================
+
+2026-05-20  Razvan Crainea  <razvan@opensips.org>
+        * [d7d905586d] :
+
+        bin: fix packet size log format
+
+        (cherry picked from commit ab8a84249c28a369d639fbd69bf693cd158819f1)
+
+
+2026-05-20  Razvan Crainea  <razvan@opensips.org>
+        * [510ce80f08] :
+
+        build: use -Wno-atomic-alignment only for clang
+
+        (cherry picked from commit fac6a9f17b9fa5f0a4db29971a3971e7faf7a432)
+
+
+2026-05-20  Razvan Crainea  <razvan@opensips.org>
+        * [f9ee95a8e9] :
+
+        bin: use portable size print
+
+        (cherry picked from commit 13827e1a941201bc41f79f7edabe1ad6f2a534a4)
+
+
+2026-05-20  Razvan Crainea  <razvan@opensips.org>
+        * [a6f2cf7b87] :
+
+        rtpengine: properly reset pvar
+
+        (cherry picked from commit d08cfc5104c0d85fb5ad5c0ca6424930d8595635)
+
+
+2026-05-20  Razvan Crainea  <razvan@opensips.org>
+        * [ed018c349b] :
+
+        rtpengine: avoid looping when a server is enforced
+
+        (cherry picked from commit 0665f671d811ab44559e1033651964286e6a6b08)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [4232171dfc] :
+
+        compression: fix decompression bounds checks
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit e78608619b9ebe7454e0c9ce43e5d56762f9c47a)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [d2363d31dc] :
+
+        proto_smpp: harden SMPP string bounds
+
+        Reported-by: Haruto Kimura (Stella)
+        Reported-by: jming912
+        Fixes #3847
+        Fixes #3848
+
+        (cherry picked from commit ad715b5dc1d5e7aecf27e11839f99d510bdeaea6)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [d703b76c74] :
+
+        usrloc: fix cachedb contact match key size
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 47e027c038d1c699bb1e5ed33731054f58aeffcc)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [00c434d32c] :
+
+        bin: validate received packet bounds
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 76b61fefdb0ae125583030be5f999b74756a056c)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [ec9f4425e4] :
+
+        pi_http: avoid POST argument OOB access
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 3ac1244805d96ab5e717a9c5e6c1c3af453efb18)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [a2f621c8a9] :
+
+        sdp: bound parsed SDP line count
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 34d244171aa0aba7892c5567708cd4179aebb341)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [73230d7503] :
+
+        registrar: dinamically grow temporary GRUU buffer
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 7a51936e08705eec202be5dced2ab3c22bc9fd14)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [d8ac1ba5b9] :
+
+        aaa_diameter: bound accounting AVP collection
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 9c2c5ff8ecb3e43d2f0e495f26d62b99cd04b0fb)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [0a728fd6e8] :
+
+        clusterer: bound topology packet counts
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 93c286af60ad8101d56198d5a0e4a6e6efbe5e52)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [5844e56613] :
+
+        b2b_logic: stop oversized Replaces rewrite
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 381604899574713d1406210b1b066063a16216ee)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [61d6152d8a] :
+
+        b2b_entities: bound generated RAck headers
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 7761e3c1e9039d1b6e37ed9c20ee74700a7137a9)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [626112c9aa] :
+
+        topology_hiding: bound encoded contact lengths
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 4195754ca32c9d7e639a334d8d0550b3c30aa826)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [5589fb1cd9] :
+
+        rr: bound maddr URI construction
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 02ca6f06492fa92d5ae7583908e84b682a0c34a3)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [06712cb5d9] :
+
+        proto_hep: reject HEPv3 frames without payload
+
+        Treat HEPv3 packets without a payload chunk as malformed before
+        callbacks or SIP message parsing can consume the zero-initialized
+        payload pointer and length. Also route UDP unpacking failures through
+        the existing cleanup path.
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 8fd2109b06b9841627965c42852efdc47c8cf5b4)
+
+
+2026-05-19  Razvan Crainea  <razvan@opensips.org>
+        * [99669a9019] :
+
+        proto_hep: validate HEPv3 chunk lengths
+
+        Reject malformed HEPv3 packet and chunk lengths before parsing
+        chunk-specific data. This prevents zero-length chunks from stalling the
+        parser loop and avoids length underflow while walking the advertised
+        packet body.
+
+        Reported-by: Haruto Kimura (Stella)
+        (cherry picked from commit 41756b8a77cdf69bc3aaeb8e88b734a7fa87a26e)
+
+
+2026-05-19  Liviu Chircu  <liviu@opensips.org>
+        * [9a8499142c] :
+
+        Merge branch 'compression_overflow' of github.com:john08burke/opensips into john08burke-compression_overflow
+
+        mc_compact() calculated the output size of preserved headers using the
+        normalized parser fields: header name, ": ", body and CRLF.
+
+        However, for preserved long-form headers, it wrote the original raw header
+        span instead.  If the input header contained extra whitespace after the
+        colon, such as "Supported:   100rel", the writer emitted more bytes than
+        the size calculation reserved, causing a buffer overflow and later memory
+        corruption.
+
+        Always rebuild preserved headers from the same normalized fields used by
+        the length calculation, instead of mixing normalized accounting with raw
+        header copying.
+
+        (cherry picked from commit d016658049fe5e2fa1061d16365507de0816fdce)
+
+
+2026-05-17  OpenSIPS  <github@opensips.org>
+        * [696753cc9f] :
+
+        Rebuild documentation
+
+
+2026-05-15  Liviu Chircu  <liviu@opensips.org>
+        * [7b5745d62f] :
+
+        usrloc cluster: Fix possible SHM memory leak
+
+        Commit 343f452c15 included a possible memory leak whenever the
+        .kv_storage field was already allocated in the urecord_t structure.
+
+        (cherry picked from commit 1c505c5e3f61e173bb5a89bb316315173e6e6330)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [47bb121fb0] :
+
+        xmpp: validate resolved IPv4 addresses
+
+        (cherry picked from commit 15ed7355c6c888082d75fa08667c975a61459360)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [8c2614afec] :
+
+        jabber: validate resolved address family
+
+        (cherry picked from commit 4103862c7c9728f555f515b0628c3755e298bccc)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [4c98c4c2de] :
+
+        rtpengine: allow IPv6 destinations in sockets
+
+        (cherry picked from commit afec9c857e773c0707ceaa1bb13753de72639e71)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [91e13270ed] :
+
+        presence: handle case when Content-Type is missing
+
+        Also properly test the mime type, incorporating both type and subtype
+
+        (cherry picked from commit a03b8a82e96d591adf4f8ef81978497e6036cbfd)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [73279c3fe9] :
+
+        presence: make sure Content-Type is parsed
+
+        (cherry picked from commit 5949135249019720b9078773bbf78f6317e3b8bf)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [80340bae31] :
+
+        imc: centralize user body formatting
+
+        (cherry picked from commit 3571c128760af9ac64065710c767ce7cda47a940)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [d3c4b6da76] :
+
+        imc: reject oversized unknown command replies
+
+        (cherry picked from commit 07d54dbc966347148e7ca5b86671843a01ff7f7d)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [1cef34147d] :
+
+        imc: fix member list buffer overflow
+
+        Build #list replies in an exact-sized pkg buffer instead of the fixed module buffer. Check length arithmetic before copying member URIs so large rooms cannot overflow the response body.
+
+        (cherry picked from commit 76afe34203d571bb8709eeaca00ef9a300187617)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [33d11d70d9] :
+
+        mem: drop unused q_malloc counter
+
+        (cherry picked from commit e95fbffcec303891601607282d41dc3b9b890b14)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [ac5309d5b8] :
+
+        sdp: reject malformed bandwidth lines
+
+        (cherry picked from commit 38d0e6ea07c4f4441f00f4e3723432fe557f961d)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [e965dcf8f9] :
+
+        presence: drop unused variable
+
+        (cherry picked from commit f86942e32ca1986e622caf52cbf00f0abc3b22b9)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [dd86461b71] :
+
+        presence: fix winfo  XML overflow on long URIs
+
+        (cherry picked from commit eeb331cd57d096ad7c767d9c0ef25010d020941a)
+
+
+2026-05-13  Tristan  <1075304+TristanInSec@users.noreply.github.com>
+        * [5f103effaf] :
+
+        core: enforce bounds checks on input-derived lengths (#3888)
+
+        - transformations: account for base64 4/3 expansion in b64encode
+          output length check
+        - parser/parse_body: validate remaining buffer length before delimiter
+          comparison in multipart boundary search
+        - net/proto_tcp: validate Content-Length value before multiplication
+          to prevent integer wraparound
+        - sipmsgops: enforce header name length limit in sip_to_json
+          conversion
+        - msg_translator: validate total URI length in construct_uri before
+          writing components
+
+        (cherry picked from commit bd32a79eb38429995e30bf7c3859e3ed5b085c49)
+
+
+2026-05-13  volga629-1  <59034879+volga629-1@users.noreply.github.com>
+        * [c5af7f7f5b] :
+
+        proto_smpp: bound sm_length against buffer overflow (#3891)
+
+        Clamp attacker-controlled sm_length to MAX_SMS_CHARACTERS in
+        parse_submit_or_deliver_body() and reject oversized or odd UCS2
+        lengths in recv_smpp_msg() before they reach copy_fixed_str()
+        or the GSM7/UCS2 decoders.
+
+        Fixes a stack/heap buffer overflow reachable from a malicious
+        SMSC peer sending submit_sm/deliver_sm with sm_length > 254.
+
+        Signed-off-by: NetworkLab Dev <info@networklab.ca>
+        (cherry picked from commit 6089db4ab94ba2ea09f8a88fd792c64949198ba4)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [feb57fa516] :
+
+        opentelemetry: drop dependency of the pt.h module
+
+        Close #3869
+
+        (cherry picked from commit 5f106c47674b4a8f818adeb30f87034625fed51f)
+
+
+2026-05-13  Razvan Crainea  <razvan@opensips.org>
+        * [703e8b5264] :
+
+        add inttypes format for i686 architectures
+
+        (cherry picked from commit feccfa614f1059073eea4363bf6d7170906fe922)
+
+
+2026-05-12  Peter Lemenkov  <lemenkov@gmail.com>
+        * [c2e75946b9] :
+
+        Fix format specifier warnings on 32-bit architectures (i686) (#3791)
+
+        During compilation on i686 (32-bit) architecture with GCC 15, format
+        specifier warnings appear due to type size differences between 32-bit
+        and 64-bit platforms.
+
+        ```
+        server.c: In function 'on_frame_recv_callback':
+        warning: format '%ld' expects argument of type 'long int', but argument 14
+        has type 'size_t' {aka 'unsigned int'} [-Wformat=]
+          638 |  LM_DBG("h2 header [%d], %p %ld\n", frame->hd.type, frame->headers.nva, frame->headers.nvlen);
+
+        dm_impl.c: In function 'dm_avps2json':
+        warning: format '%ld' expects argument of type 'long int', but argument 15
+        has type 'int64_t' {aka 'long long int'} [-Wformat=]
+          484 |  LM_DBG("%2d. got int64   AVP %s (%u), value: %ld\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->i64);
+
+        warning: format '%lu' expects argument of type 'long unsigned int', but argument 15
+        has type 'uint64_t' {aka 'long long unsigned int'} [-Wformat=]
+          494 |  LM_DBG("%2d. got uint64  AVP %s (%u), value: %lu\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->u64);
+        ```
+
+        Type sizes differ between 32-bit and 64-bit architectures:
+
+        **On x86_64 (64-bit):**
+        - `size_t` = `unsigned long` (8 bytes)
+        - `int64_t` = `long int` (8 bytes)
+
+        **On i686 (32-bit):**
+        - `size_t` = `unsigned int` (4 bytes)
+        - `int64_t` = `long long int` (8 bytes)
+        - `uint64_t` = `unsigned long long int` (8 bytes)
+
+        Use portable C99 format specifiers that work correctly on all
+        architectures:
+
+        - `%zu` for `size_t` (modules/http2d/server.c line 638)
+        - `%" PRId64` for `int64_t` (modules/aaa_diameter/dm_impl.c line 484)
+        - `%" PRIu64` for `uint64_t` (modules/aaa_diameter/dm_impl.c line 494)
+
+        Assisted-by: Claude (Anthropic) <https://claude.ai>
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 672e4dd4d3338f4045fb8f914cf76b47d1a0a148)
+
+
+2026-05-12  Razvan Crainea  <razvan@opensips.org>
+        * [2c0e549f93] :
+
+        b2b_entities: preserved leg index when answering call
+
+        Introduced in 862fa537, when the `pass-legs-upstream` flag was used and
+        the call was answered by any other leg but the first one, the index of
+        the leg has to be "preserved", otherwise the subsequent requests will
+        contain index 1, not the actual index.
+
+        (cherry picked from commit 73ef9dda2611348466aea189d8f177b9e2337c0a)
+
+
+2026-05-11  Razvan Crainea  <razvan@opensips.org>
+        * [e0511d43c4] :
+
+        github: bump actions versions to avoid deprecation
+
+        (cherry picked from commit 0d62134d29cc0b12c32fd8ee687078af5b8cd838)
+
+
+2026-05-11  Ovidiu Sas  <osas@voipembedded.com>
+        * [3e99d46c96] :
+
+        topology_hiding: fix crash when th_callid_loop_protection is disabled (#3881)
+
+        (cherry picked from commit f98d0823408b6bf5d52085518eab1de6d2f11d13)
+
+
+2026-05-11  Razvan Crainea  <razvan@opensips.org>
+        * [baf0645ef5] :
+
+        presence: remove deprecated xmlMemoryDump()
+
+        (cherry picked from commit 7ea25d91355b165a7b08d68e99898ed506b9b69b)
+
+
+2026-05-10  OpenSIPS  <github@opensips.org>
+        * [205a9d7ba0] :
+
+        Rebuild documentation
+
+
+2026-05-07  Jarrod Baumann  <j@rrod.io>
+        * [bfe3896b84] :
+
+        cgrates: add missing { NULL, NULL } terminator to modparam deps array
+
+        (cherry picked from commit 7358018a857cec0d35fccce9dceb8d735773f3ba)
+
+
+2026-05-06  Liviu Chircu  <liviu@opensips.org>
+        * [293d7e716f] :
+
+        PN Support: Add few unit tests for t_wait_for_new_branches()
+
+        (cherry picked from commit 5358eee98523c186d113e077661710e636eb6625)
+
+
+2026-05-06  Liviu Chircu  <liviu@opensips.org>
+        * [d17fb7df6c] :
+
+        registrar: Fix unit tests on OpenSIPS 4.0+
+
+        (cherry picked from commit 49a548536ffac9ca20fb89d0d962c24832052cb8)
+
+
+2026-05-06  Liviu Chircu  <liviu@opensips.org>
+        * [749bf9f305] :
+
+        registrar: Improve error handling
+
+        (cherry picked from commit 1875c584795952cbf9b2c4bf35777683e6ac0091)
+
+
+2026-05-06  Liviu Chircu  <liviu@opensips.org>
+        * [fb7e5c41db] :
+
+        PN Support: Complete commit e7cf1d595
+
+        The fix in e7cf1d595 was not complete, as we must add both PN, non-PN
+        branches as well as any pre-existing append_branches() into the
+        t_wait_for_new_branches() wait count, otherwise the UAC-side transaction
+        could end prematurely, before the PN-branch gets a chance to deliver and
+        connect the call.
+
+        (cherry picked from commit 6b058932285bfe95ab440ea61b8a34e2d8d6d722)
+
+
+2026-05-03  OpenSIPS  <github@opensips.org>
+        * [f83e33adc2] :
+
+        Rebuild documentation
+
+
+2026-04-26  Ovidiu Sas  <osas@voipembedded.com>
+        * [ee5c1a6cff] :
+
+        dialog: fix documentation for load_dialog_ctx( dialog [, id_type] [, active_only])
+
+        (cherry picked from commit eb4fba7af031714059b3f48c2713afeb535bf516)
+
+
+2026-04-26  OpenSIPS  <github@opensips.org>
+        * [6f34cbc4e3] :
+
+        Rebuild documentation
+
+
+2026-04-24  Liviu Chircu  <liviu@opensips.org>
+        * [0760df09b9] :
+
+        python: Improve compatibility with Debian 13
+
+        The "python" binary is no longer provided by default -> adjust Makefile.
+
+        (cherry picked from commit 70003cf10784a28f4fb18b6d446b30c6a07a8027)
+
+
+2026-04-23  Liviu Chircu  <liviu@opensips.org>
+        * [4bdab3954b] :
+
+        aaa_diameter: fix reply cJSON ownership in dm_send_request() paths
+
+        _dm_get_message_response() detached cond->rpl.json into a temporary
+        reply object before wrapper cleanup ran.  Now, cleanup frees only
+        cond->rpl.json, so the SHM-backed cJSON reply tree leaked.
+
+        (cherry picked from commit 1e8001fa00247667b1a780345473ace416cb08a0)
+
+
+2026-04-22  Liviu Chircu  <liviu@opensips.org>
+        * [02b0ae7e59] :
+
+        dialog: Document the new PRACK handling modparams
+
+        (cherry picked from commit 34a0fc066769002b788ce814791ca0cd4110701c)
+
+
+2026-04-22  Liviu Chircu  <liviu@opensips.org>
+        * [855f3e1437] :
+
+        TCP core: Add docs for tcp_close_conn() and MI tcp:close
+
+        (cherry picked from commit a66a151826b7825ee1010b02cc3c8bfe768c3634)
+
+
 =========================== Release 4.0.0-beta ==============================
 
 2026-04-22  Liviu Chircu  <liviu at opensips dot org>
