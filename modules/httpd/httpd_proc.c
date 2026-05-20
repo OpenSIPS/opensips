@@ -575,7 +575,7 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 							*upload_data_size + 1);
 					if (!kv) {
 						LM_ERR("oom\n");
-						goto mhd_no;
+						return MHD_NO;
 					}
 					p = (char*)(kv + 1);
 					kv->key.len = 1; kv->key.s = p;
