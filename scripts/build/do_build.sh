@@ -15,12 +15,19 @@ fi
 
 MAKE_ENV="FASTER=1 NICER=0 RADIUSCLIENT=RADCLI"
 MAKE_CMD="${MAKE_ENV} make"
+DEFAULT_CC_EXTRA_OPTS="-Werror"
+
+case "${COMPILER}" in
+clang*)
+  DEFAULT_CC_EXTRA_OPTS="${DEFAULT_CC_EXTRA_OPTS} -Wno-atomic-alignment"
+  ;;
+esac
 
 if [ ! -z "${ONE_MODULE}" ]
 then
-  env CC_EXTRA_OPTS="${CC_EXTRA_OPTS:-"-Werror -Wno-atomic-alignment"}" ${MAKE_CMD} \
+  env CC_EXTRA_OPTS="${CC_EXTRA_OPTS:-"${DEFAULT_CC_EXTRA_OPTS}"}" ${MAKE_CMD} \
    -C "modules/${ONE_MODULE}"
 else
-  env CC_EXTRA_OPTS="${CC_EXTRA_OPTS:-"-Werror -Wno-atomic-alignment"}" ${MAKE_CMD} \
+  env CC_EXTRA_OPTS="${CC_EXTRA_OPTS:-"${DEFAULT_CC_EXTRA_OPTS}"}" ${MAKE_CMD} \
    exclude_modules="${EXCLUDE_MODULES}" "${@}" ${MAKE_TGT:-"all"}
 fi
