@@ -6,7 +6,7 @@
 COMMENT= "OpenSIPS"
 
 PORTNAME= opensips
-PORTVERSION= 4.0.0-beta
+PORTVERSION= 4.0.0-rc1
 CATEGORIES= net
 MASTER_SITES= https://opensips.org/pub/opensips/4.0.0/
 

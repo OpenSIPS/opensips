@@ -1,3 +1,10 @@
+opensips (4.0.0-rc1-1) stable; urgency=low
+
+  * Minor Public Release.
+
+ -- Liviu Chircu <liviu@opensips.org>  Wed, 20 May 2026 15:10:23 +0300
+
+
 opensips (4.0.0-beta-1) beta; urgency=low
 
   * Major Public Release.
