@@ -5091,7 +5091,7 @@ static int rtpengine_api_offer(struct rtp_relay_session *sess,
 			fill_rtpengine_node(server, &val.rs);
 		else
 			LM_ERR("could not retrieve the value of the used rtpengine!\n");
-		pv_set_value(NULL, &media_pvar, EQ_T, NULL);
+		pv_set_value(sess->msg, &media_pvar, EQ_T, NULL);
 	}
 	return ret;
 }
