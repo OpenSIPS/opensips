@@ -110,6 +110,14 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 			ci.received = path_received;
 		}
 
+		if (parse_headers(_m, HDR_CONTACT_F, 0) != -1) {
+			ci.params = get_first_contact(_m)->params;
+		} else {
+			if(_c && _c->params) {
+				ci.params = _c->params;
+			}
+		}		
+
 		if (ownership_tag)
 			ci.shtag = *ownership_tag;
 
