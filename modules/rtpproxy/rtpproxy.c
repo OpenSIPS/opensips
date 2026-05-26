@@ -5128,13 +5128,16 @@ int rtpproxy_raise_dtmf_event(struct rtpp_dtmf_event *dtmf)
 
 static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_args *args,
 		str *ip, str *type, str *in_iface, str *out_iface,
-		str *global_flags, str *flags, str *extra_flags)
+		str *global_flags, str *flags, str *extra_flags, int require_from_tag)
 {
 	char *p;
 	str b;
 
 	if (!sess->from_tag) {
-		if (get_from_tag(sess->msg, &args->from_tag) == -1 || args->from_tag.len == 0) {
+		if (require_from_tag &&
+				(!sess->msg ||
+				get_from_tag(sess->msg, &args->from_tag) == -1 ||
+				args->from_tag.len == 0)) {
 			LM_ERR("can't get From tag\n");
 			return 0;
 		}
@@ -5150,7 +5153,9 @@ static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_a
 		args->to_tag = *sess->to_tag;
 	}
 	if (!sess->callid) {
-		if (get_callid(sess->msg, &args->callid) == -1 || args->callid.len == 0) {
+		if (!sess->msg ||
+				get_callid(sess->msg, &args->callid) == -1 ||
+				args->callid.len == 0) {
 			LM_ERR("can't get Call-Id field\n");
 			return 0;
 		}
@@ -5247,7 +5252,7 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess,
 	memset(&args, '\0', sizeof(args));
 
 	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
-			in_iface, out_iface, global_flags, flags, extra_flags))
+			in_iface, out_iface, global_flags, flags, extra_flags, 1))
 		return -1;
 
 	if (!server->node.s) {
@@ -5314,7 +5319,7 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess,
 	memset(&args, '\0', sizeof(args));
 
 	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
-			in_iface, out_iface, global_flags, flags, extra_flags))
+			in_iface, out_iface, global_flags, flags, extra_flags, 1))
 		return -1;
 
 	if (nh_lock)
@@ -5356,7 +5361,7 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 
 	memset(&args, '\0', sizeof(args));
 	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
-			NULL, NULL, NULL, flags, extra))
+			NULL, NULL, NULL, flags, extra, 0))
 		return -1;
 
 	if (nh_lock) {
@@ -5959,7 +5964,7 @@ static int rtpproxy_api_copy_answer(struct rtp_relay_session *sess,
 	memset(&args, '\0', sizeof(args));
 
 	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
-			NULL, NULL, NULL, flags, NULL))
+			NULL, NULL, NULL, flags, NULL, 1))
 		return -1;
 
 	if (!server->node.s) {
@@ -6026,7 +6031,7 @@ static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
 	memset(&args, '\0', sizeof(args));
 
 	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
-			NULL, NULL, NULL, flags, NULL))
+			NULL, NULL, NULL, flags, NULL, 1))
 		return -1;
 
 	if (!server->node.s) {
