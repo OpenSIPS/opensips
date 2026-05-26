@@ -253,7 +253,7 @@ void hash_carrier(pcr_t *pcr,MD5_CTX *hash_ctx)
 		return;
 
 	MD5Update(hash_ctx, pcr->id.s, pcr->id.len);
-	MD5Update(hash_ctx, (char *)pcr->sort_alg, sizeof(pcr->sort_alg));
+	MD5Update(hash_ctx, (char *)&pcr->sort_alg, sizeof(pcr->sort_alg));
 	for (i=0;i<pcr->pgwa_len;i++) {
 		if (pcr->pgwl[i].is_carrier == 1)
 			hash_carrier(pcr->pgwl[i].dst.carrier,hash_ctx);
