@@ -322,7 +322,7 @@ static inline void strip_esc(str *s)
 	int len = s->len;
 
 	for ( ; len > 0; len--, c++) {
-		if (*c == '\\' &&
+		if (*c == '\\' && len > 1 &&
 				(*(c+1)=='\\' || *(c+1)=='#' || *(c+1)=='|')) {
 			memmove(c, c + 1, len - 1);
 			s->len--;
@@ -1323,14 +1323,14 @@ str* write_dialog_vars( struct dlg_cell *dlg)
 		o_l = l;
 	}
 
-	lock_stop_read(dlg->vals_lock);
-
-	/* write the stuff into it */
+	/* write the stuff into it (still under read lock) */
 	o.len = l;
 	p = o.s;
 	for ( v=dlg->vals ; v ; v=v->next) {
 		p += write_pair( p, &v->name,NULL, &v->val, v->type);
 	}
+	lock_stop_read(dlg->vals_lock);
+
 	if (o.len!=p-o.s) {
 		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
 			o.len,(int)(p-o.s));
