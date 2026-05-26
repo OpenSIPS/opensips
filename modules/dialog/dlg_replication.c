@@ -415,11 +415,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 post_linking_error:
 	/* dialog was linked but not yet timer-inserted or ref-bumped */
 	unlink_unsafe_dlg(d_entry, dlg);
-	dlg_unlock(d_table, d_entry);
-	if (dlg)
-		destroy_dlg(dlg);
-	return -1;
-
 pre_linking_error:
 	dlg_unlock(d_table, d_entry);
 	if (dlg)
