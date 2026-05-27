@@ -884,19 +884,82 @@ error:
 	return NULL;
 }
 
+static int th_binary_encode_record_route(rr_t *record_route, rr_t **out_rr, int encode_self) {
+	struct sip_uri rr_uri = { 0 }, rr_uri_r2 = { 0 };
+	const struct socket_info *rr_sock = NULL;
+
+	if (record_route == NULL) {
+		LM_DBG("Record-Route to encode is NULL, skipping\n");
+		return -1;
+	}
+
+	if (parse_uri(record_route->nameaddr.uri.s, record_route->nameaddr.uri.len, &rr_uri) < 0) {
+		LM_ERR("Failed to parse SIP uri\n");
+		return -1;
+	}
+
+	rr_sock = grep_sock_info(&rr_uri.host, rr_uri.port_no ? rr_uri.port_no : SIP_PORT, rr_uri.proto);
+
+	if (th_no_dlg_one_way_hiding(rr_sock) && !encode_self) {
+		LM_DBG("Route header is self, skipping encode\n");
+		return 1;
+	}
+
+	if (!is_2rr(&rr_uri.params)) {
+		if (thinfo_encode_uri(&encoded_uri_buf, &rr_uri, 0, NULL, 1) == -1) {
+			LM_ERR("Error encoding Route URI\n");
+			return -1;
+		}
+	} else {
+		record_route = record_route->next;
+		if (record_route != NULL) {
+			if (parse_uri(record_route->nameaddr.uri.s, record_route->nameaddr.uri.len, &rr_uri_r2) < 0) {
+				LM_ERR("Failed to parse SIP uri\n");
+				return -1;
+			}
+
+			if (is_2rr(&rr_uri_r2.params) && str_match(&rr_uri.host, &rr_uri_r2.host)) {
+				if (thinfo_encode_dual_uri(&encoded_uri_buf, &rr_uri, &rr_uri_r2) == -1) {
+					LM_ERR("Error encoding Route URI\n");
+					return -1;
+				}
+			} else {
+				if (thinfo_encode_uri(&encoded_uri_buf, &rr_uri, 0, NULL, 1) == -1) {
+					LM_ERR("Error encoding Route URI\n");
+					return -1;
+				}
+
+				if (thinfo_encode_uri(&encoded_uri_buf, &rr_uri_r2, 0, NULL, 1) == -1) {
+					LM_ERR("Error encoding Route URI\n");
+					return -1;
+				}
+			}
+		} else {
+			if (thinfo_encode_uri(&encoded_uri_buf, &rr_uri, 0, NULL, 1) == -1) {
+				LM_ERR("Error encoding Route URI\n");
+				return -1;
+			}
+			LM_WARN("Previous Route has r2=on but no next Route\n");
+		}
+	}
+
+	*out_rr = record_route != NULL ? record_route->next : NULL;
+	return 0;
+}
+
 static char* build_encoded_thinfo_suffix(struct sip_msg* msg, str rr_set, int *suffix_len, uint16_t flags, int socket_only) {
 	uint16_t enc_len = 0;
 	char *suffix_enc, *s;
     rr_t *next = NULL, *head = NULL;
 	int i, x, params_len = 0;
-	struct sip_uri ctu = { 0 }, rr_uri = { 0 }, rr_uri_r2 = { 0 };
+	struct sip_uri ctu = { 0 };
 	struct th_ct_params* el;
 	param_t *it;
 	str contact = STR_NULL;
 	char *rr_set_free_str = NULL;
-	const struct socket_info *rr_sock = NULL;
 	str ct_uri_params_skip[URI_MAX_U_PARAMS];
 	int param_count = 0;
+	int encode_self_rr = 0, encode_ret_code = 0;
 
 	/* parse all headers as we can have multiple
 	   RR headers in the same message */
@@ -957,60 +1020,15 @@ static char* build_encoded_thinfo_suffix(struct sip_msg* msg, str rr_set, int *s
         next = head;
     }
 
-    while (next != NULL) {
-        if (parse_uri(next->nameaddr.uri.s, next->nameaddr.uri.len, &rr_uri) < 0) {
-            LM_ERR("Failed to parse SIP uri\n");
-            goto error;
-        }
-
-		rr_sock = grep_sock_info(&rr_uri.host, rr_uri.port_no ? rr_uri.port_no : SIP_PORT, rr_uri.proto);
-
-        if (!th_no_dlg_one_way_hiding(rr_sock)) {
-			if (!is_2rr(&rr_uri.params)) {
-				if (thinfo_encode_uri(&encoded_uri_buf, &rr_uri, 0, NULL, 1) == -1) {
-					LM_ERR("Error encoding Route URI\n");
-					goto error;
-				}
-			} else {
-				next = next->next;
-				if (next != NULL) {
-					if (parse_uri(next->nameaddr.uri.s, next->nameaddr.uri.len, &rr_uri_r2) < 0) {
-						LM_ERR("Failed to parse SIP uri\n");
-						goto error;
-					}
-				} else {
-					if (thinfo_encode_uri(&encoded_uri_buf, &rr_uri, 0, NULL, 1) == -1) {
-						LM_ERR("Error encoding Route URI\n");
-						goto error;
-					}
-					LM_WARN("Previous Route has r2=on but no next Route\n");
-					continue;
-				}
-
-				if (is_2rr(&rr_uri_r2.params) && str_match(&rr_uri.host, &rr_uri_r2.host)) {
-					if (thinfo_encode_dual_uri(&encoded_uri_buf, &rr_uri, &rr_uri_r2) == -1) {
-						LM_ERR("Error encoding Route URI\n");
-						goto error;
-					}
-				} else {
-					if (thinfo_encode_uri(&encoded_uri_buf, &rr_uri, 0, NULL, 1) == -1) {
-						LM_ERR("Error encoding Route URI\n");
-						goto error;
-					}
-
-					if (thinfo_encode_uri(&encoded_uri_buf, &rr_uri_r2, 0, NULL, 1) == -1) {
-						LM_ERR("Error encoding Route URI\n");
-						goto error;
-					}
-				}
-
-				memset(&rr_uri_r2, 0, sizeof(rr_uri_r2));
-			}
-        }
-
-        memset(&rr_uri, 0, sizeof(rr_uri));
-        next = next->next;
-    }
+	while (next != NULL) {
+		encode_ret_code = th_binary_encode_record_route(next, &next, encode_self_rr);
+		if (encode_ret_code < 0) {
+			goto error;
+		} else if (encode_ret_code == 1) {
+			// Found first occurence of self Record-Route, need to encode the rest
+			encode_self_rr = 1;
+		}
+	}
 
 	if (head != NULL) {
 		pkg_free(head);
