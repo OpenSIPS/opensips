@@ -159,6 +159,7 @@ static int w_t_new_request(struct sip_msg* msg, str *method,
 static int t_wait_for_new_branches(struct sip_msg* msg,
 			unsigned int* br_to_wait);
 static int w_t_wait_no_more_branches(struct sip_msg* msg);
+static int api_t_wait_no_more_branches(void);
 static int t_reply_by_callid(struct sip_msg* msg,
 		unsigned int* code, str* text, str* callid, str* cseq);
 static int t_get_branch_idx_by_attr(struct sip_msg* msg,
@@ -808,6 +809,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->setlocalTholder = setlocalTholder;
 	tmb->get_branch_index = get_branch_index;
 	tmb->t_wait_for_new_branches = w_t_wait_for_new_branches;
+	tmb->t_wait_no_more_branches = api_t_wait_no_more_branches;
 	tmb->t_inject_ul_event_branch = t_inject_ul_event_branch;
 
 	/* tm context functions */
@@ -1761,6 +1763,39 @@ static int w_t_wait_no_more_branches(struct sip_msg* msg)
 	return 1;
 }
 
+
+static int api_t_wait_no_more_branches(void)
+{
+	struct cell *t;
+	int is_local = 0, rc;
+
+	t = get_t();
+	if (t != T_NULL_CELL && t != T_UNDEFINED) {
+		is_local = 1;
+	} else {
+		if (remote_T == NULL)
+			return -1;
+
+		if (remote_T->hash == 0 && remote_T->label == 0) {
+			LM_BUG("invalid T ID (bad hexa %d,%d) found in remote_T\n",
+				remote_T->hash, remote_T->label);
+			return -1;
+		}
+
+		if (t_lookup_ident(&t, remote_T->hash, remote_T->label) < 0) {
+			LM_DBG("transaction %u:%u not found anymore\n",
+				remote_T->hash, remote_T->label);
+			return -1;
+		}
+	}
+
+	rc = t_wait_no_more_branches_timeout(t, 408) < 0 ? -1 : 1;
+
+	if (!is_local)
+		t_unref_cell(t);
+
+	return rc;
+}
 
 static int t_reply_by_callid(struct sip_msg* msg, unsigned int* code, str* text, str* callid, str* cseq_number)
 {

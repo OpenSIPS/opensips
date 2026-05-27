@@ -108,6 +108,14 @@ struct tm_binds {
 	int (*t_wait_for_new_branches) (struct sip_msg *msg, unsigned int num_br);
 
 	/**
+	 * Stop waiting for any still-pending phony branch created by
+	 * t_wait_for_new_branches().
+	 *
+	 * Return: 1 on success, -1 otherwise
+	 */
+	int (*t_wait_no_more_branches) (void);
+
+	/**
 	 * Injects and relays a new branch for the current transaction using the
 	 * attributes of the current usrloc contact EVI event, packed as AVPs.
 	 *

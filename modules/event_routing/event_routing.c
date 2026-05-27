@@ -59,7 +59,7 @@ ebr_event *get_ebr_event(const str *name);
 int api_notify_on_event(struct sip_msg *msg, ebr_event *event,
                         const ebr_filter *filters,
                         ebr_pack_params_cb pack_params,
-                        ebr_notify_cb notify, int timeout);
+                        ebr_notify_cb notify, int timeout, int flags);
 int api_wait_for_event(struct sip_msg *msg, async_ctx *ctx,
                         ebr_event *event, const ebr_filter *filters,
                         ebr_pack_params_cb pack_params, int timeout);
@@ -349,7 +349,7 @@ static int notify_on_event(struct sip_msg *msg, ebr_event* event,
 int api_notify_on_event(struct sip_msg *msg, ebr_event *event,
                         const ebr_filter *filters,
                         ebr_pack_params_cb pack_params,
-                        ebr_notify_cb notify, int timeout)
+                        ebr_notify_cb notify, int timeout, int flags)
 {
 	ebr_filter *filters_cpy;
 
@@ -369,7 +369,7 @@ int api_notify_on_event(struct sip_msg *msg, ebr_event *event,
 	/* we have a valid EBR event here, let's subscribe on it */
 	if (add_ebr_subscription( msg, event, filters_cpy,
 	    timeout, pack_params, notify,
-	    EBR_SUBS_TYPE_NOTY|EBR_DATA_TYPE_FUNC ) <0 ) {
+	    EBR_SUBS_TYPE_NOTY|EBR_DATA_TYPE_FUNC|flags ) <0 ) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 			event->event_id);
 		return -1;

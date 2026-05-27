@@ -66,6 +66,7 @@ int t_inject_ul_event_branch(void);
 int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags);
 
 int t_wait_no_more_branches( struct cell *t, int extra);
+int t_wait_no_more_branches_timeout(struct cell *t, int code);
 
 void get_cancel_reason(struct sip_msg *msg, int flags, str *reason);
 
