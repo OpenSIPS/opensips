@@ -1108,6 +1108,25 @@ int t_wait_no_more_branches( struct cell *t, int extra)
 }
 
 
+int t_wait_no_more_branches_timeout(struct cell *t, int code)
+{
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
+	int b;
+
+	for (b = t->nr_of_outgoings - 1; b >= t->first_branch; b--) {
+		if (TM_BRANCH(t, b).flags & T_UAC_IS_PHONY) {
+			if (TM_BRANCH(t, b).last_received < 200) {
+				LOCK_REPLIES(t);
+				relay_reply(t, FAKED_REPLY, b, code, cancel_bitmap);
+			}
+			TM_BRANCH(t, b).br_flags = t->nr_of_outgoings;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
 int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 {
 	static struct sip_msg faked_req;

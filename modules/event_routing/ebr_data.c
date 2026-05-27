@@ -519,6 +519,31 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				/* setting swait_data->ret_avps to -1 serves as an 
 				 * indication of a timeout */
 				swait_data->ret_avps = ((void*)(long)-1);
+			} else
+			if ((sub->flags & EBR_SUBS_TYPE_NOTY) &&
+			        (sub->flags & EBR_SUBS_EXPIRE_NOTIFY)) {
+				job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
+				if (job==NULL) {
+					LM_ERR("failed to allocated new IPC job, skipping..\n");
+					continue;
+				}
+				job->ev = ev;
+				job->data = sub->data;
+				job->flags = sub->flags;
+				job->tm = sub->tm;
+				job->avps = NULL;
+
+				if (sub->flags & EBR_DATA_TYPE_ROUT)
+					job->data = dup_ref_script_route_in_shm
+						((struct script_route_ref *)job->data, 1);
+
+				if (ipc_send_job( process_no, ebr_ipc_type, (void*)job)<0) {
+					LM_ERR("failed to send job via IPC, skipping...\n");
+					if ((sub->flags & EBR_DATA_TYPE_ROUT) && job->data)
+						shm_free(job->data);
+					shm_free(job);
+					continue;
+				}
 			}
 
 			/* unlink it */
@@ -729,6 +754,39 @@ void ebr_timeout(unsigned int ticks, void* param)
 				/* setting swait_data->ret_avps to -1 serves as an 
 				 * indication of a timeout */
 				swait_data->ret_avps = ((void*)(long)-1);
+
+			} else
+			if ((sub->flags & EBR_SUBS_TYPE_NOTY) &&
+			        (sub->flags & EBR_SUBS_EXPIRE_NOTIFY)) {
+
+				LM_DBG("subscription type [%s] from process %d(pid %d) on "
+					"event <%.*s> expired at %d, now %d, notifying\n",
+					EBR_SUBS_TYPE(sub), sub->proc_no, pt[sub->proc_no].pid,
+					sub->event->event_name.len, sub->event->event_name.s,
+					sub->expire, my_time);
+
+				job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
+				if (job==NULL) {
+					LM_ERR("failed to allocated new IPC job, skipping..\n");
+					continue;
+				}
+				job->ev = ev;
+				job->data = sub->data;
+				job->flags = sub->flags;
+				job->tm = sub->tm;
+				job->avps = NULL;
+
+				if (sub->flags & EBR_DATA_TYPE_ROUT)
+					job->data = dup_ref_script_route_in_shm
+						((struct script_route_ref *)job->data, 1);
+
+				if (ipc_send_job( process_no, ebr_ipc_type, (void*)job)<0) {
+					LM_ERR("failed to send job via IPC, skipping...\n");
+					if ((sub->flags & EBR_DATA_TYPE_ROUT) && job->data)
+						shm_free(job->data);
+					shm_free(job);
+					continue;
+				}
 
 			} else {
 

@@ -588,8 +588,17 @@ static struct usr_avp *pn_trim_pn_params(evi_params_t *params)
 }
 
 
-static void pn_inject_branch(void)
+static void pn_notify_branch(void)
 {
+	struct usr_avp **avps;
+
+	avps = get_avp_list();
+	if (!avps || !*avps) {
+		if (tmb.t_wait_no_more_branches() != 1)
+			LM_ERR("failed to stop waiting for PN branches\n");
+		return;
+	}
+
 	if (tmb.t_inject_ul_event_branch() != 1)
 		LM_ERR("failed to inject a branch for the "UL_EV_CT_UPDATE" event!\n");
 }
@@ -667,7 +676,8 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 	}
 
 	if (ebr.notify_on_event(req, ev_ct_update, pn_ebr_filters,
-	        pn_trim_pn_params, pn_inject_branch, pn_refresh_timeout) != 0) {
+	        pn_trim_pn_params, pn_notify_branch, pn_refresh_timeout,
+	        EBR_SUBS_EXPIRE_NOTIFY) != 0) {
 		LM_ERR("failed to EBR-subscribe to "UL_EV_CT_UPDATE", Contact: %.*s\n",
 		       ct->c.len, ct->c.s);
 		return -1;

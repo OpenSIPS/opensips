@@ -46,6 +46,7 @@ struct _ebr_event;
 #define EBR_SUBS_TYPE_SWAIT (1<<2)
 #define EBR_DATA_TYPE_ROUT  (1<<3)
 #define EBR_DATA_TYPE_FUNC  (1<<4)
+#define EBR_SUBS_EXPIRE_NOTIFY (1<<5)
 
 #define EBR_SUBS_TYPE(_s) \
 	( ((_s)->flags&EBR_SUBS_TYPE_WAIT)?"WAIT": \
