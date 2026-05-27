@@ -44,6 +44,7 @@ struct _ebr_event;
 #define EBR_SUBS_TYPE_NOTY  (1<<1)
 #define EBR_DATA_TYPE_ROUT  (1<<2)
 #define EBR_DATA_TYPE_FUNC  (1<<3)
+#define EBR_SUBS_EXPIRE_NOTIFY (1<<4)
 
 typedef struct usr_avp *(*ebr_pack_params_cb) (evi_params_t *params);
 

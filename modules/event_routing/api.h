@@ -49,6 +49,7 @@ typedef struct ebr_api {
 	 * @notify: mandatory callback, a hook where to take action once the
 	 *          desired event takes place
 	 * @timeout: lifetime of the subscription (seconds)
+	 * @flags: optional EBR_SUBS_* flags
 	 *
 	 * Return: 0 on successful registration, -1 otherwise
 	 *
@@ -61,7 +62,7 @@ typedef struct ebr_api {
 	int (*notify_on_event) (struct sip_msg *msg, ebr_event *event,
 	                        const ebr_filter *filters,
 	                        ebr_pack_params_cb pack_params,
-	                        ebr_notify_cb notify, int timeout);
+	                        ebr_notify_cb notify, int timeout, int flags);
 
 	/**
 	 * async_wait_for_event() - subscribe to the @event given by @filters.
