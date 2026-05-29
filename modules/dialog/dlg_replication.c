@@ -443,7 +443,9 @@ int dlg_replicated_update(bin_packet_t *packet)
 	struct dlg_entry *d_entry;
 	int rcv_flags, save_new_flag, save_sync_flag;
 	unsigned int h_id;
+	unsigned int new_state;
 	short pkg_ver = get_bin_pkg_version(packet);
+	int state;
 
 	bin_pop_str(packet, &call_id);
 	bin_pop_str(packet, &from_tag);
@@ -486,7 +488,18 @@ int dlg_replicated_update(bin_packet_t *packet)
 	}
 
 	bin_skip_int(packet, 1);
-	bin_pop_int(packet, &dlg->state);
+	state = dlg->state;
+	bin_pop_int(packet, &new_state);
+	/* Update stats when the dialog moves between confirmed, early, and other states. */
+	if ((state == DLG_STATE_CONFIRMED_NA || state == DLG_STATE_CONFIRMED) !=
+			(new_state == DLG_STATE_CONFIRMED_NA || new_state == DLG_STATE_CONFIRMED) ||
+			(state == DLG_STATE_EARLY) != (new_state == DLG_STATE_EARLY)) {
+		update_dlg_stats(dlg, -1);
+		dlg->state = new_state;
+		update_dlg_stats(dlg, 1);
+	} else {
+		dlg->state = new_state;
+	}
 
 	/* sockets */
 	bin_skip_str(packet, 2);
