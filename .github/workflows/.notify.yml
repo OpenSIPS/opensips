@@ -16,13 +16,22 @@ jobs:
     steps:
       - name: Notify slack fail
         if: ${{ inputs.job_result == 'failure' && github.repository == 'OpenSIPS/opensips' }}
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        uses: voxmedia/github-action-slack-notify-build@v1
+        uses: slackapi/slack-github-action@v3.0.3
         with:
-          channel: devel
-          status: FAILED
-          color: danger
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: devel
+            text: ":x: ${{ inputs.job_name }} failed in ${{ github.repository }}"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":x: *${{ inputs.job_name }}* failed in *${{ github.repository }}*"
+              - type: context
+                elements:
+                  - type: mrkdwn
+                    text: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Open this run in GitHub Actions>"
 
       - name: Post Fail
         if: ${{ inputs.job_result == 'failure' }}
