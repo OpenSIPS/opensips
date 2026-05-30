@@ -663,7 +663,7 @@ Chapter 2. Contributors
    1. Debian 61 3 6168 356
    2. Liviu Chircu (@liviuchircu) 43 23 1720 288
    3. Vlad Paiu (@vladpaiu) 33 19 1446 50
-   4. Razvan Crainea (@razvancrainea) 17 14 150 48
+   4. Razvan Crainea (@razvancrainea) 20 16 180 72
    5. Vlad Patrascu (@rvlad-patrascu) 12 6 595 38
    6. Norman Brandinger (@NormB) 7 5 58 4
    7. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 7 5
@@ -696,11 +696,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Debian                          Mar 2026 - Mar 2026
-   2.  rdondeti                        Mar 2026 - Mar 2026
-   3.  Norman Brandinger (@NormB)      Mar 2026 - Feb 2026
-   4.  Ken Rice                        Sep 2025 - Sep 2025
-   5.  Razvan Crainea (@razvancrainea) Feb 2012 - May 2025
+   1.  Razvan Crainea (@razvancrainea) Feb 2012 - May 2026
+   2.  Debian                          Mar 2026 - Mar 2026
+   3.  rdondeti                        Mar 2026 - Mar 2026
+   4.  Norman Brandinger (@NormB)      Mar 2026 - Feb 2026
+   5.  Ken Rice                        Sep 2025 - Sep 2025
    6.  Norm Brandinger                 May 2025 - May 2025
    7.  Eddie Fiorentine                Mar 2025 - Mar 2025
    8.  Liviu Chircu (@liviuchircu)     Mar 2014 - Jan 2025
