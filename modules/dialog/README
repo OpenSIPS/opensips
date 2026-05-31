@@ -2718,8 +2718,8 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 467 294 13400 3568
-   2. Razvan Crainea (@razvancrainea) 308 228 5668 1913
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 470 297 13403 3576
+   2. Razvan Crainea (@razvancrainea) 309 229 5682 1914
    3. Vlad Paiu (@vladpaiu) 263 149 7467 3027
    4. Liviu Chircu (@liviuchircu) 205 144 4042 1599
    5. Vlad Patrascu (@rvlad-patrascu) 200 104 4330 3514
@@ -2738,11 +2738,11 @@ Chapter 4. Contributors
    (@nikbyte), Zero King (@l2dy), Michel Bensoussan, Richard
    Revels, Elena-Ramona Modroiu, Tavis Paquette, Ryan Bullock,
    Andrei Datcu (@andrei-datcu), Jeffrey Magder, Stefan-Cristian
-   Mititelu, Ron Winacott, Andy Pyles, Julián Moreno Patiño,
-   Konstantin Bokarius, sergei lavrov, Alex Massover, Damien
-   Sandras (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05),
-   UnixDev, Eliot Gable, Ryan Bullock (@rrb3942), Edson Gellert
-   Schubert.
+   Mititelu, Norm Brandinger, Ron Winacott, Andy Pyles, Julián
+   Moreno Patiño, Konstantin Bokarius, sergei lavrov, Alex
+   Massover, Damien Sandras (@dsandras), Alex Hermann, Dusan
+   Klinec (@ph4r05), UnixDev, Eliot Gable, Ryan Bullock
+   (@rrb3942), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -2764,31 +2764,32 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ovidiu Sas (@ovidiusas)             Feb 2008 - May 2026
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2026
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2026
-   4.  Norman Brandinger (@NormB)          Oct 2013 - Apr 2026
-   5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2026
-   6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
-   7.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   8.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
-   9.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
-   10. Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2026
+   3.  Ovidiu Sas (@ovidiusas)             Feb 2008 - May 2026
+   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2026
+   5.  Norman Brandinger (@NormB)          Oct 2013 - Apr 2026
+   6.  Norm Brandinger                     Mar 2026 - Mar 2026
+   7.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jan 2025
+   8.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   9.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
+   10. Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
 
-   All remaining contributors: Ryan Bullock, Peter Lemenkov
-   (@lemenkov), Nick Altmann (@nikbyte), Walter Doekes (@wdoekes),
-   sergei lavrov, Zero King (@l2dy), Dan Pascu (@danpascu), Ionel
-   Cerghit (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut
-   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
-   (@ph4r05), Eseanu Marius Cristian (@eseanucristian), Andrei
-   Datcu (@andrei-datcu), Damien Sandras (@dsandras), Ryan Bullock
-   (@rrb3942), Anca Vamanu, Alex Massover, Andrei Dragus, John
-   Riordan, Hugues Mitonneau, Richard Revels, UnixDev, Alex
-   Hermann, Henning Westerholt (@henningw), Carsten Bock, Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Jerome Martin, Tavis
-   Paquette, Michel Bensoussan, Eliot Gable, Andy Pyles,
-   Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Ryan Bullock, Peter Lemenkov (@lemenkov), Nick Altmann
+   (@nikbyte), Walter Doekes (@wdoekes), sergei lavrov, Zero King
+   (@l2dy), Dan Pascu (@danpascu), Ionel Cerghit (@ionel-cerghit),
+   Jarrod Baumann (@jarrodb), Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Dusan Klinec (@ph4r05), Eseanu Marius
+   Cristian (@eseanucristian), Andrei Datcu (@andrei-datcu),
+   Damien Sandras (@dsandras), Ryan Bullock (@rrb3942), Anca
+   Vamanu, Alex Massover, Andrei Dragus, John Riordan, Hugues
+   Mitonneau, Richard Revels, UnixDev, Alex Hermann, Henning
+   Westerholt (@henningw), Carsten Bock, Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jerome Martin, Tavis Paquette, Michel
+   Bensoussan, Eliot Gable, Andy Pyles, Elena-Ramona Modroiu,
+   Jeffrey Magder, Ron Winacott.
 
    (1) including any documentation-related commits, excluding
    merge commits
