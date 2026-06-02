@@ -159,6 +159,9 @@ inline static int _atomic_xchg(volatile int *lock, int newval)
 			: "r"(newval), "r" (lock) : "memory"
 	);
 
+#elif defined(__CPU_aarch64)
+	val = __atomic_exchange_n(lock, newval, __ATOMIC_ACQ_REL);
+
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
 			"1: lwarx  %0, 0, %2\n\t"
