@@ -1639,7 +1639,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 	struct dlg_entry *entry;
 	struct dlg_cell  * cell,*next_cell;
 	unsigned char on_shutdown;
-	int callee_leg,ins_done=0;
+	int callee_leg, ins_done=0, reset_locked_by;
 	static query_list_t *ins_list = NULL;
 
 	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {
@@ -1697,9 +1697,11 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 						/* mark it as deleted so as we don't deal with it later */
 						cell->flags |= DLG_FLAG_DB_DELETED;
 						/* timer is done with this dialog */
+						reset_locked_by = (cell->ref > 1);
 						cell->locked_by = process_no;
 						unref_dlg_unsafe(cell,1,entry);
-						cell->locked_by = 0;
+						if (reset_locked_by)
+							cell->locked_by = 0;
 						cell=next_cell;
 						continue;
 					}
@@ -2514,4 +2516,3 @@ mi_response_t *mi_restore_dlg_db(const mi_params_t *params,
 	else
 		return init_mi_result_ok();
 }
-
