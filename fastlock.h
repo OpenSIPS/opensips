@@ -147,6 +147,12 @@ inline static int tsl(volatile int* lock)
 #endif
 			: "=&r" (val) : "r"(1), "r" (lock) : "cc", "memory"
 	);
+#elif defined(__CPU_aarch64)
+#ifdef SPIN_OPTIMIZE
+	if (__atomic_load_n(lock, __ATOMIC_RELAXED))
+		return 1;
+#endif
+	val = __atomic_exchange_n(lock, 1, __ATOMIC_ACQUIRE);
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
 			"1: lwarx  %0, 0, %2\n\t"
@@ -300,6 +306,8 @@ inline static void release_lock(fl_lock_t* lock_struct)
 		" str %1, [%2] \n\r"
 		: "=m"(*lock) : "r"(0), "r"(lock) : "memory"
 	);
+#elif defined(__CPU_aarch64)
+	__atomic_store_n(lock, 0, __ATOMIC_RELEASE);
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
 			/* "sync\n\t"  lwsync is faster and will work

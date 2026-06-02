@@ -230,7 +230,7 @@ arm_macros= __arm__ __thumb__
 arm6_macros= __ARM_ARCH_6__
 arm7_macros= __ARM_ARCH_7__ __ARM_ARCH_7A__
 
-arm64_macros= __AARCH64EL__
+arm64_macros= __aarch64__ __AARCH64EL__ __AARCH64EB__
 
 ppc_macros= __powerpc __powerpc__ __POWERPC__ __ppc__ _ARCH_PPC
 ppc64_macros= __ppc64__ _ARCH_PPC64
@@ -749,6 +749,10 @@ ifeq ($(ARCH), arm6)
 endif
 
 ifeq ($(ARCH), arm7)
+	use_fast_lock=yes
+endif
+
+ifeq ($(ARCH), aarch64)
 	use_fast_lock=yes
 endif
 
