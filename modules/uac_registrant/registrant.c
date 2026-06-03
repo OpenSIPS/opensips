@@ -831,7 +831,7 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 	cb_param->uac = rec;
 
 	/* get the string version of expires */
-	expires = int2str((unsigned long)(rec->expires), &expires_len);
+	expires = int2str((unsigned long)(rec->wanted_expires), &expires_len);
 
 	p = extra_hdrs.s;
 	memcpy(p, contact_hdr.s, contact_hdr.len);
