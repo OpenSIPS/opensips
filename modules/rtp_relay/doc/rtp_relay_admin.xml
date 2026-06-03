@@ -24,9 +24,11 @@
 		in-dialog requests. These flags can be specified through the 
 		<xref linkend="pv_rtp_relay"/> and/or
 		<xref linkend="pv_rtp_relay_peer"/> variables at initial INVITE,
-		and are then passed along with the RTP relay context until
-		the end of the call. They can also be modified during sequential
-		in-dialog requests.
+		or through the absolute
+		<xref linkend="pv_rtp_relay_caller"/> and
+		<xref linkend="pv_rtp_relay_callee"/> variables, and are then
+		passed along with the RTP relay context until the end of the call.
+		They can also be modified during sequential in-dialog requests.
 	</para>
 	<para>
 		This is not a stand-alone module that communicates directly with RTP relays,
@@ -791,8 +793,10 @@ route[rtp_relay_copy_delete] {
 		</para>
 		<para>
 		The RTP session modifiers used are the ones provisioned through the
-		<xref linkend="pv_rtp_relay"/> and/or
-		<xref linkend="pv_rtp_relay_peer"/> variables.
+		<xref linkend="pv_rtp_relay"/>,
+		<xref linkend="pv_rtp_relay_peer"/>,
+		<xref linkend="pv_rtp_relay_caller"/> and/or
+		<xref linkend="pv_rtp_relay_callee"/> variables.
 		</para>
 		<para>
 		The function can be called from the main request route - in this case
@@ -800,6 +804,18 @@ route[rtp_relay_copy_delete] {
 		the branch route - in this case the RTP relay will only be engaged for
 		the branch where it was called, or that has an associated
 		<emphasis>rtp_relay</emphasis> provisioned.
+		</para>
+		<para>
+		When using the scope-relative <xref linkend="pv_rtp_relay"/>
+		variable together with this function, note that its meaning depends
+		on where it is used. In the main request route of the initial INVITE,
+		<xref linkend="pv_rtp_relay"/> refers to the caller and
+		<xref linkend="pv_rtp_relay_peer"/> refers to the callee. In a
+		branch route, <xref linkend="pv_rtp_relay"/> refers to the callee
+		branch and <xref linkend="pv_rtp_relay_peer"/> refers to the
+		caller. To avoid depending on this route scope, use
+		<xref linkend="pv_rtp_relay_caller"/> and
+		<xref linkend="pv_rtp_relay_callee"/> instead.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -1022,15 +1038,21 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1 \
 			<title><varname>$rtp_relay</varname></title>
 			<para>
 				Is used to provision the RTP back-end flags for the
-				current peer - if used in the initial INVITE
-				REQUEST route, it provisions the flags of the
-				caller, whereas if used in the initial INVITE BRANCH/REPLY
-				route, it provisions the callee's flags.
+				current peer. This variable is scope-relative: in the
+				main request route of the initial INVITE it provisions
+				the caller, while in the branch route or replies of the
+				initial INVITE transaction it provisions the callee branch.
 			</para>
 			<para>
 				For a sequential request, the variable represents the
 				flags used for the UAC that generated the request. When
 				used in a reply, the other UAC's flags are provisioned.
+			</para>
+			<para>
+				Use <xref linkend="pv_rtp_relay_caller"/> and
+				<xref linkend="pv_rtp_relay_callee"/> when the script
+				needs to address the caller or callee side directly,
+				independent of the route scope.
 			</para>
 			<para>
 				In an initial INVITE scope, the variable can be
@@ -1080,6 +1102,40 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1 \
 				current one. All other fields are similar.
 			</para>
 		</section>
+		<section id="pv_rtp_relay_caller" xreflabel="$rtp_relay_caller">
+			<title><varname>$rtp_relay_caller</varname></title>
+			<para>
+				This variable has the same parameters as
+				<xref linkend="pv_rtp_relay"/>, but always provisions
+				the caller side of the RTP relay session, independent of
+				the route where it is used.
+			</para>
+			<para>
+				In the main request route of the initial INVITE this is
+				equivalent to <xref linkend="pv_rtp_relay"/>. In a branch
+				route or in replies of the initial INVITE transaction this
+				is equivalent to <xref linkend="pv_rtp_relay_peer"/>.
+				After the dialog is established, it addresses the stored
+				caller leg directly.
+			</para>
+		</section>
+		<section id="pv_rtp_relay_callee" xreflabel="$rtp_relay_callee">
+			<title><varname>$rtp_relay_callee</varname></title>
+			<para>
+				This variable has the same parameters as
+				<xref linkend="pv_rtp_relay"/>, but always provisions
+				the callee side of the RTP relay session, independent of
+				the route where it is used.
+			</para>
+			<para>
+				In the main request route of the initial INVITE this is
+				equivalent to <xref linkend="pv_rtp_relay_peer"/>. In a
+				branch route or in replies of the initial INVITE
+				transaction this is equivalent to
+				<xref linkend="pv_rtp_relay"/>. After the dialog is
+				established, it addresses the stored callee leg directly.
+			</para>
+		</section>
 		<section id="pv_rtp_relay_ctx" xreflabel="$rtp_relay_ctx">
 			<title><varname>$rtp_relay_ctx()</varname></title>
 			<para>
@@ -1113,4 +1169,3 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1 \
 		</section>
 	</section>
 </chapter>
-
