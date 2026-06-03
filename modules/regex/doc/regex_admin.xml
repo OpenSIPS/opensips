@@ -222,13 +222,14 @@ modparam("regex", "pcre_extended", 1)
 
 		<section id="func_pcre_match" xreflabel="pcre_match()">
 			<title>
-				<function moreinfo="none">pcre_match (string, pcre_regex)</function>
+				<function moreinfo="none">pcre_match (string, pcre_regex [, match])</function>
 			</title>
 
 			<para>
 				Matches the given string parameter against the regular expression pcre_regex,
 				which is compiled into a PCRE object. Returns TRUE if it matches, FALSE
-				otherwise.
+				otherwise. When the optional match parameter is provided, it is set to
+				the matched part of the string, or cleared if there is no match.
 			</para>
 
 			<para>Meaning of the parameters is as follows:</para>
@@ -243,6 +244,12 @@ modparam("regex", "pcre_extended", 1)
 					<para>
 						<emphasis>pcre_regex</emphasis> (string) - Regular expression to be compiled
 						in a PCRE object.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>match</emphasis> (var, optional) - Writable pseudo-variable
+						where the matched part of the string is stored.
 					</para>
 				</listitem>
 			</itemizedlist>

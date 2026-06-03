@@ -77,6 +77,8 @@
 #include "../../str.h"
 #include "../../locking.h"
 #include "../../mod_fix.h"
+#include "../../pvar.h"
+#include "../../error.h"
 #include "../../mi/mi.h"
 
 #define START 0
@@ -128,12 +130,15 @@ static void destroy(void);
  */
 static int load_pcres(int);
 static void free_shared_memory(void);
+static int fixup_check_pv_setf(void **param);
+static int set_match_pvar(struct sip_msg *msg, pv_spec_t *match, str *value);
 
 
 /*
  * Script functions
  */
-static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s);
+static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s,
+		pv_spec_t *match);
 static int w_pcre_match_group(struct sip_msg* _msg, str* string, int* _num_pcre);
 
 
@@ -152,7 +157,8 @@ static const cmd_export_t cmds[] =
 {
 	{"pcre_match", (cmd_function)w_pcre_match, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_pv_setf, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"pcre_match_group", (cmd_function)w_pcre_match_group, {
@@ -584,8 +590,49 @@ static void free_shared_memory(void)
  * Script functions
  */
 
+static int fixup_check_pv_setf(void **param)
+{
+	if (!pv_is_w(((pv_spec_t*)*param))) {
+		LM_ERR("invalid output parameter: must be writable\n");
+		return E_SCRIPT;
+	}
+
+	return 0;
+}
+
+
+static int set_match_pvar(struct sip_msg *msg, pv_spec_t *match, str *value)
+{
+	pv_value_t pv_val;
+
+	if (!match)
+		return 0;
+
+	if (!value) {
+		if (pv_set_value(msg, match, 0, NULL) != 0) {
+			LM_ERR("failed to clear match pvar\n");
+			return -1;
+		}
+
+		return 0;
+	}
+
+	memset(&pv_val, 0, sizeof(pv_val));
+	pv_val.flags = PV_VAL_STR;
+	pv_val.rs = *value;
+
+	if (pv_set_value(msg, match, 0, &pv_val) != 0) {
+		LM_ERR("failed to set match pvar\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 /*! \brief Return true if the argument matches the regular expression parameter */
-static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
+static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s,
+		pv_spec_t *match)
 {
 	pcre2_code *pcre_re = NULL;
 	int pcre_rc;
@@ -594,8 +641,12 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 	PCRE2_SIZE pcre_erroffset;
 #ifdef PCRE2_LIB
 	pcre2_match_data *match_data;
+	PCRE2_SIZE *ovector;
+#else
+	int ovector[3];
 #endif
 	str regex;
+	str match_str;
 
 	if (pkg_nt_str_dup(&regex, _regex_s) < 0)
 		return -1;
@@ -616,10 +667,19 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 			string->len, /* the length of the subject */
 			0, /* start at offset 0 in the subject */
 			0, /* default options */
-			NULL, /* output vector for substring information */
-			0); /* number of elements in the output vector */
+			match ? ovector : NULL, /* output vector for substring information */
+			match ? 3 : 0); /* number of elements in the output vector */
 #else
-	match_data = pcre2_match_data_create(0, NULL); // no captures needed
+	if (match)
+		match_data = pcre2_match_data_create_from_pattern(pcre_re, NULL);
+	else
+		match_data = pcre2_match_data_create(0, NULL);
+	if (!match_data) {
+		LM_ERR("failed to allocate match data\n");
+		pcre2_code_free(pcre_re);
+		pkg_free(regex.s);
+		return -1;
+	}
 
 	pcre_rc = pcre2_match(
 		pcre_re,                    /* the compiled pattern */
@@ -629,8 +689,6 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 		0,                          /* default options */
 		match_data,                 /* match data block */
 		NULL);                      /* match context */
-
-	pcre2_match_data_free(match_data);
 #endif
 
 	/* Matching failed: handle error cases */
@@ -643,14 +701,40 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 				LM_DBG("matching error '%d'\n", pcre_rc);
 				break;
 		}
+#ifdef PCRE2_LIB
+		pcre2_match_data_free(match_data);
+#endif
 		pcre2_code_free(pcre_re);
 		pkg_free(regex.s);
+		if (set_match_pvar(_msg, match, NULL) < 0)
+			return -1;
 		return -1;
 	}
 
+	LM_DBG("'%s' matches '%s'\n", string->s, regex.s);
+
+	if (match) {
+#ifdef PCRE2_LIB
+		ovector = pcre2_get_ovector_pointer(match_data);
+#endif
+		match_str.s = string->s + ovector[0];
+		match_str.len = (int)(ovector[1] - ovector[0]);
+
+		if (set_match_pvar(_msg, match, &match_str) < 0) {
+#ifdef PCRE2_LIB
+			pcre2_match_data_free(match_data);
+#endif
+			pcre2_code_free(pcre_re);
+			pkg_free(regex.s);
+			return -1;
+		}
+	}
+
+#ifdef PCRE2_LIB
+	pcre2_match_data_free(match_data);
+#endif
 	pcre2_code_free(pcre_re);
 	pkg_free(regex.s);
-	LM_DBG("'%s' matches '%s'\n", string->s, regex.s);
 	return 1;
 }
 
@@ -769,7 +853,7 @@ mi_response_t *mi_pcres_match(const mi_params_t *params, struct mi_handler *asyn
 	}
 
 	/* handle call back function result */
-	rc = w_pcre_match(NULL, &string, &pcre_regex);
+	rc = w_pcre_match(NULL, &string, &pcre_regex, NULL);
 	LM_DBG("w_pcre_match: string<%s>, pcre_regex=<%s>, result:<%i>\n", string.s, pcre_regex.s, rc);
 
 	switch(rc) {
