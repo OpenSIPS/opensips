@@ -801,6 +801,17 @@ route[rtp_relay_copy_delete] {
 		the branch where it was called, or that has an associated
 		<emphasis>rtp_relay</emphasis> provisioned.
 		</para>
+		<para>
+		When provisioning RTP relay flags for this function, note that
+		<xref linkend="pv_rtp_relay"/> and
+		<xref linkend="pv_rtp_relay_peer"/> are relative to the route where
+		they are used. In the main request route of the initial INVITE,
+		<xref linkend="pv_rtp_relay"/> refers to the caller and
+		<xref linkend="pv_rtp_relay_peer"/> refers to the callee. In a
+		branch route, <xref linkend="pv_rtp_relay"/> refers to the current
+		callee branch and <xref linkend="pv_rtp_relay_peer"/> refers to the
+		caller.
+		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
@@ -1022,15 +1033,22 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1 \
 			<title><varname>$rtp_relay</varname></title>
 			<para>
 				Is used to provision the RTP back-end flags for the
-				current peer - if used in the initial INVITE
-				REQUEST route, it provisions the flags of the
-				caller, whereas if used in the initial INVITE BRANCH/REPLY
-				route, it provisions the callee's flags.
+				current peer. This variable is scope-relative: in the
+				main request route of the initial INVITE it provisions
+				the caller, while in the branch route or replies of the
+				initial INVITE transaction it provisions the callee branch.
 			</para>
 			<para>
 				For a sequential request, the variable represents the
 				flags used for the UAC that generated the request. When
 				used in a reply, the other UAC's flags are provisioned.
+			</para>
+			<para>
+				Use <xref linkend="pv_rtp_relay_peer"/> when the script
+				needs to provision the opposite side: in the main request
+				route of the initial INVITE it provisions the callee, while
+				in the branch route or replies of the initial INVITE
+				transaction it provisions the caller.
 			</para>
 			<para>
 				In an initial INVITE scope, the variable can be
@@ -1076,7 +1094,7 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1 \
 			<para>
 				This variable has the same meaning and parameters as the
 				<xref linkend="pv_rtp_relay"/> variable, except that it
-				is used to provision the other UAC's flags, except the
+				is used to provision the other UAC's flags, not the
 				current one. All other fields are similar.
 			</para>
 		</section>
@@ -1113,4 +1131,3 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1 \
 		</section>
 	</section>
 </chapter>
-
