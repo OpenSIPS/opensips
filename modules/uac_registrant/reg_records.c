@@ -38,12 +38,13 @@ int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
 	unsigned int all_contacts);
 
 void reg_print_record(reg_record_t *rec) {
-	LM_DBG("checking uac=[%p] state=[%d][%.*s] expires=[%d]"
+	LM_DBG("checking uac=[%p] state=[%d][%.*s] expires=[%d/%d]"
 			" last_register_sent=[%d] registration_timeout=[%d]"
 			" auth_user[%p][%d]->[%.*s] auth_password=[%p][%d]->[%.*s]"
 			" sock=[%p] clustering=[%.*s/%d] enabled=[%s]\n",
 		rec, rec->state,
-		uac_reg_state[rec->state].len, uac_reg_state[rec->state].s, rec->expires,
+		uac_reg_state[rec->state].len, uac_reg_state[rec->state].s,
+		rec->expires, rec->wanted_expires,
 		(unsigned int)rec->last_register_sent, (unsigned int)rec->registration_timeout,
 		rec->auth_user.s, rec->auth_user.len, rec->auth_user.len, rec->auth_user.s,
 		rec->auth_password.s, rec->auth_password.len,
@@ -189,6 +190,7 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int mode,
 
 	memset(record, 0, size);
 
+	record->wanted_expires = uac->expires;
 	record->expires = uac->expires;
 
 	td = &(record->td);

@@ -84,6 +84,7 @@ typedef struct reg_record {
 	str auth_user;
 	str auth_password;
 	unsigned int state;
+	unsigned int wanted_expires;
 	unsigned int expires;
 	time_t last_register_sent;
 	time_t registration_timeout;
