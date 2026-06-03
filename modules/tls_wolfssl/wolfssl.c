@@ -22,6 +22,8 @@
 
 #include <poll.h>
 #include <errno.h>
+#include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 #include <netinet/tcp.h>
 
@@ -139,6 +141,125 @@ static void _wolfssl_show_ciphers(void)
 	}
 }
 
+#if defined(F_MALLOC) || defined(Q_MALLOC)
+#if defined(__CPU_sparc64) || defined(__CPU_sparc) || \
+		UINTPTR_MAX > 0xffffffffUL
+#define OSS_SHM_ALIGNMENT 8
+#else
+#define OSS_SHM_ALIGNMENT 4
+#endif
+#else
+#define OSS_SHM_ALIGNMENT 8
+#endif
+
+#if defined(WOLFSSL_GENERAL_ALIGNMENT) && \
+		WOLFSSL_GENERAL_ALIGNMENT > OSS_SHM_ALIGNMENT
+#define OSS_ALIGN WOLFSSL_GENERAL_ALIGNMENT
+#elif defined(WOLFSSL_USE_ALIGN) && 16 > OSS_SHM_ALIGNMENT
+#define OSS_ALIGN 16
+#endif
+
+#ifdef OSS_ALIGN
+/*
+ * wolfSSL may use aligned instructions requiring stricter alignment than
+ * shm_malloc() provides. Over-allocate and return an aligned pointer,
+ * stashing the original shm pointer in the slot before it.
+ *
+ *   [pad 0..15] [void *orig] [aligned user data ...]
+ *                             ^ returned to caller
+ */
+#define OSS_PAD   (sizeof(void *) + OSS_ALIGN - 1)
+
+/* Return an OSS_ALIGN-aligned pointer, storing raw just before it */
+static inline void *oss_aligned(void *raw)
+{
+	uintptr_t a = ((uintptr_t)raw + OSS_PAD) & ~(uintptr_t)(OSS_ALIGN - 1);
+	((void **)a)[-1] = raw;
+	return (void *)a;
+}
+
+/* Re-align after shm_realloc. off is the old raw-to-aligned offset.
+ * memmove before writing back-pointer: the slot may overlap old data. */
+static inline void *oss_realigned(void *new_raw, size_t off, size_t size)
+{
+	uintptr_t a;
+
+	if (!new_raw)
+		return NULL;
+
+	a = ((uintptr_t)new_raw + OSS_PAD) & ~(uintptr_t)(OSS_ALIGN - 1);
+
+	if (a != (uintptr_t)new_raw + off)
+		memmove((void *)a, (char *)new_raw + off, size);
+
+	((void **)a)[-1] = new_raw;
+	return (void *)a;
+}
+
+#ifndef WOLFSSL_DEBUG_MEMORY
+static void *oss_malloc(size_t size)
+{
+	void *raw = shm_malloc(size + OSS_PAD);
+	return raw ? oss_aligned(raw) : NULL;
+}
+
+static void oss_free(void *ptr)
+{
+	if (ptr)
+		shm_free(((void **)ptr)[-1]);
+}
+
+static void *oss_realloc(void *ptr, size_t size)
+{
+	void *raw;
+	size_t off;
+
+	if (!size) {
+		oss_free(ptr);
+		return NULL;
+	}
+
+	if (!ptr)
+		return oss_malloc(size);
+
+	raw = ((void **)ptr)[-1];
+	off = (char *)ptr - (char *)raw;
+	return oss_realigned(shm_realloc(raw, size + OSS_PAD), off, size);
+}
+#else
+static void *oss_malloc(size_t size, const char* func, unsigned int line)
+{
+	void *raw = shm_malloc_func(size + OSS_PAD, "wolfssl.lib", func, line);
+	return raw ? oss_aligned(raw) : NULL;
+}
+
+static void oss_free(void *ptr, const char* func, unsigned int line)
+{
+	if (ptr)
+		shm_free_func(((void **)ptr)[-1], "wolfssl.lib", func, line);
+}
+
+static void *oss_realloc(void *ptr, size_t size, const char* func, unsigned int line)
+{
+	void *raw;
+	size_t off;
+
+	if (!size) {
+		oss_free(ptr, func, line);
+		return NULL;
+	}
+
+	if (!ptr)
+		return oss_malloc(size, func, line);
+
+	raw = ((void **)ptr)[-1];
+	off = (char *)ptr - (char *)raw;
+	return oss_realigned(
+		shm_realloc_func(raw, size + OSS_PAD, "wolfssl.lib", func, line),
+		off, size);
+}
+#endif
+#else
 #ifndef WOLFSSL_DEBUG_MEMORY
 static void *oss_malloc(size_t size)
 {
@@ -169,6 +290,7 @@ static void *oss_realloc(void *ptr, size_t size, const char* func, unsigned int 
 {
 	return shm_realloc_func(ptr, size, "wolfssl.lib", func, line);
 }
+#endif
 #endif
 
 #ifdef __WOLFSSL_ON_EXIT
