@@ -9,6 +9,10 @@ on:
       llvm-version-old:
         required: true
         type: string
+      ghcr-repo:
+        required: false
+        type: string
+        default: ghcr.io/${{ github.repository_owner }}/opensips
       rtpp-repo:
         required: false
         type: string
@@ -29,6 +33,8 @@ jobs:
       build-matrix: ${{ steps.set-env.outputs.build-matrix }}
       test-matrix: ${{ steps.set-env.outputs.test-matrix }}
       build-os: ${{ steps.set-env.outputs.build-os }}
+      build-image: ${{ steps.set-env.outputs.build-image }}
+      git-branch: ${{ steps.set-env.outputs.git-branch }}
     steps:
     - uses: actions/checkout@v4
 
@@ -40,6 +46,10 @@ jobs:
           jq -r '.manifests[] | "\(.platform.os)/\(.platform.architecture)\(if .platform.variant != null then "/\(.platform.variant)" else "" end)"' | \
           sort -u | grep -v unknown | BUILD_OS="${BUILD_OS}" ./scripts/build/get-arch-buildargs.rtp.io fltplatforms | paste -sd ','`"
         BUILD_MATRIX="`echo ${PLATFORMS} | tr ',' '\n'  | jq -R . | jq -s . | tr '\n' ' '`"
+        GIT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+        GIT_BRANCH="${GIT_BRANCH#refs/tags/}"
+        BI_BRANCH="`echo ${GIT_BRANCH} | sed 's~/~_~g'`"
+        BUILD_IMAGE="${{ inputs.ghcr-repo }}:rtp.io-${{ inputs.rtpp-tag }}-${BI_BRANCH}"
         echo "Platforms: ${PLATFORMS}"
         for _p in `echo ${PLATFORMS} | tr ',' '\n'`; \
         do \
@@ -53,11 +63,75 @@ jobs:
         echo "build-matrix=${BUILD_MATRIX}" >> $GITHUB_OUTPUT
         echo "test-matrix=${TEST_MATRIX}" >> $GITHUB_OUTPUT
         echo "build-os=${BUILD_OS}" >> $GITHUB_OUTPUT
+        echo "build-image=${BUILD_IMAGE}" >> $GITHUB_OUTPUT
+        echo "git-branch=${GIT_BRANCH}" >> $GITHUB_OUTPUT
 
   build_rtp_io_dock:
-    name: Build Container (LOCAL)
+    name: Build Container (GHCR)
     needs: set_env
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' }}
+    permissions:
+      packages: write
+    env:
+      BASE_IMAGE: ${{ inputs.rtpp-repo }}-${{ inputs.rtpp-tag }}
+      BUILD_OS: ${{ needs.set_env.outputs.build-os }}
+      PLATFORMS: ${{ needs.set_env.outputs.platforms }}
+      BUILD_IMAGE: ${{ needs.set_env.outputs.build-image }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Checkout VoIPTests repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'sippy/voiptests'
+        path: dist/voiptests
+
+    - name: Checkout RTPProxy repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'sippy/rtpproxy'
+        path: dist/rtpproxy
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v6
+      env:
+        CACHE_SPEC: "type=registry,ref=${{ env.BUILD_IMAGE }}-buildcache"
+      with:
+        context: .
+        file: ./docker/Dockerfile.rtp.io
+        build-args: |
+          BASE_IMAGE=${{ env.BASE_IMAGE }}
+          BUILD_OS=${{ env.BUILD_OS }}
+          LLVM_VER=${{ inputs.llvm-version }}
+          LLVM_VER_OLD=${{ inputs.llvm-version-old }}
+        platforms: ${{ env.PLATFORMS }}
+        cache-from: ${{ env.CACHE_SPEC }}
+        cache-to: ${{ env.CACHE_SPEC }},mode=max
+        tags: ${{ env.BUILD_IMAGE }}
+        push: true
+
+  build_rtp_io_dock_local:
+    name: Build Container (Local)
+    needs: set_env
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
@@ -128,15 +202,61 @@ jobs:
         path: ${{ env.OUTPUT_IMAGE }}
 
   test_rtp_io_dock:
-    name: Run VoIPTests™ (LOCAL)
+    name: Run VoIPTests™ (GHCR)
     needs: [build_rtp_io_dock, set_env]
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' }}
+    permissions:
+      packages: read
     strategy:
       fail-fast: false
       matrix:
         platform: ${{ fromJSON(needs.set_env.outputs.test-matrix) }}
     env:
       TARGETPLATFORM: ${{ matrix.platform }}
+      BUILD_IMAGE: ${{ needs.set_env.outputs.build-image }}
+      BUILD_OS: ${{ needs.set_env.outputs.build-os }}
+
+    steps:
+    - name: Set up QEMU
+      if: matrix.platform != 'linux/386' && matrix.platform != 'linux/amd64'
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: ${{ env.TARGETPLATFORM }}
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set dynamic environment
+      run: |
+        if [ "${TARGETPLATFORM}" != "linux/amd64" ]
+        then
+          echo "TEST_SET_MIGHTFAIL=early_cancel_lost100,early_cancel" >> $GITHUB_ENV
+        fi
+
+    - name: Test ${{ env.TARGETPLATFORM }}
+      run: |
+        docker pull ${BUILD_IMAGE}
+        docker run --platform ${TARGETPLATFORM} --env TEST_SET_MIGHTFAIL --name test --cap-add=SYS_PTRACE \
+         --privileged --sysctl net.ipv6.conf.all.disable_ipv6=0 ${BUILD_IMAGE}
+      timeout-minutes: 3
+
+  test_rtp_io_local:
+    name: Run VoIPTests™ (LOCAL)
+    needs: [build_rtp_io_dock_local, set_env]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(needs.set_env.outputs.test-matrix) }}
+    env:
+      TARGETPLATFORM: ${{ matrix.platform }}
+      BUILD_IMAGE: ${{ needs.set_env.outputs.build-image }}
       BUILD_OS: ${{ needs.set_env.outputs.build-os }}
 
     steps:
