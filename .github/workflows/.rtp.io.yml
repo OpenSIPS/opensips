@@ -12,7 +12,7 @@ on:
       ghcr-repo:
         required: false
         type: string
-        default: ghcr.io/${{ github.repository_owner }}/opensips
+        default: ghcr.io/${{ github.repository_owner }}/opensips-rtpio
       rtpp-repo:
         required: false
         type: string
