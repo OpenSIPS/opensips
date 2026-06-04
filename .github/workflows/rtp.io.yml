@@ -14,7 +14,7 @@ on:
 env:
   LLVM_VER: 19
   LLVM_VER_OLD: 16
-  GHCR_REPO: ghcr.io/${{ github.repository_owner }}/opensips
+  GHCR_REPO: ghcr.io/${{ github.repository_owner }}/opensips-rtpio
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -114,7 +114,7 @@ jobs:
       run: |
         echo "LLVM_VER=${LLVM_VER}" >> $GITHUB_OUTPUT
         echo "LLVM_VER_OLD=${LLVM_VER_OLD}" >> $GITHUB_OUTPUT
-        GHCR_REPO="ghcr.io/${{ github.repository_owner }}/opensips"
+        GHCR_REPO="ghcr.io/${{ github.repository_owner }}/opensips-rtpio"
         echo "GHCR_REPO=${GHCR_REPO}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_OUTPUT
 
   build_test_rtp_io_dock:
