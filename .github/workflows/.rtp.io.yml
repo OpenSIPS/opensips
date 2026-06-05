@@ -36,7 +36,7 @@ jobs:
       build-image: ${{ steps.set-env.outputs.build-image }}
       git-branch: ${{ steps.set-env.outputs.git-branch }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set dynamic environment
       id: set-env
@@ -80,38 +80,68 @@ jobs:
       BUILD_IMAGE: ${{ needs.set_env.outputs.build-image }}
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Maximize build space
+      shell: sh -x -e {0}
+      run: |
+        echo "Memory and swap:"
+        sudo free -h
+        echo
+        sudo swapon --show
+        echo
+
+        echo "Available storage:"
+        sudo df -h
+        echo
+
+        PIDS=""
+        for d in /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        do
+          sudo rm -rf "${d}" &
+          PIDS="${PIDS} ${!}"
+        done
+        sudo docker image prune --all --force &
+        PIDS="${PIDS} ${!}"
+        for pid in ${PIDS}
+        do
+          wait ${pid}
+        done
+
+    - uses: actions/checkout@v5
       with:
         submodules: recursive
 
     - name: Checkout VoIPTests repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'sippy/voiptests'
         path: dist/voiptests
 
     - name: Checkout RTPProxy repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'sippy/rtpproxy'
         path: dist/rtpproxy
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
+      with:
+        cache-image: false
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Login to GitHub Container Registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build Docker image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       env:
+        DOCKER_BUILD_SUMMARY: false
+        DOCKER_BUILD_RECORD_UPLOAD: false
         CACHE_SPEC: "type=registry,ref=${{ env.BUILD_IMAGE }}-buildcache"
       with:
         context: .
@@ -128,7 +158,7 @@ jobs:
         push: true
 
   build_rtp_io_dock_local:
-    name: Build Container (Local)
+    name: Build Container (LOCAL)
     needs: set_env
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'pull_request' }}
@@ -141,30 +171,31 @@ jobs:
       BUILD_OS: ${{ needs.set_env.outputs.build-os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         submodules: recursive
 
     - name: Checkout VoIPTests repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'sippy/voiptests'
         path: dist/voiptests
 
     - name: Checkout RTPProxy repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: 'sippy/rtpproxy'
         path: dist/rtpproxy
 
     - name: Set up QEMU
       if: matrix.platform != 'linux/386' && matrix.platform != 'linux/amd64'
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
       with:
+        cache-image: false
         platforms: ${{ matrix.platform }}
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Set dynamic environment
       id: set-env
@@ -180,7 +211,10 @@ jobs:
         echo CACHE_SPEC="${CACHE_SPEC}" >> $GITHUB_ENV
 
     - name: Build Docker image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
+      env:
+        DOCKER_BUILD_SUMMARY: false
+        DOCKER_BUILD_RECORD_UPLOAD: false
       with:
         context: .
         file: ./docker/Dockerfile.rtp.io
@@ -196,7 +230,7 @@ jobs:
         cache-to: ${{ env.CACHE_SPEC }},mode=max
 
     - name: Upload image artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.OUTPUT_IMAGE_N }}
         path: ${{ env.OUTPUT_IMAGE }}
@@ -220,12 +254,13 @@ jobs:
     steps:
     - name: Set up QEMU
       if: matrix.platform != 'linux/386' && matrix.platform != 'linux/amd64'
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
       with:
+        cache-image: false
         platforms: ${{ env.TARGETPLATFORM }}
 
     - name: Login to GitHub Container Registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
@@ -277,12 +312,13 @@ jobs:
 
     - name: Set up QEMU
       if: matrix.platform != 'linux/386' && matrix.platform != 'linux/amd64'
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
       with:
+        cache-image: false
         platforms: ${{ env.TARGETPLATFORM }}
 
     - name: Download image artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: ${{ env.OUTPUT_IMAGE_N }}
         path: .
