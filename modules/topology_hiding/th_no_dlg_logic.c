@@ -692,7 +692,7 @@ error:
 
 static char* build_encoded_contact_suffix_legacy(struct sip_msg* msg, str rr_set, int *suffix_len, int flags) {
 	short rr_len,ct_len,addr_len,flags_len,enc_len;
-	char *suffix_plain = NULL,*suffix_enc = NULL,*p = NULL,*s = NULL;
+	char *suffix_plain = NULL, *suffix_enc = NULL, *p = NULL, *s = NULL;
 	char *rr_set_free_str = NULL;
 	str contact;
 	str flags_str;
@@ -950,7 +950,7 @@ static int th_binary_encode_record_route(rr_t *record_route, rr_t **out_rr, int 
 
 static char* build_encoded_thinfo_suffix(struct sip_msg* msg, str rr_set, int *suffix_len, uint16_t flags, int socket_only) {
 	uint16_t enc_len = 0;
-	char *suffix_enc, *s;
+	char *suffix_enc = NULL, *s = NULL;
     rr_t *next = NULL, *head = NULL;
 	int i, x, params_len = 0;
 	struct sip_uri ctu = { 0 };
@@ -1207,11 +1207,6 @@ error:
 	if (prefix) pkg_free(prefix);
 	if (suffix) pkg_free(suffix);
 	return -1;
-}
-
-static inline void topo_no_dlg_seq_free(void *p) {
-	if (p)
-		shm_free(p);
 }
 
 static inline int topo_no_dlg_route(struct sip_msg *msg, str rr_buf[static 1]) {
