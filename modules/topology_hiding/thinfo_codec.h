@@ -145,6 +145,7 @@
  */
 typedef struct {
     unsigned char buf[MAX_THINFO_BUFFER_SIZE];   /**< Buffer holding encoded binary data */
+    uint8_t uri_count;                           /**< Current amount of encoded URIs */
     uint16_t len;                                /**< Current length of encoded data */
     int pos;                                     /**< Current read/write position */
 } thinfo_encoded_t;
@@ -238,9 +239,8 @@ uint16_t thinfo_get_flags(thinfo_encoded_t *thinfo);
  * 
  * @param thinfo Pointer to the encoded buffer structure (updates buf with header)
  * @param flags Flags value to write to the header
- * @param uri_count Number of URIs encoded in the buffer
  */
-void thinfo_buffer_finalize(thinfo_encoded_t *thinfo, uint16_t flags, uint8_t uri_count);
+void thinfo_buffer_finalize(thinfo_encoded_t *thinfo, uint16_t flags);
 
 /**
  * @brief Reset the encoded buffer to initial state

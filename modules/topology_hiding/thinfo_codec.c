@@ -12,8 +12,6 @@
 #define SCHEME_TELS    0x0003
 #define SCHEME_URN_S   0x0004
 #define SCHEME_URN_N   0x0005
-#define SCHEME_M1      0x0006  // Magic bit 1 - must be 0 (invalid/garbage detection)
-#define SCHEME_M2      0x0007  // Magic bit 2 - must be 0 (invalid/garbage detection)
 
 #define TRANSPORT_MASK 0x0038
 #define TRANSPORT_UDP  0x0000
@@ -22,14 +20,11 @@
 #define TRANSPORT_SCTP 0x0018
 #define TRANSPORT_WS   0x0020
 #define TRANSPORT_WSS  0x0028
-#define TRANSPORT_M1   0x0030  // Magic bit 1 - must be 0 (invalid/garbage detection)
-#define TRANSPORT_M2   0x0038  // Magic bit 2 - must be 0 (invalid/garbage detection)
 
 #define DOMAIN_MASK    0x00C0
 #define DOMAIN_IPV4    0x0000
 #define DOMAIN_IPV6    0x0040
 #define DOMAIN_FQDN    0x0080
-#define DOMAIN_M1      0x00C0  // Magic bit - must be 0 (invalid/garbage detection)
 
 #define HAS_USERNAME   0x0100
 #define HAS_PASSWORD   0x0200
@@ -38,14 +33,12 @@
 #define HAS_HEADERS    0x1000
 #define HAS_LR         0x2000  // lr or lr=on present
 #define IS_DUAL_URI    0x4000  // Dual URI encoding flag
-#define RESERVED_BIT   0x8000  // Reserved for future use
 
 #define SOCKET_PROTO_MASK  0x07  // 3 bits for protocol (bits 0-2)
 #define SOCKET_IP_MASK     0x18  // 2 bits for IP type (bits 3-4)
 #define SOCKET_IPV4        0x00
 #define SOCKET_IPV6        0x08
 #define SOCKET_HAS_PORT    0x20  // Bit 5: port is present
-
 
 // URI2 properties byte (1 byte following URI1 data)
 #define URI2_SCHEME_MASK    0x07    // Bits 0-2: scheme for URI2
@@ -54,7 +47,6 @@
 #define URI2_HAS_PORT       0x40    // Bit 6: URI2 has port
 #define URI2_HAS_R2         0x80    // Bit 7: r2 flag for both URIs in dual encoding
 
-static str r2_on_uri_param     = str_init("r2=on");
 static str lr_uri_param        = str_init("lr");
 static str lr_on_uri_param     = str_init("lr=on");
 static str transport_uri_param = str_init("transport");
@@ -69,15 +61,6 @@ static const uint8_t SCHEMES[] = {
     [TELS_URI_T]             = SCHEME_TELS,
     [URN_SERVICE_URI_T]      = SCHEME_URN_N,
     [URN_NENA_SERVICE_URI_T] = SCHEME_URN_S
-};
-
-static const enum _uri_type SCHEME_TO_ENUM[] = {
-    [SCHEME_SIP]   = SIP_URI_T,
-    [SCHEME_SIPS]  = SIPS_URI_T,
-    [SCHEME_TEL]   = TEL_URI_T,
-    [SCHEME_TELS]  = TELS_URI_T,
-    [SCHEME_URN_N] = URN_SERVICE_URI_T,
-    [SCHEME_URN_S] = URN_NENA_SERVICE_URI_T
 };
 
 static const str SCHEME_STRINGS[] = {
@@ -97,15 +80,6 @@ static const uint8_t TRANSPORTS[] = {
     [PROTO_SCTP]    = TRANSPORT_SCTP,
     [PROTO_WS]      = TRANSPORT_WS,
     [PROTO_WSS]     = TRANSPORT_WSS
-};
-
-static const enum sip_protos TRANSPORT_TO_ENUM[] = {
-    [TRANSPORT_UDP]  = PROTO_UDP,
-    [TRANSPORT_TCP]  = PROTO_TCP,
-    [TRANSPORT_TLS]  = PROTO_TLS,
-    [TRANSPORT_SCTP] = PROTO_SCTP,
-    [TRANSPORT_WS]   = PROTO_WS,
-    [TRANSPORT_WSS]  = PROTO_WSS
 };
 
 static const char *TRANSPORT_STRINGS[] = {
@@ -284,6 +258,7 @@ static int encode_uris(thinfo_encoded_t *thinfo, struct sip_uri *uri1, struct si
         }
         uri2_props |= URI2_HAS_R2;
         *uri2_props_ptr = uri2_props;
+        thinfo->uri_count++;
     }
 
     if (uri1->params.len > 0 && uri1->params.len <= UINT8_MAX) {
@@ -314,6 +289,7 @@ static int encode_uris(thinfo_encoded_t *thinfo, struct sip_uri *uri1, struct si
     props_ptr[0] = (props >> 8) & 0xFF;
     props_ptr[1] = props & 0xFF;
     
+    thinfo->uri_count++;
     thinfo->len = p - thinfo->buf;
     return p - (thinfo->buf + start_pos);
 }
@@ -638,14 +614,15 @@ int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decoded_uri_str[static MAX
 }
 
 void thinfo_buffer_reset(thinfo_encoded_t *thinfo) {
-    thinfo->len = 0;
-    thinfo->pos = 0;
+    thinfo->uri_count = 0;
+    thinfo->len       = 0;
+    thinfo->pos       = 0;
 }
 
-void thinfo_buffer_finalize(thinfo_encoded_t *thinfo, uint16_t flags, uint8_t count) {
+void thinfo_buffer_finalize(thinfo_encoded_t *thinfo, uint16_t flags) {
     thinfo->buf[0] = (flags >> 8) & 0xFF;
     thinfo->buf[1] = flags & 0xFF;
-    thinfo->buf[2] = count;
+    thinfo->buf[2] = thinfo->uri_count;
 }
 
 uint8_t thinfo_get_uri_count(thinfo_encoded_t *thinfo) {

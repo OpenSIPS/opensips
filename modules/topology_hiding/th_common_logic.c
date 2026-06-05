@@ -75,6 +75,81 @@ int topo_parse_passed_hdr_ct_params(str *params)
 	return topo_parse_passed_params(params, &th_hdr_param_list);
 }
 
+static inline int topo_delete_record_route_or_route_uris(struct sip_msg *msg, hdr_types_t hdr_type, int uris_to_delete) {
+	struct hdr_field *it = NULL;
+	rr_t *curr_rr = NULL, *next_rr = NULL;
+	unsigned int offset;
+	int total_delete_count = 0;
+    int delete_count = uris_to_delete > 0 ? uris_to_delete : 64;
+
+	if (hdr_type != HDR_RECORDROUTE_T && hdr_type != HDR_ROUTE_T) {
+		LM_ERR("Header type has to be one of Route or Record-Route\n");
+		return -1;
+	}
+
+	LM_DBG("Attempting to delete %d '%s' headers\n", delete_count, hdr_type == HDR_RECORDROUTE_T ? "Record-Route" : "Route");
+
+	if (parse_headers(msg, HDR_EOH_F, 0) == -1) {
+		LM_ERR("Failed to parse '%s' headers\n", hdr_type == HDR_RECORDROUTE_T ? "Record-Route" : "Route");
+		return -1;
+	}
+ 
+	it = hdr_type == HDR_RECORDROUTE_T ? msg->record_route : msg->route;
+	while (it != NULL) {
+		if (parse_rr(it) < 0) {
+			LM_ERR("Failed to parse '%.*s' headers\n", it->name.len, it->name.s);
+			return -1;
+		}
+
+		curr_rr = (rr_t*) it->parsed;
+        next_rr = NULL;
+		offset = 0;
+		while (curr_rr) {
+            next_rr = curr_rr->next;
+
+            if (next_rr != NULL) {
+                offset += next_rr->nameaddr.name.s - curr_rr->nameaddr.name.s;
+            }
+
+            curr_rr = next_rr;
+
+			if (++total_delete_count == delete_count) {
+				break;
+			}
+		}
+
+		if (curr_rr == NULL) {
+			if (del_lump(msg, it->name.s - msg->buf, it->len, hdr_type) == NULL) {
+				LM_ERR("del_lump failed \n");
+				return -1;
+			}
+		} else {
+			if (del_lump(msg, it->body.s - msg->buf, offset, 0) == NULL) {
+				LM_ERR("Failed to remove '%.*s' header\n",  it->name.len, it->name.s);
+				return -1;
+			}
+		}
+
+		if (total_delete_count == delete_count) {
+			break;
+		}
+
+		it = it->sibling;
+	}
+
+    LM_DBG("Deleted %d '%s' headers\n", total_delete_count, hdr_type == HDR_RECORDROUTE_T ? "Record-Route" : "Route");
+
+	return 1;
+}
+
+int topo_delete_route_uris(struct sip_msg *msg, int delete_count) {
+	return topo_delete_record_route_or_route_uris(msg, HDR_ROUTE_T, delete_count);
+}
+
+int topo_delete_record_route_uris(struct sip_msg *msg, int delete_count) {
+	return topo_delete_record_route_or_route_uris(msg, HDR_RECORDROUTE_T, delete_count);
+}
+
 int topo_delete_record_routes(struct sip_msg *req) {
 	struct lump* lump, *crt, *prev_crt =0, *a, *foo;
 	struct hdr_field *it;
@@ -221,7 +296,8 @@ struct lump* delete_existing_contact(struct sip_msg *msg, int del_hdr) {
 	return lump;
 }
 
-struct lump* restore_vias_from_req(struct sip_msg *req,struct sip_msg *rpl) {
+struct lump* restore_vias_from_req(struct sip_msg *req, struct sip_msg *rpl)
+{
 	struct lump* lmp;
 	struct hdr_field *it;
 	str via_str;
@@ -378,14 +454,14 @@ struct lump* restore_vias_from_req(struct sip_msg *req,struct sip_msg *rpl) {
 			it = it->sibling;
 		}
 
-		LM_DBG("built [%.*s], %d %d\n",(int)(p-via_str.s),via_str.s,(int)(p-via_str.s),via_str.len);
+		LM_DBG("built [%.*s], %d %d\n",(int)(p-via_str.s), via_str.s, (int)(p-via_str.s), via_str.len);
 
 		if ((lmp = insert_new_lump_after(lmp, via_str.s, via_str.len, 0)) == 0) {
 			LM_ERR("failed inserting new old vias\n");
 			pkg_free(via_str.s);
 			goto err_free_rport;
 		}
-			
+	
 		pkg_free(rport_buf);
 		pkg_free(received_buf);
 	} else {

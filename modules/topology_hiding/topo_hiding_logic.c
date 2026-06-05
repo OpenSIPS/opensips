@@ -26,6 +26,7 @@
 
 #include "../../ut.h"
 #include "topo_hiding_logic.h"
+#include "th_no_dlg_logic.h"
 
 extern int force_dialog;
 extern struct rr_binds rr_api;
@@ -33,6 +34,7 @@ extern struct tm_binds tm_api;
 extern struct dlg_binds dlg_api;
 extern str topo_hiding_prefix;
 extern str topo_hiding_seed;
+extern int th_loop_protection;
 
 static struct th_ct_params *th_param_list=NULL;
 static struct th_ct_params *th_hdr_param_list=NULL;
