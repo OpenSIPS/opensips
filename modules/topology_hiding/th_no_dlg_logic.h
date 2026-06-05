@@ -31,6 +31,7 @@
 enum encode_scheme {ENC_BASE64, ENC_BASE32};
 
 #define TH_INFO_PASSWORD_ROTATION_SIZE 2
+#define MAX_ENCODED_SIP_URIS 12
 
 #define DEFAULT_PARAM str_init("thinfo")
 #define DEFAULT_PW str_init("ToPoCtPaSS")
@@ -41,7 +42,7 @@ typedef struct {
 	int compact_encoding;
 } thinfo_options_t;
 
-extern str decoded_uris[12];
+extern str decoded_uris[MAX_ENCODED_SIP_URIS];
 extern int decoded_uris_count;
 extern int ctx_decoded_routes_valid_idx;
 
