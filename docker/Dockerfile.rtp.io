@@ -32,7 +32,7 @@ COPY --exclude=.git --exclude=.github --exclude=docker --exclude=dist \
 
 ARG KEEP_MODULES="dialog sipmsgops sl tm rr maxfwd rtp.io rtpproxy textops \
  signaling mi_fifo usrloc registrar acc rtp_relay siprec b2b_entities \
- uac_auth presence pua alias_db b2b_logic"
+ uac_auth presence pua alias_db b2b_logic nathelper"
 ARG SKIP_MODULES="event_routing clusterer"
 RUN mkdir tmp && cd modules && mv ${KEEP_MODULES} ${SKIP_MODULES} ../tmp && \
  rm -rf * && cd ../tmp && mv ${KEEP_MODULES} ${SKIP_MODULES} ../modules && \
