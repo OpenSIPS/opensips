@@ -315,7 +315,7 @@ int build_appearanceURI(str *display, str *uri, str *call_info_apperance_uri)
 	char *p;
 	char escaped_display[256];
 
-	size = display->len + 5 + uri->len + 2;
+	size = 2 * display->len + 1 + uri->len + 2;
 	if (size > CALL_INFO_APPEARANCE_URI_LEN) {
 		LM_WARN("buffer overflow on appearance URI param: size [%d]\n", size);
 		p = (char *)pkg_malloc(size);
