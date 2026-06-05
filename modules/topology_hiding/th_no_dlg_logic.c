@@ -34,7 +34,6 @@
 
 #define START_THINFO_BUF_SZ 1000
 #define THINFO_MAX_BUFFER_SIZE 10000
-#define MAX_ENCODED_SIP_URIS 12
 
 #define TOPOH_MATCH_TAG_MATCH            2
 #define TOPOH_MATCH_SUCCESS              1
@@ -184,7 +183,7 @@ int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_f
 		LM_WARN("Cannot store DID in user when dialog support is not engaged!\n");
 
 	if (!(extra_flags & TOPOH_KEEP_USER) && params && params->ct_callee_user.len) {
-		param_size = sizeof *p + params->ct_callee_user.len + sizeof(uint16_t);
+		param_size = sizeof *p + params->ct_callee_user.len;
 	} else {
 		param_size = sizeof *p;
 	}
@@ -199,15 +198,11 @@ int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_f
 	
 	if (!(extra_flags & TOPOH_KEEP_USER)) {
 		if (params && params->ct_callee_user.len) {
-			p = shm_malloc(sizeof *p + params->ct_callee_user.len);
-			if (p) {
-				memset(p, 0, sizeof *p);
-				p->username.s = (char *)(p + 1);
-				p->username.len =  params->ct_callee_user.len;
-				memcpy(p->username.s,  params->ct_callee_user.s,
-						params->ct_callee_user.len);
-				username = &params->ct_callee_user;
-			}
+			p->username.s = (char *)(p + 1);
+			p->username.len =  params->ct_callee_user.len;
+			memcpy(p->username.s,  params->ct_callee_user.s,
+					params->ct_callee_user.len);
+			username = &params->ct_callee_user;
 		}
 	}
 
@@ -477,7 +472,6 @@ static struct lump *anchor_after_last_record_route(struct sip_msg *msg) {
     return anchor_lump(msg, offset, HDR_RECORDROUTE_T);
 }
 
-// TODO log callId perhaps?
 static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *param) {
 	struct th_no_dlg_param *p = *(param->param);
 	str route_s = STR_NULL;
@@ -680,6 +674,9 @@ static inline int th_no_dlg_onrequest(struct sip_msg *req, uint16_t flags, str *
 		return -1;
 	}
 
+	if (route_s.s != NULL)
+		pkg_free(route_s.s);
+
 	return 1;
 error:
 	if (route_s.s != NULL) {
@@ -793,8 +790,10 @@ static char* build_encoded_contact_suffix_legacy(struct sip_msg* msg, str rr_set
         }
     }
 
-	if (head != NULL)
-        pkg_free(head);
+	if (head != NULL) {
+		free_rr(&head);
+		head = NULL;
+	}
 
 	total_len += params_len;
 
@@ -881,6 +880,8 @@ error:
 		pkg_free(suffix_plain);
 	if (rr_set_free_str)
 		pkg_free(rr_set_free_str);
+	if (head)
+		free_rr(&head);
 	return NULL;
 }
 
@@ -1031,7 +1032,7 @@ static char* build_encoded_thinfo_suffix(struct sip_msg* msg, str rr_set, int *s
 	}
 
 	if (head != NULL) {
-		pkg_free(head);
+		free_rr(&head);
 		head = NULL;
 	}
 
@@ -1097,15 +1098,12 @@ socket_only:
 
 	return suffix_enc;
 error:
-	if (rr_set_free_str) {
+	if (rr_set_free_str)
 		pkg_free(rr_set_free_str);
-	}
-    if (head) {
-        pkg_free(head);
-	}
-	if (suffix_enc) {
+	if (head)
+		free_rr(&head);
+	if (suffix_enc)
 		pkg_free(suffix_enc);
-	}
 	return NULL;
 }
 
@@ -1460,17 +1458,17 @@ static decoded_info_buffer_t decode_info_buffer_legacy(str *info, const thinfo_o
     for (i = 0; i < dec_len; i++)
         dec_buf_legacy[i] ^= options->param_password.s[i % options->param_password.len];
 
-    #define __extract_len_and_buf(_p, _len, _s) \
-        do { \
-            (_s).len = *(short *)p;\
-            if ((_s).len < 0 || (_s).len > _len) {\
-                LM_ERR("bad length %d in encoded contact\n", (_s).len); \
-                goto error;\
-            }\
-            (_s).s = _p + sizeof(short);\
-            _p += sizeof(short) + (_s).len;\
-            _len -= sizeof(short) + (_s).len;\
-        } while(0)
+	#define __extract_len_and_buf(_p, _len, _s) \
+		do { \
+			memcpy(&(_s).len, _p, sizeof(short)); \
+			if ((_s).len < 0 || (_s).len > _len) { \
+				LM_ERR("bad length %d in encoded contact\n", (_s).len); \
+				goto error; \
+			} \
+			(_s).s = _p + sizeof(short); \
+			_p += sizeof(short) + (_s).len; \
+			_len -= sizeof(short) + (_s).len; \
+		} while(0)
 
     p = dec_buf_legacy;
     size = dec_len;

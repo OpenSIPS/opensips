@@ -55,7 +55,7 @@ int auto_route_on_trusted_socket = 1;
 int th_ct_enc_scheme;
 
 /* Global buffer for decoded routes */
-str decoded_uris[12];
+str decoded_uris[MAX_ENCODED_SIP_URIS];
 int decoded_uris_count = 0;
 
 /* Context flag to track if decoded routes are valid for current message */
@@ -384,8 +384,6 @@ int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val)
 }
 
 static char *callid_buf=NULL;
-static int callid_buf_len=0;
-
 static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
 	struct dlg_cell *dlg;
