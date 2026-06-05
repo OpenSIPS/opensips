@@ -65,7 +65,7 @@ jobs:
 
     - name: Build
       run: |
-        KEEP_MODULES="dialog sipmsgops sl tm rr maxfwd rtp.io rtpproxy textops"
+        KEEP_MODULES="dialog sipmsgops sl tm rr maxfwd rtp.io rtpproxy textops nathelper"
         SKIP_MODULES="usrloc event_routing clusterer rtp_relay"
         mkdir tmp
         cd modules
