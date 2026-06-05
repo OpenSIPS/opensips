@@ -393,7 +393,7 @@ int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val)
 		mm = (int)(long)seq_match_mode_val;
 
 	if (!dlg_api.match_dialog || dlg_api.match_dialog(req, mm) < 0)
-		return topology_hiding_match(req);
+		return topo_hiding_match_no_dlg(req);
 	else
 		/* we went to the dlg module, which triggered us back, all good */
 		return 1;
@@ -482,11 +482,13 @@ static int pv_topo_decoded_uri(struct sip_msg *msg, pv_param_t *param, pv_value_
 		field_id = param->pvn.u.isname.name.n;
 	}
 
+	LM_DBG("Decoded uri %.*s\n", decoded_uris[index].len - 2, decoded_uris[index].s + 1);
+
 	if (field_id == TH_ROUTE_FULL) {
 		return pv_get_strval(msg, param, res, &decoded_uris[index]);
 	}
 
-	if (parse_uri(decoded_uris[index].s + 1, decoded_uris[index].len - 1, &uri) < 0) {
+	if (parse_uri(decoded_uris[index].s + 1, decoded_uris[index].len - 2, &uri) < 0) {
 		LM_ERR("Bad Contact URI\n");
 		return -1;
 	}
