@@ -36,7 +36,9 @@ RTP Relay Module
 
               1.8.1. $rtp_relay
               1.8.2. $rtp_relay_peer
-              1.8.3. $rtp_relay_ctx()
+              1.8.3. $rtp_relay_caller
+              1.8.4. $rtp_relay_callee
+              1.8.5. $rtp_relay_ctx()
 
    2. Contributors
 
@@ -93,9 +95,10 @@ Chapter 1. Admin Guide
    throughout the entire RTP session, and are being used for
    further in-dialog requests. These flags can be specified
    through the $rtp_relay and/or $rtp_relay_peer variables at
-   initial INVITE, and are then passed along with the RTP relay
-   context until the end of the call. They can also be modified
-   during sequential in-dialog requests.
+   initial INVITE, or through the absolute $rtp_relay_caller and
+   $rtp_relay_callee variables, and are then passed along with the
+   RTP relay context until the end of the call. They can also be
+   modified during sequential in-dialog requests.
 
    This is not a stand-alone module that communicates directly
    with RTP relays, but rather a generic interface that is able to
@@ -457,13 +460,23 @@ route[rtp_relay_copy_delete] {
    further media requests.
 
    The RTP session modifiers used are the ones provisioned through
-   the $rtp_relay and/or $rtp_relay_peer variables.
+   the $rtp_relay, $rtp_relay_peer, $rtp_relay_caller and/or
+   $rtp_relay_callee variables.
 
    The function can be called from the main request route - in
    this case the RTP relay will be engaged for any further
    branches created, or from the branch route - in this case the
    RTP relay will only be engaged for the branch where it was
    called, or that has an associated rtp_relay provisioned.
+
+   When using the scope-relative $rtp_relay variable together with
+   this function, note that its meaning depends on where it is
+   used. In the main request route of the initial INVITE,
+   $rtp_relay refers to the caller and $rtp_relay_peer refers to
+   the callee. In a branch route, $rtp_relay refers to the callee
+   branch and $rtp_relay_peer refers to the caller. To avoid
+   depending on this route scope, use $rtp_relay_caller and
+   $rtp_relay_callee instead.
 
    Meaning of the parameters is as follows:
      * engine(string) - the RTP relay engine to be used for the
@@ -593,14 +606,18 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1
 1.8.1. $rtp_relay
 
    Is used to provision the RTP back-end flags for the current
-   peer - if used in the initial INVITE REQUEST route, it
-   provisions the flags of the caller, whereas if used in the
-   initial INVITE BRANCH/REPLY route, it provisions the callee's
-   flags.
+   peer. This variable is scope-relative: in the main request
+   route of the initial INVITE it provisions the caller, while in
+   the branch route or replies of the initial INVITE transaction
+   it provisions the callee branch.
 
    For a sequential request, the variable represents the flags
    used for the UAC that generated the request. When used in a
    reply, the other UAC's flags are provisioned.
+
+   Use $rtp_relay_caller and $rtp_relay_callee when the script
+   needs to address the caller or callee side directly,
+   independent of the route scope.
 
    In an initial INVITE scope, the variable can be provisioned per
    branch, by using the variable's index.
@@ -630,7 +647,31 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1
    other UAC's flags, except the current one. All other fields are
    similar.
 
-1.8.3. $rtp_relay_ctx()
+1.8.3. $rtp_relay_caller
+
+   This variable has the same parameters as $rtp_relay, but always
+   provisions the caller side of the RTP relay session,
+   independent of the route where it is used.
+
+   In the main request route of the initial INVITE this is
+   equivalent to $rtp_relay. In a branch route or in replies of
+   the initial INVITE transaction this is equivalent to
+   $rtp_relay_peer. After the dialog is established, it addresses
+   the stored caller leg directly.
+
+1.8.4. $rtp_relay_callee
+
+   This variable has the same parameters as $rtp_relay, but always
+   provisions the callee side of the RTP relay session,
+   independent of the route where it is used.
+
+   In the main request route of the initial INVITE this is
+   equivalent to $rtp_relay_peer. In a branch route or in replies
+   of the initial INVITE transaction this is equivalent to
+   $rtp_relay. After the dialog is established, it addresses the
+   stored callee leg directly.
+
+1.8.5. $rtp_relay_ctx()
 
    This variable can be used to provide information about the RTP
    context, information that is not associated with any of the
@@ -657,7 +698,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 189 108 7036 1230
+   1. Razvan Crainea (@razvancrainea) 192 110 7151 1245
    2. Maksym Sobolyev (@sobomax) 6 4 10 11
    3. Norman Brandinger (@NormB) 4 2 2 2
    4. Vlad Patrascu (@rvlad-patrascu) 3 1 11 7
@@ -685,8 +726,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2026 - Apr 2026
-   2. Razvan Crainea (@razvancrainea)     Apr 2021 - Mar 2026
+   1. Razvan Crainea (@razvancrainea)     Apr 2021 - Jun 2026
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2026 - Apr 2026
    3. Liviu Chircu (@liviuchircu)         Jun 2024 - Jun 2024
    4. Norman Brandinger (@NormB)          Mar 2024 - Jun 2024
    5. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023

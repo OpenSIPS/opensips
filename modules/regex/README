@@ -23,7 +23,7 @@ Regex Module
 
         1.4. Exported Functions
 
-              1.4.1. pcre_match (string, pcre_regex)
+              1.4.1. pcre_match (string, pcre_regex [, match])
               1.4.2. pcre_match_group (string [, group])
 
         1.5. Exported MI Functions
@@ -210,16 +210,20 @@ modparam("regex", "pcre_extended", 1)
 
 1.4. Exported Functions
 
-1.4.1.  pcre_match (string, pcre_regex)
+1.4.1.  pcre_match (string, pcre_regex [, match])
 
    Matches the given string parameter against the regular
    expression pcre_regex, which is compiled into a PCRE object.
-   Returns TRUE if it matches, FALSE otherwise.
+   Returns TRUE if it matches, FALSE otherwise. When the optional
+   match parameter is provided, it is set to the matched part of
+   the string, or cleared if there is no match.
 
    Meaning of the parameters is as follows:
      * string - String to compare.
      * pcre_regex (string) - Regular expression to be compiled in
        a PCRE object.
+     * match (var, optional) - Writable pseudo-variable where the
+       matched part of the string is stored.
 
    NOTE: To use the "end of line" symbol '$' in the pcre_regex
    parameter use '$$'.
@@ -441,9 +445,9 @@ Chapter 2. Contributors
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 12 7
    6. MonkeyTester 6 3 188 14
    7. Norman Brandinger (@NormB) 5 3 4 4
-   8. Steve Ayre 4 2 64 48
-   9. Sergio Gutierrez 3 1 19 1
-   10. Ovidiu Sas (@ovidiusas) 3 1 13 11
+   8. Ovidiu Sas (@ovidiusas) 4 2 116 23
+   9. Steve Ayre 4 2 64 48
+   10. Sergio Gutierrez 3 1 19 1
 
    All remaining contributors: Anca Vamanu, Maksym Sobolyev
    (@sobomax), Ken Rice, Marius Zbihlei.
@@ -468,16 +472,16 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
-   2.  Steve Ayre                          Sep 2025 - Sep 2025
-   3.  Ken Rice                            Sep 2025 - Sep 2025
-   4.  MonkeyTester                        Aug 2023 - Aug 2023
-   5.  Norman Brandinger (@NormB)          Apr 2023 - Apr 2023
-   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Apr 2019
-   9.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   10. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   1.  Ovidiu Sas (@ovidiusas)             Jan 2013 - May 2026
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
+   3.  Steve Ayre                          Sep 2025 - Sep 2025
+   4.  Ken Rice                            Sep 2025 - Sep 2025
+   5.  MonkeyTester                        Aug 2023 - Aug 2023
+   6.  Norman Brandinger (@NormB)          Apr 2023 - Apr 2023
+   7.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Apr 2019
+   10. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
 
    All remaining contributors: Marius Zbihlei, Iñaki Baz Castillo,
    Anca Vamanu, Sergio Gutierrez.
@@ -489,9 +493,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), MonkeyTester,
-   Vlad Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Iñaki Baz Castillo.
+   Last edited by: Ovidiu Sas (@ovidiusas), Razvan Crainea
+   (@razvancrainea), MonkeyTester, Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Iñaki Baz Castillo.
 
    Documentation Copyrights:
 
