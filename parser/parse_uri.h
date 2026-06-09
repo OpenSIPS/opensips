@@ -48,6 +48,20 @@
  */
 int parse_uri(char *buf, int len, struct sip_uri* uri);
 
+/* Trim a URI userinfo string in place at the first ';', dropping any user
+ * parameters (e.g. the RFC 4904 'tgrp'/'trunk-context' fields) that parse_uri()
+ * may have folded into the .user field along with the leading value.  Callers
+ * that only want that leading value (such as a telephone number for an E.164
+ * check) use this; a userinfo without parameters is left untouched.
+ *
+ * This is a naive cut at the first ';' with no escape/quote handling: it
+ * assumes the leading value itself contains no literal ';' (true for RFC 4904
+ * telephone numbers).  Do not use it on userinfo that may legitimately carry a
+ * ';' in the value.  Only .len is changed; .s keeps pointing at the original
+ * buffer.
+ */
+void trim_user_params(str *user);
+
 /*
  * Fully prints a given "struct sip_uri" into a given buffer
  *
