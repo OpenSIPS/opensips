@@ -889,6 +889,7 @@ static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 	}
 
 	*orig_tn = parsed_uri.user;
+	trim_user_params(orig_tn);
 
 	return 0;
 }
@@ -920,6 +921,7 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 	}
 
 	*dest_tn = parsed_uri.user;
+	trim_user_params(dest_tn);
 
 	return 0;
 }

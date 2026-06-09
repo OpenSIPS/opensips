@@ -1641,6 +1641,16 @@ error_exit:
 	return E_BAD_URI;
 }
 
+/* Trim a URI userinfo str at the first ';'; see trim_user_params() in
+ * parse_uri.h for the full contract and caveats. */
+void trim_user_params(str *user)
+{
+	char *semi = q_memchr(user->s, ';', user->len);
+
+	if (semi)
+		user->len = semi - user->s;
+}
+
 
 int parse_sip_msg_uri(struct sip_msg* msg)
 {
