@@ -84,4 +84,6 @@ jobs:
     with:
       job_name: "Main CI"
       job_result: ${{ needs.build.result }}
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     if: ${{ always() }}

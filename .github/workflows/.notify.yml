@@ -9,17 +9,22 @@ on:
       job_result:
         required: true
         type: string
+    secrets:
+      SLACK_BOT_TOKEN:
+        required: false
 
 jobs:
   notify_slack:
     runs-on: ubuntu-latest
+    env:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     steps:
       - name: Notify slack fail
-        if: ${{ inputs.job_result == 'failure' && github.repository == 'OpenSIPS/opensips' }}
+        if: ${{ inputs.job_result == 'failure' && github.repository == 'OpenSIPS/opensips' && env.SLACK_BOT_TOKEN != '' }}
         uses: slackapi/slack-github-action@v3.0.3
         with:
           method: chat.postMessage
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          token: ${{ env.SLACK_BOT_TOKEN }}
           payload: |
             channel: devel
             text: ":x: ${{ inputs.job_name }} failed in ${{ github.repository }}"

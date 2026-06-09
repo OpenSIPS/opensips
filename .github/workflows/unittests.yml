@@ -125,4 +125,6 @@ jobs:
     with:
       job_name: "Unit Tests"
       job_result: ${{ needs.build_and_test.result }}
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     if: ${{ always() }}

@@ -76,4 +76,6 @@ jobs:
     with:
       job_name: "Multi-Architecture Build"
       job_result: ${{ needs.build_multiarch.result }}
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     if: ${{ always() }}

@@ -30,4 +30,6 @@ jobs:
     with:
       job_name: "CIFuzz"
       job_result: ${{ needs.Fuzzing.result }}
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     if: ${{ always() }}
