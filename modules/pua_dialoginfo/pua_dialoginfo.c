@@ -200,7 +200,44 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 	peer = &(param->peer);
 	entity = &(param->entity);
 
-	/* this is triggered only for TMCB_RESPONSE_IN */
+	if (type==TMCB_ON_FAILURE) {
+		/* the transaction completed with a failure - explicitly terminate
+		 * any branches still in "early" state which never received a final
+		 * negative reply (e.g. UAS went silent after sending 180), otherwise
+		 * their published state will linger until it expires */
+		if (get_callid(_params->req, &callid) < 0)
+			return;
+
+		if (include_tags) {
+			if(parse_from_header( _params->req )<0
+			|| parse_to_header( _params->req )<0 ) {
+				LM_ERR("failed to parse the request\n");
+				return;
+			}
+			ftag = &(get_from(_params->req)->tag_value);
+			ttag = &(get_to(_params->req)->tag_value);
+		} else {
+			ftag = ttag = NULL;
+		}
+
+		/* note: this callback runs under the transaction's reply lock,
+		 * so it is safe to test/set the bitmasks here */
+		for (branch=t->first_branch; branch<t->nr_of_outgoings; branch++) {
+			if (!BRANCH_BM_TST_IDX( param->bitmask_early, branch)
+			|| BRANCH_BM_TST_IDX( param->bitmask_failed, branch))
+				continue;
+			BRANCH_BM_SET_IDX( param->bitmask_failed, branch);
+			if (param->flags & DLG_PUB_A)
+				dialog_publish("terminated", entity, peer,
+					&callid, branch, 1, 0, ftag, ttag);
+			if (param->flags & DLG_PUB_B)
+				dialog_publish("terminated", peer, entity,
+					&callid, branch, 0, 0, ttag, ftag);
+		}
+		return;
+	}
+
+	/* from here on, handling of TMCB_RESPONSE_IN */
 	branch = tm_api.get_branch_index();
 
 	LM_DBG("TM event %d [%d/%d] received, entity [%.*s], peer [%.*s],"
@@ -266,7 +303,7 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 	/* depending on the reply code, see what to publish */
 	if (_params->code<180 && _params->code>=100) {
 
-		expire = TM_BRANCH(t,branch).request.fr_timer.time_out - get_ticks();
+		expire = DEFAULT_CREATED_LIFETIME;
 		if (publish_on_trying) {
 			if (should_publish_A( param->flags, mute_val.s))
 				dialog_publish("trying", entity, peer,
@@ -292,7 +329,7 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 		lock_release(&t->reply_mutex);
 
 		if (n) {
-			expire = TM_BRANCH(t,branch).request.fr_timer.time_out-get_ticks();
+			expire = DEFAULT_CREATED_LIFETIME;
 			if (should_publish_A( param->flags, mute_val.s))
 				dialog_publish(caller_confirmed?"confirmed":"early",
 					entity, peer,
@@ -1015,8 +1052,9 @@ int dialoginfo_set(struct sip_msg* msg, str* flag_s)
 		return -1;
 	}
 
-	/* register TM callback to get access to recevied replies */
-	if (tm_api.register_tmcb( msg, NULL, TMCB_RESPONSE_IN,
+	/* register TM callback to get access to recevied replies and to
+	 * the transaction failure (to clean up dangling early states) */
+	if (tm_api.register_tmcb( msg, NULL, TMCB_RESPONSE_IN|TMCB_ON_FAILURE,
 		__tm_sendpublish, (void*)param_tm, free_cb_param) != 1) {
 		LM_ERR("cannot register TM callback for incoming replies\n");
 		goto end;
