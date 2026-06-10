@@ -728,8 +728,10 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			LM_ERR("FAKED_REPLY\n");
 			goto done;
 		}
-		if (0 == parse_min_expires(msg)) {
-			rec->expires = (unsigned int)(long)msg->min_expires->parsed;
+		/* do we have a Min-Expires with a resonable value (a shorter than
+		 * 5 seconds registration is not considered resonable) */
+		if (0 == parse_min_expires(msg) && 5<=(unsigned int)(long)msg->min_expires->parsed) {
+			rec->wanted_expires = (unsigned int)(long)msg->min_expires->parsed;
 			if(send_register(cb_param->hash_index, rec, NULL)==1) {
 				reg_change_state(rec,REGISTERING_STATE);
 			} else {
