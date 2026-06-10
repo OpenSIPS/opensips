@@ -1787,7 +1787,7 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx,
 	/* fill in tag's tag */
 	if (sess->legs[type] && sess->legs[type]->tag.len)
 		return 0;
-	if (parse_headers(rpl, HDR_TO_F, 0) < 0 || !rpl->to || parse_from_header(rpl) < 0) {
+	if (parse_headers(rpl, HDR_TO_F, 0) < 0 || !rpl->to || parse_to_header(rpl) < 0) {
 		LM_ERR("bad request or missing To header\n");
 		return -1;
 	} else {
