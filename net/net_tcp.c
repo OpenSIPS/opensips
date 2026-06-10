@@ -1030,8 +1030,9 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 			goto error;
 		}
 	}
-	if (sock >= 0 && protos[si->proto].net.stream.conn.init) {
-		if (protos[si->proto].net.stream.conn.init(c) < 0) {
+	if (sock >= 0) {
+		if (protos[si->proto].net.stream.conn.init &&
+				protos[si->proto].net.stream.conn.init(c) < 0) {
 			LM_ERR("failed to do proto %d specific init for conn %p\n",
 					c->type, c);
 			goto error;
@@ -2389,9 +2390,9 @@ static int tcpconn_prepare_write(struct tcp_connection *tcpconn)
 	int fd;
 	int connected = 0;
 
-	if ((tcpconn->flags & F_CONN_INIT) == 0 &&
-			protos[tcpconn->type].net.stream.conn.init) {
-		if (protos[tcpconn->type].net.stream.conn.init(tcpconn) < 0) {
+	if ((tcpconn->flags & F_CONN_INIT) == 0) {
+		if (protos[tcpconn->type].net.stream.conn.init &&
+				protos[tcpconn->type].net.stream.conn.init(tcpconn) < 0) {
 			LM_ERR("failed to init proto %d conn %p in TCP main\n",
 				tcpconn->type, tcpconn);
 			return -1;
