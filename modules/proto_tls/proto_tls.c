@@ -555,6 +555,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 			if (n<0) {
 				LM_ERR("failed async TLS connect\n");
 				rlen = -1;
+				close(fd);
 				goto con_release;
 			}
 			if (n==0) {
@@ -565,6 +566,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 				}
 
 				LM_DBG("Successfully started async SSL connection \n");
+				close(fd);
 				goto con_release;
 			}
 
