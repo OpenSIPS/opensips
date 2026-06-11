@@ -223,8 +223,8 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 		/* note: this callback runs under the transaction's reply lock,
 		 * so it is safe to test/set the bitmasks here */
 		for (branch=t->first_branch; branch<t->nr_of_outgoings; branch++) {
-+			if ((param->bitmask_early & (((long long)1) << branch)) &&
-+			!(param->bitmask_failed & (((long long)1) << branch))) {
+			if ((param->bitmask_early & (((long long)1) << branch)) &&
+			!(param->bitmask_failed & (((long long)1) << branch)))
 				continue;
 			param->bitmask_failed |= (((long long)1)<<branch);
 			if (param->flags & DLG_PUB_A)
