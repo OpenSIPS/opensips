@@ -140,6 +140,16 @@
 #define MAX_THINFO_BUFFER_SIZE 4096
 
 /**
+ * @def THINFO_DECODE_BUF_SIZE
+ * @brief Size of the destination buffer used when decoding URIs into strings.
+ *
+ * Single source of truth for the decode output buffer capacity. The caller must
+ * provide a buffer of at least this size to thinfo_decode_uris(), which enforces
+ * the bound at runtime and fails hard (-1) rather than overflowing.
+ */
+#define THINFO_DECODE_BUF_SIZE (MAX_ENCODED_URI_SIZE * 3)
+
+/**
  * @struct thinfo_encoded_t
  * @brief Buffer structure for encoded thinfo data
  */
@@ -199,7 +209,7 @@ int thinfo_encode_socket(thinfo_encoded_t *thinfo, const struct socket_info *soc
  * 
  * @return 0 on success, -1 on error
  */
-int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decode_buf[static MAX_ENCODED_URI_SIZE * 3], uint16_t uri_count, str uris[static uri_count]);
+int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decode_buf[static THINFO_DECODE_BUF_SIZE], uint16_t uri_count, str uris[static uri_count]);
 
 /**
  * @brief Decode socket information from the encoded buffer
