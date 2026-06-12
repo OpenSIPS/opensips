@@ -40,6 +40,12 @@ str invite_str=str_init("INVITE");
 
 extern int reinvite_ping_interval;
 extern int options_ping_interval;
+extern int options_ping_max_retries;
+
+/* forward declarations for OPTIONS ping retry from inside the reply callback */
+void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps);
+void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps);
+void unref_dlg_cb(void *dlg);
 
 /* for the dlg timer, there are 3 possible states :
  * prev=next=0 -> dialog not in timer list
@@ -753,6 +759,36 @@ int dlg_handle_seq_reply(struct dlg_cell *dlg, struct sip_msg* rpl,
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (rpl == FAKED_REPLY || statuscode == 408) {
+		/* OPTIONS ping timeout: optionally retry immediately before giving up.
+		 * Re-INVITE ping path is unchanged. */
+		if (!is_reinvite_rpl &&
+		    dlg->legs[leg].ping_retries < (unsigned char)options_ping_max_retries) {
+			dlg_request_callback *cb;
+
+			dlg->legs[leg].ping_retries++;
+			LM_INFO("OPTIONS ping timeout on %s leg, retry %u/%d, "
+			        "ci: [%.*s]\n",
+			        leg == DLG_CALLER_LEG ? "caller" : "callee",
+			        dlg->legs[leg].ping_retries, options_ping_max_retries,
+			        dlg->callid.len, dlg->callid.s);
+
+			/* clear the gate so a new in-flight ping can be tracked */
+			*ping_status = DLG_PING_SUCCESS;
+
+			cb = (leg == DLG_CALLER_LEG) ? reply_from_caller : reply_from_callee;
+			ref_dlg(dlg, 1);
+			if (send_leg_msg(dlg, &options_str, other_leg(dlg, leg), leg,
+			        0, 0, cb, dlg, unref_dlg_cb,
+			        &dlg->legs[leg].reply_received) < 0) {
+				LM_ERR("failed to send OPTIONS retry on %s leg\n",
+				       leg == DLG_CALLER_LEG ? "caller" : "callee");
+				unref_dlg(dlg, 1);
+				/* leave ping_retries as-is; the next interval-driven ping
+				 * will continue from the current retry count */
+			}
+			return 0;
+		}
+
 		/* timeout occurred, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
@@ -776,6 +812,8 @@ int dlg_handle_seq_reply(struct dlg_cell *dlg, struct sip_msg* rpl,
 	}
 
 	*ping_status = DLG_PING_SUCCESS;
+	if (!is_reinvite_rpl)
+		dlg->legs[leg].ping_retries = 0;
 	if (is_reinvite_rpl && statuscode < 300 && send_leg_msg(dlg, &ack,
 			other_leg(dlg, leg), leg, NULL, NULL, NULL, NULL, NULL, NULL) < 0)
 		LM_ERR("cannot send ACK message!\n");
