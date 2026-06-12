@@ -2036,20 +2036,19 @@ int th_add_encode_param_password(modparam_t type, void *val) {
 		return -1;
 	}
 
-	buffers[param_password_count] = pkg_malloc(strlen(param_val));
+	if (param_password_count >= TH_INFO_PASSWORD_ROTATION_SIZE) {
+		LM_ERR("at most %d entries allowed\n", TH_INFO_PASSWORD_ROTATION_SIZE);
+		return -1;
+	}
+
+	buffers[param_password_count] = pkg_strdup(param_val);
 
 	if (buffers[param_password_count] == NULL) {
 		LM_ERR("Failed to allocate string buffer\n");
 		return -1;
 	}
 
-	memcpy(buffers[param_password_count], param_val, strlen(param_val));
 	param_val = buffers[param_password_count];
-
-	if (param_password_count >= 2) {
-		LM_ERR("at most 2 entries allowed\n");
-		return -1;
-	}
 
 	colon = strchr(param_val, ':');
 	if (!colon) {
