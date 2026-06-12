@@ -2311,7 +2311,7 @@ after_unlock5:
 		return;
 	}
 
-	if ( (event==DLG_EVENT_REQ || event==DLG_EVENT_REQACK)
+	if ( (event==DLG_EVENT_REQ || event==DLG_EVENT_REQACK || event==DLG_EVENT_REQPRACK)
 	&& (new_state==DLG_STATE_CONFIRMED || new_state==DLG_STATE_CONFIRMED_NA) ) {
 		LM_DBG("sequential request successfully processed (dst_leg=%d)\n",
 			dst_leg);
