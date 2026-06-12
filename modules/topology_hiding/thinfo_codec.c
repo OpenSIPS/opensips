@@ -67,6 +67,10 @@
 #define URI2_HAS_PORT       0x40    // Bit 6: URI2 has port
 #define URI2_HAS_R2         0x80    // Bit 7: r2 flag for both URIs in dual encoding
 
+#define LR_OUT_STR   ";lr"
+#define R2_OUT_STR   ";r2=on"
+#define MAX_PORT_OUT_LEN (sizeof(":65535") - 1)
+
 static str lr_uri_param        = str_init("lr");
 static str lr_on_uri_param     = str_init("lr=on");
 static str transport_uri_param = str_init("transport");
@@ -444,63 +448,92 @@ int thinfo_decode_socket(thinfo_encoded_t *thinfo, int *proto, str *ip, unsigned
     return 1;
 }
 
+#define CHECK_DECODE_BUF_BOUNDS(_n) \
+    do { \
+        if (s + (_n) > buf_end) { \
+            LM_ERR("decode output buffer overflow guard hit (need %d bytes)\n", (int)(_n)); \
+            return -1; \
+        } \
+    } while(0)
+
 #define BUILD_URI_STRING(scheme_val, transport_val, port_val) \
     do { \
+        CHECK_DECODE_BUF_BOUNDS(sizeof(char) + SCHEME_STRINGS[scheme_val].len + sizeof(char)); \
         *s++ = '<'; \
         uri_start = s; \
         memcpy(s, SCHEME_STRINGS[scheme_val].s, SCHEME_STRINGS[scheme_val].len); \
         s += SCHEME_STRINGS[scheme_val].len; \
         *s++ = ':'; \
         if (username.len > 0) { \
+            CHECK_DECODE_BUF_BOUNDS(username.len); \
             memcpy(s, username.s, username.len); \
             s += username.len; \
             if (password.len > 0) { \
+                CHECK_DECODE_BUF_BOUNDS(sizeof(char) + password.len); \
                 *s++ = ':'; \
                 memcpy(s, password.s, password.len); \
                 s += password.len; \
             } \
+            CHECK_DECODE_BUF_BOUNDS(sizeof(char)); \
             *s++ = '@'; \
         } \
-        if (domain_type == DOMAIN_IPV6) *s++ = '['; \
+        if (domain_type == DOMAIN_IPV6) { CHECK_DECODE_BUF_BOUNDS(sizeof(char)); *s++ = '['; } \
+        CHECK_DECODE_BUF_BOUNDS(host.len); \
         memcpy(s, host.s, host.len); \
         s += host.len; \
-        if (domain_type == DOMAIN_IPV6) *s++ = ']'; \
+        if (domain_type == DOMAIN_IPV6) { CHECK_DECODE_BUF_BOUNDS(sizeof(char)); *s++ = ']'; } \
         if (port_val > 0) { \
+            CHECK_DECODE_BUF_BOUNDS(MAX_PORT_OUT_LEN); \
             s += sprintf(s, ":%u", port_val); \
         } \
         if (transport_val != TRANSPORT_UDP) { \
             if (transport_val < sizeof(TRANSPORT_STRINGS)/sizeof(TRANSPORT_STRINGS[0]) && \
                 TRANSPORT_STRINGS[transport_val] != NULL) { \
-                *s++ = ';'; \
                 t_len = strlen(TRANSPORT_STRINGS[transport_val]); \
+                CHECK_DECODE_BUF_BOUNDS(sizeof(char) + t_len); \
+                *s++ = ';'; \
                 memcpy(s, TRANSPORT_STRINGS[transport_val], t_len); \
                 s += t_len; \
             } \
         } \
         if (props & HAS_LR) { \
-            memcpy(s, ";lr", 3); \
-            s += 3; \
+            CHECK_DECODE_BUF_BOUNDS(sizeof(LR_OUT_STR) - 1); \
+            memcpy(s, LR_OUT_STR, sizeof(LR_OUT_STR) - 1); \
+            s += sizeof(LR_OUT_STR) - 1; \
         } \
         if (has_r2) { \
-            memcpy(s, ";r2=on", 6); \
-            s += 6; \
+            CHECK_DECODE_BUF_BOUNDS(sizeof(R2_OUT_STR) - 1); \
+            memcpy(s, R2_OUT_STR, sizeof(R2_OUT_STR) - 1); \
+            s += sizeof(R2_OUT_STR) - 1; \
         } \
         if (params.len > 0) { \
+            CHECK_DECODE_BUF_BOUNDS(sizeof(char) + params.len); \
             *s++ = ';'; \
             memcpy(s, params.s, params.len); \
             s += params.len; \
         } \
         if (headers.len > 0) { \
+            CHECK_DECODE_BUF_BOUNDS(sizeof(char) + headers.len); \
             *s++ = '?'; \
             memcpy(s, headers.s, headers.len); \
             s += headers.len; \
         } \
+        CHECK_DECODE_BUF_BOUNDS(sizeof(char)); \
         *s++ = '>'; \
         uris[uri_idx].s = uri_start - 1; \
         uris[uri_idx].len = s - uris[uri_idx].s; \
         if (uri_idx < uri_count - 1) { \
+            CHECK_DECODE_BUF_BOUNDS(is_dual ? (2 * sizeof(char)) : sizeof(char)); \
             *s++ = ','; \
             if (is_dual) *s++ = ' '; \
+        } \
+    } while(0)
+
+#define CHECK_ENCODE_BUF_BOUNDS(_n) \
+    do { \
+        if ((p - thinfo->buf) + (_n) > thinfo->len) { \
+            LM_ERR("encoded buffer underrun guard hit (need %d bytes)\n", (int)(_n)); \
+            return -1; \
         } \
     } while(0)
 
@@ -508,7 +541,9 @@ int thinfo_decode_socket(thinfo_encoded_t *thinfo, int *proto, str *ip, unsigned
     do { \
         field.len = 0; \
         if (props & flag) { \
+            CHECK_ENCODE_BUF_BOUNDS(sizeof(uint8_t)); \
             field.len = *p++; \
+            CHECK_ENCODE_BUF_BOUNDS(field.len); \
             memcpy(field.s, p, field.len); \
             p += field.len; \
         } \
@@ -516,7 +551,7 @@ int thinfo_decode_socket(thinfo_encoded_t *thinfo, int *proto, str *ip, unsigned
 
 static char host_buf[UINT8_MAX], params_buf[UINT8_MAX], username_buf[UINT8_MAX], password_buf[UINT8_MAX], headers_buf[UINT8_MAX];
 
-int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decoded_uri_str[static MAX_ENCODED_URI_SIZE * 3], uint16_t uri_count, str uris[static uri_count]) {
+int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decoded_uri_str[static THINFO_DECODE_BUF_SIZE], uint16_t uri_count, str uris[static uri_count]) {
     uint8_t domain_type, len, uri2_props = 0;
     uint8_t scheme1 = 0, scheme2 = 0, transport1 = 0, transport2 = 0;
     uint16_t port1 = 0, port2 = 0;
@@ -525,6 +560,7 @@ int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decoded_uri_str[static MAX
     unsigned char *p;
     uint16_t props;
     char *s, *uri_start;
+    char *buf_end = decoded_uri_str + THINFO_DECODE_BUF_SIZE;
     int t_len;
     int uri_idx;
     str username = {username_buf, 0};
@@ -544,15 +580,14 @@ int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decoded_uri_str[static MAX
     
     uri_idx = 0;
     while (uri_idx < uri_count) {
-        if ((p - thinfo->buf) >= thinfo->len) return -1;
-
         has_r2 = 0;
         port1 = 0;
         port2 = 0;
         is_dual = 0;
 
+        CHECK_ENCODE_BUF_BOUNDS(sizeof(uint16_t));
         props = (p[0] << 8) | p[1];
-        p += 2;
+        p += sizeof(uint16_t);
 
         // Validate magic bits - detect garbage data
         scheme1 = props & SCHEME_MASK;
@@ -574,34 +609,47 @@ int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decoded_uri_str[static MAX
         domain_type = (props & DOMAIN_MASK);
         host.len = 0;
         if (domain_type == DOMAIN_IPV4) {
+            CHECK_ENCODE_BUF_BOUNDS(sizeof(struct in_addr));
             inet_ntop(AF_INET, p, host.s, UINT8_MAX);
             host.len = strlen(host.s);
-            p += 4;
+            p += sizeof(struct in_addr);
         } else if (domain_type == DOMAIN_IPV6) {
+            CHECK_ENCODE_BUF_BOUNDS(sizeof(struct in6_addr));
             inet_ntop(AF_INET6, p, host.s, UINT8_MAX);
             host.len = strlen(host.s);
-            p += 16;
+            p += sizeof(struct in6_addr);
         } else {
+            CHECK_ENCODE_BUF_BOUNDS(sizeof(uint8_t));
             len = *p++;
             host.len = len;
+            CHECK_ENCODE_BUF_BOUNDS(len);
             memcpy(host.s, p, len);
             p += len;
         }
 
         if (props & HAS_PORT) {
+            CHECK_ENCODE_BUF_BOUNDS(sizeof(uint16_t));
             port1 = (p[0] << 8) | p[1];
-            p += 2;
+            p += sizeof(uint16_t);
         }
 
         if (is_dual) {
+            CHECK_ENCODE_BUF_BOUNDS(sizeof(uint8_t));
             uri2_props = *p++;
             scheme2 = uri2_props & URI2_SCHEME_MASK;
             transport2 = uri2_props & URI2_TRANSPORT_MASK;
             has_r2 = (uri2_props & URI2_HAS_R2) ? 1 : 0;
 
+            if (scheme2 > SCHEME_URN_N || transport2 > TRANSPORT_WSS) {
+                LM_ERR("Invalid URI2 properties detected: uri2_props=0x%02x, scheme=0x%02x, transport=0x%02x (garbage data)\n",
+                    uri2_props, scheme2, transport2);
+                return -1;
+            }
+
             if (uri2_props & URI2_HAS_PORT) {
+                CHECK_ENCODE_BUF_BOUNDS(sizeof(uint16_t));
                 port2 = (p[0] << 8) | p[1];
-                p += 2;
+                p += sizeof(uint16_t);
             }
         }
 
