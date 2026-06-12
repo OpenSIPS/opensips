@@ -152,30 +152,58 @@ modparam("topology_hiding", "force_dialog", 1)
 		</example>
 	</section>
 
-	<section id="param_th_contact_encode_passwd" xreflabel="th_contact_encode_passwd">
-		<title><varname>th_contact_encode_passwd</varname> (string)</title>
+	<section id="param_th_contact_encode_param_password" xreflabel="th_contact_encode_param_password">
+		<title><varname>th_contact_encode_param_password</varname> (string)</title>
 		<para>
-			When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. The parameter configures the string password that will be used for encoding/decoding that specific param .
+			When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. This parameter defines a Contact URI param together with the password used for encoding/decoding the data stored in it, and (optionally) the encoding layout.
+		</para>
+		<para>
+			The value has the format <emphasis>param_name[:password[:encoding_type]]</emphasis>:
+			<itemizedlist>
+				<listitem><para><emphasis>param_name</emphasis> - the name of the Contact URI parameter holding the encoded topology hiding information.</para></listitem>
+				<listitem><para><emphasis>password</emphasis> - the string password used to encode/decode the data. If omitted, the default password <quote>ToPoCtPaSS</quote> is used.</para></listitem>
+				<listitem><para><emphasis>encoding_type</emphasis> - the encoding layout, one of <emphasis>C</emphasis>/<emphasis>c</emphasis> (compact, the default) or <emphasis>L</emphasis>/<emphasis>l</emphasis> (long).</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			This parameter may be set more than once in order to define multiple
+			(param name, password) entries, which allows password rotation - data
+			encoded with an older password can still be decoded while new data is
+			encoded with the current one. At most 2 entries are supported. Use
+			<varname>th_use_param</varname> to select which entry is used when encoding.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>"ToPoCtPaSS"</quote>
+			Default value is <quote>"thinfo:ToPoCtPaSS:C"</quote> ( param name <quote>thinfo</quote>, password <quote>ToPoCtPaSS</quote>, compact encoding ).
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>th_contact_encode_passwd</varname> parameter</title>
+		<title>Set <varname>th_contact_encode_param_password</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("topology_hiding", "th_contact_encode_passwd", "my_topoh_passwd")
+# only define the param name, use the default password and compact encoding
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam")
+...
+# define param name and password
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam:my_topoh_passwd")
+...
+# define param name, password and long encoding, plus a second entry for rotation
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam:new_passwd:L")
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam_old:old_passwd:L")
 ...
 </programlisting>
 		</example>
 	</section>
 
-	<section id="param_th_contact_encode_param" xreflabel="th_contact_encode_param">
-		<title><varname>th_contact_encode_param</varname> (string)</title>
+	<section id="param_th_use_param" xreflabel="th_use_param">
+		<title><varname>th_use_param</varname> (string)</title>
 		<para>
-			When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. The parameter configures the respective parameter name.
+			Selects, by name, which of the Contact URI params defined via
+			<varname>th_contact_encode_param_password</varname> is used when
+			<emphasis>encoding</emphasis> the topology hiding information. All defined
+			params are always considered when <emphasis>decoding</emphasis>, but only the
+			one referenced here is used for encoding. The value must match one of the
+			configured param names.
 		</para>
 		<para>
 		<emphasis>
@@ -183,10 +211,11 @@ modparam("topology_hiding", "th_contact_encode_passwd", "my_topoh_passwd")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>th_contact_encode_param</varname> parameter</title>
+		<title>Set <varname>th_use_param</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("topology_hiding", "th_contact_encode_param", "customparam")
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam:new_passwd:L")
+modparam("topology_hiding", "th_use_param", "customparam")
 ...
 </programlisting>
 		</example>
@@ -276,6 +305,87 @@ modparam("topology_hiding", "th_contact_callee_username_var", "__topo_hiding_use
 		<programlisting format="linespecific">
 ...
 modparam("topology_hiding", "th_callid_loop_protection", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_th_internal_trusted_tag" xreflabel="th_internal_trusted_tag">
+		<title><varname>th_internal_trusted_tag</varname> (string)</title>
+		<para>
+			Socket tag identifying the internal (trusted) sockets, as defined via the
+			<emphasis>tag</emphasis> attribute of a listening socket. When set, requests forced through this socket 
+			will allow the network topology information(Contact, Record-Routes and Vias) to percolate through to the next hop.
+			This applies to requests and replies and allows for the internal side to have a complete network topology while 
+			removing internal topology information from the SIP message sent outbound.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty</quote> ( no internal trusted tag )
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_internal_trusted_tag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+socket=udp:203.0.113.1:5060
+socket=udp:10.0.0.1:5060 tag internal
+...
+$socket_out = "10.0.0.1:5060";
+topology_hiding();
+t_relay();
+...
+modparam("topology_hiding", "th_internal_trusted_tag", "internal")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_th_external_socket_tag" xreflabel="th_external_socket_tag">
+		<title><varname>th_external_socket_tag</varname> (string)</title>
+		<para>
+			Socket tag identifying the external sockets, as defined via the
+			<emphasis>tag</emphasis> attribute of a listening socket. When a sequential from an auto Route 
+			request cannot be matched because the socket address was encoded on a different instance
+			this tag is used to select an appropriate socket for sending outbound.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty</quote> ( no external socket tag )
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_external_socket_tag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+socket=udp:203.0.113.1:5060 tag external
+...
+modparam("topology_hiding", "th_external_socket_tag", "external")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_th_auto_route_on_trusted_socket" xreflabel="th_auto_route_on_trusted_socket">
+		<title><varname>th_auto_route_on_trusted_socket</varname> (int)</title>
+		<para>
+			When enabled, and when doing topology hiding without dialog support, the
+			module automatically adds a Record-Route header encoding the receiving
+			socket information, so that sequential requests can be matched and routed
+			back through the correct socket without relying on the dialog module. The
+			encoded Route is decoded using the passwords defined via
+			<varname>th_contact_encode_param_password</varname>.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1</quote> / enabled.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_auto_route_on_trusted_socket</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("topology_hiding", "th_auto_route_on_trusted_socket", 0)
 ...
 </programlisting>
 		</example>
