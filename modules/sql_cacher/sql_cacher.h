@@ -28,6 +28,7 @@
 
 #include "../../db/db.h"
 #include "../../cachedb/cachedb.h"
+#include "../../atomic.h"
 
 #define DEFAULT_SPEC_DELIM "\n"
 #define DEFAULT_COLUMNS_DELIM " "
@@ -51,6 +52,12 @@
 #define ONDEMAND_STR_LEN ((int)(sizeof(ONDEMAND_STR) - 1))
 #define EXPIRE_STR "expire"
 #define EXPIRE_STR_LEN ((int)(sizeof(EXPIRE_STR) - 1))
+#define FULL_CACHING_LOCK_SCOPE "full_caching_lock_scope"
+#define FULL_CACHING_LOCK_SCOPE_STR_LEN ((int)(sizeof(FULL_CACHING_LOCK_SCOPE) - 1))
+#define LOCK_SCOPE_ROW "row"
+#define LOCK_SCOPE_ROW_STR_LEN ((int)(sizeof(LOCK_SCOPE_ROW) - 1))
+#define LOCK_SCOPE_TABLE "table"
+#define LOCK_SCOPE_TABLE_STR_LEN ((int)(sizeof(LOCK_SCOPE_TABLE) - 1))
 
 #define TYPE_STR_STR "string"
 #define TYPE_STR_LEN ((int)(sizeof(TYPE_STR_STR) - 1))
@@ -73,6 +80,18 @@
 #define is_str_column(pv_name_fix_p) \
 	((pv_name_fix_p)->c_entry->column_types & (1LL << (pv_name_fix_p)->col_nr))
 
+typedef enum _caching_lock_scope {
+	CACHE_LOCK_ROW, CACHE_LOCK_TABLE
+} caching_lock_scope;
+
+typedef struct _cache_lock {
+	rw_lock_t *ref_lock;
+	caching_lock_scope scope;
+#ifndef NO_ATOMIC_OPS
+	atomic_bool_t is_writing;
+#endif
+} cache_lock_t;
+
 typedef struct _cache_entry {
 	str id;
 	str db_url;
@@ -90,7 +109,7 @@ typedef struct _cache_entry {
 	 * where n = (entry.nr_columns - 1) */
 	long long column_types;
 
-	rw_lock_t *ref_lock;
+	cache_lock_t cache_lock;
 	struct _cache_entry *next;
 } cache_entry_t;
 
