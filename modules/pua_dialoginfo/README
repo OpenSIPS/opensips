@@ -534,7 +534,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Walter Doekes (@wdoekes), Stanislaw
    Pitucha, Maksym Sobolyev (@sobomax), Peter Lemenkov
-   (@lemenkov), Zero King (@l2dy), Aron Podrigal (@ar45).
+   (@lemenkov), Norman Brandinger (@NormB), Zero King (@l2dy),
+   Aron Podrigal (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -556,20 +557,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Feb 2026
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   8.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019
-   9.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Jan 2014
-   10. Damien Sandras (@dsandras)          Jul 2013 - Aug 2013
+   1.  Norman Brandinger (@NormB)          Jun 2026 - Jun 2026
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2026
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Feb 2026
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   9.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019
+   10. Ovidiu Sas (@ovidiusas)             Sep 2010 - Jan 2014
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Anca Vamanu,
-   Vallimamod Abdullah, Stanislaw Pitucha, Walter Doekes
-   (@wdoekes), Klaus Darilion.
+   All remaining contributors: Damien Sandras (@dsandras), Vlad
+   Paiu (@vladpaiu), Anca Vamanu, Vallimamod Abdullah, Stanislaw
+   Pitucha, Walter Doekes (@wdoekes), Klaus Darilion.
 
    (1) including any documentation-related commits, excluding
    merge commits

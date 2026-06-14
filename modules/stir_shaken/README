@@ -504,8 +504,8 @@ Chapter 2. Contributors
    9. Patrice Fournier 3 1 3 1
    10. Kevin 3 1 2 2
 
-   All remaining contributors: John Burke (@john08burke), Andriy
-   Pylypenko (@bambyster).
+   All remaining contributors: John Burke (@john08burke), Norman
+   Brandinger (@NormB), Andriy Pylypenko (@bambyster).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -527,19 +527,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Apr 2026
-   2.  Liviu Chircu (@liviuchircu)         Nov 2019 - Mar 2026
-   3.  Patrice Fournier                    Nov 2025 - Nov 2025
-   4.  MonkeyTester                        Aug 2023 - Aug 2024
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Jul 2024
-   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jun 2024
-   7.  tcresson                            Oct 2023 - Oct 2023
-   8.  Kevin                               Feb 2022 - Feb 2022
-   9.  kworm83                             Jan 2022 - Jan 2022
-   10. Vlad Patrascu (@rvlad-patrascu)     Oct 2019 - Aug 2021
+   1.  Norman Brandinger (@NormB)          Jun 2026 - Jun 2026
+   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Apr 2026
+   3.  Liviu Chircu (@liviuchircu)         Nov 2019 - Mar 2026
+   4.  Patrice Fournier                    Nov 2025 - Nov 2025
+   5.  MonkeyTester                        Aug 2023 - Aug 2024
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Jul 2024
+   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jun 2024
+   8.  tcresson                            Oct 2023 - Oct 2023
+   9.  Kevin                               Feb 2022 - Feb 2022
+   10. kworm83                             Jan 2022 - Jan 2022
 
-   All remaining contributors: John Burke (@john08burke), Andriy
-   Pylypenko (@bambyster).
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   John Burke (@john08burke), Andriy Pylypenko (@bambyster).
 
    (1) including any documentation-related commits, excluding
    merge commits
