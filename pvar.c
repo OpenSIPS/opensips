@@ -1507,7 +1507,7 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 	int idx=-1;
 	int idxf=-1;
 	int distance=0;
-	char buf[BUFLEN];
+	static char buf[BUFLEN];
 	struct sip_msg_body* sbody;
 	struct body_part* body_part;
 	struct body_part* neg_index[2];
@@ -1580,25 +1580,26 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 		}
 	} else {
 		/* copy main content type */
+		if (msg->content_type->body.len >= BUFLEN) {
+			LM_ERR("Content-Type header too long for pvar buffer (%d >= %d)\n",
+				msg->content_type->body.len, BUFLEN);
+			return pv_get_null(msg, param, res);
+		}
 		memcpy(buf, msg->content_type->body.s, msg->content_type->body.len);
-		buf[msg->content_type->body.len] = ',';
-		s.len = msg->content_type->body.len+1;
+		s.len = msg->content_type->body.len;
 
 		/* copy all the other contenttypes */
 		body_part = &sbody->first;
 		while (body_part) {
 			s.s = convert_mime2string_CT(body_part->mime);
-			if (s.len + strlen(s.s) >= BUFLEN) {
+			if (1 + s.len + strlen(s.s) >= BUFLEN) {
 				LM_CRIT("buffer overflow! Too many contenttypes!\n");
 				return pv_get_null(msg, param, res);
 			}
 
+			buf[s.len++] = ',';
 			memcpy( buf+s.len, s.s, strlen(s.s));
 			s.len += strlen(s.s);
-
-			/* delimiter only if something follows */
-			if(body_part->next)
-				buf[s.len++] = ',';
 
 			body_part = body_part->next;
 		}
