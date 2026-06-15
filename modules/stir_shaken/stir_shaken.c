@@ -562,9 +562,9 @@ static int add_disengagement_token(struct sip_msg *msg, str *token)
 {
 
 	#define DISENGAGEMENT_HDR_S		"P-Identity-Bypass: "
-	#define DISENGAGEMENT_HDR_L		sizeof(DISENGAGEMENT_HDR_S)
+	#define DISENGAGEMENT_HDR_L		(sizeof(DISENGAGEMENT_HDR_S)-1)
 
-	char *buf;
+	char *buf, *p;
 	unsigned int len;
 	struct lump* anchor;
 
@@ -588,7 +588,7 @@ static int add_disengagement_token(struct sip_msg *msg, str *token)
 	}
 
 	/* calculate len (header + token + crlf) */
-	len = strlen(DISENGAGEMENT_HDR_S) + strlen(token->s) + strlen(CRLF);
+	len = DISENGAGEMENT_HDR_L + token->len + CRLF_LEN;
 	/* alloc pkg memory */
 	buf= pkg_malloc(len);
 	if (!buf) {
@@ -596,12 +596,13 @@ static int add_disengagement_token(struct sip_msg *msg, str *token)
 		return -1;
 	}
 
-	// push header in the buffer
-	strcpy(buf, DISENGAGEMENT_HDR_S);
-	// push token after the header
-	strcat(buf, token->s);
-	// push "\r\n" after the token
-	strcat(buf, CRLF);
+	p = buf;
+	memcpy(p, DISENGAGEMENT_HDR_S, DISENGAGEMENT_HDR_L);
+	p += DISENGAGEMENT_HDR_L;
+	memcpy(p, token->s, token->len);
+	p += token->len;
+	memcpy(p, CRLF, CRLF_LEN);
+	p += CRLF_LEN;
 
 	/* insert buf at the end of previous headers */
 	if (insert_new_lump_after(anchor, buf, len, 0) == 0) {
