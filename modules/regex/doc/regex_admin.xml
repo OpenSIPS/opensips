@@ -18,7 +18,8 @@
 			function to match a string or pseudo-variable against any of these groups is
 			provided. The text file can be modified and reloaded at any time via a MI command.
 			The module also offers a function to perform a PCRE matching operation against a
-			regular expression provided as function parameter.
+			regular expression provided as function parameter, as well as a transformation
+			for PCRE-based string substitutions.
 		</para>
 		
 		<para>
@@ -335,6 +336,76 @@ if (pcre_match_group($rU, 2)) {
 }
 ...
 </programlisting>
+			</example>
+
+		</section>
+
+	</section>
+
+	<section id="exported_transformations" xreflabel="exported_transformations">
+		<title>Exported Transformations</title>
+
+		<section id="trans_pcre_subst" xreflabel="pcre.subst">
+			<title>
+				<function moreinfo="none">pcre.subst</function>
+			</title>
+
+			<para>
+				Applies a PCRE substitution expression to the input string. The expression
+				format is <quote>/pattern/replacement/[flags]</quote>; the first character
+				is used as the separator, similarly to the core <quote>re.subst</quote>
+				transformation. If the pattern does not match, the original input string is
+				returned unchanged.
+			</para>
+
+			<para>
+				The pattern is compiled using the PCRE library, so PCRE syntax such as
+				<quote>\Q...\E</quote> is supported. Replacement strings use the OpenSIPS
+				substitution replacement syntax, including <quote>\0</quote> to
+				<quote>\9</quote> for matched subexpressions, <quote>\n</quote>,
+				<quote>\r</quote>, <quote>\t</quote>, <quote>\u</quote> for the request
+				URI and pseudo-variables.
+			</para>
+
+			<para>
+				The supported expression flags are:
+			</para>
+
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>i</emphasis> - case-insensitive matching.</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>s</emphasis> - dot matches newline.</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>m</emphasis> - multiline matching.</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>x</emphasis> - extended pattern syntax.</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>g</emphasis> - replace all matches.</para>
+				</listitem>
+			</itemizedlist>
+
+			<example>
+				<title>
+					<function>pcre.subst</function> usage
+				</title>
+	<programlisting format="linespecific">
+...
+loadmodule "regex.so"
+
+startup_route {
+    # Remove + from E.164 number using pcre regex
+    $var(e164_number) = "sip:+123456789@127.0.0.1";
+    # Escape the string between \Q and \E 
+    $var(reg) = "/\Q+123456789\E/123456789/";
+    $var(out) = $(var(fu){pcre.subst,$var(reg)});
+}
+...
+	</programlisting>
 			</example>
 
 		</section>
