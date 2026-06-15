@@ -665,7 +665,14 @@ int thinfo_decode_uris(thinfo_encoded_t *thinfo, char decoded_uri_str[static THI
         
         uri_idx++;
 
-        if (is_dual && uri_idx < uri_count) {
+        if (is_dual) {
+            if (uri_idx >= uri_count) {
+                LM_ERR("IS_DUAL_URI set but URI count (%u) does not account for "
+                    "the second URI (decoded %d) - inconsistent encoded buffer\n",
+                    uri_count, uri_idx);
+                return -1;
+            }
+
             BUILD_URI_STRING(scheme2, transport2, port2);
             
             LM_DBG("Dual uri[%d]: s=%p, len=%d, content=[%.*s]\n",
