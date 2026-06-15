@@ -835,13 +835,16 @@ static void __tcpconn_rm(struct tcp_connection* c, int no_event)
 	(*tcp_connections_no)--;
 	lock_release(tcp_connections_lock);
 
-	if (c->proto_req)
-		thread_free(c->proto_req);
-	c->proto_req = NULL;
-	tcp_conn_destroy_req(c);
+	/* Only TCP main has valid process-private connection state. */
+	if (is_tcp_main) {
+		if (c->proto_req)
+			thread_free(c->proto_req);
+		c->proto_req = NULL;
+		tcp_conn_destroy_req(c);
 
-	if (protos[c->type].net.stream.conn.clean)
-		protos[c->type].net.stream.conn.clean(c);
+		if (protos[c->type].net.stream.conn.clean)
+			protos[c->type].net.stream.conn.clean(c);
+	}
 
 	if (!no_event) tcp_disconnect_event_raise(c);
 
