@@ -1,0 +1,218 @@
+---
+title: "rest_client Module"
+description: "The *rest_client* module provides a means of interacting with an HTTP server by doing RESTful queries, such as GET and POST."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+The *rest_client* module provides a means of interacting
+	with an HTTP server by doing RESTful queries, such as GET and POST.
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *No dependencies on other OpenSIPS modules.*.
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed before 
+		running OpenSIPS with this module loaded:
+
+
+- *libcurl*.
+
+
+### Exported Parameters
+
+
+#### connection_timeout (integer)
+
+
+Maximum time allowed to establish a connection with the server.
+
+
+*Default value is "20" seconds.*
+
+
+```c title="Setting the connection_timeout parameter"
+...
+modparam("rest_client", "connection_timeout", 300)
+...
+```
+
+
+#### curl_timeout (integer)
+
+
+Maximum time allowed for the libcurl transfer to complete.
+
+
+*Default value is "20" seconds.*
+
+
+```c title="Setting the curl_timeout parameter"
+...
+modparam("rest_client", "curl_timeout", 300)
+...
+```
+
+
+#### ssl_verifypeer (integer)
+
+
+Set this to 0 in order to disable the verification of the remote peer's
+		certificate. Verification is done using a default bundle of CA certificates
+		which come with libcurl.
+
+
+*Default value is "1" (enabled).*
+
+
+```c title="Setting the ssl_verifypeer parameter"
+...
+modparam("rest_client", "ssl_verifypeer", 0)
+...
+```
+
+
+#### ssl_verifyhost (integer)
+
+
+Set this to 0 in order to disable the verification that the remote peer
+		actually corresponds to the server listed in the certificate.
+
+
+*Default value is "1" (enabled).*
+
+
+```c title="Setting the ssl_verifyhost parameter"
+...
+modparam("rest_client", "ssl_verifyhost", 0)
+...
+```
+
+
+#### ssl_capath (integer)
+
+
+An optional path for CA certificates to be used for host verifications.
+
+
+```c title="Setting the ssl_capath parameter"
+...
+modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
+...
+```
+
+
+### Exported Functions
+
+
+#### rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
+
+
+Issues an HTTP GET request to the given 'url', and returns a representation
+		of the resource.
+
+
+The *body_pv* pseudo-var will hold the body of the HTTP
+		response.
+
+
+The optional *ctype_pv* pseudo-var will contain the value
+		of the "Content-Type:" header.
+
+
+The optional *retcode_pv* pseudo-var is used to retain the
+		HTTP status code of the response message.
+
+
+Possible parameter types
+
+
+- *url* - String, pseudo-variable, or a String
+				which includes pseudo-variables. (useful for specifying additional
+				attribute-value fields in the URL)
+- *body_pv, ctype_pv, retcode_pv* -
+			pseudo-variables
+
+
+This function can be used from the *startup, branch, failure,
+				request* and *timer* routes.
+
+
+```c title="rest_get usage"
+...
+# Example of querying a REST service to get the credit of an account
+
+if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct)", "$var(rcode)")) {
+	xlog("Error code $var(rcode) in HTTP GET!\n");
+	send_reply("403", "Not registered");
+	exit;
+}
+...
+```
+
+
+#### rest_post(url, send_body_pv, send_ctype_pv, recv_body_pv[, recv_ctype_pv[, retcode_pv]])
+
+
+Issues an HTTP POST request to the specified 'url'. The request body will
+		be copied from the 'send_body_pv' pseudo-variable. Its MIME content type
+		will be taken from 'send_ctype_pv'.
+
+
+The *recv_body_pv* pseudo-var will hold the body of the HTTP
+		response.
+
+
+The optional *recv_ctype_pv* parameter will contain
+		the value of the "Content-Type:" header of the response message.
+
+
+The optional *retcode_pv* pseudo-var parameter can be given
+		in order to save the HTTP status code of the response message.
+
+
+Possible parameter types
+
+
+- *url, send_body_pv, send_type_pv* -
+			String, pseudo-variable, or a String which includes pseudo-variables.
+- *recv_body_pv, recv_ctype_pv, retcode_pv* -
+			pseudo-variables
+
+
+This function can be used from the *startup, branch, failure,
+				request* and *timer* routes.
+
+
+```c title="rest_post usage"
+...
+# Storing data using a RESTful service with an HTTP POST request
+
+if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$var(body)", "$var(ct)", "$var(rcode)")) {
+	xlog("Error code $var(rcode) in HTTP POST!\n");
+	send_reply("403", "POST Forbidden");
+	exit;
+}
+...
+```
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
