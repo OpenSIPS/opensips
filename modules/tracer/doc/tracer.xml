@@ -4,13 +4,13 @@
 
 
 <!ENTITY admin SYSTEM "tracer_admin.xml">
-<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY faq SYSTEM "../../../docs/module_faq.xml">
 
 <!ENTITY tracercfg SYSTEM "tracer.cfg">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>
