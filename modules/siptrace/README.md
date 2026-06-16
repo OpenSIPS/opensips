@@ -1,0 +1,351 @@
+---
+title: "SipTrace Module"
+description: "Offer a possibility to store incoming/outgoing SIP messages in database. Since version 2.2, proto_hep module needs to be loaded in order to duplicate with hep. All hep parameters moved inside proto_hep."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+Offer a possibility to store incoming/outgoing SIP messages in database.
+		Since version 2.2, proto_hep module needs to be loaded in order to duplicate
+		with hep. All hep parameters moved inside proto_hep.
+
+
+The 2.2 version of OpenSIPS came with a major improvement in siptrace module.
+		Now all you have to do is call *sip_trace()* function
+		with the proper parameters and it will do the job for you. Now you can trace
+		messages, transactions and dialogs with the same function. Also, you can trace
+		to multiple databases, multiple hep destinations and sip destinations using
+		only one parameter. All you need now is defining *trace_id*
+		parameters in modparam section and switch between them in
+		siptrace function. Also you cand turn tracing  on
+		and off using *trace_on* either globally(for all trace_ids)
+		or for a certain trace_id.
+
+
+IMPORTANT: In 2.2 version support for stateless trace has been removed.
+
+
+The tracing tracing can be turned on/off using fifo command.
+
+
+opensipsctl fifo sip_trace on
+	opensipsctl fifo sip_trace [some_trace_id] on
+
+
+opensipsctl fifo sip_trace off
+	opensipsctl fifo sip_trace [some_trace_id] off
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *database module* - mysql, postrgress,
+				dbtext, unixodbc... only if you are using a database type
+				trace id
+- *dialog* - only if you want to trace dialogs.
+- *tm* - only if you want to trace dialogs/transactions.
+- *proto_hep* - only if you want to replicate messages over hep.
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed before running
+		OpenSIPS with this module loaded:
+
+
+- *None*.
+
+
+### Exported Parameters
+
+
+#### trace_on (integer)
+
+
+Parameter to enable/disable trace (on(1)/off(0))
+
+
+*Default value is "1"(enabled).*
+
+
+```c title="Set trace_on parameter"
+...
+modparam("siptrace", "trace_on", 1)
+...
+```
+
+
+#### trace_local_ip (str)
+
+
+The address to be used in the fields that specify the source address
+		(protocol, ip and port) for locally generated messages. If not set,
+		the module sets it to the address of the socket that will be used to send
+		the message. Protocol and/or port are optional and if omitted will take
+		the default values: udp and 5060.
+
+
+*Default value is "NULL".*
+
+
+```c title="Set trace_local_ip parameter"
+...
+#Resulting address: udp:10.1.1.1:5064
+modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
+...
+
+...
+#Resulting address: tcp:10.1.1.1:5060
+modparam("siptrace, "trace_local_ip", "tcp:10.1.1.1")
+...
+
+...
+#Resulting address: tcp:10.1.1.1:5064
+modparam("siptrace", "trace_local_ip", "tcp:10.1.1.1:5064")
+...
+
+...
+#Resulting address: udp:10.1.1.1:5060
+modparam("siptrace", "trace_local_ip", "10.1.1.1")
+...
+```
+
+
+#### trace_id (str)
+
+
+Specify a destination for the trace. This can be a hep id defined
+			in proto_hep, sip uri or a database url and a table. All parameters inside
+			*trace_id* must be separated by
+			*;*, excepting the last one. The parameters
+			are given in key-value format, the possible keys being
+			*uri* for HEP and SIP IDs and
+			*uri* and *table*
+			for databases. The format is
+			*[id_name]key1=value1;key2=value2;*. HEP
+			id's **MUST** be defined in proto_hep in order
+			to be able to use them here.
+
+
+One can declare multiple types of tracing under the same trace
+			id, being identified by their name. So if you define two
+			database url, one hep uri and one sip uri with the same name,
+			when calling sip_trace() with this name tracing shall be done
+			to all the destinations.
+
+
+All the old parameter such as db_url, table and duplicate_uri
+			will form the trace id with the name "default".
+
+
+*No default value. If not set the module will be useless.*
+
+
+```c title="Set trace_id parameter"
+...
+/*DB trace id*/
+modparam("siptrace", "trace_id",
+"[tid]
+uri=mysql://xxxx:xxxx@10.10.10.10/opensips;
+table=new_sip_trace;")
+/* hep trace id with the hep id defined in proto_hep; check proto_hep docs
+ * for more information */
+modparam("proto_hep", "hep_id",  "[hid]10.10.10.10")
+modparam("siptrace", "trace_id", "[tid]uri=hep:hid")
+/*sip trace id*/
+modparam("siptrace", "trace_id",
+"[tid]uri=sip:10.10.10.11:5060")
+/* notice that they all have the same name
+ * meaning that calling sip_trace("tid",...)
+ * will do sql, sip and hep tracing */
+...
+```
+
+
+### Exported Functions
+
+
+#### sip_trace(trace_id, [scope, [type, [trace_attrs]]])
+
+
+Store or replocate current processed SIP message,transaction or dialogin database.
+			It is stored in the form prior applying chages made to it. The traced_user_avp
+			parameter is now an argument to sip_trace() function. Since version 2.2, sip_trace()
+			also catches internally generated replies in stateless mode(sl_send_reply(...)).
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
+
+
+Meaning of the parameters is as follows:
+
+
+- *trace_id (string, pvar)*
+			the name of the *trace_id* specifying where to do
+			the tracing.
+- *scope (string)* what do you want to trace:
+		dialog, transaction or only the message. If not specified, will try
+		the topmost trace that can be done: if dialog module loaded will trace
+		dialogs, else if tm module loaded will trace transaction and if none
+		of these loaded will trace messages.
+Types can be the following:
+
+  - *'m'/'M'* trace messages. Is the only
+				one you should use in stateless mode.
+  - *'t'/'T'* trace transactions. If tm
+					module not loaded, it will be in stateless transaction aware
+					mode meaning that will catch selected requests both in and out
+				and internally generated replies.
+  - *'d'/'D'* trace dialog
+- *type (string)* list of types of messages to
+			be traced by this function; if not set only sip messages shall be traced;
+			if the parameter is set, but *sip* is not specified,
+			*sip* shall not be traced;
+			all the parameters from the list shall be separated by '|'
+Current possible types to be traced are the following:
+
+  - *sip* - enable sip messages tracing;
+  - *xlog* - enable xlog messages tracing in current
+						scope(dialog, transaction or message);
+  - *rest* - enable rest messages tracing;
+- *trace_attrs (string,pvar)* this parameter
+			replaces the traced_user_avp from the old version. To avoid duplicating
+			an entry only for this parameter, whatever you put here(string/pvar)
+			shall be stored in the trace_attrs column in the sip_trace table.
+
+
+```c title="sip_trace() usage"
+...
+/* see declaration of tid in trace_id section */
+	$var(trace_id) = "tid";
+	$var(user) = "osip_user@opensips.org";
+
+...
+/* Example 1: how to trace a dialog sip and xlog */
+	if (has_totag()) {
+		match_dialog();
+	} else {
+		if (is_method("INVITE") {
+			sip_trace("$var(trace_id)", "d", "sip|xlog", "$var(user)");
+		}
+	}
+...
+/* Example 2: how to trace initial INVITE and BYE, sip and rest */
+	if (has_totag()) {
+		if (is_method("BYE")) {
+			sip_trace("$var(trace_id)", "m", "sip|rest", "$var(user)");
+		}
+	} else {
+		if (is_method("INVITE")) {
+			sip_trace("$var(trace_id)", "m", "sip|rest", "$var(user)");
+		}
+	}
+
+...
+/* Example 3: trace initial INVITE transaction's only xlog and rest, no sip */
+	if (!has_totag()) {
+		if (is_method("INVITE")) {
+			sip_trace("$var(trace_id)", "t", "xlog|rest", "$var(user)");
+		}
+	}
+...
+/* Example 4: stateless transaction aware mode!*/
+/* tm module must not be loaded */
+	if (is_method("REGISTER")) {
+		sip_trace("$var(trace_id)", "t", "xlog|rest", "$var(user)");
+		if (!www_authorize("", "subscriber")) {
+			/* siptrace will also catch the 401 generated by www_challenge() */
+			www_challenge("", "1");
+		}
+	}
+```
+
+
+### Exported MI Functions
+
+
+#### sip_trace
+
+
+Name: *sip_trace*
+
+
+Parameters:
+
+
+- trace_id/trace_mode : if it is a trace_id name
+			it dumps info about that trace id if the second parameter is
+			not set to on/off or it turns tracing on/off for a certain
+			trace id if it is set, else if it's on/off
+			it turns on/off tracing for all the trace ids. If you turn
+			global trace on but some of the trace ids had trace to off,
+			then they shall not do tracing. In order to do that you
+			have to set the trace_on parameter for each trace_id.
+			Possible values are:
+
+  - on
+  - off
+  - trace_id name
+The parameter is optional - if missing, the command will
+			return the status of the SIP message tracing (as string
+			"on" or "off") marked with
+			*global* and the status for each trace id
+			without changing anything.
+- trace_mode : this parameter has the same
+			meaning as the trace_mode in the first parameter, but this time
+			it enables/disables tracing for a certain trace id given in the
+			first parameter.
+
+
+MI FIFO Command Format:
+
+
+```c
+		:sip_trace:_reply_fifo_file_
+		trace_id/trace_mode
+		trace_mode
+		_empty_line_
+		
+```
+
+
+### Database setup
+
+
+Before running OpenSIPS with siptrace, you have to setup the database
+			tables where the module will store the data. For that, if the
+			table were not created by the installation script or you choose
+			to install everything by yourself you can use the siptrace-create.sql
+			SQL script in the database directories in the
+			opensips/scripts folder as template.
+			You can also find the complete database documentation on the
+			project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
+
+
+### Known Issues
+
+
+ACKs related to a transaction that are leaving OpenSIPS are not
+			traced since they are handled statelessly using forward_request function.
+			Fixing it would mean to register a fwdcb callback that would be called
+			for all the messages but would be used only by ACKs, which would be
+			highly ineffective.
+
+
+*doc copyrights:*
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
