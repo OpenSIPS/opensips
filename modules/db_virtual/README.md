@@ -1,0 +1,269 @@
+---
+title: "db_virtual Module"
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+#### The idea
+
+
+A virtual DB will expose the same front DB api however, it will
+				backed by many real DB. This means that a virtual DB URL 
+				translates to many real DB URLs. This virtual layer also 
+				enables us to use the real dbs in multiple ways such as: 
+				parallel, failover(hotswap) and round-robin.
+
+				Therefore:
+					each virtual DB URL with associated real dbs and
+					a way to use(mode) it's real dbs must be specified.
+
+
+#### Modes
+
+
+The implemented modes are:
+
+
+- FAILOVER
+Use the first URL; if it fails, take the next
+								URL and redo the operation.
+- PARALLEL
+Use all the URLs in the virtual DB URL set.
+								Fails if all the URLs fail.
+- ROUND (round-robin)
+Use the next URL each time; if it fails, 
+								use the next one, redo operation.
+
+
+When choosing the db virtual mode, be sure that there is a full
+			compatibility between the DB operations you want to do (inserts, 
+			updates, deletes,...) and the relation (if any) between the real
+			DB URLs you have in the set - can be completely independent, can be
+			nodes of the same cluster, or any other combination.
+
+
+#### Capabilities
+
+
+For each set (or new virtual DB URL), the capabilities are
+			automatically calculated based on the capabilities provided by the
+			real DB URLs from the set. A logical AND is done for each
+			cabability over all the URLs in the set. Shortly, in order for the
+			virtual URL to provide a certain capability, ALL its real URLs 
+			must provide that capability.
+
+
+Note that starting with version 2.2 db_virtual supports 
+			async_raw_query and async_raw_resume functions currently
+			implemented only by the mysql database engine.
+
+
+#### Failures
+
+
+```c
+	When an operation from a process on a real DB fails:
+		it is marked (global and local CAN flag down)
+		its connection closed
+
+	Later a timer process (probe):
+	foreach virtual db_url
+		foreach real db_url
+			if global CAN down
+				try to connect
+			if ok
+				global CAN up
+				close connection
+
+	Later each process:
+		if local CAN down and global CAN up
+			if db_max_consec_retrys *
+				try to connect
+		if ok
+			local CAN up
+
+				
+```
+
+
+Note *: there could be inconsistencies between the probe and each process so a retry limit is in order.
+				It is reset and ignored by an MI command.
+
+
+#### The timer process
+
+
+The timer process(probe) is a process that tries to reconnect to failed dbs from time to time.
+				It is a separate process so that when it blocks (for a timeout on the connection) it doesn't matter.
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *At least one real DB module*.
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed before running
+		OpenSIPS with this module loaded:
+
+
+- *None*.
+
+
+### Exported Parameters
+
+
+#### db_urls (str)
+
+
+Multiple value parameter used for virtual DB URLs declaration.
+
+
+```c title="Set db_urls parameter"
+...
+
+modparam("group","db_url","virtual://set1")
+modparam("presence|presence_xml", "db_url","virtual://set2")
+
+modparam("db_virtual", "db_urls", "define set1 PARALLEL")
+modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
+modparam("db_virtual", "db_urls", "postgres://opensips:opensipsrw@localhost/opensips")
+
+modparam("db_virtual", "db_urls", "define set2 FAILOVER")
+modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
+...
+				
+```
+
+
+#### db_probe_time (integer)
+
+
+Time interval after which a registered timer process attempts to check
+		failed(as reported by other processes) connections to real dbs. The probe will connect and
+		disconnect to the failed real DB and announce others.
+
+
+*Default value is 10 (10 sec).*
+
+
+```c title="Set db_probe_time parameter"
+...
+modparam("db_virtual", "db_probe_time", 20)
+...
+				
+```
+
+
+#### db_max_consec_retrys (integer)
+
+
+After the timer process has reported that it can connect to the real db,
+		other processes will try to reconnect to it. There are cases where although
+		the probe could connect some might fail. This parameter represents the number
+		of consecutive failed retries that a process will do before it gives up.
+		This value is reset and suppressed by a MI function (db_virtual:set).
+
+
+*Default value is 10 (10 consecutive times).*
+
+
+```c title="Set db_max_consec_retrys parameter"
+...
+modparam("db_virtual", "db_max_consec_retrys", 20)
+...
+
+				
+```
+
+
+### Exported MI Functions
+
+
+#### db_virtual:get
+
+
+Replaces obsolete MI command: *db_get*.
+
+
+Return information about global state of the real dbs.
+
+
+Name:
+				*db_virtual:get*
+
+
+Parameters:
+
+
+- None.
+
+
+MI FIFO Command Format:
+
+
+```c
+				opensips-cli -x mi db_virtual:get
+			
+```
+
+
+#### db_virtual:set
+
+
+Replaces obsolete MI command: *db_set*.
+
+
+Sets the permissions for real dbs access per set per db.
+
+
+Sets the reconnect reset flag.
+
+
+Name:
+				*db_virtual:set*
+
+
+Parameters:
+
+
+- set_index [int]
+- db_url_index [int]
+- may_use_db_flag [boolean]
+- ignore_retries[boolean](optional)
+
+
+db_virtual:set 3 2 0 1 means:
+
+
+- 3 - the fourth set (must exist)
+- 2 - the third URL in the fourth set(must exist)
+- 0 - processes are not allowed to use that URL
+- 1 - reset and suppress db_max_consec_retrys
+
+
+MI FIFO Command Format:
+
+
+```c
+				opensips-cli -x mi db_virtual:set 3 2 0 1
+			
+```
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0

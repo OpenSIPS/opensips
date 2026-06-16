@@ -1,0 +1,1641 @@
+---
+title: "dispatcher Module"
+description: "This modules implements a dispatcher for destination addresses. It computes hashes over various parts of the request and selects an address from a destination set. The selected address may then either overwrite the R-URI of a SIP request or be used as an outbound proxy."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+This modules implements a dispatcher for destination addresses. It
+		computes hashes over various parts of the request and selects an
+		address from a destination set. The selected address may then either
+		overwrite the R-URI of a SIP request or be used as an outbound proxy.
+
+
+The module can be used as a stateless load balancer, having no
+		guarantee of fair distribution.
+
+
+For the distribution algorithm, the module allows the definition of
+		weights for the destination. This is useful in order to get a different
+		ratio of traffic between destinations.
+
+
+Starting with version 2.1, the dispatcher module keeps its destination sets 
+		into different partitions. Each partition is described by its own
+		"db_url", "table_name", "dst_avp", "grp_avp", "cnt_avp", "sock_avp",
+                "attr_avp", "blacklists", "ping_from", "ping_method" and
+                "persistent_state" set of attributes. Setting any of these
+                module parameters will only alter the "default" partition's properties.
+
+
+In order to create a new partition, the [partition](#param_partition)
+		parameter can be used.  If none of the 8 partition specific parameters
+		are defined for the "default" partition, then this partition will not
+		be created.  Once the "default" partition is created, any undefined
+		parameter from other partitions will inherit the value of the
+		corresponding parameter of the "default" partition.  If there is no
+		"default" partition, the default value specified in the parameter's
+		description will be used.  Finally, note that each dispatcher table
+		specified using the "table_name" partition attribute requires a
+		corresponding "version" table record within the partition's database,
+		specified through "db_url".
+
+
+Since version 2.1, the "flags" parameter has been moved to 
+		ds_select_dst() and ds_select_domain() along with "force_dst" and
+		"use_default" flags.
+
+
+### Dependencies
+
+
+#### OpenSIPS modules
+
+
+The following modules must be loaded before this module:
+
+
+- *TM - only if active recovery of failed hosts is required*.
+- *clusterer* - only if "cluster_id"
+				option is enabled.
+- *database* - one of the DB SQL modules
+- *freeswitch - only if "fetch_freeswitch_stats" is enabled.*.
+
+
+#### External libraries or applications
+
+
+The following libraries or applications must be installed before
+		running OpenSIPS with this module:
+
+
+- *none*.
+
+
+### Exported Parameters
+
+
+#### db_url (string)
+
+
+The default DB connection of the module, overriding the global
+		'db_default_url' setting.  Once specified, partitions which are missing
+		the 'db_url' property will inherit their URL from this value.
+
+
+*Default value is "NULL".*
+
+
+```c title="Setting the default database URL for dispatcher"
+...
+modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
+...
+```
+
+
+#### attrs_avp (str)
+
+
+The name of the avp to contain the attributes string of the current
+		destination. When a destination is selected, automatically, this AVP
+		will provide the attributes string - this is an opaque string (from
+		OpenSIPS point of view) : it is loaded from destination definition (
+		via DB) and blindly provided in the script.
+		Setting this parameter will only change the default partition's
+		attrs_avp. Use the partition parameter to create and alter
+		other partitions.
+
+
+*Default value is "null" - don't provide ATTRIBUTEs.*
+
+
+```c title="Set the 'default' partition's 'attrs_avp' parameter"
+...
+modparam("dispatcher", "attrs_avp", "$avp(272)")
+...
+```
+
+
+#### script_attrs_avp (str)
+
+
+Name of the avp to contain the script attributes string of the current
+		destination. When a destination is selected, automatically, this AVP
+		will provide the attributes string - this is an opaque string (from
+		OpenSIPS point of view) : it is provided via the ds_push_script_attrs
+		MI or SCRIPT function.
+
+
+*Default value is "null" - don't provide SCRIPT ATTRIBUTEs.*
+
+
+```c title="Set the 'default' partition's 'script_attrs_avp' parameter"
+...
+modparam("dispatcher", "attrs_avp", "$avp(script_attrs)")
+...
+```
+
+
+#### algo_route (str)
+
+
+Name of the route to be called when using algo 10.
+		The route will get as param the dst_uri, attrs and script_attrs for the
+		dispatcher entry that currently needs to be evaluated ( available via 
+		$param(1), $param(2) and $param(3) or via $param(dst_uri), $param(attrs) and $param(script_attrs) when the route gets called ).
+		The return value of the route is considered by the dispatcher module to
+		be the current weight of the dispatcher entry, and when using the 10
+		algo, the dispatcher entries are sorted in ascending weight order.
+
+		If the returned value from the algo route is negative, the current dispatcher entry will be automatically skipped from usage
+
+
+*Default value is "null" - disabled.*
+
+
+```c title="Use algo_route for hashing:"
+...
+modparam("dispatcher", "algo_route", "my_dispatcher_logic)")
+...
+route[my_dispatcher_logic] {
+        $var(curent_score) = 0;
+        xlog("DISPATCHER - Running logic for $param(dst_uri) with attrs $param(attrs) and script attrs $param(script_attrs) \n");
+
+	# decide to penalize current dispatcher entry, based on your logic
+	if (my_condition_here)
+		$var(current_score) = $var(current_score) + 10;
+
+        return $var(rc);
+}
+```
+
+
+#### hash_pvar (str)
+
+
+String with PVs used for the hashing algorithm 7.
+
+
+> [!NOTE]
+> You must set this parameter if you want do hashing over custom message
+		parts.
+
+
+*Default value is "null" - disabled.*
+
+
+```c title="Use $avp(273) for hashing:"
+...
+modparam("dispatcher", "hash_pvar", "$avp(273)")
+...
+```
+
+
+```c title="Use combination of PVs for hashing:"
+...
+modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
+...
+```
+
+
+#### setid_pvar (str)
+
+
+The name of the PV where to store the set ID (group ID) when calling
+		ds_is_in_list() without group parameter (third parameter).
+
+
+*Default value is "null" - don't set PV.*
+
+
+```c title="Set the 'setid_pvar' parameter"
+...
+modparam("dispatcher", "setid_pvar", "$var(setid)")
+...
+```
+
+
+#### ds_ping_method (string)
+
+
+With this Method you can define, with which method you want to probe
+		the failed gateways. This method is only available, if compiled with
+		the probing of failed gateways enabled.
+
+
+Use the 'partition' parameter if you want to define the ping method
+		other partitions.
+
+
+*Default value is "OPTIONS".*
+
+
+```c title="Set the 'ds_ping_method' parameter"
+...
+modparam("dispatcher", "ds_ping_method", "INFO")
+...
+```
+
+
+#### ds_ping_from (string)
+
+
+With this Method you can define the "From:"-Line for the request,
+		sent to the failed gateways. This method is only available, if
+		compiled with the probing of failed gateways enabled.
+
+
+Use the 'partition' parameter if you want to define the "From:"
+		ping header of other partitions.
+
+
+*Default value is "sip:dispatcher@localhost".*
+
+
+```c title="Set the 'ds_ping_from' parameter"
+...
+modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
+...
+```
+
+
+#### ds_ping_interval (int)
+
+
+With this Method you can define the interval for sending a request to
+		a failed gateway. This parameter is only used, when the TM-Module is
+		loaded. If set to "0", the pinging of failed requests
+		is disabled.
+
+
+*Default value is "0" (disabled).*
+
+
+```c title="Set the 'ds_ping_interval' parameter"
+...
+modparam("dispatcher", "ds_ping_interval", 30)
+...
+```
+
+
+#### ds_ping_maxfwd (int)
+
+
+This parameter allows you to enforce a specific Max-Forward value
+		for the SIP pinging requests generated by the Dispatcher modules.
+		If not explicitly set, no value will be enforced and it let the
+		Transaction Layer (TM module) to set a default Max-Forward value.
+
+
+The accepted values are any positive integer values, including the
+		"0" value.
+
+
+```c title="Set the 'ds_ping_maxfwd' parameter"
+...
+modparam("dispatcher", "ds_ping_maxfwd", 2)
+...
+```
+
+
+#### ds_probing_sock (str)
+
+
+A socket description [proto:]host[:port] of the local socket (which
+		is used by OpenSIPS for SIP traffic) to be used (if multiple) for
+		sending the probing messages from.
+
+
+*Default value is "NULL(none)".*
+
+
+```c title="Set the 'ds_probing_sock' parameter"
+...
+modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
+...
+```
+
+
+#### ds_probing_threshold (int)
+
+
+If you want to set a gateway into probing mode, you will need a
+		specific number of requests until it will change from "active" to
+		probing. The number of attempts can be set with this parameter.
+
+
+*Default value is "3".*
+
+
+```c title="Set the 'ds_probing_threshold' parameter"
+...
+modparam("dispatcher", "ds_probing_threshold", 10)
+...
+```
+
+
+#### ds_probing_mode (int)
+
+
+Controls what gateways are tested to see if they are reachable. If set
+		to 0, only the gateways with state PROBING are tested, if set to 1, all
+		gateways are tested. If set to 1 and the response is 408 (timeout),
+		an active gateway is set to PROBING state.
+
+
+*Default value is "0".*
+
+
+```c title="Set the 'ds_probing_mode' parameter"
+...
+modparam("dispatcher", "ds_probing_mode", 1)
+...
+```
+
+
+#### ds_probing_list (str)
+
+
+Defines a list of one or more setids that limits which
+                destinations are probed if probing is active.  This is useful
+                when multiple proxies share the same dispatcher table, but you
+                want to limit which ones are responsible for probing specific
+                destinations.
+
+
+*Default value is "NULL (probe all sets)".*
+
+
+```c title="Set the 'ds_probing_list' parameter"
+...
+modparam("dispatcher", "ds_probing_list", "1,2,3")
+...
+```
+
+
+#### ds_define_blacklist (str)
+
+
+Defines a blacklist based on a dispatching setid from the 'default'
+		partition.
+		This list will contain the IPs (no port, all protocols) of the
+		destinations matching the given setid.
+		Use the 'partition' parameter if you want to define blacklists
+		based on other partitions' sets.
+
+
+Multiple instances of this param are allowed.
+
+
+*Default value is "NULL".*
+
+
+```c title="Set the 'default' partition's 'ds_define_blacklist' parameter"
+...
+modparam("dispatcher", "ds_define_blacklist", "list= 1,4,3")
+modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
+...
+```
+
+
+#### options_reply_codes (str)
+
+
+This parameter must contain a list of SIP reply codes separated by
+		comma. The codes defined here will be considered as valid reply codes
+		for OPTIONS messages used for pinging, apart for 200.
+
+
+*Default value is "NULL".*
+
+
+```c title="Set the 'options_reply_codes' parameter"
+...
+modparam("dispatcher", "options_reply_codes", "501, 403")
+...
+```
+
+
+#### dst_avp (str)
+
+
+This is mainly for internal usage and represents the name of the avp
+		which will hold the list with addresses, in the order
+		they have been selected by the chosen algorithm. If use_default is 1,
+		the value of last dst_avp_id is the last address in destination set. The
+		first dst_avp_id is the selected destinations. All the other addresses
+		from the destination set will be added in the avp list to be able to
+		implement serial forking.
+		Setting this parameter will only change the default partition's
+		dst_avp. Use the partition parameter to create and alter
+		other partitions.
+
+
+*For the 'default' partition the default value
+			is "$avp(ds_dst_failover)". For any other partition,
+			the default value is "$avp(ds_dst_failover_partitionname)".*
+
+
+```c title="Set the 'default' partition's 'dst_avp' parameter"
+...
+modparam("dispatcher", "dst_avp", "$avp(271)")
+...
+```
+
+
+#### grp_avp (str)
+
+
+This is mainly for internal usage and represents the name of the avp
+		storing the group id of the destination set. Good
+		to have it for later usage or checks.
+		Setting this parameter will only change the default partition's
+		grp_avp. Use the partition parameter to create and alter
+		other partitions.
+
+
+*For the 'default' partition the default value
+			is "$avp(ds_grp_failover)". For any other partition,
+			the default value is "$avp(ds_grp_failover_partitionname)".*
+
+
+```c title="Set the 'default' partition's 'grp_avp' parameter"
+...
+modparam("dispatcher", "grp_avp", "$avp(273)")
+...
+```
+
+
+#### cnt_avp (str)
+
+
+This is mainly for internal usage and represents the name of the avp
+		storing the number of destination addresses kept in dst_avp avps.
+		Setting this parameter will only change the default partition's
+		cnt_avp. Use the partition parameter to create and alter
+		other partitions.
+
+
+*For the 'default' partition the default value
+			is "$avp(ds_cnt_failover)". For any other partition,
+			the default value is "$avp(ds_cnt_failover_partitionname)".*
+
+
+```c title="Set the 'default' partition's 'cnt_avp' parameter"
+...
+modparam("dispatcher", "cnt_avp", "$avp(274)")
+...
+```
+
+
+#### sock_avp (str)
+
+
+This is mainly for internal usage and represents the name of the avp
+		storing the sockets to be used for the destination addresses kept in
+		dst_avp avps.
+		Setting this parameter will only change the default partition's
+		sock_avp. Use the partition parameter to create and alter
+		other partitions.
+
+
+*For the 'default' partition the default value
+			is "$avp(ds_sock_failover)". For any other partition,
+			the default value is "$avp(ds_sock_failover_partitionname)".*
+
+
+```c title="Set the 'default' partition's 'sock_avp' parameter"
+...
+modparam("dispatcher", "sock_avp", "$avp(275)")
+...
+```
+
+
+#### pvar_algo_pattern (str)
+
+
+This parameter is used by the PVAR(9) algorithm to specify the
+		pseudovariable pattern used to detect the load of each destination. The
+		name of the pseudovariable should contain the string "%u",
+		which will be internally replaced by the module with the uri of the
+		destination. The string "%i" can also be used and will be
+		replaced with the set ID of the destination (useful in cases where same
+		uri exists in multiple sets).
+
+
+*Default value is "none".*
+
+
+```c title="Set the 'pvar_algo_pattern' parameter"
+...
+modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
+...
+```
+
+
+#### persistent_state (int)
+
+
+Specifies whether the *state* column
+		should be loaded at startup and flushed during runtime or not
+		for the "default" partition.
+
+
+Use the 'partition' parameter if you want to define the persistent
+		state of other partitions.
+
+
+*Default value is "1" (enabled).*
+
+
+```c title="Set the persistent_state parameter"
+...
+# disable all DB operations with the state of a destination
+modparam("dispatcher", "persistent_state", 0)
+...
+```
+
+
+#### cluster_id (integer)
+
+
+The ID of the cluster the module is part of. The clustering support is 
+		used in dispatcher module for two purposes: for sharing the status 
+		of the destinations and for controlling the pinging to destinations.
+
+
+If clustering enbled, the module will automatically share changes
+		over the status of the destinations with the other 
+		OpenSIPS instances that are part of a cluster. Whenever such a status 
+		changes (following an MI command, a probing result, a script command),
+		the module will replicate this status change to all the nodes in this 
+		given cluster.
+
+
+The clustering with sharing tag support may be used to control which 
+		node in the cluster will perform the pinging/probing to 
+		destinations. See the
+		[cluster sharing tag](#param_cluster_sharing_tag) option.
+
+
+This OpenSIPS cluster exposes the **"dispatcher-status-repl"**
+capability in order to mark nodes as eligible for becoming data donors during an
+arbitrary sync request. Consequently, the cluster must have *at least
+one node* marked with the **"seed"** value
+as the *clusterer.flags* column/property in order to be fully functional.
+Consult the [clusterer - Capabilities](../clusterer#capabilities)
+chapter for more details.
+
+
+For more info on how to define and populate a cluster (with OpenSIPS 
+		nodes) see the [clusterer](../clusterer) module.
+
+
+*Default value is "0 (none)".*
+
+
+```c title="Set cluster_id parameter"
+...
+# replicate destination status with all OpenSIPS in cluster ID 9
+modparam("dispatcher", "cluster_id", 9)
+...
+```
+
+
+#### cluster_sharing_tag (string)
+
+
+The name of the sharing tag (as defined per clusterer modules) to 
+		control which node is responsible for perform the self-triggered
+		actions in the module. Such actions may be the destination probing
+		(see also the [cluster probing mode](#param_cluster_probing_mode) parameter)
+		or sharing the changes in the destination status.
+		If defined, only the node with active status of this tag will 
+		perform the actions (pinging and sharing status).
+
+
+The [cluster id](#param_cluster_id) must be defined for this option
+		to work.
+
+
+This is an optional parameter. If not set, all the nodes in the cluster
+		will share the status changes.
+
+
+*Default value is "empty (none)".*
+
+
+```c title="Set cluster_sharing_tag parameter"
+...
+# only the node with the active "vip" sharing tag will perform pinging
+# and broadcast the status changes
+modparam("dispatcher", "cluster_id", 9)
+modparam("dispatcher", "cluster_sharing_tag", "vip")
+...
+```
+
+
+#### cluster_probing_mode (string)
+
+
+This paramter controls how the probing/pinging should be done when
+		using the clustering support. It is about which node in the cluster
+		pings which gateway/destination.
+
+
+The [cluster id](#param_cluster_id) must be defined for this option
+		to work.
+
+
+The supported probing modes are:
+
+
+- **"all"** - all the nodes in the
+			cluster will independetly ping all the defined destinations,
+			an "all" pings "all" mode.
+- **"by-shtag"** - all the destinations
+			are pinged by only one node in the cluster, the node having the
+			[cluster sharing tag](#param_cluster_sharing_tag) active. By 
+			activating the sharing tag on a different node, the pinging
+			duty will be transfered to another node in the cluster.
+- **"distributed"** - the pinging
+			effort is distributed across all the nodes in the cluster, so each
+			node will ping a sub-set of the overall set of destinations. Still
+			all the destinations will get pinged (and only once per pinging 
+			cycle).
+			The re-partitioning of the pinging effort over the available nodes
+			in the cluster is automatically done when new nodes are joining or
+			nodes are dropping out. Still there is no guaratee on which node
+			will be responsible for pinging which destination.
+
+
+*Default value is ""all"".*
+
+
+```c title="Set cluster_probing_mode parameter"
+...
+# only the node with the active "vip" sharing tag will perform pinging
+modparam("dispatcher", "cluster_id", 9)
+modparam("dispatcher", "cluster_sharing_tag", "vip")
+modparam("dispatcher", "cluster_probing_mode", "by-shtag")
+...
+# the pinging effort is distributed across all the nodes
+modparam("dispatcher", "cluster_id", 9)
+modparam("dispatcher", "cluster_probing_mode", "distributed")
+...
+```
+
+
+#### partition (string)
+
+
+Define a new partition (data source) with the following properties:
+		"db_url", "table_name", "dst_avp", "grp_avp", "cnt_avp", "sock_avp",
+		"attrs_avp", "script_attrs", "ds_define_blacklist".  All these
+		properties are optional, having appropriate default values.
+
+
+The syntax is: "partition_name: param1 = value1; param2 = value2".
+		Each value format is the same as the one used to define a specific
+		parameter using modparam.
+
+
+This parameter may be set multiple times, thus defining as many
+		partitions as needed.  The 'default' partition may also be defined
+		using this parameter.
+
+
+```c title="Define a new partition called 'voicemail'"
+...
+modparam("dispatcher", "partition",
+                "voicemail:
+                    db_url = mysql://user:passwd@localhost/database;
+                    table_name = dispatcher;
+                    attrs_avp = $avp(ds_attr_vm);
+                    ds_define_blacklist = list2 = 4,6")
+...
+```
+
+
+```c title="Define the 'trunks' partition and make it the 'default' partition, so we avoid loading the 'dispatcher' table"
+...
+modparam("dispatcher", "partition",
+                "trunks:
+                    db_url = mysql://user:passwd@localhost/database;
+                    table_name = dispatcher_trunks;
+                    attrs_avp = $avp(ds_attr_trunks)")
+modparam("dispatcher", "partition", "default: trunks")
+...
+```
+
+
+#### table_name (string)
+
+
+The default name of the table from which to load dispatcher
+		destinations.  Partitions which are missing the 'table_name' property
+		will inherit their table name from this value.
+
+
+*Default value is "dispatcher".*
+
+
+```c title="Set the default table name"
+...
+modparam("dispatcher", "table_name", "my_dispatcher")
+...
+```
+
+
+#### setid_col (string)
+
+
+The column's name in the database storing the gateway's group id.
+
+
+*Default value is "setid".*
+
+
+```c title="Set 'setid_col' parameter"
+...
+modparam("dispatcher", "setid_col", "groupid")
+...
+```
+
+
+#### destination_col (string)
+
+
+The column's name in the database storing the destination's
+			sip uri.
+
+
+*Default value is "destination".*
+
+
+```c title="Set 'destination_col' parameter"
+...
+modparam("dispatcher", "destination_col", "uri")
+...
+```
+
+
+#### state_col (string)
+
+
+The column's name in the database storing the state of the
+			destination uri.
+
+
+*Default value is "state".*
+
+
+```c title="Set 'state_col' parameter"
+...
+modparam("dispatcher", "state_col", "dststate")
+...
+```
+
+
+#### weight_col (string)
+
+
+The column's name in the database storing the weight for
+			destination uri.
+
+
+*Default value is "weight".*
+
+
+```c title="Set 'weight_col' parameter"
+...
+modparam("dispatcher", "weight_col", "dstweight")
+...
+```
+
+
+#### priority_col (string)
+
+
+The column's name in the database storing the priority for
+			destination uri.
+
+
+*Default value is "priority".*
+
+
+```c title="Set 'priority_col' parameter"
+...
+modparam("dispatcher", "priority_col", "dstprio")
+...
+```
+
+
+#### attrs_col (string)
+
+
+The column's name in the database storing the attributes (opaque
+			string) for destination uri.
+
+
+*Default value is "attrs".*
+
+
+```c title="Set 'attrs_col' parameter"
+...
+modparam("dispatcher", "attrs_col", "dstattrs")
+...
+```
+
+
+#### socket_col (string)
+
+
+The column's name in the database storing the socket (as
+			string) for destination uri.
+
+
+*Default value is "socket".*
+
+
+```c title="Set 'socket_col' parameter"
+...
+modparam("dispatcher", "socket_col", "my_sock")
+...
+```
+
+
+#### probe_mode_col (string)
+
+
+The column's name in the database storing the probe_mode (as
+			string) for destination.
+
+
+*Default value is "probe_mode".*
+
+
+```c title="Set 'probe_mode_col' parameter"
+...
+modparam("dispatcher", "probe_mode_col", "probing")
+...
+```
+
+
+#### fetch_freeswitch_stats (integer)
+
+
+If enabled, FreeSWITCH destinations may have dynamic dispatching weights,
+		refreshed at runtime, using the FreeSWITCH Event Socket Layer.
+		For these destinations, an Event Socket Layer URL must be provisioned
+		into the "weight" column, instead of an integer string. Some example values:
+		*"fs://:password@freeswitch.example.com"*
+		or *"fs://user:password@127.0.0.1:8021"*.
+		The default ESL port is 8021.
+
+
+OpenSIPS will establish a connection with the given socket and
+		periodically calculate/update the weights of these destinations
+		using statistics pushed by the FreeSWITCH box.
+
+
+The value for an automatically calculated weight ranges between
+		**0 - 100**.
+		This is helpful when grouping normal destinations with
+		FreeSWITCH ones.
+
+
+The dynamic weights are recalculated every
+		*event_heartbeat_interval* seconds (see the
+		"freeswitch" OpenSIPS module for more details regarding this setting),
+		as the stats from FreeSWITCH are expected to arrive.  The update formula
+		is shown below (FreeSWITCH stats are highlighted in bold):
+
+
+*weight = 100 * (**Idle-CPU** / 100) * (1 - **Session-Count** / **Max-Sessions**)*
+
+
+*Default value is **0** (disabled).*
+
+
+```c title="Set the fetch_freeswitch_load parameter"
+...
+modparam("dispatcher", "fetch_freeswitch_stats", 1)
+...
+```
+
+
+#### max_freeswitch_weight (integer)
+
+
+The maximum weight of a FreeSWITCH ESL-enabled destination. This value
+		is also used during startup/reload, when no stats from FreeSWITCH are
+		available yet.
+
+
+Important: When mixing normal destinations with FreeSWITCH-enabled ones in
+		the same dispatching set, OpenSIPS will truncate any weight values that
+		are larger than **max_freeswitch_weight**
+		to the value of this parameter!
+
+
+NOTE: OpenSIPS internally rounds weights to nearest integer, so larger
+		max weight values will more accurately represent the current load on the
+		FreeSWITCH boxes! For example, if you set this parameter to 1, the box
+		will receive no traffic whenever either its CPU or session usage goes
+		past 50%!
+
+
+*Default value is **100**.*
+
+
+```c title="Set the max_freeswitch_weight parameter"
+...
+modparam("dispatcher", "max_freeswitch_weight", 1000)
+...
+```
+
+
+### Exported Functions
+
+
+#### ds_select_dst(set, alg, [flags], [partition], [max_res])
+
+
+The method selects a destination from the given set of addresses. It will
+		overwrite the destination URI (*$du*) of a SIP request.
+
+
+Meaning of the parameters is as follows:
+
+
+- *set (int)* - a set identifier from which to select destinations
+- *alg (int)* - the algorithm used to select the
+			destination address
+
+  - "0" - hash over callid
+  - "1" - hash over from uri.
+  - "2" - hash over to uri.
+  - "3" - hash over request-uri.
+  - "4" - weighted round-robin (next destination).
+				the destination's weight determines how many times it is chosen
+				before going to the next one
+  - "5" - hash over authorization-username
+				(Proxy-Authorization or "normal" authorization).
+				If no username is found, weighted round-robin is used.
+  - "6" - random (using rand()).
+  - "7" - hash over the content of PVs string.
+				Note: This works only when the parameter hash_pvar is set.
+  - "8" - the first entry in set is chosen.
+  - "9" - The *pvar_algo_pattern*
+				parameter is used to determine the load on each server. If the
+				parameter is not specified, then the first entry in the set is
+				chosen.
+  - "10" - The *algo_route*
+				OpenSIPS route is called for each dispatcher entry in 
+				the setid, in order to decide the routing order.
+				See the algo_route parameter for usage examples
+  - "X" - if the algorithm is not implemented, the
+				first entry in set is chosen.
+- *flags (string, optional)* - a string of flag-settings
+				which tweak the function's behavior:
+
+  - 'f' (failover support): causes the remaining
+				addresses from the destination set to be stored within an
+				internally managed AVP.  You may then use
+				[ds next dst](#func_ds_next_dst) to switch to the next
+				address, thus achieving serial forking to all possible destinations
+  - 'u' (user only): will specify that only the URI user part
+					will be used for hashing
+  - 'd' (use default): use the last address in destination
+					set as last option to send the message
+  - 'a' (append destinations): append any new destinations to
+					the current destination list, rather than rewriting the list
+The flags are being kept per partition.
+- *partition (string, optional)* - name of a DB partition
+- *max_res (int, optional)* - signifies that only a maximum
+			number of destinations shall be included in the specified failover AVP. 
+			This allows having multiple destinations while
+			also preventing excessive failover attempts in case a number is
+			bound to fail globally.
+
+
+This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and FAILURE_ROUTE.
+
+
+```c title="ds_select_dst usage"
+...
+if (!ds_select_dst(1, 0)) {
+	xlog("ERROR: no active destinations found!\n");
+	send_reply(503, "Service Unavailable");
+	exit;
+}
+...
+ds_select_dst(1, 0, , "fs_boxes", 5);
+...
+ds_select_dst(1, 0, "fUD", "ask_boxes");
+...
+ds_select_dst(2, 0, "fud", "pstn_gws", 5);
+ds_select_dst(3, 1, "fua", "pstn_gws", 2);
+...
+# using variables
+$var(part) = "pstn_gws"
+$var(setid) = 1;
+$var(alg) = 4;
+$var(flags) = "fdu";
+$var(max_res) = 2;
+ds_select_dst($var(setid), $var(alg), $var(flags), $var(part), $var(max_res));
+...
+```
+
+
+#### ds_select_domain(set, alg, [flags], [partition], [max_res])
+
+
+The method selects a destination from addresses set and rewrites the
+		hostname and port parts of the Request-URI (*$ru*).
+		Its parameters have same meaning as in [ds select dst](#func_ds_select_dst).
+
+
+If the "f" (failover support) flag is present, the rest of the
+		addresses from the destination set will be stored in an internally
+		managed AVP. You may then use [ds next domain](#func_ds_next_domain) to
+		switch to the next address in the list, thus achieving serial forking
+		to all possible destinations.
+
+
+This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and FAILURE_ROUTE.
+
+
+#### ds_next_dst([partition])
+
+
+Takes the next destination address from the AVPs with id
+		partition.'dst_avp_id' and sets the dst_uri (outbound proxy address).
+		If "partition" is omitted, the default partition will be used.This
+		function is using the flags set in ds_select_dst or ds_select_domain.
+
+
+This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+
+
+#### ds_next_domain([partition])
+
+
+Takes the next destination address from the AVPs with id
+		partition.'dst_avp_id' and sets the domain part of the request uri.
+		If "partition" is omitted, the default partition will be used.This
+		function is using the flags set in ds_select_dst or ds_select_domain.
+
+
+This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+
+
+#### ds_mark_dst([state], [partition])
+
+
+Mark the last used address from partition's destination set as
+		inactive ("i"/"I"/"0"), active ("a"/"A"/"1") or probing ("p"/"P"/"2").
+		With this function, an automatic detection of failed gateways can be implemented.
+		When an address is marked as inactive or probing, it will be ignored by
+		[ds select dst](#func_ds_select_dst) and [ds select domain](#func_ds_select_domain).
+		If "partition" is omitted, the default partition will be used. This function
+		is using the flags set in [ds select dst](#func_ds_select_dst) or
+		[ds select domain](#func_ds_select_domain).
+
+
+Possible parameters:
+
+
+- state (string, optional) - new state for the last attempted
+				destination.  Possible values:
+
+  - *"i", "I" or "0" (default)* - the last
+					destination should be set to inactive and will be ignored
+					in future requests.
+  - *"a", "A" or "1"* - the last
+					destination should be set to active.
+  - *"p", "P" or "2"* - the last
+					destination will be set to probing. Note: You will need to
+					call this function "threshold"-times, before it will be
+					actually set to probing.
+- partition (string, optional) - name of a DB partition,
+			otherwise the default one will be used
+
+
+This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+
+
+#### ds_count(set, state_filter, res_var, [partition])
+
+
+Returns the number of active, inactive or probing destinations in a
+		partition's set, or combinations between these properties.
+
+
+Meaning of the parameters:
+
+
+- *set (int)* - a set of dispatching destinations
+- *state_filter (string)* - which destinations should be
+			counted. Either active ("a", "A" or "1"), inactive
+			("i", "I" or "0"), probing ("p", "P" or "2") destinations or
+			different combinations between these flags, such as
+			"pI", "1i", "ipA"...
+- *res_var (variable)* - a variable
+				which will hold the integer result
+- *partition (string, optional)* - name of a
+				DB partition.  If omitted, the "default" partition
+				will be used.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
+		LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
+
+
+```c title="ds_count usage"
+...
+if (ds_count(1, "a", $avp(result))) {
+	...
+}
+...
+if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
+	...
+}
+...
+```
+
+
+#### ds_is_in_list(ip, port, [set], [partition], [active_only], [pattern])
+
+
+This function returns *true* only if "ip" and "port" point to a
+		host from the given dispatcher "set".
+
+
+Meaning of the parameters:
+
+
+- *ip (string)* - an IPv4 or IPv6 address to
+				test against the dispatcher "set"
+- *port (int)* - a port to test against the
+			dispatcher list.  Use a *0* value in order to
+			match any port
+- *set (int, optional)* - a dispatcher set
+			identifier to test against.  If missing, all sets will be checked.
+			The *-1* set is a special value, acting as a
+			"check all sets" wildcard.
+- *partition (string, optional)* - name of
+				a DB partition
+- *active_only (int, optional)* - specify
+			a non-zero value in order to only search through the active
+			destinations (ignore the ones in probing and inactive states)
+- *pattern (string, optional)* - a glob
+			pattern used to match destination attributes. If the destination
+			ip and port matches but the pattern does not match the destination's
+			attribute, the function will fail.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		BRANCH_ROUTE and ONREPLY_ROUTE.
+
+
+```c title="ds_is_in_list usage"
+...
+if (ds_is_in_list($si, $sp)) {
+	# source IP:PORT is in a dispatcher list
+}
+...
+if (ds_is_in_list($rd, $rp, 2)) {
+	# the R-URI (IP and port) is in the dispatcher set 2 of the "default" partition
+}
+...
+if (ds_is_in_list($rd, $rp, 2, "part2")) {
+	# the R-URI (IP and port) is in the dispatcher set 2 of the "part2" partition
+}
+...
+```
+
+
+#### ds_push_script_attrs(script_attr, ip, port, set, [partition])
+
+
+Set the script attrs for the dispatcher entry defined by IP, Port, setid and partition.
+
+
+Meaning of the parameters:
+
+
+- *script_attr (str or pvar)* - The new script attributes
+- *IP (string)* -
+			IP address for which we are pushing script attributes
+- *port (int)* Port for which we are pushing script attributes
+- *setid (int)* Setid for which we are pushing script attributes
+- *partition (string, optional)* - name of a
+				DB partition.  If omitted, the "default" partition
+				will be used.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
+		LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
+
+
+```c title="ds_count usage"
+...
+if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition')) {
+	...
+}
+...
+```
+
+
+#### ds_get_script_attrs(uri, set, [partition], out_attrs)
+
+
+Get the script attrs for the dispatcher entry defined by the URI, setid and partition.
+
+
+Meaning of the parameters:
+
+
+- *URI (string)* -
+			URI address for which we are getting script attributes
+- *setid (int)* Setid for which we are pushing script attributes
+- *partition (string, optional)* - name of a
+				DB partition.  If omitted, the "default" partition
+				will be used.
+- *out_atrs (pvar)* - name of a
+				variable where we will store the script attrs.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
+		LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
+
+
+```c title="ds_count usage"
+...
+if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition')) {
+	...
+}
+...
+```
+
+
+### Exported MI Functions
+
+
+#### dispatcher:set_state
+
+
+Replaces obsolete MI command: *ds_set_state*.
+
+
+Sets the status for a destination address (can be use to mark the destination
+		as active or inactive).
+
+
+Name: *dispatcher:set_state*
+
+
+Parameters:
+
+
+- *state* : state of the destination address
+
+  - "a": active
+  - "i": inactive
+  - "p": probing
+- *group*: partition name followed by colon
+			and destination group id. If the partition name is omitted,
+			the default partition will be used
+- *address*: address of the destination in the group
+
+
+MI FIFO Command Format:
+
+
+```c
+opensips-cli -x mi dispatcher:set_state a 2 sip:10.0.0.202
+```
+
+
+#### dispatcher:list
+
+
+Replaces obsolete MI command: *ds_list*.
+
+
+It lists the groups and included destinations of all the partitions.
+
+
+Name: *dispatcher:list*
+
+
+Parameters:
+
+
+- *full* (optional) - adds the weight,
+				priority and description fields to the listing
+- *partition* (optional) - return only
+				destinations and sets in the provided partition.
+
+
+MI FIFO Command Format:
+
+
+```c
+opensips-cli -x mi dispatcher:list
+```
+
+
+#### dispatcher:reload
+
+
+Replaces obsolete MI command: *ds_reload*.
+
+
+It reloads the groups and included destinations for a
+		specified partition or all partitions.
+
+
+Name: *dispatcher:reload*
+
+
+Parameters:
+
+
+- *partition* (optional) - name of
+				the partition to be reloaded. default partition is "default".
+- *inherit_state* (optional) : whether inherit old state of the destination , default is y.
+
+  - "n": no inherit state
+  - "y": inherit state
+
+
+MI FIFO Command Format:
+
+
+```c
+opensips-cli -x mi dispatcher:reload
+opensips-cli -x mi dispatcher:reload inherit_state=n
+```
+
+
+#### dispatcher:push_script_attrs
+
+
+Replaces obsolete MI command: *ds_push_script_attrs*.
+
+
+Pushes script attrs for the dispatcher entry defined by IP, Port, setid, and optionally partition.
+
+
+Name: *dispatcher:push_script_attrs*
+
+
+Parameters:
+
+
+- *attrs* : new attributes to be pushed
+- *ip*: IP for which we are pushing script attributes
+- *port*: Port for which we are pushing script attributes
+- *setid*: Setid for which we are pushing script attributes
+- *partition ( optional )*: Partition for which we are pushing script attributes
+
+
+MI FIFO Command Format:
+
+
+```c
+#opensips-cli -x mi dispatcher:push_script_attrs '{"ping":"30000","load":"50"}' '192.168.0.107' 5091 1 main
+```
+
+
+### Exported Events
+
+
+#### E_DISPATCHER_STATUS
+
+
+This event is raised when the dispatcher module marks a destination as
+			activated or deactivated.
+
+
+Parameters:
+
+
+- *partition* - the partition name of the destination.
+- *group* - the group of the destination.
+- *address* - the address of the destination.
+- *status* - *active* if
+				the destination gets activated or *inactive* if the
+				destination is detected unresponsive.
+
+
+### Exported Status/Report Identifiers
+
+
+The module provides the "dispatcher" Status/Report group, where each
+	partition is defined as a separate SR identifier.
+
+
+#### [partition_name]
+
+
+The status of these identifiers reflects the readiness/status of the 
+	cached data (if available or not when being loaded from DB):
+
+
+- *-2* - no data at all (initial status)
+- *-1* - no data, initial loading in progress
+- *1* - data loaded, partition ready
+- *2* - data available, a reload in progress
+
+
+Reload reporting:
+
+
+In terms of date reloading, the following events will be reported:
+
+
+- starting DB data loading
+- DB data loading failed, discarding
+- DB data loading successfully completed
+- N destination loaded (N discarded)
+
+
+```c
+        {
+            "Name": "default",
+            "Reports": [
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "starting DB data loading"
+                },
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "DB data loading successfully completed"
+                },
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "2 destinations loaded (0 discarded)"
+                }
+            ]
+        }
+
+	
+```
+
+
+#### [partition_name];events
+
+
+Destination switching reporting:
+
+
+For reporting events related to the state changes of the
+	destinations, the module provides separate identifiers (still
+	one per partition).
+	Why separate ones? The reports on state changing may be verbose and there
+	is the risk of loose/discard important reports on reloads due to the high
+	number of logs on state changes;
+
+
+So, each partition will provide the identified "partition_name;events" for
+	reporting state changes of destinations, along with the reason
+	of the change. This identifiers have a 200 records history before 
+	discarding the old ones.
+
+
+```c
+        {
+            "Name": "default;events",
+            "Reports": [
+                {
+                    "Timestamp": 1652373308,
+                    "Date": "Thu May 12 19:35:08 2022",
+                    "Log": "DESTINATION <sip:127.0.1.1>, set 1 switched to [inactive] due to negative probing reply\n"
+                },
+                {
+                    "Timestamp": 1652373308,
+                    "Date": "Thu May 12 19:35:08 2022",
+                    "Log": "DESTINATION <sip:127.0.1.2>, set 1 switched to [inactive] due to negative probing reply\n"
+                }
+            ]
+        },
+
+	
+```
+
+
+For how to access and use the Status/Report information, please see
+	[https://www.opensips.org/Documentation/Interface-StatusReport-3-3](>https://www.opensips.org/Documentation/Interface-StatusReport-3-3).
+
+
+### Installation and Running
+
+
+#### OpenSIPS config file
+
+
+Next picture displays a sample usage of dispatcher.
+
+
+[OpenSIPS config script - sample dispatcher usage](./samples.md "include")
+
+
+## Frequently Asked Questions
+
+
+**Q: Does *dispatcher* provide a fair distribution?**
+
+
+There is no guarantee of that. You should do some measurements
+			to decide what distribution algorithm fits better in your
+			environment.
+
+
+**Q: Is *dispatcher* dialog stateful?**
+
+
+No. Dispatcher is stateless, although some distribution algorithms
+			are designed to select same destination for subsequent requests of
+			the same dialog (e.g., hashing the call-id).
+
+
+**Q: What happened with the *ds_is_from_list()*
+			function?**
+
+
+The function was replaced by the more generic
+			*ds_is_in_list()* function that takes as
+			parameters the IP and PORT to test against the dispatcher list.
+
+ds_is_from_list() == ds_is_in_list("$si", "$sp")
+
+
+**Q: How is weight and priority used by the dispatcher in selecting
+			a destination?**
+
+
+The *weight* of a destination is currently used in
+			the hashing algorithms and it increases the probability of it to be
+			chosen(if we have two destinations with weights 1 respectively
+			4 than the second one is 4 times more likely to be selected than the
+			other). The sum of all weights does not need to add up to a specific
+			number.
+			Weights are now used in the round-robin algorithm, a destination is
+			chosen a number of times equal to its weight consecutively before going
+			to the next destination.
+
+The  *priority* field is used at ordering the
+			destinations from a set. It does not affect the overall probability
+			of a destination to be chosen.  It is reflected when listing the
+			destination, the field can definetly be used in further selecting algorithms.
+
+
+**Q: What happened with the *list_file*
+			module parameter ?**
+
+
+The support for text file (for provisioning destinations) was dropped.
+			Only the DB support (provisioning via a DB table) is now available - if
+			you still want to use a text file for provisioning, use db_text DB driver
+			(DB emulated via text files)
+
+
+**Q: Where can I find more about OpenSIPS?**
+
+
+Take a look at [https://opensips.org/](https://opensips.org/).
+
+
+**Q: Where can I post a question about this module?**
+
+
+First at all check if your question was already answered on one of
+			our mailing lists:
+
+E-mails regarding any stable version should be sent to
+			users@lists.opensips.org and e-mail regarding development versions or SVN
+			snapshots should be send to devel@lists.opensips.org.
+
+If you want to keep the mail private, send it to users@lists.opensips.org.
+
+
+**Q: How can I report a bug?**
+
+
+Please follow the guidelines provided at: [https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues)
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
