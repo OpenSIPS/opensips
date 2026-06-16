@@ -249,7 +249,7 @@ git-dir:
 
 .PHONY: modules-contrib
 modules-contrib: git-dir
-	@set -e; ./doc/build-contrib.sh $(modules)
+	@set -e; ./docs/build-contrib.sh $(modules)
 
 .PHONY: modules-readme
 modules-readme: tool-lynx tool-xsltproc
@@ -342,33 +342,33 @@ modules-docbook: modules-docbook-txt modules-docbook-html modules-docbook-pdf
 .PHONY: dbschema-docbook-txt
 dbschema-docbook-txt: dbschema
 	@set -e; \
-	for r in $(wildcard doc/database/*.sgml) "" ; do \
+	for r in $(wildcard docs/database/*.sgml) "" ; do \
 		if [ -f "$$r" ]; then \
 			echo  "" ; \
 			echo  "docbook2txt $$r" ; \
-			docbook2txt -o "doc/database/" "$$r" ; \
+			docbook2txt -o "docs/database/" "$$r" ; \
 		fi ; \
 	done
 
 .PHONY: dbschema-docbook-html
 dbschema-docbook-html: dbschema
 	@set -e; \
-	for r in $(wildcard doc/database/*.sgml) "" ; do \
+	for r in $(wildcard docs/database/*.sgml) "" ; do \
 		if [ -f "$$r" ]; then \
 			echo  "" ; \
 			echo  "docbook2html $$r" ; \
-			docbook2html --nochunks -o "doc/database/" "$$r" ; \
+			docbook2html --nochunks -o "docs/database/" "$$r" ; \
 		fi ; \
 	done
 
 .PHONY: dbschema-docbook-pdf
 dbschema-docbook-pdf: dbschema
 	@set -e; \
-	for r in $(wildcard doc/database/*.sgml) "" ; do \
+	for r in $(wildcard docs/database/*.sgml) "" ; do \
 		if [ -f "$$r" ]; then \
 			echo  "" ; \
 			echo  "docbook2pdf $$r" ; \
-			docbook2pdf -o "doc/database/" "$$r" ; \
+			docbook2pdf -o "docs/database/" "$$r" ; \
 		fi ; \
 	done
 
@@ -715,7 +715,7 @@ test:
 doxygen:
 	-@echo "Create Doxygen documentation"
 	# disable call graphes, because of the DOT dependencies
-	(cat doc/doxygen/opensips-doxygen; \
+	(cat docs/doxygen/opensips-doxygen; \
 	echo "HAVE_DOT=no" ;\
 	echo "PROJECT_NUMBER=$(NAME)-$(RELEASE)" )| doxygen -
 	-@echo "Doxygen documentation created"

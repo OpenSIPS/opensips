@@ -3,9 +3,9 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 <!ENTITY admin SYSTEM "seas_admin.xml">
 <!ENTITY devel SYSTEM "seas_devel.xml">
-<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY faq SYSTEM "../../../docs/module_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 ]>
 <book>
