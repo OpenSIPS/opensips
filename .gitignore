@@ -15,8 +15,8 @@ cscope*
 /.svnrevision
 /.gitrevision
 
-# /doc/
-/doc/database
+# /docs/
+/docs/database
 
 # /menuconfig/
 /menuconfig/configure
