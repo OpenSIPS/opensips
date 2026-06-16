@@ -1,0 +1,367 @@
+---
+title: "UAC Registrant Module"
+description: "The module enable OpenSIPS to register itself on a remote SIP registrar. Several registrant accounts can be defined, each account is specified by the \"uac\" parameter."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+The module enable OpenSIPS to register itself on a remote SIP registrar.
+		Several registrant accounts can be defined, each account is
+		specified by the "uac" parameter.
+
+
+At startup, the registrant records are loaded into
+		a hash table in memory and a timer is started.
+		The hash index is computed over the AOR field.
+		For better hash distribution, the size of the hash table is configurable.
+		When the timer fires for the first time, the first hash table will be checked and
+		REGISTERs will be sent out for each record that is found.
+		On the next timeout fire, the second hash table will be checked and so on.
+		The timer interval is configurable.
+
+
+Each registrant has it's own state.
+		Registranr's status can be inspected via "reg_list" MI comand.
+
+
+UAC registrant states:
+
+
+- *0*
+				- NOT_REGISTERED_STATE -
+				the initial state (no REGISTER has been sent out yet);
+- *1*
+				- REGISTERING_STATE - waiting for a reply from the registrar
+				after a REGISTER without authentication header was sent;
+- *2*
+				- AUTHENTICATING_STATE - waiting for a reply from the registrar
+			 	after a REGISTER with authentication header was sent;
+- *3*
+				- REGISTERED_STATE - the uac is successfully registered;
+- *4*
+				- REGISTER_TIMEOUT_STATE :
+				no reply received from the registrar;
+- *5*
+				- INTERNAL_ERROR_STATE -
+				some errors were found/encountered during the
+				processing of a reply;
+- *6*
+				- WRONG_CREDENTIALS_STATE -
+				credentials rejected by the registrar;
+- *7*
+				- REGISTRAR_ERROR_STATE -
+				error reply received from the registrar;
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *uac_auth - UAC authentication module*
+
+
+#### External Libraries or Applications
+
+
+None.
+
+
+### Exported Parameters
+
+
+#### hash_size (integer)
+
+
+The size of the hash table internally used to keep the registrants.
+		A larger table distributes better the registration load in time but consumes more memory.
+		The hash size is a power of number two.
+
+
+*Default value is 1.*
+
+
+```c title="Set hash_size parameter"
+...
+modparam("uac_registrant", "hash_size", 2)
+...
+```
+
+
+#### timer_interval (integer)
+
+
+Defines the periodic timer for checking the registrations status.
+
+
+*Default value is 100.*
+
+
+```c title="Set timer_interval parameter"
+...
+modparam("uac_registrant", "timer_interval", 120)
+...
+```
+
+
+#### db_url (string)
+
+
+Database where to load the registrants from.
+
+
+*Default value is "NULL" (use default DB URL from core).*
+
+
+```c title="Set 'db_url' parameter"
+...
+modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/database")
+...
+```
+
+
+#### table_name (string)
+
+
+The database table that holds the registrant records.
+
+
+*Default value is "registrant".*
+
+
+```c title="Set 'table_name' parameter"
+...
+modparam("uac_registrant", "table_name", "my_registrant")
+...
+```
+
+
+#### registrar_column (string)
+
+
+The column's name in the database storing the
+		URI pointing to the remote registrar (mandatory field).
+		OpenSIPS expects a valid URI.
+
+
+*Default value is "registrar".*
+
+
+```c title="Set 'registrar_column' parameter"
+...
+modparam("uac_registrant", "registrar_column", "registranr_uri")
+...
+```
+
+
+#### proxy_column (string)
+
+
+The column's name in the database storing the
+		URI pointing to the outbond proxy (not mandatory field).
+		An empty or NULL value means no outbound proxy,
+		otherwise OpenSIPS expects a valid URI.
+
+
+*Default value is "proxy".*
+
+
+```c title="Set 'proxy_column' parameter"
+...
+modparam("uac_registrant", "proxy_column", "proxy_uri")
+...
+```
+
+
+#### aor_column (string)
+
+
+The column's name in the database storing the
+		URI defining the address of record (mandatory field).
+		The URI stored here will be used in the To URI of the REGISTER.
+		OpenSIPS expects a valid URI.
+
+
+*Default value is "aor".*
+
+
+```c title="Set 'aor_column' parameter"
+...
+modparam("uac_registrant", "aor_column", "to_uri")
+...
+```
+
+
+#### third_party_registrant_column (string)
+
+
+The column's name in the database storing the
+		URI defining the third party registrant (not mandatory field).
+		The URI stored here will be used in the From URI of the REGISTER.
+		An empty or NULL value means no third party registration
+		(the From URI will be identical to To URI),
+		otherwise OpenSIPS expects a valid URI.
+
+
+*Default value is "third_party_registrant".*
+
+
+```c title="Set 'third_party_registrant_column' parameter"
+...
+modparam("uac_registrant", "third_party_registrant_column", "from_uri")
+...
+```
+
+
+#### username_column (string)
+
+
+The column's name in the database storing the
+		username for authentication (mandatory if the registrar requires authentication).
+
+
+*Default value is "username".*
+
+
+```c title="Set 'username_column' parameter"
+...
+modparam("uac_registrant", "username_column", "auth_username")
+...
+```
+
+
+#### password_column (string)
+
+
+The column's name in the database storing the
+		password for authentication (mandatory if the registrar requires authntication).
+
+
+*Default value is "password".*
+
+
+```c title="Set 'password_column' parameter"
+...
+modparam("uac_registrant", "password_column", "auth_passowrd")
+...
+```
+
+
+#### binding_URI_column (string)
+
+
+The column's name in the database storing the
+		binding URI in REGISTER (mandatory field).
+		The URI stored here will be used in the Contact URI of the REGISTER.
+		OpenSIPS expects a valid URI.
+
+
+*Default value is "binding_URI".*
+
+
+```c title="Set 'binding_URI_column' parameter"
+...
+modparam("uac_registrant", "binding_URI_column", "contact_uri")
+...
+```
+
+
+#### binding_params_column (string)
+
+
+The column's name in the database storing the
+		binding params in REGISTER (not mandatory field).
+		If not NULL or not empty, the string stored here will be added
+		as paramns to the Contact URI in REGISTER (it MUST start with ";".
+		There is no validation on the string stored here.
+
+
+*Default value is "binding_params".*
+
+
+```c title="Set 'binding_params_column' parameter"
+...
+modparam("uac_registrant", "binding_params_column", "contact_params")
+...
+```
+
+
+#### expiry_column (string)
+
+
+The column's name in the database storing the
+		expiration time (not mandatory).
+
+
+*Default value is "expiry".*
+
+
+```c title="Set 'expiry_column' parameter"
+...
+modparam("uac_registrant", "expiry_column", "registration_timeout")
+...
+```
+
+
+#### forced_socket_column (string)
+
+
+The column's name in the database storing the
+		socket for sending the REGISTER (not mandatory).
+		If a forced socket is provided, the socket MUST be
+		explicitely set as a global listening socket in the config
+		(see "listen" core parameter).
+
+
+*Default value is "forced_socket".*
+
+
+```c title="Set 'forced_socket_column' parameter"
+...
+modparam("uac_registrant", "forced_socket_column", "fs")
+...
+```
+
+
+### Exported Functions
+
+
+None to be used in configuration file.
+
+
+### Exported MI Functions
+
+
+#### reg_list
+
+
+Lists the registrant records and their status.
+
+
+Name: *reg_list*
+
+
+Parameters: *none*
+
+
+MI FIFO Command Format:
+
+
+```c
+:reg_list:_reply_fifo_file_
+_empty_line_
+		
+```
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
