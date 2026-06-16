@@ -6,7 +6,7 @@
 <!ENTITY admin SYSTEM "script_helper_admin.xml">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>

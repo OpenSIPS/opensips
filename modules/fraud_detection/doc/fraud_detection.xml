@@ -5,7 +5,7 @@
 <!ENTITY admin SYSTEM "fraud_detection_admin.xml">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>
