@@ -1,0 +1,324 @@
+---
+title: "rest_client Module"
+description: "The *rest_client* module provides a means of interacting with an HTTP server by doing RESTful queries, such as GET and POST."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+The *rest_client* module provides a means of interacting
+	with an HTTP server by doing RESTful queries, such as GET and POST.
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *No dependencies on other OpenSIPS modules.*.
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed before 
+		running OpenSIPS with this module loaded:
+
+
+- *libcurl*.
+
+
+### Exported Parameters
+
+
+#### connection_timeout (integer)
+
+
+Maximum time allowed to establish a connection with the server.
+
+
+*Default value is "20" seconds.*
+
+
+```c title="Setting the connection_timeout parameter"
+...
+modparam("rest_client", "connection_timeout", 300)
+...
+```
+
+
+#### max_async_transfers (integer)
+
+
+Maximum number of asynchronous HTTP transfers *a single*
+		OpenSIPS worker is allowed to run simultanously. As long as this threshold
+		is reached for a worker, all new async transfers it attempts to perform
+		will be done in a blocking manner, with appropriate logging warnings.
+
+
+*Default value is "100".*
+
+
+```c title="Setting the max_async_transfers parameter"
+...
+modparam("rest_client", "max_async_transfers", 300)
+...
+```
+
+
+#### curl_timeout (integer)
+
+
+Maximum time allowed for the libcurl transfer to complete.
+
+
+*Default value is "20" seconds.*
+
+
+```c title="Setting the curl_timeout parameter"
+...
+modparam("rest_client", "curl_timeout", 300)
+...
+```
+
+
+#### ssl_verifypeer (integer)
+
+
+Set this to 0 in order to disable the verification of the remote peer's
+		certificate. Verification is done using a default bundle of CA certificates
+		which come with libcurl.
+
+
+*Default value is "1" (enabled).*
+
+
+```c title="Setting the ssl_verifypeer parameter"
+...
+modparam("rest_client", "ssl_verifypeer", 0)
+...
+```
+
+
+#### ssl_verifyhost (integer)
+
+
+Set this to 0 in order to disable the verification that the remote peer
+		actually corresponds to the server listed in the certificate.
+
+
+*Default value is "1" (enabled).*
+
+
+```c title="Setting the ssl_verifyhost parameter"
+...
+modparam("rest_client", "ssl_verifyhost", 0)
+...
+```
+
+
+#### ssl_capath (integer)
+
+
+An optional path for CA certificates to be used for host verifications.
+
+
+```c title="Setting the ssl_capath parameter"
+...
+modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
+...
+```
+
+
+### Exported Functions
+
+
+#### rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
+
+
+Issues an HTTP GET request to the given 'url', and returns a representation
+		of the resource.
+
+
+The *body_pv* pseudo-var will hold the body of the HTTP
+		response.
+
+
+The optional *ctype_pv* pseudo-var will contain the value
+		of the "Content-Type:" header.
+
+
+The optional *retcode_pv* pseudo-var is used to retain the
+		HTTP status code of the response message. Since the module is based on libcurl,
+		a **0** value means no HTTP reply arrived at all.
+
+
+Possible parameter types
+
+
+- *url* - String, pseudo-variable, or a String
+				which includes pseudo-variables. (useful for specifying additional
+				attribute-value fields in the URL)
+- *body_pv, ctype_pv, retcode_pv* -
+			pseudo-variables
+
+
+This function can be used from the *startup, branch, failure,
+				request* and *timer* routes.
+
+
+```c title="rest_get usage"
+...
+# Example of querying a REST service to get the credit of an account
+$var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)", "$var(ct)", "$var(rcode)");
+
+if ($var(rc) < 0) {
+	xlog("rest_get() failed with $var(rc), acc=$fU\n");
+	send_reply("500", "Server Internal Error");
+	exit;
+}
+if ($var(rcode) >= 300) {
+	xlog("L_INFO", "rest_get() rcode=$var(rcode), acc=$fU\n");
+	send_reply("403", "Forbidden");
+	exit;
+}
+...
+```
+
+
+#### rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+
+
+Issues an HTTP POST request to the specified *url*. The request body will
+		be copied from the *send_body_pv* pseudo-variable. The MIME Content-Type
+		header for the request will be taken from *send_ctype_pv* (default is 
+		*"application/x-www-form-urlencoded"*)
+
+
+The mandatory *recv_body_pv* pseudo-var will hold the body of the HTTP
+		response.
+
+
+The optional *recv_ctype_pv* parameter will contain
+		the value of the "Content-Type" header of the response message.
+
+
+The optional *retcode_pv* pseudo-var parameter can be given
+		in order to retrieve the HTTP status code of the response message. Since
+		the module based on libcurl, a **0** value
+		means no HTTP reply arrived at all.
+
+
+Possible parameter types
+
+
+- *url, send_body_pv, send_type_pv* -
+			String, pseudo-variable, or a String which includes pseudo-variables.
+- *recv_body_pv, recv_ctype_pv, retcode_pv* -
+			pseudo-variables
+
+
+This function can be used from the *startup, branch, failure,
+				request* and *timer* routes.
+
+
+```c title="rest_post usage"
+...
+# Creating a resource using a RESTful service with an HTTP POST request
+$var(rc) = rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)");
+
+if ($var(rc) < 0) {
+	xlog("rest_post() failed with $var(rc), user=$fU\n");
+	send_reply("500", "Server Internal Error 1");
+	exit;
+}
+if ($var(rcode) >= 300) {
+	xlog("rest_post() rcode=$var(rcode), user=$fU\n");
+	send_reply("500", "Server Internal Error 2");
+	exit;
+}
+...
+```
+
+
+### Exported Asynchronous Functions
+
+
+#### rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
+
+
+Sends a GET HTTP request. This function behaves exactly the same as
+		**[rest get](#func_rest_get)**
+		(in terms of input, output and processing),
+		but in an asynchronous way. Script execution is suspended until the
+		entire content of the HTTP response is available.
+
+
+```c title="async rest_get usage"
+route {
+	...
+	async(rest_get("http://getcredit.org/?account=$fU", "$var(credit)", , "$var(rcode)"), resume);
+}
+
+route [resume] {
+	$var(rc) = $rc;
+	if ($var(rc) < 0) {
+		xlog("async rest_get() failed with $var(rc), acc=$fU\n");
+		send_reply("500", "Server Internal Error");
+		exit;
+	}
+
+	if ($var(rcode) >= 300) {
+		xlog("L_INFO", "async rest_get() rcode=$var(rcode), acc=$fU\n");
+		send_reply("403", "Forbidden");
+		exit;
+	}
+
+	...
+}
+```
+
+
+#### rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+
+
+Sends a POST HTTP request. This function behaves exactly the same as
+		**[rest post](#func_rest_post)** (in terms of input, output and processing),
+		but in an asynchronous way. Script execution is suspended until the
+		entire content of the HTTP response is available.
+
+
+```c title="async rest_post usage"
+route {
+	...
+	async(rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+}
+
+route [resume] {
+	$var(rc) = $rc;
+	if ($var(rc) < 0) {
+		xlog("async rest_post() failed with $var(rc), user=$fU\n");
+		send_reply("500", "Server Internal Error 1");
+		exit;
+	}
+	if ($var(rcode) >= 300) {
+		xlog("async rest_post() rcode=$var(rcode), user=$fU\n");
+		send_reply("500", "Server Internal Error 2");
+		exit;
+	}
+
+	...
+}
+```
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
