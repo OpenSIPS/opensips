@@ -1,0 +1,284 @@
+---
+title: "pua dialoginfo"
+description: "The pua_dialoginfo retrieves dialog state information from the dialog module and PUBLISHes the dialog-information using the pua module. Thus, in combination with the presence_xml module this can be used to derive dialog-info from the dialog module and NOTIFY the subscribed watchers about..."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+The pua_dialoginfo retrieves dialog state information from the 
+		dialog module and PUBLISHes the dialog-information using the pua
+		module. Thus, in combination with the presence_xml module this can
+		be used to derive dialog-info from the dialog module and NOTIFY
+		the subscribed watchers about dialog-info changes. This can be used
+		for example with SNOM and Linksys phones.
+
+
+Note: This implements dialog-info according to RFC 4235 and is not 
+		compatible with the BLA feature defined in draft-anil-sipping-bla-03.txt.
+		(Actually the BLA draft is really crap as it changes SIP semantics)
+
+
+The module is based on code (copy/paste) from pua_usrloc and nat_traversal
+		module.
+
+
+Following you will show some examples of an dialog-info XML document taken
+		from RFC 4235. This will help you to understand the meaning of the module
+		parameters:
+
+
+```c
+<?xml version="1.0"?>
+<dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
+             version="1"
+             state="full"
+             entity="sip:alice@example.com">
+    <dialog id="as7d900as8" 
+            call-id="a84b4c76e66710"
+            local-tag="1928301774" 
+            remote-tag="456887766"
+            direction="initiator">
+        <state>early</state>
+    </dialog>
+</dialog-info>
+```
+
+
+The root element is the "dialog-info". It contains the namespace, the 
+		version (which must be incremented for each new PUBLISH for this certain
+		dialog), the state (this module only supports state=full) and the entity
+		for which we publish the dialog-info.
+
+
+The "dialog" element must contain an id parameter. The id parameter is
+		usually different to the optional call-id parameter (which is the call-id of the 
+		INVITE request) as an INVITE can create multiple dialogs (forked request). But
+		as the dialog module does not support multiple dialogs created by a single 
+		transaction, the pua_dialoginfo module sets the id parameter to the same 
+		value as the call-id parameter. The "local-tag" indicates the local tag of the
+		entity. The remote-tag indicates the tag of the remote party. The "direction"
+		indicates if the entity was the initator of the dialog or the recepient (aka
+		if the entity sent or received the first INVITE).
+
+
+The "state" element describes the state of the dialog state machine and must be
+		either: trying, proceeding, early, confirmed or terminated.
+
+
+The dialog element can contain optional "local" and "remote" elements which
+        decsribes the local and the remote party in more detail, for example:
+
+
+```c
+<?xml version="1.0" encoding="UTF-8"?>
+<dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
+             version="1" state="full">
+    <dialog id="as7d900as8" 
+            call-id="a84b4c76e66710"
+            local-tag="1928301774" 
+            remote-tag="456887766"
+            direction="initiator">
+        <state>early</state>
+        <local>
+            <identity display="Alice">sip:alice@example.com</identity>
+            <target uri="sip:alice@phone11.example.com"/>
+        </local>
+        <remote>
+            <identity display="Bob">sip:bob@example.org</identity>
+            <target uri="sip:bobster@phone21.example.org"/>
+        </remote>
+    </dialog>
+</dialog-info>
+```
+
+
+The local and remote elements are needed to implement call pickup. For example if 
+		the above XML document is received by somebody who SUBSCRIBEd the dialog-info of
+		Alice, then it can pick-up the call by sending an INVITE to Bob (actually I am not
+		sure if it should use the URI in the identity element or the URI in the target 
+		parameter) which contains a Replaces header which contains the call-id and the tags.
+		This was tested sucessfully with Linksys SPA962 phones and with SNOM 320 Firmware 7.3.7
+		(you have to set the function key to "Extension").
+
+
+A dialog-info XML document may contain multiple "dialog" elements, for 
+		example if the entity has multiple ongoing dialogs. For example the
+		following XML document shows a confirmed dialog and an early (probably
+		a second incoming call) dialog.
+
+
+```c
+<?xml version="1.0"?>
+<dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
+             version="3"
+             state="full"
+             entity="sip:alice@example.com">
+    <dialog id="as7d900as8" call-id="a84b4c76e66710"
+            local-tag="1928301774" remote-tag="hh76a"
+            direction="initiator">
+        <state>confirmed</state>
+    </dialog>
+    <dialog id="j7zgt54" call-id="ASDRRVASDRF"
+            local-tag="123456789" remote-tag="EE345"
+            direction="recipient">
+        <state>early</state>
+    </dialog>
+</dialog-info>
+```
+
+
+As the dialog module callbacks only address a certain dialog, the pua_dialoginfo
+		always PUBLISHes XML documents with a single "dialog" element. If an entity
+		has multiple concurrent dialogs, the pua_dialoginfo module will send PUBLISH for
+		each dialog. These multiple "presenties" can be aggregated by the presence_dialoginfo
+		module into a single XML document with multiple "dialog" elements. Please see the
+		description of the presence_dialoginfo module for details about the aggregation.
+
+
+If there are problems with the callbacks from dialog module and you want to 
+		debug them you define PUA_DIALOGINFO_DEBUG in pua_dialoginfo.c and recompile.
+
+
+Known issues:
+
+
+- The module tries to find out if the entity is a local user. Only PUBLISH to
+				local user are sent. Therefore, the module needs to find out if the domain is
+				a local one or not. It uses the same mechanism as the "==myself" mechanism. Thus,
+				all domains have to be declared with the "alias=..." option in OpenSIPS.cfg. 
+				DB-based multidomain support as offered by "domain" module is not supported yet.
+				Conclusion: The module has the same "domain" problems as the "rr" module.
+- The module puts the call-id of the dialog into an XML parameter. Thus, if the 
+				call-id contains quotes, they should be escaped. This is not yet implemented. Thus,
+				if the call-id contains quotes the XML document will be invalid.
+- The module derives the AoR of the callee from the To: header. Thus, if the To
+				header does not contain the canonical AoR the PUBLISH might have the wrong
+				SIP URI in the RURI and the entity parameter.
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *dialog*.
+- *pua*.
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed before running
+		OpenSIPS with this module loaded:
+
+
+- *libxml*.
+
+
+### Exported Parameters
+
+
+#### include_callid (int)
+
+
+If this parameter is set, the optional call-id will be put into the
+			dialog element. This is needed for call-pickup features.
+
+
+*Default value is "1".*
+
+
+```c title="Set include_callid parameter"
+...
+modparam("pua_dialoginfo", "include_callid", 0)
+...
+```
+
+
+#### include_tags (int)
+
+
+If this parameter is set, the local and remote tag will be put
+			into the dialog element. This is needed for call-pickup features.
+
+
+*Default value is "1".*
+
+
+```c title="Set include_tags parameter"
+...
+modparam("pua_dialoginfo", "include_tags", 0)
+...
+```
+
+
+#### include_localremote (int)
+
+
+If this parameter is set, the optional local and remote elements
+			will be put into the dialog element. This is needed for call-pickup 
+			features.
+
+
+*Default value is "1".*
+
+
+```c title="Set include_localremote parameter"
+...
+modparam("pua_dialoginfo", "include_localremote", 0)
+...
+```
+
+
+#### caller_confirmed (int)
+
+
+Usually the dialog-info of the caller will be 
+			"trying -> early -> confirmed" and the dialog-info of the callee 
+			will be "early -> confirmed". On some phones the function LED
+			will start blinking if the state is early, regardless if is is the
+			caller or the callee (indicated with the "direction" parameter).
+			To avoid blinking LEDs for the caller, you can enable this parameter.
+			Then the state of the caller will be singaled as "confirmed" even
+			in "early" state. This is a workaround for the buggy Linksys SPA962
+			phones. SNOM phones work well with the default setting.
+
+
+*Default value is "0".*
+
+
+```c title="Set caller_confirmed parameter"
+...
+modparam("pua_dialoginfo", "caller_confirmed", 1)
+...
+```
+
+
+#### presence_sever (string)
+
+
+The address of the presence server, where the PUBLISH messages
+		should be sent ( not compulsory).
+
+
+```c title="Set presence_server parameter"
+...
+modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
+...
+```
+
+
+### Exported Functions
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
