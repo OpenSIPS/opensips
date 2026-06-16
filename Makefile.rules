@@ -85,10 +85,10 @@ docbook-clean:
 
 .PHONY: dbschema-docbook-clean
 dbschema-docbook-clean:
-	-@if [ -d doc/database ] ; then \
-		rm -f doc/database/*.txt ; \
-		rm -f doc/database/*.html ; \
-		rm -f doc/database/*.pdf ; \
+	-@if [ -d docs/database ] ; then \
+		rm -f docs/database/*.txt ; \
+		rm -f docs/database/*.html ; \
+		rm -f docs/database/*.pdf ; \
 		$(MAKE) -C db/schema docbook_clean; \
 	fi
 
