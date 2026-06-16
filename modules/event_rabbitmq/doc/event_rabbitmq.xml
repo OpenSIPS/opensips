@@ -8,7 +8,7 @@
 <!ENTITY rabbitmqcfg SYSTEM "event_rabbitmq.cfg">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>

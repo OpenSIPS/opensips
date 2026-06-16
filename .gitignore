@@ -13,9 +13,8 @@ tags
 /curses.out
 /.svnrevision
 
-
-# /doc/
-/doc/database
+# /docs/
+/docs/database
 
 # /menuconfig/
 /menuconfig/configure
