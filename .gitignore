@@ -13,9 +13,8 @@ tags
 /curses.out
 /.svnrevision
 
-
-# /doc/
-/doc/database
+# /docs/
+/docs/database
 
 # /utils/opensipsunix/
 /utils/opensipsunix/opensipsunix

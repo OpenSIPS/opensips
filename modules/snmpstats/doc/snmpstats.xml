@@ -6,7 +6,7 @@
 <!ENTITY faq SYSTEM "snmpstats_faq.xml">
 
 <!-- Include general OpenSIPS documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>
