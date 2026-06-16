@@ -9,7 +9,7 @@
 <!ENTITY aliasdbsql SYSTEM "alias_db.sql">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>
