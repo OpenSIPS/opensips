@@ -1,0 +1,831 @@
+---
+title: "mid_registrar Module"
+description: "The *mid_registrar* is a mid-component of a SIP platform, designed to work between end users and the platform's main registration component. It opens up new possibilities for leveraging existing infrastructure in order to continue to grow (as subscribers and as registration traffic) wh..."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+The *mid_registrar* is a mid-component of a SIP
+		platform, designed to work between end users and the platform's main
+		registration component.
+
+		It opens up new possibilities for leveraging existing infrastructure in
+		order to continue to grow (as subscribers and as registration traffic)
+		while keeping an existing low-resources registrar server.
+
+
+Acting as a registration front-end to the main SIP registrar, the
+		mid-registrar is able to:
+
+
+- convert incoming high-rate registration traffic into a low-rate
+			variant, towards the main registrar layer. With proper
+			configuration, it can absorb over 90% of existing registration
+			traffic while correctly managing the back-end's user location
+			state, effectively reducing resource usage at the respective layer.
+- stay synchronized with the main registrar (from a user
+				location perspective), by properly
+				accepting the contact states and expirations it decides.
+
+
+### Working modes
+
+
+The mid_registrar may function in one of several modes:
+
+
+#### Contact mirroring (default)
+
+
+In "contact mirroring" mode, the mid-registrar will only insert itself
+		in the SIP traffic flow between end user and main registrar by
+		altering the Contact header field values. See section
+		[sip flow insertion](#auto_insertion_into_future_sip_flows) for a detailed description of
+		possible Contact-based insertion modes. The incoming REGISTER requests
+		will be proxied further to the main registrar; the registered contact
+		will be stored in the mid-registrar only on 2xx replies, according to
+		the information returned by the main registrar.
+
+
+A possible usage of this mode, for example, would be to clone
+		registrations on a SIP front-end that extends the main platform with
+		new services (like adding IM/messaging routing).
+
+
+#### Contact throttling
+
+
+In "contact throttling" mode, the mid-registrar can significantly
+		reduce the registration rate on the main registrar side (between
+		mid-registrar and main registrar), while coping with a high registration
+		rate on the end-user side (between end-user and mid-registrar). This
+		is useful in scenarios were the end-users are very dynamic and
+		short-lived  (e.g. mobile devices), but the main registrar cannot cope
+		with large amounts of registration traffic.
+
+
+Traffic conversion is done in a *"per-device"*
+		manner, according to each unique SIP Contact header field value. It is
+		achieved by increasing the "expires" parameter value of each contact,
+		when relaying registrations to the main registrar.
+		Once such a registration is completed, subsequent registrations for the
+		same SIP Contact header field value will be continuously absorbed by
+		the mid-registrar until, eventually, the lifetime of the remote
+		registration will have decreased enough that a refresh (i.e. simply
+		forwarding the next REGISTER request) is mandatory.
+
+
+A common occurence is for some SIP User Agents to lose their network
+		connection (especially when dealing with mobile devices), hence they do
+		not properly de-register from the mid-registrar. In this case, in order
+		to avoid stale registrations on the main registrar (which contains SIP
+		contacts with greatly extended lifetimes!), the mid-registrar will
+		appropriately generate De-REGISTER requests and remove these contacts
+		from the main registrar's location service as soon as it considers
+		them to have expired.
+
+
+The main practical use for this mode is registration traffic conversion.
+		By minimizing the strain of processing registrations on the main
+		registrar, we allow it to dedicate more system resources to critical
+		areas of the platform, such as advanced SIP calling features and/or
+		media handling.
+
+
+#### AOR throttling
+
+
+In "AOR throttling" mode, the mid-registrar helps with handling multiple
+		registrations per user/AOR. This is done by aggregating all the end-user
+		registered contacts from a single AOR under a single registration into
+		the main registrar. This can dramatically reduce the incoming rate of
+		registrations (to a single registration per AOR), but also helps in dealing
+		with registrar servers which are not able to implement parallel forking/ringing.
+
+
+Traffic conversion is done in a *"per-user"*
+		manner, according to each unique SIP AOR. It is achieved by
+		providing a contact with a large "expires" parameter value,
+		when relaying registrations to the main registrar.
+		Once such a registration is completed, subsequent registrations to the same
+		Address-of-record  will be continuously absorbed by the mid-registrar until,
+		eventually, the lifetime of the remote registration will have decreased enough
+		that a refresh (i.e. simply forwarding the next REGISTER request) is mandatory.
+
+
+A common occurence is for some SIP User Agents to lose their network connection
+		(especially when dealing with mobile devices), hence they do not properly de-register
+		from the mid-registrar. In this case, in order to avoid stale registrations on the
+		main registrar (which contains SIP AORs with greatly extended lifetimes!),
+		the mid-registrar will appropriately generate De-REGISTER requests and remove
+		these contacts from the main registrar's location service as soon as it considers
+		them to have expired.
+
+
+Of all three modes, "AOR throttling" potentially offers the best reduction in
+			traffic on the way to the main registrar. By aggregating contacts, it also
+			has the added benefit of reducing the number of contacts that the main registrar
+			must handle.
+
+
+Regarding SIP request mangling in this mode, the module will always
+			replace all Contact header field values with a single Contact header
+			field value when proxying registrations to the main registrar, indicating
+			that the AOR is local to the front-end, and its contacts can be found there.
+
+
+The main practical uses for this mode are registration traffic conversion
+		towards the main registrar, as well as taking over its call forking
+		duties. By minimizing the
+		strain of processing registrations / forking calls on the main registrar,
+		we allow it to dedicate more system resources to critical areas of the
+		platform, such as advanced SIP calling features and/or media handling.
+
+
+### Auto-Insertion Into Future SIP Flows
+
+
+A defining feature of the mid-registrar is that it must be easy to
+		integrate, ideally a "plug-and-play" SIP component. It should not
+		impose any "outbound-proxy" configurations on any of the platform's
+		layers and automatically insert itself on the call flows which follow
+		successful registrations.
+
+
+Regardless of its configured working [mode](#param_mode), the
+		mid-registrar will mangle the Contact header field URIs of all
+		forwarded REGISTER requests and replace the original "hostname" and
+		"port" parts of a Contact URI with one of its listening interfaces.
+
+
+Additionally, in modes "0" and "1", each Contact will be assigned an
+		unique identifier, which will be utilized in future contact-based
+		lookup operations. This information will be included in each forwarded
+		Contact URI. The [contact id insertion](#param_contact_id_insertion) modparam
+		controls how this information is included.
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *usrloc*
+- *signaling*
+- *tm*
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed before
+		running OpenSIPS with this module loaded:
+
+
+- *None*
+
+
+### Exported Parameters
+
+
+#### mode (integer)
+
+
+Working mode of the module.
+			Refer to [sec working modes](#working_modes) for
+			more details.
+
+
+The following is true for **all** working modes:
+
+
+- when a REGISTER is received, the script writer must call
+			*[mid registrar save](#func_mid_registrar_save)*
+- the mid-registrar will insert itself on the call flow of
+			all registrations according to the
+			*[contact id insertion](#param_contact_id_insertion)*.
+- registrations forwarded by the mid-registrar will transparently
+			result in a user location update only if the reply status code from
+			the downstream registrar is 2xx.
+
+
+Each working mode behaves differently, as follows:
+
+
+- *0 (Contact mirroring mode)*
+			The module will only insert itself on the call flow.
+			Contact expirations are left unchanged.
+- *1 (Contact throttling mode)*
+			Contact throttling is a first step in lowering registration traffic rates. This
+			is possible through the use of the
+			*[outgoing expires](#param_outgoing_expires)* module
+			parameter or the corresponding parameter to
+			*[mid registrar save](#func_mid_registrar_save)*,
+			which allow the script writer to prolong the life of the registrations on the way
+			to the main registrar.
+
+			In this mode, the
+			mid-registrar may alter Expires header field values or "expires" Contact
+			header field parameters found in the initial request when forwarding registrations, according to
+			*[outgoing expires](#param_outgoing_expires)*
+- *2 (AOR throttling mode)*
+		AOR throttling is a step beyond "Contact throttling", as the main registrar
+		is only made aware of the network presence of AORs, rather than
+		Contacts. This behaviour is also made possible through the
+		*[outgoing expires](#param_outgoing_expires)* module
+		parameter or the corresponding parameter to
+		*[mid registrar save](#func_mid_registrar_save)*,
+		which allow the script writer to prolong the life of the registrations on the way
+		to the main registrar.
+		In this mode, the mid-registrar will fully replace the Contact
+		set of all forwarded registrations with a single Contact, advertising
+		that the AOR is available to the main registrar. The expiration value
+		for this Contact is given by 
+		*[outgoing expires](#param_outgoing_expires)*.
+
+
+Default value is **0** (contact mirroring mode)
+
+
+```c title="Setting the *mode* module parameter"
+modparam("mid_registrar", "mode", 2)
+```
+
+
+#### contact_id_insertion (integer)
+
+
+Only relevant in a "mirroring" or "contact throttling"
+			[mode](#param_mode). Controls where the additional
+		unique Contact identification information (64-bit, hex-encoded integer)
+		will be placed within outgoing Contact header field URIs. Refer to
+		[sip flow insertion](#auto_insertion_into_future_sip_flows) for more details.
+
+
+Possible values are:
+
+
+- *"ct-param" (default)* - the contact IDs shall
+			be appended to outgoing Contact URIs as ";ctid=" parameters.
+- *"ct-username"* - the contact IDs will
+			substitute the "username" parts of outgoing Contact URIs
+
+
+```c title="Setting the *contact_id_insertion* module parameter"
+modparam("mid_registrar", "contact_id_insertion", "ct-username")
+```
+
+
+#### contact_id_param (string)
+
+
+Only relevant in a "mirroring" or "contact throttling"
+			[mode](#param_mode). Specifies the name of the
+			Contact URI parameter which is used by the module in order to
+			match contacts and route SIP requests.
+
+
+Default value is **"ctid"**
+
+
+```c title="Setting the *contact_id_param* module parameter"
+modparam("mid_registrar", "contact_id_param", "ctid")
+
+# Example resulting Contact header field:
+# Contact: <sip:liviu@10.0.0.10:5060;ctid=619244948763447138>;expires=180.
+```
+
+
+#### outgoing_expires (integer)
+
+
+Only relevant in Contact/AOR throttling modes. Sets a minimal
+			value for the expiration intervals of egressing contacts.
+
+
+Default value is **3600** (seconds)
+
+
+```c title="Setting the *outgoing_expires* module parameter"
+modparam("mid_registrar", "outgoing_expires", 3600)
+```
+
+
+#### received_avp (string)
+
+
+The module will store the value of the AVP configured by this
+		parameter in the *received* column of the user
+		location table. It will leave the column empty if the AVP is empty.
+		The AVP should contain a SIP URI consisting of the source IP, port,
+		and protocol of the REGISTER message being processed.
+
+
+> [!NOTE]
+> The value of this parameter should be the same as the value of
+			corresponding parameter of nathelper module.
+
+
+Default value is **"NULL"** (disabled)
+
+
+```c title="Setting the *received_avp* module parameter"
+modparam("mid_registrar", "received_avp", "$avp(rcv)")
+```
+
+
+#### received_param (string)
+
+
+The name of the parameter that will be appended to Contacts of
+		200 OK replies if the received URI is set by nathelper module.
+
+
+> [!NOTE]
+> The value of this parameter should be the same as the value of
+			corresponding parameter of nathelper module.
+
+
+Default value is **"received"**
+
+
+```c title="Setting the *received_param* module parameter"
+modparam("mid_registrar", "received_param", "rcv")
+```
+
+
+#### extra_contact_params_avp (string)
+
+
+An AVP specification. This AVP is evaluated during
+		*[mid registrar save](#func_mid_registrar_save)*:
+		if it holds a valid string, its content be appended to
+		*each* new Contact URI built by the mid-registrar,
+		for the outgoing request.
+
+
+Default value is **None** (not used)
+
+
+```c title="Setting the *extra_contact_params_avp* module parameter"
+# NB: AVPs are cleared with every new SIP request
+modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_params)")
+```
+
+
+#### min_expires (integer)
+
+
+The minimum expires value of a Contact, values lower than this
+			minimum will be automatically set to the minimum. Value 0 disables the checking.
+
+
+Default value is **10** (seconds)
+
+
+```c title="Setting the *min_expires* module parameter"
+modparam("mid_registrar", "min_expires", 600)
+```
+
+
+#### default_expires (integer)
+
+
+If the processed message contains neither Expires HFs nor expires
+			contact parameters, this value will be used as the expiration
+			interval of any newly created usrloc records.
+
+
+Default value is **3600** (seconds)
+
+
+```c title="Setting the *default_expires* module parameter"
+modparam("mid_registrar", "default_expires", 1800)
+```
+
+
+#### max_expires (integer)
+
+
+The maximum expires value of a Contact, values higher than this
+			maximum will be automatically set to the maximum. Value 0 disables the checking.
+
+
+Default value is **3600** (seconds)
+
+
+```c title="Setting the *max_expires* module parameter"
+modparam("mid_registrar", "max_expires", 7200)
+```
+
+
+#### default_q (integer)
+
+
+Sets the default *"q"* value for new contacts.
+		Because OpenSIPS does not support floating point module parameters,
+		the supplied *"q"* value must be multiplied by 1000.
+		For example, if you want
+		*[default q](#param_default_q)*
+		to be 0.38, set this parameter to 380.
+
+
+Default value is **0**
+
+
+```c title="Setting the *default_q* module parameter"
+modparam("mid_registrar", "default_q", 380)
+```
+
+
+#### tcp_persistent_flag (string)
+
+
+Specifies the message flag to be used to control the
+		module behaviour regarding TCP connections. If the flag is set for a
+		REGISTER via TCP containing a TCP contact, the module, via the
+		*[mid registrar save](#func_mid_registrar_save)*
+		function, will set the lifetime of the TCP
+		connection to the contact expire value. By doing this, the TCP
+		connection will stay up as long as its contacts are valid.
+
+
+Default value is **-1** (not set)
+
+
+```c title="Setting the *tcp_persistent_flag* module parameter"
+modparam("mid_registrar", "tcp_persistent_flag", "TCP_PERSIST_REGISTRATIONS")
+```
+
+
+#### realm_prefix (string)
+
+
+In multi-domain user location scenarios
+		(**"use_domain"** usrloc module parameter
+		set to *"1"*),
+		this parameter denotes a prefix to be automatically stripped from the
+		hostname part of *To* header field URIs when doing
+		a save, or *Request-URIs* when doing a lookup.
+
+
+It is meant as an alternative to DNS SRV records (not all SIP clients
+		support SRV lookups), a subdomain of
+		 the master domain can be defined for SIP purposes (like
+		 "sip.mydomain.net" pointing to same IP address as the SRV record for
+		 "mydomain.net"). By ignoring the realm_prefix "sip.", at registration,
+		 "sip.mydomain.net" will be translated to "mydomain.net".
+
+
+Default value is **NULL** (none)
+
+
+```c title="Setting the *realm_prefix* module parameter"
+modparam("mid_registrar", "realm_prefix", "sip.")
+```
+
+
+#### case_sensitive (integer)
+
+
+If set to 1, then AOR comparison will be case
+		sensitive (as RFC3261 instructs), if set to 0 then
+		AOR comparison will be case insensitive.
+
+
+Default value is **1** (true)
+
+
+```c title="Setting the *case_sensitive* module parameter"
+modparam("mid_registrar", "case_sensitive", 0)
+```
+
+
+#### retry_after (integer)
+
+
+The mid-registrar can generate 5xx replies to registrations in various
+		situations.  In this case, OpenSIPS would respond with "503 Service
+		Unavailable".
+
+
+If you want to add the Retry-After header field in 5xx replies, set
+		this parameter to a value greater than zero (0 means: do not add the
+		header field). See section 20.33 of RFC3261 for more details.
+
+
+Default value is **0** (disabled)
+
+
+```c title="Setting the *retry_after* module parameter"
+modparam("mid_registrar", "retry_after", 30)
+```
+
+
+#### disable_gruu (integer)
+
+
+Globally disable GRUU handling.
+
+
+Default value is **1** (GRUUs will not be handled)
+
+
+```c title="Setting the *gruu_secret* module parameter"
+modparam("mid_registrar", "disable_gruu", 0)
+```
+
+
+#### gruu_secret (string)
+
+
+The string that will be used in XORing when generating
+		temporary GRUUs.
+
+
+Default value is **"0p3nS1pS"**
+
+
+```c title="Setting the *gruu_secret* module parameter"
+modparam("mid_registrar", "gruu_secret", "my_secret")
+```
+
+
+### Exported Functions
+
+
+#### mid_registrar_save(domain[, [flags][, [aor][, [outgoing_expires]]]])
+
+
+Function to be called when handling REGISTER requests. This function
+		decides if a REGISTER should be forwarded to the main registrar and
+		performs all the necessary changes over the registered contacts. The
+		function is also covering the handling of the 2xx REGISTER replies -
+		the contacts confirmed by the main registrar will be automatically
+		saved in the local user location (without any additional scripting).
+
+
+In Contact/AOR throttling modes (more info about working modes in [sec working modes](#working_modes)),
+			the return value of this function indicates whether the script
+			writer must forward the REGISTER request to the main registrar,
+			or just wrap up any left-over processing and exit script execution, as
+			the current REGISTER request has been answered with 200 OK
+			(absorbed at mid-registrar level).
+
+
+Depending on the current working
+			*[mode](#param_mode)* and
+			*[contact id insertion](#param_contact_id_insertion)*,
+			the function may additionally perform
+			the following series of transformations when relaying REGISTER requests:
+
+
+- in *"Contact throttling"* mode
+
+  - change the value of the *Expires*
+								header field to the value of
+								*outgoing_expires*, if given,
+								otherwise the value given by the
+								*[outgoing expires](#param_outgoing_expires)*
+								module parameter.
+								The same applies to any *";expires"*
+								Contact URI parameter.
+  - replace the "host:port" part of all Contact URIs of the
+								incoming REGISTER request with an OpenSIPS listening interface
+  - append a parameter to each
+								*Contact* URI, which will
+								allow the module to match the reply contacts
+								and also route calls. The name of this URI
+								parameter is configurable via
+								*[contact id param](#param_contact_id_param)*
+- in *"AOR throttling"* mode
+
+  - change the value of the *Expires*
+								header field to the value of
+								*outgoing_expires*, if given,
+								otherwise the value given by the
+								*[outgoing expires](#param_outgoing_expires)*
+								module parameter.
+  - replace all *Contact* header
+								fields of the request with a single *Contact* header field,
+								which will contain the following SIP URI: "sip:address-of-record@proxy_ip:proxy_port"
+
+
+Meaning of the parameters is as follows:
+
+
+- *domain* - logical domain within the registrar.
+			If a database is used, then this must be name of the *usrloc*
+			table which stores the contacts
+- *flags* (optional) - string of
+			the following flags:
+
+  - *'m' (Memory only)* - save the
+					contacts only in memory cache without no DB operation;
+  - *'r' (no Reply)* - do not
+					generate a SIP reply to the current REGISTER request.
+  - *'v' (path receiVed)* if set,
+					the "received" parameter of the first Path
+					URI of a registration is set as received-uri and the NAT
+					branch flag is set for this contact. This is useful if
+					the registrar is placed behind a SIP loadbalancer, which
+					passes the nat'ed UAC address as "received"
+					parameter in it's Path uri.
+This parameter is a string composed of a set of flags.
+- *aor (optional)* - variable holding a custom Address-of-Record.
+				If not given, the AOR will be taken from the *To* header URI
+- *outgoing_expires (optional, only relevant
+			in Contact/AOR throttling modes)* - custom value
+		for the contact expiration interval of the outgoing REGISTER
+		request, which overrides the default
+			*[outgoing expires](#param_outgoing_expires)* module parameter.
+
+
+**Return value**
+
+
+- 1 (success) - current REGISTER request must be dispatched by the
+				script writer over to the main registrar
+- 2 (success) - current REGISTER request has been absorbed by the
+				mid-registrar; a 200 OK reply has been sent upstream
+- -1 (error) - generic error code; the logs should provide more help
+
+
+This function can only be used from the request route.
+
+
+```c title="*mid_registrar_save* usage"
+...
+if (is_method("REGISTER")) {
+	mid_registrar_save("location");
+	switch ($retcode) {
+	case 1:
+		xlog("L_INFO", "forwarding REGISTER to main registrar...\n");
+		$ru = "sip:10.0.0.3:5070";
+		if (!t_relay()) {
+			send_reply("500", "Server Internal Error 1");
+		}
+
+		break;
+	case 2:
+		xlog("L_INFO", "REGISTER has been absorbed!\n");
+		break;
+	default:
+		xlog("L_ERR", "mid-registrar error!\n");
+		send_reply("500", "Server Internal Error 2");
+	}
+
+	exit;
+}
+...
+```
+
+
+#### mid_registrar_lookup(domain[, [flags][, [aor]]])
+
+
+Function to be called when receiving requests from the main registrar
+		(to be routed to the end-user). It performs the local lookup
+		(in user location) and the necessary RURI processing in order to route
+		the requests further to the end-user registered contacts (note that
+		multiple branches/destinations may result after the lookup).
+
+
+Depending on the current working
+		*[mode](#param_mode)*,
+		the function will behave as follows:
+
+
+- in *"mirror"* mode
+
+  - extract the username (Address-of-Record) from the Request-URI
+				and look up all of its contact bindings stored in the user
+				location. The Request-URI (**$ru**
+				variable) will be overwritten with the highest q-value contact,
+				with additional branches for each contact being optionally
+				created. (depending on the *flags* parameter)
+- in *"Contact throttling"* mode
+
+  - extract the *[contact id param](#param_contact_id_param)*
+				from the Request-URI, derive the actual SIP URI of the destination
+				from it and set it as the new Request-URI of the INVITE
+				(**$ru** variable).
+- in *"AOR throttling"* mode
+
+  - extract the username (Address-of-Record) from the Request-URI
+				and look up all of its contact bindings stored in the user
+				location. The Request-URI (**$ru**
+				variable) will be overwritten with the highest q-value contact,
+				with additional branches for each contact being optionally
+				created. (depending on the *flags* parameter)
+
+
+Meaning of the parameters is as follows:
+
+
+- *domain* - logical domain within the registrar.
+			If a database is used, then this must be name of the *usrloc*
+			table which stores the contacts
+- *flags*(optional)
+
+  - *'b' (no Branches)* - this flag controls how
+				this function processes multiple contacts.  If there are
+				multiple contacts for the given username in usrloc and this
+				flag is not set, Request-URI will be overwritten with the
+				highest-q rated contact and the rest will be appended to
+				sip_msg structure and can be later used by tm for forking. If
+				the flag is set, only Request-URI will be overwritten
+				with the highest-q rated contact and the rest will be left
+				unprocessed.
+  - *'r' (bRanch lookup)* - this flag enables
+				searching through existing branches for aor's and expanding
+				them to contacts. For example, you have got AOR A in your
+				ruri but you also want to forward your calls to AOR B. In order
+				to do this, you must put AOR B in a branch, and if this flag
+				enabled, the function will also expand AOR B to contacts,
+				which will be put back into the branches. The AOR's that were
+				in branches before the function call shall be removed.
+**WARNING:**
+				*if you want this flag activated,
+				the 'b' (no Branches) flag must not be set, otherwise
+				the lookup function will be unable to add new branches*
+  - *'m' (Method filtering)* - setting this flag
+				will enable contact filtering based on the supported methods
+				listed in the "Allow" header field during registration.
+				Contacts which did not present an "Allow" header field during
+				registration are assumed to support all standard SIP methods.
+  - *'u' (User-Agent filtering)* - this flag
+				enables regexp filtering by user-agent. It's useful with
+				enabled append_branches parameter. Regexp must follow
+				the 'u' flag and must use format like 'u/regexp/'.
+  - *'i' (Case insensitive search)* - this flag
+				enables case insensitive filtering for the 'u' flag.
+  - *'e' (Use extended regexp)* - this flag
+				enables using of extended regexp format for the 'u' flag.
+  - *'g' (Global lookup)* - this flag
+				is only relevant with federated user location clustering. If
+				set, the [mid registrar lookup](#func_mid_registrar_lookup) function
+				will not only perform the classic
+				in-memory "search-AoR-and-push-branches" operation, but will
+				also perform a metadata lookup and append an additional branch
+				for each returned result. The "in-memory branches" correspond
+				to local contacts (current location), while the "metadata
+				branches" correspond to contacts available on one or more of
+				the remaining locations of the platform.
+The AoR metadata consists of the minimally required information
+				in order for one of the VoIP platform's locations (data
+				centers) to advertise the presence of a locally registered AoR
+				for the global platform. Specifically, this consists of two
+				pieces of information:
+				
+				
+					the AoR (e.g. "vladimir@federation-cluster")
+				
+				
+					the home IP (e.g. "10.0.0.223")
+- *aor (optional)* - variable holding a custom Address-of-Record.
+				If not given, the AOR will be taken from the *Request-URI*
+
+
+**Return value**
+
+
+- 1 (success) - branch set successfully built
+- -1 (error) - generic error code; the logs should provide more help
+
+
+This function can only be used from the request route.
+
+
+```c title="*mid_registrar_lookup* usage"
+...
+	# initial invites from the main registrar - need to look them up!
+	if (is_method("INVITE") and $si == "10.0.0.3" and $sp == 5070) {
+		if (!mid_registrar_lookup("location")) {
+			t_reply("404", "Not Found");
+			exit;
+		}
+
+		if (!t_relay())
+			send_reply("500", "Server Internal Error 3");
+
+	    exit;
+	}
+...
+```
+
+
+*doc copyrights:*
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
