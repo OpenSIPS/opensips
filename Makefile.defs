@@ -544,7 +544,7 @@ endif
 
 ifneq ($(DBXML2HTML),)
 ifeq ($(DBHTMLCSS),)
-DBHTMLCSS = ../../../doc/module-docbook.css
+DBHTMLCSS = ../../../docs/module-docbook.css
 endif
 #DBHTMLXSL = /usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl
 # On CentOS, this is the right path:

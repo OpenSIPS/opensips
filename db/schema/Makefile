@@ -3,7 +3,7 @@
 TABLES := $(patsubst opensips-%.xml,%,$(wildcard opensips-*.xml))
 
 ROOT=../..
-STYLESHEETS=$(ROOT)/doc/dbschema/xsl
+STYLESHEETS=$(ROOT)/docs/dbschema/xsl
 
 # Stylesheet used to generate db_table nodes for pi_framework XML schema
 PI_FRAMEWORK_TABLE_XSL = $(STYLESHEETS)/pi_framework_table.xsl
@@ -40,7 +40,7 @@ VALIDATE = 0
 VERBOSE = 0
 
 # XML Catalog used to resolve entities
-CATALOG = $(ROOT)/doc/dbschema/catalog.xml
+CATALOG = $(ROOT)/docs/dbschema/catalog.xml
 
 XSLTPROC = /usr/bin/xsltproc
 XSLTPROC_FLAGS = --xinclude
@@ -190,33 +190,33 @@ db_berkeley_clean:
 docbook:
 	for FILE in $(TABLES); do \
 		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
-		--stringparam dir "$(ROOT)/doc/database" \
+		--stringparam dir "$(ROOT)/docs/database" \
 		--stringparam prefix "$$FILE-" \
 		$(DOCBOOK_XSL) opensips-"$$FILE".xml ; \
 	done ; \
 
 	# link all documents to one file, to get nicer output
-	echo "<!DOCTYPE book PUBLIC \"-//OASIS//DTD DocBook V4.4//EN\" \"http://www.oasis-open.org/docbook/sgml/4.4/docbook.dtd\"[" > "$(ROOT)/doc/database/tables.sgml"
+	echo "<!DOCTYPE book PUBLIC \"-//OASIS//DTD DocBook V4.4//EN\" \"http://www.oasis-open.org/docbook/sgml/4.4/docbook.dtd\"[" > "$(ROOT)/docs/database/tables.sgml"
 	
 	# create entities, as xi:include is not available in sgml docbook
 	# substitute '-' for '_', docbook smgl don't like this
-	for FILE in $(wildcard $(ROOT)/doc/database/*.xml); do \
-		echo "  <!ENTITY `basename "$$FILE" | sed -e 's#_#-#g'` SYSTEM \""$$FILE"\">" >> "$(ROOT)/doc/database/tables.sgml" ; \
+	for FILE in $(wildcard $(ROOT)/docs/database/*.xml); do \
+		echo "  <!ENTITY `basename "$$FILE" | sed -e 's#_#-#g'` SYSTEM \""$$FILE"\">" >> "$(ROOT)/docs/database/tables.sgml" ; \
 	done ; \
 	#Include general documentation entities
-	echo "  <!ENTITY % docentities SYSTEM \"../entities.xml\"> %docentities;" >> "$(ROOT)/doc/database/tables.sgml" ; \
-	echo "]>" >> "$(ROOT)/doc/database/tables.sgml"
+	echo "  <!ENTITY % docentities SYSTEM \"../entities.xml\"> %docentities;" >> "$(ROOT)/docs/database/tables.sgml" ; \
+	echo "]>" >> "$(ROOT)/docs/database/tables.sgml"
 	# add bookinfo
-	cat "$(ROOT)/doc/dbschema/bookinfo.xml" >> "$(ROOT)/doc/database/tables.sgml"
+	cat "$(ROOT)/docs/dbschema/bookinfo.xml" >> "$(ROOT)/docs/database/tables.sgml"
 	# actually include the entities
-	for FILE in $(wildcard $(ROOT)/doc/database/*.xml); do \
-		echo "    &`basename "$$FILE" | sed -e 's#_#-#g'`" >> "$(ROOT)/doc/database/tables.sgml" ; \
+	for FILE in $(wildcard $(ROOT)/docs/database/*.xml); do \
+		echo "    &`basename "$$FILE" | sed -e 's#_#-#g'`" >> "$(ROOT)/docs/database/tables.sgml" ; \
 	done ; \
-	echo "</book>" >> "$(ROOT)/doc/database/tables.sgml"
+	echo "</book>" >> "$(ROOT)/docs/database/tables.sgml"
 
 docbook_clean:
-	-@rm -f $(ROOT)/doc/database/*.xml
-	-@rm -f $(ROOT)/doc/database/tables.sgml
+	-@rm -f $(ROOT)/docs/database/*.xml
+	-@rm -f $(ROOT)/docs/database/tables.sgml
 
 
 .PHONY: clean

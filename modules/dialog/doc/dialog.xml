@@ -11,7 +11,7 @@
 <!ENTITY clusterer_sync_cap_para SYSTEM "../../clusterer/doc/clusterer_sync_cap.xml">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>

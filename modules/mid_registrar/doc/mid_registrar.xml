@@ -19,7 +19,7 @@
 <!ENTITY save_common_flags SYSTEM "../../../lib/reg/doc/save_common_flags.xml">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>
