@@ -1,0 +1,832 @@
+---
+title: "SQLops Module"
+description: "SQLops (SQL-operations) modules implements a set of script functions for generic SQL standard queries (raw or structure queries). It also provides a dedicated set of functions for DB manipulation (loading/storing/removing) of user AVPs (preferences)."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+SQLops (SQL-operations) modules implements a set of script
+		functions for generic SQL standard queries (raw or structure queries).
+		It also provides a dedicated set of functions for DB manipulation
+		(loading/storing/removing) of user AVPs (preferences).
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *a database module*
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed
+				before running OpenSIPS with this module loaded:
+
+
+- *None*
+
+
+### Exported Parameters
+
+
+#### db_url (string)
+
+
+DB URL for database connection. As the module allows the usage
+			of multiple DBs (DB URLs), the actual DB URL may be preceded by
+			an reference number. This reference number is to be passed to
+			AVPOPS function that what to explicitly use this DB connection.
+			If no reference number is given, 0 is assumed - this is the default
+			DB URL.
+
+
+*This parameter is optional, it's default value being NULL.*
+
+
+```c title="Set db_url parameter"
+...
+# default URL
+modparam("sqlops","db_url","mysql://user:passwd@host/database")
+# an additional DB URL
+modparam("sqlops","db_url","1 postgres://user:passwd@host2/opensips")
+...
+				
+```
+
+
+#### usr_table (string)
+
+
+DB table to be used for user preferences (AVPs)
+
+
+*This parameter is optional, it's default value being
+					"usr_preferences".*
+
+
+```c title="Set usr_table parameter"
+...
+modparam("sqlops","usr_table","avptable")
+...
+				
+```
+
+
+#### db_scheme (string)
+
+
+Definition of a DB scheme to be used for accessing
+				a non-standard User Preference -like table.
+
+
+Definition of a DB scheme. Scheme syntax is:
+
+
+- *db_scheme = name':'element[';'element]**
+- *element* =
+					
+						'uuid_col='string
+						'username_col='string
+						'domain_col='string
+						'value_col='string
+						'value_type='('integer'|'string')
+						'table='string
+
+
+*Default value is "NULL".*
+
+
+```c title="Set db_scheme parameter"
+...
+modparam("sqlops","db_scheme",
+"scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
+...
+				
+```
+
+
+#### use_domain (boolean)
+
+
+If the domain part of the a SIP URI should be used for
+				identifying an AVP in DB operations.
+
+
+*Default value is *true* (enabled).*
+
+
+```c title="Set use_domain parameter"
+...
+modparam("sqlops", "use_domain", true)
+...
+				
+```
+
+
+#### ps_id_max_buf_len (integer)
+
+
+The maximum size of the buffer used to build the query IDs which
+			are used for managing the Prepare Statements when comes to the
+			"sql_select|update|insert|replace|delete()" functions
+
+
+If the size is exceeded (when trying to build the PS query ID),
+			the PS support will be dropped for the query. If set to 0, the PS
+			support will be completly disabled.
+
+
+*Default value is 1024.*
+
+
+```c title="Set ps_id_max_buf_len parameter"
+...
+modparam("sqlops","ps_id_max_buf_len", 2048)
+...
+				
+```
+
+
+#### bigint_to_str (int)
+
+
+Controls bigint conversion.
+				By default bigint values are returned as int.
+				If the value stored in bigint is out of the int range,
+				by enabling bigint to string conversion,
+				the bigint value will be returned as string.
+
+
+*Default value is "0".*
+
+
+```c title="Set bigint_to_str parameter"
+...
+# Return bigint as string
+modparam("sqlops","bigint_to_str",1)
+...
+				
+```
+
+
+#### uuid_column (string)
+
+
+Name of column containing the uuid (unique user id).
+
+
+*Default value is "uuid".*
+
+
+```c title="Set uuid_column parameter"
+...
+modparam("sqlops","uuid_column","uuid")
+...
+				
+```
+
+
+#### username_column (string)
+
+
+Name of column containing the username.
+
+
+*Default value is "username".*
+
+
+```c title="Set username_column parameter"
+...
+modparam("sqlops","username_column","username")
+...
+				
+```
+
+
+#### domain_column (string)
+
+
+Name of column containing the domain name.
+
+
+*Default value is "domain".*
+
+
+```c title="Set domain_column parameter"
+...
+modparam("sqlops","domain_column","domain")
+...
+				
+```
+
+
+#### attribute_column (string)
+
+
+Name of column containing the attribute name (AVP name).
+
+
+*Default value is "attribute".*
+
+
+```c title="Set attribute_column parameter"
+...
+modparam("sqlops","attribute_column","attribute")
+...
+				
+```
+
+
+#### value_column (string)
+
+
+Name of column containing the AVP value.
+
+
+*Default value is "value".*
+
+
+```c title="Set value_column parameter"
+...
+modparam("sqlops","value_column","value")
+...
+				
+```
+
+
+#### type_column (string)
+
+
+Name of column containing the AVP type.
+
+
+*Default value is "type".*
+
+
+```c title="Set type_column parameter"
+...
+modparam("sqlops","type_column","type")
+...
+				
+```
+
+
+### Exported Functions
+
+
+#### sql_query(query, [res_col_avps], [db_id])
+
+
+Make a database query and store the result in AVPs.
+
+
+The meaning and usage of the parameters:
+
+
+- *query (string)* - must be a valid SQL
+				query. The parameter can contain pseudo-variables.
+You must escape any pseudo-variables manually to prevent
+				SQL injection attacks. You can use the existing transformations
+				*escape.common* and
+				*unescape.common*
+				to escape and unescape the content of any pseudo-variable.
+				Failing to escape the variables used in the query makes you
+				vulnerable to SQL injection, e.g. make it possible for an
+				outside attacker to alter your database content.
+				The function returns true if the query was successful, -2 in
+				case the query returned an empty result set, and -1 for all 
+				other types of errors.
+- *res_col_avps (string, optional, no expand)* - a list with AVP names where
+				to store the result. The format is
+				"$avp(name1);$avp(name2);...". If this parameter
+				is omitted, the result is stored in
+				"$avp(1);$avp(2);...". If the result consists of
+				multiple rows, then multiple AVPs with corresponding names will
+				be added. The value type of the AVP (string or integer) will
+				be derived from the type of the columns. If the value in the
+				database is *NULL*, the returned avp will
+				be a string with the *<null>* value.
+- *db_id (int, optional)* - reference to a defined
+				DB URL (a numerical id) - see the "db_url"
+				module parameter. It can be either a constant, or a
+				string/int variable.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+
+
+```c title="sql_query usage"
+...
+sql_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
+	"$avp(pass);$avp(hash)");
+sql_query("DELETE FROM subscriber");
+sql_query("DELETE FROM subscriber", , 2);
+
+$avp(id) = 2;
+sql_query("DELETE FROM subscriber", , $avp(id));
+...
+				
+```
+
+
+#### sql_query_one(query, [res_col_vars], [db_id])
+
+
+Similar to [sql query](#func_sql_query), it makes a generic raw
+			database query and returns the results, but with the following
+			differences:
+
+
+- *returns only one row* - even if
+				the query results in a multi row result, only the first row
+				will be returned to script.
+- *return variables are not limited to AVPs* -
+				the variables for returning the query result may any kind
+				of variable, of course, as time as it is writeable. NOTE that
+				the number of return vairable MUST match (as number) the number
+				of returned columns. If less variables are provided, the query
+				will fail.
+- *NULL is returned* - any a DB NULL
+				value resulting from the query will be pushed as NULL indicator
+				(and NOT as *<null>* string) to the
+				script variables.
+
+
+This function can be used from any type of route.
+
+
+```c title="sql_query_one usage"
+...
+sql_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'",
+	"$var(pass);$var(hash)");
+# $var(pass) or $var(hash) may be NULL if the corresponding columns
+# are not populated
+...
+sql_query_one("SELECT value, type FROM usr_preferences WHERE username='$fU' and attribute='cfna'",
+	"$var(cf_uri);$var(type)");
+# the above query will return only one row, even if there are multiple `cfna`
+# attributes for the user
+...
+				
+```
+
+
+#### sql_select([columns],table,[filter],[order],[res_col_avps], [db_id])
+
+
+Function to perform a structured (not raw) SQL SELECT operation.
+			The query is performed via OpenSIPS internal SQL interface, taking
+			advantages of the prepared-statements support (if the db backend
+			provides something like that). The selected columns are returned
+			into a set of AVPs (one to one matching the selected columns).
+
+
+> [!WARNING]
+> If using varibales in constructing the query, you must 
+			manually escape their values in order to prevent SQL injection 
+			attacks. You can use the existing transformations
+			*escape.common* and
+			*unescape.common*
+			to escape and unescape the content of any pseudo-variable.
+			Failing to escape the variables used in the query makes you
+			vulnerable to SQL injection, e.g. make it possible for an
+			outside attacker to alter your database content.
+
+
+The function returns true if the query was successful, -2 in
+			case the query returned an empty result set, and -1 for all 
+			other types of errors.
+
+
+The meaning and usage of the parameters:
+
+
+- *columns (string,optional)* - JSON
+				formated string holding an array of columns to be returned by
+				the select. Ex: "["col1","col2"]".
+				If missing, a "*" (all columns) select will be
+				performed.
+- *table (string, mandatory)* - the 
+				name of the table to be queried.
+- *filter (string, optional)* - JSON 
+				formated string holding the "where" filter of the query. This 
+				must be  an array of (column, operator,value) pairs. The 
+				exact JSON syntax of such a pair is 
+				"{"column":{"operator":"value"}}".; operators
+				may be `>`, `<`, `=`, `!=` or custom string; The values
+				may be string, integer or `null`. To simplify the usage with
+				the `=` operator, you can use "{"column":"value"}"
+				If missing, all rows will be selected.
+- *order (string, optional)* - the 
+				name of the column to oder by (only ascending).
+- *res_col_avps (string, optional, no expand)* - a list with AVP names where
+				to store the result. The format is
+				"$avp(name1);$avp(name2);...". If this parameter
+				is omitted, the result is stored in
+				"$avp(1);$avp(2);...". If the result consists of
+				multiple rows, then multiple AVPs with corresponding names will
+				be added. The value type of the AVP (string or integer) will
+				be derived from the type of the columns. If the value in the
+				database is *NULL*, the returned avp will
+				be a string with the *<null>* value.
+- *db_id (int, optional)* - reference
+				to a defined DB URL (a numerical id) - see the
+				[db url](#param_db_url) module parameter. It can 
+				be either a constant, or a string/int variable.
+
+
+This function can be used from any type of route.
+
+
+```c title="sql_select usage"
+...
+sql_select('["password","ha1"]', 'subscriber',
+	'[ {"username": "$tu"}, {"domain": {"!=", null}}]', ,
+	'$avp(pass);$avp(hash)');
+...
+				
+```
+
+
+#### sql_select_one([columns],table,[filter],[order],[res_col_vars], [db_id])
+
+
+Similar to [sql select](#func_sql_select), it makes a SELECT SQL
+			query and returns the results, but with the following
+			differences:
+
+
+- *returns only one row* - even if
+				the query results in a multi row result, only the first row
+				will be returned to script.
+- *return variables are not limited to AVPs* -
+				the variables for returning the query result may any kind
+				of variable, of course, as time as it is writeable. NOTE that
+				the number of return vairable MUST match (as number) the number
+				of returned columns. If less variables are provided, the query
+				will fail.
+- *NULL is returned* - any a DB NULL
+				value resulting from the query will be pushed as NULL indicator
+				(and NOT as *<null>* string) to the
+				script variables.
+
+
+This function can be used from any type of route.
+
+
+```c title="sql_select_one usage"
+...
+sql_select_one('["value","type"]', 'usr_preferences',
+	'[ {"username": "$tu"}, {"attribute": "cfna"}]', ,
+	'$var(cf_uri);$var(type)');
+# the above query will return only one row, even if there are multiple `cfna`
+# attributes for the user
+...
+				
+```
+
+
+#### sql_update(columns,table,[filter],[db_id])
+
+
+Function to perform a structured (not raw) SQL UPDATE operation.
+			IMPORTANT: please see all the general notes from the 
+			[sql select](#func_sql_select) function.
+
+
+The function returns true if the query was successful.
+
+
+The meaning and usage of the parameters:
+
+
+- *columns (string,mandatory)* - JSON
+				formated string holding an array of (column,value) pairs to 
+				be updated by the query.
+				Ex: "[{"col1":"val1"},{"col2":"val1"}]".
+- *table (string, mandatory)* - the 
+				name of the table to be queried.
+- *filter (string, optional)* - JSON 
+				formated string holding the "where" filter of the query. This 
+				must be  an array of (column, operator,value) pairs. The 
+				exact JSON syntax of such a pair is 
+				"{"column":{"operator":"value"}}".; operators
+				may be `>`, `<`, `=`, `!=` or custom string; The values
+				may be string, integer or `null`. To simplify the usage with
+				the `=` operator, you can use "{"column":"value"}"
+				If missing, all rows will be updated.
+- *db_id (int, optional)* - reference
+				to a defined DB URL (a numerical id) - see the
+				[db url](#param_db_url) module parameter. It can 
+				be either a constant, or a string/int variable.
+
+
+This function can be used from any type of route.
+
+
+```c title="sql_update usage"
+...
+sql_update( '[{"password":"my_secret"}]', 'subscriber',
+	'[{"username": "$tu"}]');
+...
+				
+```
+
+
+#### sql_insert(table,columns,[db_id])
+
+
+Function to perform a structured (not raw) SQL INSERT operation.
+			IMPORTANT: please see all the general notes from the 
+			[sql select](#func_sql_select) function.
+
+
+The function returns true if the query was successful.
+
+
+The meaning and usage of the parameters:
+
+
+- *table (string, mandatory)* - the 
+				name of the table to be queried.
+- *columns (string,mandatory)* - JSON
+				formated string holding an array of (column,value) pairs to 
+				be inserted.
+				Ex: "[{"col1":"val1"},{"col2":"val1"}]".
+- *db_id (int, optional)* - reference
+				to a defined DB URL (a numerical id) - see the
+				[db url](#param_db_url) module parameter. It can 
+				be either a constant, or a string/int variable.
+
+
+This function can be used from any type of route.
+
+
+```c title="sql_insert usage"
+...
+sql_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"location":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessions":2}]' );
+...
+				
+```
+
+
+#### sql_delete(table,[filter],[db_id])
+
+
+Function to perform a structured (not raw) SQL DELETE operation.
+			IMPORTANT: please see all the general notes from the 
+			[sql select](#func_sql_select) function.
+
+
+The function returns true if the query was successful.
+
+
+The meaning and usage of the parameters:
+
+
+- *table (string, mandatory)* - the 
+				name of the table to delete from.
+- *filter (string, optional)* - JSON 
+				formated string holding the "where" filter of the query. This 
+				must be  an array of (column, operator,value) pairs. The 
+				exact JSON syntax of such a pair is 
+				"{"column":{"operator":"value"}}".; operators
+				may be `>`, `<`, `=`, `!=` or custom string; The values
+				may be string, integer or `null`. To simplify the usage with
+				the `=` operator, you can use "{"column":"value"}"
+				If missing, all rows will be updated.
+- *db_id (int, optional)* - reference
+				to a defined DB URL (a numerical id) - see the
+				[db url](#param_db_url) module parameter. It can 
+				be either a constant, or a string/int variable.
+
+
+This function can be used from any type of route.
+
+
+```c title="sql_delete usage"
+...
+sql_delete( 'subscriber', '[{"username": "$tu"}]');
+...
+				
+```
+
+
+#### sql_replace(table,columns,[db_id])
+
+
+Function very similar to [sql insert](#func_sql_insert) function,
+			but performing an SQL REPLACE operation instead. Note that not all
+			SQL backend in OpenSIPS may support a REPLACE operation.
+
+
+The function returns true if the query was successful.
+
+
+#### sql_avp_load(source, name, [db_id], [prefix]])
+
+
+Loads from DB into memory the AVPs corresponding to the given
+			*source*. If given, it sets the script flags
+			for loaded AVPs. It returns true if it loaded some values
+			in AVPs, false otherwise (db error, no avp loaded ...).
+
+
+AVPs may be preceded by an optional *prefix*, in
+			order to avoid some conflicts.
+
+
+Meaning of the parameters is as follows:
+
+
+- *source (string, no expand)* - what info is used for
+				identifying the AVPs. Parameter syntax:
+				
+					*source = (pvar|str_value)
+					['/'('username'|'domain'|'uri'|'uuid')])*
+					*pvar = any pseudo variable defined in OpenSIPS. If
+					the pvar is $ru (request uri), $fu (from uri), $tu (to uri)
+					or $ou (original uri), then the implicit flag is 'uri'.
+					Otherwise, the implicit flag is 'uuid'.*
+- *name (string, no expand)* - which AVPs will be loaded
+				from DB into memory. Parameter syntax is:
+				
+					*name = avp_spec['/'(table_name|'$'db_scheme)]*
+- *db_id (int, optional)* - reference to a defined
+				DB URL (a numerical id) - see the "db_url"
+				module parameter.
+- *prefix (string, optional)* - static string which will
+					precede the names of the AVPs populated by this function.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+
+
+```c title="sql_avp_load usage"
+...
+sql_avp_load("$fu", "$avp(678)");
+sql_avp_load("$ru/domain", "i/domain_preferences");
+sql_avp_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
+sql_avp_load("$ru", "$avp(123)/$some_scheme");
+
+# use DB URL id 3
+sql_avp_load("$ru", "$avp(1)", 3);
+
+# precede all loaded AVPs by the "caller_" prefix
+sql_avp_load("$ru", "$avp(100)", , "caller_");
+xlog("Loaded: $avp(caller_100)\n");
+
+...
+				
+```
+
+
+#### sql_avp_store(source, name, [db_id])
+
+
+Stores to DB the AVPs corresponding to the given
+			*source*.
+
+
+The meaning and usage of the parameters are identical as for
+			*sql_avp_load(source, name)*
+			function. Please refer to its description.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+
+
+```c title="sql_avp_store usage"
+...
+sql_avp_store("$tu", "$avp(678)");
+sql_avp_store("$ru/username", "$avp(email)");
+# use DB URL id 3
+sql_avp_store("$ru", "$avp(1)", 3);
+...
+				
+```
+
+
+#### sql_avp_delete(source, name, [db_id])
+
+
+Deletes from DB the AVPs corresponding to the given
+			*source*.
+
+
+The meaning and usage of the parameters are identical as for
+			*sql_avp_load(source, name)*
+			function. Please refer to its description.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+
+
+```c title="sql_avp_delete usage"
+...
+sql_avp_delete("$tu", "$avp(678)");
+sql_avp_delete("$ru/username", "$avp(email)");
+sql_avp_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
+# use DB URL id 3
+sql_avp_delete("$ru", "$avp(1)", 3);
+...
+				
+```
+
+
+### Exported Asynchronous Functions
+
+
+#### sql_query(query, [dest], [db_id])
+
+
+This function takes the same parameters and behaves identically
+			to [sql query](#func_sql_query), but asynchronously
+			(after launching the query, the current SIP worker pauses the
+			execution of the current SIP message until the result is available
+			and attempts to process more SIP traffic).
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+
+
+```c title="async sql_query usage"
+...
+{
+...
+/* Example of a slow MySQL query - it should take around 5 seconds */
+async(
+	sql_query(
+		"SELECT table_name, table_version, SLEEP(0.1) from version",
+		"$avp(tb_name); $avp(tb_ver); $avp(retcode)"),
+	my_resume_route);
+/* script execution is halted right after the async() call */
+}
+
+/* We will be called when data is ready - meanwhile, the worker is free */
+route [my_resume_route]
+{
+	xlog("Results: \n$(avp(tb_name)[*])\n
+-------------------\n$(avp(tb_ver)[*])\n
+-------------------\n$(avp(retcode)[*])\n");
+}
+...
+				
+```
+
+
+#### sql_query_one(query, [dest], [db_id])
+
+
+This function takes the same parameters and behaves identically
+			to [sql query one](#func_sql_query_one), but asynchronously
+			(after launching the query, the current SIP worker pauses the
+			execution of the current SIP message until the result is available
+			and attempts to process more SIP traffic).
+
+
+This function can be used from any route.
+
+
+```c title="async sql_query_one usage"
+...
+{
+...
+/* Example of a slow MySQL query - it should take around 5 seconds */
+async(
+	sql_query_one(
+		"SELECT table_name, table_version, SLEEP(0.1) from version",
+		"$var(tb_name); $var(tb_ver); $var(retcode)"),
+	my_resume_route);
+/* script execution is halted right after the async() call */
+}
+
+/* We will be called when data is ready - meanwhile, the worker is free */
+route [my_resume_route]
+{
+	xlog("Result: $var(tb_name) | $var(tb_ver) | $(var(retcode)\n");
+}
+...
+				
+```
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
