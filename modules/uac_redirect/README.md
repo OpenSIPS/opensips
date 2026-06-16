@@ -1,0 +1,427 @@
+---
+title: "UAC_REDIRECT Module"
+description: "UAC REDIRECT - User Agent Client redirection - module enhance OpenSIPS with the functionality of being able to handle (interpret, filter, log and follow) redirect responses ( 3xx replies class)."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+UAC REDIRECT - User Agent Client redirection - module enhance OpenSIPS
+		with the functionality of being able to handle (interpret, filter,
+		log and follow) redirect responses ( 3xx replies class).
+
+
+UAC REDIRECT module offer stateful processing, gathering the
+		contacts from all 3xx branches of a call.
+
+
+The module provide a powerful mechanism for selecting and filtering 
+		the contacts to be used for the new redirect:
+
+
+- *number based* - limits like the 
+			number of total contacts to be used or the maximum number of 
+			contacts per branch to be selected.
+- *Regular Expression based* - combinations
+			of deny and accept filters allow a strict control of the 
+			contacts to be used for redirection.
+
+
+When selecting from a 3xx branch the contacts to be used, the contacts
+		will be ordered and prioritized based on the "q" value.
+
+
+### Accounting
+
+
+UAC REDIRECT module allows to log all the redirection (to be later
+		used for CDR aggregation). This functionality may be dynamically
+		enabled for each redirection situation.
+
+
+The logging will be done via the accounting module functions (all are
+		supported). The information to be logged will be the same as the 
+		normal logged information directly via ACC module, but with 
+		following differences:
+
+
+- *reason phrase* - which will be
+			dynamically set by the redirection function;
+- *outgoing URI* - which will be the
+			redirect URI.
+
+
+For each redirect contact, a separate record will be logged. For
+		example, if a call is redirected to three new contacts, the 
+		module will log three additional records corresponding to each
+		redirect URI.
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *TM* - Transaction Module, for accessing
+				replies.
+- *ACC* - Accounting Module, but only if the
+				logging feature is used.
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed 
+				before running OpenSIPS with this module loaded:
+
+
+- *None*
+
+
+### Exported Parameters
+
+
+#### default_filter (string)
+
+
+The default behavior in filtering contacts. It may be 
+			"accept" or "deny".
+
+
+*The default value is "accept".*
+
+
+```c title="Set default_filter module parameter"
+...
+modparam("uac_redirect","default_filter","deny")
+...
+				
+```
+
+
+#### deny_filter (string)
+
+
+The regular expression for default deny filtering. It make sens
+			to be defined on only if the `default_filter`
+			parameter is set to "accept". All contacts matching
+			the `deny_filter` will be rejected; the rest 
+			of them will be accepted for redirection.
+
+
+The parameter may be defined only one - multiple definition will
+			overwrite the previous definitions. If more regular expression 
+			need to be defined, use the 
+			`set_deny_filter()` scripting
+			function.
+
+
+*This parameter is optional, it's default 
+					value being NULL.*
+
+
+```c title="Set deny_filter module parameter"
+...
+modparam("uac_redirect","deny_filter",".*@siphub\.net")
+...
+				
+```
+
+
+#### accept_filter (string)
+
+
+The regular expression for default accept filtering. It make sens
+			to be defined on only if the `default_filter`
+			parameter is set to "deny". All contacts matching
+			the `accept_filter` will be accepted; the rest 
+			of them will be rejected for redirection.
+
+
+The parameter may be defined only one - multiple definition will
+			overwrite the previous definitions. If more regular expression 
+			need to be defined, use the 
+			`set_accept_filter()` scripting
+			function.
+
+
+*This parameter is optional, it's default 
+					value being NULL.*
+
+
+```c title="Set accept_filter module parameter"
+...
+modparam("uac_redirect","accept_filter",".*@siphub\.net")
+...
+				
+```
+
+
+#### acc_function (string)
+
+
+Specifies the accounting function to be used. Just be defining 
+			this parameter, the accounting support will not be enabled. 
+			Accounting may only be enabled via two parameters 
+			`set_accept_filter()` 
+			scripting function.
+
+
+Its values my be:
+
+
+- *acc_log_request*
+- *acc_db_request*
+- *acc_rad_request*
+- *acc_diam_request*
+
+
+*The default value is "acc_log_request".*
+
+
+```c title="Set acc_function parameter"
+...
+modparam("uac_redirect","acc_function","acc_db_request")
+...
+				
+```
+
+
+#### acc_db_table (string)
+
+
+Specifies the accounting table to be used if DB accounting was 
+			chosen (`acc_function` was set to 
+			"acc_db_request"). Just be defining 
+			this parameter, the accounting support will not be enabled. 
+			Accounting may only be enabled via two parameters 
+			`set_accept_filter()` 
+			scripting function.
+
+
+*The default value is "acc".*
+
+
+```c title="Set acc_db_table parameter"
+...
+modparam("uac_redirect","acc_db_table","acc_redirect")
+...
+				
+```
+
+
+### Exported Functions
+
+
+#### set_deny_filter(filter,flags)
+
+
+Sets additional deny filters. Maximum 6 may be combined. This
+			additional filter will apply only to the current message - it
+			will not have a global effect.
+
+
+Default or previous added deny filter may be reset depending of
+			the *flag* parameter value:
+
+
+- *reset_all* - reset both default
+				and previous added deny filters;
+- *reset_default* - reset only the
+				default deny filter;
+- *reset_added* - reset only the 
+				previous added deny filters;
+- *empty* - no reset, just add the
+				filter.
+
+
+This function can be used from FAILURE_ROUTE.
+
+
+```c title="set_deny_filter usage"
+...
+set_deny_filter(".*@domain2.net","reset_all");
+set_deny_filter(".*@domain1.net","");
+...
+				
+```
+
+
+#### set_accept_filter(filter,flags)
+
+
+Sets additional accept filters. Maximum 6 may be combined. This
+			additional filter will apply only to the current message - it
+			will not have a global effect.
+
+
+Default or previous added deny filter may be reset depending of
+			the *flag* parameter value:
+
+
+- *reset_all* - reset both default
+				and previous added accept filters;
+- *reset_default* - reset only the
+				default accept filter;
+- *reset_added* - reset only the 
+				previous added accept filters;
+- *empty* - no reset, just add
+				the filter.
+
+
+This function can be used from FAILURE_ROUTE.
+
+
+```c title="set_accept_filter usage"
+...
+set_accept_filter(".*@domain2.net","reset_added");
+set_accept_filter(".*@domain1.net","");
+...
+				
+```
+
+
+#### get_redirects(max)
+
+
+The function may be called only from failure routes. It will
+				extract the contacts from all 3xx branches and append them
+				as new branches. Note that the function will not forward the
+				new branches, this must be done explicitly from script.
+
+
+How many contacts (in total and per branch) are selected 
+				depends of the *max* parameter values.
+				Its syntax is:
+
+
+- max = max_total [":" max_branch]
+- max_total = number of total contacts to be selected
+- max_branch = number of contacts per branch to be selected
+
+
+Both "max_total" and "max_branch"
+				are positive integer. To specify unlimited values, use 0 value
+				or "*" character.
+
+
+NOTE that during the selection process, each set of contacts 
+				from a specific branch are ordered based on "q" 
+				value.
+
+
+This function will produce no accounting records.
+
+
+This function can be used from FAILURE_ROUTE.
+
+
+```c title="get_redirects usage"
+...
+# max 2 contacts per branch, but no overall limit
+get_redirects("*:2");
+...
+# no limits per branch, but not more than 6 overall contacts
+get_redirects("6:*");
+...
+# no restrictions
+get_redirects("*");
+...
+				
+```
+
+
+#### get_redirects(max,reason)
+
+
+The function has same functionality as 
+				`get_redirects(max)`
+				function, but it will produce accounting records.
+
+
+The accounting records will be mark by the 
+				*reason* phrase.  This phrase shall be in the same format
+				as the `reason` parameter that would be passed to the
+				accounting function set by the `acc_function` module parameter.
+				See the ACC module documentation for more information.
+
+
+If this function appears in the script, at startup, the module
+				will import the accounting function. Otherwise not.
+
+
+This function can be used from FAILURE_ROUTE.
+
+
+```c title="get_redirects usage"
+...
+get_redirects("4:1","300"); # Record 300, using the default reason string for a 300
+get_redirects("4:1","302 Redirected"); # Record as 302, with custom "Redirected" reason string
+...
+				
+```
+
+
+### Script Example
+
+
+```c title="Redirection script example"
+loadmodule "modules/sl/sl.so"
+loadmodule "modules/usrloc/usrloc.so"
+loadmodule "modules/registrar/registrar.so"
+loadmodule "modules/tm/tm.so"
+loadmodule "modules/acc/acc.so"
+loadmodule "modules/uac_redirect/uac_redirect.so"
+
+modparam("usrloc", "db_mode",   0)
+
+route{
+	if (uri==myself) {
+
+		if (method=="REGISTER") {
+			save("location");
+			exit;
+		};
+
+		if (!lookup("location")) {
+			sl_send_reply("404", "Not Found");
+			exit;
+		};
+		# do redirect with accounting
+		t_on_failure("2");
+	} else {
+		# just do redirect
+		t_on_failure("1");
+	}
+
+	if (!t_relay()) {
+		sl_reply_error();
+	};
+}
+
+failure_route[1] {
+	get_redirects("3:1");
+	t_relay();
+}
+
+failure_route[2] {
+	get_redirects("6:2", "300 redirect");
+	t_relay();
+}
+				
+```
+
+
+*doc copyrights:*
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
