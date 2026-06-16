@@ -1,0 +1,562 @@
+---
+title: "Core Statistics"
+description: "The OpenSIPS core exports several statistics, which are grouped into classes. To view all statistics which correspond to a class, fetch the \"class:\" statisti..."
+---
+
+The **OpenSIPS** core exports several statistics, which are grouped into **classes**. To view all statistics which correspond to a class, fetch the "class:" statistic (e.g. **opensips-cli -x mi get_statistics load: core: shmem:**)
+
+---
+
+## "CORE" class
+
+### rcv_requests
+Returns the total number of received requests by OpenSIPS.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics rcv_requests
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of received requests = $stat(rcv_requests) \n");
+
+```
+
+### rcv_replies
+Returns the total number of received replies by OpenSIPS.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics rcv_replies
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of received replies = $stat(rcv_replies) \n");
+
+```
+
+### fwd_requests
+Returns the number of stateless forwarded requests by OpenSIPS.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics fwd_requests
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of forwarded requests = $stat(fwd_requests) \n");
+
+```
+
+### fwd_replies
+Returns the number of stateless forwarded replies by OpenSIPS.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics fwd_replies
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of forwarded replies = $stat(fwd_replies) \n");
+
+```
+
+### drop_requests
+Returns the number of requests dropped even before entering the script routing logic.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics drop_requests
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of dropped requests = $stat(drop_requests) \n");
+
+```
+
+### drop_replies
+Returns the number of replies dropped even before entering the script routing logic, or explicitly dropped in the
+onreply_route.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics drop_replies
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of dropped replies = $stat(drop_replies) \n");
+
+```
+
+### err_requests
+Returns the number of bogus requests from SIP point of view ( eg. : No VIA header found )
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics err_requests
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of error requests = $stat(err_requests) \n");
+
+```
+
+### err_replies
+Returns the number of bogus replies from SIP point of view ( eg. : No VIA header found )
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics err_replies
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of error replies = $stat(err_replies) \n");
+
+```
+
+### bad_URIs_rcvd
+Returns the number of URIs that OpenSIPS failed to parse.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics bad_URIs_rcvd
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of bad URIs detected = $stat(bad_URIs_rcvd) \n");
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of unsupported methods detected = $stat(unsupported_methods) \n");
+
+```
+
+### bad_msg_hdr
+Returns the number of SIP headers that OpenSIPS failed to parse.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics bad_msg_hdr
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total number of headers that failed to parse = $stat(bad_msg_hdr) \n");
+
+```
+
+### timestamp
+Returns the number of seconds elapsed from OpenSIPS starting.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics timestamp
+
+```
+
+Example of usage from script
+```text
+
+xlog("OpenSIPS has been alive for $stat(timestamp) seconds \n");
+
+```
+
+---
+
+## "LOAD" class
+
+Statistics giving information about the OpenSIPS internal load. The load is defined as percentage of time spent in doing processing versus total time. Following the model of "top", there are three load values, calculated over different periods of time:
+* realtime load - calculated over the last 1 second
+* last minute load - calculated over the last 1 minute
+* last 10 minutes load - calculated over the last 10 minutes
+
+All three load values are provided by OpenSIPS in a per-process manner (the load of each process) and globally (covering all processes).
+
+### load
+The realtime load of entire OpenSIPS - this counts all the core processes of OpenSIPS; the additional processes requested by modules are not counted in this load. Also note that some core processes are not counted as they do not generate any kind of load; such processes are the attendant, the time keeper and the timer trigger.
+This statistic is actually reflecting the load generated by processing the SIP traffic (as only the core active processes are counted).
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics load
+load:load:: 24
+
+```
+
+Example of usage from script
+```text
+
+xlog("The OpenSIPS processing load is $stat(load) \n");
+
+```
+
+### load1m
+The last minute average load of core OpenSIPS (covering only core/SIP processes). For more, see [load](#load).
+
+### load10m
+The last 10 minutes average load of core OpenSIPS (covering only core/SIP processes). For more, see [load](#load).
+
+### load-all
+The realtime load of entire OpenSIPS, counting both core and module processes. Similar to [[#load|load], the processes not generating load at all are not counted. 
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics load-all
+load:load-all:: 24
+
+```
+
+Example of usage from script
+```text
+
+xlog("The overall OpenSIPS load is $stat(load-all) \n");
+
+```
+
+### load1m-all
+The last minute average load of entire OpenSIPS (covering all processes). For more, see [load-all](#load-all).
+
+### load10m-all
+The last 10 minutes average load of entire OpenSIPS (covering all processes). For more, see [load-all](#load-all).
+
+### load-proc-id
+The realtime load of the process **ID**. To learn the IDs of the OpenSIPS processes (and their types), use the **ps** MI command.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics load-proc-5
+load:load-proc-5:: 79
+
+```
+
+Example of usage from script
+```text
+
+xlog("The load of processes 5 is $stat(load-proc-5) \n");
+
+```
+
+### load1m-proc-id
+The last minute average load of the process **ID**. For more, see [load-proc-id](#load-proc-id).
+
+### load10m-proc-id
+The last 10 minutes average load of the process **ID**. For more, see [load-proc-id](#load-proc-id).
+
+---
+
+## "NET" class
+
+Statistics giving information about UDP, TCP and TLS buffers on interfaces that OpenSIPS is listening on.
+
+### waiting_udp
+Returns the number of bytes waiting to be consumed on UDP interfaces that OpenSIPS is listening on.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics waiting_udp
+
+```
+
+Example of usage from script
+```text
+
+xlog("The UDP waiting buffer size is $stat(waiting_udp) \n");
+
+```
+
+### waiting_tcp
+Returns the number of bytes waiting to be consumed on TCP interfaces that OpenSIPS is listening on.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics waiting_tcp
+
+```
+
+Example of usage from script
+```text
+
+xlog("The TCP waiting buffer size is $stat(waiting_tcp) \n");
+
+```
+
+### waiting_tls
+Returns the number of bytes waiting to be consumed on TLS interfaces that OpenSIPS is listening on.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics waiting_tls
+
+```
+
+Example of usage from script
+```text
+
+xlog("The TLS waiting buffer size is $stat(waiting_tls) \n");
+
+```
+
+---
+
+## "SHMEM" class
+
+Statistics giving information on the shared memory that OpenSIPS is using.
+
+### total_size
+Returns the total size of shared memory available to OpenSIPS processes.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics total_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total size of SHMEM available is $stat(total_size) \n");
+
+```
+
+### used_size
+Returns the amount of shared memory requested and used by OpenSIPS processes.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics used_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("SHMEM in use = $stat(used_size) \n");
+
+```
+
+### real_used_size
+Returns the amount of shared memory requested by OpenSIPS processes + malloc overhead
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics real_used_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("Real SHMEM used size is $stat(real_used_size) \n");
+
+```
+
+### max_used_size
+Returns the maximum amount of shared memory ever used by OpenSIPS processes.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics max_used_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("The max SHMEM ever used is $stat(max_used_size) \n");
+
+```
+
+### free_size
+Returns the free memory available. Computed as total_size - real_used_size
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics free_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("Free SHMEM available is $stat(free_size) \n");
+
+```
+
+### fragments
+Returns the total number of fragments in the shared memory.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics fragments
+
+```
+
+Example of usage from script
+```text
+
+xlog("The total number of SHMEM fragments is $stat(fragments) \n");
+
+```
+
+---
+
+## "PKMEM" class
+
+Various private memory related statistics for each OpenSIPS process. Each "PKMEM" statistic is prefixed by a number, representing the index of an OpenSIPS process (0, 1, ...).
+
+### N-total_size
+Returns the total size of private memory available to OpenSIPS process #N.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics 0-total_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("Total size of PKG memory available for process #0 is $stat(0-total_size) \n");
+
+```
+
+### N-used_size
+Returns the amount of private memory requested and used by OpenSIPS process #N.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics 0-used_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("PKG mem in use for process #1 = $stat(1-used_size) \n");
+
+```
+
+### N-real_used_size
+Returns the amount of private memory requested by OpenSIPS process #N, including allocator-specific metadata
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics 0-real_used_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("Process #0 actually uses $stat(0-real_used_size) bytes of private memory\n");
+
+```
+
+### N-max_used_size
+Returns the maximum amount of private memory ever used by OpenSIPS process #N.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics 0-max_used_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("The max PKG memory ever used for process #0 is $stat(0-max_used_size) \n");
+
+```
+
+### N-free_size
+Returns the free private memory available for OpenSIPS process #N. Computed as total_size - real_used_size
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics 0-free_size
+
+```
+
+Example of usage from script
+```text
+
+xlog("Free PKG memory available for process #0 is $stat(0-free_size) \n");
+
+```
+
+### N-fragments
+Returns the currently available number of free fragments in the private memory for OpenSIPS process #N.
+
+Example of usage through MI FIFO
+```bash
+
+opensips-cli -x mi get_statistics 0-fragments
+
+```
+
+Example of usage from script
+```text
+
+xlog("The total number of PKG fragments is $stat(0-fragments) \n");
+
+```
