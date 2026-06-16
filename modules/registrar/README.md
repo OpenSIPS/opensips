@@ -1,0 +1,753 @@
+---
+title: "registrar Module"
+description: "The module contains REGISTER processing logic."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+The module contains REGISTER processing logic.
+
+
+#### PATH support
+
+
+Register module includes Path support (according to RFC 3327) 
+		for usage in registrars and home-proxies.
+
+
+A call to save(...) stores, if path-support is enabled
+		in the registrar-module, the values of the Path
+		Header(s) along with the contact into usrloc. There are
+		three modes regarding the reply to a REGISTER including
+		one or more Path HFs:
+
+
+- *off* - stores the value of the 
+				Path headers into usrloc without passing it back to 
+				the UAC in the reply.
+- *lazy* - stores the Path header and 
+				passes it back to the UAC if Path-support is indicated 
+				by the "path" param in the Supported HF.
+- *strict* - rejects the registration 
+				with "420 Bad Extension" if there's a Path 
+				header but no support for it is indicated by the UAC. 
+				Otherwise it's stored and passed back to the UAC.
+
+
+A call to lookup(...) always uses the path header if
+		found, and inserts it as Route HF either in front of
+		the first Route HF, or after the last Via HF if no
+		Route is present. It also sets the destination uri to
+		the first Path uri, thus overwriting the received-uri,
+		because NAT has to be handled at the outbound-proxy of
+		the UAC (the first hop after client's NAT).
+
+
+The whole process is transparent to the user, so no
+		config changes are required beside setting the
+		registrar-parameters "use_path" and 
+		"path_mode".
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *usrloc - User Location Module*.
+- *sl - Stateless Replies*.
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed before 
+		running OpenSIPS with this module loaded:
+
+
+- *None*.
+
+
+### Exported Parameters
+
+
+#### default_expires (integer)
+
+
+If the processed message contains neither Expires 
+		HFs nor expires contact parameters, this value 
+		will be used for newly created usrloc records. The parameter contains 
+		number of second to expire (for example use 3600 for one hour).
+
+
+*Default value is 3600.*
+
+
+```c title="Set default_expires parameter"
+...
+modparam("registrar", "default_expires", 1800)
+...
+```
+
+
+#### min_expires (integer)
+
+
+The minimum expires value of a Contact, values lower than this 
+		minimum will be automatically set to the minimum. Value 0 disables 
+		the checking.
+
+
+*Default value is 60.*
+
+
+```c title="Set min_expires parameter"
+...
+modparam("registrar", "min_expires", 60)
+...
+```
+
+
+#### max_expires (integer)
+
+
+The maximum expires value of a Contact, values higher than this 
+		maximum will be automatically set to the maximum. Value 0 disables 
+		the checking.
+
+
+*Default value is 0.*
+
+
+```c title="Set max_expires parameter"
+...
+modparam("registrar", "max_expires", 120)
+...
+```
+
+
+#### default_q (integer)
+
+
+The parameter represents default q value for new contacts. Because 
+		OpenSIPS doesn't support float parameter types, the value in the parameter 
+		is divided by 1000 and stored as float. For example, if you want 
+		default_q to be 0.38, use value 380 here.
+
+
+*Default value is 0.*
+
+
+```c title="Set default_q parameter"
+...
+modparam("registrar", "default_q", 1000)
+...
+```
+
+
+#### tcp_persistent_flag (integer)
+
+
+The parameter specifies the message flag to be used to control the 
+		module behaviour regarding TCP connections. If the flag is set for a 
+		REGISTER via TCP containing a TCP contact, the module, via the 
+		"save()" functions will set the lifetime of the TCP
+		connection to the contact expire value. By doing this, the TCP 
+		connection will stay on as long as the contact is valid.
+
+
+*Default value is -1 (disabled).*
+
+
+```c title="Set tcp_persistent_flag parameter"
+...
+modparam("registrar", "tcp_persistent_flag", 7)
+...
+```
+
+
+#### realm_prefix (string)
+
+
+Prefix to be automatically strip from realm. As an alternative to 
+		 SRV records (not all SIP clients support SRV lookup), a subdomain of 
+		 the master domain can be defined for SIP purposes (like 
+		 sip.mydomain.net pointing to same IP address as the SRV record for 
+		 mydomain.net). By ignoring the realm_prefix "sip.", at registration,
+		 sip.mydomain.net will be equivalent to mydomain.net .
+
+
+*Default value is NULL (none).*
+
+
+```c title="Set realm_prefix parameter"
+...
+modparam("registrar", "realm_prefix", "sip.")
+...
+```
+
+
+#### append_branches (integer)
+
+
+The parameter controls how lookup function processes multiple 
+		contacts.  If there are multiple contacts for the given username in 
+		usrloc and this parameter is set to 1, Request-URI will be 
+		overwritten with the highest-q rated contact and the rest will be 
+		appended to sip_msg structure and can be later used by tm for forking.
+		If the parameter is set to 0, only Request-URI will be overwritten 
+		with the highest-q rated contact and the rest will be left unprocessed.
+
+
+*Default value is 1.*
+
+
+```c title="Set append_branches parameter"
+...
+modparam("registrar", "append_branches", 0)
+...
+```
+
+
+#### aor_avp (str)
+
+
+If set, the module will try first to get the AOR from this AVP 
+		instead of fetching it form the processed request.
+
+
+The AVP must contain a valid SIP URI. If no AVP is found, it will be
+		tried to get the AOR from the message (standard behaviour).
+
+
+*Default value is "NULL" (disabled).*
+
+
+```c title="Set aor_avp parameter"
+...
+modparam("registrar", "aor_avp", "$avp(i:3223)")
+...
+```
+
+
+#### case_sensitive (integer)
+
+
+If set to 1 then AOR comparison will be case 
+		sensitive, if set to 0 then AOR comparison will 
+		be case insensitive--This is recommended.
+
+
+*Default value is 0.*
+
+
+```c title="Set case_sensitive parameter"
+...
+modparam("registrar", "case_sensitive", 1)
+...
+```
+
+
+#### received_avp (str)
+
+
+Registrar will store the value of the AVP configured by this 
+		parameter in the received column in the user location database. 
+		It will leave the column empty if the AVP is empty. The AVP should 
+		contain a SIP URI consisting of the source IP, port,
+		and protocol of the REGISTER message being processed.
+
+
+> [!NOTE]
+> The value of this parameter should be the same as the value of 
+			corresponding parameter of nathelper module.
+
+
+*Default value is "NULL" (disabled).*
+
+
+```c title="Set received_avp parameter"
+...
+modparam("registrar", "received_avp", "$avp(s:rcv)")
+...
+```
+
+
+#### received_param (string)
+
+
+The name of the parameter that will be appended to Contacts of 
+		200 OK when the received URI was set by nathelper module.
+
+
+*Default value is "received".*
+
+
+```c title="Set received_param parameter"
+...
+modparam("registrar", "received_param", "rcv")
+...
+```
+
+
+#### max_contacts (integer)
+
+
+The parameter can be used to limit the number of contacts per 
+		AOR (Address of Record) in the user location database. Value 0 
+		disables the check.
+
+
+*Default value is 0.*
+
+
+```c title="Set max_contacts parameter"
+...
+# Allow no more than 10 contacts per AOR
+modparam("registrar", "max_contacts", 10)
+...
+		
+```
+
+
+#### retry_after (integer)
+
+
+The registrar can generate 5xx reply to REGISTER in various 
+		situations. It can, for example, happen when the 
+		`max_contacts` parameter is set and the
+		processing of REGISTER request would exceed the limit. In this case 
+		the registrar would generate "503 Service Unavailable" response.
+
+
+If you want to add the Retry-After header field in 5xx replies, set 
+		this parameter to a value grater than zero (0 means do not add the 
+		header field). See section 20.33 of RFC3261 for more details.
+
+
+*Default value is 0 (disabled).*
+
+
+```c title="Set retry_after parameter"
+...
+modparam("registrar", "retry_after", 30)
+...
+		
+```
+
+
+#### sock_flag (integer)
+
+
+Message flag to signal to register module to look into REGISTER 
+		request for a header which contains a socket description (IP:port). 
+		This socket info will be stored by register instead of the received 
+		socket info.
+
+
+This make sens only in multiple replicated servers scenarios.
+
+
+*Default value is -1 (no flag).*
+
+
+```c title="Set sock_flag parameter"
+...
+modparam("registrar", "sock_flag", 18)
+...
+		
+```
+
+
+#### sock_hdr_name (string)
+
+
+Header which contains a socket description (proto:IP:port) to override
+		the received socket info. The header will be read only if the
+		flag sock_flag is set.
+
+
+This make sens only in multiple replicated servers scenarios.
+
+
+*Default value is NULL.*
+
+
+```c title="Set sock_hdr_namer parameter"
+...
+modparam("registrar", "sock_hdr_name", "Sock-Info")
+...
+		
+```
+
+
+#### method_filtering (integer)
+
+
+Tells if the contact filtering based on supported methods should be
+		performed during lookup. It's enabled only if it has a non zero 
+		value.
+
+
+*Default value is 0 (disabled).*
+
+
+```c title="Set method_filtering parameter"
+...
+modparam("registrar", "method_filtering", 1)
+...
+		
+```
+
+
+#### use_path (integer)
+
+
+If set to 1, the Path header is handled according to the parameter 
+		"path_mode".
+
+
+*Default value is 0 (disabled).*
+
+
+```c title="Set use_path parameter"
+...
+modparam("registrar", "use_path", 1)
+...
+		
+```
+
+
+#### path_mode (integer)
+
+
+The registrar module implements three different modes regarding the 
+		response to a registration which includes one or more Path headers:
+
+
+- 0 - The Path header is saved into usrloc, but is not included in 
+			the reply.
+- 1 - The Path header is saved into usrloc, but is only included in 
+			the reply if path support is indicated in the registration request 
+			by the "path" option of the 
+			"Supported" header.
+- 2 - The path header is only saved into usrloc, if path support is 
+			indicated in the registration request by the "path" 
+			option of the "Supported" header. If no path support 
+			is indicated, the request is rejected with 
+			"420 - Bad Extension" and the header 
+			"Unsupported: path" is included in the reply along 
+			with the received "Path" header. This mode is the 
+			one recommended by RFC-3327.
+
+
+*Default value is 2.*
+
+
+```c title="Set path_mode parameter"
+...
+modparam("registrar", "path_mode", 0)
+...
+		
+```
+
+
+#### path_use_received (integer)
+
+
+If set to 1, the "received" parameter of the first Path 
+		URI of a registration is set as received-uri and the NAT branch flag is
+		set for this contact. This is useful if the registrar is placed
+		behind a SIP loadbalancer, which passes the nat'ed UAC address as 
+		"received" parameter
+		in it's Path uri.
+
+
+*Default value is 0 (disabled).*
+
+
+```c title="Set path_use_received parameter"
+...
+modparam("registrar", "path_use_received", 1)
+...
+		
+```
+
+
+### Exported Functions
+
+
+#### save(domain)
+
+
+The function processes a REGISTER message. It can add, remove or 
+		modify usrloc records depending on Contact and Expires HFs in the 
+		REGISTER message. On success, 200 OK will be returned listing all 
+		contacts that are currently in usrloc. On an error, error message 
+		will be send with a short description in reason phrase.
+
+
+Meaning of the parameters is as follows:
+
+
+- *domain* - Logical domain within registrar. 
+			If database is used then this must be name of the table which 
+			stores the contacts.
+
+
+This function can be used from REQUEST_ROUTE.
+
+
+```c title="save usage"
+...
+save("location");
+...
+```
+
+
+#### save(domain,flags)
+
+
+Same as `save()` but it accepts a set of flags for
+		controlling its behaviour.
+
+
+Meaning of the parameters is as follows:
+
+
+- *domain* - Logical domain within registrar. 
+			If database is used then this must be name of the table which 
+			stores the contacts.
+- *flags* - the value may be a bitwise OR of 
+			the following flags:
+
+  - *0x01* - save the contacts only
+					in memory cache without no DB operation;
+  - *0x02* - do not generate a SIP 
+						reply to the current REGISTER request.
+The flags may be given in decimal or hexa format.
+
+
+This function can be used from REQUEST_ROUTE.
+
+
+```c title="save usage"
+...
+save("location","0x01");
+...
+```
+
+
+#### lookup(domain)
+
+
+The functions extracts username from Request-URI and tries to find 
+		all contacts for the username in usrloc. If there are no such 
+		contacts, -1 will be returned.  If there are such contacts, 
+		Request-URI will be overwritten with the contact that has
+		the highest q value and optionally the rest will be appended to 
+		the message (depending on append_branches parameter value).
+
+
+If the method_filtering option is enabled, the lookup function
+		will return only the contacts that support the method of the
+		processed request.
+
+
+Meaning of the parameters is as follows:
+
+
+- *domain* - Name of table that should be used 
+			for the lookup.
+
+
+Return codes:
+
+
+- *1* - contacts found and returned.
+*-1* - no contact found.
+*-2* - contacts found, but method not supported.
+*-3* - internal error during processing.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+
+```c title="lookup usage"
+...
+lookup("location");
+switch ($retcode) {
+    case -1:
+    case -3:
+        sl_send_reply("404", "Not Found");
+        exit;
+    case -2:
+        sl_send_reply("405", "Not Found");
+        exit;
+};
+...
+```
+
+
+#### registered(domain)
+
+
+The function returns true if the AOR in the Request-URI is 
+		registered, false otherwise.  The function does not modify the 
+		message being process, it neither rewrites the Request-URI if a 
+		contact is found not append branches.
+
+
+Meaning of the parameters is as follows:
+
+
+- *domain* - Name of table that should be 
+			used for the lookup.
+
+
+This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+
+```c title="registered usage"
+...
+if (registered("location")) {
+	sl_send_reply("100", "Trying");
+	...
+};
+...
+```
+
+
+#### add_sock_hdr(hdr_name)
+
+
+Adds to the current REGISTER request a new header with 
+		"hdr_name" which contains the description of the
+		received socket (proto:ip:port)
+
+
+This make sens only in multiple replicated servers scenarios.
+
+
+Meaning of the parameters is as follows:
+
+
+- *hdr_name* - header name to be used.
+
+
+This function can be used from REQUEST_ROUTE.
+
+
+```c title="add_sock_hdr usage"
+...
+add_sock_hdr("Sock-Info");
+...
+```
+
+
+### Exported Statistics
+
+
+#### max_expires
+
+
+Value of max_expires parameter.
+
+
+#### max_contacts
+
+
+The value of max_contacts parameter.
+
+
+#### defaults_expires
+
+
+The value of default_expires parameter.
+
+
+#### accepted_regs
+
+
+Number of accepted registrations.
+
+
+#### rejected_regs
+
+
+Number of rejected registrations.
+
+
+## Frequently Asked Questions
+
+
+**Q: What happend with the old "nat_flag" module parameter?**
+
+
+In was removed, as the module internally loads this value from the
+			"USRLOC" module (see the "nat_bflag"
+			USRLOC parameter).
+
+
+**Q: What happend with the old "use_domain" module parameter?**
+
+
+In was removed, as the module internally loads this option from the
+			"USRLOC" module. This was done in order to simplify the
+			configuration.
+
+
+**Q: What happend with the old "save_noreply" and "save_memory" functions?**
+
+
+There functions were merged into the new 
+			"save(domain,flags)" functions. If a reply should be
+			sent or if the DB should be updated also is controlled via the
+			flags.
+
+
+**Q: Where can I find more about OpenSIPS?**
+
+
+Take a look at [http://www.opensips.org/](http://www.opensips.org/).
+
+
+**Q: Where can I post a question about this module?**
+
+
+First at all check if your question was already answered on one of
+			our mailing lists:
+
+E-mails regarding any stable OpenSIPS release should be sent to 
+			users@lists.opensips.org and e-mails regarding development versions
+			should be sent to devel@lists.opensips.org.
+
+If you want to keep the mail private, send it to 
+			users@lists.opensips.org.
+
+
+**Q: How can I report a bug?**
+
+
+Please follow the guidelines provided at:
+			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+
+
+**Q: What happened to the desc_time_order parameter?**
+
+
+It was removed, as its functionality was mmigrate into usrloc
+			module, were there is a parameter with the same name.
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
