@@ -1,0 +1,191 @@
+---
+title: "JSON-RPC Module"
+description: "This module is an implementation of an JSON-RPC v2.0 client [http://www.jsonrpc.org/specification](http://www.jsonrpc.org/specification). that can send a call to a JSON-RPC server over a TCP connection."
+---
+
+## Admin Guide
+
+
+### Overview
+
+
+This module is an implementation of an JSON-RPC v2.0
+		client [http://www.jsonrpc.org/specification](http://www.jsonrpc.org/specification).
+		that can send a call to a JSON-RPC server over a TCP connection.
+
+
+NOTE that the current version of this module does not support TCP
+		connection reusage, nor asynchronous commands.
+
+
+### Dependencies
+
+
+#### OpenSIPS Modules
+
+
+The following modules must be loaded before this module:
+
+
+- *none*.
+
+
+#### External Libraries or Applications
+
+
+The following libraries or applications must be installed before 
+		running OpenSIPS with this module loaded:
+
+
+- *none*
+
+
+### Exported Parameters
+
+
+#### connect_timeout (integer)
+
+
+The amount of milliseconds OpenSIPS waits to connect to the the
+			JSON-RPC server, until it times out.
+
+
+*Default value is "500 milliseconds".*
+
+
+```c title="Set connect_timeout parameter"
+...
+modparam("jsonrpc", "connect_timeout", 200)
+...
+```
+
+
+#### write_timeout (integer)
+
+
+The amount of milliseconds OpenSIPS waits to send a RPC command to
+			the JSON-RPC server, until it times out.
+
+
+*Default value is "500 milliseconds".*
+
+
+```c title="Set write_timeout parameter"
+...
+modparam("jsonrpc", "write_timeout", 300)
+...
+```
+
+
+#### read_timeout (integer)
+
+
+The amount of milliseconds OpenSIPS waits for the JSON-RPC server
+			to respond to a JSON-RPC request, until it times out. Note that
+			these parameter only affects the *jsonrpc_request*
+			command.
+
+
+*Default value is "500 milliseconds".*
+
+
+```c title="Set read_timeout parameter"
+...
+modparam("jsonrpc", "read_timeout", 300)
+...
+```
+
+
+### Exported Functions
+
+
+#### jsonrpc_request(destination, method, params, ret_var)
+
+
+Does a JSON-RPC request to the JSON-RPC server
+				indicated in the *destination*
+				parameter, and waits for a reply from it.
+
+
+This function can be used from any route.
+
+
+The function has the following parameters:
+
+
+- *destination* (string) - address of the
+						JSON-RPC server. The format needs to be
+						*IP:port*.
+- *method* (string) - the method used in
+						the RPC request.
+- *params* (string) - these are the parameters
+						sent to the RPC method. This parameter needs to be
+						a properly formated JSON array, or JSON object,
+						according the the JSON-RPC specifications.
+- *ret_var* a writeable variable
+						used to store the result of the JSON-RPC command. If
+						the command returns an error, the variable will be
+						populated with the error JSON, otherwise, with the
+						body of the JSON-RPC result.
+
+
+The function has the following return codes:
+
+
+- *1* - JSON-RPC command executed
+						successfully, and the server returned success. You can
+						check the *ret_pvar* variable for
+						the result.
+- *-1* - There was an internal error
+						during processing.
+- *-2* - There was a connection
+						(timeout or connect) error with the destination.
+- *-3* - The JSON-RPC was
+						successfully run, but the server returned an error.
+						Check the *ret_pvar* value to find
+						out more information.
+
+
+```c title="jsonrpc_request() function usage"
+	...
+	if (!jsonrpc_request("127.0.0.1", "add", "[1,2]", $var(ret))) {
+		xlog("JSON-RPC command failed with $var(ret)\n");
+		exit;
+	}
+	xlog(JSON-RPC command returned $var(ret)\n");
+	# parse $var(ret) as JSON, or whatever the function returns
+	...
+	
+```
+
+
+#### jsonrpc_notification(destination, method, params)
+
+
+Does a JSON-RPC notification to the JSON-RPC server
+				indicated in the *destination*
+				parameter, but unlike [jsonrpc request](#func_jsonrpc_request),
+				it does not wait for a reply from the JSON-RPC server.
+
+
+This function can be used from any route.
+
+
+The function receives the same parameters as 
+				[jsonrpc request](#func_jsonrpc_request), except for the *ret_pvar*. Also, the same values are returned.
+
+
+```c title="jsonrpc_notification() function usage"
+	...
+	if (!jsonrpc_notification("127.0.0.1", "block_ip", "{ \"ip": \"$si\" }")) {
+		xlog("JSON-RPC notification failed with $rc!\n");
+		exit;
+	}
+	...
+	
+```
+<!-- CONTRIBUTORS -->
+
+### License
+
+All documentation files (i.e. .md extension) are licensed under the Creative Common License 4.0
