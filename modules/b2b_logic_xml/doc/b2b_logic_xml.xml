@@ -5,11 +5,11 @@
 
 <!ENTITY admin SYSTEM "b2b_logic_xml_admin.xml">
 <!ENTITY devel SYSTEM "b2b_logic_xml_devel.xml">
-<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY faq SYSTEM "../../../docs/module_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../docs/entities.xml">
 %docentities;
 
 ]>
@@ -30,5 +30,4 @@
 	<para>&copyright; 2010 <ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink></para>
 	<para>&copyright; 2009 Anca-Maria Vamanu</para>
 </book>
-
 
