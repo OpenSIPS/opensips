@@ -1,3 +1,404 @@
+=========================== Release 3.6.7 ==============================
+
+2026-06-17  Liviu Chircu  <liviu@opensips.org>
+        * [85207da3bb] :
+
+        cfgutils: Fix SHM leak with re.subst and $shv() variables
+
+        The re.subst transformation stores replacement-side PV specs by value inside
+        its cached subst_expr.  When the cached expression is replaced, the embedded
+        $shv() spec could leave behind its shared-memory pvv buffer.
+
+        This can be triggered with a dynamic substitution expression such as:
+
+            $var(re) = "/^s=before/s=$shv(voip_sdp_session)\r/g";
+            $var(sdp) = $(var(sdp){re.subst,$var(re)});
+
+        Track pvv ownership, mark $shv() buffers as SHM-owned, and release them when
+        freeing cached re.subst replacement specs.
+
+        Fixes #3872
+
+        (cherry picked from commit 09ec06179c8c40d034e8eb27fe814f15418f58b6)
+
+
+2026-06-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [d967744fb8] :
+
+        [clusterer] fix stack overflow in receiving MI params over BIN
+
+        Reported by Hu Xinyao ( huxinyao0011@gmail.com )
+        https://github.com/OpenSIPS/opensips/security/advisories/GHSA-p96q-v5qf-w24h
+
+        (cherry picked from commit 94bd74a651ca72d670678b35b0306e2c5c6efb27)
+
+
+2026-06-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [3ec7d0c30e] :
+
+        [msilo] fix malformed body for non plain/text content
+
+        When sending stored messaged, do not attempt to add any extra text info to the body, unless is text/plain. Any other type, like cpim, will result into a broken body (as syntax, as cpim is xml)
+        Reported by Robert Dyck <rob.dyck@telus.net>
+
+        (cherry picked from commit 73115759a1570560b737862e48fa1479e6e161ff)
+
+
+2026-06-16  Stefan Darius  <darius.stefan@opensips.org>
+        * [0fa1146886] :
+
+        docs: add generated module README files for 3.6 (#3927)
+
+        * docs: add generated README.md files
+
+        * docs: add generated manual [skip ci]
+
+2026-06-16  Razvan Crainea  <razvan@opensips.org>
+        * [ec25c321d0] :
+
+        docs: rename doc directory to docs [skip ci]
+
+
+2026-06-15  Liviu Chircu  <liviu@opensips.org>
+        * [1703868201] :
+
+        registrar: Add few GRUU unit tests for ;+sip.instance=
+
+        Follow-up of #3886
+
+        (cherry picked from commit 303888a89552394ab48b9efbccb451261d4972b9)
+
+
+2026-06-15  Damien Sandras  <dsandras@beip.be>
+        * [04d5367ab4] :
+
+        opensips: Fix SIP Instance according to RFC 5626
+
+        It should be surrounded by angle brackets following section 4.1 from RFC
+        5626:
+
+          [RFC3840] defines equality rules for callee capabilities parameters,
+          and according to that specification, the "sip.instance" media feature
+          tag will be compared by case- sensitive string comparison.  This means
+          that the URN will be encapsulated by angle brackets ("<" and ">") when
+          it is placed within the quoted string value of the "+sip.instance"
+          Contact header field parameter.
+
+
+2026-06-15  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f8935fe12a] :
+
+        fixed stack buffer overflow in $(cT[*]) pvar
+
+        Credits for reporting and fixing go to Yiyi Wang, Tsinghua University (wangyiyi25@mails.tsinghua.edu.cn)
+        https://github.com/OpenSIPS/opensips/security/advisories/GHSA-w522-9gcp-274p
+
+        (cherry picked from commit fbef00a7bb4dfc5f0f24528d123beac128462827)
+
+
+2026-06-15  Razvan Crainea  <razvan@opensips.org>
+        * [5a91d8ac1d] :
+
+        proto_bin: validate stream packet lengths
+
+        Reject BIN packets with advertised sizes outside the protocol bounds before marking the request complete. This prevents zero-length frames from being repeatedly dispatched without consuming input.
+
+        Reported-by: Hu Xinyao (@ZwCrazyThursday)
+        (cherry picked from commit 6caec74f56623f13bf503dabccc0439b5bc84a79)
+
+
+2026-06-15  Razvan Crainea  <razvan@opensips.org>
+        * [584f826db1] :
+
+        rtp_relay: parse reply To header
+
+        (cherry picked from commit 2daa6238f0b180cb6d62643e20afd627ae15b574)
+
+
+2026-06-15  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [3925140275] :
+
+        [stir-shaken] fix heap-buffer-overflow in stir_shaken_disengagement()
+
+        Credits for reporting and fixing go to Yukimura Aneha from BroadBand Security, Inc (yuk_aneha@bbsec.co.jp)
+        https://github.com/OpenSIPS/opensips/security/advisories/GHSA-qr87-6xwg-29p3
+
+        (cherry picked from commit 5bd393d0151e4636cdfe78f4317ecf3ac447dd9a)
+
+
+2026-06-14  OpenSIPS  <github@opensips.org>
+        * [a686b62ae1] :
+
+        Rebuild documentation
+
+
+2026-06-12  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [382d02be28] :
+
+        Merge pull request #3920 from ovidiusas/master_in_dialog_PRACK
+
+        dialog: handle late PRACK received in conversation
+        (cherry picked from commit d8586fa694d924e465fa0599a78cb71dbea14e02)
+
+
+2026-06-11  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [b17f7fda5f] :
+
+        [pua_dialoginfo] fix some backport syntax issues
+
+        related to prev commit
+
+
+2026-06-11  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [3489076916] :
+
+        Merge pull request #3915 from NormB/fix/pua-dialoginfo-early-lifetime
+
+        pua_dialoginfo: fix early state lifetime and clean up dangling early branches
+
+        (cherry picked from commit 6755c14afc60f3bfc92e06d825742d6b6ca9a013)
+
+
+2026-06-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [0430f1d6c3] :
+
+        fix rewrite_ruri() + RW_RURI_PREFIX with empty string prefix
+
+        If an empty string prefix was provided, a malformed URI was generated (like "sip:@host.com")
+        Reported by @thuroc and @FlyingDutchfrog
+        Fixes #3691
+
+        (cherry picked from commit 4ddb8f0ed93e099ecd548a53d2219fd38fe2f246)
+
+
+2026-06-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [457f09d0ea] :
+
+        [uac_registrant] fix extracting the min-expires upon 423 reply
+
+        This is a regression due to 2cd2a45a025aac256d758d3bac44b3d35eb4ab90
+        Reported by @sindy39
+        Fixes #3910
+
+        (cherry picked from commit ee7af98143e4d970f3ca64c2c6f51b4ff443814f)
+
+
+2026-06-09  Razvan Crainea  <razvan@opensips.org>
+        * [f372f2f209] :
+
+        github: inherit SLACK token in reusable workflows
+
+        (cherry picked from commit c7528472d4290f0b84fd68bfb914c326ecbd56ce)
+
+
+2026-06-09  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [3ef7955ae1] :
+
+        Merge pull request #3912 from sippy/pr_rtpproxy_nsock_drain_3.6
+
+        rtpproxy: drain timeout notification sockets (merge of #3911 into 3.6)
+
+2026-06-08  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [1dc7d08617] :
+
+        rtpproxy: drain timeout notification sockets
+
+        RTPProxy may keep the notification connection open while writing a burst of
+        timeout events.  The rtpproxy notification callback only performed a single
+        read per reactor wakeup, so already-buffered notifications could be left
+        pending with no further event to wake the process.
+
+        Set notification sockets nonblocking and drain them until EAGAIN, preserving
+        partial commands between callbacks.  Also centralize notification connection
+        cleanup so error, EOF and handler failure paths consistently unregister the fd,
+        free pending data and close the socket.
+
+
+2026-06-08  Razvan Crainea  <razvan@opensips.org>
+        * [dc328f2c9b] :
+
+        github: migrate slack notify to official action
+
+        (cherry picked from commit fcf1668c5b50966eb2e18e13a241936db6370fbc)
+
+
+2026-06-07  OpenSIPS  <github@opensips.org>
+        * [53d0e33329] :
+
+        Rebuild documentation
+
+
+2026-06-05  Razvan Crainea  <razvan@opensips.org>
+        * [d6a21d5436] :
+
+        b2b_sca: fix potential heap/buffer overflow in uri
+
+        If the display name needs to be escaped, we need way more space to fit
+        it, and if we don't allocate that much, it can lead to mem corruption.
+
+        Credits go to  R4mbb of KRsecurity(<yong010301@gmail.com>) for reporting
+        it and providing a fix.
+
+        (cherry picked from commit 8f1be98346769100cbd43cc4124b24cf24a6b0d1)
+
+
+2026-06-05  Ovidiu Sas  <osas@voipembedded.com>
+        * [b3953c20c4] :
+
+        core: implement FAST_LOCK for aarch64 (#3892)
+
+        (cherry picked from commit ecc8dbb5bbf98ba40e04cce3933c944358366bc8)
+
+
+2026-06-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [2d8f046871] :
+
+        [uac_registrant] store the configured "expires" and use it for each re-REGISTER
+
+        ...in order to avoid decreasing it if the registar is reducing it.
+        Reported by @sindy39
+        Fixes #3659
+
+        (cherry picked from commit 2cd2a45a025aac256d758d3bac44b3d35eb4ab90)
+
+
+2026-06-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [4f6c86c0ef] :
+
+        [b2b_entities] avoid sending 408 on a completed transaction
+
+        upon entities cleanup, is the UAS/UPDATE transactions are completed, just unref without sending a 408.
+        Reported by @davegreeko2023
+        Fixes #3899
+
+        (cherry picked from commit 6ab5ee16460a1ff74a328ff39b0eb39195a190b8)
+
+
+2026-06-03  Razvan Crainea  <razvan@opensips.org>
+        * [c2a655a27b] :
+
+        tls_wolfssl: align wolfSSL shm allocations
+
+        wolfSSL may require allocations aligned beyond the default shm allocator guarantee on builds that enable aligned cryptographic data. Keep the existing allocator path unchanged unless wolfSSL advertises such a requirement, and use an aligned shm-backed wrapper only then.
+
+        The wrapper follows the issue patch by over-allocating, storing the raw shm pointer before the aligned address, and using memmove after shm_realloc when the aligned offset changes so data is preserved before writing the back-pointer.
+
+        Reported-and-tested-by: @volga629-1
+
+        Fixed-by: @NormB
+
+        Suggested-by: @space88man
+
+        Closes #3814
+
+
+2026-06-03  Razvan Crainea  <razvan@opensips.org>
+        * [0a078e4a0a] :
+
+        rtp_relay: clarify peer pvar scope
+
+        Thanks to @sindy39 for the suggestion.
+
+        Refs #3884
+
+
+2026-06-02  Razvan Crainea  <razvan@opensips.org>
+        * [b596d3faf5] :
+
+        dialog: avoid clearing locked_by after final db cleanup unref
+
+        The DB cleanup path temporarily sets locked_by, calls
+        unref_dlg_unsafe(), and then clears the field again. If that unref drops
+        the last reference, the dialog is destroyed before the final assignment,
+        so the reset writes into freed memory. Only clear locked_by when another
+        reference still exists.
+
+        (cherry picked from commit fbf3c0bd02aff11d35acab59d6f478aa639e3ce6)
+
+
+2026-06-02  Razvan Crainea  <razvan@opensips.org>
+        * [5cce875c73] :
+
+        rtp_relay: use the opposite tag when creating the peer leg in request
+
+        When request_route lazily creates the peer leg for an unestablished RTP
+        relay session, the local leg is already matched by the From tag. The
+        peer leg therefore needs the opposite tag (To tag) so the internal leg
+        map stays consistent.
+
+        Thanks to @sindy39 on GitHub for reporting it in #3884.
+
+        (cherry picked from commit aca9a9a2b81e79c7dc15d002bc8d1aa3f474bd8d)
+
+
+2026-05-31  OpenSIPS  <github@opensips.org>
+        * [b20ae9e460] :
+
+        Rebuild documentation
+
+
+2026-05-29  Razvan Crainea  <razvan@opensips.org>
+        * [d6427ec4bc] :
+
+        dialog: fix stats transitions for replicated dlgs
+
+        (cherry picked from commit 4857fbd04e2a95d9c594f07935d84d914aff5077)
+
+
+2026-05-27  Liviu Chircu  <liviu@opensips.org>
+        * [5dbbd997f7] :
+
+        registrar: Honor pn_refresh_timeout for PN branch waits
+
+        pn_refresh_timeout was only limiting the EBR subscription lifetime.  For
+        initial INVITEs to PN-only contacts, the TM phony branch created by
+        t_wait_for_new_branches() could remain pending until fr_inv_timeout
+        after the PN refresh window had already expired.
+
+        Add opt-in EBR expiry notifications for function-based NOTIFY subs and
+        use them from registrar PN handling.  On subscription expiry, release
+        the associated TM phony branch through a new TM bind which can resolve
+        the EBR remote transaction reference and generate a local 408 for that
+        branch.  Matching contact updates continue to inject the refreshed
+        branch as before.
+
+        This caps the PN-only INVITE wait at pn_refresh_timeout without
+        shortening timers for real branches in mixed lookups.
+
+
+2026-05-26  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [b10c6af6c8] :
+
+        [drouting] fix hashing the carrier sort algorithm
+
+        Credits go to @Sippy-Soft
+        Fixes #3897
+
+        (cherry picked from commit 86742f5f88d04bf75c4f24b3759ebd6026e3a85c)
+
+
+2026-05-26  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [70e8fc0b02] :
+
+        Merge branch 'NormB-fix/dialog-cluster-sipi-crash'
+
+        (cherry picked from commit 3b307e6057e04e2422f40f25d66305e8eba08fbb)
+
+
+2026-05-26  Razvan Crainea  <razvan@opensips.org>
+        * [1dffc0d4b0] :
+
+        rtpproxy: guard for null message in command
+
+        (cherry picked from commit d3b092457414dcda7a80676e14e4958863b2b29f)
+
+
+2026-05-24  OpenSIPS  <github@opensips.org>
+        * [83ca84c181] :
+
+        Rebuild documentation
+
+
 =========================== Release 3.6.6 ==============================
 
 2026-05-20  Razvan Crainea  <razvan@opensips.org>
