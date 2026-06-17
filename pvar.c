@@ -5769,6 +5769,8 @@ void pv_spec_free(pv_spec_t *spec)
 	/* TODO: free name if it is PV */
 	if(spec->trans)
 		free_transformation((trans_t*)spec->trans);
+	if ((spec->pvp.pvv_flags & PV_PARAM_PVV_SHM) && spec->pvp.pvv.s)
+		shm_free(spec->pvp.pvv.s);
 	pkg_free(spec);
 }
 
