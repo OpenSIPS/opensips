@@ -41,7 +41,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.6.6
+Version:  3.6.7
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1670,6 +1670,9 @@ fi
 
 
 %changelog
+* Wed Jun 17 2026 Liviu Chircu <liviu@opensips.org> - 3.6.7-1
+- OpenSIPS minor stable release: 3.6.7-1
+
 * Wed May 20 2026 Liviu Chircu <liviu@opensips.org> - 3.6.6-1
 - OpenSIPS minor stable release: 3.6.6-1
 
