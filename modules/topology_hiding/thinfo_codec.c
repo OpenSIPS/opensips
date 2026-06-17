@@ -69,7 +69,6 @@
 
 #define LR_OUT_STR   ";lr"
 #define R2_OUT_STR   ";r2=on"
-#define MAX_PORT_OUT_LEN (sizeof(":65535") - 1)
 
 static str lr_uri_param        = str_init("lr");
 static str lr_on_uri_param     = str_init("lr=on");
@@ -483,8 +482,13 @@ int thinfo_decode_socket(thinfo_encoded_t *thinfo, int *proto, str *ip, unsigned
         s += host.len; \
         if (domain_type == DOMAIN_IPV6) { CHECK_DECODE_BUF_BOUNDS(sizeof(char)); *s++ = ']'; } \
         if (port_val > 0) { \
-            CHECK_DECODE_BUF_BOUNDS(MAX_PORT_OUT_LEN); \
-            s += sprintf(s, ":%u", port_val); \
+            int port_str_len = 0; \
+            char *port_str = NULL; \
+            port_str = int2str((uint64_t) port_val, &port_str_len); \
+            CHECK_DECODE_BUF_BOUNDS(/* leading colon */ 1 + port_str_len); \
+            *s++ = ':'; \
+            memcpy(s, port_str, port_str_len); \
+            s += port_str_len; \
         } \
         if (transport_val != TRANSPORT_UDP) { \
             if (transport_val < sizeof(TRANSPORT_STRINGS)/sizeof(TRANSPORT_STRINGS[0]) && \
