@@ -36,6 +36,7 @@
 
 #include "dprint.h"
 #include "mem/mem.h"
+#include "mem/shm_mem.h"
 #include "re.h"
 
 #include <string.h>
@@ -48,10 +49,15 @@ void subst_expr_free(struct subst_expr* se)
 
 	if (se->replacement.s) pkg_free(se->replacement.s);
 	if (se->re) { regfree(se->re); pkg_free(se->re); };
-	for (i = 0; i < se->n_escapes; i++)
-		if (se->replace[i].type == REPLACE_SPEC
-		    && se->replace[i].u.spec.pvp.pvi.type == PV_IDX_PVAR)
-		        pv_spec_free(se->replace[i].u.spec.pvp.pvi.u.dval);
+	for (i = 0; i < se->n_escapes; i++) {
+		if (se->replace[i].type != REPLACE_SPEC)
+			continue;
+		if (se->replace[i].u.spec.pvp.pvi.type == PV_IDX_PVAR)
+			pv_spec_free(se->replace[i].u.spec.pvp.pvi.u.dval);
+		if ((se->replace[i].u.spec.pvp.pvv_flags & PV_PARAM_PVV_SHM) &&
+		    se->replace[i].u.spec.pvp.pvv.s)
+			shm_free(se->replace[i].u.spec.pvp.pvv.s);
+	}
 	pkg_free(se);
 }
 
