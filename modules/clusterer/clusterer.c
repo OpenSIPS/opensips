@@ -1092,7 +1092,7 @@ void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_id)
 
 static void handle_cl_mi_msg(bin_packet_t *packet)
 {
-	str cmd_params[MI_CMD_MAX_NR_PARAMS];
+	str cmd_params[MAX_MI_PARAMS];
 	str cmd_name;
 	int i, no_params;
 	int rc;
@@ -1101,6 +1101,11 @@ static void handle_cl_mi_msg(bin_packet_t *packet)
 	LM_DBG("Received MI command <%.*s>\n", cmd_name.len, cmd_name.s);
 
 	bin_pop_int(packet, &no_params);
+	if (no_params>MAX_MI_PARAMS) {
+		LM_ERR("MI command <%.*s> got more params (%d) than supported (%d)\n",
+			cmd_name.len, cmd_name.s, no_params, MAX_MI_PARAMS);
+		return;
+	}
 	for (i = 0; i < no_params; i++)
 		bin_pop_str(packet, &cmd_params[i]);
 
