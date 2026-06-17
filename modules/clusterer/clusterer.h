@@ -45,8 +45,6 @@
 #define TAG_RAND_LEN 24
 #define TAG_FIX_MAXLEN 6	/* "XX-YY-" */
 
-#define MI_CMD_MAX_NR_PARAMS 15
-
 /* node flags */
 #define NODE_STATE_ENABLED	(1<<0)
 #define NODE_EVENT_DOWN		(1<<1)
