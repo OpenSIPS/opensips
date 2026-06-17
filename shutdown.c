@@ -58,9 +58,11 @@ void cleanup(int show_status)
 #endif
 
 	handle_ql_shutdown();
+	/* TCP conn cleanup may call protocol/module callbacks, so it must run
+	 * before module destroy handlers release module-owned connection state. */
+	tcp_destroy();
 	destroy_modules();
 	udp_destroy();
-	tcp_destroy();
 	destroy_timer();
 	if (shm_memlog_size)
 		shm_mem_disable_dbg();
