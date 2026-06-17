@@ -925,18 +925,43 @@ error_sec:
 }
 
 
+static void tcpconn_put_rpc(int pid, void *param)
+{
+	tcpconn_put(param);
+}
+
+
 void tcpconn_put(struct tcp_connection* c)
 {
 	int destroy = 0;
+	int release_in_main = 0;
+	int tcp_main_proc;
 
 	TCPCONN_LOCK(c->id);
-	c->refcnt--;
-	if (c->refcnt == 0 && (c->flags & F_CONN_HASHED) == 0)
-		destroy = 1;
+	if ((c->flags & F_CONN_HASHED) == 0) {
+		if (!is_tcp_main && c->refcnt == 1) {
+			/* Keep the last reference until TCP main accepts ownership. */
+			release_in_main = 1;
+		} else {
+			c->refcnt--;
+			if (c->refcnt == 0)
+				destroy = 1;
+		}
+	} else {
+		/* Hashed connections are destroyed by TCP main lifetime handling. */
+		c->refcnt--;
+	}
 	TCPCONN_UNLOCK(c->id);
 
-	if (destroy)
+	if (release_in_main) {
+		tcp_main_proc = tcp_get_main_proc_no();
+		if (tcp_main_proc < 0 ||
+				ipc_send_rpc(tcp_main_proc, tcpconn_put_rpc, c) < 0)
+			LM_ERR("failed to release connection %p (%u) in TCP main; "
+				"leaving its final reference intact\n", c, c->id);
+	} else if (destroy) {
 		_tcpconn_rm(c, 1);
+	}
 }
 
 
@@ -1120,13 +1145,30 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 	TCPCONN_UNLOCK(id);
 }
 
+static void tcpconn_destroy_rpc(int _, void *param)
+{
+	tcpconn_destroy(param);
+}
+
 /* wrapper to the internally used function */
 void tcp_conn_destroy(struct tcp_connection* tcpconn)
 {
+	int tcp_main_proc;
+
 	tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
 				"Closed by Proto layer");
 	sh_log(tcpconn->hist, TCP_UNREF, "tcp_conn_destroy, (%d)", tcpconn->refcnt);
-	return tcpconn_destroy(tcpconn);
+
+	if (!is_tcp_main) {
+		tcp_main_proc = tcp_get_main_proc_no();
+		if (tcp_main_proc < 0 ||
+				ipc_send_rpc(tcp_main_proc, tcpconn_destroy_rpc, tcpconn) < 0)
+			LM_ERR("failed to destroy connection %p (%u) in TCP main; "
+				"leaving its reference intact\n", tcpconn, tcpconn->id);
+		return;
+	}
+
+	tcpconn_destroy(tcpconn);
 }
 
 static inline int tcp_set_nonblock(int fd)
@@ -2485,7 +2527,7 @@ static int tcp_close_conn_run(void *data)
 	return 0;
 }
 
-static void tcp_close_conn_rpc(int _, void *param)
+static void tcp_close_conn_rpc(int pid, void *param)
 {
 	tcp_close_conn_run(param);
 }
