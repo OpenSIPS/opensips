@@ -38,6 +38,8 @@ static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps);
 static void cgr_tmcb_func_free(void *param);
 static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
+static void cgr_dlg_process_vars(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params);
 
 static str cgr_ctx_str = str_init("cgrX_ctx");
 static str cgr_serial_str = str_init("cgrX_serial");
@@ -58,6 +60,30 @@ int cgr_acc_init(void)
 	INIT_LIST_HEAD(cgrates_contexts);
 
 	return 0;
+}
+
+static int cgr_restore_acc_ctx(struct dlg_cell *dlg, struct cgr_acc_ctx *ctx)
+{
+	int_str ctxstr;
+	int_str new_ctxstr;
+	int val_type;
+	struct cgr_acc_ctx *stored_ctx = NULL;
+
+	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &val_type,
+				&ctxstr, 0) == 0 &&
+			val_type == DLG_VAL_TYPE_STR &&
+			ctxstr.s.len == sizeof(struct cgr_acc_ctx *)) {
+		stored_ctx = *(struct cgr_acc_ctx **)ctxstr.s.s;
+		if (stored_ctx == ctx)
+			return 0;
+	}
+
+	LM_DBG("resetting dialog acc ctx from %p to %p\n", stored_ctx, ctx);
+	new_ctxstr.s.len = sizeof(ctx);
+	new_ctxstr.s.s = (char *)&ctx;
+
+	return cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &new_ctxstr,
+			DLG_VAL_TYPE_STR);
 }
 
 static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
@@ -979,6 +1005,12 @@ int w_cgr_acc(struct sip_msg* msg, void *flag_c, str* acc_c, str *dst_c,
 			return -1;
 		}
 
+		if (cgr_dlgb.register_dlgcb(dlg, DLGCB_PROCESS_VARS,
+					cgr_dlg_process_vars, ctx, NULL) != 0) {
+			LM_ERR("cannot register callback for context replication!\n");
+			return -1;
+		}
+
 		if (cgr_dlgb.register_dlgcb(dlg, DLGCB_DESTROY,
 					cgr_dlg_destroy, NULL, NULL) != 0)
 			LM_ERR("cannot register callback for context release! context might leak!\n");
@@ -1303,6 +1335,12 @@ store:
 		goto internal_error;
 	}
 
+	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_PROCESS_VARS,
+				cgr_dlg_process_vars, ctx, NULL) != 0) {
+		LM_ERR("cannot register callback for context replication!\n");
+		goto internal_error;
+	}
+
 	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_DESTROY,
 				cgr_dlg_destroy, NULL, NULL) != 0)
 		LM_ERR("cannot register callback for context release! context might leak!\n");
@@ -1313,6 +1351,28 @@ internal_error:
 	cgr_free_acc_ctx(ctx);
 }
 #undef CGR_CTX_COPY
+
+static void cgr_dlg_process_vars(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params)
+{
+	struct cgr_acc_ctx *ctx;
+	str *name;
+
+	if (!_params || !_params->param || !*_params->param) {
+		LM_ERR("no context specified to process replicated vars\n");
+		return;
+	}
+
+	ctx = *_params->param;
+	name = (str *)_params->dlg_data;
+
+	if (name && (name->len != cgr_ctx_str.len ||
+				memcmp(name->s, cgr_ctx_str.s, name->len) != 0))
+		return;
+
+	if (cgr_restore_acc_ctx(dlg, ctx) < 0)
+		LM_ERR("cannot restore context %p in dialog %p\n", ctx, dlg);
+}
 
 static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
