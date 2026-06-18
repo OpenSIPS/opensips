@@ -139,4 +139,4 @@ jobs:
       job_result: ${{ needs.build_test_rtp_io_dock.result }}
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-    if: ${{ always() }}
+    if: ${{ always() && !cancelled() }}
