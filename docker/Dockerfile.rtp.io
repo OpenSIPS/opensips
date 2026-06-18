@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1.7-labs
 
 ARG BASE_IMAGE="sippylabs/rtpproxy:latest"
-FROM --platform=$TARGETPLATFORM $BASE_IMAGE AS build
+ARG PIPCACHE_IMAGE="scratch"
+FROM --platform=$TARGETPLATFORM $BASE_IMAGE AS base
 LABEL maintainer="Maksym Sobolyev <sobomax@sippysoft.com>"
 
 USER root
@@ -10,6 +11,18 @@ USER root
 ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /src
+
+ENV CACHE_HOME="/root"
+ENV CACHE_ROOT="${CACHE_HOME}/.cache"
+RUN mkdir -p ${CACHE_ROOT}
+
+FROM ${PIPCACHE_IMAGE} AS cache
+COPY --from=base /root/.cache/ /root/.cache/
+
+FROM base AS build
+COPY --from=cache /root/.cache /root/.cache
+
+RUN find /root/.cache -type f
 
 ARG LLVM_VER=18
 ARG LLVM_VER_OLD=16
@@ -24,7 +37,6 @@ RUN --mount=type=bind,source=scripts/build,target=scripts/build \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
  apt-get install -y gpp python-is-python3 python3-pip
 RUN --mount=type=bind,source=dist/voiptests/requirements.txt,target=requirements.txt \
- --mount=type=cache,target=/root/.cache/pip,sharing=locked \
  python -m pip install --break-system-packages -U -r requirements.txt
 
 COPY --exclude=.git --exclude=.github --exclude=docker --exclude=dist \

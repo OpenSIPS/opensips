@@ -37,13 +37,6 @@ fltplatforms() {
 platformopts() {
   out="COMPILER=clang-${LLVM_VER} LINKER=lld-${LLVM_VER}"
   case "${BUILD_OS}" in
-  debian:*)
-    case "${TARGETPLATFORM}" in
-    linux/ppc64le | linux/arm/v7 | linux/mips64le | linux/arm/v5)
-      out="COMPILER=clang-${LLVM_VER_OLD} LINKER=lld-${LLVM_VER_OLD}"
-      ;;
-    esac
-    ;;
   ubuntu*)
     case "${TARGETPLATFORM}" in
     linux/arm64/v8)
