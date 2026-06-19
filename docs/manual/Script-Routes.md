@@ -159,8 +159,8 @@ Certain 'onreply_route' blocks can be executed by TM module for special replies.
 ```c
 
 route {
-        seturi("sip:bob@opensips.org");  # first branch
-        append_branch("sip:alice@opensips.org"); # second branch
+        $ru = "sip:bob@opensips.org";  # first branch
+        $msg.branch = "sip:alice@opensips.org"; # second branch
 
         t_on_reply("global"); # the "global" reply route
                               # is set the whole transaction
@@ -185,7 +185,7 @@ onreply_route[alice] {
 
 onreply_route[global] {
         if (t_check_status("1[0-9][0-9]")) {
-                setflag(1);
+                setflag("PROVISIONAL_REPLY");
                 log("provisional reply received\n");
                 if (t_check_status("183"))
                         drop;
@@ -224,7 +224,7 @@ In error_route, the following pseudo-variables are available to get access to er
      xlog("--- error route class=$(err.class) level=$(err.level)
             info=$(err.info) rcode=$(err.rcode) rreason=$(err.rreason) ---\n");
      xlog("--- error from [$si:$sp]\n+++++\n$mb\n++++\n");
-     sl_send_reply("$err.rcode", "$err.rreason");
+     sl_send_reply($err.rcode, $err.rreason);
      exit;
   }
 
@@ -271,8 +271,8 @@ The **startup_route** is executed only once when OpenSIPS is started and before 
 ```c
 
   startup_route {
-    avp_db_query("select gwlist where ruleid==1",$avp(i:100));
-    cache_store("local", "rule1", "$avp(i:100)");
+    sql_query_one("SELECT gwlist FROM routing_rules WHERE ruleid = 1", "$avp(gateway_list)");
+    cache_store("local", "rule1", "$avp(gateway_list)");
   }
 
 ```
@@ -293,8 +293,8 @@ The **timer_route** is a route executed periodically at a configured interval of
 ```c
 
   timer_route[gw_update, 300] {
-    avp_db_query("select gwlist where ruleid==1",$avp(i:100));
-    $shv(i:100) =$avp(i:100);
+    sql_query_one("SELECT gwlist FROM routing_rules WHERE ruleid = 1", "$avp(gateway_list)");
+    $shv(gateway_list) = $avp(gateway_list);
   }
 
 ```
@@ -304,7 +304,7 @@ The **timer_route** is a route executed periodically at a configured interval of
 ## event_route
 The **event_route** is used by the OpenSIPS Event Interface to execute script code when an event is triggered. The name of the route is the event that has to be handled by that route. The route itself is executed asynchronously with regards to the trigger moment.
 
-**Triggered by** : the [event_route](../../modules/event_route/README.md) module when an event raised by the OpenSIPS Event Interface
+**Triggered by** : OpenSIPS core when an event with the same name is raised by the Event Interface
 
 **Processing** : the event triggered
 
