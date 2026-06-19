@@ -28,7 +28,7 @@ There are several types of events that can be exported by OpenSIPS:
 
 ## Transport Protocols
 
-External applications can be notified about the events triggered using various transport protocols. While the interface itself is provided by OpenSIPS core, each transport protocol is implemented by a separate OpenSIPS module. Multiple transport modules can be loaded simultaneously in order to provide different ways of notifications.
+External applications can be notified about the events triggered using various transport protocols. While the interface itself is provided by OpenSIPS core, each transport protocol below is implemented by a separate OpenSIPS module. Multiple transport modules can be loaded simultaneously in order to provide different ways of notifications.
 
 Available transport protocols are :
 
@@ -36,12 +36,11 @@ Available transport protocols are :
 * [event_flastore](../../modules/event_flatstore/README.md) - writes to plain text files
 * [event_kafka](../../modules/event_kafka/README.md) - sends events via Apache Kafka broker
 * [event_rabbitmq](../../modules/event_rabbitmq/README.md) - sends an AMQP message to a RabbitMQ server
-* [event_route](../../modules/event_route/README.md) - runs an OpenSIPS event_route in script
 * [event_stream](../../modules/event_stream/README.md) - sends a JSON-RPC command/notification over TCP
 * [event_virtual](../../modules/event_virtual/README.md) - aggregates event backends for failover and balancing
 * [event_xmlrpc](../../modules/event_xmlrpc/README.md) - sends a XML-RPC command over TCP
 
-An external application can subscribe to any of the exported module and can be notified using any of the loaded transport modules/protocols.
+An external application can subscribe to any exported event and can be notified using any loaded transport module/protocol. Separately, the core Event Interface can run an `event_route` with the same name as the raised event, such as `event_route[E_PIKE_BLOCKED]`, without loading a dedicated transport module.
 
 ---
 
