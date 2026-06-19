@@ -142,8 +142,8 @@ Certain 'onreply_route' blocks can be executed by TM module for special replies.
 ```c
 
 route {
-        seturi("sip:bob@opensips.org");  # first branch
-        append_branch("sip:alice@opensips.org"); # second branch
+        $ru = "sip:bob@opensips.org";  # first branch
+        $branch = "sip:alice@opensips.org"; # second branch
 
         t_on_reply("global"); # the "global" reply route
                               # is set the whole transaction
@@ -168,7 +168,7 @@ onreply_route[alice] {
 
 onreply_route[global] {
         if (t_check_status("1[0-9][0-9]")) {
-                setflag(1);
+                setflag("PROVISIONAL_REPLY");
                 log("provisional reply received\n");
                 if (t_check_status("183"))
                         drop;
@@ -207,7 +207,7 @@ In error_route, the following pseudo-variables are available to get access to er
      xlog("--- error route class=$(err.class) level=$(err.level)
             info=$(err.info) rcode=$(err.rcode) rreason=$(err.rreason) ---\n");
      xlog("--- error from [$si:$sp]\n+++++\n$mb\n++++\n");
-     sl_send_reply("$err.rcode", "$err.rreason");
+     sl_send_reply($err.rcode, $err.rreason);
      exit;
   }
 
@@ -254,8 +254,8 @@ The **startup_route** is executed only once when OpenSIPS is started and before 
 ```c
 
   startup_route {
-    avp_db_query("select gwlist where ruleid==1",$avp(i:100));
-    cache_store("local", "rule1", "$avp(i:100)");
+    $avp(gateway_list) = "gw1,gw2";
+    cache_store("local", "rule1", "$avp(gateway_list)");
   }
 
 ```
@@ -276,8 +276,8 @@ The **timer_route** is a route executed periodically at a configured interval of
 ```c
 
   timer_route[gw_update, 300] {
-    avp_db_query("select gwlist where ruleid==1",$avp(i:100));
-    $shv(i:100) =$avp(i:100);
+    $avp(gateway_list) = "gw1,gw2";
+    $shv(gateway_list) = $avp(gateway_list);
   }
 
 ```
