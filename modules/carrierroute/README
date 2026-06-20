@@ -1241,8 +1241,8 @@ Chapter 2. Contributors
    1. Henning Westerholt (@henningw) 125 80 2085 1607
    2. Jonas Appel 54 1 6240 0
    3. Hardy Kahl 49 3 2713 1360
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 131 154
-   5. Razvan Crainea (@razvancrainea) 28 23 177 148
+   4. Razvan Crainea (@razvancrainea) 29 24 179 150
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 131 154
    6. Vlad Patrascu (@rvlad-patrascu) 22 5 384 764
    7. Liviu Chircu (@liviuchircu) 20 14 138 214
    8. Daniel-Constantin Mierla (@miconda) 9 7 34 30
@@ -1263,7 +1263,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -1275,8 +1275,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2026
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
    3.  Ken Rice                            Sep 2025 - Sep 2025
    4.  Alexandra Titoc                     Sep 2024 - Sep 2024
    5.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
@@ -1299,8 +1299,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Julián Moreno
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Julián Moreno
    Patiño, Bogdan-Andrei Iancu (@bogdan-iancu), Henning Westerholt
    (@henningw), Iouri Kharon, Hardy Kahl, Daniel-Constantin Mierla
    (@miconda), Edson Gellert Schubert, Carsten Bock, Jonas Appel.

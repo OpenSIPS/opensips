@@ -248,7 +248,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Alexandra Titoc                    68      17      3573     1192
-   2. Razvan Crainea (@razvancrainea)    8        3       3       214
+   2. Razvan Crainea (@razvancrainea)    9        4       4       215
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -258,7 +258,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -270,7 +270,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Aug 2024 - May 2026
+   1. Razvan Crainea (@razvancrainea) Aug 2024 - Jun 2026
    2. Alexandra Titoc                 Jul 2024 - Sep 2024
 
    (1) including any documentation-related commits, excluding

@@ -335,7 +335,7 @@ Chapter 2. Contributors
    2. Daniel-Constantin Mierla (@miconda) 21 16 127 137
    3. Liviu Chircu (@liviuchircu) 15 12 38 61
    4. Elena-Ramona Modroiu 12 2 1063 1
-   5. Razvan Crainea (@razvancrainea) 9 7 12 9
+   5. Razvan Crainea (@razvancrainea) 10 8 14 11
    6. Vlad Patrascu (@rvlad-patrascu) 6 4 31 35
    7. Henning Westerholt (@henningw) 4 2 50 41
    8. Maksym Sobolyev (@sobomax) 4 2 4 5
@@ -345,7 +345,7 @@ Chapter 2. Contributors
    All remaining contributors: Walter Doekes (@wdoekes), Anca
    Vamanu, Andrei Pelinescu-Onciul, Konstantin Bokarius, Julián
    Moreno Patiño, Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert.
+   Schubert, Stefan Darius.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -355,7 +355,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -367,21 +367,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Feb 2026
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Sergio Gutierrez                    Nov 2008 - Dec 2008
-   10. Daniel-Constantin Mierla (@miconda) May 2006 - Mar 2008
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jun 2026
+   2.  Stefan Darius                       Jun 2026 - Jun 2026
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Sergio Gutierrez                    Nov 2008 - Dec 2008
 
-   All remaining contributors: Konstantin Bokarius, Edson Gellert
-   Schubert, Henning Westerholt (@henningw), Anca Vamanu,
-   Elena-Ramona Modroiu, Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu.
+   All remaining contributors: Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Anca Vamanu, Elena-Ramona
+   Modroiu, Andrei Pelinescu-Onciul, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

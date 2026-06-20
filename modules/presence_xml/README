@@ -198,7 +198,7 @@ Chapter 3. Contributors
    1. Anca Vamanu 124 54 4745 1776
    2. Saúl Ibarra Corretgé (@saghul) 30 9 1499 471
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 78 128
-   4. Razvan Crainea (@razvancrainea) 16 14 40 37
+   4. Razvan Crainea (@razvancrainea) 17 15 42 39
    5. Liviu Chircu (@liviuchircu) 14 11 45 71
    6. Daniel-Constantin Mierla (@miconda) 8 6 15 14
    7. Henning Westerholt (@henningw) 6 4 45 50
@@ -220,7 +220,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -232,7 +232,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2026
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
    2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
    3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
@@ -256,12 +256,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Saúl
-   Ibarra Corretgé (@saghul), Razvan Crainea (@razvancrainea),
-   Anca Vamanu, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Dan Pascu (@danpascu).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Anca Vamanu,
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Dan
+   Pascu (@danpascu).
 
    Documentation Copyrights:
 

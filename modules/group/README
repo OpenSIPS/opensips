@@ -367,7 +367,7 @@ Chapter 2. Contributors
    2. Jan Janak (@janakj) 35 20 1370 148
    3. Daniel-Constantin Mierla (@miconda) 24 18 176 226
    4. Liviu Chircu (@liviuchircu) 17 13 93 160
-   5. Razvan Crainea (@razvancrainea) 9 7 16 39
+   5. Razvan Crainea (@razvancrainea) 10 8 18 41
    6. Irina-Maria Stanescu 9 4 466 59
    7. Andrei Pelinescu-Onciul 7 5 101 40
    8. Henning Westerholt (@henningw) 7 5 27 46
@@ -388,7 +388,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -400,10 +400,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
-   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2021
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
+   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    5.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - May 2020
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Mar 2020
@@ -424,12 +424,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Irina-Maria Stanescu, Sergio
-   Gutierrez, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Jan
-   Janak (@janakj).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Irina-Maria Stanescu, Sergio Gutierrez,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Dan Pascu (@danpascu), Jan Janak (@janakj).
 
    Documentation Copyrights:
 

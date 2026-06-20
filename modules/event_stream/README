@@ -292,7 +292,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 32 14 1802 100
+   1. Razvan Crainea (@razvancrainea) 33 15 1804 102
    2. Vlad Patrascu (@rvlad-patrascu) 10 6 105 145
    3. Liviu Chircu (@liviuchircu) 8 6 14 42
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 7 9
@@ -309,7 +309,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -321,13 +321,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Ryan Bullock                        Apr 2025 - Apr 2025
-   2. Liviu Chircu (@liviuchircu)         Apr 2018 - Mar 2025
-   3. Alexandra Titoc                     Sep 2024 - Sep 2024
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2020 - Jun 2023
-   5. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
-   7. Razvan Crainea (@razvancrainea)     Mar 2018 - Jan 2020
+   1. Razvan Crainea (@razvancrainea)     Mar 2018 - Jun 2026
+   2. Ryan Bullock                        Apr 2025 - Apr 2025
+   3. Liviu Chircu (@liviuchircu)         Apr 2018 - Mar 2025
+   4. Alexandra Titoc                     Sep 2024 - Sep 2024
+   5. Vlad Patrascu (@rvlad-patrascu)     May 2020 - Jun 2023
+   6. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
    8. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2019 - Apr 2019
 
    (1) including any documentation-related commits, excluding
@@ -337,9 +337,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 

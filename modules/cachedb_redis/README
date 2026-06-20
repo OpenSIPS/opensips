@@ -663,7 +663,7 @@ Chapter 2. Contributors
    1. Debian 61 3 6168 356
    2. Liviu Chircu (@liviuchircu) 43 23 1720 288
    3. Vlad Paiu (@vladpaiu) 33 19 1446 50
-   4. Razvan Crainea (@razvancrainea) 20 16 180 72
+   4. Razvan Crainea (@razvancrainea) 21 17 181 73
    5. Vlad Patrascu (@rvlad-patrascu) 12 6 595 38
    6. Norman Brandinger (@NormB) 7 5 58 4
    7. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 7 5
@@ -684,7 +684,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -696,7 +696,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Razvan Crainea (@razvancrainea) Feb 2012 - May 2026
+   1.  Razvan Crainea (@razvancrainea) Feb 2012 - Jun 2026
    2.  Debian                          Mar 2026 - Mar 2026
    3.  rdondeti                        Mar 2026 - Mar 2026
    4.  Norman Brandinger (@NormB)      Mar 2026 - Feb 2026
@@ -721,9 +721,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Debian, Liviu Chircu (@liviuchircu), Vlad
-   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián
-   Moreno Patiño, Razvan Crainea (@razvancrainea), Vlad Paiu
+   Last edited by: Razvan Crainea (@razvancrainea), Debian, Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Julián Moreno Patiño, Vlad Paiu
    (@vladpaiu).
 
 Chapter 4. Frequently Asked Questions

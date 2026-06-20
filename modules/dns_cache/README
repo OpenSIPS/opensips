@@ -111,7 +111,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 15 5 1006 3
    2. Liviu Chircu (@liviuchircu) 13 11 50 48
-   3. Razvan Crainea (@razvancrainea) 11 9 12 14
+   3. Razvan Crainea (@razvancrainea) 12 10 13 15
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 22 13
    5. Leo Smith 8 6 32 2
    6. James Stanley 3 1 2 2
@@ -128,7 +128,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -140,13 +140,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  James Stanley                       Jun 2025 - Jun 2025
-   2.  Leo Smith                           Mar 2025 - Mar 2025
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2012 - Dec 2024
-   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
-   7.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
+   2.  James Stanley                       Jun 2025 - Jun 2025
+   3.  Leo Smith                           Mar 2025 - Mar 2025
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2012 - Dec 2024
+   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    10. Vlad Paiu (@vladpaiu)               Feb 2012 - Oct 2012
@@ -158,7 +158,7 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Leo Smith, Razvan Crainea (@razvancrainea),
+   Last edited by: Razvan Crainea (@razvancrainea), Leo Smith,
    Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu),
    Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu).
 

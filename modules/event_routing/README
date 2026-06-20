@@ -404,7 +404,7 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 34 15 2000 67
    2. Liviu Chircu (@liviuchircu) 30 21 558 224
    3. Vlad Patrascu (@rvlad-patrascu) 9 5 75 148
-   4. Razvan Crainea (@razvancrainea) 7 5 18 11
+   4. Razvan Crainea (@razvancrainea) 8 6 19 12
    5. Fabian Gast (@fgast) 4 2 27 7
    6. Maksym Sobolyev (@sobomax) 4 2 5 6
    7. Peter Lemenkov (@lemenkov) 4 2 2 2
@@ -419,7 +419,7 @@ Chapter 4. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -431,10 +431,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Sep 2017 - May 2026
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Apr 2026
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
-   4. Razvan Crainea (@razvancrainea)     Apr 2017 - Jun 2025
+   1. Razvan Crainea (@razvancrainea)     Apr 2017 - Jun 2026
+   2. Liviu Chircu (@liviuchircu)         Sep 2017 - May 2026
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Apr 2026
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
    5. Vlad Paiu (@vladpaiu)               Nov 2024 - Nov 2024
    6. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    7. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2020
@@ -448,10 +448,10 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Zero King (@l2dy), Vlad Patrascu
-   (@rvlad-patrascu), Fabian Gast (@fgast), Peter Lemenkov
-   (@lemenkov).
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Zero King
+   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Fabian Gast (@fgast),
+   Peter Lemenkov (@lemenkov).
 
    Documentation Copyrights:
 

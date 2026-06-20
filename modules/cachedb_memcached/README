@@ -143,7 +143,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 23 13 859 63
-   2. Razvan Crainea (@razvancrainea) 12 10 28 16
+   2. Razvan Crainea (@razvancrainea) 13 11 30 18
    3. Liviu Chircu (@liviuchircu) 12 9 71 91
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 5 7
    5. Maksym Sobolyev (@sobomax) 4 2 3 3
@@ -160,7 +160,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -172,10 +172,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. rdondeti                            Mar 2026 - Mar 2026
-   2. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Mar 2020
-   4. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Jun 2026
+   2. rdondeti                            Mar 2026 - Mar 2026
+   3. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Mar 2020
    5. Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
@@ -189,9 +189,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Julián Moreno Patiño, Vlad Paiu (@vladpaiu),
-   Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Julián Moreno Patiño,
+   Vlad Paiu (@vladpaiu), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

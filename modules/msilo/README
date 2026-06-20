@@ -724,11 +724,11 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 125 66 4163 1410
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 46 39 194 280
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 47 40 228 284
    3. Andrei Pelinescu-Onciul 18 10 115 382
    4. Liviu Chircu (@liviuchircu) 17 14 73 89
    5. Jan Janak (@janakj) 16 11 126 168
-   6. Razvan Crainea (@razvancrainea) 13 11 34 29
+   6. Razvan Crainea (@razvancrainea) 14 12 36 31
    7. Jiri Kuthan (@jiriatipteldotorg) 9 6 180 33
    8. Henning Westerholt (@henningw) 9 6 114 110
    9. Vlad Patrascu (@rvlad-patrascu) 9 5 69 123
@@ -736,10 +736,11 @@ Chapter 2. Contributors
 
    All remaining contributors: Juha Heinanen (@juha-h), Andrea
    Giordana, Ancuta Onofrei, Elena-Ramona Modroiu, Maksym Sobolyev
-   (@sobomax), Aron Rosenberg, John Riordan, Alexandra Titoc,
-   Konstantin Bokarius, Ovidiu Sas (@ovidiusas), Julián Moreno
-   Patiño, Peter Lemenkov (@lemenkov), Sergio Gutierrez, UnixDev,
-   Zero King (@l2dy), Edson Gellert Schubert, Stanislaw Pitucha.
+   (@sobomax), Stefan Darius, Aron Rosenberg, John Riordan,
+   Alexandra Titoc, Konstantin Bokarius, Ovidiu Sas (@ovidiusas),
+   Julián Moreno Patiño, Peter Lemenkov (@lemenkov), Sergio
+   Gutierrez, UnixDev, Zero King (@l2dy), Edson Gellert Schubert,
+   Stanislaw Pitucha.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -749,7 +750,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -761,24 +762,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2002 - Apr 2026
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2026
-   3.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  Ovidiu Sas (@ovidiusas)             Apr 2022 - Apr 2022
-   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2002 - Jun 2026
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   3.  Stefan Darius                       Jun 2026 - Jun 2026
+   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7.  Ovidiu Sas (@ovidiusas)             Apr 2022 - Apr 2022
+   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Stanislaw
-   Pitucha, John Riordan, UnixDev, Sergio Gutierrez, Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei,
-   Aron Rosenberg, Elena-Ramona Modroiu, Juha Heinanen (@juha-h),
-   Andrea Giordana, Andrei Pelinescu-Onciul, Jan Janak (@janakj),
-   Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Julián Moreno Patiño, Vlad Paiu
+   (@vladpaiu), Stanislaw Pitucha, John Riordan, UnixDev, Sergio
+   Gutierrez, Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Ancuta Onofrei, Aron Rosenberg, Elena-Ramona Modroiu, Juha
+   Heinanen (@juha-h), Andrea Giordana, Andrei Pelinescu-Onciul,
+   Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits

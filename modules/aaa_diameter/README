@@ -474,14 +474,15 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 119 41 6957 1125
-   2. Razvan Crainea (@razvancrainea) 43 25 1491 281
+   2. Razvan Crainea (@razvancrainea) 44 26 1492 282
    3. Alexandra Titoc 6 4 11 2
    4. Peter Lemenkov (@lemenkov) 5 3 5 4
-   5. Larry Laffer 3 1 6 5
-   6. rdondeti 3 1 6 1
-   7. Maksym Sobolyev (@sobomax) 3 1 5 5
-   8. Darius Stefan 3 1 4 7
-   9. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 1 1
+   5. dondetir 4 2 2 2
+   6. Larry Laffer 3 1 6 5
+   7. rdondeti 3 1 6 1
+   8. Maksym Sobolyev (@sobomax) 3 1 5 5
+   9. Darius Stefan 3 1 4 7
+   10. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -491,7 +492,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -502,16 +503,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     May 2023 - May 2026
-   2. Peter Lemenkov (@lemenkov)          Jul 2024 - May 2026
-   3. Liviu Chircu (@liviuchircu)         May 2021 - Apr 2026
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2026 - Apr 2026
-   5. rdondeti                            Mar 2026 - Mar 2026
-   6. Darius Stefan                       Jul 2025 - Jul 2025
-   7. Larry Laffer                        Jul 2025 - Jul 2025
-   8. Alexandra Titoc                     Sep 2024 - Sep 2024
-   9. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+                      Name                   Commit Activity
+   1.  Razvan Crainea (@razvancrainea)     May 2023 - Jun 2026
+   2.  Peter Lemenkov (@lemenkov)          Jul 2024 - May 2026
+   3.  dondetir                            Apr 2026 - Apr 2026
+   4.  Liviu Chircu (@liviuchircu)         May 2021 - Apr 2026
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2026 - Apr 2026
+   6.  rdondeti                            Mar 2026 - Mar 2026
+   7.  Darius Stefan                       Jul 2025 - Jul 2025
+   8.  Larry Laffer                        Jul 2025 - Jul 2025
+   9.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   10. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -257,7 +257,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 18 16 55 53
    2. Liviu Chircu (@liviuchircu) 14 12 44 60
-   3. Razvan Crainea (@razvancrainea) 13 11 26 17
+   3. Razvan Crainea (@razvancrainea) 14 12 28 19
    4. Hardy Kahl 12 1 1191 0
    5. Henning Westerholt (@henningw) 9 5 204 72
    6. Daniel-Constantin Mierla (@miconda) 8 6 17 12
@@ -277,7 +277,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -289,8 +289,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
-   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2026
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2026
    3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Mar 2020
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -311,11 +311,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Edson Gellert Schubert, Hardy Kahl.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Edson Gellert Schubert, Hardy Kahl.
 
    Documentation Copyrights:
 
