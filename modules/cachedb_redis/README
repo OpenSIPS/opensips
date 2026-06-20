@@ -346,7 +346,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 43 23 1720 288
    2. Vlad Paiu (@vladpaiu) 33 19 1446 50
-   3. Razvan Crainea (@razvancrainea) 17 14 150 48
+   3. Razvan Crainea (@razvancrainea) 18 15 151 49
    4. Vlad Patrascu (@rvlad-patrascu) 13 6 595 38
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 14 6
    6. Maksym Sobolyev (@sobomax) 6 4 7 7
@@ -368,7 +368,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -380,9 +380,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2026
-   2.  Ken Rice                            Sep 2025 - Sep 2025
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2025
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2026
+   3.  Ken Rice                            Sep 2025 - Sep 2025
    4.  Norm Brandinger                     May 2025 - May 2025
    5.  Eddie Fiorentine                    Mar 2025 - Mar 2025
    6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2025
@@ -403,9 +403,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián Moreno
-   Patiño, Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Julián Moreno Patiño, Vlad Paiu (@vladpaiu).
 
 Chapter 4. Frequently Asked Questions
 

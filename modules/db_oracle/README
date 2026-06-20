@@ -142,7 +142,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Iouri Kharon 21 1 2363 0
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 11 64 68
-   3. Razvan Crainea (@razvancrainea) 12 10 115 41
+   3. Razvan Crainea (@razvancrainea) 13 11 117 43
    4. Liviu Chircu (@liviuchircu) 12 9 23 83
    5. dronord 8 6 29 18
    6. Peter Lemenkov (@lemenkov) 7 5 41 5
@@ -163,7 +163,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -175,9 +175,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Gang Zhuo                           Nov 2022 - Nov 2024
-   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2024
+   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jun 2026
+   2.  Ken Rice                            Sep 2025 - Sep 2025
+   3.  Gang Zhuo                           Nov 2022 - Nov 2024
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    6.  Gang Zhuo                           Dec 2021 - Dec 2021
@@ -197,9 +197,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Henning
-   Westerholt (@henningw), Iouri Kharon.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Henning Westerholt (@henningw), Iouri Kharon.
 
    Documentation Copyrights:
 

@@ -216,7 +216,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Saúl Ibarra Corretgé (@saghul) 15 3 1260 53
    2. Liviu Chircu (@liviuchircu) 11 8 55 106
-   3. Razvan Crainea (@razvancrainea) 7 5 25 21
+   3. Razvan Crainea (@razvancrainea) 8 6 29 25
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 6 10
    5. Ovidiu Sas (@ovidiusas) 3 1 13 3
    6. Maksym Sobolyev (@sobomax) 3 1 7 7
@@ -232,7 +232,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -244,11 +244,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Ken Rice                            Sep 2025 - Sep 2025
-   2. Liviu Chircu (@liviuchircu)         Jul 2014 - May 2024
-   3. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
-   5. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Jun 2026
+   2. Ken Rice                            Sep 2025 - Sep 2025
+   3. Liviu Chircu (@liviuchircu)         Jul 2014 - May 2024
+   4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    8. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
@@ -261,8 +261,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Saúl Ibarra Corretgé (@saghul).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Saúl Ibarra Corretgé
+   (@saghul).
 
    Documentation Copyrights:
 

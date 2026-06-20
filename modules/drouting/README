@@ -1902,7 +1902,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 417 203 13811 5825
    2. Liviu Chircu (@liviuchircu) 163 97 2515 2613
-   3. Razvan Crainea (@razvancrainea) 100 53 1171 2226
+   3. Razvan Crainea (@razvancrainea) 101 54 1172 2227
    4. Mihai Tiganus (@tallicamike) 73 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 43 20 1100 735
    6. Vlad Paiu (@vladpaiu) 28 22 421 65
@@ -1927,7 +1927,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -1939,10 +1939,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2026
-   2.  Vlad Paiu (@vladpaiu)               Aug 2011 - Feb 2024
-   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
-   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2023
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2026
+   3.  Vlad Paiu (@vladpaiu)               Aug 2011 - Feb 2024
+   4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
    5.  wangdd                              May 2023 - May 2023
    6.  MayamaTakeshi                       Apr 2023 - Apr 2023
    7.  nexbridge                           Feb 2023 - Mar 2023
@@ -1966,14 +1966,13 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Paiu
-   (@vladpaiu), Razvan Crainea (@razvancrainea), wangdd, Vlad
-   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Nick Altmann (@nikbyte), Alexey Vasilyev
-   (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut Ionita
-   (@ionutrazvanionita), Mihai Tiganus (@tallicamike), Andrei
-   Datcu (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
-   Sergio Gutierrez.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Paiu (@vladpaiu), wangdd, Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Nick
+   Altmann (@nikbyte), Alexey Vasilyev (@vasilevalex), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Mihai
+   Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
+   Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.
 
    Documentation Copyrights:
 

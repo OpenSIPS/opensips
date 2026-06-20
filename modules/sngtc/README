@@ -186,7 +186,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 33 14 2076 59
-   2. Razvan Crainea (@razvancrainea) 9 7 15 12
+   2. Razvan Crainea (@razvancrainea) 10 8 16 13
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 9 6 29 64
    4. Vlad Patrascu (@rvlad-patrascu) 7 5 57 44
    5. Maksym Sobolyev (@sobomax) 4 2 5 5
@@ -200,7 +200,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -212,10 +212,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
-   2. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
-   4. Razvan Crainea (@razvancrainea)     Aug 2015 - Feb 2020
+   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Jun 2026
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   3. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
    5. Liviu Chircu (@liviuchircu)         Aug 2013 - Jun 2018
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
@@ -226,8 +226,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov).
 
    Documentation Copyrights:
 

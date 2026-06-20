@@ -364,8 +364,8 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 20 10 240 375
    4. Jan Janak (@janakj) 19 14 345 75
    5. Daniel-Constantin Mierla (@miconda) 14 12 46 55
-   6. Vlad Patrascu (@rvlad-patrascu) 9 3 47 251
-   7. Razvan Crainea (@razvancrainea) 8 6 19 17
+   6. Razvan Crainea (@razvancrainea) 9 7 21 19
+   7. Vlad Patrascu (@rvlad-patrascu) 9 3 47 251
    8. Henning Westerholt (@henningw) 8 3 14 190
    9. Greg Fausak 7 1 493 30
    10. Andrei Pelinescu-Onciul 5 3 11 7
@@ -384,7 +384,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -396,9 +396,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - May 2025
-   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - May 2025
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2019
    5.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
    6.  Dan Pascu (@danpascu)               Apr 2019 - Apr 2019
@@ -420,9 +420,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Dan Pascu
-   (@danpascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Juha Heinanen
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Dan Pascu (@danpascu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Juha Heinanen
    (@juha-h), Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Greg Fausak, Klaus Darilion,
    Jan Janak (@janakj).

@@ -1519,7 +1519,7 @@ Chapter 3. Contributors
    2. Liviu Chircu (@liviuchircu) 111 72 1711 1441
    3. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
-   5. Razvan Crainea (@razvancrainea) 46 37 602 175
+   5. Razvan Crainea (@razvancrainea) 47 38 603 176
    6. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
    7. Ovidiu Sas (@ovidiusas) 31 17 705 434
    8. Vlad Patrascu (@rvlad-patrascu) 19 11 378 236
@@ -1535,8 +1535,8 @@ Chapter 3. Contributors
    Lemenkov (@lemenkov), Stanislaw Pitucha, Babak Yakhchali,
    Federico Cabiddu, Konstantin Bokarius, Alexandra Titoc, Andreas
    Granig, John Riordan, Aron Podrigal (@ar45), Julián Moreno
-   Patiño, Kevin McAllister, Roman Sevko, UnixDev, David Sanders,
-   Edson Gellert Schubert.
+   Patiño, Kevin McAllister, Roman Sevko, UnixDev, Stefan Darius,
+   David Sanders, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1546,7 +1546,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -1558,26 +1558,26 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jun 2025
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2025
-   3.  Babak Yakhchali                     Feb 2025 - Feb 2025
-   4.  Norman Brandinger (@NormB)          Nov 2024 - Nov 2024
-   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   6.  Vlad Paiu (@vladpaiu)               Mar 2012 - Dec 2023
-   7.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
-   8.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2023
-   9.  wangdd                              Apr 2023 - May 2023
-   10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Jun 2026
+   2.  Stefan Darius                       Jun 2026 - Jun 2026
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jun 2025
+   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2025
+   5.  Babak Yakhchali                     Feb 2025 - Feb 2025
+   6.  Norman Brandinger (@NormB)          Nov 2024 - Nov 2024
+   7.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   8.  Vlad Paiu (@vladpaiu)               Mar 2012 - Dec 2023
+   9.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   10. wangdd                              Apr 2023 - May 2023
 
-   All remaining contributors: John Burke (@john08burke), Peter
-   Lemenkov (@lemenkov), Roman Sevko, Nick Altmann (@nikbyte),
-   Ionel Cerghit (@ionel-cerghit), Ionut Ionita
-   (@ionutrazvanionita), Julián Moreno Patiño, Jarrod Baumann
-   (@jarrodb), Ovidiu Sas (@ovidiusas), David Sanders, Aron
-   Podrigal (@ar45), Andrei Datcu (@andrei-datcu), Walter Doekes
-   (@wdoekes), Stanislaw Pitucha, Anca Vamanu, John Riordan,
-   UnixDev, Kevin McAllister, Klaus Darilion, Carsten Bock,
-   Daniel-Constantin Mierla (@miconda), Henning Westerholt
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   John Burke (@john08burke), Peter Lemenkov (@lemenkov), Roman
+   Sevko, Nick Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit),
+   Ionut Ionita (@ionutrazvanionita), Julián Moreno Patiño, Jarrod
+   Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), David Sanders,
+   Aron Podrigal (@ar45), Andrei Datcu (@andrei-datcu), Walter
+   Doekes (@wdoekes), Stanislaw Pitucha, Anca Vamanu, John
+   Riordan, UnixDev, Kevin McAllister, Klaus Darilion, Carsten
+   Bock, Daniel-Constantin Mierla (@miconda), Henning Westerholt
    (@henningw), Konstantin Bokarius, Edson Gellert Schubert,
    Federico Cabiddu, Elena-Ramona Modroiu, Andreas Granig, Andrei
    Pelinescu-Onciul, Jan Janak (@janakj).
@@ -1589,17 +1589,17 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Paiu
-   (@vladpaiu), Razvan Crainea (@razvancrainea), wangdd, Vlad
-   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), John Burke (@john08burke), Roman Sevko, Peter
-   Lemenkov (@lemenkov), Nick Altmann (@nikbyte), Ionel Cerghit
-   (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ovidiu Sas
-   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
-   (@andrei-datcu), Walter Doekes (@wdoekes), Stanislaw Pitucha,
-   Anca Vamanu, Klaus Darilion, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Carsten Bock, Edson Gellert
-   Schubert, Elena-Ramona Modroiu.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Paiu (@vladpaiu), wangdd, Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), John
+   Burke (@john08burke), Roman Sevko, Peter Lemenkov (@lemenkov),
+   Nick Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
+   Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Walter
+   Doekes (@wdoekes), Stanislaw Pitucha, Anca Vamanu, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Carsten Bock, Edson Gellert Schubert, Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

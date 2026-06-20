@@ -422,7 +422,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 94 44 3640 1114
    2. Liviu Chircu (@liviuchircu) 30 22 498 150
-   3. Razvan Crainea (@razvancrainea) 16 14 33 15
+   3. Razvan Crainea (@razvancrainea) 17 15 34 16
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 13 10 128 31
    5. Ovidiu Sas (@ovidiusas) 7 5 83 7
    6. Maksym Sobolyev (@sobomax) 7 5 8 9
@@ -442,7 +442,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -454,8 +454,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2016 - May 2025
-   2.  Razvan Crainea (@razvancrainea)     Feb 2016 - Jul 2024
+   1.  Razvan Crainea (@razvancrainea)     Feb 2016 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - May 2025
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - Apr 2024
    4.  Ovidiu Sas (@ovidiusas)             Mar 2017 - Apr 2024
    5.  Bence Szigeti                       Jan 2024 - Jan 2024
@@ -475,10 +475,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
+   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov).
 
    Documentation Copyrights:
 

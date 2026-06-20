@@ -183,7 +183,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 16 7 931 11
+   1. Razvan Crainea (@razvancrainea) 17 8 933 13
    2. Liviu Chircu (@liviuchircu) 6 4 16 32
    3. Vlad Patrascu (@rvlad-patrascu) 6 2 33 128
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 4 2
@@ -199,7 +199,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -211,10 +211,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. rdondeti                            Mar 2026 - Mar 2026
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2018 - Apr 2023
-   3. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4. Razvan Crainea (@razvancrainea)     Mar 2018 - Nov 2019
+   1. Razvan Crainea (@razvancrainea)     Mar 2018 - Jun 2026
+   2. rdondeti                            Mar 2026 - Mar 2026
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2018 - Apr 2023
+   4. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    5. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
    6. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2018
    7. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -226,9 +226,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 

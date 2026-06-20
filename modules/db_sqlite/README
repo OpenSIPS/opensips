@@ -176,7 +176,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                   Name                DevScore Commits Lines ++ Lines --
 1.  Ionut Ionita (@ionutrazvanionita)    82      28      3744     1276
-2.  Razvan Crainea (@razvancrainea)      19      17      115       42
+2.  Razvan Crainea (@razvancrainea)      20      18      117       44
 3.  Liviu Chircu (@liviuchircu)          15      12       55       64
 4.  Alexey Vasilyev (@vasilevalex)       13       9      165       96
 5.  Jarrod Baumann (@jarrodb)            5        3       7        4
@@ -197,7 +197,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -209,8 +209,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         May 2016 - Apr 2026
-   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2025
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         May 2016 - Apr 2026
    3.  Alexey Vasilyev (@vasilevalex)      Dec 2024 - Dec 2024
    4.  Alexandra Titoc                     Sep 2024 - Sep 2024
    5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
@@ -230,9 +230,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Alexey Vasilyev (@vasilevalex), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Ionut Ionita
-   (@ionutrazvanionita).
+   Last edited by: Razvan Crainea (@razvancrainea), Alexey
+   Vasilyev (@vasilevalex), Liviu Chircu (@liviuchircu), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita).
 
    Documentation Copyrights:
 

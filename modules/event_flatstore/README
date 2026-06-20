@@ -278,7 +278,7 @@ Chapter 2. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 27 16 482 303
    2. Ionel Cerghit (@ionel-cerghit) 23 13 770 135
    3. Liviu Chircu (@liviuchircu) 12 9 31 62
-   4. Razvan Crainea (@razvancrainea) 9 7 36 5
+   4. Razvan Crainea (@razvancrainea) 10 8 37 6
    5. Nick Altmann (@nikbyte) 8 1 612 8
    6. Eseanu Marius Cristian (@eseanucristian) 7 3 254 9
    7. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 7 4
@@ -293,7 +293,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -305,11 +305,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Nick Altmann (@nikbyte)                  May 2025 - May 2025
-   2. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2023
-   3. Liviu Chircu (@liviuchircu)              Jan 2016 - Dec 2021
-   4. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - Jul 2020
-   5. Razvan Crainea (@razvancrainea)          Aug 2015 - Sep 2019
+   1. Razvan Crainea (@razvancrainea)          Aug 2015 - Jun 2026
+   2. Nick Altmann (@nikbyte)                  May 2025 - May 2025
+   3. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2023
+   4. Liviu Chircu (@liviuchircu)              Jan 2016 - Dec 2021
+   5. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - Jul 2020
    6. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2018 - Apr 2019
    7. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    8. Ionel Cerghit (@ionel-cerghit)           Jun 2015 - Jul 2015
@@ -322,8 +322,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Nick Altmann (@nikbyte), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Nick Altmann
+   (@nikbyte), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionel Cerghit
    (@ionel-cerghit).
 

@@ -275,7 +275,7 @@ Chapter 3. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 26 19 257 202
    2. Bastian Friedrich 19 2 1820 18
    3. Liviu Chircu (@liviuchircu) 14 12 25 57
-   4. Razvan Crainea (@razvancrainea) 11 9 27 14
+   4. Razvan Crainea (@razvancrainea) 12 10 29 16
    5. Daniel-Constantin Mierla (@miconda) 9 7 27 25
    6. Maksym Sobolyev (@sobomax) 5 3 5 21
    7. Henning Westerholt (@henningw) 4 2 14 13
@@ -294,7 +294,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -306,9 +306,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2023
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jun 2026
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -327,10 +327,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Bastian Friedrich.
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Bastian Friedrich.
 
    Documentation Copyrights:
 
