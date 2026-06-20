@@ -2556,7 +2556,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 454 287 13284 3533
-   2. Razvan Crainea (@razvancrainea) 289 217 5242 1738
+   2. Razvan Crainea (@razvancrainea) 290 218 5243 1739
    3. Vlad Paiu (@vladpaiu) 255 146 7208 3027
    4. Vlad Patrascu (@rvlad-patrascu) 198 104 4330 3514
    5. Liviu Chircu (@liviuchircu) 179 132 2959 1298
@@ -2588,7 +2588,7 @@ Chapter 4. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -2600,9 +2600,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  David Trihy                         Jan 2026 - Jan 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2025
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2025
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2026
+   2.  David Trihy                         Jan 2026 - Jan 2026
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2025
    4.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2024
    5.  Alexandra Titoc                     Sep 2024 - Sep 2024
    6.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
@@ -2633,9 +2633,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ryan Bullock, Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Vlad Paiu
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ryan
+   Bullock, Vlad Patrascu (@rvlad-patrascu), Vlad Paiu
    (@vladpaiu), Zero King (@l2dy), Dan Pascu (@danpascu), Peter
    Lemenkov (@lemenkov), Julián Moreno Patiño, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter

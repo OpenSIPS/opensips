@@ -753,7 +753,7 @@ Chapter 2. Contributors
    1. Ionut Ionita (@ionutrazvanionita) 201 45 5927 6525
    2. Liviu Chircu (@liviuchircu) 44 24 477 933
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 202 180
-   4. Razvan Crainea (@razvancrainea) 24 21 86 64
+   4. Razvan Crainea (@razvancrainea) 25 22 88 66
    5. Alexandr Dubovikov (@adubovikov) 22 2 2360 0
    6. Vlad Patrascu (@rvlad-patrascu) 9 7 73 54
    7. Maksym Sobolyev (@sobomax) 6 4 16 13
@@ -773,7 +773,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -785,11 +785,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - May 2023
-   4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2021
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - May 2023
+   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
    6.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
    7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -807,9 +807,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Zero King (@l2dy), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Ionut Ionita
+   Last edited by: Razvan Crainea (@razvancrainea), Zero King
+   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
    (@adubovikov).
 

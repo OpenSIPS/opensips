@@ -259,7 +259,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 32 19 1446 50
    2. Liviu Chircu (@liviuchircu) 29 19 558 277
-   3. Razvan Crainea (@razvancrainea) 16 13 130 35
+   3. Razvan Crainea (@razvancrainea) 17 14 131 36
    4. Vlad Patrascu (@rvlad-patrascu) 12 6 595 38
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 14 6
    6. Maksym Sobolyev (@sobomax) 6 4 7 7
@@ -280,7 +280,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -292,14 +292,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2026
-   2.  Vlad Paiu (@vladpaiu)               Oct 2011 - Nov 2024
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Oct 2023
-   4.  zhengsh                             Aug 2023 - Aug 2023
-   5.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   6.  John Burke (@john08burke)           Apr 2022 - Apr 2022
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2022
-   8.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2026
+   3.  Vlad Paiu (@vladpaiu)               Oct 2011 - Nov 2024
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Oct 2023
+   5.  zhengsh                             Aug 2023 - Aug 2023
+   6.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   7.  John Burke (@john08burke)           Apr 2022 - Apr 2022
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2022
    9.  Dan Pascu (@danpascu)               May 2019 - May 2019
    10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
@@ -313,9 +313,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián Moreno
-   Patiño, Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Julián Moreno Patiño, Vlad Paiu (@vladpaiu).
 
 Chapter 4. Frequently Asked Questions
 

@@ -1436,7 +1436,7 @@ Chapter 3. Contributors
    2. Liviu Chircu (@liviuchircu) 72 54 868 585
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 30 16 1342 128
-   5. Razvan Crainea (@razvancrainea) 26 20 326 147
+   5. Razvan Crainea (@razvancrainea) 27 21 327 148
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Maksym Sobolyev (@sobomax) 6 4 10 11
    8. Jasper Hafkenscheid 4 2 107 2
@@ -1453,7 +1453,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -1465,10 +1465,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
-   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - Apr 2025
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
-   4.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2024
+   1.  Razvan Crainea (@razvancrainea)     Nov 2015 - Jun 2026
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2016 - Apr 2025
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
    5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
    6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
    7.  Jasper Hafkenscheid                 May 2022 - Jul 2022
@@ -1486,11 +1486,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Jasper
-   Hafkenscheid, Fabian Gast (@fgast), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Eseanu Marius
-   Cristian (@eseanucristian).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Jasper Hafkenscheid, Fabian Gast
+   (@fgast), Peter Lemenkov (@lemenkov), Eseanu Marius Cristian
+   (@eseanucristian).
 
    Documentation Copyrights:
 

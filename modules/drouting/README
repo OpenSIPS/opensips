@@ -1891,7 +1891,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 411 202 13810 5824
    2. Liviu Chircu (@liviuchircu) 160 96 2513 2613
-   3. Razvan Crainea (@razvancrainea) 100 53 1171 2226
+   3. Razvan Crainea (@razvancrainea) 101 54 1172 2227
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 41 20 1100 735
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
@@ -1916,7 +1916,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -1928,8 +1928,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2024
-   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2023
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2024
    3.  wangdd                              May 2023 - May 2023
    4.  MayamaTakeshi                       Apr 2023 - Apr 2023
    5.  nexbridge                           Feb 2023 - Mar 2023
@@ -1955,8 +1955,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), wangdd, Vlad Patrascu (@rvlad-patrascu),
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), wangdd, Vlad Patrascu (@rvlad-patrascu),
    Bogdan-Andrei Iancu (@bogdan-iancu), Nick Altmann (@nikbyte),
    Alexey Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov),
    Ionut Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai

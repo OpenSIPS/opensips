@@ -359,7 +359,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Arnaud Chong + Eric Gouyer 37 1 4335 0
-   2. Razvan Crainea (@razvancrainea) 34 27 274 230
+   2. Razvan Crainea (@razvancrainea) 35 28 275 231
    3. Vlad Patrascu (@rvlad-patrascu) 24 16 319 276
    4. Liviu Chircu (@liviuchircu) 13 10 15 63
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 9 3
@@ -376,7 +376,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -388,9 +388,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
-   2. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3. Razvan Crainea (@razvancrainea)     Feb 2012 - Feb 2023
+   1. Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
+   3. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Jan 2020
    5. Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2019
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -405,8 +405,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Vlad Paiu (@vladpaiu), Arnaud Chong + Eric
    Gouyer.
 

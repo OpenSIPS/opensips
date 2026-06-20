@@ -494,7 +494,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 51 42 383 284
    2. Andrei Datcu (@andrei-datcu) 37 11 2665 235
-   3. Razvan Crainea (@razvancrainea) 8 6 14 11
+   3. Razvan Crainea (@razvancrainea) 9 7 15 12
    4. Vlad Patrascu (@rvlad-patrascu) 8 5 73 114
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 20 31
    6. Maksym Sobolyev (@sobomax) 5 3 7 8
@@ -509,7 +509,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -521,9 +521,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   2. Liviu Chircu (@liviuchircu)         Mar 2015 - Aug 2022
-   3. Razvan Crainea (@razvancrainea)     Feb 2015 - Oct 2021
+   1. Razvan Crainea (@razvancrainea)     Feb 2015 - Jun 2026
+   2. Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   3. Liviu Chircu (@liviuchircu)         Mar 2015 - Aug 2022
    4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -537,9 +537,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Andrei Datcu (@andrei-datcu).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Andrei Datcu
+   (@andrei-datcu).
 
    Documentation Copyrights:
 

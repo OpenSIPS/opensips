@@ -395,7 +395,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Ionut Ionita (@ionutrazvanionita) 23 11 1258 30
    2. Irina-Maria Stanescu 23 10 1432 60
-   3. Razvan Crainea (@razvancrainea) 15 13 51 42
+   3. Razvan Crainea (@razvancrainea) 16 14 52 43
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 15 12 102 82
    5. Liviu Chircu (@liviuchircu) 9 7 21 49
    6. Vlad Patrascu (@rvlad-patrascu) 6 3 49 73
@@ -416,7 +416,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -428,9 +428,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jun 2026
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Dan Pascu (@danpascu)               May 2019 - May 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
@@ -450,9 +450,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Zero King (@l2dy), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut Ionita
+   Last edited by: Razvan Crainea (@razvancrainea), Zero King
+   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
    (@ionutrazvanionita), Walter Doekes (@wdoekes), Bogdan-Andrei
    Iancu (@bogdan-iancu), Boris Ratner, Irina-Maria Stanescu.
 

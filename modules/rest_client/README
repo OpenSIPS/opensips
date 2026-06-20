@@ -723,7 +723,7 @@ Chapter 2. Contributors
    1. Liviu Chircu (@liviuchircu) 150 87 4035 1786
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Vlad Patrascu (@rvlad-patrascu) 17 8 336 345
-   4. Razvan Crainea (@razvancrainea) 15 13 41 17
+   4. Razvan Crainea (@razvancrainea) 16 14 42 18
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 115 48
    6. Jarrod Baumann (@jarrodb) 6 3 131 32
    7. Agalya Ramachandran (@AgalyaR) 6 2 354 1
@@ -743,7 +743,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -755,16 +755,16 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Feb 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Nov 2025
-   3.  Vlad Paiu (@vladpaiu)               Nov 2025 - Nov 2025
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2025
-   5.  Aron Podrigal (@ar45)               Sep 2024 - Sep 2024
-   6.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   8.  John Burke (@john08burke)           Apr 2021 - Apr 2021
-   9.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
-   10. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Feb 2026
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Nov 2025
+   4.  Vlad Paiu (@vladpaiu)               Nov 2025 - Nov 2025
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2025
+   6.  Aron Podrigal (@ar45)               Sep 2024 - Sep 2024
+   7.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
+   9.  John Burke (@john08burke)           Apr 2021 - Apr 2021
+   10. Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
    Andrey Vorobiev (@andrey-vorobiev), Ryan Bullock (@rrb3942),
@@ -777,9 +777,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Callum Guy
-   (@spacetourist), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Agalya
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Callum Guy (@spacetourist), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Agalya
    Ramachandran (@AgalyaR), Jarrod Baumann (@jarrodb),
    Bogdan-Andrei Iancu (@bogdan-iancu).
 

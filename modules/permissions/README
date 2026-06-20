@@ -753,7 +753,7 @@ Chapter 2. Contributors
    3. Jan Janak (@janakj) 56 21 2871 621
    4. Irina-Maria Stanescu 51 9 1218 1908
    5. Liviu Chircu (@liviuchircu) 31 20 412 369
-   6. Razvan Crainea (@razvancrainea) 27 23 178 117
+   6. Razvan Crainea (@razvancrainea) 28 24 180 119
    7. Daniel-Constantin Mierla (@miconda) 17 11 126 221
    8. Henning Westerholt (@henningw) 15 10 136 148
    9. Ionut Ionita (@ionutrazvanionita) 15 4 970 175
@@ -776,7 +776,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -788,7 +788,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2011 - Jun 2025
+   1.  Razvan Crainea (@razvancrainea)     Jan 2011 - Jun 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Jun 2025
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
@@ -815,10 +815,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Razvan
-   Crainea (@razvancrainea), Irina-Maria Stanescu, Henning
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
+   Ionita (@ionutrazvanionita), Irina-Maria Stanescu, Henning
    Westerholt (@henningw), Juha Heinanen (@juha-h),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj).

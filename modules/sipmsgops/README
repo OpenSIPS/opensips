@@ -1129,7 +1129,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 71 41 2130 721
    2. Liviu Chircu (@liviuchircu) 59 27 809 1510
-   3. Razvan Crainea (@razvancrainea) 48 21 2968 105
+   3. Razvan Crainea (@razvancrainea) 49 22 2970 107
    4. Vlad Paiu (@vladpaiu) 15 7 530 123
    5. David Trihy 7 3 132 74
    6. Mihai Tiganus (@tallicamike) 6 3 155 28
@@ -1152,7 +1152,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -1164,10 +1164,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  David Trihy                         Jan 2026 - Jan 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Mar 2025
-   3.  Vlad Paiu (@vladpaiu)               Feb 2012 - Jun 2023
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2023
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
+   2.  David Trihy                         Jan 2026 - Jan 2026
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Mar 2025
+   4.  Vlad Paiu (@vladpaiu)               Feb 2012 - Jun 2023
    5.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
    6.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
    7.  Dan Pascu (@danpascu)               May 2019 - May 2019
@@ -1188,7 +1188,7 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: David Trihy, Razvan Crainea (@razvancrainea),
+   Last edited by: Razvan Crainea (@razvancrainea), David Trihy,
    Vlad Paiu (@vladpaiu), Liviu Chircu (@liviuchircu),
    Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Patrascu
    (@rvlad-patrascu), Fabian Gast (@fgast), Peter Lemenkov

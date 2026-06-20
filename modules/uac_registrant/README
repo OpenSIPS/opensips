@@ -483,7 +483,7 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 17 14 57 68
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 11 320 20
    4. Vlad Patrascu (@rvlad-patrascu) 15 7 732 118
-   5. Razvan Crainea (@razvancrainea) 11 9 26 36
+   5. Razvan Crainea (@razvancrainea) 12 10 28 38
    6. Nick Altmann (@nikbyte) 4 2 35 4
    7. Maksym Sobolyev (@sobomax) 4 2 19 15
    8. Vlad Paiu (@vladpaiu) 4 2 6 3
@@ -501,7 +501,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -513,10 +513,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Jul 2024
-   2.  James Stanley                       Mar 2023 - Mar 2023
-   3.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
-   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Nov 2021
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Jul 2024
+   3.  James Stanley                       Mar 2023 - Mar 2023
+   4.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
    5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
    6.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    7.  sagarmalam                          Jan 2021 - Jan 2021
@@ -534,9 +534,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
-   (@ovidiusas), Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu).
 
    Documentation Copyrights:

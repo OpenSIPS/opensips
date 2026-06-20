@@ -289,7 +289,7 @@ Chapter 3. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 56 42 427 561
    2. Jan Janak (@janakj) 32 21 999 113
    3. Juha Heinanen (@juha-h) 30 20 700 233
-   4. Razvan Crainea (@razvancrainea) 21 14 288 222
+   4. Razvan Crainea (@razvancrainea) 22 15 292 226
    5. Daniel-Constantin Mierla (@miconda) 19 16 92 79
    6. Liviu Chircu (@liviuchircu) 11 8 45 109
    7. Vlad Patrascu (@rvlad-patrascu) 9 5 96 123
@@ -312,7 +312,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -324,8 +324,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Aug 2025
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2024
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Aug 2025
    3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  John Burke (@john08burke)           Jan 2022 - Jan 2022
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -349,8 +349,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Juha Heinanen (@juha-h), Elena-Ramona

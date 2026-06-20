@@ -663,7 +663,7 @@ Chapter 3. Contributors
    2. Maksym Sobolyev (@sobomax) 152 44 3552 4786
    3. Liviu Chircu (@liviuchircu) 50 40 452 324
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
-   5. Razvan Crainea (@razvancrainea) 33 27 158 240
+   5. Razvan Crainea (@razvancrainea) 34 28 159 241
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
    7. Anca Vamanu 22 4 1602 185
    8. Jan Janak (@janakj) 21 11 780 129
@@ -689,7 +689,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -701,14 +701,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2024
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2024
-   3.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
-   5.  Maksym Sobolyev (@sobomax)          May 2003 - Feb 2023
-   6.  Nick Altmann (@nikbyte)             May 2022 - May 2022
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   8.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
+   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2024
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2024
+   4.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   6.  Maksym Sobolyev (@sobomax)          May 2003 - Feb 2023
+   7.  Nick Altmann (@nikbyte)             May 2022 - May 2022
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
    9.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
    10. Dan Pascu (@danpascu)               May 2019 - May 2019
 
@@ -730,9 +730,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Nick Altmann (@nikbyte), Jasper Hafkenscheid
-   (@hafkensite), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Nick Altmann
+   (@nikbyte), Jasper Hafkenscheid (@hafkensite), Bogdan-Andrei
    Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Ovidiu Sas
    (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
    (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu
