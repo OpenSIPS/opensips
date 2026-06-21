@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">13</entry>
-		<entry align="center">11</entry>
-		<entry align="center">19</entry>
-		<entry align="center">20</entry>
+		<entry align="center">14</entry>
+		<entry align="center">12</entry>
+		<entry align="center">21</entry>
+		<entry align="center">22</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -106,7 +106,7 @@
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
 	<para>
-	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/doc/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
+	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/docs/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
 	</para>
 	<para>
 	    <emphasis>(3) ignoring whitespace edits, renamed files and auto-generated files</emphasis>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Sep 2011 - Mar 2026</entry>
+		<entry align="center">Sep 2011 - Jun 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>

@@ -45,10 +45,10 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">9</entry>
-		<entry align="center">7</entry>
-		<entry align="center">11</entry>
-		<entry align="center">6</entry>
+		<entry align="center">10</entry>
+		<entry align="center">8</entry>
+		<entry align="center">13</entry>
+		<entry align="center">8</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -106,7 +106,7 @@
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
 	<para>
-	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/doc/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
+	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/docs/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
 	</para>
 	<para>
 	    <emphasis>(3) ignoring whitespace edits, renamed files and auto-generated files</emphasis>
@@ -128,48 +128,48 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jun 2011 - Jun 2026</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Sep 2024</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Alexandra Titoc</entry>
 		<entry align="center">Sep 2024 - Sep 2024</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jan 2021 - Nov 2023</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Apr 2023</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>okhowang</entry>
 		<entry align="center">Mar 2023 - Mar 2023</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Apr 2022</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>)</entry>
 		<entry align="center">Mar 2022 - Mar 2022</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Jun 2008 - Apr 2020</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2011 - Sep 2019</entry>
 	</row>
 	<row>
 		<entry>10. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>).</para>
 </section>
 
 </chapter>

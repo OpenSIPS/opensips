@@ -275,9 +275,9 @@ Chapter 2. Contributors
    1. Carsten Bock 18 1 1930 0
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 16 19
    3. Liviu Chircu (@liviuchircu) 4 2 3 4
-   4. Ken Rice 3 1 2 2
-   5. Peter Lemenkov (@lemenkov) 3 1 1 1
-   6. Razvan Crainea (@razvancrainea) 2 1 1 0
+   4. Razvan Crainea (@razvancrainea) 4 2 3 2
+   5. Ken Rice 3 1 2 2
+   6. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -287,7 +287,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -299,10 +299,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Apr 2024 - Apr 2026
-   2. Ken Rice                            Sep 2025 - Sep 2025
-   3. Peter Lemenkov (@lemenkov)          Feb 2025 - Feb 2025
-   4. Razvan Crainea (@razvancrainea)     Jan 2025 - Jan 2025
+   1. Razvan Crainea (@razvancrainea)     Jan 2025 - Jun 2026
+   2. Liviu Chircu (@liviuchircu)         Apr 2024 - Apr 2026
+   3. Ken Rice                            Sep 2025 - Sep 2025
+   4. Peter Lemenkov (@lemenkov)          Feb 2025 - Feb 2025
    5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2024 - Apr 2024
    6. Carsten Bock                        Mar 2024 - Mar 2024
 
@@ -313,8 +313,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Carsten
-   Bock.
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Carsten Bock.
 
    Documentation Copyrights:
 

@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">19</entry>
-		<entry align="center">16</entry>
-		<entry align="center">74</entry>
-		<entry align="center">79</entry>
+		<entry align="center">20</entry>
+		<entry align="center">17</entry>
+		<entry align="center">75</entry>
+		<entry align="center">80</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -106,7 +106,7 @@
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
 	<para>
-	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/doc/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
+	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/docs/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
 	</para>
 	<para>
 	    <emphasis>(3) ignoring whitespace edits, renamed files and auto-generated files</emphasis>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Oct 2011 - Apr 2026</entry>
+		<entry align="center">Oct 2011 - Jun 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Stephane Alnet, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Andrei Dragus.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Stephane Alnet, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Andrei Dragus.</para>
 </section>
 
 </chapter>

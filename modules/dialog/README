@@ -2719,7 +2719,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 470 297 13403 3576
-   2. Razvan Crainea (@razvancrainea) 310 230 5685 1916
+   2. Razvan Crainea (@razvancrainea) 311 231 5686 1917
    3. Vlad Paiu (@vladpaiu) 263 149 7467 3027
    4. Liviu Chircu (@liviuchircu) 205 144 4042 1599
    5. Vlad Patrascu (@rvlad-patrascu) 200 104 4330 3514
@@ -2752,7 +2752,7 @@ Chapter 4. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -2764,8 +2764,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2026
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2026
+   2.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2026
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2026
    4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2026
    5.  Norman Brandinger (@NormB)          Oct 2013 - Apr 2026
@@ -2798,8 +2798,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Ovidiu Sas (@ovidiusas), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad Paiu
+   Last edited by: Razvan Crainea (@razvancrainea), Ovidiu Sas
+   (@ovidiusas), Liviu Chircu (@liviuchircu), Vlad Paiu
    (@vladpaiu), Bogdan-Andrei Iancu (@bogdan-iancu),
    Stefan-Cristian Mititelu, Ryan Bullock, Vlad Patrascu
    (@rvlad-patrascu), Zero King (@l2dy), Dan Pascu (@danpascu),

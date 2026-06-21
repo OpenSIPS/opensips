@@ -223,8 +223,8 @@ Chapter 2. Contributors
    2. Lavinia Andrei Spirea 22 2 2206 7
    3. Daniel-Constantin Mierla (@miconda) 10 8 44 20
    4. Juha Heinanen (@juha-h) 6 4 56 8
-   5. Liviu Chircu (@liviuchircu) 5 3 30 11
-   6. Razvan Crainea (@razvancrainea) 5 3 26 3
+   5. Razvan Crainea (@razvancrainea) 6 4 28 5
+   6. Liviu Chircu (@liviuchircu) 5 3 30 11
    7. Ancuta Onofrei 4 1 64 97
    8. Elena-Ramona Modroiu 3 1 7 7
    9. Konstantin Bokarius 3 1 2 5
@@ -241,7 +241,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -253,9 +253,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Oct 2014
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2014
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2013
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Oct 2014
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2014
    4.  Dan Pascu (@danpascu)               Aug 2008 - Aug 2008
    5.  Daniel-Constantin Mierla (@miconda) Feb 2007 - Mar 2008
    6.  Konstantin Bokarius                 Mar 2008 - Mar 2008
@@ -274,8 +274,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Daniel-Constantin Mierla (@miconda),
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Juha Heinanen
    (@juha-h), Elena-Ramona Modroiu, Lavinia Andrei Spirea.
 

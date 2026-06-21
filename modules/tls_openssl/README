@@ -61,7 +61,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 25 5 2195 39
-   2. Razvan Crainea (@razvancrainea) 21 6 172 746
+   2. Razvan Crainea (@razvancrainea) 22 7 173 747
    3. James Stanley 4 2 13 8
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 3 3
    5. Maksym Sobolyev (@sobomax) 3 1 1 1
@@ -76,7 +76,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -88,7 +88,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Feb 2026 - Apr 2026
+   1. Razvan Crainea (@razvancrainea)     Feb 2026 - Jun 2026
    2. Ross Henderson                      Feb 2026 - Feb 2026
    3. Your Name                           Jul 2024 - Jul 2024
    4. James Stanley                       Apr 2023 - Feb 2024
@@ -103,7 +103,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu).
 
    Documentation Copyrights:
 

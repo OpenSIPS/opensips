@@ -210,7 +210,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Gabriel Vasile 52 13 3118 674
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 26 20 195 198
-   3. Razvan Crainea (@razvancrainea) 14 12 39 27
+   3. Razvan Crainea (@razvancrainea) 15 13 41 29
    4. Daniel-Constantin Mierla (@miconda) 13 11 25 49
    5. Andrei Pelinescu-Onciul 12 9 71 72
    6. Liviu Chircu (@liviuchircu) 9 7 17 60
@@ -232,7 +232,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -244,12 +244,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2020
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2020
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    8.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
    9.  Henning Westerholt (@henningw)      May 2007 - Jun 2008
@@ -267,9 +267,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Henning
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Henning
    Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
    Modroiu, Jan Janak (@janakj).

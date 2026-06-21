@@ -266,7 +266,7 @@ Chapter 3. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 33 28 222 171
    2. Daniel-Constantin Mierla (@miconda) 15 12 28 64
    3. Liviu Chircu (@liviuchircu) 13 10 48 64
-   4. Razvan Crainea (@razvancrainea) 8 6 10 8
+   4. Razvan Crainea (@razvancrainea) 9 7 11 9
    5. Henning Westerholt (@henningw) 6 4 48 49
    6. Elena-Ramona Modroiu 5 3 92 39
    7. Walter Doekes (@wdoekes) 5 3 7 7
@@ -287,7 +287,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -299,11 +299,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2025
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2025
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   5.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
@@ -322,9 +322,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Sergey Khripchenko (@shripchenko), Razvan Crainea
-   (@razvancrainea), Walter Doekes (@wdoekes), Bogdan-Andrei Iancu
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Sergey Khripchenko
+   (@shripchenko), Walter Doekes (@wdoekes), Bogdan-Andrei Iancu
    (@bogdan-iancu), Sergio Gutierrez, Henning Westerholt
    (@henningw), Elena-Ramona Modroiu, Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert.

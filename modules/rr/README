@@ -543,7 +543,7 @@ Chapter 4. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 96 65 1915 843
    3. Liviu Chircu (@liviuchircu) 19 16 72 105
    4. Daniel-Constantin Mierla (@miconda) 19 14 244 92
-   5. Razvan Crainea (@razvancrainea) 15 13 91 49
+   5. Razvan Crainea (@razvancrainea) 16 14 92 50
    6. Vlad Paiu (@vladpaiu) 15 10 333 88
    7. Jiri Kuthan (@jiriatipteldotorg) 15 10 250 64
    8. Andrei Pelinescu-Onciul 12 9 61 92
@@ -565,7 +565,7 @@ Chapter 4. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -577,7 +577,7 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2026
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2026
    2.  Liviu Chircu (@liviuchircu)         Oct 2013 - May 2024
    3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Nov 2022
@@ -602,13 +602,12 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad
-   Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas), Dan Pascu
-   (@danpascu), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jan
-   Janak (@janakj).
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Paiu
+   (@vladpaiu), Ovidiu Sas (@ovidiusas), Dan Pascu (@danpascu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj).
 
    Documentation Copyrights:
 

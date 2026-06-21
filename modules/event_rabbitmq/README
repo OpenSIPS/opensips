@@ -582,7 +582,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 116 77 3598 442
+   1. Razvan Crainea (@razvancrainea) 117 78 3599 443
    2. Vlad Patrascu (@rvlad-patrascu) 36 20 1044 412
    3. Alexandra Titoc 27 3 504 1139
    4. Liviu Chircu (@liviuchircu) 16 13 41 76
@@ -593,10 +593,10 @@ Chapter 3. Contributors
    9. Ionut Ionita (@ionutrazvanionita) 4 2 52 25
    10. franklyfox 4 2 44 5
 
-   All remaining contributors: Jarrod Baumann (@jarrodb), Norman
-   Brandinger (@NormB), Eric Tamme (@etamme), Julián Moreno
-   Patiño, Ken Rice, Walter Doekes (@wdoekes), Vlad Paiu
-   (@vladpaiu).
+   All remaining contributors: Jarrod Baumann (@jarrodb), Stefan
+   Darius, Norman Brandinger (@NormB), Eric Tamme (@etamme),
+   Julián Moreno Patiño, Ken Rice, Walter Doekes (@wdoekes), Vlad
+   Paiu (@vladpaiu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -606,7 +606,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -618,20 +618,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Razvan Crainea (@razvancrainea) Jan 2017 - Apr 2026
-   2.  Norman Brandinger (@NormB)      Apr 2026 - Apr 2026
-   3.  Ovidiu Sas (@ovidiusas)         Jun 2015 - Nov 2025
-   4.  Ken Rice                        Sep 2025 - Sep 2025
-   5.  Alexandra Titoc                 Sep 2024 - Sep 2024
-   6.  Vlad Patrascu (@rvlad-patrascu) May 2017 - Jun 2023
-   7.  Liviu Chircu (@liviuchircu)     Apr 2018 - May 2023
-   8.  Maksym Sobolyev (@sobomax)      Jul 2017 - Feb 2023
-   9.  Peter Lemenkov (@lemenkov)      Jun 2018 - Aug 2020
-   10. Walter Doekes (@wdoekes)        Apr 2019 - Apr 2019
+   1.  Razvan Crainea (@razvancrainea) Jan 2017 - Jun 2026
+   2.  Stefan Darius                   Jun 2026 - Jun 2026
+   3.  Norman Brandinger (@NormB)      Apr 2026 - Apr 2026
+   4.  Ovidiu Sas (@ovidiusas)         Jun 2015 - Nov 2025
+   5.  Ken Rice                        Sep 2025 - Sep 2025
+   6.  Alexandra Titoc                 Sep 2024 - Sep 2024
+   7.  Vlad Patrascu (@rvlad-patrascu) May 2017 - Jun 2023
+   8.  Liviu Chircu (@liviuchircu)     Apr 2018 - May 2023
+   9.  Maksym Sobolyev (@sobomax)      Jul 2017 - Feb 2023
+   10. Peter Lemenkov (@lemenkov)      Jun 2018 - Aug 2020
 
-   All remaining contributors: Bogdan-Andrei Iancu
-   (@bogdan-iancu), Jarrod Baumann (@jarrodb), Julián Moreno
-   Patiño, Eric Tamme (@etamme), Ionut Ionita
+   All remaining contributors: Walter Doekes (@wdoekes),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Jarrod Baumann (@jarrodb),
+   Julián Moreno Patiño, Eric Tamme (@etamme), Ionut Ionita
    (@ionutrazvanionita), Vlad Paiu (@vladpaiu), franklyfox.
 
    (1) including any documentation-related commits, excluding
@@ -641,8 +641,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Alexandra Titoc, Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   Last edited by: Razvan Crainea (@razvancrainea), Alexandra
+   Titoc, Liviu Chircu (@liviuchircu), Vlad Patrascu
    (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita).
 

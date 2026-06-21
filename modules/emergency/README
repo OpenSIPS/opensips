@@ -369,7 +369,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Evandro Villaron (@evillaron) 151 9 10947 3011
    2. Robison Tesini (@rtesini) 62 1 3116 2038
-   3. Razvan Crainea (@razvancrainea) 27 18 332 339
+   3. Razvan Crainea (@razvancrainea) 28 19 333 340
    4. Liviu Chircu (@liviuchircu) 19 13 134 188
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 13 10 70 73
    6. Alexandra Titoc 10 8 62 19
@@ -389,7 +389,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -401,7 +401,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2015 - May 2026
+   1.  Razvan Crainea (@razvancrainea)     Jul 2015 - Jun 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Apr 2026
    3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
@@ -422,9 +422,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Evandro Villaron
-   (@evillaron).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Julián Moreno
+   Patiño, Evandro Villaron (@evillaron).
 
    Documentation Copyrights:
 

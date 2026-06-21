@@ -1573,8 +1573,8 @@ Chapter 3. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 366 135 13387 7101
    2. Liviu Chircu (@liviuchircu) 82 58 1445 647
    3. Eseanu Marius Cristian (@eseanucristian) 46 10 3142 534
-   4. Razvan Crainea (@razvancrainea) 33 25 474 232
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 31 16 1342 128
+   4. Razvan Crainea (@razvancrainea) 34 26 475 233
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 32 17 1348 131
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Maksym Sobolyev (@sobomax) 8 6 12 13
    8. Alexandra Titoc 6 4 18 4
@@ -1592,7 +1592,7 @@ Chapter 3. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -1604,12 +1604,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Nov 2015 - May 2026
-   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2025
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
-   4.  Norm Brandinger                     Jun 2025 - Jun 2025
-   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Sep 2024
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Jun 2026
+   2.  Razvan Crainea (@razvancrainea)     Nov 2015 - Jun 2026
+   3.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2025
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
+   5.  Norm Brandinger                     Jun 2025 - Jun 2025
+   6.  Alexandra Titoc                     Sep 2024 - Sep 2024
    7.  Shanee Vanstone                     Mar 2024 - Mar 2024
    8.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    9.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023

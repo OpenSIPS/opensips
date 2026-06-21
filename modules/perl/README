@@ -1378,7 +1378,7 @@ Chapter 5. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bastian Friedrich 116 38 8597 284
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 51 32 715 688
-   3. Razvan Crainea (@razvancrainea) 25 22 100 61
+   3. Razvan Crainea (@razvancrainea) 26 23 101 62
    4. Liviu Chircu (@liviuchircu) 22 18 62 133
    5. Vlad Patrascu (@rvlad-patrascu) 20 10 264 408
    6. Daniel-Constantin Mierla (@miconda) 19 14 164 125
@@ -1400,7 +1400,7 @@ Chapter 5. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -1412,7 +1412,7 @@ Chapter 5. Contributors
 
    Table 5.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2026
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - May 2025
    3.  Aaron Meriwether                    May 2024 - May 2024
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
@@ -1436,10 +1436,10 @@ Chapter 6. Documentation
 
 6.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu
-   Sas (@ovidiusas), Klaus Darilion, Daniel-Constantin Mierla
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu Sas
+   (@ovidiusas), Klaus Darilion, Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Bastian Friedrich.
 

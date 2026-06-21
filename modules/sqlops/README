@@ -724,7 +724,7 @@ Chapter 2. Contributors
    2. Daniel-Constantin Mierla (@miconda) 105 44 2927 2158
    3. Liviu Chircu (@liviuchircu) 55 29 1120 952
    4. Elena-Ramona Modroiu 52 11 4040 390
-   5. Razvan Crainea (@razvancrainea) 21 14 149 246
+   5. Razvan Crainea (@razvancrainea) 22 15 151 248
    6. Elena-Ramona Modroiu 18 5 1051 192
    7. Henning Westerholt (@henningw) 12 8 112 133
    8. Vlad Paiu (@vladpaiu) 9 7 39 2
@@ -748,7 +748,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -760,14 +760,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2026
-   3.  Maksym Sobolyev (@sobomax)          Oct 2022 - Apr 2025
-   4.  Norman Brandinger (@NormB)          Aug 2006 - Mar 2025
-   5.  Nick Altmann (@nikbyte)             Feb 2025 - Feb 2025
-   6.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
-   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   8.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2026
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2026
+   4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Apr 2025
+   5.  Norman Brandinger (@NormB)          Aug 2006 - Mar 2025
+   6.  Nick Altmann (@nikbyte)             Feb 2025 - Feb 2025
+   7.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
+   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
    9.  John Burke (@john08burke)           Jun 2022 - Jun 2022
    10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
 
@@ -787,11 +787,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Ovidiu Sas
-   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), John Burke (@john08burke), Peter
-   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad
-   Paiu (@vladpaiu), Anca Vamanu, Norman Brandinger (@NormB), Kobi
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
+   (@bogdan-iancu), John Burke (@john08burke), Peter Lemenkov
+   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
+   (@vladpaiu), Anca Vamanu, Norman Brandinger (@NormB), Kobi
    Eshun (@ekobi), Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Elena-Ramona Modroiu, Klaus Darilion, Andrei

@@ -45,10 +45,10 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">10</entry>
-		<entry align="center">8</entry>
-		<entry align="center">83</entry>
-		<entry align="center">39</entry>
+		<entry align="center">11</entry>
+		<entry align="center">9</entry>
+		<entry align="center">84</entry>
+		<entry align="center">40</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -61,10 +61,10 @@
 	<row>
 		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">6</entry>
-		<entry align="center">3</entry>
-		<entry align="center">47</entry>
-		<entry align="center">64</entry>
+		<entry align="center">7</entry>
+		<entry align="center">4</entry>
+		<entry align="center">57</entry>
+		<entry align="center">73</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
@@ -106,7 +106,7 @@
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
 	<para>
-	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/doc/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
+	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/docs/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
 	</para>
 	<para>
 	    <emphasis>(3) ignoring whitespace edits, renamed files and auto-generated files</emphasis>
@@ -128,33 +128,33 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jan 2021 - Jun 2026</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Mar 2024 - Jun 2026</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
 		<entry align="center">Jun 2026 - Jun 2026</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jan 2021 - Apr 2026</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Nov 2019 - Mar 2026</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Patrice Fournier</entry>
 		<entry align="center">Nov 2025 - Nov 2025</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>MonkeyTester</entry>
 		<entry align="center">Aug 2023 - Aug 2024</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Mar 2024 - Jul 2024</entry>
 	</row>
 	<row>
 		<entry>7. </entry>

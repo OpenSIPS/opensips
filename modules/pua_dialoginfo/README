@@ -523,7 +523,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 60 36 1213 750
    2. Anca Vamanu 26 16 713 231
-   3. Razvan Crainea (@razvancrainea) 13 11 19 21
+   3. Razvan Crainea (@razvancrainea) 14 12 21 23
    4. Liviu Chircu (@liviuchircu) 13 10 44 78
    5. Klaus Darilion 11 1 1109 0
    6. Vlad Patrascu (@rvlad-patrascu) 9 6 117 120
@@ -545,7 +545,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -557,8 +557,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Norman Brandinger (@NormB)          Jun 2026 - Jun 2026
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2026
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
+   2.  Norman Brandinger (@NormB)          Jun 2026 - Jun 2026
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Feb 2026
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
@@ -579,12 +579,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ovidiu
-   Sas (@ovidiusas), Damien Sandras (@dsandras), Vallimamod
-   Abdullah, Anca Vamanu, Walter Doekes (@wdoekes), Klaus
-   Darilion.
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu Sas
+   (@ovidiusas), Damien Sandras (@dsandras), Vallimamod Abdullah,
+   Anca Vamanu, Walter Doekes (@wdoekes), Klaus Darilion.
 
    Documentation Copyrights:
 

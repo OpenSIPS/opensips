@@ -496,9 +496,9 @@ Chapter 2. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 59 26 3129 324
    2. Liviu Chircu (@liviuchircu) 28 21 412 169
    3. MonkeyTester 14 9 388 14
-   4. Razvan Crainea (@razvancrainea) 10 8 83 39
+   4. Razvan Crainea (@razvancrainea) 11 9 84 40
    5. Maksym Sobolyev (@sobomax) 7 5 23 35
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 6 3 47 64
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 7 4 57 73
    7. kworm83 4 2 7 2
    8. tcresson 3 1 4 18
    9. Patrice Fournier 3 1 3 1
@@ -515,7 +515,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -527,12 +527,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Norman Brandinger (@NormB)          Jun 2026 - Jun 2026
-   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Apr 2026
-   3.  Liviu Chircu (@liviuchircu)         Nov 2019 - Mar 2026
-   4.  Patrice Fournier                    Nov 2025 - Nov 2025
-   5.  MonkeyTester                        Aug 2023 - Aug 2024
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Jul 2024
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Jun 2026
+   3.  Norman Brandinger (@NormB)          Jun 2026 - Jun 2026
+   4.  Liviu Chircu (@liviuchircu)         Nov 2019 - Mar 2026
+   5.  Patrice Fournier                    Nov 2025 - Nov 2025
+   6.  MonkeyTester                        Aug 2023 - Aug 2024
    7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jun 2024
    8.  tcresson                            Oct 2023 - Oct 2023
    9.  Kevin                               Feb 2022 - Feb 2022

@@ -186,7 +186,7 @@ Chapter 2. Contributors
    4. Greg Fausak 42 3 4472 2
    5. Daniel-Constantin Mierla (@miconda) 27 20 350 203
    6. Liviu Chircu (@liviuchircu) 18 15 45 87
-   7. Razvan Crainea (@razvancrainea) 15 12 210 27
+   7. Razvan Crainea (@razvancrainea) 16 13 212 29
    8. Jan Janak (@janakj) 12 8 300 23
    9. Klaus Darilion 10 6 139 67
    10. Vlad Paiu (@vladpaiu) 9 7 102 34
@@ -207,7 +207,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -219,8 +219,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ken Rice                            Sep 2025 - Sep 2025
-   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2024
+   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jun 2026
+   2.  Ken Rice                            Sep 2025 - Sep 2025
    3.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2024
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Feb 2024
    5.  Maksym Sobolyev (@sobomax)          Apr 2004 - Feb 2023
@@ -245,9 +245,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Norman Brandinger (@NormB), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Peter
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Norman
+   Brandinger (@NormB), Liviu Chircu (@liviuchircu), Peter
    Lemenkov (@lemenkov), Aron Podrigal, Eseanu Marius Cristian
    (@eseanucristian), Vlad Paiu (@vladpaiu), Daniel-Constantin
    Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,

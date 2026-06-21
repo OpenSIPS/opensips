@@ -467,7 +467,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 33 2 3536 2
-   2. Razvan Crainea (@razvancrainea) 16 14 44 36
+   2. Razvan Crainea (@razvancrainea) 17 15 46 38
    3. Liviu Chircu (@liviuchircu) 13 10 63 67
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 13 13
    5. Vlad Patrascu (@rvlad-patrascu) 8 5 82 90
@@ -483,7 +483,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".

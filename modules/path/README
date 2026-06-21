@@ -191,7 +191,7 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 18 12 96 267
    3. Andreas Granig 13 4 863 22
    4. Daniel-Constantin Mierla (@miconda) 12 10 25 21
-   5. Razvan Crainea (@razvancrainea) 9 7 10 8
+   5. Razvan Crainea (@razvancrainea) 10 8 12 10
    6. Vlad Patrascu (@rvlad-patrascu) 6 3 35 104
    7. Maksym Sobolyev (@sobomax) 5 3 4 5
    8. Henning Westerholt (@henningw) 4 2 5 32
@@ -209,7 +209,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -221,9 +221,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
-   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jul 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -242,11 +242,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
-   Modroiu, Andreas Granig.
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elena-Ramona Modroiu, Andreas Granig.
 
    Documentation Copyrights:
 

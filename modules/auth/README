@@ -525,7 +525,7 @@ Chapter 2. Contributors
    4. Maksym Sobolyev (@sobomax) 33 13 587 862
    5. Liviu Chircu (@liviuchircu) 29 22 214 294
    6. Jiri Kuthan (@jiriatipteldotorg) 26 19 660 51
-   7. Razvan Crainea (@razvancrainea) 18 13 212 169
+   7. Razvan Crainea (@razvancrainea) 20 14 226 183
    8. Vlad Patrascu (@rvlad-patrascu) 18 10 420 236
    9. Anca Vamanu 12 5 497 77
    10. Henning Westerholt (@henningw) 11 8 107 100
@@ -545,7 +545,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -557,8 +557,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2025
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2024
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2025
    3.  Maksym Sobolyev (@sobomax)          Jan 2005 - Mar 2023
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2022
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Jan 2021
@@ -582,9 +582,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Maksym Sobolyev (@sobomax), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Last edited by: Razvan Crainea (@razvancrainea), Maksym
+   Sobolyev (@sobomax), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
    Iancu (@bogdan-iancu), Sergio Gutierrez, Dan Pascu (@danpascu),
    Anca Vamanu, Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Henning Westerholt

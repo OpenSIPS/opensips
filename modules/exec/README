@@ -250,7 +250,7 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 40 23 344 827
    3. Jiri Kuthan (@jiriatipteldotorg) 28 11 1579 152
    4. Daniel-Constantin Mierla (@miconda) 26 19 440 131
-   5. Razvan Crainea (@razvancrainea) 21 17 327 59
+   5. Razvan Crainea (@razvancrainea) 23 18 329 61
    6. Jan Janak (@janakj) 16 10 463 111
    7. Ionut Ionita (@ionutrazvanionita) 15 7 612 117
    8. Andrei Pelinescu-Onciul 11 8 29 105
@@ -272,7 +272,7 @@ Chapter 2. Contributors
    merge commits. Regarding imported patches/code, we do our best
    to count the work on behalf of the proper owner, as per the
    "fix_authors" and "mod_renames" arrays in
-   opensips/doc/build-contrib.sh. If you identify any
+   opensips/docs/build-contrib.sh. If you identify any
    patches/commits which do not get properly attributed to you,
    please submit a pull request which extends "fix_authors" and/or
    "mod_renames".
@@ -284,8 +284,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Apr 2026
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2025
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Apr 2026
    3.  Liviu Chircu (@liviuchircu)         Feb 2014 - May 2024
    4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
@@ -309,10 +309,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Walter
-   Doekes (@wdoekes), Ionut Ionita (@ionutrazvanionita), Razvan
-   Crainea (@razvancrainea), Anca Vamanu, Dror Wald, Dan Pascu
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Peter
+   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Ionut Ionita
+   (@ionutrazvanionita), Anca Vamanu, Dror Wald, Dan Pascu
    (@danpascu), Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jan
    Janak (@janakj).
