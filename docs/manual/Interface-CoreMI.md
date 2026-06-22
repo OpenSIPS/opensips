@@ -7,10 +7,12 @@ MI (management interface) functions which are exported by **OpenSIPS** core.
 
 This document is for **OpenSIPS 1.5.x**
 
-## arg
-Returns the full list of arguments used when **OpenSIPS** was started. As in UNIX, the first argument is the name of executable binary.  
+## Core
 
-**Arguments**: none  
+### arg
+Returns the full list of arguments used when **OpenSIPS** was started. As in UNIX, the first argument is the name of executable binary.
+
+**Arguments**: none
 
 **Output**: multiple MI nodes where each node contains an argument. The MI nodes have no name, but only value.
 
@@ -25,9 +27,9 @@ Example of usage:
 ```
 
 ### debug [level]
-Gets or sets the value of the debug core variable. You may use it to dynamically (at runtime) change  or inspect the debug level of your **OpenSIPS**. If no argument is passed, the function will fetch the value of the debug level.  
+Gets or sets the value of the debug core variable. You may use it to dynamically (at runtime) change  or inspect the debug level of your **OpenSIPS**. If no argument is passed, the function will fetch the value of the debug level.
 
-**Arguments**: debug level (-3...4)  
+**Arguments**: debug level (-3...4)
 
 **Output**: debug level (only when no argument is passed). The value will be returned as a single MI node with name "DEBUG"
 
@@ -41,9 +43,9 @@ Examples of usage:
 ```
 
 ### kill
-The command will terminate **OpenSIPS** (and internal shutdown).  
+The command will terminate **OpenSIPS** (and internal shutdown).
 
-**Arguments**: none  
+**Arguments**: none
 
 **Output**: none
 
@@ -54,33 +56,19 @@ Examples of usage:
 
 ```
 
-### list_blacklists
-The command lists all the defined (static or learned) blacklists from **OpenSIPS**.  
-
-**Arguments**: none  
-
-**Output**: an MI tree - first level (nodes named "List") will describe the list (name, owner, flags); Second level (nodes named "Rules) will describe the rules (blacklists) for each list (IP/mask, protocol, port, matching regexp, flags)
-
-Examples of usage:
-```bash
-
-    # opensipsctl fifo list_blacklists
-
-```
-
 ### ps
-The command will list all all **OpenSIPS** processes, along with type and description.  
+The command will list all all **OpenSIPS** processes, along with type and description.
 
-**Arguments**: none  
+**Arguments**: none
 
-**Output**: multiple MI nodes (named "Process") - each node contains process ID (internal), PID (OS), Type and description 
+**Output**: multiple MI nodes (named "Process") - each node contains process ID (internal), PID (OS), Type and description
 
 Examples of usage:
 ```bash
 
     # opensipsctl fifo ps
     Process::  ID=0 PID=16224 Type=attendant
-    Process::  ID=1 PID=16225 Type=SIP receiver udp:192.168.1.2:5060 
+    Process::  ID=1 PID=16225 Type=SIP receiver udp:192.168.1.2:5060
     Process::  ID=2 PID=16226 Type=timer
     Process::  ID=3 PID=16227 Type=MI FIFO
     Process::  ID=4 PID=16228 Type=TCP receiver
@@ -89,9 +77,9 @@ Examples of usage:
 ```
 
 ### pwd
-Prints the working directory of **OpenSIPS** instance.  
+Prints the working directory of **OpenSIPS** instance.
 
-**Arguments**: none  
+**Arguments**: none
 
 **Output**: a single MI node with name "WD" containing the working directory full path.
 
@@ -104,9 +92,9 @@ Examples of usage:
 ```
 
 ### uptime
-Prints various time information about **OpenSIPS** - when it started to run, for how long it runs.  
+Prints various time information about **OpenSIPS** - when it started to run, for how long it runs.
 
-**Arguments**: none  
+**Arguments**: none
 
 **Output**: three MI nodes: "Now" - current time; "Up since" - start time ; "Up time" - number of seconds since started.
 
@@ -121,9 +109,9 @@ Examples of usage:
 ```
 
 ### version
-Prints the version string of a running**OpenSIPS**.  
+Prints the version string of a running**OpenSIPS**.
 
-**Arguments**: none  
+**Arguments**: none
 
 **Output**: one MI node (named "Server") containing the version string.
 
@@ -136,9 +124,9 @@ Examples of usage:
 ```
 
 ### which
-Prints all available MI commands from the queried **OpenSIPS**instance.  
+Prints all available MI commands from the queried **OpenSIPS**instance.
 
-**Arguments**: none  
+**Arguments**: none
 
 **Output**: multiple MI nodes (no name), each node containing (as value) the name of an available MI command. NOTE that the list of available MI commands may differ depending of what modules your **OpenSIPS** is using.
 
@@ -168,10 +156,28 @@ Examples of usage:
 
 ```
 
-### get_statistics
-Prints the statistics (all, group or one) realtime values.  
+## Blacklists
 
-**Arguments**: input may be "all" - print all available statistics; "group:" - print only statistics from a certain group; "name" - print only this statistic. The **OpenSIPS** core defines the following groups: *core*, *shmem*; Modules export groups typically named like the module itself.  
+### list_blacklists
+The command lists all the defined (static or learned) blacklists from **OpenSIPS**.
+
+**Arguments**: none
+
+**Output**: an MI tree - first level (nodes named "List") will describe the list (name, owner, flags); Second level (nodes named "Rules) will describe the rules (blacklists) for each list (IP/mask, protocol, port, matching regexp, flags)
+
+Examples of usage:
+```bash
+
+    # opensipsctl fifo list_blacklists
+
+```
+
+## Statistics
+
+### get_statistics
+Prints the statistics (all, group or one) realtime values.
+
+**Arguments**: input may be "all" - print all available statistics; "group:" - print only statistics from a certain group; "name" - print only this statistic. The **OpenSIPS** core defines the following groups: *core*, *shmem*; Modules export groups typically named like the module itself.
 
 **Output**: list of MI nodes (no name) - each MI mode contains the name and value of a single statistic variable.
 
@@ -180,7 +186,7 @@ Examples of usage:
 
     # opensipsctl fifo get_statistics rcv_requests
     core:rcv_requests = 35243
-    # opensipsctl fifo get_statistics shmem:      
+    # opensipsctl fifo get_statistics shmem:
     shmem:total_size = 33554432
     shmem:used_size = 1686952
     shmem:real_used_size = 1704592
@@ -193,9 +199,9 @@ Examples of usage:
 ```
 
 ### reset_statistics
-Reset (to zero) the value of a statistic variable. Note that not all variables allow reset (depending of the nature of the information they carry - example "shmem:used_size").  
+Reset (to zero) the value of a statistic variable. Note that not all variables allow reset (depending of the nature of the information they carry - example "shmem:used_size").
 
-**Arguments**: name of the variable to be reset.  
+**Arguments**: name of the variable to be reset.
 
 **Output**: none.
 
@@ -210,18 +216,20 @@ Examples of usage:
 
 ```
 
+## CacheDB interface
+
 ### cache_store
-This command stores in a cache system a string value.  
+This command stores in a cache system a string value.
 
-**Arguments**:   
+**Arguments**:
 
-   - cache system to use - for the cache system implemented by **OpenSIPS** module 'localcache' the value of this parameter should be 'local'   
+   - cache system to use - for the cache system implemented by **OpenSIPS** module 'localcache' the value of this parameter should be 'local'
 
 ```text
 - the label to be associated with this value \\
 - the string to be stored \\
 ```
-**Output**: none.   
+**Output**: none.
 
 Examples of usage:
 ```bash
@@ -231,16 +239,16 @@ Examples of usage:
 ```
 
 ### cache_fetch
-This command queries for a stored value.  
+This command queries for a stored value.
 
-**Arguments**:   
+**Arguments**:
 
-   - cache system to use - for the cache system implemented by **OpenSIPS** module 'localcache' the value of this parameter should be 'local'   
+   - cache system to use - for the cache system implemented by **OpenSIPS** module 'localcache' the value of this parameter should be 'local'
 
 ```text
 - the label associated with the value \\
 ```
-**Output**: MI tree containing the value if a record is found or 'Value not found' string otherwise.  
+**Output**: MI tree containing the value if a record is found or 'Value not found' string otherwise.
 
 Examples of usage:
 ```bash
@@ -250,15 +258,15 @@ Examples of usage:
 ```
 
 ### cache_remove
-This command removes a record from the cache system.  
+This command removes a record from the cache system.
 
-**Arguments**:   
+**Arguments**:
 
 ```text
 - cache system to use\\
 - the label associated with the stored value \\
 ```
-**Output**: None.  
+**Output**: None.
 
 Examples of usage:
 ```bash
