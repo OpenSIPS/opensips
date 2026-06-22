@@ -4227,6 +4227,91 @@ int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
 }
 
 
+/* GH#3796: apply pending lumps to a TM faked request.
+ *
+ * A faked request (FL_TM_FAKE_REQ, built by tm's fake_req() for the async
+ * resume / failure routes) is a hybrid: its header-node list is a single pkg
+ * block, but the nodes' parsed sub-structures AND the message buffer live in
+ * the SHM transaction clone.  The generic in-place path used by
+ * b2b_apply_lumps() (free_sip_msg() then reparse into the same buffer) cannot
+ * run on it: free_sip_msg() would pkg_free() those SHM parsed structures
+ * (the GH#3796 crash) and the reparse would overwrite the SHM clone buffer.
+ *
+ * Instead, flatten the lumps into a private pkg buffer, parse it into a fresh,
+ * fully pkg-owned sip_msg, and graft that self-contained state onto the faked
+ * request (the caller holds it by address, so we replace contents, not the
+ * pointer).  The pkg fields that fake_req() set up (URIs, advertised
+ * address/port, send socket, branch flags) are carried over.  Marking
+ * FL_TM_FAKE_REQ_REBUILT tells tm's free_faked_req() that the message is now a
+ * standalone pkg structure and must be released as such, rather than via the
+ * clone-relative cleanup. */
+static int b2b_apply_lumps_fake_req(struct sip_msg *msg)
+{
+	struct sip_msg nmsg;
+	str obuf;
+	char *newbuf;
+
+	obuf.s = build_req_buf_from_sip_req(msg, (unsigned int *)&obuf.len,
+		msg->rcv.bind_address, msg->rcv.proto, NULL, MSG_TRANS_NOVIA_FLAG);
+	if (!obuf.s) {
+		LM_ERR("failed to build flattened request buffer\n");
+		return -1;
+	}
+
+	/* private pkg copy of the flattened buffer */
+	newbuf = pkg_malloc(obuf.len + 1);
+	if (!newbuf) {
+		LM_ERR("no more pkg mem for flattened buffer\n");
+		pkg_free(obuf.s);
+		return -1;
+	}
+	memcpy(newbuf, obuf.s, obuf.len);
+	newbuf[obuf.len] = '\0';
+	pkg_free(obuf.s);
+
+	/* parse the flattened buffer into a fresh, self-contained pkg message */
+	memset(&nmsg, 0, sizeof nmsg);
+	nmsg.buf = newbuf;
+	nmsg.len = obuf.len;
+	nmsg.rcv = msg->rcv;
+	nmsg.id  = msg->id;
+	if (parse_msg(newbuf, obuf.len, &nmsg) != 0) {
+		LM_ERR("failed to parse flattened faked request\n");
+		free_sip_msg(&nmsg);
+		pkg_free(newbuf);
+		return -1;
+	}
+	if (!parse_sdp(&nmsg))
+		LM_DBG("flattened faked request has no parsable SDP\n");
+
+	/* carry over the pkg-owned context the reparse cannot reproduce */
+	nmsg.flags              = msg->flags;
+	nmsg.msg_flags          = msg->msg_flags | FL_TM_FAKE_REQ_REBUILT;
+	nmsg.hash_index         = msg->hash_index;
+	nmsg.force_send_socket  = msg->force_send_socket;
+	nmsg.set_global_address = msg->set_global_address;
+	nmsg.set_global_port    = msg->set_global_port;
+	nmsg.dst_uri            = msg->dst_uri;
+	nmsg.path_vec           = msg->path_vec;
+	nmsg.new_uri            = msg->new_uri;
+	nmsg.ruri_q             = msg->ruri_q;
+	nmsg.ruri_bflags        = msg->ruri_bflags;
+
+	/* release ONLY the old pkg-owned parts of the faked req; the SHM parsed
+	 * sub-structures and the SHM buffer belong to the transaction clone and
+	 * must NOT be freed.  The header-node list is a single pkg block. */
+	if (msg->headers)
+		pkg_free(msg->headers);
+	if (msg->body)
+		free_sip_body(msg->body);
+
+	/* graft the standalone pkg message onto the faked req; the stolen pkg
+	 * fields above now have a single owner */
+	memcpy(msg, &nmsg, sizeof *msg);
+
+	return 1;
+}
+
 int b2b_apply_lumps(struct sip_msg* msg)
 {
 	str obuf;
@@ -4238,6 +4323,11 @@ int b2b_apply_lumps(struct sip_msg* msg)
 
 	if(!msg->body_lumps && !msg->add_rm)
 		return 0;
+
+	/* TM faked request: cannot reparse in place (SHM-backed headers/buffer
+	 * owned by the transaction clone) -- see GH#3796 */
+	if (msg->msg_flags & FL_TM_FAKE_REQ)
+		return b2b_apply_lumps_fake_req(msg);
 
 	if (msg->first_line.type==SIP_REQUEST)
 		obuf.s = build_req_buf_from_sip_req(msg, (unsigned int*)&obuf.len,
