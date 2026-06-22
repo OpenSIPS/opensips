@@ -26,6 +26,20 @@ Example of usage:
 
 ```
 
+### help
+Prints MI command usage information. When *mi_cmd* is provided, the response includes the command description and the module which exports it.
+
+**Arguments**:
+* *mi_cmd* (optional) - MI command name
+
+Examples of usage:
+```text
+
+    # opensips-mi help
+    # opensips-mi help core:version
+
+```
+
 ### kill
 The command will terminate **OpenSIPS** (and internal shutdown).
 
@@ -910,6 +924,20 @@ Examples of usage:
 
 > [!IMPORTANT]
 > The processes without IPC support (like timer and per-module processes) will not be able to generate a memory dump.
+
+### mem:rpm_dump
+Triggers a restart-persistent memory dump. The memory dump is written to OpenSIPS's log (syslog or stderr) using the `memdump` logging level. The global `memdump` level may be overridden by the optional argument.
+
+**Arguments**:
+* *log_level* (optional) - logging level used for this dump
+
+Examples of usage:
+```text
+
+    # opensips-mi mem:rpm_dump
+    # opensips-mi mem:rpm_dump -1
+
+```
 
 ### mem:shm_dump
 Triggers a shm memory dump. The memory dump will written to OpenSIPS's log (syslog or stderr) using the 'memdump' logging level. The global 'memdump' log level may be overwritten by a custom value provided as argument to this command.
