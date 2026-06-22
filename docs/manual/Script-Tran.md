@@ -126,7 +126,7 @@ $var(reverse) = $(var(forward){s.reverse}); //Contains "eerhtowteno";
 
 ### {s.substr,offset,length}
 
-Return substring starting at offset having size of 'length'. If offset is negative, then it is counted from the end of the value, -1 being the last char. In case of positive value, 0 is first char. Length must be positive, in case of 0, substring to the end of variable value is returned. offset and length can be a varibale as well.
+Return substring starting at offset having size of 'length'. If offset is negative, then it is counted from the end of the value, -1 being the last char. In case of positive value, 0 is first char. If length is 0 or greater than the string length, substring to the end of variable value is returned. If length is negative, the end of the substring is counted from the end of the value, with -1 excluding the last char. offset and length can be a varibale as well.
 
 Example:
 ```text
@@ -161,7 +161,7 @@ Return decoding from hexa of variable's value
 
 ### {s.escape.common}
 
-Return escaped string of variable's value. Characters escaped are ', ",  and 0. Useful when doing DB queries (care should be taken for non Latin character set).
+Return escaped string of variable's value. Characters escaped are ', ", backslash and 0. Useful when doing DB queries (care should be taken for non Latin character set).
 
 ### {s.unescape.common}
 
@@ -214,7 +214,7 @@ $(var(strtosearch){s.index, $var(str), -25}) # Same as above
 
 #Test for existence of string in another
 if ($(var(strtosearch){s.index, $var(str)}) != NULL)
-    xlog("found $var(sstr) in $var(strtosearch)\n");
+    xlog("found $var(str) in $var(strtosearch)\n");
 
 ```
 
@@ -370,7 +370,7 @@ $(var(format){s.eval})   => "Hello, client!"
 
 ## URI Transformations
 
-The name of transformation starts with 'uri.'. The value of the variable is considered to be a SIP URI. This transformation returns parts of SIP URI (see struct sip_uri). If that part is missing, the returned value is an empty string.
+The name of transformation starts with 'uri.'. The value of the variable is considered to be a SIP URI. This transformation returns parts of SIP URI (see struct sip_uri). If that part is missing, the returned value is NULL.
 
 Available transformations in this class:
 
@@ -438,7 +438,7 @@ Returns the schema part of the given URI.
 
 ## VIA Transformations
 
-These transformations parse Via headers and all starts with `via.`. The value of the variable is considered to be a SIP Via header. This transformation returns parts of the via header (see struct via_body). If the requested part is missing, the returned value is an empty string. Transformation will fail (with script error) if variable holding the Via header is empty. Unless otherwise specified in descriptions below, the result of transform is a string (not an integer).
+These transformations parse Via headers and all starts with `via.`. The value of the variable is considered to be a SIP Via header. This transformation returns parts of the via header (see struct via_body). If the requested part is missing, the returned value is NULL. Transformation will fail (with script error) if variable holding the Via header is empty. Unless otherwise specified in descriptions below, the result of transform is a string (not an integer).
 
 Examples:
 ```text
@@ -529,7 +529,7 @@ Example:
 
 ### {param.valueat,index}
 
-Returns the value of parameter at position give by 'index' (0-based index)
+Returns the value of parameter at position give by 'index' (0-based index). Negative indexes are accepted, with -1 being the last parameter.
 
 Example:
 ```text
@@ -542,7 +542,7 @@ Example:
 
 ### {param.name,index}
 
-Returns the name of parameter at position 'index'.
+Returns the name of parameter at position 'index'. Negative indexes are accepted, with -1 being the last parameter. 'index' can be a variable.
 
 Example:
 ```text
@@ -727,8 +727,8 @@ Example:
 
 ```
 
-### {csv.value}
-Returns the entry at the specified positions. Indexing starts from 0.
+### {csv.value,index}
+Returns the entry at the specified position. Indexing starts from 0. Negative indexes are accepted, with -1 being the last entry. 'index' can be a variable.
 Example:
 ```text
 
