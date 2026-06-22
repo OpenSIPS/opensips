@@ -20,13 +20,22 @@ The **MI** commands are provided by the OpenSIPS core (see [full list](Interface
 
 Several protocols are available in order to connect (from external apps) to the OpenSIPS **MI** . While the interface itself is provided by OpenSIPS core, each protocol is provided by a separate OpenSIPS module. You can load multiple MI modules in order to use multiple MI protocols in the same time.
 
-Available protocols are :
+The available MI modules are:
 
-* **mi_fifo** - protocol is text oriented (see the syntax in the module documentation), communications is done via a FIFO file; OpenSIPS reads from a predefined FIFO file, where the external apps are writing down the MI commands. As the file is actually as stream of data, there is no restrictions here on the amount of data OpenSIPS may return (when fetching data from OpenSIPS)
+### [mi_fifo](../../modules/mi_fifo/README.md)
+Provides the FIFO transport layer for the Management Interface.
 
-* **mi_datagram** - protocol is text oriented, similar for fifo (see the syntax in the module documentation), communication is done either via UNIX SOCKETS , either via UDP packages ; OpenSIPS listens for MI commands on UDP port(s) or unisock files; The transported data is limited to the size of a Datagram (65K).
+### [mi_datagram](../../modules/mi_datagram/README.md)
+Provides the UNIX and UDP socket transport layer for the Management Interface.
 
-* **mi_xmlrpc** - protocol is XMLRPC (XML over HTTP). As TCP is used, there is no limit in regards to the amount of transfered data.
+### [mi_http](../../modules/mi_http/README.md)
+Provides the HTTP transport layer for the Management Interface.
+
+### [mi_json](../../modules/mi_json/README.md)
+Implements a JSON server that handles GET requests and generates JSON responses.
+
+### [mi_xmlrpc_ng](../../modules/mi_xmlrpc_ng/README.md)
+Implements an XML-RPC server that handles XML-RPC requests and generates XML-RPC responses.
 
 All protocols do allow multiple applications (clients) to connect in the same time to the MI interface.
 
