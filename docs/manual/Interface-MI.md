@@ -20,21 +20,27 @@ The **MI** commands are provided by the OpenSIPS core (see [full list](Interface
 
 The protocols available in order to connect (from external apps) to the OpenSIPS **MI** are JSON-RPC over several transports and XML-RPC. While the interface itself (tailored around the JSON format) is provided by the OpenSIPS core, each actual transport protocol is provided by a separate OpenSIPS module. You can load multiple MI modules in order to use multiple MI transport protocols at the same time.
 
-The majority of the MI backend modules only provide the transport, while the command parsing and response formatting (as **JSON-RPC**) is done by the OpenSIPS core. The only exceptions are the *mi_html* and *mi_xmlrpc_ng* modules, which use a different format.
+The majority of the MI backend modules only provide the transport, while the command parsing and response formatting (as **JSON-RPC**) is done by the OpenSIPS core. The only exceptions are the *mi_html* and *mi_xmlrpc* modules, which use a different format.
 
-The available MI modules are :
+The available MI modules are:
 
-* **mi_fifo** - provides JSON-RPC transport via a FIFO file; OpenSIPS reads from a predefined FIFO file, where the external apps are writing down the MI commands. As the file is actually as stream of data, there is no restrictions here on the amount of data OpenSIPS may return (when fetching data from OpenSIPS).
+### [mi_fifo](../../modules/mi_fifo/README.md)
+Provides JSON-RPC transport via a FIFO file; OpenSIPS reads from a predefined FIFO file, where the external apps are writing down the MI commands. As the file is actually as stream of data, there is no restrictions here on the amount of data OpenSIPS may return (when fetching data from OpenSIPS).
 
-* **mi_datagram** - provides JSON-RPC transport either via UNIX SOCKETS, or via UDP packets; OpenSIPS listens for MI commands on UDP port(s) or unisock files; The transported data is limited to the size of a Datagram (65K).
+### [mi_datagram](../../modules/mi_datagram/README.md)
+Provides JSON-RPC transport either via UNIX SOCKETS, or via UDP packets; OpenSIPS listens for MI commands on UDP port(s) or unisock files; The transported data is limited to the size of a Datagram (65K).
 
-* **mi_http** - provides JSON-RPC transport over HTTP. As TCP is used, there is no limit in regards to the amount of transfered data.
+### [mi_http](../../modules/mi_http/README.md)
+Provides JSON-RPC transport over HTTP. As TCP is used, there is no limit in regards to the amount of transfered data.
 
-* **mi_html**- provides a way of issuing MI commands directly from a web browser via an HTML page. The command's parameters are passed in the URL's query string. Although not conforming to JSON-RPC, the MI responses are still delivered in JSON format within the page.
+### [mi_html](../../modules/mi_html/README.md)
+Provides a way of issuing MI commands directly from a web browser via an HTML page. The command's parameters are passed in the URL's query string. Although not conforming to JSON-RPC, the MI responses are still delivered in JSON format within the page.
 
-* **mi_xmlrpc_ng** - implements XML-RPC by not only providing an HTTP transport but also by translating between the MI's internal JSON format and XML.
+### [mi_xmlrpc](../../modules/mi_xmlrpc/README.md)
+Implements XML-RPC by not only providing an HTTP transport but also by translating between the MI's internal JSON format and XML.
 
-* **mi_script** - provides the ability to run MI commands directly from OpenSIPS' script, returning the result as a JSON string.
+### [mi_script](../../modules/mi_script/README.md)
+Provides the ability to run MI commands directly from OpenSIPS' script, returning the result as a JSON string.
 
 All protocols do allow multiple applications (clients) to connect at the same time to the MI interface.
 
