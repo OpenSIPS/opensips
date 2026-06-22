@@ -5,10 +5,12 @@ description: "MI (management interface) functions which are exported by OpenSIPS
 
 MI (management interface) functions which are exported by **OpenSIPS** core.
 
-## arg
-Returns the full list of arguments used when **OpenSIPS** was started. As in UNIX, the first argument is the name of executable binary.  
+## Core
 
-**Arguments**: none  
+### arg
+Returns the full list of arguments used when **OpenSIPS** was started. As in UNIX, the first argument is the name of executable binary.
+
+**Arguments**: none
 
 **Output**: an array with multiple strings representing the arguments.
 
@@ -24,10 +26,10 @@ Example of usage:
 
 ```
 
-## kill
-The command will terminate **OpenSIPS** (and internal shutdown).  
+### kill
+The command will terminate **OpenSIPS** (and internal shutdown).
 
-**Arguments**: none  
+**Arguments**: none
 
 **Output**: none
 
@@ -38,105 +40,8 @@ Examples of usage:
 
 ```
 
-## list_blacklists
-The command lists all the defined (static or learned) blacklists from **OpenSIPS**.  
-
-**Arguments**:
-* *name* (optional) - filter and print only rules in a specific blacklist
-**Output**: an array with each object describing the list (name, owner, flags); the "Rules" item is an array with each object member describing the rules (blacklists) for each list (IP/mask, protocol, port, matching regexp, flags).
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi list_blacklists
-
-```
-
-## check_blacklists
-The command returns all the blacklists that match an proto:IP:port+pattern.  
-
-**Arguments**:
-* *proto* (optional) - protocol of the check rule - if missing, "any" protocol is used. Note that an "any" protocol check can only match an "any" protocol rule.
-* *ip* - the mandatory IP that is used to match the rules
-* *port* (optional) - the port of the check rule - if missing, 0/any port is used. Note that a 0 port will only match a 0 port rule.
-* *pattern* (optional) - optional pattern to check against the rules
-**Output**: an array with the names of each blacklist that matched.
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi check_blacklists 127.0.0.1
-    # opensips-cli -x mi check_blacklists udp 127.0.0.1 5060
-
-```
-
-## check_blacklist
-The command check whether a proto:IP:port+pattern matches any rule of a blacklist.  
-
-**Arguments**:
-* *name* = the name of the blacklist to check against
-* *proto* (optional) - protocol of the check rule - if missing, "any" protocol is used. Note that an "any" protocol check can only match an "any" protocol rule.
-* *ip* - the mandatory IP that is used to match the rules
-* *port* (optional) - the port of the check rule - if missing, 0/any port is used. Note that a 0 port will only match a 0 port rule.
-* *pattern* (optional) - optional pattern to check against the rules
-**Output**: an object containing the first rule that matched, or an error if nothing matched.
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi check_blacklist net_dynamic 127.0.0.1
-    # opensips-cli -x mi check_blacklists net_dynamic udp 127.0.0.1 5060
-
-```
-
-## add_blacklist_rule
-Adds a rule to a non-readonly blacklist.  
-
-**Arguments**:
-* *name*- the name of the blacklist to add to
-* *rule* - a string containing a blacklist rule, according to [**dst_blacklist**](https://docs.opensips.org/manual/3-5/script-coreparameters#dst_blacklist) parameter
-* *expire* (optional) - indicates the number of seconds the rule should expire
-**Output**: success or failed object.
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi add_blacklist_rule net_dynamic '!tcp,127.0.0.1,5060'
-    # opensips-cli -x mi add_blacklist_rule net_dynamic '!tcp,127.0.0.1,5060' 3600
-
-```
-
-## del_blacklist_rule
-Removes a rule from a non-readonly blacklist.  
-
-**Arguments**:
-* *name* - the name of the blacklist to remove from
-* *rule* - a string containing a blacklist rule, according to [**dst_blacklist**](https://docs.opensips.org/manual/3-5/script-coreparameters#dst_blacklist) parameter
-**Output**: success or failed object.
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi del_blacklist_rule net_dynamic '!tcp,127.0.0.1,5060'
-
-```
-
-## list_tcp_conns
-The command lists all ongoing TCP/TLS connection from **OpenSIPS**.  
-
-**Arguments**: none  
-
-**Output**: an array with one object per connection with the following attributes : ID, type, state, source, destination, lifetime, alias port.
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi list_tcp_conns
-
-```
-
-## log_level  [level] [pid]
-Get or set the logging level of one or all OpenSIPS processes. If no argument is passed to the **log_level** command, it will print a table with the current logging levels of all processes. If a logging **level** is given, it will be set for each process. If **pid** is also given, the logging level will change only for that process.  
+### log_level  [level] [pid]
+Get or set the logging level of one or all OpenSIPS processes. If no argument is passed to the **log_level** command, it will print a table with the current logging levels of all processes. If a logging **level** is given, it will be set for each process. If **pid** is also given, the logging level will change only for that process.
 
 **Arguments**:
 * *level* (optional) - logging level (-3...4) (see [meaning of the values](Script-CoreParameters.md#log_level))
@@ -176,7 +81,7 @@ Examples of usage:
 
 ```
 
-## log_level_filter  consumer [level_filter]
+### log_level_filter  consumer [level_filter]
 Get or set the level of the extra filtering applied to log messages for a specific logging "consumer"(*stderror*, *syslog* or *event*). If **log_level_filter** is not given, the command will print the current level filter for the specified consumer.
 
 **Arguments**:
@@ -195,7 +100,7 @@ Examples of usage:
 
 ```
 
-## log_mute_state  consumer [mute_state]
+### log_mute_state  consumer [mute_state]
 Get or set the mute state (printing enabled/disabled) of a specific logging "consumer"(*stderror*, *syslog* or *event*). If **mute_state** is not given, the command will print the current mute state for the specified consumer.
 
 **Arguments**:
@@ -214,12 +119,12 @@ Examples of usage:
 
 ```
 
-## ps
-The command will list all all **OpenSIPS** processes, along with type and description.  
+### ps
+The command will list all all **OpenSIPS** processes, along with type and description.
 
-**Arguments**: none  
+**Arguments**: none
 
-**Output**: multiple objects, each one containing a process ID (internal), PID (OS) and Type. 
+**Output**: multiple objects, each one containing a process ID (internal), PID (OS) and Type.
 
 Examples of usage:
 ```bash
@@ -262,10 +167,10 @@ Examples of usage:
 
 ```
 
-## pwd
-Prints the working directory of **OpenSIPS** instance.  
+### pwd
+Prints the working directory of **OpenSIPS** instance.
 
-**Arguments**: none  
+**Arguments**: none
 
 **Output**: a single item containing the working directory full path.
 
@@ -279,17 +184,203 @@ Examples of usage:
 
 ```
 
-## reload_routes
+### reload_routes
 Triggers the reload of the routing block (the routes) from the script during the runtime.
-**Arguments**: none  
+**Arguments**: none
 
 **Output**: none
 
-Please note that there are some limitations of when a reload is possible or not. Depending on the initial configuration of your modules, the reload may be rejected as the usage of the functions in the new script is not compatible with the original module setting and initialization.  
+Please note that there are some limitations of when a reload is possible or not. Depending on the initial configuration of your modules, the reload may be rejected as the usage of the functions in the new script is not compatible with the original module setting and initialization.
 
 If the reload fails, take a look at the logs to understand why - it may have been a syntax error or maybe a module related constraint. Anyhow, if the reload fails, there is no impact on your running OpenSIPS.
 
-## sr_get_status
+### uptime
+Prints various time information about **OpenSIPS** - when it started to run, for how long it runs.
+
+**Arguments**: none
+
+**Output**: three items: "Now" - current time; "Up since" - start time ; "Up time" - number of seconds since started.
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi uptime
+{
+    "Now": "Mon Jul 21 17:41:03 2008",
+    "Up since": "Mon Jul 21 17:36:33 2008",
+    "Up time": "270 [sec]"
+}
+
+```
+
+### version
+Prints the version string of a running**OpenSIPS**.
+
+**Arguments**: none
+
+**Output**: one item (named "Server") containing the version string.
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi version
+{
+    "Server": "OpenSIPS (3.5.0-dev (x86_64/linux))"
+}
+
+```
+
+### which
+Prints all available MI commands from the queried **OpenSIPS**instance.
+
+**Arguments**: none
+
+**Output**: an array of the names of available MI commands. NOTE that the list of available MI commands may differ depending of what modules your **OpenSIPS** is using.
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi which
+[
+    "get_statistics",
+    "list_statistics",
+    "reset_statistics",
+    "uptime",
+    "version",
+    "pwd",
+    "arg",
+    "which",
+    "ps",
+    "kill",
+    "log_level",
+    "xlog_level",
+    "shm_check",
+    "cache_store",
+    "cache_fetch",
+    "cache_remove",
+    "event_subscribe",
+    "events_list",
+...
+
+```
+
+### xlog_level [level]
+Get or set the global xlogging level in OpenSIPS processes. If no argument is passed to the **xlog_level** command, it will print the current **xlog_level**. If a logging **level** is given, it will be globally set for all OpenSIPS processes.
+
+**Arguments**:
+* *level* (optional)
+
+Example of usage:
+```bash
+
+    # opensips-cli -x mi xlog_level -2
+
+```
+
+## Blacklists
+
+### list_blacklists
+The command lists all the defined (static or learned) blacklists from **OpenSIPS**.
+
+**Arguments**:
+* *name* (optional) - filter and print only rules in a specific blacklist
+**Output**: an array with each object describing the list (name, owner, flags); the "Rules" item is an array with each object member describing the rules (blacklists) for each list (IP/mask, protocol, port, matching regexp, flags).
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi list_blacklists
+
+```
+
+### check_blacklists
+The command returns all the blacklists that match an proto:IP:port+pattern.
+
+**Arguments**:
+* *proto* (optional) - protocol of the check rule - if missing, "any" protocol is used. Note that an "any" protocol check can only match an "any" protocol rule.
+* *ip* - the mandatory IP that is used to match the rules
+* *port* (optional) - the port of the check rule - if missing, 0/any port is used. Note that a 0 port will only match a 0 port rule.
+* *pattern* (optional) - optional pattern to check against the rules
+**Output**: an array with the names of each blacklist that matched.
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi check_blacklists 127.0.0.1
+    # opensips-cli -x mi check_blacklists udp 127.0.0.1 5060
+
+```
+
+### check_blacklist
+The command check whether a proto:IP:port+pattern matches any rule of a blacklist.
+
+**Arguments**:
+* *name* = the name of the blacklist to check against
+* *proto* (optional) - protocol of the check rule - if missing, "any" protocol is used. Note that an "any" protocol check can only match an "any" protocol rule.
+* *ip* - the mandatory IP that is used to match the rules
+* *port* (optional) - the port of the check rule - if missing, 0/any port is used. Note that a 0 port will only match a 0 port rule.
+* *pattern* (optional) - optional pattern to check against the rules
+**Output**: an object containing the first rule that matched, or an error if nothing matched.
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi check_blacklist net_dynamic 127.0.0.1
+    # opensips-cli -x mi check_blacklists net_dynamic udp 127.0.0.1 5060
+
+```
+
+### add_blacklist_rule
+Adds a rule to a non-readonly blacklist.
+
+**Arguments**:
+* *name*- the name of the blacklist to add to
+* *rule* - a string containing a blacklist rule, according to [**dst_blacklist**](https://docs.opensips.org/manual/3-5/script-coreparameters#dst_blacklist) parameter
+* *expire* (optional) - indicates the number of seconds the rule should expire
+**Output**: success or failed object.
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi add_blacklist_rule net_dynamic '!tcp,127.0.0.1,5060'
+    # opensips-cli -x mi add_blacklist_rule net_dynamic '!tcp,127.0.0.1,5060' 3600
+
+```
+
+### del_blacklist_rule
+Removes a rule from a non-readonly blacklist.
+
+**Arguments**:
+* *name* - the name of the blacklist to remove from
+* *rule* - a string containing a blacklist rule, according to [**dst_blacklist**](https://docs.opensips.org/manual/3-5/script-coreparameters#dst_blacklist) parameter
+**Output**: success or failed object.
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi del_blacklist_rule net_dynamic '!tcp,127.0.0.1,5060'
+
+```
+
+## TCP connections
+
+### list_tcp_conns
+The command lists all ongoing TCP/TLS connection from **OpenSIPS**.
+
+**Arguments**: none
+
+**Output**: an array with one object per connection with the following attributes : ID, type, state, source, destination, lifetime, alias port.
+
+Examples of usage:
+```bash
+
+    # opensips-cli -x mi list_tcp_conns
+
+```
+
+## Status Report
+
+### sr_get_status
 The MI equivalent of the [sr_check_status() script function](https://docs.opensips.org/manual/3-5/script-corefunctions#sr_check_status) - to get the status of an 'status/report' identifier/group.
 
 **Arguments**: a mandatory *group* and optional *identifier*, see the parameters of the [sr_check_status() script function](https://docs.opensips.org/manual/3-5/script-corefunctions#sr_check_status).
@@ -314,7 +405,7 @@ Examples of usage:
 
 ```
 
-## sr_list_status
+### sr_list_status
 Command to list the status of the identifiers within one or all 'status/report' groups.
 
 **Arguments**: an optional 'status/report'  *group*, see the [sr_check_status() script function](https://docs.opensips.org/manual/3-5/script-corefunctions#sr_check_status) for more details.
@@ -323,7 +414,7 @@ Command to list the status of the identifiers within one or all 'status/report' 
 Examples of usage:
 ```bash
 
-#opensips-cli -x mi sr_list_status 
+#opensips-cli -x mi sr_list_status
 [
     {
         "Name": "drouting",
@@ -361,7 +452,7 @@ Examples of usage:
 
 ```
 
-## sr_list_reports
+### sr_list_reports
 Command to list the full set of reports (logs) collected by 'status/report' identifiers.
 
 **Arguments**:
@@ -372,7 +463,7 @@ Command to list the full set of reports (logs) collected by 'status/report' iden
 Examples of usage:
 ```bash
 
-#bin/opensips-cli -x mi sr_list_reports 
+#bin/opensips-cli -x mi sr_list_reports
 [
     {
         "Name": "drouting",
@@ -432,7 +523,7 @@ Examples of usage:
 
 ```
 
-## sr_list_identifiers
+### sr_list_identifiers
 Command to list all the existing identifiers in OpenSIPS or only from a certain group.
 
 **Arguments**:
@@ -488,78 +579,10 @@ Examples of usage:
 
 ```
 
-## uptime
-Prints various time information about **OpenSIPS** - when it started to run, for how long it runs.  
+## Statistics
 
-**Arguments**: none  
-
-**Output**: three items: "Now" - current time; "Up since" - start time ; "Up time" - number of seconds since started.
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi uptime
-{
-    "Now": "Mon Jul 21 17:41:03 2008",
-    "Up since": "Mon Jul 21 17:36:33 2008",
-    "Up time": "270 [sec]"
-}
-
-```
-
-## version
-Prints the version string of a running**OpenSIPS**.  
-
-**Arguments**: none  
-
-**Output**: one item (named "Server") containing the version string.
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi version
-{
-    "Server": "OpenSIPS (3.5.0-dev (x86_64/linux))"
-}
-
-```
-
-## which
-Prints all available MI commands from the queried **OpenSIPS**instance.  
-
-**Arguments**: none  
-
-**Output**: an array of the names of available MI commands. NOTE that the list of available MI commands may differ depending of what modules your **OpenSIPS** is using.
-
-Examples of usage:
-```bash
-
-    # opensips-cli -x mi which
-[
-    "get_statistics",
-    "list_statistics",
-    "reset_statistics",
-    "uptime",
-    "version",
-    "pwd",
-    "arg",
-    "which",
-    "ps",
-    "kill",
-    "log_level",
-    "xlog_level",
-    "shm_check",
-    "cache_store",
-    "cache_fetch",
-    "cache_remove",
-    "event_subscribe",
-    "events_list",
-...
-
-```
-
-## get_statistics
-Prints the statistics (all, group or one) realtime values.  
+### get_statistics
+Prints the statistics (all, group or one) realtime values.
 
 **Arguments**:
 * *statistics* - an array of the following possible values:
@@ -575,7 +598,7 @@ Examples of usage:
    {
        "core:rcv_requests": 35243
    }
-    # opensipsc-cli -x mi get_statistics shmem:      
+    # opensipsc-cli -x mi get_statistics shmem:
     {
         "shmem:total_size": 1073741824,
         "shmem:max_used_size": 3389232,
@@ -589,7 +612,7 @@ Examples of usage:
 
 ```
 
-## list_statistics
+### list_statistics
 Prints a list of available statistics in the current configuration of OpenSIPS.
 **Arguments**:
 * *statistics* (optional) - an array of the same possible values as for **get_statistics** MI command, with the exception of "all". Omitting the parameter will list all available statistics.
@@ -611,11 +634,11 @@ Examples of usage:
 
 ```
 
-## reset_statistics
-Reset (to zero) the value of a statistic variable. Note that not all variables allow reset (depending of the nature of the information they carry - example "shmem:used_size").  
+### reset_statistics
+Reset (to zero) the value of a statistic variable. Note that not all variables allow reset (depending of the nature of the information they carry - example "shmem:used_size").
 
-**Arguments**: 
-* *statistics* - an array of the names of the variables to be reset. 
+**Arguments**:
+* *statistics* - an array of the names of the variables to be reset.
 **Output**: none.
 
 Examples of usage:
@@ -633,8 +656,8 @@ Examples of usage:
 
 ```
 
-## reset_all_statistics
-Reset (to zero) the value of all statistic variables that can be reset. Note that not all variables allow reset (depending of the nature of the information they carry - example "shmem:used_size").  
+### reset_all_statistics
+Reset (to zero) the value of all statistic variables that can be reset. Note that not all variables allow reset (depending of the nature of the information they carry - example "shmem:used_size").
 
 **Output**: none.
 
@@ -645,15 +668,17 @@ Examples of usage:
 
 ```
 
-## cache_store
-This command stores in a cache system a string value.  
+## CacheDB interface
+
+### cache_store
+This command stores in a cache system a string value.
 
 **Arguments**:
 * *system* - cache system to use - for the cache system implemented by **OpenSIPS** module 'localcache' the value of this parameter should be 'local';
 * *attr* - the label to be associated with this value;
 * *value* - the string to be stored;
 * *expire* (optional) - expire time for the stored value;
-**Output**: none.   
+**Output**: none.
 
 Examples of usage:
 ```bash
@@ -662,13 +687,13 @@ Examples of usage:
 
 ```
 
-## cache_fetch
-This command queries for a stored value.  
+### cache_fetch
+This command queries for a stored value.
 
 **Arguments**:
 * *system* - cache system to use - for the cache system implemented by **OpenSIPS** module 'localcache' the value of this parameter should be 'local'
 * *attr* - the label associated with the value
-**Output**: object containing the value if a record is found or 'Value not found' string otherwise.  
+**Output**: object containing the value if a record is found or 'Value not found' string otherwise.
 
 Examples of usage:
 ```bash
@@ -677,13 +702,13 @@ Examples of usage:
 
 ```
 
-## cache_remove
-This command removes a record from the cache system.  
+### cache_remove
+This command removes a record from the cache system.
 
 **Arguments**:
 * *system* - cache system to use;
 * *attr* - the label associated with the stored value;
-**Output**: None.  
+**Output**: None.
 
 Examples of usage:
 ```bash
@@ -692,14 +717,16 @@ Examples of usage:
 
 ```
 
-## event_subscribe
-Subscribes an external application to a certain event.  
+## Event Interface
+
+### event_subscribe
+Subscribes an external application to a certain event.
 
 **Arguments**:
 * *event* - event name
 * *socket* - external application socket
 * *expire* (optional) - expire time, in seconds - if absent, the subscription is valid only one hour (3600 s)
-**Output**: None.  
+**Output**: None.
 
 Examples of usage:
 ```bash
@@ -708,12 +735,12 @@ Examples of usage:
 
 ```
 
-## events_list
-Lists all the events published through the Event Interface.  
+### events_list
+Lists all the events published through the Event Interface.
 
-**Arguments**: None.   
+**Arguments**: None.
 
-**Output**: None.  
+**Output**: None.
 
 Examples of usage:
 ```bash
@@ -737,13 +764,13 @@ Examples of usage:
 
 ```
 
-## raise_event
-Raises an event through the Event Interface using an MI command.  
+### raise_event
+Raises an event through the Event Interface using an MI command.
 
 **Arguments**:
 * *event* - event name
 * *params* (optional) - array of elements, or a string consisting of a JSON object containing key-value pairs
-**Output**: None.  
+**Output**: None.
 
 Examples of usage:
 ```bash
@@ -753,13 +780,13 @@ Examples of usage:
 
 ```
 
-## subscribers_list
-Lists information about the subscribers  
+### subscribers_list
+Lists information about the subscribers
 
 **Arguments**:
 * *event* - event name
 * *socket* (optional) - external application socket
-**Output**: If no parameter is specified, then the command returns information about all events and their subscribers. If the event is specified, only the external applications subscribed for that event are returned. If the socket is also specified, only one subscriber information is returned.  
+**Output**: If no parameter is specified, then the command returns information about all events and their subscribers. If the event is specified, only the external applications subscribed for that event are returned. If the socket is also specified, only one subscriber information is returned.
 
 Examples of usage:
 ```bash
@@ -798,7 +825,7 @@ Examples of usage:
 		  "ttl": 1046
 		}
 	]
-  } 
+  }
 }
 
     # opensips-cli -x mi subscribers_list E_RTPPROXY_STATUS unix:/tmp/event.sock
@@ -810,18 +837,20 @@ Examples of usage:
 	  "socket": "unix:/tmp/event.sock",
 	  "expire": "never"
 	}
-  } 
+  }
 }
 
 ```
 
-## mem_pkg_dump
-Triggers a pkg memory dump for a given process. The memory dump will written to OpenSIPS's log (syslog or stderr) using the 'memdump' logging level. The global 'memdump' log level may be overwritten by a custom value provided as argument to this command.  
+## Memory
+
+### mem_pkg_dump
+Triggers a pkg memory dump for a given process. The memory dump will written to OpenSIPS's log (syslog or stderr) using the 'memdump' logging level. The global 'memdump' log level may be overwritten by a custom value provided as argument to this command.
 
 **Arguments**:
 * *pid* - the PID of the process to perform the pkg dump
 * *log_level* (optional) - a log level to be used for this dump
-**Output**: None.  
+**Output**: None.
 
 Examples of usage:
 ```bash
@@ -833,12 +862,12 @@ Examples of usage:
 > [!IMPORTANT]
 > The processes without IPC support (like timer and per-module processes) will not be able to generate a memory dump.
 
-## mem_shm_dump
-Triggers a shm memory dump. The memory dump will written to OpenSIPS's log (syslog or stderr) using the 'memdump' logging level. The global 'memdump' log level may be overwritten by a custom value provided as argument to this command.  
+### mem_shm_dump
+Triggers a shm memory dump. The memory dump will written to OpenSIPS's log (syslog or stderr) using the 'memdump' logging level. The global 'memdump' log level may be overwritten by a custom value provided as argument to this command.
 
 **Arguments**:
 * *log_level* (optional) - a log level to be used for this dump
-**Output**: None.  
+**Output**: None.
 
 Examples of usage:
 ```bash
@@ -847,29 +876,16 @@ Examples of usage:
 
 ```
 
-## shm_check
-Only available with *QM_MALLOC* + *DBG_MALLOC*.  Fully scans the shared memory pool in order to locate any inconsistencies.  If any sign of memory corruption is detected, OpenSIPS will immediately abort.   
+### shm_check
+Only available with *QM_MALLOC* + *DBG_MALLOC*.  Fully scans the shared memory pool in order to locate any inconsistencies.  If any sign of memory corruption is detected, OpenSIPS will immediately abort.
 
-**Arguments**: None  
+**Arguments**: None
 
-**Output**: current number of fragments.  
+**Output**: current number of fragments.
 
 Example of usage:
 ```bash
 
     # opensips-cli -x mi shm_check
-
-```
-
-## xlog_level [level]
-Get or set the global xlogging level in OpenSIPS processes. If no argument is passed to the **xlog_level** command, it will print the current **xlog_level**. If a logging **level** is given, it will be globally set for all OpenSIPS processes.   
-
-**Arguments**:
-* *level* (optional)
-
-Example of usage:
-```bash
-
-    # opensips-cli -x mi xlog_level -2
 
 ```
