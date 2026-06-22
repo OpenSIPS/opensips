@@ -22,17 +22,22 @@ The protocols available in order to connect (from external apps) to the OpenSIPS
 
 The majority of the MI backend modules only provide the transport, while the command parsing and response formatting (as **JSON-RPC**) is done by the OpenSIPS core. The only exceptions are the *mi_html* and *mi_xmlrpc_ng* modules, which use a different format.
 
-The available MI modules are :
+The available MI modules are:
 
-* **mi_fifo** - provides JSON-RPC transport via a FIFO file; OpenSIPS reads from a predefined FIFO file, where the external apps are writing down the MI commands. As the file is actually as stream of data, there is no restrictions here on the amount of data OpenSIPS may return (when fetching data from OpenSIPS).
+### [mi_fifo](../../modules/mi_fifo/README.md)
+Provides the FIFO transport layer for the Management Interface.
 
-* **mi_datagram** - provides JSON-RPC transport either via UNIX SOCKETS, or via UDP packets; OpenSIPS listens for MI commands on UDP port(s) or unisock files; The transported data is limited to the size of a Datagram (65K).
+### [mi_datagram](../../modules/mi_datagram/README.md)
+Provides the UNIX and UDP socket transport layer for the Management Interface.
 
-* **mi_http** - provides JSON-RPC transport over HTTP. As TCP is used, there is no limit in regards to the amount of transfered data.
+### [mi_http](../../modules/mi_http/README.md)
+Provides the HTTP transport layer for the Management Interface.
 
-* **mi_html**- provides a way of issuing MI commands directly from a web browser via an HTML page. The command's parameters are passed in the URL's query string. Although not conforming to JSON-RPC, the MI responses are still delivered in JSON format within the page.
+### [mi_html](../../modules/mi_html/README.md)
+Provides a minimal web user interface for the Management Interface.
 
-* **mi_xmlrpc_ng** - implements XML-RPC by not only providing an HTTP transport but also by translating between the MI's internal JSON format and XML.
+### [mi_xmlrpc_ng](../../modules/mi_xmlrpc_ng/README.md)
+Implements an XML-RPC server that handles XML-RPC requests and generates XML-RPC responses.
 
 All protocols do allow multiple applications (clients) to connect at the same time to the MI interface.
 
