@@ -207,7 +207,7 @@ In error_route, the following pseudo-variables are available to get access to er
      xlog("--- error route class=$(err.class) level=$(err.level)
             info=$(err.info) rcode=$(err.rcode) rreason=$(err.rreason) ---\n");
      xlog("--- error from [$si:$sp]\n+++++\n$mb\n++++\n");
-     sl_send_reply("$err.rcode", "$err.rreason");
+     sl_send_reply($err.rcode, $err.rreason);
      exit;
   }
 
@@ -254,8 +254,8 @@ The **startup_route** is executed only once when OpenSIPS is started and before 
 ```c
 
   startup_route {
-    avp_db_query("select gwlist where ruleid==1",$avp(i:100));
-    cache_store("local", "rule1", "$avp(i:100)");
+    avp_db_query("SELECT gwlist FROM routing_rules WHERE ruleid = 1", "$avp(gateway_list)");
+    cache_store("local", "rule1", "$avp(gateway_list)");
   }
 
 ```
@@ -276,8 +276,8 @@ The **timer_route** is a route executed periodically at a configured interval of
 ```c
 
   timer_route[gw_update, 300] {
-    avp_db_query("select gwlist where ruleid==1",$avp(i:100));
-    $shv(i:100) =$avp(i:100);
+    avp_db_query("SELECT gwlist FROM routing_rules WHERE ruleid = 1", "$avp(gateway_list)");
+    $shv(gateway_list) = $avp(gateway_list);
   }
 
 ```
