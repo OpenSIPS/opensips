@@ -113,6 +113,10 @@ xlog("MD5 over From username: $(fU{s.md5})\n");
 
 ```
 
+### {s.crc32}
+
+Returns the CRC-32 checksum of the value as a decimal string.
+
 ### {s.reverse}
 
 Returns the input string in revers order.
