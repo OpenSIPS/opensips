@@ -4026,6 +4026,9 @@ int b2b_apply_lumps(struct sip_msg* msg)
 	if(!msg->body_lumps && !msg->add_rm)
 		return 0;
 
+	if (msg->msg_flags & FL_TM_FAKE_REQ)
+		return 0;
+
 	if (msg->first_line.type==SIP_REQUEST)
 		obuf.s = build_req_buf_from_sip_req(msg, (unsigned int*)&obuf.len,
 			msg->rcv.bind_address, msg->rcv.proto, NULL, MSG_TRANS_NOVIA_FLAG );
