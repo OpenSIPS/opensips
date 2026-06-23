@@ -55,6 +55,7 @@
 #include "../ipc.h"
 #include "../receive.h"
 #include "../lib/cond.h"
+#include "../cfg_reload.h"
 
 #include "tcp_passfd.h"
 #include "net_tcp_proc.h"
@@ -2323,7 +2324,8 @@ static int fork_dynamic_tcp_process(void *foo)
 		tcp_workers[r].pid = getpid();
 
 		if (tcp_worker_proc_reactor_init(tcp_dispatch_sock[0]) < 0 ||
-				init_child(20000) < 0)
+		init_child(20000) ||
+		self_update_routing_script() < 0)
 			goto error;
 
 		report_conditional_status(1, 0);
