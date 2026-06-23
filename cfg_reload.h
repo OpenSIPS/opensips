@@ -30,6 +30,8 @@ int init_script_reload(void);
 
 int reload_routing_script(void);
 
+int self_update_routing_script(void);
+
 /* sets as active the old/previous cfg (after a reload) */
 void reload_swap_old_script(void);
 
