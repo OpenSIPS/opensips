@@ -56,6 +56,7 @@ struct script_reload_ctx {
 	rw_lock_t *rw_lock;
 	unsigned int seq_no;
 	unsigned int next_seq_no;
+	str reloaded_cfg_buf;
 	str cfg_buf;
 	enum proc_reload_status *proc_status;
 };
@@ -139,8 +140,9 @@ int init_script_reload(void)
 
 static inline void reset_script_reload_ctx(void)
 {
-	if (srr_ctx->cfg_buf.s)
-		shm_free(srr_ctx->cfg_buf.s);
+	if (srr_ctx->reloaded_cfg_buf.s)
+		shm_free(srr_ctx->reloaded_cfg_buf.s);
+	srr_ctx->reloaded_cfg_buf = srr_ctx->cfg_buf;
 	srr_ctx->cfg_buf.s = NULL;
 	srr_ctx->cfg_buf.len = 0;
 
@@ -350,6 +352,47 @@ static void routes_switch_per_proc(int sender, void *param)
 	/* update all the ref to script routes */
 	update_all_script_route_refs();
 	print_script_route_refs();
+}
+
+
+int self_update_routing_script(void)
+{
+	int ret = 0;
+
+	/* be sure we do not overlap with a script reload */
+	lock_get( &srr_ctx->lock );
+	if (srr_ctx->seq_no!=0) {
+		LM_INFO("Reload already in progress, cannot update now\n");
+		lock_release( &srr_ctx->lock );
+		return -1;
+	}
+	srr_ctx->seq_no = srr_ctx->next_seq_no++;
+	lock_release( &srr_ctx->lock );
+
+	/* anything to reload? */
+	if (srr_ctx->reloaded_cfg_buf.s==NULL)
+		goto done;
+
+	/* put the last reloaded buffer in the right place as for a reload */
+	srr_ctx->cfg_buf = srr_ctx->reloaded_cfg_buf;
+
+	routes_reload_per_proc( process_no, (void*)(long)srr_ctx->seq_no);
+	if (srr_ctx->proc_status[process_no] != RELOAD_SUCCESS) {
+		LM_ERR("failed to update to the last reloaded cfg :(\n");
+		ret = -1;
+		goto done;
+	}
+
+	routes_switch_per_proc( process_no, (void*)(long)srr_ctx->seq_no);
+
+done:
+	srr_ctx->cfg_buf.s = NULL;
+	srr_ctx->cfg_buf.len = 0;
+	/* this must be the last as it will allow the ctx reusage
+	 * for another reload */
+	srr_ctx->seq_no = 0;
+
+	return ret;
 }
 
 
