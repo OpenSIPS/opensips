@@ -25,7 +25,7 @@
 #include "common.h"
 #include "../dprint.h"
 
-enum osips_mm mem_allocator = MM_Q_MALLOC_DBG;
+enum osips_mm mem_allocator = MM_F_MALLOC;
 
 /* returns -1 if @mm_name is unrecognized */
 int set_global_mm(const char *mm_name)

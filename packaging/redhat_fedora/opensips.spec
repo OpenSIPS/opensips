@@ -1724,6 +1724,9 @@ fi
 
 
 %changelog
+* Tue Jun 23 2026 Liviu Chircu <liviu@opensips.org> - 4.0.0-1
+- OpenSIPS minor stable release: 4.0.0-1
+
 * Wed Jun 17 2026 Liviu Chircu <liviu@opensips.org> - 4.0.0-rc2-1
 - OpenSIPS minor stable release: 4.0.0-rc2-1
 
